@@ -398,8 +398,8 @@ and loop_direct env r (tree : 'a Flambda.t) : 'a Flambda.t * R.t =
     end;
     tree, ret r A.value_unknown
   | Fprim ((Psequand | Psequor), _, _, _) ->
-    Misc.fatal_error "Psequand and Psequor are not allowed in Fprim \
-        expressions; use Fseq_prim instead"
+    Misc.fatal_error "Psequand and Psequor must be expanded (see handling in \
+        closure_conversion.ml)"
   | Fprim (p, args, dbg, _) ->
     let approxs = E.find_list env args in
     let expr, approx, benefit =
@@ -409,8 +409,6 @@ and loop_direct env r (tree : 'a Flambda.t) : 'a Flambda.t * R.t =
     in
     let r = R.map_benefit r (B.(+) benefit) in
     expr, ret r approx
-  | Fseq_prim ((Psequ_and | Psequ_or), _, _, _) ->
-    Misc.fatal_error "Psequ_and / Psequ_or must have exactly two arguments"
   | Fstaticraise (i, args, annot) ->
     let i = Freshening.apply_static_exception (E.freshening env) i in
     let args, _, r = loop_list env r args in

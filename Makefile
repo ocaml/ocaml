@@ -157,7 +157,6 @@ MIDDLE_END=\
   middle_end/remove_unused_arguments.cmo \
   middle_end/remove_unused_closure_vars.cmo \
   middle_end/remove_unused_globals.cmo \
-  middle_end/simplify_sequential_logical_ops.cmo \
   middle_end/simplify_boxed_integer_ops.cmo \
   middle_end/simplify_primitives.cmo \
   middle_end/inlining_stats_types.cmo \
