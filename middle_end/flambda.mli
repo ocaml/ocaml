@@ -101,7 +101,6 @@ type 'a t =
   | Fproject_var of project_var * 'a
   | Flet of let_kind * Variable.t * 'a named * 'a t * 'a
   | Fletrec of (Variable.t * 'a named) list * 'a t * 'a
-  | Fseq_prim of Lambda.seq_primitive * 'a t list * Debuginfo.t * 'a
   (* CR-someday mshinwell: try to produce a tighter definition of a "switch"
      (and translate to that earlier) so that middle- and back-end code for
      these can be reduced. *)

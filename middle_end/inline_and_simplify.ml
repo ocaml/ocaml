@@ -409,20 +409,6 @@ and loop_direct env r (tree : 'a Flambda.t) : 'a Flambda.t * R.t =
     in
     let r = R.map_benefit r (B.(+) benefit) in
     expr, ret r approx
-  | Fseq_prim ((Psequ_and | Psequ_or) as prim, [arg1; arg2], dbg, annot) ->
-    let arg1, r = loop env r arg1 in
-    let arg1_approx = R.approx r in
-    let arg2, r = loop env r arg2 in
-    let arg2_approx = R.approx r in
-    let simplifier =
-      match prim with
-      | Psequ_and -> Simplify_sequential_logical_ops.sequential_and
-      | Psequ_or -> Simplify_sequential_logical_ops.sequential_or
-    in
-    let expr, approx, simplification_benefit =
-      simplifier ~arg1 ~arg1_approx ~arg2 ~arg2_approx ~dbg ~annot
-    in
-    expr, ret (R.map_benefit r (B.(+) simplification_benefit)) approx
   | Fseq_prim ((Psequ_and | Psequ_or), _, _, _) ->
     Misc.fatal_error "Psequ_and / Psequ_or must have exactly two arguments"
   | Fstaticraise (i, args, annot) ->
@@ -498,10 +484,6 @@ and loop_direct env r (tree : 'a Flambda.t) : 'a Flambda.t * R.t =
       Fifthenelse (arg, ifso, ifnot, annot),
       ret r (A.meet ifso_approx ifnot_approx)
     end
-  | Fsequence (lam1, lam2, annot) ->
-    let lam1, r = loop env r lam1 in
-    let lam2, r = loop env r lam2 in
-    Effect_analysis.sequence lam1 lam2 annot, r
   | Fwhile (cond, body, annot) ->
     let cond, r = loop env r cond in
     let env = E.inside_loop env in

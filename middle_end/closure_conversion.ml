@@ -433,15 +433,18 @@ let rec close t env (lam : Lambda.lambda) : _ Flambda.t =
   | Lsend (kind, met, obj, args, _) ->
     Fsend (kind, close t env met, close t env obj,
       close_list t env args, Debuginfo.none, nid ())
-  | Lprim ((Psequand | Psequor) as prim, args) ->
-    let prim : Lambda.seq_primitive =
-      match prim with
-      | Psequand -> Psequ_and
-      | Psequor -> Psequ_or
-      | _ -> assert false
-    in
-    Fseq_prim (prim, close_list t env args, Debuginfo.none,
-      nid ~name:"seq_prim" ())
+  | Lprim (Psequor, [arg1; arg2]) ->
+    let const_true = fresh_variable ~name:"const_true" in
+    let name = "Psequand" in
+    Flet (Immutable, const_true, Fconst (Fconst_base (Const_int 1)),
+      Fifthenelse (arg1, const_true, arg2, nid ~name ()), nid ~name ())
+  | Lprim (Psequand, [arg1; arg2]) ->
+    let const_false = fresh_variable ~name:"const_true" in
+    let name = "Psequor" in
+    Flet (Immutable, const_false, Fconst (Fconst_base (Const_int 0)),
+      Fifthenelse (arg1, arg2, const_false, nid ~name ()), nid ~name ())
+  | Lprim (Psequand | Psequor, _) ->
+    Misc.fatal_error "Psequand / Psequor must have exactly two arguments"
   | Lprim (Pidentity, [arg]) -> close t env arg
   | Lprim (Pdirapply loc, [funct; arg])
   | Lprim (Prevapply loc, [arg; funct]) ->

@@ -19,7 +19,7 @@
     have any side effects. *)
 val no_effects : _ Flambda.t -> bool
 
-(** [sequence e1 e2 annot] produces a sequence expression running [e1] then
+(** [sequence e1 e2 annot] produces an expression running [e1] then
     [e2], unless [e1] has no effects, in which case the function returns
     just [e2]. *)
 val sequence
