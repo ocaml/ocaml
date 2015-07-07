@@ -92,6 +92,9 @@ let catch_break on =
     set_signal sigint Signal_default
 
 
+external enable_runtime_warnings: bool -> unit =
+  "caml_ml_enable_runtime_warnings"
+
 (* The version string is found in file ../VERSION *)
 
 let ocaml_version = "%%VERSION%%";;

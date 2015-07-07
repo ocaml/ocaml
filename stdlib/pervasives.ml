@@ -510,6 +510,3 @@ let exit retcode =
   sys_exit retcode
 
 let _ = register_named_value "Pervasives.do_at_exit" do_at_exit
-
-
-external enable_runtime_warnings: bool -> unit = "caml_ml_enable_runtime_warnings"
