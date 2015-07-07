@@ -20,7 +20,7 @@ let calculate tree =
     match flam with
     | Fvar (var, _) -> mark_free var
     | Fapply ({ func; args; kind = _; dbg = _}, _) ->
-      aux func;
+      mark_free func;
       List.iter mark_free args
     | Fproject_var ({ closure; closure_id = _; var = _ }, _) ->
       mark_free closure

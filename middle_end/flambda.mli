@@ -93,11 +93,38 @@ type const =
   | Fconst_immstring of string
   | Fconst_float of float
 
+type apply = {
+  func : Variable.t;
+  args : Variable.t list;
+  kind : call_kind;
+  dbg : Debuginfo.t;
+}
+
+type project_closure = {
+  (** [set_of_closures] must yield a set of closures rather than a closure. *)
+  set_of_closures : Variable.t;
+  closure_id : Closure_id.t;
+}
+
+type move_within_set_of_closures = {
+  (** [closure] must yield a closure rather than a set of closures. *)
+  closure : Variable.t;
+  start_from : Closure_id.t;
+  move_to : Closure_id.t;
+}
+
+type project_var = {
+  (** [closure] must yield a closure rather than a set of closures. *)
+  closure : Variable.t;
+  closure_id : Closure_id.t;
+  var : Var_within_closure.t;
+}
+
 (** The value of type ['a] may be used for annotation of an flambda expression
     by some optimization pass. *)
 type 'a t =
   | Fvar of Variable.t * 'a
-  | Fapply of 'a apply * 'a
+  | Fapply of apply * 'a
   | Fproject_var of project_var * 'a
   (* CR-someday mshinwell: consider eliminating assignment from Flambda
      onwards *)
@@ -138,13 +165,6 @@ and 'a named =
   | Fmove_within_set_of_closures of move_within_set_of_closures * 'a
   | Fprim of Lambda.primitive * Variable.t list * Debuginfo.t * 'a
   | Fexpr of 'a t
-
-and 'a apply = {
-  func : 'a t;
-  args : Variable.t list;
-  kind : call_kind;
-  dbg : Debuginfo.t;
-}
 
 and 'a set_of_closures = {
   function_decls : 'a function_declarations;
@@ -213,26 +233,6 @@ and 'a function_declaration = {
       through a stub.  Stubs will be unconditionally inlined. *)
   stub : bool;
   dbg : Debuginfo.t;
-}
-
-and project_closure = {
-  (** [set_of_closures] must yield a set of closures rather than a closure. *)
-  set_of_closures : Variable.t;
-  closure_id : Closure_id.t;
-}
-
-and move_within_set_of_closures = {
-  (** [closure] must yield a closure rather than a set of closures. *)
-  closure : Variable.t;
-  start_from : Closure_id.t;
-  move_to : Closure_id.t;
-}
-
-and project_var = {
-  (** [closure] must yield a closure rather than a set of closures. *)
-  closure : Variable.t;
-  closure_id : Closure_id.t;
-  var : Var_within_closure.t;
 }
 
 and 'a switch = {  (** Equivalent to the similar type in [Lambda]. *)

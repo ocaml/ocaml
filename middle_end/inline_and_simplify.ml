@@ -799,8 +799,7 @@ and simplify_set_of_closures original_env r
 and simplify_apply env r ~(apply : _ Flambda.apply) ~annot
       : _ Flambda.t * R.t =
   let { Flambda. func; args; kind = _; dbg } = apply in
-  let func, r = loop env r func in
-  let func_approx = R.approx r in
+  let func_approx = Env.find func env in
   let args_approxs = List.map (fun arg -> E.find arg env) args in
   let no_transformation () : _ Flambda.t * R.t =
     Fapply ({ func; args; kind = Indirect; dbg }, annot),
@@ -829,8 +828,14 @@ and simplify_apply env r ~(apply : _ Flambda.apply) ~annot
         full_apply env r clos func closure_id func_decl value_set_of_closures
           (h_args, h_approxs) dbg (Expr_id.create ())
       in
-      loop env r (Flambda.Fapply ({ func = expr; args = q_args;
-                           kind = Indirect; dbg }, annot))
+      let func_var = fresh_variable ~name:"full_apply" in
+      let expr : _ Flambda.t =
+        Flet (Immutable, func_var, expr,
+          Fapply ({ func = func_var; args = q_args; kind = Indirect; dbg },
+            annot),
+          Expr_id.create ())
+      in
+      loop env r expr
     else if nargs > 0 && nargs < arity then
       let partial_fun = partial_apply func closure_id func_decl args dbg in
       loop env r partial_fun
@@ -858,7 +863,7 @@ and partial_apply funct fun_id (func : _ Flambda.function_declaration)
   let new_fun_id = new_var "partial_fun" in
   let expr : _ Flambda.t =
     Fapply ({
-      func = Fvar (funct_id, Expr_id.create ());
+      func = funct_id;
       args = param_sb;
       kind = Direct fun_id;
       dbg;

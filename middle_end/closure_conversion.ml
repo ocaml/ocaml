@@ -245,8 +245,10 @@ let tupled_function_call_stub t original_params tuplified_version
   let params = List.map (fun p -> rename_var t p) original_params in
   let call : _ Flambda.t =
     Fapply ({
-        func = Fvar (tuplified_version, nid ());
+        func = tuplified_version;
         args = params;
+        (* CR mshinwell for mshinwell: investigate if there is some
+           redundancy here (func is also tuplified_version) *)
         kind = Direct (Closure_id.wrap tuplified_version);
         dbg = Debuginfo.none;
       },
@@ -359,13 +361,16 @@ let rec close t env (lam : Lambda.lambda) : _ Flambda.t =
       ~evaluation_order:`Right_to_left
       ~name:"apply_arg"
       ~create_body:(fun args ->
-        Fapply ({
-            func = close t env funct;
-            args;
-            kind = Indirect;
-            dbg = Debuginfo.none;
-          },
-          nid ~name:"apply" ()))
+        let func = close t env funct in
+        let func_var = fresh_variable ~name:"apply_funct" in
+        Flet (Immutable, func_var, Fexpr funct,
+          Fapply ({
+              func_var;
+              args;
+              kind = Indirect;
+              dbg = Debuginfo.none;
+            },
+            nid ~name:"apply" ()))
   | Lletrec (defs, body) ->
     let env =
       List.fold_right (fun (id,  _) env ->
