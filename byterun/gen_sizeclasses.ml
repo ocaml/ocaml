@@ -6,7 +6,12 @@ let rec blocksizes block slot = function
   | 0 -> []
   | obj ->
     if overhead block slot obj > max_overhead 
-    then obj :: blocksizes block obj (obj - 1)
+    then
+      if overhead block obj obj < max_overhead then
+        obj :: blocksizes block obj (obj - 1)
+      else
+        failwith (Format.sprintf "%d-word objects cannot fit in %d-word arena below %.1f%% overhead"
+                                 obj block (100. *. max_overhead))
     else blocksizes block slot (obj - 1)
 
 let rec findi_acc i p = function
@@ -23,14 +28,21 @@ let rec size_slots n =
 
 open Format
 
+let rec print_overheads n = function
+  | [] -> ()
+  | s :: ss when n > s -> print_overheads n ss
+  | (s :: _) as ss  ->
+     printf "%3d/%-3d: %f\n" n s (overhead arena s n);
+     print_overheads (n+1) ss
+
 let rec print_list ppf = function
   | [] -> ()
   | [x] -> fprintf ppf "%d" x
   | x :: xs -> fprintf ppf "%d,@ %a" x print_list xs
 
 let _ =
-  printf "#define ARENA_REGION_WSIZE %d\n" arena;
-  printf "#define MAX_SLOT_WSIZE %d\n" max_slot;
+  printf "#define POOL_WSIZE %d\n" arena;
+  printf "#define SIZECLASS_MAX %d\n" max_slot;
   printf "#define NUM_SIZECLASSES %d\n" (List.length sizes);
-  printf "static const unsigned int slot_sizes[NUM_SIZECLASSES] = @[<2>{ %a };@]\n" print_list sizes;
-  printf "static const unsigned char size_slots[MAX_SLOT_WSIZE + 1] = @[<2>{ %a };@]\n" print_list (255 :: size_slots 1);
+  printf "static const unsigned int wsize_sizeclass[NUM_SIZECLASSES] = @[<2>{ %a };@]\n" print_list sizes;
+  printf "static const unsigned char sizeclass_wsize[SIZECLASS_MAX + 1] = @[<2>{ %a };@]\n" print_list (255 :: size_slots 1);
