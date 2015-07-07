@@ -627,11 +627,12 @@ and close_functions t external_env function_declarations : _ Flambda.named =
 
 and close_list t sb l = List.map (close t sb) l
 
-(* Ensure that [let] and [let rec]-bound functions have appropriate names. *)
 and close_let_bound_expression t ?let_rec_ident let_bound_var env
       (lam : Lambda.lambda) : _ Flambda.named =
   match lam with
   | Lfunction (kind, params, body) ->
+    (* Ensure that [let] and [let rec]-bound functions have appropriate
+       names. *)
     let closure_bound_var = rename_var t let_bound_var in
     let decl =
       Function_decl.create ~let_rec_ident ~closure_bound_var ~kind ~params

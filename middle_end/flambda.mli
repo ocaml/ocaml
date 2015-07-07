@@ -99,8 +99,14 @@ type 'a t =
   | Fvar of Variable.t * 'a
   | Fapply of 'a apply * 'a
   | Fproject_var of project_var * 'a
+  (* CR-someday mshinwell: consider eliminating assignment from Flambda
+     onwards *)
+  | Fassign of Variable.t * 'a t * 'a
+  | Fsend of Lambda.meth_kind * 'a t * 'a t * 'a t list * Debuginfo.t * 'a
+  | Funreachable of 'a  (** Represents code proved unreachable. *)
   | Flet of let_kind * Variable.t * 'a named * 'a t * 'a
   | Fletrec of (Variable.t * 'a named) list * 'a t * 'a
+  | Fifthenelse of 'a t * 'a t * 'a t * 'a
   (* CR-someday mshinwell: try to produce a tighter definition of a "switch"
      (and translate to that earlier) so that middle- and back-end code for
      these can be reduced. *)
@@ -110,14 +116,8 @@ type 'a t =
   | Fstaticraise of Static_exception.t * 'a t list * 'a
   | Fstaticcatch of Static_exception.t * Variable.t list * 'a t * 'a t * 'a
   | Ftrywith of 'a t * Variable.t * 'a t * 'a
-  | Fifthenelse of 'a t * 'a t * 'a t * 'a
   | Fwhile of 'a t * 'a t * 'a
   | Ffor of Variable.t * 'a t * 'a t * Asttypes.direction_flag * 'a t * 'a
-  (* CR-someday mshinwell: consider eliminating assignment from Flambda
-     onwards *)
-  | Fassign of Variable.t * 'a t * 'a
-  | Fsend of Lambda.meth_kind * 'a t * 'a t * 'a t list * Debuginfo.t * 'a
-  | Funreachable of 'a  (** Represents code proved unreachable. *)
 
 (** Values of type ['a named] will always be [let]-bound to a [Variable.t].
 
