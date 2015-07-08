@@ -40,10 +40,10 @@ end) : Simplify_boxed_integer_ops_intf.S with type t := I.t = struct
   module C = Inlining_cost
 
   let simplify_unop (p : Lambda.primitive) (kind : I.t A.boxed_int)
-        expr (n : I.t) eid =
-    let eval op = S.const_boxed_int_expr expr kind (op n) eid in
-    let eval_conv kind op = S.const_boxed_int_expr expr kind (op n) eid in
-    let eval_unboxed op = S.const_int_expr expr (op n) eid in
+        expr (n : I.t) =
+    let eval op = S.const_boxed_int_expr expr kind (op n) in
+    let eval_conv kind op = S.const_boxed_int_expr expr kind (op n) in
+    let eval_unboxed op = S.const_int_expr expr (op n) in
     match p with
     | Pintofbint kind when kind = I.kind -> eval_unboxed I.to_int
     | Pcvtbint (kind, Pint32) when kind = I.kind ->
@@ -55,8 +55,8 @@ end) : Simplify_boxed_integer_ops_intf.S with type t := I.t = struct
     | _ -> expr, A.value_unknown, C.Benefit.zero
 
   let simplify_binop (p : Lambda.primitive) (kind : I.t A.boxed_int)
-        expr (n1 : I.t) (n2 : I.t) eid =
-    let eval op = S.const_boxed_int_expr expr kind (op n1 n2) eid in
+        expr (n1 : I.t) (n2 : I.t) =
+    let eval op = S.const_boxed_int_expr expr kind (op n1 n2) in
     let non_zero n = (I.compare I.zero n) <> 0 in
     match p with
     | Paddbint kind when kind = I.kind -> eval I.add
@@ -68,12 +68,12 @@ end) : Simplify_boxed_integer_ops_intf.S with type t := I.t = struct
     | Porbint kind when kind = I.kind -> eval I.logor
     | Pxorbint kind when kind = I.kind -> eval I.logxor
     | Pbintcomp (kind, c) when kind = I.kind ->
-      S.const_comparison_expr expr c n1 n2 eid
+      S.const_comparison_expr expr c n1 n2
     | _ -> expr, A.value_unknown, C.Benefit.zero
 
   let simplify_binop_int (p : Lambda.primitive) (kind : I.t A.boxed_int)
-        expr (n1 : I.t) (n2 : int) eid ~size_int =
-    let eval op = S.const_boxed_int_expr expr kind (op n1 n2) eid in
+        expr (n1 : I.t) (n2 : int) ~size_int =
+    let eval op = S.const_boxed_int_expr expr kind (op n1 n2) in
     let precond = 0 <= n2 && n2 < 8 * size_int in
     match p with
     | Plslbint kind when kind = I.kind && precond -> eval I.shift_left
