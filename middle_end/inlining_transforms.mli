@@ -62,8 +62,8 @@
 val inline_by_copying_function_body
    : env:Inlining_env.t
   -> r:Inlining_result.t
-  -> clos: Flambda.function_declarations
-  -> lfunc:Flambda.t
+  -> clos:Flambda.function_declarations
+  -> lfunc:Flambda.named
   -> fun_id:Closure_id.t
   -> func:Flambda.function_declaration
   -> args:Variable.t list
@@ -80,7 +80,7 @@ val inline_by_copying_function_body
 val inline_by_copying_function_declaration
    : env:Inlining_env.t
   -> r:Inlining_result.t
-  -> funct:Flambda.t
+  -> funct:Flambda.named
   -> function_decls:Flambda.function_declarations
   -> closure_id:Closure_id.t
   -> function_decl:Flambda.function_declaration
