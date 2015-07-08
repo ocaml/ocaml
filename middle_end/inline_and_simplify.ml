@@ -269,6 +269,12 @@ let rec simplify_project_var env r ~(project_var : Flambda.project_var)
       Variable.print closure
       Simple_value_approx.print approx
 
+and sequence env r expr1 expr2 annot : _ Flambda.t =
+  let expr =
+    
+  in
+  loop env r expr
+
 and loop env r tree =
   let f, r = loop_direct env r tree in
   let module Backend = (val (E.backend env) : Backend_intf.S) in
@@ -342,8 +348,13 @@ and loop_direct env r (tree : 'a Flambda.t) : 'a Flambda.t * R.t =
         let r = R.map_benefit r (B.remove_code lam) in
         body, r
       else
-        Flambda.Sequence (lam, body, annot),
-          (* if [lam] is kept, add its used variables *)
+        (* CR mshinwell: check that Pignore is inserted correctly by a later
+           pass. *)
+        (* Generate a fresh name for increasing legibility of the
+           intermediate language (in particular to make it more obvious that
+           the variable is unused). *)
+        let fresh_var = new_var "unused" in
+        Flambda.Let (fresh_var, lam, body, annot),
           R.set_used_variables r
             (Variable.Set.union def_used_var (R.used_variables r))
     in
@@ -469,12 +480,12 @@ and loop_direct env r (tree : 'a Flambda.t) : 'a Flambda.t * R.t =
       (* constant false, keep ifnot *)
       let ifnot, r = loop env r ifnot in
       let r = R.map_benefit r B.remove_branch in
-      Effect_analysis.sequence arg ifnot annot, r
+      sequence env r arg ifnot annot, r
     | Value_constptr _ | Value_block _ ->
       (* constant true, keep ifso *)
       let ifso, r = loop env r ifso in
       let r = R.map_benefit r B.remove_branch in
-      Effect_analysis.sequence arg ifso annot, r
+      sequence env r arg ifso annot, r
     | _ ->
       let env = E.inside_branch env in
       let ifso, r = loop env r ifso in
@@ -539,7 +550,7 @@ and loop_direct env r (tree : 'a Flambda.t) : 'a Flambda.t * R.t =
       in
       let lam, r = loop env r lam in
       let r = R.map_benefit r B.remove_branch in
-      Effect_analysis.sequence arg lam annot, r
+      sequence env r arg lam annot, r
     | Value_block (tag, _) ->
       let tag = Tag.to_int tag in
       let lam =
@@ -548,7 +559,7 @@ and loop_direct env r (tree : 'a Flambda.t) : 'a Flambda.t * R.t =
       in
       let lam, r = loop env r lam in
       let r = R.map_benefit r B.remove_branch in
-      Effect_analysis.sequence arg lam annot, r
+      sequence env r arg lam annot, r
     | _ ->
       let env = E.inside_branch env in
       let f (i, v) (acc, r) =

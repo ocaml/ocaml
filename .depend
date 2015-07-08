@@ -772,21 +772,17 @@ middle_end/flambdaiter.cmx : middle_end/base_types/variable.cmx \
     utils/misc.cmx middle_end/flambda.cmi middle_end/flambdaiter.cmi
 middle_end/flambdautils.cmo : middle_end/base_types/variable.cmi \
     middle_end/base_types/var_within_closure.cmi \
-    middle_end/base_types/symbol.cmi \
-    middle_end/base_types/static_exception.cmi \
     middle_end/base_types/set_of_closures_id.cmi utils/misc.cmi \
-    middle_end/free_variables.cmi middle_end/flambdaiter.cmi \
-    middle_end/flambda.cmi middle_end/base_types/expr_id.cmi \
-    bytecomp/debuginfo.cmi middle_end/base_types/compilation_unit.cmi \
+    middle_end/free_variables.cmi middle_end/flambda.cmi \
+    middle_end/base_types/expr_id.cmi bytecomp/debuginfo.cmi \
+    middle_end/base_types/compilation_unit.cmi \
     middle_end/base_types/closure_id.cmi middle_end/flambdautils.cmi
 middle_end/flambdautils.cmx : middle_end/base_types/variable.cmx \
     middle_end/base_types/var_within_closure.cmx \
-    middle_end/base_types/symbol.cmx \
-    middle_end/base_types/static_exception.cmx \
     middle_end/base_types/set_of_closures_id.cmx utils/misc.cmx \
-    middle_end/free_variables.cmx middle_end/flambdaiter.cmx \
-    middle_end/flambda.cmi middle_end/base_types/expr_id.cmx \
-    bytecomp/debuginfo.cmx middle_end/base_types/compilation_unit.cmx \
+    middle_end/free_variables.cmx middle_end/flambda.cmi \
+    middle_end/base_types/expr_id.cmx bytecomp/debuginfo.cmx \
+    middle_end/base_types/compilation_unit.cmx \
     middle_end/base_types/closure_id.cmx middle_end/flambdautils.cmi
 middle_end/free_variables.cmo : middle_end/base_types/variable.cmi \
     utils/misc.cmi middle_end/flambda.cmi middle_end/free_variables.cmi

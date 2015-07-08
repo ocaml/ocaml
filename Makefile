@@ -145,7 +145,6 @@ MIDDLE_END=\
   middle_end/freshening.cmo \
   middle_end/invariant_params.cmo \
   middle_end/printflambda.cmo \
-  middle_end/flambdacheck.cmo \
   middle_end/inconstant_idents.cmo \
   middle_end/effect_analysis.cmo \
   middle_end/simple_value_approx.cmo \
@@ -167,6 +166,7 @@ MIDDLE_END=\
   middle_end/inlining_decision.cmo \
   middle_end/inline_and_simplify.cmo \
   middle_end/ref_to_variables.cmo \
+  middle_end/flambdacheck.cmo \
   middle_end/middle_end.cmo
 
 TOPLEVEL=toplevel/genprintval.cmo toplevel/toploop.cmo \

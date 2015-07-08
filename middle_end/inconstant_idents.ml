@@ -122,11 +122,11 @@ module NotConstants(P:Param) = struct
      It can be empty when no constraint can be added like in the toplevel
      expression or in the body of a function.
   *)
-  let rec mark_loop ~toplevel (curr:dep list) (flam : _ Flambda.t) =
+  let rec mark_loop ~toplevel (curr : dep list) (flam : _ Flambda.t) =
     match flam with
     | Let(str, var, lam, body, _) ->
       if str = Flambda.Mutable then mark_curr [Var var];
-      mark_loop ~toplevel [Var var] lam;
+      mark_named ~toplevel [Var var] lam;
       (* adds 'var in NC => curr in NC'
          This is not really necessary, but compiling this correctly is
          trickier than eliminating that earlier. *)
@@ -135,7 +135,7 @@ module NotConstants(P:Param) = struct
 
     | Let_rec(defs, body, _) ->
       List.iter (fun (var, def) ->
-          mark_loop ~toplevel [Var var] def;
+          mark_named ~toplevel [Var var] def;
           (* adds 'var in NC => curr in NC' same remark as let case *)
           mark_var var curr)
         defs;
@@ -143,6 +143,80 @@ module NotConstants(P:Param) = struct
 
     | Var (var, _) -> mark_var var curr
 
+    (* Not constant cases: we mark directly 'curr in NC' and mark
+       bound variables as in NC also *)
+
+    | Assign (id, f1, _) ->
+      (* the assigned is also not constant *)
+      mark_curr [Var id];
+      mark_curr curr;
+      mark_loop ~toplevel [] f1
+
+    | Try_with (f1,id,f2,_) ->
+      mark_curr [Var id];
+      mark_curr curr;
+      mark_loop ~toplevel [] f1;
+      mark_loop ~toplevel [] f2
+
+    | Static_catch (_,ids,f1,f2,_) ->
+      List.iter (fun id -> mark_curr [Var id]) ids;
+      mark_curr curr;
+      mark_loop ~toplevel [] f1;
+      mark_loop ~toplevel [] f2
+      (* If recursive staticcatch is introduced: this becomes
+         ~toplevel:false *)
+
+    | For (id,f1,f2,_,body,_) ->
+      mark_curr [Var id];
+      mark_curr curr;
+      mark_loop ~toplevel [] f1;
+      mark_loop ~toplevel [] f2;
+      mark_loop ~toplevel:false [] body
+
+    | While (f1,body,_) ->
+      mark_curr curr;
+      mark_loop ~toplevel [] f1;
+      mark_loop ~toplevel:false [] body
+
+    | If_then_else (f1,f2,f3,_) ->
+      mark_curr curr;
+      mark_loop ~toplevel [] f1;
+      mark_loop ~toplevel [] f2;
+      mark_loop ~toplevel [] f3
+
+    | Static_raise (_,l,_) ->
+      mark_curr curr;
+      List.iter (mark_loop ~toplevel []) l
+
+    | Apply ({func; args; _ },_) ->
+      mark_curr [Var func];
+      mark_curr curr;
+      mark_vars args curr;
+
+    | Switch (arg,sw,_) ->
+      mark_curr curr;
+      mark_loop ~toplevel [] arg;
+      List.iter (fun (_,l) -> mark_loop ~toplevel [] l) sw.consts;
+      List.iter (fun (_,l) -> mark_loop ~toplevel [] l) sw.blocks;
+      Misc.may (fun l -> mark_loop ~toplevel [] l) sw.failaction
+
+    | String_switch (arg,sw,def,_) ->
+      mark_curr curr;
+      mark_loop ~toplevel [] arg;
+      List.iter (fun (_,l) -> mark_loop ~toplevel [] l) sw;
+      Misc.may (fun l -> mark_loop ~toplevel [] l) def
+
+    | Send (_,f1,f2,fl,_,_) ->
+      mark_curr curr;
+      mark_loop ~toplevel [] f1;
+      mark_loop ~toplevel [] f2;
+      List.iter (mark_loop ~toplevel []) fl
+
+    | Unreachable _ ->
+      mark_curr curr
+
+  and mark_named ~toplevel curr (named : _ Flambda.named) =
+    match named with
     | Set_of_closures (set_of_closures, _) ->
       mark_loop_set_of_closures ~toplevel curr set_of_closures
 
@@ -225,90 +299,11 @@ module NotConstants(P:Param) = struct
       (* adds 'f in NC => global i in NC' *)
       register_implication ~in_nc:(Var f) ~implies_in_nc:[Global i]
 
-    (* Not constant cases: we mark directly 'curr in NC' and mark
-       bound variables as in NC also *)
-
-    | Assign (id, f1, _) ->
-      (* the assigned is also not constant *)
-      mark_curr [Var id];
-      mark_curr curr;
-      mark_loop ~toplevel [] f1
-
-    | Try_with (f1,id,f2,_) ->
-      mark_curr [Var id];
-      mark_curr curr;
-      mark_loop ~toplevel [] f1;
-      mark_loop ~toplevel [] f2
-
-    | Static_catch (_,ids,f1,f2,_) ->
-      List.iter (fun id -> mark_curr [Var id]) ids;
-      mark_curr curr;
-      mark_loop ~toplevel [] f1;
-      mark_loop ~toplevel [] f2
-      (* If recursive staticcatch is introduced: this becomes
-         ~toplevel:false *)
-
-    | For (id,f1,f2,_,body,_) ->
-      mark_curr [Var id];
-      mark_curr curr;
-      mark_loop ~toplevel [] f1;
-      mark_loop ~toplevel [] f2;
-      mark_loop ~toplevel:false [] body
-
-    | Fsequence (f1,f2,_) ->
-      mark_curr curr;
-      mark_loop ~toplevel [] f1;
-      mark_loop ~toplevel [] f2
-
-    | While (f1,body,_) ->
-      mark_curr curr;
-      mark_loop ~toplevel [] f1;
-      mark_loop ~toplevel:false [] body
-
-    | If_then_else (f1,f2,f3,_) ->
-      mark_curr curr;
-      mark_loop ~toplevel [] f1;
-      mark_loop ~toplevel [] f2;
-      mark_loop ~toplevel [] f3
-
-    | Static_raise (_,l,_) ->
-      mark_curr curr;
-      List.iter (mark_loop ~toplevel []) l
-
     | Prim (_, args, _, _) ->
       mark_curr curr;
       mark_vars args curr
-
-    | Fseq_prim (_, args, _, _) ->
-      mark_curr curr;
-      List.iter (mark_loop ~toplevel []) args
-
-    | Apply ({func; args; _ },_) ->
-      mark_curr curr;
-      mark_vars args curr;
-      mark_loop ~toplevel [] func
-
-    | Switch (arg,sw,_) ->
-      mark_curr curr;
-      mark_loop ~toplevel [] arg;
-      List.iter (fun (_,l) -> mark_loop ~toplevel [] l) sw.consts;
-      List.iter (fun (_,l) -> mark_loop ~toplevel [] l) sw.blocks;
-      Misc.may (fun l -> mark_loop ~toplevel [] l) sw.failaction
-
-    | String_switch (arg,sw,def,_) ->
-      mark_curr curr;
-      mark_loop ~toplevel [] arg;
-      List.iter (fun (_,l) -> mark_loop ~toplevel [] l) sw;
-      Misc.may (fun l -> mark_loop ~toplevel [] l) def
-
-    | Send (_,f1,f2,fl,_,_) ->
-      mark_curr curr;
-      mark_loop ~toplevel [] f1;
-      mark_loop ~toplevel [] f2;
-      List.iter (mark_loop ~toplevel []) fl
-
-    | Unreachable _ ->
-      mark_curr curr
+    | Expr flam ->
+      mark_loop ~toplevel curr flam
 
   and mark_var var curr =
     (* adds 'id in NC => curr in NC' *)

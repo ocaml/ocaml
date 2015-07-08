@@ -86,24 +86,15 @@ let no_effects_prim (prim : Lambda.primitive) =
   | Pbigstring_load_64 false
   | Pstring_set_16 _ | Pstring_set_32 _ | Pstring_set_64 _
   | Pbigstring_set_16 _ | Pbigstring_set_32 _ | Pbigstring_set_64 _ -> false
-  | Psequand | Psequor ->
-    Misc.fatal_error "Psequand and Psequor are not allowed in Prim \
-        expressions; use Fseq_prim instead"
-
-let no_effects_seq_prim (prim : Lambda.seq_primitive) =
-  match prim with
-  | Psequ_and | Psequ_or -> true
+  | Psequand | Psequor -> false
 
 let rec no_effects (flam : _ Flambda.t) =
   match flam with
-  | Var _ | Symbol _ | Const _ | Set_of_closures _ | Project_closure _
-  | Project_var _ | Move_within_set_of_closures _ -> true
-  | Let (_, _, def, body, _) -> no_effects def && no_effects body
+  | Var _ -> true
+  | Let (_, _, def, body, _) -> no_effects_named def && no_effects body
   | Let_rec (defs, body, _) ->
-    no_effects body && List.for_all (fun (_, def) -> no_effects def) defs
-  | Prim (prim, _, _, _) -> no_effects_prim prim
-  | Fseq_prim (prim, args, _, _) ->
-    no_effects_seq_prim prim && List.for_all no_effects args
+    no_effects body
+      && List.for_all (fun (_, def) -> no_effects_named def) defs
   | If_then_else (cond, ifso, ifnot, _) ->
     no_effects cond && no_effects ifso && no_effects ifnot
   | Switch (lam, sw, _) ->
@@ -121,32 +112,16 @@ let rec no_effects (flam : _ Flambda.t) =
     (* If there is a [raise] in [body], the whole [Try_with] may have an
        effect, so there is no need to test the handler. *)
     no_effects body
-  | Fsequence (l1, l2, _) -> no_effects l1 && no_effects l2
   (* CR mshinwell for pchambart: Is there something subtle here about the
      compilation of [While] and [For] which means that even a
      non-side-effecting loop body does not imply that the loop itself has
      no effects? *)
-  | While _ | For _ | Apply _ | Send _ | Assign _
-  | Static_raise _ -> false
+  | While _ | For _ | Apply _ | Send _ | Assign _ | Static_raise _ -> false
   | Unreachable _ -> true
 
-let sequence (l1 : _ Flambda.t) (l2 : _ Flambda.t) annot : _ Flambda.t =
-  if no_effects l1 then
-    l2
-  else
-    (* CR mshinwell for pchambart: Please add a comment explaining how
-       these Const_pointer | Const_base ... sequences arise. *)
-    match l2 with
-    | Const ((Const_pointer 0 | Const_base (Asttypes.Const_int 0)), _) ->
-      let l1_var =
-        Variable.create "sequence"
-          ~current_compilation_unit:(Compilation_unit.get_current_exn ())
-      in
-      (* CR mshinwell: duplicating [annot]... *)
-      Flambda.Let (Immutable, l1_var, l1,
-        Prim (Pignore, [l1_var], Debuginfo.none, annot),
-        annot)
-    | _ ->
-      match l1 with
-      | Prim (Pignore, [_arg], _, _) -> l2
-      | _ -> Fsequence (l1, l2, annot)
+and no_effects_named (named : _ Flambda.named) =
+  match named with
+  | Symbol _ | Const _ | Set_of_closures _ | Project_closure _
+  | Project_var _ | Move_within_set_of_closures _ -> true
+  | Prim (prim, _, _, _) -> no_effects_prim prim
+  | Expr flam -> no_effects flam
