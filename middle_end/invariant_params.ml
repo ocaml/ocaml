@@ -182,7 +182,7 @@ let unchanging_params_in_recursion (decls : _ Flambda.function_declarations) =
   let rec loop ~caller (expr : _ Flambda.t) =
     match expr with
     | Var (var,_) -> test_escape var
-    | Apply ({ func = Var(callee,_); args }, _) ->
+    | Apply ({ func = callee; args }, _) ->
       let num_args = List.length args in
       for callee_pos = num_args to (arity ~callee) - 1 do
         match find_callee_arg ~callee ~callee_pos with
@@ -195,7 +195,8 @@ let unchanging_params_in_recursion (decls : _ Flambda.function_declarations) =
           check_argument ~caller ~callee ~callee_pos arg)
         args
     | e ->
-      Flambdaiter.apply_on_subexpressions (loop ~caller) e
+      Flambdaiter.apply_on_subexpressions (loop ~caller)
+        (fun (_ : _ Flambda.named) -> ()) e
   in
   Variable.Map.iter (fun caller (decl : _ Flambda.function_declaration) ->
       loop ~caller decl.body)
@@ -255,19 +256,19 @@ let unused_arguments (decls : _ Flambda.function_declarations) : Variable.Set.t 
         Argument arr.(callee_pos)
   in
   let rec loop (expr : _ Flambda.t) =
+    (* XXX *)
     match expr with
     | Var (var,_) -> used_variable var
-    | Apply ({ func; args; kind = Direct callee }, _) ->
-        List.iteri (fun callee_pos arg ->
-            match find_callee_arg ~callee ~callee_pos with
-            | Used -> used_variable arg
-            | Argument param ->
-                if not (Variable.equal arg param) then
-                  used_variable arg)
-          args;
-        loop func
+    | Apply ({ func = _; args; kind = Direct callee }, _) ->
+      List.iteri (fun callee_pos arg ->
+          match find_callee_arg ~callee ~callee_pos with
+          | Used -> used_variable arg
+          | Argument param ->
+            if not (Variable.equal arg param) then used_variable arg)
+        args
     | e ->
-        Flambdaiter.apply_on_subexpressions loop e
+      Flambdaiter.apply_on_subexpressions loop
+        (fun (_ : _ Flambda.named) -> ()) e
   in
   Variable.Map.iter (fun _caller (decl : _ Flambda.function_declaration) ->
       loop decl.body)
