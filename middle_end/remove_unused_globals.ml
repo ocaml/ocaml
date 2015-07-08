@@ -13,10 +13,11 @@
 
 let used_globals id tree =
   let used = ref Ext_types.Int.Set.empty in
-  Flambdaiter.iter (function
+  Flambdaiter.iter_named (function
       | Prim(Pgetglobalfield(modul, pos), _, _, _) when Ident.same id modul ->
           used := Ext_types.Int.Set.add pos !used
-      | _ -> ()) tree;
+      | _ -> ())
+    tree;
   !used
 
 let remove_unused_globals tree =
