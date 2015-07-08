@@ -35,8 +35,8 @@ OCAMLBUILDNATIVE=$(WITH_OCAMLBUILD:=.native)
 
 OCAMLDOC_OPT=$(WITH_OCAMLDOC:=.opt)
 
-INCLUDES=-I utils -I parsing -I typing -I bytecomp -I middle_end -I asmcomp \
-         -I driver -I toplevel
+INCLUDES=-I utils -I parsing -I typing -I bytecomp -I middle_end \
+         -I middle_end/base_types -I asmcomp -I driver -I toplevel
 
 UTILS=utils/misc.cmo utils/tbl.cmo utils/config.cmo utils/timings.cmo \
   utils/clflags.cmo utils/terminfo.cmo utils/ccomp.cmo utils/warnings.cmo \
@@ -125,18 +125,18 @@ ASMCOMP=\
   driver/opterrors.cmo driver/optcompile.cmo
 
 MIDDLE_END=\
-  middle_end/tag.cmo \
-  middle_end/linkage_name.cmo \
-  middle_end/compilation_unit.cmo \
-  middle_end/variable.cmo \
-  middle_end/set_of_closures_id.cmo \
-  middle_end/closure_element.cmo \
-  middle_end/closure_id.cmo \
-  middle_end/var_within_closure.cmo \
-  middle_end/expr_id.cmo \
-  middle_end/static_exception.cmo \
-  middle_end/export_id.cmo \
-  middle_end/symbol.cmo \
+  middle_end/base_types/tag.cmo \
+  middle_end/base_types/linkage_name.cmo \
+  middle_end/base_types/compilation_unit.cmo \
+  middle_end/base_types/variable.cmo \
+  middle_end/base_types/set_of_closures_id.cmo \
+  middle_end/base_types/closure_element.cmo \
+  middle_end/base_types/closure_id.cmo \
+  middle_end/base_types/var_within_closure.cmo \
+  middle_end/base_types/expr_id.cmo \
+  middle_end/base_types/static_exception.cmo \
+  middle_end/base_types/export_id.cmo \
+  middle_end/base_types/symbol.cmo \
   middle_end/closure_conversion.cmo \
   middle_end/free_variables.cmo \
   middle_end/flambdaiter.cmo \
@@ -419,6 +419,7 @@ installopt:
 	cp ocamlopt $(INSTALL_BINDIR)/ocamlopt$(EXE)
 	cd stdlib; $(MAKE) installopt
 	cp middle_end/*.cmi middle_end/*.cmt middle_end/*.cmti $(INSTALL_COMPLIBDIR)
+	cp middle_end/base_types/*.cmi middle_end/base_types/*.cmt middle_end/base_types/*.cmti $(INSTALL_COMPLIBDIR)
 	cp asmcomp/*.cmi asmcomp/*.cmt asmcomp/*.cmti $(INSTALL_COMPLIBDIR)
 	cp compilerlibs/ocamloptcomp.cma $(OPTSTART) $(INSTALL_COMPLIBDIR)
 	if test -n "$(WITH_OCAMLDOC)"; then (cd ocamldoc; $(MAKE) installopt); \

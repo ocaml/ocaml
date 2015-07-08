@@ -219,7 +219,6 @@ let map_general ~toplevel f f_named tree =
       | Unreachable _ -> tree
     in
     f exp
-
   and aux_named (named : _ Flambda.named) =
     let named : _ Flambda.named =
       match named with
@@ -248,8 +247,8 @@ let map_general ~toplevel f f_named tree =
   in
   aux tree
 
-let map f tree = map_general ~toplevel:false f tree
-let map_toplevel f tree = map_general ~toplevel:true f tree
+let map f f_named tree = map_general ~toplevel:false f f_named tree
+let map_toplevel f f_named tree = map_general ~toplevel:true f f_named tree
 
 (*
 let map_data (type t1) (type t2) (f:t1 -> t2)
