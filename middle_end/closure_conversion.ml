@@ -363,14 +363,15 @@ let rec close t env (lam : Lambda.lambda) : _ Flambda.t =
       ~create_body:(fun args ->
         let func = close t env funct in
         let func_var = fresh_variable ~name:"apply_funct" in
-        Let (Immutable, func_var, Expr funct,
+        Let (Immutable, func_var, Expr func,
           Apply ({
-              func_var;
+              func = func_var;
               args;
               kind = Indirect;
               dbg = Debuginfo.none;
             },
-            nid ~name:"apply" ())))
+            nid ~name:"apply" ()),
+          nid ~name:"apply" ()))
   | Lletrec (defs, body) ->
     let env =
       List.fold_right (fun (id,  _) env ->
@@ -439,16 +440,24 @@ let rec close t env (lam : Lambda.lambda) : _ Flambda.t =
     Send (kind, close t env met, close t env obj,
       close_list t env args, Debuginfo.none, nid ())
   | Lprim (Psequor, [arg1; arg2]) ->
+    let arg1 = close t env arg1 in
+    let arg2 = close t env arg2 in
     let const_true = fresh_variable ~name:"const_true" in
     let name = "Psequand" in
-    Let (Immutable, const_true, Const (Const_base (Const_int 1)),
-      If_then_else (arg1, const_true, arg2, nid ~name ()), nid ~name ())
+    Let (Immutable, const_true,
+      Const (Const_base (Const_int 1), nid ~name ()),
+      If_then_else (arg1, Var (const_true, nid ~name ()), arg2, nid ~name ()),
+      nid ~name ())
   | Lprim (Psequand, [arg1; arg2]) ->
+    let arg1 = close t env arg1 in
+    let arg2 = close t env arg2 in
     let const_false = fresh_variable ~name:"const_true" in
     let name = "Psequor" in
-    Let (Immutable, const_false, Const (Const_base (Const_int 0)),
-      If_then_else (arg1, arg2, const_false, nid ~name ()), nid ~name ())
-  | Lprim (Psequand | Psequor, _) ->
+    Let (Immutable, const_false,
+      Const (Const_base (Const_int 0), nid ~name ()),
+      If_then_else (arg1, arg2, Var (const_false, nid ~name ()),
+        nid ~name ()), nid ~name ())
+  | Lprim ((Psequand | Psequor), _) ->
     Misc.fatal_error "Psequand / Psequor must have exactly two arguments"
   | Lprim (Pidentity, [arg]) -> close t env arg
   | Lprim (Pdirapply loc, [funct; arg])
