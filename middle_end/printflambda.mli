@@ -15,7 +15,7 @@ val flambda : Format.formatter -> Flambda.t -> unit
 
 val function_declarations
    : Format.formatter
-  -> _ Flambda.function_declarations
+  -> Flambda.function_declarations
   -> unit
 
 val project_closure

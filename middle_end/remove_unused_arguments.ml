@@ -15,7 +15,7 @@ let rename_var var =
   Variable.rename var
     ~current_compilation_unit:(Compilation_unit.get_current_exn ())
 
-let remove_params unused (fun_decl: _ Flambda.function_declaration) =
+let remove_params unused (fun_decl: Flambda.function_declaration) =
   let unused_params, used_params =
     List.partition (fun v -> Variable.Set.mem v unused) fun_decl.params
   in
@@ -40,7 +40,7 @@ let remove_params unused (fun_decl: _ Flambda.function_declaration) =
     body;
   }
 
-let make_stub unused var (fun_decl : _ Flambda.function_declaration) =
+let make_stub unused var (fun_decl : Flambda.function_declaration) =
   let renamed = rename_var var in
   let args' = List.map (fun var -> var, rename_var var) fun_decl.params in
   let args =
@@ -63,7 +63,7 @@ let make_stub unused var (fun_decl : _ Flambda.function_declaration) =
       (Variable.Set.singleton renamed)
       args'
   in
-  let decl : _ Flambda.function_declaration = {
+  let decl : Flambda.function_declaration = {
     params = List.map snd args';
     body;
     free_variables;
@@ -73,11 +73,11 @@ let make_stub unused var (fun_decl : _ Flambda.function_declaration) =
   in
   decl, renamed
 
-let separate_unused_arguments (set_of_closures : _ Flambda.set_of_closures) =
+let separate_unused_arguments (set_of_closures : Flambda.set_of_closures) =
   let decl = set_of_closures.function_decls in
   let unused = Invariant_params.unused_arguments decl in
   let non_stub_arguments =
-    Variable.Map.fold (fun _ (decl : _ Flambda.function_declaration) acc ->
+    Variable.Map.fold (fun _ (decl : Flambda.function_declaration) acc ->
         if decl.stub then
           acc
         else
@@ -89,7 +89,7 @@ let separate_unused_arguments (set_of_closures : _ Flambda.set_of_closures) =
   then None
   else begin
     let funs =
-      Variable.Map.fold (fun fun_id (fun_decl : _ Flambda.function_declaration) acc ->
+      Variable.Map.fold (fun fun_id (fun_decl : Flambda.function_declaration) acc ->
           if List.exists (fun v -> Variable.Set.mem v unused) fun_decl.params
           then begin
             let stub, renamed_fun_id = make_stub unused fun_id fun_decl in
@@ -116,7 +116,7 @@ let separate_unused_arguments (set_of_closures : _ Flambda.set_of_closures) =
    is only indirectly called, suppressing unused arguments does not
    benefit, and introduce an useless intermediate call *)
 let candidate_for_spliting_for_unused_arguments
-    (fun_decls : _ Flambda.function_declarations) =
+    (fun_decls : Flambda.function_declarations) =
   let no_recursive_functions =
     Variable.Set.is_empty
       (Find_recursive_functions.in_function_decls fun_decls)

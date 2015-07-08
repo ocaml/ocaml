@@ -91,7 +91,7 @@ let iter_general ~toplevel f f_named t =
     | Set_of_closures ({ function_decls = funcs; free_vars = _;
           specialised_args = _}) ->
       if not toplevel then begin
-        Variable.Map.iter (fun _ (decl : _ Flambda.function_declaration) ->
+        Variable.Map.iter (fun _ (decl : Flambda.function_declaration) ->
             aux decl.body)
           funcs.funs
       end
@@ -192,12 +192,12 @@ let map_general ~toplevel f f_named tree =
       | Project_var _ | Prim _ -> named
       | Set_of_closures ({ function_decls; free_vars;
             specialised_args }) ->
-        let function_decls : _ Flambda.function_declarations =
+        let function_decls : Flambda.function_declarations =
           if toplevel then function_decls
           else
             { function_decls with
               funs = Variable.Map.map
-                  (fun (ffun : _ Flambda.function_declaration) ->
+                  (fun (ffun : Flambda.function_declaration) ->
                     { ffun with body = aux ffun.body })
                 function_decls.funs;
             }

@@ -43,7 +43,7 @@ let functions expr =
   let cf_map = ref Closure_id.Map.empty in
   let fun_id_map = ref Set_of_closures_id.Map.empty in
   let argument_kept = ref Set_of_closures_id.Map.empty in
-  let aux (({ function_decls } as cl) : _ Flambda.set_of_closures) _ =
+  let aux (({ function_decls } as cl) : Flambda.set_of_closures) _ =
     let add var _ map =
       Closure_id.Map.add (Closure_id.wrap var) function_decls map in
     cf_map := Variable.Map.fold add function_decls.funs !cf_map;
@@ -617,7 +617,7 @@ module Conv(P:Param1) = struct
         Unreachable (),
         Value_unknown
 
-  and conv_closure env (functs : _ Flambda.function_declarations)
+  and conv_closure env (functs : Flambda.function_declarations)
         param_approxs spec_arg fv =
     let closed =
       Set_of_closures_id.Set.mem functs.set_of_closures_id P.constant_closures
@@ -674,7 +674,7 @@ module Conv(P:Param1) = struct
           spec_arg
     in
 
-    let conv_function _id (func : _ Flambda.function_declaration) =
+    let conv_function _id (func : Flambda.function_declaration) =
 
       (* inside the body of the function, we cannot access variables
          declared outside, so take a clean substitution table. *)
@@ -810,7 +810,7 @@ module Prepare(P:Param2) = struct
 
   let ex_functions =
     let ex_functions = ref Set_of_closures_id.Map.empty in
-    let aux ({ function_decls } : _ Flambda.set_of_closures) _ =
+    let aux ({ function_decls } : Flambda.set_of_closures) _ =
       ex_functions := Set_of_closures_id.Map.add function_decls.set_of_closures_id function_decls !ex_functions
     in
     Flambdaiter.iter_on_sets_of_closures aux expr;
@@ -890,7 +890,7 @@ module Prepare(P:Param2) = struct
     let aux_fun ffunctions off_id _ map =
       let fun_id = Closure_id.wrap off_id in
       Closure_id.Map.add fun_id ffunctions map in
-    let aux _ (f : _ Flambda.function_declarations) map =
+    let aux _ (f : Flambda.function_declarations) map =
       Variable.Map.fold (aux_fun f) f.funs map
     in
     Set_of_closures_id.Map.fold aux ex_functions Closure_id.Map.empty

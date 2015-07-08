@@ -252,9 +252,9 @@ let import_code_for_pack units pack expr =
     expr
 
 let import_ffunctions_for_pack units pack
-      (ffuns : _ Flambda.function_declarations) =
+      (ffuns : Flambda.function_declarations) =
   { ffuns with
-    funs = Variable.Map.map (fun (ffun : _ Flambda.function_declaration) ->
+    funs = Variable.Map.map (fun (ffun : Flambda.function_declaration) ->
         {ffun with body = import_code_for_pack units pack ffun.body})
         ffuns.funs }
 
@@ -262,7 +262,7 @@ let ex_functions_off ex_functions =
   let aux_fun ffunctions function_id _ map =
     Closure_id.Map.add
       (Closure_id.wrap function_id) ffunctions map in
-  let aux _ (f : _ Flambda.function_declarations) map =
+  let aux _ (f : Flambda.function_declarations) map =
     Variable.Map.fold (aux_fun f) f.funs map
   in
   Set_of_closures_id.Map.fold aux ex_functions Closure_id.Map.empty

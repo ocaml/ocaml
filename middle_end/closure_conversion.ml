@@ -237,7 +237,7 @@ module Function_decl = Function_decls.Function_decl
    calls another function with (curried) arguments extracted in the obvious
    manner from the tuple. *)
 let tupled_function_call_stub t original_params tuplified_version
-      : _ Flambda.function_declaration =
+      : Flambda.function_declaration =
   let tuple_param =
     rename_var t ~append:"tupled_stub_param" tuplified_version
   in
@@ -574,7 +574,7 @@ and close_functions t external_env function_declarations : Flambda.named =
     let params = List.map (Env.find_var closure_env) params in
     let closure_bound_var = Function_decl.closure_bound_var decl in
     let body = close t closure_env body in
-    let fun_decl : _ Flambda.function_declaration =
+    let fun_decl : Flambda.function_declaration =
       { stub; params; dbg; free_variables; body; }
     in
     match Function_decl.kind decl with
@@ -587,7 +587,7 @@ and close_functions t external_env function_declarations : Flambda.named =
       Variable.Map.add tuplified_version fun_decl
         (Variable.Map.add closure_bound_var generic_function_stub map)
   in
-  let fun_decls : _ Flambda.function_declarations =
+  let fun_decls : Flambda.function_declarations =
     { set_of_closures_id =
         Set_of_closures_id.create (Compilation_unit.get_current_exn ());
       funs =
@@ -599,7 +599,7 @@ and close_functions t external_env function_declarations : Flambda.named =
   (* The closed representation of a set of functions is a "set of closures".
      (For avoidance of doubt, the runtime representation of the *whole set* is
      a single block with tag [Closure_tag].) *)
-  let set_of_closures : _ Flambda.set_of_closures =
+  let set_of_closures : Flambda.set_of_closures =
     { function_decls = fun_decls;
       free_vars =
         IdentSet.fold (fun var map ->

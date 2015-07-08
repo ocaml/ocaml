@@ -33,4 +33,4 @@ val for_call_site
 (* When a function declaration is encountered in [Flambdainline], the body
    may be subject to inlining immediately, thus changing the declaration.
    This function must return [true] for that to be able to happen. *)
-val should_inline_inside_declaration : _ Flambda.function_declaration -> bool
+val should_inline_inside_declaration : Flambda.function_declaration -> bool

@@ -132,7 +132,7 @@ let inline_non_recursive
   end
 
 let for_call_site ~env ~r
-      ~(clos : _ Flambda.function_declarations)
+      ~(clos : Flambda.function_declarations)
       ~(lhs_of_application : Flambda.t)
       ~fun_id
       ~(func : 'a Flambda.function_declaration)
@@ -368,5 +368,5 @@ let for_call_site ~env ~r
    Inlining inside the declaration of a stub could result in more code than
    expected being inlined. *)
 (* CR mshinwell for pchambart: maybe we need an example here *)
-let should_inline_inside_declaration (decl : _ Flambda.function_declaration) =
+let should_inline_inside_declaration (decl : Flambda.function_declaration) =
   not decl.stub

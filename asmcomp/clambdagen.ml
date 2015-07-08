@@ -102,7 +102,7 @@ module Offsets(P:Param1) = struct
       iter_closure funct fv
     | _ -> ()
 
-  and iter_closure (functs : _ Flambda.function_declarations) fv =
+  and iter_closure (functs : Flambda.function_declarations) fv =
 
     let funct = Variable.Map.bindings functs.funs in
     let fv = Variable.Map.bindings fv in
@@ -136,7 +136,7 @@ module Offsets(P:Param1) = struct
     fun_offset_table := fun_offset;
     fv_offset_table := fv_offset;
 
-    List.iter (fun (_, ({body} : _ Flambda.function_declaration)) ->
+    List.iter (fun (_, ({body} : Flambda.function_declaration)) ->
         Flambdaiter.iter_toplevel iter body)
       funct
 
@@ -509,7 +509,7 @@ module Conv(P:Param2) = struct
     then Usequence(ufunct, apply)
     else apply
 
-  and conv_closure env (functs : _ Flambda.function_declarations) fv
+  and conv_closure env (functs : Flambda.function_declarations) fv
         ~expected_symbol : Clambda.ulambda =
     (* Make the susbtitutions for variables bound by the closure:
        the variables bounds are the functions inside the closure and
@@ -568,7 +568,7 @@ module Conv(P:Param2) = struct
 
     let fv_ulam = List.map (fun (id,lam) -> id,conv env lam) fv in
 
-    let conv_function (id, (func : _ Flambda.function_declaration))
+    let conv_function (id, (func : Flambda.function_declaration))
           : Clambda.ufunction =
       let cf = Closure_id.wrap id in
       (* adds variables from the closure to the substitution environment *)

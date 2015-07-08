@@ -60,7 +60,7 @@ let rec lam ppf (flam : Flambda.t) =
       fprintf ppf
         "@[<2>(letrec@ (@[<hv 1>%a@])@ %a)@]" bindings id_arg_list lam body
   | Switch(larg, sw,_) ->
-      let switch ppf (sw : _ Flambda.switch) =
+      let switch ppf (sw : Flambda.switch) =
         let spc = ref false in
         List.iter
           (fun (n, l) ->
@@ -143,13 +143,13 @@ and lam_named ppf (named : Flambda.named) =
       Variable.print_list args
   | Expr expr -> lam ppf expr
 
-and print_set_of_closures ppf (set_of_closures : _ Flambda.set_of_closures) =
+and print_set_of_closures ppf (set_of_closures : Flambda.set_of_closures) =
   match set_of_closures with
   | { function_decls; free_vars; specialised_args} ->
     let idents ppf =
       List.iter (fprintf ppf "@ %a" Variable.print) in
     let funs ppf =
-      Variable.Map.iter (fun var (f : _ Flambda.function_declaration) ->
+      Variable.Map.iter (fun var (f : Flambda.function_declaration) ->
           fprintf ppf "@ (fun %a@[<2>%a@]@ @[<2>%a@])"
             Variable.print var idents f.params lam f.body) in
     let vars ppf =
@@ -204,11 +204,11 @@ and const ppf (c : Flambda.const) =
         List.iter (fun f -> fprintf ppf "@ %s" f) fl in
       fprintf ppf "@[<1>[|@[%s%a@]|]@]" f1 floats fl
 
-let function_declarations ppf (fd : _ Flambda.function_declarations) =
+let function_declarations ppf (fd : Flambda.function_declarations) =
   let idents ppf =
     List.iter (fprintf ppf "@ %a" Variable.print) in
   let funs ppf =
-    Variable.Map.iter (fun var (f : _ Flambda.function_declaration) ->
+    Variable.Map.iter (fun var (f : Flambda.function_declaration) ->
         fprintf ppf "@ (fun@ %a@[<2>%a@]@ @[<2>%a@])"
           Variable.print var idents f.params lam f.body) in
   fprintf ppf "@[<2>(%a)@]" funs fd.funs

@@ -112,7 +112,7 @@ let apply_variable t var =
 
 (*
 let rewrite_recursive_calls_with_symbols t
-      (function_declarations : _ Flambda.function_declarations)
+      (function_declarations : Flambda.function_declarations)
       ~make_closure_symbol =
   match t with
   | Inactive -> function_declarations
@@ -123,7 +123,7 @@ let rewrite_recursive_calls_with_symbols t
         Symbol.Map.add sym id map)
         function_declarations.funs Symbol.Map.empty in
     let funs =
-      Variable.Map.map (fun (ffun : _ Flambda.function_declaration) ->
+      Variable.Map.map (fun (ffun : Flambda.function_declaration) ->
         let body =
           Flambdaiter.map_toplevel
             (function
@@ -185,11 +185,11 @@ module Project_var = struct
       subst_free_vars must have been used to build off_sb
    *)
   let func_decls_subst t (subst : subst)
-        (func_decls : _ Flambda.function_declarations) =
+        (func_decls : Flambda.function_declarations) =
     match subst with
     | Inactive -> func_decls, subst, t
     | Active subst ->
-      let subst_func_declction _fun_id (func_decl : _ Flambda.function_declaration)
+      let subst_func_declction _fun_id (func_decl : Flambda.function_declaration)
             subst =
         let params, subst = active_add_variables' subst func_decl.params in
         let free_variables =

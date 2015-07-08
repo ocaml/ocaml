@@ -77,7 +77,7 @@ let simplify_using_approx_and_env env r original_lam approx =
    It is not strictly necessary to have this restriction, but it helps
    to catch potential substitution bugs. *)
 let populate_closure_approximations
-      ~(function_decl : _ Flambda.function_declaration)
+      ~(function_decl : Flambda.function_declaration)
       ~(free_vars : (_ * A.t) Variable.Map.t)
       ~(parameter_approximations : A.t Variable.Map.t)
       ~set_of_closures_env =
@@ -673,7 +673,7 @@ and loop_list env r l = match l with
    variable.
 *)
 and simplify_set_of_closures original_env r
-      (set_of_closures : _ Flambda.set_of_closures) annot
+      (set_of_closures : Flambda.set_of_closures) annot
       : Flambda.t * R.t =
   let function_decls =
     let module Backend = (val (E.backend original_env) : Backend_intf.S) in
@@ -738,7 +738,7 @@ and simplify_set_of_closures original_env r
         E.add_approx closure approx env)
       function_decls.funs env
   in
-  let simplify_function fid (function_decl : _ Flambda.function_declaration)
+  let simplify_function fid (function_decl : Flambda.function_declaration)
         (funs, used_params, r)
         : Flambda.function_declaration Variable.Map.t * Variable.Set.t * R.t =
     let closure_env =
@@ -787,7 +787,7 @@ and simplify_set_of_closures original_env r
     }
   in
   let r = Variable.Map.fold (fun id _ r -> R.exit_scope r id) function_decls.funs r in
-  let set_of_closures : _ Flambda.set_of_closures =
+  let set_of_closures : Flambda.set_of_closures =
     { function_decls;
       free_vars = Variable.Map.map fst free_vars;
       specialised_args;
@@ -808,7 +808,7 @@ and simplify_set_of_closures original_env r
    interesting case is that of a full application: we then consider whether
    the function can be inlined.  (See [full_apply], below.)
 *)
-and simplify_apply env r ~(apply : _ Flambda.apply) ~annot
+and simplify_apply env r ~(apply : Flambda.apply) ~annot
       : Flambda.t * R.t =
   let { Flambda. func; args; kind = _; dbg } = apply in
   let func_approx = Env.find func env in
@@ -859,7 +859,7 @@ and full_apply env r clos lhs_of_application closure_id func closure
     ~fun_id:closure_id ~func ~closure ~args_with_approxs ~dbg ~eid
     ~simplify:loop
 
-and partial_apply funct fun_id (func : _ Flambda.function_declaration)
+and partial_apply funct fun_id (func : Flambda.function_declaration)
       (args : Variable.t list) dbg : Flambda.t =
   let arity = Flambdautils.function_arity func in
   let remaining_args = arity - (List.length args) in

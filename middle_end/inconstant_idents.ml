@@ -331,7 +331,7 @@ module NotConstants(P:Param) = struct
     Variable.Map.iter (fun inner_id var ->
         register_implication ~in_nc:(Var var) ~implies_in_nc:[Var inner_id])
       free_vars;
-    Variable.Map.iter (fun fun_id (ffunc : _ Flambda.function_declaration) ->
+    Variable.Map.iter (fun fun_id (ffunc : Flambda.function_declaration) ->
         (* for each function f in a closure c 'c in NC => f' *)
         register_implication ~in_nc:(Closure function_decls.set_of_closures_id)
           ~implies_in_nc:[Var fun_id];

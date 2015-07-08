@@ -75,7 +75,7 @@ let lambda_smaller' lam ~than:threshold =
       let call_cost = match direct with Indirect -> 6 | Direct _ -> 4 in
       size := !size + call_cost; lambda_size fn
     | Set_of_closures ({ function_decls = ffuns }, _) ->
-      Variable.Map.iter (fun _ (ffun : _ Flambda.function_declaration) ->
+      Variable.Map.iter (fun _ (ffun : Flambda.function_declaration) ->
           lambda_size ffun.body)
         ffuns.funs
     | Project_closure _ | Project_var _ | Move_within_set_of_closures _ ->

@@ -11,11 +11,11 @@
 (*                                                                        *)
 (**************************************************************************)
 
-let in_function_decls ({ funs } : _ Flambda.function_declarations) =
+let in_function_decls ({ funs } : Flambda.function_declarations) =
   let module VCC = Sort_connected_components.Make (Variable) in
   let function_variables = Variable.Map.keys funs in
   let directed_graph =
-    Variable.Map.map (fun (func_decl : _ Flambda.function_declaration) ->
+    Variable.Map.map (fun (func_decl : Flambda.function_declaration) ->
         Variable.Set.inter func_decl.free_variables function_variables)
       funs
   in

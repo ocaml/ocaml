@@ -11,22 +11,22 @@
 (*                                                                        *)
 (**************************************************************************)
 
-let find_declaration cf ({ funs } : _ Flambda.function_declarations) =
+let find_declaration cf ({ funs } : Flambda.function_declarations) =
   Variable.Map.find (Closure_id.unwrap cf) funs
 
-let find_declaration_variable cf ({ funs } : _ Flambda.function_declarations) =
+let find_declaration_variable cf ({ funs } : Flambda.function_declarations) =
   let var = Closure_id.unwrap cf in
   if not (Variable.Map.mem var funs)
   then raise Not_found
   else var
 
-let find_free_variable cv ({ free_vars } : _ Flambda.set_of_closures) =
+let find_free_variable cv ({ free_vars } : Flambda.set_of_closures) =
   Variable.Map.find (Var_within_closure.unwrap cv) free_vars
 
-let function_arity (f : _ Flambda.function_declaration) = List.length f.params
+let function_arity (f : Flambda.function_declaration) = List.length f.params
 
 let variables_bound_by_the_closure cf
-      (decls : _ Flambda.function_declarations) =
+      (decls : Flambda.function_declarations) =
   let func = find_declaration cf decls in
   let params = Variable.Set.of_list func.params in
   let functions = Variable.Map.keys decls.funs in
@@ -147,13 +147,13 @@ let same (_l1 : Flambda.t) (_l2 : Flambda.t) = true
   | Send _, _ | _, Send _ -> false
   | Unreachable _, Unreachable _ -> true
 
-and sameclosure (c1 : _ Flambda.function_declaration)
-      (c2 : _ Flambda.function_declaration) =
+and sameclosure (c1 : Flambda.function_declaration)
+      (c2 : Flambda.function_declaration) =
   Misc.samelist Variable.equal c1.params c2.params &&
   same c1.body c2.body
 
-and same_set_of_closures (c1 : _ Flambda.set_of_closures)
-      (c2 : _ Flambda.set_of_closures) =
+and same_set_of_closures (c1 : Flambda.set_of_closures)
+      (c2 : Flambda.set_of_closures) =
   Variable.Map.equal sameclosure c1.function_decls.funs c2.function_decls.funs &&
   Variable.Map.equal Variable.equal c1.free_vars c2.free_vars &&
   Variable.Map.equal Variable.equal c1.specialised_args c2.specialised_args
@@ -172,7 +172,7 @@ and same_move_within_set_of_closures (m1 : Flambda.move_within_set_of_closures)
 and samebinding (v1, c1) (v2, c2) =
   Variable.equal v1 v2 && same c1 c2
 
-and sameswitch (fs1 : _ Flambda.switch) (fs2 : _ Flambda.switch) =
+and sameswitch (fs1 : Flambda.switch) (fs2 : Flambda.switch) =
   let samecase (n1, a1) (n2, a2) = n1 = n2 && same a1 a2 in
   fs1.numconsts = fs2.numconsts &&
   fs1.numblocks = fs2.numblocks &&
@@ -219,7 +219,7 @@ let make_closure_declaration ~id ~body ~params : Flambda.t =
       free_variables Variable.Map.empty in
   let body = toplevel_substitution sb body in
   let subst id = Variable.Map.find id sb in
-  let function_declaration : _ Flambda.function_declaration =
+  let function_declaration : Flambda.function_declaration =
     { stub = false;
       params = List.map subst params;
       free_variables = Variable.Set.map subst free_variables;

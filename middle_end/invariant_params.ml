@@ -122,11 +122,11 @@ let transitive_closure state =
   in
   fp state
 
-let unchanging_params_in_recursion (decls : _ Flambda.function_declarations) =
+let unchanging_params_in_recursion (decls : Flambda.function_declarations) =
   let escaping_functions = ref Variable.Set.empty in
   let relation = ref Pair_var_var.Map.empty in
   let variables_at_position =
-    Variable.Map.map (fun (decl : _ Flambda.function_declaration) ->
+    Variable.Map.map (fun (decl : Flambda.function_declaration) ->
         Array.of_list decl.params)
       decls.funs
   in
@@ -198,12 +198,12 @@ let unchanging_params_in_recursion (decls : _ Flambda.function_declarations) =
       Flambdaiter.apply_on_subexpressions (loop ~caller)
         (fun (_ : Flambda.named) -> ()) e
   in
-  Variable.Map.iter (fun caller (decl : _ Flambda.function_declaration) ->
+  Variable.Map.iter (fun caller (decl : Flambda.function_declaration) ->
       loop ~caller decl.body)
     decls.funs;
   let relation =
     Variable.Map.fold (fun func_var
-          ({ params } : _ Flambda.function_declaration) relation ->
+          ({ params } : Flambda.function_declaration) relation ->
         if Variable.Set.mem func_var !escaping_functions
         then
           List.fold_left (fun relation param ->
@@ -226,7 +226,7 @@ let unchanging_params_in_recursion (decls : _ Flambda.function_declarations) =
       result Variable.Set.empty
   in
   let variables = Variable.Map.fold (fun _
-        ({ params } : _ Flambda.function_declaration) set ->
+        ({ params } : Flambda.function_declaration) set ->
       Variable.Set.union (Variable.Set.of_list params) set)
     decls.funs Variable.Set.empty
   in
@@ -236,13 +236,13 @@ type argument =
   | Used
   | Argument of Variable.t
 
-let unused_arguments (decls : _ Flambda.function_declarations) : Variable.Set.t =
+let unused_arguments (decls : Flambda.function_declarations) : Variable.Set.t =
   let used_variables = ref Variable.Set.empty in
   let used_variable var =
     used_variables := Variable.Set.add var !used_variables
   in
   let variables_at_position =
-    Variable.Map.fold (fun var (decl : _ Flambda.function_declaration) map ->
+    Variable.Map.fold (fun var (decl : Flambda.function_declaration) map ->
         let cid = Closure_id.wrap var in
         Closure_id.Map.add cid (Array.of_list decl.params) map)
       decls.funs Closure_id.Map.empty
@@ -270,7 +270,7 @@ let unused_arguments (decls : _ Flambda.function_declarations) : Variable.Set.t 
       Flambdaiter.apply_on_subexpressions loop
         (fun (_ : Flambda.named) -> ()) e
   in
-  Variable.Map.iter (fun _caller (decl : _ Flambda.function_declaration) ->
+  Variable.Map.iter (fun _caller (decl : Flambda.function_declaration) ->
       loop decl.body)
     decls.funs;
   let arguments = Variable.Map.fold (fun _ decl acc ->

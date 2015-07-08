@@ -26,7 +26,7 @@ val find_declaration_variable :
 
 (** [find_free_variable v clos] raises [Not_found] if [c] is not in [clos]. *)
 val find_free_variable :
-  Var_within_closure.t -> _ Flambda.set_of_closures -> Variable.t
+  Var_within_closure.t -> Flambda.set_of_closures -> Variable.t
 
 (** Utility functions *)
 

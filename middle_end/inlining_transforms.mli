@@ -62,7 +62,7 @@
 val inline_by_copying_function_body
    : env:Inlining_env.t
   -> r:Inlining_result.t
-  -> clos: _ Flambda.function_declarations
+  -> clos: Flambda.function_declarations
   -> lfunc:Flambda.t
   -> fun_id:Closure_id.t
   -> func:Flambda.function_declaration
@@ -83,7 +83,7 @@ val inline_by_copying_function_declaration
   -> funct:Flambda.t
   -> function_decls:Flambda.function_declarations
   -> closure_id:Closure_id.t
-  -> function_decl:_ Flambda.function_declaration
+  -> function_decl:Flambda.function_declaration
   -> args_with_approxs: (Variable.t list) * (Simple_value_approx.t list)
   -> unchanging_params:Variable.Set.t
   -> specialised_args:Variable.Set.t

@@ -51,8 +51,8 @@ let fold_over_exprs_for_variables_bound_by_closure ~fun_id ~clos_id ~clos
     (Flambdautils.variables_bound_by_the_closure fun_id clos) init
 
 let inline_by_copying_function_body ~env ~r
-      ~(clos : _ Flambda.function_declarations) ~lfunc ~fun_id
-      ~(func : _ Flambda.function_declaration) ~args
+      ~(clos : Flambda.function_declarations) ~lfunc ~fun_id
+      ~(func : Flambda.function_declaration) ~args
       ~simplify =
   let r = R.map_benefit r B.remove_call in
   let env = E.inlining_level_up env in
@@ -102,9 +102,9 @@ let inline_by_copying_function_body ~env ~r
     (Flambda.Let (Immutable, closure, lfunc, expr))
 
 let inline_by_copying_function_declaration ~env ~r ~funct
-    ~(function_decls : _ Flambda.function_declarations)
+    ~(function_decls : Flambda.function_declarations)
     ~closure_id
-    ~(function_decl : _ Flambda.function_declaration)
+    ~(function_decl : Flambda.function_declaration)
     ~args_with_approxs ~unchanging_params ~specialised_args ~dbg
     ~simplify =
   let args, approxs = args_with_approxs in
@@ -136,7 +136,7 @@ let inline_by_copying_function_declaration ~env ~r ~funct
             Variable.Map.add internal_var from_closure map,
               (from_closure, expr)::for_lets)
       in
-      let set_of_closures : _ Flambda.set_of_closures =
+      let set_of_closures : Flambda.set_of_closures =
         (* This is the new set of closures, with more precise specialisation
            information than the one being copied. *)
         { function_decls;
