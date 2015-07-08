@@ -1079,14 +1079,14 @@ method_:
 class_type:
     class_signature
       { $1 }
-  | QUESTION LIDENT COLON simple_core_type_or_tuple_no_attr MINUSGREATER
+  | QUESTION LIDENT COLON simple_core_type_or_tuple MINUSGREATER
     class_type
       { mkcty(Pcty_arrow(Optional $2 , $4, $6)) }
-  | OPTLABEL simple_core_type_or_tuple_no_attr MINUSGREATER class_type
+  | OPTLABEL simple_core_type_or_tuple MINUSGREATER class_type
       { mkcty(Pcty_arrow(Optional $1, $2, $4)) }
-  | LIDENT COLON simple_core_type_or_tuple_no_attr MINUSGREATER class_type
+  | LIDENT COLON simple_core_type_or_tuple MINUSGREATER class_type
       { mkcty(Pcty_arrow(Labelled $1, $3, $5)) }
-  | simple_core_type_or_tuple_no_attr MINUSGREATER class_type
+  | simple_core_type_or_tuple MINUSGREATER class_type
       { mkcty(Pcty_arrow(Nolabel, $1, $3)) }
  ;
 class_signature:
@@ -2111,14 +2111,8 @@ name_tag_list:
   | name_tag_list name_tag                      { $2 :: $1 }
 ;
 simple_core_type_or_tuple:
-    simple_core_type %prec below_LBRACKETAT  { $1 }
+    simple_core_type { $1 }
   | simple_core_type STAR core_type_list
-      { mktyp(Ptyp_tuple($1 :: List.rev $3)) }
-;
-simple_core_type_or_tuple_no_attr:
-    simple_core_type
-      { $1 }
-  | simple_core_type STAR core_type_list_no_attr
       { mktyp(Ptyp_tuple($1 :: List.rev $3)) }
 ;
 core_type_comma_list:
