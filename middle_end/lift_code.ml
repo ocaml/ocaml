@@ -16,7 +16,8 @@ module C = Inlining_cost
 
 type lifter = Flambda.t -> Flambda.t
 
-let lift_lets tree =
+let lift_lets tree = tree
+(* XXX
   let rec aux (expr : Flambda.t) : Flambda.t =
     match expr with
     | Fsequence(Let(str, v, def, body, d1), seq, dseq) ->
@@ -27,13 +28,14 @@ let lift_lets tree =
     | e -> e
   in
   Flambdaiter.map aux tree
+*)
 
 let lifting_helper exprs ~evaluation_order ~create_body ~name =
   let vars, lets =
     (* [vars] corresponds elementwise to [exprs]; the order is unchanged. *)
     List.fold_right (fun (flam : Flambda.t) (vars, lets) ->
         match flam with
-        | Var (v, _) ->
+        | Var v ->
           (* Assumes that [v] is an immutable variable, otherwise this may
              change the evaluation order. *)
           (* XCR mshinwell for pchambart: Please justify why [v] is always

@@ -25,37 +25,31 @@
 val const_int_expr
    : Flambda.t
   -> int
-  -> 'a
   -> Flambda.t * Simple_value_approx.t * Inlining_cost.Benefit.t
 
 val const_char_expr
    : Flambda.t
   -> char
-  -> 'a
   -> Flambda.t * Simple_value_approx.t * Inlining_cost.Benefit.t
 
 val const_bool_expr
    : Flambda.t
   -> bool
-  -> 'a
   -> Flambda.t * Simple_value_approx.t * Inlining_cost.Benefit.t
 
 val const_ptr_expr
    : Flambda.t
   -> int
-  -> 'a
   -> Flambda.t * Simple_value_approx.t * Inlining_cost.Benefit.t
 
 val const_float_expr
    : Flambda.t
   -> float
-  -> 'a
   -> Flambda.t * Simple_value_approx.t * Inlining_cost.Benefit.t
 
 val const_boxed_int_expr
    : Flambda.t
-  -> 'b Simple_value_approx.boxed_int
-  -> 'b
+  -> 'a Simple_value_approx.boxed_int
   -> 'a
   -> Flambda.t * Simple_value_approx.t * Inlining_cost.Benefit.t
 
@@ -66,8 +60,7 @@ val const_boxed_int_expr
 val const_comparison_expr
    : Flambda.t
   -> Lambda.comparison
-  -> 'b
-  -> 'b
+  -> 'a
   -> 'a
   -> Flambda.t * Simple_value_approx.t * Inlining_cost.Benefit.t
 

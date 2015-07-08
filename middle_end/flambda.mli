@@ -120,8 +120,6 @@ type project_var = {
 type t =
   | Var of Variable.t
   | Apply of apply
-  (* CR-someday mshinwell: consider eliminating assignment from Flambda
-     onwards *)
   | Assign of Variable.t * t
   | Send of Lambda.meth_kind * t * t * t list * Debuginfo.t
   | Unreachable  (** Represents code proved unreachable. *)
@@ -151,9 +149,6 @@ type t =
     for control flow constructs, is the presence of [Expr].  This could be
     removed in the future to provide a more rigorous ANF-like representation.)
 *)
-(* CR-someday mshinwell: Since we lack expression identifiers on every term,
-   we should probably introduce [Mutable_var] into [named] if we introduce
-   more complicated analyses on these in the future. *)
 and named =
   | Symbol of Symbol.t
   | Const of const
@@ -163,6 +158,10 @@ and named =
   | Project_var of project_var
   | Prim of Lambda.primitive * Variable.t list * Debuginfo.t
   | Expr of t
+(* CR-someday mshinwell: Since we lack expression identifiers on every term,
+   we should probably introduce [Mutable_var] into [named] if we introduce
+   more complicated analyses on these in the future.  Alternatively, maybe
+   consider removing mutable variables altogether. *)
 
 and set_of_closures = {
   function_decls : function_declarations;
