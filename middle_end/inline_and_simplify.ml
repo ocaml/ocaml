@@ -151,6 +151,8 @@ let simplify_move_within_set_of_closures env r
       Printflambda.move_within_set_of_closures move_within_set_of_closures
   | Ok (_value_closure, set_of_closures_var, value_set_of_closures) ->
     let freshen =
+      (* CR mshinwell: potentially misleading name---not freshening with new
+         names, but with previously fresh names *)
       A.freshen_and_check_closure_id value_set_of_closures
     in
     let move_to = freshen move_within_set_of_closures.move_to in
@@ -340,7 +342,7 @@ and loop_direct env r (tree : 'a Flambda.t) : 'a Flambda.t * R.t =
         let r = R.map_benefit r (B.remove_code lam) in
         body, r
       else
-        Flambda.Fsequence (lam, body, annot),
+        Flambda.Sequence (lam, body, annot),
           (* if [lam] is kept, add its used variables *)
           R.set_used_variables r
             (Variable.Set.union def_used_var (R.used_variables r))
@@ -794,7 +796,7 @@ and simplify_set_of_closures original_env r
    partial application (note that previously it may have appeared as partial,
    but now we may know from the approximation that it is full).  The
    interesting case is that of a full application: we then consider whether
-   the function can be inlined.  (See [direct_apply], below.)
+   the function can be inlined.  (See [full_apply], below.)
 *)
 and simplify_apply env r ~(apply : _ Flambda.apply) ~annot
       : _ Flambda.t * R.t =
