@@ -30,6 +30,7 @@ let lift_lets tree = tree
   Flambdaiter.map aux tree
 *)
 
+(* XXX think about this more *)
 let lifting_helper exprs ~evaluation_order ~create_body ~name =
   let vars, lets =
     (* [vars] corresponds elementwise to [exprs]; the order is unchanged. *)
@@ -66,5 +67,5 @@ let lifting_helper exprs ~evaluation_order ~create_body ~name =
     | `Left_to_right -> List.rev lets
   in
   List.fold_left (fun body (v, expr) ->
-      Flambda.Let (Immutable, v, expr, body))
+      Flambda.Let (Immutable, v, Expr expr, body))
     (create_body vars) lets

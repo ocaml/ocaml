@@ -129,18 +129,16 @@ let candidate_for_spliting_for_unused_arguments
   (not no_recursive_functions) || (number_of_non_stub_functions > 1)
 
 let separate_unused_arguments_in_closures tree =
-  let aux (expr : Flambda.t) : Flambda.t =
-    match expr with
-    | Set_of_closures (set_of_closures, eid) -> begin
-        if candidate_for_spliting_for_unused_arguments
-            set_of_closures.function_decls then
-          match separate_unused_arguments set_of_closures with
-          | None -> expr
-          | Some set_of_closures ->
-              Set_of_closures (set_of_closures, eid)
-        else
-          expr
-      end
+  let aux_named (named : Flambda.named) : Flambda.named =
+    match named with
+    | Set_of_closures set_of_closures ->
+      if candidate_for_spliting_for_unused_arguments
+          set_of_closures.function_decls then
+        match separate_unused_arguments set_of_closures with
+        | None -> named
+        | Some set_of_closures -> Set_of_closures set_of_closures
+      else
+        named
     | e -> e
   in
-  Flambdaiter.map aux tree
+  Flambdaiter.map (fun expr -> expr) aux_named tree

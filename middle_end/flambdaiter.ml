@@ -100,6 +100,7 @@ let iter_general ~toplevel f f_named t =
   aux t
 
 let iter f f_named t = iter_general ~toplevel:false f f_named t
+let iter_named f_named t = iter (fun (_ : Flambda.t) -> ()) f_named t
 let iter_toplevel f f_named t = iter_general ~toplevel:true f f_named t
 
 let iter_on_sets_of_closures f t =
@@ -210,4 +211,5 @@ let map_general ~toplevel f f_named tree =
   aux tree
 
 let map f f_named tree = map_general ~toplevel:false f f_named tree
+let map_named f_named tree = map (fun expr -> expr) f_named tree
 let map_toplevel f f_named tree = map_general ~toplevel:true f f_named tree

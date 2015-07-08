@@ -17,25 +17,24 @@ let remove_unused_closure_variables tree =
   let used_vars_within_closure, used_closure_ids =
     let used = ref Var_within_closure.Set.empty in
     let used_fun = ref Closure_id.Set.empty in
-    let aux (expr : Flambda.t) =
-      match expr with
-      | Project_closure ({ set_of_closures = _; closure_id }, _) ->
+    let aux_named (named : Flambda.named) =
+      match named with
+      | Project_closure { set_of_closures = _; closure_id } ->
         used_fun := Closure_id.Set.add closure_id !used_fun
-      | Project_var ({ closure_id; var }, _) ->
+      | Project_var { closure_id; var } ->
         used := Var_within_closure.Set.add var !used;
         used_fun := Closure_id.Set.add closure_id !used_fun
-      | Move_within_set_of_closures
-          ({ closure = _; start_from; move_to }, _) ->
+      | Move_within_set_of_closures { closure = _; start_from; move_to } ->
         used_fun := Closure_id.Set.add start_from !used_fun;
         used_fun := Closure_id.Set.add move_to !used_fun
-      | _ -> ()
+      | Symbol _ | Const _ | Set_of_closures _ | Prim _ | Expr _ -> ()
     in
-    Flambdaiter.iter aux tree;
+    Flambdaiter.iter_named aux_named tree;
     !used, !used_fun
   in
-  let aux (expr : Flambda.t) : Flambda.t =
-    match expr with
-    | Set_of_closures ({ function_decls; free_vars; _ } as closure, eid) ->
+  let aux_named (named : Flambda.named) : Flambda.named =
+    match named with
+    | Set_of_closures ({ function_decls; free_vars; _ } as closure) ->
       let all_free_vars =
         Variable.Map.fold (fun _ { Flambda. free_variables } acc ->
             Variable.Set.union free_variables acc)
@@ -56,7 +55,8 @@ let remove_unused_closure_variables tree =
           function_decls.funs
       in
       let function_decls = { function_decls with funs } in
-      Set_of_closures ({ closure with free_vars; function_decls }, eid)
+      Set_of_closures { closure with free_vars; function_decls }
     | e -> e
   in
-  Flambdaiter.map aux tree
+  Flambdaiter.map_named aux_named tree
+

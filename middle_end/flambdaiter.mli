@@ -27,6 +27,13 @@ val iter
   -> Flambda.t
   -> unit
 
+(* CR-someday mshinwell: we might need to add the corresponding variable to
+   the parameters of the user function for [iter_named] *)
+val iter_named
+   : (Flambda.named -> unit)
+  -> Flambda.t
+  -> unit
+
 (** [iter_toplevel f t] applies [f] on every toplevel subexpression of [t].
     In particular, it never applies [f] to the body of a function (which
     will always be contained within an [Set_of_closures] expression). *)
@@ -45,6 +52,11 @@ val iter_on_sets_of_closures
 val map
    : (Flambda.t -> Flambda.t)
   -> (Flambda.named -> Flambda.named)
+  -> Flambda.t
+  -> Flambda.t
+
+val map_named
+   : (Flambda.named -> Flambda.named)
   -> Flambda.t
   -> Flambda.t
 

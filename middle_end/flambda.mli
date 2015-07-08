@@ -119,12 +119,11 @@ type project_var = {
 
 type t =
   | Var of Variable.t
+  | Let of let_kind * Variable.t * named * t
+  | Let_rec of (Variable.t * named) list * t
   | Apply of apply
   | Assign of Variable.t * t
   | Send of Lambda.meth_kind * t * t * t list * Debuginfo.t
-  | Proved_unreachable
-  | Let of let_kind * Variable.t * named * t
-  | Let_rec of (Variable.t * named) list * t
   | If_then_else of t * t * t
   | Switch of t * switch
   (* Restrictions on [Lambda.Lstringswitch] also apply here *)
@@ -134,6 +133,7 @@ type t =
   | Try_with of t * Variable.t * t
   | While of t * t
   | For of Variable.t * t * t * Asttypes.direction_flag * t
+  | Proved_unreachable
 (* CR-someday mshinwell: use [letcont]-style construct to remove e.g.
    [While] and [For]. *)
 (* CR-someday mshinwell: try to produce a tighter definition of a "switch"
