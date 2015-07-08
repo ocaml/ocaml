@@ -174,7 +174,7 @@ let simplify_move_within_set_of_closures env r
       if Closure_id.equal start_from move_to then
         (* Moving from one closure to itself is a no-op.  We can return an
            [Var] since we already have a variable bound to the closure. *)
-        Var move_within_set_of_closures.closure, ret r closure_approx
+        Expr (Var move_within_set_of_closures.closure), ret r closure_approx
       else
         match set_of_closures_var with
         | Some set_of_closures_var ->
