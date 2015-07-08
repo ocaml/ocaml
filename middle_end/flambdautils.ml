@@ -290,3 +290,13 @@ let bind ?name ~bindings ~body =
   List.fold_left (fun expr (var, var_def) ->
       Flambda.Let (Immutable, var, var_def, expr, Expr_id.create ?name ()))
     body bindings
+
+let name_expr (named : _ Flambda.named) : _ Flambda.t =
+  let var =
+    Variable.create
+      ~current_compilation_unit:(Compilation_unit.get_current_exn ())
+      "named"
+  in
+  let nid1 = Expr_id.create () in
+  let nid2 = Expr_id.create () in
+  Let (Immutable, var, named, Var (var, nid1), nid2)

@@ -137,10 +137,10 @@ MIDDLE_END=\
   middle_end/base_types/static_exception.cmo \
   middle_end/base_types/export_id.cmo \
   middle_end/base_types/symbol.cmo \
+  middle_end/flambdautils.cmo \
   middle_end/closure_conversion.cmo \
   middle_end/free_variables.cmo \
   middle_end/flambdaiter.cmo \
-  middle_end/flambdautils.cmo \
   middle_end/find_recursive_functions.cmo \
   middle_end/freshening.cmo \
   middle_end/invariant_params.cmo \

@@ -156,6 +156,9 @@ type 'a t =
     for control flow constructs, is the presence of [Expr].  This could be
     removed in the future to provide a more rigorous ANF-like representation.)
 *)
+(* CR-someday mshinwell: Without expression identifiers on every term, we
+   should probably introduce [Mutable_var] into ['a named] if we introduce
+   more complicated analyses on these in the future. *)
 and 'a named =
   | Symbol of Symbol.t * 'a
   | Const of const * 'a

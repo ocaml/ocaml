@@ -11,6 +11,8 @@
 (*                                                                        *)
 (**************************************************************************)
 
+module U = Flambdautils
+
 type 'a boxed_int =
   | Int32 : int32 boxed_int
   | Int64 : int64 boxed_int
@@ -148,16 +150,16 @@ let value_string size contents = approx (Value_string {size; contents })
 let value_float_array size = approx (Value_float_array size)
 
 let make_const_int n eid : _ Flambda.t * t =
-  Const(Const_base(Asttypes.Const_int n),eid), value_int n
+  U.name_expr (Const(Const_base(Asttypes.Const_int n),eid)), value_int n
 
 let make_const_ptr n eid : _ Flambda.t * t =
-  Const(Const_pointer n,eid), value_constptr n
+  U.name_expr (Const(Const_pointer n,eid)), value_constptr n
 
 let make_const_bool b eid : _ Flambda.t * t =
   make_const_ptr (if b then 1 else 0) eid
 
 let make_const_float f eid : _ Flambda.t * t =
-  Const(Const_float f,eid), value_float f
+  U.name_expr (Const(Const_float f,eid)), value_float f
 
 let make_const_boxed_int (type bi) (t:bi boxed_int) (i:bi) eid
       : _ Flambda.t * t =
@@ -167,7 +169,7 @@ let make_const_boxed_int (type bi) (t:bi boxed_int) (i:bi) eid
     | Int64 -> Const_int64 i
     | Nativeint -> Const_nativeint i
   in
-  Const (Const_base c, eid), value_boxed_int t i
+  U.name_expr (Const (Const_base c, eid)), value_boxed_int t i
 
 let const (flam : Flambda.const) =
   match flam with
@@ -198,7 +200,7 @@ let simplify t (lam : _ Flambda.t) : _ Flambda.t * t =
     | Value_boxed_int (t, i) ->
       make_const_boxed_int t i (Flambdautils.data_at_toplevel_node lam)
     | Value_symbol sym ->
-      Symbol (sym, Flambdautils.data_at_toplevel_node lam), t
+      U.name_expr (Symbol (sym, Flambdautils.data_at_toplevel_node lam)), t
     | Value_string _ | Value_float_array _
     | Value_block _ | Value_set_of_closures _ | Value_closure _
     | Value_unknown | Value_bottom | Value_extern _ | Value_unresolved _ ->
@@ -213,7 +215,8 @@ let simplify_using_env t ~is_present_in_env lam =
       Var (var, Flambdautils.data_at_toplevel_node lam)
     | _ ->
       match t.symbol with
-      | Some sym -> Symbol (sym, Flambdautils.data_at_toplevel_node lam)
+      | Some sym ->
+        U.name_expr (Symbol (sym, Flambdautils.data_at_toplevel_node lam))
       | None -> lam
   in
   simplify t res

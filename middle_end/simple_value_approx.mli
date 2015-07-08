@@ -185,11 +185,15 @@ val const : Flambda.const -> t
 
 (** Take the given constant and produce an appropriate approximation for it
     together with an Flambda expression representing it. *)
-val make_const_int : int -> 'a -> 'a Flambda.t * t
-val make_const_ptr : int -> 'a -> 'a Flambda.t * t
-val make_const_bool : bool -> 'a -> 'a Flambda.t * t
-val make_const_float : float -> 'a -> 'a Flambda.t * t
-val make_const_boxed_int : 'i boxed_int -> 'i -> 'a -> 'a Flambda.t * t
+val make_const_int : int -> Expr_id.t -> Expr_id.t Flambda.t * t
+val make_const_ptr : int -> Expr_id.t -> Expr_id.t Flambda.t * t
+val make_const_bool : bool -> Expr_id.t -> Expr_id.t Flambda.t * t
+val make_const_float : float -> Expr_id.t -> Expr_id.t Flambda.t * t
+val make_const_boxed_int
+   : 'i boxed_int
+  -> 'i
+  -> Expr_id.t
+  -> Expr_id.t Flambda.t * t
 
 (** Augment an approximation with a given variable (see comment above).
     If the approximation was already augmented with a variable, the one

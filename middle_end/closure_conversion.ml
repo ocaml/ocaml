@@ -26,6 +26,7 @@
 *)
 
 module IdentSet = Lambda.IdentSet
+module U = Flambdautils
 
 type t = {
   current_unit_id : Ident.t;
@@ -303,18 +304,12 @@ let close_const (const : Lambda.structured_constant) : _ Flambda.named =
     Misc.fatal_error "Const_block should have been eliminated \
         before closure conversion"
 
-let name_expr (named : _ Flambda.named) : _ Flambda.t =
-  let var = fresh_variable ~name:"named" in
-  let nid1 = nid ~name:"named" () in
-  let nid2 = nid ~name:"named" () in
-  Let (Immutable, var, named, Var (var, nid1), nid2)
-
 let rec close t env (lam : Lambda.lambda) : _ Flambda.t =
   match lam with
   | Lvar id ->
     let var = Env.find_var env id in
     Var (var, nid ~name:(Format.asprintf "var_%a" Variable.print var) ())
-  | Lconst cst -> name_expr (close_const cst)
+  | Lconst cst -> U.name_expr (close_const cst)
   | Llet (let_kind, id, lam, body) ->
     let let_kind : Flambda.let_kind =
       match let_kind with
@@ -352,7 +347,7 @@ let rec close t env (lam : Lambda.lambda) : _ Flambda.t =
       }
     in
     Let (Immutable, set_of_closures_var, set_of_closures,
-      name_expr (Project_closure (project_closure,
+      U.name_expr (Project_closure (project_closure,
         nid ~name:"project_closure" ())),
       nid ~name:"function" ())
   | Lapply (funct, args, _loc) ->
@@ -466,14 +461,14 @@ let rec close t env (lam : Lambda.lambda) : _ Flambda.t =
   | Lprim (Praise kind, [Levent (arg, event)]) ->
     let arg_var = fresh_variable ~name:"raise_arg" in
     Let (Immutable, arg_var, Expr (close t env arg),
-      name_expr
+      U.name_expr
         (Prim (Praise kind, [arg_var], Debuginfo.from_raise event, nid ())),
       nid ())
   | Lprim (Pfield i, [Lprim (Pgetglobal id, [])])
       when Ident.same id t.current_unit_id ->
     (* Access to globals of the current module uses a distinguished primitive
        in Flambda. *)
-    name_expr (Prim (Pgetglobalfield (id, i), [], Debuginfo.none,
+    U.name_expr (Prim (Pgetglobalfield (id, i), [], Debuginfo.none,
       nid ~name:"getglobalfield" ()))
   | Lprim (Psetfield (i, _), [Lprim (Pgetglobal id, []); lam]) ->
     assert (Ident.same id t.current_unit_id);
@@ -482,13 +477,13 @@ let rec close t env (lam : Lambda.lambda) : _ Flambda.t =
     in
     let arg_var = fresh_variable ~name:"raise_arg" in
     Let (Immutable, arg_var, Expr (close t env lam),
-      name_expr (Prim (Psetglobalfield (exported, i), [arg_var],
+      U.name_expr (Prim (Psetglobalfield (exported, i), [arg_var],
         Debuginfo.none, nid ~name:"setglobalfield" ())),
       nid ())
   | Lprim (Pgetglobal id, []) when not (Ident.is_predef_exn id) ->
     assert (not (Ident.same id t.current_unit_id));
     let symbol = t.symbol_for_global' id in
-    name_expr (Symbol (symbol, nid ~name:"external_global" ()))
+    U.name_expr (Symbol (symbol, nid ~name:"external_global" ()))
   | Lprim (p, args) ->
     (* One of the important consequences of the ANF-like representation
        here is that we obtain names corresponding to the components of
@@ -500,7 +495,7 @@ let rec close t env (lam : Lambda.lambda) : _ Flambda.t =
       ~evaluation_order:`Right_to_left
       ~name:"prim_arg"
       ~create_body:(fun args ->
-        name_expr (Prim (p, args, Debuginfo.none, nid ~name:"prim" ())))
+        U.name_expr (Prim (p, args, Debuginfo.none, nid ~name:"prim" ())))
   | Lswitch (arg, sw) ->
     let aux (i, lam) = i, close t env lam in
     let zero_to_n = Ext_types.IntSet.zero_to_n in
@@ -660,12 +655,12 @@ and close_let_bound_expression t ?let_rec_ident let_bound_var env
       }
     in
     Expr (Let (Immutable, set_of_closures_var, set_of_closures,
-      name_expr (Project_closure (project_closure,
+      U.name_expr (Project_closure (project_closure,
         nid ~name:"project_closure" ())),
       nid ~name:"close_let_bound_expression" ()))
   | lam ->
     match close t env lam with
-    (* Remove unnecessary [let]s introduced by [name_expr], above. *)
+    (* Remove unnecessary [let]s introduced by [U.name_expr], above. *)
     | Let (Immutable, var1, named, Var (var2, _), _)
         when Variable.equal var1 var2 -> named
     | flam -> Expr flam

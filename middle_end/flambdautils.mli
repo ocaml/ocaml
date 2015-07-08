@@ -80,3 +80,5 @@ val bind
   -> bindings:(Variable.t * Expr_id.t Flambda.named) list
   -> body:Expr_id.t Flambda.t
   -> Expr_id.t Flambda.t
+
+val name_expr : Expr_id.t Flambda.named -> Expr_id.t Flambda.t

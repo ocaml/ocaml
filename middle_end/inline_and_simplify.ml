@@ -271,7 +271,7 @@ let rec simplify_project_var env r ~(project_var : Flambda.project_var)
 
 and sequence env r expr1 expr2 annot : _ Flambda.t =
   let expr =
-    
+    Let (Immutable, new_var "seq", Expr expr1, expr2, annot)
   in
   loop env r expr
 
