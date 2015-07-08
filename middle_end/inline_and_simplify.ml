@@ -37,14 +37,14 @@ module R = Inlining_result
      the new environment
    * mark used variables:
        [let r = use_var r id]
-   * remove variable related bottom up informations:
+   * remove variable related bottom up information:
        [let r = exit_scope r id in]
-   * rebuild the expression according to the informations about
+   * rebuild the expression according to the information about
      its content.
    * associate its description to the returned value:
        [ret r approx]
    * replace the returned expression by a contant or a direct variable
-     acces (when possible):
+     access (when possible):
        [simplify_using_approx_and_env env r expr approx]
  *)
 
@@ -223,7 +223,7 @@ let simplify_move_within_set_of_closures env r
 
    What ensures that this information is available at [Project_var]
    point is that those constructions can only be introduced by inlining,
-   which requires those same informations. For this to still be valid,
+   which requires that same information. For this to still be valid,
    other transformation must avoid transforming the information flow in
    a way that the inline function can't propagate it.
 *)
@@ -240,17 +240,14 @@ let rec simplify_project_var env r ~(project_var : Flambda.project_var)
     let closure_id' = F.apply_closure_id freshening closure_id in
     assert (Closure_id.equal closure_id closure_id');
     let approx = A.approx_for_bound_var value_set_of_closures var in
-    let expr : Flambda.t =
-      Project_var ({ closure; closure_id; var })
-    in
+    let expr : Flambda.t = Project_var { closure; closure_id; var; } in
     simplify_using_approx_and_env env r expr approx
   | Unresolved symbol ->
     (* This value comes from a symbol for which we couldn't find any
        approximation, telling us that names within the closure couldn't
        have been renamed.  So we don't need to change the variable or
        closure ID in the [Project_var] expression. *)
-    Project_var ({ project_var with closure }),
-      ret r (A.value_unresolved symbol)
+    Project_var { project_var with closure }, ret r (A.value_unresolved symbol)
   | Wrong ->
     (* We must have the correct approximation of the value to ensure
        we take account of all freshenings. *)
@@ -274,24 +271,70 @@ and loop env r tree =
      exactly is happening here? *)
   f, ret r (Backend.really_import_approx (R.approx r))
 
-and loop_direct env r (tree : Flambda.t) : Flambda.t * R.t =
-  match tree with
-  | Symbol (sym) ->
+and loop_named env r (named : Flambda.named) : Flambda.named * R.t =
+  match named with
+  | Symbol sym ->
     let module Backend = (val (E.backend env) : Backend_intf.S) in
     simplify_using_approx r tree (Backend.import_symbol sym)
-  | Var (id) ->
-    let id = Freshening.apply_variable (E.freshening env) id in
-    let tree : Flambda.t = Var (id) in
-    simplify_using_approx_and_env env r tree (E.find id env)
-  | Const (cst, _) -> tree, ret r (A.const cst)
-  | Apply apply -> simplify_apply env r ~apply
+  | Const cst -> tree, ret r (A.const cst)
   | Set_of_closures set_of_closures ->
     simplify_set_of_closures env r set_of_closures
   | Project_closure project_closure ->
     simplify_project_closure env r ~project_closure
   | Project_var project_var -> simplify_project_var env r ~project_var
-  | Move_within_set_of_closures (move_within_set_of_closures) ->
+  | Move_within_set_of_closures move_within_set_of_closures ->
     simplify_move_within_set_of_closures env r ~move_within_set_of_closures
+  | Prim (Pgetglobal id, [], _dbg) ->
+    let approx =
+      if Ident.is_predef_exn id then A.value_unknown
+      else
+        let module Backend = (val (E.backend env) : Backend_intf.S) in
+        Backend.import_global id
+    in
+    tree, ret r approx
+  | Prim (Pgetglobalfield (id, i), [], _dbg) ->
+    let approx =
+      if id = Compilation_unit.get_current_id_exn ()
+      then R.find_global r ~field_index:i
+      else
+        let module Backend = (val (E.backend env) : Backend_intf.S) in
+        A.get_field (Backend.import_global id) ~field_index:i
+    in
+    simplify_using_approx r tree approx
+  | Prim (Psetglobalfield (_, i), [arg], _) ->
+    let approx = E.find arg env in
+    let r = R.add_global r ~field_index:i ~approx in
+    tree, ret r A.value_unknown
+  | Prim (Pfield i, [arg], _, _) as expr ->
+    let approx = A.get_field (E.find arg env) ~field_index:i in
+    simplify_using_approx_and_env env r expr approx
+  | Prim ((Psetfield _ | Parraysetu _ | Parraysets _), block::_, dbg) ->
+    let block_approx = E.find block env in
+    if A.is_certainly_immutable block_approx then begin
+      Location.prerr_warning (Debuginfo.to_location dbg)
+        Warnings.Assignment_on_non_mutable_value
+    end;
+    tree, ret r A.value_unknown
+  | Prim ((Psequand | Psequor), _, _) ->
+    Misc.fatal_error "Psequand and Psequor must be expanded (see handling in \
+        closure_conversion.ml)"
+  | Prim (p, args, dbg) ->
+    let approxs = E.find_list env args in
+    let expr, approx, benefit =
+      let module Backend = (val (E.backend env) : Backend_intf.S) in
+      Simplify_primitives.primitive p (args, approxs) tree dbg
+        ~size_int:Backend.size_int ~big_endian:Backend.big_endian
+    in
+    let r = R.map_benefit r (B.(+) benefit) in
+    expr, ret r approx
+
+and loop_direct env r (tree : Flambda.t) : Flambda.t * R.t =
+  match tree with
+  | Var var ->
+    let var = Freshening.apply_variable (E.freshening env) var in
+    let tree : Flambda.t = Var var in
+    simplify_using_approx_and_env env r tree (E.find var env)
+  | Apply apply -> simplify_apply env r ~apply
   | Let (str, id, lam, body) ->
     (* The different cases for rewriting [Let] are, if the original code
        corresponds to [let id = lam in body],
@@ -366,50 +409,6 @@ and loop_direct env r (tree : Flambda.t) : Flambda.t * R.t =
     let body, r = loop body_env r body in
     let r = List.fold_left (fun r (id, _) -> R.exit_scope r id) r defs in
     Let_rec (defs, body), r
-  | Prim (Pgetglobal id, [], _dbg) ->
-    let approx =
-      if Ident.is_predef_exn id
-      then A.value_unknown
-      else
-        let module Backend = (val (E.backend env) : Backend_intf.S) in
-        Backend.import_global id
-    in
-    tree, ret r approx
-  | Prim (Pgetglobalfield (id, i), [], _dbg) ->
-    let approx =
-      if id = Compilation_unit.get_current_id_exn ()
-      then R.find_global r ~field_index:i
-      else
-        let module Backend = (val (E.backend env) : Backend_intf.S) in
-        A.get_field (Backend.import_global id) ~field_index:i
-    in
-    simplify_using_approx r tree approx
-  | Prim (Psetglobalfield (_, i), [arg], _) ->
-    let approx = E.find arg env in
-    let r = R.add_global r ~field_index:i ~approx in
-    tree, ret r A.value_unknown
-  | Prim (Pfield i, [arg], _, _) as expr ->
-    let approx = A.get_field (E.find arg env) ~field_index:i in
-    simplify_using_approx_and_env env r expr approx
-  | Prim ((Psetfield _ | Parraysetu _ | Parraysets _), block::_, dbg) ->
-    let block_approx = E.find block env in
-    if A.is_certainly_immutable block_approx then begin
-      Location.prerr_warning (Debuginfo.to_location dbg)
-        Warnings.Assignment_on_non_mutable_value
-    end;
-    tree, ret r A.value_unknown
-  | Prim ((Psequand | Psequor), _, _) ->
-    Misc.fatal_error "Psequand and Psequor must be expanded (see handling in \
-        closure_conversion.ml)"
-  | Prim (p, args, dbg) ->
-    let approxs = E.find_list env args in
-    let expr, approx, benefit =
-      let module Backend = (val (E.backend env) : Backend_intf.S) in
-      Simplify_primitives.primitive p (args, approxs) tree dbg
-        ~size_int:Backend.size_int ~big_endian:Backend.big_endian
-    in
-    let r = R.map_benefit r (B.(+) benefit) in
-    expr, ret r approx
   | Static_raise (i, args) ->
     let i = Freshening.apply_static_exception (E.freshening env) i in
     let args, _, r = loop_list env r args in
