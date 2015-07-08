@@ -1859,7 +1859,7 @@ generalized_constructor_arguments:
 ;
 
 constructor_arguments:
-  | core_type_list_no_attr { Pcstr_tuple (List.rev $1) }
+  | core_type_list                   { Pcstr_tuple (List.rev $1) }
   | LBRACE label_declarations RBRACE { Pcstr_record $2 }
 ;
 label_declarations:
@@ -2120,12 +2120,8 @@ core_type_comma_list:
   | core_type_comma_list COMMA core_type        { $3 :: $1 }
 ;
 core_type_list:
-    simple_core_type %prec below_LBRACKETAT  { [$1] }
+    simple_core_type                            { [$1] }
   | core_type_list STAR simple_core_type        { $3 :: $1 }
-;
-core_type_list_no_attr:
-    simple_core_type                     { [$1] }
-  | core_type_list STAR simple_core_type { $3 :: $1 }
 ;
 meth_list:
     field SEMI meth_list                     { let (f, c) = $3 in ($1 :: f, c) }
