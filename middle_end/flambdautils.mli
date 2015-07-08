@@ -17,12 +17,12 @@
 
 (** [find_declaration f decl] raises [Not_found] if [f] is not in [decl]. *)
 val find_declaration :
-  Closure_id.t -> 'a Flambda.function_declarations -> 'a Flambda.function_declaration
+  Closure_id.t -> Flambda.function_declarations -> Flambda.function_declaration
 
 (** [find_declaration_variable f decl] raises [Not_found] if [f] is not in
     [decl]. *)
 val find_declaration_variable :
-  Closure_id.t -> 'a Flambda.function_declarations -> Variable.t
+  Closure_id.t -> Flambda.function_declarations -> Variable.t
 
 (** [find_free_variable v clos] raises [Not_found] if [c] is not in [clos]. *)
 val find_free_variable :
@@ -30,7 +30,7 @@ val find_free_variable :
 
 (** Utility functions *)
 
-val function_arity : 'a Flambda.function_declaration -> int
+val function_arity : Flambda.function_declaration -> int
 
 (** Variables "bound by a closure" are those variables free in the
     corresponding function's body that are neither:
@@ -41,7 +41,7 @@ val function_arity : 'a Flambda.function_declaration -> int
     [f], [g] or [h] are bound in any of the closures for [f], [g] and [h].
 *)
 val variables_bound_by_the_closure :
-  Closure_id.t -> 'a Flambda.function_declarations -> Variable.Set.t
+  Closure_id.t -> Flambda.function_declarations -> Variable.Set.t
 
 (** If [can_be_merged f1 f2] is [true], it is safe to merge switch
     branches containing [f1] and [f2]. *)

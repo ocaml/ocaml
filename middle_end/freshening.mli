@@ -120,6 +120,6 @@ end
 val apply_function_decls_and_free_vars
    : t
   -> 'a Variable.Map.t
-  -> 'b Flambda.function_declarations
-  -> 'a Variable.Map.t * 'b Flambda.function_declarations * t
+  -> Flambda.function_declarations
+  -> 'a Variable.Map.t * Flambda.function_declarations * t
     * Project_var.t

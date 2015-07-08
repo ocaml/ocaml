@@ -16,10 +16,10 @@
 type 'a by_copying_function_body =
      env:Inlining_env.t
   -> r:Inlining_result.t
-  -> clos:'a Flambda.function_declarations
+  -> clos:Flambda.function_declarations
   -> lfunc:Flambda.t
   -> fun_id:Closure_id.t
-  -> func:'a Flambda.function_declaration
+  -> func:Flambda.function_declaration
   -> args:Flambda.t list
   -> Flambda.t * Inlining_result.t
 
@@ -27,9 +27,9 @@ type 'a by_copying_function_declaration =
      env:Inlining_env.t
   -> r:Inlining_result.t
   -> funct:Flambda.t
-  -> clos:'a Flambda.function_declarations
+  -> clos:Flambda.function_declarations
   -> fun_id:Closure_id.t
-  -> func:'a Flambda.function_declaration
+  -> func:Flambda.function_declaration
   -> args_with_approxs:
       (Flambda.t list) * (Simple_value_approx.t list)
   -> unchanging_params:Variable.Set.t

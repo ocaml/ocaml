@@ -24,4 +24,4 @@
 
 (** Determine the recursive functions, if any, bound by the given set of
     function declarations. *)
-val in_function_decls : 'a Flambda.function_declarations -> Variable.Set.t
+val in_function_decls : Flambda.function_declarations -> Variable.Set.t

@@ -25,8 +25,8 @@ let is_probably_a_functor env func_decls approxs =
         (Find_recursive_functions.in_function_decls func_decls)
 
 let should_inline_function_known_to_be_recursive
-      ~(func : 'a Flambda.function_declaration)
-      ~(clos : 'a Flambda.function_declarations)
+      ~(func : Flambda.function_declaration)
+      ~(clos : Flambda.function_declarations)
       ~env ~(closure : A.value_set_of_closures) ~approxs ~unchanging_params =
   assert (List.length func.params = List.length approxs);
   (not (E.inside_set_of_closures_declaration clos.set_of_closures_id env))
@@ -38,7 +38,7 @@ let should_inline_function_known_to_be_recursive
 
 let inline_non_recursive
     ~env ~r ~clos ~funct ~fun_id
-    ~(func : 'a Flambda.function_declaration)
+    ~(func : Flambda.function_declaration)
     ~(record_decision : Inlining_stats_types.Decision.t -> unit)
     ~direct_apply
     ~no_transformation
@@ -135,7 +135,7 @@ let for_call_site ~env ~r
       ~(clos : Flambda.function_declarations)
       ~(lhs_of_application : Flambda.t)
       ~fun_id
-      ~(func : 'a Flambda.function_declaration)
+      ~(func : Flambda.function_declaration)
       ~(closure : Simple_value_approx.value_set_of_closures)
       ~args_with_approxs ~dbg ~eid
       ~simplify =

@@ -26,11 +26,11 @@
      let rec f x l = List.iter (f x) l
 *)
 val unchanging_params_in_recursion
-   : 'a Flambda.function_declarations
+   : Flambda.function_declarations
   -> Variable.Set.t
 
 (* CR mshinwell for lwhite: think about whether this function should
    be in this file.  Should it be called "unused_parameters"? *)
 val unused_arguments
-   : 'a Flambda.function_declarations
+   : Flambda.function_declarations
   -> Variable.Set.t
