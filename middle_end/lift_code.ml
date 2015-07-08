@@ -14,10 +14,10 @@
 module A = Simple_value_approx
 module C = Inlining_cost
 
-type lifter = Expr_id.t Flambda.t -> Expr_id.t Flambda.t
+type lifter = Flambda.t -> Flambda.t
 
 let lift_lets tree =
-  let rec aux (expr : _ Flambda.t) : _ Flambda.t =
+  let rec aux (expr : Flambda.t) : Flambda.t =
     match expr with
     | Fsequence(Let(str, v, def, body, d1), seq, dseq) ->
         Let(str, v, def, Fsequence( aux body, seq, dseq), d1)
@@ -31,7 +31,7 @@ let lift_lets tree =
 let lifting_helper exprs ~evaluation_order ~create_body ~name =
   let vars, lets =
     (* [vars] corresponds elementwise to [exprs]; the order is unchanged. *)
-    List.fold_right (fun (flam : _ Flambda.t) (vars, lets) ->
+    List.fold_right (fun (flam : Flambda.t) (vars, lets) ->
         match flam with
         | Var (v, _) ->
           (* Assumes that [v] is an immutable variable, otherwise this may
@@ -64,5 +64,5 @@ let lifting_helper exprs ~evaluation_order ~create_body ~name =
     | `Left_to_right -> List.rev lets
   in
   List.fold_left (fun body (v, expr) ->
-      Flambda.Let (Immutable, v, expr, body, Expr_id.create ()))
+      Flambda.Let (Immutable, v, expr, body))
     (create_body vars) lets

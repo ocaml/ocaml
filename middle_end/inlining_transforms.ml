@@ -40,13 +40,12 @@ let which_function_parameters_can_we_specialize ~params ~args
 let fold_over_exprs_for_variables_bound_by_closure ~fun_id ~clos_id ~clos
       ~init ~f =
   Variable.Set.fold (fun var acc ->
-      let expr : _ Flambda.t =
-        Project_var
-          ({ closure = clos_id;
-             closure_id = fun_id;
-             var = Var_within_closure.wrap var;
-           },
-           Expr_id.create ())
+      let expr : Flambda.t =
+        Project_var {
+          closure = clos_id;
+          closure_id = fun_id;
+          var = Var_within_closure.wrap var;
+        }
       in
       f ~acc ~var ~expr)
     (Flambdautils.variables_bound_by_the_closure fun_id clos) init
@@ -69,7 +68,7 @@ let inline_by_copying_function_body ~env ~r
      that we saw at the call site. *)
   let bindings_for_params_around_body =
     let args =
-      List.map (fun arg -> Flambda.Var (arg, Expr_id.create ())) args
+      List.map (fun arg -> Flambda.Var (arg)) args
     in
     Flambdautils.bind ~body
       ~bindings:(List.combine subst_params args)
@@ -80,7 +79,7 @@ let inline_by_copying_function_body ~env ~r
     fold_over_exprs_for_variables_bound_by_closure ~fun_id
       ~clos_id:closure ~clos ~init:bindings_for_params_around_body
       ~f:(fun ~acc:body ~var ~expr ->
-        Flambda.Let (Immutable, var, expr, body, Expr_id.create ()))
+        Flambda.Let (Immutable, var, expr, body))
   in
   (* 3. Finally add bindings for the function declaration identifiers being
      introduced by the whole set of closures. *)
@@ -91,8 +90,8 @@ let inline_by_copying_function_body ~env ~r
               closure;
               start_from = fun_id;
               move_to = Closure_id.wrap id;
-            }, Expr_id.create ()),
-          expr, Expr_id.create ()))
+            }),
+          expr))
       clos.funs bindings_for_vars_bound_by_closure_and_params_around_body
   in
   let env =
@@ -100,7 +99,7 @@ let inline_by_copying_function_body ~env ~r
       ~where:Inline_by_copying_function_body
   in
   simplify (E.activate_freshening env) r
-    (Flambda.Let (Immutable, closure, lfunc, expr, Expr_id.create ()))
+    (Flambda.Let (Immutable, closure, lfunc, expr))
 
 let inline_by_copying_function_declaration ~env ~r ~funct
     ~(function_decls : _ Flambda.function_declarations)
@@ -146,34 +145,31 @@ let inline_by_copying_function_declaration ~env ~r ~funct
         }
       in
       Flambdautils.bind ~bindings:free_vars_for_lets
-        ~body:(Set_of_closures (set_of_closures, Expr_id.create ()))
+        ~body:(Set_of_closures (set_of_closures))
         ~name:"free_var"
     in
     (* Generate a copy of the function application, including the function
        declaration(s), but with variables (not yet bound) in place of the
        arguments.  The new set of closures is bound to a fresh variable. *)
-    let duplicated_application : _ Flambda.t =
+    let duplicated_application : Flambda.t =
       let set_of_closures_var = new_var "dup_set_of_closures" in
       let project_closure : Flambda.project_closure =
         { set_of_closures = set_of_closures_var;
           closure_id;
         }
       in
-      let func : _ Flambda.t =
-        Project_closure (project_closure, Expr_id.create ())
+      let func : Flambda.t =
+        Project_closure (project_closure)
       in
       Let (Immutable, set_of_closures_var, set_of_closures,
-        Apply ({ func; args; kind = Direct closure_id; dbg; },
-          Expr_id.create ()),
-        Expr_id.create ())
+        Apply { func; args; kind = Direct closure_id; dbg; })
     in
     (* Now bind the variables that will hold the arguments from the original
        application. *)
-    let expr : _ Flambda.t =
+    let expr : Flambda.t =
       Let (Immutable, closure, funct,
         Flambdautils.bind ~body:duplicated_application ~bindings:args_decl
-          ~name:"dup_apply_arg",
-        Expr_id.create ())
+          ~name:"dup_apply_arg")
     in
     let env =
       E.note_entering_closure env ~closure_id

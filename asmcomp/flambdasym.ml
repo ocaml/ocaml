@@ -59,7 +59,7 @@ let functions expr =
 
 let list_used_variable_within_closure expr =
   let used = ref Var_within_closure.Set.empty in
-  let aux (expr : _ Flambda.t) =
+  let aux (expr : Flambda.t) =
     match expr with
     | Project_var({ var },_) ->
       used := Var_within_closure.Set.add var !used
@@ -251,7 +251,7 @@ module Conv(P:Param1) = struct
   let unit_approx () : ET.approx = Value_id (new_descr (Value_constptr 0))
 
   let rec conv env expr = fst (conv_approx env expr)
-  and conv_approx (env : env) (flam : _ Flambda.t)
+  and conv_approx (env : env) (flam : Flambda.t)
         : unit Flambda.t * ET.approx =
     match flam with
     | Var (id,_) ->
@@ -354,7 +354,7 @@ module Conv(P:Param1) = struct
           List.partition (fun (id,_) -> is_constant id) defs in
 
         let env, consts = List.fold_left
-            (fun (env, acc) (id, (def : _ Flambda.t)) ->
+            (fun (env, acc) (id, (def : Flambda.t)) ->
                match def with
                | Const (( Const_pointer _
                          | Const_base
@@ -514,7 +514,7 @@ module Conv(P:Param1) = struct
 
     | Prim(Lambda.Pgetglobalfield(id,i), l, dbg, v) ->
         assert(l = []);
-        let lam : _ Flambda.t =
+        let lam : Flambda.t =
           Prim(Lambda.Pfield i,
             [Flambda.Prim(Lambda.Pgetglobal id, l, dbg, v)], dbg, v)
         in
@@ -536,7 +536,7 @@ module Conv(P:Param1) = struct
 
     | Prim(Lambda.Pmakeblock(tag, Asttypes.Immutable) as p, args, dbg, _) ->
         let args, approxs = conv_list_approx env args in
-        let block : _ Flambda.t = Prim(p, args, dbg, ()) in
+        let block : Flambda.t = Prim(p, args, dbg, ()) in
         let tag = Tag.create_exn tag in
         let ex = new_descr (Value_block (tag, Array.of_list approxs)) in
         if not (List.for_all is_simple_constant args)
@@ -741,8 +741,8 @@ module Conv(P:Param1) = struct
     let closure_ex_id = new_descr (Value_set_of_closures value_closure') in
     let value_closure : ET.approx = Value_id closure_ex_id in
 
-    let expr : _ Flambda.t =
-      let expr : _ Flambda.t =
+    let expr : Flambda.t =
+      let expr : Flambda.t =
         Set_of_closures ({ function_decls = ufunct;
                     free_vars = used_fv;
                     specialised_args = spec_arg }, ()) in
@@ -758,7 +758,7 @@ module Conv(P:Param1) = struct
   and conv_list_approx env l =
     List.split (List.map (conv_approx env) l)
 
-  and is_simple_constant (flam : _ Flambda.t) =
+  and is_simple_constant (flam : Flambda.t) =
     match flam with
     | Const _
     | Symbol _ -> true
@@ -794,7 +794,7 @@ module Prepare(P:Param2) = struct
 
   (* Replace all symbols' occurrences by their representative *)
   let expr, constants =
-    let use_canonical_symbols (flam : _ Flambda.t) : _ Flambda.t =
+    let use_canonical_symbols (flam : Flambda.t) : Flambda.t =
       match flam with
       | Symbol(sym, ()) as expr ->
           let sym' = canonical_symbol sym in

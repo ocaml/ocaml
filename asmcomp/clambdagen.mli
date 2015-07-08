@@ -21,6 +21,6 @@
    For everything else, it is basically the identity.
 *)
 val convert
-   : 'a Flambda.t * 'a Flambda.t Symbol.Map.t
+   : Flambda.t * Flambda.t Symbol.Map.t
        * Flambdaexport_types.exported
   -> Clambda.ulambda

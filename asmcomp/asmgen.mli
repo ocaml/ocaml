@@ -15,7 +15,7 @@
 val compile_implementation :
     ?toplevel:(string -> bool) ->
     sourcefile:string ->
-    string -> Format.formatter -> size:int -> _ Flambda.t -> unit
+    string -> Format.formatter -> size:int -> Flambda.t -> unit
 val compile_phrase :
     Format.formatter -> Cmm.phrase -> unit
 

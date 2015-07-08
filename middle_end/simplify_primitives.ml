@@ -17,7 +17,7 @@ module I = Simplify_boxed_integer_ops
 module S = Simplify_common
 
 let primitive (p : Lambda.primitive) (args, approxs) expr dbg ~size_int
-      ~big_endian : _ Flambda.t * A.t * Inlining_cost.Benefit.t =
+      ~big_endian : Flambda.t * A.t * Inlining_cost.Benefit.t =
   let fpc = !Clflags.float_const_prop in
   match p with
   | Pmakeblock(tag, Asttypes.Immutable) ->
@@ -27,7 +27,7 @@ let primitive (p : Lambda.primitive) (args, approxs) expr dbg ~size_int
       let eid = Flambdautils.data_at_toplevel_node expr in
       match args, A.descrs approxs with
       | [arg], [(Value_int 0 | Value_constptr 0)] ->
-        S.const_ptr_expr (Flambda.Var (arg, Expr_id.create ())) 0 eid
+        S.const_ptr_expr (Flambda.Var (arg)) 0 eid
       | _ ->
         S.const_ptr_expr expr 0 eid
     end

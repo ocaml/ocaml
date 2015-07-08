@@ -26,5 +26,5 @@ type result = {
 val inconstants
    : for_clambda:bool
   -> compilation_unit:Compilation_unit.t
-  -> _ Flambda.t
+  -> Flambda.t
   -> result

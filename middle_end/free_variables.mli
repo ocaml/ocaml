@@ -12,4 +12,4 @@
 (**************************************************************************)
 
 (** Calculation of the set of free variables in a given Flambda term. *)
-val calculate : _ Flambda.t -> Variable.Set.t
+val calculate : Flambda.t -> Variable.Set.t

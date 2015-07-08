@@ -16,7 +16,7 @@ let calculate tree =
   let bound = ref Variable.Set.empty in
   let mark_free id = free := Variable.Set.add id !free in
   let mark_bound id = bound := Variable.Set.add id !bound in
-  let rec aux (flam : _ Flambda.t) : unit =
+  let rec aux (flam : Flambda.t) : unit =
     match flam with
     | Var (var, _) -> mark_free var
     | Apply ({ func; args; kind = _; dbg = _}, _) ->
@@ -71,7 +71,7 @@ let calculate tree =
       aux e2;
       List.iter aux es
     | Unreachable _ -> ()
-  and aux_named (named : _ Flambda.named) =
+  and aux_named (named : Flambda.named) =
     match named with
     | Symbol _ | Const _ -> ()
     | Set_of_closures ({specialised_args},_) ->

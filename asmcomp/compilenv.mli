@@ -72,7 +72,7 @@ val approx_for_global: Compilation_unit.t -> Flambdaexport_types.exported
 (* CR mshinwell: rename to imported_set_of_closures *)
 val imported_closure
    : Set_of_closures_id.t
-  -> Expr_id.t Flambda.function_declarations
+  -> Flambda.function_declarations
 
 val need_curry_fun: int -> unit
 val need_apply_fun: int -> unit

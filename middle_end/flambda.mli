@@ -70,9 +70,6 @@
     - Direct calls are distinguished from indirect calls (as in [Clambda])
       using values of type [call_kind].
 
-    - Nodes making up an expression in the language may be annotated with
-      arbitrary values (the ['a] in [type 'a Flambda.t]).
-
     - "Structured constants" built from the constructors in type [const]
       are not explicitly represented.  Instead, they are converted into
       expressions such as: [Prim (Pmakeblock(...), ...)].
@@ -120,57 +117,55 @@ type project_var = {
   var : Var_within_closure.t;
 }
 
-(** The value of type ['a] may be used for annotation of an flambda expression
-    by some optimization pass. *)
-type 'a t =
-  | Var of Variable.t * 'a
-  | Apply of apply * 'a
+type t =
+  | Var of Variable.t
+  | Apply of apply
   (* CR-someday mshinwell: consider eliminating assignment from Flambda
      onwards *)
-  | Assign of Variable.t * 'a t * 'a
-  | Send of Lambda.meth_kind * 'a t * 'a t * 'a t list * Debuginfo.t * 'a
-  | Unreachable of 'a  (** Represents code proved unreachable. *)
-  | Let of let_kind * Variable.t * 'a named * 'a t * 'a
-  | Let_rec of (Variable.t * 'a named) list * 'a t * 'a
-  | If_then_else of 'a t * 'a t * 'a t * 'a
+  | Assign of Variable.t * t
+  | Send of Lambda.meth_kind * t * t * t list * Debuginfo.t
+  | Unreachable  (** Represents code proved unreachable. *)
+  | Let of let_kind * Variable.t * named * t
+  | Let_rec of (Variable.t * named) list * t
+  | If_then_else of t * t * t
   (* CR-someday mshinwell: try to produce a tighter definition of a "switch"
      (and translate to that earlier) so that middle- and back-end code for
      these can be reduced. *)
-  | Switch of 'a t * 'a switch * 'a
+  | Switch of t * switch
   (* Restrictions on [Lambda.Lstringswitch] also apply here *)
-  | String_switch of 'a t * (string * 'a t) list * 'a t option * 'a
-  | Static_raise of Static_exception.t * 'a t list * 'a
-  | Static_catch of Static_exception.t * Variable.t list * 'a t * 'a t * 'a
-  | Try_with of 'a t * Variable.t * 'a t * 'a
-  | While of 'a t * 'a t * 'a
-  | For of Variable.t * 'a t * 'a t * Asttypes.direction_flag * 'a t * 'a
+  | String_switch of t * (string * t) list * t option
+  | Static_raise of Static_exception.t * t list
+  | Static_catch of Static_exception.t * Variable.t list * t * t
+  | Try_with of t * Variable.t * t
+  | While of t * t
+  | For of Variable.t * t * t * Asttypes.direction_flag * t
 
-(** Values of type ['a named] will always be [let]-bound to a [Variable.t].
+(** Values of type [named] will always be [let]-bound to a [Variable.t].
 
     This has an important consequence: all expressions that we might deem
     constant (and thus assign to a symbol) have an associated variable.
 
-    (The split between ['a t] and ['a named] is very similar to the split in
+    (The split between [t] and [named] is very similar to the split in
     the language used in Kennedy's "Compiling with Continuations, Continued".
     The main difference, apart from the fact that we do not work in CPS style
     for control flow constructs, is the presence of [Expr].  This could be
     removed in the future to provide a more rigorous ANF-like representation.)
 *)
-(* CR-someday mshinwell: Without expression identifiers on every term, we
-   should probably introduce [Mutable_var] into ['a named] if we introduce
+(* CR-someday mshinwell: Since we lack expression identifiers on every term,
+   we should probably introduce [Mutable_var] into [named] if we introduce
    more complicated analyses on these in the future. *)
-and 'a named =
-  | Symbol of Symbol.t * 'a
-  | Const of const * 'a
-  | Set_of_closures of 'a set_of_closures * 'a
-  | Project_closure of project_closure * 'a
-  | Move_within_set_of_closures of move_within_set_of_closures * 'a
-  | Project_var of project_var * 'a
-  | Prim of Lambda.primitive * Variable.t list * Debuginfo.t * 'a
-  | Expr of 'a t
+and named =
+  | Symbol of Symbol.t
+  | Const of const
+  | Set_of_closures of set_of_closures
+  | Project_closure of project_closure
+  | Move_within_set_of_closures of move_within_set_of_closures
+  | Project_var of project_var
+  | Prim of Lambda.primitive * Variable.t list * Debuginfo.t
+  | Expr of t
 
-and 'a set_of_closures = {
-  function_decls : 'a function_declarations;
+and set_of_closures = {
+  function_decls : function_declarations;
   (* CR mshinwell: consider renaming [free_vars] *)
   free_vars : Variable.t Variable.Map.t;
   (** Parameters known to always alias some variable in the scope of the set
@@ -215,15 +210,15 @@ and 'a set_of_closures = {
   specialised_args : Variable.t Variable.Map.t;
 }
 
-and 'a function_declarations = {
+and function_declarations = {
   set_of_closures_id : Set_of_closures_id.t;
-  funs : 'a function_declaration Variable.Map.t;
+  funs : function_declaration Variable.Map.t;
   compilation_unit : Compilation_unit.t;
 }
 
-and 'a function_declaration = {
+and function_declaration = {
   params : Variable.t list;
-  body : 'a t;
+  body : t;
   (** All variables free in the *body* of the function.  For example, a
       variable that is bound as one of the function's parameters will still
       be included in this set.  This field is present as an optimization. *)
@@ -238,10 +233,10 @@ and 'a function_declaration = {
   dbg : Debuginfo.t;
 }
 
-and 'a switch = {  (** Equivalent to the similar type in [Lambda]. *)
+and switch = {  (** Equivalent to the similar type in [Lambda]. *)
   numconsts : Ext_types.Int.Set.t; (** Integer cases *)
-  consts : (int * 'a t) list; (** Integer cases *)
+  consts : (int * t) list; (** Integer cases *)
   numblocks : Ext_types.Int.Set.t; (** Number of tag block cases *)
-  blocks : (int * 'a t) list; (** Tag block cases *)
-  failaction : 'a t option; (** Action to take if none matched *)
+  blocks : (int * t) list; (** Tag block cases *)
+  failaction : t option; (** Action to take if none matched *)
 }

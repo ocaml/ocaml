@@ -24,7 +24,7 @@ type inlining_threshold =
    cost so as to fit under the given [inlining_threshold].  The [bonus] is
    added to the threshold before evaluation. *)
 val can_inline
-    : _ Flambda.t
+    : Flambda.t
   -> inlining_threshold
   -> bonus:int
   -> bool
@@ -38,7 +38,7 @@ val can_inline
    returned, with the constructor argument being the measured estimated size
    of the expression. *)
 val can_try_inlining
-    : _ Flambda.t
+    : Flambda.t
   -> inlining_threshold
   -> bonus:int
   -> inlining_threshold
@@ -59,7 +59,7 @@ module Benefit : sig
   val remove_prim : t -> t
   val remove_branch : t -> t
 
-  val remove_code : _ Flambda.t -> t -> t
+  val remove_code : Flambda.t -> t -> t
 
   val print : Format.formatter -> t -> unit
 end
@@ -71,8 +71,8 @@ module Whether_sufficient_benefit : sig
   type t
 
   val create
-     : original:_ Flambda.t
-    -> _ Flambda.t
+     : original:Flambda.t
+    -> Flambda.t
     -> Benefit.t
     -> probably_a_functor:bool
     -> t

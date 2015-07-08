@@ -45,16 +45,16 @@ val variables_bound_by_the_closure :
 
 (** If [can_be_merged f1 f2] is [true], it is safe to merge switch
     branches containing [f1] and [f2]. *)
-val can_be_merged : 'a Flambda.t -> 'a Flambda.t -> bool
+val can_be_merged : Flambda.t -> Flambda.t -> bool
 
-val data_at_toplevel_node : 'a Flambda.t -> 'a
+val data_at_toplevel_node : Flambda.t -> 'a
 
-val description_of_toplevel_node : 'a Flambda.t -> string
+val description_of_toplevel_node : Flambda.t -> string
 
 (** Sharing key *)
 (* CR mshinwell for pchambart: this needs a proper comment as discussed *)
 type sharing_key
-val make_key : 'a Flambda.t -> sharing_key option
+val make_key : Flambda.t -> sharing_key option
 
 (* Given an expression, freshen all variables within it, and form a function
    whose body is the resulting expression.  The variables specified by
@@ -63,22 +63,21 @@ val make_key : 'a Flambda.t -> sharing_key option
    free variables of [body]. *)
 val make_closure_declaration
    : id:Variable.t
-  -> body:Expr_id.t Flambda.t
+  -> body:Flambda.t
   -> params:Variable.t list
-  -> Expr_id.t Flambda.t
+  -> Flambda.t
 
 val toplevel_substitution
    : Variable.t Variable.Map.t
-  -> 'a Flambda.t
-  -> 'a Flambda.t
+  -> Flambda.t
+  -> Flambda.t
 
-(** [bind ?name [var1, expr1; ...; varN, exprN] body] binds using
+(** [bind [var1, expr1; ...; varN, exprN] body] binds using
     [Immutable] [Let] expressions the given [(var, expr)] pairs around the
-    body.  The optional name is used for creating [Expr_id.t] values. *)
+    body. *)
 val bind
-   : ?name:string
-  -> bindings:(Variable.t * Expr_id.t Flambda.named) list
-  -> body:Expr_id.t Flambda.t
-  -> Expr_id.t Flambda.t
+   : bindings:(Variable.t * Flambda.named) list
+  -> body:Flambda.t
+  -> Flambda.t
 
-val name_expr : Expr_id.t Flambda.named -> Expr_id.t Flambda.t
+val name_expr : Flambda.named -> Flambda.t

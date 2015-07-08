@@ -24,5 +24,5 @@
        and fact n unused = fact' n]
 *)
 val separate_unused_arguments_in_closures
-   : Expr_id.t Flambda.t
-  -> Expr_id.t Flambda.t
+   : Flambda.t
+  -> Flambda.t

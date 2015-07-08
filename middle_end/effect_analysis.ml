@@ -88,7 +88,7 @@ let no_effects_prim (prim : Lambda.primitive) =
   | Pbigstring_set_16 _ | Pbigstring_set_32 _ | Pbigstring_set_64 _ -> false
   | Psequand | Psequor -> false
 
-let rec no_effects (flam : _ Flambda.t) =
+let rec no_effects (flam : Flambda.t) =
   match flam with
   | Var _ -> true
   | Let (_, _, def, body, _) -> no_effects_named def && no_effects body
@@ -119,7 +119,7 @@ let rec no_effects (flam : _ Flambda.t) =
   | While _ | For _ | Apply _ | Send _ | Assign _ | Static_raise _ -> false
   | Unreachable _ -> true
 
-and no_effects_named (named : _ Flambda.named) =
+and no_effects_named (named : Flambda.named) =
   match named with
   | Symbol _ | Const _ | Set_of_closures _ | Project_closure _
   | Project_var _ | Move_within_set_of_closures _ -> true

@@ -133,7 +133,7 @@ let inline_non_recursive
 
 let for_call_site ~env ~r
       ~(clos : _ Flambda.function_declarations)
-      ~(lhs_of_application : _ Flambda.t)
+      ~(lhs_of_application : Flambda.t)
       ~fun_id
       ~(func : 'a Flambda.function_declaration)
       ~(closure : Simple_value_approx.value_set_of_closures)
@@ -147,7 +147,7 @@ let for_call_site ~env ~r
     Inlining_stats.record_decision ~closure_stack ~debuginfo:dbg
   in
   let args, approxs = args_with_approxs in
-  let no_transformation () : _ Flambda.t * R.t =
+  let no_transformation () : Flambda.t * R.t =
     Apply ({func = lhs_of_application; args; kind = Direct fun_id; dbg}, eid),
     R.set_approx r A.value_unknown
   in

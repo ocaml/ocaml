@@ -21,7 +21,7 @@ let every_used_identifier_is_bound flam =
   let test var env =
     if not (Variable.Set.mem var env) then raise (Counter_example_id var)
   in
-  let check env (flam : _ Flambda.t) =
+  let check env (flam : Flambda.t) =
     (* CR mshinwell: check this function carefully *)
     match flam with
     (* The non-trivial cases here are all the various types of expressions
@@ -45,7 +45,7 @@ let every_used_identifier_is_bound flam =
     | Try_with _ | If_then_else _ | Fsequence _ | While _ | For _ | Send _
     | Unreachable _ -> ()
   in
-  let rec loop env (flam : _ Flambda.t) =
+  let rec loop env (flam : Flambda.t) =
     match flam with
     (* Expressions that can bind [Variable.t]s: *)
     | Let(_,id,def,body,_) ->
@@ -119,7 +119,7 @@ let no_identifier_bound_multiple_times flam =
     then raise (Counter_example_id id)
     else bound := Variable.Set.add id !bound
   in
-  let f (flam : _ Flambda.t) =
+  let f (flam : Flambda.t) =
     match flam with
     | Let(_,id,_,_,_) ->
         add_and_check id
@@ -157,7 +157,7 @@ let every_bound_variable_is_from_current_compilation_unit flam =
     if not (Variable.in_compilation_unit current_compilation_unit id)
     then raise (Counter_example_id id)
   in
-  let f (flam : _ Flambda.t) =
+  let f (flam : Flambda.t) =
     match flam with
     | Let(_,id,_,_,_) ->
         check id
@@ -193,12 +193,12 @@ let no_assign_on_variable_of_kind_Immutable flam =
   let test var env =
     if not (Variable.Set.mem var env)
     then raise (Counter_example_id var) in
-  let check env (flam : _ Flambda.t) =
+  let check env (flam : Flambda.t) =
     match flam with
     | Assign(id,_,_) -> test id env
     | _ -> ()
   in
-  let rec loop env (flam : _ Flambda.t) =
+  let rec loop env (flam : Flambda.t) =
     match flam with
     | Let(Mutable,id,def,body,_) ->
         loop env def;
@@ -268,7 +268,7 @@ let declared_closure_id flam =
     then bound_multiple_times := Some var;
     bound := Closure_id.Set.add var !bound
   in
-  let f (flam : _ Flambda.t) =
+  let f (flam : Flambda.t) =
     match flam with
     | Set_of_closures ({function_decls},_) ->
         Variable.Map.iter (fun id _ ->
@@ -286,7 +286,7 @@ let no_closure_id_is_bound_multiple_times flam =
 
 let used_closure_id flam =
   let used = ref Closure_id.Set.empty in
-  let f (flam : _ Flambda.t) =
+  let f (flam : Flambda.t) =
     match flam with
     | Project_closure ({closure_id;}, _) ->
       used := Closure_id.Set.add closure_id !used;
@@ -306,7 +306,7 @@ let used_closure_id flam =
 
 let used_var_within_closure flam =
   let used = ref Var_within_closure.Set.empty in
-  let f (flam : _ Flambda.t) =
+  let f (flam : Flambda.t) =
     match flam with
     | Project_var ({ closure = _; closure_id = _; var },_) ->
       used := Var_within_closure.Set.add var !used
@@ -347,14 +347,14 @@ let every_used_var_within_closure_from_current_compilation_unit_is_declared
 exception Counter_example_se of Static_exception.t
 
 let every_static_exception_is_caught flam =
-  let check env (flam : _ Flambda.t) =
+  let check env (flam : Flambda.t) =
     match flam with 
     | Static_raise(exn,_,_) ->
         if not (Static_exception.Set.mem exn env)
         then raise (Counter_example_se exn)
     | _ -> ()
   in
-  let rec loop env (flam : _ Flambda.t) =
+  let rec loop env (flam : Flambda.t) =
     match flam with
     | Static_catch (i, _, body, handler,_) ->
         let env = Static_exception.Set.add i env in
@@ -373,7 +373,7 @@ let every_static_exception_is_caught flam =
 
 let every_static_exception_is_caught_at_a_single_position flam =
   let caught = ref Static_exception.Set.empty in
-  let f (flam : _ Flambda.t) =
+  let f (flam : Flambda.t) =
     match flam with
     | Static_catch (i, _, _body, _handler,_) ->
         if Static_exception.Set.mem i !caught
@@ -390,7 +390,7 @@ let every_static_exception_is_caught_at_a_single_position flam =
 exception Counter_example_prim of Lambda.primitive
 
 let no_access_to_global_module_identifiers flam =
-  let f (flam : _ Flambda.t) =
+  let f (flam : Flambda.t) =
     match flam with
     | Prim(Pgetglobalfield _ as p, _, _, _)
     | Prim(Psetglobalfield _ as p, _, _, _)

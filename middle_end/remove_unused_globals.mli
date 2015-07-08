@@ -13,4 +13,4 @@
 
 (** Eliminate assignments to global fields (Psetglobalfield (false, n)) by
     replacing them with "ignore" if the global is unused. *)
-val remove_unused_globals : Expr_id.t Flambda.t -> Expr_id.t Flambda.t
+val remove_unused_globals : Flambda.t -> Flambda.t

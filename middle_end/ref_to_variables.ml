@@ -24,7 +24,7 @@ let rename_var var =
 
 let directly_used_variables tree =
   let set = ref Variable.Set.empty in
-  let rec loop (flam : _ Flambda.t) =
+  let rec loop (flam : Flambda.t) =
     match flam with
     | Var (v, _) -> set := Variable.Set.add v !set
     | Prim(Pfield _, [Var _], _, _)
@@ -43,7 +43,7 @@ let directly_used_variables tree =
 
 let variables_containing_ref lam =
   let map = ref Variable.Map.empty in
-  let aux (flam : _ Flambda.t) =
+  let aux (flam : Flambda.t) =
     match flam with
     | Let(Immutable, v,
            Prim(Pmakeblock(0, Asttypes.Mutable), l, _, _), _, _) ->
@@ -73,7 +73,7 @@ let eliminate_ref lam =
     else Some (arr.(field), Array.length arr)
   in
 
-  let aux (flam : _ Flambda.t) : _ Flambda.t =
+  let aux (flam : Flambda.t) : Flambda.t =
     match flam with
     | Let(Immutable, v,
            Prim(Pmakeblock(0, Asttypes.Mutable), inits, _, _), body, _)
@@ -84,8 +84,8 @@ let eliminate_ref lam =
               | None -> assert false
               | Some (var, _) ->
                 field+1,
-                  ((Let(Mutable, var, init, body, Expr_id.create ()))
-                    : _ Flambda.t))
+                  ((Let(Mutable, var, init, body))
+                    : Flambda.t))
             (0,body) inits in
         expr
     | Prim(Pfield field, [Var (v,d)], _, _)

@@ -129,7 +129,7 @@ and value_closure = {
 }
 
 and value_set_of_closures = {
-  function_decls : Expr_id.t Flambda.function_declarations;
+  function_decls : Flambda.function_declarations;
   bound_vars : t Var_within_closure.Map.t;
   unchanging_params : Variable.Set.t;
   specialised_args : Variable.Set.t;
@@ -185,15 +185,11 @@ val const : Flambda.const -> t
 
 (** Take the given constant and produce an appropriate approximation for it
     together with an Flambda expression representing it. *)
-val make_const_int : int -> Expr_id.t -> Expr_id.t Flambda.t * t
-val make_const_ptr : int -> Expr_id.t -> Expr_id.t Flambda.t * t
-val make_const_bool : bool -> Expr_id.t -> Expr_id.t Flambda.t * t
-val make_const_float : float -> Expr_id.t -> Expr_id.t Flambda.t * t
-val make_const_boxed_int
-   : 'i boxed_int
-  -> 'i
-  -> Expr_id.t
-  -> Expr_id.t Flambda.t * t
+val make_const_int : int -> Flambda.t * t
+val make_const_ptr : int -> Flambda.t * t
+val make_const_bool : bool -> Flambda.t * t
+val make_const_float : float -> Flambda.t * t
+val make_const_boxed_int : 'i boxed_int -> 'i -> Flambda.t * t
 
 (** Augment an approximation with a given variable (see comment above).
     If the approximation was already augmented with a variable, the one
@@ -225,7 +221,7 @@ val is_certainly_immutable : t -> bool
 (** Given an expression and its approximation, attempt to simplify the
     expression to a constant (with associated approximation), taking into
     account whether the expression has any side effects. *)
-val simplify : t -> 'a Flambda.t -> 'a Flambda.t * t
+val simplify : t -> Flambda.t -> Flambda.t * t
 
 (** As for [simplify], but also enables us to simplify based on equalities
     between variables.  The caller must provide a function that tells us
@@ -234,8 +230,8 @@ val simplify : t -> 'a Flambda.t -> 'a Flambda.t * t
 val simplify_using_env
    : t
   -> is_present_in_env:(Variable.t -> bool)
-  -> Expr_id.t Flambda.t
-  -> Expr_id.t Flambda.t * t
+  -> Flambda.t
+  -> Flambda.t * t
 
 (** Given the approximation of a value, expected to correspond to a block
     (in the [Pmakeblock] sense of the word), and a field index then return

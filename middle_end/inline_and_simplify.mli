@@ -27,5 +27,5 @@
 val run
    : never_inline:bool
   -> backend:(module Backend_intf.S)
-  -> Expr_id.t Flambda.t
-  -> Expr_id.t Flambda.t
+  -> Flambda.t
+  -> Flambda.t

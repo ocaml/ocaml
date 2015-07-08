@@ -34,25 +34,7 @@ let variables_bound_by_the_closure cf
     (Variable.Set.diff func.free_variables params)
     functions
 
-let data_at_toplevel_node (expr : _ Flambda.t) =
-  match expr with
-  | Var (_,data)
-  | Let(_,_,_,_,data)
-  | Let_rec(_,_,data)
-  | Apply(_,data)
-  | Switch(_,_,data)
-  | String_switch(_,_,_,data)
-  | Send(_,_,_,_,_,data)
-  | Static_raise (_,_,data)
-  | Static_catch (_,_,_,_,data)
-  | Try_with(_,_,_,data)
-  | If_then_else(_,_,_,data)
-  | While(_,_,data)
-  | For(_,_,_,_,_,data)
-  | Assign(_,_,data)
-  | Unreachable data -> data
-
-let description_of_toplevel_node (expr : _ Flambda.t) =
+let description_of_toplevel_node (expr : Flambda.t) =
   match expr with
   | Var (id, _) -> Format.asprintf "var %a" Variable.print id
   | Apply _ -> "apply"
@@ -70,7 +52,7 @@ let description_of_toplevel_node (expr : _ Flambda.t) =
   | While _ -> "while"
   | For _ -> "for"
 
-let same (_l1 : 'a Flambda.t) (_l2 : 'a Flambda.t) = true
+let same (_l1 : Flambda.t) (_l2 : Flambda.t) = true
 (* XXX
   l1 == l2 || (* it is ok for string case: if they are physicaly the same,
                  it is the same original branch *)
@@ -211,7 +193,7 @@ let make_key _ = None
 let toplevel_substitution _sb tree = tree
 (* XXX
   let sb v = try Variable.Map.find v sb with Not_found -> v in
-  let aux (flam : _ Flambda.t) : _ Flambda.t =
+  let aux (flam : Flambda.t) : Flambda.t =
     match flam with
     | Var (id,e) -> Var (sb id,e)
     | Assign (id,e,d) -> Assign (sb id,e,d)
@@ -225,7 +207,7 @@ let toplevel_substitution _sb tree = tree
   Flambdaiter.map_toplevel aux tree
 *)
 
-let make_closure_declaration ~id ~body ~params : _ Flambda.t =
+let make_closure_declaration ~id ~body ~params : Flambda.t =
   let free_variables = Free_variables.calculate body in
   let param_set = Variable.Set.of_list params in
   if not (Variable.Set.subset param_set free_variables) then begin
@@ -268,35 +250,29 @@ let make_closure_declaration ~id ~body ~params : _ Flambda.t =
       specialised_args = Variable.Map.empty;
     }
   in
-  let project_closure : Expr_id.t Flambda.named =
-    Project_closure ({
+  let project_closure : Flambda.named =
+    Project_closure {
         set_of_closures = set_of_closures_var;
         closure_id = Closure_id.wrap id;
-      },
-      Expr_id.create ())
+      }
   in
   let project_closure_var =
     Variable.create "project_closure"
       ~current_compilation_unit:compilation_unit
   in
-  Let (Immutable, set_of_closures_var,
-    Set_of_closures (set_of_closures, Expr_id.create ()),
+  Let (Immutable, set_of_closures_var, Set_of_closures (set_of_closures),
     Let (Immutable, project_closure_var, project_closure,
-      Var (project_closure_var, Expr_id.create ()),
-      Expr_id.create ()),
-    Expr_id.create ())
+      Var (project_closure_var)))
 
-let bind ?name ~bindings ~body =
+let bind ~bindings ~body =
   List.fold_left (fun expr (var, var_def) ->
-      Flambda.Let (Immutable, var, var_def, expr, Expr_id.create ?name ()))
+      Flambda.Let (Immutable, var, var_def, expr))
     body bindings
 
-let name_expr (named : _ Flambda.named) : _ Flambda.t =
+let name_expr (named : Flambda.named) : Flambda.t =
   let var =
     Variable.create
       ~current_compilation_unit:(Compilation_unit.get_current_exn ())
       "named"
   in
-  let nid1 = Expr_id.create () in
-  let nid2 = Expr_id.create () in
-  Let (Immutable, var, named, Var (var, nid1), nid2)
+  Let (Immutable, var, named, Var var)

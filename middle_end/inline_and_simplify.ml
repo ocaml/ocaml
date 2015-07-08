@@ -105,12 +105,12 @@ let reference_recursive_function_directly env closure_id annot =
   let closure_id = Closure_id.unwrap closure_id in
   match E.find_opt env closure_id with
   | None -> None
-  | Some approx -> Some (Flambda.Var (closure_id, annot), approx)
+  | Some approx -> Some (Flambda.Var (closure_id), approx)
 
 (* Simplify an expression that takes a set of closures and projects an
    individual closure from it. *)
 let simplify_project_closure env r ~(project_closure : Flambda.project_closure)
-      ~annot : _ Flambda.t * R.t =
+      ~annot : Flambda.t * R.t =
   let set_of_closures_approx = E.find project_closure.set_of_closures env in
   match A.check_approx_for_set_of_closures set_of_closures_approx with
   | Wrong ->
@@ -120,7 +120,7 @@ let simplify_project_closure env r ~(project_closure : Flambda.project_closure)
     (* A set of closures coming from another compilation unit, whose .cmx is
        missing; as such, we cannot have rewritten the function and don't
        need to do any freshening. *)
-    Project_closure (project_closure, annot),
+    Project_closure (project_closure),
       ret r (A.value_unresolved symbol)
   | Ok (set_of_closures_var, value_set_of_closures) ->
     let closure_id =
@@ -134,7 +134,7 @@ let simplify_project_closure env r ~(project_closure : Flambda.project_closure)
         A.value_closure ?set_of_closures_var value_set_of_closures
           closure_id
       in
-      Project_closure ({ project_closure with closure_id; }, annot),
+      Project_closure ({ project_closure with closure_id; }),
         ret r approx
 
 (* Simplify an expression that, given one closure within some set of
@@ -142,7 +142,7 @@ let simplify_project_closure env r ~(project_closure : Flambda.project_closure)
    same set. *)
 let simplify_move_within_set_of_closures env r
       ~(move_within_set_of_closures : Flambda.move_within_set_of_closures)
-      ~annot : _ Flambda.t * R.t =
+      ~annot : Flambda.t * R.t =
   let closure_approx = E.find move_within_set_of_closures.closure env in
   match A.check_approx_for_closure closure_approx with
   | Wrong ->
@@ -164,7 +164,7 @@ let simplify_move_within_set_of_closures env r
         (* Moving from one closure to itself is a no-op.  We can return an
            [Var] since we already have a variable bound to the closure. *)
         let closure_var = move_within_set_of_closures.closure in
-        Var (closure_var, annot), ret r closure_approx
+        Var (closure_var), ret r closure_approx
       else
         match set_of_closures_var with
         | Some set_of_closures_var ->
@@ -179,7 +179,7 @@ let simplify_move_within_set_of_closures env r
           let approx =
             A.value_closure ~set_of_closures_var value_set_of_closures move_to
           in
-          Project_closure (project_closure, annot), ret r approx
+          Project_closure (project_closure), ret r approx
         | None ->
           (* The set of closures is not available in scope, and we have no
              other information by which to simplify the move. *)
@@ -187,7 +187,7 @@ let simplify_move_within_set_of_closures env r
             { move_within_set_of_closures with start_from; move_to; }
           in
           let approx = A.value_closure value_set_of_closures move_to in
-          Move_within_set_of_closures (move_within, annot), ret r approx
+          Move_within_set_of_closures (move_within), ret r approx
 
 (* Transform an expression denoting an access to a variable bound in
    a closure.  Variables in the closure ([project_var.closure]) may
@@ -237,7 +237,7 @@ let simplify_move_within_set_of_closures env r
    a way that the inline function can't propagate it.
 *)
 let rec simplify_project_var env r ~(project_var : Flambda.project_var)
-      ~annot : _ Flambda.t * R.t =
+      ~annot : Flambda.t * R.t =
   let approx = R.approx r in
   let closure = project_var.closure in
   match A.check_approx_for_closure_allowing_unresolved approx with
@@ -249,8 +249,8 @@ let rec simplify_project_var env r ~(project_var : Flambda.project_var)
     let closure_id' = F.apply_closure_id freshening closure_id in
     assert (Closure_id.equal closure_id closure_id');
     let approx = A.approx_for_bound_var value_set_of_closures var in
-    let expr : _ Flambda.t =
-      Project_var ({ closure; closure_id; var }, annot)
+    let expr : Flambda.t =
+      Project_var ({ closure; closure_id; var })
     in
     simplify_using_approx_and_env env r expr approx
   | Unresolved symbol ->
@@ -258,7 +258,7 @@ let rec simplify_project_var env r ~(project_var : Flambda.project_var)
        approximation, telling us that names within the closure couldn't
        have been renamed.  So we don't need to change the variable or
        closure ID in the [Project_var] expression. *)
-    Project_var ({ project_var with closure }, annot),
+    Project_var ({ project_var with closure }),
       ret r (A.value_unresolved symbol)
   | Wrong ->
     (* We must have the correct approximation of the value to ensure
@@ -269,9 +269,9 @@ let rec simplify_project_var env r ~(project_var : Flambda.project_var)
       Variable.print closure
       Simple_value_approx.print approx
 
-and sequence env r expr1 expr2 annot : _ Flambda.t =
+and sequence env r expr1 expr2 annot : Flambda.t =
   let expr =
-    Let (Immutable, new_var "seq", Expr expr1, expr2, annot)
+    Let (Immutable, new_var "seq", Expr expr1, expr2)
   in
   loop env r expr
 
@@ -283,28 +283,28 @@ and loop env r tree =
      exactly is happening here? *)
   f, ret r (Backend.really_import_approx (R.approx r))
 
-and loop_direct env r (tree : 'a Flambda.t) : 'a Flambda.t * R.t =
+and loop_direct env r (tree : Flambda.t) : Flambda.t * R.t =
   match tree with
   | Symbol (sym, _annot) ->
     let module Backend = (val (E.backend env) : Backend_intf.S) in
     simplify_using_approx r tree (Backend.import_symbol sym)
-  | Var (id, annot) ->
+  | Var (id) ->
     let id = Freshening.apply_variable (E.freshening env) id in
-    let tree : _ Flambda.t = Var (id, annot) in
+    let tree : Flambda.t = Var (id) in
     simplify_using_approx_and_env env r tree (E.find id env)
   | Const (cst, _) -> tree, ret r (A.const cst)
-  | Apply (apply, annot) ->
+  | Apply (apply) ->
     simplify_apply env r ~apply ~annot
-  | Set_of_closures (set_of_closures, annot) ->
+  | Set_of_closures (set_of_closures) ->
     simplify_set_of_closures env r set_of_closures annot
-  | Project_closure (project_closure, annot) ->
+  | Project_closure (project_closure) ->
     simplify_project_closure env r ~project_closure ~annot
-  | Project_var (project_var, annot) ->
+  | Project_var (project_var) ->
     simplify_project_var env r ~project_var ~annot
-  | Move_within_set_of_closures (move_within_set_of_closures, annot) ->
+  | Move_within_set_of_closures (move_within_set_of_closures) ->
     simplify_move_within_set_of_closures env r ~move_within_set_of_closures
       ~annot
-  | Let (str, id, lam, body, annot) ->
+  | Let (str, id, lam, body) ->
     (* The different cases for rewriting [Let] are, if the original code
        corresponds to [let id = lam in body],
        * [body] with [id] substituted by [lam] when possible (unused or
@@ -329,9 +329,9 @@ and loop_direct env r (tree : 'a Flambda.t) : 'a Flambda.t * R.t =
        the declaration. *)
     let r_body = R.set_used_variables r init_used_var in
     let body, r = loop body_env r_body body in
-    let (expr : _ Flambda.t), r =
+    let (expr : Flambda.t), r =
       if Variable.Set.mem id (R.used_variables r) then
-        Flambda.Let (str, id, lam, body, annot),
+        Flambda.Let (str, id, lam, body),
           (* if [lam] is kept, add its used variables *)
           R.set_used_variables r
             (Variable.Set.union def_used_var (R.used_variables r))
@@ -354,12 +354,12 @@ and loop_direct env r (tree : 'a Flambda.t) : 'a Flambda.t * R.t =
            intermediate language (in particular to make it more obvious that
            the variable is unused). *)
         let fresh_var = new_var "unused" in
-        Flambda.Let (fresh_var, lam, body, annot),
+        Flambda.Let (fresh_var, lam, body),
           R.set_used_variables r
             (Variable.Set.union def_used_var (R.used_variables r))
     in
     expr, R.exit_scope r id
-  | Let_rec (defs, body, annot) ->
+  | Let_rec (defs, body) ->
     let defs, sb = Freshening.add_variables (E.freshening env) defs in
     let env = E.set_freshening sb env in
     let def_env =
@@ -377,7 +377,7 @@ and loop_direct env r (tree : 'a Flambda.t) : 'a Flambda.t * R.t =
     in
     let body, r = loop body_env r body in
     let r = List.fold_left (fun r (id, _) -> R.exit_scope r id) r defs in
-    Let_rec (defs, body, annot), r
+    Let_rec (defs, body), r
   | Prim (Pgetglobal id, [], _dbg, _annot) ->
     let approx =
       if Ident.is_predef_exn id
@@ -396,24 +396,24 @@ and loop_direct env r (tree : 'a Flambda.t) : 'a Flambda.t * R.t =
         A.get_field (Backend.import_global id) ~field_index:i
     in
     simplify_using_approx r tree approx
-  | Prim (Psetglobalfield (_, i), [arg], _, _) ->
+  | Prim (Psetglobalfield (_, i), [arg], _) ->
     let approx = E.find arg env in
     let r = R.add_global r ~field_index:i ~approx in
     tree, ret r A.value_unknown
   | Prim (Pfield i, [arg], _, _) as expr ->
     let approx = A.get_field (E.find arg env) ~field_index:i in
     simplify_using_approx_and_env env r expr approx
-  | Prim ((Psetfield _ | Parraysetu _ | Parraysets _), block::_, dbg, _) ->
+  | Prim ((Psetfield _ | Parraysetu _ | Parraysets _), block::_, dbg) ->
     let block_approx = E.find block env in
     if A.is_certainly_immutable block_approx then begin
       Location.prerr_warning (Debuginfo.to_location dbg)
         Warnings.Assignment_on_non_mutable_value
     end;
     tree, ret r A.value_unknown
-  | Prim ((Psequand | Psequor), _, _, _) ->
+  | Prim ((Psequand | Psequor), _, _) ->
     Misc.fatal_error "Psequand and Psequor must be expanded (see handling in \
         closure_conversion.ml)"
-  | Prim (p, args, dbg, _) ->
+  | Prim (p, args, dbg) ->
     let approxs = E.find_list env args in
     let expr, approx, benefit =
       let module Backend = (val (E.backend env) : Backend_intf.S) in
@@ -422,12 +422,12 @@ and loop_direct env r (tree : 'a Flambda.t) : 'a Flambda.t * R.t =
     in
     let r = R.map_benefit r (B.(+) benefit) in
     expr, ret r approx
-  | Static_raise (i, args, annot) ->
+  | Static_raise (i, args) ->
     let i = Freshening.apply_static_exception (E.freshening env) i in
     let args, _, r = loop_list env r args in
     let r = R.use_staticfail r i in
-    Static_raise (i, args, annot), ret r A.value_bottom
-  | Static_catch (i, vars, body, handler, annot) ->
+    Static_raise (i, args), ret r A.value_bottom
+  | Static_catch (i, vars, body, handler) ->
     let i, sb = Freshening.add_static_exception (E.freshening env) i in
     let env = E.set_freshening sb env in
     let body, r = loop env r body in
@@ -435,7 +435,7 @@ and loop_direct env r (tree : 'a Flambda.t) : 'a Flambda.t * R.t =
       (* If the static exception is not used, we can drop the declaration *)
       body, r
     else begin
-      match (body : _ Flambda.t) with
+      match (body : Flambda.t) with
       | Static_raise (j, args, _) when
           Static_exception.equal i
             (Freshening.apply_static_exception (E.freshening env) j) ->
@@ -445,7 +445,7 @@ and loop_direct env r (tree : 'a Flambda.t) : 'a Flambda.t * R.t =
            all arguments where guaranteed to be variables. *)
         let handler =
           List.fold_left2 (fun body var arg ->
-              Flambda.Let (Immutable, var, arg, body, Expr_id.create ()))
+              Flambda.Let (Immutable, var, arg, body))
             handler vars args
         in
         let r = R.exit_scope_catch r i in
@@ -460,17 +460,17 @@ and loop_direct env r (tree : 'a Flambda.t) : 'a Flambda.t * R.t =
         let handler, r = loop env r handler in
         let r = List.fold_left R.exit_scope r vars in
         let r = R.exit_scope_catch r i in
-        Static_catch (i, vars, body, handler, annot), ret r A.value_unknown
+        Static_catch (i, vars, body, handler), ret r A.value_unknown
     end
-  | Try_with (body, id, handler, annot) ->
+  | Try_with (body, id, handler) ->
     let body, r = loop env r body in
     let id, sb = Freshening.add_variable (E.freshening env) id in
     let env = E.add_approx id A.value_unknown (E.set_freshening sb env) in
     let env = E.inside_branch env in
     let handler, r = loop env r handler in
     let r = R.exit_scope r id in
-    Try_with (body, id, handler, annot), ret r A.value_unknown
-  | If_then_else (arg, ifso, ifnot, annot) ->
+    Try_with (body, id, handler), ret r A.value_unknown
+  | If_then_else (arg, ifso, ifnot) ->
     (* When arg is the constant false or true (or something considered
        as true), we can drop the if and replace it by a sequence.
        if arg is not effectful we can also drop it. *)
@@ -492,20 +492,20 @@ and loop_direct env r (tree : 'a Flambda.t) : 'a Flambda.t * R.t =
       let ifso_approx = R.approx r in
       let ifnot, r = loop env r ifnot in
       let ifnot_approx = R.approx r in
-      If_then_else (arg, ifso, ifnot, annot),
+      If_then_else (arg, ifso, ifnot),
       ret r (A.meet ifso_approx ifnot_approx)
     end
-  | While (cond, body, annot) ->
+  | While (cond, body) ->
     let cond, r = loop env r cond in
     let env = E.inside_loop env in
     let body, r = loop env r body in
-    While (cond, body, annot), ret r A.value_unknown
-  | Send (kind, met, obj, args, dbg, annot) ->
+    While (cond, body), ret r A.value_unknown
+  | Send (kind, met, obj, args, dbg) ->
     let met, r = loop env r met in
     let obj, r = loop env r obj in
     let args, _, r = loop_list env r args in
-    Send (kind, met, obj, args, dbg, annot), ret r A.value_unknown
-  | For (id, lo, hi, dir, body, annot) ->
+    Send (kind, met, obj, args, dbg), ret r A.value_unknown
+  | For (id, lo, hi, dir, body) ->
     let lo, r = loop env r lo in
     let hi, r = loop env r hi in
     let id, sb = Freshening.add_variable (E.freshening env) id in
@@ -513,18 +513,18 @@ and loop_direct env r (tree : 'a Flambda.t) : 'a Flambda.t * R.t =
     let env = E.inside_loop env in
     let body, r = loop env r body in
     let r = R.exit_scope r id in
-    For (id, lo, hi, dir, body, annot), ret r A.value_unknown
-  | Assign (id, lam, annot) ->
+    For (id, lo, hi, dir, body), ret r A.value_unknown
+  | Assign (id, lam) ->
     let lam, r = loop env r lam in
     let id = Freshening.apply_variable (E.freshening env) id in
     let r = R.use_var r id in
-    Assign (id, lam, annot), ret r A.value_unknown
-  | Switch (arg, sw, annot) ->
+    Assign (id, lam), ret r A.value_unknown
+  | Switch (arg, sw) ->
     (* When arg is known to be a block with a fixed tag or a fixed integer,
        we can drop the switch and replace it by a sequence.
        if arg is not effectful we can also drop it. *)
     let arg, r = loop env r arg in
-    let get_failaction () : _ Flambda.t =
+    let get_failaction () : Flambda.t =
       (* If the switch is applied to a statically-known value that is
          outside of each match case:
          * if there is a default action take that case
@@ -538,7 +538,7 @@ and loop_direct env r (tree : 'a Flambda.t) : 'a Flambda.t * R.t =
                 | Float f -> ...]
        *)
       match sw.failaction with
-      | None -> Unreachable (Expr_id.create ())
+      | None -> Unreachable
       | Some f -> f
     in
     begin match (R.approx r).descr with
@@ -579,9 +579,9 @@ and loop_direct env r (tree : 'a Flambda.t) : 'a Flambda.t * R.t =
           Some l, R.set_approx r (A.meet (R.approx r) approx)
       in
       let sw = { sw with failaction; consts; blocks; } in
-      Switch (arg, sw, annot), r
+      Switch (arg, sw), r
     end
-  | String_switch (arg, sw, def, annot) ->
+  | String_switch (arg, sw, def) ->
     let arg, r = loop env r arg in
     let sw, r =
       List.fold_right (fun (str, lam) (sw, r) ->
@@ -597,7 +597,7 @@ and loop_direct env r (tree : 'a Flambda.t) : 'a Flambda.t * R.t =
         let def, r = loop env r def in
         Some def, r
     in
-    String_switch (arg, sw, def, annot), ret r A.value_unknown
+    String_switch (arg, sw, def), ret r A.value_unknown
   | Unreachable _ -> tree, ret r A.value_bottom
 
 and loop_list env r l = match l with
@@ -674,7 +674,7 @@ and loop_list env r l = match l with
 *)
 and simplify_set_of_closures original_env r
       (set_of_closures : _ Flambda.set_of_closures) annot
-      : _ Flambda.t * R.t =
+      : Flambda.t * R.t =
   let function_decls =
     let module Backend = (val (E.backend original_env) : Backend_intf.S) in
     (* CR mshinwell: Does this affect
@@ -740,8 +740,7 @@ and simplify_set_of_closures original_env r
   in
   let simplify_function fid (function_decl : _ Flambda.function_declaration)
         (funs, used_params, r)
-        : Expr_id.t Flambda.function_declaration Variable.Map.t
-            * Variable.Set.t * R.t =
+        : Flambda.function_declaration Variable.Map.t * Variable.Set.t * R.t =
     let closure_env =
       populate_closure_approximations ~function_decl ~free_vars
         ~parameter_approximations ~set_of_closures_env
@@ -794,7 +793,7 @@ and simplify_set_of_closures original_env r
       specialised_args;
     }
   in
-  Set_of_closures (set_of_closures, annot),
+  Set_of_closures (set_of_closures),
     ret r (A.value_set_of_closures value_set_of_closures)
 
 (* Transform an flambda function application based on information provided
@@ -810,12 +809,12 @@ and simplify_set_of_closures original_env r
    the function can be inlined.  (See [full_apply], below.)
 *)
 and simplify_apply env r ~(apply : _ Flambda.apply) ~annot
-      : _ Flambda.t * R.t =
+      : Flambda.t * R.t =
   let { Flambda. func; args; kind = _; dbg } = apply in
   let func_approx = Env.find func env in
   let args_approxs = List.map (fun arg -> E.find arg env) args in
-  let no_transformation () : _ Flambda.t * R.t =
-    Apply ({ func; args; kind = Indirect; dbg }, annot),
+  let no_transformation () : Flambda.t * R.t =
+    Apply ({ func; args; kind = Indirect; dbg }),
       ret r A.value_unknown
   in
   match A.check_approx_for_closure func_approx with
@@ -839,14 +838,12 @@ and simplify_apply env r ~(apply : _ Flambda.apply) ~annot
       let h_approxs, _q_approxs = Misc.split_at arity args_approxs in
       let expr, r =
         full_apply env r clos func closure_id func_decl value_set_of_closures
-          (h_args, h_approxs) dbg (Expr_id.create ())
+          (h_args, h_approxs) dbg
       in
       let func_var = fresh_variable ~name:"full_apply" in
-      let expr : _ Flambda.t =
+      let expr : Flambda.t =
         Let (Immutable, func_var, expr,
-          Apply ({ func = func_var; args = q_args; kind = Indirect; dbg },
-            annot),
-          Expr_id.create ())
+          Apply { func = func_var; args = q_args; kind = Indirect; dbg })
       in
       loop env r expr
     else if nargs > 0 && nargs < arity then
@@ -863,7 +860,7 @@ and full_apply env r clos lhs_of_application closure_id func closure
     ~simplify:loop
 
 and partial_apply funct fun_id (func : _ Flambda.function_declaration)
-      (args : Variable.t list) dbg : _ Flambda.t =
+      (args : Variable.t list) dbg : Flambda.t =
   let arity = Flambdautils.function_arity func in
   let remaining_args = arity - (List.length args) in
   assert (remaining_args > 0);
@@ -874,24 +871,24 @@ and partial_apply funct fun_id (func : _ Flambda.function_declaration)
       (fun arg id' -> id', arg) args param_sb in
   let funct_id = new_var "partial_called_fun" in
   let new_fun_id = new_var "partial_fun" in
-  let expr : _ Flambda.t =
+  let expr : Flambda.t =
     Apply ({
       func = funct_id;
       args = param_sb;
       kind = Direct fun_id;
       dbg;
-    }, Expr_id.create ())
+    })
   in
   let closures =
     Flambdautils.make_closure_declaration ~id:new_fun_id
       ~body:expr ~params:remaining_args
   in
   let with_args = List.fold_right (fun (id', arg) expr ->
-      Flambda.Let (Immutable, id', Var (arg, Expr_id.create ()),
-        expr, Expr_id.create ()))
+      Flambda.Let (Immutable, id', Var (arg),
+        expr))
     applied_args closures
   in
-  Let (Immutable, funct_id, funct, with_args, Expr_id.create ())
+  Let (Immutable, funct_id, funct, with_args)
 
 (* CR mshinwell for pchambart: Change to a "-dinlining-benefit" option? *)
 let debug_benefit =

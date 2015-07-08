@@ -11,7 +11,7 @@
 (*                                                                        *)
 (**************************************************************************)
 
-val flambda : Format.formatter -> _ Flambda.t -> unit
+val flambda : Format.formatter -> Flambda.t -> unit
 
 val function_declarations
    : Format.formatter

@@ -122,7 +122,7 @@ module NotConstants(P:Param) = struct
      It can be empty when no constraint can be added like in the toplevel
      expression or in the body of a function.
   *)
-  let rec mark_loop ~toplevel (curr : dep list) (flam : _ Flambda.t) =
+  let rec mark_loop ~toplevel (curr : dep list) (flam : Flambda.t) =
     match flam with
     | Let(str, var, lam, body, _) ->
       if str = Flambda.Mutable then mark_curr [Var var];
@@ -215,7 +215,7 @@ module NotConstants(P:Param) = struct
     | Unreachable _ ->
       mark_curr curr
 
-  and mark_named ~toplevel curr (named : _ Flambda.named) =
+  and mark_named ~toplevel curr (named : Flambda.named) =
     match named with
     | Set_of_closures (set_of_closures, _) ->
       mark_loop_set_of_closures ~toplevel curr set_of_closures

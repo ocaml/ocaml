@@ -12,4 +12,4 @@
 (**************************************************************************)
 
 (** Eliminate variables bound by a given closure that are not required. *)
-val remove_unused_closure_variables : 'a Flambda.t -> 'a Flambda.t
+val remove_unused_closure_variables : Flambda.t -> Flambda.t

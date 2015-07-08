@@ -51,7 +51,7 @@ and value_closure = {
 }
 
 and value_set_of_closures = {
-  function_decls : Expr_id.t Flambda.function_declarations;
+  function_decls : Flambda.function_declarations;
   bound_vars : t Var_within_closure.Map.t;
   unchanging_params : Variable.Set.t;
   specialised_args : Variable.Set.t;
@@ -149,20 +149,20 @@ let value_unresolved sym = approx (Value_unresolved sym)
 let value_string size contents = approx (Value_string {size; contents })
 let value_float_array size = approx (Value_float_array size)
 
-let make_const_int n eid : _ Flambda.t * t =
+let make_const_int n eid : Flambda.t * t =
   U.name_expr (Const(Const_base(Asttypes.Const_int n),eid)), value_int n
 
-let make_const_ptr n eid : _ Flambda.t * t =
+let make_const_ptr n eid : Flambda.t * t =
   U.name_expr (Const(Const_pointer n,eid)), value_constptr n
 
-let make_const_bool b eid : _ Flambda.t * t =
+let make_const_bool b eid : Flambda.t * t =
   make_const_ptr (if b then 1 else 0) eid
 
-let make_const_float f eid : _ Flambda.t * t =
+let make_const_float f eid : Flambda.t * t =
   U.name_expr (Const(Const_float f,eid)), value_float f
 
 let make_const_boxed_int (type bi) (t:bi boxed_int) (i:bi) eid
-      : _ Flambda.t * t =
+      : Flambda.t * t =
   let c : Asttypes.constant =
     match t with
     | Int32 -> Const_int32 i
@@ -188,7 +188,7 @@ let const (flam : Flambda.const) =
   | Const_float_array a -> value_float_array (List.length a)
   | Const_immstring s -> value_string (String.length s) (Some s)
 
-let simplify t (lam : _ Flambda.t) : _ Flambda.t * t =
+let simplify t (lam : Flambda.t) : Flambda.t * t =
   if Effect_analysis.no_effects lam then
     match t.descr with
     | Value_int n ->
@@ -209,7 +209,7 @@ let simplify t (lam : _ Flambda.t) : _ Flambda.t * t =
     lam, t
 
 let simplify_using_env t ~is_present_in_env lam =
-  let res : _ Flambda.t =
+  let res : Flambda.t =
     match t.var with
     | Some var when is_present_in_env var ->
       Var (var, Flambdautils.data_at_toplevel_node lam)

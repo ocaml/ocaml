@@ -63,12 +63,12 @@ val inline_by_copying_function_body
    : env:Inlining_env.t
   -> r:Inlining_result.t
   -> clos: _ Flambda.function_declarations
-  -> lfunc:Expr_id.t Flambda.t
+  -> lfunc:Flambda.t
   -> fun_id:Closure_id.t
-  -> func:Expr_id.t Flambda.function_declaration
+  -> func:Flambda.function_declaration
   -> args:Variable.t list
   -> simplify:Inlining_decision_intf.simplify
-  -> Expr_id.t Flambda.t * Inlining_result.t
+  -> Flambda.t * Inlining_result.t
 
 (** Inlining of recursive function(s) yields a copy of the functions'
     definitions (not just their bodies, unlike the non-recursive case) and
@@ -80,8 +80,8 @@ val inline_by_copying_function_body
 val inline_by_copying_function_declaration
    : env:Inlining_env.t
   -> r:Inlining_result.t
-  -> funct:Expr_id.t Flambda.t
-  -> function_decls:Expr_id.t Flambda.function_declarations
+  -> funct:Flambda.t
+  -> function_decls:Flambda.function_declarations
   -> closure_id:Closure_id.t
   -> function_decl:_ Flambda.function_declaration
   -> args_with_approxs: (Variable.t list) * (Simple_value_approx.t list)
@@ -89,4 +89,4 @@ val inline_by_copying_function_declaration
   -> specialised_args:Variable.Set.t
   -> dbg:Debuginfo.t
   -> simplify:Inlining_decision_intf.simplify
-  -> (Expr_id.t Flambda.t * Inlining_result.t) option
+  -> (Flambda.t * Inlining_result.t) option

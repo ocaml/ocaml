@@ -20,16 +20,15 @@
 val for_call_site
    : env:Inlining_env.t
   -> r:Inlining_result.t
-  -> clos:Expr_id.t Flambda.function_declarations
-  -> lhs_of_application:Expr_id.t Flambda.t
+  -> clos:Flambda.function_declarations
+  -> lhs_of_application:Flambda.t
   -> fun_id:Closure_id.t
-  -> func:Expr_id.t Flambda.function_declaration
+  -> func:Flambda.function_declaration
   -> closure:Simple_value_approx.value_set_of_closures
   -> args_with_approxs:(Variable.t list) * (Simple_value_approx.t list)
   -> dbg:Debuginfo.t
-  -> eid:Expr_id.t
   -> simplify:Inlining_decision_intf.simplify
-  -> Expr_id.t Flambda.t * Inlining_result.t
+  -> Flambda.t * Inlining_result.t
 
 (* When a function declaration is encountered in [Flambdainline], the body
    may be subject to inlining immediately, thus changing the declaration.

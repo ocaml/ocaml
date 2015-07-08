@@ -15,8 +15,6 @@ let rename_var var =
   Variable.rename var
     ~current_compilation_unit:(Compilation_unit.get_current_exn ())
 
-let nid () = Expr_id.create ()
-
 let remove_params unused (fun_decl: _ Flambda.function_declaration) =
   let unused_params, used_params =
     List.partition (fun v -> Variable.Set.mem v unused) fun_decl.params
@@ -27,9 +25,8 @@ let remove_params unused (fun_decl: _ Flambda.function_declaration) =
   let body = List.fold_left (fun body var ->
       Flambda.Let(Immutable,
            var,
-           Const(Const_pointer 0, nid ()),
-           body,
-           nid ()))
+           Const(Const_pointer 0),
+           body))
       fun_decl.body
       unused_params
   in
@@ -52,13 +49,13 @@ let make_stub unused var (fun_decl : _ Flambda.function_declaration) =
   in
   let kind = Flambda.Direct (Closure_id.wrap renamed) in
   let dbg = fun_decl.dbg in
-  let body : _ Flambda.t =
-    Apply(
-      { func = Var(renamed, nid ());
-        args;
-        kind;
-        dbg },
-      nid ())
+  let body : Flambda.t =
+    Apply {
+      func = renamed;
+      args;
+      kind;
+      dbg;
+    }
   in
   let free_variables =
     List.fold_left
@@ -132,7 +129,7 @@ let candidate_for_spliting_for_unused_arguments
   (not no_recursive_functions) || (number_of_non_stub_functions > 1)
 
 let separate_unused_arguments_in_closures tree =
-  let aux (expr : _ Flambda.t) : _ Flambda.t =
+  let aux (expr : Flambda.t) : Flambda.t =
     match expr with
     | Set_of_closures (set_of_closures, eid) -> begin
         if candidate_for_spliting_for_unused_arguments

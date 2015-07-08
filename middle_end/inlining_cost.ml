@@ -58,7 +58,7 @@ let seq_prim_size (prim : Lambda.seq_primitive) =
 
 let lambda_smaller' lam ~than:threshold =
   let size = ref 0 in
-  let rec lambda_size (lam : _ Flambda.t) =
+  let rec lambda_size (lam : Flambda.t) =
     if !size > threshold then raise Exit;
     match lam with
     | Var _ -> ()
@@ -181,7 +181,7 @@ module Benefit = struct
 
   let remove_code lam b =
     let b = ref b in
-    let f (flam : _ Flambda.t) =
+    let f (flam : Flambda.t) =
       match flam with
       | Set_of_closures _
       | Prim ((Pmakearray _ | Pmakeblock _ | Pduprecord _), _, _, _) ->

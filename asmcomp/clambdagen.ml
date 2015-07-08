@@ -20,7 +20,7 @@ type ('a,'b) declaration_position =
 
 let list_closures expr constants =
   let closures = ref Closure_id.Map.empty in
-  let aux (expr : _ Flambda.t) =
+  let aux (expr : Flambda.t) =
     match expr with
     | Set_of_closures ({ function_decls = functs; }, _) ->
         let add off_id _ map =
@@ -37,7 +37,7 @@ let list_closures expr constants =
 let reexported_offset extern_fun_offset_table extern_fv_offset_table expr constants =
   let set_fun = ref Closure_id.Set.empty in
   let set_fv = ref Var_within_closure.Set.empty in
-  let aux (expr : _ Flambda.t) =
+  let aux (expr : Flambda.t) =
     match expr with
     | Var_within_closure({var = env_var; closure_id = env_fun_id}, _) ->
         set_fun := Closure_id.Set.add env_fun_id !set_fun;
@@ -96,7 +96,7 @@ module Offsets(P:Param1) = struct
      closure *)
   let fv_offset_table = ref Var_within_closure.Map.empty
 
-  let rec iter (flam : _ Flambda.t) =
+  let rec iter (flam : Flambda.t) =
     match flam with
     | Set_of_closures({function_decls = funct; free_vars = fv}, _) ->
       iter_closure funct fv
@@ -263,7 +263,7 @@ module Conv(P:Param2) = struct
     id, { env with var = Variable.Map.add var id env.var }
 
   let rec conv ?(expected_symbol:Symbol.t option) (env : env)
-        (flam : _ Flambda.t) : Clambda.ulambda =
+        (flam : Flambda.t) : Clambda.ulambda =
     match flam with
     | Var (var,_) ->
         begin
@@ -348,7 +348,7 @@ module Conv(P:Param2) = struct
                    us_index_blocks = block_index;
                    us_actions_blocks = block_actions})
         in
-        let rec simple_expr (flam : _ Flambda.t) =
+        let rec simple_expr (flam : Flambda.t) =
           match flam with
           | Const( Const_base (Asttypes.Const_string _), _ ) -> false
           | Var _ | Symbol _ | Const _ -> true
@@ -368,7 +368,7 @@ module Conv(P:Param2) = struct
               failaction = Some (Flambda.Static_raise (exn, [], d));
             }
           in
-          let expr : _ Flambda.t =
+          let expr : Flambda.t =
             Static_catch(exn, [], Switch(arg, sw, d), failaction, d)
           in
           conv env expr

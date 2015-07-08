@@ -14,5 +14,5 @@
 (** Transform [let]-bound references into variables. *)
 
 val eliminate_ref
-   : Expr_id.t Flambda.t
-  -> Expr_id.t Flambda.t
+   : Flambda.t
+  -> Flambda.t

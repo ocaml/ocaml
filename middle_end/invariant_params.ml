@@ -179,7 +179,7 @@ let unchanging_params_in_recursion (decls : _ Flambda.function_declarations) =
     | exception Not_found -> 0
     | func -> Flambdautils.function_arity func
   in
-  let rec loop ~caller (expr : _ Flambda.t) =
+  let rec loop ~caller (expr : Flambda.t) =
     match expr with
     | Var (var,_) -> test_escape var
     | Apply ({ func = callee; args }, _) ->
@@ -196,7 +196,7 @@ let unchanging_params_in_recursion (decls : _ Flambda.function_declarations) =
         args
     | e ->
       Flambdaiter.apply_on_subexpressions (loop ~caller)
-        (fun (_ : _ Flambda.named) -> ()) e
+        (fun (_ : Flambda.named) -> ()) e
   in
   Variable.Map.iter (fun caller (decl : _ Flambda.function_declaration) ->
       loop ~caller decl.body)
@@ -255,7 +255,7 @@ let unused_arguments (decls : _ Flambda.function_declarations) : Variable.Set.t 
         (* Direct calls don't have overapplication *)
         Argument arr.(callee_pos)
   in
-  let rec loop (expr : _ Flambda.t) =
+  let rec loop (expr : Flambda.t) =
     (* XXX *)
     match expr with
     | Var (var,_) -> used_variable var
@@ -268,7 +268,7 @@ let unused_arguments (decls : _ Flambda.function_declarations) : Variable.Set.t 
         args
     | e ->
       Flambdaiter.apply_on_subexpressions loop
-        (fun (_ : _ Flambda.named) -> ()) e
+        (fun (_ : Flambda.named) -> ()) e
   in
   Variable.Map.iter (fun _caller (decl : _ Flambda.function_declaration) ->
       loop decl.body)

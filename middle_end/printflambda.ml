@@ -15,7 +15,7 @@
 let fprintf = Format.fprintf
 module Int = Ext_types.Int
 
-let rec lam ppf (flam : _ Flambda.t) =
+let rec lam ppf (flam : Flambda.t) =
   match flam with
   | Var (id,_) ->
       Variable.print ppf id
@@ -34,7 +34,7 @@ let rec lam ppf (flam : _ Flambda.t) =
   | Unreachable _ ->
       fprintf ppf "unreachable"
   | Let(_str, id, arg, body,_) ->
-      let rec letbody (ul : _ Flambda.t) =
+      let rec letbody (ul : Flambda.t) =
         match ul with
         | Let(str, id, arg, body,_) ->
             let str = match str with
@@ -127,7 +127,7 @@ let rec lam ppf (flam : _ Flambda.t) =
         Variable.print param lam lo
         (match dir with Asttypes.Upto -> "to" | Asttypes.Downto -> "downto")
         lam hi lam body
-and lam_named ppf (named : _ Flambda.named) =
+and lam_named ppf (named : Flambda.named) =
   match named with
   | Symbol (symbol,_) -> Symbol.print ppf symbol
   | Const (cst,_) -> const ppf cst

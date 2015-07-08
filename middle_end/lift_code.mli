@@ -11,7 +11,7 @@
 (*                                                                        *)
 (**************************************************************************)
 
-type lifter = Expr_id.t Flambda.t -> Expr_id.t Flambda.t
+type lifter = Flambda.t -> Flambda.t
 
 (** Lift [let] bindings to attempt to increase the length of scopes, as an
     aid to further optimizations.  For example:
@@ -29,8 +29,8 @@ val lift_lets : lifter
    the (possibly complex) expressions bound to those variables are
    evaluated. *)
 val lifting_helper
-   : Expr_id.t Flambda.t list
+   : Flambda.t list
   -> evaluation_order:[ `Left_to_right | `Right_to_left ]
-  -> create_body:(Variable.t list -> Expr_id.t Flambda.t)
+  -> create_body:(Variable.t list -> Flambda.t)
   -> name:string
-  -> Expr_id.t Flambda.t
+  -> Flambda.t

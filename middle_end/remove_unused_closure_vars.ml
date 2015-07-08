@@ -17,7 +17,7 @@ let remove_unused_closure_variables tree =
   let used_vars_within_closure, used_closure_ids =
     let used = ref Var_within_closure.Set.empty in
     let used_fun = ref Closure_id.Set.empty in
-    let aux (expr : _ Flambda.t) =
+    let aux (expr : Flambda.t) =
       match expr with
       | Project_closure ({ set_of_closures = _; closure_id }, _) ->
         used_fun := Closure_id.Set.add closure_id !used_fun
@@ -33,7 +33,7 @@ let remove_unused_closure_variables tree =
     Flambdaiter.iter aux tree;
     !used, !used_fun
   in
-  let aux (expr : _ Flambda.t) : _ Flambda.t =
+  let aux (expr : Flambda.t) : Flambda.t =
     match expr with
     | Set_of_closures ({ function_decls; free_vars; _ } as closure, eid) ->
       let all_free_vars =

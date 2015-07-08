@@ -17,4 +17,4 @@
    mshinwell: Where is the [Purity] module? *)
 (** Conservative approximation as to whether a given Flambda expression may
     have any side effects. *)
-val no_effects : _ Flambda.t -> bool
+val no_effects : Flambda.t -> bool
