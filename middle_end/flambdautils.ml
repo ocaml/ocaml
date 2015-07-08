@@ -36,12 +36,12 @@ let variables_bound_by_the_closure cf
 
 let description_of_toplevel_node (expr : Flambda.t) =
   match expr with
-  | Var (id, _) -> Format.asprintf "var %a" Variable.print id
+  | Var id -> Format.asprintf "var %a" Variable.print id
   | Apply _ -> "apply"
   | Assign _ -> "assign"
   | Send _ -> "send"
-  | Unreachable _ -> "unreachable"
-  | Let (_, id, _, _, _) -> Format.asprintf "let %a" Variable.print id
+  | Unreachable -> "unreachable"
+  | Let (_, id, _, _) -> Format.asprintf "let %a" Variable.print id
   | Let_rec _ -> "letrec"
   | If_then_else _ -> "if"
   | Switch _ -> "switch"

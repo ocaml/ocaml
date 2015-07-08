@@ -273,14 +273,14 @@ let add_debug_info (ev : Lambda.lambda_event) (flam : Flambda.t)
   match ev.lev_kind with
   | Lev_after _ ->
     begin match flam with
-    | Apply (ap, v) ->
-      Apply ({ ap with dbg = Debuginfo.from_call ev}, v)
+    | Apply ap ->
+      Apply { ap with dbg = Debuginfo.from_call ev}
 (* XXX resurrect this
     | Prim (p, args, _dinfo, v) ->
       Prim (p, args, Debuginfo.from_call ev, v)
 *)
-    | Send (kind, flam1, flam2, args, _dinfo, v) ->
-      Send (kind, flam1, flam2, args, Debuginfo.from_call ev, v)
+    | Send (kind, flam1, flam2, args, _dinfo) ->
+      Send (kind, flam1, flam2, args, Debuginfo.from_call ev)
 (*
     | Fsequence (flam1, flam2, v) ->
       Fsequence (flam1, add_debug_info ev flam2, v)
@@ -397,15 +397,14 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
                an [Project_closure] expression, which projects from the set of
                closures. *)
             (Let (Immutable, let_bound_var,
-              Project_closure ({
-                  set_of_closures = set_of_closures_var;
-                  closure_id = Closure_id.wrap closure_bound_var;
-                }),
-              body)) : Flambda.t)
+              Project_closure {
+                set_of_closures = set_of_closures_var;
+                closure_id = Closure_id.wrap closure_bound_var;
+              },
+              body) : Flambda.t))
           (close t env body) function_declarations
       in
-      Let (Immutable, set_of_closures_var, set_of_closures,
-        body)
+      Let (Immutable, set_of_closures_var, set_of_closures, body)
     | None ->
       (* If the condition above is not satisfied, we build an [Let_rec]
          expression; any functions bound by it will have their own
@@ -428,17 +427,13 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
     let arg1 = close t env arg1 in
     let arg2 = close t env arg2 in
     let const_true = fresh_variable ~name:"const_true" in
-    let name = "Psequand" in
-    Let (Immutable, const_true,
-      Const (Const_base (Const_int 1)),
+    Let (Immutable, const_true, Const (Const_base (Const_int 1)),
       If_then_else (arg1, Var (const_true), arg2))
   | Lprim (Psequand, [arg1; arg2]) ->
     let arg1 = close t env arg1 in
     let arg2 = close t env arg2 in
     let const_false = fresh_variable ~name:"const_true" in
-    let name = "Psequor" in
-    Let (Immutable, const_false,
-      Const (Const_base (Const_int 0)),
+    Let (Immutable, const_false, Const (Const_base (Const_int 0)),
       If_then_else (arg1, arg2, Var (const_false)))
   | Lprim ((Psequand | Psequor), _) ->
     Misc.fatal_error "Psequand / Psequor must have exactly two arguments"
@@ -639,7 +634,7 @@ and close_let_bound_expression t ?let_rec_ident let_bound_var env
   | lam ->
     match close t env lam with
     (* Remove unnecessary [let]s introduced by [U.name_expr], above. *)
-    | Let (Immutable, var1, named, Var (var2, _), _)
+    | Let (Immutable, var1, named, Var var2)
         when Variable.equal var1 var2 -> named
     | flam -> Expr flam
 

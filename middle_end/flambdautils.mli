@@ -47,8 +47,6 @@ val variables_bound_by_the_closure :
     branches containing [f1] and [f2]. *)
 val can_be_merged : Flambda.t -> Flambda.t -> bool
 
-val data_at_toplevel_node : Flambda.t -> 'a
-
 val description_of_toplevel_node : Flambda.t -> string
 
 (** Sharing key *)
