@@ -18,3 +18,5 @@
 (** Conservative approximation as to whether a given Flambda expression may
     have any side effects. *)
 val no_effects : Flambda.t -> bool
+
+val no_effects_named : Flambda.named -> bool

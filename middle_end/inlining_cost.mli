@@ -60,6 +60,7 @@ module Benefit : sig
   val remove_branch : t -> t
 
   val remove_code : Flambda.t -> t -> t
+  val remove_code_named : Flambda.named -> t -> t
 
   val print : Format.formatter -> t -> unit
 end

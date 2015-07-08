@@ -49,7 +49,11 @@ let apply_on_subexpressions f f_named (flam : Flambda.t) =
   | For (_,f1,f2,_,f3) ->
     f f1;f f2;f f3
 
-let iter_general ~toplevel f f_named t =
+type maybe_named =
+  | Expr of Flambda.t
+  | Named of Flambda.named
+
+let iter_general ~toplevel f f_named maybe_named =
   let rec aux (t : Flambda.t) =
     f t;
     match t with
@@ -97,11 +101,15 @@ let iter_general ~toplevel f f_named t =
       end
     | Expr flam -> aux flam
   and iter_list l = List.iter aux l in
-  aux t
+  match maybe_named with
+  | Expr expr -> aux expr
+  | Named named -> aux_named named
 
-let iter f f_named t = iter_general ~toplevel:false f f_named t
+let iter f f_named t = iter_general ~toplevel:false f f_named (Expr t)
 let iter_named f_named t = iter (fun (_ : Flambda.t) -> ()) f_named t
-let iter_toplevel f f_named t = iter_general ~toplevel:true f f_named t
+let iter_toplevel f f_named t = iter_general ~toplevel:true f f_named (Expr t)
+let iter_named_toplevel f f_named named =
+  iter_general ~toplevel:true f f_named (Named named)
 
 let iter_on_sets_of_closures f t =
   let aux_named (named : Flambda.named) =

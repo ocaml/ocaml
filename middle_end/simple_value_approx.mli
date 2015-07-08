@@ -218,10 +218,19 @@ val useful : t -> bool
 (* CR mshinwell: rename to [is_definitely_immutable] *)
 val is_certainly_immutable : t -> bool
 
+type simplification_summary =
+  | Nothing_done
+  | Replaced_term_by_variable of Variable.t
+  | Replaced_term_by_constant
+  | Replaced_term_by_symbol
+
+type simplification_result = Flambda.t * simplification_summary * t
+type simplification_result_named = Flambda.named * simplification_summary * t
+
 (** Given an expression and its approximation, attempt to simplify the
     expression to a constant (with associated approximation), taking into
     account whether the expression has any side effects. *)
-val simplify : t -> Flambda.t -> Flambda.t * t
+val simplify : t -> Flambda.t -> simplification_result
 
 (** As for [simplify], but also enables us to simplify based on equalities
     between variables.  The caller must provide a function that tells us
@@ -231,7 +240,15 @@ val simplify_using_env
    : t
   -> is_present_in_env:(Variable.t -> bool)
   -> Flambda.t
-  -> Flambda.t * t
+  -> simplification_result
+
+val simplify_named : t -> Flambda.named -> simplification_result_named
+
+val simplify_named_using_env
+   : t
+  -> is_present_in_env:(Variable.t -> bool)
+  -> Flambda.named
+  -> simplification_result_named
 
 (** Given the approximation of a value, expected to correspond to a block
     (in the [Pmakeblock] sense of the word), and a field index then return

@@ -175,29 +175,36 @@ module Benefit = struct
   let remove_prim t = { t with remove_prim = t.remove_prim + 1; }
   let remove_branch t = { t with remove_branch = t.remove_branch + 1; }
 
+  let remove_code_helper b (flam : Flambda.t) =
+    match flam with
+    | Assign _ -> b := remove_prim !b
+    | Switch _ | String_switch _ | Static_raise _ | Try_with _
+    | If_then_else _ | While _ | For _ -> b := remove_branch !b
+    | Apply _ | Send _ -> b := remove_call !b
+    | Let _ | Let_rec _ | Proved_unreachable | Var _ | Static_catch _ -> ()
+
+  let remove_code_helper_named b (named : Flambda.named) =
+    match named with
+    | Set_of_closures _
+    | Prim ((Pmakearray _ | Pmakeblock _ | Pduprecord _), _, _) ->
+      b := remove_alloc !b
+      (* CR pchambart: should we consider that boxed integer and float
+         operations are allocations ? *)
+      (* CR mshinwell for pchambart: check closure cases carefully *)
+    | Prim _ | Project_closure _ | Project_var _
+    | Move_within_set_of_closures _ -> b := remove_prim !b
+    | Symbol _ | Const _ | Expr _ -> ()
+
   let remove_code lam b =
     let b = ref b in
-    let f (flam : Flambda.t) =
-      match flam with
-      | Assign _ -> b := remove_prim !b
-      | Switch _ | String_switch _ | Static_raise _ | Try_with _
-      | If_then_else _ | While _ | For _ -> b := remove_branch !b
-      | Apply _ | Send _ -> b := remove_call !b
-      | Let _ | Let_rec _ | Proved_unreachable | Var _ | Static_catch _ -> ()
-    in
-    let f_named (named : Flambda.named) =
-      match named with
-      | Set_of_closures _
-      | Prim ((Pmakearray _ | Pmakeblock _ | Pduprecord _), _, _) ->
-        b := remove_alloc !b
-        (* CR pchambart: should we consider that boxed integer and float
-           operations are allocations ? *)
-        (* CR mshinwell for pchambart: check closure cases carefully *)
-      | Prim _ | Project_closure _ | Project_var _
-      | Move_within_set_of_closures _ -> b := remove_prim !b
-      | Symbol _ | Const _ | Expr _ -> ()
-    in
-    Flambdaiter.iter_toplevel f f_named lam;
+    Flambdaiter.iter_toplevel (remove_code_helper b)
+      (remove_code_helper_named b) lam;
+    !b
+
+  let remove_code_named lam b =
+    let b = ref b in
+    Flambdaiter.iter_named_toplevel (remove_code_helper b)
+      (remove_code_helper_named b) lam;
     !b
 
   let print ppf b =

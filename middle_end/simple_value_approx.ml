@@ -149,26 +149,34 @@ let value_unresolved sym = approx (Value_unresolved sym)
 let value_string size contents = approx (Value_string {size; contents })
 let value_float_array size = approx (Value_float_array size)
 
-let make_const_int n : Flambda.t * t =
-  U.name_expr (Const (Const_base (Asttypes.Const_int n))), value_int n
+let name_expr_fst (named, thing) = (Flambdautils.name_expr named), thing
 
-let make_const_ptr n : Flambda.t * t =
-  U.name_expr (Const (Const_pointer n)), value_constptr n
+let make_const_int_named n : Flambda.named * t =
+  Const (Const_base (Asttypes.Const_int n)), value_int n
+let make_const_int n = name_expr_fst (make_const_int_named n)
 
-let make_const_bool b : Flambda.t * t =
-  make_const_ptr (if b then 1 else 0)
+let make_const_ptr_named n : Flambda.named * t =
+  Const (Const_pointer n), value_constptr n
+let make_const_ptr n = name_expr_fst (make_const_ptr_named n)
 
-let make_const_float f : Flambda.t * t =
-  U.name_expr (Const (Const_float f)), value_float f
+let make_const_bool_named b : Flambda.named * t =
+  make_const_ptr_named (if b then 1 else 0)
+let make_const_bool b = name_expr_fst (make_const_bool_named b)
 
-let make_const_boxed_int (type bi) (t:bi boxed_int) (i:bi) : Flambda.t * t =
+let make_const_float_named f : Flambda.named * t =
+  Const (Const_float f), value_float f
+let make_const_float f = name_expr_fst (make_const_float_named f)
+
+let make_const_boxed_int_named (type bi) (t:bi boxed_int) (i:bi)
+      : Flambda.named * t =
   let c : Asttypes.constant =
     match t with
     | Int32 -> Const_int32 i
     | Int64 -> Const_int64 i
     | Nativeint -> Const_nativeint i
   in
-  U.name_expr (Const (Const_base c)), value_boxed_int t i
+  Const (Const_base c), value_boxed_int t i
+let make_const_boxed_int t i = name_expr_fst (make_const_boxed_int_named t i)
 
 let const (flam : Flambda.const) =
   match flam with
@@ -187,20 +195,68 @@ let const (flam : Flambda.const) =
   | Const_float_array a -> value_float_array (List.length a)
   | Const_immstring s -> value_string (String.length s) (Some s)
 
-let simplify t (lam : Flambda.t) : Flambda.t * t =
+type simplification_summary =
+  | Nothing_done
+  | Replaced_term_by_variable of Variable.t
+  | Replaced_term_by_constant
+  | Replaced_term_by_symbol
+
+type simplification_result = Flambda.t * simplification_summary * t
+type simplification_result_named = Flambda.named * simplification_summary * t
+
+let simplify t (lam : Flambda.t) : simplification_result =
   if Effect_analysis.no_effects lam then
     match t.descr with
-    | Value_int n -> make_const_int n
-    | Value_constptr n -> make_const_ptr n
-    | Value_float f -> make_const_float f
-    | Value_boxed_int (t, i) -> make_const_boxed_int t i
-    | Value_symbol sym -> U.name_expr (Symbol sym), t
+    | Value_int n ->
+      let const, approx = make_const_int n in
+      const, Replaced_term_by_constant, approx
+    | Value_constptr n ->
+      let const, approx = make_const_ptr n in
+      const, Replaced_term_by_constant, approx
+    | Value_float f ->
+      let const, approx = make_const_float f in
+      const, Replaced_term_by_constant, approx
+    | Value_boxed_int (t, i) ->
+      let const, approx = make_const_boxed_int t i in
+      const, Replaced_term_by_constant, approx
+    | Value_symbol sym ->
+      U.name_expr (Symbol sym), Replaced_term_by_symbol, t
     | Value_string _ | Value_float_array _
     | Value_block _ | Value_set_of_closures _ | Value_closure _
     | Value_unknown | Value_bottom | Value_extern _ | Value_unresolved _ ->
-      lam, t
+      lam, Nothing_done, t
   else
-    lam, t
+    lam, Nothing_done, t
+
+let simplify_named t (named : Flambda.named) : simplification_result_named =
+  match named with
+  | Expr expr ->
+    (* CR mshinwell: maybe some of this could do with improvement. *)
+    let expr, summary, approx = simplify t expr in
+    Expr expr, summary, approx
+  | _ ->
+    if Effect_analysis.no_effects_named named then
+      match t.descr with
+      | Value_int n ->
+        let const, approx = make_const_int_named n in
+        const, Replaced_term_by_constant, approx
+      | Value_constptr n ->
+        let const, approx = make_const_ptr_named n in
+        const, Replaced_term_by_constant, approx
+      | Value_float f ->
+        let const, approx = make_const_float_named f in
+        const, Replaced_term_by_constant, approx
+      | Value_boxed_int (t, i) ->
+        let const, approx = make_const_boxed_int_named t i in
+        const, Replaced_term_by_constant, approx
+      | Value_symbol sym ->
+        Symbol sym, Replaced_term_by_symbol, t
+      | Value_string _ | Value_float_array _
+      | Value_block _ | Value_set_of_closures _ | Value_closure _
+      | Value_unknown | Value_bottom | Value_extern _ | Value_unresolved _ ->
+        named, Nothing_done, t
+    else
+      named, Nothing_done, t
 
 let simplify_using_env t ~is_present_in_env lam =
   let res : Flambda.t =
@@ -212,6 +268,17 @@ let simplify_using_env t ~is_present_in_env lam =
       | None -> lam
   in
   simplify t res
+
+let simplify_named_using_env t ~is_present_in_env named =
+  let named : Flambda.named =
+    match t.var with
+    | Some var when is_present_in_env var -> Expr (Var var)
+    | _ ->
+      match t.symbol with
+      | Some sym -> Symbol sym
+      | None -> named
+  in
+  simplify_named t named
 
 let known t =
   match t.descr with

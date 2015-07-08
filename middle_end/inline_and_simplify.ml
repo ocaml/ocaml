@@ -50,22 +50,41 @@ module R = Inlining_result
 
 let ret = R.set_approx
 
-let simplify_using_approx r lam approx =
-  let lam, approx = A.simplify approx lam in
+let simplify_named_using_approx r lam approx =
+  let lam, _summary, approx = A.simplify_named approx lam in
   lam, R.set_approx r approx
 
 let simplify_using_approx_and_env env r original_lam approx =
-  let lam, approx =
+  let lam, summary, approx =
     A.simplify_using_env approx ~is_present_in_env:(E.present env) original_lam
   in
   let r =
     let r = ret r approx in
-    match lam with
-    | Var var -> R.map_benefit (R.use_var r var) (B.remove_code original_lam)
-    | Const _ -> R.map_benefit r (B.remove_code original_lam)
-    | _ -> r
+    match summary with
+    | Replaced_term_by_variable var ->
+      R.map_benefit (R.use_var r var) (B.remove_code original_lam)
+    | Replaced_term_by_constant -> R.map_benefit r (B.remove_code original_lam)
+    | Replaced_term_by_symbol (* CR mshinwell: should we do something here? *)
+    | Nothing_done -> r
   in
   lam, r
+
+let simplify_named_using_approx_and_env env r original_named approx =
+  let named, summary, approx =
+    A.simplify_named_using_env approx ~is_present_in_env:(E.present env)
+      original_named
+  in
+  let r =
+    let r = ret r approx in
+    match summary with
+    | Replaced_term_by_variable var ->
+      R.map_benefit (R.use_var r var) (B.remove_code_named original_named)
+    | Replaced_term_by_constant ->
+      R.map_benefit r (B.remove_code_named original_named)
+    | Replaced_term_by_symbol
+    | Nothing_done -> r
+  in
+  named, r
 
 (* This adds only the minimal set of approximations to the closures.
    It is not strictly necessary to have this restriction, but it helps
@@ -99,12 +118,12 @@ let reference_recursive_function_directly env closure_id =
   let closure_id = Closure_id.unwrap closure_id in
   match E.find_opt env closure_id with
   | None -> None
-  | Some approx -> Some (Flambda.Var (closure_id), approx)
+  | Some approx -> Some (Flambda.Expr (Var closure_id), approx)
 
 (* Simplify an expression that takes a set of closures and projects an
    individual closure from it. *)
 let simplify_project_closure env r ~(project_closure : Flambda.project_closure)
-      : Flambda.t * R.t =
+      : Flambda.named * R.t =
   let set_of_closures_approx = E.find project_closure.set_of_closures env in
   match A.check_approx_for_set_of_closures set_of_closures_approx with
   | Wrong ->
@@ -134,7 +153,7 @@ let simplify_project_closure env r ~(project_closure : Flambda.project_closure)
    same set. *)
 let simplify_move_within_set_of_closures env r
       ~(move_within_set_of_closures : Flambda.move_within_set_of_closures)
-      : Flambda.t * R.t =
+      : Flambda.named * R.t =
   let closure_approx = E.find move_within_set_of_closures.closure env in
   match A.check_approx_for_closure closure_approx with
   | Wrong ->
@@ -241,7 +260,7 @@ let rec simplify_project_var env r ~(project_var : Flambda.project_var)
     assert (Closure_id.equal closure_id closure_id');
     let approx = A.approx_for_bound_var value_set_of_closures var in
     let expr : Flambda.t = Project_var { closure; closure_id; var; } in
-    simplify_using_approx_and_env env r expr approx
+    simplify_named_using_approx_and_env env r expr approx
   | Unresolved symbol ->
     (* This value comes from a symbol for which we couldn't find any
        approximation, telling us that names within the closure couldn't
@@ -271,11 +290,11 @@ and loop env r tree =
      exactly is happening here? *)
   f, ret r (Backend.really_import_approx (R.approx r))
 
-and loop_named env r (named : Flambda.named) : Flambda.named * R.t =
-  match named with
+and loop_named env r (tree : Flambda.named) : Flambda.named * R.t =
+  match tree with
   | Symbol sym ->
     let module Backend = (val (E.backend env) : Backend_intf.S) in
-    simplify_using_approx r tree (Backend.import_symbol sym)
+    simplify_named_using_approx r tree (Backend.import_symbol sym)
   | Const cst -> tree, ret r (A.const cst)
   | Set_of_closures set_of_closures ->
     simplify_set_of_closures env r set_of_closures
@@ -300,14 +319,14 @@ and loop_named env r (named : Flambda.named) : Flambda.named * R.t =
         let module Backend = (val (E.backend env) : Backend_intf.S) in
         A.get_field (Backend.import_global id) ~field_index:i
     in
-    simplify_using_approx r tree approx
+    simplify_named_using_approx r tree approx
   | Prim (Psetglobalfield (_, i), [arg], _) ->
     let approx = E.find arg env in
     let r = R.add_global r ~field_index:i ~approx in
     tree, ret r A.value_unknown
   | Prim (Pfield i, [arg], _, _) as expr ->
     let approx = A.get_field (E.find arg env) ~field_index:i in
-    simplify_using_approx_and_env env r expr approx
+    simplify_named_using_approx_and_env env r expr approx
   | Prim ((Psetfield _ | Parraysetu _ | Parraysets _), block::_, dbg) ->
     let block_approx = E.find block env in
     if A.is_certainly_immutable block_approx then begin
@@ -332,8 +351,7 @@ and loop_direct env r (tree : Flambda.t) : Flambda.t * R.t =
   match tree with
   | Var var ->
     let var = Freshening.apply_variable (E.freshening env) var in
-    let tree : Flambda.t = Var var in
-    simplify_using_approx_and_env env r tree (E.find var env)
+    simplify_using_approx_and_env env r (Fvar var) (E.find var env)
   | Apply apply -> simplify_apply env r ~apply
   | Let (str, id, lam, body) ->
     (* The different cases for rewriting [Let] are, if the original code
