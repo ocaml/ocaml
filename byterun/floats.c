@@ -26,11 +26,13 @@
 #include "caml/reverse.h"
 #include "caml/stacks.h"
 
-#ifdef _MSC_VER
-#include <float.h>
-#define isnan _isnan
-#define isfinite _finite
-#endif
+#if defined (_MSC_VER)
+#  include <float.h>
+#  if(MSC_VER < 1900)
+#    define isnan _isnan
+#    define isfinite _finite
+#  endif/*(MSC_VER <= 1900)*/
+#endif /*defined(_MSC_VER)*/
 
 #ifdef ARCH_ALIGN_DOUBLE
 
