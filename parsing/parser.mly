@@ -1852,9 +1852,9 @@ sig_exception_declaration:
 generalized_constructor_arguments:
     /*empty*/                     { (Pcstr_tuple [],None) }
   | OF constructor_arguments      { ($2,None) }
-  | COLON constructor_arguments MINUSGREATER simple_core_type_no_attr
+  | COLON constructor_arguments MINUSGREATER simple_core_type
                                   { ($2,Some $4) }
-  | COLON simple_core_type_no_attr
+  | COLON simple_core_type
                                   { (Pcstr_tuple [],Some $2) }
 ;
 
@@ -2029,13 +2029,6 @@ simple_core_type:
       { match $2 with [sty] -> sty | _ -> raise Parse_error }
 ;
 
-simple_core_type_no_attr:
-    simple_core_type2  %prec below_SHARP
-      { $1 }
-  | LPAREN core_type_comma_list RPAREN %prec below_SHARP
-      { match $2 with [sty] -> sty | _ -> raise Parse_error }
-;
-
 simple_core_type2:
     QUOTE ident
       { mktyp(Ptyp_var $2) }
@@ -2123,9 +2116,9 @@ simple_core_type_or_tuple:
       { mktyp(Ptyp_tuple($1 :: List.rev $3)) }
 ;
 simple_core_type_or_tuple_no_attr:
-    simple_core_type_no_attr
+    simple_core_type
       { $1 }
-  | simple_core_type_no_attr STAR core_type_list_no_attr
+  | simple_core_type STAR core_type_list_no_attr
       { mktyp(Ptyp_tuple($1 :: List.rev $3)) }
 ;
 core_type_comma_list:
@@ -2137,8 +2130,8 @@ core_type_list:
   | core_type_list STAR simple_core_type        { $3 :: $1 }
 ;
 core_type_list_no_attr:
-    simple_core_type_no_attr                     { [$1] }
-  | core_type_list STAR simple_core_type_no_attr { $3 :: $1 }
+    simple_core_type                     { [$1] }
+  | core_type_list STAR simple_core_type { $3 :: $1 }
 ;
 meth_list:
     field SEMI meth_list                     { let (f, c) = $3 in ($1 :: f, c) }
