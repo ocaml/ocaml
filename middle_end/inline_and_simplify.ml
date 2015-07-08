@@ -65,10 +65,8 @@ let simplify_using_approx_and_env env r original_lam approx =
   let r =
     let r = ret r approx in
     match lam with
-    | Var (var, _) ->
-      R.map_benefit (R.use_var r var) (B.remove_code original_lam)
-    | Const _ ->
-      R.map_benefit r (B.remove_code original_lam)
+    | Var var -> R.map_benefit (R.use_var r var) (B.remove_code original_lam)
+    | Const _ -> R.map_benefit r (B.remove_code original_lam)
     | _ -> r
   in
   lam, r
