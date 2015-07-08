@@ -17,7 +17,7 @@ module I = Simplify_boxed_integer_ops
 module S = Simplify_common
 
 let primitive (p : Lambda.primitive) (args, approxs) expr dbg ~size_int
-      ~big_endian : Flambda.t * A.t * Inlining_cost.Benefit.t =
+      ~big_endian : Flambda.named * A.t * Inlining_cost.Benefit.t =
   let fpc = !Clflags.float_const_prop in
   match p with
   | Pmakeblock(tag, Asttypes.Immutable) ->
@@ -26,7 +26,7 @@ let primitive (p : Lambda.primitive) (args, approxs) expr dbg ~size_int
   | Pignore -> begin
       match args, A.descrs approxs with
       | [arg], [(Value_int 0 | Value_constptr 0)] ->
-        S.const_ptr_expr (Flambda.Var (arg)) 0
+        S.const_ptr_expr (Flambda.Expr (Var arg)) 0
       | _ -> S.const_ptr_expr expr 0
     end
   | _ ->
@@ -130,15 +130,13 @@ let primitive (p : Lambda.primitive) (args, approxs) expr dbg ~size_int
        (Value_int x | Value_constptr x)] when x >= 0 && x < size ->
         begin match p with
         | Pstringrefu
-        | Pstringrefs ->
-            S.const_char_expr expr s.[x]
+        | Pstringrefs -> S.const_char_expr expr s.[x]
         | _ -> expr, A.value_unknown, C.Benefit.zero
         end
     | [Value_string { size; contents = None };
        (Value_int x | Value_constptr x)]
       when x >= 0 && x < size && p = Lambda.Pstringrefs ->
-        let named = Flambda.Prim (Pstringrefu, args, dbg) in
-        Flambdautils.name_expr named,
+        Flambda.Prim (Pstringrefu, args, dbg),
           A.value_unknown,
           (* we improved it, but there is no way to account for that: *)
           C.Benefit.zero

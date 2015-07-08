@@ -23,46 +23,46 @@
 *)
 
 val const_int_expr
-   : Flambda.t
+   : Flambda.named
   -> int
-  -> Flambda.t * Simple_value_approx.t * Inlining_cost.Benefit.t
+  -> Flambda.named * Simple_value_approx.t * Inlining_cost.Benefit.t
 
 val const_char_expr
-   : Flambda.t
+   : Flambda.named
   -> char
-  -> Flambda.t * Simple_value_approx.t * Inlining_cost.Benefit.t
+  -> Flambda.named * Simple_value_approx.t * Inlining_cost.Benefit.t
 
 val const_bool_expr
-   : Flambda.t
+   : Flambda.named
   -> bool
-  -> Flambda.t * Simple_value_approx.t * Inlining_cost.Benefit.t
+  -> Flambda.named * Simple_value_approx.t * Inlining_cost.Benefit.t
 
 val const_ptr_expr
-   : Flambda.t
+   : Flambda.named
   -> int
-  -> Flambda.t * Simple_value_approx.t * Inlining_cost.Benefit.t
+  -> Flambda.named * Simple_value_approx.t * Inlining_cost.Benefit.t
 
 val const_float_expr
-   : Flambda.t
+   : Flambda.named
   -> float
-  -> Flambda.t * Simple_value_approx.t * Inlining_cost.Benefit.t
+  -> Flambda.named * Simple_value_approx.t * Inlining_cost.Benefit.t
 
 val const_boxed_int_expr
-   : Flambda.t
+   : Flambda.named
   -> 'a Simple_value_approx.boxed_int
   -> 'a
-  -> Flambda.t * Simple_value_approx.t * Inlining_cost.Benefit.t
+  -> Flambda.named * Simple_value_approx.t * Inlining_cost.Benefit.t
 
 (* CR mshinwell: This function is horrible, it uses polymorphic comparisons
    (including on floats).  Apart from fixing it, we should also take care to
    document exactly which floating-point comparison semantics is being
    used. *)
 val const_comparison_expr
-   : Flambda.t
+   : Flambda.named
   -> Lambda.comparison
   -> 'a
   -> 'a
-  -> Flambda.t * Simple_value_approx.t * Inlining_cost.Benefit.t
+  -> Flambda.named * Simple_value_approx.t * Inlining_cost.Benefit.t
 
 (** Functions for transposing the order of bytes within words of various
     sizes. *)

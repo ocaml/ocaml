@@ -21,31 +21,31 @@ external swapnative : nativeint -> nativeint = "%bswap_native"
 
 (* CR mshinwell: rename [eid] and/or [annot] to be consistent *)
 let const_int_expr expr n =
-  if Effect_analysis.no_effects expr then
-    let (new_expr, approx) = A.make_const_int n in
-    new_expr, approx, C.Benefit.remove_code expr C.Benefit.zero
+  if Effect_analysis.no_effects_named expr then
+    let (new_expr, approx) = A.make_const_int_named n in
+    new_expr, approx, C.Benefit.remove_code_named expr C.Benefit.zero
   else expr, A.value_int n, C.Benefit.zero
 let const_char_expr expr c =
-  if Effect_analysis.no_effects expr then
-    let (new_expr, approx) = A.make_const_int (Char.code c) in
-    new_expr, approx, C.Benefit.remove_code expr C.Benefit.zero
+  if Effect_analysis.no_effects_named expr then
+    let (new_expr, approx) = A.make_const_int_named (Char.code c) in
+    new_expr, approx, C.Benefit.remove_code_named expr C.Benefit.zero
   else expr, A.value_int (Char.code c), C.Benefit.zero
 let const_ptr_expr expr n =
-  if Effect_analysis.no_effects expr then
-    let (new_expr, approx) = A.make_const_ptr n in
-    new_expr, approx, C.Benefit.remove_code expr C.Benefit.zero
+  if Effect_analysis.no_effects_named expr then
+    let (new_expr, approx) = A.make_const_ptr_named n in
+    new_expr, approx, C.Benefit.remove_code_named expr C.Benefit.zero
   else expr, A.value_constptr n, C.Benefit.zero
 let const_bool_expr expr b =
   const_ptr_expr expr (if b then 1 else 0)
 let const_float_expr expr f =
-  if Effect_analysis.no_effects expr then
-    let (new_expr, approx) = A.make_const_float f in
-    new_expr, approx, C.Benefit.remove_code expr C.Benefit.zero
+  if Effect_analysis.no_effects_named expr then
+    let (new_expr, approx) = A.make_const_float_named f in
+    new_expr, approx, C.Benefit.remove_code_named expr C.Benefit.zero
   else expr, A.value_float f, C.Benefit.zero
 let const_boxed_int_expr expr t i =
-  if Effect_analysis.no_effects expr then
-    let (new_expr, approx) = A.make_const_boxed_int t i in
-    new_expr, approx, C.Benefit.remove_code expr C.Benefit.zero
+  if Effect_analysis.no_effects_named expr then
+    let (new_expr, approx) = A.make_const_boxed_int_named t i in
+    new_expr, approx, C.Benefit.remove_code_named expr C.Benefit.zero
   else expr, A.value_boxed_int t i, C.Benefit.zero
 
 let const_comparison_expr expr (cmp : Lambda.comparison) x y =

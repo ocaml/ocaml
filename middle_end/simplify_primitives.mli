@@ -16,8 +16,8 @@
 val primitive
    : Lambda.primitive
   -> (Variable.t list * (Simple_value_approx.t list))
-  -> Flambda.t
+  -> Flambda.named
   -> Debuginfo.t
   -> size_int:int
   -> big_endian:bool
-  -> Flambda.t * Simple_value_approx.t * Inlining_cost.Benefit.t
+  -> Flambda.named * Simple_value_approx.t * Inlining_cost.Benefit.t

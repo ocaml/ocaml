@@ -247,7 +247,7 @@ let simplify_move_within_set_of_closures env r
    a way that the inline function can't propagate it.
 *)
 let rec simplify_project_var env r ~(project_var : Flambda.project_var)
-      : Flambda.t * R.t =
+      : Flambda.named * R.t =
   let approx = R.approx r in
   let closure = project_var.closure in
   match A.check_approx_for_closure_allowing_unresolved approx with
@@ -259,7 +259,7 @@ let rec simplify_project_var env r ~(project_var : Flambda.project_var)
     let closure_id' = F.apply_closure_id freshening closure_id in
     assert (Closure_id.equal closure_id closure_id');
     let approx = A.approx_for_bound_var value_set_of_closures var in
-    let expr : Flambda.t = Project_var { closure; closure_id; var; } in
+    let expr : Flambda.named = Project_var { closure; closure_id; var; } in
     simplify_named_using_approx_and_env env r expr approx
   | Unresolved symbol ->
     (* This value comes from a symbol for which we couldn't find any
@@ -276,8 +276,8 @@ let rec simplify_project_var env r ~(project_var : Flambda.project_var)
       Variable.print closure
       Simple_value_approx.print approx
 
-and sequence env r expr1 expr2 : Flambda.t =
-  let expr =
+and sequence env r expr1 expr2 =
+  let expr : Flambda.t =
     Let (Immutable, Variable.create "seq", Expr expr1, expr2)
   in
   loop env r expr
@@ -324,7 +324,7 @@ and loop_named env r (tree : Flambda.named) : Flambda.named * R.t =
     let approx = E.find arg env in
     let r = R.add_global r ~field_index:i ~approx in
     tree, ret r A.value_unknown
-  | Prim (Pfield i, [arg], _, _) as expr ->
+  | Prim (Pfield i, [arg], _) as expr ->
     let approx = A.get_field (E.find arg env) ~field_index:i in
     simplify_named_using_approx_and_env env r expr approx
   | Prim ((Psetfield _ | Parraysetu _ | Parraysets _), block::_, dbg) ->
@@ -678,7 +678,7 @@ and loop_list env r l = match l with
    variable.
 *)
 and simplify_set_of_closures original_env r
-      (set_of_closures : Flambda.set_of_closures) : Flambda.t * R.t =
+      (set_of_closures : Flambda.set_of_closures) : Flambda.named * R.t =
   let function_decls =
     let module Backend = (val (E.backend original_env) : Backend_intf.S) in
     (* CR mshinwell: Does this affect

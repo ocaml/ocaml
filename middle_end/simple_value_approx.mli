@@ -191,6 +191,12 @@ val make_const_bool : bool -> Flambda.t * t
 val make_const_float : float -> Flambda.t * t
 val make_const_boxed_int : 'i boxed_int -> 'i -> Flambda.t * t
 
+val make_const_int_named : int -> Flambda.named * t
+val make_const_ptr_named : int -> Flambda.named * t
+val make_const_bool_named : bool -> Flambda.named * t
+val make_const_float_named : float -> Flambda.named * t
+val make_const_boxed_int_named : 'i boxed_int -> 'i -> Flambda.named * t
+
 (** Augment an approximation with a given variable (see comment above).
     If the approximation was already augmented with a variable, the one
     passed to this function replaces it within the approximation. *)
