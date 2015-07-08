@@ -71,13 +71,11 @@ val apply_static_exception : t -> Static_exception.t -> Static_exception.t
 
     If the renaming is inactive, this is the identity.
 *)
-(*
 val rewrite_recursive_calls_with_symbols
    : t
   -> Flambda.function_declarations
   -> make_closure_symbol:(Closure_id.t -> Symbol.t)
   -> Flambda.function_declarations
-*)
 
 (* CR mshinwell for mshinwell: maybe inaccurate module name, it freshens
    closure IDs as well.  Check use points though *)

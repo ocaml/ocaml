@@ -346,12 +346,15 @@ and loop_named env r (tree : Flambda.named) : Flambda.named * R.t =
     in
     let r = R.map_benefit r (B.(+) benefit) in
     expr, ret r approx
+  | Expr expr ->
+    let expr, r = loop_direct env r expr in
+    Expr expr, r
 
 and loop_direct env r (tree : Flambda.t) : Flambda.t * R.t =
   match tree with
   | Var var ->
     let var = Freshening.apply_variable (E.freshening env) var in
-    simplify_using_approx_and_env env r (Fvar var) (E.find var env)
+    simplify_using_approx_and_env env r (Var var) (E.find var env)
   | Apply apply -> simplify_apply env r ~apply
   | Let (str, id, lam, body) ->
     (* The different cases for rewriting [Let] are, if the original code
@@ -362,7 +365,7 @@ and loop_direct env r (tree : Flambda.t) : Flambda.t * R.t =
        * [let id = lam in body] otherwise.
      *)
     let init_used_var = R.used_variables r in
-    let lam, r = loop env r lam in
+    let lam, r = loop_named env r lam in
     let id, sb = Freshening.add_variable (E.freshening env) id in
     let env = E.set_freshening sb env in
     let def_used_var = R.used_variables r in
@@ -393,8 +396,8 @@ and loop_direct env r (tree : Flambda.t) : Flambda.t * R.t =
          seem as important as for the let.
          I should find a nice pattern to allow to do that elsewhere
          without too much syntactic noise. *)
-      else if Effect_analysis.no_effects lam then
-        let r = R.map_benefit r (B.remove_code lam) in
+      else if Effect_analysis.no_effects_named lam then
+        let r = R.map_benefit r (B.remove_code_named lam) in
         body, r
       else
         (* CR mshinwell: check that Pignore is inserted correctly by a later
@@ -403,7 +406,7 @@ and loop_direct env r (tree : Flambda.t) : Flambda.t * R.t =
            intermediate language (in particular to make it more obvious that
            the variable is unused). *)
         let fresh_var = Variable.create "unused" in
-        Flambda.Let (fresh_var, lam, body),
+        Flambda.Let (Immutable, fresh_var, lam, body),
           R.set_used_variables r
             (Variable.Set.union def_used_var (R.used_variables r))
     in
@@ -418,7 +421,7 @@ and loop_direct env r (tree : Flambda.t) : Flambda.t * R.t =
     in
     let defs, body_env, r =
       List.fold_right (fun (id, lam) (defs, env_acc, r) ->
-          let lam, r = loop def_env r lam in
+          let lam, r = loop_named def_env r lam in
           let defs = (id, lam) :: defs in
           let env_acc = E.add_approx id (R.approx r) env_acc in
           defs, env_acc, r)
@@ -441,7 +444,7 @@ and loop_direct env r (tree : Flambda.t) : Flambda.t * R.t =
       body, r
     else begin
       match (body : Flambda.t) with
-      | Static_raise (j, args, _) when
+      | Static_raise (j, args) when
           Static_exception.equal i
             (Freshening.apply_static_exception (E.freshening env) j) ->
         (* This is usually true, since whe checked that the static
@@ -450,7 +453,7 @@ and loop_direct env r (tree : Flambda.t) : Flambda.t * R.t =
            all arguments where guaranteed to be variables. *)
         let handler =
           List.fold_left2 (fun body var arg ->
-              Flambda.Let (Immutable, var, arg, body))
+              Flambda.Let (Immutable, var, Flambda.Expr arg, body))
             handler vars args
         in
         let r = R.exit_scope_catch r i in
@@ -485,12 +488,12 @@ and loop_direct env r (tree : Flambda.t) : Flambda.t * R.t =
       (* constant false, keep ifnot *)
       let ifnot, r = loop env r ifnot in
       let r = R.map_benefit r B.remove_branch in
-      sequence env r arg ifnot, r
+      sequence env r arg ifnot
     | Value_constptr _ | Value_block _ ->
       (* constant true, keep ifso *)
       let ifso, r = loop env r ifso in
       let r = R.map_benefit r B.remove_branch in
-      sequence env r arg ifso, r
+      sequence env r arg ifso
     | _ ->
       let env = E.inside_branch env in
       let ifso, r = loop env r ifso in
@@ -555,7 +558,7 @@ and loop_direct env r (tree : Flambda.t) : Flambda.t * R.t =
       in
       let lam, r = loop env r lam in
       let r = R.map_benefit r B.remove_branch in
-      sequence env r arg lam, r
+      sequence env r arg lam
     | Value_block (tag, _) ->
       let tag = Tag.to_int tag in
       let lam =
@@ -564,7 +567,7 @@ and loop_direct env r (tree : Flambda.t) : Flambda.t * R.t =
       in
       let lam, r = loop env r lam in
       let r = R.map_benefit r B.remove_branch in
-      sequence env r arg lam, r
+      sequence env r arg lam
     | _ ->
       let env = E.inside_branch env in
       let f (i, v) (acc, r) =
@@ -814,7 +817,7 @@ and simplify_set_of_closures original_env r
 *)
 and simplify_apply env r ~(apply : Flambda.apply) : Flambda.t * R.t =
   let { Flambda. func; args; kind = _; dbg } = apply in
-  let func_approx = Env.find func env in
+  let func_approx = E.find func env in
   let args_approxs = List.map (fun arg -> E.find arg env) args in
   let no_transformation () : Flambda.t * R.t =
     Apply ({ func; args; kind = Indirect; dbg }),
@@ -843,9 +846,9 @@ and simplify_apply env r ~(apply : Flambda.apply) : Flambda.t * R.t =
         full_apply env r clos func closure_id func_decl value_set_of_closures
           (h_args, h_approxs) dbg
       in
-      let func_var = fresh_variable ~name:"full_apply" in
+      let func_var = Variable.create "full_apply" in
       let expr : Flambda.t =
-        Let (Immutable, func_var, expr,
+        Let (Immutable, func_var, Expr expr,
           Apply { func = func_var; args = q_args; kind = Indirect; dbg })
       in
       loop env r expr
@@ -857,9 +860,9 @@ and simplify_apply env r ~(apply : Flambda.apply) : Flambda.t * R.t =
   | Wrong -> no_transformation ()
 
 and full_apply env r clos lhs_of_application closure_id func closure
-      args_with_approxs dbg eid =
+      args_with_approxs dbg =
   Inlining_decision.for_call_site ~env ~r ~clos ~lhs_of_application
-    ~fun_id:closure_id ~func ~closure ~args_with_approxs ~dbg ~eid
+    ~fun_id:closure_id ~func ~closure ~args_with_approxs ~dbg
     ~simplify:loop
 
 and partial_apply funct fun_id (func : Flambda.function_declaration)
@@ -872,11 +875,10 @@ and partial_apply funct fun_id (func : Flambda.function_declaration)
   in
   let applied_args, remaining_args = Misc.map2_head
       (fun arg id' -> id', arg) args param_sb in
-  let funct_id = Variable.create "partial_called_fun" in
   let new_fun_id = Variable.create "partial_fun" in
   let expr : Flambda.t =
     Apply ({
-      func = funct_id;
+      func = funct;
       args = param_sb;
       kind = Direct fun_id;
       dbg;
@@ -886,12 +888,9 @@ and partial_apply funct fun_id (func : Flambda.function_declaration)
     Flambdautils.make_closure_declaration ~id:new_fun_id
       ~body:expr ~params:remaining_args
   in
-  let with_args = List.fold_right (fun (id', arg) expr ->
-      Flambda.Let (Immutable, id', Var (arg),
-        expr))
+  List.fold_right (fun (id', arg) expr ->
+      Flambda.Let (Immutable, id', Expr (Var arg), expr))
     applied_args closures
-  in
-  Let (Immutable, funct_id, funct, with_args)
 
 (* CR mshinwell for pchambart: Change to a "-dinlining-benefit" option? *)
 let debug_benefit =

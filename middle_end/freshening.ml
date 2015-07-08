@@ -110,10 +110,10 @@ let apply_variable t var =
    try Variable.Map.find var t.sb_var with
    | Not_found -> var
 
+let rewrite_recursive_calls_with_symbols _t
+      (_function_declarations : Flambda.function_declarations)
+      ~make_closure_symbol:_ = assert false (* XXX *)
 (*
-let rewrite_recursive_calls_with_symbols t
-      (function_declarations : Flambda.function_declarations)
-      ~make_closure_symbol =
   match t with
   | Inactive -> function_declarations
   | Active _ ->
