@@ -925,7 +925,7 @@ partialclean::
 	rm -f asmcomp/*/*.cmp
 
 depend: beforedepend
-	(for d in utils parsing typing bytecomp middle_end asmcomp driver toplevel; \
+	(for d in utils parsing typing bytecomp middle_end middle_end/base_types asmcomp driver toplevel; \
 	 do $(CAMLDEP) $(DEPFLAGS) $$d/*.mli $$d/*.ml; \
 	 done) > .depend
 

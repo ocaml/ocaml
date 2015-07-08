@@ -19,7 +19,8 @@ case $1 in
   | asmcomp/flambdaexport_types.* \
   | asmcomp/flambdasym.* \
   | asmcomp/import_approx.* \
-  | middle_end/*)
+  | middle_end/* \
+  | middle_end/base_types/*)
     # Strict compilation options for Flambda passes.
     # Constructor/record field disambiguation is kept in check by
     # using -principal (which is also morally correct).

@@ -370,7 +370,7 @@ let rec close t env (lam : Lambda.lambda) : _ Flambda.t =
               kind = Indirect;
               dbg = Debuginfo.none;
             },
-            nid ~name:"apply" ()))
+            nid ~name:"apply" ())))
   | Lletrec (defs, body) ->
     let env =
       List.fold_right (fun (id,  _) env ->
