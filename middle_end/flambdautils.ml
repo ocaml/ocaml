@@ -40,7 +40,7 @@ let description_of_toplevel_node (expr : Flambda.t) =
   | Apply _ -> "apply"
   | Assign _ -> "assign"
   | Send _ -> "send"
-  | Unreachable -> "unreachable"
+  | Proved_unreachable -> "unreachable"
   | Let (_, id, _, _) -> Format.asprintf "let %a" Variable.print id
   | Let_rec _ -> "letrec"
   | If_then_else _ -> "if"
@@ -145,7 +145,7 @@ let same (_l1 : Flambda.t) (_l2 : Flambda.t) = true
   | Send(k1, a1, b1, cl1, _, _), Send(k2, a2, b2, cl2, _, _) ->
       k1 = k2 && same a1 a2 && same b1 b2 && Misc.samelist same cl1 cl2
   | Send _, _ | _, Send _ -> false
-  | Unreachable, Unreachable -> true
+  | Proved_unreachable, Proved_unreachable -> true
 
 and sameclosure (c1 : Flambda.function_declaration)
       (c2 : Flambda.function_declaration) =

@@ -613,8 +613,8 @@ module Conv(P:Param1) = struct
         Send(kind, conv env met, conv env obj, conv_list env args, dbg, ()),
         Value_unknown
 
-    | Unreachable ->
-        Unreachable (),
+    | Proved_unreachable ->
+        Proved_unreachable (),
         Value_unknown
 
   and conv_closure env (functs : Flambda.function_declarations)

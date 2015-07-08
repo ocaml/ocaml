@@ -116,7 +116,7 @@ let rec no_effects (flam : Flambda.t) =
      non-side-effecting loop body does not imply that the loop itself has
      no effects? *)
   | While _ | For _ | Apply _ | Send _ | Assign _ | Static_raise _ -> false
-  | Unreachable -> true
+  | Proved_unreachable -> true
 
 and no_effects_named (named : Flambda.named) =
   match named with

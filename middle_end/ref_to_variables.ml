@@ -35,7 +35,7 @@ let directly_used_variables tree =
     | Project_var _ | Let_rec _
     | Prim _ | Switch _ | String_switch _ | Static_raise _
     | Static_catch _ | Try_with _ | If_then_else _ | Fsequence _
-    | While _ | For _ | Send _ | Unreachable as exp ->
+    | While _ | For _ | Send _ | Proved_unreachable as exp ->
       Flambdaiter.apply_on_subexpressions loop exp
   in
   loop tree;
@@ -91,22 +91,22 @@ let eliminate_ref lam =
     | Prim(Pfield field, [Var (v,d)], _, _)
       when convertible_variable v ->
         (match get_variable v field with
-        | None -> Unreachable d
+        | None -> Proved_unreachable d
         | Some (var,_) -> Var (var,d))
     | Prim(Poffsetref delta, [Var (v,d1)], dbg, d2)
       when convertible_variable v ->
         (match get_variable v 0 with
-        | None -> Unreachable d1
+        | None -> Proved_unreachable d1
         | Some (var,size) ->
             if size = 1
             then
               Assign(var, Prim(Poffsetint delta, [Flambda.Var (var,d1)], dbg, d2),
                       Expr_id.create ())
-            else Unreachable d1)
+            else Proved_unreachable d1)
     | Prim(Psetfield(field, _), [Var (v,d1); e], _, d2)
       when convertible_variable v ->
         (match get_variable v field with
-         | None -> Unreachable d1
+         | None -> Proved_unreachable d1
          | Some (var,_) -> Assign(var, e, d2))
     | Set_of_closures _ | Let _
     | Assign _ | Var _
@@ -115,7 +115,7 @@ let eliminate_ref lam =
     | Prim _ | Switch _ | String_switch _
     | Static_raise _ | Static_catch _
     | Try_with _ | If_then_else _ | Fsequence _
-    | While _ | For _ | Send _ | Unreachable as exp ->
+    | While _ | For _ | Send _ | Proved_unreachable as exp ->
         exp
   in
   Flambdaiter.map aux lam

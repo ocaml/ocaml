@@ -211,7 +211,7 @@ module NotConstants(P:Param) = struct
       mark_loop ~toplevel [] f2;
       List.iter (mark_loop ~toplevel []) fl
 
-    | Unreachable ->
+    | Proved_unreachable ->
       mark_curr curr
 
   and mark_named ~toplevel curr (named : Flambda.named) =

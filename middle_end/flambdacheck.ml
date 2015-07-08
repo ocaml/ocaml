@@ -43,7 +43,7 @@ let every_used_identifier_is_bound flam =
     | Symbol _ | Const _ | Let _ | Let_rec _ | Fseq_prim _
     | Switch _ | String_switch _ | Static_raise _ | Static_catch _
     | Try_with _ | If_then_else _ | Fsequence _ | While _ | For _ | Send _
-    | Unreachable -> ()
+    | Proved_unreachable -> ()
   in
   let rec loop env (flam : Flambda.t) =
     match flam with
@@ -77,7 +77,7 @@ let every_used_identifier_is_bound flam =
     | Project_closure _ | Move_within_set_of_closures _ | Project_var _
     | Prim _ | Fseq_prim _ | Switch _ | String_switch _ | Static_raise _
     | If_then_else _ | Fsequence _ | While _ | Send _
-    | Unreachable as exp ->
+    | Proved_unreachable as exp ->
       check env exp;
       Flambdaiter.apply_on_subexpressions (loop env) exp
   in
@@ -142,7 +142,7 @@ let no_identifier_bound_multiple_times flam =
     | Project_var _ | Move_within_set_of_closures _
     | Prim _ | Fseq_prim _ | Switch _ | String_switch _ | Static_raise _
     | If_then_else _ | Fsequence _
-    | While _ | Send _ | Unreachable
+    | While _ | Send _ | Proved_unreachable
       -> ()
   in
   try
@@ -180,7 +180,7 @@ let every_bound_variable_is_from_current_compilation_unit flam =
     | Project_var _ | Move_within_set_of_closures _
     | Prim _ | Fseq_prim _ | Switch _ | String_switch _ | Static_raise _
     | If_then_else _ | Fsequence _
-    | While _ | Send _ | Unreachable
+    | While _ | Send _ | Proved_unreachable
       -> ()
   in
   try
@@ -213,7 +213,7 @@ let no_assign_on_variable_of_kind_Immutable flam =
     | Project_var _ | Move_within_set_of_closures _ | Let_rec _
     | Prim _ | Fseq_prim _ | Switch _ | String_switch _ | Static_raise _
     | Static_catch _ | Try_with _ | If_then_else _ | Fsequence _
-    | While _ | For _ | Send _ | Unreachable
+    | While _ | For _ | Send _ | Proved_unreachable
       as exp ->
         check env exp;
         Flambdaiter.apply_on_subexpressions (loop env) exp
@@ -299,7 +299,7 @@ let used_closure_id flam =
     | Apply _ | Let _ | Let_rec _ | Prim _ | Fseq_prim _ | Switch _
     | String_switch _ | Static_raise _ | Static_catch _ | Try_with _
     | If_then_else _ | Fsequence _ | While _ | For _ | Send _
-    | Unreachable -> ()
+    | Proved_unreachable -> ()
   in
   Flambdaiter.iter f flam;
   !used

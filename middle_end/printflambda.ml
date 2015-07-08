@@ -31,7 +31,7 @@ let rec lam ppf (flam : Flambda.t) =
       let kind =
         if k = Lambda.Self then "self" else if k = Lambda.Cached then "cache" else "" in
       fprintf ppf "@[<2>(send%s@ %a@ %a%a)@]" kind lam obj lam met args largs
-  | Unreachable ->
+  | Proved_unreachable ->
       fprintf ppf "unreachable"
   | Let(_str, id, arg, body) ->
       let rec letbody (ul : Flambda.t) =

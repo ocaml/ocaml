@@ -66,7 +66,7 @@ let lambda_smaller' lam ~than:threshold =
     | Send (_, met, obj, args, _) ->
       size := !size + 8;
       lambda_size met; lambda_size obj; lambda_list_size args
-    | Unreachable -> ()
+    | Proved_unreachable -> ()
     | Let (_, _, lam, body) ->
       lambda_named_size lam; lambda_size body
     | Let_rec (bindings, body) ->
@@ -183,7 +183,7 @@ module Benefit = struct
       | Switch _ | String_switch _ | Static_raise _ | Try_with _
       | If_then_else _ | While _ | For _ -> b := remove_branch !b
       | Apply _ | Send _ -> b := remove_call !b
-      | Let _ | Let_rec _ | Unreachable | Var _ | Static_catch _ -> ()
+      | Let _ | Let_rec _ | Proved_unreachable | Var _ | Static_catch _ -> ()
     in
     let f_named (named : Flambda.named) =
       match named with

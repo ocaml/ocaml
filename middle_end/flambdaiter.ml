@@ -20,7 +20,7 @@ let apply_on_subexpressions f f_named (flam : Flambda.t) =
     f e1;
     f e2;
     List.iter f es
-  | Unreachable -> ()
+  | Proved_unreachable -> ()
   | Let (_, _, defining_expr, body) ->
     f_named defining_expr;
     f body
@@ -58,7 +58,7 @@ let iter_general ~toplevel f f_named t =
       aux f1
     | Send (_,f1,f2,fl,_) ->
       iter_list (f1::f2::fl)
-    | Unreachable -> ()
+    | Proved_unreachable -> ()
     | Let ( _, _, f1, f2) ->
       aux_named f1;
       aux f2
@@ -115,7 +115,7 @@ let iter_on_sets_of_closures f t =
       aux_named defining_expr
     | Let_rec (defs, _) ->
       List.iter (fun (_, defining_expr) -> aux_named defining_expr) defs
-    | Var _ | Apply _ | Assign _ | Send _ | Unreachable | Switch _
+    | Var _ | Apply _ | Assign _ | Send _ | Proved_unreachable | Switch _
     | String_switch _ | Static_raise _ | Static_catch _ | Try_with _
     | If_then_else _ | While _ | For _ -> ()
   in
@@ -129,7 +129,7 @@ let map_general ~toplevel f f_named tree =
       | Assign(id, lam) ->
         let lam = aux lam in
         Assign(id, lam)
-      | Unreachable -> tree
+      | Proved_unreachable -> tree
       | Let (str, id, lam, body) ->
         let lam = aux_named lam in
         let body = aux body in

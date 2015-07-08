@@ -538,7 +538,7 @@ and loop_direct env r (tree : Flambda.t) : Flambda.t * R.t =
                 | Float f -> ...]
        *)
       match sw.failaction with
-      | None -> Unreachable
+      | None -> Proved_unreachable
       | Some f -> f
     in
     begin match (R.approx r).descr with
@@ -598,7 +598,7 @@ and loop_direct env r (tree : Flambda.t) : Flambda.t * R.t =
         Some def, r
     in
     String_switch (arg, sw, def), ret r A.value_unknown
-  | Unreachable -> tree, ret r A.value_bottom
+  | Proved_unreachable -> tree, ret r A.value_bottom
 
 and loop_list env r l = match l with
   | [] -> [], [], r

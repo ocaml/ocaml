@@ -122,7 +122,7 @@ type t =
   | Apply of apply
   | Assign of Variable.t * t
   | Send of Lambda.meth_kind * t * t * t list * Debuginfo.t
-  | Unreachable  (** Represents code proved unreachable. *)
+  | Proved_unreachable
   | Let of let_kind * Variable.t * named * t
   | Let_rec of (Variable.t * named) list * t
   | If_then_else of t * t * t
@@ -159,7 +159,7 @@ and named =
   | Move_within_set_of_closures of move_within_set_of_closures
   | Project_var of project_var
   | Prim of Lambda.primitive * Variable.t list * Debuginfo.t
-  | Expr of t
+  | Expr of t  (** ANF escape hatch. *)
 (* CR-someday mshinwell: Since we lack expression identifiers on every term,
    we should probably introduce [Mutable_var] into [named] if we introduce
    more complicated analyses on these in the future.  Alternatively, maybe

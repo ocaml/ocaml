@@ -70,7 +70,7 @@ let calculate tree =
       aux e1;
       aux e2;
       List.iter aux es
-    | Unreachable -> ()
+    | Proved_unreachable -> ()
   and aux_named (named : Flambda.named) =
     match named with
     | Symbol _ | Const _ -> ()

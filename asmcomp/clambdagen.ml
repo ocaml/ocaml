@@ -451,7 +451,7 @@ module Conv(P:Param2) = struct
     | Send(kind, met, obj, args, dbg, _) ->
         Usend(kind, conv env met, conv env obj, conv_list env args, dbg)
 
-    | Unreachable ->
+    | Proved_unreachable ->
         (* shoudl'nt be executable, maybe build something else *)
        Uunreachable
     (* Uprim(Praise, [Uconst (Uconst_pointer 0, None)], Debuginfo.none) *)
