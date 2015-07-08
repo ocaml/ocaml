@@ -125,7 +125,6 @@ type project_var = {
 type 'a t =
   | Var of Variable.t * 'a
   | Apply of apply * 'a
-  | Project_var of project_var * 'a
   (* CR-someday mshinwell: consider eliminating assignment from Flambda
      onwards *)
   | Assign of Variable.t * 'a t * 'a
@@ -163,6 +162,7 @@ and 'a named =
   | Set_of_closures of 'a set_of_closures * 'a
   | Project_closure of project_closure * 'a
   | Move_within_set_of_closures of move_within_set_of_closures * 'a
+  | Project_var of project_var * 'a
   | Prim of Lambda.primitive * Variable.t list * Debuginfo.t * 'a
   | Expr of 'a t
 

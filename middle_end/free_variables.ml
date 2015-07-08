@@ -22,8 +22,6 @@ let calculate tree =
     | Apply ({ func; args; kind = _; dbg = _}, _) ->
       mark_free func;
       List.iter mark_free args
-    | Project_var ({ closure; closure_id = _; var = _ }, _) ->
-      mark_free closure
     | Let ( _, var, defining_expr, body, _) ->
       mark_bound var;
       aux_named defining_expr;
@@ -83,6 +81,8 @@ let calculate tree =
       Variable.Map.iter (fun _ var -> mark_free var) specialised_args
     | Project_closure ({ set_of_closures; closure_id = _}, _) ->
       mark_free set_of_closures
+    | Project_var ({ closure; closure_id = _; var = _ }, _) ->
+      mark_free closure
     | Move_within_set_of_closures
         ({ closure; start_from = _; move_to = _ }, _) ->
       mark_free closure
