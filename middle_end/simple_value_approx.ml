@@ -149,27 +149,26 @@ let value_unresolved sym = approx (Value_unresolved sym)
 let value_string size contents = approx (Value_string {size; contents })
 let value_float_array size = approx (Value_float_array size)
 
-let make_const_int n eid : Flambda.t * t =
-  U.name_expr (Const(Const_base(Asttypes.Const_int n),eid)), value_int n
+let make_const_int n : Flambda.t * t =
+  U.name_expr (Const (Const_base (Asttypes.Const_int n))), value_int n
 
-let make_const_ptr n eid : Flambda.t * t =
-  U.name_expr (Const(Const_pointer n,eid)), value_constptr n
+let make_const_ptr n : Flambda.t * t =
+  U.name_expr (Const (Const_pointer n)), value_constptr n
 
-let make_const_bool b eid : Flambda.t * t =
-  make_const_ptr (if b then 1 else 0) eid
+let make_const_bool b : Flambda.t * t =
+  make_const_ptr (if b then 1 else 0)
 
-let make_const_float f eid : Flambda.t * t =
-  U.name_expr (Const(Const_float f,eid)), value_float f
+let make_const_float f : Flambda.t * t =
+  U.name_expr (Const (Const_float f)), value_float f
 
-let make_const_boxed_int (type bi) (t:bi boxed_int) (i:bi) eid
-      : Flambda.t * t =
+let make_const_boxed_int (type bi) (t:bi boxed_int) (i:bi) : Flambda.t * t =
   let c : Asttypes.constant =
     match t with
     | Int32 -> Const_int32 i
     | Int64 -> Const_int64 i
     | Nativeint -> Const_nativeint i
   in
-  U.name_expr (Const (Const_base c, eid)), value_boxed_int t i
+  U.name_expr (Const (Const_base c)), value_boxed_int t i
 
 let const (flam : Flambda.const) =
   match flam with
@@ -191,16 +190,11 @@ let const (flam : Flambda.const) =
 let simplify t (lam : Flambda.t) : Flambda.t * t =
   if Effect_analysis.no_effects lam then
     match t.descr with
-    | Value_int n ->
-      make_const_int n (Flambdautils.data_at_toplevel_node lam)
-    | Value_constptr n ->
-      make_const_ptr n (Flambdautils.data_at_toplevel_node lam)
-    | Value_float f ->
-      make_const_float f (Flambdautils.data_at_toplevel_node lam)
-    | Value_boxed_int (t, i) ->
-      make_const_boxed_int t i (Flambdautils.data_at_toplevel_node lam)
-    | Value_symbol sym ->
-      U.name_expr (Symbol (sym, Flambdautils.data_at_toplevel_node lam)), t
+    | Value_int n -> make_const_int n
+    | Value_constptr n -> make_const_ptr n
+    | Value_float f -> make_const_float f
+    | Value_boxed_int (t, i) -> make_const_boxed_int t i
+    | Value_symbol sym -> U.name_expr (Symbol sym), t
     | Value_string _ | Value_float_array _
     | Value_block _ | Value_set_of_closures _ | Value_closure _
     | Value_unknown | Value_bottom | Value_extern _ | Value_unresolved _ ->
@@ -211,12 +205,10 @@ let simplify t (lam : Flambda.t) : Flambda.t * t =
 let simplify_using_env t ~is_present_in_env lam =
   let res : Flambda.t =
     match t.var with
-    | Some var when is_present_in_env var ->
-      Var (var, Flambdautils.data_at_toplevel_node lam)
+    | Some var when is_present_in_env var -> Var var
     | _ ->
       match t.symbol with
-      | Some sym ->
-        U.name_expr (Symbol (sym, Flambdautils.data_at_toplevel_node lam))
+      | Some sym -> U.name_expr (Symbol sym)
       | None -> lam
   in
   simplify t res

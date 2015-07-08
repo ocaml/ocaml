@@ -122,7 +122,7 @@ let lambda_smaller' lam ~than:threshold =
     | Send (_, met, obj, args, _, _) ->
       size := !size + 8;
       lambda_size met; lambda_size obj; lambda_list_size args
-    | Unreachable _ -> ()
+    | Unreachable -> ()
   and lambda_list_size l = List.iter lambda_size l in
   try
     lambda_size lam;
@@ -197,7 +197,7 @@ module Benefit = struct
         b := remove_branch !b
       | Apply _ | Send _ ->
         b := remove_call !b
-      | Let _ | Let_rec _ | Unreachable _ | Fsequence _ | Symbol _
+      | Let _ | Let_rec _ | Unreachable | Fsequence _ | Symbol _
       | Var _ | Const _ | Static_catch _ -> ()
     in
     Flambdaiter.iter_toplevel f lam;

@@ -35,7 +35,7 @@ let directly_used_variables tree =
     | Project_var _ | Let_rec _
     | Prim _ | Switch _ | String_switch _ | Static_raise _
     | Static_catch _ | Try_with _ | If_then_else _ | Fsequence _
-    | While _ | For _ | Send _ | Unreachable _ as exp ->
+    | While _ | For _ | Send _ | Unreachable as exp ->
       Flambdaiter.apply_on_subexpressions loop exp
   in
   loop tree;
@@ -115,7 +115,7 @@ let eliminate_ref lam =
     | Prim _ | Switch _ | String_switch _
     | Static_raise _ | Static_catch _
     | Try_with _ | If_then_else _ | Fsequence _
-    | While _ | For _ | Send _ | Unreachable _ as exp ->
+    | While _ | For _ | Send _ | Unreachable as exp ->
         exp
   in
   Flambdaiter.map aux lam

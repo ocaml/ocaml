@@ -91,24 +91,23 @@ let no_effects_prim (prim : Lambda.primitive) =
 let rec no_effects (flam : Flambda.t) =
   match flam with
   | Var _ -> true
-  | Let (_, _, def, body, _) -> no_effects_named def && no_effects body
-  | Let_rec (defs, body, _) ->
+  | Let (_, _, def, body) -> no_effects_named def && no_effects body
+  | Let_rec (defs, body) ->
     no_effects body
       && List.for_all (fun (_, def) -> no_effects_named def) defs
-  | If_then_else (cond, ifso, ifnot, _) ->
+  | If_then_else (cond, ifso, ifnot) ->
     no_effects cond && no_effects ifso && no_effects ifnot
-  | Switch (lam, sw, _) ->
+  | Switch (lam, sw) ->
     let aux (_, lam) = no_effects lam in
     no_effects lam
       && List.for_all aux sw.blocks
       && List.for_all aux sw.consts
       && Misc.may_default no_effects sw.failaction true
-  | String_switch (lam, sw, def, _) ->
+  | String_switch (lam, sw, def) ->
     no_effects lam
       && List.for_all (fun (_, lam) -> no_effects lam) sw
       && Misc.may_default no_effects def true
-  | Static_catch (_, _, body, _, _)
-  | Try_with (body, _, _, _) ->
+  | Static_catch (_, _, body, _) | Try_with (body, _, _) ->
     (* If there is a [raise] in [body], the whole [Try_with] may have an
        effect, so there is no need to test the handler. *)
     no_effects body
@@ -117,11 +116,11 @@ let rec no_effects (flam : Flambda.t) =
      non-side-effecting loop body does not imply that the loop itself has
      no effects? *)
   | While _ | For _ | Apply _ | Send _ | Assign _ | Static_raise _ -> false
-  | Unreachable _ -> true
+  | Unreachable -> true
 
 and no_effects_named (named : Flambda.named) =
   match named with
   | Symbol _ | Const _ | Set_of_closures _ | Project_closure _
   | Project_var _ | Move_within_set_of_closures _ -> true
-  | Prim (prim, _, _, _) -> no_effects_prim prim
+  | Prim (prim, _, _) -> no_effects_prim prim
   | Expr flam -> no_effects flam

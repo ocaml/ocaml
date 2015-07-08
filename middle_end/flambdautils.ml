@@ -145,7 +145,7 @@ let same (_l1 : Flambda.t) (_l2 : Flambda.t) = true
   | Send(k1, a1, b1, cl1, _, _), Send(k2, a2, b2, cl2, _, _) ->
       k1 = k2 && same a1 a2 && same b1 b2 && Misc.samelist same cl1 cl2
   | Send _, _ | _, Send _ -> false
-  | Unreachable _, Unreachable _ -> true
+  | Unreachable, Unreachable -> true
 
 and sameclosure (c1 : Flambda.function_declaration)
       (c2 : Flambda.function_declaration) =

@@ -613,7 +613,7 @@ module Conv(P:Param1) = struct
         Send(kind, conv env met, conv env obj, conv_list env args, dbg, ()),
         Value_unknown
 
-    | Unreachable _ ->
+    | Unreachable ->
         Unreachable (),
         Value_unknown
 

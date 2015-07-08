@@ -598,7 +598,7 @@ and loop_direct env r (tree : Flambda.t) : Flambda.t * R.t =
         Some def, r
     in
     String_switch (arg, sw, def), ret r A.value_unknown
-  | Unreachable _ -> tree, ret r A.value_bottom
+  | Unreachable -> tree, ret r A.value_bottom
 
 and loop_list env r l = match l with
   | [] -> [], [], r

@@ -17,26 +17,26 @@ module Int = Ext_types.Int
 
 let rec lam ppf (flam : Flambda.t) =
   match flam with
-  | Var (id,_) ->
+  | Var (id) ->
       Variable.print ppf id
-  | Apply({func; args; kind},_) ->
+  | Apply({func; args; kind}) ->
     let direct = match kind with Indirect -> "" | Direct _ -> "*" in
     fprintf ppf "@[<2>(apply%s@ %a%a)@]" direct Variable.print func
       Variable.print_list args
-  | Assign(id, expr,_) ->
+  | Assign(id, expr) ->
       fprintf ppf "@[<2>(assign@ %a@ %a)@]" Variable.print id lam expr
-  | Send (k, met, obj, largs, _,_) ->
+  | Send (k, met, obj, largs, _) ->
       let args ppf largs =
         List.iter (fun l -> fprintf ppf "@ %a" lam l) largs in
       let kind =
         if k = Lambda.Self then "self" else if k = Lambda.Cached then "cache" else "" in
       fprintf ppf "@[<2>(send%s@ %a@ %a%a)@]" kind lam obj lam met args largs
-  | Unreachable _ ->
+  | Unreachable ->
       fprintf ppf "unreachable"
-  | Let(_str, id, arg, body,_) ->
+  | Let(_str, id, arg, body) ->
       let rec letbody (ul : Flambda.t) =
         match ul with
-        | Let(str, id, arg, body,_) ->
+        | Let(str, id, arg, body) ->
             let str = match str with
               | Mutable -> "*"
               | Immutable -> ""
@@ -49,7 +49,7 @@ let rec lam ppf (flam : Flambda.t) =
         Variable.print id lam_named arg;
       let expr = letbody body in
       fprintf ppf ")@]@ %a)@]" lam expr
-  | Let_rec(id_arg_list, body,_) ->
+  | Let_rec(id_arg_list, body) ->
       let bindings ppf id_arg_list =
         let spc = ref false in
         List.iter
@@ -59,7 +59,7 @@ let rec lam ppf (flam : Flambda.t) =
           id_arg_list in
       fprintf ppf
         "@[<2>(letrec@ (@[<hv 1>%a@])@ %a)@]" bindings id_arg_list lam body
-  | Switch(larg, sw,_) ->
+  | Switch(larg, sw) ->
       let switch ppf (sw : Flambda.switch) =
         let spc = ref false in
         List.iter
@@ -84,7 +84,7 @@ let rec lam ppf (flam : Flambda.t) =
         (Int.Set.cardinal sw.numconsts)
         (Int.Set.cardinal sw.numblocks)
         lam larg switch sw
-  | String_switch(arg, cases, default, _) ->
+  | String_switch(arg, cases, default) ->
       let switch ppf cases =
         let spc = ref false in
         List.iter
@@ -100,11 +100,11 @@ let rec lam ppf (flam : Flambda.t) =
         end in
       fprintf ppf
        "@[<1>(stringswitch %a@ @[<v 0>%a@])@]" lam arg switch cases
-  | Static_raise (i, ls,_)  ->
+  | Static_raise (i, ls)  ->
       let lams ppf largs =
         List.iter (fun l -> fprintf ppf "@ %a" lam l) largs in
       fprintf ppf "@[<2>(exit@ %a%a)@]" Static_exception.print i lams ls;
-  | Static_catch(i, vars, lbody, lhandler,_) ->
+  | Static_catch(i, vars, lbody, lhandler) ->
       fprintf ppf "@[<2>(catch@ %a@;<1 -1>with (%a%a)@ %a)@]"
         lam lbody Static_exception.print i
         (fun ppf vars -> match vars with
@@ -115,30 +115,30 @@ let rec lam ppf (flam : Flambda.t) =
                  vars)
         vars
         lam lhandler
-  | Try_with(lbody, param, lhandler,_) ->
+  | Try_with(lbody, param, lhandler) ->
       fprintf ppf "@[<2>(try@ %a@;<1 -1>with %a@ %a)@]"
         lam lbody Variable.print param lam lhandler
-  | If_then_else(lcond, lif, lelse,_) ->
+  | If_then_else(lcond, lif, lelse) ->
       fprintf ppf "@[<2>(if@ %a@ %a@ %a)@]" lam lcond lam lif lam lelse
-  | While(lcond, lbody,_) ->
+  | While(lcond, lbody) ->
       fprintf ppf "@[<2>(while@ %a@ %a)@]" lam lcond lam lbody
-  | For(param, lo, hi, dir, body,_) ->
+  | For(param, lo, hi, dir, body) ->
       fprintf ppf "@[<2>(for %a@ %a@ %s@ %a@ %a)@]"
         Variable.print param lam lo
         (match dir with Asttypes.Upto -> "to" | Asttypes.Downto -> "downto")
         lam hi lam body
 and lam_named ppf (named : Flambda.named) =
   match named with
-  | Symbol (symbol,_) -> Symbol.print ppf symbol
-  | Const (cst,_) -> const ppf cst
-  | Project_closure (project_closure, _) ->
+  | Symbol (symbol) -> Symbol.print ppf symbol
+  | Const (cst) -> const ppf cst
+  | Project_closure (project_closure) ->
     print_project_closure ppf project_closure
-  | Project_var (project_var, _) -> print_project_var ppf project_var
-  | Move_within_set_of_closures (move_within_set_of_closures, _) ->
+  | Project_var (project_var) -> print_project_var ppf project_var
+  | Move_within_set_of_closures (move_within_set_of_closures) ->
     print_move_within_set_of_closures ppf move_within_set_of_closures
-  | Set_of_closures (set_of_closures, _) ->
+  | Set_of_closures (set_of_closures) ->
     print_set_of_closures ppf set_of_closures
-  | Prim(prim, args, _,_) ->
+  | Prim(prim, args, _) ->
     fprintf ppf "@[<2>(%a%a)@]" Printlambda.primitive prim
       Variable.print_list args
   | Expr expr -> lam ppf expr

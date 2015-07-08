@@ -20,7 +20,7 @@ let apply_on_subexpressions f f_named (flam : Flambda.t) =
     f e1;
     f e2;
     List.iter f es
-  | Unreachable _ -> ()
+  | Unreachable -> ()
   | Let (_, _, defining_expr, body) ->
     f_named defining_expr;
     f body
@@ -58,18 +58,18 @@ let iter_general ~toplevel f f_named t =
       aux f1
     | Send (_,f1,f2,fl,_) ->
       iter_list (f1::f2::fl)
-    | Unreachable _ -> ()
+    | Unreachable -> ()
     | Let ( _, _, f1, f2) ->
       aux_named f1;
       aux f2
     | Let_rec (defs, body) ->
       List.iter (fun (_,l) -> aux_named l) defs;
       aux body
-    | Try_with (f1,_,f2,_)
-    | While (f1,f2,_)
+    | Try_with (f1,_,f2)
+    | While (f1,f2)
     | Static_catch (_,_,f1,f2) ->
       aux f1; aux f2
-    | For (_,f1,f2,_,f3,_)
+    | For (_,f1,f2,_,f3)
     | If_then_else (f1,f2,f3) ->
       aux f1;aux f2;aux f3
     | Static_raise (_,l) ->
@@ -105,7 +105,7 @@ let iter_toplevel f f_named t = iter_general ~toplevel:true f f_named t
 let iter_on_sets_of_closures f t =
   let aux_named (named : Flambda.named) =
     match named with
-    | Set_of_closures (clos, data) -> f clos data
+    | Set_of_closures clos -> f clos
     | Symbol _ | Const _ | Project_closure _ | Move_within_set_of_closures _
     | Project_var _ | Prim _ | Expr _ -> ()
   in
@@ -115,7 +115,7 @@ let iter_on_sets_of_closures f t =
       aux_named defining_expr
     | Let_rec (defs, _) ->
       List.iter (fun (_, defining_expr) -> aux_named defining_expr) defs
-    | Var _ | Apply _ | Assign _ | Send _ | Unreachable _ | Switch _
+    | Var _ | Apply _ | Assign _ | Send _ | Unreachable | Switch _
     | String_switch _ | Static_raise _ | Static_catch _ | Try_with _
     | If_then_else _ | While _ | For _ -> ()
   in
@@ -129,7 +129,7 @@ let map_general ~toplevel f f_named tree =
       | Assign(id, lam) ->
         let lam = aux lam in
         Assign(id, lam)
-      | Unreachable _ -> tree
+      | Unreachable -> tree
       | Let (str, id, lam, body) ->
         let lam = aux_named lam in
         let body = aux body in
@@ -202,8 +202,7 @@ let map_general ~toplevel f f_named tree =
                 function_decls.funs;
             }
         in
-        Set_of_closures ({ function_decls; free_vars; specialised_args },
-          annot)
+        Set_of_closures { function_decls; free_vars; specialised_args }
       | Expr expr -> Expr (aux expr)
     in
     f_named named
