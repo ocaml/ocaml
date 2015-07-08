@@ -21,7 +21,7 @@ val for_call_site
    : env:Inlining_env.t
   -> r:Inlining_result.t
   -> clos:Flambda.function_declarations
-  -> lhs_of_application:Flambda.t
+  -> lhs_of_application:Variable.t
   -> fun_id:Closure_id.t
   -> func:Flambda.function_declaration
   -> closure:Simple_value_approx.value_set_of_closures

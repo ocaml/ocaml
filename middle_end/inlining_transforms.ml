@@ -56,7 +56,6 @@ let inline_by_copying_function_body ~env ~r
       ~simplify =
   let r = R.map_benefit r B.remove_call in
   let env = E.inlining_level_up env in
-  let closure = new_var "inline_by_copying_function_body" in
   (* Assign fresh names for the function's parameters and rewrite the body to
      use these new names. *)
   let subst_params = List.map Variable.freshen func.params in
@@ -73,7 +72,7 @@ let inline_by_copying_function_body ~env ~r
   (* 2. Now add bindings for variables bound by the closure. *)
   let bindings_for_vars_bound_by_closure_and_params_around_body =
     fold_over_exprs_for_variables_bound_by_closure ~fun_id
-      ~clos_id:closure ~clos ~init:bindings_for_params_around_body
+      ~clos_id:lfunc ~clos ~init:bindings_for_params_around_body
       ~f:(fun ~acc:body ~var ~expr -> Flambda.Let (Immutable, var, expr, body))
   in
   (* 3. Finally add bindings for the function declaration identifiers being
@@ -82,7 +81,7 @@ let inline_by_copying_function_body ~env ~r
     Variable.Map.fold (fun id _ expr ->
         Flambda.Let (Immutable, id,
           Move_within_set_of_closures {
-            closure;
+            closure = lfunc;
             start_from = fun_id;
             move_to = Closure_id.wrap id;
           },
@@ -93,8 +92,7 @@ let inline_by_copying_function_body ~env ~r
     E.note_entering_closure env ~closure_id:fun_id
       ~where:Inline_by_copying_function_body
   in
-  simplify (E.activate_freshening env) r
-    (Flambda.Let (Immutable, closure, lfunc, expr))
+  simplify (E.activate_freshening env) r expr
 
 let inline_by_copying_function_declaration ~env ~r ~funct
     ~(function_decls : Flambda.function_declarations)
@@ -116,7 +114,6 @@ let inline_by_copying_function_declaration ~env ~r ~funct
     None
   else
     let env = E.inlining_level_up env in
-    let closure = new_var "inline_by_copying_function_declaration" in
     let set_of_closures_var = new_var "dup_set_of_closures" in
     (* The free variable map for the duplicated declaration(s) maps the
        "internal" names used within the function bodies to fresh names,
@@ -125,7 +122,7 @@ let inline_by_copying_function_declaration ~env ~r ~funct
        set-of-closures declaration. *)
     let free_vars, free_vars_for_lets =
       fold_over_exprs_for_variables_bound_by_closure ~fun_id:closure_id
-        ~clos_id:closure ~clos:function_decls ~init:(Variable.Map.empty, [])
+        ~clos_id:funct ~clos:function_decls ~init:(Variable.Map.empty, [])
         ~f:(fun ~acc:(map, for_lets) ~var:internal_var ~expr ->
           let from_closure = new_var "from_closure" in
           Variable.Map.add internal_var from_closure map,
@@ -159,8 +156,7 @@ let inline_by_copying_function_declaration ~env ~r ~funct
     (* Now bind the variables that will hold the arguments from the original
        application. *)
     let expr : Flambda.t =
-      Let (Immutable, closure, funct,
-        Flambdautils.bind ~body:duplicated_application ~bindings:args_decl)
+      Flambdautils.bind ~body:duplicated_application ~bindings:args_decl
     in
     let env =
       E.note_entering_closure env ~closure_id

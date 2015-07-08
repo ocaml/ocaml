@@ -37,7 +37,7 @@ let should_inline_function_known_to_be_recursive
         func.params approxs
 
 let inline_non_recursive
-    ~env ~r ~clos ~funct ~fun_id
+    ~env ~r ~clos ~(funct : Variable.t) ~fun_id
     ~(func : Flambda.function_declaration)
     ~(record_decision : Inlining_stats_types.Decision.t -> unit)
     ~direct_apply
@@ -133,12 +133,11 @@ let inline_non_recursive
 
 let for_call_site ~env ~r
       ~(clos : Flambda.function_declarations)
-      ~(lhs_of_application : Flambda.t)
+      ~(lhs_of_application : Variable.t)
       ~fun_id
       ~(func : Flambda.function_declaration)
       ~(closure : Simple_value_approx.value_set_of_closures)
-      ~args_with_approxs ~dbg ~eid
-      ~simplify =
+      ~args_with_approxs ~dbg ~simplify =
   let record_decision =
     let closure_stack =
       E.inlining_stats_closure_stack (E.note_entering_closure env
@@ -148,8 +147,8 @@ let for_call_site ~env ~r
   in
   let args, approxs = args_with_approxs in
   let no_transformation () : Flambda.t * R.t =
-    Apply ({func = lhs_of_application; args; kind = Direct fun_id; dbg}, eid),
-    R.set_approx r A.value_unknown
+    Apply {func = lhs_of_application; args; kind = Direct fun_id; dbg},
+      R.set_approx r A.value_unknown
   in
   let max_level = 3 in
   (* If [unconditionally_inline] is [true], then the function will always be
@@ -172,14 +171,12 @@ let for_call_site ~env ~r
     func.stub
   in
   let num_params = List.length func.params in
-  (* CR pchambart to pchambart: find a better name
+  (* CR pchambart for pchambart: find a better name
      This is true if the function is directly an argument of the
-     apply construction. *)
-  let direct_apply =
-    match lhs_of_application with
-    | Project_closure _ | Move_within_set_of_closures _ -> true
-    | _ -> false
-  in
+     apply construction.
+     mshinwell: disabled for now, check this elsewhere and set [stub].
+  *)
+  let direct_apply = false in
   let inlining_threshold = R.inlining_threshold r in
   let fun_var = U.find_declaration_variable fun_id clos in
   let recursive =
