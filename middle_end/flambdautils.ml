@@ -36,26 +36,17 @@ let variables_bound_by_the_closure cf
 
 let data_at_toplevel_node (expr : _ Flambda.t) =
   match expr with
-  | Symbol (_,data)
   | Var (_,data)
-  | Const (_,data)
   | Let(_,_,_,_,data)
   | Let_rec(_,_,data)
-  | Set_of_closures(_,data)
-  | Project_closure(_,data)
-  | Project_var (_, data)
-  | Move_within_set_of_closures (_, data)
   | Apply(_,data)
   | Switch(_,_,data)
   | String_switch(_,_,_,data)
   | Send(_,_,_,_,_,data)
-  | Prim(_,_,_,data)
-  | Fseq_prim(_,_,_,data)
   | Static_raise (_,_,data)
   | Static_catch (_,_,_,_,data)
   | Try_with(_,_,_,data)
   | If_then_else(_,_,_,data)
-  | Fsequence(_,_,data)
   | While(_,_,data)
   | For(_,_,_,_,_,data)
   | Assign(_,_,data)
@@ -63,32 +54,24 @@ let data_at_toplevel_node (expr : _ Flambda.t) =
 
 let description_of_toplevel_node (expr : _ Flambda.t) =
   match expr with
-  | Symbol (sym, _) -> Format.asprintf "%%%a" Symbol.print sym
   | Var (id, _) -> Format.asprintf "var %a" Variable.print id
-  | Const _ -> "const"
+  | Apply _ -> "apply"
+  | Assign _ -> "assign"
+  | Send _ -> "send"
+  | Unreachable _ -> "unreachable"
   | Let (_, id, _, _, _) -> Format.asprintf "let %a" Variable.print id
   | Let_rec _ -> "letrec"
-  | Set_of_closures _ -> "set_of_closures"
-  | Project_closure _ -> "project_closure"
-  | Project_var _ -> "project_var"
-  | Move_within_set_of_closures _ -> "move_within_set_of_closures"
-  | Apply _ -> "apply"
+  | If_then_else _ -> "if"
   | Switch _ -> "switch"
   | String_switch _ -> "stringswitch"
-  | Send _ -> "send"
-  | Prim _ -> "prim"
-  | Fseq_prim _ -> "seq_prim"
   | Static_raise  _ -> "staticraise"
   | Static_catch  _ -> "catch"
   | Try_with _ -> "trywith"
-  | If_then_else _ -> "if"
-  | Fsequence _ -> "seq"
   | While _ -> "while"
   | For _ -> "for"
-  | Assign _ -> "assign"
-  | Unreachable _ -> "unreachable"
 
-let rec same (l1 : 'a Flambda.t) (l2 : 'a Flambda.t) =
+let same (_l1 : 'a Flambda.t) (_l2 : 'a Flambda.t) = true
+(* XXX
   l1 == l2 || (* it is ok for string case: if they are physicaly the same,
                  it is the same original branch *)
   match (l1, l2) with
@@ -214,6 +197,7 @@ and sameswitch (fs1 : _ Flambda.switch) (fs2 : _ Flambda.switch) =
   Misc.samelist samecase fs1.consts fs2.consts &&
   Misc.samelist samecase fs1.blocks fs2.blocks &&
   Misc.sameoption same fs1.failaction fs2.failaction
+*)
 
 let can_be_merged = same
 
@@ -224,7 +208,8 @@ let can_be_merged = same
 type sharing_key = unit
 let make_key _ = None
 
-let toplevel_substitution sb tree =
+let toplevel_substitution _sb tree = tree
+(* XXX
   let sb v = try Variable.Map.find v sb with Not_found -> v in
   let aux (flam : _ Flambda.t) : _ Flambda.t =
     match flam with
@@ -238,6 +223,7 @@ let toplevel_substitution sb tree =
     | e -> e
   in
   Flambdaiter.map_toplevel aux tree
+*)
 
 let make_closure_declaration ~id ~body ~params : _ Flambda.t =
   let free_variables = Free_variables.calculate body in
@@ -282,16 +268,23 @@ let make_closure_declaration ~id ~body ~params : _ Flambda.t =
       specialised_args = Variable.Map.empty;
     }
   in
-  let project_closure : Expr_id.t Flambda.t =
+  let project_closure : Expr_id.t Flambda.named =
     Project_closure ({
         set_of_closures = set_of_closures_var;
         closure_id = Closure_id.wrap id;
       },
       Expr_id.create ())
   in
+  let project_closure_var =
+    Variable.create "project_closure"
+      ~current_compilation_unit:compilation_unit
+  in
   Let (Immutable, set_of_closures_var,
     Set_of_closures (set_of_closures, Expr_id.create ()),
-    project_closure, Expr_id.create ())
+    Let (Immutable, project_closure_var, project_closure,
+      Var (project_closure_var, Expr_id.create ()),
+      Expr_id.create ()),
+    Expr_id.create ())
 
 let bind ?name ~bindings ~body =
   List.fold_left (fun expr (var, var_def) ->

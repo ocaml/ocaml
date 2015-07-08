@@ -77,6 +77,6 @@ val toplevel_substitution
     body.  The optional name is used for creating [Expr_id.t] values. *)
 val bind
    : ?name:string
-  -> bindings:(Variable.t * Expr_id.t Flambda.t) list
+  -> bindings:(Variable.t * Expr_id.t Flambda.named) list
   -> body:Expr_id.t Flambda.t
   -> Expr_id.t Flambda.t
