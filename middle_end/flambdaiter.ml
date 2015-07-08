@@ -119,16 +119,17 @@ let iter_on_sets_of_closures f t =
     | String_switch _ | Static_raise _ | Static_catch _ | Try_with _
     | If_then_else _ | While _ | For _ -> ()
   in
-  iter aux t
+  iter aux aux_named t
 
 let map_general ~toplevel f f_named tree =
   let rec aux (tree : _ Flambda.t) =
     let exp : _ Flambda.t =
       match tree with
-      | Var _ -> tree
-      | Apply ({ func; args; kind; dbg }, annot) ->
-        Apply ({ func = aux func; args; kind; dbg }, annot)
-      | Project_var _ -> tree
+      | Var _ | Apply _ -> tree
+      | Assign(id, lam, annot) ->
+        let lam = aux lam in
+        Assign(id, lam, annot)
+      | Unreachable _ -> tree
       | Let (str, id, lam, body, annot) ->
         let lam = aux_named lam in
         let body = aux body in
@@ -137,8 +138,6 @@ let map_general ~toplevel f f_named tree =
         let defs = List.map (fun (id, lam) -> id, aux_named lam) defs in
         let body = aux body in
         Let_rec (defs, body, annot)
-      | Fseq_prim (prim, args, dbg, annot) ->
-        Fseq_prim (prim, List.map aux args, dbg, annot)
       | Switch(arg, sw, annot) ->
         let arg = aux arg in
         let sw =
@@ -184,20 +183,13 @@ let map_general ~toplevel f f_named tree =
         let hi = aux hi in
         let body = aux body in
         For(id, lo, hi, dir, body, annot)
-      | Assign(id, lam, annot) ->
-        let lam = aux lam in
-        Assign(id, lam, annot)
-      | Unreachable _ -> tree
     in
     f exp
   and aux_named (named : _ Flambda.named) =
     let named : _ Flambda.named =
       match named with
-      | Symbol _
-      | Const _
-      | Project_closure _
-      | Move_within_set_of_closures _
-      | Prim _ -> named
+      | Symbol _ | Const _ | Project_closure _ | Move_within_set_of_closures _
+      | Project_var _ | Prim _ -> named
       | Set_of_closures ({ function_decls; free_vars;
             specialised_args }, annot) ->
         let function_decls : _ Flambda.function_declarations =
@@ -212,7 +204,7 @@ let map_general ~toplevel f f_named tree =
         in
         Set_of_closures ({ function_decls; free_vars; specialised_args },
           annot)
-      | Expr expr -> aux expr
+      | Expr expr -> Expr (aux expr)
     in
     f_named named
   in
