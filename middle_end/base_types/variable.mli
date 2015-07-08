@@ -23,7 +23,7 @@
 
 include Ext_types.Identifiable
 
-val create : current_compilation_unit:Compilation_unit.t -> string -> t
+val create : ?current_compilation_unit:Compilation_unit.t -> string -> t
 
 val unwrap : t -> Ident.t (* For bytecode debugger only *)
 val unique_ident : t -> Ident.t (* For clambdagen only *)

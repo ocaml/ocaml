@@ -36,8 +36,13 @@ end
 include T
 include Ext_types.Identifiable.Make (T)
 
-let create ~current_compilation_unit name =
-  { compilation_unit = current_compilation_unit;
+let create ?current_compilation_unit name =
+  let compilation_unit =
+    match current_compilation_unit with
+    | Some compilation_unit -> compilation_unit
+    | None -> Compilation_unit.get_current_exn ()
+  in
+  { compilation_unit;
     ident = Ident.create name;
   }
 
