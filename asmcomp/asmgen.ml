@@ -126,9 +126,9 @@ let prep_flambda_for_export ppf flam =
           Printflambda.flambda lam)
       const
   end;
-  Flambdacheck.check ~flambdasym:true fl;
+  Flambda_invariants.check ~flambdasym:true fl;
   Symbol.Map.iter (fun _ lam ->
-      Flambdacheck.check ~flambdasym:true ~cmxfile:true lam)
+      Flambda_invariants.check ~flambdasym:true ~cmxfile:true lam)
     const;
   fl_sym
 

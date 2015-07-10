@@ -165,7 +165,7 @@ MIDDLE_END=\
   middle_end/inlining_decision.cmo \
   middle_end/inline_and_simplify.cmo \
   middle_end/ref_to_variables.cmo \
-  middle_end/flambdacheck.cmo \
+  middle_end/flambda_invariants.cmo \
   middle_end/middle_end.cmo
 
 TOPLEVEL=toplevel/genprintval.cmo toplevel/toploop.cmo \

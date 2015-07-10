@@ -16,7 +16,7 @@ let middle_end ppf ~sourcefile ~prefixname ~backend ~exported_fields lam =
   let dump_and_check s flam =
     if !Clflags.dump_flambda
     then Format.fprintf ppf "%s:@ %a@." s Printflambda.flambda flam;
-    try Flambdacheck.check flam
+    try Flambda_invariants.check flam
     with e -> begin
       Format.fprintf ppf "%a@." Printflambda.flambda flam;
       raise e
