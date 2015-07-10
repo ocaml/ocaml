@@ -25,6 +25,8 @@
 #include "compatibility.h"
 #endif
 
+#ifndef CAML_CONFIG_H_NO_TYPEDEFS
+
 /* Types for 32-bit integers, 64-bit integers,
    native integers (as wide as a pointer type) */
 
@@ -78,6 +80,8 @@ typedef uint64 uintnat;
 #define ARCH_INTNAT_PRINTF_FORMAT ARCH_INT64_PRINTF_FORMAT
 #else
 #error "No integer type available to represent pointers"
+#endif
+
 #endif
 
 /* Endianness of floats */

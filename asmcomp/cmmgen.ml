@@ -481,11 +481,11 @@ let get_field base n =
   Cop(Cload Word, [field_address base n])
 
 let get_mut_field base n =
-  Cop(Cextcall("caml_get_field", typ_addr, false,Debuginfo.none),
-      [base; Cconst_int n])
+  Cop(Cextcall("caml_read_barrier", typ_addr, false, Debuginfo.none),
+      [base; n])
 
 let set_addr_field base n newval =
-  Cop(Cextcall("caml_modify_field", typ_void, false,Debuginfo.none),
+  Cop(Cextcall("caml_modify_field", typ_void, false, Debuginfo.none),
       [base; Cconst_int n; newval])
 
 let set_int_field base n newval =
@@ -495,8 +495,10 @@ let set_float_field base n newval =
   Cop(Cstore Double_u, [float_field_address base n; newval])
 
 let init_field base n newval =
-  Cop(Cextcall("caml_init_field", typ_void, false, Debuginfo.none),
-      [base; Cconst_int n; newval])
+  let promoted = Cop (Cextcall("caml_obj_promote_to", typ_addr,
+                               false, Debuginfo.none),
+                      [newval; base]) in
+  set_addr_field base n promoted
 
 let header ptr =
   Cop(Cload Word, [Cop(Cadda, [ptr; Cconst_int(-size_int)])])
@@ -549,8 +551,7 @@ let array_indexing log2size ptr ofs =
                    Cconst_int((-1) lsl (log2size - 1))])
 
 let addr_array_ref arr ofs =
-  Cop(Cextcall("caml_get_field", typ_addr, false, Debuginfo.none),
-      [arr; untag_int ofs])
+  get_mut_field arr (untag_int ofs)
 let int_array_ref arr ofs =
   Cop(Cload Word, [array_indexing log2_size_addr arr ofs])
 let unboxed_float_array_ref arr ofs =
@@ -593,7 +594,7 @@ let lookup_tag obj tag =
 
 let lookup_label obj lab =
   bind "lab" lab (fun lab ->
-    let table = get_mut_field obj 0 in
+    let table = get_mut_field obj (Cconst_int 0) in
     addr_array_ref table lab)
 
 let call_cached_method obj tag cache pos args dbg =
@@ -1468,8 +1469,13 @@ let rec transl = function
           transl_prim_2 p arg1 arg2 dbg
       | (p, [arg1; arg2; arg3]) ->
           transl_prim_3 p arg1 arg2 arg3 dbg
-      | (_, _) ->
-          fatal_error "Cmmgen.transl:prim"
+      | (p, [arg1; arg2; arg3; arg4]) ->
+          transl_prim_4 p arg1 arg2 arg3 arg4 dbg
+      | (prim, _) ->
+        let (_ : string) = Format.flush_str_formatter () in
+        Printlambda.primitive Format.str_formatter prim;
+        fatal_error (Printf.sprintf "Cmmgen.transl_prim %s"
+            (Format.flush_str_formatter ()))
       end
 
   (* Control structures *)
@@ -1582,7 +1588,7 @@ and transl_prim_1 p arg dbg =
       return_unit(remove_unit (transl arg))
   (* Heap operations *)
   | Pfield(n, is_ptr, mut) ->
-      if is_ptr && (mut = Mutable) then get_mut_field (transl arg) n
+      if is_ptr && (mut = Mutable) then get_mut_field (transl arg) (Cconst_int n)
       else get_field (transl arg) n
   | Pfloatfield n ->
       let ptr = transl arg in
@@ -1676,8 +1682,14 @@ and transl_prim_1 p arg dbg =
       tag_int (Cop(Cextcall("caml_bswap16_direct", typ_int, false,
                             Debuginfo.none),
                    [untag_int (transl arg)]))
-  | _ ->
-      fatal_error "Cmmgen.transl_prim_1"
+  | Pperform ->
+      (* CR mshinwell: add implementation *)
+      Ctuple []
+  | prim ->
+      let (_ : string) = Format.flush_str_formatter () in
+      Printlambda.primitive Format.str_formatter prim;
+      fatal_error (Printf.sprintf "Cmmgen.transl_prim_1 %s"
+          (Format.flush_str_formatter ()))
 
 and transl_prim_2 p arg1 arg2 dbg =
   match p with
@@ -1910,8 +1922,16 @@ and transl_prim_2 p arg1 arg2 dbg =
   | Pbintcomp(bi, cmp) ->
       tag_int (Cop(Ccmpi(transl_comparison cmp),
                      [transl_unbox_int bi arg1; transl_unbox_int bi arg2]))
-  | _ ->
-      fatal_error "Cmmgen.transl_prim_2"
+  | Phandle
+  | Pcontinue
+  | Pdiscontinue ->
+      (* CR mshinwell: add implementation *)
+      Ctuple []
+  | prim ->
+      let (_ : string) = Format.flush_str_formatter () in
+      Printlambda.primitive Format.str_formatter prim;
+      fatal_error (Printf.sprintf "Cmmgen.transl_prim_2 %s"
+          (Format.flush_str_formatter ()))
 
 and transl_prim_3 p arg1 arg2 arg3 dbg =
   match p with
@@ -2042,6 +2062,17 @@ and transl_prim_3 p arg1 arg2 arg3 dbg =
 
   | _ ->
     fatal_error "Cmmgen.transl_prim_3"
+
+and transl_prim_4 prim arg1 arg2 arg3 arg4 dbg =
+  match prim with
+  | Phandle ->
+      (* CR mshinwell: add implementation *)
+      Ctuple []
+  | prim ->
+      let (_ : string) = Format.flush_str_formatter () in
+      Printlambda.primitive Format.str_formatter prim;
+      fatal_error (Printf.sprintf "Cmmgen.transl_prim_4 %s"
+          (Format.flush_str_formatter ()))
 
 and transl_unbox_float = function
     Uconst(Uconst_ref(_, Uconst_float f)) -> Cconst_float f
@@ -2478,13 +2509,13 @@ let send_function arity =
     let cache = Cvar cache and obj = Cvar obj and tag = Cvar tag in
     let meths = Ident.create "meths" and cached = Ident.create "cached" in
     let real = Ident.create "real" in
-    let mask = get_mut_field (Cvar meths) 1 in
+    let mask = get_mut_field (Cvar meths) (Cconst_int 1) in
     let cached_pos = Cvar cached in
     let tag_pos = Cop(Cadda, [Cop (Cadda, [cached_pos; Cvar meths]);
                               Cconst_int(3*size_addr-1)]) in
     let tag' = Cop(Cload Word, [tag_pos]) in
     Clet (
-    meths, get_mut_field obj 0,
+    meths, get_mut_field obj (Cconst_int 0),
     Clet (
     cached, Cop(Cand, [Cop(Cload Word, [cache]); mask]),
     Clet (
@@ -2492,10 +2523,9 @@ let send_function arity =
     Cifthenelse(Cop(Ccmpa Cne, [tag'; tag]),
                 cache_public_method (Cvar meths) tag cache,
                 cached_pos),
-    Cop(Cextcall("caml_get_field", typ_addr, false,Debuginfo.none),
-        [Cvar meths;
-         Cop(Casr, [Cop (Cadda, [Cvar real; Cconst_int(2*size_addr - 1)]);
-                    Cconst_int log2_size_addr])]))))
+    get_mut_field (Cvar meths)
+                  (Cop(Casr, [Cop (Cadda, [Cvar real; Cconst_int(2*size_addr - 1)]);
+                              Cconst_int log2_size_addr])))))
   in
   let body = Clet(clos', clos, body) in
   let fun_args =

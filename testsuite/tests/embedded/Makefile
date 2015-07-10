@@ -26,7 +26,7 @@ compile: caml
 
 caml:
 	@mkdir -p caml || :
-	@cp -f $(TOPDIR)/byterun/*.h caml/
+	@cp -f $(TOPDIR)/byterun/*.h $(TOPDIR)/byterun/*.tbl caml/
 
 .PHONY: run
 run:

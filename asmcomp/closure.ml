@@ -760,6 +760,11 @@ let rec add_debug_info ev u =
       end
   | _ -> u
 
+let prim_promote =
+  Pccall { Primitive.prim_name = "caml_obj_promote_to"; prim_arity = 2;
+           prim_alloc = false; prim_native_name = "";
+           prim_native_float = false }
+
 (* Uncurry an expression and explicitate closures.
    Also return the approximation of the expression.
    The approximation environment [fenv] maps idents to approximations.
@@ -928,7 +933,8 @@ let rec close fenv cenv = function
       let (ulam, approx) = close fenv cenv lam in
       if approx <> Value_unknown then
         (!global_approx).(n) <- approx;
-      (Uprim(Psetfield(n, false, Mutable), [getglobal id; ulam], Debuginfo.none),
+      let promoted = Uprim(prim_promote, [ulam; Uconst (Uconst_int 0)], Debuginfo.none) in
+      (Uprim(Psetfield(n, false, Mutable), [getglobal id; promoted], Debuginfo.none),
        Value_unknown)
   | Lprim(Praise k, [Levent(arg, ev)]) ->
       let (ulam, approx) = close fenv cenv arg in

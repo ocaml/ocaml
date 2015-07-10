@@ -23,6 +23,7 @@
 #include "mlvalues.h"
 #ifdef NATIVE_CODE
 #include "stack.h"
+#include "frame_descriptors.h"
 #else
 #include "fiber.h"
 #endif
@@ -31,9 +32,7 @@
 #include "signals.h"
 #include "startup.h"
 
-#ifndef NATIVE_CODE
 uintnat caml_max_stack_size;
-#endif
 
 double caml_stat_minor_words = 0.0,
        caml_stat_promoted_words = 0.0,
@@ -429,7 +428,7 @@ CAMLprim value caml_gc_major(value v)
   caml_gc_log ("Major GC cycle requested");
   caml_empty_minor_heap ();
   caml_trigger_stw_gc ();
-  caml_handle_gc_interrupt (0);
+  caml_handle_gc_interrupt ();
   /* !! caml_final_do_calls (); */
   return Val_unit;
 }
@@ -471,6 +470,9 @@ major_heap_size =
                caml_max_stack_size / 1024 * sizeof (value));
 
   caml_init_domains(caml_startup_params.minor_heap_init);
+  #ifdef NATIVE_CODE
+  caml_init_frame_descriptors();
+  #endif
 /*
   caml_major_heap_increment = major_incr;
   caml_percent_free = norm_pfree (percent_fr);

@@ -30,6 +30,11 @@ FIXME: This file should use C11 atomics if they are available.
 #error "no compiler barrier defined for this compiler"
 #endif
 
+#if defined(__GNUC__)
+#define compiler_expect_1(c) __builtin_expect((c), 1)
+#else
+#define compiler_expect_1(c) c
+#endif
 
 
 /* Loads and stores with acquire and release semantics respectively */
@@ -61,11 +66,33 @@ INLINE void atomic_store_rel(atomic_uintnat* p, uintnat v) {
 #endif
 
 
+/* Spin-wait loops */
+
+#define Max_spins 1000
+
+unsigned caml_plat_spin_wait(unsigned spins,
+                             const char* file, int line,
+                             const char* function);
+
+#define GENSYM_3(name, l) name##l
+#define GENSYM_2(name, l) GENSYM_3(name, l)
+#define GENSYM(name) GENSYM_2(name, __LINE__)
+
+
+#define SPIN_WAIT                                                       \
+  unsigned GENSYM(caml__spins) = 0;                                     \
+  for (; 1; cpu_relax(),                                                \
+         GENSYM(caml__spins) =                                          \
+           compiler_expect_1(GENSYM(caml__spins) < Max_spins) ?         \
+         GENSYM(caml__spins) + 1 :                                      \
+         caml_plat_spin_wait(GENSYM(caml__spins),                       \
+                             __FILE__, __LINE__, __func__))
+
+
 INLINE uintnat atomic_load_wait_nonzero(atomic_uintnat* p) {
-  while (1) {
+  SPIN_WAIT {
     uintnat v = atomic_load_acq(p);
     if (v) return v;
-    cpu_relax();
   }
 }
 

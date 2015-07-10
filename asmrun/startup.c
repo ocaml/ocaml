@@ -69,7 +69,7 @@ static void init_segments(void)
 struct longjmp_buffer caml_termination_jmpbuf;
 void (*caml_termination_hook)(void *) = NULL;
 
-extern value caml_start_program (void);
+extern value caml_start_program (char*);
 extern void caml_init_ieee_floats (void);
 extern void caml_init_signals (void);
 
@@ -94,8 +94,8 @@ void caml_main(char **argv)
   caml_install_invalid_parameter_handler();
 #endif
   caml_init_custom_operations();
-  caml_top_of_stack = &tos;
   caml_init_gc ();
+  caml_domain_state->top_of_stack = &tos;
   init_segments();
   caml_init_signals();
   caml_debugger_init (); /* force debugger.o stub to be linked */
@@ -111,7 +111,7 @@ void caml_main(char **argv)
     if (caml_termination_hook != NULL) caml_termination_hook(NULL);
     return;
   }
-  res = caml_start_program();
+  res = caml_start_program(caml_domain_state->young_ptr);
   if (Is_exception_result(res))
     caml_fatal_uncaught_exception(Extract_exception(res));
 }

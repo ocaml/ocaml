@@ -78,6 +78,15 @@ let load_symbol_addr s =
   then `leaq	{emit_symbol s}(%rip)`
   else `movq	${emit_symbol s}`
 
+let locate_domain_state () =
+  let bits = Domainstate.minor_heap_align_bits in
+  let dom_mask = Nativeint.(lognot (sub (shift_left one bits) one)) in
+  (* CR mshinwell: could do (-1) lsl bits *)
+  `andq	${emit_nativeint dom_mask}`
+
+let domain_field f =
+  emit_int (Domainstate.idx_of_field f * 8)
+
 (* Output a label *)
 
 let emit_label lbl =
@@ -184,14 +193,16 @@ let record_frame live dbg =
 (* Record calls to the GC -- we've moved them out of the way *)
 
 type gc_call =
-  { gc_lbl: label;                      (* Entry label *)
+  { gc_size : int;                      (* Allocation size, in bytes *)
+    gc_lbl: label;                      (* Entry label *)
     gc_return_lbl: label;               (* Where to branch after GC *)
     gc_frame: label }                   (* Label of frame descriptor *)
 
 let call_gc_sites = ref ([] : gc_call list)
 
 let emit_call_gc gc =
-  `{emit_label gc.gc_lbl}:	{emit_call "caml_call_gc"}\n`;
+  `{emit_label gc.gc_lbl}:	addq	${emit_int gc.gc_size}, %r15\n`;
+  `	{emit_call "caml_call_gc"}\n`;
   `{emit_label gc.gc_frame}:	jmp	{emit_label gc.gc_return_lbl}\n`
 
 (* Record calls to caml_ml_array_bound_error.
@@ -416,8 +427,10 @@ let emit_instr fallthrough i =
           `	{load_symbol_addr s}, %rax\n`;
           `	{emit_call "caml_c_call"}\n`;
           record_frame i.live i.dbg;
-          `	{load_symbol_addr "caml_young_ptr"}, %r11\n`;
-          `	movq    (%r11), %r15\n`;
+          (* caml_c_call preserves the old value of %r15, but this may no longer
+             be the correct minor heap pointer, so we reload young_ptr *)
+          `	{locate_domain_state ()}, %r15\n`;
+          `	movq	{domain_field Domainstate.Domain_young_ptr}(%r15), %r15\n`;
         end else begin
           `	{emit_call s}\n`
         end
@@ -468,18 +481,17 @@ let emit_instr fallthrough i =
     | Lop(Ialloc n) ->
         if !fastcode_flag then begin
           let lbl_redo = new_label() in
-          `{emit_label lbl_redo}:	subq	${emit_int n}, %r15\n`;
-          if !Clflags.dlcode then begin
-            `	{load_symbol_addr "caml_young_limit"}, %rax\n`;
-            `	cmpq	(%rax), %r15\n`;
-          end else
-            `	cmpq	{emit_symbol "caml_young_limit"}(%rip), %r15\n`;
+          `{emit_label lbl_redo}:	movq	%r15, %rax\n`;
+          `	subq	${emit_int n}, %r15\n`;
+          `	{locate_domain_state ()}, %rax\n`;
+          `	cmpq	{domain_field Domainstate.Domain_young_limit}(%rax), %r15\n`;
           let lbl_call_gc = new_label() in
           let lbl_frame = record_frame_label i.live Debuginfo.none in
           `	jb	{emit_label lbl_call_gc}\n`;
           `	leaq	8(%r15), {emit_reg i.res.(0)}\n`;
           call_gc_sites :=
-            { gc_lbl = lbl_call_gc;
+            { gc_size = n;
+              gc_lbl = lbl_call_gc;
               gc_return_lbl = lbl_redo;
               gc_frame = lbl_frame } :: !call_gc_sites
         end else begin
@@ -714,6 +726,9 @@ let fundecl fundecl =
   bound_error_call := 0;
   `	.text\n`;
   emit_align 16;
+  Emitaux.emit_block_header_for_closure ~word_directive:".quad"
+    ~comment_char:'#'
+    ~function_entry_points_are_doubleword_aligned:true;
   if macosx
   && not !Clflags.output_c_object
   && is_generic_function fundecl.fun_name

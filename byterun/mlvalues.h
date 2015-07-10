@@ -68,7 +68,6 @@ typedef struct atomic_uintnat {
   volatile uintnat val;
 } atomic_uintnat;
 
-
 /* Longs vs blocks. */
 #define Is_long(x)   (((x) & 1) != 0)
 #define Is_block(x)  (((x) & 1) == 0)
@@ -168,17 +167,18 @@ bits  63    10 9     8 7   0
 /* Fields are numbered from 0. */
 
 
-CAMLextern __thread char *caml_young_end, *caml_young_start;
+/* see domain.c */
+CAMLextern __thread struct caml_domain_state* caml_domain_state;
 
 
 /* All values which are not blocks in the current domain's minor heap
-   differ from caml_young_start in at least one of the bits set in
+   differ from caml_domain_state in at least one of the bits set in
    Young_val_bitmask */
 #define Young_val_bitmask \
   ((uintnat)1 | ~(((uintnat)1 << Minor_heap_align_bits) - (uintnat)1))
 
 /* All values which are not blocks in any domain's minor heap differ
-   from caml_young_start in at least one of the bits set in
+   from caml_domain_state in at least one of the bits set in
    Minor_val_bitmask */
 #define Minor_val_bitmask \
   ((uintnat)1 | ~(((uintnat)1 << (Minor_heap_align_bits + Minor_heap_sel_bits)) - (uintnat)1))
@@ -188,43 +188,31 @@ CAMLextern __thread char *caml_young_end, *caml_young_start;
    Since the minor heap is allocated in one aligned block, this can be tested
    via bitmasking. */
 #define Is_young(val) \
-  ((((uintnat)(val) ^ (uintnat)caml_young_start) & Young_val_bitmask) == 0)
+  ((((uintnat)(val) ^ (uintnat)caml_domain_state) & Young_val_bitmask) == 0)
 
 /* Is_minor(val) is true iff val is a block in any domain's minor heap. */
 #define Is_minor(val) \
-  ((((uintnat)(val) ^ (uintnat)caml_young_start) & Minor_val_bitmask) == 0)
+  ((((uintnat)(val) ^ (uintnat)caml_domain_state) & Minor_val_bitmask) == 0)
 
 /* Is_foreign(val) is true iff val is a block in another domain's minor heap.
    Since all minor heaps lie in one aligned block, this can be tested via
    more bitmasking. */
 #define Is_foreign(val) \
-  (((((uintnat)(val) ^ (uintnat)caml_young_start) - (1 << Minor_heap_align_bits)) & \
+  (((((uintnat)(val) ^ (uintnat)caml_domain_state) - (1 << Minor_heap_align_bits)) & \
     Minor_val_bitmask) == 0)
 
 
-CAMLextern __thread char *caml_young_ptr;
-  
 CAMLextern value caml_read_barrier(value, int);
 static inline value Field(value x, int i) {
   value v = (((value*)x))[i];
-  if (Is_young(v)) Assert(caml_young_ptr < (char*)v);
+  //if (Is_young(v)) Assert(young_ptr < (char*)v);
   return Is_foreign(v) ? caml_read_barrier(x, i) : v;
   }
   #define FieldImm(x, i) (((value *)(x)) [i] + 0)
   //#define Field(x, i) (((value *)(x)) [i] + 0)
 
 /* initialise a field of an object just allocated on the minor heap */
-#ifndef DEBUG
 #define Init_field(block, offset, val) (Op_val(block)[offset] = val)
-#else
-/* add some assertions in debug mode */
-#define Init_field(block, offset, val)                  \
-  do {                                                  \
-    value caml__temp_block = block;                     \
-    Assert(Hp_val(caml__temp_block) == caml_young_ptr); \
-    Op_val(caml__temp_block)[offset] = val;             \
-  } while(0)
-#endif
 
 
 typedef int32 opcode_t;

@@ -17,8 +17,6 @@
 #include "mlvalues.h"
 #include "memory.h"
 
-CAMLextern __thread int caml_backtrace_active;
-CAMLextern __thread int caml_backtrace_pos;
 CAMLextern __thread code_t * caml_backtrace_buffer;
 CAMLextern __thread caml_root caml_backtrace_last_exn;
 CAMLextern __thread char * caml_cds_file;

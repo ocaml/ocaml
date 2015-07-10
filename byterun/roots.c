@@ -33,10 +33,6 @@
 
 /* FIXME: there should be one of these per domain */
 
-char * caml_top_of_stack;
-char * caml_bottom_of_stack = NULL; /* no stack initially */
-uintnat caml_last_return_address = 1; /* not in OCaml code initially */
-value * caml_gc_regs;
 intnat caml_globals_inited = 0;
 static intnat caml_globals_scanned = 0;
 
@@ -51,9 +47,9 @@ CAMLexport void caml_do_local_roots (scanning_action f, struct domain* domain)
   value* sp;
 
 #ifdef NATIVE_CODE
-  /* FIXME: does not work when domain != self */
-  caml_scan_stack_roots(f, caml_bottom_of_stack,
-                        caml_last_return_address, caml_gc_regs);
+  struct caml_domain_state* st = domain->state;
+  caml_scan_stack_roots(f, st->bottom_of_stack,
+                        st->last_return_address, st->gc_regs);
 #else
   f(*(domain->current_stack), domain->current_stack);
   f(*(domain->parent_stack), domain->parent_stack);
@@ -73,8 +69,8 @@ CAMLexport void caml_do_local_roots (scanning_action f, struct domain* domain)
 void caml_do_sampled_roots(scanning_action f, struct domain* domain)
 {
   /* look for roots on the minor heap */
-  value* p = (value*)(*domain->young_ptr);
-  value* end = (value*)(*domain->young_end);
+  value* p = (value*)(domain->state->young_ptr);
+  value* end = (value*)(domain->state->young_end);
   while (p < end) {
     value v = Val_hp(p);
     Assert (Is_block(v) && Wosize_val(v) <= Max_young_wosize);

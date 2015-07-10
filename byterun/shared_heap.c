@@ -21,6 +21,7 @@ struct global_heap_state {
   status MARKED, UNMARKED, GARBAGE;
 };
 struct global_heap_state global = {0 << 8, 1 << 8, 2 << 8};
+/* CR mshinwell: ensure this matches [Emitaux] */
 enum {NOT_MARKABLE = 3 << 8};
 
 
