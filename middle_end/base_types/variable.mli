@@ -34,6 +34,7 @@ val freshen : t -> t
 val rename : current_compilation_unit:Compilation_unit.t ->
   ?append:string -> t -> t
 
+(* CR mshinwell: type t first *)
 val in_compilation_unit : Compilation_unit.t -> t -> bool
 
 val unique_name : t -> string

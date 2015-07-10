@@ -88,6 +88,8 @@ type const =
   | Const_pointer of int
   | Const_float_array of string list
   | Const_immstring of string
+  (** Unlike [Const_base (Const_float ...)], [Const_float] here takes a
+      [float], not a [string]. *)
   | Const_float of float
 
 type apply = {

@@ -16,7 +16,7 @@
 val iter
    : Flambda.t
   -> free_variable:(Variable.t -> unit)
-  -> bound_variable:(Variable.t Binding_occurrence.t -> unit)
+  -> bound_variable:(Variable.t -> unit)
   -> unit
 
 (** Calculation of the set of free variables in a given Flambda term. *)

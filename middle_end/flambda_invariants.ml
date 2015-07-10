@@ -19,9 +19,8 @@
 *)
 let already_added_bound_variable_to_env (var : Variable.t) = ()
 let already_examined_fun_var (var : Variable.t) = ()
-let will_traverse_expression_later (e : Flambda.t) = ()
+let will_traverse_named_expression_later (e : Flambda.named) = ()
 let ignore_call_kind (_ : Flambda.call_kind) = ()
-let ignore_let_kind (_ : Flambda.let_kind) = ()
 let ignore_debuginfo (_ : Debuginfo.t) = ()
 let ignore_meth_kind (_ : Lambda.meth_kind) = ()
 let ignore_int (_ : int) = ()
@@ -44,28 +43,36 @@ exception Assignment_to_non_mutable_variable of Variable.t
 exception Var_in_function_body_not_bound_by_closure_or_params of Variable.Set.t
 exception Function_decls_have_overlapping_parameters of Variable.Set.t
 exception Specialised_arg_that_is_not_a_parameter of Variable.t
-exception Free_variables_set_is_lying of Flambda.function_declaration
+exception Free_variables_set_is_lying of
+  Variable.t * Flambda.function_declaration
 exception Set_of_closures_free_vars_map_has_wrong_domain of Variable.Set.t
 exception Static_exception_not_caught of Static_exception.t
 exception Static_exception_caught_in_multiple_places of Static_exception.t
 exception Access_to_global_module_identifier of Lambda.primitive
+exception Pidentity_should_not_occur
+exception Pdirapply_should_be_expanded
+exception Prevapply_should_be_expanded
+exception Use_Pmakeblock_and_not_Const_block
 
 exception Flambda_invariants_failed
 
-type is_mutable = Mutable | Immutable
-
 let variable_invariants flam =
-  let add_binding_occurrence env var ~is_mutable =
+  let add_binding_occurrence env var is_mutable =
     let compilation_unit = Compilation_unit.get_current_exn () in
-    if not (Variable.in_compilation_unit var compilation_unit) then
+    if not (Variable.in_compilation_unit compilation_unit var) then
       raise (Binding_occurrence_not_from_current_compilation_unit var)
     else if Variable.Map.mem var env then
       raise (Binding_occurrence_of_variable_already_bound var)
     else
       Variable.Map.add var is_mutable env
   in
+  let add_binding_occurrences env vars is_mutable =
+    List.fold_left (fun env var ->
+        add_binding_occurrence env var is_mutable)
+      env vars
+  in
   let check_variable_is_bound env var =
-    if not Variable.Map.mem var env then raise (Unbound_variable var)
+    if not (Variable.Map.mem var env) then raise (Unbound_variable var)
   in
   let check_variable_is_bound_and_get_mutability env var =
     try Variable.Map.find var env
@@ -78,14 +85,13 @@ let variable_invariants flam =
     match flam with
     (* Expressions that can bind [Variable.t]s: *)
     | Let (let_kind, var, def, body) ->
-      ignore_let_kind let_kind;
       loop_named env def;
-      loop (add_binding_occurrence env var) body
+      loop (add_binding_occurrence env var let_kind) body
     | Let_rec (defs, body) ->
       let env =
         List.fold_left (fun env (var, def) ->
-            will_traverse_expression_later def;
-            add_binding_occurrence env var)
+            will_traverse_named_expression_later def;
+            add_binding_occurrence env var Flambda.Immutable)
           env defs
       in
       List.iter (fun (var, def) ->
@@ -96,16 +102,16 @@ let variable_invariants flam =
       ignore_direction_flag direction;
       loop env lo;
       loop env hi;
-      loop (add_binding_occurrence env var) body
+      loop (add_binding_occurrence env var Flambda.Immutable) body
     | Static_catch (static_exn, vars, body, handler) ->
       ignore_static_exception static_exn;
       loop env body;
-      let env = List.fold_right Variable.Set.add vars env in
-      loop env handler
+      loop (add_binding_occurrences env vars Flambda.Immutable) handler
     | Try_with (body, var, handler) ->
       loop env body;
-      loop (add_binding_occurrence env var) handler
+      loop (add_binding_occurrence env var Flambda.Immutable) handler
     (* Everything else: *)
+    | Var var -> check_variable_is_bound env var
     | Apply { func; args; kind; dbg } ->
       check_variable_is_bound env func;
       check_variables_are_bound env args;
@@ -115,7 +121,7 @@ let variable_invariants flam =
       let is_mutable = check_variable_is_bound_and_get_mutability env var in
       (* CR-someday mshinwell: consider if the mutable/immutable distinction
          on variables could be enforced by the type system *)
-      begin match is_mutable with
+      begin match (is_mutable : Flambda.let_kind) with
       | Mutable -> loop env e
       | Immutable -> raise (Assignment_to_non_mutable_variable var)
       end
@@ -124,7 +130,7 @@ let variable_invariants flam =
       loop env e1;
       loop env e2;
       List.iter (loop env) es;
-      ignore_debug_info dbg
+      ignore_debuginfo dbg
     | If_then_else (e1, e2, e3) ->
       loop env e1;
       loop env e2;
@@ -135,7 +141,7 @@ let variable_invariants flam =
       ignore_int_set numblocks;
       List.iter (fun (n, e) ->
           ignore_int n;
-          loop env e);
+          loop env e)
         (consts @ blocks);
       Misc.may (loop env) failaction
     | String_switch (e, cases, e_opt) ->
@@ -152,13 +158,14 @@ let variable_invariants flam =
       loop env e1;
       loop env e2
     | Proved_unreachable -> ()
-  in
   and loop_named env (named : Flambda.named) =
     match named with
     | Symbol symbol -> ignore_symbol symbol
     | Const const -> ignore_const const
     | Set_of_closures { function_decls; free_vars; specialised_args; } ->
-      let { set_of_closures_id; funs; compilation_unit } = function_decls in
+      let { Flambda.set_of_closures_id; funs; compilation_unit } =
+        function_decls
+      in
       ignore_set_of_closures_id set_of_closures_id;
       ignore_compilation_unit compilation_unit;
       let functions_in_closure = Variable.Map.keys funs in
@@ -237,6 +244,13 @@ let variable_invariants flam =
   in
   loop Variable.Map.empty flam
 
+let const_invariants flam =
+  Flambdaiter.iter_named (function
+      | Const (Const_base (Const_block _)) ->
+        raise Use_Pmakeblock_and_not_Const_block
+      | _ -> ())
+    flam
+
 let primitive_invariants flam ~no_access_to_global_module_identifiers =
   Flambdaiter.iter_named (function
       | Prim (prim, _, _) ->
@@ -253,6 +267,9 @@ let primitive_invariants flam ~no_access_to_global_module_identifiers =
           begin
             raise (Access_to_global_module_identifier prim)
           end
+        | Pidentity -> raise Pidentity_should_not_occur
+        | Pdirapply _ -> raise Pdirapply_should_be_expanded
+        | Prevapply _ -> raise Prevapply_should_be_expanded
         end
       | _ -> ())
     flam
@@ -298,13 +315,14 @@ let declared_closure_id flam =
   Flambdaiter.iter_on_sets_of_closures (fun { Flambda. function_decls; _; } ->
       Variable.Map.iter (fun id _ ->
           let var = Closure_id.wrap id in
-          add_and_check var)
+          add_and_check var))
       function_decls.funs;
   !bound, !bound_multiple_times
 
 let no_closure_id_is_bound_multiple_times flam =
   match declared_closure_id flam with
-  | _, Some closure_id -> Closure_id_is_bound_multiple_times closure_id
+  | _, Some closure_id ->
+    raise (Closure_id_is_bound_multiple_times closure_id)
   | _, None -> ()
 
 let used_closure_ids flam =
@@ -345,8 +363,8 @@ let every_used_function_from_current_compilation_unit_is_declared flam =
   let counter_examples =
     Closure_id.Set.diff used_from_current_unit declared in
   if Closure_id.Set.is_empty counter_examples
-  then No_counter_example
-  else Counter_example counter_examples
+  then ()
+  else Unbound_closure_ids counter_examples
 
 let every_used_var_within_closure_from_current_compilation_unit_is_declared
       flam =
@@ -360,8 +378,8 @@ let every_used_var_within_closure_from_current_compilation_unit_is_declared
   let counter_examples =
     Var_within_closure.Set.diff used_from_current_unit declared in
   if Var_within_closure.Set.is_empty counter_examples
-  then No_counter_example
-  else Counter_example counter_examples
+  then ()
+  else Unbound_vars_within_closures counter_examples
 
 let every_static_exception_is_caught flam =
   let check env (flam : Flambda.t) =
@@ -396,12 +414,10 @@ let every_static_exception_is_caught_at_a_single_position flam =
   in
   Flambdaiter.iter f (fun (_ : Flambda.named) -> ()) flam
 
-(* CR mshinwell: check that the [free_vars] and [free_variables] fields of
-   [set_of_closures] and [function_declaration] respectively are correct. *)
-
 let check ?(flambdasym=false) ?(cmxfile=false) flam =
   try
     variable_invariants flam;
+    const_invariants flam;
     primitive_invariants flam ~no_access_to_global_module_identifiers:cmxfile;
     every_static_exception_is_caught flam;
     every_static_exception_is_caught_at_a_single_position flam;
@@ -441,11 +457,11 @@ let check ?(flambdasym=false) ?(cmxfile=false) flam =
       Format.eprintf "Variable in [specialised_args] that is not a parameter \
           of any of the function(s) in the corresponding declaration(s): %a"
         Variable.print var
-    | Free_variables_set_is_lying function_decl ->
+    | Free_variables_set_is_lying (var, function_decl) ->
       Format.eprintf "Function declaration whose [free_variables] set does \
           not coincide with the result of [Free_variables.calculate] applied \
           to the body of the function: %a"
-        Function_decl.print function_decl
+        Printflambda.function_declaration var function_decl
     | Set_of_closures_free_vars_map_has_wrong_domain vars ->
       Format.eprintf "[free_vars] map in set of closures has in its domain \
           variables that are not free variables of the corresponding \
@@ -469,7 +485,7 @@ let check ?(flambdasym=false) ?(cmxfile=false) flam =
       Format.eprintf "Unbound closure ID(s) from the current compilation \
           unit: %a"
         Closure_id.Set.printclosure_ids
-    | Unbound_vars_within_closure vars_within_closures ->
+    | Unbound_vars_within_closures vars_within_closures ->
       Format.eprintf "Unbound variable(s) within closure(s) from the current \
           compilation_unit: %a"
         Var_within_closure.Set.print vars_within_closures
@@ -485,6 +501,18 @@ let check ?(flambdasym=false) ?(cmxfile=false) flam =
       Format.eprintf "Forbidden access to a global module identifier (not \
           allowed in Flambda that will be exported to a .cmx file)"
         Printlambda.primitive prim
+    | Pidentity_should_not_occur ->
+      Format.eprintf "The Pidentity primitive should never occur in an \
+        Flambda expression (see closure_conversion.ml)"
+    | Pdirapply_should_be_expanded ->
+      Format.eprintf "The Pdirapply primitive should never occur in an \
+        Flambda expression (see closure_conversion.ml); use Apply instead"
+    | Prevapply_should_be_expanded ->
+      Format.eprintf "The Prevapply primitive should never occur in an \
+        Flambda expression (see closure_conversion.ml); use Apply instead"
+    | Use_Pmakeblock_and_not_Const_block ->
+      Format.eprintf "Const_block must not be used in Flambda expressions; \
+        use Pmakeblock instead"
     end;
     raise Flambda_invariants_failed
   end

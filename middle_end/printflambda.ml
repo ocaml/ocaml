@@ -143,15 +143,18 @@ and lam_named ppf (named : Flambda.named) =
       Variable.print_list args
   | Expr expr -> lam ppf expr
 
+and print_function_declaration ppf var (f : Flambda.function_declaration) =
+  let idents ppf =
+    List.iter (fprintf ppf "@ %a" Variable.print) in
+  fprintf ppf "@ (fun %a@[<2>%a@]@ @[<2>%a@])"
+    Variable.print var idents f.params lam f.body
+
 and print_set_of_closures ppf (set_of_closures : Flambda.set_of_closures) =
   match set_of_closures with
   | { function_decls; free_vars; specialised_args} ->
-    let idents ppf =
-      List.iter (fprintf ppf "@ %a" Variable.print) in
     let funs ppf =
-      Variable.Map.iter (fun var (f : Flambda.function_declaration) ->
-          fprintf ppf "@ (fun %a@[<2>%a@]@ @[<2>%a@])"
-            Variable.print var idents f.params lam f.body) in
+      Variable.Map.iter (print_function_declaration ppf)
+    in
     let vars ppf =
       Variable.Map.iter (fun id v -> fprintf ppf "@ %a = %a"
                       Variable.print id Variable.print v) in
@@ -219,3 +222,4 @@ let flambda ppf flam =
 let project_closure = print_project_closure
 let move_within_set_of_closures = print_move_within_set_of_closures
 let project_var = print_project_var
+let function_declaration = print_function_declaration
