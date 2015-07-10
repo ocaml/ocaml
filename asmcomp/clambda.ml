@@ -152,4 +152,17 @@ let compare_structured_constants c1 c2 =
   | Uconst_closure (_,lbl1,_), Uconst_closure (_,lbl2,_) ->
       String.compare lbl1 lbl2
   | _, _ -> rank_structured_constant c1 - rank_structured_constant c2
+
+(* CR fbour:
+Occurrences:
+1. https://github.com/chambart/ocaml-1/blob/flambda_trunk/asmcomp/clambda.ml#L154
+2. https://github.com/chambart/ocaml-1/blob/flambda_trunk/typing/ident.ml#L226
+3. https://github.com/chambart/ocaml-1/blob/flambda_trunk/utils/ext_types.ml#L182
+4. https://github.com/chambart/ocaml-1/blob/flambda_trunk/utils/ext_types.ml#L223
+
+Even when we know subtraction won't overflow, I don't see the point of not using compare directly (this applies to 1. and 2.).
+
+3 and 4 will require more type annotations to get optimised.
+In 4, integers are not constrained so the overflow case could a problem (although unlikely).
+*)
                 (* no overflow possible here *)
