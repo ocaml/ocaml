@@ -259,6 +259,8 @@ void caml_empty_minor_heap (void)
     ++ caml_stat_minor_collections;
     caml_final_empty_young ();
     if (caml_minor_gc_end_hook != NULL) (*caml_minor_gc_end_hook) ();
+  }else{
+    caml_final_empty_young ();
   }
 #ifdef DEBUG
   {
