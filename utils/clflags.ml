@@ -125,3 +125,5 @@ let inline_prim_cost = ref 3           (* -inline-prim-cost *)
 let inline_branch_cost = ref 10        (* -inline-branch-cost *)
 
 let print_timings = ref false          (* -timings *)
+
+let full_flambda_invariant_check = ref false

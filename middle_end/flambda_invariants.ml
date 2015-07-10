@@ -17,7 +17,32 @@ type 'a counter_example =
 
 exception Counter_example_id of Variable.t
 
-let every_used_identifier_is_bound flam =
+(* Explicit "ignore" functions.  We name every pattern variable, avoiding
+   underscores, to try to avoid accidentally failing to handle (for example)
+   a particular variable.
+   We also avoid explicit record field access during the checking functions,
+   preferring instead to use exhaustive record matches.
+*)
+let already_added_bound_variable_to_env (var : Variable.t) = ()
+let will_traverse_expression_later (e : Flambda.t) = ()
+let ignore_call_kind (_ : Flambda.call_kind) = ()
+let ignore_let_kind (_ : Flambda.let_kind) = ()
+let ignore_debuginfo (_ : Debuginfo.t) = ()
+let ignore_meth_kind (_ : Lambda.meth_kind) = ()
+let ignore_int (_ : int) = ()
+let ignore_int_set (_ : Ext_types.Int.Set.t) = ()
+let ignore_string (_ : string) = ()
+let ignore_static_exception (_ : Static_exception.t) = ()
+let ignore_direction_flag (_ : Asttypes.direction_flag) = ()
+let ignore_symbol (_ : Symbol.t) = ()
+let ignore_primitive ( _ : Lambda.primitive) = ()
+let ignore_const (_ : Flambda.const) = ()
+let ignore_set_of_closures_id (_ : Set_of_closures_id.t) = ()
+let ignore_closure_id (_ : Closure_id.t) = ()
+let ignore_var_within_closure (_ : Var_within_closure.t) = ()
+let ignore_compilation_unit (_ : Compilation_unit.t) = ()
+
+let check_bindings flam =
   let test var env =
     if not (Variable.Set.mem var env) then raise (Counter_example_id var)
   in
@@ -45,32 +70,136 @@ let every_used_identifier_is_bound flam =
     | Try_with _ | If_then_else _ | Fsequence _ | While _ | For _ | Send _
     | Proved_unreachable -> ()
   in
+
+exception Binding_occurrence_in_different_compilation_unit of Variable.t
+exception Binding_occurrence_of_variable_already_bound of Variable.t
+exception Unbound_variable of Variable.t
+
+  let add_binding_occurrence env var =
+    let compilation_unit = Compilation_unit.get_current_exn () in
+    if not (Variable.in_compilation_unit var compilation_unit) then
+      raise (Binding_occurrence_in_different_compilation_unit var)
+    else if Variable.Set.mem var env then
+      raise (Binding_occurrence_of_variable_already_bound var)
+    else
+      Variable.Set.add var env
+  in
+  let check_variable_is_bound env var =
+    if not Variable.Set.mem var env then raise (Unbound_variable var)
+  in
+  let check_variables_are_bound env vars =
+    List.iter (check_variable_is_bound env) vars
+  in
   let rec loop env (flam : Flambda.t) =
     match flam with
     (* Expressions that can bind [Variable.t]s: *)
-    | Let(_,id,def,body,_) ->
-        loop env def;
-        loop (Variable.Set.add id env) body
-    | Let_rec(defs,body,_) ->
-        let env =
-          List.fold_left (fun env (id,_) -> Variable.Set.add id env) env defs in
-        List.iter (fun (_,def) -> loop env def) defs;
-        loop env body
+    | Let (let_kind, var, def, body) ->
+      ignore_let_kind let_kind;
+      loop_named env def;
+      loop (add_binding_occurrence env var) body
+    | Let_rec (defs, body) ->
+      let env =
+        List.fold_left (fun env (var, def) ->
+            will_traverse_expression_later def;
+            add_binding_occurrence env var)
+          env defs
+      in
+      List.iter (fun (var, def) ->
+        already_added_bound_variable_to_env var;
+        loop_named env def) defs;
+      loop env body
+    | For (var, lo, hi, direction, body) ->
+      ignore_direction_flag direction;
+      loop env lo;
+      loop env hi;
+      loop (add_binding_occurrence env var) body
+    | Static_catch (static_exn, vars, body, handler) ->
+      ignore_static_exception static_exn;
+      loop env body;
+      let env = List.fold_right Variable.Set.add vars env in
+      loop env handler
+    | Try_with (body, var, handler) ->
+      loop env body;
+      loop (add_binding_occurrence env var) handler
+    (* Everything else: *)
+    | Apply { func; args; kind; dbg } ->
+      check_variable_is_bound env func;
+      check_variables_are_bound env args;
+      ignore_call_kind kind;
+      ignore_debuginfo dbg;
+    | Assign (var, e) ->
+      check_variable_is_bound env var;
+      loop env e
+    | Send (meth_kind, e1, e2, es, dbg) ->
+      ignore_meth_kind meth_kind;
+      loop env e1;
+      loop env e2;
+      List.iter (loop env) es;
+      ignore_debug_info dbg
+    | If_then_else (e1, e2, e3) ->
+      loop env e1;
+      loop env e2;
+      loop env e3
+    | Switch (e, { numconsts; consts; numblocks; blocks; failaction; }) ->
+      loop env e;
+      ignore_int_set numconsts;
+      ignore_int_set numblocks;
+      List.iter (fun (n, e) ->
+          ignore_int n;
+          loop env e);
+        (consts @ blocks);
+      Misc.may (loop env) failaction
+    | String_switch (e, cases, e_opt) ->
+      loop env e;
+      List.iter (fun (label, case) ->
+          ignore_string label;
+          loop env case)
+        cases;
+      Misc.may (loop env) e_opt
+    | Static_raise (static_exn, es) ->
+      ignore_static_exception static_exn;
+      List.iter (loop env) es
+    | While (e1, e2) ->
+      loop env e1;
+      loop env e2;
+    | Proved_unreachable -> ()
+  in
+  and loop_named env (named : Flambda.named) =
+    match named with
+    | Symbol symbol -> ignore_symbol symbol
+    | Const const -> ignore_const const
+    | Set_of_closures { function_decls; free_vars; specialised_args; } ->
+      let { set_of_closures_id; funs; compilation_unit } = function_decls in
+      ignore_set_of_closures_id set_of_closures_id;
+      ignore_compilation_unit compilation_unit;
+      Variable.Map.iter (fun fun_var function_decl ->
+          let { params; body; free_variables; stub; dbg; } = function_decl in
+
+          ignore_bool stub;
+          ignore_debuginfo dbg;
+
+        funs;
+      Variable.Map.iter (fun _ var -> test var env) free_vars;
+      Variable.Map.iter (fun _ var -> test var env) specialised_args
+    | Project_closure { set_of_closures; closure_id; } ->
+      check_variable_is_bound set_of_closures;
+      ignore_closure_id closure_id
+    | Move_within_set_of_closures { closure; start_from; move_to; } ->
+      check_variable_is_bound closure;
+      ignore_closure_id start_from;
+      ignore_closure_id move_to;
+    | Project_var { closure; closure_id; var; } ->
+      check_variable_is_bound closure;
+      ignore_closure_id closure_id;
+      ignore_var_within_closure var
+  in
+
+
     | Set_of_closures ({function_decls;free_vars = _},_) as exp ->
         check env exp;
         Variable.Map.iter (fun _ { Flambda. free_variables; body } ->
             loop free_variables body)
           function_decls.funs
-    | For (id, lo, hi, _, body, _) ->
-        loop env lo; loop env hi;
-        loop (Variable.Set.add id env) body
-    | Static_catch (_i, vars, body, handler,_) ->
-        loop env body;
-        let env = List.fold_right Variable.Set.add vars env in
-        loop env handler
-    | Try_with(body, id, handler,_) ->
-        loop env body;
-        loop (Variable.Set.add id env) handler
     (* Expressions that cannot bind [Variable.t]s, but may have free
        occurrences of them: *)
     | Assign _ | Var _ | Symbol _ | Const _ | Apply _
@@ -406,6 +535,9 @@ let no_access_to_global_module_identifiers flam =
     No_counter_example
   with Counter_example_prim p ->
     Counter_example p
+
+(* CR mshinwell: check that the [free_vars] and [free_variables] fields of
+   [set_of_closures] and [function_declaration] respectively are correct. *)
 
 (* CR mshinwell: checks for other disallowed primitives?
    (for example, Prim with Psequand/Psequor) *)

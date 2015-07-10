@@ -11,5 +11,13 @@
 (*                                                                        *)
 (**************************************************************************)
 
+(** Pass in turn all free and bound variables in the given Flambda term to
+    the supplied [free_variable] and [bound_variable] functions. *)
+val iter
+   : Flambda.t
+  -> free_variable:(Variable.t -> unit)
+  -> bound_variable:(Variable.t Binding_occurrence.t -> unit)
+  -> unit
+
 (** Calculation of the set of free variables in a given Flambda term. *)
 val calculate : Flambda.t -> Variable.Set.t

@@ -14,6 +14,13 @@
 #########################################################################
 
 case $1 in
+    middle_end/flambda_invariants.*)
+    # Same as below, but we also enable warning 9, to try to help catch
+    # cases where we fail to examine some subterm.  (See comments at the top
+    # of flambda_invariants.ml too.)
+    echo '-w +a-4+27-30-40-41-42 -principal -safe-string -strict-formats'
+    ;;
+
     asmcomp/clambdagen.* \
   | asmcomp/flambdaexport.* \
   | asmcomp/flambdaexport_types.* \
