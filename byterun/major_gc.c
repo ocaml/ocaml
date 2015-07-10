@@ -192,11 +192,13 @@ static void mark_slice (intnat work)
 #endif
       Assert (Is_gray_hd (hd));
       size = Wosize_hd (hd);
+      end = start + work;
       if (Tag_hd (hd) < No_scan_tag){
-        end = (size - start < work) ? size : (start + work);
+        start = size < start ? size : start;
+        end = size < end ? size : end;
         CAMLassert (end > start);
         INSTR (slice_fields += end - start;)
-        INSTR (if (size - end > 0)
+        INSTR (if (size > end)
                  CAML_INSTR_INT ("major/mark/slice/remain", size - end);)
         for (i = start; i < end; i++){
           child = Field (v, i);
