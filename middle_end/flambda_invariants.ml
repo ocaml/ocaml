@@ -45,6 +45,7 @@ exception Var_in_function_body_not_bound_by_closure_or_params of Variable.Set.t
 exception Function_decls_have_overlapping_parameters of Variable.Set.t
 exception Specialised_arg_that_is_not_a_parameter of Variable.t
 exception Free_variables_set_is_lying of Flambda.function_declaration
+exception Set_of_closures_free_vars_map_has_wrong_domain of Variable.Set.t
 exception Static_exception_not_caught of Static_exception.t
 exception Static_exception_caught_in_multiple_places of Static_exception.t
 exception Access_to_global_module_identifier of Lambda.primitive
@@ -167,8 +168,9 @@ let variable_invariants flam =
             Variable.Set.add var_in_closure variables_in_closure)
           free_vars Variable.Set.empty
       in
-      let params_for_all_functions =
-        Variable.Map.iter (fun all_params fun_var function_decl ->
+      let params_for_all_functions, free_vars_for_all_functions =
+        Variable.Map.iter (fun acc fun_var function_decl ->
+            let all_params, all_free_vars = acc in
             let { params; body; free_variables; stub; dbg; } = function_decl in
             assert (Variable.Map.mem fun_var functions_in_closure);
             ignore_bool stub;
@@ -200,9 +202,19 @@ let variable_invariants flam =
             if all_params_size <> old_all_params_size + params_size then begin
               raise (Function_decls_have_overlapping_parameters all_params)
             end;
-            all_params)
+            all_params, Variable.Set.union free_variables all_free_vars)
           funs Variable.Set.empty
       in
+      (* Check that the free variables rewriting map in the set of closures
+         does not contain variables in its domain that are not actually free
+         variables of any of the function bodies. *)
+      let bad_free_vars =
+        Variable.Set.diff (Variable.Map.keys free_vars)
+          free_vars_for_all_functions
+      in
+      if not (Variable.Set.is_empty bad_free_vars) then begin
+        raise (Set_of_closures_free_vars_map_has_wrong_domain bad_free_vars)
+      end
       (* Check that every "specialised arg" is a parameter of one of the
          functions being declared. *)
       Variable.Map.iter (fun being_specialised specialised_to ->
@@ -225,16 +237,25 @@ let variable_invariants flam =
   in
   loop Variable.Map.empty flam
 
-let primitive_invariants flam =
+let primitive_invariants flam ~no_access_to_global_module_identifiers =
   Flambdaiter.iter_named (function
-    | Prim (prim, _, _) ->
-      begin match prim with
-      | Psequand | Psequor ->
-        raise (Sequential_logical_operator_primitives_must_be_expanded prim)
-      | _ -> ()
-      end
-    | _ -> ())
-  flam
+      | Prim (prim, _, _) ->
+        begin match prim with
+        | Psequand | Psequor ->
+          raise (Sequential_logical_operator_primitives_must_be_expanded prim)
+        | Pgetglobalfield _ | Psetglobalfield _ | Psetglobal _ ->
+          if no_access_to_global_module_identifiers then begin
+            raise (Access_to_global_module_identifier prim)
+          end
+        | Pgetglobal id ->
+          if no_access_to_global_module_identifiers
+            && not (Ident.is_predef_exn id) then
+          begin
+            raise (Access_to_global_module_identifier prim)
+          end
+        end
+      | _ -> ())
+    flam
 
 let declared_var_within_closure flam =
   let bound = ref Var_within_closure.Set.empty in
@@ -255,8 +276,8 @@ let declared_var_within_closure flam =
 
 let no_var_within_closure_is_bound_multiple_times flam =
   match declared_var_within_closure flam with
-  | _, Some var -> Counter_example var
-  | _, None -> No_counter_example
+  | _, Some var -> raise (Var_within_closure_bound_multiple_times var)
+  | _, None -> ()
 
 let every_declared_closure_is_from_current_compilation_unit flam =
   let current_compilation_unit = Compilation_unit.get_current_exn () in
@@ -265,7 +286,6 @@ let every_declared_closure_is_from_current_compilation_unit flam =
       if not (Compilation_unit.equal compilation_unit current_compilation_unit)
       then raise (Declared_closure_from_another_unit compilation_unit))
     flam
-  No_counter_example
 
 let declared_closure_id flam =
   let bound = ref Closure_id.Set.empty in
@@ -284,10 +304,10 @@ let declared_closure_id flam =
 
 let no_closure_id_is_bound_multiple_times flam =
   match declared_closure_id flam with
-  | _, Some var -> Counter_example var
-  | _, None -> No_counter_example
+  | _, Some closure_id -> Closure_id_is_bound_multiple_times closure_id
+  | _, None -> ()
 
-let used_closure_id flam =
+let used_closure_ids flam =
   let used = ref Closure_id.Set.empty in
   let f (flam : Flambda.named) =
     match flam with
@@ -303,7 +323,7 @@ let used_closure_id flam =
   Flambdaiter.iter_named f flam;
   !used
 
-let used_var_within_closure flam =
+let used_vars_within_closures flam =
   let used = ref Var_within_closure.Set.empty in
   let f (flam : Flambda.t) =
     match flam with
@@ -317,7 +337,7 @@ let used_var_within_closure flam =
 let every_used_function_from_current_compilation_unit_is_declared flam =
   let current_compilation_unit = Compilation_unit.get_current_exn () in
   let declared, _ = declared_closure_id flam in
-  let used = used_closure_id flam in
+  let used = used_closure_ids flam in
   let used_from_current_unit =
     Closure_id.Set.filter
       (Closure_id.in_compilation_unit current_compilation_unit)
@@ -332,7 +352,7 @@ let every_used_var_within_closure_from_current_compilation_unit_is_declared
       flam =
   let current_compilation_unit = Compilation_unit.get_current_exn () in
   let declared, _ = declared_var_within_closure flam in
-  let used = used_var_within_closure flam in
+  let used = used_vars_within_closures flam in
   let used_from_current_unit =
     Var_within_closure.Set.filter
       (Var_within_closure.in_compilation_unit current_compilation_unit)
@@ -376,29 +396,13 @@ let every_static_exception_is_caught_at_a_single_position flam =
   in
   Flambdaiter.iter f (fun (_ : Flambda.named) -> ()) flam
 
-let no_access_to_global_module_identifiers flam =
-  let f (flam : Flambda.named) =
-    match flam with
-    | Prim (Pgetglobalfield _ as p, _, _, _)
-    | Prim (Psetglobalfield _ as p, _, _, _)
-    | Prim (Psetglobal _ as p, _, _, _) ->
-      raise (Access_to_global_module_identifier p)
-    | Prim (Pgetglobal id as p, _, _, _) ->
-      if not (Ident.is_predef_exn id)
-      then raise (Access_to_global_module_identifier p)
-    | _ -> ()
-  in
-  Flambdaiter.iter (fun (_ : Flambda.t) -> ()) f flam
-
 (* CR mshinwell: check that the [free_vars] and [free_variables] fields of
    [set_of_closures] and [function_declaration] respectively are correct. *)
-
-(* CR mshinwell: checks for other disallowed primitives?
-   (for example, Prim with Psequand/Psequor) *)
 
 let check ?(flambdasym=false) ?(cmxfile=false) flam =
   try
     variable_invariants flam;
+    primitive_invariants flam ~no_access_to_global_module_identifiers:cmxfile;
     every_static_exception_is_caught flam;
     every_static_exception_is_caught_at_a_single_position flam;
     no_var_within_closure_is_bound_multiple_times flam;
@@ -442,6 +446,11 @@ let check ?(flambdasym=false) ?(cmxfile=false) flam =
           not coincide with the result of [Free_variables.calculate] applied \
           to the body of the function: %a"
         Function_decl.print function_decl
+    | Set_of_closures_free_vars_map_has_wrong_domain vars ->
+      Format.eprintf "[free_vars] map in set of closures has in its domain \
+          variables that are not free variables of the corresponding \
+           functions"
+        Variable.Set.print vars
     | Sequential_logical_operator_primitives_must_be_expanded prim ->
       Format.eprintf "Sequential logical operator primitives must be \
           expanded (see closure_conversion.ml)"
