@@ -102,10 +102,11 @@ static value promote_stack(struct domain* domain, value stack)
     stack = Val_hp(new_stack);
   }
 
-  /* Promote each object on the stack. If the stack is not dirty, there are no
-     such objects. */
+  /* Promote each object on the stack. */
   promote_domain = domain;
-  caml_scan_dirty_stack(&promote_stack_elem, stack);
+  caml_scan_stack(&promote_stack_elem, stack);
+  /* Since we've promoted the objects on the stack, the stack is now clean. */
+  caml_clean_stack_domain(stack, domain);
   return stack;
 }
 
@@ -136,7 +137,7 @@ static value caml_promote_one(struct promotion_stack* stk, struct domain* domain
     curr -= infix_offset;
     curr_block_hd = Hd_val(curr);
   }
-    
+
   if (Is_promoted_hd(curr_block_hd)) {
     /* already promoted */
     return caml_addrmap_lookup(&domain->remembered_set->promotion, curr) + infix_offset;
@@ -151,13 +152,13 @@ static value caml_promote_one(struct promotion_stack* stk, struct domain* domain
   if (!mem) caml_fatal_error("allocation failure during promotion");
   value promoted = Val_hp(mem);
   Hd_val(curr) = Promotedhd_hd(curr_block_hd);
-    
+
   caml_addrmap_insert(&domain->remembered_set->promotion, curr, promoted);
   caml_addrmap_insert(&domain->remembered_set->promotion_rev, promoted, curr);
 
   if (Tag_hd(curr_block_hd) >= No_scan_tag) {
     int i;
-    for (i = 0; i < Wosize_hd(curr_block_hd); i++) 
+    for (i = 0; i < Wosize_hd(curr_block_hd); i++)
       Op_val(promoted)[i] = Op_val(curr)[i];
   } else {
     /* push to stack */
@@ -201,7 +202,7 @@ CAMLexport value caml_promote(struct domain* domain, value root)
     int field = curr->field;
     Assert(field < Wosize_val(local));
     curr->field++;
-    if (curr->field == Wosize_val(local)) 
+    if (curr->field == Wosize_val(local))
       stk.sp--;
     value x = Op_val(local)[field];
     if (Is_block(x) && Tag_val(x) == Stack_tag) {
@@ -427,7 +428,7 @@ void caml_empty_minor_heap (void)
           if (Tag_hd(hd) == Infix_tag) {
             offset = Infix_offset_hd(hd);
             v -= offset;
-          } 
+          }
           Assert (Hd_val (v) == 0);
           vnew = Op_val(v)[0] + offset;
         }
@@ -453,7 +454,7 @@ void caml_empty_minor_heap (void)
   }
   caml_restore_stack_gc();
 
-  
+
 #ifdef DEBUG
   {
     value *p;
@@ -481,7 +482,7 @@ CAMLexport void caml_minor_collection (void)
   /* !! caml_stat_promoted_words += caml_allocated_words - prev_alloc_words; */
   ++ caml_stat_minor_collections;
   caml_major_collection_slice (0);
-  
+
   /* !! caml_final_do_calls (); */
 
   caml_empty_minor_heap ();
