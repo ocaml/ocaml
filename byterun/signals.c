@@ -68,11 +68,7 @@ void caml_record_signal(int signal_number)
 {
   caml_pending_signals[signal_number] = 1;
   caml_signals_are_pending = 1;
-#ifndef NATIVE_CODE
-  caml_something_to_do = 1;
-#else
   caml_interrupt_self();
-#endif
 }
 
 

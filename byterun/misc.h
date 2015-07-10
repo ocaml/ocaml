@@ -61,7 +61,7 @@ typedef char * addr;
 
 /* Assertions */
 
-#ifdef DEBUG
+#if defined(DEBUG) || defined(NATIVE_CODE)
 #define CAMLassert(x) \
   ((x) ? (void) 0 : caml_failed_assert ( #x , __FILE__, __LINE__))
 CAMLextern int caml_failed_assert (char *, char *, int);

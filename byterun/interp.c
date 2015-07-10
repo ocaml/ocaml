@@ -295,7 +295,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
       for (s = sp; s < caml_stack_high; s++) {
         Assert(*s != Debug_free_minor);
         Assert(!Is_foreign(*s));
-        if (Is_minor(*s)) Assert(caml_young_ptr < (char*)*s);
+        if (Is_minor(*s)) Assert(caml_domain_state->young_ptr < (char*)*s);
       }
     }
 #endif
@@ -650,6 +650,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
     }
 
     Instruct(SETGLOBAL):
+      accu = caml_promote(caml_domain_self(), accu);
       caml_modify_field(caml_read_root(caml_global_data), *pc, accu);
       accu = Val_unit;
       pc++;
@@ -866,7 +867,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
       Next;
 
     Instruct(POPTRAP):
-      if (caml_something_to_do) {
+      if (Caml_check_gc_interrupt()) {
         /* We must check here so that if a signal is pending and its
            handler triggers an exception, the exception is trapped
            by the current try...with, not the enclosing one. */
@@ -883,13 +884,13 @@ value caml_interprete(code_t prog, asize_t prog_size)
 
     Instruct(RERAISE):
       if (caml_trap_sp_off >= caml_trap_barrier_off) caml_debugger(TRAP_BARRIER);
-      if (caml_backtrace_active) caml_stash_backtrace(accu, pc, sp, 1);
+      if (caml_domain_state->backtrace_active) caml_stash_backtrace(accu, pc, sp, 1);
       goto raise_notrace;
 
     Instruct(RAISE):
     raise_exception:
       if (caml_trap_sp_off >= caml_trap_barrier_off) caml_debugger(TRAP_BARRIER);
-      if (caml_backtrace_active) caml_stash_backtrace(accu, pc, sp, 0);
+      if (caml_domain_state->backtrace_active) caml_stash_backtrace(accu, pc, sp, 0);
     raise_notrace:
       if (caml_trap_sp_off > 0) {
         if (caml_parent_stack == Val_long(0)) {
@@ -938,13 +939,12 @@ value caml_interprete(code_t prog, asize_t prog_size)
 /* Signal handling */
 
     Instruct(CHECK_SIGNALS):    /* accu not preserved */
-      if (caml_something_to_do) goto process_signal;
+      if (Caml_check_gc_interrupt()) goto process_signal;
       Next;
 
     process_signal:
-      caml_something_to_do = 0;
       Setup_for_event;
-      caml_process_event();
+      caml_handle_gc_interrupt();
       Restore_after_event;
       Next;
 

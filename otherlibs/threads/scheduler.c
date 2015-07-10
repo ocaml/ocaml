@@ -786,7 +786,7 @@ value thread_uncaught_exception(value exn)  /* ML */
   fprintf(stderr, "Thread %d killed on uncaught exception %s\n",
           Int_val(curr_thread->ident), msg);
   free(msg);
-  if (backtrace_active) print_exception_backtrace();
+  //if (backtrace_active) print_exception_backtrace();
   fflush(stderr);
   return Val_unit;
 }

@@ -2,7 +2,7 @@
 #define CAML_DOMAIN_H
 
 #include "mlvalues.h"
-CAMLextern __thread atomic_uintnat caml_young_limit;
+#include "domain_state.h"
 
 struct domain {
   int id;
@@ -21,24 +21,18 @@ struct domain {
   value* parent_stack;
 #endif
 
-  char** young_ptr;
-  char** young_end;
+  struct caml_domain_state* state;
   value** mark_stack;
   int* mark_stack_count;
 };
 
-
-/* FIXME atomic access below */
-#define Caml_get_young_limit() caml_young_limit.val
-
-#define Caml_check_gc_interrupt(p) ((uintnat)(p) < Caml_get_young_limit())
+#define Caml_check_gc_interrupt() \
+  ((uintnat)caml_domain_state->young_ptr < caml_domain_state->young_limit)
 
 asize_t caml_norm_minor_heap_size (intnat);
 void caml_reallocate_minor_heap(asize_t);
 
-void caml_update_young_limit(uintnat);
-
-void caml_handle_gc_interrupt(int required_words);
+void caml_handle_gc_interrupt(void);
 
 void caml_trigger_stw_gc(void);
 

@@ -102,20 +102,24 @@ int caml_parse_command_line(char **argv)
         caml_startup_params.verb_gc = 0x001+0x004+0x008+0x010+0x020;
       }
       break;
+#ifndef NATIVE_CODE
     case 'p':
       for (j = 0; caml_names_of_builtin_cprim[j] != NULL; j++)
         printf("%s\n", caml_names_of_builtin_cprim[j]);
       exit(0);
       break;
+#endif
     case 'b':
       caml_startup_params.backtrace_enabled_init = 1;
       break;
+#ifndef NATIVE_CODE
     case 'I':
       if (argv[i + 1] != NULL) {
         caml_ext_table_add(&caml_shared_libs_path, argv[i + 1]);
         i++;
       }
       break;
+#endif
     default:
       caml_fatal_error_arg("Unknown option %s.\n", argv[i]);
     }

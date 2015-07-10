@@ -50,11 +50,9 @@ extern caml_generated_constant
 
 extern void caml_raise_exception (value bucket) Noreturn;
 
-char * caml_exception_pointer = NULL;
-
 void caml_raise(value v)
 {
-  if (caml_exception_pointer == NULL) caml_fatal_uncaught_exception(v);
+  if (caml_domain_state->exception_pointer == NULL) caml_fatal_uncaught_exception(v);
 
 #ifndef Stack_grows_upwards
 #define PUSHED_AFTER <
@@ -62,7 +60,7 @@ void caml_raise(value v)
 #define PUSHED_AFTER >
 #endif
   while (caml_local_roots != NULL &&
-         (char *) caml_local_roots PUSHED_AFTER caml_exception_pointer) {
+         (char *) caml_local_roots PUSHED_AFTER caml_domain_state->exception_pointer) {
     Assert(caml_local_roots != NULL);
     struct caml__mutex_unwind* m = caml_local_roots->mutexes;
     while (m) {

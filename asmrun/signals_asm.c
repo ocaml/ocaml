@@ -64,9 +64,9 @@ extern char caml_system__code_begin, caml_system__code_end;
    Only generated assembly code can call [caml_garbage_collection],
    via the caml_call_gc assembly stubs.  */
 
-void caml_garbage_collection(void)
+void caml_garbage_collection()
 {
-  caml_handle_gc_interrupt(0);
+  caml_handle_gc_interrupt();
   caml_process_pending_signals();
 }
 
@@ -151,10 +151,10 @@ DECLARE_SIGNAL_HANDLER(trap_handler)
     sigprocmask(SIG_UNBLOCK, &mask, NULL);
   }
 #endif
-  caml_exception_pointer = (char *) CONTEXT_EXCEPTION_POINTER;
-  caml_young_ptr = (char *) CONTEXT_YOUNG_PTR;
-  caml_bottom_of_stack = (char *) CONTEXT_SP;
-  caml_last_return_address = (uintnat) CONTEXT_PC;
+  caml_domain_state->exception_pointer = (char *) CONTEXT_EXCEPTION_POINTER;
+  caml_domain_state->young_ptr = (char *) CONTEXT_YOUNG_PTR;
+  caml_domain_state->bottom_of_stack = (char *) CONTEXT_SP;
+  caml_domain_state->last_return_address = (uintnat) CONTEXT_PC;
   caml_array_bound_error();
 }
 #endif
@@ -210,8 +210,8 @@ DECLARE_SIGNAL_HANDLER(segv_handler)
 #else
     /* Raise a Stack_overflow exception straight from this signal handler */
 #if defined(CONTEXT_YOUNG_PTR) && defined(CONTEXT_EXCEPTION_POINTER)
-    caml_exception_pointer = (char *) CONTEXT_EXCEPTION_POINTER;
-    caml_young_ptr = (char *) CONTEXT_YOUNG_PTR;
+    caml_domain_state->exception_pointer = (char *) CONTEXT_EXCEPTION_POINTER;
+    caml_domain_state->young_ptr = (char *) CONTEXT_YOUNG_PTR;
 #endif
     caml_raise_stack_overflow();
 #endif

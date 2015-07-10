@@ -20,7 +20,7 @@
 #include "domain.h"
 #include "startup.h"
 
-#ifdef DEBUG
+#if defined(DEBUG) || defined(NATIVE_CODE)
 
 int caml_failed_assert (char * expr, char * file, int line)
 {

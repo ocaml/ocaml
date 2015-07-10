@@ -8,6 +8,37 @@
 #include "platform.h"
 #include "fix_code.h"
 
+#ifdef NATIVE_CODE
+
+void caml_save_stack_gc()
+{
+}
+
+void caml_restore_stack_gc()
+{
+}
+
+struct caml_runqueue* caml_init_runqueue()
+{
+  return 0;
+}
+
+void caml_scan_stack(scanning_action f, value stack)
+{
+  caml_fatal_error("Fibers unimplemented");
+}
+
+void caml_scan_dirty_stack(scanning_action f, value stack)
+{
+  caml_fatal_error("Fibers unimplemented");
+}
+
+void caml_clean_stack(value stack)
+{
+  caml_fatal_error("Fibers unimplemented");
+}
+#else
+
 /* One word at the base of the stack is used to store the stack pointer */
 #define Stack_ctx_words 5
 #define Stack_base(stk) (Op_val(stk) + Stack_ctx_words)
@@ -453,3 +484,5 @@ void caml_scan_stack(scanning_action f, value stack)
     f(*sp, sp);
   }
 }
+
+#endif /* not NATIVE_CODE */
