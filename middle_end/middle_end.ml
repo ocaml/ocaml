@@ -15,11 +15,11 @@ let middle_end ppf ~sourcefile ~prefixname ~backend ~exported_fields lam =
   let pass_number = ref 0 in
   let round_number = ref 0 in
   let check flam =
-    try Flambda_invariants.check flam
-    with e ->
-      (* XXX print [e] *)
-      Misc.fatal_errorf "Flambda invariant failed (pass %d, round %d): %a"
-        !pass_number !round_number Printflambda.flambda flam
+    try Flambda_invariants.check_exn flam
+    with exn ->
+      Misc.fatal_errorf "Flambda invariant failed (pass %d, round %d): %s: %a"
+        !pass_number !round_number (Printexc.to_string exn)
+        Printflambda.flambda flam
   in
   let dump_and_check s flam =
     if !Clflags.dump_flambda
@@ -30,9 +30,9 @@ let middle_end ppf ~sourcefile ~prefixname ~backend ~exported_fields lam =
     if not !Clflags.full_flambda_invariant_check then
       pass flam
     else begin
-      incr !pass_number;
+      incr pass_number;
       let flam = pass flam in
-      Flambda_invariants.check flam;
+      check flam;
       flam
     end
   in
@@ -62,9 +62,9 @@ let middle_end ppf ~sourcefile ~prefixname ~backend ~exported_fields lam =
       ++ Inline_and_simplify.run ~never_inline:true ~backend
       ++ Remove_unused_closure_vars.remove_unused_closure_variables
       ++ Ref_to_variables.eliminate_ref
-      ++ loop ()
+      ++ loop
   in
-  let flam = loop () flam in
+  let flam = loop flam in
   dump_and_check "End of middle end" flam;
   Inlining_stats.save_then_forget_decisions ~output_prefix:prefixname;
   Timings.(stop (Flambda_middle_end sourcefile));

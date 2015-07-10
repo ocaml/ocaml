@@ -11,9 +11,6 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(** Checking of invariants on Flambda expressions. *)
-
-(* CR mshinwell: improve documentation *)
-(** Run all tests.  Raises [Fatal_error] if a test fails.
-*)
-val check : ?flambdasym:bool -> ?cmxfile:bool -> Flambda.t -> unit
+(** Checking of invariants on Flambda expressions.  Raises an exception if
+    a check fails. *)
+val check_exn : ?flambdasym:bool -> ?cmxfile:bool -> Flambda.t -> unit

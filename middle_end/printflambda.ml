@@ -222,4 +222,5 @@ let flambda ppf flam =
 let project_closure = print_project_closure
 let move_within_set_of_closures = print_move_within_set_of_closures
 let project_var = print_project_var
-let function_declaration = print_function_declaration
+let function_declaration ppf (var, decl) =
+  print_function_declaration ppf var decl
