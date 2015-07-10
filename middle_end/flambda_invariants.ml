@@ -24,6 +24,7 @@ exception Counter_example_id of Variable.t
    preferring instead to use exhaustive record matches.
 *)
 let already_added_bound_variable_to_env (var : Variable.t) = ()
+let already_examined_fun_var (var : Variable.t) = ()
 let will_traverse_expression_later (e : Flambda.t) = ()
 let ignore_call_kind (_ : Flambda.call_kind) = ()
 let ignore_let_kind (_ : Flambda.let_kind) = ()
@@ -42,19 +43,22 @@ let ignore_closure_id (_ : Closure_id.t) = ()
 let ignore_var_within_closure (_ : Var_within_closure.t) = ()
 let ignore_compilation_unit (_ : Compilation_unit.t) = ()
 
-(** Faults found by [binding_invariants]. *)
-exception Binding_occurrence_in_different_compilation_unit of Variable.t
+(** Faults found by [variable_invariants]. *)
+exception Binding_occurrence_not_from_current_compilation_unit of Variable.t
 exception Binding_occurrence_of_variable_already_bound of Variable.t
 exception Unbound_variable of Variable.t
 exception Assignment_to_non_mutable_variable of Variable.t
+exception Var_in_function_body_not_bound_by_closure_or_params of Variable.Set.t
+exception Function_decls_have_overlapping_parameters of Variable.Set.t
+exception Specialised_arg_that_is_not_a_parameter of Variable.t
 
 type is_mutable = Mutable | Immutable
 
-let binding_invariants flam =
+let variable_invariants flam =
   let add_binding_occurrence env var ~is_mutable =
     let compilation_unit = Compilation_unit.get_current_exn () in
     if not (Variable.in_compilation_unit var compilation_unit) then
-      raise (Binding_occurrence_in_different_compilation_unit var)
+      raise (Binding_occurrence_not_from_current_compilation_unit var)
     else if Variable.Map.mem var env then
       raise (Binding_occurrence_of_variable_already_bound var)
     else
@@ -109,6 +113,8 @@ let binding_invariants flam =
       ignore_debuginfo dbg;
     | Assign (var, e) ->
       let is_mutable = check_variable_is_bound_and_get_mutability env var in
+      (* CR-someday mshinwell: consider if the mutable/immutable distinction
+         on variables could be enforced by the type system *)
       begin match is_mutable with
       | Mutable -> loop env e
       | Immutable -> raise (Assignment_to_non_mutable_variable var)
@@ -144,7 +150,7 @@ let binding_invariants flam =
       List.iter (loop env) es
     | While (e1, e2) ->
       loop env e1;
-      loop env e2;
+      loop env e2
     | Proved_unreachable -> ()
   in
   and loop_named env (named : Flambda.named) =
@@ -155,15 +161,52 @@ let binding_invariants flam =
       let { set_of_closures_id; funs; compilation_unit } = function_decls in
       ignore_set_of_closures_id set_of_closures_id;
       ignore_compilation_unit compilation_unit;
-      Variable.Map.iter (fun fun_var function_decl ->
-          let { params; body; free_variables; stub; dbg; } = function_decl in
-
-          ignore_bool stub;
-          ignore_debuginfo dbg;
-
-        funs;
-      Variable.Map.iter (fun _ var -> test var env) free_vars;
-      Variable.Map.iter (fun _ var -> test var env) specialised_args
+      let functions_in_closure = Variable.Map.keys funs in
+      let variables_in_closure =
+        Variable.Map.fold (fun variables_in_closure var_in_closure var ->
+            check_variable_is_bound env var;
+            Variable.Set.add var_in_closure variables_in_closure)
+          free_vars Variable.Set.empty
+      in
+      let params_for_all_functions =
+        Variable.Map.iter (fun all_params fun_var function_decl ->
+            (* Check that every variable free in the body of the function is
+               bound by either the set of closures or the parameter list. *)
+            let { params; body; free_variables; stub; dbg; } = function_decl in
+            assert (Variable.Map.mem fun_var functions_in_closure);
+            ignore_bool stub;
+            ignore_debuginfo dbg;
+            let acceptable_free_variables =
+              Variable.Set.union
+                (Variable.Set.union variables_in_closure functions_in_closure)
+                (Variable.Set.of_list params)
+            in
+            let bad =
+              Variable.Set.diff free_variables acceptable_free_variables
+            in
+            if not (Variable.Set.is_empty bad) then begin
+              raise (Vars_in_function_body_not_bound_by_closure_or_params bad)
+            end;
+            (* Check that parameters are unique across all functions in the
+               declaration. *)
+            let old_all_params_size = Variable.Set.cardinal all_params in
+            let params_size = Variable.Set.cardinal params in
+            let all_params = Variable.Set.union all_params params in
+            let all_params_size = Variable.Set.cardinal all_params in
+            if all_params_size <> old_all_params_size + params_size then begin
+              raise (Function_decls_have_overlapping_parameters all_params)
+            end;
+            all_params)
+          funs Variable.Set.empty
+      in
+      (* Check that every "specialised arg" is a parameter of one of the
+         functions being declared. *)
+      Variable.Map.iter (fun being_specialised specialised_to ->
+          if not (Variable.Set.mem being_specialised all_params) then begin
+            raise (Specialised_arg_that_is_not_a_parameter being_specialised)
+          end;
+          check_variable_is_bound env specialised_to)
+        specialised_args
     | Project_closure { set_of_closures; closure_id; } ->
       check_variable_is_bound set_of_closures;
       ignore_closure_id closure_id
@@ -179,29 +222,6 @@ let binding_invariants flam =
   loop Variable.Map.empty flam
 
 exception Counter_example_varset of Variable.Set.t
-
-let function_free_variables_are_bound_in_the_closure_and_parameters flam =
-  let f { Flambda. function_decls;free_vars} _ =
-    let variables_in_closure = Variable.Map.keys free_vars in
-    let functions_in_closure =
-      Variable.Map.fold (fun id _ env -> Variable.Set.add id env)
-        function_decls.funs Variable.Set.empty in
-    Variable.Map.iter (fun _ { Flambda. params; free_variables } ->
-        let acceptable_free_variables =
-          Variable.Set.union
-            (Variable.Set.union variables_in_closure functions_in_closure)
-            (Variable.Set.of_list params) in
-        let counter_examples =
-          Variable.Set.diff free_variables acceptable_free_variables in
-        if not (Variable.Set.is_empty counter_examples)
-        then raise (Counter_example_varset counter_examples))
-      function_decls.funs
-  in
-  try
-    Flambdaiter.iter_on_sets_of_closures f flam;
-    No_counter_example
-  with Counter_example_varset set ->
-    Counter_example set
 
 let declared_var_within_closure flam =
   let bound = ref Var_within_closure.Set.empty in
@@ -274,9 +294,9 @@ let used_closure_id flam =
     | Project_var ({ closure = _; closure_id; var = _ }, _) ->
       used := Closure_id.Set.add closure_id !used
     | Assign _ | Var _ | Set_of_closures _ | Symbol _ | Const _
-    | Apply _ | Let _ | Let_rec _ | Prim _ | Fseq_prim _ | Switch _
+    | Apply _ | Let _ | Let_rec _ | Prim _ | Switch _
     | String_switch _ | Static_raise _ | Static_catch _ | Try_with _
-    | If_then_else _ | Fsequence _ | While _ | For _ | Send _
+    | If_then_else _ | While _ | For _ | Send _
     | Proved_unreachable -> ()
   in
   Flambdaiter.iter f flam;
