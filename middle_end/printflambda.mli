@@ -13,6 +13,11 @@
 
 val flambda : Format.formatter -> Flambda.t -> unit
 
+val function_declaration
+   : Format.formatter
+  -> Flambda.function_declaration
+  -> unit
+
 val function_declarations
    : Format.formatter
   -> Flambda.function_declarations
