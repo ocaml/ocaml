@@ -17,6 +17,7 @@ let middle_end ppf ~sourcefile ~prefixname ~backend ~exported_fields lam =
   let check flam =
     try Flambda_invariants.check flam
     with e ->
+      (* XXX print [e] *)
       Misc.fatal_errorf "Flambda invariant failed (pass %d, round %d): %a"
         !pass_number !round_number Printflambda.flambda flam
   in

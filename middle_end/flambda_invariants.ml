@@ -42,50 +42,30 @@ let ignore_closure_id (_ : Closure_id.t) = ()
 let ignore_var_within_closure (_ : Var_within_closure.t) = ()
 let ignore_compilation_unit (_ : Compilation_unit.t) = ()
 
-let check_bindings flam =
-  let test var env =
-    if not (Variable.Set.mem var env) then raise (Counter_example_id var)
-  in
-  let check env (flam : Flambda.t) =
-    (* CR mshinwell: check this function carefully *)
-    match flam with
-    (* The non-trivial cases here are all the various types of expressions
-       that can contain a free [Variable.t]. *)
-    | Assign (var, _, _) | Var (var, _) -> test var env
-    | Set_of_closures
-        ({ function_decls = _; free_vars; specialised_args }, _) ->
-      Variable.Map.iter (fun _ var -> test var env) free_vars;
-      Variable.Map.iter (fun _ var -> test var env) specialised_args
-    | Project_closure (project_closure, _) ->
-      test project_closure.set_of_closures env
-    | Move_within_set_of_closures (move_within_set_of_closures, _) ->
-      test move_within_set_of_closures.closure env
-    | Project_var (project_var, _) ->
-      test project_var.closure env
-    | Apply ({ func = _; args; kind = _; dbg = _ }, _)
-    | Prim (_, args, _, _) ->
-      List.iter (fun var -> test var env) args
-    | Symbol _ | Const _ | Let _ | Let_rec _ | Fseq_prim _
-    | Switch _ | String_switch _ | Static_raise _ | Static_catch _
-    | Try_with _ | If_then_else _ | Fsequence _ | While _ | For _ | Send _
-    | Proved_unreachable -> ()
-  in
-
+(** Faults found by [binding_invariants]. *)
 exception Binding_occurrence_in_different_compilation_unit of Variable.t
 exception Binding_occurrence_of_variable_already_bound of Variable.t
 exception Unbound_variable of Variable.t
+exception Assignment_to_non_mutable_variable of Variable.t
 
-  let add_binding_occurrence env var =
+type is_mutable = Mutable | Immutable
+
+let binding_invariants flam =
+  let add_binding_occurrence env var ~is_mutable =
     let compilation_unit = Compilation_unit.get_current_exn () in
     if not (Variable.in_compilation_unit var compilation_unit) then
       raise (Binding_occurrence_in_different_compilation_unit var)
-    else if Variable.Set.mem var env then
+    else if Variable.Map.mem var env then
       raise (Binding_occurrence_of_variable_already_bound var)
     else
-      Variable.Set.add var env
+      Variable.Map.add var is_mutable env
   in
   let check_variable_is_bound env var =
-    if not Variable.Set.mem var env then raise (Unbound_variable var)
+    if not Variable.Map.mem var env then raise (Unbound_variable var)
+  in
+  let check_variable_is_bound_and_get_mutability env var =
+    try Variable.Map.find var env
+    with Not_found -> raise (Unbound_variable var)
   in
   let check_variables_are_bound env vars =
     List.iter (check_variable_is_bound env) vars
@@ -128,8 +108,11 @@ exception Unbound_variable of Variable.t
       ignore_call_kind kind;
       ignore_debuginfo dbg;
     | Assign (var, e) ->
-      check_variable_is_bound env var;
-      loop env e
+      let is_mutable = check_variable_is_bound_and_get_mutability env var in
+      begin match is_mutable with
+      | Mutable -> loop env e
+      | Immutable -> raise (Assignment_to_non_mutable_variable var)
+      end
     | Send (meth_kind, e1, e2, es, dbg) ->
       ignore_meth_kind meth_kind;
       loop env e1;
@@ -193,28 +176,7 @@ exception Unbound_variable of Variable.t
       ignore_closure_id closure_id;
       ignore_var_within_closure var
   in
-
-
-    | Set_of_closures ({function_decls;free_vars = _},_) as exp ->
-        check env exp;
-        Variable.Map.iter (fun _ { Flambda. free_variables; body } ->
-            loop free_variables body)
-          function_decls.funs
-    (* Expressions that cannot bind [Variable.t]s, but may have free
-       occurrences of them: *)
-    | Assign _ | Var _ | Symbol _ | Const _ | Apply _
-    | Project_closure _ | Move_within_set_of_closures _ | Project_var _
-    | Prim _ | Fseq_prim _ | Switch _ | String_switch _ | Static_raise _
-    | If_then_else _ | Fsequence _ | While _ | Send _
-    | Proved_unreachable as exp ->
-      check env exp;
-      Flambdaiter.apply_on_subexpressions (loop env) exp
-  in
-  try
-    loop Variable.Set.empty flam;
-    No_counter_example
-  with Counter_example_id var ->
-    Counter_example var
+  loop Variable.Map.empty flam
 
 exception Counter_example_varset of Variable.Set.t
 
@@ -240,119 +202,6 @@ let function_free_variables_are_bound_in_the_closure_and_parameters flam =
     No_counter_example
   with Counter_example_varset set ->
     Counter_example set
-
-let no_identifier_bound_multiple_times flam =
-  let bound = ref Variable.Set.empty in
-  let add_and_check id =
-    if Variable.Set.mem id !bound
-    then raise (Counter_example_id id)
-    else bound := Variable.Set.add id !bound
-  in
-  let f (flam : Flambda.t) =
-    match flam with
-    | Let(_,id,_,_,_) ->
-        add_and_check id
-    | Let_rec(defs,_,_) ->
-        List.iter (fun (id,_) -> add_and_check id) defs
-    | Set_of_closures ({function_decls;free_vars},_) ->
-        Variable.Map.iter (fun id _ -> add_and_check id) free_vars;
-        Variable.Map.iter (fun _ { Flambda. params } ->
-            List.iter add_and_check params)
-          function_decls.funs
-    | For (id,_,_,_,_,_) ->
-        add_and_check id
-    | Static_catch (_,vars,_,_,_) ->
-        List.iter add_and_check vars
-    | Try_with(_, id,_,_) ->
-        add_and_check id
-
-    | Assign _ | Var _
-    | Symbol _ | Const _ | Apply _ | Project_closure _
-    | Project_var _ | Move_within_set_of_closures _
-    | Prim _ | Fseq_prim _ | Switch _ | String_switch _ | Static_raise _
-    | If_then_else _ | Fsequence _
-    | While _ | Send _ | Proved_unreachable
-      -> ()
-  in
-  try
-    Flambdaiter.iter f flam;
-    No_counter_example
-  with Counter_example_id var ->
-    Counter_example var
-
-let every_bound_variable_is_from_current_compilation_unit flam =
-  let current_compilation_unit = Compilation_unit.get_current_exn () in
-  let check id =
-    if not (Variable.in_compilation_unit current_compilation_unit id)
-    then raise (Counter_example_id id)
-  in
-  let f (flam : Flambda.t) =
-    match flam with
-    | Let(_,id,_,_,_) ->
-        check id
-    | Let_rec(defs,_,_) ->
-        List.iter (fun (id,_) -> check id) defs
-    | Set_of_closures ({function_decls;free_vars},_) ->
-        Variable.Map.iter (fun id _ -> check id) free_vars;
-        Variable.Map.iter (fun _ { Flambda. params } ->
-            List.iter check params)
-          function_decls.funs
-    | For (id,_,_,_,_,_) ->
-        check id
-    | Static_catch (_,vars,_,_,_) ->
-        List.iter check vars
-    | Try_with(_, id,_,_) ->
-        check id
-
-    | Assign _ | Var _
-    | Symbol _ | Const _ | Apply _ | Project_closure _
-    | Project_var _ | Move_within_set_of_closures _
-    | Prim _ | Fseq_prim _ | Switch _ | String_switch _ | Static_raise _
-    | If_then_else _ | Fsequence _
-    | While _ | Send _ | Proved_unreachable
-      -> ()
-  in
-  try
-    Flambdaiter.iter f flam;
-    No_counter_example
-  with Counter_example_id var ->
-    Counter_example var
-
-let no_assign_on_variable_of_kind_Immutable flam =
-  let test var env =
-    if not (Variable.Set.mem var env)
-    then raise (Counter_example_id var) in
-  let check env (flam : Flambda.t) =
-    match flam with
-    | Assign(id,_,_) -> test id env
-    | _ -> ()
-  in
-  let rec loop env (flam : Flambda.t) =
-    match flam with
-    | Let(Mutable,id,def,body,_) ->
-        loop env def;
-        loop (Variable.Set.add id env) body
-    | Set_of_closures ({ Flambda. function_decls;free_vars = _},_) ->
-        let env = Variable.Set.empty in
-        Variable.Map.iter (fun _ { Flambda. body } -> loop env body)
-          function_decls.funs
-    | Let (Immutable, _, _, _, _)
-    | Assign _ | Var _
-    | Symbol _ | Const _ | Apply _ | Project_closure _
-    | Project_var _ | Move_within_set_of_closures _ | Let_rec _
-    | Prim _ | Fseq_prim _ | Switch _ | String_switch _ | Static_raise _
-    | Static_catch _ | Try_with _ | If_then_else _ | Fsequence _
-    | While _ | For _ | Send _ | Proved_unreachable
-      as exp ->
-        check env exp;
-        Flambdaiter.apply_on_subexpressions (loop env) exp
-  in
-  let env = Variable.Set.empty in
-  try
-    loop env flam;
-    No_counter_example
-  with Counter_example_id var ->
-    Counter_example var
 
 let declared_var_within_closure flam =
   let bound = ref Var_within_closure.Set.empty in
