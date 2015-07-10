@@ -458,6 +458,14 @@ void caml_clean_stack(value stack)
   }
 }
 
+void caml_clean_stack_domain(value stack, struct domain* domain)
+{
+  Assert(Tag_val(stack) == Stack_tag);
+  if (Stack_dirty_domain(stack) == domain) {
+    Stack_dirty_domain(stack) = 0;
+  }
+}
+
 void caml_scan_stack(scanning_action f, value stack)
 {
   value *low, *high, *sp;
