@@ -110,10 +110,9 @@ let apply_variable t var =
    try Variable.Map.find var t.sb_var with
    | Not_found -> var
 
-let rewrite_recursive_calls_with_symbols _t
-      (_function_declarations : Flambda.function_declarations)
-      ~make_closure_symbol:_ = assert false (* XXX *)
-(*
+let rewrite_recursive_calls_with_symbols t
+      (function_declarations : Flambda.function_declarations)
+      ~make_closure_symbol =
   match t with
   | Inactive -> function_declarations
   | Active _ ->
@@ -125,17 +124,16 @@ let rewrite_recursive_calls_with_symbols _t
     let funs =
       Variable.Map.map (fun (ffun : Flambda.function_declaration) ->
         let body =
-          Flambdaiter.map_toplevel
+          Flambdaiter.map_named
             (function
-              | Symbol (sym,_) when Symbol.Map.mem sym closure_symbols ->
-                Var(Symbol.Map.find sym closure_symbols,Expr_id.create ())
+              | Symbol sym when Symbol.Map.mem sym closure_symbols ->
+                Expr (Var (Symbol.Map.find sym closure_symbols))
               | e -> e)
             ffun.body in
         { ffun with body })
         function_declarations.funs
     in
     { function_declarations with funs }
-*)
 
 module Project_var = struct
   type t =
