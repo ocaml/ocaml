@@ -272,7 +272,7 @@ core:
 # Recompile the core system using the bootstrap compiler
 coreall:
 	$(MAKE) ocamlc
-	$(MAKE) ocamllex ocamlyacc library
+	$(MAKE) ocamllex ocamlyacc ocamltools library
 
 # Save the current bootstrap compiler
 MAXSAVED=boot/Saved/Saved.prev/Saved.prev/Saved.prev/Saved.prev/Saved.prev

@@ -26,14 +26,13 @@ type ustructured_constant =
   | Uconst_block of int * uconstant list
   | Uconst_float_array of float list
   | Uconst_string of string
-  | Uconst_closure of ufunction list * string * uconstant list
 
 and uconstant =
-  | Uconst_ref of string * ustructured_constant option
+  | Uconst_ref of string * ustructured_constant
   | Uconst_int of int
   | Uconst_ptr of int
 
-and ulambda =
+type ulambda =
     Uvar of Ident.t
   | Uconst of uconstant
   | Udirect_apply of function_label * ulambda list * Debuginfo.t
@@ -54,7 +53,6 @@ and ulambda =
   | Ufor of Ident.t * ulambda * ulambda * direction_flag * ulambda
   | Uassign of Ident.t * ulambda
   | Usend of meth_kind * ulambda * ulambda * ulambda list * Debuginfo.t
-  | Uunreachable
 
 and ufunction = {
   label  : function_label;
@@ -135,7 +133,6 @@ let rank_structured_constant = function
   | Uconst_block _ -> 4
   | Uconst_float_array _ -> 5
   | Uconst_string _ -> 6
-  | Uconst_closure _ -> 7
 
 let compare_structured_constants c1 c2 =
   match c1, c2 with
@@ -149,20 +146,5 @@ let compare_structured_constants c1 c2 =
   | Uconst_float_array l1, Uconst_float_array l2 ->
       compare_float_lists l1 l2
   | Uconst_string s1, Uconst_string s2 -> String.compare s1 s2
-  | Uconst_closure (_,lbl1,_), Uconst_closure (_,lbl2,_) ->
-      String.compare lbl1 lbl2
   | _, _ -> rank_structured_constant c1 - rank_structured_constant c2
-
-(* CR fbour:
-Occurrences:
-1. https://github.com/chambart/ocaml-1/blob/flambda_trunk/asmcomp/clambda.ml#L154
-2. https://github.com/chambart/ocaml-1/blob/flambda_trunk/typing/ident.ml#L226
-3. https://github.com/chambart/ocaml-1/blob/flambda_trunk/utils/ext_types.ml#L182
-4. https://github.com/chambart/ocaml-1/blob/flambda_trunk/utils/ext_types.ml#L223
-
-Even when we know subtraction won't overflow, I don't see the point of not using compare directly (this applies to 1. and 2.).
-
-3 and 4 will require more type annotations to get optimised.
-In 4, integers are not constrained so the overflow case could a problem (although unlikely).
-*)
                 (* no overflow possible here *)

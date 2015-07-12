@@ -407,10 +407,9 @@ let safe_mod_bi =
 
 (* Bool *)
 
-let rec test_bool = function
+let test_bool = function
     Cop(Caddi, [Cop(Clsl, [c; Cconst_int 1]); Cconst_int 1]) -> c
   | Cop(Clsl, [c; Cconst_int 1]) -> c
-  | Clet(id, exp, body) -> Clet(id, exp, test_bool body)
   | c -> Cop(Ccmpi Cne, [c; Cconst_int 1])
 
 (* Float *)
@@ -698,7 +697,7 @@ let transl_structured_constant cst =
 (* Translate constant closures *)
 
 let constant_closures =
-  ref ([] : (string * ufunction list * uconstant list) list)
+  ref ([] : (string * ufunction list) list)
 
 (* Boxed integers *)
 
@@ -762,12 +761,6 @@ let make_unsigned_int bi arg =
   if bi = Pint32 && size_int = 8
   then Cop(Cand, [arg; Cconst_natint 0xFFFFFFFFn])
   else arg
-
-let rec cifthenelse (cond, ifso, ifnot) = match cond with
-  | Clet(id,exp,body) ->
-    Clet(id,exp,cifthenelse (body, ifso, ifnot))
-  | e ->
-    Cifthenelse(cond,ifso,ifnot)
 
 (* Big arrays *)
 
@@ -1225,14 +1218,8 @@ type unboxed_number_kind =
   | Boxed_integer of boxed_integer
 
 let rec is_unboxed_number = function
-    Uconst(Uconst_ref(_, Some (Uconst_float _))) ->
+    Uconst(Uconst_ref(_, Uconst_float _)) ->
       Boxed_float
-  | Uconst(Uconst_ref(_, Some (Uconst_nativeint _))) ->
-      Boxed_integer Pnativeint
-  | Uconst(Uconst_ref(_, Some (Uconst_int32 _))) ->
-      Boxed_integer Pint32
-  | Uconst(Uconst_ref(_, Some (Uconst_int64 _))) ->
-      Boxed_integer Pint64
   | Uprim(p, _, _) ->
       begin match simplif_primitive p with
           Pccall p -> if p.prim_native_float then Boxed_float else No_unboxing
@@ -1341,7 +1328,7 @@ let rec transl = function
       transl_constant sc
   | Uclosure(fundecls, []) ->
       let lbl = Compilenv.new_const_symbol() in
-      constant_closures := (lbl, fundecls, []) :: !constant_closures;
+      constant_closures := (lbl, fundecls) :: !constant_closures;
       List.iter (fun f -> Queue.add f functions) fundecls;
       Cconst_symbol lbl
   | Uclosure(fundecls, clos_vars) ->
@@ -1587,9 +1574,6 @@ let rec transl = function
                  Ctuple []))))
   | Uassign(id, exp) ->
       return_unit(Cassign(id, transl exp))
-
-  | Uunreachable ->
-     Cop(Cload Word, [Cconst_int 0])
 
 and transl_prim_1 p arg dbg =
   match p with
@@ -2071,15 +2055,15 @@ and transl_prim_3 p arg1 arg2 arg3 dbg =
     fatal_error "Cmmgen.transl_prim_3"
 
 and transl_unbox_float = function
-    Uconst(Uconst_ref(_, Some (Uconst_float f))) -> Cconst_float f
+    Uconst(Uconst_ref(_, Uconst_float f)) -> Cconst_float f
   | exp -> unbox_float(transl exp)
 
 and transl_unbox_int bi = function
-    Uconst(Uconst_ref(_, Some (Uconst_int32 n))) ->
+    Uconst(Uconst_ref(_, Uconst_int32 n)) ->
       Cconst_natint (Nativeint.of_int32 n)
-  | Uconst(Uconst_ref(_, Some (Uconst_nativeint n))) ->
+  | Uconst(Uconst_ref(_, Uconst_nativeint n)) ->
       Cconst_natint n
-  | Uconst(Uconst_ref(_, Some (Uconst_int64 n))) ->
+  | Uconst(Uconst_ref(_, Uconst_int64 n)) ->
       assert (size_int = 8); Cconst_natint (Int64.to_nativeint n)
   | Uprim(Pbintofint bi',[Uconst(Uconst_int i)],_) when bi = bi' ->
       Cconst_int i
@@ -2117,10 +2101,8 @@ and exit_if_true cond nfail otherwise =
   match cond with
   | Uconst (Uconst_ptr 0) -> otherwise
   | Uconst (Uconst_ptr 1) -> Cexit (nfail,[])
-  | Uifthenelse (arg1, Uconst (Uconst_ptr 1), arg2)
   | Uprim(Psequor, [arg1; arg2], _) ->
       exit_if_true arg1 nfail (exit_if_true arg2 nfail otherwise)
-  | Uifthenelse (_, _, Uconst (Uconst_ptr 0))
   | Uprim(Psequand, _, _) ->
       begin match otherwise with
       | Cexit (raise_num,[]) ->
@@ -2137,22 +2119,20 @@ and exit_if_true cond nfail otherwise =
   | Uifthenelse (cond, ifso, ifnot) ->
       make_catch2
         (fun shared ->
-          cifthenelse
+          Cifthenelse
             (test_bool (transl cond),
              exit_if_true ifso nfail shared,
              exit_if_true ifnot nfail shared))
         otherwise
   | _ ->
-      cifthenelse(test_bool(transl cond), Cexit (nfail, []), otherwise)
+      Cifthenelse(test_bool(transl cond), Cexit (nfail, []), otherwise)
 
 and exit_if_false cond otherwise nfail =
   match cond with
   | Uconst (Uconst_ptr 0) -> Cexit (nfail,[])
   | Uconst (Uconst_ptr 1) -> otherwise
-  | Uifthenelse (arg1, arg2, Uconst (Uconst_ptr 0))
   | Uprim(Psequand, [arg1; arg2], _) ->
       exit_if_false arg1 (exit_if_false arg2 otherwise nfail) nfail
-  | Uifthenelse (_, Uconst (Uconst_ptr 1), _)
   | Uprim(Psequor, _, _) ->
       begin match otherwise with
       | Cexit (raise_num,[]) ->
@@ -2169,13 +2149,13 @@ and exit_if_false cond otherwise nfail =
   | Uifthenelse (cond, ifso, ifnot) ->
       make_catch2
         (fun shared ->
-          cifthenelse
+          Cifthenelse
             (test_bool (transl cond),
              exit_if_false ifso shared nfail,
              exit_if_false ifnot shared nfail))
         otherwise
   | _ ->
-      cifthenelse(test_bool(transl cond), otherwise, Cexit (nfail, []))
+      Cifthenelse(test_bool(transl cond), otherwise, Cexit (nfail, []))
 
 and transl_switch arg index cases = match Array.length cases with
 | 0 -> fatal_error "Cmmgen.transl_switch"
@@ -2272,24 +2252,16 @@ let rec transl_all_functions already_translated cont =
         (transl_function f :: cont)
     end
   with Queue.Empty ->
-    cont, already_translated
-
-let cdefine_symbol l =
-  let aux (symb, global) =
-    if global
-    then [Cglobal_symbol symb; Cdefine_symbol symb]
-    else [Cdefine_symbol symb]
-  in
-  List.flatten (List.map aux l)
+    cont
 
 (* Emit structured constants *)
 
-let rec emit_structured_constant (symb:(string*bool) list) cst cont =
+let rec emit_structured_constant symb cst cont =
   let emit_block white_header symb cont =
     (* Headers for structured constants must be marked black in case we
        are in no-naked-pointers mode.  See [caml_darken]. *)
     let black_header = Nativeint.logor white_header caml_black in
-    Cint black_header :: cdefine_symbol symb @ cont
+    Cint black_header :: Cdefine_symbol symb :: cont
   in
   match cst with
   | Uconst_float s->
@@ -2312,10 +2284,6 @@ let rec emit_structured_constant (symb:(string*bool) list) cst cont =
   | Uconst_float_array fields ->
       emit_block (floatarray_header (List.length fields)) symb
         (Misc.map_end (fun f -> Cdouble f) fields cont)
-  | Uconst_closure(fundecls, lbl, fv) ->
-      constant_closures := (lbl, fundecls, fv) :: !constant_closures;
-      List.iter (fun f -> Queue.add f functions) fundecls;
-      cont
 
 and emit_constant cst cont =
   match cst with
@@ -2353,39 +2321,26 @@ and emit_boxed_int64_constant n cont =
 
 (* Emit constant closures *)
 
-let emit_constant_closure symb fundecls clos_vars cont =
-  let global_symb = List.exists snd symb in
-  let closure_symbol f = [f.label ^ "_closure", global_symb] in
+let emit_constant_closure symb fundecls cont =
   match fundecls with
-    [] ->
-      (* This should probably not happen has dead code normaly have been
-         eliminated, and a closure cannot be accessed without going through
-         a Fselect_closure, hence depending on the function. *)
-      assert(clos_vars = []);
-      cdefine_symbol symb @
-      List.fold_right emit_constant clos_vars cont
+    [] -> assert false
   | f1 :: remainder ->
       let rec emit_others pos = function
-        [] ->
-            List.fold_right emit_constant clos_vars cont
+        [] -> cont
       | f2 :: rem ->
           if f2.arity = 1 then
             Cint(infix_header pos) ::
-            cdefine_symbol (closure_symbol f2) @
             Csymbol_address f2.label ::
             Cint 3n ::
             emit_others (pos + 3) rem
           else
             Cint(infix_header pos) ::
-            cdefine_symbol (closure_symbol f2) @
             Csymbol_address(curry_function f2.arity) ::
             Cint(Nativeint.of_int (f2.arity lsl 1 + 1)) ::
             Csymbol_address f2.label ::
             emit_others (pos + 4) rem in
-      Cint(black_closure_header (fundecls_size fundecls
-                                 + List.length clos_vars)) ::
-      cdefine_symbol symb @
-      cdefine_symbol (closure_symbol f1) @
+      Cint(black_closure_header (fundecls_size fundecls)) ::
+      Cdefine_symbol symb ::
       if f1.arity = 1 then
         Csymbol_address f1.label ::
         Cint 3n ::
@@ -2401,14 +2356,16 @@ let emit_constant_closure symb fundecls clos_vars cont =
 let emit_all_constants cont =
   let c = ref cont in
   List.iter
-    (fun (lbls, cst) ->
-       let cst = emit_structured_constant lbls cst [] in
+    (fun (lbl, global, cst) ->
+       let cst = emit_structured_constant lbl cst [] in
+       let cst = if global then
+         Cglobal_symbol lbl :: cst
+       else cst in
          c:= Cdata(cst):: !c)
     (Compilenv.structured_constants());
-  Compilenv.clear_structured_constants ();
   List.iter
-    (fun (symb, fundecls, clos_vars) ->
-       c := Cdata(emit_constant_closure [symb,true] fundecls clos_vars []) :: !c)
+    (fun (symb, fundecls) ->
+        c := Cdata(emit_constant_closure symb fundecls []) :: !c)
     !constant_closures;
   constant_closures := [];
   !c
@@ -2422,16 +2379,8 @@ let compunit size ulam =
                        fun_args = [];
                        fun_body = init_code; fun_fast = false;
                        fun_dbg  = Debuginfo.none }] in
-  let rec aux set c1 =
-    if Compilenv.structured_constants () = [] &&
-       Queue.is_empty functions
-    then c1
-    else
-      let c2, set = transl_all_functions set c1 in
-      let c3 = emit_all_constants c2 in
-      aux set c3
-  in
-  let c3 = aux StringSet.empty c1 in
+  let c2 = transl_all_functions StringSet.empty c1 in
+  let c3 = emit_all_constants c2 in
   let space =
     (* These words will be registered as roots and as such must contain
        valid values, in case we are in no-naked-pointers mode.  Likewise
@@ -2659,7 +2608,6 @@ let final_curry_function arity =
     fun_dbg  = Debuginfo.none }
 
 let rec intermediate_curry_functions arity num =
-  assert (arity > 0);
   if num = arity - 1 then
     [final_curry_function arity]
   else begin
@@ -2719,13 +2667,7 @@ let rec intermediate_curry_functions arity num =
 
 let curry_function arity =
   if arity >= 0
-  then if arity = 0
-    then
-      (* Calls to functions of arity 0 are direct calls *)
-      [Cdata([Cglobal_symbol "caml_curry0";
-              Cdefine_symbol "caml_curry0";
-              Cint 0n])]
-    else intermediate_curry_functions arity 0
+  then intermediate_curry_functions arity 0
   else [tuplify_function (-arity)]
 
 
@@ -2793,7 +2735,8 @@ let reference_symbols namelist =
   Cdata(List.map mksym namelist)
 
 let global_data name v =
-  Cdata(emit_structured_constant [name,true]
+  Cdata(Cglobal_symbol name ::
+          emit_structured_constant name
           (Uconst_string (Marshal.to_string v [])) [])
 
 let globals_map v = global_data "caml_globals_map" v
@@ -2833,12 +2776,12 @@ let predef_exception i name =
   let symname = "caml_exn_" ^ name in
   let cst = Uconst_string name in
   let label = Compilenv.new_const_symbol () in
-  let cont = emit_structured_constant [label,true] cst [] in
+  let cont = emit_structured_constant label cst [] in
   Cdata(Cglobal_symbol symname ::
-        emit_structured_constant [symname,true]
+        emit_structured_constant symname
           (Uconst_block(Obj.object_tag,
                        [
-                         Uconst_ref(label, Some cst);
+                         Uconst_ref(label, cst);
                          Uconst_int (-i-1);
                        ])) cont)
 

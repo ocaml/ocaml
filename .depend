@@ -1132,30 +1132,28 @@ middle_end/base_types/variable.cmx : typing/ident.cmx utils/ext_types.cmx \
     middle_end/base_types/compilation_unit.cmx \
     middle_end/base_types/variable.cmi
 asmcomp/CSEgen.cmi : asmcomp/mach.cmi
-asmcomp/asmgen.cmi : middle_end/flambda.cmi asmcomp/cmm.cmi
+asmcomp/asmgen.cmi : bytecomp/lambda.cmi asmcomp/cmm.cmi
 asmcomp/asmlibrarian.cmi :
 asmcomp/asmlink.cmi : asmcomp/cmx_format.cmi
-asmcomp/asmpackager.cmi : typing/env.cmi middle_end/backend_intf.cmi
+asmcomp/asmpackager.cmi : typing/env.cmi
 asmcomp/clambda.cmi : bytecomp/lambda.cmi typing/ident.cmi \
     bytecomp/debuginfo.cmi parsing/asttypes.cmi
 asmcomp/clambdagen.cmi : middle_end/base_types/symbol.cmi \
     asmcomp/flambdaexport_types.cmo middle_end/flambda.cmi \
     asmcomp/clambda.cmi
+asmcomp/closure.cmi : bytecomp/lambda.cmi asmcomp/clambda.cmi
 asmcomp/cmm.cmi : bytecomp/lambda.cmi typing/ident.cmi \
     bytecomp/debuginfo.cmi
 asmcomp/cmmgen.cmi : asmcomp/cmx_format.cmi asmcomp/cmm.cmi \
     asmcomp/clambda.cmi
-asmcomp/cmx_format.cmi : asmcomp/flambdaexport_types.cmo asmcomp/clambda.cmi
+asmcomp/cmx_format.cmi : asmcomp/clambda.cmi
 asmcomp/codegen.cmi : asmcomp/cmm.cmi
 asmcomp/coloring.cmi :
 asmcomp/comballoc.cmi : asmcomp/mach.cmi
-asmcomp/compilenv.cmi : middle_end/base_types/symbol.cmi \
-    middle_end/base_types/set_of_closures_id.cmi \
-    middle_end/base_types/linkage_name.cmi typing/ident.cmi \
-    asmcomp/flambdaexport_types.cmo middle_end/flambda.cmi \
-    middle_end/base_types/compilation_unit.cmi asmcomp/cmx_format.cmi \
-    middle_end/base_types/closure_id.cmi asmcomp/clambda.cmi
+asmcomp/compilenv.cmi : typing/ident.cmi asmcomp/cmx_format.cmi \
+    asmcomp/clambda.cmi
 asmcomp/deadcode.cmi : asmcomp/mach.cmi
+asmcomp/debuginfo.cmi : parsing/location.cmi bytecomp/lambda.cmi
 asmcomp/emit.cmi : asmcomp/linearize.cmi asmcomp/cmm.cmi
 asmcomp/emitaux.cmi : bytecomp/debuginfo.cmi
 asmcomp/flambdaexport.cmi : asmcomp/flambdaexport_types.cmo \
@@ -1201,32 +1199,26 @@ asmcomp/CSEgen.cmx : asmcomp/reg.cmx asmcomp/proc.cmx asmcomp/mach.cmx \
     asmcomp/CSEgen.cmi
 asmcomp/arch.cmo : utils/clflags.cmi
 asmcomp/arch.cmx : utils/clflags.cmx
-asmcomp/asmgen.cmo : bytecomp/translmod.cmi utils/timings.cmi \
-    middle_end/base_types/symbol.cmi asmcomp/split.cmi asmcomp/spill.cmi \
-    asmcomp/selection.cmi asmcomp/scheduling.cmi asmcomp/reload.cmi \
-    asmcomp/reg.cmi asmcomp/proc.cmi asmcomp/printmach.cmi \
-    asmcomp/printlinear.cmi middle_end/printflambda.cmi asmcomp/printcmm.cmi \
-    asmcomp/printclambda.cmi typing/primitive.cmi utils/misc.cmi \
-    asmcomp/mach.cmi parsing/location.cmi asmcomp/liveness.cmi \
-    asmcomp/linearize.cmi asmcomp/interf.cmi asmcomp/flambdasym.cmi \
-    middle_end/flambda_invariants.cmi asmcomp/emitaux.cmi asmcomp/emit.cmi \
-    asmcomp/deadcode.cmi utils/config.cmi asmcomp/compilenv.cmi \
-    asmcomp/comballoc.cmi asmcomp/coloring.cmi asmcomp/cmmgen.cmi \
-    asmcomp/cmm.cmi utils/clflags.cmi asmcomp/clambdagen.cmi asmcomp/CSE.cmo \
-    asmcomp/asmgen.cmi
-asmcomp/asmgen.cmx : bytecomp/translmod.cmx utils/timings.cmx \
-    middle_end/base_types/symbol.cmx asmcomp/split.cmx asmcomp/spill.cmx \
-    asmcomp/selection.cmx asmcomp/scheduling.cmx asmcomp/reload.cmx \
-    asmcomp/reg.cmx asmcomp/proc.cmx asmcomp/printmach.cmx \
-    asmcomp/printlinear.cmx middle_end/printflambda.cmx asmcomp/printcmm.cmx \
-    asmcomp/printclambda.cmx typing/primitive.cmx utils/misc.cmx \
-    asmcomp/mach.cmx parsing/location.cmx asmcomp/liveness.cmx \
-    asmcomp/linearize.cmx asmcomp/interf.cmx asmcomp/flambdasym.cmx \
-    middle_end/flambda_invariants.cmx asmcomp/emitaux.cmx asmcomp/emit.cmx \
-    asmcomp/deadcode.cmx utils/config.cmx asmcomp/compilenv.cmx \
-    asmcomp/comballoc.cmx asmcomp/coloring.cmx asmcomp/cmmgen.cmx \
-    asmcomp/cmm.cmx utils/clflags.cmx asmcomp/clambdagen.cmx asmcomp/CSE.cmx \
-    asmcomp/asmgen.cmi
+asmcomp/asmgen.cmo : bytecomp/translmod.cmi asmcomp/split.cmi \
+    asmcomp/spill.cmi asmcomp/selection.cmi asmcomp/scheduling.cmi \
+    asmcomp/reload.cmi asmcomp/reg.cmi asmcomp/proc.cmi asmcomp/printmach.cmi \
+    asmcomp/printlinear.cmi asmcomp/printcmm.cmi asmcomp/printclambda.cmi \
+    typing/primitive.cmi utils/misc.cmi asmcomp/mach.cmi parsing/location.cmi \
+    asmcomp/liveness.cmi asmcomp/linearize.cmi asmcomp/interf.cmi \
+    asmcomp/emitaux.cmi asmcomp/emit.cmi asmcomp/deadcode.cmi \
+    utils/config.cmi asmcomp/compilenv.cmi asmcomp/comballoc.cmi \
+    asmcomp/coloring.cmi asmcomp/cmmgen.cmi asmcomp/cmm.cmi \
+    asmcomp/closure.cmi utils/clflags.cmi asmcomp/CSE.cmo asmcomp/asmgen.cmi
+asmcomp/asmgen.cmx : bytecomp/translmod.cmx asmcomp/split.cmx \
+    asmcomp/spill.cmx asmcomp/selection.cmx asmcomp/scheduling.cmx \
+    asmcomp/reload.cmx asmcomp/reg.cmx asmcomp/proc.cmx asmcomp/printmach.cmx \
+    asmcomp/printlinear.cmx asmcomp/printcmm.cmx asmcomp/printclambda.cmx \
+    typing/primitive.cmx utils/misc.cmx asmcomp/mach.cmx parsing/location.cmx \
+    asmcomp/liveness.cmx asmcomp/linearize.cmx asmcomp/interf.cmx \
+    asmcomp/emitaux.cmx asmcomp/emit.cmx asmcomp/deadcode.cmx \
+    utils/config.cmx asmcomp/compilenv.cmx asmcomp/comballoc.cmx \
+    asmcomp/coloring.cmx asmcomp/cmmgen.cmx asmcomp/cmm.cmx \
+    asmcomp/closure.cmx utils/clflags.cmx asmcomp/CSE.cmx asmcomp/asmgen.cmi
 asmcomp/asmlibrarian.cmo : utils/misc.cmi parsing/location.cmi \
     utils/config.cmi asmcomp/compilenv.cmi asmcomp/cmx_format.cmi \
     utils/clflags.cmi asmcomp/clambda.cmi utils/ccomp.cmi asmcomp/asmlink.cmi \
@@ -1246,17 +1238,13 @@ asmcomp/asmlink.cmx : bytecomp/runtimedef.cmx utils/misc.cmx \
     asmcomp/cmx_format.cmi asmcomp/cmmgen.cmx utils/clflags.cmx \
     utils/ccomp.cmx asmcomp/asmgen.cmx asmcomp/asmlink.cmi
 asmcomp/asmpackager.cmo : typing/typemod.cmi bytecomp/translmod.cmi \
-    utils/misc.cmi middle_end/middle_end.cmi parsing/location.cmi \
-    typing/ident.cmi asmcomp/flambdaexport.cmi typing/env.cmi \
-    utils/config.cmi asmcomp/compilenv.cmi \
-    middle_end/base_types/compilation_unit.cmi asmcomp/cmx_format.cmi \
+    utils/misc.cmi parsing/location.cmi typing/ident.cmi typing/env.cmi \
+    utils/config.cmi asmcomp/compilenv.cmi asmcomp/cmx_format.cmi \
     utils/clflags.cmi utils/ccomp.cmi asmcomp/asmlink.cmi asmcomp/asmgen.cmi \
     asmcomp/asmpackager.cmi
 asmcomp/asmpackager.cmx : typing/typemod.cmx bytecomp/translmod.cmx \
-    utils/misc.cmx middle_end/middle_end.cmx parsing/location.cmx \
-    typing/ident.cmx asmcomp/flambdaexport.cmx typing/env.cmx \
-    utils/config.cmx asmcomp/compilenv.cmx \
-    middle_end/base_types/compilation_unit.cmx asmcomp/cmx_format.cmi \
+    utils/misc.cmx parsing/location.cmx typing/ident.cmx typing/env.cmx \
+    utils/config.cmx asmcomp/compilenv.cmx asmcomp/cmx_format.cmi \
     utils/clflags.cmx utils/ccomp.cmx asmcomp/asmlink.cmx asmcomp/asmgen.cmx \
     asmcomp/asmpackager.cmi
 asmcomp/clambda.cmo : bytecomp/lambda.cmi typing/ident.cmi \
@@ -1287,6 +1275,16 @@ asmcomp/clambdagen.cmx : middle_end/base_types/variable.cmx \
     utils/ext_types.cmx bytecomp/debuginfo.cmx asmcomp/compilenv.cmx \
     middle_end/base_types/closure_id.cmx asmcomp/clambda.cmx \
     parsing/asttypes.cmi asmcomp/clambdagen.cmi
+asmcomp/closure.cmo : utils/tbl.cmi bytecomp/switch.cmi typing/primitive.cmi \
+    utils/misc.cmi bytecomp/lambda.cmi typing/ident.cmi \
+    bytecomp/debuginfo.cmi asmcomp/compilenv.cmi utils/clflags.cmi \
+    asmcomp/clambda.cmi parsing/asttypes.cmi asmcomp/arch.cmo \
+    asmcomp/closure.cmi
+asmcomp/closure.cmx : utils/tbl.cmx bytecomp/switch.cmx typing/primitive.cmx \
+    utils/misc.cmx bytecomp/lambda.cmx typing/ident.cmx \
+    bytecomp/debuginfo.cmx asmcomp/compilenv.cmx utils/clflags.cmx \
+    asmcomp/clambda.cmx parsing/asttypes.cmi asmcomp/arch.cmx \
+    asmcomp/closure.cmi
 asmcomp/cmm.cmo : bytecomp/lambda.cmi typing/ident.cmi \
     bytecomp/debuginfo.cmi asmcomp/arch.cmo asmcomp/cmm.cmi
 asmcomp/cmm.cmx : bytecomp/lambda.cmx typing/ident.cmx \
@@ -1319,30 +1317,20 @@ asmcomp/comballoc.cmo : asmcomp/reg.cmi asmcomp/mach.cmi utils/config.cmi \
     asmcomp/arch.cmo asmcomp/comballoc.cmi
 asmcomp/comballoc.cmx : asmcomp/reg.cmx asmcomp/mach.cmx utils/config.cmx \
     asmcomp/arch.cmx asmcomp/comballoc.cmi
-asmcomp/compilenv.cmo : middle_end/base_types/variable.cmi \
-    middle_end/base_types/symbol.cmi \
-    middle_end/base_types/set_of_closures_id.cmi utils/misc.cmi \
-    parsing/location.cmi middle_end/base_types/linkage_name.cmi \
-    typing/ident.cmi middle_end/free_variables.cmi middle_end/flambdaiter.cmi \
-    asmcomp/flambdaexport_types.cmo asmcomp/flambdaexport.cmi \
-    middle_end/flambda.cmi utils/ext_types.cmi typing/env.cmi \
-    utils/config.cmi middle_end/base_types/compilation_unit.cmi \
-    asmcomp/cmx_format.cmi middle_end/base_types/closure_id.cmi \
+asmcomp/compilenv.cmo : utils/misc.cmi parsing/location.cmi typing/ident.cmi \
+    typing/env.cmi utils/config.cmi asmcomp/cmx_format.cmi \
     asmcomp/clambda.cmi asmcomp/compilenv.cmi
-asmcomp/compilenv.cmx : middle_end/base_types/variable.cmx \
-    middle_end/base_types/symbol.cmx \
-    middle_end/base_types/set_of_closures_id.cmx utils/misc.cmx \
-    parsing/location.cmx middle_end/base_types/linkage_name.cmx \
-    typing/ident.cmx middle_end/free_variables.cmx middle_end/flambdaiter.cmx \
-    asmcomp/flambdaexport_types.cmx asmcomp/flambdaexport.cmx \
-    middle_end/flambda.cmi utils/ext_types.cmx typing/env.cmx \
-    utils/config.cmx middle_end/base_types/compilation_unit.cmx \
-    asmcomp/cmx_format.cmi middle_end/base_types/closure_id.cmx \
+asmcomp/compilenv.cmx : utils/misc.cmx parsing/location.cmx typing/ident.cmx \
+    typing/env.cmx utils/config.cmx asmcomp/cmx_format.cmi \
     asmcomp/clambda.cmx asmcomp/compilenv.cmi
 asmcomp/deadcode.cmo : asmcomp/reg.cmi asmcomp/proc.cmi asmcomp/mach.cmi \
     asmcomp/deadcode.cmi
 asmcomp/deadcode.cmx : asmcomp/reg.cmx asmcomp/proc.cmx asmcomp/mach.cmx \
     asmcomp/deadcode.cmi
+asmcomp/debuginfo.cmo : parsing/location.cmi bytecomp/lambda.cmi \
+    asmcomp/debuginfo.cmi
+asmcomp/debuginfo.cmx : parsing/location.cmx bytecomp/lambda.cmx \
+    asmcomp/debuginfo.cmi
 asmcomp/emit.cmo : asmcomp/x86_proc.cmi asmcomp/x86_masm.cmi \
     asmcomp/x86_gas.cmi asmcomp/x86_dsl.cmi asmcomp/x86_ast.cmi \
     asmcomp/reg.cmi asmcomp/proc.cmi utils/misc.cmi asmcomp/mach.cmi \
