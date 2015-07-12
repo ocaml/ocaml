@@ -371,27 +371,15 @@ and loop_direct env r (tree : Flambda.t) : Flambda.t * R.t =
     let body_env =
       match str with
       | Mutable ->
-       (* If the variable is mutable, we don't propagate anything about it. *)
-       E.clear_approx id env
+        (* If the variable is mutable, we don't propagate anything about it. *)
+        E.clear_approx id env
       | Immutable -> E.add_approx id (R.approx r) env
     in
-    (* To distinguish variables used by the body and the declaration,
-       [body] is rewritten without the set of used variables from
-       the declaration. *)
     let body, r = loop body_env r body in
     let free_variables_of_body = Free_variables.calculate body in
     let (expr : Flambda.t), r =
       if Variable.Set.mem id free_variables_of_body then
         Flambda.Let (str, id, lam, body), r
-      (* CR mshinwell for pchambart: This looks like a copy of
-         the function called [sequence], above
-            pchambart: it almost a copy, but we can't return the
-         same 'r' in both cases as in other uses of [sequence].
-         In fact in the other cases, it should also avoid preventing
-         the elimination of unused variables like here, but it didn't
-         seem as important as for the let.
-         I should find a nice pattern to allow to do that elsewhere
-         without too much syntactic noise. *)
       else if Effect_analysis.no_effects_named lam then
         let r = R.map_benefit r (B.remove_code_named lam) in
         body, r
