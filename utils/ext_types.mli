@@ -27,15 +27,19 @@ module type ExtMap = sig
                  and type 'a t = 'a Map.Make(M).t
   val map_option : (key -> 'a -> 'b option) -> 'a t -> 'b t
   val of_list : (key * 'a) list -> 'a t
-  val disjoint_union : ?eq:('a -> 'a -> bool) -> 'a t -> 'a t -> 'a t
+
   (** [disjoint_union m1 m2] contains all bindings from [m1] and
       [m2]. If some binding is present in both and the associated
       value is not equal, a Fatal_error is raised *)
-  val union_right : 'a t -> 'a t -> 'a t
+  val disjoint_union : ?eq:('a -> 'a -> bool) -> 'a t -> 'a t -> 'a t
+
   (** [union_right m1 m2] contains all bindings from [m1] and [m2]. If
       some binding is present in both, the one from [m2] is taken *)
-  val union_left : 'a t -> 'a t -> 'a t
+  val union_right : 'a t -> 'a t -> 'a t
+
   (** [union_left m1 m2 = union_right m2 m1] *)
+  val union_left : 'a t -> 'a t -> 'a t
+
   val union_merge : ('a -> 'a -> 'a) -> 'a t -> 'a t -> 'a t
   val rename : key t -> key -> key
   val map_keys : (key -> key) -> 'a t -> 'a t
@@ -103,9 +107,10 @@ sig
   val unit : t -> Compilation_unit.t
 end
 
-module Id : functor (E : sig end) -> Id
 (** If applied generatively, i.e. [Id(struct end)], creates a new type
     of identifiers. *)
+module Id : functor (E : sig end) -> Id
+
 module UnitId :
   functor (Id : Id) ->
   functor (Compilation_unit : PrintableHashOrdered) ->

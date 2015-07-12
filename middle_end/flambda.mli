@@ -100,21 +100,18 @@ type apply = {
 }
 
 type project_closure = {
-  (** [set_of_closures] must yield a set of closures rather than a closure. *)
-  set_of_closures : Variable.t;
+  set_of_closures : Variable.t; (** must yield a set of closures *)
   closure_id : Closure_id.t;
 }
 
 type move_within_set_of_closures = {
-  (** [closure] must yield a closure rather than a set of closures. *)
-  closure : Variable.t;
+  closure : Variable.t;  (** must yield a closure *)
   start_from : Closure_id.t;
   move_to : Closure_id.t;
 }
 
 type project_var = {
-  (** [closure] must yield a closure rather than a set of closures. *)
-  closure : Variable.t;
+  closure : Variable.t;  (** must yield a closure *)
   closure_id : Closure_id.t;
   var : Var_within_closure.t;
 }
@@ -236,7 +233,8 @@ and function_declaration = {
   dbg : Debuginfo.t;
 }
 
-and switch = {  (** Equivalent to the similar type in [Lambda]. *)
+(** Equivalent to the similar type in [Lambda]. *)
+and switch = {
   numconsts : Ext_types.Int.Set.t; (** Integer cases *)
   consts : (int * t) list; (** Integer cases *)
   numblocks : Ext_types.Int.Set.t; (** Number of tag block cases *)
