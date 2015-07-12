@@ -146,7 +146,7 @@ and lam_named ppf (named : Flambda.named) =
 and print_function_declaration ppf var (f : Flambda.function_declaration) =
   let idents ppf =
     List.iter (fprintf ppf "@ %a" Variable.print) in
-  fprintf ppf "@ (fun %a@[<2>%a@]@ @[<2>%a@])"
+  fprintf ppf "@ (%a@ =@ fun@ @[<2>%a@]@ -> @[<2>%a@])"
     Variable.print var idents f.params lam f.body
 
 and print_set_of_closures ppf (set_of_closures : Flambda.set_of_closures) =
@@ -208,12 +208,9 @@ and const ppf (c : Flambda.const) =
       fprintf ppf "@[<1>[|@[%s%a@]|]@]" f1 floats fl
 
 let function_declarations ppf (fd : Flambda.function_declarations) =
-  let idents ppf =
-    List.iter (fprintf ppf "@ %a" Variable.print) in
   let funs ppf =
-    Variable.Map.iter (fun var (f : Flambda.function_declaration) ->
-        fprintf ppf "@ (fun@ %a@[<2>%a@]@ @[<2>%a@])"
-          Variable.print var idents f.params lam f.body) in
+    Variable.Map.iter (print_function_declaration ppf)
+  in
   fprintf ppf "@[<2>(%a)@]" funs fd.funs
 
 let flambda ppf flam =
