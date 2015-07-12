@@ -61,8 +61,8 @@ let simplify_using_approx_and_env env r original_lam approx =
   let r =
     let r = ret r approx in
     match summary with
-    | Replaced_term_by_variable var ->
-      R.map_benefit (R.use_var r var) (B.remove_code original_lam)
+    | Replaced_term_by_variable _ ->
+      R.map_benefit r (B.remove_code original_lam)
     | Replaced_term_by_constant -> R.map_benefit r (B.remove_code original_lam)
     | Replaced_term_by_symbol (* CR mshinwell: should we do something here? *)
     | Nothing_done -> r
@@ -77,8 +77,9 @@ let simplify_named_using_approx_and_env env r original_named approx =
   let r =
     let r = ret r approx in
     match summary with
-    | Replaced_term_by_variable var ->
-      R.map_benefit (R.use_var r var) (B.remove_code_named original_named)
+    (* CR mshinwell: remove ctor arg *)
+    | Replaced_term_by_variable _ ->
+      R.map_benefit r (B.remove_code_named original_named)
     | Replaced_term_by_constant ->
       R.map_benefit r (B.remove_code_named original_named)
     | Replaced_term_by_symbol
@@ -364,11 +365,9 @@ and loop_direct env r (tree : Flambda.t) : Flambda.t * R.t =
        * [lam; body] when id is not used but [lam] has a side effect;
        * [let id = lam in body] otherwise.
      *)
-    let init_used_var = R.used_variables r in
     let lam, r = loop_named env r lam in
     let id, sb = Freshening.add_variable (E.freshening env) id in
     let env = E.set_freshening sb env in
-    let def_used_var = R.used_variables r in
     let body_env =
       match str with
       | Mutable ->
@@ -379,14 +378,11 @@ and loop_direct env r (tree : Flambda.t) : Flambda.t * R.t =
     (* To distinguish variables used by the body and the declaration,
        [body] is rewritten without the set of used variables from
        the declaration. *)
-    let r_body = R.set_used_variables r init_used_var in
-    let body, r = loop body_env r_body body in
+    let body, r = loop body_env r body in
+    let free_variables_of_body = Free_variables.calculate body in
     let (expr : Flambda.t), r =
-      if Variable.Set.mem id (R.used_variables r) then
-        Flambda.Let (str, id, lam, body),
-          (* if [lam] is kept, add its used variables *)
-          R.set_used_variables r
-            (Variable.Set.union def_used_var (R.used_variables r))
+      if Variable.Set.mem id free_variables_of_body then
+        Flambda.Let (str, id, lam, body), r
       (* CR mshinwell for pchambart: This looks like a copy of
          the function called [sequence], above
             pchambart: it almost a copy, but we can't return the
@@ -406,11 +402,9 @@ and loop_direct env r (tree : Flambda.t) : Flambda.t * R.t =
            intermediate language (in particular to make it more obvious that
            the variable is unused). *)
         let fresh_var = Variable.create "unused" in
-        Flambda.Let (Immutable, fresh_var, lam, body),
-          R.set_used_variables r
-            (Variable.Set.union def_used_var (R.used_variables r))
+        Flambda.Let (Immutable, fresh_var, lam, body), r
     in
-    expr, R.exit_scope r id
+    expr, r
   | Let_rec (defs, body) ->
     let defs, sb = Freshening.add_variables (E.freshening env) defs in
     let env = E.set_freshening sb env in
@@ -428,7 +422,6 @@ and loop_direct env r (tree : Flambda.t) : Flambda.t * R.t =
         defs ([], env, r)
     in
     let body, r = loop body_env r body in
-    let r = List.fold_left (fun r (id, _) -> R.exit_scope r id) r defs in
     Let_rec (defs, body), r
   | Static_raise (i, args) ->
     let i = Freshening.apply_static_exception (E.freshening env) i in
@@ -466,7 +459,6 @@ and loop_direct env r (tree : Flambda.t) : Flambda.t * R.t =
         in
         let env = E.inside_branch env in
         let handler, r = loop env r handler in
-        let r = List.fold_left R.exit_scope r vars in
         let r = R.exit_scope_catch r i in
         Static_catch (i, vars, body, handler), ret r A.value_unknown
     end
@@ -476,7 +468,6 @@ and loop_direct env r (tree : Flambda.t) : Flambda.t * R.t =
     let env = E.add_approx id A.value_unknown (E.set_freshening sb env) in
     let env = E.inside_branch env in
     let handler, r = loop env r handler in
-    let r = R.exit_scope r id in
     Try_with (body, id, handler), ret r A.value_unknown
   | If_then_else (arg, ifso, ifnot) ->
     (* When arg is the constant false or true (or something considered
@@ -520,12 +511,10 @@ and loop_direct env r (tree : Flambda.t) : Flambda.t * R.t =
     let env = E.add_approx id A.value_unknown (E.set_freshening sb env) in
     let env = E.inside_loop env in
     let body, r = loop env r body in
-    let r = R.exit_scope r id in
     For (id, lo, hi, dir, body), ret r A.value_unknown
   | Assign (id, lam) ->
     let lam, r = loop env r lam in
     let id = Freshening.apply_variable (E.freshening env) id in
-    let r = R.use_var r id in
     Assign (id, lam), ret r A.value_unknown
   | Switch (arg, sw) ->
     (* When arg is known to be a block with a fixed tag or a fixed integer,
@@ -746,7 +735,9 @@ and simplify_set_of_closures original_env r
       function_decls.funs env
   in
   let simplify_function fid (function_decl : Flambda.function_declaration)
-        (funs, used_params, r)
+        (funs, _used_params, r)
+        (* CR mshinwell: check we really did not need _used_params, and
+           remove it *)
         : Flambda.function_declaration Variable.Map.t * Variable.Set.t * R.t =
     let closure_env =
       populate_closure_approximations ~function_decl ~free_vars
@@ -759,17 +750,13 @@ and simplify_set_of_closures original_env r
         ~where:Transform_set_of_closures_expression
         ~f:(fun body_env -> loop body_env r function_decl.body)
     in
-    let used_params =
-      (* CR mshinwell for pchambart: The original code seemed to start from
-         the existing [used_params] as well.  Why do we need that?  I think
-         we might be able to just remove this whole "union used_params" bit. *)
-      let is_used_var var = Variable.Set.mem var (R.used_variables r) in
-      Variable.Set.union used_params
-        (Variable.Set.of_list (List.filter is_used_var function_decl.params))
-    in
     let free_variables = Free_variables.calculate body in
+    let used_params =
+      Variable.Set.filter (fun param -> Variable.Set.mem param free_variables)
+        (Variable.Set.of_list function_decl.params)
+    in
     Variable.Map.add fid { function_decl with body; free_variables } funs,
-      used_params, R.exit_scope_set r function_decl.free_variables
+      used_params, r
   in
   let funs, used_params, r =
     Variable.Map.fold simplify_function function_decls.funs
@@ -780,10 +767,6 @@ and simplify_set_of_closures original_env r
     Variable.Map.filter (fun id _ -> Variable.Set.mem id used_params)
       specialised_args
   in
-  let r =
-    Variable.Map.fold (fun _id' v acc -> R.use_var acc v)
-      specialised_args r
-  in
   let function_decls = { function_decls with funs } in
   let unchanging_params =
     Invariant_params.unchanging_params_in_recursion function_decls
@@ -793,7 +776,6 @@ and simplify_set_of_closures original_env r
       function_decls; unchanging_params;
     }
   in
-  let r = Variable.Map.fold (fun id _ r -> R.exit_scope r id) function_decls.funs r in
   let set_of_closures : Flambda.set_of_closures =
     { function_decls;
       free_vars = Variable.Map.map fst free_vars;
@@ -909,13 +891,6 @@ let run ~never_inline ~backend tree =
   let env = E.empty ~never_inline:false ~backend in
   let result, r = loop env r tree in
   Clflags.inlining_stats := stats;
-  if not (Variable.Set.is_empty (R.used_variables r))
-  then begin
-    Misc.fatal_error (Format.asprintf "remaining variables: %a@.%a@."
-      Variable.Set.print (R.used_variables r)
-      Printflambda.flambda result)
-  end;
-  assert (Variable.Set.is_empty (R.used_variables r));
   if not (Static_exception.Set.is_empty (R.used_staticfail r))
   then begin
     Misc.fatal_error (Format.asprintf "remaining static exceptions: %a@.%a@."

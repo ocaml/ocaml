@@ -16,7 +16,6 @@ module Int = Ext_types.Int
 type t =
   { approx : Simple_value_approx.t;
     globals : Simple_value_approx.t Int.Map.t;
-    used_variables : Variable.Set.t;
     used_staticfail : Static_exception.Set.t;
     inlining_threshold : Inlining_cost.inlining_threshold;
     benefit : Inlining_cost.Benefit.t;
@@ -25,7 +24,6 @@ type t =
 let create () =
   { approx = Simple_value_approx.value_unknown;
     globals = Int.Map.empty;
-    used_variables = Variable.Set.empty;
     used_staticfail = Static_exception.Set.empty;
     inlining_threshold =
       (* CR pchambart: Add a warning if this is too big *)
@@ -35,20 +33,6 @@ let create () =
 
 let approx t = t.approx
 let set_approx t approx = { t with approx }
-
-let use_var t var =
-  { t with used_variables = Variable.Set.add var t.used_variables }
-
-let set_used_variables t used_variables =
-  { t with used_variables; }
-
-let used_variables t = t.used_variables
-
-let exit_scope t var =
-  { t with used_variables = Variable.Set.remove var t.used_variables }
-
-let exit_scope_set t vars =
-  Variable.Set.fold (fun var t -> exit_scope t var) vars t
 
 let use_staticfail t i =
   { t with used_staticfail = Static_exception.Set.add i t.used_staticfail }

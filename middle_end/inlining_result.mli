@@ -18,13 +18,6 @@ val create : unit -> t
 val approx : t -> Simple_value_approx.t
 val set_approx : t -> Simple_value_approx.t -> t
 
-val use_var : t -> Variable.t -> t
-val set_used_variables : t -> Variable.Set.t -> t
-val used_variables : t -> Variable.Set.t
-
-val exit_scope : t -> Variable.t -> t
-val exit_scope_set : t -> Variable.Set.t -> t
-
 val use_staticfail : t -> Static_exception.t -> t
 val used_staticfail : t -> Static_exception.Set.t
 
