@@ -442,87 +442,88 @@ let check_exn ?(flambdasym=false) ?(cmxfile=false) flam =
   with exn -> begin
     begin match exn with
     | Binding_occurrence_not_from_current_compilation_unit var ->
-      Format.eprintf ">> Binding occurrence of variable marked as not being from \
-          the current compilation unit: %a\n%!"
+      Format.eprintf ">> Binding occurrence of variable marked as not being \
+          from the current compilation unit: %a"
         Variable.print var
     | Binding_occurrence_of_variable_already_bound var ->
       Format.eprintf ">> Binding occurrence of variable that was already \
-            bound: %a\n%!"
+            bound: %a"
         Variable.print var
     | Unbound_variable var ->
       Format.eprintf ">> Unbound variable: %a" Variable.print var
     | Assignment_to_non_mutable_variable var ->
-      Format.eprintf ">> Assignment to non-mutable variable: %a\n%!"
+      Format.eprintf ">> Assignment to non-mutable variable: %a"
         Variable.print var
     | Vars_in_function_body_not_bound_by_closure_or_params vars ->
       Format.eprintf ">> Variable in the body of a function declaration that \
           is not bound by either the closure or the function's parameter \
-          list: %a\n%!"
+          list: %a"
         Variable.Set.print vars
     | Function_decls_have_overlapping_parameters vars ->
       Format.eprintf ">> Function declarations whose parameters overlap: \
-          %a\n%!"
+          %a"
         Variable.Set.print vars
     | Specialised_arg_that_is_not_a_parameter var ->
       Format.eprintf ">> Variable in [specialised_args] that is not a \
           parameter of any of the function(s) in the corresponding \
-          declaration(s): %a\n%!"
+          declaration(s): %a"
         Variable.print var
     | Free_variables_set_is_lying (var, function_decl) ->
       Format.eprintf ">> Function declaration whose [free_variables] set does \
           not coincide with the result of [Free_variables.calculate] applied \
-          to the body of the function: %a\n%!"
+          to the body of the function: %a"
         Printflambda.function_declaration (var, function_decl)
     | Set_of_closures_free_vars_map_has_wrong_domain vars ->
       Format.eprintf ">> [free_vars] map in set of closures has in its domain \
           variables that are not free variables of the corresponding \
-           functions: %a\n%!"
+           functions: %a"
         Variable.Set.print vars
     | Sequential_logical_operator_primitives_must_be_expanded prim ->
       Format.eprintf ">> Sequential logical operator primitives must be \
-          expanded (see closure_conversion.ml): %a\n%!"
+          expanded (see closure_conversion.ml): %a"
         Printlambda.primitive prim
     | Var_within_closure_bound_multiple_times var ->
       Format.eprintf ">> Variable within a closure is bound multiple times: \
-          %a\n%!"
+          %a"
         Var_within_closure.print var
     | Closure_id_is_bound_multiple_times closure_id ->
-      Format.eprintf ">> Closure ID is bound multiple times: %a\n%!"
+      Format.eprintf ">> Closure ID is bound multiple times: %a"
         Closure_id.print closure_id
     | Declared_closure_from_another_unit compilation_unit ->
       Format.eprintf ">> Closure declared as being from another compilation \
-          unit: %a\n%!"
+          unit: %a"
         Compilation_unit.print compilation_unit
     | Unbound_closure_ids closure_ids ->
       Format.eprintf ">> Unbound closure ID(s) from the current compilation \
-          unit: %a\n%!"
+          unit: %a"
         Closure_id.Set.print closure_ids
     | Unbound_vars_within_closures vars_within_closures ->
       Format.eprintf ">> Unbound variable(s) within closure(s) from the \
-          current compilation_unit: %a\n%!"
+          current compilation_unit: %a"
         Var_within_closure.Set.print vars_within_closures
     | Static_exception_not_caught static_exn ->
-      Format.eprintf ">> Uncaught static exception: %a\n%!"
+      Format.eprintf ">> Uncaught static exception: %a"
         Static_exception.print static_exn
     | Static_exception_caught_in_multiple_places static_exn ->
-      Format.eprintf ">> Static exception caught in multiple places: %a\n%!"
+      Format.eprintf ">> Static exception caught in multiple places: %a"
         Static_exception.print static_exn
     | Access_to_global_module_identifier prim ->
       (* CR mshinwell: backend-specific checks should move to another module,
          in the asmcomp/ directory. *)
       Format.eprintf ">> Forbidden access to a global module identifier (not \
-          allowed in Flambda that will be exported to a .cmx file): %a\n%!"
+          allowed in Flambda that will be exported to a .cmx file): %a"
         Printlambda.primitive prim
     | Pidentity_should_not_occur ->
       Format.eprintf ">> The Pidentity primitive should never occur in an \
-        Flambda expression (see closure_conversion.ml)\n%!"
+        Flambda expression (see closure_conversion.ml)"
     | Pdirapply_should_be_expanded ->
       Format.eprintf ">> The Pdirapply primitive should never occur in an \
-        Flambda expression (see closure_conversion.ml); use Apply instead\n%!"
+        Flambda expression (see closure_conversion.ml); use Apply instead"
     | Prevapply_should_be_expanded ->
       Format.eprintf ">> The Prevapply primitive should never occur in an \
-        Flambda expression (see closure_conversion.ml); use Apply instead\n%!"
+        Flambda expression (see closure_conversion.ml); use Apply instead"
     | exn -> raise exn
     end;
+    Format.eprintf "\n@?";
     raise Flambda_invariants_failed
   end
