@@ -90,9 +90,10 @@ let module_of_filename ppf inputfile outputprefix =
   name
 ;;
 
+type filename = string
 
 type readenv_position =
-  Before_args | Before_compile | Before_link
+  Before_args | Before_compile of filename | Before_link
 
 (* Syntax of OCAMLPARAM: (name=VALUE,)* _ (,name=VALUE)*
    where VALUE should not contain ',' *)
@@ -134,6 +135,22 @@ let setter ppf f name options s =
     Location.print_warning Location.none ppf
       (Warnings.Bad_env_variable ("OCAMLPARAM",
                                   Printf.sprintf "bad value for %s" name))
+
+let int_setter ppf name option s =
+  try
+    option := int_of_string s
+  with _ ->
+    Location.print_warning Location.none ppf
+      (Warnings.Bad_env_variable
+         ("OCAMLPARAM", Printf.sprintf "non-integer parameter for \"%s\"" name))
+
+let float_setter ppf name option s =
+  try
+    option := float_of_string s
+  with _ ->
+    Location.print_warning Location.none ppf
+      (Warnings.Bad_env_variable
+         ("OCAMLPARAM", Printf.sprintf "non-float parameter for \"%s\"" name))
 
 (* 'can-discard=' specifies which arguments can be discarded without warning
    because they are not understood by some versions of OCaml. *)
@@ -230,14 +247,14 @@ let read_OCAMLPARAM ppf position =
       | "I" -> begin
           match position with
           | Before_args -> first_include_dirs := v :: !first_include_dirs
-          | Before_link | Before_compile ->
+          | Before_link | Before_compile _ ->
             last_include_dirs := v :: !last_include_dirs
         end
 
       | "cclib" ->
         begin
           match position with
-          | Before_compile -> ()
+          | Before_compile _ -> ()
           | Before_link | Before_args ->
             ccobjs := Misc.rev_split_words v @ !ccobjs
         end
@@ -245,7 +262,7 @@ let read_OCAMLPARAM ppf position =
       | "ccopts" ->
         begin
           match position with
-          | Before_link | Before_compile ->
+          | Before_link | Before_compile _ ->
             last_ccopts := v :: !last_ccopts
           | Before_args ->
             first_ccopts := v :: !first_ccopts
@@ -254,7 +271,7 @@ let read_OCAMLPARAM ppf position =
       | "ppx" ->
         begin
           match position with
-          | Before_link | Before_compile ->
+          | Before_link | Before_compile _ ->
             last_ppx := v :: !last_ppx
           | Before_args ->
             first_ppx := v :: !first_ppx
@@ -265,7 +282,7 @@ let read_OCAMLPARAM ppf position =
         if not !native_code then
         begin
           match position with
-          | Before_link | Before_compile ->
+          | Before_link | Before_compile _ ->
             last_objfiles := v ::! last_objfiles
           | Before_args ->
             first_objfiles := v :: !first_objfiles
@@ -275,7 +292,7 @@ let read_OCAMLPARAM ppf position =
         if !native_code then
         begin
           match position with
-          | Before_link | Before_compile ->
+          | Before_link | Before_compile _ ->
             last_objfiles := v ::! last_objfiles
           | Before_args ->
             first_objfiles := v :: !first_objfiles
@@ -297,7 +314,7 @@ let read_OCAMLPARAM ppf position =
         end
     ) (match position with
         Before_args -> before
-      | Before_compile | Before_link -> after)
+      | Before_compile _ | Before_link -> after)
   with Not_found -> ()
 
 let readenv ppf position =

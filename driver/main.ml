@@ -141,7 +141,7 @@ module Options = Main_args.Make_bytecomp_options (struct
 end)
 
 let main () =
-  Timings.start All;
+  Timings.start Timings.All;
   try
     readenv ppf Before_args;
     Arg.parse Options.list anonymous usage;
@@ -191,7 +191,7 @@ let main () =
       Bytelink.link ppf (get_objfiles ()) target;
       Warnings.check_fatal ();
     end;
-    Timings.stop All;
+    Timings.stop Timings.All;
     if !Clflags.print_timings then Timings.print Format.std_formatter;
     exit 0
   with x ->

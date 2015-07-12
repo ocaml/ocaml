@@ -608,8 +608,8 @@ let rec map f lam =
     | Lconst cst -> lam
     | Lapply(e1, el, loc) ->
         Lapply(map f e1, List.map (map f) el, loc)
-    | Lfunction(kind, params, body) ->
-        Lfunction(kind, params, map f body)
+    | Lfunction{kind; params; body} ->
+        Lfunction{kind; params; body = map f body}
     | Llet(str, v, e1, e2) ->
         Llet(str, v, map f e1, map f e2)
     | Lletrec(idel, e2) ->
@@ -669,6 +669,9 @@ let stubify body =
                prim_native_name = "*stub*"; prim_native_float = false} in
   Lprim(Pccall stub_prim, [body])
 
+(* CR mshinwell: check all this is really new.  It should probably move
+   into middle_end/ *)
+
 (* Split a function with default parameters into a wrapper and an
    inner function.  The wrapper fills in missing optional parameters
    with their default value and tail-calls the inner function.  The
@@ -695,8 +698,9 @@ let split_default_wrapper fun_id kind params body =
         let inner_id = Ident.create (Ident.name fun_id ^ "_inner") in
         let map_param p = try List.assoc p map with Not_found -> p in
         let args = List.map (fun p -> Lvar (map_param p)) params in
-        let wrapper_body = Lapply (Lvar inner_id, args, Location.none) in
-
+        let wrapper_body =
+          Lapply (Lvar inner_id, args, Lambda.mk_apply_info Location.none)
+        in
         let inner_params = List.map map_param params in
         let new_ids = List.map Ident.rename inner_params in
         let subst = List.fold_left2
@@ -705,19 +709,19 @@ let split_default_wrapper fun_id kind params body =
             Ident.empty inner_params new_ids
         in
         let body = Lambda.subst_lambda subst body in
-        let inner_fun = Lfunction(Curried, new_ids, body) in
+        let inner_fun = Lfunction { kind = Curried; params = new_ids; body } in
         (wrapper_body, (inner_id, inner_fun))
   in
   try
     let wrapper_body, inner = aux [] body in
-    [(fun_id, Lfunction(kind, params, stubify wrapper_body)); inner]
+    [(fun_id, Lfunction{kind; params; body = stubify wrapper_body}); inner]
   with Exit ->
-    [(fun_id, Lfunction(kind, params, body))]
+    [(fun_id, Lfunction{kind; params; body})]
 
 let simplify_default_wrapper lam =
   let f = function
     | Llet(( Strict | Alias | StrictOpt), id,
-           Lfunction(kind, params, fbody), body) ->
+           Lfunction{kind; params; body = fbody}, body) ->
         begin match split_default_wrapper id kind params fbody with
         | [fun_id, def] ->
             Llet(Alias, fun_id, def, body)
@@ -733,7 +737,7 @@ let simplify_default_wrapper lam =
             List.flatten
               (List.map
                  (function
-                   | (id, Lfunction(kind, params, body)) ->
+                   | (id, Lfunction{kind; params; body}) ->
                        split_default_wrapper id kind params body
                    | _ -> assert false)
                  defs)
