@@ -315,7 +315,7 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
     let lam = close_let_bound_expression t var env lam in
     let body = close t (Env.add_var env id var) body in
     Let (let_kind, var, lam, body)
-  | Lfunction (kind, params, body) ->
+  | Lfunction { kind; params; body; } ->
     let closure_bound_var =
       let name =
         (* Name anonymous functions by their source location, if known. *)
@@ -368,7 +368,7 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
       (* Identify any bindings in the [let rec] that are functions.  These
          will be named after the corresponding identifier in the [let rec]. *)
       List.map (function
-          | (let_rec_ident, Lambda.Lfunction (kind, params, body)) ->
+          | (let_rec_ident, Lambda.Lfunction { kind; params; body; }) ->
             let closure_bound_var = create_var let_rec_ident in
             let function_declaration =
               Function_decl.create ~let_rec_ident:(Some let_rec_ident)
@@ -440,7 +440,7 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
   | Lprim (Pidentity, [arg]) -> close t env arg
   | Lprim (Pdirapply loc, [funct; arg])
   | Lprim (Prevapply loc, [arg; funct]) ->
-    close t env (Lambda.Lapply (funct, [arg], loc))
+    close t env (Lambda.Lapply (funct, [arg], Lambda.mk_apply_info loc))
   | Lprim (Praise kind, [Levent (arg, event)]) ->
     let arg_var = fresh_variable ~name:"raise_arg" in
     Let (Immutable, arg_var, Expr (close t env arg),
@@ -614,7 +614,7 @@ and close_list t sb l = List.map (close t sb) l
 and close_let_bound_expression t ?let_rec_ident let_bound_var env
       (lam : Lambda.lambda) : Flambda.named =
   match lam with
-  | Lfunction (kind, params, body) ->
+  | Lfunction { kind; params; body; } ->
     (* Ensure that [let] and [let rec]-bound functions have appropriate
        names. *)
     let closure_bound_var = rename_var t let_bound_var in

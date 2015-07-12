@@ -36,7 +36,18 @@ let pass_dump_linear_if ppf flag message phrase =
   phrase
 
 let clambda_dump_if ppf ulambda =
-  if !dump_clambda then Printclambda.clambda ppf ulambda; ulambda
+  if !dump_clambda then
+    begin
+      Printclambda.clambda ppf ulambda;
+      List.iter (fun (lbls,cst) ->
+          let lbl = match lbls with
+            | [] -> assert false
+            | (lbl, _) :: _ -> lbl in
+          Format.fprintf ppf "%s: %a@." lbl
+            Printclambda.structured_constant cst)
+        (Compilenv.structured_constants ())
+    end;
+  ulambda
 
 let rec regalloc ppf round fd =
   if round > 50 then
@@ -99,7 +110,29 @@ let compile_genfuns ppf f =
        | _ -> ())
     (Cmmgen.generic_functions true [Compilenv.current_unit_infos ()])
 
-let compile_unit asm_filename keep_asm obj_filename gen =
+let prep_flambda_for_export ppf flam =
+  let current_compilation_unit = Compilenv.current_unit () in
+  let fl_sym =
+    Flambdasym.convert ~compilation_unit:current_compilation_unit flam
+  in
+  let fl, const, export = fl_sym in
+  Compilenv.set_export_info export;
+  if !Clflags.dump_flambda
+  then begin
+    Format.fprintf ppf "flambdasym@ %a@." Printflambda.flambda fl;
+    Symbol.Map.iter (fun sym lam ->
+        Format.fprintf ppf "sym: %a@ %a@."
+          Symbol.print sym
+          Printflambda.flambda lam)
+      const
+  end;
+  Flambda_invariants.check ~flambdasym:true fl;
+  Symbol.Map.iter (fun _ lam ->
+      Flambda_invariants.check ~flambdasym:true ~cmxfile:true lam)
+    const;
+  fl_sym
+
+let compile_unit ~sourcefile output_prefix asm_filename keep_asm obj_filename gen =
   let create_asm = keep_asm || not !Emitaux.binary_backend_available in
   Emitaux.create_asm_file := create_asm;
   try
@@ -112,19 +145,29 @@ let compile_unit asm_filename keep_asm obj_filename gen =
       if not keep_asm then remove_file asm_filename;
       raise exn
     end;
+    Timings.(start (Assemble sourcefile));
     if Proc.assemble_file asm_filename obj_filename <> 0
     then raise(Error(Assembler_error asm_filename));
+    Timings.(stop (Assemble sourcefile));
     if create_asm && not keep_asm then remove_file asm_filename
   with exn ->
     remove_file obj_filename;
     raise exn
 
-let gen_implementation ?toplevel ppf (size, lam) =
+let gen_implementation ?toplevel ~sourcefile ppf ~size flam =
   Emit.begin_assembly ();
-  Closure.intro size lam
+  Timings.(start (Flambda_backend sourcefile));
+  prep_flambda_for_export ppf flam
+  ++ Clambdagen.convert
+  ++ Timings.(stop_id (Flambda_backend sourcefile))
   ++ clambda_dump_if ppf
+  ++ Timings.(start_id (Cmm sourcefile))
   ++ Cmmgen.compunit size
-  ++ List.iter (compile_phrase ppf) ++ (fun () -> ());
+  ++ Timings.(stop_id (Cmm sourcefile))
+  ++ Timings.(start_id (Compile_phrases sourcefile))
+  ++ List.iter (compile_phrase ppf)
+  ++ Timings.(stop_id (Compile_phrases sourcefile))
+  ++ (fun () -> ());
   (match toplevel with None -> () | Some f -> compile_genfuns ppf f);
 
   (* We add explicit references to external primitive symbols.  This
@@ -140,14 +183,15 @@ let gen_implementation ?toplevel ppf (size, lam) =
     );
   Emit.end_assembly ()
 
-let compile_implementation ?toplevel prefixname ppf (size, lam) =
+let compile_implementation ?toplevel ~sourcefile prefixname ppf ~size flam =
   let asmfile =
     if !keep_asm_file || !Emitaux.binary_backend_available
     then prefixname ^ ext_asm
     else Filename.temp_file "camlasm" ext_asm
   in
-  compile_unit asmfile !keep_asm_file (prefixname ^ ext_obj)
-    (fun () -> gen_implementation ?toplevel ppf (size, lam))
+  compile_unit sourcefile prefixname asmfile !keep_asm_file (prefixname ^ ext_obj)
+    (fun () ->
+       gen_implementation ?toplevel ~sourcefile ppf ~size flam)
 
 (* Error report *)
 
