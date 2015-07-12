@@ -245,9 +245,8 @@ let import_descr_for_pack units pack (descr : ET.descr) : ET.descr =
     Value_mutable_block (tag, size)
 
 let import_code_for_pack units pack expr =
-  Flambdaiter.map (function
-      | Symbol (sym, ()) ->
-        Symbol (import_symbol_for_pack units pack sym, ())
+  Flambdaiter.map_named (function
+      | Symbol sym -> Symbol (import_symbol_for_pack units pack sym)
       | e -> e)
     expr
 

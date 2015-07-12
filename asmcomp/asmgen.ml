@@ -110,6 +110,7 @@ let compile_genfuns ppf f =
        | _ -> ())
     (Cmmgen.generic_functions true [Compilenv.current_unit_infos ()])
 
+(*
 let prep_flambda_for_export ppf flam =
   let current_compilation_unit = Compilenv.current_unit () in
   let fl_sym =
@@ -131,6 +132,7 @@ let prep_flambda_for_export ppf flam =
       Flambda_invariants.check ~flambdasym:true ~cmxfile:true lam)
     const;
   fl_sym
+*)
 
 let compile_unit ~sourcefile output_prefix asm_filename keep_asm obj_filename gen =
   let create_asm = keep_asm || not !Emitaux.binary_backend_available in
@@ -154,7 +156,9 @@ let compile_unit ~sourcefile output_prefix asm_filename keep_asm obj_filename ge
     remove_file obj_filename;
     raise exn
 
-let gen_implementation ?toplevel ~sourcefile ppf ~size flam =
+let gen_implementation ?toplevel:_ ~sourcefile:_ _ppf ~size:_ flam:_ =
+  Misc.fatal_error "Backend disabled"
+(*
   Emit.begin_assembly ();
   Timings.(start (Flambda_backend sourcefile));
   prep_flambda_for_export ppf flam
@@ -182,6 +186,7 @@ let gen_implementation ?toplevel ~sourcefile ppf ~size flam =
           (List.map Primitive.native_name !Translmod.primitive_declarations))
     );
   Emit.end_assembly ()
+*)
 
 let compile_implementation ?toplevel ~sourcefile prefixname ppf ~size flam =
   let asmfile =

@@ -181,7 +181,7 @@ module Options = Main_args.Make_optcomp_options (struct
 end);;
 
 let main () =
-  Timings.start All;
+  Timings.start Timings.All;
   native_code := true;
   let ppf = Format.err_formatter in
   try
@@ -235,7 +235,7 @@ let main () =
       Asmlink.link ppf (get_objfiles ()) target;
       Warnings.check_fatal ();
     end;
-    Timings.stop All;
+    Timings.stop Timings.All;
     if !Clflags.print_timings then Timings.print Format.std_formatter;
     exit 0
   with x ->
