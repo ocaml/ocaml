@@ -16,7 +16,8 @@ nat_stubs.o: nat_stubs.c ../../byterun/caml/alloc.h \
  ../../byterun/caml/fail.h ../../byterun/caml/hash.h \
  ../../byterun/caml/memory.h ../../byterun/caml/gc.h \
  ../../byterun/caml/major_gc.h ../../byterun/caml/freelist.h \
- ../../byterun/caml/minor_gc.h ../../byterun/caml/mlvalues.h bng.h nat.h
+ ../../byterun/caml/minor_gc.h ../../byterun/caml/address_class.h \
+ ../../byterun/caml/mlvalues.h bng.h nat.h
 arith_flags.cmi :
 arith_status.cmi :
 big_int.cmi : nat.cmi

@@ -427,16 +427,8 @@ CAMLexport void caml_finalize_channel(value vchan)
   struct channel * chan = Channel(vchan);
   if (--chan->refcount > 0) return;
   if (caml_channel_mutex_free != NULL) (*caml_channel_mutex_free)(chan);
-  /* If the buffer is empty, remove the channel from the list of all
-     open channels and free it. Otherwise, keep it around so the Ocaml
-     [at_exit] function gets a chance to flush it.
-     We would want to simply flush the channel now, but flushing can
-     raise exceptions, which is forbidden in a finalization function.
-  */
-  if (chan->curr == chan->buff){
-    unlink_channel(chan);
-    caml_stat_free(chan);
-  }
+  unlink_channel(chan);
+  caml_stat_free(chan);
 }
 
 static int compare_channel(value vchan1, value vchan2)

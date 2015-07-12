@@ -511,8 +511,12 @@ let addr_array_length hdr = Cop(Clsr, [hdr; Cconst_int wordsize_shift])
 let float_array_length hdr = Cop(Clsr, [hdr; Cconst_int numfloat_shift])
 
 let lsl_const c n =
-  Cop(Clsl, [c; Cconst_int n])
+  if n = 0 then c
+  else Cop(Clsl, [c; Cconst_int n])
 
+(* Produces a pointer to the element of the array [ptr] on the position [ofs]
+   with the given element [log2size] log2 element size. [ofs] is given as a
+   tagged int expression. *)
 let array_indexing log2size ptr ofs =
   match ofs with
     Cconst_int n ->
@@ -520,9 +524,13 @@ let array_indexing log2size ptr ofs =
       if i = 0 then ptr else Cop(Cadda, [ptr; Cconst_int(i lsl log2size)])
   | Cop(Caddi, [Cop(Clsl, [c; Cconst_int 1]); Cconst_int 1]) ->
       Cop(Cadda, [ptr; lsl_const c log2size])
+  | Cop(Caddi, [c; Cconst_int n]) when log2size = 0 ->
+      Cop(Cadda, [Cop(Cadda, [ptr; untag_int c]); Cconst_int (n asr 1)])
   | Cop(Caddi, [c; Cconst_int n]) ->
       Cop(Cadda, [Cop(Cadda, [ptr; lsl_const c (log2size - 1)]);
                    Cconst_int((n-1) lsl (log2size - 1))])
+  | _ when log2size = 0 ->
+      Cop(Cadda, [ptr; untag_int ofs])
   | _ ->
       Cop(Cadda, [Cop(Cadda, [ptr; lsl_const ofs (log2size - 1)]);
                    Cconst_int((-1) lsl (log2size - 1))])
@@ -778,22 +786,40 @@ let bigarray_elt_size = function
   | Pbigarray_complex32 -> 8
   | Pbigarray_complex64 -> 16
 
+(* Produces a pointer to the element of the bigarray [b] on the position
+   [args].  [args] is given as a list of tagged int expressions, one per array
+   dimension. *)
 let bigarray_indexing unsafe elt_kind layout b args dbg =
-  let check_bound a1 a2 k =
-    if unsafe then k else Csequence(make_checkbound dbg [a1;a2], k) in
+  let check_ba_bound bound idx v =
+    Csequence(make_checkbound dbg [bound;idx], v) in
+  (* Validates the given multidimensional offset against the array bounds and
+     transforms it into a one dimensional offset.  The offsets are expressions
+     evaluating to tagged int. *)
   let rec ba_indexing dim_ofs delta_ofs = function
     [] -> assert false
   | [arg] ->
-      bind "idx" (untag_int arg)
-        (fun idx ->
-           check_bound (Cop(Cload Word,[field_address b dim_ofs])) idx idx)
+      if unsafe then arg
+      else
+        bind "idx" arg (fun idx ->
+          (* Load the untagged int bound for the given dimension *)
+          let bound = Cop(Cload Word,[field_address b dim_ofs]) in
+          let idxn = untag_int idx in
+          check_ba_bound bound idxn idx)
   | arg1 :: argl ->
+      (* The remainder of the list is transformed into a one dimensional offset
+         *)
       let rem = ba_indexing (dim_ofs + delta_ofs) delta_ofs argl in
-      bind "idx" (untag_int arg1)
-        (fun idx ->
-          bind "bound" (Cop(Cload Word, [field_address b dim_ofs]))
-          (fun bound ->
-            check_bound bound idx (add_int (mul_int rem bound) idx))) in
+      (* Load the untagged int bound for the given dimension *)
+      let bound = Cop(Cload Word, [field_address b dim_ofs]) in
+      if unsafe then add_int (mul_int (decr_int rem) bound) arg1
+      else
+        bind "idx" arg1 (fun idx ->
+          bind "bound" bound (fun bound ->
+            let idxn = untag_int idx in
+            (* [offset = rem * (tag_int bound) + idx] *)
+            let offset = add_int (mul_int (decr_int rem) bound) idx in
+            check_ba_bound bound idxn offset)) in
+  (* The offset as an expression evaluating to int *)
   let offset =
     match layout with
       Pbigarray_unknown_layout ->
@@ -804,11 +830,8 @@ let bigarray_indexing unsafe elt_kind layout b args dbg =
         ba_indexing 5 1 (List.map (fun idx -> sub_int idx (Cconst_int 2)) args)
   and elt_size =
     bigarray_elt_size elt_kind in
-  let byte_offset =
-    if elt_size = 1
-    then offset
-    else Cop(Clsl, [offset; Cconst_int(log2 elt_size)]) in
-  Cop(Cadda, [Cop(Cload Word, [field_address b 1]); byte_offset])
+  (* [array_indexing] can simplify the given expressions *)
+  array_indexing (log2 elt_size) (Cop(Cload Word, [field_address b 1])) offset
 
 let bigarray_word_kind = function
     Pbigarray_unknown -> assert false
@@ -1267,13 +1290,21 @@ let subst_boxed_number unbox_fn boxed_id unboxed_id box_chunk box_offset exp =
           Cassign(id, subst arg)
     | Ctuple argv -> Ctuple(List.map subst argv)
     | Cop(Cload chunk, [Cvar id]) as e ->
-        if Ident.same id boxed_id && chunk = box_chunk && box_offset = 0
-        then Cvar unboxed_id
-        else e
+      if not (Ident.same id boxed_id) then e
+      else if chunk = box_chunk && box_offset = 0 then
+        Cvar unboxed_id
+      else begin
+        need_boxed := true;
+        e
+      end
     | Cop(Cload chunk, [Cop(Cadda, [Cvar id; Cconst_int ofs])]) as e ->
-        if Ident.same id boxed_id && chunk = box_chunk && ofs = box_offset
-        then Cvar unboxed_id
-        else e
+      if not (Ident.same id boxed_id) then e
+      else if chunk = box_chunk && ofs = box_offset then
+        Cvar unboxed_id
+      else begin
+        need_boxed := true;
+        e
+      end
     | Cop(op, argv) -> Cop(op, List.map subst argv)
     | Csequence(e1, e2) -> Csequence(subst e1, subst e2)
     | Cifthenelse(e1, e2, e3) -> Cifthenelse(subst e1, subst e2, subst e3)
@@ -1283,7 +1314,10 @@ let subst_boxed_number unbox_fn boxed_id unboxed_id box_chunk box_offset exp =
     | Ccatch(nfail, ids, e1, e2) -> Ccatch(nfail, ids, subst e1, subst e2)
     | Cexit (nfail, el) -> Cexit (nfail, List.map subst el)
     | Ctrywith(e1, id, e2) -> Ctrywith(subst e1, id, subst e2)
-    | e -> e in
+    | Cconst_int _ | Cconst_natint _ | Cconst_float _ | Cconst_symbol _
+    | Cconst_pointer _ | Cconst_natpointer _
+    | Cconst_blockheader _ as e -> e
+  in
   let res = subst exp in
   (res, !need_boxed, !assigned)
 

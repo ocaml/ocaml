@@ -351,14 +351,14 @@ let expression sub exp =
           List.map (sub.value_binding sub) list,
           sub.expr sub exp)
 
-    (** Pexp_function can't have a label, so we split in 3 cases. *)
-    (** One case, no guard: It's a fun. *)
+    (* Pexp_function can't have a label, so we split in 3 cases. *)
+    (* One case, no guard: It's a fun. *)
     | Texp_function (label, [{c_lhs=p; c_guard=None; c_rhs=e}], _) ->
         Pexp_fun (label, None, sub.pat sub p, sub.expr sub e)
-    (** No label: it's a function. *)
+    (* No label: it's a function. *)
     | Texp_function (Nolabel, cases, _) ->
         Pexp_function (sub.cases sub cases)
-    (** Mix of both, we generate `fun ~label:$name$ -> match $name$ with ...` *)
+    (* Mix of both, we generate `fun ~label:$name$ -> match $name$ with ...` *)
     | Texp_function (Labelled s | Optional s as label, cases, _) ->
         let name = fresh_name s exp.exp_env in
         Pexp_fun (label, None, Pat.var ~loc {loc;txt = name },

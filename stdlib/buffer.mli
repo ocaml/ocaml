@@ -119,10 +119,11 @@ val add_buffer : t -> t -> unit
    at the end of buffer [b1].  [b2] is not modified. *)
 
 val add_channel : t -> in_channel -> int -> unit
-(** [add_channel b ic n] reads exactly [n] character from the
+(** [add_channel b ic n] reads at most [n] characters from the
    input channel [ic] and stores them at the end of buffer [b].
    Raise [End_of_file] if the channel contains fewer than [n]
-   characters. *)
+   characters. In this case the characters are still added to
+   the buffer, so as to avoid loss of data. *)
 
 val output_buffer : out_channel -> t -> unit
 (** [output_buffer oc b] writes the current contents of buffer [b]

@@ -206,6 +206,10 @@ external ( := ) : 'a ref -> 'a -> unit = "%setfield0"
 external incr : int ref -> unit = "%incr"
 external decr : int ref -> unit = "%decr"
 
+(* Result type *)
+
+type ('a,'b) result = Ok of 'a | Error of 'b
+
 (* String conversion functions *)
 
 external format_int : string -> int -> string = "caml_format_int"

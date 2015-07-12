@@ -101,12 +101,20 @@ let add_bytes b s = add_string b (Bytes.unsafe_to_string s)
 let add_buffer b bs =
   add_subbytes b bs.buffer 0 bs.position
 
+(* read up to [len] bytes from [ic] into [b]. *)
+let rec add_channel_rec b ic len =
+  if len > 0 then (
+    let n = input ic b.buffer b.position len in
+    b.position <- b.position + n;
+    if n = 0 then raise End_of_file
+    else add_channel_rec b ic (len-n)   (* n <= len *)
+  )
+
 let add_channel b ic len =
   if len < 0 || len > Sys.max_string_length then   (* PR#5004 *)
     invalid_arg "Buffer.add_channel";
   if b.position + len > b.length then resize b len;
-  really_input ic b.buffer b.position len;
-  b.position <- b.position + len
+  add_channel_rec b ic len
 
 let output_buffer oc b =
   output oc b.buffer 0 b.position

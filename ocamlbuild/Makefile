@@ -125,8 +125,10 @@ ocamlbuildlib.cmxa: ocamlbuild_pack.cmx $(EXTRA_CMX)
 
 # The packs
 
-ocamlbuild_pack.cmo ocamlbuild_pack.cmi: $(PACK_CMO)
+ocamlbuild_pack.cmo: $(PACK_CMO)
 	$(OCAMLC) -pack $(PACK_CMO) -o ocamlbuild_pack.cmo
+
+ocamlbuild_pack.cmi: ocamlbuild_pack.cmo
 
 ocamlbuild_pack.cmx: $(PACK_CMX)
 	$(OCAMLOPT) -pack $(PACK_CMX) -o ocamlbuild_pack.cmx

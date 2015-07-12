@@ -19,6 +19,8 @@ let rec length_aux len = function
 
 let length l = length_aux 0 l
 
+let cons a l = a::l
+
 let hd = function
     [] -> failwith "hd"
   | a::l -> a

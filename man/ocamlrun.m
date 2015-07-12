@@ -108,11 +108,15 @@ default to the library directory specified when compiling OCaml.
 .B OCAMLRUNPARAM
 Set the runtime system options and garbage collection parameters.
 (If OCAMLRUNPARAM is not set, CAMLRUNPARAM will be used instead.)
-This variable must be a sequence of parameter specifications.
-A parameter specification is an option letter followed by an =
+This variable must be a sequence of parameter specifications separated
+by commas.
+A parameter specification is a letter, optionally followed by an =
 sign, a decimal number (or a hexadecimal number prefixed by
 .BR 0x ),
-and an optional multiplier.  The options are documented below; the
+and an optional multiplier. If the letter is followed by anything
+else, the corresponding option is set to 1. Unknown letters
+are ignored.
+The options are documented below; the
 last six correspond to the fields of the
 .B control
 record documented in

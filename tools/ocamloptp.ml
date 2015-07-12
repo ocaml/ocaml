@@ -69,6 +69,7 @@ module Options = Main_args.Make_optcomp_options (struct
   let _no_functor_heuristics = option "-no-functor-heuristics"
   let _intf s = with_intf := true; option_with_arg "-intf" s
   let _intf_suffix s = option_with_arg "-intf-suffix" s
+  let _keep_docs = option "-keep-docs"
   let _keep_locs = option "-keep-locs"
   let _labels = option "-labels"
   let _linkall = option "-linkall"

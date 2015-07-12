@@ -84,11 +84,10 @@ static void st_thread_exit(void)
   ExitThread(0);
 }
 
-static void st_thread_kill(st_thread_id thr)
+static void st_thread_join(st_thread_id thr)
 {
-  TRACE1("st_thread_kill", thr);
-  TerminateThread(thr, 0);
-  CloseHandle(thr);
+  TRACE1("st_thread_join", h);
+  WaitForSingleObject(thr, INFINITE);
 }
 
 /* Scheduling hints */
@@ -383,18 +382,21 @@ static void st_check_error(DWORD retcode, char * msg)
   raise_sys_error(str);
 }
 
+/* Variable used to stop the "tick" thread */
+static volatile int caml_tick_thread_stop = 0;
+
 /* The tick thread: posts a SIGPREEMPTION signal periodically */
 
 static DWORD WINAPI caml_thread_tick(void * arg)
 {
-  while(1) {
+  while(! caml_tick_thread_stop) {
     Sleep(Thread_timeout);
     /* The preemption signal should never cause a callback, so don't
      go through caml_handle_signal(), just record signal delivery via
      caml_record_signal(). */
     caml_record_signal(SIGPREEMPTION);
   }
-  return 0;                     /* prevents compiler warning */
+  return 0;
 }
 
 /* "At fork" processing -- none under Win32 */

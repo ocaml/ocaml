@@ -1684,8 +1684,8 @@ SYSLIB=-l\$(1)
 #ml let syslib x = "-l"^x;;
 
 ### How to build a static library
-MKLIB=ar rc \$(1) \$(2); ranlib \$(1)
-#ml let mklib out files opts = Printf.sprintf "ar rc %s %s %s; ranlib %s" out opts files out;;
+MKLIB=${TOOLPREF}ar rc \$(1) \$(2); ${TOOLPREF}ranlib \$(1)
+#ml let mklib out files opts = Printf.sprintf "${TOOLPREF}ar rc %s %s %s; ${TOOLPREF}ranlib %s" out opts files out;;
 EOF
 echo "ARCH=$arch" >> Makefile
 echo "MODEL=$model" >> Makefile
@@ -1726,6 +1726,11 @@ echo "MKEXEDEBUGFLAG=$mkexedebugflag" >> Makefile
 echo "MKDLL=$mksharedlib" >> Makefile
 echo "MKMAINDLL=$mkmaindll" >> Makefile
 echo "RUNTIMED=${debugruntime}" >>Makefile
+if $shared_libraries_supported; then
+  echo "SHARED=shared" >>Makefile
+else
+  echo "SHARED=noshared" >>Makefile
+fi
 echo "WITH_DEBUGGER=${with_debugger}" >>Makefile
 echo "WITH_OCAMLDOC=${with_ocamldoc}" >>Makefile
 echo "WITH_OCAMLBUILD=${with_ocamlbuild}" >>Makefile
