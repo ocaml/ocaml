@@ -2247,9 +2247,10 @@ and transl_letrec bindings cont =
 (* Translate a function definition *)
 
 let transl_function f =
+  let body = Un_anf.apply f.body in
   Cfunction {fun_name = f.label;
              fun_args = List.map (fun id -> (id, typ_addr)) f.params;
-             fun_body = transl f.body;
+             fun_body = transl body;
              fun_fast = !Clflags.optimize_for_speed;
              fun_dbg  = f.dbg; }
 
