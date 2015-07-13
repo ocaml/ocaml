@@ -24,6 +24,7 @@
 #include "misc.h"
 #include "mlvalues.h"
 #include "prims.h"
+#include "platform.h"
 
 /* all uses of this are bugs */
 CAMLprim value caml_static_alloc(value size)
@@ -211,11 +212,17 @@ value caml_cache_public_method2 (value *meths, value tag, value *cache)
 }
 #endif /*CAML_JIT*/
 
-static value oo_last_id = Val_int(0);
+/* Allocate OO ids in chunks, to avoid contention */
+#define Id_chunk 1024
+
+static atomic_uintnat oo_next_id;
+static __thread uintnat oo_next_id_local;
 
 CAMLprim value caml_set_oo_id (value obj) {
-  Op_val(obj)[1] = oo_last_id;
-  oo_last_id += 2;
+  if (oo_next_id_local % Id_chunk == 0) {
+    oo_next_id_local = atomic_fetch_add(&oo_next_id, Id_chunk);
+  }
+  Op_val(obj)[1] = Val_long(oo_next_id_local++);
   return obj;
 }
 
