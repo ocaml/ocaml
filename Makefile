@@ -149,6 +149,7 @@ MIDDLE_END=\
   middle_end/find_recursive_functions.cmo \
   middle_end/invariant_params.cmo \
   middle_end/inconstant_idents.cmo \
+  middle_end/alias_analysis.cmo \
   middle_end/simplify_common.cmo \
   middle_end/eliminate_const_block.cmo \
   middle_end/remove_unused_arguments.cmo \
