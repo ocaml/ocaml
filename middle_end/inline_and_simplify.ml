@@ -333,16 +333,13 @@ and loop_named env r (tree : Flambda.named) : Flambda.named * R.t =
       in
       simplify_named_using_approx r tree approx
     | Psetglobalfield (_, i), [arg] ->
-      let arg = Freshening.apply_variable (E.freshening env) arg in
       let approx = E.find arg env in
       let r = R.add_global r ~field_index:i ~approx in
       tree, ret r A.value_unknown
     | Pfield i, [arg] ->
-      let arg = Freshening.apply_variable (E.freshening env) arg in
       let approx = A.get_field (E.find arg env) ~field_index:i in
       simplify_named_using_approx_and_env env r tree approx
     | (Psetfield _ | Parraysetu _ | Parraysets _), block::_ ->
-      let block = Freshening.apply_variable (E.freshening env) block in
       let block_approx = E.find block env in
       if A.is_certainly_immutable block_approx then begin
         Location.prerr_warning (Debuginfo.to_location dbg)
@@ -353,9 +350,6 @@ and loop_named env r (tree : Flambda.named) : Flambda.named * R.t =
       Misc.fatal_error "Psequand and Psequor must be expanded (see handling \
           in closure_conversion.ml)"
     | p, args ->
-      let args =
-        List.map (Freshening.apply_variable (E.freshening env)) args
-      in
       let approxs = E.find_list env args in
       let expr, approx, benefit =
         let module Backend = (val (E.backend env) : Backend_intf.S) in
@@ -805,7 +799,7 @@ and simplify_set_of_closures original_env r
 *)
 and simplify_apply env r ~(apply : Flambda.apply) : Flambda.t * R.t =
   let { Flambda. func; args; kind = _; dbg } = apply in
-  let func = Freshening.apply_variable (E.freshening env) arg in
+  let func = Freshening.apply_variable (E.freshening env) func in
   let args = List.map (Freshening.apply_variable (E.freshening env)) args in
   let func_approx = E.find func env in
   let args_approxs = List.map (fun arg -> E.find arg env) args in
