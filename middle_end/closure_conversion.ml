@@ -305,16 +305,16 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
   match lam with
   | Lvar id -> Var (Env.find_var env id)
   | Lconst cst -> U.name_expr (close_const cst)
-  | Llet (let_kind, id, lam, body) ->
+  | Llet (let_kind, id, defining_expr, body) ->
     let let_kind : Flambda.let_kind =
       match let_kind with
       | Variable -> Mutable
       | Strict | Alias | StrictOpt -> Immutable
     in
     let var = create_var id in
-    let lam = close_let_bound_expression t var env lam in
+    let defining_expr = close_let_bound_expression t var env defining_expr in
     let body = close t (Env.add_var env id var) body in
-    Let (let_kind, var, lam, body)
+    Let (let_kind, var, defining_expr, body)
   | Lfunction { kind; params; body; } ->
     let closure_bound_var =
       let name =

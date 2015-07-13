@@ -35,7 +35,8 @@ let middle_end ppf ~sourcefile ~prefixname ~backend ~exported_fields lam =
       incr pass_number;
       if verbose then begin
         Format.fprintf ppf "Before pass %d, round %d:@ %a@." !pass_number
-          !round_number Printflambda.flambda flam
+          !round_number Printflambda.flambda flam;
+        Format.eprintf "\n@?"
       end;
       let flam = pass flam in
       check flam;

@@ -19,6 +19,7 @@
 *)
 let already_added_bound_variable_to_env (_ : Variable.t) = ()
 let will_traverse_named_expression_later (_ : Flambda.named) = ()
+let ignore_variable (_ : Variable.t) = ()
 let ignore_call_kind (_ : Flambda.call_kind) = ()
 let ignore_debuginfo (_ : Debuginfo.t) = ()
 let ignore_meth_kind (_ : Lambda.meth_kind) = ()
@@ -45,7 +46,7 @@ exception Vars_in_function_body_not_bound_by_closure_or_params of
 exception Function_decls_have_overlapping_parameters of Variable.Set.t
 exception Specialised_arg_that_is_not_a_parameter of Variable.t
 exception Free_variables_set_is_lying of
-  Variable.t * Flambda.function_declaration
+  Variable.t * Variable.Set.t * Variable.Set.t * Flambda.function_declaration
 exception Set_of_closures_free_vars_map_has_wrong_domain of Variable.Set.t
 exception Static_exception_not_caught of Static_exception.t
 exception Static_exception_caught_in_multiple_places of Static_exception.t
@@ -178,8 +179,12 @@ let variable_invariants flam =
       let functions_in_closure = Variable.Map.keys funs in
       let variables_in_closure =
         Variable.Map.fold (fun var var_in_closure variables_in_closure ->
-            check_variable_is_bound env var;
-            Variable.Set.add var_in_closure variables_in_closure)
+            (* [var] may occur in the body, but will effectively be renamed
+               to [var_in_closure], so the latter is what we check to make
+               sure it's bound. *)
+            ignore_variable var;
+            check_variable_is_bound env var_in_closure;
+            Variable.Set.add var variables_in_closure)
           free_vars Variable.Set.empty
       in
       let all_params, all_free_vars =
@@ -194,8 +199,9 @@ let variable_invariants flam =
             (* Check that [free_variables], which is only present as an
                optimization, is not lying. *)
             let free_variables' = Free_variables.calculate body in
-            if not (Variable.Set.equal free_variables free_variables') then
-              raise (Free_variables_set_is_lying (fun_var, function_decl));
+            if not (Variable.Set.subset free_variables' free_variables) then
+              raise (Free_variables_set_is_lying (fun_var,
+                free_variables, free_variables', function_decl));
             (* Check that every variable free in the body of the function is
                bound by either the set of closures or the parameter list. *)
             let acceptable_free_variables =
@@ -468,10 +474,12 @@ let check_exn ?(flambdasym=false) ?(cmxfile=false) flam =
           parameter of any of the function(s) in the corresponding \
           declaration(s): %a"
         Variable.print var
-    | Free_variables_set_is_lying (var, function_decl) ->
-      Format.eprintf ">> Function declaration whose [free_variables] set does \
-          not coincide with the result of [Free_variables.calculate] applied \
-          to the body of the function: %a"
+    | Free_variables_set_is_lying (var, claimed, calculated, function_decl) ->
+      Format.eprintf ">> Function declaration whose [free_variables] set (%a) \
+          is not a superset of the result of [Free_variables.calculate] \
+          applied to the body of the function (%a).  Declaration: %a"
+        Variable.Set.print claimed
+        Variable.Set.print calculated
         Printflambda.function_declaration (var, function_decl)
     | Set_of_closures_free_vars_map_has_wrong_domain vars ->
       Format.eprintf ">> [free_vars] map in set of closures has in its domain \

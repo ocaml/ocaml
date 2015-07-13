@@ -156,7 +156,7 @@ and print_set_of_closures ppf (set_of_closures : Flambda.set_of_closures) =
       Variable.Map.iter (print_function_declaration ppf)
     in
     let vars ppf =
-      Variable.Map.iter (fun id v -> fprintf ppf "@ %a = %a"
+      Variable.Map.iter (fun id v -> fprintf ppf "@ %a -rename-> %a"
                       Variable.print id Variable.print v) in
     let spec ppf spec_args =
       if not (Variable.Map.is_empty spec_args)
@@ -167,7 +167,7 @@ and print_set_of_closures ppf (set_of_closures : Flambda.set_of_closures) =
           spec_args
       end
     in
-    fprintf ppf "@[<2>(set_of_closures%a %a%a)@]" funs function_decls.funs
+    fprintf ppf "@[<2>(set_of_closures%a fv={%a} sa={%a})@]" funs function_decls.funs
       vars free_vars spec specialised_args
 
 and print_project_closure ppf (project_closure : Flambda.project_closure) =
