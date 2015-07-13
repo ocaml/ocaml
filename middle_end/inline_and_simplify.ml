@@ -125,7 +125,10 @@ let reference_recursive_function_directly env closure_id =
    individual closure from it. *)
 let simplify_project_closure env r ~(project_closure : Flambda.project_closure)
       : Flambda.named * R.t =
-  let set_of_closures_approx = E.find project_closure.set_of_closures env in
+  let set_of_closures_approx =
+    E.find (Freshening.apply_variable (E.freshening env)
+      project_closure.set_of_closures) env
+  in
   match A.check_approx_for_set_of_closures set_of_closures_approx with
   | Wrong ->
     Misc.fatal_errorf "Wrong approximation when projecting closure: %a"
@@ -155,7 +158,10 @@ let simplify_project_closure env r ~(project_closure : Flambda.project_closure)
 let simplify_move_within_set_of_closures env r
       ~(move_within_set_of_closures : Flambda.move_within_set_of_closures)
       : Flambda.named * R.t =
-  let closure_approx = E.find move_within_set_of_closures.closure env in
+  let closure_approx =
+    E.find (Freshening.apply_variable (E.freshening env)
+      move_within_set_of_closures.closure) env
+  in
   match A.check_approx_for_closure closure_approx with
   | Wrong ->
     Misc.fatal_errorf "Wrong approximation when moving within set of \
@@ -250,7 +256,9 @@ let simplify_move_within_set_of_closures env r
 let rec simplify_project_var env r ~(project_var : Flambda.project_var)
       : Flambda.named * R.t =
   let approx = R.approx r in
-  let closure = project_var.closure in
+  let closure =
+    Freshening.apply_variable (E.freshening env) project_var.closure
+  in
   match A.check_approx_for_closure_allowing_unresolved approx with
   | Ok (_value_closure, _set_of_closures_var, value_set_of_closures) ->
     let module F = Freshening.Project_var in
@@ -304,49 +312,59 @@ and loop_named env r (tree : Flambda.named) : Flambda.named * R.t =
   | Project_var project_var -> simplify_project_var env r ~project_var
   | Move_within_set_of_closures move_within_set_of_closures ->
     simplify_move_within_set_of_closures env r ~move_within_set_of_closures
-  | Prim (Pgetglobal id, [], _dbg) ->
-    let approx =
-      if Ident.is_predef_exn id then A.value_unknown
-      else
+  | Prim (prim, args, dbg) ->
+    let args = List.map (Freshening.apply_variable (E.freshening env)) args in
+    begin match prim, args with
+    | Pgetglobal id, [] ->
+      let approx =
+        if Ident.is_predef_exn id then A.value_unknown
+        else
+          let module Backend = (val (E.backend env) : Backend_intf.S) in
+          Backend.import_global id
+      in
+      tree, ret r approx
+    | Pgetglobalfield (id, i), [] ->
+      let approx =
+        if id = Compilation_unit.get_current_id_exn ()
+        then R.find_global r ~field_index:i
+        else
+          let module Backend = (val (E.backend env) : Backend_intf.S) in
+          A.get_field (Backend.import_global id) ~field_index:i
+      in
+      simplify_named_using_approx r tree approx
+    | Psetglobalfield (_, i), [arg] ->
+      let arg = Freshening.apply_variable (E.freshening env) arg in
+      let approx = E.find arg env in
+      let r = R.add_global r ~field_index:i ~approx in
+      tree, ret r A.value_unknown
+    | Pfield i, [arg] ->
+      let arg = Freshening.apply_variable (E.freshening env) arg in
+      let approx = A.get_field (E.find arg env) ~field_index:i in
+      simplify_named_using_approx_and_env env r tree approx
+    | (Psetfield _ | Parraysetu _ | Parraysets _), block::_ ->
+      let block = Freshening.apply_variable (E.freshening env) block in
+      let block_approx = E.find block env in
+      if A.is_certainly_immutable block_approx then begin
+        Location.prerr_warning (Debuginfo.to_location dbg)
+          Warnings.Assignment_on_non_mutable_value
+      end;
+      tree, ret r A.value_unknown
+    | (Psequand | Psequor), _ ->
+      Misc.fatal_error "Psequand and Psequor must be expanded (see handling \
+          in closure_conversion.ml)"
+    | p, args ->
+      let args =
+        List.map (Freshening.apply_variable (E.freshening env)) args
+      in
+      let approxs = E.find_list env args in
+      let expr, approx, benefit =
         let module Backend = (val (E.backend env) : Backend_intf.S) in
-        Backend.import_global id
-    in
-    tree, ret r approx
-  | Prim (Pgetglobalfield (id, i), [], _dbg) ->
-    let approx =
-      if id = Compilation_unit.get_current_id_exn ()
-      then R.find_global r ~field_index:i
-      else
-        let module Backend = (val (E.backend env) : Backend_intf.S) in
-        A.get_field (Backend.import_global id) ~field_index:i
-    in
-    simplify_named_using_approx r tree approx
-  | Prim (Psetglobalfield (_, i), [arg], _) ->
-    let approx = E.find arg env in
-    let r = R.add_global r ~field_index:i ~approx in
-    tree, ret r A.value_unknown
-  | Prim (Pfield i, [arg], _) as expr ->
-    let approx = A.get_field (E.find arg env) ~field_index:i in
-    simplify_named_using_approx_and_env env r expr approx
-  | Prim ((Psetfield _ | Parraysetu _ | Parraysets _), block::_, dbg) ->
-    let block_approx = E.find block env in
-    if A.is_certainly_immutable block_approx then begin
-      Location.prerr_warning (Debuginfo.to_location dbg)
-        Warnings.Assignment_on_non_mutable_value
-    end;
-    tree, ret r A.value_unknown
-  | Prim ((Psequand | Psequor), _, _) ->
-    Misc.fatal_error "Psequand and Psequor must be expanded (see handling in \
-        closure_conversion.ml)"
-  | Prim (p, args, dbg) ->
-    let approxs = E.find_list env args in
-    let expr, approx, benefit =
-      let module Backend = (val (E.backend env) : Backend_intf.S) in
-      Simplify_primitives.primitive p (args, approxs) tree dbg
-        ~size_int:Backend.size_int ~big_endian:Backend.big_endian
-    in
-    let r = R.map_benefit r (B.(+) benefit) in
-    expr, ret r approx
+        Simplify_primitives.primitive p (args, approxs) tree dbg
+          ~size_int:Backend.size_int ~big_endian:Backend.big_endian
+      in
+      let r = R.map_benefit r (B.(+) benefit) in
+      expr, ret r approx
+    end
   | Expr expr ->
     let expr, r = loop_direct env r expr in
     Expr expr, r
@@ -787,6 +805,8 @@ and simplify_set_of_closures original_env r
 *)
 and simplify_apply env r ~(apply : Flambda.apply) : Flambda.t * R.t =
   let { Flambda. func; args; kind = _; dbg } = apply in
+  let func = Freshening.apply_variable (E.freshening env) arg in
+  let args = List.map (Freshening.apply_variable (E.freshening env)) args in
   let func_approx = E.find func env in
   let args_approxs = List.map (fun arg -> E.find arg env) args in
   let no_transformation () : Flambda.t * R.t =
