@@ -45,7 +45,6 @@ module Eq_left_m = struct
 end
 
 module Eq_left = struct
-  type t = equation_left
   include Ext_types.Identifiable.Make(Eq_left_m)
 end
 
@@ -69,8 +68,6 @@ type alias_equation =
 type equation_right =
   | Resolved of resolved_equation
   | Alias of alias_equation
-
-type equation = equation_left * equation_right
 
 type equations = equation_right Eq_left.Tbl.t
 
@@ -330,11 +327,11 @@ let rec fixpoint t =
   Eq_left.Tbl.iter (fun l _ -> update_block t l) t;
   if contains_fields t then
     fixpoint t
-  else t
 
 let run tree =
   let t = Eq_left.Tbl.create 10 in
   let _ : equation_right = collect_equations t tree in
+  fixpoint t;
   Eq_left.Tbl.fold (fun k r map ->
       match k with
       | Var left -> begin
