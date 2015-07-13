@@ -681,6 +681,9 @@ and simplify_set_of_closures original_env r
   let env = E.increase_closure_depth original_env in
   let free_vars =
     Variable.Map.map (fun external_var ->
+        let external_var =
+          Freshening.apply_variable (E.freshening env) external_var
+        in
         external_var, E.find external_var env)
       set_of_closures.free_vars
   in
