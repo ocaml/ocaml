@@ -1471,6 +1471,18 @@ asmcomp/interf.cmo : asmcomp/reg.cmi asmcomp/proc.cmi asmcomp/mach.cmi \
     asmcomp/interf.cmi
 asmcomp/interf.cmx : asmcomp/reg.cmx asmcomp/proc.cmx asmcomp/mach.cmx \
     asmcomp/interf.cmi
+asmcomp/lift_constants.cmo : middle_end/base_types/variable.cmi \
+    middle_end/base_types/symbol.cmi \
+    middle_end/base_types/set_of_closures_id.cmi bytecomp/lambda.cmi \
+    middle_end/inconstant_idents.cmi middle_end/flambdaiter.cmi \
+    middle_end/flambda.cmi asmcomp/compilenv.cmi \
+    middle_end/alias_analysis.cmi asmcomp/lift_constants.cmi
+asmcomp/lift_constants.cmx : middle_end/base_types/variable.cmx \
+    middle_end/base_types/symbol.cmx \
+    middle_end/base_types/set_of_closures_id.cmx bytecomp/lambda.cmx \
+    middle_end/inconstant_idents.cmx middle_end/flambdaiter.cmx \
+    middle_end/flambda.cmi asmcomp/compilenv.cmx \
+    middle_end/alias_analysis.cmx asmcomp/lift_constants.cmi
 asmcomp/linearize.cmo : asmcomp/reg.cmi asmcomp/proc.cmi utils/misc.cmi \
     asmcomp/mach.cmi bytecomp/lambda.cmi bytecomp/debuginfo.cmi \
     asmcomp/cmm.cmi asmcomp/linearize.cmi
