@@ -18,8 +18,8 @@
 (* CR mshinwell: improve some of the label names to avoid confusion, e.g.
    [clos] vs. [closure]; [func] vs. [funct]. *)
 val for_call_site
-   : env:Inlining_env.t
-  -> r:Inlining_result.t
+   : env:Inlining_aux.Env.t
+  -> r:Inlining_aux.Result.t
   -> clos:Flambda.function_declarations
   -> lhs_of_application:Variable.t
   -> fun_id:Closure_id.t
@@ -28,7 +28,7 @@ val for_call_site
   -> args_with_approxs:(Variable.t list) * (Simple_value_approx.t list)
   -> dbg:Debuginfo.t
   -> simplify:Inlining_decision_intf.simplify
-  -> Flambda.t * Inlining_result.t
+  -> Flambda.t * Inlining_aux.Result.t
 
 (* When a function declaration is encountered in [Flambdainline], the body
    may be subject to inlining immediately, thus changing the declaration.

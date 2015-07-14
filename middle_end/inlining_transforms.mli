@@ -13,8 +13,9 @@
 
 (** Source code transformations used during inlining. *)
 
-(** Inline a function by substituting its body (which may be subject to further
-    transformation) at a call site.  The function's declaration is not copied.
+(** Inline a function by substituting its body (which may be subject to
+    further transformation) at a call site.  The function's declaration is
+    not copied.
  
     This transformation is used when:
     - inlining a call to a non-recursive function;
@@ -60,15 +61,15 @@
 *)
 (* CR mshinwell: fix argument names *)
 val inline_by_copying_function_body
-   : env:Inlining_env.t
-  -> r:Inlining_result.t
+   : env:Inlining_aux.Env.t
+  -> r:Inlining_aux.Result.t
   -> clos:Flambda.function_declarations
   -> lfunc:Variable.t
   -> fun_id:Closure_id.t
   -> func:Flambda.function_declaration
   -> args:Variable.t list
   -> simplify:Inlining_decision_intf.simplify
-  -> Flambda.t * Inlining_result.t
+  -> Flambda.t * Inlining_aux.Result.t
 
 (** Inlining of recursive function(s) yields a copy of the functions'
     definitions (not just their bodies, unlike the non-recursive case) and
@@ -78,8 +79,8 @@ val inline_by_copying_function_body
     non-recursive] is not sufficient.
 *)
 val inline_by_copying_function_declaration
-   : env:Inlining_env.t
-  -> r:Inlining_result.t
+   : env:Inlining_aux.Env.t
+  -> r:Inlining_aux.Result.t
   -> funct:Variable.t
   -> function_decls:Flambda.function_declarations
   -> closure_id:Closure_id.t
@@ -89,4 +90,4 @@ val inline_by_copying_function_declaration
   -> specialised_args:Variable.Set.t
   -> dbg:Debuginfo.t
   -> simplify:Inlining_decision_intf.simplify
-  -> (Flambda.t * Inlining_result.t) option
+  -> (Flambda.t * Inlining_aux.Result.t) option
