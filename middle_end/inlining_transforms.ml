@@ -54,11 +54,11 @@ let inline_by_copying_function_body ~env ~r
       ~(clos : Flambda.function_declarations) ~lfunc ~fun_id
       ~(func : Flambda.function_declaration) ~args
       ~simplify =
-
+(*
 Format.eprintf "inline_by_copying_function_body: %a@.env: %a@.\n"
   Printflambda.flambda func.body
   Inlining_env.print env;
-
+*)
   let r = R.map_benefit r B.remove_call in
   let env = E.inlining_level_up env in
   (* Assign fresh names for the function's parameters and rewrite the body to
@@ -93,9 +93,11 @@ Format.eprintf "inline_by_copying_function_body: %a@.env: %a@.\n"
           expr))
       clos.funs bindings_for_vars_bound_by_closure_and_params_around_body
   in
+(*
 Format.eprintf "inline_by_copying_function_body expr: %a@.env: %a@.\n"
   Printflambda.flambda expr
   Inlining_env.print env;
+*)
   let env =
     E.note_entering_closure env ~closure_id:fun_id
       ~where:Inline_by_copying_function_body

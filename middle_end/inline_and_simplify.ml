@@ -295,7 +295,7 @@ and sequence env r expr1 expr2 =
   loop env r expr
 
 and loop env r tree =
-
+  (* CR mshinwell: add compiler option to enable this expensive check *)
   let fv = Free_variables.calculate tree in
   Variable.Set.iter (fun var ->
       let var = Freshening.apply_variable (E.freshening env) var in
@@ -318,7 +318,7 @@ and loop env r tree =
   f, ret r (Backend.really_import_approx (R.approx r))
 
 and loop_named env r (tree : Flambda.named) : Flambda.named * R.t =
-
+  (* CR mshinwell: add compiler option to enable this expensive check *)
   let fv = Free_variables.calculate_named tree in
   Variable.Set.iter (fun var ->
       let var = Freshening.apply_variable (E.freshening env) var in
@@ -332,7 +332,6 @@ and loop_named env r (tree : Flambda.named) : Flambda.named * R.t =
           (Printexc.raw_backtrace_to_string (Printexc.get_callstack max_int));
         Misc.fatal_error "unbound variable(s)")
     fv;
-
   match tree with
   | Symbol sym ->
     let module Backend = (val (E.backend env) : Backend_intf.S) in
@@ -346,9 +345,11 @@ and loop_named env r (tree : Flambda.named) : Flambda.named * R.t =
   | Move_within_set_of_closures move_within_set_of_closures ->
     simplify_move_within_set_of_closures env r ~move_within_set_of_closures
   | Prim (prim, args, dbg) ->
+(*
     Format.eprintf "loop_named, Prim case: %a Environment is: %a\n"
       Printflambda.named tree
       Inlining_env.print env;
+*)
     let args = List.map (Freshening.apply_variable (E.freshening env)) args in
     let tree = Flambda.Prim (prim, args, dbg) in
     begin match prim, args with
@@ -400,7 +401,9 @@ and loop_named env r (tree : Flambda.named) : Flambda.named * R.t =
     let expr, r = loop_direct env r expr in
     Expr expr, r
 
+(*
 and count = ref 0
+*)
 
 and loop_direct env r (tree : Flambda.t) : Flambda.t * R.t =
   match tree with
@@ -409,6 +412,7 @@ and loop_direct env r (tree : Flambda.t) : Flambda.t * R.t =
     simplify_using_approx_and_env env r (Var var) (E.find var env)
   | Apply apply -> simplify_apply env r ~apply
   | Let (str, id, defining_expr, body) ->
+(*
     incr count;
     let my_count = !count in
     Format.eprintf "Let case %d, binding '%a', the defining expr is: %a, \
@@ -418,6 +422,7 @@ and loop_direct env r (tree : Flambda.t) : Flambda.t * R.t =
       Printflambda.named defining_expr
       Printflambda.flambda body
       Inlining_env.print env;
+*)
     let defining_expr, r = loop_named env r defining_expr in
     let id, sb = Freshening.add_variable (E.freshening env) id in
     let env = E.set_freshening sb env in
@@ -427,27 +432,32 @@ and loop_direct env r (tree : Flambda.t) : Flambda.t * R.t =
         | Mutable -> E.clear_approx id env
         | Immutable -> E.add_approx id (R.approx r) env
       in
+(*
       Format.eprintf "Let case %d, binding (freshened) '%a', body environment: %a\n"
         my_count
         Variable.print id
         Inlining_env.print body_env;
+*)
       loop body_env r body
     in
     let free_variables_of_body = Free_variables.calculate body in
+(*
     Format.eprintf "Let case %d simplified to let %a = %a in %a (fv=%a)\n"
       my_count
       Variable.print id
       Printflambda.named defining_expr
       Printflambda.flambda body
       Variable.Set.print free_variables_of_body;
+*)
     let (expr : Flambda.t), r =
       if Variable.Set.mem id free_variables_of_body then
         Flambda.Let (str, id, defining_expr, body), r
-      else begin
+      else (* begin
     Format.eprintf "ELIMINATION: Let case %d: %a\n"
       my_count
       Variable.print id;
-if Effect_analysis.no_effects_named defining_expr then
+*)
+      if Effect_analysis.no_effects_named defining_expr then
         let r = R.map_benefit r (B.remove_code_named defining_expr) in
         body, r
       else
@@ -458,7 +468,7 @@ if Effect_analysis.no_effects_named defining_expr then
            the variable is unused). *)
         let fresh_var = Variable.create "unused" in
         Flambda.Let (Immutable, fresh_var, defining_expr, body), r
-end
+(* end *)
     in
     expr, r
   | Let_rec (defs, body) ->
@@ -727,8 +737,10 @@ and loop_list env r l = match l with
 *)
 and simplify_set_of_closures original_env r
       (set_of_closures : Flambda.set_of_closures) : Flambda.named * R.t =
+(*
   Format.eprintf "simply_set_of_closures %a\n"
     Set_of_closures_id.print set_of_closures.function_decls.set_of_closures_id;
+*)
   let function_decls =
     let module Backend = (val (E.backend original_env) : Backend_intf.S) in
     (* CR mshinwell: Does this affect
@@ -758,8 +770,10 @@ and simplify_set_of_closures original_env r
       function_decls
   in
   let env = E.set_freshening sb env in
+(*
   Format.eprintf "env for function body with set_freshening: %a\n"
     Freshening.print sb;
+*)
   let specialised_args =
     Variable.Map.map_keys (Freshening.apply_variable (E.freshening env))
       specialised_args
@@ -802,9 +816,11 @@ and simplify_set_of_closures original_env r
         (* CR mshinwell: check we really did not need _used_params, and
            remove it *)
         : Flambda.function_declaration Variable.Map.t * Variable.Set.t * R.t =
+(*
     Format.eprintf "simplify_set_of_closures %a %a\n"
       Set_of_closures_id.print set_of_closures.function_decls.set_of_closures_id
       Variable.print fid;
+*)
     let closure_env =
       populate_closure_approximations ~function_decl ~free_vars
         ~parameter_approximations ~set_of_closures_env
@@ -815,14 +831,18 @@ and simplify_set_of_closures original_env r
           (Inlining_decision.should_inline_inside_declaration function_decl)
         ~where:Transform_set_of_closures_expression
         ~f:(fun body_env ->
+(*
           Format.eprintf "E.enter_closure '%a', function body: %a, env: %a\n"
             Variable.print fid
             Printflambda.flambda function_decl.body
             Inlining_env.print body_env;
+*)
           loop body_env r function_decl.body)
     in
+(*
     Format.eprintf "E.enter_closure '%a' finished\n"
       Variable.print fid;
+*)
     let free_variables = Free_variables.calculate body in
     let used_params =
       Variable.Set.filter (fun param -> Variable.Set.mem param free_variables)
@@ -855,7 +875,9 @@ and simplify_set_of_closures original_env r
       specialised_args;
     }
   in
+(*
   Format.eprintf "simplify_set_of_closures end\n";
+*)
   Set_of_closures (set_of_closures),
     ret r (A.value_set_of_closures value_set_of_closures)
 
