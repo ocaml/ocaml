@@ -93,6 +93,7 @@ void caml_do_sampled_roots(scanning_action f, struct domain* domain)
   for (p = mark_stack; p < mark_stack_end; p++) {
     value v = *p;
     Assert (Is_block(v));
+    f(v, p);
     if (Tag_val(v) == Stack_tag) {
       caml_scan_stack(f, v);
     } else if (Tag_val(v) < No_scan_tag) {
