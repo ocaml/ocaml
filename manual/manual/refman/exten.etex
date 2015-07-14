@@ -1857,7 +1857,13 @@ infix-symbol:
         | "#" {operator-chars} "#"  {operator-char '|' "#"}
 ;
 \end{syntax}
-Operator names starting with a "#" character and containing more than one "#" character in their name are accepted during parsing and rejected during type-checking. These operators can therefore not be used directly in vanilla Ocaml. However, "-ppx" rewriters and other external tools can use this parser leniency to extend the language with new extension specific "#"-operators.
+
+Operator names starting with a "#" character and containing more than
+one "#" character in their name are accepted during parsing and
+rejected during type-checking. These operators can therefore not be
+used directly in vanilla Ocaml. However, "-ppx" rewriters and other
+external tools can use this parser leniency to extend the language
+with new extension specific "#"-operators.
 
 \section{Customizable index operators} \label{s:index-operators}
 
@@ -1883,24 +1889,33 @@ operator:
         | '.' '{' '}' '<-'
 \end{syntax}
 
-
-This extension provides syntactic sugar for getting and setting elements for custom array-like types.
-The quintessential examples of array-like type are the standard array, string, bytes and bigarray types. For these types, elements can
-be accessed and assigned with the well-know syntax
+This extension provides syntactic sugar for getting and setting
+elements for custom array-like types.  The quintessential examples of
+array-like type are the standard array, string, bytes and bigarray
+types. For these types, elements can be accessed and assigned with the
+well-know syntax
+%
 \begin{center}\begin{tabular}{lll}  \hline
                 & acces                 & assignment                        \\ \hline
 array           & @expr_a".("expr_i")"@ & @expr_a".("expr_i")" "<-" expr_v@ \\
 string or bytes & @expr_s".["expr_i"]"@ & @expr_s".["expr_i"]" "<-" expr_v@ \\
 bigarray & @expr_s".{"expr_i"}"@ & @expr_s".{"expr_i"}" "<-" expr_v@ \\ \hline
 \end{tabular}\end{center}
-This extension generalizes this standard syntax by associating these access and assignment operations to three new families of index operators:
+
+This extension generalizes this standard syntax by associating these
+access and assignment operations to three new families of index
+operators:
+%
 \begin{center}\begin{tabular}{lll}  \hline
               & acces & assignment \\ \hline
 array-like    & ".()" & ".()<-"    \\
 string-like   & ".[]" & ".[]<-"    \\
 bigarray-like & ".{}" & ".{}<-"    \\ \hline
 \end{tabular}\end{center}
-The concrete syntaxes "array.(index)",\dots, "bigarray.{index}<-value"  are then redefined as syntactic sugar for these new operators
+
+The concrete syntaxes "array.(index)",\dots, "bigarray.{index}<-value"
+are then redefined as syntactic sugar for these new operators
+%
 \begin{center}\begin{tabular}{lll} \hline
               & concrete syntax                   & translation                            \\ \hline
 array-like    & @expr_a'.('expr_i')'@             & @'(' '.()' ')' expr_a expr_i@          \\
@@ -1911,24 +1926,35 @@ bigarray-like & @expr_s'.{'expr_i^*'}'@             & @'(' '.{}' ')' expr_s expr
               & @expr_s'.{'expr_i^*'}' '<-' expr_v@ & @'(' '.{}<-' ')' expr_s expr_i^* expr_v@ \\ \hline
 \end{tabular}\end{center}
 %
-Note that the syntactic sugar for the "( .{} )" bigarray operator family presents some particularities to support multidimensional arrays. These particularities are detailed in subsection~\ref{s:m-index-operators}.
+Note that the syntactic sugar for the "( .{} )" bigarray operator
+family presents some particularities to support multidimensional
+arrays. These particularities are detailed in
+subsection~\ref{s:m-index-operators}.
 
-This new syntactic sugar is used in the Pervasives module[\moduleref{Pervasives}] to redefine the standard syntax for the array and string types. Similarly, the "Bigarray"[\moduleref{Bigarray}] library uses the "( .{} )" operator family.
+This new syntactic sugar is used in the Pervasives
+module[\moduleref{Pervasives}] to redefine the standard syntax for the
+array and string types. Similarly, the
+"Bigarray"[\moduleref{Bigarray}] library uses the "( .{} )" operator
+family.
 
-Customized access and assignment operators can be defined for arbitrary types by overriding the corresponding operators. For instance, we can define python-like dictionary
+Customized access and assignment operators can be defined for
+arbitrary types by overriding the corresponding operators. For
+instance, we can define python-like dictionary
+%
 \begin{verbatim}
 module Dict = struct
-include Hashtbl
-let ( .[] ) tabl index = find tabl index
-let ( .[]<- ) tabl index value = add tabl index value
+  include Hashtbl
+  let ( .[] ) tabl index = find tabl index
+  let ( .[]<- ) tabl index value = add tabl index value
 end
+
 let dict =
   let open Dict in
   let dict = create 10 in
-  let () =
-    dict.["one"] <- 1;
-    dict.["two"] <- 2 in
+  dict.["one"] <- 1;
+  dict.["two"] <- 2;
   dict
+
 let () =
   let open Dict in
   assert( dict.["one"] = 1 )
@@ -1954,7 +1980,10 @@ operator:
 
 \end{syntax}
 
-In addition to the two regular "( .{} )" and "( .{}<- )" index operators, the "( .{} )" operator family includes $6$ specific index operators. These operators are designed to lighten access and assignment for multidimensional array of dimension $2$, $3$ and $n>3$:
+In addition to the two regular "( .{} )" and "( .{}<- )" index
+operators, the "( .{} )" operator family includes $6$ specific index
+operators. These operators are designed to lighten access and
+assignment for multidimensional array of dimension $2$, $3$ and $n>3$:
 %
 \begin{center}\begin{tabular}{lll} \hline
                 & acces     & assignment  \\ \hline
@@ -1964,7 +1993,10 @@ dimension $3$   & ".{,,}"   & ".{,,}<-"   \\
 dimension $n>3$ & ".{,..,}" & ".{,..,}<-" \\ \hline
 \end{tabular}\end{center}
 %
-The concrete syntaxes @expr_a'.{'expr_1,..,expr_n'}'@ and @expr_a'.{'expr_1,..,expr_n'}<-expr_v'@ are translated to the corresponding $n$-dimensional operators in function of the number $n$ of comma-separated expressions inside the braces:
+The concrete syntaxes @expr_a'.{'expr_1,..,expr_n'}'@ and
+@expr_a'.{'expr_1,..,expr_n'}<-expr_v'@ are translated to the
+corresponding $n$-dimensional operators in function of the number $n$
+of comma-separated expressions inside the braces:
 %
 \begin{center}\begin{tabular}{lll} \hline
 dimension       &  concrete syntax                           & translation                                              \\ \hline
@@ -1978,10 +2010,15 @@ dimension $n>3$ & @expr_a'.{'i_1,\ldots,i_n'}'@              &   @'(.{,..,})'  e
                 & @expr_a'.{'i_1,\ldots,i_n'}' '<-' expr_v@  & @'(.{,..,}<-)' expr_a '[|'i_1';'\ldots';'i_n'|]' expr_v@ \\ \hline
 \end{tabular}\end{center}
 %
-Note that for multidimensional array of dimension $n > 3$, all the index arguments are packed into a single array which is then passed as an argument to the "( .{,..,} )" or "( .{,..,}<- )"  operators.
+Note that for multidimensional array of dimension $n > 3$, all the
+index arguments are packed into a single array which is then passed as
+an argument to the "( .{,..,} )" or "( .{,..,}<- )" operators.
 
-These multidimensional index operators can also be redefined to be used with custom types. For instance, we can implement an unified "'a tensor" type
-for vectors and matrices and define separated access operators for vectors and matrices using "( .{} )" and "( .{,} )":
+These multidimensional index operators can also be redefined to be
+used with custom types. For instance, we can implement an unified "'a
+tensor" type for vectors and matrices and define separated access
+operators for vectors and matrices using "( .{} )" and "( .{,} )":
+%
 \begin{verbatim}
 type 'a tensor = { dim: int; array: float array } constraint 'a = [< `Vector | `Matrix ]
 let  ( .{} ) ( v: [`Vector] tensor ) i = v.array.(i)
@@ -1990,6 +2027,7 @@ let  ( .{,} ) ( mat: [`Matrix] tensor ) i j = mat.array.( i*mat.dim + j )
 let x = v.{i} (* vector access *)
 let m = mat.{i,j} (* matrix access *)
 \end{verbatim}
+
 Another example, the "Bigarray"[\moduleref{Bigarray}] library defines these operators as
 %
 \begin{tableau}{ll}{operator}{function}
@@ -2003,8 +2041,19 @@ Another example, the "Bigarray"[\moduleref{Bigarray}] library defines these oper
 \entree{ "( .{,..,}<- )" } {"Genarray.set"}
 \end{tableau}
 %
-With these definitions, it is then possible to use the short syntax @bigarray'.{'index'}'@ with bigarray values by opening the "Bigarray" module in scope.
+With these definitions, it is then possible to use the short syntax
+@bigarray'.{'index'}'@ with bigarray values by opening the "Bigarray"
+module in scope.
 
 \subsection{Backward compatibility warning for the "Bigarray" library} \label{s:bigarray-indexop-compatibility}
 
-One of the reasons behind the existence of the 6 special @"( .{"\ldots"} )"@ operators is to preserve backward compatibility with the "Bigarray" library special syntax. However, this extension \emph{does break} partially source compatibility with the bigarray syntax extension: before Ocaml 4.03, it was possible to use the @bigarray'.{'index'}'@ syntax without opening the "Bigarray" module. This usage is no longer possible since the @"(.{"\ldots"})"@ index operators are now defined inside the "Bigarray" module. This problem can be fixed by opening the "Bigarray" module (or by bringing in scope the index operators defined in the "Bigarray" module).
+One of the reasons behind the existence of the 6 special
+@"( .{"\ldots"} )"@ operators is to preserve backward compatibility
+with the "Bigarray" library special syntax. However, this extension
+\emph{does break} partially source compatibility with the bigarray
+syntax extension: before Ocaml 4.03, it was possible to use the
+@bigarray'.{'index'}'@ syntax without opening the "Bigarray"
+module. This usage is no longer possible since the @"(.{"\ldots"})"@
+index operators are now defined inside the "Bigarray" module. This
+problem can be fixed by opening the "Bigarray" module (or by bringing
+in scope the index operators defined in the "Bigarray" module).
