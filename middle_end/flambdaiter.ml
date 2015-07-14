@@ -208,6 +208,7 @@ let map_general ~toplevel f f_named tree =
 
 let map f f_named tree = map_general ~toplevel:false f f_named tree
 let map_named f_named tree = map (fun expr -> expr) f_named tree
+(* CR mshinwell: rename "toplevel" *)
 let map_toplevel f f_named tree = map_general ~toplevel:true f f_named tree
 
 let map_symbols tree ~f =

@@ -31,6 +31,21 @@ let empty_tbl = {
   back_var = Variable.Map.empty;
 }
 
+let print ppf = function
+  | Inactive -> Format.fprintf ppf "Inactive"
+  | Active tbl ->
+    Format.fprintf ppf "Active:@ ";
+    Variable.Map.iter (fun var1 var2 ->
+        Format.fprintf ppf "%a -> %a@ "
+          Variable.print var1
+          Variable.print var2)
+      tbl.sb_var;
+    Variable.Map.iter (fun var vars ->
+        Format.fprintf ppf "%a -> %a@ "
+          Variable.print var
+          Variable.Set.print (Variable.Set.of_list vars))
+      tbl.back_var
+
 let empty = Inactive
 
 let empty_preserving_activation_state = function
@@ -187,7 +202,7 @@ module Project_var = struct
     match subst with
     | Inactive -> func_decls, subst, t
     | Active subst ->
-      let subst_func_declction _fun_id (func_decl : Flambda.function_declaration)
+      let subst_func_decl _fun_id (func_decl : Flambda.function_declaration)
             subst =
         let params, subst = active_add_variables' subst func_decl.params in
         let free_variables =
@@ -196,6 +211,9 @@ module Project_var = struct
             func_decl.free_variables Variable.Set.empty in
         (* It is not a problem to share the substitution of parameter
            names between function: There should be no clash *)
+        (* CR mshinwell: could this violate one of the new invariants in
+           Flambda_invariants (about all parameters being distinct within one
+           set of function declarations)? *)
         { func_decl with
           free_variables;
           params;
@@ -210,7 +228,7 @@ module Project_var = struct
           func_decls.funs (subst,t) in
       let funs, subst =
         Variable.Map.fold (fun orig_id func_decl (funs, subst) ->
-            let func_decl, subst = subst_func_declction orig_id func_decl subst in
+            let func_decl, subst = subst_func_decl orig_id func_decl subst in
             let id = active_find_var_exn subst orig_id in
             let funs = Variable.Map.add id func_decl funs in
             funs, subst)

@@ -190,22 +190,47 @@ let can_be_merged = same
 type sharing_key = unit
 let make_key _ = None
 
-let toplevel_substitution _sb tree = tree
-(* XXX
+(* CR mshinwell: change "toplevel" name, potentially misleading *)
+let toplevel_substitution sb tree =
   let sb v = try Variable.Map.find v sb with Not_found -> v in
   let aux (flam : Flambda.t) : Flambda.t =
     match flam with
-    | Var (id,e) -> Var (sb id,e)
-    | Assign (id,e,d) -> Assign (sb id,e,d)
-    | Set_of_closures (cl,d) ->
-      Set_of_closures ({cl with
-                 specialised_args =
-                   Variable.Map.map sb cl.specialised_args},
-                d)
-    | e -> e
+    | Var var -> Var (sb var)
+    | Assign (var, e) -> Assign (sb var, e)
+    | Apply { func; args; kind; dbg; } ->
+      Apply { func = sb func; args = List.map sb args; kind; dbg; }
+    | Let _ | Let_rec _ | Send _ | If_then_else _ | Switch _
+    | String_switch _ | Static_raise _ | Static_catch _ | Try_with _
+    | While _ | For _ | Proved_unreachable -> flam
   in
-  Flambdaiter.map_toplevel aux tree
-*)
+  let aux_named (named : Flambda.named) : Flambda.named =
+    match named with
+    | Symbol _ | Const _ | Expr _ -> named
+    | Set_of_closures set_of_closures ->
+      Set_of_closures {
+        set_of_closures with
+        specialised_args =
+          Variable.Map.map sb set_of_closures.specialised_args;
+      }
+    | Project_closure project_closure ->
+      Project_closure {
+        project_closure with
+        set_of_closures = sb project_closure.set_of_closures;
+      }
+    | Move_within_set_of_closures move_within_set_of_closures ->
+      Move_within_set_of_closures {
+        move_within_set_of_closures with
+        closure = sb move_within_set_of_closures.closure;
+      }
+    | Project_var project_var ->
+      Project_var {
+        project_var with
+        closure = sb project_var.closure;
+      }
+    | Prim (prim, args, dbg) ->
+      Prim (prim, List.map sb args, dbg)
+  in
+  Flambdaiter.map_toplevel aux aux_named tree
 
 let make_closure_declaration ~id ~body ~params : Flambda.t =
   let free_variables = Free_variables.calculate body in

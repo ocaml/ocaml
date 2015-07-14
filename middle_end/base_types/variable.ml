@@ -42,9 +42,15 @@ let create ?current_compilation_unit name =
     | Some compilation_unit -> compilation_unit
     | None -> Compilation_unit.get_current_exn ()
   in
-  { compilation_unit;
-    ident = Ident.create name;
-  }
+  let t =
+    { compilation_unit;
+      ident = Ident.create name;
+    }
+  in
+(*
+  if t.ident.stamp = 6221 then begin Printf.eprintf "%s\n%!" (Printexc.raw_backtrace_to_string (Printexc.get_callstack max_int)); failwith "Variable 6221"; end;
+*)
+  t
 
 let unwrap t = t.ident
 
@@ -62,6 +68,9 @@ let rename ~current_compilation_unit ?append t =
     | None -> Ident.rename t.ident
     | Some s -> Ident.create (t.ident.Ident.name ^ s)
   in
+(*
+  if ident.stamp = 6221 then begin Printf.eprintf "%s\n%!" (Printexc.raw_backtrace_to_string (Printexc.get_callstack max_int)); failwith "Variable 6221"; end;
+*)
   { compilation_unit = current_compilation_unit;
     ident;
   }

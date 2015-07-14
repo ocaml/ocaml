@@ -121,3 +121,5 @@ val apply_function_decls_and_free_vars
   -> Flambda.function_declarations
   -> 'a Variable.Map.t * Flambda.function_declarations * t
     * Project_var.t
+
+val print : Format.formatter -> t -> unit

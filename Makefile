@@ -136,8 +136,8 @@ MIDDLE_END=\
   middle_end/base_types/symbol.cmo \
   middle_end/free_variables.cmo \
   middle_end/printflambda.cmo \
-  middle_end/flambdautils.cmo \
   middle_end/flambdaiter.cmo \
+  middle_end/flambdautils.cmo \
   middle_end/inlining_cost.cmo \
   middle_end/effect_analysis.cmo \
   middle_end/freshening.cmo \

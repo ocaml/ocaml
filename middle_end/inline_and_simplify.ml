@@ -106,6 +106,9 @@ let populate_closure_approximations
     List.fold_left (fun env id ->
        let approx = try Variable.Map.find id parameter_approximations
                     with Not_found -> A.value_unknown in
+(*       Format.eprintf "populate_closure_approximations: %a\n"
+         Variable.print id;
+*)
        E.add_approx id approx env)
       env function_decl.params in
   env
@@ -671,6 +674,8 @@ and loop_list env r l = match l with
 *)
 and simplify_set_of_closures original_env r
       (set_of_closures : Flambda.set_of_closures) : Flambda.named * R.t =
+  Format.eprintf "simply_set_of_closures %a\n"
+    Set_of_closures_id.print set_of_closures.function_decls.set_of_closures_id;
   let function_decls =
     let module Backend = (val (E.backend original_env) : Backend_intf.S) in
     (* CR mshinwell: Does this affect
@@ -700,6 +705,8 @@ and simplify_set_of_closures original_env r
       function_decls
   in
   let env = E.set_freshening sb env in
+  Format.eprintf "env for function body with set_freshening: %a\n"
+    Freshening.print sb;
   let specialised_args =
     Variable.Map.map_keys (Freshening.apply_variable (E.freshening env))
       specialised_args
@@ -742,6 +749,9 @@ and simplify_set_of_closures original_env r
         (* CR mshinwell: check we really did not need _used_params, and
            remove it *)
         : Flambda.function_declaration Variable.Map.t * Variable.Set.t * R.t =
+    Format.eprintf "simply_set_of_closures %a %a\n"
+      Set_of_closures_id.print set_of_closures.function_decls.set_of_closures_id
+      Variable.print fid;
     let closure_env =
       populate_closure_approximations ~function_decl ~free_vars
         ~parameter_approximations ~set_of_closures_env
@@ -785,6 +795,7 @@ and simplify_set_of_closures original_env r
       specialised_args;
     }
   in
+  Format.eprintf "simply_set_of_closures end\n";
   Set_of_closures (set_of_closures),
     ret r (A.value_set_of_closures value_set_of_closures)
 
