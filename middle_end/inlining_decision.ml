@@ -12,8 +12,8 @@
 (**************************************************************************)
 
 module A = Simple_value_approx
-module E = Inlining_aux.Env
-module R = Inlining_aux.Result
+module E = Inline_and_simplify_aux.Env
+module R = Inline_and_simplify_aux.Result
 module U = Flambdautils
 
 let is_probably_a_functor env func_decls approxs =

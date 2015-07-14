@@ -13,8 +13,8 @@
 
 module A = Simple_value_approx
 module B = Inlining_cost.Benefit
-module E = Inlining_aux.Env
-module R = Inlining_aux.Result
+module E = Inline_and_simplify_aux.Env
+module R = Inline_and_simplify_aux.Result
 
 let new_var name =
   Variable.create name
