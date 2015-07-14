@@ -30,7 +30,6 @@ let lift_lets tree = tree
   Flambdaiter.map aux tree
 *)
 
-(* XXX think about this more *)
 let lifting_helper exprs ~evaluation_order ~create_body ~name =
   let vars, lets =
     (* [vars] corresponds elementwise to [exprs]; the order is unchanged. *)

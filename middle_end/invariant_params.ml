@@ -73,6 +73,7 @@
 
 *)
 
+(*
 module Pair_var_var =
   Ext_types.Identifiable.Make(Ext_types.Pair(Variable.M)(Variable.M))
 
@@ -256,7 +257,6 @@ let unused_arguments (decls : Flambda.function_declarations) : Variable.Set.t =
         Argument arr.(callee_pos)
   in
   let rec loop (expr : Flambda.t) =
-    (* XXX *)
     match expr with
     | Var var -> used_variable var
     | Apply { func = _; args; kind = Direct callee } ->
@@ -278,3 +278,8 @@ let unused_arguments (decls : Flambda.function_declarations) : Variable.Set.t =
       decls.funs Variable.Set.empty
   in
   Variable.Set.diff arguments !used_variables
+*)
+
+(* CR mshinwell: re-enable this once everything else is working *)
+let unchanging_params_in_recursion _ = Variable.Set.empty
+let unused_arguments _ = Variable.Set.empty
