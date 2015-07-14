@@ -90,6 +90,7 @@ let add_approx var (approx : Simple_value_approx.t) env =
   in
   { env with env_approx = Variable.Map.add var approx env.env_approx }
 
+(* CR mshinwell: bad name! *)
 let clear_approx id env =
   let env_approx =
     Variable.Map.add id Simple_value_approx.value_unknown env.env_approx

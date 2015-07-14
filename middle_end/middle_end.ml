@@ -49,6 +49,7 @@ let middle_end ppf ~sourcefile ~prefixname ~backend ~exported_fields lam =
     |> Eliminate_const_block.run
     |> Lift_strings.run
     |> Closure_conversion.lambda_to_flambda ~backend ~exported_fields
+    |> Superfluous_lets.remove
   in
   dump_and_check "After closure conversion" flam;
   let rec loop flam =
@@ -59,6 +60,7 @@ let middle_end ppf ~sourcefile ~prefixname ~backend ~exported_fields lam =
       ++ Lift_code.lift_lets
       ++ Remove_unused_closure_vars.remove_unused_closure_variables
       ++ Inline_and_simplify.run ~never_inline:false ~backend
+      ++ Superfluous_lets.remove
       ++ Lift_code.lift_lets
       ++ Remove_unused_closure_vars.remove_unused_closure_variables
       ++ Remove_unused_arguments.separate_unused_arguments_in_closures
@@ -67,6 +69,7 @@ let middle_end ppf ~sourcefile ~prefixname ~backend ~exported_fields lam =
          because we always have to generate a [let] with them now.  Do we
          need to insert something else here (lift_lets)? *)
       ++ Inline_and_simplify.run ~never_inline:true ~backend
+      ++ Superfluous_lets.remove
       ++ Remove_unused_closure_vars.remove_unused_closure_variables
       ++ Ref_to_variables.eliminate_ref
       ++ loop

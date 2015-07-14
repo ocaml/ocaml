@@ -295,6 +295,21 @@ and sequence env r expr1 expr2 =
   loop env r expr
 
 and loop env r tree =
+
+  let fv = Free_variables.calculate tree in
+  Variable.Set.iter (fun var ->
+      let var = Freshening.apply_variable (E.freshening env) var in
+      match Inlining_env.find_opt env var with
+      | Some _ -> ()
+      | None ->
+        Format.eprintf "start of loop has unbound vars: %a fv=%a env=%a %s\n"
+          Printflambda.flambda tree
+          Variable.Set.print fv
+          Inlining_env.print env
+          (Printexc.raw_backtrace_to_string (Printexc.get_callstack max_int));
+        Misc.fatal_error "unbound variable(s)")
+    fv;
+
   let f, r = loop_direct env r tree in
   let module Backend = (val (E.backend env) : Backend_intf.S) in
   (* CR mshinwell for pchambart: This call to [really_import_approx] is
@@ -303,6 +318,21 @@ and loop env r tree =
   f, ret r (Backend.really_import_approx (R.approx r))
 
 and loop_named env r (tree : Flambda.named) : Flambda.named * R.t =
+
+  let fv = Free_variables.calculate_named tree in
+  Variable.Set.iter (fun var ->
+      let var = Freshening.apply_variable (E.freshening env) var in
+      match Inlining_env.find_opt env var with
+      | Some _ -> ()
+      | None ->
+        Format.eprintf "start of loop_named has unbound vars: %a fv=%a env=%a %s\n"
+          Printflambda.named tree
+          Variable.Set.print fv
+          Inlining_env.print env
+          (Printexc.raw_backtrace_to_string (Printexc.get_callstack max_int));
+        Misc.fatal_error "unbound variable(s)")
+    fv;
+
   match tree with
   | Symbol sym ->
     let module Backend = (val (E.backend env) : Backend_intf.S) in
@@ -316,7 +346,11 @@ and loop_named env r (tree : Flambda.named) : Flambda.named * R.t =
   | Move_within_set_of_closures move_within_set_of_closures ->
     simplify_move_within_set_of_closures env r ~move_within_set_of_closures
   | Prim (prim, args, dbg) ->
+    Format.eprintf "loop_named, Prim case: %a Environment is: %a\n"
+      Printflambda.named tree
+      Inlining_env.print env;
     let args = List.map (Freshening.apply_variable (E.freshening env)) args in
+    let tree = Flambda.Prim (prim, args, dbg) in
     begin match prim, args with
     | Pgetglobal id, [] ->
       let approx =
@@ -366,6 +400,8 @@ and loop_named env r (tree : Flambda.named) : Flambda.named * R.t =
     let expr, r = loop_direct env r expr in
     Expr expr, r
 
+and count = ref 0
+
 and loop_direct env r (tree : Flambda.t) : Flambda.t * R.t =
   match tree with
   | Var var ->
@@ -373,22 +409,45 @@ and loop_direct env r (tree : Flambda.t) : Flambda.t * R.t =
     simplify_using_approx_and_env env r (Var var) (E.find var env)
   | Apply apply -> simplify_apply env r ~apply
   | Let (str, id, defining_expr, body) ->
+    incr count;
+    let my_count = !count in
+    Format.eprintf "Let case %d, binding '%a', the defining expr is: %a, \
+        body is: %a, environment: %a\n"
+      my_count
+      Variable.print id
+      Printflambda.named defining_expr
+      Printflambda.flambda body
+      Inlining_env.print env;
     let defining_expr, r = loop_named env r defining_expr in
     let id, sb = Freshening.add_variable (E.freshening env) id in
     let env = E.set_freshening sb env in
     let body, r =
       let body_env =
         match str with
-        | Mutable -> assert (E.find_opt env id = None); env
+        | Mutable -> E.clear_approx id env
         | Immutable -> E.add_approx id (R.approx r) env
       in
+      Format.eprintf "Let case %d, binding (freshened) '%a', body environment: %a\n"
+        my_count
+        Variable.print id
+        Inlining_env.print body_env;
       loop body_env r body
     in
     let free_variables_of_body = Free_variables.calculate body in
+    Format.eprintf "Let case %d simplified to let %a = %a in %a (fv=%a)\n"
+      my_count
+      Variable.print id
+      Printflambda.named defining_expr
+      Printflambda.flambda body
+      Variable.Set.print free_variables_of_body;
     let (expr : Flambda.t), r =
       if Variable.Set.mem id free_variables_of_body then
         Flambda.Let (str, id, defining_expr, body), r
-      else if Effect_analysis.no_effects_named defining_expr then
+      else begin
+    Format.eprintf "ELIMINATION: Let case %d: %a\n"
+      my_count
+      Variable.print id;
+if Effect_analysis.no_effects_named defining_expr then
         let r = R.map_benefit r (B.remove_code_named defining_expr) in
         body, r
       else
@@ -399,6 +458,7 @@ and loop_direct env r (tree : Flambda.t) : Flambda.t * R.t =
            the variable is unused). *)
         let fresh_var = Variable.create "unused" in
         Flambda.Let (Immutable, fresh_var, defining_expr, body), r
+end
     in
     expr, r
   | Let_rec (defs, body) ->
@@ -742,7 +802,7 @@ and simplify_set_of_closures original_env r
         (* CR mshinwell: check we really did not need _used_params, and
            remove it *)
         : Flambda.function_declaration Variable.Map.t * Variable.Set.t * R.t =
-    Format.eprintf "simply_set_of_closures %a %a\n"
+    Format.eprintf "simplify_set_of_closures %a %a\n"
       Set_of_closures_id.print set_of_closures.function_decls.set_of_closures_id
       Variable.print fid;
     let closure_env =
@@ -761,6 +821,8 @@ and simplify_set_of_closures original_env r
             Inlining_env.print body_env;
           loop body_env r function_decl.body)
     in
+    Format.eprintf "E.enter_closure '%a' finished\n"
+      Variable.print fid;
     let free_variables = Free_variables.calculate body in
     let used_params =
       Variable.Set.filter (fun param -> Variable.Set.mem param free_variables)
@@ -793,7 +855,7 @@ and simplify_set_of_closures original_env r
       specialised_args;
     }
   in
-  Format.eprintf "simply_set_of_closures end\n";
+  Format.eprintf "simplify_set_of_closures end\n";
   Set_of_closures (set_of_closures),
     ret r (A.value_set_of_closures value_set_of_closures)
 
@@ -857,9 +919,13 @@ and simplify_apply env r ~(apply : Flambda.apply) : Flambda.t * R.t =
 
 and full_apply env r clos lhs_of_application closure_id func closure
       args_with_approxs dbg =
+let result =
   Inlining_decision.for_call_site ~env ~r ~clos ~lhs_of_application
     ~fun_id:closure_id ~func ~closure ~args_with_approxs ~dbg
     ~simplify:loop
+in
+Printf.printf "";
+result
 
 and partial_apply funct fun_id (func : Flambda.function_declaration)
       (args : Variable.t list) dbg : Flambda.t =

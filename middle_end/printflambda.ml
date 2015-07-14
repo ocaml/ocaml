@@ -221,3 +221,4 @@ let move_within_set_of_closures = print_move_within_set_of_closures
 let project_var = print_project_var
 let function_declaration ppf (var, decl) =
   print_function_declaration ppf var decl
+let named = lam_named
