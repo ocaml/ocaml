@@ -57,16 +57,16 @@ consist in one or several simple definitions, possibly mutually
 recursive, separated by the "and" keyword. Each simple definition
 defines one type constructor.
 
-In a set of definitions, references in the type equation,
-representation or constraint to one of the type constructor name being
-defined is considered as recursive, unless "type" is followed by
-"nonrec". The "nonrec" keyword was introduced in OCaml 4.02.2.
-
 A simple definition consists in a lowercase identifier, possibly
 preceded by one or several type parameters, and followed by an
 optional type equation, then an optional type representation, and then
 a constraint clause. The identifier is the name of the type
 constructor being defined.
+
+In the right-hand side of type definitions, references to one of the
+type constructor name being defined are considered as recursive,
+unless "type" is followed by "nonrec". The "nonrec" keyword was
+introduced in OCaml 4.02.2.
 
 The optional type parameters are either one type variable @"'" ident@,
 for type constructors with one parameter, or a list of type variables
