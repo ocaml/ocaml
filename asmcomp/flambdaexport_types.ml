@@ -47,9 +47,9 @@ and approx =
   | Value_symbol of Symbol.t
 
 type exported = {
-  ex_functions : unit Flambda.function_declarations Set_of_closures_id.Map.t;
+  ex_functions : Flambda.function_declarations Set_of_closures_id.Map.t;
   (** Code of exported functions indexed by function identifier *)
-  ex_functions_off : unit Flambda.function_declarations Closure_id.Map.t;
+  ex_functions_off : Flambda.function_declarations Closure_id.Map.t;
   (** Code of exported functions indexed by offset identifier *)
   ex_values : descr Export_id.Map.t Compilation_unit.Map.t;
   (** Structure of exported values  *)

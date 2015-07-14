@@ -137,6 +137,7 @@ MIDDLE_END=\
   middle_end/base_types/export_id.cmo \
   middle_end/base_types/symbol.cmo \
   middle_end/flambdautils.cmo \
+  middle_end/closure_conversion_aux.cmo \
   middle_end/closure_conversion.cmo \
   middle_end/free_variables.cmo \
   middle_end/flambdaiter.cmo \
@@ -159,8 +160,7 @@ MIDDLE_END=\
   middle_end/simplify_primitives.cmo \
   middle_end/inlining_stats_types.cmo \
   middle_end/inlining_stats.cmo \
-  middle_end/inlining_env.cmo \
-  middle_end/inlining_result.cmo \
+  middle_end/inlining_aux.cmo \
   middle_end/inlining_transforms.cmo \
   middle_end/inlining_decision.cmo \
   middle_end/inline_and_simplify.cmo \
