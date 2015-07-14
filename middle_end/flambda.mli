@@ -125,7 +125,7 @@ type t =
   | Send of Lambda.meth_kind * t * t * t list * Debuginfo.t
   | If_then_else of t * t * t
   | Switch of t * switch
-  (* Restrictions on [Lambda.Lstringswitch] also apply here *)
+  (* Restrictions on [Lambda.Lstringswitch] also apply to [String_switch]. *)
   | String_switch of t * (string * t) list * t option
   | Static_raise of Static_exception.t * t list
   | Static_catch of Static_exception.t * Variable.t list * t * t
@@ -133,12 +133,6 @@ type t =
   | While of t * t
   | For of Variable.t * t * t * Asttypes.direction_flag * t
   | Proved_unreachable
-(* CR-someday mshinwell: use [letcont]-style construct to remove e.g.
-   [While] and [For]. *)
-(* CR-someday mshinwell: try to produce a tighter definition of a "switch"
-   (and translate to that earlier) so that middle- and back-end code for
-   these can be reduced. *)
-
 (** Values of type [named] will always be [let]-bound to a [Variable.t].
 
     This has an important consequence: all expressions that we might deem
@@ -159,6 +153,14 @@ and named =
   | Project_var of project_var
   | Prim of Lambda.primitive * Variable.t list * Debuginfo.t
   | Expr of t  (** ANF escape hatch. *)
+
+(* CR-someday mshinwell: use [letcont]-style construct to remove e.g.
+   [While] and [For]. *)
+(* CR-someday mshinwell: try to produce a tighter definition of a "switch"
+   (and translate to that earlier) so that middle- and back-end code for
+   these can be reduced. *)
+(* CR-someday mshinwell: remove [Expr], but to do this easily would probably
+   require a continuation-binding construct. *)
 (* CR-someday mshinwell: Since we lack expression identifiers on every term,
    we should probably introduce [Mutable_var] into [named] if we introduce
    more complicated analyses on these in the future.  Alternatively, maybe
