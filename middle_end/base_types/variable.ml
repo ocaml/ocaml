@@ -52,6 +52,8 @@ let create ?current_compilation_unit name =
 *)
   t
 
+let of_ident ident = create (Ident.name ident)
+
 let unwrap t = t.ident
 
 let unique_ident t =
@@ -62,7 +64,12 @@ let unique_ident t =
         t.ident.name;
   }
 
-let rename ~current_compilation_unit ?append t =
+let rename ?current_compilation_unit ?append t =
+  let compilation_unit =
+    match current_compilation_unit with
+    | Some compilation_unit -> compilation_unit
+    | None -> Compilation_unit.get_current_exn ()
+  in
   let ident =
     match append with
     | None -> Ident.rename t.ident
@@ -71,7 +78,7 @@ let rename ~current_compilation_unit ?append t =
 (*
   if ident.stamp = 6221 then begin Printf.eprintf "%s\n%!" (Printexc.raw_backtrace_to_string (Printexc.get_callstack max_int)); failwith "Variable 6221"; end;
 *)
-  { compilation_unit = current_compilation_unit;
+  { compilation_unit = compilation_unit;
     ident;
   }
 
