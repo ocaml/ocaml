@@ -163,7 +163,7 @@ let print_all ppf (export : ET.exported) =
   fprintf ppf "constants@ %a@.@."
     Symbol.Set.print export.ex_constants;
   fprintf ppf "functions@ %a@.@."
-    (Set_of_closures_id.Map.print Printflambda.function_declarations) export.ex_functions
+    (Set_of_closures_id.Map.print Flambda_printers.function_declarations) export.ex_functions
 
 let merge (e1 : ET.exported) (e2 : ET.exported) : ET.exported =
   let int_eq (i:int) j = i = j in
@@ -245,7 +245,7 @@ let import_descr_for_pack units pack (descr : ET.descr) : ET.descr =
     Value_mutable_block (tag, size)
 
 let import_code_for_pack units pack expr =
-  Flambdaiter.map_named (function
+  Flambda_iterators.map_named (function
       | Symbol sym -> Symbol (import_symbol_for_pack units pack sym)
       | e -> e)
     expr

@@ -21,11 +21,11 @@ let middle_end ppf ~sourcefile ~prefixname ~backend ~exported_fields lam =
     with exn ->
       Misc.fatal_errorf "After Flambda pass %d, round %d:@.%s:@.%a"
         !pass_number !round_number (Printexc.to_string exn)
-        Printflambda.flambda flam
+        Flambda_printers.flambda flam
   in
   let dump_and_check s flam =
     if !Clflags.dump_flambda
-    then Format.fprintf ppf "%s:@ %a@." s Printflambda.flambda flam;
+    then Format.fprintf ppf "%s:@ %a@." s Flambda_printers.flambda flam;
     check flam
   in
   let (++) flam pass =
@@ -35,7 +35,7 @@ let middle_end ppf ~sourcefile ~prefixname ~backend ~exported_fields lam =
       incr pass_number;
       if verbose then begin
         Format.fprintf ppf "Before pass %d, round %d:@ %a@." !pass_number
-          !round_number Printflambda.flambda flam;
+          !round_number Flambda_printers.flambda flam;
         Format.eprintf "\n@?"
       end;
       let flam = pass flam in

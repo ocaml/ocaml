@@ -120,11 +120,11 @@ let prep_flambda_for_export ppf flam =
   Compilenv.set_export_info export;
   if !Clflags.dump_flambda
   then begin
-    Format.fprintf ppf "flambdasym@ %a@." Printflambda.flambda fl;
+    Format.fprintf ppf "flambdasym@ %a@." Flambda_printers.flambda fl;
     Symbol.Map.iter (fun sym lam ->
         Format.fprintf ppf "sym: %a@ %a@."
           Symbol.print sym
-          Printflambda.flambda lam)
+          Flambda_printers.flambda lam)
       const
   end;
   Flambda_invariants.check ~flambdasym:true fl;

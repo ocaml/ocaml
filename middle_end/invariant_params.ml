@@ -178,7 +178,7 @@ let unchanging_params_in_recursion (decls : Flambda.function_declarations) =
   let arity ~callee =
     match Variable.Map.find callee decls.funs with
     | exception Not_found -> 0
-    | func -> Flambdautils.function_arity func
+    | func -> Flambda_utils.function_arity func
   in
   let rec loop ~caller (expr : Flambda.t) =
     match expr with
@@ -196,7 +196,7 @@ let unchanging_params_in_recursion (decls : Flambda.function_declarations) =
           check_argument ~caller ~callee ~callee_pos arg)
         args
     | e ->
-      Flambdaiter.apply_on_subexpressions (loop ~caller)
+      Flambda_iterators.apply_on_subexpressions (loop ~caller)
         (fun (_ : Flambda.named) -> ()) e
   in
   Variable.Map.iter (fun caller (decl : Flambda.function_declaration) ->
@@ -267,7 +267,7 @@ let unused_arguments (decls : Flambda.function_declarations) : Variable.Set.t =
             if not (Variable.equal arg param) then used_variable arg)
         args
     | e ->
-      Flambdaiter.apply_on_subexpressions loop
+      Flambda_iterators.apply_on_subexpressions loop
         (fun (_ : Flambda.named) -> ()) e
   in
   Variable.Map.iter (fun _caller (decl : Flambda.function_declaration) ->

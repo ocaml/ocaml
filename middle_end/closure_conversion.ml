@@ -16,7 +16,7 @@ module Function_decls = Closure_conversion_aux.Function_decls
 module Function_decl = Function_decls.Function_decl
 module IdentSet = Lambda.IdentSet
 
-let name_expr = Flambdautils.name_expr
+let name_expr = Flambda_utils.name_expr
 
 type t = {
   current_unit_id : Ident.t;

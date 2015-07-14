@@ -29,7 +29,7 @@ let remove_unused_closure_variables tree =
         used_fun := Closure_id.Set.add move_to !used_fun
       | Symbol _ | Const _ | Set_of_closures _ | Prim _ | Expr _ -> ()
     in
-    Flambdaiter.iter_named aux_named tree;
+    Flambda_iterators.iter_named aux_named tree;
     !used, !used_fun
   in
   let aux_named (named : Flambda.named) : Flambda.named =
@@ -58,5 +58,5 @@ let remove_unused_closure_variables tree =
       Set_of_closures { closure with free_vars; function_decls }
     | e -> e
   in
-  Flambdaiter.map_named aux_named tree
+  Flambda_iterators.map_named aux_named tree
 

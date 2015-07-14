@@ -266,7 +266,7 @@ let variable_invariants flam =
   loop Variable.Map.empty flam
 
 let primitive_invariants flam ~no_access_to_global_module_identifiers =
-  Flambdaiter.iter_named (function
+  Flambda_iterators.iter_named (function
       | Prim (prim, _, _) ->
         begin match prim with
         | Psequand | Psequor ->
@@ -298,7 +298,7 @@ let declared_var_within_closure flam =
     end;
     bound := Var_within_closure.Set.add var !bound
   in
-  Flambdaiter.iter_on_sets_of_closures (fun { Flambda.free_vars; _ } ->
+  Flambda_iterators.iter_on_sets_of_closures (fun { Flambda.free_vars; _ } ->
       Variable.Map.iter (fun id _ ->
           let var = Var_within_closure.wrap id in
           add_and_check var)
@@ -313,7 +313,7 @@ let no_var_within_closure_is_bound_multiple_times flam =
 
 let every_declared_closure_is_from_current_compilation_unit flam =
   let current_compilation_unit = Compilation_unit.get_current_exn () in
-  Flambdaiter.iter_on_sets_of_closures (fun
+  Flambda_iterators.iter_on_sets_of_closures (fun
         { Flambda. function_decls = { compilation_unit; _ }; _ } ->
       if not (Compilation_unit.equal compilation_unit current_compilation_unit)
       then raise (Declared_closure_from_another_unit compilation_unit))
@@ -327,7 +327,7 @@ let declared_closure_ids flam =
     then bound_multiple_times := Some var;
     bound := Closure_id.Set.add var !bound
   in
-  Flambdaiter.iter_on_sets_of_closures (fun { Flambda. function_decls; _; } ->
+  Flambda_iterators.iter_on_sets_of_closures (fun { Flambda. function_decls; _; } ->
       Variable.Map.iter (fun id _ ->
           let var = Closure_id.wrap id in
           add_and_check var)
@@ -355,7 +355,7 @@ let used_closure_ids flam =
     | Set_of_closures _
     | Symbol _ | Const _ | Prim _ | Expr _ -> ()
   in
-  Flambdaiter.iter_named f flam;
+  Flambda_iterators.iter_named f flam;
   !used
 
 let used_vars_within_closures flam =
@@ -366,7 +366,7 @@ let used_vars_within_closures flam =
       used := Var_within_closure.Set.add var !used
     | _ -> ()
   in
-  Flambdaiter.iter_named f flam;
+  Flambda_iterators.iter_named f flam;
   !used
 
 let every_used_function_from_current_compilation_unit_is_declared flam =
@@ -414,7 +414,7 @@ let every_static_exception_is_caught flam =
       loop env body
     | exp ->
       check env exp;
-      Flambdaiter.apply_on_subexpressions (loop env)
+      Flambda_iterators.apply_on_subexpressions (loop env)
         (fun (_ : Flambda.named) -> ()) exp
   in
   loop Static_exception.Set.empty flam
@@ -429,7 +429,7 @@ let every_static_exception_is_caught_at_a_single_position flam =
       caught := Static_exception.Set.add i !caught
     | _ -> ()
   in
-  Flambdaiter.iter f (fun (_ : Flambda.named) -> ()) flam
+  Flambda_iterators.iter f (fun (_ : Flambda.named) -> ()) flam
 
 let check_exn ?(flambdasym=false) ?(cmxfile=false) flam =
   try
@@ -480,7 +480,7 @@ let check_exn ?(flambdasym=false) ?(cmxfile=false) flam =
           applied to the body of the function (%a).  Declaration: %a"
         Variable.Set.print claimed
         Variable.Set.print calculated
-        Printflambda.function_declaration (var, function_decl)
+        Flambda_printers.function_declaration (var, function_decl)
     | Set_of_closures_free_vars_map_has_wrong_domain vars ->
       Format.eprintf ">> [free_vars] map in set of closures has in its domain \
           variables that are not free variables of the corresponding \

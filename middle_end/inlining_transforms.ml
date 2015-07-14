@@ -48,7 +48,7 @@ let fold_over_exprs_for_variables_bound_by_closure ~fun_id ~clos_id ~clos
         }
       in
       f ~acc ~var ~expr)
-    (Flambdautils.variables_bound_by_the_closure fun_id clos) init
+    (Flambda_utils.variables_bound_by_the_closure fun_id clos) init
 
 let inline_by_copying_function_body ~env ~r
       ~(clos : Flambda.function_declarations) ~lfunc ~fun_id
@@ -56,7 +56,7 @@ let inline_by_copying_function_body ~env ~r
       ~simplify =
 (*
 Format.eprintf "inline_by_copying_function_body: %a@.env: %a@.\n"
-  Printflambda.flambda func.body
+  Flambda_printers.flambda func.body
   Inlining_env.print env;
 *)
   let r = R.map_benefit r B.remove_call in
@@ -67,12 +67,12 @@ Format.eprintf "inline_by_copying_function_body: %a@.env: %a@.\n"
   let subst_map =
     Variable.Map.of_list (List.combine func.params subst_params)
   in
-  let body = Flambdautils.toplevel_substitution subst_map func.body in
+  let body = Flambda_utils.toplevel_substitution subst_map func.body in
   (* Around the function's body, bind the parameters to the arguments
      that we saw at the call site. *)
   let bindings_for_params_around_body =
     let args = List.map (fun arg -> Flambda.Expr (Var arg)) args in
-    Flambdautils.bind ~body ~bindings:(List.combine subst_params args)
+    Flambda_utils.bind ~body ~bindings:(List.combine subst_params args)
   in
   (* 2. Now add bindings for variables bound by the closure. *)
   let bindings_for_vars_bound_by_closure_and_params_around_body =
@@ -95,7 +95,7 @@ Format.eprintf "inline_by_copying_function_body: %a@.env: %a@.\n"
   in
 (*
 Format.eprintf "inline_by_copying_function_body expr: %a@.env: %a@.\n"
-  Printflambda.flambda expr
+  Flambda_printers.flambda expr
   Inlining_env.print env;
 *)
   let env =
@@ -163,12 +163,12 @@ let inline_by_copying_function_declaration ~env ~r ~funct
           Let (Immutable, func, Project_closure project_closure,
             Apply { func; args; kind = Direct closure_id; dbg; }))
       in
-      Flambdautils.bind ~bindings:free_vars_for_lets ~body
+      Flambda_utils.bind ~bindings:free_vars_for_lets ~body
     in
     (* Now bind the variables that will hold the arguments from the original
        application. *)
     let expr : Flambda.t =
-      Flambdautils.bind ~body:duplicated_application ~bindings:args_decl
+      Flambda_utils.bind ~body:duplicated_application ~bindings:args_decl
     in
     let env =
       E.note_entering_closure env ~closure_id

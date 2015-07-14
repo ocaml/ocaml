@@ -478,7 +478,7 @@ let imported_closure =
       funs =
         Variable.Map.map
           (fun ff ->
-             let body = Flambdaiter.map_toplevel f f_named ff.body in
+             let body = Flambda_iterators.map_toplevel f f_named ff.body in
              let free_variables = Free_variables.calculate body in
              { ff with body; free_variables })
           clos.funs } in

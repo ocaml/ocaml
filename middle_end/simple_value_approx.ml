@@ -11,7 +11,7 @@
 (*                                                                        *)
 (**************************************************************************)
 
-module U = Flambdautils
+module U = Flambda_utils
 
 type 'a boxed_int =
   | Int32 : int32 boxed_int
@@ -149,7 +149,7 @@ let value_unresolved sym = approx (Value_unresolved sym)
 let value_string size contents = approx (Value_string {size; contents })
 let value_float_array size = approx (Value_float_array size)
 
-let name_expr_fst (named, thing) = (Flambdautils.name_expr named), thing
+let name_expr_fst (named, thing) = (Flambda_utils.name_expr named), thing
 
 let make_const_int_named n : Flambda.named * t =
   Const (Const_base (Asttypes.Const_int n)), value_int n
@@ -422,7 +422,7 @@ let freshen_and_check_closure_id
       value_set_of_closures.freshening closure_id
   in
   try
-    ignore (Flambdautils.find_declaration closure_id
+    ignore (Flambda_utils.find_declaration closure_id
       value_set_of_closures.function_decls);
     closure_id
   with Not_found ->
@@ -430,7 +430,7 @@ let freshen_and_check_closure_id
       "Function %a not found in the set of closures@ %a@.%a@."
       Closure_id.print closure_id
       print_value_set_of_closures value_set_of_closures
-      Printflambda.function_declarations value_set_of_closures.function_decls)
+      Flambda_printers.function_declarations value_set_of_closures.function_decls)
 
 type checked_approx_for_set_of_closures =
   | Wrong
