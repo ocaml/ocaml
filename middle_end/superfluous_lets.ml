@@ -14,7 +14,7 @@
 (* CR mshinwell: improve bound name representations or find some other
    way of fixing this? *)
 
-let substitute_free_occurrences tree find replace =
+let _substitute_free_occurrences tree find replace =
   let handle_var var =
     if Variable.equal var find then replace else var
   in
@@ -147,7 +147,7 @@ let remove tree =
         | defining_expr1 -> defining_expr1
       in
       begin match defining_expr1 with
-      | Expr (Var var) -> substitute_free_occurrences body1 var1 var
+(*      | Expr (Var var) -> substitute_free_occurrences body1 var1 var*)
       | defining_expr1 -> Let (Immutable, var1, defining_expr1, body1)
       end
     | Let (Mutable, var, defining_expr, body) ->
