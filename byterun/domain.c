@@ -149,6 +149,7 @@ static void create_domain(uintnat initial_minor_heap_size, int is_main) {
   if (d) {
     d->running = 1;
     d->state.is_main = 0;
+    d->state.vm_inited = 0;
     d->state.internals = d;
     /* FIXME: shutdown RPC? */
     atomic_store_rel(&d->rpc_request, RPC_IDLE);
@@ -183,6 +184,7 @@ static void create_domain(uintnat initial_minor_heap_size, int is_main) {
     d->state.state = caml_domain_state;
     d->state.mark_stack = &caml_mark_stack;
     d->state.mark_stack_count = &caml_mark_stack_count;
+    d->state.vm_inited = 1;
   }
   caml_plat_unlock(&all_domains_lock);
 }
