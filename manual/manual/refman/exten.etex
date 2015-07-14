@@ -1849,6 +1849,16 @@ types).
 As a side-effect of this generativity, one is allowed to unpack
 first-class modules in the body of generative functors.
 
+\section{Extension operators} \label{s:ext-ops}
+(Introduced in Ocaml 4.02.2 )
+\begin{syntax}
+infix-symbol:
+          ...
+        | "#" {operator-chars} "#"  {operator-char '|' "#"}
+;
+\end{syntax}
+Operator names starting with a "#" character and containing more than one "#" character in their name are accepted during parsing and rejected during type-checking. These operators can therefore not be used directly in vanilla Ocaml. However, "-ppx" rewriters and other external tools can use this parser leniency to extend the language with new extension specific "#"-operators.
+
 \section{Customizable index operators} \label{s:index-operators}
 
 ( Introduced in OCaml 4.03 )

@@ -184,6 +184,7 @@ there are really 3 tokens, with optional blanks between them.
 infix-symbol:
         ('=' || '<' || '>' || '@' || '^' || '|' || '&' ||
          '+' || '-' || '*' || '/' || '$' || '%') { operator-char }
+      | "#" {{ operator-char }}
 ;
 prefix-symbol:
         '!' { operator-char }
