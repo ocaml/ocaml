@@ -299,13 +299,13 @@ and loop env r tree =
   let fv = Free_variables.calculate tree in
   Variable.Set.iter (fun var ->
       let var = Freshening.apply_variable (E.freshening env) var in
-      match Inlining_env.find_opt env var with
+      match Inlining_aux.Env.find_opt env var with
       | Some _ -> ()
       | None ->
         Format.eprintf "start of loop has unbound vars: %a fv=%a env=%a %s\n"
           Printflambda.flambda tree
           Variable.Set.print fv
-          Inlining_env.print env
+          Inlining_aux.Env.print env
           (Printexc.raw_backtrace_to_string (Printexc.get_callstack max_int));
         Misc.fatal_error "unbound variable(s)")
     fv;
@@ -322,13 +322,13 @@ and loop_named env r (tree : Flambda.named) : Flambda.named * R.t =
   let fv = Free_variables.calculate_named tree in
   Variable.Set.iter (fun var ->
       let var = Freshening.apply_variable (E.freshening env) var in
-      match Inlining_env.find_opt env var with
+      match Inlining_aux.Env.find_opt env var with
       | Some _ -> ()
       | None ->
         Format.eprintf "start of loop_named has unbound vars: %a fv=%a env=%a %s\n"
           Printflambda.named tree
           Variable.Set.print fv
-          Inlining_env.print env
+          Inlining_aux.Env.print env
           (Printexc.raw_backtrace_to_string (Printexc.get_callstack max_int));
         Misc.fatal_error "unbound variable(s)")
     fv;
@@ -348,7 +348,7 @@ and loop_named env r (tree : Flambda.named) : Flambda.named * R.t =
 (*
     Format.eprintf "loop_named, Prim case: %a Environment is: %a\n"
       Printflambda.named tree
-      Inlining_env.print env;
+      Inlining_aux.Env.print env;
 *)
     let args = List.map (Freshening.apply_variable (E.freshening env)) args in
     let tree = Flambda.Prim (prim, args, dbg) in
@@ -421,7 +421,7 @@ and loop_direct env r (tree : Flambda.t) : Flambda.t * R.t =
       Variable.print id
       Printflambda.named defining_expr
       Printflambda.flambda body
-      Inlining_env.print env;
+      Inlining_aux.Env.print env;
 *)
     let defining_expr, r = loop_named env r defining_expr in
     let id, sb = Freshening.add_variable (E.freshening env) id in
@@ -436,7 +436,7 @@ and loop_direct env r (tree : Flambda.t) : Flambda.t * R.t =
       Format.eprintf "Let case %d, binding (freshened) '%a', body environment: %a\n"
         my_count
         Variable.print id
-        Inlining_env.print body_env;
+        Inlining_aux.Env.print body_env;
 *)
       loop body_env r body
     in
@@ -835,7 +835,7 @@ and simplify_set_of_closures original_env r
           Format.eprintf "E.enter_closure '%a', function body: %a, env: %a\n"
             Variable.print fid
             Printflambda.flambda function_decl.body
-            Inlining_env.print body_env;
+            Inlining_aux.Env.print body_env;
 *)
           loop body_env r function_decl.body)
     in
