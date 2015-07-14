@@ -23,12 +23,8 @@ type t = {
   exported_fields : int;
 }
 
-let fresh_variable ~name =
-  Variable.create name
-    ~current_compilation_unit:(Compilation_unit.get_current_exn ())
-
 let create_var id =
-  let var = fresh_variable ~name:(Ident.name id) in
+  let var = Variable.create (Ident.name id) in
   var
 
 let rename_var _t ?append var =
@@ -127,11 +123,11 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
           Format.asprintf "anon-fn[%a]" Location.print_compact lev_loc
         | _ -> "anon-fn"
       in
-      fresh_variable ~name
+      Variable.create name
     in
     (* CR mshinwell: some of this is now very similar to the let rec case
        below *)
-    let set_of_closures_var = fresh_variable ~name:"set_of_closures" in
+    let set_of_closures_var = Variable.create "set_of_closures" in
     let set_of_closures =
       let decl =
         Function_decl.create ~let_rec_ident:None ~closure_bound_var ~kind
@@ -153,7 +149,7 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
       ~name:"apply_arg"
       ~create_body:(fun args ->
         let func = close t env funct in
-        let func_var = fresh_variable ~name:"apply_funct" in
+        let func_var = Variable.create "apply_funct" in
         Let (Immutable, func_var, Expr func,
           Apply ({
               func = func_var;
@@ -187,7 +183,7 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
          eliminate the [let rec] construction, instead producing a normal
          [Let] that binds a set of closures containing all of the functions.
       *)
-      let set_of_closures_var = fresh_variable ~name:"set_of_closures" in
+      let set_of_closures_var = Variable.create "set_of_closures" in
       let set_of_closures =
         close_functions t env (Function_decls.create function_declarations)
       in
@@ -229,13 +225,13 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
   | Lprim (Psequor, [arg1; arg2]) ->
     let arg1 = close t env arg1 in
     let arg2 = close t env arg2 in
-    let const_true = fresh_variable ~name:"const_true" in
+    let const_true = Variable.create "const_true" in
     Let (Immutable, const_true, Const (Const_base (Const_int 1)),
       If_then_else (arg1, Var (const_true), arg2))
   | Lprim (Psequand, [arg1; arg2]) ->
     let arg1 = close t env arg1 in
     let arg2 = close t env arg2 in
-    let const_false = fresh_variable ~name:"const_true" in
+    let const_false = Variable.create "const_true" in
     Let (Immutable, const_false, Const (Const_base (Const_int 0)),
       If_then_else (arg1, arg2, Var (const_false)))
   | Lprim ((Psequand | Psequor), _) ->
@@ -245,7 +241,7 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
   | Lprim (Prevapply loc, [arg; funct]) ->
     close t env (Lambda.Lapply (funct, [arg], Lambda.mk_apply_info loc))
   | Lprim (Praise kind, [Levent (arg, event)]) ->
-    let arg_var = fresh_variable ~name:"raise_arg" in
+    let arg_var = Variable.create "raise_arg" in
     Let (Immutable, arg_var, Expr (close t env arg),
       U.name_expr
         (Prim (Praise kind, [arg_var], Debuginfo.from_raise event)))
@@ -259,7 +255,7 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
     let exported : Lambda.exported =
       if i < t.exported_fields then Exported else Not_exported
     in
-    let arg_var = fresh_variable ~name:"raise_arg" in
+    let arg_var = Variable.create "raise_arg" in
     Let (Immutable, arg_var, Expr (close t env lam),
       U.name_expr (Prim (Psetglobalfield (exported, i), [arg_var],
         Debuginfo.none)))
@@ -308,7 +304,7 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
   | Lifthenelse (arg, ifso, ifnot) ->
     If_then_else (close t env arg, close t env ifso, close t env ifnot)
   | Lsequence (lam1, lam2) ->
-    let var = fresh_variable ~name:"sequence" in
+    let var = Variable.create "sequence" in
     let lam1 = Flambda.Expr (close t env lam1) in
     let lam2 = close t env lam2 in
     Let (Immutable, var, lam1, lam2)
@@ -425,7 +421,7 @@ and close_let_bound_expression t ?let_rec_ident let_bound_var env
       Function_decl.create ~let_rec_ident ~closure_bound_var ~kind ~params
         ~body
     in
-    let set_of_closures_var = fresh_variable ~name:"set_of_closures_var" in
+    let set_of_closures_var = Variable.create "set_of_closures_var" in
     let set_of_closures = close_functions t env [decl] in
     let project_closure : Flambda.project_closure =
       { set_of_closures = set_of_closures_var;
