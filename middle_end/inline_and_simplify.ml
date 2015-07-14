@@ -372,31 +372,24 @@ and loop_direct env r (tree : Flambda.t) : Flambda.t * R.t =
     let var = Freshening.apply_variable (E.freshening env) var in
     simplify_using_approx_and_env env r (Var var) (E.find var env)
   | Apply apply -> simplify_apply env r ~apply
-  | Let (str, id, lam, body) ->
-    (* The different cases for rewriting [Let] are, if the original code
-       corresponds to [let id = lam in body],
-       * [body] with [id] substituted by [lam] when possible (unused or
-         constant);
-       * [lam; body] when id is not used but [lam] has a side effect;
-       * [let id = lam in body] otherwise.
-     *)
-    let lam, r = loop_named env r lam in
+  | Let (str, id, defining_expr, body) ->
+    let defining_expr, r = loop_named env r defining_expr in
     let id, sb = Freshening.add_variable (E.freshening env) id in
     let env = E.set_freshening sb env in
-    let body_env =
-      match str with
-      | Mutable ->
-        (* If the variable is mutable, we don't propagate anything about it. *)
-        E.clear_approx id env
-      | Immutable -> E.add_approx id (R.approx r) env
+    let body, r =
+      let body_env =
+        match str with
+        | Mutable -> assert (E.find_opt env id = None); env
+        | Immutable -> E.add_approx id (R.approx r) env
+      in
+      loop body_env r body
     in
-    let body, r = loop body_env r body in
     let free_variables_of_body = Free_variables.calculate body in
     let (expr : Flambda.t), r =
       if Variable.Set.mem id free_variables_of_body then
-        Flambda.Let (str, id, lam, body), r
-      else if Effect_analysis.no_effects_named lam then
-        let r = R.map_benefit r (B.remove_code_named lam) in
+        Flambda.Let (str, id, defining_expr, body), r
+      else if Effect_analysis.no_effects_named defining_expr then
+        let r = R.map_benefit r (B.remove_code_named defining_expr) in
         body, r
       else
         (* CR mshinwell: check that Pignore is inserted correctly by a later
@@ -405,7 +398,7 @@ and loop_direct env r (tree : Flambda.t) : Flambda.t * R.t =
            intermediate language (in particular to make it more obvious that
            the variable is unused). *)
         let fresh_var = Variable.create "unused" in
-        Flambda.Let (Immutable, fresh_var, lam, body), r
+        Flambda.Let (Immutable, fresh_var, defining_expr, body), r
     in
     expr, r
   | Let_rec (defs, body) ->
@@ -761,7 +754,12 @@ and simplify_set_of_closures original_env r
         ~inline_inside:
           (Inlining_decision.should_inline_inside_declaration function_decl)
         ~where:Transform_set_of_closures_expression
-        ~f:(fun body_env -> loop body_env r function_decl.body)
+        ~f:(fun body_env ->
+          Format.eprintf "E.enter_closure '%a', function body: %a, env: %a\n"
+            Variable.print fid
+            Printflambda.flambda function_decl.body
+            Inlining_env.print body_env;
+          loop body_env r function_decl.body)
     in
     let free_variables = Free_variables.calculate body in
     let used_params =

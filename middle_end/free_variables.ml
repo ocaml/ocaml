@@ -71,9 +71,9 @@ let iter tree ~free_variable ~bound_variable =
     match named with
     | Symbol _ | Const _ -> ()
     | Set_of_closures { specialised_args; _ } ->
-      (* CR mshinwell for pchambart: free_variable comment explaining why
-         the [free_variables] inside [Set_of_closures] isn't counted
-         here.  Shouldn't this go into the body as well? *)
+      (* Sets of closures are, well, closed---except for the specialised
+         argument list, which may identify variables currently in scope
+         outside of the closure. *)
       Variable.Map.iter (fun _ var -> free_variable var) specialised_args
     | Project_closure { set_of_closures; closure_id = _ } ->
       free_variable set_of_closures

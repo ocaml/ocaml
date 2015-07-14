@@ -53,14 +53,19 @@ let local env =
 
 let inlining_level_up env = { env with inlining_level = env.inlining_level + 1 }
 
+let print ppf t =
+  Format.fprintf ppf "Environment maps: %a@.Freshening: %a@."
+      Variable.Set.print (Variable.Map.keys t.env_approx)
+      Freshening.print t.freshening
+
 let find id env =
   try Variable.Map.find id env.env_approx
   with Not_found ->
     Misc.fatal_errorf "Inlining_env.find: Unbound variable %a@.%s@.\
-        Environment maps: %a@."
+        Environment: %a@."
       Variable.print id
       (Printexc.raw_backtrace_to_string (Printexc.get_callstack max_int))
-      Variable.Set.print (Variable.Map.keys env.env_approx)
+      print env
 
 let find_list t vars =
   List.map (fun var -> find var t) vars

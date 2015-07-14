@@ -100,3 +100,5 @@ val enter_closure
 val inlining_stats_closure_stack
    : t
   -> Inlining_stats.Closure_stack.t
+
+val print : Format.formatter -> t -> unit
