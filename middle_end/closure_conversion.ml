@@ -434,12 +434,7 @@ and close_let_bound_expression t ?let_rec_ident let_bound_var env
     in
     Expr (Let (Immutable, set_of_closures_var, set_of_closures,
       U.name_expr (Project_closure (project_closure))))
-  | lam ->
-    match close t env lam with
-    (* Remove unnecessary [let]s introduced by [U.name_expr], above. *)
-    | Let (Immutable, var1, named, Var var2)
-        when Variable.equal var1 var2 -> named
-    | flam -> Expr flam
+  | lam -> Expr (close t env lam)
 
 let lambda_to_flambda ~backend ~(exported_fields:int) lam =
   let module Backend = (val backend : Backend_intf.S) in
