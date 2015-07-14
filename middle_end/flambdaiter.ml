@@ -112,23 +112,11 @@ let iter_named_toplevel f f_named named =
   iter_general ~toplevel:true f f_named (Named named)
 
 let iter_on_sets_of_closures f t =
-  let aux_named (named : Flambda.named) =
-    match named with
-    | Set_of_closures clos -> f clos
-    | Symbol _ | Const _ | Project_closure _ | Move_within_set_of_closures _
-    | Project_var _ | Prim _ | Expr _ -> ()
-  in
-  let aux (flam : Flambda.t) =
-    match flam with
-    | Let (_, _, defining_expr, _) ->
-      aux_named defining_expr
-    | Let_rec (defs, _) ->
-      List.iter (fun (_, defining_expr) -> aux_named defining_expr) defs
-    | Var _ | Apply _ | Assign _ | Send _ | Proved_unreachable | Switch _
-    | String_switch _ | Static_raise _ | Static_catch _ | Try_with _
-    | If_then_else _ | While _ | For _ -> ()
-  in
-  iter aux aux_named t
+  iter_named (function
+      | Set_of_closures clos -> f clos
+      | Symbol _ | Const _ | Project_closure _ | Move_within_set_of_closures _
+      | Project_var _ | Prim _ | Expr _ -> ())
+    t
 
 let map_general ~toplevel f f_named tree =
   let rec aux (tree : Flambda.t) =
@@ -220,4 +208,13 @@ let map_general ~toplevel f f_named tree =
 
 let map f f_named tree = map_general ~toplevel:false f f_named tree
 let map_named f_named tree = map (fun expr -> expr) f_named tree
+(* CR mshinwell: rename "toplevel" *)
 let map_toplevel f f_named tree = map_general ~toplevel:true f f_named tree
+
+let map_symbols tree ~f =
+  map_named (function
+      | Symbol sym -> Symbol (f sym)
+      | (Const _ | Set_of_closures _ | Project_closure _
+      | Move_within_set_of_closures _ | Project_var _ | Prim _
+      | Expr _) as named -> named)
+    tree

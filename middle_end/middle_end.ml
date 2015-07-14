@@ -11,13 +11,15 @@
 (*                                                                        *)
 (**************************************************************************)
 
+let verbose = try ignore (Sys.getenv "FLAMBDA_VERBOSE"); true with _ -> false
+
 let middle_end ppf ~sourcefile ~prefixname ~backend ~exported_fields lam =
   let pass_number = ref 0 in
   let round_number = ref 0 in
   let check flam =
     try Flambda_invariants.check_exn flam
     with exn ->
-      Misc.fatal_errorf "Flambda invariant failed (pass %d, round %d): %s: %a"
+      Misc.fatal_errorf "After Flambda pass %d, round %d:@.%s:@.%a"
         !pass_number !round_number (Printexc.to_string exn)
         Printflambda.flambda flam
   in
@@ -31,6 +33,11 @@ let middle_end ppf ~sourcefile ~prefixname ~backend ~exported_fields lam =
       pass flam
     else begin
       incr pass_number;
+      if verbose then begin
+        Format.fprintf ppf "Before pass %d, round %d:@ %a@." !pass_number
+          !round_number Printflambda.flambda flam;
+        Format.eprintf "\n@?"
+      end;
       let flam = pass flam in
       check flam;
       flam

@@ -35,7 +35,7 @@ opt.opt: ocamldep.opt read_cmt.opt
 
 CAMLDEP_OBJ=depend.cmo ocamldep.cmo
 CAMLDEP_IMPORTS=timings.cmo misc.cmo config.cmo clflags.cmo terminfo.cmo \
-  warnings.cmo location.cmo longident.cmo \
+  warnings.cmo location.cmo longident.cmo docstrings.cmo \
   syntaxerr.cmo ast_helper.cmo parser.cmo lexer.cmo parse.cmo \
   ccomp.cmo ast_mapper.cmo pparse.cmo compenv.cmo
 
@@ -65,7 +65,7 @@ install::
 
 CSLPROF=ocamlprof.cmo
 CSLPROF_IMPORTS=misc.cmo config.cmo clflags.cmo terminfo.cmo \
-  warnings.cmo location.cmo longident.cmo \
+  warnings.cmo location.cmo longident.cmo docstrings.cmo \
   syntaxerr.cmo ast_helper.cmo parser.cmo lexer.cmo parse.cmo
 
 ocamlprof: $(CSLPROF) profiling.cmo
@@ -158,7 +158,7 @@ clean::
 # Insert labels following an interface file (upgrade 3.02 to 3.03)
 
 ADDLABELS_IMPORTS=misc.cmo config.cmo clflags.cmo terminfo.cmo \
-  warnings.cmo location.cmo longident.cmo \
+  warnings.cmo location.cmo longident.cmo docstrings.cmo \
   syntaxerr.cmo ast_helper.cmo parser.cmo lexer.cmo parse.cmo
 
 addlabels: addlabels.cmo
@@ -204,6 +204,7 @@ READ_CMT= \
 	  ../utils/ext_types.cmo \
           ../parsing/location.cmo \
           ../parsing/longident.cmo \
+          ../parsing/docstrings.cmo \
           ../parsing/lexer.cmo \
           ../parsing/pprintast.cmo \
           ../parsing/ast_helper.cmo \

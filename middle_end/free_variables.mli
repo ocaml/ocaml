@@ -21,3 +21,5 @@ val iter
 
 (** Calculation of the set of free variables in a given Flambda term. *)
 val calculate : Flambda.t -> Variable.Set.t
+
+val calculate_named : Flambda.named -> Variable.Set.t

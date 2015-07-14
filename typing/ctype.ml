@@ -454,38 +454,6 @@ let rec filter_row_fields erase = function
                     (**************************************)
 
 
-exception Non_closed0
-
-let rec closed_schema_rec ty =
-  let ty = repr ty in
-  if ty.level >= lowest_level then begin
-    let level = ty.level in
-    ty.level <- pivot_level - level;
-    match ty.desc with
-      Tvar _ when level <> generic_level ->
-        raise Non_closed0
-    | Tfield(_, kind, t1, t2) ->
-        if field_kind_repr kind = Fpresent then
-          closed_schema_rec t1;
-        closed_schema_rec t2
-    | Tvariant row ->
-        let row = row_repr row in
-        iter_row closed_schema_rec row;
-        if not (static_row row) then closed_schema_rec row.row_more
-    | _ ->
-        iter_type_expr closed_schema_rec ty
-  end
-
-(* Return whether all variables of type [ty] are generic. *)
-let closed_schema ty =
-  try
-    closed_schema_rec ty;
-    unmark_type ty;
-    true
-  with Non_closed0 ->
-    unmark_type ty;
-    false
-
 exception Non_closed of type_expr * bool
 
 let free_variables = ref []
@@ -1124,6 +1092,13 @@ let instance_def sch =
   cleanup_types ();
   ty
 
+let generic_instance ?partial env sch =
+  let old = !current_level in
+  current_level := generic_level;
+  let ty = instance env sch in
+  current_level := old;
+  ty
+
 let instance_list env schl =
   let env = gadt_env env in
   let tyl = List.map (fun t -> copy ?env t) schl in
@@ -1465,8 +1440,8 @@ let expand_abbrev_gen kind find_type_expansion env ty =
       assert false
 
 (* Expand respecting privacy *)
-let expand_abbrev ty =
-  expand_abbrev_gen Public Env.find_type_expansion ty
+let expand_abbrev env ty =
+  expand_abbrev_gen Public Env.find_type_expansion env ty
 
 (* Expand once the head of a type *)
 let expand_head_once env ty =
@@ -1676,10 +1651,11 @@ exception Occur
 
 let rec occur_rec env visited ty0 ty =
   if ty == ty0  then raise Occur;
+  let occur_ok = !Clflags.recursive_types && is_contractive env ty in
   match ty.desc with
     Tconstr(p, tl, abbrev) ->
       begin try
-        if List.memq ty visited || !Clflags.recursive_types then raise Occur;
+        if occur_ok || List.memq ty visited then raise Occur;
         iter_type_expr (occur_rec env (ty::visited) ty0) ty
       with Occur -> try
         let ty' = try_expand_head try_expand_once env ty in
@@ -1690,15 +1666,15 @@ let rec occur_rec env visited ty0 ty =
         match ty'.desc with
           Tobject _ | Tvariant _ -> ()
         | _ ->
-            if not !Clflags.recursive_types then
+            if not (!Clflags.recursive_types && is_contractive env ty') then
               iter_type_expr (occur_rec env (ty'::visited) ty0) ty'
       with Cannot_expand ->
-        if not !Clflags.recursive_types then raise Occur
+        if not occur_ok then raise Occur
       end
   | Tobject _ | Tvariant _ ->
       ()
   | _ ->
-      if not !Clflags.recursive_types then
+      if not occur_ok then
         iter_type_expr (occur_rec env visited ty0) ty
 
 let type_changed = ref false (* trace possible changes to the studied type *)
@@ -2068,7 +2044,7 @@ let rec mcomp type_pairs env t1 t2 =
         | (Tconstr (p, _, _), _) | (_, Tconstr (p, _, _)) ->
             begin try
               let decl = Env.find_type p env in
-              if non_aliasable p decl then raise (Unify [])
+              if non_aliasable p decl || is_datatype decl then raise (Unify [])
             with Not_found -> ()
             end
         (*
@@ -4197,6 +4173,40 @@ let cyclic_abbrev env id ty =
     | _ ->
         false
   in check_cycle [] ty
+
+(* Check for non-generalizable type variables *)
+exception Non_closed0
+let visited = ref TypeSet.empty
+
+let rec closed_schema_rec env ty =
+  let ty = expand_head env ty in
+  if TypeSet.mem ty !visited then () else begin
+    visited := TypeSet.add ty !visited;
+    match ty.desc with
+      Tvar _ when ty.level <> generic_level ->
+        raise Non_closed0
+    | Tfield(_, kind, t1, t2) ->
+        if field_kind_repr kind = Fpresent then
+          closed_schema_rec env t1;
+        closed_schema_rec env t2
+    | Tvariant row ->
+        let row = row_repr row in
+        iter_row (closed_schema_rec env) row;
+        if not (static_row row) then closed_schema_rec env row.row_more
+    | _ ->
+        iter_type_expr (closed_schema_rec env) ty
+  end
+
+(* Return whether all variables of type [ty] are generic. *)
+let closed_schema env ty =
+  visited := TypeSet.empty;
+  try
+    closed_schema_rec env ty;
+    visited := TypeSet.empty;
+    true
+  with Non_closed0 ->
+    visited := TypeSet.empty;
+    false
 
 (* Normalize a type before printing, saving... *)
 (* Cannot use mark_type because deep_occur uses it too *)

@@ -207,6 +207,10 @@ let () = Btype.print_raw := raw_type_expr
 
 type param_subst = Id | Nth of int | Map of int list
 
+let is_nth = function
+    Nth _ -> true
+  | _ -> false
+
 let compose l1 = function
   | Id -> Map l1
   | Map l2 -> Map (List.map (List.nth l1) l2)
@@ -448,7 +452,7 @@ let aliasable ty =
   match ty.desc with
     Tvar _ | Tunivar _ | Tpoly _ -> false
   | Tconstr (p, _, _) ->
-      (match best_type_path p with (_, Nth _) -> false | _ -> true)
+      not (is_nth (snd (best_type_path p)))
   | _ -> true
 
 let namable_row row =
@@ -567,12 +571,10 @@ let rec tree_of_typexp sch ty =
     | Ttuple tyl ->
         Otyp_tuple (tree_of_typlist sch tyl)
     | Tconstr(p, tyl, abbrev) ->
-        begin match best_type_path p with
-          (_, Nth n) -> tree_of_typexp sch (List.nth tyl n)
-        | (p', s) ->
-            let tyl' = apply_subst s tyl in
-            Otyp_constr (tree_of_path p', tree_of_typlist sch tyl')
-        end
+        let p', s = best_type_path p in
+        let tyl' = apply_subst s tyl in
+        if is_nth s then tree_of_typexp sch (List.hd tyl') else
+        Otyp_constr (tree_of_path p', tree_of_typlist sch tyl')
     | Tvariant row ->
         let row = row_repr row in
         let fields =
@@ -591,17 +593,22 @@ let rec tree_of_typexp sch ty =
         begin match row.row_name with
         | Some(p, tyl) when namable_row row ->
             let (p', s) = best_type_path p in
-            assert (s = Id);
             let id = tree_of_path p' in
-            let args = tree_of_typlist sch tyl in
+            let args = tree_of_typlist sch (apply_subst s tyl) in
             if row.row_closed && all_present then
-              Otyp_constr (id, args)
+              if is_nth s then List.hd args else Otyp_constr (id, args)
             else
               let non_gen = is_non_gen sch px in
               let tags =
                 if all_present then None else Some (List.map fst present) in
-              Otyp_variant (non_gen, Ovar_name(id, args),
-                            row.row_closed, tags)
+              let inh =
+                match args with
+                  [Otyp_constr (i, a)] when is_nth s -> Ovar_name (i, a)
+                | _ ->
+                    (* fallback case, should change outcometree... *)
+                    Ovar_name (tree_of_path p, tree_of_typlist sch tyl)
+              in
+              Otyp_variant (non_gen, inh, row.row_closed, tags)
         | _ ->
             let non_gen =
               not (row.row_closed && all_present) && is_non_gen sch px in

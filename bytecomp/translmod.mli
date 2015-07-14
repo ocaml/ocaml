@@ -18,6 +18,7 @@ open Lambda
 
 val transl_implementation: string -> structure * module_coercion -> lambda
 val transl_store_phrases: string -> structure -> int * lambda
+
 val transl_store_implementation:
   string -> structure * module_coercion -> (int * int) * lambda
 (** transl_store_implementation returns ((size, exported), code)
@@ -28,6 +29,7 @@ val transl_store_implementation:
     after the last exported from the global block (if they are unused
     in lambda)
 *)
+
 val transl_toplevel_definition: structure -> lambda
 val transl_package:
       Ident.t option list -> Ident.t -> module_coercion -> lambda

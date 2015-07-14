@@ -17,7 +17,7 @@ include stdlib/StdlibModules
 
 CAMLC=boot/ocamlrun boot/ocamlc -g -nostdlib -I boot
 CAMLOPT=boot/ocamlrun ./ocamlopt -g -nostdlib -I stdlib -I otherlibs/dynlink
-COMPFLAGS=-strict-sequence -w +33..39+48-40 -warn-error A -bin-annot \
+COMPFLAGS=-strict-sequence -w +33..39+48+50 -warn-error A -bin-annot \
           -safe-string $(INCLUDES)
 LINKFLAGS=
 
@@ -44,7 +44,7 @@ UTILS=utils/misc.cmo utils/tbl.cmo utils/config.cmo utils/timings.cmo \
   utils/sort_connected_components.cmo
 
 PARSING=parsing/location.cmo parsing/longident.cmo \
-  parsing/ast_helper.cmo \
+  parsing/docstrings.cmo parsing/ast_helper.cmo \
   parsing/syntaxerr.cmo parsing/parser.cmo \
   parsing/lexer.cmo parsing/parse.cmo parsing/printast.cmo \
   parsing/pprintast.cmo \
@@ -107,8 +107,6 @@ ASMCOMP=\
   asmcomp/flambdaexport.cmo \
   asmcomp/compilenv.cmo \
   asmcomp/import_approx.cmo \
-  asmcomp/flambdasym.cmo \
-  asmcomp/clambdagen.cmo \
   asmcomp/strmatch.cmo asmcomp/cmmgen.cmo \
   asmcomp/printmach.cmo asmcomp/selectgen.cmo asmcomp/selection.cmo \
   asmcomp/comballoc.cmo \
@@ -136,23 +134,23 @@ MIDDLE_END=\
   middle_end/base_types/static_exception.cmo \
   middle_end/base_types/export_id.cmo \
   middle_end/base_types/symbol.cmo \
-  middle_end/flambdautils.cmo \
-  middle_end/closure_conversion_aux.cmo \
-  middle_end/closure_conversion.cmo \
   middle_end/free_variables.cmo \
-  middle_end/flambdaiter.cmo \
-  middle_end/find_recursive_functions.cmo \
-  middle_end/freshening.cmo \
-  middle_end/invariant_params.cmo \
   middle_end/printflambda.cmo \
-  middle_end/inconstant_idents.cmo \
-  middle_end/effect_analysis.cmo \
-  middle_end/simple_value_approx.cmo \
+  middle_end/flambdaiter.cmo \
+  middle_end/flambdautils.cmo \
   middle_end/inlining_cost.cmo \
-  middle_end/simplify_common.cmo \
-  middle_end/eliminate_const_block.cmo \
+  middle_end/effect_analysis.cmo \
+  middle_end/freshening.cmo \
+  middle_end/simple_value_approx.cmo \
   middle_end/lift_code.cmo \
   middle_end/lift_strings.cmo \
+  middle_end/closure_conversion_aux.cmo \
+  middle_end/closure_conversion.cmo \
+  middle_end/find_recursive_functions.cmo \
+  middle_end/invariant_params.cmo \
+  middle_end/inconstant_idents.cmo \
+  middle_end/simplify_common.cmo \
+  middle_end/eliminate_const_block.cmo \
   middle_end/remove_unused_arguments.cmo \
   middle_end/remove_unused_closure_vars.cmo \
   middle_end/remove_unused_globals.cmo \
@@ -455,14 +453,14 @@ clean:: partialclean
 # Shared parts of the system
 
 compilerlibs/ocamlcommon.cma: $(COMMON)
-	$(CAMLC) -a -linkall -o $@ $(COMMON)
+	$(CAMLC) -a -g -linkall -o $@ $(COMMON)
 partialclean::
 	rm -f compilerlibs/ocamlcommon.cma
 
 # The bytecode compiler
 
 compilerlibs/ocamlbytecomp.cma: $(BYTECOMP)
-	$(CAMLC) -a -o $@ $(BYTECOMP)
+	$(CAMLC) -a -g -o $@ $(BYTECOMP)
 partialclean::
 	rm -f compilerlibs/ocamlbytecomp.cma
 
@@ -474,7 +472,7 @@ ocamlc: compilerlibs/ocamlcommon.cma compilerlibs/ocamlbytecomp.cma $(BYTESTART)
 # The native-code compiler
 
 compilerlibs/ocamloptcomp.cma: $(MIDDLE_END) $(ASMCOMP)
-	$(CAMLC) -a -o $@ $(MIDDLE_END) $(ASMCOMP)
+	$(CAMLC) -a -g -o $@ $(MIDDLE_END) $(ASMCOMP)
 partialclean::
 	rm -f compilerlibs/ocamloptcomp.cma
 

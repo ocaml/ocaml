@@ -52,111 +52,104 @@ let description_of_toplevel_node (expr : Flambda.t) =
   | While _ -> "while"
   | For _ -> "for"
 
-let same (_l1 : Flambda.t) (_l2 : Flambda.t) = true
-(* XXX
-  l1 == l2 || (* it is ok for string case: if they are physicaly the same,
+let rec same (l1 : Flambda.t) (l2 : Flambda.t) =
+  l1 == l2 || (* it is ok for the string case: if they are physically the same,
                  it is the same original branch *)
   match (l1, l2) with
-  | Symbol(s1, _), Symbol(s2, _) -> Symbol.equal s1 s2
-  | Symbol _, _ | _, Symbol _ -> false
-  | Var(v1, _), Var(v2, _) -> Variable.equal v1 v2
+  | Var v1 , Var v2  -> Variable.equal v1 v2
   | Var _, _ | _, Var _ -> false
-  | Const(c1, _), Const(c2, _) -> begin
-      match c1, c2 with
-      | Const_base (Const_string (s1,_)), Const_base (Const_string (s2,_)) ->
-          s1 == s2 (* string constants can't be merged: they are mutable,
-                      but if they are physicaly the same, it comes from a safe case *)
-      | Const_base (Const_string _), _ -> false
-      | Const_base (Const_int _ | Const_char _ | Const_float _ |
-                     Const_int32 _ | Const_int64 _ | Const_nativeint _), _
-      | Const_pointer _, _
-      | Const_float _, _
-      | Const_float_array _, _
-      | Const_immstring _, _ -> c1 = c2
+  | Apply a1 , Apply a2  ->
+    a1.kind = a2.kind
+      && Variable.equal a1.func a2.func
+      && Misc.samelist Variable.equal a1.args a2.args
+  | Apply _, _ | _, Apply _ -> false
+  | Let (k1, v1, a1, b1), Let (k2, v2, a2, b2) ->
+    k1 = k2 && Variable.equal v1 v2 && same_named a1 a2 && same b1 b2
+  | Let _, _ | _, Let _ -> false
+  | Let_rec (bl1, a1), Let_rec (bl2, a2) ->
+    Misc.samelist samebinding bl1 bl2 && same a1 a2
+  | Let_rec _, _ | _, Let_rec _ -> false
+  | Switch (a1, s1), Switch (a2, s2) -> same a1 a2 && sameswitch s1 s2
+  | Switch _, _ | _, Switch _ -> false
+  | String_switch (a1, s1, d1), String_switch (a2, s2, d2) ->
+    same a1 a2 &&
+      Misc.samelist (fun (s1, e1) (s2, e2) -> s1 = s2 && same e1 e2) s1 s2 &&
+      Misc.sameoption same d1 d2
+  | String_switch _, _ | _, String_switch _ -> false
+  | Static_raise (e1, a1), Static_raise (e2, a2) ->
+    Static_exception.equal e1 e2 && Misc.samelist same a1 a2
+  | Static_raise _, _ | _, Static_raise _ -> false
+  | Static_catch (s1, v1, a1, b1), Static_catch (s2, v2, a2, b2) ->
+    Static_exception.equal s1 s2 && Misc.samelist Variable.equal v1 v2 &&
+      same a1 a2 && same b1 b2
+  | Static_catch _, _ | _, Static_catch _ -> false
+  | Try_with (a1, v1, b1), Try_with (a2, v2, b2) ->
+    same a1 a2 && Variable.equal v1 v2 && same b1 b2
+  | Try_with _, _ | _, Try_with _ -> false
+  | If_then_else (a1, b1, c1), If_then_else (a2, b2, c2) ->
+    same a1 a2 && same b1 b2 && same c1 c2
+  | If_then_else _, _ | _, If_then_else _ -> false
+  | While (a1, b1), While (a2, b2) ->
+    same a1 a2 && same b1 b2
+  | While _, _ | _, While _ -> false
+  | For (v1, a1, b1, df1, c1), For (v2, a2, b2, df2, c2) ->
+    Variable.equal v1 v2 &&  same a1 a2 &&
+      same b1 b2 && df1 = df2 && same c1 c2
+  | For _, _ | _, For _ -> false
+  | Assign (v1, a1), Assign (v2, a2) ->
+    Variable.equal v1 v2 && same a1 a2
+  | Assign _, _ | _, Assign _ -> false
+  | Send (k1, a1, b1, cl1, _), Send (k2, a2, b2, cl2, _) ->
+    k1 = k2 && same a1 a2 && same b1 b2 && Misc.samelist same cl1 cl2
+  | Send _, _ | _, Send _ -> false
+  | Proved_unreachable, Proved_unreachable -> true
+
+and same_named (named1 : Flambda.named) (named2 : Flambda.named) =
+  match named1, named2 with
+  | Symbol s1 , Symbol s2  -> Symbol.equal s1 s2
+  | Symbol _, _ | _, Symbol _ -> false
+  | Const c1 , Const c2 ->
+    begin match c1, c2 with
+    | Const_base (Const_string (s1, _)), Const_base (Const_string (s2, _)) ->
+      s1 == s2 (* string constants can't be merged: they are mutable,
+                  but if they are physically the same, it comes from a
+                  safe case *)
+    | Const_base (Const_string _), _ -> false
+    | Const_base (Const_int _ | Const_char _ | Const_float _ |
+                  Const_int32 _ | Const_int64 _ | Const_nativeint _), _
+    | Const_pointer _, _ | Const_float _, _ | Const_float_array _, _
+    | Const_immstring _, _ -> c1 = c2
     end
   | Const _, _ | _, Const _ -> false
-  | Apply(a1, _), Apply(a2, _) ->
-      a1.kind = a2.kind &&
-      same a1.func a2.func &&
-      Misc.samelist Variable.equal a1.args a2.args
-  | Apply _, _ | _, Apply _ -> false
-  | Set_of_closures (c1, _), Set_of_closures (c2, _) ->
-    same_set_of_closures c1 c2
+  | Set_of_closures s1, Set_of_closures s2 -> same_set_of_closures s1 s2
   | Set_of_closures _, _ | _, Set_of_closures _ -> false
-  | Project_closure (f1, _), Project_closure (f2, _) ->
-    same_project_closure f1 f2
+  | Project_closure f1, Project_closure f2 -> same_project_closure f1 f2
   | Project_closure _, _ | _, Project_closure _ -> false
-  | Project_var (v1, _), Project_var (v2, _) ->
+  | Project_var v1, Project_var v2 ->
     Variable.equal v1.closure v2.closure
       && Closure_id.equal v1.closure_id v2.closure_id
       && Var_within_closure.equal v1.var v2.var
   | Project_var _, _ | _, Project_var _ -> false
-  | Move_within_set_of_closures (m1, _),
-    Move_within_set_of_closures (m2, _) ->
+  | Move_within_set_of_closures m1, Move_within_set_of_closures m2 ->
     same_move_within_set_of_closures m1 m2
   | Move_within_set_of_closures _, _ | _, Move_within_set_of_closures _ ->
     false
-  | Let (k1, v1, a1, b1, _), Let (k2, v2, a2, b2, _) ->
-      k1 = k2 && Variable.equal v1 v2 && same a1 a2 && same b1 b2
-  | Let _, _ | _, Let _ -> false
-  | Let_rec (bl1, a1, _), Let_rec (bl2, a2, _) ->
-      Misc.samelist samebinding bl1 bl2 && same a1 a2
-  | Let_rec _, _ | _, Let_rec _ -> false
-  | Prim (p1, al1, _, _), Prim (p2, al2, _, _) ->
-      p1 = p2 && Misc.samelist Variable.equal al1 al2
+  | Prim (p1, al1, _), Prim (p2, al2, _) ->
+    p1 = p2 && Misc.samelist Variable.equal al1 al2
   | Prim _, _ | _, Prim _ -> false
-  | Fseq_prim (p1, al1, _, _), Fseq_prim (p2, al2, _, _) ->
-      p1 = p2 && Misc.samelist same al1 al2
-  | Fseq_prim _, _ | _, Fseq_prim _ -> false
-  | Switch (a1, s1, _), Switch (a2, s2, _) ->
-      same a1 a2 && sameswitch s1 s2
-  | Switch _, _ | _, Switch _ -> false
-  | String_switch (a1, s1, d1, _), String_switch (a2, s2, d2, _) ->
-      same a1 a2 &&
-      Misc.samelist (fun (s1, e1) (s2, e2) -> s1 = s2 && same e1 e2) s1 s2 &&
-      Misc.sameoption same d1 d2
-  | String_switch _, _ | _, String_switch _ -> false
-  | Static_raise (e1, a1, _), Static_raise (e2, a2, _) ->
-      Static_exception.equal e1 e2 && Misc.samelist same a1 a2
-  | Static_raise _, _ | _, Static_raise _ -> false
-  | Static_catch (s1, v1, a1, b1, _), Static_catch (s2, v2, a2, b2, _) ->
-      Static_exception.equal s1 s2 && Misc.samelist Variable.equal v1 v2 &&
-      same a1 a2 && same b1 b2
-  | Static_catch _, _ | _, Static_catch _ -> false
-  | Try_with (a1, v1, b1, _), Try_with (a2, v2, b2, _) ->
-      same a1 a2 && Variable.equal v1 v2 && same b1 b2
-  | Try_with _, _ | _, Try_with _ -> false
-  | If_then_else (a1, b1, c1, _), If_then_else (a2, b2, c2, _) ->
-      same a1 a2 && same b1 b2 && same c1 c2
-  | If_then_else _, _ | _, If_then_else _ -> false
-  | Fsequence (a1, b1, _), Fsequence (a2, b2, _) ->
-      same a1 a2 && same b1 b2
-  | Fsequence _, _ | _, Fsequence _ -> false
-  | While (a1, b1, _), While (a2, b2, _) ->
-      same a1 a2 && same b1 b2
-  | While _, _ | _, While _ -> false
-  | For(v1, a1, b1, df1, c1, _), For(v2, a2, b2, df2, c2, _) ->
-      Variable.equal v1 v2 &&  same a1 a2 &&
-      same b1 b2 && df1 = df2 && same c1 c2
-  | For _, _ | _, For _ -> false
-  | Assign(v1, a1, _), Assign(v2, a2, _) ->
-      Variable.equal v1 v2 && same a1 a2
-  | Assign _, _ | _, Assign _ -> false
-  | Send(k1, a1, b1, cl1, _, _), Send(k2, a2, b2, cl2, _, _) ->
-      k1 = k2 && same a1 a2 && same b1 b2 && Misc.samelist same cl1 cl2
-  | Send _, _ | _, Send _ -> false
-  | Proved_unreachable, Proved_unreachable -> true
+  | Expr e1, Expr e2 -> same e1 e2
 
 and sameclosure (c1 : Flambda.function_declaration)
       (c2 : Flambda.function_declaration) =
-  Misc.samelist Variable.equal c1.params c2.params &&
-  same c1.body c2.body
+  Misc.samelist Variable.equal c1.params c2.params
+    && same c1.body c2.body
 
 and same_set_of_closures (c1 : Flambda.set_of_closures)
       (c2 : Flambda.set_of_closures) =
-  Variable.Map.equal sameclosure c1.function_decls.funs c2.function_decls.funs &&
-  Variable.Map.equal Variable.equal c1.free_vars c2.free_vars &&
-  Variable.Map.equal Variable.equal c1.specialised_args c2.specialised_args
+  Variable.Map.equal sameclosure c1.function_decls.funs c2.function_decls.funs
+    && Variable.Map.equal Variable.equal c1.free_vars c2.free_vars
+    && Variable.Map.equal Variable.equal c1.specialised_args
+        c2.specialised_args
 
 and same_project_closure (s1 : Flambda.project_closure)
       (s2 : Flambda.project_closure) =
@@ -169,17 +162,16 @@ and same_move_within_set_of_closures (m1 : Flambda.move_within_set_of_closures)
     && Closure_id.equal m1.start_from m2.start_from
     && Closure_id.equal m1.move_to m2.move_to
 
-and samebinding (v1, c1) (v2, c2) =
-  Variable.equal v1 v2 && same c1 c2
+and samebinding (v1, n1) (v2, n2) =
+  Variable.equal v1 v2 && same_named n1 n2
 
 and sameswitch (fs1 : Flambda.switch) (fs2 : Flambda.switch) =
   let samecase (n1, a1) (n2, a2) = n1 = n2 && same a1 a2 in
-  fs1.numconsts = fs2.numconsts &&
-  fs1.numblocks = fs2.numblocks &&
-  Misc.samelist samecase fs1.consts fs2.consts &&
-  Misc.samelist samecase fs1.blocks fs2.blocks &&
-  Misc.sameoption same fs1.failaction fs2.failaction
-*)
+  fs1.numconsts = fs2.numconsts
+    && fs1.numblocks = fs2.numblocks
+    && Misc.samelist samecase fs1.consts fs2.consts
+    && Misc.samelist samecase fs1.blocks fs2.blocks
+    && Misc.sameoption same fs1.failaction fs2.failaction
 
 let can_be_merged = same
 
@@ -190,22 +182,47 @@ let can_be_merged = same
 type sharing_key = unit
 let make_key _ = None
 
-let toplevel_substitution _sb tree = tree
-(* XXX
+(* CR mshinwell: change "toplevel" name, potentially misleading *)
+let toplevel_substitution sb tree =
   let sb v = try Variable.Map.find v sb with Not_found -> v in
   let aux (flam : Flambda.t) : Flambda.t =
     match flam with
-    | Var (id,e) -> Var (sb id,e)
-    | Assign (id,e,d) -> Assign (sb id,e,d)
-    | Set_of_closures (cl,d) ->
-      Set_of_closures ({cl with
-                 specialised_args =
-                   Variable.Map.map sb cl.specialised_args},
-                d)
-    | e -> e
+    | Var var -> Var (sb var)
+    | Assign (var, e) -> Assign (sb var, e)
+    | Apply { func; args; kind; dbg; } ->
+      Apply { func = sb func; args = List.map sb args; kind; dbg; }
+    | Let _ | Let_rec _ | Send _ | If_then_else _ | Switch _
+    | String_switch _ | Static_raise _ | Static_catch _ | Try_with _
+    | While _ | For _ | Proved_unreachable -> flam
   in
-  Flambdaiter.map_toplevel aux tree
-*)
+  let aux_named (named : Flambda.named) : Flambda.named =
+    match named with
+    | Symbol _ | Const _ | Expr _ -> named
+    | Set_of_closures set_of_closures ->
+      Set_of_closures {
+        set_of_closures with
+        specialised_args =
+          Variable.Map.map sb set_of_closures.specialised_args;
+      }
+    | Project_closure project_closure ->
+      Project_closure {
+        project_closure with
+        set_of_closures = sb project_closure.set_of_closures;
+      }
+    | Move_within_set_of_closures move_within_set_of_closures ->
+      Move_within_set_of_closures {
+        move_within_set_of_closures with
+        closure = sb move_within_set_of_closures.closure;
+      }
+    | Project_var project_var ->
+      Project_var {
+        project_var with
+        closure = sb project_var.closure;
+      }
+    | Prim (prim, args, dbg) ->
+      Prim (prim, List.map sb args, dbg)
+  in
+  Flambdaiter.map_toplevel aux aux_named tree
 
 let make_closure_declaration ~id ~body ~params : Flambda.t =
   let free_variables = Free_variables.calculate body in

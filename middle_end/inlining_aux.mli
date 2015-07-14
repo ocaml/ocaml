@@ -11,9 +11,6 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(** Environments and result structures used during inlining and
-    simplification. *)
-
 module Env : sig
   type t
 
@@ -48,17 +45,18 @@ module Env : sig
 
   val add_approx : Variable.t -> Simple_value_approx.t -> t -> t
 
+  (* Explicitly record the fact that this variable does not carry any
+     information.  Used for mutable variables *)
   val clear_approx : Variable.t -> t -> t
-  (* Explicitely record the fact that this variable does not carry any
-     informations. Used for mutable variables *)
 
   val enter_set_of_closures_declaration : Set_of_closures_id.t -> t -> t
 
   val inside_set_of_closures_declaration : Set_of_closures_id.t -> t -> bool
 
-  val at_toplevel : t -> bool
   (** Not inside a closure declaration.
-      Toplevel code is the one evaluated when the compilation unit is loaded *)
+      Toplevel code is the one evaluated when the compilation unit is
+      loaded *)
+  val at_toplevel : t -> bool
 
   val is_inside_branch : t -> bool
 
@@ -104,6 +102,8 @@ module Env : sig
   val inlining_stats_closure_stack
      : t
     -> Inlining_stats.Closure_stack.t
+
+  val print : Format.formatter -> t -> unit
 end
 
 module Result : sig
@@ -114,19 +114,16 @@ module Result : sig
   val approx : t -> Simple_value_approx.t
   val set_approx : t -> Simple_value_approx.t -> t
 
-  val use_var : t -> Variable.t -> t
-  val set_used_variables : t -> Variable.Set.t -> t
-  val used_variables : t -> Variable.Set.t
-
-  val exit_scope : t -> Variable.t -> t
-  val exit_scope_set : t -> Variable.Set.t -> t
-
   val use_staticfail : t -> Static_exception.t -> t
   val used_staticfail : t -> Static_exception.Set.t
 
   val exit_scope_catch : t -> Static_exception.t -> t
 
-  val map_benefit : t -> (Inlining_cost.Benefit.t -> Inlining_cost.Benefit.t) -> t
+  val map_benefit
+    : t
+    -> (Inlining_cost.Benefit.t -> Inlining_cost.Benefit.t)
+    -> t
+
   val benefit : t -> Inlining_cost.Benefit.t
   val clear_benefit : t -> t
 

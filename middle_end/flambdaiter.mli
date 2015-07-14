@@ -71,3 +71,8 @@ val map_toplevel
   -> (Flambda.named -> Flambda.named)
   -> Flambda.t
   -> Flambda.t
+
+val map_symbols
+   : Flambda.t
+  -> f:(Symbol.t -> Symbol.t)
+  -> Flambda.t

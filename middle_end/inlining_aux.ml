@@ -49,17 +49,25 @@ module Env = struct
   let local env =
     { env with
       env_approx = Variable.Map.empty;
-      freshening =
-        Freshening.empty_preserving_activation_state env.freshening;
+      freshening = Freshening.empty_preserving_activation_state env.freshening;
     }
 
   let inlining_level_up env =
     { env with inlining_level = env.inlining_level + 1 }
 
+  let print ppf t =
+    Format.fprintf ppf "Environment maps: %a@.Freshening: %a@."
+        Variable.Set.print (Variable.Map.keys t.env_approx)
+        Freshening.print t.freshening
+
   let find id env =
     try Variable.Map.find id env.env_approx
     with Not_found ->
-      Misc.fatal_errorf "Unbound variable %a@." Variable.print id
+      Misc.fatal_errorf "Inlining_env.find: Unbound variable %a@.%s@.\
+          Environment: %a@."
+        Variable.print id
+        (Printexc.raw_backtrace_to_string (Printexc.get_callstack max_int))
+        print env
 
   let find_list t vars =
     List.map (fun var -> find var t) vars
@@ -85,6 +93,7 @@ module Env = struct
     in
     { env with env_approx = Variable.Map.add var approx env.env_approx }
 
+  (* CR mshinwell: bad name! *)
   let clear_approx id env =
     let env_approx =
       Variable.Map.add id Simple_value_approx.value_unknown env.env_approx
@@ -152,7 +161,6 @@ module Result = struct
   type t =
     { approx : Simple_value_approx.t;
       globals : Simple_value_approx.t Int.Map.t;
-      used_variables : Variable.Set.t;
       used_staticfail : Static_exception.Set.t;
       inlining_threshold : Inlining_cost.inlining_threshold;
       benefit : Inlining_cost.Benefit.t;
@@ -161,7 +169,6 @@ module Result = struct
   let create () =
     { approx = Simple_value_approx.value_unknown;
       globals = Int.Map.empty;
-      used_variables = Variable.Set.empty;
       used_staticfail = Static_exception.Set.empty;
       inlining_threshold =
         (* CR pchambart: Add a warning if this is too big *)
@@ -171,20 +178,6 @@ module Result = struct
 
   let approx t = t.approx
   let set_approx t approx = { t with approx }
-
-  let use_var t var =
-    { t with used_variables = Variable.Set.add var t.used_variables }
-
-  let set_used_variables t used_variables =
-    { t with used_variables; }
-
-  let used_variables t = t.used_variables
-
-  let exit_scope t var =
-    { t with used_variables = Variable.Set.remove var t.used_variables }
-
-  let exit_scope_set t vars =
-    Variable.Set.fold (fun var t -> exit_scope t var) vars t
 
   let use_staticfail t i =
     { t with used_staticfail = Static_exception.Set.add i t.used_staticfail }

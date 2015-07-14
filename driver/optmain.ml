@@ -30,7 +30,9 @@ end
 let backend = (module Backend : Backend_intf.S)
 
 let process_interface_file ppf name =
-  Optcompile.interface ppf name (output_prefix name)
+  let opref = output_prefix name in
+  Optcompile.interface ppf name opref;
+  if !make_package then objfiles := (opref ^ ".cmi") :: !objfiles
 
 let process_implementation_file ppf name =
   let opref = output_prefix name in
@@ -43,11 +45,8 @@ let process_file ppf name =
   if Filename.check_suffix name ".ml"
   || Filename.check_suffix name ".mlt" then
     process_implementation_file ppf name
-  else if Filename.check_suffix name !Config.interface_suffix then begin
-    let opref = output_prefix name in
-    Optcompile.interface ppf name opref;
-    if !make_package then objfiles := (opref ^ ".cmi") :: !objfiles
-  end
+  else if Filename.check_suffix name !Config.interface_suffix then
+    process_interface_file ppf name
   else if Filename.check_suffix name ".cmx" then
     objfiles := name :: !objfiles
   else if Filename.check_suffix name ".cmxa" then begin
@@ -113,6 +112,7 @@ module Options = Main_args.Make_optcomp_options (struct
   let _inline_branch_cost n = inline_branch_cost := n
   let _intf = intf
   let _intf_suffix s = Config.interface_suffix := s
+  let _keep_docs = set keep_docs
   let _keep_locs = set keep_locs
   let _labels = clear classic
   let _linkall = set link_everything
@@ -181,7 +181,7 @@ module Options = Main_args.Make_optcomp_options (struct
 end);;
 
 let main () =
-  Timings.start All;
+  Timings.start Timings.All;
   native_code := true;
   let ppf = Format.err_formatter in
   try
@@ -235,7 +235,7 @@ let main () =
       Asmlink.link ppf (get_objfiles ()) target;
       Warnings.check_fatal ();
     end;
-    Timings.stop All;
+    Timings.stop Timings.All;
     if !Clflags.print_timings then Timings.print Format.std_formatter;
     exit 0
   with x ->

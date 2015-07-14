@@ -153,23 +153,26 @@ let rec abbreviate_class_type path params cty =
   | Cty_arrow (l, ty, cty) ->
       Cty_arrow (l, ty, abbreviate_class_type path params cty)
 
+(* Check that all type variables are generalizable *)
+(* Use Env.empty to prevent expansion of recursively defined object types;
+   cf. typing-poly/poly.ml *)
 let rec closed_class_type =
   function
     Cty_constr (_, params, _) ->
-      List.for_all Ctype.closed_schema params
+      List.for_all (Ctype.closed_schema Env.empty) params
   | Cty_signature sign ->
-      Ctype.closed_schema sign.csig_self
+      Ctype.closed_schema Env.empty sign.csig_self
         &&
-      Vars.fold (fun _ (_, _, ty) cc -> Ctype.closed_schema ty && cc)
+      Vars.fold (fun _ (_, _, ty) cc -> Ctype.closed_schema Env.empty ty && cc)
         sign.csig_vars
         true
   | Cty_arrow (_, ty, cty) ->
-      Ctype.closed_schema ty
+      Ctype.closed_schema Env.empty ty
         &&
       closed_class_type cty
 
 let closed_class cty =
-  List.for_all Ctype.closed_schema cty.cty_params
+  List.for_all (Ctype.closed_schema Env.empty) cty.cty_params
     &&
   closed_class_type cty.cty_type
 
@@ -676,6 +679,8 @@ let rec class_field self_loc cl_num self_type meths vars
 
       let field =
         lazy begin
+          (* Read the generalized type *)
+          let (_, ty) = Meths.find lab.txt !meths in
           let meth_type =
             Btype.newgenty (Tarrow(Nolabel, self_type, ty, Cok)) in
           Ctype.raise_nongen_level ();
@@ -815,12 +820,16 @@ and class_structure cl_num final val_env met_env loc
   end;
 
   (* Typing of method bodies *)
-  if !Clflags.principal then
-    List.iter (fun (_,_,ty) -> Ctype.generalize_spine ty) methods;
+  (* if !Clflags.principal then *) begin
+    let ms = !meths in
+    (* Generalize the spine of methods accessed through self *)
+    Meths.iter (fun _ (_,ty) -> Ctype.generalize_spine ty) ms;
+    meths :=
+      Meths.map (fun (id,ty) -> (id, Ctype.generic_instance val_env ty)) ms;
+    (* But keep levels correct on the type of self *)
+    Meths.iter (fun _ (_,ty) -> Ctype.unify val_env ty (Ctype.newvar ())) ms
+  end;
   let fields = List.map Lazy.force (List.rev fields) in
-  if !Clflags.principal then
-    List.iter (fun (_,_,ty) -> Ctype.unify val_env ty (Ctype.newvar ()))
-      methods;
   let meths = Meths.map (function (id, ty) -> id) !meths in
 
   (* Check for private methods made public *)
@@ -948,7 +957,7 @@ and class_expr cl_num val_env met_env scl =
         | _ -> true
       in
       let partial =
-        Parmatch.check_partial pat.pat_loc
+        Typecore.check_partial val_env pat.pat_type pat.pat_loc
           [{c_lhs=pat;
             c_guard=None;
             c_rhs = (* Dummy expression *)
@@ -995,7 +1004,11 @@ and class_expr cl_num val_env met_env scl =
         List.for_all (fun (l,_) -> l = Nolabel) sargs &&
         List.exists (fun l -> l <> Nolabel) labels &&
         begin
-          Location.prerr_warning cl.cl_loc Warnings.Labels_omitted;
+          Location.prerr_warning
+	    cl.cl_loc
+	    (Warnings.Labels_omitted
+	       (List.map Printtyp.string_of_label
+			 (List.filter ((<>) Nolabel) labels)));
           true
         end
       in

@@ -845,32 +845,33 @@ let rec path_of_module mexp =
 
 (* Check that all core type schemes in a structure are closed *)
 
-let rec closed_modtype = function
+let rec closed_modtype env = function
     Mty_ident p -> true
   | Mty_alias p -> true
-  | Mty_signature sg -> List.for_all closed_signature_item sg
-  | Mty_functor(id, param, body) -> closed_modtype body
+  | Mty_signature sg ->
+      let env = Env.add_signature sg env in
+      List.for_all (closed_signature_item env) sg
+  | Mty_functor(id, param, body) ->
+      let env = Env.add_module ~arg:true id (Btype.default_mty param) env in
+      closed_modtype env body
 
-and closed_signature_item = function
-    Sig_value(id, desc) -> Ctype.closed_schema desc.val_type
-  | Sig_module(id, md, _) -> closed_modtype md.md_type
+and closed_signature_item env = function
+    Sig_value(id, desc) -> Ctype.closed_schema env desc.val_type
+  | Sig_module(id, md, _) -> closed_modtype env md.md_type
   | _ -> true
 
-let check_nongen_scheme env str =
-  match str.str_desc with
-    Tstr_value(rec_flag, pat_exp_list) ->
-      List.iter
-        (fun {vb_expr=exp} ->
-          if not (Ctype.closed_schema exp.exp_type) then
-            raise(Error(exp.exp_loc, env, Non_generalizable exp.exp_type)))
-        pat_exp_list
-  | Tstr_module {mb_expr=md;_} ->
-      if not (closed_modtype md.mod_type) then
-        raise(Error(md.mod_loc, env, Non_generalizable_module md.mod_type))
+let check_nongen_scheme env sig_item =
+  match sig_item with
+    Sig_value(_id, vd) ->
+      if not (Ctype.closed_schema env vd.val_type) then
+        raise (Error (vd.val_loc, env, Non_generalizable vd.val_type))
+  | Sig_module (_id, md, _) ->
+      if not (closed_modtype env md.md_type) then
+        raise(Error(md.md_loc, env, Non_generalizable_module md.md_type))
   | _ -> ()
 
-let check_nongen_schemes env str =
-  List.iter (check_nongen_scheme env) str
+let check_nongen_schemes env sg =
+  List.iter (check_nongen_scheme env) sg
 
 (* Helpers for typing recursive modules *)
 
@@ -1489,7 +1490,7 @@ let type_module_type_of env smod =
   (* PR#6307: expand aliases at root and submodules *)
   let mty = Mtype.remove_aliases env mty in
   (* PR#5036: must not contain non-generalized type variables *)
-  if not (closed_modtype mty) then
+  if not (closed_modtype env mty) then
     raise(Error(smod.pmod_loc, env, Non_generalizable_module mty));
   tmty, mty
 
@@ -1590,7 +1591,7 @@ let type_implementation sourcefile outputprefix modulename initial_env ast =
         (Cmt_format.Implementation str) (Some sourcefile) initial_env None;
       (str, coercion)
     end else begin
-      check_nongen_schemes finalenv str.str_items;
+      check_nongen_schemes finalenv sg;
       normalize_signature finalenv simple_sg;
       let coercion =
         Includemod.compunit initial_env sourcefile sg

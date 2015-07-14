@@ -39,9 +39,9 @@ let rec lift_strings acc (lam : Lambda.lambda)
     let acc, lam = lift_strings acc lam in
     let acc, body = lift_strings acc body in
     acc, Llet (str, id, lam, body)
-  | Lfunction (kind, params, body) ->
+  | Lfunction { kind; params; body; } ->
     let acc, body = lift_strings acc body in
-    acc, Lfunction (kind, params, body)
+    acc, Lfunction { kind; params; body; }
   | Lapply (funct, args, loc) ->
     let acc, funct = lift_strings acc funct in
     let acc, args = lift_strings_list acc args in

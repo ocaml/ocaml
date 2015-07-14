@@ -144,156 +144,17 @@ let int_setter ppf name option s =
       (Warnings.Bad_env_variable
          ("OCAMLPARAM", Printf.sprintf "non-integer parameter for \"%s\"" name))
 
+let float_setter ppf name option s =
+  try
+    option := float_of_string s
+  with _ ->
+    Location.print_warning Location.none ppf
+      (Warnings.Bad_env_variable
+         ("OCAMLPARAM", Printf.sprintf "non-float parameter for \"%s\"" name))
+
 (* 'can-discard=' specifies which arguments can be discarded without warning
    because they are not understood by some versions of OCaml. *)
 let can_discard = ref []
-
-let read_one_param ppf position name v =
-  let set name options s =  setter ppf (fun b -> b) name options s in
-  let clear name options s = setter ppf (fun b -> not b) name options s in
-  match name with
-  | "g" -> set "g" [ Clflags.debug ] v
-  | "p" -> set "p" [ Clflags.gprofile ] v
-  | "bin-annot" -> set "bin-annot" [ Clflags.binary_annotations ] v
-  | "annot" -> set "annot" [ Clflags.annotations ] v
-  | "absname" -> set "absname" [ Location.absname ] v
-  | "compat-32" -> set "compat-32" [ bytecode_compatible_32 ] v
-  | "noassert" -> set "noassert" [ noassert ] v
-  | "noautolink" -> set "noautolink" [ no_auto_link ] v
-  | "nostdlib" -> set "nostdlib" [ no_std_include ] v
-  | "linkall" -> set "linkall" [ link_everything ] v
-  | "nolabels" -> set "nolabels" [ classic ] v
-  | "principal" -> set "principal"  [ principal ] v
-  | "rectypes" -> set "rectypes" [ recursive_types ] v
-  | "safe-string" -> clear "safe-string" [ unsafe_string ] v
-  | "strict-sequence" -> set "strict-sequence" [ strict_sequence ] v
-  | "strict-formats" -> set "strict-formats" [ strict_formats ] v
-  | "thread" -> set "thread" [ use_threads ] v
-  | "unsafe" -> set "unsafe" [ fast ] v
-  | "verbose" -> set "verbose" [ verbose ] v
-  | "nopervasives" -> set "nopervasives" [ nopervasives ] v
-  | "slash" -> set "slash" [ force_slash ] v (* for ocamldep *)
-  | "keep-locs" -> set "keep-locs" [ Clflags.keep_locs ] v
-
-  | "compact" -> clear "compact" [ optimize_for_speed ] v
-  | "no-app-funct" -> clear "no-app-funct" [ applicative_functors ] v
-  | "nodynlink" -> clear "nodynlink" [ dlcode ] v
-  | "short-paths" -> clear "short-paths" [ real_paths ] v
-  | "trans-mod" -> set "trans-mod" [ transparent_modules ] v
-
-  | "pp" -> preprocessor := Some v
-  | "runtime-variant" -> runtime_variant := v
-  | "cc" -> c_compiler := Some v
-
-  (* assembly sources *)
-  |  "s" ->
-      set "s" [ Clflags.keep_asm_file ; Clflags.keep_startup_file ] v
-  |  "S" -> set "S" [ Clflags.keep_asm_file ] v
-  |  "dstartup" -> set "dstartup" [ Clflags.keep_startup_file ] v
-
-  (* warn-errors *)
-  | "we" | "warn-error" -> Warnings.parse_options true v
-  (* warnings *)
-  |  "w"  ->               Warnings.parse_options false v
-  (* warn-errors *)
-  | "wwe" ->               Warnings.parse_options false v
-
-  (* inlining *)
-  | "inline" -> begin try
-        inline_threshold := 8 * int_of_string v
-      with _ ->
-        Location.print_warning Location.none ppf
-          (Warnings.Bad_env_variable ("OCAMLPARAM",
-                                      "non-integer parameter for \"inline\""))
-    end
-
-  | "rounds" -> int_setter ppf "rounds" simplify_rounds v
-  | "unroll" -> int_setter ppf "unroll" unroll v
-  | "inline-call-cost" -> int_setter ppf "inline-call-cost" inline_call_cost v
-  | "inline-alloc-cost" -> int_setter ppf "inline-alloc-cost" inline_alloc_cost v
-  | "inline-prim-cost" -> int_setter ppf "inline-prim-cost" inline_prim_cost v
-  | "inline-branch-cost" -> int_setter ppf "inline-branch-cost" inline_branch_cost v
-
-  | "functor-heuristics" ->
-      if !native_code then
-        set "functor-heuristics" [ functor_heuristics ] v
-
-  | "inlining-stats" ->
-      if !native_code then
-        set "inlining-stats" [ inlining_stats ] v
-
-  | "intf-suffix" -> Config.interface_suffix := v
-
-  | "I" -> begin
-      match position with
-      | Before_args -> first_include_dirs := v :: !first_include_dirs
-      | Before_link | Before_compile _ ->
-          last_include_dirs := v :: !last_include_dirs
-    end
-
-  | "cclib" ->
-      begin
-        match position with
-        | Before_compile _ -> ()
-        | Before_link | Before_args ->
-            ccobjs := Misc.rev_split_words v @ !ccobjs
-      end
-
-  | "ccopts" ->
-      begin
-        match position with
-        | Before_link | Before_compile _ ->
-            last_ccopts := v :: !last_ccopts
-        | Before_args ->
-            first_ccopts := v :: !first_ccopts
-      end
-
-  | "ppx" ->
-      begin
-        match position with
-        | Before_link | Before_compile _ ->
-            last_ppx := v :: !last_ppx
-        | Before_args ->
-            first_ppx := v :: !first_ppx
-      end
-
-
-  | "cmo" | "cma" ->
-      if not !native_code then
-        begin
-          match position with
-          | Before_link | Before_compile _ ->
-              last_objfiles := v ::! last_objfiles
-          | Before_args ->
-              first_objfiles := v :: !first_objfiles
-        end
-
-  | "cmx" | "cmxa" ->
-      if !native_code then
-        begin
-          match position with
-          | Before_link | Before_compile _ ->
-              last_objfiles := v ::! last_objfiles
-          | Before_args ->
-              first_objfiles := v :: !first_objfiles
-        end
-
-  | "pic" ->
-      if !native_code then
-        set "pic" [ pic_code ] v
-
-  | "can-discard" ->
-      can_discard := v ::!can_discard
-
-  | "timings" -> set "timings" [ print_timings ] v
-
-  | _ ->
-      if not (List.mem name !can_discard) then begin
-        can_discard := name :: !can_discard;
-        Printf.eprintf
-          "Warning: discarding value of variable %S in OCAMLPARAM\n%!"
-          name
-      end
 
 let read_OCAMLPARAM ppf position =
   try
@@ -306,103 +167,161 @@ let read_OCAMLPARAM ppf position =
            (Warnings.Bad_env_variable ("OCAMLPARAM", s));
          [],[]
     in
-    List.iter (fun (name, v) -> read_one_param ppf position name v)
-      (match position with
+    let set name options s =  setter ppf (fun b -> b) name options s in
+    let clear name options s = setter ppf (fun b -> not b) name options s in
+    List.iter (fun (name, v) ->
+      match name with
+      | "g" -> set "g" [ Clflags.debug ] v
+      | "p" -> set "p" [ Clflags.gprofile ] v
+      | "bin-annot" -> set "bin-annot" [ Clflags.binary_annotations ] v
+      | "annot" -> set "annot" [ Clflags.annotations ] v
+      | "absname" -> set "absname" [ Location.absname ] v
+      | "compat-32" -> set "compat-32" [ bytecode_compatible_32 ] v
+      | "noassert" -> set "noassert" [ noassert ] v
+      | "noautolink" -> set "noautolink" [ no_auto_link ] v
+      | "nostdlib" -> set "nostdlib" [ no_std_include ] v
+      | "linkall" -> set "linkall" [ link_everything ] v
+      | "nolabels" -> set "nolabels" [ classic ] v
+      | "principal" -> set "principal"  [ principal ] v
+      | "rectypes" -> set "rectypes" [ recursive_types ] v
+      | "safe-string" -> clear "safe-string" [ unsafe_string ] v
+      | "strict-sequence" -> set "strict-sequence" [ strict_sequence ] v
+      | "strict-formats" -> set "strict-formats" [ strict_formats ] v
+      | "thread" -> set "thread" [ use_threads ] v
+      | "unsafe" -> set "unsafe" [ fast ] v
+      | "verbose" -> set "verbose" [ verbose ] v
+      | "nopervasives" -> set "nopervasives" [ nopervasives ] v
+      | "slash" -> set "slash" [ force_slash ] v (* for ocamldep *)
+      | "keep-docs" -> set "keep-docs" [ Clflags.keep_docs ] v
+      | "keep-locs" -> set "keep-locs" [ Clflags.keep_locs ] v
+
+      | "compact" -> clear "compact" [ optimize_for_speed ] v
+      | "no-app-funct" -> clear "no-app-funct" [ applicative_functors ] v
+      | "nodynlink" -> clear "nodynlink" [ dlcode ] v
+      | "short-paths" -> clear "short-paths" [ real_paths ] v
+      | "trans-mod" -> set "trans-mod" [ transparent_modules ] v
+
+      | "pp" -> preprocessor := Some v
+      | "runtime-variant" -> runtime_variant := v
+      | "cc" -> c_compiler := Some v
+
+      (* assembly sources *)
+      |  "s" ->
+        set "s" [ Clflags.keep_asm_file ; Clflags.keep_startup_file ] v
+      |  "S" -> set "S" [ Clflags.keep_asm_file ] v
+      |  "dstartup" -> set "dstartup" [ Clflags.keep_startup_file ] v
+
+      (* warn-errors *)
+      | "we" | "warn-error" -> Warnings.parse_options true v
+      (* warnings *)
+      |  "w"  ->               Warnings.parse_options false v
+      (* warn-errors *)
+      | "wwe" ->               Warnings.parse_options false v
+
+      (* inlining *)
+      | "inline" -> begin try
+            inline_threshold := 8 * int_of_string v
+          with _ ->
+            Location.print_warning Location.none ppf
+              (Warnings.Bad_env_variable ("OCAMLPARAM",
+                                          "non-integer parameter for \"inline\""))
+        end
+
+      | "rounds" -> int_setter ppf "rounds" simplify_rounds v
+      | "unroll" -> int_setter ppf "unroll" unroll v
+      | "inline-call-cost" -> int_setter ppf "inline-call-cost" inline_call_cost v
+      | "inline-alloc-cost" -> int_setter ppf "inline-alloc-cost" inline_alloc_cost v
+      | "inline-prim-cost" -> int_setter ppf "inline-prim-cost" inline_prim_cost v
+      | "inline-branch-cost" -> int_setter ppf "inline-branch-cost" inline_branch_cost v
+
+      | "functor-heuristics" ->
+          if !native_code then
+            set "functor-heuristics" [ functor_heuristics ] v
+
+      | "inlining-stats" ->
+          if !native_code then
+            set "inlining-stats" [ inlining_stats ] v
+
+      | "intf-suffix" -> Config.interface_suffix := v
+
+      | "I" -> begin
+          match position with
+          | Before_args -> first_include_dirs := v :: !first_include_dirs
+          | Before_link | Before_compile _ ->
+            last_include_dirs := v :: !last_include_dirs
+        end
+
+      | "cclib" ->
+        begin
+          match position with
+          | Before_compile _ -> ()
+          | Before_link | Before_args ->
+            ccobjs := Misc.rev_split_words v @ !ccobjs
+        end
+
+      | "ccopts" ->
+        begin
+          match position with
+          | Before_link | Before_compile _ ->
+            last_ccopts := v :: !last_ccopts
+          | Before_args ->
+            first_ccopts := v :: !first_ccopts
+        end
+
+      | "ppx" ->
+        begin
+          match position with
+          | Before_link | Before_compile _ ->
+            last_ppx := v :: !last_ppx
+          | Before_args ->
+            first_ppx := v :: !first_ppx
+        end
+
+
+      | "cmo" | "cma" ->
+        if not !native_code then
+        begin
+          match position with
+          | Before_link | Before_compile _ ->
+            last_objfiles := v ::! last_objfiles
+          | Before_args ->
+            first_objfiles := v :: !first_objfiles
+        end
+
+      | "cmx" | "cmxa" ->
+        if !native_code then
+        begin
+          match position with
+          | Before_link | Before_compile _ ->
+            last_objfiles := v ::! last_objfiles
+          | Before_args ->
+            first_objfiles := v :: !first_objfiles
+        end
+
+      | "pic" ->
+        if !native_code then
+          set "pic" [ pic_code ] v
+
+      | "can-discard" ->
+        can_discard := v ::!can_discard
+
+      | _ ->
+        if not (List.mem name !can_discard) then begin
+          can_discard := name :: !can_discard;
+          Printf.eprintf
+            "Warning: discarding value of variable %S in OCAMLPARAM\n%!"
+            name
+        end
+    ) (match position with
         Before_args -> before
       | Before_compile _ | Before_link -> after)
   with Not_found -> ()
-
-(* OCAMLPARAM passed as file *)
-
-type pattern =
-  | Filename of string
-  | Any
-
-type file_option = {
-  pattern : pattern;
-  name : string;
-  value : string;
-}
-
-let scan_line ic =
-  Scanf.bscanf ic "%[0-9a-zA-Z_.*] : %[a-zA-Z_-] = %s "
-    (fun pattern name value ->
-       let pattern =
-         match pattern with
-         | "*" -> Any
-         | _ -> Filename pattern
-       in
-       { pattern; name; value })
-
-let load_config ppf filename =
-  match open_in_bin filename with
-  | exception e ->
-      Location.print_error ppf (Location.in_file filename);
-      Format.fprintf ppf "Cannot open file %s@." (Printexc.to_string e);
-      raise Exit
-  | ic ->
-      let sic = Scanf.Scanning.from_channel ic in
-      let rec read line_number line_start acc =
-        match scan_line sic with
-        | exception End_of_file ->
-            close_in ic;
-            acc
-        | exception Scanf.Scan_failure error ->
-            let position = Lexing.{
-                pos_fname = filename;
-                pos_lnum = line_number;
-                pos_bol = line_start;
-                pos_cnum = pos_in ic;
-              }
-            in
-            let loc = Location.{
-                loc_start = position;
-                loc_end = position;
-                loc_ghost = false;
-              }
-            in
-            Location.print_error ppf loc;
-            Format.fprintf ppf "Configuration file error %s@." error;
-            close_in ic;
-            raise Exit
-        | line ->
-            read (line_number + 1) (pos_in ic) (line :: acc)
-      in
-      let lines = read 0 0 [] in
-      lines
-
-let matching_filename filename { pattern } =
-  match pattern with
-  | Any -> true
-  | Filename pattern ->
-      let filename = String.lowercase_ascii filename in
-      let pattern = String.lowercase_ascii pattern in
-      filename = pattern
-
-let apply_config_file ppf position =
-  let config_file = Filename.concat Config.standard_library "compiler_configuration" in
-  let config =
-    if Sys.file_exists config_file then
-      load_config ppf config_file
-    else
-      []
-  in
-  let config =
-    match position with
-    | Before_compile filename ->
-        List.filter (matching_filename filename) config
-    | Before_args | Before_link ->
-        List.filter (fun { pattern } -> pattern = Any) config
-  in
-  List.iter (fun { name; value } -> read_one_param ppf position name value)
-    config
 
 let readenv ppf position =
   last_include_dirs := [];
   last_ccopts := [];
   last_ppx := [];
   last_objfiles := [];
-  apply_config_file ppf position;
   read_OCAMLPARAM ppf position;
   all_ccopts := !last_ccopts @ !first_ccopts;
   all_ppx := !last_ppx @ !first_ppx

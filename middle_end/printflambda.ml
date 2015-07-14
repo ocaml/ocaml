@@ -146,7 +146,7 @@ and lam_named ppf (named : Flambda.named) =
 and print_function_declaration ppf var (f : Flambda.function_declaration) =
   let idents ppf =
     List.iter (fprintf ppf "@ %a" Variable.print) in
-  fprintf ppf "@ (fun %a@[<2>%a@]@ @[<2>%a@])"
+  fprintf ppf "@ (%a@ =@ fun@ @[<2>%a@]@ -> @[<2>%a@])"
     Variable.print var idents f.params lam f.body
 
 and print_set_of_closures ppf (set_of_closures : Flambda.set_of_closures) =
@@ -156,7 +156,7 @@ and print_set_of_closures ppf (set_of_closures : Flambda.set_of_closures) =
       Variable.Map.iter (print_function_declaration ppf)
     in
     let vars ppf =
-      Variable.Map.iter (fun id v -> fprintf ppf "@ %a = %a"
+      Variable.Map.iter (fun id v -> fprintf ppf "@ %a -rename-> %a"
                       Variable.print id Variable.print v) in
     let spec ppf spec_args =
       if not (Variable.Map.is_empty spec_args)
@@ -167,7 +167,7 @@ and print_set_of_closures ppf (set_of_closures : Flambda.set_of_closures) =
           spec_args
       end
     in
-    fprintf ppf "@[<2>(set_of_closures%a %a%a)@]" funs function_decls.funs
+    fprintf ppf "@[<2>(set_of_closures%a fv={%a} sa={%a})@]" funs function_decls.funs
       vars free_vars spec specialised_args
 
 and print_project_closure ppf (project_closure : Flambda.project_closure) =
@@ -208,12 +208,9 @@ and const ppf (c : Flambda.const) =
       fprintf ppf "@[<1>[|@[%s%a@]|]@]" f1 floats fl
 
 let function_declarations ppf (fd : Flambda.function_declarations) =
-  let idents ppf =
-    List.iter (fprintf ppf "@ %a" Variable.print) in
   let funs ppf =
-    Variable.Map.iter (fun var (f : Flambda.function_declaration) ->
-        fprintf ppf "@ (fun@ %a@[<2>%a@]@ @[<2>%a@])"
-          Variable.print var idents f.params lam f.body) in
+    Variable.Map.iter (print_function_declaration ppf)
+  in
   fprintf ppf "@[<2>(%a)@]" funs fd.funs
 
 let flambda ppf flam =
@@ -224,3 +221,4 @@ let move_within_set_of_closures = print_move_within_set_of_closures
 let project_var = print_project_var
 let function_declaration ppf (var, decl) =
   print_function_declaration ppf var decl
+let named = lam_named

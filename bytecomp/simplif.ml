@@ -24,9 +24,9 @@ let rec eliminate_ref id = function
     Lvar v as lam ->
       if Ident.same v id then raise Real_reference else lam
   | Lconst cst as lam -> lam
-  | Lapply(e1, el, loc) ->
-      Lapply(eliminate_ref id e1, List.map (eliminate_ref id) el, loc)
-  | Lfunction(kind, params, body) as lam ->
+  | Lapply(e1, el, info) ->
+      Lapply(eliminate_ref id e1, List.map (eliminate_ref id) el, info)
+  | Lfunction{kind; params; body} as lam ->
       if IdentSet.mem id (free_variables lam)
       then raise Real_reference
       else lam
@@ -107,7 +107,7 @@ let simplify_exits lam =
   let rec count = function
   | (Lvar _| Lconst _) -> ()
   | Lapply(l1, ll, _) -> count l1; List.iter count ll
-  | Lfunction(kind, params, l) -> count l
+  | Lfunction{kind; params; body = l} -> count l
   | Llet(str, v, l1, l2) ->
       count l2; count l1
   | Lletrec(bindings, body) ->
@@ -193,8 +193,9 @@ let simplify_exits lam =
 
   let rec simplif = function
   | (Lvar _|Lconst _) as l -> l
-  | Lapply(l1, ll, loc) -> Lapply(simplif l1, List.map simplif ll, loc)
-  | Lfunction(kind, params, l) -> Lfunction(kind, params, simplif l)
+  | Lapply(l1, ll, info) -> Lapply(simplif l1, List.map simplif ll, info)
+  | Lfunction{kind; params; body = l} ->
+     Lfunction{kind; params; body = simplif l}
   | Llet(kind, v, l1, l2) -> Llet(kind, v, simplif l1, simplif l2)
   | Lletrec(bindings, body) ->
       Lletrec(List.map (fun (v, l) -> (v, simplif l)) bindings, simplif body)
@@ -202,16 +203,16 @@ let simplify_exits lam =
     let ll = List.map simplif ll in
     match p, ll with
         (* Simplify %revapply, for n-ary functions with n > 1 *)
-      | Prevapply loc, [x; Lapply(f, args, _)]
-      | Prevapply loc, [x; Levent (Lapply(f, args, _),_)] ->
-        Lapply(f, args@[x], loc)
-      | Prevapply loc, [x; f] -> Lapply(f, [x], loc)
+      | Prevapply loc, [x; Lapply(f, args, info)]
+      | Prevapply loc, [x; Levent (Lapply(f, args, info),_)] ->
+        Lapply(f, args@[x], {info with apply_loc=loc})
+      | Prevapply loc, [x; f] -> Lapply(f, [x], mk_apply_info loc)
 
         (* Simplify %apply, for n-ary functions with n > 1 *)
-      | Pdirapply loc, [Lapply(f, args, _); x]
-      | Pdirapply loc, [Levent (Lapply(f, args, _),_); x] ->
-        Lapply(f, args@[x], loc)
-      | Pdirapply loc, [f; x] -> Lapply(f, [x], loc)
+      | Pdirapply loc, [Lapply(f, args, info); x]
+      | Pdirapply loc, [Levent (Lapply(f, args, info),_); x] ->
+        Lapply(f, args@[x], {info with apply_loc=loc})
+      | Pdirapply loc, [f; x] -> Lapply(f, [x], mk_apply_info loc)
 
       | _ -> Lprim(p, ll)
      end
@@ -338,15 +339,15 @@ let simplify_lets lam =
   | Lconst cst -> ()
   | Lvar v ->
       use_var bv v 1
-  | Lapply(Lfunction(Curried, params, body), args, _)
+  | Lapply(Lfunction{kind = Curried; params; body}, args, _)
     when optimize && List.length params = List.length args ->
       count bv (beta_reduce params body args)
-  | Lapply(Lfunction(Tupled, params, body), [Lprim(Pmakeblock _, args)], _)
+  | Lapply(Lfunction{kind = Tupled; params; body}, [Lprim(Pmakeblock _, args)], _)
     when optimize && List.length params = List.length args ->
       count bv (beta_reduce params body args)
   | Lapply(l1, ll, _) ->
       count bv l1; List.iter (count bv) ll
-  | Lfunction(kind, params, l) ->
+  | Lfunction{kind; params; body = l} ->
       count Tbl.empty l
   | Llet(str, v, Lvar w, l2) when optimize ->
       (* v will be replaced by w in l2, so each occurrence of v in l2
@@ -430,14 +431,22 @@ let simplify_lets lam =
         l
       end
   | Lconst cst as l -> l
-  | Lapply(Lfunction(Curried, params, body), args, _)
+  | Lapply(Lfunction{kind = Curried; params; body}, args, _)
     when optimize && List.length params = List.length args ->
       simplif (beta_reduce params body args)
-  | Lapply(Lfunction(Tupled, params, body), [Lprim(Pmakeblock _, args)], _)
+  | Lapply(Lfunction{kind = Tupled; params; body},
+           [Lprim(Pmakeblock _, args)], _)
     when optimize && List.length params = List.length args ->
       simplif (beta_reduce params body args)
   | Lapply(l1, ll, loc) -> Lapply(simplif l1, List.map simplif ll, loc)
-  | Lfunction(kind, params, l) -> Lfunction(kind, params, simplif l)
+  | Lfunction{kind; params; body = l} ->
+      begin match simplif l with
+        Lfunction{kind=Curried; params=params'; body}
+        when kind = Curried && optimize ->
+          Lfunction{kind; params = params @ params'; body}
+      | body ->
+          Lfunction{kind; params; body}
+      end
   | Llet(str, v, Lvar w, l2) when optimize ->
       Hashtbl.add subst v (simplif (Lvar w));
       simplif l2
@@ -516,10 +525,15 @@ let rec emit_tail_infos is_tail lambda =
   match lambda with
   | Lvar _ -> ()
   | Lconst _ -> ()
-  | Lapply (func, l, loc) ->
+  | Lapply (func, l, ({apply_loc=loc} as info)) ->
+      if info.apply_should_be_tailcall
+      && not is_tail
+      && Warnings.is_active Warnings.Expect_tailcall
+        then Location.prerr_warning loc Warnings.Expect_tailcall;
       list_emit_tail_infos false l;
-      Stypes.record (Stypes.An_call (loc, call_kind l))
-  | Lfunction (_, _, lam) ->
+      if !Clflags.annotations then
+        Stypes.record (Stypes.An_call (loc, call_kind l));
+  | Lfunction {body = lam} ->
       emit_tail_infos true lam
   | Llet (_, _, lam, body) ->
       emit_tail_infos false lam;
@@ -574,7 +588,8 @@ let rec emit_tail_infos is_tail lambda =
       emit_tail_infos false meth;
       emit_tail_infos false obj;
       list_emit_tail_infos false args;
-      Stypes.record (Stypes.An_call (loc, call_kind (obj :: args)))
+      if !Clflags.annotations then
+        Stypes.record (Stypes.An_call (loc, call_kind (obj :: args)));
   | Levent (lam, _) ->
       emit_tail_infos is_tail lam
   | Lifused (_, lam) ->
@@ -593,8 +608,8 @@ let rec map f lam =
     | Lconst cst -> lam
     | Lapply(e1, el, loc) ->
         Lapply(map f e1, List.map (map f) el, loc)
-    | Lfunction(kind, params, body) ->
-        Lfunction(kind, params, map f body)
+    | Lfunction{kind; params; body} ->
+        Lfunction{kind; params; body = map f body}
     | Llet(str, v, e1, e2) ->
         Llet(str, v, map f e1, map f e2)
     | Lletrec(idel, e2) ->
@@ -654,6 +669,9 @@ let stubify body =
                prim_native_name = "*stub*"; prim_native_float = false} in
   Lprim(Pccall stub_prim, [body])
 
+(* CR mshinwell: check all this is really new.  It should probably move
+   into middle_end/ *)
+
 (* Split a function with default parameters into a wrapper and an
    inner function.  The wrapper fills in missing optional parameters
    with their default value and tail-calls the inner function.  The
@@ -680,8 +698,9 @@ let split_default_wrapper fun_id kind params body =
         let inner_id = Ident.create (Ident.name fun_id ^ "_inner") in
         let map_param p = try List.assoc p map with Not_found -> p in
         let args = List.map (fun p -> Lvar (map_param p)) params in
-        let wrapper_body = Lapply (Lvar inner_id, args, Location.none) in
-
+        let wrapper_body =
+          Lapply (Lvar inner_id, args, Lambda.mk_apply_info Location.none)
+        in
         let inner_params = List.map map_param params in
         let new_ids = List.map Ident.rename inner_params in
         let subst = List.fold_left2
@@ -690,19 +709,19 @@ let split_default_wrapper fun_id kind params body =
             Ident.empty inner_params new_ids
         in
         let body = Lambda.subst_lambda subst body in
-        let inner_fun = Lfunction(Curried, new_ids, body) in
+        let inner_fun = Lfunction { kind = Curried; params = new_ids; body } in
         (wrapper_body, (inner_id, inner_fun))
   in
   try
     let wrapper_body, inner = aux [] body in
-    [(fun_id, Lfunction(kind, params, stubify wrapper_body)); inner]
+    [(fun_id, Lfunction{kind; params; body = stubify wrapper_body}); inner]
   with Exit ->
-    [(fun_id, Lfunction(kind, params, body))]
+    [(fun_id, Lfunction{kind; params; body})]
 
 let simplify_default_wrapper lam =
   let f = function
     | Llet(( Strict | Alias | StrictOpt), id,
-           Lfunction(kind, params, fbody), body) ->
+           Lfunction{kind; params; body = fbody}, body) ->
         begin match split_default_wrapper id kind params fbody with
         | [fun_id, def] ->
             Llet(Alias, fun_id, def, body)
@@ -718,7 +737,7 @@ let simplify_default_wrapper lam =
             List.flatten
               (List.map
                  (function
-                   | (id, Lfunction(kind, params, body)) ->
+                   | (id, Lfunction{kind; params; body}) ->
                        split_default_wrapper id kind params body
                    | _ -> assert false)
                  defs)
@@ -744,5 +763,6 @@ let simplify_lambda lam =
     |> simplify_lets
     |> simplify_default_wrapper
   in
-  if !Clflags.annotations then emit_tail_infos true res;
+  if !Clflags.annotations || Warnings.is_active Warnings.Expect_tailcall
+    then emit_tail_infos true res;
   res

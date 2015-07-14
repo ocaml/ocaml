@@ -31,6 +31,21 @@ let empty_tbl = {
   back_var = Variable.Map.empty;
 }
 
+let print ppf = function
+  | Inactive -> Format.fprintf ppf "Inactive"
+  | Active tbl ->
+    Format.fprintf ppf "Active:@ ";
+    Variable.Map.iter (fun var1 var2 ->
+        Format.fprintf ppf "%a -> %a@ "
+          Variable.print var1
+          Variable.print var2)
+      tbl.sb_var;
+    Variable.Map.iter (fun var vars ->
+        Format.fprintf ppf "%a -> %a@ "
+          Variable.print var
+          Variable.Set.print (Variable.Set.of_list vars))
+      tbl.back_var
+
 let empty = Inactive
 
 let empty_preserving_activation_state = function
@@ -110,10 +125,9 @@ let apply_variable t var =
    try Variable.Map.find var t.sb_var with
    | Not_found -> var
 
-let rewrite_recursive_calls_with_symbols _t
-      (_function_declarations : Flambda.function_declarations)
-      ~make_closure_symbol:_ = assert false (* XXX *)
-(*
+let rewrite_recursive_calls_with_symbols t
+      (function_declarations : Flambda.function_declarations)
+      ~make_closure_symbol =
   match t with
   | Inactive -> function_declarations
   | Active _ ->
@@ -125,17 +139,16 @@ let rewrite_recursive_calls_with_symbols _t
     let funs =
       Variable.Map.map (fun (ffun : Flambda.function_declaration) ->
         let body =
-          Flambdaiter.map_toplevel
+          Flambdaiter.map_named
             (function
-              | Symbol (sym,_) when Symbol.Map.mem sym closure_symbols ->
-                Var(Symbol.Map.find sym closure_symbols,Expr_id.create ())
+              | Symbol sym when Symbol.Map.mem sym closure_symbols ->
+                Expr (Var (Symbol.Map.find sym closure_symbols))
               | e -> e)
             ffun.body in
         { ffun with body })
         function_declarations.funs
     in
     { function_declarations with funs }
-*)
 
 module Project_var = struct
   type t =
@@ -189,7 +202,7 @@ module Project_var = struct
     match subst with
     | Inactive -> func_decls, subst, t
     | Active subst ->
-      let subst_func_declction _fun_id (func_decl : Flambda.function_declaration)
+      let subst_func_decl _fun_id (func_decl : Flambda.function_declaration)
             subst =
         let params, subst = active_add_variables' subst func_decl.params in
         let free_variables =
@@ -198,6 +211,9 @@ module Project_var = struct
             func_decl.free_variables Variable.Set.empty in
         (* It is not a problem to share the substitution of parameter
            names between function: There should be no clash *)
+        (* CR mshinwell: could this violate one of the new invariants in
+           Flambda_invariants (about all parameters being distinct within one
+           set of function declarations)? *)
         { func_decl with
           free_variables;
           params;
@@ -212,7 +228,7 @@ module Project_var = struct
           func_decls.funs (subst,t) in
       let funs, subst =
         Variable.Map.fold (fun orig_id func_decl (funs, subst) ->
-            let func_decl, subst = subst_func_declction orig_id func_decl subst in
+            let func_decl, subst = subst_func_decl orig_id func_decl subst in
             let id = active_find_var_exn subst orig_id in
             let funs = Variable.Map.add id func_decl funs in
             funs, subst)

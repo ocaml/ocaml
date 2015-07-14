@@ -15,7 +15,9 @@ open Clflags
 open Compenv
 
 let process_interface_file ppf name =
-  Compile.interface ppf name (output_prefix name)
+  let opref = output_prefix name in
+  Compile.interface ppf name opref;
+  if !make_package then objfiles := (opref ^ ".cmi") :: !objfiles
 
 let process_implementation_file ppf name =
   let opref = output_prefix name in
@@ -24,16 +26,10 @@ let process_implementation_file ppf name =
 
 let process_file ppf name =
   if Filename.check_suffix name ".ml"
-  || Filename.check_suffix name ".mlt" then begin
-    let opref = output_prefix name in
-    Compile.implementation ppf name opref;
-    objfiles := (opref ^ ".cmo") :: !objfiles
-  end
-  else if Filename.check_suffix name !Config.interface_suffix then begin
-    let opref = output_prefix name in
-    Compile.interface ppf name opref;
-    if !make_package then objfiles := (opref ^ ".cmi") :: !objfiles
-  end
+  || Filename.check_suffix name ".mlt" then
+    process_implementation_file ppf name
+  else if Filename.check_suffix name !Config.interface_suffix then
+    process_interface_file ppf name
   else if Filename.check_suffix name ".cmo"
        || Filename.check_suffix name ".cma" then
     objfiles := name :: !objfiles
@@ -83,6 +79,7 @@ module Options = Main_args.Make_bytecomp_options (struct
   let _compat_32 = set bytecode_compatible_32
   let _config = show_config
   let _custom = set custom_runtime
+  let _no_check_prims = set no_check_prims
   let _dllib s = dllibs := Misc.rev_split_words s @ !dllibs
   let _dllpath s = dllpaths := !dllpaths @ [s]
   let _for_pack s = for_package := Some s
@@ -92,6 +89,7 @@ module Options = Main_args.Make_bytecomp_options (struct
   let _impl = impl
   let _intf = intf
   let _intf_suffix s = Config.interface_suffix := s
+  let _keep_docs = set keep_docs
   let _keep_locs = set keep_locs
   let _labels = unset classic
   let _linkall = set link_everything
@@ -143,7 +141,7 @@ module Options = Main_args.Make_bytecomp_options (struct
 end)
 
 let main () =
-  Timings.start All;
+  Timings.start Timings.All;
   try
     readenv ppf Before_args;
     Arg.parse Options.list anonymous usage;
@@ -193,7 +191,7 @@ let main () =
       Bytelink.link ppf (get_objfiles ()) target;
       Warnings.check_fatal ();
     end;
-    Timings.stop All;
+    Timings.stop Timings.All;
     if !Clflags.print_timings then Timings.print Format.std_formatter;
     exit 0
   with x ->

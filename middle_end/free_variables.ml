@@ -11,6 +11,9 @@
 (*                                                                        *)
 (**************************************************************************)
 
+(* CR mshinwell: this doesn't seem to cope with shadowed identifiers
+   properly.  Check the original version. *)
+
 let iter tree ~free_variable ~bound_variable =
   let rec aux (flam : Flambda.t) : unit =
     match flam with
@@ -18,7 +21,7 @@ let iter tree ~free_variable ~bound_variable =
     | Apply { func; args; kind = _; dbg = _} ->
       free_variable func;
       List.iter free_variable args
-    | Let ( _, var, defining_expr, body) ->
+    | Let (_, var, defining_expr, body) ->
       bound_variable var;
       aux_named defining_expr;
       aux body
@@ -70,10 +73,12 @@ let iter tree ~free_variable ~bound_variable =
   and aux_named (named : Flambda.named) =
     match named with
     | Symbol _ | Const _ -> ()
-    | Set_of_closures { specialised_args; _ } ->
-      (* CR mshinwell for pchambart: free_variable comment explaining why
-         the [free_variables] inside [Set_of_closures] isn't counted
-         here.  Shouldn't this go into the body as well? *)
+    | Set_of_closures { free_vars; specialised_args; _ } ->
+      (* Sets of closures are, well, closed---except for the specialised
+         argument list, which may identify variables currently in scope
+         outside of the closure. *)
+      Variable.Map.iter (fun _ renamed_to -> free_variable renamed_to)
+        free_vars;
       Variable.Map.iter (fun _ var -> free_variable var) specialised_args
     | Project_closure { set_of_closures; closure_id = _ } ->
       free_variable set_of_closures
@@ -93,3 +98,7 @@ let calculate tree =
   let bound_variable id = bound := Variable.Set.add id !bound in
   iter tree ~free_variable ~bound_variable;
   Variable.Set.diff !free !bound
+
+let calculate_named tree =
+  let var = Variable.create "dummy" in
+  calculate (Let (Immutable, var, tree, Var var))

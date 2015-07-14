@@ -83,11 +83,16 @@ struct debug_info {
   int already_read;
 };
 
-#define Debug_info_val(v) ((struct debug_info *) Data_custom_val(v))
+#define Debug_info_val(v) ((struct debug_info **) Data_custom_val(v))
 
-static void caml_finalize_debug_info(value di) {
-  free(Debug_info_val(di)->events);
-  Debug_info_val(di)->events = NULL;
+static void caml_finalize_debug_info(value debug_info)
+{
+  struct debug_info* di;
+  di = *(Debug_info_val(debug_info));
+  if (di->events != NULL) {
+    free(di->events);
+  }
+  free(di);
 }
 
 static struct custom_operations caml_debug_info_ops = {
@@ -101,13 +106,23 @@ static struct custom_operations caml_debug_info_ops = {
 };
 
 static value caml_alloc_debug_info() {
-  return caml_alloc_custom(&caml_debug_info_ops, sizeof (struct debug_info), 0, 1);
+  struct debug_info* di;
+  value debug_info;
+  di = (struct debug_info*) malloc(sizeof(struct debug_info));
+  if (di == NULL) {
+    caml_fatal_error("caml_alloc_debug_info: Out of memory");
+  }
+  di->events = NULL;
+  debug_info = caml_alloc_custom(&caml_debug_info_ops,
+    sizeof (struct debug_info*), 0, 1);
+  (*Debug_info_val(debug_info)) = di;
+  return debug_info;
 }
 
 static struct debug_info *find_debug_info(code_t pc) {
   value dis = caml_debug_info;
   while (dis != Val_emptylist) {
-    struct debug_info *di = Debug_info_val(Field(dis, 0));
+    struct debug_info *di = *(Debug_info_val(Field(dis, 0)));
     if (pc >= di->start && pc < di->end)
       return di;
     dis = Field(dis, 1);
@@ -184,19 +199,21 @@ CAMLprim value caml_add_debug_info(code_t code_start, value code_size, value eve
 {
   CAMLparam1(events_heap);
   CAMLlocal1(debug_info);
+  struct debug_info* di;
 
   /* build the OCaml-side debug_info value */
   debug_info = caml_alloc_debug_info();
-  Debug_info_val(debug_info)->start = code_start;
-  Debug_info_val(debug_info)->end = (code_t)((char*) code_start + Long_val(code_size));
+  di = *(Debug_info_val(debug_info));
+  di->start = code_start;
+  di->end = (code_t)((char*) code_start + Long_val(code_size));
   if (events_heap == Val_unit) {
-    Debug_info_val(debug_info)->events = NULL;
-    Debug_info_val(debug_info)->num_events = 0;
-    Debug_info_val(debug_info)->already_read = 0;
+    di->events = NULL;
+    di->num_events = 0;
+    di->already_read = 0;
   } else {
-    Debug_info_val(debug_info)->events =
-      process_debug_events(code_start, events_heap, &Debug_info_val(debug_info)->num_events);
-    Debug_info_val(debug_info)->already_read = 1;
+    di->events =
+      process_debug_events(code_start, events_heap, &di->num_events);
+    di->already_read = 1;
   }
 
   /* prepend it to the global caml_debug_info root (an OCaml list) */
@@ -217,7 +234,7 @@ CAMLprim value caml_remove_debug_info(code_t start)
 
   dis = caml_debug_info;
   while (dis != Val_emptylist) {
-    struct debug_info *di = Debug_info_val(Field(dis, 0));
+    struct debug_info *di = *(Debug_info_val(Field(dis, 0)));
     if (di->start == start) {
       if (prev != Val_unit) {
         Store_field(prev, 1, Field(dis, 1));
@@ -243,6 +260,7 @@ CAMLprim value caml_record_backtrace(value vflag)
     caml_backtrace_active = flag;
     caml_backtrace_pos = 0;
     if (flag) {
+      caml_backtrace_last_exn = Val_unit;
       caml_register_global_root(&caml_backtrace_last_exn);
     } else {
       caml_remove_global_root(&caml_backtrace_last_exn);

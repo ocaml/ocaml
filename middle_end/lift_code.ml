@@ -16,21 +16,15 @@ module C = Inlining_cost
 
 type lifter = Flambda.t -> Flambda.t
 
-let lift_lets tree = tree
-(* XXX
+let lift_lets tree =
   let rec aux (expr : Flambda.t) : Flambda.t =
     match expr with
-    | Fsequence(Let(str, v, def, body, d1), seq, dseq) ->
-        Let(str, v, def, Fsequence( aux body, seq, dseq), d1)
-    | Let(str1, v1, Let(str2, v2, def2, body2, d2), body1, d1) ->
-        Let(str2, v2, def2, aux (
-          Flambda.Let(str1, v1, body2, body1, d1)), d2)
+    | Let (str1, v1, Expr (Let (str2, v2, def2, body2)), body1) ->
+      Let (str2, v2, def2, aux (Flambda.Let(str1, v1, Expr body2, body1)))
     | e -> e
   in
-  Flambdaiter.map aux tree
-*)
+  Flambdaiter.map aux (fun (named : Flambda.named) -> named) tree
 
-(* XXX think about this more *)
 let lifting_helper exprs ~evaluation_order ~create_body ~name =
   let vars, lets =
     (* [vars] corresponds elementwise to [exprs]; the order is unchanged. *)

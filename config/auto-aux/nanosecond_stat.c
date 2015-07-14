@@ -2,7 +2,7 @@
 /*                                                                     */
 /*                                OCaml                                */
 /*                                                                     */
-/*                 Jeremie Dimino, Jane Street Capital                 */
+/*                 Jeremie Dimino, Jane Street Group, LLC              */
 /*                                                                     */
 /*  Copyright 2015 Institut National de Recherche en Informatique et   */
 /*  en Automatique.  All rights reserved.  This file is distributed    */

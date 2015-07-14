@@ -416,24 +416,24 @@ let transl_primitive loc p env ty =
   match prim with
   | Plazyforce ->
       let parm = Ident.create "prim" in
-      Lfunction(Curried, [parm],
-                Matching.inline_lazy_force (Lvar parm) Location.none)
+      Lfunction{kind = Curried; params = [parm];
+                body = Matching.inline_lazy_force (Lvar parm) Location.none }
   | Ploc kind ->
     let lam = lam_of_loc kind loc in
     begin match p.prim_arity with
       | 0 -> lam
       | 1 -> (* TODO: we should issue a warning ? *)
         let param = Ident.create "prim" in
-        Lfunction(Curried, [param],
-          Lprim(Pmakeblock(0, Immutable), [lam; Lvar param]))
+        Lfunction{kind = Curried; params = [param];
+                  body = Lprim(Pmakeblock(0, Immutable), [lam; Lvar param])}
       | _ -> assert false
     end
   | _ ->
       let rec make_params n =
         if n <= 0 then [] else Ident.create "prim" :: make_params (n-1) in
       let params = make_params p.prim_arity in
-      Lfunction(Curried, params,
-                Lprim(prim, List.map (fun id -> Lvar id) params))
+      Lfunction{ kind = Curried; params;
+                 body = Lprim(prim, List.map (fun id -> Lvar id) params) }
 
 let transl_primitive_application loc prim env ty args =
   let prim_name = prim.prim_name in
@@ -472,7 +472,7 @@ let check_recursive_lambda idlist lam =
 
   and check idlist = function
     | Lvar _ -> true
-    | Lfunction(kind, params, body) -> true
+    | Lfunction{kind; params; body} -> true
     | Llet (_, _, _, _) as lam when check_recursive_recordwith idlist lam ->
         true
     | Llet(str, id, arg, body) ->
@@ -541,6 +541,11 @@ let rec name_pattern default = function
       | _ -> name_pattern default rem
 
 (* Push the default values under the functional abstractions *)
+(* Also push bindings of module patterns, since this sound *)
+
+type binding =
+  | Bind_value of value_binding list
+  | Bind_module of Ident.t * string loc * module_expr 
 
 let rec push_defaults loc bindings cases partial =
   match cases with
@@ -553,13 +558,25 @@ let rec push_defaults loc bindings cases partial =
       c_rhs={exp_attributes=[{txt="#default"},_];
              exp_desc = Texp_let
                (Nonrecursive, binds, ({exp_desc = Texp_function _} as e2))}}] ->
-      push_defaults loc (binds :: bindings) [{c_lhs=pat;c_guard=None;c_rhs=e2}]
-                    partial
+      push_defaults loc (Bind_value binds :: bindings)
+                   [{c_lhs=pat;c_guard=None;c_rhs=e2}]
+                   partial
+  | [{c_lhs=pat; c_guard=None;
+      c_rhs={exp_attributes=[{txt="#modulepat"},_];
+             exp_desc = Texp_letmodule
+               (id, name, mexpr, ({exp_desc = Texp_function _} as e2))}}] ->
+      push_defaults loc (Bind_module (id, name, mexpr) :: bindings)
+                   [{c_lhs=pat;c_guard=None;c_rhs=e2}]
+                   partial
   | [case] ->
       let exp =
         List.fold_left
           (fun exp binds ->
-            {exp with exp_desc = Texp_let(Nonrecursive, binds, exp)})
+            {exp with exp_desc =
+             match binds with
+             | Bind_value binds -> Texp_let(Nonrecursive, binds, exp)
+             | Bind_module (id, name, mexpr) ->
+                 Texp_letmodule (id, name, mexpr, exp)})
           case.c_rhs bindings
       in
       [{case with c_rhs=exp}]
@@ -646,6 +663,9 @@ let rec cut n l =
 
 let try_ids = Hashtbl.create 8
 
+let has_tailcall_attribute e =
+  List.exists (fun ({txt},_) -> txt="tailcall") e.exp_attributes
+
 let rec transl_exp e =
   let eval_once =
     (* Whether classes for immediate objects must be cached *)
@@ -663,14 +683,14 @@ and transl_exp0 e =
       if public_send || p.prim_name = "%sendself" then
         let kind = if public_send then Public else Self in
         let obj = Ident.create "obj" and meth = Ident.create "meth" in
-        Lfunction(Curried, [obj; meth], Lsend(kind, Lvar meth, Lvar obj, [],
-                                              e.exp_loc))
+        Lfunction{kind = Curried; params = [obj; meth];
+                  body = Lsend(kind, Lvar meth, Lvar obj, [], e.exp_loc)}
       else if p.prim_name = "%sendcache" then
         let obj = Ident.create "obj" and meth = Ident.create "meth" in
         let cache = Ident.create "cache" and pos = Ident.create "pos" in
-        Lfunction(Curried, [obj; meth; cache; pos],
-                  Lsend(Cached, Lvar meth, Lvar obj, [Lvar cache; Lvar pos],
-                        e.exp_loc))
+        Lfunction{kind = Curried; params = [obj; meth; cache; pos];
+                  body = Lsend(Cached, Lvar meth, Lvar obj,
+                               [Lvar cache; Lvar pos], e.exp_loc)}
       else
         transl_primitive e.exp_loc p e.exp_env e.exp_type
   | Texp_ident(path, _, {val_kind = Val_anc _}) ->
@@ -689,16 +709,18 @@ and transl_exp0 e =
             let pl = push_defaults e.exp_loc [] pat_expr_list partial in
             transl_function e.exp_loc !Clflags.native_code repr partial pl)
       in
-      Lfunction(kind, params, body)
+      Lfunction{kind; params; body}
   | Texp_apply({ exp_desc = Texp_ident(path, _, {val_kind = Val_prim p});
-                exp_type = prim_type }, oargs)
+                exp_type = prim_type } as funct, oargs)
     when List.length oargs >= p.prim_arity
     && List.for_all (fun (_, arg,_) -> arg <> None) oargs ->
       let args, args' = cut p.prim_arity oargs in
       let wrap f =
         if args' = []
         then event_after e f
-        else event_after e (transl_apply f args' e.exp_loc)
+        else
+          let should_be_tailcall = has_tailcall_attribute funct in
+          event_after e (transl_apply ~should_be_tailcall f args' e.exp_loc)
       in
       let wrap0 f =
         if args' = [] then f else wrap f in
@@ -746,7 +768,8 @@ and transl_exp0 e =
             end
       end
   | Texp_apply(funct, oargs) ->
-      event_after e (transl_apply (transl_exp funct) oargs e.exp_loc)
+      let should_be_tailcall = has_tailcall_attribute funct in
+      event_after e (transl_apply ~should_be_tailcall (transl_exp funct) oargs e.exp_loc)
   | Texp_match(arg, pat_expr_list, exn_pat_expr_list, partial) ->
     transl_match e arg pat_expr_list exn_pat_expr_list partial
   | Texp_try(body, pat_expr_list) ->
@@ -864,7 +887,7 @@ and transl_exp0 e =
       event_after e lam
   | Texp_new (cl, {Location.loc=loc}, _) ->
       Lapply(Lprim(Pfield 0, [transl_path ~loc e.exp_env cl]),
-             [lambda_unit], Location.none)
+             [lambda_unit], no_apply_info)
   | Texp_instvar(path_self, path, _) ->
       Lprim(Parrayrefu Paddrarray,
             [transl_normal_path path_self; transl_normal_path path])
@@ -874,7 +897,7 @@ and transl_exp0 e =
       let cpy = Ident.create "copy" in
       Llet(Strict, cpy,
            Lapply(Translobj.oo_prim "copy", [transl_normal_path path_self],
-                  Location.none),
+                  no_apply_info),
            List.fold_right
              (fun (path, _, expr) rem ->
                 Lsequence(transl_setinstvar (Lvar cpy) path expr, rem))
@@ -936,7 +959,8 @@ and transl_exp0 e =
           end
       (* other cases compile to a lazy block holding a function *)
       | _ ->
-          let fn = Lfunction (Curried, [Ident.create "param"], transl_exp e) in
+         let fn = Lfunction {kind = Curried; params = [Ident.create "param"];
+                             body = transl_exp e} in
           Lprim(Pmakeblock(Config.lazy_tag, Mutable), [fn])
       end
   | Texp_object (cs, meths) ->
@@ -984,17 +1008,17 @@ and transl_tupled_cases patl_expr_list =
   List.map (fun (patl, guard, expr) -> (patl, transl_guard guard expr))
     patl_expr_list
 
-and transl_apply lam sargs loc =
+and transl_apply ?(should_be_tailcall=false) lam sargs loc =
   let lapply funct args =
     match funct with
       Lsend(k, lmet, lobj, largs, loc) ->
         Lsend(k, lmet, lobj, largs @ args, loc)
     | Levent(Lsend(k, lmet, lobj, largs, loc), _) ->
         Lsend(k, lmet, lobj, largs @ args, loc)
-    | Lapply(lexp, largs, _) ->
-        Lapply(lexp, largs @ args, loc)
+    | Lapply(lexp, largs, info) ->
+        Lapply(lexp, largs @ args, {info with apply_loc=loc})
     | lexp ->
-        Lapply(lexp, args, loc)
+        Lapply(lexp, args, mk_apply_info ~tailcall:should_be_tailcall loc)
   in
   let rec build_apply lam args = function
       (None, optional) :: l ->
@@ -1017,12 +1041,12 @@ and transl_apply lam sargs loc =
         and id_arg = Ident.create "param" in
         let body =
           match build_apply handle ((Lvar id_arg, optional)::args') l with
-            Lfunction(Curried, ids, lam) ->
-              Lfunction(Curried, id_arg::ids, lam)
-          | Levent(Lfunction(Curried, ids, lam), _) ->
-              Lfunction(Curried, id_arg::ids, lam)
+            Lfunction{kind = Curried; params = ids; body = lam} ->
+              Lfunction{kind = Curried; params = id_arg::ids; body = lam}
+          | Levent(Lfunction{kind = Curried; params = ids; body = lam}, _) ->
+              Lfunction{kind = Curried; params = id_arg::ids; body = lam}
           | lam ->
-              Lfunction(Curried, [id_arg], lam)
+              Lfunction{kind = Curried; params = [id_arg]; body = lam}
         in
         List.fold_left
           (fun body (id, lam) -> Llet(Strict, id, lam, body))

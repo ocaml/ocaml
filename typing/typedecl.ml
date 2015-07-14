@@ -1022,24 +1022,26 @@ let transl_type_decl env rec_flag sdecl_list =
   let current_slot = ref None in
   let warn_unused = Warnings.is_active (Warnings.Unused_type_declaration "") in
   let id_slots id =
-    if not warn_unused then id, None
-    else
-      (* See typecore.ml for a description of the algorithm used
-         to detect unused declarations in a set of recursive definitions. *)
-      let slot = ref [] in
-      let td = Env.find_type (Path.Pident id) temp_env in
-      let name = Ident.name id in
-      Env.set_type_used_callback
-        name td
-        (fun old_callback ->
-          match !current_slot with
-          | Some slot -> slot := (name, td) :: !slot
-          | None ->
-              List.iter (fun (name, d) -> Env.mark_type_used env name d)
-                (get_ref slot);
-              old_callback ()
-        );
-      id, Some slot
+    match rec_flag with
+    | Asttypes.Recursive when warn_unused ->
+        (* See typecore.ml for a description of the algorithm used
+             to detect unused declarations in a set of recursive definitions. *)
+        let slot = ref [] in
+        let td = Env.find_type (Path.Pident id) temp_env in
+        let name = Ident.name id in
+        Env.set_type_used_callback
+          name td
+          (fun old_callback ->
+             match !current_slot with
+             | Some slot -> slot := (name, td) :: !slot
+             | None ->
+                 List.iter (fun (name, d) -> Env.mark_type_used env name d)
+                   (get_ref slot);
+                 old_callback ()
+          );
+        id, Some slot
+    | Asttypes.Recursive | Asttypes.Nonrecursive ->
+        id, None
   in
   let transl_declaration name_sdecl (id, slot) =
     current_slot := slot; transl_declaration temp_env name_sdecl id in
@@ -1451,7 +1453,7 @@ let transl_with_constraint env id row_path orig_decl sdecl =
   let decl = name_recursion sdecl id decl in
   let decl =
     {decl with type_variance =
-     compute_variance_decl env false decl
+     compute_variance_decl env true decl
        (add_injectivity (List.map snd sdecl.ptype_params), sdecl.ptype_loc)} in
   Ctype.end_def();
   generalize_decl decl;

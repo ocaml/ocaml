@@ -103,7 +103,8 @@ val int_size : int
 (** Size of an int.  It is 31 bits (resp. 63 bits) when using the
     OCaml compiler on a 32 bits (resp. 64 bits) platform.  It may
     differ for other compilers, e.g. it is 32 bits when compiling to
-    JavaScript. *)
+    JavaScript.
+    @since 4.03.0 *)
 
 val big_endian : bool
 (** Whether the machine currently executing the Caml program is big-endian.

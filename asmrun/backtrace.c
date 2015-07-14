@@ -51,6 +51,7 @@ CAMLprim value caml_record_backtrace(value vflag)
     caml_backtrace_active = flag;
     caml_backtrace_pos = 0;
     if (flag) {
+      caml_backtrace_last_exn = Val_unit;
       caml_register_global_root(&caml_backtrace_last_exn);
     } else {
       caml_remove_global_root(&caml_backtrace_last_exn);
@@ -80,7 +81,7 @@ frame_descr * caml_next_frame_descriptor(uintnat * pc, char ** sp)
     h = Hash_retaddr(*pc);
     while (1) {
       d = caml_frame_descriptors[h];
-      if (d == 0) return NULL; /* can happen if some code compiled without -g */
+      if (d == NULL) return NULL; /* happens if some code compiled without -g */
       if (d->retaddr == *pc) break;
       h = (h+1) & caml_frame_descriptors_mask;
     }

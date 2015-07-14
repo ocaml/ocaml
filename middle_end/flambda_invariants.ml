@@ -19,6 +19,7 @@
 *)
 let already_added_bound_variable_to_env (_ : Variable.t) = ()
 let will_traverse_named_expression_later (_ : Flambda.named) = ()
+let ignore_variable (_ : Variable.t) = ()
 let ignore_call_kind (_ : Flambda.call_kind) = ()
 let ignore_debuginfo (_ : Debuginfo.t) = ()
 let ignore_meth_kind (_ : Lambda.meth_kind) = ()
@@ -45,7 +46,7 @@ exception Vars_in_function_body_not_bound_by_closure_or_params of
 exception Function_decls_have_overlapping_parameters of Variable.Set.t
 exception Specialised_arg_that_is_not_a_parameter of Variable.t
 exception Free_variables_set_is_lying of
-  Variable.t * Flambda.function_declaration
+  Variable.t * Variable.Set.t * Variable.Set.t * Flambda.function_declaration
 exception Set_of_closures_free_vars_map_has_wrong_domain of Variable.Set.t
 exception Static_exception_not_caught of Static_exception.t
 exception Static_exception_caught_in_multiple_places of Static_exception.t
@@ -178,8 +179,12 @@ let variable_invariants flam =
       let functions_in_closure = Variable.Map.keys funs in
       let variables_in_closure =
         Variable.Map.fold (fun var var_in_closure variables_in_closure ->
-            check_variable_is_bound env var;
-            Variable.Set.add var_in_closure variables_in_closure)
+            (* [var] may occur in the body, but will effectively be renamed
+               to [var_in_closure], so the latter is what we check to make
+               sure it's bound. *)
+            ignore_variable var;
+            check_variable_is_bound env var_in_closure;
+            Variable.Set.add var variables_in_closure)
           free_vars Variable.Set.empty
       in
       let all_params, all_free_vars =
@@ -194,8 +199,9 @@ let variable_invariants flam =
             (* Check that [free_variables], which is only present as an
                optimization, is not lying. *)
             let free_variables' = Free_variables.calculate body in
-            if not (Variable.Set.equal free_variables free_variables') then
-              raise (Free_variables_set_is_lying (fun_var, function_decl));
+            if not (Variable.Set.subset free_variables' free_variables) then
+              raise (Free_variables_set_is_lying (fun_var,
+                free_variables, free_variables', function_decl));
             (* Check that every variable free in the body of the function is
                bound by either the set of closures or the parameter list. *)
             let acceptable_free_variables =
@@ -313,7 +319,7 @@ let every_declared_closure_is_from_current_compilation_unit flam =
       then raise (Declared_closure_from_another_unit compilation_unit))
     flam
 
-let declared_closure_id flam =
+let declared_closure_ids flam =
   let bound = ref Closure_id.Set.empty in
   let bound_multiple_times = ref None in
   let add_and_check var =
@@ -330,7 +336,7 @@ let declared_closure_id flam =
   !bound, !bound_multiple_times
 
 let no_closure_id_is_bound_multiple_times flam =
-  match declared_closure_id flam with
+  match declared_closure_ids flam with
   | _, Some closure_id ->
     raise (Closure_id_is_bound_multiple_times closure_id)
   | _, None -> ()
@@ -365,7 +371,7 @@ let used_vars_within_closures flam =
 
 let every_used_function_from_current_compilation_unit_is_declared flam =
   let current_compilation_unit = Compilation_unit.get_current_exn () in
-  let declared, _ = declared_closure_id flam in
+  let declared, _ = declared_closure_ids flam in
   let used = used_closure_ids flam in
   let used_from_current_unit =
     Closure_id.Set.filter
@@ -442,84 +448,90 @@ let check_exn ?(flambdasym=false) ?(cmxfile=false) flam =
   with exn -> begin
     begin match exn with
     | Binding_occurrence_not_from_current_compilation_unit var ->
-      Format.eprintf "Binding occurrence of variable marked as not being from \
-          the current compilation unit: %a"
+      Format.eprintf ">> Binding occurrence of variable marked as not being \
+          from the current compilation unit: %a"
         Variable.print var
     | Binding_occurrence_of_variable_already_bound var ->
-      Format.eprintf "Binding occurrence of variable that was already \
+      Format.eprintf ">> Binding occurrence of variable that was already \
             bound: %a"
         Variable.print var
     | Unbound_variable var ->
-      Format.eprintf "Unbound variable: %a" Variable.print var
+      Format.eprintf ">> Unbound variable: %a" Variable.print var
     | Assignment_to_non_mutable_variable var ->
-      Format.eprintf "Assignment to non-mutable variable: %a"
+      Format.eprintf ">> Assignment to non-mutable variable: %a"
         Variable.print var
     | Vars_in_function_body_not_bound_by_closure_or_params vars ->
-      Format.eprintf "Variable in the body of a function declaration that is \
-          not bound by either the closure or the function's parameter \
+      Format.eprintf ">> Variable in the body of a function declaration that \
+          is not bound by either the closure or the function's parameter \
           list: %a"
         Variable.Set.print vars
     | Function_decls_have_overlapping_parameters vars ->
-      Format.eprintf "Function declarations whose parameters overlap: %a"
+      Format.eprintf ">> Function declarations whose parameters overlap: \
+          %a"
         Variable.Set.print vars
     | Specialised_arg_that_is_not_a_parameter var ->
-      Format.eprintf "Variable in [specialised_args] that is not a parameter \
-          of any of the function(s) in the corresponding declaration(s): %a"
+      Format.eprintf ">> Variable in [specialised_args] that is not a \
+          parameter of any of the function(s) in the corresponding \
+          declaration(s): %a"
         Variable.print var
-    | Free_variables_set_is_lying (var, function_decl) ->
-      Format.eprintf "Function declaration whose [free_variables] set does \
-          not coincide with the result of [Free_variables.calculate] applied \
-          to the body of the function: %a"
+    | Free_variables_set_is_lying (var, claimed, calculated, function_decl) ->
+      Format.eprintf ">> Function declaration whose [free_variables] set (%a) \
+          is not a superset of the result of [Free_variables.calculate] \
+          applied to the body of the function (%a).  Declaration: %a"
+        Variable.Set.print claimed
+        Variable.Set.print calculated
         Printflambda.function_declaration (var, function_decl)
     | Set_of_closures_free_vars_map_has_wrong_domain vars ->
-      Format.eprintf "[free_vars] map in set of closures has in its domain \
+      Format.eprintf ">> [free_vars] map in set of closures has in its domain \
           variables that are not free variables of the corresponding \
            functions: %a"
         Variable.Set.print vars
     | Sequential_logical_operator_primitives_must_be_expanded prim ->
-      Format.eprintf "Sequential logical operator primitives must be \
+      Format.eprintf ">> Sequential logical operator primitives must be \
           expanded (see closure_conversion.ml): %a"
         Printlambda.primitive prim
     | Var_within_closure_bound_multiple_times var ->
-      Format.eprintf "Variable within a closure is bound multiple times: %a"
+      Format.eprintf ">> Variable within a closure is bound multiple times: \
+          %a"
         Var_within_closure.print var
     | Closure_id_is_bound_multiple_times closure_id ->
-      Format.eprintf "Function within a closure is bound multiple times: %a"
+      Format.eprintf ">> Closure ID is bound multiple times: %a"
         Closure_id.print closure_id
     | Declared_closure_from_another_unit compilation_unit ->
-      Format.eprintf "Closure declared as being from another compilation \
+      Format.eprintf ">> Closure declared as being from another compilation \
           unit: %a"
         Compilation_unit.print compilation_unit
     | Unbound_closure_ids closure_ids ->
-      Format.eprintf "Unbound closure ID(s) from the current compilation \
+      Format.eprintf ">> Unbound closure ID(s) from the current compilation \
           unit: %a"
         Closure_id.Set.print closure_ids
     | Unbound_vars_within_closures vars_within_closures ->
-      Format.eprintf "Unbound variable(s) within closure(s) from the current \
-          compilation_unit: %a"
+      Format.eprintf ">> Unbound variable(s) within closure(s) from the \
+          current compilation_unit: %a"
         Var_within_closure.Set.print vars_within_closures
     | Static_exception_not_caught static_exn ->
-      Format.eprintf "Uncaught static exception: %a"
+      Format.eprintf ">> Uncaught static exception: %a"
         Static_exception.print static_exn
     | Static_exception_caught_in_multiple_places static_exn ->
-      Format.eprintf "Static exception caught in multiple places: %a"
+      Format.eprintf ">> Static exception caught in multiple places: %a"
         Static_exception.print static_exn
     | Access_to_global_module_identifier prim ->
       (* CR mshinwell: backend-specific checks should move to another module,
          in the asmcomp/ directory. *)
-      Format.eprintf "Forbidden access to a global module identifier (not \
+      Format.eprintf ">> Forbidden access to a global module identifier (not \
           allowed in Flambda that will be exported to a .cmx file): %a"
         Printlambda.primitive prim
     | Pidentity_should_not_occur ->
-      Format.eprintf "The Pidentity primitive should never occur in an \
+      Format.eprintf ">> The Pidentity primitive should never occur in an \
         Flambda expression (see closure_conversion.ml)"
     | Pdirapply_should_be_expanded ->
-      Format.eprintf "The Pdirapply primitive should never occur in an \
+      Format.eprintf ">> The Pdirapply primitive should never occur in an \
         Flambda expression (see closure_conversion.ml); use Apply instead"
     | Prevapply_should_be_expanded ->
-      Format.eprintf "The Prevapply primitive should never occur in an \
+      Format.eprintf ">> The Prevapply primitive should never occur in an \
         Flambda expression (see closure_conversion.ml); use Apply instead"
     | exn -> raise exn
     end;
+    Format.eprintf "\n@?";
     raise Flambda_invariants_failed
   end

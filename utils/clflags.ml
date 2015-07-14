@@ -26,6 +26,7 @@ and debug = ref false                   (* -g *)
 and fast = ref false                    (* -unsafe *)
 and link_everything = ref false         (* -linkall *)
 and custom_runtime = ref false          (* -custom *)
+and no_check_prims = ref false          (* -no-check-prims *)
 and bytecode_compatible_32 = ref false  (* -compat-32 *)
 and output_c_object = ref false         (* -output-obj *)
 and all_ccopts = ref ([] : string list)     (* -ccopt *)
@@ -116,6 +117,7 @@ let pic_code = ref (match Config.architecture with (* -fPIC *)
 
 let runtime_variant = ref "";;      (* -runtime-variant *)
 
+let keep_docs = ref false              (* -keep-docs *)
 let keep_locs = ref false              (* -keep-locs *)
 let unsafe_string = ref true;;         (* -safe-string / -unsafe-string *)
 let functor_heuristics = ref true;;    (* -no-functor-heuristics *)
@@ -126,4 +128,6 @@ let inline_branch_cost = ref 10        (* -inline-branch-cost *)
 
 let print_timings = ref false          (* -timings *)
 
-let full_flambda_invariant_check = ref false
+(* CR mshinwell: change to [false] before merge, and finish off
+   command line arg support *)
+let full_flambda_invariant_check = ref true

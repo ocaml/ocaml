@@ -493,8 +493,8 @@ fun buf fmtty -> match fmtty with
 
 (***)
 
-let rec int_of_custom_arity : type a b c d .
-  (a, b, c, d) custom_arity -> int =
+let rec int_of_custom_arity : type a b c .
+  (a, b, c) custom_arity -> int =
   function
   | Custom_zero -> 0
   | Custom_succ x -> 1 + int_of_custom_arity x
@@ -881,7 +881,7 @@ fun fmtty -> match fmtty with
   | End_of_format              -> End_of_fmtty
 
 and fmtty_of_custom : type x y a b c d e f .
-  (c, a, x, y) custom_arity -> (a, b, c, d, e, f) fmtty ->
+  (a, x, y) custom_arity -> (a, b, c, d, e, f) fmtty ->
   (y, b, c, d, e, f) fmtty =
 fun arity fmtty -> match arity with
   | Custom_zero -> fmtty
@@ -1457,7 +1457,7 @@ fun k o acc fmt -> match fmt with
   | Theta rest ->
     fun f -> make_printf k o (Acc_delay (acc, f)) rest
   | Custom (arity, f, rest) ->
-    make_custom k o acc rest arity f
+    make_custom k o acc rest arity (f ())
   | Reader _ ->
     (* This case is impossible, by typing of formats. *)
     (* Indeed, since printf and co. take a format4 as argument, the 'd and 'e
@@ -1687,12 +1687,12 @@ and make_float_padding_precision : type x y a b c d e f .
 and make_custom : type x y a b c d e f .
   (b -> (b, c) acc -> f) -> b -> (b, c) acc ->
   (a, b, c, d, e, f) fmt ->
-  (c, a, x, y) custom_arity -> (b -> x) -> y =
+  (a, x, y) custom_arity -> x -> y =
   fun k o acc rest arity f -> match arity with
-  | Custom_zero -> make_printf k o (Acc_delay (acc, f)) rest
+  | Custom_zero -> make_printf k o (Acc_data_string (acc, f)) rest
   | Custom_succ arity ->
     fun x ->
-      make_custom k o acc rest arity (fun o -> f o x)
+      make_custom k o acc rest arity (f x)
 
 (******************************************************************************)
                           (* Continuations for make_printf *)
@@ -1872,7 +1872,7 @@ let fmt_ebb_of_string ?legacy_behavior str =
   let legacy_behavior = match legacy_behavior with
     | Some flag -> flag
     | None -> true
-  (** When this flag is enabled, the format parser tries to behave as
+  (*  When this flag is enabled, the format parser tries to behave as
       the <4.02 implementations, in particular it ignores most benine
       nonsensical format. When the flag is disabled, it will reject any
       format that is not accepted by the specification.
