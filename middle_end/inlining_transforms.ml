@@ -37,18 +37,20 @@ let which_function_parameters_can_we_specialize ~params ~args
     (List.combine params args) args_approxs
     (Variable.Map.empty, [], [])
 
-let fold_over_exprs_for_variables_bound_by_closure ~fun_id ~clos_id ~clos
-      ~init ~f =
+let fold_over_exprs_for_variables_bound_by_closure ~closure_id_being_applied
+      ~lhs_of_application ~function_decls ~init ~f =
   Variable.Set.fold (fun var acc ->
       let expr : Flambda.named =
         Project_var {
-          closure = clos_id;
-          closure_id = fun_id;
+          closure = lhs_of_application;
+          closure_id = closure_id_being_applied;
           var = Var_within_closure.wrap var;
         }
       in
       f ~acc ~var ~expr)
-    (Flambda_utils.variables_bound_by_the_closure fun_id clos) init
+    (Flambda_utils.variables_bound_by_the_closure closure_id_being_applied
+      function_decls)
+    init
 
 (** Assign fresh names for a function's parameters and rewrite the body to
     use these new names. *)
@@ -76,8 +78,8 @@ let inline_by_copying_function_body ~env ~r
   in
   (* Add bindings for variables bound by the closure. *)
   let bindings_for_vars_bound_by_closure_and_params_to_args =
-    fold_over_exprs_for_variables_bound_by_closure ~fun_id:closure_id_being_applied
-      ~clos_id:lhs_of_application ~clos:function_decls ~init:bindings_for_params_to_args
+    fold_over_exprs_for_variables_bound_by_closure ~closure_id_being_applied
+      ~lhs_of_application ~function_decls ~init:bindings_for_params_to_args
       ~f:(fun ~acc:body ~var ~expr -> Flambda.Let (Immutable, var, expr, body))
   in
   (* CR mshinwell: How does this not add a variable that points to the
@@ -129,8 +131,8 @@ let inline_by_copying_function_declaration ~env ~r
        copied.  We add these bindings using [Let] around the new
        set-of-closures declaration. *)
     let free_vars, free_vars_for_lets =
-      fold_over_exprs_for_variables_bound_by_closure ~fun_id:closure_id_being_applied
-        ~clos_id:lhs_of_application ~clos:function_decls ~init:(Variable.Map.empty, [])
+      fold_over_exprs_for_variables_bound_by_closure ~closure_id_being_applied
+        ~lhs_of_application ~function_decls ~init:(Variable.Map.empty, [])
         ~f:(fun ~acc:(map, for_lets) ~var:internal_var ~expr ->
           let from_closure = new_var "from_closure" in
           Variable.Map.add internal_var from_closure map,
