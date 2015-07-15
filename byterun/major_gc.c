@@ -686,7 +686,7 @@ void caml_finish_major_cycle (void)
   caml_allocated_words = 0;
 }
 
-/* Call this function to make sure [request] is greater than or equal
+/* Call this function to make sure [bsz] is greater than or equal
    to both [Heap_chunk_min] and the current heap increment.
 */
 asize_t caml_clip_heap_chunk_size (asize_t bsz)
