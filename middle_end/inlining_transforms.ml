@@ -68,8 +68,9 @@ let copy_of_function's_body_with_freshened_params
   freshened_params, body
 
 (** Inline a function by copying its body into a context where it becomes
-    closed.  That is to say, we bind the free variables of the body, and any
-    function identifiers introduced by the corresponding set of closures. *)
+    closed.  That is to say, we bind the free variables of the body
+    (= "variables bound by the closure"), and any function identifiers
+    introduced by the corresponding set of closures. *)
 let inline_by_copying_function_body ~env ~r ~function_decls ~lhs_of_application
       ~closure_id_being_applied ~function_decl ~args ~simplify =
   let r = R.map_benefit r B.remove_call in
