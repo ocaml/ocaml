@@ -37,7 +37,7 @@ let which_function_parameters_can_we_specialize ~params ~args
     (List.combine params args) args_approxs
     (Variable.Map.empty, [], [])
 
-let fold_over_exprs_for_variables_bound_by_closure ~closure_id_being_applied
+let fold_over_projections_of_vars_bound_by_closure ~closure_id_being_applied
       ~lhs_of_application ~function_decls ~init ~f =
   Variable.Set.fold (fun var acc ->
       let expr : Flambda.named =
@@ -78,7 +78,7 @@ let inline_by_copying_function_body ~env ~r
   in
   (* Add bindings for variables bound by the closure. *)
   let bindings_for_vars_bound_by_closure_and_params_to_args =
-    fold_over_exprs_for_variables_bound_by_closure ~closure_id_being_applied
+    fold_over_projections_of_vars_bound_by_closure ~closure_id_being_applied
       ~lhs_of_application ~function_decls ~init:bindings_for_params_to_args
       ~f:(fun ~acc:body ~var ~expr -> Flambda.Let (Immutable, var, expr, body))
   in
@@ -131,7 +131,7 @@ let inline_by_copying_function_declaration ~env ~r
        copied.  We add these bindings using [Let] around the new
        set-of-closures declaration. *)
     let free_vars, free_vars_for_lets =
-      fold_over_exprs_for_variables_bound_by_closure ~closure_id_being_applied
+      fold_over_projections_of_vars_bound_by_closure ~closure_id_being_applied
         ~lhs_of_application ~function_decls ~init:(Variable.Map.empty, [])
         ~f:(fun ~acc:(map, for_lets) ~var:internal_var ~expr ->
           let from_closure = new_var "from_closure" in
