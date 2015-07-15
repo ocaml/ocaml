@@ -70,8 +70,8 @@ let add_debug_info (ev : Lambda.lambda_event) (flam : Flambda.t)
     | Prim (p, args, _dinfo, v) ->
       Prim (p, args, Debuginfo.from_call ev, v)
 *)
-    | Send (kind, flam1, flam2, args, _dinfo) ->
-      Send (kind, flam1, flam2, args, Debuginfo.from_call ev)
+    | Send { kind; meth; obj; args; dbg = _; } ->
+      Send { kind; meth; obj; args; dbg = Debuginfo.from_call ev; }
 (*
     | Fsequence (flam1, flam2, v) ->
       Fsequence (flam1, add_debug_info ev flam2, v)
@@ -208,9 +208,17 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
       in
       Let_rec (defs, close t env body)
     end
-  | Lsend (kind, met, obj, args, _) ->
-    Send (kind, close t env met, close t env obj,
-      close_list t env args, Debuginfo.none)
+  | Lsend (kind, meth, obj, args, loc) ->
+    let meth_var = Variable.create "meth" in
+    let obj_var = Variable.create "obj" in
+    let dbg = Debuginfo.from_location Dinfo_call loc in
+    Let (Immutable, meth_var, Expr (close t env meth),
+      Let (Immutable, obj_var, Expr (close t env obj),
+        Lift_code.lifting_helper (close_list t env args)
+          ~evaluation_order:`Right_to_left
+          ~name:"send_arg"
+          ~create_body:(fun args ->
+              Send { kind; meth = meth_var; obj = obj_var; args; dbg; })))
   | Lprim (Psequor, [arg1; arg2]) ->
     let arg1 = close t env arg1 in
     let arg2 = close t env arg2 in

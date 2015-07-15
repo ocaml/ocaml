@@ -27,12 +27,19 @@ let rec lam ppf (flam : Flambda.t) =
     fprintf ppf "@[<2>(assign@ %a@ %a)@]"
       Variable.print being_assigned
       Variable.print new_value
-  | Send (k, met, obj, largs, _) ->
-      let args ppf largs =
-        List.iter (fun l -> fprintf ppf "@ %a" lam l) largs in
-      let kind =
-        if k = Lambda.Self then "self" else if k = Lambda.Cached then "cache" else "" in
-      fprintf ppf "@[<2>(send%s@ %a@ %a%a)@]" kind lam obj lam met args largs
+  | Send { kind; meth; obj; args; dbg = _; } ->
+    let print_args ppf args =
+      List.iter (fun l -> fprintf ppf "@ %a" Variable.print l) args
+    in
+    let kind =
+      match kind with
+      | Self -> "self"
+      | Public -> "public"
+      | Cached -> "cached"
+    in
+    fprintf ppf "@[<2>(send%s@ %a@ %a%a)@]" kind
+      Variable.print obj Variable.print meth
+      print_args args
   | Proved_unreachable ->
       fprintf ppf "unreachable"
   | Let(_str, id, arg, body) ->

@@ -13,12 +13,7 @@
 
 let apply_on_subexpressions f f_named (flam : Flambda.t) =
   match flam with
-  | Var _ | Apply _ | Assign _ -> ()
-  | Send (_, e1, e2, es, _) ->
-    f e1;
-    f e2;
-    List.iter f es
-  | Proved_unreachable -> ()
+  | Var _ | Apply _ | Assign _ | Send _ | Proved_unreachable -> ()
   | Let (_, _, defining_expr, body) ->
     f_named defining_expr;
     f body
@@ -52,10 +47,7 @@ let iter_general ~toplevel f f_named maybe_named =
   let rec aux (t : Flambda.t) =
     f t;
     match t with
-    | Var _ | Apply _ | Assign _ -> ()
-    | Send (_,f1,f2,fl,_) ->
-      iter_list (f1::f2::fl)
-    | Proved_unreachable -> ()
+    | Var _ | Apply _ | Assign _ | Send _ | Proved_unreachable -> ()
     | Let ( _, _, f1, f2) ->
       aux_named f1;
       aux f2
@@ -113,8 +105,7 @@ let map_general ~toplevel f f_named tree =
   let rec aux (tree : Flambda.t) =
     let exp : Flambda.t =
       match tree with
-      | Var _ | Apply _ | Assign _ -> tree
-      | Proved_unreachable -> tree
+      | Var _ | Apply _ | Assign _ | Send _ | Proved_unreachable -> tree
       | Let (str, id, lam, body) ->
         let lam = aux_named lam in
         let body = aux body in
@@ -155,11 +146,6 @@ let map_general ~toplevel f f_named tree =
         let cond = aux cond in
         let body = aux body in
         While(cond, body)
-      | Send(kind, met, obj, args, dbg) ->
-        let met = aux met in
-        let obj = aux obj in
-        let args = List.map aux args in
-        Send(kind, met, obj, args, dbg)
       | For { bound_var; from_value; to_value; direction; body; } ->
         let body = aux body in
         For { bound_var; from_value; to_value; direction; body; }

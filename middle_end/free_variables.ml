@@ -65,10 +65,10 @@ let iter tree ~free_variable ~bound_variable =
     | Assign { being_assigned; new_value; } ->
       free_variable being_assigned;
       free_variable new_value
-    | Send (_, e1, e2, es, _) ->
-      aux e1;
-      aux e2;
-      List.iter aux es
+    | Send { kind = _; meth; obj; args; dbg = _ } ->
+      free_variable meth;
+      free_variable obj;
+      List.iter free_variable args;
     | Proved_unreachable -> ()
   and aux_named (named : Flambda.named) =
     match named with

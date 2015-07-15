@@ -135,11 +135,11 @@ let variable_invariants flam =
       | Mutable -> ()
       | Immutable -> raise (Assignment_to_non_mutable_variable being_assigned)
       end
-    | Send (meth_kind, e1, e2, es, dbg) ->
-      ignore_meth_kind meth_kind;
-      loop env e1;
-      loop env e2;
-      List.iter (loop env) es;
+    | Send { kind; meth; obj; args; dbg; } ->
+      ignore_meth_kind kind;
+      check_variable_is_bound env meth;
+      check_variable_is_bound env obj;
+      check_variables_are_bound env args;
       ignore_debuginfo dbg
     | If_then_else (cond, ifso, ifnot) ->
       check_variable_is_bound env cond;

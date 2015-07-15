@@ -62,9 +62,7 @@ let lambda_smaller' lam ~than:threshold =
       let call_cost = match direct with Indirect -> 6 | Direct _ -> 4 in
       size := !size + call_cost
     | Assign _ -> incr size
-    | Send (_, met, obj, args, _) ->
-      size := !size + 8;
-      lambda_size met; lambda_size obj; lambda_list_size args
+    | Send _ -> size := !size + 8
     | Proved_unreachable -> ()
     | Let (_, _, lam, body) ->
       lambda_named_size lam; lambda_size body

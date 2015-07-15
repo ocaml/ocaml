@@ -108,8 +108,12 @@ let rec same (l1 : Flambda.t) (l2 : Flambda.t) =
     Variable.equal being_assigned1 being_assigned2
       && Variable.equal new_value1 new_value2
   | Assign _, _ | _, Assign _ -> false
-  | Send (k1, a1, b1, cl1, _), Send (k2, a2, b2, cl2, _) ->
-    k1 = k2 && same a1 a2 && same b1 b2 && Misc.samelist same cl1 cl2
+  | Send { kind = kind1; meth = meth1; obj = obj1; args = args1; dbg = _; },
+    Send { kind = kind2; meth = meth2; obj = obj2; args = args2; dbg = _; } ->
+    kind1 = kind2
+      && Variable.equal meth1 meth2
+      && Variable.equal obj1 obj2
+      && Misc.samelist Variable.equal args1 args2
   | Send _, _ | _, Send _ -> false
   | Proved_unreachable, Proved_unreachable -> true
 

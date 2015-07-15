@@ -104,6 +104,14 @@ type assign = {
   new_value : Variable.t;
 }
 
+type send = {
+  kind : Lambda.meth_kind;
+  meth : Variable.t;
+  obj : Variable.t;
+  args : Variable.t list;
+  dbg : Debuginfo.t;
+}
+
 type project_closure = {
   set_of_closures : Variable.t; (** must yield a set of closures *)
   closure_id : Closure_id.t;
@@ -127,7 +135,7 @@ type t =
   | Let_rec of (Variable.t * named) list * t
   | Apply of apply
   | Assign of assign
-  | Send of Lambda.meth_kind * t * t * t list * Debuginfo.t
+  | Send of send
   | If_then_else of Variable.t * t * t
   | Switch of Variable.t * switch
   (* Restrictions on [Lambda.Lstringswitch] also apply to [String_switch]. *)

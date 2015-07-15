@@ -206,11 +206,10 @@ module NotConstants(P:Param) = struct
       List.iter (fun (_,l) -> mark_loop ~toplevel [] l) sw;
       Misc.may (fun l -> mark_loop ~toplevel [] l) def
 
-    | Send (_,f1,f2,fl,_) ->
-      mark_curr curr;
-      mark_loop ~toplevel [] f1;
-      mark_loop ~toplevel [] f2;
-      List.iter (mark_loop ~toplevel []) fl
+    | Send { kind = _; meth; obj; args; dbg = _; } ->
+      mark_var meth curr;
+      mark_var obj curr;
+      List.iter (fun arg -> mark_var arg curr) args
 
     | Proved_unreachable ->
       mark_curr curr

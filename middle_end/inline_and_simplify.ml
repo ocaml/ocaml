@@ -585,11 +585,11 @@ and loop_direct env r (tree : Flambda.t) : Flambda.t * R.t =
     let env = E.inside_loop env in
     let body, r = loop env r body in
     While (cond, body), ret r A.value_unknown
-  | Send (kind, met, obj, args, dbg) ->
-    let met, r = loop env r met in
-    let obj, r = loop env r obj in
-    let args, _, r = loop_list env r args in
-    Send (kind, met, obj, args, dbg), ret r A.value_unknown
+  | Send { kind; meth; obj; args; dbg; } ->
+    let meth = freshen_and_simplify_variable env meth in
+    let obj = freshen_and_simplify_variable env obj in
+    let args = List.map (freshen_and_simplify_variable env) args in
+    Send { kind; meth; obj; args; dbg; }, ret r A.value_unknown
   | For { bound_var; from_value; to_value; direction; body; } ->
     let from_value = freshen_and_simplify_variable env from_value in
     let to_value = freshen_and_simplify_variable env to_value in
