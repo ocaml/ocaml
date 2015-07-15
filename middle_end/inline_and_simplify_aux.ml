@@ -20,7 +20,7 @@ module Env = struct
        recursively *)
     inlining_level : int;
     inside_branch : bool;
-    inside_loop : bool;
+    inside_simplify : bool;
     (* Number of times "inline" has been called recursively *)
     freshening : Freshening.t;
     never_inline : bool ;
@@ -35,7 +35,7 @@ module Env = struct
       current_functions = Set_of_closures_id.Set.empty;
       inlining_level = 0;
       inside_branch = false;
-      inside_loop = false;
+      inside_simplify = false;
       freshening = Freshening.empty;
       never_inline;
       possible_unrolls = !Clflags.unroll;
@@ -116,8 +116,8 @@ module Env = struct
   let inside_branch env =
     { env with inside_branch = true }
 
-  let inside_loop env =
-    { env with inside_loop = true }
+  let inside_simplify env =
+    { env with inside_simplify = true }
 
   let set_freshening freshening env =
     { env with freshening; }

@@ -61,7 +61,7 @@ module Env : sig
   val is_inside_branch : t -> bool
 
   val inside_branch : t -> t
-  val inside_loop : t -> t
+  val inside_simplify : t -> t
 
   val set_freshening : Freshening.t -> t -> t
 

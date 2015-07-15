@@ -24,16 +24,16 @@ module R = Inline_and_simplify_aux.Result
    Along with the results come rewritten Flambda terms.
 
    In general the pattern is to do a subset of these steps:
-   * recursive call of loop on the arguments with the original
+   * recursive call of simplify on the arguments with the original
      environment:
-       [let new_arg, r = loop env r arg]
+       [let new_arg, r = simplify env r arg]
    * generate fresh new identifiers (if subst.active is true) and
      add the substitution to the environment:
        [let new_id, env = add_variable id env]
    * associate in the environment the approximation of values to
      identifiers:
        [let env = E.add_approx id (R.approx r) env]
-   * recursive call of loop on the body of the expression, using
+   * recursive call of simplify on the body of the expression, using
      the new environment
    * mark used variables:
        [let r = use_var r id]
@@ -469,7 +469,7 @@ and simplify_set_of_closures original_env r
           (Inlining_decision.should_inline_inside_declaration function_decl)
         ~where:Transform_set_of_closures_expression
         ~f:(fun body_env ->
-          loop body_env r function_decl.body)
+          simplify body_env r function_decl.body)
     in
     let free_variables = Free_variables.calculate body in
     let used_params =
@@ -557,7 +557,7 @@ and simplify_full_application env r ~function_decls ~lhs_of_application
       ~args_approxs ~dbg =
   Inlining_decision.for_call_site ~env ~r ~function_decls
     ~lhs_of_application ~closure_id_being_applied ~function_decl
-    ~value_set_of_closures ~args ~args_approxs ~dbg ~simplify:loop
+    ~value_set_of_closures ~args ~args_approxs ~dbg ~simplify
 
 and simplify_partial_application env r ~lhs_of_application
       ~closure_id_being_applied ~function_decl ~args ~dbg =
@@ -588,7 +588,7 @@ and simplify_partial_application env r ~lhs_of_application
           var, Flambda.Expr (Var arg)) applied_args)
       ~body:wrapper_accepting_remaining_args
   in
-  loop env r with_known_args
+  simplify env r with_known_args
 
 and simplify_over_application env r ~args ~args_approxs ~function_decls
       ~lhs_of_application ~closure_id_being_applied ~function_decl
@@ -608,10 +608,10 @@ and simplify_over_application env r ~args ~args_approxs ~function_decls
     Let (Immutable, func_var, Expr expr,
       Apply { func = func_var; args = q_args; kind = Indirect; dbg })
   in
-  loop env r expr
+  simplify env r expr
 
-and loop_named env r (tree : Flambda.named) : Flambda.named * R.t =
-  debug_free_variables_check env tree ~name:"loop_named"
+and simplify_named env r (tree : Flambda.named) : Flambda.named * R.t =
+  debug_free_variables_check env tree ~name:"simplify_named"
     ~calculate_free_variables:Free_variables.calculate_named
     ~printer:Flambda_printers.named;
   match tree with
@@ -675,10 +675,10 @@ and loop_named env r (tree : Flambda.named) : Flambda.named * R.t =
       expr, ret r approx
     end
   | Expr expr ->
-    let expr, r = loop_direct env r expr in
+    let expr, r = simplify_direct env r expr in
     Expr expr, r
 
-and loop_direct env r (tree : Flambda.t) : Flambda.t * R.t =
+and simplify_direct env r (tree : Flambda.t) : Flambda.t * R.t =
   debug_free_variables_check env tree ~name:"loop"
     ~calculate_free_variables:Free_variables.calculate
     ~printer:Flambda_printers.flambda;
@@ -693,7 +693,7 @@ and loop_direct env r (tree : Flambda.t) : Flambda.t * R.t =
     flam, r
   | Apply apply -> simplify_apply env r ~apply
   | Let (str, id, defining_expr, body) ->
-    let defining_expr, r = loop_named env r defining_expr in
+    let defining_expr, r = simplify_named env r defining_expr in
     (* When [defining_expr] is really a [Flambda.named] rather than an
        [Flambda.t], squash any intermediate [let], or we will never eliminate
        certain cases (e.g. when a variable is simplified to a constant). *)
@@ -711,7 +711,7 @@ and loop_direct env r (tree : Flambda.t) : Flambda.t * R.t =
         | Mutable -> E.clear_approx id env
         | Immutable -> E.add_approx id (R.approx r) env
       in
-      loop body_env r body
+      simplify body_env r body
     in
     let free_variables_of_body = Free_variables.calculate body in
     let (expr : Flambda.t), r =
@@ -740,23 +740,23 @@ and loop_direct env r (tree : Flambda.t) : Flambda.t * R.t =
     in
     let defs, body_env, r =
       List.fold_right (fun (id, lam) (defs, env_acc, r) ->
-          let lam, r = loop_named def_env r lam in
+          let lam, r = simplify_named def_env r lam in
           let defs = (id, lam) :: defs in
           let env_acc = E.add_approx id (R.approx r) env_acc in
           defs, env_acc, r)
         defs ([], env, r)
     in
-    let body, r = loop body_env r body in
+    let body, r = simplify body_env r body in
     Let_rec (defs, body), r
   | Static_raise (i, args) ->
     let i = Freshening.apply_static_exception (E.freshening env) i in
-    let args, _, r = loop_list env r args in
+    let args, _, r = simplify_list env r args in
     let r = R.use_staticfail r i in
     Static_raise (i, args), ret r A.value_bottom
   | Static_catch (i, vars, body, handler) ->
     let i, sb = Freshening.add_static_exception (E.freshening env) i in
     let env = E.set_freshening sb env in
-    let body, r = loop env r body in
+    let body, r = simplify env r body in
     if not (Static_exception.Set.mem i (R.used_staticfail r)) then
       (* If the static exception is not used, we can drop the declaration *)
       body, r
@@ -775,7 +775,7 @@ and loop_direct env r (tree : Flambda.t) : Flambda.t * R.t =
             handler vars args
         in
         let r = R.exit_scope_catch r i in
-        loop env r handler
+        simplify env r handler
       | _ ->
         let vars, sb = Freshening.add_variables' (E.freshening env) vars in
         let env =
@@ -783,16 +783,16 @@ and loop_direct env r (tree : Flambda.t) : Flambda.t * R.t =
             (E.set_freshening sb env) vars
         in
         let env = E.inside_branch env in
-        let handler, r = loop env r handler in
+        let handler, r = simplify env r handler in
         let r = R.exit_scope_catch r i in
         Static_catch (i, vars, body, handler), ret r A.value_unknown
     end
   | Try_with (body, id, handler) ->
-    let body, r = loop env r body in
+    let body, r = simplify env r body in
     let id, sb = Freshening.add_variable (E.freshening env) id in
     let env = E.add_approx id A.value_unknown (E.set_freshening sb env) in
     let env = E.inside_branch env in
-    let handler, r = loop env r handler in
+    let handler, r = simplify env r handler in
     Try_with (body, id, handler), ret r A.value_unknown
   | If_then_else (arg, ifso, ifnot) ->
     (* When arg is the constant false or true (or something considered
@@ -802,24 +802,24 @@ and loop_direct env r (tree : Flambda.t) : Flambda.t * R.t =
     begin match (R.approx r).descr with
     | Value_constptr 0 ->
       (* constant false, keep ifnot *)
-      let ifnot, r = loop env r ifnot in
+      let ifnot, r = simplify env r ifnot in
       ifnot, R.map_benefit r B.remove_branch
     | Value_constptr _ | Value_block _ ->
       (* constant true, keep ifso *)
-      let ifso, r = loop env r ifso in
+      let ifso, r = simplify env r ifso in
       ifso, R.map_benefit r B.remove_branch
     | _ ->
       let env = E.inside_branch env in
-      let ifso, r = loop env r ifso in
+      let ifso, r = simplify env r ifso in
       let ifso_approx = R.approx r in
-      let ifnot, r = loop env r ifnot in
+      let ifnot, r = simplify env r ifnot in
       let ifnot_approx = R.approx r in
       If_then_else (arg, ifso, ifnot), ret r (A.meet ifso_approx ifnot_approx)
     end
   | While (cond, body) ->
-    let cond, r = loop env r cond in
-    let env = E.inside_loop env in
-    let body, r = loop env r body in
+    let cond, r = simplify env r cond in
+    let env = E.inside_simplify env in
+    let body, r = simplify env r body in
     While (cond, body), ret r A.value_unknown
   | Send { kind; meth; obj; args; dbg; } ->
     let meth = freshen_and_simplify_variable env meth in
@@ -831,11 +831,11 @@ and loop_direct env r (tree : Flambda.t) : Flambda.t * R.t =
     let to_value = freshen_and_simplify_variable env to_value in
     let bound_var, sb = Freshening.add_variable (E.freshening env) bound_var in
     let env =
-      E.inside_loop
+      E.inside_simplify
         (E.add_approx bound_var A.value_unknown (E.set_freshening sb env))
     in
-    let env = E.inside_loop env in
-    let body, r = loop env r body in
+    let env = E.inside_simplify env in
+    let body, r = simplify env r body in
     For { bound_var; from_value; to_value; direction; body; },
       ret r A.value_unknown
   | Assign { being_assigned; new_value; } ->
@@ -871,7 +871,7 @@ and loop_direct env r (tree : Flambda.t) : Flambda.t * R.t =
         try List.assoc i sw.consts
         with Not_found -> get_failaction ()
       in
-      let lam, r = loop env r lam in
+      let lam, r = simplify env r lam in
       lam, R.map_benefit r B.remove_branch
     | Value_block (tag, _) ->
       let tag = Tag.to_int tag in
@@ -879,13 +879,13 @@ and loop_direct env r (tree : Flambda.t) : Flambda.t * R.t =
         try List.assoc tag sw.blocks
         with Not_found -> get_failaction ()
       in
-      let lam, r = loop env r lam in
+      let lam, r = simplify env r lam in
       lam, R.map_benefit r B.remove_branch
     | _ ->
       let env = E.inside_branch env in
       let f (i, v) (acc, r) =
         let approx = R.approx r in
-        let lam, r = loop env r v in
+        let lam, r = simplify env r v in
         ((i, lam)::acc, R.set_approx r (A.meet (R.approx r) approx))
       in
       let r = R.set_approx r A.value_bottom in
@@ -896,7 +896,7 @@ and loop_direct env r (tree : Flambda.t) : Flambda.t * R.t =
         | None -> None, r
         | Some l ->
           let approx = R.approx r in
-          let l, r = loop env r l in
+          let l, r = simplify env r l in
           Some l, R.set_approx r (A.meet (R.approx r) approx)
       in
       let sw = { sw with failaction; consts; blocks; } in
@@ -906,7 +906,7 @@ and loop_direct env r (tree : Flambda.t) : Flambda.t * R.t =
     let arg = freshen_and_simplify_variable env arg in
     let sw, r =
       List.fold_right (fun (str, lam) (sw, r) ->
-          let lam, r = loop env r lam in
+          let lam, r = simplify env r lam in
           (str, lam)::sw, r)
         sw
         ([], r)
@@ -915,24 +915,25 @@ and loop_direct env r (tree : Flambda.t) : Flambda.t * R.t =
       match def with
       | None -> def, r
       | Some def ->
-        let def, r = loop env r def in
+        let def, r = simplify env r def in
         Some def, r
     in
     String_switch (arg, sw, def), ret r A.value_unknown
   | Proved_unreachable -> tree, ret r A.value_bottom
 
-and loop_list env r l = match l with
+and simplify_list env r l =
+  match l with
   | [] -> [], [], r
   | h::t ->
-    let t', approxs, r = loop_list env r t in
-    let h', r = loop env r h in
+    let t', approxs, r = simplify_list env r t in
+    let h', r = simplify env r h in
     let approxs = (R.approx r) :: approxs in
     if t' == t && h' == h
     then l, approxs, r
     else h' :: t', approxs, r
 
-and loop env r tree =
-  let f, r = loop_direct env r tree in
+and simplify env r tree =
+  let f, r = simplify_direct env r tree in
   let module Backend = (val (E.backend env) : Backend_intf.S) in
   (* CR mshinwell for pchambart: This call to [really_import_approx] is
      kind of confusing; it seems like some kind of catch-all.  What
@@ -954,7 +955,7 @@ let run ~never_inline ~backend tree =
   let stats = !Clflags.inlining_stats in
   if never_inline then Clflags.inlining_stats := false;
   let env = E.empty ~never_inline:false ~backend in
-  let result, r = loop env r tree in
+  let result, r = simplify env r tree in
   Clflags.inlining_stats := stats;
   if not (Static_exception.Set.is_empty (R.used_staticfail r))
   then begin
