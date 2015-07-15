@@ -69,6 +69,7 @@ let middle_end ppf ~sourcefile ~prefixname ~backend ~exported_fields lam =
       ++ Inline_and_simplify.run ~never_inline:true ~backend
       ++ Remove_unused_closure_vars.remove_unused_closure_variables
       ++ Ref_to_variables.eliminate_ref
+      ++ Inline_and_simplify.run ~never_inline:true ~backend
       ++ loop
   in
   let flam = loop flam in

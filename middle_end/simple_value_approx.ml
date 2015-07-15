@@ -274,6 +274,11 @@ let simplify_named_using_env t ~is_present_in_env named =
   in
   simplify_named t named
 
+let simplify_var_to_var_using_env t ~is_present_in_env =
+  match t.var with
+  | Some var when is_present_in_env var -> Some var
+  | _ -> None
+
 let known t =
   match t.descr with
   | Value_unresolved _

@@ -99,3 +99,6 @@ let output_full c t =
 
 let print_list ppf ts =
   List.iter (fun t -> Format.fprintf ppf "@ %a" print t) ts
+
+let debug_when_stamp_matches t ~stamp ~f =
+  if t.ident.stamp = stamp then f ()

@@ -256,6 +256,14 @@ val simplify_named_using_env
   -> Flambda.named
   -> simplification_result_named
 
+(** If the given approximation identifies another variable and
+    [is_present_in_env] deems it to be in scope, return that variable (wrapped
+    in a [Some]), otherwise return [None]. *)
+val simplify_var_to_var_using_env
+   : t
+  -> is_present_in_env:(Variable.t -> bool)
+  -> Variable.t option
+
 (** Given the approximation of a value, expected to correspond to a block
     (in the [Pmakeblock] sense of the word), and a field index then return
     an appropriate approximation for that field of the block. *)
