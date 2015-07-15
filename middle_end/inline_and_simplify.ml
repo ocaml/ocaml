@@ -859,8 +859,8 @@ and simplify_apply env r ~(apply : Flambda.apply) : Flambda.t * R.t =
     let nargs = List.length args in
     let arity = Flambda_utils.function_arity function_decl in
     if nargs = arity then
-      full_apply env r function_decls func ~closure_id ~function_decl
-        ~value_set_of_closures (args, args_approxs) dbg
+      full_apply env r ~function_decls func ~closure_id ~function_decl
+        ~value_set_of_closures ~args ~args_approxs ~dbg
     else if nargs > arity then
       over_apply env r ~args ~args_approxs ~function_decls ~func ~closure_id
         ~function_decl ~value_set_of_closures ~dbg
@@ -875,11 +875,12 @@ and simplify_apply env r ~(apply : Flambda.apply) : Flambda.t * R.t =
   | Wrong ->  (* Insufficient approximation information to simplify. *)
     Apply ({ func; args; kind = Indirect; dbg }), ret r A.value_unknown
 
-and full_apply env r function_decls lhs_of_application ~closure_id
-      ~function_decl ~value_set_of_closures args_with_approxs dbg =
+and full_apply env r ~function_decls lhs_of_application ~closure_id
+      ~function_decl ~value_set_of_closures ~args ~args_approxs ~dbg =
   Inlining_decision.for_call_site ~env ~r ~clos:function_decls
     ~lhs_of_application ~fun_id:closure_id ~func:function_decl
-    ~value_set_of_closures ~args_with_approxs ~dbg ~simplify:loop
+    ~value_set_of_closures ~args_with_approxs:(args, args_approxs)
+    ~dbg ~simplify:loop
 
 and partial_apply env r ~lhs_of_application ~closure_id_being_applied
       ~(function_decl : Flambda.function_declaration)
@@ -921,8 +922,8 @@ and over_apply env r ~args ~args_approxs ~function_decls ~func ~closure_id
   let h_args, q_args = Misc.split_at arity args in
   let h_approxs, _q_approxs = Misc.split_at arity args_approxs in
   let expr, r =
-    full_apply env r function_decls func ~closure_id ~function_decl
-      ~value_set_of_closures (h_args, h_approxs) dbg
+    full_apply env r ~function_decls func ~closure_id ~function_decl
+      ~value_set_of_closures ~args:h_args ~args_approxs:h_approxs ~dbg
   in
   let func_var = Variable.create "full_apply" in
   let expr : Flambda.t =
