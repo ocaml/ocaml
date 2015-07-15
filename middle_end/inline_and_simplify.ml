@@ -324,13 +324,291 @@ let rec simplify_project_var env r ~(project_var : Flambda.project_var)
       Variable.print closure
       Simple_value_approx.print approx
 
-and loop env r tree =
-  let f, r = loop_direct env r tree in
-  let module Backend = (val (E.backend env) : Backend_intf.S) in
-  (* CR mshinwell for pchambart: This call to [really_import_approx] is
-     kind of confusing; it seems like some kind of catch-all.  What
-     exactly is happening here? *)
-  f, ret r (Backend.really_import_approx (R.approx r))
+(* Transforms closure definitions by applying [loop] on the code of every
+   one of the set and on the expressions of the free variables.
+   If the substitution is activated, alpha renaming also occur on everything
+   defined by the set of closures:
+   * Variables bound by a closure of the set
+   * closure identifiers
+   * parameters
+
+   The rewriting occurs in a clean environment without any of the variables
+   defined outside reachable.  This helps increase robustness against accidental,
+   potentially unsound simplification of variable accesses by
+   [simplify_using_approx_and_env].
+
+   The rewriting occurs in an environment filled with:
+   * The approximation of the free variables
+   * An explicitely unknown approximation for function parameters,
+     except for those where it is known to be safe: those present in the
+     [specialised_args] set.
+   * An approximation for the closures in the set. It contains the code of
+     the functions before rewriting.
+
+   The approximation of the currently defined closures is available to
+   allow marking recursives calls as direct and in some cases, allow
+   inlining of one closure from the set inside another one. For this to
+   be correct an alpha renaming is first applied on the expressions by
+   [apply_function_decls_and_free_vars].
+
+   For instance when rewriting the declaration
+
+     [let rec f_1 x_1 =
+        let y_1 = x_1 + 1 in
+        g_1 y_1
+      and g_1 z_1 = f_1 (f_1 z_1)]
+
+   When rewriting this function, the first substitution will contain
+   some mapping:
+   { f_1 -> f_2;
+     g_1 -> g_2;
+     x_1 -> x_2;
+     z_1 -> z_2 }
+
+   And the approximation for the closure will contain
+
+   { f_2:
+       fun x_2 ->
+         let y_1 = x_2 + 1 in
+         g_2 y_1
+     g_2:
+       fun z_2 -> f_2 (f_2 z_2) }
+
+   Note that no substitution is applied to the let-bound variable [y_1].
+   If [f_2] where to be inlined inside [g_2], we known that a new substitution
+   will be introduced in the current scope for [y_1] each time.
+
+
+   If the function where a recursive one comming from another compilation
+   unit, the code already went through [Flambdasym] that could have
+   replaced the function variable by the symbol identifying the function
+   (this occur if the function contains only constants in its closure).
+   To handle that case, we first replace those symbols by the original
+   variable.
+*)
+and simplify_set_of_closures original_env r
+      (set_of_closures : Flambda.set_of_closures) : Flambda.named * R.t =
+  let function_decls =
+    let module Backend = (val (E.backend original_env) : Backend_intf.S) in
+    (* CR mshinwell: Does this affect
+       [reference_recursive_function_directly]? *)
+    Freshening.rewrite_recursive_calls_with_symbols (E.freshening original_env)
+      set_of_closures.function_decls ~make_closure_symbol:Backend.closure_symbol
+  in
+  let env = E.increase_closure_depth original_env in
+  let free_vars =
+    Variable.Map.map (fun external_var ->
+        let external_var =
+          freshen_and_simplify_variable env external_var
+        in
+        external_var, E.find external_var env)
+      set_of_closures.free_vars
+  in
+  let specialised_args =
+    Variable.Map.map (freshen_and_simplify_variable env)
+      set_of_closures.specialised_args
+  in
+  (* Remove all variable bindings from the environment.  This isn't necessary,
+     but allows us to catch bugs where variables escape their scope. *)
+  let environment_before_cleaning = env in
+  let env = E.local env in
+  let free_vars, function_decls, sb, freshening =
+    Freshening.apply_function_decls_and_free_vars (E.freshening env) free_vars
+      function_decls
+  in
+  let env = E.set_freshening sb env in
+  let specialised_args =
+    Variable.Map.map_keys (freshen_and_simplify_variable env)
+      specialised_args
+  in
+  let parameter_approximations =
+    (* Approximations of parameters that are known to always hold the same
+       argument throughout the body of the function. *)
+    Variable.Map.map_keys (freshen_and_simplify_variable env)
+      (Variable.Map.map (fun id -> E.find id environment_before_cleaning)
+        specialised_args)
+  in
+  let env =
+    E.enter_set_of_closures_declaration function_decls.set_of_closures_id env
+  in
+  (* we use the previous closure for evaluating the functions *)
+  let internal_value_set_of_closures : A.value_set_of_closures =
+    { function_decls = function_decls;
+      bound_vars = Variable.Map.fold (fun id (_, desc) map ->
+          Var_within_closure.Map.add (Var_within_closure.wrap id) desc map)
+          free_vars Var_within_closure.Map.empty;
+      unchanging_params = Variable.Set.empty;
+      specialised_args = Variable.Map.keys specialised_args;
+      freshening;
+    }
+  in
+  (* Populate the environment with the approximation of each closure.
+     This part of the environment is shared between all of the closures in
+     the set of closures. *)
+  let set_of_closures_env =
+    Variable.Map.fold (fun closure _ env ->
+        let approx =
+          A.value_closure ~closure_var:closure internal_value_set_of_closures
+            (Closure_id.wrap closure)
+        in
+        E.add_approx closure approx env)
+      function_decls.funs env
+  in
+  let simplify_function fid (function_decl : Flambda.function_declaration)
+        (funs, _used_params, r)
+        (* CR mshinwell: check we really did not need _used_params, and
+           remove it *)
+        : Flambda.function_declaration Variable.Map.t * Variable.Set.t * R.t =
+    let closure_env =
+      populate_closure_approximations ~function_decl ~free_vars
+        ~parameter_approximations ~set_of_closures_env
+    in
+    let body, r =
+      E.enter_closure closure_env ~closure_id:(Closure_id.wrap fid)
+        ~inline_inside:
+          (Inlining_decision.should_inline_inside_declaration function_decl)
+        ~where:Transform_set_of_closures_expression
+        ~f:(fun body_env ->
+          loop body_env r function_decl.body)
+    in
+    let free_variables = Free_variables.calculate body in
+    let used_params =
+      Variable.Set.filter (fun param -> Variable.Set.mem param free_variables)
+        (Variable.Set.of_list function_decl.params)
+    in
+    Variable.Map.add fid { function_decl with body; free_variables } funs,
+      used_params, r
+  in
+  let funs, used_params, r =
+    Variable.Map.fold simplify_function function_decls.funs
+      (Variable.Map.empty, Variable.Set.empty, r)
+  in
+  let specialised_args =
+    (* Remove any specialised arguments whose parameters are unused. *)
+    Variable.Map.filter (fun id _ -> Variable.Set.mem id used_params)
+      specialised_args
+  in
+  let function_decls = { function_decls with funs } in
+  let unchanging_params =
+    Invariant_params.unchanging_params_in_recursion function_decls
+  in
+  let value_set_of_closures : A.value_set_of_closures =
+    { internal_value_set_of_closures with
+      function_decls; unchanging_params;
+    }
+  in
+  let set_of_closures : Flambda.set_of_closures =
+    { function_decls;
+      free_vars = Variable.Map.map fst free_vars;
+      specialised_args;
+    }
+  in
+  Set_of_closures (set_of_closures),
+    ret r (A.value_set_of_closures value_set_of_closures)
+
+and simplify_apply env r ~(apply : Flambda.apply) : Flambda.t * R.t =
+  let { Flambda. func = lhs_of_application; args; kind = _; dbg } = apply in
+  let lhs_of_application =
+    freshen_and_simplify_variable env lhs_of_application
+  in
+  let args = List.map (freshen_and_simplify_variable env) args in
+  let lhs_of_application_approx = E.find lhs_of_application env in
+  let args_approxs = List.map (fun arg -> E.find arg env) args in
+  (* By using the approximation of the left-hand side of the application,
+     attempt to determine which function is being applied (even if the
+     application is currently [Indirect]).  If successful---in which case we
+     then have a direct application---consider inlining. *)
+  match A.check_approx_for_closure lhs_of_application_approx with
+  | Ok (value_closure, _set_of_closures_var, value_set_of_closures) ->
+    let closure_id_being_applied = value_closure.closure_id in
+    let function_decls = value_set_of_closures.function_decls in
+    let function_decl =
+      try
+        Flambda_utils.find_declaration closure_id_being_applied function_decls
+      with
+      | Not_found ->
+        Misc.fatal_errorf "When handling application expression, \
+            approximation references non-existent closure %a@."
+          Closure_id.print closure_id_being_applied
+    in
+    let nargs = List.length args in
+    let arity = Flambda_utils.function_arity function_decl in
+    if nargs = arity then
+      simplify_full_application env r ~function_decls ~lhs_of_application
+        ~closure_id_being_applied ~function_decl ~value_set_of_closures ~args
+        ~args_approxs ~dbg
+    else if nargs > arity then
+      simplify_over_application env r ~args ~args_approxs ~function_decls
+        ~lhs_of_application ~closure_id_being_applied ~function_decl
+        ~value_set_of_closures ~dbg
+    else if nargs > 0 && nargs < arity then
+      simplify_partial_application env r ~lhs_of_application
+        ~closure_id_being_applied ~function_decl ~args ~dbg
+    else
+      Misc.fatal_errorf "Function with arity %d when simplifying \
+          application expression: %a"
+        arity Flambda_printers.flambda (Flambda.Apply apply)
+  | Wrong ->  (* Insufficient approximation information to simplify. *)
+    Apply ({ func = lhs_of_application; args; kind = Indirect; dbg }),
+      ret r A.value_unknown
+
+and simplify_full_application env r ~function_decls ~lhs_of_application
+      ~closure_id_being_applied ~function_decl ~value_set_of_closures ~args
+      ~args_approxs ~dbg =
+  Inlining_decision.for_call_site ~env ~r ~function_decls
+    ~lhs_of_application ~closure_id_being_applied ~function_decl
+    ~value_set_of_closures ~args ~args_approxs ~dbg ~simplify:loop
+
+and simplify_partial_application env r ~lhs_of_application
+      ~closure_id_being_applied ~function_decl ~args ~dbg =
+  let arity = Flambda_utils.function_arity function_decl in
+  assert (arity > List.length args);
+  let freshened_params =
+    List.map (fun id -> Variable.freshen id) function_decl.Flambda.params
+  in
+  let applied_args, remaining_args =
+    Misc.map2_head (fun arg id' -> id', arg) args freshened_params
+  in
+  let wrapper_accepting_remaining_args =
+    let body : Flambda.t =
+      Apply {
+        func = lhs_of_application;
+        args = freshened_params;
+        kind = Direct closure_id_being_applied;
+        dbg;
+      }
+    in
+    Flambda_utils.make_closure_declaration ~id:(Variable.create "partial_fun")
+      ~body
+      ~params:remaining_args
+  in
+  let with_known_args =
+    Flambda_utils.bind
+      ~bindings:(List.map (fun (var, arg) ->
+          var, Flambda.Expr (Var arg)) applied_args)
+      ~body:wrapper_accepting_remaining_args
+  in
+  loop env r with_known_args
+
+and simplify_over_application env r ~args ~args_approxs ~function_decls
+      ~lhs_of_application ~closure_id_being_applied ~function_decl
+      ~value_set_of_closures ~dbg =
+  let arity = Flambda_utils.function_arity function_decl in
+  assert (arity < List.length args);
+  assert (List.length args = List.length args_approxs);
+  let h_args, q_args = Misc.split_at arity args in
+  let h_approxs, _q_approxs = Misc.split_at arity args_approxs in
+  let expr, r =
+    simplify_full_application env r ~function_decls ~lhs_of_application
+      ~closure_id_being_applied ~function_decl ~value_set_of_closures
+      ~args:h_args ~args_approxs:h_approxs ~dbg
+  in
+  let func_var = Variable.create "full_apply" in
+  let expr : Flambda.t =
+    Let (Immutable, func_var, Expr expr,
+      Apply { func = func_var; args = q_args; kind = Indirect; dbg })
+  in
+  loop env r expr
 
 and loop_named env r (tree : Flambda.named) : Flambda.named * R.t =
   debug_free_variables_check env tree ~name:"loop_named"
@@ -653,291 +931,13 @@ and loop_list env r l = match l with
     then l, approxs, r
     else h' :: t', approxs, r
 
-(* Transforms closure definitions by applying [loop] on the code of every
-   one of the set and on the expressions of the free variables.
-   If the substitution is activated, alpha renaming also occur on everything
-   defined by the set of closures:
-   * Variables bound by a closure of the set
-   * closure identifiers
-   * parameters
-
-   The rewriting occurs in a clean environment without any of the variables
-   defined outside reachable.  This helps increase robustness against accidental,
-   potentially unsound simplification of variable accesses by
-   [simplify_using_approx_and_env].
-
-   The rewriting occurs in an environment filled with:
-   * The approximation of the free variables
-   * An explicitely unknown approximation for function parameters,
-     except for those where it is known to be safe: those present in the
-     [specialised_args] set.
-   * An approximation for the closures in the set. It contains the code of
-     the functions before rewriting.
-
-   The approximation of the currently defined closures is available to
-   allow marking recursives calls as direct and in some cases, allow
-   inlining of one closure from the set inside another one. For this to
-   be correct an alpha renaming is first applied on the expressions by
-   [apply_function_decls_and_free_vars].
-
-   For instance when rewriting the declaration
-
-     [let rec f_1 x_1 =
-        let y_1 = x_1 + 1 in
-        g_1 y_1
-      and g_1 z_1 = f_1 (f_1 z_1)]
-
-   When rewriting this function, the first substitution will contain
-   some mapping:
-   { f_1 -> f_2;
-     g_1 -> g_2;
-     x_1 -> x_2;
-     z_1 -> z_2 }
-
-   And the approximation for the closure will contain
-
-   { f_2:
-       fun x_2 ->
-         let y_1 = x_2 + 1 in
-         g_2 y_1
-     g_2:
-       fun z_2 -> f_2 (f_2 z_2) }
-
-   Note that no substitution is applied to the let-bound variable [y_1].
-   If [f_2] where to be inlined inside [g_2], we known that a new substitution
-   will be introduced in the current scope for [y_1] each time.
-
-
-   If the function where a recursive one comming from another compilation
-   unit, the code already went through [Flambdasym] that could have
-   replaced the function variable by the symbol identifying the function
-   (this occur if the function contains only constants in its closure).
-   To handle that case, we first replace those symbols by the original
-   variable.
-*)
-and simplify_set_of_closures original_env r
-      (set_of_closures : Flambda.set_of_closures) : Flambda.named * R.t =
-  let function_decls =
-    let module Backend = (val (E.backend original_env) : Backend_intf.S) in
-    (* CR mshinwell: Does this affect
-       [reference_recursive_function_directly]? *)
-    Freshening.rewrite_recursive_calls_with_symbols (E.freshening original_env)
-      set_of_closures.function_decls ~make_closure_symbol:Backend.closure_symbol
-  in
-  let env = E.increase_closure_depth original_env in
-  let free_vars =
-    Variable.Map.map (fun external_var ->
-        let external_var =
-          freshen_and_simplify_variable env external_var
-        in
-        external_var, E.find external_var env)
-      set_of_closures.free_vars
-  in
-  let specialised_args =
-    Variable.Map.map (freshen_and_simplify_variable env)
-      set_of_closures.specialised_args
-  in
-  (* Remove all variable bindings from the environment.  This isn't necessary,
-     but allows us to catch bugs where variables escape their scope. *)
-  let environment_before_cleaning = env in
-  let env = E.local env in
-  let free_vars, function_decls, sb, freshening =
-    Freshening.apply_function_decls_and_free_vars (E.freshening env) free_vars
-      function_decls
-  in
-  let env = E.set_freshening sb env in
-  let specialised_args =
-    Variable.Map.map_keys (freshen_and_simplify_variable env)
-      specialised_args
-  in
-  let parameter_approximations =
-    (* Approximations of parameters that are known to always hold the same
-       argument throughout the body of the function. *)
-    Variable.Map.map_keys (freshen_and_simplify_variable env)
-      (Variable.Map.map (fun id -> E.find id environment_before_cleaning)
-        specialised_args)
-  in
-  let env =
-    E.enter_set_of_closures_declaration function_decls.set_of_closures_id env
-  in
-  (* we use the previous closure for evaluating the functions *)
-  let internal_value_set_of_closures : A.value_set_of_closures =
-    { function_decls = function_decls;
-      bound_vars = Variable.Map.fold (fun id (_, desc) map ->
-          Var_within_closure.Map.add (Var_within_closure.wrap id) desc map)
-          free_vars Var_within_closure.Map.empty;
-      unchanging_params = Variable.Set.empty;
-      specialised_args = Variable.Map.keys specialised_args;
-      freshening;
-    }
-  in
-  (* Populate the environment with the approximation of each closure.
-     This part of the environment is shared between all of the closures in
-     the set of closures. *)
-  let set_of_closures_env =
-    Variable.Map.fold (fun closure _ env ->
-        let approx =
-          A.value_closure ~closure_var:closure internal_value_set_of_closures
-            (Closure_id.wrap closure)
-        in
-        E.add_approx closure approx env)
-      function_decls.funs env
-  in
-  let simplify_function fid (function_decl : Flambda.function_declaration)
-        (funs, _used_params, r)
-        (* CR mshinwell: check we really did not need _used_params, and
-           remove it *)
-        : Flambda.function_declaration Variable.Map.t * Variable.Set.t * R.t =
-    let closure_env =
-      populate_closure_approximations ~function_decl ~free_vars
-        ~parameter_approximations ~set_of_closures_env
-    in
-    let body, r =
-      E.enter_closure closure_env ~closure_id:(Closure_id.wrap fid)
-        ~inline_inside:
-          (Inlining_decision.should_inline_inside_declaration function_decl)
-        ~where:Transform_set_of_closures_expression
-        ~f:(fun body_env ->
-          loop body_env r function_decl.body)
-    in
-    let free_variables = Free_variables.calculate body in
-    let used_params =
-      Variable.Set.filter (fun param -> Variable.Set.mem param free_variables)
-        (Variable.Set.of_list function_decl.params)
-    in
-    Variable.Map.add fid { function_decl with body; free_variables } funs,
-      used_params, r
-  in
-  let funs, used_params, r =
-    Variable.Map.fold simplify_function function_decls.funs
-      (Variable.Map.empty, Variable.Set.empty, r)
-  in
-  let specialised_args =
-    (* Remove any specialised arguments whose parameters are unused. *)
-    Variable.Map.filter (fun id _ -> Variable.Set.mem id used_params)
-      specialised_args
-  in
-  let function_decls = { function_decls with funs } in
-  let unchanging_params =
-    Invariant_params.unchanging_params_in_recursion function_decls
-  in
-  let value_set_of_closures : A.value_set_of_closures =
-    { internal_value_set_of_closures with
-      function_decls; unchanging_params;
-    }
-  in
-  let set_of_closures : Flambda.set_of_closures =
-    { function_decls;
-      free_vars = Variable.Map.map fst free_vars;
-      specialised_args;
-    }
-  in
-  Set_of_closures (set_of_closures),
-    ret r (A.value_set_of_closures value_set_of_closures)
-
-and simplify_apply env r ~(apply : Flambda.apply) : Flambda.t * R.t =
-  let { Flambda. func = lhs_of_application; args; kind = _; dbg } = apply in
-  let lhs_of_application =
-    freshen_and_simplify_variable env lhs_of_application
-  in
-  let args = List.map (freshen_and_simplify_variable env) args in
-  let lhs_of_application_approx = E.find lhs_of_application env in
-  let args_approxs = List.map (fun arg -> E.find arg env) args in
-  (* By using the approximation of the left-hand side of the application,
-     attempt to determine which function is being applied (even if the
-     application is currently [Indirect]).  If successful---in which case we
-     then have a direct application---consider inlining. *)
-  match A.check_approx_for_closure lhs_of_application_approx with
-  | Ok (value_closure, _set_of_closures_var, value_set_of_closures) ->
-    let closure_id_being_applied = value_closure.closure_id in
-    let function_decls = value_set_of_closures.function_decls in
-    let function_decl =
-      try
-        Flambda_utils.find_declaration closure_id_being_applied function_decls
-      with
-      | Not_found ->
-        Misc.fatal_errorf "When handling application expression, \
-            approximation references non-existent closure %a@."
-          Closure_id.print closure_id_being_applied
-    in
-    let nargs = List.length args in
-    let arity = Flambda_utils.function_arity function_decl in
-    if nargs = arity then
-      simplify_full_application env r ~function_decls ~lhs_of_application
-        ~closure_id_being_applied ~function_decl ~value_set_of_closures ~args
-        ~args_approxs ~dbg
-    else if nargs > arity then
-      simplify_over_application env r ~args ~args_approxs ~function_decls
-        ~lhs_of_application ~closure_id_being_applied ~function_decl
-        ~value_set_of_closures ~dbg
-    else if nargs > 0 && nargs < arity then
-      simplify_partial_application env r ~lhs_of_application
-        ~closure_id_being_applied ~function_decl ~args ~dbg
-    else
-      Misc.fatal_errorf "Function with arity %d when simplifying \
-          application expression: %a"
-        arity Flambda_printers.flambda (Flambda.Apply apply)
-  | Wrong ->  (* Insufficient approximation information to simplify. *)
-    Apply ({ func = lhs_of_application; args; kind = Indirect; dbg }),
-      ret r A.value_unknown
-
-and simplify_full_application env r ~function_decls ~lhs_of_application
-      ~closure_id_being_applied ~function_decl ~value_set_of_closures ~args
-      ~args_approxs ~dbg =
-  Inlining_decision.for_call_site ~env ~r ~function_decls
-    ~lhs_of_application ~closure_id_being_applied ~function_decl
-    ~value_set_of_closures ~args ~args_approxs ~dbg ~simplify:loop
-
-and simplify_partial_application env r ~lhs_of_application
-      ~closure_id_being_applied ~function_decl ~args ~dbg =
-  let arity = Flambda_utils.function_arity function_decl in
-  assert (arity > List.length args);
-  let freshened_params =
-    List.map (fun id -> Variable.freshen id) function_decl.Flambda.params
-  in
-  let applied_args, remaining_args =
-    Misc.map2_head (fun arg id' -> id', arg) args freshened_params
-  in
-  let wrapper_accepting_remaining_args =
-    let body : Flambda.t =
-      Apply {
-        func = lhs_of_application;
-        args = freshened_params;
-        kind = Direct closure_id_being_applied;
-        dbg;
-      }
-    in
-    Flambda_utils.make_closure_declaration ~id:(Variable.create "partial_fun")
-      ~body
-      ~params:remaining_args
-  in
-  let with_known_args =
-    Flambda_utils.bind
-      ~bindings:(List.map (fun (var, arg) ->
-          var, Flambda.Expr (Var arg)) applied_args)
-      ~body:wrapper_accepting_remaining_args
-  in
-  loop env r with_known_args
-
-and simplify_over_application env r ~args ~args_approxs ~function_decls
-      ~lhs_of_application ~closure_id_being_applied ~function_decl
-      ~value_set_of_closures ~dbg =
-  let arity = Flambda_utils.function_arity function_decl in
-  assert (arity < List.length args);
-  assert (List.length args = List.length args_approxs);
-  let h_args, q_args = Misc.split_at arity args in
-  let h_approxs, _q_approxs = Misc.split_at arity args_approxs in
-  let expr, r =
-    simplify_full_application env r ~function_decls ~lhs_of_application
-      ~closure_id_being_applied ~function_decl ~value_set_of_closures
-      ~args:h_args ~args_approxs:h_approxs ~dbg
-  in
-  let func_var = Variable.create "full_apply" in
-  let expr : Flambda.t =
-    Let (Immutable, func_var, Expr expr,
-      Apply { func = func_var; args = q_args; kind = Indirect; dbg })
-  in
-  loop env r expr
+and loop env r tree =
+  let f, r = loop_direct env r tree in
+  let module Backend = (val (E.backend env) : Backend_intf.S) in
+  (* CR mshinwell for pchambart: This call to [really_import_approx] is
+     kind of confusing; it seems like some kind of catch-all.  What
+     exactly is happening here? *)
+  f, ret r (Backend.really_import_approx (R.approx r))
 
 (* CR mshinwell for pchambart: Change to a "-dinlining-benefit" option? *)
 let debug_benefit =
