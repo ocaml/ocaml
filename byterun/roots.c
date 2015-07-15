@@ -65,7 +65,7 @@ void caml_darken_all_roots_start (void)
   caml_do_roots (caml_darken, 1);
 }
 
-uintnat caml_number_of_incremental_roots = 1;
+uintnat caml_incremental_roots_count = 1;
 
 intnat caml_darken_all_roots_slice (intnat work)
 {
