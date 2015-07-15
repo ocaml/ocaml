@@ -835,24 +835,15 @@ and simplify_set_of_closures original_env r
   Set_of_closures (set_of_closures),
     ret r (A.value_set_of_closures value_set_of_closures)
 
-(* Transform an flambda function application based on information provided
-   by an approximation of the function being applied.
-
-   If the approximation does not identify which closure is being applied, the
-   application remains as-is.
-
-   Otherwise, we determine whether the application is actually a full or
-   partial application (note that previously it may have appeared as partial,
-   but now we may know from the approximation that it is full).  The
-   interesting case is that of a full application: we then consider whether
-   the function can be inlined.  (See [full_apply], below.)
-*)
 and simplify_apply env r ~(apply : Flambda.apply) : Flambda.t * R.t =
   let { Flambda. func; args; kind = _; dbg } = apply in
   let func = freshen_and_simplify_variable env func in
   let args = List.map (freshen_and_simplify_variable env) args in
   let func_approx = E.find func env in
   let args_approxs = List.map (fun arg -> E.find arg env) args in
+  (* By using the approximation, attempt to determine which function is being
+     applied (even if the application is currently [Indirect]); if successful,
+     then consider inlining. *)
   match A.check_approx_for_closure func_approx with
   | Ok (value_closure, _set_of_closures_var, value_set_of_closures) ->
     let closure_id = value_closure.closure_id in
@@ -924,6 +915,8 @@ and partial_apply env r ~lhs_of_application ~closure_id_being_applied
 
 and over_apply env r ~args ~args_approxs ~function_decls ~func ~closure_id
       ~function_decl ~value_set_of_closures ~arity ~dbg =
+  assert (arity > List.length args);
+  assert (List.length args = List.length args_approxs);
   let h_args, q_args = Misc.split_at arity args in
   let h_approxs, _q_approxs = Misc.split_at arity args_approxs in
   let expr, r =
