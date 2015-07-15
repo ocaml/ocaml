@@ -39,7 +39,7 @@ let should_inline_function_known_to_be_recursive
         func.params approxs
 
 let inline_non_recursive
-    ~env ~r ~clos:function_decls ~(funct : Variable.t) ~closure_id_being_applied:fun_id
+    ~env ~r ~function_decls ~(funct : Variable.t) ~closure_id_being_applied:fun_id
     ~(func : Flambda.function_declaration)
     ~(record_decision : Inlining_stats_types.Decision.t -> unit)
     ~direct_apply
@@ -257,7 +257,7 @@ let for_call_site ~env ~r
         || (not recursive && E.inlining_level env <= max_level)
       then
         inline_non_recursive
-          ~env ~r ~clos:function_decls ~funct:lhs_of_application ~closure_id_being_applied:fun_id ~func:function_decl
+          ~env ~r ~function_decls ~funct:lhs_of_application ~closure_id_being_applied:fun_id ~func:function_decl
           ~record_decision
           ~direct_apply
           ~no_transformation
