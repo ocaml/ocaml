@@ -45,10 +45,6 @@ module Env : sig
 
   val add_approx : Variable.t -> Simple_value_approx.t -> t -> t
 
-  (* Explicitly record the fact that this variable does not carry any
-     information.  Used for mutable variables *)
-  val clear_approx : Variable.t -> t -> t
-
   val enter_set_of_closures_declaration : Set_of_closures_id.t -> t -> t
 
   val inside_set_of_closures_declaration : Set_of_closures_id.t -> t -> bool
