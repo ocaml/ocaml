@@ -574,17 +574,17 @@ and simplify_over_application env r ~args ~args_approxs ~function_decls
   let arity = Flambda_utils.function_arity function_decl in
   assert (arity < List.length args);
   assert (List.length args = List.length args_approxs);
-  let h_args, q_args = Misc.split_at arity args in
-  let h_approxs, _q_approxs = Misc.split_at arity args_approxs in
+  let full_app_args, remaining_args = Misc.split_at arity args in
+  let full_app_approxs, _ = Misc.split_at arity args_approxs in
   let expr, r =
     simplify_full_application env r ~function_decls ~lhs_of_application
       ~closure_id_being_applied ~function_decl ~value_set_of_closures
-      ~args:h_args ~args_approxs:h_approxs ~dbg
+      ~args:full_app_args ~args_approxs:full_app_approxs ~dbg
   in
   let func_var = Variable.create "full_apply" in
   let expr : Flambda.t =
     Let (Immutable, func_var, Expr expr,
-      Apply { func = func_var; args = q_args; kind = Indirect; dbg })
+      Apply { func = func_var; args = remaining_args; kind = Indirect; dbg })
   in
   simplify env r expr
 
@@ -682,8 +682,8 @@ and simplify_direct env r (tree : Flambda.t) : Flambda.t * R.t =
     let body, r =
       let body_env =
         match str with
-        | Mutable -> E.clear_approx id env
         | Immutable -> E.add_approx id (R.approx r) env
+        | Mutable -> E.add_approx id A.value_unknown env
       in
       simplify body_env r body
     in
