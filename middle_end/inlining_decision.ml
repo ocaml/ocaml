@@ -134,7 +134,7 @@ let inline_non_recursive
   end
 
 let for_call_site ~env ~r
-      ~(clos : Flambda.function_declarations)
+      ~(function_decls : Flambda.function_declarations)
       ~(lhs_of_application : Variable.t)
       ~fun_id
       ~(func : Flambda.function_declaration)
@@ -180,12 +180,12 @@ let for_call_site ~env ~r
   *)
   let direct_apply = false in
   let inlining_threshold = R.inlining_threshold r in
-  let fun_var = U.find_declaration_variable fun_id clos in
+  let fun_var = U.find_declaration_variable fun_id function_decls in
   let recursive =
     Variable.Set.mem fun_var
-      (Find_recursive_functions.in_function_decls clos)
+      (Find_recursive_functions.in_function_decls function_decls)
   in
-  let probably_a_functor = is_probably_a_functor env clos approxs in
+  let probably_a_functor = is_probably_a_functor env function_decls approxs in
   let fun_cost =
     if unconditionally_inline || (direct_apply && not recursive)
        || probably_a_functor then
@@ -253,7 +253,7 @@ let for_call_site ~env ~r
         || (not recursive && E.inlining_level env <= max_level)
       then
         inline_non_recursive
-          ~env ~r ~clos ~funct:lhs_of_application ~fun_id ~func
+          ~env ~r ~clos:function_decls ~funct:lhs_of_application ~fun_id ~func
           ~record_decision
           ~direct_apply
           ~no_transformation
@@ -267,14 +267,14 @@ let for_call_site ~env ~r
         let tried_unrolling = ref false in
         let unrolling_result =
           if E.unrolling_allowed env && E.inlining_level env <= max_level then
-            if E.inside_set_of_closures_declaration clos.set_of_closures_id env then
+            if E.inside_set_of_closures_declaration function_decls.set_of_closures_id env then
               (* Self unrolling *)
               None
             else begin
               let env = E.inside_unrolled_function env in
               let body, r_inlined =
                 Inlining_transforms.inline_by_copying_function_body ~env
-                  ~r:(R.clear_benefit r) ~clos ~lfunc:lhs_of_application ~fun_id ~func
+                  ~r:(R.clear_benefit r) ~clos:function_decls ~lfunc:lhs_of_application ~fun_id ~func
                   ~args ~simplify
               in
               tried_unrolling := true;
@@ -305,7 +305,7 @@ let for_call_site ~env ~r
         match unrolling_result with
         | Some r -> r
         | None ->
-          if should_inline_function_known_to_be_recursive ~func ~clos ~env
+          if should_inline_function_known_to_be_recursive ~func ~clos:function_decls ~env
               ~value_set_of_closures ~approxs ~unchanging_params
           then
 (*
@@ -318,7 +318,7 @@ let for_call_site ~env ~r
             let copied_function_declaration =
               Inlining_transforms.inline_by_copying_function_declaration ~env
                 ~r:(R.clear_benefit r) ~funct:lhs_of_application
-                ~function_decls:clos ~closure_id:fun_id ~function_decl:func
+                ~function_decls ~closure_id:fun_id ~function_decl:func
                 ~args_with_approxs:(args, approxs) ~unchanging_params
                 ~specialised_args:value_set_of_closures.specialised_args ~dbg ~simplify
             in
