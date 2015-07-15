@@ -92,11 +92,7 @@ let inline_non_recursive
         ~where:Inline_by_copying_function_body
     in
     let env = E.inlining_level_up env in
-let result =
     simplify env r body
-in
-Printf.printf "";
-result
   end else begin
     (* The function is not sufficiently good by itself, but may become if
        we allow inlining below *)
@@ -253,8 +249,7 @@ let for_call_site ~env ~r
          inlined). *)
       if unconditionally_inline
         || (not recursive && E.inlining_level env <= max_level)
-      then begin
-let result =
+      then
         inline_non_recursive
           ~env ~r ~clos ~funct:lhs_of_application ~fun_id ~func
           ~record_decision
@@ -262,10 +257,6 @@ let result =
           ~no_transformation
           ~probably_a_functor
           ~args ~simplify
-in
-  Printf.printf "";
-  result
-end
       else if E.inlining_level env > max_level then begin
         record_decision (Can_inline_but_tried_nothing (Level_exceeded true));
         no_transformation ()

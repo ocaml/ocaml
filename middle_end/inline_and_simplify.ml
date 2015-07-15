@@ -885,13 +885,9 @@ and simplify_apply env r ~(apply : Flambda.apply) : Flambda.t * R.t =
 
 and full_apply env r function_decls lhs_of_application closure_id func closure
       args_with_approxs dbg =
-let result =
   Inlining_decision.for_call_site ~env ~r ~clos:function_decls
     ~lhs_of_application ~fun_id:closure_id ~func ~closure ~args_with_approxs
     ~dbg ~simplify:loop
-in
-Printf.printf "";
-result
 
 and partial_apply env r ~lhs_of_application ~closure_id_being_applied
       ~(function_decl : Flambda.function_declaration)
