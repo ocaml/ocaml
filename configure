@@ -1609,9 +1609,21 @@ if sh ./hasgot -DPACKAGE=ocaml -i bfd.h && \
   inf "BFD library found."
   echo "#define HAS_LIBBFD" >> s.h
   echo "LIBBFD_LINK=-lbfd -ldl -liberty -lz" >> Makefile
+  echo LIBBFD_INCLUDE= >>Makefile
+elif sh ./hasgot -DPACKAGE=ocaml -I/opt/local/include -i bfd.h && \
+     sh ./hasgot -DPACKAGE=ocaml -L/opt/local/lib -lbfd -ldl \
+                 -liberty -lz -lintl bfd_openr
+then
+  # MacOSX with binutils from MacPorts
+  inf "BFD library found."
+  echo "#define HAS_LIBBFD" >> s.h
+  echo "LIBBFD_LINK=-L/opt/local/lib -lbfd -ldl -liberty -lz -lintl" >> Makefile
+  echo LIBBFD_INCLUDE=-I/opt/local/include >>Makefile
 else
-  wrn "BFD library not found, 'objinfo' will be unable to display info on .cmxs files."
+  wrn "BFD library not found, 'objinfo' will be unable to display info" \
+      " on .cmxs files."
   echo "LIBBFD_LINK=" >> Makefile
+  echo "LIBBFD_INCLUDE=" >> Makefile
 fi
 
 # Check whether assembler supports CFI directives
