@@ -861,14 +861,15 @@ and simplify_apply env r ~(apply : Flambda.apply) : Flambda.t * R.t =
     let nargs = List.length args in
     let arity = Flambda_utils.function_arity function_decl in
     if nargs = arity then
-      full_apply env r ~function_decls func ~closure_id_being_applied
-        ~function_decl ~value_set_of_closures ~args ~args_approxs ~dbg
+      simplify_full_application env r ~function_decls func
+        ~closure_id_being_applied ~function_decl ~value_set_of_closures ~args
+        ~args_approxs ~dbg
     else if nargs > arity then
-      over_apply env r ~args ~args_approxs ~function_decls ~func
+      simplify_over_application env r ~args ~args_approxs ~function_decls ~func
         ~closure_id_being_applied ~function_decl ~value_set_of_closures ~dbg
     else if nargs > 0 && nargs < arity then
-      partial_apply env r ~lhs_of_application:func ~closure_id_being_applied
-        ~function_decl ~args ~dbg
+      simplify_partial_application env r ~lhs_of_application:func
+        ~closure_id_being_applied ~function_decl ~args ~dbg
     else
       Misc.fatal_errorf "Function with arity %d when simplifying \
           application expression: %a"
@@ -876,20 +877,19 @@ and simplify_apply env r ~(apply : Flambda.apply) : Flambda.t * R.t =
   | Wrong ->  (* Insufficient approximation information to simplify. *)
     Apply ({ func; args; kind = Indirect; dbg }), ret r A.value_unknown
 
-and full_apply env r ~function_decls lhs_of_application
+and simplify_full_application env r ~function_decls lhs_of_application
       ~closure_id_being_applied ~function_decl ~value_set_of_closures ~args
       ~args_approxs ~dbg =
   Inlining_decision.for_call_site ~env ~r ~function_decls
     ~lhs_of_application ~closure_id_being_applied ~function_decl
     ~value_set_of_closures ~args ~args_approxs ~dbg ~simplify:loop
 
-and partial_apply env r ~lhs_of_application ~closure_id_being_applied
-      ~(function_decl : Flambda.function_declaration)
-      ~(args : Variable.t list) ~dbg =
+and simplify_partial_application env r ~lhs_of_application
+      ~closure_id_being_applied ~function_decl ~args ~dbg =
   let arity = Flambda_utils.function_arity function_decl in
   assert (arity > List.length args);
   let freshened_params =
-    List.map (fun id -> Variable.freshen id) function_decl.params
+    List.map (fun id -> Variable.freshen id) function_decl.Flambda.params
   in
   let applied_args, remaining_args =
     Misc.map2_head (fun arg id' -> id', arg) args freshened_params
@@ -915,7 +915,7 @@ and partial_apply env r ~lhs_of_application ~closure_id_being_applied
   in
   loop env r with_known_args
 
-and over_apply env r ~args ~args_approxs ~function_decls ~func
+and simplify_over_application env r ~args ~args_approxs ~function_decls ~func
       ~closure_id_being_applied ~function_decl ~value_set_of_closures ~dbg =
   let arity = Flambda_utils.function_arity function_decl in
   assert (arity < List.length args);
@@ -923,9 +923,9 @@ and over_apply env r ~args ~args_approxs ~function_decls ~func
   let h_args, q_args = Misc.split_at arity args in
   let h_approxs, _q_approxs = Misc.split_at arity args_approxs in
   let expr, r =
-    full_apply env r ~function_decls func ~closure_id_being_applied
-      ~function_decl ~value_set_of_closures ~args:h_args
-      ~args_approxs:h_approxs ~dbg
+    simplify_full_application env r ~function_decls func
+      ~closure_id_being_applied ~function_decl ~value_set_of_closures
+      ~args:h_args ~args_approxs:h_approxs ~dbg
   in
   let func_var = Variable.create "full_apply" in
   let expr : Flambda.t =

@@ -11,10 +11,8 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(** Examine a full application of a known closure to determine whether to
-    inline.  Then, if inlining is desired, perform inlining using the
-    supplied helper functions [inline_by_copying_function_body] and
-    [inline_by_copying_function_declaration]. *)
+(** Try to inline a full application of a known function, guided by various
+    heuristics. *)
 val for_call_site
    : env:Inline_and_simplify_aux.Env.t
   -> r:Inline_and_simplify_aux.Result.t
@@ -29,7 +27,7 @@ val for_call_site
   -> simplify:Inlining_decision_intf.simplify
   -> Flambda.t * Inline_and_simplify_aux.Result.t
 
-(** When a function declaration is encountered in [Flambdainline], the body
+(** When a function declaration is encountered by [for_call_site], the body
     may be subject to inlining immediately, thus changing the declaration.
     This function must return [true] for that to be able to happen. *)
 val should_inline_inside_declaration : Flambda.function_declaration -> bool
