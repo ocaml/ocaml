@@ -61,8 +61,9 @@ let copy_of_function's_body_with_freshened_params
   freshened_params, body
 
 let inline_by_copying_function_body ~env ~r
-      ~(function_decls : Flambda.function_declarations) ~lhs_of_application ~fun_id
-      ~(function_decl : Flambda.function_declaration) ~args ~simplify =
+      ~(function_decls : Flambda.function_declarations) ~lhs_of_application
+      ~closure_id_being_applied ~(function_decl : Flambda.function_declaration)
+      ~args ~simplify =
   let r = R.map_benefit r B.remove_call in
   let env = E.inlining_level_up env in
   let freshened_params, body =
@@ -75,7 +76,7 @@ let inline_by_copying_function_body ~env ~r
   in
   (* Add bindings for variables bound by the closure. *)
   let bindings_for_vars_bound_by_closure_and_params_to_args =
-    fold_over_exprs_for_variables_bound_by_closure ~fun_id
+    fold_over_exprs_for_variables_bound_by_closure ~fun_id:closure_id_being_applied
       ~clos_id:lhs_of_application ~clos:function_decls ~init:bindings_for_params_to_args
       ~f:(fun ~acc:body ~var ~expr -> Flambda.Let (Immutable, var, expr, body))
   in
@@ -86,7 +87,7 @@ let inline_by_copying_function_body ~env ~r
         Flambda.Let (Immutable, id,
           Move_within_set_of_closures {
             closure = lhs_of_application;
-            start_from = fun_id;
+            start_from = closure_id_being_applied;
             move_to = Closure_id.wrap id;
           },
           expr))
@@ -94,17 +95,16 @@ let inline_by_copying_function_body ~env ~r
       bindings_for_vars_bound_by_closure_and_params_to_args
   in
   let env =
-    E.note_entering_closure env ~closure_id:fun_id
+    E.note_entering_closure env ~closure_id:closure_id_being_applied
       ~where:Inline_by_copying_function_body
   in
   simplify (E.activate_freshening env) r expr
 
-let inline_by_copying_function_declaration ~env ~r ~funct
+let inline_by_copying_function_declaration ~env ~r
     ~(function_decls : Flambda.function_declarations)
-    ~closure_id
+    ~lhs_of_application ~closure_id_being_applied
     ~(function_decl : Flambda.function_declaration)
-    ~args_with_approxs ~unchanging_params ~specialised_args ~dbg
-    ~simplify =
+    ~args_with_approxs ~unchanging_params ~specialised_args ~dbg ~simplify =
   let args, approxs = args_with_approxs in
   let more_specialised_args, args, args_decl =
     which_function_parameters_can_we_specialize
@@ -126,8 +126,8 @@ let inline_by_copying_function_declaration ~env ~r ~funct
        copied.  We add these bindings using [Let] around the new
        set-of-closures declaration. *)
     let free_vars, free_vars_for_lets =
-      fold_over_exprs_for_variables_bound_by_closure ~fun_id:closure_id
-        ~clos_id:funct ~clos:function_decls ~init:(Variable.Map.empty, [])
+      fold_over_exprs_for_variables_bound_by_closure ~fun_id:closure_id_being_applied
+        ~clos_id:lhs_of_application ~clos:function_decls ~init:(Variable.Map.empty, [])
         ~f:(fun ~acc:(map, for_lets) ~var:internal_var ~expr ->
           let from_closure = new_var "from_closure" in
           Variable.Map.add internal_var from_closure map,
@@ -147,14 +147,19 @@ let inline_by_copying_function_declaration ~env ~r ~funct
     let duplicated_application : Flambda.t =
       let project_closure : Flambda.project_closure =
         { set_of_closures = set_of_closures_var;
-          closure_id;
+          closure_id = closure_id_being_applied;
         }
       in
       let func = new_var "dup_func" in
       let body : Flambda.t =
         Let (Immutable, set_of_closures_var, Set_of_closures set_of_closures,
           Let (Immutable, func, Project_closure project_closure,
-            Apply { func; args; kind = Direct closure_id; dbg; }))
+            Apply {
+              func;
+              args;
+              kind = Direct closure_id_being_applied;
+              dbg;
+            }))
       in
       Flambda_utils.bind ~bindings:free_vars_for_lets ~body
     in
@@ -164,7 +169,7 @@ let inline_by_copying_function_declaration ~env ~r ~funct
       Flambda_utils.bind ~body:duplicated_application ~bindings:args_decl
     in
     let env =
-      E.note_entering_closure env ~closure_id
+      E.note_entering_closure env ~closure_id:closure_id_being_applied
         ~where:Inline_by_copying_function_declaration
     in
     Some (simplify (E.activate_freshening env) r expr)

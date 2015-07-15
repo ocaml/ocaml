@@ -65,7 +65,7 @@ val inline_by_copying_function_body
   -> r:Inline_and_simplify_aux.Result.t
   -> function_decls:Flambda.function_declarations
   -> lhs_of_application:Variable.t
-  -> fun_id:Closure_id.t
+  -> closure_id_being_applied:Closure_id.t
   -> function_decl:Flambda.function_declaration
   -> args:Variable.t list
   -> simplify:Inlining_decision_intf.simplify
@@ -81,9 +81,9 @@ val inline_by_copying_function_body
 val inline_by_copying_function_declaration
    : env:Inline_and_simplify_aux.Env.t
   -> r:Inline_and_simplify_aux.Result.t
-  -> funct:Variable.t
   -> function_decls:Flambda.function_declarations
-  -> closure_id:Closure_id.t
+  -> lhs_of_application:Variable.t
+  -> closure_id_being_applied:Closure_id.t
   -> function_decl:Flambda.function_declaration
   -> args_with_approxs: (Variable.t list) * (Simple_value_approx.t list)
   -> unchanging_params:Variable.Set.t

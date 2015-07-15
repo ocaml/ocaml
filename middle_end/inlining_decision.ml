@@ -51,8 +51,8 @@ let inline_non_recursive
     (* We first try to inline that function preventing further inlining below *)
     Inlining_transforms.inline_by_copying_function_body ~env
       ~r:(R.set_inlining_threshold (R.clear_benefit r) Inlining_cost.Never_inline)
-      ~function_decls ~lhs_of_application ~fun_id:closure_id_being_applied ~function_decl:func ~args
-      ~simplify
+      ~function_decls ~lhs_of_application ~closure_id_being_applied
+      ~function_decl:func ~args ~simplify
   in
   let unconditionally_inline =
     func.stub
@@ -102,7 +102,8 @@ let inline_non_recursive
     let body, r_inlined =
       Inlining_transforms.inline_by_copying_function_body ~env
         ~r:(R.clear_benefit r)
-        ~function_decls ~lhs_of_application ~fun_id:closure_id_being_applied ~function_decl:func ~args ~simplify
+        ~function_decls ~lhs_of_application ~closure_id_being_applied
+        ~function_decl:func ~args ~simplify
     in
     let keep_inlined_version =
       let wsb =
@@ -137,7 +138,7 @@ let inline_non_recursive
 let for_call_site ~env ~r
       ~(function_decls : Flambda.function_declarations)
       ~(lhs_of_application : Variable.t)
-      ~closure_id_being_applied:fun_id
+      ~closure_id_being_applied
       ~(function_decl : Flambda.function_declaration)
       ~(value_set_of_closures : Simple_value_approx.value_set_of_closures)
       ~args ~args_approxs ~dbg ~simplify =
@@ -149,13 +150,13 @@ let for_call_site ~env ~r
   let record_decision =
     let closure_stack =
       E.inlining_stats_closure_stack (E.note_entering_closure env
-          ~closure_id:fun_id ~where:Inlining_decision)
+          ~closure_id:closure_id_being_applied ~where:Inlining_decision)
     in
     Inlining_stats.record_decision ~closure_stack ~debuginfo:dbg
   in
   let args, approxs = args_with_approxs in
   let no_transformation () : Flambda.t * R.t =
-    Apply {func = lhs_of_application; args; kind = Direct fun_id; dbg},
+    Apply {func = lhs_of_application; args; kind = Direct closure_id_being_applied; dbg},
       R.set_approx r A.value_unknown
   in
   let max_level = 3 in
@@ -184,7 +185,7 @@ let for_call_site ~env ~r
   *)
   let direct_apply = false in
   let inlining_threshold = R.inlining_threshold r in
-  let fun_var = U.find_declaration_variable fun_id function_decls in
+  let fun_var = U.find_declaration_variable closure_id_being_applied function_decls in
   let recursive =
     Variable.Set.mem fun_var
       (Find_recursive_functions.in_function_decls function_decls)
@@ -258,7 +259,7 @@ let for_call_site ~env ~r
       then
         inline_non_recursive
           ~env ~r ~function_decls ~lhs_of_application
-          ~closure_id_being_applied:fun_id ~func:function_decl
+          ~closure_id_being_applied ~func:function_decl
           ~record_decision
           ~direct_apply
           ~no_transformation
@@ -280,7 +281,7 @@ let for_call_site ~env ~r
               let body, r_inlined =
                 Inlining_transforms.inline_by_copying_function_body ~env
                   ~r:(R.clear_benefit r) ~function_decls
-                  ~lhs_of_application ~fun_id ~function_decl
+                  ~lhs_of_application ~closure_id_being_applied ~function_decl
                   ~args ~simplify
               in
               tried_unrolling := true;
@@ -314,17 +315,10 @@ let for_call_site ~env ~r
           if should_inline_function_known_to_be_recursive ~func:function_decl ~clos:function_decls ~env
               ~value_set_of_closures ~approxs ~unchanging_params
           then
-(*
-            let () =
-              if Variable.Map.cardinal clos.funs > 1
-              then Format.printf "try inline multi rec %a@."
-                  Closure_id.print fun_id
-            in
-*)
             let copied_function_declaration =
               Inlining_transforms.inline_by_copying_function_declaration ~env
-                ~r:(R.clear_benefit r) ~funct:lhs_of_application
-                ~function_decls ~closure_id:fun_id ~function_decl
+                ~r:(R.clear_benefit r) ~lhs_of_application
+                ~function_decls ~closure_id_being_applied ~function_decl
                 ~args_with_approxs:(args, approxs) ~unchanging_params
                 ~specialised_args:value_set_of_closures.specialised_args ~dbg ~simplify
             in
