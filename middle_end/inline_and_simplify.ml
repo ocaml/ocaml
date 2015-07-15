@@ -303,12 +303,6 @@ let rec simplify_project_var env r ~(project_var : Flambda.project_var)
       Variable.print closure
       Simple_value_approx.print approx
 
-and sequence env r expr1 expr2 =
-  let expr : Flambda.t =
-    Let (Immutable, Variable.create "seq", Expr expr1, expr2)
-  in
-  loop env r expr
-
 and loop env r tree =
   (* CR mshinwell: add compiler option to enable this expensive check *)
   let fv = Free_variables.calculate tree in
@@ -616,7 +610,7 @@ and loop_direct env r (tree : Flambda.t) : Flambda.t * R.t =
     (* When arg is known to be a block with a fixed tag or a fixed integer,
        we can drop the switch and replace it by a sequence.
        if arg is not effectful we can also drop it. *)
-    let arg, r = loop env r arg in
+    let arg = freshen_and_simplify_variable env arg in
     let get_failaction () : Flambda.t =
       (* If the switch is applied to a statically-known value that is
          outside of each match case:
@@ -642,8 +636,7 @@ and loop_direct env r (tree : Flambda.t) : Flambda.t * R.t =
         with Not_found -> get_failaction ()
       in
       let lam, r = loop env r lam in
-      let r = R.map_benefit r B.remove_branch in
-      sequence env r arg lam
+      lam, R.map_benefit r B.remove_branch
     | Value_block (tag, _) ->
       let tag = Tag.to_int tag in
       let lam =
@@ -651,8 +644,7 @@ and loop_direct env r (tree : Flambda.t) : Flambda.t * R.t =
         with Not_found -> get_failaction ()
       in
       let lam, r = loop env r lam in
-      let r = R.map_benefit r B.remove_branch in
-      sequence env r arg lam
+      lam, R.map_benefit r B.remove_branch
     | _ ->
       let env = E.inside_branch env in
       let f (i, v) (acc, r) =
@@ -675,7 +667,7 @@ and loop_direct env r (tree : Flambda.t) : Flambda.t * R.t =
       Switch (arg, sw), r
     end
   | String_switch (arg, sw, def) ->
-    let arg, r = loop env r arg in
+    let arg = freshen_and_simplify_variable env arg in
     let sw, r =
       List.fold_right (fun (str, lam) (sw, r) ->
           let lam, r = loop env r lam in

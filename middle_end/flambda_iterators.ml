@@ -25,13 +25,11 @@ let apply_on_subexpressions f f_named (flam : Flambda.t) =
   | Let_rec (defs, body) ->
     List.iter (fun (_,l) -> f_named l) defs;
     f body
-  | Switch (arg,sw) ->
-    f arg;
+  | Switch (_, sw) ->
     List.iter (fun (_,l) -> f l) sw.consts;
     List.iter (fun (_,l) -> f l) sw.blocks;
     Misc.may f sw.failaction
-  | String_switch (arg,sw,def) ->
-    f arg;
+  | String_switch (_, sw, def) ->
     List.iter (fun (_,l) -> f l) sw;
     Misc.may f def
   | Static_raise (_,l) ->
@@ -73,13 +71,11 @@ let iter_general ~toplevel f f_named maybe_named =
       aux f1; aux f2
     | Static_raise (_,l) ->
       iter_list l
-    | Switch (arg,sw) ->
-      aux arg;
+    | Switch (_, sw) ->
       List.iter (fun (_,l) -> aux l) sw.consts;
       List.iter (fun (_,l) -> aux l) sw.blocks;
       Misc.may aux sw.failaction
-    | String_switch (arg,sw,def) ->
-      aux arg;
+    | String_switch (_, sw, def) ->
       List.iter (fun (_,l) -> aux l) sw;
       Misc.may aux def
   and aux_named (named : Flambda.named) =
@@ -127,8 +123,7 @@ let map_general ~toplevel f f_named tree =
         let defs = List.map (fun (id, lam) -> id, aux_named lam) defs in
         let body = aux body in
         Let_rec (defs, body)
-      | Switch(arg, sw) ->
-        let arg = aux arg in
+      | Switch (arg, sw) ->
         let sw =
           { sw with
             failaction = Misc.may_map aux sw.failaction;
@@ -137,8 +132,7 @@ let map_general ~toplevel f f_named tree =
           }
         in
         Switch (arg, sw)
-      | String_switch(arg, sw, def) ->
-        let arg = aux arg in
+      | String_switch (arg, sw, def) ->
         let sw = List.map (fun (i,v) -> i, aux v) sw in
         let def = Misc.may_map aux def in
         String_switch(arg, sw, def)

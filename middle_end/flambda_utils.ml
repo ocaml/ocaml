@@ -69,10 +69,11 @@ let rec same (l1 : Flambda.t) (l2 : Flambda.t) =
   | Let_rec (bl1, a1), Let_rec (bl2, a2) ->
     Misc.samelist samebinding bl1 bl2 && same a1 a2
   | Let_rec _, _ | _, Let_rec _ -> false
-  | Switch (a1, s1), Switch (a2, s2) -> same a1 a2 && sameswitch s1 s2
+  | Switch (a1, s1), Switch (a2, s2) ->
+    Variable.equal a1 a2 && sameswitch s1 s2
   | Switch _, _ | _, Switch _ -> false
   | String_switch (a1, s1, d1), String_switch (a2, s2, d2) ->
-    same a1 a2 &&
+    Variable.equal a1 a2 &&
       Misc.samelist (fun (s1, e1) (s2, e2) -> s1 = s2 && same e1 e2) s1 s2 &&
       Misc.sameoption same d1 d2
   | String_switch _, _ | _, String_switch _ -> false

@@ -96,15 +96,13 @@ let rec no_effects (flam : Flambda.t) =
     no_effects body
       && List.for_all (fun (_, def) -> no_effects_named def) defs
   | If_then_else (_, ifso, ifnot) -> no_effects ifso && no_effects ifnot
-  | Switch (lam, sw) ->
-    let aux (_, lam) = no_effects lam in
-    no_effects lam
-      && List.for_all aux sw.blocks
+  | Switch (_, sw) ->
+    let aux (_, flam) = no_effects flam in
+    List.for_all aux sw.blocks
       && List.for_all aux sw.consts
       && Misc.may_default no_effects sw.failaction true
-  | String_switch (lam, sw, def) ->
-    no_effects lam
-      && List.for_all (fun (_, lam) -> no_effects lam) sw
+  | String_switch (_, sw, def) ->
+    List.for_all (fun (_, lam) -> no_effects lam) sw
       && Misc.may_default no_effects def true
   | Static_catch (_, _, body, _) | Try_with (body, _, _) ->
     (* If there is a [raise] in [body], the whole [Try_with] may have an

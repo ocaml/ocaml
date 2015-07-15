@@ -31,13 +31,13 @@ let iter tree ~free_variable ~bound_variable =
           aux_named defining_expr)
         bindings;
       aux body
-    | Switch (e1, switch) ->
-      aux e1;
+    | Switch (scrutinee, switch) ->
+      free_variable scrutinee;
       List.iter (fun (_, e) -> aux e) switch.consts;
       List.iter (fun (_, e) -> aux e) switch.blocks;
       Misc.may aux switch.failaction
-    | String_switch (e1, cases, failaction) ->
-      aux e1;
+    | String_switch (scrutinee, cases, failaction) ->
+      free_variable scrutinee;
       List.iter (fun (_, e) -> aux e) cases;
       Misc.may aux failaction
     | Static_raise (_, es) ->

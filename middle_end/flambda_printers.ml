@@ -85,7 +85,7 @@ let rec lam ppf (flam : Flambda.t) =
         (match sw.failaction with None -> "switch*" | _ -> "switch")
         (Int.Set.cardinal sw.numconsts)
         (Int.Set.cardinal sw.numblocks)
-        lam larg switch sw
+        Variable.print larg switch sw
   | String_switch(arg, cases, default) ->
       let switch ppf cases =
         let spc = ref false in
@@ -101,7 +101,7 @@ let rec lam ppf (flam : Flambda.t) =
         | None -> ()
         end in
       fprintf ppf
-       "@[<1>(stringswitch %a@ @[<v 0>%a@])@]" lam arg switch cases
+       "@[<1>(stringswitch %a@ @[<v 0>%a@])@]" Variable.print arg switch cases
   | Static_raise (i, ls)  ->
       let lams ppf largs =
         List.iter (fun l -> fprintf ppf "@ %a" lam l) largs in

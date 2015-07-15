@@ -195,14 +195,14 @@ module NotConstants(P:Param) = struct
 
     | Switch (arg,sw) ->
       mark_curr curr;
-      mark_loop ~toplevel [] arg;
+      mark_var arg curr;
       List.iter (fun (_,l) -> mark_loop ~toplevel [] l) sw.consts;
       List.iter (fun (_,l) -> mark_loop ~toplevel [] l) sw.blocks;
       Misc.may (fun l -> mark_loop ~toplevel [] l) sw.failaction
 
     | String_switch (arg,sw,def) ->
       mark_curr curr;
-      mark_loop ~toplevel [] arg;
+      mark_var arg curr;
       List.iter (fun (_,l) -> mark_loop ~toplevel [] l) sw;
       Misc.may (fun l -> mark_loop ~toplevel [] l) def
 

@@ -145,8 +145,8 @@ let variable_invariants flam =
       check_variable_is_bound env cond;
       loop env ifso;
       loop env ifnot
-    | Switch (e, { numconsts; consts; numblocks; blocks; failaction; }) ->
-      loop env e;
+    | Switch (arg, { numconsts; consts; numblocks; blocks; failaction; }) ->
+      check_variable_is_bound env arg;
       ignore_int_set numconsts;
       ignore_int_set numblocks;
       List.iter (fun (n, e) ->
@@ -154,8 +154,8 @@ let variable_invariants flam =
           loop env e)
         (consts @ blocks);
       Misc.may (loop env) failaction
-    | String_switch (e, cases, e_opt) ->
-      loop env e;
+    | String_switch (arg, cases, e_opt) ->
+      check_variable_is_bound env arg;
       List.iter (fun (label, case) ->
           ignore_string label;
           loop env case)

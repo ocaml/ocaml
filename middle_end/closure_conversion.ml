@@ -269,20 +269,23 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
       ~create_body:(fun args ->
         name_expr (Prim (p, args, Debuginfo.none)))
   | Lswitch (arg, sw) ->
+    let scrutinee = Variable.create "switch" in
     let aux (i, lam) = i, close t env lam in
     let zero_to_n = Ext_types.IntSet.zero_to_n in
-    Switch (close t env arg,
-      { numconsts = zero_to_n (sw.sw_numconsts - 1);
-        consts = List.map aux sw.sw_consts;
-        numblocks = zero_to_n (sw.sw_numblocks - 1);
-        blocks = List.map aux sw.sw_blocks;
-        failaction = Misc.may_map (close t env) sw.sw_failaction;
-      })
+    Let (Immutable, scrutinee, Expr (close t env arg),
+      Switch (scrutinee,
+        { numconsts = zero_to_n (sw.sw_numconsts - 1);
+          consts = List.map aux sw.sw_consts;
+          numblocks = zero_to_n (sw.sw_numblocks - 1);
+          blocks = List.map aux sw.sw_blocks;
+          failaction = Misc.may_map (close t env) sw.sw_failaction;
+        }))
   | Lstringswitch (arg, sw, def) ->
-    String_switch (
-      close t env arg,
-      List.map (fun (s, e) -> s, close t env e) sw,
-      Misc.may_map (close t env) def)
+    let scrutinee = Variable.create "string_switch" in
+    Let (Immutable, scrutinee, Expr (close t env arg),
+      String_switch (scrutinee,
+        List.map (fun (s, e) -> s, close t env e) sw,
+        Misc.may_map (close t env) def))
   | Lstaticraise (i, args) ->
     Static_raise (Env.find_static_exception env i, close_list t env args)
   | Lstaticcatch (body, (i, ids), handler) ->

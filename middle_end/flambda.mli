@@ -129,9 +129,9 @@ type t =
   | Assign of assign
   | Send of Lambda.meth_kind * t * t * t list * Debuginfo.t
   | If_then_else of Variable.t * t * t
-  | Switch of t * switch
+  | Switch of Variable.t * switch
   (* Restrictions on [Lambda.Lstringswitch] also apply to [String_switch]. *)
-  | String_switch of t * (string * t) list * t option
+  | String_switch of Variable.t * (string * t) list * t option
   | Static_raise of Static_exception.t * t list
   | Static_catch of Static_exception.t * Variable.t list * t * t
   | Try_with of t * Variable.t * t
