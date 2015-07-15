@@ -887,8 +887,12 @@ and simplify_apply env r ~(apply : Flambda.apply) : Flambda.t * R.t =
       in
       loop env r expr
     else if nargs > 0 && nargs < arity then
-      let partial_fun = partial_apply func closure_id func_decl args dbg in
-      loop env r partial_fun
+      let wrapper_accepting_remaining_args =
+        partial_apply ~lhs_of_application:func
+          ~closure_id_being_applied:closure_id
+          ~function_decl:func_decl ~args ~dbg
+      in
+      loop env r wrapper_accepting_remaining_args
     else
       no_transformation ()
   | Wrong -> no_transformation ()
@@ -903,32 +907,35 @@ in
 Printf.printf "";
 result
 
-and partial_apply funct fun_id (func : Flambda.function_declaration)
-      (args : Variable.t list) dbg : Flambda.t =
-  let arity = Flambda_utils.function_arity func in
+and partial_apply ~lhs_of_application ~closure_id_being_applied
+      ~(function_decl : Flambda.function_declaration)
+      ~(args : Variable.t list) ~dbg : Flambda.t =
+  let arity = Flambda_utils.function_arity function_decl in
   let remaining_args = arity - (List.length args) in
   assert (remaining_args > 0);
-  let param_sb =
-    List.map (fun id -> Variable.freshen id) func.params
+  let freshened_params =
+    List.map (fun id -> Variable.freshen id) function_decl.params
   in
-  let applied_args, remaining_args = Misc.map2_head
-      (fun arg id' -> id', arg) args param_sb in
-  let new_fun_id = Variable.create "partial_fun" in
-  let expr : Flambda.t =
-    Apply ({
-      func = funct;
-      args = param_sb;
-      kind = Direct fun_id;
-      dbg;
-    })
+  let applied_args, remaining_args =
+    Misc.map2_head (fun arg id' -> id', arg) args freshened_params
   in
-  let closures =
-    Flambda_utils.make_closure_declaration ~id:new_fun_id
-      ~body:expr ~params:remaining_args
+  let wrapper_accepting_remaining_args =
+    let body : Flambda.t =
+      Apply {
+        func = lhs_of_application;
+        args = freshened_params;
+        kind = Direct closure_id_being_applied;
+        dbg;
+      }
+    in
+    Flambda_utils.make_closure_declaration ~id:(Variable.create "partial_fun")
+      ~body
+      ~params:remaining_args
   in
-  List.fold_right (fun (id', arg) expr ->
-      Flambda.Let (Immutable, id', Expr (Var arg), expr))
-    applied_args closures
+  Flambda_utils.bind
+    ~bindings:(List.map (fun (var, arg) ->
+        var, Flambda.Expr (Var arg)) applied_args)
+    ~body:wrapper_accepting_remaining_args
 
 (* CR mshinwell for pchambart: Change to a "-dinlining-benefit" option? *)
 let debug_benefit =

@@ -59,6 +59,7 @@ val make_key : Flambda.t -> sharing_key option
    [params] will become the parameters of the function; the closure will be
    identified by [id].  [params] must only reference variables that are
    free variables of [body]. *)
+(* CR mshinwell: consider improving name and names of arguments *)
 val make_closure_declaration
    : id:Variable.t
   -> body:Flambda.t
