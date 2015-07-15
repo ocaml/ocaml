@@ -92,9 +92,15 @@ let rec same (l1 : Flambda.t) (l2 : Flambda.t) =
   | While (a1, b1), While (a2, b2) ->
     same a1 a2 && same b1 b2
   | While _, _ | _, While _ -> false
-  | For (v1, a1, b1, df1, c1), For (v2, a2, b2, df2, c2) ->
-    Variable.equal v1 v2 &&  same a1 a2 &&
-      same b1 b2 && df1 = df2 && same c1 c2
+  | For { bound_var = bound_var1; from_value = from_value1;
+          to_value = to_value1; direction = direction1; body = body1; },
+    For { bound_var = bound_var2; from_value = from_value2;
+          to_value = to_value2; direction = direction2; body = body2; } ->
+    Variable.equal bound_var1 bound_var2
+      && Variable.equal from_value1 from_value2
+      && Variable.equal to_value1 to_value2
+      && direction1 = direction2
+      && same body1 body2
   | For _, _ | _, For _ -> false
   | Assign { being_assigned = being_assigned1; new_value = new_value1; },
     Assign { being_assigned = being_assigned2; new_value = new_value2; } ->

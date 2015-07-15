@@ -125,11 +125,12 @@ let rec lam ppf (flam : Flambda.t) =
         lam lif lam lelse
   | While(lcond, lbody) ->
       fprintf ppf "@[<2>(while@ %a@ %a)@]" lam lcond lam lbody
-  | For(param, lo, hi, dir, body) ->
-      fprintf ppf "@[<2>(for %a@ %a@ %s@ %a@ %a)@]"
-        Variable.print param lam lo
-        (match dir with Asttypes.Upto -> "to" | Asttypes.Downto -> "downto")
-        lam hi lam body
+  | For { bound_var; from_value; to_value; direction; body; } ->
+    fprintf ppf "@[<2>(for %a@ %a@ %s@ %a@ %a)@]"
+      Variable.print bound_var Variable.print from_value
+      (match direction with
+        Asttypes.Upto -> "to" | Asttypes.Downto -> "downto")
+      Variable.print to_value lam body
 and lam_named ppf (named : Flambda.named) =
   match named with
   | Symbol (symbol) -> Symbol.print ppf symbol

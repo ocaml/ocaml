@@ -44,8 +44,7 @@ let apply_on_subexpressions f f_named (flam : Flambda.t) =
     f f1;f f2
   | While (f1,f2) ->
     f f1; f f2
-  | For (_,f1,f2,_,f3) ->
-    f f1;f f2;f f3
+  | For { body; _ } -> f body
 
 type maybe_named =
   | Expr of Flambda.t
@@ -69,8 +68,7 @@ let iter_general ~toplevel f f_named maybe_named =
     | While (f1,f2)
     | Static_catch (_,_,f1,f2) ->
       aux f1; aux f2
-    | For (_,f1,f2,_,f3) ->
-      aux f1;aux f2;aux f3
+    | For { body; _ } -> aux body
     | If_then_else (_, f1, f2) ->
       aux f1; aux f2
     | Static_raise (_,l) ->
@@ -168,11 +166,9 @@ let map_general ~toplevel f f_named tree =
         let obj = aux obj in
         let args = List.map aux args in
         Send(kind, met, obj, args, dbg)
-      | For(id, lo, hi, dir, body) ->
-        let lo = aux lo in
-        let hi = aux hi in
+      | For { bound_var; from_value; to_value; direction; body; } ->
         let body = aux body in
-        For(id, lo, hi, dir, body)
+        For { bound_var; from_value; to_value; direction; body; }
     in
     f exp
   and aux_named (named : Flambda.named) =

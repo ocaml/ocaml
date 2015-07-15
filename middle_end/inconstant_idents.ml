@@ -166,11 +166,11 @@ module NotConstants(P:Param) = struct
       (* If recursive staticcatch is introduced: this becomes
          ~toplevel:false *)
 
-    | For (id,f1,f2,_,body) ->
-      mark_curr [Var id];
+    | For { bound_var; from_value; to_value; direction = _; body; } ->
+      mark_curr [Var bound_var];
+      mark_curr [Var from_value];
+      mark_curr [Var to_value];
       mark_curr curr;
-      mark_loop ~toplevel [] f1;
-      mark_loop ~toplevel [] f2;
       mark_loop ~toplevel:false [] body
 
     | While (f1,body) ->

@@ -106,11 +106,11 @@ let variable_invariants flam =
         already_added_bound_variable_to_env var;
         loop_named env def) defs;
       loop env body
-    | For (var, lo, hi, direction, body) ->
+    | For { bound_var; from_value; to_value; direction; body; } ->
       ignore_direction_flag direction;
-      loop env lo;
-      loop env hi;
-      loop (add_binding_occurrence env var Flambda.Immutable) body
+      check_variable_is_bound env from_value;
+      check_variable_is_bound env to_value;
+      loop (add_binding_occurrence env bound_var Flambda.Immutable) body
     | Static_catch (static_exn, vars, body, handler) ->
       ignore_static_exception static_exn;
       loop env body;

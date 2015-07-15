@@ -94,8 +94,8 @@ let lambda_smaller' lam ~than:threshold =
       lambda_size ifso; lambda_size ifnot
     | While (cond, body) ->
       size := !size + 2; lambda_size cond; lambda_size body
-    | For (_, low, high, _, body) ->
-      size := !size + 4; lambda_size low; lambda_size high; lambda_size body
+    | For { body; _ } ->
+      size := !size + 4; lambda_size body
   and lambda_list_size l = List.iter lambda_size l
   and lambda_named_size (named : Flambda.named) =
     if !size > threshold then raise Exit;

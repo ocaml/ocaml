@@ -136,7 +136,7 @@ type t =
   | Static_catch of Static_exception.t * Variable.t list * t * t
   | Try_with of t * Variable.t * t
   | While of t * t
-  | For of Variable.t * t * t * Asttypes.direction_flag * t
+  | For of for_loop
   | Proved_unreachable
 
 (** Values of type [named] will always be [let]-bound to a [Variable.t].
@@ -248,4 +248,12 @@ and switch = {
   numblocks : Ext_types.Int.Set.t; (** Number of tag block cases *)
   blocks : (int * t) list; (** Tag block cases *)
   failaction : t option; (** Action to take if none matched *)
+}
+
+and for_loop = {
+  bound_var : Variable.t;
+  from_value : Variable.t;
+  to_value : Variable.t;
+  direction : Asttypes.direction_flag;
+  body : t
 }

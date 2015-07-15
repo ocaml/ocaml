@@ -596,14 +596,18 @@ and loop_direct env r (tree : Flambda.t) : Flambda.t * R.t =
     let obj, r = loop env r obj in
     let args, _, r = loop_list env r args in
     Send (kind, met, obj, args, dbg), ret r A.value_unknown
-  | For (id, lo, hi, dir, body) ->
-    let lo, r = loop env r lo in
-    let hi, r = loop env r hi in
-    let id, sb = Freshening.add_variable (E.freshening env) id in
-    let env = E.add_approx id A.value_unknown (E.set_freshening sb env) in
+  | For { bound_var; from_value; to_value; direction; body; } ->
+    let from_value = freshen_and_simplify_variable env from_value in
+    let to_value = freshen_and_simplify_variable env to_value in
+    let bound_var, sb = Freshening.add_variable (E.freshening env) bound_var in
+    let env =
+      E.inside_loop
+        (E.add_approx bound_var A.value_unknown (E.set_freshening sb env))
+    in
     let env = E.inside_loop env in
     let body, r = loop env r body in
-    For (id, lo, hi, dir, body), ret r A.value_unknown
+    For { bound_var; from_value; to_value; direction; body; },
+      ret r A.value_unknown
   | Assign { being_assigned; new_value; } ->
     let being_assigned = freshen_and_simplify_variable env being_assigned in
     let new_value = freshen_and_simplify_variable env new_value in

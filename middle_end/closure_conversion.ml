@@ -305,10 +305,14 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
     let lam2 = close t env lam2 in
     Let (Immutable, var, lam1, lam2)
   | Lwhile (cond, body) -> While (close t env cond, close t env body)
-  | Lfor (id, lo, hi, dir, body) ->
-    let var = Variable.of_ident id in
-    For (var, close t env lo, close t env hi, dir,
-      close t (Env.add_var env id var) body)
+  | Lfor (id, lo, hi, direction, body) ->
+    let bound_var = Variable.of_ident id in
+    let from_value = Variable.create "for_from" in
+    let to_value = Variable.create "for_to" in
+    let body = close t (Env.add_var env id bound_var) body in
+    Let (Immutable, from_value, Expr (close t env lo),
+      Let (Immutable, to_value, Expr (close t env hi),
+        For { bound_var; from_value; to_value; direction; body; }))
   | Lassign (id, new_value) ->
     let being_assigned = Env.find_var env id in
     let new_value_var = Variable.create "new_value" in

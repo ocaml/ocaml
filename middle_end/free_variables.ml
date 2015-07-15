@@ -57,11 +57,11 @@ let iter tree ~free_variable ~bound_variable =
     | While (e1, e2) ->
       aux e1;
       aux e2
-    | For (var, e1, e2, _, e3) ->
-      bound_variable var;
-      aux e1;
-      aux e2;
-      aux e3
+    | For { bound_var; from_value; to_value; direction = _; body; } ->
+      bound_variable bound_var;
+      free_variable from_value;
+      free_variable to_value;
+      aux body
     | Assign { being_assigned; new_value; } ->
       free_variable being_assigned;
       free_variable new_value
