@@ -309,7 +309,11 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
     let var = Variable.of_ident id in
     For (var, close t env lo, close t env hi, dir,
       close t (Env.add_var env id var) body)
-  | Lassign (id, lam) -> Assign (Env.find_var env id, close t env lam)
+  | Lassign (id, new_value) ->
+    let being_assigned = Env.find_var env id in
+    let new_value_var = Variable.create "new_value" in
+    Let (Immutable, new_value_var, Expr (close t env new_value),
+      Assign { being_assigned; new_value = new_value_var; })
   | Levent (lam, ev) -> add_debug_info ev (close t env lam)
   | Lifused _ ->
     (* [Lifused] is used to mark that this expression should be alive only if

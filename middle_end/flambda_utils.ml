@@ -96,8 +96,10 @@ let rec same (l1 : Flambda.t) (l2 : Flambda.t) =
     Variable.equal v1 v2 &&  same a1 a2 &&
       same b1 b2 && df1 = df2 && same c1 c2
   | For _, _ | _, For _ -> false
-  | Assign (v1, a1), Assign (v2, a2) ->
-    Variable.equal v1 v2 && same a1 a2
+  | Assign { being_assigned = being_assigned1; new_value = new_value1; },
+    Assign { being_assigned = being_assigned2; new_value = new_value2; } ->
+    Variable.equal being_assigned1 being_assigned2
+      && Variable.equal new_value1 new_value2
   | Assign _, _ | _, Assign _ -> false
   | Send (k1, a1, b1, cl1, _), Send (k2, a2, b2, cl2, _) ->
     k1 = k2 && same a1 a2 && same b1 b2 && Misc.samelist same cl1 cl2
@@ -189,7 +191,8 @@ let toplevel_substitution sb tree =
   let aux (flam : Flambda.t) : Flambda.t =
     match flam with
     | Var var -> Var (sb var)
-    | Assign (var, e) -> Assign (sb var, e)
+    | Assign { being_assigned; new_value; } ->
+      Assign { being_assigned = sb being_assigned; new_value = sb new_value; }
     | Apply { func; args; kind; dbg; } ->
       Apply { func = sb func; args = List.map sb args; kind; dbg; }
     | If_then_else (cond, e1, e2) -> If_then_else (sb cond, e1, e2)

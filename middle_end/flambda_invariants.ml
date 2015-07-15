@@ -125,13 +125,15 @@ let variable_invariants flam =
       check_variables_are_bound env args;
       ignore_call_kind kind;
       ignore_debuginfo dbg;
-    | Assign (var, e) ->
-      let is_mutable = check_variable_is_bound_and_get_mutability env var in
+    | Assign { being_assigned; new_value = _; } ->
+      let is_mutable =
+        check_variable_is_bound_and_get_mutability env being_assigned
+      in
       (* CR-someday mshinwell: consider if the mutable/immutable distinction
          on variables could be enforced by the type system *)
       begin match (is_mutable : Flambda.let_kind) with
-      | Mutable -> loop env e
-      | Immutable -> raise (Assignment_to_non_mutable_variable var)
+      | Mutable -> ()
+      | Immutable -> raise (Assignment_to_non_mutable_variable being_assigned)
       end
     | Send (meth_kind, e1, e2, es, dbg) ->
       ignore_meth_kind meth_kind;

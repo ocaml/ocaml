@@ -62,9 +62,9 @@ let iter tree ~free_variable ~bound_variable =
       aux e1;
       aux e2;
       aux e3
-    | Assign (id, e) ->
-      free_variable id;
-      aux e
+    | Assign { being_assigned; new_value; } ->
+      free_variable being_assigned;
+      free_variable new_value
     | Send (_, e1, e2, es, _) ->
       aux e1;
       aux e2;

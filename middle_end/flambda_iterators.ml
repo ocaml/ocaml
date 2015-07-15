@@ -13,9 +13,7 @@
 
 let apply_on_subexpressions f f_named (flam : Flambda.t) =
   match flam with
-  | Var _ | Apply _ -> ()
-  | Assign (_,f1) ->
-    f f1
+  | Var _ | Apply _ | Assign _ -> ()
   | Send (_, e1, e2, es, _) ->
     f e1;
     f e2;
@@ -57,9 +55,7 @@ let iter_general ~toplevel f f_named maybe_named =
   let rec aux (t : Flambda.t) =
     f t;
     match t with
-    | Var _ | Apply _ -> ()
-    | Assign (_,f1) ->
-      aux f1
+    | Var _ | Apply _ | Assign _ -> ()
     | Send (_,f1,f2,fl,_) ->
       iter_list (f1::f2::fl)
     | Proved_unreachable -> ()
@@ -123,10 +119,7 @@ let map_general ~toplevel f f_named tree =
   let rec aux (tree : Flambda.t) =
     let exp : Flambda.t =
       match tree with
-      | Var _ | Apply _ -> tree
-      | Assign(id, lam) ->
-        let lam = aux lam in
-        Assign(id, lam)
+      | Var _ | Apply _ | Assign _ -> tree
       | Proved_unreachable -> tree
       | Let (str, id, lam, body) ->
         let lam = aux_named lam in

@@ -116,12 +116,17 @@ type project_var = {
   var : Var_within_closure.t;
 }
 
+type assign = {
+  being_assigned : Variable.t;
+  new_value : Variable.t;
+}
+
 type t =
   | Var of Variable.t
   | Let of let_kind * Variable.t * named * t
   | Let_rec of (Variable.t * named) list * t
   | Apply of apply
-  | Assign of Variable.t * t
+  | Assign of assign
   | Send of Lambda.meth_kind * t * t * t list * Debuginfo.t
   | If_then_else of Variable.t * t * t
   | Switch of t * switch

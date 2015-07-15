@@ -61,8 +61,7 @@ let lambda_smaller' lam ~than:threshold =
     | Apply ({ func = _; args = _; kind = direct }) ->
       let call_cost = match direct with Indirect -> 6 | Direct _ -> 4 in
       size := !size + call_cost
-    | Assign (_, lam) ->
-      incr size;  lambda_size lam
+    | Assign _ -> incr size
     | Send (_, met, obj, args, _) ->
       size := !size + 8;
       lambda_size met; lambda_size obj; lambda_list_size args

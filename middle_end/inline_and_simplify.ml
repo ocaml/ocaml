@@ -604,10 +604,10 @@ and loop_direct env r (tree : Flambda.t) : Flambda.t * R.t =
     let env = E.inside_loop env in
     let body, r = loop env r body in
     For (id, lo, hi, dir, body), ret r A.value_unknown
-  | Assign (id, lam) ->
-    let lam, r = loop env r lam in
-    let id = freshen_and_simplify_variable env id in
-    Assign (id, lam), ret r A.value_unknown
+  | Assign { being_assigned; new_value; } ->
+    let being_assigned = freshen_and_simplify_variable env being_assigned in
+    let new_value = freshen_and_simplify_variable env new_value in
+    Assign { being_assigned; new_value; }, ret r A.value_unknown
   | Switch (arg, sw) ->
     (* When arg is known to be a block with a fixed tag or a fixed integer,
        we can drop the switch and replace it by a sequence.

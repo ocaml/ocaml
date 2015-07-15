@@ -23,8 +23,10 @@ let rec lam ppf (flam : Flambda.t) =
     let direct = match kind with Indirect -> "" | Direct _ -> "*" in
     fprintf ppf "@[<2>(apply%s@ %a%a)@]" direct Variable.print func
       Variable.print_list args
-  | Assign(id, expr) ->
-      fprintf ppf "@[<2>(assign@ %a@ %a)@]" Variable.print id lam expr
+  | Assign { being_assigned; new_value; } ->
+    fprintf ppf "@[<2>(assign@ %a@ %a)@]"
+      Variable.print being_assigned
+      Variable.print new_value
   | Send (k, met, obj, largs, _) ->
       let args ppf largs =
         List.iter (fun l -> fprintf ppf "@ %a" lam l) largs in

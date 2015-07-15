@@ -145,11 +145,12 @@ module NotConstants(P:Param) = struct
     (* Not constant cases: we mark directly 'curr in NC' and mark
        bound variables as in NC also *)
 
-    | Assign (id, f1) ->
+    | Assign { being_assigned; new_value; } ->
+      (* CR mshinwell: not sure about this next comment.  Check this is
+         right *)
       (* the assigned is also not constant *)
-      mark_curr [Var id];
-      mark_curr curr;
-      mark_loop ~toplevel [] f1
+      mark_curr [Var being_assigned];
+      mark_curr [Var new_value]
 
     | Try_with (f1,id,f2) ->
       mark_curr [Var id];
