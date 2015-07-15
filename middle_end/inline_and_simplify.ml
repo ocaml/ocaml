@@ -717,10 +717,6 @@ and loop_list env r l = match l with
 *)
 and simplify_set_of_closures original_env r
       (set_of_closures : Flambda.set_of_closures) : Flambda.named * R.t =
-(*
-  Format.eprintf "simply_set_of_closures %a\n"
-    Set_of_closures_id.print set_of_closures.function_decls.set_of_closures_id;
-*)
   let function_decls =
     let module Backend = (val (E.backend original_env) : Backend_intf.S) in
     (* CR mshinwell: Does this affect
@@ -750,10 +746,6 @@ and simplify_set_of_closures original_env r
       function_decls
   in
   let env = E.set_freshening sb env in
-(*
-  Format.eprintf "env for function body with set_freshening: %a\n"
-    Freshening.print sb;
-*)
   let specialised_args =
     Variable.Map.map_keys (freshen_and_simplify_variable env)
       specialised_args
@@ -796,11 +788,6 @@ and simplify_set_of_closures original_env r
         (* CR mshinwell: check we really did not need _used_params, and
            remove it *)
         : Flambda.function_declaration Variable.Map.t * Variable.Set.t * R.t =
-(*
-    Format.eprintf "simplify_set_of_closures %a %a\n"
-      Set_of_closures_id.print set_of_closures.function_decls.set_of_closures_id
-      Variable.print fid;
-*)
     let closure_env =
       populate_closure_approximations ~function_decl ~free_vars
         ~parameter_approximations ~set_of_closures_env
@@ -811,18 +798,8 @@ and simplify_set_of_closures original_env r
           (Inlining_decision.should_inline_inside_declaration function_decl)
         ~where:Transform_set_of_closures_expression
         ~f:(fun body_env ->
-(*
-          Format.eprintf "E.enter_closure '%a', function body: %a, env: %a\n"
-            Variable.print fid
-            Flambda_printers.flambda function_decl.body
-            Inline_and_simplify_aux.Env.print body_env;
-*)
           loop body_env r function_decl.body)
     in
-(*
-    Format.eprintf "E.enter_closure '%a' finished\n"
-      Variable.print fid;
-*)
     let free_variables = Free_variables.calculate body in
     let used_params =
       Variable.Set.filter (fun param -> Variable.Set.mem param free_variables)
@@ -855,9 +832,6 @@ and simplify_set_of_closures original_env r
       specialised_args;
     }
   in
-(*
-  Format.eprintf "simplify_set_of_closures end\n";
-*)
   Set_of_closures (set_of_closures),
     ret r (A.value_set_of_closures value_set_of_closures)
 
