@@ -494,6 +494,7 @@ let approx_for_bound_var value_set_of_closures var =
   with
   | Not_found ->
     Misc.fatal_errorf "The set-of-closures approximation %a@ does not \
-        bind the variable %a@."
+        bind the variable %a@.%s@."
       print_value_set_of_closures value_set_of_closures
       Var_within_closure.print var
+      (Printexc.raw_backtrace_to_string (Printexc.get_callstack max_int))

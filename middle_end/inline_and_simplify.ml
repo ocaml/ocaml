@@ -143,10 +143,11 @@ let reference_recursive_function_directly env closure_id =
    individual closure from it. *)
 let simplify_project_closure env r ~(project_closure : Flambda.project_closure)
       : Flambda.named * R.t =
-  let set_of_closures_approx =
-    E.find (freshen_and_simplify_variable env
-      project_closure.set_of_closures) env
+  let set_of_closures =
+    Freshening.apply_variable (E.freshening env)
+      project_closure.set_of_closures
   in
+  let set_of_closures_approx = E.find set_of_closures env in
   match A.check_approx_for_set_of_closures set_of_closures_approx with
   | Wrong ->
     Misc.fatal_errorf "Wrong approximation when projecting closure: %a"
@@ -155,7 +156,10 @@ let simplify_project_closure env r ~(project_closure : Flambda.project_closure)
     (* A set of closures coming from another compilation unit, whose .cmx is
        missing; as such, we cannot have rewritten the function and don't
        need to do any freshening. *)
-    Project_closure project_closure, ret r (A.value_unresolved symbol)
+    Project_closure {
+      set_of_closures;
+      closure_id = project_closure.closure_id;
+    }, ret r (A.value_unresolved symbol)
   | Ok (set_of_closures_var, value_set_of_closures) ->
     let closure_id =
       A.freshen_and_check_closure_id value_set_of_closures
@@ -168,7 +172,7 @@ let simplify_project_closure env r ~(project_closure : Flambda.project_closure)
         A.value_closure ?set_of_closures_var value_set_of_closures
           closure_id
       in
-      Project_closure { project_closure with closure_id }, ret r approx
+      Project_closure { set_of_closures; closure_id; }, ret r approx
 
 (* Simplify an expression that, given one closure within some set of
    closures, returns another closure (possibly the same one) within the
@@ -176,10 +180,11 @@ let simplify_project_closure env r ~(project_closure : Flambda.project_closure)
 let simplify_move_within_set_of_closures env r
       ~(move_within_set_of_closures : Flambda.move_within_set_of_closures)
       : Flambda.named * R.t =
-  let closure_approx =
-    E.find (freshen_and_simplify_variable env
-      move_within_set_of_closures.closure) env
+  let closure =
+    Freshening.apply_variable (E.freshening env)
+      move_within_set_of_closures.closure
   in
+  let closure_approx = E.find closure env in
   match A.check_approx_for_closure closure_approx with
   | Wrong ->
     Misc.fatal_errorf "Wrong approximation when moving within set of \
@@ -199,13 +204,14 @@ let simplify_move_within_set_of_closures env r
       if Closure_id.equal start_from move_to then
         (* Moving from one closure to itself is a no-op.  We can return an
            [Var] since we already have a variable bound to the closure. *)
-        Expr (Var move_within_set_of_closures.closure), ret r closure_approx
+        Expr (Var closure), ret r closure_approx
       else
         match set_of_closures_var with
         | Some set_of_closures_var ->
           (* A variable bound to the set of closures is in scope, meaning we
              can rewrite the [Move_within_set_of_closures] to a
              [Project_closure]. *)
+          (* CR mshinwell: does [set_of_closures_var] need freshening? *)
           let project_closure : Flambda.project_closure =
             { set_of_closures = set_of_closures_var;
               closure_id = move_to;
@@ -219,7 +225,7 @@ let simplify_move_within_set_of_closures env r
           (* The set of closures is not available in scope, and we have no
              other information by which to simplify the move. *)
           let move_within : Flambda.move_within_set_of_closures =
-            { move_within_set_of_closures with start_from; move_to; }
+            { closure; start_from; move_to; }
           in
           let approx = A.value_closure value_set_of_closures move_to in
           Move_within_set_of_closures move_within, ret r approx
@@ -275,16 +281,15 @@ let rec simplify_project_var env r ~(project_var : Flambda.project_var)
       : Flambda.named * R.t =
   let approx = R.approx r in
   let closure =
-    freshen_and_simplify_variable env project_var.closure
+    Freshening.apply_variable (E.freshening env) project_var.closure
   in
   match A.check_approx_for_closure_allowing_unresolved approx with
-  | Ok (_value_closure, _set_of_closures_var, value_set_of_closures) ->
+  | Ok (value_closure, _set_of_closures_var, value_set_of_closures) ->
     let module F = Freshening.Project_var in
     let freshening = value_set_of_closures.freshening in
     let var = F.apply_var_within_closure freshening project_var.var in
-    let closure_id = project_var.closure_id in
-    let closure_id' = F.apply_closure_id freshening closure_id in
-    assert (Closure_id.equal closure_id closure_id');
+    let closure_id = F.apply_closure_id freshening project_var.closure_id in
+    assert (Closure_id.equal closure_id value_closure.closure_id);
     let approx = A.approx_for_bound_var value_set_of_closures var in
     let expr : Flambda.named = Project_var { closure; closure_id; var; } in
     simplify_named_using_approx_and_env env r expr approx
