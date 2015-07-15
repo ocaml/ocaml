@@ -85,7 +85,8 @@ val inline_by_copying_function_declaration
   -> lhs_of_application:Variable.t
   -> closure_id_being_applied:Closure_id.t
   -> function_decl:Flambda.function_declaration
-  -> args_with_approxs: (Variable.t list) * (Simple_value_approx.t list)
+  -> args:Variable.t list
+  -> args_approxs:Simple_value_approx.t list
   -> unchanging_params:Variable.Set.t
   -> specialised_args:Variable.Set.t
   -> dbg:Debuginfo.t

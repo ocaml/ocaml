@@ -319,7 +319,7 @@ let for_call_site ~env ~r
               Inlining_transforms.inline_by_copying_function_declaration ~env
                 ~r:(R.clear_benefit r) ~lhs_of_application
                 ~function_decls ~closure_id_being_applied ~function_decl
-                ~args_with_approxs:(args, approxs) ~unchanging_params
+                ~args ~args_approxs:approxs ~unchanging_params
                 ~specialised_args:value_set_of_closures.specialised_args ~dbg ~simplify
             in
             match copied_function_declaration with

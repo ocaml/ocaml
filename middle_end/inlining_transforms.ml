@@ -21,9 +21,9 @@ let new_var name =
     ~current_compilation_unit:(Compilation_unit.get_current_exn ())
 
 let which_function_parameters_can_we_specialize ~params ~args
-      ~approximations_of_args ~unchanging_params =
+      ~args_approxs ~unchanging_params =
   assert (List.length params = List.length args);
-  assert (List.length args = List.length approximations_of_args);
+  assert (List.length args = List.length args_approxs);
   List.fold_right2 (fun (var, arg) approx (spec_args, args, args_decl) ->
       let spec_args =
         if Simple_value_approx.useful approx
@@ -34,7 +34,7 @@ let which_function_parameters_can_we_specialize ~params ~args
           spec_args
       in
       spec_args, arg :: args, args_decl)
-    (List.combine params args) approximations_of_args
+    (List.combine params args) args_approxs
     (Variable.Map.empty, [], [])
 
 let fold_over_exprs_for_variables_bound_by_closure ~fun_id ~clos_id ~clos
@@ -104,12 +104,10 @@ let inline_by_copying_function_declaration ~env ~r
     ~(function_decls : Flambda.function_declarations)
     ~lhs_of_application ~closure_id_being_applied
     ~(function_decl : Flambda.function_declaration)
-    ~args_with_approxs ~unchanging_params ~specialised_args ~dbg ~simplify =
-  let args, approxs = args_with_approxs in
+    ~args ~args_approxs ~unchanging_params ~specialised_args ~dbg ~simplify =
   let more_specialised_args, args, args_decl =
     which_function_parameters_can_we_specialize
-      ~params:function_decl.params ~args ~approximations_of_args:approxs
-      ~unchanging_params
+      ~params:function_decl.params ~args ~args_approxs ~unchanging_params
   in
   if Variable.Set.equal specialised_args
       (Variable.Map.keys more_specialised_args)
