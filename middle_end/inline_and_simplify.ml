@@ -680,12 +680,12 @@ and simplify_direct env r (tree : Flambda.t) : Flambda.t * R.t =
     let id, sb = Freshening.add_variable (E.freshening env) id in
     let env = E.set_freshening sb env in
     let body, r =
-      let body_env =
+      let approx_of_bound_var =
         match str with
-        | Immutable -> E.add_approx id (R.approx r) env
-        | Mutable -> E.add_approx id A.value_unknown env
+        | Immutable -> R.approx r
+        | Mutable -> A.value_unknown
       in
-      simplify body_env r body
+      simplify (E.add_approx id approx_of_bound_var env) r body
     in
     let free_variables_of_body = Free_variables.calculate body in
     let (expr : Flambda.t), r =
