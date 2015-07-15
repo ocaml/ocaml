@@ -279,17 +279,27 @@ let simplify_move_within_set_of_closures env r
 *)
 let rec simplify_project_var env r ~(project_var : Flambda.project_var)
       : Flambda.named * R.t =
-  let approx = R.approx r in
   let closure =
     Freshening.apply_variable (E.freshening env) project_var.closure
   in
+  let approx = E.find closure env in
   match A.check_approx_for_closure_allowing_unresolved approx with
   | Ok (value_closure, _set_of_closures_var, value_set_of_closures) ->
     let module F = Freshening.Project_var in
     let freshening = value_set_of_closures.freshening in
     let var = F.apply_var_within_closure freshening project_var.var in
     let closure_id = F.apply_closure_id freshening project_var.closure_id in
-    assert (Closure_id.equal closure_id value_closure.closure_id);
+    let closure_id_in_approx = value_closure.closure_id in
+    if not (Closure_id.equal closure_id closure_id_in_approx) then begin
+      Misc.fatal_errorf "When simplifying [Project_var], the closure ID %a in \
+          the approximation of the set of closures did not match the closure \
+          ID %a in the [Project_var] term.  Approximation: %a@. \
+          Var-within-closure being projected: %a@."
+        Closure_id.print closure_id_in_approx
+        Closure_id.print closure_id
+        Simple_value_approx.print approx
+        Var_within_closure.print var
+    end;
     let approx = A.approx_for_bound_var value_set_of_closures var in
     let expr : Flambda.named = Project_var { closure; closure_id; var; } in
     simplify_named_using_approx_and_env env r expr approx
