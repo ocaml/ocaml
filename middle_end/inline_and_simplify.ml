@@ -504,7 +504,7 @@ and loop_direct env r (tree : Flambda.t) : Flambda.t * R.t =
         (* Generate a fresh name for increasing legibility of the
            intermediate language (in particular to make it more obvious that
            the variable is unused). *)
-        let fresh_var = Variable.create "unused" in
+        let fresh_var = Variable.create "for_side_effect_only" in
         Flambda.Let (Immutable, fresh_var, defining_expr, body), r
 (* end *)
     in

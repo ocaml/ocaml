@@ -182,7 +182,7 @@ and print_set_of_closures ppf (set_of_closures : Flambda.set_of_closures) =
       vars free_vars spec specialised_args
 
 and print_project_closure ppf (project_closure : Flambda.project_closure) =
-  fprintf ppf "@[<2>(project_closure@ %a@ %a)@]"
+  fprintf ppf "@[<2>(project_closure@ %a@ from@ %a)@]"
     Closure_id.print project_closure.closure_id
     Variable.print project_closure.set_of_closures
 
