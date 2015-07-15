@@ -99,6 +99,11 @@ type apply = {
   dbg : Debuginfo.t;
 }
 
+type assign = {
+  being_assigned : Variable.t;
+  new_value : Variable.t;
+}
+
 type project_closure = {
   set_of_closures : Variable.t; (** must yield a set of closures *)
   closure_id : Closure_id.t;
@@ -114,11 +119,6 @@ type project_var = {
   closure : Variable.t;  (** must yield a closure *)
   closure_id : Closure_id.t;
   var : Var_within_closure.t;
-}
-
-type assign = {
-  being_assigned : Variable.t;
-  new_value : Variable.t;
 }
 
 type t =
