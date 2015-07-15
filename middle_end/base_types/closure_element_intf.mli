@@ -17,6 +17,8 @@ module type S = sig
   val wrap : Variable.t -> t
   val unwrap : t -> Variable.t
 
+  val wrap_map : 'a Variable.Map.t -> 'a Map.t
+
   val in_compilation_unit : Compilation_unit.t -> t -> bool
   val get_compilation_unit : t -> Compilation_unit.t
 

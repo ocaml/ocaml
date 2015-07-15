@@ -106,6 +106,7 @@ ASMCOMP=\
   asmcomp/lift_constants.cmo \
   asmcomp/flambdaexport_types.cmo \
   asmcomp/flambdaexport.cmo \
+  asmcomp/build_export_info.cmo \
   asmcomp/compilenv.cmo \
   asmcomp/import_approx.cmo \
   asmcomp/strmatch.cmo asmcomp/cmmgen.cmo \
