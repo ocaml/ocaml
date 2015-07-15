@@ -12,7 +12,8 @@
 (**************************************************************************)
 
 (* CR mshinwell: this doesn't seem to cope with shadowed identifiers
-   properly.  Check the original version. *)
+   properly.  Check the original version.  Why don't we just do the
+   subtraction as we pass back over binding points? *)
 
 let iter tree ~free_variable ~bound_variable =
   let rec aux (flam : Flambda.t) : unit =
