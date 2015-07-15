@@ -134,8 +134,8 @@ type t =
   | Let of let_kind * Variable.t * named * t
   | Let_rec of (Variable.t * named) list * t
   | Apply of apply
-  | Assign of assign
   | Send of send
+  | Assign of assign
   | If_then_else of Variable.t * t * t
   | Switch of Variable.t * switch
   (* Restrictions on [Lambda.Lstringswitch] also apply to [String_switch]. *)

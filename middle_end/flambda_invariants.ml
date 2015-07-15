@@ -125,7 +125,7 @@ let variable_invariants flam =
       check_variables_are_bound env args;
       ignore_call_kind kind;
       ignore_debuginfo dbg;
-    | Assign { being_assigned; new_value = _; } ->
+    | Assign { being_assigned; new_value; } ->
       let is_mutable =
         check_variable_is_bound_and_get_mutability env being_assigned
       in
@@ -134,7 +134,8 @@ let variable_invariants flam =
       begin match (is_mutable : Flambda.let_kind) with
       | Mutable -> ()
       | Immutable -> raise (Assignment_to_non_mutable_variable being_assigned)
-      end
+      end;
+      check_variable_is_bound env new_value
     | Send { kind; meth; obj; args; dbg; } ->
       ignore_meth_kind kind;
       check_variable_is_bound env meth;
