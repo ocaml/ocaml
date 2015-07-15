@@ -216,57 +216,7 @@ and describe_named (env : env) (named : Flambda.named) : ET.approx =
     Value_unknown
 
   | Set_of_closures set ->
-    let bound_vars_approx = Variable.Map.map (find_approx env) set.free_vars in
-    let specialised_args_approx =
-      Variable.Map.map (find_approx env) set.specialised_args
-    in
-
-    let closures_approx =
-      (* To build an approximation of the results, we need an
-         approximation of the functions. The first one we can build is
-         one where every function return somthing unknown.
-
-         CR pchambart: we could improve a bit on that by building a
-         recursive approximation of the closures: The value_closure
-         description contains a [value_set_of_closures]. We could replace
-         this field by a [Expr_id.t] or an [approx]. *)
-      let initial_value_set_of_closure =
-        { ET.set_of_closures_id = set.function_decls.set_of_closures_id;
-          bound_vars = Var_within_closure.wrap_map bound_vars_approx;
-          results =
-            Closure_id.wrap_map
-              (Variable.Map.map (fun _ -> ET.Value_unknown)
-                 set.function_decls.funs);
-        }
-      in
-      Variable.Map.mapi (fun var _ ->
-          let descr =
-            ET.Value_closure
-              { fun_id = Closure_id.wrap var;
-                set_of_closures = initial_value_set_of_closure }
-          in
-          ET.Value_id (new_descr descr))
-        set.function_decls.funs
-    in
-    let closure_env =
-      Variable.Map.fold Variable.Map.add closures_approx
-        (Variable.Map.fold Variable.Map.add bound_vars_approx
-           (Variable.Map.fold Variable.Map.add specialised_args_approx env))
-    in
-    let result_approx (function_declaration:Flambda.function_declaration) =
-      describe closure_env function_declaration.body
-    in
-    let results =
-      Variable.Map.map result_approx set.function_decls.funs
-    in
-    let descr =
-      ET.Value_set_of_closures {
-        set_of_closures_id = set.function_decls.set_of_closures_id;
-        bound_vars = Var_within_closure.wrap_map bound_vars_approx;
-        results = Closure_id.wrap_map results;
-      }
-    in
-    Value_id (new_descr descr)
+    Value_id (describe_set_of_closures env set)
 
   | Project_closure { set_of_closures; closure_id } -> begin
       match get_descr (find_approx env set_of_closures) with
@@ -296,8 +246,73 @@ and describe_named (env : env) (named : Flambda.named) : ET.approx =
       | _ -> Value_unknown
     end
 
+and describe_set_of_closures env (set:Flambda.set_of_closures) : Export_id.t =
+  let bound_vars_approx = Variable.Map.map (find_approx env) set.free_vars in
+  let specialised_args_approx =
+    Variable.Map.map (find_approx env) set.specialised_args
+  in
+
+  let closures_approx =
+    (* To build an approximation of the results, we need an
+       approximation of the functions. The first one we can build is
+       one where every function return somthing unknown.
+
+       CR pchambart: we could improve a bit on that by building a
+       recursive approximation of the closures: The value_closure
+       description contains a [value_set_of_closures]. We could replace
+       this field by a [Expr_id.t] or an [approx]. *)
+    let initial_value_set_of_closure =
+      { ET.set_of_closures_id = set.function_decls.set_of_closures_id;
+        bound_vars = Var_within_closure.wrap_map bound_vars_approx;
+        results =
+          Closure_id.wrap_map
+            (Variable.Map.map (fun _ -> ET.Value_unknown)
+               set.function_decls.funs);
+      }
+    in
+    Variable.Map.mapi (fun var _ ->
+        let descr =
+          ET.Value_closure
+            { fun_id = Closure_id.wrap var;
+              set_of_closures = initial_value_set_of_closure }
+        in
+        ET.Value_id (new_descr descr))
+      set.function_decls.funs
+  in
+  let closure_env =
+    Variable.Map.fold Variable.Map.add closures_approx
+      (Variable.Map.fold Variable.Map.add bound_vars_approx
+         (Variable.Map.fold Variable.Map.add specialised_args_approx env))
+  in
+  let result_approx (function_declaration:Flambda.function_declaration) =
+    describe closure_env function_declaration.body
+  in
+  let results =
+    Variable.Map.map result_approx set.function_decls.funs
+  in
+  let descr =
+    ET.Value_set_of_closures {
+      set_of_closures_id = set.function_decls.set_of_closures_id;
+      bound_vars = Var_within_closure.wrap_map bound_vars_approx;
+      results = Closure_id.wrap_map results;
+    }
+  in
+  new_descr descr
+
 let build_export_info (lifted_constants:Lift_constants.result) : ET.exported =
   reset ();
+  (* let constant_approx = *)
+  (*   Variable.Map.map (fun set_of_closures -> *)
+  (*       describe_set_of_closures Variable.Map.empty set_of_closures) *)
+  (*     lifted_constants.map *)
+  (* in *)
+
+  (* let _constant_closure_approx = *)
+  (*   Variable.Map.map (fun set_of_closures -> *)
+  (*       describe_set_of_closures Variable.Map.empty set_of_closures) *)
+  (*     lifted_constants.set_of_closures_map *)
+  (* in *)
+
   let _root_description = describe Variable.Map.empty lifted_constants.expr in
 
   (* build the approximation of the root module *)
@@ -331,9 +346,6 @@ let build_export_info (lifted_constants:Lift_constants.result) : ET.exported =
   let ex_id_symbol = Export_id.Map.empty in
 
   (* TODO *)
-  let approx = Export_id.Map.empty in
-
-  (* TODO *)
   let ex_functions = Set_of_closures_id.Map.empty in
 
   (* TODO *)
@@ -347,7 +359,7 @@ let build_export_info (lifted_constants:Lift_constants.result) : ET.exported =
 
   let export : ET.exported =
     { Flambdaexport.empty_export with
-      ex_values = Flambdaexport.nest_eid_map approx;
+      ex_values = Flambdaexport.nest_eid_map !ex_table;
       ex_globals =
         Ident.Map.singleton
           (Compilenv.current_unit_id ()) root_approx;

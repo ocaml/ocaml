@@ -6,7 +6,7 @@ type constant =
 
 type result = {
   expr : Flambda.t;
-  tbl : Flambda.named Variable.Tbl.t;
+  map : Flambda.named Variable.Map.t;
   constant_tbl : constant Variable.Tbl.t;
   set_of_closures_map : Flambda.set_of_closures Variable.Map.t;
 }
@@ -144,7 +144,7 @@ let rewrite_constant_access (expr, constant_tbl, tbl, set_of_closures_tbl) =
       set_of_closures_tbl Variable.Map.empty
   in
   { expr;
-    tbl;
+    map = Variable.Tbl.fold Variable.Map.add tbl Variable.Map.empty;
     constant_tbl;
     set_of_closures_map }
 

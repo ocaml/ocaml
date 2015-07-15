@@ -6,7 +6,7 @@ type constant =
 
 type result = {
   expr : Flambda.t;
-  tbl : Flambda.named Variable.Tbl.t;
+  map : Flambda.named Variable.Map.t;
   constant_tbl : constant Variable.Tbl.t;
   set_of_closures_map : Flambda.set_of_closures Variable.Map.t;
 }
