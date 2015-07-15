@@ -686,10 +686,6 @@ and simplify_direct env r (tree : Flambda.t) : Flambda.t * R.t =
   | Var var ->
     let var = freshen_and_simplify_variable env var in
     let flam, r = simplify_using_approx_and_env env r (Var var) (E.find var env) in
-    Variable.debug_when_stamp_matches var ~stamp:5993 ~f:(fun () ->
-        Format.eprintf "approximation for 5993 is %a, simplified expr to %a\n"
-          Simple_value_approx.print (E.find var env)
-          Flambda_printers.flambda flam);
     flam, r
   | Apply apply -> simplify_apply env r ~apply
   | Let (str, id, defining_expr, body) ->
