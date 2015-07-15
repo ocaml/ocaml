@@ -50,38 +50,39 @@ let fold_over_exprs_for_variables_bound_by_closure ~fun_id ~clos_id ~clos
       f ~acc ~var ~expr)
     (Flambda_utils.variables_bound_by_the_closure fun_id clos) init
 
+(** Assign fresh names for a function's parameters and rewrite the body to
+    use these new names. *)
+let copy_of_function's_body_with_freshened_params
+      ~(function_decl : Flambda.function_declaration) =
+  let params = function_decl.params in
+  let freshened_params = List.map Variable.freshen params in
+  let subst = Variable.Map.of_list (List.combine params freshened_params) in
+  let body = Flambda_utils.toplevel_substitution subst function_decl.body in
+  freshened_params, body
+
 let inline_by_copying_function_body ~env ~r
-      ~(clos : Flambda.function_declarations) ~lfunc ~fun_id
-      ~(func : Flambda.function_declaration) ~args
+      ~(function_decls : Flambda.function_declarations) ~lfunc ~fun_id
+      ~(function_decl : Flambda.function_declaration) ~args
       ~simplify =
-(*
-Format.eprintf "inline_by_copying_function_body: %a@.env: %a@.\n"
-  Flambda_printers.flambda func.body
-  Inlining_env.print env;
-*)
   let r = R.map_benefit r B.remove_call in
   let env = E.inlining_level_up env in
-  (* Assign fresh names for the function's parameters and rewrite the body to
-     use these new names. *)
-  let subst_params = List.map Variable.freshen func.params in
-  let subst_map =
-    Variable.Map.of_list (List.combine func.params subst_params)
+  let freshened_params, body =
+    copy_of_function's_body_with_freshened_params ~function_decl
   in
-  let body = Flambda_utils.toplevel_substitution subst_map func.body in
   (* Around the function's body, bind the parameters to the arguments
      that we saw at the call site. *)
   let bindings_for_params_around_body =
     let args = List.map (fun arg -> Flambda.Expr (Var arg)) args in
-    Flambda_utils.bind ~body ~bindings:(List.combine subst_params args)
+    Flambda_utils.bind ~body ~bindings:(List.combine freshened_params args)
   in
-  (* 2. Now add bindings for variables bound by the closure. *)
+  (* Add bindings for variables bound by the closure. *)
   let bindings_for_vars_bound_by_closure_and_params_around_body =
     fold_over_exprs_for_variables_bound_by_closure ~fun_id
-      ~clos_id:lfunc ~clos ~init:bindings_for_params_around_body
+      ~clos_id:lfunc ~clos:function_decls ~init:bindings_for_params_around_body
       ~f:(fun ~acc:body ~var ~expr -> Flambda.Let (Immutable, var, expr, body))
   in
-  (* 3. Finally add bindings for the function declaration identifiers being
-     introduced by the whole set of closures. *)
+  (* Finally add bindings for the function identifiers being introduced by
+     the whole set of closures. *)
   let expr =
     Variable.Map.fold (fun id _ expr ->
         Flambda.Let (Immutable, id,
@@ -91,20 +92,14 @@ Format.eprintf "inline_by_copying_function_body: %a@.env: %a@.\n"
             move_to = Closure_id.wrap id;
           },
           expr))
-      clos.funs bindings_for_vars_bound_by_closure_and_params_around_body
+      function_decls.funs
+      bindings_for_vars_bound_by_closure_and_params_around_body
   in
-(*
-Format.eprintf "inline_by_copying_function_body expr: %a@.env: %a@.\n"
-  Flambda_printers.flambda expr
-  Inlining_env.print env;
-*)
   let env =
     E.note_entering_closure env ~closure_id:fun_id
       ~where:Inline_by_copying_function_body
   in
-  let result = simplify (E.activate_freshening env) r expr in
-  Printf.printf "";
-  result
+  simplify (E.activate_freshening env) r expr
 
 let inline_by_copying_function_declaration ~env ~r ~funct
     ~(function_decls : Flambda.function_declarations)

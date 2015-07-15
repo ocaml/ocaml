@@ -63,10 +63,10 @@
 val inline_by_copying_function_body
    : env:Inline_and_simplify_aux.Env.t
   -> r:Inline_and_simplify_aux.Result.t
-  -> clos:Flambda.function_declarations
+  -> function_decls:Flambda.function_declarations
   -> lfunc:Variable.t
   -> fun_id:Closure_id.t
-  -> func:Flambda.function_declaration
+  -> function_decl:Flambda.function_declaration
   -> args:Variable.t list
   -> simplify:Inlining_decision_intf.simplify
   -> Flambda.t * Inline_and_simplify_aux.Result.t
