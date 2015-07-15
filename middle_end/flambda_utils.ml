@@ -87,7 +87,7 @@ let rec same (l1 : Flambda.t) (l2 : Flambda.t) =
     same a1 a2 && Variable.equal v1 v2 && same b1 b2
   | Try_with _, _ | _, Try_with _ -> false
   | If_then_else (a1, b1, c1), If_then_else (a2, b2, c2) ->
-    same a1 a2 && same b1 b2 && same c1 c2
+    Variable.equal a1 a2 && same b1 b2 && same c1 c2
   | If_then_else _, _ | _, If_then_else _ -> false
   | While (a1, b1), While (a2, b2) ->
     same a1 a2 && same b1 b2
@@ -183,6 +183,7 @@ type sharing_key = unit
 let make_key _ = None
 
 (* CR mshinwell: change "toplevel" name, potentially misleading *)
+(* CR mshinwell: this should use the explicit ignore functions *)
 let toplevel_substitution sb tree =
   let sb v = try Variable.Map.find v sb with Not_found -> v in
   let aux (flam : Flambda.t) : Flambda.t =
@@ -191,7 +192,8 @@ let toplevel_substitution sb tree =
     | Assign (var, e) -> Assign (sb var, e)
     | Apply { func; args; kind; dbg; } ->
       Apply { func = sb func; args = List.map sb args; kind; dbg; }
-    | Let _ | Let_rec _ | Send _ | If_then_else _ | Switch _
+    | If_then_else (cond, e1, e2) -> If_then_else (sb cond, e1, e2)
+    | Let _ | Let_rec _ | Send _ | Switch _
     | String_switch _ | Static_raise _ | Static_catch _ | Try_with _
     | While _ | For _ | Proved_unreachable -> flam
   in

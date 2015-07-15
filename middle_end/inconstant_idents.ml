@@ -179,7 +179,7 @@ module NotConstants(P:Param) = struct
 
     | If_then_else (f1,f2,f3) ->
       mark_curr curr;
-      mark_loop ~toplevel [] f1;
+      mark_curr [Var f1];
       mark_loop ~toplevel [] f2;
       mark_loop ~toplevel [] f3
 

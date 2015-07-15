@@ -139,10 +139,10 @@ let variable_invariants flam =
       loop env e2;
       List.iter (loop env) es;
       ignore_debuginfo dbg
-    | If_then_else (e1, e2, e3) ->
-      loop env e1;
-      loop env e2;
-      loop env e3
+    | If_then_else (cond, ifso, ifnot) ->
+      check_variable_is_bound env cond;
+      loop env ifso;
+      loop env ifnot
     | Switch (e, { numconsts; consts; numblocks; blocks; failaction; }) ->
       loop env e;
       ignore_int_set numconsts;

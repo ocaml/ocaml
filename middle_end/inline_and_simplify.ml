@@ -568,26 +568,23 @@ and loop_direct env r (tree : Flambda.t) : Flambda.t * R.t =
     (* When arg is the constant false or true (or something considered
        as true), we can drop the if and replace it by a sequence.
        if arg is not effectful we can also drop it. *)
-    let arg, r = loop env r arg in
+    let arg = freshen_and_simplify_variable env arg in
     begin match (R.approx r).descr with
     | Value_constptr 0 ->
       (* constant false, keep ifnot *)
       let ifnot, r = loop env r ifnot in
-      let r = R.map_benefit r B.remove_branch in
-      sequence env r arg ifnot
+      ifnot, R.map_benefit r B.remove_branch
     | Value_constptr _ | Value_block _ ->
       (* constant true, keep ifso *)
       let ifso, r = loop env r ifso in
-      let r = R.map_benefit r B.remove_branch in
-      sequence env r arg ifso
+      ifso, R.map_benefit r B.remove_branch
     | _ ->
       let env = E.inside_branch env in
       let ifso, r = loop env r ifso in
       let ifso_approx = R.approx r in
       let ifnot, r = loop env r ifnot in
       let ifnot_approx = R.approx r in
-      If_then_else (arg, ifso, ifnot),
-      ret r (A.meet ifso_approx ifnot_approx)
+      If_then_else (arg, ifso, ifnot), ret r (A.meet ifso_approx ifnot_approx)
     end
   | While (cond, body) ->
     let cond, r = loop env r cond in

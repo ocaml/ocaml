@@ -119,7 +119,8 @@ let rec lam ppf (flam : Flambda.t) =
       fprintf ppf "@[<2>(try@ %a@;<1 -1>with %a@ %a)@]"
         lam lbody Variable.print param lam lhandler
   | If_then_else(lcond, lif, lelse) ->
-      fprintf ppf "@[<2>(if@ %a@ %a@ %a)@]" lam lcond lam lif lam lelse
+      fprintf ppf "@[<2>(if@ %a@ %a@ %a)@]" Variable.print lcond
+        lam lif lam lelse
   | While(lcond, lbody) ->
       fprintf ppf "@[<2>(while@ %a@ %a)@]" lam lcond lam lbody
   | For(param, lo, hi, dir, body) ->

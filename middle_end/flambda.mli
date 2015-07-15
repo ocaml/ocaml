@@ -123,7 +123,7 @@ type t =
   | Apply of apply
   | Assign of Variable.t * t
   | Send of Lambda.meth_kind * t * t * t list * Debuginfo.t
-  | If_then_else of t * t * t
+  | If_then_else of Variable.t * t * t
   | Switch of t * switch
   (* Restrictions on [Lambda.Lstringswitch] also apply to [String_switch]. *)
   | String_switch of t * (string * t) list * t option

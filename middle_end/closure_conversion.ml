@@ -215,14 +215,18 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
     let arg1 = close t env arg1 in
     let arg2 = close t env arg2 in
     let const_true = Variable.create "const_true" in
+    let cond = Variable.create "cond_sequor" in
     Let (Immutable, const_true, Const (Const_base (Const_int 1)),
-      If_then_else (arg1, Var (const_true), arg2))
+      Let (Immutable, cond, Expr arg1,
+        If_then_else (cond, Var (const_true), arg2)))
   | Lprim (Psequand, [arg1; arg2]) ->
     let arg1 = close t env arg1 in
     let arg2 = close t env arg2 in
     let const_false = Variable.create "const_true" in
+    let cond = Variable.create "cond_sequand" in
     Let (Immutable, const_false, Const (Const_base (Const_int 0)),
-      If_then_else (arg1, arg2, Var (const_false)))
+      Let (Immutable, cond, Expr arg1,
+        If_then_else (cond, arg2, Var (const_false))))
   | Lprim ((Psequand | Psequor), _) ->
     Misc.fatal_error "Psequand / Psequor must have exactly two arguments"
   | Lprim (Pidentity, [arg]) -> close t env arg
@@ -290,8 +294,11 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
   | Ltrywith (body, id, handler) ->
     let var = Variable.of_ident id in
     Try_with (close t env body, var, close t (Env.add_var env id var) handler)
-  | Lifthenelse (arg, ifso, ifnot) ->
-    If_then_else (close t env arg, close t env ifso, close t env ifnot)
+  | Lifthenelse (cond, ifso, ifnot) ->
+    let cond = close t env cond in
+    let cond_var = Variable.create "cond" in
+    Let (Immutable, cond_var, Expr cond,
+      If_then_else (cond_var, close t env ifso, close t env ifnot))
   | Lsequence (lam1, lam2) ->
     let var = Variable.create "sequence" in
     let lam1 = Flambda.Expr (close t env lam1) in

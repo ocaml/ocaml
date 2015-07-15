@@ -42,8 +42,8 @@ let apply_on_subexpressions f f_named (flam : Flambda.t) =
     f f1; f f2;
   | Try_with (f1,_,f2) ->
     f f1; f f2
-  | If_then_else (f1,f2,f3) ->
-    f f1;f f2;f f3
+  | If_then_else (_,f1, f2) ->
+    f f1;f f2
   | While (f1,f2) ->
     f f1; f f2
   | For (_,f1,f2,_,f3) ->
@@ -73,9 +73,10 @@ let iter_general ~toplevel f f_named maybe_named =
     | While (f1,f2)
     | Static_catch (_,_,f1,f2) ->
       aux f1; aux f2
-    | For (_,f1,f2,_,f3)
-    | If_then_else (f1,f2,f3) ->
+    | For (_,f1,f2,_,f3) ->
       aux f1;aux f2;aux f3
+    | If_then_else (_, f1, f2) ->
+      aux f1; aux f2
     | Static_raise (_,l) ->
       iter_list l
     | Switch (arg,sw) ->
@@ -162,7 +163,6 @@ let map_general ~toplevel f f_named tree =
         let handler = aux handler in
         Try_with(body, id, handler)
       | If_then_else(arg, ifso, ifnot) ->
-        let arg = aux arg in
         let ifso = aux ifso in
         let ifnot = aux ifnot in
         If_then_else(arg, ifso, ifnot)

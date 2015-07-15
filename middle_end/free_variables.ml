@@ -50,10 +50,10 @@ let iter tree ~free_variable ~bound_variable =
       aux e1;
       bound_variable var;
       aux e2
-    | If_then_else (e1, e2, e3) ->
+    | If_then_else (var, e1, e2) ->
+      free_variable var;
       aux e1;
-      aux e2;
-      aux e3
+      aux e2
     | While (e1, e2) ->
       aux e1;
       aux e2
