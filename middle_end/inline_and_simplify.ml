@@ -836,16 +836,18 @@ and simplify_set_of_closures original_env r
     ret r (A.value_set_of_closures value_set_of_closures)
 
 and simplify_apply env r ~(apply : Flambda.apply) : Flambda.t * R.t =
-  let { Flambda. func; args; kind = _; dbg } = apply in
-  let func = freshen_and_simplify_variable env func in
+  let { Flambda. func = lhs_of_application; args; kind = _; dbg } = apply in
+  let lhs_of_application =
+    freshen_and_simplify_variable env lhs_of_application
+  in
   let args = List.map (freshen_and_simplify_variable env) args in
-  let func_approx = E.find func env in
+  let lhs_of_application_approx = E.find lhs_of_application env in
   let args_approxs = List.map (fun arg -> E.find arg env) args in
   (* By using the approximation of the left-hand side of the application,
      attempt to determine which function is being applied (even if the
      application is currently [Indirect]).  If successful---in which case we
      then have a direct application---consider inlining. *)
-  match A.check_approx_for_closure func_approx with
+  match A.check_approx_for_closure lhs_of_application_approx with
   | Ok (value_closure, _set_of_closures_var, value_set_of_closures) ->
     let closure_id_being_applied = value_closure.closure_id in
     let function_decls = value_set_of_closures.function_decls in
@@ -861,23 +863,25 @@ and simplify_apply env r ~(apply : Flambda.apply) : Flambda.t * R.t =
     let nargs = List.length args in
     let arity = Flambda_utils.function_arity function_decl in
     if nargs = arity then
-      simplify_full_application env r ~function_decls func
+      simplify_full_application env r ~function_decls ~lhs_of_application
         ~closure_id_being_applied ~function_decl ~value_set_of_closures ~args
         ~args_approxs ~dbg
     else if nargs > arity then
-      simplify_over_application env r ~args ~args_approxs ~function_decls ~func
-        ~closure_id_being_applied ~function_decl ~value_set_of_closures ~dbg
+      simplify_over_application env r ~args ~args_approxs ~function_decls
+        ~lhs_of_application ~closure_id_being_applied ~function_decl
+        ~value_set_of_closures ~dbg
     else if nargs > 0 && nargs < arity then
-      simplify_partial_application env r ~lhs_of_application:func
+      simplify_partial_application env r ~lhs_of_application
         ~closure_id_being_applied ~function_decl ~args ~dbg
     else
       Misc.fatal_errorf "Function with arity %d when simplifying \
           application expression: %a"
         arity Flambda_printers.flambda (Flambda.Apply apply)
   | Wrong ->  (* Insufficient approximation information to simplify. *)
-    Apply ({ func; args; kind = Indirect; dbg }), ret r A.value_unknown
+    Apply ({ func = lhs_of_application; args; kind = Indirect; dbg }),
+      ret r A.value_unknown
 
-and simplify_full_application env r ~function_decls lhs_of_application
+and simplify_full_application env r ~function_decls ~lhs_of_application
       ~closure_id_being_applied ~function_decl ~value_set_of_closures ~args
       ~args_approxs ~dbg =
   Inlining_decision.for_call_site ~env ~r ~function_decls
@@ -915,15 +919,16 @@ and simplify_partial_application env r ~lhs_of_application
   in
   loop env r with_known_args
 
-and simplify_over_application env r ~args ~args_approxs ~function_decls ~func
-      ~closure_id_being_applied ~function_decl ~value_set_of_closures ~dbg =
+and simplify_over_application env r ~args ~args_approxs ~function_decls
+      ~lhs_of_application ~closure_id_being_applied ~function_decl
+      ~value_set_of_closures ~dbg =
   let arity = Flambda_utils.function_arity function_decl in
   assert (arity < List.length args);
   assert (List.length args = List.length args_approxs);
   let h_args, q_args = Misc.split_at arity args in
   let h_approxs, _q_approxs = Misc.split_at arity args_approxs in
   let expr, r =
-    simplify_full_application env r ~function_decls func
+    simplify_full_application env r ~function_decls ~lhs_of_application
       ~closure_id_being_applied ~function_decl ~value_set_of_closures
       ~args:h_args ~args_approxs:h_approxs ~dbg
   in
