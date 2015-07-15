@@ -387,7 +387,7 @@ void caml_urge_major_slice (void)
 
 
 static void stw_phase(void);
-static void check_rpc(void);
+static int check_rpc(void);
 
 void caml_handle_gc_interrupt() {
   atomic_uintnat* young_limit = domain_self->interrupt_word_address;
@@ -523,8 +523,9 @@ static void stw_phase () {
 }
 
 
-static void handle_rpc(dom_internal* target)
+static int handle_rpc(dom_internal* target)
 {
+  int r = 0;
   if (atomic_load_acq(&target->rpc_request) != RPC_IDLE) {
 
     /* wait until we know what the request is */
@@ -546,29 +547,36 @@ static void handle_rpc(dom_internal* target)
       /* signal completion */
       atomic_store_rel(rpc_completion_signal, 1);
     }
+    r = 1;
   }
+  return r;
 }
 
 /* Handle incoming RPC requests for the current domain,
-   and any domains we have temporarily taken over */
-static void check_rpc()
+   and any domains we have temporarily taken over.
+   Returns nonzero if any RPC requests were handled. */
+static int check_rpc()
 {
-  int i;
-  handle_rpc(domain_self);
+  int i, res = 0;
+  res |= handle_rpc(domain_self);
   for (i = 0; i < Max_domains; i++) {
     dom_internal* d = &all_domains[i];
     if (domain_is_locked(d))
-      handle_rpc(d);
+      res |= handle_rpc(d);
   }
+  return res;
 }
 
-static void attempt_rpc_takeover(dom_internal* target) {
+static int attempt_rpc_takeover(dom_internal* target) {
+  int res;
   if (try_lock_domain(target)) {
     /* process pending RPC for this domain */
-    check_rpc();
-
+    res = check_rpc();
     unlock_domain(target);
+  } else {
+    res = check_rpc();
   }
+  return res;
 }
 
 
@@ -591,13 +599,14 @@ CAMLexport void caml_domain_rpc(struct domain* domain,
   /* Wait until we can send an RPC to the target.
      Need to keep handling incoming RPCs while waiting.
      The target may have deactivated, so try taking it over */
-  SPIN_WAIT {
-    if (atomic_load_acq(&target->rpc_request) == RPC_IDLE &&
-        atomic_cas(&target->rpc_request, RPC_IDLE, RPC_REQUEST_INITIALISING)) {
-      break;
+  while (!(atomic_load_acq(&target->rpc_request) == RPC_IDLE &&
+           atomic_cas(&target->rpc_request, RPC_IDLE, RPC_REQUEST_INITIALISING))) {
+    /* exit the SPIN_WAIT loop when anything happens,
+       so that backoff time does not increase */
+    SPIN_WAIT {
+      if (atomic_load_acq(&target->rpc_request) == RPC_IDLE) break;
+      if (attempt_rpc_takeover(target)) break;
     }
-    attempt_rpc_takeover(target);
-    check_rpc();
   }
 
   /* Initialise and send the request */
@@ -608,10 +617,13 @@ CAMLexport void caml_domain_rpc(struct domain* domain,
   interrupt_domain(target);
 
   /* Wait for a response */
-  SPIN_WAIT {
-    if (atomic_load_acq(&completed)) break;
-    attempt_rpc_takeover(target);
-    check_rpc(); /* must keep handling RPCs while waiting for this one */
+  while (!atomic_load_acq(&completed)) {
+    /* exit the SPIN_WAIT loop when anything happens,
+       so that backoff time does not increase */
+    SPIN_WAIT {
+      if (atomic_load_acq(&completed)) break;
+      if (attempt_rpc_takeover(target)) break;
+    }
   }
 }
 
