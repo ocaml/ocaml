@@ -333,9 +333,13 @@ let new_const_label () =
   incr const_label;
   !const_label
 
-let new_const_symbol () =
+let new_const_symbol ?name () =
   incr const_label;
-  make_symbol (Some (string_of_int !const_label))
+  let name = match name with
+    | None -> string_of_int !const_label
+    | Some name -> name ^ "_" ^ string_of_int !const_label
+  in
+  make_symbol (Some name)
 
 let snapshot () = !structured_constants
 let backtrack s = structured_constants := s
@@ -427,8 +431,9 @@ let structured_constants () =
        (symbols, cst)
     ) structured_constants.strcst_all
 
-let new_const_symbol' () =
-  Symbol.create (current_unit ()) (Linkage_name.create (new_const_symbol ()))
+let new_const_symbol' ?name () =
+  Symbol.create (current_unit ())
+    (Linkage_name.create (new_const_symbol ?name ()))
 
 let concat_symbol unitname id =
   unitname ^ "__" ^ id

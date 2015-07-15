@@ -27,6 +27,7 @@ case $1 in
   | asmcomp/flambdasym.* \
   | asmcomp/lift_constants.* \
   | asmcomp/import_approx.* \
+  | asmcomp/build_export_info.* \
   | middle_end/* \
   | middle_end/base_types/*)
     # Strict compilation options for Flambda passes.

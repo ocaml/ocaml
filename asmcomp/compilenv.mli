@@ -80,8 +80,8 @@ val need_send_fun: int -> unit
         (* Record the need of a currying (resp. application,
            message sending) function with the given arity *)
 
-val new_const_symbol : unit -> string
-val new_const_symbol' : unit -> Symbol.t
+val new_const_symbol : ?name:string -> unit -> string
+val new_const_symbol' : ?name:string -> unit -> Symbol.t
 val closure_symbol : Closure_id.t -> Symbol.t
         (* Symbol of a function if the function is
            closed (statically allocated) *)
