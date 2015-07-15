@@ -37,6 +37,11 @@ let which_function_parameters_can_we_specialize ~params ~args
     (List.combine params args) args_approxs
     (Variable.Map.empty, [], [])
 
+(** Fold over all variables bound by the given closure, which is bound to the
+    variable [lhs_of_application], and corresponds to the given
+    [function_decls].  Each variable bound by the closure is passed to the
+    user-specified function as an [Flambda.named] value that projects the
+    variable from its closure. *)
 let fold_over_projections_of_vars_bound_by_closure ~closure_id_being_applied
       ~lhs_of_application ~function_decls ~init ~f =
   Variable.Set.fold (fun var acc ->
@@ -62,10 +67,11 @@ let copy_of_function's_body_with_freshened_params
   let body = Flambda_utils.toplevel_substitution subst function_decl.body in
   freshened_params, body
 
-let inline_by_copying_function_body ~env ~r
-      ~(function_decls : Flambda.function_declarations) ~lhs_of_application
-      ~closure_id_being_applied ~(function_decl : Flambda.function_declaration)
-      ~args ~simplify =
+(** Inline a function by copying its body into a context where it becomes
+    closed.  That is to say, we bind the free variables of the body, and any
+    function identifiers introduced by the corresponding set of closures. *)
+let inline_by_copying_function_body ~env ~r ~function_decls ~lhs_of_application
+      ~closure_id_being_applied ~function_decl ~args ~simplify =
   let r = R.map_benefit r B.remove_call in
   let env = E.inlining_level_up env in
   let freshened_params, body =
@@ -98,7 +104,7 @@ let inline_by_copying_function_body ~env ~r
             move_to = Closure_id.wrap another_closure_in_the_same_set;
           },
           expr))
-      function_decls.funs
+      function_decls.Flambda.funs
       bindings_for_vars_bound_by_closure_and_params_to_args
   in
   let env =
