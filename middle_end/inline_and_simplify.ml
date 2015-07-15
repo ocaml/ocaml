@@ -880,9 +880,8 @@ and full_apply env r ~function_decls lhs_of_application
       ~closure_id_being_applied ~function_decl ~value_set_of_closures ~args
       ~args_approxs ~dbg =
   Inlining_decision.for_call_site ~env ~r ~function_decls
-    ~lhs_of_application ~fun_id:closure_id_being_applied ~func:function_decl
-    ~value_set_of_closures ~args_with_approxs:(args, args_approxs)
-    ~dbg ~simplify:loop
+    ~lhs_of_application ~closure_id_being_applied ~function_decl
+    ~value_set_of_closures ~args ~args_approxs ~dbg ~simplify:loop
 
 and partial_apply env r ~lhs_of_application ~closure_id_being_applied
       ~(function_decl : Flambda.function_declaration)

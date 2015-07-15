@@ -20,10 +20,11 @@ val for_call_site
   -> r:Inline_and_simplify_aux.Result.t
   -> function_decls:Flambda.function_declarations
   -> lhs_of_application:Variable.t
-  -> fun_id:Closure_id.t
-  -> func:Flambda.function_declaration
+  -> closure_id_being_applied:Closure_id.t
+  -> function_decl:Flambda.function_declaration
   -> value_set_of_closures:Simple_value_approx.value_set_of_closures
-  -> args_with_approxs:(Variable.t list) * (Simple_value_approx.t list)
+  -> args:Variable.t list
+  -> args_approxs:Simple_value_approx.t list
   -> dbg:Debuginfo.t
   -> simplify:Inlining_decision_intf.simplify
   -> Flambda.t * Inline_and_simplify_aux.Result.t
