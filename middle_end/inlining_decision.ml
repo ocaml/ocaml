@@ -39,7 +39,7 @@ let should_inline_function_known_to_be_recursive
         func.params approxs
 
 let inline_non_recursive
-    ~env ~r ~function_decls ~lhs_of_application ~closure_id_being_applied:fun_id
+    ~env ~r ~function_decls ~lhs_of_application ~closure_id_being_applied
     ~(func : Flambda.function_declaration)
     ~(record_decision : Inlining_stats_types.Decision.t -> unit)
     ~direct_apply
@@ -51,7 +51,7 @@ let inline_non_recursive
     (* We first try to inline that function preventing further inlining below *)
     Inlining_transforms.inline_by_copying_function_body ~env
       ~r:(R.set_inlining_threshold (R.clear_benefit r) Inlining_cost.Never_inline)
-      ~function_decls ~lhs_of_application ~fun_id ~function_decl:func ~args
+      ~function_decls ~lhs_of_application ~fun_id:closure_id_being_applied ~function_decl:func ~args
       ~simplify
   in
   let unconditionally_inline =
@@ -91,7 +91,7 @@ let inline_non_recursive
     let r = R.map_benefit r (Inlining_cost.Benefit.(+) (R.benefit r_inlined)) in
     let body = Lift_code.lift_lets body in
     let env =
-      E.note_entering_closure env ~closure_id:fun_id
+      E.note_entering_closure env ~closure_id:closure_id_being_applied
         ~where:Inline_by_copying_function_body
     in
     let env = E.inlining_level_up env in
@@ -102,7 +102,7 @@ let inline_non_recursive
     let body, r_inlined =
       Inlining_transforms.inline_by_copying_function_body ~env
         ~r:(R.clear_benefit r)
-        ~function_decls ~lhs_of_application ~fun_id ~function_decl:func ~args ~simplify
+        ~function_decls ~lhs_of_application ~fun_id:closure_id_being_applied ~function_decl:func ~args ~simplify
     in
     let keep_inlined_version =
       let wsb =
