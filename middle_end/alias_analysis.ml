@@ -101,8 +101,8 @@ let rec collect_equations (t:equations) : Flambda.t -> equation_right = function
   | Let (_, v, def, body) ->
     add t (Var v) (collect_equations_named t v def);
     collect_equations t body
-  | Assign (v, expr) ->
-    add t (Var v) (collect_equations t expr);
+  | Assign { being_assigned; new_value } ->
+    add t (Var being_assigned) (alias (Var new_value));
     Resolved Not_const
   | Let_rec (defs, body) ->
     List.iter (fun (v, def) ->
@@ -113,18 +113,13 @@ let rec collect_equations (t:equations) : Flambda.t -> equation_right = function
     (* If we want to propagate arguments to function we also need to
        find escaping functions. This may not be that much clutter *)
     Resolved Not_const
-  | Send (_, e1, e2, args, _) ->
-    List.iter (fun e ->
-        ignore (collect_equations t e : equation_right))
-      (e1 :: e2 :: args);
+  | Send _ ->
     Resolved Not_const
-  | If_then_else (cond, ifso, ifnot) ->
-    ignore (collect_equations t cond : equation_right);
+  | If_then_else (_cond, ifso, ifnot) ->
     let ifso_eq = to_lset t (collect_equations t ifso) in
     let ifnot_eq = to_lset t (collect_equations t ifnot) in
     alias_set [ifso_eq; ifnot_eq]
-  | Switch (cond, { consts; blocks; failaction }) ->
-    ignore (collect_equations t cond : equation_right);
+  | Switch (_cond, { consts; blocks; failaction }) ->
     let conv (_, e) : lset = to_lset t (collect_equations t e) in
     let eqs = List.map conv (consts @ blocks) in
     let eqs = match failaction with
@@ -132,8 +127,7 @@ let rec collect_equations (t:equations) : Flambda.t -> equation_right = function
       | Some e -> conv ((),e) :: eqs
     in
     alias_set eqs
-  | String_switch (cond, branches, failaction) ->
-    ignore (collect_equations t cond : equation_right);
+  | String_switch (_cond, branches, failaction) ->
     let conv (_,e) = to_lset t (collect_equations t e) in
     let eqs = List.map conv branches in
     let eqs = match failaction with
@@ -164,9 +158,7 @@ let rec collect_equations (t:equations) : Flambda.t -> equation_right = function
     ignore (collect_equations t cond : equation_right);
     ignore (collect_equations t body : equation_right);
     Resolved Not_const
-  | For (_, low, high, _, body) ->
-    ignore (collect_equations t low : equation_right);
-    ignore (collect_equations t high : equation_right);
+  | For { body } ->
     ignore (collect_equations t body : equation_right);
     Resolved Not_const
   | Proved_unreachable ->

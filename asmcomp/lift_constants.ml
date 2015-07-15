@@ -76,7 +76,7 @@ let extract_constant_declarations expr =
       constant_named var named
   in
   let expr =
-    Flambdaiter.map (function
+    Flambda_iterators.map (function
         | Let (kind, var, named, body) ->
           Let (kind, var, to_symbol_if_constant var named, body)
         | Let_rec (defs, body) ->
@@ -121,13 +121,13 @@ let rewrite_constant_access (expr, constant_tbl, tbl, set_of_closures_tbl) =
       Flambda.Let_rec (defs, body)
     | expr -> expr
   in
-  let expr = Flambdaiter.map rewrite (fun x -> x) expr in
+  let expr = Flambda_iterators.map rewrite (fun x -> x) expr in
   let set_of_closures_map =
     Variable.Tbl.fold (fun var (set_of_closures:Flambda.set_of_closures) map ->
         let update_function_decl (function_declaration:Flambda.function_declaration) =
           { function_declaration with
             Flambda.body =
-              Flambdaiter.map rewrite (fun x -> x)
+              Flambda_iterators.map rewrite (fun x -> x)
                 function_declaration.body;
           }
         in
