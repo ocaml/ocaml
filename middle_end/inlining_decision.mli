@@ -24,7 +24,7 @@ val for_call_site
   -> lhs_of_application:Variable.t
   -> fun_id:Closure_id.t
   -> func:Flambda.function_declaration
-  -> closure:Simple_value_approx.value_set_of_closures
+  -> value_set_of_closures:Simple_value_approx.value_set_of_closures
   -> args_with_approxs:(Variable.t list) * (Simple_value_approx.t list)
   -> dbg:Debuginfo.t
   -> simplify:Inlining_decision_intf.simplify

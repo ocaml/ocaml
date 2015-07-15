@@ -27,11 +27,13 @@ let is_probably_a_functor env func_decls approxs =
 let should_inline_function_known_to_be_recursive
       ~(func : Flambda.function_declaration)
       ~(clos : Flambda.function_declarations)
-      ~env ~(closure : A.value_set_of_closures) ~approxs ~unchanging_params =
+      ~env ~(value_set_of_closures : A.value_set_of_closures)
+      ~approxs ~unchanging_params =
   assert (List.length func.params = List.length approxs);
   (not (E.inside_set_of_closures_declaration clos.set_of_closures_id env))
-    && (not (Variable.Set.is_empty closure.unchanging_params))
-    && Var_within_closure.Map.is_empty closure.bound_vars (* closed *)
+    && (not (Variable.Set.is_empty value_set_of_closures.unchanging_params))
+    && Var_within_closure.Map.is_empty
+        value_set_of_closures.bound_vars (* closed *)
     && List.exists2 (fun id approx ->
           A.useful approx && Variable.Set.mem id unchanging_params)
         func.params approxs
@@ -136,7 +138,7 @@ let for_call_site ~env ~r
       ~(lhs_of_application : Variable.t)
       ~fun_id
       ~(func : Flambda.function_declaration)
-      ~(closure : Simple_value_approx.value_set_of_closures)
+      ~(value_set_of_closures : Simple_value_approx.value_set_of_closures)
       ~args_with_approxs ~dbg ~simplify =
   let record_decision =
     let closure_stack =
@@ -243,7 +245,7 @@ let for_call_site ~env ~r
          [inlining_threshold] is confusing.
          pchambart: is [remaining_inlining_threshold] better ? *)
       let r = R.set_inlining_threshold r remaining_inlining_threshold in
-      let unchanging_params = closure.unchanging_params in
+      let unchanging_params = value_set_of_closures.unchanging_params in
       (* Try inlining if the function is non-recursive and not too far above
          the threshold (or if the function is to be unconditionally
          inlined). *)
@@ -304,7 +306,7 @@ let for_call_site ~env ~r
         | Some r -> r
         | None ->
           if should_inline_function_known_to_be_recursive ~func ~clos ~env
-              ~closure ~approxs ~unchanging_params
+              ~value_set_of_closures ~approxs ~unchanging_params
           then
 (*
             let () =
@@ -318,7 +320,7 @@ let for_call_site ~env ~r
                 ~r:(R.clear_benefit r) ~funct:lhs_of_application
                 ~function_decls:clos ~closure_id:fun_id ~function_decl:func
                 ~args_with_approxs:(args, approxs) ~unchanging_params
-                ~specialised_args:closure.specialised_args ~dbg ~simplify
+                ~specialised_args:value_set_of_closures.specialised_args ~dbg ~simplify
             in
             match copied_function_declaration with
             | Some (expr, r_inlined) ->
