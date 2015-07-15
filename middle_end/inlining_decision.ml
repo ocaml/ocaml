@@ -51,7 +51,7 @@ let inline_non_recursive
     (* We first try to inline that function preventing further inlining below *)
     Inlining_transforms.inline_by_copying_function_body ~env
       ~r:(R.set_inlining_threshold (R.clear_benefit r) Inlining_cost.Never_inline)
-      ~function_decls ~lfunc:funct ~fun_id ~function_decl:func ~args
+      ~function_decls ~lhs_of_application:funct ~fun_id ~function_decl:func ~args
       ~simplify
   in
   let unconditionally_inline =
@@ -102,7 +102,7 @@ let inline_non_recursive
     let body, r_inlined =
       Inlining_transforms.inline_by_copying_function_body ~env
         ~r:(R.clear_benefit r)
-        ~function_decls ~lfunc:funct ~fun_id ~function_decl:func ~args ~simplify
+        ~function_decls ~lhs_of_application:funct ~fun_id ~function_decl:func ~args ~simplify
     in
     let keep_inlined_version =
       let wsb =
@@ -279,7 +279,7 @@ let for_call_site ~env ~r
               let body, r_inlined =
                 Inlining_transforms.inline_by_copying_function_body ~env
                   ~r:(R.clear_benefit r) ~function_decls
-                  ~lfunc:lhs_of_application ~fun_id ~function_decl
+                  ~lhs_of_application ~fun_id ~function_decl
                   ~args ~simplify
               in
               tried_unrolling := true;

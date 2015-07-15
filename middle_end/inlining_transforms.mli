@@ -64,7 +64,7 @@ val inline_by_copying_function_body
    : env:Inline_and_simplify_aux.Env.t
   -> r:Inline_and_simplify_aux.Result.t
   -> function_decls:Flambda.function_declarations
-  -> lfunc:Variable.t
+  -> lhs_of_application:Variable.t
   -> fun_id:Closure_id.t
   -> function_decl:Flambda.function_declaration
   -> args:Variable.t list

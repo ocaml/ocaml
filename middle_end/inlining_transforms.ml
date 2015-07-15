@@ -61,24 +61,22 @@ let copy_of_function's_body_with_freshened_params
   freshened_params, body
 
 let inline_by_copying_function_body ~env ~r
-      ~(function_decls : Flambda.function_declarations) ~lfunc ~fun_id
-      ~(function_decl : Flambda.function_declaration) ~args
-      ~simplify =
+      ~(function_decls : Flambda.function_declarations) ~lhs_of_application ~fun_id
+      ~(function_decl : Flambda.function_declaration) ~args ~simplify =
   let r = R.map_benefit r B.remove_call in
   let env = E.inlining_level_up env in
   let freshened_params, body =
     copy_of_function's_body_with_freshened_params ~function_decl
   in
-  (* Around the function's body, bind the parameters to the arguments
-     that we saw at the call site. *)
-  let bindings_for_params_around_body =
+  let bindings_for_params_to_args =
+    (* Bind the function's parameters to the arguments from the call site. *)
     let args = List.map (fun arg -> Flambda.Expr (Var arg)) args in
     Flambda_utils.bind ~body ~bindings:(List.combine freshened_params args)
   in
   (* Add bindings for variables bound by the closure. *)
-  let bindings_for_vars_bound_by_closure_and_params_around_body =
+  let bindings_for_vars_bound_by_closure_and_params_to_args =
     fold_over_exprs_for_variables_bound_by_closure ~fun_id
-      ~clos_id:lfunc ~clos:function_decls ~init:bindings_for_params_around_body
+      ~clos_id:lhs_of_application ~clos:function_decls ~init:bindings_for_params_to_args
       ~f:(fun ~acc:body ~var ~expr -> Flambda.Let (Immutable, var, expr, body))
   in
   (* Finally add bindings for the function identifiers being introduced by
@@ -87,13 +85,13 @@ let inline_by_copying_function_body ~env ~r
     Variable.Map.fold (fun id _ expr ->
         Flambda.Let (Immutable, id,
           Move_within_set_of_closures {
-            closure = lfunc;
+            closure = lhs_of_application;
             start_from = fun_id;
             move_to = Closure_id.wrap id;
           },
           expr))
       function_decls.funs
-      bindings_for_vars_bound_by_closure_and_params_around_body
+      bindings_for_vars_bound_by_closure_and_params_to_args
   in
   let env =
     E.note_entering_closure env ~closure_id:fun_id
