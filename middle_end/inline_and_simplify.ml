@@ -76,10 +76,7 @@ let simplify_using_approx_and_env env r original_lam approx =
   let r =
     let r = ret r approx in
     match summary with
-    | Replaced_term_by_variable _ ->
-      R.map_benefit r (B.remove_code original_lam)
-    | Replaced_term_by_constant -> R.map_benefit r (B.remove_code original_lam)
-    | Replaced_term_by_symbol (* CR mshinwell: should we do something here? *)
+    | Replaced_term -> R.map_benefit r (B.remove_code original_lam)
     | Nothing_done -> r
   in
   lam, r
@@ -92,12 +89,7 @@ let simplify_named_using_approx_and_env env r original_named approx =
   let r =
     let r = ret r approx in
     match summary with
-    (* CR mshinwell: remove ctor arg *)
-    | Replaced_term_by_variable _ ->
-      R.map_benefit r (B.remove_code_named original_named)
-    | Replaced_term_by_constant ->
-      R.map_benefit r (B.remove_code_named original_named)
-    | Replaced_term_by_symbol
+    | Replaced_term -> R.map_benefit r (B.remove_code_named original_named)
     | Nothing_done -> r
   in
   named, r
@@ -121,12 +113,26 @@ let populate_closure_approximations
     List.fold_left (fun env id ->
        let approx = try Variable.Map.find id parameter_approximations
                     with Not_found -> A.value_unknown in
-(*       Format.eprintf "populate_closure_approximations: %a\n"
-         Variable.print id;
-*)
        E.add_approx id approx env)
       env function_decl.params in
   env
+
+let debug_free_variables_check env tree ~name ~calculate_free_variables
+      ~printer =
+  (* CR mshinwell: add compiler option to enable this expensive check *)
+  let fv = calculate_free_variables tree in
+  Variable.Set.iter (fun var ->
+      let var = Freshening.apply_variable (E.freshening env) var in
+      match Inline_and_simplify_aux.Env.find_opt env var with
+      | Some _ -> ()
+      | None ->
+        Misc.fatal_errorf "Unbound variable(s) (%s): %a fv=%a env=%a %s\n"
+          name
+          printer tree
+          Variable.Set.print fv
+          Inline_and_simplify_aux.Env.print env
+          (Printexc.raw_backtrace_to_string (Printexc.get_callstack max_int)))
+    fv
 
 (* Determine whether a given closure ID corresponds directly to a variable
    (bound to a closure) in the given environment.  This happens when the body
@@ -319,21 +325,6 @@ let rec simplify_project_var env r ~(project_var : Flambda.project_var)
       Simple_value_approx.print approx
 
 and loop env r tree =
-  (* CR mshinwell: add compiler option to enable this expensive check *)
-  let fv = Free_variables.calculate tree in
-  Variable.Set.iter (fun var ->
-      let var = Freshening.apply_variable (E.freshening env) var in
-      match Inline_and_simplify_aux.Env.find_opt env var with
-      | Some _ -> ()
-      | None ->
-        Format.eprintf "start of loop has unbound vars: %a fv=%a env=%a %s\n"
-          Flambda_printers.flambda tree
-          Variable.Set.print fv
-          Inline_and_simplify_aux.Env.print env
-          (Printexc.raw_backtrace_to_string (Printexc.get_callstack max_int));
-        Misc.fatal_error "unbound variable(s)")
-    fv;
-
   let f, r = loop_direct env r tree in
   let module Backend = (val (E.backend env) : Backend_intf.S) in
   (* CR mshinwell for pchambart: This call to [really_import_approx] is
@@ -342,20 +333,9 @@ and loop env r tree =
   f, ret r (Backend.really_import_approx (R.approx r))
 
 and loop_named env r (tree : Flambda.named) : Flambda.named * R.t =
-  (* CR mshinwell: add compiler option to enable this expensive check *)
-  let fv = Free_variables.calculate_named tree in
-  Variable.Set.iter (fun var ->
-      let var = Freshening.apply_variable (E.freshening env) var in
-      match Inline_and_simplify_aux.Env.find_opt env var with
-      | Some _ -> ()
-      | None ->
-        Format.eprintf "start of loop_named has unbound vars: %a fv=%a env=%a %s\n"
-          Flambda_printers.named tree
-          Variable.Set.print fv
-          Inline_and_simplify_aux.Env.print env
-          (Printexc.raw_backtrace_to_string (Printexc.get_callstack max_int));
-        Misc.fatal_error "unbound variable(s)")
-    fv;
+  debug_free_variables_check env tree ~name:"loop_named"
+    ~calculate_free_variables:Free_variables.calculate_named
+    ~printer:Flambda_printers.named;
   match tree with
   | Symbol sym ->
     let module Backend = (val (E.backend env) : Backend_intf.S) in
@@ -369,11 +349,6 @@ and loop_named env r (tree : Flambda.named) : Flambda.named * R.t =
   | Move_within_set_of_closures move_within_set_of_closures ->
     simplify_move_within_set_of_closures env r ~move_within_set_of_closures
   | Prim (prim, args, dbg) ->
-(*
-    Format.eprintf "loop_named, Prim case: %a Environment is: %a\n"
-      Flambda_printers.named tree
-      Inline_and_simplify_aux.Env.print env;
-*)
     let args = List.map (freshen_and_simplify_variable env) args in
     let tree = Flambda.Prim (prim, args, dbg) in
     begin match prim, args with
@@ -425,11 +400,10 @@ and loop_named env r (tree : Flambda.named) : Flambda.named * R.t =
     let expr, r = loop_direct env r expr in
     Expr expr, r
 
-(*
-and count = ref 0
-*)
-
 and loop_direct env r (tree : Flambda.t) : Flambda.t * R.t =
+  debug_free_variables_check env tree ~name:"loop"
+    ~calculate_free_variables:Free_variables.calculate
+    ~printer:Flambda_printers.flambda;
   match tree with
   | Var var ->
     let var = freshen_and_simplify_variable env var in
@@ -441,17 +415,6 @@ and loop_direct env r (tree : Flambda.t) : Flambda.t * R.t =
     flam, r
   | Apply apply -> simplify_apply env r ~apply
   | Let (str, id, defining_expr, body) ->
-(*
-    incr count;
-    let my_count = !count in
-    Format.eprintf "Let case %d, binding '%a', the defining expr is: %a, \
-        body is: %a, environment: %a\n"
-      my_count
-      Variable.print id
-      Flambda_printers.named defining_expr
-      Flambda_printers.flambda body
-      Inline_and_simplify_aux.Env.print env;
-*)
     let defining_expr, r = loop_named env r defining_expr in
     (* When [defining_expr] is really a [Flambda.named] rather than an
        [Flambda.t], squash any intermediate [let], or we will never eliminate
@@ -470,32 +433,13 @@ and loop_direct env r (tree : Flambda.t) : Flambda.t * R.t =
         | Mutable -> E.clear_approx id env
         | Immutable -> E.add_approx id (R.approx r) env
       in
-(*
-      Format.eprintf "Let case %d, binding (freshened) '%a', body environment: %a\n"
-        my_count
-        Variable.print id
-        Inline_and_simplify_aux.Env.print body_env;
-*)
       loop body_env r body
     in
     let free_variables_of_body = Free_variables.calculate body in
-(*
-    Format.eprintf "Let case %d simplified to let %a = %a in %a (fv=%a)\n"
-      my_count
-      Variable.print id
-      Flambda_printers.named defining_expr
-      Flambda_printers.flambda body
-      Variable.Set.print free_variables_of_body;
-*)
     let (expr : Flambda.t), r =
       if Variable.Set.mem id free_variables_of_body then
         Flambda.Let (str, id, defining_expr, body), r
-      else (* begin
-    Format.eprintf "ELIMINATION: Let case %d: %a\n"
-      my_count
-      Variable.print id;
-*)
-      if Effect_analysis.no_effects_named defining_expr then
+      else if Effect_analysis.no_effects_named defining_expr then
         let r = R.map_benefit r (B.remove_code_named defining_expr) in
         body, r
       else
@@ -506,7 +450,6 @@ and loop_direct env r (tree : Flambda.t) : Flambda.t * R.t =
            the variable is unused). *)
         let fresh_var = Variable.create "for_side_effect_only" in
         Flambda.Let (Immutable, fresh_var, defining_expr, body), r
-(* end *)
     in
     expr, r
   | Let_rec (defs, body) ->

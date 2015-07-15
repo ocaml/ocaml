@@ -197,9 +197,7 @@ let const (flam : Flambda.const) =
 
 type simplification_summary =
   | Nothing_done
-  | Replaced_term_by_variable of Variable.t
-  | Replaced_term_by_constant
-  | Replaced_term_by_symbol
+  | Replaced_term
 
 type simplification_result = Flambda.t * simplification_summary * t
 type simplification_result_named = Flambda.named * simplification_summary * t
@@ -209,18 +207,18 @@ let simplify t (lam : Flambda.t) : simplification_result =
     match t.descr with
     | Value_int n ->
       let const, approx = make_const_int n in
-      const, Replaced_term_by_constant, approx
+      const, Replaced_term, approx
     | Value_constptr n ->
       let const, approx = make_const_ptr n in
-      const, Replaced_term_by_constant, approx
+      const, Replaced_term, approx
     | Value_float f ->
       let const, approx = make_const_float f in
-      const, Replaced_term_by_constant, approx
+      const, Replaced_term, approx
     | Value_boxed_int (t, i) ->
       let const, approx = make_const_boxed_int t i in
-      const, Replaced_term_by_constant, approx
+      const, Replaced_term, approx
     | Value_symbol sym ->
-      U.name_expr (Symbol sym), Replaced_term_by_symbol, t
+      U.name_expr (Symbol sym), Replaced_term, t
     | Value_string _ | Value_float_array _
     | Value_block _ | Value_set_of_closures _ | Value_closure _
     | Value_unknown | Value_bottom | Value_extern _ | Value_unresolved _ ->
@@ -233,18 +231,18 @@ let simplify_named t (named : Flambda.named) : simplification_result_named =
     match t.descr with
     | Value_int n ->
       let const, approx = make_const_int_named n in
-      const, Replaced_term_by_constant, approx
+      const, Replaced_term, approx
     | Value_constptr n ->
       let const, approx = make_const_ptr_named n in
-      const, Replaced_term_by_constant, approx
+      const, Replaced_term, approx
     | Value_float f ->
       let const, approx = make_const_float_named f in
-      const, Replaced_term_by_constant, approx
+      const, Replaced_term, approx
     | Value_boxed_int (t, i) ->
       let const, approx = make_const_boxed_int_named t i in
-      const, Replaced_term_by_constant, approx
+      const, Replaced_term, approx
     | Value_symbol sym ->
-      Symbol sym, Replaced_term_by_symbol, t
+      Symbol sym, Replaced_term, t
     | Value_string _ | Value_float_array _
     | Value_block _ | Value_set_of_closures _ | Value_closure _
     | Value_unknown | Value_bottom | Value_extern _ | Value_unresolved _ ->
@@ -252,27 +250,36 @@ let simplify_named t (named : Flambda.named) : simplification_result_named =
   else
     named, Nothing_done, t
 
-let simplify_using_env t ~is_present_in_env lam =
-  let res : Flambda.t =
+let join_summaries summary ~replaced_by_var_or_symbol =
+  match replaced_by_var_or_symbol, summary with
+  | true, Nothing_done
+  | true, Replaced_term
+  | false, Replaced_term -> Replaced_term
+  | false, Nothing_done -> Nothing_done
+
+let simplify_using_env t ~is_present_in_env flam =
+  let replaced_by_var_or_symbol, flam =
     match t.var with
-    | Some var when is_present_in_env var -> Var var
+    | Some var when is_present_in_env var -> true, Flambda.Var var
     | _ ->
       match t.symbol with
-      | Some sym -> U.name_expr (Symbol sym)
-      | None -> lam
+      | Some sym -> true, U.name_expr (Symbol sym)
+      | None -> false, flam
   in
-  simplify t res
+  let const, summary, approx = simplify t flam in
+  const, join_summaries summary ~replaced_by_var_or_symbol, approx
 
 let simplify_named_using_env t ~is_present_in_env named =
-  let named : Flambda.named =
+  let replaced_by_var_or_symbol, named =
     match t.var with
-    | Some var when is_present_in_env var -> Expr (Var var)
+    | Some var when is_present_in_env var -> true, Flambda.Expr (Var var)
     | _ ->
       match t.symbol with
-      | Some sym -> Symbol sym
-      | None -> named
+      | Some sym -> true, Flambda.Symbol sym
+      | None -> false, named
   in
-  simplify_named t named
+  let const, summary, approx = simplify_named t named in
+  const, join_summaries summary ~replaced_by_var_or_symbol, approx
 
 let simplify_var_to_var_using_env t ~is_present_in_env =
   match t.var with

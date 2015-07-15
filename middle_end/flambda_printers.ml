@@ -179,7 +179,7 @@ and print_set_of_closures ppf (set_of_closures : Flambda.set_of_closures) =
           spec_args
       end
     in
-    fprintf ppf "@[<2>(set_of_closures%a@ free_vars={%a}@ \
+    fprintf ppf "@[<2>(set_of_closures%a@ free_vars={%a@ }@ \
         specialised_args={%a})@]"
       funs function_decls.funs
       vars free_vars spec specialised_args

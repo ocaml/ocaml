@@ -241,7 +241,8 @@ let variable_invariants flam =
         raise (Set_of_closures_free_vars_map_has_wrong_domain bad_free_vars)
       end;
       (* Check that every "specialised arg" is a parameter of one of the
-         functions being declared. *)
+         functions being declared, and that the variable to which the
+         parameter is being specialised is bound. *)
       Variable.Map.iter (fun being_specialised specialised_to ->
           if not (Variable.Set.mem being_specialised all_params) then begin
             raise (Specialised_arg_that_is_not_a_parameter being_specialised)

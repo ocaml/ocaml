@@ -226,9 +226,7 @@ val is_certainly_immutable : t -> bool
 
 type simplification_summary =
   | Nothing_done
-  | Replaced_term_by_variable of Variable.t
-  | Replaced_term_by_constant
-  | Replaced_term_by_symbol
+  | Replaced_term
 
 type simplification_result = Flambda.t * simplification_summary * t
 type simplification_result_named = Flambda.named * simplification_summary * t
