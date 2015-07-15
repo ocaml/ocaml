@@ -128,7 +128,8 @@ let rec lam ppf (flam : Flambda.t) =
       fprintf ppf "@[<2>(try@ %a@;<1 -1>with %a@ %a)@]"
         lam lbody Variable.print param lam lhandler
   | If_then_else(lcond, lif, lelse) ->
-      fprintf ppf "@[<2>(if@ %a@ %a@ %a)@]" Variable.print lcond
+      fprintf ppf "@[<2>(if@ %a@ then begin@ %a@ end else begin@ %a@ end)@]"
+        Variable.print lcond
         lam lif lam lelse
   | While(lcond, lbody) ->
       fprintf ppf "@[<2>(while@ %a@ %a)@]" lam lcond lam lbody
@@ -157,7 +158,7 @@ and lam_named ppf (named : Flambda.named) =
 and print_function_declaration ppf var (f : Flambda.function_declaration) =
   let idents ppf =
     List.iter (fprintf ppf "@ %a" Variable.print) in
-  fprintf ppf "@ (%a@ =@ fun@ @[<2>%a@]@ -> @[<2>%a@])"
+  fprintf ppf "@ (%a@ =@ fun@[<2>%a@] ->@ @[<2>%a@])"
     Variable.print var idents f.params lam f.body
 
 and print_set_of_closures ppf (set_of_closures : Flambda.set_of_closures) =
@@ -178,7 +179,9 @@ and print_set_of_closures ppf (set_of_closures : Flambda.set_of_closures) =
           spec_args
       end
     in
-    fprintf ppf "@[<2>(set_of_closures%a fv={%a} sa={%a})@]" funs function_decls.funs
+    fprintf ppf "@[<2>(set_of_closures%a@ free_vars={%a}@ \
+        specialised_args={%a})@]"
+      funs function_decls.funs
       vars free_vars spec specialised_args
 
 and print_project_closure ppf (project_closure : Flambda.project_closure) =
