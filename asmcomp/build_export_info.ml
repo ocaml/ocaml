@@ -11,23 +11,6 @@ let reset () =
   symbol_table := Symbol.Map.empty;
   global_approx := Int.Map.empty
 
-(* let fresh_id () = Export_id.create (Compilenv.current_unit ()) *)
-
-(* We should not have to use something like get_descr: we are only
-   building approximation, there should be no need to know what they
-   contains. Is this possible with apply ?
-
-   Maybe we should extend the export_types to contains an apply
-   constructor.
-
-   There is a similar problem with project_closure,
-   move_within_set_of_closures and project_var: we need to know that
-   the approximation is built using the contents of an approximation
-   of a set_of_closures. For those a construction project_closure, ...
-
-   Pfield could also be represented like that.
- *)
-
 let extern_id_descr ex =
   let export = Compilenv.approx_env () in
   try Some (Flambdaexport.find_description ex export)
@@ -61,14 +44,10 @@ let get_descr (approx : ET.approx) =
     with Not_found ->
       extern_symbol_descr sym
 
-
-
 let new_descr descr =
   let id = Export_id.create (Compilenv.current_unit ()) in
   ex_table := Export_id.Map.add id descr !ex_table;
   id
-
-let unit_approx () : ET.approx = Value_id (new_descr (Value_constptr 0))
 
 let find_approx env var : ET.approx =
   begin try Variable.Map.find var env with
@@ -111,27 +90,25 @@ let rec describe (env : env) (flam : Flambda.t) : ET.approx =
     in
     describe env body
 
-  | Apply _ ->
-    Value_unknown
-
-  (* | Apply {func; args; kind; dbg} -> *)
-  (*   begin match kind with *)
-  (*   | Indirect -> Value_unknown *)
-  (*   | Direct closure_id -> *)
-  (*     match get_descr env func with *)
-  (*     | Some(Value_closure { fun_id; set_of_closures = { results } }) -> *)
-  (*       Closure_id.Map.find fun_id results *)
-  (*     | _ -> Value_unknown *)
-  (*   end *)
+  | Apply { func; kind } ->
+    begin match kind with
+    | Indirect -> Value_unknown
+    | Direct closure_id ->
+      match get_descr (find_approx env func) with
+      | Some(Value_closure { fun_id; set_of_closures = { results } }) ->
+        assert(Closure_id.equal closure_id fun_id);
+        Closure_id.Map.find fun_id results
+      | _ -> Value_unknown
+    end
 
   | Assign _ ->
-    unit_approx ()
+    Value_id (new_descr (Value_constptr 0))
 
   | For _ ->
-    unit_approx ()
+    Value_id (new_descr (Value_constptr 0))
 
   | While _ ->
-    unit_approx ()
+    Value_id (new_descr (Value_constptr 0))
 
   | Static_raise _ ->
     Value_unknown
@@ -232,8 +209,8 @@ and describe_named (env : env) (named : Flambda.named) : ET.approx =
     end
 
   | Prim(Lambda.Psetglobalfield (_, i), [arg], _) ->
-      global_approx := Int.Map.add i (find_approx env arg) !global_approx;
-      Value_unknown
+    global_approx := Int.Map.add i (find_approx env arg) !global_approx;
+    Value_unknown
 
   | Prim(_, _, _) ->
     Value_unknown
@@ -291,17 +268,33 @@ and describe_named (env : env) (named : Flambda.named) : ET.approx =
     in
     Value_id (new_descr descr)
 
-  | Project_closure _ ->
-    (* CR pchambart: TODO *)
-    Value_unknown
+  | Project_closure { set_of_closures; closure_id } -> begin
+      match get_descr (find_approx env set_of_closures) with
+      | Some(Value_set_of_closures set_of_closures) ->
+        let descr = ET.Value_closure { fun_id = closure_id; set_of_closures } in
+        Value_id (new_descr descr)
+      | _ ->
+        (* CR pchambart: This should be [assert false], but currently there are a
+           few cases where this is less precise than inline_and_simplify. *)
+        Value_unknown
+    end
 
-  | Move_within_set_of_closures _ ->
-    (* CR pchambart: TODO *)
-    Value_unknown
+  | Move_within_set_of_closures { closure; start_from; move_to } -> begin
+      match get_descr (find_approx env closure) with
+      | Some(Value_closure { set_of_closures; fun_id }) ->
+        assert(Closure_id.equal fun_id start_from);
+        let descr = ET.Value_closure { fun_id = move_to; set_of_closures } in
+        Value_id (new_descr descr)
+      | _ -> Value_unknown
+    end
 
-  | Project_var _ ->
-    (* CR pchambart: TODO *)
-    Value_unknown
+  | Project_var { closure; closure_id; var } -> begin
+      match get_descr (find_approx env closure) with
+      | Some(Value_closure { set_of_closures = { bound_vars }; fun_id }) ->
+        assert(Closure_id.equal fun_id closure_id);
+        Var_within_closure.Map.find var bound_vars
+      | _ -> Value_unknown
+    end
 
 let build_export_info (lifted_constants:Lift_constants.result) : ET.exported =
   reset ();
