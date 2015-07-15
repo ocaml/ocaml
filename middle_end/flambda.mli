@@ -133,6 +133,7 @@ type t =
   | While of t * t
   | For of Variable.t * t * t * Asttypes.direction_flag * t
   | Proved_unreachable
+
 (** Values of type [named] will always be [let]-bound to a [Variable.t].
 
     This has an important consequence: all expressions that we might deem
