@@ -4,6 +4,8 @@ OCaml 4.02.3:
 Bug fixes:
 - PR#6919: corrupted final_table
   (ygrek)
+- PR#6930: Aliased result type of GADT constructor results in assertion failure
+  (Jacques Garrigue)
 
 OCaml 4.02.2:
 -------------
