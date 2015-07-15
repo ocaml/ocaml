@@ -224,7 +224,7 @@ val useful : t -> bool
     It must have been resolved (it cannot be [Value_extern] or
     [Value_symbol]).  (See comment above for further explanation.) *)
 (* CR mshinwell: rename to [is_definitely_immutable] *)
-val is_certainly_immutable : t -> bool
+val is_definitely_immutable : t -> bool
 
 type simplification_summary =
   | Nothing_done

@@ -303,7 +303,7 @@ let useful t =
   | Value_float _ | Value_boxed_int _ | Value_closure _ | Value_extern _
   | Value_symbol _ -> true
 
-let is_certainly_immutable t =
+let is_definitely_immutable t =
   match t.descr with
   | Value_string { contents = Some _ }
   | Value_block _ | Value_int _ | Value_constptr _ | Value_set_of_closures _

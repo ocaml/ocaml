@@ -371,14 +371,13 @@ and simplify_set_of_closures original_env r
     (* CR mshinwell: Does this affect
        [reference_recursive_function_directly]? *)
     Freshening.rewrite_recursive_calls_with_symbols (E.freshening original_env)
-      set_of_closures.function_decls ~make_closure_symbol:Backend.closure_symbol
+      set_of_closures.function_decls
+      ~make_closure_symbol:Backend.closure_symbol
   in
   let env = E.increase_closure_depth original_env in
   let free_vars =
     Variable.Map.map (fun external_var ->
-        let external_var =
-          freshen_and_simplify_variable env external_var
-        in
+        let external_var = freshen_and_simplify_variable env external_var in
         external_var, E.find external_var env)
       set_of_closures.free_vars
   in
@@ -595,6 +594,8 @@ and simplify_named env r (tree : Flambda.named) : Flambda.named * R.t =
   match tree with
   | Symbol sym ->
     let module Backend = (val (E.backend env) : Backend_intf.S) in
+    (* CR mshinwell for pchambart: Is there a reason we cannot use
+       [simplify_named_using_approx_and_env] here? *)
     simplify_named_using_approx r tree (Backend.import_symbol sym)
   | Const cst -> tree, ret r (A.const cst)
   | Set_of_closures set_of_closures ->
@@ -624,6 +625,8 @@ and simplify_named env r (tree : Flambda.named) : Flambda.named * R.t =
           let module Backend = (val (E.backend env) : Backend_intf.S) in
           A.get_field (Backend.import_global id) ~field_index:i
       in
+      (* CR mshinwell for pchambart: Is there a reason we cannot use
+         [simplify_named_using_approx_and_env] here? *)
       simplify_named_using_approx r tree approx
     | Psetglobalfield (_, i), [arg] ->
       let approx = E.find arg env in
@@ -634,7 +637,7 @@ and simplify_named env r (tree : Flambda.named) : Flambda.named * R.t =
       simplify_named_using_approx_and_env env r tree approx
     | (Psetfield _ | Parraysetu _ | Parraysets _), block::_ ->
       let block_approx = E.find block env in
-      if A.is_certainly_immutable block_approx then begin
+      if A.is_definitely_immutable block_approx then begin
         Location.prerr_warning (Debuginfo.to_location dbg)
           Warnings.Assignment_on_non_mutable_value
       end;
@@ -663,8 +666,7 @@ and simplify_direct env r (tree : Flambda.t) : Flambda.t * R.t =
   match tree with
   | Var var ->
     let var = freshen_and_simplify_variable env var in
-    let flam, r = simplify_using_approx_and_env env r (Var var) (E.find var env) in
-    flam, r
+    simplify_using_approx_and_env env r (Var var) (E.find var env)
   | Apply apply -> simplify_apply env r ~apply
   | Let (str, id, defining_expr, body) ->
     let defining_expr, r = simplify_named env r defining_expr in
@@ -774,12 +776,10 @@ and simplify_direct env r (tree : Flambda.t) : Flambda.t * R.t =
        if arg is not effectful we can also drop it. *)
     let arg = freshen_and_simplify_variable env arg in
     begin match (R.approx r).descr with
-    | Value_constptr 0 ->
-      (* constant false, keep ifnot *)
+    | Value_constptr 0 ->  (* Constant [false]: keep [ifnot] *)
       let ifnot, r = simplify env r ifnot in
       ifnot, R.map_benefit r B.remove_branch
-    | Value_constptr _ | Value_block _ ->
-      (* constant true, keep ifso *)
+    | Value_constptr _ | Value_block _ ->  (* Constant [true]: keep [ifso] *)
       let ifso, r = simplify env r ifso in
       ifso, R.map_benefit r B.remove_branch
     | _ ->
@@ -817,22 +817,23 @@ and simplify_direct env r (tree : Flambda.t) : Flambda.t * R.t =
     let new_value = freshen_and_simplify_variable env new_value in
     Assign { being_assigned; new_value; }, ret r A.value_unknown
   | Switch (arg, sw) ->
-    (* When arg is known to be a block with a fixed tag or a fixed integer,
-       we can drop the switch and replace it by a sequence.
-       if arg is not effectful we can also drop it. *)
+    (* When [arg] is known to be a variable whose approximation is that of a
+       block with a fixed tag or a fixed integer, we can eliminate the
+       [Switch].  (This should also make the [Let] that binds [arg] redundant,
+       meaning that it too can be eliminated.) *)
     let arg = freshen_and_simplify_variable env arg in
     let get_failaction () : Flambda.t =
-      (* If the switch is applied to a statically-known value that is
-         outside of each match case:
-         * if there is a default action take that case
+      (* If the switch is applied to a statically-known value that does not
+         match any case:
+         * if there is a default action take that case;
          * otherwise this is something that is guaranteed not to
-           be reachable by the type checker: for instance
+           be reachable by the type checker.  For example:
            [type 'a t = Int : int -> int t | Float : float -> float t
             match Int 1 with
             | Int _ -> ...
             | Float f as v ->
-                match v with       This match is unreachable
-                | Float f -> ...]
+              match v with   <-- This match is unreachable
+              | Float f -> ...]
        *)
       match sw.failaction with
       | None -> Proved_unreachable
