@@ -841,9 +841,10 @@ and simplify_apply env r ~(apply : Flambda.apply) : Flambda.t * R.t =
   let args = List.map (freshen_and_simplify_variable env) args in
   let func_approx = E.find func env in
   let args_approxs = List.map (fun arg -> E.find arg env) args in
-  (* By using the approximation, attempt to determine which function is being
-     applied (even if the application is currently [Indirect]); if successful,
-     then consider inlining. *)
+  (* By using the approximation of the left-hand side of the application,
+     attempt to determine which function is being applied (even if the
+     application is currently [Indirect]).  If successful---in which case we
+     then have a direct application---consider inlining. *)
   match A.check_approx_for_closure func_approx with
   | Ok (value_closure, _set_of_closures_var, value_set_of_closures) ->
     let closure_id = value_closure.closure_id in
@@ -862,7 +863,7 @@ and simplify_apply env r ~(apply : Flambda.apply) : Flambda.t * R.t =
         ~value_set_of_closures (args, args_approxs) dbg
     else if nargs > arity then
       over_apply env r ~args ~args_approxs ~function_decls ~func ~closure_id
-        ~function_decl ~value_set_of_closures ~arity ~dbg
+        ~function_decl ~value_set_of_closures ~dbg
     else if nargs > 0 && nargs < arity then
       partial_apply env r ~lhs_of_application:func
         ~closure_id_being_applied:closure_id ~function_decl:function_decl ~args
@@ -884,8 +885,7 @@ and partial_apply env r ~lhs_of_application ~closure_id_being_applied
       ~(function_decl : Flambda.function_declaration)
       ~(args : Variable.t list) ~dbg =
   let arity = Flambda_utils.function_arity function_decl in
-  let remaining_args = arity - (List.length args) in
-  assert (remaining_args > 0);
+  assert (arity > List.length args);
   let freshened_params =
     List.map (fun id -> Variable.freshen id) function_decl.params
   in
@@ -914,8 +914,9 @@ and partial_apply env r ~lhs_of_application ~closure_id_being_applied
   loop env r with_known_args
 
 and over_apply env r ~args ~args_approxs ~function_decls ~func ~closure_id
-      ~function_decl ~value_set_of_closures ~arity ~dbg =
-  assert (arity > List.length args);
+      ~function_decl ~value_set_of_closures ~dbg =
+  let arity = Flambda_utils.function_arity function_decl in
+  assert (arity < List.length args);
   assert (List.length args = List.length args_approxs);
   let h_args, q_args = Misc.split_at arity args in
   let h_approxs, _q_approxs = Misc.split_at arity args_approxs in
