@@ -128,6 +128,8 @@ and value_closure = {
   closure_id : Closure_id.t;
 }
 
+(* CR mshinwell: add support for the approximations of the results, so we
+   can do all of the tricky higher-order cases. *)
 and value_set_of_closures = {
   function_decls : Flambda.function_declarations;
   bound_vars : t Var_within_closure.Map.t;

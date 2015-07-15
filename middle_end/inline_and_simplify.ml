@@ -16,37 +16,15 @@ module B = Inlining_cost.Benefit
 module E = Inline_and_simplify_aux.Env
 module R = Inline_and_simplify_aux.Result
 
-(* Two kinds of information are propagated during inlining and
-   simplification:
-   - [E.t] "environments", top-down, usually called "env";
-   - [R.t] "results", bottom-up approximately following the
-     evaluation order, usually called "r".
-   Along with the results come rewritten Flambda terms.
-
-   In general the pattern is to do a subset of these steps:
-   * recursive call of simplify on the arguments with the original
-     environment:
-       [let new_arg, r = simplify env r arg]
-   * generate fresh new identifiers (if subst.active is true) and
-     add the substitution to the environment:
-       [let new_id, env = add_variable id env]
-   * associate in the environment the approximation of values to
-     identifiers:
-       [let env = E.add_approx id (R.approx r) env]
-   * recursive call of simplify on the body of the expression, using
-     the new environment
-   * mark used variables:
-       [let r = use_var r id]
-   * remove variable related bottom up information:
-       [let r = exit_scope r id in]
-   * rebuild the expression according to the information about
-     its content.
-   * associate its description to the returned value:
-       [ret r approx]
-   * replace the returned expression by a contant or a direct variable
-     access (when possible):
-       [simplify_using_approx_and_env env r expr approx]
- *)
+(** Values of two types hold the information propagated during simplification:
+    - [E.t] "environments", top-down, almost always called "env";
+    - [R.t] "results", bottom-up approximately following the evaluation order,
+      almost always called "r".  These results come along with rewritten
+      Flambda terms.
+    The environments map variables to approximations, which enable various
+    simplifications to be performed; for example, some variable may be known
+    to always hold a particular constant.
+*)
 
 let ret = R.set_approx
 
