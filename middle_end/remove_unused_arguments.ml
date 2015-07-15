@@ -141,4 +141,4 @@ let separate_unused_arguments_in_closures tree =
         named
     | e -> e
   in
-  Flambdaiter.map (fun expr -> expr) aux_named tree
+  Flambda_iterators.map (fun expr -> expr) aux_named tree

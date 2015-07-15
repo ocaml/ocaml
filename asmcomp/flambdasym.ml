@@ -28,7 +28,7 @@ module ET = Flambdaexport_types
 
 let all_closures expr =
   let closures = ref Set_of_closures_id.Set.empty in
-  Flambdaiter.iter_on_sets_of_closures (fun cl _ ->
+  Flambda_iterators.iter_on_sets_of_closures (fun cl _ ->
       closures := Set_of_closures_id.Set.add
         cl.function_decls.set_of_closures_id !closures)
     expr;
@@ -54,7 +54,7 @@ let functions expr =
         (Invariant_params.unchanging_params_in_recursion function_decls)
         !argument_kept
   in
-  Flambdaiter.iter_on_sets_of_closures aux expr;
+  Flambda_iterators.iter_on_sets_of_closures aux expr;
   !fun_id_map, !cf_map, !argument_kept
 
 let list_used_variable_within_closure expr =
@@ -65,7 +65,7 @@ let list_used_variable_within_closure expr =
       used := Var_within_closure.Set.add var !used
     | _ -> ()
   in
-  Flambdaiter.iter aux expr;
+  Flambda_iterators.iter aux expr;
   !used
 
 module type Param1 = sig
@@ -142,8 +142,8 @@ module Conv(P:Param1) = struct
 
   let function_arity fun_id =
     let arity clos _off =
-      Flambdautils.function_arity
-        (Flambdautils.find_declaration fun_id clos)
+      Flambda_utils.function_arity
+        (Flambda_utils.find_declaration fun_id clos)
     in
     try arity (Closure_id.Map.find fun_id closures) fun_id with
     | Not_found ->
@@ -345,7 +345,7 @@ module Conv(P:Param1) = struct
             conv_approx env body
         | true, Not_const, Immutable ->
             Format.eprintf "%a@.%a" Variable.print id
-              Printflambda.flambda lam;
+              Flambda_printers.flambda lam;
             assert false
         end
 
@@ -434,7 +434,7 @@ module Conv(P:Param1) = struct
             | Some _ -> assert false
             | _ ->
                 Format.printf "Unknown closure in offset %a@."
-                  Printflambda.flambda expr;
+                  Flambda_printers.flambda expr;
                 assert false
           in
           Fselect_closure({ set_of_closures = ulam; closure_id = id; relative_to = rel },()),
@@ -448,8 +448,8 @@ module Conv(P:Param1) = struct
               (try Var_within_closure.Map.find env_var bound_var with
                | Not_found ->
                    Format.printf "Wrong closure in env_field %a@.%a@."
-                     Printflambda.flambda expr
-                     Printflambda.flambda ulam;
+                     Flambda_printers.flambda expr
+                     Flambda_printers.flambda ulam;
                    assert false)
           | _ when not (Closure_id.in_compilation_unit
                           (Compilenv.current_unit ())
@@ -461,8 +461,8 @@ module Conv(P:Param1) = struct
           | Some _ -> assert false
           | None ->
               Format.printf "Unknown closure in env_field %a@.%a@."
-                Printflambda.flambda expr
-                Printflambda.flambda ulam;
+                Flambda_printers.flambda expr
+                Flambda_printers.flambda ulam;
               assert false in
         Var_within_closure({closure = ulam;var = env_var;closure_id = env_fun_id}, ()),
         approx
@@ -803,9 +803,9 @@ module Prepare(P:Param2) = struct
       | expr -> expr in
     let aux sym lam map =
       let sym' = canonical_symbol sym in
-      Symbol.Map.add sym' (Flambdaiter.map use_canonical_symbols lam) map
+      Symbol.Map.add sym' (Flambda_iterators.map use_canonical_symbols lam) map
     in
-    Flambdaiter.map use_canonical_symbols P.expr,
+    Flambda_iterators.map use_canonical_symbols P.expr,
     Symbol.Tbl.fold aux P.infos.constants Symbol.Map.empty
 
   let ex_functions =
@@ -813,8 +813,8 @@ module Prepare(P:Param2) = struct
     let aux ({ function_decls } : Flambda.set_of_closures) _ =
       ex_functions := Set_of_closures_id.Map.add function_decls.set_of_closures_id function_decls !ex_functions
     in
-    Flambdaiter.iter_on_sets_of_closures aux expr;
-    Symbol.Map.iter (fun _ -> Flambdaiter.iter_on_sets_of_closures aux) constants;
+    Flambda_iterators.iter_on_sets_of_closures aux expr;
+    Symbol.Map.iter (fun _ -> Flambda_iterators.iter_on_sets_of_closures aux) constants;
     !ex_functions
 
   (* Preparing export information *)

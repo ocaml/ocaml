@@ -36,7 +36,7 @@ let directly_used_variables tree =
     | Prim _ | Switch _ | String_switch _ | Static_raise _
     | Static_catch _ | Try_with _ | If_then_else _ | Fsequence _
     | While _ | For _ | Send _ | Proved_unreachable as exp ->
-      Flambdaiter.apply_on_subexpressions loop exp
+      Flambda_iterators.apply_on_subexpressions loop exp
   in
   loop tree;
   !set
@@ -50,7 +50,7 @@ let variables_containing_ref lam =
         map := Variable.Map.add v (List.length l) !map
     | _ -> ()
   in
-  Flambdaiter.iter aux lam;
+  Flambda_iterators.iter aux lam;
   !map
 
 let eliminate_ref lam =
@@ -118,7 +118,7 @@ let eliminate_ref lam =
     | While _ | For _ | Send _ | Proved_unreachable as exp ->
         exp
   in
-  Flambdaiter.map aux lam
+  Flambda_iterators.map aux lam
 
 *)
 

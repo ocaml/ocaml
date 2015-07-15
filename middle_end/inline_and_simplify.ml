@@ -13,8 +13,8 @@
 
 module A = Simple_value_approx
 module B = Inlining_cost.Benefit
-module E = Inlining_env
-module R = Inlining_result
+module E = Inline_and_simplify_aux.Env
+module R = Inline_and_simplify_aux.Result
 
 (* Two kinds of information are propagated during inlining and
    simplification:
@@ -135,7 +135,7 @@ let simplify_project_closure env r ~(project_closure : Flambda.project_closure)
   match A.check_approx_for_set_of_closures set_of_closures_approx with
   | Wrong ->
     Misc.fatal_errorf "Wrong approximation when projecting closure: %a"
-      Printflambda.project_closure project_closure
+      Flambda_printers.project_closure project_closure
   | Unresolved symbol ->
     (* A set of closures coming from another compilation unit, whose .cmx is
        missing; as such, we cannot have rewritten the function and don't
@@ -169,7 +169,7 @@ let simplify_move_within_set_of_closures env r
   | Wrong ->
     Misc.fatal_errorf "Wrong approximation when moving within set of \
         closures: %a"
-      Printflambda.move_within_set_of_closures move_within_set_of_closures
+      Flambda_printers.move_within_set_of_closures move_within_set_of_closures
   | Ok (_value_closure, set_of_closures_var, value_set_of_closures) ->
     let freshen =
       (* CR mshinwell: potentially misleading name---not freshening with new
@@ -284,7 +284,7 @@ let rec simplify_project_var env r ~(project_var : Flambda.project_var)
        we take account of all freshenings. *)
     Misc.fatal_errorf "[Project_var] from a value with wrong \
         approximation: %a@.%a@.%a@."
-      Printflambda.project_var project_var
+      Flambda_printers.project_var project_var
       Variable.print closure
       Simple_value_approx.print approx
 
@@ -299,13 +299,13 @@ and loop env r tree =
   let fv = Free_variables.calculate tree in
   Variable.Set.iter (fun var ->
       let var = Freshening.apply_variable (E.freshening env) var in
-      match Inlining_env.find_opt env var with
+      match Inline_and_simplify_aux.Env.find_opt env var with
       | Some _ -> ()
       | None ->
         Format.eprintf "start of loop has unbound vars: %a fv=%a env=%a %s\n"
-          Printflambda.flambda tree
+          Flambda_printers.flambda tree
           Variable.Set.print fv
-          Inlining_env.print env
+          Inline_and_simplify_aux.Env.print env
           (Printexc.raw_backtrace_to_string (Printexc.get_callstack max_int));
         Misc.fatal_error "unbound variable(s)")
     fv;
@@ -322,13 +322,13 @@ and loop_named env r (tree : Flambda.named) : Flambda.named * R.t =
   let fv = Free_variables.calculate_named tree in
   Variable.Set.iter (fun var ->
       let var = Freshening.apply_variable (E.freshening env) var in
-      match Inlining_env.find_opt env var with
+      match Inline_and_simplify_aux.Env.find_opt env var with
       | Some _ -> ()
       | None ->
         Format.eprintf "start of loop_named has unbound vars: %a fv=%a env=%a %s\n"
-          Printflambda.named tree
+          Flambda_printers.named tree
           Variable.Set.print fv
-          Inlining_env.print env
+          Inline_and_simplify_aux.Env.print env
           (Printexc.raw_backtrace_to_string (Printexc.get_callstack max_int));
         Misc.fatal_error "unbound variable(s)")
     fv;
@@ -347,8 +347,8 @@ and loop_named env r (tree : Flambda.named) : Flambda.named * R.t =
   | Prim (prim, args, dbg) ->
 (*
     Format.eprintf "loop_named, Prim case: %a Environment is: %a\n"
-      Printflambda.named tree
-      Inlining_env.print env;
+      Flambda_printers.named tree
+      Inline_and_simplify_aux.Env.print env;
 *)
     let args = List.map (Freshening.apply_variable (E.freshening env)) args in
     let tree = Flambda.Prim (prim, args, dbg) in
@@ -419,9 +419,9 @@ and loop_direct env r (tree : Flambda.t) : Flambda.t * R.t =
         body is: %a, environment: %a\n"
       my_count
       Variable.print id
-      Printflambda.named defining_expr
-      Printflambda.flambda body
-      Inlining_env.print env;
+      Flambda_printers.named defining_expr
+      Flambda_printers.flambda body
+      Inline_and_simplify_aux.Env.print env;
 *)
     let defining_expr, r = loop_named env r defining_expr in
     let id, sb = Freshening.add_variable (E.freshening env) id in
@@ -436,7 +436,7 @@ and loop_direct env r (tree : Flambda.t) : Flambda.t * R.t =
       Format.eprintf "Let case %d, binding (freshened) '%a', body environment: %a\n"
         my_count
         Variable.print id
-        Inlining_env.print body_env;
+        Inline_and_simplify_aux.Env.print body_env;
 *)
       loop body_env r body
     in
@@ -445,8 +445,8 @@ and loop_direct env r (tree : Flambda.t) : Flambda.t * R.t =
     Format.eprintf "Let case %d simplified to let %a = %a in %a (fv=%a)\n"
       my_count
       Variable.print id
-      Printflambda.named defining_expr
-      Printflambda.flambda body
+      Flambda_printers.named defining_expr
+      Flambda_printers.flambda body
       Variable.Set.print free_variables_of_body;
 *)
     let (expr : Flambda.t), r =
@@ -834,8 +834,8 @@ and simplify_set_of_closures original_env r
 (*
           Format.eprintf "E.enter_closure '%a', function body: %a, env: %a\n"
             Variable.print fid
-            Printflambda.flambda function_decl.body
-            Inlining_env.print body_env;
+            Flambda_printers.flambda function_decl.body
+            Inline_and_simplify_aux.Env.print body_env;
 *)
           loop body_env r function_decl.body)
     in
@@ -908,14 +908,14 @@ and simplify_apply env r ~(apply : Flambda.apply) : Flambda.t * R.t =
     let closure_id = value_closure.closure_id in
     let clos = value_set_of_closures.function_decls in
     let func_decl =
-      try Flambdautils.find_declaration closure_id clos with
+      try Flambda_utils.find_declaration closure_id clos with
       | Not_found ->
         Format.printf "approximation references non-existent closure %a@."
             Closure_id.print closure_id;
         assert false
     in
     let nargs = List.length args in
-    let arity = Flambdautils.function_arity func_decl in
+    let arity = Flambda_utils.function_arity func_decl in
     if nargs = arity then
       full_apply env r clos func closure_id func_decl value_set_of_closures
         (args, args_approxs) dbg
@@ -951,7 +951,7 @@ result
 
 and partial_apply funct fun_id (func : Flambda.function_declaration)
       (args : Variable.t list) dbg : Flambda.t =
-  let arity = Flambdautils.function_arity func in
+  let arity = Flambda_utils.function_arity func in
   let remaining_args = arity - (List.length args) in
   assert (remaining_args > 0);
   let param_sb =
@@ -969,7 +969,7 @@ and partial_apply funct fun_id (func : Flambda.function_declaration)
     })
   in
   let closures =
-    Flambdautils.make_closure_declaration ~id:new_fun_id
+    Flambda_utils.make_closure_declaration ~id:new_fun_id
       ~body:expr ~params:remaining_args
   in
   List.fold_right (fun (id', arg) expr ->
@@ -997,7 +997,7 @@ let run ~never_inline ~backend tree =
   then begin
     Misc.fatal_error (Format.asprintf "remaining static exceptions: %a@.%a@."
       Static_exception.Set.print (R.used_staticfail r)
-      Printflambda.flambda result)
+      Flambda_printers.flambda result)
   end;
   assert (Static_exception.Set.is_empty (R.used_staticfail r));
   if debug_benefit then

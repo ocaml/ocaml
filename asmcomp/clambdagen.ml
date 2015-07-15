@@ -30,8 +30,8 @@ let list_closures expr constants =
         closures := Variable.Map.fold add functs.funs !closures;
     | _ -> ()
   in
-  Flambdaiter.iter aux expr;
-  Symbol.Map.iter (fun _ flam -> Flambdaiter.iter aux flam) constants;
+  Flambda_iterators.iter aux expr;
+  Symbol.Map.iter (fun _ flam -> Flambda_iterators.iter aux flam) constants;
   !closures
 
 let reexported_offset extern_fun_offset_table extern_fv_offset_table expr constants =
@@ -49,8 +49,8 @@ let reexported_offset extern_fun_offset_table extern_fv_offset_table expr consta
         set_fun := Closure_id.Set.add id set;
     | _ -> ()
   in
-  Flambdaiter.iter aux expr;
-  Symbol.Map.iter (fun _ flam -> Flambdaiter.iter aux flam) constants;
+  Flambda_iterators.iter aux expr;
+  Symbol.Map.iter (fun _ flam -> Flambda_iterators.iter aux flam) constants;
   let f extern_map offset new_map =
     try
       Closure_id.Map.add offset (Closure_id.Map.find offset extern_map) new_map
@@ -85,8 +85,8 @@ module Offsets(P:Param1) = struct
     Switch.Store
       (struct
         type t = P.t Flambda.t
-        type key = Flambdautils.sharing_key
-        let make_key = Flambdautils.make_key
+        type key = Flambda_utils.sharing_key
+        let make_key = Flambda_utils.make_key
       end)
 
   (* The offset table associate a function label to its offset
@@ -111,7 +111,7 @@ module Offsets(P:Param1) = struct
        pointer inside the closure value *)
     let aux_fun_offset (map,env_pos) (id, func) =
       let pos = env_pos + 1 in
-      let arity = Flambdautils.function_arity func in
+      let arity = Flambda_utils.function_arity func in
       let env_pos = env_pos + 1 +
                     (if arity <> 1 then 3 else 2) in
       let map = Closure_id.Map.add (Closure_id.wrap id) pos map in
@@ -137,11 +137,11 @@ module Offsets(P:Param1) = struct
     fv_offset_table := fv_offset;
 
     List.iter (fun (_, ({body} : Flambda.function_declaration)) ->
-        Flambdaiter.iter_toplevel iter body)
+        Flambda_iterators.iter_toplevel iter body)
       funct
 
   let res =
-    let run flam = Flambdaiter.iter_toplevel iter flam in
+    let run flam = Flambda_iterators.iter_toplevel iter flam in
     run P.expr;
     Symbol.Map.iter (fun _ -> run) P.constants;
     !fun_offset_table, !fv_offset_table
@@ -168,8 +168,8 @@ module Conv(P:Param2) = struct
     Switch.Store
       (struct
         type t = P.t Flambda.t
-        type key = Flambdautils.sharing_key
-        let make_key = Flambdautils.make_key
+        type key = Flambda_utils.sharing_key
+        let make_key = Flambda_utils.make_key
       end)
 
   (* The offset table associate a function label to its offset
@@ -615,7 +615,7 @@ module Conv(P:Param2) = struct
 
       { Clambda.
         label = Compilenv.function_label cf;
-        arity = Flambdautils.function_arity func;
+        arity = Flambda_utils.function_arity func;
         params = if closed then params else params @ [env_var];
         body = conv env_body func.body;
         dbg = func.dbg;
@@ -700,7 +700,7 @@ module Conv(P:Param2) = struct
 
   let symbol_dependency existing expr =
     let r = ref Symbol.Set.empty in
-    Flambdaiter.iter
+    Flambda_iterators.iter
       (function
         | Symbol (sym,_) ->
             if Symbol.Map.mem sym existing

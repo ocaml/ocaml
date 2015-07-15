@@ -12,9 +12,9 @@
 (**************************************************************************)
 
 module A = Simple_value_approx
-module E = Inlining_env
-module R = Inlining_result
-module U = Flambdautils
+module E = Inline_and_simplify_aux.Env
+module R = Inline_and_simplify_aux.Result
+module U = Flambda_utils
 
 let is_probably_a_functor env func_decls approxs =
   !Clflags.functor_heuristics

@@ -16,14 +16,15 @@
     [compilation_unit].  As such, it is unique within a whole program,
     not just one compilation unit.
 
-    Introducing a new type helps tracing the source of identifier
-    when debugging the inliner; and, avoids ident renaming when
+    Introducing a new type helps in tracing the source of identifiers
+    when debugging the inliner.  It also avoids Ident renaming when
     importing cmx files.
 *)
 
 include Ext_types.Identifiable
 
 val create : ?current_compilation_unit:Compilation_unit.t -> string -> t
+val of_ident : Ident.t -> t
 
 val unwrap : t -> Ident.t (* For bytecode debugger only *)
 val unique_ident : t -> Ident.t (* For clambdagen only *)
@@ -31,8 +32,11 @@ val unique_ident : t -> Ident.t (* For clambdagen only *)
 
 val freshen : t -> t
 
-val rename : current_compilation_unit:Compilation_unit.t ->
-  ?append:string -> t -> t
+val rename
+   : ?current_compilation_unit:Compilation_unit.t
+  -> ?append:string
+  -> t
+  -> t
 
 (* CR mshinwell: type t first *)
 val in_compilation_unit : Compilation_unit.t -> t -> bool

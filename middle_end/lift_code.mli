@@ -23,7 +23,7 @@ type lifter = Flambda.t -> Flambda.t
 *)
 val lift_lets : lifter
 
-(* CR mshinwell: Rename to [bind]?  Also see Flambdautils.bind. *)
+(* CR mshinwell: Rename to [bind]?  Also see Flambda_utils.bind. *)
 (* [create_body] always receives the variables corresponding to [evaluate]
    in the same order.  However [evaluation_order] specifies in which order
    the (possibly complex) expressions bound to those variables are

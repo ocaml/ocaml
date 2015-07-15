@@ -139,7 +139,7 @@ let rewrite_recursive_calls_with_symbols t
     let funs =
       Variable.Map.map (fun (ffun : Flambda.function_declaration) ->
         let body =
-          Flambdaiter.map_named
+          Flambda_iterators.map_named
             (function
               | Symbol sym when Symbol.Map.mem sym closure_symbols ->
                 Expr (Var (Symbol.Map.find sym closure_symbols))
@@ -218,7 +218,7 @@ module Project_var = struct
           free_variables;
           params;
           (* keep code in sync with the closure *)
-          body = Flambdautils.toplevel_substitution subst.sb_var func_decl.body;
+          body = Flambda_utils.toplevel_substitution subst.sb_var func_decl.body;
         }, subst
       in
       let subst, t =

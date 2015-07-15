@@ -23,7 +23,7 @@ let lift_lets tree =
       Let (let_kind2, v2, def2, aux (Flambda.Let (let_kind1, v1, Expr body2, body1)))
     | e -> e
   in
-  Flambdaiter.map aux (fun (named : Flambda.named) -> named) tree
+  Flambda_iterators.map aux (fun (named : Flambda.named) -> named) tree
 
 let lifting_helper exprs ~evaluation_order ~create_body ~name =
   let vars, lets =
