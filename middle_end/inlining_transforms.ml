@@ -80,15 +80,20 @@ let inline_by_copying_function_body ~env ~r
       ~clos_id:lhs_of_application ~clos:function_decls ~init:bindings_for_params_to_args
       ~f:(fun ~acc:body ~var ~expr -> Flambda.Let (Immutable, var, expr, body))
   in
-  (* Finally add bindings for the function identifiers being introduced by
-     the whole set of closures. *)
+  (* CR mshinwell: How does this not add a variable that points to the
+     function being applied itself?  Presumably it shouldn't do that. *)
+  (* Add bindings for variables corresponding to the functions introduced by
+     the whole set of closures.  Each such variable will be bound to a closure;
+     each such closure is in turn produced by moving from the closure being
+     applied to another closure in the same set.
+  *)
   let expr =
-    Variable.Map.fold (fun id _ expr ->
-        Flambda.Let (Immutable, id,
+    Variable.Map.fold (fun another_closure_in_the_same_set _ expr ->
+        Flambda.Let (Immutable, another_closure_in_the_same_set,
           Move_within_set_of_closures {
             closure = lhs_of_application;
             start_from = closure_id_being_applied;
-            move_to = Closure_id.wrap id;
+            move_to = Closure_id.wrap another_closure_in_the_same_set;
           },
           expr))
       function_decls.funs

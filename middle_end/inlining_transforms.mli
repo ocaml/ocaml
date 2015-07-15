@@ -59,7 +59,6 @@
         let y' = y + snd x in
         f (fst x') (y' + snd x')  (* body of [f] with parameters freshened *)
 *)
-(* CR mshinwell: fix argument names *)
 val inline_by_copying_function_body
    : env:Inline_and_simplify_aux.Env.t
   -> r:Inline_and_simplify_aux.Result.t
