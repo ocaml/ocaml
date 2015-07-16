@@ -67,10 +67,23 @@ module Env : sig
       expressions. *)
   val activate_freshening : t -> t
 
+  (** Erase all variable approximation information and freshening information
+      from the given environment.  However, the freshening activation state
+      is preserved.  This function is used when rewriting inside a function
+      declaration, to avoid (due to a compiler bug) accidental use of
+      variables from outer scopes that are not accessible. *)
   val local : t -> t
 
+  (** Note that the inliner is descending into a function body from the given
+      set of closures.  A set of such descents is maintained. *)
+  (* CR mshinwell: consider changing name to remove "declaration".  Also,
+     isn't this the inlining stack?  Maybe we can use that instead. *)
   val enter_set_of_closures_declaration : Set_of_closures_id.t -> t -> t
 
+  (** Determine whether the inliner is currently inside a function body from
+      the given set of closures.  This is used to detect whether a given
+      function call refers to a function which exists somewhere on the current
+      inlining stack. *)
   val inside_set_of_closures_declaration : Set_of_closures_id.t -> t -> bool
 
   (** Not inside a closure declaration.
@@ -81,7 +94,6 @@ module Env : sig
   val is_inside_branch : t -> bool
   val inside_branch : t -> t
   val inside_simplify : t -> t
-
 
   val increase_closure_depth : t -> t
 

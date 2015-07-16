@@ -385,9 +385,8 @@ and simplify_set_of_closures original_env r
     Variable.Map.map (freshen_and_simplify_variable env)
       set_of_closures.specialised_args
   in
-  (* Remove all variable bindings from the environment.  This isn't necessary,
-     but allows us to catch bugs where variables escape their scope. *)
   let environment_before_cleaning = env in
+  (* [E.local] helps us to catch bugs whereby variables escape their scope. *)
   let env = E.local env in
   let free_vars, function_decls, sb, freshening =
     Freshening.apply_function_decls_and_free_vars (E.freshening env) free_vars
