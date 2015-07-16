@@ -2398,20 +2398,24 @@ let emit_constant_closure symb fundecls clos_vars cont =
 
 (* Emit all structured constants *)
 
-let emit_all_constants cont =
+let emit_constants cont constants =
   let c = ref cont in
   List.iter
     (fun (lbls, cst) ->
        let cst = emit_structured_constant lbls cst [] in
          c:= Cdata(cst):: !c)
-    (Compilenv.structured_constants());
-  Compilenv.clear_structured_constants ();
+    constants;
   List.iter
     (fun (symb, fundecls, clos_vars) ->
        c := Cdata(emit_constant_closure [symb,true] fundecls clos_vars []) :: !c)
     !constant_closures;
   constant_closures := [];
   !c
+
+let emit_all_constants cont =
+  let constants = Compilenv.structured_constants() in
+  Compilenv.clear_structured_constants ();
+  emit_constants cont constants
 
 (* Translate a compilation unit *)
 
@@ -2445,9 +2449,42 @@ let compunit size ulam =
          Cglobal_symbol glob;
          Cdefine_symbol glob] @ space) :: c3
 
-let compunit_and_constants size (ulam, _constants) =
-  (* TODO *)
-  compunit size ulam
+let compunit_and_constants size (ulam, constants) =
+  let glob = Compilenv.make_symbol None in
+  let init_code = transl ulam in
+  let c1 = [Cfunction {fun_name = Compilenv.make_symbol (Some "entry");
+                       fun_args = [];
+                       fun_body = init_code; fun_fast = false;
+                       fun_dbg  = Debuginfo.none }] in
+  let structured_constants =
+    (* TODO: don't mark every symbol as global, only those reachable
+       from exported info should *)
+    List.map (fun (s, c) -> [Linkage_name.to_string (Symbol.label s),true], c)
+      (Symbol.Map.bindings constants)
+  in
+  let c1' = emit_constants c1 structured_constants in
+  let rec aux set c1 =
+    if Compilenv.structured_constants () = [] &&
+       Queue.is_empty functions
+    then c1
+    else
+      let c2, set = transl_all_functions set c1 in
+      let c3 = emit_all_constants c2 in
+      aux set c3
+  in
+  let c3 = aux StringSet.empty c1' in
+  let space =
+    (* These words will be registered as roots and as such must contain
+       valid values, in case we are in no-naked-pointers mode.  Likewise
+       the block header must be black, below (see [caml_darken]), since
+       the overall record may be referenced. *)
+    Array.to_list
+      (Array.init size (fun _index ->
+        Cint (Nativeint.of_int 1 (* Val_unit *))))
+  in
+  Cdata ([Cint(black_block_header 0 size);
+         Cglobal_symbol glob;
+         Cdefine_symbol glob] @ space) :: c3
 
 (*
 CAMLprim value caml_cache_public_method (value meths, value tag, value *cache)
