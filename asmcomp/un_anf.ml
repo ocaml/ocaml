@@ -368,4 +368,8 @@ and un_anf_array ident_info env clams : Clambda.ulambda array =
 
 let apply clam =
   let ident_info = make_ident_info clam in
-  un_anf ident_info Ident.Map.empty clam
+  let clam = un_anf ident_info Ident.Map.empty clam in
+  if !Clflags.dump_clambda then
+    Format.eprintf "@.un-anf:@ %a@."
+      Printclambda.clambda clam;
+  clam
