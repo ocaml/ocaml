@@ -276,22 +276,11 @@ module NotConstants(P:Param) = struct
       mark_var f1 curr
     | Prim(Lambda.Pgetglobalfield(id,i), [], _) ->
       (* adds 'global i in NC => curr in NC' *)
-      if for_clambda
-      then mark_curr curr
-      else
-        (* This is correct only if there is a rebind phase after !
-           Clambdagen cannot handle this *)
-        (* if some inlining produced some unreachable code like
-           {[let a = 0 in
-             if a
-             then a.(0)
-             else ... ]}
-           then a.(0) cannot be compiled. There must be a specialisation
-           phase after that eliminating the then branch and a dead code
-           elimination eliminating potential reference to a.(0) *)
       if Ident.same id (Compilation_unit.get_persistent_ident compilation_unit)
-      then register_implication ~in_nc:(Global i) ~implies_in_nc:curr
-      else mark_curr curr
+      then
+        register_implication ~in_nc:(Global i) ~implies_in_nc:curr
+      else
+        mark_curr curr
 
     | Prim(Lambda.Psetglobalfield (_,i), [f], _) ->
       mark_curr curr;
