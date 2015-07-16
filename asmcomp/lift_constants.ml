@@ -341,14 +341,15 @@ let constant_sharing map aliases =
 
 let rewrite_constant_access expr aliases set_of_closures_tbl constant_descr (kind:constant Variable.Map.t) =
   let find_symbol_alias var named : Flambda.named =
-    match Variable.Map.find var aliases with
+    let var =
+      try Variable.Map.find var aliases with
+      | Not_found -> var
+    in
+    match Variable.Map.find var kind with
     | exception Not_found -> named
-    | alias ->
-      match Variable.Map.find alias kind with
-      | exception Not_found -> named
-      | Symbol symbol -> Symbol symbol
-      | Const_pointer p -> Const (Const_pointer p)
-      | Int i -> Const (Const_base (Const_int i))
+    | Symbol symbol -> Symbol symbol
+    | Const_pointer p -> Const (Const_pointer p)
+    | Int i -> Const (Const_base (Const_int i))
   in
   let rewrite : Flambda.t -> Flambda.t = function
     | Let (kind, var, named, body) ->
