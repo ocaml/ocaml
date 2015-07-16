@@ -273,7 +273,11 @@ let rec follow_aliases t l =
     Eq_left.Set.empty
   | Alias (Set s) ->
     let set = follow_set t s in
-    replace t l (Alias (Set set));
+    if Eq_left.Set.cardinal set = 1 then
+      let elt = Eq_left.Set.choose set in
+      replace t l (find t elt)
+    else
+      replace t l (Alias (Set set));
     set
   | Alias (Field (n, s)) ->
     let set = follow_set t s in
