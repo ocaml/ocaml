@@ -131,6 +131,7 @@ module Env = struct
   let freshening t = t.freshening
   let never_inline t = t.never_inline
 
+  (* CR mshinwell: this is a bit contorted (see use in inlining_decision.ml) *)
   let note_entering_closure t ~closure_id ~where =
     { t with
       inlining_stats_closure_stack =

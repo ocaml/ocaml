@@ -15,6 +15,7 @@ module A = Simple_value_approx
 module E = Inline_and_simplify_aux.Env
 module R = Inline_and_simplify_aux.Result
 module U = Flambda_utils
+module W = Inlining_cost.Whether_sufficient_benefit
 
 let is_probably_a_functor ~env ~args_approxs ~recursive_functions =
   !Clflags.functor_heuristics
@@ -23,69 +24,65 @@ let is_probably_a_functor ~env ~args_approxs ~recursive_functions =
     && List.for_all A.known args_approxs
     && Variable.Set.is_empty recursive_functions
 
-let should_inline_function_known_to_be_recursive
-      ~(func : Flambda.function_declaration)
-      ~(clos : Flambda.function_declarations)
-      ~env ~(value_set_of_closures : A.value_set_of_closures)
-      ~approxs ~unchanging_params =
-  assert (List.length func.params = List.length approxs);
-  (not (E.inside_set_of_closures_declaration clos.set_of_closures_id env))
+let should_inline_function_known_to_be_recursive env
+      ~(function_decl : Flambda.function_declaration)
+      ~(function_decls : Flambda.function_declarations)
+      ~(value_set_of_closures : A.value_set_of_closures)
+      ~args_approxs ~unchanging_params =
+  assert (List.length function_decl.params = List.length args_approxs);
+  (not (E.inside_set_of_closures_declaration
+      function_decls.set_of_closures_id env))
     && (not (Variable.Set.is_empty value_set_of_closures.unchanging_params))
     && Var_within_closure.Map.is_empty
         value_set_of_closures.bound_vars (* closed *)
     && List.exists2 (fun id approx ->
           A.useful approx && Variable.Set.mem id unchanging_params)
-        func.params approxs
+        function_decl.params args_approxs
 
-let inline_non_recursive env r
-    ~function_decls ~lhs_of_application ~closure_id_being_applied
-    ~(function_decl : Flambda.function_declaration)
-    ~(record_decision : Inlining_stats_types.Decision.t -> unit)
-    ~direct_apply
-    ~no_simplification
-    ~probably_a_functor
-    ~(args : Variable.t list)
-    ~simplify =
+let inline_non_recursive env r ~function_decls ~lhs_of_application
+    ~closure_id_being_applied ~(function_decl : Flambda.function_declaration)
+    ~only_use_of_function ~no_simplification ~probably_a_functor
+    ~(args : Variable.t list) ~simplify
+    ~(made_decision : Inlining_stats_types.Decision.t -> unit) =
   let body, r_inlined =
-    (* We first try to inline that function preventing further inlining below *)
-    Inlining_transforms.inline_by_copying_function_body ~env
-      ~r:(R.set_inlining_threshold (R.clear_benefit r) Inlining_cost.Never_inline)
+    (* First we construct the code that would result from copying the body of
+       the function, without doing any further inlining upon it, to the call
+       site. *)
+    let r =
+      R.set_inlining_threshold (R.clear_benefit r) Inlining_cost.Never_inline
+    in
+    Inlining_transforms.inline_by_copying_function_body ~env ~r
       ~function_decls ~lhs_of_application ~closure_id_being_applied
       ~function_decl ~args ~simplify
   in
-  let unconditionally_inline = function_decl.stub in
-  (* Now we know how large the inlined version actually is,
-     determine whether or not to keep it. *)
   let keep_inlined_version =
-    if unconditionally_inline then begin
-      record_decision (Inlined (Copying_body Unconditionally));
+    if function_decl.stub then begin
+      made_decision (Inlined (Copying_body Unconditionally));
       true
-    end else if direct_apply then begin
-      (* The function declaration was local to the application
-         expression; always inline it. *)
-      record_decision (Inlined (Copying_body Decl_local_to_application));
+    end else if only_use_of_function then begin
+      made_decision (Inlined (Copying_body Decl_local_to_application));
       true
     end else begin
-      let wsb =
-        Inlining_cost.Whether_sufficient_benefit.create
-          ~original:(fst (no_simplification()))
-          body
-          ~probably_a_functor
-          (R.benefit r_inlined)
+      let sufficient_benefit =
+        W.create ~original:(fst (no_simplification())) body
+          ~probably_a_functor (R.benefit r_inlined)
       in
-      if Inlining_cost.Whether_sufficient_benefit.evaluate wsb then begin
-        record_decision (Inlined (Copying_body (Evaluated wsb)));
+      if W.evaluate sufficient_benefit then begin
+        made_decision (Inlined (Copying_body (Evaluated sufficient_benefit)));
         true
       end else begin
-        record_decision (Tried (Copying_body (Evaluated wsb)));
+        made_decision (Tried (Copying_body (Evaluated sufficient_benefit)));
         false
       end
     end
   in
   if keep_inlined_version then begin
-    (* The function is sufficiently beneficial to be inlined by itself
-       so we keep it and we continue for potential inlining below *)
-    let r = R.map_benefit r (Inlining_cost.Benefit.(+) (R.benefit r_inlined)) in
+    (* Inlining the body of the function was sufficiently beneficial that we
+       will keep it, replacing the call site.  We continue by allowing
+       further inlining within the inlined copy of the body. *)
+    let r =
+      R.map_benefit r (Inlining_cost.Benefit.(+) (R.benefit r_inlined))
+    in
     let body = Lift_code.lift_lets body in
     let env =
       E.note_entering_closure env ~closure_id:closure_id_being_applied
@@ -94,8 +91,9 @@ let inline_non_recursive env r
     let env = E.inlining_level_up env in
     simplify env r body
   end else begin
-    (* The function is not sufficiently good by itself, but may become if
-       we allow inlining below *)
+    (* Inlining the body of the function did not appear sufficiently
+       beneficial; however, it may become so if we inline within the body
+       first.  We try that next. *)
     let body, r_inlined =
       Inlining_transforms.inline_by_copying_function_body ~env
         ~r:(R.clear_benefit r)
@@ -104,17 +102,19 @@ let inline_non_recursive env r
     in
     let keep_inlined_version =
       let wsb =
-        Inlining_cost.Whether_sufficient_benefit.create
+        W.create
           ~original:(fst (no_simplification()))
           body
           ~probably_a_functor
           (R.benefit r_inlined)
       in
-      if Inlining_cost.Whether_sufficient_benefit.evaluate wsb then begin
-        record_decision (Inlined (Copying_body_with_subfunctions (Evaluated wsb)));
+      if W.evaluate wsb then begin
+        made_decision
+          (Inlined (Copying_body_with_subfunctions (Evaluated wsb)));
         true
       end else begin
-        record_decision (Tried (Copying_body_with_subfunctions (Evaluated wsb)));
+        made_decision
+          (Tried (Copying_body_with_subfunctions (Evaluated wsb)));
         false
       end
     in
@@ -132,14 +132,13 @@ let inline_non_recursive env r
     end
   end
 
-let inline_recursive env r ~max_level ~lhs_of_application
+let unroll_recursive env r ~max_level ~lhs_of_application
       ~(function_decls : Flambda.function_declarations)
-      ~closure_id_being_applied ~function_decl
-      ~(value_set_of_closures : Simple_value_approx.value_set_of_closures)
-      ~unchanging_params ~args ~args_approxs ~dbg ~simplify ~no_simplification
-      ~(record_decision : Inlining_stats_types.Decision.t -> unit) =
+      ~closure_id_being_applied ~function_decl ~args ~simplify
+      ~no_simplification
+      ~(made_decision : Inlining_stats_types.Decision.t -> unit) =
   let tried_unrolling = ref false in
-  let unrolling_result =
+  let result =
     if E.unrolling_allowed env && E.inlining_level env <= max_level then
       if E.inside_set_of_closures_declaration function_decls.set_of_closures_id env then
         (* Self unrolling *)
@@ -148,20 +147,19 @@ let inline_recursive env r ~max_level ~lhs_of_application
         let env = E.inside_unrolled_function env in
         let body, r_inlined =
           Inlining_transforms.inline_by_copying_function_body ~env
-            ~r:(R.clear_benefit r) ~function_decls
-            ~lhs_of_application ~closure_id_being_applied ~function_decl
-            ~args ~simplify
+            ~r:(R.clear_benefit r) ~function_decls ~lhs_of_application
+            ~closure_id_being_applied ~function_decl ~args ~simplify
         in
         tried_unrolling := true;
         let wsb =
-          Inlining_cost.Whether_sufficient_benefit.create body
+          W.create body
             ~original:(fst (no_simplification()))
             ~probably_a_functor:false
             (R.benefit r_inlined)
         in
         let keep_unrolled_version =
-          if Inlining_cost.Whether_sufficient_benefit.evaluate wsb then begin
-            record_decision (Inlined (Unrolled wsb));
+          if W.evaluate wsb then begin
+            made_decision (Inlined (Unrolled wsb));
             true
           end else begin
             (* No decision is recorded here; we will try another strategy
@@ -177,36 +175,54 @@ let inline_recursive env r ~max_level ~lhs_of_application
       end
     else None
   in
+  !tried_unrolling, result
+
+let inline_recursive env r ~max_level ~lhs_of_application
+      ~(function_decls : Flambda.function_declarations)
+      ~closure_id_being_applied ~function_decl
+      ~(value_set_of_closures : Simple_value_approx.value_set_of_closures)
+      ~unchanging_params ~args ~args_approxs ~dbg ~simplify ~no_simplification
+      ~(made_decision : Inlining_stats_types.Decision.t -> unit) =
+  let tried_unrolling, unrolling_result =
+    (* First try unrolling the recursive call, if we're allowed to. *)
+    unroll_recursive env r ~max_level ~lhs_of_application ~function_decls
+      ~closure_id_being_applied ~function_decl ~args ~simplify
+      ~no_simplification ~made_decision
+  in
   match unrolling_result with
-  | Some r -> r
+  | Some unrolling_result -> unrolling_result
   | None ->
-    if should_inline_function_known_to_be_recursive ~func:function_decl ~clos:function_decls ~env
-        ~value_set_of_closures ~approxs:args_approxs ~unchanging_params
+    (* If unrolling failed, consider duplicating the whole function
+       declaration at the call site, specialising parameters whose arguments
+       we know. *)
+    if should_inline_function_known_to_be_recursive env ~function_decls
+        ~function_decl ~value_set_of_closures ~args_approxs ~unchanging_params
     then
       let copied_function_declaration =
         Inlining_transforms.inline_by_copying_function_declaration ~env
           ~r:(R.clear_benefit r) ~lhs_of_application
           ~function_decls ~closure_id_being_applied ~function_decl
           ~args ~args_approxs ~unchanging_params
-          ~specialised_args:value_set_of_closures.specialised_args ~dbg ~simplify
+          ~specialised_args:value_set_of_closures.specialised_args ~dbg
+          ~simplify
       in
       match copied_function_declaration with
       | Some (expr, r_inlined) ->
           let wsb =
-            Inlining_cost.Whether_sufficient_benefit.create
+            W.create
               ~original:(fst (no_simplification ()))
               expr
               ~probably_a_functor:false
               (R.benefit r_inlined)
           in
           let keep_inlined_version =
-            if Inlining_cost.Whether_sufficient_benefit.evaluate wsb then begin
-              record_decision (Inlined (Copying_decl (
-                  Tried_unrolling !tried_unrolling, wsb)));
+            if W.evaluate wsb then begin
+              made_decision (Inlined (Copying_decl (
+                  Tried_unrolling tried_unrolling, wsb)));
               true
             end else begin
-              record_decision (Tried (Copying_decl (
-                  Tried_unrolling !tried_unrolling, wsb)));
+              made_decision (Tried (Copying_decl (
+                  Tried_unrolling tried_unrolling, wsb)));
               false
             end
           in
@@ -218,12 +234,12 @@ let inline_recursive env r ~max_level ~lhs_of_application
       | None ->
           no_simplification ()
     else begin
-      record_decision
-        (Did_not_try_copying_decl (Tried_unrolling !tried_unrolling));
+      made_decision
+        (Did_not_try_copying_decl (Tried_unrolling tried_unrolling));
       no_simplification ()
     end
 
-(* CR mshinwell: We deleted the [direct_apply] stuff in [for_call_site],
+(* CR mshinwell: We deleted the [only_use_of_function] stuff in [for_call_site],
    which used to identify when the function declaration was only used once,
    within the application expression itself (which is no longer
    expressible).  We should consider handling this case elsewhere and
@@ -238,7 +254,7 @@ let for_call_site ~env ~r ~(function_decls : Flambda.function_declarations)
     Misc.fatal_error "Inlining_decision.for_call_site: inconsistent lengths \
         of [args] and [args_approxs]"
   end;
-  let record_decision =
+  let made_decision =
     let closure_stack =
       E.inlining_stats_closure_stack (E.note_entering_closure env
           ~closure_id:closure_id_being_applied ~where:Inlining_decision)
@@ -283,7 +299,7 @@ let for_call_site ~env ~r ~(function_decls : Flambda.function_declarations)
   let expr, r =
     match fun_cost with
     | Never_inline ->
-      record_decision Function_obviously_too_large;
+      made_decision Function_obviously_too_large;
       no_simplification ()
     | Can_inline_if_no_larger_than _ when E.never_inline env ->
       (* This case only occurs when examining the body of a stub function
@@ -301,27 +317,23 @@ let for_call_site ~env ~r ~(function_decls : Flambda.function_declarations)
       if unconditionally_inline
         || (not recursive && E.inlining_level env <= max_level)
       then
-        inline_non_recursive env r
-          ~function_decls ~lhs_of_application
-          ~closure_id_being_applied ~function_decl
-          ~record_decision
-          ~direct_apply:only_use_of_function
-          ~no_simplification
-          ~probably_a_functor
+        inline_non_recursive env r ~function_decls ~lhs_of_application
+          ~closure_id_being_applied ~function_decl ~made_decision
+          ~only_use_of_function ~no_simplification ~probably_a_functor
           ~args ~simplify
       else if E.inlining_level env > max_level then begin
         (* CR mshinwell for pchambart: This branch is taken even if
            [recursive = true].  Is that correct?  It's not the inverse of the
            condition just above. *)
-        record_decision (Can_inline_but_tried_nothing (Level_exceeded true));
+        made_decision (Can_inline_but_tried_nothing (Level_exceeded true));
         no_simplification ()
       end else if recursive then
         inline_recursive env r ~max_level ~lhs_of_application ~function_decls
           ~closure_id_being_applied ~function_decl ~value_set_of_closures
           ~unchanging_params ~args ~args_approxs ~dbg ~simplify
-          ~no_simplification ~record_decision
+          ~no_simplification ~made_decision
       else begin
-        record_decision (Can_inline_but_tried_nothing (Level_exceeded false));
+        made_decision (Can_inline_but_tried_nothing (Level_exceeded false));
         no_simplification ()
       end
   in

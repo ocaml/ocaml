@@ -121,6 +121,7 @@ module Result : sig
     -> t
 
   val benefit : t -> Inlining_cost.Benefit.t
+  (* CR mshinwell: rename [clear_benefit], it might be misconstrued *)
   val clear_benefit : t -> t
 
   val set_inlining_threshold : t -> Inlining_cost.inlining_threshold -> t
