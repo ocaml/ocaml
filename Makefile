@@ -103,12 +103,13 @@ ASMCOMP=\
   asmcomp/cmm.cmo asmcomp/printcmm.cmo \
   asmcomp/reg.cmo asmcomp/mach.cmo asmcomp/proc.cmo \
   asmcomp/clambda.cmo asmcomp/printclambda.cmo \
-  asmcomp/lift_constants.cmo \
   asmcomp/flambdaexport_types.cmo \
   asmcomp/flambdaexport.cmo \
+  asmcomp/compilenv.cmo \
+  asmcomp/lift_constants.cmo \
   asmcomp/build_export_info.cmo \
   asmcomp/closure_offsets.cmo \
-  asmcomp/compilenv.cmo \
+  asmcomp/clambdagen.cmo \
   asmcomp/import_approx.cmo \
   asmcomp/strmatch.cmo asmcomp/cmmgen.cmo \
   asmcomp/printmach.cmo asmcomp/selectgen.cmo asmcomp/selection.cmo \

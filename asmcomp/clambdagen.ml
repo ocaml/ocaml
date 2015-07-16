@@ -342,11 +342,31 @@ module M(P:Arg) = struct
       let pos = var_offset - fun_offset in
       Uprim(Pfield pos, [ulam], Debuginfo.none)
 
+    | Prim(Pgetglobalfield(id,i), _, dbg) ->
+      Uprim(Pfield i,
+            [Clambda.Uprim(Pgetglobal
+                             (Ident.create_persistent
+                                (Compilenv.symbol_for_global id)), [], dbg)],
+            dbg)
+
+    | Prim(Psetglobalfield (_ex, i), [arg], dbg) ->
+      Uprim(Psetfield (i,false),
+            [Clambda.Uprim(Pgetglobal (Ident.create_persistent
+                                         (Compilenv.make_symbol None)), [], dbg);
+             subst_var env arg],
+            dbg)
+
     | Prim(p, args, dbg) ->
       Uprim(p, subst_vars env args, dbg)
 
+    | Const (Const_pointer n) ->
+      Uconst (Uconst_ptr n)
+
+    | Const (Const_base (Const_int n)) ->
+      Uconst (Uconst_int n)
+
     | Const _ ->
-      (* all constants should have been removed *)
+      (* all allocated constants should have been removed *)
       assert false
 
   and conv_switch env cases num_keys default =

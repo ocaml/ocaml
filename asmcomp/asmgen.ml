@@ -38,6 +38,7 @@ let pass_dump_linear_if ppf flag message phrase =
 let clambda_dump_if ppf (ulambda, structured_constants) =
   if !dump_clambda then
     begin
+      Format.fprintf ppf "clambda:@.";
       Printclambda.clambda ppf ulambda;
       (* List.iter (fun (lbls,cst) -> *)
       (*     let lbl = match lbls with *)
@@ -52,6 +53,8 @@ let clambda_dump_if ppf (ulambda, structured_constants) =
             Printclambda.structured_constant cst)
         structured_constants
     end;
+  if !dump_cmm then
+    Format.fprintf ppf "@.cmm:@.";
   (ulambda, structured_constants)
 
 let rec regalloc ppf round fd =

@@ -39,3 +39,8 @@ val project_var
    : Format.formatter
   -> Flambda.project_var
   -> unit
+
+val set_of_closures
+   : Format.formatter
+  -> Flambda.set_of_closures
+  -> unit
