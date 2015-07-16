@@ -67,6 +67,10 @@ let copy_of_function's_body_with_freshened_params
   let body = Flambda_utils.toplevel_substitution subst function_decl.body in
   freshened_params, body
 
+(* CR mshinwell: Add a note somewhere to explain why "bound by the closure"
+   does not include the function identifiers for other functions in the same
+   set of closures. *)
+
 (** Inline a function by copying its body into a context where it becomes
     closed.  That is to say, we bind the free variables of the body
     (= "variables bound by the closure"), and any function identifiers
