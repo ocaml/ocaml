@@ -1,15 +1,148 @@
+(* Extract constants out of the main expression.
+   
+*)
+
+(* Values of constants at use point *)
 
 type constant =
   | Symbol of Symbol.t
   | Int of int
   | Const_pointer of int
 
+(* Values of constants at definition point *)
+
+module Allocated_constants = struct
+
+  (* subset of constants that can be assigned a symbol.
+     There are more cases than what can be described by
+     clambda to be able to build an approximation *)
+
+  type 'a t =
+    | Float of float
+    | Int32 of int32
+    | Int64 of int64
+    | Nativeint of nativeint
+    | Float_array of float list
+    | String of string
+    | Immstring of string
+    | Block of Tag.t * 'a list
+
+  let map : ('a -> 'b) -> 'a t -> 'b t = fun f t ->
+    match t with
+    | Float v -> Float v
+    | Int32 v -> Int32 v
+    | Int64 v -> Int64 v
+    | Nativeint v -> Nativeint v
+    | Float_array v -> Float_array v
+    | String v -> String v
+    | Immstring v -> Immstring v
+    | Block (tag, fields) ->
+      Block (tag, List.map f fields)
+
+end
+
+(* All the kinds of constants. *)
+
+type constant_descr =
+  | Int of int
+  | Const_pointer of int
+  | Float of float
+  | Int32 of int32
+  | Int64 of int64
+  | Nativeint of nativeint
+  | Float_array of float list
+  | String of string
+  | Immstring of string
+  | Block of Tag.t * Variable.t list
+  | Symbol of Symbol.t
+
+module Constant_descr = struct
+  type t = constant_descr
+
+  let compare_floats x1 x2 =
+    Int64.compare (Int64.bits_of_float x1) (Int64.bits_of_float x2)
+
+  (* let rec compare_float_lists l1 l2 = *)
+  (*   match l1, l2 with *)
+  (*   | [], [] -> 0 *)
+  (*   | [], _::_ -> -1 *)
+  (*   | _::_, [] -> 1 *)
+  (*   | h1::t1, h2::t2 -> *)
+  (*     let c = compare_floats h1 h2 in *)
+  (*     if c <> 0 then c else compare_float_lists t1 t2 *)
+
+  let rec compare_variable_lists l1 l2 =
+    match l1, l2 with
+    | [], [] -> 0
+    | [], _::_ -> -1
+    | _::_, [] -> 1
+    | h1::t1, h2::t2 ->
+      let c = Variable.compare h1 h2 in
+      if c <> 0 then
+        c
+      else
+        compare_variable_lists t1 t2
+
+  let compare (x:t) (y:t) = match x, y with
+    | Int x, Int y -> compare x y
+    | Const_pointer x, Const_pointer y -> compare x y
+    | Float x, Float y -> compare_floats x y
+    | Int32 x, Int32 y -> compare x y
+    | Int64 x, Int64 y -> compare x y
+    | Nativeint x, Nativeint y -> compare x y
+    | Float_array _, Float_array _ ->
+      assert false
+    (* should not be added to the map *)
+    (* | Float_array x, Float_array y -> *)
+    (*   compare_float_lists x y *)
+    | String _, String _ ->
+      assert false
+      (* should not be added to the map *)
+    (* | String x, String y -> *)
+    (*   compare x y *)
+    | Immstring x, Immstring y -> compare x y
+    | Symbol x, Symbol y -> compare x y
+    | Block (tag1, fields1), Block (tag2, fields2) ->
+      let c = Tag.compare tag1 tag2 in
+      if c <> 0 then
+        c
+      else
+        compare_variable_lists fields1 fields2
+
+    | Int _, _ -> -1
+    | _, Int _ -> 1
+    | Const_pointer _, _ -> -1
+    | _, Const_pointer _ -> 1
+    | Float _, _ -> -1
+    | _, Float _ -> 1
+    | Int32 _, _ -> -1
+    | _, Int32 _ -> 1
+    | Int64 _, _ -> -1
+    | _, Int64 _ -> 1
+    | Nativeint _, _ -> -1
+    | _, Nativeint _ -> 1
+    | Float_array _, _ -> -1
+    | _, Float_array _ -> 1
+    | String _, _ -> -1
+    | _, String _ -> 1
+    | Immstring _, _ -> -1
+    | _, Immstring _ -> 1
+    | Symbol _, _ -> -1
+    | _, Symbol _ -> 1
+
+
+end
+
+module Constant_descr_map = Map.Make(Constant_descr)
+
 type result = {
   expr : Flambda.t;
-  map : Flambda.named Variable.Map.t;
-  constant_tbl : constant Variable.Tbl.t;
-  set_of_closures_map : Flambda.set_of_closures Variable.Map.t;
+  constant_descr : constant Allocated_constants.t Symbol.Map.t;
+  set_of_closures_map : (Symbol.t * Flambda.set_of_closures) Variable.Map.t;
 }
+
+let fresh_symbol var =
+  Compilenv.new_const_symbol' ~name:(Variable.unique_name var) ()
 
 let extract_constant_declarations expr =
   let inconstant =
@@ -20,90 +153,192 @@ let extract_constant_declarations expr =
       ~compilation_unit:(Compilenv.current_unit ())
       expr
   in
-  let fresh_symbol var =
-    Compilenv.new_const_symbol' ~name:(Variable.unique_name var) ()
-  in
-  let constant_tbl : constant Variable.Tbl.t = Variable.Tbl.create 10 in
-  let tbl : Flambda.named Variable.Tbl.t = Variable.Tbl.create 10 in
-  let set_of_closures_tbl : Flambda.set_of_closures Variable.Tbl.t = Variable.Tbl.create 10 in
-  let constant_named var (named:Flambda.named) : Flambda.named =
+  let constant_tbl : constant_descr Variable.Tbl.t = Variable.Tbl.create 10 in
+  let set_of_closures_tbl : (Symbol.t * Flambda.set_of_closures) Variable.Tbl.t =
+    Variable.Tbl.create 10 in
+  let constant_named var (named:Flambda.named) : unit =
+    let add (descr:constant_descr) = Variable.Tbl.add constant_tbl var descr in
     match named with
     | Const (Const_base (Const_int i)) ->
-      Variable.Tbl.add constant_tbl var (Int i);
-      named
+      add (Int i)
     | Const (Const_base (Const_char c)) ->
-      Variable.Tbl.add constant_tbl var (Int (Char.code c));
-      named
+      add (Int (Char.code c))
     | Const (Const_pointer p) ->
-      Variable.Tbl.add constant_tbl var (Const_pointer p);
-      named
-    | Const (Const_float_array _ | Const_immstring _ | Const_float _
-            | Const_base
-               (Const_string _ | Const_float _
-               | Const_int32 _ | Const_int64 _ | Const_nativeint _)) ->
-      let symbol = fresh_symbol var in
-      Variable.Tbl.add tbl var named;
-      Variable.Tbl.add constant_tbl var (Symbol symbol);
-      Symbol symbol
-    | Prim (Lambda.Pmakeblock _, _, _) ->
-      let symbol = fresh_symbol var in
-      Variable.Tbl.add tbl var named;
-      Variable.Tbl.add constant_tbl var (Symbol symbol);
-      Symbol symbol
+      add (Const_pointer p)
+    | Const (Const_float_array array) ->
+      add (Float_array (List.map float_of_string array))
+    | Const (Const_immstring s) ->
+      add (Immstring s)
+    | Const (Const_float f) ->
+      add (Float f)
+    | Const (Const_base (Const_string (s,_))) ->
+      add (String s)
+    | Const (Const_base (Const_float s)) ->
+      add (Float (float_of_string s))
+    | Const (Const_base (Const_int32 i)) ->
+      add (Int32 i)
+    | Const (Const_base (Const_int64 i)) ->
+      add (Int64 i)
+    | Const (Const_base (Const_nativeint i)) ->
+      add (Nativeint i)
+    | Prim (Lambda.Pmakeblock (tag, _), args, _) ->
+      add (Block (Tag.create_exn tag, args))
     | Set_of_closures ( { function_decls = { set_of_closures_id } } as set )->
       assert(not (Set_of_closures_id.Set.mem set_of_closures_id inconstant.closure));
       (* Will probably never be used *)
       let symbol = fresh_symbol var in
-      Variable.Tbl.add set_of_closures_tbl var set;
-      Variable.Tbl.add constant_tbl var (Symbol symbol);
-      Symbol symbol
+      Variable.Tbl.add set_of_closures_tbl var (symbol, set);
+      add (Symbol symbol)
     | Move_within_set_of_closures { move_to = closure_id }
     | Project_closure { closure_id } ->
-      Symbol (Compilenv.closure_symbol closure_id)
-    | Prim _ -> named
+      add (Symbol (Compilenv.closure_symbol closure_id))
+    | Prim _ ->
+      assert false
     | Symbol symbol ->
-      Variable.Tbl.add constant_tbl var (Symbol symbol);
-      named
+      add (Symbol symbol)
     | Project_var _ ->
-      named
+      ()
     | Expr _ ->
-      named
+      ()
   in
   let to_symbol_if_constant var named =
-    if Variable.Set.mem var inconstant.id then
-      named
-    else
+    if not (Variable.Set.mem var inconstant.id) then
       constant_named var named
   in
-  let expr =
-    Flambda_iterators.map (function
-        | Let (kind, var, named, body) ->
-          Let (kind, var, to_symbol_if_constant var named, body)
-        | Let_rec (defs, body) ->
-          let defs =
-            List.map
-              (fun (var, named) -> var, to_symbol_if_constant var named)
-              defs
-          in
-          Let_rec (defs, body)
-        | expr -> expr)
-      (fun x -> x)
-      expr
-  in
-  expr,
+  Flambda_iterators.iter (function
+      | Let (_, var, named, _) ->
+        to_symbol_if_constant var named
+      | Let_rec (defs, _) ->
+        List.iter
+          (fun (var, named) -> to_symbol_if_constant var named)
+          defs
+      | _ -> ())
+    (fun _ -> ())
+    expr;
   constant_tbl,
-  tbl,
   set_of_closures_tbl
 
-let rewrite_constant_access (expr, constant_tbl, tbl, set_of_closures_tbl) =
-  let aliases =
-    Alias_analysis.run expr
+module Variable_SCC = Sort_connected_components.Make (Variable)
+
+let constant_graph (map:constant_descr Variable.Map.t) =
+  Variable.Map.map (fun (descr:constant_descr) ->
+      match descr with
+      | Block (_, var) -> Variable.Set.of_list var
+      | _ -> Variable.Set.empty)
+    map
+
+let rewrite_constant_aliases map aliases =
+  let subst var =
+    try Variable.Map.find var aliases with
+    | Not_found -> var
   in
+  let subst_block (descr:constant_descr) : constant_descr =
+    match descr with
+    | Block (tag, fields) ->
+      Block (tag, List.map subst fields)
+    | c -> c
+  in
+  Variable.Map.map subst_block map
+
+let constant_sharing map aliases =
+  let map = rewrite_constant_aliases map aliases in
+  let graph = constant_graph map in
+  let components = Variable_SCC.connected_components_sorted_from_roots_to_leaf graph in
+  let sorted_symbols =
+    List.flatten
+      (List.map (function
+           | Variable_SCC.Has_loop l -> l
+           | Variable_SCC.No_loop v -> [v])
+          (List.rev (Array.to_list components)))
+  in
+  let shared_constants = ref Constant_descr_map.empty in
+  let constants = ref Variable.Map.empty in
+  let alias = ref Variable.Map.empty in
+  let find_and_add var cst =
+    match Constant_descr_map.find cst !shared_constants with
+    | exception Not_found ->
+      shared_constants := Constant_descr_map.add cst var !shared_constants;
+      constants := Variable.Map.add var cst !constants
+    | sharing ->
+      alias := Variable.Map.add var sharing !alias
+  in
+  let subst var =
+    match Variable.Map.find var !alias with
+    | exception Not_found ->
+      var
+    | subst ->
+      subst
+  in
+  let share var =
+    let cst = Variable.Map.find var map in
+    match cst with
+    | String _
+    | Float_array _ ->
+      (* Not shared constants *)
+      constants := Variable.Map.add var cst !constants
+    | Int _
+    | Const_pointer _
+    | Float _
+    | Int32 _
+    | Int64 _
+    | Nativeint _
+    | Immstring _
+    | Symbol _ ->
+      find_and_add var cst
+    | Block (tag, fields) ->
+      find_and_add var (Block (tag, List.map subst fields))
+  in
+  List.iter share sorted_symbols;
+  let assign_symbols var descr (descr_map, kind_map) =
+    let add var (allocated_cst:Variable.t Allocated_constants.t) =
+      let symbol = fresh_symbol var in
+      Symbol.Map.add symbol allocated_cst descr_map,
+      Variable.Map.add var (Symbol symbol:constant) kind_map
+    in
+    match descr with
+    | Int i ->
+      descr_map, Variable.Map.add var (Int i:constant) kind_map
+    | Const_pointer i ->
+      descr_map, Variable.Map.add var (Const_pointer i:constant) kind_map
+    | Symbol s ->
+      descr_map, Variable.Map.add var (Symbol s:constant) kind_map
+    | Float f ->
+      add var (Float f)
+    | Float_array a ->
+      add var (Float_array a)
+    | Block (tag, fields) ->
+      add var (Block (tag, fields))
+    | Int32 i ->
+      add var (Int32 i)
+    | Int64 i ->
+      add var (Int64 i)
+    | Nativeint i ->
+      add var (Nativeint i)
+    | String s ->
+      add var (String s)
+    | Immstring s ->
+      add var (Immstring s)
+  in
+  let descr, kind =
+    Variable.Map.fold assign_symbols !constants (Symbol.Map.empty, Variable.Map.empty)
+  in
+  let kind =
+    Variable.Map.map (fun var -> Variable.Map.find var kind) !alias
+  in
+  let descr =
+    Symbol.Map.map (Allocated_constants.map (fun var -> Variable.Map.find var kind))
+      descr
+  in
+  descr, kind
+
+(* Rewrite every declaration of variable *)
+
+let rewrite_constant_access expr aliases set_of_closures_tbl constant_descr (kind:constant Variable.Map.t) =
   let find_symbol_alias var named : Flambda.named =
     match Variable.Map.find var aliases with
     | exception Not_found -> named
     | alias ->
-      match Variable.Tbl.find constant_tbl alias with
+      match Variable.Map.find alias kind with
       | exception Not_found -> named
       | Symbol symbol -> Symbol symbol
       | Const_pointer p -> Const (Const_pointer p)
@@ -123,12 +358,22 @@ let rewrite_constant_access (expr, constant_tbl, tbl, set_of_closures_tbl) =
   in
   let expr = Flambda_iterators.map rewrite (fun x -> x) expr in
   let set_of_closures_map =
-    Variable.Tbl.fold (fun var (set_of_closures:Flambda.set_of_closures) map ->
+    Variable.Tbl.fold (fun var (symbol, (set_of_closures:Flambda.set_of_closures)) map ->
         let update_function_decl (function_declaration:Flambda.function_declaration) =
+          let body =
+            Flambda_iterators.map rewrite (fun x -> x)
+              function_declaration.body
+          in
+
+          (* TODO:
+
+             The constants are now not bound in the closure anymore.
+             The corresponding lets must be added (or some tweeks in the representation ?)
+
+          *)
           { function_declaration with
-            Flambda.body =
-              Flambda_iterators.map rewrite (fun x -> x)
-                function_declaration.body;
+            Flambda.body;
+            free_variables = Free_variables.calculate body;
           }
         in
         let function_decls = {
@@ -138,16 +383,26 @@ let rewrite_constant_access (expr, constant_tbl, tbl, set_of_closures_tbl) =
               set_of_closures.function_decls.funs
         }
         in
-        let set_of_closures = { set_of_closures with function_decls } in
-        Variable.Map.add var set_of_closures map
+        let set_of_closures = {
+          Flambda.function_decls;
+          free_vars = Variable.Map.empty;
+          specialised_args = Variable.Map.empty;
+        } in
+        Variable.Map.add var (symbol, set_of_closures) map
       )
       set_of_closures_tbl Variable.Map.empty
   in
   { expr;
-    map = Variable.Tbl.fold Variable.Map.add tbl Variable.Map.empty;
-    constant_tbl;
+    constant_descr;
     set_of_closures_map }
 
 let lift_constants expr =
-  rewrite_constant_access
-    (extract_constant_declarations expr)
+  let constant_tbl, set_of_closures_tbl =
+    extract_constant_declarations expr
+  in
+  let constant_map = Variable.Tbl.fold Variable.Map.add constant_tbl Variable.Map.empty in
+  let aliases =
+    Alias_analysis.run expr
+  in
+  let constants, kind = constant_sharing constant_map aliases in
+  rewrite_constant_access expr aliases set_of_closures_tbl constants kind
