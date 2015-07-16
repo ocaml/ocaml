@@ -20,8 +20,8 @@ CAMLextern __thread struct caml_domain_state* caml_domain_state;
 
 
 #define DOMAIN_STATE(idx, type, name) \
-  CAML_STATIC_ASSERT(sizeof(caml_domain_state->name) == sizeof(void*)); \
-  CAML_STATIC_ASSERT(offsetof(struct caml_domain_state, name) == idx * sizeof(void*));
+  CAML_STATIC_ASSERT(sizeof(caml_domain_state->name) == sizeof(void*) && \
+                     offsetof(struct caml_domain_state, name) == idx * sizeof(void*));
 #include "domain_state.tbl"
 #undef DOMAIN_STATE
 
