@@ -301,7 +301,10 @@ module NotConstants(P:Param) = struct
     (* adds 'id in NC => curr in NC' *)
     List.iter (fun var -> mark_var var curr) vars
 
-  (* CR mshinwell: [toplevel] is now unused, is that correct? *)
+  (* CR mshinwell: [toplevel] is now unused, is that correct?
+     CRX pchambart: [toplevel] is intended for allowing allocations of
+        mutable block statically. This is not yet activated because of
+        missing parts in the gc currently. *)
   and mark_loop_set_of_closures ~toplevel:_ curr
         { Flambda. function_decls; free_vars; specialised_args } =
     (* If a function in the set of closures is specialised, do not consider
