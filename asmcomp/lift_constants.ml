@@ -193,10 +193,14 @@ let extract_constant_declarations expr =
     | Move_within_set_of_closures { move_to = closure_id }
     | Project_closure { closure_id } ->
       add (Symbol (Compilenv.closure_symbol closure_id))
-    | Prim _ ->
-      assert false
+    | Prim(Lambda.Pgetglobal id, _, _) ->
+      let sym = Compilenv.symbol_for_global' id in
+      add (Symbol sym)
     | Symbol symbol ->
       add (Symbol symbol)
+    | Prim _ ->
+      Format.printf "err:@.%a@." Flambda_printers.named named;
+      assert false
     | Project_var _ ->
       ()
     | Expr _ ->
