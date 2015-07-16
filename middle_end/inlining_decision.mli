@@ -11,6 +11,8 @@
 (*                                                                        *)
 (**************************************************************************)
 
+(* CR mshinwell: Add the new inlining heuristic documentation here. *)
+
 (** Try to inline a full application of a known function, guided by various
     heuristics. *)
 val for_call_site

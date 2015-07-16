@@ -160,22 +160,6 @@ let for_call_site ~env ~r
       R.set_approx r A.value_unknown
   in
   let max_level = 3 in
-  (* If [unconditionally_inline] is [true], then the function will always be
-     inlined, and the strategy used will be that for non-recursive functions.
-
-     The cases where this happens are:
-     1. Stub functions for handling tuplified functions (generated during
-        closure conversion).
-     2. Stub functions for handling default optional arguments (generated in
-        bytecomp/simplify.ml).
-
-     In both cases, the functions may actually be recursive, but not
-     "directly recursive" (where we say a function [f] is "directly recursive"
-     if [f] is free in the body of [f]). It would in general be wrong to mark
-     directly recursive functions as stubs, even if specific cases work
-     correctly.
-  *)
-  (* CR mshinwell for mshinwell: finish the comment *)
   let unconditionally_inline = function_decl.stub in
   let num_params = List.length function_decl.params in
   (* CR pchambart for pchambart: find a better name
@@ -194,41 +178,6 @@ let for_call_site ~env ~r
   let fun_cost =
     if unconditionally_inline || (direct_apply && not recursive)
        || probably_a_functor then
-      (* CR pchambart: need to explain that the previous fun_cost is used
-         for performance reasons, and that for functor it is acceptable. *)
-
-      (* A function is considered for inlining if it does not increase the code
-         size too much. This size is verified after effectively duplicating
-         and specialising the code in the current context. In that context,
-         some local calls can have new opportunity for inlining, for instance.
-         [let f g x = g x + 1
-          let h x = ...
-          let v = f h 1]
-         When inlining [f], [g] becomes known and so [h] can be inlined too.
-         Inlining only [f] will usualy fit the size constraint and will be
-         beneficial. But depending on [h] it can or cannot be beneficial to
-         inline it: If [h] is too big, it may be possible to inline it in [f],
-         but that may prevent [f] from being inlinable after verification.
-         To prevent that, the maximal size increase allowed to [h] is reduced
-         by what is consumed by [f].
-         In the case of stub functions, we know that the function is small
-         enouth and has a high probability of reducing the size of the
-         code around it, hence we know that trying to inline it won't prevent
-         the surrounding function from being inlined.
-
-         CR pchambart: The case of functors should not be always treated as
-           stub functions. It won't often decrease the function size hence
-           will probably prevent a function from being inlined, loosing the
-           benefit of the potential inlining.
-           It may be reasonnable to consider that reavealing an opportunity
-           for inlining a functor as sufficient for forced inlining.
-         CR pchambart: The heuristic is half broken as the potential local
-           inlines are not accumulated. For instance, in the previous example
-           if f was [let f g x = g (g x)], if g was just bellow the quota,
-           it could considered the two times.
-           To correct that, the threshold should be propagated through [r]
-           rather than [env]
-      *)
       inlining_threshold
     else
       Inlining_cost.can_try_inlining function_decl.body inlining_threshold
@@ -245,10 +194,6 @@ let for_call_site ~env ~r
          is nothing to do here (and no decision to report). *)
       no_transformation ()
     | (Can_inline_if_no_larger_than _) as remaining_inlining_threshold ->
-      (* CR mshinwell for mshinwell: add comment about stub functions *)
-      (* CR mshinwell for pchambart: two variables called [threshold] and
-         [inlining_threshold] is confusing.
-         pchambart: is [remaining_inlining_threshold] better ? *)
       let r = R.set_inlining_threshold r remaining_inlining_threshold in
       let unchanging_params = value_set_of_closures.unchanging_params in
       (* Try inlining if the function is non-recursive and not too far above
