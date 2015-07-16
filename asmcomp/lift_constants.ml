@@ -138,7 +138,7 @@ module Constant_descr_map = Map.Make(Constant_descr)
 type result = {
   expr : Flambda.t;
   constant_descr : constant Allocated_constants.t Symbol.Map.t;
-  set_of_closures_map : (Symbol.t * Flambda.set_of_closures) Variable.Map.t;
+  set_of_closures_map : Flambda.set_of_closures Symbol.Map.t;
 }
 
 let fresh_symbol var =
@@ -154,8 +154,8 @@ let extract_constant_declarations expr =
       expr
   in
   let constant_tbl : constant_descr Variable.Tbl.t = Variable.Tbl.create 10 in
-  let set_of_closures_tbl : (Symbol.t * Flambda.set_of_closures) Variable.Tbl.t =
-    Variable.Tbl.create 10 in
+  let set_of_closures_tbl : Flambda.set_of_closures Symbol.Tbl.t =
+    Symbol.Tbl.create 10 in
   let constant_named var (named:Flambda.named) : unit =
     let add (descr:constant_descr) = Variable.Tbl.add constant_tbl var descr in
     match named with
@@ -187,7 +187,7 @@ let extract_constant_declarations expr =
       assert(not (Set_of_closures_id.Set.mem set_of_closures_id inconstant.closure));
       (* Will probably never be used *)
       let symbol = fresh_symbol var in
-      Variable.Tbl.add set_of_closures_tbl var (symbol, set);
+      Symbol.Tbl.add set_of_closures_tbl symbol set;
       add (Symbol symbol)
     | Move_within_set_of_closures { move_to = closure_id }
     | Project_closure { closure_id } ->
@@ -358,7 +358,7 @@ let rewrite_constant_access expr aliases set_of_closures_tbl constant_descr (kin
   in
   let expr = Flambda_iterators.map rewrite (fun x -> x) expr in
   let set_of_closures_map =
-    Variable.Tbl.fold (fun var (symbol, (set_of_closures:Flambda.set_of_closures)) map ->
+    Symbol.Tbl.fold (fun symbol (set_of_closures:Flambda.set_of_closures) map ->
         let update_function_decl (function_declaration:Flambda.function_declaration) =
           let body =
             Flambda_iterators.map rewrite (fun x -> x)
@@ -388,9 +388,9 @@ let rewrite_constant_access expr aliases set_of_closures_tbl constant_descr (kin
           free_vars = Variable.Map.empty;
           specialised_args = Variable.Map.empty;
         } in
-        Variable.Map.add var (symbol, set_of_closures) map
+        Symbol.Map.add symbol set_of_closures map
       )
-      set_of_closures_tbl Variable.Map.empty
+      set_of_closures_tbl Symbol.Map.empty
   in
   { expr;
     constant_descr;

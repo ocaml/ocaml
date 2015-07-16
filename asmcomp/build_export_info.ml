@@ -49,6 +49,42 @@ let new_descr descr =
   ex_table := Export_id.Map.add id descr !ex_table;
   id
 
+let new_symbol symbol id =
+  symbol_table := Symbol.Map.add symbol id !symbol_table
+
+let describe_constant (c:Lift_constants.constant) : ET.approx =
+  match c with
+  | Symbol s -> Value_symbol s
+  | Int i -> Value_id (new_descr (Value_int i))
+  | Const_pointer i -> Value_id (new_descr (Value_int i))
+
+let describe_allocated_constant
+    (c:Lift_constants.constant Lift_constants.Allocated_constants.t) : Flambdaexport_types.descr =
+  match c with
+  | Float f ->
+    Value_float f
+  | Int32 i ->
+    Value_boxed_int (Int32, i)
+  | Int64 i ->
+    Value_boxed_int (Int64, i)
+  | Nativeint i ->
+    Value_boxed_int (Nativeint, i)
+  | String s ->
+    let v_string : ET.value_string =
+      { size = String.length s; contents = None }
+    in
+    Value_string v_string
+  | Immstring c ->
+    let v_string : ET.value_string =
+      { size = String.length c; contents = Some c }
+    in
+    Value_string v_string
+  | Float_array a ->
+    Value_float_array (List.length a)
+  | Block (tag, fields) ->
+    let approxs = List.map describe_constant fields in
+    Value_block (tag, Array.of_list approxs)
+
 let find_approx env var : ET.approx =
   begin try Variable.Map.find var env with
   | Not_found -> Value_unknown
@@ -216,7 +252,10 @@ and describe_named (env : env) (named : Flambda.named) : ET.approx =
     Value_unknown
 
   | Set_of_closures set ->
-    Value_id (describe_set_of_closures env set)
+    let descr =
+      ET.Value_set_of_closures (describe_set_of_closures env set)
+    in
+    Value_id (new_descr descr)
 
   | Project_closure { set_of_closures; closure_id } -> begin
       match get_descr (find_approx env set_of_closures) with
@@ -246,7 +285,7 @@ and describe_named (env : env) (named : Flambda.named) : ET.approx =
       | _ -> Value_unknown
     end
 
-and describe_set_of_closures env (set:Flambda.set_of_closures) : Export_id.t =
+and describe_set_of_closures env (set:Flambda.set_of_closures) : ET.value_set_of_closures =
   let bound_vars_approx = Variable.Map.map (find_approx env) set.free_vars in
   let specialised_args_approx =
     Variable.Map.map (find_approx env) set.specialised_args
@@ -290,30 +329,41 @@ and describe_set_of_closures env (set:Flambda.set_of_closures) : Export_id.t =
   let results =
     Variable.Map.map result_approx set.function_decls.funs
   in
-  let descr =
-    ET.Value_set_of_closures {
-      set_of_closures_id = set.function_decls.set_of_closures_id;
-      bound_vars = Var_within_closure.wrap_map bound_vars_approx;
-      results = Closure_id.wrap_map results;
-    }
-  in
-  new_descr descr
+  { set_of_closures_id = set.function_decls.set_of_closures_id;
+    bound_vars = Var_within_closure.wrap_map bound_vars_approx;
+    results = Closure_id.wrap_map results;
+  }
+
+let record_project_closures (set_of_closures:ET.value_set_of_closures) =
+  Closure_id.Map.iter (fun closure_id _ ->
+      let symbol = Compilenv.closure_symbol closure_id in
+      let export_id =
+        new_descr (Value_closure { fun_id = closure_id; set_of_closures })
+      in
+      new_symbol symbol export_id)
+    set_of_closures.results
 
 let build_export_info (lifted_constants:Lift_constants.result) : ET.exported =
   reset ();
-  (* let constant_approx = *)
-  (*   Variable.Map.map (fun set_of_closures -> *)
-  (*       describe_set_of_closures Variable.Map.empty set_of_closures) *)
-  (*     lifted_constants.map *)
-  (* in *)
 
-  (* let _constant_closure_approx = *)
-  (*   Variable.Map.map (fun set_of_closures -> *)
-  (*       describe_set_of_closures Variable.Map.empty set_of_closures) *)
-  (*     lifted_constants.set_of_closures_map *)
-  (* in *)
+  let constant_approx =
+    Symbol.Map.map (fun cst -> new_descr (describe_allocated_constant cst))
+      lifted_constants.constant_descr
+  in
+  symbol_table := constant_approx;
 
-  let _root_description = describe Variable.Map.empty lifted_constants.expr in
+  (* TODO: should be sorted before describing. This would allow
+       approximation to be able to use the closures results *)
+  Symbol.Map.iter (fun symbol set_of_closures ->
+      let descr =
+        describe_set_of_closures Variable.Map.empty set_of_closures
+      in
+      record_project_closures descr;
+      new_symbol symbol (new_descr (ET.Value_set_of_closures descr))
+    )
+    lifted_constants.set_of_closures_map;
+
+  let _root_description : ET.approx = describe Variable.Map.empty lifted_constants.expr in
 
   (* build the approximation of the root module *)
   let root_id =
@@ -342,8 +392,10 @@ let build_export_info (lifted_constants:Lift_constants.result) : ET.exported =
     Symbol.Map.add module_symbol root_id !symbol_table
   in
 
-  (* TODO *)
-  let ex_id_symbol = Export_id.Map.empty in
+  let ex_id_symbol =
+    Symbol.Map.fold (fun sym id map -> Export_id.Map.add id sym map)
+      ex_symbol_id Export_id.Map.empty
+  in
 
   (* TODO *)
   let ex_functions = Set_of_closures_id.Map.empty in
