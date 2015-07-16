@@ -2,7 +2,8 @@
 (* Movable variables are variables that are used exactly once and are
    not asigned *)
 type ident_info =
-  { movable : Ident.Set.t;
+  { used : Ident.Set.t;
+    movable : Ident.Set.t;
     assigned : Ident.Set.t }
 
 let make_ident_info (clam:Clambda.ulambda) : ident_info =
@@ -83,7 +84,14 @@ let make_ident_info (clam:Clambda.ulambda) : ident_info =
         else acc)
       t Ident.Set.empty
   in
-  { movable; assigned = !assigned_ident }
+  let used =
+    (* This is very restricted: this does not allow to get rid of
+       useless chains of lets. But this should be sufficient to remove
+       the cruft of variables bounds to symbols. *)
+    Ident.Tbl.fold (fun id _n acc -> Ident.Set.add id acc)
+      t Ident.Set.empty
+  in
+  { used; movable; assigned = !assigned_ident }
 
 type purity = Pure | Impure
 
@@ -258,8 +266,11 @@ let rec un_anf_and_purity ident_info env (clam:Clambda.ulambda) : Clambda.ulambd
     Uoffset (clam, n), purity
   | Ulet (id, def, body) ->
     let def, def_purity = un_anf_and_purity ident_info env def in
-    begin match def_purity, Ident.Set.mem id ident_info.movable with
-    | Pure, true ->
+    begin match def_purity, Ident.Set.mem id ident_info.movable,
+                Ident.Set.mem id ident_info.used with
+    | Pure, _, false ->
+      un_anf_and_purity ident_info env body
+    | Pure, true, _ ->
       let env = Ident.Map.add id def env in
       un_anf_and_purity ident_info env body
     | _ ->
