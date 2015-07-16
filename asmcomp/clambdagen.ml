@@ -28,20 +28,42 @@ let empty_env =
     var = Variable.Map.empty;
     toplevel = false }
 
-let initialise_substitution ({kind}:Lift_constants.result) =
-  let conv_const : Lift_constants.constant -> Clambda.ulambda = function
-    | Int i ->
-      Uconst (Uconst_int i)
-    | Const_pointer i ->
-      Uconst (Uconst_ptr i)
-    | Symbol sym ->
-      let lbl = Linkage_name.to_string (Symbol.label sym) in
-      (* The constant should contains details about the variable to
-         allow cmmgen to unbox *)
-      Uconst (Uconst_ref (lbl, None))
-  in
-  { empty_env with
-    const_subst = Variable.Map.map conv_const kind }
+let conv_const : Lift_constants.constant -> Clambda.uconstant = function
+  | Int i ->
+    Uconst_int i
+  | Const_pointer i ->
+    Uconst_ptr i
+  | Symbol sym ->
+    let lbl = Linkage_name.to_string (Symbol.label sym) in
+    (* The constant should contains details about the variable to
+       allow cmmgen to unbox *)
+    Uconst_ref (lbl, None)
+
+let conv_allocated_constant
+    (c:Lift_constants.constant Lift_constants.Allocated_constants.t) : Clambda.ustructured_constant =
+  match c with
+  | Float f ->
+    Uconst_float f
+  | Int32 i ->
+    Uconst_int32 i
+  | Int64 i ->
+    Uconst_int64 i
+  | Nativeint i ->
+    Uconst_nativeint i
+  | Immstring s
+  | String s ->
+    Uconst_string s
+  | Float_array a ->
+    Uconst_float_array a
+  | Block (tag, fields) ->
+    let fields = List.map conv_const fields in
+    Uconst_block (Tag.to_int tag, fields)
+
+let initialise_substitution ({kind}:Lift_constants.result) = {
+  empty_env with
+  const_subst =
+    Variable.Map.map (fun kind -> Clambda.Uconst(conv_const kind)) kind;
+  }
 
 let add_sb id subst env =
   { env with subst = Variable.Map.add id subst env.subst }
@@ -448,9 +470,9 @@ module M(P:Arg) = struct
 
     Clambda.Uclosure (ufunct, List.map snd fv_ulam)
 
-  and _conv_closed_set_of_closures env
+  and conv_closed_set_of_closures env symbol
       ({ function_decls = functs } : Flambda.set_of_closures)
-      ~symbol : Clambda.ustructured_constant =
+    : Clambda.ustructured_constant =
 
     let funct = Variable.Map.bindings functs.funs in
 
@@ -491,4 +513,17 @@ let convert ((lifted_constants:Lift_constants.result), _exported) =
       let constant_set_of_closures = constant_closure_set lifted_constants
     end)
   in
-  M.conv (initialise_substitution lifted_constants) lifted_constants.expr
+  let structured_constants =
+    Symbol.Map.map conv_allocated_constant lifted_constants.constant_descr
+  in
+  let env = initialise_substitution lifted_constants in
+  let constant_set_of_closures =
+    Symbol.Map.mapi
+      (M.conv_closed_set_of_closures env)
+      lifted_constants.set_of_closures_map
+  in
+  let expr = M.conv env lifted_constants.expr in
+  expr,
+  Symbol.Map.disjoint_union
+    structured_constants
+    constant_set_of_closures

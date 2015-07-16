@@ -22,4 +22,4 @@
 *)
 val convert
    : Lift_constants.result * Flambdaexport_types.exported
-  -> Clambda.ulambda
+  -> Clambda.ulambda * Clambda.ustructured_constant Symbol.Map.t
