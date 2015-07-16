@@ -138,6 +138,7 @@ module Constant_descr_map = Map.Make(Constant_descr)
 type result = {
   expr : Flambda.t;
   constant_descr : constant Allocated_constants.t Symbol.Map.t;
+  kind : constant Variable.Map.t;
   set_of_closures_map : Flambda.set_of_closures Symbol.Map.t;
 }
 
@@ -394,6 +395,7 @@ let rewrite_constant_access expr aliases set_of_closures_tbl constant_descr (kin
   in
   { expr;
     constant_descr;
+    kind;
     set_of_closures_map }
 
 let lift_constants expr =

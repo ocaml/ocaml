@@ -107,6 +107,7 @@ ASMCOMP=\
   asmcomp/flambdaexport_types.cmo \
   asmcomp/flambdaexport.cmo \
   asmcomp/build_export_info.cmo \
+  asmcomp/closure_offsets.cmo \
   asmcomp/compilenv.cmo \
   asmcomp/import_approx.cmo \
   asmcomp/strmatch.cmo asmcomp/cmmgen.cmo \

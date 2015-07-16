@@ -21,6 +21,5 @@
    For everything else, it is basically the identity.
 *)
 val convert
-   : Flambda.t * Flambda.t Symbol.Map.t
-       * Flambdaexport_types.exported
+   : Lift_constants.result * Flambdaexport_types.exported
   -> Clambda.ulambda

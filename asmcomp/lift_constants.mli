@@ -38,6 +38,8 @@ type result = {
       accesses replaced by a symbol or an integer. *)
   constant_descr : constant Allocated_constants.t Symbol.Map.t;
   (** The constants that should be emitted. *)
+  kind : constant Variable.Map.t;
+  (** How to substitute a variable *)
   set_of_closures_map : Flambda.set_of_closures Symbol.Map.t;
   (** Constant closures that should be emitted *)
 }

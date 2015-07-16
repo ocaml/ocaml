@@ -19,6 +19,7 @@ type result = {
 }
 
 let add_closure_offsets
+    kind
     { code_pointer_offsets; free_variable_offsets }
     ({ function_decls; free_vars } : Flambda.set_of_closures) =
 
@@ -42,11 +43,15 @@ let add_closure_offsets
      used inside the body of the function: it is directly
      substituted here. But if the function is inlined, it is
      possible that the closure is accessed from outside its body. *)
-  let aux_fv_offset id _ (map,pos) =
-    let off = Var_within_closure.wrap id in
-    assert(not (Var_within_closure.Map.mem off map));
-    let map = Var_within_closure.Map.add off pos map in
-    (map,pos + 1)
+  let aux_fv_offset var _ (map,pos) =
+    if Variable.Map.mem var kind then
+      (* This is a constant: don't put it in the closure *)
+      (map,pos)
+    else
+      let var_within_closure = Var_within_closure.wrap var in
+      assert(not (Var_within_closure.Map.mem var_within_closure map));
+      let map = Var_within_closure.Map.add var_within_closure pos map in
+      (map,pos + 1)
   in
   let free_variable_offsets, _ =
     Variable.Map.fold aux_fv_offset
@@ -59,7 +64,7 @@ let add_closure_offsets
 let compute (lifted_constants:Lift_constants.result) =
   let sets = sets_of_closures lifted_constants in
   List.fold_left
-    add_closure_offsets
+    (add_closure_offsets lifted_constants.kind)
     { code_pointer_offsets = Closure_id.Map.empty;
       free_variable_offsets = Var_within_closure.Map.empty; }
     sets
