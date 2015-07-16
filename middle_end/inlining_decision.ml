@@ -135,10 +135,8 @@ let inline_non_recursive
     end
   end
 
-let for_call_site ~env ~r
-      ~(function_decls : Flambda.function_declarations)
-      ~(lhs_of_application : Variable.t)
-      ~closure_id_being_applied
+let for_call_site ~env ~r ~(function_decls : Flambda.function_declarations)
+      ~lhs_of_application ~closure_id_being_applied
       ~(function_decl : Flambda.function_declaration)
       ~(value_set_of_closures : Simple_value_approx.value_set_of_closures)
       ~args ~args_approxs ~dbg ~simplify =
@@ -146,7 +144,6 @@ let for_call_site ~env ~r
     Misc.fatal_error "Inlining_decision.for_call_site: inconsistent lengths \
         of [args] and [args_approxs]"
   end;
-  let args_with_approxs = args, args_approxs in
   let record_decision =
     let closure_stack =
       E.inlining_stats_closure_stack (E.note_entering_closure env
@@ -154,7 +151,6 @@ let for_call_site ~env ~r
     in
     Inlining_stats.record_decision ~closure_stack ~debuginfo:dbg
   in
-  let args, approxs = args_with_approxs in
   let no_transformation () : Flambda.t * R.t =
     Apply {func = lhs_of_application; args; kind = Direct closure_id_being_applied; dbg},
       R.set_approx r A.value_unknown
@@ -174,7 +170,7 @@ let for_call_site ~env ~r
     Variable.Set.mem fun_var
       (Find_recursive_functions.in_function_decls function_decls)
   in
-  let probably_a_functor = is_probably_a_functor env function_decls approxs in
+  let probably_a_functor = is_probably_a_functor env function_decls args_approxs in
   let fun_cost =
     if unconditionally_inline || (direct_apply && not recursive)
        || probably_a_functor then
@@ -258,13 +254,13 @@ let for_call_site ~env ~r
         | Some r -> r
         | None ->
           if should_inline_function_known_to_be_recursive ~func:function_decl ~clos:function_decls ~env
-              ~value_set_of_closures ~approxs ~unchanging_params
+              ~value_set_of_closures ~approxs:args_approxs ~unchanging_params
           then
             let copied_function_declaration =
               Inlining_transforms.inline_by_copying_function_declaration ~env
                 ~r:(R.clear_benefit r) ~lhs_of_application
                 ~function_decls ~closure_id_being_applied ~function_decl
-                ~args ~args_approxs:approxs ~unchanging_params
+                ~args ~args_approxs ~unchanging_params
                 ~specialised_args:value_set_of_closures.specialised_args ~dbg ~simplify
             in
             match copied_function_declaration with
