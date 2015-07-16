@@ -53,8 +53,6 @@ let print_if ppf flag printer arg =
   if !flag then fprintf ppf "%a@." printer arg;
   arg
 
-let (++) x f = f x
-
 let implementation ppf sourcefile outputprefix =
   Compmisc.init_path false;
   let modulename = module_of_filename ppf sourcefile outputprefix in
@@ -63,12 +61,12 @@ let implementation ppf sourcefile outputprefix =
   if !Clflags.print_types then begin
     let comp ast =
       ast
-      ++ print_if ppf Clflags.dump_parsetree Printast.implementation
-      ++ print_if ppf Clflags.dump_source Pprintast.structure
-      ++ Typemod.type_implementation sourcefile outputprefix modulename env
-      ++ print_if ppf Clflags.dump_typedtree
+      |> print_if ppf Clflags.dump_parsetree Printast.implementation
+      |> print_if ppf Clflags.dump_source Pprintast.structure
+      |> Typemod.type_implementation sourcefile outputprefix modulename env
+      |> print_if ppf Clflags.dump_typedtree
           Printtyped.implementation_with_coercion
-      ++ (fun _ -> ());
+      |> (fun _ -> ());
       Warnings.check_fatal ();
       Stypes.dump (Some (outputprefix ^ ".annot"))
     in
@@ -81,18 +79,18 @@ let implementation ppf sourcefile outputprefix =
     let oc = open_out_bin objfile in
     let comp ast =
       ast
-      ++ print_if ppf Clflags.dump_parsetree Printast.implementation
-      ++ print_if ppf Clflags.dump_source Pprintast.structure
-      ++ Typemod.type_implementation sourcefile outputprefix modulename env
-      ++ print_if ppf Clflags.dump_typedtree
+      |> print_if ppf Clflags.dump_parsetree Printast.implementation
+      |> print_if ppf Clflags.dump_source Pprintast.structure
+      |> Typemod.type_implementation sourcefile outputprefix modulename env
+      |> print_if ppf Clflags.dump_typedtree
                   Printtyped.implementation_with_coercion
-      ++ Translmod.transl_implementation modulename
-      ++ print_if ppf Clflags.dump_rawlambda Printlambda.lambda
-      ++ Simplif.simplify_lambda
-      ++ print_if ppf Clflags.dump_lambda Printlambda.lambda
-      ++ Bytegen.compile_implementation modulename
-      ++ print_if ppf Clflags.dump_instr Printinstr.instrlist
-      ++ Emitcode.to_file oc modulename objfile;
+      |> Translmod.transl_implementation modulename
+      |> print_if ppf Clflags.dump_rawlambda Printlambda.lambda
+      |> Simplif.simplify_lambda
+      |> print_if ppf Clflags.dump_lambda Printlambda.lambda
+      |> Bytegen.compile_implementation modulename
+      |> print_if ppf Clflags.dump_instr Printinstr.instrlist
+      |> Emitcode.to_file oc modulename objfile;
       Warnings.check_fatal ();
       close_out oc;
       Stypes.dump (Some (outputprefix ^ ".annot"))
