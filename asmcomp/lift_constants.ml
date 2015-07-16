@@ -263,7 +263,8 @@ let constant_sharing map aliases =
     match Constant_descr_map.find cst !shared_constants with
     | exception Not_found ->
       shared_constants := Constant_descr_map.add cst var !shared_constants;
-      constants := Variable.Map.add var cst !constants
+      constants := Variable.Map.add var cst !constants;
+      alias := Variable.Map.add var var !alias
     | sharing ->
       alias := Variable.Map.add var sharing !alias
   in
