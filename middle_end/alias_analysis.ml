@@ -172,7 +172,11 @@ and collect_equations_named (t:equations) (var:Variable.t) : Flambda.named -> eq
   | Expr e ->
     collect_equations t e
 
-  | Set_of_closures { free_vars; specialised_args } ->
+  | Set_of_closures { function_decls; free_vars; specialised_args } ->
+    Variable.Map.iter (fun _ ({ body }:Flambda.function_declaration) ->
+        ignore (collect_equations t body:equation_right);
+      )
+      function_decls.funs;
     Variable.Map.iter (fun free_var def_var ->
         add t
           (Var_within_closure (Var_within_closure.wrap free_var))
