@@ -59,7 +59,7 @@ static int caml_runtime_warnings_first = 1;
 static int runtime_warnings() {
   if (!caml_runtime_warnings) return 0;
   if (caml_runtime_warnings_first) {
-    fprintf(stderr, "[ocaml] (use Pervasives.enable_runtime_warnings to disable these warnings)\n");
+    fprintf(stderr, "[ocaml] (use Sys.enable_runtime_warnings to control these warnings)\n");
     caml_runtime_warnings_first = 0;
   }
   return 1;
@@ -67,8 +67,13 @@ static int runtime_warnings() {
 
 CAMLprim value caml_ml_enable_runtime_warnings(value vbool)
 {
-  caml_runtime_warnings = Int_val(vbool);
+  caml_runtime_warnings = Bool_val(vbool);
   return Val_unit;
+}
+
+CAMLprim value caml_ml_runtime_warnings_enabled(value vbool)
+{
+  return Val_bool(caml_runtime_warnings);
 }
 
 /* Basic functions over type struct channel *.
