@@ -215,10 +215,11 @@ let primitive_purity (prim:Lambda.primitive) (args:Clambda.ulambda list) =
   | Pdirapply _ -> assert false
 
 (* This transformation substitute let bound pure expressions used only once.
-   This is usefull since cmmgen match paterns that does not contains 
+   This is usefull since cmmgen match paterns that does not contains lets
 *)
 
-let rec un_anf_and_purity ident_info env (clam:Clambda.ulambda) = match clam with
+let rec un_anf_and_purity ident_info env (clam:Clambda.ulambda) : Clambda.ulambda * purity =
+  match clam with
   | Uvar id ->
     begin match Ident.Map.find id env with
     | e -> e, Pure
