@@ -24,7 +24,7 @@ let is_probably_a_functor ~env ~args_approxs ~recursive_functions =
     && List.for_all A.known args_approxs
     && Variable.Set.is_empty recursive_functions
 
-let should_inline_function_known_to_be_recursive env
+let should_duplicate_recursive_function env
       ~(function_decl : Flambda.function_declaration)
       ~(function_decls : Flambda.function_declarations)
       ~(value_set_of_closures : A.value_set_of_closures)
@@ -67,13 +67,15 @@ let inline_non_recursive env r ~function_decls ~lhs_of_application
         W.create ~original:(fst (no_simplification())) body
           ~probably_a_functor (R.benefit r_inlined)
       in
-      if W.evaluate sufficient_benefit then begin
-        made_decision (Inlined (Copying_body (Evaluated sufficient_benefit)));
-        true
-      end else begin
-        made_decision (Tried (Copying_body (Evaluated sufficient_benefit)));
-        false
-      end
+      let keep_inlined_version = W.evaluate sufficient_benefit in
+      let decision : Inlining_stats_types.Decision.t =
+        if keep_inlined_version then
+          Inlined (Copying_body (Evaluated sufficient_benefit))
+        else
+          Tried (Copying_body (Evaluated sufficient_benefit))
+      in
+      made_decision decision;
+      keep_inlined_version
     end
   in
   if keep_inlined_version then begin
@@ -83,13 +85,13 @@ let inline_non_recursive env r ~function_decls ~lhs_of_application
     let r =
       R.map_benefit r (Inlining_cost.Benefit.(+) (R.benefit r_inlined))
     in
+    (* CR mshinwell for pchambart: This [lift_lets] should have a comment. *)
     let body = Lift_code.lift_lets body in
     let env =
       E.note_entering_closure env ~closure_id:closure_id_being_applied
         ~where:Inline_by_copying_function_body
     in
-    let env = E.inlining_level_up env in
-    simplify env r body
+    simplify (E.inlining_level_up env) r body
   end else begin
     (* Inlining the body of the function did not appear sufficiently
        beneficial; however, it may become so if we inline within the body
@@ -100,24 +102,18 @@ let inline_non_recursive env r ~function_decls ~lhs_of_application
         ~function_decls ~lhs_of_application ~closure_id_being_applied
         ~function_decl ~args ~simplify
     in
-    let keep_inlined_version =
-      let wsb =
-        W.create
-          ~original:(fst (no_simplification()))
-          body
-          ~probably_a_functor
-          (R.benefit r_inlined)
-      in
-      if W.evaluate wsb then begin
-        made_decision
-          (Inlined (Copying_body_with_subfunctions (Evaluated wsb)));
-        true
-      end else begin
-        made_decision
-          (Tried (Copying_body_with_subfunctions (Evaluated wsb)));
-        false
-      end
+    let wsb =
+      W.create ~original:(fst (no_simplification ()))
+        body ~probably_a_functor (R.benefit r_inlined)
     in
+    let keep_inlined_version = W.evaluate wsb in
+    let decision : Inlining_stats_types.Decision.t =
+      if keep_inlined_version then
+        Inlined (Copying_body_with_subfunctions (Evaluated wsb))
+      else
+        Tried (Copying_body_with_subfunctions (Evaluated wsb))
+    in
+    made_decision decision;
     if keep_inlined_version then begin
       body, R.map_benefit r_inlined (Inlining_cost.Benefit.(+) (R.benefit r))
     end
@@ -140,8 +136,13 @@ let unroll_recursive env r ~max_level ~lhs_of_application
   let tried_unrolling = ref false in
   let result =
     if E.unrolling_allowed env && E.inlining_level env <= max_level then
-      if E.inside_set_of_closures_declaration function_decls.set_of_closures_id env then
-        (* Self unrolling *)
+      let self_unrolling =
+        E.inside_set_of_closures_declaration function_decls.set_of_closures_id
+          env
+      in
+      if self_unrolling then
+        (* CR mshinwell for pchambart: Should we really completely
+           disallow this?  (Maybe there should be a compiler option?) *)
         None
       else begin
         let env = E.inside_unrolled_function env in
@@ -152,10 +153,8 @@ let unroll_recursive env r ~max_level ~lhs_of_application
         in
         tried_unrolling := true;
         let wsb =
-          W.create body
-            ~original:(fst (no_simplification()))
-            ~probably_a_functor:false
-            (R.benefit r_inlined)
+          W.create body ~original:(fst (no_simplification()))
+            ~probably_a_functor:false (R.benefit r_inlined)
         in
         let keep_unrolled_version =
           if W.evaluate wsb then begin
@@ -195,7 +194,7 @@ let inline_recursive env r ~max_level ~lhs_of_application
     (* If unrolling failed, consider duplicating the whole function
        declaration at the call site, specialising parameters whose arguments
        we know. *)
-    if should_inline_function_known_to_be_recursive env ~function_decls
+    if should_duplicate_recursive_function env ~function_decls
         ~function_decl ~value_set_of_closures ~args_approxs ~unchanging_params
     then
       let copied_function_declaration =
@@ -208,31 +207,24 @@ let inline_recursive env r ~max_level ~lhs_of_application
       in
       match copied_function_declaration with
       | Some (expr, r_inlined) ->
-          let wsb =
-            W.create
-              ~original:(fst (no_simplification ()))
-              expr
-              ~probably_a_functor:false
-              (R.benefit r_inlined)
-          in
-          let keep_inlined_version =
-            if W.evaluate wsb then begin
-              made_decision (Inlined (Copying_decl (
-                  Tried_unrolling tried_unrolling, wsb)));
-              true
-            end else begin
-              made_decision (Tried (Copying_decl (
-                  Tried_unrolling tried_unrolling, wsb)));
-              false
-            end
-          in
+        let wsb =
+          W.create ~original:(fst (no_simplification ()))
+            expr ~probably_a_functor:false (R.benefit r_inlined)
+        in
+        let keep_inlined_version = W.evaluate wsb in
+        let decision : Inlining_stats_types.Decision.t =
           if keep_inlined_version then
-            expr, R.map_benefit r_inlined
-              (Inlining_cost.Benefit.(+) (R.benefit r))
+            Inlined (Copying_decl (Tried_unrolling tried_unrolling, wsb))
           else
-            no_simplification ()
-      | None ->
+            Tried (Copying_decl (Tried_unrolling tried_unrolling, wsb))
+        in
+        made_decision decision;
+        if keep_inlined_version then
+          expr, R.map_benefit r_inlined
+            (Inlining_cost.Benefit.(+) (R.benefit r))
+        else
           no_simplification ()
+      | None -> no_simplification ()
     else begin
       made_decision
         (Did_not_try_copying_decl (Tried_unrolling tried_unrolling));
@@ -262,6 +254,8 @@ let for_call_site ~env ~r ~(function_decls : Flambda.function_declarations)
     Inlining_stats.record_decision ~closure_stack ~debuginfo:dbg
   in
   let no_simplification () : Flambda.t * R.t =
+    (* N.B. This function should not have any side effects; it may be called
+       speculatively, and the result discarded. *)
     Apply {
       func = lhs_of_application;
       args;
