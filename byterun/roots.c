@@ -105,6 +105,8 @@ void caml_do_sampled_roots(scanning_action f, struct domain* domain)
       }
     }
   }
+  /* these values need no longer be grayed by the target domain */
+  *domain->mark_stack_count = 0;
 
   /* treat the remembered sets as roots */
   struct caml_ref_entry* r;

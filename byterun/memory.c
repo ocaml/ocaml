@@ -154,6 +154,7 @@ struct read_fault_req {
   value ret;
 };
 
+static void send_read_fault(struct read_fault_req*);
 static void handle_read_fault(struct domain* target, void* reqp) {
   struct read_fault_req* req = reqp;
   value v = Op_val(req->obj)[req->field];
@@ -172,7 +173,21 @@ static void handle_read_fault(struct domain* target, void* reqp) {
        case, all domains get tied up servicing one fault and then
        there are no more left running to win the race */
     caml_gc_log("Stale read fault for domain [%02d]", target->id);
-    req->ret = caml_read_barrier(req->obj, req->field);
+    send_read_fault(req);
+  }
+}
+
+static void send_read_fault(struct read_fault_req* req)
+{
+  value v = Op_val(req->obj)[req->field];
+  if (Is_minor(v)) {
+    caml_gc_log("Read fault to domain [%02d]", caml_owner_of_young_block(v)->id);
+    caml_domain_rpc(caml_owner_of_young_block(v), &handle_read_fault, req);
+    Assert(!Is_minor(req->ret));
+    caml_gc_log("Read fault returned (%p)", (void*)req->ret);
+  } else {
+    caml_gc_log("Stale read fault: already promoted");
+    req->ret = v;
   }
 }
 
@@ -188,10 +203,7 @@ CAMLexport value caml_read_barrier(value obj, int field)
       Assert(Is_promoted_hd(Hd_val(obj)));
       req.obj = caml_addrmap_lookup(&caml_remembered_set.promotion, obj);
     }
-    caml_gc_log("Read fault to domain [%02d]", caml_owner_of_young_block(v)->id);
-    caml_domain_rpc(caml_owner_of_young_block(v), &handle_read_fault, &req);
-    Assert(!Is_minor(req.ret));
-    caml_gc_log("Read fault returned (%p)", (void*)req.ret);
+    send_read_fault(&req);
     return req.ret;
   } else {
     return v;
