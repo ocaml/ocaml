@@ -156,26 +156,48 @@ end
 
 module Result : sig
   (** Result structures approximately follow the evaluation order of the
-      program. *)
+      program.  They are returned by the simplification algorithm acting on
+      an Flambda subexpression. *)
   type t
 
   val create : unit -> t
 
+  (** The approximation of the subexpression that has just been
+      simplified. *)
   val approx : t -> Simple_value_approx.t
+
+  (** Set the approximation of the subexpression that has just been
+      simplified.  Typically used just before returning from a case of the
+      simplification algorithm. *)
   val set_approx : t -> Simple_value_approx.t -> t
 
-  val use_staticfail : t -> Static_exception.t -> t
+  (** All static exceptions for which [use_staticfail] has been called on
+      the given result structure. *)
   val used_staticfail : t -> Static_exception.Set.t
 
+  (** Mark that the given static exception has been used. *)
+  (* CR mshinwell: consider rename to [use_static_exception] *)
+  val use_staticfail : t -> Static_exception.t -> t
+
+  (** Mark that we are moving up out of the scope of a static-catch block
+      that catches the given static exception identifier.  This has the effect
+      of removing the identifier from the [used_staticfail] set. *)
   val exit_scope_catch : t -> Static_exception.t -> t
 
+  (** The benefit to be gained by inlining the subexpression whose
+      simplification yielded the given result structure. *)
+  val benefit : t -> Inlining_cost.Benefit.t
+
+  (** Apply a transformation to the inlining benefit stored within the
+      given result structure. *)
   val map_benefit
     : t
     -> (Inlining_cost.Benefit.t -> Inlining_cost.Benefit.t)
     -> t
 
-  val benefit : t -> Inlining_cost.Benefit.t
   (* CR mshinwell: rename [clear_benefit], it might be misconstrued *)
+  (** Set the benefit of inlining the subexpression corresponding to the
+      given result structure to zero. *)
   val clear_benefit : t -> t
 
   val set_inlining_threshold : t -> Inlining_cost.inlining_threshold -> t
