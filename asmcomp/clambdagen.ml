@@ -506,7 +506,7 @@ module M(P:Arg) = struct
 
 end
 
-let convert ((lifted_constants:Lift_constants.result), _exported) =
+let convert ((lifted_constants:Lift_constants.result), exported) =
   let module M = M(struct
       let offsets = Closure_offsets.compute lifted_constants
       let closures = make_closure_map lifted_constants
@@ -523,7 +523,9 @@ let convert ((lifted_constants:Lift_constants.result), _exported) =
       lifted_constants.set_of_closures_map
   in
   let expr = M.conv env lifted_constants.expr in
+  (* TODO: add offsets to export info *)
   expr,
   Symbol.Map.disjoint_union
     structured_constants
-    constant_set_of_closures
+    constant_set_of_closures,
+  exported

@@ -2445,6 +2445,10 @@ let compunit size ulam =
          Cglobal_symbol glob;
          Cdefine_symbol glob] @ space) :: c3
 
+let compunit_and_constants size (ulam, _constants) =
+  (* TODO *)
+  compunit size ulam
+
 (*
 CAMLprim value caml_cache_public_method (value meths, value tag, value *cache)
 {

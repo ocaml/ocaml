@@ -35,19 +35,24 @@ let pass_dump_linear_if ppf flag message phrase =
   if !flag then fprintf ppf "*** %s@.%a@." message Printlinear.fundecl phrase;
   phrase
 
-let clambda_dump_if ppf ulambda =
+let clambda_dump_if ppf (ulambda, structured_constants) =
   if !dump_clambda then
     begin
       Printclambda.clambda ppf ulambda;
-      List.iter (fun (lbls,cst) ->
-          let lbl = match lbls with
-            | [] -> assert false
-            | (lbl, _) :: _ -> lbl in
-          Format.fprintf ppf "%s: %a@." lbl
+      (* List.iter (fun (lbls,cst) -> *)
+      (*     let lbl = match lbls with *)
+      (*       | [] -> assert false *)
+      (*       | (lbl, _) :: _ -> lbl in *)
+      (*     Format.fprintf ppf "%s: %a@." lbl *)
+      (*       Printclambda.structured_constant cst) *)
+      (*   structured_constants *)
+      Symbol.Map.iter (fun sym cst ->
+          Format.fprintf ppf "%a: %a@."
+            Symbol.print sym
             Printclambda.structured_constant cst)
-        (Compilenv.structured_constants ())
+        structured_constants
     end;
-  ulambda
+  (ulambda, structured_constants)
 
 let rec regalloc ppf round fd =
   if round > 50 then
@@ -110,29 +115,29 @@ let compile_genfuns ppf f =
        | _ -> ())
     (Cmmgen.generic_functions true [Compilenv.current_unit_infos ()])
 
-(*
 let prep_flambda_for_export ppf flam =
-  let current_compilation_unit = Compilenv.current_unit () in
-  let fl_sym =
-    Flambdasym.convert ~compilation_unit:current_compilation_unit flam
-  in
-  let fl, const, export = fl_sym in
-  Compilenv.set_export_info export;
+  let lifted_constants = Lift_constants.lift_constants flam in
+  let export = Build_export_info.build_export_info lifted_constants in
+  (* Compilenv.set_export_info export; *)
   if !Clflags.dump_flambda
   then begin
-    Format.fprintf ppf "flambdasym@ %a@." Flambda_printers.flambda fl;
-    Symbol.Map.iter (fun sym lam ->
+    Format.fprintf ppf "flambdasym@ %a@."
+      Flambda_printers.flambda lifted_constants.Lift_constants.expr;
+    Symbol.Map.iter (fun sym set_of_closures ->
         Format.fprintf ppf "sym: %a@ %a@."
           Symbol.print sym
-          Flambda_printers.flambda lam)
-      const
+          Flambda_printers.set_of_closures set_of_closures)
+      lifted_constants.Lift_constants.set_of_closures_map;
+    (* TODO: print structured constants *)
   end;
-  Flambda_invariants.check ~flambdasym:true fl;
-  Symbol.Map.iter (fun _ lam ->
-      Flambda_invariants.check ~flambdasym:true ~cmxfile:true lam)
-    const;
-  fl_sym
-*)
+  Flambda_invariants.check_exn ~flambdasym:true
+    lifted_constants.Lift_constants.expr;
+  Symbol.Map.iter (fun _ set_of_closures ->
+      let var = Variable.create "dummy" in
+      let expr = Flambda.(Let(Immutable,var, Set_of_closures set_of_closures, Var var)) in
+      Flambda_invariants.check_exn ~flambdasym:true ~cmxfile:true expr)
+    lifted_constants.Lift_constants.set_of_closures_map;
+  lifted_constants, export
 
 let compile_unit ~sourcefile output_prefix asm_filename keep_asm obj_filename gen =
   let create_asm = keep_asm || not !Emitaux.binary_backend_available in
@@ -156,17 +161,20 @@ let compile_unit ~sourcefile output_prefix asm_filename keep_asm obj_filename ge
     remove_file obj_filename;
     raise exn
 
-let gen_implementation ?toplevel:_ ~sourcefile:_ _ppf ~size:_ flam:_ =
-  Misc.fatal_error "Backend disabled"
-(*
+let set_export_info (ulambda, structured_constants, export) =
+  Compilenv.set_export_info export;
+  (ulambda, structured_constants)
+
+let gen_implementation ?toplevel ~sourcefile ppf ~size flam =
   Emit.begin_assembly ();
   Timings.(start (Flambda_backend sourcefile));
   prep_flambda_for_export ppf flam
   ++ Clambdagen.convert
+  ++ set_export_info
   ++ Timings.(stop_id (Flambda_backend sourcefile))
   ++ clambda_dump_if ppf
   ++ Timings.(start_id (Cmm sourcefile))
-  ++ Cmmgen.compunit size
+  ++ Cmmgen.compunit_and_constants size
   ++ Timings.(stop_id (Cmm sourcefile))
   ++ Timings.(start_id (Compile_phrases sourcefile))
   ++ List.iter (compile_phrase ppf)
@@ -186,7 +194,6 @@ let gen_implementation ?toplevel:_ ~sourcefile:_ _ppf ~size:_ flam:_ =
           (List.map Primitive.native_name !Translmod.primitive_declarations))
     );
   Emit.end_assembly ()
-*)
 
 let compile_implementation ?toplevel ~sourcefile prefixname ppf ~size flam =
   let asmfile =
