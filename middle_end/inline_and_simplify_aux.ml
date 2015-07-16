@@ -14,7 +14,7 @@
 module Env = struct
   type t = {
     backend : (module Backend_intf.S);
-    env_approx : Simple_value_approx.t Variable.Map.t;
+    approx : Simple_value_approx.t Variable.Map.t;
     current_functions : Set_of_closures_id.Set.t;
     (* The functions currently being declared: used to avoid inlining
        recursively *)
@@ -29,9 +29,9 @@ module Env = struct
     inlining_stats_closure_stack : Inlining_stats.Closure_stack.t;
   }
 
-  let empty ~never_inline ~backend =
+  let create ~never_inline ~backend =
     { backend;
-      env_approx = Variable.Map.empty;
+      approx = Variable.Map.empty;
       current_functions = Set_of_closures_id.Set.empty;
       inlining_level = 0;
       inside_branch = false;
@@ -48,7 +48,7 @@ module Env = struct
 
   let local env =
     { env with
-      env_approx = Variable.Map.empty;
+      approx = Variable.Map.empty;
       freshening = Freshening.empty_preserving_activation_state env.freshening;
     }
 
@@ -57,75 +57,75 @@ module Env = struct
 
   let print ppf t =
     Format.fprintf ppf "Environment maps: %a@.Freshening: %a@."
-        Variable.Set.print (Variable.Map.keys t.env_approx)
+        Variable.Set.print (Variable.Map.keys t.approx)
         Freshening.print t.freshening
 
-  let find id env =
-    try Variable.Map.find id env.env_approx
+  let mem t var = Variable.Map.mem var t.approx
+
+  let add t var (approx : Simple_value_approx.t) =
+    let approx =
+      (* The semantics of this [match] are what preserve the property
+         described at the top of simple_value_approx.mli, namely that when a
+         [var] is mem on an approximation (amongst many possible [var]s),
+         it is the one with the outermost scope. *)
+      match approx.var with
+      | Some var when mem t var -> approx
+      | _ -> Simple_value_approx.augment_with_variable approx var
+    in
+    { t with approx = Variable.Map.add var approx t.approx }
+
+  let find_exn t id =
+    try Variable.Map.find id t.approx
     with Not_found ->
       Misc.fatal_errorf "Inlining_env.find: Unbound variable %a@.%s@.\
           Environment: %a@."
         Variable.print id
         (Printexc.raw_backtrace_to_string (Printexc.get_callstack max_int))
-        print env
+        print t
 
-  let find_list t vars =
-    List.map (fun var -> find var t) vars
+  let find_list_exn t vars =
+    List.map (fun var -> find_exn t var) vars
 
   let find_opt t id =
-    try Some (Variable.Map.find id t.env_approx)
+    try Some (Variable.Map.find id t.approx)
     with Not_found -> None
-
-  let present env var = Variable.Map.mem var env.env_approx
 
   let activate_freshening t =
     { t with freshening = Freshening.activate t.freshening }
 
-  let add_approx var (approx : Simple_value_approx.t) env =
-    let approx =
-      (* The semantics of this [match] are what preserve the property
-         described at the top of simple_value_approx.mli, namely that when a
-         [var] is present on an approximation (amongst many possible [var]s),
-         it is the one with the outermost scope. *)
-      match approx.var with
-      | Some var when present env var -> approx
-      | _ -> Simple_value_approx.augment_with_variable approx var
-    in
-    { env with env_approx = Variable.Map.add var approx env.env_approx }
-
-  let enter_set_of_closures_declaration ident env =
-    { env with
+  let enter_set_of_closures_declaration ident t =
+    { t with
       current_functions =
-        Set_of_closures_id.Set.add ident env.current_functions; }
+        Set_of_closures_id.Set.add ident t.current_functions; }
 
-  let inside_set_of_closures_declaration closure_id env =
-    Set_of_closures_id.Set.mem closure_id env.current_functions
+  let inside_set_of_closures_declaration closure_id t =
+    Set_of_closures_id.Set.mem closure_id t.current_functions
 
-  let at_toplevel env =
-    env.closure_depth = 0
+  let at_toplevel t =
+    t.closure_depth = 0
 
   let is_inside_branch env = env.inside_branch
 
-  let inside_branch env =
-    { env with inside_branch = true }
+  let inside_branch t =
+    { t with inside_branch = true }
 
-  let inside_simplify env =
-    { env with inside_simplify = true }
+  let inside_simplify t =
+    { t with inside_simplify = true }
 
-  let set_freshening freshening env =
-    { env with freshening; }
+  let set_freshening t freshening  =
+    { t with freshening; }
 
-  let increase_closure_depth env =
-    { env with closure_depth = env.closure_depth + 1; }
+  let increase_closure_depth t =
+    { t with closure_depth = t.closure_depth + 1; }
 
-  let set_never_inline env =
-    { env with never_inline = true }
+  let set_never_inline t =
+    { t with never_inline = true }
 
-  let unrolling_allowed env =
-    env.possible_unrolls > 0
+  let unrolling_allowed t =
+    t.possible_unrolls > 0
 
-  let inside_unrolled_function env =
-    { env with possible_unrolls = env.possible_unrolls - 1 }
+  let inside_unrolled_function t =
+    { t with possible_unrolls = t.possible_unrolls - 1 }
 
   let inlining_level t = t.inlining_level
   let freshening t = t.freshening

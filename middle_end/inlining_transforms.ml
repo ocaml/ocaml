@@ -87,7 +87,7 @@ let inline_by_copying_function_body ~env ~r ~function_decls ~lhs_of_application
     let args = List.map (fun arg -> Flambda.Expr (Var arg)) args in
     Flambda_utils.bind ~body ~bindings:(List.combine freshened_params args)
   in
-  (* Add bindings for variables bound by the closure. *)
+  (* Add bindings for the variables bound by the closure. *)
   let bindings_for_vars_bound_by_closure_and_params_to_args =
     fold_over_projections_of_vars_bound_by_closure ~closure_id_being_applied
       ~lhs_of_application ~function_decls ~init:bindings_for_params_to_args

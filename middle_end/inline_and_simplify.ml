@@ -36,8 +36,8 @@ let freshen_and_simplify_variable env var =
        by replacing [var2] in the body with [var1].  Simplification can then
        eliminate the [let].
     *)
-    A.simplify_var_to_var_using_env (E.find var env)
-      ~is_present_in_env:(fun var -> E.present env var)
+    A.simplify_var_to_var_using_env (E.find_exn env var)
+      ~is_present_in_env:(fun var -> E.mem env var)
   in
   match var_opt with
   | None -> var
@@ -49,7 +49,7 @@ let simplify_named_using_approx r lam approx =
 
 let simplify_using_approx_and_env env r original_lam approx =
   let lam, summary, approx =
-    A.simplify_using_env approx ~is_present_in_env:(E.present env) original_lam
+    A.simplify_using_env approx ~is_present_in_env:(E.mem env) original_lam
   in
   let r =
     let r = ret r approx in
@@ -61,7 +61,7 @@ let simplify_using_approx_and_env env r original_lam approx =
 
 let simplify_named_using_approx_and_env env r original_named approx =
   let named, summary, approx =
-    A.simplify_named_using_env approx ~is_present_in_env:(E.present env)
+    A.simplify_named_using_env approx ~is_present_in_env:(E.mem env)
       original_named
   in
   let r =
@@ -84,14 +84,14 @@ let populate_closure_approximations
   let env =
     Variable.Map.fold (fun id (_, desc) env ->
        if Variable.Set.mem id function_decl.free_variables
-       then E.add_approx id desc env
+       then E.add env id desc
        else env) free_vars set_of_closures_env in
   (* Add known approximations of function parameters *)
   let env =
     List.fold_left (fun env id ->
        let approx = try Variable.Map.find id parameter_approximations
                     with Not_found -> A.value_unknown in
-       E.add_approx id approx env)
+       E.add env id approx)
       env function_decl.params in
   env
 
@@ -131,7 +131,7 @@ let simplify_project_closure env r ~(project_closure : Flambda.project_closure)
     Freshening.apply_variable (E.freshening env)
       project_closure.set_of_closures
   in
-  let set_of_closures_approx = E.find set_of_closures env in
+  let set_of_closures_approx = E.find_exn env set_of_closures in
   match A.check_approx_for_set_of_closures set_of_closures_approx with
   | Wrong ->
     Misc.fatal_errorf "Wrong approximation when projecting closure: %a"
@@ -168,7 +168,7 @@ let simplify_move_within_set_of_closures env r
     Freshening.apply_variable (E.freshening env)
       move_within_set_of_closures.closure
   in
-  let closure_approx = E.find closure env in
+  let closure_approx = E.find_exn env closure in
   match A.check_approx_for_closure closure_approx with
   | Wrong ->
     Misc.fatal_errorf "Wrong approximation when moving within set of \
@@ -266,7 +266,7 @@ let rec simplify_project_var env r ~(project_var : Flambda.project_var)
   let closure =
     Freshening.apply_variable (E.freshening env) project_var.closure
   in
-  let approx = E.find closure env in
+  let approx = E.find_exn env closure in
   match A.check_approx_for_closure_allowing_unresolved approx with
   | Ok (value_closure, _set_of_closures_var, value_set_of_closures) ->
     let module F = Freshening.Project_var in
@@ -378,7 +378,7 @@ and simplify_set_of_closures original_env r
   let free_vars =
     Variable.Map.map (fun external_var ->
         let external_var = freshen_and_simplify_variable env external_var in
-        external_var, E.find external_var env)
+        external_var, E.find_exn env external_var)
       set_of_closures.free_vars
   in
   let specialised_args =
@@ -393,7 +393,7 @@ and simplify_set_of_closures original_env r
     Freshening.apply_function_decls_and_free_vars (E.freshening env) free_vars
       function_decls
   in
-  let env = E.set_freshening sb env in
+  let env = E.set_freshening env sb in
   let specialised_args =
     Variable.Map.map_keys (freshen_and_simplify_variable env)
       specialised_args
@@ -402,7 +402,7 @@ and simplify_set_of_closures original_env r
     (* Approximations of parameters that are known to always hold the same
        argument throughout the body of the function. *)
     Variable.Map.map_keys (freshen_and_simplify_variable env)
-      (Variable.Map.map (fun id -> E.find id environment_before_cleaning)
+      (Variable.Map.map (fun id -> E.find_exn environment_before_cleaning id)
         specialised_args)
   in
   let env =
@@ -428,7 +428,7 @@ and simplify_set_of_closures original_env r
           A.value_closure ~closure_var:closure internal_value_set_of_closures
             (Closure_id.wrap closure)
         in
-        E.add_approx closure approx env)
+        E.add env closure approx)
       function_decls.funs env
   in
   let simplify_function fid (function_decl : Flambda.function_declaration)
@@ -489,8 +489,8 @@ and simplify_apply env r ~(apply : Flambda.apply) : Flambda.t * R.t =
     freshen_and_simplify_variable env lhs_of_application
   in
   let args = List.map (freshen_and_simplify_variable env) args in
-  let lhs_of_application_approx = E.find lhs_of_application env in
-  let args_approxs = List.map (fun arg -> E.find arg env) args in
+  let lhs_of_application_approx = E.find_exn env lhs_of_application in
+  let args_approxs = List.map (fun arg -> E.find_exn env arg) args in
   (* By using the approximation of the left-hand side of the application,
      attempt to determine which function is being applied (even if the
      application is currently [Indirect]).  If successful---in which case we
@@ -629,14 +629,14 @@ and simplify_named env r (tree : Flambda.named) : Flambda.named * R.t =
          [simplify_named_using_approx_and_env] here? *)
       simplify_named_using_approx r tree approx
     | Psetglobalfield (_, i), [arg] ->
-      let approx = E.find arg env in
+      let approx = E.find_exn env arg in
       let r = R.add_global r ~field_index:i ~approx in
       tree, ret r A.value_unknown
     | Pfield i, [arg] ->
-      let approx = A.get_field (E.find arg env) ~field_index:i in
+      let approx = A.get_field (E.find_exn env arg) ~field_index:i in
       simplify_named_using_approx_and_env env r tree approx
     | (Psetfield _ | Parraysetu _ | Parraysets _), block::_ ->
-      let block_approx = E.find block env in
+      let block_approx = E.find_exn env block in
       if A.is_definitely_immutable block_approx then begin
         Location.prerr_warning (Debuginfo.to_location dbg)
           Warnings.Assignment_on_non_mutable_value
@@ -646,7 +646,7 @@ and simplify_named env r (tree : Flambda.named) : Flambda.named * R.t =
       Misc.fatal_error "Psequand and Psequor must be expanded (see handling \
           in closure_conversion.ml)"
     | p, args ->
-      let approxs = E.find_list env args in
+      let approxs = E.find_list_exn env args in
       let expr, approx, benefit =
         let module Backend = (val (E.backend env) : Backend_intf.S) in
         Simplify_primitives.primitive p (args, approxs) tree dbg
@@ -666,7 +666,7 @@ and simplify_direct env r (tree : Flambda.t) : Flambda.t * R.t =
   match tree with
   | Var var ->
     let var = freshen_and_simplify_variable env var in
-    simplify_using_approx_and_env env r (Var var) (E.find var env)
+    simplify_using_approx_and_env env r (Var var) (E.find_exn env var)
   | Apply apply -> simplify_apply env r ~apply
   | Let (str, id, defining_expr, body) ->
     let defining_expr, r = simplify_named env r defining_expr in
@@ -680,14 +680,14 @@ and simplify_direct env r (tree : Flambda.t) : Flambda.t * R.t =
       | _ -> defining_expr
     in
     let id, sb = Freshening.add_variable (E.freshening env) id in
-    let env = E.set_freshening sb env in
+    let env = E.set_freshening env sb in
     let body, r =
       let approx_of_bound_var =
         match str with
         | Immutable -> R.approx r
         | Mutable -> A.value_unknown
       in
-      simplify (E.add_approx id approx_of_bound_var env) r body
+      simplify (E.add env id approx_of_bound_var) r body
     in
     let free_variables_of_body = Free_variables.calculate body in
     let (expr : Flambda.t), r =
@@ -708,17 +708,17 @@ and simplify_direct env r (tree : Flambda.t) : Flambda.t * R.t =
     expr, r
   | Let_rec (defs, body) ->
     let defs, sb = Freshening.add_variables (E.freshening env) defs in
-    let env = E.set_freshening sb env in
+    let env = E.set_freshening env sb in
     let def_env =
       List.fold_left (fun env_acc (id, _lam) ->
-          E.add_approx id A.value_unknown env_acc)
+          E.add env_acc id A.value_unknown)
         env defs
     in
     let defs, body_env, r =
       List.fold_right (fun (id, lam) (defs, env_acc, r) ->
           let lam, r = simplify_named def_env r lam in
           let defs = (id, lam) :: defs in
-          let env_acc = E.add_approx id (R.approx r) env_acc in
+          let env_acc = E.add env_acc id (R.approx r) in
           defs, env_acc, r)
         defs ([], env, r)
     in
@@ -731,7 +731,7 @@ and simplify_direct env r (tree : Flambda.t) : Flambda.t * R.t =
     Static_raise (i, args), ret r A.value_bottom
   | Static_catch (i, vars, body, handler) ->
     let i, sb = Freshening.add_static_exception (E.freshening env) i in
-    let env = E.set_freshening sb env in
+    let env = E.set_freshening env sb in
     let body, r = simplify env r body in
     if not (Static_exception.Set.mem i (R.used_staticfail r)) then
       (* If the static exception is not used, we can drop the declaration *)
@@ -755,8 +755,8 @@ and simplify_direct env r (tree : Flambda.t) : Flambda.t * R.t =
       | _ ->
         let vars, sb = Freshening.add_variables' (E.freshening env) vars in
         let env =
-          List.fold_left (fun env id -> E.add_approx id A.value_unknown env)
-            (E.set_freshening sb env) vars
+          List.fold_left (fun env id -> E.add env id A.value_unknown)
+            (E.set_freshening env sb) vars
         in
         let env = E.inside_branch env in
         let handler, r = simplify env r handler in
@@ -766,7 +766,7 @@ and simplify_direct env r (tree : Flambda.t) : Flambda.t * R.t =
   | Try_with (body, id, handler) ->
     let body, r = simplify env r body in
     let id, sb = Freshening.add_variable (E.freshening env) id in
-    let env = E.add_approx id A.value_unknown (E.set_freshening sb env) in
+    let env = E.add (E.set_freshening env sb) id A.value_unknown in
     let env = E.inside_branch env in
     let handler, r = simplify env r handler in
     Try_with (body, id, handler), ret r A.value_unknown
@@ -806,7 +806,7 @@ and simplify_direct env r (tree : Flambda.t) : Flambda.t * R.t =
     let bound_var, sb = Freshening.add_variable (E.freshening env) bound_var in
     let env =
       E.inside_simplify
-        (E.add_approx bound_var A.value_unknown (E.set_freshening sb env))
+        (E.add (E.set_freshening env sb) bound_var A.value_unknown)
     in
     let env = E.inside_simplify env in
     let body, r = simplify env r body in
@@ -929,7 +929,7 @@ let run ~never_inline ~backend tree =
   in
   let stats = !Clflags.inlining_stats in
   if never_inline then Clflags.inlining_stats := false;
-  let env = E.empty ~never_inline:false ~backend in
+  let env = E.create ~never_inline:false ~backend in
   let result, r = simplify env r tree in
   Clflags.inlining_stats := stats;
   if not (Static_exception.Set.is_empty (R.used_staticfail r))
