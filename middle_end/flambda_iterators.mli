@@ -34,6 +34,11 @@ val iter_named
   -> Flambda.t
   -> unit
 
+val iter_named_on_named
+   : (Flambda.named -> unit)
+  -> Flambda.named
+  -> unit
+
 (** [iter_toplevel f t] applies [f] on every toplevel subexpression of [t].
     In particular, it never applies [f] to the body of a function (which
     will always be contained within an [Set_of_closures] expression). *)

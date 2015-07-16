@@ -90,6 +90,9 @@ let iter_general ~toplevel f f_named maybe_named =
 
 let iter f f_named t = iter_general ~toplevel:false f f_named (Expr t)
 let iter_named f_named t = iter (fun (_ : Flambda.t) -> ()) f_named t
+let iter_named_on_named f_named named =
+  iter_general ~toplevel:false (fun (_ : Flambda.t) -> ()) f_named (Named named)
+
 let iter_toplevel f f_named t = iter_general ~toplevel:true f f_named (Expr t)
 let iter_named_toplevel f f_named named =
   iter_general ~toplevel:true f f_named (Named named)
