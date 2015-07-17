@@ -197,8 +197,7 @@ and collect_equations_named (t:equations) (var:Variable.t) : Flambda.named -> eq
 
   | Project_closure _
   | Move_within_set_of_closures _ ->
-    (* Probably don't need to bother with closures *)
-    Resolved Not_const
+    Resolved (Ground_const var)
 
   | Project_var {var} ->
     alias (Var_within_closure var)
