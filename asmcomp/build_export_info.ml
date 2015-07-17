@@ -343,12 +343,12 @@ let record_project_closures (set_of_closures:ET.value_set_of_closures) =
       new_symbol symbol export_id)
     set_of_closures.results
 
-let build_export_info (lifted_constants:Lift_constants.result) : ET.exported =
+let build_export_info (lifted_flambda:Lift_constants.result) : ET.exported =
   reset ();
 
   let constant_approx =
     Symbol.Map.map (fun cst -> new_descr (describe_allocated_constant cst))
-      lifted_constants.constant_descr
+      lifted_flambda.constant_descr
   in
   symbol_table := constant_approx;
 
@@ -361,9 +361,9 @@ let build_export_info (lifted_constants:Lift_constants.result) : ET.exported =
       record_project_closures descr;
       new_symbol symbol (new_descr (ET.Value_set_of_closures descr))
     )
-    lifted_constants.set_of_closures_map;
+    lifted_flambda.set_of_closures_map;
 
-  let _root_description : ET.approx = describe Variable.Map.empty lifted_constants.expr in
+  let _root_description : ET.approx = describe Variable.Map.empty lifted_flambda.expr in
 
   (* build the approximation of the root module *)
   let root_id =
@@ -397,6 +397,8 @@ let build_export_info (lifted_constants:Lift_constants.result) : ET.exported =
       ex_symbol_id Export_id.Map.empty
   in
 
+  let set_of_closures_map = Lifted_flambda_utils.set_of_closures_map lifted_flambda in
+
   (* TODO *)
   let ex_functions = Set_of_closures_id.Map.empty in
 
@@ -406,8 +408,12 @@ let build_export_info (lifted_constants:Lift_constants.result) : ET.exported =
   (* TODO *)
   let constant_closures = Set_of_closures_id.Set.empty in
 
-  (* TODO *)
-  let ex_kept_arguments = Set_of_closures_id.Map.empty in
+  let ex_invariant_arguments =
+    Set_of_closures_id.Map.map
+      (fun { Flambda.function_decls } ->
+         Invariant_params.unchanging_params_in_recursion function_decls
+      ) set_of_closures_map
+  in
 
   let export : ET.exported =
     { Flambdaexport.empty_export with
@@ -420,7 +426,7 @@ let build_export_info (lifted_constants:Lift_constants.result) : ET.exported =
       ex_functions = ex_functions;
       ex_functions_off = ex_functions_off;
       ex_constant_closures = constant_closures;
-      ex_kept_arguments = ex_kept_arguments }
+      ex_invariant_arguments }
   in
   export
 

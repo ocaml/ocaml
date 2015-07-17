@@ -76,5 +76,5 @@ type exported = {
   ex_constants : Symbol.Set.t;
 
   ex_constant_closures : Set_of_closures_id.Set.t;
-  ex_kept_arguments : Variable.Set.t Set_of_closures_id.Map.t;
+  ex_invariant_arguments : Variable.Set.t Set_of_closures_id.Map.t;
 }

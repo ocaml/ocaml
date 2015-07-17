@@ -24,7 +24,7 @@ let empty_export : ET.exported = {
   ex_offset_fv = Var_within_closure.Map.empty;
   ex_constants = Symbol.Set.empty;
   ex_constant_closures = Set_of_closures_id.Set.empty;
-  ex_kept_arguments = Set_of_closures_id.Map.empty;
+  ex_invariant_arguments = Set_of_closures_id.Map.empty;
 }
 
 let find_ex_value eid map =
@@ -181,8 +181,9 @@ let merge (e1 : ET.exported) (e2 : ET.exported) : ET.exported =
     ex_constants = Symbol.Set.union e1.ex_constants e2.ex_constants;
     ex_constant_closures =
       Set_of_closures_id.Set.union e1.ex_constant_closures e2.ex_constant_closures;
-    ex_kept_arguments =
-      Set_of_closures_id.Map.disjoint_union e1.ex_kept_arguments e2.ex_kept_arguments;
+    ex_invariant_arguments =
+      Set_of_closures_id.Map.disjoint_union
+        e1.ex_invariant_arguments e2.ex_invariant_arguments;
   }
 
 (* importing informations to build a pack: the global identifying the
@@ -304,7 +305,7 @@ let import_for_pack ~pack_units ~pack (exp : ET.exported) =
           (Symbol.Map.map import_eid exp.ex_symbol_id);
       ex_constants = Symbol.Set.map import_sym exp.ex_constants;
       ex_constant_closures = exp.ex_constant_closures;
-      ex_kept_arguments = exp.ex_kept_arguments } in
+      ex_invariant_arguments = exp.ex_invariant_arguments } in
   res
 
 let clear_import_state () = Export_id.Tbl.clear rename_id_state

@@ -32,7 +32,7 @@ let rec import_ex ex =
   | Value_closure { fun_id; set_of_closures = { set_of_closures_id; bound_vars } } ->
     let bound_vars = Var_within_closure.Map.map import_approx bound_vars in
     begin match
-      Set_of_closures_id.Map.find set_of_closures_id ex_info.ex_kept_arguments
+      Set_of_closures_id.Map.find set_of_closures_id ex_info.ex_invariant_arguments
     with
     | exception Not_found ->
       Misc.fatal_error "Set of closures ID not found in ex_kept_arguments"
@@ -52,7 +52,7 @@ let rec import_ex ex =
     let unchanging_params =
       try
         Set_of_closures_id.Map.find set_of_closures_id
-          ex_info.ex_kept_arguments
+          ex_info.ex_invariant_arguments
       with
       | Not_found -> assert false
     in
