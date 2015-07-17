@@ -178,8 +178,14 @@ and collect_equations_named (t:equations) (var:Variable.t) : Flambda.named -> eq
       )
       function_decls.funs;
     Variable.Map.iter (fun free_var def_var ->
+        let var_within_closure =
+          Var_within_closure (Var_within_closure.wrap free_var)
+        in
         add t
-          (Var_within_closure (Var_within_closure.wrap free_var))
+          (Var free_var)
+          (alias var_within_closure);
+        add t
+          var_within_closure
           (alias (Var def_var)))
       free_vars;
     Variable.Map.iter (fun arg var ->
