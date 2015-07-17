@@ -611,6 +611,25 @@ The precedences must be listed from low to high.
 
 implementation:
     structure EOF                        { extra_str 1 $1 }
+  | inline_sig structure EOF
+      {
+       let str = Mod.structure ~loc:(rhs_loc 2) (extra_str 2 $2) in
+       let loc = symbol_rloc () in
+       let i = Incl.mk (Mod.constraint_ ~loc str $1) ~loc ~attrs:[] in
+       [ Str.include_ ~loc i ]
+      }
+;
+inline_sig:
+  SIG signature END
+     {
+       Mty.signature ~loc:(symbol_rloc ()) (extra_sig 2 $2)
+     }
+| SIG signature error
+      { unclosed "sig" 1 "end" 3 }
+| inline_sig attribute
+     {
+       Mty.attr $1 $2
+     }
 ;
 interface:
     signature EOF                        { extra_sig 1 $1 }
