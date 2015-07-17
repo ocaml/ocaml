@@ -302,6 +302,35 @@ let emit_load_symbol_addr dst s =
     `	ldr	{emit_reg dst}, [{emit_reg dst}, #:got_lo12:{emit_symbol s}]\n`
   end
 
+let asm_unique = ref 0
+
+let emit_asm i asm iargs =
+  incr asm_unique;
+  let open Inline_asm in
+  let rec emit_template t =
+    Array.iter (function
+        Emit_string s -> `{emit_string s}`
+      | Emit_unique -> `{emit_string (string_of_int !asm_unique)}`
+      | Emit_dialect d -> emit_template d.(0)
+      | Emit_arg (n, _) ->
+          let iarg = iargs.(n) in
+          match iarg.Mach.source with
+            Imm n -> `#{emit_int (Int64.to_int n)}`
+          | Unit -> `#{emit_int 0}`
+          | Reg | Stack ->
+              begin match iarg.reg with
+                \`arg n -> `{emit_reg i.arg.(n)}`
+              | \`res n -> `{emit_reg i.res.(n)}`
+              end
+          | Addr (_, _, _) ->
+              fatal_error (
+                "Addressing currently not supported in inline assembly "
+                ^ "for the architecture ARM64")) t
+  in
+  `	`;
+  emit_template asm.template;
+  `\n`
+
 (* Output the assembly code for an instruction *)
 
 let emit_instr i =
@@ -387,6 +416,11 @@ let emit_instr i =
             `	fcvt	{emit_reg dst}, s7\n`
         | Word | Double | Double_u ->
             `	ldr	{emit_reg dst}, {emit_addressing addr base}\n`
+        | M128d_a | M128d_u
+        | M128i_a | M128i_u
+        | M256d_a | M256d_u
+        | M256i_a | M256i_u ->
+            Misc.fatal_error "Vector data types not supported on architecture ARM64"
         end
     | Lop(Istore(size, addr, _)) ->
         let src = i.arg.(0) in
@@ -408,6 +442,11 @@ let emit_instr i =
             `	str	s7, {emit_addressing addr base}\n`;
         | Word | Double | Double_u ->
             `	str	{emit_reg src}, {emit_addressing addr base}\n`
+        | M128d_a | M128d_u
+        | M128i_a | M128i_u
+        | M256d_a | M256d_u
+        | M256i_a | M256i_u ->
+            Misc.fatal_error "Vector data types not supported on architecture ARM64"
         end
     | Lop(Ialloc n) ->
         let lbl_frame = record_frame_label i.live i.dbg in
@@ -462,6 +501,7 @@ let emit_instr i =
     | Lop(Iintop_imm(op, n)) ->
         let instr = name_for_int_operation op in
         `	{emit_string instr}     {emit_reg i.res.(0)}, {emit_reg i.arg.(0)}, #{emit_int n}\n`
+    | Lop(Iasm(asm, iargs)) -> emit_asm i asm iargs
     | Lop(Ifloatofint | Iintoffloat | Iabsf | Inegf | Ispecific Isqrtf as op) ->
         let instr = (match op with
                      | Ifloatofint      -> "scvtf"

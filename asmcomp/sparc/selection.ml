@@ -50,6 +50,11 @@ method! select_operation op args =
   | _ ->
       super#select_operation op args
 
+method! asm_pseudoreg alt r =
+  match alt.Inline_asm.mach_register with
+  | Some Inline_asm_arch.FP -> Reg.create Float
+  | _ -> r
+
 (* Override insert_move_args to deal correctly with floating-point
    arguments being passed into pairs of integer registers. *)
 method! insert_move_args arg loc stacksize =

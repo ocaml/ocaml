@@ -19,6 +19,10 @@ let machtype_component ppf = function
   | Addr -> fprintf ppf "addr"
   | Int -> fprintf ppf "int"
   | Float -> fprintf ppf "float"
+  | M128d -> fprintf ppf "m128d"
+  | M128i -> fprintf ppf "m128i"
+  | M256d -> fprintf ppf "m256d"
+  | M256i -> fprintf ppf "m256i"
 
 let machtype ppf mty =
   match Array.length mty with
@@ -47,6 +51,14 @@ let chunk = function
   | Single -> "float32"
   | Double -> "float64"
   | Double_u -> "float64u"
+  | M128d_a -> "m128d_a"
+  | M128d_u -> "m128d_u"
+  | M256d_a -> "m256d_a"
+  | M256d_u -> "m256d_u"
+  | M128i_a -> "m128i_a"
+  | M128i_u -> "m128i_u"
+  | M256i_a -> "m256i_a"
+  | M256i_u -> "m256i_u"
 
 let operation = function
   | Capply(ty, d) -> "app" ^ Debuginfo.to_string d
@@ -84,6 +96,7 @@ let operation = function
   | Ccmpf c -> Printf.sprintf "%sf" (comparison c)
   | Craise (k, d) -> Lambda.raise_kind k ^ Debuginfo.to_string d
   | Ccheckbound d -> "checkbound" ^ Debuginfo.to_string d
+  | Casm appl -> Inline_asm.name appl.Inline_asm.asm
 
 let rec expr ppf = function
   | Cconst_int n -> fprintf ppf "%i" n

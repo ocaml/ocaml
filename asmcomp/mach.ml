@@ -31,6 +31,19 @@ type test =
   | Ioddtest
   | Ieventest
 
+type asm_arg_source =
+  Addr of Cmm.memory_chunk * Arch.addressing_mode * Cmm.expression
+| Imm of int64
+| Reg
+| Stack
+| Unit
+
+type asm_arg = {
+  alt    : Inline_asm.alternative;
+  reg    : [ `arg of int | `res of int ];
+  num_reg: int;
+  source : asm_arg_source }
+
 type operation =
     Imove
   | Ispill
@@ -52,6 +65,7 @@ type operation =
   | Iintop_imm of integer_operation * int
   | Inegf | Iabsf | Iaddf | Isubf | Imulf | Idivf
   | Ifloatofint | Iintoffloat
+  | Iasm of Inline_asm.inline_asm * asm_arg array
   | Ispecific of Arch.specific_operation
 
 type instruction =

@@ -43,60 +43,60 @@ let transl_object =
 let comparisons_table = create_hashtable 11 [
   "%equal",
       (Pccall{prim_name = "caml_equal"; prim_arity = 2; prim_alloc = true;
-              prim_native_name = ""; prim_native_float = false},
+              prim_native_name = ""; prim_native_float = false; prim_asm = None},
        Pintcomp Ceq,
        Pfloatcomp Ceq,
        Pccall{prim_name = "caml_string_equal"; prim_arity = 2;
               prim_alloc = false;
-              prim_native_name = ""; prim_native_float = false},
+              prim_native_name = ""; prim_native_float = false; prim_asm = None},
        Pbintcomp(Pnativeint, Ceq),
        Pbintcomp(Pint32, Ceq),
        Pbintcomp(Pint64, Ceq),
        true);
   "%notequal",
       (Pccall{prim_name = "caml_notequal"; prim_arity = 2; prim_alloc = true;
-              prim_native_name = ""; prim_native_float = false},
+              prim_native_name = ""; prim_native_float = false; prim_asm = None},
        Pintcomp Cneq,
        Pfloatcomp Cneq,
        Pccall{prim_name = "caml_string_notequal"; prim_arity = 2;
               prim_alloc = false; prim_native_name = "";
-              prim_native_float = false},
+              prim_native_float = false; prim_asm = None},
        Pbintcomp(Pnativeint, Cneq),
        Pbintcomp(Pint32, Cneq),
        Pbintcomp(Pint64, Cneq),
        true);
   "%lessthan",
       (Pccall{prim_name = "caml_lessthan"; prim_arity = 2; prim_alloc = true;
-              prim_native_name = ""; prim_native_float = false},
+              prim_native_name = ""; prim_native_float = false; prim_asm = None},
        Pintcomp Clt,
        Pfloatcomp Clt,
        Pccall{prim_name = "caml_string_lessthan"; prim_arity = 2;
               prim_alloc = false; prim_native_name = "";
-              prim_native_float = false},
+              prim_native_float = false; prim_asm = None},
        Pbintcomp(Pnativeint, Clt),
        Pbintcomp(Pint32, Clt),
        Pbintcomp(Pint64, Clt),
        false);
   "%greaterthan",
       (Pccall{prim_name = "caml_greaterthan"; prim_arity = 2; prim_alloc = true;
-              prim_native_name = ""; prim_native_float = false},
+              prim_native_name = ""; prim_native_float = false; prim_asm = None},
        Pintcomp Cgt,
        Pfloatcomp Cgt,
        Pccall{prim_name = "caml_string_greaterthan"; prim_arity = 2;
               prim_alloc = false; prim_native_name = "";
-              prim_native_float = false},
+              prim_native_float = false; prim_asm = None},
        Pbintcomp(Pnativeint, Cgt),
        Pbintcomp(Pint32, Cgt),
        Pbintcomp(Pint64, Cgt),
        false);
   "%lessequal",
       (Pccall{prim_name = "caml_lessequal"; prim_arity = 2; prim_alloc = true;
-              prim_native_name = ""; prim_native_float = false},
+              prim_native_name = ""; prim_native_float = false; prim_asm = None},
        Pintcomp Cle,
        Pfloatcomp Cle,
        Pccall{prim_name = "caml_string_lessequal"; prim_arity = 2;
               prim_alloc = false; prim_native_name = "";
-              prim_native_float = false},
+              prim_native_float = false; prim_asm = None},
        Pbintcomp(Pnativeint, Cle),
        Pbintcomp(Pint32, Cle),
        Pbintcomp(Pint64, Cle),
@@ -104,37 +104,37 @@ let comparisons_table = create_hashtable 11 [
   "%greaterequal",
       (Pccall{prim_name = "caml_greaterequal"; prim_arity = 2;
               prim_alloc = true;
-              prim_native_name = ""; prim_native_float = false},
+              prim_native_name = ""; prim_native_float = false; prim_asm = None},
        Pintcomp Cge,
        Pfloatcomp Cge,
        Pccall{prim_name = "caml_string_greaterequal"; prim_arity = 2;
               prim_alloc = false; prim_native_name = "";
-              prim_native_float = false},
+              prim_native_float = false; prim_asm = None},
        Pbintcomp(Pnativeint, Cge),
        Pbintcomp(Pint32, Cge),
        Pbintcomp(Pint64, Cge),
        false);
   "%compare",
       (Pccall{prim_name = "caml_compare"; prim_arity = 2; prim_alloc = true;
-              prim_native_name = ""; prim_native_float = false},
+              prim_native_name = ""; prim_native_float = false; prim_asm = None},
        Pccall{prim_name = "caml_int_compare"; prim_arity = 2;
               prim_alloc = false; prim_native_name = "";
-              prim_native_float = false},
+              prim_native_float = false; prim_asm = None},
        Pccall{prim_name = "caml_float_compare"; prim_arity = 2;
               prim_alloc = false; prim_native_name = "";
-              prim_native_float = false},
+              prim_native_float = false; prim_asm = None},
        Pccall{prim_name = "caml_string_compare"; prim_arity = 2;
               prim_alloc = false; prim_native_name = "";
-              prim_native_float = false},
+              prim_native_float = false; prim_asm = None},
        Pccall{prim_name = "caml_nativeint_compare"; prim_arity = 2;
               prim_alloc = false; prim_native_name = "";
-              prim_native_float = false},
+              prim_native_float = false; prim_asm = None},
        Pccall{prim_name = "caml_int32_compare"; prim_arity = 2;
               prim_alloc = false; prim_native_name = "";
-              prim_native_float = false},
+              prim_native_float = false; prim_asm = None},
        Pccall{prim_name = "caml_int64_compare"; prim_arity = 2;
               prim_alloc = false; prim_native_name = "";
-              prim_native_float = false},
+              prim_native_float = false; prim_asm = None},
        false)
 ]
 
@@ -333,11 +333,11 @@ let index_primitives_table =
 
 let prim_makearray =
   { prim_name = "caml_make_vect"; prim_arity = 2; prim_alloc = true;
-    prim_native_name = ""; prim_native_float = false }
+    prim_native_name = ""; prim_native_float = false; prim_asm = None }
 
 let prim_obj_dup =
   { prim_name = "caml_obj_dup"; prim_arity = 1; prim_alloc = true;
-    prim_native_name = ""; prim_native_float = false }
+    prim_native_name = ""; prim_native_float = false; prim_asm = None }
 
 let find_primitive loc prim_name =
   match prim_name with
@@ -370,41 +370,46 @@ let specialize_comparison table env ty =
    raise Not_found if primitive is unknown  *)
 
 let specialize_primitive loc p env ty ~has_constant_constructor =
-  try
-    let table = Hashtbl.find comparisons_table p.prim_name in
-    let (gencomp, intcomp, _, _, _, _, _, simplify_constant_constructor) =
-      table in
-    if has_constant_constructor && simplify_constant_constructor then
-      intcomp
-    else
-      match is_function_type env ty with
-      | Some (lhs,rhs) -> specialize_comparison table env lhs
-      | None -> gencomp
-  with Not_found ->
-    let p = find_primitive loc p.prim_name in
-    (* Try strength reduction based on the type of the argument *)
-    let params = match is_function_type env ty with
-      | None -> []
-      | Some (p1, rhs) -> match is_function_type env rhs with
-        | None -> [p1]
-        | Some (p2, _) -> [p1;p2]
-    in
-    match (p, params) with
-      (Psetfield(n, _), [p1; p2]) -> Psetfield(n, maybe_pointer_type env p2)
-    | (Parraylength Pgenarray, [p])   -> Parraylength(array_type_kind env p)
-    | (Parrayrefu Pgenarray, p1 :: _) -> Parrayrefu(array_type_kind env p1)
-    | (Parraysetu Pgenarray, p1 :: _) -> Parraysetu(array_type_kind env p1)
-    | (Parrayrefs Pgenarray, p1 :: _) -> Parrayrefs(array_type_kind env p1)
-    | (Parraysets Pgenarray, p1 :: _) -> Parraysets(array_type_kind env p1)
-    | (Pbigarrayref(unsafe, n, Pbigarray_unknown, Pbigarray_unknown_layout),
-       p1 :: _) ->
-        let (k, l) = bigarray_type_kind_and_layout env p1 in
-        Pbigarrayref(unsafe, n, k, l)
-    | (Pbigarrayset(unsafe, n, Pbigarray_unknown, Pbigarray_unknown_layout),
-       p1 :: _) ->
-        let (k, l) = bigarray_type_kind_and_layout env p1 in
-        Pbigarrayset(unsafe, n, k, l)
-    | _ -> p
+  match p.prim_asm with
+  | Some asm ->
+      let ref_eliminated = Array.make p.prim_arity false in
+      Pasm { Inline_asm.asm; ref_eliminated; loc }
+  | None ->
+    try
+      let table = Hashtbl.find comparisons_table p.prim_name in
+      let (gencomp, intcomp, _, _, _, _, _, simplify_constant_constructor) =
+        table in
+      if has_constant_constructor && simplify_constant_constructor then
+        intcomp
+      else
+        match is_function_type env ty with
+        | Some (lhs,rhs) -> specialize_comparison table env lhs
+        | None -> gencomp
+    with Not_found ->
+      let p = find_primitive loc p.prim_name in
+      (* Try strength reduction based on the type of the argument *)
+      let params = match is_function_type env ty with
+        | None -> []
+        | Some (p1, rhs) -> match is_function_type env rhs with
+          | None -> [p1]
+          | Some (p2, _) -> [p1;p2]
+      in
+      match (p, params) with
+        (Psetfield(n, _), [p1; p2]) -> Psetfield(n, maybe_pointer_type env p2)
+      | (Parraylength Pgenarray, [p])   -> Parraylength(array_type_kind env p)
+      | (Parrayrefu Pgenarray, p1 :: _) -> Parrayrefu(array_type_kind env p1)
+      | (Parraysetu Pgenarray, p1 :: _) -> Parraysetu(array_type_kind env p1)
+      | (Parrayrefs Pgenarray, p1 :: _) -> Parrayrefs(array_type_kind env p1)
+      | (Parraysets Pgenarray, p1 :: _) -> Parraysets(array_type_kind env p1)
+      | (Pbigarrayref(unsafe, n, Pbigarray_unknown, Pbigarray_unknown_layout),
+         p1 :: _) ->
+          let (k, l) = bigarray_type_kind_and_layout env p1 in
+          Pbigarrayref(unsafe, n, k, l)
+      | (Pbigarrayset(unsafe, n, Pbigarray_unknown, Pbigarray_unknown_layout),
+         p1 :: _) ->
+          let (k, l) = bigarray_type_kind_and_layout env p1 in
+          Pbigarrayset(unsafe, n, k, l)
+      | _ -> p
 
 (* Eta-expand a primitive *)
 
@@ -413,6 +418,8 @@ let transl_primitive loc p env ty =
     try specialize_primitive loc p env ty ~has_constant_constructor:false
     with Not_found -> Pccall p
   in
+  let rec make_params n =
+    if n <= 0 then [] else Ident.create "prim" :: make_params (n-1) in
   match prim with
   | Plazyforce ->
       let parm = Ident.create "prim" in
@@ -429,8 +436,6 @@ let transl_primitive loc p env ty =
       | _ -> assert false
     end
   | _ ->
-      let rec make_params n =
-        if n <= 0 then [] else Ident.create "prim" :: make_params (n-1) in
       let params = make_params p.prim_arity in
       Lfunction{ kind = Curried; params;
                  body = Lprim(prim, List.map (fun id -> Lvar id) params) }

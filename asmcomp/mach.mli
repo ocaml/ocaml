@@ -31,6 +31,22 @@ type test =
   | Ioddtest
   | Ieventest
 
+(* The kind of machine source for each inline assembly argument *)
+type asm_arg_source =
+  Addr of Cmm.memory_chunk * Arch.addressing_mode * Cmm.expression
+               (** The source is the memory pointed by register(s) *)
+| Imm of int64 (** An immediate value *)
+| Reg          (** The source is a machine register *)
+| Stack        (** The source is a stack slot.  This is used in the case when
+                   the source must be the memory but [Addr] cannot be used. *)
+| Unit         (** No machine source needed for the argument *)
+
+type asm_arg = {
+  alt    : Inline_asm.alternative;
+  reg    : [ `arg of int | `res of int ];
+  num_reg: int;
+  source : asm_arg_source }
+
 type operation =
     Imove
   | Ispill
@@ -53,6 +69,7 @@ type operation =
   | Iintop_imm of integer_operation * int
   | Inegf | Iabsf | Iaddf | Isubf | Imulf | Idivf
   | Ifloatofint | Iintoffloat
+  | Iasm of Inline_asm.inline_asm * asm_arg array
   | Ispecific of Arch.specific_operation
 
 type instruction =

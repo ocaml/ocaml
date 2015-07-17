@@ -364,6 +364,39 @@ let emit_load_symbol_addr dst s =
     1
   end
 
+let asm_unique = ref 0
+
+let emit_asm i asm iargs =
+  incr asm_unique;
+  let open Inline_asm in
+  let open Inline_asm_arch in
+  let rec emit_template t =
+    Array.iter (function
+        Emit_string s -> `{emit_string s}`
+      | Emit_unique -> `{emit_string (string_of_int !asm_unique)}`
+      | Emit_dialect d -> emit_template d.(0)
+      | Emit_arg (n, _) ->
+          let iarg = iargs.(n) in
+          match iarg.Mach.source with
+            Imm n -> `#{emit_int (Int64.to_int n)}`
+          | Unit -> `#{emit_int 0}`
+          | Reg | Stack ->
+              begin match iarg.reg with
+                \`arg n -> `{emit_reg i.arg.(n)}`
+              | \`res n -> `{emit_reg i.res.(n)}`
+              end
+          | Addr (chunk, addr, _) ->
+              match iarg.reg with
+                \`arg n -> `{emit_addressing addr i.arg n}`
+              | \`res n -> `{emit_addressing addr i.res n}`) t
+  in
+  `	`;
+  emit_template asm.template;
+  `\n`;
+  List.fold_left (fun n -> function
+    | Clobber _ -> n
+    | Length n -> n) 1 asm.arch_specifics
+
 (* Output the assembly code for an instruction *)
 
 let emit_instr i =
@@ -623,6 +656,7 @@ let emit_instr i =
     | Lop(Iintoffloat) ->
         `	ftosizd	s14, {emit_reg i.arg.(0)}\n`;
         `	fmrs	{emit_reg i.res.(0)}, s14\n`; 2
+    | Lop(Iasm(asm, iargs)) -> emit_asm i asm iargs
     | Lop(Iaddf | Isubf | Imulf | Idivf | Ispecific Inegmulf as op) ->
         let instr = (match op with
                        Iaddf              -> "faddd"

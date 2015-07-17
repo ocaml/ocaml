@@ -89,6 +89,22 @@ let build_graph fundecl =
         interf i.next
     | Iop(Itailcall_ind) -> ()
     | Iop(Itailcall_imm lbl) -> ()
+    | Iop(Iasm (asm, iargs)) ->
+        Array.iter (fun iarg ->
+          let alt = iarg.Mach.alt in
+          if alt.Inline_asm.earlyclobber then
+            match iarg.reg with
+              `arg n ->
+                for m = n to n + iarg.num_reg - 1 do
+                  Array.iter (add_interf i.arg.(m)) i.res
+                done
+            | `res n ->
+                for m = n to n + iarg.num_reg - 1 do
+                  Array.iter (add_interf i.res.(m)) i.arg
+                done) iargs;
+        add_interf_set i.res i.live;
+        add_interf_self i.res;
+        interf i.next
     | Iop op ->
         add_interf_set i.res i.live;
         add_interf_self i.res;

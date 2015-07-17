@@ -100,8 +100,12 @@ let rec float_needs = function
 exception Use_default
 
 let eax = phys_reg 0
+let ebx = phys_reg 1
 let ecx = phys_reg 2
 let edx = phys_reg 3
+let esi = phys_reg 4
+let edi = phys_reg 5
+let ebp = phys_reg 6
 let tos = phys_reg 100
 
 let pseudoregs_for_operation op arg res =
@@ -192,6 +196,21 @@ method! select_store is_assign addr exp =
       (Ispecific(Istore_symbol(s, addr, is_assign)), Ctuple [])
   | _ ->
       super#select_store is_assign addr exp
+
+method! asm_pseudoreg alt r =
+  match alt.Inline_asm.mach_register with
+    None -> r
+  | Some m ->
+      match m with
+        Inline_asm_arch.R   -> r
+      | Inline_asm_arch.A   -> eax
+      | Inline_asm_arch.B   -> ebx
+      | Inline_asm_arch.C   -> ecx
+      | Inline_asm_arch.D   -> edx
+      | Inline_asm_arch.SI  -> esi
+      | Inline_asm_arch.DI  -> edi
+      | Inline_asm_arch.BP  -> ebp
+      | Inline_asm_arch.TOS -> tos
 
 method! select_operation op args =
   match op with

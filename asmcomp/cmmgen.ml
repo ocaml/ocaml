@@ -56,6 +56,8 @@ let white_closure_header sz = block_header Obj.closure_tag sz
 let black_closure_header sz = black_block_header Obj.closure_tag sz
 let infix_header ofs = block_header Obj.infix_tag ofs
 let float_header = block_header Obj.double_tag (size_float / size_addr)
+let m128_header = block_header Obj.double_array_tag (2 * size_float / size_addr)
+let m256_header = block_header Obj.double_array_tag (4 * size_float / size_addr)
 let floatarray_header len =
       block_header Obj.double_array_tag (len * size_float / size_addr)
 let string_header len =
@@ -66,6 +68,8 @@ let boxedintnat_header = block_header Obj.custom_tag 2
 
 let alloc_block_header tag sz = Cconst_blockheader(block_header tag sz)
 let alloc_float_header = Cconst_blockheader(float_header)
+let alloc_m128_header = Cconst_blockheader(m128_header)
+let alloc_m256_header = Cconst_blockheader(m256_header)
 let alloc_floatarray_header len = Cconst_blockheader(floatarray_header len)
 let alloc_closure_header sz = Cconst_blockheader(white_closure_header sz)
 let alloc_infix_header ofs = Cconst_blockheader(infix_header ofs)
@@ -414,18 +418,29 @@ let test_bool = function
 
 (* Float *)
 
-let box_float c = Cop(Calloc, [alloc_float_header; c])
+let box_floatx alloc c = Cop(Calloc, [alloc; c])
 
-let rec unbox_float = function
+let rec unbox_floatx addr = function
     Cop(Calloc, [header; c]) -> c
-  | Clet(id, exp, body) -> Clet(id, exp, unbox_float body)
+  | Clet(id, exp, body) -> Clet(id, exp, unbox_floatx addr body)
   | Cifthenelse(cond, e1, e2) ->
-      Cifthenelse(cond, unbox_float e1, unbox_float e2)
-  | Csequence(e1, e2) -> Csequence(e1, unbox_float e2)
-  | Cswitch(e, tbl, el) -> Cswitch(e, tbl, Array.map unbox_float el)
-  | Ccatch(n, ids, e1, e2) -> Ccatch(n, ids, unbox_float e1, unbox_float e2)
-  | Ctrywith(e1, id, e2) -> Ctrywith(unbox_float e1, id, unbox_float e2)
-  | c -> Cop(Cload Double_u, [c])
+      Cifthenelse(cond, unbox_floatx addr e1, unbox_floatx addr e2)
+  | Csequence(e1, e2) -> Csequence(e1, unbox_floatx addr e2)
+  | Cswitch(e, tbl, el) -> Cswitch(e, tbl, Array.map (unbox_floatx addr) el)
+  | Ccatch(n, ids, e1, e2) -> Ccatch(n, ids, unbox_floatx addr e1, unbox_floatx addr e2)
+  | Ctrywith(e1, id, e2) -> Ctrywith(unbox_floatx addr e1, id, unbox_floatx addr e2)
+  | c -> Cop(Cload addr, [c])
+
+let box_float    = box_floatx alloc_float_header
+let box_m128d    = box_floatx alloc_m128_header
+let box_m256d    = box_floatx alloc_m256_header
+let box_m128i    = box_floatx alloc_m128_header
+let box_m256i    = box_floatx alloc_m256_header
+let unbox_float  = unbox_floatx Double_u
+let unbox_m128d  = unbox_floatx M128d_u
+let unbox_m256d  = unbox_floatx M256d_u
+let unbox_m128i  = unbox_floatx M128i_u
+let unbox_m256i  = unbox_floatx M256i_u
 
 (* Complex *)
 
@@ -494,11 +509,11 @@ let get_size ptr =
 
 (* Array indexing *)
 
-let log2_size_addr = Misc.log2 size_addr
+let log2_size_addr  = Misc.log2 size_addr
 let log2_size_float = Misc.log2 size_float
 
 let wordsize_shift = 9
-let numfloat_shift = 9 + log2_size_float - log2_size_addr
+let numfloat_shift = 9 + log2_size_float  - log2_size_addr
 
 let is_addr_array_hdr hdr =
   Cop(Ccmpi Cne, [Cop(Cand, [hdr; Cconst_int 255]); floatarray_tag])
@@ -1043,7 +1058,8 @@ let check_bound unsafe dbg a1 a2 k =
 
 let default_prim name =
   { prim_name = name; prim_arity = 0 (*ignored*);
-    prim_alloc = true; prim_native_name = ""; prim_native_float = false }
+    prim_alloc = true; prim_native_name = ""; prim_native_float = false;
+    prim_asm = None }
 
 let simplif_primitive_32bits = function
     Pbintofint Pint64 -> Pccall (default_prim "caml_int64_of_int")
@@ -1216,10 +1232,16 @@ type unboxed_number_kind =
     No_unboxing
   | Boxed_float
   | Boxed_integer of boxed_integer
+  | Boxed_m128d
+  | Boxed_m256d
+  | Boxed_m128i
+  | Boxed_m256i
 
 let rec is_unboxed_number = function
-    Uconst(Uconst_ref(_, Uconst_float _)) ->
-      Boxed_float
+    Uconst(Uconst_ref(_, Uconst_float _)) -> Boxed_float
+  | Uconst(Uconst_ref(_, Uconst_int32 _)) -> Boxed_integer Pint32
+  | Uconst(Uconst_ref(_, Uconst_int64 _)) -> Boxed_integer Pint64
+  | Uconst(Uconst_ref(_, Uconst_nativeint _)) -> Boxed_integer Pnativeint
   | Uprim(p, _, _) ->
       begin match simplif_primitive p with
           Pccall p -> if p.prim_native_float then Boxed_float else No_unboxing
@@ -1257,6 +1279,20 @@ let rec is_unboxed_number = function
         | Pbigstring_load_32(_) -> Boxed_integer Pint32
         | Pbigstring_load_64(_) -> Boxed_integer Pint64
         | Pbbswap bi -> Boxed_integer bi
+        | Pasm appl ->
+            let open Inline_asm in
+            let args = appl.asm.args in
+            begin match args.(Array.length args - 1).kind with
+            | `Float -> Boxed_float
+            | `Int32 -> Boxed_integer Pint32
+            | `Int64 -> Boxed_integer Pint64
+            | `M128d -> Boxed_m128d
+            | `M256d -> Boxed_m256d
+            | `M128i -> Boxed_m128i
+            | `M256i -> Boxed_m256i
+            | `Nativeint -> Boxed_integer Pnativeint
+            | `Addr | `Int | `Unit -> No_unboxing
+            end
         | _ -> No_unboxing
       end
   | Ulet (_, _, e) | Usequence (_, e) -> is_unboxed_number e
@@ -1394,6 +1430,18 @@ let rec transl = function
           transl_unbox_let box_float unbox_float transl_unbox_float
                            Double_u 0
                            id exp body
+      | Boxed_m128d ->
+          transl_unbox_let box_m128d unbox_m128d transl_unbox_m128d M128d_u 0
+                           id exp body
+      | Boxed_m256d ->
+          transl_unbox_let box_m256d unbox_m256d transl_unbox_m256d M256d_u 0
+                           id exp body
+      | Boxed_m128i ->
+          transl_unbox_let box_m128i unbox_m128i transl_unbox_m128i M128i_u 0
+                           id exp body
+      | Boxed_m256i ->
+          transl_unbox_let box_m256i unbox_m256i transl_unbox_m256i M256i_u 0
+                           id exp body
       | Boxed_integer bi ->
           transl_unbox_let (box_int bi) (unbox_int bi) (transl_unbox_int bi)
                            (if bi = Pint32 then Thirtytwo_signed else Word)
@@ -1464,6 +1512,8 @@ let rec transl = function
       | (Pbigarraydim(n), [b]) ->
           let dim_ofs = 4 + n in
           tag_int (Cop(Cload Word, [field_address (transl b) dim_ofs]))
+      | (Pasm appl, args) ->
+          transl_asm appl args
       | (p, [arg]) ->
           transl_prim_1 p arg dbg
       | (p, [arg1; arg2]) ->
@@ -1574,6 +1624,64 @@ let rec transl = function
                  Ctuple []))))
   | Uassign(id, exp) ->
       return_unit(Cassign(id, transl exp))
+
+and transl_asm appl args =
+  let open Inline_asm in
+  let rec sequence = function
+    [] -> assert false
+  | [c] -> c
+  | [c; c'] -> Csequence(c, c')
+  | c :: cs -> Csequence(c, sequence cs)
+  in
+  let rec make_expression transl_args assigns args n =
+    let asm_arg = appl.asm.args.(n) in
+    let transl_unbox, unbox, box =
+      match asm_arg.kind with
+        `Addr
+      | `Int       -> transl, (fun x -> x), (fun x -> x)
+      | `Float     -> transl_unbox_float, unbox_float, box_float
+      | `Int32     -> transl_unbox_int Pint32, unbox_int Pint32, box_int Pint32
+      | `Int64     -> transl_unbox_int Pint64, unbox_int Pint64, box_int Pint64
+      | `M128d     -> transl_unbox_m128d, unbox_m128d, box_m128d
+      | `M256d     -> transl_unbox_m256d, unbox_m256d, box_m256d
+      | `M128i     -> transl_unbox_m128i, unbox_m128i, box_m128i
+      | `M256i     -> transl_unbox_m256i, unbox_m256i, box_m256i
+      | `Nativeint ->
+          transl_unbox_int Pnativeint, unbox_int Pnativeint, box_int Pnativeint
+      | `Unit      ->
+          (fun x -> remove_unit (transl x)), (fun x -> x), return_unit
+    in
+    match args with
+      arg :: args ->
+        if asm_arg.output then
+          let unboxed = Ident.create "unboxed" in
+          let id = match arg with Uvar id -> id | _ -> Ident.create "deref" in
+          let assign, arg_expr =
+            if appl.ref_eliminated.(n) then
+              Cassign(id, box (Cvar unboxed)), Cvar id
+            else
+              return_unit(set_field (Cvar id) 0 (box (Cvar unboxed))),
+              get_field (Cvar id) 0
+          in
+          let assigns = assign :: assigns in
+          let transl_args = (Cvar unboxed) :: transl_args in
+          let expr = Clet(unboxed, unbox arg_expr,
+            make_expression transl_args assigns args (n + 1)) in
+          match arg with
+            Uvar _ -> expr
+          | _ -> Clet(id, transl arg, expr)
+        else
+          let transl_args = (transl_unbox arg) :: transl_args in
+          make_expression transl_args assigns args (n + 1)
+    | [] ->
+        let asm = box (Cop(Casm appl, List.rev transl_args)) in
+        if asm_arg.kind = `Unit || assigns = [] then
+          sequence (asm :: assigns)
+        else
+          let result = Ident.create "result" in
+          Clet(result, asm, sequence (assigns @ [Cvar result]))
+  in
+  make_expression [] [] args 0
 
 and transl_prim_1 p arg dbg =
   match p with
@@ -2057,6 +2165,14 @@ and transl_prim_3 p arg1 arg2 arg3 dbg =
 and transl_unbox_float = function
     Uconst(Uconst_ref(_, Uconst_float f)) -> Cconst_float f
   | exp -> unbox_float(transl exp)
+
+and transl_unbox_m128d exp = unbox_m128d(transl exp)
+
+and transl_unbox_m256d exp = unbox_m256d(transl exp)
+
+and transl_unbox_m128i exp = unbox_m128i(transl exp)
+
+and transl_unbox_m256i exp = unbox_m256i(transl exp)
 
 and transl_unbox_int bi = function
     Uconst(Uconst_ref(_, Uconst_int32 n)) ->

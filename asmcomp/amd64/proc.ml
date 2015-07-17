@@ -102,7 +102,7 @@ let register_class r =
   match r.typ with
     Int -> 0
   | Addr -> 0
-  | Float -> 1
+  | Float | M128d | M128i | M256d | M256i -> 1
 
 let num_available_registers = [| 13; 16 |]
 
@@ -133,10 +133,34 @@ let all_phys_regs =
 let phys_reg n =
   if n < 100 then hard_int_reg.(n) else hard_float_reg.(n - 100)
 
-let rax = phys_reg 0
-let rcx = phys_reg 5
-let rdx = phys_reg 4
-let rbp = phys_reg 12
+let rax    = phys_reg 0
+let rbx    = phys_reg 1
+let rcx    = phys_reg 5
+let rdx    = phys_reg 4
+let rdi    = phys_reg 2
+let rsi    = phys_reg 3
+let r8     = phys_reg 6
+let r9     = phys_reg 7
+let r10    = phys_reg 10
+let r11    = phys_reg 11
+let r12    = phys_reg 8
+let r13    = phys_reg 9
+let rbp    = phys_reg 12
+let rxmm0  = phys_reg 100
+let rxmm1  = phys_reg 101
+let rxmm2  = phys_reg 102
+let rxmm3  = phys_reg 103
+let rxmm4  = phys_reg 104
+let rxmm5  = phys_reg 105
+let rxmm6  = phys_reg 106
+let rxmm7  = phys_reg 107
+let rxmm8  = phys_reg 108
+let rxmm9  = phys_reg 109
+let rxmm10 = phys_reg 110
+let rxmm11 = phys_reg 111
+let rxmm12 = phys_reg 112
+let rxmm13 = phys_reg 113
+let rxmm14 = phys_reg 114
 let rxmm15 = phys_reg 115
 
 let stack_slot slot ty =
@@ -164,12 +188,12 @@ let calling_conventions first_int last_int first_float last_float make_stack
           loc.(i) <- stack_slot (make_stack !ofs) ty;
           ofs := !ofs + size_int
         end
-    | Float ->
+    | Float | M128d | M256d | M128i | M256i ->
         if !float <= last_float then begin
           loc.(i) <- phys_reg !float;
           incr float
         end else begin
-          loc.(i) <- stack_slot (make_stack !ofs) Float;
+          loc.(i) <- stack_slot (make_stack !ofs) arg.(i).typ;
           ofs := !ofs + size_float
         end
   done;
@@ -224,7 +248,7 @@ let win64_loc_external_arguments arg =
           loc.(i) <- stack_slot (Outgoing !ofs) ty;
           ofs := !ofs + size_int
         end
-    | Float ->
+    | Float | M128d | M256d | M128i | M256i ->
         if !reg < 4 then begin
           loc.(i) <- phys_reg win64_float_external_arguments.(!reg);
           incr reg
@@ -267,6 +291,40 @@ let destroyed_at_oper = function
   | Iop(Istore(Single, _, _)) -> [| rxmm15 |]
   | Iop(Ialloc _ | Iintop(Imulh | Icomp _) | Iintop_imm((Icomp _), _))
         -> [| rax |]
+  | Iop(Iasm(asm, _)) ->
+      List.map (function
+          Inline_asm_arch.R
+        | Inline_asm_arch.SSE -> assert false
+        | Inline_asm_arch.A   -> rax
+        | Inline_asm_arch.B   -> rbx
+        | Inline_asm_arch.C   -> rcx
+        | Inline_asm_arch.D   -> rdx
+        | Inline_asm_arch.BP  -> rbp
+        | Inline_asm_arch.SI  -> rsi
+        | Inline_asm_arch.DI  -> rdi
+        | Inline_asm_arch.R8  -> r8
+        | Inline_asm_arch.R9  -> r9
+        | Inline_asm_arch.R10 -> r10
+        | Inline_asm_arch.R11 -> r11
+        | Inline_asm_arch.R12 -> r12
+        | Inline_asm_arch.R13 -> r13
+        | Inline_asm_arch.X0  -> rxmm0
+        | Inline_asm_arch.X1  -> rxmm1
+        | Inline_asm_arch.X2  -> rxmm2
+        | Inline_asm_arch.X3  -> rxmm3
+        | Inline_asm_arch.X4  -> rxmm4
+        | Inline_asm_arch.X5  -> rxmm5
+        | Inline_asm_arch.X6  -> rxmm6
+        | Inline_asm_arch.X7  -> rxmm7
+        | Inline_asm_arch.X8  -> rxmm8
+        | Inline_asm_arch.X9  -> rxmm9
+        | Inline_asm_arch.X10 -> rxmm10
+        | Inline_asm_arch.X11 -> rxmm11
+        | Inline_asm_arch.X12 -> rxmm12
+        | Inline_asm_arch.X13 -> rxmm13
+        | Inline_asm_arch.X14 -> rxmm14
+        | Inline_asm_arch.X15 -> rxmm15) asm.Inline_asm.arch_specifics
+      |> Array.of_list
   | Iswitch(_, _) -> [| rax; rdx |]
   | _ ->
     if fp then
@@ -305,7 +363,7 @@ let max_register_pressure = function
 let op_is_pure = function
   | Icall_ind | Icall_imm _ | Itailcall_ind | Itailcall_imm _
   | Iextcall _ | Istackoffset _ | Istore _ | Ialloc _
-  | Iintop(Icheckbound) | Iintop_imm(Icheckbound, _) -> false
+  | Iintop(Icheckbound) | Iintop_imm(Icheckbound, _) | Iasm _ -> false
   | Ispecific(Ilea _) -> true
   | Ispecific _ -> false
   | _ -> true

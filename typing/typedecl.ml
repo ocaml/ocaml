@@ -46,6 +46,7 @@ type error =
   | Unbound_type_var_ext of type_expr * extension_constructor
   | Varying_anonymous
   | Val_in_structure
+  | Inline_asm_error of string
 
 open Typedtree
 
@@ -1351,6 +1352,63 @@ let transl_exception env sext =
   let newenv = Env.add_extension ~check:true ext.ext_id ext.ext_type env in
     ext, newenv
 
+(** Extracts types of function argument infos to be used by inline asm. *)
+let inline_asm_args env ty =
+  let open Types in
+  let rec get_atomic_type path =
+    try
+      let _, manifest, _ = Env.find_type_expansion path env in
+      get_type manifest.desc
+    with Not_found ->
+      match Path.name path with
+        "float"     -> `Float
+      | "int"       -> `Int
+      | "int32"     -> `Int32
+      | "int64"     -> `Int64
+      | "nativeint" -> `Nativeint
+      | "m128d"     -> `M128d
+      | "m128i"     -> `M128i
+      | "m256d"     -> `M256d
+      | "m256i"     -> `M256i
+      | _           -> `Addr (* we'll treat everything else as pointer *)
+  and get_type = function
+      Tconstr(path, exprs, _) ->
+        begin match Path.last path with
+        | "unit" -> `Unit
+        | "ref" ->
+            begin match exprs with
+            | [expr] ->
+                begin match expr.desc with
+                  Tconstr(path, _, _) -> get_atomic_type path
+                | _ -> `Addr
+                end
+            | _ -> `Addr
+            end
+        | _ -> get_atomic_type path
+        end
+    | _ -> `Addr
+  in
+  let rec get_types acc ty =
+    match ty.desc with
+      Tarrow(_, t1, t2, _) ->
+        get_types (get_type t1.desc :: acc) t2
+    | t -> List.rev (get_type t :: acc)
+  in
+  let types = get_types [] ty in
+  Printf.printf "%s\n%!" (String.concat " " (List.map (function
+      `Addr      -> "addr"
+    | `Float     -> "float"
+    | `Int       -> "int"
+    | `Int32     -> "int32"
+    | `Int64     -> "int64"
+    | `M128d     -> "m128d"
+    | `M128i     -> "m128i"
+    | `M256d     -> "m256d"
+    | `M256i     -> "m256i"
+    | `Nativeint -> "nativeint"
+    | `Unit      -> "unit") types));
+  types
+
 (* Translate a value declaration *)
 let transl_value_decl env loc valdecl =
   let cty = Typetexp.transl_type_scheme env valdecl.pval_type in
@@ -1364,13 +1422,27 @@ let transl_value_decl env loc valdecl =
       raise (Error(valdecl.pval_loc, Val_in_structure))
   | decl ->
       let arity = Ctype.arity ty in
-      let prim = Primitive.parse_declaration arity decl in
-      if arity = 0 && (prim.prim_name = "" || prim.prim_name.[0] <> '%') then
-        raise(Error(valdecl.pval_type.ptyp_loc, Null_arity_external));
-      if !Clflags.native_code
-      && prim.prim_arity > 5
-      && prim.prim_native_name = ""
-      then raise(Error(valdecl.pval_type.ptyp_loc, Missing_native_external));
+      let prim =
+        match decl with
+          "%asm" :: decl ->
+            begin try
+              let inline_asm = Inline_asm.parse (inline_asm_args env ty) decl in
+              {prim_name = ""; prim_arity = arity; prim_alloc = true;
+               prim_native_name = ""; prim_native_float = false;
+               prim_asm = Some inline_asm}
+            with Inline_asm.Inline_asm_error s ->
+              raise(Error(valdecl.pval_type.ptyp_loc, Inline_asm_error s))
+            end
+        | _ ->
+            let prim = Primitive.parse_declaration arity decl in
+            if arity = 0 && (prim.prim_name = "" || prim.prim_name.[0] <> '%') then
+              raise(Error(valdecl.pval_type.ptyp_loc, Null_arity_external));
+            if !Clflags.native_code
+            && prim.prim_arity > 5
+            && prim.prim_native_name = ""
+            then raise(Error(valdecl.pval_type.ptyp_loc, Missing_native_external));
+            prim
+      in
       { val_type = ty; val_kind = Val_prim prim; Types.val_loc = loc;
         val_attributes = valdecl.pval_attributes }
   in
@@ -1714,6 +1786,8 @@ let report_error ppf = function
         "cannot be checked"
   | Val_in_structure ->
       fprintf ppf "Value declarations are only allowed in signatures"
+  | Inline_asm_error s ->
+      fprintf ppf "%s" s
 
 let () =
   Location.register_error_of_exn

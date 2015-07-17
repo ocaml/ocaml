@@ -61,6 +61,10 @@ let register_class r =
   match r.typ with
   | (Int | Addr)  -> 0
   | Float         -> 1
+  | M128d
+  | M128i
+  | M256d
+  | M256i -> fatal_error "Vector data types not supported on architecture ARM64"
 
 let num_available_registers =
   [| 23; 32 |] (* first 23 int regs allocatable; all float regs allocatable *)
@@ -127,6 +131,10 @@ let calling_conventions
           loc.(i) <- stack_slot (make_stack !ofs) Float;
           ofs := !ofs + size_float
         end
+    | M128d
+    | M128i
+    | M256d
+    | M256i -> fatal_error "Vector data types not supported on architecture ARM64"
   done;
   (loc, Misc.align !ofs 16)  (* keep stack 16-aligned *)
 
@@ -183,6 +191,16 @@ let destroyed_at_oper = function
       [| reg_x15 |]
   | Iop(Iintoffloat | Ifloatofint | Iload(Single, _) | Istore(Single, _, _)) ->
       [| reg_d7 |]            (* d7 / s7 destroyed *)
+  | Iop(Iasm(asm, _)) ->
+      let open Inline_asm_arch in
+      List.fold_left (fun regs -> function
+        | D n -> hard_float_reg.(n) :: regs
+        | X n when n <= 15           -> hard_int_reg.(n) :: regs
+        | X n when n > 15 && n <= 25 -> hard_int_reg.(n - 3) :: regs
+        | X n when n > 25            -> hard_int_reg.(n - 10) :: regs
+        | X _ | FP -> assert false
+      ) [] asm.Inline_asm.arch_specifics
+      |> Array.of_list
   | _ -> [||]
 
 let destroyed_at_raise = all_phys_regs

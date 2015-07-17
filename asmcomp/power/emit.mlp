@@ -345,6 +345,10 @@ let instr_size = function
   | Lop(Ifloatofint) -> 9
   | Lop(Iintoffloat) -> 4
   | Lop(Ispecific sop) -> 1
+  | Lop(Iasm (asm, _)) ->
+      List.fold_left (fun l -> function
+          Inline_asm_arch.Length l -> l
+        | _ -> l) 1 asm.Inline_asm.arch_specifics
   | Lreloadretaddr -> 2
   | Lreturn -> 2
   | Llabel lbl -> 0
@@ -428,6 +432,35 @@ let rec branch_normalization code =
   then branch_normalization code
   else ()
 
+
+let asm_unique = ref 0
+
+let emit_asm i asm iargs =
+  incr asm_unique;
+  let open Inline_asm in
+  let rec emit_template t =
+    Array.iter (function
+        Emit_string s -> `{emit_string s}`
+      | Emit_unique -> `{emit_string (string_of_int !asm_unique)}`
+      | Emit_dialect d -> emit_template d.(0)
+      | Emit_arg (n, _) ->
+          let iarg = iargs.(n) in
+          match iarg.Mach.source with
+            Imm n -> `#{emit_int (Int64.to_int n)}`
+          | Unit -> `#{emit_int 0}`
+          | Reg | Stack ->
+              begin match iarg.reg with
+                \`arg n -> `{emit_reg i.arg.(n)}`
+              | \`res n -> `{emit_reg i.res.(n)}`
+              end
+          | Addr (_, _, _) ->
+              fatal_error (
+                "Addressing currently not supported in inline assembly "
+                ^ "for the architecture Power")) t
+  in
+  `	`;
+  emit_template asm.template;
+  `\n`
 
 (* Output the assembly code for an instruction *)
 
@@ -544,7 +577,12 @@ let rec emit_instr i dslot =
           | Thirtytwo_signed -> if ppc64 then "lwa" else "lwz"
 	  | Word -> lg
           | Single -> "lfs"
-          | Double | Double_u -> "lfd" in
+          | Double | Double_u -> "lfd"
+          | M128d_a | M128d_u
+          | M128i_a | M128i_u
+          | M256d_a | M256d_u
+          | M256i_a | M256i_u ->
+              fatal_error "Vector data types not supported on architecture Power" in
         emit_load_store loadinstr addr i.arg 0 i.res.(0);
         if chunk = Byte_signed then
           `	extsb	{emit_reg i.res.(0)}, {emit_reg i.res.(0)}\n`
@@ -556,7 +594,12 @@ let rec emit_instr i dslot =
 	  | Thirtytwo_unsigned | Thirtytwo_signed -> "stw"
 	  | Word -> stg
           | Single -> "stfs"
-          | Double | Double_u -> "stfd" in
+          | Double | Double_u -> "stfd"
+          | M128d_a | M128d_u
+          | M128i_a | M128i_u
+          | M256d_a | M256d_u
+          | M256i_a | M256i_u ->
+              fatal_error "Vector data types not supported on architecture Power" in
         emit_load_store storeinstr addr i.arg 1 i.arg.(0)
     | Lop(Ialloc n) ->
         if !call_gc_label = 0 then call_gc_label := new_label();
@@ -620,6 +663,7 @@ let rec emit_instr i dslot =
     | Lop(Iaddf | Isubf | Imulf | Idivf as op) ->
         let instr = name_for_floatop2 op in
         `	{emit_string instr}	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}\n`
+    | Lop(Iasm(asm, iargs)) -> emit_asm i asm iargs
     | Lop(Ifloatofint) ->
 	if ppc64 then begin
 	  `	stdu	{emit_reg i.arg.(0)}, -16({emit_gpr 1})\n`;

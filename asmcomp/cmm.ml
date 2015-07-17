@@ -10,10 +10,19 @@
 (*                                                                     *)
 (***********************************************************************)
 
+(* Packed float and int types are separate due to amd64 architecture.  Even
+   though the representation is the same and the same registers are used, they
+   require different instructions for conversion and load/store, otherwise a
+   significant performance penalty is incurred.  See "Intel(R) 64 and IA-32
+   Architectures Optimization Reference Manual", April 2012, page 5-2. *)
 type machtype_component =
     Addr
   | Int
   | Float
+  | M128d
+  | M256d
+  | M128i
+  | M256i
 
 type machtype = machtype_component array
 
@@ -21,11 +30,17 @@ let typ_void = ([||] : machtype_component array)
 let typ_addr = [|Addr|]
 let typ_int = [|Int|]
 let typ_float = [|Float|]
+let typ_m128d = [|M128d|]
+let typ_m256d = [|M256d|]
+let typ_m128i = [|M128i|]
+let typ_m256i = [|M256i|]
 
 let size_component = function
     Addr -> Arch.size_addr
   | Int -> Arch.size_int
   | Float -> Arch.size_float
+  | M128d | M128i -> 16
+  | M256d | M256i -> 32
 
 let size_machtype mty =
   let size = ref 0 in
@@ -63,6 +78,14 @@ type memory_chunk =
   | Single
   | Double
   | Double_u
+  | M128d_a
+  | M128d_u
+  | M256d_a
+  | M256d_u
+  | M128i_a
+  | M128i_u
+  | M256i_a
+  | M256i_u
 
 type operation =
     Capply of machtype * Debuginfo.t
@@ -81,6 +104,7 @@ type operation =
   | Ccmpf of comparison
   | Craise of Lambda.raise_kind * Debuginfo.t
   | Ccheckbound of Debuginfo.t
+  | Casm of Inline_asm.application
 
 type expression =
     Cconst_int of int

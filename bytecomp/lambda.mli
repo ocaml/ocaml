@@ -125,6 +125,8 @@ type primitive =
   | Pbbswap of boxed_integer
   (* Integer to external pointer *)
   | Pint_as_pointer
+  (* Inline asm *)
+  | Pasm of Inline_asm.application
 
 and comparison =
     Ceq | Cneq | Clt | Cgt | Cle | Cge

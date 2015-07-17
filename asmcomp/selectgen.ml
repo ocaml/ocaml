@@ -18,6 +18,8 @@ open Cmm
 open Reg
 open Mach
 
+exception Inline_asm_error of Location.t * string
+
 type environment = (Ident.t, Reg.t array) Tbl.t
 
 (* Infer the type of the result of an operation *)
@@ -29,6 +31,10 @@ let oper_result_type = function
       begin match c with
         Word -> typ_addr
       | Single | Double | Double_u -> typ_float
+      | M128d_a | M128d_u -> typ_m128d
+      | M256d_a | M256d_u -> typ_m256d
+      | M128i_a | M128i_u -> typ_m128i
+      | M256i_a | M256i_u -> typ_m256i
       | _ -> typ_int
       end
   | Calloc -> typ_addr
@@ -42,6 +48,17 @@ let oper_result_type = function
   | Cintoffloat -> typ_int
   | Craise _ -> typ_void
   | Ccheckbound _ -> typ_void
+  | Casm appl ->
+      let args = appl.Inline_asm.asm.Inline_asm.args in
+      match args.(Array.length args - 1).Inline_asm.kind with
+        `Addr  -> typ_addr
+      | `Float -> typ_float
+      | `Int | `Int32 | `Int64 | `Nativeint -> typ_int
+      | `M128d -> typ_m128d
+      | `M256d -> typ_m256d
+      | `M128i -> typ_m128i
+      | `M256i -> typ_m256i
+      | `Unit  -> typ_void
 
 (* Infer the size in bytes of the result of a simple expression *)
 
@@ -165,6 +182,8 @@ let catch_regs = ref []
 (* Name of function being compiled *)
 let current_function_name = ref ""
 
+exception Asm_alternative_not_possible
+
 (* The default instruction selection class *)
 
 class virtual selector_generic = object (self)
@@ -243,6 +262,98 @@ method mark_instr = function
     self#mark_call
   | _ -> ()
 
+(* If the given inline assembly alternative is possible returns its cost *)
+method asm_alternative_cost asm args alt_index =
+  let open Inline_asm in
+  try
+    let cost    = ref 0 in
+    let num_arg = ref 0 in
+    let num_res = ref 0 in
+    let asm_mach_args = Array.mapi (fun j asm_arg ->
+      let alt = asm_arg.alternatives.(alt_index) in
+      let source, num_reg, arg_cost =
+        if j > Array.length args then assert false
+        else if j = Array.length args then begin
+          if asm_arg.kind = `Unit then Unit, 0, 0
+          else if alt.register then Reg, 1, alt.disparage
+          else Stack, 1, alt.reload_disparage
+        end else if alt.copy_to_output <> None then Reg, 1, 0
+        else
+          match alt.memory, args.(j) with
+            _, Cconst_int n when alt.immediate ->
+              Imm (Int64.of_int n), 0, alt.disparage
+          | _, Cconst_natint n when alt.immediate ->
+              Imm (Int64.of_nativeint n), 0, alt.disparage
+          | _, _ when asm_arg.kind = `Unit  -> Unit, 0, 0
+          |  `m8,
+            Cop(Cload (Byte_unsigned | Byte_signed as chunk), [loc])
+          | (`m8 | `m16),
+            Cop(Cload (Sixteen_unsigned | Sixteen_signed as chunk), [loc])
+          | (`m8 | `m16 | `m32),
+            Cop(Cload (Thirtytwo_unsigned | Thirtytwo_signed as chunk), [loc])
+          | (`m8 | `m16 | `m32 | `m64),
+            Cop(Cload (Word | Single | Double | Double_u
+                      | M128d_u | M256d_u | M128i_u | M256i_u as chunk), [loc])
+          | (`m8 | `m16 | `m32 | `m64 | `m128),
+            Cop(Cload (M128d_a | M128i_a as chunk), [loc])
+          | (`m8 | `m16 | `m32 | `m64 | `m128 | `m256),
+            Cop(Cload (M256d_a | M256i_a as chunk), [loc])
+            when asm_arg.input && alt.copy_to_output = None ->
+              let addr, arg1 = self#select_addressing chunk loc in
+              Addr (chunk, addr, arg1),
+                Arch.num_args_addressing addr,
+                alt.disparage
+          | _, Cop(Cload _, _) when alt.register -> Reg, 1, alt.reload_disparage
+          | _, _ when alt.register               -> Reg, 1, alt.disparage
+          | _, _ when alt.memory <> `no          ->
+              Stack, 1, alt.reload_disparage
+          | _, _ -> raise Asm_alternative_not_possible
+      in
+      cost := !cost + arg_cost;
+      let reg = if asm_arg.input then `arg !num_arg else `res !num_res in
+      if asm_arg.input  then num_arg := !num_arg + num_reg;
+      if asm_arg.output then num_res := !num_res + num_reg;
+      { Mach.alt; reg; num_reg; source }) asm.args in
+    Some (asm_mach_args, !cost)
+  with Asm_alternative_not_possible -> None
+
+(* Finds the best inline asm alternative in terms of cost *)
+method asm_best_alternative asm args =
+  let rec try_all_commutations asm args i j best =
+    if j >= Array.length args - 1 then
+      match self#asm_alternative_cost asm args i with
+        None -> best
+      | Some (iargs, cost) ->
+          match best with
+            None -> Some (iargs, Array.copy args, cost)
+          | Some (_, _, cost') when cost' >= cost ->
+              Some (iargs, Array.copy args, cost)
+          | _ -> best
+    else
+      let asm_arg = asm.Inline_asm.args.(j).Inline_asm.alternatives.(i) in
+      if asm_arg.Inline_asm.commutative then begin
+        let best = try_all_commutations asm args i (j + 1) best in
+        let arg_j = args.(j) in
+        args.(j) <- args.(j + 1);
+        args.(j + 1) <- arg_j;
+        let best = try_all_commutations asm args i (j + 1) best in
+        args.(j + 1) <- args.(j);
+        args.(j) <- arg_j;
+        best
+      end else try_all_commutations asm args i (j + 1) best
+  in
+
+  let args = Array.of_list args in
+  let rec loop i best =
+    let i = i - 1 in
+    if i < 0 then
+      match best with
+        None -> None
+      | Some (iargs, args, _) -> Some (iargs, Array.to_list args)
+    else loop i (try_all_commutations asm args i 0 best)
+  in
+  loop (Array.length asm.Inline_asm.args.(0).Inline_asm.alternatives) None
+
 (* Default instruction selection for operators *)
 
 method select_operation op args =
@@ -288,6 +399,30 @@ method select_operation op args =
   | (Cfloatofint, _) -> (Ifloatofint, args)
   | (Cintoffloat, _) -> (Iintoffloat, args)
   | (Ccheckbound _, _) -> self#select_arith Icheckbound args
+  | (Casm appl, _) ->
+      let { Inline_asm.asm; loc; _ } = appl in
+      begin match self#asm_best_alternative asm args with
+        None ->
+          (* This error means that no inline assembly alterternative fits the
+             arguments.  Catching it in [typedecl.ml] is impossible because at
+             that level not everything about the arguments is known.  The
+             compromise is to propagate [loc] and raise the error here. *)
+          raise (Inline_asm_error (loc,
+            Printf.sprintf "inconsistent operand constraints in an 'asm': %s"
+              (Inline_asm.name asm)))
+      | Some (asm_mach_args, args) ->
+          let _, args =
+            List.fold_left (fun (i, args) arg ->
+              let args =
+                match asm_mach_args.(i).Mach.source with
+                  Imm _ | Unit      ->         args
+                | Addr (_, _, arg1) -> arg1 :: args
+                | Reg | Stack       ->  arg :: args
+              in
+              i + 1, args) (0, []) args
+          in
+          (Iasm (asm, asm_mach_args), List.rev args)
+      end
   | _ -> fatal_error "Selection.select_oper"
 
 method private select_arith_comm op = function
@@ -392,6 +527,8 @@ method insert_moves src dst =
   for i = 0 to min (Array.length src) (Array.length dst) - 1 do
     self#insert_move src.(i) dst.(i)
   done
+
+method asm_pseudoreg _ r = r
 
 (* Adjust the types of destination pseudoregs for a [Cassign] assignment.
    The type inferred at [let] binding might be [Int] while we assign
@@ -539,6 +676,58 @@ method emit_expr env exp =
               let size = size_expr env (Ctuple new_args) in
               self#insert (Iop(Ialloc size)) [||] rd;
               self#emit_stores env new_args rd;
+              Some rd
+          | Iasm (asm, iargs) ->
+              let r1 = self#emit_tuple env new_args in
+              let rd = self#regs_for ty in
+              let rs = Array.append r1 rd in
+              let rs_new = Array.copy rs in
+              let rs_pos = Array.make (Array.length iargs) 0 in
+              for i = 1 to Array.length iargs - 1 do
+                rs_pos.(i) <- rs_pos.(i - 1) + iargs.(i - 1).num_reg
+              done;
+              Array.iteri (fun i iarg ->
+                let pos = rs_pos.(i) in
+                for i = pos to pos + iarg.num_reg - 1 do
+                  match iarg.source with
+                    Addr _ | Imm _ | Unit -> ()
+                  | Stack -> rs_new.(i).Reg.spill <- true
+                  | Reg   -> rs_new.(i) <- self#asm_pseudoreg iarg.Mach.alt rs_new.(i)
+                done) iargs;
+              (* This has to be done in two passes! *)
+              Array.iteri (fun i iarg ->
+                match iarg.alt.Inline_asm.copy_to_output with
+                  None -> ()
+                | Some n -> rs_new.(rs_pos.(i)) <- rs_new.(rs_pos.(n))) iargs;
+
+              let rsrc     = ref [] in
+              let rsrc_new = ref [] in
+              let rdst     = ref [] in
+              let rdst_new = ref [] in
+              let pos      = ref 0  in
+              Array.iteri (fun i iarg ->
+                let asm_arg = asm.Inline_asm.args.(i) in
+                let new_pos = !pos + iarg.Mach.num_reg in
+                for i = !pos to new_pos - 1 do
+                  if asm_arg.Inline_asm.input then begin
+                    rsrc := rs.(i) :: !rsrc;
+                    rsrc_new := rs_new.(i) :: !rsrc_new
+                  end;
+                  if asm_arg.Inline_asm.output then begin
+                    rdst := rs.(i) :: !rdst;
+                    rdst_new := rs_new.(i) :: !rdst_new
+                  end
+                done;
+                pos := new_pos) iargs;
+
+              let rsrc     = Array.of_list (List.rev !rsrc    ) in
+              let rsrc_new = Array.of_list (List.rev !rsrc_new) in
+              let rdst     = Array.of_list (List.rev !rdst    ) in
+              let rdst_new = Array.of_list (List.rev !rdst_new) in
+
+              self#insert_moves rsrc rsrc_new;
+              self#insert_debug (Iop new_op) dbg rsrc_new rdst_new;
+              self#insert_moves rdst_new rdst;
               Some rd
           | op ->
               let r1 = self#emit_tuple env new_args in
@@ -703,7 +892,15 @@ method emit_stores env data regs_addr =
             Istore(_, _, _) ->
               for i = 0 to Array.length regs - 1 do
                 let r = regs.(i) in
-                let kind = if r.typ = Float then Double_u else Word in
+                let kind =
+                  match r.typ with
+                  | Float -> Double_u
+                  | M128d -> M128d_u
+                  | M256d -> M256d_u
+                  | M128i -> M128i_u
+                  | M256i -> M256i_u
+                  | _ -> Word
+                in
                 self#insert (Iop(Istore(kind, !a, false)))
                             (Array.append [|r|] regs_addr) [||];
                 a := Arch.offset_addressing !a (size_component r.typ)
@@ -879,3 +1076,15 @@ let _ =
 let reset () =
   catch_regs := [];
   current_function_name := ""
+
+(* Error report *)
+
+let report_error ppf s = Format.fprintf ppf "%s" s
+
+let () =
+  Location.register_error_of_exn
+    (function
+      | Inline_asm_error (loc, err) ->
+          Some (Location.error_of_printer loc report_error err)
+      | _ -> None
+    )

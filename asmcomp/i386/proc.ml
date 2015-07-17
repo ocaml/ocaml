@@ -57,6 +57,10 @@ let register_class r =
     Int -> 0
   | Addr -> 0
   | Float -> 1
+  | M128d
+  | M128i
+  | M256d
+  | M256i -> fatal_error "Vector data types not supported on architecture I386"
 
 let num_available_registers = [| 7; 0 |]
 
@@ -134,6 +138,10 @@ let calling_conventions first_int last_int first_float last_float make_stack
           loc.(i) <- stack_slot (make_stack !ofs) Float;
           ofs := !ofs + size_float
         end
+    | M128d
+    | M128i
+    | M256d
+    | M256i -> fatal_error "Vector data types not supported on architecture I386"
   done;
   (loc, Misc.align (max 0 !ofs) stack_alignment)
 

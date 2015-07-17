@@ -21,7 +21,15 @@ let reg ppf r =
   if not (Reg.anonymous r) then
     fprintf ppf "%s" (Reg.name r)
   else
-    fprintf ppf "%s" (match r.typ with Addr -> "A" | Int -> "I" | Float -> "F");
+    fprintf ppf "%s" (
+      match r.typ with
+        Addr -> "A"
+      | Int -> "I"
+      | Float -> "F"
+      | M128d -> "M128d"
+      | M256d -> "M256d"
+      | M128i -> "M128i"
+      | M256i -> "M256i" );
   fprintf ppf "/%i" r.stamp;
   begin match r.loc with
   | Unknown -> ()
@@ -137,6 +145,45 @@ let operation op arg ppf res =
   | Idivf -> fprintf ppf "%a /f %a" reg arg.(0) reg arg.(1)
   | Ifloatofint -> fprintf ppf "floatofint %a" reg arg.(0)
   | Iintoffloat -> fprintf ppf "intoffloat %a" reg arg.(0)
+  | Iasm (asm, iargs) ->
+      let open Inline_asm in
+      let rec print a =
+        Array.iter (function
+            Emit_dialect d ->
+              for i = 0 to Array.length d - 1 do
+                fprintf ppf (if i = 0 then "{" else " | ");
+                print d.(i)
+              done;
+              fprintf ppf "}"
+          | Emit_string s -> fprintf ppf "%s" s
+          | Emit_unique -> fprintf ppf "%%="
+          | Emit_arg (i, modifier) ->
+              let iarg = iargs.(i) in
+              begin match iarg.source with
+                Addr (chunk, addr, _) ->
+                  fprintf ppf "%s[%a]" (Printcmm.chunk chunk)
+                    (Arch.print_addressing reg addr)
+                    (match iarg.reg with
+                        `arg n -> Array.sub arg n (Array.length arg - n)
+                      | `res n -> Array.sub res n (Array.length res - n))
+              | Imm n -> fprintf ppf "%Ld" n
+              | Reg | Stack ->
+                  fprintf ppf "%a%s" reg
+                    (match iarg.reg with `arg n -> arg.(n) | `res n -> res.(n))
+                    ( match modifier with
+                      | None -> ""
+                      | R8L -> "l"
+                      | R8H -> "h"
+                      | R16 -> "w"
+                      | R32 -> "k"
+                      | R64 -> "q"
+                      | XMM -> "x"
+                      | YMM -> "y" )
+              | Unit -> fprintf ppf "()"
+              end
+          | Record_frame -> fprintf ppf "%%f") a
+      in
+      print asm.template;
   | Ispecific op ->
       Arch.print_specific_operation reg op ppf arg
 

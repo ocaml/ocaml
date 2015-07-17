@@ -49,8 +49,8 @@ PARSING=parsing/location.cmo parsing/longident.cmo \
   parsing/pprintast.cmo \
   parsing/ast_mapper.cmo
 
-TYPING=typing/ident.cmo typing/path.cmo \
-  typing/primitive.cmo typing/types.cmo \
+TYPING=typing/ident.cmo typing/path.cmo typing/inline_asm_arch.cmo \
+  typing/inline_asm.cmo typing/primitive.cmo typing/types.cmo \
   typing/btype.cmo typing/oprint.cmo \
   typing/subst.cmo typing/predef.cmo \
   typing/datarepr.cmo typing/cmi_format.cmo typing/env.cmo \
@@ -637,6 +637,14 @@ partialclean::
 	rm -f asmcomp/scheduling.ml
 
 beforedepend:: asmcomp/scheduling.ml
+
+typing/inline_asm_arch.ml: typing/$(ARCH)/inline_asm_arch.ml
+	ln -s $(ARCH)/inline_asm_arch.ml typing/inline_asm_arch.ml
+
+partialclean::
+	rm -f typing/inline_asm_arch.ml
+
+beforedepend:: typing/inline_asm_arch.ml
 
 # Preprocess the code emitters
 

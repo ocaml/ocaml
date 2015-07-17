@@ -2804,6 +2804,7 @@
 /typing/.depend
 /typing/.depend.nt
 /typing/.DS_Store
+/typing/inline_asm_arch.ml
 
 # /utils/
 /utils/*.o

@@ -415,6 +415,9 @@ let comp_primitive p args =
   | Pbswap16 -> Kccall("caml_bswap16", 1)
   | Pbbswap(bi) -> comp_bint_primitive bi "bswap" args
   | Pint_as_pointer -> Kccall("caml_int_as_pointer", 1)
+  | Pasm appl ->
+      let open Inline_asm in
+      Kccall(bytecode_call appl.asm, Array.length appl.asm.args - 1)
   | _ -> fatal_error "Bytegen.comp_primitive"
 
 let is_immed n = immed_min <= n && n <= immed_max

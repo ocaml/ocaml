@@ -262,6 +262,35 @@ let name_for_float_comparison cmp neg =
   | Clt -> if neg then "fbuge" else "fbl"
   | Cge -> if neg then "fbul" else "fbge"
 
+let asm_unique = ref 0
+
+let emit_asm i asm iargs =
+  incr asm_unique;
+  let open Inline_asm in
+  let rec emit_template t =
+    Array.iter (function
+        Emit_string s -> `{emit_string s}`
+      | Emit_unique -> `{emit_string (string_of_int !asm_unique)}`
+      | Emit_dialect d -> emit_template d.(0)
+      | Emit_arg (n, _) ->
+          let iarg = iargs.(n) in
+          match iarg.Mach.source with
+            Imm n -> `#{emit_int (Int64.to_int n)}`
+          | Unit -> `#{emit_int 0}`
+          | Reg | Stack ->
+              begin match iarg.reg with
+                \`arg n -> `{emit_reg i.arg.(n)}`
+              | \`res n -> `{emit_reg i.res.(n)}`
+              end
+          | Addr (_, _, _) ->
+              fatal_error (
+                "Addressing currently not supported in inline assembly "
+                ^ "for the architecture Sparc")) t
+  in
+  `	`;
+  emit_template asm.template;
+  `\n`
+
 (* Output the assembly code for an instruction *)
 
 let function_name = ref ""
@@ -489,6 +518,7 @@ let rec emit_instr i dslot =
     | Lop(Iaddf | Isubf | Imulf | Idivf as op) ->
         let instr = name_for_float_operation op in
         `	{emit_string instr}	{emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}, {emit_reg i.res.(0)}\n`
+    | Lop(Iasm(asm, iargs)) -> emit_asm i asm iargs
     | Lop(Ifloatofint) ->
         `	sub	%sp, 8, %sp\n`;
         `	st	{emit_reg i.arg.(0)}, [%sp + 96]\n`;

@@ -189,6 +189,7 @@ let string_of_reg32 = function
 
 let string_of_registerf = function
   | XMM n -> Printf.sprintf "xmm%d" n
+  | YMM n -> Printf.sprintf "ymm%d" n
   | TOS -> Printf.sprintf "tos"
   | ST n -> Printf.sprintf "st(%d)" n
 

@@ -181,11 +181,15 @@ let print_instr b = function
       i2 b "mov" arg1 (Reg32 r)
   | MOV (arg1, arg2) -> i2 b "mov" arg1 arg2
   | MOVAPD (arg1, arg2) -> i2 b "movapd" arg1 arg2
+  | MOVDQA (arg1, arg2) -> i2 b "movdqa" arg1 arg2
+  | MOVDQU (arg1, arg2) -> i2 b "movdqu" arg1 arg2
   | MOVLPD (arg1, arg2) -> i2 b "movlpd" arg1 arg2
+  | MOVQ (arg1, arg2) -> i2 b "movq" arg1 arg2
   | MOVSD (arg1, arg2) -> i2 b "movsd" arg1 arg2
   | MOVSS (arg1, arg2) -> i2 b "movss" arg1 arg2
   | MOVSX (arg1, arg2) -> i2 b "movsx" arg1 arg2
   | MOVSXD (arg1, arg2) -> i2 b "movsxd" arg1 arg2
+  | MOVUPD (arg1, arg2) -> i2 b "movupd" arg1 arg2
   | MOVZX (arg1, arg2) -> i2 b "movzx" arg1 arg2
   | MULSD (arg1, arg2) -> i2 b "mulsd" arg1 arg2
   | NEG arg -> i1 b "neg" arg
@@ -204,6 +208,10 @@ let print_instr b = function
   | SUBSD (arg1, arg2) -> i2 b "subsd" arg1 arg2
   | TEST (arg1, arg2) -> i2 b "test" arg1 arg2
   | UCOMISD (arg1, arg2) -> i2 b "ucomisd" arg1 arg2
+  | VMOVAPD (arg1, arg2) -> i2 b "vmovapd" arg1 arg2
+  | VMOVDQA (arg1, arg2) -> i2 b "vmovdqa" arg1 arg2
+  | VMOVDQU (arg1, arg2) -> i2 b "vmovdqu" arg1 arg2
+  | VMOVUPD (arg1, arg2) -> i2 b "vmovupd" arg1 arg2
   | XCHG (arg1, arg2) -> i2 b "xchg" arg1 arg2
   | XOR (arg1, arg2) -> i2 b "xor" arg1 arg2
   | XORPD (arg1, arg2) -> i2 b "xorpd" arg1 arg2
@@ -211,6 +219,11 @@ let print_instr b = function
 
 let print_line b = function
   | Ins instr -> print_instr b instr
+  | Asm args ->
+      bprintf b "\t";
+      List.iter (function
+        | Asm_arg a -> bprintf b "%a" arg a
+        | Asm_string s -> bprintf b "%s" s) args
 
   | Align (_data,n) -> bprintf b "\tALIGN\t%d" n
   | Byte n -> bprintf b "\tBYTE\t%a" cst n

@@ -97,6 +97,11 @@ class virtual selector_generic : object
   method insert_move_args : Reg.t array -> Reg.t array -> int -> unit
   method insert_move_results : Reg.t array -> Reg.t array -> int -> unit
   method insert_moves : Reg.t array -> Reg.t array -> unit
+  method asm_alternative_cost : Inline_asm.inline_asm -> Cmm.expression array -> int
+    -> (Mach.asm_arg array * int) option
+  method asm_best_alternative : Inline_asm.inline_asm -> Cmm.expression list
+    -> (Mach.asm_arg array * Cmm.expression list) option
+  method asm_pseudoreg : Inline_asm.alternative -> Reg.t -> Reg.t
   method adjust_type : Reg.t -> Reg.t -> unit
   method adjust_types : Reg.t array -> Reg.t array -> unit
   method emit_expr :

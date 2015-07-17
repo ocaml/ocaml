@@ -162,10 +162,14 @@ module I : sig
   val lea: arg -> arg -> unit
   val mov: arg -> arg -> unit
   val movapd: arg -> arg -> unit
+  val movdqa: arg -> arg -> unit
+  val movdqu: arg -> arg -> unit
+  val movq: arg -> arg -> unit
   val movsd: arg -> arg -> unit
   val movss: arg -> arg -> unit
   val movsx: arg -> arg -> unit
   val movsxd: arg -> arg -> unit
+  val movupd: arg -> arg -> unit
   val movzx: arg -> arg -> unit
   val mulsd: arg -> arg -> unit
   val nop: unit -> unit
@@ -182,7 +186,13 @@ module I : sig
   val subsd: arg -> arg -> unit
   val test: arg -> arg -> unit
   val ucomisd: arg -> arg -> unit
+  val vmovapd: arg -> arg -> unit
+  val vmovdqa: arg -> arg -> unit
+  val vmovdqu: arg -> arg -> unit
+  val vmovupd: arg -> arg -> unit
   val xchg: arg -> arg -> unit
   val xor: arg -> arg -> unit
   val xorpd: arg -> arg -> unit
+
+  val asm: asm list -> unit
 end

@@ -54,7 +54,7 @@ type reg8h =
   | AH | BH | CH | DH
 
 
-type registerf = XMM of int | TOS | ST of int
+type registerf = XMM of int | YMM of int | TOS | ST of int
 
 type arch = X64 | X86
 
@@ -154,11 +154,15 @@ type instruction =
   | LEAVE
   | MOV of arg * arg
   | MOVAPD of arg * arg
+  | MOVDQA of arg * arg
+  | MOVDQU of arg * arg
   | MOVLPD of arg * arg
+  | MOVQ of arg * arg
   | MOVSD of arg * arg
   | MOVSS of arg * arg
   | MOVSX of arg * arg
   | MOVSXD of arg * arg
+  | MOVUPD of arg * arg
   | MOVZX of arg * arg
   | MULSD of arg * arg
   | NEG of arg
@@ -177,12 +181,21 @@ type instruction =
   | SUBSD of arg * arg
   | TEST of arg * arg
   | UCOMISD of arg * arg
+  | VMOVAPD of arg * arg
+  | VMOVDQA of arg * arg
+  | VMOVDQU of arg * arg
+  | VMOVUPD of arg * arg
   | XCHG of arg * arg
   | XOR of arg * arg
   | XORPD of arg * arg
 
+type asm =
+  | Asm_arg of arg
+  | Asm_string of string
+
 type asm_line =
   | Ins of instruction
+  | Asm of asm list
 
   | Align of bool * int
   | Byte of constant

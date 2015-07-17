@@ -73,9 +73,35 @@ let rec select_addr exp =
 
 exception Use_default
 
-let rax = phys_reg 0
-let rcx = phys_reg 5
-let rdx = phys_reg 4
+let rax    = phys_reg 0
+let rbx    = phys_reg 1
+let rcx    = phys_reg 5
+let rdx    = phys_reg 4
+let rdi    = phys_reg 2
+let rsi    = phys_reg 3
+let r8     = phys_reg 6
+let r9     = phys_reg 7
+let r10    = phys_reg 10
+let r11    = phys_reg 11
+let r12    = phys_reg 8
+let r13    = phys_reg 9
+let rbp    = phys_reg 12
+let rxmm0  = phys_reg 100
+let rxmm1  = phys_reg 101
+let rxmm2  = phys_reg 102
+let rxmm3  = phys_reg 103
+let rxmm4  = phys_reg 104
+let rxmm5  = phys_reg 105
+let rxmm6  = phys_reg 106
+let rxmm7  = phys_reg 107
+let rxmm8  = phys_reg 108
+let rxmm9  = phys_reg 109
+let rxmm10 = phys_reg 110
+let rxmm11 = phys_reg 111
+let rxmm12 = phys_reg 112
+let rxmm13 = phys_reg 113
+let rxmm14 = phys_reg 114
+let rxmm15 = phys_reg 115
 
 let pseudoregs_for_operation op arg res =
   match op with
@@ -166,6 +192,47 @@ method! select_store is_assign addr exp =
       (Ispecific(Istore_symbol(s, addr, is_assign)), Ctuple [])
   | _ ->
       super#select_store is_assign addr exp
+
+method! asm_pseudoreg alt r =
+  let alt_reg =
+    match alt.Inline_asm.mach_register with
+      None -> Inline_asm_arch.R
+    | Some r -> r
+  in
+  match alt_reg with
+  | Inline_asm_arch.R   when List.mem r.Reg.typ [ Addr; Int ] -> r
+  | Inline_asm_arch.SSE when List.mem r.Reg.typ [ Float; M128d; M128i; M256d; M256i ] -> r
+  | Inline_asm_arch.R   -> Reg.create Addr
+  | Inline_asm_arch.SSE -> Reg.create Float
+  | Inline_asm_arch.A   -> rax
+  | Inline_asm_arch.B   -> rbx
+  | Inline_asm_arch.C   -> rcx
+  | Inline_asm_arch.D   -> rdx
+  | Inline_asm_arch.BP  -> rbp
+  | Inline_asm_arch.SI  -> rsi
+  | Inline_asm_arch.DI  -> rdi
+  | Inline_asm_arch.R8  -> r8
+  | Inline_asm_arch.R9  -> r9
+  | Inline_asm_arch.R10 -> r10
+  | Inline_asm_arch.R11 -> r11
+  | Inline_asm_arch.R12 -> r12
+  | Inline_asm_arch.R13 -> r13
+  | Inline_asm_arch.X0  -> rxmm0
+  | Inline_asm_arch.X1  -> rxmm1
+  | Inline_asm_arch.X2  -> rxmm2
+  | Inline_asm_arch.X3  -> rxmm3
+  | Inline_asm_arch.X4  -> rxmm4
+  | Inline_asm_arch.X5  -> rxmm5
+  | Inline_asm_arch.X6  -> rxmm6
+  | Inline_asm_arch.X7  -> rxmm7
+  | Inline_asm_arch.X8  -> rxmm8
+  | Inline_asm_arch.X9  -> rxmm9
+  | Inline_asm_arch.X10 -> rxmm10
+  | Inline_asm_arch.X11 -> rxmm11
+  | Inline_asm_arch.X12 -> rxmm12
+  | Inline_asm_arch.X13 -> rxmm13
+  | Inline_asm_arch.X14 -> rxmm14
+  | Inline_asm_arch.X15 -> rxmm15
 
 method! select_operation op args =
   match op with

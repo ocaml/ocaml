@@ -68,6 +68,10 @@ let register_class r =
     Int -> 0
   | Addr -> 0
   | Float -> 1
+  | M128d
+  | M128i
+  | M256d
+  | M256i -> fatal_error "Vector data types not supported on architecture Sparc"
 
 let num_available_registers = [| 19; 15 |]
 
@@ -127,6 +131,10 @@ let calling_conventions first_int last_int first_float last_float make_stack
           loc.(i) <- stack_slot (make_stack !ofs) Float;
           ofs := !ofs + size_float
         end
+    | M128d
+    | M128i
+    | M256d
+    | M256i -> fatal_error "Vector data types not supported on architecture Sparc"
   done;
   (loc, Misc.align !ofs 8)         (* Keep stack 8-aligned *)
 
@@ -158,6 +166,10 @@ let loc_external_arguments arg =
           if !reg = 5 then fatal_error "Proc_sparc: cannot call";
           loc := phys_reg (!reg + 1) :: phys_reg !reg :: !loc;
           reg := !reg + 2
+      | M128d
+      | M128i
+      | M256d
+      | M256i -> fatal_error "Vector data types not supported on architecture Sparc"
     end else begin
       loc := stack_slot (outgoing !ofs) arg.(i).typ :: !loc;
       ofs := !ofs + size_component arg.(i).typ
@@ -186,6 +198,17 @@ let destroyed_at_c_call = (* %l0-%l4, %i0-%i5 preserved *)
 let destroyed_at_oper = function
     Iop(Icall_ind | Icall_imm _ | Iextcall(_, true)) -> all_phys_regs
   | Iop(Iextcall(_, false)) -> destroyed_at_c_call
+  | Iop(Iasm(asm, _)) ->
+      let open Inline_asm_arch in
+      List.fold_left (fun regs -> function
+          F n -> hard_float_reg.(n lsr 1) :: regs
+        | G n -> hard_int_reg.(n + 14) :: regs
+        | I n -> hard_int_reg.(n + 6) :: regs
+        | L n -> hard_int_reg.(n + 12) :: regs
+        | O n -> hard_int_reg.(n) :: regs
+        | FP -> assert false
+      ) [] asm.Inline_asm.arch_specifics
+      |> Array.of_list
   | _ -> [||]
 
 let destroyed_at_raise = all_phys_regs

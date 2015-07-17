@@ -220,6 +220,8 @@ READ_CMT= \
           ../typing/env.cmo \
           ../typing/ctype.cmo \
           ../typing/oprint.cmo \
+	  ../typing/inline_asm_arch.cmo \
+	  ../typing/inline_asm.cmo \
           ../typing/primitive.cmo \
           ../typing/printtyp.cmo \
           ../typing/mtype.cmo \

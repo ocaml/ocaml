@@ -76,6 +76,23 @@ method reload_operation op arg res =
       | _ ->
           (arg, res)
       end
+  | Iasm (asm, iargs) ->
+      let arg = Array.copy arg in
+      let res = Array.copy res in
+      Array.iter (fun iarg ->
+        let alt = iarg.Mach.alt in
+        match alt.Inline_asm.memory with
+          `m8 | `m16 | `m32 | `m64 -> ()
+        | _ ->
+            let src, i =
+              match iarg.Mach.reg with
+                `arg i -> arg, i
+              | `res i -> res, i
+            in
+            for j = i to i + iarg.Mach.num_reg - 1 do
+              src.(j) <- self#makereg src.(j)
+            done) iargs;
+      (arg, res)
   | _ ->
       (self#makeregs arg, self#makeregs res)
 
