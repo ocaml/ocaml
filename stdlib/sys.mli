@@ -230,3 +230,13 @@ val ocaml_version : string;;
     where [major], [minor], and [patchlevel] are integers, and
     [additional-info] is an arbitrary string. The [[.patchlevel]] and
     [[+additional-info]] parts may be absent. *)
+
+
+val enable_runtime_warnings: bool -> unit
+(** Control whether the OCaml runtime system can emit warnings
+    on stderr.  Currently, the only supported warning is triggered
+    when a channel created by [open_*] functions is finalized without
+    being closed.  Runtime warnings are enabled by default. *)
+
+val runtime_warnings_enabled: unit -> bool
+(** Return whether runtime warnings are currently enabled. *)
