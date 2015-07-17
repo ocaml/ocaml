@@ -20,6 +20,11 @@ type constant =
 
 module Allocated_constants : sig
 
+
+  (* PR pchambart: The ['a] type variable is a sad side effect of the
+     implementation. In this module it is instanciated with constant
+     and Variable.t. I'm may be worth duplicating the type to avoid
+     it in the interface *)
   type 'a t =
     | Float of float
     | Int32 of int32

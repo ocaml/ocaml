@@ -11,6 +11,10 @@
 (*                                                                        *)
 (**************************************************************************)
 
+type flambda_kind =
+  | Normal
+  | Lifted of Variable.Set.t (* Externaly bound variables *)
+
 (** Checking of invariants on Flambda expressions.  Raises an exception if
     a check fails. *)
-val check_exn : ?flambdasym:bool -> ?cmxfile:bool -> Flambda.t -> unit
+val check_exn : ?kind:flambda_kind -> ?cmxfile:bool -> Flambda.t -> unit

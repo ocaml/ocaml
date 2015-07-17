@@ -1,5 +1,28 @@
 (* Extract constants out of the main expression.
-   
+   * First collect all the constant declarations, separating structured
+     constants and constant sets of closures: [collect_constant_declarations]
+   * Then share equal constants: [constant_sharing].
+     This is done by traversing the structured constants in inverse
+     topological order and replacing every existing constant by the previous
+     one. (Note: this does not guaranty maximal sharing in cycles)
+   * Finaly, remove every let declaration of constants (or aliased to a constant).
+
+   Since the representation does not allow to substitute symbol for variables
+   (only variables are accepted in certain positions), those variables are unbound
+   in the expression.
+
+   The invariants are:
+   * every variable is either bound in the expression or bound in the [kind] field
+     of the [result] type.
+   * every symbol from the current compilation unit referenced by the [kind] field
+     should be bound by either
+     - [constant_descr] if it is a structured constant
+     - [set_of_closures_map] if it is a set of closures
+     - a closure in a set of [set_of_closures_map] if it is a closures
+
+   PR pchambart: those invariants should be checked by a modified Flambda_invariants
+   for this representations.
+
 *)
 
 (* Values of constants at use point *)
@@ -145,7 +168,7 @@ type result = {
 let fresh_symbol var =
   Compilenv.new_const_symbol' ~name:(Variable.unique_name var) ()
 
-let extract_constant_declarations expr =
+let collect_constant_declarations expr =
   let inconstant =
     Inconstant_idents.inconstants
       ~for_clambda:true
@@ -332,35 +355,38 @@ let constant_sharing map aliases =
     Variable.Map.map (fun var -> Variable.Map.find var kind) !alias
   in
   let descr =
-    Symbol.Map.map (Allocated_constants.map (fun var -> Variable.Map.find var kind))
+    let find_kind var =
+      try Variable.Map.find var kind with
+      | Not_found ->
+        Format.printf "missing %a@."
+          Variable.print var;
+        raise Not_found
+    in
+    Symbol.Map.map (Allocated_constants.map find_kind)
       descr
   in
   descr, kind
 
-(* Rewrite every declaration of variable *)
-
 let rewrite_constant_access expr aliases set_of_closures_tbl constant_descr (kind:constant Variable.Map.t) =
-  let find_symbol_alias var named : Flambda.named =
+  let is_a_constant var =
     let var =
       try Variable.Map.find var aliases with
       | Not_found -> var
     in
-    match Variable.Map.find var kind with
-    | exception Not_found -> named
-    | Symbol symbol -> Symbol symbol
-    | Const_pointer p -> Const (Const_pointer p)
-    | Int i -> Const (Const_base (Const_int i))
+    Variable.Map.mem var kind
   in
   let rewrite : Flambda.t -> Flambda.t = function
     | Let (kind, var, named, body) ->
-      Let (kind, var, find_symbol_alias var named, body)
+      if is_a_constant var then
+        body
+      else
+        Let (kind, var, named, body)
     | Let_rec (defs, body) ->
-      let defs =
-        List.map
-          (fun (var, named) -> var, find_symbol_alias var named)
-          defs
-      in
-      Flambda.Let_rec (defs, body)
+      let defs = List.filter (fun (var, _) -> is_a_constant var) defs in
+      begin match defs with
+      | [] -> body
+      | _ -> Flambda.Let_rec (defs, body)
+      end
     | expr -> expr
   in
   let expr = Flambda_iterators.map rewrite (fun x -> x) expr in
@@ -371,17 +397,7 @@ let rewrite_constant_access expr aliases set_of_closures_tbl constant_descr (kin
             Flambda_iterators.map rewrite (fun x -> x)
               function_declaration.body
           in
-
-          (* TODO:
-
-             The constants are now not bound in the closure anymore.
-             The corresponding lets must be added (or some tweeks in the representation ?)
-
-          *)
-          { function_declaration with
-            Flambda.body;
-            free_variables = Free_variables.calculate body;
-          }
+          { function_declaration with Flambda.body }
         in
         let function_decls = {
           set_of_closures.function_decls with
@@ -406,7 +422,7 @@ let rewrite_constant_access expr aliases set_of_closures_tbl constant_descr (kin
 
 let lift_constants expr =
   let constant_tbl, set_of_closures_tbl =
-    extract_constant_declarations expr
+    collect_constant_declarations expr
   in
   let constant_map = Variable.Tbl.fold Variable.Map.add constant_tbl Variable.Map.empty in
   let aliases =

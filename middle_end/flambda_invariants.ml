@@ -11,6 +11,10 @@
 (*                                                                        *)
 (**************************************************************************)
 
+type flambda_kind =
+  | Normal
+  | Lifted of Variable.Set.t
+
 (* Explicit "ignore" functions.  We name every pattern variable, avoiding
    underscores, to try to avoid accidentally failing to handle (for example)
    a particular variable.
@@ -64,7 +68,7 @@ exception Unbound_vars_within_closures of Var_within_closure.Set.t
 
 exception Flambda_invariants_failed
 
-let variable_invariants flam =
+let variable_invariants externaly_bound_variables flam =
   let add_binding_occurrence env var is_mutable =
     let compilation_unit = Compilation_unit.get_current_exn () in
     if not (Variable.in_compilation_unit compilation_unit var) then
@@ -80,7 +84,9 @@ let variable_invariants flam =
       env vars
   in
   let check_variable_is_bound env var =
-    if not (Variable.Map.mem var env) then raise (Unbound_variable var)
+    if not (Variable.Map.mem var env) &&
+       not (Variable.Set.mem var externaly_bound_variables)
+    then raise (Unbound_variable var)
   in
   let check_variable_is_bound_and_get_mutability env var =
     try Variable.Map.find var env
@@ -202,7 +208,10 @@ let variable_invariants flam =
             (* Check that [free_variables], which is only present as an
                optimization, is not lying. *)
             let free_variables' = Free_variables.calculate body in
-            if not (Variable.Set.subset free_variables' free_variables) then
+            if not (Variable.Set.subset free_variables'
+                      (Variable.Set.union
+                         externaly_bound_variables
+                         free_variables)) then
               raise (Free_variables_set_is_lying (fun_var,
                 free_variables, free_variables', function_decl));
             (* Check that every variable free in the body of the function is
@@ -404,7 +413,7 @@ let every_used_var_within_closure_from_current_compilation_unit_is_declared
 
 let every_static_exception_is_caught flam =
   let check env (flam : Flambda.t) =
-    match flam with 
+    match flam with
     | Static_raise (exn, _) ->
       if not (Static_exception.Set.mem exn env)
       then raise (Static_exception_not_caught exn)
@@ -435,16 +444,20 @@ let every_static_exception_is_caught_at_a_single_position flam =
   in
   Flambda_iterators.iter f (fun (_ : Flambda.named) -> ()) flam
 
-let check_exn ?(flambdasym=false) ?(cmxfile=false) flam =
+let check_exn ?(kind=Normal) ?(cmxfile=false) flam =
+  let externaly_bound_variables = match kind with
+    | Normal -> Variable.Set.empty
+    | Lifted set -> set
+  in
   try
-    variable_invariants flam;
+    variable_invariants externaly_bound_variables flam;
     primitive_invariants flam ~no_access_to_global_module_identifiers:cmxfile;
     every_static_exception_is_caught flam;
     every_static_exception_is_caught_at_a_single_position flam;
     no_var_within_closure_is_bound_multiple_times flam;
     every_declared_closure_is_from_current_compilation_unit flam;
     no_closure_id_is_bound_multiple_times flam;
-    if not flambdasym then begin
+    if kind = Normal then begin
       every_used_function_from_current_compilation_unit_is_declared flam;
       every_used_var_within_closure_from_current_compilation_unit_is_declared
         flam;

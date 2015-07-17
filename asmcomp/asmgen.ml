@@ -133,12 +133,16 @@ let prep_flambda_for_export ppf flam =
       lifted_constants.Lift_constants.set_of_closures_map;
     (* TODO: print structured constants *)
   end;
-  Flambda_invariants.check_exn ~flambdasym:true
+  let kind =
+    Flambda_invariants.Lifted (Variable.Map.keys lifted_constants.Lift_constants.kind)
+  in
+  Flambda_invariants.check_exn
+    ~kind
     lifted_constants.Lift_constants.expr;
   Symbol.Map.iter (fun _ set_of_closures ->
       let var = Variable.create "dummy" in
       let expr = Flambda.(Let(Immutable,var, Set_of_closures set_of_closures, Var var)) in
-      Flambda_invariants.check_exn ~flambdasym:true ~cmxfile:true expr)
+      Flambda_invariants.check_exn ~kind ~cmxfile:true expr)
     lifted_constants.Lift_constants.set_of_closures_map;
   lifted_constants, export
 
