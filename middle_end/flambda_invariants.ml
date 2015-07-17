@@ -208,20 +208,15 @@ let variable_invariants externaly_bound_variables flam =
             (* Check that [free_variables], which is only present as an
                optimization, is not lying. *)
             let free_variables' = Free_variables.calculate body in
-            if not (Variable.Set.subset free_variables'
-                      (Variable.Set.union
-                         externaly_bound_variables
-                         free_variables)) then
+            if not (Variable.Set.subset free_variables' free_variables) then
               raise (Free_variables_set_is_lying (fun_var,
                 free_variables, free_variables', function_decl));
             (* Check that every variable free in the body of the function is
                bound by either the set of closures or the parameter list. *)
             let acceptable_free_variables =
               Variable.Set.union
-                (Variable.Set.union
-                   (Variable.Set.union variables_in_closure functions_in_closure)
-                   (Variable.Set.of_list params))
-                externaly_bound_variables
+                (Variable.Set.union variables_in_closure functions_in_closure)
+                (Variable.Set.of_list params)
             in
             let bad =
               Variable.Set.diff free_variables acceptable_free_variables

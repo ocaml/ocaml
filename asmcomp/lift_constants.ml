@@ -402,6 +402,63 @@ let rewrite_constant_access expr aliases set_of_closures_tbl constant_descr (kin
     in
     Variable.Map.mem var kind
   in
+  let get_kind var =
+    let var =
+      try Variable.Map.find var aliases with
+      | Not_found -> var
+    in
+    Variable.Map.find var kind
+  in
+  let rewrite_function_declaration (function_decl: Flambda.function_declaration) =
+    let free_variables = Free_variables.calculate function_decl.body in
+    let
+      globaly_bound_variables,
+      closure_bound_variables =
+      Variable.Set.partition is_a_constant
+        free_variables
+        (* function_decl.free_variables *)
+    in
+    let bind_constant var body : Flambda.t =
+      let named : Flambda.named = match get_kind var with
+        | Int i -> Const (Const_base (Const_int i))
+        | Const_pointer p -> Const (Const_pointer p)
+        | Symbol s -> Symbol s
+      in
+      Let (Immutable, var, named, body)
+    in
+    { function_decl
+      with
+        free_variables = closure_bound_variables;
+        body =
+          Variable.Set.fold
+            bind_constant
+            globaly_bound_variables
+            function_decl.body
+    }
+  in
+  let rewrite_set_of_closures (set_of_closures: Flambda.set_of_closures) =
+    {
+      Flambda.function_decls = {
+        set_of_closures.function_decls with
+        funs =
+          Variable.Map.map rewrite_function_declaration
+            set_of_closures.function_decls.funs
+      };
+      free_vars =
+        Variable.Map.filter
+          (fun var _ -> not (is_a_constant var))
+          set_of_closures.free_vars;
+      specialised_args =
+        Variable.Map.filter
+          (fun var _ -> not (is_a_constant var))
+          set_of_closures.specialised_args;
+    }
+  in
+  let rewrite_named : Flambda.named -> Flambda.named = function
+    | Set_of_closures set_of_closures ->
+      Set_of_closures (rewrite_set_of_closures set_of_closures)
+    | named -> named
+  in
   let rewrite : Flambda.t -> Flambda.t = function
     | Let (kind, var, named, body) ->
       if is_a_constant var then
@@ -409,19 +466,19 @@ let rewrite_constant_access expr aliases set_of_closures_tbl constant_descr (kin
       else
         Let (kind, var, named, body)
     | Let_rec (defs, body) ->
-      let defs = List.filter (fun (var, _) -> is_a_constant var) defs in
+      let defs = List.filter (fun (var, _) -> not (is_a_constant var)) defs in
       begin match defs with
       | [] -> body
       | _ -> Flambda.Let_rec (defs, body)
       end
     | expr -> expr
   in
-  let expr = Flambda_iterators.map rewrite (fun x -> x) expr in
+  let expr = Flambda_iterators.map rewrite rewrite_named expr in
   let set_of_closures_map =
     Symbol.Tbl.fold (fun symbol (set_of_closures:Flambda.set_of_closures) map ->
         let update_function_decl (function_declaration:Flambda.function_declaration) =
           let body =
-            Flambda_iterators.map rewrite (fun x -> x)
+            Flambda_iterators.map rewrite rewrite_named
               function_declaration.body
           in
           { function_declaration with Flambda.body }
@@ -433,11 +490,9 @@ let rewrite_constant_access expr aliases set_of_closures_tbl constant_descr (kin
               set_of_closures.function_decls.funs
         }
         in
-        let set_of_closures = {
-          Flambda.function_decls;
-          free_vars = Variable.Map.empty;
-          specialised_args = Variable.Map.empty;
-        } in
+        let set_of_closures =
+          rewrite_set_of_closures { set_of_closures with function_decls }
+        in
         Symbol.Map.add symbol set_of_closures map
       )
       set_of_closures_tbl Symbol.Map.empty
