@@ -106,21 +106,7 @@ let rec describe (env : env) (flam : Flambda.t) : ET.approx =
   | Let_rec(defs, body) ->
     let env =
       List.fold_left (fun env (var, def) ->
-          match def with
-          | Flambda.Symbol symbol ->
-            Variable.Map.add var (ET.Value_symbol symbol) env
-          | _ ->
-            env
-        )
-        env defs
-    in
-    let env =
-      List.fold_left (fun env (var, def) ->
-          match def with
-          | Flambda.Symbol _ ->
-            env
-          | _ ->
-            Variable.Map.add var (describe_named env def) env
+          Variable.Map.add var (describe_named env def) env
         )
         env defs
     in
