@@ -1,7 +1,51 @@
 
+(* This analysis finds for variables that could be constants, to which constant
+   they can be alias.
+
+   This works by accumulating a set of equations, then propagating them.
+
+   The representable equations are of the form:
+     the set A is a super-ser of the set B
+
+   The accepted left sets (A) are all the identifiers that can carry a
+   value in flambda. This means that equations more precisely represents:
+
+     the set of all the value that the identifier I can contains is
+     a super-set of the set B
+
+   The accepter right sets (B) are descriptions of singleton values,
+   sets of blocks allocated at a single program point or potential alias.
+
+   The described aliases can represents direct alias, or field access:
+     the set A is a super-set of what the set B contains in its f field
+
+   Once all equations are collected, all direct subset aliases are
+   completely propagated, and sequences of
+     A super-set of B's field f
+     B is a super-set of the sets of blocks containting C in its field f
+   are resolved to A super-set of C
+
+   [v] When all equations are propagated, we ends up with for every variable
+   either:
+   - [v] is aliased to blocks allocated at a given point (identified by a variable [x]).
+   - [v] is aliased to simple constants allocated at a given point (identified by a variable [x]).
+   - [v] can be an alias of multiple values
+
+   In the first two cases, we will keep the information [v] is an
+   alias of a value allocated at the definition of [x]. If [x] is
+   not a constant, this does not provide much information, but if
+   [x] is a constant, that means that there is a single value
+   allocated at [x], hence [v] is an alias of [x].
+*)
+
+
 module Eq_id = Ext_types.Id(struct end)
 let fresh () = Eq_id.create ()
 
+(* All kinds of identifiers to which a value can be bound.
+   Some expressions are not directly let-bound, in some cases
+   an identifier is introduced to represent them: it's the Eq_id.t
+   type. *)
 type equation_left =
   | Eq_id of Eq_id.t (* introduced expression *)
   | Var of Variable.t
@@ -38,7 +82,14 @@ module Eq_left_m = struct
 
   let hash x = Hashtbl.hash x
 
-  let print _ = failwith "not_implemented"
+  let print ppf = function
+    | Eq_id id -> Format.fprintf ppf "Eq_id %a" Eq_id.print id
+    | Var var ->  Format.fprintf ppf "Var %a" Variable.print var
+    | Global i -> Format.fprintf ppf "Global %i" i
+    | Var_within_closure v ->
+                  Format.fprintf ppf "Var_withing_closure %a" Var_within_closure.print v
+    | Static_exception_arg (s,n) ->
+                  Format.fprintf ppf "St_exn_arg (%a, %i)" Static_exception.print s n
 
   let output _ = failwith "not_implemented"
 
@@ -205,6 +256,8 @@ and collect_equations_named (t:equations) (var:Variable.t) : Flambda.named -> eq
   | Prim (Pfield n,[arg],_) ->
     Alias (Field (n, Eq_left.Set.singleton (Var arg)))
 
+  (* We could also track aliases on mutable blocks (and setfields),
+     but that would need an associated escape analysis *)
   | Prim (Pmakeblock (_tag, Immutable), args, _) ->
     let fields =
       List.map (fun v ->
