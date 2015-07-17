@@ -207,9 +207,16 @@ let toplevel_substitution sb tree =
     | Apply { func; args; kind; dbg; } ->
       Apply { func = sb func; args = List.map sb args; kind; dbg; }
     | If_then_else (cond, e1, e2) -> If_then_else (sb cond, e1, e2)
-    | Let _ | Let_rec _ | Send _ | Switch _
-    | String_switch _ | Static_raise _ | Static_catch _ | Try_with _
-    | While _ | For _ | Proved_unreachable -> flam
+    | Switch (cond, sw) -> Switch (sb cond, sw)
+    | String_switch (cond, branches, def) ->
+      String_switch (sb cond, branches, def)
+    | Send { kind; meth; obj; args; dbg } ->
+      Send { kind; meth = sb meth; obj = sb obj; args = List.map sb args; dbg }
+    | For { bound_var; from_value; to_value; direction; body } ->
+      For { bound_var; from_value = sb from_value; to_value = sb to_value;
+            direction; body }
+    | Static_raise _ | Static_catch _ | Try_with _ | While _
+    | Let _ | Let_rec _ | Proved_unreachable -> flam
   in
   let aux_named (named : Flambda.named) : Flambda.named =
     match named with
@@ -217,6 +224,8 @@ let toplevel_substitution sb tree =
     | Set_of_closures set_of_closures ->
       Set_of_closures {
         set_of_closures with
+        free_vars =
+          Variable.Map.map sb set_of_closures.free_vars;
         specialised_args =
           Variable.Map.map sb set_of_closures.specialised_args;
       }
