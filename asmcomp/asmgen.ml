@@ -38,7 +38,7 @@ let pass_dump_linear_if ppf flag message phrase =
 let clambda_dump_if ppf (ulambda, structured_constants) =
   if !dump_clambda then
     begin
-      Format.fprintf ppf "clambda:@.";
+      Format.fprintf ppf "@.clambda:@.";
       Printclambda.clambda ppf ulambda;
       (* List.iter (fun (lbls,cst) -> *)
       (*     let lbl = match lbls with *)
@@ -48,7 +48,7 @@ let clambda_dump_if ppf (ulambda, structured_constants) =
       (*       Printclambda.structured_constant cst) *)
       (*   structured_constants *)
       Symbol.Map.iter (fun sym cst ->
-          Format.fprintf ppf "%a: %a@."
+          Format.fprintf ppf "%a:@ %a@."
             Symbol.print sym
             Printclambda.structured_constant cst)
         structured_constants
