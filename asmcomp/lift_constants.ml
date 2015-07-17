@@ -221,6 +221,8 @@ let collect_constant_declarations expr =
       add (Symbol sym)
     | Symbol symbol ->
       add (Symbol symbol)
+    | Prim (Pgetglobalfield _, _, _) ->
+      ()
     | Prim _ ->
       Format.printf "err:@.%a@." Flambda_printers.named named;
       assert false
