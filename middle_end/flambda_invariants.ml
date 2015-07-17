@@ -218,8 +218,10 @@ let variable_invariants externaly_bound_variables flam =
                bound by either the set of closures or the parameter list. *)
             let acceptable_free_variables =
               Variable.Set.union
-                (Variable.Set.union variables_in_closure functions_in_closure)
-                (Variable.Set.of_list params)
+                (Variable.Set.union
+                   (Variable.Set.union variables_in_closure functions_in_closure)
+                   (Variable.Set.of_list params))
+                externaly_bound_variables
             in
             let bad =
               Variable.Set.diff free_variables acceptable_free_variables
