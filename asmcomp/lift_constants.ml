@@ -250,6 +250,18 @@ let collect_constant_declarations expr =
   constant_tbl,
   set_of_closures_tbl
 
+let all_constants map aliases =
+  let structured_constants = Variable.Map.keys map in
+  let aliased_constants =
+    Variable.Map.keys
+      (Variable.Map.filter (fun _var alias ->
+           Variable.Map.mem alias map)
+          aliases)
+  in
+  Variable.Set.union
+    structured_constants
+    aliased_constants
+
 module Variable_SCC = Sort_connected_components.Make (Variable)
 
 let constant_graph (map:constant_descr Variable.Map.t) =
@@ -273,6 +285,7 @@ let rewrite_constant_aliases map aliases =
   Variable.Map.map subst_block map
 
 let constant_sharing map aliases =
+  let all_constants = all_constants map aliases in
   let map = rewrite_constant_aliases map aliases in
   let graph = constant_graph map in
   let components = Variable_SCC.connected_components_sorted_from_roots_to_leaf graph in
@@ -285,22 +298,18 @@ let constant_sharing map aliases =
   in
   let shared_constants = ref Constant_descr_map.empty in
   let constants = ref Variable.Map.empty in
-  let alias = ref Variable.Map.empty in
+  let equal_constants = ref Variable.Map.empty in
   let find_and_add var cst =
     match Constant_descr_map.find cst !shared_constants with
     | exception Not_found ->
       shared_constants := Constant_descr_map.add cst var !shared_constants;
       constants := Variable.Map.add var cst !constants;
-      alias := Variable.Map.add var var !alias
     | sharing ->
-      alias := Variable.Map.add var sharing !alias
+      equal_constants := Variable.Map.add var sharing !equal_constants
   in
   let subst var =
-    match Variable.Map.find var !alias with
-    | exception Not_found ->
-      var
-    | subst ->
-      subst
+    try Variable.Map.find var !equal_constants with
+    | Not_found -> var
   in
   let share var =
     let cst = Variable.Map.find var map in
@@ -352,11 +361,25 @@ let constant_sharing map aliases =
     | Immstring s ->
       add var (Immstring s)
   in
-  let descr, kind =
+  let descr, declared_constants_kind =
     Variable.Map.fold assign_symbols !constants (Symbol.Map.empty, Variable.Map.empty)
   in
+  let equal_constants_kind =
+    Variable.Map.map (fun var -> Variable.Map.find var declared_constants_kind) !equal_constants
+  in
+  let declared_and_equal_constants_kind =
+    Variable.Map.disjoint_union
+      declared_constants_kind
+      equal_constants_kind
+  in
   let kind =
-    Variable.Map.map (fun var -> Variable.Map.find var kind) !alias
+    Variable.Map.of_set (fun var ->
+        let alias =
+          try Variable.Map.find var aliases with
+          | Not_found -> var
+        in
+        Variable.Map.find alias declared_and_equal_constants_kind)
+      all_constants
   in
   let descr =
     let find_kind var =
