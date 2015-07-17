@@ -320,7 +320,8 @@ module NotConstants(P:Param) = struct
       ~implies_in_nc:curr;
     (* a closure is constant if its free variables are constants. *)
     Variable.Map.iter (fun inner_id var ->
-        register_implication ~in_nc:(Var var) ~implies_in_nc:[Var inner_id])
+        register_implication ~in_nc:(Var var)
+          ~implies_in_nc:[Var inner_id; Closure function_decls.set_of_closures_id])
       free_vars;
     Variable.Map.iter (fun fun_id (ffunc : Flambda.function_declaration) ->
         (* for each function f in a closure c 'c in NC => f' *)
