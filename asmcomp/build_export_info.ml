@@ -338,6 +338,13 @@ let build_export_info (lifted_flambda:Lift_constants.result) : ET.exported =
   in
   symbol_table := constant_approx;
 
+  (* The initialisation part must be traveresed before the constant
+     closures to have the description of global fields.
+     We may want to split this part and sort the traversal of different
+     part according to dependencies.
+     Another solution is to preallocate ids for globals. *)
+  let _root_description : ET.approx = describe Variable.Map.empty lifted_flambda.expr in
+
   (* TODO: should be sorted before describing. This would allow
        approximation to be able to use the closures results *)
   Symbol.Map.iter (fun symbol set_of_closures ->
@@ -348,8 +355,6 @@ let build_export_info (lifted_flambda:Lift_constants.result) : ET.exported =
       new_symbol symbol (new_descr (ET.Value_set_of_closures descr))
     )
     lifted_flambda.set_of_closures_map;
-
-  let _root_description : ET.approx = describe Variable.Map.empty lifted_flambda.expr in
 
   (* build the approximation of the root module *)
   let root_id =
