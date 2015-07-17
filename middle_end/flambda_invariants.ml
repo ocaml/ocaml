@@ -287,9 +287,10 @@ let primitive_invariants flam ~no_access_to_global_module_identifiers =
         | Psequand | Psequor ->
           raise (Sequential_logical_operator_primitives_must_be_expanded prim)
         | Pgetglobalfield _ | Psetglobalfield _ | Psetglobal _ ->
-          if no_access_to_global_module_identifiers then begin
-            raise (Access_to_global_module_identifier prim)
-          end
+          (* if no_access_to_global_module_identifiers then begin *)
+          (*   raise (Access_to_global_module_identifier prim) *)
+          (* end *)
+          ()
         | Pgetglobal id ->
           if no_access_to_global_module_identifiers
             && not (Ident.is_predef_exn id) then
