@@ -406,7 +406,9 @@ let build_export_info (lifted_flambda:Lift_constants.result) : ET.exported =
   let ex_functions_off = Closure_id.Map.empty in
 
   (* TODO *)
-  let constant_closures = Set_of_closures_id.Set.empty in
+  let constant_closures =
+    Lifted_flambda_utils.constants_set_of_closures_id_set lifted_flambda
+  in
 
   let ex_invariant_arguments =
     Set_of_closures_id.Map.map
