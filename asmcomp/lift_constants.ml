@@ -221,6 +221,8 @@ let collect_constant_declarations expr =
       add (Symbol sym)
     | Symbol symbol ->
       add (Symbol symbol)
+    | Prim(Pfield _, _, _) ->
+      ()
     | Prim (Pgetglobalfield _, _, _) ->
       ()
     | Prim _ ->
