@@ -1081,14 +1081,14 @@ method_:
 class_type:
     class_signature
       { $1 }
-  | QUESTION LIDENT COLON simple_core_type_or_tuple_no_attr MINUSGREATER
+  | QUESTION LIDENT COLON simple_core_type_or_tuple MINUSGREATER
     class_type
       { mkcty(Pcty_arrow(Optional $2 , $4, $6)) }
-  | OPTLABEL simple_core_type_or_tuple_no_attr MINUSGREATER class_type
+  | OPTLABEL simple_core_type_or_tuple MINUSGREATER class_type
       { mkcty(Pcty_arrow(Optional $1, $2, $4)) }
-  | LIDENT COLON simple_core_type_or_tuple_no_attr MINUSGREATER class_type
+  | LIDENT COLON simple_core_type_or_tuple MINUSGREATER class_type
       { mkcty(Pcty_arrow(Labelled $1, $3, $5)) }
-  | simple_core_type_or_tuple_no_attr MINUSGREATER class_type
+  | simple_core_type_or_tuple MINUSGREATER class_type
       { mkcty(Pcty_arrow(Nolabel, $1, $3)) }
  ;
 class_signature:
@@ -1854,14 +1854,14 @@ sig_exception_declaration:
 generalized_constructor_arguments:
     /*empty*/                     { (Pcstr_tuple [],None) }
   | OF constructor_arguments      { ($2,None) }
-  | COLON constructor_arguments MINUSGREATER simple_core_type_no_attr
+  | COLON constructor_arguments MINUSGREATER simple_core_type
                                   { ($2,Some $4) }
-  | COLON simple_core_type_no_attr
+  | COLON simple_core_type
                                   { (Pcstr_tuple [],Some $2) }
 ;
 
 constructor_arguments:
-  | core_type_list_no_attr { Pcstr_tuple (List.rev $1) }
+  | core_type_list                   { Pcstr_tuple (List.rev $1) }
   | LBRACE label_declarations RBRACE { Pcstr_record $2 }
 ;
 label_declarations:
@@ -2031,13 +2031,6 @@ simple_core_type:
       { match $2 with [sty] -> sty | _ -> raise Parse_error }
 ;
 
-simple_core_type_no_attr:
-    simple_core_type2  %prec below_SHARP
-      { $1 }
-  | LPAREN core_type_comma_list RPAREN %prec below_SHARP
-      { match $2 with [sty] -> sty | _ -> raise Parse_error }
-;
-
 simple_core_type2:
     QUOTE ident
       { mktyp(Ptyp_var $2) }
@@ -2120,14 +2113,8 @@ name_tag_list:
   | name_tag_list name_tag                      { $2 :: $1 }
 ;
 simple_core_type_or_tuple:
-    simple_core_type %prec below_LBRACKETAT  { $1 }
+    simple_core_type { $1 }
   | simple_core_type STAR core_type_list
-      { mktyp(Ptyp_tuple($1 :: List.rev $3)) }
-;
-simple_core_type_or_tuple_no_attr:
-    simple_core_type_no_attr
-      { $1 }
-  | simple_core_type_no_attr STAR core_type_list_no_attr
       { mktyp(Ptyp_tuple($1 :: List.rev $3)) }
 ;
 core_type_comma_list:
@@ -2135,12 +2122,8 @@ core_type_comma_list:
   | core_type_comma_list COMMA core_type        { $3 :: $1 }
 ;
 core_type_list:
-    simple_core_type %prec below_LBRACKETAT  { [$1] }
+    simple_core_type                            { [$1] }
   | core_type_list STAR simple_core_type        { $3 :: $1 }
-;
-core_type_list_no_attr:
-    simple_core_type_no_attr                     { [$1] }
-  | core_type_list STAR simple_core_type_no_attr { $3 :: $1 }
 ;
 meth_list:
     field SEMI meth_list                     { let (f, c) = $3 in ($1 :: f, c) }
