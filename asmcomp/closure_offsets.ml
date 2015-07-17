@@ -1,17 +1,4 @@
 
-let sets_of_closures ({ expr; set_of_closures_map } : Lift_constants.result) =
-  let l = ref [] in
-  let add_set_of_closures : Flambda.named -> unit = function
-    | Set_of_closures set_of_closure ->
-      l := set_of_closure :: !l
-    | _ -> ()
-  in
-  Flambda_iterators.iter_named add_set_of_closures expr;
-  Symbol.Map.iter (fun _ set_of_closures ->
-      Flambda_iterators.iter_named_on_named add_set_of_closures
-        (Set_of_closures set_of_closures))
-    set_of_closures_map;
-  !l
 
 type result = {
   code_pointer_offsets : int Closure_id.Map.t;
@@ -62,7 +49,7 @@ let add_closure_offsets
     free_variable_offsets }
 
 let compute (lifted_constants:Lift_constants.result) =
-  let sets = sets_of_closures lifted_constants in
+  let sets = Lifted_flambda_utils.sets_of_closures lifted_constants in
   List.fold_left
     (add_closure_offsets lifted_constants.kind)
     { code_pointer_offsets = Closure_id.Map.empty;
