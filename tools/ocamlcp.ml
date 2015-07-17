@@ -76,6 +76,7 @@ module Options = Main_args.Make_bytecomp_options (struct
   let _o s = option_with_arg "-o" s
   let _open s = option_with_arg "-open" s
   let _output_obj = option "-output-obj"
+  let _output_complete_obj = option "-output-complete-obj"
   let _pack = option "-pack"
   let _pp _s = incompatible "-pp"
   let _ppx _s = incompatible "-ppx"

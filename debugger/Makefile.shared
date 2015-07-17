@@ -11,15 +11,15 @@
 #########################################################################
 
 include ../config/Makefile
+CAMLRUN ?= ../boot/ocamlrun
+CAMLYACC ?= ../boot/ocamlyacc
 
-ROOTDIR=..
-CAMLC=$(ROOTDIR)/boot/ocamlrun $(ROOTDIR)/ocamlc -nostdlib -I $(ROOTDIR)/stdlib
+CAMLC=$(CAMLRUN) ../ocamlc -nostdlib -I ../stdlib
 COMPFLAGS=-warn-error A -safe-string $(INCLUDES)
 LINKFLAGS=-linkall -I $(UNIXDIR)
-CAMLYACC=../boot/ocamlyacc
 YACCFLAGS=
-CAMLLEX=../boot/ocamlrun ../boot/ocamllex
-CAMLDEP=../boot/ocamlrun ../tools/ocamldep
+CAMLLEX=$(CAMLRUN) ../boot/ocamllex
+CAMLDEP=$(CAMLRUN) ../tools/ocamldep
 DEPFLAGS=$(INCLUDES)
 
 INSTALL_BINDIR=$(DESTDIR)$(BINDIR)

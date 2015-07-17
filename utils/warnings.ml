@@ -477,7 +477,7 @@ let descriptions =
    43, "Nonoptional label applied as optional.";
    44, "Open statement shadows an already defined identifier.";
    45, "Open statement shadows an already defined label or constructor.";
-   46, "Illegal environment variable.";
+   46, "Error in environment variable.";
    47, "Illegal attribute payload.";
    48, "Implicit elimination of optional arguments.";
    49, "Missing cmi file when looking up module alias.";
@@ -488,15 +488,15 @@ let descriptions =
 
 let help_warnings () =
   List.iter (fun (i, s) -> Printf.printf "%3i %s\n" i s) descriptions;
-  print_endline "  A All warnings.";
+  print_endline "  A all warnings";
   for i = Char.code 'b' to Char.code 'z' do
     let c = Char.chr i in
     match letter c with
     | [] -> ()
     | [n] ->
-        Printf.printf "  %c Synonym for warning %i.\n" (Char.uppercase_ascii c) n
+        Printf.printf "  %c Alias for warning %i.\n" (Char.uppercase_ascii c) n
     | l ->
-        Printf.printf "  %c Set of warnings %s.\n"
+        Printf.printf "  %c warnings %s.\n"
           (Char.uppercase_ascii c)
           (String.concat ", " (List.map string_of_int l))
   done;

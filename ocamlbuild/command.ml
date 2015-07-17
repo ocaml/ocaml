@@ -393,6 +393,9 @@ let pdep tags ptag deps =
   Param_tags.declare ptag
     (fun param -> dep (Param_tags.make ptag param :: tags) (deps param))
 
+let list_all_deps () =
+  !all_deps_of_tags
+
 (*
 let to_string_for_digest x =
   let rec cmd_of_spec =

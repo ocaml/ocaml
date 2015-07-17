@@ -277,12 +277,13 @@ let link_shared ppf objfiles output_name =
 let call_linker file_list startup_file output_name =
   let main_dll = !Clflags.output_c_object
                  && Filename.check_suffix output_name Config.ext_dll
+  and main_obj_runtime = !Clflags.output_complete_object
   in
   let files = startup_file :: (List.rev file_list) in
   let files, c_lib =
-    if (not !Clflags.output_c_object) || main_dll then
+    if (not !Clflags.output_c_object) || main_dll || main_obj_runtime then
       files @ (List.rev !Clflags.ccobjs) @ runtime_lib (),
-      (if !Clflags.nopervasives then "" else Config.native_c_libraries)
+      (if !Clflags.nopervasives || main_obj_runtime then "" else Config.native_c_libraries)
     else
       files, ""
   in

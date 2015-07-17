@@ -25,7 +25,6 @@ exception Exit_build_error of string
 exception Exit_silently
 
 let clean () =
-  Log.finish ();
   Shell.rm_rf !Options.build_dir;
   if !Options.make_links then begin
     let entry =
@@ -34,6 +33,7 @@ let clean () =
     in
     Slurp.force (Resource.clean_up_links entry)
   end;
+  Log.finish ();
   raise Exit_silently
 ;;
 
@@ -67,6 +67,8 @@ let builtin_useful_tags =
 let proceed () =
   Hooks.call_hook Hooks.Before_options;
   Options.init ();
+  Options.include_dirs := List.map Pathname.normalize !Options.include_dirs;
+  Options.exclude_dirs := List.map Pathname.normalize !Options.exclude_dirs;
   if !Options.must_clean then clean ();
   Hooks.call_hook Hooks.After_options;
   let options_wd = Sys.getcwd () in
@@ -203,7 +205,14 @@ let proceed () =
     raise Exit_silently
   end;
 
-  let all_tags = Tags.union builtin_useful_tags (Flags.get_used_tags ()) in
+  let all_tags =
+    let builtin = builtin_useful_tags in
+    let used_in_flags = Flags.get_used_tags () in
+    let used_in_deps =
+      List.fold_left (fun acc (tags, _deps) -> Tags.union acc tags)
+        Tags.empty (Command.list_all_deps ())
+    in
+    Tags.union builtin (Tags.union used_in_flags used_in_deps) in
   Configuration.check_tags_usage all_tags;
 
   Digest_cache.init ();

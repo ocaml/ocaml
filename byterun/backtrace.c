@@ -306,15 +306,15 @@ void caml_stash_backtrace(value exn, code_t pc, value * sp, int reraise)
 #define Codet_Val(v) ((code_t)(Long_val(v)<<1))
 
 /* returns the next frame pointer (or NULL if none is available);
-   updates *sp to point to the following one, and *trapsp to the next
+   updates *sp to point to the following one, and *trsp to the next
    trap frame, which we will skip when we reach it  */
 
-code_t caml_next_frame_pointer(value ** sp, value ** trapsp)
+code_t caml_next_frame_pointer(value ** sp, value ** trsp)
 {
   while (*sp < caml_stack_high) {
     code_t *p = (code_t*) (*sp)++;
-    if(&Trap_pc(*trapsp) == p) {
-      *trapsp = Trap_link(*trapsp);
+    if(&Trap_pc(*trsp) == p) {
+      *trsp = Trap_link(*trsp);
       continue;
     }
 
@@ -343,10 +343,10 @@ CAMLprim value caml_get_current_callstack(value max_frames_value) {
   /* first compute the size of the trace */
   {
     value * sp = caml_extern_sp;
-    value * trapsp = caml_trapsp;
+    value * trsp = caml_trapsp;
 
     for (trace_size = 0; trace_size < max_frames; trace_size++) {
-      code_t p = caml_next_frame_pointer(&sp, &trapsp);
+      code_t p = caml_next_frame_pointer(&sp, &trsp);
       if (p == NULL) break;
     }
   }
@@ -356,11 +356,11 @@ CAMLprim value caml_get_current_callstack(value max_frames_value) {
   /* then collect the trace */
   {
     value * sp = caml_extern_sp;
-    value * trapsp = caml_trapsp;
+    value * trsp = caml_trapsp;
     uintnat trace_pos;
 
     for (trace_pos = 0; trace_pos < trace_size; trace_pos++) {
-      code_t p = caml_next_frame_pointer(&sp, &trapsp);
+      code_t p = caml_next_frame_pointer(&sp, &trsp);
       Assert(p != NULL);
       Field(trace, trace_pos) = Val_Codet(p);
     }

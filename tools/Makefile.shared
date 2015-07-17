@@ -11,8 +11,9 @@
 #########################################################################
 
 include ../config/Makefile
+CAMLRUN ?= ../boot/ocamlrun
+CAMLYACC ?= ../boot/ocamlyacc
 
-CAMLRUN=../boot/ocamlrun
 CAMLC=$(CAMLRUN) ../boot/ocamlc -nostdlib -I ../boot
 CAMLOPT=$(CAMLRUN) ../ocamlopt -nostdlib -I ../stdlib
 CAMLLEX=$(CAMLRUN) ../boot/ocamllex
@@ -279,8 +280,15 @@ else
 DEF_SYMBOL_PREFIX = '-Dsymbol_prefix=""'
 endif
 
+ifeq "$(CCOMPTYPE)" "msvc"
+CCOUT = -Fe
+else
+EMPTY =
+CCOUT = -o $(EMPTY)
+endif
+
 objinfo_helper$(EXE): objinfo_helper.c ../config/s.h
-	$(BYTECC) -o objinfo_helper$(EXE) $(BYTECCCOMPOPTS) \
+	$(BYTECC) $(CCOUT)objinfo_helper$(EXE) $(BYTECCCOMPOPTS) \
           $(DEF_SYMBOL_PREFIX) $(LIBBFD_INCLUDE) objinfo_helper.c $(LIBBFD_LINK)
 
 OBJINFO=../compilerlibs/ocamlcommon.cma \

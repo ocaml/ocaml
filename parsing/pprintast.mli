@@ -82,7 +82,8 @@ class printer :
     method private_flag : Format.formatter -> Asttypes.private_flag -> unit
     method rec_flag : Format.formatter -> Asttypes.rec_flag -> unit
     method nonrec_flag : Format.formatter -> Asttypes.rec_flag -> unit
-    method record_declaration : Format.formatter -> Parsetree.label_declaration list -> unit
+    method record_declaration :
+        Format.formatter -> Parsetree.label_declaration list -> unit
 
     method reset : 'b
     method reset_semi : 'b

@@ -11,8 +11,15 @@
 /*                                                                     */
 /***********************************************************************/
 
+#ifndef CAML_UNIXSUPPORT_H
+#define CAML_UNIXSUPPORT_H
+
 #ifdef HAS_UNISTD
 #include <unistd.h>
+#endif
+
+#ifdef __cplusplus
+extern "C" {
 #endif
 
 #define Nothing ((value) 0)
@@ -25,3 +32,9 @@ extern void uerror (char * cmdname, value arg) Noreturn;
 #define UNIX_BUFFER_SIZE 65536
 
 #define DIR_Val(v) *((DIR **) &Field(v, 0))
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* CAML_UNIXSUPPORT_H */

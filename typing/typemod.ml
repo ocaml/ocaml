@@ -311,6 +311,16 @@ let rec map_rec_type_with_row_types ~rec_flag fn decls rem =
       else
         map_rec_type ~rec_flag fn decls rem
 
+let rec_flag_of_ptype_declarations tds =
+  let is_nonrec =
+    List.exists
+      (fun td ->
+         List.exists (fun (n, _) -> n.txt = "nonrec")
+           td.ptype_attributes)
+      tds
+  in
+  if is_nonrec then Nonrecursive else Recursive
+
 (* Add type extension flags to extension contructors *)
 let map_ext fn exts rem =
   match exts with
@@ -360,6 +370,7 @@ and approx_sig env ssg =
   | item :: srem ->
       match item.psig_desc with
       | Psig_type (rec_flag, sdecls) ->
+          let rec_flag = rec_flag_of_ptype_declarations sdecls in
           let decls = Typedecl.approx_type_decl env sdecls in
           let rem = approx_sig env srem in
           map_rec_type ~rec_flag
@@ -586,6 +597,7 @@ and transl_signature env sg =
             Sig_value(tdesc.val_id, tdesc.val_val) :: rem,
               final_env
         | Psig_type (rec_flag, sdecls) ->
+            let rec_flag = rec_flag_of_ptype_declarations sdecls in
             List.iter
               (fun decl -> check_name check_type names decl.ptype_name)
               sdecls;
@@ -842,6 +854,9 @@ let rec path_of_module mexp =
   | Tmod_constraint (mexp, _, _, _) ->
       path_of_module mexp
   | _ -> raise Not_a_path
+
+let path_of_module mexp =
+ try Some (path_of_module mexp) with Not_a_path -> None
 
 (* Check that all core type schemes in a structure are closed *)
 
@@ -1110,7 +1125,7 @@ let rec type_module ?(alias=false) sttn funct_body anchor env smod =
            mod_loc = smod.pmod_loc }
   | Pmod_apply(sfunct, sarg) ->
       let arg = type_module true funct_body None env sarg in
-      let path = try Some (path_of_module arg) with Not_a_path -> None in
+      let path = path_of_module arg in
       let funct =
         type_module (sttn && path <> None) funct_body None env sfunct in
       begin match Env.scrape_alias env funct.mod_type with
@@ -1231,6 +1246,7 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
         let (desc, newenv) = Typedecl.transl_value_decl env loc sdesc in
         Tstr_primitive desc, [Sig_value(desc.val_id, desc.val_val)], newenv
     | Pstr_type (rec_flag, sdecls) ->
+        let rec_flag = rec_flag_of_ptype_declarations sdecls in
         List.iter
           (fun decl -> check_name check_type names decl.ptype_name)
           sdecls;

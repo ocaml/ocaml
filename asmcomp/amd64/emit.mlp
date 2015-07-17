@@ -26,6 +26,12 @@ open X86_ast
 open X86_proc
 open X86_dsl
 
+(* [Branch_relaxation] is not used in this file, but is required by
+   emit.mlp files for certain other targets; the reference here ensures
+   that when releases are being prepared the .depend files are correct
+   for all targets. *)
+open! Branch_relaxation
+
 let _label s = D.label ~typ:QWORD s
 
 (* Override proc.ml *)
