@@ -34,6 +34,8 @@ Compilers:
 - PR#6845: -no-check-prims to tell ocamlc not to check primitives in runtime
 - GPR#17: some cmm optimizations of integer operations with constants
   (Stephen Dolan, review by Pierre Chambart)
+- GPR#109: new unboxing strategy for float and int references (Vladimir Brankov,
+  review by Alain Frisch)
 
 Runtime system:
 - PR#6517: use ISO C99 types {,u}int{32,64}_t in preference to our homegrown
