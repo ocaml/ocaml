@@ -7,9 +7,9 @@
    represent every case of Flambdaexport_types
 
    The constant type does not have a description of the contained
-   constant. For rebuilding clambda, we may need to find the
-   description: this is usefull on floats (and boxed integers) for
-   unboxing.
+   constant (the option in the Uconst_ref constructor). For rebuilding
+   clambda, we may need to find the description: this is usefull on
+   floats (and boxed integers) for unboxing.
 
 *)
 

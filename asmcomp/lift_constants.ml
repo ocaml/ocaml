@@ -5,23 +5,11 @@
      This is done by traversing the structured constants in inverse
      topological order and replacing every existing constant by the previous
      one. (Note: this does not guaranty maximal sharing in cycles)
-   * Finaly, remove every let declaration of constants (or aliased to a constant).
+   * Remove every let declaration of constants (or aliased to a constant).
+   * Add back the let definition of constants at toplevel and in every function
 
-   Since the representation does not allow to substitute symbol for variables
-   (only variables are accepted in certain positions), those variables are unbound
-   in the expression.
-
-   The invariants are:
-   * every variable is either bound in the expression or bound in the [kind] field
-     of the [result] type.
-   * every symbol from the current compilation unit referenced by the [kind] field
-     should be bound by either
-     - [constant_descr] if it is a structured constant
-     - [set_of_closures_map] if it is a set of closures
-     - a closure in a set of [set_of_closures_map] if it is a closures
-
-   PR pchambart: those invariants should be checked by a modified Flambda_invariants
-   for this representations.
+   Note that this means that some variables can be bound multiple times if
+   multiple closures in the same set use the same constant bound by the closure
 
 *)
 
@@ -409,6 +397,22 @@ let rewrite_constant_access expr aliases set_of_closures_tbl constant_descr (kin
     in
     Variable.Map.find var kind
   in
+  let bind_constant var body : Flambda.t =
+    match get_kind var with
+    | Int i ->
+      Let (Immutable, var,
+           Const (Const_base (Const_int i)),
+           body)
+    | Const_pointer p ->
+      Let (Immutable, var,
+           Const (Const_pointer p),
+           body)
+    | Symbol s ->
+      Let (Immutable, var,
+           Symbol s,
+           body)
+    | exception Not_found -> body
+  in
   let rewrite_function_declaration (function_decl: Flambda.function_declaration) =
     let free_variables = Free_variables.calculate function_decl.body in
     let
@@ -417,14 +421,6 @@ let rewrite_constant_access expr aliases set_of_closures_tbl constant_descr (kin
       Variable.Set.partition is_a_constant
         free_variables
         (* function_decl.free_variables *)
-    in
-    let bind_constant var body : Flambda.t =
-      let named : Flambda.named = match get_kind var with
-        | Int i -> Const (Const_base (Const_int i))
-        | Const_pointer p -> Const (Const_pointer p)
-        | Symbol s -> Symbol s
-      in
-      Let (Immutable, var, named, body)
     in
     { function_decl
       with
@@ -474,6 +470,13 @@ let rewrite_constant_access expr aliases set_of_closures_tbl constant_descr (kin
     | expr -> expr
   in
   let expr = Flambda_iterators.map rewrite rewrite_named expr in
+  let expr =
+    let free_variables = Free_variables.calculate expr in
+    Variable.Set.fold
+      bind_constant
+      free_variables
+      expr
+  in
   let set_of_closures_map =
     Symbol.Tbl.fold (fun symbol (set_of_closures:Flambda.set_of_closures) map ->
         let update_function_decl (function_declaration:Flambda.function_declaration) =
