@@ -13,7 +13,7 @@
 
 type flambda_kind =
   | Normal
-  | Lifted of Variable.Set.t (* Externaly bound variables *)
+  | Lifted
 
 (** Checking of invariants on Flambda expressions.  Raises an exception if
     a check fails. *)

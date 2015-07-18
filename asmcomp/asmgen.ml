@@ -134,7 +134,7 @@ let prep_flambda_for_export ppf flam =
     (* TODO: print structured constants *)
   end;
   let kind =
-    Flambda_invariants.Lifted (Variable.Map.keys lifted_constants.Lift_constants.kind)
+    Flambda_invariants.Lifted
   in
   Flambda_invariants.check_exn
     ~kind

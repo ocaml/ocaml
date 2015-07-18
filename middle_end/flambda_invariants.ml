@@ -13,7 +13,7 @@
 
 type flambda_kind =
   | Normal
-  | Lifted of Variable.Set.t
+  | Lifted
 
 (* Explicit "ignore" functions.  We name every pattern variable, avoiding
    underscores, to try to avoid accidentally failing to handle (for example)
@@ -68,7 +68,7 @@ exception Unbound_vars_within_closures of Var_within_closure.Set.t
 
 exception Flambda_invariants_failed
 
-let variable_invariants externaly_bound_variables flam =
+let variable_invariants flam =
   let add_binding_occurrence env var is_mutable =
     let compilation_unit = Compilation_unit.get_current_exn () in
     if not (Variable.in_compilation_unit compilation_unit var) then
@@ -84,9 +84,7 @@ let variable_invariants externaly_bound_variables flam =
       env vars
   in
   let check_variable_is_bound env var =
-    if not (Variable.Map.mem var env) &&
-       not (Variable.Set.mem var externaly_bound_variables)
-    then raise (Unbound_variable var)
+    if not (Variable.Map.mem var env) then raise (Unbound_variable var)
   in
   let check_variable_is_bound_and_get_mutability env var =
     try Variable.Map.find var env
@@ -443,12 +441,8 @@ let every_static_exception_is_caught_at_a_single_position flam =
   Flambda_iterators.iter f (fun (_ : Flambda.named) -> ()) flam
 
 let check_exn ?(kind=Normal) ?(cmxfile=false) flam =
-  let externaly_bound_variables = match kind with
-    | Normal -> Variable.Set.empty
-    | Lifted set -> set
-  in
   try
-    variable_invariants externaly_bound_variables flam;
+    variable_invariants flam;
     primitive_invariants flam ~no_access_to_global_module_identifiers:cmxfile;
     every_static_exception_is_caught flam;
     every_static_exception_is_caught_at_a_single_position flam;
