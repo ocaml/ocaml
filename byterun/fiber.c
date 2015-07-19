@@ -7,6 +7,7 @@
 #include "alloc.h"
 #include "platform.h"
 #include "fix_code.h"
+#include "shared_heap.h"
 
 #ifdef NATIVE_CODE
 
@@ -73,6 +74,10 @@ static value save_stack ()
   Assert(caml_stack_high == Stack_high(old_stack));
   Assert(caml_extern_sp == caml_stack_high + Stack_sp(old_stack));
   dirty_stack(old_stack);
+  if (!Is_minor(old_stack) && caml_is_marked(old_stack)) {
+    //TODO: Only scan mutated part of the stack
+    caml_scan_stack(&caml_darken, old_stack);
+  }
   return old_stack;
 }
 
