@@ -119,7 +119,7 @@ static pool* pool_acquire(struct caml_heap_state* local) {
   } else {
     caml_plat_lock(&pool_freelist.lock);
     if (!pool_freelist.free) {
-      void* mem = caml_mem_map(Bsize_wsize(POOL_WSIZE) * POOLS_PER_ALLOCATION, 
+      void* mem = caml_mem_map(Bsize_wsize(POOL_WSIZE) * POOLS_PER_ALLOCATION,
                                Bsize_wsize(POOL_WSIZE), 0 /* allocate */);
       int i;
       if (mem) {
@@ -153,6 +153,26 @@ static void pool_release(struct caml_heap_state* local, pool* pool) {
     local->pools_allocated--;
   }
 }
+#ifdef DEBUG
+
+static int detect_cycle (pool* p) {
+  pool *slow, *fast;
+
+  slow = fast = p;
+
+  while (fast != 0) {
+    slow = slow->next;
+    if (fast->next)
+      fast = fast->next->next;
+    else
+      fast = 0;
+    if (slow == fast && fast !=0)
+      return 1;
+  }
+  return 0;
+}
+
+#endif
 
 
 /* Allocating an object from a pool */
@@ -166,7 +186,7 @@ static pool* pool_find(struct caml_heap_state* local, sizeclass sz) {
   if (r) return r;
 
   /* Otherwise, try to sweep until we find one */
-  while (!local->avail_pools[sz] && 
+  while (!local->avail_pools[sz] &&
          pool_sweep(local, &local->unswept_avail_pools[sz], sz));
   while (!local->avail_pools[sz] &&
          pool_sweep(local, &local->unswept_full_pools[sz], sz));
@@ -211,6 +231,7 @@ static void* pool_allocate(struct caml_heap_state* local, sizeclass sz) {
     local->full_pools[sz] = r;
   }
 
+  Assert(!detect_cycle(local->full_pools[sz]));
   Assert(r->next_obj == 0 || *r->next_obj == 0);
   return p;
 }
@@ -280,7 +301,7 @@ static intnat pool_sweep(struct caml_heap_state* local, pool** plist, sizeclass 
   value* end = (value*)a + POOL_WSIZE;
   mlsize_t wh = wsize_sizeclass[sz];
   int all_free = 1, all_used = 1;
-  
+
   while (p + wh <= end) {
     header_t hd = (header_t)*p;
     if (hd == 0) {
@@ -377,6 +398,15 @@ int caml_mark_object(value p) {
   }
 }
 
+int caml_is_marked(value p) {
+  Assert (Is_block(p));
+  header_t h = Hd_val(p);
+  Assert (h && !Has_status_hd(h, global.GARBAGE));
+  if (Has_status_hd(h, global.MARKED))
+    return 1;
+  return 0;
+}
+
 const header_t atoms[256] = {
 #define A(i) Make_header(0, i, NOT_MARKABLE)
 A(0),A(1),A(2),A(3),A(4),A(5),A(6),A(7),A(8),A(9),A(10),
@@ -429,7 +459,7 @@ static void verify_push(value v, value* p) {
     verify_stack_len = verify_stack_len * 2 + 100;
     verify_stack = caml_stat_resize(verify_stack,
          sizeof(value*) * verify_stack_len);
-  } 
+  }
   verify_stack[verify_sp++] = v;
 }
 
@@ -495,11 +525,11 @@ static void verify_pool(pool* a, sizeclass sz, struct mem_stats* s) {
   for (v = a->next_obj; v; v = (value*)v[1]) {
     Assert(*v == 0);
   }
-  
+
   value* p = (value*)((char*)a + POOL_HEADER_SZ);
   value* end = (value*)a + POOL_WSIZE;
   mlsize_t wh = wsize_sizeclass[sz];
-  
+
   while (p + wh <= end) {
     header_t hd = (header_t)*p;
     Assert(hd == 0 || !Has_status_hd(hd, global.GARBAGE));
@@ -552,7 +582,7 @@ static void verify_swept (struct caml_heap_state* local) {
 void caml_cycle_heap_stw() {
   struct global_heap_state oldg = global;
   struct global_heap_state newg;
-  //verify_heap();
+  verify_heap();
   newg.UNMARKED     = oldg.MARKED;
   newg.GARBAGE      = oldg.UNMARKED;
   newg.MARKED       = oldg.GARBAGE; /* should be empty because garbage was swept */
