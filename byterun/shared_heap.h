@@ -16,13 +16,15 @@ void caml_shared_unpin(value v);
 
 int caml_mark_object(value);
 
+int caml_is_marked(value);
+
 intnat caml_sweep(struct caml_heap_state*, intnat);
 
 
 /* must be called during STW */
 void caml_cycle_heap_stw(void);
 
-/* must be called on each domain 
+/* must be called on each domain
    (after caml_cycle_heap_stw) */
 void caml_cycle_heap(struct caml_heap_state*);
 
