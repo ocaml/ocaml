@@ -15,7 +15,7 @@ include ../config/Makefile
 
 CC=$(NATIVECC)
 FLAGS=-I../byterun -DCAML_NAME_SPACE -DNATIVE_CODE \
-      -DTARGET_$(ARCH) -DSYS_$(SYSTEM) $(IFLEXDIR)
+      -DTARGET_$(ARCH) -DMODEL_$(MODEL) -DSYS_$(SYSTEM) $(IFLEXDIR)
 CFLAGS=$(FLAGS) $(NATIVECCCOMPOPTS)
 DFLAGS=$(FLAGS) -g -DDEBUG $(NATIVECCCOMPOPTS)
 PFLAGS=$(FLAGS) -pg -O -DPROFILING $(NATIVECCPROFOPTS)
@@ -110,18 +110,6 @@ install-shared:
 	cd $(INSTALL_LIBDIR); $(RANLIB) libasmrunp.a
 	cp libasmrun_shared.so $(INSTALL_LIBDIR)/libasmrun_shared.so
 .PHONY: install-prof
-
-power-bsd_elf.S: power-elf.S
-	cp power-elf.S power-bsd_elf.S
-
-power.o: power-$(SYSTEM).o
-	cp power-$(SYSTEM).o power.o
-
-power.p.o: power-$(SYSTEM).o
-	cp power-$(SYSTEM).o power.p.o
-
-power.pic.o: power-$(SYSTEM).pic.o
-	cp power-$(SYSTEM).pic.o power.pic.o
 
 main.c: ../byterun/main.c
 	ln -s ../byterun/main.c main.c
