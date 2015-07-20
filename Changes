@@ -9,6 +9,10 @@ Bug fixes:
 - PR#6930: Aliased result type of GADT constructor results in assertion failure
   (Jacques Garrigue)
 
+Feature wish:
+- GPR#37: New primitive: caml_alloc_dummy_function
+  (Hugo Heuzard)
+
 OCaml 4.02.2:
 -------------
 
