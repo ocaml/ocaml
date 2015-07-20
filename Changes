@@ -9,7 +9,9 @@ Bug fixes:
 - PR#6930: Aliased result type of GADT constructor results in assertion failure
   (Jacques Garrigue)
 
-Feature wish:
+Feature wishes:
+- PR#6691: install .cmt[i] files for stdlib and compiler-libs
+  (David Sheets, request by Gabriel Radanne)
 - GPR#37: New primitive: caml_alloc_dummy_function
   (Hugo Heuzard)
 
