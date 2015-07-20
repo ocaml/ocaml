@@ -25,6 +25,6 @@ CAMLprim value unix_gettimeofday(value unit)
   FILETIME ft;
   double tm;
   GetSystemTimeAsFileTime(&ft);
-  tm = *(uint64 *)&ft - epoch_ft; /* shift to Epoch-relative time */
+  tm = *(uint64_t *)&ft - epoch_ft; /* shift to Epoch-relative time */
   return copy_double(tm * 1e-7);  /* tm is in 100ns */
 }
