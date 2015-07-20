@@ -148,7 +148,7 @@ static void create_domain(uintnat initial_minor_heap_size, int is_main) {
 
   if (d) {
     d->running = 1;
-    d->state.is_main = 0;
+    d->state.is_main = is_main;
     d->state.vm_inited = 0;
     d->state.internals = d;
     /* FIXME: shutdown RPC? */

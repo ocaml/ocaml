@@ -127,6 +127,7 @@ static pool* pool_acquire(struct caml_heap_state* local) {
         for (i=1; i<POOLS_PER_ALLOCATION; i++) {
           r = (pool*)(((uintnat)mem) + ((uintnat)i) * Bsize_wsize(POOL_WSIZE));
           r->next = pool_freelist.free;
+          r->owner = 0;
           pool_freelist.free = r;
         }
       }
@@ -137,10 +138,12 @@ static pool* pool_acquire(struct caml_heap_state* local) {
     caml_plat_unlock(&pool_freelist.lock);
     local->pools_allocated++;
   }
+  Assert (r->owner == 0);
   return r;
 }
 
 static void pool_release(struct caml_heap_state* local, pool* pool) {
+  pool->owner = 0;
   if (local->num_free_pools < MAX_LOCAL_FREE_POOLS) {
     local->num_free_pools++;
     pool->next = local->free_pools;
