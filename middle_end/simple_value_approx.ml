@@ -75,8 +75,9 @@ let rec print_descr ppf = function
   | Value_bottom -> Format.fprintf ppf "bottom"
   | Value_extern id -> Format.fprintf ppf "_%a_" Export_id.print id
   | Value_symbol sym -> Format.fprintf ppf "%a" Symbol.print sym
-  | Value_closure { closure_id } ->
-    Format.fprintf ppf "(fun:@ %a)" Closure_id.print closure_id
+  | Value_closure { set_of_closures; closure_id; } ->
+    Format.fprintf ppf "(closure:@ %a from@ %a)" Closure_id.print closure_id
+      print set_of_closures
   | Value_set_of_closures set_of_closures ->
     print_value_set_of_closures ppf set_of_closures
   | Value_unresolved sym ->
@@ -102,7 +103,11 @@ let rec print_descr ppf = function
     | Int64 -> Format.fprintf ppf "%Li" i
     | Nativeint -> Format.fprintf ppf "%ni" i
 
-and print ppf { descr } = print_descr ppf descr
+and print ppf { descr; var; symbol; } =
+  Format.fprintf ppf "{ descr=%a var=%a symbol=%a }"
+    print_descr descr
+    Variable.print_opt var
+    Symbol.print_opt symbol
 
 let approx descr = { descr; var = None; symbol = None }
 

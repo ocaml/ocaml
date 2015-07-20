@@ -15,12 +15,15 @@
    properly.  Check the original version.  Why don't we just do the
    subtraction as we pass back over binding points? *)
 
-let iter tree ~free_variable ~bound_variable =
+let iter ?ignore_uses_as_callee tree ~free_variable ~bound_variable =
   let rec aux (flam : Flambda.t) : unit =
     match flam with
     | Var var -> free_variable var
     | Apply { func; args; kind = _; dbg = _} ->
-      free_variable func;
+      begin match ignore_uses_as_callee with
+      | None -> free_variable func
+      | Some () -> ()
+      end;
       List.iter free_variable args
     | Let (_, var, defining_expr, body) ->
       bound_variable var;
@@ -92,12 +95,12 @@ let iter tree ~free_variable ~bound_variable =
   in
   aux tree
 
-let calculate tree =
+let calculate ?ignore_uses_as_callee tree =
   let free = ref Variable.Set.empty in
   let bound = ref Variable.Set.empty in
   let free_variable id = free := Variable.Set.add id !free in
   let bound_variable id = bound := Variable.Set.add id !bound in
-  iter tree ~free_variable ~bound_variable;
+  iter ?ignore_uses_as_callee tree ~free_variable ~bound_variable;
   Variable.Set.diff !free !bound
 
 let calculate_named tree =

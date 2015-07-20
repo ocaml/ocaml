@@ -93,3 +93,10 @@ let print_list ppf ts =
 
 let debug_when_stamp_matches t ~stamp ~f =
   if t.ident.stamp = stamp then f ()
+
+let print_opt ppf = function
+  | None -> Format.fprintf ppf "<no var>"
+  | Some t -> print ppf t
+
+type pair = t * t
+module Pair = Ext_types.Identifiable.Make (Ext_types.Pair (T) (T))

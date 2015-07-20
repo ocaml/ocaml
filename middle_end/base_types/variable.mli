@@ -48,7 +48,11 @@ val output_full : out_channel -> t -> unit
 val get_compilation_unit : t -> Compilation_unit.t
 
 val print_list : Format.formatter -> t list -> unit
+val print_opt : Format.formatter -> t option -> unit
 
 (** If the given variable has the given stamp, call the user-supplied
     function.  For debugging purposes only. *)
 val debug_when_stamp_matches : t -> stamp:int -> f:(unit -> unit) -> unit
+
+type pair = t * t
+module Pair : Ext_types.Identifiable with type t := pair

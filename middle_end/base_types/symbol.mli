@@ -27,3 +27,5 @@ val create : Compilation_unit.t -> Linkage_name.t -> t
 
 val compilation_unit : t -> Compilation_unit.t
 val label : t -> Linkage_name.t
+
+val print_opt : Format.formatter -> t option -> unit

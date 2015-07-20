@@ -375,6 +375,8 @@ and simplify_set_of_closures original_env r
       ~make_closure_symbol:Backend.closure_symbol
   in
   let env = E.increase_closure_depth original_env in
+  (* CR mshinwell: check uses of [freshen_and_simplify_variable] vs.
+     [Freshening.apply_variable] *)
   let free_vars =
     Variable.Map.map (fun external_var ->
         let external_var = freshen_and_simplify_variable env external_var in
@@ -394,13 +396,13 @@ and simplify_set_of_closures original_env r
   in
   let env = E.set_freshening env sb in
   let specialised_args =
-    Variable.Map.map_keys (freshen_and_simplify_variable env)
+    Variable.Map.map_keys (Freshening.apply_variable (E.freshening env))
       specialised_args
   in
   let parameter_approximations =
     (* Approximations of parameters that are known to always hold the same
        argument throughout the body of the function. *)
-    Variable.Map.map_keys (freshen_and_simplify_variable env)
+    Variable.Map.map_keys (Freshening.apply_variable (E.freshening env))
       (Variable.Map.map (fun id -> E.find_exn environment_before_cleaning id)
         specialised_args)
   in
@@ -626,7 +628,7 @@ and simplify_named env r (tree : Flambda.named) : Flambda.named * R.t =
       in
       (* CR mshinwell for pchambart: Is there a reason we cannot use
          [simplify_named_using_approx_and_env] here? *)
-      simplify_named_using_approx r tree approx
+      simplify_named_using_approx_and_env env r tree approx
     | Psetglobalfield (_, i), [arg] ->
       let approx = E.find_exn env arg in
       let r = R.add_global r ~field_index:i ~approx in
@@ -660,7 +662,8 @@ and simplify_named env r (tree : Flambda.named) : Flambda.named * R.t =
 
 and simplify_direct env r (tree : Flambda.t) : Flambda.t * R.t =
   debug_free_variables_check env tree ~name:"loop"
-    ~calculate_free_variables:Free_variables.calculate
+    ~calculate_free_variables:
+      (Free_variables.calculate ?ignore_uses_as_callee:None)
     ~printer:Flambda_printers.flambda;
   match tree with
   | Var var ->

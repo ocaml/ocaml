@@ -42,3 +42,7 @@ include Ext_types.Identifiable.Make (T)
 let create compilation_unit label = { compilation_unit; label; }
 let compilation_unit t = t.compilation_unit
 let label t = t.label
+
+let print_opt ppf = function
+  | None -> Format.fprintf ppf "<no symbol>"
+  | Some t -> print ppf t

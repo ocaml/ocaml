@@ -93,6 +93,7 @@ type const =
   | Const_float of float
 
 type apply = {
+  (* CR mshinwell: rename func -> callee, and lhs_of_application -> callee *)
   func : Variable.t;
   args : Variable.t list;
   kind : call_kind;
