@@ -492,6 +492,7 @@ rule token = parse
   | "+=" { PLUSEQ }
   | "-"  { MINUS }
   | "-." { MINUSDOT }
+  | "\\" { BACKSLASH }
 
   | "!" symbolchar +
             { PREFIXOP(Lexing.lexeme lexbuf) }
