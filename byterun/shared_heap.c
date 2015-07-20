@@ -177,7 +177,6 @@ static int detect_cycle (pool* p) {
 
 #endif
 
-
 /* Allocating an object from a pool */
 
 static intnat pool_sweep(struct caml_heap_state* local, pool**, sizeclass sz);
