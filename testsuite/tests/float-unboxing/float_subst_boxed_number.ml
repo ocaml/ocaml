@@ -46,7 +46,7 @@ module GPR_109 = struct
     let () =
       (* is there a better to test whether we run in native code? *)
       match Filename.basename Sys.argv.(0) with
-      | "program.byte" -> ()
-      | "program.native" -> test ()
+      | "program.byte" | "program.byte.exe" -> ()
+      | "program.native" | "program.native.exe" -> test ()
       | _ -> assert false
 end
