@@ -6,6 +6,8 @@ Bug fixes:
   (Grégoire Henry, report by Jeremy Yallop)
 - PR#6919: corrupted final_table
   (ygrek)
+- PR#6926: Regression: ocamldoc lost unattached comment
+  (Damien Doligez, report by François Bobot)
 - PR#6930: Aliased result type of GADT constructor results in assertion failure
   (Jacques Garrigue)
 
