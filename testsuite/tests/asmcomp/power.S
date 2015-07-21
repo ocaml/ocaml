@@ -10,7 +10,7 @@
 /*                                                                   */
 /*********************************************************************/
 
-#if defined(MODEL_ppc64)
+#if defined(MODEL_ppc64) || defined(MODEL_ppc64le)
 #define EITHER(a,b) b
 #else
 #define EITHER(a,b) a
@@ -28,6 +28,10 @@
 #endif
 #if defined(MODEL_ppc64)
 #define RESERVED_STACK 48
+#define LR_SAVE_AREA 16
+#endif
+#if defined(MODEL_ppc64le)
+#define RESERVED_STACK 32
 #define LR_SAVE_AREA 16
 #endif
 
@@ -54,6 +58,18 @@
   .L.name:
 #endif
 
+#if defined(MODEL_ppc64le)
+#define FUNCTION(name) \
+  .section ".text"; \
+  .globl name; \
+  .type name, @function; \
+  .align 2; \
+  name: ; \
+  0: addis r2, r12, (.TOC. - 0b)@ha; \
+  addi r2, r12, (.TOC. - 0b)@l; \
+  .localentry name, . - 0b
+#endif
+        
 FUNCTION(call_gen_code)
     /* Allocate and link stack frame */
         stgu    1, -(WORD*18 + 8*18 + RESERVED_STACK)(1)
@@ -100,12 +116,17 @@ FUNCTION(call_gen_code)
         stfdu   30, 8(11)
         stfdu   31, 8(11)
     /* Get function pointer in CTR */
-#ifdef MODEL_ppc64
+#if defined(MODEL_ppc)
+        mtctr   3
+#elif defined(MODEL_ppc64)
         ld      0, 0(3)
         mtctr   0
         ld      2, 8(3)
-#else
+#elif defined(MODEL_ppc64le)
         mtctr   3
+        mr      12, 3
+#else
+#error "wrong MODEL"
 #endif
     /* Shuffle arguments */
         mr      3, 4
@@ -161,12 +182,16 @@ FUNCTION(call_gen_code)
 
 FUNCTION(caml_c_call)
     /* Jump to C function (address in r28) */
-#ifdef MODEL_ppc64
+#if defined(MODEL_ppc)
+        mtctr   28
+#elif defined(MODEL_ppc64)
         ld      0, 0(28)
         mtctr   0
         ld      2, 8(28)
-        bctr
-#else
+#elif defined(MODEL_ppc64le)
         mtctr   28
-        bctr
+        mr      12, 28
+#else
+#error "wrong MODEL"
 #endif
+        bctr

@@ -107,6 +107,10 @@ let divg = if ppc64 then "divd" else "divw"
 let tglle = if ppc64 then "tdlle" else "twlle"
 let slgi = if ppc64 then "sldi" else "slwi"
 
+(* Output a processor register *)
+
+let emit_gpr = emit_int  
+
 (* Output a pseudo-register *)
 
 let emit_reg r =
@@ -154,32 +158,40 @@ type tocentry =
   | TocSym of string
   | TocLabel of int
   | TocInt of nativeint
-  | TocFloat of float
+  | TocFloat of int64
   
 let tocref_entries : (tocentry, label) Hashtbl.t = Hashtbl.create 64
 
 let emit_tocentry = function
   | TocSym s -> emit_symbol s
   | TocInt i -> emit_nativeint i
-  | TocFloat f -> emit_printf "0x%Lx # %.12g" (Int64.bits_of_float f) f
+  | TocFloat f -> emit_printf "0x%Lx # %.12g" f (Int64.float_of_bits f)
   | TocLabel lbl -> emit_label lbl
 
-let emit_tocref entry =
-  let lbl =
-    try
-      Hashtbl.find tocref_entries entry
-    with Not_found ->
-      let lbl = new_label() in
-      Hashtbl.add tocref_entries entry lbl;
-      lbl
-  in
-    emit_label lbl; emit_string "@toc(2) #"; emit_tocentry entry
+let label_for_tocref entry =
+  try
+    Hashtbl.find tocref_entries entry
+  with Not_found ->
+    let lbl = new_label() in
+    Hashtbl.add tocref_entries entry lbl;
+    lbl
 
-let emit_tocentries () =
+let emit_toctable () =
   Hashtbl.iter
     (fun entry lbl ->
       `{emit_label lbl}:	.tc	{emit_label lbl}[TC], {emit_tocentry entry}\n`)
     tocref_entries
+
+(* Emit a load from a TOC entry *)
+  
+let emit_tocload emit_dest dest entry =
+  let lbl = label_for_tocref entry in
+  if !big_toc then begin
+    `	addis	{emit_dest dest}, 2, {emit_label lbl}@toc@ha\n`;
+    `	ld	{emit_dest dest}, {emit_label lbl}@toc@l({emit_dest dest}) # {emit_tocentry entry}\n`
+  end else begin
+    `	ld	{emit_dest dest}, {emit_label lbl}@toc(2) # {emit_tocentry entry}\n`
+  end
 
 (* Output a "upper 16 bits" or "lower 16 bits" operator. *)
 
@@ -202,18 +214,20 @@ let emit_load_store instr addressing_mode addr n arg =
         `	addis	11, 0, {emit_upper emit_symbol_offset (s,d)}\n`;
         `	{emit_string instr}	{emit_reg arg}, {emit_lower emit_symbol_offset (s,d)}(11)\n`
       | ELF64v1 | ELF64v2 ->
-        `	ld	11, {emit_tocref (TocSym s)}\n`;
-        if high_s d <> 0 then
-          `	addis	11, 11, {emit_int (high_s d)}\n`;
-        `	{emit_string instr}	{emit_reg arg}, {emit_int (low_s d)}(11)\n`
+        emit_tocload emit_gpr 11 (TocSym s);
+        let lo = low_s d and hi = high_s d in
+        if hi <> 0 then
+          `	addis	11, 11, {emit_int hi}\n`;
+        `	{emit_string instr}	{emit_reg arg}, {emit_int lo}(11)\n`
       end
   | Iindexed ofs ->
       if is_immediate ofs && valid_offset instr ofs then
         `	{emit_string instr}	{emit_reg arg}, {emit_int ofs}({emit_reg addr.(n)})\n`
       else begin
-        `	lis	0, {emit_int(high ofs)}\n`;
-        if low ofs <> 0 then
-          `	ori	0, 0, {emit_int(low ofs)}\n`;
+        let lo = low ofs and hi = high ofs in
+        `	lis	0, {emit_int hi}\n`;
+        if lo <> 0 then
+          `	ori	0, 0, {emit_int lo}\n`;
         `	{emit_string instr}x	{emit_reg arg}, {emit_reg addr.(n)}, 0\n`
       end
   | Iindexed2 ->
@@ -247,6 +261,12 @@ let emit_call_nop () =
   match abi with
   | ELF32 -> ()
   | ELF64v1 | ELF64v2 -> `	nop	\n`
+
+(* Adjust stack_offset and emit corresponding CFI directive *)
+
+let adjust_stack_offset delta =
+  stack_offset := !stack_offset + delta;
+  cfi_adjust_cfa_offset (-delta)    
 
 (* Record live pointers at call points *)
 
@@ -426,6 +446,7 @@ end)
 (* Output the assembly code for an instruction *)
 
 let emit_instr i =
+    emit_debug_info i.dbg;
     match i.desc with
     | Lend -> ()
     | Lop(Imove | Ispill | Ireload) ->
@@ -459,7 +480,7 @@ let emit_instr i =
           match abi with
           | ELF32 -> assert false
           | ELF64v1 | ELF64v2 ->
-            `	ld	{emit_reg i.res.(0)}, {emit_tocref (TocInt n)}\n`
+              emit_tocload emit_reg i.res.(0) (TocInt n)
         end
     | Lop(Iconst_float f) ->
         begin match abi with
@@ -469,7 +490,14 @@ let emit_instr i =
           `	addis	11, 0, {emit_upper emit_label lbl}\n`;
           `	lfd	{emit_reg i.res.(0)}, {emit_lower emit_label lbl}(11)\n`
         | ELF64v1 | ELF64v2 ->
-          `	lfd	{emit_reg i.res.(0)}, {emit_tocref (TocFloat f)}\n`
+          let entry = TocFloat (Int64.bits_of_float f) in
+          let lbl = label_for_tocref entry in
+          if !big_toc then begin
+            `	addis	11, 2, {emit_label lbl}@toc@ha\n`;
+            `	lfd	{emit_reg i.res.(0)}, {emit_label lbl}@toc@l(11) # {emit_tocentry entry}\n`
+          end else begin          
+            `	lfd	{emit_reg i.res.(0)}, {emit_label lbl}@toc(2) # {emit_tocentry entry}\n`
+          end
         end
     | Lop(Iconst_symbol s) ->
         begin match abi with
@@ -477,7 +505,7 @@ let emit_instr i =
           `	addis	{emit_reg i.res.(0)}, 0, {emit_upper emit_symbol s}\n`;
           `	addi	{emit_reg i.res.(0)}, {emit_reg i.res.(0)}, {emit_lower emit_symbol s}\n`
         | ELF64v1 | ELF64v2 ->
-          `	ld	{emit_reg i.res.(0)}, {emit_tocref (TocSym s)}\n`
+          emit_tocload emit_reg i.res.(0) (TocSym s)
         end
     | Lop(Icall_ind) ->
         begin match abi with
@@ -531,12 +559,12 @@ let emit_instr i =
           | ELF32 ->
             ()
           | ELF64v1 ->
-            `	ld	11, {emit_tocref (TocSym s)}\n`;
+            emit_tocload emit_gpr 11 (TocSym s);
             `	ld	0, 0(11)\n`;  (* code pointer *)
             `	mtctr	0\n`;
             `	ld	2, 8(11)\n`   (* TOC for callee *)
           | ELF64v2 ->
-            `	ld	12, {emit_tocref (TocSym s)}\n`; (* addr of fn in r12 *)
+            emit_tocload emit_gpr 12 (TocSym s); (* addr of fn must be in r12 *)
             `	mtctr	12\n`
           end;
           if !contains_calls then begin
@@ -563,14 +591,14 @@ let emit_instr i =
             `	bl	{emit_symbol "caml_c_call"}\n`;
             record_frame i.live i.dbg
           | ELF64v1 | ELF64v2 ->
-            `	ld	28, {emit_tocref (TocSym s)}\n`;
+            emit_tocload emit_gpr 28 (TocSym s);
             `	bl	{emit_symbol "caml_c_call"}\n`;
             record_frame i.live i.dbg;
             `	nop\n`
         end
     | Lop(Istackoffset n) ->
         `	addi	1, 1, {emit_int (-n)}\n`;
-        stack_offset := !stack_offset + n
+        adjust_stack_offset n
     | Lop(Iload(chunk, addr)) ->
         let loadinstr =
           match chunk with
@@ -760,7 +788,7 @@ let emit_instr i =
     | Lswitch jumptbl ->
         let lbl = new_label() in
         if ppc64 then begin
-          `	ld	11, {emit_tocref (TocLabel lbl)}\n`
+          emit_tocload emit_gpr 11 (TocLabel lbl)
         end else begin
           `	addis	11, 0, {emit_upper emit_label lbl}\n`;
           `	addi	11, 11, {emit_lower emit_label lbl}\n`
@@ -783,13 +811,13 @@ let emit_instr i =
         | ELF32 ->
           `	mflr	0\n`;
           `	stwu    0, -16(1)\n`;
-          stack_offset := !stack_offset + 16;
+          adjust_stack_offset 16;
           `	stw	29, 4(1)\n`;
           `	mr	29, 1\n`
         | ELF64v1 | ELF64v2 ->
           `	mflr	0\n`;
           `	addi	1, 1, -32\n`;
-          stack_offset := !stack_offset + 32;
+          adjust_stack_offset 32;
           `	std     0, {emit_int reserved_stack_space}(1)\n`;
           `	std	29, {emit_int (reserved_stack_space + 8)}(1)\n`;
           `	std	2, {emit_int (reserved_stack_space + 16)}(1)\n`;
@@ -800,11 +828,11 @@ let emit_instr i =
         | ELF32 ->
           `	lwz	29, 4(1)\n`;
           `	addi	1, 1, 16\n`;
-          stack_offset := !stack_offset - 16
+          adjust_stack_offset (-16)
         | ELF64v1 | ELF64v2 ->
           `	ld	29, {emit_int (reserved_stack_space + 8)}(1)\n`;
           `	addi	1, 1, 32\n`;
-          stack_offset := !stack_offset - 32
+          adjust_stack_offset (-32)
         end
     | Lraise k ->
         begin match !Clflags.debug, k with
@@ -879,12 +907,18 @@ let fundecl fundecl =
     `	addi	r2, r2, (.TOC. - 0b)@l\n`; 
     `	.localentry {emit_symbol fundecl.fun_name}, . - 0b\n`
   end;
+  emit_debug_info fundecl.fun_dbg;
+  cfi_startproc();
   let n = frame_size() in
-  if n > 0 then
+  if n > 0 then begin
     `	addi	1, 1, {emit_int(-n)}\n`;
+    cfi_adjust_cfa_offset n
+  end;
   if !contains_calls then begin
+    let ra = retaddr_offset() in
     `	mflr	0\n`;
-    `	{emit_string stg}	0, {emit_int(retaddr_offset())}(1)\n`
+    `	{emit_string stg}	0, {emit_int ra}(1)\n`;
+    cfi_offset ~reg: 65 (* LR *) ~offset: (ra - n)
   end;
   `{emit_label !tailrec_entry_point}:\n`;
   (* On this target, there is at most one "out of line" code block per
@@ -899,16 +933,17 @@ let fundecl fundecl =
     | ELF32 ->
       `	b	{emit_symbol "caml_call_gc"}\n`
     | ELF64v1 ->
-      `	ld	11, {emit_tocref (TocSym "caml_call_gc")}\n`;
+      emit_tocload emit_gpr 11 (TocSym "caml_call_gc");
       `	ld	0, 0(11)\n`;
       `	mtctr	0\n`;
       `	ld	2, 8(11)\n`;
       `	bctr\n`
     | ELF64v2 ->
-      `	ld	12, {emit_tocref (TocSym "caml_call_gc")}\n`;
+      emit_tocload emit_gpr 12 (TocSym "caml_call_gc");
       `	mtctr	12\n`;
       `	bctr\n`
   end;
+  cfi_endproc();
   begin match abi with
   | ELF32 | ELF64v2 ->
     `	.size	{emit_symbol fundecl.fun_name}, . - {emit_symbol fundecl.fun_name}\n`
@@ -1017,7 +1052,7 @@ let end_assembly() =
   | ELF32 -> ()
   | ELF64v1 | ELF64v2 ->
       emit_string toc_space;
-      emit_tocentries();
+      emit_toctable();
       Hashtbl.clear tocref_entries
   end;
   `	.section .note.GNU-stack,\"\",%progbits\n`

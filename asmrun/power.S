@@ -318,8 +318,10 @@ ENDFUNCTION(caml_call_gc)
 /* Call a C function from OCaml */
 
 FUNCTION(caml_c_call)
+        .cfi_startproc
     /* Save return address in a callee-save register */
         mflr    27
+        .cfi_register 65, 27
     /* Record lowest stack address and return address */
         Storeglobal(1, caml_bottom_of_stack, 11)
         Storeglobal(27, caml_last_return_address, 11)
@@ -353,6 +355,7 @@ FUNCTION(caml_c_call)
         Loadglobal(30, caml_young_limit, 11)
     /* Return to caller */
         blr
+        .cfi_endproc
 ENDFUNCTION(caml_c_call)
 
 /* Raise an exception from OCaml */
@@ -449,6 +452,7 @@ ENDFUNCTION(caml_raise_exception)
 /* Start the OCaml program */
 
 FUNCTION(caml_start_program)
+        .cfi_startproc
 #define STACKSIZE (WORD*18 + 8*18 + RESERVED_STACK)
   /* 18 callee-save GPR14...GPR31 + 18 callee-save FPR14...FPR31 */
         Addrglobal(12, caml_program)
@@ -456,9 +460,11 @@ FUNCTION(caml_start_program)
 .L102:
     /* Allocate and link stack frame */
         stgu    1, -STACKSIZE(1)
+        .cfi_adjust_cfa_offset STACKSIZE
     /* Save return address */
         mflr    0
         stg     0, (STACKSIZE + LR_SAVE)(1)
+        .cfi_offset 65, LR_SAVE
     /* Save all callee-save registers */
         addi    11, 1, RESERVED_STACK - WORD
         stgu    14, WORD(11)
@@ -499,6 +505,7 @@ FUNCTION(caml_start_program)
         stfdu   31, 8(11)
     /* Set up a callback link */
         addi    1, 1, -CALLBACK_LINK_SIZE
+        .cfi_adjust_cfa_offset CALLBACK_LINK_SIZE
         Loadglobal(11, caml_bottom_of_stack, 11)
         stg     11, CALLBACK_LINK_OFFSET(1)
         Loadglobal(11, caml_last_return_address, 11)
@@ -510,6 +517,7 @@ FUNCTION(caml_start_program)
         b       .L104
 .L103:
         addi    1, 1, -TRAP_SIZE
+        .cfi_adjust_cfa_offset TRAP_SIZE
         mflr    0
         stg     0, TRAP_HANDLER_OFFSET(1)
         Loadglobal(11, caml_exception_pointer, 11)
@@ -544,6 +552,7 @@ FUNCTION(caml_start_program)
         lg      0, TRAP_PREVIOUS_OFFSET(1)
         Storeglobal(0, caml_exception_pointer, 11)
         addi    1, 1, TRAP_SIZE
+        .cfi_adjust_cfa_offset -TRAP_SIZE
     /* Pop the callback link, restoring the global variables */
 .L106:
         lg      0, CALLBACK_LINK_OFFSET(1)
@@ -553,6 +562,7 @@ FUNCTION(caml_start_program)
         lg      0, (CALLBACK_LINK_OFFSET + 2 * WORD)(1)
         Storeglobal(0, caml_gc_regs, 11)
         addi    1, 1, CALLBACK_LINK_SIZE
+        .cfi_adjust_cfa_offset -CALLBACK_LINK_SIZE
     /* Update allocation pointer */
         Storeglobal(31, caml_young_ptr, 11)
     /* Restore callee-save registers */
@@ -608,6 +618,7 @@ FUNCTION(caml_start_program)
         ori     3, 3, 2
         b       .L106
 #undef STACKSIZE
+        .cfi_endproc
 ENDFUNCTION(caml_start_program)
 
 /* Callback from C to OCaml */
