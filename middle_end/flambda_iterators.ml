@@ -190,3 +190,22 @@ let map_symbols tree ~f =
       | Move_within_set_of_closures _ | Project_var _ | Prim _
       | Expr _) as named -> named)
     tree
+
+let map_sets_of_closures tree ~f =
+  map_named (function
+      | Set_of_closures set_of_closures -> Set_of_closures (f set_of_closures)
+      | (Symbol _ | Const _ | Project_closure _
+      | Move_within_set_of_closures _ | Project_var _ | Prim _
+      | Expr _) as named -> named)
+    tree
+
+let map_project_var_to_expr_opt tree ~f =
+  map_named (function
+      | Project_var project_var ->
+        begin match f project_var with
+        | None -> Project_var project_var
+        | Some expr -> Expr expr
+        end
+      | (Symbol _ | Const _ | Set_of_closures _ | Project_closure _
+      | Move_within_set_of_closures _ | Prim _ | Expr _) as named -> named)
+    tree

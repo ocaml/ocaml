@@ -257,6 +257,8 @@ module Whether_sufficient_benefit = struct
     if t.probably_a_functor then
       true
     else
+      (* CR mshinwell: The documentation for -inline-call-cost etc don't
+         seem to match this code. *)
       t.new_size - t.evaluated_benefit
       <= t.original_size
 

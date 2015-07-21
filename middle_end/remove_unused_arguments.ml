@@ -133,10 +133,15 @@ let separate_unused_arguments_in_closures tree =
     match named with
     | Set_of_closures set_of_closures ->
       if candidate_for_spliting_for_unused_arguments
-          set_of_closures.function_decls then
+          set_of_closures.function_decls then begin
+(*
+        Format.eprintf "separate_unused_arguments %a: %!"
+          Flambda_printers.function_declarations set_of_closures.function_decls;
+*)
         match separate_unused_arguments set_of_closures with
-        | None -> named
-        | Some set_of_closures -> Set_of_closures set_of_closures
+        | None -> (* Format.eprintf "None\n"; *) named
+        | Some set_of_closures -> (* Format.eprintf "Some\n"; *) Set_of_closures set_of_closures
+end
       else
         named
     | e -> e

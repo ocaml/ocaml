@@ -229,9 +229,12 @@ let unchanging_params_in_recursion (decls : Flambda.function_declarations) =
       Variable.Set.union (Variable.Set.of_list params) set)
     decls.funs Variable.Set.empty
   in
-  Variable.Set.diff params not_unchanging
+  let result = Variable.Set.diff params not_unchanging in
+Format.eprintf "unchanging_params_in_recursion %a for %a\n"
+  Variable.Set.print result
+  Flambda_printers.function_declarations decls;
+  result
 
-(*
 type argument =
   | Used
   | Argument of Variable.t
@@ -255,9 +258,8 @@ let unused_arguments (decls : Flambda.function_declarations) : Variable.Set.t =
         (* Direct calls don't have overapplication *)
         Argument arr.(callee_pos)
   in
-  let rec loop (expr : Flambda.t) =
+  let check_expr (expr : Flambda.t) =
     match expr with
-    | Var var -> used_variable var
     | Apply { func = _; args; kind = Direct callee } ->
       List.iteri (fun callee_pos arg ->
           match find_callee_arg ~callee ~callee_pos with
@@ -265,19 +267,16 @@ let unused_arguments (decls : Flambda.function_declarations) : Variable.Set.t =
           | Argument param ->
             if not (Variable.equal arg param) then used_variable arg)
         args
-    | e ->
-      Flambda_iterators.apply_on_subexpressions loop
-        (fun (_ : Flambda.named) -> ()) e
+    | _ -> ()
   in
   Variable.Map.iter (fun _caller (decl : Flambda.function_declaration) ->
-      loop decl.body)
+      Flambda_iterators.iter check_expr (fun (_ : Flambda.named) -> ())
+        decl.body;
+      Variable.Set.iter used_variable
+        (Free_variables.calculate ~ignore_uses_as_callee:() decl.body))
     decls.funs;
   let arguments = Variable.Map.fold (fun _ decl acc ->
       Variable.Set.union acc (Variable.Set.of_list decl.Flambda.params))
       decls.funs Variable.Set.empty
   in
   Variable.Set.diff arguments !used_variables
-*)
-
-(* CR mshinwell: re-enable this once everything else is working *)
-let unused_arguments _ = Variable.Set.empty

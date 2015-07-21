@@ -25,6 +25,10 @@ let which_function_parameters_can_we_specialize ~params ~args
   assert (List.length params = List.length args);
   assert (List.length args = List.length args_approxs);
   List.fold_right2 (fun (var, arg) approx (spec_args, args, args_decl) ->
+      Format.eprintf "%a useful approx? %s unchanging? %s\n"
+        Variable.print var
+        (if Simple_value_approx.useful approx then "yes" else "no")
+        (if Variable.Set.mem var unchanging_params then "yes" else "no");
       let spec_args =
         if Simple_value_approx.useful approx
           && Variable.Set.mem var unchanging_params
@@ -127,6 +131,10 @@ let inline_by_copying_function_declaration ~env ~r
     which_function_parameters_can_we_specialize
       ~params:function_decl.params ~args ~args_approxs ~unchanging_params
   in
+  Format.eprintf "inline: spec_args=%a more_spec_args=%a lhs_of_application=%a"
+    Variable.Set.print specialised_args
+    Variable.Set.print (Variable.Map.keys more_specialised_args)
+    Variable.print lhs_of_application;
   if Variable.Set.equal specialised_args
       (Variable.Map.keys more_specialised_args)
   then
@@ -188,4 +196,6 @@ let inline_by_copying_function_declaration ~env ~r
       E.note_entering_closure env ~closure_id:closure_id_being_applied
         ~where:Inline_by_copying_function_declaration
     in
+    Format.eprintf "Result of copying decl: %a\n"
+      Flambda_printers.flambda expr;
     Some (simplify (E.activate_freshening env) r expr)

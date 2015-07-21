@@ -173,8 +173,8 @@ and print_set_of_closures ppf (set_of_closures : Flambda.set_of_closures) =
     let spec ppf spec_args =
       if not (Variable.Map.is_empty spec_args)
       then begin
-        fprintf ppf "@ with";
-        Variable.Map.iter (fun id id' -> fprintf ppf "@ %a <- %a"
+        fprintf ppf "@ ";
+        Variable.Map.iter (fun id id' -> fprintf ppf "@ %a := %a"
                         Variable.print id Variable.print id')
           spec_args
       end
@@ -197,7 +197,7 @@ and print_move_within_set_of_closures ppf
     Variable.print move_within_set_of_closures.closure
 
 and print_project_var ppf (project_var : Flambda.project_var) =
-  fprintf ppf "@[<2>(project_var@ %a@ %a@ %a)@]"
+  fprintf ppf "@[<2>(project_var@ %a@ from %a=%a)@]"
     Var_within_closure.print project_var.var
     Closure_id.print project_var.closure_id
     Variable.print project_var.closure
