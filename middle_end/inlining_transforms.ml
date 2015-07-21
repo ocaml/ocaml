@@ -152,6 +152,7 @@ let inline_by_copying_function_declaration ~env ~r
     let function_decls =
       Unbox_closures.run ~env ~function_decls
         ~specialised_args:more_specialised_args
+        ~closure_id_being_applied
     in
     let set_of_closures : Flambda.set_of_closures =
       (* This is the new set of closures, with more precise specialisation

@@ -10,6 +10,8 @@
 (*                                                                        *)
 (**************************************************************************)
 
+module A = Simple_value_approx
+
 (* CR mshinwell: should be backend-dependent *)
 let max_arguments = 10
 
@@ -28,64 +30,60 @@ let params_only_used_for_project_var function_decl =
   Variable.Set.inter free_variables_only_used_for_project_var
     (Variable.Set.of_list function_decl.params)
 
-let rewrite_function_decl function_decls fun_var
-      (function_decl : Flambda.function_declaration) funs =
+let rewrite_function_decl ~env ~function_decls ~specialised_args
+      fun_var function_decl funs =
   let closure_id = Closure_id.wrap fun_var in
-  (* CR mshinwell: [vars_bound_by_closure] is a slight misnomer now *)
-  let params_only_used_for_project_var =
-    params_only_used_for_project_var function_decl
+  let closure_element_params_for_specialised_args =
+    Variable.Map.fold (fun specialised_param specialised_to map ->
+        let approx = E.find_exn env specialised_to in
+        match A.check_approx_for_closure approx with
+        | Wrong ->
+          Misc.fatal_error "Unbox_closures.rewrite_function_decl: \
+              wrong approximation for specialised arg %a -> %a: %a"
+            Variable.print specialised_param
+            Variable.print specialised_to
+            Simple_value_approx.print approx
+        | Ok (_value_closure, _approx_var, value_set_of_closures) ->
+          Var_within_closure.Map.fold (fun var _approx map ->
+              let param = Variable.rename ~append:"_unboxed_param" var in
+              Variable.Pair.Map.add (specialised_param, var) param map))
+      specialised_args
+      Variable.Pair.Map.empty
   in
-  let vars_bound_by_closure =
-    Variable.Set.union
+  let closure_element_params_for_vars_bound_by_closure =
+    Variable.Set.fold (fun var map ->
+        let param = Variable.rename ~append:"_unboxed_bound"
       (Flambda_utils.variables_bound_by_the_closure closure_id function_decls)
-      params_only_used_for_project_var
+      Variable.Pair.Map.empty
   in
-  let num_params = List.length function_decl.params in
-  let num_vars_bound_by_closure =
-    Variable.Set.cardinal vars_bound_by_closure
+  let closure_element_params_mapping =
+    Variable.Pair.Map.union closure_element_params_for_specialised_args
+      closure_element_params_for_vars_bound_by_closure
   in
-  Format.eprintf "Unbox_closures on %a.  num params %d num bound %d\n"
-    Variable.print fun_var num_params num_vars_bound_by_closure;
-  if Variable.Map.cardinal function_decls.specialised_args > 0
-      && num_vars_bound_by_closure > 0
-      && num_params + num_vars_bound_by_closure <= max_arguments
-  then begin
-    let param_map_for_vars_bound_by_closure =
-      List.map (fun var ->
-          var, Variable.rename ~append:"_unbox_closures" var)
-        (Variable.Set.elements vars_bound_by_closure)
-      |> Variable.Map.of_list
-    in
-    let param_for_var_bound_by_closure var =
-      Variable.Map.find (Var_within_closure.unwrap var)
-        param_map_for_vars_bound_by_closure
-    in
-    let params_for_vars_bound_by_closure =
-      List.map snd
-        (Variable.Map.bindings param_map_for_vars_bound_by_closure)
-    in
-    let body_using_args_not_closure =
+  let closure_element_params =
+    List.map snd (Variable.Pair.Map.bindings closure_element_params_mapping)
+  in
+  let all_params = function_decl.params @ closure_element_params in
+  if List.length all_params > max_arguments then begin
+    Variable.Map.add fun_var function_decl funs
+  end else begin
+    let body_using_params_not_closures =
       Flambda_iterators.map_project_var_to_expr_opt function_decl.body
         ~f:(fun project_var ->
-          if Closure_id.equal closure_id project_var.closure_id
-            || Variable.Set.mem params_only_used_for_project_var
-                project_var.closure
-          then begin
-            Some (Flambda.Var (param_for_var_bound_by_closure project_var.var))
-          end else begin
-            None
-          end)
+          match
+            Variable.Pair.Map.find closure_element_params_mapping
+              (project_var.closure, Var_within_closure.unwrap project_var.var)
+          with
+          | None -> None
+          | Some param -> Some (Flambda.Var param))
     in
-    let new_fun_var = Variable.rename ~append:"_unbox_closures" fun_var in
-    assert (Variable.Set.equal function_decl.free_variables
-        (Free_variables.calculate body_using_args_not_closure));
-    let rewritten_function_decl_params =
-      function_decl.params @ params_for_vars_bound_by_closure
+    let free_variables =
+      Free_variables.calculate body_using_params_not_closures
     in
     let rewritten_function_decl : Flambda.function_declaration =
-      { params = rewritten_function_decl_params;
-        body = body_using_args_not_closure;
-        free_variables = function_decl.free_variables;
+      { params = all_params;
+        body = body_using_params_not_closures;
+        free_variables;
         stub = function_decl.stub;
         dbg = function_decl.dbg;
       }
@@ -95,8 +93,8 @@ let rewrite_function_decl function_decls fun_var
         function_decl.params
     in
     let wrapper_body : Flambda.t =
-      let bindings_for_vars_bound_by_closure =
-        List.map (fun var ->
+      let bindings_for_closure_element_params =
+        Variable.Pair.fold (fun (projected_from, var) param ->
             let binding_var = Variable.rename var in
             let defining_expr : Flambda.named =
               Project_var {
@@ -106,7 +104,7 @@ let rewrite_function_decl function_decls fun_var
               }
             in
             binding_var, defining_expr)
-          (Variable.Set.elements vars_bound_by_closure)
+          closure_element_
       in
       let args_for_vars_bound_by_closure =
         List.map fst bindings_for_vars_bound_by_closure
@@ -131,13 +129,12 @@ let rewrite_function_decl function_decls fun_var
     in
     Variable.Map.add new_fun_var rewritten_function_decl
       (Variable.Map.add fun_var wrapper funs)
-  end else begin
-    funs
   end
 
 let run ~env ~function_decls ~specialised_args =
   let funs =
-    Variable.Map.fold (rewrite_function_decl function_decls)
+    Variable.Map.fold (rewrite_function_decl ~env ~function_decls
+        ~specialised_args)
       function_decls.funs function_decls.funs
   in
   let function_decls = { function_decls with funs; } in
