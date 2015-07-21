@@ -255,6 +255,15 @@ let emit_free_frame () =
   if n > 0 then
     `	addi	1, 1, {emit_int n}\n`
 
+(* Emit a "bl" instruction to a given symbol *)
+
+let emit_call s =
+  match abi with
+  | ELF32 when !Clflags.dlcode || !Clflags.pic_code ->
+    `	bl	{emit_symbol s}@plt\n`
+  | _ ->
+    `	bl	{emit_symbol s}\n`
+
 (* Add a nop after a "bl" call for ELF64 *)
 
 let emit_call_nop () =
@@ -530,7 +539,7 @@ let emit_instr i =
           `	ld	2, 24(1)\n`   (* reload current TOC pointer *)
         end
     | Lop(Icall_imm s) ->
-        `	bl	{emit_symbol s}\n`;
+        emit_call s;
         record_frame i.live i.dbg;
         emit_call_nop()
     | Lop(Itailcall_ind) ->
@@ -581,18 +590,18 @@ let emit_instr i =
         end
     | Lop(Iextcall(s, alloc)) ->
         if not alloc then begin
-          `	bl	{emit_symbol s}\n`;
+          emit_call s;
           emit_call_nop()
         end else begin
           match abi with
           | ELF32 ->
             `	addis	28, 0, {emit_upper emit_symbol s}\n`;
             `	addi	28, 28, {emit_lower emit_symbol s}\n`;
-            `	bl	{emit_symbol "caml_c_call"}\n`;
+            emit_call "caml_c_call";
             record_frame i.live i.dbg
           | ELF64v1 | ELF64v2 ->
             emit_tocload emit_gpr 28 (TocSym s);
-            `	bl	{emit_symbol "caml_c_call"}\n`;
+            emit_call "caml_c_call";
             record_frame i.live i.dbg;
             `	nop\n`
         end
@@ -837,13 +846,13 @@ let emit_instr i =
     | Lraise k ->
         begin match !Clflags.debug, k with
         | true, Lambda.Raise_regular ->
-          `	bl	{emit_symbol "caml_raise_exn"}\n`;
-          record_frame Reg.Set.empty i.dbg;
-          emit_call_nop()
+            emit_call "caml_raise_exn";
+            record_frame Reg.Set.empty i.dbg;
+            emit_call_nop()
         | true, Lambda.Raise_reraise ->
-          `	bl	{emit_symbol "caml_reraise_exn"}\n`;
-          record_frame Reg.Set.empty i.dbg;
-          emit_call_nop()
+            emit_call "caml_reraise_exn";
+            record_frame Reg.Set.empty i.dbg;
+            emit_call_nop()
         | false, _
         | true, Lambda.Raise_notrace ->
           begin match abi with
