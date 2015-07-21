@@ -285,17 +285,8 @@ let rec simplify_project_var env r ~(project_var : Flambda.project_var)
         Var_within_closure.print var
     end;
     let approx = A.approx_for_bound_var value_set_of_closures var in
-    Format.eprintf "Project_var, var=%a approx=%a\n"
-      Var_within_closure.print var
-      Simple_value_approx.print approx;
     let expr : Flambda.named = Project_var { closure; closure_id; var; } in
-    Format.eprintf "Project_var before simplify: %a\n"
-      Flambda_printers.named expr;
-    let result, r = simplify_named_using_approx_and_env env r expr approx in
-    Format.eprintf "Project_var after simplify: %a.  Env %a\n"
-      Flambda_printers.named result
-      E.print env;
-    result, r
+    simplify_named_using_approx_and_env env r expr approx
   | Unresolved symbol ->
     (* This value comes from a symbol for which we couldn't find any
        approximation, telling us that names within the closure couldn't
@@ -672,7 +663,8 @@ and simplify_named env r (tree : Flambda.named) : Flambda.named * R.t =
 and simplify_direct env r (tree : Flambda.t) : Flambda.t * R.t =
   debug_free_variables_check env tree ~name:"loop"
     ~calculate_free_variables:
-      (Free_variables.calculate ?ignore_uses_as_callee:None)
+      (Free_variables.calculate ?ignore_uses_as_callee:None
+        ?ignore_uses_in_project_var:None)
     ~printer:Flambda_printers.flambda;
   match tree with
   | Var var ->

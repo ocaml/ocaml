@@ -82,6 +82,11 @@ val map_symbols
   -> f:(Symbol.t -> Symbol.t)
   -> Flambda.t
 
+val map_toplevel_sets_of_closures
+   : Flambda.t
+  -> f:(Flambda.set_of_closures -> Flambda.set_of_closures)
+  -> Flambda.t
+
 val map_sets_of_closures
    : Flambda.t
   -> f:(Flambda.set_of_closures -> Flambda.set_of_closures)

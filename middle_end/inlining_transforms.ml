@@ -25,10 +25,6 @@ let which_function_parameters_can_we_specialize ~params ~args
   assert (List.length params = List.length args);
   assert (List.length args = List.length args_approxs);
   List.fold_right2 (fun (var, arg) approx (spec_args, args, args_decl) ->
-      Format.eprintf "%a useful approx? %s unchanging? %s\n"
-        Variable.print var
-        (if Simple_value_approx.useful approx then "yes" else "no")
-        (if Variable.Set.mem var unchanging_params then "yes" else "no");
       let spec_args =
         if Simple_value_approx.useful approx
           && Variable.Set.mem var unchanging_params
@@ -131,10 +127,6 @@ let inline_by_copying_function_declaration ~env ~r
     which_function_parameters_can_we_specialize
       ~params:function_decl.params ~args ~args_approxs ~unchanging_params
   in
-  Format.eprintf "inline: spec_args=%a more_spec_args=%a lhs_of_application=%a"
-    Variable.Set.print specialised_args
-    Variable.Set.print (Variable.Map.keys more_specialised_args)
-    Variable.print lhs_of_application;
   if Variable.Set.equal specialised_args
       (Variable.Map.keys more_specialised_args)
   then
@@ -157,6 +149,10 @@ let inline_by_copying_function_declaration ~env ~r
           Variable.Map.add internal_var from_closure map,
             (from_closure, expr)::for_lets)
     in
+    let function_decls =
+      Unbox_closures.run ~env ~function_decls
+        ~specialised_args:more_specialised_args
+    in
     let set_of_closures : Flambda.set_of_closures =
       (* This is the new set of closures, with more precise specialisation
          information than the one being copied. *)
@@ -167,7 +163,7 @@ let inline_by_copying_function_declaration ~env ~r
     in
     (* Generate a copy of the function application, including the function
        declaration(s), but with variables (not yet bound) in place of the
-       arguments.  The new set of closures is bound to a fresh variable. *)
+       arguments. *)
     let duplicated_application : Flambda.t =
       let project_closure : Flambda.project_closure =
         { set_of_closures = set_of_closures_var;
@@ -196,6 +192,4 @@ let inline_by_copying_function_declaration ~env ~r
       E.note_entering_closure env ~closure_id:closure_id_being_applied
         ~where:Inline_by_copying_function_declaration
     in
-    Format.eprintf "Result of copying decl: %a\n"
-      Flambda_printers.flambda expr;
     Some (simplify (E.activate_freshening env) r expr)

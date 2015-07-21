@@ -229,11 +229,7 @@ let unchanging_params_in_recursion (decls : Flambda.function_declarations) =
       Variable.Set.union (Variable.Set.of_list params) set)
     decls.funs Variable.Set.empty
   in
-  let result = Variable.Set.diff params not_unchanging in
-Format.eprintf "unchanging_params_in_recursion %a for %a\n"
-  Variable.Set.print result
-  Flambda_printers.function_declarations decls;
-  result
+  Variable.Set.diff params not_unchanging
 
 type argument =
   | Used

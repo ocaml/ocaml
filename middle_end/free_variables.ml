@@ -15,7 +15,8 @@
    properly.  Check the original version.  Why don't we just do the
    subtraction as we pass back over binding points? *)
 
-let iter ?ignore_uses_as_callee tree ~free_variable ~bound_variable =
+let iter ?ignore_uses_as_callee ?ignore_uses_in_project_var tree
+      ~free_variable ~bound_variable =
   let rec aux (flam : Flambda.t) : unit =
     match flam with
     | Var var -> free_variable var
@@ -87,7 +88,10 @@ let iter ?ignore_uses_as_callee tree ~free_variable ~bound_variable =
     | Project_closure { set_of_closures; closure_id = _ } ->
       free_variable set_of_closures
     | Project_var { closure; closure_id = _; var = _ } ->
-      free_variable closure
+      begin match ignore_uses_in_project_var with
+      | None -> free_variable closure
+      | Some () -> ()
+      end
     | Move_within_set_of_closures { closure; start_from = _; move_to = _ } ->
       free_variable closure
     | Prim (_, args, _) -> List.iter free_variable args
@@ -95,12 +99,13 @@ let iter ?ignore_uses_as_callee tree ~free_variable ~bound_variable =
   in
   aux tree
 
-let calculate ?ignore_uses_as_callee tree =
+let calculate ?ignore_uses_as_callee ?ignore_uses_in_project_var tree =
   let free = ref Variable.Set.empty in
   let bound = ref Variable.Set.empty in
   let free_variable id = free := Variable.Set.add id !free in
   let bound_variable id = bound := Variable.Set.add id !bound in
-  iter ?ignore_uses_as_callee tree ~free_variable ~bound_variable;
+  iter ?ignore_uses_as_callee ?ignore_uses_in_project_var tree
+    ~free_variable ~bound_variable;
   Variable.Set.diff !free !bound
 
 let calculate_named tree =

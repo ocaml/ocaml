@@ -182,11 +182,21 @@ let map f f_named tree = map_general ~toplevel:false f f_named tree
 let map_named f_named tree = map (fun expr -> expr) f_named tree
 (* CR mshinwell: rename "toplevel" *)
 let map_toplevel f f_named tree = map_general ~toplevel:true f f_named tree
+let map_toplevel_named f_named tree =
+  map_toplevel (fun tree -> tree) f_named tree
 
 let map_symbols tree ~f =
   map_named (function
       | Symbol sym -> Symbol (f sym)
       | (Const _ | Set_of_closures _ | Project_closure _
+      | Move_within_set_of_closures _ | Project_var _ | Prim _
+      | Expr _) as named -> named)
+    tree
+
+let map_toplevel_sets_of_closures tree ~f =
+  map_toplevel_named (function
+      | Set_of_closures set_of_closures -> Set_of_closures (f set_of_closures)
+      | (Symbol _ | Const _ | Project_closure _
       | Move_within_set_of_closures _ | Project_var _ | Prim _
       | Expr _) as named -> named)
     tree
