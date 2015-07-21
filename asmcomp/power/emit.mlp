@@ -539,9 +539,34 @@ let emit_instr i =
           `	ld	2, 24(1)\n`   (* reload current TOC pointer *)
         end
     | Lop(Icall_imm s) ->
-        emit_call s;
-        record_frame i.live i.dbg;
-        emit_call_nop()
+        begin match abi with
+        | ELF32 ->
+            emit_call s;
+            record_frame i.live i.dbg
+        | ELF64v1 | ELF64v2 ->
+        (* For PPC64, we cannot just emit a "bl s; nop" sequence, because 
+           of the following scenario:
+              - current function f1 calls f2 that has the same TOC
+              - f2 tailcalls f3 that has a different TOC
+           Because f1 and f2 have the same TOC, the linker inserted no
+           code in f1 to save and restore r2 around the call to f1.
+           Because f2 tailcalls f3, r2 will not be restored to f2's TOC
+           when f3 returns.
+           We have two options:
+             1- Turn the call into an indirect call, like we do for 
+                Itailcall_imm.  Cost: 7 instructions.
+             2- Wrap the "bl" with 2 instructions to save and restore r2
+                explicitly.  If the called function has a different TOC,
+                these instructions are redundant with those inserted
+                by the linker, but this is harmless.
+                Cost: 4 instructions if same TOC, 8 if different TOC.
+           Let's try option 2. *)
+            `	std	2, 40(1)\n`;  (* save current TOC pointer *)
+            emit_call s;           
+            record_frame i.live i.dbg;
+            `	nop\n`;
+            `	ld	2, 40(1)\n`   (* restore TOC pointer *)
+        end         
     | Lop(Itailcall_ind) ->
         begin match abi with
         | ELF32 ->
@@ -942,12 +967,16 @@ let fundecl fundecl =
     | ELF32 ->
       `	b	{emit_symbol "caml_call_gc"}\n`
     | ELF64v1 ->
+      `	std	2, 40(1)\n`;
+             (* save our TOC, will be restored by caml_call_gc *)
       emit_tocload emit_gpr 11 (TocSym "caml_call_gc");
       `	ld	0, 0(11)\n`;
       `	mtctr	0\n`;
       `	ld	2, 8(11)\n`;
       `	bctr\n`
     | ELF64v2 ->
+      `	std	2, 24(1)\n`;
+             (* save our TOC, will be restored by caml_call_gc *)
       emit_tocload emit_gpr 12 (TocSym "caml_call_gc");
       `	mtctr	12\n`;
       `	bctr\n`

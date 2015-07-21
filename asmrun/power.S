@@ -309,6 +309,10 @@ FUNCTION(caml_call_gc)
         Loadglobal(11, caml_last_return_address, 11)
         addi    11, 11, -16     /* Restart the allocation (4 instructions) */
         mtlr    11
+    /* For PPC64: restore the TOC that the caller saved at the usual place */
+#ifdef TOC_SAVE
+        ld      2, (STACKSIZE + TOC_SAVE)(1)
+#endif
     /* Deallocate stack frame */
         addi    1, 1, STACKSIZE
         blr
