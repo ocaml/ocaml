@@ -149,11 +149,6 @@ let inline_by_copying_function_declaration ~env ~r
           Variable.Map.add internal_var from_closure map,
             (from_closure, expr)::for_lets)
     in
-    let function_decls =
-      Unbox_closures.run ~env ~function_decls
-        ~specialised_args:more_specialised_args
-        ~closure_id_being_applied
-    in
     let set_of_closures : Flambda.set_of_closures =
       (* This is the new set of closures, with more precise specialisation
          information than the one being copied. *)
@@ -193,4 +188,7 @@ let inline_by_copying_function_declaration ~env ~r
       E.note_entering_closure env ~closure_id:closure_id_being_applied
         ~where:Inline_by_copying_function_declaration
     in
-    Some (simplify (E.activate_freshening env) r expr)
+    let expr, r = simplify (E.activate_freshening env) r expr in
+    let expr, r = simplify env r (Unbox_closures.run env expr) in
+    Format.eprintf "After Unbox_closures and simplify: %a\n" Flambda_printers.flambda expr;
+    Some (expr, r)

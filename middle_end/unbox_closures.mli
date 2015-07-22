@@ -10,4 +10,7 @@
 (*                                                                        *)
 (**************************************************************************)
 
-val run : Flambda.t -> Flambda.t
+val run
+   : Inline_and_simplify_aux.Env.t
+  -> Flambda.t
+  -> Flambda.t
