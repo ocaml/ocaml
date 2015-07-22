@@ -89,6 +89,9 @@ let populate_closure_approximations
   (* Add known approximations of function parameters *)
   let env =
     List.fold_left (fun env id ->
+       Format.eprintf "populate_closure_approximations %a, approx in PAs? %s"
+        Variable.print id (if Variable.Map.mem id parameter_approximations
+          then "yes" else "no");
        let approx = try Variable.Map.find id parameter_approximations
                     with Not_found -> A.value_unknown in
        E.add env id approx)
@@ -297,7 +300,7 @@ let rec simplify_project_var env r ~(project_var : Flambda.project_var)
     (* We must have the correct approximation of the value to ensure
        we take account of all freshenings. *)
     Misc.fatal_errorf "[Project_var] from a value with wrong \
-        approximation: %a@.%a@.%a@."
+        approximation: %a@.closure=%a@.approx of closure=%a@."
       Flambda_printers.project_var project_var
       Variable.print closure
       Simple_value_approx.print approx
@@ -366,6 +369,11 @@ let rec simplify_project_var env r ~(project_var : Flambda.project_var)
 *)
 and simplify_set_of_closures original_env r
       (set_of_closures : Flambda.set_of_closures) : Flambda.named * R.t =
+Format.eprintf "simplify_set_of_closures_starting.  Binds %a SA %a -------: %a@ %s\n"
+  Variable.Set.print (Variable.Map.keys set_of_closures.function_decls.funs)
+  Variable.Set.print (Variable.Map.keys set_of_closures.specialised_args)
+  Flambda_printers.set_of_closures set_of_closures
+  (Printexc.raw_backtrace_to_string (Printexc.get_callstack 40000));
   let function_decls =
     let module Backend = (val (E.backend original_env) : Backend_intf.S) in
     (* CR mshinwell: Does this affect
@@ -403,7 +411,12 @@ and simplify_set_of_closures original_env r
     (* Approximations of parameters that are known to always hold the same
        argument throughout the body of the function. *)
     Variable.Map.map_keys (Freshening.apply_variable (E.freshening env))
-      (Variable.Map.map (fun id -> E.find_exn environment_before_cleaning id)
+      (Variable.Map.mapi (fun id' id ->
+          let approx = E.find_exn environment_before_cleaning id in
+          Format.eprintf "param_approx %a := %a = %a\n"
+            Variable.print id'
+            Variable.print id
+            Simple_value_approx.print approx; approx)
         specialised_args)
   in
   let env =
@@ -433,7 +446,7 @@ and simplify_set_of_closures original_env r
       function_decls.funs env
   in
   let simplify_function fid (function_decl : Flambda.function_declaration)
-        (funs, _used_params, r)
+        (funs, used_params, r)
         (* CR mshinwell: check we really did not need _used_params, and
            remove it *)
         : Flambda.function_declaration Variable.Map.t * Variable.Set.t * R.t =
@@ -447,15 +460,19 @@ and simplify_set_of_closures original_env r
           (Inlining_decision.should_inline_inside_declaration function_decl)
         ~where:Transform_set_of_closures_expression
         ~f:(fun body_env ->
+          Format.eprintf "simplifying body of function decl %a (%a):@ %a\n"
+            Variable.print fid
+            Variable.print_list function_decl.params
+            Flambda_printers.flambda function_decl.body;
           simplify body_env r function_decl.body)
     in
     let free_variables = Free_variables.calculate body in
-    let used_params =
+    let used_params' =
       Variable.Set.filter (fun param -> Variable.Set.mem param free_variables)
         (Variable.Set.of_list function_decl.params)
     in
     Variable.Map.add fid { function_decl with body; free_variables } funs,
-      used_params, r
+      Variable.Set.union used_params used_params', r
   in
   let funs, used_params, r =
     Variable.Map.fold simplify_function function_decls.funs
@@ -481,7 +498,7 @@ and simplify_set_of_closures original_env r
       specialised_args;
     }
   in
-  Set_of_closures (set_of_closures),
+  Set_of_closures set_of_closures,
     ret r (A.value_set_of_closures value_set_of_closures)
 
 and simplify_apply env r ~(apply : Flambda.apply) : Flambda.t * R.t =

@@ -72,7 +72,17 @@ module Env = struct
       | Some var when mem t var -> approx
       | _ -> Simple_value_approx.augment_with_variable approx var
     in
-    { t with approx = Variable.Map.add var approx t.approx }
+    Variable.debug_when_stamp_matches var ~stamp:1190 ~f:(fun () ->
+      Format.eprintf "Var 1190 being added to env: %s approx: %a\n"
+        (Printexc.raw_backtrace_to_string (Printexc.get_callstack 1000))
+        Simple_value_approx.print approx);
+    if Variable.Map.mem var t.approx then begin
+      Misc.fatal_errorf "Cannot rebind %a in environment to %a"
+        Variable.print var
+        Simple_value_approx.print approx
+    end else begin
+      { t with approx = Variable.Map.add var approx t.approx }
+    end
 
   let find_exn t id =
     try Variable.Map.find id t.approx

@@ -246,19 +246,32 @@ let unused_arguments (decls : Flambda.function_declarations) : Variable.Set.t =
         Closure_id.Map.add cid (Array.of_list decl.params) map)
       decls.funs Closure_id.Map.empty
   in
-  let find_callee_arg ~callee ~callee_pos =
+  Closure_id.Map.iter (fun closure_id params ->
+      Format.eprintf "closure id %a has %d params\n"
+        Closure_id.print closure_id (Array.length params))
+    variables_at_position;
+  let find_callee_arg ~callee ~callee_pos ~application_expr =
     match Closure_id.Map.find callee variables_at_position with
     | exception Not_found -> Used (* not a recursive call *)
     | arr ->
-        assert(callee_pos < Array.length arr);
-        (* Direct calls don't have overapplication *)
-        Argument arr.(callee_pos)
+      (* Direct calls don't have overapplication *)
+      if callee_pos >= Array.length arr then begin
+        Misc.fatal_errorf "Invariant_params.unused_arguments: direct calls \
+            may not have overapplication: callee %a, application expr: %a, \
+            function decls: %a"
+          Closure_id.print callee
+          Flambda_printers.flambda application_expr
+          Flambda_printers.function_declarations decls
+      end;
+      Argument arr.(callee_pos)
   in
   let check_expr (expr : Flambda.t) =
     match expr with
     | Apply { func = _; args; kind = Direct callee } ->
       List.iteri (fun callee_pos arg ->
-          match find_callee_arg ~callee ~callee_pos with
+          match
+            find_callee_arg ~callee ~callee_pos ~application_expr:expr
+          with
           | Used -> used_variable arg
           | Argument param ->
             if not (Variable.equal arg param) then used_variable arg)

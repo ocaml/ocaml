@@ -201,6 +201,13 @@ let map_toplevel_sets_of_closures tree ~f =
       | Expr _) as named -> named)
     tree
 
+let map_apply tree ~f =
+  map (function
+      | Apply apply -> Apply (f apply)
+      | expr -> expr)
+    (fun named -> named)
+    tree
+
 let map_sets_of_closures tree ~f =
   map_named (function
       | Set_of_closures set_of_closures -> Set_of_closures (f set_of_closures)

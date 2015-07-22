@@ -68,6 +68,10 @@ exception Unbound_vars_within_closures of Var_within_closure.Set.t
 
 exception Flambda_invariants_failed
 
+(* CR mshinwell: We should make "direct applications should not have
+   overapplication" be an invariant throughout.  At the moment I think this is
+   only true after [Inline_and_simplify] has split overapplications. *)
+
 let variable_invariants flam =
   let add_binding_occurrence env var is_mutable =
     let compilation_unit = Compilation_unit.get_current_exn () in

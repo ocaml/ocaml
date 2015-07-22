@@ -127,9 +127,12 @@ let inline_by_copying_function_declaration ~env ~r
     which_function_parameters_can_we_specialize
       ~params:function_decl.params ~args ~args_approxs ~unchanging_params
   in
-  if Variable.Set.equal specialised_args
-      (Variable.Map.keys more_specialised_args)
+  let more_specialised_args_keys = Variable.Map.keys more_specialised_args in
+  if Variable.Set.equal more_specialised_args_keys specialised_args
+      || Variable.Set.subset more_specialised_args_keys specialised_args
   then
+    (* CR mshinwell: talk to Pierre about the narrowing seen in the List.map
+       example. *)
     (* If the function already has the right set of specialised arguments,
        then there is nothing to do to improve it here. *)
     None
@@ -188,7 +191,10 @@ let inline_by_copying_function_declaration ~env ~r
       E.note_entering_closure env ~closure_id:closure_id_being_applied
         ~where:Inline_by_copying_function_declaration
     in
+    let expr' = expr in
     let expr, r = simplify (E.activate_freshening env) r expr in
-    let expr, r = simplify env r (Unbox_closures.run env expr) in
-    Format.eprintf "After Unbox_closures and simplify: %a\n" Flambda_printers.flambda expr;
-    Some (expr, r)
+    Format.eprintf "Approx before Unbox_closures = %a, the expr was %a\n"
+      Simple_value_approx.print (R.approx r)
+      Flambda_printers.flambda expr';
+    let expr = Unbox_closures.run env expr in
+    Some (simplify env r expr)

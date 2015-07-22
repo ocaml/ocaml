@@ -13,9 +13,6 @@
 module A = Simple_value_approx
 module E = Inline_and_simplify_aux.Env
 
-(* CR mshinwell: should be backend-dependent *)
-let max_arguments = 10
-
 let rewrite_function_decl ~env
       ~(function_decls : Flambda.function_declarations) ~fun_var
       ~(function_decl : Flambda.function_declaration) ~specialised_args
@@ -58,103 +55,122 @@ let rewrite_function_decl ~env
     List.map snd (Variable.Pair.Map.bindings closure_element_params_mapping)
   in
   let all_params = function_decl.params @ closure_element_params in
-  if List.length all_params > max_arguments then begin
-    Variable.Map.add fun_var function_decl funs, additional_specialised_args
-  end else begin
-    let body_using_params_not_closures =
-      Flambda_iterators.map_project_var_to_expr_opt function_decl.body
-        ~f:(fun project_var ->
-          match
-            Variable.Pair.Map.find
-              (project_var.closure, Var_within_closure.unwrap project_var.var)
-              closure_element_params_mapping
-          with
-          | exception Not_found -> None
-          | param -> Some (Flambda.Var param))
-    in
-    let free_variables =
-      Free_variables.calculate body_using_params_not_closures
-    in
-    let rewritten_function_decl : Flambda.function_declaration =
-      { params = all_params;
-        body = body_using_params_not_closures;
-        free_variables;
-        stub = function_decl.stub;
-        dbg = function_decl.dbg;
-      }
-    in
-    let wrapper_params =
-      List.map (fun param -> Variable.rename ~append:"_unbox_closures" param)
-        function_decl.params
-    in
-    let function_decl_params_to_wrapper_params =
-      Variable.Map.of_list (List.combine function_decl.params wrapper_params)
-    in
-    let wrapper_params_to_function_decl_params =
-      Variable.Map.of_list (List.combine wrapper_params function_decl.params)
-    in
-    let new_fun_var = Variable.rename ~append:"_unbox_closures" fun_var in
-    let wrapper_body : Flambda.t =
-      let bindings_for_closure_element_params =
-        Variable.Pair.Map.fold (fun (projected_from, var) _param bindings ->
-            let closure =
-              if Variable.equal projected_from fun_var then fun_var
-              else
+  let new_fun_var = Variable.rename ~append:"_unbox_closures" fun_var in
+  let body_using_params_not_closures =
+    function_decl.body
+    |> Flambda_iterators.map_project_var_to_expr_opt ~f:(fun project_var ->
+        match
+          Variable.Pair.Map.find
+            (project_var.closure, Var_within_closure.unwrap project_var.var)
+            closure_element_params_mapping
+        with
+        | exception Not_found -> None
+        | param -> Some (Flambda.Var param))
+    |> Flambda_iterators.map_apply ~f:(fun apply ->
+        if not ( Variable.equal apply.func fun_var) then apply
+        else
+          { func = new_fun_var;
+            args = apply.args @ closure_element_params;
+            kind = Direct (Closure_id.wrap new_fun_var);
+            dbg = apply.dbg;
+          })
+  in
+  let free_variables =
+    Free_variables.calculate body_using_params_not_closures
+  in
+  let rewritten_function_decl : Flambda.function_declaration =
+    { params = all_params;
+      body = body_using_params_not_closures;
+      free_variables;
+      stub = function_decl.stub;
+      dbg = function_decl.dbg;
+    }
+  in
+  let wrapper_params =
+    List.map (fun param -> Variable.rename ~append:"_unbox_closures" param)
+      function_decl.params
+  in
+  let function_decl_params_to_wrapper_params =
+    Variable.Map.of_list (List.combine function_decl.params wrapper_params)
+  in
+  let wrapper_params_to_function_decl_params =
+    Variable.Map.of_list (List.combine wrapper_params function_decl.params)
+  in
+  let additional_specialised_args =
+    Variable.Map.fold (fun wrapper_param original_param
+          additional_specialised_args ->
+        match Variable.Map.find original_param specialised_args with
+        | exception Not_found -> additional_specialised_args
+        | specialised_to ->
+          Variable.Map.add wrapper_param specialised_to
+            additional_specialised_args)
+      wrapper_params_to_function_decl_params
+      additional_specialised_args
+  in
+  let wrapper_body : Flambda.t =
+    let bindings_for_closure_element_params =
+      Variable.Pair.Map.fold (fun (projected_from, var) _param bindings ->
+          let closure, closure_id =
+            if Variable.equal projected_from fun_var then
+              fun_var, closure_id
+            else
+              match
+                Variable.Map.find projected_from
+                  function_decl_params_to_wrapper_params
+              with
+              | exception Not_found -> assert false
+              | wrapper_param ->
                 match
-                  Variable.Map.find projected_from
-                    function_decl_params_to_wrapper_params
+                  Variable.Map.find wrapper_param
+                    additional_specialised_args
                 with
                 | exception Not_found -> assert false
-                | wrapper_param -> wrapper_param
-            in
-            let binding_var = Variable.rename var in
-            let defining_expr : Flambda.named =
-              Project_var {
-                closure;
-                closure_id = Closure_id.wrap fun_var;
-                var = Var_within_closure.wrap var;
-              }
-            in
-            (binding_var, defining_expr)::bindings)
-          closure_element_params_mapping
-          []
-      in
-      let extra_args = List.map fst bindings_for_closure_element_params in
-      let body : Flambda.t =
-        Apply {
-          func = new_fun_var;
-          args = wrapper_params @ extra_args;
-          kind = Direct closure_id;
-          dbg = Debuginfo.none;
-        }
-      in
-      Flambda_utils.bind ~bindings:bindings_for_closure_element_params ~body
+                | specialised_to ->
+                  let approx = E.find_exn env specialised_to in
+                  match A.check_approx_for_closure approx with
+                  | Wrong -> assert false
+                  | Ok (value_closure, _, _) ->
+                    wrapper_param, value_closure.closure_id
+          in
+          let binding_var = Variable.rename var in
+          let defining_expr : Flambda.named =
+            Project_var {
+              closure;
+              closure_id;
+              var = Var_within_closure.wrap var;
+            }
+          in
+          (binding_var, defining_expr)::bindings)
+        closure_element_params_mapping
+        []
     in
-    let wrapper : Flambda.function_declaration =
-      { params = wrapper_params;
-        body = wrapper_body;
-        free_variables = Free_variables.calculate wrapper_body;
-        stub = true;
+    let extra_args = List.map fst bindings_for_closure_element_params in
+    let body : Flambda.t =
+      Apply {
+        func = new_fun_var;
+        args = wrapper_params @ extra_args;
+        kind = Direct (Closure_id.wrap new_fun_var);
         dbg = Debuginfo.none;
       }
     in
-    let additional_specialised_args =
-      Variable.Map.fold (fun wrapper_param original_param
-            additional_specialised_args ->
-          match Variable.Map.find original_param specialised_args with
-          | exception Not_found -> assert false
-          | specialised_to ->
-            Variable.Map.add wrapper_param specialised_to
-              additional_specialised_args)
-        wrapper_params_to_function_decl_params
-        additional_specialised_args
-    in
-    let funs =
-      Variable.Map.add new_fun_var rewritten_function_decl
-          (Variable.Map.add fun_var wrapper funs)
-    in
-    funs, additional_specialised_args
-  end
+    Flambda_utils.bind ~bindings:bindings_for_closure_element_params ~body
+  in
+  let wrapper : Flambda.function_declaration =
+    { params = wrapper_params;
+      body = wrapper_body;
+      free_variables = Free_variables.calculate wrapper_body;
+      stub = true;
+      dbg = Debuginfo.none;
+    }
+  in
+  Format.eprintf "Arity of %a (rewritten) = %d; arity of %a (wrapper) = %d\n"
+    Variable.print new_fun_var (List.length rewritten_function_decl.params)
+    Variable.print fun_var (List.length wrapper.params);
+  let funs =
+    Variable.Map.add new_fun_var rewritten_function_decl
+        (Variable.Map.add fun_var wrapper funs)
+  in
+  funs, additional_specialised_args
 
 let run env expr =
   Format.eprintf "Before Unbox_closures: %a\n" Flambda_printers.flambda expr;
@@ -175,7 +191,8 @@ let run env expr =
         { set_of_closures with
           function_decls = { function_decls with funs; };
           specialised_args = Variable.Map.disjoint_union specialised_args
-              additional_specialised_args;
+              additional_specialised_args
+              ~eq:Variable.equal
         })
   in
   Format.eprintf "After Unbox_closures: %a\n" Flambda_printers.flambda expr;

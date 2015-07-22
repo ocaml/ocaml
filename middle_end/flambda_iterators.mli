@@ -87,6 +87,11 @@ val map_toplevel_sets_of_closures
   -> f:(Flambda.set_of_closures -> Flambda.set_of_closures)
   -> Flambda.t
 
+val map_apply
+   : Flambda.t
+  -> f:(Flambda.apply -> Flambda.apply)
+  -> Flambda.t
+
 val map_sets_of_closures
    : Flambda.t
   -> f:(Flambda.set_of_closures -> Flambda.set_of_closures)

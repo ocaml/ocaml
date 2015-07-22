@@ -20,8 +20,12 @@ let rec lam ppf (flam : Flambda.t) =
   | Var (id) ->
       Variable.print ppf id
   | Apply({func; args; kind}) ->
-    let direct = match kind with Indirect -> "" | Direct _ -> "*" in
-    fprintf ppf "@[<2>(apply%s@ %a%a)@]" direct Variable.print func
+    let direct ppf () =
+      match kind with
+      | Indirect -> ()
+      | Direct closure_id -> fprintf ppf "*[%a]" Closure_id.print closure_id
+    in
+    fprintf ppf "@[<2>(apply%a@ %a%a)@]" direct () Variable.print func
       Variable.print_list args
   | Assign { being_assigned; new_value; } ->
     fprintf ppf "@[<2>(assign@ %a@ %a)@]"
