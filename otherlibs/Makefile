@@ -16,8 +16,7 @@
 CAMLC=$(CAMLRUN) $(ROOTDIR)/ocamlc -nostdlib -I $(ROOTDIR)/stdlib
 CAMLOPT=$(CAMLRUN) $(ROOTDIR)/ocamlopt -nostdlib \
         -I $(ROOTDIR)/stdlib
-COPTFLAG=-O
-CFLAGS=-I$(ROOTDIR)/byterun $(COPTFLAG) $(SHAREDCCCOMPOPTS) $(EXTRACFLAGS)
+CFLAGS=-I$(ROOTDIR)/byterun $(SHAREDCCCOMPOPTS) $(EXTRACFLAGS)
 
 include ../Makefile.shared
 # Note .. is the current directory (this makefile is included from
