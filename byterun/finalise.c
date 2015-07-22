@@ -111,7 +111,8 @@ void caml_final_update (void)
     young = j;
     to_do_tl->size = k;
     for (i = 0; i < k; i++){
-      CAMLassert (Is_white_val (to_do_tl->item[i].val));
+      /* Note that item may alredy be dark due to multiple entries in
+         the final table. */
       caml_darken (to_do_tl->item[i].val, NULL);
     }
   }
