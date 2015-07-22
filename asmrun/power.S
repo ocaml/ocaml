@@ -32,7 +32,6 @@
 #define TRAP_SIZE 16
 #define TRAP_HANDLER_OFFSET 0
 #define TRAP_PREVIOUS_OFFSET 4
-#undef  TRAP_TOC_OFFSET
 #define CALLBACK_LINK_SIZE 16	
 #define CALLBACK_LINK_OFFSET 0
 #endif
@@ -40,21 +39,21 @@
 #define RESERVED_STACK 48
 #define LR_SAVE 16
 #define TOC_SAVE 40
+#define TOC_SAVE_PARENT 8
 #define TRAP_SIZE 32
-#define TRAP_HANDLER_OFFSET 48
-#define TRAP_PREVIOUS_OFFSET 56
-#define TRAP_TOC_OFFSET 64
+#define TRAP_HANDLER_OFFSET 56
+#define TRAP_PREVIOUS_OFFSET 64
 #define CALLBACK_LINK_SIZE 32
 #define CALLBACK_LINK_OFFSET 48
 #endif
 #if defined(MODEL_ppc64le)
 #define RESERVED_STACK 32
 #define LR_SAVE 16
+#define TOC_SAVE_PARENT 8
 #define TOC_SAVE 24
 #define TRAP_SIZE 32
-#define TRAP_HANDLER_OFFSET 32
-#define TRAP_PREVIOUS_OFFSET 40
-#define TRAP_TOC_OFFSET 48
+#define TRAP_HANDLER_OFFSET 40
+#define TRAP_PREVIOUS_OFFSET 48
 #define CALLBACK_LINK_SIZE 32
 #define CALLBACK_LINK_OFFSET 32
 #endif
@@ -97,8 +96,8 @@
   .type name, @function; \
   .align 2; \
   name: ; \
-  0: addis r2, r12, (.TOC. - 0b)@ha; \
-  addi r2, r12, (.TOC. - 0b)@l; \
+  0: addis 2, 12, (.TOC. - 0b)@ha; \
+  addi 2, 12, (.TOC. - 0b)@l; \
   .localentry name, . - 0b
 
 #define ENDFUNCTION(name) \
@@ -374,9 +373,6 @@ FUNCTION(caml_raise_exn)
         mr      1, 29
         mtctr   0
         lg      29, TRAP_PREVIOUS_OFFSET(1)
-#ifdef TRAP_TOC_OFFSET
-        lg      2, TRAP_TOC_OFFSET(1)
-#endif
         addi    1, 1, TRAP_SIZE
     /* Branch to handler */
         bctr
@@ -407,9 +403,6 @@ FUNCTION(caml_reraise_exn)
         mr      1, 29
         mtctr   0
         lg      29, TRAP_PREVIOUS_OFFSET(1)
-#ifdef TRAP_TOC_OFFSET
-        lg      2, TRAP_TOC_OFFSET(1)
-#endif
         addi    1, 1, TRAP_SIZE
     /* Branch to handler */
         bctr
@@ -430,9 +423,6 @@ FUNCTION(caml_raise_exception)
         lg      0, TRAP_HANDLER_OFFSET(1)
         mtctr   0
         lg      29, TRAP_PREVIOUS_OFFSET(1)
-#ifdef TRAP_TOC_OFFSET
-        lg      2, TRAP_TOC_OFFSET(1)
-#endif
         addi    1, 1, TRAP_SIZE
     /* Branch to handler */
         bctr
@@ -457,7 +447,7 @@ ENDFUNCTION(caml_raise_exception)
 
 FUNCTION(caml_start_program)
         .cfi_startproc
-#define STACKSIZE (WORD*18 + 8*18 + RESERVED_STACK)
+#define STACKSIZE (WORD*18 + 8*18 + CALLBACK_LINK_SIZE + RESERVED_STACK)
   /* 18 callee-save GPR14...GPR31 + 18 callee-save FPR14...FPR31 */
         Addrglobal(12, caml_program)
 /* Code shared between caml_start_program and caml_callback */
@@ -469,8 +459,12 @@ FUNCTION(caml_start_program)
         mflr    0
         stg     0, (STACKSIZE + LR_SAVE)(1)
         .cfi_offset 65, LR_SAVE
+    /* Save TOC pointer if applicable */
+#ifdef TOC_SAVE_PARENT
+        std     2, (STACKSIZE + TOC_SAVE_PARENT)(1)
+#endif        
     /* Save all callee-save registers */
-        addi    11, 1, RESERVED_STACK - WORD
+        addi    11, 1, CALLBACK_LINK_SIZE + RESERVED_STACK - WORD
         stgu    14, WORD(11)
         stgu    15, WORD(11)
         stgu    16, WORD(11)
@@ -508,8 +502,6 @@ FUNCTION(caml_start_program)
         stfdu   30, 8(11)
         stfdu   31, 8(11)
     /* Set up a callback link */
-        addi    1, 1, -CALLBACK_LINK_SIZE
-        .cfi_adjust_cfa_offset CALLBACK_LINK_SIZE
         Loadglobal(11, caml_bottom_of_stack, 11)
         stg     11, CALLBACK_LINK_OFFSET(1)
         Loadglobal(11, caml_last_return_address, 11)
@@ -526,9 +518,6 @@ FUNCTION(caml_start_program)
         stg     0, TRAP_HANDLER_OFFSET(1)
         Loadglobal(11, caml_exception_pointer, 11)
         stg     11, TRAP_PREVIOUS_OFFSET(1)
-#ifdef TRAP_TOC_OFFSET
-        stg     2, TRAP_TOC_OFFSET(1)
-#endif        
         mr      29, 1
     /* Reload allocation pointers */
         Loadglobal(31, caml_young_ptr, 11)
@@ -565,12 +554,10 @@ FUNCTION(caml_start_program)
         Storeglobal(0, caml_last_return_address, 11)
         lg      0, (CALLBACK_LINK_OFFSET + 2 * WORD)(1)
         Storeglobal(0, caml_gc_regs, 11)
-        addi    1, 1, CALLBACK_LINK_SIZE
-        .cfi_adjust_cfa_offset -CALLBACK_LINK_SIZE
     /* Update allocation pointer */
         Storeglobal(31, caml_young_ptr, 11)
     /* Restore callee-save registers */
-        addi    11, 1, RESERVED_STACK - WORD
+        addi    11, 1, CALLBACK_LINK_SIZE + RESERVED_STACK - WORD
         lgu     14, WORD(11)
         lgu     15, WORD(11)
         lgu     16, WORD(11)
@@ -616,6 +603,10 @@ FUNCTION(caml_start_program)
 
     /* The trap handler: */
 .L104:
+    /* Restore TOC pointer */
+#ifdef TOC_SAVE_PARENT
+        ld      2, (STACKSIZE + TOC_SAVE_PARENT)(1)
+#endif        
     /* Update caml_exception_pointer */
         Storeglobal(29, caml_exception_pointer, 11)
     /* Encode exception bucket as an exception result and return it */

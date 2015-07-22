@@ -60,6 +60,17 @@ let retaddr_offset () =
   | ELF32 -> frame_size() - size_addr
   | ELF64v1 | ELF64v2 -> frame_size() + 16
 
+let toc_save_offset () =
+  match abi with
+  | ELF32 -> assert false
+  | ELF64v1 | ELF64v2 -> frame_size() + 8
+  
+let (trap_size, trap_handler_offset, trap_previous_offset) =
+  match abi with
+  | ELF32 -> (16, 0, 4)
+  | ELF64v1 -> (32, 56, 64)
+  | ELF64v2 -> (32, 40, 48)
+
 (* Output a symbol *)
 
 let emit_symbol s = Emitaux.emit_symbol '.' s
@@ -271,6 +282,11 @@ let emit_call_nop () =
   | ELF32 -> ()
   | ELF64v1 | ELF64v2 -> `	nop	\n`
 
+(* Reload the TOC register r2 from the value saved on the stack *)
+
+let emit_reload_toc () =
+  `	ld	2, {emit_int (toc_save_offset())}(1)\n`
+
 (* Adjust stack_offset and emit corresponding CFI directive *)
 
 let adjust_stack_offset delta =
@@ -405,8 +421,8 @@ module BR = Branch_relaxation.Make (struct
       if is_native_immediate n then 1 else 2
     | Lop(Iconst_float s) -> size 2 1 1
     | Lop(Iconst_symbol s) -> size 2 1 1
-    | Lop(Icall_ind) -> size 2 6 5
-    | Lop(Icall_imm s) -> size 1 2 2
+    | Lop(Icall_ind) -> size 2 5 4
+    | Lop(Icall_imm s) -> size 1 3 3
     | Lop(Itailcall_ind) -> size 5 7 6
     | Lop(Itailcall_imm s) -> if s = !function_name then 1 else size 4 8 6
     | Lop(Iextcall(s, true)) -> 3
@@ -438,10 +454,10 @@ module BR = Branch_relaxation.Make (struct
         + (if lbl1 = None then 0 else 1)
         + (if lbl2 = None then 0 else 1)
     | Lswitch jumptbl -> size 7 6 6
-    | Lsetuptrap lbl -> 1
-    | Lpushtrap -> size 4 6 6
+    | Lsetuptrap lbl -> size 1 2 2
+    | Lpushtrap -> size 4 5 5
     | Lpoptrap -> 2
-    | Lraise _ -> size 6 7 7
+    | Lraise _ -> 6
 
   let relax_allocation ~num_words = Lop (Ispecific (Ialloc_far num_words))
 
@@ -525,18 +541,16 @@ let emit_instr i =
         | ELF64v1 ->
           `	ld	0, 0({emit_reg i.arg.(0)})\n`;  (* code pointer *)
           `	mtctr	0\n`;
-          `	std	2, 40(1)\n`;  (* save current TOC pointer *)
           `	ld	2, 8({emit_reg i.arg.(0)})\n`;  (* TOC for callee *)
           `	bctrl\n`;
           record_frame i.live i.dbg;
-          `	ld	2, 40(1)\n`   (* reload current TOC pointer *)
+          emit_reload_toc()
         | ELF64v2 ->
           `	mtctr	{emit_reg i.arg.(0)}\n`;
           `	mr	12, {emit_reg i.arg.(0)}\n`;  (* addr of fn in r12 *)
-          `	std	2, 24(1)\n`;  (* save current TOC pointer *)
           `	bctrl\n`;
           record_frame i.live i.dbg;
-          `	ld	2, 24(1)\n`   (* reload current TOC pointer *)
+          emit_reload_toc()
         end
     | Lop(Icall_imm s) ->
         begin match abi with
@@ -551,21 +565,20 @@ let emit_instr i =
            Because f1 and f2 have the same TOC, the linker inserted no
            code in f1 to save and restore r2 around the call to f1.
            Because f2 tailcalls f3, r2 will not be restored to f2's TOC
-           when f3 returns.
+           when f3 returns.  So, we're back into f1, with the wrong TOC in r2.
            We have two options:
              1- Turn the call into an indirect call, like we do for 
-                Itailcall_imm.  Cost: 7 instructions.
-             2- Wrap the "bl" with 2 instructions to save and restore r2
+                Itailcall_imm.  Cost: 6 instructions.
+             2- Follow the "bl" with an instruction to restore r2
                 explicitly.  If the called function has a different TOC,
-                these instructions are redundant with those inserted
+                this instruction is redundant with those inserted
                 by the linker, but this is harmless.
-                Cost: 4 instructions if same TOC, 8 if different TOC.
+                Cost: 3 instructions if same TOC, 7 if different TOC.
            Let's try option 2. *)
-            `	std	2, 40(1)\n`;  (* save current TOC pointer *)
             emit_call s;           
             record_frame i.live i.dbg;
             `	nop\n`;
-            `	ld	2, 40(1)\n`   (* restore TOC pointer *)
+            emit_reload_toc()
         end         
     | Lop(Itailcall_ind) ->
         begin match abi with
@@ -839,7 +852,11 @@ let emit_instr i =
         done;
         emit_string code_space
     | Lsetuptrap lbl ->
-        `	bl	{emit_label lbl}\n`
+        `	bl	{emit_label lbl}\n`;
+        begin match abi with
+        | ELF32 -> ()
+        | ELF64v1 | ELF64v2 -> emit_reload_toc()
+        end
     | Lpushtrap ->
         begin match abi with
         | ELF32 ->
@@ -852,22 +869,14 @@ let emit_instr i =
           `	mflr	0\n`;
           `	addi	1, 1, -32\n`;
           adjust_stack_offset 32;
-          `	std     0, {emit_int reserved_stack_space}(1)\n`;
-          `	std	29, {emit_int (reserved_stack_space + 8)}(1)\n`;
-          `	std	2, {emit_int (reserved_stack_space + 16)}(1)\n`;
+          `	std     0, {emit_int trap_handler_offset}(1)\n`;
+          `	std	29, {emit_int trap_previous_offset}(1)\n`;
           `	mr	29, 1\n`
           end        
     | Lpoptrap ->
-        begin match abi with
-        | ELF32 ->
-          `	lwz	29, 4(1)\n`;
-          `	addi	1, 1, 16\n`;
-          adjust_stack_offset (-16)
-        | ELF64v1 | ELF64v2 ->
-          `	ld	29, {emit_int (reserved_stack_space + 8)}(1)\n`;
-          `	addi	1, 1, 32\n`;
-          adjust_stack_offset (-32)
-        end
+        `	{emit_string lg}	29, {emit_int trap_previous_offset}(1)\n`;
+        `	addi	1, 1, {emit_int trap_size}\n`;
+        adjust_stack_offset (-trap_size)
     | Lraise k ->
         begin match !Clflags.debug, k with
         | true, Lambda.Raise_regular ->
@@ -880,23 +889,12 @@ let emit_instr i =
             emit_call_nop()
         | false, _
         | true, Lambda.Raise_notrace ->
-          begin match abi with
-          | ELF32 ->
-            `	lwz	0, 0(29)\n`;
+            `	{emit_string lg}	0, {emit_int trap_handler_offset}(29)\n`;
             `	mr	1, 29\n`;
             `	mtctr   0\n`;
-            `	lwz	29, 4(1)\n`;
-            `	addi	1, 1, 16\n`;
+            `	{emit_string lg}	29, {emit_int trap_previous_offset}(1)\n`;
+            `	addi	1, 1, {emit_int trap_size}\n`;
             `	bctr\n`
-          | ELF64v1 | ELF64v2 ->
-            `	ld	0, {emit_int reserved_stack_space}(29)\n`;
-            `	mr	1, 29\n`;
-            `	mtctr	0\n`;
-            `	ld	29, {emit_int (reserved_stack_space + 8)}(1)\n`;
-            `	ld	2, {emit_int (reserved_stack_space + 16)}(1)\n`;
-            `	addi	1, 1, 32\n`;
-            `	bctr\n`
-          end
         end
 
 (* Emit a sequence of instructions *)
@@ -937,8 +935,8 @@ let fundecl fundecl =
     `	.type	{emit_symbol fundecl.fun_name}, @function\n`;
     `	.align	2\n`;
     `{emit_symbol fundecl.fun_name}:\n`;
-    `0:	addis	r2, r12, (.TOC. - 0b)@ha\n`;
-    `	addi	r2, r2, (.TOC. - 0b)@l\n`; 
+    `0:	addis	2, 12, (.TOC. - 0b)@ha\n`;
+    `	addi	2, 2, (.TOC. - 0b)@l\n`; 
     `	.localentry {emit_symbol fundecl.fun_name}, . - 0b\n`
   end;
   emit_debug_info fundecl.fun_dbg;
@@ -952,7 +950,11 @@ let fundecl fundecl =
     let ra = retaddr_offset() in
     `	mflr	0\n`;
     `	{emit_string stg}	0, {emit_int ra}(1)\n`;
-    cfi_offset ~reg: 65 (* LR *) ~offset: (ra - n)
+    cfi_offset ~reg: 65 (* LR *) ~offset: (ra - n);
+    match abi with
+    | ELF32 -> ()
+    | ELF64v1 | ELF64v2 ->
+      `	std	2, {emit_int(toc_save_offset())}(1)\n`
   end;
   `{emit_label !tailrec_entry_point}:\n`;
   (* On this target, there is at most one "out of line" code block per
@@ -1054,6 +1056,14 @@ let begin_assembly() =
   `{emit_symbol lbl_begin}:\n`;
   let lbl_begin = Compilenv.make_symbol (Some "code_begin") in
   emit_string function_descr_space;
+  (* For the ELF64v1 ABI, we must make sure that the .opd and .data
+     sections are in different pages.  .opd comes after .data,
+     so aligning .opd is enough.  To save space, we do it only
+     for the startup file, not for every OCaml compilation unit. *)
+  let c = Compilenv.current_unit_name() in
+  if abi = ELF64v1 && (c = "_startup" || c = "_shared_startup") then begin
+    `	.p2align	12\n`
+  end;
   declare_global_data lbl_begin;
   `{emit_symbol lbl_begin}:\n`
 
