@@ -103,7 +103,12 @@ void caml_final_update (void)
         final_table[j++] = final_table[i];
       }
     }
-    young = old = j;
+    i = old;
+    old = j;
+    for(;i < young; i++){
+      final_table[j++] = final_table[i];
+    }
+    young = j;
     to_do_tl->size = k;
     for (i = 0; i < k; i++){
       CAMLassert (Is_white_val (to_do_tl->item[i].val));
