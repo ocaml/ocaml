@@ -311,16 +311,6 @@ let rec map_rec_type_with_row_types ~rec_flag fn decls rem =
       else
         map_rec_type ~rec_flag fn decls rem
 
-let rec_flag_of_ptype_declarations tds =
-  let is_nonrec =
-    List.exists
-      (fun td ->
-         List.exists (fun (n, _) -> n.txt = "nonrec")
-           td.ptype_attributes)
-      tds
-  in
-  if is_nonrec then Nonrecursive else Recursive
-
 (* Add type extension flags to extension contructors *)
 let map_ext fn exts rem =
   match exts with
@@ -370,7 +360,6 @@ and approx_sig env ssg =
   | item :: srem ->
       match item.psig_desc with
       | Psig_type (rec_flag, sdecls) ->
-          let rec_flag = rec_flag_of_ptype_declarations sdecls in
           let decls = Typedecl.approx_type_decl env sdecls in
           let rem = approx_sig env srem in
           map_rec_type ~rec_flag
@@ -597,7 +586,6 @@ and transl_signature env sg =
             Sig_value(tdesc.val_id, tdesc.val_val) :: rem,
               final_env
         | Psig_type (rec_flag, sdecls) ->
-            let rec_flag = rec_flag_of_ptype_declarations sdecls in
             List.iter
               (fun decl -> check_name check_type names decl.ptype_name)
               sdecls;
@@ -1246,7 +1234,6 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
         let (desc, newenv) = Typedecl.transl_value_decl env loc sdesc in
         Tstr_primitive desc, [Sig_value(desc.val_id, desc.val_val)], newenv
     | Pstr_type (rec_flag, sdecls) ->
-        let rec_flag = rec_flag_of_ptype_declarations sdecls in
         List.iter
           (fun decl -> check_name check_type names decl.ptype_name)
           sdecls;
