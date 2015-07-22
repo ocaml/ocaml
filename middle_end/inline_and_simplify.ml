@@ -680,7 +680,7 @@ and simplify_named env r (tree : Flambda.named) : Flambda.named * R.t =
 and simplify_direct env r (tree : Flambda.t) : Flambda.t * R.t =
   debug_free_variables_check env tree ~name:"loop"
     ~calculate_free_variables:
-      (Free_variables.calculate ?ignore_uses_as_callee:None
+      (Free_variables.calculate ?ignore_uses_in_apply:None
         ?ignore_uses_in_project_var:None)
     ~printer:Flambda_printers.flambda;
   match tree with

@@ -52,6 +52,7 @@ let middle_end ppf ~sourcefile ~prefixname ~backend ~exported_fields lam =
   in
   dump_and_check "After closure conversion" flam;
   let rec loop flam =
+    pass_number := 0;
     incr round_number;
     if !round_number > !Clflags.simplify_rounds then flam
     else
@@ -62,6 +63,7 @@ let middle_end ppf ~sourcefile ~prefixname ~backend ~exported_fields lam =
       ++ Lift_code.lift_lets
       ++ Remove_unused_closure_vars.remove_unused_closure_variables
       ++ Remove_unused_arguments.separate_unused_arguments_in_closures
+        ?force:None
       ++ Remove_unused_globals.remove_unused_globals
       (* CR mshinwell: the lifting of sets of closures seemed redundant,
          because we always have to generate a [let] with them now.  Do we

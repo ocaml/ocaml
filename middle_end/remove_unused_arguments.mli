@@ -24,5 +24,6 @@
        and fact n unused = fact' n]
 *)
 val separate_unused_arguments_in_closures
-   : Flambda.t
+   : ?force:unit
+  -> Flambda.t
   -> Flambda.t

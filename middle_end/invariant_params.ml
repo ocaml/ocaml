@@ -198,7 +198,7 @@ let unchanging_params_in_recursion (decls : Flambda.function_declarations) =
         (fun (_ : Flambda.named) -> ())
         decl.body;
       Variable.Set.iter test_escape
-        (Free_variables.calculate ~ignore_uses_as_callee:() decl.body))
+        (Free_variables.calculate ~ignore_uses_in_apply:() decl.body))
     decls.funs;
   let relation =
     Variable.Map.fold (fun func_var
@@ -282,7 +282,7 @@ let unused_arguments (decls : Flambda.function_declarations) : Variable.Set.t =
       Flambda_iterators.iter check_expr (fun (_ : Flambda.named) -> ())
         decl.body;
       Variable.Set.iter used_variable
-        (Free_variables.calculate ~ignore_uses_as_callee:() decl.body))
+        (Free_variables.calculate ~ignore_uses_in_apply:() decl.body))
     decls.funs;
   let arguments = Variable.Map.fold (fun _ decl acc ->
       Variable.Set.union acc (Variable.Set.of_list decl.Flambda.params))

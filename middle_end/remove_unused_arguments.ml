@@ -76,6 +76,8 @@ let make_stub unused var (fun_decl : Flambda.function_declaration) =
 let separate_unused_arguments (set_of_closures : Flambda.set_of_closures) =
   let decl = set_of_closures.function_decls in
   let unused = Invariant_params.unused_arguments decl in
+  Format.eprintf "separate_unused_arguments: unused=%a\n"
+    Variable.Set.print unused;
   let non_stub_arguments =
     Variable.Map.fold (fun _ (decl : Flambda.function_declaration) acc ->
         if decl.stub then
@@ -84,6 +86,8 @@ let separate_unused_arguments (set_of_closures : Flambda.set_of_closures) =
           Variable.Set.union acc (Variable.Set.of_list decl.Flambda.params))
       decl.funs Variable.Set.empty
   in
+  Format.eprintf "separate_unused_arguments: non_stub_arguments=%a\n"
+    Variable.Set.print non_stub_arguments;
   let unused = Variable.Set.inter non_stub_arguments unused in
   if Variable.Set.is_empty unused
   then None
@@ -128,22 +132,24 @@ let candidate_for_spliting_for_unused_arguments
   in
   (not no_recursive_functions) || (number_of_non_stub_functions > 1)
 
-let separate_unused_arguments_in_closures tree =
+let separate_unused_arguments_in_closures ?force tree =
   let aux_named (named : Flambda.named) : Flambda.named =
     match named with
     | Set_of_closures set_of_closures ->
-      if candidate_for_spliting_for_unused_arguments
-          set_of_closures.function_decls then begin
-(*
-        Format.eprintf "separate_unused_arguments %a: %!"
+      if force <> None ||
+        candidate_for_spliting_for_unused_arguments
+          set_of_closures.function_decls
+      then begin
+        Format.eprintf "separate_unused_arguments RUNNING %a: %!"
           Flambda_printers.function_declarations set_of_closures.function_decls;
-*)
         match separate_unused_arguments set_of_closures with
-        | None -> (* Format.eprintf "None\n"; *) named
-        | Some set_of_closures -> (* Format.eprintf "Some\n"; *) Set_of_closures set_of_closures
-end
-      else
+        | None -> named
+        | Some set_of_closures -> Set_of_closures set_of_closures
+      end else begin
+        Format.eprintf "separate_unused_arguments NOT HAPPENING %a: %!"
+          Flambda_printers.function_declarations set_of_closures.function_decls;
         named
+      end
     | e -> e
   in
-  Flambda_iterators.map (fun expr -> expr) aux_named tree
+  Flambda_iterators.map_named aux_named tree

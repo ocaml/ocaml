@@ -196,5 +196,48 @@ let inline_by_copying_function_declaration ~env ~r
     Format.eprintf "Approx before Unbox_closures = %a, the expr was %a\n"
       Simple_value_approx.print (R.approx r)
       Flambda_printers.flambda expr';
-    let expr = Unbox_closures.run env expr in
+    let expr =
+(*      Remove_unused_arguments.separate_unused_arguments_in_closures ~force:()*)
+        (Unbox_closures.run env expr)
+    in
+    let expr = 
+      Flambda_iterators.map_sets_of_closures expr
+        ~f:(fun (set_of_closures : Flambda.set_of_closures) ->
+          let body_freshening =
+            Variable.Map.map (fun external_var ->
+                Variable.rename ~append:"_spec_arg_fresh" external_var)
+              set_of_closures.specialised_args
+          in
+          let specialised_args_freshening =
+            Variable.Map.map_keys (fun internal_var ->
+                Variable.Map.find internal_var body_freshening)
+              set_of_closures.specialised_args
+          in
+          let funs =
+            Variable.Map.map (fun (function_decl : Flambda.function_declaration) ->
+                let body =
+                  Flambda_utils.toplevel_substitution
+                    body_freshening function_decl.body
+                in
+                let free_variables = Free_variables.calculate body in
+                { function_decl with
+                  body;
+                  free_variables;
+                })
+              set_of_closures.function_decls.funs
+          in
+          let free_vars =
+            Variable.Map.disjoint_union
+              specialised_args_freshening
+              set_of_closures.free_vars
+              ~eq:Variable.equal
+          in
+          { Flambda.
+            function_decls = { function_decls with funs; };
+            free_vars;
+            specialised_args = Variable.Map.empty;
+          })
+    in
+    Format.eprintf "After Unbox_closures + specialised_args removal:@ %a"
+      Flambda_printers.flambda expr;
     Some (simplify env r expr)

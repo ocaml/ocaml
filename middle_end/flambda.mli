@@ -233,6 +233,8 @@ and function_declarations = {
   compilation_unit : Compilation_unit.t;
 }
 
+(* CR mshinwell: consider making private, so we can ensure [free_variables]
+   is correct *)
 and function_declaration = {
   params : Variable.t list;
   body : t;

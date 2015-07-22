@@ -14,7 +14,7 @@
 (** Pass in turn all free and bound variables in the given Flambda term to
     the supplied [free_variable] and [bound_variable] functions. *)
 val iter
-   : ?ignore_uses_as_callee:unit
+   : ?ignore_uses_in_apply:unit
   -> ?ignore_uses_in_project_var:unit
   -> Flambda.t
   -> free_variable:(Variable.t -> unit)
@@ -22,13 +22,14 @@ val iter
   -> unit
 
 (** Calculation of the set of free variables in a given Flambda term.
-    If [ignore_uses_as_callee] is specified, then uses of the variables in the
-    callee position of [Apply] nodes are not counted as free occurrences.  
+    If [ignore_uses_in_apply] is specified, then uses of the variables in
+    [Apply] nodes (either as the callee or as arguments) are not counted as
+    free occurrences.  
     If [ignore_uses_in_project_var] is specified, then uses in the [closure]
     field of [Project_var] nodes are not counted as free occurrences.
 *)
 val calculate
-   : ?ignore_uses_as_callee:unit
+   : ?ignore_uses_in_apply:unit
   -> ?ignore_uses_in_project_var:unit
   -> Flambda.t
   -> Variable.Set.t
