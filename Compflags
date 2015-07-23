@@ -23,6 +23,7 @@ case $1 in
 
     asmcomp/clambdagen.* \
   | asmcomp/closure_offsets.* \
+  | asmcomp/compilenv.* \
   | asmcomp/flambdaexport.* \
   | asmcomp/flambdaexport_types.* \
   | asmcomp/flambdasym.* \

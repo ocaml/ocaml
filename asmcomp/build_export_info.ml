@@ -1,3 +1,16 @@
+(**************************************************************************)
+(*                                                                        *)
+(*                                OCaml                                   *)
+(*                                                                        *)
+(*                       Pierre Chambart, OCamlPro                        *)
+(*                  Mark Shinwell, Jane Street Europe                     *)
+(*                                                                        *)
+(*   Copyright 2015 Institut National de Recherche en Informatique et     *)
+(*   en Automatique.  All rights reserved.  This file is distributed      *)
+(*   under the terms of the Q Public License version 1.0.                 *)
+(*                                                                        *)
+(**************************************************************************)
+
 module Int = Ext_types.Int
 module ET = Flambdaexport_types
 type env = ET.approx Variable.Map.t
@@ -390,11 +403,26 @@ let build_export_info (lifted_flambda:Lift_constants.result) : ET.exported =
 
   let set_of_closures_map = Lifted_flambda_utils.set_of_closures_map lifted_flambda in
 
-  (* TODO *)
-  let ex_functions = Set_of_closures_id.Map.empty in
+  let ex_functions =
+    Symbol.Map.fold (fun _symbol (set_of_closures : Flambda.set_of_closures)
+          ex_functions ->
+        let function_decls = set_of_closures.function_decls in
+        Set_of_closures_id.Map.add function_decls.set_of_closures_id
+          set_of_closures.function_decls ex_functions
+      )
+      lifted_flambda.set_of_closures_map
+      Set_of_closures_id.Map.empty
+  in
 
-  (* TODO *)
-  let ex_functions_off = Closure_id.Map.empty in
+  let ex_functions_off =
+    let aux_fun ffunctions off_id _ map =
+      let fun_id = Closure_id.wrap off_id in
+      Closure_id.Map.add fun_id ffunctions map in
+    let aux _ (f : Flambda.function_declarations) map =
+      Variable.Map.fold (aux_fun f) f.funs map
+    in
+    Set_of_closures_id.Map.fold aux ex_functions Closure_id.Map.empty
+  in
 
   (* TODO *)
   let constant_closures =
@@ -421,5 +449,9 @@ let build_export_info (lifted_flambda:Lift_constants.result) : ET.exported =
       ex_constant_closures = constant_closures;
       ex_invariant_arguments }
   in
+(*
+  Format.eprintf "Build_export_info returns %a\n"
+    Flambdaexport.print_all export;
+*)
   export
 

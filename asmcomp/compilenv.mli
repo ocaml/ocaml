@@ -16,6 +16,10 @@
 
 open Cmx_format
 
+(* CR mshinwell: this is a bit ugly *)
+val imported_sets_of_closures_table
+  : Flambda.function_declarations Set_of_closures_id.Tbl.t
+
 val reset: ?packname:string -> string -> unit
         (* Reset the environment and record the name of the unit being
            compiled (arg).  Optional argument is [-for-pack] prefix. *)
@@ -68,11 +72,6 @@ val approx_env: unit -> Flambdaexport_types.exported
         (* Returns all the information loaded from extenal compilation units *)
 val approx_for_global: Compilation_unit.t -> Flambdaexport_types.exported
         (* Loads the exported information declaring the compilation_unit *)
-
-(* CR mshinwell: rename to imported_set_of_closures *)
-val imported_closure
-   : Set_of_closures_id.t
-  -> Flambda.function_declarations
 
 val need_curry_fun: int -> unit
 val need_apply_fun: int -> unit

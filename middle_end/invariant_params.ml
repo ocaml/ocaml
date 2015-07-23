@@ -246,10 +246,6 @@ let unused_arguments (decls : Flambda.function_declarations) : Variable.Set.t =
         Closure_id.Map.add cid (Array.of_list decl.params) map)
       decls.funs Closure_id.Map.empty
   in
-  Closure_id.Map.iter (fun closure_id params ->
-      Format.eprintf "closure id %a has %d params\n"
-        Closure_id.print closure_id (Array.length params))
-    variables_at_position;
   let find_callee_arg ~callee ~callee_pos ~application_expr =
     match Closure_id.Map.find callee variables_at_position with
     | exception Not_found -> Used (* not a recursive call *)

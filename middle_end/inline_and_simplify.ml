@@ -89,9 +89,6 @@ let populate_closure_approximations
   (* Add known approximations of function parameters *)
   let env =
     List.fold_left (fun env id ->
-       Format.eprintf "populate_closure_approximations %a, approx in PAs? %s"
-        Variable.print id (if Variable.Map.mem id parameter_approximations
-          then "yes" else "no");
        let approx = try Variable.Map.find id parameter_approximations
                     with Not_found -> A.value_unknown in
        E.add env id approx)
@@ -369,11 +366,6 @@ let rec simplify_project_var env r ~(project_var : Flambda.project_var)
 *)
 and simplify_set_of_closures original_env r
       (set_of_closures : Flambda.set_of_closures) : Flambda.named * R.t =
-Format.eprintf "simplify_set_of_closures_starting.  Binds %a SA %a -------: %a@ %s\n"
-  Variable.Set.print (Variable.Map.keys set_of_closures.function_decls.funs)
-  Variable.Set.print (Variable.Map.keys set_of_closures.specialised_args)
-  Flambda_printers.set_of_closures set_of_closures
-  (Printexc.raw_backtrace_to_string (Printexc.get_callstack 40000));
   let function_decls =
     let module Backend = (val (E.backend original_env) : Backend_intf.S) in
     (* CR mshinwell: Does this affect
@@ -459,12 +451,7 @@ Format.eprintf "simplify_set_of_closures_starting.  Binds %a SA %a -------: %a@ 
         ~inline_inside:
           (Inlining_decision.should_inline_inside_declaration function_decl)
         ~where:Transform_set_of_closures_expression
-        ~f:(fun body_env ->
-          Format.eprintf "simplifying body of function decl %a (%a):@ %a\n"
-            Variable.print fid
-            Variable.print_list function_decl.params
-            Flambda_printers.flambda function_decl.body;
-          simplify body_env r function_decl.body)
+        ~f:(fun body_env -> simplify body_env r function_decl.body)
     in
     let free_variables = Free_variables.calculate body in
     let used_params' =

@@ -76,8 +76,6 @@ let make_stub unused var (fun_decl : Flambda.function_declaration) =
 let separate_unused_arguments (set_of_closures : Flambda.set_of_closures) =
   let decl = set_of_closures.function_decls in
   let unused = Invariant_params.unused_arguments decl in
-  Format.eprintf "separate_unused_arguments: unused=%a\n"
-    Variable.Set.print unused;
   let non_stub_arguments =
     Variable.Map.fold (fun _ (decl : Flambda.function_declaration) acc ->
         if decl.stub then
@@ -86,8 +84,6 @@ let separate_unused_arguments (set_of_closures : Flambda.set_of_closures) =
           Variable.Set.union acc (Variable.Set.of_list decl.Flambda.params))
       decl.funs Variable.Set.empty
   in
-  Format.eprintf "separate_unused_arguments: non_stub_arguments=%a\n"
-    Variable.Set.print non_stub_arguments;
   let unused = Variable.Set.inter non_stub_arguments unused in
   if Variable.Set.is_empty unused
   then None
@@ -140,14 +136,10 @@ let separate_unused_arguments_in_closures ?force tree =
         candidate_for_spliting_for_unused_arguments
           set_of_closures.function_decls
       then begin
-        Format.eprintf "separate_unused_arguments RUNNING %a: %!"
-          Flambda_printers.function_declarations set_of_closures.function_decls;
         match separate_unused_arguments set_of_closures with
         | None -> named
         | Some set_of_closures -> Set_of_closures set_of_closures
       end else begin
-        Format.eprintf "separate_unused_arguments NOT HAPPENING %a: %!"
-          Flambda_printers.function_declarations set_of_closures.function_decls;
         named
       end
     | e -> e

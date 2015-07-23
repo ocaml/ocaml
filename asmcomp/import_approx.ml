@@ -15,6 +15,50 @@ module A = Simple_value_approx
 
 let reexported_missing_symbols = Symbol.Tbl.create 0
 
+let import_set_of_closures =
+  let import_function_declarations (clos : Flambda.function_declarations)
+        : Flambda.function_declarations =
+    let orig_var_map (clos : Flambda.function_declarations) =
+      Variable.Map.fold (fun id _ acc ->
+           let fun_id = Closure_id.wrap id in
+           let sym = Compilenv.closure_symbol fun_id in
+           Symbol.Map.add sym id acc)
+        clos.funs Symbol.Map.empty
+    in
+    let sym_map = orig_var_map clos in
+    let f_named (named : Flambda.named) =
+      match named with
+      | Symbol sym ->
+        begin try Flambda.Expr (Var (Symbol.Map.find sym sym_map)) with
+        | Not_found -> named
+        end
+      | named -> named
+    in
+    { clos with
+      funs =
+        Variable.Map.map (fun (function_decl : Flambda.function_declaration) ->
+            let body =
+              Flambda_iterators.map_toplevel_named f_named function_decl.body
+            in
+            let free_variables = Free_variables.calculate body in
+            { function_decl with body; free_variables; })
+          clos.funs;
+    }
+  in
+  let aux set_of_closures_id =
+    let ex_info = Compilenv.approx_env () in
+    let function_declarations =
+      try Set_of_closures_id.Map.find set_of_closures_id ex_info.ex_functions
+      with Not_found ->
+        Misc.fatal_errorf "[ex_functions] does not map set of closures ID %a. \
+            ex_info = %a"
+          Set_of_closures_id.print set_of_closures_id
+          Flambdaexport.print_all ex_info
+    in
+    import_function_declarations function_declarations
+  in
+  Set_of_closures_id.Tbl.memoize Compilenv.imported_sets_of_closures_table aux
+
 let rec import_ex ex =
   ignore (Compilenv.approx_for_global (Export_id.unit ex));
   let ex_info = Compilenv.approx_env () in
@@ -29,16 +73,18 @@ let rec import_ex ex =
   | Value_mutable_block _ -> A.value_unknown
   | Value_block (tag, fields) ->
     A.value_block (tag, Array.map import_approx fields)
-  | Value_closure { fun_id; set_of_closures = { set_of_closures_id; bound_vars } } ->
+  | Value_closure { fun_id;
+        set_of_closures = { set_of_closures_id; bound_vars } } ->
     let bound_vars = Var_within_closure.Map.map import_approx bound_vars in
     begin match
-      Set_of_closures_id.Map.find set_of_closures_id ex_info.ex_invariant_arguments
+      Set_of_closures_id.Map.find set_of_closures_id
+        ex_info.ex_invariant_arguments
     with
     | exception Not_found ->
-      Misc.fatal_error "Set of closures ID not found in ex_kept_arguments"
+      Misc.fatal_error "Set of closures ID not found in ex_invariant_arguments"
     | unchanging_params ->
       let value_set_of_closures : A.value_set_of_closures =
-        { function_decls = Compilenv.imported_closure set_of_closures_id;
+        { function_decls = import_set_of_closures set_of_closures_id;
           bound_vars;
           unchanging_params = unchanging_params;
           specialised_args = Variable.Set.empty;
@@ -54,10 +100,14 @@ let rec import_ex ex =
         Set_of_closures_id.Map.find set_of_closures_id
           ex_info.ex_invariant_arguments
       with
-      | Not_found -> assert false
+      | Not_found ->
+        Misc.fatal_errorf "Export description of [Value_set_of_closures] \
+            names [set_of_closures_id] %a that is not present in \
+            [invariant_arguments]"
+          Set_of_closures_id.print set_of_closures_id
     in
     let value_set_of_closures : A.value_set_of_closures =
-      { function_decls = Compilenv.imported_closure set_of_closures_id;
+      { function_decls = import_set_of_closures set_of_closures_id;
         bound_vars;
         unchanging_params = unchanging_params;
         specialised_args = Variable.Set.empty;
@@ -78,12 +128,12 @@ let import_symbol sym =
   else
     let symbol_id_map =
       let global = Symbol.compilation_unit sym in
-      (Compilenv.approx_for_global global).ex_symbol_id in
-    match import_ex (Symbol.Map.find sym symbol_id_map) with
-    | approx -> A.augment_with_symbol approx sym
+      (Compilenv.approx_for_global global).ex_symbol_id
+    in
+    match Symbol.Map.find sym symbol_id_map with
+    | approx -> A.augment_with_symbol (import_ex approx) sym
     | exception Not_found ->
-      if not (Symbol.Tbl.mem reexported_missing_symbols sym)
-      then begin
+      if not (Symbol.Tbl.mem reexported_missing_symbols sym) then begin
         Symbol.Tbl.add reexported_missing_symbols sym ();
         Location.prerr_warning (Location.in_file "some_file")
           (Warnings.Missing_symbol_information

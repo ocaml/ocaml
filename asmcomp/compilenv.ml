@@ -18,7 +18,6 @@ open Config
 open Misc
 open Clambda
 open Cmx_format
-open Ext_types
 
 type error =
     Not_a_unit_info of string
@@ -32,7 +31,7 @@ let global_infos_table =
 let export_infos_table =
   (Hashtbl.create 10 : (string, Flambdaexport_types.exported) Hashtbl.t)
 
-let imported_closure_table =
+let imported_sets_of_closures_table =
   (Set_of_closures_id.Tbl.create 10
    : Flambda.function_declarations Set_of_closures_id.Tbl.t)
 
@@ -108,7 +107,7 @@ let current_unit_linkage_name () =
 
 let reset ?packname name =
   Hashtbl.clear global_infos_table;
-  Set_of_closures_id.Tbl.clear imported_closure_table;
+  Set_of_closures_id.Tbl.clear imported_sets_of_closures_table;
   let symbol = symbolname_for_pack packname name in
   current_unit_id := unit_id_from_name name;
   current_unit.ui_name <- name;
@@ -209,7 +208,7 @@ let cache_unit_info ui =
 
 let toplevel_approx = Hashtbl.create 16
 
-let record_global_approx_toplevel id =
+let record_global_approx_toplevel _id =
   Hashtbl.add toplevel_approx current_unit.ui_name current_unit.ui_approx
 
 let global_approx id =
@@ -219,11 +218,6 @@ let global_approx id =
     match get_global_info id with
       | None -> Value_unknown
       | Some ui -> ui.ui_approx
-
-let get_unit_name id =
-  match get_global_info id with
-  | None -> Ident.name id
-  | Some ui -> ui.ui_symbol
 
 (* Return the symbol used to refer to a global identifier *)
 
@@ -455,45 +449,6 @@ let function_label fv =
       (Compilation_unit.get_linkage_name compilation_unit)
   in
   (concat_symbol unitname (Closure_id.unique_name fv))
-
-let imported_closure =
-  let open Flambda in
-  let import_closure clos =
-
-    let orig_var_map clos =
-      Variable.Map.fold
-        (fun id _ acc ->
-           let fun_id = Closure_id.wrap id in
-           let sym = closure_symbol fun_id in
-           Symbol.Map.add sym id acc)
-        clos.funs Symbol.Map.empty in
-
-    let sym_map = orig_var_map clos in
-
-    let f expr = expr in
-    let f_named (named : Flambda.named) =
-      match named with
-      | Symbol sym ->
-          (try Expr(Var(Symbol.Map.find sym sym_map)) with
-           | Not_found -> named)
-      | named -> named
-    in
-
-    { clos with
-      funs =
-        Variable.Map.map
-          (fun (ff : Flambda.function_declaration) ->
-             let body = Flambda_iterators.map_toplevel f f_named ff.body in
-             let free_variables = Free_variables.calculate body in
-             { ff with body; free_variables })
-          clos.funs } in
-  let aux fun_id =
-    let ex_info = approx_env () in
-    let closure = Set_of_closures_id.Map.find fun_id ex_info.Flambdaexport_types.ex_functions in
-    let cl = import_closure closure in
-    cl
-  in
-  Set_of_closures_id.Tbl.memoize imported_closure_table aux
 
 (* Error report *)
 
