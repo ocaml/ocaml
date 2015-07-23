@@ -611,7 +611,7 @@ int64_t caml_int64_bits_of_float_unboxed(double d)
 {
   union { double d; int64_t i; int32_t h[2]; } u;
   u.d = d;
-#if defined(__arm__) && !defined(__ARM_EABI__)
+#if defined(__arm__) && !defined(__ARM_EABI__) && !defined(__APPLE__)
   { int32_t t = u.h[0]; u.h[0] = u.h[1]; u.h[1] = t; }
 #endif
   return u.i;
@@ -621,7 +621,7 @@ double caml_int64_float_of_bits_unboxed(int64_t i)
 {
   union { double d; int64_t i; int32_t h[2]; } u;
   u.i = i;
-#if defined(__arm__) && !defined(__ARM_EABI__)
+#if defined(__arm__) && !defined(__ARM_EABI__) && !defined(__APPLE__)
   { int32_t t = u.h[0]; u.h[0] = u.h[1]; u.h[1] = t; }
 #endif
   return u.d;

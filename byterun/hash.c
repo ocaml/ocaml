@@ -90,7 +90,7 @@ CAMLexport uint32_t caml_hash_mix_double(uint32_t hash, double d)
 {
   union {
     double d;
-#if defined(ARCH_BIG_ENDIAN) || (defined(__arm__) && !defined(__ARM_EABI__))
+#if defined(ARCH_BIG_ENDIAN) || (defined(__arm__) && !defined(__ARM_EABI__) && !defined(__APPLE__))
     struct { uint32_t h; uint32_t l; } i;
 #else
     struct { uint32_t l; uint32_t h; } i;
