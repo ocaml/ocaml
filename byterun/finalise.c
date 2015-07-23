@@ -60,7 +60,6 @@ static void alloc_to_do (int size)
 
 /* Find white finalisable values, put them in the finalising set, and
    darken them.
-   The recent set is empty.
 */
 void caml_final_update (void)
 {
