@@ -23,6 +23,8 @@ Language features:
 - GPR#88: allow field punning in object copying expressions:
     {< x; y; >} is sugar for {< x = x; y = y; >}
   (Jeremy Yallop)
+- GPR#218: Add the syntax "M.!( ... )" that opens a module locally but doesn't trigger shadowing warnings.
+  (Gabriel Radanne and 'Octachron')
 
 Compilers:
 - PR#6501: harden the native-code generator against certain uses of "%identity"
