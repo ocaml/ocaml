@@ -104,8 +104,10 @@ let debug_free_variables_check env tree ~name ~calculate_free_variables
       match Inline_and_simplify_aux.Env.find_opt env var with
       | Some _ -> ()
       | None ->
-        Misc.fatal_errorf "Unbound variable(s) (%s): %a fv=%a env=%a %s\n"
+        Misc.fatal_errorf "Unbound variable (in compiler function `%s'): \
+            var=%a %a fv=%a env=%a %s\n"
           name
+          Variable.print var
           printer tree
           Variable.Set.print fv
           Inline_and_simplify_aux.Env.print env

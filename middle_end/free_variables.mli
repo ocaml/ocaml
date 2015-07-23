@@ -14,6 +14,7 @@
 (** Pass in turn all free and bound variables in the given Flambda term to
     the supplied [free_variable] and [bound_variable] functions. *)
 val iter
+  (* CR mshinwell: rename arg *)
    : ?ignore_uses_in_apply:unit
   -> ?ignore_uses_in_project_var:unit
   -> Flambda.t
