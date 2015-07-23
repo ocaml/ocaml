@@ -222,15 +222,9 @@ let inline_by_copying_function_declaration ~env ~r
       E.note_entering_closure env ~closure_id:closure_id_being_applied
         ~where:Inline_by_copying_function_declaration
     in
-    let expr' = expr in
     let expr, r = simplify (E.activate_freshening env) r expr in
-    Format.eprintf "Approx before Unbox_closures = %a, the expr was %a\n"
-      Simple_value_approx.print (R.approx r)
-      Flambda_printers.flambda expr';
-    let expr =
-(*      Remove_unused_arguments.separate_unused_arguments_in_closures ~force:()*)
-        (Unbox_closures.run env expr)
-    in
+    (* CR mshinwell: add control over when [Unbox_closures] is run *)
+    let expr = Unbox_closures.run env expr in
     let expr = 
       Flambda_iterators.map_sets_of_closures expr
         ~f:(fun (set_of_closures : Flambda.set_of_closures) ->
@@ -267,6 +261,4 @@ let inline_by_copying_function_declaration ~env ~r
             specialised_args = Variable.Map.empty;
           })
     in
-    Format.eprintf "After Unbox_closures + specialised_args removal:@ %a"
-      Flambda_printers.flambda expr;
     Some (simplify env r expr)
