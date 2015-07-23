@@ -71,12 +71,33 @@ let copy_of_function's_body_with_freshened_params
    does not include the function identifiers for other functions in the same
    set of closures. *)
 
+let debug_free_variables_check env tree ~name ~calculate_free_variables
+      ~printer =
+  (* CR mshinwell: add compiler option to enable this expensive check *)
+  let fv = calculate_free_variables tree in
+  Variable.Set.iter (fun var ->
+      let var = Freshening.apply_variable (E.freshening env) var in
+      match Inline_and_simplify_aux.Env.find_opt env var with
+      | Some _ -> ()
+      | None ->
+        Misc.fatal_errorf "Unbound variable (in compiler function `%s'): \
+            var=%a %a fv=%a env=%a %s\n"
+          name
+          Variable.print var
+          printer tree
+          Variable.Set.print fv
+          Inline_and_simplify_aux.Env.print env
+          (Printexc.raw_backtrace_to_string (Printexc.get_callstack max_int)))
+    fv
+
 (** Inline a function by copying its body into a context where it becomes
     closed.  That is to say, we bind the free variables of the body
     (= "variables bound by the closure"), and any function identifiers
     introduced by the corresponding set of closures. *)
 let inline_by_copying_function_body ~env ~r ~function_decls ~lhs_of_application
       ~closure_id_being_applied ~function_decl ~args ~simplify =
+  assert (E.mem env lhs_of_application);
+  assert (List.for_all (E.mem env) args);
   let r = R.map_benefit r B.remove_call in
   let env = E.inlining_level_up env in
   let freshened_params, body =
@@ -116,7 +137,17 @@ let inline_by_copying_function_body ~env ~r ~function_decls ~lhs_of_application
     E.note_entering_closure env ~closure_id:closure_id_being_applied
       ~where:Inline_by_copying_function_body
   in
+  debug_free_variables_check env expr ~name:"inline_by_copying_function_body"
+    ~calculate_free_variables:
+      (Free_variables.calculate ?ignore_uses_in_apply:None
+        ?ignore_uses_in_project_var:None)
+    ~printer:Flambda_printers.flambda;
+try
   simplify (E.activate_freshening env) r expr
+with _exn ->
+  Format.eprintf "Exception from simplify, term is %a"
+    Flambda_printers.flambda expr;
+  Misc.fatal_error "failure"
 
 let inline_by_copying_function_declaration ~env ~r
     ~(function_decls : Flambda.function_declarations)
@@ -219,11 +250,9 @@ let inline_by_copying_function_declaration ~env ~r
                   Flambda_utils.toplevel_substitution
                     body_freshening function_decl.body
                 in
-                let free_variables = Free_variables.calculate body in
-                { function_decl with
-                  body;
-                  free_variables;
-                })
+                Flambda.create_function_declaration
+                  ~params:function_decl.params ~body
+                  ~stub:function_decl.stub ~dbg:function_decl.dbg)
               set_of_closures.function_decls.funs
           in
           let free_vars =

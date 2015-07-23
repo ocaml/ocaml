@@ -30,15 +30,8 @@ let remove_params unused (fun_decl: Flambda.function_declaration) =
       fun_decl.body
       unused_params
   in
-  let free_variables =
-    Variable.Set.filter (fun var -> not (Variable.Set.mem var unused))
-      fun_decl.free_variables
-  in
-  { fun_decl with
-    params = used_params;
-    free_variables;
-    body;
-  }
+  Flambda.create_function_declaration ~params:used_params ~body
+    ~stub:fun_decl.stub ~dbg:fun_decl.dbg
 
 let make_stub unused var (fun_decl : Flambda.function_declaration) =
   let renamed = rename_var var in
@@ -57,21 +50,11 @@ let make_stub unused var (fun_decl : Flambda.function_declaration) =
       dbg;
     }
   in
-  let free_variables =
-    List.fold_left
-      (fun set (_, renamed_arg) -> Variable.Set.add renamed_arg set)
-      (Variable.Set.singleton renamed)
-      args'
+  let function_decl =
+    Flambda.create_function_declaration ~params:(List.map snd args') ~body
+      ~stub:true ~dbg:fun_decl.dbg
   in
-  let decl : Flambda.function_declaration = {
-    params = List.map snd args';
-    body;
-    free_variables;
-    stub = true;
-    dbg = fun_decl.dbg;
-  }
-  in
-  decl, renamed
+  function_decl, renamed
 
 let separate_unused_arguments (set_of_closures : Flambda.set_of_closures) =
   let decl = set_of_closures.function_decls in

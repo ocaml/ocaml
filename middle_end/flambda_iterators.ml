@@ -167,7 +167,11 @@ let map_general ~toplevel f f_named tree =
             { function_decls with
               funs = Variable.Map.map
                   (fun (ffun : Flambda.function_declaration) ->
-                    { ffun with body = aux ffun.body })
+                    Flambda.create_function_declaration
+                      ~params:ffun.params
+                      ~body:(aux ffun.body)
+                      ~stub:ffun.stub
+                      ~dbg:ffun.dbg)
                 function_decls.funs;
             }
         in

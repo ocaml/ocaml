@@ -422,15 +422,17 @@ let rewrite_constant_access expr aliases set_of_closures_tbl constant_descr (kin
         free_variables
         (* function_decl.free_variables *)
     in
-    { function_decl
-      with
-        free_variables = closure_bound_variables;
-        body =
-          Variable.Set.fold
-            bind_constant
-            globaly_bound_variables
-            function_decl.body
-    }
+    let body =
+      Variable.Set.fold bind_constant globaly_bound_variables
+        function_decl.body
+    in
+    let function_decl =
+      Flambda.create_function_declaration ~params:function_decl.params
+        ~body ~stub:function_decl.stub ~dbg:function_decl.dbg
+    in
+    assert (Variable.Set.equal closure_bound_variables
+      function_decl.free_variables);
+    function_decl
   in
   let rewrite_set_of_closures (set_of_closures: Flambda.set_of_closures) =
     {
@@ -479,12 +481,12 @@ let rewrite_constant_access expr aliases set_of_closures_tbl constant_descr (kin
   in
   let set_of_closures_map =
     Symbol.Tbl.fold (fun symbol (set_of_closures:Flambda.set_of_closures) map ->
-        let update_function_decl (function_declaration:Flambda.function_declaration) =
+        let update_function_decl (function_decl : Flambda.function_declaration) =
           let body =
-            Flambda_iterators.map rewrite rewrite_named
-              function_declaration.body
+            Flambda_iterators.map rewrite rewrite_named function_decl.body
           in
-          { function_declaration with Flambda.body }
+          Flambda.create_function_declaration ~params:function_decl.params
+            ~body ~stub:function_decl.stub ~dbg:function_decl.dbg
         in
         let function_decls = {
           set_of_closures.function_decls with

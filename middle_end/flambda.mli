@@ -233,9 +233,7 @@ and function_declarations = {
   compilation_unit : Compilation_unit.t;
 }
 
-(* CR mshinwell: consider making private, so we can ensure [free_variables]
-   is correct *)
-and function_declaration = {
+and function_declaration = private {
   params : Variable.t list;
   body : t;
   (** All variables free in the *body* of the function.  For example, a
@@ -270,3 +268,24 @@ and for_loop = {
   direction : Asttypes.direction_flag;
   body : t
 }
+
+val free_variables
+   : ?ignore_uses_in_apply:unit
+  -> ?ignore_uses_in_project_var:unit
+  -> t
+  -> Variable.Set.t
+
+val free_variables_named : named -> Variable.Set.t
+
+(* CR mshinwell: try to move the non-recursive types out to a separate .mli *)
+(* CR mshinwell: consider moving [Flambda_utils] functions into here, now we
+   are forced to have a .ml *)
+
+val create_function_declaration
+   : params:Variable.t list
+  -> body:t
+  -> stub:bool
+  -> dbg:Debuginfo.t
+  -> function_declaration
+
+val used_params : function_declaration -> Variable.Set.t

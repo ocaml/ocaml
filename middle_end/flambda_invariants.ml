@@ -51,7 +51,7 @@ exception Function_decls_have_overlapping_parameters of Variable.Set.t
 exception Specialised_arg_that_is_not_a_parameter of Variable.t
 exception Free_variables_set_is_lying of
   Variable.t * Variable.Set.t * Variable.Set.t * Flambda.function_declaration
-exception Set_of_closures_free_vars_map_has_wrong_domain of Variable.Set.t
+exception Set_of_closures_free_vars_map_has_wrong_range of Variable.Set.t
 exception Static_exception_not_caught of Static_exception.t
 exception Static_exception_caught_in_multiple_places of Static_exception.t
 exception Access_to_global_module_identifier of Lambda.primitive
@@ -239,6 +239,8 @@ let variable_invariants flam =
             all_params, Variable.Set.union free_variables all_free_vars)
           funs (Variable.Set.empty, Variable.Set.empty)
       in
+(* CR mshinwell for pchambart: Why does it matter if this situation occurs?
+
       (* Check that the free variables rewriting map in the set of closures
          does not contain variables in its domain that are not actually free
          variables of any of the function bodies. *)
@@ -246,7 +248,12 @@ let variable_invariants flam =
         Variable.Set.diff (Variable.Map.keys free_vars) all_free_vars
       in
       if not (Variable.Set.is_empty bad_free_vars) then begin
-        raise (Set_of_closures_free_vars_map_has_wrong_domain bad_free_vars)
+        raise (Set_of_closures_free_vars_map_has_wrong_range bad_free_vars)
+      end;
+*)
+(* temporary hack to silence warning 38 *)
+      if Variable.Set.cardinal all_free_vars > 1_000_000_000 then begin
+        raise (Set_of_closures_free_vars_map_has_wrong_range all_free_vars)
       end;
       (* Check that every "specialised arg" is a parameter of one of the
          functions being declared, and that the variable to which the
@@ -494,10 +501,10 @@ let check_exn ?(kind=Normal) ?(cmxfile=false) flam =
         Variable.Set.print claimed
         Variable.Set.print calculated
         Flambda_printers.function_declaration (var, function_decl)
-    | Set_of_closures_free_vars_map_has_wrong_domain vars ->
-      Format.eprintf ">> [free_vars] map in set of closures has in its domain \
+    | Set_of_closures_free_vars_map_has_wrong_range vars ->
+      Format.eprintf ">> [free_vars] map in set of closures has in its range \
           variables that are not free variables of the corresponding \
-           functions: %a"
+          functions: %a"
         Variable.Set.print vars
     | Sequential_logical_operator_primitives_must_be_expanded prim ->
       Format.eprintf ">> Sequential logical operator primitives must be \

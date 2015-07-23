@@ -144,8 +144,10 @@ let rewrite_recursive_calls_with_symbols t
               | Symbol sym when Symbol.Map.mem sym closure_symbols ->
                 Expr (Var (Symbol.Map.find sym closure_symbols))
               | e -> e)
-            ffun.body in
-        { ffun with body })
+            ffun.body
+        in
+        Flambda.create_function_declaration ~params:ffun.params
+          ~body ~stub:ffun.stub ~dbg:ffun.dbg)
         function_declarations.funs
     in
     { function_declarations with funs }
@@ -205,21 +207,19 @@ module Project_var = struct
       let subst_func_decl _fun_id (func_decl : Flambda.function_declaration)
             subst =
         let params, subst = active_add_variables' subst func_decl.params in
-        let free_variables =
-          Variable.Set.fold (fun id set ->
-              Variable.Set.add (active_find_var_exn subst id) set)
-            func_decl.free_variables Variable.Set.empty in
         (* It is not a problem to share the substitution of parameter
            names between function: There should be no clash *)
         (* CR mshinwell: could this violate one of the new invariants in
            Flambda_invariants (about all parameters being distinct within one
            set of function declarations)? *)
-        { func_decl with
-          free_variables;
-          params;
-          (* keep code in sync with the closure *)
-          body = Flambda_utils.toplevel_substitution subst.sb_var func_decl.body;
-        }, subst
+        let body =
+          Flambda_utils.toplevel_substitution subst.sb_var func_decl.body
+        in
+        let function_decl =
+          Flambda.create_function_declaration ~params
+            ~body ~stub:func_decl.stub ~dbg:func_decl.dbg
+        in
+        function_decl, subst
       in
       let subst, t =
         Variable.Map.fold (fun orig_id _func_decl (subst, t) ->

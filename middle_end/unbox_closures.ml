@@ -75,16 +75,10 @@ let rewrite_function_decl ~env
             dbg = apply.dbg;
           })
   in
-  let free_variables =
-    Free_variables.calculate body_using_params_not_closures
-  in
-  let rewritten_function_decl : Flambda.function_declaration =
-    { params = all_params;
-      body = body_using_params_not_closures;
-      free_variables;
-      stub = function_decl.stub;
-      dbg = function_decl.dbg;
-    }
+  let rewritten_function_decl =
+    Flambda.create_function_declaration ~params:all_params
+      ~body:body_using_params_not_closures ~stub:function_decl.stub
+      ~dbg:function_decl.dbg
   in
   let wrapper_params =
     List.map (fun param -> Variable.rename ~append:"_unbox_closures" param)
@@ -156,12 +150,8 @@ let rewrite_function_decl ~env
     Flambda_utils.bind ~bindings:bindings_for_closure_element_params ~body
   in
   let wrapper : Flambda.function_declaration =
-    { params = wrapper_params;
-      body = wrapper_body;
-      free_variables = Free_variables.calculate wrapper_body;
-      stub = true;
-      dbg = Debuginfo.none;
-    }
+    Flambda.create_function_declaration ~params:wrapper_params
+      ~body:wrapper_body ~stub:true ~dbg:Debuginfo.none
   in
   Format.eprintf "Arity of %a (rewritten) = %d; arity of %a (wrapper) = %d\n"
     Variable.print new_fun_var (List.length rewritten_function_decl.params)

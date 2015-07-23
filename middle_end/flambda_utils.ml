@@ -261,14 +261,12 @@ let make_closure_declaration ~id ~body ~params : Flambda.t =
       free_variables Variable.Map.empty in
   let body = toplevel_substitution sb body in
   let subst id = Variable.Map.find id sb in
-  let function_declaration : Flambda.function_declaration =
-    { stub = false;
-      params = List.map subst params;
-      free_variables = Variable.Set.map subst free_variables;
-      body;
-      dbg = Debuginfo.none;
-    }
+  let function_declaration =
+    Flambda.create_function_declaration ~params:(List.map subst params)
+      ~body ~stub:false ~dbg:Debuginfo.none
   in
+  assert (Variable.Set.equal (Variable.Set.map subst free_variables)
+    function_declaration.free_variables);
   let free_vars =
     (* CR mshinwell: can be simplified now *)
     Variable.Map.fold (fun id id' fv' ->

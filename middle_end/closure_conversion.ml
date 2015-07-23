@@ -51,12 +51,8 @@ let tupled_function_call_stub original_params tuplified_version
         pos + 1, Flambda.Let (Immutable, param, lam, body))
       (0, call) params
   in
-  { stub = true;  (* force the function to be inlined *)
-    params = [tuple_param];
-    free_variables = Variable.Set.of_list [tuple_param; tuplified_version];
-    body;
-    dbg = Debuginfo.none;
-  }
+  Flambda.create_function_declaration ~params:[tuple_param]
+    ~body ~stub:true ~dbg:Debuginfo.none
 
 (** Propagate an [Lev_after] debugging event into an adjacent Flambda node. *)
 let add_debug_info (ev : Lambda.lambda_event) (flam : Flambda.t)
@@ -365,12 +361,6 @@ and close_functions t external_env function_declarations : Flambda.named =
       List.fold_right (fun id env -> Env.add_var env id (Variable.of_ident id))
         params closure_env_without_parameters
     in
-    let free_variables =
-      IdentSet.fold
-        (fun id set -> Variable.Set.add (Env.find_var closure_env id) set)
-        (Function_decl.used_idents decl)
-        Variable.Set.empty
-    in
     (* If the function is the wrapper for a function with an optional
        argument with a default value, make sure it always gets inlined.
        CR-someday pchambart: eta-expansion wrapper for a primitive are
@@ -383,8 +373,8 @@ and close_functions t external_env function_declarations : Flambda.named =
     let params = List.map (Env.find_var closure_env) params in
     let closure_bound_var = Function_decl.closure_bound_var decl in
     let body = close t closure_env body in
-    let fun_decl : Flambda.function_declaration =
-      { stub; params; dbg; free_variables; body; }
+    let fun_decl =
+      Flambda.create_function_declaration ~params ~body ~stub ~dbg
     in
     match Function_decl.kind decl with
     | Curried -> Variable.Map.add closure_bound_var fun_decl map

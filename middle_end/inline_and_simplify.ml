@@ -193,11 +193,15 @@ let simplify_move_within_set_of_closures env r
         Expr (Var closure), ret r closure_approx
       else
         match set_of_closures_var with
-        | Some set_of_closures_var ->
+        | Some set_of_closures_var when E.mem env set_of_closures_var ->
           (* A variable bound to the set of closures is in scope, meaning we
              can rewrite the [Move_within_set_of_closures] to a
              [Project_closure]. *)
-          (* CR mshinwell: does [set_of_closures_var] need freshening? *)
+          (* CR mshinwell: does [set_of_closures_var] need freshening?
+          let set_of_closures_var =
+            Freshening.apply_variable (E.freshening env) set_of_closures_var
+          in
+          *)
           let project_closure : Flambda.project_closure =
             { set_of_closures = set_of_closures_var;
               closure_id = move_to;
@@ -207,7 +211,7 @@ let simplify_move_within_set_of_closures env r
             A.value_closure ~set_of_closures_var value_set_of_closures move_to
           in
           Project_closure project_closure, ret r approx
-        | None ->
+        | Some _ | None ->
           (* The set of closures is not available in scope, and we have no
              other information by which to simplify the move. *)
           let move_within : Flambda.move_within_set_of_closures =
@@ -455,12 +459,12 @@ and simplify_set_of_closures original_env r
         ~where:Transform_set_of_closures_expression
         ~f:(fun body_env -> simplify body_env r function_decl.body)
     in
-    let free_variables = Free_variables.calculate body in
-    let used_params' =
-      Variable.Set.filter (fun param -> Variable.Set.mem param free_variables)
-        (Variable.Set.of_list function_decl.params)
+    let function_decl =
+      Flambda.create_function_declaration ~params:function_decl.params
+        ~body ~stub:function_decl.stub ~dbg:function_decl.dbg
     in
-    Variable.Map.add fid { function_decl with body; free_variables } funs,
+    let used_params' = Flambda.used_params function_decl in
+    Variable.Map.add fid function_decl funs,
       Variable.Set.union used_params used_params', r
   in
   let funs, used_params, r =

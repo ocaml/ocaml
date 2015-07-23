@@ -11,6 +11,8 @@
 (*                                                                        *)
 (**************************************************************************)
 
+(* CR mshinwell: remove *)
+(*
 (** Pass in turn all free and bound variables in the given Flambda term to
     the supplied [free_variable] and [bound_variable] functions. *)
 val iter
@@ -21,6 +23,7 @@ val iter
   -> free_variable:(Variable.t -> unit)
   -> bound_variable:(Variable.t -> unit)
   -> unit
+*)
 
 (** Calculation of the set of free variables in a given Flambda term.
     If [ignore_uses_in_apply] is specified, then uses of the variables in

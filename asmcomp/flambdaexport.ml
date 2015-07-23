@@ -255,8 +255,11 @@ let import_ffunctions_for_pack units pack
       (ffuns : Flambda.function_declarations) =
   { ffuns with
     funs = Variable.Map.map (fun (ffun : Flambda.function_declaration) ->
-        {ffun with body = import_code_for_pack units pack ffun.body})
-        ffuns.funs }
+        Flambda.create_function_declaration ~params:ffun.params
+          ~body:(import_code_for_pack units pack ffun.body)
+          ~stub:ffun.stub ~dbg:ffun.dbg)
+      ffuns.funs;
+  }
 
 let ex_functions_off ex_functions =
   let aux_fun ffunctions function_id _ map =

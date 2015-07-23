@@ -40,8 +40,8 @@ let import_set_of_closures =
             let body =
               Flambda_iterators.map_toplevel_named f_named function_decl.body
             in
-            let free_variables = Free_variables.calculate body in
-            { function_decl with body; free_variables; })
+            Flambda.create_function_declaration ~params:function_decl.params
+              ~body ~stub:function_decl.stub ~dbg:function_decl.dbg)
           clos.funs;
     }
   in
