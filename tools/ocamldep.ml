@@ -227,9 +227,9 @@ let read_parse_and_extract parse_function extract_function magic source_file =
 		    input_file parse_function magic
       in
       let bound_vars = Depend.StringSet.empty in
-      List.iter (fun modname ->
+      let bound_vars = List.fold_left (fun bound_vars modname ->
 	Depend.open_module bound_vars (Longident.Lident modname)
-      ) !Clflags.open_modules;
+      ) bound_vars !Clflags.open_modules in
       extract_function bound_vars ast;
       Pparse.remove_preprocessed input_file;
       !Depend.free_structure_names

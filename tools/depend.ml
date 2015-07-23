@@ -17,8 +17,48 @@ open Parsetree
 
 module StringSet = Set.Make(struct type t = string let compare = compare end)
 
-(* Collect free module identifiers in the a.s.t. *)
+module Hint = struct
+  exception Invalid_paylaod of Location.t
 
+  let rec add_leftmost_module bv = function
+    | Lident s -> StringSet.add s bv
+    | Ldot(l,_) -> add_leftmost_module bv l
+    | Lapply(l,_) -> add_leftmost_module bv l
+
+  let process bv ~attributes =
+    let attributes =
+      List.filter (fun (name, _payload) -> name.txt = "ocamldep.hint") attributes
+    in
+    List.fold_left (fun bv attr ->
+      try
+        let {Asttypes.loc}, payload = attr in
+        match payload with
+        | PTyp _
+        | PPat _ -> raise (Invalid_paylaod loc)
+        | PStr structures ->
+          let r = List.fold_left (fun bv item ->
+            (* recognize [include Module] only *)
+            match item with
+            | { pstr_desc =
+                  Pstr_include
+                    { pincl_mod =
+                        { pmod_desc =
+                            Pmod_ident { txt }
+                        }
+                    }
+              } ->
+              add_leftmost_module bv txt
+            | _ -> raise (Invalid_paylaod loc)) bv structures in
+          r
+      with
+      | Not_found -> bv
+      | Invalid_paylaod loc ->
+        Location.print Format.err_formatter loc;
+        Format.eprintf "Ignore payload.@.";
+        bv) bv attributes
+end
+
+(* Collect free module identifiers in the a.s.t. *)
 let free_structure_names = ref StringSet.empty
 
 let rec add_path bv = function
@@ -28,7 +68,9 @@ let rec add_path bv = function
   | Ldot(l, _s) -> add_path bv l
   | Lapply(l1, l2) -> add_path bv l1; add_path bv l2
 
-let open_module bv lid = add_path bv lid
+let open_module bv lid =
+  add_path bv lid;
+  bv
 
 let add bv lid =
   match lid.txt with
@@ -193,7 +235,8 @@ let rec add_expr bv exp =
       let bv = add_pattern bv pat in List.iter (add_class_field bv) fieldl
   | Pexp_newtype (_, e) -> add_expr bv e
   | Pexp_pack m -> add_module bv m
-  | Pexp_open (_ovf, m, e) -> open_module bv m.txt; add_expr bv e
+  | Pexp_open (_ovf, m, e) ->
+      let bv = open_module bv m.txt in add_expr bv e
   | Pexp_extension _ -> ()
 
 and add_cases bv cases =
@@ -261,7 +304,8 @@ and add_sig_item bv item =
       end;
       bv
   | Psig_open od ->
-      open_module bv od.popen_lid.txt; bv
+      let dv = open_module bv od.popen_lid.txt in
+      Hint.process dv ~attributes:od.popen_attributes
   | Psig_include incl ->
       add_modtype bv incl.pincl_mod; bv
   | Psig_class cdl ->
@@ -322,7 +366,8 @@ and add_struct_item bv item =
       end;
       bv
   | Pstr_open od ->
-      open_module bv od.popen_lid.txt; bv
+      let bv = open_module bv od.popen_lid.txt in
+      Hint.process bv ~attributes:od.popen_attributes
   | Pstr_class cdl ->
       List.iter (add_class_declaration bv) cdl; bv
   | Pstr_class_type cdtl ->
