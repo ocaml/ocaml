@@ -133,20 +133,18 @@ let prep_flambda_for_export ppf flam =
       lifted_constants.Lift_constants.set_of_closures_map;
     (* TODO: print structured constants *)
   end;
-  let kind =
-    Flambda_invariants.Lifted
-  in
-  Flambda_invariants.check_exn
-    ~kind
-    lifted_constants.Lift_constants.expr;
+  let kind = Flambda_invariants.Lifted in
+  Flambda_invariants.check_exn ~kind lifted_constants.Lift_constants.expr;
   Symbol.Map.iter (fun _ set_of_closures ->
       let var = Variable.create "dummy" in
-      let expr = Flambda.(Let(Immutable,var, Set_of_closures set_of_closures, Var var)) in
+      let expr : Flambda.t =
+        Let (Immutable, var, Set_of_closures set_of_closures, Var var)
+      in
       Flambda_invariants.check_exn ~kind ~cmxfile:true expr)
     lifted_constants.Lift_constants.set_of_closures_map;
   lifted_constants, export
 
-let compile_unit ~sourcefile output_prefix asm_filename keep_asm obj_filename gen =
+let compile_unit ~sourcefile _output_prefix asm_filename keep_asm obj_filename gen =
   let create_asm = keep_asm || not !Emitaux.binary_backend_available in
   Emitaux.create_asm_file := create_asm;
   try
@@ -208,7 +206,7 @@ let compile_implementation ?toplevel ~sourcefile prefixname ppf ~size flam =
     then prefixname ^ ext_asm
     else Filename.temp_file "camlasm" ext_asm
   in
-  compile_unit sourcefile prefixname asmfile !keep_asm_file (prefixname ^ ext_obj)
+  compile_unit ~sourcefile prefixname asmfile !keep_asm_file (prefixname ^ ext_obj)
     (fun () ->
        gen_implementation ?toplevel ~sourcefile ppf ~size flam)
 

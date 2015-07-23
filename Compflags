@@ -21,7 +21,8 @@ case $1 in
     echo '-w +a-4+27-30-40-41-42 -principal -safe-string -strict-formats'
     ;;
 
-    asmcomp/clambdagen.* \
+    asmcomp/asmgen.* \
+  | asmcomp/clambdagen.* \
   | asmcomp/closure_offsets.* \
   | asmcomp/compilenv.* \
   | asmcomp/flambdaexport.* \
