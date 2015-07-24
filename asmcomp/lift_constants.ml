@@ -445,7 +445,9 @@ let rewrite_constant_access expr aliases set_of_closures_tbl constant_descr
   (* CR mshinwell: tidy this up once working *)
   let bind_constant_fv var body
         ~(set_of_closures : Flambda.set_of_closures) : Flambda.t =
+(*
 Format.eprintf "bind_constant_fv var=%a\n" Variable.print var;
+*)
     let outer_var =
       match Variable.Map.find var set_of_closures.free_vars with
       | outer_var -> outer_var

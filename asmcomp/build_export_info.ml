@@ -245,7 +245,6 @@ and describe_named (env : env) (named : Flambda.named) : ET.approx =
     end
 
   | Prim(Psetglobalfield (_, i), [arg], _) ->
-    Format.eprintf "Psetglobalfield %d %a\n" i Variable.print arg;
     global_approx := Int.Map.add i (find_approx env arg) !global_approx;
     Value_unknown
 
@@ -358,10 +357,12 @@ and describe_set_of_closures env (set : Flambda.set_of_closures)
   let results =
     Variable.Map.map result_approx set.function_decls.funs
   in
+(*
   Format.eprintf "Set of closures binding closure ID(s) %a has the following \
       bound_vars: %a\n"
     Variable.Set.print (Variable.Map.keys set.function_decls.funs)
     Variable.Set.print (Variable.Map.keys bound_vars_approx);
+*)
   { set_of_closures_id = set.function_decls.set_of_closures_id;
     bound_vars = Var_within_closure.wrap_map bound_vars_approx;
     results = Closure_id.wrap_map results;

@@ -374,7 +374,9 @@ let inconstants ~for_clambda ~compilation_unit (expr : Flambda.t) =
     let toplevel = true
   end in
   let module A = NotConstants(P) in
+(*
   Format.eprintf "inconstants returns %a\n%a@ "
     Variable.Set.print A.res.id
     Set_of_closures_id.Set.print A.res.closure;
+*)
   A.res
