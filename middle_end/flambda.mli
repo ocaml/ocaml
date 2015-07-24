@@ -183,7 +183,9 @@ and named =
 
 and set_of_closures = {
   function_decls : function_declarations;
-  (* CR mshinwell: consider renaming [free_vars] *)
+  (* CR mshinwell: consider renaming [free_vars].  Also, it's still really
+     confusing which side of this map to use when.  "Vars bound by the
+     closure" is the domain. *)
   free_vars : Variable.t Variable.Map.t;
   (** Parameters known to always alias some variable in the scope of the set
       of closures declaration. For instance, supposing all call sites of f

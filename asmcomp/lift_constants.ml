@@ -396,15 +396,16 @@ let constant_sharing map aliases =
 
 let rewrite_constant_access expr aliases set_of_closures_tbl constant_descr
       (kind : constant Variable.Map.t) =
-  let used_in_project_var =
-    let used = ref Var_within_closure.Set.empty in
-    let aux (expr : Flambda.t) =
-      match expr with
-      | Var_within_closure { var; _ } ->
-        used := Var_within_closure.Set.add var !used
+  let _used_in_project_var =
+    let used = ref Variable.Set.empty in
+    let aux (named : Flambda.named) =
+      match named with
+      | Project_var { var; _ } ->
+        let var = Var_within_closure.unwrap var in
+        used := Variable.Set.add var !used
       | _ -> ()
     in
-    Flambdaiter.iter aux expr;
+    Flambda_iterators.iter_named aux expr;
     !used
   in
   let is_a_constant var =
@@ -500,14 +501,8 @@ Format.eprintf "bind_constant_fv var=%a\n" Variable.print var;
             set_of_closures.function_decls.funs
       };
       free_vars =
-        Variable.Map.filter (fun _ var ->
-            not (is_a_constant var)
-              (* CR mshinwell for pchambart: I had to add this otherwise we
-                 were dropping variables in closures that were referenced by
-                 [Project_var] expressions.  Maybe instead we should keep
-                 track of which free_vars we would like to eliminate here,
-                 and then substitute out the [Project_var] expressions? *)
-              && not (Variable.Map.mem var used_in_project_var))
+        Variable.Map.filter (fun _inner_var outer_var ->
+            not (is_a_constant outer_var))
           set_of_closures.free_vars;
       specialised_args =
         Variable.Map.filter
@@ -521,6 +516,29 @@ Format.eprintf "bind_constant_fv var=%a\n" Variable.print var;
     | named -> named
   in
   let rewrite : Flambda.t -> Flambda.t = function
+    (* [Project_var] expressions that reference variables that used to be
+       within some closure, but were removed by this pass as a result of them
+       being constant, must be rewritten. *)
+    (* CR mshinwell: could these occur in [Let_rec] too? *)
+    | Let (Immutable, bound_var, Project_var { var; _ }, body)
+        when is_a_constant (Var_within_closure.unwrap var) ->
+      (* XXX nearly a copy of the above *)
+      let var = Var_within_closure.unwrap var in
+      begin match get_kind var with
+      | Int i ->
+        Let (Immutable, bound_var,
+             Const (Const_base (Const_int i)),
+             body)
+      | Const_pointer p ->
+        Let (Immutable, bound_var,
+             Const (Const_pointer p),
+             body)
+      | Symbol s ->
+        Let (Immutable, bound_var,
+             Symbol s,
+             body)
+      | exception Not_found -> assert false
+      end
     | expr -> expr
 (* CR mshinwell for pchambart:  This doesn't look right.  It causes unbound
    variables (kind of obviously...)  We can't just substitute either, because
@@ -574,7 +592,7 @@ Format.eprintf "bind_constant_fv var=%a\n" Variable.print var;
       )
       set_of_closures_tbl Symbol.Map.empty
   in
-  Format.eprintf "lift_constants output: %a\n"
+  Format.eprintf "lift_constants output:@ %a\n"
     Flambda_printers.flambda expr;
   { expr;
     constant_descr;
@@ -582,7 +600,7 @@ Format.eprintf "bind_constant_fv var=%a\n" Variable.print var;
     set_of_closures_map }
 
 let lift_constants expr =
-  Format.eprintf "lift_constants input: %a\n"
+  Format.eprintf "lift_constants input:@ %a\n"
     Flambda_printers.flambda expr;
   let constant_tbl, set_of_closures_tbl =
     collect_constant_declarations expr
