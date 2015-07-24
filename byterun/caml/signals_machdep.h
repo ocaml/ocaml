@@ -16,7 +16,7 @@
 #ifndef CAML_SIGNALS_MACHDEP_H
 #define CAML_SIGNALS_MACHDEP_H
 
-#if defined(__GNUC__) && defined(__i386__)
+#if defined(__GNUC__) && (defined(__i386__) || (defined(__x86_64__) && defined(__ILP32__)))
 
 #define Read_and_clear(dst,src) \
   asm("xorl %0, %0; xchgl %0, %1" \

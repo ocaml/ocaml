@@ -855,14 +855,13 @@ esac
 
 # Some platforms exist both in 32-bit and 64-bit variants, not distinguished
 # by $target.  Turn off native code compilation on platforms where 64-bit mode
-# is not supported.  (PR#4441)
+# is not supported  (PR#4441).
+# Sometimes, it's 32-bit mode that is not supported  (PR#6722).
 
-if $arch64; then
-  case "$arch,$model" in
-    sparc,default|power,ppc)
+case "$arch64,$arch,$model" in
+  true,sparc,*|true,power,ppc|false,amd64,*)
       arch=none; model=default; system=unknown;;
-  esac
-fi
+esac
 
 if test -z "$ccoption"; then
   nativecc="$bytecc"

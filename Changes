@@ -137,6 +137,8 @@ Features wishes:
   (Jeremy Yallop, review by Gabriel Radanne)
 - PR#6691: install .cmt[i] files for stdlib and compiler-libs
   (David Sheets, request by Gabriel Radanne)
+- PR#6722: compatibility with x32 architecture (x86-64 in ILP32 mode).
+  ocamlopt is not supported, but bytecode compiles cleanly.
 - PR#6742: remove duplicate virtual_flag information from Tstr_class
 - PR#6719: improve Buffer.add_channel when not enough input is available
   (Simon Cruanes)
