@@ -342,6 +342,8 @@ Format.eprintf "Clambdagen.conv: %a\n"
     | Project_var { closure; var; closure_id } ->
       let ulam = subst_var env closure in
       let fun_offset = get_fun_offset closure_id in
+      Format.eprintf "Clambdagen: Project_var: %a\n"
+        Flambda_printers.named named;
       let var_offset = get_fv_offset var in
       let pos = var_offset - fun_offset in
       Uprim(Pfield pos, [ulam], Debuginfo.none)
