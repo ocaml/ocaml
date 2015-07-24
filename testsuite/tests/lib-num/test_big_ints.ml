@@ -977,3 +977,47 @@ test 6 eq_int (Hashtbl.hash (sub_big_int
                                (big_int_of_string "123456789123456789")
                                (big_int_of_string "123456789123456788")),
               992063522);;
+
+testing_function "float_of_big_int";;
+
+test 1 eq_float (float_of_big_int zero_big_int, 0.0);;
+test 2 eq_float (float_of_big_int unit_big_int, 1.0);;
+test 3 eq_float (float_of_big_int (minus_big_int unit_big_int), -1.0);;
+test 4 eq_float (float_of_big_int (shift_left_big_int unit_big_int 1024),
+                 infinity);;
+test 5 eq_float (float_of_big_int (shift_left_big_int unit_big_int 1023),
+                 ldexp 1.0 1023);;
+(* Some random int64 values *)
+let ok = ref true in
+for i = 1 to 100 do
+  let n = Random.int64 Int64.max_int in
+  if not (eq_float (float_of_big_int (big_int_of_int64 n)) (Int64.to_float n))
+  then ok := false;
+  let n = Int64.neg n in
+  if not (eq_float (float_of_big_int (big_int_of_int64 n)) (Int64.to_float n))
+  then ok := false
+done;
+test 6 eq (!ok, true);;
+(* Some random int64 values scaled by some random power of 2 *)
+let ok = ref true in
+for i = 1 to 1000 do
+  let n = Random.int64 Int64.max_int in
+  let exp = Random.int 1200 in
+  if not (eq_float
+             (float_of_big_int
+                 (shift_left_big_int (big_int_of_int64 n) exp))
+             (ldexp (Int64.to_float n) exp))
+  then ok := false
+done;
+test 7 eq (!ok, true);;
+(* Round to nearest even *)
+let ok = ref true in
+for i = 0 to 15 do
+  let n = Int64.(add 0xfffffffffffff0L (of_int i)) in
+  if not (eq_float
+             (float_of_big_int
+                 (shift_left_big_int (big_int_of_int64 n) 32))
+             (ldexp (Int64.to_float n) 32))
+  then ok := false
+done;
+test 8 eq (!ok, true);;
