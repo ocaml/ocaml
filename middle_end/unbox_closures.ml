@@ -148,9 +148,6 @@ let rewrite_function_decl ~env
     Flambda.create_function_declaration ~params:wrapper_params
       ~body:wrapper_body ~stub:true ~dbg:Debuginfo.none
   in
-  Format.eprintf "Arity of %a (rewritten) = %d; arity of %a (wrapper) = %d\n"
-    Variable.print new_fun_var (List.length rewritten_function_decl.params)
-    Variable.print fun_var (List.length wrapper.params);
   let funs =
     Variable.Map.add new_fun_var rewritten_function_decl
         (Variable.Map.add fun_var wrapper funs)

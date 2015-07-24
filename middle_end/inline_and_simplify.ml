@@ -412,12 +412,13 @@ and simplify_set_of_closures original_env r
     (* Approximations of parameters that are known to always hold the same
        argument throughout the body of the function. *)
     Variable.Map.map_keys (Freshening.apply_variable (E.freshening env))
-      (Variable.Map.mapi (fun id' id ->
+      (Variable.Map.mapi (fun _id' id ->
           let approx = E.find_exn environment_before_cleaning id in
+(*
           Format.eprintf "param_approx %a := %a = %a\n"
             Variable.print id'
             Variable.print id
-            Simple_value_approx.print approx; approx)
+            Simple_value_approx.print approx; *) approx)
         specialised_args)
   in
   let env =

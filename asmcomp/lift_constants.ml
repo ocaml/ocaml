@@ -515,32 +515,22 @@ Format.eprintf "bind_constant_fv var=%a\n" Variable.print var;
   let rewrite_named : Flambda.named -> Flambda.named = function
     | Set_of_closures set_of_closures ->
       Set_of_closures (rewrite_set_of_closures set_of_closures)
+    | Project_var { var; _ }
+        when is_a_constant (Var_within_closure.unwrap var) ->
+      (* [Project_var] expressions that reference variables that used to be
+         within some closure, but were removed by this pass as a result of them
+         being constant (see [rewrite_function_declaration], above), must be
+         replaced by the corresponding constants. *)
+      let var = Var_within_closure.unwrap var in
+      begin match get_kind var with
+      | Int i -> Const (Const_base (Const_int i))
+      | Const_pointer p -> Const (Const_pointer p)
+      | Symbol s -> Symbol s
+      | exception Not_found -> assert false
+      end
     | named -> named
   in
   let rewrite : Flambda.t -> Flambda.t = function
-    (* [Project_var] expressions that reference variables that used to be
-       within some closure, but were removed by this pass as a result of them
-       being constant, must be rewritten. *)
-    (* CR mshinwell: could these occur in [Let_rec] too? *)
-    | Let (Immutable, bound_var, Project_var { var; _ }, body)
-        when is_a_constant (Var_within_closure.unwrap var) ->
-      (* XXX nearly a copy of the above *)
-      let var = Var_within_closure.unwrap var in
-      begin match get_kind var with
-      | Int i ->
-        Let (Immutable, bound_var,
-             Const (Const_base (Const_int i)),
-             body)
-      | Const_pointer p ->
-        Let (Immutable, bound_var,
-             Const (Const_pointer p),
-             body)
-      | Symbol s ->
-        Let (Immutable, bound_var,
-             Symbol s,
-             body)
-      | exception Not_found -> assert false
-      end
     | Let (kind, var, named, body) ->
       if is_a_constant var then
         bind_constant var body
@@ -548,7 +538,7 @@ Format.eprintf "bind_constant_fv var=%a\n" Variable.print var;
         Let (kind, var, named, body)
     | Let_rec (defs, body) ->
       let defs =
-        List.map (fun (var, def) ->
+        List.map (fun (var, (def : Flambda.named)) ->
             if is_a_constant var then
               let def : Flambda.named =
                 match get_kind var with
