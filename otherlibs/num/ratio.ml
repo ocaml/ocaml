@@ -592,10 +592,10 @@ let float_of_ratio r =
         if n >= 0
         then (shift_left_big_int ap n, q)
         else (ap, shift_left_big_int q (-n)) in
-      (* quo is the integral part of |p|/q*2^n
-         rem/q' is the fractional part. *)
       (* Euclidean division of p' by q' *)
       let (quo, rem) = quomod_big_int p' q' in
+      (* quo is the integral part of |p|/q*2^n
+         rem/q' is the fractional part. *)
       (* Round quo to float *)
       let f = round_big_int_to_float quo (sign_big_int rem = 0) in
       (* Apply exponent *)
