@@ -22,12 +22,7 @@ let rewrite_function_decl ~env
     Variable.Map.fold (fun specialised_param specialised_to map ->
         let approx = E.find_exn env specialised_to in
         match A.check_approx_for_closure approx with
-        | Wrong ->
-          Misc.fatal_errorf "Unbox_closures.rewrite_function_decl: \
-              wrong approximation for specialised arg %a -> %a: %a"
-            Variable.print specialised_param
-            Variable.print specialised_to
-            Simple_value_approx.print approx
+        | Wrong -> map  (* Ignore specialised args that aren't closures. *)
         | Ok (_value_closure, _approx_var, value_set_of_closures) ->
           Var_within_closure.Map.fold (fun var _approx map ->
               let var = Var_within_closure.unwrap var in
