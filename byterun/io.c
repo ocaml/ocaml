@@ -17,6 +17,7 @@
 #include <fcntl.h>
 #include <limits.h>
 #include <string.h>
+#include <stdio.h>
 #include <sys/types.h>
 #include "caml/config.h"
 #ifdef HAS_UNISTD
@@ -51,6 +52,30 @@ CAMLexport void (*caml_channel_mutex_unlock_exn) (void) = NULL;
 /* List of opened channels */
 CAMLexport struct channel * caml_all_opened_channels = NULL;
 
+/* Runtime warnings */
+static int caml_runtime_warnings = 1;
+static int caml_runtime_warnings_first = 1;
+
+static int runtime_warnings() {
+  if (!caml_runtime_warnings) return 0;
+  if (caml_runtime_warnings_first) {
+    fprintf(stderr, "[ocaml] (use Sys.enable_runtime_warnings to control these warnings)\n");
+    caml_runtime_warnings_first = 0;
+  }
+  return 1;
+}
+
+CAMLprim value caml_ml_enable_runtime_warnings(value vbool)
+{
+  caml_runtime_warnings = Bool_val(vbool);
+  return Val_unit;
+}
+
+CAMLprim value caml_ml_runtime_warnings_enabled(value vbool)
+{
+  return Val_bool(caml_runtime_warnings);
+}
+
 /* Basic functions over type struct channel *.
    These functions can be called directly from C.
    No locking is performed. */
@@ -75,6 +100,7 @@ CAMLexport struct channel * caml_open_descriptor_in(int fd)
   channel->flags = 0;
   channel->next = caml_all_opened_channels;
   channel->prev = NULL;
+  channel->name = NULL;
   if (caml_all_opened_channels != NULL)
     caml_all_opened_channels->prev = channel;
   caml_all_opened_channels = channel;
@@ -109,6 +135,7 @@ CAMLexport void caml_close_channel(struct channel *channel)
   if (channel->refcount > 0) return;
   if (caml_channel_mutex_free != NULL) (*caml_channel_mutex_free)(channel);
   unlink_channel(channel);
+  caml_stat_free(channel->name);
   caml_stat_free(channel);
 }
 
@@ -427,7 +454,15 @@ CAMLexport void caml_finalize_channel(value vchan)
   struct channel * chan = Channel(vchan);
   if (--chan->refcount > 0) return;
   if (caml_channel_mutex_free != NULL) (*caml_channel_mutex_free)(chan);
+
+  if (chan->fd != -1 && chan->name && runtime_warnings())
+    fprintf(stderr,
+            "[ocaml] channel opened on file '%s' dies without being closed\n",
+            chan->name
+            );
+
   unlink_channel(chan);
+  caml_stat_free(chan->name);
   caml_stat_free(chan);
 }
 
@@ -471,6 +506,17 @@ CAMLprim value caml_ml_open_descriptor_in(value fd)
 CAMLprim value caml_ml_open_descriptor_out(value fd)
 {
   return caml_alloc_channel(caml_open_descriptor_out(Int_val(fd)));
+}
+
+CAMLprim value caml_ml_set_channel_name(value vchannel, value vname)
+{
+  struct channel * channel = Channel(vchannel);
+  caml_stat_free(channel->name);
+  if (caml_string_length(vname) > 0)
+    channel->name = caml_strdup(String_val(vname));
+  else
+    channel->name = NULL;
+  return Val_unit;
 }
 
 #define Pair_tag 0

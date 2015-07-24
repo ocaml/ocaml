@@ -82,6 +82,8 @@ void caml_parse_ocamlrunparam(void)
       case 's': scanmult (opt, &caml_init_minor_heap_wsz); break;
       case 't': scanmult (opt, &caml_trace_level); break;
       case 'v': scanmult (opt, &caml_verb_gc); break;
+      case 'W': scanmult (opt, &p);
+        caml_ml_enable_runtime_warnings(Val_bool (p)); break;
       }
       while (*opt != '\0'){
         if (*opt++ == ',') break;

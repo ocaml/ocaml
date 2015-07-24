@@ -302,8 +302,13 @@ type open_flag =
 
 external open_desc : string -> open_flag list -> int -> int = "caml_sys_open"
 
+external set_out_channel_name: out_channel -> string -> unit =
+  "caml_ml_set_channel_name"
+
 let open_out_gen mode perm name =
-  open_descriptor_out(open_desc name mode perm)
+  let c = open_descriptor_out(open_desc name mode perm) in
+  set_out_channel_name c name;
+  c
 
 let open_out name =
   open_out_gen [Open_wronly; Open_creat; Open_trunc; Open_text] 0o666 name
@@ -408,8 +413,13 @@ external set_binary_mode_out : out_channel -> bool -> unit
 
 (* General input functions *)
 
+external set_in_channel_name: in_channel -> string -> unit =
+  "caml_ml_set_channel_name"
+
 let open_in_gen mode perm name =
-  open_descriptor_in(open_desc name mode perm)
+  let c = open_descriptor_in(open_desc name mode perm) in
+  set_in_channel_name c name;
+  c
 
 let open_in name =
   open_in_gen [Open_rdonly; Open_text] 0 name
