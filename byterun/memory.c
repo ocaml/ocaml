@@ -18,10 +18,10 @@ static void shared_heap_write_barrier(value obj, int field, value val)
       /* Add to remembered set */
       Ref_table_add(&caml_remembered_set.ref, obj, field);
     } else {
-      /* 
+      /*
          FIXME: should have an is_marking check
          don't want to do this all the time
-         
+
          unconditionally mark new value
       */
 
@@ -88,7 +88,7 @@ CAMLexport void caml_set_fields (value obj, value v)
 {
   int i;
   Assert (Is_block(obj));
-  
+
   for (i = 0; i < Wosize_val(obj); i++) {
     caml_modify_field(obj, i, v);
   }
@@ -103,7 +103,7 @@ CAMLexport void caml_blit_fields (value src, int srcoff, value dst, int dstoff, 
   Assert(dstoff + n <= Wosize_val(dst));
   Assert(Tag_val(src) != Infix_tag);
   Assert(Tag_val(dst) != Infix_tag);
-  
+
   /* we can't use memcpy/memmove since they may not do atomic word writes.
      for instance, they may copy a byte at a time */
   if (src == dst && srcoff < dstoff) {
@@ -220,7 +220,7 @@ static void handle_write_fault(struct domain* target, void* reqp) {
   struct write_fault_req* req = reqp;
   if (Is_promoted_hd(Hd_val(req->obj)) &&
       caml_owner_of_shared_block(req->obj) == target) {
-    caml_gc_log("Handling write fault for domain [%02d] on %p(%d)", target->id, req->obj, req->field);
+    caml_gc_log("Handling write fault for domain [%02d] on %p(%d)", target->id, (value*)req->obj, req->field);
     value local =
       caml_addrmap_lookup(&target->remembered_set->promotion_rev, req->obj);
     Op_val(local)[req->field] = req->val;
