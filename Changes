@@ -45,6 +45,8 @@ Runtime system:
   (Peter Zotov, review by Jacques-Henri Jourdan)
 
 Standard library:
+- PR#6316: Scanf.scanf failure on %u formats when reading big integers
+  (Xavier Leroy, Benoît Vaugon)
 - PR#6390, GPR#36: expose Sys.{int_size,max_wosize} for improved js_of_ocaml portability
   (Hugo Heuzard)
 * PR#6494: Add equal function in modules
