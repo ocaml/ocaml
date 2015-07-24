@@ -374,6 +374,9 @@ Recognize file names ending with
 .I string
 as interface files (instead of the default .mli).
 .TP
+.B \-keep-docs
+Keep documentation strings in generated .cmi files.
+.TP
 .B \-keep-locs
 Keep locations in generated .cmi files.
 .TP
@@ -829,6 +832,21 @@ mutually recursive types.
 45
 \ \ Open statement shadows an already defined label or constructor.
 
+46
+\ \ Error in environment variable.
+
+47
+\ \ Illegal attribute payload.
+
+48
+\ \ Implicit elimination of optional arguments.
+
+49
+\ \ Missing cmi file when looking up module alias.
+
+50
+\ \ Unexpected documentation comment.
+
 The letters stand for the following sets of warnings.  Any letter not
 mentioned here corresponds to the empty set.
 
@@ -882,7 +900,7 @@ mentioned here corresponds to the empty set.
 
 .IP
 The default setting is
-.BR \-w\ +a\-4\-6\-7\-9\-27\-29\-32..39\-41..42\-44\-45 .
+.BR \-w\ +a\-4\-6\-7\-9\-27\-29\-32..39\-41\-42\-44\-45\-48\-50 .
 Note that warnings
 .BR 5 \ and \ 10
 are not always triggered, depending on the internals of the type checker.
@@ -911,7 +929,8 @@ compiling your program with later versions of OCaml when they add new
 warnings or modify existing warnings.
 
 The default setting is
-.B \-warn\-error\ -a (all warnings are non-fatal).
+.B \-warn\-error \-a
+(all warnings are non-fatal).
 .TP
 .B \-warn\-help
 Show the description of all available warning numbers.

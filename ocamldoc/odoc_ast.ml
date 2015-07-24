@@ -1719,7 +1719,11 @@ module Analyser =
       }
       in
       match (p_module_expr.Parsetree.pmod_desc, tt_module_expr.Typedtree.mod_desc) with
-        (Parsetree.Pmod_ident longident, Typedtree.Tmod_ident (path, _)) ->
+        (Parsetree.Pmod_ident longident, Typedtree.Tmod_ident (path, _))
+        | (Parsetree.Pmod_ident longident,
+           Typedtree.Tmod_constraint
+             ({Typedtree.mod_desc = Typedtree.Tmod_ident (path, _)}, _, _, _))
+          ->
           let alias_name = Odoc_env.full_module_name env (Name.from_path path) in
           { m_base with m_kind = Module_alias { ma_name = alias_name ;
                                                 ma_module = None ; } }
@@ -1869,6 +1873,7 @@ module Analyser =
           (*DEBUG*)  | Parsetree.Pmod_apply _ -> "Pmod_apply"
           (*DEBUG*)  | Parsetree.Pmod_constraint _ -> "Pmod_constraint"
           (*DEBUG*)  | Parsetree.Pmod_unpack _ -> "Pmod_unpack"
+          (*DEBUG*)  | Parsetree.Pmod_extension _ -> "Pmod_extension"
           (*DEBUG*)in
           (*DEBUG*)let s_typed =
           (*DEBUG*)  match typedtree with

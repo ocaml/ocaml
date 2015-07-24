@@ -16,7 +16,7 @@ include ../config/Makefile
 CC=$(NATIVECC)
 FLAGS=-I../byterun -DCAML_NAME_SPACE -DNATIVE_CODE \
       -DTARGET_$(ARCH) -DSYS_$(SYSTEM) $(IFLEXDIR)
-CFLAGS=$(FLAGS) -O $(NATIVECCCOMPOPTS)
+CFLAGS=$(FLAGS) $(NATIVECCCOMPOPTS)
 DFLAGS=$(FLAGS) -g -DDEBUG $(NATIVECCCOMPOPTS)
 PFLAGS=$(FLAGS) -pg -O -DPROFILING $(NATIVECCPROFOPTS)
 PICFLAGS=$(FLAGS) -O $(SHAREDCCCOMPOPTS) $(NATIVECCCOMPOPTS)
@@ -119,6 +119,9 @@ power.o: power-$(SYSTEM).o
 
 power.p.o: power-$(SYSTEM).o
 	cp power-$(SYSTEM).o power.p.o
+
+power.pic.o: power-$(SYSTEM).pic.o
+	cp power-$(SYSTEM).pic.o power.pic.o
 
 main.c: ../byterun/main.c
 	ln -s ../byterun/main.c main.c

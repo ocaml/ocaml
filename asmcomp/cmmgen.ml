@@ -349,8 +349,8 @@ let mod_int c1 c2 dbg =
                         [Cconst_symbol "caml_exn_Division_by_zero"]))
   | (c1, Cconst_int (1 | (-1))) ->
       Csequence(c1, Cconst_int 0)
-  | (Cconst_int(0 | 1 | (-1)) as c1, c2) ->
-      Csequence(c2, c1)
+  | (Cconst_int 0, c2) ->
+      Csequence(c2, Cconst_int 0)
   | (Cconst_int n1, Cconst_int n2) ->
       Cconst_int (n1 mod n2)
   | (c1, (Cconst_int n as c2)) when n <> min_int ->
@@ -1262,36 +1262,29 @@ let rec is_unboxed_number = function
   | Ulet (_, _, e) | Usequence (_, e) -> is_unboxed_number e
   | _ -> No_unboxing
 
-let subst_boxed_number unbox_fn boxed_id unboxed_id box_chunk box_offset exp =
-  let need_boxed = ref false in
-  let assigned = ref false in
+let subst_boxed_number box_fn unbox_fn boxed_id unboxed_id box_chunk box_offset exp =
   let rec subst = function
       Cvar id as e ->
-        if Ident.same id boxed_id then need_boxed := true; e
+        if Ident.same id boxed_id then
+          box_fn (Cvar unboxed_id)
+        else e
     | Clet(id, arg, body) -> Clet(id, subst arg, subst body)
     | Cassign(id, arg) ->
         if Ident.same id boxed_id then begin
-          assigned := true;
           Cassign(unboxed_id, subst(unbox_fn arg))
         end else
           Cassign(id, subst arg)
     | Ctuple argv -> Ctuple(List.map subst argv)
-    | Cop(Cload chunk, [Cvar id]) as e ->
-      if not (Ident.same id boxed_id) then e
-      else if chunk = box_chunk && box_offset = 0 then
+    | Cop(Cload chunk, [Cvar id])
+      when Ident.same id boxed_id &&
+           chunk = box_chunk && box_offset = 0
+      ->
         Cvar unboxed_id
-      else begin
-        need_boxed := true;
-        e
-      end
-    | Cop(Cload chunk, [Cop(Cadda, [Cvar id; Cconst_int ofs])]) as e ->
-      if not (Ident.same id boxed_id) then e
-      else if chunk = box_chunk && ofs = box_offset then
+    | Cop(Cload chunk, [Cop(Cadda, [Cvar id; Cconst_int ofs])])
+        when Ident.same id boxed_id &&
+             chunk = box_chunk && ofs = box_offset
+      ->
         Cvar unboxed_id
-      else begin
-        need_boxed := true;
-        e
-      end
     | Cop(op, argv) -> Cop(op, List.map subst argv)
     | Csequence(e1, e2) -> Csequence(subst e1, subst e2)
     | Cifthenelse(e1, e2, e3) -> Cifthenelse(subst e1, subst e2, subst e3)
@@ -1305,8 +1298,7 @@ let subst_boxed_number unbox_fn boxed_id unboxed_id box_chunk box_offset exp =
     | Cconst_pointer _ | Cconst_natpointer _
     | Cconst_blockheader _ as e -> e
   in
-  let res = subst exp in
-  (res, !need_boxed, !assigned)
+  subst exp
 
 (* Translate an expression *)
 
@@ -2073,15 +2065,9 @@ and transl_unbox_let box_fn unbox_fn transl_unbox_fn box_chunk box_offset
                      id exp body =
   let unboxed_id = Ident.create (Ident.name id) in
   let trbody1 = transl body in
-  let (trbody2, need_boxed, is_assigned) =
-    subst_boxed_number unbox_fn id unboxed_id box_chunk box_offset trbody1 in
-  if need_boxed && is_assigned then
-    Clet(id, transl exp, trbody1)
-  else
-    Clet(unboxed_id, transl_unbox_fn exp,
-         if need_boxed
-         then Clet(id, box_fn(Cvar unboxed_id), trbody2)
-         else trbody2)
+  let trbody2 =
+    subst_boxed_number box_fn unbox_fn id unboxed_id box_chunk box_offset trbody1 in
+  Clet(unboxed_id, transl_unbox_fn exp, trbody2)
 
 and make_catch ncatch body handler = match body with
 | Cexit (nexit,[]) when nexit=ncatch -> handler

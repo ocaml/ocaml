@@ -1266,7 +1266,8 @@ class printer  ()= object(self:'self)
     in
     let constructor_declaration f pcd =
       pp f "|@;";
-      self#constructor_declaration f (pcd.pcd_name.txt, pcd.pcd_args, pcd.pcd_res, pcd.pcd_attributes)
+      self#constructor_declaration f (pcd.pcd_name.txt, pcd.pcd_args,
+                                      pcd.pcd_res, pcd.pcd_attributes)
     in
     let repr f =
       let intro f =
@@ -1298,7 +1299,9 @@ class printer  ()= object(self:'self)
       pp f "@[<2>type %a%a +=%a@]%a"
          (fun f -> function
                 | [] -> ()
-                | l ->  pp f "%a@;" (self#list self#type_param ~first:"(" ~last:")" ~sep:",") l)
+                | l ->  pp f "%a@;" (self#list self#type_param ~first:"("
+                                               ~last:")" ~sep:",")
+                                    l)
          x.ptyext_params
          self#longident_loc x.ptyext_path
          (self#list ~sep:"" extension_constructor)

@@ -26,6 +26,12 @@ open X86_ast
 open X86_proc
 open X86_dsl
 
+(* [Branch_relaxation] is not used in this file, but is required by
+   emit.mlp files for certain other targets; the reference here ensures
+   that when releases are being prepared the .depend files are correct
+   for all targets. *)
+open! Branch_relaxation
+
 let _label s = D.label ~typ:QWORD s
 
 (* Override proc.ml *)
@@ -394,12 +400,16 @@ let emit_float_test cmp neg i lbl =
 let output_epilogue f =
   if frame_required() then begin
     let n = frame_size() - 8 - (if fp then 8 else 0) in
-    I.add (int n) rsp;
-    cfi_adjust_cfa_offset (-n);
+    if n <> 0
+    then begin
+      I.add (int n) rsp;
+      cfi_adjust_cfa_offset (-n);
+    end;
     if fp then I.pop rbp;
     f ();
     (* reset CFA back cause function body may continue *)
-    cfi_adjust_cfa_offset n
+    if n <> 0
+    then cfi_adjust_cfa_offset n
   end
   else
     f ()
@@ -510,8 +520,10 @@ let emit_instr fallthrough i =
   | Lop(Istackoffset n) ->
       if n < 0
       then I.add (int (-n)) rsp
-      else I.sub (int n) rsp;
-      cfi_adjust_cfa_offset n;
+      else if n > 0
+      then I.sub (int n) rsp;
+      if n <> 0
+      then cfi_adjust_cfa_offset n;
       stack_offset := !stack_offset + n
   | Lop(Iload(chunk, addr)) ->
       let dest = res i 0 in
@@ -817,8 +829,11 @@ let fundecl fundecl =
   if !Clflags.gprofile then emit_profile();
   if frame_required() then begin
     let n = frame_size() - 8 - (if fp then 8 else 0) in
-    I.sub (int n) rsp;
-    cfi_adjust_cfa_offset n;
+    if n <> 0
+    then begin
+      I.sub (int n) rsp;
+      cfi_adjust_cfa_offset n;
+    end;
   end;
   def_label !tailrec_entry_point;
   emit_all true fundecl.fun_body;

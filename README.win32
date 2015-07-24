@@ -209,8 +209,8 @@ NOTES:
     to another toolchain packaged in Cygwin.
 
   - The standalone mingw toolchain from the MinGW-w64 project
-    (http://mingw-w64.sourceforge.net/) is not supported.
-    Please use the version packaged in Cygwin instead.
+    (http://mingw-w64.org/) is not supported. Please use the
+    version packaged in Cygwin instead.
 
 INSTALLATION:
 
@@ -245,7 +245,7 @@ You will need the following software components to perform the recompilation:
   to your PATH
 
 The standalone mingw toolchain from the MinGW-w64 project
-(http://mingw-w64.sourceforge.net/) is not supported.  Please use the
+(http://mingw-w64.org/) is not supported.  Please use the
 version packaged in Cygwin instead.
 
 Start a new Cygwin shell and unpack the source distribution
@@ -281,7 +281,8 @@ NOTES:
 
 * The replay debugger is partially supported (no reverse execution).
 
-* The default Makefile.mingw and Makefile.mingw64 pass -static-libgcc to the linker.
+* The default Makefile.mingw and Makefile.mingw64 pass -static-libgcc to
+  the linker.
   For more information on this topic:
 
   http://gcc.gnu.org/onlinedocs/gcc-4.9.1/gcc/Link-Options.html#Link-Options

@@ -18,6 +18,10 @@
 
 #include "mlvalues.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 CAMLextern uint32_t caml_hash_mix_uint32(uint32_t h, uint32_t d);
 CAMLextern uint32_t caml_hash_mix_intnat(uint32_t h, intnat d);
 CAMLextern uint32_t caml_hash_mix_int64(uint32_t h, int64_t d);
@@ -25,5 +29,9 @@ CAMLextern uint32_t caml_hash_mix_double(uint32_t h, double d);
 CAMLextern uint32_t caml_hash_mix_float(uint32_t h, float d);
 CAMLextern uint32_t caml_hash_mix_string(uint32_t h, value s);
 
-
+#ifdef __cplusplus
+extern "C" {
 #endif
+
+
+#endif /* CAML_HASH_H */

@@ -16,14 +16,16 @@ CMO_FILES=$(MODULES:=.cmo)
 CMX_FILES=$(MODULES:=.cmx)
 CMA_FILES=$(LIBRARIES:=.cma)
 CMXA_FILES=$(LIBRARIES:=.cmxa)
-O_FILES=$(C_FILES:=.o)
+O_FILES=$(F_FILES:=.o) $(C_FILES:=.o)
 
 CUSTOM_FLAG=`if [ -n "$(C_FILES)" ]; then echo '-custom'; fi`
 ADD_CFLAGS+=$(CUSTOM_FLAG)
 MYRUNTIME=`if [ -z "$(C_FILES)$(CUSTOM)" ]; then echo '$(OCAMLRUN)'; fi`
-FORTRAN_LIB=`if [ -n "$(F_FILES)" ]; then echo '$(FORTRAN_LIBRARY)'; fi`
+FORTRAN_LIB=`if [ -n "$(F_FILES)" ]; then echo $(FORTRAN_LIBRARY); fi`
 ADD_CFLAGS+=$(FORTRAN_LIB)
 ADD_OPTFLAGS+=$(FORTRAN_LIB)
+
+C_INCLUDES+=-I $(CTOPDIR)/byterun -I$(CTOPDIR)/otherlibs/bigarray
 
 .PHONY: check
 check:
@@ -34,10 +36,10 @@ check:
 .PHONY: run-all
 run-all:
 	@for file in $(C_FILES); do \
-	  $(CC) -c -I$(PREFIX)/lib/ocaml/caml $$file.c; \
+	  $(CC) $(C_INCLUDES) -c $$file.c; \
 	done;
 	@for file in $(F_FILES); do \
-	  $(FORTRAN_COMPILER) -c -I$(PREFIX)/lib/ocaml/caml $$file.f; \
+	  $(FORTRAN_COMPILER) -c $$file.f; \
 	done;
 	@for file in *.ml; do \
 	  if [ -f `basename $$file ml`precheck ]; then \

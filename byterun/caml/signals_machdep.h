@@ -16,7 +16,13 @@
 #ifndef CAML_SIGNALS_MACHDEP_H
 #define CAML_SIGNALS_MACHDEP_H
 
-#if defined(__GNUC__) && defined(__i386__)
+#if defined(__GNUC__) && defined(__ATOMIC_SEQ_CST) && defined(__GCC_ATOMIC_LONG_LOCK_FREE)
+
+/* Use the "atomic" builtins of GCC and Clang */
+#define Read_and_clear(dst,src) \
+  ((dst) = __atomic_exchange_n(&(src), 0, __ATOMIC_SEQ_CST))
+
+#elif defined(__GNUC__) && (defined(__i386__) || (defined(__x86_64__) && defined(__ILP32__)))
 
 #define Read_and_clear(dst,src) \
   asm("xorl %0, %0; xchgl %0, %1" \

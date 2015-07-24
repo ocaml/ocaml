@@ -3,13 +3,13 @@ i386)
   ./configure
   make world.opt
   sudo make install
-  cd testsuite && make all && cd ..
+  (cd testsuite && make all)
   mkdir external-packages
   cd external-packages
   git clone git://github.com/ocaml/camlp4
-  cd camlp4 && ./configure && make && sudo make install && cd ..
+  (cd camlp4 && ./configure && make && sudo make install)
   git clone git://github.com/ocaml/opam
-  cd opam && ./configure && make lib-ext && make && sudo make install && cd ..
+  (cd opam && ./configure && make lib-ext && make && sudo make install)
   git config --global user.email "some@name.com"
   git config --global user.name "Some Name"
   opam init -y -a git://github.com/ocaml/opam-repository
