@@ -43,6 +43,8 @@ Runtime system:
   (Xavier Leroy)
 - PR#6760: closures evaluated in the toplevel can now be marshalled
   (Peter Zotov, review by Jacques-Henri Jourdan)
+- Signal handling: for read-and-clear, use GCC/Clang atomic builtins
+  if available.  (Xavier Leroy)
 
 Standard library:
 - PR#6316: Scanf.scanf failure on %u formats when reading big integers
