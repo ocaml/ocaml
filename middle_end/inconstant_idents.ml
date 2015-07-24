@@ -146,11 +146,9 @@ module NotConstants(P:Param) = struct
        bound variables as in NC also *)
 
     | Assign { being_assigned; new_value; } ->
-      (* CR mshinwell: not sure about this next comment.  Check this is
-         right *)
       (* the assigned is also not constant *)
       mark_curr [Var being_assigned];
-      mark_curr [Var new_value]
+      mark_var new_value curr
 
     | Try_with (f1,id,f2) ->
       mark_curr [Var id];
@@ -168,8 +166,8 @@ module NotConstants(P:Param) = struct
 
     | For { bound_var; from_value; to_value; direction = _; body; } ->
       mark_curr [Var bound_var];
-      mark_curr [Var from_value];
-      mark_curr [Var to_value];
+      mark_var from_value curr;
+      mark_var to_value curr;
       mark_curr curr;
       mark_loop ~toplevel:false [] body
 
@@ -189,8 +187,8 @@ module NotConstants(P:Param) = struct
       List.iter (mark_loop ~toplevel []) l
 
     | Apply ({func; args; _ }) ->
-      mark_curr [Var func];
       mark_curr curr;
+      mark_var func curr;
       mark_vars args curr;
 
     | Switch (arg,sw) ->
@@ -268,9 +266,9 @@ module NotConstants(P:Param) = struct
         mark_curr curr
     | Move_within_set_of_closures
         ({ closure; start_from = _; move_to = _ }) ->
-      register_implication ~in_nc:(Var closure) ~implies_in_nc:curr
+      mark_var closure curr
     | Project_var ({ closure; closure_id = _; var = _ }) ->
-      register_implication ~in_nc:(Var closure) ~implies_in_nc:curr
+      mark_var closure curr
     | Prim(Lambda.Pfield _, [f1], _) ->
       if for_clambda then mark_curr curr;
       mark_var f1 curr
@@ -376,5 +374,9 @@ let inconstants ~for_clambda ~compilation_unit (expr : Flambda.t) =
     let toplevel = true
   end in
   let module A = NotConstants(P) in
+(*
+  Format.eprintf "inconstants returns %a\n%a@ "
+    Variable.Set.print A.res.id
+    Set_of_closures_id.Set.print A.res.closure;
+*)
   A.res
-

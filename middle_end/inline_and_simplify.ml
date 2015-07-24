@@ -198,10 +198,7 @@ let simplify_move_within_set_of_closures env r
              can rewrite the [Move_within_set_of_closures] to a
              [Project_closure]. *)
           (* CR mshinwell: does [set_of_closures_var] need freshening?
-          let set_of_closures_var =
-            Freshening.apply_variable (E.freshening env) set_of_closures_var
-          in
-          *)
+             before the [E.mem] test above? *)
           let project_closure : Flambda.project_closure =
             { set_of_closures = set_of_closures_var;
               closure_id = move_to;

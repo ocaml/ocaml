@@ -161,7 +161,8 @@ let collect_constant_declarations expr =
     Inconstant_idents.inconstants
       ~for_clambda:true
       (* CR pchambart: get rid of this.
-         This should be available in backend *)
+         This should be available in backend
+         mshinwell: what is "this"? *)
       ~compilation_unit:(Compilenv.current_unit ())
       expr
   in
@@ -195,12 +196,23 @@ let collect_constant_declarations expr =
       add (Nativeint i)
     | Prim (Lambda.Pmakeblock (tag, _), args, _) ->
       add (Block (Tag.create_exn tag, args))
-    | Set_of_closures ( { function_decls = { set_of_closures_id } } as set )->
+    | Set_of_closures ( { function_decls = { funs; set_of_closures_id } } as set )->
       assert(not (Set_of_closures_id.Set.mem set_of_closures_id inconstant.closure));
       (* Will probably never be used *)
       let symbol = fresh_symbol var in
       Symbol.Tbl.add set_of_closures_tbl symbol set;
-      add (Symbol symbol)
+      add (Symbol symbol);
+      (* CR mshinwell: the following seems to be needed because of the behaviour of
+         [Closure_conversion_aux.closure_env_without_parameters] and maybe
+         [reference_recursive_function_directly].  We should think about this.
+         (Could we always use projections instead?  If so we should add an
+         invariant check forbidding direct access.)
+      *)
+      Variable.Map.iter (fun fun_var _ ->
+          let closure_id = Closure_id.wrap fun_var in
+          Variable.Tbl.add constant_tbl fun_var
+            (Symbol (Compilenv.closure_symbol closure_id)))
+        funs
     | Move_within_set_of_closures { move_to = closure_id }
     | Project_closure { closure_id } ->
       add (Symbol (Compilenv.closure_symbol closure_id))
@@ -443,8 +455,7 @@ let rewrite_constant_access expr aliases set_of_closures_tbl constant_descr (kin
             set_of_closures.function_decls.funs
       };
       free_vars =
-        Variable.Map.filter
-          (fun var _ -> not (is_a_constant var))
+        Variable.Map.filter (fun _ var -> not (is_a_constant var))
           set_of_closures.free_vars;
       specialised_args =
         Variable.Map.filter
@@ -498,16 +509,28 @@ let rewrite_constant_access expr aliases set_of_closures_tbl constant_descr (kin
         let set_of_closures =
           rewrite_set_of_closures { set_of_closures with function_decls }
         in
+(*
+        Format.eprintf "lift_constants adding set of closures: %a -> %a\n"
+          Symbol.print symbol Flambda_printers.set_of_closures set_of_closures;
+*)
         Symbol.Map.add symbol set_of_closures map
       )
       set_of_closures_tbl Symbol.Map.empty
   in
+(*
+  Format.eprintf "lift_constants output: %a\n"
+    Flambda_printers.flambda expr;
+*)
   { expr;
     constant_descr;
     kind;
     set_of_closures_map }
 
 let lift_constants expr =
+(*
+  Format.eprintf "lift_constants input: %a\n"
+    Flambda_printers.flambda expr;
+*)
   let constant_tbl, set_of_closures_tbl =
     collect_constant_declarations expr
   in

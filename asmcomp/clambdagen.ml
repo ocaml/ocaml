@@ -91,8 +91,6 @@ let make_closure_map ({ expr; set_of_closures_map } : Lift_constants.result) =
   let map = ref Closure_id.Map.empty in
   let add_set_of_closures : Flambda.named -> unit = function
     | Set_of_closures { function_decls } ->
-      Format.eprintf "make_closure_map adding %a\n"
-        Set_of_closures_id.print function_decls.set_of_closures_id;
       Variable.Map.iter (fun var _ ->
           let closure_id = Closure_id.wrap var in
           map := Closure_id.Map.add closure_id function_decls !map)
@@ -109,8 +107,6 @@ let make_closure_map ({ expr; set_of_closures_map } : Lift_constants.result) =
 let constant_closure_set ({ set_of_closures_map } : Lift_constants.result) =
   let set = ref Set_of_closures_id.Set.empty in
   Symbol.Map.iter (fun _ { Flambda.function_decls = { set_of_closures_id } } ->
-      Format.eprintf "constant_closure_set adding %a\n"
-        Set_of_closures_id.print set_of_closures_id;
       set := Set_of_closures_id.Set.add set_of_closures_id !set)
     set_of_closures_map;
   !set
@@ -193,8 +189,10 @@ module M(P:Arg) = struct
     List.map (subst_var env) vars
 
   let rec conv (env : env) (flam : Flambda.t) : Clambda.ulambda =
+(*
 Format.eprintf "Clambdagen.conv: %a\n"
   Flambda_printers.flambda flam;
+*)
     match flam with
     | Var var ->
       subst_var env var
@@ -410,7 +408,7 @@ Format.eprintf "Clambdagen.conv: %a\n"
     Clambda.Udirect_apply(label, uargs, dbg)
 
   and conv_set_of_closures env
-      (({ function_decls = functs; free_vars = fv } : Flambda.set_of_closures) as set_of_closures) =
+      ({ function_decls = functs; free_vars = fv } : Flambda.set_of_closures) =
     (* Make the susbtitutions for variables bound by the closure:
        the variables bounds are the functions inside the closure and
        the free variables of the functions.
@@ -438,8 +436,10 @@ Format.eprintf "Clambdagen.conv: %a\n"
        field.
     *)
 
+(*
 Format.eprintf "Clambdagen.conv_set_of_closures: %a\n"
   Flambda_printers.set_of_closures set_of_closures;
+*)
 
     let funct = Variable.Map.bindings functs.funs in
     let env_var = Ident.create "env" in
