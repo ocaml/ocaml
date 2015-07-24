@@ -126,8 +126,9 @@ INLINE void atomic_cas_strong(atomic_uintnat* p, uintnat vold, uintnat vnew) {
 
 
 
+
 typedef pthread_mutex_t caml_plat_mutex;
-#define caml_plat_mutex_init(m) pthread_mutex_init(m, 0);
+#define caml_plat_mutex_init(m) pthread_mutex_init(m,0)
 #define caml_plat_lock pthread_mutex_lock
 #define caml_plat_try_lock(l) (pthread_mutex_trylock(l) == 0)
 #define caml_plat_unlock pthread_mutex_unlock
