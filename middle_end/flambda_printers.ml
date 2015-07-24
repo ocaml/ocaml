@@ -146,7 +146,7 @@ let rec lam ppf (flam : Flambda.t) =
 and lam_named ppf (named : Flambda.named) =
   match named with
   | Symbol (symbol) -> Symbol.print ppf symbol
-  | Const (cst) -> const ppf cst
+  | Const (cst) -> fprintf ppf "Const(%a)" const cst
   | Project_closure (project_closure) ->
     print_project_closure ppf project_closure
   | Project_var (project_var) -> print_project_var ppf project_var

@@ -539,23 +539,31 @@ Format.eprintf "bind_constant_fv var=%a\n" Variable.print var;
              body)
       | exception Not_found -> assert false
       end
-    | expr -> expr
-(* CR mshinwell for pchambart:  This doesn't look right.  It causes unbound
-   variables (kind of obviously...)  We can't just substitute either, because
-   constants have to be let-bound.
     | Let (kind, var, named, body) ->
       if is_a_constant var then
-        body
+        bind_constant var body
       else
         Let (kind, var, named, body)
     | Let_rec (defs, body) ->
-      let defs = List.filter (fun (var, _) -> not (is_a_constant var)) defs in
+      let defs =
+        List.map (fun (var, def) ->
+            if is_a_constant var then
+              let def : Flambda.named =
+                match get_kind var with
+                | Int i -> Const (Const_base (Const_int i))
+                | Const_pointer p -> Const (Const_pointer p)
+                | Symbol s -> Symbol s
+                | exception Not_found -> assert false
+              in
+              var, def
+            else (var, def))
+          defs
+      in
       begin match defs with
       | [] -> body
       | _ -> Flambda.Let_rec (defs, body)
       end
     | expr -> expr
-*)
   in
   let expr = Flambda_iterators.map rewrite rewrite_named expr in
   let expr =
@@ -592,16 +600,20 @@ Format.eprintf "bind_constant_fv var=%a\n" Variable.print var;
       )
       set_of_closures_tbl Symbol.Map.empty
   in
+(*
   Format.eprintf "lift_constants output:@ %a\n"
     Flambda_printers.flambda expr;
+*)
   { expr;
     constant_descr;
     kind;
     set_of_closures_map }
 
 let lift_constants expr =
+(*
   Format.eprintf "lift_constants input:@ %a\n"
     Flambda_printers.flambda expr;
+*)
   let constant_tbl, set_of_closures_tbl =
     collect_constant_declarations expr
   in
