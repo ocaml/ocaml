@@ -158,7 +158,9 @@ let rewrite_function_decl ~env
   funs, additional_specialised_args
 
 let run env expr =
+(*
   Format.eprintf "Before Unbox_closures: %a\n" Flambda_printers.flambda expr;
+*)
   let expr =
     Flambda_iterators.map_toplevel_sets_of_closures expr
       ~f:(fun (set_of_closures : Flambda.set_of_closures) ->
@@ -180,5 +182,7 @@ let run env expr =
               ~eq:Variable.equal
         })
   in
+(*
   Format.eprintf "After Unbox_closures: %a\n" Flambda_printers.flambda expr;
+*)
   expr

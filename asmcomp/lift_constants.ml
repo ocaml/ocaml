@@ -394,7 +394,19 @@ let constant_sharing map aliases =
   in
   descr, kind
 
-let rewrite_constant_access expr aliases set_of_closures_tbl constant_descr (kind:constant Variable.Map.t) =
+let rewrite_constant_access expr aliases set_of_closures_tbl constant_descr
+      (kind : constant Variable.Map.t) =
+  let used_in_project_var =
+    let used = ref Var_within_closure.Set.empty in
+    let aux (expr : Flambda.t) =
+      match expr with
+      | Var_within_closure { var; _ } ->
+        used := Var_within_closure.Set.add var !used
+      | _ -> ()
+    in
+    Flambdaiter.iter aux expr;
+    !used
+  in
   let is_a_constant var =
     let var =
       try Variable.Map.find var aliases with
@@ -410,6 +422,10 @@ let rewrite_constant_access expr aliases set_of_closures_tbl constant_descr (kin
     Variable.Map.find var kind
   in
   let bind_constant var body : Flambda.t =
+    assert (is_a_constant var);
+    (* CR mshinwell: add comment about aliases: might not be immediately
+       obvious that we are not copying the defining expression here, only
+       a reference to the constant. *)
     match get_kind var with
     | Int i ->
       Let (Immutable, var,
@@ -425,17 +441,46 @@ let rewrite_constant_access expr aliases set_of_closures_tbl constant_descr (kin
            body)
     | exception Not_found -> body
   in
-  let rewrite_function_declaration (function_decl: Flambda.function_declaration) =
-    let free_variables = Free_variables.calculate function_decl.body in
-    let
-      globaly_bound_variables,
-      closure_bound_variables =
-      Variable.Set.partition is_a_constant
-        free_variables
-        (* function_decl.free_variables *)
+  (* CR mshinwell: tidy this up once working *)
+  let bind_constant_fv var body
+        ~(set_of_closures : Flambda.set_of_closures) : Flambda.t =
+Format.eprintf "bind_constant_fv var=%a\n" Variable.print var;
+    let outer_var =
+      match Variable.Map.find var set_of_closures.free_vars with
+      | outer_var -> outer_var
+      | exception Not_found -> assert false
+    in
+    assert (is_a_constant outer_var);
+    match get_kind outer_var with
+    | Int i ->
+      Let (Immutable, var,
+           Const (Const_base (Const_int i)),
+           body)
+    | Const_pointer p ->
+      Let (Immutable, var,
+           Const (Const_pointer p),
+           body)
+    | Symbol s ->
+      Let (Immutable, var,
+           Symbol s,
+           body)
+    | exception Not_found -> assert false
+  in
+  let rewrite_function_declaration (function_decl: Flambda.function_declaration)
+        ~(set_of_closures : Flambda.set_of_closures) =
+    let globally_bound_variables, closure_bound_variables =
+      Variable.Set.partition (fun var ->
+          match Variable.Map.find var set_of_closures.free_vars with
+          | outer_var -> is_a_constant outer_var
+          | exception Not_found ->
+            (* CR mshinwell: presumably this should be one of the [fun_var]s or
+               a parameter?  If so we should check. *)
+            false)
+        function_decl.free_variables
     in
     let body =
-      Variable.Set.fold bind_constant globaly_bound_variables
+      Variable.Set.fold (bind_constant_fv ~set_of_closures)
+        globally_bound_variables
         function_decl.body
     in
     let function_decl =
@@ -451,15 +496,22 @@ let rewrite_constant_access expr aliases set_of_closures_tbl constant_descr (kin
       Flambda.function_decls = {
         set_of_closures.function_decls with
         funs =
-          Variable.Map.map rewrite_function_declaration
+          Variable.Map.map (rewrite_function_declaration ~set_of_closures)
             set_of_closures.function_decls.funs
       };
       free_vars =
-        Variable.Map.filter (fun _ var -> not (is_a_constant var))
+        Variable.Map.filter (fun _ var ->
+            not (is_a_constant var)
+              (* CR mshinwell for pchambart: I had to add this otherwise we
+                 were dropping variables in closures that were referenced by
+                 [Project_var] expressions.  Maybe instead we should keep
+                 track of which free_vars we would like to eliminate here,
+                 and then substitute out the [Project_var] expressions? *)
+              && not (Variable.Map.mem var used_in_project_var))
           set_of_closures.free_vars;
       specialised_args =
         Variable.Map.filter
-          (fun var _ -> not (is_a_constant var))
+          (fun _ var -> not (is_a_constant var))
           set_of_closures.specialised_args;
     }
   in
@@ -469,6 +521,10 @@ let rewrite_constant_access expr aliases set_of_closures_tbl constant_descr (kin
     | named -> named
   in
   let rewrite : Flambda.t -> Flambda.t = function
+    | expr -> expr
+(* CR mshinwell for pchambart:  This doesn't look right.  It causes unbound
+   variables (kind of obviously...)  We can't just substitute either, because
+   constants have to be let-bound.
     | Let (kind, var, named, body) ->
       if is_a_constant var then
         body
@@ -481,6 +537,7 @@ let rewrite_constant_access expr aliases set_of_closures_tbl constant_descr (kin
       | _ -> Flambda.Let_rec (defs, body)
       end
     | expr -> expr
+*)
   in
   let expr = Flambda_iterators.map rewrite rewrite_named expr in
   let expr =
@@ -517,20 +574,16 @@ let rewrite_constant_access expr aliases set_of_closures_tbl constant_descr (kin
       )
       set_of_closures_tbl Symbol.Map.empty
   in
-(*
   Format.eprintf "lift_constants output: %a\n"
     Flambda_printers.flambda expr;
-*)
   { expr;
     constant_descr;
     kind;
     set_of_closures_map }
 
 let lift_constants expr =
-(*
   Format.eprintf "lift_constants input: %a\n"
     Flambda_printers.flambda expr;
-*)
   let constant_tbl, set_of_closures_tbl =
     collect_constant_declarations expr
   in

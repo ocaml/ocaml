@@ -46,7 +46,7 @@ exception Binding_occurrence_of_variable_already_bound of Variable.t
 exception Unbound_variable of Variable.t
 exception Assignment_to_non_mutable_variable of Variable.t
 exception Vars_in_function_body_not_bound_by_closure_or_params of
-  Variable.Set.t
+  Variable.Set.t * Flambda.set_of_closures * Variable.t
 exception Function_decls_have_overlapping_parameters of Variable.Set.t
 exception Specialised_arg_that_is_not_a_parameter of Variable.t
 exception Free_variables_set_is_lying of
@@ -181,7 +181,8 @@ let variable_invariants flam =
     match named with
     | Symbol symbol -> ignore_symbol symbol
     | Const const -> ignore_const const
-    | Set_of_closures { function_decls; free_vars; specialised_args; } ->
+    | Set_of_closures ({ function_decls; free_vars; specialised_args; }
+        as set_of_closures) ->
       let { Flambda.set_of_closures_id; funs; compilation_unit } =
         function_decls
       in
@@ -224,7 +225,8 @@ let variable_invariants flam =
               Variable.Set.diff free_variables acceptable_free_variables
             in
             if not (Variable.Set.is_empty bad) then begin
-              raise (Vars_in_function_body_not_bound_by_closure_or_params bad)
+              raise (Vars_in_function_body_not_bound_by_closure_or_params
+                (bad, set_of_closures, fun_var))
             end;
             (* Check that parameters are unique across all functions in the
                declaration. *)
@@ -480,11 +482,14 @@ let check_exn ?(kind=Normal) ?(cmxfile=false) flam =
     | Assignment_to_non_mutable_variable var ->
       Format.eprintf ">> Assignment to non-mutable variable: %a"
         Variable.print var
-    | Vars_in_function_body_not_bound_by_closure_or_params vars ->
-      Format.eprintf ">> Variable in the body of a function declaration that \
-          is not bound by either the closure or the function's parameter \
-          list: %a"
+    | Vars_in_function_body_not_bound_by_closure_or_params
+        (vars, set_of_closures, fun_var) ->
+      Format.eprintf ">> Variable(s) (%a) in the body of a function declaration \
+          (fun_var = %a) that is not bound by either the closure or the function's \
+          parameter list.  Set of closures: %a"
         Variable.Set.print vars
+        Variable.print fun_var
+        Flambda_printers.set_of_closures set_of_closures
     | Function_decls_have_overlapping_parameters vars ->
       Format.eprintf ">> Function declarations whose parameters overlap: \
           %a"

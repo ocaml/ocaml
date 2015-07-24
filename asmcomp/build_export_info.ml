@@ -131,7 +131,8 @@ let rec describe (env : env) (flam : Flambda.t) : ET.approx =
     | Direct closure_id ->
       match get_descr (find_approx env func) with
       | Some(Value_closure { fun_id; set_of_closures = { results } }) ->
-        assert(Closure_id.equal closure_id fun_id);
+        assert (Closure_id.equal closure_id fun_id);
+        assert (Closure_id.Map.mem fun_id results);
         Closure_id.Map.find fun_id results
       | _ -> Value_unknown
     end
@@ -222,10 +223,10 @@ and describe_named (env : env) (named : Flambda.named) : ET.approx =
         Value_unknown
     end
 
-  | Prim(Lambda.Pgetglobal id, _, _) ->
+  | Prim(Pgetglobal id, _, _) ->
     Value_symbol (Compilenv.symbol_for_global' id)
 
-  | Prim(Lambda.Pgetglobalfield(id,i), _, _) -> begin
+  | Prim(Pgetglobalfield(id,i), _, _) -> begin
       if id = Compilenv.current_unit_id () then
         match Int.Map.find i !global_approx with
         | exception Not_found ->
@@ -243,7 +244,8 @@ and describe_named (env : env) (named : Flambda.named) : ET.approx =
           Misc.fatal_error (Format.asprintf "global %a is not a block" Ident.print id)
     end
 
-  | Prim(Lambda.Psetglobalfield (_, i), [arg], _) ->
+  | Prim(Psetglobalfield (_, i), [arg], _) ->
+    Format.eprintf "Psetglobalfield %d %a\n" i Variable.print arg;
     global_approx := Int.Map.add i (find_approx env arg) !global_approx;
     Value_unknown
 
@@ -276,24 +278,33 @@ and describe_named (env : env) (named : Flambda.named) : ET.approx =
       | _ -> Value_unknown
     end
 
-  | Project_var { closure; closure_id; var } -> begin
-      match get_descr (find_approx env closure) with
-      | Some(Value_closure { set_of_closures = { bound_vars }; fun_id }) ->
-        assert(Closure_id.equal fun_id closure_id);
-        Var_within_closure.Map.find var bound_vars
-      | _ -> Value_unknown
+  | Project_var { closure; closure_id; var } ->
+    begin match get_descr (find_approx env closure) with
+    | Some (Value_closure { set_of_closures = { bound_vars }; fun_id }) ->
+      assert (Closure_id.equal fun_id closure_id);
+      if not (Var_within_closure.Map.mem var bound_vars) then begin
+        Misc.fatal_errorf "Project_var from %a (closure ID %a) of \
+            variable %a that is not bound by the closure.  \
+            Variables bound by the closure are: %a"
+          Variable.print closure
+          Closure_id.print closure_id
+          Var_within_closure.print var
+          (Var_within_closure.Map.print (fun _ _ -> ())) bound_vars
+      end;
+      Var_within_closure.Map.find var bound_vars
+    | _ -> Value_unknown
     end
 
-and describe_set_of_closures env (set:Flambda.set_of_closures) : ET.value_set_of_closures =
+and describe_set_of_closures env (set : Flambda.set_of_closures)
+      : ET.value_set_of_closures =
   let bound_vars_approx = Variable.Map.map (find_approx env) set.free_vars in
   let specialised_args_approx =
     Variable.Map.map (find_approx env) set.specialised_args
   in
-
   let closures_approx =
     (* To build an approximation of the results, we need an
        approximation of the functions. The first one we can build is
-       one where every function return somthing unknown.
+       one where every function returns something unknown.
 
        CR pchambart: we could improve a bit on that by building a
        recursive approximation of the closures: The value_closure
@@ -308,11 +319,30 @@ and describe_set_of_closures env (set:Flambda.set_of_closures) : ET.value_set_of
                set.function_decls.funs);
       }
     in
-    Variable.Map.mapi (fun var _ ->
+    Variable.Map.mapi (fun var
+          (function_decl : Flambda.function_declaration) ->
+        (* CR mshinwell: consider moving this check into Flambda_invariants *)
+        let free_vars_that_are_not_params_or_fun_vars =
+          Variable.Set.diff function_decl.free_variables
+            (Variable.Set.union (Variable.Set.of_list function_decl.params)
+              (Variable.Map.keys set.function_decls.funs))
+        in
+        let bound_vars = Variable.Map.keys bound_vars_approx in
+        if not (Variable.Set.subset free_vars_that_are_not_params_or_fun_vars
+          bound_vars) then
+        begin
+          Misc.fatal_errorf "Build_export_info.describe_set_of_closures: \
+              %a function declaration's [free_variables] set %a is wrong. \
+              Set of closures: %a"
+            Variable.print var
+            Variable.Set.print function_decl.free_variables
+            Flambda_printers.set_of_closures set
+        end;
         let descr =
           ET.Value_closure
             { fun_id = Closure_id.wrap var;
-              set_of_closures = initial_value_set_of_closure }
+              set_of_closures = initial_value_set_of_closure;
+            }
         in
         ET.Value_id (new_descr descr))
       set.function_decls.funs
@@ -328,6 +358,10 @@ and describe_set_of_closures env (set:Flambda.set_of_closures) : ET.value_set_of
   let results =
     Variable.Map.map result_approx set.function_decls.funs
   in
+  Format.eprintf "Set of closures binding closure ID(s) %a has the following \
+      bound_vars: %a\n"
+    Variable.Set.print (Variable.Map.keys set.function_decls.funs)
+    Variable.Set.print (Variable.Map.keys bound_vars_approx);
   { set_of_closures_id = set.function_decls.set_of_closures_id;
     bound_vars = Var_within_closure.wrap_map bound_vars_approx;
     results = Closure_id.wrap_map results;

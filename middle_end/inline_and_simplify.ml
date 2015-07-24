@@ -98,21 +98,27 @@ let populate_closure_approximations
 let debug_free_variables_check env tree ~name ~calculate_free_variables
       ~printer =
   (* CR mshinwell: add compiler option to enable this expensive check *)
-  let fv = calculate_free_variables tree in
-  Variable.Set.iter (fun var ->
-      let var = Freshening.apply_variable (E.freshening env) var in
-      match Inline_and_simplify_aux.Env.find_opt env var with
-      | Some _ -> ()
-      | None ->
-        Misc.fatal_errorf "Unbound variable (in compiler function `%s'): \
-            var=%a %a fv=%a env=%a %s\n"
-          name
-          Variable.print var
-          printer tree
-          Variable.Set.print fv
-          Inline_and_simplify_aux.Env.print env
-          (Printexc.raw_backtrace_to_string (Printexc.get_callstack max_int)))
-    fv
+  let enabled =
+    try ignore (Sys.getenv "FLAMBDA_FV_CHECK"); true with _ -> false
+  in
+  if enabled then begin
+    let fv = calculate_free_variables tree in
+    Variable.Set.iter (fun var ->
+        let var = Freshening.apply_variable (E.freshening env) var in
+        match Inline_and_simplify_aux.Env.find_opt env var with
+        | Some _ -> ()
+        | None ->
+          Misc.fatal_errorf "Unbound variable (in compiler function `%s'): \
+              var=%a %a fv=%a env=%a %s\n"
+            name
+            Variable.print var
+            printer tree
+            Variable.Set.print fv
+            Inline_and_simplify_aux.Env.print env
+            (Printexc.raw_backtrace_to_string
+              (Printexc.get_callstack max_int)))
+      fv
+  end
 
 (* Determine whether a given closure ID corresponds directly to a variable
    (bound to a closure) in the given environment.  This happens when the body

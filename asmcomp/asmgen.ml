@@ -171,6 +171,7 @@ let set_export_info (ulambda, structured_constants, export) =
   (ulambda, structured_constants)
 
 let gen_implementation ?toplevel ~sourcefile ppf ~size flam =
+try
   Emit.begin_assembly ();
   Timings.(start (Flambda_backend sourcefile));
   prep_flambda_for_export ppf flam
@@ -199,6 +200,11 @@ let gen_implementation ?toplevel ~sourcefile ppf ~size flam =
           (List.map Primitive.native_name !Translmod.primitive_declarations))
     );
   Emit.end_assembly ()
+with exn -> begin
+  Printf.eprintf "Exception %s\n%s%!" (Printexc.to_string exn)
+    (Printexc.get_backtrace ());
+  failwith "failure"
+end
 
 let compile_implementation ?toplevel ~sourcefile prefixname ppf ~size flam =
   let asmfile =
