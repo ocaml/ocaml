@@ -2,7 +2,7 @@
 #                                                                       #
 #                                 OCaml                                 #
 #                                                                       #
-#                 Xavier Clerc, SED, INRIA Rocquencourt                 #
+#                  Jeremie Dimino, Jane Street Europe                   #
 #                                                                       #
 #   Copyright 2010 Institut National de Recherche en Informatique et    #
 #   en Automatique.  All rights reserved.  This file is distributed     #
@@ -11,11 +11,6 @@
 #########################################################################
 
 BASEDIR=../..
-LIBRARIES=unix bigarray
-C_FILES=bigarrfstub
-F_FILES=bigarrf
-ADD_COMPFLAGS=-I $(OTOPDIR)/otherlibs/bigarray \
-	      -I $(OTOPDIR)/otherlibs/$(UNIXLIB)
-
-include $(BASEDIR)/makefiles/Makefile.several
+TOPFLAGS+=-dparsetree
+include $(BASEDIR)/makefiles/Makefile.dparsetree
 include $(BASEDIR)/makefiles/Makefile.common

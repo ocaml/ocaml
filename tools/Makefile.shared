@@ -273,9 +273,15 @@ beforedepend:: opnames.ml
 
 # Display info on compiled files
 
+ifeq "$(SYSTEM)" "macosx"
+DEF_SYMBOL_PREFIX = '-Dsymbol_prefix="_"'
+else
+DEF_SYMBOL_PREFIX = '-Dsymbol_prefix=""'
+endif
+
 objinfo_helper$(EXE): objinfo_helper.c ../config/s.h
 	$(BYTECC) -o objinfo_helper$(EXE) $(BYTECCCOMPOPTS) \
-          objinfo_helper.c $(LIBBFD_LINK)
+          $(DEF_SYMBOL_PREFIX) $(LIBBFD_INCLUDE) objinfo_helper.c $(LIBBFD_LINK)
 
 OBJINFO=../compilerlibs/ocamlcommon.cma \
         ../compilerlibs/ocamlbytecomp.cma \

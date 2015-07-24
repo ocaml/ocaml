@@ -3,6 +3,7 @@
 #                                 OCaml                                 #
 #                                                                       #
 #                 Xavier Clerc, SED, INRIA Rocquencourt                 #
+#                  Jeremie Dimino, Jane Street Europe                   #
 #                                                                       #
 #   Copyright 2010 Institut National de Recherche en Informatique et    #
 #   en Automatique.  All rights reserved.  This file is distributed     #
@@ -10,12 +11,17 @@
 #                                                                       #
 #########################################################################
 
-BASEDIR=../..
-LIBRARIES=unix bigarray
-C_FILES=bigarrfstub
-F_FILES=bigarrf
-ADD_COMPFLAGS=-I $(OTOPDIR)/otherlibs/bigarray \
-	      -I $(OTOPDIR)/otherlibs/$(UNIXLIB)
+default:
+	@for file in *.ml; do \
+	  $(OCAMLC) -dparsetree -c $$file 2>$$file.result >/dev/null || true; \
+	done
+	@for file in *.reference; do \
+	  printf " ... testing '$$file':"; \
+	  $(DIFF) $$file `basename $$file reference`result >/dev/null \
+          && echo " => passed" || echo " => failed"; \
+	done
 
-include $(BASEDIR)/makefiles/Makefile.several
-include $(BASEDIR)/makefiles/Makefile.common
+promote: defaultpromote
+
+clean: defaultclean
+	@rm -f *.result
