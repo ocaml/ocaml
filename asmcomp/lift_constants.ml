@@ -515,19 +515,6 @@ Format.eprintf "bind_constant_fv var=%a\n" Variable.print var;
   let rewrite_named : Flambda.named -> Flambda.named = function
     | Set_of_closures set_of_closures ->
       Set_of_closures (rewrite_set_of_closures set_of_closures)
-    | Project_var { var; _ }
-        when is_a_constant (Var_within_closure.unwrap var) ->
-      (* [Project_var] expressions that reference variables that used to be
-         within some closure, but were removed by this pass as a result of them
-         being constant (see [rewrite_function_declaration], above), must be
-         replaced by the corresponding constants. *)
-      let var = Var_within_closure.unwrap var in
-      begin match get_kind var with
-      | Int i -> Const (Const_base (Const_int i))
-      | Const_pointer p -> Const (Const_pointer p)
-      | Symbol s -> Symbol s
-      | exception Not_found -> assert false
-      end
     | named -> named
   in
   let rewrite : Flambda.t -> Flambda.t = function
@@ -558,6 +545,23 @@ Format.eprintf "bind_constant_fv var=%a\n" Variable.print var;
     | expr -> expr
   in
   let expr = Flambda_iterators.map rewrite rewrite_named expr in
+  let rewrite_named' : Flambda.named -> Flambda.named = function
+    | Project_var { var; _ }
+        when is_a_constant (Var_within_closure.unwrap var) ->
+      (* [Project_var] expressions that reference variables that used to be
+         within some closure, but were removed by this pass as a result of them
+         being constant (see [rewrite_function_declaration], above), must be
+         replaced by the corresponding constants. *)
+      let var = Var_within_closure.unwrap var in
+      begin match get_kind var with
+      | Int i -> Const (Const_base (Const_int i))
+      | Const_pointer p -> Const (Const_pointer p)
+      | Symbol s -> Symbol s
+      | exception Not_found -> assert false
+      end
+    | named -> named
+  in
+  let expr = Flambda_iterators.map_named rewrite_named' expr in
   let expr =
     let free_variables = Free_variables.calculate expr in
     Variable.Set.fold
@@ -592,6 +596,15 @@ Format.eprintf "bind_constant_fv var=%a\n" Variable.print var;
       )
       set_of_closures_tbl Symbol.Map.empty
   in
+
+(* To do:
+- Proper second traversal.  This should fix the 4887 error.
+It may also fix the other error, because some reference to the constant
+string might be deleted, and cause the free_vars set to be updated.
+
+*)
+
+          let body = Flambda_iterators.map_named rewrite_named' body in
 (*
   Format.eprintf "lift_constants output:@ %a\n"
     Flambda_printers.flambda expr;

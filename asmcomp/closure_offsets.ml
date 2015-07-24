@@ -1,4 +1,15 @@
-
+(**************************************************************************)
+(*                                                                        *)
+(*                                OCaml                                   *)
+(*                                                                        *)
+(*                       Pierre Chambart, OCamlPro                        *)
+(*                  Mark Shinwell, Jane Street Europe                     *)
+(*                                                                        *)
+(*   Copyright 2015 Institut National de Recherche en Informatique et     *)
+(*   en Automatique.  All rights reserved.  This file is distributed      *)
+(*   under the terms of the Q Public License version 1.0.                 *)
+(*                                                                        *)
+(**************************************************************************)
 
 type result = {
   code_pointer_offsets : int Closure_id.Map.t;
@@ -8,7 +19,10 @@ type result = {
 let add_closure_offsets
     kind
     { code_pointer_offsets; free_variable_offsets }
-    ({ function_decls; free_vars } : Flambda.set_of_closures) =
+    (({ function_decls; free_vars } : Flambda.set_of_closures) as set_of_closures) =
+
+  Format.eprintf "add_closure_offsets: %a\n"
+    Flambda_printers.set_of_closures set_of_closures;
 
   (* build the table mapping the function to the offset of its code
      pointer inside the closure value *)
@@ -31,10 +45,12 @@ let add_closure_offsets
      substituted here. But if the function is inlined, it is
      possible that the closure is accessed from outside its body. *)
   let aux_fv_offset var _ (map,pos) =
-    if Variable.Map.mem var kind then
+    if Variable.Map.mem var kind then begin
       (* This is a constant: don't put it in the closure *)
+      Format.eprintf "Closure_offsets omitting variable %a since it is constant\n"
+        Variable.print var;
       (map,pos)
-    else
+    end else
       let var_within_closure = Var_within_closure.wrap var in
       assert(not (Var_within_closure.Map.mem var_within_closure map));
       let map = Var_within_closure.Map.add var_within_closure pos map in

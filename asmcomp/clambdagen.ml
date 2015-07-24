@@ -410,7 +410,8 @@ Format.eprintf "Clambdagen.conv: %a\n"
     Clambda.Udirect_apply(label, uargs, dbg)
 
   and conv_set_of_closures env
-      ({ function_decls = functs; free_vars = fv } : Flambda.set_of_closures) =
+      (({ function_decls = functs; free_vars = fv } : Flambda.set_of_closures)
+        as set_of_closures) =
     (* Make the susbtitutions for variables bound by the closure:
        the variables bounds are the functions inside the closure and
        the free variables of the functions.
@@ -465,8 +466,16 @@ Format.eprintf "Clambdagen.conv_set_of_closures: %a\n"
         (* Add to the substitution the value of the free variables *)
 
         let add_env_variable id _ env =
-          let var_offset = Var_within_closure.Map.find
-              (Var_within_closure.wrap id) fv_offset_table in
+          let var_offset =
+            try
+              Var_within_closure.Map.find
+                (Var_within_closure.wrap id) fv_offset_table
+            with Not_found ->
+              Misc.fatal_errorf "Clambda.conv_set_of_closures: offset for \
+                  free variable %a is unknown.  Set of closures: %a"
+                Variable.print id
+                Flambda_printers.set_of_closures set_of_closures
+          in
           let pos = var_offset - fun_offset in
           add_sb id (Uprim(Pfield pos, [Clambda.Uvar env_var], Debuginfo.none)) env
         in
