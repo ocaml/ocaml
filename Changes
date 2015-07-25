@@ -130,6 +130,8 @@ Bug fixes:
 - PR#6899: Optional parameters and non generalizable type variables
   (Thomas Refis and Leo White)
 - PR#6931: Incorrect error message
+- PR#6938: fix regression on "%047.27{l,L,n}{d,i,x,X,o,u}"
+  (Benoît Vaugon, report by Arduino Cascella)
 - GPR#205: Clear caml_backtrace_last_exn before registering as root (report
   and fix by Frederic Bour)
 

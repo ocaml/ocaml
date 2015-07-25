@@ -2110,6 +2110,30 @@ let fmt_ebb_of_string ?legacy_behavior str =
     and get_prec    () = prec_used  := true; prec
     and get_padprec () = pad_used   := true; padprec in
 
+    let get_int_pad () =
+      (* %5.3d is accepted and meaningful: pad to length 5 with
+         spaces, but first pad with zeros upto length 3 (0-padding
+         is the interpretation of "precision" for integer formats).
+
+         %05.3d is redundant: pad to length 5 *with zeros*, but
+         first pad with zeros... To add insult to the injury, the
+         legacy implementation ignores the 0-padding indication and
+         does the 5 padding with spaces instead. We reuse this
+         interpretation for compatiblity, but statically reject this
+         format when the legacy mode is disabled, to protect strict
+         users from this corner case. *)
+       match get_pad (), get_prec () with
+         | pad, No_precision -> pad
+         | No_padding, _     -> No_padding
+         | Lit_padding (Zeros, n), _ ->
+           if legacy_behavior then Lit_padding (Right, n)
+           else incompatible_flag pct_ind str_ind '0' "precision"
+         | Arg_padding Zeros, _ ->
+           if legacy_behavior then Arg_padding Right
+           else incompatible_flag pct_ind str_ind '0' "precision"
+         | Lit_padding _ as pad, _ -> pad
+         | Arg_padding _ as pad, _ -> pad in
+
     (* Check that padty <> Zeros. *)
     let check_no_0 symb (type a) (type b) (pad : (a, b) padding) =
       match pad with
@@ -2205,31 +2229,8 @@ let fmt_ebb_of_string ?legacy_behavior str =
         let ignored = Ignored_int (iconv, get_pad_opt '_') in
         Fmt_EBB (Ignored_param (ignored, fmt_rest))
       else
-	(* %5.3d is accepted and meaningful: pad to length 5 with
-	   spaces, but first pad with zeros upto length 3 (0-padding
-	   is the interpretation of "precision" for integer formats).
-
-           %05.3d is redundant: pad to length 5 *with zeros*, but
-           first pad with zeros... To add insult to the injury, the
-           legacy implementation ignores the 0-padding indication and
-           does the 5 padding with spaces instead. We reuse this
-           interpretation for compatiblity, but statically reject this
-           format when the legacy mode is disabled, to protect strict
-           users from this corner case.
-	 *)
-        let pad = match get_pad (), get_prec () with
-          | pad, No_precision -> pad
-          | No_padding, _     -> No_padding
-          | Lit_padding (Zeros, n), _ ->
-            if legacy_behavior then Lit_padding (Right, n)
-            else incompatible_flag pct_ind str_ind '0' "precision"
-          | Arg_padding Zeros, _ ->
-            if legacy_behavior then Arg_padding Right
-            else incompatible_flag pct_ind str_ind '0' "precision"
-          | Lit_padding _ as pad, _ -> pad
-          | Arg_padding _ as pad, _ -> pad in
         let Padprec_fmt_EBB (pad', prec', fmt_rest') =
-          make_padprec_fmt_ebb pad (get_prec ()) fmt_rest in
+          make_padprec_fmt_ebb (get_int_pad ()) (get_prec ()) fmt_rest in
         Fmt_EBB (Int (iconv, pad', prec', fmt_rest'))
     | 'N' ->
       let Fmt_EBB fmt_rest = parse str_ind end_ind in
@@ -2238,7 +2239,7 @@ let fmt_ebb_of_string ?legacy_behavior str =
         let ignored = Ignored_scan_get_counter counter in
         Fmt_EBB (Ignored_param (ignored, fmt_rest))
       else
-      Fmt_EBB (Scan_get_counter (counter, fmt_rest))
+        Fmt_EBB (Scan_get_counter (counter, fmt_rest))
     | 'l' | 'n' | 'L' when str_ind=end_ind || not (is_int_base str.[str_ind]) ->
       let Fmt_EBB fmt_rest = parse str_ind end_ind in
       let counter = counter_of_char symb in
@@ -2257,7 +2258,7 @@ let fmt_ebb_of_string ?legacy_behavior str =
         Fmt_EBB (Ignored_param (ignored, fmt_rest))
       else
         let Padprec_fmt_EBB (pad', prec', fmt_rest') =
-          make_padprec_fmt_ebb (get_pad ()) (get_prec ()) fmt_rest in
+          make_padprec_fmt_ebb (get_int_pad ()) (get_prec ()) fmt_rest in
         Fmt_EBB (Int32 (iconv, pad', prec', fmt_rest'))
     | 'n' ->
       let iconv =
@@ -2269,7 +2270,7 @@ let fmt_ebb_of_string ?legacy_behavior str =
         Fmt_EBB (Ignored_param (ignored, fmt_rest))
       else
         let Padprec_fmt_EBB (pad', prec', fmt_rest') =
-          make_padprec_fmt_ebb (get_pad ()) (get_prec ()) fmt_rest in
+          make_padprec_fmt_ebb (get_int_pad ()) (get_prec ()) fmt_rest in
         Fmt_EBB (Nativeint (iconv, pad', prec', fmt_rest'))
     | 'L' ->
       let iconv =
@@ -2281,7 +2282,7 @@ let fmt_ebb_of_string ?legacy_behavior str =
         Fmt_EBB (Ignored_param (ignored, fmt_rest))
       else
         let Padprec_fmt_EBB (pad', prec', fmt_rest') =
-          make_padprec_fmt_ebb (get_pad ()) (get_prec ()) fmt_rest in
+          make_padprec_fmt_ebb (get_int_pad ()) (get_prec ()) fmt_rest in
         Fmt_EBB (Int64 (iconv, pad', prec', fmt_rest'))
     | 'f' | 'e' | 'E' | 'g' | 'G' | 'F' ->
       let fconv = compute_float_conv pct_ind str_ind (get_plus ())
