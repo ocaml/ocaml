@@ -849,15 +849,16 @@ let xor_big_int a b =
    Then, the following function returns [r] correctly rounded to
    the nearest double-precision floating-point number.
    This is an instance of the "round to odd" technique formalized in
-   "When double rounding is odd" by S. Boldo and G. Melquiond,
-   IMACS 2005, and mechanically verified in CompCert. *)
+   "When double rounding is odd" by S. Boldo and G. Melquiond.
+   The claim above is lemma Fappli_IEEE_extra.round_odd_fix
+   from the CompCert Coq development. *)
 
 let round_big_int_to_float x exact =
   assert (let n = num_bits_big_int x in 55 <= n && n <= 63);
   let m = int64_of_big_int x in
   (* Unless the fractional part is exactly 0, round m to an odd integer *)
   let m = if exact then m else Int64.logor m 1L in
-  (* Then convert m to float, rounding to nearest, ties break to even *)  
+  (* Then convert m to float, with the normal rounding mode. *)
   Int64.to_float m
 
 let float_of_big_int x =

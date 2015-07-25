@@ -1189,7 +1189,7 @@ failwith_test 9
 
 testing_function "float_of_ratio";;
 let ok = ref true in
-for i = 1 to 1000 do
+for i = 1 to 100 do
   let p = Random.int64 0x20000000000000L
   and pexp = Random.int 100
   and q = Random.int64 0x20000000000000L
