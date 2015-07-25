@@ -530,6 +530,7 @@ let rec emit_tail_infos is_tail lambda =
       && not is_tail
       && Warnings.is_active Warnings.Expect_tailcall
         then Location.prerr_warning loc Warnings.Expect_tailcall;
+      emit_tail_infos false func;
       list_emit_tail_infos false l;
       if !Clflags.annotations then
         Stypes.record (Stypes.An_call (loc, call_kind l));
