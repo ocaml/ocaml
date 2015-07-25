@@ -89,6 +89,8 @@ Other libraries:
 OCamlbuild:
 - PR#6794, PR#6809: pass package-specific include flags when building C files
   (Jérémie Dimino, request by Peter Zotov)
+- GPR#208: add "asm" tag to ocamlbuild to enable flag -S
+  (ygrek)
 
 Bug fixes:
 * PR#4539: change exception string raised when comparing functional values
