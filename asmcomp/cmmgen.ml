@@ -31,6 +31,11 @@ let bind name arg fn =
   | Cconst_blockheader _ -> fn arg
   | _ -> let id = Ident.create name in Clet(id, arg, fn (Cvar id))
 
+let bind_load name arg fn =
+  match arg with
+  | Cop(Cload _, [Cvar _]) -> fn arg
+  | _ -> bind name arg fn
+
 let bind_nonvar name arg fn =
   match arg with
     Cconst_int _ | Cconst_natint _ | Cconst_symbol _
@@ -1982,7 +1987,7 @@ and transl_prim_3 p arg1 arg2 arg3 dbg =
             Csequence(make_checkbound dbg [addr_array_length(header arr); idx],
                       int_array_set arr idx newval))))
       | Pfloatarray ->
-          bind "newval" (transl_unbox_float arg3) (fun newval ->
+          bind_load "newval" (transl_unbox_float arg3) (fun newval ->
           bind "index" (transl arg2) (fun idx ->
           bind "arr" (transl arg1) (fun arr ->
             Csequence(make_checkbound dbg [float_array_length(header arr);idx],

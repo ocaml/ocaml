@@ -159,6 +159,8 @@ Features wishes:
   (Hugo Heuzard)
 - PR#6876: improve warning 6 by listing the omitted labels.
   (Eyyüb Sari)
+- PR#6924: tiny optim to avoid some spilling of floats in x87
+  (Alain Frisch)
 - GPR#111: `(f [@taillcall]) x y` warns if `f x y` is not a tail-call
   (Simon Cruanes)
 - GPR#118: ocamldep -allow-approx: fallback to a lexer-based approximation
