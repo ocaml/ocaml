@@ -178,6 +178,8 @@ Features wishes:
   (Benjamin Canou, review by Damien Doligez)
 - GPR#191: Making gc.h and some part of memory.h public
   (Thomas Refis)
+- GPR#196: Make [Thread.id] and [Thread.self] [noalloc]
+  (Clark Gaebel)
 
 OCaml 4.02.3:
 -------------
