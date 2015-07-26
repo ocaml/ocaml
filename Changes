@@ -4,11 +4,14 @@ OCaml 4.03.0:
 (Changes that can break existing programs are marked with a "*")
 
 Language features:
+- PR#5528: inline records for constructor arguments (Alain Frisch)
 - PR#6374: allow "_ t" as a short-hand for "(_, _, ..) t" for n-ary type
   constructors (Alain Frisch)
 - PR#6714: allow [@@ocaml.warning] on most structure and signature items:
   values, modules, module types
   (Peter Zotov)
+- GPR#26: support for "(type a b)" as syntactic sugar for "(type a) (type b)"
+  (Gabriel Scherer)
 * GPR#69: Custom index operators: ( .() ), ( .[] ), ( .{} ) etc.
   (user 'Octachron')
   The syntax "foo.(bar) <- baz" now desugars into "( .()<- ) foo bar baz"; this
@@ -20,7 +23,6 @@ Language features:
 - GPR#88: allow field punning in object copying expressions:
     {< x; y; >} is sugar for {< x = x; y = y; >}
   (Jeremy Yallop)
-- PR#5528: inline records for constructor arguments (Alain Frisch)
 
 Compilers:
 - PR#6501: harden the native-code generator against certain uses of "%identity"
