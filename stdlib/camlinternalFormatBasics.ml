@@ -23,6 +23,8 @@ type float_conv =
   | Float_g | Float_pg | Float_sg  (*  %g | %+g | % g  *)
   | Float_G | Float_pG | Float_sG  (*  %G | %+G | % G  *)
   | Float_F                        (*  %F              *)
+  | Float_h | Float_ph | Float_sh  (*  %h | %+h | % h  *)
+  | Float_H | Float_pH | Float_sH  (*  %H | %+H | % H  *)
 
 (***)
 

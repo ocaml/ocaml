@@ -10,6 +10,7 @@ type float_conv =
   | Float_f | Float_pf | Float_sf | Float_e | Float_pe | Float_se
   | Float_E | Float_pE | Float_sE | Float_g | Float_pg | Float_sg
   | Float_G | Float_pG | Float_sG | Float_F
+  | Float_h | Float_ph | Float_sh | Float_H | Float_pH | Float_sH
 
 type char_set = string
 
