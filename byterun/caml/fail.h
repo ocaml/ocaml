@@ -60,22 +60,21 @@ int caml_is_special_exception(value exn);
 extern "C" {
 #endif
 
-CAMLextern void caml_raise (value bucket) Noreturn;
-CAMLextern void caml_raise_constant (value tag) Noreturn;
-CAMLextern void caml_raise_with_arg (value tag, value arg) Noreturn;
-CAMLextern void caml_raise_with_args (value tag, int nargs, value arg[])
-                Noreturn;
-CAMLextern void caml_raise_with_string (value tag, char const * msg) Noreturn;
-CAMLextern void caml_failwith (char const *) Noreturn;
-CAMLextern void caml_invalid_argument (char const *) Noreturn;
-CAMLextern void caml_raise_out_of_memory (void) Noreturn;
-CAMLextern void caml_raise_stack_overflow (void) Noreturn;
-CAMLextern void caml_raise_sys_error (value) Noreturn;
-CAMLextern void caml_raise_end_of_file (void) Noreturn;
-CAMLextern void caml_raise_zero_divide (void) Noreturn;
-CAMLextern void caml_raise_not_found (void) Noreturn;
-CAMLextern void caml_array_bound_error (void) Noreturn;
-CAMLextern void caml_raise_sys_blocked_io (void) Noreturn;
+Noreturn CAMLextern void caml_raise (value bucket);
+Noreturn CAMLextern void caml_raise_constant (value tag);
+Noreturn CAMLextern void caml_raise_with_arg (value tag, value arg);
+Noreturn CAMLextern void caml_raise_with_args (value tag, int nargs, value arg[]);
+Noreturn CAMLextern void caml_raise_with_string (value tag, char const * msg);
+Noreturn CAMLextern void caml_failwith (char const *);
+Noreturn CAMLextern void caml_invalid_argument (char const *);
+Noreturn CAMLextern void caml_raise_out_of_memory (void);
+Noreturn CAMLextern void caml_raise_stack_overflow (void);
+Noreturn CAMLextern void caml_raise_sys_error (value);
+Noreturn CAMLextern void caml_raise_end_of_file (void);
+Noreturn CAMLextern void caml_raise_zero_divide (void);
+Noreturn CAMLextern void caml_raise_not_found (void);
+Noreturn CAMLextern void caml_array_bound_error (void);
+Noreturn CAMLextern void caml_raise_sys_blocked_io (void);
 
 #ifdef __cplusplus
 }
