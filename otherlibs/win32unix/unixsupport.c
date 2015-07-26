@@ -170,118 +170,81 @@ void win32_maperr(DWORD errcode)
 }
 
 /* Windows socket errors */
-#ifndef EWOULDBLOCK
+#undef EWOULDBLOCK
 #define EWOULDBLOCK             -WSAEWOULDBLOCK
-#endif
-#ifndef EINPROGRESS
+#undef EINPROGRESS
 #define EINPROGRESS             -WSAEINPROGRESS
-#endif
-#ifndef EALREADY
+#undef EALREADY
 #define EALREADY                -WSAEALREADY
-#endif
-#ifndef ENOTSOCK
+#undef ENOTSOCK
 #define ENOTSOCK                -WSAENOTSOCK
-#endif
-#ifndef EDESTADDRREQ
+#undef EDESTADDRREQ
 #define EDESTADDRREQ            -WSAEDESTADDRREQ
-#endif
-#ifndef EMSGSIZE
+#undef EMSGSIZE
 #define EMSGSIZE                -WSAEMSGSIZE
-#endif
-#ifndef EPROTOTYPE
+#undef EPROTOTYPE
 #define EPROTOTYPE              -WSAEPROTOTYPE
-#endif
-#ifndef ENOPROTOOPT
+#undef ENOPROTOOPT
 #define ENOPROTOOPT             -WSAENOPROTOOPT
-#endif
-#ifndef EPROTONOSUPPORT
+#undef EPROTONOSUPPORT
 #define EPROTONOSUPPORT         -WSAEPROTONOSUPPORT
-#endif
-#ifndef ESOCKTNOSUPPORT
+#undef ESOCKTNOSUPPORT
 #define ESOCKTNOSUPPORT         -WSAESOCKTNOSUPPORT
-#endif
-#ifndef EOPNOTSUPP
+#undef EOPNOTSUPP
 #define EOPNOTSUPP              -WSAEOPNOTSUPP
-#endif
-#ifndef EPFNOSUPPORT
+#undef EPFNOSUPPORT
 #define EPFNOSUPPORT            -WSAEPFNOSUPPORT
-#endif
-#ifndef EAFNOSUPPORT
+#undef EAFNOSUPPORT
 #define EAFNOSUPPORT            -WSAEAFNOSUPPORT
-#endif
-#ifndef EADDRINUSE
+#undef EADDRINUSE
 #define EADDRINUSE              -WSAEADDRINUSE
-#endif
-#ifndef EADDRNOTAVAIL
+#undef EADDRNOTAVAIL
 #define EADDRNOTAVAIL           -WSAEADDRNOTAVAIL
-#endif
-#ifndef ENETDOWN
+#undef ENETDOWN
 #define ENETDOWN                -WSAENETDOWN
-#endif
-#ifndef ENETUNREACH
+#undef ENETUNREACH
 #define ENETUNREACH             -WSAENETUNREACH
-#endif
-#ifndef ENETRESET
+#undef ENETRESET
 #define ENETRESET               -WSAENETRESET
-#endif
-#ifndef ECONNABORTED
+#undef ECONNABORTED
 #define ECONNABORTED            -WSAECONNABORTED
-#endif
-#ifndef ECONNRESET
+#undef ECONNRESET
 #define ECONNRESET              -WSAECONNRESET
-#endif
-#ifndef ENOBUFS
+#undef ENOBUFS
 #define ENOBUFS                 -WSAENOBUFS
-#endif
-#ifndef EISCONN
+#undef EISCONN
 #define EISCONN                 -WSAEISCONN
-#endif
-#ifndef ENOTCONN
+#undef ENOTCONN
 #define ENOTCONN                -WSAENOTCONN
-#endif
-#ifndef ESHUTDOWN
+#undef ESHUTDOWN
 #define ESHUTDOWN               -WSAESHUTDOWN
-#endif
-#ifndef ETOOMANYREFS
+#undef ETOOMANYREFS
 #define ETOOMANYREFS            -WSAETOOMANYREFS
-#endif
-#ifndef ETIMEDOUT
+#undef ETIMEDOUT
 #define ETIMEDOUT               -WSAETIMEDOUT
-#endif
-#ifndef ECONNREFUSED
+#undef ECONNREFUSED
 #define ECONNREFUSED            -WSAECONNREFUSED
-#endif
-#ifndef ELOOP
+#undef ELOOP
 #define ELOOP                   -WSAELOOP
-#endif
-#ifndef EHOSTDOWN
+#undef EHOSTDOWN
 #define EHOSTDOWN               -WSAEHOSTDOWN
-#endif
-#ifndef EHOSTUNREACH
+#undef EHOSTUNREACH
 #define EHOSTUNREACH            -WSAEHOSTUNREACH
-#endif
-#ifndef EPROCLIM
+#undef EPROCLIM
 #define EPROCLIM                -WSAEPROCLIM
-#endif
-#ifndef EUSERS
+#undef EUSERS
 #define EUSERS                  -WSAEUSERS
-#endif
-#ifndef EDQUOT
+#undef EDQUOT
 #define EDQUOT                  -WSAEDQUOT
-#endif
-#ifndef ESTALE
+#undef ESTALE
 #define ESTALE                  -WSAESTALE
-#endif
-#ifndef EREMOTE
+#undef EREMOTE
 #define EREMOTE                 -WSAEREMOTE
-#endif
 
-#ifndef EOVERFLOW
+#undef EOVERFLOW
 #define EOVERFLOW -ERROR_ARITHMETIC_OVERFLOW
-#endif
-#ifndef EACCESS
+#undef EACCESS
 #define EACCESS EACCES
-#endif
 
 int error_table[] = {
   E2BIG, EACCESS, EAGAIN, EBADF, EBUSY, ECHILD, EDEADLK, EDOM,
