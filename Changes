@@ -182,6 +182,8 @@ Features wishes:
   (Thomas Refis)
 - GPR#196: Make [Thread.id] and [Thread.self] [noalloc]
   (Clark Gaebel)
+- GPR#165: fix windows compilation warnings
+  (Bernhard Schommer)
 
 OCaml 4.02.3:
 -------------
