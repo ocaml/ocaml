@@ -160,10 +160,10 @@ extern void caml_set_fields (intnat v, unsigned long, unsigned long);
 
 /* snprintf emulation for Win32 */
 
-#ifdef _WIN32
+#if defined(_WIN32) && defined(_MSC_VER) && _MSC_VER < 1900
 extern int caml_snprintf(char * buf, size_t size, const char * format, ...);
-#define snprintf caml_snprintf
-#endif
+#  define snprintf caml_snprintf
+#endif /*defined (_WIN32) && defined (_MSC_VER)&& _MSC_VER < 1900 */
 
 /* </private> */
 
