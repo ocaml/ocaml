@@ -59,8 +59,8 @@ let num_register_classes = 2
 
 let register_class r =
   match r.typ with
-  | (Int | Addr)  -> 0
-  | Float         -> 1
+  | Val | Int | Addr  -> 0
+  | Float -> 1
 
 let num_available_registers =
   [| 23; 32 |] (* first 23 int regs allocatable; all float regs allocatable *)
