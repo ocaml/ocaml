@@ -172,12 +172,15 @@ let run env expr =
             function_decls.funs
             (Variable.Map.empty, Variable.Map.empty)
         in
-        { set_of_closures with
-          function_decls = { function_decls with funs; };
-          specialised_args = Variable.Map.disjoint_union specialised_args
-              additional_specialised_args
-              ~eq:Variable.equal
-        })
+        let specialised_args =
+          Variable.Map.disjoint_union specialised_args
+            additional_specialised_args
+            ~eq:Variable.equal
+        in
+        Flambda.create_set_of_closures
+          ~function_decls:{ function_decls with funs; }
+          ~free_vars:set_of_closures.free_vars
+          ~specialised_args)
   in
 (*
   Format.eprintf "After Unbox_closures: %a\n" Flambda_printers.flambda expr;

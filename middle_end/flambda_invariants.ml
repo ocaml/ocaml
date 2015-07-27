@@ -241,8 +241,6 @@ let variable_invariants flam =
             all_params, Variable.Set.union free_variables all_free_vars)
           funs (Variable.Set.empty, Variable.Set.empty)
       in
-(* CR mshinwell for pchambart: Why does it matter if this situation occurs?
-
       (* Check that the free variables rewriting map in the set of closures
          does not contain variables in its domain that are not actually free
          variables of any of the function bodies. *)
@@ -251,11 +249,6 @@ let variable_invariants flam =
       in
       if not (Variable.Set.is_empty bad_free_vars) then begin
         raise (Set_of_closures_free_vars_map_has_wrong_range bad_free_vars)
-      end;
-*)
-(* temporary hack to silence warning 38 *)
-      if Variable.Set.cardinal all_free_vars > 1_000_000_000 then begin
-        raise (Set_of_closures_free_vars_map_has_wrong_range all_free_vars)
       end;
       (* Check that every "specialised arg" is a parameter of one of the
          functions being declared, and that the variable to which the

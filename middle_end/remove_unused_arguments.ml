@@ -89,10 +89,11 @@ let separate_unused_arguments (set_of_closures : Flambda.set_of_closures) =
       Variable.Map.filter (fun param _ -> not (Variable.Set.mem param unused))
         set_of_closures.specialised_args
     in
-    Some
-      { set_of_closures with
-        function_decls = { decl with funs };
-        specialised_args; }
+    let set_of_closures =
+      Flambda.create_set_of_closures ~function_decls:{ decl with funs; }
+        ~free_vars:set_of_closures.free_vars ~specialised_args
+    in
+    Some set_of_closures
   end
 
 (* Spliting is not always beneficial. For instance when a function

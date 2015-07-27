@@ -181,7 +181,7 @@ and named =
    more complicated analyses on these in the future.  Alternatively, maybe
    consider removing mutable variables altogether. *)
 
-and set_of_closures = {
+and set_of_closures = private {
   function_decls : function_declarations;
   (* CR mshinwell: consider renaming [free_vars].  Also, it's still really
      confusing which side of this map to use when.  "Vars bound by the
@@ -289,5 +289,11 @@ val create_function_declaration
   -> stub:bool
   -> dbg:Debuginfo.t
   -> function_declaration
+
+val create_set_of_closures
+   : function_decls:function_declarations
+  -> free_vars:Variable.t Variable.Map.t
+  -> specialised_args:Variable.t Variable.Map.t
+  -> set_of_closures
 
 val used_params : function_declaration -> Variable.Set.t

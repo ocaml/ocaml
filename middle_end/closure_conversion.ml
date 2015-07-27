@@ -386,7 +386,7 @@ and close_functions t external_env function_declarations : Flambda.named =
       Variable.Map.add tuplified_version fun_decl
         (Variable.Map.add closure_bound_var generic_function_stub map)
   in
-  let fun_decls : Flambda.function_declarations =
+  let function_decls : Flambda.function_declarations =
     { set_of_closures_id =
         Set_of_closures_id.create (Compilation_unit.get_current_exn ());
       funs =
@@ -398,18 +398,18 @@ and close_functions t external_env function_declarations : Flambda.named =
   (* The closed representation of a set of functions is a "set of closures".
      (For avoidance of doubt, the runtime representation of the *whole set* is
      a single block with tag [Closure_tag].) *)
-  let set_of_closures : Flambda.set_of_closures =
-    { function_decls = fun_decls;
-      free_vars =
-        IdentSet.fold (fun var map ->
-            let internal_var =
-              Env.find_var closure_env_without_parameters var
-            in
-            let external_var = Env.find_var external_env var in
-            Variable.Map.add internal_var external_var map)
-          all_free_idents Variable.Map.empty;
-      specialised_args = Variable.Map.empty;
-    }
+  let set_of_closures =
+    let free_vars =
+      IdentSet.fold (fun var map ->
+          let internal_var =
+            Env.find_var closure_env_without_parameters var
+          in
+          let external_var = Env.find_var external_env var in
+          Variable.Map.add internal_var external_var map)
+        all_free_idents Variable.Map.empty
+    in
+    Flambda.create_set_of_closures ~function_decls ~free_vars
+      ~specialised_args:Variable.Map.empty
   in
   Set_of_closures set_of_closures
 

@@ -222,13 +222,14 @@ let toplevel_substitution sb tree =
     match named with
     | Symbol _ | Const _ | Expr _ -> named
     | Set_of_closures set_of_closures ->
-      Set_of_closures {
-        set_of_closures with
-        free_vars =
-          Variable.Map.map sb set_of_closures.free_vars;
-        specialised_args =
-          Variable.Map.map sb set_of_closures.specialised_args;
-      }
+      let set_of_closures =
+        Flambda.create_set_of_closures
+          ~function_decls:set_of_closures.function_decls
+          ~free_vars:(Variable.Map.map sb set_of_closures.free_vars)
+          ~specialised_args:
+            (Variable.Map.map sb set_of_closures.specialised_args)
+      in
+      Set_of_closures set_of_closures
     | Project_closure project_closure ->
       Project_closure {
         project_closure with
@@ -280,15 +281,14 @@ let make_closure_declaration ~id ~body ~params : Flambda.t =
       ~current_compilation_unit:compilation_unit
   in
   let set_of_closures =
-    { Flambda.
-      function_decls = {
-        set_of_closures_id = Set_of_closures_id.create compilation_unit;
+    let function_decls : Flambda.function_declarations =
+      { set_of_closures_id = Set_of_closures_id.create compilation_unit;
         funs = Variable.Map.singleton id function_declaration;
         compilation_unit;
-      };
-      free_vars;
-      specialised_args = Variable.Map.empty;
-    }
+      }
+    in
+    Flambda.create_set_of_closures ~function_decls ~free_vars
+      ~specialised_args:Variable.Map.empty
   in
   let project_closure : Flambda.named =
     Project_closure {

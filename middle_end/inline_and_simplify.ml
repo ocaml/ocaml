@@ -489,11 +489,10 @@ and simplify_set_of_closures original_env r
       function_decls; unchanging_params;
     }
   in
-  let set_of_closures : Flambda.set_of_closures =
-    { function_decls;
-      free_vars = Variable.Map.map fst free_vars;
-      specialised_args;
-    }
+  let set_of_closures =
+    Flambda.create_set_of_closures ~function_decls
+      ~free_vars:(Variable.Map.map fst free_vars)
+      ~specialised_args
   in
   Set_of_closures set_of_closures,
     ret r (A.value_set_of_closures value_set_of_closures)

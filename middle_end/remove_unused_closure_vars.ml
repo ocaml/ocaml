@@ -34,7 +34,7 @@ let remove_unused_closure_variables tree =
   in
   let aux_named (named : Flambda.named) : Flambda.named =
     match named with
-    | Set_of_closures ({ function_decls; free_vars; _ } as closure) ->
+    | Set_of_closures ({ function_decls; free_vars; _ } as set_of_closures) ->
       let all_free_vars =
         Variable.Map.fold (fun _ { Flambda. free_variables } acc ->
             Variable.Set.union free_variables acc)
@@ -55,7 +55,11 @@ let remove_unused_closure_variables tree =
           function_decls.funs
       in
       let function_decls = { function_decls with funs } in
-      Set_of_closures { closure with free_vars; function_decls }
+      let set_of_closures =
+        Flambda.create_set_of_closures ~function_decls ~free_vars
+          ~specialised_args:set_of_closures.specialised_args
+      in
+      Set_of_closures set_of_closures
     | e -> e
   in
   Flambda_iterators.map_named aux_named tree

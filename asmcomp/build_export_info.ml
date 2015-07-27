@@ -331,10 +331,12 @@ and describe_set_of_closures env (set : Flambda.set_of_closures)
           bound_vars) then
         begin
           Misc.fatal_errorf "Build_export_info.describe_set_of_closures: \
-              %a function declaration's [free_variables] set %a is wrong. \
-              Set of closures: %a"
+              %a function declaration's [free_variables] set %a is wrong \
+              (%a should be subset of %a).  Set of closures: %a"
             Variable.print var
             Variable.Set.print function_decl.free_variables
+            Variable.Set.print free_vars_that_are_not_params_or_fun_vars
+            Variable.Set.print bound_vars
             Flambda_printers.set_of_closures set
         end;
         let descr =

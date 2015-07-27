@@ -175,7 +175,11 @@ let map_general ~toplevel f f_named tree =
                 function_decls.funs;
             }
         in
-        Set_of_closures { function_decls; free_vars; specialised_args }
+        let set_of_closures =
+          Flambda.create_set_of_closures ~function_decls ~free_vars
+            ~specialised_args
+        in
+        Set_of_closures set_of_closures
       | Expr expr -> Expr (aux expr)
     in
     f_named named

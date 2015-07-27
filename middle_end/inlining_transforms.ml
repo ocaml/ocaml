@@ -183,13 +183,11 @@ let inline_by_copying_function_declaration ~env ~r
           Variable.Map.add internal_var from_closure map,
             (from_closure, expr)::for_lets)
     in
-    let set_of_closures : Flambda.set_of_closures =
+    let set_of_closures =
       (* This is the new set of closures, with more precise specialisation
          information than the one being copied. *)
-      { function_decls;
-        free_vars;
-        specialised_args = more_specialised_args;
-      }
+      Flambda.create_set_of_closures ~function_decls ~free_vars
+        ~specialised_args:more_specialised_args
     in
     (* Generate a copy of the function application, including the function
        declaration(s), but with variables (not yet bound) in place of the
@@ -255,10 +253,8 @@ let inline_by_copying_function_declaration ~env ~r
               set_of_closures.free_vars
               ~eq:Variable.equal
           in
-          { Flambda.
-            function_decls = { function_decls with funs; };
-            free_vars;
-            specialised_args = Variable.Map.empty;
-          })
+          Flambda.create_set_of_closures
+            ~function_decls:{ function_decls with funs; }
+            ~free_vars ~specialised_args:Variable.Map.empty)
     in
     Some (simplify env r expr)
