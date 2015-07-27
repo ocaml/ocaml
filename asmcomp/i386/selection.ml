@@ -31,11 +31,11 @@ let rec select_addr exp =
   match exp with
     Cconst_symbol s ->
       (Asymbol s, 0)
-  | Cop((Caddi | Cadda), [arg; Cconst_int m]) ->
+  | Cop((Caddi | Caddv | Cadda), [arg; Cconst_int m]) ->
       let (a, n) = select_addr arg in (a, n + m)
-  | Cop((Csubi | Csuba), [arg; Cconst_int m]) ->
+  | Cop(Csubi, [arg; Cconst_int m]) ->
       let (a, n) = select_addr arg in (a, n - m)
-  | Cop((Caddi | Cadda), [Cconst_int m; arg]) ->
+  | Cop((Caddi | Caddv | Cadda), [Cconst_int m; arg]) ->
       let (a, n) = select_addr arg in (a, n + m)
   | Cop(Clsl, [arg; Cconst_int(1|2|3 as shift)]) ->
       begin match select_addr arg with
@@ -52,7 +52,7 @@ let rec select_addr exp =
         (Alinear e, n) -> (Ascale(e, mult), n * mult)
       | _ -> (Alinear exp, 0)
       end
-  | Cop((Caddi | Cadda), [arg1; arg2]) ->
+  | Cop((Caddi | Cadda | Caddv), [arg1; arg2]) ->
       begin match (select_addr arg1, select_addr arg2) with
           ((Alinear e1, n1), (Alinear e2, n2)) ->
               (Aadd(e1, e2), n1 + n2)
@@ -196,7 +196,7 @@ method! select_store is_assign addr exp =
 method! select_operation op args =
   match op with
   (* Recognize the LEA instruction *)
-    Caddi | Cadda | Csubi | Csuba ->
+    Caddi | Caddv | Cadda | Csubi ->
       begin match self#select_addressing Word_int (Cop(op, args)) with
         (Iindexed d, _) -> super#select_operation op args
       | (Iindexed2 0, _) -> super#select_operation op args
