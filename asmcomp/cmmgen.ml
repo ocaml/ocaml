@@ -1428,23 +1428,7 @@ let rec transl = function
         | _ ->
             bind "met" (lookup_tag obj (transl met)) (call_met obj args))
   | Ulet(id, exp, body) ->
-      begin match is_unboxed_number exp with
-        No_unboxing ->
-          Clet(id, transl exp, transl body)
-      | No_result ->
-          (* the let-bound expression never returns a value, we can ignore the body *)
-          transl exp
-      | Boxed_float ->
-          transl_unbox_let box_float unbox_float transl_unbox_float
-                           Double_u 0
-                           id exp body
-      | Boxed_integer bi ->
-          transl_unbox_let (box_int bi) (unbox_int bi) (transl_unbox_int bi)
-                           (if bi = Pint32 then Thirtytwo_signed
-                                           else Word_int)
-                           size_addr
-                           id exp body
-      end
+      transl_let id exp (transl body)
   | Uletrec(bindings, body) ->
       transl_letrec bindings (transl body)
 
@@ -2122,13 +2106,30 @@ and transl_unbox_int bi = function
       Cconst_int i
   | exp -> unbox_int bi (transl exp)
 
+and transl_let id exp tr_body =
+  match is_unboxed_number exp with
+  |  No_unboxing ->
+      Clet(id, transl exp, tr_body)
+  | No_result ->
+      (* the let-bound expression never returns a value, we can ignore the body *)
+      transl exp
+  | Boxed_float ->
+      transl_unbox_let box_float unbox_float transl_unbox_float
+        Double_u 0
+        id exp tr_body
+  | Boxed_integer bi ->
+      transl_unbox_let (box_int bi) (unbox_int bi) (transl_unbox_int bi)
+        (if bi = Pint32 then Thirtytwo_signed
+         else Word_int)
+        size_addr
+        id exp tr_body
+
 and transl_unbox_let box_fn unbox_fn transl_unbox_fn box_chunk box_offset
                      id exp body =
   let unboxed_id = Ident.create (Ident.name id) in
-  let trbody1 = transl body in
-  let trbody2 =
-    subst_boxed_number box_fn unbox_fn id unboxed_id box_chunk box_offset trbody1 in
-  Clet(unboxed_id, transl_unbox_fn exp, trbody2)
+  let subst_body =
+    subst_boxed_number box_fn unbox_fn id unboxed_id box_chunk box_offset body in
+  Clet(unboxed_id, transl_unbox_fn exp, subst_body)
 
 and make_catch ncatch body handler = match body with
 | Cexit (nexit,[]) when nexit=ncatch -> handler
@@ -2259,7 +2260,7 @@ and transl_letrec bindings cont =
     | (id, exp, (RHS_block _ | RHS_floatblock _)) :: rem ->
         fill_nonrec rem
     | (id, exp, RHS_nonrec) :: rem ->
-        Clet (id, transl exp, fill_nonrec rem)
+        transl_let id exp (fill_nonrec rem)
   and fill_blocks = function
     | [] -> cont
     | (id, exp, (RHS_block _ | RHS_floatblock _)) :: rem ->
