@@ -113,12 +113,12 @@ method! is_simple_expr = function
   | e -> super#is_simple_expr e
 
 method select_addressing chunk = function
-  | Cop(Cadda, [arg; Cconst_int n])
+  | Cop((Cadda | Caddv), [arg; Cconst_int n])
     when is_offset chunk n ->
       (Iindexed n, arg)
-  | Cop(Cadda, [arg1; Cop(Caddi, [arg2; Cconst_int n])])
+  | Cop((Cadda | Caddv as op), [arg1; Cop(Caddi, [arg2; Cconst_int n])])
     when is_offset chunk n ->
-      (Iindexed n, Cop(Cadda, [arg1; arg2]))
+      (Iindexed n, Cop(op, [arg1; arg2]))
   | arg ->
       (Iindexed 0, arg)
 
@@ -163,18 +163,18 @@ method select_shift_arith op arithop arithrevop args =
 method! select_operation op args =
   match (op, args) with
   (* Recognize special shift arithmetic *)
-    ((Cadda | Caddi), [arg; Cconst_int n])
+    ((Caddv | Cadda | Caddi), [arg; Cconst_int n])
     when n < 0 && self#is_immediate (-n) ->
       (Iintop_imm(Isub, -n), [arg])
-  | ((Cadda | Caddi as op), args) ->
+  | ((Caddv | Cadda | Caddi as op), args) ->
       self#select_shift_arith op Ishiftadd Ishiftadd args
-  | ((Csuba | Csubi), [arg; Cconst_int n])
+  | (Csubi, [arg; Cconst_int n])
     when n < 0 && self#is_immediate (-n) ->
       (Iintop_imm(Iadd, -n), [arg])
-  | ((Csuba | Csubi), [Cconst_int n; arg])
+  | (Csubi, [Cconst_int n; arg])
     when self#is_immediate n ->
       (Ispecific(Irevsubimm n), [arg])
-  | ((Csuba | Csubi as op), args) ->
+  | (Csubi as op, args) ->
       self#select_shift_arith op Ishiftsub Ishiftsubrev args
   | (Cand as op, args) ->
       self#select_shift_arith op Ishiftand Ishiftand args
