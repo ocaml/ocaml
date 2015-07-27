@@ -2114,22 +2114,19 @@ and transl_let id exp tr_body =
       (* the let-bound expression never returns a value, we can ignore the body *)
       transl exp
   | Boxed_float ->
-      transl_unbox_let box_float unbox_float transl_unbox_float
-        Double_u 0
-        id exp tr_body
+      let unboxed_id = Ident.create (Ident.name id) in
+      let subst_body =
+        subst_boxed_number box_float unbox_float id unboxed_id Double_u 0 tr_body
+      in
+      Clet(unboxed_id, transl_unbox_float exp, subst_body)
   | Boxed_integer bi ->
-      transl_unbox_let (box_int bi) (unbox_int bi) (transl_unbox_int bi)
-        (if bi = Pint32 then Thirtytwo_signed
-         else Word_int)
-        size_addr
-        id exp tr_body
-
-and transl_unbox_let box_fn unbox_fn transl_unbox_fn box_chunk box_offset
-                     id exp body =
-  let unboxed_id = Ident.create (Ident.name id) in
-  let subst_body =
-    subst_boxed_number box_fn unbox_fn id unboxed_id box_chunk box_offset body in
-  Clet(unboxed_id, transl_unbox_fn exp, subst_body)
+      let unboxed_id = Ident.create (Ident.name id) in
+      let subst_body =
+        subst_boxed_number (box_int bi) (unbox_int bi) id unboxed_id
+          (if bi = Pint32 then Thirtytwo_signed else Word_int)
+          size_addr tr_body
+      in
+      Clet(unboxed_id, transl_unbox_int bi exp, subst_body)
 
 and make_catch ncatch body handler = match body with
 | Cexit (nexit,[]) when nexit=ncatch -> handler
