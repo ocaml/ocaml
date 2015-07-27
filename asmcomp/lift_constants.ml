@@ -499,11 +499,14 @@ Format.eprintf "bind_constant_fv var=%a\n" Variable.print var;
       { function_decls with
         funs =
           Variable.Map.map (rewrite_function_declaration ~free_vars)
-            function_decls.funs
+            function_decls.funs;
       }
     in
     let free_vars =
       Variable.Map.filter (fun _inner_var outer_var ->
+Format.eprintf "Checking if %a is a constant, %s\n"
+  Variable.print outer_var
+  (if is_a_constant outer_var then "yes" else "no");
           not (is_a_constant outer_var))
         free_vars
     in
@@ -512,7 +515,14 @@ Format.eprintf "bind_constant_fv var=%a\n" Variable.print var;
         (fun _ var -> not (is_a_constant var))
         specialised_args
     in
+let set_of_closures =
+Format.eprintf "set_of_closures creation: %a (free_vars %a)\n"
+  Flambda_printers.function_declarations function_decls
+  (Variable.Map.print Variable.print) free_vars;
     Flambda.create_set_of_closures ~function_decls ~free_vars ~specialised_args
+in
+Format.eprintf "set_of_closures creation done\n%!";
+set_of_closures
   in
   let rewrite_named : Flambda.named -> Flambda.named = function
     | Set_of_closures set_of_closures ->
@@ -546,13 +556,15 @@ Format.eprintf "bind_constant_fv var=%a\n" Variable.print var;
     | expr -> expr
   in
   let expr =
+Format.eprintf "*** start %a\n%!" Flambda_printers.flambda expr;
     let expr = Flambda_iterators.map rewrite rewrite_named expr in
+Format.eprintf "***\n%!";
     let free_variables = Free_variables.calculate expr in
     Variable.Set.fold bind_constant free_variables expr
   in
   let set_of_closures_map =
     Symbol.Tbl.fold (fun symbol (set_of_closures:Flambda.set_of_closures) map ->
-        let update_function_decl (function_decl : Flambda.function_declaration) =
+        let update_function_decl (function_decl : Flambda.function_declaration)  =
           (* XXX why does this not happen above? *)
           let body =
             Flambda_iterators.map rewrite rewrite_named function_decl.body
@@ -564,7 +576,7 @@ Format.eprintf "bind_constant_fv var=%a\n" Variable.print var;
           set_of_closures.function_decls with
           funs =
             Variable.Map.map update_function_decl
-              set_of_closures.function_decls.funs
+              set_of_closures.function_decls.funs;
         }
         in
         let set_of_closures =
@@ -580,31 +592,16 @@ Format.eprintf "bind_constant_fv var=%a\n" Variable.print var;
       )
       set_of_closures_tbl Symbol.Map.empty
   in
-
-(* To do:
-- Proper second traversal.  This should fix the 4887 error.
-It may also fix the other error, because some reference to the constant
-string might be deleted, and cause the free_vars set to be updated.
-
-Also think about the whole thing again from scratch, bearing in mind the
-comment at the top of the file.
-
-*)
-
-(*
   Format.eprintf "lift_constants output:@ %a\n"
     Flambda_printers.flambda expr;
-*)
   { expr;
     constant_descr;
     kind;
     set_of_closures_map }
 
 let lift_constants expr =
-(*
   Format.eprintf "lift_constants input:@ %a\n"
     Flambda_printers.flambda expr;
-*)
   let constant_tbl, set_of_closures_tbl =
     collect_constant_declarations expr
   in

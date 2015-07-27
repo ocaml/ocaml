@@ -142,7 +142,6 @@ MIDDLE_END=\
   middle_end/base_types/symbol.cmo \
   middle_end/flambda.cmo \
   middle_end/free_variables.cmo \
-  middle_end/flambda_printers.cmo \
   middle_end/flambda_iterators.cmo \
   middle_end/flambda_utils.cmo \
   middle_end/inlining_cost.cmo \
