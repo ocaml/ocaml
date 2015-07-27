@@ -68,6 +68,7 @@ let keyword_table =
     "try", TRY;
     "unit", UNIT;
     "unsigned", UNSIGNED;
+    "val", VAL;
     "while", WHILE;
     "with", WITH;
     "xor", XOR;
@@ -136,6 +137,7 @@ rule token = parse
     [' ' '\010' '\013' '\009' '\012'] +
       { token lexbuf }
   | "+a" { ADDA }
+  | "+v" { ADDV }
   | "+f" { ADDF }
   | "+" { ADDI }
   | ">>s" { ASR }
@@ -170,7 +172,6 @@ rule token = parse
   | "]" { RBRACKET }
   | ")" { RPAREN }
   | "*" { STAR }
-  | "-a" { SUBA }
   | "-f" { SUBF }
   | "-" { SUBI }
   | '-'? (['0'-'9']+ | "0x" ['0'-'9' 'a'-'f' 'A'-'F']+

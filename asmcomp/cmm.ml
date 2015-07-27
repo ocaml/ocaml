@@ -11,19 +11,21 @@
 (***********************************************************************)
 
 type machtype_component =
-    Addr
+  | Val
+  | Addr
   | Int
   | Float
 
 type machtype = machtype_component array
 
 let typ_void = ([||] : machtype_component array)
+let typ_val = [|Val|]
 let typ_addr = [|Addr|]
 let typ_int = [|Int|]
 let typ_float = [|Float|]
 
 let size_component = function
-    Addr -> Arch.size_addr
+  | Val | Addr -> Arch.size_addr
   | Int -> Arch.size_int
   | Float -> Arch.size_float
 
@@ -59,7 +61,8 @@ type memory_chunk =
   | Sixteen_signed
   | Thirtytwo_unsigned
   | Thirtytwo_signed
-  | Word
+  | Word_int
+  | Word_val
   | Single
   | Double
   | Double_u
@@ -73,7 +76,7 @@ type operation =
   | Caddi | Csubi | Cmuli | Cmulhi | Cdivi | Cmodi
   | Cand | Cor | Cxor | Clsl | Clsr | Casr
   | Ccmpi of comparison
-  | Cadda | Csuba
+  | Caddv | Cadda
   | Ccmpa of comparison
   | Cnegf | Cabsf
   | Caddf | Csubf | Cmulf | Cdivf

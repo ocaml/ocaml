@@ -40,8 +40,8 @@
       (addraset r 15 (- x 1))
       (addraset r 16 (- x -1))
 
-      (addraset r 17 (-a "R" 8))
-      (addraset r 18 (-a "R" y))
+      (addraset r 17 (- "R" 8))
+      (addraset r 18 (- "R" y))
 
       (addraset r 19 ( * x 2))
       (addraset r 20 ( * 2 x))
