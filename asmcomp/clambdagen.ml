@@ -343,7 +343,7 @@ Format.eprintf "Clambdagen.conv: %a\n"
       let ulam = subst_var env closure in
       let fun_offset = get_fun_offset closure_id in
       Format.eprintf "Clambdagen: Project_var: %a\n"
-        Flambda_printers.named named;
+        Flambda.print_named named;
       let var_offset = get_fv_offset var in
       let pos = var_offset - fun_offset in
       Uprim(Pfield pos, [ulam], Debuginfo.none)
@@ -373,7 +373,7 @@ Format.eprintf "Clambdagen.conv: %a\n"
 
     | Const _ ->
       Misc.fatal_errorf "All allocated constants should have been removed: %a"
-        Flambda_printers.named named
+        Flambda.print_named named
 
   and conv_switch env cases num_keys default =
     let num_keys =
@@ -441,7 +441,7 @@ Format.eprintf "Clambdagen.conv: %a\n"
 
 (*
 Format.eprintf "Clambdagen.conv_set_of_closures: %a\n"
-  Flambda_printers.set_of_closures set_of_closures;
+  Flambda.print_set_of_closures set_of_closures;
 *)
 
     let funct = Variable.Map.bindings functs.funs in
@@ -474,7 +474,7 @@ Format.eprintf "Clambdagen.conv_set_of_closures: %a\n"
               Misc.fatal_errorf "Clambda.conv_set_of_closures: offset for \
                   free variable %a is unknown.  Set of closures: %a"
                 Variable.print id
-                Flambda_printers.set_of_closures set_of_closures
+                Flambda.print_set_of_closures set_of_closures
           in
           let pos = var_offset - fun_offset in
           add_sb id (Uprim(Pfield pos, [Clambda.Uvar env_var], Debuginfo.none)) env

@@ -337,7 +337,7 @@ and describe_set_of_closures env (set : Flambda.set_of_closures)
             Variable.Set.print function_decl.free_variables
             Variable.Set.print free_vars_that_are_not_params_or_fun_vars
             Variable.Set.print bound_vars
-            Flambda_printers.set_of_closures set
+            Flambda.print_set_of_closures set
         end;
         let descr =
           ET.Value_closure

@@ -143,7 +143,7 @@ let simplify_project_closure env r ~(project_closure : Flambda.project_closure)
   match A.check_approx_for_set_of_closures set_of_closures_approx with
   | Wrong ->
     Misc.fatal_errorf "Wrong approximation when projecting closure: %a"
-      Flambda_printers.project_closure project_closure
+      Flambda.print_project_closure project_closure
   | Unresolved symbol ->
     (* A set of closures coming from another compilation unit, whose .cmx is
        missing; as such, we cannot have rewritten the function and don't
@@ -181,7 +181,7 @@ let simplify_move_within_set_of_closures env r
   | Wrong ->
     Misc.fatal_errorf "Wrong approximation when moving within set of \
         closures: %a"
-      Flambda_printers.move_within_set_of_closures move_within_set_of_closures
+      Flambda.print_move_within_set_of_closures move_within_set_of_closures
   | Ok (_value_closure, set_of_closures_var, value_set_of_closures) ->
     let freshen =
       (* CR mshinwell: potentially misleading name---not freshening with new
@@ -307,7 +307,7 @@ let rec simplify_project_var env r ~(project_var : Flambda.project_var)
        we take account of all freshenings. *)
     Misc.fatal_errorf "[Project_var] from a value with wrong \
         approximation: %a@.closure=%a@.approx of closure=%a@."
-      Flambda_printers.project_var project_var
+      Flambda.print_project_var project_var
       Variable.print closure
       Simple_value_approx.print approx
 
@@ -604,7 +604,7 @@ and simplify_over_application env r ~args ~args_approxs ~function_decls
 and simplify_named env r (tree : Flambda.named) : Flambda.named * R.t =
   debug_free_variables_check env tree ~name:"simplify_named"
     ~calculate_free_variables:Free_variables.calculate_named
-    ~printer:Flambda_printers.named;
+    ~printer:Flambda.print_named;
   match tree with
   | Symbol sym ->
     let module Backend = (val (E.backend env) : Backend_intf.S) in

@@ -482,7 +482,7 @@ let check_exn ?(kind=Normal) ?(cmxfile=false) flam =
           parameter list.  Set of closures: %a"
         Variable.Set.print vars
         Variable.print fun_var
-        Flambda_printers.set_of_closures set_of_closures
+        Flambda.print_set_of_closures set_of_closures
     | Function_decls_have_overlapping_parameters vars ->
       Format.eprintf ">> Function declarations whose parameters overlap: \
           %a"
@@ -498,7 +498,7 @@ let check_exn ?(kind=Normal) ?(cmxfile=false) flam =
           applied to the body of the function (%a).  Declaration: %a"
         Variable.Set.print claimed
         Variable.Set.print calculated
-        Flambda_printers.function_declaration (var, function_decl)
+        Flambda.print_function_declaration (var, function_decl)
     | Set_of_closures_free_vars_map_has_wrong_range vars ->
       Format.eprintf ">> [free_vars] map in set of closures has in its range \
           variables that are not free variables of the corresponding \

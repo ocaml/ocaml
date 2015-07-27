@@ -129,7 +129,7 @@ let prep_flambda_for_export ppf flam =
     Symbol.Map.iter (fun sym set_of_closures ->
         Format.fprintf ppf "sym: %a@ %a@."
           Symbol.print sym
-          Flambda_printers.set_of_closures set_of_closures)
+          Flambda.print_set_of_closures set_of_closures)
       lifted_constants.Lift_constants.set_of_closures_map;
     (* TODO: print structured constants *)
   end;

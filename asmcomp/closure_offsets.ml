@@ -22,7 +22,7 @@ let add_closure_offsets
     (({ function_decls; free_vars } : Flambda.set_of_closures) as set_of_closures) =
 
   Format.eprintf "add_closure_offsets: %a\n"
-    Flambda_printers.set_of_closures set_of_closures;
+    Flambda.print_set_of_closures set_of_closures;
 
   (* build the table mapping the function to the offset of its code
      pointer inside the closure value *)

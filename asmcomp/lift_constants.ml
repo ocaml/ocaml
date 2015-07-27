@@ -226,7 +226,7 @@ let collect_constant_declarations expr =
     | Prim (Pgetglobalfield _, _, _) ->
       ()
     | Prim _ ->
-      Format.printf "err:@.%a@." Flambda_printers.named named;
+      Format.printf "err:@.%a@." Flambda.print_named named;
       assert false
     | Project_var _ ->
       ()
@@ -239,6 +239,8 @@ let collect_constant_declarations expr =
   in
   Flambda_iterators.iter (function
       | Let (_, var, named, _) ->
+Format.eprintf "Let before to_symbol_if_constant for %a (is_const %s)\n"
+  Variable.print var (if Variable.Set.mem var inconstant.id then "no" else "yes");
         to_symbol_if_constant var named
       | Let_rec (defs, _) ->
         List.iter
@@ -396,18 +398,6 @@ let constant_sharing map aliases =
 
 let rewrite_constant_access expr aliases set_of_closures_tbl constant_descr
       (kind : constant Variable.Map.t) =
-  let _used_in_project_var =
-    let used = ref Variable.Set.empty in
-    let aux (named : Flambda.named) =
-      match named with
-      | Project_var { var; _ } ->
-        let var = Var_within_closure.unwrap var in
-        used := Variable.Set.add var !used
-      | _ -> ()
-    in
-    Flambda_iterators.iter_named aux expr;
-    !used
-  in
   let is_a_constant var =
     let var =
       try Variable.Map.find var aliases with
@@ -444,9 +434,7 @@ let rewrite_constant_access expr aliases set_of_closures_tbl constant_descr
   in
   (* CR mshinwell: tidy this up once working *)
   let bind_constant_fv var body ~free_vars : Flambda.t =
-(*
 Format.eprintf "bind_constant_fv var=%a\n" Variable.print var;
-*)
     let outer_var =
       match Variable.Map.find var free_vars with
       | outer_var -> outer_var
@@ -468,10 +456,28 @@ Format.eprintf "bind_constant_fv var=%a\n" Variable.print var;
            body)
     | exception Not_found -> assert false
   in
+  let bind_constant_fv' var body : Flambda.t =
+Format.eprintf "bind_constant_fv' var=%a\n" Variable.print var;
+    match get_kind var with
+    | Int i ->
+      Let (Immutable, var,
+           Const (Const_base (Const_int i)),
+           body)
+    | Const_pointer p ->
+      Let (Immutable, var,
+           Const (Const_pointer p),
+           body)
+    | Symbol s ->
+      Let (Immutable, var,
+           Symbol s,
+           body)
+    | exception Not_found -> assert false
+  in
   let rewrite_function_declaration (function_decl: Flambda.function_declaration)
         ~free_vars =
-    let globally_bound_variables, closure_bound_variables =
-      Variable.Set.partition (fun var ->
+    let globally_bound_variables =
+      Variable.Set.filter (fun var ->
+Format.eprintf "checking %a\n" Variable.print var;
           match Variable.Map.find var free_vars with
           | outer_var -> is_a_constant outer_var
           | exception Not_found ->
@@ -480,18 +486,36 @@ Format.eprintf "bind_constant_fv var=%a\n" Variable.print var;
             false)
         function_decl.free_variables
     in
+    let closure_bound_variables = ref Variable.Set.empty in
+    Flambda_iterators.iter (function
+        | Let (_, var, _, _) when is_a_constant var ->
+          closure_bound_variables :=
+            Variable.Set.add var !closure_bound_variables
+        | Let_rec (defs, _) ->
+          List.iter (fun (var, _) ->
+              if is_a_constant var then begin
+                closure_bound_variables :=
+                  Variable.Set.add var !closure_bound_variables
+              end)
+            defs
+        | _ -> ())
+      (fun _ -> ())
+      function_decl.body;
+    let closure_bound_variables = !closure_bound_variables in
+    Format.eprintf "closure_bv %a\n" Variable.Set.print
+      closure_bound_variables;
     let body =
       Variable.Set.fold (bind_constant_fv ~free_vars)
         globally_bound_variables
         function_decl.body
     in
-    let function_decl =
-      Flambda.create_function_declaration ~params:function_decl.params
-        ~body ~stub:function_decl.stub ~dbg:function_decl.dbg
+    let body =
+      Variable.Set.fold bind_constant_fv'
+        closure_bound_variables
+        body
     in
-    assert (Variable.Set.equal closure_bound_variables
-      function_decl.free_variables);
-    function_decl
+    Flambda.create_function_declaration ~params:function_decl.params
+      ~body ~stub:function_decl.stub ~dbg:function_decl.dbg
   in
   let rewrite_set_of_closures ~(function_decls : Flambda.function_declarations)
         ~free_vars ~specialised_args =
@@ -586,7 +610,7 @@ Format.eprintf "***\n%!";
         in
 (*
         Format.eprintf "lift_constants adding set of closures: %a -> %a\n"
-          Symbol.print symbol Flambda_printers.set_of_closures set_of_closures;
+          Symbol.print symbol Flambda.print_set_of_closures set_of_closures;
 *)
         Symbol.Map.add symbol set_of_closures map
       )

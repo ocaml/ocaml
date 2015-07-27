@@ -489,10 +489,11 @@ let create_set_of_closures ~function_decls ~free_vars ~specialised_args =
   if not (Variable.Set.equal expected_free_vars free_vars_domain) then begin
     Misc.fatal_errorf "create_set_of_closures: [free_vars] mapping of \
         variables bound by the closure(s) is wrong.  (%a, expected to be a \
-        subset of %a)@ \n%s"
+        subset of %a)@ \n%s\nfunction_decls:@ %a"
       Variable.Set.print free_vars_domain
       Variable.Set.print expected_free_vars
       (Printexc.raw_backtrace_to_string (Printexc.get_callstack max_int))
+      print_function_declarations function_decls
   end;
   let all_params =
     Variable.Map.fold (fun _fun_var function_decl all_params ->
@@ -505,9 +506,11 @@ let create_set_of_closures ~function_decls ~free_vars ~specialised_args =
   if not (Variable.Set.subset spec_args_domain all_params) then begin
     Misc.fatal_errorf "create_set_of_closures: [specialised_args] \
         maps variable(s) that are not parameters of the given function \
-        declarations.  specialised_args domain=%a all_params=%a"
+        declarations.  specialised_args domain=%a all_params=%a \n\
+        function_decls:@ %a"
       Variable.Set.print spec_args_domain
       Variable.Set.print all_params
+      print_function_declarations function_decls
   end;
   { function_decls;
     free_vars;
