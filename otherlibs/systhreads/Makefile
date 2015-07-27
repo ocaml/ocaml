@@ -12,13 +12,15 @@
 #########################################################################
 
 include ../../config/Makefile
+CAMLRUN ?= ../../boot/ocamlrun
+CAMLYACC ?= ../../boot/ocamlyacc
 
 ROOTDIR=../..
-CAMLC=$(ROOTDIR)/boot/ocamlrun $(ROOTDIR)/ocamlc -nostdlib \
+CAMLC=$(CAMLRUN) $(ROOTDIR)/ocamlc -nostdlib \
       -I $(ROOTDIR)/stdlib -I $(ROOTDIR)/otherlibs/unix
-CAMLOPT=$(ROOTDIR)/boot/ocamlrun $(ROOTDIR)/ocamlopt -nostdlib \
+CAMLOPT=$(CAMLRUN) $(ROOTDIR)/ocamlopt -nostdlib \
         -I $(ROOTDIR)/stdlib -I $(ROOTDIR)/otherlibs/unix
-MKLIB=../../boot/ocamlrun ../../tools/ocamlmklib
+MKLIB=$(CAMLRUN) ../../tools/ocamlmklib
 COMPFLAGS=-w +33..39 -warn-error A -g -bin-annot -safe-string
 
 BYTECODE_C_OBJS=st_stubs_b.o
@@ -34,7 +36,7 @@ libthreads.a: $(BYTECODE_C_OBJS)
 	$(MKLIB) -o threads $(BYTECODE_C_OBJS) $(PTHREAD_LINK)
 
 st_stubs_b.o: st_stubs.c st_posix.h
-	$(BYTECC) -O -I../../byterun $(BYTECCCOMPOPTS) $(SHAREDCCCOMPOPTS) \
+	$(BYTECC) -I../../byterun $(BYTECCCOMPOPTS) $(SHAREDCCCOMPOPTS) \
 	   -c st_stubs.c
 	mv st_stubs.o st_stubs_b.o
 
@@ -44,7 +46,7 @@ libthreadsnat.a: $(NATIVECODE_C_OBJS)
 	$(AR) rc libthreadsnat.a $(NATIVECODE_C_OBJS)
 
 st_stubs_n.o: st_stubs.c st_posix.h
-	$(NATIVECC) -O -I../../asmrun -I../../byterun $(NATIVECCCOMPOPTS) \
+	$(NATIVECC) -I../../asmrun -I../../byterun $(NATIVECCCOMPOPTS) \
 	            $(SHAREDCCCOMPOPTS) -DNATIVE_CODE -DTARGET_$(ARCH) \
 	            -DSYS_$(SYSTEM) -c st_stubs.c
 	mv st_stubs.o st_stubs_n.o
@@ -106,7 +108,7 @@ installopt:
 	$(CAMLOPT) -c $(COMPFLAGS) $<
 
 depend: $(GENFILES)
-	-gcc -MM -I../../byterun *.c > .depend
-	../../boot/ocamlrun ../../tools/ocamldep *.mli *.ml >> .depend
+	-$(CC) -MM -I../../byterun *.c > .depend
+	$(CAMLRUN) ../../tools/ocamldep *.mli *.ml >> .depend
 
 include .depend

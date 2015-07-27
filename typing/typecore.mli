@@ -31,7 +31,7 @@ val type_let:
 val type_expression:
         Env.t -> Parsetree.expression -> Typedtree.expression
 val type_class_arg_pattern:
-        string -> Env.t -> Env.t -> label -> Parsetree.pattern ->
+        string -> Env.t -> Env.t -> arg_label -> Parsetree.pattern ->
         Typedtree.pattern * (Ident.t * string loc * Ident.t * type_expr) list *
         Env.t * Env.t
 val type_self_pattern:
@@ -41,6 +41,9 @@ val type_self_pattern:
         (Ident.t * Asttypes.mutable_flag * Asttypes.virtual_flag * type_expr)
             Vars.t ref *
         Env.t * Env.t * Env.t
+val check_partial:
+        ?lev:int -> Env.t -> type_expr ->
+	Location.t -> Typedtree.case list -> Typedtree.partial
 val type_expect:
         ?in_function:(Location.t * type_expr) ->
         Env.t -> Parsetree.expression -> type_expr -> Typedtree.expression
@@ -69,23 +72,23 @@ type error =
   | Pattern_type_clash of (type_expr * type_expr) list
   | Or_pattern_type_clash of Ident.t * (type_expr * type_expr) list
   | Multiply_bound_variable of string
-  | Orpat_vars of Ident.t
+  | Orpat_vars of Ident.t * Ident.t list
   | Expr_type_clash of (type_expr * type_expr) list
   | Apply_non_function of type_expr
-  | Apply_wrong_label of label * type_expr
+  | Apply_wrong_label of arg_label * type_expr
   | Label_multiply_defined of string
   | Label_missing of Ident.t list
   | Label_not_mutable of Longident.t
-  | Wrong_name of string * type_expr * string * Path.t * Longident.t
+  | Wrong_name of string * type_expr * string * Path.t * string * string list
   | Name_type_mismatch of
       string * Longident.t * (Path.t * Path.t) * (Path.t * Path.t) list
   | Invalid_format of string
-  | Undefined_method of type_expr * string
-  | Undefined_inherited_method of string
+  | Undefined_method of type_expr * string * string list option
+  | Undefined_inherited_method of string * string list
   | Virtual_class of Longident.t
   | Private_type of type_expr
   | Private_label of Longident.t * type_expr
-  | Unbound_instance_variable of string
+  | Unbound_instance_variable of string * string list
   | Instance_variable_not_mutable of bool * string
   | Not_subtype of (type_expr * type_expr) list * (type_expr * type_expr) list
   | Outside_class
@@ -93,7 +96,7 @@ type error =
   | Coercion_failure of
       type_expr * type_expr * (type_expr * type_expr) list * bool
   | Too_many_arguments of bool * type_expr
-  | Abstract_wrong_label of label * type_expr
+  | Abstract_wrong_label of arg_label * type_expr
   | Scoping_let_module of string * type_expr
   | Masked_instance_variable of Longident.t
   | Not_a_variant_type of Longident.t

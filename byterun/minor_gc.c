@@ -12,24 +12,24 @@
 /***********************************************************************/
 
 #include <string.h>
-#include "config.h"
-#include "fail.h"
-#include "finalise.h"
-#include "gc.h"
-#include "gc_ctrl.h"
-#include "major_gc.h"
-#include "memory.h"
-#include "minor_gc.h"
-#include "misc.h"
-#include "mlvalues.h"
-#include "roots.h"
-#include "signals.h"
-#include "weak.h"
+#include "caml/config.h"
+#include "caml/fail.h"
+#include "caml/finalise.h"
+#include "caml/gc.h"
+#include "caml/gc_ctrl.h"
+#include "caml/major_gc.h"
+#include "caml/memory.h"
+#include "caml/minor_gc.h"
+#include "caml/misc.h"
+#include "caml/mlvalues.h"
+#include "caml/roots.h"
+#include "caml/signals.h"
+#include "caml/weak.h"
 
-asize_t caml_minor_heap_size;
+asize_t caml_minor_heap_wsz;
 static void *caml_young_base = NULL;
-CAMLexport char *caml_young_start = NULL, *caml_young_end = NULL;
-CAMLexport char *caml_young_ptr = NULL, *caml_young_limit = NULL;
+CAMLexport value *caml_young_start = NULL, *caml_young_end = NULL;
+CAMLexport value *caml_young_ptr = NULL, *caml_young_limit = NULL;
 
 CAMLexport struct caml_ref_table
   caml_ref_table = { NULL, NULL, NULL, NULL, NULL, 0, 0},
@@ -41,6 +41,7 @@ int caml_in_minor_collection = 0;
 static unsigned long minor_gc_counter = 0;
 #endif
 
+/* [sz] and [rsv] are numbers of entries */
 void caml_alloc_table (struct caml_ref_table *tbl, asize_t sz, asize_t rsv)
 {
   value **new_table;
@@ -71,7 +72,7 @@ static void clear_table (struct caml_ref_table *tbl)
     tbl->limit = tbl->threshold;
 }
 
-/* size in bytes */
+/* [size] is a number of bytes */
 void caml_set_minor_heap_size (asize_t size)
 {
   char *new_heap;
@@ -92,11 +93,11 @@ void caml_set_minor_heap_size (asize_t size)
     free (caml_young_base);
   }
   caml_young_base = new_heap_base;
-  caml_young_start = new_heap;
-  caml_young_end = new_heap + size;
+  caml_young_start = (value *) new_heap;
+  caml_young_end = (value *) (new_heap + size);
   caml_young_limit = caml_young_start;
   caml_young_ptr = caml_young_end;
-  caml_minor_heap_size = size;
+  caml_minor_heap_wsz = Wsize_bsize (size);
 
   reset_table (&caml_ref_table);
   reset_table (&caml_weak_ref_table);
@@ -116,7 +117,7 @@ void caml_oldify_one (value v, value *p)
 
  tail_call:
   if (Is_block (v) && Is_young (v)){
-    Assert (Hp_val (v) >= caml_young_ptr);
+    Assert ((value *) Hp_val (v) >= caml_young_ptr);
     hd = Hd_val (v);
     if (hd == 0){         /* If already forwarded */
       *p = Field (v, 0);  /*  then forward pointer is first field. */
@@ -226,8 +227,11 @@ void caml_oldify_mopup (void)
 void caml_empty_minor_heap (void)
 {
   value **r;
+  uintnat prev_alloc_words;
 
   if (caml_young_ptr != caml_young_end){
+    if (caml_minor_gc_begin_hook != NULL) (*caml_minor_gc_begin_hook) ();
+    prev_alloc_words = caml_allocated_words;
     caml_in_minor_collection = 1;
     caml_gc_message (0x02, "<", 0);
     caml_oldify_local_roots();
@@ -245,19 +249,24 @@ void caml_empty_minor_heap (void)
       }
     }
     if (caml_young_ptr < caml_young_start) caml_young_ptr = caml_young_start;
-    caml_stat_minor_words += Wsize_bsize (caml_young_end - caml_young_ptr);
+    caml_stat_minor_words += caml_young_end - caml_young_ptr;
     caml_young_ptr = caml_young_end;
     caml_young_limit = caml_young_start;
     clear_table (&caml_ref_table);
     clear_table (&caml_weak_ref_table);
     caml_gc_message (0x02, ">", 0);
     caml_in_minor_collection = 0;
+    caml_stat_promoted_words += caml_allocated_words - prev_alloc_words;
+    ++ caml_stat_minor_collections;
+    caml_final_empty_young ();
+    if (caml_minor_gc_end_hook != NULL) (*caml_minor_gc_end_hook) ();
+  }else{
+    caml_final_empty_young ();
   }
-  caml_final_empty_young ();
 #ifdef DEBUG
   {
     value *p;
-    for (p = (value *) caml_young_start; p < (value *) caml_young_end; ++p){
+    for (p = caml_young_start; p < caml_young_end; ++p){
       *p = Debug_free_minor;
     }
     ++ minor_gc_counter;
@@ -271,16 +280,14 @@ void caml_empty_minor_heap (void)
 */
 CAMLexport void caml_minor_collection (void)
 {
-  intnat prev_alloc_words = caml_allocated_words;
-
   caml_empty_minor_heap ();
 
-  caml_stat_promoted_words += caml_allocated_words - prev_alloc_words;
-  ++ caml_stat_minor_collections;
   caml_major_collection_slice (0);
   caml_force_major_slice = 0;
 
+  if (caml_finalise_begin_hook != NULL) (*caml_finalise_begin_hook) ();
   caml_final_do_calls ();
+  if (caml_finalise_end_hook != NULL) (*caml_finalise_end_hook) ();
 
   caml_empty_minor_heap ();
 }
@@ -298,7 +305,7 @@ void caml_realloc_ref_table (struct caml_ref_table *tbl)
                                       Assert (tbl->limit >= tbl->threshold);
 
   if (tbl->base == NULL){
-    caml_alloc_table (tbl, caml_minor_heap_size / sizeof (value) / 8, 256);
+    caml_alloc_table (tbl, caml_minor_heap_wsz / 8, 256);
   }else if (tbl->limit == tbl->threshold){
     caml_gc_message (0x08, "ref_table threshold crossed\n", 0);
     tbl->limit = tbl->end;

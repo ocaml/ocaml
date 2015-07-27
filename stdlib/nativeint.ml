@@ -51,3 +51,4 @@ external of_string: string -> nativeint = "caml_nativeint_of_string"
 type t = nativeint
 
 let compare (x: t) (y: t) = Pervasives.compare x y
+let equal (x: t) (y: t) = compare x y = 0

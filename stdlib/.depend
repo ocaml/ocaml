@@ -141,10 +141,10 @@ printf.cmx : camlinternalFormatBasics.cmx camlinternalFormat.cmx buffer.cmx \
     printf.cmi
 queue.cmo : obj.cmi queue.cmi
 queue.cmx : obj.cmx queue.cmi
-random.cmo : string.cmi pervasives.cmi nativeint.cmi int64.cmi int32.cmi \
-    digest.cmi char.cmi array.cmi random.cmi
-random.cmx : string.cmx pervasives.cmx nativeint.cmx int64.cmx int32.cmx \
-    digest.cmx char.cmx array.cmx random.cmi
+random.cmo : pervasives.cmi nativeint.cmi int64.cmi int32.cmi digest.cmi \
+    char.cmi array.cmi random.cmi
+random.cmx : pervasives.cmx nativeint.cmx int64.cmx int32.cmx digest.cmx \
+    char.cmx array.cmx random.cmi
 scanf.cmo : string.cmi printf.cmi pervasives.cmi list.cmi \
     camlinternalFormatBasics.cmi camlinternalFormat.cmi bytes.cmi buffer.cmi \
     scanf.cmi
@@ -267,10 +267,10 @@ printf.p.cmx : camlinternalFormatBasics.p.cmx camlinternalFormat.p.cmx buffer.p.
     printf.cmi
 queue.cmo : obj.cmi queue.cmi
 queue.p.cmx : obj.p.cmx queue.cmi
-random.cmo : string.cmi pervasives.cmi nativeint.cmi int64.cmi int32.cmi \
-    digest.cmi char.cmi array.cmi random.cmi
-random.p.cmx : string.p.cmx pervasives.p.cmx nativeint.p.cmx int64.p.cmx int32.p.cmx \
-    digest.p.cmx char.p.cmx array.p.cmx random.cmi
+random.cmo : pervasives.cmi nativeint.cmi int64.cmi int32.cmi digest.cmi \
+    char.cmi array.cmi random.cmi
+random.p.cmx : pervasives.p.cmx nativeint.p.cmx int64.p.cmx int32.p.cmx digest.p.cmx \
+    char.p.cmx array.p.cmx random.cmi
 scanf.cmo : string.cmi printf.cmi pervasives.cmi list.cmi \
     camlinternalFormatBasics.cmi camlinternalFormat.cmi bytes.cmi buffer.cmi \
     scanf.cmi

@@ -24,10 +24,10 @@ default:
 	fi
 
 .PHONY: compile
-compile: caml
+compile:
 	@$(OCAMLC) -c registry.ml
 	@for file in stub*.c; do \
-	  $(OCAMLC) -ccopt -I -ccopt . -c $$file; \
+	  $(OCAMLC) -ccopt -I -ccopt $(CTOPDIR)/byterun/caml -c $$file; \
 	  $(OCAMLMKLIB) -o `echo $$file | sed -e 's/stub/plug/' -e 's/\.c//'` \
 	                `basename $$file c`$(O); \
 	done
@@ -42,10 +42,6 @@ compile: caml
 	           -use-runtime $(OTOPDIR)/boot/ocamlrun$(EXE)
 	@$(OCAMLC) -o custom$(EXE) -custom -linkall registry.cmo plug2.cma \
 	           plug1.cma -I .
-
-caml:
-	@mkdir -p caml || :
-	@cp -f $(TOPDIR)/byterun/*.h caml/
 
 .PHONY: run
 run:
@@ -70,6 +66,5 @@ promote: defaultpromote
 .PHONY: clean
 clean: defaultclean
 	@rm -f main static custom custom.exe *.result marshal.data
-	@rm -rf caml
 
 include $(BASEDIR)/makefiles/Makefile.common

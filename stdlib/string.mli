@@ -158,13 +158,20 @@ val trim : string -> string
 
 val escaped : string -> string
 (** Return a copy of the argument, with special characters
-   represented by escape sequences, following the lexical
-   conventions of OCaml.  If there is no special
-   character in the argument, return the original string itself,
-   not a copy. Its inverse function is Scanf.unescaped.
+    represented by escape sequences, following the lexical
+    conventions of OCaml.
+    All characters outside the ASCII printable range (32..126) are
+    escaped, as well as backslash and double-quote.
 
-   Raise [Invalid_argument] if the result is longer than
-   {!Sys.max_string_length} bytes. *)
+    If there is no special character in the argument that needs
+    escaping, return the original string itself, not a copy.
+
+    Raise [Invalid_argument] if the result is longer than
+    {!Sys.max_string_length} bytes.
+
+    The function {!Scanf.unescaped} is a left inverse of [escaped],
+    i.e. [Scanf.unescaped (escaped s) = s] for any string [s] (unless
+    [escape s] fails). *)
 
 val index : string -> char -> int
 (** [String.index s c] returns the index of the first
@@ -215,20 +222,50 @@ val rcontains_from : string -> int -> char -> bool
    position in [s]. *)
 
 val uppercase : string -> string
+  [@@ocaml.deprecated "Use String.uppercase_ascii instead."]
 (** Return a copy of the argument, with all lowercase letters
    translated to uppercase, including accented letters of the ISO
-   Latin-1 (8859-1) character set. *)
+   Latin-1 (8859-1) character set.
+   @deprecated Functions operating on Latin-1 character set are deprecated. *)
 
 val lowercase : string -> string
+  [@@ocaml.deprecated "Use String.lowercase_ascii instead."]
 (** Return a copy of the argument, with all uppercase letters
    translated to lowercase, including accented letters of the ISO
-   Latin-1 (8859-1) character set. *)
+   Latin-1 (8859-1) character set.
+   @deprecated Functions operating on Latin-1 character set are deprecated. *)
 
 val capitalize : string -> string
-(** Return a copy of the argument, with the first character set to uppercase. *)
+  [@@ocaml.deprecated "Use String.capitalize_ascii instead."]
+(** Return a copy of the argument, with the first character set to uppercase,
+   using the ISO Latin-1 (8859-1) character set..
+   @deprecated Functions operating on Latin-1 character set are deprecated. *)
 
 val uncapitalize : string -> string
-(** Return a copy of the argument, with the first character set to lowercase. *)
+  [@@ocaml.deprecated "Use String.uncapitalize_ascii instead."]
+(** Return a copy of the argument, with the first character set to lowercase,
+   using the ISO Latin-1 (8859-1) character set..
+   @deprecated Functions operating on Latin-1 character set are deprecated. *)
+
+val uppercase_ascii : string -> string
+(** Return a copy of the argument, with all lowercase letters
+   translated to uppercase, using the US-ASCII character set.
+   @since 4.03.0 *)
+
+val lowercase_ascii : string -> string
+(** Return a copy of the argument, with all uppercase letters
+   translated to lowercase, using the US-ASCII character set.
+   @since 4.03.0 *)
+
+val capitalize_ascii : string -> string
+(** Return a copy of the argument, with the first character set to uppercase,
+   using the US-ASCII character set.
+   @since 4.03.0 *)
+
+val uncapitalize_ascii : string -> string
+(** Return a copy of the argument, with the first character set to lowercase,
+   using the US-ASCII character set.
+   @since 4.03.0 *)
 
 type t = string
 (** An alias for the type of strings. *)
@@ -238,6 +275,10 @@ val compare: t -> t -> int
     {!Pervasives.compare}.  Along with the type [t], this function [compare]
     allows the module [String] to be passed as argument to the functors
     {!Set.Make} and {!Map.Make}. *)
+
+val equal: t -> t -> bool
+(** The equal function for strings.
+    @since 4.03.0 *)
 
 (**/**)
 

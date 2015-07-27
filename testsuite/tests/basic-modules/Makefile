@@ -12,7 +12,7 @@
 
 BASEDIR=../..
 
-MODULES=offset
+MODULES=offset pr6726
 MAIN_MODULE=main
 
 include $(BASEDIR)/makefiles/Makefile.one

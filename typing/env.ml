@@ -58,6 +58,7 @@ type error =
   | Inconsistent_import of string * string * string
   | Need_recursive_types of string * string
   | Missing_module of Location.t * Path.t * Path.t
+  | Illegal_value_name of Location.t * string
 
 exception Error of error
 
@@ -69,6 +70,7 @@ module EnvLazy : sig
   val force : ('a -> 'b) -> ('a,'b) t -> 'b
   val create : 'a -> ('a,'b) t
   val is_val : ('a,'b) t -> bool
+  val get_arg : ('a,'b) t -> 'a option
 
 end  = struct
 
@@ -94,6 +96,9 @@ end  = struct
 
   let is_val x =
     match !x with Done _ -> true | _ -> false
+
+  let get_arg x =
+    match !x with Thunk a -> Some a | _ -> None
 
   let create x =
     let x = ref (Thunk x) in
@@ -209,8 +214,6 @@ and functor_components = {
   fcomp_param: Ident.t;                 (* Formal parameter *)
   fcomp_arg: module_type option;        (* Argument signature *)
   fcomp_res: module_type;               (* Result signature *)
-  fcomp_env: t;     (* Environment in which the result signature makes sense *)
-  fcomp_subst: Subst.t;  (* Prefixing substitution for the result signature *)
   fcomp_cache: (Path.t, module_components) Hashtbl.t;  (* For memoization *)
   fcomp_subst_cache: (Path.t, module_type) Hashtbl.t
 }
@@ -228,8 +231,13 @@ let empty = {
   functor_args = Ident.empty;
  }
 
-let in_signature env =
-  {env with flags = env.flags lor in_signature_flag}
+let in_signature b env =
+  let flags =
+    if b then env.flags lor in_signature_flag
+    else env.flags land (lnot in_signature_flag)
+  in
+  {env with flags}
+
 let implicit_coercion env =
   {env with flags = env.flags lor implicit_coercion_flag}
 
@@ -270,8 +278,8 @@ let components_of_module_maker' =
   ref ((fun (env, sub, path, mty) -> assert false) :
           t * Subst.t * Path.t * module_type -> module_components_repr)
 let components_of_functor_appl' =
-  ref ((fun f p1 p2 -> assert false) :
-          functor_components -> Path.t -> Path.t -> module_components)
+  ref ((fun f env p1 p2 -> assert false) :
+          functor_components -> t -> Path.t -> Path.t -> module_components)
 let check_modtype_inclusion =
   (* to be filled with Includemod.check_modtype_inclusion *)
   ref ((fun env mty1 path1 mty2 -> assert false) :
@@ -336,6 +344,12 @@ let check_consistency ps =
 
 (* Reading persistent structures from .cmi files *)
 
+let save_pers_struct crc ps =
+  let modname = ps.ps_name in
+  Hashtbl.add persistent_structures modname (Some ps);
+  Consistbl.set crc_units modname crc ps.ps_filename;
+  add_import modname
+
 let read_pers_struct modname filename =
   let cmi = read_cmi filename in
   let name = cmi.cmi_name in
@@ -377,6 +391,10 @@ let find_pers_struct ?(check=true) name =
     | Some None -> raise Not_found
     | Some (Some sg) -> sg
     | None ->
+       (* PR#6843: record the weak dependency ([add_import]) even if
+          the [find_in_path_uncap] call below fails to find the .cmi,
+          to help make builds more deterministic. *)
+        add_import name;
         let filename =
           try find_in_path_uncap !load_path (name ^ ".cmi")
           with Not_found ->
@@ -414,6 +432,9 @@ let reset_cache_toplevel () =
 let set_unit_name name =
   current_unit := name
 
+let get_unit_name () =
+  !current_unit
+
 (* Lookup by identifier *)
 
 let rec find_module_descr path env =
@@ -423,7 +444,7 @@ let rec find_module_descr path env =
         let (p, desc) = EnvTbl.find_same id env.components
         in desc
       with Not_found ->
-        if Ident.persistent id
+        if Ident.persistent id && not (Ident.name id = !current_unit)
         then (find_pers_struct (Ident.name id)).ps_comps
         else raise Not_found
       end
@@ -442,7 +463,7 @@ let rec find_module_descr path env =
         EnvLazy.force !components_of_module_maker' (find_module_descr p1 env)
       with
         Functor_comps f ->
-          !components_of_functor_appl' f p1 p2
+          !components_of_functor_appl' f env p1 p2
       | Structure_comps c ->
           raise Not_found
       end
@@ -532,7 +553,7 @@ let find_module ~alias path env =
         let (p, data) = EnvTbl.find_same id env.modules
         in data
       with Not_found ->
-        if Ident.persistent id then
+        if Ident.persistent id && not (Ident.name id = !current_unit) then
           let ps = find_pers_struct (Ident.name id) in
           md (Mty_signature(Lazy.force ps.ps_sig))
         else raise Not_found
@@ -552,8 +573,7 @@ let find_module ~alias path env =
       begin match EnvLazy.force !components_of_module_maker' desc1 with
         Functor_comps f ->
           md begin match f.fcomp_res with
-          | Mty_alias p ->
-              Mty_alias (Subst.module_path f.fcomp_subst p)
+          | Mty_alias p as mty-> mty
           | mty ->
               if alias then mty else
               try
@@ -561,7 +581,7 @@ let find_module ~alias path env =
               with Not_found ->
                 let mty =
                   Subst.modtype
-                    (Subst.add_module f.fcomp_param p2 f.fcomp_subst)
+                    (Subst.add_module f.fcomp_param p2 Subst.identity)
                     f.fcomp_res in
                 Hashtbl.add f.fcomp_subst_cache p2 mty;
                 mty
@@ -692,7 +712,7 @@ let rec lookup_module_descr lid env =
       begin match EnvLazy.force !components_of_module_maker' desc1 with
         Functor_comps f ->
           Misc.may (!check_modtype_inclusion env mty2 p2) f.fcomp_arg;
-          (Papply(p1, p2), !components_of_functor_appl' f p1 p2)
+          (Papply(p1, p2), !components_of_functor_appl' f env p1 p2)
       | Structure_comps c ->
           raise Not_found
       end
@@ -750,22 +770,6 @@ let lookup proj1 proj2 lid env =
         Structure_comps c ->
           let (data, pos) = Tbl.find s (proj2 c) in
           (Pdot(p, s, pos), data)
-      | Functor_comps f ->
-          raise Not_found
-      end
-  | Lapply(l1, l2) ->
-      raise Not_found
-
-let lookup_simple proj1 proj2 lid env =
-  match lid with
-    Lident s ->
-      EnvTbl.find_name s (proj1 env)
-  | Ldot(l, s) ->
-      let (p, desc) = lookup_module_descr l env in
-      begin match EnvLazy.force !components_of_module_maker' desc with
-        Structure_comps c ->
-          let (data, pos) = Tbl.find s (proj2 c) in
-          data
       | Functor_comps f ->
           raise Not_found
       end
@@ -972,20 +976,38 @@ let lookup_cltype lid env =
 (* Iter on an environment (ignoring the body of functors and
    not yet evaluated structures) *)
 
-let iter_env proj1 proj2 f env =
+type iter_cont = unit -> unit
+let iter_env_cont = ref []
+
+let rec scrape_alias_safe env mty =
+  match mty with
+  | Mty_alias (Pident id) when Ident.persistent id -> false
+  | Mty_alias path -> (* PR#6600: find_module may raise Not_found *)
+      scrape_alias_safe env (find_module path env).md_type
+  | _ -> true
+
+let iter_env proj1 proj2 f env () =
   Ident.iter (fun id (x,_) -> f (Pident id) x) (proj1 env);
   let rec iter_components path path' mcomps =
-    (* if EnvLazy.is_val mcomps then *)
-    match EnvLazy.force !components_of_module_maker' mcomps with
-      Structure_comps comps ->
-        Tbl.iter
-          (fun s (d, n) -> f (Pdot (path, s, n)) (Pdot (path', s, n), d))
-          (proj2 comps);
-        Tbl.iter
-          (fun s (c, n) ->
-            iter_components (Pdot (path, s, n)) (Pdot (path', s, n)) c)
-          comps.comp_components
-    | Functor_comps _ -> ()
+    let cont () =
+      let safe =
+        match EnvLazy.get_arg mcomps with
+          None -> true
+        | Some (env, sub, path, mty) ->
+            try scrape_alias_safe env mty with Not_found -> false
+      in
+      if not safe then () else
+      match EnvLazy.force !components_of_module_maker' mcomps with
+        Structure_comps comps ->
+          Tbl.iter
+            (fun s (d, n) -> f (Pdot (path, s, n)) (Pdot (path', s, n), d))
+            (proj2 comps);
+          Tbl.iter
+            (fun s (c, n) ->
+              iter_components (Pdot (path, s, n)) (Pdot (path', s, n)) c)
+            comps.comp_components
+      | Functor_comps _ -> ()
+    in iter_env_cont := (path, cont) :: !iter_env_cont
   in
   Hashtbl.iter
     (fun s pso ->
@@ -997,6 +1019,13 @@ let iter_env proj1 proj2 f env =
   Ident.iter
     (fun id ((path, comps), _) -> iter_components (Pident id) path comps)
     env.components
+
+let run_iter_cont l =
+  iter_env_cont := [];
+  List.iter (fun c -> c ()) l;
+  let cont = List.rev !iter_env_cont in
+  iter_env_cont := [];
+  cont
 
 let iter_types f = iter_env (fun env -> env.types) (fun sc -> sc.comp_types) f
 
@@ -1147,12 +1176,15 @@ let rec prefix_idents root pos sub = function
                       (Subst.add_modtype id (Mty_ident p) sub) rem in
       (p::pl, final_sub)
   | Sig_class(id, decl, _) :: rem ->
+      (* pretend this is a type, cf. PR#6650 *)
       let p = Pdot(root, Ident.name id, pos) in
-      let (pl, final_sub) = prefix_idents root (pos + 1) sub rem in
+      let (pl, final_sub) =
+        prefix_idents root (pos + 1) (Subst.add_type id p sub) rem in
       (p::pl, final_sub)
   | Sig_class_type(id, decl, _) :: rem ->
       let p = Pdot(root, Ident.name id, nopos) in
-      let (pl, final_sub) = prefix_idents root pos sub rem in
+      let (pl, final_sub) =
+        prefix_idents root pos (Subst.add_type id p sub) rem in
       (p::pl, final_sub)
 
 let subst_signature sub sg =
@@ -1288,13 +1320,10 @@ and components_of_module_maker (env, sub, path, mty) =
   | Mty_functor(param, ty_arg, ty_res) ->
         Functor_comps {
           fcomp_param = param;
-          (* fcomp_arg must be prefixed eagerly, because it is interpreted
-             in the outer environment, not in env *)
+          (* fcomp_arg and fcomp_res must be prefixed eagerly, because they are interpreted
+             in the outer environment *)
           fcomp_arg = may_map (Subst.modtype sub) ty_arg;
-          (* fcomp_res is prefixed lazily, because it is interpreted in env *)
-          fcomp_res = ty_res;
-          fcomp_env = env;
-          fcomp_subst = sub;
+          fcomp_res = Subst.modtype sub ty_res;
           fcomp_cache = Hashtbl.create 17;
           fcomp_subst_cache = Hashtbl.create 17 }
   | Mty_ident _
@@ -1323,7 +1352,20 @@ and check_usage loc id warn tbl =
         (fun () -> if not !used then Location.prerr_warning loc (warn name))
   end;
 
+and check_value_name name loc =
+  (* Note: we could also check here general validity of the
+     identifier, to protect against bad identifiers forged by -pp or
+     -ppx preprocessors. *)
+
+  if String.length name > 0 && (name.[0] = '#') then
+    for i = 1 to String.length name - 1 do
+      if name.[i] = '#' then
+        raise (Error(Illegal_value_name(loc, name)))
+    done
+
+
 and store_value ?check slot id path decl env renv =
+  check_value_name (Ident.name id) decl.val_loc;
   may (fun f -> check_usage decl.val_loc id f value_declarations) check;
   { env with
     values = EnvTbl.add "value" slot id (path, decl) env.values renv.values;
@@ -1441,15 +1483,14 @@ and store_cltype slot id path desc env renv =
 
 (* Compute the components of a functor application in a path. *)
 
-let components_of_functor_appl f p1 p2 =
+let components_of_functor_appl f env p1 p2 =
   try
     Hashtbl.find f.fcomp_cache p2
   with Not_found ->
     let p = Papply(p1, p2) in
-    let mty =
-      Subst.modtype (Subst.add_module f.fcomp_param p2 Subst.identity)
-                    f.fcomp_res in
-    let comps = components_of_module f.fcomp_env f.fcomp_subst p mty in
+    let sub = Subst.add_module f.fcomp_param p2 Subst.identity in
+    let mty = Subst.modtype sub f.fcomp_res in
+    let comps = components_of_module env Subst.identity p mty in
     Hashtbl.add f.fcomp_cache p2 comps;
     comps
 
@@ -1515,9 +1556,8 @@ let enter store_fun name data env =
 let enter_value ?check = enter (store_value ?check)
 and enter_type = enter (store_type ~check:true)
 and enter_extension = enter (store_extension ~check:true)
-and enter_module_declaration ?arg name md env =
-  let id = Ident.create name in
-  (id, add_module_declaration ?arg id md env)
+and enter_module_declaration ?arg id md env =
+  add_module_declaration ?arg id md env
   (* let (id, env) = enter store_module name md env in
   (id, add_functor_arg ?arg id env) *)
 and enter_modtype = enter store_modtype
@@ -1525,7 +1565,8 @@ and enter_class = enter store_class
 and enter_cltype = enter store_cltype
 
 let enter_module ?arg s mty env =
-  enter_module_declaration ?arg s (md mty) env
+  let id = Ident.create s in
+  (id, enter_module_declaration ?arg id (md mty) env)
 
 (* Insertion of all components of a signature *)
 
@@ -1670,9 +1711,7 @@ let save_signature_with_imports sg modname filename imports =
         ps_flags = cmi.cmi_flags;
         ps_crcs_checked = false;
       } in
-    Hashtbl.add persistent_structures modname (Some ps);
-    Consistbl.set crc_units modname crc filename;
-    add_import modname;
+    save_pers_struct crc ps;
     sg
   with exn ->
     close_out oc;
@@ -1835,11 +1874,16 @@ let report_error ppf = function
       fprintf ppf "@]@ @[%s@ %s@ %s.@]@]"
         "The compiled interface for module" (Ident.name (Path.head path2))
         "was not found"
+  | Illegal_value_name(_loc, name) ->
+      fprintf ppf "'%s' is not a valid value identifier."
+        name
 
 let () =
   Location.register_error_of_exn
     (function
-      | Error (Missing_module (loc, _, _) as err) when loc <> Location.none ->
+      | Error (Missing_module (loc, _, _)
+              | Illegal_value_name (loc, _)
+               as err) when loc <> Location.none ->
           Some (Location.error_of_printer loc report_error err)
       | Error err -> Some (Location.error_of_printer_file report_error err)
       | _ -> None

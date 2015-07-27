@@ -65,14 +65,26 @@ val mod_use_file : formatter -> string -> bool
            [mod_use_file] wrap the file contents into a module. *)
 val eval_path: Env.t -> Path.t -> Obj.t
         (* Return the toplevel object referred to by the given path *)
+val record_backtrace : unit -> unit
 
 (* Printing of values *)
 
 val print_value: Env.t -> Obj.t -> formatter -> Types.type_expr -> unit
 val print_untyped_exception: formatter -> Obj.t -> unit
 
+type ('a, 'b) gen_printer =
+  | Zero of 'b
+  | Succ of ('a -> ('a, 'b) gen_printer)
+
 val install_printer :
   Path.t -> Types.type_expr -> (formatter -> Obj.t -> unit) -> unit
+val install_generic_printer :
+  Path.t -> Path.t ->
+  (int -> (int -> Obj.t -> Outcometree.out_value,
+           Obj.t -> Outcometree.out_value) gen_printer) -> unit
+val install_generic_printer' :
+  Path.t -> Path.t -> (formatter -> Obj.t -> unit,
+                       formatter -> Obj.t -> unit) gen_printer -> unit
 val remove_printer : Path.t -> unit
 
 val max_printer_depth: int ref

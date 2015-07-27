@@ -23,7 +23,7 @@ type t =
   | Deprecated of string                    (*  3 *)
   | Fragile_match of string                 (*  4 *)
   | Partial_application                     (*  5 *)
-  | Labels_omitted                          (*  6 *)
+  | Labels_omitted of string list           (*  6 *)
   | Method_override of string list          (*  7 *)
   | Partial_match of string                 (*  8 *)
   | Non_closed_record_pattern of string     (*  9 *)
@@ -67,6 +67,8 @@ type t =
   | Attribute_payload of string * string    (* 47 *)
   | Eliminated_optional_arguments of string list (* 48 *)
   | No_cmi_file of string                   (* 49 *)
+  | Bad_docstring of bool                   (* 50 *)
+  | Expect_tailcall                         (* 51 *)
 ;;
 
 (* If you remove a warning, leave a hole in the numbering.  NEVER change
@@ -81,7 +83,7 @@ let number = function
   | Deprecated _ -> 3
   | Fragile_match _ -> 4
   | Partial_application -> 5
-  | Labels_omitted -> 6
+  | Labels_omitted _ -> 6
   | Method_override _ -> 7
   | Partial_match _ -> 8
   | Non_closed_record_pattern _ -> 9
@@ -125,9 +127,11 @@ let number = function
   | Attribute_payload _ -> 47
   | Eliminated_optional_arguments _ -> 48
   | No_cmi_file _ -> 49
+  | Bad_docstring _ -> 50
+  | Expect_tailcall -> 51
 ;;
 
-let last_warning_number = 49
+let last_warning_number = 51
 (* Must be the max number returned by the [number] function. *)
 
 let letter = function
@@ -206,7 +210,7 @@ let parse_opt error active flags s =
     if i >= String.length s then () else
     match s.[i] with
     | 'A' .. 'Z' ->
-       List.iter set (letter (Char.lowercase s.[i]));
+       List.iter set (letter (Char.lowercase_ascii s.[i]));
        loop (i+1)
     | 'a' .. 'z' ->
        List.iter clear (letter s.[i]);
@@ -223,7 +227,7 @@ let parse_opt error active flags s =
         for n = n1 to min n2 last_warning_number do myset n done;
         loop i
     | 'A' .. 'Z' ->
-       List.iter myset (letter (Char.lowercase s.[i]));
+       List.iter myset (letter (Char.lowercase_ascii s.[i]));
        loop (i+1)
     | 'a' .. 'z' ->
        List.iter myset (letter s.[i]);
@@ -240,7 +244,7 @@ let parse_options errflag s =
   current := {error; active}
 
 (* If you change these, don't forget to change them in man/ocamlc.m *)
-let defaults_w = "+a-4-6-7-9-27-29-32..39-41..42-44-45-48";;
+let defaults_w = "+a-4-6-7-9-27-29-32..39-41..42-44-45-48-50";;
 let defaults_warn_error = "-a";;
 
 let () = parse_options false defaults_w;;
@@ -258,8 +262,12 @@ let message = function
   | Partial_application ->
       "this function application is partial,\n\
        maybe some arguments are missing."
-  | Labels_omitted ->
-      "labels were omitted in the application of this function."
+  | Labels_omitted [] -> assert false
+  | Labels_omitted [l] ->
+     "label " ^ l ^ " was omitted in the application of this function."
+  | Labels_omitted ls ->
+     "labels " ^ String.concat ", " ls ^
+       " were omitted in the application of this function."
   | Method_override [lab] ->
       "the method " ^ lab ^ " is overridden."
   | Method_override (cname :: slist) ->
@@ -384,6 +392,11 @@ let message = function
         (String.concat ", " sl)
   | No_cmi_file s ->
       "no cmi file was found in path for module " ^ s
+  | Bad_docstring unattached ->
+      if unattached then "unattached documentation comment (ignored)"
+      else "ambiguous documentation comment"
+  | Expect_tailcall ->
+      Printf.sprintf "expected tailcall"
 ;;
 
 let nerrors = ref 0;;
@@ -391,19 +404,9 @@ let nerrors = ref 0;;
 let print ppf w =
   let msg = message w in
   let num = number w in
-  let newlines = ref 0 in
-  for i = 0 to String.length msg - 1 do
-    if msg.[i] = '\n' then incr newlines;
-  done;
-  let out_functions = Format.pp_get_formatter_out_functions ppf () in
-  let countnewline x = incr newlines; out_functions.Format.out_newline x in
-  Format.pp_set_formatter_out_functions ppf
-         {out_functions with Format.out_newline = countnewline};
   Format.fprintf ppf "%d: %s" num msg;
   Format.pp_print_flush ppf ();
-  Format.pp_set_formatter_out_functions ppf out_functions;
-  if (!current).error.(num) then incr nerrors;
-  !newlines
+  if (!current).error.(num) then incr nerrors
 ;;
 
 exception Errors of int;;
@@ -443,7 +446,7 @@ let descriptions =
    19, "Type without principality.";
    20, "Unused function argument.";
    21, "Non-returning statement.";
-   22, "Proprocessor warning.";
+   22, "Preprocessor warning.";
    23, "Useless record \"with\" clause.";
    24, "Bad module name: the source file name is not a valid OCaml module \
         name.";
@@ -474,25 +477,27 @@ let descriptions =
    43, "Nonoptional label applied as optional.";
    44, "Open statement shadows an already defined identifier.";
    45, "Open statement shadows an already defined label or constructor.";
-   46, "Illegal environment variable.";
+   46, "Error in environment variable.";
    47, "Illegal attribute payload.";
    48, "Implicit elimination of optional arguments.";
-   49, "Absent cmi file when looking up module alias.";
+   49, "Missing cmi file when looking up module alias.";
+   50, "Unexpected documentation comment.";
+   51, "Warning on non-tail calls if @tailcall present";
   ]
 ;;
 
 let help_warnings () =
   List.iter (fun (i, s) -> Printf.printf "%3i %s\n" i s) descriptions;
-  print_endline "  A All warnings.";
+  print_endline "  A all warnings";
   for i = Char.code 'b' to Char.code 'z' do
     let c = Char.chr i in
     match letter c with
     | [] -> ()
     | [n] ->
-        Printf.printf "  %c Synonym for warning %i.\n" (Char.uppercase c) n
+        Printf.printf "  %c Alias for warning %i.\n" (Char.uppercase_ascii c) n
     | l ->
-        Printf.printf "  %c Set of warnings %s.\n"
-          (Char.uppercase c)
+        Printf.printf "  %c warnings %s.\n"
+          (Char.uppercase_ascii c)
           (String.concat ", " (List.map string_of_int l))
   done;
   exit 0

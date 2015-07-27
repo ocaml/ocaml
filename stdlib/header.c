@@ -23,8 +23,8 @@
 #include <fcntl.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include "../byterun/mlvalues.h"
-#include "../byterun/exec.h"
+#include "../byterun/caml/mlvalues.h"
+#include "../byterun/caml/exec.h"
 
 char * default_runtime_path = RUNTIME_NAME;
 
@@ -40,7 +40,7 @@ char * default_runtime_path = RUNTIME_NAME;
 #define SEEK_END 2
 #endif
 
-#ifndef __CYGWIN32__
+#ifndef __CYGWIN__
 
 /* Normal Unix search path function */
 

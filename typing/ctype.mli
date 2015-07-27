@@ -110,6 +110,8 @@ val instance: ?partial:bool -> Env.t -> type_expr -> type_expr
            partial=true  -> newty2 ty.level Tvar for non generic subterms *)
 val instance_def: type_expr -> type_expr
         (* use defaults *)
+val generic_instance: ?partial:bool -> Env.t -> type_expr -> type_expr
+        (* Same as instance, but new nodes at generic_level *)
 val instance_list: Env.t -> type_expr list -> type_expr list
         (* Take an instance of a list of type schemes *)
 val instance_constructor:
@@ -144,6 +146,7 @@ val try_expand_once_opt: Env.t -> type_expr -> type_expr
 val expand_head_opt: Env.t -> type_expr -> type_expr
 (** The compiler's own version of [expand_head] necessary for type-based
     optimisations. *)
+
 val full_expand: Env.t -> type_expr -> type_expr
 val extract_concrete_typedecl:
         Env.t -> type_expr -> Path.t * Path.t * type_declaration
@@ -161,7 +164,7 @@ val unify_gadt: newtype_level:int -> Env.t ref -> type_expr -> type_expr -> unit
 val unify_var: Env.t -> type_expr -> type_expr -> unit
         (* Same as [unify], but allow free univars when first type
            is a variable. *)
-val filter_arrow: Env.t -> type_expr -> label -> type_expr * type_expr
+val filter_arrow: Env.t -> type_expr -> arg_label -> type_expr * type_expr
         (* A special case of unification (with l:'a -> 'b). *)
 val filter_method: Env.t -> string -> private_flag -> type_expr -> type_expr
         (* A special case of unification (with {m : 'a; 'b}). *)
@@ -243,7 +246,7 @@ val cyclic_abbrev: Env.t -> Ident.t -> type_expr -> bool
 val is_contractive: Env.t -> type_expr -> bool
 val normalize_type: Env.t -> type_expr -> unit
 
-val closed_schema: type_expr -> bool
+val closed_schema: Env.t -> type_expr -> bool
         (* Check whether the given type scheme contains no non-generic
            type variables *)
 

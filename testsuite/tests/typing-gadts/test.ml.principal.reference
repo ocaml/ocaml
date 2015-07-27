@@ -47,11 +47,29 @@ module Nonexhaustive :
     type 'a v = Foo : t -> t v | Bar : u -> u v
     val same_type : 's v * 's v -> bool
   end
+#           Characters 34-42:
+    class c (Some x) = object method x : int = x end
+            ^^^^^^^^
+Warning 8: this pattern-matching is not exhaustive.
+Here is an example of a value that is not matched:
+None
+Characters 139-147:
+    class d (Just x) = object method x : int = x end
+            ^^^^^^^^
+Warning 8: this pattern-matching is not exhaustive.
+Here is an example of a value that is not matched:
+Nothing
+module PR6862 :
+  sig
+    class c : int option -> object method x : int end
+    type _ opt = Just : 'a -> 'a opt | Nothing : 'a opt
+    class d : int opt -> object method x : int end
+  end
 #               Characters 118-119:
       let eval (D x) = x
                        ^
 Error: This expression has type a#2 t but an expression was expected of type
-         a#2 t
+         'a
        The type constructor a#2 would escape its scope
 #               module Rectype :
   sig type (_, _) t = C : ('a, 'a) t val f : ('s, 's * 's) t -> unit end
@@ -75,6 +93,11 @@ Error: This expression has type bool but an expression was expected of type s
                               ^
 Error: This pattern matches values of type b
        but a pattern was expected which matches values of type a
+#             Characters 89-92:
+        Foo -> 5
+        ^^^
+Error: This pattern matches values of type 'a t
+       but a pattern was expected which matches values of type int
 #   type _ t = Int : int t
 #   val ky : 'a -> 'a -> 'a = <fun>
 #       val test : 'a t -> 'a = <fun>
@@ -83,21 +106,21 @@ Error: This pattern matches values of type b
     function Int -> ky (1 : a) 1  (* fails *)
                     ^^^^^^^^^^^^
 Error: This expression has type a = int
-       but an expression was expected of type a = int
+       but an expression was expected of type 'a
        This instance of int is ambiguous:
        it would escape the scope of its equation
 #         Characters 70-82:
     let r = match x with Int -> ky (1 : a) 1  (* fails *)
                                 ^^^^^^^^^^^^
 Error: This expression has type a = int
-       but an expression was expected of type a = int
+       but an expression was expected of type 'a
        This instance of int is ambiguous:
        it would escape the scope of its equation
 #       Characters 69-81:
     let r = match x with Int -> ky 1 (1 : a)  (* fails *)
                                 ^^^^^^^^^^^^
 Error: This expression has type a = int
-       but an expression was expected of type a = int
+       but an expression was expected of type 'a
        This instance of int is ambiguous:
        it would escape the scope of its equation
 #       val test : 'a t -> int = <fun>
@@ -121,7 +144,7 @@ Error: This expression has type int option
     match v with Int -> let y = either 1 x in y
                                               ^
 Error: This expression has type a = int
-       but an expression was expected of type a = int
+       but an expression was expected of type 'a
        This instance of int is ambiguous:
        it would escape the scope of its equation
 #             val f : 'a t -> 'a -> 'a = <fun>
@@ -192,7 +215,7 @@ Error: This expression has type [> `A of a ]
        Type a is not compatible with type b = a 
        This instance of a is ambiguous:
        it would escape the scope of its equation
-#     Characters 97-98:
+#     Characters 90-91:
     match eq with Eq -> v ;; (* should fail *)
                         ^
 Error: This expression has type [> `A of a ]
@@ -299,7 +322,7 @@ Error: This expression has type t = < foo : int; .. >
 #         Characters 98-99:
     (x:<foo:int;bar:int;..>)
      ^
-Error: This expression has type < bar : int; foo : int; .. > as 'a
+Error: This expression has type < bar : int; foo : int; .. >
        but an expression was expected of type 'a
        The type constructor ex#22 would escape its scope
 #         val g : 'a -> 'a int_foo -> 'a int_bar -> 'a = <fun>

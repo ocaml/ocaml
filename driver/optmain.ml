@@ -15,7 +15,9 @@ open Clflags
 open Compenv
 
 let process_interface_file ppf name =
-  Optcompile.interface ppf name (output_prefix name)
+  let opref = output_prefix name in
+  Optcompile.interface ppf name opref;
+  if !make_package then objfiles := (opref ^ ".cmi") :: !objfiles
 
 let process_implementation_file ppf name =
   let opref = output_prefix name in
@@ -28,11 +30,8 @@ let process_file ppf name =
   if Filename.check_suffix name ".ml"
   || Filename.check_suffix name ".mlt" then
     process_implementation_file ppf name
-  else if Filename.check_suffix name !Config.interface_suffix then begin
-    let opref = output_prefix name in
-    Optcompile.interface ppf name opref;
-    if !make_package then objfiles := (opref ^ ".cmi") :: !objfiles
-  end
+  else if Filename.check_suffix name !Config.interface_suffix then
+    process_interface_file ppf name
   else if Filename.check_suffix name ".cmx" then
     objfiles := name :: !objfiles
   else if Filename.check_suffix name ".cmxa" then begin
@@ -90,6 +89,7 @@ module Options = Main_args.Make_optcomp_options (struct
   let _inline n = inline_threshold := n * 8
   let _intf = intf
   let _intf_suffix s = Config.interface_suffix := s
+  let _keep_docs = set keep_docs
   let _keep_locs = set keep_locs
   let _labels = clear classic
   let _linkall = set link_everything
@@ -104,6 +104,8 @@ module Options = Main_args.Make_optcomp_options (struct
   let _o s = output_name := Some s
   let _open s = open_modules := s :: !open_modules
   let _output_obj = set output_c_object
+  let _output_complete_obj s =
+    set output_c_object s; set output_complete_object s
   let _p = set gprofile
   let _pack = set make_package
   let _pp s = preprocessor := Some s

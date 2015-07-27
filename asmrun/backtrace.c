@@ -17,11 +17,11 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "alloc.h"
-#include "backtrace.h"
-#include "memory.h"
-#include "misc.h"
-#include "mlvalues.h"
+#include "caml/alloc.h"
+#include "caml/backtrace.h"
+#include "caml/memory.h"
+#include "caml/misc.h"
+#include "caml/mlvalues.h"
 #include "stack.h"
 
 int caml_backtrace_active = 0;
@@ -51,6 +51,7 @@ CAMLprim value caml_record_backtrace(value vflag)
     caml_backtrace_active = flag;
     caml_backtrace_pos = 0;
     if (flag) {
+      caml_backtrace_last_exn = Val_unit;
       caml_register_global_root(&caml_backtrace_last_exn);
     } else {
       caml_remove_global_root(&caml_backtrace_last_exn);
@@ -74,13 +75,11 @@ frame_descr * caml_next_frame_descriptor(uintnat * pc, char ** sp)
   frame_descr * d;
   uintnat h;
 
-  if (caml_frame_descriptors == NULL) caml_init_frame_descriptors();
-
   while (1) {
     h = Hash_retaddr(*pc);
     while (1) {
       d = caml_frame_descriptors[h];
-      if (d == 0) return NULL; /* can happen if some code compiled without -g */
+      if (d == NULL) return NULL; /* happens if some code compiled without -g */
       if (d->retaddr == *pc) break;
       h = (h+1) & caml_frame_descriptors_mask;
     }
@@ -204,17 +203,8 @@ CAMLprim value caml_get_current_callstack(value max_frames_value) {
 
 /* Extract location information for the given frame descriptor */
 
-struct loc_info {
-  int loc_valid;
-  int loc_is_raise;
-  char * loc_filename;
-  int loc_lnum;
-  int loc_startchr;
-  int loc_endchr;
-};
-
-static void extract_location_info(frame_descr * d,
-                                  /*out*/ struct loc_info * li)
+CAMLexport void extract_location_info(frame_descr * d,
+                                  /*out*/ struct caml_loc_info * li)
 {
   uintnat infoptr;
   uint32_t info1, info2;
@@ -260,7 +250,7 @@ static void extract_location_info(frame_descr * d,
    useless. We kept it to keep code identical to the byterun/
    implementation. */
 
-static void print_location(struct loc_info * li, int index)
+static void print_location(struct caml_loc_info * li, int index)
 {
   char * info;
 
@@ -293,7 +283,7 @@ static void print_location(struct loc_info * li, int index)
 void caml_print_exception_backtrace(void)
 {
   int i;
-  struct loc_info li;
+  struct caml_loc_info li;
 
   for (i = 0; i < caml_backtrace_pos; i++) {
     extract_location_info((frame_descr *) (caml_backtrace_buffer[i]), &li);
@@ -306,7 +296,7 @@ void caml_print_exception_backtrace(void)
 CAMLprim value caml_convert_raw_backtrace_slot(value backtrace_slot) {
   CAMLparam1(backtrace_slot);
   CAMLlocal2(p, fname);
-  struct loc_info li;
+  struct caml_loc_info li;
 
   extract_location_info(Descrptr_Val(backtrace_slot), &li);
 
@@ -364,6 +354,16 @@ CAMLprim value caml_get_exception_raw_backtrace(value unit)
   }
 
   CAMLreturn(res);
+}
+
+CAMLprim value caml_add_debug_info(code_t start, value size, value events)
+{
+  return Val_unit;
+}
+
+CAMLprim value caml_remove_debug_info(code_t start)
+{
+  return Val_unit;
 }
 
 /* the function below is deprecated: we previously returned directly

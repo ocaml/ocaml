@@ -195,6 +195,15 @@ let cfi_adjust_cfa_offset n =
     emit_string "\t.cfi_adjust_cfa_offset\t"; emit_int n; emit_string "\n";
   end
 
+let cfi_offset ~reg ~offset =
+  if is_cfi_enabled () then begin
+    emit_string "\t.cfi_offset ";
+    emit_int reg;
+    emit_string ", ";
+    emit_int offset;
+    emit_string "\n"
+  end
+
 (* Emit debug information *)
 
 (* This assoc list is expected to be very short *)
@@ -211,7 +220,7 @@ let reset_debug_info () =
 
 (* We only diplay .file if the file has not been seen before. We
    display .loc for every instruction. *)
-let emit_debug_info dbg =
+let emit_debug_info_gen dbg file_emitter loc_emitter =
   if is_cfi_enabled () &&
     (!Clflags.debug || Config.with_frame_pointers)
      && dbg.Debuginfo.dinfo_line > 0 (* PR#6243 *)
@@ -223,16 +232,27 @@ let emit_debug_info dbg =
       with Not_found ->
         let file_num = !file_pos_num_cnt in
         incr file_pos_num_cnt;
-        emit_string "\t.file\t";
-        emit_int file_num; emit_char '\t';
-        emit_string_literal file_name; emit_char '\n';
+        file_emitter file_num file_name;
         file_pos_nums := (file_name,file_num) :: !file_pos_nums;
         file_num in
-    emit_string "\t.loc\t";
-    emit_int file_num; emit_char '\t';
-    emit_int line; emit_char '\n'
+    loc_emitter file_num line;
   end
+
+let emit_debug_info dbg =
+  emit_debug_info_gen dbg (fun file_num file_name ->
+    emit_string "\t.file\t";
+    emit_int file_num; emit_char '\t';
+    emit_string_literal file_name; emit_char '\n';
+  )
+    (fun file_num line ->
+      emit_string "\t.loc\t";
+      emit_int file_num; emit_char '\t';
+      emit_int line; emit_char '\n')
 
 let reset () =
   reset_debug_info ();
   frame_descriptors := []
+
+let binary_backend_available = ref false
+let create_asm_file = ref true
+

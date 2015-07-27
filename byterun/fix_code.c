@@ -13,21 +13,21 @@
 
 /* Handling of blocks of bytecode (endianness switch, threading). */
 
-#include "config.h"
+#include "caml/config.h"
 
 #ifdef HAS_UNISTD
 #include <unistd.h>
 #endif
 
-#include "debugger.h"
-#include "fix_code.h"
-#include "instruct.h"
-#include "intext.h"
-#include "md5.h"
-#include "memory.h"
-#include "misc.h"
-#include "mlvalues.h"
-#include "reverse.h"
+#include "caml/debugger.h"
+#include "caml/fix_code.h"
+#include "caml/instruct.h"
+#include "caml/intext.h"
+#include "caml/md5.h"
+#include "caml/memory.h"
+#include "caml/misc.h"
+#include "caml/mlvalues.h"
+#include "caml/reverse.h"
 
 code_t caml_start_code;
 asize_t caml_code_size;
@@ -95,33 +95,44 @@ void caml_fixup_endianness(code_t code, asize_t len)
 char ** caml_instr_table;
 char * caml_instr_base;
 
+static int* opcode_nargs = NULL;
+int* caml_init_opcode_nargs()
+{
+  if( opcode_nargs == NULL ){
+    int* l = (int*)caml_stat_alloc(sizeof(int) * FIRST_UNIMPLEMENTED_OP);
+    int i;
+
+    for (i = 0; i < FIRST_UNIMPLEMENTED_OP; i++) {
+      l [i] = 0;
+    }
+    /* Instructions with one operand */
+    l[PUSHACC] = l[ACC] = l[POP] = l[ASSIGN] =
+      l[PUSHENVACC] = l[ENVACC] = l[PUSH_RETADDR] = l[APPLY] =
+      l[APPTERM1] = l[APPTERM2] = l[APPTERM3] = l[RETURN] =
+      l[GRAB] = l[PUSHGETGLOBAL] = l[GETGLOBAL] = l[SETGLOBAL] =
+      l[PUSHATOM] = l[ATOM] = l[MAKEBLOCK1] = l[MAKEBLOCK2] =
+      l[MAKEBLOCK3] = l[MAKEFLOATBLOCK] = l[GETFIELD] =
+      l[GETFLOATFIELD] = l[SETFIELD] = l[SETFLOATFIELD] =
+      l[BRANCH] = l[BRANCHIF] = l[BRANCHIFNOT] = l[PUSHTRAP] =
+      l[C_CALL1] = l[C_CALL2] = l[C_CALL3] = l[C_CALL4] = l[C_CALL5] =
+      l[CONSTINT] = l[PUSHCONSTINT] = l[OFFSETINT] =
+      l[OFFSETREF] = l[OFFSETCLOSURE] = l[PUSHOFFSETCLOSURE] = 1;
+    
+    /* Instructions with two operands */
+    l[APPTERM] = l[CLOSURE] = l[PUSHGETGLOBALFIELD] =
+      l[GETGLOBALFIELD] = l[MAKEBLOCK] = l[C_CALLN] =
+      l[BEQ] = l[BNEQ] = l[BLTINT] = l[BLEINT] = l[BGTINT] = l[BGEINT] =
+      l[BULTINT] = l[BUGEINT] = l[GETPUBMET] = 2;
+
+    opcode_nargs = l;
+  }
+  return opcode_nargs;
+}
+
 void caml_thread_code (code_t code, asize_t len)
 {
   code_t p;
-  int l [FIRST_UNIMPLEMENTED_OP];
-  int i;
-
-  for (i = 0; i < FIRST_UNIMPLEMENTED_OP; i++) {
-    l [i] = 0;
-  }
-  /* Instructions with one operand */
-  l[PUSHACC] = l[ACC] = l[POP] = l[ASSIGN] =
-  l[PUSHENVACC] = l[ENVACC] = l[PUSH_RETADDR] = l[APPLY] =
-  l[APPTERM1] = l[APPTERM2] = l[APPTERM3] = l[RETURN] =
-  l[GRAB] = l[PUSHGETGLOBAL] = l[GETGLOBAL] = l[SETGLOBAL] =
-  l[PUSHATOM] = l[ATOM] = l[MAKEBLOCK1] = l[MAKEBLOCK2] =
-  l[MAKEBLOCK3] = l[MAKEFLOATBLOCK] = l[GETFIELD] =
-  l[GETFLOATFIELD] = l[SETFIELD] = l[SETFLOATFIELD] =
-  l[BRANCH] = l[BRANCHIF] = l[BRANCHIFNOT] = l[PUSHTRAP] =
-  l[C_CALL1] = l[C_CALL2] = l[C_CALL3] = l[C_CALL4] = l[C_CALL5] =
-  l[CONSTINT] = l[PUSHCONSTINT] = l[OFFSETINT] =
-  l[OFFSETREF] = l[OFFSETCLOSURE] = l[PUSHOFFSETCLOSURE] = 1;
-
-  /* Instructions with two operands */
-  l[APPTERM] = l[CLOSURE] = l[PUSHGETGLOBALFIELD] =
-  l[GETGLOBALFIELD] = l[MAKEBLOCK] = l[C_CALLN] =
-  l[BEQ] = l[BNEQ] = l[BLTINT] = l[BLEINT] = l[BGTINT] = l[BGEINT] =
-  l[BULTINT] = l[BUGEINT] = l[GETPUBMET] = 2;
+  int* l = caml_init_opcode_nargs();
   len /= sizeof(opcode_t);
   for (p = code; p < code + len; /*nothing*/) {
     opcode_t instr = *p;
@@ -147,6 +158,13 @@ void caml_thread_code (code_t code, asize_t len)
     }
   }
   Assert(p == code + len);
+}
+
+#else
+
+int* caml_init_opcode_nargs()
+{
+  return NULL;
 }
 
 #endif /* THREADED_CODE */

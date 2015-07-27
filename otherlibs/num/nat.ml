@@ -318,6 +318,12 @@ let digits = "0123456789ABCDEF"
    A la fin de la boucle i-1 est la plus grande puissance de la base qui tient
    sur un seul digit et j est la plus grande puissance de la base qui tient
    sur un int.
+
+   This function returns [(pmax, pint)] where:
+   [pmax] is the index of the digit of [power_base] that contains the
+     the maximum power of [base] that fits in a digit. This is also one
+     less than the exponent of that power.
+   [pint] is the exponent of the maximum power of [base] that fits in an [int].
 *)
 let make_power_base base power_base =
   let i = ref 0
@@ -329,7 +335,7 @@ let make_power_base base power_base =
           power_base (pred !i) 1
           power_base 0)
    done;
-   while !j <= !i && is_digit_int power_base !j do incr j done;
+   while !j < !i - 1 && is_digit_int power_base !j do incr j done;
   (!i - 2, !j)
 
 (*

@@ -40,6 +40,12 @@ let rec struct_const ppf = function
         List.iter (fun f -> fprintf ppf "@ %s" f) fl in
       fprintf ppf "@[<1>[|@[%s%a@]|]@]" f1 floats fl
 
+let array_kind = function
+  | Pgenarray -> "gen"
+  | Paddrarray -> "addr"
+  | Pintarray -> "int"
+  | Pfloatarray -> "float"
+
 let boxed_integer_name = function
   | Pnativeint -> "nativeint"
   | Pint32 -> "int32"
@@ -158,16 +164,18 @@ let primitive ppf = function
   | Pstringsetu -> fprintf ppf "string.unsafe_set"
   | Pstringrefs -> fprintf ppf "string.get"
   | Pstringsets -> fprintf ppf "string.set"
-  | Parraylength _ -> fprintf ppf "array.length"
-  | Pmakearray _ -> fprintf ppf "makearray "
-  | Parrayrefu _ -> fprintf ppf "array.unsafe_get"
-  | Parraysetu _ -> fprintf ppf "array.unsafe_set"
-  | Parrayrefs _ -> fprintf ppf "array.get"
-  | Parraysets _ -> fprintf ppf "array.set"
+  | Parraylength k -> fprintf ppf "array.length[%s]" (array_kind k)
+  | Pmakearray k -> fprintf ppf "makearray[%s]" (array_kind k)
+  | Parrayrefu k -> fprintf ppf "array.unsafe_get[%s]" (array_kind k)
+  | Parraysetu k -> fprintf ppf "array.unsafe_set[%s]" (array_kind k)
+  | Parrayrefs k -> fprintf ppf "array.get[%s]" (array_kind k)
+  | Parraysets k -> fprintf ppf "array.set[%s]" (array_kind k)
   | Pctconst c ->
      let const_name = match c with
        | Big_endian -> "big_endian"
        | Word_size -> "word_size"
+       | Int_size -> "int_size"
+       | Max_wosize -> "max_wosize"
        | Ostype_unix -> "ostype_unix"
        | Ostype_win32 -> "ostype_win32"
        | Ostype_cygwin -> "ostype_cygwin" in
@@ -246,11 +254,15 @@ let rec lam ppf = function
       Ident.print ppf id
   | Lconst cst ->
       struct_const ppf cst
+  | Lapply(lfun, largs, info) when info.apply_should_be_tailcall ->
+      let lams ppf largs =
+        List.iter (fun l -> fprintf ppf "@ %a" lam l) largs in
+      fprintf ppf "@[<2>(apply@ %a%a @@tailcall)@]" lam lfun lams largs
   | Lapply(lfun, largs, _) ->
       let lams ppf largs =
         List.iter (fun l -> fprintf ppf "@ %a" lam l) largs in
       fprintf ppf "@[<2>(apply@ %a%a)@]" lam lfun lams largs
-  | Lfunction(kind, params, body) ->
+  | Lfunction{kind; params; body} ->
       let pr_params ppf params =
         match kind with
         | Curried ->

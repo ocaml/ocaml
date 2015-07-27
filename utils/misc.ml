@@ -104,7 +104,7 @@ let find_in_path_rel path name =
   in try_dir path
 
 let find_in_path_uncap path name =
-  let uname = String.uncapitalize name in
+  let uname = String.uncapitalize_ascii name in
   let rec try_dir = function
     [] -> raise Not_found
   | dir::rem ->
@@ -176,7 +176,9 @@ let no_overflow_add a b = (a lxor b) lor (a lxor (lnot (a+b))) < 0
 
 let no_overflow_sub a b = (a lxor (lnot b)) lor (b lxor (a-b)) < 0
 
-let no_overflow_lsl a = min_int asr 1 <= a && a <= max_int asr 1
+let no_overflow_mul a b = b <> 0 && (a * b) / b = a
+
+let no_overflow_lsl a k = 0 <= k && k < Sys.word_size && min_int asr k <= a && a <= max_int asr k
 
 (* String operations *)
 
@@ -201,6 +203,17 @@ let search_substring pat str start =
     else if str.[i + j] = pat.[j] then search i (j+1)
     else search (i+1) 0
   in search start 0
+
+let replace_substring ~before ~after str =
+  let rec search acc curr =
+    match search_substring before str curr with
+      | next ->
+         let prefix = String.sub str curr (next - curr) in
+         search (prefix :: acc) (next + String.length before)
+      | exception Not_found ->
+        let suffix = String.sub str curr (String.length str - curr) in
+        List.rev (suffix :: acc)
+  in String.concat after (search [] 0)
 
 let rev_split_words s =
   let rec split1 res i =
@@ -321,6 +334,39 @@ let edit_distance a b cutoff =
     else Some result
   end
 
+let spellcheck env name =
+  let cutoff =
+    match String.length name with
+      | 1 | 2 -> 0
+      | 3 | 4 -> 1
+      | 5 | 6 -> 2
+      | _ -> 3
+  in
+  let compare target acc head =
+    match edit_distance target head cutoff with
+      | None -> acc
+      | Some dist ->
+	 let (best_choice, best_dist) = acc in
+	 if dist < best_dist then ([head], dist)
+	 else if dist = best_dist then (head :: best_choice, dist)
+	 else acc
+  in
+  fst (List.fold_left (compare name) ([], max_int) env)
+
+let did_you_mean ppf get_choices =
+  (* flush now to get the error report early, in the (unheard of) case
+     where the search in the get_choices function would take a bit of
+     time; in the worst case, the user has seen the error, she can
+     interrupt the process before the spell-checking terminates. *)
+  Format.fprintf ppf "@?";
+  match get_choices () with
+  | [] -> ()
+  | choices ->
+     let rest, last = split_last choices in
+     Format.fprintf ppf "@\nHint: Did you mean %s%s%s?"
+       (String.concat ", " rest)
+       (if rest = [] then "" else " or ")
+       last
 
 (* split a string [s] at every char [c], and return the list of sub-strings *)
 let split s c =
@@ -341,3 +387,7 @@ let split s c =
 let cut_at s c =
   let pos = String.index s c in
   String.sub s 0 pos, String.sub s (pos+1) (String.length s - pos - 1)
+
+
+module StringSet = Set.Make(struct type t = string let compare = compare end)
+module StringMap = Map.Make(struct type t = string let compare = compare end)

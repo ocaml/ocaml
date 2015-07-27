@@ -11,8 +11,9 @@
 #########################################################################
 
 include ../config/Makefile
+CAMLRUN ?= ../boot/ocamlrun
+CAMLYACC ?= ../boot/ocamlyacc
 
-CAMLRUN=../boot/ocamlrun
 CAMLC=$(CAMLRUN) ../boot/ocamlc -nostdlib -I ../boot
 CAMLOPT=$(CAMLRUN) ../ocamlopt -nostdlib -I ../stdlib
 CAMLLEX=$(CAMLRUN) ../boot/ocamllex
@@ -23,8 +24,6 @@ LINKFLAGS=$(INCLUDES)
 
 all: ocamldep ocamlprof ocamlcp ocamloptp ocamlmktop ocamlmklib dumpobj \
      objinfo read_cmt
-
-all: tast_iter.cmo
 
 # scrapelabels addlabels
 
@@ -37,7 +36,7 @@ opt.opt: ocamldep.opt read_cmt.opt
 
 CAMLDEP_OBJ=depend.cmo ocamldep.cmo
 CAMLDEP_IMPORTS=misc.cmo config.cmo clflags.cmo terminfo.cmo \
-  warnings.cmo location.cmo longident.cmo \
+  warnings.cmo location.cmo longident.cmo docstrings.cmo \
   syntaxerr.cmo ast_helper.cmo parser.cmo lexer.cmo parse.cmo \
   ccomp.cmo ast_mapper.cmo pparse.cmo compenv.cmo
 
@@ -67,7 +66,7 @@ install::
 
 CSLPROF=ocamlprof.cmo
 CSLPROF_IMPORTS=misc.cmo config.cmo clflags.cmo terminfo.cmo \
-  warnings.cmo location.cmo longident.cmo \
+  warnings.cmo location.cmo longident.cmo docstrings.cmo \
   syntaxerr.cmo ast_helper.cmo parser.cmo lexer.cmo parse.cmo
 
 ocamlprof: $(CSLPROF) profiling.cmo
@@ -160,7 +159,7 @@ clean::
 # Insert labels following an interface file (upgrade 3.02 to 3.03)
 
 ADDLABELS_IMPORTS=misc.cmo config.cmo clflags.cmo terminfo.cmo \
-  warnings.cmo location.cmo longident.cmo \
+  warnings.cmo location.cmo longident.cmo docstrings.cmo \
   syntaxerr.cmo ast_helper.cmo parser.cmo lexer.cmo parse.cmo
 
 addlabels: addlabels.cmo
@@ -205,6 +204,7 @@ READ_CMT= \
           ../utils/clflags.cmo \
           ../parsing/location.cmo \
           ../parsing/longident.cmo \
+          ../parsing/docstrings.cmo \
           ../parsing/lexer.cmo \
           ../parsing/pprintast.cmo \
           ../parsing/ast_helper.cmo \
@@ -225,13 +225,11 @@ READ_CMT= \
           ../typing/printtyp.cmo \
           ../typing/mtype.cmo \
           ../typing/envaux.cmo \
-          ../typing/typedtreeMap.cmo \
-          ../typing/typedtreeIter.cmo \
+          ../typing/tast_mapper.cmo \
           ../typing/cmt_format.cmo \
           ../typing/stypes.cmo \
+          ../typing/untypeast.cmo \
           \
-          untypeast.cmo \
-          tast_iter.cmo \
           cmt2annot.cmo read_cmt.cmo
 
 read_cmt: $(READ_CMT)
@@ -257,7 +255,7 @@ dumpobj: $(DUMPOBJ)
 clean::
 	rm -f dumpobj
 
-opnames.ml: ../byterun/instruct.h
+opnames.ml: ../byterun/caml/instruct.h
 	unset LC_ALL || : ; \
 	unset LC_CTYPE || : ; \
 	unset LC_COLLATE LANG || : ; \
@@ -267,7 +265,7 @@ opnames.ml: ../byterun/instruct.h
 	    -e 's/.*};$$/ |]/' \
 	    -e 's/\([A-Z][A-Z_0-9a-z]*\)/"\1"/g' \
 	    -e 's/,/;/g' \
-	../byterun/instruct.h > opnames.ml
+	../byterun/caml/instruct.h > opnames.ml
 
 clean::
 	rm -f opnames.ml
@@ -276,9 +274,22 @@ beforedepend:: opnames.ml
 
 # Display info on compiled files
 
+ifeq "$(SYSTEM)" "macosx"
+DEF_SYMBOL_PREFIX = '-Dsymbol_prefix="_"'
+else
+DEF_SYMBOL_PREFIX = '-Dsymbol_prefix=""'
+endif
+
+ifeq "$(CCOMPTYPE)" "msvc"
+CCOUT = -Fe
+else
+EMPTY =
+CCOUT = -o $(EMPTY)
+endif
+
 objinfo_helper$(EXE): objinfo_helper.c ../config/s.h
-	$(BYTECC) -o objinfo_helper$(EXE) $(BYTECCCOMPOPTS) \
-          objinfo_helper.c $(LIBBFD_LINK)
+	$(BYTECC) $(CCOUT)objinfo_helper$(EXE) $(BYTECCCOMPOPTS) \
+          $(DEF_SYMBOL_PREFIX) $(LIBBFD_INCLUDE) objinfo_helper.c $(LIBBFD_LINK)
 
 OBJINFO=../compilerlibs/ocamlcommon.cma \
         ../compilerlibs/ocamlbytecomp.cma \

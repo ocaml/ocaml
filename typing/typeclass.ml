@@ -23,7 +23,7 @@ type error =
   | Field_type_mismatch of string * string * (type_expr * type_expr) list
   | Structure_expected of class_type
   | Cannot_apply of class_type
-  | Apply_wrong_label of label
+  | Apply_wrong_label of arg_label
   | Pattern_type_clash of type_expr
   | Repeated_parameter
   | Unbound_class_2 of Longident.t
@@ -153,23 +153,26 @@ let rec abbreviate_class_type path params cty =
   | Cty_arrow (l, ty, cty) ->
       Cty_arrow (l, ty, abbreviate_class_type path params cty)
 
+(* Check that all type variables are generalizable *)
+(* Use Env.empty to prevent expansion of recursively defined object types;
+   cf. typing-poly/poly.ml *)
 let rec closed_class_type =
   function
     Cty_constr (_, params, _) ->
-      List.for_all Ctype.closed_schema params
+      List.for_all (Ctype.closed_schema Env.empty) params
   | Cty_signature sign ->
-      Ctype.closed_schema sign.csig_self
+      Ctype.closed_schema Env.empty sign.csig_self
         &&
-      Vars.fold (fun _ (_, _, ty) cc -> Ctype.closed_schema ty && cc)
+      Vars.fold (fun _ (_, _, ty) cc -> Ctype.closed_schema Env.empty ty && cc)
         sign.csig_vars
         true
   | Cty_arrow (_, ty, cty) ->
-      Ctype.closed_schema ty
+      Ctype.closed_schema Env.empty ty
         &&
       closed_class_type cty
 
 let closed_class cty =
-  List.for_all Ctype.closed_schema cty.cty_params
+  List.for_all (Ctype.closed_schema Env.empty) cty.cty_params
     &&
   closed_class_type cty.cty_type
 
@@ -352,7 +355,7 @@ let type_constraint val_env sty sty' loc =
 let make_method loc cl_num expr =
   let open Ast_helper in
   let mkid s = mkloc s loc in
-  Exp.fun_ ~loc:expr.pexp_loc "" None
+  Exp.fun_ ~loc:expr.pexp_loc Nolabel None
     (Pat.alias ~loc (Pat.var ~loc (mkid "self-*")) (mkid ("self-" ^ cl_num)))
     expr
 
@@ -498,6 +501,10 @@ and class_type env scty =
   | Pcty_arrow (l, sty, scty) ->
       let cty = transl_simple_type env false sty in
       let ty = cty.ctyp_type in
+      let ty =
+        if Btype.is_optional l
+        then Ctype.newty (Tconstr(Predef.path_option,[ty], ref Mnil))
+        else ty in
       let clty = class_type env scty in
       let typ = Cty_arrow (l, ty, clty.cltyp_type) in
       cltyp (Tcty_arrow (l, cty, clty)) typ
@@ -672,8 +679,10 @@ let rec class_field self_loc cl_num self_type meths vars
 
       let field =
         lazy begin
+          (* Read the generalized type *)
+          let (_, ty) = Meths.find lab.txt !meths in
           let meth_type =
-            Btype.newgenty (Tarrow("", self_type, ty, Cok)) in
+            Btype.newgenty (Tarrow(Nolabel, self_type, ty, Cok)) in
           Ctype.raise_nongen_level ();
           vars := vars_local;
           let texp = type_expect met_env meth_expr meth_type in
@@ -698,7 +707,7 @@ let rec class_field self_loc cl_num self_type meths vars
           Ctype.raise_nongen_level ();
           let meth_type =
             Ctype.newty
-              (Tarrow ("", self_type,
+              (Tarrow (Nolabel, self_type,
                        Ctype.instance_def Predef.type_unit, Cok)) in
           vars := vars_local;
           let texp = type_expect met_env expr meth_type in
@@ -811,12 +820,16 @@ and class_structure cl_num final val_env met_env loc
   end;
 
   (* Typing of method bodies *)
-  if !Clflags.principal then
-    List.iter (fun (_,_,ty) -> Ctype.generalize_spine ty) methods;
+  (* if !Clflags.principal then *) begin
+    let ms = !meths in
+    (* Generalize the spine of methods accessed through self *)
+    Meths.iter (fun _ (_,ty) -> Ctype.generalize_spine ty) ms;
+    meths :=
+      Meths.map (fun (id,ty) -> (id, Ctype.generic_instance val_env ty)) ms;
+    (* But keep levels correct on the type of self *)
+    Meths.iter (fun _ (_,ty) -> Ctype.unify val_env ty (Ctype.newvar ())) ms
+  end;
   let fields = List.map Lazy.force (List.rev fields) in
-  if !Clflags.principal then
-    List.iter (fun (_,_,ty) -> Ctype.unify val_env ty (Ctype.newvar ()))
-      methods;
   let meths = Meths.map (function (id, ty) -> id) !meths in
 
   (* Check for private methods made public *)
@@ -944,7 +957,7 @@ and class_expr cl_num val_env met_env scl =
         | _ -> true
       in
       let partial =
-        Parmatch.check_partial pat.pat_loc
+        Typecore.check_partial val_env pat.pat_type pat.pat_loc
           [{c_lhs=pat;
             c_guard=None;
             c_rhs = (* Dummy expression *)
@@ -988,10 +1001,14 @@ and class_expr cl_num val_env met_env scl =
         !Clflags.classic ||
         let labels = nonopt_labels [] cl.cl_type in
         List.length labels = List.length sargs &&
-        List.for_all (fun (l,_) -> l = "") sargs &&
-        List.exists (fun l -> l <> "") labels &&
+        List.for_all (fun (l,_) -> l = Nolabel) sargs &&
+        List.exists (fun l -> l <> Nolabel) labels &&
         begin
-          Location.prerr_warning cl.cl_loc Warnings.Labels_omitted;
+          Location.prerr_warning
+	    cl.cl_loc
+	    (Warnings.Labels_omitted
+	       (List.map Printtyp.string_of_label
+			 (List.filter ((<>) Nolabel) labels)));
           true
         end
       in
@@ -1008,7 +1025,7 @@ and class_expr cl_num val_env met_env scl =
                   (l', sarg0)::_, _ ->
                     raise(Error(sarg0.pexp_loc, val_env, Apply_wrong_label l'))
                 | _, (l', sarg0)::more_sargs ->
-                    if l <> l' && l' <> "" then
+                    if l <> l' && l' <> Nolabel then
                       raise(Error(sarg0.pexp_loc, val_env,
                                   Apply_wrong_label l'))
                     else ([], more_sargs,
@@ -1028,7 +1045,7 @@ and class_expr cl_num val_env met_env scl =
                 in
                 if optional = Required && Btype.is_optional l' then
                   Location.prerr_warning sarg0.pexp_loc
-                    (Warnings.Nonoptional_label l);
+                    (Warnings.Nonoptional_label (Printtyp.string_of_label l));
                 sargs, more_sargs,
                 if optional = Required || Btype.is_optional l' then
                   Some (type_argument val_env sarg0 ty ty0)
@@ -1040,7 +1057,7 @@ and class_expr cl_num val_env met_env scl =
               with Not_found ->
                 sargs, more_sargs,
                 if Btype.is_optional l &&
-                  (List.mem_assoc "" sargs || List.mem_assoc "" more_sargs)
+                  (List.mem_assoc Nolabel sargs || List.mem_assoc Nolabel more_sargs)
                 then
                   Some (option_none ty0 Location.none)
                 else None
@@ -1704,8 +1721,8 @@ let report_error env ppf = function
         "This class expression is not a class function, it cannot be applied"
   | Apply_wrong_label l ->
       let mark_label = function
-        | "" -> "out label"
-        |  l -> sprintf " label ~%s" l in
+        | Nolabel -> "out label"
+        |  l -> sprintf " label %s" (Btype.prefixed_label_name l) in
       fprintf ppf "This argument cannot be applied with%s" (mark_label l)
   | Pattern_type_clash ty ->
       (* XXX Trace *)

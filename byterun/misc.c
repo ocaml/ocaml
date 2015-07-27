@@ -14,9 +14,16 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdarg.h>
-#include "config.h"
-#include "misc.h"
-#include "memory.h"
+#include "caml/config.h"
+#include "caml/misc.h"
+#include "caml/memory.h"
+
+caml_timing_hook caml_major_slice_begin_hook = NULL;
+caml_timing_hook caml_major_slice_end_hook = NULL;
+caml_timing_hook caml_minor_gc_begin_hook = NULL;
+caml_timing_hook caml_minor_gc_end_hook = NULL;
+caml_timing_hook caml_finalise_begin_hook = NULL;
+caml_timing_hook caml_finalise_end_hook = NULL;
 
 #ifdef DEBUG
 
@@ -28,11 +35,11 @@ int caml_failed_assert (char * expr, char * file, int line)
   exit (100);
 }
 
-void caml_set_fields (char *bp, unsigned long start, unsigned long filler)
+void caml_set_fields (value v, unsigned long start, unsigned long filler)
 {
   mlsize_t i;
-  for (i = start; i < Wosize_bp (bp); i++){
-    Field (Val_bp (bp), i) = (value) filler;
+  for (i = start; i < Wosize_val (v); i++){
+    Field (v, i) = (value) filler;
   }
 }
 
@@ -68,6 +75,7 @@ CAMLexport void caml_fatal_error_arg2 (char *fmt1, char *arg1,
   exit(2);
 }
 
+/* [size] and [modulo] are numbers of bytes */
 char *caml_aligned_malloc (asize_t size, int modulo, void **block)
 {
   char *raw_mem;
@@ -113,6 +121,19 @@ int caml_ext_table_add(struct ext_table * tbl, void * data)
   tbl->contents[res] = data;
   tbl->size++;
   return res;
+}
+
+void caml_ext_table_remove(struct ext_table * tbl, void * data)
+{
+  int i;
+  for (i = 0; i < tbl->size; i++) {
+    if (tbl->contents[i] == data) {
+      caml_stat_free(tbl->contents[i]);
+      memmove(&tbl->contents[i], &tbl->contents[i + 1],
+              (tbl->size - i - 1) * sizeof(void *));
+      tbl->size--;
+    }
+  }
 }
 
 void caml_ext_table_free(struct ext_table * tbl, int free_entries)

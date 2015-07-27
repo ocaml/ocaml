@@ -1268,7 +1268,12 @@ sscanf "Hello \n" "%s%s%_1[ ]\n" (fun s1 s2 ->
  sscanf "Hello\nWorld!" "%s\n%s%!" (fun s1 s2 ->
       s1 = "Hello" && s2 = "World!") &&
  sscanf "Hello\nWorld!" "%s\n%s@!%!" (fun s1 s2 ->
-      s1 = "Hello" && s2 = "World")
+      s1 = "Hello" && s2 = "World") &&
+ (* PR#6791 *)
+ sscanf "Hello{foo}" "%s@{%s" (fun s1 s2 ->
+   s1 = "Hello" && s2 = "foo}") &&
+ sscanf "Hello[foo]" "%s@[%s" (fun s1 s2 ->
+   s1 = "Hello" && s2 = "foo]")
 ;;
 
 test (test52 ())
@@ -1351,7 +1356,7 @@ test (test54 ())
 
 (* Creating digests for files. *)
 let add_digest_ib ob ib =
-  let digest s = String.uppercase (Digest.to_hex (Digest.string s)) in
+  let digest s = String.uppercase_ascii (Digest.to_hex (Digest.string s)) in
   let scan_line ib f = Scanf.bscanf ib "%[^\n\r]\n" f in
   let output_line_digest s =
     Buffer.add_string ob s;

@@ -23,14 +23,32 @@ val chr : int -> char
 
 val escaped : char -> string
 (** Return a string representing the given character,
-   with special characters escaped following the lexical conventions
-   of OCaml. *)
+    with special characters escaped following the lexical conventions
+    of OCaml.
+    All characters outside the ASCII printable range (32..126) are
+    escaped, as well as backslash, double-quote, and single-quote. *)
 
 val lowercase : char -> char
-(** Convert the given character to its equivalent lowercase character. *)
+  [@@ocaml.deprecated "Use Char.lowercase_ascii instead."]
+(** Convert the given character to its equivalent lowercase character,
+   using the ISO Latin-1 (8859-1) character set.
+   @deprecated Functions operating on Latin-1 character set are deprecated. *)
 
 val uppercase : char -> char
-(** Convert the given character to its equivalent uppercase character. *)
+  [@@ocaml.deprecated "Use Char.uppercase_ascii instead."]
+(** Convert the given character to its equivalent uppercase character,
+   using the ISO Latin-1 (8859-1) character set.
+   @deprecated Functions operating on Latin-1 character set are deprecated. *)
+
+val lowercase_ascii : char -> char
+(** Convert the given character to its equivalent lowercase character,
+   using the US-ASCII character set.
+   @since 4.03.0 *)
+
+val uppercase_ascii : char -> char
+(** Convert the given character to its equivalent uppercase character,
+   using the US-ASCII character set.
+   @since 4.03.0 *)
 
 type t = char
 (** An alias for the type of characters. *)
@@ -40,6 +58,10 @@ val compare: t -> t -> int
     {!Pervasives.compare}.  Along with the type [t], this function [compare]
     allows the module [Char] to be passed as argument to the functors
     {!Set.Make} and {!Map.Make}. *)
+
+val equal: t -> t -> bool
+(** The equal function for chars.
+    @since 4.03.0 *)
 
 (**/**)
 

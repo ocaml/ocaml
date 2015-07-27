@@ -62,11 +62,13 @@ module type Compiler_options =  sig
   val _impl : string -> unit
   val _intf : string -> unit
   val _intf_suffix : string -> unit
+  val _keep_docs : unit -> unit
   val _keep_locs : unit -> unit
   val _linkall : unit -> unit
   val _noautolink : unit -> unit
   val _o : string -> unit
   val _output_obj : unit -> unit
+  val _output_complete_obj : unit -> unit
   val _pack : unit -> unit
   val _pp : string -> unit
   val _principal : unit -> unit
@@ -88,6 +90,7 @@ module type Bytecomp_options = sig
   include Compiler_options
   val _compat_32 : unit -> unit
   val _custom : unit -> unit
+  val _no_check_prims : unit -> unit
   val _dllib : string -> unit
   val _dllpath : string -> unit
   val _make_runtime : unit -> unit

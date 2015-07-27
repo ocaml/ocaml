@@ -13,17 +13,18 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include "fail.h"
-#include "freelist.h"
-#include "gc.h"
-#include "gc_ctrl.h"
-#include "major_gc.h"
-#include "memory.h"
-#include "major_gc.h"
-#include "minor_gc.h"
-#include "misc.h"
-#include "mlvalues.h"
-#include "signals.h"
+#include "caml/address_class.h"
+#include "caml/fail.h"
+#include "caml/freelist.h"
+#include "caml/gc.h"
+#include "caml/gc_ctrl.h"
+#include "caml/major_gc.h"
+#include "caml/memory.h"
+#include "caml/major_gc.h"
+#include "caml/minor_gc.h"
+#include "caml/misc.h"
+#include "caml/mlvalues.h"
+#include "caml/signals.h"
 
 extern uintnat caml_percent_free;                   /* major_gc.c */
 
@@ -218,7 +219,7 @@ int caml_page_table_remove(int kind, void * start, void * end)
 
 /* Allocate a block of the requested size, to be passed to
    [caml_add_to_heap] later.
-   [request] must be a multiple of [Page_size].
+   [request] must be a multiple of [Page_size], it is a number of bytes.
    [caml_alloc_for_heap] returns NULL if the request cannot be satisfied.
    The returned pointer is a hp, but the header must be initialized by
    the caller.
@@ -264,7 +265,7 @@ int caml_add_to_heap (char *m)
 #endif /* debug */
 
   caml_gc_message (0x04, "Growing heap to %luk bytes\n",
-                   (caml_stat_heap_size + Chunk_size (m)) / 1024);
+                   (Bsize_wsize (caml_stat_heap_wsz) + Chunk_size (m)) / 1024);
 
   /* Register block in page table */
   if (caml_page_table_add(In_heap, m, m + Chunk_size(m)) != 0)
@@ -285,9 +286,9 @@ int caml_add_to_heap (char *m)
     ++ caml_stat_heap_chunks;
   }
 
-  caml_stat_heap_size += Chunk_size (m);
-  if (caml_stat_heap_size > caml_stat_top_heap_size){
-    caml_stat_top_heap_size = caml_stat_heap_size;
+  caml_stat_heap_wsz += Wsize_bsize (Chunk_size (m));
+  if (caml_stat_heap_wsz > caml_stat_top_heap_wsz){
+    caml_stat_top_heap_wsz = caml_stat_heap_wsz;
   }
   return 0;
 }
@@ -298,18 +299,20 @@ int caml_add_to_heap (char *m)
    field 0); the last block of the chain is pointed by field 1 of the
    first.  There may be a fragment after the last block.
    The caller must insert the blocks into the free list.
-   The request must be less than or equal to Max_wosize.
+   [request] is a number of words and must be less than or equal
+   to [Max_wosize].
    Return NULL when out of memory.
 */
-static char *expand_heap (mlsize_t request)
+static value *expand_heap (mlsize_t request)
 {
-  char *mem, *hp, *prev;
+  /* these point to headers, but we do arithmetic on them, hence [value *]. */
+  value *mem, *hp, *prev;
   asize_t over_request, malloc_request, remain;
 
   Assert (request <= Max_wosize);
-  over_request = request + request / 100 * caml_percent_free;
-  malloc_request = caml_round_heap_chunk_size (Bhsize_wosize (over_request));
-  mem = caml_alloc_for_heap (malloc_request);
+  over_request = Whsize_wosize (request + request / 100 * caml_percent_free);
+  malloc_request = caml_round_heap_chunk_wsz (over_request);
+  mem = (value *) caml_alloc_for_heap (Bsize_wsize (malloc_request));
   if (mem == NULL){
     caml_gc_message (0x04, "No room for growing heap\n", 0);
     return NULL;
@@ -317,33 +320,33 @@ static char *expand_heap (mlsize_t request)
   remain = malloc_request;
   prev = hp = mem;
   /* FIXME find a way to do this with a call to caml_make_free_blocks */
-  while (Wosize_bhsize (remain) > Max_wosize){
+  while (Wosize_whsize (remain) > Max_wosize){
     Hd_hp (hp) = Make_header (Max_wosize, 0, Caml_blue);
 #ifdef DEBUG
-    caml_set_fields (Bp_hp (hp), 0, Debug_free_major);
+    caml_set_fields (Val_hp (hp), 0, Debug_free_major);
 #endif
-    hp += Bhsize_wosize (Max_wosize);
-    remain -= Bhsize_wosize (Max_wosize);
-    Field (Op_hp (mem), 1) = Field (Op_hp (prev), 0) = (value) Op_hp (hp);
+    hp += Whsize_wosize (Max_wosize);
+    remain -= Whsize_wosize (Max_wosize);
+    Field (Val_hp (mem), 1) = Field (Val_hp (prev), 0) = Val_hp (hp);
     prev = hp;
   }
   if (remain > 1){
-    Hd_hp (hp) = Make_header (Wosize_bhsize (remain), 0, Caml_blue);
+    Hd_hp (hp) = Make_header (Wosize_whsize (remain), 0, Caml_blue);
 #ifdef DEBUG
-    caml_set_fields (Bp_hp (hp), 0, Debug_free_major);
+    caml_set_fields (Val_hp (hp), 0, Debug_free_major);
 #endif
-    Field (Op_hp (mem), 1) = Field (Op_hp (prev), 0) = (value) Op_hp (hp);
-    Field (Op_hp (hp), 0) = (value) NULL;
+    Field (Val_hp (mem), 1) = Field (Val_hp (prev), 0) = Val_hp (hp);
+    Field (Val_hp (hp), 0) = (value) NULL;
   }else{
-    Field (Op_hp (prev), 0) = (value) NULL;
+    Field (Val_hp (prev), 0) = (value) NULL;
     if (remain == 1) Hd_hp (hp) = Make_header (0, 0, Caml_white);
   }
   Assert (Wosize_hp (mem) >= request);
-  if (caml_add_to_heap (mem) != 0){
-    caml_free_for_heap (mem);
+  if (caml_add_to_heap ((char *) mem) != 0){
+    caml_free_for_heap ((char *) mem);
     return NULL;
   }
-  return Bp_hp (mem);
+  return Op_hp (mem);
 }
 
 /* Remove the heap chunk [chunk] from the heap and give the memory back
@@ -358,12 +361,13 @@ void caml_shrink_heap (char *chunk)
      want to shift the page table, it's too messy (see above).
      It will never happen anyway, because of the way compaction works.
      (see compact.c)
+     XXX FIXME this has become false with the fix to PR#5389 (see compact.c)
   */
   if (chunk == caml_heap_start) return;
 
-  caml_stat_heap_size -= Chunk_size (chunk);
-  caml_gc_message (0x04, "Shrinking heap to %luk bytes\n",
-                   (unsigned long) caml_stat_heap_size / 1024);
+  caml_stat_heap_wsz -= Wsize_bsize (Chunk_size (chunk));
+  caml_gc_message (0x04, "Shrinking heap to %luk words\n",
+                   (unsigned long) caml_stat_heap_wsz / 1024);
 
 #ifdef DEBUG
   {
@@ -403,7 +407,8 @@ color_t caml_allocation_color (void *hp)
 
 CAMLexport value caml_alloc_shr (mlsize_t wosize, tag_t tag)
 {
-  char *hp, *new_block;
+  header_t *hp;
+  value *new_block;
 
   if (wosize > Max_wosize) caml_raise_out_of_memory ();
   hp = caml_fl_allocate (wosize);
@@ -415,7 +420,7 @@ CAMLexport value caml_alloc_shr (mlsize_t wosize, tag_t tag)
       else
         caml_raise_out_of_memory ();
     }
-    caml_fl_add_blocks (new_block);
+    caml_fl_add_blocks ((value) new_block);
     hp = caml_fl_allocate (wosize);
   }
 
@@ -433,7 +438,7 @@ CAMLexport value caml_alloc_shr (mlsize_t wosize, tag_t tag)
   }
   Assert (Hd_hp (hp) == Make_header (wosize, tag, caml_allocation_color (hp)));
   caml_allocated_words += Whsize_wosize (wosize);
-  if (caml_allocated_words > Wsize_bsize (caml_minor_heap_size)){
+  if (caml_allocated_words > caml_minor_heap_wsz){
     caml_urge_major_slice ();
   }
 #ifdef DEBUG
@@ -489,8 +494,8 @@ CAMLexport void caml_adjust_gc_speed (mlsize_t res, mlsize_t max)
     caml_urge_major_slice ();
   }
   if (caml_extra_heap_resources
-           > (double) Wsize_bsize (caml_minor_heap_size) / 2.0
-             / (double) Wsize_bsize (caml_stat_heap_size)) {
+           > (double) caml_minor_heap_wsz / 2.0
+             / (double) caml_stat_heap_wsz) {
     caml_urge_major_slice ();
   }
 }
@@ -569,6 +574,7 @@ CAMLexport CAMLweakdef void caml_modify (value *fp, value val)
   }
 }
 
+/* [sz] is a number of bytes */
 CAMLexport void * caml_stat_alloc (asize_t sz)
 {
   void * result = malloc (sz);
@@ -586,6 +592,7 @@ CAMLexport void caml_stat_free (void * blk)
   free (blk);
 }
 
+/* [sz] is a number of bytes */
 CAMLexport void * caml_stat_resize (void * blk, asize_t sz)
 {
   void * result = realloc (blk, sz);

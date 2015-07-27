@@ -96,7 +96,13 @@ let outval_of_value env obj ty =
 let print_value env obj ppf ty =
   !print_out_value ppf (outval_of_value env obj ty)
 
+type ('a, 'b) gen_printer = ('a, 'b) Genprintval.gen_printer =
+  | Zero of 'b
+  | Succ of ('a -> ('a, 'b) gen_printer)
+
 let install_printer = Printer.install_printer
+let install_generic_printer = Printer.install_generic_printer
+let install_generic_printer' = Printer.install_generic_printer'
 let remove_printer = Printer.remove_printer
 
 (* Hooks for parsing functions *)
@@ -110,7 +116,7 @@ let input_name = Location.input_name
 
 let parse_mod_use_file name lb =
   let modname =
-    String.capitalize (Filename.chop_extension (Filename.basename name))
+    String.capitalize_ascii (Filename.chop_extension (Filename.basename name))
   in
   let items =
     List.concat
@@ -136,6 +142,12 @@ let toplevel_startup_hook = ref (fun () -> ())
 let may_trace = ref false (* Global lock on tracing *)
 type evaluation_outcome = Result of Obj.t | Exception of exn
 
+let backtrace = ref None
+
+let record_backtrace () =
+  if Printexc.backtrace_status ()
+  then backtrace := Some (Printexc.get_backtrace ())
+
 let load_lambda ppf lam =
   if !Clflags.dump_rawlambda then fprintf ppf "%a@." Printlambda.lambda lam;
   let slam = Simplif.simplify_lambda lam in
@@ -145,7 +157,8 @@ let load_lambda ppf lam =
     fprintf ppf "%a%a@."
     Printinstr.instrlist init_code
     Printinstr.instrlist fun_code;
-  let (code, code_size, reloc) = Emitcode.to_memory init_code fun_code in
+  let (code, code_size, reloc, events) = Emitcode.to_memory init_code fun_code in
+  Meta.add_debug_info code code_size [| events |];
   let can_free = (fun_code = []) in
   let initial_symtable = Symtable.current_state() in
   Symtable.patch_object code reloc;
@@ -157,13 +170,16 @@ let load_lambda ppf lam =
     let retval = (Meta.reify_bytecode code code_size) () in
     may_trace := false;
     if can_free then begin
+      Meta.remove_debug_info code;
       Meta.static_release_bytecode code code_size;
       Meta.static_free code;
     end;
     Result retval
   with x ->
     may_trace := false;
+    record_backtrace ();
     if can_free then begin
+      Meta.remove_debug_info code;
       Meta.static_release_bytecode code code_size;
       Meta.static_free code;
     end;
@@ -194,7 +210,14 @@ let print_out_exception ppf exn outv =
 let print_exception_outcome ppf exn =
   if exn = Out_of_memory then Gc.full_major ();
   let outv = outval_of_value !toplevel_env (Obj.repr exn) Predef.type_exn in
-  print_out_exception ppf exn outv
+  print_out_exception ppf exn outv;
+  if Printexc.backtrace_status ()
+  then
+    match !backtrace with
+      | None -> ()
+      | Some b ->
+          print_string b;
+          backtrace := None
 
 (* The table of toplevel directives.
    Filled by functions from module topdirs. *)
@@ -240,6 +263,15 @@ let execute_phrase print_outcome ppf phr =
               Ophr_exception (exn, outv)
         in
         !print_out_phrase ppf out_phr;
+        if Printexc.backtrace_status ()
+        then begin
+          match !backtrace with
+            | None -> ()
+            | Some b ->
+                pp_print_string ppf b;
+                pp_print_flush ppf ();
+                backtrace := None;
+        end;
         begin match out_phr with
         | Ophr_eval (_, _) | Ophr_signature _ -> true
         | Ophr_exception _ -> false
@@ -391,6 +423,7 @@ let refill_lexbuf buffer len =
    can call directives from Topdirs. *)
 
 let _ =
+  Clflags.debug := true;
   Sys.interactive := true;
   let crc_intfs = Symtable.init_toplevel() in
   Compmisc.init_path false;
@@ -432,6 +465,7 @@ let initialize_toplevel_env () =
 exception PPerror
 
 let loop ppf =
+  Location.formatter_for_warnings := ppf;
   fprintf ppf "        OCaml version %s@.@." Config.version;
   initialize_toplevel_env ();
   let lb = Lexing.from_function refill_lexbuf in
@@ -465,7 +499,14 @@ let run_script ppf name args =
   Array.blit args 0 Sys.argv 0 len;
   Obj.truncate (Obj.repr Sys.argv) len;
   Arg.current := 0;
-  Compmisc.init_path false;
+  Compmisc.init_path ~dir:(Filename.dirname name) true;
+                     (* Note: would use [Filename.abspath] here, if we had it. *)
   toplevel_env := Compmisc.initial_env();
   Sys.interactive := false;
-  use_silently ppf name
+  let explicit_name =
+    (* Prevent use_silently from searching in the path. *)
+    if Filename.is_implicit name
+    then Filename.concat Filename.current_dir_name name
+    else name
+  in
+  use_silently ppf explicit_name

@@ -48,7 +48,8 @@ compile: $(ML_FILES) $(CMO_FILES) $(MAIN_MODULE).cmo
 	@if $(BYTECODE_ONLY); then : ; else \
 	  rm -f program.native program.native.exe; \
 	  $(MAKE) $(CMX_FILES) $(MAIN_MODULE).cmx; \
-	  $(OCAMLOPT) $(ADD_COMPFLAGS) -o program.native$(EXE) $(O_FILES) \
+	  $(OCAMLOPT) $(ADD_COMPFLAGS) $(ADD_OPTCOMPFLAGS) \
+	              -o program.native$(EXE) $(O_FILES) \
 	              $(CMXA_FILES) $(CMX_FILES) $(ADD_CMX_FILES) \
 	              $(MAIN_MODULE).cmx; \
 	fi

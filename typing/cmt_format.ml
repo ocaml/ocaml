@@ -68,67 +68,35 @@ let need_to_clear_env =
 
 let keep_only_summary = Env.keep_only_summary
 
-module ClearEnv  = TypedtreeMap.MakeMap (struct
-  open TypedtreeMap
-  include DefaultMapArgument
+open Tast_mapper
 
-  let leave_pattern p = { p with pat_env = keep_only_summary p.pat_env }
-  let leave_expression e =
-    let exp_extra = List.map (function
-        (Texp_open (ovf, path, lloc, env), loc, attrs) ->
-          (Texp_open (ovf, path, lloc, keep_only_summary env), loc, attrs)
-      | exp_extra -> exp_extra) e.exp_extra in
-    { e with
-      exp_env = keep_only_summary e.exp_env;
-      exp_extra = exp_extra }
-  let leave_class_expr c =
-    { c with cl_env = keep_only_summary c.cl_env }
-  let leave_module_expr m =
-    { m with mod_env = keep_only_summary m.mod_env }
-  let leave_structure s =
-    { s with str_final_env = keep_only_summary s.str_final_env }
-  let leave_structure_item str =
-    { str with str_env = keep_only_summary str.str_env }
-  let leave_module_type m =
-    { m with mty_env = keep_only_summary m.mty_env }
-  let leave_signature s =
-    { s with sig_final_env = keep_only_summary s.sig_final_env }
-  let leave_signature_item s =
-    { s with sig_env = keep_only_summary s.sig_env }
-  let leave_core_type c =
-    { c with ctyp_env = keep_only_summary c.ctyp_env }
-  let leave_class_type c =
-    { c with cltyp_env = keep_only_summary c.cltyp_env }
+let cenv =
+  {Tast_mapper.default with env = fun _sub env -> keep_only_summary env}
 
-end)
-
-let clear_part p = match p with
-  | Partial_structure s -> Partial_structure (ClearEnv.map_structure s)
+let clear_part = function
+  | Partial_structure s -> Partial_structure (cenv.structure cenv s)
   | Partial_structure_item s ->
-    Partial_structure_item (ClearEnv.map_structure_item s)
-  | Partial_expression e -> Partial_expression (ClearEnv.map_expression e)
-  | Partial_pattern p -> Partial_pattern (ClearEnv.map_pattern p)
-  | Partial_class_expr ce -> Partial_class_expr (ClearEnv.map_class_expr ce)
-  | Partial_signature s -> Partial_signature (ClearEnv.map_signature s)
+      Partial_structure_item (cenv.structure_item cenv s)
+  | Partial_expression e -> Partial_expression (cenv.expr cenv e)
+  | Partial_pattern p -> Partial_pattern (cenv.pat cenv p)
+  | Partial_class_expr ce -> Partial_class_expr (cenv.class_expr cenv ce)
+  | Partial_signature s -> Partial_signature (cenv.signature cenv s)
   | Partial_signature_item s ->
-    Partial_signature_item (ClearEnv.map_signature_item s)
-  | Partial_module_type s -> Partial_module_type (ClearEnv.map_module_type s)
+      Partial_signature_item (cenv.signature_item cenv s)
+  | Partial_module_type s -> Partial_module_type (cenv.module_type cenv s)
 
 let clear_env binary_annots =
   if need_to_clear_env then
     match binary_annots with
-      | Implementation s -> Implementation (ClearEnv.map_structure s)
-      | Interface s -> Interface (ClearEnv.map_signature s)
-      | Packed _ -> binary_annots
-      | Partial_implementation array ->
+    | Implementation s -> Implementation (cenv.structure cenv s)
+    | Interface s -> Interface (cenv.signature cenv s)
+    | Packed _ -> binary_annots
+    | Partial_implementation array ->
         Partial_implementation (Array.map clear_part array)
-      | Partial_interface array ->
+    | Partial_interface array ->
         Partial_interface (Array.map clear_part array)
 
   else binary_annots
-
-
-
 
 exception Error of error
 

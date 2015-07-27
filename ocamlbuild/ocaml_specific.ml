@@ -61,7 +61,9 @@ let x_p_dll = "%.p"-.-ext_dll;;
 (* -output-obj targets *)
 let x_byte_c = "%.byte.c";;
 let x_byte_o = "%.byte"-.-ext_obj;;
+let x_byte_so = "%.byte"-.-ext_dll;;
 let x_native_o = "%.native"-.-ext_obj;;
+let x_native_so = "%.native"-.-ext_dll;;
 
 rule "target files"
   ~dep:"%.itarget"
@@ -221,6 +223,15 @@ rule "ocaml: cmo* -> byte.c"
   ~dep:"%.cmo"
   (Ocaml_compiler.byte_output_obj "%.cmo" x_byte_c);;
 
+rule "ocaml: cmo* -> byte.(so|dll|dylib)"
+  ~prod:x_byte_so
+  ~dep:"%.cmo"
+  ~doc:"The foo.byte.so target, or foo.byte.dll under Windows, \
+  or foo.byte.dylib under Mac OS X will produce a shared library file
+  by passing the -output-obj and -cclib -shared options \
+  to the OCaml compiler. See also foo.native.{so,dll,dylib}."
+  (Ocaml_compiler.byte_output_shared "%.cmo" x_byte_so);;
+
 rule "ocaml: p.cmx* & p.o* -> p.native"
   ~prod:"%.p.native"
   ~deps:["%.p.cmx"; x_p_o]
@@ -238,6 +249,11 @@ rule "ocaml: cmx* & o* -> native.(o|obj)"
   ~prod:x_native_o
   ~deps:["%.cmx"; x_o]
   (Ocaml_compiler.native_output_obj "%.cmx" x_native_o);;
+
+rule "ocaml: cmx* & o* -> native.(so|dll|dylib)"
+  ~prod:x_native_so
+  ~deps:["%.cmx"; x_o]
+  (Ocaml_compiler.native_output_shared "%.cmx" x_native_so);;
 
 rule "ocaml: mllib & d.cmo* -> d.cma"
   ~prod:"%.d.cma"
@@ -472,9 +488,7 @@ rule "ocaml C stubs: c -> o"
     let c = env "%.c" in
     let o = env x_o in
     let comp = if Tags.mem "native" (tags_of_pathname c) then !Options.ocamlopt else !Options.ocamlc in
-    let cc = Cmd(S[comp; T(tags_of_pathname c++"c"++"compile"); A"-c"; Px c]) in
-    if Pathname.dirname o = Pathname.current_dir_name then cc
-    else Seq[cc; mv (Pathname.basename o) o]
+    Cmd(S[comp; T(tags_of_pathname c++"c"++"compile"); A"-c"; A"-o"; P o; Px c])
   end;;
 
 rule "ocaml: ml & ml.depends & *cmi -> .inferred.mli"
@@ -527,11 +541,22 @@ end;;
 flag ["ocaml"; "ocamlyacc"] (atomize !Options.ocaml_yaccflags);;
 flag ["ocaml"; "menhir"] (atomize !Options.ocaml_yaccflags);;
 flag ["ocaml"; "doc"] (atomize !Options.ocaml_docflags);;
+flag ["ocaml"; "ocamllex"] (atomize !Options.ocaml_lexflags);;
 
 (* Tell menhir to explain conflicts *)
 flag [ "ocaml" ; "menhir" ; "explain" ] (S[A "--explain"]);;
+flag [ "ocaml" ; "menhir" ; "infer" ] (S[A "--infer"]);;
 
-flag ["ocaml"; "ocamllex"] (atomize !Options.ocaml_lexflags);;
+(* Define two ocamlbuild flags [only_tokens] and [external_tokens(Foo)]
+   which correspond to menhir's [--only-tokens] and [--external-tokens Foo].
+   When they are used, these flags should be passed both to [menhir] and to
+   [menhir --raw-depend]. *)
+let () =
+  List.iter begin fun mode ->
+    flag [ mode; "only_tokens" ] (S[A "--only-tokens"]);
+    pflag [ mode ] "external_tokens" (fun name ->
+      S[A "--external-tokens"; A name]);
+  end [ "menhir"; "menhir_ocamldep" ];;
 
 (* Tell ocamllex to generate ml code *)
 flag [ "ocaml" ; "ocamllex" ; "generate_ml" ] (S[A "-ml"]);;
@@ -558,6 +583,15 @@ let () =
     (* Ocamlfind will link the archives for us. *)
     flag ["ocaml"; "link"; "program"] & A"-linkpkg";
     flag ["ocaml"; "link"; "toplevel"] & A"-linkpkg";
+    flag ["ocaml"; "link"; "output_obj"] & A"-linkpkg";
+
+    (* "program" will make sure that -linkpkg is passed when compiling
+       whole-programs (.byte and .native); but it is occasionally
+       useful to pass -linkpkg when building archives for example
+       (.cma and .cmxa); the "linkpkg" flag allows user to request it
+       explicitly. *)
+    flag ["ocaml"; "link"; "linkpkg"] & A"-linkpkg";
+    pflag ["ocaml"; "link"] "dontlink" (fun pkg -> S[A"-dontlink"; A pkg]);
 
     let all_tags = [
       ["ocaml"; "byte"; "compile"];
@@ -568,6 +602,8 @@ let () =
       ["ocaml"; "doc"];
       ["ocaml"; "mktop"];
       ["ocaml"; "infer_interface"];
+      (* PR#6794: ocamlbuild should pass -package flags when building C files *)
+      ["c"; "compile"];
     ] in
 
     (* tags package(X), predicate(X) and syntax(X) *)
@@ -576,7 +612,8 @@ let () =
       if not (List.mem "ocamldep" tags) then
         (* PR#6184: 'ocamlfind ocamldep' does not support -predicate *)
         pflag tags "predicate" (fun pkg -> S [A "-predicates"; A pkg]);
-      pflag tags "syntax" (fun pkg -> S [A "-syntax"; A pkg])
+      if List.mem "ocaml" tags then
+        pflag tags "syntax" (fun pkg -> S [A "-syntax"; A pkg])
     end all_tags
   end else begin
     try
@@ -585,7 +622,9 @@ let () =
       flag ["ocaml"; "byte"; "compile"] (Findlib.compile_flags_byte pkgs);
       flag ["ocaml"; "native"; "compile"] (Findlib.compile_flags_native pkgs);
       flag ["ocaml"; "byte"; "link"] (Findlib.link_flags_byte pkgs);
-      flag ["ocaml"; "native"; "link"] (Findlib.link_flags_native pkgs)
+      flag ["ocaml"; "native"; "link"] (Findlib.link_flags_native pkgs);
+      (* PR#6794: ocamlbuild should pass -package flags when building C files *)
+      flag ["c"; "compile"] (Findlib.include_flags pkgs)
     with Findlib.Findlib_error e ->
       Findlib.report_error e
   end
@@ -616,6 +655,8 @@ let () =
     (fun param -> S [A "-open"; A param]);
   pflag ["ocaml"; "compile"] "open"
     (fun param -> S [A "-open"; A param]);
+  pflag ["ocaml"; "link"] "runtime_variant"
+    (fun param -> S [A "-runtime-variant"; A param]);
   ()
 
 let camlp4_flags camlp4s =
@@ -666,8 +707,11 @@ flag ["ocaml"; "debug"; "pack"; "byte"] (A "-g");;
 flag ["ocaml"; "debug"; "compile"; "native"] (A "-g");;
 flag ["ocaml"; "debug"; "link"; "native"; "program"] (A "-g");;
 flag ["ocaml"; "debug"; "pack"; "native"] (A "-g");;
+flag ["c";     "debug"; "compile"] (A "-g");
+flag ["c";     "debug"; "link"] (A "-g");
 flag ["ocaml"; "link"; "native"; "output_obj"] (A"-output-obj");;
 flag ["ocaml"; "link"; "byte"; "output_obj"] (A"-output-obj");;
+flag ["ocaml"; "link"; "output_shared"] & (S[A"-cclib"; A"-shared"]);;
 flag ["ocaml"; "dtypes"; "compile"] (A "-dtypes");;
 flag ["ocaml"; "annot"; "compile"] (A "-annot");;
 flag ["ocaml"; "annot"; "pack"] (A "-annot");;
@@ -694,16 +738,21 @@ flag ["ocaml"; "compile"; "no_alias_deps";] (A "-no-alias-deps");;
 flag ["ocaml"; "compile"; "strict_formats";] (A "-strict-formats");;
 flag ["ocaml"; "native"; "compile"; "opaque";] (A "-opaque");;
 flag ["ocaml"; "native"; "compile"; "no_float_const_prop";] (A "-no-float-const-prop");
+flag ["ocaml"; "compile"; "keep_docs";] (A "-keep-docs");
 flag ["ocaml"; "compile"; "keep_locs";] (A "-keep-locs");
 flag ["ocaml"; "absname"; "compile"] (A "-absname");;
 flag ["ocaml"; "absname"; "infer_interface"] (A "-absname");;
-flag ["ocaml"; "byte"; "compile"; "compat_32";] (A "-compat-32");
+flag ["ocaml"; "byte"; "compile"; "compat_32";] (A "-compat-32");;
+flag ["ocaml";"compile";"native";"asm"] & S [A "-S"];;
 
 
 (* threads, with or without findlib *)
 flag ["ocaml"; "compile"; "thread"] (A "-thread");;
 flag ["ocaml"; "link"; "thread"] (A "-thread");;
-if not !Options.use_ocamlfind then begin
+if !Options.use_ocamlfind then
+  (* PR#6794: Needed as we pass -package when compiling C files *)
+  flag ["c"; "compile"; "thread"] (A "-thread")
+else begin
   flag ["ocaml"; "doc"; "thread"] (S[A"-I"; A"+threads"]);
   flag ["ocaml"; "link"; "thread"; "native"; "program"] (A "threads.cmxa");
   flag ["ocaml"; "link"; "thread"; "byte"; "program"] (A "threads.cma");
@@ -719,17 +768,17 @@ flag ["ocaml"; "ocamllex"; "quiet"] (A"-q");;
 
 let ocaml_warn_flag c =
   flag ~deprecated:true
-    ["ocaml"; "compile"; sprintf "warn_%c" (Char.uppercase c)]
-    (S[A"-w"; A (sprintf "%c" (Char.uppercase c))]);
+    ["ocaml"; "compile"; sprintf "warn_%c" (Char.uppercase_ascii c)]
+    (S[A"-w"; A (sprintf "%c" (Char.uppercase_ascii c))]);
   flag ~deprecated:true
-    ["ocaml"; "compile"; sprintf "warn_error_%c" (Char.uppercase c)]
-    (S[A"-warn-error"; A (sprintf "%c" (Char.uppercase c))]);
+    ["ocaml"; "compile"; sprintf "warn_error_%c" (Char.uppercase_ascii c)]
+    (S[A"-warn-error"; A (sprintf "%c" (Char.uppercase_ascii c))]);
   flag ~deprecated:true
-    ["ocaml"; "compile"; sprintf "warn_%c" (Char.lowercase c)]
-    (S[A"-w"; A (sprintf "%c" (Char.lowercase c))]);
+    ["ocaml"; "compile"; sprintf "warn_%c" (Char.lowercase_ascii c)]
+    (S[A"-w"; A (sprintf "%c" (Char.lowercase_ascii c))]);
   flag ~deprecated:true
-    ["ocaml"; "compile"; sprintf "warn_error_%c" (Char.lowercase c)]
-    (S[A"-warn-error"; A (sprintf "%c" (Char.lowercase c))]);;
+    ["ocaml"; "compile"; sprintf "warn_error_%c" (Char.lowercase_ascii c)]
+    (S[A"-warn-error"; A (sprintf "%c" (Char.lowercase_ascii c))]);;
 
 List.iter ocaml_warn_flag ['A'; 'C'; 'D'; 'E'; 'F'; 'K'; 'L'; 'M'; 'P'; 'R'; 'S'; 'U'; 'V'; 'X'; 'Y'; 'Z'];;
 

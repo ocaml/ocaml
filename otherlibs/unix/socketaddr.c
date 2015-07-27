@@ -12,9 +12,9 @@
 /***********************************************************************/
 
 #include <string.h>
-#include <mlvalues.h>
-#include <alloc.h>
-#include <memory.h>
+#include <caml/mlvalues.h>
+#include <caml/alloc.h>
+#include <caml/memory.h>
 #include <errno.h>
 #include "unixsupport.h"
 
@@ -23,6 +23,7 @@
 #include "socketaddr.h"
 
 #ifdef _WIN32
+#undef EAFNOSUPPORT
 #define EAFNOSUPPORT WSAEAFNOSUPPORT
 #endif
 

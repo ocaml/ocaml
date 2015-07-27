@@ -36,7 +36,7 @@ and attributes = attribute list
 and payload =
   | PStr of structure
   | PTyp of core_type  (* : T *)
-  | PPat of pattern * expression option  (* : P  or  : P when E *)
+  | PPat of pattern * expression option  (* ? P  or  ? P when E *)
 
 (** {2 Core language} *)
 
@@ -54,10 +54,10 @@ and core_type_desc =
         (*  _ *)
   | Ptyp_var of string
         (* 'a *)
-  | Ptyp_arrow of label * core_type * core_type
-        (* T1 -> T2       (label = "")
-           ~l:T1 -> T2    (label = "l")
-           ?l:T1 -> T2    (label = "?l")
+  | Ptyp_arrow of arg_label * core_type * core_type
+        (* T1 -> T2       Simple
+           ~l:T1 -> T2    Labelled
+           ?l:T1 -> T2    Otional
          *)
   | Ptyp_tuple of core_type list
         (* T1 * ... * Tn
@@ -219,18 +219,18 @@ and expression_desc =
          *)
   | Pexp_function of case list
         (* function P1 -> E1 | ... | Pn -> En *)
-  | Pexp_fun of label * expression option * pattern * expression
-        (* fun P -> E1                          (lab = "", None)
-           fun ~l:P -> E1                       (lab = "l", None)
-           fun ?l:P -> E1                       (lab = "?l", None)
-           fun ?l:(P = E0) -> E1                (lab = "?l", Some E0)
+  | Pexp_fun of arg_label * expression option * pattern * expression
+        (* fun P -> E1                          (Simple, None)
+           fun ~l:P -> E1                       (Labelled l, None)
+           fun ?l:P -> E1                       (Optional l, None)
+           fun ?l:(P = E0) -> E1                (Optional l, Some E0)
 
            Notes:
-           - If E0 is provided, lab must start with '?'.
+           - If E0 is provided, only Optional is allowed.
            - "fun P1 P2 .. Pn -> E1" is represented as nested Pexp_fun.
            - "let f P = E" is represented using Pexp_fun.
          *)
-  | Pexp_apply of expression * (label * expression) list
+  | Pexp_apply of expression * (arg_label * expression) list
         (* E0 ~l1:E1 ... ~ln:En
            li can be empty (non labeled argument) or start with '?'
            (optional argument).
@@ -342,8 +342,6 @@ and value_description =
 (*
   val x: T                            (prim = [])
   external x: T = "s1" ... "sn"       (prim = ["s1";..."sn"])
-
-  Note: when used under Pstr_primitive, prim cannot be empty
 *)
 
 (* Type declarations *)
@@ -466,10 +464,10 @@ and class_type_desc =
            ['a1, ..., 'an] c *)
   | Pcty_signature of class_signature
         (* object ... end *)
-  | Pcty_arrow of label * core_type * class_type
-        (* T -> CT       (label = "")
-           ~l:T -> CT    (label = "l")
-           ?l:T -> CT    (label = "?l")
+  | Pcty_arrow of arg_label * core_type * class_type
+        (* T -> CT       Simple
+           ~l:T -> CT    Labelled l
+           ?l:T -> CT    Optional l
          *)
   | Pcty_extension of extension
         (* [%id] *)
@@ -542,13 +540,13 @@ and class_expr_desc =
            ['a1, ..., 'an] c *)
   | Pcl_structure of class_structure
         (* object ... end *)
-  | Pcl_fun of label * expression option * pattern * class_expr
-        (* fun P -> CE                          (lab = "", None)
-           fun ~l:P -> CE                       (lab = "l", None)
-           fun ?l:P -> CE                       (lab = "?l", None)
-           fun ?l:(P = E0) -> CE                (lab = "?l", Some E0)
+  | Pcl_fun of arg_label * expression option * pattern * class_expr
+        (* fun P -> CE                          (Simple, None)
+           fun ~l:P -> CE                       (Labelled l, None)
+           fun ?l:P -> CE                       (Optional l, None)
+           fun ?l:(P = E0) -> CE                (Optional l, Some E0)
          *)
-  | Pcl_apply of class_expr * (label * expression) list
+  | Pcl_apply of class_expr * (arg_label * expression) list
         (* CE ~l1:E1 ... ~ln:En
            li can be empty (non labeled argument) or start with '?'
            (optional argument).
@@ -651,7 +649,7 @@ and signature_item_desc =
           val x: T
           external x: T = "s1" ... "sn"
          *)
-  | Psig_type of type_declaration list
+  | Psig_type of rec_flag * type_declaration list
         (* type t1 = ... and ... and tn = ... *)
   | Psig_typext of type_extension
         (* type t1 += ... *)
@@ -776,8 +774,9 @@ and structure_item_desc =
            let rec P1 = E1 and ... and Pn = EN   (flag = Recursive)
          *)
   | Pstr_primitive of value_description
-        (* external x: T = "s1" ... "sn" *)
-  | Pstr_type of type_declaration list
+        (*  val x: T
+            external x: T = "s1" ... "sn" *)
+  | Pstr_type of rec_flag * type_declaration list
         (* type t1 = ... and ... and tn = ... *)
   | Pstr_typext of type_extension
         (* type t1 += ... *)

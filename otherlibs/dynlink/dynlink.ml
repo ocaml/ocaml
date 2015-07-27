@@ -237,6 +237,13 @@ let load_compunit ic file_name file_digest compunit =
      Unit name is needed for .cma files, which produce several code fragments.*)
   let digest = Digest.string (file_digest ^ compunit.cu_name) in
   register_code_fragment code code_size digest;
+  let events =
+    if compunit.cu_debug = 0 then [| |]
+    else begin
+      seek_in ic compunit.cu_debug;
+      [| input_value ic |]
+    end in
+  Meta.add_debug_info code code_size events;
   begin try
     ignore((Meta.reify_bytecode code code_size) ())
   with exn ->

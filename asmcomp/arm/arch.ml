@@ -56,8 +56,6 @@ let (arch, fpu, thumb) =
     end in
   (ref def_arch, ref def_fpu, ref def_thumb)
 
-let pic_code = ref false
-
 let farch spec =
   arch := (match spec with
              "armv4" when abi <> EABI_HF   -> ARMv4
@@ -83,9 +81,9 @@ let command_line_options =
     "-ffpu", Arg.String ffpu,
       "<fpu>  Select the floating-point hardware"
       ^ " (default: " ^ (string_of_fpu !fpu) ^ ")";
-    "-fPIC", Arg.Set pic_code,
+    "-fPIC", Arg.Set Clflags.pic_code,
       " Generate position-independent machine code";
-    "-fno-PIC", Arg.Clear pic_code,
+    "-fno-PIC", Arg.Clear Clflags.pic_code,
       " Generate position-dependent machine code";
     "-fthumb", Arg.Set thumb,
       " Enable Thumb/Thumb-2 code generation"

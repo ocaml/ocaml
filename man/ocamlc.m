@@ -191,8 +191,12 @@ linking with this library automatically adds back the
 options as if they had been provided on the
 command line, unless the
 .B -noautolink
-option is given.
-.TP
+option is given. Additionally, a substring
+.B $CAMLORIGIN
+inside a
+.BR \ \-ccopt
+options will be replaced by the full path to the .cma library,
+excluding the filename.
 .B \-absname
 Show absolute filenames in error messages.
 .TP
@@ -350,9 +354,9 @@ If the given directory starts with
 .BR + ,
 it is taken relative to the
 standard library directory. For instance,
-.B \-I\ +camlp4
+.B \-I\ +compiler-libs
 adds the subdirectory
-.B camlp4
+.B compiler-libs
 of the standard library to the search path.
 .TP
 .BI \-impl \ filename
@@ -369,6 +373,9 @@ as an interface file, even if its extension is not .mli.
 Recognize file names ending with
 .I string
 as interface files (instead of the default .mli).
+.TP
+.B \-keep-docs
+Keep documentation strings in generated .cmi files.
 .TP
 .B \-keep-locs
 Keep locations in generated .cmi files.
@@ -745,7 +752,7 @@ have type
 \ \ Non-returning statement.
 
 22
-\ \ Camlp4 warning.
+\ \ Preprocessor warning.
 
 23
 \ \ Useless record
@@ -825,6 +832,21 @@ mutually recursive types.
 45
 \ \ Open statement shadows an already defined label or constructor.
 
+46
+\ \ Error in environment variable.
+
+47
+\ \ Illegal attribute payload.
+
+48
+\ \ Implicit elimination of optional arguments.
+
+49
+\ \ Missing cmi file when looking up module alias.
+
+50
+\ \ Unexpected documentation comment.
+
 The letters stand for the following sets of warnings.  Any letter not
 mentioned here corresponds to the empty set.
 
@@ -878,7 +900,7 @@ mentioned here corresponds to the empty set.
 
 .IP
 The default setting is
-.BR \-w\ +a\-4\-6\-7\-9\-27\-29\-32..39\-41..42\-44\-45 .
+.BR \-w\ +a\-4\-6\-7\-9\-27\-29\-32..39\-41\-42\-44\-45\-48\-50 .
 Note that warnings
 .BR 5 \ and \ 10
 are not always triggered, depending on the internals of the type checker.
@@ -907,7 +929,8 @@ compiling your program with later versions of OCaml when they add new
 warnings or modify existing warnings.
 
 The default setting is
-.B \-warn\-error\ -a (all warnings are non-fatal).
+.B \-warn\-error \-a
+(all warnings are non-fatal).
 .TP
 .B \-warn\-help
 Show the description of all available warning numbers.

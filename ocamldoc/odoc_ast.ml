@@ -83,17 +83,17 @@ module Typedtree_search =
         end
       | Typedtree.Tstr_exception ext ->
           Hashtbl.add table (E (Name.from_ident ext.ext_id)) tt
-      | Typedtree.Tstr_type ident_type_decl_list ->
+      | Typedtree.Tstr_type (rf, ident_type_decl_list) ->
           List.iter
             (fun td ->
               Hashtbl.add table (T (Name.from_ident td.typ_id))
-                (Typedtree.Tstr_type [td]))
+                (Typedtree.Tstr_type (rf, [td])))
             ident_type_decl_list
       | Typedtree.Tstr_class info_list ->
           List.iter
-            (fun (ci, m, s) ->
+            (fun (ci, s) ->
               Hashtbl.add table (C (Name.from_ident ci.ci_id_class))
-                (Typedtree.Tstr_class [ci, m, s]))
+                (Typedtree.Tstr_class [ci, s]))
             info_list
       | Typedtree.Tstr_class_type info_list ->
           List.iter
@@ -145,12 +145,12 @@ module Typedtree_search =
 
     let search_type_declaration table name =
       match Hashtbl.find table (T name) with
-      | (Typedtree.Tstr_type [td]) -> td
+      | (Typedtree.Tstr_type (_, [td])) -> td
       | _ -> assert false
 
     let search_class_exp table name =
       match Hashtbl.find table (C name) with
-      | (Typedtree.Tstr_class [(ci, _, _ )]) ->
+      | (Typedtree.Tstr_class [(ci, _ )]) ->
           let ce = ci.ci_expr in
           (
            try
@@ -1179,10 +1179,9 @@ module Analyser =
             let new_env = Odoc_env.add_value env new_value.val_name in
             (0, new_env, [Element_value new_value])
 
-      | Parsetree.Pstr_type name_typedecl_list ->
+      | Parsetree.Pstr_type (rf, name_typedecl_list) ->
           (* of (string * type_declaration) list *)
-          (* we start by extending the environment *)
-          let new_env =
+          let extended_env =
             List.fold_left
               (fun acc_env {Parsetree.ptype_name = { txt = name }} ->
                 let complete_name = Name.concat current_module_name name in
@@ -1190,6 +1189,11 @@ module Analyser =
               )
               env
               name_typedecl_list
+          in
+          let env =
+            match rf with
+            | Recursive -> extended_env
+            | Nonrecursive -> env
           in
           let rec f ?(first=false) maybe_more_acc last_pos name_type_decl_list =
             match name_type_decl_list with
@@ -1220,7 +1224,7 @@ module Analyser =
                       get_comments_in_module last_pos loc_start
                   in
                   let kind = Sig.get_type_kind
-                    new_env name_comment_list
+                    env name_comment_list
                     tt_type_decl.Types.type_kind
                   in
                   let new_end = loc_end + maybe_more in
@@ -1232,7 +1236,7 @@ module Analyser =
                       List.map2
                        (fun p v ->
                          let (co, cn) = Types.Variance.get_upper v in
-                         (Odoc_env.subst_type new_env p, co, cn))
+                         (Odoc_env.subst_type env p, co, cn))
                        tt_type_decl.Types.type_params
                        tt_type_decl.Types.type_variance ;
                       ty_kind = kind ;
@@ -1241,7 +1245,7 @@ module Analyser =
                         (match tt_type_decl.Types.type_manifest with
                            None -> None
                          | Some t ->
-                           Some (Sig.manifest_structure new_env name_comment_list t));
+                           Some (Sig.manifest_structure env name_comment_list t));
                       ty_loc = { loc_impl = Some loc ; loc_inter = None } ;
                       ty_code =
                       (
@@ -1262,7 +1266,7 @@ module Analyser =
                   (maybe_more3, ele_comments @ ((Element_type t) :: eles))
             in
             let (maybe_more, eles) = f ~first: true 0 loc.Location.loc_start.Lexing.pos_cnum name_typedecl_list in
-            (maybe_more, new_env, eles)
+            (maybe_more, extended_env, eles)
 
       | Parsetree.Pstr_typext tyext ->
           (* we get the extension declaration in the typed tree *)
@@ -1715,7 +1719,11 @@ module Analyser =
       }
       in
       match (p_module_expr.Parsetree.pmod_desc, tt_module_expr.Typedtree.mod_desc) with
-        (Parsetree.Pmod_ident longident, Typedtree.Tmod_ident (path, _)) ->
+        (Parsetree.Pmod_ident longident, Typedtree.Tmod_ident (path, _))
+        | (Parsetree.Pmod_ident longident,
+           Typedtree.Tmod_constraint
+             ({Typedtree.mod_desc = Typedtree.Tmod_ident (path, _)}, _, _, _))
+          ->
           let alias_name = Odoc_env.full_module_name env (Name.from_path path) in
           { m_base with m_kind = Module_alias { ma_name = alias_name ;
                                                 ma_module = None ; } }
@@ -1865,6 +1873,7 @@ module Analyser =
           (*DEBUG*)  | Parsetree.Pmod_apply _ -> "Pmod_apply"
           (*DEBUG*)  | Parsetree.Pmod_constraint _ -> "Pmod_constraint"
           (*DEBUG*)  | Parsetree.Pmod_unpack _ -> "Pmod_unpack"
+          (*DEBUG*)  | Parsetree.Pmod_extension _ -> "Pmod_extension"
           (*DEBUG*)in
           (*DEBUG*)let s_typed =
           (*DEBUG*)  match typedtree with
@@ -1899,7 +1908,7 @@ module Analyser =
        in
        prepare_file complete_source_file input_file;
        (* We create the t_module for this file. *)
-       let mod_name = String.capitalize (Filename.basename (Filename.chop_extension source_file)) in
+       let mod_name = String.capitalize_ascii (Filename.basename (Filename.chop_extension source_file)) in
        let (len,info_opt) = My_ir.first_special !file_name !file in
 
        (* we must complete the included modules *)

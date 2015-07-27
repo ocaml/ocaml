@@ -122,7 +122,6 @@ let cat s1 s2 =
   r
 ;;
 
-external is_printable: char -> bool = "caml_is_printable"
 external char_code: char -> int = "%identity"
 external char_chr: int -> char = "%identity"
 
@@ -151,7 +150,8 @@ let escaped s =
     n := !n +
       (match unsafe_get s i with
        | '"' | '\\' | '\n' | '\t' | '\r' | '\b' -> 2
-       | c -> if is_printable c then 1 else 4)
+       | ' ' .. '~' -> 1
+       | _ -> 4)
   done;
   if !n = length s then copy s else begin
     let s' = create !n in
@@ -168,19 +168,16 @@ let escaped s =
           unsafe_set s' !n '\\'; incr n; unsafe_set s' !n 'r'
       | '\b' ->
           unsafe_set s' !n '\\'; incr n; unsafe_set s' !n 'b'
+      | (' ' .. '~') as c -> unsafe_set s' !n c
       | c ->
-          if is_printable c then
-            unsafe_set s' !n c
-          else begin
-            let a = char_code c in
-            unsafe_set s' !n '\\';
-            incr n;
-            unsafe_set s' !n (char_chr (48 + a / 100));
-            incr n;
-            unsafe_set s' !n (char_chr (48 + (a / 10) mod 10));
-            incr n;
-            unsafe_set s' !n (char_chr (48 + a mod 10))
-          end
+          let a = char_code c in
+          unsafe_set s' !n '\\';
+          incr n;
+          unsafe_set s' !n (char_chr (48 + a / 100));
+          incr n;
+          unsafe_set s' !n (char_chr (48 + (a / 10) mod 10));
+          incr n;
+          unsafe_set s' !n (char_chr (48 + a mod 10));
       end;
       incr n
     done;
@@ -203,8 +200,8 @@ let mapi f s =
     r
   end
 
-let uppercase s = map Char.uppercase s
-let lowercase s = map Char.lowercase s
+let uppercase_ascii s = map Char.uppercase_ascii s
+let lowercase_ascii s = map Char.lowercase_ascii s
 
 let apply1 f s =
   if length s = 0 then s else begin
@@ -213,8 +210,8 @@ let apply1 f s =
     r
   end
 
-let capitalize s = apply1 Char.uppercase s
-let uncapitalize s = apply1 Char.lowercase s
+let capitalize_ascii s = apply1 Char.uppercase_ascii s
+let uncapitalize_ascii s = apply1 Char.lowercase_ascii s
 
 let rec index_rec s lim i c =
   if i >= lim then raise Not_found else
@@ -260,3 +257,12 @@ let rcontains_from s i c =
 type t = bytes
 
 let compare (x: t) (y: t) = Pervasives.compare x y
+external equal : t -> t -> bool = "caml_string_equal"
+
+(* Deprecated functions implemented via other deprecated functions *)
+[@@@ocaml.warning "-3"]
+let uppercase s = map Char.uppercase s
+let lowercase s = map Char.lowercase s
+
+let capitalize s = apply1 Char.uppercase s
+let uncapitalize s = apply1 Char.lowercase s

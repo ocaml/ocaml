@@ -11,24 +11,24 @@
 /*                                                                     */
 /***********************************************************************/
 
-#include "alloc.h"
-#include "backtrace.h"
-#include "callback.h"
-#include "custom.h"
-#include "fail.h"
-#include "io.h"
-#include "memory.h"
-#include "misc.h"
-#include "mlvalues.h"
-#include "printexc.h"
-#include "roots.h"
-#include "signals.h"
+#include "caml/alloc.h"
+#include "caml/backtrace.h"
+#include "caml/callback.h"
+#include "caml/custom.h"
+#include "caml/fail.h"
+#include "caml/io.h"
+#include "caml/memory.h"
+#include "caml/misc.h"
+#include "caml/mlvalues.h"
+#include "caml/printexc.h"
+#include "caml/roots.h"
+#include "caml/signals.h"
 #ifdef NATIVE_CODE
 #include "stack.h"
 #else
-#include "stacks.h"
+#include "caml/stacks.h"
 #endif
-#include "sys.h"
+#include "caml/sys.h"
 #include "threads.h"
 
 /* Initial size of bytecode stack when a thread is created (4 Ko) */
@@ -95,10 +95,10 @@ static caml_thread_t curr_thread = NULL;
 /* The master lock protecting the OCaml runtime system */
 static st_masterlock caml_master_lock;
 
-/* Whether the ``tick'' thread is already running */
+/* Whether the "tick" thread is already running */
 static int caml_tick_thread_running = 0;
 
-/* The thread identifier of the ``tick'' thread */
+/* The thread identifier of the "tick" thread */
 static st_thread_id caml_tick_thread_id;
 
 /* The key used for storing the thread descriptor in the specific data
@@ -444,7 +444,12 @@ CAMLprim value caml_thread_initialize(value unit)   /* ML */
 
 CAMLprim value caml_thread_cleanup(value unit)   /* ML */
 {
-  if (caml_tick_thread_running) st_thread_kill(caml_tick_thread_id);
+  if (caml_tick_thread_running){
+    caml_tick_thread_stop = 1;
+    st_thread_join(caml_tick_thread_id);
+    caml_tick_thread_stop = 0;
+    caml_tick_thread_running = 0;
+  }
   return Val_unit;
 }
 

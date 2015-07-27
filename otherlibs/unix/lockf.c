@@ -13,9 +13,9 @@
 
 #include <errno.h>
 #include <fcntl.h>
-#include <fail.h>
-#include <mlvalues.h>
-#include <signals.h>
+#include <caml/fail.h>
+#include <caml/mlvalues.h>
+#include <caml/signals.h>
 #include "unixsupport.h"
 
 #if defined(F_GETLK) && defined(F_SETLK) && defined(F_SETLKW)

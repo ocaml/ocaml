@@ -210,7 +210,8 @@ and pretty_cdr ppf v = match v.pat_desc with
 | _ -> pretty_val ppf v
 
 and pretty_arg ppf v = match v.pat_desc with
-| Tpat_construct (_,_,_::_) -> fprintf ppf "(%a)" pretty_val v
+| Tpat_construct (_,_,_::_)
+| Tpat_variant (_, Some _, _) -> fprintf ppf "(%a)" pretty_val v
 |  _ -> pretty_val ppf v
 
 and pretty_or ppf v = match v.pat_desc with
@@ -1774,6 +1775,14 @@ module Conv = struct
     (ps, constrs, labels)
 end
 
+(* Whether the counter-example contains an extension pattern *)
+let contains_extension pat =
+  let r = ref false in
+  let rec loop = function
+      {pat_desc=Tpat_construct(_, {cstr_name="*extension*"}, _)} ->
+        r := true
+    | p -> Typedtree.iter_pattern_desc loop p.pat_desc
+  in loop pat; !r
 
 let do_check_partial ?pred exhaust loc casel pss = match pss with
 | [] ->
@@ -1809,11 +1818,7 @@ let do_check_partial ?pred exhaust loc casel pss = match pss with
           None -> Total
         | Some v ->
             let errmsg =
-              match v.pat_desc with
-                Tpat_construct (_, {cstr_name="*extension*"}, _) ->
-                  "_\nMatching over values of open types must include\n\
-                   a wild card pattern in order to be exhaustive."
-              | _ -> try
+              try
                 let buf = Buffer.create 16 in
                 let fmt = formatter_of_buffer buf in
                 top_pretty fmt v;
@@ -1826,7 +1831,12 @@ let do_check_partial ?pred exhaust loc casel pss = match pss with
                        is a pain in the top-level *)
                     Buffer.add_string buf
                       "\n(However, some guarded clause may match this value.)"
-                end ;
+                end;
+                if contains_extension v then
+                  Buffer.add_string buf
+                    "\nMatching over values of extensible variant types (the *extension* above)\n\
+                    must include a wild card pattern in order to be exhaustive."
+                ;
                 Buffer.contents buf
               with _ ->
                 ""

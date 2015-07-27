@@ -13,22 +13,23 @@
 
 /* The bytecode interpreter */
 #include <stdio.h>
-#include "alloc.h"
-#include "backtrace.h"
-#include "callback.h"
-#include "debugger.h"
-#include "fail.h"
-#include "fix_code.h"
-#include "instrtrace.h"
-#include "instruct.h"
-#include "interp.h"
-#include "major_gc.h"
-#include "memory.h"
-#include "misc.h"
-#include "mlvalues.h"
-#include "prims.h"
-#include "signals.h"
-#include "stacks.h"
+#include "caml/alloc.h"
+#include "caml/backtrace.h"
+#include "caml/callback.h"
+#include "caml/debugger.h"
+#include "caml/fail.h"
+#include "caml/fix_code.h"
+#include "caml/instrtrace.h"
+#include "caml/instruct.h"
+#include "caml/interp.h"
+#include "caml/major_gc.h"
+#include "caml/memory.h"
+#include "caml/misc.h"
+#include "caml/mlvalues.h"
+#include "caml/prims.h"
+#include "caml/signals.h"
+#include "caml/stacks.h"
+#include "caml/startup_aux.h"
 
 /* Registers for the abstract machine:
         pc         the code pointer
@@ -220,7 +221,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
 
 #ifdef THREADED_CODE
   static void * jumptable[] = {
-#    include "jumptbl.h"
+#    include "caml/jumptbl.h"
   };
 #endif
 
@@ -271,9 +272,9 @@ value caml_interprete(code_t prog, asize_t prog_size)
 #ifdef DEBUG
     caml_bcodcount++;
     if (caml_icount-- == 0) caml_stop_here ();
-    if (caml_trace_flag>1) printf("\n##%ld\n", caml_bcodcount);
-    if (caml_trace_flag) caml_disasm_instr(pc);
-    if (caml_trace_flag>1) {
+    if (caml_trace_level>1) printf("\n##%ld\n", caml_bcodcount);
+    if (caml_trace_level>0) caml_disasm_instr(pc);
+    if (caml_trace_level>1) {
       printf("env=");
       caml_trace_value_file(env,prog,prog_size,stdout);
       putchar('\n');

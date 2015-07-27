@@ -13,6 +13,7 @@
 (* Basic operations on core types *)
 
 open Misc
+open Asttypes
 open Types
 
 (**** Sets, maps and hashtables of types ****)
@@ -561,15 +562,17 @@ let check_memorized_abbrevs () =
                   (*  Utilities for labels          *)
                   (**********************************)
 
-let is_optional l =
-  String.length l > 0 && l.[0] = '?'
+let is_optional = function Optional _ -> true | _ -> false
 
-let label_name l =
-  if is_optional l then String.sub l 1 (String.length l - 1)
-                   else l
+let label_name = function
+    Nolabel -> ""
+  | Labelled s
+  | Optional s -> s
 
-let prefixed_label_name l =
-  if is_optional l then l else "~" ^ l
+let prefixed_label_name = function
+    Nolabel -> ""
+  | Labelled s -> "~" ^ s
+  | Optional s -> "?" ^ s
 
 let rec extract_label_aux hd l = function
     [] -> raise Not_found

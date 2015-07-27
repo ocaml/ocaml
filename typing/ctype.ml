@@ -454,38 +454,6 @@ let rec filter_row_fields erase = function
                     (**************************************)
 
 
-exception Non_closed0
-
-let rec closed_schema_rec ty =
-  let ty = repr ty in
-  if ty.level >= lowest_level then begin
-    let level = ty.level in
-    ty.level <- pivot_level - level;
-    match ty.desc with
-      Tvar _ when level <> generic_level ->
-        raise Non_closed0
-    | Tfield(_, kind, t1, t2) ->
-        if field_kind_repr kind = Fpresent then
-          closed_schema_rec t1;
-        closed_schema_rec t2
-    | Tvariant row ->
-        let row = row_repr row in
-        iter_row closed_schema_rec row;
-        if not (static_row row) then closed_schema_rec row.row_more
-    | _ ->
-        iter_type_expr closed_schema_rec ty
-  end
-
-(* Return whether all variables of type [ty] are generic. *)
-let closed_schema ty =
-  try
-    closed_schema_rec ty;
-    unmark_type ty;
-    true
-  with Non_closed0 ->
-    unmark_type ty;
-    false
-
 exception Non_closed of type_expr * bool
 
 let free_variables = ref []
@@ -1059,20 +1027,25 @@ let rec copy ?env ?partial ?keep_names ty =
               (* Open row if partial for pattern and contains Reither *)
               let more', row =
                 match partial with
-                  Some (free_univars, false) when row.row_closed
-                  && not row.row_fixed && TypeSet.is_empty (free_univars ty) ->
+                  Some (free_univars, false) ->
+                    let more' =
+                      if more.id != more'.id then more' else
+                      let lv = if keep then more.level else !current_level in
+                      newty2 lv (Tvar None)
+                    in
                     let not_reither (_, f) =
                       match row_field_repr f with
                         Reither _ -> false
                       | _ -> true
                     in
-                    if List.for_all not_reither row.row_fields
-                    then (more', row) else
-                    (newty2 (if keep then more.level else !current_level)
-                       (Tvar None),
-                     {row_fields = List.filter not_reither row.row_fields;
-                      row_more = more; row_bound = ();
-                      row_closed = false; row_fixed = false; row_name = None})
+                    if row.row_closed && not row.row_fixed
+                    && TypeSet.is_empty (free_univars ty)
+                    && not (List.for_all not_reither row.row_fields) then
+                      (more',
+                       {row_fields = List.filter not_reither row.row_fields;
+                        row_more = more'; row_bound = ();
+                        row_closed = false; row_fixed = false; row_name = None})
+                    else (more', row)
                 | _ -> (more', row)
               in
               (* Register new type first for recursion *)
@@ -1117,6 +1090,13 @@ let instance ?partial env sch =
 let instance_def sch =
   let ty = copy sch in
   cleanup_types ();
+  ty
+
+let generic_instance ?partial env sch =
+  let old = !current_level in
+  current_level := generic_level;
+  let ty = instance env sch in
+  current_level := old;
   ty
 
 let instance_list env schl =
@@ -1460,8 +1440,8 @@ let expand_abbrev_gen kind find_type_expansion env ty =
       assert false
 
 (* Expand respecting privacy *)
-let expand_abbrev ty =
-  expand_abbrev_gen Public Env.find_type_expansion ty
+let expand_abbrev env ty =
+  expand_abbrev_gen Public Env.find_type_expansion env ty
 
 (* Expand once the head of a type *)
 let expand_head_once env ty =
@@ -1671,10 +1651,11 @@ exception Occur
 
 let rec occur_rec env visited ty0 ty =
   if ty == ty0  then raise Occur;
+  let occur_ok = !Clflags.recursive_types && is_contractive env ty in
   match ty.desc with
     Tconstr(p, tl, abbrev) ->
       begin try
-        if List.memq ty visited || !Clflags.recursive_types then raise Occur;
+        if occur_ok || List.memq ty visited then raise Occur;
         iter_type_expr (occur_rec env (ty::visited) ty0) ty
       with Occur -> try
         let ty' = try_expand_head try_expand_once env ty in
@@ -1685,15 +1666,15 @@ let rec occur_rec env visited ty0 ty =
         match ty'.desc with
           Tobject _ | Tvariant _ -> ()
         | _ ->
-            if not !Clflags.recursive_types then
+            if not (!Clflags.recursive_types && is_contractive env ty') then
               iter_type_expr (occur_rec env (ty'::visited) ty0) ty'
       with Cannot_expand ->
-        if not !Clflags.recursive_types then raise Occur
+        if not occur_ok then raise Occur
       end
   | Tobject _ | Tvariant _ ->
       ()
   | _ ->
-      if not !Clflags.recursive_types then
+      if not occur_ok then
         iter_type_expr (occur_rec env visited ty0) ty
 
 let type_changed = ref false (* trace possible changes to the studied type *)
@@ -2061,8 +2042,11 @@ let rec mcomp type_pairs env t1 t2 =
         | (Tconstr (p1, tl1, _), Tconstr (p2, tl2, _)) ->
             mcomp_type_decl type_pairs env p1 p2 tl1 tl2
         | (Tconstr (p, _, _), _) | (_, Tconstr (p, _, _)) ->
-            let decl = Env.find_type p env in
-            if non_aliasable p decl then raise (Unify [])
+            begin try
+              let decl = Env.find_type p env in
+              if non_aliasable p decl || is_datatype decl then raise (Unify [])
+            with Not_found -> ()
+            end
         (*
         | (Tpackage (p1, n1, tl1), Tpackage (p2, n2, tl2)) when n1 = n2 ->
             mcomp_list type_pairs env tl1 tl2
@@ -2318,6 +2302,18 @@ let unify_eq env t1 t2 =
       try TypePairs.find unify_eq_set (order_type_pair t1 t2); true
       with Not_found -> false
 
+let unify1_var env t1 t2 =
+  assert (is_Tvar t1);
+  occur env t1 t2;
+  occur_univar env t2;
+  let d1 = t1.desc in
+  link_type t1 t2;
+  try
+    update_level env t1.level t2
+  with Unify _ as e ->
+    t1.desc <- d1;
+    raise e
+
 let rec unify (env:Env.t ref) t1 t2 =
   (* First step: special cases (optimizations) *)
   if t1 == t2 then () else
@@ -2334,15 +2330,9 @@ let rec unify (env:Env.t ref) t1 t2 =
     | (Tconstr _, Tvar _) when deep_occur t2 t1 ->
         unify2 env t1 t2
     | (Tvar _, _) ->
-        occur !env t1 t2;
-        occur_univar !env t2;
-        link_type t1 t2;
-        update_level !env t1.level t2
+        unify1_var !env t1 t2
     | (_, Tvar _) ->
-        occur !env t2 t1;
-        occur_univar !env t1;
-        link_type t2 t1;
-        update_level !env t2.level t1
+        unify1_var !env t2 t1
     | (Tunivar _, Tunivar _) ->
         unify_univar t1 t2 !univar_pairs;
         update_level !env t1.level t2;
@@ -2741,6 +2731,19 @@ and unify_row_field env fixed1 fixed2 more l f1 f2 =
             if List.memq ty tl then remq tl tl' else ty :: remq tl tl'
       in
       let tl2' = remq tl2 tl1 and tl1' = remq tl1 tl2 in
+      (* PR#6744 *)
+      let split_univars =
+        List.partition
+          (fun ty -> try occur_univar !env ty; true with Unify _ -> false) in
+      let (tl1',tlu1) = split_univars tl1'
+      and (tl2',tlu2) = split_univars tl2' in
+      begin match tlu1, tlu2 with
+        [], [] -> ()
+      | (tu1::tlu1), (tu2::_) ->
+          (* Attempt to merge all the types containing univars *)
+          List.iter (unify env tu1) (tlu1@tlu2)
+      | (tu::_, []) | ([], tu::_) -> occur_univar !env tu
+      end;
       (* Is this handling of levels really principal? *)
       List.iter (update_level !env (repr more).level) (tl1' @ tl2');
       let e = ref None in
@@ -2845,7 +2848,7 @@ let filter_arrow env t l =
       link_type t t';
       (t1, t2)
   | Tarrow(l', t1, t2, _)
-    when l = l' || !Clflags.classic && l = "" && not (is_optional l') ->
+    when l = l' || !Clflags.classic && l = Nolabel && not (is_optional l') ->
       (t1, t2)
   | _ ->
       raise (Unify [])
@@ -3653,7 +3656,7 @@ let match_class_declarations env patt_params patt_type subj_params subj_type =
         (* Use moregeneral for class parameters, need to recheck everything to
            keeps relationships (PR#4824) *)
         let clty_params =
-          List.fold_right (fun ty cty -> Cty_arrow ("*",ty,cty)) in
+          List.fold_right (fun ty cty -> Cty_arrow (Labelled "*",ty,cty)) in
         match_class_types ~trace:false env
           (clty_params patt_params patt_type)
           (clty_params subj_params subj_type)
@@ -4170,6 +4173,40 @@ let cyclic_abbrev env id ty =
     | _ ->
         false
   in check_cycle [] ty
+
+(* Check for non-generalizable type variables *)
+exception Non_closed0
+let visited = ref TypeSet.empty
+
+let rec closed_schema_rec env ty =
+  let ty = expand_head env ty in
+  if TypeSet.mem ty !visited then () else begin
+    visited := TypeSet.add ty !visited;
+    match ty.desc with
+      Tvar _ when ty.level <> generic_level ->
+        raise Non_closed0
+    | Tfield(_, kind, t1, t2) ->
+        if field_kind_repr kind = Fpresent then
+          closed_schema_rec env t1;
+        closed_schema_rec env t2
+    | Tvariant row ->
+        let row = row_repr row in
+        iter_row (closed_schema_rec env) row;
+        if not (static_row row) then closed_schema_rec env row.row_more
+    | _ ->
+        iter_type_expr (closed_schema_rec env) ty
+  end
+
+(* Return whether all variables of type [ty] are generic. *)
+let closed_schema env ty =
+  visited := TypeSet.empty;
+  try
+    closed_schema_rec env ty;
+    visited := TypeSet.empty;
+    true
+  with Non_closed0 ->
+    visited := TypeSet.empty;
+    false
 
 (* Normalize a type before printing, saving... *)
 (* Cannot use mark_type because deep_occur uses it too *)

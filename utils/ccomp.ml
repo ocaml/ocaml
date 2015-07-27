@@ -48,16 +48,20 @@ let quote_optfile = function
   | None -> ""
   | Some f -> Filename.quote f
 
-let compile_file name =
+let compile_file ~output_name name =
   command
     (Printf.sprintf
-       "%s -c %s %s %s %s"
+       "%s%s -c %s %s %s %s %s"
        (match !Clflags.c_compiler with
         | Some cc -> cc
         | None ->
             if !Clflags.native_code
             then Config.native_c_compiler
             else Config.bytecomp_c_compiler)
+       (match output_name with
+          | Some n -> " -o " ^ Filename.quote n
+          | None -> "")
+       (if !Clflags.debug then "-g" else "")
        (String.concat " " (List.rev !Clflags.all_ccopts))
        (quote_prefixed "-I" (List.rev !Clflags.include_dirs))
        (Clflags.std_include_flag "-I")
@@ -97,14 +101,22 @@ type link_mode =
   | MainDll
   | Partial
 
+let remove_Wl cclibs =
+  cclibs |> List.map (fun cclib ->
+    (* -Wl,-foo,bar -> -foo bar *)
+    if String.length cclib >= 4 && "-Wl," = String.sub cclib 0 4 then
+      String.map (function ',' -> ' ' | c -> c)
+                 (String.sub cclib 4 (String.length cclib - 4))
+    else cclib)
+
 let call_linker mode output_name files extra =
-  let files = quote_files files in
   let cmd =
     if mode = Partial then
-      Printf.sprintf "%s%s %s %s"
+      Printf.sprintf "%s%s %s %s %s"
         Config.native_pack_linker
         (Filename.quote output_name)
-        files
+        (quote_prefixed "-L" !Config.load_path)
+        (quote_files (remove_Wl files))
         extra
     else
       Printf.sprintf "%s -o %s %s %s %s %s %s %s"
@@ -120,7 +132,7 @@ let call_linker mode output_name files extra =
         ""  (*(Clflags.std_include_flag "-I")*)
         (quote_prefixed "-L" !Config.load_path)
         (String.concat " " (List.rev !Clflags.all_ccopts))
-        files
+        (quote_files files)
         extra
   in
   command cmd = 0

@@ -13,22 +13,22 @@
 
 /* Structured input, compact format */
 
-/* The interface of this file is "intext.h" */
+/* The interface of this file is "caml/intext.h" */
 
 #include <string.h>
 #include <stdio.h>
-#include "alloc.h"
-#include "callback.h"
-#include "custom.h"
-#include "fail.h"
-#include "gc.h"
-#include "intext.h"
-#include "io.h"
-#include "md5.h"
-#include "memory.h"
-#include "mlvalues.h"
-#include "misc.h"
-#include "reverse.h"
+#include "caml/alloc.h"
+#include "caml/callback.h"
+#include "caml/custom.h"
+#include "caml/fail.h"
+#include "caml/gc.h"
+#include "caml/intext.h"
+#include "caml/io.h"
+#include "caml/md5.h"
+#include "caml/memory.h"
+#include "caml/mlvalues.h"
+#include "caml/misc.h"
+#include "caml/reverse.h"
 
 static unsigned char * intern_src;
 /* Reading pointer in block holding input data. */
@@ -66,7 +66,7 @@ static value intern_block;
 
 static char * intern_resolve_code_pointer(unsigned char digest[16],
                                           asize_t offset);
-static void intern_bad_code_pointer(unsigned char digest[16]) Noreturn;
+Noreturn static void intern_bad_code_pointer(unsigned char digest[16]);
 
 static void intern_free_stack(void);
 
@@ -143,6 +143,7 @@ static void readfloat(double * dest, unsigned int code)
 #endif
 }
 
+/* [len] is a number of floats */
 static void readfloats(double * dest, mlsize_t len, unsigned int code)
 {
   mlsize_t i;
@@ -679,6 +680,7 @@ CAMLexport value caml_input_value_from_malloc(char * data, intnat ofs)
   return obj;
 }
 
+/* [len] is a number of bytes */
 CAMLexport value caml_input_value_from_block(char * data, intnat len)
 {
   uint32_t magic;
@@ -698,6 +700,9 @@ CAMLexport value caml_input_value_from_block(char * data, intnat len)
   return obj;
 }
 
+/* [ofs] is a [value] that represents a number of bytes
+   result is a [value] that represents a number of bytes
+*/
 CAMLprim value caml_marshal_data_size(value buff, value ofs)
 {
   uint32_t magic;

@@ -31,6 +31,11 @@ let bind name arg fn =
   | Cconst_blockheader _ -> fn arg
   | _ -> let id = Ident.create name in Clet(id, arg, fn (Cvar id))
 
+let bind_load name arg fn =
+  match arg with
+  | Cop(Cload _, [Cvar _]) -> fn arg
+  | _ -> bind name arg fn
+
 let bind_nonvar name arg fn =
   match arg with
     Cconst_int _ | Cconst_natint _ | Cconst_symbol _
@@ -88,70 +93,68 @@ let rec add_const c n =
   if n = 0 then c
   else match c with
   | Cconst_int x when no_overflow_add x n -> Cconst_int (x + n)
+  | Cop(Caddi, ([Cconst_int x; c] | [c; Cconst_int x])) when no_overflow_add n x ->
+      let d = n + x in
+      if d = 0 then c else Cop(Caddi, [c; Cconst_int d])
   | Cop(Csubi, [Cconst_int x; c]) when no_overflow_add n x ->
       Cop(Csubi, [Cconst_int (n + x); c])
   | Cop(Csubi, [c; Cconst_int x]) when no_overflow_sub n x ->
       add_const c (n - x)
   | c -> Cop(Caddi, [c; Cconst_int n])
 
-let incr_int = function
-    Cconst_int n when n < max_int -> Cconst_int(n+1)
-  | Cop(Caddi, [c; Cconst_int n]) when n < max_int -> add_const c (n + 1)
-  | c -> add_const c 1
+let incr_int c = add_const c 1
+let decr_int c = add_const c (-1)
 
-let decr_int = function
-    Cconst_int n when n > min_int -> Cconst_int(n-1)
-  | Cop(Caddi, [c; Cconst_int n]) when n > min_int -> add_const c (n - 1)
-  | c -> add_const c (-1)
-
-let add_int c1 c2 =
+let rec add_int c1 c2 =
   match (c1, c2) with
-    (Cop(Caddi, [c1; Cconst_int n1]),
-     Cop(Caddi, [c2; Cconst_int n2])) when no_overflow_add n1 n2 ->
-      add_const (Cop(Caddi, [c1; c2])) (n1 + n2)
+  | (Cconst_int n, c) | (c, Cconst_int n) ->
+      add_const c n
   | (Cop(Caddi, [c1; Cconst_int n1]), c2) ->
-      add_const (Cop(Caddi, [c1; c2])) n1
+      add_const (add_int c1 c2) n1
   | (c1, Cop(Caddi, [c2; Cconst_int n2])) ->
-      add_const (Cop(Caddi, [c1; c2])) n2
-  | (Cconst_int _, _) ->
-      Cop(Caddi, [c2; c1])
+      add_const (add_int c1 c2) n2
   | (_, _) ->
       Cop(Caddi, [c1; c2])
 
-let sub_int c1 c2 =
+let rec sub_int c1 c2 =
   match (c1, c2) with
-    (Cop(Caddi, [c1; Cconst_int n1]),
-     Cop(Caddi, [c2; Cconst_int n2])) when no_overflow_sub n1 n2 ->
-      add_const (Cop(Csubi, [c1; c2])) (n1 - n2)
-  | (Cop(Caddi, [c1; Cconst_int n1]), c2) ->
-      add_const (Cop(Csubi, [c1; c2])) n1
+  | (c1, Cconst_int n2) when n2 <> min_int ->
+      add_const c1 (-n2)
   | (c1, Cop(Caddi, [c2; Cconst_int n2])) when n2 <> min_int ->
-      add_const (Cop(Csubi, [c1; c2])) (-n2)
-  | (c1, Cconst_int n) when n <> min_int ->
-      add_const c1 (-n)
+      add_const (sub_int c1 c2) (-n2)
+  | (Cop(Caddi, [c1; Cconst_int n1]), c2) ->
+      add_const (sub_int c1 c2) n1
   | (c1, c2) ->
       Cop(Csubi, [c1; c2])
 
-let mul_int c1 c2 =
+let rec lsl_int c1 c2 =
   match (c1, c2) with
-    (c, Cconst_int 0) | (Cconst_int 0, c) ->
+  | (Cop(Clsl, [c; Cconst_int n1]), Cconst_int n2)
+    when n1 > 0 && n2 > 0 && n1 + n2 < size_int * 8 ->
+      Cop(Clsl, [c; Cconst_int (n1 + n2)])
+  | (Cop(Caddi, [c1; Cconst_int n1]), Cconst_int n2)
+    when no_overflow_lsl n1 n2 ->
+      add_const (lsl_int c1 c2) (n1 lsl n2)
+  | (_, _) ->
+      Cop(Clsl, [c1; c2])
+
+let rec mul_int c1 c2 =
+  match (c1, c2) with
+  | (c, Cconst_int 0) | (Cconst_int 0, c) ->
       Cconst_int 0
   | (c, Cconst_int 1) | (Cconst_int 1, c) ->
       c
   | (c, Cconst_int(-1)) | (Cconst_int(-1), c) ->
       sub_int (Cconst_int 0) c
   | (c, Cconst_int n) | (Cconst_int n, c) when n = 1 lsl Misc.log2 n->
-      Cop(Clsl, [c; Cconst_int(Misc.log2 n)])
+      lsl_int c (Cconst_int (Misc.log2 n))
+  | (Cop(Caddi, [c; Cconst_int n]), Cconst_int k) |
+    (Cconst_int k, Cop(Caddi, [c; Cconst_int n]))
+    when no_overflow_mul n k ->
+      add_const (mul_int c (Cconst_int k)) (n * k)
   | (c1, c2) ->
       Cop(Cmuli, [c1; c2])
 
-let lsl_int c1 c2 =
-  match (c1, c2) with
-    (Cop(Clsl, [c; Cconst_int n1]), Cconst_int n2)
-    when n1 > 0 && n2 > 0 && n1 + n2 < size_int * 8 ->
-      Cop(Clsl, [c; Cconst_int (n1 + n2)])
-  | (_, _) ->
-      Cop(Clsl, [c1; c2])
 
 let ignore_low_bit_int = function
     Cop(Caddi, [(Cop(Clsl, [_; Cconst_int n]) as c); Cconst_int 1]) when n > 0
@@ -349,10 +352,10 @@ let mod_int c1 c2 dbg =
     (c1, Cconst_int 0) ->
       Csequence(c1, Cop(Craise (Raise_regular, dbg),
                         [Cconst_symbol "caml_exn_Division_by_zero"]))
-  | (c1, Cconst_int 1) ->
-      c1
-  | (Cconst_int(0 | 1) as c1, c2) ->
-      Csequence(c2, c1)
+  | (c1, Cconst_int (1 | (-1))) ->
+      Csequence(c1, Cconst_int 0)
+  | (Cconst_int 0, c2) ->
+      Csequence(c2, Cconst_int 0)
   | (Cconst_int n1, Cconst_int n2) ->
       Cconst_int (n1 mod n2)
   | (c1, (Cconst_int n as c2)) when n <> min_int ->
@@ -513,20 +516,38 @@ let addr_array_length hdr = Cop(Clsr, [hdr; Cconst_int wordsize_shift])
 let float_array_length hdr = Cop(Clsr, [hdr; Cconst_int numfloat_shift])
 
 let lsl_const c n =
-  Cop(Clsl, [c; Cconst_int n])
+  if n = 0 then c
+  else Cop(Clsl, [c; Cconst_int n])
 
-let array_indexing log2size ptr ofs =
+(* Produces a pointer to the element of the array [ptr] on the position [ofs]
+   with the given element [log2size] log2 element size. [ofs] is given as a
+   tagged int expression.
+   The optional ?typ argument is the C-- type of the result.
+   By default, it is Addr, meaning we are constructing a derived pointer
+   into the heap.  If we know the pointer is outside the heap
+   (this is the case for bigarray indexing), we give type Int instead. *)
+
+let array_indexing ?typ log2size ptr ofs =
+  let add =
+    match typ with
+    | None | Some Addr -> Cadda
+    | Some Int -> Caddi
+    | _ -> assert false in
   match ofs with
     Cconst_int n ->
       let i = n asr 1 in
-      if i = 0 then ptr else Cop(Cadda, [ptr; Cconst_int(i lsl log2size)])
+      if i = 0 then ptr else Cop(add, [ptr; Cconst_int(i lsl log2size)])
   | Cop(Caddi, [Cop(Clsl, [c; Cconst_int 1]); Cconst_int 1]) ->
-      Cop(Cadda, [ptr; lsl_const c log2size])
+      Cop(add, [ptr; lsl_const c log2size])
+  | Cop(Caddi, [c; Cconst_int n]) when log2size = 0 ->
+      Cop(add, [Cop(add, [ptr; untag_int c]); Cconst_int (n asr 1)])
   | Cop(Caddi, [c; Cconst_int n]) ->
-      Cop(Cadda, [Cop(Cadda, [ptr; lsl_const c (log2size - 1)]);
+      Cop(add, [Cop(add, [ptr; lsl_const c (log2size - 1)]);
                    Cconst_int((n-1) lsl (log2size - 1))])
+  | _ when log2size = 0 ->
+      Cop(add, [ptr; untag_int ofs])
   | _ ->
-      Cop(Cadda, [Cop(Cadda, [ptr; lsl_const ofs (log2size - 1)]);
+      Cop(add, [Cop(add, [ptr; lsl_const ofs (log2size - 1)]);
                    Cconst_int((-1) lsl (log2size - 1))])
 
 let addr_array_ref arr ofs =
@@ -776,23 +797,40 @@ let bigarray_elt_size = function
   | Pbigarray_complex32 -> 8
   | Pbigarray_complex64 -> 16
 
+(* Produces a pointer to the element of the bigarray [b] on the position
+   [args].  [args] is given as a list of tagged int expressions, one per array
+   dimension. *)
 let bigarray_indexing unsafe elt_kind layout b args dbg =
-  let check_bound a1 a2 k =
-    if unsafe then k else Csequence(make_checkbound dbg [a1;a2], k) in
+  let check_ba_bound bound idx v =
+    Csequence(make_checkbound dbg [bound;idx], v) in
+  (* Validates the given multidimensional offset against the array bounds and
+     transforms it into a one dimensional offset.  The offsets are expressions
+     evaluating to tagged int. *)
   let rec ba_indexing dim_ofs delta_ofs = function
     [] -> assert false
   | [arg] ->
-      bind "idx" (untag_int arg)
-        (fun idx ->
-           check_bound (Cop(Cload Word_int,[field_address b dim_ofs]))
-                       idx idx)
+      if unsafe then arg
+      else
+        bind "idx" arg (fun idx ->
+          (* Load the untagged int bound for the given dimension *)
+          let bound = Cop(Cload Word_int,[field_address b dim_ofs]) in
+          let idxn = untag_int idx in
+          check_ba_bound bound idxn idx)
   | arg1 :: argl ->
+      (* The remainder of the list is transformed into a one dimensional offset
+         *)
       let rem = ba_indexing (dim_ofs + delta_ofs) delta_ofs argl in
-      bind "idx" (untag_int arg1)
-        (fun idx ->
-          bind "bound" (Cop(Cload Word_int, [field_address b dim_ofs]))
-          (fun bound ->
-            check_bound bound idx (add_int (mul_int rem bound) idx))) in
+      (* Load the untagged int bound for the given dimension *)
+      let bound = Cop(Cload Word_int, [field_address b dim_ofs]) in
+      if unsafe then add_int (mul_int (decr_int rem) bound) arg1
+      else
+        bind "idx" arg1 (fun idx ->
+          bind "bound" bound (fun bound ->
+            let idxn = untag_int idx in
+            (* [offset = rem * (tag_int bound) + idx] *)
+            let offset = add_int (mul_int (decr_int rem) bound) idx in
+            check_ba_bound bound idxn offset)) in
+  (* The offset as an expression evaluating to int *)
   let offset =
     match layout with
       Pbigarray_unknown_layout ->
@@ -803,12 +841,9 @@ let bigarray_indexing unsafe elt_kind layout b args dbg =
         ba_indexing 5 1 (List.map (fun idx -> sub_int idx (Cconst_int 2)) args)
   and elt_size =
     bigarray_elt_size elt_kind in
-  let byte_offset =
-    if elt_size = 1
-    then offset
-    else Cop(Clsl, [offset; Cconst_int(log2 elt_size)]) in
-  Cop(Caddi, [Cop(Cload Word_int, [field_address b 1]); byte_offset])
-  (* this produces a pointer outside the heap, hence Caddi instead of Cadda *)
+  (* [array_indexing] can simplify the given expressions *)
+  array_indexing ~typ:Int (log2 elt_size)
+                 (Cop(Cload Word_int, [field_address b 1])) offset
 
 let bigarray_word_kind = function
     Pbigarray_unknown -> assert false
@@ -1246,28 +1281,29 @@ let rec is_unboxed_number = function
   | Ulet (_, _, e) | Usequence (_, e) -> is_unboxed_number e
   | _ -> No_unboxing
 
-let subst_boxed_number unbox_fn boxed_id unboxed_id box_chunk box_offset exp =
-  let need_boxed = ref false in
-  let assigned = ref false in
+let subst_boxed_number box_fn unbox_fn boxed_id unboxed_id box_chunk box_offset exp =
   let rec subst = function
       Cvar id as e ->
-        if Ident.same id boxed_id then need_boxed := true; e
+        if Ident.same id boxed_id then
+          box_fn (Cvar unboxed_id)
+        else e
     | Clet(id, arg, body) -> Clet(id, subst arg, subst body)
     | Cassign(id, arg) ->
         if Ident.same id boxed_id then begin
-          assigned := true;
           Cassign(unboxed_id, subst(unbox_fn arg))
         end else
           Cassign(id, subst arg)
     | Ctuple argv -> Ctuple(List.map subst argv)
-    | Cop(Cload chunk, [Cvar id]) as e ->
-        if Ident.same id boxed_id && chunk = box_chunk && box_offset = 0
-        then Cvar unboxed_id
-        else e
-    | Cop(Cload chunk, [Cop(Cadda, [Cvar id; Cconst_int ofs])]) as e ->
-        if Ident.same id boxed_id && chunk = box_chunk && ofs = box_offset
-        then Cvar unboxed_id
-        else e
+    | Cop(Cload chunk, [Cvar id])
+      when Ident.same id boxed_id &&
+           chunk = box_chunk && box_offset = 0
+      ->
+        Cvar unboxed_id
+    | Cop(Cload chunk, [Cop(Cadda, [Cvar id; Cconst_int ofs])])
+        when Ident.same id boxed_id &&
+             chunk = box_chunk && ofs = box_offset
+      ->
+        Cvar unboxed_id
     | Cop(op, argv) -> Cop(op, List.map subst argv)
     | Csequence(e1, e2) -> Csequence(subst e1, subst e2)
     | Cifthenelse(e1, e2, e3) -> Cifthenelse(subst e1, subst e2, subst e3)
@@ -1277,9 +1313,11 @@ let subst_boxed_number unbox_fn boxed_id unboxed_id box_chunk box_offset exp =
     | Ccatch(nfail, ids, e1, e2) -> Ccatch(nfail, ids, subst e1, subst e2)
     | Cexit (nfail, el) -> Cexit (nfail, List.map subst el)
     | Ctrywith(e1, id, e2) -> Ctrywith(subst e1, id, subst e2)
-    | e -> e in
-  let res = subst exp in
-  (res, !need_boxed, !assigned)
+    | Cconst_int _ | Cconst_natint _ | Cconst_float _ | Cconst_symbol _
+    | Cconst_pointer _ | Cconst_natpointer _
+    | Cconst_blockheader _ as e -> e
+  in
+  subst exp
 
 (* Translate an expression *)
 
@@ -1584,12 +1622,14 @@ and transl_prim_1 p arg dbg =
         match c with
         | Big_endian -> const_of_bool Arch.big_endian
         | Word_size -> tag_int (Cconst_int (8*Arch.size_int))
+        | Int_size -> tag_int (Cconst_int ((8*Arch.size_int) - 1))
+        | Max_wosize -> tag_int (Cconst_int ((1 lsl ((8*Arch.size_int) - 10)) - 1 ))
         | Ostype_unix -> const_of_bool (Sys.os_type = "Unix")
         | Ostype_win32 -> const_of_bool (Sys.os_type = "Win32")
         | Ostype_cygwin -> const_of_bool (Sys.os_type = "Cygwin")
       end
   | Poffsetint n ->
-      if no_overflow_lsl n then
+      if no_overflow_lsl n 1 then
         add_const (transl arg) (n lsl 1)
       else
         transl_prim_2 Paddint arg (Uconst (Uconst_int n))
@@ -1691,7 +1731,17 @@ and transl_prim_2 p arg1 arg2 dbg =
   | Psubint ->
       incr_int(sub_int (transl arg1) (transl arg2))
   | Pmulint ->
-      incr_int(mul_int (decr_int(transl arg1)) (untag_int(transl arg2)))
+     begin
+       (* decrementing the non-constant part helps when the multiplication is followed by an addition;
+          for example, using this trick compiles (100 * a + 7) into
+            (+ ( * a 100) -85)
+          rather than
+            (+ ( * 200 (>>s a 1)) 15)
+        *)
+       match transl arg1, transl arg2 with
+         | Cconst_int _ as c1, c2 -> incr_int (mul_int (untag_int c1) (decr_int c2))
+         | c1, c2 -> incr_int (mul_int (decr_int c1) (untag_int c2))
+     end
   | Pdivint ->
       tag_int(div_int (untag_int(transl arg1)) (untag_int(transl arg2)) dbg)
   | Pmodint ->
@@ -1964,7 +2014,7 @@ and transl_prim_3 p arg1 arg2 arg3 dbg =
             Csequence(make_checkbound dbg [addr_array_length(header arr); idx],
                       int_array_set arr idx newval))))
       | Pfloatarray ->
-          bind "newval" (transl_unbox_float arg3) (fun newval ->
+          bind_load "newval" (transl_unbox_float arg3) (fun newval ->
           bind "index" (transl arg2) (fun idx ->
           bind "arr" (transl arg1) (fun arr ->
             Csequence(make_checkbound dbg [float_array_length(header arr);idx],
@@ -2047,15 +2097,9 @@ and transl_unbox_let box_fn unbox_fn transl_unbox_fn box_chunk box_offset
                      id exp body =
   let unboxed_id = Ident.create (Ident.name id) in
   let trbody1 = transl body in
-  let (trbody2, need_boxed, is_assigned) =
-    subst_boxed_number unbox_fn id unboxed_id box_chunk box_offset trbody1 in
-  if need_boxed && is_assigned then
-    Clet(id, transl exp, trbody1)
-  else
-    Clet(unboxed_id, transl_unbox_fn exp,
-         if need_boxed
-         then Clet(id, box_fn(Cvar unboxed_id), trbody2)
-         else trbody2)
+  let trbody2 =
+    subst_boxed_number box_fn unbox_fn id unboxed_id box_chunk box_offset trbody1 in
+  Clet(unboxed_id, transl_unbox_fn exp, trbody2)
 
 and make_catch ncatch body handler = match body with
 | Cexit (nexit,[]) when nexit=ncatch -> handler

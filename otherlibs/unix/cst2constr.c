@@ -11,8 +11,8 @@
 /*                                                                     */
 /***********************************************************************/
 
-#include <mlvalues.h>
-#include <fail.h>
+#include <caml/mlvalues.h>
+#include <caml/fail.h>
 #include "cst2constr.h"
 
 value cst_to_constr(int n, int *tbl, int size, int deflt)

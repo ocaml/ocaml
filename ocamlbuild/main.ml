@@ -25,7 +25,6 @@ exception Exit_build_error of string
 exception Exit_silently
 
 let clean () =
-  Log.finish ();
   Shell.rm_rf !Options.build_dir;
   if !Options.make_links then begin
     let entry =
@@ -34,6 +33,7 @@ let clean () =
     in
     Slurp.force (Resource.clean_up_links entry)
   end;
+  Log.finish ();
   raise Exit_silently
 ;;
 
@@ -57,7 +57,7 @@ let show_documentation () =
    they should be marked as useful, to avoid the "unused tag" warning. *)
 let builtin_useful_tags =
   Tags.of_list [
-    "include"; "traverse"; "not_hygienic";
+    "include"; "traverse"; "not_hygienic"; "precious";
     "pack"; "ocamlmklib"; "native"; "thread";
     "nopervasives"; "use_menhir"; "ocamldep";
     "thread";
@@ -67,6 +67,8 @@ let builtin_useful_tags =
 let proceed () =
   Hooks.call_hook Hooks.Before_options;
   Options.init ();
+  Options.include_dirs := List.map Pathname.normalize !Options.include_dirs;
+  Options.exclude_dirs := List.map Pathname.normalize !Options.exclude_dirs;
   if !Options.must_clean then clean ();
   Hooks.call_hook Hooks.After_options;
   let options_wd = Sys.getcwd () in
@@ -74,7 +76,7 @@ let proceed () =
     (* If we are in the first run before launching the plugin, we
        should skip the user-visible operations (hygiene) that may need
        information from the plugin to run as the user expects it.
-       
+
        Note that we don't need to disable the [Hooks] call as they are
        no-ops anyway, before any plugin has registered hooks. *)
     Plugin.we_need_a_plugin () && not !Options.just_plugin in
@@ -91,6 +93,8 @@ let proceed () =
      <**/*.cmo>: ocaml, byte\n\
      <**/*.cmi>: ocaml, byte, native\n\
      <**/*.cmx>: ocaml, native\n\
+     <**/*.mly>: infer\n\
+     <**/.svn>|\".bzr\"|\".hg\"|\".git\"|\"_darcs\": -traverse\n\
     ";
 
   List.iter
@@ -201,7 +205,14 @@ let proceed () =
     raise Exit_silently
   end;
 
-  let all_tags = Tags.union builtin_useful_tags (Flags.get_used_tags ()) in
+  let all_tags =
+    let builtin = builtin_useful_tags in
+    let used_in_flags = Flags.get_used_tags () in
+    let used_in_deps =
+      List.fold_left (fun acc (tags, _deps) -> Tags.union acc tags)
+        Tags.empty (Command.list_all_deps ())
+    in
+    Tags.union builtin (Tags.union used_in_flags used_in_deps) in
   Configuration.check_tags_usage all_tags;
 
   Digest_cache.init ();
@@ -263,10 +274,10 @@ let proceed () =
     else
       ()
   with
-  | Ocaml_dependencies.Circular_dependencies(seen, p) ->
+  | Ocaml_dependencies.Circular_dependencies(cycle, p) ->
       raise
         (Exit_build_error
-          (sbprintf "@[<2>Circular dependencies: %S already seen in@ %a@]@." p pp_l seen))
+          (sbprintf "@[<2>Circular dependencies: %S already seen in@ %a@]@." p pp_l cycle))
 ;;
 
 open Exit_codes;;

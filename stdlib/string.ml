@@ -73,8 +73,6 @@ let mapi f s =
    copy, but String.mli spells out some cases where we are not allowed
    to make a copy. *)
 
-external is_printable: char -> bool = "caml_is_printable"
-
 let is_space = function
   | ' ' | '\012' | '\n' | '\r' | '\t' -> true
   | _ -> false
@@ -90,7 +88,7 @@ let escaped s =
     if i >= length s then false else
       match unsafe_get s i with
       | '"' | '\\' | '\n' | '\t' | '\r' | '\b' -> true
-      | c when is_printable c -> needs_escape (i+1)
+      | ' ' .. '~' -> needs_escape (i+1)
       | _ -> true
   in
   if needs_escape 0 then
@@ -112,6 +110,23 @@ let contains_from s i c =
   B.contains_from (bos s) i c
 let rcontains_from s i c =
   B.rcontains_from (bos s) i c
+
+let uppercase_ascii s =
+  B.uppercase_ascii (bos s) |> bts
+let lowercase_ascii s =
+  B.lowercase_ascii (bos s) |> bts
+let capitalize_ascii s =
+  B.capitalize_ascii (bos s) |> bts
+let uncapitalize_ascii s =
+  B.uncapitalize_ascii (bos s) |> bts
+
+type t = string
+
+let compare (x: t) (y: t) = Pervasives.compare x y
+external equal : string -> string -> bool = "caml_string_equal"
+
+(* Deprecated functions implemented via other deprecated functions *)
+[@@@ocaml.warning "-3"]
 let uppercase s =
   B.uppercase (bos s) |> bts
 let lowercase s =
@@ -120,7 +135,3 @@ let capitalize s =
   B.capitalize (bos s) |> bts
 let uncapitalize s =
   B.uncapitalize (bos s) |> bts
-
-type t = string
-
-let compare (x: t) (y: t) = Pervasives.compare x y

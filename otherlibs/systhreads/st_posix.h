@@ -78,9 +78,10 @@ static void st_thread_exit(void)
   pthread_exit(NULL);
 }
 
-static void st_thread_kill(st_thread_id thr)
+static void st_thread_join(st_thread_id thr)
 {
-  pthread_cancel(thr);
+  pthread_join(thr, NULL);
+  /* best effort: ignore errors */
 }
 
 /* Scheduling hints */
@@ -312,6 +313,9 @@ static void st_check_error(int retcode, char * msg)
   raise_sys_error(str);
 }
 
+/* Variable used to stop the "tick" thread */
+static volatile int caml_tick_thread_stop = 0;
+
 /* The tick thread: posts a SIGPREEMPTION signal periodically */
 
 static void * caml_thread_tick(void * arg)
@@ -322,9 +326,7 @@ static void * caml_thread_tick(void * arg)
   /* Block all signals so that we don't try to execute an OCaml signal handler*/
   sigfillset(&mask);
   pthread_sigmask(SIG_BLOCK, &mask, NULL);
-  /* Allow async cancellation */
-  pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
-  while(1) {
+  while(! caml_tick_thread_stop) {
     /* select() seems to be the most efficient way to suspend the
        thread for sub-second intervals */
     timeout.tv_sec = 0;
@@ -335,10 +337,19 @@ static void * caml_thread_tick(void * arg)
      caml_record_signal(). */
     caml_record_signal(SIGPREEMPTION);
   }
-  return NULL;                  /* prevents compiler warning */
+  return NULL;
 }
 
 /* "At fork" processing */
+
+#if defined(__ANDROID__)
+/* Android's libc does not include declaration of pthread_atfork;
+   however, it implements it since API level 10 (Gingerbread).
+   The reason for the omission is that Android (GUI) applications
+   are not supposed to fork at all, however this workaround is still
+   included in case OCaml is used for an Android CLI utility. */
+int pthread_atfork(void (*prepare)(void), void (*parent)(void), void (*child)(void));
+#endif
 
 static int st_atfork(void (*fn)(void))
 {

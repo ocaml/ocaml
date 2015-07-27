@@ -11,11 +11,11 @@
 /*                                                                     */
 /***********************************************************************/
 
-#include <mlvalues.h>
-#include <fail.h>
+#include <caml/mlvalues.h>
+#include <caml/fail.h>
 #include "unixsupport.h"
 #include <signal.h>
-#include <signals.h>
+#include <caml/signals.h>
 
 CAMLprim value unix_kill(value pid, value signal)
 {

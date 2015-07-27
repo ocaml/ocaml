@@ -135,6 +135,9 @@ done
 #########################################################################
 # Do the work
 
+# Tell gcc to use only ASCII in its diagnostic outputs.
+export LC_ALL=C
+
 $make -f Makefile$nt distclean || :
 
 if $docheckout; then

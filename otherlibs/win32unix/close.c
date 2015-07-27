@@ -11,9 +11,9 @@
 /*                                                                     */
 /***********************************************************************/
 
-#include <mlvalues.h>
+#include <caml/mlvalues.h>
 #include "unixsupport.h"
-#include <io.h>
+#include <caml/io.h>
 
 extern int _close(int);
 

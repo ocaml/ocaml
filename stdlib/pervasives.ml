@@ -206,6 +206,10 @@ external ( := ) : 'a ref -> 'a -> unit = "%setfield0"
 external incr : int ref -> unit = "%incr"
 external decr : int ref -> unit = "%decr"
 
+(* Result type *)
+
+type ('a,'b) result = Ok of 'a | Error of 'b
+
 (* String conversion functions *)
 
 external format_int : string -> int -> string = "caml_format_int"
@@ -246,6 +250,14 @@ let rec ( @ ) l1 l2 =
     [] -> l2
   | hd :: tl -> hd :: (tl @ l2)
 
+(* Array index operators *)
+external  ( .() ) : 'a array -> int -> 'a = "%array_opt_get"
+external  ( .() <- ) : 'a array -> int -> 'a -> unit = "%array_opt_set"
+
+(* String index operators *)
+external  ( .[] )  : string -> int -> char = "%string_opt_get"
+external  ( .[] <- ) : bytes -> int -> char -> unit = "%string_opt_set"
+
 (* I/O operations *)
 
 type in_channel
@@ -268,8 +280,13 @@ type open_flag =
 
 external open_desc : string -> open_flag list -> int -> int = "caml_sys_open"
 
+external set_out_channel_name: out_channel -> string -> unit =
+  "caml_ml_set_channel_name"
+
 let open_out_gen mode perm name =
-  open_descriptor_out(open_desc name mode perm)
+  let c = open_descriptor_out(open_desc name mode perm) in
+  set_out_channel_name c name;
+  c
 
 let open_out name =
   open_out_gen [Open_wronly; Open_creat; Open_trunc; Open_text] 0o666 name
@@ -331,8 +348,13 @@ external set_binary_mode_out : out_channel -> bool -> unit
 
 (* General input functions *)
 
+external set_in_channel_name: in_channel -> string -> unit =
+  "caml_ml_set_channel_name"
+
 let open_in_gen mode perm name =
-  open_descriptor_in(open_desc name mode perm)
+  let c = open_descriptor_in(open_desc name mode perm) in
+  set_in_channel_name c name;
+  c
 
 let open_in name =
   open_in_gen [Open_rdonly; Open_text] 0 name

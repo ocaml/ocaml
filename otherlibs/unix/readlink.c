@@ -11,11 +11,11 @@
 /*                                                                     */
 /***********************************************************************/
 
-#include <mlvalues.h>
-#include <memory.h>
-#include <alloc.h>
-#include <fail.h>
-#include <signals.h>
+#include <caml/mlvalues.h>
+#include <caml/memory.h>
+#include <caml/alloc.h>
+#include <caml/fail.h>
+#include <caml/signals.h>
 
 #ifdef HAS_SYMLINK
 

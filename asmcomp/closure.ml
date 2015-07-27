@@ -119,7 +119,7 @@ let split_default_wrapper fun_id kind params body =
         let inner_id = Ident.create (Ident.name fun_id ^ "_inner") in
         let map_param p = try List.assoc p map with Not_found -> p in
         let args = List.map (fun p -> Lvar (map_param p)) params in
-        let wrapper_body = Lapply (Lvar inner_id, args, Location.none) in
+        let wrapper_body = Lapply (Lvar inner_id, args, no_apply_info) in
 
         let inner_params = List.map map_param params in
         let new_ids = List.map Ident.rename inner_params in
@@ -129,14 +129,14 @@ let split_default_wrapper fun_id kind params body =
             Ident.empty inner_params new_ids
         in
         let body = Lambda.subst_lambda subst body in
-        let inner_fun = Lfunction(Curried, new_ids, body) in
+        let inner_fun = Lfunction{kind = Curried; params = new_ids; body} in
         (wrapper_body, (inner_id, inner_fun))
   in
   try
     let wrapper_body, inner = aux [] body in
-    [(fun_id, Lfunction(kind, params, wrapper_body)); inner]
+    [(fun_id, Lfunction{kind; params; body = wrapper_body}); inner]
   with Exit ->
-    [(fun_id, Lfunction(kind, params, body))]
+    [(fun_id, Lfunction{kind; params; body})]
 
 
 (* Determine whether the estimated size of a clambda term is below
@@ -493,6 +493,8 @@ let simplif_prim_pure fpc p (args, approxs) dbg =
       begin match c with
         | Big_endian -> make_const_bool Arch.big_endian
         | Word_size -> make_const_int (8*Arch.size_int)
+        | Int_size -> make_const_int (8*Arch.size_int - 1)
+        | Max_wosize -> make_const_int ((1 lsl ((8*Arch.size_int) - 10)) - 1 )
         | Ostype_unix -> make_const_bool (Sys.os_type = "Unix")
         | Ostype_win32 -> make_const_bool (Sys.os_type = "Win32")
         | Ostype_cygwin -> make_const_bool (Sys.os_type = "Cygwin")
@@ -527,6 +529,16 @@ let simplif_prim fpc p (args, approxs as args_approxs) dbg =
 let approx_ulam = function
     Uconst c -> Value_const c
   | _ -> Value_unknown
+
+let find_action idxs acts tag =
+  if 0 <= tag && tag < Array.length idxs then begin
+    let idx = idxs.(tag) in
+    assert(0 <= idx && idx < Array.length acts);
+    Some acts.(idx)
+  end else
+    (* Can this happen? *)
+    None
+
 
 let rec substitute fpc sb ulam =
   match ulam with
@@ -572,13 +584,32 @@ let rec substitute fpc sb ulam =
         simplif_prim fpc p (sargs, List.map approx_ulam sargs) dbg in
       res
   | Uswitch(arg, sw) ->
-      Uswitch(substitute fpc sb arg,
-              { sw with
-                us_actions_consts =
-                  Array.map (substitute fpc sb) sw.us_actions_consts;
-                us_actions_blocks =
-                  Array.map (substitute fpc sb) sw.us_actions_blocks;
-               })
+      let sarg = substitute fpc sb arg in
+      let action =
+        (* Unfortunately, we cannot easily deal with the
+           case of a constructed block (makeblock) bound to a local
+           identifier.  This would require to keep track of
+           local let bindings (at least their approximations)
+           in this substitute function.
+        *)
+        match sarg with
+        | Uconst (Uconst_ref (_,  Uconst_block (tag, _))) ->
+            find_action sw.us_index_blocks sw.us_actions_blocks tag
+        | Uconst (Uconst_ptr tag) ->
+            find_action sw.us_index_consts sw.us_actions_consts tag
+        | _ -> None
+      in
+      begin match action with
+      | Some u -> substitute fpc sb u
+      | None ->
+          Uswitch(sarg,
+                  { sw with
+                    us_actions_consts =
+                      Array.map (substitute fpc sb) sw.us_actions_consts;
+                    us_actions_blocks =
+                      Array.map (substitute fpc sb) sw.us_actions_blocks;
+                  })
+      end
   | Ustringswitch(arg,sw,d) ->
       Ustringswitch
         (substitute fpc sb arg,
@@ -809,12 +840,12 @@ let rec close fenv cenv = function
         | Const_base(Const_nativeint x) -> str (Uconst_nativeint x)
       in
       make_const (transl cst)
-  | Lfunction(kind, params, body) as funct ->
+  | Lfunction{kind; params; body} as funct ->
       close_one_function fenv cenv (Ident.create "fun") funct
 
     (* We convert [f a] to [let a' = a in fun b c -> f a' b c]
        when fun_arity > nargs *)
-  | Lapply(funct, args, loc) ->
+  | Lapply(funct, args, {apply_loc=loc}) ->
       let nargs = List.length args in
       begin match (close fenv cenv funct, close_list fenv cenv args) with
         ((ufunct, Value_closure(fundesc, approx_res)),
@@ -846,8 +877,10 @@ let rec close fenv cenv = function
           @ (List.map (fun arg -> Lvar arg ) final_args)
         in
         let (new_fun, approx) = close fenv cenv
-          (Lfunction(
-            Curried, final_args, Lapply(funct, internal_args, loc)))
+          (Lfunction{
+               kind = Curried;
+               params = final_args;
+               body = Lapply(funct, internal_args, mk_apply_info loc)})
         in
         let new_fun = iter first_args new_fun in
         (new_fun, approx)
@@ -881,7 +914,7 @@ let rec close fenv cenv = function
       end
   | Lletrec(defs, body) ->
       if List.for_all
-           (function (id, Lfunction(_, _, _)) -> true | _ -> false)
+           (function (id, Lfunction _) -> true | _ -> false)
            defs
       then begin
         (* Simple case: only function definitions *)
@@ -913,7 +946,7 @@ let rec close fenv cenv = function
       end
   | Lprim(Pdirapply loc,[funct;arg])
   | Lprim(Prevapply loc,[arg;funct]) ->
-      close fenv cenv (Lapply(funct, [arg], loc))
+      close fenv cenv (Lapply(funct, [arg], mk_apply_info loc))
   | Lprim(Pgetglobal id, []) as lam ->
       check_constant_result lam
                             (getglobal id)
@@ -1035,7 +1068,7 @@ and close_list_approx fenv cenv = function
       (ulam :: ulams, approx :: approxs)
 
 and close_named fenv cenv id = function
-    Lfunction(kind, params, body) as funct ->
+    Lfunction{kind; params; body} as funct ->
       close_one_function fenv cenv id funct
   | lam ->
       close fenv cenv lam
@@ -1047,7 +1080,7 @@ and close_functions fenv cenv fun_defs =
     List.flatten
       (List.map
          (function
-           | (id, Lfunction(kind, params, body)) ->
+           | (id, Lfunction{kind; params; body}) ->
                split_default_wrapper id kind params body
            | _ -> assert false
          )
@@ -1067,7 +1100,7 @@ and close_functions fenv cenv fun_defs =
   let uncurried_defs =
     List.map
       (function
-          (id, Lfunction(kind, params, body)) ->
+          (id, Lfunction{kind; params; body}) ->
             let label = Compilenv.make_symbol (Some (Ident.unique_name id)) in
             let arity = List.length params in
             let fundesc =

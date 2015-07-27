@@ -11,7 +11,7 @@
 /*                                                                     */
 /***********************************************************************/
 
-#include <mlvalues.h>
+#include <caml/mlvalues.h>
 #include "unixsupport.h"
 
 #ifdef HAS_DUP2

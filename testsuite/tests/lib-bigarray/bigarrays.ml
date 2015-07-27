@@ -163,6 +163,86 @@ let _ =
     set 1 vals;
     a in
 
+  (* Test indexing arrays.  This test has to be copy-pasted, otherwise indexing may not
+     use the optimizations in Cmmgen.bigarray_indexing. *)
+  begin
+    let v = 123 in
+    let cb = Array1.create int8_signed c_layout 1000 in
+    let fb = Array1.create int8_signed fortran_layout 1000 in
+    Array1.fill cb v;
+    Array1.fill fb v;
+    let return = ref true in
+    for i = 1 to 99 do
+      let i = i * 10 in
+      return := !return
+        && Array1.unsafe_get cb (i - 10) = v
+        && Array1.unsafe_get cb (i     ) = v
+        && Array1.unsafe_get cb (i +  9) = v
+        && Array1.unsafe_get fb (i -  9) = v
+        && Array1.unsafe_get fb (i     ) = v
+        && Array1.unsafe_get fb (i + 10) = v
+    done;
+    test 13 true !return
+  end;
+  begin
+    let v = 123 in
+    let cb = Array1.create int16_unsigned c_layout 1000 in
+    let fb = Array1.create int16_unsigned fortran_layout 1000 in
+    Array1.fill cb v;
+    Array1.fill fb v;
+    let return = ref true in
+    for i = 1 to 99 do
+      let i = i * 10 in
+      return := !return
+        && Array1.unsafe_get cb (i - 10) = v
+        && Array1.unsafe_get cb (i     ) = v
+        && Array1.unsafe_get cb (i +  9) = v
+        && Array1.unsafe_get fb (i -  9) = v
+        && Array1.unsafe_get fb (i     ) = v
+        && Array1.unsafe_get fb (i + 10) = v
+    done;
+    test 14 true !return
+  end;
+  begin
+    let v = 123. in
+    let cb = Array1.create float32 c_layout 1000 in
+    let fb = Array1.create float32 fortran_layout 1000 in
+    Array1.fill cb v;
+    Array1.fill fb v;
+    let return = ref true in
+    for i = 1 to 99 do
+      let i = i * 10 in
+      return := !return
+        && Array1.unsafe_get cb (i - 10) = v
+        && Array1.unsafe_get cb (i     ) = v
+        && Array1.unsafe_get cb (i +  9) = v
+        && Array1.unsafe_get fb (i -  9) = v
+        && Array1.unsafe_get fb (i     ) = v
+        && Array1.unsafe_get fb (i + 10) = v
+    done;
+    test 15 true !return
+  end;
+
+  begin
+    let v = 123. in
+    let cb = Array1.create float64 c_layout 1000 in
+    let fb = Array1.create float64 fortran_layout 1000 in
+    Array1.fill cb v;
+    Array1.fill fb v;
+    let return = ref true in
+    for i = 1 to 99 do
+      let i = i * 10 in
+      return := !return
+        && Array1.unsafe_get cb (i - 10) = v
+        && Array1.unsafe_get cb (i     ) = v
+        && Array1.unsafe_get cb (i +  9) = v
+        && Array1.unsafe_get fb (i -  9) = v
+        && Array1.unsafe_get fb (i     ) = v
+        && Array1.unsafe_get fb (i + 10) = v
+    done;
+    test 16 true !return
+  end;
+
   testing_function "set/get (specialized)";
   let a = Array1.create int c_layout 3 in
   for i = 0 to 2 do a.{i} <- i done;

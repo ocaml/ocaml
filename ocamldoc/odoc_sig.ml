@@ -335,10 +335,10 @@ module Analyser =
         | Parsetree.Psig_include _
         | Parsetree.Psig_class _
         | Parsetree.Psig_class_type _ as tp -> take_item tp
-        | Parsetree.Psig_type types ->
+        | Parsetree.Psig_type (rf, types) ->
           (match List.filter (fun td -> not (Name.Set.mem td.Parsetree.ptype_name.txt erased)) types with
           | [] -> acc
-          | types -> take_item (Parsetree.Psig_type types))
+          | types -> take_item (Parsetree.Psig_type (rf, types)))
         | Parsetree.Psig_module {Parsetree.pmd_name=name}
         | Parsetree.Psig_modtype {Parsetree.pmtd_name=name} as m ->
           if Name.Set.mem name.txt erased then acc else take_item m
@@ -738,9 +738,8 @@ module Analyser =
             let new_env = Odoc_env.add_extension env e.ex_name in
             (maybe_more, new_env, [ Element_exception e ])
 
-        | Parsetree.Psig_type name_type_decl_list ->
-            (* we start by extending the environment *)
-            let new_env =
+        | Parsetree.Psig_type (rf, name_type_decl_list) ->
+            let extended_env =
               List.fold_left
                 (fun acc_env td ->
                   let complete_name = Name.concat current_module_name td.Parsetree.ptype_name.txt in
@@ -748,6 +747,11 @@ module Analyser =
                 )
                 env
                 name_type_decl_list
+            in
+            let env =
+              match rf with
+              | Recursive -> extended_env
+              | Nonrecursive -> env
             in
             let rec f ?(first=false) acc_maybe_more last_pos name_type_decl_list =
               match name_type_decl_list with
@@ -784,7 +788,7 @@ module Analyser =
                       raise (Failure (Odoc_messages.type_not_found current_module_name name.txt))
                   in
                   (* get the type kind with the associated comments *)
-                  let type_kind = get_type_kind new_env name_comment_list sig_type_decl.Types.type_kind in
+                  let type_kind = get_type_kind env name_comment_list sig_type_decl.Types.type_kind in
                   let loc_start = type_decl.Parsetree.ptype_loc.Location.loc_start.Lexing.pos_cnum in
                   let new_end = type_decl.Parsetree.ptype_loc.Location.loc_end.Lexing.pos_cnum + maybe_more in
                   (* associate the comments to each constructor and build the [Type.t_type] *)
@@ -795,7 +799,7 @@ module Analyser =
                       ty_parameters =
                         List.map2 (fun p v ->
                           let (co, cn) = Types.Variance.get_upper v in
-                          (Odoc_env.subst_type new_env p,co, cn))
+                          (Odoc_env.subst_type env p,co, cn))
                         sig_type_decl.Types.type_params
                         sig_type_decl.Types.type_variance;
                       ty_kind = type_kind;
@@ -830,7 +834,7 @@ module Analyser =
                   (new_maybe_more, (ele_comments @ [Element_type new_type]) @ eles)
             in
             let (maybe_more, types) = f ~first: true 0 pos_start_ele name_type_decl_list in
-            (maybe_more, new_env, types)
+            (maybe_more, extended_env, types)
 
         | Parsetree.Psig_open _ -> (* A VOIR *)
             let ele_comments = match comment_opt with
@@ -1520,7 +1524,7 @@ module Analyser =
       in
       prepare_file complete_source_file input_file;
       (* We create the t_module for this file. *)
-      let mod_name = String.capitalize
+      let mod_name = String.capitalize_ascii
           (Filename.basename (try Filename.chop_extension source_file with _ -> source_file))
       in
       let (len,info_opt) = My_ir.first_special !file_name !file in

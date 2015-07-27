@@ -15,17 +15,18 @@
 
 #include <string.h>
 
-#include "alloc.h"
-#include "fail.h"
-#include "major_gc.h"
-#include "memory.h"
-#include "mlvalues.h"
+#include "caml/alloc.h"
+#include "caml/fail.h"
+#include "caml/major_gc.h"
+#include "caml/memory.h"
+#include "caml/mlvalues.h"
 
 value caml_weak_list_head = 0;
 
 static value weak_dummy = 0;
 value caml_weak_none = (value) &weak_dummy;
 
+/* [len] is a value that represents a number of words (fields) */
 CAMLprim value caml_weak_create (value len)
 {
   mlsize_t size, i;

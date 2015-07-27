@@ -15,10 +15,10 @@
 #include <fcntl.h>
 #include <signal.h>
 #include "libgraph.h"
-#include <alloc.h>
-#include <callback.h>
-#include <fail.h>
-#include <memory.h>
+#include <caml/alloc.h>
+#include <caml/callback.h>
+#include <caml/fail.h>
+#include <caml/memory.h>
 #ifdef HAS_UNISTD
 #include <unistd.h>
 #endif

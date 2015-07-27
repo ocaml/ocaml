@@ -9,7 +9,7 @@ type _ inline_t =
 
 let uppercase seq =
    let rec process: type a. a inline_t -> a inline_t = function
-       | Text txt       -> Text (String.uppercase txt)
+       | Text txt       -> Text (String.uppercase_ascii txt)
        | Bold xs        -> Bold (List.map process xs)
        | Link lnk       -> Link lnk
        | Mref (lnk, xs) -> Mref (lnk, List.map process xs)

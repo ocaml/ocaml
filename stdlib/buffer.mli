@@ -38,11 +38,12 @@ val create : int -> t
 
 val contents : t -> string
 (** Return a copy of the current contents of the buffer.
-   The buffer itself is unchanged. *)
+    The buffer itself is unchanged. *)
 
 val to_bytes : t -> bytes
 (** Return a copy of the current contents of the buffer.
-   The buffer itself is unchanged. *)
+    The buffer itself is unchanged.
+    @since 4.02 *)
 
 val sub : t -> int -> int -> string
 (** [Buffer.sub b off len] returns (a copy of) the bytes from the
@@ -85,7 +86,8 @@ val add_string : t -> string -> unit
 (** [add_string b s] appends the string [s] at the end of the buffer [b]. *)
 
 val add_bytes : t -> bytes -> unit
-(** [add_string b s] appends the string [s] at the end of the buffer [b]. *)
+(** [add_string b s] appends the string [s] at the end of the buffer [b].
+    @since 4.02 *)
 
 val add_substring : t -> string -> int -> int -> unit
 (** [add_substring b s ofs len] takes [len] characters from offset
@@ -93,7 +95,8 @@ val add_substring : t -> string -> int -> int -> unit
 
 val add_subbytes : t -> bytes -> int -> int -> unit
 (** [add_substring b s ofs len] takes [len] characters from offset
-   [ofs] in byte sequence [s] and appends them at the end of the buffer [b]. *)
+    [ofs] in byte sequence [s] and appends them at the end of the buffer [b].
+    @since 4.02 *)
 
 val add_substitute : t -> (string -> string) -> string -> unit
 (** [add_substitute b f s] appends the string pattern [s] at the end
@@ -116,10 +119,11 @@ val add_buffer : t -> t -> unit
    at the end of buffer [b1].  [b2] is not modified. *)
 
 val add_channel : t -> in_channel -> int -> unit
-(** [add_channel b ic n] reads exactly [n] character from the
+(** [add_channel b ic n] reads at most [n] characters from the
    input channel [ic] and stores them at the end of buffer [b].
    Raise [End_of_file] if the channel contains fewer than [n]
-   characters. *)
+   characters. In this case the characters are still added to
+   the buffer, so as to avoid loss of data. *)
 
 val output_buffer : out_channel -> t -> unit
 (** [output_buffer oc b] writes the current contents of buffer [b]

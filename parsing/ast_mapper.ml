@@ -179,6 +179,7 @@ module CT = struct
   let map sub {pcty_loc = loc; pcty_desc = desc; pcty_attributes = attrs} =
     let open Cty in
     let loc = sub.location sub loc in
+    let attrs = sub.attributes sub attrs in
     match desc with
     | Pcty_constr (lid, tys) ->
         constr ~loc ~attrs (map_loc sub lid) (List.map (sub.typ sub) tys)
@@ -191,6 +192,7 @@ module CT = struct
     =
     let open Ctf in
     let loc = sub.location sub loc in
+    let attrs = sub.attributes sub attrs in
     match desc with
     | Pctf_inherit ct -> inherit_ ~loc ~attrs (sub.class_type sub ct)
     | Pctf_val (s, m, v, t) -> val_ ~loc ~attrs s m v (sub.typ sub t)
@@ -241,7 +243,7 @@ module MT = struct
     let loc = sub.location sub loc in
     match desc with
     | Psig_value vd -> value ~loc (sub.value_description sub vd)
-    | Psig_type l -> type_ ~loc (List.map (sub.type_declaration sub) l)
+    | Psig_type (rf, l) -> type_ ~loc rf (List.map (sub.type_declaration sub) l)
     | Psig_typext te -> type_extension ~loc (sub.type_extension sub te)
     | Psig_exception ed -> exception_ ~loc (sub.extension_constructor sub ed)
     | Psig_module x -> module_ ~loc (sub.module_declaration sub x)
@@ -289,7 +291,7 @@ module M = struct
         eval ~loc ~attrs:(sub.attributes sub attrs) (sub.expr sub x)
     | Pstr_value (r, vbs) -> value ~loc r (List.map (sub.value_binding sub) vbs)
     | Pstr_primitive vd -> primitive ~loc (sub.value_description sub vd)
-    | Pstr_type l -> type_ ~loc (List.map (sub.type_declaration sub) l)
+    | Pstr_type (rf, l) -> type_ ~loc rf (List.map (sub.type_declaration sub) l)
     | Pstr_typext te -> type_extension ~loc (sub.type_extension sub te)
     | Pstr_exception ed -> exception_ ~loc (sub.extension_constructor sub ed)
     | Pstr_module x -> module_ ~loc (sub.module_binding sub x)
@@ -415,6 +417,7 @@ module CE = struct
   let map sub {pcl_loc = loc; pcl_desc = desc; pcl_attributes = attrs} =
     let open Cl in
     let loc = sub.location sub loc in
+    let attrs = sub.attributes sub attrs in
     match desc with
     | Pcl_constr (lid, tys) ->
         constr ~loc ~attrs (map_loc sub lid) (List.map (sub.typ sub) tys)
@@ -442,6 +445,7 @@ module CE = struct
   let map_field sub {pcf_desc = desc; pcf_loc = loc; pcf_attributes = attrs} =
     let open Cf in
     let loc = sub.location sub loc in
+    let attrs = sub.attributes sub attrs in
     match desc with
     | Pcf_inherit (o, ce, s) -> inherit_ ~loc ~attrs o (sub.class_expr sub ce) s
     | Pcf_val (s, m, k) -> val_ ~loc ~attrs (map_loc sub s) m (map_kind sub k)
@@ -793,17 +797,6 @@ let ppx_context = PpxContext.make
 
 
 let apply_lazy ~source ~target mapper =
-  let ic = open_in_bin source in
-  let magic =
-    really_input_string ic (String.length Config.ast_impl_magic_number)
-  in
-  if magic <> Config.ast_impl_magic_number
-  && magic <> Config.ast_intf_magic_number then
-    failwith "Ast_mapper: OCaml version mismatch or malformed input";
-  Location.input_name := input_value ic;
-  let ast = input_value ic in
-  close_in ic;
-
   let implem ast =
     try
       let fields, ast =
@@ -844,16 +837,32 @@ let apply_lazy ~source ~target mapper =
             psig_loc  = Location.none}]
       | None -> raise exn
   in
-  let ast =
-    if magic = Config.ast_impl_magic_number
-    then Obj.magic (implem (Obj.magic ast))
-    else Obj.magic (iface (Obj.magic ast))
+
+  let ic = open_in_bin source in
+  let magic =
+    really_input_string ic (String.length Config.ast_impl_magic_number)
   in
-  let oc = open_out_bin target in
-  output_string oc magic;
-  output_value oc !Location.input_name;
-  output_value oc ast;
-  close_out oc
+
+  let rewrite transform =
+    Location.input_name := input_value ic;
+    let ast = input_value ic in
+    close_in ic;
+    let ast = transform ast in
+    let oc = open_out_bin target in
+    output_string oc magic;
+    output_value oc !Location.input_name;
+    output_value oc ast;
+    close_out oc
+  and fail () =
+    close_in ic;
+    failwith "Ast_mapper: OCaml version mismatch or malformed input";
+  in
+
+  if magic = Config.ast_impl_magic_number then
+    rewrite (implem : structure -> structure)
+  else if magic = Config.ast_intf_magic_number then
+    rewrite (iface : signature -> signature)
+  else fail ()
 
 let drop_ppx_context_str ~restore = function
   | {pstr_desc = Pstr_attribute({Location.txt = "ocaml.ppx.context"}, a)}

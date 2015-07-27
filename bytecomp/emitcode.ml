@@ -409,8 +409,9 @@ let to_memory init_code fun_code =
   LongString.unsafe_blit_to_bytes !out_buffer 0 code 0 !out_position;
   let reloc = List.rev !reloc_info
   and code_size = !out_position in
+  let events = !events in
   init();
-  (code, code_size, reloc)
+  (code, code_size, reloc, events)
 
 (* Emission to a file for a packed library *)
 

@@ -1526,7 +1526,7 @@ let inline_lazy_force_cond arg loc =
                 (* ... if (tag == Obj.lazy_tag) then Lazy.force varg else ... *)
                 Lprim(Pintcomp Ceq,
                       [Lvar tag; Lconst(Const_base(Const_int Obj.lazy_tag))]),
-                Lapply(force_fun, [varg], loc),
+                Lapply(force_fun, [varg], mk_apply_info loc),
                 (* ... arg *)
                   varg))))
 
@@ -1544,7 +1544,7 @@ let inline_lazy_force_switch arg loc =
                sw_blocks =
                  [ (Obj.forward_tag, Lprim(Pfield 0, [varg]));
                    (Obj.lazy_tag,
-                    Lapply(force_fun, [varg], loc)) ];
+                    Lapply(force_fun, [varg], mk_apply_info loc)) ];
                sw_failaction = Some varg } ))))
 
 let inline_lazy_force arg loc =
@@ -2055,10 +2055,10 @@ let as_interval_canfail fail low high l =
   let store = StoreExp.mk_store () in
 
   let do_store tag act =
+
     let i =  store.act_store act in
 (*
-    Printlambda.lambda Format.str_formatter act ;
-    eprintf "STORE [%s] %i %s\n" tag i (Format.flush_str_formatter ()) ;
+    eprintf "STORE [%s] %i %s\n" tag i (string_of_lam act) ;
 *)
     i in
 
@@ -2095,7 +2095,7 @@ let as_interval_canfail fail low high l =
           nofail_rec i i index rem in
 
   let init_rec = function
-    | [] -> []
+    | [] -> [low,high,0]
     | (i,act_i)::rem ->
         let index = do_store "INIT" act_i in
         if index=0 then
@@ -2246,20 +2246,20 @@ let mk_failaction_neg partial ctx def = match partial with
 | Partial ->
     begin match def with
     | (_,idef)::_ ->
-        Some (Lstaticraise (idef,[])),[],jumps_singleton idef ctx
-    | _ ->
+        Some (Lstaticraise (idef,[])),jumps_singleton idef ctx
+    | [] ->
        (* Act as Total, this means
           If no appropriate default matrix exists,
           then this switch cannot fail *)
-        None, [], jumps_empty
+        None, jumps_empty
     end
 | Total ->
-    None, [], jumps_empty
+    None, jumps_empty
 
 
 
 (* Conforme a l'article et plus simple qu'avant *)
-and mk_failaction_pos partial seen ctx defs  =
+let mk_failaction_pos partial seen ctx defs  =
   if dbg then begin
     prerr_endline "**POS**" ;
     pretty_def defs ;
@@ -2286,19 +2286,35 @@ and mk_failaction_pos partial seen ctx defs  =
       | [] -> scan_def env to_test rem
       | _  -> scan_def ((List.map fst now,idef)::env) later rem in
 
-  scan_def
-    []
-    (List.map
-       (fun pat -> pat, ctx_lub pat ctx)
-       (complete_pats_constrs seen))
-    defs
-
+  let fail_pats = complete_pats_constrs seen in
+  if List.length fail_pats < 32 then begin 
+    let fail,jmps =
+      scan_def
+        []
+        (List.map
+           (fun pat -> pat, ctx_lub pat ctx)
+           fail_pats)
+        defs in
+    if dbg then begin
+      eprintf "POSITIVE JUMPS [%i]:\n" (List.length fail_pats);
+      pretty_jumps jmps
+    end ;
+    None,fail,jmps
+  end else begin (* Two many non-matched constructors -> reduced information *)
+    if dbg then eprintf "POS->NEG!!!\n%!" ;
+    let fail,jumps =  mk_failaction_neg partial ctx defs in
+    if dbg then
+      eprintf "FAIL: %s\n"
+        (match fail with 
+        | None -> "<none>"
+        | Some lam -> string_of_lam lam) ;
+    fail,[],jumps
+  end
 
 let combine_constant arg cst partial ctx def
     (const_lambda_list, total, pats) =
-  let fail, to_add, local_jumps =
+  let fail, local_jumps =
     mk_failaction_neg partial ctx def in
-  let const_lambda_list = to_add@const_lambda_list in
   let lambda1 =
     match cst with
     | Const_int _ ->
@@ -2379,9 +2395,8 @@ let combine_constructor arg ex_pat cstr partial ctx def
     (tag_lambda_list, total1, pats) =
   if cstr.cstr_consts < 0 then begin
     (* Special cases for extensions *)
-    let fail, to_add, local_jumps =
+    let fail, local_jumps =
       mk_failaction_neg partial ctx def in
-    let tag_lambda_list = to_add@tag_lambda_list in
     let lambda1 =
       let consts, nonconsts = split_extension_cases tag_lambda_list in
       let default, consts, nonconsts =
@@ -2424,42 +2439,52 @@ let combine_constructor arg ex_pat cstr partial ctx def
     let ncases = List.length tag_lambda_list
     and nconstrs =  cstr.cstr_consts + cstr.cstr_nonconsts in
     let sig_complete = ncases = nconstrs in
-    let fails,local_jumps =
-      if sig_complete then [],jumps_empty
+    let fail_opt,fails,local_jumps =
+      if sig_complete then None,[],jumps_empty
       else
         mk_failaction_pos partial pats ctx def in
 
     let tag_lambda_list = fails @ tag_lambda_list in
     let (consts, nonconsts) = split_cases tag_lambda_list in
     let lambda1 =
-      match same_actions tag_lambda_list with
-      | Some act -> act
+      match fail_opt,same_actions tag_lambda_list with
+      | None,Some act -> act (* Identical actions, no failure *)
       | _ ->
           match
             (cstr.cstr_consts, cstr.cstr_nonconsts, consts, nonconsts)
           with
           | (1, 1, [0, act1], [0, act2]) ->
+           (* Typically, match on lists, will avoid isint primitive in that case *)
               Lifthenelse(arg, act2, act1)
-          | (n,_,_,[])  ->
-              call_switcher None arg 0 (n-1) consts
+          | (n,0,_,[])  -> (* The type defines constant constructors only *)
+              call_switcher fail_opt arg 0 (n-1) consts
           | (n, _, _, _) ->
-              match same_actions nonconsts with
-              | None ->
-(* Emit a switch, as bytecode implements this sophisticated instruction *)
-                  let sw =
-                    {sw_numconsts = cstr.cstr_consts; sw_consts = consts;
-                     sw_numblocks = cstr.cstr_nonconsts; sw_blocks = nonconsts;
-                     sw_failaction = None} in
-                  let hs,sw = share_actions_sw sw in
-                  let sw = reintroduce_fail sw in
-                  hs (Lswitch (arg,sw))
+              let act0  =
+                (* = Some act when all non-const constructors match to act *)
+                match fail_opt,nonconsts with
+                | Some a,[] -> Some a
+                | Some _,_ ->
+                    if List.length nonconsts = cstr.cstr_nonconsts then
+                      same_actions nonconsts
+                    else None
+                | None,_ -> same_actions nonconsts in
+              match act0 with
               | Some act ->
                   Lifthenelse
                     (Lprim (Pisint, [arg]),
                      call_switcher
-                       None arg
+                       fail_opt arg
                        0 (n-1) consts,
-                     act) in
+                     act)
+(* Emit a switch, as bytecode implements this sophisticated instruction *)
+              | None ->
+                  let sw =
+                    {sw_numconsts = cstr.cstr_consts; sw_consts = consts;
+                     sw_numblocks = cstr.cstr_nonconsts; sw_blocks = nonconsts;
+                     sw_failaction = fail_opt} in
+                  let hs,sw = share_actions_sw sw in
+                  let sw = reintroduce_fail sw in
+                  hs (Lswitch (arg,sw)) in
     lambda1, jumps_union local_jumps total1
   end
 
@@ -2494,14 +2519,13 @@ let combine_variant row arg partial ctx def (tag_lambda_list, total1, pats) =
     Lifthenelse(Lprim (Pisint, [arg]), if_int, if_block) in
   let sig_complete =  List.length tag_lambda_list = !num_constr
   and one_action = same_actions tag_lambda_list in
-  let fail, to_add, local_jumps =
+  let fail, local_jumps =
     if
       sig_complete  || (match partial with Total -> true | _ -> false)
     then
-      None, [], jumps_empty
+      None, jumps_empty
     else
       mk_failaction_neg partial ctx def in
-  let tag_lambda_list = to_add@tag_lambda_list in
   let (consts, nonconsts) = split_cases tag_lambda_list in
   let lambda1 = match fail, one_action with
   | None, Some act -> act
@@ -2533,8 +2557,7 @@ let combine_variant row arg partial ctx def (tag_lambda_list, total1, pats) =
 
 let combine_array arg kind partial ctx def
     (len_lambda_list, total1, pats)  =
-  let fail, to_add, local_jumps = mk_failaction_neg partial  ctx def in
-  let len_lambda_list = to_add @ len_lambda_list in
+  let fail, local_jumps = mk_failaction_neg partial  ctx def in
   let lambda1 =
     let newvar = Ident.create "len" in
     let switch =
@@ -2637,8 +2660,8 @@ let compile_test compile_fun partial divide combine ctx to_match =
   match c_div with
   | [],_,_ ->
      begin match mk_failaction_neg partial ctx to_match.default with
-     | None,_,_ -> raise Unused
-     | Some l,_,total -> l,total
+     | None,_ -> raise Unused
+     | Some l,total -> l,total
      end
   | _ ->
       combine ctx to_match.default c_div

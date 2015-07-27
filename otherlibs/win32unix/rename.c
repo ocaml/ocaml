@@ -12,7 +12,7 @@
 /***********************************************************************/
 
 #include <stdio.h>
-#include <mlvalues.h>
+#include <caml/mlvalues.h>
 #include "unixsupport.h"
 
 CAMLprim value unix_rename(value path1, value path2)

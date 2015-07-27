@@ -74,8 +74,8 @@ and expression_desc =
     Texp_ident of Path.t * Longident.t loc * Types.value_description
   | Texp_constant of constant
   | Texp_let of rec_flag * value_binding list * expression
-  | Texp_function of label * case list * partial
-  | Texp_apply of expression * (label * expression option * optional) list
+  | Texp_function of arg_label * case list * partial
+  | Texp_apply of expression * (arg_label * expression option * optional) list
   | Texp_match of expression * case list * case list * partial
   | Texp_try of expression * case list
   | Texp_tuple of expression list
@@ -132,9 +132,9 @@ and class_expr_desc =
     Tcl_ident of Path.t * Longident.t loc * core_type list
   | Tcl_structure of class_structure
   | Tcl_fun of
-      label * pattern * (Ident.t * string loc * expression) list * class_expr *
+      arg_label * pattern * (Ident.t * string loc * expression) list * class_expr *
         partial
-  | Tcl_apply of class_expr * (label * expression option * optional) list
+  | Tcl_apply of class_expr * (arg_label * expression option * optional) list
   | Tcl_let of rec_flag * value_binding list *
                   (Ident.t * string loc * expression) list * class_expr
   | Tcl_constraint of
@@ -210,14 +210,14 @@ and structure_item_desc =
     Tstr_eval of expression * attributes
   | Tstr_value of rec_flag * value_binding list
   | Tstr_primitive of value_description
-  | Tstr_type of type_declaration list
+  | Tstr_type of rec_flag * type_declaration list
   | Tstr_typext of type_extension
   | Tstr_exception of extension_constructor
   | Tstr_module of module_binding
   | Tstr_recmodule of module_binding list
   | Tstr_modtype of module_type_declaration
   | Tstr_open of open_description
-  | Tstr_class of (class_declaration * string list * virtual_flag) list
+  | Tstr_class of (class_declaration * string list) list
   | Tstr_class_type of (Ident.t * string loc * class_type_declaration) list
   | Tstr_include of include_declaration
   | Tstr_attribute of attribute
@@ -244,7 +244,7 @@ and module_coercion =
   | Tcoerce_structure of (int * module_coercion) list *
                          (Ident.t * int * module_coercion) list
   | Tcoerce_functor of module_coercion * module_coercion
-  | Tcoerce_primitive of Primitive.description
+  | Tcoerce_primitive of primitive_coercion
   | Tcoerce_alias of Path.t * module_coercion
 
 and module_type =
@@ -263,6 +263,15 @@ and module_type_desc =
   | Tmty_typeof of module_expr
   | Tmty_alias of Path.t * Longident.t loc
 
+(* Keep primitive type information for type-based lambda-code specialization *)
+and primitive_coercion =
+  {
+    pc_desc: Primitive.description;
+    pc_type: type_expr;
+    pc_env: Env.t;
+    pc_loc : Location.t;
+  }
+
 and signature = {
   sig_items : signature_item list;
   sig_type : Types.signature;
@@ -276,7 +285,7 @@ and signature_item =
 
 and signature_item_desc =
     Tsig_value of value_description
-  | Tsig_type of type_declaration list
+  | Tsig_type of rec_flag * type_declaration list
   | Tsig_typext of type_extension
   | Tsig_exception of extension_constructor
   | Tsig_module of module_declaration
@@ -345,7 +354,7 @@ and core_type =
 and core_type_desc =
     Ttyp_any
   | Ttyp_var of string
-  | Ttyp_arrow of label * core_type * core_type
+  | Ttyp_arrow of arg_label * core_type * core_type
   | Ttyp_tuple of core_type list
   | Ttyp_constr of Path.t * Longident.t loc * core_type list
   | Ttyp_object of (string * attributes * core_type) list * closed_flag
@@ -433,9 +442,9 @@ and extension_constructor =
   {
     ext_id: Ident.t;
     ext_name: string loc;
-    ext_type : Types.extension_constructor;
-    ext_kind : extension_constructor_kind;
-    ext_loc : Location.t;
+    ext_type: Types.extension_constructor;
+    ext_kind: extension_constructor_kind;
+    ext_loc: Location.t;
     ext_attributes: attribute list;
   }
 
@@ -455,12 +464,12 @@ and class_type =
 and class_type_desc =
     Tcty_constr of Path.t * Longident.t loc * core_type list
   | Tcty_signature of class_signature
-  | Tcty_arrow of label * core_type * class_type
+  | Tcty_arrow of arg_label * core_type * class_type
 
 and class_signature = {
-    csig_self : core_type;
-    csig_fields : class_type_field list;
-    csig_type : Types.class_signature;
+    csig_self: core_type;
+    csig_fields: class_type_field list;
+    csig_type: Types.class_signature;
   }
 
 and class_type_field = {
@@ -488,14 +497,14 @@ and class_type_declaration =
 and 'a class_infos =
   { ci_virt: virtual_flag;
     ci_params: (core_type * variance) list;
-    ci_id_name : string loc;
+    ci_id_name: string loc;
     ci_id_class: Ident.t;
-    ci_id_class_type : Ident.t;
-    ci_id_object : Ident.t;
-    ci_id_typesharp : Ident.t;
+    ci_id_class_type: Ident.t;
+    ci_id_object: Ident.t;
+    ci_id_typesharp: Ident.t;
     ci_expr: 'a;
     ci_decl: Types.class_declaration;
-    ci_type_decl : Types.class_type_declaration;
+    ci_type_decl: Types.class_type_declaration;
     ci_loc: Location.t;
     ci_attributes: attribute list;
    }

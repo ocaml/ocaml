@@ -13,20 +13,20 @@
 
 /* Structured output */
 
-/* The interface of this file is "intext.h" */
+/* The interface of this file is "caml/intext.h" */
 
 #include <string.h>
-#include "alloc.h"
-#include "custom.h"
-#include "fail.h"
-#include "gc.h"
-#include "intext.h"
-#include "io.h"
-#include "md5.h"
-#include "memory.h"
-#include "misc.h"
-#include "mlvalues.h"
-#include "reverse.h"
+#include "caml/alloc.h"
+#include "caml/custom.h"
+#include "caml/fail.h"
+#include "caml/gc.h"
+#include "caml/intext.h"
+#include "caml/io.h"
+#include "caml/md5.h"
+#include "caml/memory.h"
+#include "caml/misc.h"
+#include "caml/mlvalues.h"
+#include "caml/reverse.h"
 
 static uintnat obj_counter;  /* Number of objects emitted so far */
 static uintnat size_32;  /* Size in words of 32-bit block for struct. */
@@ -75,10 +75,10 @@ static struct extern_item * extern_stack_limit = extern_stack_init
 
 /* Forward declarations */
 
-static void extern_out_of_memory(void) Noreturn;
-static void extern_invalid_argument(char *msg) Noreturn;
-static void extern_failwith(char *msg) Noreturn;
-static void extern_stack_overflow(void) Noreturn;
+Noreturn static void extern_out_of_memory(void);
+Noreturn static void extern_invalid_argument(char *msg);
+Noreturn static void extern_failwith(char *msg);
+Noreturn static void extern_stack_overflow(void);
 static struct code_fragment * extern_find_code(char *addr);
 static void extern_replay_trail(void);
 static void free_extern_output(void);
@@ -489,8 +489,8 @@ static void extern_rec(value v)
     case Custom_tag: {
       uintnat sz_32, sz_64;
       char * ident = Custom_ops_val(v)->identifier;
-      void (*serialize)(value v, uintnat * wsize_32,
-                        uintnat * wsize_64)
+      void (*serialize)(value v, uintnat * bsize_32,
+                        uintnat * bsize_64)
         = Custom_ops_val(v)->serialize;
       if (serialize == NULL)
         extern_invalid_argument("output_value: abstract value (Custom)");

@@ -11,10 +11,10 @@
 /*                                                                     */
 /***********************************************************************/
 
-#include <mlvalues.h>
-#include <fail.h>
-#include <alloc.h>
-#include <memory.h>
+#include <caml/mlvalues.h>
+#include <caml/fail.h>
+#include <caml/alloc.h>
+#include <caml/memory.h>
 #include "unixsupport.h"
 #include <stdio.h>
 #include <grp.h>

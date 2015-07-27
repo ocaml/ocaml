@@ -14,12 +14,13 @@
 /* Operations on arrays */
 
 #include <string.h>
-#include "alloc.h"
-#include "fail.h"
-#include "memory.h"
-#include "misc.h"
-#include "mlvalues.h"
+#include "caml/alloc.h"
+#include "caml/fail.h"
+#include "caml/memory.h"
+#include "caml/misc.h"
+#include "caml/mlvalues.h"
 
+/* returns number of elements (either fields or floats) */
 CAMLexport mlsize_t caml_array_length(value array)
 {
   if (Tag_val(array) == Double_array_tag)
@@ -135,6 +136,7 @@ CAMLprim value caml_array_unsafe_set(value array, value index, value newval)
     return caml_array_unsafe_set_addr(array, index, newval);
 }
 
+/* [len] is a [value] representing number of floats */
 CAMLprim value caml_make_float_vect(value len)
 {
   mlsize_t wosize = Long_val(len) * Double_wosize;
@@ -156,6 +158,7 @@ CAMLprim value caml_make_float_vect(value len)
   return result;
 }
 
+/* [len] is a [value] representing number of words or floats */
 CAMLprim value caml_make_vect(value len, value init)
 {
   CAMLparam2 (len, init);

@@ -15,11 +15,11 @@
 
 #include <signal.h>
 #include <errno.h>
-#include "config.h"
-#include "memory.h"
-#include "osdeps.h"
-#include "signals.h"
-#include "signals_machdep.h"
+#include "caml/config.h"
+#include "caml/memory.h"
+#include "caml/osdeps.h"
+#include "caml/signals.h"
+#include "caml/signals_machdep.h"
 
 #ifndef NSIG
 #define NSIG 64
@@ -38,8 +38,7 @@ void caml_process_event(void)
 {
   void (*async_action)(void);
 
-  if (caml_force_major_slice) caml_minor_collection ();
-                             /* FIXME should be [caml_check_urgent_gc] */
+  caml_check_urgent_gc (Val_unit);
   caml_process_pending_signals();
   async_action = caml_async_action_hook;
   if (async_action != NULL) {

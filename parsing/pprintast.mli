@@ -53,10 +53,10 @@ class printer :
       Format.formatter -> Parsetree.extension_constructor -> unit
     method label_exp :
       Format.formatter ->
-      Asttypes.label * Parsetree.expression option * Parsetree.pattern ->
+      Asttypes.arg_label * Parsetree.expression option * Parsetree.pattern ->
       unit
     method label_x_expression_param :
-      Format.formatter -> Asttypes.label * Parsetree.expression -> unit
+      Format.formatter -> Asttypes.arg_label * Parsetree.expression -> unit
     method list :
       ?sep:space_formatter ->
       ?first:space_formatter ->
@@ -81,7 +81,9 @@ class printer :
     method payload : Format.formatter -> Parsetree.payload -> unit
     method private_flag : Format.formatter -> Asttypes.private_flag -> unit
     method rec_flag : Format.formatter -> Asttypes.rec_flag -> unit
-    method record_declaration : Format.formatter -> Parsetree.label_declaration list -> unit
+    method nonrec_flag : Format.formatter -> Asttypes.rec_flag -> unit
+    method record_declaration :
+        Format.formatter -> Parsetree.label_declaration list -> unit
 
     method reset : 'b
     method reset_semi : 'b
@@ -105,7 +107,7 @@ class printer :
     method type_declaration :
       Format.formatter -> Parsetree.type_declaration -> unit
     method type_def_list :
-      Format.formatter -> Parsetree.type_declaration list -> unit
+      Format.formatter -> Asttypes.rec_flag * Parsetree.type_declaration list -> unit
     method type_extension :
       Format.formatter -> Parsetree.type_extension -> unit
     method type_param :
@@ -113,7 +115,7 @@ class printer :
     method type_params :
       Format.formatter -> (Parsetree.core_type * Asttypes.variance) list -> unit
     method type_with_label :
-      Format.formatter -> Asttypes.label * Parsetree.core_type -> unit
+      Format.formatter -> Asttypes.arg_label * Parsetree.core_type -> unit
     method tyvar : Format.formatter -> string -> unit
     method under_pipe : 'b
     method under_semi : 'b

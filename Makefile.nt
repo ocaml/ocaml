@@ -13,18 +13,18 @@
 # The main Makefile
 
 include config/Makefile
+CAMLRUN ?= boot/ocamlrun
+CAMLYACC ?= boot/ocamlyacc
 include stdlib/StdlibModules
 
-CAMLC=boot/ocamlrun boot/ocamlc -nostdlib -I boot
-CAMLOPT=boot/ocamlrun ./ocamlopt -nostdlib -I stdlib -I otherlibs/dynlink
+CAMLC=$(CAMLRUN) boot/ocamlc -nostdlib -I boot
+CAMLOPT=$(CAMLRUN) ./ocamlopt -nostdlib -I stdlib -I otherlibs/dynlink
 COMPFLAGS=-strict-sequence -w +33..39+48 -warn-error A -bin-annot $(INCLUDES)
 LINKFLAGS=
-CAMLYACC=boot/ocamlyacc
 YACCFLAGS=
-CAMLLEX=boot/ocamlrun boot/ocamllex
-CAMLDEP=boot/ocamlrun tools/ocamldep
+CAMLLEX=$(CAMLRUN) boot/ocamllex
+CAMLDEP=$(CAMLRUN) tools/ocamldep
 DEPFLAGS=$(INCLUDES)
-CAMLRUN=byterun/ocamlrun
 
 OCAMLBUILDBYTE=$(WITH_OCAMLBUILD:=.byte)
 OCAMLBUILDNATIVE=$(WITH_OCAMLBUILD:=.native)
@@ -39,7 +39,7 @@ UTILS=utils/misc.cmo utils/tbl.cmo utils/config.cmo \
   utils/consistbl.cmo
 
 PARSING=parsing/location.cmo parsing/longident.cmo \
-  parsing/ast_helper.cmo \
+  parsing/docstrings.cmo parsing/ast_helper.cmo \
   parsing/syntaxerr.cmo parsing/parser.cmo \
   parsing/lexer.cmo parsing/parse.cmo parsing/printast.cmo \
   parsing/pprintast.cmo \
@@ -53,11 +53,13 @@ TYPING=typing/ident.cmo typing/path.cmo \
   typing/typedtree.cmo typing/printtyped.cmo typing/ctype.cmo \
   typing/printtyp.cmo typing/includeclass.cmo \
   typing/mtype.cmo typing/envaux.cmo typing/includecore.cmo \
-  typing/typedtreeIter.cmo typing/typedtreeMap.cmo typing/cmt_format.cmo \
+  typing/typedtreeIter.cmo typing/typedtreeMap.cmo \
+  typing/tast_mapper.cmo \
+  typing/cmt_format.cmo \
   typing/includemod.cmo typing/typetexp.cmo typing/parmatch.cmo \
   typing/stypes.cmo typing/typecore.cmo \
   typing/typedecl.cmo typing/typeclass.cmo \
-  typing/typemod.cmo
+  typing/typemod.cmo typing/untypeast.cmo
 
 COMP=bytecomp/lambda.cmo bytecomp/printlambda.cmo \
   bytecomp/typeopt.cmo bytecomp/switch.cmo bytecomp/matching.cmo \
@@ -75,7 +77,23 @@ BYTECOMP=bytecomp/meta.cmo bytecomp/instruct.cmo bytecomp/bytegen.cmo \
   bytecomp/bytelink.cmo bytecomp/bytelibrarian.cmo bytecomp/bytepackager.cmo \
   driver/errors.cmo driver/compile.cmo
 
-ASMCOMP=asmcomp/arch.cmo asmcomp/debuginfo.cmo \
+INTEL_ASM=\
+  asmcomp/x86_proc.cmo \
+  asmcomp/x86_dsl.cmo \
+  asmcomp/x86_gas.cmo \
+  asmcomp/x86_masm.cmo
+
+ARCH_SPECIFIC_ASMCOMP=
+ifeq ($(ARCH),i386)
+ARCH_SPECIFIC_ASMCOMP=$(INTEL_ASM)
+endif
+ifeq ($(ARCH),amd64)
+ARCH_SPECIFIC_ASMCOMP=$(INTEL_ASM)
+endif
+
+ASMCOMP=\
+  $(ARCH_SPECIFIC_ASMCOMP) \
+  asmcomp/arch.cmo asmcomp/debuginfo.cmo \
   asmcomp/cmm.cmo asmcomp/printcmm.cmo \
   asmcomp/reg.cmo asmcomp/mach.cmo asmcomp/proc.cmo \
   asmcomp/clambda.cmo asmcomp/printclambda.cmo asmcomp/compilenv.cmo \
@@ -244,8 +262,12 @@ installbyt:
 	cd stdlib ; $(MAKEREC) install
 	cp lex/ocamllex $(INSTALL_BINDIR)/ocamllex.exe
 	cp yacc/ocamlyacc.exe $(INSTALL_BINDIR)/ocamlyacc.exe
-	cp utils/*.cmi parsing/*.cmi typing/*.cmi bytecomp/*.cmi driver/*.cmi \
-	   toplevel/*.cmi $(INSTALL_COMPLIBDIR)
+	cp utils/*.cmi utils/*.cmt utils/*.cmti \
+	   parsing/*.cmi parsing/*.cmt parsing/*.cmti \
+	   typing/*.cmi typing/*.cmt typing/*.cmti \
+	   bytecomp/*.cmi bytecomp/*.cmt bytecomp/*.cmti \
+	   driver/*.cmi driver/*.cmt driver/*.cmti \
+	   toplevel/*.cmi toplevel/*.cmt toplevel/*.cmti $(INSTALL_COMPLIBDIR)
 	cp compilerlibs/ocamlcommon.cma compilerlibs/ocamlbytecomp.cma \
 	   compilerlibs/ocamltoplevel.cma $(BYTESTART) $(TOPLEVELSTART) \
 	   $(INSTALL_COMPLIBDIR)
@@ -272,12 +294,14 @@ installopt:
 	cd asmrun ; $(MAKEREC) install
 	cp ocamlopt $(INSTALL_BINDIR)/ocamlopt.exe
 	cd stdlib ; $(MAKEREC) installopt
-	cp asmcomp/*.cmi $(INSTALL_COMPLIBDIR)
+	cp asmcomp/*.cmi asmcomp/*.cmt asmcomp/*.cmti $(INSTALL_COMPLIBDIR)
 	cp compilerlibs/ocamloptcomp.cma $(OPTSTART) $(INSTALL_COMPLIBDIR)
 	if test -n "$(WITH_OCAMLDOC)"; then (cd ocamldoc; $(MAKEREC) installopt); fi
 	if test -n "$(WITH_OCAMLBUILD)"; then (cd ocamlbuild; $(MAKE) installopt); \
 	   else :; fi
-	for i in $(OTHERLIBRARIES); do $(MAKEREC) -C otherlibs/$$i installopt; done
+	for i in $(OTHERLIBRARIES); do \
+	  $(MAKEREC) -C otherlibs/$$i installopt || exit $$?; \
+	done
 	if test -f ocamlopt.opt ; then $(MAKEREC) installoptopt; fi
 	cd tools; $(MAKE) installopt
 
@@ -463,8 +487,8 @@ $(COMMON:.cmo=.cmx) $(BYTECOMP:.cmo=.cmx) $(ASMCOMP:.cmo=.cmx): ocamlopt
 
 # The numeric opcodes
 
-bytecomp/opcodes.ml: byterun/instruct.h
-	sed -n -e "/^enum/p" -e "s|,||g" -e "/^  /p" byterun/instruct.h | \
+bytecomp/opcodes.ml: byterun/caml/instruct.h
+	sed -n -e "/^enum/p" -e "s|,||g" -e "/^  /p" byterun/caml/instruct.h | \
 	gawk -f tools/make-opcodes > bytecomp/opcodes.ml
 
 partialclean::
@@ -477,9 +501,9 @@ beforedepend:: bytecomp/opcodes.ml
 byterun/primitives:
 	cd byterun ; $(MAKEREC) primitives
 
-bytecomp/runtimedef.ml: byterun/primitives byterun/fail.h
+bytecomp/runtimedef.ml: byterun/primitives byterun/caml/fail.h
 	(echo 'let builtin_exceptions = [|'; \
-	 sed -n -e 's|.*/\* \("[A-Za-z_]*"\) \*/$$|  \1;|p' byterun/fail.h | \
+	 sed -n -e 's|.*/\* \("[A-Za-z_]*"\) \*/$$|  \1;|p' byterun/caml/fail.h | \
 	 sed -e '$$s/;$$//'; \
 	 echo '|]'; \
 	 echo 'let builtin_primitives = [|'; \
@@ -500,12 +524,6 @@ partialclean::
 	rm -f asmcomp/arch.ml
 
 beforedepend:: asmcomp/arch.ml
-
-ifeq ($(TOOLCHAIN),msvc)
-ASMCOMP_EMIT=asmcomp/$(ARCH)/emit_nt.mlp
-else
-ASMCOMP_EMIT=asmcomp/$(ARCH)/emit.mlp
-endif
 
 asmcomp/proc.ml: asmcomp/$(ARCH)/proc.ml
 	cp asmcomp/$(ARCH)/proc.ml asmcomp/proc.ml
@@ -549,8 +567,8 @@ beforedepend:: asmcomp/scheduling.ml
 
 # Preprocess the code emitters
 
-asmcomp/emit.ml: $(ASMCOMP_EMIT) tools/cvt_emit
-	boot/ocamlrun tools/cvt_emit < $(ASMCOMP_EMIT) > asmcomp/emit.ml
+asmcomp/emit.ml: asmcomp/$(ARCH)/emit.mlp tools/cvt_emit
+	$(CAMLRUN) tools/cvt_emit < asmcomp/$(ARCH)/emit.mlp > asmcomp/emit.ml
 
 partialclean::
 	rm -f asmcomp/emit.ml
@@ -603,7 +621,7 @@ alldepend::
 library:
 	cd stdlib ; $(MAKEREC) all
 library-cross:
-	cd stdlib ; $(MAKEREC) RUNTIME=../byterun/ocamlrun all
+	cd stdlib ; $(MAKEREC) CAMLRUN=../byterun/ocamlrun all
 libraryopt:
 	cd stdlib ; $(MAKEREC) allopt
 partialclean::
@@ -659,15 +677,25 @@ alldepend::
 # The extra libraries
 
 otherlibraries:
-	for i in $(OTHERLIBRARIES); do $(MAKEREC) -C otherlibs/$$i all; done
+	for i in $(OTHERLIBRARIES); do \
+	  $(MAKEREC) -C otherlibs/$$i all || exit $$?; \
+	done
 otherlibrariesopt:
-	for i in $(OTHERLIBRARIES); do $(MAKEREC) -C otherlibs/$$i allopt; done
+	for i in $(OTHERLIBRARIES); \
+	  do $(MAKEREC) -C otherlibs/$$i allopt || exit $$?; \
+	done
 partialclean::
-	for i in $(OTHERLIBRARIES); do $(MAKEREC) -C otherlibs/$$i partialclean; done
+	for i in $(OTHERLIBRARIES); \
+	  do $(MAKEREC) -C otherlibs/$$i partialclean || exit $$?; \
+	done
 clean::
-	for i in $(OTHERLIBRARIES); do $(MAKEREC) -C otherlibs/$$i clean; done
+	for i in $(OTHERLIBRARIES); do \
+	  $(MAKEREC) -C otherlibs/$$i clean || exit $$?; \
+	done
 alldepend::
-	for i in $(OTHERLIBRARIES); do $(MAKEREC) -C otherlibs/$$i depend; done
+	for i in $(OTHERLIBRARIES); do \
+	  $(MAKEREC) -C otherlibs/$$i depend || exit $$?; \
+	done
 
 # The replay debugger
 
@@ -729,6 +757,7 @@ alldepend:: depend
 
 distclean:
 	$(MAKE) clean
+	rm -f asmrun/.depend.nt byterun/.depend.nt
 	rm -f boot/ocamlrun boot/ocamlrun.exe boot/camlheader boot/ocamlyacc \
 	      boot/*.cm* boot/libcamlrun.a
 	rm -f config/Makefile config/m.h config/s.h

@@ -77,7 +77,7 @@ let mk_virtual_solvers =
   List.iter begin fun cmd ->
     let solver () =
       A (find_tool cmd)
-    in Command.setup_virtual_command_solver (String.uppercase cmd) solver
+    in Command.setup_virtual_command_solver (String.uppercase_ascii cmd) solver
   end
 
 let () =
@@ -101,7 +101,9 @@ let show_documentation = ref false
 let recursive = ref false
 let ext_lib = ref Ocamlbuild_config.a
 let ext_obj = ref Ocamlbuild_config.o
-let ext_dll = ref Ocamlbuild_config.so
+let ext_dll =
+  let s = Ocamlbuild_config.ext_dll in
+  ref (String.sub s 1 (String.length s - 1))
 let exe = ref Ocamlbuild_config.exe
 
 let targets_internal = ref []
@@ -353,7 +355,7 @@ let init () =
   dir_reorder my_include_dirs include_dirs;
   dir_reorder my_exclude_dirs exclude_dirs;
 
-  ignore_list := List.map String.capitalize !ignore_list
+  ignore_list := List.map String.capitalize_ascii !ignore_list
 ;;
 
 (* The current heuristic: we know we are in an ocamlbuild project if

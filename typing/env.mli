@@ -37,9 +37,11 @@ type type_descriptions =
     constructor_description list * label_description list
 
 (* For short-paths *)
+type iter_cont
 val iter_types:
     (Path.t -> Path.t * (type_declaration * type_descriptions) -> unit) ->
-    t -> unit
+    t -> iter_cont
+val run_iter_cont: iter_cont list -> (Path.t * iter_cont) list
 val same_types: t -> t -> bool
 val used_persistent: unit -> Concr.t
 val find_shadowed_types: Path.t -> t -> Path.t list
@@ -133,7 +135,7 @@ val enter_type: string -> type_declaration -> t -> Ident.t * t
 val enter_extension: string -> extension_constructor -> t -> Ident.t * t
 val enter_module: ?arg:bool -> string -> module_type -> t -> Ident.t * t
 val enter_module_declaration:
-    ?arg:bool -> string -> module_declaration -> t -> Ident.t * t
+    ?arg:bool -> Ident.t -> module_declaration -> t -> t
 val enter_modtype: string -> modtype_declaration -> t -> Ident.t * t
 val enter_class: string -> class_declaration -> t -> Ident.t * t
 val enter_cltype: string -> class_type_declaration -> t -> Ident.t * t
@@ -146,6 +148,7 @@ val reset_cache_toplevel: unit -> unit
 
 (* Remember the name of the current compilation unit. *)
 val set_unit_name: string -> unit
+val get_unit_name: unit -> string
 
 (* Read, save a signature to/from a file *)
 
@@ -190,6 +193,7 @@ type error =
   | Inconsistent_import of string * string * string
   | Need_recursive_types of string * string
   | Missing_module of Location.t * Path.t * Path.t
+  | Illegal_value_name of Location.t * string
 
 exception Error of error
 
@@ -209,8 +213,10 @@ val mark_constructor:
 val mark_extension_used:
     constructor_usage -> t -> extension_constructor -> string -> unit
 
-val in_signature: t -> t
+val in_signature: bool -> t -> t
 val implicit_coercion: t -> t
+
+val is_in_signature: t -> bool
 
 val set_value_used_callback:
     string -> value_description -> (unit -> unit) -> unit
@@ -257,3 +263,4 @@ val fold_cltypes:
 
 (** Utilities *)
 val scrape_alias: t -> module_type -> module_type
+val check_value_name: string -> Location.t -> unit

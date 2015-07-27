@@ -46,4 +46,6 @@ val dep : Tags.elt list -> pathname list -> unit
 
 val pdep : Tags.elt list -> Tags.elt -> (string -> pathname list) -> unit
 
+val list_all_deps : unit -> (Tags.t * pathname list) list
+
 val file_or_exe_exists: string -> bool

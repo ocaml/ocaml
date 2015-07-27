@@ -25,7 +25,7 @@
 #if !_WIN32
 #include <sys/wait.h>
 #endif
-#include "config.h"
+#include "caml/config.h"
 #ifdef HAS_UNISTD
 #include <unistd.h>
 #endif
@@ -39,16 +39,16 @@
 #ifdef HAS_GETTIMEOFDAY
 #include <sys/time.h>
 #endif
-#include "alloc.h"
-#include "debugger.h"
-#include "fail.h"
-#include "instruct.h"
-#include "mlvalues.h"
-#include "osdeps.h"
-#include "signals.h"
-#include "stacks.h"
-#include "sys.h"
-#include "gc_ctrl.h"
+#include "caml/alloc.h"
+#include "caml/debugger.h"
+#include "caml/fail.h"
+#include "caml/instruct.h"
+#include "caml/mlvalues.h"
+#include "caml/osdeps.h"
+#include "caml/signals.h"
+#include "caml/stacks.h"
+#include "caml/sys.h"
+#include "caml/gc_ctrl.h"
 
 static char * error_message(void)
 {
@@ -97,7 +97,7 @@ CAMLprim value caml_sys_exit(value retcode)
   if ((caml_verb_gc & 0x400) != 0) {
     /* cf caml_gc_counters */
     double minwords = caml_stat_minor_words
-      + (double) Wsize_bsize (caml_young_end - caml_young_ptr);
+      + (double) (caml_young_end - caml_young_ptr);
     double prowords = caml_stat_promoted_words;
     double majwords = caml_stat_major_words + (double) caml_allocated_words;
     double allocated_words =
@@ -280,7 +280,7 @@ CAMLprim value caml_sys_getenv(value var)
 }
 
 char * caml_exe_name;
-static char ** caml_main_argv;
+char ** caml_main_argv;
 
 CAMLprim value caml_sys_get_argv(value unit)
 {
@@ -412,9 +412,22 @@ CAMLprim value caml_sys_const_big_endian(value unit)
 #endif
 }
 
+/* returns a value that represents a number of bits */
 CAMLprim value caml_sys_const_word_size(value unit)
 {
   return Val_long(8 * sizeof(value));
+}
+
+/* returns a value that represents a number of bits */
+CAMLprim value caml_sys_const_int_size(value unit)
+{
+  return Val_long(8 * sizeof(value) - 1) ;
+}
+
+/* returns a value that represents a number of words */
+CAMLprim value caml_sys_const_max_wosize(value unit)
+{
+  return Val_long(Max_wosize) ;
 }
 
 CAMLprim value caml_sys_const_ostype_unix(value unit)

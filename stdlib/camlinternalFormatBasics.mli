@@ -29,6 +29,11 @@ type ('a, 'b) precision =
 
 type prec_option = int option
 
+type ('a, 'b, 'c) custom_arity =
+  | Custom_zero : ('a, string, 'a) custom_arity
+  | Custom_succ : ('a, 'b, 'c) custom_arity ->
+    ('a, 'x -> 'b, 'x -> 'c) custom_arity
+
 type block_type = Pp_hbox | Pp_vbox | Pp_hvbox | Pp_hovbox | Pp_box | Pp_fits
 
 type formatting_lit =
@@ -121,6 +126,11 @@ and ('a1, 'b1, 'c1, 'd1, 'e1, 'f1,
      'a2, 'b2, 'c2, 'd2, 'e2, 'f2) fmtty_rel ->
     (('b1 -> 'c1) -> 'a1, 'b1, 'c1, 'd1, 'e1, 'f1,
      ('b2 -> 'c2) -> 'a2, 'b2, 'c2, 'd2, 'e2, 'f2) fmtty_rel
+| Any_ty :                                                  (* Used for custom formats *)
+    ('a1, 'b1, 'c1, 'd1, 'e1, 'f1,
+     'a2, 'b2, 'c2, 'd2, 'e2, 'f2) fmtty_rel ->
+    ('x -> 'a1, 'b1, 'c1, 'd1, 'e1, 'f1,
+     'x -> 'a2, 'b2, 'c2, 'd2, 'e2, 'f2) fmtty_rel
 
 (* Scanf specific constructor. *)
 | Reader_ty :                                               (* %r  *)
@@ -233,6 +243,11 @@ and ('a, 'b, 'c, 'd, 'e, 'f) fmt =
 | Ignored_param :                                          (* %_ *)
     ('a, 'b, 'c, 'd, 'y, 'x) ignored * ('x, 'b, 'c, 'y, 'e, 'f) fmt ->
       ('a, 'b, 'c, 'd, 'e, 'f) fmt
+
+(* Custom printing format *)
+| Custom :
+    ('a, 'x, 'y) custom_arity * (unit -> 'x) * ('a, 'b, 'c, 'd, 'e, 'f) fmt ->
+    ('y, 'b, 'c, 'd, 'e, 'f) fmt
 
 | End_of_format :
       ('f, 'b, 'c, 'e, 'e, 'f) fmt

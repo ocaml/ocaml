@@ -340,7 +340,7 @@ class man =
     method man_of_custom_text b s t = ()
 
     method man_of_Target b ~target ~code =
-      if String.lowercase target = "man" then bs b code else ()
+      if String.lowercase_ascii target = "man" then bs b code else ()
 
     (** Print groff string to display code. *)
     method man_of_code b s = self#man_of_text b [ Code s ]

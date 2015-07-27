@@ -11,7 +11,7 @@
 /*                                                                     */
 /***********************************************************************/
 
-#include <mlvalues.h>
+#include <caml/mlvalues.h>
 #include "unixsupport.h"
 
 extern value val_process_id;

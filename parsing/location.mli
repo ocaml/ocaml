@@ -29,11 +29,14 @@ type t = {
 
 val none : t
 (** An arbitrary value of type [t]; describes an empty ghost range. *)
-val in_file : string -> t;;
+
+val in_file : string -> t
 (** Return an empty ghost range located in a given file. *)
+
 val init : Lexing.lexbuf -> string -> unit
 (** Set the file name and line number of the [lexbuf] to be the start
     of the named file. *)
+
 val curr : Lexing.lexbuf -> t
 (** Get the location of the current token from the [lexbuf]. *)
 
@@ -52,9 +55,16 @@ val print_loc: formatter -> t -> unit
 val print_error: formatter -> t -> unit
 val print_error_cur_file: formatter -> unit
 val print_warning: t -> formatter -> Warnings.t -> unit
+val formatter_for_warnings : formatter ref
 val prerr_warning: t -> Warnings.t -> unit
 val echo_eof: unit -> unit
 val reset: unit -> unit
+
+val warning_printer : (t -> formatter -> Warnings.t -> unit) ref
+(** Hook for intercepting warnings. *)
+
+val default_warning_printer : t -> formatter -> Warnings.t -> unit
+(** Original warning printer for use in hooks. *)
 
 val highlight_locations: formatter -> t list -> bool
 
@@ -114,6 +124,12 @@ val register_error_of_exn: (exn -> error option) -> unit
      being located as well). *)
 
 val report_error: formatter -> error -> unit
+
+val error_reporter : (formatter -> error -> unit) ref
+(** Hook for intercepting error reports. *)
+
+val default_error_reporter : formatter -> error -> unit
+(** Original error reporter for use in hooks. *)
 
 val report_exception: formatter -> exn -> unit
   (* Reraise the exception if it is unknown. *)

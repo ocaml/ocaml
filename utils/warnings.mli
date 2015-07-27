@@ -18,7 +18,7 @@ type t =
   | Deprecated of string                    (*  3 *)
   | Fragile_match of string                 (*  4 *)
   | Partial_application                     (*  5 *)
-  | Labels_omitted                          (*  6 *)
+  | Labels_omitted of string list           (*  6 *)
   | Method_override of string list          (*  7 *)
   | Partial_match of string                 (*  8 *)
   | Non_closed_record_pattern of string     (*  9 *)
@@ -62,6 +62,8 @@ type t =
   | Attribute_payload of string * string    (* 47 *)
   | Eliminated_optional_arguments of string list (* 48 *)
   | No_cmi_file of string                   (* 49 *)
+  | Bad_docstring of bool                   (* 50 *)
+  | Expect_tailcall                         (* 51 *)
 ;;
 
 val parse_options : bool -> string -> unit;;
@@ -72,9 +74,7 @@ val is_error : t -> bool;;
 val defaults_w : string;;
 val defaults_warn_error : string;;
 
-val print : formatter -> t -> int;;
-  (* returns the number of newlines in the printed string *)
-
+val print : formatter -> t -> unit;;
 
 exception Errors of int;;
 

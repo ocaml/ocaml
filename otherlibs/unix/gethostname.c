@@ -11,9 +11,9 @@
 /*                                                                     */
 /***********************************************************************/
 
-#include <mlvalues.h>
-#include <alloc.h>
-#include <fail.h>
+#include <caml/mlvalues.h>
+#include <caml/alloc.h>
+#include <caml/fail.h>
 #ifndef _WIN32
 #include <sys/param.h>
 #endif
