@@ -38,6 +38,8 @@ Compilers:
   (Stephen Dolan, review by Pierre Chambart)
 - GPR#109: new unboxing strategy for float and int references (Vladimir Brankov,
   review by Alain Frisch)
+- GPR#107: Prevent more unnecessary float boxing, especially in `if` and `match`
+  (Vladimir Brankov, review by Alain Frisch)
 
 Runtime system:
 - PR#6517: use ISO C99 types {,u}int{32,64}_t in preference to our homegrown

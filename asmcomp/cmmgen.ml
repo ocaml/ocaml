@@ -1235,13 +1235,26 @@ type unboxed_number_kind =
     No_unboxing
   | Boxed_float
   | Boxed_integer of boxed_integer
+  | No_result (* expression never returns a result *)
 
-let rec is_unboxed_number = function
-    Uconst(Uconst_ref(_, Uconst_float _)) ->
-      Boxed_float
+let rec is_unboxed_number e =
+  (* Given unboxed_number_kind from two branches of the code, returns the
+     resulting unboxed_number_kind *)
+  let join k1 e =
+    match k1, is_unboxed_number e with
+    | Boxed_float, Boxed_float -> Boxed_float
+    | Boxed_integer bi1, Boxed_integer bi2 when bi1 = bi2 -> k1
+    | No_result, k | k, No_result -> k (* if a branch never returns, it is safe to unbox it *)
+    | _, _ -> No_unboxing
+  in
+  match e with
+  | Uconst(Uconst_ref(_, Uconst_float _)) -> Boxed_float
+  | Uconst(Uconst_ref(_, Uconst_int32 _)) -> Boxed_integer Pint32
+  | Uconst(Uconst_ref(_, Uconst_int64 _)) -> Boxed_integer Pint64
+  | Uconst(Uconst_ref(_, Uconst_nativeint _)) -> Boxed_integer Pnativeint
   | Uprim(p, _, _) ->
       begin match simplif_primitive p with
-          Pccall p -> if p.prim_native_float then Boxed_float else No_unboxing
+        | Pccall p -> if p.prim_native_float then Boxed_float else No_unboxing
         | Pfloatfield _ -> Boxed_float
         | Pfloatofint -> Boxed_float
         | Pnegfloat -> Boxed_float
@@ -1276,9 +1289,22 @@ let rec is_unboxed_number = function
         | Pbigstring_load_32(_) -> Boxed_integer Pint32
         | Pbigstring_load_64(_) -> Boxed_integer Pint64
         | Pbbswap bi -> Boxed_integer bi
+        | Praise _ -> No_result
         | _ -> No_unboxing
       end
-  | Ulet (_, _, e) | Usequence (_, e) -> is_unboxed_number e
+  | Ulet (_, _, e) | Uletrec (_, e) | Usequence (_, e) -> is_unboxed_number e
+  | Uswitch (_, switch) ->
+      let k = Array.fold_left join No_result switch.us_actions_consts in
+      Array.fold_left join k switch.us_actions_blocks
+  | Ustringswitch (_, actions, default_opt) ->
+      let k = List.fold_left (fun k (_, e) -> join k e) No_result actions in
+      begin match default_opt with
+        None -> k
+      | Some default -> join k default
+      end
+  | Ustaticfail _ -> No_result
+  | Uifthenelse (_, e1, e2) | Ucatch (_, _, e1, e2) | Utrywith (e1, _, e2) ->
+      join (is_unboxed_number e1) e2
   | _ -> No_unboxing
 
 let subst_boxed_number box_fn unbox_fn boxed_id unboxed_id box_chunk box_offset exp =
@@ -1405,6 +1431,9 @@ let rec transl = function
       begin match is_unboxed_number exp with
         No_unboxing ->
           Clet(id, transl exp, transl body)
+      | No_result ->
+          (* the let-bound expression never returns a value, we can ignore the body *)
+          transl exp
       | Boxed_float ->
           transl_unbox_let box_float unbox_float transl_unbox_float
                            Double_u 0
