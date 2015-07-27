@@ -10,7 +10,7 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(function "quick" (lo: int hi: int a: addr)
+(function "quick" (lo: int hi: int a: val)
   (if (< lo hi)
       (let (i lo
             j hi
@@ -40,5 +40,5 @@
         (app "quick" (+ i 2) hi a unit))
     []))
 
-(function "quicksort" (lo: int hi: int a: addr)
+(function "quicksort" (lo: int hi: int a: val)
    (app "quick" (+ (<< lo 1) 1) (+ (<< hi 1) 1) a unit))

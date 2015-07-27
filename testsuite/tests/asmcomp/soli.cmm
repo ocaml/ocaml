@@ -14,7 +14,7 @@
  "d2": int 1 int 0
  "d3": int 0 int -1
  "d4": int -1 int 0
- "dir": addr "d1" addr "d2" addr "d3" addr "d4")
+ "dir": val "d1" val "d2" val "d3" val "d4")
 
 ("counter": int 0)
 
@@ -29,8 +29,8 @@
  "line6": int 0 int 0 int 0 int 2 int 2 int 2 int 0 int 0 int 0
  "line7": int 0 int 0 int 0 int 2 int 2 int 2 int 0 int 0 int 0
  "line8": int 0 int 0 int 0 int 0 int 0 int 0 int 0 int 0 int 0
- "board": addr "line0" addr "line1" addr "line2" addr "line3"
-          addr "line4" addr "line5" addr "line6" addr "line7" addr "line8")
+ "board": val "line0" val "line1" val "line2" val "line3"
+          val "line4" val "line5" val "line6" val "line7" val "line8")
 
 ("format": string "%d\n\000")
 

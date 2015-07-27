@@ -245,10 +245,12 @@ let record_frame_label live dbg =
   let live_offset = ref [] in
   Reg.Set.iter
     (function
-      | {typ = Addr; loc = Reg r} ->
+      | {typ = Val; loc = Reg r} ->
           live_offset := ((r lsl 1) + 1) :: !live_offset
-      | {typ = Addr; loc = Stack s} as reg ->
+      | {typ = Val; loc = Stack s} as reg ->
           live_offset := slot_offset s (register_class reg) :: !live_offset
+      | {typ = Addr} as r ->
+          Misc.fatal_error ("bad GC root " ^ Reg.name r)
       | _ -> ()
     )
     live;
@@ -528,7 +530,7 @@ let emit_instr fallthrough i =
   | Lop(Iload(chunk, addr)) ->
       let dest = res i 0 in
       begin match chunk with
-      | Word ->
+      | Word_int | Word_val ->
           I.mov (addressing addr QWORD i 0) dest
       | Byte_unsigned ->
           I.movzx (addressing addr BYTE i 0) dest
@@ -549,7 +551,7 @@ let emit_instr fallthrough i =
       end
   | Lop(Istore(chunk, addr, _)) ->
       begin match chunk with
-      | Word ->
+      | Word_int | Word_val ->
           I.mov (arg i 0) (addressing addr QWORD i 1)
       | Byte_unsigned | Byte_signed ->
           I.mov (arg8 i 0) (addressing addr BYTE i 1)

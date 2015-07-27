@@ -197,7 +197,7 @@ method! select_operation op args =
   match op with
   (* Recognize the LEA instruction *)
     Caddi | Cadda | Csubi | Csuba ->
-      begin match self#select_addressing Word (Cop(op, args)) with
+      begin match self#select_addressing Word_int (Cop(op, args)) with
         (Iindexed d, _) -> super#select_operation op args
       | (Iindexed2 0, _) -> super#select_operation op args
       | (addr, arg) -> (Ispecific(Ilea addr), [arg])
@@ -215,11 +215,11 @@ method! select_operation op args =
       self#select_floatarith Idivf (Ispecific Idivfrev) Ifloatdiv Ifloatdivrev
                              args
   (* Recognize store instructions *)
-  | Cstore Word ->
+  | Cstore (Word_int | Word_val as chunk) ->
       begin match args with
         [loc; Cop(Caddi, [Cop(Cload _, [loc']); Cconst_int n])]
         when loc = loc' ->
-          let (addr, arg) = self#select_addressing Word loc in
+          let (addr, arg) = self#select_addressing chunk loc in
           (Ispecific(Ioffset_loc(n, addr)), [arg])
       | _ ->
           super#select_operation op args
@@ -280,8 +280,8 @@ method select_push exp =
   | Cconst_pointer n -> (Ispecific(Ipush_int(Nativeint.of_int n)), Ctuple [])
   | Cconst_natpointer n -> (Ispecific(Ipush_int n), Ctuple [])
   | Cconst_symbol s -> (Ispecific(Ipush_symbol s), Ctuple [])
-  | Cop(Cload Word, [loc]) ->
-      let (addr, arg) = self#select_addressing Word loc in
+  | Cop(Cload (Word_int | Word_val as chunk), [loc]) ->
+      let (addr, arg) = self#select_addressing chunk loc in
       (Ispecific(Ipush_load addr), arg)
   | Cop(Cload Double_u, [loc]) ->
       let (addr, arg) = self#select_addressing Double_u loc in
