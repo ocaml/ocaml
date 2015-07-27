@@ -2242,8 +2242,8 @@ and transl_letrec bindings cont =
         Clet(id, op_alloc "caml_alloc_dummy" sz, init_blocks rem)
     | (id, exp, RHS_floatblock sz) :: rem ->
         Clet(id, op_alloc "caml_alloc_dummy_float" sz, init_blocks rem)
-    | (_id, _exp, RHS_nonrec) :: rem ->
-        init_blocks rem
+    | (id, exp, RHS_nonrec) :: rem ->
+        Clet (id, Cconst_int 0, init_blocks rem)
   and fill_nonrec = function
     | [] -> fill_blocks bsz
     | (id, exp, (RHS_block _ | RHS_floatblock _)) :: rem ->
