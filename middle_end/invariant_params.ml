@@ -256,8 +256,8 @@ let unused_arguments (decls : Flambda.function_declarations) : Variable.Set.t =
             may not have overapplication: callee %a, application expr: %a, \
             function decls: %a"
           Closure_id.print callee
-          Flambda_printers.flambda application_expr
-          Flambda_printers.function_declarations decls
+          Flambda.print application_expr
+          Flambda.print_function_declarations decls
       end;
       Argument arr.(callee_pos)
   in

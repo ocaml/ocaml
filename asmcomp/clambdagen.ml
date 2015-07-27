@@ -191,7 +191,7 @@ module M(P:Arg) = struct
   let rec conv (env : env) (flam : Flambda.t) : Clambda.ulambda =
 (*
 Format.eprintf "Clambdagen.conv: %a\n"
-  Flambda_printers.flambda flam;
+  Flambda.print flam;
 *)
     match flam with
     | Var var ->

@@ -517,7 +517,7 @@ Format.eprintf "Checking if %a is a constant, %s\n"
     in
 let set_of_closures =
 Format.eprintf "set_of_closures creation: %a (free_vars %a)\n"
-  Flambda_printers.function_declarations function_decls
+  Flambda.print_function_declarations function_decls
   (Variable.Map.print Variable.print) free_vars;
     Flambda.create_set_of_closures ~function_decls ~free_vars ~specialised_args
 in
@@ -556,7 +556,7 @@ set_of_closures
     | expr -> expr
   in
   let expr =
-Format.eprintf "*** start %a\n%!" Flambda_printers.flambda expr;
+Format.eprintf "*** start %a\n%!" Flambda.print expr;
     let expr = Flambda_iterators.map rewrite rewrite_named expr in
 Format.eprintf "***\n%!";
     let free_variables = Free_variables.calculate expr in
@@ -593,7 +593,7 @@ Format.eprintf "***\n%!";
       set_of_closures_tbl Symbol.Map.empty
   in
   Format.eprintf "lift_constants output:@ %a\n"
-    Flambda_printers.flambda expr;
+    Flambda.print expr;
   { expr;
     constant_descr;
     kind;
@@ -601,7 +601,7 @@ Format.eprintf "***\n%!";
 
 let lift_constants expr =
   Format.eprintf "lift_constants input:@ %a\n"
-    Flambda_printers.flambda expr;
+    Flambda.print expr;
   let constant_tbl, set_of_closures_tbl =
     collect_constant_declarations expr
   in

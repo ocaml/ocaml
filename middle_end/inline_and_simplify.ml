@@ -538,7 +538,7 @@ and simplify_apply env r ~(apply : Flambda.apply) : Flambda.t * R.t =
     else
       Misc.fatal_errorf "Function with arity %d when simplifying \
           application expression: %a"
-        arity Flambda_printers.flambda (Flambda.Apply apply)
+        arity Flambda.print (Flambda.Apply apply)
   | Wrong ->  (* Insufficient approximation information to simplify. *)
     Apply ({ func = lhs_of_application; args; kind = Indirect; dbg }),
       ret r A.value_unknown
@@ -678,7 +678,7 @@ and simplify_direct env r (tree : Flambda.t) : Flambda.t * R.t =
     ~calculate_free_variables:
       (Free_variables.calculate ?ignore_uses_in_apply:None
         ?ignore_uses_in_project_var:None)
-    ~printer:Flambda_printers.flambda;
+    ~printer:Flambda.print;
   match tree with
   | Var var ->
     let var = freshen_and_simplify_variable env var in
@@ -952,7 +952,7 @@ let run ~never_inline ~backend tree =
   then begin
     Misc.fatal_error (Format.asprintf "remaining static exceptions: %a@.%a@."
       Static_exception.Set.print (R.used_staticfail r)
-      Flambda_printers.flambda result)
+      Flambda.print result)
   end;
   assert (Static_exception.Set.is_empty (R.used_staticfail r));
   if debug_benefit then

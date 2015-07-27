@@ -163,7 +163,7 @@ let print_all ppf (export : ET.exported) =
   fprintf ppf "constants@ %a@.@."
     Symbol.Set.print export.ex_constants;
   fprintf ppf "functions@ %a@.@."
-    (Set_of_closures_id.Map.print Flambda_printers.function_declarations) export.ex_functions
+    (Set_of_closures_id.Map.print Flambda.print_function_declarations) export.ex_functions
 
 let merge (e1 : ET.exported) (e2 : ET.exported) : ET.exported =
   let int_eq (i:int) j = i = j in

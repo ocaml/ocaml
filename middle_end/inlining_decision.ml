@@ -98,8 +98,8 @@ with _exn ->
         closure id being applied is %a, term is %a, \
         original function decls %a"
     Closure_id.print closure_id_being_applied
-    Flambda_printers.flambda body
-    Flambda_printers.function_declarations function_decls;
+    Flambda.print body
+    Flambda.print_function_declarations function_decls;
   Misc.fatal_error "failure"
   end else begin
     (* Inlining the body of the function did not appear sufficiently

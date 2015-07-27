@@ -156,7 +156,7 @@ let rewrite_function_decl ~env
 
 let run env expr =
 (*
-  Format.eprintf "Before Unbox_closures: %a\n" Flambda_printers.flambda expr;
+  Format.eprintf "Before Unbox_closures: %a\n" Flambda.print expr;
 *)
   let expr =
     Flambda_iterators.map_toplevel_sets_of_closures expr
@@ -183,6 +183,6 @@ let run env expr =
           ~specialised_args)
   in
 (*
-  Format.eprintf "After Unbox_closures: %a\n" Flambda_printers.flambda expr;
+  Format.eprintf "After Unbox_closures: %a\n" Flambda.print expr;
 *)
   expr

@@ -125,7 +125,7 @@ let prep_flambda_for_export ppf flam =
   if !Clflags.dump_flambda
   then begin
     Format.fprintf ppf "After Build_export_info:@ %a@."
-      Flambda_printers.flambda lifted_constants.Lift_constants.expr;
+      Flambda.print lifted_constants.Lift_constants.expr;
     Symbol.Map.iter (fun sym set_of_closures ->
         Format.fprintf ppf "sym: %a@ %a@."
           Symbol.print sym

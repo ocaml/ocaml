@@ -141,12 +141,12 @@ let inline_by_copying_function_body ~env ~r ~function_decls ~lhs_of_application
     ~calculate_free_variables:
       (Free_variables.calculate ?ignore_uses_in_apply:None
         ?ignore_uses_in_project_var:None)
-    ~printer:Flambda_printers.flambda;
+    ~printer:Flambda.print;
 try
   simplify (E.activate_freshening env) r expr
 with _exn ->
   Format.eprintf "Exception from simplify, term is %a"
-    Flambda_printers.flambda expr;
+    Flambda.print expr;
   Misc.fatal_error "failure"
 
 let inline_by_copying_function_declaration ~env ~r

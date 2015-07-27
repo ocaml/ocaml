@@ -345,7 +345,7 @@ module Conv(P:Param1) = struct
             conv_approx env body
         | true, Not_const, Immutable ->
             Format.eprintf "%a@.%a" Variable.print id
-              Flambda_printers.flambda lam;
+              Flambda.print lam;
             assert false
         end
 
@@ -434,7 +434,7 @@ module Conv(P:Param1) = struct
             | Some _ -> assert false
             | _ ->
                 Format.printf "Unknown closure in offset %a@."
-                  Flambda_printers.flambda expr;
+                  Flambda.print expr;
                 assert false
           in
           Fselect_closure({ set_of_closures = ulam; closure_id = id; relative_to = rel },()),
@@ -448,8 +448,8 @@ module Conv(P:Param1) = struct
               (try Var_within_closure.Map.find env_var bound_var with
                | Not_found ->
                    Format.printf "Wrong closure in env_field %a@.%a@."
-                     Flambda_printers.flambda expr
-                     Flambda_printers.flambda ulam;
+                     Flambda.print expr
+                     Flambda.print ulam;
                    assert false)
           | _ when not (Closure_id.in_compilation_unit
                           (Compilenv.current_unit ())
@@ -461,8 +461,8 @@ module Conv(P:Param1) = struct
           | Some _ -> assert false
           | None ->
               Format.printf "Unknown closure in env_field %a@.%a@."
-                Flambda_printers.flambda expr
-                Flambda_printers.flambda ulam;
+                Flambda.print expr
+                Flambda.print ulam;
               assert false in
         Var_within_closure({closure = ulam;var = env_var;closure_id = env_fun_id}, ()),
         approx

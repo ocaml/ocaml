@@ -441,7 +441,7 @@ let freshen_and_check_closure_id
       "Function %a not found in the set of closures@ %a@.%a@."
       Closure_id.print closure_id
       print_value_set_of_closures value_set_of_closures
-      Flambda_printers.function_declarations value_set_of_closures.function_decls)
+      Flambda.print_function_declarations value_set_of_closures.function_decls)
 
 type checked_approx_for_set_of_closures =
   | Wrong

@@ -297,3 +297,37 @@ val create_set_of_closures
   -> set_of_closures
 
 val used_params : function_declaration -> Variable.Set.t
+
+val print : Format.formatter -> t -> unit
+
+val print_named : Format.formatter -> named -> unit
+
+val print_function_declaration
+   : Format.formatter
+  -> Variable.t * function_declaration
+  -> unit
+
+val print_function_declarations
+   : Format.formatter
+  -> function_declarations
+  -> unit
+
+val print_project_closure
+   : Format.formatter
+  -> project_closure
+  -> unit
+
+val print_move_within_set_of_closures
+   : Format.formatter
+  -> move_within_set_of_closures
+  -> unit
+
+val print_project_var
+   : Format.formatter
+  -> project_var
+  -> unit
+
+val print_set_of_closures
+   : Format.formatter
+  -> set_of_closures
+  -> unit
