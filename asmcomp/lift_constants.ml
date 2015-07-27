@@ -1,3 +1,18 @@
+(**************************************************************************)
+(*                                                                        *)
+(*                                OCaml                                   *)
+(*                                                                        *)
+(*                       Pierre Chambart, OCamlPro                        *)
+(*                  Mark Shinwell, Jane Street Europe                     *)
+(*                                                                        *)
+(*   Copyright 2015 Institut National de Recherche en Informatique et     *)
+(*   en Automatique.  All rights reserved.  This file is distributed      *)
+(*   under the terms of the Q Public License version 1.0.                 *)
+(*                                                                        *)
+(**************************************************************************)
+
+(* CR mshinwell for mshinwell: update this comment to reflect changes in the
+   last couple of steps *)
 (* Extract constants out of the main expression.
    * First collect all the constant declarations, separating structured
      constants and constant sets of closures: [collect_constant_declarations]
@@ -618,6 +633,11 @@ Format.eprintf "bind_constant_fv' var=%a\n" Variable.print var;
   in
   Format.eprintf "***\n%!";
   let free_variables = Free_variables.calculate expr in
+  if not (Variable.Set.for_all is_a_constant free_variables) then begin
+    Misc.fatal_errorf "Lift_constants: toplevel expression contains free \
+        variables that are not constant: %a"
+      Flambda.print expr
+  end;
   let expr = Variable.Set.fold bind_constant free_variables expr in
   let set_of_closures_map =
     Symbol.Tbl.fold (fun symbol set_of_closures map ->

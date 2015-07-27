@@ -41,17 +41,20 @@ let add_closure_offsets
      used inside the body of the function: it is directly
      substituted here. But if the function is inlined, it is
      possible that the closure is accessed from outside its body. *)
-  let aux_fv_offset var _ (map,pos) =
+  let aux_fv_offset var _ (map, pos) =
     if Variable.Map.mem var kind then begin
       (* This is a constant: don't put it in the closure *)
       Format.eprintf "Closure_offsets omitting variable %a since it is constant\n"
         Variable.print var;
-      (map,pos)
-    end else
+      (map, pos)
+    end else begin
+      Format.eprintf "assigning closure offset for %a\n"
+        Variable.print var;
       let var_within_closure = Var_within_closure.wrap var in
-      assert(not (Var_within_closure.Map.mem var_within_closure map));
+      assert (not (Var_within_closure.Map.mem var_within_closure map));
       let map = Var_within_closure.Map.add var_within_closure pos map in
-      (map,pos + 1)
+      (map, pos + 1)
+    end
   in
   let free_variable_offsets, _ =
     Variable.Map.fold aux_fv_offset
@@ -62,7 +65,7 @@ let add_closure_offsets
   }
 
 let compute (lifted_constants:Lift_constants.result) =
-  Format.eprintf "Closure_offsets.compute@ ";
+  Format.eprintf "Closure_offsets.compute@ \n";
   let sets = Lifted_flambda_utils.sets_of_closures lifted_constants in
   List.iter (fun (set_of_closures : Flambda.set_of_closures) ->
       Format.eprintf "Closures_offsets.compute set: %a @ "
