@@ -40,6 +40,8 @@ Compilers:
   review by Alain Frisch)
 - GPR#107: Prevent more unnecessary float boxing, especially in `if` and `match`
   (Vladimir Brankov, review by Alain Frisch)
+- GPR#115: More precise typing of values at the C-- and Mach level,.
+  (Xavier Leroy, review by Pierre Chambart)
 
 Runtime system:
 - PR#6517: use ISO C99 types {,u}int{32,64}_t in preference to our homegrown
