@@ -508,6 +508,30 @@ Format.eprintf "bind_constant_fv' var=%a\n" Variable.print var;
     let closure_bound_variables = !closure_bound_variables in
     Format.eprintf "closure_bv %a %a\n" Variable.Set.print
       closure_bound_variables Flambda.print function_decl.body;
+    let body =
+      (* See comment below. *)
+      delete_redundant_lets_and_fix_project_vars function_decl.body
+    in
+    (* Add [let] expressions to bind constants at the top of the function's
+       body. *)
+    let body =
+      Variable.Set.fold (bind_constant_fv ~free_vars)
+        globally_bound_variables
+        body
+    in
+    Format.eprintf "body 1: %a\n" Flambda.print body;
+    let body =
+      Variable.Set.fold bind_constant_fv'
+        closure_bound_variables
+        body
+    in
+    Format.eprintf "body 2: %a\n" Flambda.print body;
+    (* Perform the same transformations on any sets of closures contained
+       within the function's body. *)
+    let body = rewrite_sets_of_closures body in
+    Flambda.create_function_declaration ~params:function_decl.params
+      ~body ~stub:function_decl.stub ~dbg:function_decl.dbg
+  and delete_redundant_lets_and_fix_project_vars (expr : Flambda.t) =
     (* Delete [let] and [let rec] expressions in the function's body that bind
        variables in [globally_bound_variables] or [closure_bound_variables].
        These expressions are redundant since we are about to add new [let]s
@@ -540,28 +564,7 @@ Format.eprintf "bind_constant_fv' var=%a\n" Variable.print var;
         end
       | expr -> expr
     in
-    let body =
-      Flambda_iterators.map_toplevel rewrite rewrite_named function_decl.body
-    in
-    (* Add [let] expressions to bind constants at the top of the function's
-       body. *)
-    let body =
-      Variable.Set.fold (bind_constant_fv ~free_vars)
-        globally_bound_variables
-        body
-    in
-    Format.eprintf "body 1: %a\n" Flambda.print body;
-    let body =
-      Variable.Set.fold bind_constant_fv'
-        closure_bound_variables
-        body
-    in
-    Format.eprintf "body 2: %a\n" Flambda.print body;
-    (* Perform the same transformations on any sets of closures contained
-       within the function's body. *)
-    let body = rewrite_sets_of_closures body in
-    Flambda.create_function_declaration ~params:function_decl.params
-      ~body ~stub:function_decl.stub ~dbg:function_decl.dbg
+    Flambda_iterators.map_toplevel rewrite rewrite_named expr
   and rewrite_set_of_closures (set_of_closures : Flambda.set_of_closures) =
     let free_vars = set_of_closures.free_vars in
     let function_decls =
@@ -608,7 +611,11 @@ Format.eprintf "bind_constant_fv' var=%a\n" Variable.print var;
     Flambda_iterators.map_toplevel_named rewrite_named expr
   in
   Format.eprintf "*** start %a\n%!" Flambda.print expr;
-  let expr = rewrite_sets_of_closures expr in
+  let expr =
+    expr
+    |> rewrite_sets_of_closures
+    |> delete_redundant_lets_and_fix_project_vars
+  in
   Format.eprintf "***\n%!";
   let free_variables = Free_variables.calculate expr in
   let expr = Variable.Set.fold bind_constant free_variables expr in
