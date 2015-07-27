@@ -1309,26 +1309,17 @@ let rec is_unboxed_number e =
 
 let subst_boxed_number box_fn unbox_fn boxed_id unboxed_id box_chunk box_offset exp =
   let rec subst = function
-      Cvar id as e ->
-        if Ident.same id boxed_id then
-          box_fn (Cvar unboxed_id)
-        else e
+    | Cvar id when Ident.same id boxed_id -> box_fn (Cvar unboxed_id)
     | Clet(id, arg, body) -> Clet(id, subst arg, subst body)
-    | Cassign(id, arg) ->
-        if Ident.same id boxed_id then begin
-          Cassign(unboxed_id, subst(unbox_fn arg))
-        end else
-          Cassign(id, subst arg)
+    | Cassign(id, arg) when Ident.same id boxed_id ->
+        Cassign(unboxed_id, subst(unbox_fn arg))
+    | Cassign(id, arg) -> Cassign(id, subst arg)
     | Ctuple argv -> Ctuple(List.map subst argv)
     | Cop(Cload chunk, [Cvar id])
-      when Ident.same id boxed_id &&
-           chunk = box_chunk && box_offset = 0
-      ->
+      when Ident.same id boxed_id && chunk = box_chunk && 0 = box_offset ->
         Cvar unboxed_id
     | Cop(Cload chunk, [Cop(Cadda, [Cvar id; Cconst_int ofs])])
-        when Ident.same id boxed_id &&
-             chunk = box_chunk && ofs = box_offset
-      ->
+      when Ident.same id boxed_id && chunk = box_chunk && ofs = box_offset ->
         Cvar unboxed_id
     | Cop(op, argv) -> Cop(op, List.map subst argv)
     | Csequence(e1, e2) -> Csequence(subst e1, subst e2)
@@ -1339,6 +1330,7 @@ let subst_boxed_number box_fn unbox_fn boxed_id unboxed_id box_chunk box_offset 
     | Ccatch(nfail, ids, e1, e2) -> Ccatch(nfail, ids, subst e1, subst e2)
     | Cexit (nfail, el) -> Cexit (nfail, List.map subst el)
     | Ctrywith(e1, id, e2) -> Ctrywith(subst e1, id, subst e2)
+    | Cvar _
     | Cconst_int _ | Cconst_natint _ | Cconst_float _ | Cconst_symbol _
     | Cconst_pointer _ | Cconst_natpointer _
     | Cconst_blockheader _ as e -> e
