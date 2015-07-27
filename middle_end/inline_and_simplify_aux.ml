@@ -12,9 +12,11 @@
 (**************************************************************************)
 
 module Env = struct
+  type scope = Current | Outer
+
   type t = {
     backend : (module Backend_intf.S);
-    approx : Simple_value_approx.t Variable.Map.t;
+    approx : (scope * Simple_value_approx.t) Variable.Map.t;
     current_functions : Set_of_closures_id.Set.t;
     (* The functions currently being declared: used to avoid inlining
        recursively *)
@@ -77,14 +79,23 @@ module Env = struct
         Variable.print var
         Simple_value_approx.print approx
     end else begin
-      { t with approx = Variable.Map.add var approx t.approx }
+      { t with approx = Variable.Map.add var (Current, approx) t.approx }
     end
 
-  let find_exn t id =
-    try Variable.Map.find id t.approx
+  let find_scope_exn t id =
+    try fst (Variable.Map.find id t.approx)
     with Not_found ->
-      Misc.fatal_errorf "Inlining_env.find: Unbound variable %a@.%s@.\
-          Environment: %a@."
+      Misc.fatal_errorf "Inlining_env.find_with_scope_exn: Unbound variable \
+          %a@.%s@. Environment: %a@."
+        Variable.print id
+        (Printexc.raw_backtrace_to_string (Printexc.get_callstack max_int))
+        print t
+
+  let find_exn t id =
+    try snd (Variable.Map.find id t.approx)
+    with Not_found ->
+      Misc.fatal_errorf "Inlining_env.find_with_scope_exn: Unbound variable \
+          %a@.%s@. Environment: %a@."
         Variable.print id
         (Printexc.raw_backtrace_to_string (Printexc.get_callstack max_int))
         print t
@@ -93,7 +104,7 @@ module Env = struct
     List.map (fun var -> find_exn t var) vars
 
   let find_opt t id =
-    try Some (Variable.Map.find id t.approx)
+    try Some (snd (Variable.Map.find id t.approx))
     with Not_found -> None
 
   let activate_freshening t =
@@ -122,7 +133,13 @@ module Env = struct
     { t with freshening; }
 
   let increase_closure_depth t =
-    { t with closure_depth = t.closure_depth + 1; }
+    let approx =
+      Variable.Map.map (fun (_scope, approx) -> Outer, approx) t.approx
+    in
+    { t with
+      approx;
+      closure_depth = t.closure_depth + 1;
+    }
 
   let set_never_inline t =
     { t with never_inline = true }

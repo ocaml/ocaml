@@ -28,20 +28,41 @@ module R = Inline_and_simplify_aux.Result
 
 let ret = R.set_approx
 
-let freshen_and_simplify_variable env var =
+let freshen_and_simplify_variable env var ~f : Flambda.t =
   let var = Freshening.apply_variable (E.freshening env) var in
+  let original_var = var in
+  assert (E.mem env original_var);
+  (* In the case where an approximation is useful, we introduce a [let]
+     to bind (e.g.) the constant or symbol replacing [var], unless this
+     would introduce a useless [let] as a consequence of [var] already being
+     in the current scope.
+
+     Even when the approximation is not useful, this simplification helps.
+     In particular, it squashes aliases of the form:
+      let var1 = var2 in ... var2 ...
+     by replacing [var2] in the body with [var1].  Simplification can then
+     eliminate the [let].
+  *)
   let var_opt =
-    (* This squashes aliases of the form:
-        let var1 = var2 in ... var2 ...
-       by replacing [var2] in the body with [var1].  Simplification can then
-       eliminate the [let].
-    *)
+    (* CR mshinwell: consider shuffling this logic around a bit *)
     A.simplify_var_to_var_using_env (E.find_exn env var)
       ~is_present_in_env:(fun var -> E.mem env var)
   in
-  match var_opt with
-  | None -> var
-  | Some var -> var
+  let var =
+    match var_opt with
+    | None -> var
+    | Some var -> var
+  in
+  assert (E.mem env var);
+  let approx_not_useful () = f var in
+  (* CR mshinwell: Should we update [r] when we *add* code? *)
+  match E.find_scope_exn env var with
+  | Current -> approx_not_useful ()  (* avoid useless [let] *)
+  | Outer ->
+    match A.simplify_var (E.find_exn env var) with
+    | None -> approx_not_useful ()
+    | Some (named, approx) ->
+      Let (Immutable, original_var, named, f original_var)
 
 let simplify_named_using_approx r lam approx =
   let lam, _summary, approx = A.simplify_named approx lam in
@@ -54,6 +75,8 @@ let simplify_using_approx_and_env env r original_lam approx =
   let r =
     let r = ret r approx in
     match summary with
+    (* CR mshinwell: Why is [r] not updated with the cost of adding the
+       new code? *)
     | Replaced_term -> R.map_benefit r (B.remove_code original_lam)
     | Nothing_done -> r
   in
@@ -681,7 +704,12 @@ and simplify_direct env r (tree : Flambda.t) : Flambda.t * R.t =
     ~printer:Flambda.print;
   match tree with
   | Var var ->
-    let var = freshen_and_simplify_variable env var in
+    let var = Freshening.apply_variable (E.freshening env) var in
+    (* If from the approximations we can simplify [var], then we will be
+       forced to insert [let]-expressions (done using [name_expr], in
+       [Simple_value_approx]) to bind a [named].  This has an important
+       consequence: it brings bindings of constants closer to their use
+       points. *)
     simplify_using_approx_and_env env r (Var var) (E.find_exn env var)
   | Apply apply -> simplify_apply env r ~apply
   | Let (str, id, defining_expr, body) ->
@@ -829,9 +857,9 @@ and simplify_direct env r (tree : Flambda.t) : Flambda.t * R.t =
     For { bound_var; from_value; to_value; direction; body; },
       ret r A.value_unknown
   | Assign { being_assigned; new_value; } ->
-    let being_assigned = freshen_and_simplify_variable env being_assigned in
-    let new_value = freshen_and_simplify_variable env new_value in
-    Assign { being_assigned; new_value; }, ret r A.value_unknown
+    freshen_and_simplify_variable env being_assigned ~f:(fun being_assigned ->
+      freshen_and_simplify_variable env new_value ~f:(fun new_value ->
+        Assign { being_assigned; new_value; }, ret r A.value_unknown))
   | Switch (arg, sw) ->
     (* When [arg] is known to be a variable whose approximation is that of a
        block with a fixed tag or a fixed integer, we can eliminate the

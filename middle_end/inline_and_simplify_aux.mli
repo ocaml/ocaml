@@ -43,6 +43,10 @@ module Env : sig
       instead if you need to catch the failure case. *)
   val find_exn : t -> Variable.t -> Simple_value_approx.t
 
+  type scope = Current | Outer
+
+  val find_scope_exn : t -> Variable.t -> scope
+
   (** Like [find_exn], but intended for use where the "not present in
       environment" case is to be handled by the caller. *)
   val find_opt : t -> Variable.t -> Simple_value_approx.t option
