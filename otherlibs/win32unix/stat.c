@@ -2,12 +2,12 @@
 /*                                                                     */
 /*                                OCaml                                */
 /*                                                                     */
-/*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         */
+/*               David Allsopp, MetaStack Solutions Ltd.               */
 /*                                                                     */
-/*  Copyright 2002 Institut National de Recherche en Informatique et   */
-/*  en Automatique.  All rights reserved.  This file is distributed    */
-/*  under the terms of the GNU Library General Public License, with    */
-/*  the special exception on linking described in file ../../LICENSE.  */
+/*  Copyright 2015 MetaStack Solutions Ltd.  All rights reserved.      */
+/*  This file is distributed under the terms of the GNU Library        */
+/*  General Public License, with the special exception on linking      */
+/*  described in file ../../LICENSE.                                   */
 /*                                                                     */
 /***********************************************************************/
 
@@ -15,11 +15,13 @@
 #include <caml/mlvalues.h>
 #include <caml/memory.h>
 #include <caml/alloc.h>
+#include <caml/signals.h>
 #include "unixsupport.h"
 #include "cst2constr.h"
 #define _INTEGRAL_MAX_BITS 64
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <time.h>
 
 #ifndef S_IFLNK
 #define S_IFLNK 0
@@ -61,16 +63,173 @@ static value stat_aux(int use_64, struct _stat64 *buf)
   CAMLreturn (v);
 }
 
+/*
+ * The long and ugly story of Microsoft CRT stat and symbolic links
+ *
+ * msvcrt.dll - which is now a core Windows component - is basically Visual
+ * Studio .NET 2003 CRT (Version 7). It is the version usually linked against by
+ * mingw64-gcc Its behaviour is as follows:
+ *   a) st_mode is correctly populated
+ *   b) st_atime, st_mtime and st_ctime are those for the symbolic link, not the
+ *      target
+ *   c) stat incorrectly returns information even if the target doesn't exist
+ *
+ * The next CRT of interest is Visual Studio 2008 (Version 9 - msvcr900.dll), as
+ * that's included with the Windows 7 SDK. This worked until 2011 when Microsoft
+ * produced security advisory KB2467174 (see https://bugs.python.org/issue6727)
+ * at which point stat returns ENOENT for symbolic links.
+ *
+ * This persists until Visual Studio 2010, when a hotfix
+ * (https://support.microsoft.com/en-gb/kb/2890375) was produced which was
+ * supposed to fix this behaviour. This CRT has one problem: it returns S_REG
+ * instead of S_DIR for directory symbolic links because of a subtle error in
+ * its implementation (it calls fstat which quite reasonably always assumes its
+ * looking at a regular file).
+ *
+ * The bug persists in Visual Studio 2012. Visual Studio 2015 features the
+ * "great refactored" CRT (written in C++!). This CRT correctly returns st_mode
+ * for directory symbolic links. Its two limitations is that it doesn't populate
+ * st_nlink correctly.
+ *
+ * However, even if fixed, mingw64 is limited to msvcrt.dll (by default, anyway)
+ * and that's a lot of buggy CRTs out there.
+ *
+ * do_stat therefore reimplements stat - but the algorithms for populating the
+ * resulting _stat64 are identical to Microsoft's (with the exception of correct
+ * handling of st_nlink for symbolic links), being based upon the code for the
+ * Microsoft CRT given in Microsoft Visual Studio 2013 Express
+ */
+
+static int convert_time(FILETIME* time, __time64_t* result, __time64_t def)
+{
+  SYSTEMTIME sys;
+  FILETIME local;
+
+  if (time->dwLowDateTime || time->dwHighDateTime) {
+    if (!FileTimeToLocalFileTime(time, &local) ||
+        !FileTimeToSystemTime(&local, &sys))
+    {
+      win32_maperr(GetLastError());
+      return 0;
+    }
+    else
+    {
+      struct tm stamp = {sys.wSecond, sys.wMinute, sys.wHour,
+                         sys.wDay, sys.wMonth - 1, sys.wYear - 1900,
+                         0, 0, 0};
+      *result = _mktime64(&stamp);
+    }
+  }
+  else {
+    *result = def;
+  }
+
+  return 1;
+}
+
+static int do_stat(int use_64, char* path, mlsize_t l, struct _stat64* res)
+{
+  BY_HANDLE_FILE_INFORMATION info;
+  int drive, i;
+  char* ptr;
+  char c;
+  HANDLE h;
+  unsigned short mode;
+
+  /*
+   * Get the drive number
+   */
+  if (l > 1 && path[1] == ':') {
+    if (path[2]) {
+      drive = tolower(*path) - 'a';
+    }
+    else {
+      errno = ENOENT;
+      return 0;
+    }
+  }
+  else {
+    drive = _getdrive() - 1;
+  }
+
+  caml_enter_blocking_section();
+  h = CreateFile(path,
+                 FILE_READ_ATTRIBUTES,
+                 FILE_SHARE_DELETE | FILE_SHARE_READ | FILE_SHARE_WRITE,
+                 NULL,
+                 OPEN_EXISTING,
+                 FILE_FLAG_BACKUP_SEMANTICS,
+                 NULL);
+  caml_leave_blocking_section();
+  if (h == INVALID_HANDLE_VALUE) {
+    errno = ENOENT;
+    return 0;
+  }
+  else {
+    caml_enter_blocking_section();
+    if (!GetFileInformationByHandle(h, &info)) {
+      win32_maperr(GetLastError());
+      caml_leave_blocking_section();
+      CloseHandle(h);
+      return 0;
+    }
+    caml_leave_blocking_section();
+
+    CloseHandle(h);
+
+    /*
+     * FindFirstFileEx gives st_size of 0 for directories, where
+     * GetFileInformationByHandle appears to give the number of sectors.
+     * Neither is interesting, so return 0.
+     */
+    if (info.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
+      res->st_size = 0;
+    }
+    else {
+      res->st_size = ((__int64)(info.nFileSizeHigh)) << 32 |
+                     ((__int64)info.nFileSizeLow);
+    }
+    if (!use_64 && res->st_size > Max_long) {
+      win32_maperr(ERROR_ARITHMETIC_OVERFLOW);
+      return 0;
+    }
+
+    if (!convert_time(&info.ftLastWriteTime, &res->st_mtime, 0) ||
+        !convert_time(&info.ftLastAccessTime, &res->st_atime, res->st_mtime) ||
+        !convert_time(&info.ftCreationTime, &res->st_ctime, res->st_mtime)) {
+      win32_maperr(GetLastError());
+      return 0;
+    }
+
+    /*
+     * Note MS CRT (still) puts st_nlink = 1
+     */
+    res->st_nlink = info.nNumberOfLinks;
+  }
+
+  mode = (info.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY ? _S_IFDIR | _S_IEXEC : _S_IFREG) |
+         (info.dwFileAttributes & FILE_ATTRIBUTE_READONLY ? _S_IREAD : _S_IREAD | _S_IWRITE);
+  if ((ptr = strrchr(path, '.')) && (!_stricmp(ptr, ".exe") ||
+                                     !_stricmp(ptr, ".cmd") ||
+                                     !_stricmp(ptr, ".bat") ||
+                                     !_stricmp(ptr, ".com"))) {
+    mode |= _S_IEXEC;
+  }
+  mode |= (mode & 0700) >> 3;
+  mode |= (mode & 0700) >> 6;
+  res->st_mode = mode;
+  res->st_uid = res->st_gid = res->st_ino = 0;
+  res->st_rdev = res->st_dev = drive;
+
+  return 1;
+}
+
 CAMLprim value unix_stat(value path)
 {
-  int ret;
   struct _stat64 buf;
 
   caml_unix_check_path(path, "stat");
-  ret = _stat64(String_val(path), &buf);
-  if (ret == -1) uerror("stat", path);
-  if (buf.st_size > Max_long) {
-    win32_maperr(ERROR_ARITHMETIC_OVERFLOW);
+  if (!do_stat(0, String_val(path), caml_string_length(path), &buf)) {
     uerror("stat", path);
   }
   return stat_aux(0, &buf);
@@ -78,12 +237,12 @@ CAMLprim value unix_stat(value path)
 
 CAMLprim value unix_stat_64(value path)
 {
-  int ret;
   struct _stat64 buf;
 
   caml_unix_check_path(path, "stat");
-  ret = _stat64(String_val(path), &buf);
-  if (ret == -1) uerror("stat", path);
+  if (!do_stat(1, String_val(path), caml_string_length(path), &buf)) {
+    uerror("stat", path);
+  }
   return stat_aux(1, &buf);
 }
 
