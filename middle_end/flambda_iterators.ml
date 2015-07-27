@@ -159,11 +159,10 @@ let map_general ~toplevel f f_named tree =
       match named with
       | Symbol _ | Const _ | Project_closure _ | Move_within_set_of_closures _
       | Project_var _ | Prim _ -> named
-      | Set_of_closures ({ function_decls; free_vars;
-            specialised_args }) ->
-        let function_decls : Flambda.function_declarations =
-          if toplevel then function_decls
-          else
+      | Set_of_closures ({ function_decls; free_vars; specialised_args }) ->
+        if toplevel then named
+        else
+          let function_decls : Flambda.function_declarations =
             { function_decls with
               funs = Variable.Map.map
                   (fun (ffun : Flambda.function_declaration) ->
@@ -174,12 +173,12 @@ let map_general ~toplevel f f_named tree =
                       ~dbg:ffun.dbg)
                 function_decls.funs;
             }
-        in
-        let set_of_closures =
-          Flambda.create_set_of_closures ~function_decls ~free_vars
-            ~specialised_args
-        in
-        Set_of_closures set_of_closures
+          in
+          let set_of_closures =
+            Flambda.create_set_of_closures ~function_decls ~free_vars
+              ~specialised_args
+          in
+          Set_of_closures set_of_closures
       | Expr expr -> Expr (aux expr)
     in
     f_named named
