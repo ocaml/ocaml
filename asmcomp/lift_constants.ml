@@ -426,210 +426,58 @@ let rewrite_constant_access expr aliases set_of_closures_tbl constant_descr
     in
     Variable.Map.find var kind
   in
-  let bind_constant var body : Flambda.t =
+  let replacement_for_defining_expr var : Flambda.named =
     assert (is_a_constant var);
-    (* CR mshinwell: add comment about aliases: might not be immediately
-       obvious that we are not copying the defining expression here, only
-       a reference to the constant. *)
     match get_kind var with
-    | Int i ->
-      Let (Immutable, var,
-           Const (Const_base (Const_int i)),
-           body)
-    | Const_pointer p ->
-      Let (Immutable, var,
-           Const (Const_pointer p),
-           body)
-    | Symbol s ->
-      Let (Immutable, var,
-           Symbol s,
-           body)
-    | exception Not_found -> body
-  in
-  (* CR mshinwell: tidy this up once working *)
-  let bind_constant_fv var body ~free_vars : Flambda.t =
-Format.eprintf "bind_constant_fv var=%a\n" Variable.print var;
-    let outer_var =
-      match Variable.Map.find var free_vars with
-      | outer_var -> outer_var
-      | exception Not_found -> assert false
-    in
-    assert (is_a_constant outer_var);
-    match get_kind outer_var with
-    | Int i ->
-      Let (Immutable, var,
-           Const (Const_base (Const_int i)),
-           body)
-    | Const_pointer p ->
-      Let (Immutable, var,
-           Const (Const_pointer p),
-           body)
-    | Symbol s ->
-      Let (Immutable, var,
-           Symbol s,
-           body)
+    | Int i -> Const (Const_base (Const_int i))
+    | Const_pointer p -> Const (Const_pointer p)
+    | Symbol s -> Symbol s
     | exception Not_found -> assert false
   in
-  let bind_constant_fv' var body : Flambda.t =
-Format.eprintf "bind_constant_fv' var=%a\n" Variable.print var;
-    match get_kind var with
-    | Int i ->
-      Let (Immutable, var,
-           Const (Const_base (Const_int i)),
-           body)
-    | Const_pointer p ->
-      Let (Immutable, var,
-           Const (Const_pointer p),
-           body)
-    | Symbol s ->
-      Let (Immutable, var,
-           Symbol s,
-           body)
-    | exception Not_found -> assert false
+  let replace_constant_defining_exprs (expr : Flambda.t) : Flambda.t =
+    match expr with
+    | Let (_, var, _defining_expr, body) when is_a_constant var ->
+      Let (Immutable, var, replacement_for_defining_expr var, body)
+    | Let_rec (defs, body) ->
+      let defs =
+        List.map (fun (var, defining_expr) ->
+            let defining_expr =
+              if is_a_constant var then replacement_for_defining_expr var
+              else defining_expr
+            in
+            var, defining_expr)
+          defs
+      in
+      Let_rec (defs, body)
+    | Let _ | Var _ | Apply _ | Send _ | Assign _ | If_then_else _ | Switch _
+    | String_switch _ | Static_raise _ | Static_catch _ | Try_with _
+    | While _ | For _ | Proved_unreachable -> expr
   in
-  let rec rewrite_function_declaration
-        (function_decl : Flambda.function_declaration) ~free_vars =
-    (* Calculate which [let] expressions need to be added at the top of the
-       function body to close it over free variables known to be constant. *)
-    let globally_bound_variables =
-      Variable.Set.filter (fun var ->
-          Format.eprintf "GBV checking %a\n" Variable.print var;
-          match Variable.Map.find var free_vars with
-          | outer_var -> is_a_constant outer_var
-          | exception Not_found ->
-            (* CR mshinwell: presumably this should be one of the [fun_var]s or
-               a parameter?  If so we should check. *)
-            false)
-        function_decl.free_variables
-    in
-    (* Calculate which [let] and [let rec] expressions bind constants.  These
-       will be lifted to the top of the function body. *)
-    let closure_bound_variables = ref Variable.Set.empty in
-    Flambda_iterators.iter (function
-        | Let (_, var, _, _) when is_a_constant var ->
-          closure_bound_variables :=
-            Variable.Set.add var !closure_bound_variables
-        | Let_rec (defs, _) ->
-          List.iter (fun (var, _) ->
-              if is_a_constant var then begin
-                closure_bound_variables :=
-                  Variable.Set.add var !closure_bound_variables
-              end)
-            defs
-        | _ -> ())
-      (fun _ -> ())
-      function_decl.body;
-    let closure_bound_variables = !closure_bound_variables in
-    let body =
-      function_decl.body
-      (* See comment below. *)
-      |> delete_redundant_lets_and_fix_project_vars
-      (* Add [let] expressions to bind constants at the top of the body. *)
-      |> Variable.Set.fold (bind_constant_fv ~free_vars)
-          globally_bound_variables
-      |> Variable.Set.fold bind_constant_fv'
-          closure_bound_variables
-    in
-    (* Perform the same transformations on any sets of closures contained
-       within the function's body. *)
-    let body = rewrite_sets_of_closures body in
-    Flambda.create_function_declaration ~params:function_decl.params
-      ~body ~stub:function_decl.stub ~dbg:function_decl.dbg
-  and delete_redundant_lets_and_fix_project_vars (expr : Flambda.t) =
-    (* Delete [let] and [let rec] expressions in the function's body that bind
-       variables in [globally_bound_variables] or [closure_bound_variables].
-       These expressions are redundant since we are about to add new [let]s
-       to bind the constants at the top of the function's body.
-
-       There may also exist [Project_var] expressions that reference variables
-       that used to be within some closure, but were removed (or will be
-       removed) by this pass as a result of them being constant.  Such
-       [Project_var] expressions must be replaced by the corresponding
-       constants. *)
-    let rewrite_named : Flambda.named -> Flambda.named = function
-      | Project_var { var; _ }
-          when is_a_constant (Var_within_closure.unwrap var) ->
-Format.eprintf "removing Project_var %a\n" Var_within_closure.print var;
-        let var = Var_within_closure.unwrap var in
-        begin match get_kind var with
-        | Int i -> Const (Const_base (Const_int i))
-        | Const_pointer p -> Const (Const_pointer p)
-        | Symbol s -> Symbol s
-        | exception Not_found -> assert false
-        end
-      | (Project_var { var; _ } as named) ->
-Format.eprintf "NOT removing Project_var %a\n" Var_within_closure.print var;
-        named
-      | named -> named
-    in
-    let rewrite : Flambda.t -> Flambda.t = function
-      | Let (_, var, _, body) when is_a_constant var -> body
-      | Let_rec (defs, body) ->
-        let defs =
-          List.filter (fun (var, _) -> not (is_a_constant var)) defs
-        in
-        begin match defs with
-        | [] -> body
-        | _ -> Flambda.Let_rec (defs, body)
-        end
-      | expr -> expr
-    in
-    Flambda_iterators.map_toplevel rewrite rewrite_named expr
-  and rewrite_set_of_closures (set_of_closures : Flambda.set_of_closures) =
-    let free_vars = set_of_closures.free_vars in
-    let function_decls =
-      { set_of_closures.function_decls with
-        funs =
-          Variable.Map.map (rewrite_function_declaration ~free_vars)
-            set_of_closures.function_decls.funs;
-      }
-    in
-    (* Any free variable or parameter in the declaration(s) that was a
-       constant will now have been bound.  As such, we must update
-       [free_vars] and/or [specialised_args] as appropriate.  (The updates
-       to [Project_var] nodes above ensure this is safe.) *)
-    let free_vars =
-      Variable.Map.filter (fun inner_var outer_var ->
-          (* If the outer variable is inconstant, the inner variable must
-             also be inconstant. *)
-          assert (is_a_constant outer_var || not (is_a_constant inner_var));
-          not (is_a_constant outer_var))
-        free_vars
-    in
-    let specialised_args =
-      Variable.Map.filter (fun _ specialised_to ->
-          not (is_a_constant specialised_to))
-        set_of_closures.specialised_args
-    in
-    Flambda.create_set_of_closures ~function_decls ~free_vars
-      ~specialised_args
-  and rewrite_sets_of_closures expr =
-    (* Find all sets of closures at the toplevel of [expr] and apply the
-       above transformations on the function declarations inside them. *)
-    let rewrite_named (named : Flambda.named) : Flambda.named =
-      match named with
-      | Set_of_closures set_of_closures ->
-        Set_of_closures (rewrite_set_of_closures set_of_closures)
-      | Symbol _ | Const _ | Project_closure _ | Move_within_set_of_closures _
-      | Project_var _ | Prim _ | Expr _ -> named
-    in
-    Flambda_iterators.map_toplevel_named rewrite_named expr
+  let rewrite_expr expr =
+    Flambda_iterators.map replace_constant_defining_exprs
+      (fun named -> named) expr
   in
-  let expr =
-    expr
-    |> rewrite_sets_of_closures
-    |> delete_redundant_lets_and_fix_project_vars
-  in
+  let expr = rewrite_expr expr in
   let free_variables = Free_variables.calculate expr in
   if not (Variable.Set.for_all is_a_constant free_variables) then begin
     Misc.fatal_errorf "Lift_constants: toplevel expression contains free \
         variables that are not constant: %a"
       Flambda.print expr
   end;
+  let bind_constant var body : Flambda.t =
+    assert (is_a_constant var);
+    match get_kind var with
+    | Int i -> Let (Immutable, var, Const (Const_base (Const_int i)), body)
+    | Const_pointer p -> Let (Immutable, var, Const (Const_pointer p), body)
+    | Symbol s -> Let (Immutable, var, Symbol s, body)
+    | exception Not_found -> body
+  in
   let expr = Variable.Set.fold bind_constant free_variables expr in
   let set_of_closures_map =
     Symbol.Tbl.fold (fun symbol set_of_closures map ->
-        let set_of_closures = rewrite_set_of_closures set_of_closures in
+        let set_of_closures =
+          Flambda_iterators.map_function_bodies set_of_closures ~f:rewrite_expr
+        in
         Symbol.Map.add symbol set_of_closures map)
       set_of_closures_tbl Symbol.Map.empty
   in

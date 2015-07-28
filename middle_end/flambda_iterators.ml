@@ -233,3 +233,17 @@ let map_project_var_to_expr_opt tree ~f =
       | (Symbol _ | Const _ | Set_of_closures _ | Project_closure _
       | Move_within_set_of_closures _ | Prim _ | Expr _) as named -> named)
     tree
+
+let map_function_bodies (set_of_closures : Flambda.set_of_closures) ~f =
+  let funs =
+    Variable.Map.map (fun (function_decl : Flambda.function_declaration) ->
+        Flambda.create_function_declaration ~body:(f function_decl.body)
+          ~params:function_decl.params
+          ~stub:function_decl.stub
+          ~dbg:function_decl.dbg)
+      set_of_closures.function_decls.funs
+  in
+  Flambda.create_set_of_closures
+    ~function_decls:{ set_of_closures.function_decls with funs; }
+    ~free_vars:set_of_closures.free_vars
+    ~specialised_args:set_of_closures.specialised_args

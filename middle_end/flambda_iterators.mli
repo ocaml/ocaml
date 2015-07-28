@@ -97,6 +97,11 @@ val map_apply
   -> f:(Flambda.apply -> Flambda.apply)
   -> Flambda.t
 
+val map_function_bodies
+   : Flambda.set_of_closures
+  -> f:(Flambda.t -> Flambda.t)
+  -> Flambda.set_of_closures
+
 val map_sets_of_closures
    : Flambda.t
   -> f:(Flambda.set_of_closures -> Flambda.set_of_closures)
