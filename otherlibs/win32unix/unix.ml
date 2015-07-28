@@ -389,6 +389,8 @@ let symlink ?to_dir source dest =
   in
     symlink_stub to_dir source dest
 
+external has_symlink : unit -> bool = "unix_has_symlink"
+
 (* Locking *)
 
 type lock_command =

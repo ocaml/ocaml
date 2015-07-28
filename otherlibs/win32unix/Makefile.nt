@@ -34,12 +34,13 @@ UNIX_CAML_FILES = unix.mli unixLabels.mli unixLabels.ml
 
 ALL_FILES=$(WIN_FILES) $(UNIX_FILES)
 WSOCKLIB=$(call SYSLIB,ws2_32)
+ADVAPI32LIB=$(call SYSLIB,advapi32)
 
 LIBNAME=unix
 COBJS=$(ALL_FILES:.c=.$(O))
 CAMLOBJS=unix.cmo unixLabels.cmo
-LINKOPTS=-cclib $(WSOCKLIB)
-LDOPTS=-ldopt $(WSOCKLIB)
+LINKOPTS=-cclib $(WSOCKLIB) -cclib $(ADVAPI32LIB)
+LDOPTS=-ldopt $(WSOCKLIB) -ldopt $(ADVAPI32LIB)
 EXTRACAMLFLAGS=-nolabels
 EXTRACFLAGS=-I../unix
 HEADERS=unixsupport.h socketaddr.h

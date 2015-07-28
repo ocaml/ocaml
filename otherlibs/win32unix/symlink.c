@@ -40,3 +40,47 @@ CAMLprim value unix_symlink(value to_dir, value source, value dest)
 
   CAMLreturn(Val_unit);
 }
+
+#define luid_eq(l, r) (l.LowPart == r.LowPart && l.HighPart == r.HighPart)
+
+CAMLprim value unix_has_symlink(value unit)
+{
+  CAMLparam1(unit);
+  HANDLE hProcess = GetCurrentProcess();
+  BOOL result = FALSE;
+
+  if (OpenProcessToken(hProcess, TOKEN_READ, &hProcess)) {
+    LUID seCreateSymbolicLinkPrivilege;
+
+    if (LookupPrivilegeValue(NULL,
+                             SE_CREATE_SYMBOLIC_LINK_NAME,
+                             &seCreateSymbolicLinkPrivilege)) {
+      DWORD length;
+
+      if (!GetTokenInformation(hProcess, TokenPrivileges, NULL, 0, &length)) {
+        if (GetLastError() == ERROR_INSUFFICIENT_BUFFER) {
+          TOKEN_PRIVILEGES* privileges = (TOKEN_PRIVILEGES*)malloc(length);
+          if (GetTokenInformation(hProcess,
+                                  TokenPrivileges,
+                                  privileges,
+                                  length,
+                                  &length)) {
+            DWORD count = privileges->PrivilegeCount;
+
+            if (count) {
+              LUID_AND_ATTRIBUTES* privs = privileges->Privileges;
+              while (count-- && !(result = luid_eq(privs->Luid, seCreateSymbolicLinkPrivilege)))
+                privs++;
+            }
+          }
+
+          free(privileges);
+        }
+      }
+    }
+
+    CloseHandle(hProcess);
+  }
+
+  CAMLreturn(Val_bool(result));
+}

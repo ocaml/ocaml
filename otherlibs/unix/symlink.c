@@ -39,9 +39,21 @@ CAMLprim value unix_symlink(value to_dir, value path1, value path2)
   CAMLreturn(Val_unit);
 }
 
+CAMLprim value unix_has_symlink(value unit)
+{
+  CAMLparam0();
+  CAMLreturn(Val_true);
+}
+
 #else
 
 CAMLprim value unix_symlink(value to_dir, value path1, value path2)
 { invalid_argument("symlink not implemented"); }
+
+CAMLprim value unix_has_symlink(value unit)
+{
+  CAMLparam0();
+  CAMLreturn(Val_false);
+}
 
 #endif

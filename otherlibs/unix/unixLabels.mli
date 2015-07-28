@@ -622,6 +622,12 @@ val symlink : ?to_dir:bool -> src:string -> dst:string -> unit
 (** [symlink source dest] creates the file [dest] as a symbolic link
    to the file [source]. See {!Unix.symlink} for details of [~to_dir] *)
 
+val has_symlink : unit -> bool
+(** Returns [true] if the user is able to create symbolic links. On Windows,
+   this indicates that the user not only has the SeCreateSymbolicLinkPrivilege
+   but is also running elevated, if necessary. On other platforms, this is
+   simply indicates that the symlink system call is available. *)
+
 val readlink : string -> string
 (** Read the contents of a link. *)
 

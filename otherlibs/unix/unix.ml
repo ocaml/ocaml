@@ -379,6 +379,7 @@ external closedir : dir_handle -> unit = "unix_closedir"
 
 external pipe : unit -> file_descr * file_descr = "unix_pipe"
 external symlink : ?to_dir:bool -> string -> string -> unit = "unix_symlink"
+external has_symlink : unit -> bool = "unix_has_symlink"
 external readlink : string -> string = "unix_readlink"
 external mkfifo : string -> file_perm -> unit = "unix_mkfifo"
 external select :

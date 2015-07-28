@@ -707,6 +707,12 @@ val symlink : ?to_dir:bool -> string -> string -> unit
    {!has_symlink} can be used to check that a process is able to create symbolic
    links. *)
 
+val has_symlink : unit -> bool
+(** Returns [true] if the user is able to create symbolic links. On Windows,
+   this indicates that the user not only has the SeCreateSymbolicLinkPrivilege
+   but is also running elevated, if necessary. On other platforms, this is
+   simply indicates that the symlink system call is available. *)
+
 val readlink : string -> string
 (** Read the contents of a link.
 
