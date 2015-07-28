@@ -97,6 +97,7 @@ OCamlbuild:
   (Jérémie Dimino, request by Peter Zotov)
 - GPR#208: add "asm" tag to ocamlbuild to enable flag -S
   (ygrek)
+- Changed OCamlbuild's license to LGPLv2 with static linking exception.
 
 Bug fixes:
 * PR#4539: change exception string raised when comparing functional values
