@@ -38,6 +38,8 @@ module Env : sig
       environment. *)
   val add : t -> Variable.t -> Simple_value_approx.t -> t
 
+  val add_outer_scope : t -> Variable.t -> Simple_value_approx.t -> t
+
   (** Find the approximation of a given variable, raising a fatal error if
       the environment does not know about the variable.  Use [find_opt]
       instead if you need to catch the failure case. *)
@@ -45,7 +47,7 @@ module Env : sig
 
   type scope = Current | Outer
 
-  val find_scope_exn : t -> Variable.t -> scope
+  val find_with_scope_exn : t -> Variable.t -> scope * Simple_value_approx.t
 
   (** Like [find_exn], but intended for use where the "not present in
       environment" case is to be handled by the caller. *)

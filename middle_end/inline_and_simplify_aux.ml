@@ -64,7 +64,7 @@ module Env = struct
 
   let mem t var = Variable.Map.mem var t.approx
 
-  let add t var (approx : Simple_value_approx.t) =
+  let add_internal t var (approx : Simple_value_approx.t) ~scope =
     let approx =
       (* The semantics of this [match] are what preserve the property
          described at the top of simple_value_approx.mli, namely that when a
@@ -74,16 +74,16 @@ module Env = struct
       | Some var when mem t var -> approx
       | _ -> Simple_value_approx.augment_with_variable approx var
     in
-    if Variable.Map.mem var t.approx then begin
-      Misc.fatal_errorf "Cannot rebind %a in environment to %a"
-        Variable.print var
-        Simple_value_approx.print approx
-    end else begin
-      { t with approx = Variable.Map.add var (Current, approx) t.approx }
-    end
+    { t with approx = Variable.Map.add var (scope, approx) t.approx }
 
-  let find_scope_exn t id =
-    try fst (Variable.Map.find id t.approx)
+  let add t var (approx : Simple_value_approx.t) =
+    add_internal t var approx ~scope:Current
+
+  let add_outer_scope t var (approx : Simple_value_approx.t) =
+    add_internal t var approx ~scope:Outer
+
+  let find_with_scope_exn t id =
+    try Variable.Map.find id t.approx
     with Not_found ->
       Misc.fatal_errorf "Inlining_env.find_with_scope_exn: Unbound variable \
           %a@.%s@. Environment: %a@."
@@ -92,13 +92,7 @@ module Env = struct
         print t
 
   let find_exn t id =
-    try snd (Variable.Map.find id t.approx)
-    with Not_found ->
-      Misc.fatal_errorf "Inlining_env.find_with_scope_exn: Unbound variable \
-          %a@.%s@. Environment: %a@."
-        Variable.print id
-        (Printexc.raw_backtrace_to_string (Printexc.get_callstack max_int))
-        print t
+    snd (find_with_scope_exn t id)
 
   let find_list_exn t vars =
     List.map (fun var -> find_exn t var) vars

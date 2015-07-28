@@ -28,10 +28,13 @@ module R = Inline_and_simplify_aux.Result
 
 let ret = R.set_approx
 
-let freshen_and_simplify_variable env var ~f : Flambda.t =
-  let var = Freshening.apply_variable (E.freshening env) var in
+type simplify_variable_result =
+  | No_binding of Variable.t
+  | Binding of Variable.t * Flambda.named
+
+let simplify_free_variable_internal env original_var =
+  let var = Freshening.apply_variable (E.freshening env) original_var in
   let original_var = var in
-  assert (E.mem env original_var);
   (* In the case where an approximation is useful, we introduce a [let]
      to bind (e.g.) the constant or symbol replacing [var], unless this
      would introduce a useless [let] as a consequence of [var] already being
@@ -53,16 +56,67 @@ let freshen_and_simplify_variable env var ~f : Flambda.t =
     | None -> var
     | Some var -> var
   in
-  assert (E.mem env var);
-  let approx_not_useful () = f var in
-  (* CR mshinwell: Should we update [r] when we *add* code? *)
-  match E.find_scope_exn env var with
-  | Current -> approx_not_useful ()  (* avoid useless [let] *)
-  | Outer ->
-    match A.simplify_var (E.find_exn env var) with
-    | None -> approx_not_useful ()
-    | Some (named, approx) ->
-      Let (Immutable, original_var, named, f original_var)
+  (* CR mshinwell: Should we update [r] when we *add* code?
+     Aside from that, it looks like maybe we don't need [r] in this function,
+     because the approximation within it wouldn't be used by any of the
+     call sites. *)
+  match E.find_with_scope_exn env var with
+  | Current, _approx -> No_binding var  (* avoid useless [let] *)
+  | Outer, approx ->
+    match A.simplify_var approx with
+    | None -> No_binding var
+    | Some (named, _approx) -> Binding (original_var, named)
+
+let simplify_free_variable env var ~f : Flambda.t * R.t =
+  match simplify_free_variable_internal env var with
+  | No_binding var -> f env var
+  | Binding (var, named) ->
+    let approx = E.find_exn env var in
+    let var = Variable.rename var in
+    let env = E.add env var approx in
+    let body, r = f env var in
+    Let (Immutable, var, named, body), r
+
+let simplify_free_variables env vars ~f : Flambda.t * R.t =
+  let rec collect_bindings vars env bound_vars : Flambda.t * R.t =
+    match vars with
+    | [] -> f env (List.rev bound_vars)
+    | var::vars ->
+      Format.eprintf "simplify_free_variables %a: "
+        Variable.print var;
+      match simplify_free_variable_internal env var with
+      | No_binding var ->
+        Format.eprintf "No binding %a\n" Variable.print var;
+        collect_bindings vars env (var::bound_vars)
+      | Binding (var, named) ->
+        let approx = E.find_exn env var in
+        let var = Variable.rename var in
+        Format.eprintf "Binding %a -> %a\n" Variable.print var
+          Flambda.print_named named;
+        let env = E.add env var approx in
+        let body, r = collect_bindings vars env (var::bound_vars) in
+        Let (Immutable, var, named, body), r
+  in
+  collect_bindings vars env []
+
+let simplify_free_variables_named env vars ~f : Flambda.named * R.t =
+  let rec collect_bindings vars env bound_vars : Flambda.t * R.t =
+    match vars with
+    | [] ->
+      let named, r = f env (List.rev bound_vars) in
+      Flambda_utils.name_expr named, r
+    | var::vars ->
+      match simplify_free_variable_internal env var with
+      | No_binding var -> collect_bindings vars env (var::bound_vars)
+      | Binding (var, named) ->
+        let approx = E.find_exn env var in
+        let var = Variable.rename var in
+        let env = E.add env var approx in
+        let body, r = collect_bindings vars env (var::bound_vars) in
+        Let (Immutable, var, named, body), r
+  in
+  let expr, r = collect_bindings vars env [] in
+  Expr expr, r
 
 let simplify_named_using_approx r lam approx =
   let lam, _summary, approx = A.simplify_named approx lam in
@@ -106,8 +160,11 @@ let populate_closure_approximations
   (* Add approximations of used free variables *)
   let env =
     Variable.Map.fold (fun id (_, desc) env ->
+       Format.eprintf "populate_closure_approximations doing %a? %s (approx %a)\n"
+        Variable.print id (if Variable.Set.mem id function_decl.free_variables then
+          "yes" else "no") Simple_value_approx.print desc;
        if Variable.Set.mem id function_decl.free_variables
-       then E.add env id desc
+       then E.add_outer_scope env id desc
        else env) free_vars set_of_closures_env in
   (* Add known approximations of function parameters *)
   let env =
@@ -407,16 +464,17 @@ and simplify_set_of_closures original_env r
       ~make_closure_symbol:Backend.closure_symbol
   in
   let env = E.increase_closure_depth original_env in
-  (* CR mshinwell: check uses of [freshen_and_simplify_variable] vs.
-     [Freshening.apply_variable] *)
   let free_vars =
     Variable.Map.map (fun external_var ->
-        let external_var = freshen_and_simplify_variable env external_var in
+        let external_var =
+          Freshening.apply_variable (E.freshening env) external_var
+        in
+        Format.eprintf "adding approx for free var %a\n" Variable.print external_var;
         external_var, E.find_exn env external_var)
       set_of_closures.free_vars
   in
   let specialised_args =
-    Variable.Map.map (freshen_and_simplify_variable env)
+    Variable.Map.map (Freshening.apply_variable (E.freshening env))
       set_of_closures.specialised_args
   in
   let environment_before_cleaning = env in
@@ -522,49 +580,48 @@ and simplify_set_of_closures original_env r
 
 and simplify_apply env r ~(apply : Flambda.apply) : Flambda.t * R.t =
   let { Flambda. func = lhs_of_application; args; kind = _; dbg } = apply in
-  let lhs_of_application =
-    freshen_and_simplify_variable env lhs_of_application
-  in
-  let args = List.map (freshen_and_simplify_variable env) args in
-  let lhs_of_application_approx = E.find_exn env lhs_of_application in
-  let args_approxs = List.map (fun arg -> E.find_exn env arg) args in
-  (* By using the approximation of the left-hand side of the application,
-     attempt to determine which function is being applied (even if the
-     application is currently [Indirect]).  If successful---in which case we
-     then have a direct application---consider inlining. *)
-  match A.check_approx_for_closure lhs_of_application_approx with
-  | Ok (value_closure, _set_of_closures_var, value_set_of_closures) ->
-    let closure_id_being_applied = value_closure.closure_id in
-    let function_decls = value_set_of_closures.function_decls in
-    let function_decl =
-      try
-        Flambda_utils.find_declaration closure_id_being_applied function_decls
-      with
-      | Not_found ->
-        Misc.fatal_errorf "When handling application expression, \
-            approximation references non-existent closure %a@."
-          Closure_id.print closure_id_being_applied
-    in
-    let nargs = List.length args in
-    let arity = Flambda_utils.function_arity function_decl in
-    if nargs = arity then
-      simplify_full_application env r ~function_decls ~lhs_of_application
-        ~closure_id_being_applied ~function_decl ~value_set_of_closures ~args
-        ~args_approxs ~dbg
-    else if nargs > arity then
-      simplify_over_application env r ~args ~args_approxs ~function_decls
-        ~lhs_of_application ~closure_id_being_applied ~function_decl
-        ~value_set_of_closures ~dbg
-    else if nargs > 0 && nargs < arity then
-      simplify_partial_application env r ~lhs_of_application
-        ~closure_id_being_applied ~function_decl ~args ~dbg
-    else
-      Misc.fatal_errorf "Function with arity %d when simplifying \
-          application expression: %a"
-        arity Flambda.print (Flambda.Apply apply)
-  | Wrong ->  (* Insufficient approximation information to simplify. *)
-    Apply ({ func = lhs_of_application; args; kind = Indirect; dbg }),
-      ret r A.value_unknown
+  simplify_free_variable env lhs_of_application ~f:(fun env lhs_of_application ->
+    simplify_free_variables env args ~f:(fun env args ->
+      let lhs_of_application_approx = E.find_exn env lhs_of_application in
+      let args_approxs = List.map (fun arg -> E.find_exn env arg) args in
+      (* By using the approximation of the left-hand side of the application,
+         attempt to determine which function is being applied (even if the
+         application is currently [Indirect]).  If successful---in which case we
+         then have a direct application---consider inlining. *)
+      match A.check_approx_for_closure lhs_of_application_approx with
+      | Ok (value_closure, _set_of_closures_var, value_set_of_closures) ->
+        let closure_id_being_applied = value_closure.closure_id in
+        let function_decls = value_set_of_closures.function_decls in
+        let function_decl =
+          try
+            Flambda_utils.find_declaration closure_id_being_applied
+              function_decls
+          with
+          | Not_found ->
+            Misc.fatal_errorf "When handling application expression, \
+                approximation references non-existent closure %a@."
+              Closure_id.print closure_id_being_applied
+        in
+        let nargs = List.length args in
+        let arity = Flambda_utils.function_arity function_decl in
+        if nargs = arity then
+          simplify_full_application env r ~function_decls ~lhs_of_application
+            ~closure_id_being_applied ~function_decl ~value_set_of_closures
+            ~args ~args_approxs ~dbg
+        else if nargs > arity then
+          simplify_over_application env r ~args ~args_approxs ~function_decls
+            ~lhs_of_application ~closure_id_being_applied ~function_decl
+            ~value_set_of_closures ~dbg
+        else if nargs > 0 && nargs < arity then
+          simplify_partial_application env r ~lhs_of_application
+            ~closure_id_being_applied ~function_decl ~args ~dbg
+        else
+          Misc.fatal_errorf "Function with arity %d when simplifying \
+              application expression: %a"
+            arity Flambda.print (Flambda.Apply apply)
+      | Wrong ->  (* Insufficient approximation information to simplify. *)
+        Apply ({ func = lhs_of_application; args; kind = Indirect; dbg }),
+          ret r A.value_unknown))
 
 and simplify_full_application env r ~function_decls ~lhs_of_application
       ~closure_id_being_applied ~function_decl ~value_set_of_closures ~args
@@ -643,55 +700,55 @@ and simplify_named env r (tree : Flambda.named) : Flambda.named * R.t =
   | Move_within_set_of_closures move_within_set_of_closures ->
     simplify_move_within_set_of_closures env r ~move_within_set_of_closures
   | Prim (prim, args, dbg) ->
-    let args = List.map (freshen_and_simplify_variable env) args in
-    let tree = Flambda.Prim (prim, args, dbg) in
-    begin match prim, args with
-    | Pgetglobal id, [] ->
-      let approx =
-        if Ident.is_predef_exn id then A.value_unknown
-        else
+    simplify_free_variables_named env args ~f:(fun env args ->
+      let tree = Flambda.Prim (prim, args, dbg) in
+      begin match prim, args with
+      | Pgetglobal id, [] ->
+        let approx =
+          if Ident.is_predef_exn id then A.value_unknown
+          else
+            let module Backend = (val (E.backend env) : Backend_intf.S) in
+            Backend.import_global id
+        in
+        tree, ret r approx
+      | Pgetglobalfield (id, i), [] ->
+        let approx =
+          if id = Compilation_unit.get_current_id_exn ()
+          then R.find_global r ~field_index:i
+          else
+            let module Backend = (val (E.backend env) : Backend_intf.S) in
+            A.get_field (Backend.import_global id) ~field_index:i
+        in
+        (* CR mshinwell for pchambart: Is there a reason we cannot use
+           [simplify_named_using_approx_and_env] here? *)
+        simplify_named_using_approx_and_env env r tree approx
+      | Psetglobalfield (_, i), [arg] ->
+        let approx = E.find_exn env arg in
+        let r = R.add_global r ~field_index:i ~approx in
+        tree, ret r A.value_unknown
+      | Pfield i, [arg] ->
+        let approx = A.get_field (E.find_exn env arg) ~field_index:i in
+        simplify_named_using_approx_and_env env r tree approx
+      | (Psetfield _ | Parraysetu _ | Parraysets _), block::_ ->
+        let block_approx = E.find_exn env block in
+        if A.is_definitely_immutable block_approx then begin
+          Location.prerr_warning (Debuginfo.to_location dbg)
+            Warnings.Assignment_on_non_mutable_value
+        end;
+        tree, ret r A.value_unknown
+      | (Psequand | Psequor), _ ->
+        Misc.fatal_error "Psequand and Psequor must be expanded (see handling \
+            in closure_conversion.ml)"
+      | p, args ->
+        let approxs = E.find_list_exn env args in
+        let expr, approx, benefit =
           let module Backend = (val (E.backend env) : Backend_intf.S) in
-          Backend.import_global id
-      in
-      tree, ret r approx
-    | Pgetglobalfield (id, i), [] ->
-      let approx =
-        if id = Compilation_unit.get_current_id_exn ()
-        then R.find_global r ~field_index:i
-        else
-          let module Backend = (val (E.backend env) : Backend_intf.S) in
-          A.get_field (Backend.import_global id) ~field_index:i
-      in
-      (* CR mshinwell for pchambart: Is there a reason we cannot use
-         [simplify_named_using_approx_and_env] here? *)
-      simplify_named_using_approx_and_env env r tree approx
-    | Psetglobalfield (_, i), [arg] ->
-      let approx = E.find_exn env arg in
-      let r = R.add_global r ~field_index:i ~approx in
-      tree, ret r A.value_unknown
-    | Pfield i, [arg] ->
-      let approx = A.get_field (E.find_exn env arg) ~field_index:i in
-      simplify_named_using_approx_and_env env r tree approx
-    | (Psetfield _ | Parraysetu _ | Parraysets _), block::_ ->
-      let block_approx = E.find_exn env block in
-      if A.is_definitely_immutable block_approx then begin
-        Location.prerr_warning (Debuginfo.to_location dbg)
-          Warnings.Assignment_on_non_mutable_value
-      end;
-      tree, ret r A.value_unknown
-    | (Psequand | Psequor), _ ->
-      Misc.fatal_error "Psequand and Psequor must be expanded (see handling \
-          in closure_conversion.ml)"
-    | p, args ->
-      let approxs = E.find_list_exn env args in
-      let expr, approx, benefit =
-        let module Backend = (val (E.backend env) : Backend_intf.S) in
-        Simplify_primitives.primitive p (args, approxs) tree dbg
-          ~size_int:Backend.size_int ~big_endian:Backend.big_endian
-      in
-      let r = R.map_benefit r (B.(+) benefit) in
-      expr, ret r approx
-    end
+          Simplify_primitives.primitive p (args, approxs) tree dbg
+            ~size_int:Backend.size_int ~big_endian:Backend.big_endian
+        in
+        let r = R.map_benefit r (B.(+) benefit) in
+        expr, ret r approx
+      end)
   | Expr expr ->
     let expr, r = simplify_direct env r expr in
     Expr expr, r
@@ -818,126 +875,129 @@ and simplify_direct env r (tree : Flambda.t) : Flambda.t * R.t =
     (* When arg is the constant false or true (or something considered
        as true), we can drop the if and replace it by a sequence.
        if arg is not effectful we can also drop it. *)
-    let arg = freshen_and_simplify_variable env arg in
-    begin match (R.approx r).descr with
-    | Value_constptr 0 ->  (* Constant [false]: keep [ifnot] *)
-      let ifnot, r = simplify env r ifnot in
-      ifnot, R.map_benefit r B.remove_branch
-    | Value_constptr _ | Value_block _ ->  (* Constant [true]: keep [ifso] *)
-      let ifso, r = simplify env r ifso in
-      ifso, R.map_benefit r B.remove_branch
-    | _ ->
-      let env = E.inside_branch env in
-      let ifso, r = simplify env r ifso in
-      let ifso_approx = R.approx r in
-      let ifnot, r = simplify env r ifnot in
-      let ifnot_approx = R.approx r in
-      If_then_else (arg, ifso, ifnot), ret r (A.meet ifso_approx ifnot_approx)
-    end
+    simplify_free_variable env arg ~f:(fun env arg ->
+      begin match (R.approx r).descr with
+      | Value_constptr 0 ->  (* Constant [false]: keep [ifnot] *)
+        let ifnot, r = simplify env r ifnot in
+        ifnot, R.map_benefit r B.remove_branch
+      | Value_constptr _ | Value_block _ ->  (* Constant [true]: keep [ifso] *)
+        let ifso, r = simplify env r ifso in
+        ifso, R.map_benefit r B.remove_branch
+      | _ ->
+        let env = E.inside_branch env in
+        let ifso, r = simplify env r ifso in
+        let ifso_approx = R.approx r in
+        let ifnot, r = simplify env r ifnot in
+        let ifnot_approx = R.approx r in
+        If_then_else (arg, ifso, ifnot),
+          ret r (A.meet ifso_approx ifnot_approx)
+      end)
   | While (cond, body) ->
     let cond, r = simplify env r cond in
     let env = E.inside_simplify env in
     let body, r = simplify env r body in
     While (cond, body), ret r A.value_unknown
   | Send { kind; meth; obj; args; dbg; } ->
-    let meth = freshen_and_simplify_variable env meth in
-    let obj = freshen_and_simplify_variable env obj in
-    let args = List.map (freshen_and_simplify_variable env) args in
-    Send { kind; meth; obj; args; dbg; }, ret r A.value_unknown
+    simplify_free_variable env meth ~f:(fun env meth ->
+      simplify_free_variable env obj ~f:(fun env obj ->
+        simplify_free_variables env args ~f:(fun _env args ->
+          Send { kind; meth; obj; args; dbg; }, ret r A.value_unknown)))
   | For { bound_var; from_value; to_value; direction; body; } ->
-    let from_value = freshen_and_simplify_variable env from_value in
-    let to_value = freshen_and_simplify_variable env to_value in
-    let bound_var, sb = Freshening.add_variable (E.freshening env) bound_var in
-    let env =
-      E.inside_simplify
-        (E.add (E.set_freshening env sb) bound_var A.value_unknown)
-    in
-    let env = E.inside_simplify env in
-    let body, r = simplify env r body in
-    For { bound_var; from_value; to_value; direction; body; },
-      ret r A.value_unknown
+    simplify_free_variable env from_value ~f:(fun env from_value ->
+      simplify_free_variable env to_value ~f:(fun env to_value ->
+        let bound_var, sb =
+          Freshening.add_variable (E.freshening env) bound_var
+        in
+        let env =
+          E.inside_simplify
+            (E.add (E.set_freshening env sb) bound_var A.value_unknown)
+        in
+        let env = E.inside_simplify env in
+        let body, r = simplify env r body in
+        For { bound_var; from_value; to_value; direction; body; },
+          ret r A.value_unknown))
   | Assign { being_assigned; new_value; } ->
-    freshen_and_simplify_variable env being_assigned ~f:(fun being_assigned ->
-      freshen_and_simplify_variable env new_value ~f:(fun new_value ->
+    simplify_free_variable env being_assigned ~f:(fun env being_assigned ->
+      simplify_free_variable env new_value ~f:(fun _env new_value ->
         Assign { being_assigned; new_value; }, ret r A.value_unknown))
   | Switch (arg, sw) ->
     (* When [arg] is known to be a variable whose approximation is that of a
        block with a fixed tag or a fixed integer, we can eliminate the
        [Switch].  (This should also make the [Let] that binds [arg] redundant,
        meaning that it too can be eliminated.) *)
-    let arg = freshen_and_simplify_variable env arg in
-    let get_failaction () : Flambda.t =
-      (* If the switch is applied to a statically-known value that does not
-         match any case:
-         * if there is a default action take that case;
-         * otherwise this is something that is guaranteed not to
-           be reachable by the type checker.  For example:
-           [type 'a t = Int : int -> int t | Float : float -> float t
-            match Int 1 with
-            | Int _ -> ...
-            | Float f as v ->
-              match v with   <-- This match is unreachable
-              | Float f -> ...]
-       *)
-      match sw.failaction with
-      | None -> Proved_unreachable
-      | Some f -> f
-    in
-    begin match (R.approx r).descr with
-    | Value_int i
-    | Value_constptr i ->
-      let lam =
-        try List.assoc i sw.consts
-        with Not_found -> get_failaction ()
-      in
-      let lam, r = simplify env r lam in
-      lam, R.map_benefit r B.remove_branch
-    | Value_block (tag, _) ->
-      let tag = Tag.to_int tag in
-      let lam =
-        try List.assoc tag sw.blocks
-        with Not_found -> get_failaction ()
-      in
-      let lam, r = simplify env r lam in
-      lam, R.map_benefit r B.remove_branch
-    | _ ->
-      let env = E.inside_branch env in
-      let f (i, v) (acc, r) =
-        let approx = R.approx r in
-        let lam, r = simplify env r v in
-        ((i, lam)::acc, R.set_approx r (A.meet (R.approx r) approx))
-      in
-      let r = R.set_approx r A.value_bottom in
-      let consts, r = List.fold_right f sw.consts ([], r) in
-      let blocks, r = List.fold_right f sw.blocks ([], r) in
-      let failaction, r =
+    simplify_free_variable env arg ~f:(fun env arg ->
+      let get_failaction () : Flambda.t =
+        (* If the switch is applied to a statically-known value that does not
+           match any case:
+           * if there is a default action take that case;
+           * otherwise this is something that is guaranteed not to
+             be reachable by the type checker.  For example:
+             [type 'a t = Int : int -> int t | Float : float -> float t
+              match Int 1 with
+              | Int _ -> ...
+              | Float f as v ->
+                match v with   <-- This match is unreachable
+                | Float f -> ...]
+         *)
         match sw.failaction with
-        | None -> None, r
-        | Some l ->
-          let approx = R.approx r in
-          let l, r = simplify env r l in
-          Some l, R.set_approx r (A.meet (R.approx r) approx)
+        | None -> Proved_unreachable
+        | Some f -> f
       in
-      let sw = { sw with failaction; consts; blocks; } in
-      Switch (arg, sw), r
-    end
+      begin match (R.approx r).descr with
+      | Value_int i
+      | Value_constptr i ->
+        let lam =
+          try List.assoc i sw.consts
+          with Not_found -> get_failaction ()
+        in
+        let lam, r = simplify env r lam in
+        lam, R.map_benefit r B.remove_branch
+      | Value_block (tag, _) ->
+        let tag = Tag.to_int tag in
+        let lam =
+          try List.assoc tag sw.blocks
+          with Not_found -> get_failaction ()
+        in
+        let lam, r = simplify env r lam in
+        lam, R.map_benefit r B.remove_branch
+      | _ ->
+        let env = E.inside_branch env in
+        let f (i, v) (acc, r) =
+          let approx = R.approx r in
+          let lam, r = simplify env r v in
+          ((i, lam)::acc, R.set_approx r (A.meet (R.approx r) approx))
+        in
+        let r = R.set_approx r A.value_bottom in
+        let consts, r = List.fold_right f sw.consts ([], r) in
+        let blocks, r = List.fold_right f sw.blocks ([], r) in
+        let failaction, r =
+          match sw.failaction with
+          | None -> None, r
+          | Some l ->
+            let approx = R.approx r in
+            let l, r = simplify env r l in
+            Some l, R.set_approx r (A.meet (R.approx r) approx)
+        in
+        let sw = { sw with failaction; consts; blocks; } in
+        Switch (arg, sw), r
+      end)
   | String_switch (arg, sw, def) ->
-    let arg = freshen_and_simplify_variable env arg in
-    let sw, r =
-      List.fold_right (fun (str, lam) (sw, r) ->
-          let lam, r = simplify env r lam in
-          (str, lam)::sw, r)
-        sw
-        ([], r)
-    in
-    let def, r =
-      match def with
-      | None -> def, r
-      | Some def ->
-        let def, r = simplify env r def in
-        Some def, r
-    in
-    String_switch (arg, sw, def), ret r A.value_unknown
+    simplify_free_variable env arg ~f:(fun env arg ->
+      let sw, r =
+        List.fold_right (fun (str, lam) (sw, r) ->
+            let lam, r = simplify env r lam in
+            (str, lam)::sw, r)
+          sw
+          ([], r)
+      in
+      let def, r =
+        match def with
+        | None -> def, r
+        | Some def ->
+          let def, r = simplify env r def in
+          Some def, r
+      in
+      String_switch (arg, sw, def), ret r A.value_unknown)
   | Proved_unreachable -> tree, ret r A.value_bottom
 
 and simplify_list env r l =
