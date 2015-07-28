@@ -1007,6 +1007,12 @@ for i = 1 to 1000 do
              (float_of_big_int
                  (shift_left_big_int (big_int_of_int64 n) exp))
              (ldexp (Int64.to_float n) exp))
+  then ok := false;
+  let n = Int64.neg n in
+  if not (eq_float
+             (float_of_big_int
+                 (shift_left_big_int (big_int_of_int64 n) exp))
+             (ldexp (Int64.to_float n) exp))
   then ok := false
 done;
 test 7 eq (!ok, true);;

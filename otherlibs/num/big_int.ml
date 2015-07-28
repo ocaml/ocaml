@@ -868,7 +868,7 @@ let float_of_big_int x =
   else begin
     let n = n - 55 in
     (* Extract top 55 bits of x *)
-    let top = shift_right_towards_zero_big_int x n in
+    let top = shift_right_big_int x n in
     (* Check if the other bits are all zero *)
     let exact = eq_big_int x (shift_left_big_int top n) in
     (* Round to float and apply exponent *)
