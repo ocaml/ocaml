@@ -50,7 +50,7 @@ typedef char * addr;
 #ifdef __GNUC__
   /* Works only in GCC 2.5 and later */
   #define Noreturn __attribute__ ((noreturn))
-#elif 
+#else
   #define Noreturn
 #endif
 
