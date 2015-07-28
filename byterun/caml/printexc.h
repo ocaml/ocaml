@@ -24,7 +24,7 @@ extern "C" {
 
 
 CAMLextern char * caml_format_exception (value);
-CAMLnoreturn void caml_fatal_uncaught_exception (value);
+CAMLno_return void caml_fatal_uncaught_exception (value);
 
 #ifdef __cplusplus
 }

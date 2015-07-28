@@ -47,7 +47,7 @@ extern caml_generated_constant
 
 /* Exception raising */
 
-CAMLnoreturn extern void caml_raise_exception (value bucket);
+CAMLno_return extern void caml_raise_exception (value bucket);
 
 char * caml_exception_pointer = NULL;
 

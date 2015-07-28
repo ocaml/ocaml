@@ -40,11 +40,11 @@ typedef char * addr;
 
 #ifdef __GNUC__
   /* Works only in GCC 2.5 and later */
-  #define CAMLnoreturn __attribute__ ((noreturn))
+  #define CAMLno_return __attribute__ ((noreturn))
 #elif _MSC_VER >= 1500
-  #define CAMLnoreturn __declspec(noreturn)
+  #define CAMLno_return __declspec(noreturn)
 #else
-  #define CAMLnoreturn
+  #define CAMLno_return
 #endif
 
 #ifdef __GNUC__
@@ -86,14 +86,14 @@ extern caml_timing_hook caml_finalise_begin_hook, caml_finalise_end_hook;
 #ifdef DEBUG
 #define CAMLassert(x) \
   ((x) ? (void) 0 : caml_failed_assert ( #x , __FILE__, __LINE__))
-CAMLnoreturn CAMLextern int caml_failed_assert (char *, char *, int);
+CAMLno_return CAMLextern int caml_failed_assert (char *, char *, int);
 #else
 #define CAMLassert(x) ((void) 0)
 #endif
 
-CAMLnoreturn CAMLextern void caml_fatal_error (char *msg);
-CAMLnoreturn CAMLextern void caml_fatal_error_arg (char *fmt, char *arg);
-CAMLnoreturn CAMLextern void caml_fatal_error_arg2 (char *fmt1, char *arg1,
+CAMLno_return CAMLextern void caml_fatal_error (char *msg);
+CAMLno_return CAMLextern void caml_fatal_error_arg (char *fmt, char *arg);
+CAMLno_return CAMLextern void caml_fatal_error_arg2 (char *fmt1, char *arg1,
                                        char *fmt2, char *arg2);
 
 /* Safe string operations */

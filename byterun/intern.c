@@ -66,7 +66,7 @@ static value intern_block;
 
 static char * intern_resolve_code_pointer(unsigned char digest[16],
                                           asize_t offset);
-CAMLnoreturn static void intern_bad_code_pointer(unsigned char digest[16]);
+CAMLno_return static void intern_bad_code_pointer(unsigned char digest[16]);
 
 static void intern_free_stack(void);
 

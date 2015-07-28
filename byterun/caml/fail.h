@@ -60,21 +60,21 @@ int caml_is_special_exception(value exn);
 extern "C" {
 #endif
 
-CAMLnoreturn CAMLextern void caml_raise (value bucket);
-CAMLnoreturn CAMLextern void caml_raise_constant (value tag);
-CAMLnoreturn CAMLextern void caml_raise_with_arg (value tag, value arg);
-CAMLnoreturn CAMLextern void caml_raise_with_args (value tag, int nargs, value arg[]);
-CAMLnoreturn CAMLextern void caml_raise_with_string (value tag, char const * msg);
-CAMLnoreturn CAMLextern void caml_failwith (char const *);
-CAMLnoreturn CAMLextern void caml_invalid_argument (char const *);
-CAMLnoreturn CAMLextern void caml_raise_out_of_memory (void);
-CAMLnoreturn CAMLextern void caml_raise_stack_overflow (void);
-CAMLnoreturn CAMLextern void caml_raise_sys_error (value);
-CAMLnoreturn CAMLextern void caml_raise_end_of_file (void);
-CAMLnoreturn CAMLextern void caml_raise_zero_divide (void);
-CAMLnoreturn CAMLextern void caml_raise_not_found (void);
-CAMLnoreturn CAMLextern void caml_array_bound_error (void);
-CAMLnoreturn CAMLextern void caml_raise_sys_blocked_io (void);
+CAMLno_return CAMLextern void caml_raise (value bucket);
+CAMLno_return CAMLextern void caml_raise_constant (value tag);
+CAMLno_return CAMLextern void caml_raise_with_arg (value tag, value arg);
+CAMLno_return CAMLextern void caml_raise_with_args (value tag, int nargs, value arg[]);
+CAMLno_return CAMLextern void caml_raise_with_string (value tag, char const * msg);
+CAMLno_return CAMLextern void caml_failwith (char const *);
+CAMLno_return CAMLextern void caml_invalid_argument (char const *);
+CAMLno_return CAMLextern void caml_raise_out_of_memory (void);
+CAMLno_return CAMLextern void caml_raise_stack_overflow (void);
+CAMLno_return CAMLextern void caml_raise_sys_error (value);
+CAMLno_return CAMLextern void caml_raise_end_of_file (void);
+CAMLno_return CAMLextern void caml_raise_zero_divide (void);
+CAMLno_return CAMLextern void caml_raise_not_found (void);
+CAMLno_return CAMLextern void caml_array_bound_error (void);
+CAMLno_return CAMLextern void caml_raise_sys_blocked_io (void);
 
 #ifdef __cplusplus
 }
