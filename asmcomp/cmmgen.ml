@@ -1250,7 +1250,7 @@ let rec is_unboxed_number e =
   match e with
   | Uconst(Uconst_ref(_, Uconst_float _)) -> Boxed_float
   | Uconst(Uconst_ref(_, Uconst_int32 _)) -> Boxed_integer Pint32
-  | Uconst(Uconst_ref(_, Uconst_int64 _)) -> Boxed_integer Pint64
+  | Uconst(Uconst_ref(_, Uconst_int64 _)) when size_int = 8 -> Boxed_integer Pint64
   | Uconst(Uconst_ref(_, Uconst_nativeint _)) -> Boxed_integer Pnativeint
   | Uprim(p, _, _) ->
       begin match simplif_primitive p with
