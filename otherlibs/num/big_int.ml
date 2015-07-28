@@ -719,10 +719,11 @@ let two_power_m1_big_int n =
   if n < 0 then invalid_arg "two_power_m1_big_int"
   else if n = 0 then zero_big_int
   else begin
-    let size_res = (n + length_of_digit - 1) / length_of_digit in
+    let idx = n / length_of_digit in
+    let size_res = idx + 1 in
     let res = make_nat size_res in
-    set_digit_nat_native res (n / length_of_digit)
-                             (Nativeint.shift_left 1n (n mod length_of_digit));
+    set_digit_nat_native res idx 
+                         (Nativeint.shift_left 1n (n mod length_of_digit));
     ignore (decr_nat res 0 size_res 0);
     { sign = 1; abs_value = res }
   end
