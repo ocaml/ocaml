@@ -374,7 +374,20 @@ let mkfifo name perm = invalid_arg "Unix.mkfifo not implemented"
 (* Symbolic links *)
 
 external readlink : string -> string = "unix_readlink"
-let symlink path1 path2 = invalid_arg "Unix.symlink not implemented"
+external symlink_stub : bool -> string -> string -> unit = "unix_symlink"
+
+let symlink ?to_dir source dest =
+  let to_dir =
+    match to_dir with
+      Some to_dir ->
+        to_dir
+    | None ->
+        try
+          LargeFile.((stat source).st_kind = S_DIR)
+        with _ ->
+          false
+  in
+    symlink_stub to_dir source dest
 
 (* Locking *)
 

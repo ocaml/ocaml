@@ -356,7 +356,7 @@ let pipe() =
   set_nonblock out_fd;
   fd_pair
 
-external symlink : string -> string -> unit = "unix_symlink"
+external symlink : ?to_dir:bool -> string -> string -> unit = "unix_symlink"
 external readlink : string -> string = "unix_readlink"
 external mkfifo : string -> file_perm -> unit = "unix_mkfifo"
 

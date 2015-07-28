@@ -618,9 +618,9 @@ val close_process_full :
 (** {6 Symbolic links} *)
 
 
-val symlink : src:string -> dst:string -> unit
+val symlink : ?to_dir:bool -> src:string -> dst:string -> unit
 (** [symlink source dest] creates the file [dest] as a symbolic link
-   to the file [source]. *)
+   to the file [source]. See {!Unix.symlink} for details of [~to_dir] *)
 
 val readlink : string -> string
 (** Read the contents of a link. *)
