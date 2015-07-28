@@ -251,7 +251,7 @@ type stats =
     st_ctime : float }
 
 external stat : string -> stats = "unix_stat"
-let lstat = stat
+external lstat : string -> stats = "unix_lstat"
 external fstat : file_descr -> stats = "unix_fstat"
 let isatty fd =
   match (fstat fd).st_kind with S_CHR -> true | _ -> false
@@ -287,7 +287,7 @@ module LargeFile =
         st_ctime : float;
       }
     external stat : string -> stats = "unix_stat_64"
-    let lstat = stat
+    external lstat : string -> stats = "unix_lstat_64"
     external fstat : file_descr -> stats = "unix_fstat_64"
   end
 

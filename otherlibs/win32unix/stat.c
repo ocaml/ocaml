@@ -22,9 +22,16 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <time.h>
+#include <winioctl.h>
 
 #ifndef S_IFLNK
-#define S_IFLNK 0
+/*
+ * The Microsoft CRT doesn't support lstat and so has no S_IFLNK
+ * The implementation uses comparison, so rather than allocating another bit, in
+ * a potentially future-incompatible way, just create a value with multiple bits
+ * set.
+ */
+#define S_IFLNK (S_IFDIR | S_IFREG)
 #endif
 #ifndef S_IFIFO
 #define S_IFIFO 0
@@ -34,6 +41,45 @@
 #endif
 #ifndef S_IFBLK
 #define S_IFBLK 0
+#endif
+
+/*
+ * This structure is defined inconsistently. mingw64 has it in ntdef.h (which
+ * doesn't look like a primary header) and technically it's part of ntifs.h in
+ * the WDK. Requiring the WDK is a bit extreme, so the definition is taken from
+ * ntdef.h. Both ntdef.h and ntifs.h define REPARSE_DATA_BUFFER_HEADER_SIZE
+ */
+#ifndef REPARSE_DATA_BUFFER_HEADER_SIZE
+typedef struct _REPARSE_DATA_BUFFER
+{
+  ULONG  ReparseTag;
+  USHORT ReparseDataLength;
+  USHORT Reserved;
+  union
+  {
+    struct
+    {
+      USHORT SubstituteNameOffset;
+      USHORT SubstituteNameLength;
+      USHORT PrintNameOffset;
+      USHORT PrintNameLength;
+      ULONG  Flags;
+      WCHAR  PathBuffer[1];
+    } SymbolicLinkReparseBuffer;
+    struct
+    {
+      USHORT SubstituteNameOffset;
+      USHORT SubstituteNameLength;
+      USHORT PrintNameOffset;
+      USHORT PrintNameLength;
+      WCHAR  PathBuffer[1];
+    } MountPointReparseBuffer;
+    struct
+    {
+      UCHAR  DataBuffer[1];
+    } GenericReparseBuffer;
+  };
+} REPARSE_DATA_BUFFER, *PREPARSE_DATA_BUFFER;
 #endif
 
 static int file_kind_table[] = {
@@ -88,11 +134,14 @@ static value stat_aux(int use_64, struct _stat64 *buf)
  *
  * The bug persists in Visual Studio 2012. Visual Studio 2015 features the
  * "great refactored" CRT (written in C++!). This CRT correctly returns st_mode
- * for directory symbolic links. Its two limitations is that it doesn't populate
- * st_nlink correctly.
+ * for directory symbolic links. Its two limitations are that it doesn't return
+ * the st_size correctly for symbolic links and it doesn't populate st_nlink
+ * correctly.
  *
  * However, even if fixed, mingw64 is limited to msvcrt.dll (by default, anyway)
  * and that's a lot of buggy CRTs out there.
+ *
+ * There is also no implementation given for lstat in any CRT.
  *
  * do_stat therefore reimplements stat - but the algorithms for populating the
  * resulting _stat64 are identical to Microsoft's (with the exception of correct
@@ -127,7 +176,7 @@ static int convert_time(FILETIME* time, __time64_t* result, __time64_t def)
   return 1;
 }
 
-static int do_stat(int use_64, char* path, mlsize_t l, struct _stat64* res)
+static int do_stat(int do_lstat, int use_64, char* path, mlsize_t l, struct _stat64* res)
 {
   BY_HANDLE_FILE_INFORMATION info;
   int drive, i;
@@ -135,6 +184,7 @@ static int do_stat(int use_64, char* path, mlsize_t l, struct _stat64* res)
   char c;
   HANDLE h;
   unsigned short mode;
+  int is_symlink = 0;
 
   /*
    * Get the drive number
@@ -158,7 +208,7 @@ static int do_stat(int use_64, char* path, mlsize_t l, struct _stat64* res)
                  FILE_SHARE_DELETE | FILE_SHARE_READ | FILE_SHARE_WRITE,
                  NULL,
                  OPEN_EXISTING,
-                 FILE_FLAG_BACKUP_SEMANTICS,
+                 FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OPEN_REPARSE_POINT,
                  NULL);
   caml_leave_blocking_section();
   if (h == INVALID_HANDLE_VALUE) {
@@ -175,20 +225,74 @@ static int do_stat(int use_64, char* path, mlsize_t l, struct _stat64* res)
     }
     caml_leave_blocking_section();
 
+    if (info.dwFileAttributes & FILE_ATTRIBUTE_REPARSE_POINT) {
+      /*
+       * Only symbolic links should be processed specially. The call to
+       * DeviceIoControl solves two problems at the same time:
+       *   a) Although FindFirstFileEx gives the reparse tag in dwReserved0,
+       *      GetFileInformationByHandle does not and using the Ex version (or
+       *      GetFileAttributesEx) makes Windows XP support harder
+       *   b) Windows returns 0 for the size of a symbolic link - reading the
+       *      reparse point allows a POSIX-compatible value to be returned in
+       *      st_size
+       */
+      char buffer[16384];
+      DWORD read;
+      REPARSE_DATA_BUFFER* point;
+
+      caml_enter_blocking_section();
+      if (DeviceIoControl(h, FSCTL_GET_REPARSE_POINT, NULL, 0, buffer, 16384, &read, NULL)) {
+        if (((REPARSE_DATA_BUFFER*)buffer)->ReparseTag == IO_REPARSE_TAG_SYMLINK) {
+          is_symlink = do_lstat;
+          res->st_size = ((REPARSE_DATA_BUFFER*)buffer)->SymbolicLinkReparseBuffer.SubstituteNameLength / 2;
+        }
+      }
+      caml_leave_blocking_section();
+
+      if (!is_symlink) {
+        CloseHandle(h);
+        caml_enter_blocking_section();
+        if ((h = CreateFile(path,
+                            FILE_READ_ATTRIBUTES,
+                            FILE_SHARE_DELETE | FILE_SHARE_READ | FILE_SHARE_WRITE,
+                            NULL,
+                            OPEN_EXISTING,
+                            FILE_FLAG_BACKUP_SEMANTICS,
+                            NULL)) == INVALID_HANDLE_VALUE) {
+          errno = ENOENT;
+          caml_leave_blocking_section();
+          return 0;
+        }
+        else {
+          if (!GetFileInformationByHandle(h, &info)) {
+            win32_maperr(GetLastError());
+            caml_leave_blocking_section();
+            CloseHandle(h);
+            return 0;
+          }
+          caml_leave_blocking_section();
+        }
+      }
+    }
+
     CloseHandle(h);
 
-    /*
-     * FindFirstFileEx gives st_size of 0 for directories, where
-     * GetFileInformationByHandle appears to give the number of sectors.
-     * Neither is interesting, so return 0.
-     */
-    if (info.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
-      res->st_size = 0;
+    if (!is_symlink) {
+      /*
+       * The size returned seems to vary depending on whether it's a directory
+       * (in which case it's 0) or a symbolic link (in which case it looks like
+       * allocated sector size).
+       * Neither is interesting, so return 0.
+       */
+      if (info.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
+        res->st_size = 0;
+      }
+      else {
+        res->st_size = ((__int64)(info.nFileSizeHigh)) << 32 |
+                       ((__int64)info.nFileSizeLow);
+      }
     }
-    else {
-      res->st_size = ((__int64)(info.nFileSizeHigh)) << 32 |
-                     ((__int64)info.nFileSizeLow);
-    }
+
     if (!use_64 && res->st_size > Max_long) {
       win32_maperr(ERROR_ARITHMETIC_OVERFLOW);
       return 0;
@@ -207,8 +311,13 @@ static int do_stat(int use_64, char* path, mlsize_t l, struct _stat64* res)
     res->st_nlink = info.nNumberOfLinks;
   }
 
-  mode = (info.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY ? _S_IFDIR | _S_IEXEC : _S_IFREG) |
-         (info.dwFileAttributes & FILE_ATTRIBUTE_READONLY ? _S_IREAD : _S_IREAD | _S_IWRITE);
+  if (do_lstat && is_symlink) {
+    mode = S_IFLNK | S_IEXEC | S_IWRITE;
+  }
+  else {
+    mode = (info.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY ? _S_IFDIR | _S_IEXEC : _S_IFREG);
+  }
+  mode |= (info.dwFileAttributes & FILE_ATTRIBUTE_READONLY ? _S_IREAD : _S_IREAD | _S_IWRITE);
   if ((ptr = strrchr(path, '.')) && (!_stricmp(ptr, ".exe") ||
                                      !_stricmp(ptr, ".cmd") ||
                                      !_stricmp(ptr, ".bat") ||
@@ -229,7 +338,7 @@ CAMLprim value unix_stat(value path)
   struct _stat64 buf;
 
   caml_unix_check_path(path, "stat");
-  if (!do_stat(0, String_val(path), caml_string_length(path), &buf)) {
+  if (!do_stat(0, 0, String_val(path), caml_string_length(path), &buf)) {
     uerror("stat", path);
   }
   return stat_aux(0, &buf);
@@ -240,8 +349,26 @@ CAMLprim value unix_stat_64(value path)
   struct _stat64 buf;
 
   caml_unix_check_path(path, "stat");
-  if (!do_stat(1, String_val(path), caml_string_length(path), &buf)) {
+  if (!do_stat(0, 1, String_val(path), caml_string_length(path), &buf)) {
     uerror("stat", path);
+  }
+  return stat_aux(1, &buf);
+}
+
+CAMLprim value unix_lstat(value path)
+{
+  struct _stat64 buf;
+  if (!do_stat(1, 0, String_val(path), caml_string_length(path), &buf)) {
+    uerror("lstat", path);
+  }
+  return stat_aux(0, &buf);
+}
+
+CAMLprim value unix_lstat_64(value path)
+{
+  struct _stat64 buf;
+  if (!do_stat(1, 1, String_val(path), caml_string_length(path), &buf)) {
+    uerror("lstat", path);
   }
   return stat_aux(1, &buf);
 }
