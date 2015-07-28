@@ -1055,7 +1055,8 @@ let debug_benefit =
   try ignore (Sys.getenv "BENEFIT"); true
   with _ -> false
 
-let run ~never_inline ~backend tree =
+let run ?(symbol_defining_exprs = Symbol.Map.empty) ~never_inline ~backend
+      tree =
   let r =
     if never_inline then
       R.set_inlining_threshold (R.create ()) Inlining_cost.Never_inline
@@ -1064,7 +1065,20 @@ let run ~never_inline ~backend tree =
   in
   let stats = !Clflags.inlining_stats in
   if never_inline then Clflags.inlining_stats := false;
-  let env = E.create ~never_inline:false ~backend in
+  let env =
+    (* Augment the environment with any approximations for symbols
+       (currently used for symbols assigned by [Lift_constants]). *)
+    Symbol.Map.fold (fun symbol defining_expr env ->
+        let approx =
+          simplify_allocated_const defining_expr
+            (* XXX what to do about the circularity? *)
+            ~approx_of_block_field:(fun symbol ->
+              ...)
+        in
+        E.add_symbol env symbol approx)
+      symbol_defining_exprs
+      (E.create ~never_inline:false ~backend)
+  in
   let result, r = simplify env r tree in
   Clflags.inlining_stats := stats;
   if not (Static_exception.Set.is_empty (R.used_staticfail r))
