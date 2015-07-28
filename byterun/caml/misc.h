@@ -40,17 +40,16 @@ typedef char * addr;
 
 #ifdef __GNUC__
   /* Works only in GCC 2.5 and later */
-  #define CAMLno_return __attribute__ ((noreturn))
-#elif _MSC_VER >= 1500
-  #define CAMLno_return __declspec(noreturn)
-#else
-  #define CAMLno_return
-#endif
-
-#ifdef __GNUC__
-  /* Works only in GCC 2.5 and later */
   #define Noreturn __attribute__ ((noreturn))
+  #define CAMLnoreturn_end __attribute__ ((noreturn))
+  #define CAMLnoreturn_start __attribute__ ((noreturn))
+#elif _MSC_VER >= 1500
+  #define CAMLnoreturn_start __declspec(noreturn)
+  #define CAMLnoreturn_end
+  #define Noreturn
 #else
+  #define CAMLnoreturn_start
+  #define CAMLnoreturn_end
   #define Noreturn
 #endif
 
@@ -86,14 +85,14 @@ extern caml_timing_hook caml_finalise_begin_hook, caml_finalise_end_hook;
 #ifdef DEBUG
 #define CAMLassert(x) \
   ((x) ? (void) 0 : caml_failed_assert ( #x , __FILE__, __LINE__))
-CAMLno_return CAMLextern int caml_failed_assert (char *, char *, int);
+CAMLnoreturn_start CAMLextern int caml_failed_assert (char *, char *, int);
 #else
 #define CAMLassert(x) ((void) 0)
 #endif
 
-CAMLno_return CAMLextern void caml_fatal_error (char *msg);
-CAMLno_return CAMLextern void caml_fatal_error_arg (char *fmt, char *arg);
-CAMLno_return CAMLextern void caml_fatal_error_arg2 (char *fmt1, char *arg1,
+CAMLnoreturn_start CAMLextern void caml_fatal_error (char *msg);
+CAMLnoreturn_start CAMLextern void caml_fatal_error_arg (char *fmt, char *arg);
+CAMLnoreturn_start CAMLextern void caml_fatal_error_arg2 (char *fmt1, char *arg1,
                                        char *fmt2, char *arg2);
 
 /* Safe string operations */
