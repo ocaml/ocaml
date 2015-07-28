@@ -373,7 +373,7 @@ let mkfifo name perm = invalid_arg "Unix.mkfifo not implemented"
 
 (* Symbolic links *)
 
-let readlink path = invalid_arg "Unix.readlink not implemented"
+external readlink : string -> string = "unix_readlink"
 let symlink path1 path2 = invalid_arg "Unix.symlink not implemented"
 
 (* Locking *)
