@@ -98,7 +98,8 @@ let implementation ppf sourcefile outputprefix ~backend =
         in
         size, flam)
       ++ (fun (size, flam) ->
-        Asmgen.compile_implementation ~sourcefile outputprefix ppf ~size flam);
+        Asmgen.compile_implementation ~sourcefile outputprefix ~backend
+          ppf ~size flam);
       Compilenv.save_unit_info cmxfile;
       Timings.(stop (Generate sourcefile));
     end;

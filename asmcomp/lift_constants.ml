@@ -31,10 +31,20 @@
 
 (* Values of constants at use point *)
 
-type constant =
-  | Symbol of Symbol.t
-  | Int of int
-  | Const_pointer of int
+module Constant = struct
+  type t =
+    | Symbol of Symbol.t
+    | Int of int
+    | Const_pointer of int
+
+  let simple_value_approx t ~convert_symbol =
+    let module A = Simple_value_approx in
+    match t with
+    | Symbol symbol -> convert_symbol symbol
+    | Int i -> A.value_int i
+    | Const_pointer p -> A.value_constptr p
+end
+type constant = Constant.t
 
 (* Values of constants at definition point *)
 
@@ -66,7 +76,27 @@ module Allocated_constants = struct
     | Block (tag, fields) ->
       Block (tag, List.map f fields)
 
+  let simple_value_approx t ~convert_field =
+    let module A = Simple_value_approx in
+    match t with
+    | Float v -> A.value_float v
+    | Int32 v -> A.value_boxed_int A.Int32 v
+    | Int64 v -> A.value_boxed_int A.Int64 v
+    | Nativeint v -> A.value_boxed_int A.Nativeint v
+    | Float_array fs -> A.value_float_array (List.length fs)
+    | String s -> A.value_string (String.length s) None
+    | Immstring s -> A.value_string (String.length s) (Some s)
+    | Block (tag, fields) ->
+      A.value_block (tag, Array.of_list (List.map convert_field fields))
 end
+
+let simple_value_approx (const : Constant.t Allocated_constants.t) result =
+
+  Allocated_constants.simple_value_approx const
+    ~convert_field:(fun constant ->
+      Constant.simple_value_approx constant
+        ~convert_symbol:(fun symbol ->
+
 
 (* All the kinds of constants. *)
 
@@ -411,7 +441,7 @@ let constant_sharing map aliases =
   descr, kind
 
 let rewrite_constant_access expr aliases set_of_closures_tbl constant_descr
-      (kind : constant Variable.Map.t) =
+      (kind : constant Variable.Map.t) ~backend =
   let is_a_constant var =
     let var =
       try Variable.Map.find var aliases with
@@ -454,8 +484,15 @@ let rewrite_constant_access expr aliases set_of_closures_tbl constant_descr
     | While _ | For _ | Proved_unreachable -> expr
   in
   let rewrite_expr expr =
-    Flambda_iterators.map replace_constant_defining_exprs
-      (fun named -> named) expr
+    expr
+    |> Flambda_iterators.map_expr replace_constant_defining_exprs
+    (* We need to rerun [Inline_and_simplify] because mutable string literals
+       (bindings of which would have had unknown approximations during
+       [Inline_and_simplify.simplify_free_variable]) that are now known to be
+       constant will now have been assigned symbols.  Symbols are immutable,
+       meaning that we should be able to cause more sets of closures to
+       become closed. *)
+    |> Inline_and_simplify.run ~never_inline:true ~backend
   in
   let expr = rewrite_expr expr in
   let free_variables = Free_variables.calculate expr in
@@ -488,7 +525,7 @@ let rewrite_constant_access expr aliases set_of_closures_tbl constant_descr
     set_of_closures_map;
   }
 
-let lift_constants expr =
+let lift_constants expr ~backend =
   Format.eprintf "lift_constants input:@ %a\n" Flambda.print expr;
   let constant_tbl, set_of_closures_tbl =
     collect_constant_declarations expr
@@ -501,3 +538,4 @@ let lift_constants expr =
   in
   let constants, kind = constant_sharing constant_map aliases in
   rewrite_constant_access expr aliases set_of_closures_tbl constants kind
+    ~backend

@@ -135,6 +135,9 @@ let import_symbol sym =
     | exception Not_found ->
       if not (Symbol.Tbl.mem reexported_missing_symbols sym) then begin
         Symbol.Tbl.add reexported_missing_symbols sym ();
+        (* CR mshinwell: fix "some_file" *)
+        (* CR mshinwell: Shouldn't this be a fatal error if it's the
+           current compilation unit? *)
         Location.prerr_warning (Location.in_file "some_file")
           (Warnings.Missing_symbol_information
              (Format.asprintf "%a" Symbol.print sym,

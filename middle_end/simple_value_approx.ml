@@ -19,6 +19,7 @@ type 'a boxed_int =
   | Nativeint : nativeint boxed_int
 
 type value_string = {
+  (* CR mshinwell: use variant *)
   contents : string option; (* None if unknown or mutable *)
   size : int;
 }
@@ -32,6 +33,7 @@ type t = {
 and descr =
   | Value_block of Tag.t * t array
   | Value_int of int
+  | Value_char of char
   | Value_constptr of int
   | Value_float of float
   | Value_boxed_int : 'a boxed_int * 'a -> descr
@@ -66,6 +68,7 @@ let print_value_set_of_closures ppf { function_decls = { funs } } =
 
 let rec print_descr ppf = function
   | Value_int i -> Format.pp_print_int ppf i
+  | Value_char c -> Format.fprintf ppf "%c" c
   | Value_constptr i -> Format.fprintf ppf "%ia" i
   | Value_block (tag,fields) ->
     let p ppf fields =
@@ -117,6 +120,7 @@ let replace_description t descr = { t with descr }
 
 let value_unknown = approx Value_unknown
 let value_int i = approx (Value_int i)
+let value_char i = approx (Value_char i)
 let value_constptr i = approx (Value_constptr i)
 let value_float f = approx (Value_float f)
 let value_boxed_int bi i = approx (Value_boxed_int (bi,i))
@@ -157,8 +161,12 @@ let value_float_array size = approx (Value_float_array size)
 let name_expr_fst (named, thing) = (Flambda_utils.name_expr named), thing
 
 let make_const_int_named n : Flambda.named * t =
-  Const (Const_base (Asttypes.Const_int n)), value_int n
+  Const (Int n), value_int n
 let make_const_int n = name_expr_fst (make_const_int_named n)
+
+let make_const_char_named n : Flambda.named * t =
+  Const (Char n), value_char n
+let make_const_char n = name_expr_fst (make_const_char_named n)
 
 let make_const_ptr_named n : Flambda.named * t =
   Const (Const_pointer n), value_constptr n
@@ -169,36 +177,19 @@ let make_const_bool_named b : Flambda.named * t =
 let make_const_bool b = name_expr_fst (make_const_bool_named b)
 
 let make_const_float_named f : Flambda.named * t =
-  Const (Const_float f), value_float f
+  Allocated_const (Float f), value_float f
 let make_const_float f = name_expr_fst (make_const_float_named f)
 
 let make_const_boxed_int_named (type bi) (t:bi boxed_int) (i:bi)
       : Flambda.named * t =
-  let c : Asttypes.constant =
+  let c : _ Flambda.allocated_const =
     match t with
-    | Int32 -> Const_int32 i
-    | Int64 -> Const_int64 i
-    | Nativeint -> Const_nativeint i
+    | Int32 -> Int32 i
+    | Int64 -> Int64 i
+    | Nativeint -> Nativeint i
   in
-  Const (Const_base c), value_boxed_int t i
+  Allocated_const c, value_boxed_int t i
 let make_const_boxed_int t i = name_expr_fst (make_const_boxed_int_named t i)
-
-let const (flam : Flambda.const) =
-  match flam with
-  | Const_base const ->
-    begin match const with
-    | Const_int i -> value_int i
-    | Const_char c -> value_int (Char.code c)
-    | Const_string (s, _) -> value_string (String.length s) None
-    | Const_float s -> value_float (float_of_string s)
-    | Const_int32 i -> value_boxed_int Int32 i
-    | Const_int64 i -> value_boxed_int Int64 i
-    | Const_nativeint i -> value_boxed_int Nativeint i
-    end
-  | Const_pointer i -> value_constptr i
-  | Const_float f -> value_float f
-  | Const_float_array a -> value_float_array (List.length a)
-  | Const_immstring s -> value_string (String.length s) (Some s)
 
 type simplification_summary =
   | Nothing_done
@@ -212,6 +203,9 @@ let simplify t (lam : Flambda.t) : simplification_result =
     match t.descr with
     | Value_int n ->
       let const, approx = make_const_int n in
+      const, Replaced_term, approx
+    | Value_char n ->
+      let const, approx = make_const_char n in
       const, Replaced_term, approx
     | Value_constptr n ->
       let const, approx = make_const_ptr n in
@@ -237,6 +231,9 @@ let simplify_named t (named : Flambda.named) : simplification_result_named =
     | Value_int n ->
       let const, approx = make_const_int_named n in
       const, Replaced_term, approx
+    | Value_char n ->
+      let const, approx = make_const_char_named n in
+      const, Replaced_term, approx
     | Value_constptr n ->
       let const, approx = make_const_ptr_named n in
       const, Replaced_term, approx
@@ -259,6 +256,7 @@ let simplify_named t (named : Flambda.named) : simplification_result_named =
 let simplify_var t : (Flambda.named * t) option =
   match t.descr with
   | Value_int n -> Some (make_const_int_named n)
+  | Value_char n -> Some (make_const_char_named n)
   | Value_constptr n -> Some (make_const_ptr_named n)
   | Value_float f -> Some (make_const_float_named f)
   | Value_boxed_int (t, i) -> Some (make_const_boxed_int_named t i)
@@ -308,23 +306,24 @@ let known t =
   | Value_unresolved _
   | Value_unknown -> false
   | Value_string _ | Value_float_array _
-  | Value_bottom | Value_block _ | Value_int _ | Value_constptr _
-  | Value_set_of_closures _ | Value_closure _ | Value_extern _
-  | Value_float _ | Value_boxed_int _ | Value_symbol _ -> true
+  | Value_bottom | Value_block _ | Value_int _ | Value_char _
+  | Value_constptr _ | Value_set_of_closures _ | Value_closure _
+  | Value_extern _ | Value_float _ | Value_boxed_int _ | Value_symbol _ -> true
 
 let useful t =
   match t.descr with
   | Value_unresolved _ | Value_unknown | Value_bottom -> false
-  | Value_string _ | Value_float_array _
-  | Value_block _ | Value_int _ | Value_constptr _ | Value_set_of_closures _
+  | Value_string _ | Value_float_array _ | Value_block _ | Value_int _
+  | Value_char _ | Value_constptr _ | Value_set_of_closures _
   | Value_float _ | Value_boxed_int _ | Value_closure _ | Value_extern _
   | Value_symbol _ -> true
 
 let is_definitely_immutable t =
   match t.descr with
   | Value_string { contents = Some _ }
-  | Value_block _ | Value_int _ | Value_constptr _ | Value_set_of_closures _
-  | Value_float _ | Value_boxed_int _ | Value_closure _ -> true
+  | Value_block _ | Value_int _ | Value_char _ | Value_constptr _
+  | Value_set_of_closures _ | Value_float _ | Value_boxed_int _
+  | Value_closure _ -> true
   | Value_string { contents = None } | Value_float_array _
   | Value_unresolved _ | Value_unknown | Value_bottom -> false
   | Value_extern _ | Value_symbol _ -> assert false
@@ -336,7 +335,7 @@ let get_field t ~field_index:i =
     then fields.(i)
     else value_unknown
   | Value_bottom
-  | Value_int _ | Value_constptr _ ->
+  | Value_int _ | Value_char _ | Value_constptr _ ->
     (* Something seriously wrong is happening: either the user is doing
        something exceptionally unsafe, or it is an unreachable branch.
        We consider this as unreachable and mark the result accordingly. *)
@@ -471,9 +470,10 @@ let check_approx_for_set_of_closures t : checked_approx_for_set_of_closures =
        closures via approximations only, with the variable originally bound
        to the set now out of scope. *)
     Ok (t.var, value_set_of_closures)
-  | Value_closure _ | Value_block _ | Value_int _ | Value_constptr _
-  | Value_float _ | Value_boxed_int _ | Value_unknown | Value_bottom
-  | Value_extern _ | Value_string _ | Value_float_array _ | Value_symbol _ ->
+  | Value_closure _ | Value_block _ | Value_int _ | Value_char _
+  | Value_constptr _ | Value_float _ | Value_boxed_int _ | Value_unknown
+  | Value_bottom | Value_extern _ | Value_string _ | Value_float_array _
+  | Value_symbol _ ->
     Wrong
 
 type checked_approx_for_closure_allowing_unresolved =
@@ -491,15 +491,17 @@ let check_approx_for_closure_allowing_unresolved t
       Ok (value_closure, value_closure.set_of_closures.var,
         value_set_of_closures)
     | Value_unresolved _
-    | Value_closure _ | Value_block _ | Value_int _ | Value_constptr _
-    | Value_float _ | Value_boxed_int _ | Value_unknown | Value_bottom
-    | Value_extern _ | Value_string _ | Value_float_array _ | Value_symbol _ ->
+    | Value_closure _ | Value_block _ | Value_int _ | Value_char _
+    | Value_constptr _ | Value_float _ | Value_boxed_int _ | Value_unknown
+    | Value_bottom | Value_extern _ | Value_string _ | Value_float_array _
+    | Value_symbol _ ->
       Wrong
     end
   | Value_unresolved symbol -> Unresolved symbol
-  | Value_set_of_closures _ | Value_block _ | Value_int _ | Value_constptr _
-  | Value_float _ | Value_boxed_int _ | Value_unknown | Value_bottom
-  | Value_extern _ | Value_string _ | Value_float_array _ | Value_symbol _ ->
+  | Value_set_of_closures _ | Value_block _ | Value_int _ | Value_char _
+  | Value_constptr _ | Value_float _ | Value_boxed_int _ | Value_unknown
+  | Value_bottom | Value_extern _ | Value_string _ | Value_float_array _
+  | Value_symbol _ ->
     Wrong
 
 type checked_approx_for_closure =

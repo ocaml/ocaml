@@ -118,8 +118,8 @@ let compile_genfuns ppf f =
        | _ -> ())
     (Cmmgen.generic_functions true [Compilenv.current_unit_infos ()])
 
-let prep_flambda_for_export ppf flam =
-  let lifted_constants = Lift_constants.lift_constants flam in
+let prep_flambda_for_export ppf flam ~backend =
+  let lifted_constants = Lift_constants.lift_constants flam ~backend in
   let export = Build_export_info.build_export_info lifted_constants in
   (* Compilenv.set_export_info export; *)
   if !Clflags.dump_flambda
@@ -170,11 +170,11 @@ let set_export_info (ulambda, structured_constants, export) =
   Compilenv.set_export_info export;
   (ulambda, structured_constants)
 
-let gen_implementation ?toplevel ~sourcefile ppf ~size flam =
+let gen_implementation ?toplevel ~sourcefile ~backend ppf ~size flam =
 try
   Emit.begin_assembly ();
   Timings.(start (Flambda_backend sourcefile));
-  prep_flambda_for_export ppf flam
+  prep_flambda_for_export ppf flam ~backend
   ++ Clambdagen.convert
   ++ set_export_info
   ++ Timings.(stop_id (Flambda_backend sourcefile))
@@ -206,7 +206,8 @@ with exn -> begin
   failwith "failure"
 end
 
-let compile_implementation ?toplevel ~sourcefile prefixname ppf ~size flam =
+let compile_implementation ?toplevel ~sourcefile prefixname ~backend ppf ~size
+      flam =
   let asmfile =
     if !keep_asm_file || !Emitaux.binary_backend_available
     then prefixname ^ ext_asm
@@ -214,7 +215,7 @@ let compile_implementation ?toplevel ~sourcefile prefixname ppf ~size flam =
   in
   compile_unit ~sourcefile prefixname asmfile !keep_asm_file (prefixname ^ ext_obj)
     (fun () ->
-       gen_implementation ?toplevel ~sourcefile ppf ~size flam)
+       gen_implementation ?toplevel ~sourcefile ~backend ppf ~size flam)
 
 (* Error report *)
 

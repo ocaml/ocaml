@@ -200,6 +200,23 @@ let debug_free_variables_check env tree ~name ~calculate_free_variables
       fv
   end
 
+let simplify_const (const : Flambda.const) =
+  match const with
+  | Int i -> A.value_int i
+  | Char c -> A.value_char c
+  | Pointer i -> A.value_constptr i
+
+let simplify_allocated_const (const : _ Flambda.allocated_const) =
+  match const with
+  | String s -> value_string (String.length s) None
+  | Float s -> value_float (float_of_string s)
+  | Int32 i -> value_boxed_int Int32 i
+  | Int64 i -> value_boxed_int Int64 i
+  | Nativeint i -> value_boxed_int Nativeint i
+  | Float f -> value_float f
+  | Float_array a -> value_float_array (List.length a)
+  | Immstring s -> value_string (String.length s) (Some s)
+
 (* Determine whether a given closure ID corresponds directly to a variable
    (bound to a closure) in the given environment.  This happens when the body
    of a [let rec]-bound function refers to another in the same set of closures.
@@ -687,11 +704,17 @@ and simplify_named env r (tree : Flambda.named) : Flambda.named * R.t =
     ~printer:Flambda.print_named;
   match tree with
   | Symbol sym ->
-    let module Backend = (val (E.backend env) : Backend_intf.S) in
-    (* CR mshinwell for pchambart: Is there a reason we cannot use
-       [simplify_named_using_approx_and_env] here? *)
-    simplify_named_using_approx r tree (Backend.import_symbol sym)
-  | Const cst -> tree, ret r (A.const cst)
+    let approx =
+      match E.find_symbol_exn env sym with
+      | exception Not_found ->
+        let module Backend = (val (E.backend env) : Backend_intf.S) in
+        (* CR mshinwell for mshinwell: Is there a reason we cannot use
+           [simplify_named_using_approx_and_env] here? *)
+        Backend.import_symbol sym
+      | approx -> approx
+    in
+    simplify_named_using_approx r tree approx
+  | Const cst -> tree, ret r (simplify_const cst)
   | Set_of_closures set_of_closures ->
     simplify_set_of_closures env r set_of_closures
   | Project_closure project_closure ->

@@ -110,6 +110,7 @@ type t = private {
 and descr = private
   | Value_block of Tag.t * t array
   | Value_int of int
+  | Value_char of char
   | Value_constptr of int
   | Value_float of float
   | Value_boxed_int : 'a boxed_int * 'a -> descr
@@ -150,7 +151,9 @@ val print_descr : Format.formatter -> descr -> unit
 (** Basic construction of approximations. *)
 val value_unknown : t
 val value_int : int -> t
+val value_char : char -> t
 val value_float : float -> t
+(* CR mshinwell: label mystery arguments *)
 val value_float_array : int -> t
 val value_string : int -> string option -> t
 val value_boxed_int : 'i boxed_int -> 'i -> t
@@ -180,10 +183,6 @@ val value_set_of_closures
    : ?set_of_closures_var:Variable.t
   -> value_set_of_closures
   -> t
-
-(** Take the given constant and produce an appropriate approximation for it. *)
-(* CR mshinwell: rename to make_const *)
-val const : Flambda.const -> t
 
 (** Take the given constant and produce an appropriate approximation for it
     together with an Flambda expression representing it. *)

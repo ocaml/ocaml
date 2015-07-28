@@ -121,19 +121,31 @@ and same_named (named1 : Flambda.named) (named2 : Flambda.named) =
   match named1, named2 with
   | Symbol s1 , Symbol s2  -> Symbol.equal s1 s2
   | Symbol _, _ | _, Symbol _ -> false
-  | Const c1 , Const c2 ->
+  | Const c1, Const c2 ->
     begin match c1, c2 with
-    | Const_base (Const_string (s1, _)), Const_base (Const_string (s2, _)) ->
+    | Int v1, Int v2 when v1 = v2 -> true
+    | Char v1, Char v2 when v1 = v2 -> true
+    | Const_pointer v1, Const_pointer v2 when v1 = v2 -> true
+    | _, _ -> false
+    end
+  | Const _, _ | _, Const _ -> false
+  | Allocated_const c1, Allocated_const c2 ->
+    begin match c1, c2 with
+    | String s1, String s2 ->
       s1 == s2 (* string constants can't be merged: they are mutable,
                   but if they are physically the same, it comes from a
                   safe case *)
-    | Const_base (Const_string _), _ -> false
-    | Const_base (Const_int _ | Const_char _ | Const_float _ |
-                  Const_int32 _ | Const_int64 _ | Const_nativeint _), _
-    | Const_pointer _, _ | Const_float _, _ | Const_float_array _, _
-    | Const_immstring _, _ -> c1 = c2
+    | Float v1, Float v2 -> v1 = v2
+    | Int32 v1, Int32 v2 -> v1 = v2
+    | Int64 v1, Int64 v2 -> v1 = v2
+    | Nativeint v1, Nativeint v2 -> v1 = v2
+    | Float_array v1, Float_array v2 -> v1 = v2
+    | Immstring v1, Immstring v2 -> v1 = v2
+    | Block (tag1, vs1), Block (tag2, vs2) when Tag.equal tag1 tag2 -> 
+      Misc.samelist Variable.equal vs1 vs2
+    | _, _ -> false
     end
-  | Const _, _ | _, Const _ -> false
+  | Allocated_const _, _ | _, Allocated_const _ -> false
   | Set_of_closures s1, Set_of_closures s2 -> same_set_of_closures s1 s2
   | Set_of_closures _, _ | _, Set_of_closures _ -> false
   | Project_closure f1, Project_closure f2 -> same_project_closure f1 f2
@@ -221,6 +233,9 @@ let toplevel_substitution sb tree =
   let aux_named (named : Flambda.named) : Flambda.named =
     match named with
     | Symbol _ | Const _ | Expr _ -> named
+    | Allocated_const (Block (tag, fields)) ->
+      Allocated_const (Block (tag, List.map sb fields))
+    | Allocated_const _ -> named
     | Set_of_closures set_of_closures ->
       let set_of_closures =
         Flambda.create_set_of_closures

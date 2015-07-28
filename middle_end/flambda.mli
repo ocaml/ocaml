@@ -84,13 +84,22 @@ type call_kind =
   | Direct of Closure_id.t
 
 type const =
-  | Const_base of Asttypes.constant
+  | Int of int
+  | Char of char
+  (* [Const_pointer] is an immediate value of a type whose values may be
+     boxed (typically a variant type with both constant and non-constant
+     constructors). *)
   | Const_pointer of int
-  | Const_float_array of string list
-  | Const_immstring of string
-  (** Unlike [Const_base (Const_float ...)], [Const_float] here takes a
-      [float], not a [string]. *)
-  | Const_float of float
+
+type 'name_of_constant allocated_const =
+  | Float of float
+  | Int32 of int32
+  | Int64 of int64
+  | Nativeint of nativeint
+  | Float_array of float list
+  | String of string
+  | Immstring of string
+  | Block of Tag.t * 'name_of_constant list
 
 type apply = {
   (* CR mshinwell: rename func -> callee, and lhs_of_application -> callee *)
@@ -159,9 +168,11 @@ type t =
     for control flow constructs, is the presence of [Expr].  This could be
     removed in the future to provide a more rigorous ANF-like representation.)
 *)
+
 and named =
   | Symbol of Symbol.t
   | Const of const
+  | Allocated_const of Variable.t allocated_const
   | Set_of_closures of set_of_closures
   | Project_closure of project_closure
   | Move_within_set_of_closures of move_within_set_of_closures

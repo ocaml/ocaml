@@ -13,15 +13,18 @@
 
 *)
 
-type constant =
-  | Symbol of Symbol.t
-  | Int of int
-  | Const_pointer of int
+module Constant : sig
+  type t =
+    | Symbol of Symbol.t
+    | Int of int
+    | Const_pointer of int
+end
+type constant = Constant.t
 
 module Allocated_constants : sig
 
 
-  (* PR pchambart: The ['a] type variable is a sad side effect of the
+  (* CR pchambart: The ['a] type variable is a sad side effect of the
      implementation. In this module it is instanciated with constant
      and Variable.t. I'm may be worth duplicating the type to avoid
      it in the interface *)
@@ -49,4 +52,7 @@ type result = {
   (** Constant closures that should be emitted *)
 }
 
-val lift_constants : Flambda.t -> result
+val lift_constants
+   : Flambda.t
+  -> backend:(module Backend_intf.S)
+  -> result

@@ -77,13 +77,17 @@ let add_debug_info (ev : Lambda.lambda_event) (flam : Flambda.t)
   | _ -> flam
 
 let close_const (const : Lambda.structured_constant) : Flambda.named =
-   (* CR-soon mshinwell: consider changing [name] arguments to be uniform
-     with the constructor names *)
-   match const with
-  | Const_base c -> Const (Const_base c)
+  match const with
+  | Const_base (Const_int c) -> Const (Int c)
+  | Const_base (Const_char c) -> Const (Char c)
+  | Const_base (Const_string (s, _)) -> Allocated_const (String s)
+  | Const_base (Const_float c) -> Allocated_const (Float c)
+  | Const_base (Const_int32 c) -> Allocated_const (Int32 c)
+  | Const_base (Const_int64 c) -> Allocated_const (Int64 c)
+  | Const_base (Const_nativeint c) -> Allocated_const (Nativeint c)
   | Const_pointer c -> Const (Const_pointer c)
-  | Const_immstring c -> Const (Const_immstring c)
-  | Const_float_array c -> Const (Const_float_array c)
+  | Const_immstring c -> Allocated_const (Immstring c)
+  | Const_float_array c -> Allocated_const (Float_array c)
   | Const_block _ ->
     Misc.fatal_error "Const_block should have been eliminated before closure \
         conversion"

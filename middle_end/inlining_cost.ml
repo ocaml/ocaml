@@ -97,14 +97,8 @@ let lambda_smaller' lam ~than:threshold =
     if !size > threshold then raise Exit;
     match named with
     | Symbol _ -> ()
-    | Const (
-        (Const_base (Const_int _ | Const_char _ | Const_float _ |
-                     Const_int32 _ | Const_int64 _ | Const_nativeint _)
-        | Const_pointer _ | Const_float _
-        | Const_float_array _ | Const_immstring _)) -> incr size
-    | Const (Const_base ( Const_string _ )) ->
-      (* should be moved out by a previous pass: see [List_string] *)
-      assert false
+    (* CR mshinwell: are these Const cases correct? *)
+    | Const _ | Allocated_const _ -> incr size
     | Set_of_closures ({ function_decls = ffuns }) ->
       Variable.Map.iter (fun _ (ffun : Flambda.function_declaration) ->
           lambda_size ffun.body)
@@ -185,10 +179,10 @@ module Benefit = struct
       b := remove_alloc !b
       (* CR pchambart: should we consider that boxed integer and float
          operations are allocations ? *)
-      (* CR mshinwell for pchambart: check closure cases carefully *)
+      (* CR mshinwell for pchambart: check closure & const cases carefully *)
     | Prim _ | Project_closure _ | Project_var _
     | Move_within_set_of_closures _ -> b := remove_prim !b
-    | Symbol _ | Const _ | Expr _ -> ()
+    | Symbol _ | Allocated_const _ | Const _ | Expr _ -> ()
 
   let remove_code lam b =
     let b = ref b in

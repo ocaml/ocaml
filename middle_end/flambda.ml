@@ -21,11 +21,19 @@ type call_kind =
   | Direct of Closure_id.t
 
 type const =
-  | Const_base of Asttypes.constant
+  | Int of int
+  | Char of char
   | Const_pointer of int
-  | Const_float_array of string list
-  | Const_immstring of string
-  | Const_float of float
+
+type 'name_of_constant allocated_const =
+  | Float of float
+  | Int32 of int32
+  | Int64 of int64
+  | Nativeint of nativeint
+  | Float_array of float list
+  | String of string
+  | Immstring of string
+  | Block of Tag.t * 'name_of_constant list
 
 type apply = {
   func : Variable.t;
@@ -84,6 +92,7 @@ type t =
 and named =
   | Symbol of Symbol.t
   | Const of const
+  | Allocated_const of Variable.t allocated_const
   | Set_of_closures of set_of_closures
   | Project_closure of project_closure
   | Move_within_set_of_closures of move_within_set_of_closures
@@ -262,6 +271,7 @@ and print_named ppf (named : named) =
   match named with
   | Symbol (symbol) -> Symbol.print ppf symbol
   | Const (cst) -> fprintf ppf "Const(%a)" print_const cst
+  | Allocated_const (cst) -> fprintf ppf "Aconst(%a)" print_allocated_const cst
   | Project_closure (project_closure) ->
     print_project_closure ppf project_closure
   | Project_var (project_var) -> print_project_var ppf project_var
@@ -324,22 +334,31 @@ and print_project_var ppf (project_var : project_var) =
 
 and print_const ppf (c : const) =
   match c with
-  | Const_base(Const_int n) -> fprintf ppf "%i" n
-  | Const_base(Const_char c) -> fprintf ppf "%C" c
-  | Const_base(Const_string (s,_)) -> fprintf ppf "%S" s
-  | Const_immstring s -> fprintf ppf "#%S" s
-  | Const_base(Const_float f) -> fprintf ppf "%s" f
-  | Const_base(Const_int32 n) -> fprintf ppf "%lil" n
-  | Const_base(Const_int64 n) -> fprintf ppf "%LiL" n
-  | Const_base(Const_nativeint n) -> fprintf ppf "%nin" n
+  | Int n -> fprintf ppf "%i" n
+  | Char c -> fprintf ppf "%C" c
   | Const_pointer n -> fprintf ppf "%ia" n
-  | Const_float f -> fprintf ppf "%f" f
-  | Const_float_array [] ->
-      fprintf ppf "[| |]"
-  | Const_float_array (f1 :: fl) ->
-      let floats ppf fl =
-        List.iter (fun f -> fprintf ppf "@ %s" f) fl in
-      fprintf ppf "@[<1>[|@[%s%a@]|]@]" f1 floats fl
+
+and print_allocated_const ppf (c : Variable.t allocated_const) =
+  match c with
+  | String s -> fprintf ppf "%S" s
+  | Immstring s -> fprintf ppf "#%S" s
+  | Int32 n -> fprintf ppf "%lil" n
+  | Int64 n -> fprintf ppf "%LiL" n
+  | Nativeint n -> fprintf ppf "%nin" n
+  | Float f -> fprintf ppf "%f" f
+  | Float_array [] -> fprintf ppf "[| |]"
+  | Float_array (f1 :: fl) ->
+    let floats ppf fl =
+      List.iter (fun f -> fprintf ppf "@ %f" f) fl
+    in
+    fprintf ppf "@[<1>[|@[%f%a@]|]@]" f1 floats fl
+  | Block (tag, []) -> fprintf ppf "[| Atom: tag=%a |]" Tag.print tag
+  | Block (tag, f1 :: fl) ->
+    let fields ppf fl =
+      List.iter (fun f -> fprintf ppf "@ %a" Variable.print f) fl
+    in
+    fprintf ppf "@[<1>[|tag=%a@ @[%a%a@]|]@]" Tag.print tag
+      Variable.print f1 fields fl
 
 let print_function_declarations ppf (fd : function_declarations) =
   let funs ppf =
@@ -421,6 +440,9 @@ let iter ?ignore_uses_in_apply ?ignore_uses_in_project_var tree
   and aux_named (named : named) =
     match named with
     | Symbol _ | Const _ -> ()
+    | Allocated_const (Block (_tag, fields)) ->
+      List.iter free_variable fields
+    | Allocated_const _ -> ()
     | Set_of_closures { free_vars; specialised_args; _ } ->
       (* Sets of closures are, well, closed---except for the specialised
          argument list, which may identify variables currently in scope

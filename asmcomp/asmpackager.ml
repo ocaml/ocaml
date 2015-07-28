@@ -103,7 +103,7 @@ let make_package_object ppf members targetobj targetname coercion
       ~exported_fields:size ~backend lam
   in
   Asmgen.compile_implementation ~sourcefile
-    prefixname ppf ~size flam;
+    prefixname ~backend ppf ~size flam;
   let objfiles =
     List.map
       (fun m -> chop_extension_if_any m.pm_file ^ Config.ext_obj)

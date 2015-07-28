@@ -447,6 +447,7 @@ let every_static_exception_is_caught_at_a_single_position flam =
   Flambda_iterators.iter f (fun (_ : Flambda.named) -> ()) flam
 
 let check_exn ?(kind=Normal) ?(cmxfile=false) flam =
+Format.eprintf "checking %a\n" Flambda.print flam;
   try
     variable_invariants flam;
     primitive_invariants flam ~no_access_to_global_module_identifiers:cmxfile;

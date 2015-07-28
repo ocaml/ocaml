@@ -66,6 +66,11 @@ val map
   -> Flambda.t
   -> Flambda.t
 
+val map_expr
+   : (Flambda.t -> Flambda.t)
+  -> Flambda.t
+  -> Flambda.t
+
 val map_named
    : (Flambda.named -> Flambda.named)
   -> Flambda.t

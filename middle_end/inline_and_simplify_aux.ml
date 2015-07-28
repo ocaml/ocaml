@@ -17,6 +17,7 @@ module Env = struct
   type t = {
     backend : (module Backend_intf.S);
     approx : (scope * Simple_value_approx.t) Variable.Map.t;
+    approx_sym : Simple_value_approx.t Symbol.Map.t;
     current_functions : Set_of_closures_id.Set.t;
     (* The functions currently being declared: used to avoid inlining
        recursively *)
@@ -34,6 +35,7 @@ module Env = struct
   let create ~never_inline ~backend =
     { backend;
       approx = Variable.Map.empty;
+      approx_sym = Symbol.Map.empty;
       current_functions = Set_of_closures_id.Set.empty;
       inlining_level = 0;
       inside_branch = false;
@@ -76,11 +78,19 @@ module Env = struct
     in
     { t with approx = Variable.Map.add var (scope, approx) t.approx }
 
-  let add t var (approx : Simple_value_approx.t) =
-    add_internal t var approx ~scope:Current
+  let add t var approx = add_internal t var approx ~scope:Current
+  let add_outer_scope t var approx = add_internal t var approx ~scope:Outer
 
-  let add_outer_scope t var (approx : Simple_value_approx.t) =
-    add_internal t var approx ~scope:Outer
+  let find_symbol_exn t symbol =
+    Symbol.Map.find symbol t.approx_sym
+
+  let add_symbol t symbol approx =
+    match find_symbol_exn t symbol with
+    | exception Not_found ->
+      { t with
+        approx_sym = Symbol.Map.add symbol approx t.approx_sym;
+      }
+    | _ -> assert false (* CR mshinwell: fatal_errorf *)
 
   let find_with_scope_exn t id =
     try Variable.Map.find id t.approx

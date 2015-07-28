@@ -56,6 +56,9 @@ module Env : sig
   (** Like [find_exn], but for a list of variables. *)
   val find_list_exn : t -> Variable.t list -> Simple_value_approx.t list
 
+  val add_symbol : t -> Symbol.t -> Simple_value_approx.t -> t
+  val find_symbol_exn : t -> Symbol.t -> Simple_value_approx.t
+
   (** Whether the environment has an approximation for the given variable. *)
   val mem : t -> Variable.t -> bool
 
