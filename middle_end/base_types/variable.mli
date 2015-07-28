@@ -56,3 +56,5 @@ val debug_when_stamp_matches : t -> stamp:int -> f:(unit -> unit) -> unit
 
 type pair = t * t
 module Pair : Ext_types.Identifiable with type t := pair
+
+val compare_lists : t list -> t list -> int

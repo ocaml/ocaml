@@ -204,18 +204,21 @@ let simplify_const (const : Flambda.const) =
   match const with
   | Int i -> A.value_int i
   | Char c -> A.value_char c
-  | Pointer i -> A.value_constptr i
+  | Const_pointer i -> A.value_constptr i
 
-let simplify_allocated_const (const : _ Flambda.allocated_const) =
+let simplify_allocated_const (type a) (const : a Flambda.allocated_const)
+      ~(approx_of_block_field : a -> A.t) =
   match const with
-  | String s -> value_string (String.length s) None
-  | Float s -> value_float (float_of_string s)
-  | Int32 i -> value_boxed_int Int32 i
-  | Int64 i -> value_boxed_int Int64 i
-  | Nativeint i -> value_boxed_int Nativeint i
-  | Float f -> value_float f
-  | Float_array a -> value_float_array (List.length a)
-  | Immstring s -> value_string (String.length s) (Some s)
+  | String s -> A.value_string (String.length s) None
+  | Int32 i -> A.value_boxed_int Int32 i
+  | Int64 i -> A.value_boxed_int Int64 i
+  | Nativeint i -> A.value_boxed_int Nativeint i
+  | Float f -> A.value_float f
+  | Float_array a -> A.value_float_array (List.length a)
+  | Immstring s -> A.value_string (String.length s) (Some s)
+  | Block (tag, fields) ->
+    let fields = List.map approx_of_block_field fields in
+    A.value_block (tag, Array.of_list fields)
 
 (* Determine whether a given closure ID corresponds directly to a variable
    (bound to a closure) in the given environment.  This happens when the body
@@ -715,6 +718,11 @@ and simplify_named env r (tree : Flambda.named) : Flambda.named * R.t =
     in
     simplify_named_using_approx r tree approx
   | Const cst -> tree, ret r (simplify_const cst)
+  | Allocated_const cst ->
+    let approx =
+      simplify_allocated_const cst ~approx_of_block_field:(E.find_exn env)
+    in
+    tree, ret r approx
   | Set_of_closures set_of_closures ->
     simplify_set_of_closures env r set_of_closures
   | Project_closure project_closure ->

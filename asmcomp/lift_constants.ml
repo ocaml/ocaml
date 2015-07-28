@@ -11,8 +11,6 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(* CR mshinwell for mshinwell: update this comment to reflect changes in the
-   last couple of steps *)
 (* Extract constants out of the main expression.
    * First collect all the constant declarations, separating structured
      constants and constant sets of closures: [collect_constant_declarations]
@@ -20,98 +18,11 @@
      This is done by traversing the structured constants in inverse
      topological order and replacing every existing constant by the previous
      one. (Note: this does not guaranty maximal sharing in cycles)
-   * Remove every let declaration of constants (or aliased to a constant).
-   * Add back the let definition of constants at toplevel and in every function
-
-   Note that this means that some variables can be bound multiple times if
-   multiple closures in the same set use the same constant bound by the closure
-
+   * Replace every defining expression of a constant variable with the
+     corresponding symbol/integer/etc.
 *)
-(* CR mshinwell: think further about the duplicate variables thing *)
-
-(* Values of constants at use point *)
-
-module Constant = struct
-  type t =
-    | Symbol of Symbol.t
-    | Int of int
-    | Const_pointer of int
-
-  let simple_value_approx t ~convert_symbol =
-    let module A = Simple_value_approx in
-    match t with
-    | Symbol symbol -> convert_symbol symbol
-    | Int i -> A.value_int i
-    | Const_pointer p -> A.value_constptr p
-end
-type constant = Constant.t
 
 (* Values of constants at definition point *)
-
-module Allocated_constants = struct
-
-  (* subset of constants that can be assigned a symbol.
-     There are more cases than what can be described by
-     clambda to be able to build an approximation *)
-
-  type 'a t =
-    | Float of float
-    | Int32 of int32
-    | Int64 of int64
-    | Nativeint of nativeint
-    | Float_array of float list
-    | String of string
-    | Immstring of string
-    | Block of Tag.t * 'a list
-
-  let map : ('a -> 'b) -> 'a t -> 'b t = fun f t ->
-    match t with
-    | Float v -> Float v
-    | Int32 v -> Int32 v
-    | Int64 v -> Int64 v
-    | Nativeint v -> Nativeint v
-    | Float_array v -> Float_array v
-    | String v -> String v
-    | Immstring v -> Immstring v
-    | Block (tag, fields) ->
-      Block (tag, List.map f fields)
-
-  let simple_value_approx t ~convert_field =
-    let module A = Simple_value_approx in
-    match t with
-    | Float v -> A.value_float v
-    | Int32 v -> A.value_boxed_int A.Int32 v
-    | Int64 v -> A.value_boxed_int A.Int64 v
-    | Nativeint v -> A.value_boxed_int A.Nativeint v
-    | Float_array fs -> A.value_float_array (List.length fs)
-    | String s -> A.value_string (String.length s) None
-    | Immstring s -> A.value_string (String.length s) (Some s)
-    | Block (tag, fields) ->
-      A.value_block (tag, Array.of_list (List.map convert_field fields))
-end
-
-let simple_value_approx (const : Constant.t Allocated_constants.t) result =
-
-  Allocated_constants.simple_value_approx const
-    ~convert_field:(fun constant ->
-      Constant.simple_value_approx constant
-        ~convert_symbol:(fun symbol ->
-
-
-(* All the kinds of constants. *)
-
-type constant_descr =
-  | Int of int
-  | Const_pointer of int
-  | Float of float
-  | Int32 of int32
-  | Int64 of int64
-  | Nativeint of nativeint
-  | Float_array of float list
-  | String of string
-  | Immstring of string
-  | Block of Tag.t * Variable.t list
-  | Symbol of Symbol.t
 
 module Constant_descr = struct
   type t = constant_descr
@@ -127,18 +38,6 @@ module Constant_descr = struct
   (*   | h1::t1, h2::t2 -> *)
   (*     let c = compare_floats h1 h2 in *)
   (*     if c <> 0 then c else compare_float_lists t1 t2 *)
-
-  let rec compare_variable_lists l1 l2 =
-    match l1, l2 with
-    | [], [] -> 0
-    | [], _::_ -> -1
-    | _::_, [] -> 1
-    | h1::t1, h2::t2 ->
-      let c = Variable.compare h1 h2 in
-      if c <> 0 then
-        c
-      else
-        compare_variable_lists t1 t2
 
   let compare (x:t) (y:t) = match x, y with
     | Int x, Int y -> compare x y
@@ -164,8 +63,7 @@ module Constant_descr = struct
       if c <> 0 then
         c
       else
-        compare_variable_lists fields1 fields2
-
+        Variable.compare_lists fields1 fields2
     | Int _, _ -> -1
     | _, Int _ -> 1
     | Const_pointer _, _ -> -1
@@ -186,16 +84,14 @@ module Constant_descr = struct
     | _, Immstring _ -> 1
     | Symbol _, _ -> -1
     | _, Symbol _ -> 1
-
-
 end
 
 module Constant_descr_map = Map.Make(Constant_descr)
 
 type result = {
   expr : Flambda.t;
-  constant_descr : constant Allocated_constants.t Symbol.Map.t;
-  kind : constant Variable.Map.t;
+  constant_descr : Symbol.t Flambda.allocated_constant Symbol.Map.t;
+  kind : Flambda.named Variable.Map.t;
   set_of_closures_map : Flambda.set_of_closures Symbol.Map.t;
 }
 
@@ -378,34 +274,28 @@ let constant_sharing map aliases =
   in
   List.iter share sorted_symbols;
   let assign_symbols var descr (descr_map, kind_map) =
-    let add var (allocated_cst:Variable.t Allocated_constants.t) =
+    let assign_symbol var (allocated_cst:Variable.t Allocated_constants.t) =
       let symbol = fresh_symbol var in
       Symbol.Map.add symbol allocated_cst descr_map,
       Variable.Map.add var (Symbol symbol:constant) kind_map
     in
     match descr with
     | Int i ->
-      descr_map, Variable.Map.add var (Int i:constant) kind_map
+      descr_map, Variable.Map.add var (Const (Int i)) kind_map
+    | Char i ->
+      descr_map, Variable.Map.add var (Const (Char i)) kind_map
     | Const_pointer i ->
-      descr_map, Variable.Map.add var (Const_pointer i:constant) kind_map
+      descr_map, Variable.Map.add var (Const (Const_pointer i)) kind_map
     | Symbol s ->
-      descr_map, Variable.Map.add var (Symbol s:constant) kind_map
-    | Float f ->
-      add var (Float f)
-    | Float_array a ->
-      add var (Float_array a)
-    | Block (tag, fields) ->
-      add var (Block (tag, fields))
-    | Int32 i ->
-      add var (Int32 i)
-    | Int64 i ->
-      add var (Int64 i)
-    | Nativeint i ->
-      add var (Nativeint i)
-    | String s ->
-      add var (String s)
-    | Immstring s ->
-      add var (Immstring s)
+      descr_map, Variable.Map.add var (Symbol s) kind_map
+    | Float f -> assign_symbol var (Float f)
+    | Float_array a -> assign_symbol var (Float_array a)
+    | Block (tag, fields) -> assign_symbol var (Block (tag, fields))
+    | Int32 i -> assign_symbol var (Int32 i)
+    | Int64 i -> assign_symbol var (Int64 i)
+    | Nativeint i -> assign_symbol var (Nativeint i)
+    | String s -> assign_symbol var (String s)
+    | Immstring s -> assign_symbol var (Immstring s)
   in
   let descr, declared_constants_kind =
     Variable.Map.fold assign_symbols !constants (Symbol.Map.empty, Variable.Map.empty)
@@ -449,20 +339,12 @@ let rewrite_constant_access expr aliases set_of_closures_tbl constant_descr
     in
     Variable.Map.mem var kind
   in
-  let get_kind var =
+  let replacement_for_defining_expr var : Flambda.named =
     let var =
       try Variable.Map.find var aliases with
       | Not_found -> var
     in
     Variable.Map.find var kind
-  in
-  let replacement_for_defining_expr var : Flambda.named =
-    assert (is_a_constant var);
-    match get_kind var with
-    | Int i -> Const (Const_base (Const_int i))
-    | Const_pointer p -> Const (Const_pointer p)
-    | Symbol s -> Symbol s
-    | exception Not_found -> assert false
   in
   let replace_constant_defining_exprs (expr : Flambda.t) : Flambda.t =
     match expr with

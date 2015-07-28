@@ -218,6 +218,9 @@ module NotConstants(P:Param) = struct
       mark_loop_set_of_closures ~toplevel curr set_of_closures
 
     | Const _ -> ()
+    | Allocated_const (Block (_tag, fields)) ->
+      mark_vars fields curr
+    | Allocated_const _ -> ()
 
     (* a symbol does not necessarilly points to a constant: toplevel
        modules are declared as symbols, but can constain not constant

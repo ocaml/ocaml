@@ -219,6 +219,11 @@ and collect_equations_named (t:equations) (var:Variable.t) : Flambda.named -> eq
   | Symbol _
   | Const _ ->
     Resolved (Ground_const var)
+  | Allocated_const _ ->
+    (* CR mshinwell for pchambart: Is this right?
+       Should we do someting with the [Allocated_const (Block (...))] case,
+       which contains free variables? *)
+    Resolved (Ground_const var)
 
   | Expr e ->
     collect_equations t e

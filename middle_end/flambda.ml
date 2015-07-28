@@ -543,3 +543,15 @@ let used_params function_decl =
   Variable.Set.filter
     (fun param -> Variable.Set.mem param function_decl.free_variables)
     (Variable.Set.of_list function_decl.params)
+
+let map_allocated_const (const : _ allocated_const) ~f =
+  match const with
+  | Float v -> Float v
+  | Int32 v -> Int32 v
+  | Int64 v -> Int64 v
+  | Nativeint v -> Nativeint v
+  | Float_array v -> Float_array v
+  | String v -> String v
+  | Immstring v -> Immstring v
+  | Block (tag, fields) ->
+    Block (tag, List.map f fields)

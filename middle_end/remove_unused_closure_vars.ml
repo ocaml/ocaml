@@ -27,7 +27,8 @@ let remove_unused_closure_variables tree =
       | Move_within_set_of_closures { closure = _; start_from; move_to } ->
         used_fun := Closure_id.Set.add start_from !used_fun;
         used_fun := Closure_id.Set.add move_to !used_fun
-      | Symbol _ | Const _ | Set_of_closures _ | Prim _ | Expr _ -> ()
+      | Symbol _ | Const _ | Set_of_closures _ | Prim _ | Expr _
+      | Allocated_const _ -> ()
     in
     Flambda_iterators.iter_named aux_named tree;
     !used, !used_fun

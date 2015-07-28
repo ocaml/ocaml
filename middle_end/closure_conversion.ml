@@ -81,13 +81,15 @@ let close_const (const : Lambda.structured_constant) : Flambda.named =
   | Const_base (Const_int c) -> Const (Int c)
   | Const_base (Const_char c) -> Const (Char c)
   | Const_base (Const_string (s, _)) -> Allocated_const (String s)
-  | Const_base (Const_float c) -> Allocated_const (Float c)
+  (* CR mshinwell: unsure about [float_of_string] (ditto below) *)
+  | Const_base (Const_float c) -> Allocated_const (Float (float_of_string c))
   | Const_base (Const_int32 c) -> Allocated_const (Int32 c)
   | Const_base (Const_int64 c) -> Allocated_const (Int64 c)
   | Const_base (Const_nativeint c) -> Allocated_const (Nativeint c)
   | Const_pointer c -> Const (Const_pointer c)
   | Const_immstring c -> Allocated_const (Immstring c)
-  | Const_float_array c -> Allocated_const (Float_array c)
+  | Const_float_array c ->
+    Allocated_const (Float_array (List.map float_of_string c))
   | Const_block _ ->
     Misc.fatal_error "Const_block should have been eliminated before closure \
         conversion"
@@ -224,7 +226,7 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
     let arg2 = close t env arg2 in
     let const_true = Variable.create "const_true" in
     let cond = Variable.create "cond_sequor" in
-    Let (Immutable, const_true, Const (Const_base (Const_int 1)),
+    Let (Immutable, const_true, Const (Int 1),
       Let (Immutable, cond, Expr arg1,
         If_then_else (cond, Var (const_true), arg2)))
   | Lprim (Psequand, [arg1; arg2]) ->
@@ -232,7 +234,7 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
     let arg2 = close t env arg2 in
     let const_false = Variable.create "const_true" in
     let cond = Variable.create "cond_sequand" in
-    Let (Immutable, const_false, Const (Const_base (Const_int 0)),
+    Let (Immutable, const_false, Const (Int 0),
       Let (Immutable, cond, Expr arg1,
         If_then_else (cond, arg2, Var (const_false))))
   | Lprim ((Psequand | Psequor), _) ->

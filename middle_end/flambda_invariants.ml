@@ -36,6 +36,7 @@ let ignore_direction_flag (_ : Asttypes.direction_flag) = ()
 let ignore_symbol (_ : Symbol.t) = ()
 let ignore_primitive ( _ : Lambda.primitive) = ()
 let ignore_const (_ : Flambda.const) = ()
+let ignore_allocated_const (_ : _ Flambda.allocated_const) = ()
 let ignore_set_of_closures_id (_ : Set_of_closures_id.t) = ()
 let ignore_closure_id (_ : Closure_id.t) = ()
 let ignore_var_within_closure (_ : Var_within_closure.t) = ()
@@ -181,6 +182,9 @@ let variable_invariants flam =
     match named with
     | Symbol symbol -> ignore_symbol symbol
     | Const const -> ignore_const const
+    | Allocated_const (Block (_tag, fields)) ->
+      check_variables_are_bound env fields
+    | Allocated_const const -> ignore_allocated_const const
     | Set_of_closures ({ function_decls; free_vars; specialised_args; }
         as set_of_closures) ->
       let { Flambda.set_of_closures_id; funs; compilation_unit } =
@@ -368,7 +372,7 @@ let used_closure_ids flam =
     | Project_var { closure = _; closure_id; var = _ } ->
       used := Closure_id.Set.add closure_id !used
     | Set_of_closures _
-    | Symbol _ | Const _ | Prim _ | Expr _ -> ()
+    | Symbol _ | Const _ | Allocated_const _ | Prim _ | Expr _ -> ()
   in
   Flambda_iterators.iter_named f flam;
   !used

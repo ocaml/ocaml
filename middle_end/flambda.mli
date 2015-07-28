@@ -99,6 +99,7 @@ type 'name_of_constant allocated_const =
   | Float_array of float list
   | String of string
   | Immstring of string
+  (* CR mshinwell: think about whether this should really be here. *)
   | Block of Tag.t * 'name_of_constant list
 
 type apply = {
@@ -342,3 +343,8 @@ val print_set_of_closures
    : Format.formatter
   -> set_of_closures
   -> unit
+
+val map_allocated_const
+   : 'name allocated_const
+  -> f:('name -> 'new_name)
+  -> 'new_name allocated_const
