@@ -43,18 +43,18 @@ static caml_plat_mutex roots_mutex;
 static value roots_all = Val_unit;
 
 
-void caml_init_global_roots() 
+void caml_init_global_roots()
 {
   caml_plat_mutex_init(&roots_mutex);
 }
 
-CAMLexport caml_root caml_create_root(value init) 
+CAMLexport caml_root caml_create_root(value init)
 {
   CAMLparam1(init);
   value v = caml_alloc_shr(3, 0);
   caml_initialize_field(v, 0, init);
   caml_initialize_field(v, 1, Val_int(1));
-  
+
   caml_plat_lock(&roots_mutex);
   caml_initialize_field(v, 2, roots_all);
   roots_all = v;
@@ -76,6 +76,8 @@ CAMLexport value caml_read_root(caml_root root)
 {
   value v = (value)root;
   Assert(root);
+  Assert(Hd_val(root));
+  Assert(Field(v,1) == Val_int(0) || Field(v,1) == Val_int(1));
   return Field(v, 0);
 }
 
@@ -92,7 +94,7 @@ static void scan_global_roots(scanning_action f)
   caml_plat_lock(&roots_mutex);
   r = roots_all;
   caml_plat_unlock(&roots_mutex);
-  
+
   Assert(!Is_minor(r));
   newr = r;
   f(newr, &newr);
@@ -176,7 +178,7 @@ static void scan_native_globals(scanning_action f)
   iter_list(dyn_globals, lnk) {
     glob = (value) lnk->data;
     for (j = 0; j < Wosize_val(glob); j++){
-      f (Op_val(glob)[j], &Op_val(glob)[j]);      
+      f (Op_val(glob)[j], &Op_val(glob)[j]);
     }
   }
 }
