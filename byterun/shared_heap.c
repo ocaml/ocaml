@@ -85,8 +85,6 @@ struct caml_heap_state* caml_init_shared_heap() {
     caml_plat_mutex_init(&pool_freelist.lock);
   }
 
-  Assert(NOT_MARKABLE == Promotedhd_hd(0));
-
   heap = caml_stat_alloc(sizeof(struct caml_heap_state));
   heap->free_pools = 0;
   heap->num_free_pools = 0;
@@ -457,6 +455,7 @@ static void verify_push(value v, value* p) {
 static void verify_object(value v) {
   if (!Is_block(v)) return;
 
+  Assert (Hd_val(v));
   if (Tag_val(v) == Infix_tag) {
     v -= Infix_offset_val(v);
     Assert(Tag_val(v) == Closure_tag);
@@ -573,7 +572,9 @@ static void verify_swept (struct caml_heap_state* local) {
 void caml_cycle_heap_stw() {
   struct global_heap_state oldg = global;
   struct global_heap_state newg;
+#if DEBUG
   verify_heap();
+#endif
   newg.UNMARKED     = oldg.MARKED;
   newg.GARBAGE      = oldg.UNMARKED;
   newg.MARKED       = oldg.GARBAGE; /* should be empty because garbage was swept */

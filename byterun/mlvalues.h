@@ -204,11 +204,12 @@ CAMLextern __thread struct caml_domain_state* caml_domain_state;
 
 CAMLextern value caml_read_barrier(value, int);
 static inline value Field(value x, int i) {
+  Assert (Hd_val(x));
   value v = (((value*)x))[i];
   //if (Is_young(v)) Assert(young_ptr < (char*)v);
   return Is_foreign(v) ? caml_read_barrier(x, i) : v;
   }
-  #define FieldImm(x, i) (((value *)(x)) [i] + 0)
+  #define FieldImm(x, i) (Assert(Hd_val(x)), ((value *)(x)) [i] + 0)
   //#define Field(x, i) (((value *)(x)) [i] + 0)
 
 /* initialise a field of an object just allocated on the minor heap */
