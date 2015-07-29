@@ -382,8 +382,6 @@ uintnat caml_heap_size(struct caml_heap_state* local) {
     local->large_bytes_allocated;
 }
 
-
-
 int caml_mark_object(value p) {
   Assert (Is_block(p));
   header_t h = Hd_val(p);
@@ -398,15 +396,6 @@ int caml_mark_object(value p) {
   } else {
     return 0;
   }
-}
-
-int caml_is_marked(value p) {
-  Assert (Is_block(p));
-  header_t h = Hd_val(p);
-  Assert (h && !Has_status_hd(h, global.GARBAGE));
-  if (Has_status_hd(h, global.MARKED))
-    return 1;
-  return 0;
 }
 
 const header_t atoms[256] = {

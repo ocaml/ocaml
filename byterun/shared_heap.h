@@ -16,8 +16,6 @@ void caml_shared_unpin(value v);
 
 int caml_mark_object(value);
 
-int caml_is_marked(value);
-
 intnat caml_sweep(struct caml_heap_state*, intnat);
 
 
