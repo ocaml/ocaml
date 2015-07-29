@@ -11,9 +11,11 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(** Constants that are always allocated (possibly statically). *)
+(** Constants that are always allocated (possibly statically).  Blocks
+    are not included here since they are always encoded using
+    [Prim (Pmakeblock, ...)]. *)
 
-type 'name t =
+type t =
   | Float of float
   | Int32 of int32
   | Int64 of int64
@@ -21,18 +23,7 @@ type 'name t =
   | Float_array of float list
   | String of string
   | Immstring of string
-  | Block of Tag.t * 'name list
 
-val compare
-   : 'name t
-  -> 'name t
-  -> compare_name_lists:('name list -> 'name list -> int)
-  -> int
+val compare : t -> t -> int
 
-val map : 'name1 t -> f:('name1 -> 'name2) -> 'name2 t
-
-val print
-   : (Format.formatter -> 'name -> unit)
-  -> Format.formatter
-  -> 'name t
-  -> unit
+val print : Format.formatter -> t -> unit

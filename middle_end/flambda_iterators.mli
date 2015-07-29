@@ -27,6 +27,11 @@ val iter
   -> Flambda.t
   -> unit
 
+val iter_expr
+   : (Flambda.t -> unit)
+  -> Flambda.t
+  -> unit
+
 (* CR-someday mshinwell: we might need to add the corresponding variable to
    the parameters of the user function for [iter_named] *)
 val iter_named
@@ -58,6 +63,11 @@ val iter_named_toplevel
 val iter_on_sets_of_closures
    : (Flambda.set_of_closures -> unit)
   -> Flambda.t
+  -> unit
+
+val iter_all_let_and_let_rec_bindings
+   : Flambda.t
+  -> f:(Variable.t -> Flambda.named -> unit)
   -> unit
 
 val map

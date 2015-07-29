@@ -89,6 +89,7 @@ let iter_general ~toplevel f f_named maybe_named =
   | Named named -> aux_named named
 
 let iter f f_named t = iter_general ~toplevel:false f f_named (Expr t)
+let iter_expr f t = iter f (fun _ -> ()) t
 let iter_named f_named t = iter (fun (_ : Flambda.t) -> ()) f_named t
 let iter_named_on_named f_named named =
   iter_general ~toplevel:false (fun (_ : Flambda.t) -> ()) f_named (Named named)
@@ -96,6 +97,13 @@ let iter_named_on_named f_named named =
 let iter_toplevel f f_named t = iter_general ~toplevel:true f f_named (Expr t)
 let iter_named_toplevel f f_named named =
   iter_general ~toplevel:true f f_named (Named named)
+
+let iter_all_let_and_let_rec_bindings t ~f =
+  iter_expr (function
+      | Let (_, var, named, _) -> f var named
+      | Let_rec (defs, _) -> List.iter (fun (var, named) -> f var named) defs
+      | _ -> ())
+    expr
 
 let iter_on_sets_of_closures f t =
   iter_named (function

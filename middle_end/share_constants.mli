@@ -14,7 +14,7 @@
 (** Share allocated constants with equal definitions. *)
 
 val constant_sharing
-   : map:'name Allocated_constant.t Variable.Map.t
+   : constant_map:'name Allocated_constant.t Variable.Map.t
   -> compare_name:('name -> 'name -> int)
   -> aliases:Variable.t Variable.Map.t
-  -> int
+  -> int * float
