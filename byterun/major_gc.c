@@ -84,7 +84,7 @@ static void mark_stack_push(value v) {
 }
 
 static int mark_stack_pop(value* ret) {
-  if (caml_mark_stack_count == 0) 
+  if (caml_mark_stack_count == 0)
     return 0;
   *ret = caml_mark_stack[--caml_mark_stack_count];
   return 1;
@@ -136,7 +136,7 @@ static intnat mark(value initial, intnat budget) {
       }
     }
     budget -= Whsize_hd(hd_v);
-    
+
     /* if we haven't found any markable children, pop an object to mark */
     if (!found_next) {
       found_next = mark_stack_pop(&next);
@@ -211,7 +211,7 @@ void caml_empty_mark_stack () {
 
   while (mark_stack_pop(&v)) mark(v, 10000000);
 
-  if (stat_blocks_marked) 
+  if (stat_blocks_marked)
     caml_gc_log("Finished marking major heap. Marked %u blocks", (unsigned)stat_blocks_marked);
   stat_blocks_marked = 0;
 }

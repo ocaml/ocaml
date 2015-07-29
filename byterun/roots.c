@@ -109,15 +109,14 @@ void caml_do_sampled_roots(scanning_action f, struct domain* domain)
   *domain->mark_stack_count = 0;
 
   /* treat the remembered sets as roots */
-  struct caml_ref_entry* r;
-  for (r = domain->remembered_set->ref.base; r < domain->remembered_set->ref.ptr; r++) {
-    f(r->obj, 0);
+  value** r;
+  for (r = domain->remembered_set->major_ref.base; r < domain->remembered_set->major_ref.ptr; r++) {
+    f(**r, *r);
   }
   for (r = domain->remembered_set->fiber_ref.base; r < domain->remembered_set->fiber_ref.ptr; r++) {
-    f(r->obj, 0);
-    caml_scan_stack(f, r->obj);
+    f((value)*r, 0);
+    caml_scan_stack(f, (value)*r);
   }
-
 
   /* look for local C and stack roots */
   caml_do_local_roots(f, domain);

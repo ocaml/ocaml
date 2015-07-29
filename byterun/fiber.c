@@ -7,6 +7,7 @@
 #include "alloc.h"
 #include "platform.h"
 #include "fix_code.h"
+#include "minor_gc.h"
 #include "shared_heap.h"
 
 #ifdef NATIVE_CODE
@@ -74,10 +75,6 @@ static value save_stack ()
   Assert(caml_stack_high == Stack_high(old_stack));
   Assert(caml_extern_sp == caml_stack_high + Stack_sp(old_stack));
   dirty_stack(old_stack);
-  if (!Is_minor(old_stack) && caml_is_marked(old_stack)) {
-    //TODO: Only scan mutated part of the stack
-    caml_scan_stack(&caml_darken, old_stack);
-  }
   return old_stack;
 }
 
@@ -88,6 +85,7 @@ static void load_stack(value newstack)
   caml_stack_high = Stack_high(newstack);
   caml_extern_sp = caml_stack_high + Stack_sp(newstack);
   caml_current_stack = newstack;
+  caml_scan_stack (forward_pointer, newstack);
 }
 
 static opcode_t finish_code[] = { FINISH };
@@ -208,6 +206,7 @@ static value use_continuation(value cont)
   struct domain *self, *owner;
   int self_id, owner_id;
   struct cont_transfer_req req;
+  value stack;
 
   owner_id = Int_val(Field(cont, 1));
 
@@ -225,8 +224,11 @@ static value use_continuation(value cont)
     owner_id = Int_val(Field(cont, 1));
   }
 
+  stack = Field(cont,0);
   caml_modify_field(cont, 1, Val_int(-1));
-  return Field(cont, 0);
+  /* Zero out the stack field to avoid space leak. */
+  caml_modify_field(cont, 0, Val_int(0));
+  return stack;
 }
 
 value caml_continue(value cont, value ret, intnat extra_args)
@@ -442,7 +444,7 @@ static void dirty_stack(value stack)
            Stack_dirty_domain(stack) == caml_domain_self());
     if (Stack_dirty_domain(stack) == 0) {
       Stack_dirty_domain(stack) = caml_domain_self();
-      Ref_table_add(&caml_remembered_set.fiber_ref, stack, 0);
+      Ref_table_add(&caml_remembered_set.fiber_ref, (value*)stack);
     }
   }
 }
@@ -475,9 +477,6 @@ void caml_scan_stack(scanning_action f, value stack)
 {
   value *low, *high, *sp;
   Assert(Is_block(stack) && Tag_val(stack) == Stack_tag);
-
-  if (Is_promoted_hd(Hd_val(stack)))
-    Assert(!Is_young(stack)); //FIXME
 
   f(Stack_handle_value(stack), &Stack_handle_value(stack));
   f(Stack_handle_exception(stack), &Stack_handle_exception(stack));
