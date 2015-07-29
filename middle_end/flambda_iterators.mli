@@ -11,6 +11,9 @@
 (*                                                                        *)
 (**************************************************************************)
 
+(* CR mshinwell: we need to document whether these iterators follow any
+   particular order. *)
+
 (** Apply the given functions to the immediate subexpressions of the given
     Flambda expression.  For avoidance of doubt, if a subexpression is
     [Expr], it is passed to the function taking [Flambda.named], rather

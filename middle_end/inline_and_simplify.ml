@@ -1101,6 +1101,14 @@ let run ~never_inline ~backend program =
       Static_exception.Set.print (R.used_staticfail r)
       Flambda.print_program result)
   end;
+(*
+  let free_variables = Free_variables.calculate expr in
+  if not (Variable.Set.for_all is_a_constant free_variables) then begin
+    Misc.fatal_errorf "Lift_constants: toplevel expression contains free \
+        variables that are not constant: %a"
+      Flambda.print expr
+  end;
+*)
   assert (Static_exception.Set.is_empty (R.used_staticfail r));
   if debug_benefit then
     Format.printf "benefit:@ %a@."
