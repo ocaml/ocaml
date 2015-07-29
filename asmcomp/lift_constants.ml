@@ -37,6 +37,22 @@ type 'name constant_defining_value =
   | Block of Tag.t * 'name list
   | Symbol of Symbol.t
 
+module Constant_defining_value_map = Map.Make (struct
+  type t = Variable.t constant_defining_value
+
+  let compare t1 t2 =
+    match t1, t2 with
+    | Allocated_const c1, Allocated_const c2 ->
+      Allocated_const.compare c1 c2
+    | Block (tag1, fields1), Block (tag2, fields2) ->
+      let c = Tag.compare tag1 tag2 in
+      if c <> 0 then c
+      else Variable.compare_list fields1 fields2
+    | Symbol sym1, Symbol sym2 -> Symbol.compare sym1 sym2
+    | Allocated_const _, _ -> -1
+    | Block _, _ -> 1
+end)
+
 let constant_defining_value_to_named (const : _ constant_defining_value)
       ~name_to_named : Flambda.named =
   match const with
@@ -106,6 +122,79 @@ let find_and_describe_allocated_constants expr =
   in
   constant_map, set_of_closures_tbl
 
+let constant_graph (map : Variable.t constant_defining_value Variable.Map.t) =
+  Variable.Map.map (fun (const : Variable.t constant_defining_value) ->
+      match const with
+      | Block (_, fields) -> Variable.Set.of_list fields
+      | constant_defining_value _ | Symbol _ -> Variable.Set.empty)
+    map
+
+let rewrite_constant_aliases map aliases =
+  let subst var =
+    try Variable.Map.find var aliases with
+    | Not_found -> var
+  in
+  let subst_block (const : Variable.t constant_defining_valueant.t)
+        : Variable.t constant_defining_valueant.t =
+    match const with
+    | Block (tag, fields) -> Block (tag, List.map subst fields)
+    | constant_defining_value _ | Symbol _ -> const
+  in
+  Variable.Map.map subst_block map
+
+let all_constants map aliases =
+  let allocated_constants = Variable.Map.keys map in
+  let aliased_constants =
+    Variable.Map.keys
+      (Variable.Map.filter (fun _var alias -> Variable.Map.mem alias map)
+        aliases)
+  in
+  Variable.Set.union allocated_constants aliased_constants
+
+let constant_sharing ~constant_map:map ~compare_name ~aliases =
+  let module Variable_SCC = Sort_connected_components.Make (Variable) in
+  let all_constants = all_constants map aliases in
+  let map = rewrite_constant_aliases map aliases in
+  let components =
+    let graph = constant_graph map in
+    Variable_SCC.connected_components_sorted_from_roots_to_leaf graph
+  in
+  let sorted_symbols =
+    List.flatten
+      (List.map (function
+          | Variable_SCC.Has_loop l -> l
+          | Variable_SCC.No_loop v -> [v])
+        (List.rev (Array.to_list components)))
+  in
+  let shared_constants = ref Constant_defining_value_map.empty in
+  let constants = ref Variable.Map.empty in
+  let equal_constants = ref Variable.Map.empty in
+  let find_and_add var cst =
+    match Constant_defining_value_map.find cst !shared_constants with
+    | exception Not_found ->
+      shared_constants :=
+        Constant_defining_value_map.add cst var !shared_constants;
+      constants := Variable.Map.add var cst !constants;
+    | sharing ->
+      equal_constants := Variable.Map.add var sharing !equal_constants
+  in
+  let subst var =
+    try Variable.Map.find var !equal_constants with
+    | Not_found -> var
+  in
+  let share var =
+    let cst = Variable.Map.find var map in
+    match cst with
+    | String _ | Float_array _ ->
+      (* Strings and float arrays are mutable; we never share them. *)
+      constants := Variable.Map.add var cst !constants
+    | Float _ | Int32 _ | Int64 _ | Nativeint _ | Immstring _ ->
+      find_and_add var cst
+    | Block (tag, fields) ->
+      find_and_add var (Block (tag, List.map subst fields))
+  in
+  List.iter share sorted_symbols;
+  !constants, !equal_constants
 
   let assign_symbols var const (descr_map, kind_map) =
     let symbol = fresh_symbol var in
@@ -148,7 +237,8 @@ let find_and_describe_allocated_constants expr =
   descr, kind
 
 let replace_constant_defining_exprs_with_symbols expr aliases
-      set_of_closures_tbl constant_descr (assigned_symbols : constant Variable.Map.t)
+      set_of_closures_tbl constant_descr
+      (assigned_symbols : constant Variable.Map.t)
       ~backend =
   let is_a_constant var =
     let var =
@@ -189,13 +279,13 @@ let replace_constant_defining_exprs_with_symbols expr aliases
      to the type of [Flambda.named]), we must also provide bindings for all
      such variables to symbols. *)
   let variable_definitions =
-    Variable.Map assigned_symbols (fun symbol -> Symbol symbol)
+    Variable.Map.fold assigned_symbols (fun symbol -> Symbol symbol)
   in
   let symbol_definitions =
     Symbol.Map.disjoint_union
       (Symbol.Map.map (fun const ->
-          constant_defining_value_to_named const
-            ~name_to_var:...  (* need [let]s maybe? *)
+          constant_defining_value_to_named const ~name_to_var:(fun symbol ->
+              ...))  (* lookup in reverse [assigned_symbols] *)
         constant_descr)
       (Symbol.Map.map (fun set -> Flambda.Set_of_closures set)
         set_of_closures_map)
