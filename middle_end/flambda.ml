@@ -126,6 +126,15 @@ and for_loop = {
   body : t
 }
 
+and constant_defining_value =
+  | Allocated_const of Allocated_const.t
+  | Block of Tag.t * Symbol.t list
+  | Set_of_closures of set_of_closures
+
+type program =
+  | Let_symbol of Symbol.t * constant_defining_value * program
+  | Entry_point of t
+
 let fprintf = Format.fprintf
 module Int = Ext_types.Int
 
@@ -510,14 +519,29 @@ let used_params function_decl =
     (fun param -> Variable.Set.mem param function_decl.free_variables)
     (Variable.Set.of_list function_decl.params)
 
-let compare_constant_defining_value t1 t2 =
-  match t1, t2 with
-  | Allocated_const c1, Allocated_const c2 ->
-    Allocated_const.compare c1 c2
-  | Block (tag1, fields1), Block (tag2, fields2) ->
-    let c = Tag.compare tag1 tag2 in
-    if c <> 0 then c
-    else Variable.compare_list fields1 fields2
-  | Symbol sym1, Symbol sym2 -> Symbol.compare sym1 sym2
-  | Allocated_const _, _ -> -1
-  | Block _, _ -> 1
+module Constant_defining_value = struct
+  module T = struct
+    type t = constant_defining_value
+
+    let compare (t1 : t) (t2 : t) =
+      match t1, t2 with
+      | Allocated_const c1, Allocated_const c2 ->
+        Allocated_const.compare c1 c2
+      | Block (tag1, fields1), Block (tag2, fields2) ->
+        let c = Tag.compare tag1 tag2 in
+        if c <> 0 then c
+        else Symbol.compare_lists fields1 fields2
+      | Set_of_closures set1, Set_of_closures set2 ->
+        Set_of_closures_id.compare set1.function_decls.set_of_closures_id
+          set2.function_decls.set_of_closures_id
+      | Allocated_const _, Block _ -> -1
+      | Allocated_const _, Set_of_closures _ -> -1
+      | Block _, Set_of_closures _ -> -1
+      | Block _, Allocated_const _ -> 1
+      | Set_of_closures _, Allocated_const _ -> 1
+      | Set_of_closures _, Block _ -> 1
+  end
+
+  include T
+  module Map = Map.Make (T)
+end

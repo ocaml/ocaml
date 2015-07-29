@@ -277,9 +277,17 @@ and constant_defining_value =
   | Block of Tag.t * Symbol.t list
   | Set_of_closures of set_of_closures
 
+module Constant_defining_value : sig
+  type t = constant_defining_value
+
+  module Map : Map.S with type key = constant_defining_value
+
+  val compare : t -> t -> int
+end
+
 (** A "program" is the contents of one compilation unit. *)
 type program =
-  | Let_symbol of Symbol.t * constant_defining_value * compilation_unit
+  | Let_symbol of Symbol.t * constant_defining_value * program
   | Entry_point of t
 
 val free_variables
@@ -342,8 +350,3 @@ val print_set_of_closures
    : Format.formatter
   -> set_of_closures
   -> unit
-
-val compare_constant_defining_value
-   : constant_defining_value
-  -> constant_defining_value
-  -> int
