@@ -280,7 +280,7 @@ and constant_defining_value =
 (** A "program" is the contents of one compilation unit. *)
 type program =
   | Let_symbol of Symbol.t * constant_defining_value * compilation_unit
-  | Expr of t
+  | Entry_point of t
 
 val free_variables
    : ?ignore_uses_in_apply:unit
@@ -342,3 +342,8 @@ val print_set_of_closures
    : Format.formatter
   -> set_of_closures
   -> unit
+
+val compare_constant_defining_value
+   : constant_defining_value
+  -> constant_defining_value
+  -> int

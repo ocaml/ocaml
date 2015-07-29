@@ -31,14 +31,6 @@ type result = {
   set_of_closures_map : Flambda.set_of_closures Symbol.Map.t;
 }
 
-(** Descriptions of the values of allocated constants.  This is effectively
-    a subset of [Flambda.named].  After this pass has finished, there will only
-    be one such description: symbols. *)
-type 'name constant_defining_value =
-  | Allocated_const of Allocated_const.t
-  | Block of Tag.t * 'name list
-  | Symbol of Symbol.t
-
 module Constant_defining_value_map = Map.Make (struct
   type t = Variable.t constant_defining_value
 

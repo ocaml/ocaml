@@ -1043,7 +1043,8 @@ and simplify env r tree =
      exactly is happening here? *)
   f, ret r (Backend.really_import_approx (R.approx r))
 
-let simplify_program env r (program : Flambda.program) =
+let simplify_program env r (program : Flambda.program)
+      : Flambda.program * R.t =
   match program with
   | Let_symbol (symbol, constant_defining_value, program) ->
     let constant_defining_value, approx =
@@ -1068,11 +1069,11 @@ let simplify_program env r (program : Flambda.program) =
     let approx = A.augment_with_symbol approx symbol in
     let env = E.add_symbol env symbol approx in
     let r = ret r approx in
-    let program = simplify_program env r program in
-    Let_symbol (symbol, constant_defining_value, program)
-  | Expr t ->
-    let t, _r = simplify env r t in
-    Expr t
+    let program, r = simplify_program env r program in
+    Let_symbol (symbol, constant_defining_value, program), r
+  | Entry_point t ->
+    let t, r = simplify env r t in
+    Entry_point t, r
 
 (* CR mshinwell for pchambart: Change to a "-dinlining-benefit" option? *)
 let debug_benefit =
