@@ -162,7 +162,7 @@ type t =
 and named =
   | Symbol of Symbol.t
   | Const of const
-  | Allocated_const of Variable.t Allocated_const.t
+  | Allocated_const of Allocated_const.t
   | Set_of_closures of set_of_closures
   | Project_closure of project_closure
   | Move_within_set_of_closures of move_within_set_of_closures
@@ -271,6 +271,16 @@ and for_loop = {
   direction : Asttypes.direction_flag;
   body : t
 }
+
+and constant_defining_value =
+  | Allocated_const of Allocated_const.t
+  | Block of Tag.t * Symbol.t list
+  | Set_of_closures of set_of_closures
+
+(** A "program" is the contents of one compilation unit. *)
+type program =
+  | Let_symbol of Symbol.t * constant_defining_value * compilation_unit
+  | Expr of t
 
 val free_variables
    : ?ignore_uses_in_apply:unit

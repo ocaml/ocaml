@@ -25,8 +25,7 @@
     - some dead code is eliminated.
 *)
 val run
-   : ?symbol_defining_exprs:Symbol.t Allocated_const.t Symbol.Map.t
-  -> never_inline:bool
+   : never_inline:bool
   -> backend:(module Backend_intf.S)
-  -> Flambda.t
-  -> Flambda.t
+  -> Flambda.program
+  -> Flambda.program

@@ -103,7 +103,7 @@ let iter_all_let_and_let_rec_bindings t ~f =
       | Let (_, var, named, _) -> f var named
       | Let_rec (defs, _) -> List.iter (fun (var, named) -> f var named) defs
       | _ -> ())
-    expr
+    t
 
 let iter_on_sets_of_closures f t =
   iter_named (function

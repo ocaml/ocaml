@@ -17,4 +17,8 @@ type flambda_kind =
 
 (** Checking of invariants on Flambda expressions.  Raises an exception if
     a check fails. *)
-val check_exn : ?kind:flambda_kind -> ?cmxfile:bool -> Flambda.t -> unit
+val check_exn
+   : ?kind:flambda_kind
+  -> ?cmxfile:bool
+  -> Flambda.compilation_unit
+  -> unit

@@ -134,8 +134,7 @@ and same_named (named1 : Flambda.named) (named2 : Flambda.named) =
   | Const c1, Const c2 -> compare_const c1 c2 = 0
   | Const _, _ | _, Const _ -> false
   | Allocated_const c1, Allocated_const c2 ->
-    Allocated_const.compare c1 c2
-      ~compare_name_lists:Variable.compare_lists = 0
+    Allocated_const.compare c1 c2 = 0
   | Allocated_const _, _ | _, Allocated_const _ -> false
   | Set_of_closures s1, Set_of_closures s2 -> same_set_of_closures s1 s2
   | Set_of_closures _, _ | _, Set_of_closures _ -> false
@@ -224,8 +223,6 @@ let toplevel_substitution sb tree =
   let aux_named (named : Flambda.named) : Flambda.named =
     match named with
     | Symbol _ | Const _ | Expr _ -> named
-    | Allocated_const (Block (tag, fields)) ->
-      Allocated_const (Block (tag, List.map sb fields))
     | Allocated_const _ -> named
     | Set_of_closures set_of_closures ->
       let set_of_closures =

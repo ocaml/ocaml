@@ -11,7 +11,7 @@
 (*                                                                        *)
 (**************************************************************************)
 
-type 'name t =
+type t =
   | Float of float
   | Int32 of int32
   | Int64 of int64
@@ -19,10 +19,8 @@ type 'name t =
   | Float_array of float list
   | String of string
   | Immstring of string
-  (* CR mshinwell: think about whether this should really be here. *)
-  | Block of Tag.t * 'name list
 
-let compare (x : _ t) (y : _ t) ~compare_name_lists =
+let compare (x : t) (y : t) =
   let compare_floats x1 x2 =
     Int64.compare (Int64.bits_of_float x1) (Int64.bits_of_float x2)
   in
@@ -43,10 +41,6 @@ let compare (x : _ t) (y : _ t) ~compare_name_lists =
   | Float_array x, Float_array y -> compare_float_lists x y
   | String x, String y -> compare x y
   | Immstring x, Immstring y -> compare x y
-  | Block (tag1, fields1), Block (tag2, fields2) ->
-    let c = Tag.compare tag1 tag2 in
-    if c <> 0 then c
-    else compare_name_lists fields1 fields2
   | Float _, _ -> -1
   | _, Float _ -> 1
   | Int32 _, _ -> -1
@@ -59,22 +53,8 @@ let compare (x : _ t) (y : _ t) ~compare_name_lists =
   | _, Float_array _ -> 1
   | String _, _ -> -1
   | _, String _ -> 1
-  | Immstring _, _ -> -1
-  | _, Immstring _ -> 1
 
-let map (t : _ t) ~f =
-  match t with
-  | Float v -> Float v
-  | Int32 v -> Int32 v
-  | Int64 v -> Int64 v
-  | Nativeint v -> Nativeint v
-  | Float_array v -> Float_array v
-  | String v -> String v
-  | Immstring v -> Immstring v
-  | Block (tag, fields) ->
-    Block (tag, List.map f fields)
-
-let print print_name ppf (t : _ t) =
+let print ppf (t : t) =
   let fprintf = Format.fprintf in
   match t with
   | String s -> fprintf ppf "%S" s
@@ -89,10 +69,3 @@ let print print_name ppf (t : _ t) =
       List.iter (fun f -> fprintf ppf "@ %f" f) fl
     in
     fprintf ppf "@[<1>[|@[%f%a@]|]@]" f1 floats fl
-  | Block (tag, []) -> fprintf ppf "[| Atom: tag=%a |]" Tag.print tag
-  | Block (tag, f1 :: fl) ->
-    let fields ppf fl =
-      List.iter (fun f -> fprintf ppf "@ %a" print_name f) fl
-    in
-    fprintf ppf "@[<1>[|tag=%a@ @[%a%a@]|]@]" Tag.print tag
-      print_name f1 fields fl

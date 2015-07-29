@@ -11,15 +11,17 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(* Lift allocated constants out of the main expression.
+(** Lift allocated constants out of an expression and assign them to
+    symbols.
    * First collect all the constant declarations, separating structured
-     constants and constant sets of closures: [collect_constant_declarations]
-   * Then share equal constants: [constant_sharing].
+     constants and constant sets of closures.
+   * Then share equal constants.
      This is done by traversing the structured constants in inverse
      topological order and replacing every existing constant by the previous
      one. (Note: this does not guaranty maximal sharing in cycles)
-   * Replace every defining expression of a constant variable with the
-     corresponding symbol/integer/etc.
+   * Replace every defining expression of a constant variable, where the
+     defining expression was an allocated constant, with the corresponding
+     symbol.
 *)
 
 type result = {
@@ -134,8 +136,8 @@ let rewrite_constant_aliases map aliases =
     try Variable.Map.find var aliases with
     | Not_found -> var
   in
-  let subst_block (const : Variable.t constant_defining_valueant.t)
-        : Variable.t constant_defining_valueant.t =
+  let subst_block (const : Variable.t constant_defining_value)
+        : Variable.t constant_defining_value =
     match const with
     | Block (tag, fields) -> Block (tag, List.map subst fields)
     | constant_defining_value _ | Symbol _ -> const
@@ -167,14 +169,19 @@ let constant_sharing ~constant_map:map ~compare_name ~aliases =
         (List.rev (Array.to_list components)))
   in
   let shared_constants = ref Constant_defining_value_map.empty in
-  let constants = ref Variable.Map.empty in
+  (* We use a list for [constants] to preserve the reverse top-sort order.
+     This enables us to be sure that, when [Inline_and_simplify] (called
+     below) computes approximations of the defining values of the constants,
+     it can perform a single traversal and be sure that there will be no
+     undefined inter-constant references. *)
+  let constants = ref [] in
   let equal_constants = ref Variable.Map.empty in
   let find_and_add var cst =
     match Constant_defining_value_map.find cst !shared_constants with
     | exception Not_found ->
       shared_constants :=
         Constant_defining_value_map.add cst var !shared_constants;
-      constants := Variable.Map.add var cst !constants;
+      constants := (var, cst)::!constants
     | sharing ->
       equal_constants := Variable.Map.add var sharing !equal_constants
   in
@@ -187,23 +194,24 @@ let constant_sharing ~constant_map:map ~compare_name ~aliases =
     match cst with
     | String _ | Float_array _ ->
       (* Strings and float arrays are mutable; we never share them. *)
-      constants := Variable.Map.add var cst !constants
+      constants := (var, cst)::!constants
     | Float _ | Int32 _ | Int64 _ | Nativeint _ | Immstring _ ->
       find_and_add var cst
     | Block (tag, fields) ->
       find_and_add var (Block (tag, List.map subst fields))
   in
   List.iter share sorted_symbols;
-  !constants, !equal_constants
-
-  let assign_symbols var const (descr_map, kind_map) =
+  let constants = !constants in
+  let equal_constants = !equal_constants in
+  let assign_symbols (descr_map, kind_map) (var, const) =
     let symbol = fresh_symbol var in
-    Symbol.Map.add symbol const descr_map,
+    (symbol, const)::descr_map,
       Variable.Map.add var (Symbol symbol) kind_map
   in
   let descr, declared_constants_kind =
-    Variable.Map.fold assign_symbols !constants
-      (Symbol.Map.empty, Variable.Map.empty)
+    List.fold_left assign_symbols
+      ([], Variable.Map.empty)
+      !constants
   in
   let equal_constants_kind =
     Variable.Map.map (fun var ->
@@ -232,7 +240,8 @@ let constant_sharing ~constant_map:map ~compare_name ~aliases =
           Variable.print var;
         raise Not_found
     in
-    Symbol.Map.map (Allocated_constants.map ~f:find_kind) descr
+    List.map (fun (symbol, const) ->
+        symbol, Allocated_constants.map ~f:find_kind) descr
   in
   descr, kind
 
@@ -299,6 +308,7 @@ let replace_constant_defining_exprs_with_symbols expr aliases
        constant will now have been assigned symbols.  Symbols are immutable,
        meaning that we should be able to cause more sets of closures to
        become closed. *)
+    (* CR mshinwell: consider adding a [Let_symbol] to flambda *)
     |> Inline_and_simplify.run ~never_inline:true ~backend
         ~symbol_definitions ~variable_definitions
   in
