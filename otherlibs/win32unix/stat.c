@@ -38,7 +38,7 @@ static int file_kind_table[] = {
   S_IFREG, S_IFDIR, S_IFCHR, S_IFBLK, S_IFLNK, S_IFIFO, S_IFSOCK
 };
 
-static value stat_aux(int use_64, struct _stati64 *buf)
+static value stat_aux(int use_64, struct _stat64 *buf)
 {
   CAMLparam0 ();
   CAMLlocal1 (v);
@@ -64,10 +64,10 @@ static value stat_aux(int use_64, struct _stati64 *buf)
 CAMLprim value unix_stat(value path)
 {
   int ret;
-  struct _stati64 buf;
+  struct _stat64 buf;
 
   caml_unix_check_path(path, "stat");
-  ret = _stati64(String_val(path), &buf);
+  ret = _stat64(String_val(path), &buf);
   if (ret == -1) uerror("stat", path);
   if (buf.st_size > Max_long) {
     win32_maperr(ERROR_ARITHMETIC_OVERFLOW);
@@ -79,10 +79,10 @@ CAMLprim value unix_stat(value path)
 CAMLprim value unix_stat_64(value path)
 {
   int ret;
-  struct _stati64 buf;
+  struct _stat64 buf;
 
   caml_unix_check_path(path, "stat");
-  ret = _stati64(String_val(path), &buf);
+  ret = _stat64(String_val(path), &buf);
   if (ret == -1) uerror("stat", path);
   return stat_aux(1, &buf);
 }
@@ -90,9 +90,9 @@ CAMLprim value unix_stat_64(value path)
 CAMLprim value unix_fstat(value handle)
 {
   int ret;
-  struct _stati64 buf;
+  struct _stat64 buf;
 
-  ret = _fstati64(win_CRT_fd_of_filedescr(handle), &buf);
+  ret = _fstat64(win_CRT_fd_of_filedescr(handle), &buf);
   if (ret == -1) uerror("fstat", Nothing);
   if (buf.st_size > Max_long) {
     win32_maperr(ERROR_ARITHMETIC_OVERFLOW);
@@ -104,9 +104,9 @@ CAMLprim value unix_fstat(value handle)
 CAMLprim value unix_fstat_64(value handle)
 {
   int ret;
-  struct _stati64 buf;
+  struct _stat64 buf;
 
-  ret = _fstati64(win_CRT_fd_of_filedescr(handle), &buf);
+  ret = _fstat64(win_CRT_fd_of_filedescr(handle), &buf);
   if (ret == -1) uerror("fstat", Nothing);
   return stat_aux(1, &buf);
 }
