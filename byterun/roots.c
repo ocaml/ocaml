@@ -74,6 +74,7 @@ void caml_do_sampled_roots(scanning_action f, struct domain* domain)
   while (p < end) {
     value v = Val_hp(p);
     Assert (Is_block(v) && Wosize_val(v) <= Max_young_wosize);
+    Assert (Hd_val(v)); //TODO KC
     if (Tag_val(v) == Stack_tag) {
       caml_scan_stack(f, v);
     } else if (Tag_val(v) < No_scan_tag) {
