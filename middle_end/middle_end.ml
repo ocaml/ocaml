@@ -60,6 +60,7 @@ let middle_end ppf ~sourcefile ~prefixname ~backend ~exported_fields lam =
       ++ Lift_code.lift_lets
       ++ Remove_unused_closure_vars.remove_unused_closure_variables
       ++ Inline_and_simplify.run ~never_inline:false ~backend
+        ?symbol_defining_exprs:None
       ++ Lift_code.lift_lets
       ++ Remove_unused_closure_vars.remove_unused_closure_variables
       ++ Remove_unused_arguments.separate_unused_arguments_in_closures
@@ -69,9 +70,11 @@ let middle_end ppf ~sourcefile ~prefixname ~backend ~exported_fields lam =
          because we always have to generate a [let] with them now.  Do we
          need to insert something else here (lift_lets)? *)
       ++ Inline_and_simplify.run ~never_inline:true ~backend
+        ?symbol_defining_exprs:None
       ++ Remove_unused_closure_vars.remove_unused_closure_variables
       ++ Ref_to_variables.eliminate_ref
       ++ Inline_and_simplify.run ~never_inline:true ~backend
+        ?symbol_defining_exprs:None
       ++ loop
   in
   let flam = loop flam in

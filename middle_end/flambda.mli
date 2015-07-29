@@ -332,8 +332,3 @@ val print_set_of_closures
    : Format.formatter
   -> set_of_closures
   -> unit
-
-val map_allocated_const
-   : 'name allocated_const
-  -> f:('name -> 'new_name)
-  -> 'new_name allocated_const

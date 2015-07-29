@@ -206,7 +206,7 @@ let simplify_const (const : Flambda.const) =
   | Char c -> A.value_char c
   | Const_pointer i -> A.value_constptr i
 
-let simplify_allocated_const (type a) (const : a Flambda.allocated_const)
+let simplify_allocated_const (type a) (const : a Allocated_const.t)
       ~(approx_of_block_field : a -> A.t) =
   match const with
   | String s -> A.value_string (String.length s) None
@@ -1072,8 +1072,8 @@ let run ?(symbol_defining_exprs = Symbol.Map.empty) ~never_inline ~backend
         let approx =
           simplify_allocated_const defining_expr
             (* XXX what to do about the circularity? *)
-            ~approx_of_block_field:(fun symbol ->
-              ...)
+            ~approx_of_block_field:(fun _symbol ->
+              assert false)
         in
         E.add_symbol env symbol approx)
       symbol_defining_exprs

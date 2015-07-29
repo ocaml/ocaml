@@ -262,7 +262,7 @@ and print_named ppf (named : named) =
   | Symbol (symbol) -> Symbol.print ppf symbol
   | Const (cst) -> fprintf ppf "Const(%a)" print_const cst
   | Allocated_const (cst) ->
-    fprintf ppf "Aconst(%a)" Allocated_const.print cst
+    fprintf ppf "Aconst(%a)" (Allocated_const.print Variable.print) cst
   | Project_closure (project_closure) ->
     print_project_closure ppf project_closure
   | Project_var (project_var) -> print_project_var ppf project_var

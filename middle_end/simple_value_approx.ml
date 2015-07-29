@@ -182,7 +182,7 @@ let make_const_float f = name_expr_fst (make_const_float_named f)
 
 let make_const_boxed_int_named (type bi) (t:bi boxed_int) (i:bi)
       : Flambda.named * t =
-  let c : _ Flambda.allocated_const =
+  let c : _ Allocated_const.t =
     match t with
     | Int32 -> Int32 i
     | Int64 -> Int64 i

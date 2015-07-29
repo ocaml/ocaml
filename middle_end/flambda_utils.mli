@@ -82,9 +82,3 @@ val bind
 val name_expr : Flambda.named -> Flambda.t
 
 val compare_const : Flambda.const -> Flambda.const -> int
-
-val compare_allocated_const
-   : 'name Flambda.allocated_const
-  -> 'name Flambda.allocated_const
-  -> compare_name_lists:('name list -> 'name list -> int)
-  -> int

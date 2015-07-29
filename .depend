@@ -653,7 +653,8 @@ middle_end/flambda.cmi : middle_end/base_types/variable.cmi \
     middle_end/base_types/set_of_closures_id.cmi bytecomp/lambda.cmi \
     utils/ext_types.cmi bytecomp/debuginfo.cmi \
     middle_end/base_types/compilation_unit.cmi \
-    middle_end/base_types/closure_id.cmi parsing/asttypes.cmi
+    middle_end/base_types/closure_id.cmi parsing/asttypes.cmi \
+    middle_end/allocated_const.cmi
 middle_end/flambda_utils.cmi : middle_end/base_types/variable.cmi \
     middle_end/base_types/var_within_closure.cmi middle_end/flambda.cmi \
     middle_end/base_types/closure_id.cmi
@@ -707,6 +708,7 @@ middle_end/ref_to_variables.cmi : middle_end/flambda.cmi
 middle_end/remove_unused_arguments.cmi : middle_end/flambda.cmi
 middle_end/remove_unused_closure_vars.cmi : middle_end/flambda.cmi
 middle_end/remove_unused_globals.cmi : middle_end/flambda.cmi
+middle_end/share_constants.cmi : middle_end/base_types/variable.cmi
 middle_end/simple_value_approx.cmi : middle_end/base_types/variable.cmi \
     middle_end/base_types/var_within_closure.cmi \
     middle_end/base_types/tag.cmi middle_end/base_types/symbol.cmi \
@@ -735,10 +737,10 @@ middle_end/alias_analysis.cmx : middle_end/base_types/variable.cmx \
     middle_end/base_types/static_exception.cmx utils/misc.cmx \
     middle_end/flambda.cmx utils/ext_types.cmx \
     middle_end/base_types/compilation_unit.cmx middle_end/alias_analysis.cmi
-middle_end/allocated_const.cmo : middle_end/base_types/variable.cmi \
-    middle_end/base_types/tag.cmi middle_end/allocated_const.cmi
-middle_end/allocated_const.cmx : middle_end/base_types/variable.cmx \
-    middle_end/base_types/tag.cmx middle_end/allocated_const.cmi
+middle_end/allocated_const.cmo : middle_end/base_types/tag.cmi \
+    middle_end/allocated_const.cmi
+middle_end/allocated_const.cmx : middle_end/base_types/tag.cmx \
+    middle_end/allocated_const.cmi
 middle_end/closure_conversion_aux.cmo : middle_end/base_types/variable.cmi \
     middle_end/base_types/static_exception.cmi typing/primitive.cmi \
     utils/misc.cmi bytecomp/lambda.cmi typing/ident.cmi utils/ext_types.cmi \
@@ -1034,9 +1036,11 @@ middle_end/remove_unused_globals.cmx : typing/ident.cmx \
     middle_end/base_types/compilation_unit.cmx \
     middle_end/remove_unused_globals.cmi
 middle_end/share_constants.cmo : middle_end/base_types/variable.cmi \
-    middle_end/base_types/symbol.cmi utils/sort_connected_components.cmi
+    middle_end/base_types/symbol.cmi utils/sort_connected_components.cmi \
+    middle_end/share_constants.cmi
 middle_end/share_constants.cmx : middle_end/base_types/variable.cmx \
-    middle_end/base_types/symbol.cmx utils/sort_connected_components.cmx
+    middle_end/base_types/symbol.cmx utils/sort_connected_components.cmx \
+    middle_end/share_constants.cmi
 middle_end/simple_value_approx.cmo : middle_end/base_types/variable.cmi \
     middle_end/base_types/var_within_closure.cmi \
     middle_end/base_types/tag.cmi middle_end/base_types/symbol.cmi \

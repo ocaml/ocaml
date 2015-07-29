@@ -28,7 +28,7 @@ module Constant_descr_map = Map.Make(Constant_descr)
 
 type result = {
   expr : Flambda.t;
-  constant_descr : Symbol.t Flambda.allocated_constant Symbol.Map.t;
+  constant_descr : Symbol.t Allocated_const.tant Symbol.Map.t;
   kind : Symbol.t Variable.Map.t;
   set_of_closures_map : Flambda.set_of_closures Symbol.Map.t;
 }
