@@ -62,47 +62,6 @@ let compare_const (c1 : Flambda.const) (c2 : Flambda.const) =
   | Char _, _ -> -1
   | _, Char _ -> 1
 
-let compare_allocated_const (x : _ Flambda.allocated_const)
-      (y : _ Flambda.allocated_const) ~compare_name_lists =
-  let compare_floats x1 x2 =
-    Int64.compare (Int64.bits_of_float x1) (Int64.bits_of_float x2)
-  in
-   let rec compare_float_lists l1 l2 =
-     match l1, l2 with
-     | [], [] -> 0
-     | [], _::_ -> -1
-     | _::_, [] -> 1
-     | h1::t1, h2::t2 ->
-       let c = compare_floats h1 h2 in
-       if c <> 0 then c else compare_float_lists t1 t2
-  in
-  match x, y with
-  | Float x, Float y -> compare_floats x y
-  | Int32 x, Int32 y -> compare x y
-  | Int64 x, Int64 y -> compare x y
-  | Nativeint x, Nativeint y -> compare x y
-  | Float_array x, Float_array y -> compare_float_lists x y
-  | String x, String y -> compare x y
-  | Immstring x, Immstring y -> compare x y
-  | Block (tag1, fields1), Block (tag2, fields2) ->
-    let c = Tag.compare tag1 tag2 in
-    if c <> 0 then c
-    else compare_name_lists fields1 fields2
-  | Float _, _ -> -1
-  | _, Float _ -> 1
-  | Int32 _, _ -> -1
-  | _, Int32 _ -> 1
-  | Int64 _, _ -> -1
-  | _, Int64 _ -> 1
-  | Nativeint _, _ -> -1
-  | _, Nativeint _ -> 1
-  | Float_array _, _ -> -1
-  | _, Float_array _ -> 1
-  | String _, _ -> -1
-  | _, String _ -> 1
-  | Immstring _, _ -> -1
-  | _, Immstring _ -> 1
-
 let rec same (l1 : Flambda.t) (l2 : Flambda.t) =
   l1 == l2 || (* it is ok for the string case: if they are physically the same,
                  it is the same original branch *)
@@ -175,7 +134,7 @@ and same_named (named1 : Flambda.named) (named2 : Flambda.named) =
   | Const c1, Const c2 -> compare_const c1 c2 = 0
   | Const _, _ | _, Const _ -> false
   | Allocated_const c1, Allocated_const c2 ->
-    compare_allocated_const c1 c2
+    Allocated_const.compare c1 c2
       ~compare_name_lists:Variable.compare_lists = 0
   | Allocated_const _, _ | _, Allocated_const _ -> false
   | Set_of_closures s1, Set_of_closures s2 -> same_set_of_closures s1 s2

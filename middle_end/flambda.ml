@@ -25,16 +25,6 @@ type const =
   | Char of char
   | Const_pointer of int
 
-type 'name_of_constant allocated_const =
-  | Float of float
-  | Int32 of int32
-  | Int64 of int64
-  | Nativeint of nativeint
-  | Float_array of float list
-  | String of string
-  | Immstring of string
-  | Block of Tag.t * 'name_of_constant list
-
 type apply = {
   func : Variable.t;
   args : Variable.t list;
@@ -92,7 +82,7 @@ type t =
 and named =
   | Symbol of Symbol.t
   | Const of const
-  | Allocated_const of Variable.t allocated_const
+  | Allocated_const of Variable.t Allocated_const.t
   | Set_of_closures of set_of_closures
   | Project_closure of project_closure
   | Move_within_set_of_closures of move_within_set_of_closures
@@ -271,7 +261,8 @@ and print_named ppf (named : named) =
   match named with
   | Symbol (symbol) -> Symbol.print ppf symbol
   | Const (cst) -> fprintf ppf "Const(%a)" print_const cst
-  | Allocated_const (cst) -> fprintf ppf "Aconst(%a)" print_allocated_const cst
+  | Allocated_const (cst) ->
+    fprintf ppf "Aconst(%a)" Allocated_const.print cst
   | Project_closure (project_closure) ->
     print_project_closure ppf project_closure
   | Project_var (project_var) -> print_project_var ppf project_var
@@ -337,28 +328,6 @@ and print_const ppf (c : const) =
   | Int n -> fprintf ppf "%i" n
   | Char c -> fprintf ppf "%C" c
   | Const_pointer n -> fprintf ppf "%ia" n
-
-and print_allocated_const ppf (c : Variable.t allocated_const) =
-  match c with
-  | String s -> fprintf ppf "%S" s
-  | Immstring s -> fprintf ppf "#%S" s
-  | Int32 n -> fprintf ppf "%lil" n
-  | Int64 n -> fprintf ppf "%LiL" n
-  | Nativeint n -> fprintf ppf "%nin" n
-  | Float f -> fprintf ppf "%f" f
-  | Float_array [] -> fprintf ppf "[| |]"
-  | Float_array (f1 :: fl) ->
-    let floats ppf fl =
-      List.iter (fun f -> fprintf ppf "@ %f" f) fl
-    in
-    fprintf ppf "@[<1>[|@[%f%a@]|]@]" f1 floats fl
-  | Block (tag, []) -> fprintf ppf "[| Atom: tag=%a |]" Tag.print tag
-  | Block (tag, f1 :: fl) ->
-    let fields ppf fl =
-      List.iter (fun f -> fprintf ppf "@ %a" Variable.print f) fl
-    in
-    fprintf ppf "@[<1>[|tag=%a@ @[%a%a@]|]@]" Tag.print tag
-      Variable.print f1 fields fl
 
 let print_function_declarations ppf (fd : function_declarations) =
   let funs ppf =
@@ -543,15 +512,3 @@ let used_params function_decl =
   Variable.Set.filter
     (fun param -> Variable.Set.mem param function_decl.free_variables)
     (Variable.Set.of_list function_decl.params)
-
-let map_allocated_const (const : _ allocated_const) ~f =
-  match const with
-  | Float v -> Float v
-  | Int32 v -> Int32 v
-  | Int64 v -> Int64 v
-  | Nativeint v -> Nativeint v
-  | Float_array v -> Float_array v
-  | String v -> String v
-  | Immstring v -> Immstring v
-  | Block (tag, fields) ->
-    Block (tag, List.map f fields)

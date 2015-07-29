@@ -91,17 +91,6 @@ type const =
      constructors). *)
   | Const_pointer of int
 
-type 'name_of_constant allocated_const =
-  | Float of float
-  | Int32 of int32
-  | Int64 of int64
-  | Nativeint of nativeint
-  | Float_array of float list
-  | String of string
-  | Immstring of string
-  (* CR mshinwell: think about whether this should really be here. *)
-  | Block of Tag.t * 'name_of_constant list
-
 type apply = {
   (* CR mshinwell: rename func -> callee, and lhs_of_application -> callee *)
   func : Variable.t;
@@ -173,7 +162,7 @@ type t =
 and named =
   | Symbol of Symbol.t
   | Const of const
-  | Allocated_const of Variable.t allocated_const
+  | Allocated_const of Variable.t Allocated_const.t
   | Set_of_closures of set_of_closures
   | Project_closure of project_closure
   | Move_within_set_of_closures of move_within_set_of_closures
