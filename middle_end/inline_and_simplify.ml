@@ -207,7 +207,7 @@ let simplify_const (const : Flambda.const) =
   | Const_pointer i -> A.value_constptr i
 
 (* CR mshinwell: function name is misleading, it only computes an approx *)
-let simplify_allocated_const (const : Allocated_const.t) =
+let approx_for_allocated_const (const : Allocated_const.t) =
   match const with
   | String s -> A.value_string (String.length s) None
   | Int32 i -> A.value_boxed_int Int32 i
@@ -471,7 +471,8 @@ let rec simplify_project_var env r ~(project_var : Flambda.project_var)
    variable.
 *)
 and simplify_set_of_closures original_env r
-      (set_of_closures : Flambda.set_of_closures) : Flambda.named * R.t =
+      (set_of_closures : Flambda.set_of_closures)
+      : Flambda.set_of_closures * R.t =
   let function_decls =
     let module Backend = (val (E.backend original_env) : Backend_intf.S) in
     (* CR mshinwell: Does this affect
@@ -714,7 +715,7 @@ and simplify_named env r (tree : Flambda.named) : Flambda.named * R.t =
     in
     simplify_named_using_approx r tree approx
   | Const cst -> tree, ret r (simplify_const cst)
-  | Allocated_const cst -> tree, ret r (simplify_allocated_const cst)
+  | Allocated_const cst -> tree, ret r (approx_for_allocated_const cst)
   | Set_of_closures set_of_closures ->
     let set_of_closures, r = simplify_set_of_closures env r set_of_closures in
     Set_of_closures set_of_closures, r
@@ -1043,7 +1044,7 @@ and simplify env r tree =
      exactly is happening here? *)
   f, ret r (Backend.really_import_approx (R.approx r))
 
-let simplify_program env r (program : Flambda.program)
+let rec simplify_program env r (program : Flambda.program)
       : Flambda.program * R.t =
   match program with
   | Let_symbol (symbol, constant_defining_value, program) ->
@@ -1051,20 +1052,21 @@ let simplify_program env r (program : Flambda.program)
       match constant_defining_value with
       (* No simplifications are possible for [Allocated_const] or [Block]. *)
       | Allocated_const const ->
-        constant_defining_value, simplify_allocated_const const
+        constant_defining_value, approx_for_allocated_const const
       | Block (tag, fields) ->
-        constant_defining_value,
-          A.value_block (tag, List.map (E.find_symbol_exn env) fields)
+        let fields = List.map (E.find_symbol_exn env) fields in
+        constant_defining_value, A.value_block (tag, Array.of_list fields)
       | Set_of_closures set_of_closures ->
         if Variable.Map.cardinal set_of_closures.free_vars <> 0 then begin
-          Misc.fatal_error "Set of closures bound by [Let_symbol] is not \
+          Misc.fatal_errorf "Set of closures bound by [Let_symbol] is not \
               closed: %a"
             Flambda.print_set_of_closures set_of_closures
         end;
         let set_of_closures, r =
           simplify_set_of_closures env r set_of_closures
         in
-        set_of_closures, R.get_approx r
+        ((Set_of_closures set_of_closures) : Flambda.constant_defining_value),
+          R.approx r
     in
     let approx = A.augment_with_symbol approx symbol in
     let env = E.add_symbol env symbol approx in
@@ -1097,7 +1099,7 @@ let run ~never_inline ~backend program =
   then begin
     Misc.fatal_error (Format.asprintf "remaining static exceptions: %a@.%a@."
       Static_exception.Set.print (R.used_staticfail r)
-      Flambda.print result)
+      Flambda.print_program result)
   end;
   assert (Static_exception.Set.is_empty (R.used_staticfail r));
   if debug_benefit then

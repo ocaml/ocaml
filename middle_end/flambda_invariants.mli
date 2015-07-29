@@ -20,5 +20,5 @@ type flambda_kind =
 val check_exn
    : ?kind:flambda_kind
   -> ?cmxfile:bool
-  -> Flambda.compilation_unit
+  -> Flambda.program
   -> unit

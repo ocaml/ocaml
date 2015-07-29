@@ -321,6 +321,8 @@ val print : Format.formatter -> t -> unit
 
 val print_named : Format.formatter -> named -> unit
 
+val print_program : Format.formatter -> program -> unit
+
 val print_function_declaration
    : Format.formatter
   -> Variable.t * function_declaration

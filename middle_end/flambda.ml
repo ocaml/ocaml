@@ -349,6 +349,39 @@ let print ppf flam =
 let print_function_declaration ppf (var, decl) =
   print_function_declaration ppf var decl
 
+let print_constant_defining_value ppf (const : constant_defining_value) =
+  match const with
+  | Allocated_const const ->
+    fprintf ppf "Allocated_const (%a)" Allocated_const.print const
+  | Block (tag, []) -> fprintf ppf "Atom (tag %d)" (Tag.to_int tag)
+  | Block (tag, fields) ->
+    let print_fields ppf =
+      List.iter (fprintf ppf "@ %a" Symbol.print)
+    in
+    fprintf ppf "Block (tag %d, %a)" (Tag.to_int tag)
+      print_fields fields
+  | Set_of_closures set_of_closures ->
+    fprintf ppf "Set_of_closures (%a)" print_set_of_closures set_of_closures
+
+let rec print_program ppf (program : program) =
+  match program with
+  | Let_symbol (symbol, constant_defining_value, body) ->
+    (* CR mshinwell: share with above *)
+    let rec letbody (ul : program) =
+      match ul with
+      | Let_symbol (symbol, constant_defining_value, body) ->
+        fprintf ppf "@ @[<2>%a@ %a@]" Symbol.print symbol
+          print_constant_defining_value constant_defining_value;
+        letbody body
+      | _ -> ul
+    in
+    fprintf ppf "@[<2>(let@ @[<hv 1>(@[<2>%a@ %a@]"
+      Symbol.print symbol
+      print_constant_defining_value constant_defining_value;
+    let program = letbody body in
+    fprintf ppf ")@]@ %a)@]" print_program program
+  | Entry_point t -> print ppf t
+
 (* CR mshinwell: this doesn't seem to cope with shadowed identifiers
    properly.  Check the original version.  Why don't we just do the
    subtraction as we pass back over binding points? *)

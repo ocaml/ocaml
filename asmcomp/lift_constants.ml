@@ -34,17 +34,6 @@ type result = {
 module Constant_defining_value_map = Map.Make (struct
   type t = Variable.t constant_defining_value
 
-  let compare t1 t2 =
-    match t1, t2 with
-    | Allocated_const c1, Allocated_const c2 ->
-      Allocated_const.compare c1 c2
-    | Block (tag1, fields1), Block (tag2, fields2) ->
-      let c = Tag.compare tag1 tag2 in
-      if c <> 0 then c
-      else Variable.compare_list fields1 fields2
-    | Symbol sym1, Symbol sym2 -> Symbol.compare sym1 sym2
-    | Allocated_const _, _ -> -1
-    | Block _, _ -> 1
 end)
 
 let constant_defining_value_to_named (const : _ constant_defining_value)

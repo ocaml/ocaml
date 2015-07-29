@@ -36,7 +36,7 @@ let ignore_direction_flag (_ : Asttypes.direction_flag) = ()
 let ignore_symbol (_ : Symbol.t) = ()
 let ignore_primitive ( _ : Lambda.primitive) = ()
 let ignore_const (_ : Flambda.const) = ()
-let ignore_allocated_const (_ : _ Allocated_const.t) = ()
+let ignore_allocated_const (_ : Allocated_const.t) = ()
 let ignore_set_of_closures_id (_ : Set_of_closures_id.t) = ()
 let ignore_closure_id (_ : Closure_id.t) = ()
 let ignore_var_within_closure (_ : Var_within_closure.t) = ()
@@ -182,8 +182,6 @@ let variable_invariants flam =
     match named with
     | Symbol symbol -> ignore_symbol symbol
     | Const const -> ignore_const const
-    | Allocated_const (Block (_tag, fields)) ->
-      check_variables_are_bound env fields
     | Allocated_const const -> ignore_allocated_const const
     | Set_of_closures ({ function_decls; free_vars; specialised_args; }
         as set_of_closures) ->
@@ -451,7 +449,6 @@ let every_static_exception_is_caught_at_a_single_position flam =
   Flambda_iterators.iter f (fun (_ : Flambda.named) -> ()) flam
 
 let check_exn ?(kind=Normal) ?(cmxfile=false) flam =
-Format.eprintf "checking %a\n" Flambda.print flam;
   try
     variable_invariants flam;
     primitive_invariants flam ~no_access_to_global_module_identifiers:cmxfile;
