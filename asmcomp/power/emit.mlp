@@ -296,7 +296,7 @@ let emit_reload_toc () =
 
 let adjust_stack_offset delta =
   stack_offset := !stack_offset + delta;
-  cfi_adjust_cfa_offset (-delta)    
+  cfi_adjust_cfa_offset delta
 
 (* Record live pointers at call points *)
 
