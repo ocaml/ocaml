@@ -47,14 +47,14 @@ static int file_kind_table[] = {
   S_IFREG, S_IFDIR, S_IFCHR, S_IFBLK, S_IFLNK, S_IFIFO, S_IFSOCK
 };
 
-static value stat_aux(int use_64, struct _stat64 *buf)
+static value stat_aux(int use_64, __int64 st_ino, struct _stat64 *buf)
 {
   CAMLparam0 ();
   CAMLlocal1 (v);
 
   v = caml_alloc (12, 0);
   Store_field (v, 0, Val_int (buf->st_dev));
-  Store_field (v, 1, Val_int (buf->st_ino));
+  Store_field (v, 1, Val_int (st_ino ? st_ino & Max_long : buf->st_ino));
   Store_field (v, 2, cst_to_constr (buf->st_mode & S_IFMT, file_kind_table,
                                     sizeof(file_kind_table) / sizeof(int), 0));
   Store_field (v, 3, Val_int(buf->st_mode & 07777));
@@ -137,31 +137,15 @@ static int convert_time(FILETIME* time, __time64_t* result, __time64_t def)
   return 1;
 }
 
-static int do_stat(int do_lstat, int use_64, char* path, mlsize_t l, struct _stat64* res)
+static int do_stat(int do_lstat, int use_64, char* path, mlsize_t l, __int64* st_ino, struct _stat64* res)
 {
   BY_HANDLE_FILE_INFORMATION info;
-  int drive, i;
+  int i;
   char* ptr;
   char c;
   HANDLE h;
   unsigned short mode;
   int is_symlink = 0;
-
-  /*
-   * Get the drive number
-   */
-  if (l > 1 && path[1] == ':') {
-    if (path[2]) {
-      drive = tolower(*path) - 'a';
-    }
-    else {
-      errno = ENOENT;
-      return 0;
-    }
-  }
-  else {
-    drive = _getdrive() - 1;
-  }
 
   caml_enter_blocking_section();
   h = CreateFile(path,
@@ -267,9 +251,11 @@ static int do_stat(int do_lstat, int use_64, char* path, mlsize_t l, struct _sta
     }
 
     /*
-     * Note MS CRT (still) puts st_nlink = 1
+     * Note MS CRT (still) puts st_nlink = 1 and gives st_ino = 0
      */
     res->st_nlink = info.nNumberOfLinks;
+    res->st_dev = info.dwVolumeSerialNumber;
+    *st_ino = ((__int64)(info.nFileIndexHigh)) << 32 | ((__int64)info.nFileIndexLow);
   }
 
   if (do_lstat && is_symlink) {
@@ -289,7 +275,7 @@ static int do_stat(int do_lstat, int use_64, char* path, mlsize_t l, struct _sta
   mode |= (mode & 0700) >> 6;
   res->st_mode = mode;
   res->st_uid = res->st_gid = res->st_ino = 0;
-  res->st_rdev = res->st_dev = drive;
+  res->st_rdev = res->st_dev;
 
   return 1;
 }
@@ -297,41 +283,45 @@ static int do_stat(int do_lstat, int use_64, char* path, mlsize_t l, struct _sta
 CAMLprim value unix_stat(value path)
 {
   struct _stat64 buf;
+  __int64 st_ino;
 
   caml_unix_check_path(path, "stat");
-  if (!do_stat(0, 0, String_val(path), caml_string_length(path), &buf)) {
+  if (!do_stat(0, 0, String_val(path), caml_string_length(path), &st_ino, &buf)) {
     uerror("stat", path);
   }
-  return stat_aux(0, &buf);
+  return stat_aux(0, st_ino, &buf);
 }
 
 CAMLprim value unix_stat_64(value path)
 {
   struct _stat64 buf;
+  __int64 st_ino;
 
   caml_unix_check_path(path, "stat");
-  if (!do_stat(0, 1, String_val(path), caml_string_length(path), &buf)) {
+  if (!do_stat(0, 1, String_val(path), caml_string_length(path), &st_ino, &buf)) {
     uerror("stat", path);
   }
-  return stat_aux(1, &buf);
+  return stat_aux(1, st_ino, &buf);
 }
 
 CAMLprim value unix_lstat(value path)
 {
   struct _stat64 buf;
-  if (!do_stat(1, 0, String_val(path), caml_string_length(path), &buf)) {
+  __int64 st_ino;
+  if (!do_stat(1, 0, String_val(path), caml_string_length(path), &st_ino, &buf)) {
     uerror("lstat", path);
   }
-  return stat_aux(0, &buf);
+  return stat_aux(0, st_ino, &buf);
 }
 
 CAMLprim value unix_lstat_64(value path)
 {
   struct _stat64 buf;
-  if (!do_stat(1, 1, String_val(path), caml_string_length(path), &buf)) {
+  __int64 st_ino;
+  if (!do_stat(1, 1, String_val(path), caml_string_length(path), &st_ino, &buf)) {
     uerror("lstat", path);
   }
-  return stat_aux(1, &buf);
+  return stat_aux(1, st_ino, &buf);
 }
 
 CAMLprim value unix_fstat(value handle)
@@ -345,7 +335,7 @@ CAMLprim value unix_fstat(value handle)
     win32_maperr(ERROR_ARITHMETIC_OVERFLOW);
     uerror("fstat", Nothing);
   }
-  return stat_aux(0, &buf);
+  return stat_aux(0, 0, &buf);
 }
 
 CAMLprim value unix_fstat_64(value handle)
@@ -355,5 +345,5 @@ CAMLprim value unix_fstat_64(value handle)
 
   ret = _fstat64(win_CRT_fd_of_filedescr(handle), &buf);
   if (ret == -1) uerror("fstat", Nothing);
-  return stat_aux(1, &buf);
+  return stat_aux(1, 0, &buf);
 }
