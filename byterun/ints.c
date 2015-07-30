@@ -30,7 +30,8 @@ static char * parse_sign_and_base(char * p,
   if (*p == '-') {
     *sign = -1;
     p++;
-  }
+  } else if (*p == '+')
+    p++;
   *base = 10; *signedness = 1;
   if (*p == '0') {
     switch (p[1]) {
