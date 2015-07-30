@@ -26,6 +26,8 @@ static char * parse_sign_and_base(char * p,
                                   /*out*/ int * signedness,
                                   /*out*/ int * sign)
 {
+  while (*p == ' ')
+    p++;
   *sign = 1;
   if (*p == '-') {
     *sign = -1;
