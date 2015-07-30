@@ -825,6 +825,7 @@ case "$target" in
                                 fi;;
   i[3456]86-*-gnu*)             arch=i386; system=gnu;;
   i[3456]86-*-mingw*)           arch=i386; system=mingw;;
+  powerpc64le*-*-linux*)        arch=power; model=ppc64le; system=elf;;
   powerpc*-*-linux*)            arch=power;
                                 if $arch64; then model=ppc64; else model=ppc; fi
                                 system=elf;;
@@ -885,14 +886,12 @@ case "$arch,$nativecc,$system,$target" in
   *,gcc*,*,*)          nativecccompopts="$gcc_warnings";;
 esac
 
-case "$arch,$nativecc,$system,$target" in
+case "$arch,$nativecc,$system,$model" in
   amd64,gcc*,macosx,*) partialld="ld -r -arch x86_64";;
   amd64,gcc*,solaris,*) partialld="ld -r -m elf_x86_64";;
-  power,gcc*,elf,*)    if $arch64; then
-                           partialld="ld -r -m elf64ppc"
-                       else
-                           partialld="ld -r -m elf32ppclinux"
-                       fi;;
+  power,gcc*,elf,ppc)   partialld="ld -r -m elf32ppclinux";;
+  power,gcc*,elf,ppc64)   partialld="ld -r -m elf64ppc";;
+  power,gcc*,elf,ppc64le)   partialld="ld -r -m elf64lppc";;
 esac
 
 asppprofflags='-DPROFILING'

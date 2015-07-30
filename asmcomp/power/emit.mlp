@@ -1090,6 +1090,10 @@ let data l =
 (* Beginning / end of an assembly file *)
 
 let begin_assembly() =
+  begin match abi with
+  | ELF64v2 -> `	.abiversion 2\n`
+  | _ -> ()
+  end;
   Hashtbl.clear tocref_entries;
   (* Emit the beginning of the segments *)
   let lbl_begin = Compilenv.make_symbol (Some "data_begin") in

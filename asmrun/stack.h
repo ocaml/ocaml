@@ -38,7 +38,10 @@
 #define Callback_link(sp) ((struct caml_context *)((sp) + 16))
 #elif defined(MODEL_ppc64)
 #define Saved_return_address(sp) *((intnat *)((sp) + 16))
-#define Callback_link(sp) ((struct caml_context *)((sp) + 80))
+#define Callback_link(sp) ((struct caml_context *)((sp) + (48 + 32)))
+#elif defined(MODEL_ppc64le)
+#define Saved_return_address(sp) *((intnat *)((sp) + 16))
+#define Callback_link(sp) ((struct caml_context *)((sp) + (32 + 32)))
 #else
 #error "TARGET_power: wrong MODEL"
 #endif

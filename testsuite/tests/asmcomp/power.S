@@ -65,8 +65,8 @@
   .type name, @function; \
   .align 2; \
   name: ; \
-  0: addis r2, r12, (.TOC. - 0b)@ha; \
-  addi r2, r12, (.TOC. - 0b)@l; \
+  0: addis 2, 12, (.TOC. - 0b)@ha; \
+  addi 2, 2, (.TOC. - 0b)@l; \
   .localentry name, . - 0b
 #endif
         

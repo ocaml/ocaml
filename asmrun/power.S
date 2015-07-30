@@ -11,6 +11,10 @@
 /*                                                                     */
 /***********************************************************************/
 
+#if defined(MODEL_ppc64le)
+        .abiversion 2
+#endif	
+
 #if defined(MODEL_ppc64) || defined(MODEL_ppc64le)
 #define EITHER(a,b) b
 #else
@@ -97,7 +101,7 @@
   .align 2; \
   name: ; \
   0: addis 2, 12, (.TOC. - 0b)@ha; \
-  addi 2, 12, (.TOC. - 0b)@l; \
+  addi 2, 2, (.TOC. - 0b)@l; \
   .localentry name, . - 0b
 
 #define ENDFUNCTION(name) \
