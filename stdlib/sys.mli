@@ -211,25 +211,32 @@ val sigprof : int
 (** Profiling interrupt *)
 
 val sigbus : int
-(** Bus error *)
+(** Bus error
+    @since 4.03 *)
 
 val sigpoll : int
-(** Pollable event *)
+(** Pollable event
+    @since 4.03 *)
 
 val sigsys : int
-(** Bad argument to routine *)
+(** Bad argument to routine
+    @since 4.03 *)
 
 val sigtrap : int
-(** Trace/breakpoint trap *)
+(** Trace/breakpoint trap
+    @since 4.03 *)
 
 val sigurg : int
-(** Urgent condition on socket *)
+(** Urgent condition on socket
+    @since 4.03 *)
 
 val sigxcpu : int
-(** Timeout in cpu time *)
+(** Timeout in cpu time
+    @since 4.03 *)
 
 val sigxfsz : int
-(** File size limit exceeded *)
+(** File size limit exceeded
+    @since 4.03 *)
 
 
 exception Break
