@@ -131,14 +131,8 @@
 
 #define LSYMB(glob) .L##glob
 
-#if 0
-#define Addrglobal(reg,glob) \
-        addis   reg, 2, LSYMB(glob)@toc@ha; \
-        ld      reg, LSYMB(glob)@toc@l(reg)
-#else
 #define Addrglobal(reg,glob) \
         ld      reg, LSYMB(glob)@toc(2)
-#endif
 #define Loadglobal(reg,glob,tmp) \
         Addrglobal(tmp,glob); \
         lg      reg, 0(tmp)
@@ -672,7 +666,7 @@ caml_system__frametable:
 
         .section ".toc", "aw"
 
-#define TOCENTRY(glob) LSYMB(glob): .tc glob[TC], glob
+#define TOCENTRY(glob) LSYMB(glob): .quad glob
 
 TOCENTRY(caml_apply2)
 TOCENTRY(caml_apply3)

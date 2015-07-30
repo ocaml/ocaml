@@ -12,9 +12,6 @@
 
 (* Emission of PowerPC assembly code *)
 
-module StringSet =
-  Set.Make(struct type t = string let compare (x:t) y = compare x y end)
-
 open Misc
 open Cmm
 open Arch
@@ -146,16 +143,24 @@ let emit_symbol_offset (s, d) =
 
 (* Split a 32-bit integer constants in two 16-bit halves *)
 
-let low n = n land 0xFFFF   (* unsigned low half, for use with "ori" *)
-let high n = n asr 16
+let low_high_u n = (n land 0xFFFF, n asr 16)
+  (* unsigned low half, for use with "ori" *)
 
-let nativelow n = Nativeint.to_int n land 0xFFFF
-let nativehigh n = Nativeint.to_int (Nativeint.shift_right n 16)
+let native_low_high_u n =
+  (Nativeint.(to_int (logand n 0xFFFFn)),
+   Nativeint.(to_int (shift_right n 16)))
+  (* unsigned low half, for use with "ori" *)
 
-let low_s n = (* signed low half, for use with "addi" *)
-  ((n + 0x8000) land 0xFFFF) - 0x8000
-let high_s n =
-  (n - low_s n) asr 16
+let low_high_s n =
+  let lo = ((n + 0x8000) land 0xFFFF) - 0x8000 in
+  (lo, (n - lo) asr 16)
+  (* signed low half, for use with "addi" *)
+
+let native_low_high_s n =
+  let lo = Nativeint.(sub (logand (add n 0x8000n) 0xFFFFn) 0x8000n) in
+  (Nativeint.to_int lo,
+   Nativeint.(to_int (shift_right (sub n lo) 16)))
+  (* signed low half, for use with "addi" *)
 
 let is_immediate n =
   n <= 32767 && n >= -32768
@@ -190,7 +195,7 @@ let label_for_tocref entry =
 let emit_toctable () =
   Hashtbl.iter
     (fun entry lbl ->
-      `{emit_label lbl}:	.tc	{emit_label lbl}[TC], {emit_tocentry entry}\n`)
+      `{emit_label lbl}:	.quad	{emit_tocentry entry}\n`)
     tocref_entries
 
 (* Emit a load from a TOC entry *)
@@ -226,7 +231,7 @@ let emit_load_store instr addressing_mode addr n arg =
         `	{emit_string instr}	{emit_reg arg}, {emit_lower emit_symbol_offset (s,d)}(11)\n`
       | ELF64v1 | ELF64v2 ->
         emit_tocload emit_gpr 11 (TocSym s);
-        let lo = low_s d and hi = high_s d in
+        let (lo, hi) = low_high_s d in
         if hi <> 0 then
           `	addis	11, 11, {emit_int hi}\n`;
         `	{emit_string instr}	{emit_reg arg}, {emit_int lo}(11)\n`
@@ -235,8 +240,8 @@ let emit_load_store instr addressing_mode addr n arg =
       if is_immediate ofs && valid_offset instr ofs then
         `	{emit_string instr}	{emit_reg arg}, {emit_int ofs}({emit_reg addr.(n)})\n`
       else begin
-        let lo = low ofs and hi = high ofs in
-        `	lis	0, {emit_int hi}\n`;
+        let (lo, hi) = low_high_u ofs in
+        `	addis	0, 0, {emit_int hi}\n`;
         if lo <> 0 then
           `	ori	0, 0, {emit_int lo}\n`;
         `	{emit_string instr}x	{emit_reg arg}, {emit_reg addr.(n)}, 0\n`
@@ -313,9 +318,16 @@ let record_frame live dbg =
       fd_debuginfo = dbg } :: !frame_descriptors;
   `{emit_label lbl}:\n`
 
-(* Record floating-point literals *)
+(* Record floating-point literals (for PPC32) *)
 
 let float_literals = ref ([] : (int64 * int) list)
+
+(* Record jump tables (for PPC64).  In order to reduce the size of the TOC,
+   we concatenate all jumptables and emit them at the end of the compilation
+   unit. *)
+
+let jumptables = ref ([] : label list)  (* in reverse order *)
+let jumptables_lbl = ref (-1)
 
 (* Names for conditional branches after comparisons *)
 
@@ -496,8 +508,18 @@ let emit_instr i =
     | Lop(Iconst_int n | Iconst_blockheader n) ->
         if is_native_immediate n then
           `	li	{emit_reg i.res.(0)}, {emit_nativeint n}\n`
-        else if n >= -0x8000_0000n && n <= 0x7FFF_FFFFn then begin
-          let lo = nativelow n and hi = nativehigh n in
+        else begin
+        (* Try a signed decomposition first, because the sequence
+           addis/addi is eligible for instruction fusion. *)
+        let (lo, hi) = native_low_high_s n in
+        if hi >= -0x8000 && hi <= 0x7FFF then begin
+          `	addis	{emit_reg i.res.(0)}, 0, {emit_int hi}\n`;
+          if lo <> 0 then
+          `	addi	{emit_reg i.res.(0)}, {emit_reg i.res.(0)}, {emit_int lo}\n`
+        end else begin
+        (* Now try an unsigned decomposition *)
+        let (lo, hi) = native_low_high_u n in
+        if hi >= -0x8000 && hi <= 0x7FFF then begin
           `	addis	{emit_reg i.res.(0)}, 0, {emit_int hi}\n`;
           if lo <> 0 then
           `	ori	{emit_reg i.res.(0)}, {emit_reg i.res.(0)}, {emit_int lo}\n`
@@ -506,7 +528,7 @@ let emit_instr i =
           | ELF32 -> assert false
           | ELF64v1 | ELF64v2 ->
               emit_tocload emit_reg i.res.(0) (TocInt n)
-        end
+        end end end
     | Lop(Iconst_float f) ->
         begin match abi with
         | ELF32 ->
@@ -835,22 +857,33 @@ let emit_instr i =
     | Lswitch jumptbl ->
         let lbl = new_label() in
         if ppc64 then begin
-          emit_tocload emit_gpr 11 (TocLabel lbl)
+          if !jumptables_lbl < 0 then jumptables_lbl := lbl;
+          let start = List.length !jumptables in
+          let (start_lo, start_hi) = low_high_s start in
+          emit_tocload emit_gpr 11 (TocLabel !jumptables_lbl);
+          `	addi	12, {emit_reg i.arg.(0)}, {emit_int start_lo}\n`;
+          if start_hi <> 0 then
+            `	addis	12, 12, {emit_int start_hi}\n`;
+          `	sldi	12, 12, 2\n`
         end else begin
           `	addis	11, 0, {emit_upper emit_label lbl}\n`;
-          `	addi	11, 11, {emit_lower emit_label lbl}\n`
+          `	addi	11, 11, {emit_lower emit_label lbl}\n`;
+          `	slwi	12, {emit_reg i.arg.(0)}, 2\n`
         end;
-        `	{emit_string slgi}	0, {emit_reg i.arg.(0)}, 2\n`;
-        `	{emit_string lwa}x	0, 11, 0\n`;
+        `	{emit_string lwa}x	0, 11, 12\n`;
         `	add	0, 11, 0\n`;
         `	mtctr	0\n`;
         `	bctr\n`;
-        emit_string rodata_space;
-        `{emit_label lbl}:`;
-        for i = 0 to Array.length jumptbl - 1 do
-          `	.long	{emit_label jumptbl.(i)} - {emit_label lbl}\n`
-        done;
-        emit_string code_space
+        if ppc64 then begin
+          jumptables := List.rev_append (Array.to_list jumptbl) !jumptables
+        end else begin
+          emit_string rodata_space;
+          `{emit_label lbl}:`;
+          for i = 0 to Array.length jumptbl - 1 do
+            `	.long	{emit_label jumptbl.(i)} - {emit_label lbl}\n`
+          done;
+          emit_string code_space
+        end
     | Lsetuptrap lbl ->
         `	bl	{emit_label lbl}\n`;
         begin match abi with
@@ -912,6 +945,7 @@ let fundecl fundecl =
   stack_offset := 0;
   call_gc_label := 0;
   float_literals := [];
+  jumptables := []; jumptables_lbl := -1;
   begin match abi with
   | ELF32 ->
     emit_string code_space;
@@ -997,10 +1031,18 @@ let fundecl fundecl =
     List.iter
       (fun (f, lbl) ->
         `{emit_label lbl}:`;
-        if ppc64
-        then emit_float64_directive ".quad" f
-        else emit_float64_split_directive ".long" f)
+        emit_float64_split_directive ".long" f)
       !float_literals
+  end;
+  (* Emit the jump tables *)
+  if !jumptables <> [] then begin
+    emit_string rodata_space;
+    `	.align	2\n`;
+    `{emit_label !jumptables_lbl}:`;
+    List.iter 
+      (fun  lbl ->
+          `	.long	{emit_label lbl} - {emit_label !jumptables_lbl}\n`)
+      (List.rev !jumptables)
   end
 
 (* Emission of data *)
@@ -1089,7 +1131,7 @@ let end_assembly() =
       efa_16 = (fun n -> `	.short	{emit_int n}\n`);
       efa_32 = (fun n -> `	.long	{emit_int32 n}\n`);
       efa_word = (fun n -> `	{emit_string datag}	{emit_int n}\n`);
-      efa_align = (fun n -> `	.align	{emit_int (Misc.log2 n)}\n`);
+      efa_align = (fun n -> `	.balign	{emit_int n}\n`);
       efa_label_rel = (fun lbl ofs ->
                            `	.long	({emit_label lbl} - .) + {emit_int32 ofs}\n`);
       efa_def_label = (fun l -> `{emit_label l}:\n`);
