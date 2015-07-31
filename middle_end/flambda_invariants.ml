@@ -41,6 +41,7 @@ let ignore_set_of_closures_id (_ : Set_of_closures_id.t) = ()
 let ignore_closure_id (_ : Closure_id.t) = ()
 let ignore_var_within_closure (_ : Var_within_closure.t) = ()
 let ignore_compilation_unit (_ : Compilation_unit.t) = ()
+let ignore_ident (_ : Ident.t) = ()
 
 exception Binding_occurrence_not_from_current_compilation_unit of Variable.t
 exception Binding_occurrence_of_variable_already_bound of Variable.t
@@ -183,6 +184,7 @@ let variable_invariants flam =
     | Symbol symbol -> ignore_symbol symbol
     | Const const -> ignore_const const
     | Allocated_const const -> ignore_allocated_const const
+    | Predefined_exn ident -> ignore_ident ident
     | Set_of_closures ({ function_decls; free_vars; specialised_args; }
         as set_of_closures) ->
       let { Flambda.set_of_closures_id; funs; compilation_unit } =
@@ -281,6 +283,7 @@ let variable_invariants flam =
   in
   loop Variable.Map.empty flam
 
+(* CR mshinwell: this function needs updating e.g. for Pgetglobal changes *)
 let primitive_invariants flam ~no_access_to_global_module_identifiers =
   Flambda_iterators.iter_named (function
       | Prim (prim, _, _) ->

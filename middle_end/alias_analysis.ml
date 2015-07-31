@@ -224,6 +224,7 @@ and collect_equations_named (t:equations) (var:Variable.t) : Flambda.named -> eq
        Should we do someting with the [Allocated_const (Block (...))] case,
        which contains free variables? *)
     Resolved (Ground_const var)
+  | Predefined_exn _ -> assert false (* CR mshinwell for pchambart: What to do? *)
 
   | Expr e ->
     collect_equations t e

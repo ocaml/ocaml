@@ -717,6 +717,7 @@ and simplify_named env r (tree : Flambda.named) : Flambda.named * R.t =
     simplify_named_using_approx r tree approx
   | Const cst -> tree, ret r (simplify_const cst)
   | Allocated_const cst -> tree, ret r (approx_for_allocated_const cst)
+  | Predefined_exn _ -> tree, ret r A.value_unknown
   | Set_of_closures set_of_closures ->
     let set_of_closures, r = simplify_set_of_closures env r set_of_closures in
     Set_of_closures set_of_closures, r
@@ -729,29 +730,8 @@ and simplify_named env r (tree : Flambda.named) : Flambda.named * R.t =
     simplify_free_variables_named env args ~f:(fun env args ->
       let tree = Flambda.Prim (prim, args, dbg) in
       begin match prim, args with
-      | Pgetglobal id, [] ->
-        let approx =
-          if Ident.is_predef_exn id then A.value_unknown
-          else
-            let module Backend = (val (E.backend env) : Backend_intf.S) in
-            Backend.import_global id
-        in
-        tree, ret r approx
-      | Pgetglobalfield (id, i), [] ->
-        let approx =
-          if id = Compilation_unit.get_current_id_exn ()
-          then R.find_global r ~field_index:i
-          else
-            let module Backend = (val (E.backend env) : Backend_intf.S) in
-            A.get_field (Backend.import_global id) ~field_index:i
-        in
-        (* CR mshinwell for pchambart: Is there a reason we cannot use
-           [simplify_named_using_approx_and_env] here? *)
-        simplify_named_using_approx_and_env env r tree approx
-      | Psetglobalfield (_, i), [arg] ->
-        let approx = E.find_exn env arg in
-        let r = R.add_global r ~field_index:i ~approx in
-        tree, ret r A.value_unknown
+      | Pgetglobal _, _ ->
+        Misc.fatal_error "Pgetglobal is forbidden in Inline_and_simplify"
       | Pfield i, [arg] ->
         let approx = A.get_field (E.find_exn env arg) ~field_index:i in
         simplify_named_using_approx_and_env env r tree approx
@@ -1108,13 +1088,13 @@ let rec simplify_program env r (program : Flambda.program)
     let r = ret r approx in
     let program, r = simplify_program env r program in
     Import_symbol (symbol, program), r
-  | Let_global (ident, defining_expr, program) ->
+  | Initialize_symbol (ident, defining_expr, program) ->
     let defining_expr, r = simplify env r defining_expr in
     let module Backend = (val (E.backend env) : Backend_intf.S) in
     let symbol = Backend.symbol_for_global' ident in
     let env = E.add_symbol env symbol (R.approx r) in
     let program, r = simplify_program env r program in
-    Let_global (ident, defining_expr, program), r
+    Initialize_symbol (ident, defining_expr, program), r
   | End -> End, r
 
 (* CR mshinwell for pchambart: Change to a "-dinlining-benefit" option? *)

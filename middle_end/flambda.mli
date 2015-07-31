@@ -163,6 +163,7 @@ and named =
   | Symbol of Symbol.t
   | Const of const
   | Allocated_const of Allocated_const.t
+  | Predefined_exn of Ident.t
   | Set_of_closures of set_of_closures
   | Project_closure of project_closure
   | Move_within_set_of_closures of move_within_set_of_closures
@@ -292,7 +293,7 @@ end
 type program =
   | Let_symbol of Symbol.t * constant_defining_value * program
   | Import_symbol of Symbol.t * program
-  | Let_global of Ident.t * t * program
+  | Initialize_symbol of Symbol.t * t * program
   | End
 
 val free_variables
