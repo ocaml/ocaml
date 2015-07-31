@@ -120,7 +120,6 @@ let compile_genfuns ppf f =
 
 let prep_flambda_for_export ppf flam ~backend =
   let program = Lift_constants.lift_constants flam ~backend in
-
   let export = Build_export_info.build_export_info program in
   (* Compilenv.set_export_info export; *)
   if !Clflags.dump_flambda

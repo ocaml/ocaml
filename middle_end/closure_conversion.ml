@@ -443,7 +443,7 @@ and close_let_bound_expression t ?let_rec_ident let_bound_var env
       name_expr (Project_closure (project_closure))))
   | lam -> Expr (close t env lam)
 
-let lambda_to_flambda ~backend ~module_ident ~module_initializer =
+let lambda_to_flambda ~backend ~module_ident module_initializer =
   imported_symbols := Symbol.Set.empty;
   let module Backend = (val backend : Backend_intf.S) in
   let t =

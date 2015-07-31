@@ -276,3 +276,33 @@ let map_function_bodies (set_of_closures : Flambda.set_of_closures) ~f =
     ~function_decls:{ set_of_closures.function_decls with funs; }
     ~free_vars:set_of_closures.free_vars
     ~specialised_args:set_of_closures.specialised_args
+
+let rec map_exprs_at_toplevel_of_program (program : Flambda.program)
+      ~(f : Flambda.t -> Flambda.t) : Flambda.program =
+  match program with
+  | Let_symbol (symbol, Set_of_closures set_of_closures, program) ->
+    let funs =
+      Variable.Map.map (fun (function_decl : Flambda.function_declaration) ->
+          let body = f function_decl.body in
+          Flambda.create_function_declaration ~body
+            ~params:function_decl.params
+            ~stub:function_decl.stub
+            ~dbg:function_decl.dbg)
+        set_of_closures.function_decls.funs
+    in
+    let function_decls = { set_of_closures.function_decls with funs; } in
+    let set_of_closures =
+      Flambda.create_set_of_closures ~function_decls
+        ~free_vars:set_of_closures.free_vars
+        ~specialised_args:set_of_closures.specialised_args
+    in
+    Let_symbol (symbol, Set_of_closures set_of_closures,
+      map_exprs_at_toplevel_of_program program ~f)
+  | Let_symbol (symbol, const, program) ->
+    Let_symbol (symbol, const, map_exprs_at_toplevel_of_program program ~f)
+  | Import_symbol (symbol, program) ->
+    Import_symbol (symbol, map_exprs_at_toplevel_of_program program ~f)
+  | Initialize_symbol (symbol, expr, program) ->
+    Initialize_symbol (symbol, f expr,
+      map_exprs_at_toplevel_of_program program ~f)
+  | End -> End

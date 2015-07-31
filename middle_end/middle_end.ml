@@ -13,21 +13,22 @@
 
 let verbose = try ignore (Sys.getenv "FLAMBDA_VERBOSE"); true with _ -> false
 
-let middle_end ppf ~sourcefile ~prefixname ~backend ~exported_fields lam =
+let middle_end ppf ~sourcefile ~prefixname ~backend ~module_ident
+      ~module_initializer =
   (* CR mshinwell: consider whether everything should run on
      [Flambda.program] *)
   let pass_number = ref 0 in
   let round_number = ref 0 in
   let check flam =
-    try Flambda_invariants.check_exn (Flambda.Entry_point flam)
+    try Flambda_invariants.check_exn flam
     with exn ->
       Misc.fatal_errorf "After Flambda pass %d, round %d:@.%s:@.%a"
         !pass_number !round_number (Printexc.to_string exn)
-        Flambda.print flam
+        Flambda.print_program flam
   in
   let dump_and_check s flam =
     if !Clflags.dump_flambda
-    then Format.fprintf ppf "%s:@ %a@." s Flambda.print flam;
+    then Format.fprintf ppf "%s:@ %a@." s Flambda.print_program flam;
     check flam
   in
   let (++) flam pass =
@@ -37,7 +38,7 @@ let middle_end ppf ~sourcefile ~prefixname ~backend ~exported_fields lam =
       incr pass_number;
       if verbose then begin
         Format.fprintf ppf "Before pass %d, round %d:@ %a@." !pass_number
-          !round_number Flambda.print flam;
+          !round_number Flambda.print_program flam;
         Format.eprintf "\n@?"
       end;
       let flam = pass flam in
@@ -47,10 +48,10 @@ let middle_end ppf ~sourcefile ~prefixname ~backend ~exported_fields lam =
   in
   Timings.(start (Flambda_middle_end sourcefile));
   let flam =
-    lam
+    module_initializer
     |> Eliminate_const_block.run
     |> Lift_strings.run
-    |> Closure_conversion.lambda_to_flambda ~backend ~exported_fields
+    |> Closure_conversion.lambda_to_flambda ~backend ~module_ident
   in
   dump_and_check "After closure conversion" flam;
   let rec loop flam =

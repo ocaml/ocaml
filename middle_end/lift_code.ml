@@ -14,7 +14,7 @@
 module A = Simple_value_approx
 module C = Inlining_cost
 
-type lifter = Flambda.t -> Flambda.t
+type lifter = Flambda.program -> Flambda.program
 
 let lift_lets tree =
   let rec aux (expr : Flambda.t) : Flambda.t =
@@ -23,7 +23,8 @@ let lift_lets tree =
       Let (let_kind2, v2, def2, aux (Flambda.Let (let_kind1, v1, Expr body2, body1)))
     | e -> e
   in
-  Flambda_iterators.map aux (fun (named : Flambda.named) -> named) tree
+  Flambda_iterators.map_exprs_at_toplevel_of_program tree ~f:(fun tree ->
+    Flambda_iterators.map aux (fun (named : Flambda.named) -> named) tree)
 
 let lifting_helper exprs ~evaluation_order ~create_body ~name =
   let vars, lets =

@@ -11,7 +11,7 @@
 (*                                                                        *)
 (**************************************************************************)
 
-type lifter = Flambda.t -> Flambda.t
+type lifter = Flambda.program -> Flambda.program
 
 (** Lift [let] bindings to attempt to increase the length of scopes, as an
     aid to further optimizations.  For example:
