@@ -29,9 +29,3 @@ val run
   -> backend:(module Backend_intf.S)
   -> Flambda.program
   -> Flambda.program
-
-val run_expr
-   : never_inline:bool
-  -> backend:(module Backend_intf.S)
-  -> Flambda.t
-  -> Flambda.t

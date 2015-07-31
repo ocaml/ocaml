@@ -707,12 +707,13 @@ and simplify_named env r (tree : Flambda.named) : Flambda.named * R.t =
     let approx =
       match E.find_symbol_exn env sym with
       | exception Not_found ->
-        let module Backend = (val (E.backend env) : Backend_intf.S) in
-        (* CR mshinwell for mshinwell: Is there a reason we cannot use
-           [simplify_named_using_approx_and_env] here? *)
-        Backend.import_symbol sym
+        Misc.fatal_errorf "Symbol %a is unbound.  Maybe there is a missing \
+            [Let_symbol] or [Import_symbol]?"
+          Symbol.print sym
       | approx -> approx
     in
+    (* CR mshinwell for mshinwell: Check this is the correct simplification
+       function to use *)
     simplify_named_using_approx r tree approx
   | Const cst -> tree, ret r (simplify_const cst)
   | Allocated_const cst -> tree, ret r (approx_for_allocated_const cst)
@@ -1100,17 +1101,21 @@ let rec simplify_program env r (program : Flambda.program)
         let module Backend = (val (E.backend env) : Backend_intf.S) in
         (* CR mshinwell for mshinwell: Is there a reason we cannot use
            [simplify_named_using_approx_and_env] here? *)
-        let approx = Backend.import_symbol sym in
+        let approx = Backend.import_symbol symbol in
         E.add_symbol env symbol approx, approx
       | approx -> env, approx
     in
     let r = ret r approx in
     let program, r = simplify_program env r program in
     Import_symbol (symbol, program), r
-    constant_defining_expr, ret r approx
-  | Let_global (ident, defining_expr) ->
+  | Let_global (ident, defining_expr, program) ->
     let defining_expr, r = simplify env r defining_expr in
-    Let_global (ident, defining_expr), r
+    let module Backend = (val (E.backend env) : Backend_intf.S) in
+    let symbol = Backend.symbol_for_global' ident in
+    let env = E.add_symbol env symbol (R.approx r) in
+    let program, r = simplify_program env r program in
+    Let_global (ident, defining_expr, program), r
+  | End -> End, r
 
 (* CR mshinwell for pchambart: Change to a "-dinlining-benefit" option? *)
 let debug_benefit =
@@ -1136,22 +1141,8 @@ let run ~never_inline ~backend program =
       Static_exception.Set.print (R.used_staticfail r)
       Flambda.print_program result)
   end;
-(*
-  let free_variables = Free_variables.calculate expr in
-  if not (Variable.Set.for_all is_a_constant free_variables) then begin
-    Misc.fatal_errorf "Lift_constants: toplevel expression contains free \
-        variables that are not constant: %a"
-      Flambda.print expr
-  end;
-*)
   assert (Static_exception.Set.is_empty (R.used_staticfail r));
   if debug_benefit then
     Format.printf "benefit:@ %a@."
       B.print (R.benefit r);
   result
-
-(* CR mshinwell: address CR in middle_end.ml then remove this *)
-let run_expr ~never_inline ~backend expr =
-  match run ~never_inline ~backend (Flambda.Entry_point expr) with
-  | Entry_point expr -> expr
-  | _ -> assert false
