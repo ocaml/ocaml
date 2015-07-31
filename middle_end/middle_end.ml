@@ -14,10 +14,12 @@
 let verbose = try ignore (Sys.getenv "FLAMBDA_VERBOSE"); true with _ -> false
 
 let middle_end ppf ~sourcefile ~prefixname ~backend ~exported_fields lam =
+  (* CR mshinwell: consider whether everything should run on
+     [Flambda.program] *)
   let pass_number = ref 0 in
   let round_number = ref 0 in
   let check flam =
-    try Flambda_invariants.check_exn flam
+    try Flambda_invariants.check_exn (Flambda.Entry_point flam)
     with exn ->
       Misc.fatal_errorf "After Flambda pass %d, round %d:@.%s:@.%a"
         !pass_number !round_number (Printexc.to_string exn)
@@ -59,8 +61,7 @@ let middle_end ppf ~sourcefile ~prefixname ~backend ~exported_fields lam =
       flam
       ++ Lift_code.lift_lets
       ++ Remove_unused_closure_vars.remove_unused_closure_variables
-      ++ Inline_and_simplify.run ~never_inline:false ~backend
-        ?symbol_defining_exprs:None
+      ++ Inline_and_simplify.run_expr ~never_inline:false ~backend
       ++ Lift_code.lift_lets
       ++ Remove_unused_closure_vars.remove_unused_closure_variables
       ++ Remove_unused_arguments.separate_unused_arguments_in_closures
@@ -69,12 +70,10 @@ let middle_end ppf ~sourcefile ~prefixname ~backend ~exported_fields lam =
       (* CR mshinwell: the lifting of sets of closures seemed redundant,
          because we always have to generate a [let] with them now.  Do we
          need to insert something else here (lift_lets)? *)
-      ++ Inline_and_simplify.run ~never_inline:true ~backend
-        ?symbol_defining_exprs:None
+      ++ Inline_and_simplify.run_expr ~never_inline:true ~backend
       ++ Remove_unused_closure_vars.remove_unused_closure_variables
       ++ Ref_to_variables.eliminate_ref
-      ++ Inline_and_simplify.run ~never_inline:true ~backend
-        ?symbol_defining_exprs:None
+      ++ Inline_and_simplify.run_expr ~never_inline:true ~backend
       ++ loop
   in
   let flam = loop flam in

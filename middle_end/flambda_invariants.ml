@@ -450,6 +450,14 @@ let every_static_exception_is_caught_at_a_single_position flam =
 
 let check_exn ?(kind=Normal) ?(cmxfile=false) flam =
   try
+    (* CR mshinwell: think about right-hand sides of [Let_symbol] *)
+    let rec find_entry_point (program : Flambda.program) =
+      match program with
+      | Let_symbol (_symbol, _constant_defining_value, program) ->
+        find_entry_point program
+      | Entry_point expr -> expr
+    in
+    let flam = find_entry_point flam in
     variable_invariants flam;
     primitive_invariants flam ~no_access_to_global_module_identifiers:cmxfile;
     every_static_exception_is_caught flam;

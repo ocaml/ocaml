@@ -1073,10 +1073,10 @@ let rec simplify_program env r (program : Flambda.program)
           E.find_symbol_exn env set_of_closures_symbol
         in
         let closure_approx =
-          match A.check_approx_for_set_of_closures with
+          match A.check_approx_for_set_of_closures set_of_closures_approx with
           | Ok (_, value_set_of_closures) ->
             let closure_id =
-              freshen_and_check_closure_id value_set_of_closures closure_id
+              A.freshen_and_check_closure_id value_set_of_closures closure_id
             in
             A.value_closure value_set_of_closures closure_id
           | Unresolved _symbol ->
@@ -1134,3 +1134,9 @@ let run ~never_inline ~backend program =
     Format.printf "benefit:@ %a@."
       B.print (R.benefit r);
   result
+
+(* CR mshinwell: address CR in middle_end.ml then remove this *)
+let run_expr ~never_inline ~backend expr =
+  match run ~never_inline ~backend (Flambda.Entry_point expr) with
+  | Entry_point expr -> expr
+  | _ -> assert false
