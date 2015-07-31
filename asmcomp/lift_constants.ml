@@ -11,25 +11,13 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(** Lift allocated constants out of an expression and assign them to
-    symbols.
-   * First collect all the constant declarations, separating structured
-     constants and constant sets of closures.
-   * Then share equal constants.
-     This is done by traversing the structured constants in inverse
-     topological order and replacing every existing constant by the previous
-     one. (Note: this does not guaranty maximal sharing in cycles)
-   * Replace every defining expression of a constant variable, where the
-     defining expression was an allocated constant, with the corresponding
-     symbol.
-*)
-
 (** To be independent of the order of traversal we do a first pass that
     assigns symbols to all [let]-bound variables that are known to be
     constant.  This either involves generating new symbols, or exploiting
     fixed mappings between (e.g.) closure IDs and symbol names.  At the same
     time we note down the mapping from set of closures IDs to symbols. *)
-let assign_symbols_to_constant_let_bound_variables ~expr ~inconstants =
+let assign_symbols_to_constant_let_bound_variables ~expr
+      ~(inconstants : Inconstant_idents.result) =
   let fresh_symbol var =
     Compilenv.new_const_symbol' ~name:(Variable.unique_name var) ()
   in
@@ -78,9 +66,10 @@ let assign_symbols_to_constant_let_bound_variables ~expr ~inconstants =
 
 (** Produce [Flambda.constant_defining_value]s for all of the constants whose
     definitions are to be lifted.  These are indexed by [Symbol]s. *)
-let compute_definitions_of_symbols ~expr ~inconstants ~var_to_symbol_map =
+let compute_definitions_of_symbols ~expr ~(inconstants : Inconstants.result)
+      ~var_to_symbol_map =
   let constant_tbl : Flambda.named Symbol.Tbl.t = Symbol.Tbl.create 42 in
-  let describe_if_constant var (named : Flambda.named) =
+  let compute_definition var (named : Flambda.named) =
     if not (Variable.Set.mem var inconstants.id) then begin
       let find_symbol var = Variable.Map.find var_to_symbol_map var in
       match named with
@@ -109,15 +98,21 @@ let compute_definitions_of_symbols ~expr ~inconstants ~var_to_symbol_map =
     end
   in
   Flambda_iterators.iter_all_let_and_let_rec_bindings expr
-    ~f:describe_if_constant;
+    ~f:compute_definition;
   Symbol.Tbl.fold Symbol.Map.add constant_tbl Symbol.Map.empty
 
+(** Compute which constants have equal definitions.  At the same time compute
+    the order in which to emit [Let_symbol] bindings. *)
 let share_constants ~constant_map:map ~compare_name ~aliases =
-  let constant_graph (map : constant_defining_value Variable.Map.t) =
-    Variable.Map.map (fun (const : constant_defining_value) ->
+  let constant_graph map =
+    Symbol.Map.map (fun (const : Flambda.constant_defining_value) ->
         match const with
+        | Allocated_const _ -> Variable.Set.empty
         | Block (_, fields) -> Variable.Set.of_list fields
-        | constant_defining_value _ | Symbol _ -> Variable.Set.empty)
+        | Set_of_closures _ ->
+          (* CR mshinwell: is this correct? *)
+          Variable.Set.empty
+        | Project_closure _ -> Variable.Set.empty)
       map
   in
   let rewrite_constant_aliases map aliases =
@@ -213,27 +208,7 @@ let share_constants ~constant_map:map ~compare_name ~aliases =
       declared_constants_kind
       equal_constants_kind
   in
-  let kind =
-    Variable.Map.of_set (fun var ->
-        let alias =
-          try Variable.Map.find var aliases with
-          | Not_found -> var
-        in
-        Variable.Map.find alias declared_and_equal_constants_kind)
-      all_constants
-  in
-  let descr =
-    let find_kind var =
-      try Variable.Map.find var kind with
-      | Not_found ->
-        Format.printf "missing %a@."
-          Variable.print var;
-        raise Not_found
-    in
-    List.map (fun (symbol, const) ->
-        symbol, Allocated_constants.map ~f:find_kind) descr
-  in
-  descr, kind
+  ...
 
 (** Substitute the defining expressions of all constant variables with the
     corresponding symbols.  Then bind all remaining free variables of the

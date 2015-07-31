@@ -26,6 +26,7 @@
    mshinwell: this CR may be out of date now
 *)
 
+(* CR mshinwell: add comment *)
 val lift_constants
    : Flambda.t
   -> backend:(module Backend_intf.S)

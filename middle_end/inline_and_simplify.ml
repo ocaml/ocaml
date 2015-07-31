@@ -1093,6 +1093,17 @@ let rec simplify_program env r (program : Flambda.program)
     let r = ret r approx in
     let program, r = simplify_program env r program in
     Let_symbol (symbol, constant_defining_value, program), r
+  | Import_symbol symbol ->
+    let approx =
+      match E.find_symbol_exn env symbol with
+      | exception Not_found ->
+        let module Backend = (val (E.backend env) : Backend_intf.S) in
+        (* CR mshinwell for mshinwell: Is there a reason we cannot use
+           [simplify_named_using_approx_and_env] here? *)
+        Backend.import_symbol sym
+      | approx -> approx
+    in
+    constant_defining_expr, ret r approx
   | Entry_point t ->
     let t, r = simplify env r t in
     Entry_point t, r

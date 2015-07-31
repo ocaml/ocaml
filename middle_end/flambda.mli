@@ -291,6 +291,7 @@ end
 (** A "program" is the contents of one compilation unit. *)
 type program =
   | Let_symbol of Symbol.t * constant_defining_value * program
+  | Import_symbol of Symbol.t
   | Entry_point of t
 
 val free_variables
