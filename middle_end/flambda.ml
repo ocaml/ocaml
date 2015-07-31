@@ -134,7 +134,8 @@ and constant_defining_value =
 
 type program =
   | Let_symbol of Symbol.t * constant_defining_value * program
-  | Entry_point of t
+  | Import_symbol of Symbol.t * program
+  | Let_global of Ident.t * t * t
 
 let fprintf = Format.fprintf
 module Int = Ext_types.Int
@@ -384,7 +385,14 @@ let rec print_program ppf (program : program) =
       print_constant_defining_value constant_defining_value;
     let program = letbody body in
     fprintf ppf ")@]@ %a)@]" print_program program
-  | Entry_point t -> print ppf t
+  | Import_symbol (symbol, program) ->
+    fprintf ppf "@[(import_symbol %a (@]" Symbol.print symbol;
+    fprintf ppf ")@]@ %a)@]" print_program program
+  | Let_global (ident, defining_expr, body) ->
+    fprintf ppf "@[<2>(let_global@ @[<hv 1>(@[<2>%a@ %a@]"
+      Ident.print ident
+      print defining_expr;
+    fprintf ppf ")@]@ %a)@]" print body
 
 (* CR mshinwell: this doesn't seem to cope with shadowed identifiers
    properly.  Check the original version.  Why don't we just do the

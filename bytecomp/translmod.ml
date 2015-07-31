@@ -482,15 +482,21 @@ let _ =
 
 (* Compile an implementation *)
 
-let transl_implementation module_name (str, cc) =
+let transl_implementation_native module_name (str, cc) =
   reset_labels ();
   primitive_declarations := [];
   let module_id = Ident.create_persistent module_name in
-  Lprim(Psetglobal module_id,
-        [transl_label_init
-            (transl_struct [] cc (global_path module_id) str)])
+  module_id,
+    transl_label_init
+      (transl_struct [] cc (global_path module_id) str)
 
+let transl_implementation module_name (str, cc) =
+  let module_id, module_initializer =
+    transl_implementation_native module_name (str, cc)
+  in
+  Lprim (Psetglobal module_id, [module_initializer])
 
+(*
 (* Build the list of value identifiers defined by a toplevel structure
    (excluding primitive declarations). *)
 
@@ -788,6 +794,7 @@ let transl_store_implementation module_name (str, restr) =
     | Tcoerce_alias _ -> assert false
   in
   (size, exported), lam
+*)
 
 (* Compile a toplevel phrase *)
 
@@ -976,6 +983,6 @@ let () =
 
 let reset () =
   primitive_declarations := [];
-  transl_store_subst := Ident.empty;
+(*  transl_store_subst := Ident.empty;*)
   toploop_ident.Ident.flags <- 0;
   aliased_idents := Ident.empty
