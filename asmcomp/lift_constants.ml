@@ -112,36 +112,36 @@ let compute_definitions_of_symbols ~expr ~inconstants ~var_to_symbol_map =
     ~f:describe_if_constant;
   Symbol.Tbl.fold Symbol.Map.add constant_tbl Symbol.Map.empty
 
-let constant_graph (map : constant_defining_value Variable.Map.t) =
-  Variable.Map.map (fun (const : constant_defining_value) ->
-      match const with
-      | Block (_, fields) -> Variable.Set.of_list fields
-      | constant_defining_value _ | Symbol _ -> Variable.Set.empty)
-    map
-
-let rewrite_constant_aliases map aliases =
-  let subst var =
-    try Variable.Map.find var aliases with
-    | Not_found -> var
-  in
-  let subst_block (const : constant_defining_value)
-        : constant_defining_value =
-    match const with
-    | Block (tag, fields) -> Block (tag, List.map subst fields)
-    | constant_defining_value _ | Symbol _ -> const
-  in
-  Variable.Map.map subst_block map
-
-let all_constants map aliases =
-  let allocated_constants = Variable.Map.keys map in
-  let aliased_constants =
-    Variable.Map.keys
-      (Variable.Map.filter (fun _var alias -> Variable.Map.mem alias map)
-        aliases)
-  in
-  Variable.Set.union allocated_constants aliased_constants
-
 let share_constants ~constant_map:map ~compare_name ~aliases =
+  let constant_graph (map : constant_defining_value Variable.Map.t) =
+    Variable.Map.map (fun (const : constant_defining_value) ->
+        match const with
+        | Block (_, fields) -> Variable.Set.of_list fields
+        | constant_defining_value _ | Symbol _ -> Variable.Set.empty)
+      map
+  in
+  let rewrite_constant_aliases map aliases =
+    let subst var =
+      try Variable.Map.find var aliases with
+      | Not_found -> var
+    in
+    let subst_block (const : constant_defining_value)
+          : constant_defining_value =
+      match const with
+      | Block (tag, fields) -> Block (tag, List.map subst fields)
+      | constant_defining_value _ | Symbol _ -> const
+    in
+    Variable.Map.map subst_block map
+  in
+  let all_constants map aliases =
+    let allocated_constants = Variable.Map.keys map in
+    let aliased_constants =
+      Variable.Map.keys
+        (Variable.Map.filter (fun _var alias -> Variable.Map.mem alias map)
+          aliases)
+    in
+    Variable.Set.union allocated_constants aliased_constants
+  in
   let module Symbol_SCC = Sort_connected_components.Make (Symbol) in
   let all_constants = all_constants map aliases in
   let map = rewrite_constant_aliases map aliases in
@@ -235,78 +235,31 @@ let share_constants ~constant_map:map ~compare_name ~aliases =
   in
   descr, kind
 
-let replace_constant_defining_exprs_with_symbols expr aliases
-      set_of_closures_tbl constant_descr
-      (assigned_symbols : constant Variable.Map.t)
-      ~backend =
-  let is_a_constant var =
-    let var =
-      try Variable.Map.find var aliases with
-      | Not_found -> var
-    in
-    Variable.Map.mem var kind
+(** Substitute the defining expressions of all constant variables with the
+    corresponding symbols.  Then bind all remaining free variables of the
+    expression, which must be constant, to their corresponding symbols. *)
+let replace_constant_defining_exprs_with_symbols ~expr ~var_to_symbol_map =
+  let is_constant var = Variable.Map.mem var var_to_symbol_map in
+  let symbol_for_var var = Variable.Map.find var var_to_symbol_map in
+  let replace var defining_expr : Flambda.named =
+    match symbol_for_var var with
+    | symbol -> Symbol symbol
+    | exception Not_found -> defining_expr  (* [var] is inconstant *)
   in
-  let replacement_for_defining_expr var : Flambda.named =
-    let var =
-      try Variable.Map.find var aliases with
-      | Not_found -> var
-    in
-    Variable.Tbl.find var var_to_symbol_tbl
+  let expr =
+    Flambda_iterators.map_all_let_and_let_rec_bindings expr ~f:replace
   in
-  let replace_constant_defining_exprs (expr : Flambda.t) : Flambda.t =
-    match expr with
-    | Let (_, var, _defining_expr, body) when is_a_constant var ->
-      Let (Immutable, var, replacement_for_defining_expr var, body)
-    | Let_rec (defs, body) ->
-      let defs =
-        List.map (fun (var, defining_expr) ->
-            let defining_expr =
-              if is_a_constant var then replacement_for_defining_expr var
-              else defining_expr
-            in
-            var, defining_expr)
-          defs
-      in
-      Let_rec (defs, body)
-    | Let _ | Var _ | Apply _ | Send _ | Assign _ | If_then_else _ | Switch _
-    | String_switch _ | Static_raise _ | Static_catch _ | Try_with _
-    | While _ | For _ | Proved_unreachable -> expr
-  in
-  let variable_definitions =
-    Variable.Map.fold assigned_symbols (fun symbol -> Symbol symbol)
-  in
-  let symbol_definitions =
-    Symbol.Map.disjoint_union
-      (Symbol.Map.map (fun const ->
-          constant_defining_value_to_named const ~name_to_var:(fun symbol ->
-              ...))  (* lookup in reverse [assigned_symbols] *)
-        constant_descr)
-      (Symbol.Map.map (fun set -> Flambda.Set_of_closures set)
-        set_of_closures_map)
-  in
-  let rewrite_expr expr =
-    Flambda_iterators.map_expr replace_constant_defining_exprs
-  in
-  let expr = rewrite_expr expr in
-  let bind_constant var body : Flambda.t =
-    assert (is_a_constant var);
-    Let (Immutable, var, replacement_for_defining_expr var, body)
-  in
-  let expr = Variable.Set.fold bind_constant free_variables expr in
-  let set_of_closures_map =
-    Symbol.Tbl.fold (fun symbol set_of_closures map ->
-        let set_of_closures =
-          Flambda_iterators.map_function_bodies set_of_closures ~f:rewrite_expr
-        in
-        Symbol.Map.add symbol set_of_closures map)
-      set_of_closures_tbl Symbol.Map.empty
-  in
-  Format.eprintf "lift_constants output:@ %a\n" Flambda.print expr;
-  { expr;
-    constant_descr;
-    assigned_symbols;
-    set_of_closures_map;
-  }
+  Variable.Set.fold (fun free_var expr ->
+      if not (is_constant free_var) then begin
+        Misc.fatal_errorf "The expression formed by replacing definitions of \
+            constants by their corresponding symbols contains free variables \
+            that are not known to be constant: free_vars = %a: %a"
+          Variable.Set.print free_vars
+          Flambda.print expr
+      end
+      Let (Immutable, free_var, Symbol (symbol_for_var free_var), expr))
+    (Free_variables.calculate expr)
+    expr
 
 (** Add [Let_symbol] bindings for symbols corresponding to constants whose
     definitions we have lifted. *)
@@ -334,12 +287,10 @@ let lift_constants expr ~backend =
   in
   let constants, kind = share_constants ~constant_map in
   let with_symbols =
-    replace_constant_defining_exprs_with_symbols expr aliases
-      set_of_closures_tbl constants kind ~backend
+    replace_constant_defining_exprs_with_symbols ~expr ~var_to_symbol_map
   in
   let program =
-    add_definitions_of_symbols ~expr:with_symbols
-      ~constant_defining_values
+    add_definitions_of_symbols ~expr:with_symbols ~constant_defining_values
   in
   (* We need to rerun [Inline_and_simplify] because strings and float arrays
      (bindings of which would have had unknown approximations during
@@ -347,4 +298,6 @@ let lift_constants expr ~backend =
      constant will now have been assigned symbols.  Symbols are immutable,
      meaning that we should be able to cause more sets of closures to
      become closed. *)
+  Format.eprintf "lift_constants before simplify:@ %a\n"
+    Flambda.print_program program;
   Inline_and_simplify.run program ~never_inline:true ~backend
