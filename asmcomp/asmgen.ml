@@ -119,22 +119,18 @@ let compile_genfuns ppf f =
     (Cmmgen.generic_functions true [Compilenv.current_unit_infos ()])
 
 let prep_flambda_for_export ppf flam ~backend =
-  let lifted_constants = Lift_constants.lift_constants flam ~backend in
-  let export = Build_export_info.build_export_info lifted_constants in
+  let program = Lift_constants.lift_constants flam ~backend in
+
+  let export = Build_export_info.build_export_info program in
   (* Compilenv.set_export_info export; *)
   if !Clflags.dump_flambda
   then begin
     Format.fprintf ppf "After Build_export_info:@ %a@."
-      Flambda.print lifted_constants.Lift_constants.expr;
-    Symbol.Map.iter (fun sym set_of_closures ->
-        Format.fprintf ppf "sym: %a@ %a@."
-          Symbol.print sym
-          Flambda.print_set_of_closures set_of_closures)
-      lifted_constants.Lift_constants.set_of_closures_map;
-    (* TODO: print structured constants *)
+      Flambda.print_program program
   end;
   let kind = Flambda_invariants.Lifted in
-  Flambda_invariants.check_exn ~kind lifted_constants.Lift_constants.expr;
+  Flambda_invariants.check_exn ~kind program;
+(*
   Symbol.Map.iter (fun _ set_of_closures ->
       let var = Variable.create "dummy" in
       let expr : Flambda.t =
@@ -142,7 +138,8 @@ let prep_flambda_for_export ppf flam ~backend =
       in
       Flambda_invariants.check_exn ~kind ~cmxfile:true expr)
     lifted_constants.Lift_constants.set_of_closures_map;
-  lifted_constants, export
+*)
+  program, export
 
 let compile_unit ~sourcefile _output_prefix asm_filename keep_asm obj_filename gen =
   let create_asm = keep_asm || not !Emitaux.binary_backend_available in

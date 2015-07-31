@@ -1,6 +1,6 @@
 
-(* This analysis finds for variables that could be constants, to which constant
-   they can be alias.
+(* This analysis finds for variables that could be constant, of which constants
+   they can be aliases.
 
    This works by accumulating a set of equations, then propagating them.
 

@@ -24,37 +24,17 @@
      symbol.
 *)
 
-type result = {
-  expr : Flambda.t;
-  constant_descr : Symbol.t Allocated_const.t Symbol.Map.t;
-  assigned_symbols : Symbol.t Variable.Map.t;
-  set_of_closures_map : Flambda.set_of_closures Symbol.Map.t;
-}
-
-module Constant_defining_value_map = Map.Make (struct
-  type t = constant_defining_value
-
-end)
-
-let fresh_symbol var =
-  Compilenv.new_const_symbol' ~name:(Variable.unique_name var) ()
-
-let find_and_describe_allocated_constants expr =
-  let inconstants =
-    Inconstant_idents.inconstants expr
-      ~for_clambda:true
-      (* CR pchambart: get rid of this.
-         This should be available in backend
-         mshinwell: what is "this"? *)
-      ~compilation_unit:(Compilenv.current_unit ())
+(** To be independent of the order of traversal we do a first pass that
+    assigns symbols to all [let]-bound variables that are known to be
+    constant.  This either involves generating new symbols, or exploiting
+    fixed mappings between (e.g.) closure IDs and symbol names.  At the same
+    time we note down the mapping from set of closures IDs to symbols. *)
+let assign_symbols_to_constant_let_bound_variables ~expr ~inconstants =
+  let fresh_symbol var =
+    Compilenv.new_const_symbol' ~name:(Variable.unique_name var) ()
   in
   let var_to_symbol_tbl : Symbol.t Variable.Tbl.t = Variable.Tbl.create 42 in
   let set_of_closures_id_to_symbol_tbl = Set_of_closures_id.Tbl.create 42 in
-  (* To be independent of the order of traversal we do a first pass that
-     assigns symbols to all [let]-bound variables that are known to be
-     constant.  This either involves generating new symbols, or exploiting
-     fixed mappings between (e.g.) closure IDs and symbol names.  At the same
-     time we note down the mapping from set of closures IDs to symbols. *)
   let assign_symbol var (named : Flambda.named) =
     match named with
     | Allocated_const _ | Prim (Pmakeblock (_, _), _, _) ->
@@ -92,33 +72,17 @@ let find_and_describe_allocated_constants expr =
       Misc.fatal_errorf "Primitive not expected to be constant: @.%a@."
         Flambda.print_named named
     | Symbol _ | Const _ | Project_var _ | Expr _ -> ()
-(*
-    | Move_within_set_of_closures { closure; start_from; move_to; } ->
-      assert (not (Variable.Set.mem closure inconstants.id));
-    | Project_closure { set_of_closures; closure_id; } ->
-      (* The set of closures being projected from must be a constant,
-         since the [Project_closure] expression is constant.  As such we
-         must have a symbol for it. *)
-      assert (not (Variable.Set.mem set_of_closures inconstants.id));
-      let set_of_closures_symbol =
-        Variable.Map.find set_of_closures.function_decls.set_of_closures_id
-          set_of_closures_id_to_symbol_tbl
-      in
-      (* The symbol corresponding to the closure is uniquely determined
-         from the closure ID. *)
-      let symbol = Compilenv.closure_symbol closure_id in
-      define_symbol symbol
-        (Project_closure (set_of_closures_symbol, closure_id))
-*)
   in
   Flambda_iterators.iter_all_let_and_let_rec_bindings expr ~f:assign_symbol;
-  (* The second pass now produces [Flambda.constant_defining_value]s for
-     all of the constants whose definitions are to be lifted.  These are
-     indexed by [Symbol]s. *)
+  Variable.Tbl.fold Variable.Map.add constant_tbl Variable.Map.empty
+
+(** Produce [Flambda.constant_defining_value]s for all of the constants whose
+    definitions are to be lifted.  These are indexed by [Symbol]s. *)
+let compute_definitions_of_symbols ~expr ~inconstants ~var_to_symbol_map =
   let constant_tbl : Flambda.named Symbol.Tbl.t = Symbol.Tbl.create 42 in
   let describe_if_constant var (named : Flambda.named) =
     if not (Variable.Set.mem var inconstants.id) then begin
-      let find_symbol var = Variable.Tbl.find var_to_symbol_tbl var in
+      let find_symbol var = Variable.Map.find var_to_symbol_map var in
       match named with
       | Allocated_const const ->
         Symbol.Tbl.add constant_tbl (find_symbol var) (Allocated_const const)
@@ -177,7 +141,7 @@ let all_constants map aliases =
   in
   Variable.Set.union allocated_constants aliased_constants
 
-let constant_sharing ~constant_map:map ~compare_name ~aliases =
+let share_constants ~constant_map:map ~compare_name ~aliases =
   let module Symbol_SCC = Sort_connected_components.Make (Symbol) in
   let all_constants = all_constants map aliases in
   let map = rewrite_constant_aliases map aliases in
@@ -198,6 +162,8 @@ let constant_sharing ~constant_map:map ~compare_name ~aliases =
      below) computes approximations of the defining values of the constants,
      it can perform a single traversal and be sure that there will be no
      undefined inter-constant references. *)
+  (* CR mshinwell: we should add a check to make sure our Let_symbol
+     defining values don't accidentally reference undefined symbols *)
   let constants = ref [] in
   let equal_constants = ref Variable.Map.empty in
   let find_and_add var cst =
@@ -306,11 +272,6 @@ let replace_constant_defining_exprs_with_symbols expr aliases
     | String_switch _ | Static_raise _ | Static_catch _ | Try_with _
     | While _ | For _ | Proved_unreachable -> expr
   in
-  (* In order to run [Inline_and_simplify], below, we need the defining values
-     of symbols we have assigned to constants.  Since these values may
-     reference other constants, which must be done using [Variable.t]s (due
-     to the type of [Flambda.named]), we must also provide bindings for all
-     such variables to symbols. *)
   let variable_definitions =
     Variable.Map.fold assigned_symbols (fun symbol -> Symbol symbol)
   in
@@ -324,24 +285,12 @@ let replace_constant_defining_exprs_with_symbols expr aliases
         set_of_closures_map)
   in
   let rewrite_expr expr =
-    expr
-    |> Flambda_iterators.map_expr replace_constant_defining_exprs
-    (* We need to rerun [Inline_and_simplify] because strings and float arrays
-       (bindings of which would have had unknown approximations during
-       [Inline_and_simplify.simplify_free_variable]) that are now known to be
-       constant will now have been assigned symbols.  Symbols are immutable,
-       meaning that we should be able to cause more sets of closures to
-       become closed. *)
-    |> Inline_and_simplify.run ~never_inline:true ~backend
+    Flambda_iterators.map_expr replace_constant_defining_exprs
   in
   let expr = rewrite_expr expr in
   let bind_constant var body : Flambda.t =
     assert (is_a_constant var);
-    match get_kind var with
-    | Int i -> Let (Immutable, var, Const (Const_base (Const_int i)), body)
-    | Const_pointer p -> Let (Immutable, var, Const (Const_pointer p), body)
-    | Symbol s -> Let (Immutable, var, Symbol s, body)
-    | exception Not_found -> body
+    Let (Immutable, var, replacement_for_defining_expr var, body)
   in
   let expr = Variable.Set.fold bind_constant free_variables expr in
   let set_of_closures_map =
@@ -359,16 +308,43 @@ let replace_constant_defining_exprs_with_symbols expr aliases
     set_of_closures_map;
   }
 
+(** Add [Let_symbol] bindings for symbols corresponding to constants whose
+    definitions we have lifted. *)
+let add_definitions_of_symbols ~expr ~constant_defining_values =
+  List.fold_left (fun expr symbol constant_defining_value ->
+      Flambda.Let_symbol (symbol, constant_defining_value, expr))
+    (Flambda.Entry_point expr)
+    (List.rev constant_defining_values)
+
 let lift_constants expr ~backend =
   Format.eprintf "lift_constants input:@ %a\n" Flambda.print expr;
-  let constant_map, set_of_closures_tbl =
-    find_and_describe_allocated_constants expr
+  let inconstants =
+    Inconstant_idents.inconstants expr
+      ~for_clambda:true
+      (* CR pchambart: get rid of this.
+         This should be available in backend
+         mshinwell: what is "this"? *)
+      ~compilation_unit:(Compilenv.current_unit ())
   in
-  let aliases = Alias_analysis.run expr in
-  let constants, kind =
-    Share_constants.constant_sharing ~constant_map
-      ~compare_name:Variable.compare
-      ~aliases
+  let var_to_symbol_map =
+    assign_symbols_to_constant_let_bound_variables ~expr ~inconstants
   in
-  replace_constant_defining_exprs_with_symbols expr aliases
-    set_of_closures_tbl constants kind ~backend
+  let constant_defining_values =
+    compute_definitions_of_symbols ~expr ~inconstants ~var_to_symbol_map
+  in
+  let constants, kind = share_constants ~constant_map in
+  let with_symbols =
+    replace_constant_defining_exprs_with_symbols expr aliases
+      set_of_closures_tbl constants kind ~backend
+  in
+  let program =
+    add_definitions_of_symbols ~expr:with_symbols
+      ~constant_defining_values
+  in
+  (* We need to rerun [Inline_and_simplify] because strings and float arrays
+     (bindings of which would have had unknown approximations during
+     [Inline_and_simplify.simplify_free_variable]) that are now known to be
+     constant will now have been assigned symbols.  Symbols are immutable,
+     meaning that we should be able to cause more sets of closures to
+     become closed. *)
+  Inline_and_simplify.run program ~never_inline:true ~backend
