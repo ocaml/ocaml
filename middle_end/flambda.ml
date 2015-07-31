@@ -130,6 +130,7 @@ and constant_defining_value =
   | Allocated_const of Allocated_const.t
   | Block of Tag.t * Symbol.t list
   | Set_of_closures of set_of_closures
+  | Closure of Symbol.t * Closure_id.t
 
 type program =
   | Let_symbol of Symbol.t * constant_defining_value * program
@@ -362,6 +363,9 @@ let print_constant_defining_value ppf (const : constant_defining_value) =
       print_fields fields
   | Set_of_closures set_of_closures ->
     fprintf ppf "Set_of_closures (%a)" print_set_of_closures set_of_closures
+  | Closure (set_of_closures, closure_id) ->
+    fprintf ppf "Closure (%a, %a)" Symbol.print set_of_closures
+      Closure_id.print closure_id
 
 let rec print_program ppf (program : program) =
   match program with
@@ -567,12 +571,22 @@ module Constant_defining_value = struct
       | Set_of_closures set1, Set_of_closures set2 ->
         Set_of_closures_id.compare set1.function_decls.set_of_closures_id
           set2.function_decls.set_of_closures_id
+      | Closure (set1, closure_id1), Closure (set2, closure_id2) ->
+        let c = Symbol.compare set1 set2 in
+        if c <> 0 then c
+        else Closure_id.compare closure_id1 closure_id2
       | Allocated_const _, Block _ -> -1
       | Allocated_const _, Set_of_closures _ -> -1
-      | Block _, Set_of_closures _ -> -1
+      | Allocated_const _, Closure _ -> -1
       | Block _, Allocated_const _ -> 1
+      | Block _, Set_of_closures _ -> -1
+      | Block _, Closure _ -> -1
       | Set_of_closures _, Allocated_const _ -> 1
       | Set_of_closures _, Block _ -> 1
+      | Set_of_closures _, Closure _ -> -1
+      | Closure _, Allocated_const _ -> 1
+      | Closure _, Block _ -> 1
+      | Closure _, Set_of_closures _ -> 1
   end
 
   include T

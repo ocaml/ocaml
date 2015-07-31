@@ -272,13 +272,13 @@ and for_loop = {
   body : t
 }
 
-(** Like [Flambda.named], except that instead of [Variable.t]s we have
-    [Symbol.t]s, and everything is a constant. *)
+(** Like a subset of [Flambda.named], except that instead of [Variable.t]s we
+    have [Symbol.t]s, and everything is a constant. *)
 and constant_defining_value =
   | Allocated_const of Allocated_const.t
   | Block of Tag.t * Symbol.t list
   | Set_of_closures of set_of_closures  (* [free_vars] must be empty *)
-  | Project_closure of Symbol.t * Closure_id.t
+  | Closure of Symbol.t * Closure_id.t
 
 module Constant_defining_value : sig
   type t = constant_defining_value
