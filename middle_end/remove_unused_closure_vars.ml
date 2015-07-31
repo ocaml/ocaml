@@ -13,7 +13,7 @@
 
 (** A variable in a closure can either be used by the closure itself
     or by an inlined version of the function. *)
-let remove_unused_closure_variables tree =
+let remove_unused_closure_variables_expr tree =
   let used_vars_within_closure, used_closure_ids =
     let used = ref Var_within_closure.Set.empty in
     let used_fun = ref Closure_id.Set.empty in
@@ -65,3 +65,6 @@ let remove_unused_closure_variables tree =
   in
   Flambda_iterators.map_named aux_named tree
 
+let remove_unused_closure_variables program =
+  Flambda_iterators.map_exprs_at_toplevel_of_program program
+    ~f:remove_unused_closure_variables_expr

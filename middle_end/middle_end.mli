@@ -18,6 +18,6 @@ val middle_end
   -> sourcefile:string
   -> prefixname:string
   -> backend:(module Backend_intf.S)
-  -> exported_fields:int
-  -> Lambda.lambda
-  -> Flambda.t
+  -> module_ident:Ident.t
+  -> module_initializer:Lambda.lambda
+  -> Flambda.program

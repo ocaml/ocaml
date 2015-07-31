@@ -25,5 +25,5 @@
 *)
 val separate_unused_arguments_in_closures
    : ?force:unit
-  -> Flambda.t
-  -> Flambda.t
+  -> Flambda.program
+  -> Flambda.program

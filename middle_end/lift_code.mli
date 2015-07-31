@@ -23,6 +23,8 @@ type lifter = Flambda.program -> Flambda.program
 *)
 val lift_lets : lifter
 
+val lift_lets_expr : Flambda.t -> Flambda.t
+
 (* CR mshinwell: Rename to [bind]?  Also see Flambda_utils.bind. *)
 (* [create_body] always receives the variables corresponding to [evaluate]
    in the same order.  However [evaluation_order] specifies in which order

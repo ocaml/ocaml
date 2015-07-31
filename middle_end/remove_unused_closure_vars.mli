@@ -11,5 +11,5 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(** Eliminate variables bound by a given closure that are not required. *)
-val remove_unused_closure_variables : Flambda.t -> Flambda.t
+(** Eliminate variables bound by closures that are not required. *)
+val remove_unused_closure_variables : Flambda.program -> Flambda.program

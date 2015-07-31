@@ -11,6 +11,7 @@
 (*                                                                        *)
 (**************************************************************************)
 
+(*
 let used_globals id tree =
   let used = ref Ext_types.Int.Set.empty in
   Flambda_iterators.iter_named (function
@@ -20,7 +21,7 @@ let used_globals id tree =
     tree;
   !used
 
-let remove_unused_globals tree =
+let remove_unused_globals_expr tree =
   let id = Compilation_unit.get_current_id_exn () in
   let used = used_globals id tree in
   Flambda_iterators.map_named (function
@@ -28,3 +29,4 @@ let remove_unused_globals tree =
         when not (Ext_types.Int.Set.mem pos used) -> Prim (Pignore, arg, dbg)
       | e -> e)
     tree
+*)

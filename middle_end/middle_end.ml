@@ -62,19 +62,20 @@ let middle_end ppf ~sourcefile ~prefixname ~backend ~module_ident
       flam
       ++ Lift_code.lift_lets
       ++ Remove_unused_closure_vars.remove_unused_closure_variables
-      ++ Inline_and_simplify.run_expr ~never_inline:false ~backend
+      ++ Inline_and_simplify.run ~never_inline:false ~backend
       ++ Lift_code.lift_lets
       ++ Remove_unused_closure_vars.remove_unused_closure_variables
       ++ Remove_unused_arguments.separate_unused_arguments_in_closures
         ?force:None
-      ++ Remove_unused_globals.remove_unused_globals
+      (* CR mshinwell: see CR in [Remove_unused_globals] *)
+      (*++ Remove_unused_globals.remove_unused_globals *)
       (* CR mshinwell: the lifting of sets of closures seemed redundant,
          because we always have to generate a [let] with them now.  Do we
          need to insert something else here (lift_lets)? *)
-      ++ Inline_and_simplify.run_expr ~never_inline:true ~backend
+      ++ Inline_and_simplify.run ~never_inline:true ~backend
       ++ Remove_unused_closure_vars.remove_unused_closure_variables
       ++ Ref_to_variables.eliminate_ref
-      ++ Inline_and_simplify.run_expr ~never_inline:true ~backend
+      ++ Inline_and_simplify.run ~never_inline:true ~backend
       ++ loop
   in
   let flam = loop flam in

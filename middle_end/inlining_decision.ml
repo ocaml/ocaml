@@ -86,7 +86,7 @@ let inline_non_recursive env r ~function_decls ~lhs_of_application
       R.map_benefit r (Inlining_cost.Benefit.(+) (R.benefit r_inlined))
     in
     (* CR mshinwell for pchambart: This [lift_lets] should have a comment. *)
-    let body = Lift_code.lift_lets body in
+    let body = Lift_code.lift_lets_expr body in
     let env =
       E.note_entering_closure env ~closure_id:closure_id_being_applied
         ~where:Inline_by_copying_function_body

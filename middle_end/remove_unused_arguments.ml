@@ -112,7 +112,7 @@ let candidate_for_spliting_for_unused_arguments
   in
   (not no_recursive_functions) || (number_of_non_stub_functions > 1)
 
-let separate_unused_arguments_in_closures ?force tree =
+let separate_unused_arguments_in_closures_expr ~force tree =
   let aux_named (named : Flambda.named) : Flambda.named =
     match named with
     | Set_of_closures set_of_closures ->
@@ -129,3 +129,7 @@ let separate_unused_arguments_in_closures ?force tree =
     | e -> e
   in
   Flambda_iterators.map_named aux_named tree
+
+let separate_unused_arguments_in_closures ?force program =
+  Flambda_iterators.map_exprs_at_toplevel_of_program program ~f:(fun expr ->
+    separate_unused_arguments_in_closures_expr ~force expr)
