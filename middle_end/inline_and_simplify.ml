@@ -1088,13 +1088,12 @@ let rec simplify_program env r (program : Flambda.program)
     let r = ret r approx in
     let program, r = simplify_program env r program in
     Import_symbol (symbol, program), r
-  | Initialize_symbol (ident, defining_expr, program) ->
+  | Initialize_symbol (symbol, defining_expr, program) ->
     let defining_expr, r = simplify env r defining_expr in
     let module Backend = (val (E.backend env) : Backend_intf.S) in
-    let symbol = Backend.symbol_for_global' ident in
     let env = E.add_symbol env symbol (R.approx r) in
     let program, r = simplify_program env r program in
-    Initialize_symbol (ident, defining_expr, program), r
+    Initialize_symbol (symbol, defining_expr, program), r
   | End -> End, r
 
 (* CR mshinwell for pchambart: Change to a "-dinlining-benefit" option? *)

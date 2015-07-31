@@ -45,7 +45,9 @@ let ignore_ident (_ : Ident.t) = ()
 
 exception Binding_occurrence_not_from_current_compilation_unit of Variable.t
 exception Binding_occurrence_of_variable_already_bound of Variable.t
+exception Binding_occurrence_of_symbol_already_bound of Symbol.t
 exception Unbound_variable of Variable.t
+exception Unbound_symbol of Symbol.t
 exception Assignment_to_non_mutable_variable of Variable.t
 exception Vars_in_function_body_not_bound_by_closure_or_params of
   Variable.Set.t * Flambda.set_of_closures * Variable.t
@@ -67,6 +69,7 @@ exception Declared_closure_from_another_unit of Compilation_unit.t
 exception Closure_id_is_bound_multiple_times of Closure_id.t
 exception Unbound_closure_ids of Closure_id.Set.t
 exception Unbound_vars_within_closures of Var_within_closure.Set.t
+exception Identifier_is_not_a_predefined_exception of Ident.t
 
 exception Flambda_invariants_failed
 
@@ -74,26 +77,35 @@ exception Flambda_invariants_failed
    overapplication" be an invariant throughout.  At the moment I think this is
    only true after [Inline_and_simplify] has split overapplications. *)
 
-let variable_invariants flam =
-  let add_binding_occurrence env var is_mutable =
+let variable_and_symbol_invariants flam =
+  let add_binding_occurrence (var_env, sym_env) var is_mutable =
     let compilation_unit = Compilation_unit.get_current_exn () in
     if not (Variable.in_compilation_unit compilation_unit var) then
       raise (Binding_occurrence_not_from_current_compilation_unit var)
-    else if Variable.Map.mem var env then
+    else if Variable.Map.mem var var_env then
       raise (Binding_occurrence_of_variable_already_bound var)
     else
-      Variable.Map.add var is_mutable env
+      Variable.Map.add var is_mutable var_env, sym_env
+  in
+  let add_binding_occurrence_of_symbol (var_env, sym_env) sym =
+    if Symbol.Set.mem sym sym_env then
+      raise (Binding_occurrence_of_symbol_already_bound sym)
+    else
+      var_env, Symbol.Set.add sym sym_env
   in
   let add_binding_occurrences env vars is_mutable =
     List.fold_left (fun env var ->
         add_binding_occurrence env var is_mutable)
       env vars
   in
-  let check_variable_is_bound env var =
-    if not (Variable.Map.mem var env) then raise (Unbound_variable var)
+  let check_variable_is_bound (var_env, _) var =
+    if not (Variable.Map.mem var var_env) then raise (Unbound_variable var)
   in
-  let check_variable_is_bound_and_get_mutability env var =
-    try Variable.Map.find var env
+  let check_symbol_is_bound (_, sym_env) sym =
+    if not (Symbol.Set.mem sym sym_env) then raise (Unbound_symbol sym)
+  in
+  let check_variable_is_bound_and_get_mutability (var_env, _) var =
+    try Variable.Map.find var var_env
     with Not_found -> raise (Unbound_variable var)
   in
   let check_variables_are_bound env vars =
@@ -181,10 +193,13 @@ let variable_invariants flam =
     | Proved_unreachable -> ()
   and loop_named env (named : Flambda.named) =
     match named with
-    | Symbol symbol -> ignore_symbol symbol
+    | Symbol symbol -> check_symbol_is_bound env symbol
     | Const const -> ignore_const const
     | Allocated_const const -> ignore_allocated_const const
-    | Predefined_exn ident -> ignore_ident ident
+    | Predefined_exn ident ->
+      if not (Ident.is_predef_exn ident) then begin
+        raise (Identifier_is_not_a_predefined_exception ident)
+      end
     | Set_of_closures ({ function_decls; free_vars; specialised_args; }
         as set_of_closures) ->
       let { Flambda.set_of_closures_id; funs; compilation_unit } =
@@ -281,7 +296,19 @@ let variable_invariants flam =
     | Expr expr ->
       loop env expr
   in
-  loop Variable.Map.empty flam
+  let rec loop_program env (program : Flambda.program) =
+    match program with
+    | Let_symbol (symbol, _, program)
+    | Import_symbol (symbol, program) ->
+      let env = add_binding_occurrence_of_symbol env symbol in
+      loop_program env program
+    | Initialize_symbol (symbol, init, program) ->
+      loop env init;
+      let env = add_binding_occurrence_of_symbol env symbol in
+      loop_program env program
+    | End -> ()
+  in
+  loop_program (Variable.Map.empty, Symbol.Set.empty) flam
 
 (* CR mshinwell: this function needs updating e.g. for Pgetglobal changes *)
 let primitive_invariants flam ~no_access_to_global_module_identifiers =
@@ -372,8 +399,8 @@ let used_closure_ids flam =
       used := Closure_id.Set.add move_to !used
     | Project_var { closure = _; closure_id; var = _ } ->
       used := Closure_id.Set.add closure_id !used
-    | Set_of_closures _
-    | Symbol _ | Const _ | Allocated_const _ | Prim _ | Expr _ -> ()
+    | Set_of_closures _ | Symbol _ | Const _ | Allocated_const _
+    | Predefined_exn _ | Prim _ | Expr _ -> ()
   in
   Flambda_iterators.iter_named f flam;
   !used
@@ -453,15 +480,7 @@ let every_static_exception_is_caught_at_a_single_position flam =
 
 let check_exn ?(kind=Normal) ?(cmxfile=false) flam =
   try
-    (* CR mshinwell: think about right-hand sides of [Let_symbol] *)
-    let rec find_entry_point (program : Flambda.program) =
-      match program with
-      | Let_symbol (_symbol, _constant_defining_value, program) ->
-        find_entry_point program
-      | Entry_point expr -> expr
-    in
-    let flam = find_entry_point flam in
-    variable_invariants flam;
+    variable_and_symbol_invariants flam;
     primitive_invariants flam ~no_access_to_global_module_identifiers:cmxfile;
     every_static_exception_is_caught flam;
     every_static_exception_is_caught_at_a_single_position flam;
@@ -483,8 +502,14 @@ let check_exn ?(kind=Normal) ?(cmxfile=false) flam =
       Format.eprintf ">> Binding occurrence of variable that was already \
             bound: %a"
         Variable.print var
+    | Binding_occurrence_of_symbol_already_bound sym ->
+      Format.eprintf ">> Binding occurrence of symbol that was already \
+            bound: %a"
+        Symbol.print sym
     | Unbound_variable var ->
       Format.eprintf ">> Unbound variable: %a" Variable.print var
+    | Unbound_symbol sym ->
+      Format.eprintf ">> Unbound symbol: %a" Symbol.print sym
     | Assignment_to_non_mutable_variable var ->
       Format.eprintf ">> Assignment to non-mutable variable: %a"
         Variable.print var
@@ -561,6 +586,10 @@ let check_exn ?(kind=Normal) ?(cmxfile=false) flam =
     | Prevapply_should_be_expanded ->
       Format.eprintf ">> The Prevapply primitive should never occur in an \
         Flambda expression (see closure_conversion.ml); use Apply instead"
+    | Identifier_is_not_a_predefined_exception ident ->
+      Format.eprintf ">> This identifier occurs within [Predefined_exn] \
+          yet it is not a predefined exception: %a"
+        Ident.print ident
     | exn -> raise exn
     end;
     Format.eprintf "\n@?";

@@ -445,8 +445,8 @@ and close_let_bound_expression t ?let_rec_ident let_bound_var env
 
 let lambda_to_flambda ~backend ~module_ident ~module_initializer =
   imported_symbols := Symbol.Set.empty;
+  let module Backend = (val backend : Backend_intf.S) in
   let t =
-    let module Backend = (val backend : Backend_intf.S) in
     { current_unit_id =
         Compilation_unit.get_persistent_ident
           (Compilation_unit.get_current_exn ());
@@ -457,4 +457,4 @@ let lambda_to_flambda ~backend ~module_ident ~module_initializer =
   let module_initializer = close t Env.empty module_initializer in
   Symbol.Set.fold (fun sym expr -> Flambda.Import_symbol (sym, expr))
     !imported_symbols
-    (Flambda.Let_global (module_symbol, module_initializer, End))
+    (Flambda.Initialize_symbol (module_symbol, module_initializer, End))
