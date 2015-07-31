@@ -278,7 +278,7 @@ and constant_defining_value =
   | Allocated_const of Allocated_const.t
   | Block of Tag.t * Symbol.t list
   | Set_of_closures of set_of_closures  (* [free_vars] must be empty *)
-  | Closure of Symbol.t * Closure_id.t
+  | Project_closure of Symbol.t * Closure_id.t
 
 module Constant_defining_value : sig
   type t = constant_defining_value

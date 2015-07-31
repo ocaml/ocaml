@@ -1067,6 +1067,26 @@ let rec simplify_program env r (program : Flambda.program)
         in
         ((Set_of_closures set_of_closures) : Flambda.constant_defining_value),
           R.approx r
+      | Project_closure (set_of_closures_symbol, closure_id) ->
+        (* No simplifications are necessary here. *)
+        let set_of_closures_approx =
+          E.find_symbol_exn env set_of_closures_symbol
+        in
+        let closure_approx =
+          match A.check_approx_for_set_of_closures with
+          | Ok (_, value_set_of_closures) ->
+            let closure_id =
+              freshen_and_check_closure_id value_set_of_closures closure_id
+            in
+            A.value_closure value_set_of_closures closure_id
+          | Unresolved _symbol ->
+            A.value_unknown  (* CR mshinwell: is this correct? *)
+          | Wrong ->
+            Misc.fatal_errorf "Wrong approximation for [Project_closure] \
+                when being used as a [constant_defining_value]: %a"
+              Flambda.print_constant_defining_value constant_defining_value
+        in
+        constant_defining_value, closure_approx
     in
     let approx = A.augment_with_symbol approx symbol in
     let env = E.add_symbol env symbol approx in
