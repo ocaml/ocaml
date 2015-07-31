@@ -250,21 +250,18 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
         (Prim (Praise kind, [arg_var], Debuginfo.from_raise event)))
   | Lprim (Pfield i, [Lprim (Pgetglobal id, [])])
       when Ident.same id t.current_unit_id ->
-    (* Access to globals of the current module uses a distinguished primitive
-       in Flambda. *)
-    name_expr (Prim (Pgetglobalfield (id, i), [], Debuginfo.none))
-  | Lprim (Psetfield (i, _), [Lprim (Pgetglobal id, []); lam]) ->
+    Misc.fatal_error "[Pfield ... Pgetglobal] from the current compilation \
+        unit is forbidden upon entry to the middle end"
+  | Lprim (Psetfield (_, _), [Lprim (Pgetglobal id, []); lam]) ->
     assert (Ident.same id t.current_unit_id);
-    let exported : Lambda.exported =
-      if i < t.exported_fields then Exported else Not_exported
-    in
-    let arg_var = Variable.create "raise_arg" in
-    Let (Immutable, arg_var, Expr (close t env lam),
-      name_expr (Prim (Psetglobalfield (exported, i), [arg_var],
-        Debuginfo.none)))
-  | Lprim (Pgetglobal id, []) when not (Ident.is_predef_exn id) ->
+    Misc.fatal_error "[Psetfield] (to the current compilation unit) is \
+        forbidden upon entry to the middle end"
+  | Lprim (Pgetglobal id, []) ->
+    (* Note: predefined exceptions appear in [id], but they are never in any
+       compilation unit. *)
     assert (not (Ident.same id t.current_unit_id));
     let symbol = t.symbol_for_global' id in
+    note_imported_symbol symbol;
     name_expr (Symbol symbol)
   | Lprim (p, args) ->
     (* One of the important consequences of the ANF-like representation
