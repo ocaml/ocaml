@@ -3,8 +3,6 @@ if Pervasives.int_of_string "123" <> 123 then raise Not_found;;
 (** test for fix of bug 6649: http://caml.inria.fr/mantis/view.php?id=6649 *)
 if Pervasives.int_of_string "+123" <> 123 then raise Not_found;;
 
-if Pervasives.int_of_string " 123" <> 123 then raise Not_found;;
-
 (**
        0 CONSTINT 42
        2 PUSHACC0 
