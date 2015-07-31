@@ -21,7 +21,6 @@ let name_expr = Flambda_utils.name_expr
 type t = {
   current_unit_id : Ident.t;
   symbol_for_global' : (Ident.t -> Symbol.t);
-  exported_fields : int;
 }
 
 (** Generate a wrapper ("stub") function that accepts a tuple argument and
@@ -93,6 +92,9 @@ let close_const (const : Lambda.structured_constant) : Flambda.named =
   | Const_block _ ->
     Misc.fatal_error "Const_block should have been eliminated before closure \
         conversion"
+
+(* CR mshinwell: try to remove global state once we've shown this works *)
+let imported_symbols = ref Symbol.Set.empty
 
 let rec close t env (lam : Lambda.lambda) : Flambda.t =
   match lam with
@@ -248,11 +250,11 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
     Let (Immutable, arg_var, Expr (close t env arg),
       name_expr
         (Prim (Praise kind, [arg_var], Debuginfo.from_raise event)))
-  | Lprim (Pfield i, [Lprim (Pgetglobal id, [])])
+  | Lprim (Pfield _, [Lprim (Pgetglobal id, [])])
       when Ident.same id t.current_unit_id ->
     Misc.fatal_error "[Pfield ... Pgetglobal] from the current compilation \
         unit is forbidden upon entry to the middle end"
-  | Lprim (Psetfield (_, _), [Lprim (Pgetglobal id, []); lam]) ->
+  | Lprim (Psetfield (_, _), [Lprim (Pgetglobal id, []); _]) ->
     assert (Ident.same id t.current_unit_id);
     Misc.fatal_error "[Psetfield] (to the current compilation unit) is \
         forbidden upon entry to the middle end"
@@ -261,7 +263,7 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
        compilation unit. *)
     assert (not (Ident.same id t.current_unit_id));
     let symbol = t.symbol_for_global' id in
-    note_imported_symbol symbol;
+    imported_symbols := Symbol.Set.add symbol !imported_symbols;
     name_expr (Symbol symbol)
   | Lprim (p, args) ->
     (* One of the important consequences of the ANF-like representation
@@ -440,14 +442,17 @@ and close_let_bound_expression t ?let_rec_ident let_bound_var env
       name_expr (Project_closure (project_closure))))
   | lam -> Expr (close t env lam)
 
-let lambda_to_flambda ~backend ~(exported_fields:int) lam =
+let lambda_to_flambda ~backend ~module_ident ~module_initializer =
+  imported_symbols := Symbol.Set.empty;
   let t =
     let module Backend = (val backend : Backend_intf.S) in
     { current_unit_id =
         Compilation_unit.get_persistent_ident
           (Compilation_unit.get_current_exn ());
       symbol_for_global' = Backend.symbol_for_global';
-      exported_fields;
     }
   in
-  close t Env.empty lam
+  let module_initializer = close t Env.empty module_initializer in
+  Symbol.Set.fold (fun sym expr -> Flambda.Import_symbol (sym, expr))
+    !imported_symbols
+    (Flambda.Let_global (module_ident, module_initializer, End))
