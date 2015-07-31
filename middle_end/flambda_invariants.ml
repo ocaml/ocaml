@@ -33,7 +33,6 @@ let ignore_bool (_ : bool) = ()
 let ignore_string (_ : string) = ()
 let ignore_static_exception (_ : Static_exception.t) = ()
 let ignore_direction_flag (_ : Asttypes.direction_flag) = ()
-let ignore_symbol (_ : Symbol.t) = ()
 let ignore_primitive ( _ : Lambda.primitive) = ()
 let ignore_const (_ : Flambda.const) = ()
 let ignore_allocated_const (_ : Allocated_const.t) = ()
@@ -41,7 +40,6 @@ let ignore_set_of_closures_id (_ : Set_of_closures_id.t) = ()
 let ignore_closure_id (_ : Closure_id.t) = ()
 let ignore_var_within_closure (_ : Var_within_closure.t) = ()
 let ignore_compilation_unit (_ : Compilation_unit.t) = ()
-let ignore_ident (_ : Ident.t) = ()
 
 exception Binding_occurrence_not_from_current_compilation_unit of Variable.t
 exception Binding_occurrence_of_variable_already_bound of Variable.t
@@ -479,19 +477,19 @@ let every_static_exception_is_caught_at_a_single_position flam =
   Flambda_iterators.iter f (fun (_ : Flambda.named) -> ()) flam
 
 let check_exn ?(kind=Normal) ?(cmxfile=false) flam =
+  ignore kind;
   try
     variable_and_symbol_invariants flam;
-    primitive_invariants flam ~no_access_to_global_module_identifiers:cmxfile;
-    every_static_exception_is_caught flam;
-    every_static_exception_is_caught_at_a_single_position flam;
-    no_var_within_closure_is_bound_multiple_times flam;
-    every_declared_closure_is_from_current_compilation_unit flam;
-    no_closure_id_is_bound_multiple_times flam;
-    if kind = Normal then begin
+    Flambda_iterators.iter_exprs_at_toplevel_of_program flam ~f:(fun flam ->
+      primitive_invariants flam ~no_access_to_global_module_identifiers:cmxfile;
+      every_static_exception_is_caught flam;
+      every_static_exception_is_caught_at_a_single_position flam;
+      no_var_within_closure_is_bound_multiple_times flam;
+      every_declared_closure_is_from_current_compilation_unit flam;
+      no_closure_id_is_bound_multiple_times flam;
       every_used_function_from_current_compilation_unit_is_declared flam;
       every_used_var_within_closure_from_current_compilation_unit_is_declared
-        flam;
-    end
+        flam)
   with exn -> begin
     begin match exn with
     | Binding_occurrence_not_from_current_compilation_unit var ->

@@ -114,6 +114,21 @@ let iter_on_sets_of_closures f t =
       | Prim _ | Expr _ -> ())
     t
 
+let rec iter_exprs_at_toplevel_of_program (program : Flambda.program) ~f =
+  match program with
+  | Let_symbol (_, Set_of_closures set_of_closures, program) ->
+    Variable.Map.iter (fun _ (function_decl : Flambda.function_declaration) ->
+        f function_decl.body)
+      set_of_closures.function_decls.funs;
+    iter_exprs_at_toplevel_of_program program ~f
+  | Let_symbol (_, _, program)
+  | Import_symbol (_, program) ->
+    iter_exprs_at_toplevel_of_program program ~f
+  | Initialize_symbol (_, expr, program) ->
+    f expr;
+    iter_exprs_at_toplevel_of_program program ~f
+  | End -> ()
+
 let map_general ~toplevel f f_named tree =
   let rec aux (tree : Flambda.t) =
     let exp : Flambda.t =
