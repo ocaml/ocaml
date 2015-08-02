@@ -127,7 +127,7 @@ val bprintf : Buffer.t -> ('a, Buffer.t, unit) format -> 'a
    append the formatted arguments to the given extensible buffer
    (see module {!Buffer}). *)
 
-val ifprintf : 'a -> ('b, 'a, unit) format -> 'b
+val ifprintf : 'a -> ('b, 'a, 'c, unit) format4 -> 'b
 (** Same as {!Printf.fprintf}, but does not print anything.
     Useful to ignore some material when conditionally printing.
     @since 3.10.0
@@ -142,8 +142,7 @@ val kfprintf : (out_channel -> 'a) -> out_channel ->
    @since 3.09.0
 *)
 
-val ikfprintf : (out_channel -> 'a) -> out_channel ->
-              ('b, out_channel, unit, 'a) format4 -> 'b
+val ikfprintf : ('a -> 'b) -> 'a -> ('c, 'a, 'd, 'b) format4 -> 'c
 (** Same as [kfprintf] above, but does not print anything.
    Useful to ignore some material when conditionally printing.
    @since 4.0
