@@ -42,6 +42,7 @@ let init log_file =
 
 let raw_dprintf log_level = Display.dprintf ~raw:true ~log_level !-internal_display
 let dprintf log_level fmt = Display.dprintf ~log_level !-internal_display fmt
+let is_logging log_level = Display.is_logging !-internal_display log_level
 let eprintf fmt = dprintf (-1) fmt
 
 let update () = Display.update !-internal_display

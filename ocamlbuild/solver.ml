@@ -41,15 +41,16 @@ let rec self depth on_the_go_orig target =
   let rules = Rule.get_rules () in
   let on_the_go = target :: on_the_go_orig in
 
-  dprintf 4 "==%a> %a" pp_repeat (depth, "==") Resource.print target;
+  (* skip allocating fmt on a hot path *)
+  if is_logging 4 then dprintf 4 "==%a> %a" pp_repeat (depth, "==") Resource.print target;
   if List.mem target on_the_go_orig then raise (Circular(target, on_the_go_orig));
   match Resource.Cache.resource_state target with
   | Resource.Cache.Bbuilt ->
-      (dprintf 5 "%a already built" Resource.print target)
+      (if is_logging 5 then dprintf 5 "%a already built" Resource.print target)
   | Resource.Cache.Bcannot_be_built ->
-      (dprintf 5 "%a already failed" Resource.print target; failed target (Leaf target))
+      (if is_logging 5 then dprintf 5 "%a already failed" Resource.print target; failed target (Leaf target))
   | Resource.Cache.Bsuspension(s) ->
-      (dprintf 5 "%a was suspended -> resuming" Resource.print target;
+      (if is_logging 5 then dprintf 5 "%a was suspended -> resuming" Resource.print target;
        Resource.Cache.resume_suspension s)
   | Resource.Cache.Bnot_built_yet ->
     if not (Pathname.is_relative target) && Pathname.exists target then
@@ -111,9 +112,10 @@ and self_firsts depth on_the_go rss =
     end results ([], []) in
   let count = List.length cmds in
   let job_debug = if !Command.jobs = 1 then 10 else 5 in
-  if count > 1 then dprintf job_debug ">>> PARALLEL: %d" count;
+  (* skip allocating fmt on a hot path *)
+  if is_logging job_debug && count > 1 then dprintf job_debug ">>> PARALLEL: %d" count;
   let opt_exn = Command.execute_many cmds in
-  if count > 1 then dprintf job_debug "<<< PARALLEL";
+  if is_logging job_debug && count > 1 then dprintf job_debug "<<< PARALLEL";
   begin match opt_exn with
   | Some(res, exn) ->
       List.iter2 (fun res thunk -> if res then thunk ()) res thunks;

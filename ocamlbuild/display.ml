@@ -377,6 +377,7 @@ let event di ?(pretend=false) command target tags =
 ;;
 (* ***)
 (*** dprintf *)
+let is_logging di log_level = log_level <= di.di_log_level
 let dprintf ?(raw=false) ?(log_level=1) di fmt =
   if log_level > di.di_log_level then Discard_printf.discard_printf fmt else
   let fmt = if raw then fmt else "@[<2>"^^fmt^^"@]@." in
