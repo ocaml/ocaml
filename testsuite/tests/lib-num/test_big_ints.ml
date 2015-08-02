@@ -382,7 +382,7 @@ failwith_test 5 big_int_of_string "sdjdkfighdgf"
 test 6
 eq_big_int (big_int_of_string "123", big_int_of_int 123);;
 test 7
-eq_big_int (big_int_of_string "3456", big_int_of_int 3456);;
+eq_big_int (big_int_of_string "+3456", big_int_of_int 3456);;
 
 test 9
 eq_big_int (big_int_of_string "-3456", big_int_of_int (-3456));;

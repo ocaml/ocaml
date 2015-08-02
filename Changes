@@ -67,6 +67,8 @@ Standard library:
 - PR#6577: improve performance of %L, %l, %n, %S, %C format specifiers
   (Alain Frisch)
 - PR#6585: fix memory leak in win32unix/createprocess.c
+- PR#6649, GPR#222: accept (int_of_string "+3")
+  (Christopher McAlpine)
 - PR#6645, GPR#174: Guarantee that Set.add, Set.remove, Set.filter
   return the original set if no change is required (Alain Frisch,
   Mohamed Iguernelala)
