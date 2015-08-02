@@ -92,6 +92,11 @@ CAMLextern int caml_really_getblock (struct channel *, char *, intnat);
 
 #define Channel(v) (*((struct channel **) (Data_custom_val(v))))
 
+/* Runtime warnings */
+
+CAMLextern value caml_ml_enable_runtime_warnings(value);
+CAMLprim value caml_ml_runtime_warnings_enabled(value);
+
 /* The locking machinery */
 
 CAMLextern void (*caml_channel_mutex_free) (struct channel *);
