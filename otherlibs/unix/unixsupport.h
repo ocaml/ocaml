@@ -26,8 +26,8 @@ extern "C" {
 
 extern value unix_error_of_code (int errcode);
 extern int code_of_unix_error (value error);
-Noreturn extern void unix_error (int errcode, char * cmdname, value arg);
-Noreturn extern void uerror (char * cmdname, value arg);
+CAMLnoreturn_start extern void unix_error (int errcode, char * cmdname, value arg);
+CAMLnoreturn_start extern void uerror (char * cmdname, value arg);
 
 #define UNIX_BUFFER_SIZE 65536
 
