@@ -147,6 +147,8 @@ Bug fixes:
   (Benoît Vaugon, report by Arduino Cascella)
 - GPR#205: Clear caml_backtrace_last_exn before registering as root (report
   and fix by Frederic Bour)
+- GPR#220: minor -dsource error on recursive modules
+  (Hongbo Zhang)
 
 Features wishes:
 - PR#4714: List.cons
