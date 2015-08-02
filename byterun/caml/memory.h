@@ -152,28 +152,27 @@ CAMLextern struct caml__roots_block *caml_local_roots;  /* defined in roots.c */
   CAMLparam0 (); \
   CAMLxparamN (x, (size))
 
-#if defined(__GNUC__) && (__GNUC__ > 2 || (__GNUC__ == 2 && __GNUC_MINOR__ > 7))
-  #define CAMLunused __attribute__ ((unused))
-#else
-  #define CAMLunused
-#endif
-
+/* CAMLunused is preserved for compatibility reasons.
+   Instead of the legacy GCC/Clang-only
+     CAMLunused foo;
+   you should prefer
+     CAMLunused_start foo CAMLunused_end;
+   which supports both GCC/Clang and MSVC.
+*/
 #if defined(__GNUC__) && (__GNUC__ > 2 || (__GNUC__ == 2 && __GNUC_MINOR__ > 7))
   #define CAMLunused_start __attribute__ ((unused))
+  #define CAMLunused_end
+  #define CAMLunused __attribute__ ((unused))
 #elif _MSC_VER >= 1500
   #define CAMLunused_start  __pragma( warning (push) )           \
     __pragma( warning (disable:4189 ) )
-
+  #define CAMLunused_end __pragma( warning (pop))
+  #define CAMLunused
 #else
   #define CAMLunused_start
-#endif
-
-#if defined _MSC_VER >= 1500
-  #define CAMLunused_end __pragma( warning (pop))
-#else
   #define CAMLunused_end
+  #define CAMLunused
 #endif
-
 
 #define CAMLxparam1(x) \
   struct caml__roots_block caml__roots_##x; \
