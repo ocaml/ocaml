@@ -127,7 +127,7 @@ val bprintf : Buffer.t -> ('a, Buffer.t, unit) format -> 'a
    append the formatted arguments to the given extensible buffer
    (see module {!Buffer}). *)
 
-val ifprintf : 'a -> ('b, 'a, 'c, unit) format4 -> 'b
+val ifprintf : 'b -> ('a, 'b, 'c, unit) format4 -> 'a
 (** Same as {!Printf.fprintf}, but does not print anything.
     Useful to ignore some material when conditionally printing.
     @since 3.10.0
@@ -135,27 +135,27 @@ val ifprintf : 'a -> ('b, 'a, 'c, unit) format4 -> 'b
 
 (** Formatted output functions with continuations. *)
 
-val kfprintf : (out_channel -> 'a) -> out_channel ->
-              ('b, out_channel, unit, 'a) format4 -> 'b
+val kfprintf : (out_channel -> 'd) -> out_channel ->
+              ('a, out_channel, unit, 'd) format4 -> 'a
 (** Same as [fprintf], but instead of returning immediately,
    passes the out channel to its first argument at the end of printing.
    @since 3.09.0
 *)
 
-val ikfprintf : ('a -> 'b) -> 'a -> ('c, 'a, 'd, 'b) format4 -> 'c
+val ikfprintf : ('b -> 'd) -> 'b -> ('a, 'b, 'c, 'd) format4 -> 'a
 (** Same as [kfprintf] above, but does not print anything.
    Useful to ignore some material when conditionally printing.
    @since 4.0
 *)
 
-val ksprintf : (string -> 'a) -> ('b, unit, string, 'a) format4 -> 'b
+val ksprintf : (string -> 'd) -> ('a, unit, string, 'd) format4 -> 'a
 (** Same as [sprintf] above, but instead of returning the string,
    passes it to the first argument.
    @since 3.09.0
 *)
 
-val kbprintf : (Buffer.t -> 'a) -> Buffer.t ->
-              ('b, Buffer.t, unit, 'a) format4 -> 'b
+val kbprintf : (Buffer.t -> 'd) -> Buffer.t ->
+              ('a, Buffer.t, unit, 'd) format4 -> 'a
 (** Same as [bprintf], but instead of returning immediately,
    passes the buffer to its first argument at the end of printing.
    @since 3.10.0
@@ -163,5 +163,5 @@ val kbprintf : (Buffer.t -> 'a) -> Buffer.t ->
 
 (** Deprecated *)
 
-val kprintf : (string -> 'a) -> ('b, unit, string, 'a) format4 -> 'b
+val kprintf : (string -> 'b) -> ('a, unit, string, 'b) format4 -> 'a
 (** A deprecated synonym for [ksprintf]. *)
