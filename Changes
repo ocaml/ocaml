@@ -100,6 +100,8 @@ OCamlbuild:
 - GPR#208: add "asm" tag to ocamlbuild to enable flag -S
   (ygrek)
 - Changed OCamlbuild's license to LGPLv2 with static linking exception.
+- GPR#219: speedup target-already-built builds
+  (ygrek)
 
 Bug fixes:
 * PR#4539: change exception string raised when comparing functional values
