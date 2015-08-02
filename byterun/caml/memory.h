@@ -152,6 +152,11 @@ CAMLextern struct caml__roots_block *caml_local_roots;  /* defined in roots.c */
   CAMLparam0 (); \
   CAMLxparamN (x, (size))
 
+#if defined(__GNUC__) && (__GNUC__ > 2 || (__GNUC__ == 2 && __GNUC_MINOR__ > 7))
+  #define CAMLunused __attribute__ ((unused))
+#else
+  #define CAMLunused
+#endif
 
 #if defined(__GNUC__) && (__GNUC__ > 2 || (__GNUC__ == 2 && __GNUC_MINOR__ > 7))
   #define CAMLunused_start __attribute__ ((unused))
