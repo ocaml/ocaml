@@ -38,11 +38,21 @@ typedef size_t asize_t;
 typedef char * addr;
 /* </private> */
 
+/* Noreturn is preserved for compatibility reasons.
+   Instead of the legacy GCC/Clang-only
+     foo Noreturn;
+   you should prefer
+     CAMLnoreturn_start foo CAMLnoreturn_end;
+   which supports both GCC/Clang and MSVC.
+
+   Note: CAMLnoreturn is a different macro defined in memory.h,
+   to be used in function bodies rather than  aprototype attribute.
+*/
 #ifdef __GNUC__
   /* Works only in GCC 2.5 and later */
-  #define Noreturn __attribute__ ((noreturn))
+  #define CAMLnoreturn_start
   #define CAMLnoreturn_end __attribute__ ((noreturn))
-  #define CAMLnoreturn_start __attribute__ ((noreturn))
+  #define Noreturn __attribute__ ((noreturn))
 #elif _MSC_VER >= 1500
   #define CAMLnoreturn_start __declspec(noreturn)
   #define CAMLnoreturn_end
@@ -87,15 +97,25 @@ extern caml_timing_hook caml_finalise_begin_hook, caml_finalise_end_hook;
 #ifdef DEBUG
 #define CAMLassert(x) \
   ((x) ? (void) 0 : caml_failed_assert ( #x , __FILE__, __LINE__))
-CAMLnoreturn_start CAMLextern int caml_failed_assert (char *, char *, int);
+CAMLnoreturn_start
+CAMLextern int caml_failed_assert (char *, char *, int)
+CAMLnoreturn_end;
 #else
 #define CAMLassert(x) ((void) 0)
 #endif
 
-CAMLnoreturn_start CAMLextern void caml_fatal_error (char *msg);
-CAMLnoreturn_start CAMLextern void caml_fatal_error_arg (char *fmt, char *arg);
-CAMLnoreturn_start CAMLextern void caml_fatal_error_arg2 (char *fmt1, char *arg1,
-                                       char *fmt2, char *arg2);
+CAMLnoreturn_start
+CAMLextern void caml_fatal_error (char *msg)
+CAMLnoreturn_end;
+
+CAMLnoreturn_start
+CAMLextern void caml_fatal_error_arg (char *fmt, char *arg)
+CAMLnoreturn_end;
+
+CAMLnoreturn_start
+CAMLextern void caml_fatal_error_arg2 (char *fmt1, char *arg1,
+                                       char *fmt2, char *arg2)
+CAMLnoreturn_end;
 
 /* Safe string operations */
 
