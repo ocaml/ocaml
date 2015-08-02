@@ -210,6 +210,34 @@ val sigvtalrm : int
 val sigprof : int
 (** Profiling interrupt *)
 
+val sigbus : int
+(** Bus error
+    @since 4.03 *)
+
+val sigpoll : int
+(** Pollable event
+    @since 4.03 *)
+
+val sigsys : int
+(** Bad argument to routine
+    @since 4.03 *)
+
+val sigtrap : int
+(** Trace/breakpoint trap
+    @since 4.03 *)
+
+val sigurg : int
+(** Urgent condition on socket
+    @since 4.03 *)
+
+val sigxcpu : int
+(** Timeout in cpu time
+    @since 4.03 *)
+
+val sigxfsz : int
+(** File size limit exceeded
+    @since 4.03 *)
+
 
 exception Break
 (** Exception raised on interactive interrupt if {!Sys.catch_break}
