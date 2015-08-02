@@ -32,4 +32,4 @@ val finish : ?how:[`Success|`Error|`Quiet] -> display -> unit
 val event : display -> ?pretend:bool -> string -> string -> Tags.t -> unit
 val display : display -> (out_channel -> unit) -> unit
 val update : display -> unit
-val dprintf : ?log_level:int -> display -> ('a, Format.formatter, unit) format -> 'a
+val dprintf : ?raw:bool -> ?log_level:int -> display -> ('a, Format.formatter, unit) format -> 'a

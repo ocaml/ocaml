@@ -40,9 +40,8 @@ let init log_file =
   in
   internal_display := Some (Display.create ~mode ?log_file ~log_level:!level ())
 
-let raw_dprintf log_level = Display.dprintf ~log_level !-internal_display
-
-let dprintf log_level fmt = raw_dprintf log_level ("@[<2>"^^fmt^^"@]@.")
+let raw_dprintf log_level = Display.dprintf ~raw:true ~log_level !-internal_display
+let dprintf log_level fmt = Display.dprintf ~log_level !-internal_display fmt
 let eprintf fmt = dprintf (-1) fmt
 
 let update () = Display.update !-internal_display

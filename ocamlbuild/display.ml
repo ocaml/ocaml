@@ -377,8 +377,9 @@ let event di ?(pretend=false) command target tags =
 ;;
 (* ***)
 (*** dprintf *)
-let dprintf ?(log_level=1) di fmt =
+let dprintf ?(raw=false) ?(log_level=1) di fmt =
   if log_level > di.di_log_level then Discard_printf.discard_printf fmt else
+  let fmt = if raw then fmt else "@[<2>"^^fmt^^"@]@." in
   match di.di_display_line with
   | Classic -> Format.fprintf di.di_formatter fmt
   | Sophisticated _ ->
