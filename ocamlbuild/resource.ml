@@ -113,6 +113,8 @@ module Cache = struct
     fprintf f "@[<2>{ @[<2>built =@ %a@];@ @[<2>changed =@ %a@];@ @[<2>dependencies =@ %a@]@ }@]"
       print_build_status e.built print_knowledge e.changed Resources.print e.dependencies
 
+  module Hashtbl = Hashtbl.Make(struct type t = Pathname.t let hash = Hashtbl.hash let equal (x:string) y = x = y end)
+
   let cache = Hashtbl.create 103
 
   let get r =
