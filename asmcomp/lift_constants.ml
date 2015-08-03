@@ -132,7 +132,7 @@ let share_constants ~var_to_symbol_tbl ~symbol_to_constant_tbl =
 
 (** Compute an order in which to emit [Let_symbol] bindings such that there
     are no references to unbound symbols. *)
-let compute_order_of_let_symbol_bindings ~symbol_to_constant_tbl
+let compute_order_of_let_symbol_bindings ~symbol_to_constant_tbl =
   let constant_graph =
     Symbol.Tbl.fold
       (fun symbol (const : Flambda.constant_defining_value) graph ->
@@ -164,9 +164,9 @@ let compute_order_of_let_symbol_bindings ~symbol_to_constant_tbl
 (** Substitute the defining expressions of all constant variables with the
     corresponding symbols.  Then bind all remaining free variables of the
     expression, which must be constant, to their corresponding symbols. *)
-let replace_constant_defining_exprs_with_symbols ~expr ~var_to_symbol_map =
-  let is_constant var = Variable.Map.mem var var_to_symbol_map in
-  let symbol_for_var var = Variable.Map.find var var_to_symbol_map in
+let replace_constant_defining_exprs_with_symbols program ~var_to_symbol_tbl =
+  let is_constant var = Variable.Tbl.mem var var_to_symbol_tbl in
+  let symbol_for_var var = Variable.Tbl.find var var_to_symbol_tbl in
   let replace var defining_expr : Flambda.named =
     match symbol_for_var var with
     | symbol -> Symbol symbol
@@ -191,41 +191,42 @@ let replace_constant_defining_exprs_with_symbols ~expr ~var_to_symbol_map =
 (** Add [Let_symbol] bindings for symbols corresponding to constants whose
     definitions we have lifted.  The bindings are inserted in a correct
     order such that there are no references to unbound symbols. *)
-let add_definitions_of_symbols ~program ~constant_defining_values =
-  List.fold_left (fun program symbol constant_defining_value ->
+let add_definitions_of_symbols program ~symbols_in_order
+      ~symbol_to_constant_tbl =
+  List.fold_left (fun program symbol ->
+      let constant_defining_value =
+        Symbol.Tbl.find symbol_to_constant_tbl symbol
+      in
       Flambda.Let_symbol (symbol, constant_defining_value, program))
     program
-    (List.rev constant_defining_values)
+    (List.rev symbols_in_order)
 
-let lift_constants expr ~backend =
-  Format.eprintf "lift_constants input:@ %a\n" Flambda.print expr;
+let lift_constants program ~backend =
+  Format.eprintf "lift_constants input:@ %a\n" Flambda.print_program program;
   let inconstants =
-    Inconstant_idents.inconstants expr
+    Inconstant_idents.inconstants program
       ~for_clambda:true
       (* CR pchambart: get rid of this.
          This should be available in backend
          mshinwell: what is "this"? *)
       ~compilation_unit:(Compilenv.current_unit ())
   in
-  let var_to_symbol_map =
-    assign_symbols_to_constant_let_bound_variables ~expr ~inconstants
+  let var_to_symbol_tbl =
+    assign_symbols_to_constant_let_bound_variables ~program ~inconstants
   in
-  let constant_defining_values =
-    compute_definitions_of_symbols ~expr ~inconstants ~var_to_symbol_map
+  let symbol_to_constant_tbl =
+    compute_definitions_of_symbols ~program ~inconstants ~var_to_symbol_tbl
   in
-  let constants, kind = share_constants ~constant_map in
-  let with_symbols =
-    replace_constant_defining_exprs_with_symbols ~expr ~var_to_symbol_map
+  let var_to_symbol_tbl, symbol_to_constant_tbl =
+    share_constants ~var_to_symbol_tbl ~symbol_to_constant_tbl
   in
-  let program =
-    add_definitions_of_symbols ~expr:with_symbols ~constant_defining_values
+  let symbols_in_order =
+    compute_order_of_let_symbol_bindings ~symbol_to_constant_tbl
   in
-  (* We need to rerun [Inline_and_simplify] because strings and float arrays
-     (bindings of which would have had unknown approximations during
-     [Inline_and_simplify.simplify_free_variable]) that are now known to be
-     constant will now have been assigned symbols.  Symbols are immutable,
-     meaning that we should be able to cause more sets of closures to
-     become closed. *)
-  Format.eprintf "lift_constants before simplify:@ %a\n"
-    Flambda.print_program program;
-  Inline_and_simplify.run program ~never_inline:true ~backend
+  program
+  |> replace_constant_defining_exprs_with_symbols ~var_to_symbol_tbl
+  |> add_definitions_of_symbols ~symbols_in_order ~symbol_to_constant_tbl
+  |> (fun program ->
+    Format.eprintf "lift_constants before simplify:@ %a\n"
+      Flambda.print_program program; program)
+  |> Inline_and_simplify.run ~never_inline:true ~backend
