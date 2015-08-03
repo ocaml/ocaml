@@ -227,6 +227,7 @@ and describe_named (env : env) (named : Flambda.named) : ET.approx =
     Value_symbol (Compilenv.symbol_for_global' id)
 
   | Prim(Pgetglobalfield(id,i), _, _) -> begin
+      (* XXX this shouldn't be needed for the current unit now. *)
       if id = Compilenv.current_unit_id () then
         match Int.Map.find i !global_approx with
         | exception Not_found ->
@@ -397,6 +398,8 @@ let build_export_info (lifted_flambda:Lift_constants.result) : ET.exported =
 
   (* TODO: should be sorted before describing. This would allow
        approximation to be able to use the closures results *)
+  (* XXX this should be easier now, I think, because the Let_symbol bindings
+     are in a correct order. *)
   Symbol.Map.iter (fun symbol set_of_closures ->
       let descr =
         describe_set_of_closures Variable.Map.empty set_of_closures
@@ -407,6 +410,8 @@ let build_export_info (lifted_flambda:Lift_constants.result) : ET.exported =
     lifted_flambda.set_of_closures_map;
 
   (* build the approximation of the root module *)
+  (* XXX this should just happen by magic now --- see Flambda.Initialize_symbol
+     and its occurrence in Closure_conversion *)
   let root_id =
     let size_global =
       1 + (Int.Map.fold (fun k _ acc -> max k acc) !global_approx (-1))
