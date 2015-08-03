@@ -83,11 +83,11 @@ module D = struct
   let comment s = directive (Comment s)
   let data () = section [ ".data" ] None []
   let extrn s ptr = directive (External (s, ptr))
-  let file num filename = directive (File (num, filename))
+  let file ~file_num ~file_name = directive (File (file_num, file_name))
   let global s = directive (Global s)
   let indirect_symbol s = directive (Indirect_symbol s)
   let label ?(typ = NONE) s = directive (NewLabel (s, typ))
-  let loc num loc = directive (Loc (num, loc))
+  let loc ~file_num ~line ~col = directive (Loc (file_num, line, col))
   let long cst = directive (Long cst)
   let mode386 () = directive Mode386
   let model name = directive (Model name)

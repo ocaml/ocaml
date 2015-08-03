@@ -4,11 +4,14 @@ OCaml 4.03.0:
 (Changes that can break existing programs are marked with a "*")
 
 Language features:
+- PR#5528: inline records for constructor arguments (Alain Frisch)
 - PR#6374: allow "_ t" as a short-hand for "(_, _, ..) t" for n-ary type
   constructors (Alain Frisch)
 - PR#6714: allow [@@ocaml.warning] on most structure and signature items:
   values, modules, module types
   (Peter Zotov)
+- GPR#26: support for "(type a b)" as syntactic sugar for "(type a) (type b)"
+  (Gabriel Scherer)
 * GPR#69: Custom index operators: ( .() ), ( .[] ), ( .{} ) etc.
   (user 'Octachron')
   The syntax "foo.(bar) <- baz" now desugars into "( .()<- ) foo bar baz"; this
@@ -20,7 +23,6 @@ Language features:
 - GPR#88: allow field punning in object copying expressions:
     {< x; y; >} is sugar for {< x = x; y = y; >}
   (Jeremy Yallop)
-- PR#5528: inline records for constructor arguments (Alain Frisch)
 
 Compilers:
 - PR#6501: harden the native-code generator against certain uses of "%identity"
@@ -36,6 +38,10 @@ Compilers:
   (Stephen Dolan, review by Pierre Chambart)
 - GPR#109: new unboxing strategy for float and int references (Vladimir Brankov,
   review by Alain Frisch)
+- GPR#107: Prevent more unnecessary float boxing, especially in `if` and `match`
+  (Vladimir Brankov, review by Alain Frisch)
+- GPR#115: More precise typing of values at the C-- and Mach level,.
+  (Xavier Leroy, review by Pierre Chambart)
 
 Runtime system:
 - PR#6517: use ISO C99 types {,u}int{32,64}_t in preference to our homegrown
@@ -43,8 +49,14 @@ Runtime system:
   (Xavier Leroy)
 - PR#6760: closures evaluated in the toplevel can now be marshalled
   (Peter Zotov, review by Jacques-Henri Jourdan)
+- PR#6902, GPR#210: runtime emits a warning when finalizing an I/O channel
+  which is still open (Alain Frisch, review by Damien Doligez)
+- Signal handling: for read-and-clear, use GCC/Clang atomic builtins
+  if available.  (Xavier Leroy)
 
 Standard library:
+- PR#6316: Scanf.scanf failure on %u formats when reading big integers
+  (Xavier Leroy, Benoît Vaugon)
 - PR#6390, GPR#36: expose Sys.{int_size,max_wosize} for improved js_of_ocaml portability
   (Hugo Heuzard)
 * PR#6494: Add equal function in modules
@@ -55,12 +67,18 @@ Standard library:
 - PR#6577: improve performance of %L, %l, %n, %S, %C format specifiers
   (Alain Frisch)
 - PR#6585: fix memory leak in win32unix/createprocess.c
+- PR#6649, GPR#222: accept (int_of_string "+3")
+  (Christopher McAlpine)
 - PR#6645, GPR#174: Guarantee that Set.add, Set.remove, Set.filter
   return the original set if no change is required (Alain Frisch,
   Mohamed Iguernelala)
 - PR#6694, PR#6695: deprecate functions using ISO-8859-1 character set
   in Char, Bytes, String and provide alternatives using US-ASCII.
   (Peter Zotov)
+- GPR#201: generalize types of Printf.{ifprintf,ikfprintf}
+  (Maxence Guesdon)
+- GPR#216: add the missing POSIX.1-2001 signals in Sys
+  (Guillaume Bury)
 
 Type system:
 - PR#5545: Type annotations on methods cannot control the choice of abbreviation
@@ -75,9 +93,19 @@ Toplevel and debugger:
   (Peter Zotov and Jake Donham,
    review by Gabriel Scherer and Jacques-Henri Jourdan)
 
+Other libraries:
+- PR#6896: serious reimplementation of Big_int.float_of_big_int and
+  Ratio.float_of_ratio, ensuring that the result is correctly rounded.
+  (Xavier Leroy)
+
 OCamlbuild:
 - PR#6794, PR#6809: pass package-specific include flags when building C files
   (Jérémie Dimino, request by Peter Zotov)
+- GPR#208: add "asm" tag to ocamlbuild to enable flag -S
+  (ygrek)
+- Changed OCamlbuild's license to LGPLv2 with static linking exception.
+- GPR#219: speedup target-already-built builds
+  (ygrek)
 
 Bug fixes:
 * PR#4539: change exception string raised when comparing functional values
@@ -114,12 +142,20 @@ Bug fixes:
 - PR#6752: Extensible variant types and scope escaping
 - PR#6808: the parsing of OCAMLRUNPARAM is too lax
   (Damien Doligez)
+* PR#6816: reject identifiers following numeric literals without spacing, e.g.
+    let foo = 1 in (fun a b -> a,b) 23foo
+  (Hugo Heuzard)
 - PR#6874: Inefficient code generated for module function arguments
 - PR#6897: Bad error message for some pattern matching on extensible variants
 - PR#6899: Optional parameters and non generalizable type variables
   (Thomas Refis and Leo White)
+- PR#6931: Incorrect error message
+- PR#6938: fix regression on "%047.27{l,L,n}{d,i,x,X,o,u}"
+  (Benoît Vaugon, report by Arduino Cascella)
 - GPR#205: Clear caml_backtrace_last_exn before registering as root (report
   and fix by Frederic Bour)
+- GPR#220: minor -dsource error on recursive modules
+  (Hongbo Zhang)
 
 Features wishes:
 - PR#4714: List.cons
@@ -134,6 +170,8 @@ Features wishes:
   (Jeremy Yallop, review by Gabriel Radanne)
 - PR#6691: install .cmt[i] files for stdlib and compiler-libs
   (David Sheets, request by Gabriel Radanne)
+- PR#6722: compatibility with x32 architecture (x86-64 in ILP32 mode).
+  ocamlopt is not supported, but bytecode compiles cleanly.
 - PR#6742: remove duplicate virtual_flag information from Tstr_class
 - PR#6719: improve Buffer.add_channel when not enough input is available
   (Simon Cruanes)
@@ -141,6 +179,8 @@ Features wishes:
   (Hugo Heuzard)
 - PR#6876: improve warning 6 by listing the omitted labels.
   (Eyyüb Sari)
+- PR#6924: tiny optim to avoid some spilling of floats in x87
+  (Alain Frisch)
 - GPR#111: `(f [@taillcall]) x y` warns if `f x y` is not a tail-call
   (Simon Cruanes)
 - GPR#118: ocamldep -allow-approx: fallback to a lexer-based approximation
@@ -152,22 +192,38 @@ Features wishes:
   (Vladimir Brankov, review by Gabriel Scherer)
 - GPR#147: [type 'a result = Ok of 'a | Error of 'b] in Pervasives
   (Yaron Minsky)
+- GPR#156: Optimize reallocation of caml_frame_descriptors (dynlink speedup)
+  (Pierre Chambart, review by François Bobot, Xavier Leroy and Damien Doligez)
 - GPR#171: allow custom warning printers / catchers
   (Benjamin Canou, review by Damien Doligez)
 - GPR#191: Making gc.h and some part of memory.h public
   (Thomas Refis)
+- GPR#196: Make [Thread.id] and [Thread.self] [noalloc]
+  (Clark Gaebel)
+- GPR#165, GPR#221: fix windows compilation warnings
+  (Bernhard Schommer, Gabriel Scherer, report by Alain Frisch)
 
 OCaml 4.02.3:
 -------------
 
 Bug fixes:
+- PR#6908: Top-level custom printing for GADTs: interface change in 4.02.2
+  (Grégoire Henry, report by Jeremy Yallop)
 - PR#6919: corrupted final_table
   (ygrek)
+- PR#6926: Regression: ocamldoc lost unattached comment
+  (Damien Doligez, report by François Bobot)
 - PR#6930: Aliased result type of GADT constructor results in assertion failure
   (Jacques Garrigue)
 
+Feature wishes:
+- PR#6691: install .cmt[i] files for stdlib and compiler-libs
+  (David Sheets, request by Gabriel Radanne)
+- GPR#37: New primitive: caml_alloc_dummy_function
+  (Hugo Heuzard)
+
 OCaml 4.02.2 (17 Jun 2015):
----------------------------
+-------------
 
 (Changes that can break existing programs are marked with a "*")
 

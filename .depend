@@ -665,9 +665,9 @@ asmcomp/x86_proc.cmi : asmcomp/x86_ast.cmi
 asmcomp/CSE.cmo : asmcomp/mach.cmi asmcomp/CSEgen.cmi asmcomp/arch.cmo
 asmcomp/CSE.cmx : asmcomp/mach.cmx asmcomp/CSEgen.cmx asmcomp/arch.cmx
 asmcomp/CSEgen.cmo : asmcomp/reg.cmi asmcomp/proc.cmi asmcomp/mach.cmi \
-    asmcomp/CSEgen.cmi
+    asmcomp/cmm.cmi asmcomp/CSEgen.cmi
 asmcomp/CSEgen.cmx : asmcomp/reg.cmx asmcomp/proc.cmx asmcomp/mach.cmx \
-    asmcomp/CSEgen.cmi
+    asmcomp/cmm.cmx asmcomp/CSEgen.cmi
 asmcomp/arch.cmo : utils/config.cmi
 asmcomp/arch.cmx : utils/config.cmx
 asmcomp/asmgen.cmo : bytecomp/translmod.cmi asmcomp/split.cmi \

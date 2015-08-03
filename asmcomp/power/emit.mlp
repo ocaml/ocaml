@@ -305,10 +305,12 @@ let record_frame live dbg =
   let live_offset = ref [] in
   Reg.Set.iter
     (function
-        {typ = Addr; loc = Reg r} ->
-          live_offset := (r lsl 1) + 1 :: !live_offset
-      | {typ = Addr; loc = Stack s} as reg ->
+      | {typ = Val; loc = Reg r} ->
+          live_offset := ((r lsl 1) + 1) :: !live_offset
+      | {typ = Val; loc = Stack s} as reg ->
           live_offset := slot_offset s (register_class reg) :: !live_offset
+      | {typ = Addr} as r ->
+          Misc.fatal_error ("bad GC root " ^ Reg.name r)
       | _ -> ())
     live;
   frame_descriptors :=
@@ -490,15 +492,15 @@ let emit_instr i =
         let src = i.arg.(0) and dst = i.res.(0) in
         if src.loc <> dst.loc then begin
            match (src, dst) with
-           |  {loc = Reg rs; typ = (Int | Addr)}, {loc = Reg rd} ->
+           |  {loc = Reg rs; typ = (Val | Int | Addr)}, {loc = Reg rd} ->
                 `	mr	{emit_reg dst}, {emit_reg src}\n`
             | {loc = Reg rs; typ = Float}, {loc = Reg rd; typ = Float} ->
                 `	fmr	{emit_reg dst}, {emit_reg src}\n`
-            | {loc = Reg rs; typ = (Int | Addr)}, {loc = Stack sd} ->
+            | {loc = Reg rs; typ = (Val | Int | Addr)}, {loc = Stack sd} ->
                 `	{emit_string stg}	{emit_reg src}, {emit_stack dst}\n`
             | {loc = Reg rs; typ = Float}, {loc = Stack sd} ->
                 `	stfd	{emit_reg src}, {emit_stack dst}\n`
-            | {loc = Stack ss; typ = (Int | Addr)}, {loc = Reg rd} ->
+            | {loc = Stack ss; typ = (Val | Int | Addr)}, {loc = Reg rd} ->
                 `	{emit_string lg}	{emit_reg dst}, {emit_stack src}\n`
             | {loc = Stack ss; typ = Float}, {loc = Reg rd} ->
                 `	lfd	{emit_reg dst}, {emit_stack src}\n`
@@ -677,7 +679,7 @@ let emit_instr i =
           | Sixteen_signed -> "lha"
           | Thirtytwo_unsigned -> "lwz"
           | Thirtytwo_signed -> if ppc64 then "lwa" else "lwz"
-	  | Word -> lg
+	  | Word_int | Word_val -> lg
           | Single -> "lfs"
           | Double | Double_u -> "lfd" in
         emit_load_store loadinstr addr i.arg 0 i.res.(0);
@@ -689,7 +691,7 @@ let emit_instr i =
           | Byte_unsigned | Byte_signed -> "stb"
           | Sixteen_unsigned | Sixteen_signed -> "sth"
 	  | Thirtytwo_unsigned | Thirtytwo_signed -> "stw"
-	  | Word -> stg
+	  | Word_int | Word_val -> stg
           | Single -> "stfs"
           | Double | Double_u -> "stfd" in
         emit_load_store storeinstr addr i.arg 1 i.arg.(0)

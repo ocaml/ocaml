@@ -63,10 +63,10 @@ let num_register_classes = 3
 
 let register_class r =
   match (r.typ, !fpu) with
-    (Int | Addr), _  -> 0
-  | Float, VFPv2     -> 1
-  | Float, VFPv3_D16 -> 1
-  | Float, _         -> 2
+  | (Val | Int | Addr), _  -> 0
+  | Float, VFPv2         -> 1
+  | Float, VFPv3_D16     -> 1
+  | Float, _             -> 2
 
 let num_available_registers =
   [| 9; 16; 32 |]
@@ -114,7 +114,7 @@ let calling_conventions
   let ofs = ref 0 in
   for i = 0 to Array.length arg - 1 do
     match arg.(i).typ with
-      Int | Addr as ty ->
+    | Val | Int | Addr as ty ->
         if !int <= last_int then begin
           loc.(i) <- phys_reg !int;
           incr int

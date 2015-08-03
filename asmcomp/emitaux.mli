@@ -32,8 +32,8 @@ val reset_debug_info: unit -> unit
 val emit_debug_info: Debuginfo.t -> unit
 val emit_debug_info_gen :
   Debuginfo.t ->
-  (int -> string -> unit) ->
-  (int -> int -> unit) -> unit
+  (file_num:int -> file_name:string -> unit) ->
+  (file_num:int -> line:int -> col:int -> unit) -> unit
 
 type frame_descr =
   { fd_lbl: int;                        (* Return address *)

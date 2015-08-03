@@ -210,6 +210,34 @@ val sigvtalrm : int
 val sigprof : int
 (** Profiling interrupt *)
 
+val sigbus : int
+(** Bus error
+    @since 4.03 *)
+
+val sigpoll : int
+(** Pollable event
+    @since 4.03 *)
+
+val sigsys : int
+(** Bad argument to routine
+    @since 4.03 *)
+
+val sigtrap : int
+(** Trace/breakpoint trap
+    @since 4.03 *)
+
+val sigurg : int
+(** Urgent condition on socket
+    @since 4.03 *)
+
+val sigxcpu : int
+(** Timeout in cpu time
+    @since 4.03 *)
+
+val sigxfsz : int
+(** File size limit exceeded
+    @since 4.03 *)
+
 
 exception Break
 (** Exception raised on interactive interrupt if {!Sys.catch_break}
@@ -230,3 +258,13 @@ val ocaml_version : string;;
     where [major], [minor], and [patchlevel] are integers, and
     [additional-info] is an arbitrary string. The [[.patchlevel]] and
     [[+additional-info]] parts may be absent. *)
+
+
+val enable_runtime_warnings: bool -> unit
+(** Control whether the OCaml runtime system can emit warnings
+    on stderr.  Currently, the only supported warning is triggered
+    when a channel created by [open_*] functions is finalized without
+    being closed.  Runtime warnings are enabled by default. *)
+
+val runtime_warnings_enabled: unit -> bool
+(** Return whether runtime warnings are currently enabled. *)

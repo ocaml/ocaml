@@ -662,7 +662,6 @@ struct
     mk_compat_32 F._compat_32;
     mk_config F._config;
     mk_custom F._custom;
-    mk_custom F._no_check_prims;
     mk_dllib F._dllib;
     mk_dllpath F._dllpath;
     mk_dtypes F._annot;

@@ -500,7 +500,8 @@ let token_bool ib =
 let token_int_literal conv ib =
   let tok =
     match conv with
-    | 'd' | 'i' | 'u' -> Scanning.token ib
+    | 'd' | 'i' -> Scanning.token ib
+    | 'u' -> "0u" ^ Scanning.token ib
     | 'o' -> "0o" ^ Scanning.token ib
     | 'x' | 'X' -> "0x" ^ Scanning.token ib
     | 'b' -> "0b" ^ Scanning.token ib

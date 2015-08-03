@@ -6,7 +6,8 @@
 (*                                                                     *)
 (*  Copyright 2007 Institut National de Recherche en Informatique et   *)
 (*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
+(*  under the terms of the GNU Library General Public License, with    *)
+(*  the special exception on linking described in file ../LICENSE.     *)
 (*                                                                     *)
 (***********************************************************************)
 
@@ -311,6 +312,9 @@ module type LOG = sig
       level. Youre formats are wrapped inside these two formats
       ["@\[<2>"] and ["@\]@."]. *)
   val dprintf : int -> ('a, Format.formatter, unit) format -> 'a
+
+  (** @return whether logging at this level will print anything *)
+  val is_logging : int -> bool
 
   (** Equivalent to calling [dprintf] with a level [< 0]. *)
   val eprintf : ('a, Format.formatter, unit) format -> 'a

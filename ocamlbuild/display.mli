@@ -6,7 +6,8 @@
 (*                                                                     *)
 (*  Copyright 2007 Institut National de Recherche en Informatique et   *)
 (*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
+(*  under the terms of the GNU Library General Public License, with    *)
+(*  the special exception on linking described in file ../LICENSE.     *)
 (*                                                                     *)
 (***********************************************************************)
 
@@ -31,4 +32,5 @@ val finish : ?how:[`Success|`Error|`Quiet] -> display -> unit
 val event : display -> ?pretend:bool -> string -> string -> Tags.t -> unit
 val display : display -> (out_channel -> unit) -> unit
 val update : display -> unit
-val dprintf : ?log_level:int -> display -> ('a, Format.formatter, unit) format -> 'a
+val is_logging : display -> int -> bool
+val dprintf : ?raw:bool -> ?log_level:int -> display -> ('a, Format.formatter, unit) format -> 'a

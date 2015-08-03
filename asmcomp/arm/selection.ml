@@ -27,7 +27,7 @@ let is_offset chunk n =
   (* ARM load/store byte/word have -4095 to 4095 *)
   | Byte_unsigned | Byte_signed
   | Thirtytwo_unsigned | Thirtytwo_signed
-  | Word | Single
+  | Word_int | Word_val | Single
     when not !thumb ->
       n >= -4095 && n <= 4095
   (* Thumb-2 load/store have -255 to 4095 *)
@@ -113,12 +113,12 @@ method! is_simple_expr = function
   | e -> super#is_simple_expr e
 
 method select_addressing chunk = function
-  | Cop(Cadda, [arg; Cconst_int n])
+  | Cop((Cadda | Caddv), [arg; Cconst_int n])
     when is_offset chunk n ->
       (Iindexed n, arg)
-  | Cop(Cadda, [arg1; Cop(Caddi, [arg2; Cconst_int n])])
+  | Cop((Cadda | Caddv as op), [arg1; Cop(Caddi, [arg2; Cconst_int n])])
     when is_offset chunk n ->
-      (Iindexed n, Cop(Cadda, [arg1; arg2]))
+      (Iindexed n, Cop(op, [arg1; arg2]))
   | arg ->
       (Iindexed 0, arg)
 
@@ -163,18 +163,18 @@ method select_shift_arith op arithop arithrevop args =
 method! select_operation op args =
   match (op, args) with
   (* Recognize special shift arithmetic *)
-    ((Cadda | Caddi), [arg; Cconst_int n])
+    ((Caddv | Cadda | Caddi), [arg; Cconst_int n])
     when n < 0 && self#is_immediate (-n) ->
       (Iintop_imm(Isub, -n), [arg])
-  | ((Cadda | Caddi as op), args) ->
+  | ((Caddv | Cadda | Caddi as op), args) ->
       self#select_shift_arith op Ishiftadd Ishiftadd args
-  | ((Csuba | Csubi), [arg; Cconst_int n])
+  | (Csubi, [arg; Cconst_int n])
     when n < 0 && self#is_immediate (-n) ->
       (Iintop_imm(Iadd, -n), [arg])
-  | ((Csuba | Csubi), [Cconst_int n; arg])
+  | (Csubi, [Cconst_int n; arg])
     when self#is_immediate n ->
       (Ispecific(Irevsubimm n), [arg])
-  | ((Csuba | Csubi as op), args) ->
+  | (Csubi as op, args) ->
       self#select_shift_arith op Ishiftsub Ishiftsubrev args
   | (Cand as op, args) ->
       self#select_shift_arith op Ishiftand Ishiftand args
@@ -231,12 +231,12 @@ method private select_operation_softfp op args =
        [Cop(Cextcall(func, typ_int, false, Debuginfo.none), args)])
   (* Add coercions around loads and stores of 32-bit floats *)
   | (Cload Single, args) ->
-      (Iextcall("__aeabi_f2d", false), [Cop(Cload Word, args)])
+      (Iextcall("__aeabi_f2d", false), [Cop(Cload Word_int, args)])
   | (Cstore Single, [arg1; arg2]) ->
       let arg2' =
         Cop(Cextcall("__aeabi_d2f", typ_int, false, Debuginfo.none),
             [arg2]) in
-      self#select_operation (Cstore Word) [arg1; arg2']
+      self#select_operation (Cstore Word_int) [arg1; arg2']
   (* Other operations are regular *)
   | (op, args) -> super#select_operation op args
 

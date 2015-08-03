@@ -731,7 +731,7 @@ end) = struct
 end
 
 let wrap_disambiguate kind ty f x =
-  try f x with Error (loc, env, Wrong_name (_,_,tk,tp,name,valid_names)) ->
+  try f x with Error (loc, env, Wrong_name ("",_,tk,tp,name,valid_names)) ->
     raise (Error (loc, env, Wrong_name (kind,ty,tk,tp,name,valid_names)))
 
 module Label = NameChoice (struct

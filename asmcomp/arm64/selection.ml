@@ -28,7 +28,7 @@ let is_offset chunk n =
         n land 1 = 0 && n lsr 1 < 0x1000
     | Thirtytwo_unsigned | Thirtytwo_signed | Single ->
         n land 3 = 0 && n lsr 2 < 0x1000
-    | Word | Double | Double_u ->
+    | Word_int | Word_val | Double | Double_u ->
         n land 7 = 0 && n lsr 3 < 0x1000)
 
 (* An automaton to recognize ( 0+1+0* | 1+0+1* )
@@ -102,15 +102,15 @@ method! is_simple_expr = function
   | e -> super#is_simple_expr e
 
 method select_addressing chunk = function
-  | Cop(Cadda, [Cconst_symbol s; Cconst_int n])
+  | Cop((Caddv | Cadda), [Cconst_symbol s; Cconst_int n])
     when use_direct_addressing s ->
       (Ibased(s, n), Ctuple [])
-  | Cop(Cadda, [arg; Cconst_int n])
+  | Cop((Caddv | Cadda), [arg; Cconst_int n])
     when is_offset chunk n ->
       (Iindexed n, arg)
-  | Cop(Cadda, [arg1; Cop(Caddi, [arg2; Cconst_int n])])
+  | Cop((Caddv | Cadda as op), [arg1; Cop(Caddi, [arg2; Cconst_int n])])
     when is_offset chunk n ->
-      (Iindexed n, Cop(Cadda, [arg1; arg2]))
+      (Iindexed n, Cop(op, [arg1; arg2]))
   | Cconst_symbol s
     when use_direct_addressing s ->
       (Ibased(s, 0), Ctuple [])
@@ -120,7 +120,7 @@ method select_addressing chunk = function
 method! select_operation op args =
   match op with
   (* Integer addition *)
-  | Caddi | Cadda ->
+  | Caddi | Caddv | Cadda ->
       begin match args with
       (* Add immediate *)
       | [arg; Cconst_int n] | [Cconst_int n; arg] when self#is_immediate n ->
@@ -149,7 +149,7 @@ method! select_operation op args =
           super#select_operation op args
       end
   (* Integer subtraction *)
-  | Csubi | Csuba ->
+  | Csubi ->
       begin match args with
       (* Sub immediate *)
       | [arg; Cconst_int n] when self#is_immediate n ->

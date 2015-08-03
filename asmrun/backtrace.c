@@ -75,8 +75,6 @@ frame_descr * caml_next_frame_descriptor(uintnat * pc, char ** sp)
   frame_descr * d;
   uintnat h;
 
-  if (caml_frame_descriptors == NULL) caml_init_frame_descriptors();
-
   while (1) {
     h = Hash_retaddr(*pc);
     while (1) {

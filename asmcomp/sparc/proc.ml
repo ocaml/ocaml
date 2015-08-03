@@ -65,8 +65,7 @@ let num_register_classes = 2
 
 let register_class r =
   match r.typ with
-    Int -> 0
-  | Addr -> 0
+  | Val | Int | Addr -> 0
   | Float -> 1
 
 let num_available_registers = [| 19; 15 |]
@@ -111,7 +110,7 @@ let calling_conventions first_int last_int first_float last_float make_stack
   let ofs = ref 0 in
   for i = 0 to Array.length arg - 1 do
     match arg.(i).typ with
-      Int | Addr as ty ->
+    | Val | Int | Addr as ty ->
         if !int <= last_int then begin
           loc.(i) <- phys_reg !int;
           incr int
@@ -151,7 +150,7 @@ let loc_external_arguments arg =
   for i = 0 to Array.length arg - 1 do
     if !reg <= 5 (* %o5 *) then begin
       match arg.(i).typ with
-        Int | Addr ->
+      | Val | Int | Addr ->
           loc := phys_reg !reg :: !loc;
           incr reg
       | Float ->

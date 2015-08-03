@@ -101,6 +101,7 @@ extern int caml_frame_descriptors_mask;
 
 extern void caml_init_frame_descriptors(void);
 extern void caml_register_frametable(intnat *);
+extern void caml_unregister_frametable(intnat *);
 extern void caml_register_dyn_global(void *);
 
 CAMLextern void extract_location_info(frame_descr * d,

@@ -152,37 +152,54 @@ CAMLextern struct caml__roots_block *caml_local_roots;  /* defined in roots.c */
   CAMLparam0 (); \
   CAMLxparamN (x, (size))
 
-
+/* CAMLunused is preserved for compatibility reasons.
+   Instead of the legacy GCC/Clang-only
+     CAMLunused foo;
+   you should prefer
+     CAMLunused_start foo CAMLunused_end;
+   which supports both GCC/Clang and MSVC.
+*/
 #if defined(__GNUC__) && (__GNUC__ > 2 || (__GNUC__ == 2 && __GNUC_MINOR__ > 7))
+  #define CAMLunused_start __attribute__ ((unused))
+  #define CAMLunused_end
   #define CAMLunused __attribute__ ((unused))
+#elif _MSC_VER >= 1500
+  #define CAMLunused_start  __pragma( warning (push) )           \
+    __pragma( warning (disable:4189 ) )
+  #define CAMLunused_end __pragma( warning (pop))
+  #define CAMLunused
 #else
+  #define CAMLunused_start
+  #define CAMLunused_end
   #define CAMLunused
 #endif
 
 #define CAMLxparam1(x) \
   struct caml__roots_block caml__roots_##x; \
-  CAMLunused int caml__dummy_##x = ( \
+  CAMLunused_start int caml__dummy_##x = ( \
     (caml__roots_##x.next = caml_local_roots), \
     (caml_local_roots = &caml__roots_##x), \
     (caml__roots_##x.nitems = 1), \
     (caml__roots_##x.ntables = 1), \
     (caml__roots_##x.tables [0] = &x), \
-    0)
+    0) \
+   CAMLunused_end
 
 #define CAMLxparam2(x, y) \
   struct caml__roots_block caml__roots_##x; \
-  CAMLunused int caml__dummy_##x = ( \
+  CAMLunused_start int caml__dummy_##x = ( \
     (caml__roots_##x.next = caml_local_roots), \
     (caml_local_roots = &caml__roots_##x), \
     (caml__roots_##x.nitems = 1), \
     (caml__roots_##x.ntables = 2), \
     (caml__roots_##x.tables [0] = &x), \
     (caml__roots_##x.tables [1] = &y), \
-    0)
+    0) \
+   CAMLunused_end
 
 #define CAMLxparam3(x, y, z) \
   struct caml__roots_block caml__roots_##x; \
-  CAMLunused int caml__dummy_##x = ( \
+  CAMLunused_start int caml__dummy_##x = ( \
     (caml__roots_##x.next = caml_local_roots), \
     (caml_local_roots = &caml__roots_##x), \
     (caml__roots_##x.nitems = 1), \
@@ -190,11 +207,12 @@ CAMLextern struct caml__roots_block *caml_local_roots;  /* defined in roots.c */
     (caml__roots_##x.tables [0] = &x), \
     (caml__roots_##x.tables [1] = &y), \
     (caml__roots_##x.tables [2] = &z), \
-    0)
+    0) \
+  CAMLunused_end
 
 #define CAMLxparam4(x, y, z, t) \
   struct caml__roots_block caml__roots_##x; \
-  CAMLunused int caml__dummy_##x = ( \
+  CAMLunused_start int caml__dummy_##x = ( \
     (caml__roots_##x.next = caml_local_roots), \
     (caml_local_roots = &caml__roots_##x), \
     (caml__roots_##x.nitems = 1), \
@@ -203,11 +221,12 @@ CAMLextern struct caml__roots_block *caml_local_roots;  /* defined in roots.c */
     (caml__roots_##x.tables [1] = &y), \
     (caml__roots_##x.tables [2] = &z), \
     (caml__roots_##x.tables [3] = &t), \
-    0)
+    0) \
+  CAMLunused_end
 
 #define CAMLxparam5(x, y, z, t, u) \
   struct caml__roots_block caml__roots_##x; \
-  CAMLunused int caml__dummy_##x = ( \
+  CAMLunused_start int caml__dummy_##x = ( \
     (caml__roots_##x.next = caml_local_roots), \
     (caml_local_roots = &caml__roots_##x), \
     (caml__roots_##x.nitems = 1), \
@@ -217,17 +236,19 @@ CAMLextern struct caml__roots_block *caml_local_roots;  /* defined in roots.c */
     (caml__roots_##x.tables [2] = &z), \
     (caml__roots_##x.tables [3] = &t), \
     (caml__roots_##x.tables [4] = &u), \
-    0)
+    0) \
+  CAMLunused_end
 
 #define CAMLxparamN(x, size) \
   struct caml__roots_block caml__roots_##x; \
-  CAMLunused int caml__dummy_##x = ( \
+  CAMLunused_start int caml__dummy_##x = (     \
     (caml__roots_##x.next = caml_local_roots), \
     (caml_local_roots = &caml__roots_##x), \
     (caml__roots_##x.nitems = (size)), \
     (caml__roots_##x.ntables = 1), \
     (caml__roots_##x.tables[0] = &(x[0])), \
-    0)
+    0) \
+  CAMLunused_end
 
 #define CAMLlocal1(x) \
   value x = Val_unit; \

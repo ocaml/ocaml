@@ -285,9 +285,7 @@ CAMLexport void caml_minor_collection (void)
   caml_major_collection_slice (0);
   caml_force_major_slice = 0;
 
-  if (caml_finalise_begin_hook != NULL) (*caml_finalise_begin_hook) ();
   caml_final_do_calls ();
-  if (caml_finalise_end_hook != NULL) (*caml_finalise_end_hook) ();
 
   caml_empty_minor_heap ();
 }

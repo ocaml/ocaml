@@ -6,7 +6,8 @@
 (*                                                                     *)
 (*  Copyright 2007 Institut National de Recherche en Informatique et   *)
 (*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
+(*  under the terms of the GNU Library General Public License, with    *)
+(*  the special exception on linking described in file ../LICENSE.     *)
 (*                                                                     *)
 (***********************************************************************)
 
@@ -376,8 +377,10 @@ let event di ?(pretend=false) command target tags =
 ;;
 (* ***)
 (*** dprintf *)
-let dprintf ?(log_level=1) di fmt =
+let is_logging di log_level = log_level <= di.di_log_level
+let dprintf ?(raw=false) ?(log_level=1) di fmt =
   if log_level > di.di_log_level then Discard_printf.discard_printf fmt else
+  let fmt = if raw then fmt else "@[<2>"^^fmt^^"@]@." in
   match di.di_display_line with
   | Classic -> Format.fprintf di.di_formatter fmt
   | Sophisticated _ ->

@@ -101,6 +101,7 @@ void caml_main(char **argv)
   value res;
   char tos;
 
+  caml_init_frame_descriptors();
   caml_init_ieee_floats();
 #ifdef _MSC_VER
   caml_install_invalid_parameter_handler();
