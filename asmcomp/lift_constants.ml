@@ -100,6 +100,11 @@ let compute_definitions_of_symbols ~expr ~(inconstants : Inconstants.result)
 
 (** Find constants assigned to multiple symbols and choose a unique symbol
     for them, thus sharing constants. *)
+(* XXX presumably to do this properly, we should actually traverse the
+   incoming program, and look at the [Let_symbol] bindings in effect when
+   processing each expression.  This may not be useful at the moment
+   because we probably won't rerun Lift_constants, but it seems like the
+   right thing to do. *)
 let share_constants ~var_to_symbol_tbl ~symbol_to_constant_tbl =
   let new_var_to_symbol_tbl = Variable.Tbl.create 42 in
   let new_symbol_to_constant_tbl = Symbol.Tbl.create 42 in
