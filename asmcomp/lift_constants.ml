@@ -61,17 +61,16 @@ let assign_symbols_to_constant_let_bound_variables ~expr
         Flambda.print_named named
     | Symbol _ | Const _ | Project_var _ | Expr _ -> ()
   in
-  Flambda_iterators.iter_all_let_and_let_rec_bindings expr ~f:assign_symbol;
-  Variable.Tbl.fold Variable.Map.add constant_tbl Variable.Map.empty
+  Flambda_iterators.iter_all_let_and_let_rec_bindings expr ~f:assign_symbol
 
 (** Produce [Flambda.constant_defining_value]s for all of the constants whose
     definitions are to be lifted.  These are indexed by [Symbol]s. *)
 let compute_definitions_of_symbols ~expr ~(inconstants : Inconstants.result)
-      ~var_to_symbol_map =
+      ~var_to_symbol_tbl =
   let constant_tbl : Flambda.named Symbol.Tbl.t = Symbol.Tbl.create 42 in
   let compute_definition var (named : Flambda.named) =
     if not (Variable.Set.mem var inconstants.id) then begin
-      let find_symbol var = Variable.Map.find var_to_symbol_map var in
+      let find_symbol var = Variable.Tbl.find var_to_symbol_tbl var in
       match named with
       | Allocated_const const ->
         Symbol.Tbl.add constant_tbl (find_symbol var) (Allocated_const const)
@@ -94,119 +93,73 @@ let compute_definitions_of_symbols ~expr ~(inconstants : Inconstants.result)
       | Prim (Pfield _, _, _) | Prim (Pgetglobalfield _, _, _) -> ()
       | Prim _ -> assert false  (* see [assign_symbol], above *)
       | Symbol _ | Const _ | Project_var _ | Expr _ -> ()
-      in
     end
   in
   Flambda_iterators.iter_all_let_and_let_rec_bindings expr
-    ~f:compute_definition;
-  Symbol.Tbl.fold Symbol.Map.add constant_tbl Symbol.Map.empty
+    ~f:compute_definition
 
-(** Compute which constants have equal definitions.  At the same time compute
-    the order in which to emit [Let_symbol] bindings. *)
-let share_constants ~constant_map:map ~compare_name ~aliases =
-  let constant_graph map =
-    Symbol.Map.map (fun (const : Flambda.constant_defining_value) ->
-        match const with
-        | Allocated_const _ -> Variable.Set.empty
-        | Block (_, fields) -> Variable.Set.of_list fields
-        | Set_of_closures _ ->
-          (* CR mshinwell: is this correct? *)
-          Variable.Set.empty
-        | Project_closure _ -> Variable.Set.empty)
+(** Find constants assigned to multiple symbols and choose a unique symbol
+    for them, thus sharing constants. *)
+let share_constants ~var_to_symbol_tbl ~symbol_to_constant_tbl =
+  let new_var_to_symbol_tbl = Variable.Tbl.create 42 in
+  let new_symbol_to_constant_tbl = Symbol.Tbl.create 42 in
+  let constant_to_symbol_tbl = Constant_defining_value.Tbl.create 42 in
+  let cannot_share (const : Flambda.constant_defining_value) =
+    match const with
+    (* Strings and float arrays are mutable; we never share them. *)
+    | Allocated_const ((String _) | (Float_array _)) -> true
+    | Allocated_const _ | Set_of_closures _ | Project_closure _ | Block _ ->
+      false
+  in
+  Variable.Tbl.iter (fun var symbol ->
+      let constant_defining_value = Symbol.Tbl.find constant_tbl symbol in
+      let symbol =
+        match
+          Constant_defining_value.Tbl.find constant_to_symbol_tbl
+            constant_defining_value
+        with
+        | exception Not_found -> symbol
+        | existing_symbol when cannot_share constant_defining_value -> symbol
+        | existing_symbol -> existing_symbol
+      in
+      Variable.Tbl.add new_var_to_symbol_tbl var symbol;
+      Symbol.Tbl.replace new_symbol_to_constant_tbl symbol
+        constant_defining_value;
+      Constant_defining_value.Tbl.replace constant_to_symbol_tbl
+        constant_defining_value symbol)
+    var_to_symbol_tbl;
+  new_var_to_symbol_tbl, new_symbol_to_constant_tbl
+
+(** Compute an order in which to emit [Let_symbol] bindings such that there
+    are no references to unbound symbols. *)
+let compute_order_of_let_symbol_bindings ~symbol_to_constant_tbl
+  let constant_graph =
+    Symbol.Tbl.fold
+      (fun symbol (const : Flambda.constant_defining_value) graph ->
+        let children =
+          match const with
+          | Allocated_const _ -> Symbol.Set.empty
+          | Block (_, fields) -> Symbol.Set.of_list fields
+          | Set_of_closures _ ->
+            (* Sets of closures used as [constant_defining_value]s are
+               always closed. *)
+            Symbol.Set.empty
+          | Project_closure _ -> Symbol.Set.empty
+        in
+        Symbol.Map.add symbol children graph)
       map
-  in
-  let rewrite_constant_aliases map aliases =
-    let subst var =
-      try Variable.Map.find var aliases with
-      | Not_found -> var
-    in
-    let subst_block (const : constant_defining_value)
-          : constant_defining_value =
-      match const with
-      | Block (tag, fields) -> Block (tag, List.map subst fields)
-      | constant_defining_value _ | Symbol _ -> const
-    in
-    Variable.Map.map subst_block map
-  in
-  let all_constants map aliases =
-    let allocated_constants = Variable.Map.keys map in
-    let aliased_constants =
-      Variable.Map.keys
-        (Variable.Map.filter (fun _var alias -> Variable.Map.mem alias map)
-          aliases)
-    in
-    Variable.Set.union allocated_constants aliased_constants
+      Symbol.Map.empty
   in
   let module Symbol_SCC = Sort_connected_components.Make (Symbol) in
-  let all_constants = all_constants map aliases in
-  let map = rewrite_constant_aliases map aliases in
   let components =
-    let graph = constant_graph map in
-    Symbol_SCC.connected_components_sorted_from_roots_to_leaf graph
+    Symbol_SCC.connected_components_sorted_from_roots_to_leaf
+      constant_graph
   in
-  let sorted_symbols =
-    List.flatten
-      (List.map (function
-          | Symbol_SCC.Has_loop l -> l
-          | Symbol_SCC.No_loop v -> [v])
-        (List.rev (Array.to_list components)))
-  in
-  let shared_constants = ref Constant_defining_value_map.empty in
-  (* We use a list for [constants] to preserve the reverse top-sort order.
-     This enables us to be sure that, when [Inline_and_simplify] (called
-     below) computes approximations of the defining values of the constants,
-     it can perform a single traversal and be sure that there will be no
-     undefined inter-constant references. *)
-  let constants = ref [] in
-  let equal_constants = ref Variable.Map.empty in
-  let find_and_add var cst =
-    match Constant_defining_value_map.find cst !shared_constants with
-    | exception Not_found ->
-      shared_constants :=
-        Constant_defining_value_map.add cst var !shared_constants;
-      constants := (var, cst)::!constants
-    | sharing ->
-      equal_constants := Variable.Map.add var sharing !equal_constants
-  in
-  let subst var =
-    try Variable.Map.find var !equal_constants with
-    | Not_found -> var
-  in
-  let share var =
-    let cst = Variable.Map.find var map in
-    match cst with
-    | String _ | Float_array _ ->
-      (* Strings and float arrays are mutable; we never share them. *)
-      constants := (var, cst)::!constants
-    | Float _ | Int32 _ | Int64 _ | Nativeint _ | Immstring _ ->
-      find_and_add var cst
-    | Block (tag, fields) ->
-      find_and_add var (Block (tag, List.map subst fields))
-  in
-  List.iter share sorted_symbols;
-  let constants = !constants in
-  let equal_constants = !equal_constants in
-  let assign_symbols (descr_map, kind_map) (var, const) =
-    let symbol = fresh_symbol var in
-    (symbol, const)::descr_map,
-      Variable.Map.add var (Symbol symbol) kind_map
-  in
-  let descr, declared_constants_kind =
-    List.fold_left assign_symbols
-      ([], Variable.Map.empty)
-      !constants
-  in
-  let equal_constants_kind =
-    Variable.Map.map (fun var ->
-        Variable.Map.find var declared_constants_kind)
-      !equal_constants
-  in
-  let declared_and_equal_constants_kind =
-    Variable.Map.disjoint_union
-      declared_constants_kind
-      equal_constants_kind
-  in
-  ...
+  List.flatten
+    (List.map (function
+        | Symbol_SCC.Has_loop l -> l
+        | Symbol_SCC.No_loop v -> [v])
+      (List.rev (Array.to_list components)))
 
 (** Substitute the defining expressions of all constant variables with the
     corresponding symbols.  Then bind all remaining free variables of the

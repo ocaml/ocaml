@@ -285,6 +285,7 @@ module Constant_defining_value : sig
   type t = constant_defining_value
 
   module Map : Map.S with type key = constant_defining_value
+  module Tbl : Hashtbl.S with type key = constant_defining_value
 
   val compare : t -> t -> int
 end
