@@ -211,7 +211,4 @@ module Result : sig
 
   val set_inlining_threshold : t -> Inlining_cost.inlining_threshold -> t
   val inlining_threshold : t -> Inlining_cost.inlining_threshold
-
-  val add_global : t -> field_index:int -> approx:Simple_value_approx.t -> t
-  val find_global : t -> field_index:int -> Simple_value_approx.t
 end

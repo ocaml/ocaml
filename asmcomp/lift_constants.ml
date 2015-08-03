@@ -157,8 +157,6 @@ let share_constants ~constant_map:map ~compare_name ~aliases =
      below) computes approximations of the defining values of the constants,
      it can perform a single traversal and be sure that there will be no
      undefined inter-constant references. *)
-  (* CR mshinwell: we should add a check to make sure our Let_symbol
-     defining values don't accidentally reference undefined symbols *)
   let constants = ref [] in
   let equal_constants = ref Variable.Map.empty in
   let find_and_add var cst =
@@ -231,17 +229,19 @@ let replace_constant_defining_exprs_with_symbols ~expr ~var_to_symbol_map =
             that are not known to be constant: free_vars = %a: %a"
           Variable.Set.print free_vars
           Flambda.print expr
-      end
-      Let (Immutable, free_var, Symbol (symbol_for_var free_var), expr))
+      end else begin
+        Let (Immutable, free_var, Symbol (symbol_for_var free_var), expr)
+      end)
     (Free_variables.calculate expr)
     expr
 
 (** Add [Let_symbol] bindings for symbols corresponding to constants whose
-    definitions we have lifted. *)
-let add_definitions_of_symbols ~expr ~constant_defining_values =
-  List.fold_left (fun expr symbol constant_defining_value ->
-      Flambda.Let_symbol (symbol, constant_defining_value, expr))
-    (Flambda.Entry_point expr)
+    definitions we have lifted.  The bindings are inserted in a correct
+    order such that there are no references to unbound symbols. *)
+let add_definitions_of_symbols ~program ~constant_defining_values =
+  List.fold_left (fun program symbol constant_defining_value ->
+      Flambda.Let_symbol (symbol, constant_defining_value, program))
+    program
     (List.rev constant_defining_values)
 
 let lift_constants expr ~backend =

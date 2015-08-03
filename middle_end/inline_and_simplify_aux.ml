@@ -181,7 +181,6 @@ module Result = struct
 
   type t =
     { approx : Simple_value_approx.t;
-      globals : Simple_value_approx.t Int.Map.t;
       used_staticfail : Static_exception.Set.t;
       inlining_threshold : Inlining_cost.inlining_threshold;
       benefit : Inlining_cost.Benefit.t;
@@ -189,7 +188,6 @@ module Result = struct
 
   let create () =
     { approx = Simple_value_approx.value_unknown;
-      globals = Int.Map.empty;
       used_staticfail = Static_exception.Set.empty;
       inlining_threshold =
         (* CR pchambart: Add a warning if this is too big *)
@@ -222,14 +220,4 @@ module Result = struct
     { t with inlining_threshold }
 
   let inlining_threshold t = t.inlining_threshold
-
-  let add_global t ~field_index ~approx =
-    { t with globals = Int.Map.add field_index approx t.globals }
-
-  let find_global t ~field_index =
-    try Int.Map.find field_index t.globals with
-    | Not_found ->
-      Misc.fatal_error (Format.asprintf
-          "Inlining_result.find_global: couldn't find global %i@."
-            field_index)
 end
