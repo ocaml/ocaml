@@ -245,6 +245,7 @@ and function_declaration = private {
       be included in this set.  This field is present as an optimization. *)
   (* CR mshinwell: inconsistent naming free_variables/free_vars here and
      above *)
+  (* CR mshinwell: make lazy *)
   free_variables : Variable.Set.t;
   (** A stub function is a generated function used to prepare arguments or
       return values to allow indirect calls to functions with a special calling
@@ -277,9 +278,13 @@ and for_loop = {
     have [Symbol.t]s, and everything is a constant. *)
 and constant_defining_value =
   | Allocated_const of Allocated_const.t
-  | Block of Tag.t * Symbol.t list
+  | Block of Tag.t * constant_defining_value_block_field list
   | Set_of_closures of set_of_closures  (* [free_vars] must be empty *)
   | Project_closure of Symbol.t * Closure_id.t
+
+and constant_defining_value_block_field =
+  | Symbol of Symbol.t
+  | Const of const
 
 module Constant_defining_value : sig
   type t = constant_defining_value
@@ -292,7 +297,7 @@ end
 
 (** A "program" is the contents of one compilation unit. *)
 type program =
-  | Let_symbol of Symbol.t * constant_defining_value * program
+  | Let_rec_symbol of (Symbol.t * constant_defining_value) list * program
   | Import_symbol of Symbol.t * program
   | Initialize_symbol of Symbol.t * t * program
   | End

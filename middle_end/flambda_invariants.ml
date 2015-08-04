@@ -75,6 +75,8 @@ exception Flambda_invariants_failed
    overapplication" be an invariant throughout.  At the moment I think this is
    only true after [Inline_and_simplify] has split overapplications. *)
 
+(* CR mshinwell: What about checks for shadowed variables and symbols? *)
+
 let variable_and_symbol_invariants flam =
   let add_binding_occurrence (var_env, sym_env) var is_mutable =
     let compilation_unit = Compilation_unit.get_current_exn () in

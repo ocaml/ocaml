@@ -64,39 +64,68 @@ let assign_symbols_to_constant_let_bound_variables ~expr
   Flambda_iterators.iter_all_let_and_let_rec_bindings expr ~f:assign_symbol
 
 (** Produce [Flambda.constant_defining_value]s for all of the constants whose
-    definitions are to be lifted.  These are indexed by [Symbol]s. *)
-let compute_definitions_of_symbols ~expr ~(inconstants : Inconstants.result)
+    definitions are to be lifted.  These are indexed by [Symbol]s.  When
+    going inside a closure, we need to apply the [free_vars] mapping, so
+    that we know the correct assignment of variables found within the bodies
+    of functions inside the closure to symbols. *)
+let rec compute_definitions_of_symbols ~expr ~(inconstants : Inconstants.result)
       ~var_to_symbol_tbl =
   let constant_tbl : Flambda.named Symbol.Tbl.t = Symbol.Tbl.create 42 in
-  let compute_definition var (named : Flambda.named) =
-    if not (Variable.Set.mem var inconstants.id) then begin
-      let find_symbol var = Variable.Tbl.find var_to_symbol_tbl var in
-      match named with
-      | Allocated_const const ->
-        Symbol.Tbl.add constant_tbl (find_symbol var) (Allocated_const const)
-      | Prim (Pmakeblock (tag, _), args, _) ->
-        Symbol.Tbl.add constant_tbl (find_symbol var)
-          (Block (Tag.create_exn tag, List.map find_symbol args))
-      | Set_of_closures set_of_closures ->
-        let set_of_closures_symbol = find_symbol var in
-        Symbol.Tbl.add constant_tbl set_of_closures_symbol
-          (Set_of_closures set_of_closures);
-        Variable.Map.iter (fun fun_var _ ->
-            Symbol.Tbl.add constant_tbl (find_symbol fun_var)
-              (Closure (set_of_closures_symbol, Closure_id.wrap fun_var)))
-          funs
-      | Move_within_set_of_closures _ | Project_closure _
-      | Prim (Pgetglobal _, _, _) ->
-        (* In these cases, there is no definition to lift: it's already a
-           symbol (uniquely determined as per [assigned_symbol], above). *)
-        ()
-      | Prim (Pfield _, _, _) | Prim (Pgetglobalfield _, _, _) -> ()
-      | Prim _ -> assert false  (* see [assign_symbol], above *)
-      | Symbol _ | Const _ | Project_var _ | Expr _ -> ()
-    end
+  let find_symbol var = Variable.Tbl.find var_to_symbol_tbl var in
+  let is_constant var = not (Variable.Set.Mem var inconstants.id) in
+  let compute_definition var named =
+    assert (is_constant var);
+    match named with
+    | Allocated_const const ->
+      Symbol.Tbl.add constant_tbl (find_symbol var) (Allocated_const const)
+    | Prim (Pmakeblock (tag, _), args, _) ->
+      Symbol.Tbl.add constant_tbl (find_symbol var)
+        (Block (Tag.create_exn tag, List.map find_symbol args))
+    | Set_of_closures set_of_closures ->
+      let set_of_closures_symbol = find_symbol var in
+      Symbol.Tbl.add constant_tbl set_of_closures_symbol
+        (Set_of_closures set_of_closures);
+      Variable.Map.iter (fun fun_var _ ->
+          Symbol.Tbl.add constant_tbl (find_symbol fun_var)
+            (Closure (set_of_closures_symbol, Closure_id.wrap fun_var)))
+        funs
+    | Move_within_set_of_closures _ | Project_closure _
+    | Prim (Pgetglobal _, _, _) ->
+      (* In these cases, there is no definition to lift: it's already a
+         symbol (uniquely determined as per [assigned_symbol], above). *)
+      ()
+    | Prim (Pfield _, _, _) | Prim (Pgetglobalfield _, _, _) -> ()
+    | Prim _ -> assert false  (* see [assign_symbol], above *)
+    | Symbol _ | Const _ | Project_var _ | Expr _ -> ()
   in
-  Flambda_iterators.iter_all_let_and_let_rec_bindings expr
-    ~f:compute_definition
+  let traverse (expr : Flambda.t) =
+    match expr with
+    | Let (_, var, named, body) when is_constant var ->
+      compute_definition var named;
+      begin match named with
+      | Set_of_closures set_of_closures ->
+        (* When descending into a closure, we create a new [var_to_symbol_tbl],
+           which reflects the [free_vars] mapping of the closure. *)
+        let var_to_symbol_tbl = Variable.Tbl.create 42 in
+        Variable.Map.iter (fun inner_var outer_var ->
+            match find_symbol outer_var with
+            | exception Not_found -> ()
+            | symbol -> Variable.Tbl.add var_to_symbol_tbl inner_var symbol)
+          set_of_closures.free_vars;
+        Variable.Map.iter (fun fun_var function_decl ->
+            compute_definitions_of_symbols ~expr:function_decl.body
+              ~inconstants ~var_to_symbol_tbl)
+          set_of_closures.function_decls.funs
+      | _ -> ()
+      end
+    | Let_rec _ -> ...
+
+    | _ -> ()
+  in
+    if not (Variable.Set.mem var inconstants.id) then begin
+    end;
+  in
+  Flambda_iterators.iter_toplevel expr traverse (fun _ -> ())
 
 (** Find constants assigned to multiple symbols and choose a unique symbol
     for them, thus sharing constants. *)
@@ -104,7 +133,15 @@ let compute_definitions_of_symbols ~expr ~(inconstants : Inconstants.result)
    incoming program, and look at the [Let_symbol] bindings in effect when
    processing each expression.  This may not be useful at the moment
    because we probably won't rerun Lift_constants, but it seems like the
-   right thing to do. *)
+   right thing to do.
+   Need to be careful that existing symbols remain the ones that are used
+   as the canonical ones.  Just comes down to pre-populating the
+   [constant_to_symbol_tbl], probably.  Maybe then these functions should
+   stay as operating on [expr].  In effect it's a fold over the program nodes
+   replacing each one that has an [expr] by a sequence of new nodes.
+   However we also need to do this globally in some sense.  What about the
+   sequential substitution thing?  Keep an environment and remove Let_symbol
+   bindings as necessary (and substitute through the expressions) *)
 let share_constants ~var_to_symbol_tbl ~symbol_to_constant_tbl =
   let new_var_to_symbol_tbl = Variable.Tbl.create 42 in
   let new_symbol_to_constant_tbl = Symbol.Tbl.create 42 in
