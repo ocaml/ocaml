@@ -100,8 +100,10 @@ let rec compute_definitions_of_symbols ~expr ~(inconstants : Inconstants.result)
   in
   let traverse (expr : Flambda.t) =
     match expr with
-    | Let (_, var, named, body) when is_constant var ->
-      compute_definition var named;
+    | Let (_, var, named, body) ->
+      if is_constant var then begin
+        compute_definition var named
+      end;
       begin match named with
       | Set_of_closures set_of_closures ->
         (* When descending into a closure, we create a new [var_to_symbol_tbl],
