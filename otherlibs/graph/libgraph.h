@@ -74,7 +74,10 @@ extern int caml_gr_bits_per_pixel;
 #endif
 #endif
 
-CAMLnoreturn_start extern void caml_gr_fail(char *fmt, char *arg);
+CAMLnoreturn_start
+extern void caml_gr_fail(char *fmt, char *arg)
+CAMLnoreturn_end;
+
 extern void caml_gr_check_open(void);
 extern unsigned long caml_gr_pixel_rgb(int rgb);
 extern int caml_gr_rgb_pixel(long unsigned int pixel);
