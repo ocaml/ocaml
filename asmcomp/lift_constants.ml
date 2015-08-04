@@ -122,9 +122,6 @@ let rec compute_definitions_of_symbols ~expr ~(inconstants : Inconstants.result)
 
     | _ -> ()
   in
-    if not (Variable.Set.mem var inconstants.id) then begin
-    end;
-  in
   Flambda_iterators.iter_toplevel expr traverse (fun _ -> ())
 
 (** Find constants assigned to multiple symbols and choose a unique symbol
