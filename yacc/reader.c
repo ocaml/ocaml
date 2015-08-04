@@ -1336,6 +1336,7 @@ loop:
         fprintf(f, " : '%s))\n", plhs[nrules]->name);
       if (sflag)
         fprintf(f, "\n");
+      FREE(a_line);
       return;
     }
     putc(c, f);
