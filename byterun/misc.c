@@ -179,3 +179,19 @@ CAMLexport char * caml_strconcat(int n, ...)
   *p = 0;
   return res;
 }
+
+/* Runtime warnings */
+
+uintnat caml_runtime_warnings = 1;
+static int caml_runtime_warnings_first = 1;
+
+int caml_runtime_warnings_active(void)
+{
+  if (!caml_runtime_warnings) return 0;
+  if (caml_runtime_warnings_first) {
+    fprintf(stderr, "[ocaml] (use Sys.enable_runtime_warnings to control these warnings)\n");
+    caml_runtime_warnings_first = 0;
+  }
+  return 1;
+}
+
