@@ -86,6 +86,8 @@ camlinternalOO.cmx : sys.cmx string.cmx obj.cmx map.cmx list.cmx char.cmx \
     array.cmx camlinternalOO.cmi
 char.cmo : char.cmi
 char.cmx : char.cmi
+cif.cmo : obj.cmi camlinternalFormatBasics.cmi
+cif.cmx : obj.cmx camlinternalFormatBasics.cmx
 complex.cmo : complex.cmi
 complex.cmx : complex.cmi
 digest.cmo : string.cmi char.cmi bytes.cmi digest.cmi
@@ -120,8 +122,6 @@ listLabels.cmo : list.cmi listLabels.cmi
 listLabels.cmx : list.cmx listLabels.cmi
 list.cmo : list.cmi
 list.cmx : list.cmi
-l.cmo :
-l.cmx :
 map.cmo : map.cmi
 map.cmx : map.cmi
 marshal.cmo : bytes.cmi marshal.cmi
@@ -178,6 +178,8 @@ string.cmo : pervasives.cmi list.cmi bytes.cmi string.cmi
 string.cmx : pervasives.cmx list.cmx bytes.cmx string.cmi
 sys.cmo : sys.cmi
 sys.cmx : sys.cmi
+test.cmo : printf.cmi
+test.cmx : printf.cmx
 weak.cmo : sys.cmi obj.cmi hashtbl.cmi array.cmi weak.cmi
 weak.cmx : sys.cmx obj.cmx hashtbl.cmx array.cmx weak.cmi
 allocation_profiling.cmo : sys.cmi scanf.cmi printf.cmi pervasives.cmi \
@@ -218,6 +220,8 @@ camlinternalOO.p.cmx : sys.p.cmx string.p.cmx obj.p.cmx map.p.cmx list.p.cmx cha
     array.p.cmx camlinternalOO.cmi
 char.cmo : char.cmi
 char.p.cmx : char.cmi
+cif.cmo : obj.cmi camlinternalFormatBasics.cmi
+cif.p.cmx : obj.p.cmx camlinternalFormatBasics.p.cmx
 complex.cmo : complex.cmi
 complex.p.cmx : complex.cmi
 digest.cmo : string.cmi char.cmi bytes.cmi digest.cmi
@@ -252,8 +256,6 @@ listLabels.cmo : list.cmi listLabels.cmi
 listLabels.p.cmx : list.p.cmx listLabels.cmi
 list.cmo : list.cmi
 list.p.cmx : list.cmi
-l.cmo :
-l.p.cmx :
 map.cmo : map.cmi
 map.p.cmx : map.cmi
 marshal.cmo : bytes.cmi marshal.cmi
@@ -310,5 +312,7 @@ string.cmo : pervasives.cmi list.cmi bytes.cmi string.cmi
 string.p.cmx : pervasives.p.cmx list.p.cmx bytes.p.cmx string.cmi
 sys.cmo : sys.cmi
 sys.p.cmx : sys.cmi
+test.cmo : printf.cmi
+test.p.cmx : printf.p.cmx
 weak.cmo : sys.cmi obj.cmi hashtbl.cmi array.cmi weak.cmi
 weak.p.cmx : sys.p.cmx obj.p.cmx hashtbl.p.cmx array.p.cmx weak.cmi

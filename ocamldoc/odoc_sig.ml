@@ -566,12 +566,20 @@ module Analyser =
                 assoc_com
                 ele.Parsetree.psig_desc
             in
-            f (acc_eles @ (ele_comments @ elements))
-              new_env
-              (ele.Parsetree.psig_loc.Location.loc_end.Lexing.pos_cnum + maybe_more)
+            let new_pos =
+              match ele.Parsetree.psig_desc with
+              | Parsetree.Psig_attribute ({Asttypes.txt = "ocaml.text"}, _) -> last_pos
+                  (* This "signature item" is actually a doc comment; the item is ignored
+                     but don't skip the comment. *)
+              | _ ->
+                 (ele.Parsetree.psig_loc.Location.loc_end.Lexing.pos_cnum + maybe_more)
                    (* for the comments of constructors in types,
                       which are after the constructor definition and can
                       go beyond ele.Parsetree.psig_loc.Location.loc_end.Lexing.pos_cnum *)
+            in
+            f (acc_eles @ (ele_comments @ elements))
+              new_env
+              new_pos
               q
       in
       f [] env last_pos sig_item_list

@@ -65,6 +65,12 @@ type ('a, 'b) precision =
    only accept an optional number as precision option (no extra argument) *)
 type prec_option = int option
 
+(* see the Custom format combinator *)
+type ('a, 'b, 'c) custom_arity =
+  | Custom_zero : ('a, string, 'a) custom_arity
+  | Custom_succ : ('a, 'b, 'c) custom_arity ->
+    ('a, 'x -> 'b, 'x -> 'c) custom_arity
+
 (***)
 
 (*        Relational format types
@@ -306,6 +312,11 @@ and ('a1, 'b1, 'c1, 'd1, 'e1, 'f1,
        'a2, 'b2, 'c2, 'd2, 'e2, 'f2) fmtty_rel ->
       (('b1 -> 'c1) -> 'a1, 'b1, 'c1, 'd1, 'e1, 'f1,
        ('b2 -> 'c2) -> 'a2, 'b2, 'c2, 'd2, 'e2, 'f2) fmtty_rel
+  | Any_ty :                                                  (* Used for custom formats *)
+      ('a1, 'b1, 'c1, 'd1, 'e1, 'f1,
+       'a2, 'b2, 'c2, 'd2, 'e2, 'f2) fmtty_rel ->
+      ('x -> 'a1, 'b1, 'c1, 'd1, 'e1, 'f1,
+       'x -> 'a2, 'b2, 'c2, 'd2, 'e2, 'f2) fmtty_rel
 
   (* Scanf specific constructor. *)
   | Reader_ty :                                               (* %r  *)
@@ -417,6 +428,32 @@ and ('a, 'b, 'c, 'd, 'e, 'f) fmt =
       ('a, 'b, 'c, 'd, 'y, 'x) ignored * ('x, 'b, 'c, 'y, 'e, 'f) fmt ->
         ('a, 'b, 'c, 'd, 'e, 'f) fmt
 
+  (* Custom printing format (PR#6452, GPR#140)
+
+     We include a type Custom of "custom converters", where an
+     arbitrary function can be used to convert one or more
+     arguments. There is no syntax for custom converters, it is only
+     inteded for custom processors that wish to rely on the
+     stdlib-defined format GADTs.
+
+     For instance a pre-processor could choose to interpret strings
+     prefixed with ["!"] as format strings where [%{{ ... }}] is
+     a special form to pass a to_string function, so that one could
+     write:
+
+     {[
+       type t = { x : int; y : int }
+
+       let string_of_t t = Printf.sprintf "{ x = %d; y = %d }" t.x t.y
+
+       Printf.printf !"t = %{{string_of_t}}" { x = 42; y = 42 }
+     ]}
+  *)
+  | Custom :
+      ('a, 'x, 'y) custom_arity * (unit -> 'x) * ('a, 'b, 'c, 'd, 'e, 'f) fmt ->
+      ('y, 'b, 'c, 'd, 'e, 'f) fmt
+
+  (* end of a format specification *)
   | End_of_format :
         ('f, 'b, 'c, 'e, 'e, 'f) fmt
 
@@ -490,6 +527,8 @@ let rec erase_rel : type a b c d e f g h i j k l .
     Alpha_ty (erase_rel rest)
   | Theta_ty rest ->
     Theta_ty (erase_rel rest)
+  | Any_ty rest ->
+    Any_ty (erase_rel rest)
   | Reader_ty rest ->
     Reader_ty (erase_rel rest)
   | Ignored_reader_ty rest ->
@@ -543,6 +582,8 @@ fun fmtty1 fmtty2 -> match fmtty1 with
     Alpha_ty (concat_fmtty rest fmtty2)
   | Theta_ty rest ->
     Theta_ty (concat_fmtty rest fmtty2)
+  | Any_ty rest ->
+    Any_ty (concat_fmtty rest fmtty2)
   | Reader_ty rest ->
     Reader_ty (concat_fmtty rest fmtty2)
   | Ignored_reader_ty rest ->
@@ -588,6 +629,8 @@ fun fmt1 fmt2 -> match fmt1 with
     Alpha (concat_fmt rest fmt2)
   | Theta rest ->
     Theta (concat_fmt rest fmt2)
+  | Custom (arity, f, rest) ->
+    Custom (arity, f, concat_fmt rest fmt2)
   | Reader rest ->
     Reader (concat_fmt rest fmt2)
   | Flush rest ->

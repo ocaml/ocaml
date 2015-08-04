@@ -34,8 +34,12 @@ type addressing_mode =
 (* Specific operations *)
 
 type specific_operation =
+  | Ifar_alloc of int
+  | Ifar_intop_checkbound
+  | Ifar_intop_imm_checkbound of int
   | Ishiftarith of arith_operation * int
   | Ishiftcheckbound of int
+  | Ifar_shiftcheckbound of int
   | Imuladd       (* multiply and add *)
   | Imulsub       (* multiply and subtract *)
   | Inegmulf      (* floating-point negate and multiply *)
@@ -91,6 +95,12 @@ let print_addressing printreg addr ppf arg =
 
 let print_specific_operation printreg op ppf arg =
   match op with
+  | Ifar_alloc n ->
+    fprintf ppf "(far) alloc %i" n
+  | Ifar_intop_checkbound ->
+    fprintf ppf "%a (far) check > %a" printreg arg.(0) printreg arg.(1)
+  | Ifar_intop_imm_checkbound n ->
+    fprintf ppf "%a (far) check > %i" printreg arg.(0) n
   | Ishiftarith(op, shift) ->
       let op_name = function
       | Ishiftadd -> "+"
@@ -103,6 +113,9 @@ let print_specific_operation printreg op ppf arg =
        printreg arg.(0) (op_name op) printreg arg.(1) shift_mark
   | Ishiftcheckbound n ->
       fprintf ppf "check %a >> %i > %a" printreg arg.(0) n printreg arg.(1)
+  | Ifar_shiftcheckbound n ->
+      fprintf ppf
+        "(far) check %a >> %i > %a" printreg arg.(0) n printreg arg.(1)
   | Imuladd ->
       fprintf ppf "(%a * %a) + %a"
         printreg arg.(0)

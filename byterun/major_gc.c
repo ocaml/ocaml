@@ -94,13 +94,6 @@ void caml_darken (value v, value *p /* not used */)
 {
 #ifdef NATIVE_CODE_AND_NO_NAKED_POINTERS
   if (Is_block (v) && Wosize_val (v) > 0) {
-    /* We insist that naked pointers to outside the heap point to things that
-       look like values with headers coloured black.  This isn't always
-       strictly necessary but is essential in certain cases---in particular
-       when the value is allocated in a read-only section.  (For the values
-       where it would be safe it is a performance improvement since we avoid
-       putting them on the grey list.) */
-    CAMLassert (Is_in_heap (v) || Is_black_hd (Hd_val (v)));
 #else
   if (Is_block (v) && Is_in_heap (v)) {
 #endif
@@ -111,6 +104,15 @@ void caml_darken (value v, value *p /* not used */)
       h = Hd_val (v);
       t = Tag_hd (h);
     }
+#ifdef NATIVE_CODE_AND_NO_NAKED_POINTERS
+    /* We insist that naked pointers to outside the heap point to things that
+       look like values with headers coloured black.  This isn't always
+       strictly necessary but is essential in certain cases---in particular
+       when the value is allocated in a read-only section.  (For the values
+       where it would be safe it is a performance improvement since we avoid
+       putting them on the grey list.) */
+    CAMLassert (Is_in_heap (v) || Is_black_hd (h));
+#endif
     CAMLassert (!Is_blue_hd (h));
     if (Is_white_hd (h)){
       if (t < No_scan_tag){
@@ -149,7 +151,6 @@ static void mark_slice (intnat work)
   int marking_closure = 0;
 #endif
 
-  if (caml_major_slice_begin_hook != NULL) (*caml_major_slice_begin_hook) ();
   caml_gc_message (0x40, "Marking %ld words\n", work);
   caml_gc_message (0x40, "Subphase = %ld\n", caml_gc_subphase);
   gray_vals_ptr = gray_vals_cur;
@@ -174,8 +175,6 @@ static void mark_slice (intnat work)
                    be reliably determined, so we always use the page table when
                    marking such values. */
                 && (!marking_closure || Is_in_heap (child))) {
-            /* See [caml_darken] for a description of this assertion. */
-            CAMLassert (Is_in_heap (child) || Is_black_hd (Hd_val (child)));
 #else
           if (Is_block (child) && Is_in_heap (child)) {
 #endif
@@ -194,6 +193,10 @@ static void mark_slice (intnat work)
               child -= Infix_offset_val(child);
               hd = Hd_val(child);
             }
+#ifdef NATIVE_CODE_AND_NO_NAKED_POINTERS
+            /* See [caml_darken] for a description of this assertion. */
+            CAMLassert (Is_in_heap (child) || Is_black_hd (hd));
+#endif
             if (Is_white_hd (hd)){
               Hd_val (child) = Grayhd_hd (hd);
               *gray_vals_ptr++ = child;
@@ -320,7 +323,6 @@ static void mark_slice (intnat work)
     }
   }
   gray_vals_cur = gray_vals_ptr;
-  if (caml_major_slice_end_hook != NULL) (*caml_major_slice_end_hook) ();
 }
 
 #define MAJOR_WORK_SAMPLES 10000
@@ -399,7 +401,6 @@ static void sweep_slice (intnat work)
     now = Profinfo_now;
   }
 
-  if (caml_major_slice_begin_hook != NULL) (*caml_major_slice_begin_hook) ();
   caml_gc_message (0x40, "Sweeping %ld words\n", work);
   while (work > 0){
     if (caml_gc_sweep_hp < limit){
@@ -450,7 +451,6 @@ static void sweep_slice (intnat work)
   }
   add_major_work_stat (dark_words, blue_words, white_words,
                        end_of_chunk, end_of_sweep);
-  if (caml_major_slice_end_hook != NULL) (*caml_major_slice_end_hook) ();
 }
 
 /* The main entry point for the GC.  Called after each minor GC.
@@ -505,6 +505,8 @@ intnat caml_major_collection_slice (intnat howmuch)
      This slice will either mark MS words or sweep SS words.
   */
 
+  if (caml_major_slice_begin_hook != NULL) (*caml_major_slice_begin_hook) ();
+
   if (caml_gc_phase == Phase_idle) start_cycle ();
 
   p = (double) caml_allocated_words * 3.0 * (100 + caml_percent_free)
@@ -552,6 +554,7 @@ intnat caml_major_collection_slice (intnat howmuch)
   caml_allocated_words = 0;
   caml_dependent_allocated = 0;
   caml_extra_heap_resources = 0.0;
+  if (caml_major_slice_end_hook != NULL) (*caml_major_slice_end_hook) ();
   return computed_work;
 }
 

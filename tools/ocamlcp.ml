@@ -61,12 +61,14 @@ module Options = Main_args.Make_bytecomp_options (struct
   let _impl s = with_impl := true; option_with_arg "-impl" s
   let _intf s = with_intf := true; option_with_arg "-intf" s
   let _intf_suffix s = option_with_arg "-intf-suffix" s
+  let _keep_docs = option "-keep-docs"
   let _keep_locs = option "-keep-locs"
   let _labels = option "-labels"
   let _linkall = option "-linkall"
   let _make_runtime = option "-make-runtime"
   let _no_alias_deps = option "-no-alias-deps"
   let _no_app_funct = option "-no-app-funct"
+  let _no_check_prims = option "-no-check-prims"
   let _noassert = option "-noassert"
   let _nolabels = option "-nolabels"
   let _noautolink = option "-noautolink"
@@ -74,6 +76,7 @@ module Options = Main_args.Make_bytecomp_options (struct
   let _o s = option_with_arg "-o" s
   let _open s = option_with_arg "-open" s
   let _output_obj = option "-output-obj"
+  let _output_complete_obj = option "-output-complete-obj"
   let _pack = option "-pack"
   let _pp _s = incompatible "-pp"
   let _ppx _s = incompatible "-ppx"

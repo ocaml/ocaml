@@ -14,6 +14,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+
+#include "caml/address_class.h"
 #include "caml/fail.h"
 #include "caml/freelist.h"
 #include "caml/gc.h"

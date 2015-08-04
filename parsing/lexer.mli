@@ -49,10 +49,7 @@ by the parser, as [preprocessor lexer lexbuf] where [lexer] is the
 lexing function.
 
 When a preprocessor is configured by calling [set_preprocessor], the lexer
-changes its behavior:
-- It accepts backslash-newline as a token-separating blank.
-- It emits an EOL token for every newline except those preceeded by backslash
-  and those in strings or comments.
+changes its behavior to accept backslash-newline as a token-separating blank.
 *)
 
 val set_preprocessor :

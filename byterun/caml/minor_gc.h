@@ -15,7 +15,7 @@
 #define CAML_MINOR_GC_H
 
 
-#include "misc.h"
+#include "address_class.h"
 
 CAMLextern char *caml_young_start, *caml_young_ptr;
 CAMLextern char *caml_young_end, *caml_young_limit;
@@ -32,10 +32,6 @@ struct caml_ref_table {
   asize_t reserve;
 };
 CAMLextern struct caml_ref_table caml_ref_table, caml_weak_ref_table;
-
-#define Is_young(val) \
-  (Assert (Is_block (val)), \
-   (addr)(val) < (addr)caml_young_end && (addr)(val) > (addr)caml_young_start)
 
 extern void caml_set_minor_heap_size (asize_t); /* size in bytes */
 extern void caml_empty_minor_heap (void);

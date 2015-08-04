@@ -308,126 +308,87 @@ let defined_functions = ref StringSet.empty
 (* Label of glue code for calling the GC *)
 let call_gc_label = ref 0
 
-(* Fixup conditional branches that exceed hardware allowed range *)
+module BR = Branch_relaxation.Make (struct
+  type distance = int
 
-let load_store_size = function
-    Ibased(s, d) -> 2
-  | Iindexed ofs -> if is_immediate ofs then 1 else 3
-  | Iindexed2 -> 1
+  module Cond_branch = struct
+    type t = Branch
 
-let instr_size = function
-    Lend -> 0
-  | Lop(Imove | Ispill | Ireload) -> 1
-  | Lop(Iconst_int n | Iconst_blockheader n) ->
-    if is_native_immediate n then 1 else 2
-  | Lop(Iconst_float s) -> 2
-  | Lop(Iconst_symbol s) -> 2
-  | Lop(Icall_ind) -> 2
-  | Lop(Icall_imm s) -> 1
-  | Lop(Itailcall_ind) -> 5
-  | Lop(Itailcall_imm s) -> if s = !function_name then 1 else 4
-  | Lop(Iextcall(s, true)) -> 3
-  | Lop(Iextcall(s, false)) -> if pic_externals then 4 else 1
-  | Lop(Istackoffset n) -> 1
-  | Lop(Iload(chunk, addr)) ->
+    let all = [Branch]
+
+    let max_displacement = function
+      (* 14-bit signed offset in words. *)
+      | Branch -> 8192
+
+    let classify_instr = function
+      | Lop (Ialloc _)
+      (* [Ialloc_far] does not need to be here, since its code sequence
+         never involves any conditional branches that might need relaxing. *)
+      | Lcondbranch _
+      | Lcondbranch3 _ -> Some Branch
+      | _ -> None
+  end
+
+  let offset_pc_at_branch = 1
+
+  let load_store_size = function
+    | Ibased(s, d) -> 2
+    | Iindexed ofs -> if is_immediate ofs then 1 else 3
+    | Iindexed2 -> 1
+
+  let instr_size = function
+    | Lend -> 0
+    | Lop(Imove | Ispill | Ireload) -> 1
+    | Lop(Iconst_int n | Iconst_blockheader n) ->
+      if is_native_immediate n then 1 else 2
+    | Lop(Iconst_float s) -> 2
+    | Lop(Iconst_symbol s) -> 2
+    | Lop(Icall_ind) -> 2
+    | Lop(Icall_imm s) -> 1
+    | Lop(Itailcall_ind) -> 5
+    | Lop(Itailcall_imm s) -> if s = !function_name then 1 else 4
+    | Lop(Iextcall(s, true)) -> 3
+    | Lop(Iextcall(s, false)) -> if pic_externals then 4 else 1
+    | Lop(Istackoffset n) -> 1
+    | Lop(Iload(chunk, addr)) ->
       if chunk = Byte_signed
       then load_store_size addr + 1
       else load_store_size addr
-  | Lop(Istore(chunk, addr, _)) -> load_store_size addr
-  | Lop(Ialloc n) -> 4
-  | Lop(Ispecific(Ialloc_far n)) -> 5
-  | Lop(Iintop Imod) -> 3
-  | Lop(Iintop(Icomp cmp)) -> 4
-  | Lop(Iintop op) -> 1
-  | Lop(Iintop_imm(Icomp cmp, n)) -> 4
-  | Lop(Iintop_imm(op, n)) -> 1
-  | Lop(Inegf | Iabsf | Iaddf | Isubf | Imulf | Idivf) -> 1
-  | Lop(Ifloatofint) -> 9
-  | Lop(Iintoffloat) -> 4
-  | Lop(Ispecific sop) -> 1
-  | Lreloadretaddr -> 2
-  | Lreturn -> 2
-  | Llabel lbl -> 0
-  | Lbranch lbl -> 1
-  | Lcondbranch(tst, lbl) -> 2
-  | Lcondbranch3(lbl0, lbl1, lbl2) ->
+    | Lop(Istore(chunk, addr, _)) -> load_store_size addr
+    | Lop(Ialloc n) -> 4
+    | Lop(Ispecific(Ialloc_far n)) -> 5
+    | Lop(Iintop Imod) -> 3
+    | Lop(Iintop(Icomp cmp)) -> 4
+    | Lop(Iintop op) -> 1
+    | Lop(Iintop_imm(Icomp cmp, n)) -> 4
+    | Lop(Iintop_imm(op, n)) -> 1
+    | Lop(Inegf | Iabsf | Iaddf | Isubf | Imulf | Idivf) -> 1
+    | Lop(Ifloatofint) -> 9
+    | Lop(Iintoffloat) -> 4
+    | Lop(Ispecific sop) -> 1
+    | Lreloadretaddr -> 2
+    | Lreturn -> 2
+    | Llabel lbl -> 0
+    | Lbranch lbl -> 1
+    | Lcondbranch(tst, lbl) -> 2
+    | Lcondbranch3(lbl0, lbl1, lbl2) ->
       1 + (if lbl0 = None then 0 else 1)
         + (if lbl1 = None then 0 else 1)
         + (if lbl2 = None then 0 else 1)
-  | Lswitch jumptbl -> 8
-  | Lsetuptrap lbl -> 1
-  | Lpushtrap -> 4
-  | Lpoptrap -> 2
-  | Lraise _ -> 6
+    | Lswitch jumptbl -> 8
+    | Lsetuptrap lbl -> 1
+    | Lpushtrap -> 4
+    | Lpoptrap -> 2
+    | Lraise _ -> 6
 
-let label_map code =
-  let map = Hashtbl.create 37 in
-  let rec fill_map pc instr =
-    match instr.desc with
-      Lend -> (pc, map)
-    | Llabel lbl -> Hashtbl.add map lbl pc; fill_map pc instr.next
-    | op -> fill_map (pc + instr_size op) instr.next
-  in fill_map 0 code
+  let relax_allocation ~num_words = Lop (Ispecific (Ialloc_far num_words))
 
-let max_branch_offset = 8180
-(* 14-bit signed offset in words.  Remember to cut some slack
-   for multi-word instructions where the branch can be anywhere in
-   the middle.  12 words of slack is plenty. *)
-
-let branch_overflows map pc_branch lbl_dest =
-  let pc_dest = Hashtbl.find map lbl_dest in
-  let delta = pc_dest - (pc_branch + 1) in
-  delta <= -max_branch_offset || delta >= max_branch_offset
-
-let opt_branch_overflows map pc_branch opt_lbl_dest =
-  match opt_lbl_dest with
-    None -> false
-  | Some lbl_dest -> branch_overflows map pc_branch lbl_dest
-
-let fixup_branches codesize map code =
-  let expand_optbranch lbl n arg next =
-    match lbl with
-      None -> next
-    | Some l ->
-        instr_cons (Lcondbranch(Iinttest_imm(Isigned Ceq, n), l))
-                   arg [||] next in
-  let rec fixup did_fix pc instr =
-    match instr.desc with
-      Lend -> did_fix
-    | Lcondbranch(test, lbl) when branch_overflows map pc lbl ->
-        let lbl2 = new_label() in
-        let cont =
-          instr_cons (Lbranch lbl) [||] [||]
-            (instr_cons (Llabel lbl2) [||] [||] instr.next) in
-        instr.desc <- Lcondbranch(invert_test test, lbl2);
-        instr.next <- cont;
-        fixup true (pc + 2) instr.next
-    | Lcondbranch3(lbl0, lbl1, lbl2)
-      when opt_branch_overflows map pc lbl0
-        || opt_branch_overflows map pc lbl1
-        || opt_branch_overflows map pc lbl2 ->
-        let cont =
-          expand_optbranch lbl0 0 instr.arg
-            (expand_optbranch lbl1 1 instr.arg
-              (expand_optbranch lbl2 2 instr.arg instr.next)) in
-        instr.desc <- cont.desc;
-        instr.next <- cont.next;
-        fixup true pc instr
-    | Lop(Ialloc n) when codesize - pc >= max_branch_offset ->
-        instr.desc <- Lop(Ispecific(Ialloc_far n));
-        fixup true (pc + 4) instr.next
-    | op ->
-        fixup did_fix (pc + instr_size op) instr.next
-  in fixup false 0 code
-
-(* Iterate branch expansion till all conditional branches are OK *)
-
-let rec branch_normalization code =
-  let (codesize, map) = label_map code in
-  if codesize >= max_branch_offset && fixup_branches codesize map code
-  then branch_normalization code
-  else ()
-
+  (* [classify_addr], above, never identifies these instructions as needing
+     relaxing.  As such, these functions should never be called. *)
+  let relax_specific_op _ = assert false
+  let relax_intop_checkbound () = assert false
+  let relax_intop_imm_checkbound ~bound:_ = assert false
+end)
 
 (* Output the assembly code for an instruction *)
 
@@ -848,7 +809,10 @@ let fundecl fundecl =
       `	addi	{emit_gpr 1}, {emit_gpr 1}, {emit_int(-n)}\n`
   end;
   `{emit_label !tailrec_entry_point}:\n`;
-  branch_normalization fundecl.fun_body;
+  (* On this target, there is at most one "out of line" code block per
+     function: a single "call GC" point.  It comes immediately after the
+     function's body. *)
+  BR.relax fundecl.fun_body ~max_out_of_line_code_offset:0;
   emit_all fundecl.fun_body;
   (* Emit the glue code to call the GC *)
   if !call_gc_label > 0 then begin

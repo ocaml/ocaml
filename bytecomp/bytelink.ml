@@ -197,7 +197,7 @@ let clear_crc_interfaces () =
 
 (* Record compilation events *)
 
-let debug_info = ref ([] : (int * LongString.t) list)
+let debug_info = ref ([] : (int * Instruct.debug_event list * string list) list)
 
 (* Link in a compilation unit *)
 
@@ -208,8 +208,14 @@ let link_compunit ppf output_fun currpos_fun inchan file_name compunit =
   Symtable.ls_patch_object code_block compunit.cu_reloc;
   if !Clflags.debug && compunit.cu_debug > 0 then begin
     seek_in inchan compunit.cu_debug;
-    let buffer = LongString.input_bytes inchan compunit.cu_debugsize in
-    debug_info := (currpos_fun(), buffer) :: !debug_info
+    let debug_event_list : Instruct.debug_event list = input_value inchan in
+    let debug_dirs : string list = input_value inchan in
+    let file_path = Filename.dirname (Location.absolute_path file_name) in
+    let debug_dirs =
+      if List.mem file_path debug_dirs
+      then debug_dirs
+      else file_path :: debug_dirs in
+    debug_info := (currpos_fun(), debug_event_list, debug_dirs) :: !debug_info
   end;
   Array.iter output_fun code_block;
   if !Clflags.link_everything then
@@ -264,9 +270,10 @@ let link_file ppf output_fun currpos_fun = function
 let output_debug_info oc =
   output_binary_int oc (List.length !debug_info);
   List.iter
-    (fun (ofs, evl) ->
+    (fun (ofs, evl, debug_dirs) ->
       output_binary_int oc ofs;
-      Array.iter (output_bytes oc) evl)
+      output_value oc evl;
+      output_value oc debug_dirs)
     !debug_info;
   debug_info := []
 
@@ -573,8 +580,15 @@ let link ppf objfiles output_name =
       raise x
   end else begin
     let basename = Filename.chop_extension output_name in
-    let c_file = basename ^ ".c"
-    and obj_file = basename ^ Config.ext_obj in
+    let c_file =
+      if !Clflags.output_complete_object
+      then Filename.temp_file "camlobj" ".c"
+      else basename ^ ".c"
+    and obj_file =
+      if !Clflags.output_complete_object
+      then Filename.temp_file "camlobj" Config.ext_obj
+      else basename ^ Config.ext_obj
+    in
     if Sys.file_exists c_file then raise(Error(File_exists c_file));
     let temps = ref [] in
     try
@@ -582,13 +596,19 @@ let link ppf objfiles output_name =
       if not (Filename.check_suffix output_name ".c") then begin
         temps := c_file :: !temps;
         if Ccomp.compile_file c_file <> 0 then raise(Error Custom_runtime);
-        if not (Filename.check_suffix output_name Config.ext_obj) then begin
+        if not (Filename.check_suffix output_name Config.ext_obj) ||
+           !Clflags.output_complete_object then begin
           temps := obj_file :: !temps;
+          let mode, c_libs =
+            if Filename.check_suffix output_name Config.ext_obj
+            then Ccomp.Partial, ""
+            else Ccomp.MainDll, Config.bytecomp_c_libraries
+          in
           if not (
             let runtime_lib = "-lcamlrun" ^ !Clflags.runtime_variant in
-            Ccomp.call_linker Ccomp.MainDll output_name
+            Ccomp.call_linker mode output_name
               ([obj_file] @ List.rev !Clflags.ccobjs @ [runtime_lib])
-              Config.bytecomp_c_libraries
+              c_libs
            ) then raise (Error Custom_runtime);
         end
       end;

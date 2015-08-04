@@ -26,7 +26,7 @@ EXTRACFLAGS=$(X11_INCLUDES)
 include ../Makefile
 
 depend:
-	gcc -MM $(CFLAGS) *.c | sed -e 's, /[^ ]*\.h,,g' > .depend
-	../../boot/ocamlrun ../../tools/ocamldep *.mli *.ml >> .depend
+	$(CC) -MM $(CFLAGS) *.c | sed -e 's, /[^ ]*\.h,,g' > .depend
+	$(CAMLRUN) ../../tools/ocamldep *.mli *.ml >> .depend
 
 include .depend
