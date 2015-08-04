@@ -2,24 +2,27 @@
 /*                                                                     */
 /*                                OCaml                                */
 /*                                                                     */
-/*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         */
+/*            Xavier Leroy, projet Gallium, INRIA Rocquencourt         */
 /*                                                                     */
-/*  Copyright 1997 Institut National de Recherche en Informatique et   */
+/*  Copyright 2015 Institut National de Recherche en Informatique et   */
 /*  en Automatique.  All rights reserved.  This file is distributed    */
 /*  under the terms of the GNU Library General Public License, with    */
 /*  the special exception on linking described in file ../../LICENSE.  */
 /*                                                                     */
 /***********************************************************************/
 
-int main()
-{
-#ifdef __STDC__
-#if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 199901L
-  return 0;
+/* Determine vendor and version of C compiler */
+
+/* This file is to be preprocessed and its output examined. */
+/* It is not C source code to be executed.  */
+/* This helps with cross-compilation. */
+
+#if defined(__INTEL_COMPILER)
+icc __INTEL_COMPILER
+#elif defined(__clang_major__) && defined(__clang_minor__)
+clang __clang_major __clang_minor__
+#elif defined(__GNUC__) && defined(__GNUC_MINOR__)
+gcc __GNUC__ __GNUC_MINOR__
 #else
-  return 1;
+unknown
 #endif
-#else
-  return 2;
-#endif
-}

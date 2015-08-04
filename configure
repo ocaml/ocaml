@@ -13,7 +13,8 @@
 #                                                                       #
 #########################################################################
 
-echo Configuring OCaml version `head -1 VERSION`
+ocamlversion=`head -1 VERSION`
+echo "Configuring OCaml version $ocamlversion"
 
 configure_options="$*"
 prefix=/usr/local
@@ -40,7 +41,6 @@ verbose=no
 with_curses=yes
 debugruntime=noruntimed
 with_sharedlibs=yes
-gcc_warnings="-Wall"
 partialld="ld -r"
 with_debugger=ocamldebugger
 with_ocamldoc=ocamldoc
@@ -267,50 +267,13 @@ fi
 
 inf "Using compiler $cc."
 
-# Check for buggy versions of GCC
-# These checks are not done for cross-compilation (yet at least) because after
-# 15 years, I doubt someone will try to use an experimental (2.96) or
-# known-unstable (2.7.2.1) version for cross-compilation.
+# Determine the C compiler family (GCC, Clang, etc)
 
-buggycc="no"
-
-case "$target,$cc" in
-  i[3456]86-*-*,gcc*)
-    case `$cc --version` in
-      2.7.2.1) cat <<'EOF'
-
-WARNING: you are using gcc version 2.7.2.1 on an Intel x86 processor.
-This version of gcc is known to generate incorrect code for the
-OCaml runtime system on some Intel x86 machines. (The symptom
-is a crash of boot/ocamlc when compiling stdlib/pervasives.mli.)
-In particular, the version of gcc 2.7.2.1 that comes with
-Linux RedHat 4.x / Intel is affected by this problem.
-Other Linux distributions might also be affected.
-If you are using one of these configurations, you are strongly advised
-to use another version of gcc, such as 2.95, which are
-known to work well with OCaml.
-
-Press <enter> to proceed or <interrupt> to stop.
-EOF
-        read reply;;
-      2.96*) cat <<'EOF'
-
-WARNING: you are using gcc version 2.96 on an Intel x86 processor.
-Certain patched versions of gcc 2.96 are known to generate incorrect
-code for the OCaml runtime system.  (The symptom is a segmentation
-violation on boot/ocamlc.)  Those incorrectly patched versions can be found
-in RedHat 7.2 and Mandrake 8.0 and 8.1; other Linux distributions
-might also be affected.  (See bug #57760 on bugzilla.redhat.com)
-
-Auto-configuration will now select gcc compiler flags that work around
-the problem.  Still, if you observe segmentation faults while running
-ocamlc or ocamlopt, you are advised to try another version of gcc,
-such as 2.95.3 or 3.2.
-
-EOF
-        buggycc="gcc.2.96";;
-
-            esac;;
+ccfamily=`$cc -E cckind.c | grep '^[a-z]' | tr -s ' ' '-'`
+case $? in
+  0) inf "Compiler family and version: $ccfamily.";;
+  *) err "Unable to preprocess the test program.\n" \
+         "Make sure the C compiler $cc is properly installed.";;
 esac
 
 # Configure the bytecode compiler
@@ -327,17 +290,48 @@ iflexdir=""
 SO="so"
 TOOLCHAIN="cc"
 
+# Choose reasonable options based on compiler kind
+# We select high optimization levels, provided we can turn off:
+# - strict type-based aliasing analysis (too risky for the OCaml runtime)
+# - strict no-overflow conditions on signed integer arithmetic
+#   (the OCaml runtime assumes Java-style behavior of signed integer arith.)
+# Concerning language version, gnu99 is ISO C99 plus GNU extensions
+# that are often used in standard headers.  GCC defaults to gnu89,
+# which is not C99.  Clang defaults to gnu99 or gnu11, which is fine.
+
+case "$ocamlversion" in
+  *+dev*) gcc_warnings="-Wall -Werror";;
+       *) gcc_warnings="-Wall";;
+esac
+
+case "$ccfamily" in
+  clang-*)
+    bytecccompopts="-O3 -fno-strict-aliasing -fwrapv $gcc_warnings";;
+  gcc-[012]-*)
+    # Some versions known to miscompile OCaml, e,g, 2.7,2.1, some 2.96.
+    # Plus: C99 support unknown.
+    err "This version of GCC is too old.  Please use GCC version 3 or above.";;
+  gcc-3-[0123])
+    # No -fwrapv option yet
+    bytecccompopts="-std=gnu99 -O $gcc_warnings";;
+  gcc-*)
+    bytecccompopts="-std=gnu99 -O3 -fno-strict-aliasing -fwrapv $gcc_warnings";;
+  *)
+    bytecccompopts="-O";;
+esac
+
+# Adjust according to target
+
 case "$bytecc,$target" in
   cc,*-*-nextstep*)
     # GNU C extensions disabled, but __GNUC__ still defined!
-    bytecccompopts="-fno-defer-pop $gcc_warnings -U__GNUC__ -posix"
+    bytecccompopts="$bytecccompopts -U__GNUC__ -posix"
     bytecclinkopts="-posix";;
   *,*-*-rhapsody*)
     # Almost the same as NeXTStep
-    bytecccompopts="-fno-defer-pop $gcc_warnings -DSHRINKED_GNUC"
+    bytecccompopts="$bytecccompopts -DSHRINKED_GNUC"
     mathlib="";;
   *,*-*-darwin*)
-    bytecccompopts="$gcc_warnings"
     mathlib=""
     mkexe="$mkexe -Wl,-no_compact_unwind"
     # Tell gcc that we can use 32-bit code addresses for threaded code
@@ -346,15 +340,12 @@ case "$bytecc,$target" in
     echo "#  define ARCH_CODE32" >> m.h
     echo "#endif" >> m.h;;
   *,*-*-haiku*)
-    bytecccompopts="-fno-defer-pop $gcc_warnings"
     # No -lm library
     mathlib="";;
   *,*-*-beos*)
-    bytecccompopts="-fno-defer-pop $gcc_warnings"
     # No -lm library
     mathlib="";;
   *gcc,alpha*-*-osf*)
-    bytecccompopts="-fno-defer-pop $gcc_warnings"
     if cc="$bytecc" sh ./hasgot -mieee; then
       bytecccompopts="-mieee $bytecccompopts";
     fi
@@ -368,30 +359,22 @@ case "$bytecc,$target" in
     if cc="$bytecc" sh ./hasgot -mieee; then
       bytecccompopts="-mieee $bytecccompopts";
     fi;;
-  cc,mips-*-irix6*)
-    # Add -n32 flag to ensure compatibility with native-code compiler
-    bytecccompopts="-n32"
+  *,mips-*-irix6*)
     # Turn off warning "unused library"
     bytecclinkopts="-n32 -Wl,-woff,84";;
-  cc*,mips-*-irix6*)
-    # (For those who want to force "cc -64")
-    # Turn off warning "unused library"
-    bytecclinkopts="-Wl,-woff,84";;
   *,alpha*-*-unicos*)
     # For the Cray T3E
-    bytecccompopts="-DUMK";;
-  *gcc*,powerpc-*-aix*)
-    # Avoid name-space pollution by requiring Unix98-conformant includes
-    bytecccompopts="-fno-defer-pop $gcc_warnings -D_XOPEN_SOURCE=500";;
+    bytecccompopts="$bytecccompopts -DUMK";;
   *,powerpc-*-aix*)
-    bytecccompopts="-D_XOPEN_SOURCE=500";;
-  *gcc*,*-*-cygwin*)
+    # Avoid name-space pollution by requiring Unix98-conformant includes
+    bytecccompopts="$bytecccompopts -D_XOPEN_SOURCE=500";;
+  *,*-*-cygwin*)
     case $target in
       i686-*) flavor=cygwin;;
       x86_64-*) flavor=cygwin64;;
       *) err "unknown cygwin variant";;
     esac
-    bytecccompopts="-fno-defer-pop $gcc_warnings -U_WIN32"
+    bytecccompopts="$bytecccompopts -U_WIN32"
     dllccompopts="-U_WIN32 -DCAML_DLL"
     if test $with_sharedlibs = yes; then
       flexlink="flexlink -chain $flavor -merge-manifest -stack 16777216"
@@ -411,8 +394,7 @@ case "$bytecc,$target" in
     fi
     exe=".exe"
     ostype="Cygwin";;
-  *gcc*,*-*-mingw*)
-    bytecccompopts="-fno-defer-pop $gcc_warnings"
+  *,*-*-mingw*)
     dllccompopt="-DCAML_DLL"
     if test $with_sharedlibs = yes; then
       case "$target" in
@@ -435,34 +417,32 @@ case "$bytecc,$target" in
     TOOLCHAIN="mingw"
     SO="dll"
     ;;
-  *gcc*,x86_64-*-linux*)
-    bytecccompopts="-fno-defer-pop $gcc_warnings"
+  *,x86_64-*-linux*)
     # Tell gcc that we can use 32-bit code addresses for threaded code
     # unless we are compiled for a shared library (-fPIC option)
     echo "#ifndef __PIC__" >> m.h
     echo "#  define ARCH_CODE32" >> m.h
     echo "#endif" >> m.h;;
-  *gcc*)
-    bytecccompopts="-fno-defer-pop $gcc_warnings";;
 esac
 
-# Configure compiler to use in further tests
+# Configure compiler to use in further tests.
 
-cc="$bytecc -O $bytecclinkopts"
+cc="$bytecc $bytecclinkopts"
 export cc cclibs verbose
 
-# Check C compiler
+# Check C compiler.
 
-sh ./runtest ansi.c
+cc="$bytecc $bytecccompopts $bytecclinkopts" sh ./runtest ansi.c
 case $? in
-  0) inf "The C compiler is ANSI-compliant." ;;
-  1) err "The C compiler $cc is not ANSI-compliant.\n" \
-         "You need an ANSI C compiler to build OCaml.";;
+  0) inf "The C compiler is ISO C99 compliant." ;;
+  1) wrn "The C compiler is ANSI / ISO C90 compliant, but not ISO C99 compliant.";;
+  2) err "The C compiler $cc is not ISO C compliant.\n" \
+         "You need an ISO C99 compiler to build OCaml.";;
   *)
      if $cross_compiler; then
        wrn "Unable to compile the test program.\n" \
            "This failure is expected for cross-compilation:\n" \
-           "we will assume the C compiler is ANSI-compliant."
+           "we will assume the C compiler is ISO C99-compliant."
      else
        err "Unable to compile the test program.\n" \
            "Make sure the C compiler $cc is properly installed."
@@ -869,23 +849,17 @@ else
   nativecc="$ccoption"
 fi
 
-nativecccompopts=''
+nativecccompopts="$bytecccompopts"
 nativecclinkopts=''
 # FIXME the naming of nativecclinkopts is broken: these are options for
 # ld (for shared libs), not for cc
 nativeccrpath="$byteccrpath"
 
 case "$arch,$nativecc,$system,$target" in
-  *,*,nextstep,*)      nativecccompopts="$gcc_warnings -U__GNUC__ -posix"
-                       nativecclinkopts="-posix";;
-  *,*,rhapsody,*darwin[1-5].*)
-                       nativecccompopts="$gcc_warnings -DSHRINKED_GNUC";;
-  *,*,rhapsody,*)      nativecccompopts="$gcc_warnings -DDARWIN_VERSION_6 $dl_defs"
-                       if $arch64; then partialld="ld -r -arch ppc64"; fi;;
-  *,gcc*,cygwin,*)     nativecccompopts="$gcc_warnings -U_WIN32";;
+  *,*,nextstep,*)      nativecclinkopts="-posix";;
+  *,*,rhapsody,*)      if $arch64; then partialld="ld -r -arch ppc64"; fi;;
   amd64,gcc*,macosx,*) partialld="ld -r -arch x86_64";;
   amd64,gcc*,solaris,*) partialld="ld -r -m elf_x86_64";;
-  *,gcc*,*,*)          nativecccompopts="$gcc_warnings";;
 esac
 
 asppprofflags='-DPROFILING'
@@ -1683,21 +1657,6 @@ fi
 if $no_naked_pointers; then
   echo "#define NO_NAKED_POINTERS" >> m.h
 fi
-
-# Add Unix-style optimization flag
-bytecccompopts="-O $bytecccompopts"
-dllcccompopts="-O $dllcccompopts"
-nativecccompopts="-O $nativecccompopts"
-sharedcccompopts="-O $sharedcccompopts"
-
-# Final twiddling of compiler options to work around known bugs
-
-nativeccprofopts="$nativecccompopts"
-case "$buggycc" in
-  gcc.2.96)
-    bytecccompopts="$bytecccompopts -fomit-frame-pointer"
-    nativecccompopts="$nativecccompopts -fomit-frame-pointer";;
-esac
 
 # Finish generated files
 
