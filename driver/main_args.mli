@@ -80,6 +80,9 @@ module type Compiler_options =  sig
   val _v : unit -> unit
   val _verbose : unit -> unit
   val _where : unit -> unit
+  val _color : unit -> unit
+  val _no_color : unit -> unit
+  val _color_auto : unit -> unit
 
   val _nopervasives : unit -> unit
 end

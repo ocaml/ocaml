@@ -368,6 +368,18 @@ let mk_warn_help f =
   "-warn-help", Arg.Unit f, " Show description of warning numbers"
 ;;
 
+let mk_color f =
+  "-color", Arg.Unit f,
+  " Enable ANSI color codes for warning/error messages"
+
+let mk_no_color f =
+  "-no-color", Arg.Unit f,
+  " Disable ANSI color codes for warning/error messages"
+
+let mk_color_auto f =
+  "-color-auto", Arg.Unit f,
+  " Automatic mode for ANSI color codes for warning/error messages (default behavior)"
+
 let mk_where f =
   "-where", Arg.Unit f, " Print location of standard library and exit"
 ;;
@@ -551,6 +563,10 @@ module type Compiler_options = sig
   val _v : unit -> unit
   val _verbose : unit -> unit
   val _where : unit -> unit
+  val _color : unit -> unit
+  val _no_color : unit -> unit
+  val _color_auto : unit -> unit
+
   val _nopervasives : unit -> unit
 end
 ;;
@@ -659,6 +675,9 @@ struct
     mk_cc F._cc;
     mk_cclib F._cclib;
     mk_ccopt F._ccopt;
+    mk_color F._color;
+    mk_no_color F._no_color;
+    mk_color_auto F._color_auto;
     mk_compat_32 F._compat_32;
     mk_config F._config;
     mk_custom F._custom;
@@ -783,6 +802,9 @@ struct
     mk_cc F._cc;
     mk_cclib F._cclib;
     mk_ccopt F._ccopt;
+    mk_color F._color;
+    mk_no_color F._no_color;
+    mk_color_auto F._color_auto;
     mk_compact F._compact;
     mk_config F._config;
     mk_dtypes F._annot;

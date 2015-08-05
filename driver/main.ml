@@ -128,6 +128,9 @@ module Options = Main_args.Make_bytecomp_options (struct
   let _w = (Warnings.parse_options false)
   let _warn_error = (Warnings.parse_options true)
   let _warn_help = Warnings.help_warnings
+  let _color () = color := Misc.Color.On
+  let _no_color () = color := Misc.Color.Off
+  let _color_auto () = color := Misc.Color.Auto
   let _where = print_standard_library
   let _verbose = set verbose
   let _nopervasives = set nopervasives
