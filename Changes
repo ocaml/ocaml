@@ -216,6 +216,8 @@ Feature wishes:
   (David Sheets, request by Gabriel Radanne)
 - GPR#37: New primitive: caml_alloc_dummy_function
   (Hugo Heuzard)
+- GPR#207: Coloring compiler's messages (warnings, errors)
+  (Simon Cruanes)
 
 OCaml 4.02.2 (17 Jun 2015):
 -------------
