@@ -54,39 +54,50 @@
     maps in sets of closures are correct).
 *)
 
-(** Like [Flambda.constant_defining_value], but also permitting projections
-    from blocks, which we will entirely simplify away in this pass. *)
-type proto_constant_defining_value =
-  | Constructive of Flambda.constant_defining_value
-  | Field of Symbol.t * int
+(** Like [Flambda.constant_defining_value] but using [Variable.t] for
+    inter-constant references rather than [Symbol.t].  This type also permits
+    projections from blocks (which we will entirely simplify away in this pass)
+    and non-allocated constants (which will never be assigned symbols). *)
+type constant_defining_value =
+  | Allocated_const of Allocated_const.t
+  | Block of Tag.t * Variable.t list
+  | Set_of_closures of Flambda.set_of_closures
+  | Project_closure of Flambda.project_var
+  | Field of Variable.t * int
+  | Const of const
+  | Symbol of Symbol.t
 
-(** To be independent of the order of traversal we do a first pass that
-    assigns symbols to all [let]-bound variables that are known to be
-    constant.  This either involves generating new symbols, or exploiting
-    fixed mappings between (e.g.) closure IDs and symbol names.  At the same
-    time we note down the mapping from set of closures IDs to symbols. *)
-let assign_symbols_to_constant_let_bound_variables ~expr
+(** Traverse the given expression assigning symbols to [let]- and [let rec]-
+    bound constant variables.  At the same time collect the definitions of
+    such variables. *)
+let assign_symbols_and_collect_constant_definitions ~expr
       ~(inconstants : Inconstant_idents.result) =
-  let fresh_symbol var =
-    Compilenv.new_const_symbol' ~name:(Variable.unique_name var) ()
-  in
-  let var_to_symbol_tbl : Symbol.t Variable.Tbl.t = Variable.Tbl.create 42 in
-  let set_of_closures_id_to_symbol_tbl = Set_of_closures_id.Tbl.create 42 in
+  let var_to_symbol_tbl = Variable.Tbl.create 42 in
+  let var_to_definition_tbl = Variable.Tbl.create 42 in
   let assign_symbol var (named : Flambda.named) =
+    let assign_symbol () =
+      Variable.Tbl.add var_to_symbol_tbl var
+        (Compilenv.new_const_symbol' ~name:(Variable.unique_name var) ())
+    in
+    let assign_existing_symbol = Variable.Tbl.add var_to_symbol_tbl var in
+    let record_definition = Variable.Tbl.add var_to_definition_tbl var in
     match named with
-    (* XXX this needs to collect [Const] too, but they don't need
-       symbols. *)
-    | Allocated_const _ | Prim (Pmakeblock (_, _), _, _) ->
-      let symbol = fresh_symbol var in
-      Variable.Tbl.add var_to_symbol_tbl var symbol
+    | Symbol symbol ->
+      assign_existing_symbol symbol;
+      record_definition (Symbol symbol)
+    | Const const -> record_definition (Const const)
+    | Allocated_const const ->
+      assign_symbol ();
+      record_definition (Allocated_const const)
+    | Prim (Pmakeblock (tag, _), fields, _) ->
+      assign_symbol ();
+      record_definition (Block (tag, fields))
     | Set_of_closures (
         { function_decls = { funs; set_of_closures_id; _ }; _ } as set) ->
       assert (not (Set_of_closures_id.Set.mem set_of_closures_id
           inconstants.closure));
-      let set_of_closures_symbol = fresh_symbol var in
-      Variable.Tbl.add var_to_symbol_tbl var set_of_closures_symbol;
-      Set_of_closures_id.Tbl.add set_of_closures_id_to_symbol_tbl
-        set_of_closures_id set_of_closures_symbol;
+      assign_symbol ();
+      record_definition (Set_of_closures set);
       (* CR mshinwell: the following seems to be needed because of the
          behaviour of [Closure_conversion_aux.closure_env_without_parameters]
          and maybe [reference_recursive_function_directly].  We should think
@@ -95,110 +106,39 @@ let assign_symbols_to_constant_let_bound_variables ~expr
       Variable.Map.iter (fun fun_var _ ->
           let closure_id = Closure_id.wrap fun_var in
           let closure_symbol = Compilenv.closure_symbol closure_id in
-          Variable.Tbl.add var_to_symbol_tbl var closure_symbol)
+          Variable.Tbl.add var_to_symbol_tbl fun_var closure_symbol;
+          Variable.Tbl.add var_to_definition_tbl fun_var
+            (Symbol closure_symbol))
         funs
     | Move_within_set_of_closures { closure = _; start_from = _; move_to; } ->
-      Variable.Tbl.add var_to_symbol_tbl var
-        (Compilenv.closure_symbol move_to)
-    | Project_closure { set_of_closures = _; closure_id; } ->
-      Variable.Tbl.add var_to_symbol_tbl var
-        (Compilenv.closure_symbol closure_id)
+      let symbol = Compilenv.closure_symbol move_to in
+      assign_existing_symbol symbol;
+      record_definition (Symbol symbol)
+    | Project_closure ({ set_of_closures; closure_id; } as project_closure) ->
+      assign_existing_symbol (Compilenv.closure_symbol closure_id);
+      record_definition (Project_closure project_closure)
     | Prim (Pgetglobal id, _, _) ->
-      let global_symbol = Compilenv.symbol_for_global' id in
-      Variable.Tbl.add var_to_symbol_tbl var global_symbol
-    | Prim (Pfield _, _, _) | Prim (Pgetglobalfield _, _, _) -> ()
+      let symbol = Compilenv.symbol_for_global' id in
+      assign_existing_symbol symbol;
+      record_definition (Symbol symbol)
+    | Prim (Pfield index, [block], _)
+    | Prim (Pgetglobalfield index, [block], _) ->
+      record_definition (Field (block, index))
+    | Prim (Pfield _, _, _) ->
+      Misc.fatal_errorf "[Pfield] with the wrong number of arguments"
+        Flambda.print_named named
+    | Prim (Pgetglobalfield _, _, _) ->
+      Misc.fatal_errorf "[Pgetglobalfield] with the wrong number of arguments"
+        Flambda.print_named named
     | Prim _ ->
       Misc.fatal_errorf "Primitive not expected to be constant: @.%a@."
         Flambda.print_named named
-    | Symbol _ | Const _ | Project_var _ | Expr _ -> ()
+    | Project_var _ | Expr _ -> ()
   in
   Flambda_iterators.iter_all_let_and_let_rec_bindings expr ~f:assign_symbol
 
-(* Split constructive/deconstructive and reduce to constructive only. *)
-
-(* Future unification of Consts, variables and symbols, differing only in
-   what they are equal to *)
-
-(* Look at Translmod again. *)
-
-(** Produce [Flambda.constant_defining_value]s for all of the constants whose
-    definitions are to be lifted.  These are indexed by [Symbol]s.  When
-    going inside a closure, we need to apply the [free_vars] mapping, so
-    that we know the correct assignment of variables found within the bodies
-    of functions inside the closure to symbols. *)
-let rec compute_definitions_of_symbols ~expr ~(inconstants : Inconstants.result)
-      ~var_to_symbol_tbl =
-  let constant_tbl : Flambda.named Symbol.Tbl.t = Symbol.Tbl.create 42 in
-  let find_symbol var = Variable.Tbl.find var_to_symbol_tbl var in
-  let is_constant var = not (Variable.Set.Mem var inconstants.id) in
-  let compute_definition var named =
-    assert (is_constant var);
-    match named with
-    | Allocated_const const ->
-      Symbol.Tbl.add constant_tbl (find_symbol var) (Allocated_const const)
-    | Prim (Pmakeblock (tag, _), args, _) ->
-      Symbol.Tbl.add constant_tbl (find_symbol var)
-        (Block (Tag.create_exn tag, List.map find_symbol args))
-    | Set_of_closures set_of_closures ->
-      let set_of_closures_symbol = find_symbol var in
-      Symbol.Tbl.add constant_tbl set_of_closures_symbol
-        (Set_of_closures set_of_closures);
-      Variable.Map.iter (fun fun_var _ ->
-          Symbol.Tbl.add constant_tbl (find_symbol fun_var)
-            (Closure (set_of_closures_symbol, Closure_id.wrap fun_var)))
-        funs
-    | Move_within_set_of_closures _ | Project_closure _
-    | Prim (Pgetglobal _, _, _) ->
-      (* In these cases, there is no definition to lift: it's already a
-         symbol (uniquely determined as per [assigned_symbol], above). *)
-      ()
-    | Prim (Pfield _, _, _) | Prim (Pgetglobalfield _, _, _) -> ()
-    | Prim _ -> assert false  (* see [assign_symbol], above *)
-    | Symbol _ | Const _ | Project_var _ | Expr _ -> ()
-  in
-  let traverse (expr : Flambda.t) =
-    match expr with
-    | Let (_, var, named, body) ->
-      if is_constant var then begin
-        compute_definition var named
-      end;
-      begin match named with
-      | Set_of_closures set_of_closures ->
-        (* When descending into a closure, we create a new [var_to_symbol_tbl],
-           which reflects the [free_vars] mapping of the closure. *)
-        let var_to_symbol_tbl = Variable.Tbl.create 42 in
-        Variable.Map.iter (fun inner_var outer_var ->
-            match find_symbol outer_var with
-            | exception Not_found -> ()
-            | symbol -> Variable.Tbl.add var_to_symbol_tbl inner_var symbol)
-          set_of_closures.free_vars;
-        Variable.Map.iter (fun fun_var function_decl ->
-            compute_definitions_of_symbols ~expr:function_decl.body
-              ~inconstants ~var_to_symbol_tbl)
-          set_of_closures.function_decls.funs
-      | _ -> ()
-      end
-    | Let_rec _ -> ...
-
-    | _ -> ()
-  in
-  Flambda_iterators.iter_toplevel expr traverse (fun _ -> ())
-
 (** Find constants assigned to multiple symbols and choose a unique symbol
     for them, thus sharing constants. *)
-(* XXX presumably to do this properly, we should actually traverse the
-   incoming program, and look at the [Let_symbol] bindings in effect when
-   processing each expression.  This may not be useful at the moment
-   because we probably won't rerun Lift_constants, but it seems like the
-   right thing to do.
-   Need to be careful that existing symbols remain the ones that are used
-   as the canonical ones.  Just comes down to pre-populating the
-   [constant_to_symbol_tbl], probably.  Maybe then these functions should
-   stay as operating on [expr].  In effect it's a fold over the program nodes
-   replacing each one that has an [expr] by a sequence of new nodes.
-   However we also need to do this globally in some sense.  What about the
-   sequential substitution thing?  Keep an environment and remove Let_symbol
-   bindings as necessary (and substitute through the expressions) *)
 let share_constants ~var_to_symbol_tbl ~symbol_to_constant_tbl =
   let new_var_to_symbol_tbl = Variable.Tbl.create 42 in
   let new_symbol_to_constant_tbl = Symbol.Tbl.create 42 in
