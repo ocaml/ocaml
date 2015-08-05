@@ -34,17 +34,12 @@ CAMLexport mlsize_t caml_string_length(value s)
 CAMLexport int caml_string_is_c_safe (value s)
 {
   mlsize_t len;
-  char *p;
-  int i;
+  size_t len2;
 
   len = caml_string_length(s);
-  p = String_val(s);
+  len2 = strlen(String_val(s));
 
-  for (i=0; i<len; ++i) {
-    if (p[i] == '\0')
-      return 0;
-  }
-  return 1;
+  return (len == len2);
 }
 
 /* returns a value that represents a number of bytes (chars) */
