@@ -97,6 +97,8 @@ CAMLprim value unix_lstat(value path)
   int ret;
   struct stat buf;
   char * p;
+  if (! caml_string_is_c_safe(path))
+    unix_error(ENOENT, "lstat", path);
   p = caml_strdup(String_val(path));
   caml_enter_blocking_section();
 #ifdef HAS_SYMLINK
@@ -131,6 +133,8 @@ CAMLprim value unix_stat_64(value path)
   int ret;
   struct stat buf;
   char * p;
+  if (! caml_string_is_c_safe(path))
+    unix_error(ENOENT, "unix_stat_64", path);
   p = caml_strdup(String_val(path));
   caml_enter_blocking_section();
   ret = stat(p, &buf);
@@ -146,6 +150,8 @@ CAMLprim value unix_lstat_64(value path)
   int ret;
   struct stat buf;
   char * p;
+  if (! caml_string_is_c_safe(path))
+    unix_error(ENOENT, "unix_lstat_64", path);
   p = caml_strdup(String_val(path));
   caml_enter_blocking_section();
 #ifdef HAS_SYMLINK
