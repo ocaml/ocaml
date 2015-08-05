@@ -11,6 +11,55 @@
 (*                                                                        *)
 (**************************************************************************)
 
+(** The aim of this pass is to assign symbols to values known to be
+    constant (in other words, whose values we know at compile time), with
+    appropriate sharing of constants, and replace the occurrences of the
+    constants with their corresponding symbols.
+
+    This pass uses the results of two other passes, [Inconstant_idents] and
+    [Alias_analysis].  The relationship between these two deserves some
+    attention.
+
+    [Inconstant_idents] is a "backwards" analysis that propagates implications
+    about inconstantness of variables and set of closures IDs.
+
+    [Alias_analysis] is a "forwards" analysis that is analagous to the
+    propagation of [Simple_value_approx.t] values during [Inline_and_simplify].
+    It gives us information about relationships between values but not actually
+    about their constantness.
+
+    Combining these two into a single pass has been attempted previously,
+    but was not thought to be successful; this experiment could be repeated in
+    the future.  (If "constant" is considered as "top" and "inconstant" is
+    considered as "bottom", then [Alias_analysis] corresponds to a least fixed
+    point and [Inconstant_idents] corresponds to a greatest fixed point.)
+
+    At a high level, this pass operates as follows.  Symbols are assigned to
+    variables known to be constant and their defining expressions examined.
+    Based on the results of [Alias_analysis], we simplify the destructive
+    elements within the defining expressions (specifically, projection of
+    fields from blocks), to eventually yield [Flambda.constant_defining_value]s
+    that are entirely constructive.  These will be bound to symbols in the
+    resulting program.
+
+    Another approach to this pass could be to only use the results of
+    [Inconstant_idents] and then repeatedly lift constants and run
+    [Inline_and_simplify] until a fixpoint.  It was thought more robust to
+    instead use [Alias_analysis], where the fixpointing involves a less
+    complicated function.
+
+    We still run [Inline_and_simplify] once after this pass since the lifting
+    of constants may enable more functions to become closed; the simplification
+    pass provides an easy way of cleaning up (e.g. making sure [free_vars]
+    maps in sets of closures are correct).
+*)
+
+(** Like [Flambda.constant_defining_value], but also permitting projections
+    from blocks, which we will entirely simplify away in this pass. *)
+type proto_constant_defining_value =
+  | Constructive of Flambda.constant_defining_value
+  | Field of Symbol.t * int
+
 (** To be independent of the order of traversal we do a first pass that
     assigns symbols to all [let]-bound variables that are known to be
     constant.  This either involves generating new symbols, or exploiting
@@ -25,6 +74,8 @@ let assign_symbols_to_constant_let_bound_variables ~expr
   let set_of_closures_id_to_symbol_tbl = Set_of_closures_id.Tbl.create 42 in
   let assign_symbol var (named : Flambda.named) =
     match named with
+    (* XXX this needs to collect [Const] too, but they don't need
+       symbols. *)
     | Allocated_const _ | Prim (Pmakeblock (_, _), _, _) ->
       let symbol = fresh_symbol var in
       Variable.Tbl.add var_to_symbol_tbl var symbol
@@ -62,6 +113,13 @@ let assign_symbols_to_constant_let_bound_variables ~expr
     | Symbol _ | Const _ | Project_var _ | Expr _ -> ()
   in
   Flambda_iterators.iter_all_let_and_let_rec_bindings expr ~f:assign_symbol
+
+(* Split constructive/deconstructive and reduce to constructive only. *)
+
+(* Future unification of Consts, variables and symbols, differing only in
+   what they are equal to *)
+
+(* Look at Translmod again. *)
 
 (** Produce [Flambda.constant_defining_value]s for all of the constants whose
     definitions are to be lifted.  These are indexed by [Symbol]s.  When

@@ -496,7 +496,6 @@ let transl_implementation module_name (str, cc) =
   in
   Lprim (Psetglobal module_id, [module_initializer])
 
-(*
 (* Build the list of value identifiers defined by a toplevel structure
    (excluding primitive declarations). *)
 
@@ -794,7 +793,6 @@ let transl_store_implementation module_name (str, restr) =
     | Tcoerce_alias _ -> assert false
   in
   (size, exported), lam
-*)
 
 (* Compile a toplevel phrase *)
 

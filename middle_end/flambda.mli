@@ -275,7 +275,8 @@ and for_loop = {
 }
 
 (** Like a subset of [Flambda.named], except that instead of [Variable.t]s we
-    have [Symbol.t]s, and everything is a constant. *)
+    have [Symbol.t]s, and everything is a constant (and entirely
+    constructive). *)
 and constant_defining_value =
   | Allocated_const of Allocated_const.t
   | Block of Tag.t * constant_defining_value_block_field list
@@ -297,6 +298,7 @@ end
 
 (** A "program" is the contents of one compilation unit. *)
 type program =
+  | Let_symbol of Symbol.t * constant_defining_value * program
   | Let_rec_symbol of (Symbol.t * constant_defining_value) list * program
   | Import_symbol of Symbol.t * program
   | Initialize_symbol of Symbol.t * t * program
