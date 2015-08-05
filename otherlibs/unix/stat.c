@@ -77,6 +77,9 @@ CAMLprim value unix_stat(value path)
   int ret;
   struct stat buf;
   char * p;
+
+  if (! caml_string_is_c_safe(path))
+    unix_error(ENOENT, "stat", path);
   p = caml_strdup(String_val(path));
   caml_enter_blocking_section();
   ret = stat(p, &buf);

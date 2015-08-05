@@ -31,6 +31,22 @@ CAMLexport mlsize_t caml_string_length(value s)
   return temp - Byte (s, temp);
 }
 
+CAMLexport int caml_string_is_c_safe (value s)
+{
+  mlsize_t len;
+  char *p;
+  int i;
+
+  len = caml_string_length(s);
+  p = String_val(s);
+
+  for (i=0; i<len; ++i) {
+    if (p[i] == '\0')
+      return 0;
+  }
+  return 1;
+}
+
 /* returns a value that represents a number of bytes (chars) */
 CAMLprim value caml_ml_string_length(value s)
 {

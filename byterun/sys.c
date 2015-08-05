@@ -172,6 +172,11 @@ CAMLprim value caml_sys_file_exists(value name)
   char * p;
   int ret;
 
+  if (! caml_string_is_c_safe(name)) {
+    errno = ENOENT;
+    caml_sys_error(name);
+  }
+
   p = caml_strdup(String_val(name));
   caml_enter_blocking_section();
 #ifdef _WIN32
