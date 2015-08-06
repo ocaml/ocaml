@@ -252,6 +252,12 @@ val print_tbreak : int -> int -> unit
 val set_tab : unit -> unit
 (** Sets a tabulation mark at the current insertion point. *)
 
+val set_tab_at : int -> unit
+(** Sets a tabulation mark at the given row.
+
+    @since 4.03.0
+*)
+
 val print_tab : unit -> unit
 (** [print_tab ()] is equivalent to [print_tbreak 0 0]. *)
 
@@ -524,6 +530,7 @@ val pp_open_tbox : formatter -> unit -> unit
 val pp_close_tbox : formatter -> unit -> unit
 val pp_print_tbreak : formatter -> int -> int -> unit
 val pp_set_tab : formatter -> unit -> unit
+val pp_set_tab_at : formatter -> int -> unit
 val pp_print_tab : formatter -> unit -> unit
 val pp_set_tags : formatter -> bool -> unit
 val pp_set_print_tags : formatter -> bool -> unit
