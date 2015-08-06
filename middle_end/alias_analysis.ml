@@ -407,3 +407,89 @@ let run tree =
         end
       | _ -> map)
     t Variable.Map.empty
+(* Version without collection *)
+
+
+type constant_defining_value =
+  | Allocated_const of Allocated_const.t
+  | Block of Tag.t * Variable.t list
+  | Set_of_closures of Flambda.set_of_closures
+  | Project_closure of Flambda.project_closure
+  | Project_var of Flambda.project_var
+  | Field of Variable.t * int
+  | Const of Flambda.const
+  | Symbol of Symbol.t
+  | Predefined_exn of Ident.t
+  | Variable of Variable.t
+
+let fatal_error_f fmt =
+  let b = Buffer.create 10 in
+  let ppf = Format.formatter_of_buffer b in
+  Format.kfprintf (fun ppf ->
+      Format.pp_print_flush ppf ();
+      let s = Buffer.contents b in
+      Misc.fatal_error s)
+    ppf
+    fmt
+
+let rec resolve_definition
+    (definitions: constant_defining_value Variable.Map.t)
+    (symbols: Variable.t Symbol.Map.t)
+    (var: Variable.t)
+    (def: constant_defining_value) =
+  match def with
+  | Allocated_const _
+  | Block _
+  | Set_of_closures _
+  | Project_closure _
+  | Const _
+  | Predefined_exn _ ->
+    var
+  | Project_var {var} ->
+    fetch_variable definitions symbols (Var_within_closure.unwrap var)
+  | Variable v ->
+    fetch_variable definitions symbols v
+  | Symbol sym -> begin
+      match Symbol.Map.find sym symbols with
+      | exception Not_found ->
+        var
+      | v ->
+        fetch_variable definitions symbols v
+    end
+  | Field (v, n) ->
+    let v = fetch_variable definitions symbols v in
+    fetch_field definitions symbols v n
+
+and fetch_variable
+    (definitions: constant_defining_value Variable.Map.t)
+    (symbols: Variable.t Symbol.Map.t)
+    (var: Variable.t) =
+  match Variable.Map.find var definitions with
+  | exception Not_found -> var
+  | def ->
+    resolve_definition definitions symbols var def
+
+and fetch_field
+    (definitions: constant_defining_value Variable.Map.t)
+    (symbols: Variable.t Symbol.Map.t)
+    (var: Variable.t)
+    (field: int) =
+  match Variable.Map.find var definitions with
+  | Block (_, fields) ->
+    begin match List.nth fields field with
+    | exception Not_found ->
+      fatal_error_f "No field %i in block %a" field Variable.print var
+    | v ->
+      fetch_variable definitions symbols v
+    end
+  | exception Not_found ->
+    fatal_error_f "No definition for field access to %a" Variable.print var
+  | Symbol _ | Variable _ | Project_var _ | Field _ ->
+    (* Must have been resolved *)
+    assert false
+  | Predefined_exn _ | Const _ | Allocated_const _
+  | Set_of_closures _ | Project_closure _ ->
+    fatal_error_f "Field access to %a which is not a block" Variable.print var
+
+let second_take definitions symbols =
+  Variable.Map.mapi (resolve_definition definitions symbols) definitions
