@@ -295,6 +295,7 @@ TOOLCHAIN="cc"
 # - strict type-based aliasing analysis (too risky for the OCaml runtime)
 # - strict no-overflow conditions on signed integer arithmetic
 #   (the OCaml runtime assumes Java-style behavior of signed integer arith.)
+# Concerning optimization level, -O3 is somewhat risky, so take -O2
 # Concerning language version, gnu99 is ISO C99 plus GNU extensions
 # that are often used in standard headers.  GCC defaults to gnu89,
 # which is not C99.  Clang defaults to gnu99 or gnu11, which is fine.
@@ -306,7 +307,7 @@ esac
 
 case "$ccfamily" in
   clang-*)
-    bytecccompopts="-O3 -fno-strict-aliasing -fwrapv $gcc_warnings";;
+    bytecccompopts="-O2 -fno-strict-aliasing -fwrapv $gcc_warnings";;
   gcc-[012]-*)
     # Some versions known to miscompile OCaml, e,g, 2.7,2.1, some 2.96.
     # Plus: C99 support unknown.
@@ -315,7 +316,7 @@ case "$ccfamily" in
     # No -fwrapv option yet
     bytecccompopts="-std=gnu99 -O $gcc_warnings";;
   gcc-*)
-    bytecccompopts="-std=gnu99 -O3 -fno-strict-aliasing -fwrapv $gcc_warnings";;
+    bytecccompopts="-std=gnu99 -O2 -fno-strict-aliasing -fwrapv $gcc_warnings";;
   *)
     bytecccompopts="-O";;
 esac
