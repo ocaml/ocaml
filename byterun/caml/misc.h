@@ -142,6 +142,10 @@ extern void caml_ext_table_free(struct ext_table * tbl, int free_entries);
 extern uintnat caml_verb_gc;
 void caml_gc_message (int, char *, uintnat);
 
+/* Runtime warnings */
+extern uintnat caml_runtime_warnings;
+int caml_runtime_warnings_active(void);
+
 /* Memory routines */
 
 char *caml_aligned_malloc (asize_t bsize, int, void **);

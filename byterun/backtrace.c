@@ -136,6 +136,9 @@ struct ev_info *process_debug_events(code_t code_start, value events_heap, mlsiz
     for (l = Field(events_heap, i); l != Val_int(0); l = Field(l, 1))
       (*num_events)++;
 
+  if (*num_events == 0)
+      CAMLreturnT(struct ev_info *, NULL);
+
   events = malloc(*num_events * sizeof(struct ev_info));
   if(events == NULL)
     caml_fatal_error ("caml_add_debug_info: out of memory");

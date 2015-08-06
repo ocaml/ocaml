@@ -125,6 +125,11 @@ CAMLprim value unix_gethostbyname(value name)
 {
   struct hostent * hp;
   char * hostname;
+#if HAS_GETHOSTBYNAME_R
+  struct hostent h;
+  char buffer[NETDB_BUFFER_SIZE];
+  int h_errno;
+#endif
 
 #if HAS_GETHOSTBYNAME_R || GETHOSTBYNAME_IS_REENTRANT
   hostname = caml_strdup(String_val(name));
@@ -134,18 +139,13 @@ CAMLprim value unix_gethostbyname(value name)
 
 #if HAS_GETHOSTBYNAME_R == 5
   {
-    struct hostent h;
-    char buffer[NETDB_BUFFER_SIZE];
-    int h_errno;
     enter_blocking_section();
     hp = gethostbyname_r(hostname, &h, buffer, sizeof(buffer), &h_errno);
     leave_blocking_section();
   }
 #elif HAS_GETHOSTBYNAME_R == 6
   {
-    struct hostent h;
-    char buffer[NETDB_BUFFER_SIZE];
-    int h_errno, rc;
+    int rc;
     enter_blocking_section();
     rc = gethostbyname_r(hostname, &h, buffer, sizeof(buffer), &hp, &h_errno);
     leave_blocking_section();
