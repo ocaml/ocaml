@@ -1110,6 +1110,7 @@ let emit_item = function
 
 let data l =
   emit_string data_space;
+  `    .align  {emit_int (if ppc64 then 3 else 2)}\n`;
   List.iter emit_item l
 
 (* Beginning / end of an assembly file *)
