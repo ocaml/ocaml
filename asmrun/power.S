@@ -32,6 +32,7 @@
 /* Stack layout */
 #if defined(MODEL_ppc)
 #define RESERVED_STACK 16
+#define PARAM_SAVE_AREA 0
 #define LR_SAVE 4
 #define TRAP_SIZE 16
 #define TRAP_HANDLER_OFFSET 0
@@ -41,6 +42,7 @@
 #endif
 #if defined(MODEL_ppc64)
 #define RESERVED_STACK 48
+#define PARAM_SAVE_AREA (8*8)
 #define LR_SAVE 16
 #define TOC_SAVE 40
 #define TOC_SAVE_PARENT 8
@@ -52,6 +54,7 @@
 #endif
 #if defined(MODEL_ppc64le)
 #define RESERVED_STACK 32
+#define PARAM_SAVE_AREA 0
 #define LR_SAVE 16
 #define TOC_SAVE_PARENT 8
 #define TOC_SAVE 24
@@ -163,7 +166,7 @@ caml_system__code_begin:
 /* Invoke the garbage collector. */
 
 FUNCTION(caml_call_gc)
-#define STACKSIZE (WORD*32 + 8*32 + RESERVED_STACK)
+#define STACKSIZE (WORD*32 + 8*32 + PARAM_SAVE_AREA + RESERVED_STACK)
     /* 32 integer registers + 32 float registers + space for C call */
     /* Set up stack frame */
         stwu    1, -STACKSIZE(1)
@@ -171,17 +174,17 @@ FUNCTION(caml_call_gc)
         mflr    0
         Storeglobal(0, caml_last_return_address, 11)
     /* Record lowest stack address */
-        addi    0, 1, (WORD*32 + 8*32 + RESERVED_STACK)
+        addi    0, 1, STACKSIZE
         Storeglobal(0, caml_bottom_of_stack, 11)
     /* Record pointer to register array */
-        addi    0, 1, 8*32 + RESERVED_STACK
+        addi    0, 1, 8*32 + PARAM_SAVE_AREA + RESERVED_STACK
         Storeglobal(0, caml_gc_regs, 11)
     /* Save current allocation pointer for debugging purposes */
         Storeglobal(31, caml_young_ptr, 11)
     /* Save exception pointer (if e.g. a sighandler raises) */
         Storeglobal(29, caml_exception_pointer, 11)
     /* Save all registers used by the code generator */
-        addi    11, 1, 8*32 + RESERVED_STACK - WORD
+        addi    11, 1, 8*32 + PARAM_SAVE_AREA + RESERVED_STACK - WORD
         stgu    3, WORD(11)
         stgu    4, WORD(11)
         stgu    5, WORD(11)
@@ -205,7 +208,7 @@ FUNCTION(caml_call_gc)
         stgu    26, WORD(11)
         stgu    27, WORD(11)
         stgu    28, WORD(11)
-        addi    11, 1, RESERVED_STACK - 8
+        addi    11, 1, PARAM_SAVE_AREA + RESERVED_STACK - 8
         stfdu   1, 8(11)
         stfdu   2, 8(11)
         stfdu   3, 8(11)
@@ -246,7 +249,7 @@ FUNCTION(caml_call_gc)
         Loadglobal(31, caml_young_ptr, 11)
         Loadglobal(30, caml_young_limit, 11)
     /* Restore all regs used by the code generator */
-        addi    11, 1, 8*32 + RESERVED_STACK - WORD
+        addi    11, 1, 8*32 + PARAM_SAVE_AREA + RESERVED_STACK - WORD
         lgu     3, WORD(11)
         lgu     4, WORD(11)
         lgu     5, WORD(11)
@@ -270,7 +273,7 @@ FUNCTION(caml_call_gc)
         lgu     26, WORD(11)
         lgu     27, WORD(11)
         lgu     28, WORD(11)
-        addi    11, 1, RESERVED_STACK - 8
+        addi    11, 1, PARAM_SAVE_AREA + RESERVED_STACK - 8
         lfdu    1, 8(11)
         lfdu    2, 8(11)
         lfdu    3, 8(11)
@@ -383,7 +386,8 @@ FUNCTION(caml_raise_exn)
         mflr    4               /* arg2: PC of raise */
         mr      5, 1            /* arg3: SP of raise */
         mr      6, 29           /* arg4: SP of handler */
-        addi    1, 1, -RESERVED_STACK /* reserve stack space for C call */
+        addi    1, 1, -(PARAM_SAVE_AREA + RESERVED_STACK)
+                                /* reserve stack space for C call */
         bl      caml_stash_backtrace
 #if defined(MODEL_ppc64) || defined(MODEL_ppc64le)
         nop
@@ -432,7 +436,8 @@ FUNCTION(caml_raise_exception)
         Loadglobal(4, caml_last_return_address, 11) /* arg2: PC of raise */
         Loadglobal(5, caml_bottom_of_stack, 11)     /* arg3: SP of raise */
         Loadglobal(6, caml_exception_pointer, 11)   /* arg4: SP of handler */
-        addi    1, 1, -RESERVED_STACK /* reserve stack space for C call */
+        addi    1, 1, -(PARAM_SAVE_AREA + RESERVED_STACK)
+                                         /* reserve stack space for C call */
         bl      caml_stash_backtrace
 #if defined(MODEL_ppc64) || defined(MODEL_ppc64le)
         nop

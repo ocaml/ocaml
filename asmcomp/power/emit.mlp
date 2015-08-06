@@ -1145,7 +1145,7 @@ let end_assembly() =
      them once in asmrun/power.S, so that we can call them
      without risking to save r2 in the wrong place. *)
   if ppc64 && !Clflags.gprofile then begin
-    let save_area = reserved_stack_space + (if abi = ELF64v1 then 2*8 else 0) in
+    let save_area = reserved_stack_space + (if abi = ELF64v1 then 8*8 else 0) in
     let stacksize = save_area + 8*8 in
     emit_string code_space;
     `	.align	2\n`;

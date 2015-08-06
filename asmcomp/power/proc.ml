@@ -141,6 +141,7 @@ let loc_results res =
      Use FPR 1-13 for the first float arguments.
      Always reserve stack space for all arguments, even when passed in 
      registers.
+     Always reserve at least 8 words (64 bytes) for the arguments.
      Always reserve 48 bytes at bottom of stack, plus whatever is needed
      to hold the arguments.
      The reserved 48 bytes are automatically added in emit.mlp
@@ -161,7 +162,10 @@ let loc_external_arguments =
   | ELF32 ->
       calling_conventions 0 7 100 107 outgoing 8 false
   | ELF64v1 ->
-      calling_conventions 0 7 100 112 outgoing 0 true
+      fun args ->
+      let (loc, ofs) =
+        calling_conventions 0 7 100 112 outgoing 0 true args in
+      (loc, max ofs 64)
   | ELF64v2 ->
       fun args ->
       let (loc, ofs) =
