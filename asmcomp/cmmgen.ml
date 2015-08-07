@@ -780,6 +780,22 @@ let make_unsigned_int bi arg =
   then Cop(Cand, [arg; Cconst_natint 0xFFFFFFFFn])
   else arg
 
+(* Boxed numbers *)
+
+type boxed_number =
+  | Boxed_float
+  | Boxed_integer of boxed_integer
+
+let box_number bn arg =
+  match bn with
+  | Boxed_float -> box_float arg
+  | Boxed_integer bi -> box_int bi arg
+
+let unbox_number bn arg =
+  match bn with
+  | Boxed_float -> unbox_float arg
+  | Boxed_integer bi -> unbox_int bi arg
+
 (* Big arrays *)
 
 let bigarray_elt_size = function
@@ -1232,14 +1248,13 @@ let transl_int_switch arg low high cases default = match cases with
 
 type unboxed_number_kind =
     No_unboxing
-  | Boxed_float
-  | Boxed_integer of boxed_integer
+  | Boxed of boxed_number
   | No_result (* expression never returns a result *)
 
 let unboxed_number_kind_of_unbox = function
   | Same_as_ocaml_repr -> No_unboxing
-  | Unboxed_float -> Boxed_float
-  | Unboxed_integer bi -> Boxed_integer bi
+  | Unboxed_float -> Boxed Boxed_float
+  | Unboxed_integer bi -> Boxed (Boxed_integer bi)
   | Untagged_int -> No_unboxing
 
 let rec is_unboxed_number e =
@@ -1247,56 +1262,55 @@ let rec is_unboxed_number e =
      resulting unboxed_number_kind *)
   let join k1 e =
     match k1, is_unboxed_number e with
-    | Boxed_float, Boxed_float -> Boxed_float
-    | Boxed_integer bi1, Boxed_integer bi2 when bi1 = bi2 -> k1
+    | Boxed b1, Boxed b2 when b1 = b2 -> Boxed b1
     | No_result, k | k, No_result ->
         k (* if a branch never returns, it is safe to unbox it *)
     | _, _ -> No_unboxing
   in
   match e with
-  | Uconst(Uconst_ref(_, Uconst_float _)) -> Boxed_float
-  | Uconst(Uconst_ref(_, Uconst_int32 _)) -> Boxed_integer Pint32
+  | Uconst(Uconst_ref(_, Uconst_float _)) -> Boxed Boxed_float
+  | Uconst(Uconst_ref(_, Uconst_int32 _)) -> Boxed (Boxed_integer Pint32)
   | Uconst(Uconst_ref(_, Uconst_int64 _)) when size_int = 8 ->
-      Boxed_integer Pint64
+      Boxed (Boxed_integer Pint64)
   | Uconst(Uconst_ref(_, Uconst_nativeint _)) ->
-      Boxed_integer Pnativeint
+      Boxed (Boxed_integer Pnativeint)
   | Uprim(p, _, _) ->
       begin match simplif_primitive p with
         | Pccall p -> unboxed_number_kind_of_unbox p.prim_native_repr_res
-        | Pfloatfield _ -> Boxed_float
-        | Pfloatofint -> Boxed_float
-        | Pnegfloat -> Boxed_float
-        | Pabsfloat -> Boxed_float
-        | Paddfloat -> Boxed_float
-        | Psubfloat -> Boxed_float
-        | Pmulfloat -> Boxed_float
-        | Pdivfloat -> Boxed_float
-        | Parrayrefu Pfloatarray -> Boxed_float
-        | Parrayrefs Pfloatarray -> Boxed_float
-        | Pbintofint bi -> Boxed_integer bi
-        | Pcvtbint(src, dst) -> Boxed_integer dst
-        | Pnegbint bi -> Boxed_integer bi
-        | Paddbint bi -> Boxed_integer bi
-        | Psubbint bi -> Boxed_integer bi
-        | Pmulbint bi -> Boxed_integer bi
-        | Pdivbint bi -> Boxed_integer bi
-        | Pmodbint bi -> Boxed_integer bi
-        | Pandbint bi -> Boxed_integer bi
-        | Porbint bi -> Boxed_integer bi
-        | Pxorbint bi -> Boxed_integer bi
-        | Plslbint bi -> Boxed_integer bi
-        | Plsrbint bi -> Boxed_integer bi
-        | Pasrbint bi -> Boxed_integer bi
+        | Pfloatfield _ -> Boxed Boxed_float
+        | Pfloatofint -> Boxed Boxed_float
+        | Pnegfloat -> Boxed Boxed_float
+        | Pabsfloat -> Boxed Boxed_float
+        | Paddfloat -> Boxed Boxed_float
+        | Psubfloat -> Boxed Boxed_float
+        | Pmulfloat -> Boxed Boxed_float
+        | Pdivfloat -> Boxed Boxed_float
+        | Parrayrefu Pfloatarray -> Boxed Boxed_float
+        | Parrayrefs Pfloatarray -> Boxed Boxed_float
+        | Pbintofint bi -> Boxed (Boxed_integer bi)
+        | Pcvtbint(src, dst) -> Boxed (Boxed_integer dst)
+        | Pnegbint bi -> Boxed (Boxed_integer bi)
+        | Paddbint bi -> Boxed (Boxed_integer bi)
+        | Psubbint bi -> Boxed (Boxed_integer bi)
+        | Pmulbint bi -> Boxed (Boxed_integer bi)
+        | Pdivbint bi -> Boxed (Boxed_integer bi)
+        | Pmodbint bi -> Boxed (Boxed_integer bi)
+        | Pandbint bi -> Boxed (Boxed_integer bi)
+        | Porbint bi -> Boxed (Boxed_integer bi)
+        | Pxorbint bi -> Boxed (Boxed_integer bi)
+        | Plslbint bi -> Boxed (Boxed_integer bi)
+        | Plsrbint bi -> Boxed (Boxed_integer bi)
+        | Pasrbint bi -> Boxed (Boxed_integer bi)
         | Pbigarrayref(_, _, (Pbigarray_float32 | Pbigarray_float64), _) ->
-            Boxed_float
-        | Pbigarrayref(_, _, Pbigarray_int32, _) -> Boxed_integer Pint32
-        | Pbigarrayref(_, _, Pbigarray_int64, _) -> Boxed_integer Pint64
-        | Pbigarrayref(_, _, Pbigarray_native_int,_) -> Boxed_integer Pnativeint
-        | Pstring_load_32(_) -> Boxed_integer Pint32
-        | Pstring_load_64(_) -> Boxed_integer Pint64
-        | Pbigstring_load_32(_) -> Boxed_integer Pint32
-        | Pbigstring_load_64(_) -> Boxed_integer Pint64
-        | Pbbswap bi -> Boxed_integer bi
+            Boxed Boxed_float
+        | Pbigarrayref(_, _, Pbigarray_int32, _) -> Boxed (Boxed_integer Pint32)
+        | Pbigarrayref(_, _, Pbigarray_int64, _) -> Boxed (Boxed_integer Pint64)
+        | Pbigarrayref(_, _, Pbigarray_native_int,_) -> Boxed (Boxed_integer Pnativeint)
+        | Pstring_load_32(_) -> Boxed (Boxed_integer Pint32)
+        | Pstring_load_64(_) -> Boxed (Boxed_integer Pint64)
+        | Pbigstring_load_32(_) -> Boxed (Boxed_integer Pint32)
+        | Pbigstring_load_64(_) -> Boxed (Boxed_integer Pint64)
+        | Pbbswap bi -> Boxed (Boxed_integer bi)
         | Praise _ -> No_result
         | _ -> No_unboxing
       end
@@ -1315,19 +1329,33 @@ let rec is_unboxed_number e =
       join (is_unboxed_number e1) e2
   | _ -> No_unboxing
 
-let subst_boxed_number box_fn unbox_fn boxed_id unboxed_id box_chunk box_offset exp =
+let box_chunk = function
+  | Boxed_float -> Double_u
+  | Boxed_integer Pint32 -> Thirtytwo_unsigned
+  | Boxed_integer _ -> Word_int
+
+let box_offset = function
+  | Boxed_float -> 0
+  | Boxed_integer _ -> size_addr
+
+let subst_boxed_number boxed_number boxed_id unboxed_id exp =
   let rec subst = function
-    | Cvar id when Ident.same id boxed_id -> box_fn (Cvar unboxed_id)
+    | Cvar id when Ident.same id boxed_id ->
+        box_number boxed_number (Cvar unboxed_id)
     | Clet(id, arg, body) -> Clet(id, subst arg, subst body)
     | Cassign(id, arg) when Ident.same id boxed_id ->
-        Cassign(unboxed_id, subst(unbox_fn arg))
+        Cassign(unboxed_id, subst(unbox_number boxed_number arg))
     | Cassign(id, arg) -> Cassign(id, subst arg)
     | Ctuple argv -> Ctuple(List.map subst argv)
     | Cop(Cload chunk, [Cvar id])
-      when Ident.same id boxed_id && chunk = box_chunk && 0 = box_offset ->
+      when Ident.same id boxed_id &&
+           chunk = box_chunk boxed_number &&
+           0 = box_offset boxed_number ->
         Cvar unboxed_id
     | Cop(Cload chunk, [Cop(Cadda, [Cvar id; Cconst_int ofs])])
-      when Ident.same id boxed_id && chunk = box_chunk && ofs = box_offset ->
+      when Ident.same id boxed_id
+           && chunk = box_chunk boxed_number &&
+           ofs = box_offset boxed_number ->
         Cvar unboxed_id
     | Cop(op, argv) -> Cop(op, List.map subst argv)
     | Csequence(e1, e2) -> Csequence(subst e1, subst e2)
@@ -2130,6 +2158,11 @@ and transl_unbox_int bi = function
       Cconst_int i
   | exp -> unbox_int bi (transl exp)
 
+and transl_unbox_number bn arg =
+  match bn with
+  | Boxed_float -> transl_unbox_float arg
+  | Boxed_integer bi -> transl_unbox_int bi arg
+
 and transl_let id exp tr_body =
   match is_unboxed_number exp with
   |  No_unboxing ->
@@ -2137,20 +2170,12 @@ and transl_let id exp tr_body =
   | No_result ->
       (* the let-bound expression never returns a value, we can ignore the body *)
       transl exp
-  | Boxed_float ->
+  | Boxed boxed_number ->
       let unboxed_id = Ident.create (Ident.name id) in
       let subst_body =
-        subst_boxed_number box_float unbox_float id unboxed_id Double_u 0 tr_body
+        subst_boxed_number boxed_number id unboxed_id tr_body
       in
-      Clet(unboxed_id, transl_unbox_float exp, subst_body)
-  | Boxed_integer bi ->
-      let unboxed_id = Ident.create (Ident.name id) in
-      let subst_body =
-        subst_boxed_number (box_int bi) (unbox_int bi) id unboxed_id
-          (if bi = Pint32 then Thirtytwo_signed else Word_int)
-          size_addr tr_body
-      in
-      Clet(unboxed_id, transl_unbox_int bi exp, subst_body)
+      Clet(unboxed_id, transl_unbox_number boxed_number exp, subst_body)
 
 and make_catch ncatch body handler = match body with
 | Cexit (nexit,[]) when nexit=ncatch -> handler
