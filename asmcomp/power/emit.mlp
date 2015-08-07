@@ -202,7 +202,7 @@ let emit_toctable () =
   
 let emit_tocload emit_dest dest entry =
   let lbl = label_for_tocref entry in
-  if !big_toc then begin
+  if !big_toc || !Clflags.for_package <> None then begin
     `	addis	{emit_dest dest}, 2, {emit_label lbl}@toc@ha\n`;
     `	ld	{emit_dest dest}, {emit_label lbl}@toc@l({emit_dest dest}) # {emit_tocentry entry}\n`
   end else begin
@@ -541,7 +541,7 @@ let emit_instr i =
         | ELF64v1 | ELF64v2 ->
           let entry = TocFloat (Int64.bits_of_float f) in
           let lbl = label_for_tocref entry in
-          if !big_toc then begin
+          if !big_toc || !Clflags.for_package <> None then begin
             `	addis	11, 2, {emit_label lbl}@toc@ha\n`;
             `	lfd	{emit_reg i.res.(0)}, {emit_label lbl}@toc@l(11) # {emit_tocentry entry}\n`
           end else begin          
