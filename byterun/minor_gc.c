@@ -114,15 +114,15 @@ static void oldify_one (value v, value *p, int promote_stack)
     if (hd == 0){         /* If already forwarded */
       *p = Op_val(v)[0];  /*  then forward pointer is first field. */
     } else {
-      if (v > oldest_promoted) {
-        oldest_promoted = v;
+      if (((value)Hp_val(v)) > oldest_promoted) {
+        oldest_promoted = (value)Hp_val(v);
       }
       tag = Tag_hd (hd);
       if (tag < Infix_tag){
         value field0;
 
         if (tag == Stack_tag && !promote_stack) {
-          /* stacks are not promoted unless explicitly requested */
+          /* Stacks are not promoted unless explicitly requested. */
           Ref_table_add(&promote_domain->remembered_set->major_ref, p);
         } else {
           sz = Wosize_hd (hd);
@@ -151,7 +151,7 @@ static void oldify_one (value v, value *p, int promote_stack)
             }
           }
         }
-      } else if (tag >= No_scan_tag){
+      } else if (tag >= No_scan_tag) {
         sz = Wosize_hd (hd);
         result = alloc_shared(sz, tag);
         for (i = 0; i < sz; i++) Op_val (result)[i] = Op_val(v)[i];
@@ -159,28 +159,21 @@ static void oldify_one (value v, value *p, int promote_stack)
         Op_val (v)[0] = result;    /*  and forward pointer. */
         // caml_gc_log ("promoting object %p (referred from %p) tag=%d size=%lu to %p", (value*)v, p, tag, sz, (value*)result);
         *p = result;
-      } else if (tag == Infix_tag){
+      } else if (tag == Infix_tag) {
         mlsize_t offset = Infix_offset_hd (hd);
         oldify_one (v - offset, p, promote_stack);   /* Cannot recurse deeper than 1. */
         *p += offset;
-      } else{
+      } else {
+        Assert (tag == Forward_tag);
+
         value f = Forward_val (v);
         tag_t ft = 0;
-        int vv = 1;
 
-        Assert (tag == Forward_tag);
-        if (Is_block (f)){
-          if (Is_young (f)){
-            vv = 1;
-            ft = Tag_val (Hd_val (f) == 0 ? Op_val (f)[0] : f);
-          }else{
-            vv = 1;
-            if (vv){
-              ft = Tag_val (f);
-            }
-          }
+        if (Is_block (f)) {
+          ft = Tag_val (Hd_val (f) == 0 ? Op_val (f)[0] : f);
         }
-        if (!vv || ft == Forward_tag || ft == Lazy_tag || ft == Double_tag){
+
+        if (ft == Forward_tag || ft == Lazy_tag || ft == Double_tag) {
           /* Do not short-circuit the pointer.  Copy as a normal block. */
           Assert (Wosize_hd (hd) == 1);
           result = alloc_shared (1, Forward_tag);
@@ -191,7 +184,7 @@ static void oldify_one (value v, value *p, int promote_stack)
           p = Op_val (result);
           v = f;
           goto tail_call;
-        }else{
+        } else {
           v = f;                        /* Follow the forwarding */
           goto tail_call;               /*  then oldify. */
         }
@@ -253,6 +246,7 @@ static void caml_oldify_mopup (void) {
 void forward_pointer (value v, value *p) {
   header_t hd;
   mlsize_t offset;
+  value fwd;
 
   if (Is_block (v) && Is_young(v)) {
     hd = Hd_val(v);
@@ -262,8 +256,9 @@ void forward_pointer (value v, value *p) {
       Assert (Is_block(*p) && !Is_minor(*p));
     } else if (Tag_hd(hd) == Infix_tag) {
       offset = Infix_offset_hd(hd);
-      forward_pointer (v - offset, p);
-      *p += offset;
+      fwd = 0;
+      forward_pointer (v - offset, &fwd);
+      if (fwd) *p = fwd + offset;
     }
   }
 }
@@ -287,6 +282,9 @@ CAMLexport value caml_promote(struct domain* domain, value root)
   Assert(caml_owner_of_young_block(root) == domain);
 
   caml_save_stack_gc();
+
+  caml_gc_log ("caml_promote: root=%p tag=%u", (value*)root, Tag_val(root));
+
   oldest_promoted = (value) caml_domain_state->young_start;
 
   /* Promote the object closure */
@@ -310,9 +308,11 @@ CAMLexport value caml_promote(struct domain* domain, value root)
 
   /* Scan local roots */
   caml_do_local_roots (forward_pointer, domain);
-  /* Scan major to young pointers */
+
+  /* Scan major to young pointers. FIXME KC : Use compare and swap to update? */
   for (r = caml_remembered_set.major_ref.base; r < caml_remembered_set.major_ref.ptr; r++) {
     forward_pointer (**r, *r);
+    caml_darken (**r, *r);
   }
   /* Scan young to young pointers */
   for (r = caml_remembered_set.minor_ref.base; r < caml_remembered_set.minor_ref.ptr; r++) {
@@ -320,20 +320,28 @@ CAMLexport value caml_promote(struct domain* domain, value root)
   }
   /* Scan newer objects */
   iter = (value) caml_domain_state->young_ptr;
+  Assert (iter <= oldest_promoted &&
+          oldest_promoted < (value)caml_domain_state->young_end);
+
   while (iter < oldest_promoted) {
     hd = Hd_hp(iter);
     iter = Val_hp(iter);
     if (hd == 0) {
       /* Forwarded object, move ahead using the size from major heap copy. */
-      iter += Bosize_hd(Hd_val(Op_val(iter)[0]));
+      sz = Bosize_hd(Hd_val(Op_val(iter)[0]));
+      // caml_gc_log ("Scan: iter=%p sz=%lu tag=%u FORWARDED(%p)",
+      //             (value*)iter, Wsize_bsize(sz), Tag_hd(Hd_val(Op_val(iter)[0])), (value*)Op_val(iter)[0]);
+      iter += sz;
     } else {
       tag = Tag_hd (hd);
+      Assert (tag != Infix_tag);
       sz = Bosize_hd (hd);
+      // caml_gc_log ("Scan: iter=%p sz=%lu tag=%u", (value*)iter, Wsize_bsize(sz), tag);
       if (tag < No_scan_tag && tag != Stack_tag) { /* Stacks will be scanned lazily, so skip. */
         for (i = 0; i < Wsize_bsize(sz); i++) {
           f = Op_val(iter)[i];
           if (Is_block(f)) {
-            forward_pointer (f,(value*)iter + i);
+            forward_pointer (f,((value*)iter) + i);
           }
         }
       }
