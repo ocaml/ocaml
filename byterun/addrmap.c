@@ -6,7 +6,7 @@
 
 static const value INVALID_KEY = (value)0;
 
-static uintnat pos_initial(struct addrmap* t, value key) 
+static uintnat pos_initial(struct addrmap* t, value key)
 {
   uintnat pos = (uintnat)key;
   pos *= 0xcc9e2d51;
@@ -25,7 +25,7 @@ value caml_addrmap_lookup(struct addrmap* t, value key)
 {
   Assert(Is_block(key));
   Assert(t->entries);
-  
+
   uintnat pos;
   for (pos = pos_initial(t, key); ; pos = pos_next(t, pos)) {
     Assert(t->entries[pos].key != INVALID_KEY);
@@ -63,8 +63,8 @@ value* caml_addrmap_insert_pos(struct addrmap* t, value key) {
     /* first call, initialise table with a small initial size */
     addrmap_alloc(t, 256);
   }
-  for (i = 0, pos = pos_initial(t, key); 
-       i < MAX_CHAIN; 
+  for (i = 0, pos = pos_initial(t, key);
+       i < MAX_CHAIN;
        i++,   pos = pos_next(t, pos)) {
     if (t->entries[pos].key == INVALID_KEY) {
       t->entries[pos].key = key;
