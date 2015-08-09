@@ -132,6 +132,12 @@ val map : ('a -> 'b) -> 'a array -> 'b array
    and builds an array with the results returned by [f]:
    [[| f a.(0); f a.(1); ...; f a.(Array.length a - 1) |]]. *)
 
+val map2 : ('a -> 'b -> 'c) -> 'a array -> 'b array -> 'c array
+(** [Array.map f a b] applies function [f] to all the elements of [a]
+   and [b], and builds an array with the results returned by [f]:
+   [[| f a.(0) b.(0); f a.(1) b.(1); ...; f a.(Array.length a - 1) b.(Array.length b - 1)|]].
+   Raise [Invalid_argument] if the arrays are not the same size. *)
+
 val iteri : (int -> 'a -> unit) -> 'a array -> unit
 (** Same as {!Array.iter}, but the
    function is applied to the index of the element as first argument,
