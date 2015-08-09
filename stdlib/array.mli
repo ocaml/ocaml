@@ -127,13 +127,18 @@ val iter : ('a -> unit) -> 'a array -> unit
    the elements of [a].  It is equivalent to
    [f a.(0); f a.(1); ...; f a.(Array.length a - 1); ()]. *)
 
+val iter2 : ('a -> 'b -> 'c) -> 'a array -> 'b array -> unit
+(** [Array.iter2 f a b] applies function [f] to all the elements of [a]
+   and [b].
+   Raise [Invalid_argument] if the arrays are not the same size. *)
+
 val map : ('a -> 'b) -> 'a array -> 'b array
 (** [Array.map f a] applies function [f] to all the elements of [a],
    and builds an array with the results returned by [f]:
    [[| f a.(0); f a.(1); ...; f a.(Array.length a - 1) |]]. *)
 
 val map2 : ('a -> 'b -> 'c) -> 'a array -> 'b array -> 'c array
-(** [Array.map f a b] applies function [f] to all the elements of [a]
+(** [Array.map2 f a b] applies function [f] to all the elements of [a]
    and [b], and builds an array with the results returned by [f]:
    [[| f a.(0) b.(0); f a.(1) b.(1); ...; f a.(Array.length a - 1) b.(Array.length b - 1)|]].
    Raise [Invalid_argument] if the arrays are not the same size. *)
