@@ -87,6 +87,19 @@ let map f a =
     r
   end
 
+let map2 f a b =
+  let la = length a in
+  let lb = length b in
+  if la <> lb then raise (Invalid_argument "arrays must have the same length") else begin
+    if la = 0 then [||] else begin
+      let r = create la (f (unsafe_get a 0) (unsafe_get b 0)) in
+      for i = 1 to la - 1 do
+        unsafe_set r i (f (unsafe_get a i) (unsafe_get b i))
+      done;
+      r
+    end
+  end
+
 let iteri f a =
   for i = 0 to length a - 1 do f i (unsafe_get a i) done
 
