@@ -77,6 +77,11 @@ let blit a1 ofs1 a2 ofs2 len =
 let iter f a =
   for i = 0 to length a - 1 do f(unsafe_get a i) done
 
+let iter f a b =
+  if length a <> length b then raise (Invalid_argument "arrays must have the same length")
+  else
+    for i = 0 to length a - 1 do f (unsafe_get a i) (unsafe_get b i) done
+
 let map f a =
   let l = length a in
   if l = 0 then [||] else begin
