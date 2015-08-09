@@ -203,8 +203,8 @@ Features wishes:
 - GPR#165, GPR#221: fix windows compilation warnings
   (Bernhard Schommer, Gabriel Scherer, report by Alain Frisch)
 
-OCaml 4.02.3:
--------------
+OCaml 4.02.3 (27 Jul 2015):
+---------------------------
 
 Bug fixes:
 - PR#6908: Top-level custom printing for GADTs: interface change in 4.02.2
@@ -223,7 +223,7 @@ Feature wishes:
   (Hugo Heuzard)
 
 OCaml 4.02.2 (17 Jun 2015):
--------------
+---------------------------
 
 (Changes that can break existing programs are marked with a "*")
 
