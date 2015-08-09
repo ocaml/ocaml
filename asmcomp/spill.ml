@@ -116,6 +116,15 @@ let destroyed_at_fork = ref ([] : (instruction * Reg.Set.t) list)
 (* First pass: insert reload instructions based on an approximation of
    what is destroyed at pressure points. *)
 
+(*
+   As an optimization, if a register is destroyed in one branch of
+   a conditional but not in the other, then we reload it early on exit
+   in the branch that destroyed it.
+
+   The optimization is disabled in the same case than the spilling
+   optimization of the second phase.
+*)
+
 let add_reloads regset i =
   Reg.Set.fold
     (fun r i -> instr_cons (Iop Ireload) [|spill_reg r|] [|r|] i)
@@ -130,6 +139,21 @@ let find_reload_at_exit k =
   | Not_found -> Misc.fatal_error "Spill.find_reload_at_exit"
 
 let reload_at_break = ref Reg.Set.empty
+
+let rec add_at_end at_end i =
+  match i.desc with
+    Iend -> at_end
+  | Iifthenelse _ ->
+      let new_i = { i with next = add_at_end at_end i.next } in
+      begin try
+        let at_fork = List.assq i !destroyed_at_fork in
+        destroyed_at_fork := (new_i, at_fork) :: !destroyed_at_fork;
+      with Not_found -> () end;
+      new_i
+  | _ -> { i with next = add_at_end at_end i.next }
+
+let inside_loop = ref false
+and inside_arm = ref false
 
 let rec reload i before =
   incr current_date;
@@ -168,8 +192,29 @@ let rec reload i before =
       current_date := date_fork;
       let (new_ifnot, after_ifnot) = reload ifnot at_fork in
       current_date := max date_ifso !current_date;
-      let (new_next, finally) =
-        reload i.next (Reg.Set.union after_ifso after_ifnot) in
+      let new_ifso, new_ifnot, after_if =
+        if !inside_loop || !inside_arm
+           || new_ifso.desc = Iend
+           || new_ifnot.desc = Iend
+        then new_ifso, new_ifnot, (Reg.Set.union after_ifso after_ifnot)
+        else
+          let reload_ifso =
+            Reg.Set.diff (Reg.Set.diff after_ifso after_ifnot) at_fork in
+          let reload_ifnot =
+            Reg.Set.diff (Reg.Set.diff after_ifnot after_ifso) at_fork in
+          let new_ifso =
+            add_at_end (add_reloads reload_ifso (Mach.end_instr ())) new_ifso
+          in
+          let new_ifnot =
+            add_at_end (add_reloads reload_ifnot (Mach.end_instr ())) new_ifnot
+          in
+          let after_if =
+            Reg.Set.diff (Reg.Set.diff (Reg.Set.union after_ifso after_ifnot)
+                            reload_ifso) reload_ifnot
+          in
+          new_ifso, new_ifnot, after_if
+      in
+      let (new_next, finally) = reload i.next after_if in
       let new_i =
         instr_cons (Iifthenelse(test, new_ifso, new_ifnot))
         i.arg i.res new_next in
@@ -177,6 +222,8 @@ let rec reload i before =
       (add_reloads (Reg.inter_set_array before i.arg) new_i,
        finally)
   | Iswitch(index, cases) ->
+      let saved_inside_arm = !inside_arm in
+      inside_arm := true ;
       let at_fork = Reg.diff_set_array before i.arg in
       let date_fork = !current_date in
       let date_join = ref 0 in
@@ -191,12 +238,15 @@ let rec reload i before =
             new_c)
           cases in
       current_date := !date_join;
+      inside_arm := saved_inside_arm ;
       let (new_next, finally) = reload i.next !after_cases in
       (add_reloads (Reg.inter_set_array before i.arg)
                    (instr_cons (Iswitch(index, new_cases))
                                i.arg i.res new_next),
        finally)
   | Iloop(body) ->
+      let saved_inside_loop = !inside_loop in
+      inside_loop := true;
       let date_start = !current_date in
       let at_head = ref before in
       let final_body = ref body in
@@ -213,6 +263,7 @@ let rec reload i before =
         done
       with Exit -> ()
       end;
+      inside_loop := saved_inside_loop;
       let (new_next, finally) = reload i.next Reg.Set.empty in
       (instr_cons (Iloop(!final_body)) i.arg i.res new_next,
        finally)
@@ -270,9 +321,7 @@ let find_spill_at_exit k =
   | Not_found -> Misc.fatal_error "Spill.find_spill_at_exit"
 
 let spill_at_raise = ref Reg.Set.empty
-let inside_loop = ref false
-and inside_arm = ref false
-and inside_catch = ref false
+let inside_catch = ref false
 
 let add_spills regset i =
   Reg.Set.fold

@@ -75,6 +75,7 @@ let compile_fundecl (ppf : formatter) fd_cmm =
   ++ Split.fundecl
   ++ pass_dump_if ppf dump_split "After live range splitting"
   ++ liveness ppf
+  ++ Deadcode.fundecl
   ++ regalloc ppf 1
   ++ Linearize.fundecl
   ++ pass_dump_linear_if ppf dump_linear "Linearized code"
