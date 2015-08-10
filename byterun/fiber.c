@@ -214,8 +214,8 @@ static value use_continuation(value cont)
   self = caml_domain_self();
   self_id = self->id;
 
-  caml_gc_log ("use_continuation: stack=%p self=%u owner=%u",
-               (value*)Field(cont,0), self_id, owner_id);
+  // caml_gc_log ("use_continuation: stack=%p self=%u owner=%u",
+  //             (value*)Field(cont,0), self_id, owner_id);
 
   while(owner_id != self_id) {
     if(owner_id == -1) caml_invalid_argument("continuation already used");
