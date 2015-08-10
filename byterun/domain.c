@@ -282,6 +282,7 @@ CAMLprim value caml_domain_spawn(value callback)
   int err;
 
   caml_plat_event_init(&p.ev);
+
   p.callback = caml_promote(&domain_self->state, callback);
 
   err = pthread_create(&th, 0, domain_thread_func, (void*)&p);

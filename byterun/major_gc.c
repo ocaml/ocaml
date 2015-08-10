@@ -150,8 +150,6 @@ static intnat mark(value initial, intnat budget) {
 
 void caml_darken(value v, value* ignored) {
 
-  Assert (!Is_block(v) || Hd_val(v));
-
   /* Assert (Is_markable(v)); */
   if (!Is_markable (v)) return; /* foreign stack, at least */
 

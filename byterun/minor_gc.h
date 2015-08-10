@@ -44,7 +44,7 @@ extern void caml_realloc_ref_table (struct caml_ref_table *);
 extern void caml_alloc_table (struct caml_ref_table *, asize_t, asize_t);
 struct domain;
 CAMLextern value caml_promote(struct domain*, value root);
-
+int caml_stack_is_saved (void);
 
 #define Oldify(p) do{ \
     value __oldify__v__ = *p; \

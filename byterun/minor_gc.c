@@ -105,10 +105,19 @@ static void oldify_one (value v, value *p, int promote_stack)
   header_t hd;
   mlsize_t sz, i;
   tag_t tag;
+  struct caml_domain_state* domain_state =
+    promote_domain ? promote_domain->state : caml_domain_state;
+
+  /* It is either the case that this function was called from `caml_promote` or
+   * `caml_empty_minor_heap`. In the former case, it is possible that the
+   * current domain might not be the domain for which promotion is being
+   * performed (See attempt_rpc_takeover in domain.c). Hence, in this case,
+   * `caml_domain_state` will be different from the promote_domain->state. */
 
  tail_call:
-  if (Is_block (v) && Is_young (v)){
-    Assert (Hp_val (v) >= caml_domain_state->young_ptr);
+  if (Is_block (v)
+      && domain_state->young_ptr <= Hp_val(v)
+      && Hp_val(v) < domain_state->young_end) {
     hd = Hd_val (v);
     stat_live_bytes += Bhsize_hd(hd);
     if (hd == 0){         /* If already forwarded */
@@ -215,7 +224,6 @@ static void oldify_mopup (int promote_stack)
     Assert (Hd_val (v) == 0);             /* It must be forwarded. */
     new_v = Op_val (v)[0];                /* Follow forward pointer. */
     if (Tag_val(new_v) == Stack_tag) {
-      Assert (promote_stack);
       oldify_todo_list = Op_val (v)[1];   /* Remove from list (stack) */
       caml_scan_stack(caml_oldify_one, new_v);
     } else {
@@ -270,36 +278,49 @@ CAMLexport value caml_promote(struct domain* domain, value root)
   header_t hd;
   mlsize_t sz, i;
   tag_t tag;
+  int saved_stack = 0;
 
+  /* Integers are already shared */
   if (Is_long(root))
-    /* Integers are already shared */
     return root;
 
-  if (!Is_minor(root))
-    /* This value is already shared */
+   /* Non-stack objects which are in the major heap are already shared. */
+  if (Tag_val(root) != Stack_tag && !Is_minor(root))
     return root;
 
-  Assert(caml_owner_of_young_block(root) == domain);
+  if (!caml_stack_is_saved()) {
+    saved_stack = 1;
+    caml_save_stack_gc();
+  }
 
-  caml_save_stack_gc();
-
-  caml_gc_log ("caml_promote: root=%p tag=%u", (value*)root, Tag_val(root));
-
-  oldest_promoted = (value) caml_domain_state->young_start;
-
-  /* Promote the object closure */
-  /* XXX KC: Does this assertion hold Assert (promote_domain = caml_domain_self()) */
+  oldest_promoted = (value) domain->state->young_ptr;
+  caml_gc_log ("caml_promote: root=%p tag=%u young_ptr=%p",
+              (value*)root, Tag_val(root), (value*)oldest_promoted);
   promote_domain = domain;
-  if (Tag_val(root) == Stack_tag) {
-    /* Stacks are handled specially */
-    oldify_one (root, &root, 1);
-  }
-  else {
-    /* Objects which are not stacks. Don't promote referenced stacks. */
+
+  if (Tag_val(root) != Stack_tag) {
+    Assert(caml_owner_of_young_block(root) == domain);
+
+    /* For non-stack objects, don't promote referenced stacks. They are
+     * promoted only when explicitly requested. */
     oldify_one (root, &root, 0);
+  } else {
+    /* The object is a stack */
+    if (Is_minor(root)) {
+      oldify_one (root, &root, 1);
+    } else {
+      /* Though the stack is in the major heap, it can contain objects in the
+       * minor heap. They must be promoted. */
+      caml_scan_stack(caml_oldify_one, root);
+    }
   }
+
   oldify_mopup (0);
   promote_domain = 0;
+
+  caml_gc_log ("caml_promote: new root=%p",(value*)root);
+
+  Assert (!Is_minor(root));
 
   if (Tag_val(root) == Stack_tag) {
     /* Since we've promoted the objects on the stack, the stack is now clean. */
@@ -309,20 +330,24 @@ CAMLexport value caml_promote(struct domain* domain, value root)
   /* Scan local roots */
   caml_do_local_roots (forward_pointer, domain);
 
+  /* Scan current stack */
+  caml_scan_stack (forward_pointer, *(domain->current_stack));
+
   /* Scan major to young pointers. FIXME KC : Use compare and swap to update? */
-  for (r = caml_remembered_set.major_ref.base; r < caml_remembered_set.major_ref.ptr; r++) {
+  for (r = domain->remembered_set->major_ref.base; r < domain->remembered_set->major_ref.ptr; r++) {
     forward_pointer (**r, *r);
+    // caml_gc_log ("caml_promote: major_ref **r=%p *r=%p", (value*)**r, *r);
     caml_darken (**r, *r);
   }
+
   /* Scan young to young pointers */
-  for (r = caml_remembered_set.minor_ref.base; r < caml_remembered_set.minor_ref.ptr; r++) {
+  for (r = domain->remembered_set->minor_ref.base; r < domain->remembered_set->minor_ref.ptr; r++) {
     forward_pointer (**r, *r);
   }
-  /* Scan newer objects */
-  iter = (value) caml_domain_state->young_ptr;
-  Assert (iter <= oldest_promoted &&
-          oldest_promoted < (value)caml_domain_state->young_end);
 
+  /* Scan newer objects */
+  iter = (value) domain->state->young_ptr;
+  Assert(oldest_promoted < (value)domain->state->young_end);
   while (iter < oldest_promoted) {
     hd = Hd_hp(iter);
     iter = Val_hp(iter);
@@ -350,28 +375,13 @@ CAMLexport value caml_promote(struct domain* domain, value root)
     }
   }
 
-  /* Restore scans the current stack */
-  caml_restore_stack_gc();
+  if (saved_stack)
+    caml_restore_stack_gc();
 
   return root;
 }
 
 //*****************************************************************************
-
-static void clean_stacks()
-{
-  value **r;
-  /* darkening must precede oldifying */
-  for (r = caml_remembered_set.fiber_ref.base; r < caml_remembered_set.fiber_ref.ptr; r++) {
-    caml_scan_dirty_stack(&caml_darken, (value)*r);
-  }
-
-  for (r = caml_remembered_set.fiber_ref.base; r < caml_remembered_set.fiber_ref.ptr; r++) {
-    caml_scan_dirty_stack(&caml_oldify_one, (value)*r);
-    caml_clean_stack((value)*r);
-  }
-  clear_table (&caml_remembered_set.fiber_ref);
-}
 
 /* Make sure the minor heap is empty by performing a minor collection
    if needed.
