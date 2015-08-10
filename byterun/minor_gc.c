@@ -107,6 +107,8 @@ static void oldify_one (value v, value *p, int promote_stack)
   tag_t tag;
   struct caml_domain_state* domain_state =
     promote_domain ? promote_domain->state : caml_domain_state;
+  char* young_ptr = domain_state->young_ptr;
+  char* young_end = domain_state->young_end;
 
   /* It is either the case that this function was called from `caml_promote` or
    * `caml_empty_minor_heap`. In the former case, it is possible that the
@@ -115,9 +117,7 @@ static void oldify_one (value v, value *p, int promote_stack)
    * `caml_domain_state` will be different from the promote_domain->state. */
 
  tail_call:
-  if (Is_block (v)
-      && domain_state->young_ptr <= Hp_val(v)
-      && Hp_val(v) < domain_state->young_end) {
+  if (Is_block (v) && young_ptr <= Hp_val(v) && Hp_val(v) < young_end) {
     hd = Hd_val (v);
     stat_live_bytes += Bhsize_hd(hd);
     if (hd == 0){         /* If already forwarded */
@@ -218,6 +218,10 @@ static void oldify_mopup (int promote_stack)
 {
   value v, new_v, f;
   mlsize_t i;
+  struct caml_domain_state* domain_state =
+    promote_domain ? promote_domain->state : caml_domain_state;
+  char* young_ptr = domain_state->young_ptr;
+  char* young_end = domain_state->young_end;
 
   while (oldify_todo_list != 0){
     v = oldify_todo_list;                 /* Get the head. */
@@ -230,14 +234,16 @@ static void oldify_mopup (int promote_stack)
       oldify_todo_list = Op_val (new_v)[1]; /* Remove from list (non-stack) */
 
       f = Op_val (new_v)[0];
-      if (Is_block (f) && Is_young (f)){
+      if (Is_block (f) && young_ptr <= Hp_val(v)
+          && Hp_val(v) < young_end) {
         oldify_one (f, Op_val (new_v), promote_stack);
       }
       for (i = 1; i < Wosize_val (new_v); i++){
         f = Op_val (v)[i];
-        if (Is_block (f) && Is_young (f)){
+        if (Is_block (f) && young_ptr <= Hp_val(v)
+            && Hp_val(v) < young_end) {
           oldify_one (f, Op_val (new_v) + i, promote_stack);
-        }else{
+        } else {
           Op_val (new_v)[i] = f;
         }
       }
@@ -256,7 +262,7 @@ void forward_pointer (value v, value *p) {
   mlsize_t offset;
   value fwd;
 
-  if (Is_block (v) && Is_young(v)) {
+  if (Is_block (v) && Is_minor(v)) {
     hd = Hd_val(v);
     if (hd == 0) {
       // caml_gc_log ("forward_pointer: p=%p old=%p new=%p", p, (value*)v, (value*)Op_val(v)[0]);

@@ -81,18 +81,12 @@ static value save_stack ()
 static void load_stack(value newstack)
 {
   Assert(Tag_val(newstack) == Stack_tag);
-  if (!(Stack_dirty_domain(newstack) == 0 || Stack_dirty_domain(newstack) == caml_domain_self())) {
-    caml_gc_log("load_stack: newstack=%p dirty=%p id=%u caml_domain_self=%p id=%u", (value*)newstack,
-                Stack_dirty_domain(newstack), Stack_dirty_domain(newstack)->id, caml_domain_self(),
-                caml_domain_self()->id);
-    Assert(0);
-  }
+  Assert(Stack_dirty_domain(newstack) == 0 || Stack_dirty_domain(newstack) == caml_domain_self());
   caml_stack_threshold = Stack_base(newstack) + Stack_threshold / sizeof(value);
   caml_stack_high = Stack_high(newstack);
   caml_extern_sp = caml_stack_high + Stack_sp(newstack);
   caml_current_stack = newstack;
   caml_scan_stack (forward_pointer, newstack);
-  caml_gc_log ("load_stack: %p", (value*)newstack);
 }
 
 static opcode_t finish_code[] = { FINISH };
@@ -220,7 +214,7 @@ static value use_continuation(value cont)
   self = caml_domain_self();
   self_id = self->id;
 
-  caml_gc_log ("use_cont: stack=%p self=%u owner=%u",
+  caml_gc_log ("use_continuation: stack=%p self=%u owner=%u",
                (value*)Field(cont,0), self_id, owner_id);
 
   while(owner_id != self_id) {
@@ -459,7 +453,6 @@ static void dirty_stack(value stack)
            Stack_dirty_domain(stack) == caml_domain_self());
     if (Stack_dirty_domain(stack) == 0) {
       Stack_dirty_domain(stack) = caml_domain_self();
-      caml_gc_log ("dirty_stack: stack=%p domain=%u", (value*)stack, caml_domain_self()->id);
       Ref_table_add(&caml_remembered_set.fiber_ref, (value*)stack);
     }
   }
