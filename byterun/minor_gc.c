@@ -360,6 +360,7 @@ CAMLexport value caml_promote(struct domain* domain, value root)
     if (hd == 0) {
       /* Forwarded object, move ahead using the size from major heap copy. */
       sz = Bosize_hd(Hd_val(Op_val(iter)[0]));
+      Assert (Wosize_hd(Hd_val(Op_val(iter)[0])) <= Max_young_wosize);
       // caml_gc_log ("Scan: iter=%p sz=%lu tag=%u FORWARDED(%p)",
       //             (value*)iter, Wsize_bsize(sz), Tag_hd(Hd_val(Op_val(iter)[0])), (value*)Op_val(iter)[0]);
       iter += sz;
@@ -367,6 +368,7 @@ CAMLexport value caml_promote(struct domain* domain, value root)
       tag = Tag_hd (hd);
       Assert (tag != Infix_tag);
       sz = Bosize_hd (hd);
+      Assert (Wosize_hd(hd) <= Max_young_wosize);
       // caml_gc_log ("Scan: iter=%p sz=%lu tag=%u", (value*)iter, Wsize_bsize(sz), tag);
       if (tag < No_scan_tag && tag != Stack_tag) { /* Stacks will be scanned lazily, so skip. */
         for (i = 0; i < Wsize_bsize(sz); i++) {

@@ -69,22 +69,30 @@ CAMLexport void caml_do_local_roots (scanning_action f, struct domain* domain)
 void caml_do_sampled_roots(scanning_action f, struct domain* domain)
 {
   /* look for roots on the minor heap */
+  value v;
+  header_t hd;
   value* p = (value*)(domain->state->young_ptr);
   value* end = (value*)(domain->state->young_end);
+
   while (p < end) {
-    value v = Val_hp(p);
-    Assert (Is_block(v) && Wosize_val(v) <= Max_young_wosize);
-    Assert (Hd_val(v)); //TODO KC
-    if (Tag_val(v) == Stack_tag) {
-      caml_scan_stack(f, v);
-    } else if (Tag_val(v) < No_scan_tag) {
-      int i;
-      value* fields = Op_val(v);
-      for (i = 0; i < Wosize_val(v); i++) {
-        if (Is_block(fields[i]) && !Is_minor(fields[i])) f(fields[i], &fields[i]);
+    hd = Hd_hp(p);
+    v = Val_hp(p);
+    if (hd == 0) {
+      /* Forwarded object, move ahead using the size from major heap copy. */
+      p += Whsize_wosize(Wosize_val(Op_val(v)[0]));
+    } else {
+      Assert (Is_block(v) && Wosize_val(v) <= Max_young_wosize);
+      if (Tag_val(v) == Stack_tag) {
+        caml_scan_stack(f, v);
+      } else if (Tag_val(v) < No_scan_tag) {
+        int i;
+        value* fields = Op_val(v);
+        for (i = 0; i < Wosize_val(v); i++) {
+          if (Is_block(fields[i]) && !Is_minor(fields[i])) f(fields[i], &fields[i]);
+        }
       }
+      p += Whsize_wosize(Wosize_val(v));
     }
-    p += Whsize_wosize(Wosize_val(v));
   }
   Assert(p == end);
 
