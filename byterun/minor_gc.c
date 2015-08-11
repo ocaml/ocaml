@@ -354,7 +354,7 @@ CAMLexport value caml_promote(struct domain* domain, value root)
   /* Scan newer objects */
   iter = (value) domain->state->young_ptr;
   Assert(oldest_promoted < (value)domain->state->young_end);
-  while (iter < oldest_promoted) {
+  while (iter <= oldest_promoted) {
     hd = Hd_hp(iter);
     iter = Val_hp(iter);
     if (hd == 0) {
