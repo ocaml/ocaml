@@ -9,6 +9,10 @@
 #include "addrmap.h"
 #include "roots.h"
 
+#ifdef DEBUG
+extern __thread struct addrmap caml_young_alloc = ADDRMAP_INIT;
+#endif
+
 static void write_barrier(value obj, int field, value val)
 {
   Assert (Is_block(obj));

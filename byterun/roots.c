@@ -71,6 +71,7 @@ void caml_do_sampled_roots(scanning_action f, struct domain* domain)
   /* look for roots on the minor heap */
   value v;
   header_t hd;
+  mlsize_t sz;
   value* p = (value*)(domain->state->young_ptr);
   value* end = (value*)(domain->state->young_end);
 
@@ -78,9 +79,14 @@ void caml_do_sampled_roots(scanning_action f, struct domain* domain)
     hd = Hd_hp(p);
     v = Val_hp(p);
     if (hd == 0) {
-      /* Forwarded object, move ahead using the size from major heap copy. */
-      p += Whsize_wosize(Wosize_val(Op_val(v)[0]));
+      /* Fowarded object. */
+      mlsize_t sz = caml_get_forwarded_wosize (v, (value)domain->state->young_end);
+      Assert (sz <= Max_young_wosize);
+      Assert (caml_addrmap_lookup(domain->young_alloc, v) == sz);
     } else {
+      sz = Whsize_wosize(Wosize_val(v));
+      mlsize_t saved_sz = caml_addrmap_lookup(domain->young_alloc, v);
+      Assert (saved_sz == Wosize_whsize(sz));
       Assert (Is_block(v) && Wosize_val(v) <= Max_young_wosize);
       if (Tag_val(v) == Stack_tag) {
         caml_scan_stack(f, v);
@@ -91,8 +97,8 @@ void caml_do_sampled_roots(scanning_action f, struct domain* domain)
           if (Is_block(fields[i]) && !Is_minor(fields[i])) f(fields[i], &fields[i]);
         }
       }
-      p += Whsize_wosize(Wosize_val(v));
     }
+    p += sz;
   }
   Assert(p == end);
 
