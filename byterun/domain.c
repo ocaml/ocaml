@@ -174,6 +174,9 @@ static void create_domain(uintnat initial_minor_heap_size, int is_main) {
     d->state.runqueue = caml_init_runqueue();
 
     d->state.remembered_set = &caml_remembered_set;
+#ifdef DEBUG
+    d->state.young_alloc = &caml_young_alloc;
+#endif
     d->state.local_roots = &caml_local_roots;
 #ifdef NATIVE_CODE
     /* FIXME */

@@ -28,6 +28,7 @@
 /* </private> */
 #include "misc.h"
 #include "mlvalues.h"
+#include "alloc.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -67,6 +68,14 @@ color_t caml_allocation_color (void *hp);
 #define DEBUG_clear(result, wosize)
 #endif
 
+#ifdef DEBUG
+extern __thread struct addrmap caml_young_alloc;
+#define DEBUG_alloc(result,sz) caml_addrmap_insert(&caml_young_alloc, (result), sz)
+#else
+#define DEBUG_alloc(result,sz)
+#endif
+
+
 #define Alloc_small(result, wosize, tag) do{    CAMLassert ((wosize) >= 1); \
                                           CAMLassert ((tag_t) (tag) < 256); \
                                  CAMLassert ((wosize) <= Max_young_wosize); \
@@ -81,6 +90,7 @@ color_t caml_allocation_color (void *hp);
   Hd_hp (caml_domain_state->young_ptr) = Make_header ((wosize), (tag), 0);  \
   (result) = Val_hp (caml_domain_state->young_ptr);                         \
   DEBUG_clear ((result), (wosize));                                         \
+  DEBUG_alloc ((result), (wosize));                                         \
 }while(0)
 
 /* </private> */

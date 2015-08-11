@@ -102,6 +102,9 @@ bits  63    10 9     8 7   0
 
 #define Tag_hd(hd) ((tag_t) ((hd) & 0xFF))
 #define Wosize_hd(hd) ((mlsize_t) ((hd) >> 10))
+#define Fwdsize_wosize(sz) (sz + Max_young_wosize)
+#define Wosize_fwdsize(sz) (sz - Max_young_wosize)
+#define Fwdhd_wosize(sz) (((header_t)(Fwdsize_wosize(sz))) << 10)
 
 #define Hd_val(val) (((header_t *) (val)) [-1])        /* Also an l-value. */
 #define Hd_op(op) (Hd_val (op))                        /* Also an l-value. */
