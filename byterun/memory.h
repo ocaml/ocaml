@@ -57,6 +57,8 @@ color_t caml_allocation_color (void *hp);
 
 /* <private> */
 
+//  caml_gc_log ("Alloc_small: v=%p sz=%lu", (value*)result, (value)wosize);
+
 #ifdef DEBUG
 #define DEBUG_clear(result, wosize) do{ \
   uintnat caml__DEBUG_i; \
@@ -67,14 +69,6 @@ color_t caml_allocation_color (void *hp);
 #else
 #define DEBUG_clear(result, wosize)
 #endif
-
-#ifdef DEBUG
-extern __thread struct addrmap caml_young_alloc;
-#define DEBUG_alloc(result,sz) caml_addrmap_insert(&caml_young_alloc, (result), sz)
-#else
-#define DEBUG_alloc(result,sz)
-#endif
-
 
 #define Alloc_small(result, wosize, tag) do{    CAMLassert ((wosize) >= 1); \
                                           CAMLassert ((tag_t) (tag) < 256); \
@@ -90,7 +84,6 @@ extern __thread struct addrmap caml_young_alloc;
   Hd_hp (caml_domain_state->young_ptr) = Make_header ((wosize), (tag), 0);  \
   (result) = Val_hp (caml_domain_state->young_ptr);                         \
   DEBUG_clear ((result), (wosize));                                         \
-  DEBUG_alloc ((result), (wosize));                                         \
 }while(0)
 
 /* </private> */
