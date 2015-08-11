@@ -73,9 +73,7 @@ void caml_set_minor_heap_size (asize_t size)
 
   caml_reallocate_minor_heap(size);
 
-#ifdef DEBUG
-  caml_addrmap_clear (caml_domain_self()->young_alloc);
-#endif
+  caml_addrmap_clear (caml_domain_self()->promoted_size);
   reset_table (&caml_remembered_set.major_ref);
   reset_table (&caml_remembered_set.minor_ref);
 }
@@ -108,6 +106,7 @@ static void oldify_one (value v, value *p, int promote_stack)
   header_t hd;
   mlsize_t sz, i;
   tag_t tag;
+  struct domain* domain = promote_domain ? promote_domain : caml_domain_self ();
   struct caml_domain_state* domain_state =
     promote_domain ? promote_domain->state : caml_domain_state;
   char* young_ptr = domain_state->young_ptr;
@@ -138,6 +137,8 @@ static void oldify_one (value v, value *p, int promote_stack)
           Ref_table_add(&promote_domain->remembered_set->major_ref, p);
         } else {
           sz = Wosize_hd (hd);
+          if (promote_domain)
+            caml_addrmap_insert (domain->promoted_size, v, sz);
           result = alloc_shared (sz, tag);
           caml_gc_log ("promoting object %p (referred from %p) tag=%d size=%lu to %p", (value*)v, p, tag, sz, (value*)result);
           *p = result;
@@ -165,14 +166,13 @@ static void oldify_one (value v, value *p, int promote_stack)
         }
       } else if (tag >= No_scan_tag) {
         sz = Wosize_hd (hd);
+        if (promote_domain) {
+          caml_addrmap_insert (domain->promoted_size, v, sz);
+        }
         result = alloc_shared(sz, tag);
         for (i = 0; i < sz; i++) Op_val (result)[i] = Op_val(v)[i];
         Hd_val (v) = 0;            /* Set forward flag */
         Op_val (v)[0] = result;    /*  and forward pointer. */
-        /* Store the size of the forwarded object in field 1. */
-        if (sz > 1) {
-          Op_val (v)[1] = Fwdhd_wosize(sz);
-        }
         caml_gc_log ("promoting object %p (referred from %p) tag=%d size=%lu to %p", (value*)v, p, tag, sz, (value*)result);
         *p = result;
       } else if (tag == Infix_tag) {
@@ -193,10 +193,12 @@ static void oldify_one (value v, value *p, int promote_stack)
           /* Do not short-circuit the pointer.  Copy as a normal block. */
           Assert (Wosize_hd (hd) == 1);
           result = alloc_shared (1, Forward_tag);
-          caml_gc_log ("promoting object %p (referred from %p) tag=%d size=%lu to %p", (value*)v, p, tag, sz, (value*)result);
+          caml_gc_log ("promoting object %p (referred from %p) tag=%d size=%lu to %p", (value*)v, p, tag, 1, (value*)result);
           *p = result;
           Hd_val (v) = 0;             /* Set (GC) forward flag */
           Op_val (v)[0] = result;      /*  and forward pointer. */
+          if (promote_domain)
+            caml_addrmap_insert (domain->promoted_size, v, 1);
           p = Op_val (result);
           v = f;
           goto tail_call;
@@ -223,10 +225,6 @@ static void oldify_mopup (int promote_stack)
 {
   value v, new_v, f;
   mlsize_t i;
-#ifdef DEBUG
-  struct domain* domain =
-    promote_domain ? promote_domain : caml_domain_self();
-#endif
   struct caml_domain_state* domain_state =
     promote_domain ? promote_domain->state : caml_domain_state;
   char* young_ptr = domain_state->young_ptr;
@@ -236,7 +234,6 @@ static void oldify_mopup (int promote_stack)
     v = oldify_todo_list;                 /* Get the head. */
     Assert (Hd_val (v) == 0);             /* It must be forwarded. */
     new_v = Op_val (v)[0];                /* Follow forward pointer. */
-    Assert (caml_addrmap_lookup(domain->young_alloc, v));
     if (Tag_val(new_v) == Stack_tag) {
       oldify_todo_list = Op_val (v)[1];   /* Remove from list (stack) */
       caml_scan_stack(caml_oldify_one, new_v);
@@ -260,10 +257,6 @@ static void oldify_mopup (int promote_stack)
     }
 
     Assert (Wosize_val(new_v));
-    /* Store the size of the forwarded object in field 1. */
-    if (Wosize_val(new_v) > 1) {
-      Op_val(v)[1] = Fwdhd_wosize(Wosize_val(new_v));
-    }
   }
 }
 
@@ -321,9 +314,6 @@ CAMLexport value caml_promote(struct domain* domain, value root)
   caml_gc_log ("caml_promote: root=%p tag=%u young_ptr=%p",
               (value*)root, tag, (value*)oldest_promoted);
   promote_domain = domain;
-  if (tag == 253) {
-    caml_gc_log("253");
-  }
 
   if (tag != Stack_tag) {
     Assert(caml_owner_of_young_block(root) == domain);
@@ -377,20 +367,18 @@ CAMLexport value caml_promote(struct domain* domain, value root)
   /* Scan newer objects */
   iter = (value) domain->state->young_ptr;
   Assert(oldest_promoted < (value)domain->state->young_end);
-  while (iter < oldest_promoted) {
+  while (iter <= oldest_promoted) {
     hd = Hd_hp(iter);
     iter = Val_hp(iter);
     if (hd == 0) {
       /* Fowarded object. */
-      mlsize_t wsz = caml_get_forwarded_wosize (iter, (value)domain->state->young_end);
+      mlsize_t wsz = caml_addrmap_lookup (domain->promoted_size, iter);
       Assert (wsz <= Max_young_wosize);
-      Assert (caml_addrmap_lookup(domain->young_alloc, iter) == wsz);
       sz = Bsize_wsize(wsz);
     } else {
       tag = Tag_hd (hd);
       Assert (tag != Infix_tag);
       sz = Bosize_hd (hd);
-      Assert (caml_addrmap_lookup(domain->young_alloc, iter) == Wsize_bsize(sz));
       Assert (Wosize_hd(hd) <= Max_young_wosize);
       // caml_gc_log ("Scan: iter=%p sz=%lu tag=%u", (value*)iter, Wsize_bsize(sz), tag);
       if (tag < No_scan_tag && tag != Stack_tag) { /* Stacks will be scanned lazily, so skip. */
@@ -452,9 +440,7 @@ void caml_empty_minor_heap (void)
       caml_darken (**r,*r);
     }
 
-#ifdef DEBUG
-    caml_addrmap_clear (caml_domain_self()->young_alloc);
-#endif
+    caml_addrmap_clear (caml_domain_self()->promoted_size);
     clear_table (&caml_remembered_set.fiber_ref);
     clear_table (&caml_remembered_set.major_ref);
     clear_table (&caml_remembered_set.minor_ref);

@@ -14,9 +14,7 @@ struct domain {
   struct caml_runqueue* runqueue;
   struct caml_heap_state* shared_heap;
   struct caml_remembered_set* remembered_set;
-#ifdef DEBUG
-  struct addrmap* young_alloc;
-#endif
+  struct addrmap* promoted_size;
 
   struct caml__roots_block** local_roots;
 #ifdef NATIVE_CODE

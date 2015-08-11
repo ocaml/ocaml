@@ -217,27 +217,3 @@ void caml_empty_mark_stack () {
     caml_gc_log("Finished marking major heap. Marked %u blocks", (unsigned)stat_blocks_marked);
   stat_blocks_marked = 0;
 }
-
-mlsize_t caml_get_forwarded_wosize (value v, value young_end) {
-  header_t hd;
-  mlsize_t sz = 1;
-
-  Assert (Is_block(v) && Is_minor(v));
-  hd = Hd_val (v);
-  Assert (!hd);
-
-  if (v + Bsize_wsize(1) == young_end) {
-    sz = 1;
-  } else {
-    hd = (header_t)(Op_val(v)[1]);
-    sz = Wosize_hd(hd);
-
-    if (sz > Max_young_wosize)
-      sz = Wosize_fwdsize(sz);
-    else sz = 1;
-
-    Assert (sz > 0 && sz <= Max_young_wosize);
-  }
-  caml_gc_log ("caml_get_forwarded_wosize: v=%p sz=%lu",(value*)v,sz);
-  return sz;
-}

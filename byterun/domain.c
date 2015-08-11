@@ -63,6 +63,8 @@ static __thread dom_internal* domain_self;
 
 CAMLexport __thread struct caml_domain_state* caml_domain_state;
 
+static __thread struct addrmap caml_promoted_size = ADDRMAP_INIT;
+
 static __thread char domains_locked[Max_domains];
 
 /* If you lock a domain, you are responsible for handling
@@ -174,9 +176,7 @@ static void create_domain(uintnat initial_minor_heap_size, int is_main) {
     d->state.runqueue = caml_init_runqueue();
 
     d->state.remembered_set = &caml_remembered_set;
-#ifdef DEBUG
-    d->state.young_alloc = &caml_young_alloc;
-#endif
+    d->state.promoted_size = &caml_promoted_size;
     d->state.local_roots = &caml_local_roots;
 #ifdef NATIVE_CODE
     /* FIXME */
