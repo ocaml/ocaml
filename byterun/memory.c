@@ -14,6 +14,8 @@ static void write_barrier(value obj, int field, value val)
   Assert (Is_block(obj));
 
   if (Is_block(val)) {
+    // caml_gc_log ("write_barrier: obj=%p field=%d val=%p",
+    //             (value*)obj, field, (value*)val);
     if (!Is_young(obj)) {
       if (Is_young(val)) {
         /* Add to remembered set */

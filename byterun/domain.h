@@ -3,6 +3,7 @@
 
 #include "mlvalues.h"
 #include "domain_state.h"
+#include "memory.h"
 
 struct domain {
   int id;
@@ -13,6 +14,7 @@ struct domain {
   struct caml_runqueue* runqueue;
   struct caml_heap_state* shared_heap;
   struct caml_remembered_set* remembered_set;
+  struct addrmap* promoted_size;
 
   struct caml__roots_block** local_roots;
 #ifdef NATIVE_CODE
