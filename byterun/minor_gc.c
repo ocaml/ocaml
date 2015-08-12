@@ -140,7 +140,7 @@ static void oldify_one (value v, value *p, int promote_stack)
           if (promote_domain)
             caml_addrmap_insert (domain->promoted_size, v, sz);
           result = alloc_shared (sz, tag);
-          caml_gc_log ("promoting object %p (referred from %p) tag=%d size=%lu to %p", (value*)v, p, tag, sz, (value*)result);
+          // caml_gc_log ("promoting object %p (referred from %p) tag=%d size=%lu to %p", (value*)v, p, tag, sz, (value*)result);
           *p = result;
           if (tag == Stack_tag) {
             memcpy((void*)result, (void*)v, sizeof(value) * sz);
@@ -173,7 +173,7 @@ static void oldify_one (value v, value *p, int promote_stack)
         for (i = 0; i < sz; i++) Op_val (result)[i] = Op_val(v)[i];
         Hd_val (v) = 0;            /* Set forward flag */
         Op_val (v)[0] = result;    /*  and forward pointer. */
-        caml_gc_log ("promoting object %p (referred from %p) tag=%d size=%lu to %p", (value*)v, p, tag, sz, (value*)result);
+        // caml_gc_log ("promoting object %p (referred from %p) tag=%d size=%lu to %p", (value*)v, p, tag, sz, (value*)result);
         *p = result;
       } else if (tag == Infix_tag) {
         mlsize_t offset = Infix_offset_hd (hd);
@@ -193,8 +193,8 @@ static void oldify_one (value v, value *p, int promote_stack)
           /* Do not short-circuit the pointer.  Copy as a normal block. */
           Assert (Wosize_hd (hd) == 1);
           result = alloc_shared (1, Forward_tag);
-          caml_gc_log ("promoting object %p (referred from %p) tag=%d size=%lu to %p",
-                       (value*)v, p, tag, (value)1, (value*)result);
+          // caml_gc_log ("promoting object %p (referred from %p) tag=%d size=%lu to %p",
+          //             (value*)v, p, tag, (value)1, (value*)result);
           *p = result;
           Hd_val (v) = 0;             /* Set (GC) forward flag */
           Op_val (v)[0] = result;      /*  and forward pointer. */
@@ -283,7 +283,7 @@ void forward_pointer (value v, value *p) {
   if (Is_block (v) && young_ptr <= Hp_val(v) && Hp_val(v) < young_end) {
     hd = Hd_val(v);
     if (hd == 0) {
-      caml_gc_log ("forward_pointer: p=%p old=%p new=%p", p, (value*)v, (value*)Op_val(v)[0]);
+      // caml_gc_log ("forward_pointer: p=%p old=%p new=%p", p, (value*)v, (value*)Op_val(v)[0]);
       *p = Op_val(v)[0];
       Assert (Is_block(*p) && !Is_minor(*p));
     } else if (Tag_hd(hd) == Infix_tag) {
@@ -388,8 +388,9 @@ CAMLexport value caml_promote(struct domain* domain, value root)
     hd = Hd_hp(iter);
     iter = Val_hp(iter);
     if (hd == 0) {
-      /* Fowarded object. */
+      /* Fowarded object. XXX KC. */
       mlsize_t wsz = caml_addrmap_lookup (domain->promoted_size, iter);
+      Assert (wsz == Wosize_val(Op_val(iter)[0]));
       Assert (wsz <= Max_young_wosize);
       sz = Bsize_wsize(wsz);
     } else {

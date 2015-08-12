@@ -87,7 +87,7 @@ static void load_stack(value newstack)
   caml_extern_sp = caml_stack_high + Stack_sp(newstack);
   caml_current_stack = newstack;
   caml_scan_stack (forward_pointer, newstack);
-  caml_gc_log ("load_stack: %p", (value*)newstack);
+  //caml_gc_log ("load_stack: %p", (value*)newstack);
 }
 
 static opcode_t finish_code[] = { FINISH };

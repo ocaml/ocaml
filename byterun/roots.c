@@ -79,8 +79,9 @@ void caml_do_sampled_roots(scanning_action f, struct domain* domain)
     hd = Hd_hp(p);
     v = Val_hp(p);
     if (hd == 0) {
-      /* Fowarded object. */
+      /* Fowarded object. XXX KC */
       sz = Whsize_wosize(caml_addrmap_lookup (domain->promoted_size, v));
+      Assert (sz == Whsize_val(Op_val(v)[0]));
       caml_gc_log ("caml_do_sampled_roots: v=%p hd=%lu sz=%lu next_v=%p",
                     (value*)v, hd, Wosize_whsize(sz), p+sz);
       Assert (sz <= Max_young_wosize);

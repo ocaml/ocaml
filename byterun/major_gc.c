@@ -117,13 +117,13 @@ static intnat mark(value initial, intnat budget) {
     /* mark the current object */
     hd_v = Hd_val(v);
     if (Tag_hd (hd_v) == Stack_tag) {
-      caml_gc_log ("mark: stack=%p", (value*)v);
+      // caml_gc_log ("mark: stack=%p", (value*)v);
       caml_scan_stack(&caml_darken, v);
     } else if (Tag_hd (hd_v) < No_scan_tag) {
       int i;
       for (i = 0; i < Wosize_hd(hd_v); i++) {
         value child = Field(v, i);
-        caml_gc_log ("mark: v=%p i=%u child=%p",(value*)v,i,(value*)child);
+        // caml_gc_log ("mark: v=%p i=%u child=%p",(value*)v,i,(value*)child);
         if (Is_markable(child)) {
           child = mark_normalise(child);
           if (caml_mark_object(child)) {
