@@ -79,16 +79,19 @@ void caml_do_sampled_roots(scanning_action f, struct domain* domain)
     hd = Hd_hp(p);
     v = Val_hp(p);
     if (hd == 0) {
-      /* Fowarded object. XXX KC */
-      sz = Whsize_wosize(caml_addrmap_lookup (domain->promoted_size, v));
-      Assert (sz == Whsize_val(Op_val(v)[0]));
-      caml_gc_log ("caml_do_sampled_roots: v=%p hd=%lu sz=%lu next_v=%p",
-                    (value*)v, hd, Wosize_whsize(sz), p+sz);
+      /* Fowarded object.*/
+      sz = Whsize_val(Op_val(v)[0]);
+      caml_gc_log ("caml_do_sampled_roots: Forwarded minor_v=%p major_v=%p sz=%lu",
+                   (value*)v, *(value**)v, Wosize_whsize(sz));
       Assert (sz <= Max_young_wosize);
+      /* Must consider the forward pointer as a root. This ensures that the
+       * major heap object is not GCed, and we can ascertain the size of the
+       * forwarded object. */
+      f(Op_val(v)[0], Op_val(v));
     } else {
       sz = Whsize_wosize(Wosize_val(v));
-      caml_gc_log ("caml_do_sampled_roots: v=%p hd=%lu sz=%lu",
-                   (value*)v, hd, Wosize_val(v));
+      // caml_gc_log ("caml_do_sampled_roots: v=%p hd=%lu sz=%lu",
+      //             (value*)v, hd, Wosize_val(v));
       Assert (Is_block(v) && Wosize_val(v) <= Max_young_wosize);
       if (Tag_val(v) == Stack_tag) {
         caml_scan_stack(f, v);
