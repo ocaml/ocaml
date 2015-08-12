@@ -87,6 +87,7 @@ static void load_stack(value newstack)
   caml_extern_sp = caml_stack_high + Stack_sp(newstack);
   caml_current_stack = newstack;
   caml_scan_stack (forward_pointer, newstack);
+  caml_gc_log ("load_stack: %p", (value*)newstack);
 }
 
 static opcode_t finish_code[] = { FINISH };
@@ -173,6 +174,7 @@ value caml_perform(value effect)
   /* Set trapsp and parent stack */
   sp = caml_extern_sp;
   caml_parent_stack = sp[1];
+  Assert (!Is_foreign(caml_parent_stack));
   caml_trap_sp_off = Long_val(sp[2]);
 
   /* Complete the call frame */
