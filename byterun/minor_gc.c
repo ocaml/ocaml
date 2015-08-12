@@ -73,7 +73,6 @@ void caml_set_minor_heap_size (asize_t size)
 
   caml_reallocate_minor_heap(size);
 
-  caml_addrmap_clear (caml_domain_self()->promoted_size);
   reset_table (&caml_remembered_set.major_ref);
   reset_table (&caml_remembered_set.minor_ref);
 }
@@ -137,8 +136,6 @@ static void oldify_one (value v, value *p, int promote_stack)
           Ref_table_add(&promote_domain->remembered_set->major_ref, p);
         } else {
           sz = Wosize_hd (hd);
-          if (promote_domain)
-            caml_addrmap_insert (domain->promoted_size, v, sz);
           result = alloc_shared (sz, tag);
           // caml_gc_log ("promoting object %p (referred from %p) tag=%d size=%lu to %p", (value*)v, p, tag, sz, (value*)result);
           *p = result;
@@ -166,9 +163,6 @@ static void oldify_one (value v, value *p, int promote_stack)
         }
       } else if (tag >= No_scan_tag) {
         sz = Wosize_hd (hd);
-        if (promote_domain) {
-          caml_addrmap_insert (domain->promoted_size, v, sz);
-        }
         result = alloc_shared(sz, tag);
         for (i = 0; i < sz; i++) Op_val (result)[i] = Op_val(v)[i];
         Hd_val (v) = 0;            /* Set forward flag */
@@ -198,8 +192,6 @@ static void oldify_one (value v, value *p, int promote_stack)
           *p = result;
           Hd_val (v) = 0;             /* Set (GC) forward flag */
           Op_val (v)[0] = result;      /*  and forward pointer. */
-          if (promote_domain)
-            caml_addrmap_insert (domain->promoted_size, v, 1);
           p = Op_val (result);
           v = f;
           goto tail_call;
@@ -388,9 +380,8 @@ CAMLexport value caml_promote(struct domain* domain, value root)
     hd = Hd_hp(iter);
     iter = Val_hp(iter);
     if (hd == 0) {
-      /* Fowarded object. XXX KC. */
-      mlsize_t wsz = caml_addrmap_lookup (domain->promoted_size, iter);
-      Assert (wsz == Wosize_val(Op_val(iter)[0]));
+      /* Fowarded object. */
+      mlsize_t wsz = Wosize_val(Op_val(iter)[0]);
       Assert (wsz <= Max_young_wosize);
       sz = Bsize_wsize(wsz);
     } else {
@@ -479,7 +470,6 @@ void caml_empty_minor_heap (void)
       caml_darken (**r,*r);
     }
 
-    caml_addrmap_clear (caml_domain_self()->promoted_size);
     clear_table (&caml_remembered_set.fiber_ref);
     clear_table (&caml_remembered_set.major_ref);
     clear_table (&caml_remembered_set.minor_ref);
