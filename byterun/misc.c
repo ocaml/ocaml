@@ -24,8 +24,9 @@
 
 int caml_failed_assert (char * expr, char * file, int line)
 {
-  fprintf (stderr, "file %s; line %d ### Assertion failed: %s\n",
-           file, line, expr);
+  struct domain* self = caml_domain_self ();
+  fprintf (stderr, "[%02d] file %s; line %d ### Assertion failed: %s\n",
+           self ? self->id : -1, file, line, expr);
   fflush (stderr);
   abort();
   return 1; /* not reached */

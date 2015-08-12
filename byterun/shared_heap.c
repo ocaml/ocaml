@@ -390,6 +390,7 @@ int caml_mark_object(value p) {
   Assert (h && !Has_status_hd(h, global.GARBAGE));
   if (Has_status_hd(h, global.UNMARKED)) {
     Hd_val(p) = With_status_hd(h, global.MARKED);
+    caml_gc_log ("caml_mark_object: %p hd=%p", (value*)p, (value*)Hd_val(p));
     return 1;
   } else {
     return 0;

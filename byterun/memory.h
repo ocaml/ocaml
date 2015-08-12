@@ -28,6 +28,7 @@
 /* </private> */
 #include "misc.h"
 #include "mlvalues.h"
+#include "alloc.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -55,6 +56,8 @@ color_t caml_allocation_color (void *hp);
 /* void caml_shrink_heap (char *);        Only used in compact.c */
 
 /* <private> */
+
+//  caml_gc_log ("Alloc_small: v=%p sz=%lu", (value*)result, (value)wosize);
 
 #ifdef DEBUG
 #define DEBUG_clear(result, wosize) do{ \
