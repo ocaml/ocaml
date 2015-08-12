@@ -289,11 +289,13 @@ value caml_interprete(code_t prog, asize_t prog_size)
 
     Assert(!Is_foreign(accu));
     Assert(!Is_foreign(env));
+
 #if 0
     {
       value* s;
       for (s = sp; s < caml_stack_high; s++) {
         Assert(*s != Debug_free_minor);
+        Assert(*s != Debug_free_major);
         Assert(!Is_foreign(*s));
         if (Is_minor(*s)) Assert(caml_domain_state->young_ptr < (char*)*s);
       }

@@ -117,6 +117,7 @@ static intnat mark(value initial, intnat budget) {
     /* mark the current object */
     hd_v = Hd_val(v);
     if (Tag_hd (hd_v) == Stack_tag) {
+      caml_gc_log ("mark: stack=%p", (value*)v);
       caml_scan_stack(&caml_darken, v);
     } else if (Tag_hd (hd_v) < No_scan_tag) {
       int i;

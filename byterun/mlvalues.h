@@ -206,10 +206,19 @@ CAMLextern value caml_read_barrier(value, int);
 static inline value Field(value x, int i) {
   Assert (Hd_val(x));
   value v = (((value*)x))[i];
+  Assert (v != Debug_free_major);
   //if (Is_young(v)) Assert(young_ptr < (char*)v);
   return Is_foreign(v) ? caml_read_barrier(x, i) : v;
-  }
-  #define FieldImm(x, i) (Assert(Hd_val(x)), Assert(!Is_foreign(x)), ((value *)(x)) [i] + 0)
+}
+static inline value FieldImm(value x, int i) {
+  Assert (Hd_val(x));
+  value v = (((value*)x))[i];
+  Assert (v != Debug_free_major);
+  Assert (!Is_foreign(v));
+  // if (Is_young(v)) Assert(young_ptr < (char*)v);
+  return v;
+}
+  //#define FieldImm(x, i) (((value *)(x)) [i] + 0)
   //#define Field(x, i) (((value *)(x)) [i] + 0)
 
 /* initialise a field of an object just allocated on the minor heap */

@@ -80,14 +80,14 @@ void caml_do_sampled_roots(scanning_action f, struct domain* domain)
     v = Val_hp(p);
     if (hd == 0) {
       /* Fowarded object. */
-      mlsize_t sz = Whsize_wosize(caml_addrmap_lookup (domain->promoted_size, v));
+      sz = Whsize_wosize(caml_addrmap_lookup (domain->promoted_size, v));
       caml_gc_log ("caml_do_sampled_roots: v=%p hd=%lu sz=%lu next_v=%p",
-                   v, hd, Wosize_whsize(sz), p+sz);
+                    (value*)v, hd, Wosize_whsize(sz), p+sz);
       Assert (sz <= Max_young_wosize);
-      p += sz;
     } else {
       sz = Whsize_wosize(Wosize_val(v));
-      caml_gc_log ("caml_do_sampled_roots: v=%p hd=%lu sz=%lu", v, hd, Wosize_val(v));
+      caml_gc_log ("caml_do_sampled_roots: v=%p hd=%lu sz=%lu",
+                   (value*)v, hd, Wosize_val(v));
       Assert (Is_block(v) && Wosize_val(v) <= Max_young_wosize);
       if (Tag_val(v) == Stack_tag) {
         caml_scan_stack(f, v);
@@ -98,8 +98,8 @@ void caml_do_sampled_roots(scanning_action f, struct domain* domain)
           if (Is_block(fields[i]) && !Is_minor(fields[i])) f(fields[i], &fields[i]);
         }
       }
-      p += sz;
     }
+    p += sz;
   }
   Assert(p == end);
 
