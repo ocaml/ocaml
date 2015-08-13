@@ -19,6 +19,7 @@ type constant_defining_value =
 
 val second_take :
   constant_defining_value Variable.Map.t ->
+  Flambda.constant_defining_value Symbol.Map.t ->
   Variable.t Symbol.Map.t ->
-  Variable.t Variable.Map.t
+  allocation_point Variable.Map.t
 

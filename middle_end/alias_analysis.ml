@@ -519,11 +519,17 @@ let fatal_error_f fmt =
     ppf
     fmt
 
+type definitions =
+  {
+    variable : constant_defining_value Variable.Map.t;
+    symbol : Flambda.constant_defining_value Symbol.Map.t;
+    symbol_alias : Variable.t Symbol.Map.t;
+  }
+
 let rec resolve_definition
-    (definitions: constant_defining_value Variable.Map.t)
-    (symbols: Variable.t Symbol.Map.t)
+    (definitions: definitions)
     (var: Variable.t)
-    (def: constant_defining_value) =
+    (def: constant_defining_value) : allocation_point =
   match def with
   | Allocated_const _
   | Block _
@@ -531,43 +537,44 @@ let rec resolve_definition
   | Project_closure _
   | Const _
   | Predefined_exn _ ->
-    var
+    Variable var
   | Project_var {var} ->
-    fetch_variable definitions symbols (Var_within_closure.unwrap var)
+    fetch_variable definitions (Var_within_closure.unwrap var)
   | Variable v ->
-    fetch_variable definitions symbols v
+    fetch_variable definitions v
   | Symbol sym -> begin
-      match Symbol.Map.find sym symbols with
+      match Symbol.Map.find sym definitions.symbol_alias with
       | exception Not_found ->
-        var
+        Symbol sym
       | v ->
-        fetch_variable definitions symbols v
+        fetch_variable definitions v
     end
   | Field (v, n) ->
-    let v = fetch_variable definitions symbols v in
-    fetch_field definitions symbols v n
+    match fetch_variable definitions v with
+    | Symbol s ->
+      fetch_symbol_field definitions s n
+    | Variable v ->
+      fetch_variable_field definitions v n
 
 and fetch_variable
-    (definitions: constant_defining_value Variable.Map.t)
-    (symbols: Variable.t Symbol.Map.t)
-    (var: Variable.t) =
-  match Variable.Map.find var definitions with
-  | exception Not_found -> var
+    (definitions: definitions)
+    (var: Variable.t) : allocation_point =
+  match Variable.Map.find var definitions.variable with
+  | exception Not_found -> Variable var
   | def ->
-    resolve_definition definitions symbols var def
+    resolve_definition definitions var def
 
-and fetch_field
-    (definitions: constant_defining_value Variable.Map.t)
-    (symbols: Variable.t Symbol.Map.t)
+and fetch_variable_field
+    (definitions: definitions)
     (var: Variable.t)
-    (field: int) =
-  match Variable.Map.find var definitions with
+    (field: int) : allocation_point =
+  match Variable.Map.find var definitions.variable with
   | Block (_, fields) ->
     begin match List.nth fields field with
     | exception Not_found ->
       fatal_error_f "No field %i in block %a" field Variable.print var
     | v ->
-      fetch_variable definitions symbols v
+      fetch_variable definitions v
     end
   | exception Not_found ->
     fatal_error_f "No definition for field access to %a" Variable.print var
@@ -578,5 +585,25 @@ and fetch_field
   | Set_of_closures _ | Project_closure _ ->
     fatal_error_f "Field access to %a which is not a block" Variable.print var
 
-let second_take definitions symbols =
-  Variable.Map.mapi (resolve_definition definitions symbols) definitions
+and fetch_symbol_field
+    (definitions: definitions)
+    (sym: Symbol.t)
+    (field: int) : allocation_point =
+  match Symbol.Map.find sym definitions.symbol with
+  | Block (_, fields) ->
+    begin match List.nth fields field with
+    | exception Not_found ->
+      fatal_error_f "No field %i in block %a" field Symbol.print sym
+    | Symbol s ->
+      Symbol s
+    | Const _ ->
+      Symbol sym
+    end
+  | exception Not_found ->
+    fatal_error_f "No definition for field access to %a" Symbol.print sym
+  | Allocated_const _ | Set_of_closures _ | Project_closure _ ->
+    fatal_error_f "Field access to %a which is not a block" Symbol.print sym
+
+let second_take variable symbol symbol_alias =
+  let definitions = { variable; symbol; symbol_alias; } in
+  Variable.Map.mapi (resolve_definition definitions) definitions.variable
