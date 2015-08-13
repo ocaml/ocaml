@@ -62,7 +62,12 @@ val apply_opt : ('a -> 'b) -> 'a option -> 'b option
 
 (** Return a string representing a date given as a number of seconds
    since 1970. The hour is optionnaly displayed. *)
-val string_of_date : ?hour:bool -> float -> string
+val string_of_date : ?absolute:bool -> ?hour:bool -> float -> string
+
+(* Value returned by string_of_date for current time.
+ * Uses environment variable SOURCE_DATE_EPOCH if set; falls back to
+ * current timestamp otherwise. *)
+val current_date : string
 
 (** Return the first sentence (until the first dot) of a text.
    Don't stop in the middle of [Code], [Verbatim], [List], [Lnum],
