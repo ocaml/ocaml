@@ -61,7 +61,6 @@ type primitive =
   | Pnegint | Paddint | Psubint | Pmulint | Pdivint | Pmodint
   | Pandint | Porint | Pxorint
   | Plslint | Plsrint | Pasrint
-  | Pobjcomp
   | Pintcomp of comparison
   | Poffsetint of int
   | Poffsetref of int

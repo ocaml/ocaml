@@ -1064,9 +1064,6 @@ value caml_interprete(code_t prog, asize_t prog_size)
     Instruct(ASRINT):
       accu = (value)((((intnat) accu - 1) >> Long_val(*sp++)) | 1); Next;
 
-    Instruct(OEQ):
-      accu = Val_int((intnat) accu == (intnat) *sp++); Next;
-
 #define Integer_comparison(typ,opname,tst) \
     Instruct(opname): \
       accu = Val_int((typ) accu tst (typ) *sp++); Next;
