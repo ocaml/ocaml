@@ -429,12 +429,12 @@ void caml_empty_minor_heap (void)
 
   stat_live_bytes = 0;
 
-  if (minor_allocated_bytes != 0){
+  if (minor_allocated_bytes != 0) {
     caml_gc_log ("Minor collection starting");
     caml_do_local_roots(&caml_oldify_one, caml_domain_self());
 
     for (r = caml_remembered_set.fiber_ref.base; r < caml_remembered_set.fiber_ref.ptr; r++) {
-      caml_scan_dirty_stack(&caml_oldify_one, (value)*r);
+      caml_scan_dirty_stack (&caml_oldify_one, (value)*r);
     }
 
     for (r = caml_remembered_set.major_ref.base; r < caml_remembered_set.major_ref.ptr; r++) {
@@ -443,11 +443,6 @@ void caml_empty_minor_heap (void)
     }
 
     caml_oldify_mopup ();
-
-    for (r = caml_remembered_set.fiber_ref.base; r < caml_remembered_set.fiber_ref.ptr; r++) {
-      caml_scan_dirty_stack(&caml_darken, (value)*r);
-      caml_clean_stack((value)*r);
-    }
 
     for (r = caml_remembered_set.major_ref.base; r < caml_remembered_set.major_ref.ptr; r++){
       value v = **r;
@@ -462,15 +457,14 @@ void caml_empty_minor_heap (void)
         }
         Assert (Hd_val(v) == 0);
         vnew = Op_val(v)[0] + offset;
-        Assert(Is_block(vnew) && !Is_young(vnew));
-        Assert(Hd_val(vnew));
+        Assert (Is_block(vnew) && !Is_young(vnew));
+        Assert (Hd_val(vnew));
         if (Tag_hd(hd) == Infix_tag) { Assert(Tag_val(vnew) == Infix_tag); }
         if (__sync_bool_compare_and_swap (*r,v,vnew)) ++rewritten;
       }
       caml_darken (**r,*r);
     }
 
-    clear_table (&caml_remembered_set.fiber_ref);
     clear_table (&caml_remembered_set.major_ref);
     clear_table (&caml_remembered_set.minor_ref);
 
@@ -480,6 +474,14 @@ void caml_empty_minor_heap (void)
     caml_gc_log ("Minor collection completed: %u of %u kb live, %u pointers rewritten",
                  (unsigned)stat_live_bytes/1024, (unsigned)minor_allocated_bytes/1024, rewritten);
   }
+
+  for (r = caml_remembered_set.fiber_ref.base; r < caml_remembered_set.fiber_ref.ptr; r++) {
+    caml_scan_dirty_stack (&caml_darken, (value)*r);
+    caml_clean_stack ((value)*r);
+  }
+  clear_table (&caml_remembered_set.fiber_ref);
+
+
   caml_restore_stack_gc();
 
 
