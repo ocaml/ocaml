@@ -89,21 +89,35 @@ let parse_declaration valdecl ~native_repr_args ~native_repr_res =
    prim_native_repr_args = native_repr_args;
    prim_native_repr_res = native_repr_res}
 
-let description_list p =
+let description_list_and_attributes p =
   let list = [p.prim_name] in
   let list = if not p.prim_alloc then "noalloc" :: list else list in
   let list =
     if p.prim_native_name <> "" then p.prim_native_name :: list else list
   in
-  let list =
+  let has_float =
     let is_unboxed_float x = x = Unboxed_float in
-    if List.for_all is_unboxed_float p.prim_native_repr_args &&
-       is_unboxed_float p.prim_native_repr_res then
+    List.for_all is_unboxed_float p.prim_native_repr_args &&
+    is_unboxed_float p.prim_native_repr_res
+  in
+  let list =
+    if has_float then
       "float" :: list
     else
       list
   in
-  List.rev list
+  let list = List.rev list in
+  let attr_of_native_repr = function
+    | Same_as_ocaml_repr -> None
+    | Unboxed_float -> if has_float then None else Some "unboxed"
+    | Unboxed_integer _ -> Some "unboxed"
+    | Untagged_int -> Some "untagged"
+  in
+  let attrs =
+    List.map attr_of_native_repr p.prim_native_repr_args @
+    [attr_of_native_repr p.prim_native_repr_res]
+  in
+  (list, attrs)
 
 let native_name p =
   if p.prim_native_name <> ""
