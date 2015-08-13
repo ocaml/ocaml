@@ -210,6 +210,7 @@ static inline value Field(value x, int i) {
   //if (Is_young(v)) Assert(young_ptr < (char*)v);
   return Is_foreign(v) ? caml_read_barrier(x, i) : v;
 }
+/*
 static inline value FieldImm(value x, int i) {
   Assert (Hd_val(x));
   value v = (((value*)x))[i];
@@ -217,9 +218,9 @@ static inline value FieldImm(value x, int i) {
   Assert (!Is_foreign(v));
   // if (Is_young(v)) Assert(young_ptr < (char*)v);
   return v;
-}
-  //#define FieldImm(x, i) (((value *)(x)) [i] + 0)
-  //#define Field(x, i) (((value *)(x)) [i] + 0)
+} */
+#define FieldImm(x, i) (((value *)(x)) [i])
+//#define Field(x, i) (((value *)(x)) [i] + 0)
 
 /* initialise a field of an object just allocated on the minor heap */
 #define Init_field(block, offset, val) (Op_val(block)[offset] = val)
