@@ -1028,6 +1028,7 @@ and simplify env r tree =
 let rec simplify_program env r (program : Flambda.program)
       : Flambda.program * R.t =
   match program with
+  | Let_rec_symbol _ -> failwith "TODO"
   | Let_symbol (symbol, constant_defining_value, program) ->
     let constant_defining_value, approx =
       match constant_defining_value with
@@ -1035,7 +1036,12 @@ let rec simplify_program env r (program : Flambda.program)
       | Allocated_const const ->
         constant_defining_value, approx_for_allocated_const const
       | Block (tag, fields) ->
-        let fields = List.map (E.find_symbol_exn env) fields in
+        let fields = List.map
+            (function
+              | Flambda.Symbol sym -> E.find_symbol_exn env sym
+              | Flambda.Const cst -> simplify_const cst)
+            fields
+        in
         constant_defining_value, A.value_block (tag, Array.of_list fields)
       | Set_of_closures set_of_closures ->
         if Variable.Map.cardinal set_of_closures.free_vars <> 0 then begin

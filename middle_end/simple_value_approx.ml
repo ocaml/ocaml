@@ -292,7 +292,7 @@ let simplify_named_using_env t ~is_present_in_env named =
     | Some var when is_present_in_env var -> true, Flambda.Expr (Var var)
     | _ ->
       match t.symbol with
-      | Some sym -> true, Flambda.Symbol sym
+      | Some sym -> true, (Flambda.Symbol sym:Flambda.named)
       | None -> false, named
   in
   let const, summary, approx = simplify_named t named in

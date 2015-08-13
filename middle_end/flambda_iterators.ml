@@ -121,6 +121,8 @@ let rec iter_exprs_at_toplevel_of_program (program : Flambda.program) ~f =
         f function_decl.body)
       set_of_closures.function_decls.funs;
     iter_exprs_at_toplevel_of_program program ~f
+  | Let_rec_symbol (_defs, _program) ->
+    failwith "TODO"
   | Let_symbol (_, _, program)
   | Import_symbol (_, program) ->
     iter_exprs_at_toplevel_of_program program ~f
@@ -300,6 +302,8 @@ let rec map_exprs_at_toplevel_of_program (program : Flambda.program)
       map_exprs_at_toplevel_of_program program ~f)
   | Let_symbol (symbol, const, program) ->
     Let_symbol (symbol, const, map_exprs_at_toplevel_of_program program ~f)
+  | Let_rec_symbol (_defs, _program) ->
+    failwith "TODO"
   | Import_symbol (symbol, program) ->
     Import_symbol (symbol, map_exprs_at_toplevel_of_program program ~f)
   | Initialize_symbol (symbol, expr, program) ->

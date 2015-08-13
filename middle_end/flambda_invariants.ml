@@ -298,6 +298,7 @@ let variable_and_symbol_invariants flam =
   in
   let rec loop_program env (program : Flambda.program) =
     match program with
+    | Let_rec_symbol _ -> failwith "TODO"
     | Let_symbol (symbol, _, program)
     | Import_symbol (symbol, program) ->
       let env = add_binding_occurrence_of_symbol env symbol in
