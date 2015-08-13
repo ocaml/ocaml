@@ -129,12 +129,17 @@ and for_loop = {
 
 and constant_defining_value =
   | Allocated_const of Allocated_const.t
-  | Block of Tag.t * Symbol.t list
-  | Set_of_closures of set_of_closures
+  | Block of Tag.t * constant_defining_value_block_field list
+  | Set_of_closures of set_of_closures  (* [free_vars] must be empty *)
   | Project_closure of Symbol.t * Closure_id.t
+
+and constant_defining_value_block_field =
+  | Symbol of Symbol.t
+  | Const of const
 
 type program =
   | Let_symbol of Symbol.t * constant_defining_value * program
+  | Let_rec_symbol of (Symbol.t * constant_defining_value) list * program
   | Import_symbol of Symbol.t * program
   | Initialize_symbol of Symbol.t * t * program
   | End
@@ -360,8 +365,13 @@ let print_constant_defining_value ppf (const : constant_defining_value) =
     fprintf ppf "Allocated_const (%a)" Allocated_const.print const
   | Block (tag, []) -> fprintf ppf "Atom (tag %d)" (Tag.to_int tag)
   | Block (tag, fields) ->
+    let print_field ppf (field : constant_defining_value_block_field) =
+      match field with
+      | Symbol symbol -> Symbol.print ppf symbol
+      | Const const -> print_const ppf const
+    in
     let print_fields ppf =
-      List.iter (fprintf ppf "@ %a" Symbol.print)
+      List.iter (fprintf ppf "@ %a" print_field)
     in
     fprintf ppf "Block (tag %d, %a)" (Tag.to_int tag)
       print_fields fields
@@ -388,6 +398,8 @@ let rec print_program ppf (program : program) =
       print_constant_defining_value constant_defining_value;
     let program = letbody body in
     fprintf ppf ")@]@ %a)@]" print_program program
+  | Let_rec_symbol (_defs, _body) ->
+    failwith "TODO"
   | Import_symbol (symbol, program) ->
     fprintf ppf "@[(import_symbol %a (@]" Symbol.print symbol;
     fprintf ppf ")@]@ %a)@]" print_program program
@@ -575,10 +587,11 @@ module Constant_defining_value = struct
       match t1, t2 with
       | Allocated_const c1, Allocated_const c2 ->
         Allocated_const.compare c1 c2
-      | Block (tag1, fields1), Block (tag2, fields2) ->
+      | Block (tag1, _fields1), Block (tag2, _fields2) ->
         let c = Tag.compare tag1 tag2 in
         if c <> 0 then c
-        else Symbol.compare_lists fields1 fields2
+        else failwith "TODO"
+          (* Symbol.compare_lists fields1 fields2 *)
       | Set_of_closures set1, Set_of_closures set2 ->
         Set_of_closures_id.compare set1.function_decls.set_of_closures_id
           set2.function_decls.set_of_closures_id
@@ -599,8 +612,15 @@ module Constant_defining_value = struct
       | Project_closure _, Allocated_const _ -> 1
       | Project_closure _, Block _ -> 1
       | Project_closure _, Set_of_closures _ -> 1
+
+    let equal t1 t2 =
+      compare t1 t2 = 0
+
+    let hash = Hashtbl.hash
+
   end
 
   include T
   module Map = Map.Make (T)
+  module Tbl = Hashtbl.Make (T)
 end
