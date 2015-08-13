@@ -111,7 +111,6 @@ type instruction =
   | Kccall of string * int
   | Knegint | Kaddint | Ksubint | Kmulint | Kdivint | Kmodint
   | Kandint | Korint | Kxorint | Klslint | Klsrint | Kasrint
-  | Kobjcomp
   | Kintcomp of comparison
   | Koffsetint of int
   | Koffsetref of int

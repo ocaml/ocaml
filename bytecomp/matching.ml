@@ -2401,7 +2401,7 @@ let combine_constructor arg ex_pat cstr partial ctx def
             let tests =
               List.fold_right
                 (fun (path, act) rem ->
-                   Lifthenelse(Lprim(Pobjcomp,
+                   Lifthenelse(Lprim(Pintcomp Ceq,
                                      [Lvar tag;
                                       transl_path ex_pat.pat_env path]),
                                act, rem))
@@ -2412,7 +2412,7 @@ let combine_constructor arg ex_pat cstr partial ctx def
       in
         List.fold_right
           (fun (path, act) rem ->
-             Lifthenelse(Lprim(Pobjcomp,
+             Lifthenelse(Lprim(Pintcomp Ceq,
                                [arg; transl_path ex_pat.pat_env path]),
                          act, rem))
           consts
