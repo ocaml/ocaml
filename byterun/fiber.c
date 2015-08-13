@@ -381,6 +381,14 @@ void caml_realloc_stack(asize_t required_space, value* saved_vals, int nsaved)
   }
 
   load_stack(new_stack);
+
+  /* Reset old stack */
+  Stack_sp(old_stack) = 0;
+  Stack_dirty_domain(old_stack) = 0;
+  Stack_handle_value(old_stack) = Val_long(0);
+  Stack_handle_exception(old_stack) = Val_long(0);
+  Stack_handle_effect(old_stack) = Val_long(0);
+
   CAMLreturn0;
 }
 
