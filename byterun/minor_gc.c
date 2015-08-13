@@ -105,7 +105,6 @@ static void oldify_one (value v, value *p, int promote_stack)
   header_t hd;
   mlsize_t sz, i;
   tag_t tag;
-  struct domain* domain = promote_domain ? promote_domain : caml_domain_self ();
   struct caml_domain_state* domain_state =
     promote_domain ? promote_domain->state : caml_domain_state;
   char* young_ptr = domain_state->young_ptr;
