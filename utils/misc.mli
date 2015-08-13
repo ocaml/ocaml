@@ -51,6 +51,9 @@ val split_at: int -> 'a list -> 'a list * 'a list
 val uniq_sort : ('a -> 'a -> int) -> 'a list -> 'a list
         (* Sorts and remove duplicated elements according to the
            comparison function *)
+val filter_map : ('a -> 'b option) -> 'a list -> 'b list
+        (* [filter_map f l] is the list [List.map f l] with only the
+           elements matching [Some _] *)
 val may: ('a -> unit) -> 'a option -> unit
 val may_map: ('a -> 'b) -> 'a option -> 'b option
 val may_fold: ('a -> 'b -> 'b) -> 'a option -> 'b -> 'b

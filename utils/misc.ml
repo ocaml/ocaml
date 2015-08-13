@@ -117,6 +117,14 @@ let uniq_sort compare l =
   in
   aux l
 
+let rec filter_map f l =
+  match l with
+  | [] -> []
+  | h :: t ->
+    match f h with
+    | None -> filter_map f t
+    | Some v -> v :: filter_map f t
+
 (* Options *)
 
 let may f = function
