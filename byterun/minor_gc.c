@@ -371,24 +371,8 @@ static void unpin_promoted_object(value local, value promoted)
   caml_darken(promoted, 0);
 }
 
-static void clean_stacks()
-{
-  struct caml_ref_entry* r;
-  /* darkening must precede oldifying */
-  for (r = caml_remembered_set.fiber_ref.base; r < caml_remembered_set.fiber_ref.ptr; r++) {
-    caml_scan_dirty_stack(&caml_darken, r->obj);
-  }
-
-  for (r = caml_remembered_set.fiber_ref.base; r < caml_remembered_set.fiber_ref.ptr; r++) {
-    caml_scan_dirty_stack(&caml_oldify_one, r->obj);
-    caml_clean_stack(r->obj);
-  }
-  clear_table (&caml_remembered_set.fiber_ref);
-}
-
-/* Make sure the minor heap is empty by performing a minor collection
-   if needed.
-*/
+/* Make sure the minor heap is empty by performing a minor collection if
+ * needed. */
 void caml_empty_minor_heap (void)
 {
   uintnat minor_allocated_bytes = caml_domain_state->young_end - caml_domain_state->young_ptr;
@@ -399,10 +383,6 @@ void caml_empty_minor_heap (void)
 
   stat_live_bytes = 0;
 
-  /* We must process the fiber_ref_table even if the minor heap
-     is empty. */
-  clean_stacks();
-
   if (minor_allocated_bytes != 0){
     caml_gc_log ("Minor collection starting");
     caml_do_local_roots(&caml_oldify_one, caml_domain_self());
@@ -410,6 +390,10 @@ void caml_empty_minor_heap (void)
     for (r = caml_remembered_set.ref.base; r < caml_remembered_set.ref.ptr; r++){
       value x;
       caml_oldify_one (Op_val(r->obj)[r->field], &x);
+    }
+
+    for (r = caml_remembered_set.fiber_ref.base; r < caml_remembered_set.fiber_ref.ptr; r++) {
+      caml_scan_dirty_stack(&caml_oldify_one, r->obj);
     }
 
     caml_oldify_mopup ();
@@ -441,7 +425,6 @@ void caml_empty_minor_heap (void)
 
     caml_addrmap_iter(&caml_remembered_set.promotion, unpin_promoted_object);
 
-
     if (caml_domain_state->young_ptr < caml_domain_state->young_start)
       caml_domain_state->young_ptr = caml_domain_state->young_start;
     caml_stat_minor_words += Wsize_bsize (minor_allocated_bytes);
@@ -452,6 +435,13 @@ void caml_empty_minor_heap (void)
     caml_gc_log ("Minor collection completed: %u of %u kb live, %u pointers rewritten",
                  (unsigned)stat_live_bytes/1024, (unsigned)minor_allocated_bytes/1024, rewritten);
   }
+
+  for (r = caml_remembered_set.fiber_ref.base; r < caml_remembered_set.fiber_ref.ptr; r++) {
+    caml_scan_dirty_stack(&caml_darken, r->obj);
+    caml_clean_stack(r->obj);
+  }
+  clear_table (&caml_remembered_set.fiber_ref);
+
   caml_restore_stack_gc();
 
 
