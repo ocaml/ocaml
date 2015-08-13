@@ -50,6 +50,7 @@ type equation_left =
   | Eq_id of Eq_id.t (* introduced expression *)
   | Var of Variable.t
   | Global of int
+  | Symbol of Symbol.t
   | Var_within_closure of Var_within_closure.t
   | Static_exception_arg of Static_exception.t * int
 
@@ -62,6 +63,8 @@ module Eq_left_m = struct
       Variable.compare x y
     | Global x, Global y ->
       Ext_types.Int.compare x y
+    | Symbol x, Symbol y ->
+      Symbol.compare x y
     | Var_within_closure x, Var_within_closure y ->
       Var_within_closure.compare x y
     | Static_exception_arg (x, n), Static_exception_arg (y, m) ->
@@ -75,6 +78,8 @@ module Eq_left_m = struct
     | _, Var _ -> 1
     | Global _, _ -> -1
     | _, Global _ -> 1
+    | Symbol _, _ -> -1
+    | _, Symbol _ -> 1
     | Var_within_closure _, Static_exception_arg _ -> -1
     | Static_exception_arg _, Var_within_closure _ -> 1
 
@@ -90,6 +95,8 @@ module Eq_left_m = struct
                   Format.fprintf ppf "Var_withing_closure %a" Var_within_closure.print v
     | Static_exception_arg (s,n) ->
                   Format.fprintf ppf "St_exn_arg (%a, %i)" Static_exception.print s n
+    | Symbol s ->
+      Format.fprintf ppf "Symbol %a" Symbol.print s
 
   let output _ = failwith "not_implemented"
 
@@ -101,12 +108,20 @@ end
 
 type lset = Eq_left.Set.t
 
+type allocation_point =
+  | Symbol of Symbol.t
+  | Variable of Variable.t
+
+type block_field =
+  | Id of lset
+  | Const
+
 type resolved_equation =
-  | Ground_const of Variable.t
+  | Ground_const of allocation_point
   (* Any constant expression that is not a new block in that file.
      The variable is the one of the let introducing the value.
      It is used as the cannonical identifier of the value *)
-  | Block of Variable.t * lset array
+  | Block of allocation_point * block_field array
   | Bottom
   | Not_const
 
@@ -119,6 +134,17 @@ type alias_equation =
 type equation_right =
   | Resolved of resolved_equation
   | Alias of alias_equation
+
+let print_allocation_point ppf = function
+  | Symbol s -> Symbol.print ppf s
+  | Variable v -> Variable.print ppf v
+
+let equation_right_print ppf = function
+  | Resolved (Ground_const v) -> Format.fprintf ppf "Ground_const %a" print_allocation_point v
+  | Resolved (Block (v,_)) -> Format.fprintf ppf "Block %a" print_allocation_point v
+  | Resolved _ -> Format.fprintf ppf "Resolved"
+  | Alias (Set s) -> Format.fprintf ppf "Set %a" Eq_left.Set.print s
+  | Alias (Field (n,s)) -> Format.fprintf ppf "Field %i %a" n Eq_left.Set.print s
 
 type equations = equation_right Eq_left.Tbl.t
 
@@ -146,6 +172,10 @@ let alias eq_left =
 let alias_set sets =
   let set = List.fold_left Eq_left.Set.union Eq_left.Set.empty sets in
   Alias (Set set)
+
+let constant_defining_value_block_field_id : Flambda.constant_defining_value_block_field -> block_field = function
+  | Symbol s -> Id (Eq_left.Set.singleton (Symbol s))
+  | Const _ -> Const
 
 let rec collect_equations (t:equations) : Flambda.t -> equation_right = function
   | Var v -> alias (Var v)
@@ -218,12 +248,12 @@ let rec collect_equations (t:equations) : Flambda.t -> equation_right = function
 and collect_equations_named (t:equations) (var:Variable.t) : Flambda.named -> equation_right = function
   | Symbol _
   | Const _ ->
-    Resolved (Ground_const var)
+    Resolved (Ground_const (Variable var))
   | Allocated_const _ ->
     (* CR mshinwell for pchambart: Is this right?
        Should we do someting with the [Allocated_const (Block (...))] case,
        which contains free variables? *)
-    Resolved (Ground_const var)
+    Resolved (Ground_const (Variable var))
   | Predefined_exn _ -> assert false (* CR mshinwell for pchambart: What to do? *)
 
   | Expr e ->
@@ -254,7 +284,7 @@ and collect_equations_named (t:equations) (var:Variable.t) : Flambda.named -> eq
 
   | Project_closure _
   | Move_within_set_of_closures _ ->
-    Resolved (Ground_const var)
+    Resolved (Ground_const (Variable var))
 
   | Project_var {var} ->
     alias (Var_within_closure var)
@@ -267,13 +297,21 @@ and collect_equations_named (t:equations) (var:Variable.t) : Flambda.named -> eq
   | Prim (Pmakeblock (_tag, Immutable), args, _) ->
     let fields =
       List.map (fun v ->
-          Eq_left.Set.singleton (Var v)) args
+          Id (Eq_left.Set.singleton (Var v))) args
     in
-    Resolved (Block (var, Array.of_list fields))
+    Resolved (Block (Variable var, Array.of_list fields))
 
-  | Prim (Pgetglobalfield (id, n), [], _) when
+  | Prim (Pgetglobalfield (id, n), _, _) when
       id = Compilation_unit.get_current_id_exn () ->
+    (* Format.printf "add alias global %i@." n; *)
     alias (Global n)
+
+  (* | Prim (Pgetglobalfield (id, n), _, _) -> *)
+  (*   Format.printf "get global diff %a %a %i@." *)
+  (*     Ident.print id *)
+  (*     Ident.print (Compilation_unit.get_current_id_exn ()) *)
+  (*     n; *)
+  (*   Resolved Not_const *)
 
   | Prim (Psetglobalfield (_, n), [arg], _) ->
     add t (Global n) (alias (Var arg));
@@ -284,6 +322,38 @@ and collect_equations_named (t:equations) (var:Variable.t) : Flambda.named -> eq
 
   | Prim _ ->
     Resolved Not_const
+
+and constant_defining_value_to_equation t sym (def:Flambda.constant_defining_value) : equation_right =
+  match def with
+  | Flambda.Allocated_const _ ->
+    Resolved (Ground_const (Symbol sym))
+  | Flambda.Block (_,fields) ->
+    let fields = Array.map constant_defining_value_block_field_id (Array.of_list fields) in
+    Resolved (Block (Symbol sym, fields))
+  | Flambda.Set_of_closures { function_decls; free_vars; specialised_args } ->
+    Variable.Map.iter (fun _ ({ body }:Flambda.function_declaration) ->
+        ignore (collect_equations t body:equation_right);
+      )
+      function_decls.funs;
+    assert(Variable.Map.is_empty free_vars);
+    assert(Variable.Map.is_empty specialised_args);
+    Resolved Not_const
+
+  | Flambda.Project_closure (_,_) -> failwith "TODO"
+
+
+and collect_equation_program (t:equations) : Flambda.program -> unit = function
+  | End -> ()
+  | Let_symbol (symbol, def, program) ->
+    let eq_right = constant_defining_value_to_equation t symbol def in
+    add t (Symbol symbol) eq_right;
+    collect_equation_program t program
+  | _ -> assert false
+
+  (* | Let_rec_symbol of (Symbol.t * constant_defining_value) list * program *)
+  (* | Import_symbol of Symbol.t * program *)
+  (* | Initialize_symbol of Symbol.t * t * program *)
+  (* | End *)
 
 let find t l =
   try
@@ -318,8 +388,11 @@ let blocks_field t lset field =
   try
     let set =
       Eq_left.Set.fold (fun l acc ->
-          let set = block_field t l field in
-          Eq_left.Set.union set acc)
+          match block_field t l field with
+          | Id set ->
+            Eq_left.Set.union set acc
+          | Const ->
+            raise Not_const_field)
         lset Eq_left.Set.empty
     in
     Set set
@@ -371,7 +444,11 @@ and follow_set t s =
 let update_block t l =
   match find t l with
   | Resolved (Block (v, fields)) ->
-    let fields = Array.map (follow_set t) fields in
+    let fields = Array.map (function
+        | Id field -> Id (follow_set t field)
+        | Const -> Const)
+        fields
+    in
     replace t l (Resolved (Block (v, fields)))
   | _ ->
     ()
@@ -392,13 +469,19 @@ let rec fixpoint t =
   if contains_fields t then
     fixpoint t
 
-let run tree =
+let run program =
   let t = Eq_left.Tbl.create 10 in
-  let _ : equation_right = collect_equations t tree in
+  let () = collect_equation_program t program in
+  Format.printf "alias equations:@.%a@."
+    (Eq_left.Map.print equation_right_print) (Eq_left.Tbl.to_map t);
   fixpoint t;
   Eq_left.Tbl.fold (fun k r map ->
       match k with
-      | Var left -> begin
+      | Var left ->
+        (* Format.printf "look at: %a -> %a@." *)
+        (*   Variable.print left *)
+        (*   equation_right_print r; *)
+        begin
           match r with
           | Resolved (Ground_const right)
           | Resolved (Block (right, _)) ->
@@ -407,6 +490,10 @@ let run tree =
         end
       | _ -> map)
     t Variable.Map.empty
+
+let () = let _ = equation_right_print in ()
+
+
 (* Version without collection *)
 
 

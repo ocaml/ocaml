@@ -1,5 +1,9 @@
 
-val run : Flambda.t -> Variable.t Variable.Map.t
+type allocation_point =
+  | Symbol of Symbol.t
+  | Variable of Variable.t
+
+val run : Flambda.program -> allocation_point Variable.Map.t
 
 type constant_defining_value =
   | Allocated_const of Allocated_const.t
