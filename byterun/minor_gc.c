@@ -461,6 +461,8 @@ void caml_empty_minor_heap (void)
         if (Tag_hd(hd) == Infix_tag) { Assert(Tag_val(vnew) == Infix_tag); }
         if (__sync_bool_compare_and_swap (*r,v,vnew)) ++rewritten;
       }
+      //XXX KC: Could I move the darkening into the conditional above as
+      //caml_darken(vnew,0)?
       caml_darken (**r,*r);
     }
 
