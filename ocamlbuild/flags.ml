@@ -46,25 +46,44 @@ let flag ?(deprecated=false) tags flags =
   let tags = Tags.of_list tags in
   add_decl { tags; flags; deprecated }
 
-let pflag tags ptag flags =
+let pflags_doc = ref []
+
+let pflag tags ptag ?doc_param flags =
+  pflags_doc := (tags, ptag, doc_param, flags) :: !pflags_doc;
   Param_tags.declare ptag
     (fun param -> flag (Param_tags.make ptag param :: tags) (flags param))
 
 let add x xs = x :: xs
 let remove me = List.filter (fun x -> me <> x)
 
-let pretty_print { tags; flags; deprecated } =
-  let sflag = Command.string_of_command_spec flags in
-  let header = if deprecated then "deprecated flag" else "flag" in
+let pretty_print header tags sflag =
   let pp fmt = Log.raw_dprintf (-1) fmt in
   pp "@[<2>%s@ {. %a .}@ %S@]@\n@\n" header Tags.print tags sflag
 
+let pretty_print_flag { tags; flags; deprecated } =
+  let sflag = Command.string_of_command_spec flags in
+  let header = if deprecated then "deprecated flag" else "flag" in
+  pretty_print header tags sflag
+
+let pretty_print_pflag (tags, ptag, doc_param, flags) =
+  let apply tag param = Printf.sprintf "%s(%s)" tag param in
+  let header = "parametrized flag" in
+  let doc_param = match doc_param with
+      | None -> "X"
+      | Some param -> param in
+  let tags = Tags.of_list (apply ptag doc_param :: tags) in
+  let sflag =
+    try Command.string_of_command_spec (flags doc_param)
+    with _ -> "<fun>" in
+  pretty_print header tags sflag
+
 let show_documentation () =
+  List.iter pretty_print_pflag !pflags_doc;
   List.iter
-    (fun decl -> if not decl.deprecated then pretty_print decl)
+    (fun decl -> if not decl.deprecated then pretty_print_flag decl)
     !all_decls;
   List.iter
-    (fun decl -> if decl.deprecated then pretty_print decl)
+    (fun decl -> if decl.deprecated then pretty_print_flag decl)
     !all_decls;
   let pp fmt = Log.raw_dprintf (-1) fmt in
   pp "@."

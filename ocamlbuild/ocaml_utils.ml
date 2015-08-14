@@ -36,6 +36,8 @@ let stdlib_dir = lazy begin
   String.chomp (read_file ocamlc_where)
 end
 
+(* TODO: this should register the parametrized flag for documentation,
+   just as Flags.pflag *)
 let pflag_and_dep tags ptag cmd_spec =
   Param_tags.declare ptag
     (fun param ->
