@@ -560,7 +560,7 @@ flag [ "ocaml" ; "menhir" ; "infer" ] (S[A "--infer"]);;
 let () =
   List.iter begin fun mode ->
     flag [ mode; "only_tokens" ] (S[A "--only-tokens"]);
-    pflag [ mode ] "external_tokens" (fun name ->
+    pflag [ mode ] ~doc_param:"TokenModule" "external_tokens" (fun name ->
       S[A "--external-tokens"; A name]);
   end [ "menhir"; "menhir_ocamldep" ];;
 
@@ -586,6 +586,8 @@ end;;
 (* findlib *)
 let () =
   if !Options.use_ocamlfind then begin
+    let doc_param = "my_package" in
+
     (* Ocamlfind will link the archives for us. *)
     flag ["ocaml"; "link"; "program"] & A"-linkpkg";
     flag ["ocaml"; "link"; "toplevel"] & A"-linkpkg";
@@ -597,7 +599,8 @@ let () =
        (.cma and .cmxa); the "linkpkg" flag allows user to request it
        explicitly. *)
     flag ["ocaml"; "link"; "linkpkg"] & A"-linkpkg";
-    pflag ["ocaml"; "link"] "dontlink" (fun pkg -> S[A"-dontlink"; A pkg]);
+    pflag ["ocaml"; "link"] "dontlink" ~doc_param
+          (fun pkg -> S[A"-dontlink"; A pkg]);
 
     let all_tags = [
       ["ocaml"; "byte"; "compile"];
@@ -614,12 +617,13 @@ let () =
 
     (* tags package(X), predicate(X) and syntax(X) *)
     List.iter begin fun tags ->
-      pflag tags "package" (fun pkg -> S [A "-package"; A pkg]);
+      pflag tags "package" ~doc_param (fun pkg -> S [A "-package"; A pkg]);
       if not (List.mem "ocamldep" tags) then
         (* PR#6184: 'ocamlfind ocamldep' does not support -predicate *)
-        pflag tags "predicate" (fun pkg -> S [A "-predicates"; A pkg]);
+        pflag tags "predicate" ~doc_param:"archive"
+              (fun pkg -> S [A "-predicates"; A pkg]);
       if List.mem "ocaml" tags then
-        pflag tags "syntax" (fun pkg -> S [A "-syntax"; A pkg])
+        pflag tags "syntax" ~doc_param:"camlp4o" (fun pkg -> S [A "-syntax"; A pkg])
     end all_tags
   end else begin
     try
@@ -637,32 +641,33 @@ let () =
 
 (* parameterized tags *)
 let () =
-  pflag ["ocaml"; "native"; "compile"] "for-pack"
+  pflag ["ocaml"; "native"; "compile"] "for-pack" ~doc_param:"PackModule"
     (fun param -> S [A "-for-pack"; A param]);
-  pflag ["ocaml"; "native"; "pack"] "for-pack"
+  pflag ["ocaml"; "native"; "pack"] "for-pack" ~doc_param:"PackModule"
     (fun param -> S [A "-for-pack"; A param]);
-  pflag ["ocaml"; "native"; "compile"] "inline"
+  pflag ["ocaml"; "native"; "compile"] "inline" ~doc_param:"5"
     (fun param -> S [A "-inline"; A param]);
   pflag ["ocaml"; "compile"] "color" (fun setting -> S[A "-color"; A setting]);
   List.iter (fun pp ->
-    pflag ["ocaml"; "compile"] pp
+    let doc_param = "my_" ^ pp in
+    pflag ["ocaml"; "compile"] pp ~doc_param
       (fun param -> S [A ("-" ^ pp); A param]);
-    pflag ["ocaml"; "ocamldep"] pp
+    pflag ["ocaml"; "ocamldep"] pp ~doc_param
       (fun param -> S [A ("-" ^ pp); A param]);
-    pflag ["ocaml"; "doc"] pp
+    pflag ["ocaml"; "doc"] pp ~doc_param
       (fun param -> S [A ("-" ^ pp); A param]);
-    pflag ["ocaml"; "infer_interface"] pp
+    pflag ["ocaml"; "infer_interface"] pp ~doc_param
       (fun param -> S [A ("-" ^ pp); A param])
   ) ["pp"; "ppx"];
-  pflag ["ocaml";"compile";] "warn"
+  pflag ["ocaml";"compile";] "warn" ~doc_param:"A@10-28@40-42-45"
     (fun param -> S [A "-w"; A param]);
-  pflag ["ocaml";"compile";] "warn_error"
+  pflag ["ocaml";"compile";] "warn_error" ~doc_param:"+10+40"
     (fun param -> S [A "-warn-error"; A param]);
-  pflag ["ocaml"; "ocamldep"] "open"
+  pflag ["ocaml"; "ocamldep"] "open" ~doc_param:"MyPervasives"
     (fun param -> S [A "-open"; A param]);
-  pflag ["ocaml"; "compile"] "open"
+  pflag ["ocaml"; "compile"] "open" ~doc_param:"MyPervasives"
     (fun param -> S [A "-open"; A param]);
-  pflag ["ocaml"; "link"] "runtime_variant"
+  pflag ["ocaml"; "link"] "runtime_variant" ~doc_param:"_pic"
     (fun param -> S [A "-runtime-variant"; A param]);
   ()
 
