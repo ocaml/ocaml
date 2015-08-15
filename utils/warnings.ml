@@ -61,7 +61,7 @@ type t =
   | Ambiguous_name of string list * string list *  bool    (* 41 *)
   | Disambiguated_name of string            (* 42 *)
   | Nonoptional_label of string             (* 43 *)
-  | Open_shadow_identifier of string * string (* 44 *)
+  | Open_shadow_identifier_all of string * string (* 44 *)
   | Open_shadow_label_constructor of string * string (* 45 *)
   | Bad_env_variable of string * string     (* 46 *)
   | Attribute_payload of string * string    (* 47 *)
@@ -69,6 +69,8 @@ type t =
   | No_cmi_file of string                   (* 49 *)
   | Bad_docstring of bool                   (* 50 *)
   | Expect_tailcall                         (* 51 *)
+  | Open_shadow_identifier of string * string (* 52 *)
+  | Open_shadow_operator of string * string (* 53 *)
 ;;
 
 (* If you remove a warning, leave a hole in the numbering.  NEVER change
@@ -121,7 +123,7 @@ let number = function
   | Ambiguous_name _ -> 41
   | Disambiguated_name _ -> 42
   | Nonoptional_label _ -> 43
-  | Open_shadow_identifier _ -> 44
+  | Open_shadow_identifier_all _ -> 44
   | Open_shadow_label_constructor _ -> 45
   | Bad_env_variable _ -> 46
   | Attribute_payload _ -> 47
@@ -129,9 +131,11 @@ let number = function
   | No_cmi_file _ -> 49
   | Bad_docstring _ -> 50
   | Expect_tailcall -> 51
+  | Open_shadow_identifier _ -> 52
+  | Open_shadow_operator _ -> 53
 ;;
 
-let last_warning_number = 51
+let last_warning_number = 53
 (* Must be the max number returned by the [number] function. *)
 
 let letter = function
@@ -244,7 +248,7 @@ let parse_options errflag s =
   current := {error; active}
 
 (* If you change these, don't forget to change them in man/ocamlc.m *)
-let defaults_w = "+a-4-6-7-9-27-29-32..39-41..42-44-45-48-50";;
+let defaults_w = "+a-4-6-7-9-27-29-32..39-41..42-44-45-48-50-52-53";;
 let defaults_warn_error = "-a";;
 
 let () = parse_options false defaults_w;;
@@ -374,14 +378,6 @@ let message = function
       "this use of " ^ s ^ " required disambiguation."
   | Nonoptional_label s ->
       "the label " ^ s ^ " is not optional."
-  | Open_shadow_identifier (kind, s) ->
-      Printf.sprintf
-        "this open statement shadows the %s identifier %s (which is later used)"
-        kind s
-  | Open_shadow_label_constructor (kind, s) ->
-      Printf.sprintf
-        "this open statement shadows the %s %s (which is later used)"
-        kind s
   | Bad_env_variable (var, s) ->
       Printf.sprintf "illegal environment variable %s : %s" var s
   | Attribute_payload (a, s) ->
@@ -397,6 +393,18 @@ let message = function
       else "ambiguous documentation comment"
   | Expect_tailcall ->
       Printf.sprintf "expected tailcall"
+  | (Open_shadow_identifier_all (kind, s) | Open_shadow_identifier (kind, s)) ->
+      Printf.sprintf
+        "this open statement shadows the %s identifier %s (which is later used)"
+        kind s
+  | Open_shadow_label_constructor (kind, s) ->
+      Printf.sprintf
+        "this open statement shadows the %s %s (which is later used)"
+        kind s
+  | Open_shadow_operator (_kind, s) ->
+      Printf.sprintf
+        "this open statement shadows the operator ( %s ) (which is later used)"
+        s
 ;;
 
 let nerrors = ref 0;;
@@ -483,6 +491,8 @@ let descriptions =
    49, "Missing cmi file when looking up module alias.";
    50, "Unexpected documentation comment.";
    51, "Warning on non-tail calls if @tailcall present";
+   52, "Open statement shadows an already defined alphanumeric identifier.";
+   53, "Open statement shadows an already defined operator.";
   ]
 ;;
 

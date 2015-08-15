@@ -1623,11 +1623,19 @@ let open_pers_signature name env =
   open_signature None (Pident(Ident.create_persistent name))
     (Lazy.force ps.ps_sig) env
 
+let open_warnings =
+  let open Warnings in
+  [
+    Unused_open "";
+    Open_shadow_identifier_all ("", "");
+    Open_shadow_identifier ("", "");
+    Open_shadow_operator ("", "");
+    Open_shadow_label_constructor ("", "");
+  ]
+
 let open_signature ?(loc = Location.none) ?(toplevel = false) ovf root sg env =
   if not toplevel && ovf = Asttypes.Fresh && not loc.Location.loc_ghost
-     && (Warnings.is_active (Warnings.Unused_open "")
-         || Warnings.is_active (Warnings.Open_shadow_identifier ("", ""))
-         || Warnings.is_active (Warnings.Open_shadow_label_constructor ("","")))
+     && (List.exists Warnings.is_active open_warnings)
   then begin
     let used = ref false in
     !add_delayed_check_forward
@@ -1638,14 +1646,36 @@ let open_signature ?(loc = Location.none) ?(toplevel = false) ovf root sg env =
     let shadowed = ref [] in
     let slot kind s b =
       if b && not (List.mem (kind, s) !shadowed) then begin
+        let open Warnings in
+        let warn w = Location.prerr_warning loc w in
         shadowed := (kind, s) :: !shadowed;
-        let w =
-          match kind with
+        match kind with
           | "label" | "constructor" ->
-              Warnings.Open_shadow_label_constructor (kind, s)
-          | _ -> Warnings.Open_shadow_identifier (kind, s)
-        in
-        Location.prerr_warning loc w
+              warn (Open_shadow_label_constructor (kind, s))
+          | _ ->
+             (* The broad Open_shadow_identifier_all warning (44)
+                was there before the finer-grained variants were
+                devised, and it is kept around *with its original
+                semantics* for compatibility.
+
+                If they are both active and at the same error level,
+                the broad warning should supersede the more specific
+                warnings. The expected common case is that the broad
+                warning is disabled (it has never been a default),
+                and then the specific warnings are always used.
+              *)
+             let broad = Open_shadow_identifier_all (kind, s) in
+             let specific =
+               match Misc.fixity s with
+               | `Infix | `Prefix | `Indexing ->
+                 Open_shadow_operator (kind, s)
+               | `Normal ->
+                 Open_shadow_identifier (kind, s)
+             in
+             if (is_active specific && not (is_active broad))
+             || (is_error specific  && not (is_error broad))
+             then warn specific
+             else warn broad
       end;
       used := true
     in

@@ -56,7 +56,7 @@ type t =
   | Ambiguous_name of string list * string list * bool (* 41 *)
   | Disambiguated_name of string            (* 42 *)
   | Nonoptional_label of string             (* 43 *)
-  | Open_shadow_identifier of string * string (* 44 *)
+  | Open_shadow_identifier_all of string * string (* 44 *)
   | Open_shadow_label_constructor of string * string (* 45 *)
   | Bad_env_variable of string * string     (* 46 *)
   | Attribute_payload of string * string    (* 47 *)
@@ -64,6 +64,8 @@ type t =
   | No_cmi_file of string                   (* 49 *)
   | Bad_docstring of bool                   (* 50 *)
   | Expect_tailcall                         (* 51 *)
+  | Open_shadow_identifier of string * string (* 52 *)
+  | Open_shadow_operator of string * string (* 53 *)
 ;;
 
 val parse_options : bool -> string -> unit;;
