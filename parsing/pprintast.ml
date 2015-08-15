@@ -25,6 +25,7 @@ open Parsetree
 let fixity_of_string s = match Misc.fixity s with
     | `Infix -> `Infix s
     | `Prefix -> `Prefix s
+    | `Indexing -> `Infix s
     | `Normal -> `Normal
 
 let view_fixity_of_exp = function
@@ -34,7 +35,7 @@ let view_fixity_of_exp = function
 (* which identifiers are in fact operators needing parentheses *)
 let needs_parens txt =
   match Misc.fixity txt with
-    | `Infix | `Prefix -> true
+    | `Infix | `Prefix | `Indexing -> true
     | `Normal -> false
 
 (* some infixes need spaces around parens to avoid clashes with comment

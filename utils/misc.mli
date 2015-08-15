@@ -239,4 +239,4 @@ end
 
    "asr", "land", "mod" etc. are `Infix
  *)
-val fixity : string -> [ `Prefix | `Infix | `Normal ]
+val fixity : string -> [ `Prefix | `Infix | `Normal | `Indexing ]

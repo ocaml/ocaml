@@ -521,6 +521,7 @@ let special_infix_strings =
 let fixity = function
   | "" -> `Normal
   | s when List.mem s special_infix_strings -> `Infix
+  | s when s.[0] = '.' -> `Indexing
   | s when List.mem s.[0] infix_symbols -> `Infix
   | s when List.mem s.[0] prefix_symbols -> `Prefix
   | _ -> `Normal
