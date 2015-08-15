@@ -440,8 +440,6 @@ module Color = struct
       if !color_enabled then ansi_of_style_l [Reset] else ""
     with Not_found -> or_else s
 
-  type options = On | Off | Auto
-
   (* add color handling to formatter [ppf] *)
   let set_color_tag_handling ppf =
     let open Format in
@@ -471,9 +469,9 @@ module Color = struct
         Format.set_mark_tags true;
         List.iter set_color_tag_handling formatter_l;
         color_enabled := (match o with
-          | On -> true
-          | Auto -> should_enable_color ()
-          | Off -> false
+          | Clflags.Always -> true
+          | Clflags.Auto -> should_enable_color ()
+          | Clflags.Never -> false
         )
       );
       ()

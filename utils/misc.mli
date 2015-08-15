@@ -202,16 +202,9 @@ module Color : sig
   val get_styles: unit -> styles
   val set_styles: styles -> unit
 
-  type options = On | Off | Auto
-  (* setup for colors:
-     - on means colors are printed unconditionally
-     - off means colors are not printed
-     - auto means colors are printed on channels that "look like" they support colors
-  *)
-
-  val setup : options -> unit
-  (* [setup o] will enable or disable color handling on standard formatters
-     according to the value of [o].
+  val setup : Clflags.color_setting -> unit
+  (* [setup opt] will enable or disable color handling on standard formatters
+     according to the value of color setting [opt].
      Only the first call to this function has an effect. *)
 
   val set_color_tag_handling : Format.formatter -> unit

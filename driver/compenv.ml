@@ -212,6 +212,17 @@ let read_OCAMLPARAM ppf position =
                                         "non-integer parameter for \"inline\""))
         end
 
+      (* color output *)
+      | "color" ->
+          begin match parse_color_setting v with
+          | None ->
+            Location.print_warning Location.none ppf
+              (Warnings.Bad_env_variable ("OCAMLPARAM",
+               "bad value for \"color\", \
+                (expected \"auto\", \"always\" or \"never\")"))
+          | Some setting -> color := setting
+          end
+
       | "intf-suffix" -> Config.interface_suffix := v
 
       | "I" -> begin

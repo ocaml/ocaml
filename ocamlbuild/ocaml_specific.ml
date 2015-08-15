@@ -634,6 +634,7 @@ let () =
     (fun param -> S [A "-for-pack"; A param]);
   pflag ["ocaml"; "native"; "compile"] "inline"
     (fun param -> S [A "-inline"; A param]);
+  pflag ["ocaml"; "compile"] "color" (fun setting -> S[A "-color"; A setting]);
   List.iter (fun pp ->
     pflag ["ocaml"; "compile"] pp
       (fun param -> S [A ("-" ^ pp); A param]);
