@@ -100,11 +100,11 @@ cstringv.o: cstringv.c ../../byterun/caml/mlvalues.h \
  ../../byterun/caml/major_gc.h ../../byterun/caml/freelist.h \
  ../../byterun/caml/minor_gc.h ../../byterun/caml/address_class.h \
  unixsupport.h
-dup.o: dup.c ../../byterun/caml/mlvalues.h \
+dup2.o: dup2.c ../../byterun/caml/mlvalues.h \
  ../../byterun/caml/compatibility.h ../../byterun/caml/config.h \
  ../../byterun/caml/../../config/m.h ../../byterun/caml/../../config/s.h \
  ../../byterun/caml/misc.h unixsupport.h
-dup2.o: dup2.c ../../byterun/caml/mlvalues.h \
+dup.o: dup.c ../../byterun/caml/mlvalues.h \
  ../../byterun/caml/compatibility.h ../../byterun/caml/config.h \
  ../../byterun/caml/../../config/m.h ../../byterun/caml/../../config/s.h \
  ../../byterun/caml/misc.h unixsupport.h
@@ -510,11 +510,6 @@ sleep.o: sleep.c ../../byterun/caml/mlvalues.h \
  ../../byterun/caml/../../config/m.h ../../byterun/caml/../../config/s.h \
  ../../byterun/caml/misc.h ../../byterun/caml/signals.h \
  ../../byterun/caml/mlvalues.h unixsupport.h
-socket.o: socket.c ../../byterun/caml/fail.h \
- ../../byterun/caml/compatibility.h ../../byterun/caml/misc.h \
- ../../byterun/caml/config.h ../../byterun/caml/../../config/m.h \
- ../../byterun/caml/../../config/s.h ../../byterun/caml/mlvalues.h \
- ../../byterun/caml/mlvalues.h unixsupport.h
 socketaddr.o: socketaddr.c ../../byterun/caml/mlvalues.h \
  ../../byterun/caml/compatibility.h ../../byterun/caml/config.h \
  ../../byterun/caml/../../config/m.h ../../byterun/caml/../../config/s.h \
@@ -524,6 +519,11 @@ socketaddr.o: socketaddr.c ../../byterun/caml/mlvalues.h \
  ../../byterun/caml/freelist.h ../../byterun/caml/minor_gc.h \
  ../../byterun/caml/address_class.h unixsupport.h socketaddr.h \
  ../../byterun/caml/misc.h
+socket.o: socket.c ../../byterun/caml/fail.h \
+ ../../byterun/caml/compatibility.h ../../byterun/caml/misc.h \
+ ../../byterun/caml/config.h ../../byterun/caml/../../config/m.h \
+ ../../byterun/caml/../../config/s.h ../../byterun/caml/mlvalues.h \
+ ../../byterun/caml/mlvalues.h unixsupport.h
 socketpair.o: socketpair.c ../../byterun/caml/mlvalues.h \
  ../../byterun/caml/compatibility.h ../../byterun/caml/config.h \
  ../../byterun/caml/../../config/m.h ../../byterun/caml/../../config/s.h \
@@ -636,9 +636,9 @@ write.o: write.c ../../byterun/caml/mlvalues.h \
  ../../byterun/caml/major_gc.h ../../byterun/caml/freelist.h \
  ../../byterun/caml/minor_gc.h ../../byterun/caml/address_class.h \
  ../../byterun/caml/signals.h unixsupport.h
-unix.cmi :
 unixLabels.cmi : unix.cmi
-unix.cmo : unix.cmi
-unix.cmx : unix.cmi
+unix.cmi :
 unixLabels.cmo : unix.cmi unixLabels.cmi
 unixLabels.cmx : unix.cmx unixLabels.cmi
+unix.cmo : unix.cmi
+unix.cmx : unix.cmi
