@@ -42,6 +42,8 @@ Compilers:
   (Vladimir Brankov, review by Alain Frisch)
 - GPR#115: More precise typing of values at the C-- and Mach level,.
   (Xavier Leroy, review by Pierre Chambart)
+- GPR#207: Colors in compiler messages (warnings, errors)
+  (Simon Cruanes, review by Gabriel Scherer)
 
 Runtime system:
 - PR#6517: use ISO C99 types {,u}int{32,64}_t in preference to our homegrown
