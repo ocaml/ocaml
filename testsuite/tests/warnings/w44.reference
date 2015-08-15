@@ -1,0 +1,24 @@
+File "w44.ml", line 38, characters 2-34:
+Warning 44: this open statement shadows the value identifier compare (which is later used)
+File "w44.ml", line 44, characters 2-31:
+Warning 44: this open statement shadows the value identifier <= (which is later used)
+File "w44.ml", line 49, characters 2-32:
+Warning 44: this open statement shadows the value identifier mod (which is later used)
+File "w44.ml", line 54, characters 2-34:
+Warning 44: this open statement shadows the value identifier mod (which is later used)
+File "w44.ml", line 59, characters 2-32:
+Warning 44: this open statement shadows the value identifier .() (which is later used)
+File "w44.ml", line 64, characters 2-32:
+Warning 44: this open statement shadows the value identifier .() (which is later used)
+File "w44.ml", line 72, characters 2-34:
+Warning 52: this open statement shadows the value identifier compare (which is later used)
+File "w44.ml", line 78, characters 2-31:
+Warning 53: this open statement shadows the operator ( <= ) (which is later used)
+File "w44.ml", line 83, characters 2-32:
+Warning 53: this open statement shadows the operator ( mod ) (which is later used)
+File "w44.ml", line 88, characters 2-34:
+Warning 53: this open statement shadows the operator ( mod ) (which is later used)
+File "w44.ml", line 93, characters 2-32:
+Warning 53: this open statement shadows the operator ( .() ) (which is later used)
+File "w44.ml", line 98, characters 2-32:
+Warning 53: this open statement shadows the operator ( .() ) (which is later used)
