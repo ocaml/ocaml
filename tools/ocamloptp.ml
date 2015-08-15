@@ -100,6 +100,9 @@ module Options = Main_args.Make_optcomp_options (struct
   let _w = option_with_arg "-w"
   let _warn_error = option_with_arg "-warn-error"
   let _warn_help = option "-warn-help"
+  let _color _ = option "-color" ()
+  let _no_color _ = option "-no-color" ()
+  let _color_auto _ = option "-color-auto" ()
   let _where = option "-where"
 
   let _nopervasives = option "-nopervasives"

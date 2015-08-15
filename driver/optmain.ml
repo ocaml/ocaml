@@ -129,6 +129,9 @@ module Options = Main_args.Make_optcomp_options (struct
   let _w s = Warnings.parse_options false s
   let _warn_error s = Warnings.parse_options true s
   let _warn_help = Warnings.help_warnings
+  let _color () = color := Misc.Color.On
+  let _no_color () = color := Misc.Color.Off
+  let _color_auto () = color := Misc.Color.Auto
   let _where () = print_standard_library ()
 
   let _nopervasives = set nopervasives

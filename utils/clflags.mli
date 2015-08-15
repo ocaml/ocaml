@@ -98,3 +98,5 @@ val keep_docs : bool ref
 val keep_locs : bool ref
 val unsafe_string : bool ref
 val opaque : bool ref
+
+val color : Misc.Color.options ref (* default: Color_auto *)
