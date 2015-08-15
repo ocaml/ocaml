@@ -234,3 +234,9 @@ module Color : sig
   val set_color_tag_handling : Format.formatter -> unit
   (* adds functions to support color tags to the given formatter. *)
 end
+
+(* fixity of an identifier, according to the OCaml lexical conventions.
+
+   "asr", "land", "mod" etc. are `Infix
+ *)
+val fixity : string -> [ `Prefix | `Infix | `Normal ]

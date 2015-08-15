@@ -511,3 +511,16 @@ module Color = struct
       );
       ()
 end
+
+let prefix_symbols  = [ '!'; '?'; '~' ] ;;
+let infix_symbols = [ '='; '<'; '>'; '@'; '^'; '|'; '&'; '+'; '-'; '*'; '/';
+                      '$'; '%' ]
+let special_infix_strings =
+  ["asr"; "land"; "lor"; "lsl"; "lsr"; "lxor"; "mod"; "or"; ":="; "!=" ]
+
+let fixity = function
+  | "" -> `Normal
+  | s when List.mem s special_infix_strings -> `Infix
+  | s when List.mem s.[0] infix_symbols -> `Infix
+  | s when List.mem s.[0] prefix_symbols -> `Prefix
+  | _ -> `Normal

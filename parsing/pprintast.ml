@@ -22,39 +22,20 @@ open Location
 open Longident
 open Parsetree
 
-let prefix_symbols  = [ '!'; '?'; '~' ] ;;
-let infix_symbols = [ '='; '<'; '>'; '@'; '^'; '|'; '&'; '+'; '-'; '*'; '/';
-                      '$'; '%' ]
-let operator_chars = [ '!'; '$'; '%'; '&'; '*'; '+'; '-'; '.'; '/';
-                       ':'; '<'; '='; '>'; '?'; '@'; '^'; '|'; '~' ]
-let numeric_chars  = [ '0'; '1'; '2'; '3'; '4'; '5'; '6'; '7'; '8'; '9' ]
-
-(* type fixity = Infix| Prefix  *)
-
-let special_infix_strings =
-  ["asr"; "land"; "lor"; "lsl"; "lsr"; "lxor"; "mod"; "or"; ":="; "!=" ]
-
-(* determines if the string is an infix string.
-   checks backwards, first allowing a renaming postfix ("_102") which
-   may have resulted from Pexp -> Texp -> Pexp translation, then checking
-   if all the characters in the beginning of the string are valid infix
-   characters. *)
-let fixity_of_string  = function
-  | s when List.mem s special_infix_strings -> `Infix s
-  | s when List.mem s.[0] infix_symbols -> `Infix s
-  | s when List.mem s.[0] prefix_symbols -> `Prefix s
-  | _ -> `Normal
+let fixity_of_string s = match Misc.fixity s with
+    | `Infix -> `Infix s
+    | `Prefix -> `Prefix s
+    | `Normal -> `Normal
 
 let view_fixity_of_exp = function
   | {pexp_desc = Pexp_ident {txt=Lident l;_};_} -> fixity_of_string l
   | _ -> `Normal  ;;
 
-let is_infix  = function  | `Infix _ -> true | _  -> false
-
 (* which identifiers are in fact operators needing parentheses *)
 let needs_parens txt =
-  is_infix (fixity_of_string txt)
-  || List.mem txt.[0] prefix_symbols
+  match Misc.fixity txt with
+    | `Infix | `Prefix -> true
+    | `Normal -> false
 
 (* some infixes need spaces around parens to avoid clashes with comment
    syntax *)
