@@ -74,15 +74,20 @@ rule "target files"
         build each of those targets in turn."
   begin fun env build ->
     let itarget = env "%.itarget" in
-    let dir = Pathname.dirname itarget in
-    let targets = string_list_of_file itarget in
-    List.iter ignore_good (build (List.map (fun x -> [dir/x]) targets));
-    if !Options.make_links then
-      let link x =
-        Cmd (S [A"ln"; A"-sf"; P (!Options.build_dir/x); A Pathname.parent_dir_name]) in
-      Seq (List.map (fun x -> link (dir/x)) targets)
-    else
-      Nop
+    let targets =
+      let dir = Pathname.dirname itarget in
+      let files = string_list_of_file itarget in
+      List.map (fun file -> [Pathname.concat dir file]) files
+    in
+    let results = List.map Outcome.good (build targets) in
+    let link_command result =
+      Cmd (S [A "ln"; A "-sf";
+              P (Pathname.concat !Options.build_dir result);
+              A Pathname.pwd])
+    in
+    if not !Options.make_links
+    then Nop
+    else Seq (List.map link_command results)
   end;;
 
 rule "ocaml: mli -> cmi"

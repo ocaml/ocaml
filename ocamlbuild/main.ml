@@ -250,7 +250,9 @@ let proceed () =
       List.fold_right begin fun (target, ext) acc ->
         let cmd = !Options.build_dir/target in
         let link x =
-          if !Options.make_links then ignore (call (S [A"ln"; A"-sf"; P x; A Pathname.current_dir_name])) in
+          if !Options.make_links then
+            ignore (call (S [A"ln"; A"-sf"; P x; A Pathname.pwd]))
+        in
         match ext with
         | "byte" | "native" | "top" ->
             link cmd; cmd :: acc
