@@ -158,6 +158,8 @@ Bug fixes:
   and fix by Frederic Bour)
 - GPR#220: minor -dsource error on recursive modules
   (Hongbo Zhang)
+- GPR#228: fix a dangling internal pointer in (bytecode )debug_info
+  (Gabriel Scherer and Mark Shinwell and Xavier Leroy)
 
 Features wishes:
 - PR#4714: List.cons
