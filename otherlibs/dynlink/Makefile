@@ -106,5 +106,5 @@ clean: partialclean
 depend:
 
 dynlink.cmi: dynlinkaux.cmi
-dynlink.cmo: dynlink.cmi
+dynlink.cmo: dynlink.cmi dynlinkaux.cmo
 extract_crc.cmo: dynlink.cmi
