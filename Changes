@@ -46,6 +46,8 @@ Compilers:
   (Simon Cruanes, review by Gabriel Scherer)
 
 Runtime system:
+- PR#3612: allow allocating custom block with finalizers in the minor heap
+  (Pierre Chambart)
 - PR#6517: use ISO C99 types {,u}int{32,64}_t in preference to our homegrown
   types {,u}int{32,64}.
   (Xavier Leroy)
@@ -110,6 +112,8 @@ OCamlbuild:
   (ygrek)
 
 Bug fixes:
+- PR#3612: memory leak in bigarray read from file
+  (Pierre Chambart, report by Gary Huber)
 * PR#4539: change exception string raised when comparing functional values
   (Nicolas Braud-Santoni, report by Eric Cooper)
 - PR#4832: Filling bigarrays may block out runtime
