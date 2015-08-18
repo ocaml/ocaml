@@ -78,77 +78,79 @@ let assign_symbols_and_collect_constant_definitions ~program
   let var_to_symbol_tbl = Variable.Tbl.create 42 in
   let var_to_definition_tbl = Variable.Tbl.create 42 in
   let assign_symbol var (named : Flambda.named) =
-    let assign_symbol () =
-      Variable.Tbl.add var_to_symbol_tbl var
-        (Compilenv.new_const_symbol' ~name:(Variable.unique_name var) ())
-    in
-    let assign_existing_symbol = Variable.Tbl.add var_to_symbol_tbl var in
-    let record_definition = Variable.Tbl.add var_to_definition_tbl var in
-    match named with
-    | Symbol symbol ->
-      assign_existing_symbol symbol;
-      record_definition (Symbol symbol)
-    | Const const -> record_definition (Const const)
-    | Allocated_const const ->
-      assign_symbol ();
-      record_definition (Allocated_const const)
-    | Prim (Pmakeblock (tag, _), fields, _) ->
-      assign_symbol ();
-      record_definition (Block (Tag.create_exn tag, fields))
-    | Set_of_closures (
-        { function_decls = { funs; set_of_closures_id; _ };
-          specialised_args; _ } as set) ->
-      assert (not (Set_of_closures_id.Set.mem set_of_closures_id
-          inconstants.closure));
-      assign_symbol ();
-      record_definition (Set_of_closures set);
-      (* CR mshinwell: the following seems to be needed because of the
-         behaviour of [Closure_conversion_aux.closure_env_without_parameters]
-         and maybe [reference_recursive_function_directly].  We should think
-         about this.  (Could we always use projections instead?  If so we
-         should add an invariant check forbidding direct access.) *)
-      Variable.Map.iter (fun fun_var _ ->
-          let closure_id = Closure_id.wrap fun_var in
-          let closure_symbol = Compilenv.closure_symbol closure_id in
-          Variable.Tbl.add var_to_symbol_tbl fun_var closure_symbol;
-          Variable.Tbl.add var_to_definition_tbl fun_var
-            (Symbol closure_symbol))
-        funs;
-      Variable.Map.iter (fun arg var ->
-          Variable.Tbl.add var_to_definition_tbl arg (Variable var))
-        specialised_args
-    | Move_within_set_of_closures { closure = _; start_from = _; move_to; } ->
-      let symbol = Compilenv.closure_symbol move_to in
-      assign_existing_symbol symbol;
-      record_definition (Symbol symbol)
-    | Project_closure ({ closure_id } as project_closure) ->
-      assign_existing_symbol (Compilenv.closure_symbol closure_id);
-      record_definition (Project_closure project_closure)
-    (* | Prim (Pgetglobal id, _, _) -> *)
-    (*   let symbol = Compilenv.symbol_for_global' id in *)
-    (*   assign_existing_symbol symbol; *)
-    (*   record_definition (Symbol symbol) *)
-    | Prim (Pfield index, [block], _) ->
-    (* | Prim (Pgetglobalfield index, [block], _) -> *)
-      record_definition (Field (block, index))
-    | Prim (Pfield _, _, _) ->
-      Misc.fatal_errorf "[Pfield] with the wrong number of arguments"
-        Flambda.print_named named
-    (* | Prim (Pgetglobalfield _, _, _) -> *)
-    (*   Misc.fatal_errorf "[Pgetglobalfield] with the wrong number of arguments" *)
-    (*     Flambda.print_named named *)
-    | Prim _ ->
-      Misc.fatal_errorf "Primitive not expected to be constant: @.%a@."
-        Flambda.print_named named
-    | Predefined_exn exn ->
-      record_definition (Predefined_exn exn)
-    | Project_var project_var ->
-      record_definition (Project_var project_var)
-    | Expr e -> begin
-        match tail_variable e with
-        | None -> () (* Fail ? *)
-        | Some v -> record_definition (Variable v)
-      end
+    if not (Variable.Set.mem var inconstants.id) then begin
+      let assign_symbol () =
+        Variable.Tbl.add var_to_symbol_tbl var
+          (Compilenv.new_const_symbol' ~name:(Variable.unique_name var) ())
+      in
+      let assign_existing_symbol = Variable.Tbl.add var_to_symbol_tbl var in
+      let record_definition = Variable.Tbl.add var_to_definition_tbl var in
+      match named with
+      | Symbol symbol ->
+        assign_existing_symbol symbol;
+        record_definition (Symbol symbol)
+      | Const const -> record_definition (Const const)
+      | Allocated_const const ->
+        assign_symbol ();
+        record_definition (Allocated_const const)
+      | Prim (Pmakeblock (tag, _), fields, _) ->
+        assign_symbol ();
+        record_definition (Block (Tag.create_exn tag, fields))
+      | Set_of_closures (
+          { function_decls = { funs; set_of_closures_id; _ };
+            specialised_args; _ } as set) ->
+        assert (not (Set_of_closures_id.Set.mem set_of_closures_id
+                       inconstants.closure));
+        assign_symbol ();
+        record_definition (Set_of_closures set);
+        (* CR mshinwell: the following seems to be needed because of the
+           behaviour of [Closure_conversion_aux.closure_env_without_parameters]
+           and maybe [reference_recursive_function_directly].  We should think
+           about this.  (Could we always use projections instead?  If so we
+           should add an invariant check forbidding direct access.) *)
+        Variable.Map.iter (fun fun_var _ ->
+            let closure_id = Closure_id.wrap fun_var in
+            let closure_symbol = Compilenv.closure_symbol closure_id in
+            Variable.Tbl.add var_to_symbol_tbl fun_var closure_symbol;
+            Variable.Tbl.add var_to_definition_tbl fun_var
+              (Symbol closure_symbol))
+          funs;
+        Variable.Map.iter (fun arg var ->
+            Variable.Tbl.add var_to_definition_tbl arg (Variable var))
+          specialised_args
+      | Move_within_set_of_closures { closure = _; start_from = _; move_to; } ->
+        let symbol = Compilenv.closure_symbol move_to in
+        assign_existing_symbol symbol;
+        record_definition (Symbol symbol)
+      | Project_closure ({ closure_id } as project_closure) ->
+        assign_existing_symbol (Compilenv.closure_symbol closure_id);
+        record_definition (Project_closure project_closure)
+      (* | Prim (Pgetglobal id, _, _) -> *)
+      (*   let symbol = Compilenv.symbol_for_global' id in *)
+      (*   assign_existing_symbol symbol; *)
+      (*   record_definition (Symbol symbol) *)
+      | Prim (Pfield index, [block], _) ->
+        (* | Prim (Pgetglobalfield index, [block], _) -> *)
+        record_definition (Field (block, index))
+      | Prim (Pfield _, _, _) ->
+        Misc.fatal_errorf "[Pfield] with the wrong number of arguments"
+          Flambda.print_named named
+      (* | Prim (Pgetglobalfield _, _, _) -> *)
+      (*   Misc.fatal_errorf "[Pgetglobalfield] with the wrong number of arguments" *)
+      (*     Flambda.print_named named *)
+      | Prim _ ->
+        Misc.fatal_errorf "Primitive not expected to be constant: @.%a@."
+          Flambda.print_named named
+      | Predefined_exn exn ->
+        record_definition (Predefined_exn exn)
+      | Project_var project_var ->
+        record_definition (Project_var project_var)
+      | Expr e -> begin
+          match tail_variable e with
+          | None -> () (* Fail ? *)
+          | Some v -> record_definition (Variable v)
+        end
+    end
   in
   let assign_symbol_program expr =
     Flambda_iterators.iter_all_let_and_let_rec_bindings expr ~f:assign_symbol
@@ -454,6 +456,6 @@ let lift_constants program ~backend:_ =
       initialize_symbol_tbl
       Flambda.End components
   in
-  Format.eprintf "lift_constants output:@ %a\n" Flambda.print_program program;
+  Format.eprintf "@.lift_constants output:@ %a\n" Flambda.print_program program;
   program
 

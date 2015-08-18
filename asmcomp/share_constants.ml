@@ -82,4 +82,6 @@ let share_constants (program:Flambda.program) =
       Initialize_symbol (symbol,tag,fields,loop program)
     | End -> End
   in
-  loop program
+  let program = loop program in
+  Format.eprintf "share_constants output:@ %a\n" Flambda.print_program program;
+  program
