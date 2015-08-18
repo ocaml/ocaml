@@ -131,17 +131,33 @@ let rec iter_exprs_at_toplevel_of_program (program : Flambda.program) ~f =
     iter_exprs_at_toplevel_of_program program ~f
   | End -> ()
 
+let iter_symbols_on_named named ~f =
+  iter_named_on_named (function
+      | Symbol sym -> f sym
+      | (Const _ | Allocated_const _ | Predefined_exn _ | Set_of_closures _
+      | Project_closure _ | Move_within_set_of_closures _ | Project_var _
+      | Prim _ | Expr _) -> ())
+    named
+
+let iter_symbols named ~f =
+  iter_named (function
+      | Symbol sym -> f sym
+      | (Const _ | Allocated_const _ | Predefined_exn _ | Set_of_closures _
+      | Project_closure _ | Move_within_set_of_closures _ | Project_var _
+      | Prim _ | Expr _) -> ())
+    named
+
 let map_general ~toplevel f f_named tree =
   let rec aux (tree : Flambda.t) =
     let exp : Flambda.t =
       match tree with
       | Var _ | Apply _ | Assign _ | Send _ | Proved_unreachable -> tree
       | Let (str, id, lam, body) ->
-        let lam = aux_named lam in
+        let lam = aux_named id lam in
         let body = aux body in
         Let (str, id, lam, body)
       | Let_rec (defs, body) ->
-        let defs = List.map (fun (id, lam) -> id, aux_named lam) defs in
+        let defs = List.map (fun (id, lam) -> id, aux_named id lam) defs in
         let body = aux body in
         Let_rec (defs, body)
       | Switch (arg, sw) ->
@@ -181,7 +197,7 @@ let map_general ~toplevel f f_named tree =
         For { bound_var; from_value; to_value; direction; body; }
     in
     f exp
-  and aux_named (named : Flambda.named) =
+  and aux_named (id : Variable.t) (named : Flambda.named) =
     let named : Flambda.named =
       match named with
       | Symbol _ | Const _ | Allocated_const _ | Predefined_exn _
@@ -209,15 +225,18 @@ let map_general ~toplevel f f_named tree =
           Set_of_closures set_of_closures
       | Expr expr -> Expr (aux expr)
     in
-    f_named named
+    f_named id named
   in
   aux tree
 
-let map f f_named tree = map_general ~toplevel:false f f_named tree
+let map f f_named tree = map_general ~toplevel:false f (fun _ n -> f_named n) tree
 let map_expr f tree = map f (fun named -> named) tree
 let map_named f_named tree = map (fun expr -> expr) f_named tree
+let map_named_with_id f_named tree =
+  map_general ~toplevel:false (fun expr -> expr) f_named tree
 (* CR mshinwell: rename "toplevel" *)
-let map_toplevel f f_named tree = map_general ~toplevel:true f f_named tree
+let map_toplevel f f_named tree =
+  map_general ~toplevel:true f (fun _ n -> f_named n) tree
 let map_toplevel_named f_named tree =
   map_toplevel (fun tree -> tree) f_named tree
 
@@ -228,6 +247,25 @@ let map_symbols tree ~f =
       | Project_closure _ | Move_within_set_of_closures _ | Project_var _
       | Prim _ | Expr _) as named -> named)
     tree
+
+let map_symbols_on_set_of_closures
+    { Flambda.function_decls; free_vars; specialised_args }
+    ~f =
+  let function_decls : Flambda.function_declarations =
+    { function_decls with
+      funs = Variable.Map.map
+          (fun (ffun : Flambda.function_declaration) ->
+             let body = map_symbols ffun.body ~f in
+             Flambda.create_function_declaration
+               ~params:ffun.params
+               ~body
+               ~stub:ffun.stub
+               ~dbg:ffun.dbg)
+          function_decls.funs;
+    }
+  in
+  Flambda.create_set_of_closures ~function_decls ~free_vars
+    ~specialised_args
 
 let map_toplevel_sets_of_closures tree ~f =
   map_toplevel_named (function
@@ -310,3 +348,8 @@ let rec map_exprs_at_toplevel_of_program (program : Flambda.program)
     Initialize_symbol (symbol, f expr,
       map_exprs_at_toplevel_of_program program ~f)
   | End -> End
+
+let map_named_of_program (program : Flambda.program)
+      ~(f : Variable.t -> Flambda.named -> Flambda.named) : Flambda.program =
+  map_exprs_at_toplevel_of_program program
+      ~f:(fun expr -> map_named_with_id f expr)

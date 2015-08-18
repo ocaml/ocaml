@@ -78,6 +78,16 @@ val iter_exprs_at_toplevel_of_program
   -> f:(Flambda.t -> unit)
   -> unit
 
+val iter_symbols_on_named
+   : Flambda.named
+  -> f:(Symbol.t -> unit)
+  -> unit
+
+val iter_symbols
+   : Flambda.t
+  -> f:(Symbol.t -> unit)
+  -> unit
+
 val map
    : (Flambda.t -> Flambda.t)
   -> (Flambda.named -> Flambda.named)
@@ -110,6 +120,11 @@ val map_symbols
   -> f:(Symbol.t -> Symbol.t)
   -> Flambda.t
 
+val map_symbols_on_set_of_closures
+  : Flambda.set_of_closures
+  -> f:(Symbol.t -> Symbol.t)
+  -> Flambda.set_of_closures
+
 val map_toplevel_sets_of_closures
    : Flambda.t
   -> f:(Flambda.set_of_closures -> Flambda.set_of_closures)
@@ -139,3 +154,9 @@ val map_exprs_at_toplevel_of_program
    : Flambda.program
   -> f:(Flambda.t -> Flambda.t)
   -> Flambda.program
+
+val map_named_of_program
+   : Flambda.program
+  -> f:(Variable.t -> Flambda.named -> Flambda.named)
+  -> Flambda.program
+
