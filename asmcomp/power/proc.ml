@@ -111,6 +111,9 @@ let calling_conventions
         if !float <= last_float then begin
           loc.(i) <- phys_reg !float;
           incr float;
+          (* On 64-bit platforms, passing a float in a float register
+             reserves a normal register as well *)
+          if size_int = 8 then incr int;
           if reg_use_stack then ofs := !ofs + size_float
         end else begin
           loc.(i) <- stack_slot (make_stack !ofs) Float;
@@ -139,7 +142,7 @@ let loc_results res =
    C calling conventions for ELF64v1:
      Use GPR 3-10 for the first integer arguments.
      Use FPR 1-13 for the first float arguments.
-     Always reserve stack space for all arguments, even when passed in 
+     Always reserve stack space for all arguments, even when passed in
      registers.
      Always reserve at least 8 words (64 bytes) for the arguments.
      Always reserve 48 bytes at bottom of stack, plus whatever is needed
