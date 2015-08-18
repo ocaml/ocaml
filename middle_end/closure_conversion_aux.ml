@@ -17,11 +17,13 @@ module Env = struct
   type t = {
     variables : Variable.t Ident.tbl;
     static_exceptions : Static_exception.t Ext_types.Int.Map.t;
+    globals : Symbol.t Ext_types.Int.Map.t;
   }
 
   let empty = {
     variables = Ident.empty;
     static_exceptions = Ext_types.Int.Map.empty;
+    globals = Ext_types.Int.Map.empty;
   }
 
   let add_var t id var = { t with variables = Ident.add id var t.variables }
@@ -43,6 +45,16 @@ module Env = struct
     with Not_found ->
       Misc.fatal_error ("Closure_conversion.Env.find_static_exception: exn "
         ^ string_of_int st_exn)
+
+  let add_global t pos symbol =
+    { t with globals = Ext_types.Int.Map.add pos symbol t.globals }
+
+  let find_global t pos =
+    try Ext_types.Int.Map.find pos t.globals
+    with Not_found ->
+      Misc.fatal_error ("Closure_conversion.Env.find_global: exn "
+        ^ string_of_int pos)
+
 end
 
 module Function_decls = struct

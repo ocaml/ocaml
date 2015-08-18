@@ -14,7 +14,7 @@
 let verbose = try ignore (Sys.getenv "FLAMBDA_VERBOSE"); true with _ -> false
 
 let middle_end ppf ~sourcefile ~prefixname ~backend
-    ~exported_fields:_
+    ~exported_fields
     ~module_ident
     ~module_initializer =
   (* CR mshinwell: consider whether everything should run on
@@ -53,7 +53,7 @@ let middle_end ppf ~sourcefile ~prefixname ~backend
     module_initializer
     |> Eliminate_const_block.run
     |> Lift_strings.run
-    |> Closure_conversion.lambda_to_flambda ~backend ~module_ident
+    |> Closure_conversion.lambda_to_flambda ~backend ~module_ident ~exported_fields
   in
   dump_and_check "After closure conversion" flam;
   let rec loop flam =

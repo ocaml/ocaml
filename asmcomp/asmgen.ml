@@ -119,8 +119,11 @@ let compile_genfuns ppf f =
     (Cmmgen.generic_functions true [Compilenv.current_unit_infos ()])
 
 let prep_flambda_for_export ppf flam ~backend =
+  let kind = Flambda_invariants.Lifted in
   let program = Lift_constants.lift_constants flam ~backend in
+  Flambda_invariants.check_exn ~kind program;
   let program = Share_constants.share_constants program in
+  Flambda_invariants.check_exn ~kind program;
   let export = Build_export_info.build_export_info program in
   (* Compilenv.set_export_info export; *)
   if !Clflags.dump_flambda
@@ -128,7 +131,6 @@ let prep_flambda_for_export ppf flam ~backend =
     Format.fprintf ppf "After Build_export_info:@ %a@."
       Flambda.print_program program
   end;
-  let kind = Flambda_invariants.Lifted in
   Flambda_invariants.check_exn ~kind program;
 (*
   Symbol.Map.iter (fun _ set_of_closures ->

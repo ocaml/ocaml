@@ -250,10 +250,14 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
     Let (Immutable, arg_var, Expr (close t env arg),
       name_expr
         (Prim (Praise kind, [arg_var], Debuginfo.from_raise event)))
-  (* | Lprim (Pfield _, [Lprim (Pgetglobal id, [])]) *)
-  (*     when Ident.same id t.current_unit_id -> *)
-  (*   Misc.fatal_error "[Pfield ... Pgetglobal] from the current compilation \ *)
-  (*       unit is forbidden upon entry to the middle end" *)
+  | Lprim (Pfield pos, [Lprim (Pgetglobal id, [])])
+      when Ident.same id t.current_unit_id ->
+    let symbol = Env.find_global env pos in
+    let sym_v = Variable.create ("access_global_" ^ string_of_int pos) in
+    let result_v = Variable.create ("access_global_field_" ^ string_of_int pos) in
+    Let(Immutable, sym_v, Symbol symbol,
+        Let(Immutable, result_v, Prim(Pfield 0, [sym_v], Debuginfo.none),
+            Var result_v))
   | Lprim (Psetfield (_, _), [Lprim (Pgetglobal id, []); _]) ->
     assert (Ident.same id t.current_unit_id);
     Misc.fatal_error "[Psetfield] (to the current compilation unit) is \
@@ -464,7 +468,7 @@ let rec split_module_initialization t (lam:Lambda.lambda) : (Lambda.lambda * int
     split_module_initialization t lam2
   | _ -> assert false
 
-let lambda_to_flambda ~backend ~module_ident module_initializer =
+let lambda_to_flambda ~backend ~module_ident ~exported_fields module_initializer =
   imported_symbols := Symbol.Set.empty;
   let module Backend = (val backend : Backend_intf.S) in
   let compilation_unit = Compilation_unit.get_current_exn () in
@@ -476,13 +480,16 @@ let lambda_to_flambda ~backend ~module_ident module_initializer =
   in
   let initialisations = split_module_initialization t module_initializer in
   let module_symbol = Backend.symbol_for_global' module_ident in
-  let initialisations =
-    List.map (fun (lam, pos) ->
+  let _env, initialisations =
+    List.fold_left (fun (env, l) (lam, pos) ->
         let linkage_name = Linkage_name.create ("init_" ^ string_of_int pos) in
         let symbol = Symbol.create compilation_unit linkage_name in
         (* TODO: add to env *)
-        close t Env.empty lam, pos, symbol)
-      initialisations
+        let elt = close t env lam, pos, symbol in
+        let env = Env.add_global env pos symbol in
+        env, elt::l
+      )
+      (Env.empty, []) initialisations
   in
   let field_map =
     List.fold_left (fun map (_, pos, symbol) ->
@@ -490,11 +497,8 @@ let lambda_to_flambda ~backend ~module_ident module_initializer =
       Ext_types.Int.Map.empty
       initialisations
   in
-  let max_field =
-    Ext_types.Int.Map.fold (fun pos _ acc -> max pos acc) field_map (-1)
-  in
   let fields =
-    Array.init (max_field + 1) (fun i ->
+    Array.init exported_fields (fun i ->
         match Ext_types.Int.Map.find i field_map with
         | symbol ->
           let sym_v = Variable.create "global_symbol" in
@@ -515,10 +519,10 @@ let lambda_to_flambda ~backend ~module_ident module_initializer =
       Flambda.End)
   in
   let module_initializer =
-    List.fold_right (fun (flam, _pos, symbol) program ->
+    List.fold_left (fun program (flam, _pos, symbol) ->
         Flambda.Initialize_symbol (symbol, Tag.create_exn 0, [flam], program)
       )
-      initialisations module_initializer
+      module_initializer initialisations
   in
   Symbol.Set.fold (fun sym expr -> Flambda.Import_symbol (sym, expr))
     !imported_symbols

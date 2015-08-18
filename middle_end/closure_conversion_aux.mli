@@ -28,6 +28,10 @@ module Env : sig
 
   val add_static_exception : t -> int -> Static_exception.t -> t
   val find_static_exception : t -> int -> Static_exception.t
+
+  val add_global : t -> int -> Symbol.t -> t
+  val find_global : t -> int -> Symbol.t
+
 end
 
 (** Used to represent information about a set of function declarations
