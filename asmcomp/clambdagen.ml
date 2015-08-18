@@ -10,7 +10,7 @@
 (*   under the terms of the Q Public License version 1.0.                 *)
 (*                                                                        *)
 (**************************************************************************)
-(*
+
 type ('a,'b) declaration_position =
   | Local of 'a
   | External of 'b
@@ -41,32 +41,6 @@ let conv_const : Flambda.constant_defining_value_block_field -> Clambda.uconstan
   | Const (Const_pointer i) ->
     Uconst_ptr i
 
-let conv_allocated_constant
-    (c:Lift_constants.constant Lift_constants.Allocated_constants.t) : Clambda.ustructured_constant =
-  match c with
-  | Float f ->
-    Uconst_float f
-  | Int32 i ->
-    Uconst_int32 i
-  | Int64 i ->
-    Uconst_int64 i
-  | Nativeint i ->
-    Uconst_nativeint i
-  | Immstring s
-  | String s ->
-    Uconst_string s
-  | Float_array a ->
-    Uconst_float_array a
-  | Block (tag, fields) ->
-    let fields = List.map conv_const fields in
-    Uconst_block (Tag.to_int tag, fields)
-
-let initialise_substitution ({kind}:Lift_constants.result) = {
-  empty_env with
-  const_subst =
-    Variable.Map.map (fun kind -> Clambda.Uconst(conv_const kind)) kind;
-  }
-
 let add_sb id subst env =
   { env with subst = Variable.Map.add id subst env.subst }
 
@@ -89,28 +63,28 @@ module Storer =
       let make_key = Flambda_utils.make_key
     end)
 
-let make_closure_map ({ expr; set_of_closures_map } : Lift_constants.result) =
+let make_closure_map (program : Flambda.program) =
   let map = ref Closure_id.Map.empty in
-  let add_set_of_closures : Flambda.named -> unit = function
-    | Set_of_closures { function_decls } ->
-      Variable.Map.iter (fun var _ ->
-          let closure_id = Closure_id.wrap var in
-          map := Closure_id.Map.add closure_id function_decls !map)
-        function_decls.funs
-    | _ -> ()
+  let add_set_of_closures : Flambda.set_of_closures -> unit = fun
+    { function_decls } ->
+    Variable.Map.iter (fun var _ ->
+        let closure_id = Closure_id.wrap var in
+        map := Closure_id.Map.add closure_id function_decls !map)
+      function_decls.funs
   in
-  Flambda_iterators.iter_named add_set_of_closures expr;
-  Symbol.Map.iter (fun _ set_of_closures ->
-      Flambda_iterators.iter_named_on_named add_set_of_closures
-        (Set_of_closures set_of_closures))
-    set_of_closures_map;
+  Flambda_iterators.iter_on_set_of_closures_of_program
+    program
+    ~f:add_set_of_closures;
   !map
 
-let constant_closure_set ({ set_of_closures_map } : Lift_constants.result) =
+let constant_closure_set program =
   let set = ref Set_of_closures_id.Set.empty in
-  Symbol.Map.iter (fun _ { Flambda.function_decls = { set_of_closures_id } } ->
-      set := Set_of_closures_id.Set.add set_of_closures_id !set)
-    set_of_closures_map;
+  List.iter (function
+      | (_, Flambda.Set_of_closures { function_decls = { set_of_closures_id } }) ->
+        set := Set_of_closures_id.Set.add set_of_closures_id !set
+      | _ ->
+        ())
+    (Flambda_utils.constant_symbol_declarations program);
   !set
 
 module type Arg = sig
@@ -309,6 +283,7 @@ Format.eprintf "Clambdagen.conv: %a\n"
 
   and conv_named (env : env) (named : Flambda.named) : Clambda.ulambda =
     match named with
+    | Predefined_exn _ -> failwith "TODO clambdagen..."
 
     | Expr expr ->
       conv env expr
@@ -318,6 +293,10 @@ Format.eprintf "Clambdagen.conv: %a\n"
       (* The constant should contains details about the variable to
          allow cmmgen to unbox *)
       Uconst (Uconst_ref (lbl, None))
+
+    | Allocated_const _ ->
+      (* Should have been lifted to a Let_symbol *)
+      assert false
 
     | Set_of_closures set_of_closures ->
       conv_set_of_closures env set_of_closures
@@ -370,7 +349,7 @@ Format.eprintf "Clambdagen.conv: %a\n"
     | Const (Const_pointer n) ->
       Uconst (Uconst_ptr n)
 
-    | Const (Const_base (Const_int n)) ->
+    | Const (Int n) ->
       Uconst (Uconst_int n)
 
     | Const _ ->
@@ -548,30 +527,89 @@ Format.eprintf "Clambdagen.conv_set_of_closures: %a\n"
 
 end
 
-let convert ((lifted_constants:Lift_constants.result), exported) =
+let conv_allocated_constant
+    (c:Allocated_const.t) : Clambda.ustructured_constant =
+  match c with
+  | Float f ->
+    Uconst_float f
+  | Int32 i ->
+    Uconst_int32 i
+  | Int64 i ->
+    Uconst_int64 i
+  | Nativeint i ->
+    Uconst_nativeint i
+  | Immstring s
+  | String s ->
+    Uconst_string s
+  | Float_array a ->
+    Uconst_float_array a
+
+let add_structured_constant
+    symbol (c:Flambda.constant_defining_value)
+    structured_constants =
+  match c with
+  | Allocated_const c ->
+    Symbol.Map.add symbol (conv_allocated_constant c)
+      structured_constants
+  | Block (tag, fields) ->
+    let fields = List.map conv_const fields in
+    Symbol.Map.add symbol (Clambda.Uconst_block (Tag.to_int tag, fields))
+      structured_constants
+  | Set_of_closures _
+  | Project_closure _ ->
+    structured_constants
+
+let add_constant_set_of_closures
+    conv_closed_set_of_closures
+    symbol (c:Flambda.constant_defining_value)
+    constant_set_of_closures =
+  match c with
+  | Allocated_const _ ->
+    constant_set_of_closures
+  | Block _ ->
+    constant_set_of_closures
+  | Set_of_closures set_of_closures ->
+    let conv_set_of_closures =
+      conv_closed_set_of_closures empty_env symbol set_of_closures
+    in
+    Symbol.Map.add symbol conv_set_of_closures
+      constant_set_of_closures
+  | Project_closure _ ->
+    constant_set_of_closures
+
+
+let convert ((program:Flambda.program), exported) =
   let module M = M(struct
-      let offsets = Closure_offsets.compute lifted_constants
-      let closures = make_closure_map lifted_constants
-      let constant_set_of_closures = constant_closure_set lifted_constants
+      let offsets =
+        Closure_offsets.({
+            code_pointer_offsets = Closure_id.Map.empty;
+            free_variable_offsets = Var_within_closure.Map.empty;
+          })
+        (* Closure_offsets.compute program *)
+
+      let closures = make_closure_map program
+      let constant_set_of_closures = constant_closure_set program
     end)
   in
+  let constants =
+    Symbol.Map.of_list (Flambda_utils.constant_symbol_declarations program)
+  in
   let structured_constants =
-    Symbol.Map.map conv_allocated_constant lifted_constants.constant_descr
+    Symbol.Map.fold add_structured_constant
+      constants Symbol.Map.empty
   in
-  let env = initialise_substitution lifted_constants in
   let constant_set_of_closures =
-    Symbol.Map.mapi
-      (M.conv_closed_set_of_closures env)
-      lifted_constants.set_of_closures_map
+    Symbol.Map.fold
+      (add_constant_set_of_closures M.conv_closed_set_of_closures)
+      constants Symbol.Map.empty
   in
-  let expr = M.conv env lifted_constants.expr in
+  (* let env = empty_env in *)
+  (* let expr = M.conv env lifted_constants.expr in *)
+  (* TODO convert initialize *)
+  let expr = Clambda.Uconst (Uconst_ptr 0) in
   (* TODO: add offsets to export info *)
   expr,
   Symbol.Map.disjoint_union
     structured_constants
     constant_set_of_closures,
   exported
-*)
-
-let convert ((_:Flambda.program), (_:Flambdaexport_types.exported)) =
-  failwith "TODO"

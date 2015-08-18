@@ -11,19 +11,18 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(*
 module Int = Ext_types.Int
 module ET = Flambdaexport_types
 type env = ET.approx Variable.Map.t
 
 let ex_table : ET.descr Export_id.Map.t ref = ref Export_id.Map.empty
 let symbol_table : Export_id.t Symbol.Map.t ref = ref Symbol.Map.empty
-let global_approx : ET.approx Int.Map.t ref = ref Int.Map.empty
+(* let global_approx : ET.approx Int.Map.t ref = ref Int.Map.empty *)
 
 let reset () =
   ex_table := Export_id.Map.empty;
-  symbol_table := Symbol.Map.empty;
-  global_approx := Int.Map.empty
+  symbol_table := Symbol.Map.empty
+  (* global_approx := Int.Map.empty *)
 
 let extern_id_descr ex =
   let export = Compilenv.approx_env () in
@@ -77,7 +76,7 @@ let describe_constant (c:Flambda.constant_defining_value_block_field) : ET.appro
   | Const (Const_pointer i) -> Value_id (new_descr (Value_int i))
 
 let describe_allocated_constant
-    (c:Lift_constants.constant Lift_constants.Allocated_constants.t) : Flambdaexport_types.descr =
+    (c:Allocated_const.t) : Flambdaexport_types.descr =
   match c with
   | Float f ->
     Value_float f
@@ -99,9 +98,6 @@ let describe_allocated_constant
     Value_string v_string
   | Float_array a ->
     Value_float_array (List.length a)
-  | Block (tag, fields) ->
-    let approxs = List.map describe_constant fields in
-    Value_block (tag, Array.of_list approxs)
 
 let find_approx env var : ET.approx =
   begin try Variable.Map.find var env with
@@ -184,37 +180,45 @@ and describe_named (env : env) (named : Flambda.named) : ET.approx =
   | Symbol sym ->
     Value_symbol sym
 
-  | Const (Const_base c) -> begin
+  | Predefined_exn _ ->
+    failwith "TODO"
+
+  | Const c -> begin
       match c with
-      | Const_int i ->
+      | Int i ->
         Value_id (new_descr (Value_int i))
-      | Const_char c ->
+      | Char c ->
         Value_id (new_descr (Value_int (Char.code c)))
-      | Const_float s ->
-        Value_id (new_descr (Value_float (float_of_string s)))
-      | Const_int32 i ->
-        Value_id (new_descr (Value_boxed_int (Int32, i)))
-      | Const_int64 i ->
-        Value_id (new_descr (Value_boxed_int (Int64, i)))
-      | Const_nativeint i ->
-        Value_id (new_descr (Value_boxed_int (Nativeint, i)))
-      | Const_string (s,_) ->
-        let v_string : ET.value_string =
-          { size = String.length s; contents = None }
-        in
-        Value_id (new_descr (Value_string v_string))
+      | Const_pointer i ->
+        Value_id (new_descr (Value_constptr i))
+      (* | Const_float s -> *)
+      (*   Value_id (new_descr (Value_float (float_of_string s))) *)
+      (* | Const_int32 i -> *)
+      (*   Value_id (new_descr (Value_boxed_int (Int32, i))) *)
+      (* | Const_int64 i -> *)
+      (*   Value_id (new_descr (Value_boxed_int (Int64, i))) *)
+      (* | Const_nativeint i -> *)
+      (*   Value_id (new_descr (Value_boxed_int (Nativeint, i))) *)
+      (* | Const_string (s,_) -> *)
+      (*   let v_string : ET.value_string = *)
+      (*     { size = String.length s; contents = None } *)
+      (*   in *)
+      (*   Value_id (new_descr (Value_string v_string)) *)
     end
-  | Const (Const_float f) ->
-    Value_id (new_descr (Value_float f))
-  | Const (Const_pointer c) ->
-    Value_id (new_descr (Value_constptr c))
-  | Const (Const_float_array c) ->
-    Value_id (new_descr (Value_float_array (List.length c)))
-  | Const (Const_immstring c) ->
-    let v_string : ET.value_string =
-      { size = String.length c; contents = Some c }
-    in
-    Value_id (new_descr (Value_string v_string))
+  | Allocated_const c ->
+    let descr = describe_allocated_constant c in
+    Value_id (new_descr descr)
+  (* | Const (Const_float f) -> *)
+  (*   Value_id (new_descr (Value_float f)) *)
+  (* | Const (Const_pointer c) -> *)
+  (*   Value_id (new_descr (Value_constptr c)) *)
+  (* | Const (Const_float_array c) -> *)
+  (*   Value_id (new_descr (Value_float_array (List.length c))) *)
+  (* | Const (Const_immstring c) -> *)
+  (*   let v_string : ET.value_string = *)
+  (*     { size = String.length c; contents = Some c } *)
+  (*   in *)
+  (*   Value_id (new_descr (Value_string v_string)) *)
 
   | Prim(Pmakeblock(tag, Immutable), args, _dbg) ->
     let approxs = List.map (find_approx env) args in
@@ -232,28 +236,28 @@ and describe_named (env : env) (named : Flambda.named) : ET.approx =
   | Prim(Pgetglobal id, _, _) ->
     Value_symbol (Compilenv.symbol_for_global' id)
 
-  | Prim(Pgetglobalfield(id,i), _, _) -> begin
-      (* XXX this shouldn't be needed for the current unit now. *)
-      if id = Compilenv.current_unit_id () then
-        match Int.Map.find i !global_approx with
-        | exception Not_found ->
-          Misc.fatal_error (Format.asprintf "no global %i" i)
-        | approx -> approx
-      else
-        match extern_symbol_descr (Compilenv.symbol_for_global' id) with
-        | None ->
-          Value_unknown
-        | Some (Value_block (_, fields)) ->
-          if i >= Array.length fields then
-            Misc.fatal_error (Format.asprintf "no field %i in global %a" i Ident.print id);
-          fields.(i)
-        | Some _ ->
-          Misc.fatal_error (Format.asprintf "global %a is not a block" Ident.print id)
-    end
+  (* | Prim(Pgetglobalfield(id,i), _, _) -> begin *)
+  (*     (\* XXX this shouldn't be needed for the current unit now. *\) *)
+  (*     if id = Compilenv.current_unit_id () then *)
+  (*       match Int.Map.find i !global_approx with *)
+  (*       | exception Not_found -> *)
+  (*         Misc.fatal_error (Format.asprintf "no global %i" i) *)
+  (*       | approx -> approx *)
+  (*     else *)
+  (*       match extern_symbol_descr (Compilenv.symbol_for_global' id) with *)
+  (*       | None -> *)
+  (*         Value_unknown *)
+  (*       | Some (Value_block (_, fields)) -> *)
+  (*         if i >= Array.length fields then *)
+  (*           Misc.fatal_error (Format.asprintf "no field %i in global %a" i Ident.print id); *)
+  (*         fields.(i) *)
+  (*       | Some _ -> *)
+  (*         Misc.fatal_error (Format.asprintf "global %a is not a block" Ident.print id) *)
+  (*   end *)
 
-  | Prim(Psetglobalfield (_, i), [arg], _) ->
-    global_approx := Int.Map.add i (find_approx env arg) !global_approx;
-    Value_unknown
+  (* | Prim(Psetglobalfield (_, i), [arg], _) -> *)
+  (*   global_approx := Int.Map.add i (find_approx env arg) !global_approx; *)
+  (*   Value_unknown *)
 
   | Prim(_, _, _) ->
     Value_unknown
@@ -379,6 +383,23 @@ and describe_set_of_closures env (set : Flambda.set_of_closures)
     results = Closure_id.wrap_map results;
   }
 
+let describe_constant_defining_value
+    (set_of_closures_env:Flambdaexport_types.value_set_of_closures Symbol.Map.t)
+    (c:Flambda.constant_defining_value) :
+  Flambdaexport_types.descr =
+  match c with
+  | Allocated_const c -> describe_allocated_constant c
+  | Block (tag, fields) ->
+    let approxs = List.map describe_constant fields in
+    Value_block (tag, Array.of_list approxs)
+  | Set_of_closures set_of_closures ->
+    ET.Value_set_of_closures (describe_set_of_closures Variable.Map.empty set_of_closures)
+  | Project_closure (set_of_closures, closure_id) ->
+    let set_of_closures =
+      Symbol.Map.find set_of_closures set_of_closures_env
+    in
+    ET.Value_closure { fun_id = closure_id; set_of_closures }
+
 let record_project_closures (set_of_closures:ET.value_set_of_closures) =
   Closure_id.Map.iter (fun closure_id _ ->
       let symbol = Compilenv.closure_symbol closure_id in
@@ -393,99 +414,127 @@ let build_export_info (lifted_flambda:Lift_constants.result) : ET.exported =
 
   Format.eprintf "@.build export info@.";
 
-  let constant_approx =
-    Symbol.Map.map (fun cst -> new_descr (describe_allocated_constant cst))
-      lifted_flambda.constant_descr
+  let _, constant_approx =
+    List.fold_left (fun (env, l) (symbol, cst) ->
+        let descr = describe_constant_defining_value env cst in
+        let env =
+          match descr with
+          | Value_set_of_closures set_of_closures ->
+            Symbol.Map.add symbol set_of_closures env
+          | _ -> env in
+        env, (symbol, new_descr descr) :: l)
+      (Symbol.Map.empty, [])
+      (Flambda_utils.constant_symbol_declarations lifted_flambda)
   in
-  symbol_table := constant_approx;
+  symbol_table := Symbol.Map.of_list constant_approx;
 
-  (* The initialisation part must be traveresed before the constant
-     closures to have the description of global fields.
-     We may want to split this part and sort the traversal of different
-     part according to dependencies.
-     Another solution is to preallocate ids for globals. *)
-  let _root_description : ET.approx = describe Variable.Map.empty lifted_flambda.expr in
+  (* (\* The initialisation part must be traveresed before the constant *)
+  (*    closures to have the description of global fields. *)
+  (*    We may want to split this part and sort the traversal of different *)
+  (*    part according to dependencies. *)
+  (*    Another solution is to preallocate ids for globals. *\) *)
+  (* let _root_description : ET.approx = describe Variable.Map.empty lifted_flambda.expr in *)
 
+
+  let _ = record_project_closures in
   (* TODO: should be sorted before describing. This would allow
        approximation to be able to use the closures results *)
   (* XXX this should be easier now, I think, because the Let_symbol bindings
      are in a correct order. *)
-  Symbol.Map.iter (fun symbol set_of_closures ->
-      let descr =
-        describe_set_of_closures Variable.Map.empty set_of_closures
-      in
-      record_project_closures descr;
-      new_symbol symbol (new_descr (ET.Value_set_of_closures descr))
-    )
-    lifted_flambda.set_of_closures_map;
+  (* Symbol.Map.iter (fun symbol set_of_closures -> *)
+  (*     let descr = *)
+  (*       describe_set_of_closures Variable.Map.empty set_of_closures *)
+  (*     in *)
+  (*     record_project_closures descr; *)
+  (*     new_symbol symbol (new_descr (ET.Value_set_of_closures descr)) *)
+  (*   ) *)
+  (*   lifted_flambda.set_of_closures_map; *)
 
-  (* build the approximation of the root module *)
-  (* XXX this should just happen by magic now --- see Flambda.Initialize_symbol
-     and its occurrence in Closure_conversion *)
-  let root_id =
-    let size_global =
-      1 + (Int.Map.fold (fun k _ acc -> max k acc) !global_approx (-1))
-    in
-    let fields =
-      Array.init size_global (fun i ->
-          try Int.Map.find i !global_approx with
-          | Not_found -> ET.Value_unknown
-        )
-    in
-    new_descr (Value_block (Tag.zero,fields))
-  in
+(*   (\* build the approximation of the root module *\) *)
+(*   (\* XXX this should just happen by magic now --- see Flambda.Initialize_symbol *)
+(*      and its occurrence in Closure_conversion *\) *)
+(*   let root_id = *)
+(*     let size_global = *)
+(*       1 + (Int.Map.fold (fun k _ acc -> max k acc) !global_approx (-1)) *)
+(*     in *)
+(*     let fields = *)
+(*       Array.init size_global (fun i -> *)
+(*           try Int.Map.find i !global_approx with *)
+(*           | Not_found -> ET.Value_unknown *)
+(*         ) *)
+(*     in *)
+(*     new_descr (Value_block (Tag.zero,fields)) *)
+(*   in *)
+
+(*   let root_approx : ET.approx = *)
+(*     Value_id root_id *)
+(*   in *)
+
+(*   (\* build the symbol to id and id to symbol maps *\) *)
+(*   let module_symbol = *)
+(*     Compilenv.current_unit_symbol () *)
+(*   in *)
+
+(*   let ex_symbol_id = *)
+(*     Symbol.Map.add module_symbol root_id !symbol_table *)
+(*   in *)
+
+(*   let ex_id_symbol = *)
+(*     Symbol.Map.fold (fun sym id map -> Export_id.Map.add id sym map) *)
+(*       ex_symbol_id Export_id.Map.empty *)
+(*   in *)
+
+(*   let set_of_closures_map = Lifted_flambda_utils.set_of_closures_map lifted_flambda in *)
+
+(*   let ex_functions = *)
+(*     Symbol.Map.fold (fun _symbol (set_of_closures : Flambda.set_of_closures) *)
+(*           ex_functions -> *)
+(*         let function_decls = set_of_closures.function_decls in *)
+(*         Set_of_closures_id.Map.add function_decls.set_of_closures_id *)
+(*           set_of_closures.function_decls ex_functions *)
+(*       ) *)
+(*       lifted_flambda.set_of_closures_map *)
+(*       Set_of_closures_id.Map.empty *)
+(*   in *)
+
+(*   let ex_functions_off = *)
+(*     let aux_fun ffunctions off_id _ map = *)
+(*       let fun_id = Closure_id.wrap off_id in *)
+(*       Closure_id.Map.add fun_id ffunctions map in *)
+(*     let aux _ (f : Flambda.function_declarations) map = *)
+(*       Variable.Map.fold (aux_fun f) f.funs map *)
+(*     in *)
+(*     Set_of_closures_id.Map.fold aux ex_functions Closure_id.Map.empty *)
+(*   in *)
+
+(*   (\* TODO *\) *)
+(*   let constant_closures = *)
+(*     Lifted_flambda_utils.constants_set_of_closures_id_set lifted_flambda *)
+(*   in *)
+
+(*   let ex_invariant_arguments = *)
+(*     Set_of_closures_id.Map.map *)
+(*       (fun { Flambda.function_decls } -> *)
+(*          Invariant_params.unchanging_params_in_recursion function_decls *)
+(*       ) set_of_closures_map *)
+(*   in *)
+
+  (* let export : ET.exported = *)
+  (*   { Flambdaexport.empty_export with *)
+  (*     ex_values = Flambdaexport.nest_eid_map !ex_table; *)
+  (*     ex_globals = *)
+  (*       Ident.Map.singleton *)
+  (*         (Compilenv.current_unit_id ()) root_approx; *)
+  (*     ex_symbol_id = ex_symbol_id; *)
+  (*     ex_id_symbol = Flambdaexport.nest_eid_map ex_id_symbol; *)
+  (*     ex_functions = ex_functions; *)
+  (*     ex_functions_off = ex_functions_off; *)
+  (*     ex_constant_closures = constant_closures; *)
+  (*     ex_invariant_arguments } *)
+  (* in *)
 
   let root_approx : ET.approx =
-    Value_id root_id
-  in
-
-  (* build the symbol to id and id to symbol maps *)
-  let module_symbol =
-    Compilenv.current_unit_symbol ()
-  in
-
-  let ex_symbol_id =
-    Symbol.Map.add module_symbol root_id !symbol_table
-  in
-
-  let ex_id_symbol =
-    Symbol.Map.fold (fun sym id map -> Export_id.Map.add id sym map)
-      ex_symbol_id Export_id.Map.empty
-  in
-
-  let set_of_closures_map = Lifted_flambda_utils.set_of_closures_map lifted_flambda in
-
-  let ex_functions =
-    Symbol.Map.fold (fun _symbol (set_of_closures : Flambda.set_of_closures)
-          ex_functions ->
-        let function_decls = set_of_closures.function_decls in
-        Set_of_closures_id.Map.add function_decls.set_of_closures_id
-          set_of_closures.function_decls ex_functions
-      )
-      lifted_flambda.set_of_closures_map
-      Set_of_closures_id.Map.empty
-  in
-
-  let ex_functions_off =
-    let aux_fun ffunctions off_id _ map =
-      let fun_id = Closure_id.wrap off_id in
-      Closure_id.Map.add fun_id ffunctions map in
-    let aux _ (f : Flambda.function_declarations) map =
-      Variable.Map.fold (aux_fun f) f.funs map
-    in
-    Set_of_closures_id.Map.fold aux ex_functions Closure_id.Map.empty
-  in
-
-  (* TODO *)
-  let constant_closures =
-    Lifted_flambda_utils.constants_set_of_closures_id_set lifted_flambda
-  in
-
-  let ex_invariant_arguments =
-    Set_of_closures_id.Map.map
-      (fun { Flambda.function_decls } ->
-         Invariant_params.unchanging_params_in_recursion function_decls
-      ) set_of_closures_map
+    Value_symbol (Compilenv.current_unit_symbol ())
   in
 
   let export : ET.exported =
@@ -494,19 +543,26 @@ let build_export_info (lifted_flambda:Lift_constants.result) : ET.exported =
       ex_globals =
         Ident.Map.singleton
           (Compilenv.current_unit_id ()) root_approx;
-      ex_symbol_id = ex_symbol_id;
-      ex_id_symbol = Flambdaexport.nest_eid_map ex_id_symbol;
-      ex_functions = ex_functions;
-      ex_functions_off = ex_functions_off;
-      ex_constant_closures = constant_closures;
-      ex_invariant_arguments }
+      ex_symbol_id = !symbol_table;
+      ex_id_symbol =
+        (* TODO *)
+        Compilation_unit.Map.empty;
+      ex_functions =
+        (* TODO *)
+        Set_of_closures_id.Map.empty;
+      ex_functions_off =
+        (* TODO *)
+        Closure_id.Map.empty;
+      ex_constant_closures =
+        (* TODO *)
+        Set_of_closures_id.Set.empty;
+      ex_invariant_arguments =
+        (* TODO *)
+        Set_of_closures_id.Map.empty }
   in
-(*
-  Format.eprintf "Build_export_info returns %a\n"
-    Flambdaexport.print_all export;
-*)
-  export
-*)
 
-let build_export_info _ =
-  failwith "TODO"
+  Format.eprintf "Build_export_info returns %a@."
+    Flambdaexport.print_all export;
+
+  export
+
