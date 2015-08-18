@@ -631,9 +631,9 @@ let convert ((program:Flambda.program), exported) =
       initialize_symbols
   in
   let expr =
-    List.fold_left (fun acc expr -> Clambda.Usequence(expr, acc))
-      (Clambda.Uconst (Uconst_ptr 0))
+    List.fold_right (fun expr acc -> Clambda.Usequence(expr, acc))
       initialize_symbols
+      (Clambda.Uconst (Uconst_ptr 0))
   in
   (* TODO: add offsets to export info *)
   expr,
