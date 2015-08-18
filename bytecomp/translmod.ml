@@ -792,7 +792,8 @@ let transl_store_implementation module_name (str, restr) =
     | Tcoerce_primitive _
     | Tcoerce_alias _ -> assert false
   in
-  (size, exported), lam
+  let module_id = Ident.create_persistent module_name in
+  (module_id, size, exported), lam
 
 (* Compile a toplevel phrase *)
 

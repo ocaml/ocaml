@@ -28,3 +28,9 @@ val inconstants
   -> compilation_unit:Compilation_unit.t
   -> Flambda.t
   -> result
+
+val inconstants_on_program
+   : for_clambda:bool
+  -> compilation_unit:Compilation_unit.t
+  -> Flambda.program
+  -> result

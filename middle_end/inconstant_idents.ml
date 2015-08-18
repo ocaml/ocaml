@@ -376,3 +376,6 @@ let inconstants ~for_clambda ~compilation_unit (expr : Flambda.t) =
     Variable.Set.print A.res.id
     Set_of_closures_id.Set.print A.res.closure;
   A.res
+
+let inconstants_on_program ~for_clambda:_ ~compilation_unit:_ (_ : Flambda.program) =
+  failwith "TODO"

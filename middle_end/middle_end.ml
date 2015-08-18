@@ -13,8 +13,10 @@
 
 let verbose = try ignore (Sys.getenv "FLAMBDA_VERBOSE"); true with _ -> false
 
-let middle_end ppf ~sourcefile ~prefixname ~backend ~module_ident
-      ~module_initializer =
+let middle_end ppf ~sourcefile ~prefixname ~backend
+    ~exported_fields:_
+    ~module_ident
+    ~module_initializer =
   (* CR mshinwell: consider whether everything should run on
      [Flambda.program] *)
   let pass_number = ref 0 in

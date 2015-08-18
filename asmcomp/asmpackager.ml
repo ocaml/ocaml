@@ -99,8 +99,13 @@ let make_package_object ppf members targetobj targetname coercion
   let sourcefile = "pack" in
   let prefixname = chop_extension_if_any objtemp in
   let flam =
-    Middle_end.middle_end ppf ~sourcefile ~prefixname
-      ~exported_fields:size ~backend lam
+    Middle_end.middle_end ppf
+      ~sourcefile
+      ~prefixname
+      ~backend
+      ~exported_fields:size
+      ~module_ident:(failwith "TODO")
+      ~module_initializer:lam
   in
   Asmgen.compile_implementation ~sourcefile
     prefixname ~backend ppf ~size flam;

@@ -91,10 +91,13 @@ let implementation ppf sourcefile outputprefix ~backend =
       ++ Timings.(start_id (Generate sourcefile))
       +++ Simplif.simplify_lambda
       +++ print_if ppf Clflags.dump_lambda Printlambda.lambda
-      ++ (fun ((size, exported), lam) ->
+      ++ (fun ((module_ident, size, exported), lam) ->
         let flam =
           Middle_end.middle_end ppf ~sourcefile ~prefixname:outputprefix
-            ~exported_fields:exported ~backend lam
+            ~exported_fields:exported
+            ~module_ident
+            ~backend
+            ~module_initializer:lam
         in
         size, flam)
       ++ (fun (size, flam) ->
