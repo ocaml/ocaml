@@ -35,7 +35,7 @@ let pass_dump_linear_if ppf flag message phrase =
   if !flag then fprintf ppf "*** %s@.%a@." message Printlinear.fundecl phrase;
   phrase
 
-let clambda_dump_if ppf (ulambda, structured_constants) =
+let clambda_dump_if ppf (ulambda, structured_constants, exported) =
   if !dump_clambda then
     begin
       Format.fprintf ppf "@.clambda:@.";
@@ -55,7 +55,7 @@ let clambda_dump_if ppf (ulambda, structured_constants) =
     end;
   if !dump_cmm then
     Format.fprintf ppf "@.cmm:@.";
-  (ulambda, structured_constants)
+  (ulambda, structured_constants, exported)
 
 let rec regalloc ppf round fd =
   if round > 50 then
@@ -175,9 +175,10 @@ try
   Timings.(start (Flambda_backend sourcefile));
   prep_flambda_for_export ppf flam ~backend
   ++ Clambdagen.convert
+  ++ clambda_dump_if ppf
+  ++ (fun (expr, const, exported) -> Un_anf.apply expr, const, exported)
   ++ set_export_info
   ++ Timings.(stop_id (Flambda_backend sourcefile))
-  ++ clambda_dump_if ppf
   ++ Timings.(start_id (Cmm sourcefile))
   ++ Cmmgen.compunit_and_constants size
   ++ Timings.(stop_id (Cmm sourcefile))
