@@ -107,6 +107,7 @@ ASMCOMP=\
   asmcomp/flambdaexport.cmo \
   asmcomp/compilenv.cmo \
   asmcomp/lift_constants.cmo \
+  asmcomp/share_constants.cmo \
   asmcomp/lifted_flambda_utils.cmo \
   asmcomp/build_export_info.cmo \
   asmcomp/closure_offsets.cmo \

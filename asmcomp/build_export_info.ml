@@ -11,6 +11,7 @@
 (*                                                                        *)
 (**************************************************************************)
 
+(*
 module Int = Ext_types.Int
 module ET = Flambdaexport_types
 type env = ET.approx Variable.Map.t
@@ -65,11 +66,15 @@ let new_descr descr =
 let new_symbol symbol id =
   symbol_table := Symbol.Map.add symbol id !symbol_table
 
-let describe_constant (c:Lift_constants.constant) : ET.approx =
+let describe_constant (c:Flambda.constant_defining_value_block_field) : ET.approx =
   match c with
   | Symbol s -> Value_symbol s
-  | Int i -> Value_id (new_descr (Value_int i))
-  | Const_pointer i -> Value_id (new_descr (Value_int i))
+  (* [Const_pointer] is an immediate value of a type whose values may be
+     boxed (typically a variant type with both constant and non-constant
+     constructors). *)
+  | Const (Int i) -> Value_id (new_descr (Value_int i))
+  | Const (Char c) -> Value_id (new_descr (Value_int (Char.code c)))
+  | Const (Const_pointer i) -> Value_id (new_descr (Value_int i))
 
 let describe_allocated_constant
     (c:Lift_constants.constant Lift_constants.Allocated_constants.t) : Flambdaexport_types.descr =
@@ -109,6 +114,7 @@ let rec describe (env : env) (flam : Flambda.t) : ET.approx =
     find_approx env var
 
   | Let(kind, id, lam, body) ->
+    (* Format.eprintf "Let %a@." Variable.print id; *)
     let approx = match kind with
       | Immutable -> describe_named env lam
       | Mutable -> ET.Value_unknown
@@ -253,6 +259,7 @@ and describe_named (env : env) (named : Flambda.named) : ET.approx =
     Value_unknown
 
   | Set_of_closures set ->
+    Format.eprintf "set_of_closures@.";
     let descr =
       ET.Value_set_of_closures (describe_set_of_closures env set)
     in
@@ -354,11 +361,12 @@ and describe_set_of_closures env (set : Flambda.set_of_closures)
       (Variable.Map.fold Variable.Map.add bound_vars_approx
          (Variable.Map.fold Variable.Map.add specialised_args_approx env))
   in
-  let result_approx (function_declaration:Flambda.function_declaration) =
+  let result_approx var (function_declaration:Flambda.function_declaration) =
+    Format.eprintf "closures %a@." Variable.print var;
     describe closure_env function_declaration.body
   in
   let results =
-    Variable.Map.map result_approx set.function_decls.funs
+    Variable.Map.mapi result_approx set.function_decls.funs
   in
 (*
   Format.eprintf "Set of closures binding closure ID(s) %a has the following \
@@ -382,6 +390,8 @@ let record_project_closures (set_of_closures:ET.value_set_of_closures) =
 
 let build_export_info (lifted_flambda:Lift_constants.result) : ET.exported =
   reset ();
+
+  Format.eprintf "@.build export info@.";
 
   let constant_approx =
     Symbol.Map.map (fun cst -> new_descr (describe_allocated_constant cst))
@@ -496,4 +506,7 @@ let build_export_info (lifted_flambda:Lift_constants.result) : ET.exported =
     Flambdaexport.print_all export;
 *)
   export
+*)
 
+let build_export_info _ =
+  failwith "TODO"

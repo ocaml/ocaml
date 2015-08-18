@@ -10,7 +10,7 @@
 (*   under the terms of the Q Public License version 1.0.                 *)
 (*                                                                        *)
 (**************************************************************************)
-
+(*
 type ('a,'b) declaration_position =
   | Local of 'a
   | External of 'b
@@ -28,16 +28,18 @@ let empty_env =
     var = Variable.Map.empty;
     toplevel = false }
 
-let conv_const : Lift_constants.constant -> Clambda.uconstant = function
-  | Int i ->
-    Uconst_int i
-  | Const_pointer i ->
-    Uconst_ptr i
-  | Symbol sym ->
-    let lbl = Linkage_name.to_string (Symbol.label sym) in
+let conv_const : Flambda.constant_defining_value_block_field -> Clambda.uconstant = function
+  | Symbol s ->
+    let lbl = Linkage_name.to_string (Symbol.label s) in
     (* The constant should contains details about the variable to
        allow cmmgen to unbox *)
     Uconst_ref (lbl, None)
+  | Const (Int i) ->
+    Uconst_int i
+  | Const (Char c) ->
+    Uconst_int (Char.code c)
+  | Const (Const_pointer i) ->
+    Uconst_ptr i
 
 let conv_allocated_constant
     (c:Lift_constants.constant Lift_constants.Allocated_constants.t) : Clambda.ustructured_constant =
@@ -569,3 +571,7 @@ let convert ((lifted_constants:Lift_constants.result), exported) =
     structured_constants
     constant_set_of_closures,
   exported
+*)
+
+let convert ((_:Flambda.program), (_:Flambdaexport_types.exported)) =
+  failwith "TODO"

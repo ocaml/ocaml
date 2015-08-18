@@ -15,7 +15,7 @@ type result = {
   code_pointer_offsets : int Closure_id.Map.t;
   free_variable_offsets : int Var_within_closure.Map.t;
 }
-
+(*
 let add_closure_offsets
     kind
     { code_pointer_offsets; free_variable_offsets }
@@ -66,6 +66,7 @@ let add_closure_offsets
 
 let compute (lifted_constants:Lift_constants.result) =
   Format.eprintf "Closure_offsets.compute@ \n";
+  (* let sets = Lifted_flambda_utils.sets_of_closures lifted_constants in *)
   let sets = Lifted_flambda_utils.sets_of_closures lifted_constants in
   List.iter (fun (set_of_closures : Flambda.set_of_closures) ->
       Format.eprintf "Closures_offsets.compute set: %a @ "
@@ -76,3 +77,7 @@ let compute (lifted_constants:Lift_constants.result) =
     { code_pointer_offsets = Closure_id.Map.empty;
       free_variable_offsets = Var_within_closure.Map.empty; }
     sets
+*)
+
+let compute (_:Lift_constants.result) =
+  failwith "TODO"

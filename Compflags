@@ -29,6 +29,7 @@ case $1 in
   | asmcomp/flambdaexport_types.* \
   | asmcomp/flambdasym.* \
   | asmcomp/lift_constants.* \
+  | asmcomp/share_constants.* \
   | asmcomp/lifted_flambda_utils.* \
   | asmcomp/import_approx.* \
   | asmcomp/build_export_info.* \
