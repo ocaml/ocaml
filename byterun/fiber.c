@@ -376,7 +376,6 @@ void caml_realloc_stack(asize_t required_space, value* saved_vals, int nsaved)
   Stack_dirty_domain(new_stack) = 0;
   if (Stack_dirty_domain(old_stack)) {
     Assert (Stack_dirty_domain(old_stack) == caml_domain_self());
-    Stack_dirty_domain(old_stack) = 0;
     dirty_stack(new_stack);
   }
 
