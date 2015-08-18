@@ -262,13 +262,18 @@ let expression_symbol_dependencies (expr:Flambda.t) =
     expr;
   !set
 
-let program_graph symbol_to_constant initialize_symbol_tbl =
+let program_graph symbol_to_constant
+    (initialize_symbol_tbl:(Tag.t * Flambda.t list) Symbol.Tbl.t) =
   let graph_with_only_constant_parts =
     Symbol.Map.map constant_dependencies symbol_to_constant
   in
   let graph =
-    Symbol.Tbl.fold (fun sym def ->
-        Symbol.Map.add sym (expression_symbol_dependencies def))
+    Symbol.Tbl.fold (fun sym (_tag, fields) ->
+        let deps = List.fold_left (fun set field ->
+            Symbol.Set.union (expression_symbol_dependencies field) set)
+            Symbol.Set.empty fields
+        in
+        Symbol.Map.add sym deps)
       initialize_symbol_tbl graph_with_only_constant_parts
   in
   let module Symbol_SCC = Sort_connected_components.Make (Symbol) in
@@ -296,8 +301,8 @@ let add_definition_of_symbol constant_definitions initialize_symbol_tbl
     Let_rec_symbol (l, program)
   | Symbol_SCC.No_loop sym ->
     match Symbol.Tbl.find initialize_symbol_tbl sym with
-    | expr ->
-      Initialize_symbol (sym, expr, program)
+    | (tag, fields) ->
+      Initialize_symbol (sym, tag, fields, program)
     | exception Not_found ->
       let decl = Symbol.Map.find sym constant_definitions in
       Let_symbol (sym, decl, program)
@@ -390,8 +395,8 @@ let program_symbols program =
       loop program
     | Flambda.Import_symbol (_,program) ->
       loop program
-    | Flambda.Initialize_symbol (symbol,expr,program) ->
-      Symbol.Tbl.add initialize_symbol_tbl symbol expr;
+    | Flambda.Initialize_symbol (symbol,tag,fields,program) ->
+      Symbol.Tbl.add initialize_symbol_tbl symbol (tag,fields);
       loop program
     | Flambda.End -> ()
   in

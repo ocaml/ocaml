@@ -303,8 +303,8 @@ let variable_and_symbol_invariants flam =
     | Import_symbol (symbol, program) ->
       let env = add_binding_occurrence_of_symbol env symbol in
       loop_program env program
-    | Initialize_symbol (symbol, init, program) ->
-      loop env init;
+    | Initialize_symbol (symbol, _tag, fields, program) ->
+      List.iter (loop env) fields;
       let env = add_binding_occurrence_of_symbol env symbol in
       loop_program env program
     | End -> ()

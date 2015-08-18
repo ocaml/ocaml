@@ -301,7 +301,7 @@ type program =
   | Let_symbol of Symbol.t * constant_defining_value * program
   | Let_rec_symbol of (Symbol.t * constant_defining_value) list * program
   | Import_symbol of Symbol.t * program
-  | Initialize_symbol of Symbol.t * t * program
+  | Initialize_symbol of Symbol.t * Tag.t * t list * program
   | End
 
 val free_variables

@@ -141,7 +141,7 @@ type program =
   | Let_symbol of Symbol.t * constant_defining_value * program
   | Let_rec_symbol of (Symbol.t * constant_defining_value) list * program
   | Import_symbol of Symbol.t * program
-  | Initialize_symbol of Symbol.t * t * program
+  | Initialize_symbol of Symbol.t * Tag.t * t list * program
   | End
 
 let fprintf = Format.fprintf
@@ -403,10 +403,11 @@ let rec print_program ppf (program : program) =
   | Import_symbol (symbol, program) ->
     fprintf ppf "@[(import_symbol %a (@]" Symbol.print symbol;
     fprintf ppf ")@]@ %a)@]" print_program program
-  | Initialize_symbol (symbol, defining_expr, program) ->
-    fprintf ppf "@[<2>(let_global@ @[<hv 1>(@[<2>%a@ %a@]"
+  | Initialize_symbol (symbol, tag, fields, program) ->
+    fprintf ppf "@[<2>(let_global@ @[<hv 1>(@[<2>%a@ %a@ %a@]"
       Symbol.print symbol
-      print defining_expr;
+      Tag.print tag
+      (Format.pp_print_list print) fields;
     fprintf ppf ")@]@ %a)@]" print_program program
   | End -> fprintf ppf "End"
 

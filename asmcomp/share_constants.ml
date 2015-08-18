@@ -69,15 +69,17 @@ let share_constants (program:Flambda.program) =
       end
     | Let_rec_symbol (_,_) -> failwith "TODO"
     | Import_symbol (_,_) -> failwith "TODO"
-    | Initialize_symbol (symbol,expr,program) ->
-      let expr =
-        Flambda_iterators.map_symbols
-          ~f:(fun symbol ->
-              try Symbol.Tbl.find sharing_symbol_tbl symbol with
-              | Not_found -> symbol)
-          expr
+    | Initialize_symbol (symbol,tag,fields,program) ->
+      let fields =
+        List.map (fun field ->
+            Flambda_iterators.map_symbols
+              ~f:(fun symbol ->
+                  try Symbol.Tbl.find sharing_symbol_tbl symbol with
+                  | Not_found -> symbol)
+              field)
+          fields
       in
-      Initialize_symbol (symbol,expr,loop program)
+      Initialize_symbol (symbol,tag,fields,loop program)
     | End -> End
   in
   loop program

@@ -126,8 +126,8 @@ let rec iter_exprs_at_toplevel_of_program (program : Flambda.program) ~f =
   | Let_symbol (_, _, program)
   | Import_symbol (_, program) ->
     iter_exprs_at_toplevel_of_program program ~f
-  | Initialize_symbol (_, expr, program) ->
-    f expr;
+  | Initialize_symbol (_, _, fields, program) ->
+    List.iter f fields;
     iter_exprs_at_toplevel_of_program program ~f
   | End -> ()
 
@@ -344,8 +344,9 @@ let rec map_exprs_at_toplevel_of_program (program : Flambda.program)
     failwith "TODO"
   | Import_symbol (symbol, program) ->
     Import_symbol (symbol, map_exprs_at_toplevel_of_program program ~f)
-  | Initialize_symbol (symbol, expr, program) ->
-    Initialize_symbol (symbol, f expr,
+  | Initialize_symbol (symbol, tag, fields, program) ->
+    let fields = List.map f fields in
+    Initialize_symbol (symbol, tag, fields,
       map_exprs_at_toplevel_of_program program ~f)
   | End -> End
 
