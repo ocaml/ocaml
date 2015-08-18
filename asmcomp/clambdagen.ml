@@ -601,13 +601,7 @@ let add_constant_set_of_closures
 
 let convert ((program:Flambda.program), exported) =
   let module M = M(struct
-      let offsets =
-        Closure_offsets.({
-            code_pointer_offsets = Closure_id.Map.empty;
-            free_variable_offsets = Var_within_closure.Map.empty;
-          })
-        (* Closure_offsets.compute program *)
-
+      let offsets = Closure_offsets.compute program
       let closures = make_closure_map program
       let constant_set_of_closures = constant_closure_set program
     end)

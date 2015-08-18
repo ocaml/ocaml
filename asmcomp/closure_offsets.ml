@@ -15,9 +15,8 @@ type result = {
   code_pointer_offsets : int Closure_id.Map.t;
   free_variable_offsets : int Var_within_closure.Map.t;
 }
-(*
+
 let add_closure_offsets
-    kind
     { code_pointer_offsets; free_variable_offsets }
     (({ function_decls; free_vars } : Flambda.set_of_closures) as set_of_closures) =
   Format.eprintf "add_closure_offsets:@ %a\n"
@@ -42,19 +41,10 @@ let add_closure_offsets
      substituted here. But if the function is inlined, it is
      possible that the closure is accessed from outside its body. *)
   let aux_fv_offset var _ (map, pos) =
-    if Variable.Map.mem var kind then begin
-      (* This is a constant: don't put it in the closure *)
-      Format.eprintf "Closure_offsets omitting variable %a since it is constant\n"
-        Variable.print var;
-      (map, pos)
-    end else begin
-      Format.eprintf "assigning closure offset for %a\n"
-        Variable.print var;
-      let var_within_closure = Var_within_closure.wrap var in
-      assert (not (Var_within_closure.Map.mem var_within_closure map));
-      let map = Var_within_closure.Map.add var_within_closure pos map in
-      (map, pos + 1)
-    end
+    let var_within_closure = Var_within_closure.wrap var in
+    assert (not (Var_within_closure.Map.mem var_within_closure map));
+    let map = Var_within_closure.Map.add var_within_closure pos map in
+    (map, pos + 1)
   in
   let free_variable_offsets, _ =
     Variable.Map.fold aux_fv_offset
@@ -64,20 +54,22 @@ let add_closure_offsets
     free_variable_offsets;
   }
 
-let compute (lifted_constants:Lift_constants.result) =
+let sets_of_closures program =
+  let list = ref [] in
+  Flambda_iterators.iter_on_set_of_closures_of_program program
+    ~f:(fun set_of_closures -> list := set_of_closures :: !list);
+  !list
+
+let compute (program:Flambda.program) =
   Format.eprintf "Closure_offsets.compute@ \n";
   (* let sets = Lifted_flambda_utils.sets_of_closures lifted_constants in *)
-  let sets = Lifted_flambda_utils.sets_of_closures lifted_constants in
+  let sets = sets_of_closures program in
   List.iter (fun (set_of_closures : Flambda.set_of_closures) ->
       Format.eprintf "Closures_offsets.compute set: %a @ "
         Set_of_closures_id.print set_of_closures.function_decls.set_of_closures_id)
     sets;
   List.fold_left
-    (add_closure_offsets lifted_constants.kind)
+    add_closure_offsets
     { code_pointer_offsets = Closure_id.Map.empty;
       free_variable_offsets = Var_within_closure.Map.empty; }
     sets
-*)
-
-let compute (_:Lift_constants.result) =
-  failwith "TODO"
