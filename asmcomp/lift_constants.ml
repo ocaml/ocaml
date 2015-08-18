@@ -206,8 +206,13 @@ let translate_definition_and_resolve_alias
        be assigned to a symbol. *)
     | exception Not_found ->
       assert false
-    | Variable _ ->
-      assert false
+    | Variable v ->
+      match Variable.Tbl.find var_to_symbol_tbl v with
+      | s ->
+        Some (Flambda.Project_closure (s, closure_id))
+      | exception Not_found ->
+        Format.eprintf "var: %a@." Variable.print v;
+        assert false
     end
   | Set_of_closures set_of_closures ->
     (* Handle set of closures later *)
