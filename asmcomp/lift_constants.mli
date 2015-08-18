@@ -26,8 +26,10 @@
    mshinwell: this CR may be out of date now
 *)
 
+type result = Flambda.program
+
 (* CR mshinwell: add comment *)
 val lift_constants
-   : Flambda.t
+   : Flambda.program
   -> backend:(module Backend_intf.S)
   -> Flambda.program
