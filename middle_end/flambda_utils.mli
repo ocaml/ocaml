@@ -82,3 +82,11 @@ val bind
 val name_expr : Flambda.named -> Flambda.t
 
 val compare_const : Flambda.const -> Flambda.const -> int
+
+val constant_symbol_declarations
+  : Flambda.program ->
+  (Symbol.t * Flambda.constant_defining_value) list
+
+val initialize_symbols
+  : Flambda.program ->
+  (Symbol.t * Tag.t * Flambda.t list) list

@@ -525,6 +525,27 @@ Format.eprintf "Clambdagen.conv_set_of_closures: %a\n"
 
     Uconst_closure (ufunct, closure_lbl, [])
 
+  let conv_initialize_symbol env symbol fields =
+    let fields = List.mapi (fun p expr -> p, conv env expr) fields in
+    let conv_field (p, field) =
+      (* This setfield can affect a pointer, but since we are
+         initializing a toplevel symbol, it is safe not to use
+         caml_modify *)
+      let symbol_string = Linkage_name.to_string (Symbol.label symbol) in
+      Clambda.Uprim(
+        Psetfield(p,false),
+        [Clambda.Uconst(Uconst_ref(symbol_string, None)); field],
+        Debuginfo.none
+      )
+    in
+    match fields with
+    | [] -> Clambda.Uconst(Uconst_ptr 0)
+    | h :: t ->
+      List.fold_left (fun acc (p, field) ->
+          let affectation = conv_field (p, field) in
+          Clambda.Usequence(affectation, acc))
+        (conv_field h) t
+
 end
 
 let conv_allocated_constant
@@ -603,10 +624,17 @@ let convert ((program:Flambda.program), exported) =
       (add_constant_set_of_closures M.conv_closed_set_of_closures)
       constants Symbol.Map.empty
   in
-  (* let env = empty_env in *)
-  (* let expr = M.conv env lifted_constants.expr in *)
-  (* TODO convert initialize *)
-  let expr = Clambda.Uconst (Uconst_ptr 0) in
+  let initialize_symbols = Flambda_utils.initialize_symbols program in
+  let initialize_symbols =
+    List.map (fun (symbol, _tag, fields) ->
+        M.conv_initialize_symbol empty_env symbol fields)
+      initialize_symbols
+  in
+  let expr =
+    List.fold_left (fun acc expr -> Clambda.Usequence(expr, acc))
+      (Clambda.Uconst (Uconst_ptr 0))
+      initialize_symbols
+  in
   (* TODO: add offsets to export info *)
   expr,
   Symbol.Map.disjoint_union

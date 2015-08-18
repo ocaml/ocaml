@@ -321,3 +321,28 @@ let name_expr (named : Flambda.named) : Flambda.t =
       "named"
   in
   Let (Immutable, var, named, Var var)
+
+let rec constant_symbol_declarations (program:Flambda.program) =
+  match program with
+  | Let_symbol (symbol, decl, program) ->
+    (symbol, decl) ::
+    (constant_symbol_declarations program)
+  | Let_rec_symbol (decls, program) ->
+    List.fold_left (fun l (symbol, decl) ->
+        (symbol, decl) :: l)
+      (constant_symbol_declarations program)
+      decls
+  | Initialize_symbol (_, _, _, program)
+  | Import_symbol (_, program) ->
+    constant_symbol_declarations program
+  | End -> []
+
+let rec initialize_symbols (program:Flambda.program) =
+  match program with
+  | Initialize_symbol (symbol, tag, fields, program) ->
+    (symbol, tag, fields) :: (initialize_symbols program)
+  | Let_symbol (_, _, program)
+  | Let_rec_symbol (_, program)
+  | Import_symbol (_, program) ->
+    initialize_symbols program
+  | End -> []

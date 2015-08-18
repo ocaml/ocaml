@@ -68,6 +68,11 @@ val iter_on_sets_of_closures
   -> Flambda.t
   -> unit
 
+val iter_on_set_of_closures_of_program
+   : Flambda.program
+  -> f:(Flambda.set_of_closures -> unit)
+  -> unit
+
 val iter_all_let_and_let_rec_bindings
    : Flambda.t
   -> f:(Variable.t -> Flambda.named -> unit)

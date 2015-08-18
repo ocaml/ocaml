@@ -131,6 +131,25 @@ let rec iter_exprs_at_toplevel_of_program (program : Flambda.program) ~f =
     iter_exprs_at_toplevel_of_program program ~f
   | End -> ()
 
+let rec iter_on_set_of_closures_of_program (program : Flambda.program) ~f =
+  match program with
+  | Let_symbol (_, Set_of_closures set_of_closures, program) ->
+    f set_of_closures;
+    iter_on_set_of_closures_of_program program ~f
+  | Let_rec_symbol (defs, program) ->
+    List.iter (function
+        | (_, Flambda.Set_of_closures set_of_closures) ->
+          f set_of_closures
+        | _ -> ()) defs;
+    iter_on_set_of_closures_of_program program ~f
+  | Let_symbol (_, _, program)
+  | Import_symbol (_, program) ->
+    iter_on_set_of_closures_of_program program ~f
+  | Initialize_symbol (_, _, fields, program) ->
+    List.iter (iter_on_sets_of_closures f) fields;
+    iter_on_set_of_closures_of_program program ~f
+  | End -> ()
+
 let iter_symbols_on_named named ~f =
   iter_named_on_named (function
       | Symbol sym -> f sym
