@@ -81,8 +81,12 @@ case "$arch" in
   bsd)
     make=gmake
   ;;
-  macos) ;;
-  linux) ;;
+  macos)
+    workdir=.
+  ;;
+  linux)
+    workdir=.
+  ;;
   cygwin)
     workdir="$HOME/jenkins-workspace/$branch"
     docheckout=true
@@ -117,6 +121,7 @@ esac
 #########################################################################
 # Go to the right directory
 
+pwd
 cd "$workdir"
 
 #########################################################################
