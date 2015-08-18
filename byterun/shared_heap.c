@@ -154,26 +154,6 @@ static void pool_release(struct caml_heap_state* local, pool* pool) {
     local->pools_allocated--;
   }
 }
-#ifdef DEBUG
-
-static int detect_cycle (pool* p) {
-  pool *slow, *fast;
-
-  slow = fast = p;
-
-  while (fast != 0) {
-    slow = slow->next;
-    if (fast->next)
-      fast = fast->next->next;
-    else
-      fast = 0;
-    if (slow == fast && fast !=0)
-      return 1;
-  }
-  return 0;
-}
-
-#endif
 
 /* Allocating an object from a pool */
 
@@ -231,7 +211,6 @@ static void* pool_allocate(struct caml_heap_state* local, sizeclass sz) {
     local->full_pools[sz] = r;
   }
 
-  Assert(!detect_cycle(local->full_pools[sz]));
   Assert(r->next_obj == 0 || *r->next_obj == 0);
   return p;
 }
