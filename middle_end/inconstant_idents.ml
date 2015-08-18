@@ -55,10 +55,9 @@ type result = {
 }
 
 module type Param = sig
-  val expr : Flambda.t
+  val program : Flambda.program
   val for_clambda : bool
   val compilation_unit : Compilation_unit.t
-  val toplevel : bool
 end
 
 module NotConstants(P:Param) = struct
@@ -68,18 +67,18 @@ module NotConstants(P:Param) = struct
   type dep =
     | Closure of Set_of_closures_id.t
     | Var of Variable.t
-    | Global of int (* position of the global *)
+    | Local_symbol of Symbol.t
 
   (* Sets representing NC *)
   let variables = ref Variable.Set.empty
   let closures = ref Set_of_closures_id.Set.empty
-  let globals = ref Int.Set.empty
+  let symbols = ref Symbol.Set.empty
 
   (* if the table associates [v1;v2;...;vn] to v, it represents
      v in NC => v1 in NC /\ v2 in NC ... /\ vn in NC *)
   let id_dep_table : dep list Variable.Tbl.t = Variable.Tbl.create 100
   let fun_dep_table : dep list Set_of_closures_id.Tbl.t = Set_of_closures_id.Tbl.create 100
-  let glob_dep_table : dep list Int.Tbl.t = Int.Tbl.create 100
+  let symbol_dep_table : dep list Symbol.Tbl.t = Symbol.Tbl.create 100
 
   (* adds in the tables 'dep in NC => curr in NC' *)
   let register_implication ~in_nc:dep ~implies_in_nc:curr =
@@ -93,10 +92,10 @@ module NotConstants(P:Param) = struct
         let t = try Set_of_closures_id.Tbl.find fun_dep_table cl
         with Not_found -> [] in
         Set_of_closures_id.Tbl.replace fun_dep_table cl (curr :: t)
-      | Global i ->
-        let t = try Int.Tbl.find glob_dep_table i
+      | Local_symbol symbol ->
+        let t = try Symbol.Tbl.find symbol_dep_table symbol
         with Not_found -> [] in
-        Int.Tbl.replace glob_dep_table i (curr :: t))
+        Symbol.Tbl.replace symbol_dep_table symbol (curr :: t))
       curr
 
   (* adds 'curr in NC' *)
@@ -108,9 +107,9 @@ module NotConstants(P:Param) = struct
       | Closure cl ->
         if not (Set_of_closures_id.Set.mem cl !closures)
         then closures := Set_of_closures_id.Set.add cl !closures
-      | Global i ->
-        if not (Int.Set.mem i !globals)
-        then globals := Int.Set.add i !globals)
+      | Local_symbol i ->
+        if not (Symbol.Set.mem i !symbols)
+        then symbols := Symbol.Set.add i !symbols)
       curr
 
   (* First loop: iterates on the tree to mark dependencies.
@@ -270,6 +269,8 @@ module NotConstants(P:Param) = struct
     | Prim(Lambda.Pfield _, [f1], _) ->
       if for_clambda then mark_curr curr;
       mark_var f1 curr
+
+  (*
     | Prim(Lambda.Pgetglobalfield(id,i), [], _) ->
       (* adds 'global i in NC => curr in NC' *)
       if Ident.same id (Compilation_unit.get_persistent_ident compilation_unit)
@@ -282,6 +283,7 @@ module NotConstants(P:Param) = struct
       mark_curr curr;
       (* adds 'f in NC => global i in NC' *)
       register_implication ~in_nc:(Var f) ~implies_in_nc:[Global i]
+*)
 
     | Prim (_, args, _) ->
       mark_curr curr;
@@ -328,6 +330,16 @@ module NotConstants(P:Param) = struct
         mark_loop ~toplevel:false [] ffunc.body)
       function_decls.funs
 
+  let rec mark_program (program:Flambda.program) =
+    match program with
+    | End -> ()
+    | Initialize_symbol (symbol,_tag,fields,program) ->
+      List.iter (fun field ->
+          mark_loop ~toplevel:true [Local_symbol symbol] field)
+        fields;
+      mark_program program
+    | _ -> failwith "TODO"
+
   (* Second loop: propagates implications *)
   let propagate () =
     (* Set of variables/closures added to NC but not their dependencies *)
@@ -338,7 +350,7 @@ module NotConstants(P:Param) = struct
       let deps = try match Queue.take q with
         | Var e -> Variable.Tbl.find id_dep_table e
         | Closure cl -> Set_of_closures_id.Tbl.find fun_dep_table cl
-        | Global i -> Int.Tbl.find glob_dep_table i
+        | Local_symbol s -> Symbol.Tbl.find symbol_dep_table s
       with Not_found -> [] in
       List.iter (function
         | Var id as e ->
@@ -349,33 +361,42 @@ module NotConstants(P:Param) = struct
           if not (Set_of_closures_id.Set.mem cl !closures)
           then (closures := Set_of_closures_id.Set.add cl !closures;
             Queue.push e q)
-        | Global i as e ->
-          if not (Int.Set.mem i !globals)
-          then (globals := Int.Set.add i !globals;
+        | Local_symbol s as e ->
+          if not (Symbol.Set.mem s !symbols)
+          then (symbols := Symbol.Set.add s !symbols;
             Queue.push e q))
         deps
     done
 
   let res =
-    mark_loop ~toplevel:P.toplevel [] P.expr;
+    mark_program P.program;
     propagate ();
     { id = !variables;
       closure = !closures; }
 
 end
 
-let inconstants ~for_clambda ~compilation_unit (expr : Flambda.t) =
+(* let inconstants ~for_clambda ~compilation_unit (expr : Flambda.t) = *)
+(*   let module P = struct *)
+(*     let expr = expr *)
+(*     let for_clambda = for_clambda *)
+(*     let compilation_unit = compilation_unit *)
+(*     let toplevel = true *)
+(*   end in *)
+(*   let module A = NotConstants(P) in *)
+(*   Format.eprintf "inconstants returns %a\n%a@ " *)
+(*     Variable.Set.print A.res.id *)
+(*     Set_of_closures_id.Set.print A.res.closure; *)
+(*   A.res *)
+
+let inconstants_on_program ~for_clambda ~compilation_unit (program : Flambda.program) =
   let module P = struct
-    let expr = expr
+    let program = program
     let for_clambda = for_clambda
     let compilation_unit = compilation_unit
-    let toplevel = true
   end in
   let module A = NotConstants(P) in
   Format.eprintf "inconstants returns %a\n%a@ "
     Variable.Set.print A.res.id
     Set_of_closures_id.Set.print A.res.closure;
   A.res
-
-let inconstants_on_program ~for_clambda:_ ~compilation_unit:_ (_ : Flambda.program) =
-  failwith "TODO"

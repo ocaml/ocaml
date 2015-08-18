@@ -449,8 +449,11 @@ let lift_constants program ~backend:_ =
       translated_definitions
   in
   let components = program_graph constant_definitions initialize_symbol_tbl in
-  add_definitions_of_symbols constant_definitions
-    initialize_symbol_tbl
-    Flambda.End components
-
+  let program =
+    add_definitions_of_symbols constant_definitions
+      initialize_symbol_tbl
+      Flambda.End components
+  in
+  Format.eprintf "lift_constants output:@ %a\n" Flambda.print_program program;
+  program
 

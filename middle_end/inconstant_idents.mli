@@ -23,11 +23,11 @@ type result = {
     When [for_clambda] is false, field accesses to a constant are
     considered constant.
 *)
-val inconstants
-   : for_clambda:bool
-  -> compilation_unit:Compilation_unit.t
-  -> Flambda.t
-  -> result
+(* val inconstants *)
+(*    : for_clambda:bool *)
+(*   -> compilation_unit:Compilation_unit.t *)
+(*   -> Flambda.t *)
+(*   -> result *)
 
 val inconstants_on_program
    : for_clambda:bool

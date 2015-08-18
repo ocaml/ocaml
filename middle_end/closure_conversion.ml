@@ -520,10 +520,6 @@ let lambda_to_flambda ~backend ~module_ident module_initializer =
       )
       initialisations module_initializer
   in
-  (* TODO: global module initialisation *)
-  ignore module_symbol;
-  module_initializer
-  (* let module_initializer = close t Env.empty module_initializer in *)
-  (* Symbol.Set.fold (fun sym expr -> Flambda.Import_symbol (sym, expr)) *)
-  (*   !imported_symbols *)
-  (*   (Flambda.Initialize_symbol (module_symbol, module_initializer, End)) *)
+  Symbol.Set.fold (fun sym expr -> Flambda.Import_symbol (sym, expr))
+    !imported_symbols
+    module_initializer
