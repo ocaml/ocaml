@@ -188,7 +188,32 @@ let resolve_variable
   | Variable aliased_variable ->
     variable_field_definition var_to_symbol_tbl var_to_definition_tbl aliased_variable
 
+let translate_set_of_closures
+    (inconstants:Inconstant_idents.result)
+    (aliases:Alias_analysis.allocation_point Variable.Map.t)
+    (var_to_symbol_tbl:Symbol.t Variable.Tbl.t)
+    (var_to_definition_tbl:Alias_analysis.constant_defining_value Variable.Tbl.t)
+    (set_of_closures:Flambda.set_of_closures) =
+  let f var (named:Flambda.named) : Flambda.named =
+    if Variable.Set.mem var inconstants.id then
+      named
+    else
+      let resolved =
+        resolve_variable
+          aliases
+          var_to_symbol_tbl
+          var_to_definition_tbl
+          var
+      in
+      match resolved with
+      | Symbol s -> Symbol s
+      | Const c -> Const c
+  in
+  Flambda_iterators.map_function_bodies set_of_closures
+    ~f:(Flambda_iterators.map_all_let_and_let_rec_bindings ~f)
+
 let translate_definition_and_resolve_alias
+    inconstants
     (aliases:Alias_analysis.allocation_point Variable.Map.t)
     (var_to_symbol_tbl:Symbol.t Variable.Tbl.t)
     (var_to_definition_tbl:Alias_analysis.constant_defining_value Variable.Tbl.t)
@@ -215,7 +240,14 @@ let translate_definition_and_resolve_alias
         assert false
     end
   | Set_of_closures set_of_closures ->
-    (* Handle set of closures later *)
+    let set_of_closures =
+      translate_set_of_closures
+        inconstants
+        aliases
+        var_to_symbol_tbl
+        var_to_definition_tbl
+        set_of_closures
+    in
     Some (Flambda.Set_of_closures set_of_closures)
 
   | Project_var _ -> None
@@ -226,11 +258,12 @@ let translate_definition_and_resolve_alias
   | Variable _ -> None
 
 let translate_definitions_and_resolve_alias
+    inconstants
     (aliases:Alias_analysis.allocation_point Variable.Map.t)
     (var_to_symbol_tbl:Symbol.t Variable.Tbl.t)
     (var_to_definition_tbl:Alias_analysis.constant_defining_value Variable.Tbl.t) =
   Variable.Tbl.fold (fun var def map ->
-      match translate_definition_and_resolve_alias aliases
+      match translate_definition_and_resolve_alias inconstants aliases
               var_to_symbol_tbl var_to_definition_tbl def with
       | None -> map
       | Some def ->
@@ -283,6 +316,8 @@ let program_graph symbol_to_constant
         Symbol.Map.add sym deps)
       initialize_symbol_tbl graph_with_only_constant_parts
   in
+  Format.eprintf "@.dep graph:@ %a@."
+    (Symbol.Map.print Symbol.Set.print) graph;
   let module Symbol_SCC = Sort_connected_components.Make (Symbol) in
   let components =
     Symbol_SCC.connected_components_sorted_from_roots_to_leaf
@@ -410,6 +445,34 @@ let program_symbols program =
   loop program;
   initialize_symbol_tbl, symbol_definition_tbl
 
+let replace_definitions_in_initialize_symbol
+    (inconstants:Inconstant_idents.result)
+    (aliases:Alias_analysis.allocation_point Variable.Map.t)
+    (var_to_symbol_tbl:Symbol.t Variable.Tbl.t)
+    (var_to_definition_tbl:Alias_analysis.constant_defining_value Variable.Tbl.t)
+    initialize_symbol_tbl =
+  let f var (named:Flambda.named) : Flambda.named =
+    if Variable.Set.mem var inconstants.id then
+      named
+    else
+      let resolved =
+        resolve_variable
+          aliases
+          var_to_symbol_tbl
+          var_to_definition_tbl
+          var
+      in
+      match resolved with
+      | Symbol s -> Symbol s
+      | Const c -> Const c
+  in
+  Symbol.Map.iter (fun symbol (tag, fields) ->
+      let fields =
+        List.map (Flambda_iterators.map_all_let_and_let_rec_bindings ~f) fields
+      in
+      Symbol.Tbl.replace initialize_symbol_tbl symbol (tag,fields))
+    (Symbol.Tbl.to_map initialize_symbol_tbl)
+
 let lift_constants program ~backend:_ =
   Format.eprintf "lift_constants input:@ %a\n" Flambda.print_program program;
   let inconstants =
@@ -431,8 +494,15 @@ let lift_constants program ~backend:_ =
     let var_to_sym_map = Symbol.Map.empty (* Variable.Tbl.to_map var_to_symbol_tbl *) in
     Alias_analysis.second_take var_map sym_map var_to_sym_map
   in
+  replace_definitions_in_initialize_symbol
+      (inconstants:Inconstant_idents.result)
+      (aliases:Alias_analysis.allocation_point Variable.Map.t)
+      (var_to_symbol_tbl:Symbol.t Variable.Tbl.t)
+      (var_to_definition_tbl:Alias_analysis.constant_defining_value Variable.Tbl.t)
+      initialize_symbol_tbl;
   let translated_definitions =
     translate_definitions_and_resolve_alias
+      inconstants
       (aliases:Alias_analysis.allocation_point Variable.Map.t)
       (var_to_symbol_tbl:Symbol.t Variable.Tbl.t)
       (var_to_definition_tbl:Alias_analysis.constant_defining_value Variable.Tbl.t)

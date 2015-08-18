@@ -373,3 +373,7 @@ let map_named_of_program (program : Flambda.program)
       ~(f : Variable.t -> Flambda.named -> Flambda.named) : Flambda.program =
   map_exprs_at_toplevel_of_program program
       ~f:(fun expr -> map_named_with_id f expr)
+
+let map_all_let_and_let_rec_bindings (expr : Flambda.t)
+      ~(f : Variable.t -> Flambda.named -> Flambda.named) : Flambda.t =
+  map_named_with_id f expr

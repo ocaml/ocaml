@@ -165,3 +165,8 @@ val map_named_of_program
   -> f:(Variable.t -> Flambda.named -> Flambda.named)
   -> Flambda.program
 
+
+val map_all_let_and_let_rec_bindings
+   : Flambda.t
+  -> f:(Variable.t -> Flambda.named -> Flambda.named)
+  -> Flambda.t
