@@ -264,6 +264,8 @@ let rec un_anf_and_purity ident_info env (clam:Clambda.ulambda) : Clambda.ulambd
   | Uoffset (clam, n) ->
     let clam, purity = un_anf_and_purity ident_info env clam in
     Uoffset (clam, n), purity
+  | Ulet (id, def, Uvar id') when Ident.same id id' ->
+    un_anf_and_purity ident_info env def
   | Ulet (id, def, body) ->
     let def, def_purity = un_anf_and_purity ident_info env def in
     begin match def_purity, Ident.Set.mem id ident_info.movable,
