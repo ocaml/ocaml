@@ -458,6 +458,9 @@ let rec make_variable_initialisation t (lam:Lambda.lambda)
   | Llet (let_kind, id, defining_expr, body) ->
     let body, pos = make_variable_initialisation t body in
     Llet (let_kind, id, defining_expr, body), pos
+  | Lletrec (defs, body) ->
+    let body, pos = make_variable_initialisation t body in
+    Lletrec (defs, body), pos
   | Lprim (Psetfield (pos, _), [Lprim (Pgetglobal id, []); expr]) ->
     assert (Ident.same id t.current_unit_id);
     expr, Field_initialisation pos
