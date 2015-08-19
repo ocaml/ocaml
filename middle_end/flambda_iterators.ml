@@ -121,8 +121,14 @@ let rec iter_exprs_at_toplevel_of_program (program : Flambda.program) ~f =
         f function_decl.body)
       set_of_closures.function_decls.funs;
     iter_exprs_at_toplevel_of_program program ~f
-  | Let_rec_symbol (_defs, _program) ->
-    failwith "TODO"
+  | Let_rec_symbol (defs, program) ->
+    List.iter (function
+        | (_, Flambda.Set_of_closures set_of_closures) ->
+          Variable.Map.iter (fun _ (function_decl : Flambda.function_declaration) ->
+              f function_decl.body)
+            set_of_closures.function_decls.funs
+        | _ -> ()) defs;
+    iter_exprs_at_toplevel_of_program program ~f
   | Let_symbol (_, _, program)
   | Import_symbol (_, program) ->
     iter_exprs_at_toplevel_of_program program ~f
@@ -366,7 +372,7 @@ let rec map_exprs_at_toplevel_of_program (program : Flambda.program)
   | Let_symbol (symbol, const, program) ->
     Let_symbol (symbol, const, map_exprs_at_toplevel_of_program program ~f)
   | Let_rec_symbol (_defs, _program) ->
-    failwith "TODO"
+    failwith "TODO iter let_rec"
   | Import_symbol (symbol, program) ->
     Import_symbol (symbol, map_exprs_at_toplevel_of_program program ~f)
   | Initialize_symbol (symbol, tag, fields, program) ->

@@ -67,8 +67,22 @@ let share_constants (program:Flambda.program) =
       | Some def ->
         Let_symbol (symbol,def,program)
       end
-    | Let_rec_symbol (_,_) -> failwith "TODO"
-    | Import_symbol (_,_) -> failwith "TODO"
+    | Let_rec_symbol (defs,program) ->
+      let defs =
+        Misc.filter_map
+          (fun (symbol, def) ->
+             Misc.may_map
+               (fun def -> (symbol, def))
+               (share_definition constant_to_symbol_tbl sharing_symbol_tbl symbol def))
+          defs
+      in
+      begin match defs with
+      | [] ->
+        loop program
+      | defs ->
+        Let_rec_symbol (defs,program)
+      end
+    | Import_symbol (_,_) -> failwith "TODO import"
     | Initialize_symbol (symbol,tag,fields,program) ->
       let fields =
         List.map (fun field ->

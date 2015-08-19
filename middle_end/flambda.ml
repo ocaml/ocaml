@@ -399,8 +399,20 @@ let rec print_program ppf (program : program) =
       print_constant_defining_value constant_defining_value;
     let program = letbody body in
     fprintf ppf ")@]@ %a)@]" print_program program
-  | Let_rec_symbol (_defs, _body) ->
-    failwith "TODO"
+  | Let_rec_symbol (defs, program) ->
+    let bindings ppf id_arg_list =
+      let spc = ref false in
+      List.iter
+        (fun (symbol, constant_defining_value) ->
+           if !spc then fprintf ppf "@ " else spc := true;
+           fprintf ppf "@[<2>%a@ %a@]"
+             Symbol.print symbol
+             print_constant_defining_value constant_defining_value)
+        id_arg_list in
+    fprintf ppf
+      "@[<2>(letrec@ (@[<hv 1>%a@])@ %a)@]"
+      bindings defs
+      print_program program
   | Import_symbol (symbol, program) ->
     fprintf ppf "@[(import_symbol %a (@]" Symbol.print symbol;
     fprintf ppf ")@]@ %a)@]" print_program program
@@ -596,7 +608,7 @@ module Constant_defining_value = struct
       | Block (tag1, _fields1), Block (tag2, _fields2) ->
         let c = Tag.compare tag1 tag2 in
         if c <> 0 then c
-        else failwith "TODO"
+        else failwith "TODO compare block"
           (* Symbol.compare_lists fields1 fields2 *)
       | Set_of_closures set1, Set_of_closures set2 ->
         Set_of_closures_id.compare set1.function_decls.set_of_closures_id
