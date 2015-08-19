@@ -303,15 +303,20 @@ let expression_symbol_dependencies (expr:Flambda.t) =
   !set
 
 let program_graph symbol_to_constant
-    (initialize_symbol_tbl:(Tag.t * Flambda.t list) Symbol.Tbl.t) =
+    (initialize_symbol_tbl : (Tag.t * Flambda.t list * Symbol.t option) Symbol.Tbl.t) =
   let graph_with_only_constant_parts =
     Symbol.Map.map constant_dependencies symbol_to_constant
   in
   let graph =
-    Symbol.Tbl.fold (fun sym (_tag, fields) ->
+    Symbol.Tbl.fold (fun sym (_tag, fields, previous) ->
+        let order_dep =
+          match previous with
+          | None -> Symbol.Set.empty
+          | Some previous -> Symbol.Set.singleton previous
+        in
         let deps = List.fold_left (fun set field ->
             Symbol.Set.union (expression_symbol_dependencies field) set)
-            Symbol.Set.empty fields
+            order_dep fields
         in
         Symbol.Map.add sym deps)
       initialize_symbol_tbl graph_with_only_constant_parts
@@ -326,7 +331,8 @@ let program_graph symbol_to_constant
   components
 
 (* rebuilding the program *)
-let add_definition_of_symbol constant_definitions initialize_symbol_tbl
+let add_definition_of_symbol constant_definitions
+    (initialize_symbol_tbl : (Tag.t * Flambda.t list * Symbol.t option) Symbol.Tbl.t)
     program component : Flambda.program =
   let symbol_declaration sym =
     (* A symbol declared through an Initialize_symbol construct
@@ -343,7 +349,7 @@ let add_definition_of_symbol constant_definitions initialize_symbol_tbl
     Let_rec_symbol (l, program)
   | Symbol_SCC.No_loop sym ->
     match Symbol.Tbl.find initialize_symbol_tbl sym with
-    | (tag, fields) ->
+    | (tag, fields, _previous) ->
       Initialize_symbol (sym, tag, fields, program)
     | exception Not_found ->
       let decl = Symbol.Map.find sym constant_definitions in
@@ -425,24 +431,24 @@ let var_to_block_field
 let program_symbols program =
   let initialize_symbol_tbl = Symbol.Tbl.create 42 in
   let symbol_definition_tbl = Symbol.Tbl.create 42 in
-  let rec loop (program:Flambda.program) =
+  let rec loop (program:Flambda.program) previous_initialize =
     match program with
     | Flambda.Let_symbol (symbol,def,program) ->
       Symbol.Tbl.add symbol_definition_tbl symbol def;
-      loop program
+      loop program previous_initialize
     | Flambda.Let_rec_symbol (defs,program) ->
       List.iter (fun (symbol, def) ->
           Symbol.Tbl.add symbol_definition_tbl symbol def)
         defs;
-      loop program
+      loop program previous_initialize
     | Flambda.Import_symbol (_,program) ->
-      loop program
+      loop program previous_initialize
     | Flambda.Initialize_symbol (symbol,tag,fields,program) ->
-      Symbol.Tbl.add initialize_symbol_tbl symbol (tag,fields);
-      loop program
+      Symbol.Tbl.add initialize_symbol_tbl symbol (tag,fields,previous_initialize);
+      loop program (Some symbol)
     | Flambda.End -> ()
   in
-  loop program;
+  loop program None;
   initialize_symbol_tbl, symbol_definition_tbl
 
 let replace_definitions_in_initialize_symbol
@@ -450,7 +456,7 @@ let replace_definitions_in_initialize_symbol
     (aliases:Alias_analysis.allocation_point Variable.Map.t)
     (var_to_symbol_tbl:Symbol.t Variable.Tbl.t)
     (var_to_definition_tbl:Alias_analysis.constant_defining_value Variable.Tbl.t)
-    initialize_symbol_tbl =
+    (initialize_symbol_tbl:(Tag.t * Flambda.t list * Symbol.t option) Symbol.Tbl.t) =
   let f var (named:Flambda.named) : Flambda.named =
     if Variable.Set.mem var inconstants.id then
       named
@@ -466,11 +472,11 @@ let replace_definitions_in_initialize_symbol
       | Symbol s -> Symbol s
       | Const c -> Const c
   in
-  Symbol.Map.iter (fun symbol (tag, fields) ->
+  Symbol.Map.iter (fun symbol (tag, fields, previous) ->
       let fields =
         List.map (Flambda_iterators.map_all_let_and_let_rec_bindings ~f) fields
       in
-      Symbol.Tbl.replace initialize_symbol_tbl symbol (tag,fields))
+      Symbol.Tbl.replace initialize_symbol_tbl symbol (tag,fields,previous))
     (Symbol.Tbl.to_map initialize_symbol_tbl)
 
 let lift_constants program ~backend:_ =
