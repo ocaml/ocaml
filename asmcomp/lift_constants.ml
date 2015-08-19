@@ -444,6 +444,10 @@ let program_symbols program =
     | Flambda.Import_symbol (_,program) ->
       loop program previous_initialize
     | Flambda.Initialize_symbol (symbol,tag,fields,program) ->
+      (* previous_initialize is used to keep the order of initialize values:
+         it is used as an extra dependency when sorting the symbols. *)
+      (* CR pchambart: if the fields expressions are pure, we could drop
+         this dependency *)
       Symbol.Tbl.add initialize_symbol_tbl symbol (tag,fields,previous_initialize);
       loop program (Some symbol)
     | Flambda.End -> ()

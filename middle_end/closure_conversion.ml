@@ -251,7 +251,7 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
       name_expr
         (Prim (Praise kind, [arg_var], Debuginfo.from_raise event)))
   | Lprim (Pfield pos, [Lprim (Pgetglobal id, [])])
-      when Ident.same id t.current_unit_id ->
+    when Ident.same id t.current_unit_id ->
     let symbol = Env.find_global env pos in
     let sym_v = Variable.create ("access_global_" ^ string_of_int pos) in
     let result_v = Variable.create ("access_global_field_" ^ string_of_int pos) in
@@ -349,7 +349,8 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
     the only case where it cannot is for "let rec".) *)
 and close_functions t external_env function_declarations : Flambda.named =
   let closure_env_without_parameters =
-    Function_decls.closure_env_without_parameters function_declarations
+    Function_decls.closure_env_without_parameters
+      external_env function_declarations
   in
   let all_free_idents = Function_decls.all_free_idents function_declarations in
   let close_one_function map decl =
@@ -479,6 +480,11 @@ let lambda_to_flambda ~backend ~module_ident ~exported_fields module_initializer
     }
   in
   let initialisations = split_module_initialization t module_initializer in
+  (* Format.eprintf "init @.%a@." *)
+  (*   (Format.pp_print_list (fun ppf (expr, pos) -> *)
+  (*        Format.fprintf ppf "@ %i:@ %a ;@ " *)
+  (*          pos Printlambda.lambda expr)) *)
+  (*   initialisations; *)
   let module_symbol = Backend.symbol_for_global' module_ident in
   let _env, initialisations =
     List.fold_left (fun (env, l) (lam, pos) ->

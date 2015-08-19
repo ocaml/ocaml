@@ -26,6 +26,9 @@ module Env = struct
     globals = Ext_types.Int.Map.empty;
   }
 
+  let clear_local_bindings env =
+    { empty with globals = env.globals }
+
   let add_var t id var = { t with variables = Ident.add id var t.variables }
   let add_vars t ids vars = List.fold_left2 add_var t ids vars
 
@@ -131,13 +134,13 @@ module Function_decls = struct
   let all_free_idents t =
     set_diff (set_diff (all_used_idents t) (all_params t)) (let_rec_idents t)
 
-  let closure_env_without_parameters t =
+  let closure_env_without_parameters external_env t =
     let closure_env =
       (* For "let rec"-bound functions. *)
       List.fold_right (fun t env ->
           Env.add_var env (Function_decl.let_rec_ident t)
             (Function_decl.closure_bound_var t))
-        t Env.empty
+        t (Env.clear_local_bindings external_env)
     in
     (* For free variables. *)
     IdentSet.fold (fun id env ->

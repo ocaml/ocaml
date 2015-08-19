@@ -75,6 +75,7 @@ module Function_decls : sig
 
   (* A map from identifiers to their corresponding [Variable.t]s whose domain
      is the set of all identifiers free in the bodies of the declarations that
-     are not bound as parameters. *)
-  val closure_env_without_parameters : t -> Env.t
+     are not bound as parameters.
+     It also contains the globals bindings of the provided environment. *)
+  val closure_env_without_parameters : Env.t -> t -> Env.t
 end
