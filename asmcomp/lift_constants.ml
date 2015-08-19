@@ -450,6 +450,8 @@ let program_symbols program =
          this dependency *)
       Symbol.Tbl.add initialize_symbol_tbl symbol (tag,fields,previous_initialize);
       loop program (Some symbol)
+    | Flambda.Effect (_expr,_program) ->
+      failwith "TODO: lift constant effect"
     | Flambda.End -> ()
   in
   loop program None;

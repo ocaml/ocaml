@@ -129,6 +129,9 @@ let rec iter_exprs_at_toplevel_of_program (program : Flambda.program) ~f =
   | Initialize_symbol (_, _, fields, program) ->
     List.iter f fields;
     iter_exprs_at_toplevel_of_program program ~f
+  | Effect (expr, program) ->
+    f expr;
+    iter_exprs_at_toplevel_of_program program ~f
   | End -> ()
 
 let rec iter_on_set_of_closures_of_program (program : Flambda.program) ~f =
@@ -147,6 +150,9 @@ let rec iter_on_set_of_closures_of_program (program : Flambda.program) ~f =
     iter_on_set_of_closures_of_program program ~f
   | Initialize_symbol (_, _, fields, program) ->
     List.iter (iter_on_sets_of_closures f) fields;
+    iter_on_set_of_closures_of_program program ~f
+  | Effect (expr, program) ->
+    iter_on_sets_of_closures f expr;
     iter_on_set_of_closures_of_program program ~f
   | End -> ()
 
@@ -366,6 +372,9 @@ let rec map_exprs_at_toplevel_of_program (program : Flambda.program)
   | Initialize_symbol (symbol, tag, fields, program) ->
     let fields = List.map f fields in
     Initialize_symbol (symbol, tag, fields,
+      map_exprs_at_toplevel_of_program program ~f)
+  | Effect (expr, program) ->
+    Effect (f expr,
       map_exprs_at_toplevel_of_program program ~f)
   | End -> End
 

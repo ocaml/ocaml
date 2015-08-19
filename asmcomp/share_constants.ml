@@ -80,6 +80,15 @@ let share_constants (program:Flambda.program) =
           fields
       in
       Initialize_symbol (symbol,tag,fields,loop program)
+    | Effect (expr,program) ->
+      let expr =
+        Flambda_iterators.map_symbols
+          ~f:(fun symbol ->
+              try Symbol.Tbl.find sharing_symbol_tbl symbol with
+              | Not_found -> symbol)
+          expr
+      in
+      Effect (expr, loop program)
     | End -> End
   in
   let program = loop program in

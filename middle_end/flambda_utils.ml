@@ -333,6 +333,7 @@ let rec constant_symbol_declarations (program:Flambda.program) =
       (constant_symbol_declarations program)
       decls
   | Initialize_symbol (_, _, _, program)
+  | Effect (_, program)
   | Import_symbol (_, program) ->
     constant_symbol_declarations program
   | End -> []
@@ -341,6 +342,7 @@ let rec initialize_symbols (program:Flambda.program) =
   match program with
   | Initialize_symbol (symbol, tag, fields, program) ->
     (symbol, tag, fields) :: (initialize_symbols program)
+  | Effect (_, program)
   | Let_symbol (_, _, program)
   | Let_rec_symbol (_, program)
   | Import_symbol (_, program) ->

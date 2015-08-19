@@ -1101,6 +1101,10 @@ let rec simplify_program env r (program : Flambda.program)
     let env = E.add_symbol env symbol approx in
     let program, r = simplify_program env r program in
     Initialize_symbol (symbol, tag, fields, program), r
+  | Effect (expr, program) ->
+    let expr, r = simplify env r expr in
+    let program, r = simplify_program env r program in
+    Effect (expr, program), r
   | End -> End, r
 
 (* CR mshinwell for pchambart: Change to a "-dinlining-benefit" option? *)

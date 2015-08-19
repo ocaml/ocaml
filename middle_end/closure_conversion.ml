@@ -448,20 +448,27 @@ and close_let_bound_expression t ?let_rec_ident let_bound_var env
       name_expr (Project_closure (project_closure))))
   | lam -> Expr (close t env lam)
 
-let rec make_variable_initialisation t (lam:Lambda.lambda) : Lambda.lambda * int =
+type 'a initialisation =
+  | Field_initialisation of 'a
+  | Effect
+
+let rec make_variable_initialisation t (lam:Lambda.lambda)
+  : Lambda.lambda * int initialisation =
   match lam with
   | Llet (let_kind, id, defining_expr, body) ->
     let body, pos = make_variable_initialisation t body in
     Llet (let_kind, id, defining_expr, body), pos
   | Lprim (Psetfield (pos, _), [Lprim (Pgetglobal id, []); expr]) ->
     assert (Ident.same id t.current_unit_id);
-    expr, pos
+    expr, Field_initialisation pos
   | Lsequence (lam1, lam2) ->
     let lam2, pos = make_variable_initialisation t lam2 in
     Lsequence (lam1, lam2), pos
-  | _ -> assert false
+  | _ ->
+    lam, Effect
 
-let rec split_module_initialization t (lam:Lambda.lambda) : (Lambda.lambda * int) list =
+let rec split_module_initialization t (lam:Lambda.lambda)
+  : (Lambda.lambda * int initialisation) list =
   match lam with
   | Lconst (Const_pointer 0) -> []
   | Lsequence (lam1, lam2) ->
@@ -487,19 +494,25 @@ let lambda_to_flambda ~backend ~module_ident ~exported_fields module_initializer
   (*   initialisations; *)
   let module_symbol = Backend.symbol_for_global' module_ident in
   let _env, initialisations =
-    List.fold_left (fun (env, l) (lam, pos) ->
-        let linkage_name = Linkage_name.create ("init_" ^ string_of_int pos) in
-        let symbol = Symbol.create compilation_unit linkage_name in
-        (* TODO: add to env *)
-        let elt = close t env lam, pos, symbol in
-        let env = Env.add_global env pos symbol in
-        env, elt::l
+    List.fold_left (fun (env, l) (lam, init) ->
+        match init with
+        | Field_initialisation pos ->
+          let linkage_name = Linkage_name.create ("init_" ^ string_of_int pos) in
+          let symbol = Symbol.create compilation_unit linkage_name in
+          let elt = close t env lam, Field_initialisation (pos, symbol) in
+          let env = Env.add_global env pos symbol in
+          env, elt::l
+        | Effect ->
+          let elt = close t env lam, Effect in
+          env, elt::l
       )
       (Env.empty, []) initialisations
   in
   let field_map =
-    List.fold_left (fun map (_, pos, symbol) ->
-        Ext_types.Int.Map.add pos symbol map)
+    List.fold_left (fun map -> function
+        | _, Field_initialisation (pos, symbol) ->
+          Ext_types.Int.Map.add pos symbol map
+        | _, Effect -> map)
       Ext_types.Int.Map.empty
       initialisations
   in
@@ -525,8 +538,11 @@ let lambda_to_flambda ~backend ~module_ident ~exported_fields module_initializer
       Flambda.End)
   in
   let module_initializer =
-    List.fold_left (fun program (flam, _pos, symbol) ->
-        Flambda.Initialize_symbol (symbol, Tag.create_exn 0, [flam], program)
+    List.fold_left (fun program -> function
+        | flam, Field_initialisation (_pos, symbol) ->
+          Flambda.Initialize_symbol (symbol, Tag.create_exn 0, [flam], program)
+        | flam, Effect ->
+          Flambda.Effect (flam, program)
       )
       module_initializer initialisations
   in

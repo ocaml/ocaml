@@ -307,6 +307,9 @@ let variable_and_symbol_invariants flam =
       List.iter (loop env) fields;
       let env = add_binding_occurrence_of_symbol env symbol in
       loop_program env program
+    | Effect (expr, program) ->
+      loop env expr;
+      loop_program env program
     | End -> ()
   in
   loop_program (Variable.Map.empty, Symbol.Set.empty) flam

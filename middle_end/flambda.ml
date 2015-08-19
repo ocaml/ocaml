@@ -142,6 +142,7 @@ type program =
   | Let_rec_symbol of (Symbol.t * constant_defining_value) list * program
   | Import_symbol of Symbol.t * program
   | Initialize_symbol of Symbol.t * Tag.t * t list * program
+  | Effect of t * program
   | End
 
 let fprintf = Format.fprintf
@@ -409,6 +410,8 @@ let rec print_program ppf (program : program) =
       Tag.print tag
       (Format.pp_print_list print) fields;
     fprintf ppf ")@]@ %a)@]" print_program program
+  | Effect (_expr, _body) ->
+    failwith "TODO"
   | End -> fprintf ppf "End"
 
 (* CR mshinwell: this doesn't seem to cope with shadowed identifiers
