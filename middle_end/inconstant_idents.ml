@@ -338,6 +338,9 @@ module NotConstants(P:Param) = struct
           mark_loop ~toplevel:true [Local_symbol symbol] field)
         fields;
       mark_program program
+    | Effect (expr, program) ->
+      mark_loop ~toplevel:true [] expr;
+      mark_program program
     | _ -> failwith "TODO"
 
   (* Second loop: propagates implications *)

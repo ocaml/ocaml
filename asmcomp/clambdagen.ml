@@ -546,6 +546,23 @@ Format.eprintf "Clambdagen.conv_set_of_closures: %a\n"
           Clambda.Usequence(affectation, acc))
         (conv_field h) t
 
+  let rec conv_program (program:Flambda.program) =
+    match program with
+    | Let_symbol (_, _, program)
+    | Let_rec_symbol (_, program)
+    | Import_symbol (_, program) ->
+      conv_program program
+    | End ->
+      Clambda.Uconst (Uconst_ptr 0)
+    | Initialize_symbol (symbol, _tag, fields, program) ->
+      Clambda.Usequence
+        (conv_initialize_symbol empty_env symbol fields,
+         conv_program program)
+    | Effect (expr, program) ->
+      Clambda.Usequence
+        (conv empty_env expr,
+         conv_program program)
+
 end
 
 let conv_allocated_constant
@@ -626,16 +643,7 @@ let convert ((program:Flambda.program), exported) =
           size = List.length fields })
       initialize_symbols
   in
-  let initialize_symbols =
-    List.map (fun (symbol, _tag, fields) ->
-        M.conv_initialize_symbol empty_env symbol fields)
-      initialize_symbols
-  in
-  let expr =
-    List.fold_right (fun expr acc -> Clambda.Usequence(expr, acc))
-      initialize_symbols
-      (Clambda.Uconst (Uconst_ptr 0))
-  in
+  let expr = M.conv_program program in
   (* TODO: add offsets to export info *)
   expr,
   preallocated_blocks,

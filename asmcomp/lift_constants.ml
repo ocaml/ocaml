@@ -303,11 +303,12 @@ let expression_symbol_dependencies (expr:Flambda.t) =
   !set
 
 let program_graph symbol_to_constant
-    (initialize_symbol_tbl : (Tag.t * Flambda.t list * Symbol.t option) Symbol.Tbl.t) =
+    (initialize_symbol_tbl : (Tag.t * Flambda.t list * Symbol.t option) Symbol.Tbl.t)
+    (effect_tbl : (Flambda.t * Symbol.t option) Symbol.Tbl.t)=
   let graph_with_only_constant_parts =
     Symbol.Map.map constant_dependencies symbol_to_constant
   in
-  let graph =
+  let graph_with_initialisation =
     Symbol.Tbl.fold (fun sym (_tag, fields, previous) ->
         let order_dep =
           match previous with
@@ -321,6 +322,17 @@ let program_graph symbol_to_constant
         Symbol.Map.add sym deps)
       initialize_symbol_tbl graph_with_only_constant_parts
   in
+  let graph =
+    Symbol.Tbl.fold (fun sym (expr, previous) ->
+        let order_dep =
+          match previous with
+          | None -> Symbol.Set.empty
+          | Some previous -> Symbol.Set.singleton previous
+        in
+        Symbol.Map.add sym
+          (Symbol.Set.union (expression_symbol_dependencies expr) order_dep))
+      effect_tbl graph_with_initialisation
+  in
   Format.eprintf "@.dep graph:@ %a@."
     (Symbol.Map.print Symbol.Set.print) graph;
   let module Symbol_SCC = Sort_connected_components.Make (Symbol) in
@@ -333,6 +345,7 @@ let program_graph symbol_to_constant
 (* rebuilding the program *)
 let add_definition_of_symbol constant_definitions
     (initialize_symbol_tbl : (Tag.t * Flambda.t list * Symbol.t option) Symbol.Tbl.t)
+    (effect_tbl:(Flambda.t * Symbol.t option) Symbol.Tbl.t)
     program component : Flambda.program =
   let symbol_declaration sym =
     (* A symbol declared through an Initialize_symbol construct
@@ -352,12 +365,17 @@ let add_definition_of_symbol constant_definitions
     | (tag, fields, _previous) ->
       Initialize_symbol (sym, tag, fields, program)
     | exception Not_found ->
-      let decl = Symbol.Map.find sym constant_definitions in
-      Let_symbol (sym, decl, program)
+      match Symbol.Tbl.find effect_tbl sym with
+      | (expr, _previous) ->
+        Effect (expr, program)
+      | exception Not_found ->
+        let decl = Symbol.Map.find sym constant_definitions in
+        Let_symbol (sym, decl, program)
 
 let add_definitions_of_symbols constant_definitions initialize_symbol_tbl
-    program components =
-  Array.fold_left (add_definition_of_symbol constant_definitions initialize_symbol_tbl)
+    effect_tbl program components =
+  Array.fold_left
+    (add_definition_of_symbol constant_definitions initialize_symbol_tbl effect_tbl)
     program components
 
 let introduce_free_variables_in_set_of_closures
@@ -430,39 +448,48 @@ let var_to_block_field
 
 let program_symbols program =
   let initialize_symbol_tbl = Symbol.Tbl.create 42 in
+  let effect_tbl = Symbol.Tbl.create 42 in
   let symbol_definition_tbl = Symbol.Tbl.create 42 in
-  let rec loop (program:Flambda.program) previous_initialize =
+  let rec loop (program:Flambda.program) previous_effect =
     match program with
     | Flambda.Let_symbol (symbol,def,program) ->
       Symbol.Tbl.add symbol_definition_tbl symbol def;
-      loop program previous_initialize
+      loop program previous_effect
     | Flambda.Let_rec_symbol (defs,program) ->
       List.iter (fun (symbol, def) ->
           Symbol.Tbl.add symbol_definition_tbl symbol def)
         defs;
-      loop program previous_initialize
+      loop program previous_effect
     | Flambda.Import_symbol (_,program) ->
-      loop program previous_initialize
+      loop program previous_effect
     | Flambda.Initialize_symbol (symbol,tag,fields,program) ->
-      (* previous_initialize is used to keep the order of initialize values:
+      (* previous_effect is used to keep the order of initialize and effect
+         values. Their effects order must be kept ordered.
          it is used as an extra dependency when sorting the symbols. *)
       (* CR pchambart: if the fields expressions are pure, we could drop
          this dependency *)
-      Symbol.Tbl.add initialize_symbol_tbl symbol (tag,fields,previous_initialize);
+      Symbol.Tbl.add initialize_symbol_tbl symbol (tag,fields,previous_effect);
       loop program (Some symbol)
-    | Flambda.Effect (_expr,_program) ->
-      failwith "TODO: lift constant effect"
+    | Flambda.Effect (expr,program) ->
+      (* Used to ensure that effects are correctly ordered *)
+      let fake_effect_symbol =
+        Symbol.create (Compilenv.current_unit ())
+          (Linkage_name.create "fake_effect_symbol")
+      in
+      Symbol.Tbl.add effect_tbl fake_effect_symbol (expr,previous_effect);
+      loop program (Some fake_effect_symbol)
     | Flambda.End -> ()
   in
   loop program None;
-  initialize_symbol_tbl, symbol_definition_tbl
+  initialize_symbol_tbl, symbol_definition_tbl, effect_tbl
 
-let replace_definitions_in_initialize_symbol
+let replace_definitions_in_initialize_symbol_and_effects
     (inconstants:Inconstant_idents.result)
     (aliases:Alias_analysis.allocation_point Variable.Map.t)
     (var_to_symbol_tbl:Symbol.t Variable.Tbl.t)
     (var_to_definition_tbl:Alias_analysis.constant_defining_value Variable.Tbl.t)
-    (initialize_symbol_tbl:(Tag.t * Flambda.t list * Symbol.t option) Symbol.Tbl.t) =
+    (initialize_symbol_tbl:(Tag.t * Flambda.t list * Symbol.t option) Symbol.Tbl.t)
+    (effect_tbl:(Flambda.t * Symbol.t option) Symbol.Tbl.t) =
   let f var (named:Flambda.named) : Flambda.named =
     if Variable.Set.mem var inconstants.id then
       named
@@ -483,7 +510,13 @@ let replace_definitions_in_initialize_symbol
         List.map (Flambda_iterators.map_all_let_and_let_rec_bindings ~f) fields
       in
       Symbol.Tbl.replace initialize_symbol_tbl symbol (tag,fields,previous))
-    (Symbol.Tbl.to_map initialize_symbol_tbl)
+    (Symbol.Tbl.to_map initialize_symbol_tbl);
+  Symbol.Map.iter (fun symbol (expr, previous) ->
+      let expr =
+        Flambda_iterators.map_all_let_and_let_rec_bindings ~f expr
+      in
+      Symbol.Tbl.replace effect_tbl symbol (expr,previous))
+    (Symbol.Tbl.to_map effect_tbl)
 
 let lift_constants program ~backend:_ =
   Format.eprintf "lift_constants input:@ %a\n" Flambda.print_program program;
@@ -496,7 +529,7 @@ let lift_constants program ~backend:_ =
          pchambart: The access to compilenv *)
       ~compilation_unit:(Compilenv.current_unit ())
   in
-  let initialize_symbol_tbl, symbol_definition_tbl = program_symbols program in
+  let initialize_symbol_tbl, symbol_definition_tbl, effect_tbl = program_symbols program in
   let var_to_symbol_tbl, var_to_definition_tbl =
     assign_symbols_and_collect_constant_definitions ~program ~inconstants
   in
@@ -506,12 +539,13 @@ let lift_constants program ~backend:_ =
     let var_to_sym_map = Symbol.Map.empty (* Variable.Tbl.to_map var_to_symbol_tbl *) in
     Alias_analysis.second_take var_map sym_map var_to_sym_map
   in
-  replace_definitions_in_initialize_symbol
+  replace_definitions_in_initialize_symbol_and_effects
       (inconstants:Inconstant_idents.result)
       (aliases:Alias_analysis.allocation_point Variable.Map.t)
       (var_to_symbol_tbl:Symbol.t Variable.Tbl.t)
       (var_to_definition_tbl:Alias_analysis.constant_defining_value Variable.Tbl.t)
-      initialize_symbol_tbl;
+      initialize_symbol_tbl
+      effect_tbl;
   let translated_definitions =
     translate_definitions_and_resolve_alias
       inconstants
@@ -537,10 +571,11 @@ let lift_constants program ~backend:_ =
       symbol_definition_tbl
       translated_definitions
   in
-  let components = program_graph constant_definitions initialize_symbol_tbl in
+  let components = program_graph constant_definitions initialize_symbol_tbl effect_tbl in
   let program =
     add_definitions_of_symbols constant_definitions
       initialize_symbol_tbl
+      effect_tbl
       Flambda.End components
   in
   Format.eprintf "@.lift_constants output:@ %a\n" Flambda.print_program program;

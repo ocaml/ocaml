@@ -410,8 +410,10 @@ let rec print_program ppf (program : program) =
       Tag.print tag
       (Format.pp_print_list print) fields;
     fprintf ppf ")@]@ %a)@]" print_program program
-  | Effect (_expr, _body) ->
-    failwith "TODO"
+  | Effect (expr, program) ->
+    fprintf ppf "@[(effect @[<hv 1>%a@]@ %a)@]"
+      print expr
+      print_program program;
   | End -> fprintf ppf "End"
 
 (* CR mshinwell: this doesn't seem to cope with shadowed identifiers
