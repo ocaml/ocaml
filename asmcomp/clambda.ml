@@ -89,6 +89,14 @@ type value_approximation =
   | Value_const of uconstant
   | Value_global_field of string * int
 
+(* Preallocated globals *)
+
+type preallocated_block = {
+  symbol : string;
+  tag : int;
+  size : int;
+}
+
 (* Comparison functions for constants.  We must not use Pervasives.compare
    because it compares "0.0" and "-0.0" equal.  (PR#6442) *)
 

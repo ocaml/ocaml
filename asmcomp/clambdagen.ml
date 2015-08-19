@@ -619,6 +619,13 @@ let convert ((program:Flambda.program), exported) =
       constants Symbol.Map.empty
   in
   let initialize_symbols = Flambda_utils.initialize_symbols program in
+  let preallocated_blocks =
+    List.map (fun (symbol, tag, fields) ->
+        { Clambda.symbol = Linkage_name.to_string (Symbol.label symbol);
+          tag = Tag.to_int tag;
+          size = List.length fields })
+      initialize_symbols
+  in
   let initialize_symbols =
     List.map (fun (symbol, _tag, fields) ->
         M.conv_initialize_symbol empty_env symbol fields)
@@ -631,6 +638,7 @@ let convert ((program:Flambda.program), exported) =
   in
   (* TODO: add offsets to export info *)
   expr,
+  preallocated_blocks,
   Symbol.Map.disjoint_union
     structured_constants
     constant_set_of_closures,

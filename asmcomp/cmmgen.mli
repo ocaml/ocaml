@@ -13,9 +13,11 @@
 (* Translation from closed lambda to C-- *)
 
 val compunit: int -> Clambda.ulambda -> Cmm.phrase list
+
 val compunit_and_constants:
-  int ->
-  Clambda.ulambda * Clambda.ustructured_constant Symbol.Map.t ->
+  Clambda.ulambda
+  * Clambda.preallocated_block list
+  * Clambda.ustructured_constant Symbol.Map.t ->
   Cmm.phrase list
 
 val apply_function: int -> Cmm.phrase

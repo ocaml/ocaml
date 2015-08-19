@@ -2450,8 +2450,23 @@ let compunit size ulam =
          Cglobal_symbol glob;
          Cdefine_symbol glob] @ space) :: c3
 
-let compunit_and_constants size (ulam, constants) =
-  let glob = Compilenv.make_symbol None in
+let preallocate_block { Clambda.symbol; tag; size } =
+  let space =
+    (* These words will be registered as roots and as such must contain
+       valid values, in case we are in no-naked-pointers mode.  Likewise
+       the block header must be black, below (see [caml_darken]), since
+       the overall record may be referenced. *)
+    Array.to_list
+      (Array.init size (fun _index ->
+        Cint (Nativeint.of_int 1 (* Val_unit *))))
+  in
+  (* TODO: don't mark every symbol as global, only those reachable
+     from exported info should *)
+  Cdata ([Cint(black_block_header tag size);
+         Cglobal_symbol symbol;
+         Cdefine_symbol symbol] @ space)
+
+let compunit_and_constants (ulam, preallocated_blocks, constants) =
   let init_code = transl ulam in
   let c1 = [Cfunction {fun_name = Compilenv.make_symbol (Some "entry");
                        fun_args = [];
@@ -2474,18 +2489,10 @@ let compunit_and_constants size (ulam, constants) =
       aux set c3
   in
   let c3 = aux StringSet.empty c1' in
-  let space =
-    (* These words will be registered as roots and as such must contain
-       valid values, in case we are in no-naked-pointers mode.  Likewise
-       the block header must be black, below (see [caml_darken]), since
-       the overall record may be referenced. *)
-    Array.to_list
-      (Array.init size (fun _index ->
-        Cint (Nativeint.of_int 1 (* Val_unit *))))
+  let blocks =
+    List.map preallocate_block preallocated_blocks
   in
-  Cdata ([Cint(black_block_header 0 size);
-         Cglobal_symbol glob;
-         Cdefine_symbol glob] @ space) :: c3
+  blocks @ c3
 
 (*
 CAMLprim value caml_cache_public_method (value meths, value tag, value *cache)

@@ -35,7 +35,7 @@ let pass_dump_linear_if ppf flag message phrase =
   if !flag then fprintf ppf "*** %s@.%a@." message Printlinear.fundecl phrase;
   phrase
 
-let clambda_dump_if ppf (ulambda, structured_constants, exported) =
+let clambda_dump_if ppf (ulambda, preallocated_blocks, structured_constants, exported) =
   if !dump_clambda then
     begin
       Format.fprintf ppf "@.clambda:@.";
@@ -55,7 +55,7 @@ let clambda_dump_if ppf (ulambda, structured_constants, exported) =
     end;
   if !dump_cmm then
     Format.fprintf ppf "@.cmm:@.";
-  (ulambda, structured_constants, exported)
+  (ulambda, preallocated_blocks, structured_constants, exported)
 
 let rec regalloc ppf round fd =
   if round > 50 then
@@ -165,22 +165,22 @@ let compile_unit ~sourcefile _output_prefix asm_filename keep_asm obj_filename g
     remove_file obj_filename;
     raise exn
 
-let set_export_info (ulambda, structured_constants, export) =
+let set_export_info (ulambda, prealloc, structured_constants, export) =
   Compilenv.set_export_info export;
-  (ulambda, structured_constants)
+  (ulambda, prealloc, structured_constants)
 
-let gen_implementation ?toplevel ~sourcefile ~backend ppf ~size flam =
+let gen_implementation ?toplevel ~sourcefile ~backend ppf flam =
 try
   Emit.begin_assembly ();
   Timings.(start (Flambda_backend sourcefile));
   prep_flambda_for_export ppf flam ~backend
   ++ Clambdagen.convert
   ++ clambda_dump_if ppf
-  ++ (fun (expr, const, exported) -> Un_anf.apply expr, const, exported)
+  ++ (fun (expr, prealloc, const, exported) -> Un_anf.apply expr, prealloc, const, exported)
   ++ set_export_info
   ++ Timings.(stop_id (Flambda_backend sourcefile))
   ++ Timings.(start_id (Cmm sourcefile))
-  ++ Cmmgen.compunit_and_constants size
+  ++ Cmmgen.compunit_and_constants
   ++ Timings.(stop_id (Cmm sourcefile))
   ++ Timings.(start_id (Compile_phrases sourcefile))
   ++ List.iter (compile_phrase ppf)
@@ -206,7 +206,7 @@ with exn -> begin
   failwith "failure"
 end
 
-let compile_implementation ?toplevel ~sourcefile prefixname ~backend ppf ~size
+let compile_implementation ?toplevel ~sourcefile prefixname ~backend ppf
       flam =
   let asmfile =
     if !keep_asm_file || !Emitaux.binary_backend_available
@@ -215,7 +215,7 @@ let compile_implementation ?toplevel ~sourcefile prefixname ~backend ppf ~size
   in
   compile_unit ~sourcefile prefixname asmfile !keep_asm_file (prefixname ^ ext_obj)
     (fun () ->
-       gen_implementation ?toplevel ~sourcefile ~backend ppf ~size flam)
+       gen_implementation ?toplevel ~sourcefile ~backend ppf flam)
 
 (* Error report *)
 

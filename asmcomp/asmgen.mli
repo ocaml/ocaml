@@ -17,7 +17,7 @@ val compile_implementation :
     sourcefile:string ->
     string ->
     backend:(module Backend_intf.S) ->
-    Format.formatter -> size:int -> Flambda.program -> unit
+    Format.formatter -> Flambda.program -> unit
 val compile_phrase :
     Format.formatter -> Cmm.phrase -> unit
 
