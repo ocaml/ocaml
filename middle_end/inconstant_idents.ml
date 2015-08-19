@@ -341,7 +341,7 @@ module NotConstants(P:Param) = struct
     | Effect (expr, program) ->
       mark_loop ~toplevel:true [] expr;
       mark_program program
-    | _ -> failwith "TODO"
+    | _ -> failwith "TODO inconstant ident constants"
 
   (* Second loop: propagates implications *)
   let propagate () =

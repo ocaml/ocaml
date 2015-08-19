@@ -258,10 +258,10 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
     Let(Immutable, sym_v, Symbol symbol,
         Let(Immutable, result_v, Prim(Pfield 0, [sym_v], Debuginfo.none),
             Var result_v))
-  | Lprim (Psetfield (_, _), [Lprim (Pgetglobal id, []); _]) ->
+  | Lprim (Psetfield (pos, _), [Lprim (Pgetglobal id, []); _]) ->
     assert (Ident.same id t.current_unit_id);
-    Misc.fatal_error "[Psetfield] (to the current compilation unit) is \
-        forbidden upon entry to the middle end"
+    Misc.fatal_errorf "[Psetfield %i] (to the current compilation unit) is \
+        forbidden upon entry to the middle end" pos
   | Lprim (Pgetglobal id, []) when Ident.is_predef_exn id ->
     assert (not (Ident.same id t.current_unit_id));
     name_expr (Predefined_exn id)
@@ -470,14 +470,45 @@ let rec make_variable_initialisation t (lam:Lambda.lambda)
   | _ ->
     lam, Effect
 
-let rec split_module_initialization t (lam:Lambda.lambda)
+let sequence_to_list lam =
+  let rec aux (lam:Lambda.lambda) acc =
+    match lam with
+    | Lsequence (lam1, lam2) ->
+      let acc = aux lam2 acc in
+      aux lam1 acc
+    | Llet (kind, id, def, Lsequence (lam1, lam2)) ->
+      (* We assume that id is not used in lam2 *)
+      Lambda.Llet (kind, id, def, lam1) ::
+      aux lam2 acc
+    | lam ->
+      lam :: acc
+  in
+  aux lam []
+
+let split_module_initialization t (lam:Lambda.lambda)
   : (Lambda.lambda * int initialisation) list =
-  match lam with
-  | Lconst (Const_pointer 0) -> []
-  | Lsequence (lam1, lam2) ->
-    (make_variable_initialisation t lam1) ::
-    split_module_initialization t lam2
-  | _ -> assert false
+  Format.eprintf "splited @.%a@."
+    (Format.pp_print_list Printlambda.lambda)
+    (sequence_to_list lam);
+  List.map (make_variable_initialisation t)
+    (sequence_to_list lam)
+
+  (* match lam with *)
+  (* | Lconst (Const_pointer 0) -> [] *)
+  (* | Lsequence (lam1, lam2) -> *)
+  (*   (make_variable_initialisation t lam1) :: *)
+  (*   split_module_initialization t lam2 *)
+  (* | Llet (Strict, modul, def, *)
+  (*         Lsequence (Lprim (Psetfield (pos, _), [Lprim (Pgetglobal id, []); Lvar v]), *)
+  (*                    lam2)) *)
+  (*   when Ident.same v modul -> *)
+  (*   assert (Ident.same id t.current_unit_id); *)
+  (*   (def, Field_initialisation pos) :: *)
+  (*   split_module_initialization t lam2 *)
+  (* | _ -> *)
+  (*   Format.eprintf "unknown:@ %a@." *)
+  (*     Printlambda.lambda lam; *)
+  (*   assert false *)
 
 let lambda_to_flambda ~backend ~module_ident ~exported_fields module_initializer =
   imported_symbols := Symbol.Set.empty;
@@ -490,11 +521,6 @@ let lambda_to_flambda ~backend ~module_ident ~exported_fields module_initializer
     }
   in
   let initialisations = split_module_initialization t module_initializer in
-  (* Format.eprintf "init @.%a@." *)
-  (*   (Format.pp_print_list (fun ppf (expr, pos) -> *)
-  (*        Format.fprintf ppf "@ %i:@ %a ;@ " *)
-  (*          pos Printlambda.lambda expr)) *)
-  (*   initialisations; *)
   let module_symbol = Backend.symbol_for_global' module_ident in
   let _env, initialisations =
     List.fold_left (fun (env, l) (lam, init) ->

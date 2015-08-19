@@ -1074,28 +1074,33 @@ let simplify_constant_defining_value env r
       r, constant_defining_value, closure_approx
   in
   let approx = A.augment_with_symbol approx symbol in
-  let env = E.add_symbol env symbol approx in
   let r = ret r approx in
-  env, r, constant_defining_value
+  r, constant_defining_value, approx
 
 let rec simplify_program env r (program : Flambda.program)
   : Flambda.program * R.t =
   match program with
   | Let_rec_symbol (defs, program) ->
+    let env = List.fold_left (fun env (symbol, _) ->
+        E.add_symbol env symbol A.value_unknown)
+        env defs
+    in
     let env, r, defs =
       List.fold_left (fun (env, r, defs) (symbol, def) ->
-          let env, r, def =
+          let r, def, approx =
             simplify_constant_defining_value env r symbol def
           in
+          let env = E.redefine_symbol env symbol approx in
           (env, r, (symbol, def) :: defs))
         (env, r, []) defs
     in
     let program, r = simplify_program env r program in
     Let_rec_symbol (defs, program), r
   | Let_symbol (symbol, constant_defining_value, program) ->
-    let env, r, constant_defining_value =
+    let r, constant_defining_value, approx =
       simplify_constant_defining_value env r symbol constant_defining_value
     in
+    let env = E.add_symbol env symbol approx in
     let program, r = simplify_program env r program in
     Let_symbol (symbol, constant_defining_value, program), r
   | Import_symbol (symbol, program) ->

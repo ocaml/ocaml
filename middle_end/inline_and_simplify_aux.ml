@@ -92,6 +92,15 @@ module Env = struct
       }
     | _ -> assert false (* CR mshinwell: fatal_errorf *)
 
+  let redefine_symbol t symbol approx =
+    match find_symbol_exn t symbol with
+    | exception Not_found ->
+      assert false
+    | _ ->
+      { t with
+        approx_sym = Symbol.Map.add symbol approx t.approx_sym;
+      }
+
   let find_with_scope_exn t id =
     try Variable.Map.find id t.approx
     with Not_found ->

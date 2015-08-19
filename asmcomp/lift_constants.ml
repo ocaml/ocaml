@@ -447,6 +447,13 @@ let var_to_block_field
   var_to_block_field_tbl
 
 let program_symbols program =
+  let new_fake_symbol =
+    let r = ref 0 in
+    fun () ->
+      incr r;
+      Symbol.create (Compilenv.current_unit ())
+        (Linkage_name.create ("fake_effect_symbol_" ^ string_of_int !r))
+  in
   let initialize_symbol_tbl = Symbol.Tbl.create 42 in
   let effect_tbl = Symbol.Tbl.create 42 in
   let symbol_definition_tbl = Symbol.Tbl.create 42 in
@@ -472,10 +479,7 @@ let program_symbols program =
       loop program (Some symbol)
     | Flambda.Effect (expr,program) ->
       (* Used to ensure that effects are correctly ordered *)
-      let fake_effect_symbol =
-        Symbol.create (Compilenv.current_unit ())
-          (Linkage_name.create "fake_effect_symbol")
-      in
+      let fake_effect_symbol = new_fake_symbol () in
       Symbol.Tbl.add effect_tbl fake_effect_symbol (expr,previous_effect);
       loop program (Some fake_effect_symbol)
     | Flambda.End -> ()
