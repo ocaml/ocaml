@@ -98,8 +98,7 @@ let assign_symbols_and_collect_constant_definitions ~program
         record_definition (Block (Tag.create_exn tag, fields))
       | Set_of_closures (
           { function_decls = { funs; set_of_closures_id; _ };
-            free_vars;
-            specialised_args; _ } as set) ->
+            _ } as set) ->
         assert (not (Set_of_closures_id.Set.mem set_of_closures_id
                        inconstants.closure));
         assign_symbol ();
@@ -115,13 +114,7 @@ let assign_symbols_and_collect_constant_definitions ~program
             Variable.Tbl.add var_to_symbol_tbl fun_var closure_symbol;
             Variable.Tbl.add var_to_definition_tbl fun_var
               (Symbol closure_symbol))
-          funs;
-        Variable.Map.iter (fun arg var ->
-            Variable.Tbl.add var_to_definition_tbl arg (Variable var))
-          free_vars;
-        Variable.Map.iter (fun arg var ->
-            Variable.Tbl.add var_to_definition_tbl arg (Variable var))
-          specialised_args
+          funs
       | Move_within_set_of_closures { closure = _; start_from = _; move_to; } ->
         let symbol = Compilenv.closure_symbol move_to in
         assign_existing_symbol symbol;
@@ -162,6 +155,18 @@ let assign_symbols_and_collect_constant_definitions ~program
   Flambda_iterators.iter_exprs_at_toplevel_of_program
     ~f:assign_symbol_program
     program;
+  let record_set_of_closure_equalities (set_of_closures:Flambda.set_of_closures) =
+    Variable.Map.iter (fun arg var ->
+        if not (Variable.Set.mem arg inconstants.id) then
+          Variable.Tbl.add var_to_definition_tbl arg (Variable var))
+      set_of_closures.free_vars;
+    Variable.Map.iter (fun arg var ->
+        if not (Variable.Set.mem arg inconstants.id) then
+          Variable.Tbl.add var_to_definition_tbl arg (Variable var))
+      set_of_closures.specialised_args
+  in
+  Flambda_iterators.iter_on_set_of_closures_of_program program
+    ~f:record_set_of_closure_equalities;
   var_to_symbol_tbl,
   var_to_definition_tbl
 
