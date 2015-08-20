@@ -181,7 +181,7 @@ and describe_named (env : env) (named : Flambda.named) : ET.approx =
     Value_symbol sym
 
   | Predefined_exn _ ->
-    failwith "TODO"
+    failwith "TODO build export predef exn"
 
   | Const c -> begin
       match c with
@@ -383,7 +383,22 @@ and describe_set_of_closures env (set : Flambda.set_of_closures)
     results = Closure_id.wrap_map results;
   }
 
+let constant_sets_of_closures_descr program =
+  let add_set_of_closure env  (symbol, (c:Flambda.constant_defining_value)) =
+    match c with
+    | Set_of_closures set_of_closures ->
+      Symbol.Map.add symbol
+        (describe_set_of_closures Variable.Map.empty set_of_closures)
+        env
+    | Allocated_const _ | Block _ | Project_closure _ ->
+      env
+  in
+  List.fold_left add_set_of_closure
+    Symbol.Map.empty
+    (Flambda_utils.constant_symbol_declarations program)
+
 let describe_constant_defining_value
+    symbol
     (set_of_closures_env:Flambdaexport_types.value_set_of_closures Symbol.Map.t)
     (c:Flambda.constant_defining_value) :
   Flambdaexport_types.descr =
@@ -392,11 +407,16 @@ let describe_constant_defining_value
   | Block (tag, fields) ->
     let approxs = List.map describe_constant fields in
     Value_block (tag, Array.of_list approxs)
-  | Set_of_closures set_of_closures ->
-    ET.Value_set_of_closures (describe_set_of_closures Variable.Map.empty set_of_closures)
+  | Set_of_closures _ ->
+    ET.Value_set_of_closures (Symbol.Map.find symbol set_of_closures_env)
   | Project_closure (set_of_closures, closure_id) ->
     let set_of_closures =
-      Symbol.Map.find set_of_closures set_of_closures_env
+      try
+        Symbol.Map.find set_of_closures set_of_closures_env
+      with Not_found ->
+        Misc.fatal_errorf "Undefined set_of_closures: \
+                           sym=%a\n"
+          Symbol.print set_of_closures
     in
     ET.Value_closure { fun_id = closure_id; set_of_closures }
 
@@ -409,22 +429,22 @@ let record_project_closures (set_of_closures:ET.value_set_of_closures) =
       new_symbol symbol export_id)
     set_of_closures.results
 
-let build_export_info (lifted_flambda:Lift_constants.result) : ET.exported =
+let build_export_info (program:Flambda.program) : ET.exported =
   reset ();
 
   Format.eprintf "@.build export info@.";
 
-  let _, constant_approx =
-    List.fold_left (fun (env, l) (symbol, cst) ->
-        let descr = describe_constant_defining_value env cst in
-        let env =
-          match descr with
-          | Value_set_of_closures set_of_closures ->
-            Symbol.Map.add symbol set_of_closures env
-          | _ -> env in
-        env, (symbol, new_descr descr) :: l)
-      (Symbol.Map.empty, [])
-      (Flambda_utils.constant_symbol_declarations lifted_flambda)
+  Format.eprintf "declared constant symbols@ %a@."
+    Symbol.Set.print
+    (Symbol.Set.of_list (List.map fst (Flambda_utils.constant_symbol_declarations program)));
+
+  let constant_sets_of_closures_descr = constant_sets_of_closures_descr program in
+
+  let constant_approx =
+    List.map (fun (symbol, cst) ->
+        let descr = describe_constant_defining_value symbol constant_sets_of_closures_descr cst in
+        (symbol, new_descr descr))
+      (Flambda_utils.constant_symbol_declarations program)
   in
   symbol_table := Symbol.Map.of_list constant_approx;
 

@@ -352,9 +352,8 @@ Format.eprintf "Clambdagen.conv: %a\n"
     | Const (Int n) ->
       Uconst (Uconst_int n)
 
-    | Const _ ->
-      Misc.fatal_errorf "All allocated constants should have been removed: %a"
-        Flambda.print_named named
+    | Const (Char c) ->
+      Uconst (Uconst_int (Char.code c))
 
   and conv_switch env cases num_keys default =
     let num_keys =

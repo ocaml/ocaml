@@ -18,9 +18,9 @@ type result = {
 
 let add_closure_offsets
     { code_pointer_offsets; free_variable_offsets }
-    (({ function_decls; free_vars } : Flambda.set_of_closures) as set_of_closures) =
-  Format.eprintf "add_closure_offsets:@ %a\n"
-    Flambda.print_set_of_closures set_of_closures;
+    (({ function_decls; free_vars } : Flambda.set_of_closures) as _set_of_closures) =
+  (* Format.eprintf "add_closure_offsets:@ %a\n" *)
+  (*   Flambda.print_set_of_closures set_of_closures; *)
   (* build the table mapping the function to the offset of its code
      pointer inside the closure value *)
   let aux_fun_offset id func (map,env_pos) =
@@ -57,19 +57,25 @@ let add_closure_offsets
 let sets_of_closures program =
   let list = ref [] in
   Flambda_iterators.iter_on_set_of_closures_of_program program
-    ~f:(fun set_of_closures -> list := set_of_closures :: !list);
+    ~f:(fun set_of_closures ->
+        list := set_of_closures :: !list);
   !list
 
 let compute (program:Flambda.program) =
-  Format.eprintf "Closure_offsets.compute@ \n";
+  (* Format.eprintf "Closure_offsets.compute@ \n"; *)
   (* let sets = Lifted_flambda_utils.sets_of_closures lifted_constants in *)
   let sets = sets_of_closures program in
-  List.iter (fun (set_of_closures : Flambda.set_of_closures) ->
-      Format.eprintf "Closures_offsets.compute set: %a @ "
-        Set_of_closures_id.print set_of_closures.function_decls.set_of_closures_id)
-    sets;
-  List.fold_left
-    add_closure_offsets
-    { code_pointer_offsets = Closure_id.Map.empty;
-      free_variable_offsets = Var_within_closure.Map.empty; }
-    sets
+  (* List.iter (fun (set_of_closures : Flambda.set_of_closures) -> *)
+  (*     Format.eprintf "Closures_offsets.compute set: %a @ " *)
+  (*       Set_of_closures_id.print set_of_closures.function_decls.set_of_closures_id) *)
+  (*   sets; *)
+  let r =
+    List.fold_left
+      add_closure_offsets
+      { code_pointer_offsets = Closure_id.Map.empty;
+        free_variable_offsets = Var_within_closure.Map.empty; }
+      sets
+  in
+  (* Format.eprintf "Closures_offsets results:@ code_pointer_offsets:@ %a@." *)
+  (*   (Closure_id.Map.print Format.pp_print_int) r.code_pointer_offsets; *)
+  r
