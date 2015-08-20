@@ -551,7 +551,7 @@ Format.eprintf "Clambdagen.conv_set_of_closures: %a\n"
     | Let_rec_symbol (_, program)
     | Import_symbol (_, program) ->
       conv_program program
-    | End ->
+    | End _ ->
       Clambda.Uconst (Uconst_ptr 0)
     | Initialize_symbol (symbol, _tag, fields, program) ->
       Clambda.Usequence

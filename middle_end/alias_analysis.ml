@@ -343,7 +343,7 @@ and constant_defining_value_to_equation t sym (def:Flambda.constant_defining_val
 
 
 and collect_equation_program (t:equations) : Flambda.program -> unit = function
-  | End -> ()
+  | End _ -> ()
   | Let_symbol (symbol, def, program) ->
     let eq_right = constant_defining_value_to_equation t symbol def in
     add t (Symbol symbol) eq_right;

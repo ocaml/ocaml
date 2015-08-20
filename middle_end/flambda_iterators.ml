@@ -138,7 +138,7 @@ let rec iter_exprs_at_toplevel_of_program (program : Flambda.program) ~f =
   | Effect (expr, program) ->
     f expr;
     iter_exprs_at_toplevel_of_program program ~f
-  | End -> ()
+  | End _ -> ()
 
 let rec iter_on_set_of_closures_of_program (program : Flambda.program) ~f =
   match program with
@@ -166,7 +166,7 @@ let rec iter_on_set_of_closures_of_program (program : Flambda.program) ~f =
   | Effect (expr, program) ->
     iter_on_sets_of_closures f expr;
     iter_on_set_of_closures_of_program program ~f
-  | End -> ()
+  | End _ -> ()
 
 let iter_symbols_on_named named ~f =
   iter_named_on_named (function
@@ -217,7 +217,7 @@ let rec iter_symbols_on_program (program:Flambda.program) ~f =
   | Effect (expr, program) ->
     iter_symbols ~f expr;
     iter_symbols_on_program program ~f
-  | End -> ()
+  | End _ -> ()
 
 let map_general ~toplevel f f_named tree =
   let rec aux (tree : Flambda.t) =
@@ -423,7 +423,7 @@ let rec map_exprs_at_toplevel_of_program (program : Flambda.program)
   | Effect (expr, program) ->
     Effect (f expr,
       map_exprs_at_toplevel_of_program program ~f)
-  | End -> End
+  | End s -> End s
 
 let map_named_of_program (program : Flambda.program)
       ~(f : Variable.t -> Flambda.named -> Flambda.named) : Flambda.program =

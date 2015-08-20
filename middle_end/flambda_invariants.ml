@@ -316,7 +316,8 @@ let variable_and_symbol_invariants flam =
     | Effect (expr, program) ->
       loop env expr;
       loop_program env program
-    | End -> ()
+    | End root ->
+      check_symbol_is_bound env root
   in
   loop_program (Variable.Map.empty, Symbol.Set.empty) flam
 

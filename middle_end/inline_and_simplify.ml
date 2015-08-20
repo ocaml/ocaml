@@ -1128,7 +1128,7 @@ let rec simplify_program env r (program : Flambda.program)
     let expr, r = simplify env r expr in
     let program, r = simplify_program env r program in
     Effect (expr, program), r
-  | End -> End, r
+  | End root -> End root, r
 
 (* CR mshinwell for pchambart: Change to a "-dinlining-benefit" option? *)
 let debug_benefit =

@@ -303,7 +303,7 @@ type program =
   | Import_symbol of Symbol.t * program
   | Initialize_symbol of Symbol.t * Tag.t * t list * program
   | Effect of t * program
-  | End
+  | End of Symbol.t (* The root symbol: the only symbol that can never be eliminated *)
 
 val free_variables
    : ?ignore_uses_in_apply:unit

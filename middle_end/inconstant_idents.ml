@@ -332,7 +332,7 @@ module NotConstants(P:Param) = struct
 
   let rec mark_program (program:Flambda.program) =
     match program with
-    | End -> ()
+    | End _ -> ()
     | Initialize_symbol (symbol,_tag,fields,program) ->
       List.iter (fun field ->
           mark_loop ~toplevel:true [Local_symbol symbol] field)

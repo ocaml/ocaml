@@ -522,6 +522,9 @@ let build_initialization
                             Var value_v)))
                in
                (pos, symbol), (expr, Field_initialisation symbol))
+            (* Deconstruct_initialisation build a block that is sorted
+               following the order of the fields in the final global
+               module block *)
             (List.sort compare pos)
         in
         let env =
@@ -553,6 +556,8 @@ let lambda_to_flambda ~backend ~module_ident ~exported_fields module_initializer
   let env, initialisations =
     List.fold_left (build_initialization compilation_unit t) (Env.empty, []) initialisations
   in
+  (* The global module block is built by accessing the fields of the
+     all the introduced symbols.*)
   let fields =
     Array.init exported_fields (fun i ->
         match Env.find_global env i with
@@ -572,7 +577,7 @@ let lambda_to_flambda ~backend ~module_ident ~exported_fields module_initializer
       module_symbol,
       Tag.create_exn 0,
       Array.to_list fields,
-      Flambda.End)
+      Flambda.End module_symbol)
   in
   let module_initializer =
     List.fold_left (fun program -> function

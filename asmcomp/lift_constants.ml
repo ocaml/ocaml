@@ -505,7 +505,7 @@ let program_symbols program =
       let fake_effect_symbol = new_fake_symbol () in
       Symbol.Tbl.add effect_tbl fake_effect_symbol (expr,previous_effect);
       loop program (Some fake_effect_symbol)
-    | Flambda.End -> ()
+    | Flambda.End _ -> ()
   in
   loop program None;
   initialize_symbol_tbl, symbol_definition_tbl, effect_tbl
@@ -605,7 +605,8 @@ let lift_constants program ~backend:_ =
     add_definitions_of_symbols constant_definitions
       initialize_symbol_tbl
       effect_tbl
-      Flambda.End components
+      (Flambda.End (Flambda_utils.root_symbol program))
+      components
   in
   let program =
     Symbol.Set.fold

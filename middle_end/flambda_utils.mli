@@ -94,3 +94,5 @@ val initialize_symbols
 val imported_symbols : Flambda.program -> Symbol.Set.t
 
 val needed_import_symbols : Flambda.program -> Symbol.Set.t
+
+val root_symbol : Flambda.program -> Symbol.t

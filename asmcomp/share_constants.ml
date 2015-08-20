@@ -104,7 +104,7 @@ let share_constants (program:Flambda.program) =
           expr
       in
       Effect (expr, loop program)
-    | End -> End
+    | End root -> End root
   in
   let program = loop program in
   Format.eprintf "share_constants output:@ %a\n" Flambda.print_program program;

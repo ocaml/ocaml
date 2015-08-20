@@ -336,7 +336,7 @@ let rec constant_symbol_declarations (program:Flambda.program) =
   | Effect (_, program)
   | Import_symbol (_, program) ->
     constant_symbol_declarations program
-  | End -> []
+  | End _ -> []
 
 let rec initialize_symbols (program:Flambda.program) =
   match program with
@@ -347,7 +347,7 @@ let rec initialize_symbols (program:Flambda.program) =
   | Let_rec_symbol (_, program)
   | Import_symbol (_, program) ->
     initialize_symbols program
-  | End -> []
+  | End _ -> []
 
 let rec imported_symbols (program:Flambda.program) =
   match program with
@@ -358,7 +358,7 @@ let rec imported_symbols (program:Flambda.program) =
     imported_symbols program
   | Import_symbol (symbol, program) ->
     Symbol.Set.add symbol (imported_symbols program)
-  | End ->
+  | End _ ->
     Symbol.Set.empty
 
 let needed_import_symbols (program:Flambda.program) =
@@ -376,3 +376,14 @@ let needed_import_symbols (program:Flambda.program) =
          (List.map (fun (s, _, _) -> s) (initialize_symbols program)))
   in
   Symbol.Set.diff dependencies defined_symbol
+
+let rec root_symbol (program:Flambda.program) =
+  match program with
+  | Effect (_, program)
+  | Let_symbol (_, _, program)
+  | Let_rec_symbol (_, program)
+  | Initialize_symbol (_, _, _, program)
+  | Import_symbol (_, program) ->
+    root_symbol program
+  | End root ->
+    root

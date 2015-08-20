@@ -143,7 +143,7 @@ type program =
   | Import_symbol of Symbol.t * program
   | Initialize_symbol of Symbol.t * Tag.t * t list * program
   | Effect of t * program
-  | End
+  | End of Symbol.t
 
 let fprintf = Format.fprintf
 module Int = Ext_types.Int
@@ -394,11 +394,11 @@ let rec print_program ppf (program : program) =
         letbody body
       | _ -> ul
     in
-    fprintf ppf "@[<2>(let@ @[<hv 1>(@[<2>%a@ %a@]"
+    fprintf ppf "let@ @[<hv 1>(@[<2>%a@ %a@]"
       Symbol.print symbol
       print_constant_defining_value constant_defining_value;
     let program = letbody body in
-    fprintf ppf ")@]@ %a)@]" print_program program
+    fprintf ppf ")@]@ %a" print_program program
   | Let_rec_symbol (defs, program) ->
     let bindings ppf id_arg_list =
       let spc = ref false in
@@ -426,7 +426,7 @@ let rec print_program ppf (program : program) =
     fprintf ppf "@[(effect @[<hv 1>%a@]@ %a)@]"
       print expr
       print_program program;
-  | End -> fprintf ppf "End"
+  | End root -> fprintf ppf "End %a" Symbol.print root
 
 (* CR mshinwell: this doesn't seem to cope with shadowed identifiers
    properly.  Check the original version.  Why don't we just do the
