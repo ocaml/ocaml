@@ -93,6 +93,11 @@ val iter_symbols
   -> f:(Symbol.t -> unit)
   -> unit
 
+val iter_symbols_on_program
+  : Flambda.program
+  -> f:(Symbol.t -> unit)
+  -> unit
+
 val map
    : (Flambda.t -> Flambda.t)
   -> (Flambda.named -> Flambda.named)

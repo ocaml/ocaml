@@ -90,3 +90,7 @@ val constant_symbol_declarations
 val initialize_symbols
   : Flambda.program ->
   (Symbol.t * Tag.t * Flambda.t list) list
+
+val imported_symbols : Flambda.program -> Symbol.Set.t
+
+val needed_import_symbols : Flambda.program -> Symbol.Set.t

@@ -348,3 +348,31 @@ let rec initialize_symbols (program:Flambda.program) =
   | Import_symbol (_, program) ->
     initialize_symbols program
   | End -> []
+
+let rec imported_symbols (program:Flambda.program) =
+  match program with
+  | Effect (_, program)
+  | Let_symbol (_, _, program)
+  | Let_rec_symbol (_, program)
+  | Initialize_symbol (_, _, _, program) ->
+    imported_symbols program
+  | Import_symbol (symbol, program) ->
+    Symbol.Set.add symbol (imported_symbols program)
+  | End ->
+    Symbol.Set.empty
+
+let needed_import_symbols (program:Flambda.program) =
+  let dependencies =
+    let set = ref Symbol.Set.empty in
+    Flambda_iterators.iter_symbols_on_program program
+      ~f:(fun s -> set := Symbol.Set.add s !set);
+    !set
+  in
+  let defined_symbol =
+    Symbol.Set.union
+      (Symbol.Set.of_list
+         (List.map fst (constant_symbol_declarations program)))
+      (Symbol.Set.of_list
+         (List.map (fun (s, _, _) -> s) (initialize_symbols program)))
+  in
+  Symbol.Set.diff dependencies defined_symbol

@@ -598,6 +598,12 @@ let lift_constants program ~backend:_ =
       effect_tbl
       Flambda.End components
   in
+  let program =
+    Symbol.Set.fold
+      (fun symbol program -> Flambda.Import_symbol (symbol, program))
+      (Flambda_utils.needed_import_symbols program)
+      program
+  in
   Format.eprintf "@.lift_constants output:@ %a\n" Flambda.print_program program;
   program
 
