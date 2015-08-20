@@ -689,7 +689,7 @@ let transl_store_structure glob map prims str =
     try
       let (pos, cc) = Ident.find_same id map in
       let init_val = apply_coercion Alias cc (Lvar id) in
-      Lprim(Psetfield(pos, false), [Lprim(Pgetglobal glob, []); init_val])
+      Lprim(Psetglobalfield(Exported, pos), [init_val])
     with Not_found ->
       fatal_error("Translmod.store_ident: " ^ Ident.unique_name id)
 
@@ -701,7 +701,7 @@ let transl_store_structure glob map prims str =
       let (pos, cc) = Ident.find_same id map in
       match cc with
         Tcoerce_none ->
-          Ident.add id (Lprim(Pfield pos, [Lprim(Pgetglobal glob, [])])) subst
+          Ident.add id (Lprim(Pgetglobalfield (glob, pos), [])) subst
       | _ ->
           if may_coerce then subst else assert false
     with Not_found ->
@@ -711,9 +711,8 @@ let transl_store_structure glob map prims str =
     List.fold_right (add_ident may_coerce) idlist subst
 
   and store_primitive (pos, prim) cont =
-    Lsequence(Lprim(Psetfield(pos, false),
-                    [Lprim(Pgetglobal glob, []);
-                     transl_primitive Location.none
+    Lsequence(Lprim(Psetglobalfield(Exported, pos),
+                    [transl_primitive Location.none
                        prim.pc_desc prim.pc_env prim.pc_type]),
               cont)
 
