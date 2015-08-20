@@ -62,7 +62,7 @@ color_t caml_allocation_color (void *hp);
 */
 extern uintnat caml_lifetime_shift;
 
-#define PROFINFO_MASK 0x3fffff
+#define PROFINFO_MASK 0xffffff
 #define BUILTIN_RETURN_ADDRESS \
   (__builtin_return_address(0) == NULL ? (void*)(0x1<<4) : __builtin_return_address(0))
 
@@ -97,7 +97,7 @@ extern uintnat caml_lifetime_shift;
 #define Decode_profinfo_hd(hd) \
   (((uint64_t) (Profinfo_hd (hd))) << (caml_lifetime_tracking ? caml_lifetime_shift : 4))
 
-#define Hd_no_profinfo(hd) ((hd) & ~(0x3fffffull << 42))
+#define Hd_no_profinfo(hd) ((hd) & ~(0xffffffull << 40))
 
 extern uintnat caml_allocation_profiling;
 extern uintnat caml_lifetime_tracking;

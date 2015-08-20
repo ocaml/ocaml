@@ -94,19 +94,19 @@ bits  63    10 9     8 7   0
 
 For x86-64 with allocation profiling:
 
-           22 bits         32 bits
+           24 bits         30 bits
      +----------------+----------------+-------------+
      | profiling info | wosize         | color | tag |
      +----------------+----------------+-------------+
-bits  63            42 41            10 9     8 7   0
+bits  63            40 39            10 9     8 7   0
 
 */
 
 /* CR mshinwell: these macros shouldn't be redefined when not profiling */
 
 #define Tag_hd(hd) ((tag_t) ((hd) & 0xFF))
-#define Wosize_hd(hd) (((mlsize_t) ((hd) >> 10)) & 0xffffffff)
-#define Profinfo_hd(hd) (((mlsize_t) ((hd) >> 42)) & 0x3fffff)
+#define Wosize_hd(hd) (((mlsize_t) ((hd) >> 10)) & 0x3fffffff)
+#define Profinfo_hd(hd) (((mlsize_t) ((hd) >> 40)) & 0xffffff)
 
 #define Hd_val(val) (((header_t *) (val)) [-1])        /* Also an l-value. */
 #define Hd_op(op) (Hd_val (op))                        /* Also an l-value. */
@@ -125,7 +125,7 @@ bits  63            42 41            10 9     8 7   0
 /* CR mshinwell: this needs to be fixed too
    #define Max_wosize (((intnat)1 << 54) - 1)
 */
-#define Max_wosize (((intnat)1 << 32) - 1)
+#define Max_wosize (((intnat)1 << 30) - 1)
 #else
 #define Max_wosize ((1 << 22) - 1)
 #endif

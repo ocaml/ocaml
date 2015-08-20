@@ -414,8 +414,8 @@ let emit_instr fallthrough i =
             assert (n <= 0xffff_ffffn);
             `	pushq	%r14\n`;
             `	{load_label_addr label}, %r14\n`;
-            `	andq	$0x0000000003fffff0, %r14\n`;
-            `	sal	$38, %r14\n`;
+            `	andq	$0x000000000ffffff0, %r14\n`;
+            `	sal	$36, %r14\n`;
             `	orq     %r14, {emit_reg i.res.(0)}\n`;
             `	popq	%r14\n`
           end
@@ -459,8 +459,8 @@ let emit_instr fallthrough i =
             `	popq	%r15\n`;
             (* For both, shift into the correct place and mask into the header word: *)
             `	.align 16\n{emit_label end_label}:`;
-            `	andq	$0x0000000003fffff0, %r14\n`;
-            `	sal	$38, %r14\n`;
+            `	andq	$0x000000000ffffff0, %r14\n`;
+            `	sal	$36, %r14\n`;
             `	orq     %r14, {emit_reg i.res.(0)}\n`;
             `	popq	%r14\n`
           end
@@ -869,7 +869,7 @@ let fundecl fundecl =
 (* Emission of data *)
 
 let add_profiling_info n info =
-  Nativeint.logor n (Nativeint.shift_left (Nativeint.of_int info) 42)
+  Nativeint.logor n (Nativeint.shift_left (Nativeint.of_int info) 40)
 
 let emit_item = function
     Cglobal_symbol s ->

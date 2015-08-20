@@ -48,7 +48,7 @@ extern uintnat caml_allocation_profiling;
 #define Make_header_with_profinfo(wosize, tag, color, profinfo)               \
       (/*Assert ((wosize) <= Max_wosize),*/                                   \
        ((header_t) (((caml_allocation_profiling                    ) ?          \
-                       ((((header_t) profinfo) & 0x3fffffull) << 42) : 0)     \
+                       ((((header_t) profinfo) & 0xffffffull) << 40) : 0)     \
                     + ((header_t) (wosize) << 10)                             \
                     + (color)                                                 \
                     + (tag_t) (tag)))                                         \

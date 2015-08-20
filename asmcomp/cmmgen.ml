@@ -483,7 +483,7 @@ let header ptr =
   if !Clflags.allocation_profiling then
 *)
     Cop(Cand, [Cop (Cload Word, [Cop(Cadda, [ptr; Cconst_int(-size_int)])]);
-               Cconst_int 0x0000_03ff_ffff_ffff;
+               Cconst_int 0x0000_00ff_ffff_ffff;
               ])
 (*
   else
