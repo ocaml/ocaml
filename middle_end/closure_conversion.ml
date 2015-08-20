@@ -450,67 +450,33 @@ and close_let_bound_expression t ?let_rec_ident let_bound_var env
       name_expr (Project_closure (project_closure))))
   | lam -> Expr (close t env lam)
 
-type 'a initialisation =
-  | Field_initialisation of 'a
+type initialisation =
+  | Field_initialisation of Symbol.t
   | Effect
 
-let rec make_variable_initialisation t (lam:Lambda.lambda)
-  : Lambda.lambda * int initialisation =
-  match lam with
-  | Llet (let_kind, id, defining_expr, body) ->
-    let body, pos = make_variable_initialisation t body in
-    Llet (let_kind, id, defining_expr, body), pos
-  | Lletrec (defs, body) ->
-    let body, pos = make_variable_initialisation t body in
-    Lletrec (defs, body), pos
-  | Lprim (Psetfield (pos, _), [Lprim (Pgetglobal id, []); expr]) ->
-    assert (Ident.same id t.current_unit_id);
-    expr, Field_initialisation pos
-  | Lsequence (lam1, lam2) ->
-    let lam2, pos = make_variable_initialisation t lam2 in
-    Lsequence (lam1, lam2), pos
-  | _ ->
-    lam, Effect
+(* This deconstruction has to handle initialisation of patterns that
+   are not simply compiled.
 
-let sequence_to_list lam =
-  let rec aux (lam:Lambda.lambda) acc =
-    match lam with
-    | Lsequence (lam1, lam2) ->
-      let acc = aux lam2 acc in
-      aux lam1 acc
-    | Llet (kind, id, def, Lsequence (lam1, lam2)) ->
-      (* We assume that id is not used in lam2 *)
-      Lambda.Llet (kind, id, def, lam1) ::
-      aux lam2 acc
-    | lam ->
-      lam :: acc
-  in
-  aux lam []
+   {[
+     type t =
+       | A of (int * int * int)
+       | B of int * int
 
-let split_module_initialization t (lam:Lambda.lambda)
-  : (Lambda.lambda * int initialisation) list =
-  Format.eprintf "splited @.%a@."
-    (Format.pp_print_list Printlambda.lambda)
-    (sequence_to_list lam);
-  List.map (make_variable_initialisation t)
-    (sequence_to_list lam)
+     let (A (a, _, b) | B (b, a)) = A (1, 2, 3)
+   ]}
 
-  (* match lam with *)
-  (* | Lconst (Const_pointer 0) -> [] *)
-  (* | Lsequence (lam1, lam2) -> *)
-  (*   (make_variable_initialisation t lam1) :: *)
-  (*   split_module_initialization t lam2 *)
-  (* | Llet (Strict, modul, def, *)
-  (*         Lsequence (Lprim (Psetfield (pos, _), [Lprim (Pgetglobal id, []); Lvar v]), *)
-  (*                    lam2)) *)
-  (*   when Ident.same v modul -> *)
-  (*   assert (Ident.same id t.current_unit_id); *)
-  (*   (def, Field_initialisation pos) :: *)
-  (*   split_module_initialization t lam2 *)
-  (* | _ -> *)
-  (*   Format.eprintf "unknown:@ %a@." *)
-  (*     Printlambda.lambda lam; *)
-  (*   assert false *)
+(let (match/1012 = (makeblock 0 (makeblock 0 1 2 3)))
+  (catch
+    (switch* match/1012
+     case tag 0:
+      (let (match/1017 =a (field 0 match/1012))
+        (exit 2 (field 0 match/1017) (field 2 match/1017)))
+     case tag 1: (exit 2 (field 1 match/1012) (field 0 match/1012)))
+   with (2 a/1005 b/1006)
+    (seq (setfield_imm 0 (global Pattern!) a/1005)
+      (setfield_imm 1 (global Pattern!) b/1006))))
+
+*)
 
 let lambda_to_flambda ~backend ~module_ident ~exported_fields module_initializer =
   imported_symbols := Symbol.Set.empty;
@@ -522,34 +488,64 @@ let lambda_to_flambda ~backend ~module_ident ~exported_fields module_initializer
       symbol_for_global' = Backend.symbol_for_global';
     }
   in
-  let initialisations = split_module_initialization t module_initializer in
+  let initialisations =
+    Deconstruct_initialisation.split_module_initialization module_initializer
+  in
   let module_symbol = Backend.symbol_for_global' module_ident in
-  let _env, initialisations =
+  let env, initialisations =
     List.fold_left (fun (env, l) (lam, init) ->
         match init with
-        | Field_initialisation pos ->
-          let linkage_name = Linkage_name.create ("init_" ^ string_of_int pos) in
-          let symbol = Symbol.create compilation_unit linkage_name in
-          let elt = close t env lam, Field_initialisation (pos, symbol) in
-          let env = Env.add_global env pos symbol in
-          env, elt::l
-        | Effect ->
+        | Deconstruct_initialisation.Field_initialisations pos -> begin
+            match pos with
+            | [] -> assert false
+            | [pos] ->
+              let linkage_name = Linkage_name.create ("init_" ^ string_of_int pos) in
+              let symbol = Symbol.create compilation_unit linkage_name in
+              let elt = close t env lam, Field_initialisation symbol in
+              let env = Env.add_global env pos symbol in
+              env, elt::l
+            | _ ->
+              let block_linkage_name =
+                Linkage_name.create ("init_intermediate_" ^
+                                     (String.concat "_" (List.map string_of_int pos)))
+              in
+              let block_symbol = Symbol.create compilation_unit block_linkage_name in
+              let block_elt = close t env lam, Field_initialisation block_symbol in
+              let elts =
+                List.mapi
+                  (fun field pos ->
+                     let linkage_name = Linkage_name.create ("init_" ^ string_of_int pos) in
+                     let symbol = Symbol.create compilation_unit linkage_name in
+                     let sym_v = Variable.create ("access_global_" ^ string_of_int pos) in
+                     let result_v = Variable.create ("tmp_" ^ string_of_int pos) in
+                     let value_v = Variable.create ("tmp_" ^ string_of_int pos) in
+                     let expr =
+                       Flambda.Let
+                         (Immutable, sym_v, Symbol block_symbol,
+                          Let(Immutable, result_v, Prim(Pfield 0, [sym_v], Debuginfo.none),
+                              Let(Immutable, value_v, Prim(Pfield field, [result_v], Debuginfo.none),
+                                  Var value_v)))
+                     in
+                     (pos, symbol), (expr, Field_initialisation symbol))
+                  (List.sort compare pos)
+              in
+              let env =
+                List.fold_left (fun env ((pos, symbol), _) ->
+                    Env.add_global env pos symbol)
+                  env elts
+              in
+              let elts = List.map snd elts in
+              env,  elts @ block_elt :: l
+          end
+        | Deconstruct_initialisation.Effect ->
           let elt = close t env lam, Effect in
           env, elt::l
       )
       (Env.empty, []) initialisations
   in
-  let field_map =
-    List.fold_left (fun map -> function
-        | _, Field_initialisation (pos, symbol) ->
-          Ext_types.Int.Map.add pos symbol map
-        | _, Effect -> map)
-      Ext_types.Int.Map.empty
-      initialisations
-  in
   let fields =
     Array.init exported_fields (fun i ->
-        match Ext_types.Int.Map.find i field_map with
+        match Env.find_global env i with
         | symbol ->
           let sym_v = Variable.create "global_symbol" in
           let field_v = Variable.create "global_field" in
@@ -570,7 +566,7 @@ let lambda_to_flambda ~backend ~module_ident ~exported_fields module_initializer
   in
   let module_initializer =
     List.fold_left (fun program -> function
-        | flam, Field_initialisation (_pos, symbol) ->
+        | flam, Field_initialisation symbol ->
           Flambda.Initialize_symbol (symbol, Tag.create_exn 0, [flam], program)
         | flam, Effect ->
           Flambda.Effect (flam, program)
