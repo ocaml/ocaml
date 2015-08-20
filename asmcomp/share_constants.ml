@@ -82,7 +82,8 @@ let share_constants (program:Flambda.program) =
       | defs ->
         Let_rec_symbol (defs,program)
       end
-    | Import_symbol (_,_) -> failwith "TODO import"
+    | Import_symbol (symbol,program) ->
+      Import_symbol (symbol,loop program)
     | Initialize_symbol (symbol,tag,fields,program) ->
       let fields =
         List.map (fun field ->
