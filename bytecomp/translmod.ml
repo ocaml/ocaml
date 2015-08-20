@@ -689,7 +689,7 @@ let transl_store_structure glob map prims str =
     try
       let (pos, cc) = Ident.find_same id map in
       let init_val = apply_coercion Alias cc (Lvar id) in
-      Lprim(Psetglobalfield(Exported, pos), [init_val])
+      Lprim(Psetglobalfield pos, [init_val])
     with Not_found ->
       fatal_error("Translmod.store_ident: " ^ Ident.unique_name id)
 
@@ -711,7 +711,7 @@ let transl_store_structure glob map prims str =
     List.fold_right (add_ident may_coerce) idlist subst
 
   and store_primitive (pos, prim) cont =
-    Lsequence(Lprim(Psetglobalfield(Exported, pos),
+    Lsequence(Lprim(Psetglobalfield pos,
                     [transl_primitive Location.none
                        prim.pc_desc prim.pc_env prim.pc_type]),
               cont)

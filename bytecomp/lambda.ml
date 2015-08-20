@@ -30,10 +30,6 @@ type loc_kind =
   | Loc_LOC
   | Loc_POS
 
-type exported =
-  | Exported
-  | Not_exported
-
 type primitive =
     Pidentity
   | Pignore
@@ -44,7 +40,7 @@ type primitive =
   | Pgetglobal of Ident.t
   | Psetglobal of Ident.t
   | Pgetglobalfield of Ident.t * int
-  | Psetglobalfield of exported * int
+  | Psetglobalfield of int
   (* Operations on heap blocks *)
   | Pmakeblock of int * mutable_flag
   | Pfield of int

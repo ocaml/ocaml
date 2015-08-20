@@ -313,7 +313,7 @@ and collect_equations_named (t:equations) (var:Variable.t) : Flambda.named -> eq
   (*     n; *)
   (*   Resolved Not_const *)
 
-  | Prim (Psetglobalfield (_, n), [arg], _) ->
+  | Prim (Psetglobalfield n, [arg], _) ->
     add t (Global n) (alias (Var arg));
     Resolved Not_const
 

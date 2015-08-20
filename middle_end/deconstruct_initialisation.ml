@@ -1,18 +1,18 @@
 
 let rec get_initialisation_sequence (lam:Lambda.lambda) =
   match lam with
-  | Lprim (Psetglobalfield (_, pos), [value]) -> [pos, value]
+  | Lprim (Psetglobalfield pos, [value]) -> [pos, value]
   | Lsequence (
-      Lprim (Psetglobalfield (_, pos), [value]),
+      Lprim (Psetglobalfield pos, [value]),
       expr ) ->
     (pos, value) :: get_initialisation_sequence expr
   | _ -> assert false
 
 let deconstruct_initialisation_pattern (lam:Lambda.lambda) =
   match lam with
-  | Lprim (Psetglobalfield (_, pos), [value]) -> [pos, value]
+  | Lprim (Psetglobalfield pos, [value]) -> [pos, value]
   | Lsequence (
-      Lprim (Psetglobalfield (_, pos), [value]),
+      Lprim (Psetglobalfield pos, [value]),
       expr ) ->
     (pos, value) :: get_initialisation_sequence expr
   | _ -> []
@@ -33,28 +33,11 @@ let find_initialisation lam =
     None
   with Found n -> Some n
 
-let rec make_variable_initialisation (lam:Lambda.lambda)
-  : Lambda.lambda * int =
-  match lam with
-  | Llet (let_kind, id, defining_expr, body) ->
-    let body, pos = make_variable_initialisation body in
-    Llet (let_kind, id, defining_expr, body), pos
-  | Lletrec (defs, body) ->
-    let body, pos = make_variable_initialisation body in
-    Lletrec (defs, body), pos
-  | Lprim (Psetglobalfield (_, pos), [expr]) ->
-    expr, pos
-  | Lsequence (lam1, lam2) ->
-    let lam2, pos = make_variable_initialisation lam2 in
-    Lsequence (lam1, lam2), pos
-  | _ ->
-    raise Exit
-
 let substitute_initialisation_with_raise cont expr =
   let rec loop (lam:Lambda.lambda) : Lambda.lambda =
     match lam with
-    | Lprim (Psetglobalfield (_, _), [_])
-    | Lsequence (Lprim (Psetglobalfield (_, _), [_]), _ ) ->
+    | Lprim (Psetglobalfield _, [_])
+    | Lsequence (Lprim (Psetglobalfield _, [_]), _ ) ->
       let initialisations = get_initialisation_sequence lam in
       let initialisations =
         (* We sort such that if there are multiple points where the

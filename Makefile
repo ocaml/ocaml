@@ -151,6 +151,7 @@ MIDDLE_END=\
   middle_end/simple_value_approx.cmo \
   middle_end/lift_code.cmo \
   middle_end/lift_strings.cmo \
+  middle_end/deconstruct_initialisation.cmo \
   middle_end/closure_conversion_aux.cmo \
   middle_end/closure_conversion.cmo \
   middle_end/find_recursive_functions.cmo \

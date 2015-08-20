@@ -336,7 +336,7 @@ Format.eprintf "Clambdagen.conv: %a\n"
                                 (Compilenv.symbol_for_global id)), [], dbg)],
             dbg)
 
-    | Prim(Psetglobalfield (_ex, i), [arg], dbg) ->
+    | Prim(Psetglobalfield i, [arg], dbg) ->
       Uprim(Psetfield (i,false),
             [Clambda.Uprim(Pgetglobal (Ident.create_persistent
                                          (Compilenv.make_symbol None)), [], dbg);
