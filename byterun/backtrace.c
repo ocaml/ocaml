@@ -38,11 +38,13 @@
 #include "caml/backtrace.h"
 #include "caml/fail.h"
 
+/* The table of debug information fragments */
+struct ext_table caml_debug_info;
+
 CAMLexport int caml_backtrace_active = 0;
 CAMLexport int caml_backtrace_pos = 0;
 CAMLexport code_t * caml_backtrace_buffer = NULL;
 CAMLexport value caml_backtrace_last_exn = Val_unit;
-CAMLexport value caml_debug_info = Val_emptylist;
 CAMLexport char * caml_cds_file = NULL;
 #define BACKTRACE_BUFFER_SIZE 1024
 
@@ -82,37 +84,13 @@ struct debug_info {
   struct ev_info *events;
   int already_read;
 };
-
-#define Debug_info_val(v) ((struct debug_info *) Data_custom_val(v))
-
-static void caml_finalize_debug_info(value di) {
-  free(Debug_info_val(di)->events);
-  Debug_info_val(di)->events = NULL;
-}
-
-static struct custom_operations caml_debug_info_ops = {
-    "_debug",
-    caml_finalize_debug_info,
-    custom_compare_default,
-    custom_hash_default,
-    custom_serialize_default,
-    custom_deserialize_default,
-    custom_compare_ext_default
-};
-
-static value caml_alloc_debug_info() {
-  return caml_alloc_custom(&caml_debug_info_ops, sizeof (struct debug_info), 0, 1);
-}
-
 static struct debug_info *find_debug_info(code_t pc) {
-  value dis = caml_debug_info;
-  while (dis != Val_emptylist) {
-    struct debug_info *di = Debug_info_val(Field(dis, 0));
+  int i;
+  for (i = 0; i < caml_debug_info.size; i++) {
+    struct debug_info *di = caml_debug_info.contents[i];
     if (pc >= di->start && pc < di->end)
       return di;
-    dis = Field(dis, 1);
   }
-
   return NULL;
 }
 
@@ -186,29 +164,24 @@ struct ev_info *process_debug_events(code_t code_start, value events_heap, mlsiz
 CAMLprim value caml_add_debug_info(code_t code_start, value code_size, value events_heap)
 {
   CAMLparam1(events_heap);
-  CAMLlocal1(debug_info);
+  struct debug_info *debug_info;
 
   /* build the OCaml-side debug_info value */
-  debug_info = caml_alloc_debug_info();
-  Debug_info_val(debug_info)->start = code_start;
-  Debug_info_val(debug_info)->end = (code_t)((char*) code_start + Long_val(code_size));
+  debug_info = caml_stat_alloc(sizeof(struct debug_info));
+
+  debug_info->start = code_start;
+  debug_info->end = (code_t)((char*) code_start + Long_val(code_size));
   if (events_heap == Val_unit) {
-    Debug_info_val(debug_info)->events = NULL;
-    Debug_info_val(debug_info)->num_events = 0;
-    Debug_info_val(debug_info)->already_read = 0;
+    debug_info->events = NULL;
+    debug_info->num_events = 0;
+    debug_info->already_read = 0;
   } else {
-    Debug_info_val(debug_info)->events =
-      process_debug_events(code_start, events_heap, &Debug_info_val(debug_info)->num_events);
-    Debug_info_val(debug_info)->already_read = 1;
+    debug_info->events =
+      process_debug_events(code_start, events_heap, &debug_info->num_events);
+    debug_info->already_read = 1;
   }
 
-  /* prepend it to the global caml_debug_info root (an OCaml list) */
-  {
-    value cons = caml_alloc(2, 0);
-    Store_field(cons, 0, debug_info);
-    Store_field(cons, 1, caml_debug_info);
-    caml_debug_info = cons;
-  }
+  caml_ext_table_add(&caml_debug_info, debug_info);
 
   CAMLreturn(Val_unit);
 }
@@ -218,19 +191,16 @@ CAMLprim value caml_remove_debug_info(code_t start)
   CAMLparam0();
   CAMLlocal2(dis, prev);
 
-  dis = caml_debug_info;
-  while (dis != Val_emptylist) {
-    struct debug_info *di = Debug_info_val(Field(dis, 0));
+  int i;
+  for (i = 0; i < caml_debug_info.size; i++) {
+    struct debug_info *di = caml_debug_info.contents[i];
     if (di->start == start) {
-      if (prev != Val_unit) {
-        Store_field(prev, 1, Field(dis, 1));
-      } else {
-        caml_debug_info = Field(dis, 1);
-      }
+      /* note that caml_ext_table_remove calls caml_stat_free on the
+         removed resource, bracketing the caml_stat_alloc call in
+         caml_add_debug_info. */
+      caml_ext_table_remove(&caml_debug_info, di);
       break;
     }
-    prev = dis;
-    dis = Field(dis, 1);
   }
 
   CAMLreturn(Val_unit);
@@ -432,7 +402,7 @@ void read_main_debug_info(struct debug_info *di)
 
 CAMLexport void caml_init_debug_info()
 {
-  caml_register_global_root(&caml_debug_info);
+  caml_ext_table_init(&caml_debug_info, 1);
   caml_add_debug_info(caml_start_code, Val_long(caml_code_size), Val_unit);
 }
 
@@ -536,7 +506,7 @@ CAMLexport void caml_print_exception_backtrace(void)
   int i;
   struct loc_info li;
 
-  if (caml_debug_info == Val_emptylist) {
+  if (caml_debug_info.size == 0) {
     fprintf(stderr, "(Cannot print stack backtrace: no debug information available)\n");
     return;
   }
@@ -554,7 +524,7 @@ CAMLprim value caml_convert_raw_backtrace_slot(value backtrace_slot) {
   CAMLlocal2(p, fname);
   struct loc_info li;
 
-  if (caml_debug_info == Val_emptylist)
+  if (caml_debug_info.size == 0)
     caml_failwith("No debug information available");
 
   extract_location_info(Codet_Val(backtrace_slot), &li);
@@ -605,7 +575,7 @@ CAMLprim value caml_get_exception_backtrace(value unit)
   CAMLparam0();
   CAMLlocal4(arr, raw_slot, slot, res);
 
-  if (caml_debug_info == Val_emptylist) {
+  if (caml_debug_info.size == 0) {
       res = Val_int(0); /* None */
   } else {
       arr = caml_alloc(caml_backtrace_pos, 0);

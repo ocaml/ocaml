@@ -42,8 +42,12 @@ Compilers:
   (Vladimir Brankov, review by Alain Frisch)
 - GPR#115: More precise typing of values at the C-- and Mach level,.
   (Xavier Leroy, review by Pierre Chambart)
+- GPR#207: Colors in compiler messages (warnings, errors)
+  (Simon Cruanes, review by Gabriel Scherer)
 
 Runtime system:
+- PR#3612: allow allocating custom block with finalizers in the minor heap
+  (Pierre Chambart)
 - PR#6517: use ISO C99 types {,u}int{32,64}_t in preference to our homegrown
   types {,u}int{32,64}.
   (Xavier Leroy)
@@ -108,6 +112,8 @@ OCamlbuild:
   (ygrek)
 
 Bug fixes:
+- PR#3612: memory leak in bigarray read from file
+  (Pierre Chambart, report by Gary Huber)
 * PR#4539: change exception string raised when comparing functional values
   (Nicolas Braud-Santoni, report by Eric Cooper)
 - PR#4832: Filling bigarrays may block out runtime
@@ -156,6 +162,8 @@ Bug fixes:
   and fix by Frederic Bour)
 - GPR#220: minor -dsource error on recursive modules
   (Hongbo Zhang)
+- GPR#228: fix a dangling internal pointer in (bytecode )debug_info
+  (Gabriel Scherer and Mark Shinwell and Xavier Leroy)
 
 Features wishes:
 - PR#4714: List.cons
@@ -203,8 +211,8 @@ Features wishes:
 - GPR#165, GPR#221: fix windows compilation warnings
   (Bernhard Schommer, Gabriel Scherer, report by Alain Frisch)
 
-OCaml 4.02.3:
--------------
+OCaml 4.02.3 (27 Jul 2015):
+---------------------------
 
 Bug fixes:
 - PR#6908: Top-level custom printing for GADTs: interface change in 4.02.2
@@ -223,7 +231,7 @@ Feature wishes:
   (Hugo Heuzard)
 
 OCaml 4.02.2 (17 Jun 2015):
--------------
+---------------------------
 
 (Changes that can break existing programs are marked with a "*")
 

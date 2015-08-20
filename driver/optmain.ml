@@ -129,6 +129,11 @@ module Options = Main_args.Make_optcomp_options (struct
   let _w s = Warnings.parse_options false s
   let _warn_error s = Warnings.parse_options true s
   let _warn_help = Warnings.help_warnings
+  let _color option =
+    begin match Clflags.parse_color_setting option with
+          | None -> ()
+          | Some setting -> Clflags.color := setting
+    end
   let _where () = print_standard_library ()
 
   let _nopervasives = set nopervasives

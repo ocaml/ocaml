@@ -368,6 +368,19 @@ let mk_warn_help f =
   "-warn-help", Arg.Unit f, " Show description of warning numbers"
 ;;
 
+let mk_color f =
+  "-color", Arg.Symbol (["auto"; "always"; "never"], f),
+  Printf.sprintf
+  "  Enable or disable colors in compiler messages\n\
+  \    The following settings are supported:\n\
+  \      auto    use heuristics to enable colors only if supported\n\
+  \      always  enable colors\n\
+  \      never   disable colors\n\
+  \    The default setting is 'auto', and the current heuristic\n\
+  \    checks that the TERM environment variable exists and is\n\
+  \    not empty or \"dumb\", and that isatty(stderr) holds."
+;;
+
 let mk_where f =
   "-where", Arg.Unit f, " Print location of standard library and exit"
 ;;
@@ -551,6 +564,8 @@ module type Compiler_options = sig
   val _v : unit -> unit
   val _verbose : unit -> unit
   val _where : unit -> unit
+  val _color : string -> unit
+
   val _nopervasives : unit -> unit
 end
 ;;
@@ -659,6 +674,7 @@ struct
     mk_cc F._cc;
     mk_cclib F._cclib;
     mk_ccopt F._ccopt;
+    mk_color F._color;
     mk_compat_32 F._compat_32;
     mk_config F._config;
     mk_custom F._custom;
@@ -783,6 +799,7 @@ struct
     mk_cc F._cc;
     mk_cclib F._cclib;
     mk_ccopt F._ccopt;
+    mk_color F._color;
     mk_compact F._compact;
     mk_config F._config;
     mk_dtypes F._annot;

@@ -12,6 +12,7 @@
 /***********************************************************************/
 
 #include <string.h>
+#include "caml/custom.h"
 #include "caml/config.h"
 #include "caml/fail.h"
 #include "caml/finalise.h"
@@ -33,7 +34,9 @@ CAMLexport value *caml_young_ptr = NULL, *caml_young_limit = NULL;
 
 CAMLexport struct caml_ref_table
   caml_ref_table = { NULL, NULL, NULL, NULL, NULL, 0, 0},
-  caml_weak_ref_table = { NULL, NULL, NULL, NULL, NULL, 0, 0};
+  caml_weak_ref_table = { NULL, NULL, NULL, NULL, NULL, 0, 0},
+  caml_finalize_table = { NULL, NULL, NULL, NULL, NULL, 0, 0};
+/* table of custom blocks containing finalizers in the minor heap */
 
 int caml_in_minor_collection = 0;
 
@@ -248,12 +251,20 @@ void caml_empty_minor_heap (void)
         }
       }
     }
+    for (r = caml_finalize_table.base; r < caml_finalize_table.ptr; r++){
+      int hd = Hd_val ((value)*r);
+      if (hd != 0){         /* If not oldified the finalizer must be called */
+        void (*final_fun)(value) = Custom_ops_val((value)*r)->finalize;
+        final_fun((value)*r);
+      }
+    }
     if (caml_young_ptr < caml_young_start) caml_young_ptr = caml_young_start;
     caml_stat_minor_words += caml_young_end - caml_young_ptr;
     caml_young_ptr = caml_young_end;
     caml_young_limit = caml_young_start;
     clear_table (&caml_ref_table);
     clear_table (&caml_weak_ref_table);
+    clear_table (&caml_finalize_table);
     caml_gc_message (0x02, ">", 0);
     caml_in_minor_collection = 0;
     caml_stat_promoted_words += caml_allocated_words - prev_alloc_words;

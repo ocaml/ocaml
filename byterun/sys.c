@@ -22,7 +22,9 @@
 #include <time.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#if !_WIN32
+#if _WIN32
+#include <io.h> /* for isatty */
+#else
 #include <sys/wait.h>
 #endif
 #include "caml/config.h"
@@ -49,6 +51,7 @@
 #include "caml/stacks.h"
 #include "caml/sys.h"
 #include "caml/gc_ctrl.h"
+#include "caml/io.h"
 
 static char * error_message(void)
 {
@@ -484,4 +487,21 @@ CAMLprim value caml_sys_read_directory(value path)
   result = caml_copy_string_array((char const **) tbl.contents);
   caml_ext_table_free(&tbl, 1);
   CAMLreturn(result);
+}
+
+/* Return true if the value is a filedescriptor (int) that is
+ * (presumably) open on an interactive terminal */
+CAMLprim value caml_sys_isatty(value chan)
+{
+  int fd;
+  value ret;
+
+  fd = (Channel(chan))->fd;
+#ifdef _WIN32
+  ret = Val_bool(_isatty(fd)); /* https://msdn.microsoft.com/en-us/library/f4s0ddew.aspx */
+#else
+  ret = Val_bool(isatty(fd));
+#endif
+
+  return ret;
 }

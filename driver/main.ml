@@ -128,6 +128,11 @@ module Options = Main_args.Make_bytecomp_options (struct
   let _w = (Warnings.parse_options false)
   let _warn_error = (Warnings.parse_options true)
   let _warn_help = Warnings.help_warnings
+  let _color option =
+    begin match Clflags.parse_color_setting option with
+          | None -> ()
+          | Some setting -> Clflags.color := setting
+    end
   let _where = print_standard_library
   let _verbose = set verbose
   let _nopervasives = set nopervasives
