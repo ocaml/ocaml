@@ -144,11 +144,17 @@ let rec iter_on_set_of_closures_of_program (program : Flambda.program) ~f =
   match program with
   | Let_symbol (_, Set_of_closures set_of_closures, program) ->
     f set_of_closures;
+    Variable.Map.iter (fun _ (function_decl : Flambda.function_declaration) ->
+        iter_on_sets_of_closures f function_decl.body)
+      set_of_closures.function_decls.funs;
     iter_on_set_of_closures_of_program program ~f
   | Let_rec_symbol (defs, program) ->
     List.iter (function
         | (_, Flambda.Set_of_closures set_of_closures) ->
-          f set_of_closures
+          f set_of_closures;
+          Variable.Map.iter (fun _ (function_decl : Flambda.function_declaration) ->
+              iter_on_sets_of_closures f function_decl.body)
+            set_of_closures.function_decls.funs
         | _ -> ()) defs;
     iter_on_set_of_closures_of_program program ~f
   | Let_symbol (_, _, program)
