@@ -263,8 +263,10 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
     Misc.fatal_errorf "[Psetfield %i] (to the current compilation unit) is \
         forbidden upon entry to the middle end" pos
   | Lprim (Pgetglobal id, []) when Ident.is_predef_exn id ->
-    assert (not (Ident.same id t.current_unit_id));
-    name_expr (Predefined_exn id)
+    let symbol = t.symbol_for_global' id in
+    imported_symbols := Symbol.Set.add symbol !imported_symbols;
+    name_expr (Symbol symbol)
+    (* name_expr (Predefined_exn id) *)
   | Lprim (Pgetglobal id, []) ->
     assert (not (Ident.same id t.current_unit_id));
     let symbol = t.symbol_for_global' id in
