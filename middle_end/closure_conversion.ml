@@ -478,6 +478,64 @@ type initialisation =
 
 *)
 
+let build_initialization
+    compilation_unit t
+    (env, initialisations)
+    (lam, (init:Deconstruct_initialisation.initialisation)) =
+  match init with
+  | Field_initialisations pos -> begin
+      match pos with
+      | [] -> assert false
+      | [pos] ->
+        (* If there is a single initialised global, we can assign it directly to a symbol *)
+        let linkage_name = Linkage_name.create ("init_" ^ string_of_int pos) in
+        let symbol = Symbol.create compilation_unit linkage_name in
+        let elt = close t env lam, Field_initialisation symbol in
+        let env = Env.add_global env pos symbol in
+        env, elt :: initialisations
+      | _ ->
+        (* If there are multiple initialised globals, the value
+           returned by the expression is a block containing the
+           results of the different fields. So the original result is
+           assigned to a symbol [block_symbol], that is accessed to
+           initialize the real globals.
+        *)
+        let block_linkage_name =
+          Linkage_name.create ("init_intermediate_" ^
+                               (String.concat "_" (List.map string_of_int pos)))
+        in
+        let block_symbol = Symbol.create compilation_unit block_linkage_name in
+        let block_elt = close t env lam, Field_initialisation block_symbol in
+        let elts =
+          List.mapi
+            (fun field pos ->
+               let linkage_name = Linkage_name.create ("init_" ^ string_of_int pos) in
+               let symbol = Symbol.create compilation_unit linkage_name in
+               let sym_v = Variable.create ("access_global_" ^ string_of_int pos) in
+               let result_v = Variable.create ("tmp_" ^ string_of_int pos) in
+               let value_v = Variable.create ("tmp_" ^ string_of_int pos) in
+               let expr =
+                 Flambda.Let
+                   (Immutable, sym_v, Symbol block_symbol,
+                    Let(Immutable, result_v, Prim(Pfield 0, [sym_v], Debuginfo.none),
+                        Let(Immutable, value_v, Prim(Pfield field, [result_v], Debuginfo.none),
+                            Var value_v)))
+               in
+               (pos, symbol), (expr, Field_initialisation symbol))
+            (List.sort compare pos)
+        in
+        let env =
+          List.fold_left (fun env ((pos, symbol), _) ->
+              Env.add_global env pos symbol)
+            env elts
+        in
+        let elts = List.map snd elts in
+        env,  elts @ block_elt :: initialisations
+    end
+  | Effect ->
+    let elt = close t env lam, Effect in
+    env, elt :: initialisations
+
 let lambda_to_flambda ~backend ~module_ident ~exported_fields module_initializer =
   imported_symbols := Symbol.Set.empty;
   let module Backend = (val backend : Backend_intf.S) in
@@ -493,55 +551,7 @@ let lambda_to_flambda ~backend ~module_ident ~exported_fields module_initializer
   in
   let module_symbol = Backend.symbol_for_global' module_ident in
   let env, initialisations =
-    List.fold_left (fun (env, l) (lam, init) ->
-        match init with
-        | Deconstruct_initialisation.Field_initialisations pos -> begin
-            match pos with
-            | [] -> assert false
-            | [pos] ->
-              let linkage_name = Linkage_name.create ("init_" ^ string_of_int pos) in
-              let symbol = Symbol.create compilation_unit linkage_name in
-              let elt = close t env lam, Field_initialisation symbol in
-              let env = Env.add_global env pos symbol in
-              env, elt::l
-            | _ ->
-              let block_linkage_name =
-                Linkage_name.create ("init_intermediate_" ^
-                                     (String.concat "_" (List.map string_of_int pos)))
-              in
-              let block_symbol = Symbol.create compilation_unit block_linkage_name in
-              let block_elt = close t env lam, Field_initialisation block_symbol in
-              let elts =
-                List.mapi
-                  (fun field pos ->
-                     let linkage_name = Linkage_name.create ("init_" ^ string_of_int pos) in
-                     let symbol = Symbol.create compilation_unit linkage_name in
-                     let sym_v = Variable.create ("access_global_" ^ string_of_int pos) in
-                     let result_v = Variable.create ("tmp_" ^ string_of_int pos) in
-                     let value_v = Variable.create ("tmp_" ^ string_of_int pos) in
-                     let expr =
-                       Flambda.Let
-                         (Immutable, sym_v, Symbol block_symbol,
-                          Let(Immutable, result_v, Prim(Pfield 0, [sym_v], Debuginfo.none),
-                              Let(Immutable, value_v, Prim(Pfield field, [result_v], Debuginfo.none),
-                                  Var value_v)))
-                     in
-                     (pos, symbol), (expr, Field_initialisation symbol))
-                  (List.sort compare pos)
-              in
-              let env =
-                List.fold_left (fun env ((pos, symbol), _) ->
-                    Env.add_global env pos symbol)
-                  env elts
-              in
-              let elts = List.map snd elts in
-              env,  elts @ block_elt :: l
-          end
-        | Deconstruct_initialisation.Effect ->
-          let elt = close t env lam, Effect in
-          env, elt::l
-      )
-      (Env.empty, []) initialisations
+    List.fold_left (build_initialization compilation_unit t) (Env.empty, []) initialisations
   in
   let fields =
     Array.init exported_fields (fun i ->
