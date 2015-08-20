@@ -98,6 +98,7 @@ let assign_symbols_and_collect_constant_definitions ~program
         record_definition (Block (Tag.create_exn tag, fields))
       | Set_of_closures (
           { function_decls = { funs; set_of_closures_id; _ };
+            free_vars;
             specialised_args; _ } as set) ->
         assert (not (Set_of_closures_id.Set.mem set_of_closures_id
                        inconstants.closure));
@@ -115,6 +116,9 @@ let assign_symbols_and_collect_constant_definitions ~program
             Variable.Tbl.add var_to_definition_tbl fun_var
               (Symbol closure_symbol))
           funs;
+        Variable.Map.iter (fun arg var ->
+            Variable.Tbl.add var_to_definition_tbl arg (Variable var))
+          free_vars;
         Variable.Map.iter (fun arg var ->
             Variable.Tbl.add var_to_definition_tbl arg (Variable var))
           specialised_args
