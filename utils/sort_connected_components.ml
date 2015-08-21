@@ -142,7 +142,15 @@ module Make(Id : Identifiable) = struct
       !back in
     let integer_graph = Array.init size (fun i ->
         let _, dests = a.(i) in
-        Id.Set.fold (fun dest acc -> (Id.Map.find dest back) :: acc) dests []) in
+        Id.Set.fold (fun dest acc ->
+            let v =
+              try Id.Map.find dest back
+              with Not_found ->
+                Misc.fatal_errorf
+                  "Sort_connect_components: missing dependency %a"
+                  Id.print dest
+            in
+            v :: acc) dests []) in
     { back; forth }, integer_graph
 
   let component_graph graph =
