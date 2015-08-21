@@ -96,3 +96,5 @@ val imported_symbols : Flambda.program -> Symbol.Set.t
 val needed_import_symbols : Flambda.program -> Symbol.Set.t
 
 val root_symbol : Flambda.program -> Symbol.t
+
+val contains_static_exn : Flambda.named -> Static_exception.t -> bool

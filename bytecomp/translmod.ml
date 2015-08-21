@@ -794,6 +794,13 @@ let transl_store_implementation module_name (str, restr) =
   let module_id = Ident.create_persistent module_name in
   (module_id, size, exported), lam
 
+
+let structure_size module_name (str, cc) =
+  (* TO REMOVE ! *)
+  let (_, _, size), _ = transl_store_implementation module_name (str, cc) in
+  (* /TO REMOVE! *)
+  size
+
 (* Compile a toplevel phrase *)
 
 let toploop_ident = Ident.create_persistent "Toploop"

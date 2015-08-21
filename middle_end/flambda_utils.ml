@@ -387,3 +387,15 @@ let rec root_symbol (program:Flambda.program) =
     root_symbol program
   | End root ->
     root
+
+let contains_static_exn flam stexn =
+  try
+    Flambda_iterators.iter_on_named
+      (function
+        | Flambda.Static_raise (ex, _) when Static_exception.equal ex stexn ->
+          raise Exit
+        | _ -> ())
+      (fun _ -> ())
+      flam;
+    false
+  with Exit -> true

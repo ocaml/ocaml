@@ -124,15 +124,20 @@ let prep_flambda_for_export ppf flam ~backend =
   Flambda_invariants.check_exn ~kind program;
   let program = Share_constants.share_constants program in
   Flambda_invariants.check_exn ~kind program;
-  let program = Inline_and_simplify.run ~never_inline:true ~backend program in
-  Flambda_invariants.check_exn ~kind program;
-  let export = Build_export_info.build_export_info program in
-  (* Compilenv.set_export_info export; *)
+  (* let program = Inline_and_simplify.run ~never_inline:true ~backend program in *)
+  (* Flambda_invariants.check_exn ~kind program; *)
   if !Clflags.dump_flambda
   then begin
-    Format.fprintf ppf "After Build_export_info:@ %a@."
+    Format.fprintf ppf "@.After Inline_and_simplify:@ %a@."
       Flambda.print_program program
   end;
+  let export = Build_export_info.build_export_info program in
+  (* Compilenv.set_export_info export; *)
+  (* if !Clflags.dump_flambda *)
+  (* then begin *)
+  (*   Format.fprintf ppf "After Build_export_info:@ %a@." *)
+  (*     Flambda.print_program program *)
+  (* end; *)
   Flambda_invariants.check_exn ~kind program;
 (*
   Symbol.Map.iter (fun _ set_of_closures ->

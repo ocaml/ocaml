@@ -93,6 +93,7 @@ let make_package_object ppf members targetobj targetname coercion
         | PM_impl _ -> Some(Ident.create_persistent m.pm_name))
       members in
   let size, lam =
+    (* TODO change: this is completely the wrong function !!! *)
     Translmod.transl_store_package
       components (Ident.create_persistent targetname) coercion
   in
@@ -103,7 +104,7 @@ let make_package_object ppf members targetobj targetname coercion
       ~sourcefile
       ~prefixname
       ~backend
-      ~exported_fields:size
+      ~size
       ~module_ident:(failwith "TODO")
       ~module_initializer:lam
   in

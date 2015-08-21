@@ -14,7 +14,7 @@
 let verbose = try ignore (Sys.getenv "FLAMBDA_VERBOSE"); true with _ -> false
 
 let middle_end ppf ~sourcefile ~prefixname ~backend
-    ~exported_fields
+    ~size
     ~module_ident
     ~module_initializer =
   (* CR mshinwell: consider whether everything should run on
@@ -52,8 +52,8 @@ let middle_end ppf ~sourcefile ~prefixname ~backend
   let flam =
     module_initializer
     |> Eliminate_const_block.run
-    |> Lift_strings.run
-    |> Closure_conversion.lambda_to_flambda ~backend ~module_ident ~exported_fields
+    (* |> Lift_strings.run *)
+    |> Closure_conversion.lambda_to_flambda ~backend ~module_ident ~size
   in
   dump_and_check "After closure conversion" flam;
   let rec loop flam =
@@ -62,6 +62,8 @@ let middle_end ppf ~sourcefile ~prefixname ~backend
     if !round_number > !Clflags.simplify_rounds then flam
     else
       flam
+      ++ Lift_code.lift_lets
+      ++ Lift_let_to_initialize_symbol.lift ~backend
       ++ Lift_code.lift_lets
       ++ Remove_unused_closure_vars.remove_unused_closure_variables
       ++ Inline_and_simplify.run ~never_inline:false ~backend

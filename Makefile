@@ -154,6 +154,7 @@ MIDDLE_END=\
   middle_end/deconstruct_initialisation.cmo \
   middle_end/closure_conversion_aux.cmo \
   middle_end/closure_conversion.cmo \
+  middle_end/lift_let_to_initialize_symbol.cmo \
   middle_end/find_recursive_functions.cmo \
   middle_end/invariant_params.cmo \
   middle_end/inconstant_idents.cmo \

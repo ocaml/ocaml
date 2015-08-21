@@ -80,8 +80,11 @@ let assign_symbols_and_collect_constant_definitions ~program
   let assign_symbol var (named : Flambda.named) =
     if not (Variable.Set.mem var inconstants.id) then begin
       let assign_symbol () =
-        Variable.Tbl.add var_to_symbol_tbl var
-          (Compilenv.new_const_symbol' ~name:(Variable.unique_name var) ())
+        let symbol = Compilenv.new_const_symbol' ~name:(Variable.unique_name var) () in
+        Format.eprintf "assign_symbol %a -> %a@."
+          Variable.print var
+          Symbol.print symbol;
+        Variable.Tbl.add var_to_symbol_tbl var symbol
       in
       let assign_existing_symbol = Variable.Tbl.add var_to_symbol_tbl var in
       let record_definition = Variable.Tbl.add var_to_definition_tbl var in
@@ -194,9 +197,18 @@ let resolve_variable
     (var:Variable.t) : Flambda.constant_defining_value_block_field =
   match Variable.Map.find var aliases with
   | exception Not_found ->
+    Format.eprintf "no alias for %a@."
+      Variable.print var;
     variable_field_definition var_to_symbol_tbl var_to_definition_tbl var
-  | Symbol s -> Symbol s
+  | Symbol s ->
+    Format.eprintf "symbol alias %a -> %a@."
+      Variable.print var
+      Symbol.print s;
+    Symbol s
   | Variable aliased_variable ->
+    Format.eprintf "variable alias %a -> %a@."
+      Variable.print var
+      Variable.print aliased_variable;
     variable_field_definition var_to_symbol_tbl var_to_definition_tbl aliased_variable
 
 let translate_set_of_closures

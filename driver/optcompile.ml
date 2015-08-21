@@ -57,6 +57,11 @@ let print_if ppf flag printer arg =
 let (++) x f = f x
 let (+++) (x, y) f = (x, f y)
 
+let do_transl modulename modul =
+  let size = Translmod.structure_size modulename modul in
+  let id, lam = Translmod.transl_implementation_native modulename modul in
+  (id, size), lam
+
 let implementation ppf sourcefile outputprefix ~backend =
   Compmisc.init_path true;
   let modulename = module_of_filename ppf sourcefile outputprefix in
@@ -85,24 +90,19 @@ let implementation ppf sourcefile outputprefix ~backend =
       ++ print_if ppf Clflags.dump_typedtree
           Printtyped.implementation_with_coercion
       ++ Timings.(start_id (Transl sourcefile))
-      ++ Translmod.transl_store_implementation modulename
+      ++ do_transl modulename
       ++ Timings.(stop_id (Transl sourcefile))
       +++ print_if ppf Clflags.dump_rawlambda Printlambda.lambda
       ++ Timings.(start_id (Generate sourcefile))
       +++ Simplif.simplify_lambda
       +++ print_if ppf Clflags.dump_lambda Printlambda.lambda
-      ++ (fun ((module_ident, size, exported), lam) ->
-        let flam =
+      ++ (fun ((module_ident, size), lam) ->
           Middle_end.middle_end ppf ~sourcefile ~prefixname:outputprefix
-            ~exported_fields:exported
+            ~size
             ~module_ident
             ~backend
-            ~module_initializer:lam
-        in
-        size, flam)
-      ++ (fun (size, flam) ->
-        Asmgen.compile_implementation ~sourcefile outputprefix ~backend
-          ppf ~size flam);
+            ~module_initializer:lam)
+      ++ Asmgen.compile_implementation ~sourcefile outputprefix ~backend ppf;
       Compilenv.save_unit_info cmxfile;
       Timings.(stop (Generate sourcefile));
     end;

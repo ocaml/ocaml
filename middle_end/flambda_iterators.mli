@@ -35,6 +35,12 @@ val iter_expr
   -> Flambda.t
   -> unit
 
+val iter_on_named
+   : (Flambda.t -> unit)
+  -> (Flambda.named -> unit)
+  -> Flambda.named
+  -> unit
+
 (* CR-someday mshinwell: we might need to add the corresponding variable to
    the parameters of the user function for [iter_named] *)
 val iter_named

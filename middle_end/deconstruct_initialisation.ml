@@ -1,4 +1,24 @@
 
+let rec push_initialisation_down (lam:Lambda.lambda) : Lambda.lambda =
+  match lam with
+  | Lsequence (
+      Lprim (Psetglobalfield pos, [value]),
+      Llet (kind, id, def, body)) ->
+    (* Assumes that def does not use the initialised global *)
+    Llet (kind, id, def,
+          push_initialisation_down
+            Lambda.(Lsequence (
+                Lprim (Psetglobalfield pos, [value]),
+                body)))
+  | Lprim (Psetglobalfield _, [_]) -> lam
+  | Lsequence (
+      Lprim (Psetglobalfield _, [_]),
+      _ ) ->
+    lam
+  | _ ->
+    Format.eprintf "not handled in push: %a@." Printlambda.lambda lam;
+    assert false
+
 let rec get_initialisation_sequence (lam:Lambda.lambda) =
   match lam with
   | Lprim (Psetglobalfield pos, [value]) -> [pos, value]
@@ -6,7 +26,9 @@ let rec get_initialisation_sequence (lam:Lambda.lambda) =
       Lprim (Psetglobalfield pos, [value]),
       expr ) ->
     (pos, value) :: get_initialisation_sequence expr
-  | _ -> assert false
+  | _ ->
+    Format.eprintf "not handled: %a@." Printlambda.lambda lam;
+    assert false
 
 let deconstruct_initialisation_pattern (lam:Lambda.lambda) =
   match lam with
@@ -38,6 +60,7 @@ let substitute_initialisation_with_raise cont expr =
     match lam with
     | Lprim (Psetglobalfield _, [_])
     | Lsequence (Lprim (Psetglobalfield _, [_]), _ ) ->
+      let lam = push_initialisation_down lam in
       let initialisations = get_initialisation_sequence lam in
       let initialisations =
         (* We sort such that if there are multiple points where the
@@ -122,9 +145,12 @@ let sequence_to_list lam =
       let acc = aux lam2 acc in
       aux lam1 acc
     | Llet (kind, id, def, Lsequence (lam1, lam2)) ->
-      (* We assume that id is not used in lam2 *)
-      Lambda.Llet (kind, id, def, lam1) ::
-      aux lam2 acc
+      (* Quadratic: we may need to find something cleaner *)
+      if Lambda.IdentSet.mem id (Lambda.free_variables lam2)
+      then lam :: acc
+      else
+        Lambda.Llet (kind, id, def, lam1) ::
+        aux lam2 acc
     | lam ->
       lam :: acc
   in

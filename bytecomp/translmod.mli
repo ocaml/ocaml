@@ -31,6 +31,8 @@ val transl_store_implementation:
 
 val transl_implementation_native:
   string -> structure * module_coercion -> Ident.t * lambda
+val structure_size:
+  string -> structure * module_coercion -> int
 
 val transl_toplevel_definition: structure -> lambda
 val transl_package:

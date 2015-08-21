@@ -292,7 +292,9 @@ and print_named ppf (named : named) =
   | Prim(prim, args, _) ->
     fprintf ppf "@[<2>(%a%a)@]" Printlambda.primitive prim
       Variable.print_list args
-  | Expr expr -> lam ppf expr
+  | Expr expr ->
+    fprintf ppf "*%a" lam expr
+    (* lam ppf expr *)
 
 and print_function_declaration ppf var (f : function_declaration) =
   let idents ppf =
