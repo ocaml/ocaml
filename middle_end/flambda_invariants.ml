@@ -347,7 +347,7 @@ let primitive_invariants flam ~no_access_to_global_module_identifiers =
       | _ -> ())
     flam
 
-let declared_var_within_closure flam =
+let declared_var_within_closure (flam:Flambda.program) =
   let bound = ref Var_within_closure.Set.empty in
   let bound_multiple_times = ref None in
   let add_and_check var =
@@ -356,7 +356,7 @@ let declared_var_within_closure flam =
     end;
     bound := Var_within_closure.Set.add var !bound
   in
-  Flambda_iterators.iter_on_sets_of_closures (fun { Flambda.free_vars; _ } ->
+  Flambda_iterators.iter_on_set_of_closures_of_program ~f:(fun { Flambda.free_vars; _ } ->
       Variable.Map.iter (fun id _ ->
           let var = Var_within_closure.wrap id in
           add_and_check var)
@@ -364,7 +364,7 @@ let declared_var_within_closure flam =
     flam;
   !bound, !bound_multiple_times
 
-let no_var_within_closure_is_bound_multiple_times flam =
+let no_var_within_closure_is_bound_multiple_times (flam:Flambda.program) =
   match declared_var_within_closure flam with
   | _, Some var -> raise (Var_within_closure_bound_multiple_times var)
   | _, None -> ()
@@ -416,7 +416,7 @@ let used_closure_ids (program:Flambda.program) =
   Flambda_iterators.iter_named_of_program ~f program;
   !used
 
-let used_vars_within_closures flam =
+let used_vars_within_closures (flam:Flambda.program) =
   let used = ref Var_within_closure.Set.empty in
   let f (flam : Flambda.named) =
     match flam with
@@ -424,7 +424,7 @@ let used_vars_within_closures flam =
       used := Var_within_closure.Set.add var !used
     | _ -> ()
   in
-  Flambda_iterators.iter_named f flam;
+  Flambda_iterators.iter_named_of_program ~f flam;
   !used
 
 let every_used_function_from_current_compilation_unit_is_declared (program:Flambda.program) =
@@ -442,7 +442,7 @@ let every_used_function_from_current_compilation_unit_is_declared (program:Flamb
   else raise (Unbound_closure_ids counter_examples)
 
 let every_used_var_within_closure_from_current_compilation_unit_is_declared
-      flam =
+      (flam:Flambda.program) =
   let current_compilation_unit = Compilation_unit.get_current_exn () in
   let declared, _ = declared_var_within_closure flam in
   let used = used_vars_within_closures flam in
@@ -495,14 +495,13 @@ let check_exn ?(kind=Normal) ?(cmxfile=false) (flam:Flambda.program) =
     variable_and_symbol_invariants flam;
     no_closure_id_is_bound_multiple_times flam;
     every_used_function_from_current_compilation_unit_is_declared flam;
+    no_var_within_closure_is_bound_multiple_times flam;
+    every_used_var_within_closure_from_current_compilation_unit_is_declared flam;
     Flambda_iterators.iter_exprs_at_toplevel_of_program flam ~f:(fun flam ->
       primitive_invariants flam ~no_access_to_global_module_identifiers:cmxfile;
       every_static_exception_is_caught flam;
       every_static_exception_is_caught_at_a_single_position flam;
-      no_var_within_closure_is_bound_multiple_times flam;
-      every_declared_closure_is_from_current_compilation_unit flam;
-      every_used_var_within_closure_from_current_compilation_unit_is_declared
-        flam)
+      every_declared_closure_is_from_current_compilation_unit flam)
   with exn -> begin
     begin match exn with
     | Binding_occurrence_not_from_current_compilation_unit var ->
