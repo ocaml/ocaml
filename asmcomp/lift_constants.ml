@@ -301,7 +301,15 @@ let constant_dependencies (const:Flambda.constant_defining_value) =
     Flambda_iterators.iter_symbols_on_named ~f:(fun s ->
         set := Symbol.Set.add s !set)
       (Set_of_closures set_of_closures);
-    !set
+    (* A set of closures do not depend on the closure it define *)
+    let closure_ids =
+      Symbol.Set.of_list
+        (List.map (fun var ->
+             Compilenv.closure_symbol (Closure_id.wrap var))
+            (Variable.Set.elements
+               (Variable.Map.keys set_of_closures.function_decls.funs)))
+    in
+    Symbol.Set.diff !set closure_ids
   in
   match const with
   | Allocated_const _ -> Symbol.Set.empty
@@ -327,7 +335,7 @@ let expression_symbol_dependencies (expr:Flambda.t) =
 
 let program_graph imported_symbols symbol_to_constant
     (initialize_symbol_tbl : (Tag.t * Flambda.t list * Symbol.t option) Symbol.Tbl.t)
-    (effect_tbl : (Flambda.t * Symbol.t option) Symbol.Tbl.t)=
+    (effect_tbl : (Flambda.t * Symbol.t option) Symbol.Tbl.t) =
   let graph_with_only_constant_parts =
     Symbol.Map.map (fun const ->
         Symbol.Set.diff (constant_dependencies const) imported_symbols)
