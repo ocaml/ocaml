@@ -13,7 +13,7 @@
 
 (** A variable in a closure can either be used by the closure itself
     or by an inlined version of the function. *)
-let remove_unused_closure_variables_expr tree =
+let remove_unused_closure_variables program =
   let used_vars_within_closure, used_closure_ids =
     let used = ref Var_within_closure.Set.empty in
     let used_fun = ref Closure_id.Set.empty in
@@ -30,10 +30,10 @@ let remove_unused_closure_variables_expr tree =
       | Symbol _ | Const _ | Set_of_closures _ | Prim _ | Expr _
       | Allocated_const _ | Predefined_exn _ -> ()
     in
-    Flambda_iterators.iter_named aux_named tree;
+    Flambda_iterators.iter_named_of_program ~f:aux_named program;
     !used, !used_fun
   in
-  let aux_named (named : Flambda.named) : Flambda.named =
+  let aux_named _ (named : Flambda.named) : Flambda.named =
     match named with
     | Set_of_closures ({ function_decls; free_vars; _ } as set_of_closures) ->
       let all_free_vars =
@@ -63,8 +63,4 @@ let remove_unused_closure_variables_expr tree =
       Set_of_closures set_of_closures
     | e -> e
   in
-  Flambda_iterators.map_named aux_named tree
-
-let remove_unused_closure_variables program =
-  Flambda_iterators.map_exprs_at_toplevel_of_program program
-    ~f:remove_unused_closure_variables_expr
+  Flambda_iterators.map_named_of_program ~f:aux_named program
