@@ -31,7 +31,7 @@ let rec init_mod loc shape =
          and eight environment entries makes 11 words. *)
       let closure = Obj.new_block Obj.closure_tag 11 in
       let template =
-        Obj.repr(fun _ -> raise (Undefined_recursive_module loc))
+        Obj.repr (fun _ -> raise (Undefined_recursive_module loc))
       in
       overwrite closure template;
       closure
