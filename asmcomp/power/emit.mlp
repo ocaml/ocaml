@@ -587,7 +587,7 @@ let emit_instr i =
               - current function f1 calls f2 that has the same TOC
               - f2 tailcalls f3 that has a different TOC
            Because f1 and f2 have the same TOC, the linker inserted no
-           code in f1 to save and restore r2 around the call to f1.
+           code in f1 to save and restore r2 around the call to f2.
            Because f2 tailcalls f3, r2 will not be restored to f2's TOC
            when f3 returns.  So, we're back into f1, with the wrong TOC in r2.
            We have two options:
