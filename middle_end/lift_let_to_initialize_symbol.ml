@@ -64,7 +64,20 @@ let substitute_variable_to_symbol var symbol expr =
         let named = substitute_named fresh named in
         bind fresh (Let (kind, v, named, body))
       else
-        Let (kind, v, named, body)
+        expr
+    | Let_rec (defs, body) ->
+      let need_substitution =
+        List.exists (fun (_, named) -> Variable.Set.mem var (Flambda.free_variables_named named))
+          defs
+      in
+      if need_substitution then
+        let fresh = Variable.freshen var in
+        let defs =
+          List.map (fun (v, named) -> v, substitute_named fresh named) defs
+        in
+        bind fresh (Let_rec (defs, body))
+      else
+        expr
     | If_then_else (cond, ifso, ifnot) when Variable.equal cond var ->
       let fresh = Variable.freshen var in
       bind fresh (If_then_else (fresh, ifso, ifnot))
@@ -75,10 +88,68 @@ let substitute_variable_to_symbol var symbol expr =
       bind fresh (Switch (fresh, sw))
     | Switch _ ->
       expr
-    | _ ->
-      (* TODO !!! *)
-      Format.printf "unhandled %a@." Flambda.print expr;
-      assert false
+    | String_switch (cond, sw, def) when Variable.equal cond var ->
+      let fresh = Variable.freshen var in
+      bind fresh (String_switch (fresh, sw, def))
+    | String_switch _ ->
+      expr
+    | Assign { being_assigned; new_value } when Variable.equal new_value var ->
+      let fresh = Variable.freshen var in
+      bind fresh (Assign { being_assigned; new_value = fresh })
+    | Assign _ ->
+      expr
+    | Static_raise (_exn, (_arg:Flambda.t list)) ->
+      (* If the type change to variable, this needs to be
+         updated with substitution *)
+      expr
+    | For { bound_var; from_value; to_value; direction; body }
+      when Variable.equal var from_value || Variable.equal var to_value ->
+      let fresh = Variable.freshen var in
+      let from_value =
+        if Variable.equal var from_value then fresh else from_value
+      in
+      let to_value =
+        if Variable.equal var to_value then fresh else to_value
+      in
+      bind fresh (For { bound_var; from_value; to_value; direction; body })
+    | For _ ->
+      expr
+    | Apply { func; args; kind; dbg }
+      when Variable.equal var func
+           || List.exists (Variable.equal var) args ->
+      let fresh = Variable.freshen var in
+      let func =
+        if Variable.equal var func then fresh else func
+      in
+      let args =
+        List.map (fun arg -> if Variable.equal var arg then fresh else arg) args
+      in
+      bind fresh (Apply { func; args; kind; dbg })
+    | Apply _ ->
+      expr
+    | Send { kind; meth; obj; args; dbg }
+      when Variable.equal var meth
+           || Variable.equal var obj
+           || List.exists (Variable.equal var) args ->
+      let fresh = Variable.freshen var in
+      let meth =
+        if Variable.equal var meth then fresh else meth
+      in
+      let obj =
+        if Variable.equal var obj then fresh else obj
+      in
+      let args =
+        List.map (fun arg -> if Variable.equal var arg then fresh else arg) args
+      in
+      bind fresh (Send { kind; meth; obj; args; dbg })
+    | Send _ ->
+      expr
+    | Proved_unreachable
+    | While _
+    | Try_with _
+    | Static_catch _ ->
+      (* No variables directly used in those expressions *)
+      expr
   in
   Flambda_iterators.map_toplevel f (fun v -> v) expr
 
