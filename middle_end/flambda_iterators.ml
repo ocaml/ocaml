@@ -141,6 +141,9 @@ let rec iter_exprs_at_toplevel_of_program (program : Flambda.program) ~f =
     iter_exprs_at_toplevel_of_program program ~f
   | End _ -> ()
 
+let iter_named_of_program program ~f =
+  iter_exprs_at_toplevel_of_program program ~f:(iter_named f)
+
 let rec iter_on_set_of_closures_of_program (program : Flambda.program) ~f =
   match program with
   | Let_symbol (_, Set_of_closures set_of_closures, program) ->

@@ -89,6 +89,11 @@ val iter_exprs_at_toplevel_of_program
   -> f:(Flambda.t -> unit)
   -> unit
 
+val iter_named_of_program
+   : Flambda.program
+  -> f:(Flambda.named -> unit)
+  -> unit
+
 val iter_symbols_on_named
    : Flambda.named
   -> f:(Symbol.t -> unit)

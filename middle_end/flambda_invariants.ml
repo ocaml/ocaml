@@ -377,7 +377,7 @@ let every_declared_closure_is_from_current_compilation_unit flam =
       then raise (Declared_closure_from_another_unit compilation_unit))
     flam
 
-let declared_closure_ids flam =
+let declared_closure_ids program =
   let bound = ref Closure_id.Set.empty in
   let bound_multiple_times = ref None in
   let add_and_check var =
@@ -385,21 +385,21 @@ let declared_closure_ids flam =
     then bound_multiple_times := Some var;
     bound := Closure_id.Set.add var !bound
   in
-  Flambda_iterators.iter_on_sets_of_closures (fun { Flambda. function_decls; _; } ->
-      Variable.Map.iter (fun id _ ->
-          let var = Closure_id.wrap id in
-          add_and_check var)
-      function_decls.funs)
-    flam;
+  Flambda_iterators.iter_on_set_of_closures_of_program program
+    ~f:(fun { Flambda. function_decls; _; } ->
+        Variable.Map.iter (fun id _ ->
+            let var = Closure_id.wrap id in
+            add_and_check var)
+          function_decls.funs);
   !bound, !bound_multiple_times
 
-let no_closure_id_is_bound_multiple_times flam =
-  match declared_closure_ids flam with
+let no_closure_id_is_bound_multiple_times program =
+  match declared_closure_ids program with
   | _, Some closure_id ->
     raise (Closure_id_is_bound_multiple_times closure_id)
   | _, None -> ()
 
-let used_closure_ids flam =
+let used_closure_ids (program:Flambda.program) =
   let used = ref Closure_id.Set.empty in
   let f (flam : Flambda.named) =
     match flam with
@@ -413,7 +413,7 @@ let used_closure_ids flam =
     | Set_of_closures _ | Symbol _ | Const _ | Allocated_const _
     | Predefined_exn _ | Prim _ | Expr _ -> ()
   in
-  Flambda_iterators.iter_named f flam;
+  Flambda_iterators.iter_named_of_program ~f program;
   !used
 
 let used_vars_within_closures flam =
@@ -427,10 +427,10 @@ let used_vars_within_closures flam =
   Flambda_iterators.iter_named f flam;
   !used
 
-let every_used_function_from_current_compilation_unit_is_declared flam =
+let every_used_function_from_current_compilation_unit_is_declared (program:Flambda.program) =
   let current_compilation_unit = Compilation_unit.get_current_exn () in
-  let declared, _ = declared_closure_ids flam in
-  let used = used_closure_ids flam in
+  let declared, _ = declared_closure_ids program in
+  let used = used_closure_ids program in
   let used_from_current_unit =
     Closure_id.Set.filter
       (Closure_id.in_compilation_unit current_compilation_unit)
@@ -489,18 +489,18 @@ let every_static_exception_is_caught_at_a_single_position flam =
   in
   Flambda_iterators.iter f (fun (_ : Flambda.named) -> ()) flam
 
-let check_exn ?(kind=Normal) ?(cmxfile=false) flam =
+let check_exn ?(kind=Normal) ?(cmxfile=false) (flam:Flambda.program) =
   ignore kind;
   try
     variable_and_symbol_invariants flam;
+    no_closure_id_is_bound_multiple_times flam;
+    every_used_function_from_current_compilation_unit_is_declared flam;
     Flambda_iterators.iter_exprs_at_toplevel_of_program flam ~f:(fun flam ->
       primitive_invariants flam ~no_access_to_global_module_identifiers:cmxfile;
       every_static_exception_is_caught flam;
       every_static_exception_is_caught_at_a_single_position flam;
       no_var_within_closure_is_bound_multiple_times flam;
       every_declared_closure_is_from_current_compilation_unit flam;
-      no_closure_id_is_bound_multiple_times flam;
-      every_used_function_from_current_compilation_unit_is_declared flam;
       every_used_var_within_closure_from_current_compilation_unit_is_declared
         flam)
   with exn -> begin
