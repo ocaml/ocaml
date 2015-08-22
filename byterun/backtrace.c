@@ -31,6 +31,11 @@ CAMLexport int caml_backtrace_pos = 0;
 CAMLexport backtrace_slot * caml_backtrace_buffer = NULL;
 CAMLexport value caml_backtrace_last_exn = Val_unit;
 
+void caml_init_backtrace(void)
+{
+  caml_register_global_root(&caml_backtrace_last_exn);
+}
+
 /* Start or stop the backtrace machinery */
 
 CAMLprim value caml_record_backtrace(value vflag)
@@ -40,12 +45,7 @@ CAMLprim value caml_record_backtrace(value vflag)
   if (flag != caml_backtrace_active) {
     caml_backtrace_active = flag;
     caml_backtrace_pos = 0;
-    if (flag) {
-      caml_backtrace_last_exn = Val_unit;
-      caml_register_global_root(&caml_backtrace_last_exn);
-    } else {
-      caml_remove_global_root(&caml_backtrace_last_exn);
-    }
+    caml_backtrace_last_exn = Val_unit;
     /* Note: lazy initialization of caml_backtrace_buffer in
        caml_stash_backtrace to simplify the interface with the thread
        libraries */

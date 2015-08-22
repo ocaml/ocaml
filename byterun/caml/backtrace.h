@@ -104,6 +104,7 @@ extern void caml_stash_backtrace(value exn, code_t pc, value * sp, int reraise);
  */
 CAMLextern void caml_print_exception_backtrace(void);
 
-CAMLexport void caml_init_debug_info();
+void caml_init_backtrace(void);
+CAMLexport void caml_init_debug_info(void);
 
 #endif /* CAML_BACKTRACE_H */
