@@ -212,6 +212,8 @@ Features wishes:
   (Clark Gaebel)
 - GPR#165, GPR#221: fix windows compilation warnings
   (Bernhard Schommer, Gabriel Scherer, report by Alain Frisch)
+- GPR#189: Added .dylib and .so as extensions for ocamlmklib
+  (Edgar Aroutiounian, Peter Zotov)
 
 OCaml 4.02.3 (27 Jul 2015):
 ---------------------------
