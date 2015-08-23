@@ -1128,6 +1128,7 @@ let new_declaration newtype manifest =
     type_newtype_level = newtype;
     type_loc = Location.none;
     type_attributes = [];
+    type_immediate = false;
   }
 
 let instance_constructor ?in_pattern cstr =
@@ -4401,6 +4402,7 @@ let nondep_type_decl env mid id is_covariant decl =
       type_newtype_level = None;
       type_loc = decl.type_loc;
       type_attributes = decl.type_attributes;
+      type_immediate = decl.type_immediate;
     }
   with Not_found ->
     clear_hash ();
@@ -4521,3 +4523,16 @@ let rec collapse_conj env visited ty =
 
 let collapse_conj_params env params =
   List.iter (collapse_conj env []) params
+
+let maybe_pointer_type env typ =
+   match (repr typ).desc with
+  | Tconstr(p, args, abbrev) ->
+    begin try
+      let type_decl = Env.find_type p env in
+      not type_decl.type_immediate
+    with Not_found -> true
+    (* This can happen due to e.g. missing -I options,
+       causing some .cmi files to be unavailable.
+       Maybe we should emit a warning. *)
+    end
+  | _ -> true

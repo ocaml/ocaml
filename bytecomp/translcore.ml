@@ -358,7 +358,7 @@ let specialize_comparison table env ty =
   match () with
   | () when is_base_type env ty Predef.path_int
          || is_base_type env ty Predef.path_char
-         || not (maybe_pointer_type env ty)           -> intcomp
+         || not (Ctype.maybe_pointer_type env ty)     -> intcomp
   | () when is_base_type env ty Predef.path_float     -> floatcomp
   | () when is_base_type env ty Predef.path_string    -> stringcomp
   | () when is_base_type env ty Predef.path_nativeint -> nativeintcomp
@@ -390,7 +390,7 @@ let specialize_primitive loc p env ty ~has_constant_constructor =
         | Some (p2, _) -> [p1;p2]
     in
     match (p, params) with
-      (Psetfield(n, _), [p1; p2]) -> Psetfield(n, maybe_pointer_type env p2)
+      (Psetfield(n, _), [p1; p2])     -> Psetfield(n, Ctype.maybe_pointer_type env p2)
     | (Parraylength Pgenarray, [p])   -> Parraylength(array_type_kind env p)
     | (Parrayrefu Pgenarray, p1 :: _) -> Parrayrefu(array_type_kind env p1)
     | (Parraysetu Pgenarray, p1 :: _) -> Parraysetu(array_type_kind env p1)
@@ -545,7 +545,7 @@ let rec name_pattern default = function
 
 type binding =
   | Bind_value of value_binding list
-  | Bind_module of Ident.t * string loc * module_expr 
+  | Bind_module of Ident.t * string loc * module_expr
 
 let rec push_defaults loc bindings cases partial =
   match cases with
