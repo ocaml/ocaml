@@ -101,14 +101,4 @@ let print_opt ppf = function
 type pair = t * t
 module Pair = Ext_types.Identifiable.Make (Ext_types.Pair (T) (T))
 
-let rec compare_lists l1 l2 =
-  match l1, l2 with
-  | [], [] -> 0
-  | [], _::_ -> -1
-  | _::_, [] -> 1
-  | h1::t1, h2::t2 ->
-    let c = compare h1 h2 in
-    if c <> 0 then
-      c
-    else
-      compare_lists t1 t2
+let compare_lists l1 l2 = Misc.compare_lists compare l1 l2

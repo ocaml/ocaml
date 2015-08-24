@@ -599,6 +599,25 @@ let used_params function_decl =
     (fun param -> Variable.Set.mem param function_decl.free_variables)
     (Variable.Set.of_list function_decl.params)
 
+let compare_const (c1:const) (c2:const) =
+  match c1, c2 with
+  | Int i1, Int i2 -> compare i1 i2
+  | Char i1, Char i2 -> compare i1 i2
+  | Const_pointer i1, Const_pointer i2 -> compare i1 i2
+  | Int _, (Char _ | Const_pointer _) -> -1
+  | (Char _ | Const_pointer _), Int _ -> 1
+  | Char _, Const_pointer _ -> -1
+  | Const_pointer _, Char _ -> 1
+
+let compare_constant_defining_value_block_field
+    (c1:constant_defining_value_block_field)
+    (c2:constant_defining_value_block_field) =
+  match c1, c2 with
+  | Symbol s1, Symbol s2 -> Symbol.compare s1 s2
+  | Const c1, Const c2 -> compare_const c1 c2
+  | Symbol _, Const _ -> -1
+  | Const _, Symbol _ -> 1
+
 module Constant_defining_value = struct
   module T = struct
     type t = constant_defining_value
@@ -607,11 +626,12 @@ module Constant_defining_value = struct
       match t1, t2 with
       | Allocated_const c1, Allocated_const c2 ->
         Allocated_const.compare c1 c2
-      | Block (tag1, _fields1), Block (tag2, _fields2) ->
+      | Block (tag1, fields1), Block (tag2, fields2) ->
         let c = Tag.compare tag1 tag2 in
         if c <> 0 then c
-        else failwith "TODO compare block"
-          (* Symbol.compare_lists fields1 fields2 *)
+        else
+          Misc.compare_lists compare_constant_defining_value_block_field
+            fields1 fields2
       | Set_of_closures set1, Set_of_closures set2 ->
         Set_of_closures_id.compare set1.function_decls.set_of_closures_id
           set2.function_decls.set_of_closures_id
@@ -638,9 +658,14 @@ module Constant_defining_value = struct
 
     let hash = Hashtbl.hash
 
+    let print = print_constant_defining_value
+
+    let output o v =
+      output_string o (Format.asprintf "%a" print v)
+
   end
 
   include T
-  module Map = Map.Make (T)
-  module Tbl = Hashtbl.Make (T)
+  module Identifiable = Ext_types.Identifiable.Make(T)
+  include Identifiable
 end

@@ -125,6 +125,18 @@ let rec filter_map f l =
     | None -> filter_map f t
     | Some v -> v :: filter_map f t
 
+let rec compare_lists compare l1 l2 =
+  match l1, l2 with
+  | [], [] -> 0
+  | [], _::_ -> -1
+  | _::_, [] -> 1
+  | h1::t1, h2::t2 ->
+    let c = compare h1 h2 in
+    if c <> 0 then
+      c
+    else
+      compare_lists compare t1 t2
+
 (* Options *)
 
 let may f = function
