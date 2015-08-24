@@ -159,6 +159,7 @@ type ('a, 'b) kind =
 
 let should_copy (named:Flambda.named) =
   match named with
+  | Expr (Var _)
   | Symbol _
   | Prim (Pfield _, _, _)
   | Const _ ->
@@ -166,7 +167,7 @@ let should_copy (named:Flambda.named) =
   | _ ->
     false
 
-let rec split_let (expr:Flambda.t) =
+let rec split_let free_variables_map (expr:Flambda.t) =
   match expr with
   | Let(_, _, _, Var _) ->
     None
@@ -183,20 +184,35 @@ let rec split_let (expr:Flambda.t) =
       in
       Flambda.Let(Immutable, fresh, named, expr)
     in
-    begin match split_let body with
+    begin match split_let free_variables_map body with
     | None -> None
-    | Some (Effect effect, expr) ->
-      Some (Effect (copy_definition effect),
-            Flambda.Let(Immutable, var, named, expr))
-    | Some (Initialisation (sym, tag, fields), expr) ->
-      let fields =
-        List.map copy_definition fields
-      in
-      Some (Initialisation (sym, tag, fields),
-            Flambda.Let(Immutable, var, named, expr))
+    | Some (free_vars, Effect effect, expr) ->
+      if Variable.Set.mem var free_vars then
+        let named_free_vars = Flambda.free_variables_named named in
+        let free_vars = Variable.Set.union free_vars named_free_vars in
+        Some (free_vars, Effect (copy_definition effect),
+              Flambda.Let(Immutable, var, named, expr))
+      else
+        Some (free_vars, Effect effect, expr)
+    | Some (free_vars, Initialisation (sym, tag, fields), expr) ->
+      if Variable.Set.mem var free_vars then
+        let named_free_vars = Flambda.free_variables_named named in
+        let free_vars = Variable.Set.union free_vars named_free_vars in
+        let fields =
+          List.map copy_definition fields
+        in
+        Some (free_vars, Initialisation (sym, tag, fields),
+              Flambda.Let(Immutable, var, named, expr))
+      else
+        Some (free_vars, Initialisation (sym, tag, fields),
+              Flambda.Let(Immutable, var, named, expr))
     end
   | Let(Immutable, var, def, body) ->
-    if Variable.Set.mem var (Flambda.free_variables body) then begin
+    (* It is ok to precompute the free variables even if we modify the expression:
+       the fact that those variables are free or not is not affected *)
+    let body_free_variables = Variable.Map.find var free_variables_map in
+    (* let body_free_variables = Flambda.free_variables body in *)
+    if Variable.Set.mem var body_free_variables then begin
       let symbol = make_variable_symbol var in
       let expr =
         let var' = Variable.freshen var in
@@ -206,25 +222,44 @@ let rec split_let (expr:Flambda.t) =
       (* Format.printf "introduce sym %a var %a@.def@ %a@.subst@ %a@.substituted@ %a@." *)
       (*   Symbol.print symbol Variable.print var Flambda.print_named def *)
       (*   Flambda.print body Flambda.print body'; *)
-      Some (Initialisation (symbol, Tag.create_exn 0, [expr]), body')
+      let body' = Lift_code.lift_lets_expr body' in
+      let free_vars = Flambda.free_variables expr in
+      Some (free_vars, Initialisation (symbol, Tag.create_exn 0, [expr]), body')
     end
     else begin
       let expr =
         let var' = Variable.freshen var in
         Flambda.Let(Immutable, var', def, Var var')
       in
-      Some (Effect expr, body)
+      let free_vars = Flambda.free_variables expr in
+      Some (free_vars, Effect expr, body)
     end
   | _ -> None
 
-let rec introduce_symbols expr =
-  match split_let expr with
-  | None -> [], expr
-  | Some (extracted, body) ->
-    let l, res = introduce_symbols body in
-    extracted :: l, res
+let introduce_symbols expr =
+  let free_variables_map = Flambda.free_variables_by_let expr in
+  let rec loop expr =
+    match split_let free_variables_map expr with
+    | None -> [], expr
+    | Some (_, extracted, body) -> begin match extracted with
+        | Initialisation (_symbol, _tag, _def) ->
+          Format.printf "extracted initialize %a:@ %a@."
+            Symbol.print _symbol
+            (Format.pp_print_list Flambda.print) _def;
+          (* Flambda.Initialize_symbol *)
+          (*   (symbol, tag, def, *)
+          (*    program) *)
+        | Effect _effect ->
+          Format.printf "extracted effect@.";
+          (* Flambda.Effect (effect, program)) *)
+      end;
+      let l, res = loop body in
+      extracted :: l, res
+  in
+  loop expr
 
 let add_extracted introduced program =
+  Format.printf "add extracted@.";
   List.fold_right (fun extracted program ->
       match extracted with
       | Initialisation (symbol, tag, def) ->
@@ -270,4 +305,5 @@ let lift ~backend:_ (f:Flambda.program) =
   (* Format.printf "@.before lift@ %a@." Flambda.print_program f; *)
   let f = split_program f in
   (* Format.printf "@.after lift@ %a@." Flambda.print_program f; *)
+  Format.printf "@.after lift_let_to_initialize_symbol@.@.";
   f
