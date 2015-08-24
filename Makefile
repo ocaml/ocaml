@@ -106,7 +106,6 @@ ASMCOMP=\
   asmcomp/flambdaexport_types.cmo \
   asmcomp/flambdaexport.cmo \
   asmcomp/compilenv.cmo \
-  asmcomp/lift_constants.cmo \
   asmcomp/share_constants.cmo \
   asmcomp/build_export_info.cmo \
   asmcomp/closure_offsets.cmo \
@@ -159,6 +158,7 @@ MIDDLE_END=\
   middle_end/invariant_params.cmo \
   middle_end/inconstant_idents.cmo \
   middle_end/alias_analysis.cmo \
+  middle_end/lift_constants.cmo \
   middle_end/simplify_common.cmo \
   middle_end/eliminate_const_block.cmo \
   middle_end/remove_unused_arguments.cmo \

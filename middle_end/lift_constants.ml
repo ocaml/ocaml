@@ -70,17 +70,29 @@ let rec tail_variable : Flambda.t -> Variable.t option = function
   | Let (_,_,_,e) -> tail_variable e
   | _ -> None
 
+let closure_symbol ~(backend:(module Backend_intf.S)) closure_id =
+  let module Backend = (val backend) in
+  Backend.closure_symbol closure_id
+
+(* CR chambart: Copied from lift_let_to_initialize_symobl: to factorize *)
+let make_variable_symbol prefix var =
+  Symbol.create (Compilation_unit.get_current_exn ())
+    (Linkage_name.create
+       (prefix ^ Variable.unique_name (Variable.freshen var)))
+
 (** Traverse the given expression assigning symbols to [let]- and [let rec]-
     bound constant variables.  At the same time collect the definitions of
     such variables. *)
-let assign_symbols_and_collect_constant_definitions ~program
+let assign_symbols_and_collect_constant_definitions
+    ~(backend:(module Backend_intf.S))
+    ~program
     ~(inconstants : Inconstant_idents.result) =
   let var_to_symbol_tbl = Variable.Tbl.create 42 in
   let var_to_definition_tbl = Variable.Tbl.create 42 in
   let assign_symbol var (named : Flambda.named) =
     if not (Variable.Set.mem var inconstants.id) then begin
       let assign_symbol () =
-        let symbol = Compilenv.new_const_symbol' ~name:(Variable.unique_name var) () in
+        let symbol = make_variable_symbol "" var in
         Format.eprintf "assign_symbol %a -> %a@."
           Variable.print var
           Symbol.print symbol;
@@ -113,16 +125,16 @@ let assign_symbols_and_collect_constant_definitions ~program
            should add an invariant check forbidding direct access.) *)
         Variable.Map.iter (fun fun_var _ ->
             let closure_id = Closure_id.wrap fun_var in
-            let closure_symbol = Compilenv.closure_symbol closure_id in
+            let closure_symbol = closure_symbol ~backend closure_id in
             Variable.Tbl.add var_to_symbol_tbl fun_var closure_symbol;
             Variable.Tbl.add var_to_definition_tbl fun_var
               (Symbol closure_symbol))
           funs
       | Move_within_set_of_closures ({ closure = _; start_from = _; move_to; } as move) ->
-        assign_existing_symbol (Compilenv.closure_symbol move_to);
+        assign_existing_symbol (closure_symbol ~backend  move_to);
         record_definition (Move_within_set_of_closures move)
       | Project_closure ({ closure_id } as project_closure) ->
-        assign_existing_symbol (Compilenv.closure_symbol closure_id);
+        assign_existing_symbol (closure_symbol ~backend  closure_id);
         record_definition (Project_closure project_closure)
       (* | Prim (Pgetglobal id, _, _) -> *)
       (*   let symbol = Compilenv.symbol_for_global' id in *)
@@ -331,7 +343,7 @@ let translate_definitions_and_resolve_alias
     var_to_definition_tbl Symbol.Map.empty
 
 (* Resorting of graph including Initialize_symbol *)
-let constant_dependencies (const:Flambda.constant_defining_value) =
+let constant_dependencies ~backend (const:Flambda.constant_defining_value) =
   let closure_dependencies (set_of_closures:Flambda.set_of_closures) =
     let set = ref Symbol.Set.empty in
     Flambda_iterators.iter_symbols_on_named ~f:(fun s ->
@@ -341,7 +353,7 @@ let constant_dependencies (const:Flambda.constant_defining_value) =
     let closure_ids =
       Symbol.Set.of_list
         (List.map (fun var ->
-             Compilenv.closure_symbol (Closure_id.wrap var))
+             closure_symbol ~backend (Closure_id.wrap var))
             (Variable.Set.elements
                (Variable.Map.keys set_of_closures.function_decls.funs)))
     in
@@ -369,12 +381,14 @@ let expression_symbol_dependencies (expr:Flambda.t) =
     expr;
   !set
 
-let program_graph imported_symbols symbol_to_constant
+let program_graph
+    ~backend
+    imported_symbols symbol_to_constant
     (initialize_symbol_tbl : (Tag.t * Flambda.t list * Symbol.t option) Symbol.Tbl.t)
     (effect_tbl : (Flambda.t * Symbol.t option) Symbol.Tbl.t) =
   let graph_with_only_constant_parts =
     Symbol.Map.map (fun const ->
-        Symbol.Set.diff (constant_dependencies const) imported_symbols)
+        Symbol.Set.diff (constant_dependencies ~backend const) imported_symbols)
       symbol_to_constant
   in
   let graph_with_initialisation =
@@ -530,7 +544,7 @@ let program_symbols program =
     let r = ref 0 in
     fun () ->
       incr r;
-      Symbol.create (Compilenv.current_unit ())
+      Symbol.create (Compilation_unit.get_current_exn ())
         (Linkage_name.create ("fake_effect_symbol_" ^ string_of_int !r))
   in
   let initialize_symbol_tbl = Symbol.Tbl.create 42 in
@@ -601,7 +615,7 @@ let replace_definitions_in_initialize_symbol_and_effects
       Symbol.Tbl.replace effect_tbl symbol (expr,previous))
     (Symbol.Tbl.to_map effect_tbl)
 
-let lift_constants program ~backend:_ =
+let lift_constants program ~backend =
   Format.eprintf "lift_constants input:@ %a\n" Flambda.print_program program;
   let inconstants =
     Inconstant_idents.inconstants_on_program program
@@ -610,11 +624,11 @@ let lift_constants program ~backend:_ =
          This should be available in backend
          mshinwell: what is "this"?
          pchambart: The access to compilenv *)
-      ~compilation_unit:(Compilenv.current_unit ())
+      ~compilation_unit:(Compilation_unit.get_current_exn ())
   in
   let initialize_symbol_tbl, symbol_definition_tbl, effect_tbl = program_symbols program in
   let var_to_symbol_tbl, var_to_definition_tbl =
-    assign_symbols_and_collect_constant_definitions ~program ~inconstants
+    assign_symbols_and_collect_constant_definitions ~backend ~program ~inconstants
   in
   let aliases =
     let var_map = Variable.Tbl.to_map var_to_definition_tbl in
@@ -655,7 +669,7 @@ let lift_constants program ~backend:_ =
       translated_definitions
   in
   let imported_symbols = Flambda_utils.imported_symbols program in
-  let components = program_graph imported_symbols constant_definitions
+  let components = program_graph ~backend imported_symbols constant_definitions
       initialize_symbol_tbl effect_tbl in
   let program =
     add_definitions_of_symbols constant_definitions
