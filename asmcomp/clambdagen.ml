@@ -175,13 +175,13 @@ Format.eprintf "Clambdagen.conv: %a\n"
 
     | Let (_, var, def, body) ->
       let id, env_body = add_unique_ident var env in
-      Ulet(id, conv_named env def, conv env_body body)
+      Ulet(id, conv_named var env def, conv env_body body)
 
     | Let_rec(defs, body) ->
       let env, defs = List.fold_right (fun (var,def) (env, defs) ->
           let id, env = add_unique_ident var env in
-          env, (id, def) :: defs) defs (env, []) in
-      let udefs = List.map (fun (id,def) -> id, conv_named env def) defs in
+          env, (var, id, def) :: defs) defs (env, []) in
+      let udefs = List.map (fun (var, id,def) -> id, conv_named var env def) defs in
       Uletrec(udefs, conv env body)
 
     | Apply { func = funct; args; kind = Indirect; dbg = dbg } ->
@@ -281,7 +281,7 @@ Format.eprintf "Clambdagen.conv: %a\n"
       Uunreachable
   (* Uprim(Praise, [Uconst (Uconst_pointer 0, None)], Debuginfo.none) *)
 
-  and conv_named (env : env) (named : Flambda.named) : Clambda.ulambda =
+  and conv_named var (env : env) (named : Flambda.named) : Clambda.ulambda =
     match named with
     | Predefined_exn _ -> failwith "TODO clambdagen..."
 
@@ -296,7 +296,8 @@ Format.eprintf "Clambdagen.conv: %a\n"
 
     | Allocated_const _ ->
       (* Should have been lifted to a Let_symbol *)
-      assert false
+      Misc.fatal_errorf "Unlifted allocated constant %a"
+        Variable.print var
 
     | Set_of_closures set_of_closures ->
       conv_set_of_closures env set_of_closures
