@@ -370,8 +370,8 @@ let program_graph imported_symbols symbol_to_constant
       )
       effect_tbl graph_with_initialisation
   in
-  Format.eprintf "@.dep graph:@ %a@."
-    (Symbol.Map.print Symbol.Set.print) graph;
+  (* Format.eprintf "@.dep graph:@ %a@." *)
+  (*   (Symbol.Map.print Symbol.Set.print) graph; *)
   let module Symbol_SCC = Sort_connected_components.Make (Symbol) in
   let components =
     Symbol_SCC.connected_components_sorted_from_roots_to_leaf
@@ -384,14 +384,14 @@ let add_definition_of_symbol constant_definitions
     (initialize_symbol_tbl : (Tag.t * Flambda.t list * Symbol.t option) Symbol.Tbl.t)
     (effect_tbl:(Flambda.t * Symbol.t option) Symbol.Tbl.t)
     program component : Flambda.program =
-  Format.eprintf "add_definition_of_symbols@.";
+  (* Format.eprintf "add_definition_of_symbols@."; *)
   let symbol_declaration sym =
     (* A symbol declared through an Initialize_symbol construct
        cannot be recursive, this is not allowed in the construction.
        This also couldn't have been introduced by this pass, so we can
        safely assert that this is not possible here *)
     assert(not (Symbol.Tbl.mem initialize_symbol_tbl sym));
-    Format.eprintf "add_definition_of_symbol %a@." Symbol.print sym;
+    (* Format.eprintf "add_definition_of_symbol %a@." Symbol.print sym; *)
     (sym, Symbol.Map.find sym constant_definitions)
   in
   let module Symbol_SCC = Sort_connected_components.Make (Symbol) in
@@ -400,18 +400,18 @@ let add_definition_of_symbol constant_definitions
     let l = List.map symbol_declaration l in
     Let_rec_symbol (l, program)
   | Symbol_SCC.No_loop sym ->
-    Format.eprintf "no loop component %a@." Symbol.print sym;
+    (* Format.eprintf "no loop component %a@." Symbol.print sym; *)
     match Symbol.Tbl.find initialize_symbol_tbl sym with
     | (tag, fields, _previous) ->
-      Format.eprintf "initialize@.";
+      (* Format.eprintf "initialize@."; *)
       Initialize_symbol (sym, tag, fields, program)
     | exception Not_found ->
       match Symbol.Tbl.find effect_tbl sym with
       | (expr, _previous) ->
-        Format.eprintf "effect@.";
+        (* Format.eprintf "effect@."; *)
         Effect (expr, program)
       | exception Not_found ->
-        Format.eprintf "symbol@.";
+        (* Format.eprintf "symbol@."; *)
         let decl = Symbol.Map.find sym constant_definitions in
         Let_symbol (sym, decl, program)
 
