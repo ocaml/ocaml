@@ -118,10 +118,9 @@ let assign_symbols_and_collect_constant_definitions ~program
             Variable.Tbl.add var_to_definition_tbl fun_var
               (Symbol closure_symbol))
           funs
-      | Move_within_set_of_closures { closure = _; start_from = _; move_to; } ->
-        let symbol = Compilenv.closure_symbol move_to in
-        assign_existing_symbol symbol;
-        record_definition (Symbol symbol)
+      | Move_within_set_of_closures ({ closure = _; start_from = _; move_to; } as move) ->
+        assign_existing_symbol (Compilenv.closure_symbol move_to);
+        record_definition (Move_within_set_of_closures move)
       | Project_closure ({ closure_id } as project_closure) ->
         assign_existing_symbol (Compilenv.closure_symbol closure_id);
         record_definition (Project_closure project_closure)
@@ -235,6 +234,34 @@ let translate_set_of_closures
   Flambda_iterators.map_function_bodies set_of_closures
     ~f:(Flambda_iterators.map_all_let_and_let_rec_bindings ~f)
 
+let find_original_set_of_closure
+    (aliases:Alias_analysis.allocation_point Variable.Map.t)
+    (var_to_symbol_tbl:Symbol.t Variable.Tbl.t)
+    (var_to_definition_tbl:Alias_analysis.constant_defining_value Variable.Tbl.t)
+    var =
+  let rec loop var =
+    match Variable.Map.find var aliases with
+    | Variable var -> begin
+        match Variable.Tbl.find var_to_definition_tbl var with
+        | Project_closure { set_of_closures = var }
+        | Move_within_set_of_closures { closure = var } ->
+          loop var
+        | Set_of_closures _ -> begin
+            match Variable.Tbl.find var_to_symbol_tbl var with
+            | s ->
+              s
+            | exception Not_found ->
+              Format.eprintf "var: %a@." Variable.print var;
+              assert false
+          end
+        | _ -> assert false
+      end
+    | Symbol s ->
+      (* Symbol are necessarilly set_of_closures here *)
+      s
+  in
+  loop var
+
 let translate_definition_and_resolve_alias
     inconstants
     (aliases:Alias_analysis.allocation_point Variable.Map.t)
@@ -262,6 +289,15 @@ let translate_definition_and_resolve_alias
         Format.eprintf "var: %a@." Variable.print v;
         assert false
     end
+  | Move_within_set_of_closures { closure; move_to } ->
+    let set_of_closure_symbol =
+      find_original_set_of_closure
+        aliases
+        var_to_symbol_tbl
+        var_to_definition_tbl
+        closure
+    in
+    Some (Flambda.Project_closure (set_of_closure_symbol, move_to))
   | Set_of_closures set_of_closures ->
     let set_of_closures =
       translate_set_of_closures
