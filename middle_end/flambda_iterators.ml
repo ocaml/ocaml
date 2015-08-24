@@ -416,8 +416,8 @@ let rec map_exprs_at_toplevel_of_program (program : Flambda.program)
       map_exprs_at_toplevel_of_program program ~f)
   | Let_symbol (symbol, const, program) ->
     Let_symbol (symbol, const, map_exprs_at_toplevel_of_program program ~f)
-  | Let_rec_symbol (_defs, _program) ->
-    failwith "TODO iter let_rec"
+  | Let_rec_symbol (defs, program) ->
+    Let_rec_symbol (defs, map_exprs_at_toplevel_of_program program ~f)
   | Import_symbol (symbol, program) ->
     Import_symbol (symbol, map_exprs_at_toplevel_of_program program ~f)
   | Initialize_symbol (symbol, tag, fields, program) ->

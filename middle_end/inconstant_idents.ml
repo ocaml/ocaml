@@ -330,6 +330,14 @@ module NotConstants(P:Param) = struct
         mark_loop ~toplevel:false [] ffunc.body)
       function_decls.funs
 
+  let mark_constant_defining_value (const:Flambda.constant_defining_value) =
+    match const with
+    | Allocated_const _
+    | Block _
+    | Project_closure _ -> ()
+    | Set_of_closures set_of_closure ->
+      mark_loop_set_of_closures ~toplevel:true [] set_of_closure
+
   let rec mark_program (program:Flambda.program) =
     match program with
     | End _ -> ()
@@ -343,7 +351,12 @@ module NotConstants(P:Param) = struct
       mark_program program
     | Import_symbol (_, program) ->
       mark_program program
-    | _ -> failwith "TODO inconstant ident constants"
+    | Let_symbol (_, def, program) ->
+      mark_constant_defining_value def;
+      mark_program program
+    | Let_rec_symbol (defs, program) ->
+      List.iter (fun (_, def) -> mark_constant_defining_value def) defs;
+      mark_program program
 
   (* Second loop: propagates implications *)
   let propagate () =

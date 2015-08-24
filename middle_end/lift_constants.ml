@@ -127,8 +127,12 @@ let assign_symbols_and_collect_constant_definitions
             let closure_id = Closure_id.wrap fun_var in
             let closure_symbol = closure_symbol ~backend closure_id in
             Variable.Tbl.add var_to_symbol_tbl fun_var closure_symbol;
+            let project_closure =
+              Alias_analysis.Project_closure
+                { set_of_closures = var; closure_id }
+            in
             Variable.Tbl.add var_to_definition_tbl fun_var
-              (Symbol closure_symbol))
+              project_closure)
           funs
       | Move_within_set_of_closures ({ closure = _; start_from = _; move_to; } as move) ->
         assign_existing_symbol (closure_symbol ~backend  move_to);
