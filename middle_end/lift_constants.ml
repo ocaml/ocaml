@@ -250,6 +250,30 @@ let translate_set_of_closures
   Flambda_iterators.map_function_bodies set_of_closures
     ~f:(Flambda_iterators.map_all_let_and_let_rec_bindings ~f)
 
+let translate_constant_set_of_closures
+    (inconstants:Inconstant_idents.result)
+    (aliases:Alias_analysis.allocation_point Variable.Map.t)
+    (var_to_symbol_tbl:Symbol.t Variable.Tbl.t)
+    (var_to_definition_tbl:Alias_analysis.constant_defining_value Variable.Tbl.t)
+    (constant_defining_values:Flambda.constant_defining_value Symbol.Map.t) =
+  Symbol.Map.map (fun (const:Flambda.constant_defining_value) ->
+      match const with
+      | Flambda.Allocated_const _
+      | Flambda.Block _
+      | Flambda.Project_closure _ ->
+        const
+      | Flambda.Set_of_closures set_of_closures ->
+        let set_of_closures =
+          translate_set_of_closures
+            (inconstants:Inconstant_idents.result)
+            (aliases:Alias_analysis.allocation_point Variable.Map.t)
+            (var_to_symbol_tbl:Symbol.t Variable.Tbl.t)
+            (var_to_definition_tbl:Alias_analysis.constant_defining_value Variable.Tbl.t)
+            (set_of_closures:Flambda.set_of_closures)
+        in
+        Flambda.Set_of_closures set_of_closures)
+    constant_defining_values
+
 let find_original_set_of_closure
     (aliases:Alias_analysis.allocation_point Variable.Map.t)
     (var_to_symbol_tbl:Symbol.t Variable.Tbl.t)
@@ -493,8 +517,10 @@ let introduce_free_variables_in_set_of_closures
   in
   let function_decls : Flambda.function_declarations =
     { function_decls with
-      funs = Variable.Map.map
-          (fun (ffun : Flambda.function_declaration) ->
+      funs = Variable.Map.mapi
+          (fun fun_var (ffun : Flambda.function_declaration) ->
+             Format.printf "introduce in %a@."
+               Variable.print fun_var;
              let body =
                List.fold_left
                  add_definition
@@ -665,11 +691,18 @@ let lift_constants program ~backend =
       var_to_block_field_tbl
       translated_definitions
   in
+  let symbol_definition_map =
+    translate_constant_set_of_closures
+      (inconstants:Inconstant_idents.result)
+      (aliases:Alias_analysis.allocation_point Variable.Map.t)
+      (var_to_symbol_tbl:Symbol.t Variable.Tbl.t)
+      (var_to_definition_tbl:Alias_analysis.constant_defining_value Variable.Tbl.t)
+      (Symbol.Tbl.to_map symbol_definition_tbl)
+  in
   let constant_definitions =
     (* Add previous Let_symbol to the newly discovered ones *)
-    Symbol.Tbl.fold (fun symbol def map ->
-        Symbol.Map.add symbol def map)
-      symbol_definition_tbl
+    Symbol.Map.union_merge (fun _ _ -> assert false)
+      symbol_definition_map
       translated_definitions
   in
   let imported_symbols = Flambda_utils.imported_symbols program in
