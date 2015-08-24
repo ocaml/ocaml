@@ -307,6 +307,13 @@ val free_variables
 
 val free_variables_named : named -> Variable.Set.t
 
+(* Free variables bound at each let declaration (not let-rec) *)
+val free_variables_by_let
+  : ?ignore_uses_in_apply:unit
+  -> ?ignore_uses_in_project_var:unit
+  -> t
+  -> Variable.Set.t Variable.Map.t
+
 (* CR mshinwell: try to move the non-recursive types out to a separate .mli *)
 (* CR mshinwell: consider moving [Flambda_utils] functions into here, now we
    are forced to have a .ml *)

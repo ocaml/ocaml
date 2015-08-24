@@ -435,7 +435,8 @@ let rec print_program ppf (program : program) =
    subtraction as we pass back over binding points? *)
 
 let iter ?ignore_uses_in_apply ?ignore_uses_in_project_var tree
-      ~free_variable ~bound_variable =
+    ~free_variable ~bound_variable
+    ~enter_let ~leave_let_definition ~leave_let_body =
   let rec aux (flam : t) : unit =
     match flam with
     | Var var -> free_variable var
@@ -447,9 +448,12 @@ let iter ?ignore_uses_in_apply ?ignore_uses_in_project_var tree
       end;
       List.iter free_variable args
     | Let (_, var, defining_expr, body) ->
+      let acc = enter_let var in
       bound_variable var;
       aux_named defining_expr;
-      aux body
+      let acc = leave_let_definition acc in
+      aux body;
+      leave_let_body acc
     | Let_rec (bindings, body) ->
       List.iter (fun (var, defining_expr) ->
           bound_variable var;
@@ -524,13 +528,46 @@ let free_variables ?ignore_uses_in_apply ?ignore_uses_in_project_var tree =
   let bound = ref Variable.Set.empty in
   let free_variable id = free := Variable.Set.add id !free in
   let bound_variable id = bound := Variable.Set.add id !bound in
+  let enter_let _var = () in
+  let leave_let_definition () = () in
+  let leave_let_body () = () in
   iter ?ignore_uses_in_apply ?ignore_uses_in_project_var tree
-    ~free_variable ~bound_variable;
+    ~free_variable ~bound_variable
+    ~enter_let ~leave_let_definition ~leave_let_body;
   Variable.Set.diff !free !bound
 
 let free_variables_named tree =
   let var = Variable.create "dummy" in
   free_variables (Let (Immutable, var, tree, Var var))
+
+let free_variables_by_let ?ignore_uses_in_apply ?ignore_uses_in_project_var tree =
+  let free = ref Variable.Set.empty in
+  let bound = ref Variable.Set.empty in
+  let map = ref Variable.Map.empty in
+  let free_variable id = free := Variable.Set.add id !free in
+  let bound_variable id = bound := Variable.Set.add id !bound in
+  let enter_let var =
+    var
+  in
+  let leave_let_definition var =
+    let current_free = !free in
+    let current_bound = !bound in
+    free := Variable.Set.empty;
+    bound := Variable.Set.empty;
+    var, current_free, current_bound
+  in
+  let leave_let_body (var, previous_free, previous_bound) =
+    let new_free = !free in
+    let new_bound = !bound in
+    let var_really_free = Variable.Set.diff new_free new_bound in
+    map := Variable.Map.add var var_really_free !map;
+    free := Variable.Set.union new_free previous_free;
+    bound := Variable.Set.union new_bound previous_bound
+  in
+  iter ?ignore_uses_in_apply ?ignore_uses_in_project_var tree
+    ~free_variable ~bound_variable
+    ~enter_let ~leave_let_definition ~leave_let_body;
+  !map
 
 let create_function_declaration ~params ~body ~stub ~dbg
       : function_declaration =
