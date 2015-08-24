@@ -471,6 +471,7 @@ let rec simplify_project_var env r ~(project_var : Flambda.project_var)
    variable.
 *)
 and simplify_set_of_closures original_env r
+      ~constant
       (set_of_closures : Flambda.set_of_closures)
       : Flambda.set_of_closures * R.t =
   let function_decls =
@@ -543,7 +544,14 @@ and simplify_set_of_closures original_env r
           A.value_closure ~closure_var:closure internal_value_set_of_closures
             (Closure_id.wrap closure)
         in
-        E.add env closure approx)
+        let env = E.add env closure approx in
+        if constant then
+          let module Backend = (val (E.backend env) : Backend_intf.S) in
+          let symbol = Backend.closure_symbol (Closure_id.wrap closure) in
+          E.add_symbol env symbol approx
+        else
+          env
+      )
       function_decls.funs env
   in
   let simplify_function fid (function_decl : Flambda.function_declaration)
@@ -719,7 +727,9 @@ and simplify_named env r (tree : Flambda.named) : Flambda.named * R.t =
   | Allocated_const cst -> tree, ret r (approx_for_allocated_const cst)
   | Predefined_exn _ -> tree, ret r A.value_unknown
   | Set_of_closures set_of_closures ->
-    let set_of_closures, r = simplify_set_of_closures env r set_of_closures in
+    let set_of_closures, r =
+      simplify_set_of_closures env r ~constant:false set_of_closures
+    in
     Set_of_closures set_of_closures, r
   | Project_closure project_closure ->
     simplify_project_closure env r ~project_closure
@@ -1048,7 +1058,7 @@ let simplify_constant_defining_value env r
           Flambda.print_set_of_closures set_of_closures
       end;
       let set_of_closures, r =
-        simplify_set_of_closures env r set_of_closures
+        simplify_set_of_closures env r ~constant:true set_of_closures
       in
       r, ((Set_of_closures set_of_closures) : Flambda.constant_defining_value),
       R.approx r
