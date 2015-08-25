@@ -35,7 +35,7 @@ let middle_end ppf ~sourcefile ~prefixname ~backend
   in
   let name s v =
     if verbose then
-      Format.fprintf ppf "@.%s@." s;
+      Format.fprintf ppf "@.PASS: %s@." s;
     v
   in
   let (++) flam pass =
