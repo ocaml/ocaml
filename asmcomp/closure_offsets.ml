@@ -24,7 +24,7 @@ let add_closure_offsets
   (* Build the table mapping the functions declared by the set of closures
      to the positions of their individual "infix" closures inside the runtime
      closure block.  (All of the environment entries will come afterwards.) *)
-  let aux_fun_offset id function_decl (map, env_pos) =
+  let assign_function_offset id function_decl (map, env_pos) =
     let pos = env_pos + 1 in
     let env_pos =
       let arity = Flambda_utils.function_arity function_decl in
@@ -37,22 +37,24 @@ let add_closure_offsets
     let map = Closure_id.Map.add (Closure_id.wrap id) pos map in
     (map, env_pos)
   in
-  let function_offsets, fv_pos =
-    Variable.Map.fold aux_fun_offset function_decls.funs (function_offsets, -1)
+  let function_offsets, free_variable_pos =
+    Variable.Map.fold assign_function_offset
+      function_decls.funs (function_offsets, -1)
   in
   (* CR mshinwell: I'm not sure if this comment is still accurate *)
   (* Adds the mapping of free variables to their offset. It is not
      used inside the body of the function: it is directly
      substituted here. But if the function is inlined, it is
      possible that the closure is accessed from outside its body. *)
-  let aux_fv_offset var _ (map, pos) =
+  let assign_free_variable_offset var _ (map, pos) =
     let var_within_closure = Var_within_closure.wrap var in
     assert (not (Var_within_closure.Map.mem var_within_closure map));
     let map = Var_within_closure.Map.add var_within_closure pos map in
     (map, pos + 1)
   in
   let free_variable_offsets, _ =
-    Variable.Map.fold aux_fv_offset free_vars (free_variable_offsets, fv_pos)
+    Variable.Map.fold assign_free_variable_offset
+      free_vars (free_variable_offsets, free_variable_pos)
   in
   { function_offsets;
     free_variable_offsets;
