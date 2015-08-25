@@ -19,6 +19,12 @@ open Primitive
 open Types
 open Typetexp
 
+type native_repr_kind = Unboxed | Untagged
+
+let string_of_native_repr_kind = function
+  | Unboxed -> "unboxed"
+  | Untagged -> "untagged"
+
 type error =
     Repeated_parameter
   | Duplicate_constructor of string
@@ -46,6 +52,9 @@ type error =
   | Unbound_type_var_ext of type_expr * extension_constructor
   | Varying_anonymous
   | Val_in_structure
+  | Invalid_native_repr_attribute_payload of native_repr_kind
+  | Multiple_native_repr_attributes
+  | Cannot_unbox_or_untag_type of native_repr_kind
 
 open Typedtree
 
@@ -1351,6 +1360,66 @@ let transl_exception env sext =
   let newenv = Env.add_extension ~check:true ext.ext_id ext.ext_type env in
     ext, newenv
 
+type native_repr_attribute =
+  | Native_repr_attr_absent
+  | Native_repr_attr_present of native_repr_kind
+
+let get_native_repr_attribute core_type =
+  match
+    List.filter
+      (fun (n, _) ->
+         match n.Location.txt with
+         | "unboxed" | "untagged" -> true
+         | _ -> false)
+      core_type.ptyp_attributes
+  with
+  | [] ->
+    Native_repr_attr_absent
+  | _ :: (n, _) :: _ ->
+    raise (Error (n.Location.loc, Multiple_native_repr_attributes))
+  | [(n, payload)] ->
+    let kind = if n.txt = "unboxed" then Unboxed else Untagged in
+    match payload with
+    | PStr [] ->
+      Native_repr_attr_present kind
+    | _ ->
+      raise (Error (n.Location.loc,
+                    Invalid_native_repr_attribute_payload kind))
+
+let native_repr_of_type env kind ty =
+  match kind, (Ctype.expand_head_opt env ty).desc with
+  | Untagged, Tconstr (path, _, _) when Path.same path Predef.path_int ->
+    Some Untagged_int
+  | Unboxed, Tconstr (path, _, _) when Path.same path Predef.path_float ->
+    Some Unboxed_float
+  | Unboxed, Tconstr (path, _, _) when Path.same path Predef.path_int32 ->
+    Some (Unboxed_integer Pint32)
+  | Unboxed, Tconstr (path, _, _) when Path.same path Predef.path_int64 ->
+    Some (Unboxed_integer Pint64)
+  | Unboxed, Tconstr (path, _, _) when Path.same path Predef.path_nativeint ->
+    Some (Unboxed_integer Pnativeint)
+  | _ ->
+    None
+
+let make_native_repr env core_type ty =
+  match get_native_repr_attribute core_type with
+  | Native_repr_attr_absent -> Same_as_ocaml_repr
+  | Native_repr_attr_present kind ->
+    begin match native_repr_of_type env kind ty with
+    | None ->
+      raise (Error (core_type.ptyp_loc, Cannot_unbox_or_untag_type kind))
+    | Some repr -> repr
+    end
+
+let rec parse_native_repr_attributes env core_type ty =
+  match core_type.ptyp_desc, (Ctype.repr ty).desc with
+  | Ptyp_arrow (_, ct1, ct2), Tarrow (_, t1, t2, _) ->
+    let repr_arg = make_native_repr env ct1 t1 in
+    let repr_args, repr_res = parse_native_repr_attributes env ct2 t2 in
+    (repr_arg :: repr_args, repr_res)
+  | Ptyp_arrow _, _ | _, Tarrow _ -> assert false
+  | _ -> ([], make_native_repr env core_type ty)
+
 (* Translate a value declaration *)
 let transl_value_decl env loc valdecl =
   let cty = Typetexp.transl_type_scheme env valdecl.pval_type in
@@ -1362,10 +1431,17 @@ let transl_value_decl env loc valdecl =
         val_attributes = valdecl.pval_attributes }
   | [] ->
       raise (Error(valdecl.pval_loc, Val_in_structure))
-  | decl ->
-      let arity = Ctype.arity ty in
-      let prim = Primitive.parse_declaration arity decl in
-      if arity = 0 && (prim.prim_name = "" || prim.prim_name.[0] <> '%') then
+  | _ ->
+      let native_repr_args, native_repr_res =
+        parse_native_repr_attributes env valdecl.pval_type ty
+      in
+      let prim =
+        Primitive.parse_declaration valdecl
+          ~native_repr_args
+          ~native_repr_res
+      in
+      if prim.prim_arity = 0 &&
+         (prim.prim_name = "" || prim.prim_name.[0] <> '%') then
         raise(Error(valdecl.pval_type.ptyp_loc, Null_arity_external));
       if !Clflags.native_code
       && prim.prim_arity > 5
@@ -1714,6 +1790,17 @@ let report_error ppf = function
         "cannot be checked"
   | Val_in_structure ->
       fprintf ppf "Value declarations are only allowed in signatures"
+  | Invalid_native_repr_attribute_payload kind ->
+      fprintf ppf "[@%s] attribute does not accept a payload"
+        (string_of_native_repr_kind kind)
+  | Multiple_native_repr_attributes ->
+      fprintf ppf "Too many [@unboxed]/[@untagged] attributes"
+  | Cannot_unbox_or_untag_type Unboxed ->
+      fprintf ppf "Don't know how to unbox this type. Only float, int32, \
+                   int64 and nativeint can be unboxed"
+  | Cannot_unbox_or_untag_type Untagged ->
+      fprintf ppf "Don't know how to untag this type. Only int \
+                   can be untagged"
 
 let () =
   Location.register_error_of_exn

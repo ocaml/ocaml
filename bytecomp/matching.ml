@@ -14,7 +14,6 @@
 
 open Misc
 open Asttypes
-open Primitive
 open Types
 open Typedtree
 open Lambda
@@ -1475,10 +1474,7 @@ let matcher_lazy p rem = match p.pat_desc with
 *)
 
 let prim_obj_tag =
-  {prim_name = "caml_obj_tag";
-   prim_arity = 1; prim_alloc = false;
-   prim_native_name = "";
-   prim_native_float = false}
+  Primitive.simple ~name:"caml_obj_tag" ~arity:1 ~alloc:false
 
 let get_mod_field modname field =
   lazy (
@@ -1707,14 +1703,16 @@ let divide_array kind ctx pm =
 let strings_test_threshold = 8
 
 let prim_string_notequal =
-  Pccall{prim_name = "caml_string_notequal";
-         prim_arity = 2; prim_alloc = false;
-         prim_native_name = ""; prim_native_float = false}
+  Pccall(Primitive.simple
+           ~name:"caml_string_notequal"
+           ~arity:2
+           ~alloc:false)
 
 let prim_string_compare =
-  Pccall{prim_name = "caml_string_compare";
-         prim_arity = 2; prim_alloc = false;
-         prim_native_name = ""; prim_native_float = false}
+  Pccall(Primitive.simple
+           ~name:"caml_string_compare"
+           ~arity:2
+           ~alloc:false)
 
 let bind_sw arg k = match arg with
 | Lvar _ -> k arg
@@ -2287,7 +2285,7 @@ let mk_failaction_pos partial seen ctx defs  =
       | _  -> scan_def ((List.map fst now,idef)::env) later rem in
 
   let fail_pats = complete_pats_constrs seen in
-  if List.length fail_pats < 32 then begin 
+  if List.length fail_pats < 32 then begin
     let fail,jmps =
       scan_def
         []
@@ -2305,7 +2303,7 @@ let mk_failaction_pos partial seen ctx defs  =
     let fail,jumps =  mk_failaction_neg partial ctx defs in
     if dbg then
       eprintf "FAIL: %s\n"
-        (match fail with 
+        (match fail with
         | None -> "<none>"
         | Some lam -> string_of_lam lam) ;
     fail,[],jumps

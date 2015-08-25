@@ -150,7 +150,10 @@ let extcall_use_push = true
 let loc_external_arguments arg =
   fatal_error "Proc.loc_external_arguments"
 let loc_external_results res =
-  let (loc, ofs) = calling_conventions 0 0 100 100 not_supported res in loc
+  match res with
+  | [|{typ=Int};{typ=Int}|] -> [|eax; edx|]
+  | _ ->
+      let (loc, ofs) = calling_conventions 0 0 100 100 not_supported res in loc
 
 let loc_exn_bucket = eax
 
