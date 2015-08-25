@@ -58,14 +58,6 @@ end = struct
     id, { t with var = Variable.Map.add var id t.var }
 end
 
-module Storer =
-  Switch.Store
-    (struct
-      type t = Flambda.t
-      type key = Flambda_utils.sharing_key
-      let make_key = Flambda_utils.make_key
-    end)
-
 let to_clambda_const (const : Flambda.constant_defining_value_block_field)
       : Clambda.uconstant =
   match const with
@@ -137,6 +129,10 @@ let subst_var env var : Clambda.ulambda =
         (Printexc.raw_backtrace_to_string (Printexc.get_callstack 400000))
 
 let subst_vars env vars = List.map (subst_var env) vars
+
+let build_uoffset ulam offset : Clambda.ulambda =
+  if offset = 0 then ulam
+  else Uoffset (ulam, offset)
 
 let rec to_clambda t env (flam : Flambda.t) : Clambda.ulambda =
 (*
@@ -215,16 +211,18 @@ Flambda.print flam;
     let sw = List.map (fun (s, e) -> s, to_clambda t env e) sw in
     let def = Misc.may_map (to_clambda t env) def in
     Ustringswitch (arg, sw, def)
-  | Static_raise (i, args) ->
-    Ustaticfail (Static_exception.to_int i, List.map (to_clambda t env) args)
-  | Static_catch (i, vars, body, handler) ->
+  | Static_raise (static_exn, args) ->
+    Ustaticfail (Static_exception.to_int static_exn,
+      List.map (to_clambda t env) args)
+  | Static_catch (static_exn, vars, body, handler) ->
     let env_handler, ids =
       List.fold_right (fun var (env, ids) ->
-          let id, env = add_fresh_ident var env in
-          env, id :: ids) vars (env, [])
+          let id, env = Env.add_fresh_ident env var in
+          env, id :: ids)
+        vars (env, [])
     in
-    Ucatch (Static_exception.to_int i, ids,
-            to_clambda env body, to_clambda env_handler handler)
+    Ucatch (Static_exception.to_int static_exn, ids,
+      to_clambda t env body, to_clambda t env_handler handler)
   | Try_with (body, var, handler) ->
     let id, env_handler = Env.add_fresh_ident env var in
     Utrywith (to_clambda t env body, id, to_clambda t env_handler handler)
@@ -254,101 +252,73 @@ Flambda.print flam;
        Uprim(Praise, [Uconst (Uconst_pointer 0, None)], Debuginfo.none) *)
     Uunreachable
 
-and to_clambda_named (env : env) (named : Flambda.named) : Clambda.ulambda =
+and to_clambda_named t env (named : Flambda.named) : Clambda.ulambda =
   match named with
-  | Predefined_exn _ -> failwith "TODO clambdagen..."
-
-  | Expr expr ->
-    to_clambda env expr
-
   | Symbol sym ->
     let lbl = Linkage_name.to_string (Symbol.label sym) in
-    (* The constant should contains details about the variable to
-       allow cmmgen to unbox *)
+    (* CR pchambart: The constant should contains details about the variable to
+       allow cmmgen to unbox.
+       mshinwell: What are we going to do here? *)
     Uconst (Uconst_ref (lbl, None))
-
+  | Const (Const_pointer n) -> Uconst (Uconst_ptr n)
+  | Const (Int n) -> Uconst (Uconst_int n)
+  | Const (Char c) -> Uconst (Uconst_int (Char.code c))
   | Allocated_const _ ->
-    (* Should have been lifted to a Let_symbol *)
-    assert false
-
+    Misc.fatal_errorf "[Allocated_const] should have been lifted to a \
+        [Let_symbol] construction before [Clambdagen]: %a"
+      Flambda.print_named named
   | Set_of_closures set_of_closures ->
-    to_clambda_set_of_closures env set_of_closures
-
+    to_clambda_set_of_closures t env set_of_closures
   | Project_closure { set_of_closures; closure_id } ->
     let ulam = subst_var env set_of_closures in
-    let offset = get_fun_offset closure_id in
-    if offset = 0
-    then ulam
+    let offset = get_fun_offset t closure_id in
+    (* CR mshinwell for pchambart: I don't understand how this comment
+       relates to this code.  Can you explain? *)
     (* compilation of let rec in cmmgen assumes
        that a closure is not offseted (Cmmgen.expr_size) *)
-    else Uoffset(ulam, offset)
-
+    build_uoffset ulam offset
   | Move_within_set_of_closures { closure; start_from; move_to } ->
     let ulam = subst_var env closure in
-    let offset = get_fun_offset move_to in
-    let relative_offset = offset - get_fun_offset start_from in
-    if relative_offset = 0
-    then ulam
-    (* compilation of let rec in cmmgen assumes
-       that a closure is not offseted (Cmmgen.expr_size) *)
-    else Uoffset(ulam, relative_offset)
-
+    let relative_offset =
+      (get_fun_offset t move_to) - (get_fun_offset t start_from)
+    in
+    build_uoffset ulam relative_offset
   | Project_var { closure; var; closure_id } ->
     let ulam = subst_var env closure in
-    let fun_offset = get_fun_offset closure_id in
-    Format.eprintf "Clambdagen: Project_var: %a\n"
-      Flambda.print_named named;
-    let var_offset = get_fv_offset var in
+    let fun_offset = get_fun_offset t closure_id in
+    Format.eprintf "Clambdagen: Project_var: %a\n" Flambda.print_named named;
+    let var_offset = get_fv_offset t var in
     let pos = var_offset - fun_offset in
-    Uprim(Pfield pos, [ulam], Debuginfo.none)
+    Uprim (Pfield pos, [ulam], Debuginfo.none)
+  | Prim (Pgetglobalfield (id, index), _, dbg) ->
+    let ident = Ident.create_persistent (Compilenv.symbol_for_global id) in
+    Uprim (Pfield index, [Clambda.Uprim (Pgetglobal ident, [], dbg)], dbg)
+  | Prim (Psetglobalfield index, [arg], dbg) ->
+    let ident = Ident.create_persistent (Compilenv.make_symbol None) in
+    Uprim (Psetfield (index, false), [
+        Clambda.Uprim (Pgetglobal ident, [], dbg);
+        subst_var env arg;
+      ], dbg)
+  | Prim (p, args, dbg) -> Uprim (p, subst_vars env args, dbg)
+  | Expr expr -> to_clambda t env expr
 
-  | Prim(Pgetglobalfield(id,i), _, dbg) ->
-    Uprim(Pfield i,
-          [Clambda.Uprim(Pgetglobal
-                           (Ident.create_persistent
-                              (Compilenv.symbol_for_global id)), [], dbg)],
-          dbg)
-
-  | Prim(Psetglobalfield i, [arg], dbg) ->
-    Uprim(Psetfield (i,false),
-          [Clambda.Uprim(Pgetglobal (Ident.create_persistent
-                                       (Compilenv.make_symbol None)), [], dbg);
-           subst_var env arg],
-          dbg)
-
-  | Prim(p, args, dbg) ->
-    Uprim(p, subst_vars env args, dbg)
-
-  | Const (Const_pointer n) ->
-    Uconst (Uconst_ptr n)
-
-  | Const (Int n) ->
-    Uconst (Uconst_int n)
-
-  | Const (Char c) ->
-    Uconst (Uconst_int (Char.code c))
-
-and to_clambda_switch env cases num_keys default =
+and to_clambda_switch env cases keys default =
   let num_keys =
-    if Ext_types.Int.Set.cardinal num_keys = 0
-    then 0
-    else Ext_types.Int.Set.max_elt num_keys + 1 in
-  let index = Array.make num_keys 0
-  and store = Storer.mk_store () in
-
-  (* First default case *)
+    if Ext_types.Int.Set.cardinal num_keys = 0 then 0
+    else Ext_types.Int.Set.max_elt num_keys + 1
+  in
+  let index = Array.make num_keys 0 in
+  let store = Flambda.Switch_storer.mk_store () in
   begin match default with
-  | Some def when List.length cases < num_keys ->
-    ignore (store.Switch.act_store def)
+  | Some def when List.length cases < num_keys -> ignore (store.act_store def)
   | _ -> ()
-  end ;
-  (* Then all other cases *)
-  List.iter (fun (key,lam) -> index.(key) <- store.Switch.act_store lam) cases;
-  (* Compile action *)
-  let actions = Array.map (to_clambda env) (store.Switch.act_get ()) in
+  end;
+  List.iter (fun (key, lam) -> index.(key) <- store.Switch.act_store lam)
+    cases;
+  let actions = Array.map (to_clambda t env) (store.Switch.act_get ()) in
   match actions with
-  | [| |] -> [| |], [| |] (* May happen when default is None *)
-  | _     -> index, actions
+  | [| |] -> [| |], [| |]  (* May happen when [default] is [None]. *)
+  | _ -> index, actions
 
 and to_clambda_direct_apply func args direct_func dbg env : Clambda.ulambda =
   let closed = is_function_constant direct_func in

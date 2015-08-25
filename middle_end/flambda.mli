@@ -372,3 +372,7 @@ val print_set_of_closures
    : Format.formatter
   -> set_of_closures
   -> unit
+
+module Switch_storer : sig
+  val mk_store : unit -> Flambda.t Switch.t_store
+end

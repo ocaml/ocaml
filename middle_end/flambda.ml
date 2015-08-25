@@ -644,3 +644,11 @@ module Constant_defining_value = struct
   module Map = Map.Make (T)
   module Tbl = Hashtbl.Make (T)
 end
+
+module Switch_storer =
+  Switch.Store
+    (struct
+      type t = Flambda.t
+      type key = Flambda_utils.sharing_key
+      let make_key = Flambda_utils.make_key
+    end)
