@@ -12,7 +12,12 @@
 (**************************************************************************)
 
 type t = {
-  offsets : Closure_offsets.result;
+  fun_offset_table : int Closure_id.Map.t;
+  fv_offset_table : int Var_within_closure.Map.t;
+  extern_fun_offset_table : int Closure_id.Map.t;
+  extern_fv_offset_table : int Var_within_closure.Map.t;
+  ex_closures : Flambda.function_declarations Closure_id.Map.t;
+  ex_constant_closures : Set_of_closures_id.Set.t;
   closures : Flambda.function_declarations Closure_id.Map.t;
   constant_sets_of_closures : Set_of_closures_id.Set.t;
 }
@@ -70,68 +75,53 @@ let to_clambda_const (const : Flambda.constant_defining_value_block_field)
   match const with
   | Symbol s ->
     let lbl = Linkage_name.to_string (Symbol.label s) in
-    (* The constant should contains details about the variable to
+    (* CR pchambart: The constant should contains details about the variable to
        allow cmmgen to unbox *)
     Uconst_ref (lbl, None)
   | Const (Int i) -> Uconst_int i
   | Const (Char c) -> Uconst_int (Char.code c)
   | Const (Const_pointer i) -> Uconst_ptr i
 
-(* The offset table associate a function label to its offset
-   inside a closure *)
-let fun_offset_table = P.offsets.code_pointer_offsets
-let fv_offset_table = P.offsets.free_variable_offsets
-
-(* offsets of functions and free variables in closures comming from
-   a linked module *)
-let extern_fun_offset_table = (Compilenv.approx_env ()).ex_offset_fun
-let extern_fv_offset_table = (Compilenv.approx_env ()).ex_offset_fv
-let ex_closures = (Compilenv.approx_env ()).ex_functions_off
-(* let ex_functions = *)
-(*   (Compilenv.approx_env ()).Flambdaexport_types.ex_functions *)
-let ex_constant_closures = (Compilenv.approx_env ()).ex_constant_closures
-
-let get_fun_offset off =
+let get_fun_offset t off =
   try
     if Closure_id.in_compilation_unit (Compilenv.current_unit ()) off
-    then Closure_id.Map.find off fun_offset_table
-    else Closure_id.Map.find off extern_fun_offset_table
+    then Closure_id.Map.find off t.fun_offset_table
+    else Closure_id.Map.find off t.extern_fun_offset_table
   with Not_found ->
     Misc.fatal_error
       (Format.asprintf "missing offset %a" Closure_id.print off)
 
-let get_fv_offset off =
+let get_fv_offset t off =
   if Var_within_closure.in_compilation_unit (Compilenv.current_unit ()) off
   then
-    if not (Var_within_closure.Map.mem off fv_offset_table)
+    if not (Var_within_closure.Map.mem off t.fv_offset_table)
     then Misc.fatal_error (Format.asprintf "env field offset not found: %a\n%!"
                              Var_within_closure.print off)
-    else Var_within_closure.Map.find off fv_offset_table
-  else Var_within_closure.Map.find off extern_fv_offset_table
+    else Var_within_closure.Map.find off t.fv_offset_table
+  else Var_within_closure.Map.find off t.extern_fv_offset_table
 
-let function_declaration_position cf =
-  try Current_unit (Closure_id.Map.find cf P.closures) with
+let function_declaration_position t closure_id =
+  try Current_unit (Closure_id.Map.find closure_id t.closures) with
   | Not_found ->
-    try Imported_unit (Closure_id.Map.find cf ex_closures) with
-    | Not_found ->
-      Not_declared
+    try Imported_unit (Closure_id.Map.find closure_id t.ex_closures) with
+    | Not_found -> Not_declared
 
-let is_function_constant cf =
-  match function_declaration_position cf with
+let is_function_constant t closure_id =
+  match function_declaration_position t closure_id with
   | Current_unit { set_of_closures_id } ->
-    Set_of_closures_id.Set.mem set_of_closures_id P.constant_sets_of_closures
+    Set_of_closures_id.Set.mem set_of_closures_id t.constant_sets_of_closures
   | Imported_unit { set_of_closures_id } ->
-    Set_of_closures_id.Set.mem set_of_closures_id ex_constant_closures
+    Set_of_closures_id.Set.mem set_of_closures_id t.ex_constant_closures
   | Not_declared ->
-    Misc.fatal_error (Format.asprintf "missing closure %a"
-                        Closure_id.print cf)
+    Misc.fatal_errorf "Flambda_to_clambda: missing closure %a"
+      Closure_id.print closure_id
 
 let subst_var env var : Clambda.ulambda =
-  try find_sb var env
+  try Env.find_sb env var
   with Not_found ->
-    try Uvar (ident_for_var_exn var env)
+    try Uvar (Env.ident_for_var_exn env var)
     with Not_found ->
-      Misc.fatal_errorf "Clambdagen.to_clambda: unbound variable %a@.%s@."
+      Misc.fatal_errorf "Flambda_to_clambda: unbound variable %a@.%s@."
         Variable.print var
         (Printexc.raw_backtrace_to_string (Printexc.get_callstack 400000))
 
@@ -322,74 +312,64 @@ and to_clambda_switch t env cases keys default =
   | _ -> index, actions
 
 and to_clambda_direct_apply t func args direct_func dbg env : Clambda.ulambda =
-  let closed = is_function_constant direct_func in
+  let closed = is_function_constant t direct_func in
   let label = Compilenv.function_label direct_func in
   let uargs =
     let uargs = subst_vars env args in
+    (* CR mshinwell: improve comment.  Should we check [func] too? *)
+    (* If the function is closed, the function expression is always a
+       variable, so it is ok to drop it. Note that it means that
+       some Let can be dead. The un-anf pass should get rid of it *)
     if closed then uargs else uargs @ [subst_var env func]
   in
-  (* If the function is closed, the function expression is always a
-     variable, so it is ok to drop it. Note that it means that
-     some Let can be dead. The un-anf pass should get rid of it *)
   Clambda.Udirect_apply (label, uargs, dbg)
 
+(* CR mshinwell for mshinwell: improve comment *)
+(* Make the substitutions for variables bound by the closure:
+   the variables bound are the functions inside the closure and
+   the free variables of the functions.
+
+   For instance the closure for a code like
+
+     let rec fun_a x =
+       if x <= 0 then 0 else fun_b (x-1) v1
+     and fun_b x y =
+       if x <= 0 then 0 else v1 + v2 + y + fun_a (x-1)
+
+   will be represented in memory as:
+
+     [ closure header; fun_a;
+       1; infix header; fun caml_curry_2;
+       2; fun_b; v1; v2 ]
+
+   fun_a and fun_b will take an additional parameter 'env' to
+   access their closure.  It will be shifted such that in the body
+   of a function the env parameter points to its code
+   pointer. i.e. in fun_b it will be shifted by 3 words.
+
+   Hence accessing to v1 in the body of fun_a is accessing to the
+   6th field of 'env' and in the body of fun_b it is the 1st
+   field.
+*)
 and to_clambda_set_of_closures t env
-    (({ function_decls = functs; free_vars = fv } : Flambda.set_of_closures)
-      as set_of_closures) =
-  (* Make the susbtitutions for variables bound by the closure:
-     the variables bounds are the functions inside the closure and
-     the free variables of the functions.
-
-     For instance the closure for a code like
-
-       let rec fun_a x =
-         if x <= 0 then 0 else fun_b (x-1) v1
-       and fun_b x y =
-         if x <= 0 then 0 else v1 + v2 + y + fun_a (x-1)
-
-     will be represented in memory as:
-
-       [ closure header; fun_a;
-         1; infix header; fun caml_curry_2;
-         2; fun_b; v1; v2 ]
-
-     fun_a and fun_b will take an additional parameter 'env' to
-     access their closure.  It will be shifted such that in the body
-     of a function the env parameter points to its code
-     pointer. i.e. in fun_b it will be shifted by 3 words.
-
-     Hence accessing to v1 in the body of fun_a is accessing to the
-     6th field of 'env' and in the body of fun_b it is the 1st
-     field.
-  *)
-
+      (({ function_decls; free_vars } : Flambda.set_of_closures)
+        as set_of_closures) =
 (*
 Format.eprintf "Clambdagen.to_clambda_set_of_closures: %a\n"
 Flambda.print_set_of_closures set_of_closures;
 *)
-
-  let funct = Variable.Map.bindings functs.funs in
   let env_var = Ident.create "env" in
-
-  let fv_ulam =
-    Variable.Map.bindings
-      (Variable.Map.map (subst_var env) fv)
-  in
-
-  let to_clambda_function (id, (func : Flambda.function_declaration))
-    : Clambda.ufunction =
-    let cf = Closure_id.wrap id in
-    (* adds variables from the closure to the substitution environment *)
-    let fun_offset = Closure_id.Map.find cf fun_offset_table in
-
-    (* inside the body of the function, we cannot access variables
-       declared outside, so take a clean substitution table. *)
-    let env = { empty_env with const_subst = env.const_subst } in
-
+  let to_clambda_function (closure_id, (func : Flambda.function_declaration))
+        : Clambda.ufunction =
+    let closure_id = Closure_id.wrap closure_id in
+    let fun_offset = Closure_id.Map.find closure_id fun_offset_table in
     let env =
-      (* Add to the substitution the value of the free variables *)
-
-      let add_env_variable id _ env =
+      (* Inside the body of the function, we cannot access variables
+         declared outside, so start with a clean environment. *)
+      let env = Env.empty_with_const_subst_from env in
+      (* Add the Clambda expressions for the free variables of the function
+         to the environment. *)
+      let add_env_free_variable id _ env =
         let var_offset =
           try
             Var_within_closure.Map.find
@@ -401,69 +381,67 @@ Flambda.print_set_of_closures set_of_closures;
               Flambda.print_set_of_closures set_of_closures
         in
         let pos = var_offset - fun_offset in
-        add_sb id (Uprim(Pfield pos, [Clambda.Uvar env_var], Debuginfo.none)) env
+        Env.add_sb env id
+          (Uprim (Pfield pos, [Clambda.Uvar env_var], Debuginfo.none))
       in
-
-      let env = Variable.Map.fold add_env_variable fv env in
-
-      (* Add to the substitution the value of the functions defined in
-         the current closure:
-         this can be retrieved by shifting the environment. *)
-      let add_offset_subst pos env (id,_) =
-        let offset = Closure_id.Map.find (Closure_id.wrap id) fun_offset_table in
-        let exp : Clambda.ulambda = Uoffset(Uvar env_var, offset - pos) in
-        add_sb id exp env in
-      List.fold_left (add_offset_subst fun_offset) env funct
+      let env = Variable.Map.fold add_env_free_variable free_vars env in
+      (* Add the Clambda expressions for all functions defined in the current
+         set of closures to the environment.  The various functions may be
+         retrieved by moving within the runtime closure, starting from the
+         current function's closure. *)
+      let add_env_function pos env (id, _) =
+        let offset =
+          Closure_id.Map.find (Closure_id.wrap id) fun_offset_table
+        in
+        let exp : Clambda.ulambda = Uoffset (Uvar env_var, offset - pos) in
+        Env.add_sb env id exp
+      in
+      List.fold_left (add_env_function fun_offset) env funct
     in
-
     let env_body, params =
       List.fold_right (fun var (env, params) ->
-          let id, env = add_fresh_ident var env in
-          env, id :: params) func.params (env, []) in
-
-    { Clambda.
-      label = Compilenv.function_label cf;
+          let id, env = Env.add_fresh_ident env var in
+          env, id :: params)
+        func.params (env, [])
+    in
+    { label = Compilenv.function_label closure_id;
       arity = Flambda_utils.function_arity func;
       params = params @ [env_var];
       body = to_clambda env_body func.body;
       dbg = func.dbg;
     }
   in
+  let funs =
+    List.map to_clambda_function (Variable.Map.bindings functs.funs)
+  in
+  let free_vars =
+    Variable.Map.bindings (Variable.Map.map (subst_var env) free_vars)
+  in
+  Clambda.Uclosure (funs, List.map snd fv_ulam)
 
-  let ufunct = List.map to_clambda_function funct in
-
-  Clambda.Uclosure (ufunct, List.map snd fv_ulam)
-
-and to_clambda_closed_set_of_closures env symbol
-    ({ function_decls = functs } : Flambda.set_of_closures)
-  : Clambda.ustructured_constant =
-
-  let funct = Variable.Map.bindings functs.funs in
-
-  (* the label used for constant closures *)
-  let closure_lbl = Linkage_name.to_string (Symbol.label symbol) in
-
-  let to_clambda_function (id, (func : Flambda.function_declaration))
-    : Clambda.ufunction =
-
-    (* inside the body of the function, we cannot access variables
-       declared outside, so take a clean substitution table. *)
-    let env = { empty_env with const_subst = env.const_subst } in
-
+and to_clambda_closed_set_of_closures t env symbol
+      ({ function_decls; } : Flambda.set_of_closures)
+      : Clambda.ustructured_constant =
+  let to_clambda_function (id, (function_decl : Flambda.function_declaration))
+        : Clambda.ufunction =
+    let env = Env.empty_with_const_subst_from env in
     let env_body, params =
       List.fold_right (fun var (env, params) ->
-          let id, env = add_fresh_ident var env in
-          env, id :: params) func.params (env, []) in
-
-    { Clambda.
-      label = Compilenv.function_label (Closure_id.wrap id);
-      arity = Flambda_utils.function_arity func;
+          let id, env = Env.add_fresh_ident env var in
+          env, id :: params)
+        function_decl.params (env, [])
+    in
+    { label = Compilenv.function_label (Closure_id.wrap id);
+      arity = Flambda_utils.function_arity function_decl;
       params;
-      body = to_clambda env_body func.body;
+      body = to_clambda t env_body func.body;
       dbg = func.dbg;
     }
   in
-  let ufunct = List.map to_clambda_function funct in
+  let ufunct =
+    List.map to_clambda_function (Variable.Map.bindings function_decls.funs)
+  in
+  let closure_lbl = Linkage_name.to_string (Symbol.label symbol) in
   Uconst_closure (ufunct, closure_lbl, [])
 
 let to_clambda_allocated_constant (const : Allocated_const.t)
@@ -523,8 +501,15 @@ let accumulate_structured_constants t symbol
   | Project_closure _ -> acc
 
 let convert ~program ~exported : result =
-  let t =
-    { offsets = Closure_offsets.compute program;
+  let offsets = Closure_offsets.compute program in
+  let imported = Compilenv.approx_env () in
+  let t = {
+      fv_offset_table = offsets.code_pointer_offsets;
+      fun_offset_table = offsets.free_variable_offsets;
+      extern_fv_offset_table = imported.ex_offset_fv;
+      extern_fun_offset_table = imported.ex_offset_fun;
+      ex_closures = imported.ex_functions_off;
+      ex_constant_closures = imported.ex_constant_closures;
       closures = Flambda_utils.make_closure_map program;
       constant_sets_of_closures =
         Flambda_utils.all_lifted_constant_sets_of_closures program;

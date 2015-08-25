@@ -110,7 +110,7 @@ ASMCOMP=\
   asmcomp/share_constants.cmo \
   asmcomp/build_export_info.cmo \
   asmcomp/closure_offsets.cmo \
-  asmcomp/clambdagen.cmo \
+  asmcomp/flambda_to_clambda.cmo \
   asmcomp/import_approx.cmo \
   asmcomp/un_anf.cmo \
   asmcomp/strmatch.cmo asmcomp/cmmgen.cmo \
