@@ -11,24 +11,28 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(* "Moveable" identifiers are identifiers that are used exactly once and are
-   not assigned. *)
+(* We say that an [Ident.t] is "linear" iff:
+   (a) it is used exactly once;
+   (b) it is never assigned to (using [Uassign]).
+*)
 type ident_info =
   { used : Ident.Set.t;
-    moveable : Ident.Set.t;
+    linear : Ident.Set.t;
     assigned : Ident.Set.t;
   }
 
-let make_ident_info (clam:Clambda.ulambda) : ident_info =
+(* CR mshinwell: consider explicit ignore thing here *)
+let make_ident_info (clam : Clambda.ulambda) : ident_info =
   let t : int Ident.Tbl.t = Ident.Tbl.create 10 in
-  let assigned_ident = ref Ident.Set.empty in
+  let assigned_idents = ref Ident.Set.empty in
   let rec loop : Clambda.ulambda -> unit = function
     | Uvar id ->
       begin match Ident.Tbl.find t id with
-      | n -> Ident.Tbl.replace t id (n+1)
+      | n -> Ident.Tbl.replace t id (n + 1)
       | exception Not_found -> Ident.Tbl.add t id 1
       end
     | Uconst _ ->
+      (* CR mshinwell: improve comment *)
       (* Const cannot reference variables bound in this scope.
          Only const_closure can contains variables, but they are
          all bound by the closure *)
@@ -80,7 +84,7 @@ let make_ident_info (clam:Clambda.ulambda) : ident_info =
       loop high;
       loop body
     | Uassign (id, expr) ->
-      assigned_ident := Ident.Set.add id !assigned_ident;
+      assigned_idents := Ident.Set.add id !assigned_idents;
       loop expr
     | Usend (_, e1, e2, args, _) ->
       loop e1;
@@ -90,21 +94,34 @@ let make_ident_info (clam:Clambda.ulambda) : ident_info =
       ()
   in
   loop clam;
-  let moveable =
+  let linear =
     Ident.Tbl.fold (fun id n acc ->
-        if n = 1 && not (Ident.Set.mem id !assigned_ident)
+        if n = 1 && not (Ident.Set.mem id !assigned_idents)
         then Ident.Set.add id acc
         else acc)
       t Ident.Set.empty
   in
   let used =
-    (* This is very restricted: this does not allow to get rid of
-       useless chains of lets. But this should be sufficient to remove
-       the cruft of variables bounds to symbols. *)
+    (* This doesn't work transitively and thus is somewhat restricted.  In
+       particular, it does not allow us to get rid of useless chains of [let]s.
+       However it should be sufficient to remove the majority of unnecessary
+       [let] bindings that might hinder [Cmmgen]. *)
     Ident.Tbl.fold (fun id _n acc -> Ident.Set.add id acc)
       t Ident.Set.empty
   in
-  { used; moveable; assigned = !assigned_ident }
+  { used; linear; assigned = !assigned_idents }
+
+(* For the avoidance of doubt, we say that an expression is "referentially
+   transparent" iff it has no effect (cf. [Effect_analysis]) and also does
+   not read from mutable values.  As such, in addition to the properties of
+   expressions with no effects, modifying its surroundings does not modify
+   its result.  In particular it can be run before or after adjacent
+   expressions if data dependencies permit.
+
+   [Uvar] expressions need special care: without knowledge of the kind of
+   variable involved (specifically, whether or not it is mutable) we cannot
+   tell whether such an expression is referentially transparent.
+*)
 
 type purity = Pure | Impure
 
@@ -235,8 +252,8 @@ let primitive_purity (prim:Lambda.primitive) (args:Clambda.ulambda list) =
   | Prevapply _
   | Pdirapply _ -> assert false
 
-(** Substitute [let]-bound pure expressions that are used only once.  This is
-    done for the reason given in the .mli. *)
+(** Eliminate, through substitution, [let]-bindings of linear variables with
+    referentially-transparent defining expressions. *)
 let rec un_anf_and_purity ident_info env (clam : Clambda.ulambda)
       : Clambda.ulambda * purity =
   match clam with
@@ -280,7 +297,7 @@ let rec un_anf_and_purity ident_info env (clam : Clambda.ulambda)
     un_anf_and_purity ident_info env def
   | Ulet (id, def, body) ->
     let def, def_purity = un_anf_and_purity ident_info env def in
-    begin match def_purity, Ident.Set.mem id ident_info.moveable,
+    begin match def_purity, Ident.Set.mem id ident_info.linear,
                 Ident.Set.mem id ident_info.used with
     | Pure, _, false ->
       un_anf_and_purity ident_info env body
