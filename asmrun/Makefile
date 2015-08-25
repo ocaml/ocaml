@@ -16,7 +16,7 @@ include ../config/Makefile
 CC=$(NATIVECC)
 FLAGS=-I../byterun -DCAML_NAME_SPACE -DNATIVE_CODE \
       -DTARGET_$(ARCH) -DSYS_$(SYSTEM) $(IFLEXDIR)
-CFLAGS=$(FLAGS) -O $(NATIVECCCOMPOPTS)
+CFLAGS=$(FLAGS) $(NATIVECCCOMPOPTS)
 DFLAGS=$(FLAGS) -g -DDEBUG $(NATIVECCCOMPOPTS)
 PFLAGS=$(FLAGS) -pg -O -DPROFILING $(NATIVECCPROFOPTS)
 PICFLAGS=$(FLAGS) -O $(SHAREDCCCOMPOPTS) $(NATIVECCCOMPOPTS)
@@ -26,8 +26,8 @@ COBJS=startup_aux.o startup.o \
   misc.o freelist.o major_gc.o minor_gc.o memory.o alloc.o compare.o ints.o \
   floats.o str.o array.o io.o extern.o intern.o hash.o sys.o parsing.o \
   gc_ctrl.o terminfo.o md5.o obj.o lexing.o printexc.o callback.o weak.o \
-  compact.o finalise.o custom.o $(UNIX_OR_WIN32).o backtrace.o natdynlink.o\
-  debugger.o meta.o dynlink.o
+  compact.o finalise.o custom.o $(UNIX_OR_WIN32).o backtrace_prim.o backtrace.o \
+  natdynlink.o debugger.o meta.o dynlink.o
 
 ASMOBJS=$(ARCH).o
 
@@ -120,10 +120,15 @@ power.o: power-$(SYSTEM).o
 power.p.o: power-$(SYSTEM).o
 	cp power-$(SYSTEM).o power.p.o
 
+power.pic.o: power-$(SYSTEM).pic.o
+	cp power-$(SYSTEM).pic.o power.pic.o
+
 main.c: ../byterun/main.c
 	ln -s ../byterun/main.c main.c
 startup_aux.c: ../byterun/startup_aux.c
 	ln -s ../byterun/startup_aux.c startup_aux.c
+backtrace.c: ../byterun/backtrace.c
+	ln -s ../byterun/backtrace.c backtrace.c
 misc.c: ../byterun/misc.c
 	ln -s ../byterun/misc.c misc.c
 freelist.c: ../byterun/freelist.c

@@ -6,7 +6,8 @@
 (*                                                                     *)
 (*  Copyright 2007 Institut National de Recherche en Informatique et   *)
 (*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
+(*  under the terms of the GNU Library General Public License, with    *)
+(*  the special exception on linking described in file ../LICENSE.     *)
 (*                                                                     *)
 (***********************************************************************)
 
@@ -72,13 +73,22 @@ let execute_many =
   in
   Ocamlbuild_executor.execute ~exit
 
+(* Ocamlbuild code assumes throughout that [readlink] will return a file name
+   relative to the current directory. Let's make it so. *)
+let myunixreadlink x =
+  let y = Unix.readlink x in
+  if Filename.is_relative y then
+    Filename.concat (Filename.dirname x) y
+  else
+    y
+
 let setup () =
   implem.is_degraded <- false;
   implem.stdout_isatty <- stdout_isatty;
   implem.gettimeofday <- Unix.gettimeofday;
   implem.report_error <- report_error;
   implem.execute_many <- execute_many;
-  implem.readlink <- Unix.readlink;
+  implem.readlink <- myunixreadlink;
   implem.run_and_open <- run_and_open;
   implem.at_exit_once <- at_exit_once;
   implem.is_link <- is_link;

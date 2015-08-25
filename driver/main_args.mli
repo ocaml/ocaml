@@ -62,11 +62,13 @@ module type Compiler_options =  sig
   val _impl : string -> unit
   val _intf : string -> unit
   val _intf_suffix : string -> unit
+  val _keep_docs : unit -> unit
   val _keep_locs : unit -> unit
   val _linkall : unit -> unit
   val _noautolink : unit -> unit
   val _o : string -> unit
   val _output_obj : unit -> unit
+  val _output_complete_obj : unit -> unit
   val _pack : unit -> unit
   val _pp : string -> unit
   val _principal : unit -> unit
@@ -78,6 +80,7 @@ module type Compiler_options =  sig
   val _v : unit -> unit
   val _verbose : unit -> unit
   val _where : unit -> unit
+  val _color : string -> unit
 
   val _nopervasives : unit -> unit
 end

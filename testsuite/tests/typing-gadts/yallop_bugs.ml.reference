@@ -1,5 +1,5 @@
 
-#                           Characters 240-248:
+#                           Characters 233-241:
            let f (Refl : (a T.t, b T.t) eq) = (x :> b)
                                               ^^^^^^^^
 Error: Type a is not a subtype of b 

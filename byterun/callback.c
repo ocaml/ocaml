@@ -245,3 +245,14 @@ CAMLexport value * caml_named_value(char const *name)
   }
   return NULL;
 }
+
+CAMLexport void caml_iterate_named_values(caml_named_action f)
+{
+  int i;
+  for(i = 0; i < Named_value_size; i++){
+    struct named_value * nv;
+    for (nv = named_value_table[i]; nv != NULL; nv = nv->next) {
+      f( &nv->val, nv->name );
+    }
+  }
+}

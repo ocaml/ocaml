@@ -23,7 +23,8 @@ let reg ppf r =
   else
     fprintf ppf "%s" (
       match r.typ with
-        Addr -> "A"
+        Val -> "V"
+      | Addr -> "A"
       | Int -> "I"
       | Float -> "F"
       | M128d -> "M128d"
@@ -64,7 +65,10 @@ let regsetaddr ppf s =
     (fun r ->
       if !first then begin first := false; fprintf ppf "%a" reg r end
       else fprintf ppf "@ %a" reg r;
-      match r.typ with Addr -> fprintf ppf "*" | _ -> ())
+      match r.typ with
+      | Val -> fprintf ppf "*"
+      | Addr -> fprintf ppf "!"
+      | _ -> ())
     s
 
 let intcomp = function

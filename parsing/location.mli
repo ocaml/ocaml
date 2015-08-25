@@ -29,11 +29,14 @@ type t = {
 
 val none : t
 (** An arbitrary value of type [t]; describes an empty ghost range. *)
-val in_file : string -> t;;
+
+val in_file : string -> t
 (** Return an empty ghost range located in a given file. *)
+
 val init : Lexing.lexbuf -> string -> unit
 (** Set the file name and line number of the [lexbuf] to be the start
     of the named file. *)
+
 val curr : Lexing.lexbuf -> t
 (** Get the location of the current token from the [lexbuf]. *)
 
@@ -50,14 +53,16 @@ val input_lexbuf: Lexing.lexbuf option ref
 val get_pos_info: Lexing.position -> string * int * int (* file, line, char *)
 val print_loc: formatter -> t -> unit
 val print_error: formatter -> t -> unit
-val print_error_cur_file: formatter -> unit
+val print_error_cur_file: formatter -> unit -> unit
 val print_warning: t -> formatter -> Warnings.t -> unit
+val formatter_for_warnings : formatter ref
 val prerr_warning: t -> Warnings.t -> unit
 val echo_eof: unit -> unit
 val reset: unit -> unit
 
 val warning_printer : (t -> formatter -> Warnings.t -> unit) ref
 (** Hook for intercepting warnings. *)
+
 val default_warning_printer : t -> formatter -> Warnings.t -> unit
 (** Original warning printer for use in hooks. *)
 
@@ -83,7 +88,6 @@ val show_filename: string -> string
 
 val absname: bool ref
 
-
 (* Support for located errors *)
 
 type error =
@@ -96,13 +100,21 @@ type error =
 
 exception Error of error
 
+val print_error_prefix: formatter -> unit -> unit
+  (* print the prefix "Error:" possibly with style *)
+
 val error: ?loc:t -> ?sub:error list -> ?if_highlight:string -> string -> error
 
 val errorf: ?loc:t -> ?sub:error list -> ?if_highlight:string
-            -> ('a, unit, string, error) format4 -> 'a
+            -> ('a, Format.formatter, unit, error) format4 -> 'a
+
+val errorf_prefixed : ?loc:t -> ?sub:error list -> ?if_highlight:string
+                    -> ('a, Format.formatter, unit, error) format4 -> 'a
+  (* same as {!errorf}, but prints the error prefix "Error:" before yielding
+   * to the format string *)
 
 val raise_errorf: ?loc:t -> ?sub:error list -> ?if_highlight:string
-            -> ('a, unit, string, 'b) format4 -> 'a
+            -> ('a, Format.formatter, unit, 'b) format4 -> 'a
 
 val error_of_printer: t -> (formatter -> 'a -> unit) -> 'a -> error
 
@@ -122,6 +134,7 @@ val report_error: formatter -> error -> unit
 
 val error_reporter : (formatter -> error -> unit) ref
 (** Hook for intercepting error reports. *)
+
 val default_error_reporter : formatter -> error -> unit
 (** Original error reporter for use in hooks. *)
 

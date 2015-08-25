@@ -6,7 +6,8 @@
 (*                                                                     *)
 (*  Copyright 2007 Institut National de Recherche en Informatique et   *)
 (*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
+(*  under the terms of the GNU Library General Public License, with    *)
+(*  the special exception on linking described in file ../LICENSE.     *)
 (*                                                                     *)
 (***********************************************************************)
 
@@ -39,9 +40,9 @@ let init log_file =
   in
   internal_display := Some (Display.create ~mode ?log_file ~log_level:!level ())
 
-let raw_dprintf log_level = Display.dprintf ~log_level !-internal_display
-
-let dprintf log_level fmt = raw_dprintf log_level ("@[<2>"^^fmt^^"@]@.")
+let raw_dprintf log_level = Display.dprintf ~raw:true ~log_level !-internal_display
+let dprintf log_level fmt = Display.dprintf ~log_level !-internal_display fmt
+let is_logging log_level = Display.is_logging !-internal_display log_level
 let eprintf fmt = dprintf (-1) fmt
 
 let update () = Display.update !-internal_display

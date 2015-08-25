@@ -38,12 +38,32 @@ typedef size_t asize_t;
 typedef char * addr;
 /* </private> */
 
+/* Noreturn is preserved for compatibility reasons.
+   Instead of the legacy GCC/Clang-only
+     foo Noreturn;
+   you should prefer
+     CAMLnoreturn_start foo CAMLnoreturn_end;
+   which supports both GCC/Clang and MSVC.
+
+   Note: CAMLnoreturn is a different macro defined in memory.h,
+   to be used in function bodies rather than  aprototype attribute.
+*/
 #ifdef __GNUC__
   /* Works only in GCC 2.5 and later */
+  #define CAMLnoreturn_start
+  #define CAMLnoreturn_end __attribute__ ((noreturn))
   #define Noreturn __attribute__ ((noreturn))
+#elif _MSC_VER >= 1500
+  #define CAMLnoreturn_start __declspec(noreturn)
+  #define CAMLnoreturn_end
+  #define Noreturn
 #else
+  #define CAMLnoreturn_start
+  #define CAMLnoreturn_end
   #define Noreturn
 #endif
+
+
 
 /* Export control (to mark primitives and to handle Windows DLL) */
 
@@ -59,20 +79,43 @@ typedef char * addr;
 #define CAMLweakdef
 #endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+/* GC timing hooks. These can be assigned by the user.
+   [caml_minor_gc_begin_hook] must not allocate nor change any heap value.
+   The others can allocate and even call back to OCaml code.
+*/
+typedef void (*caml_timing_hook) (void);
+extern caml_timing_hook caml_major_slice_begin_hook, caml_major_slice_end_hook;
+extern caml_timing_hook caml_minor_gc_begin_hook, caml_minor_gc_end_hook;
+extern caml_timing_hook caml_finalise_begin_hook, caml_finalise_end_hook;
+
 /* Assertions */
 
 #ifdef DEBUG
 #define CAMLassert(x) \
   ((x) ? (void) 0 : caml_failed_assert ( #x , __FILE__, __LINE__))
-CAMLextern int caml_failed_assert (char *, char *, int) Noreturn;
+CAMLnoreturn_start
+CAMLextern int caml_failed_assert (char *, char *, int)
+CAMLnoreturn_end;
 #else
 #define CAMLassert(x) ((void) 0)
 #endif
 
-CAMLextern void caml_fatal_error (char *msg) Noreturn;
-CAMLextern void caml_fatal_error_arg (char *fmt, char *arg) Noreturn;
+CAMLnoreturn_start
+CAMLextern void caml_fatal_error (char *msg)
+CAMLnoreturn_end;
+
+CAMLnoreturn_start
+CAMLextern void caml_fatal_error_arg (char *fmt, char *arg)
+CAMLnoreturn_end;
+
+CAMLnoreturn_start
 CAMLextern void caml_fatal_error_arg2 (char *fmt1, char *arg1,
-                                       char *fmt2, char *arg2) Noreturn;
+                                       char *fmt2, char *arg2)
+CAMLnoreturn_end;
 
 /* Safe string operations */
 
@@ -98,6 +141,10 @@ extern void caml_ext_table_free(struct ext_table * tbl, int free_entries);
 
 extern uintnat caml_verb_gc;
 void caml_gc_message (int, char *, uintnat);
+
+/* Runtime warnings */
+extern uintnat caml_runtime_warnings;
+int caml_runtime_warnings_active(void);
 
 /* Memory routines */
 
@@ -155,5 +202,9 @@ extern int caml_snprintf(char * buf, size_t size, const char * format, ...);
 #endif
 
 /* </private> */
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* CAML_MISC_H */

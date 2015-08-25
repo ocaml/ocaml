@@ -132,7 +132,7 @@ let rec remove_instr node = function
 
 (* We treat Lreloadretaddr as a word-sized load *)
 
-let some_load = (Iload(Cmm.Word, Arch.identity_addressing))
+let some_load = (Iload(Cmm.Word_int, Arch.identity_addressing))
 
 (* The generic scheduler *)
 

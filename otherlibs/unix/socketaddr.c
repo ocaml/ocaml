@@ -23,6 +23,7 @@
 #include "socketaddr.h"
 
 #ifdef _WIN32
+#undef EAFNOSUPPORT
 #define EAFNOSUPPORT WSAEAFNOSUPPORT
 #endif
 

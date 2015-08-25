@@ -26,6 +26,12 @@ open X86_ast
 open X86_proc
 open X86_dsl
 
+(* [Branch_relaxation] is not used in this file, but is required by
+   emit.mlp files for certain other targets; the reference here ensures
+   that when releases are being prepared the .depend files are correct
+   for all targets. *)
+open! Branch_relaxation
+
 let _label s = D.label ~typ:QWORD s
 
 (* Override proc.ml *)
@@ -273,10 +279,12 @@ let record_frame_label live dbg =
   let live_offset = ref [] in
   Reg.Set.iter
     (function
-      | {typ = Addr; loc = Reg r} ->
+      | {typ = Val; loc = Reg r} ->
           live_offset := ((r lsl 1) + 1) :: !live_offset
-      | {typ = Addr; loc = Stack s} as reg ->
+      | {typ = Val; loc = Stack s} as reg ->
           live_offset := slot_offset s (register_class reg) :: !live_offset
+      | {typ = Addr} as r ->
+          Misc.fatal_error ("bad GC root " ^ Reg.name r)
       | _ -> ()
     )
     live;
@@ -428,12 +436,16 @@ let emit_float_test cmp neg i lbl =
 let output_epilogue f =
   if frame_required() then begin
     let n = frame_size() - 8 - (if fp then 8 else 0) in
-    I.add (int n) rsp;
-    cfi_adjust_cfa_offset (-n);
+    if n <> 0
+    then begin
+      I.add (int n) rsp;
+      cfi_adjust_cfa_offset (-n);
+    end;
     if fp then I.pop rbp;
     f ();
     (* reset CFA back cause function body may continue *)
-    cfi_adjust_cfa_offset n
+    if n <> 0
+    then cfi_adjust_cfa_offset n
   end
   else
     f ()
@@ -509,7 +521,7 @@ let emit_asm i asm iargs =
             | Addr (chunk, addr, _) ->
                 let typ =
                   match chunk with
-                    Word -> QWORD
+                    Word_int | Word_val -> QWORD
                   | Byte_unsigned | Byte_signed -> BYTE
                   | Sixteen_unsigned | Sixteen_signed -> WORD
                   | Thirtytwo_unsigned | Thirtytwo_signed -> DWORD
@@ -612,13 +624,15 @@ let emit_instr fallthrough i =
   | Lop(Istackoffset n) ->
       if n < 0
       then I.add (int (-n)) rsp
-      else I.sub (int n) rsp;
-      cfi_adjust_cfa_offset n;
+      else if n > 0
+      then I.sub (int n) rsp;
+      if n <> 0
+      then cfi_adjust_cfa_offset n;
       stack_offset := !stack_offset + n
   | Lop(Iload(chunk, addr)) ->
       let dest = res i 0 in
       begin match chunk with
-      | Word ->
+      | Word_int | Word_val ->
           I.mov (addressing addr QWORD i 0) dest
       | Byte_unsigned ->
           I.movzx (addressing addr BYTE i 0) dest
@@ -655,7 +669,7 @@ let emit_instr fallthrough i =
       end
   | Lop(Istore(chunk, addr, _)) ->
       begin match chunk with
-      | Word ->
+      | Word_int | Word_val ->
           I.mov (arg i 0) (addressing addr QWORD i 1)
       | Byte_unsigned | Byte_signed ->
           I.mov (arg8 i 0) (addressing addr BYTE i 1)
@@ -953,8 +967,11 @@ let fundecl fundecl =
   if !Clflags.gprofile then emit_profile();
   if frame_required() then begin
     let n = frame_size() - 8 - (if fp then 8 else 0) in
-    I.sub (int n) rsp;
-    cfi_adjust_cfa_offset n;
+    if n <> 0
+    then begin
+      I.sub (int n) rsp;
+      cfi_adjust_cfa_offset n;
+    end;
   end;
   def_label !tailrec_entry_point;
   emit_all true fundecl.fun_body;

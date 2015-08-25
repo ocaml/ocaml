@@ -62,7 +62,8 @@ type t =
   | Attribute_payload of string * string    (* 47 *)
   | Eliminated_optional_arguments of string list (* 48 *)
   | No_cmi_file of string                   (* 49 *)
-  | Expect_tailcall                         (* 50 *)
+  | Bad_docstring of bool                   (* 50 *)
+  | Expect_tailcall                         (* 51 *)
 ;;
 
 val parse_options : bool -> string -> unit;;

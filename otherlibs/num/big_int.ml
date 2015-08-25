@@ -41,6 +41,15 @@ let unit_big_int =
 let num_digits_big_int bi =
  num_digits_nat (bi.abs_value) 0 (length_nat bi.abs_value)
 
+(* Number of bits in a big_int *)
+let num_bits_big_int bi =
+  let nd = num_digits_nat (bi.abs_value) 0 (length_nat bi.abs_value) in
+  (* nd = 1 if bi = 0 *)
+  let lz = num_leading_zero_bits_in_digit bi.abs_value (nd - 1) in
+  (* lz = length_of_digit if bi = 0 *)
+  nd * length_of_digit - lz
+  (* = 0 if bi = 0 *)
+
 (* Opposite of a big_int *)
 let minus_big_int bi =
  { sign = - bi.sign;
@@ -593,13 +602,6 @@ let base_power_big_int base n bi =
                then zero_big_int
                else create_big_int (bi.sign) res
 
-(* Coercion with float type *)
-
-let float_of_big_int bi =
-  float_of_string (string_of_big_int bi)
-
-(* XL: suppression de big_int_of_float et nat_of_float. *)
-
 (* Other functions needed *)
 
 (* Integer part of the square root of a big_int *)
@@ -717,10 +719,11 @@ let two_power_m1_big_int n =
   if n < 0 then invalid_arg "two_power_m1_big_int"
   else if n = 0 then zero_big_int
   else begin
-    let size_res = (n + length_of_digit - 1) / length_of_digit in
+    let idx = n / length_of_digit in
+    let size_res = idx + 1 in
     let res = make_nat size_res in
-    set_digit_nat_native res (n / length_of_digit)
-                             (Nativeint.shift_left 1n (n mod length_of_digit));
+    set_digit_nat_native res idx 
+                         (Nativeint.shift_left 1n (n mod length_of_digit));
     ignore (decr_nat res 0 size_res 0);
     { sign = 1; abs_value = res }
   end
@@ -836,3 +839,42 @@ let xor_big_int a b =
     then zero_big_int
     else { sign = 1; abs_value = res }
   end
+
+(* Coercion with float type *)
+
+(* Consider a real number [r] such that
+   - the integral part of [r] is the bigint [x]
+   - 2^54 <= |x| < 2^63
+   - the fractional part of [r] is 0 if [exact = true], 
+     nonzero if [exact = false].
+   Then, the following function returns [r] correctly rounded to
+   the nearest double-precision floating-point number.
+   This is an instance of the "round to odd" technique formalized in
+   "When double rounding is odd" by S. Boldo and G. Melquiond.
+   The claim above is lemma Fappli_IEEE_extra.round_odd_fix
+   from the CompCert Coq development. *)
+
+let round_big_int_to_float x exact =
+  assert (let n = num_bits_big_int x in 55 <= n && n <= 63);
+  let m = int64_of_big_int x in
+  (* Unless the fractional part is exactly 0, round m to an odd integer *)
+  let m = if exact then m else Int64.logor m 1L in
+  (* Then convert m to float, with the normal rounding mode. *)
+  Int64.to_float m
+
+let float_of_big_int x =
+  let n = num_bits_big_int x in
+  if n <= 63 then
+    Int64.to_float (int64_of_big_int x)
+  else begin
+    let n = n - 55 in
+    (* Extract top 55 bits of x *)
+    let top = shift_right_big_int x n in
+    (* Check if the other bits are all zero *)
+    let exact = eq_big_int x (shift_left_big_int top n) in
+    (* Round to float and apply exponent *)
+    ldexp (round_big_int_to_float top exact) n
+  end
+
+(* XL: suppression de big_int_of_float et nat_of_float. *)
+

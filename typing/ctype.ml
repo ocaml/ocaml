@@ -1440,8 +1440,8 @@ let expand_abbrev_gen kind find_type_expansion env ty =
       assert false
 
 (* Expand respecting privacy *)
-let expand_abbrev ty =
-  expand_abbrev_gen Public Env.find_type_expansion ty
+let expand_abbrev env ty =
+  expand_abbrev_gen Public Env.find_type_expansion env ty
 
 (* Expand once the head of a type *)
 let expand_head_once env ty =

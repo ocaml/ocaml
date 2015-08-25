@@ -328,6 +328,7 @@ CAMLexport void caml_main(char **argv)
                 caml_init_max_percent_free);
   caml_init_stack (caml_init_max_stack_wsz);
   caml_init_atom_table();
+  caml_init_backtrace();
   /* Initialize the interpreter */
   caml_interprete(NULL, 0);
   /* Initialize the debugger, if needed */
@@ -411,6 +412,7 @@ CAMLexport void caml_startup_code(
                 caml_init_max_percent_free);
   caml_init_stack (caml_init_max_stack_wsz);
   caml_init_atom_table();
+  caml_init_backtrace();
   /* Initialize the interpreter */
   caml_interprete(NULL, 0);
   /* Initialize the debugger, if needed */

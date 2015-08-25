@@ -26,34 +26,34 @@ exception Escape_error
 
 let prepare_error = function
   | Unclosed(opening_loc, opening, closing_loc, closing) ->
-      Location.errorf ~loc:closing_loc
+      Location.errorf_prefixed ~loc:closing_loc
         ~sub:[
-          Location.error ~loc:opening_loc
-            (Printf.sprintf "Error: This '%s' might be unmatched" opening)
+          Location.errorf_prefixed ~loc:opening_loc
+            "This '%s' might be unmatched" opening
         ]
         ~if_highlight:
           (Printf.sprintf "Syntax error: '%s' expected, \
                            the highlighted '%s' might be unmatched"
              closing opening)
-        "Error: Syntax error: '%s' expected" closing
+        "Syntax error: '%s' expected" closing
 
   | Expecting (loc, nonterm) ->
-      Location.errorf ~loc "Error: Syntax error: %s expected." nonterm
+      Location.errorf_prefixed ~loc "Syntax error: %s expected." nonterm
   | Not_expecting (loc, nonterm) ->
-      Location.errorf ~loc "Error: Syntax error: %s not expected." nonterm
+      Location.errorf_prefixed ~loc "Syntax error: %s not expected." nonterm
   | Applicative_path loc ->
-      Location.errorf ~loc
-        "Error: Syntax error: applicative paths of the form F(X).t \
+      Location.errorf_prefixed ~loc
+        "Syntax error: applicative paths of the form F(X).t \
          are not supported when the option -no-app-func is set."
   | Variable_in_scope (loc, var) ->
-      Location.errorf ~loc
-        "Error: In this scoped type, variable '%s \
+      Location.errorf_prefixed ~loc
+        "In this scoped type, variable '%s \
          is reserved for the local type %s."
-        var var
+         var var
   | Other loc ->
-      Location.error ~loc "Error: Syntax error"
+      Location.errorf_prefixed ~loc "Syntax error"
   | Ill_formed_ast (loc, s) ->
-      Location.errorf ~loc "Error: broken invariant in parsetree: %s" s
+      Location.errorf_prefixed ~loc "broken invariant in parsetree: %s" s
 
 let () =
   Location.register_error_of_exn

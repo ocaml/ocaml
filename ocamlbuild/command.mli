@@ -6,7 +6,8 @@
 (*                                                                     *)
 (*  Copyright 2007 Institut National de Recherche en Informatique et   *)
 (*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
+(*  under the terms of the GNU Library General Public License, with    *)
+(*  the special exception on linking described in file ../LICENSE.     *)
 (*                                                                     *)
 (***********************************************************************)
 
@@ -45,5 +46,7 @@ val deps_of_tags : Tags.t -> pathname list
 val dep : Tags.elt list -> pathname list -> unit
 
 val pdep : Tags.elt list -> Tags.elt -> (string -> pathname list) -> unit
+
+val list_all_deps : unit -> (Tags.t * pathname list) list
 
 val file_or_exe_exists: string -> bool

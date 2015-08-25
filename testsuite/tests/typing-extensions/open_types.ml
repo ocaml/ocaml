@@ -107,3 +107,11 @@ type foo = ..
 type foo += Foo
 let f = function Foo -> ()
 ;; (* warn *)
+
+(* More complex exhaustiveness *)
+
+let f = function
+  | [Foo] -> 1
+  | _::_::_ -> 3
+  | [] -> 2
+;; (* warn *)

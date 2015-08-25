@@ -112,7 +112,7 @@ int DoRegisterClass(void)
         WNDCLASS wc;
 
         memset(&wc,0,sizeof(WNDCLASS));
-        wc.style = CS_HREDRAW|CS_VREDRAW |CS_DBLCLKS|CS_OWNDC ;
+        wc.style = CS_HREDRAW|CS_VREDRAW|CS_OWNDC ;
         wc.lpfnWndProc = (WNDPROC)GraphicsWndProc;
         wc.hInstance = hInst;
         wc.hbrBackground = (HBRUSH)(COLOR_WINDOW+1);

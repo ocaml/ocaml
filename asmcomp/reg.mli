@@ -64,6 +64,7 @@ val set_of_array: t array -> Set.t
 val reset: unit -> unit
 val all_registers: unit -> t list
 val num_registers: unit -> int
+
 (** Returns the size in bytes of the largest register. *)
 val reg_size: unit -> int
 val reinit: unit -> unit

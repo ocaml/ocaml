@@ -26,12 +26,12 @@ method is_immediate n = (n <= 4095) && (n >= -4096)
 method select_addressing chunk = function
     Cconst_symbol s ->
       (Ibased(s, 0), Ctuple [])
-  | Cop(Cadda, [Cconst_symbol s; Cconst_int n]) ->
+  | Cop((Caddv | Cadda), [Cconst_symbol s; Cconst_int n]) ->
       (Ibased(s, n), Ctuple [])
-  | Cop(Cadda, [arg; Cconst_int n]) ->
+  | Cop((Caddv | Cadda), [arg; Cconst_int n]) ->
       (Iindexed n, arg)
-  | Cop(Cadda, [arg1; Cop(Caddi, [arg2; Cconst_int n])]) ->
-      (Iindexed n, Cop(Cadda, [arg1; arg2]))
+  | Cop((Caddv | Cadda as op), [arg1; Cop(Caddi, [arg2; Cconst_int n])]) ->
+      (Iindexed n, Cop(op, [arg1; arg2]))
   | arg ->
       (Iindexed 0, arg)
 

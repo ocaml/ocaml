@@ -109,6 +109,7 @@
 /asmrun/alloc.c
 /asmrun/array.c
 /asmrun/compare.c
+/asmrun/backtrace.c
 /asmrun/ints.c
 /asmrun/floats.c
 /asmrun/str.c
