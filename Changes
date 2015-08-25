@@ -23,6 +23,10 @@ Language features:
 - GPR#88: allow field punning in object copying expressions:
     {< x; y; >} is sugar for {< x = x; y = y; >}
   (Jeremy Yallop)
+- GPR#167: allow to annotate externals' arguments and result types so
+  they can be unboxed or untagged. Supports untagging int and unboxing
+  int32, int64, nativeint and float.
+  (Jérémie Dimino, Mark Shinwell)
 
 Compilers:
 - PR#6501: harden the native-code generator against certain uses of "%identity"
