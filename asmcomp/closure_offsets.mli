@@ -15,7 +15,7 @@
     environment entries. *)
 
 type result = private {
-  code_pointer_offsets : int Closure_id.Map.t;
+  function_offsets : int Closure_id.Map.t;
   free_variable_offsets : int Var_within_closure.Map.t;
 }
 

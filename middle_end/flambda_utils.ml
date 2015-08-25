@@ -420,6 +420,13 @@ let all_lifted_constant_sets_of_closures program =
     (all_lifted_constants program);
   !set
 
+let all_sets_of_closures program =
+  let list = ref [] in
+  Flambda_iterators.iter_on_set_of_closures_of_program program
+    ~f:(fun set_of_closures ->
+        list := set_of_closures :: !list);
+  !list
+
 (* Sharing key TODO
    Not implemented yet: this avoids sharing anything *)
 (* CR mshinwell for pchambart: What is happening about this? *)
