@@ -507,34 +507,20 @@ let rec to_clambda_program t (program : Flambda.program) : Clambda.ulambda =
     Usequence (to_clambda t empty_env expr, to_clambda_program t program)
   | End _ -> Uconst (Uconst_ptr 0)
 
-let add_structured_constant
-    symbol (c:Flambda.constant_defining_value)
-    structured_constants =
+let accumulate_structured_constants t symbol
+      (c : Flambda.constant_defining_value) acc =
   match c with
   | Allocated_const c ->
-    Symbol.Map.add symbol (to_clambda_allocated_constant c)
-      structured_constants
+    Symbol.Map.add symbol (to_clambda_allocated_constant c) acc
   | Block (tag, fields) ->
     let fields = List.map to_clambda_const fields in
-    Symbol.Map.add symbol (Clambda.Uconst_block (Tag.to_int tag, fields))
-      structured_constants
-  | Set_of_closures _
-  | Project_closure _ -> structured_constants
-
-let add_constant_sets_of_closures
-    to_clambda_closed_set_of_closures
-    symbol (c:Flambda.constant_defining_value)
-    constant_sets_of_closures =
-  match c with
-  | Allocated_const _ -> constant_sets_of_closures
-  | Block _ -> constant_sets_of_closures
+    Symbol.Map.add symbol (Clambda.Uconst_block (Tag.to_int tag, fields)) acc
   | Set_of_closures set_of_closures ->
     let to_clambda_set_of_closures =
       to_clambda_closed_set_of_closures empty_env symbol set_of_closures
     in
-    Symbol.Map.add symbol to_clambda_set_of_closures
-      constant_sets_of_closures
-  | Project_closure _ -> constant_sets_of_closures
+    Symbol.Map.add symbol to_clambda_set_of_closures acc
+  | Project_closure _ -> acc
 
 let convert ~program ~exported : result =
   let t =
@@ -544,29 +530,20 @@ let convert ~program ~exported : result =
         Flambda_utils.all_lifted_constant_sets_of_closures program;
     }
   in
-  let constants =
-    Symbol.Map.of_list (Flambda_utils.constant_symbol_declarations program)
-  in
   let structured_constants =
-    Symbol.Map.fold add_structured_constant
-      constants Symbol.Map.empty
+    Symbol.Map.fold (accumulate_structured_constants t)
+      (Flambda_utils.all_lifted_constants_map program)
+      Symbol.Map.empty
   in
-  let constant_sets_of_closures =
-    Symbol.Map.fold
-      (add_constant_sets_of_closures M.to_clambda_closed_set_of_closures)
-      constants Symbol.Map.empty
-  in
-  let initialize_symbols = Flambda_utils.initialize_symbols program in
   let preallocated_blocks =
     List.map (fun (symbol, tag, fields) ->
-        { Clambda.symbol = Linkage_name.to_string (Symbol.label symbol);
+        { Clambda.
+          symbol = Linkage_name.to_string (Symbol.label symbol);
           tag = Tag.to_int tag;
-          size = List.length fields })
-      initialize_symbols
+          size = List.length fields;
+        })
+      (Flambda_utils.initialize_symbols program)
   in
   let expr = to_clambda_program t program in
-  let structured_constants =
-    Symbol.Map.disjoint_union structured_constants constant_sets_of_closures
-  in
   (* CR mshinwell for pchambart: add offsets to export info *)
   { expr; preallocated_blocks; structured_constants; exported; }

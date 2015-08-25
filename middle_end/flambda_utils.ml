@@ -322,21 +322,24 @@ let name_expr (named : Flambda.named) : Flambda.t =
   in
   Let (Immutable, var, named, Var var)
 
-let rec constant_symbol_declarations (program:Flambda.program) =
+let rec all_lifted_constants (program : Flambda.program) =
   match program with
   | Let_symbol (symbol, decl, program) ->
     (symbol, decl) ::
-    (constant_symbol_declarations program)
+    (all_lifted_constant_symbols program)
   | Let_rec_symbol (decls, program) ->
     List.fold_left (fun l (symbol, decl) ->
         (symbol, decl) :: l)
-      (constant_symbol_declarations program)
+      (all_lifted_constant_symbols program)
       decls
   | Initialize_symbol (_, _, _, program)
   | Effect (_, program)
   | Import_symbol (_, program) ->
-    constant_symbol_declarations program
+    all_lifted_constant_symbols program
   | End _ -> []
+
+let all_lifted_constants_map program =
+  Symbol.Map.of_alist (all_lifted_constants program)
 
 let rec initialize_symbols (program:Flambda.program) =
   match program with
@@ -388,7 +391,7 @@ let rec root_symbol (program:Flambda.program) =
   | End root ->
     root
 
-let contains_static_exn flam stexn =
+let might_raise_static_exn flam stexn =
   try
     Flambda_iterators.iter_on_named
       (function

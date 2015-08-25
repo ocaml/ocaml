@@ -83,13 +83,9 @@ val name_expr : Flambda.named -> Flambda.t
 
 val compare_const : Flambda.const -> Flambda.const -> int
 
-val constant_symbol_declarations
-  : Flambda.program ->
-  (Symbol.t * Flambda.constant_defining_value) list
-
 val initialize_symbols
-  : Flambda.program ->
-  (Symbol.t * Tag.t * Flambda.t list) list
+   : Flambda.program
+  -> (Symbol.t * Tag.t * Flambda.t list) list
 
 val imported_symbols : Flambda.program -> Symbol.Set.t
 
@@ -97,14 +93,29 @@ val needed_import_symbols : Flambda.program -> Symbol.Set.t
 
 val root_symbol : Flambda.program -> Symbol.t
 
-val contains_static_exn : Flambda.named -> Static_exception.t -> bool
+(** Returns [true] iff the given term might raise the given static
+    exception. *)
+val might_raise_static_exn : Flambda.named -> Static_exception.t -> bool
 
+(** Creates a map from closure IDs to function declarations by iterating over
+    all sets of closures in the given program. *)
 val make_closure_map
    : Flambda.program
   -> Flambda.function_declarations Closure_id.Map.t
 
-(** The identifiers of all constant sets of closures that have been lifted to
-    [Let_symbol] or [Let_rec_symbol] expressions. *)
+(** The definitions of all constants that have been lifted out to [Let_symbol]
+    or [Let_rec_symbol] constructions. *)
+val all_lifted_constants
+   : Flambda.program
+  -> (Symbol.t * Flambda.constant_defining_value) list
+
+(** Like [all_lifted_constant_symbols], but returns a map instead of a list. *)
+val all_lifted_constants_as_map
+   : Flambda.program
+  -> Flambda.constant_defining_value Symbol.Map.t
+
+(** The identifiers of all constant sets of closures that have been lifted out
+    to [Let_symbol] or [Let_rec_symbol] constructions. *)
 val all_lifted_constant_sets_of_closures
    : Flambda.program
   -> Set_of_closures_id.Set.t
