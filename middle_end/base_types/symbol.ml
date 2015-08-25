@@ -39,7 +39,19 @@ end
 include T
 include Ext_types.Identifiable.Make (T)
 
-let create compilation_unit label = { compilation_unit; label; }
+let create compilation_unit label =
+  let unit_linkage_name =
+    Linkage_name.to_string
+      (Compilation_unit.get_linkage_name compilation_unit)
+  in
+  let label =
+    Linkage_name.create (unit_linkage_name ^ "__" ^ (Linkage_name.to_string label))
+  in
+  { compilation_unit; label; }
+
+let unsafe_create compilation_unit label =
+  { compilation_unit; label; }
+
 let compilation_unit t = t.compilation_unit
 let label t = t.label
 
