@@ -600,7 +600,7 @@ let create_set_of_closures ~function_decls ~free_vars ~specialised_args =
       free_vars
   in
   let free_vars_domain = Variable.Map.keys free_vars in
-  if not (Variable.Set.equal expected_free_vars free_vars_domain) then begin
+  if not (Variable.Set.subset free_vars_domain expected_free_vars) then begin
     Misc.fatal_errorf "create_set_of_closures: [free_vars] mapping of \
         variables bound by the closure(s) is wrong.  (%a, expected to be a \
         subset of %a)@ \n%s\nfunction_decls:@ %a"
