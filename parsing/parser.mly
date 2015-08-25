@@ -422,6 +422,7 @@ let class_of_let_bindings lbs body =
 %token DO
 %token DONE
 %token DOT
+%token DOTBANG
 %token DOTDOT
 %token DOWNTO
 %token ELSE
@@ -582,7 +583,7 @@ The precedences must be listed from low to high.
 %nonassoc SHARP                         /* simple_expr/toplevel_directive */
 %left     SHARPOP
 %nonassoc below_DOT
-%nonassoc DOT
+%nonassoc DOT DOTBANG
 /* Finally, the first tokens of simple_expr are above everything else. */
 %nonassoc BACKQUOTE BANG BEGIN CHAR FALSE FLOAT INT INT32 INT64
           LBRACE LBRACELESS LBRACKET LBRACKETBAR LIDENT LPAREN
@@ -1371,10 +1372,17 @@ simple_expr:
       { mkexp(Pexp_field($1, mkrhs $3 3)) }
   | mod_longident DOT LPAREN seq_expr RPAREN
       { mkexp(Pexp_open(Fresh, mkrhs $1 1, $4)) }
+  | mod_longident DOTBANG LPAREN seq_expr RPAREN
+      { mkexp(Pexp_open(Override, mkrhs $1 1, $4)) }
   | mod_longident DOT LPAREN RPAREN
       { mkexp(Pexp_open(Fresh, mkrhs $1 1,
 			mkexp(Pexp_construct(mkrhs (Lident "()") 1, None)))) }
+  | mod_longident DOTBANG LPAREN RPAREN
+      { mkexp(Pexp_open(Override, mkrhs $1 1,
+			mkexp(Pexp_construct(mkrhs (Lident "()") 1, None)))) }
   | mod_longident DOT LPAREN seq_expr error
+      { unclosed "(" 3 ")" 5 }
+  | mod_longident DOTBANG LPAREN seq_expr error
       { unclosed "(" 3 ")" 5 }
   | simple_expr DOT LPAREN seq_expr RPAREN
       { mkexp(Pexp_apply(ghexp(Pexp_ident(array_function ".()" false)),
@@ -1398,7 +1406,13 @@ simple_expr:
       { let (exten, fields) = $4 in
         let rec_exp = mkexp(Pexp_record(fields, exten)) in
         mkexp(Pexp_open(Fresh, mkrhs $1 1, rec_exp)) }
+  | mod_longident DOTBANG LBRACE record_expr RBRACE
+      { let (exten, fields) = $4 in
+        let rec_exp = mkexp(Pexp_record(fields, exten)) in
+        mkexp(Pexp_open(Override, mkrhs $1 1, rec_exp)) }
   | mod_longident DOT LBRACE record_expr error
+      { unclosed "{" 3 "}" 5 }
+  | mod_longident DOTBANG LBRACE record_expr error
       { unclosed "{" 3 "}" 5 }
   | LBRACKETBAR expr_semi_list opt_semi BARRBRACKET
       { mkexp (Pexp_array(List.rev $2)) }
@@ -1408,9 +1422,15 @@ simple_expr:
       { mkexp (Pexp_array []) }
   | mod_longident DOT LBRACKETBAR expr_semi_list opt_semi BARRBRACKET
       { mkexp(Pexp_open(Fresh, mkrhs $1 1, mkexp(Pexp_array(List.rev $4)))) }
+  | mod_longident DOTBANG LBRACKETBAR expr_semi_list opt_semi BARRBRACKET
+      { mkexp(Pexp_open(Override, mkrhs $1 1, mkexp(Pexp_array(List.rev $4)))) }
   | mod_longident DOT LBRACKETBAR BARRBRACKET
       { mkexp(Pexp_open(Fresh, mkrhs $1 1, mkexp(Pexp_array []))) }
+  | mod_longident DOTBANG LBRACKETBAR BARRBRACKET
+      { mkexp(Pexp_open(Override, mkrhs $1 1, mkexp(Pexp_array []))) }
   | mod_longident DOT LBRACKETBAR expr_semi_list opt_semi error
+      { unclosed "[|" 3 "|]" 6 }
+  | mod_longident DOTBANG LBRACKETBAR expr_semi_list opt_semi error
       { unclosed "[|" 3 "|]" 6 }
   | LBRACKET expr_semi_list opt_semi RBRACKET
       { reloc_exp (mktailexp (rhs_loc 4) (List.rev $2)) }
@@ -1419,10 +1439,18 @@ simple_expr:
   | mod_longident DOT LBRACKET expr_semi_list opt_semi RBRACKET
       { let list_exp = reloc_exp (mktailexp (rhs_loc 6) (List.rev $4)) in
         mkexp(Pexp_open(Fresh, mkrhs $1 1, list_exp)) }
+  | mod_longident DOTBANG LBRACKET expr_semi_list opt_semi RBRACKET
+      { let list_exp = reloc_exp (mktailexp (rhs_loc 6) (List.rev $4)) in
+        mkexp(Pexp_open(Override, mkrhs $1 1, list_exp)) }
   | mod_longident DOT LBRACKET RBRACKET
       { mkexp(Pexp_open(Fresh, mkrhs $1 1,
                         mkexp(Pexp_construct(mkrhs (Lident "[]") 1, None)))) }
+  | mod_longident DOTBANG LBRACKET RBRACKET
+      { mkexp(Pexp_open(Override, mkrhs $1 1,
+                        mkexp(Pexp_construct(mkrhs (Lident "[]") 1, None)))) }
   | mod_longident DOT LBRACKET expr_semi_list opt_semi error
+      { unclosed "[" 3 "]" 6 }
+  | mod_longident DOTBANG LBRACKET expr_semi_list opt_semi error
       { unclosed "[" 3 "]" 6 }
   | PREFIXOP simple_expr
       { mkexp(Pexp_apply(mkoperator $1 1, [Nolabel,$2])) }
@@ -1438,9 +1466,15 @@ simple_expr:
       { mkexp (Pexp_override [])}
   | mod_longident DOT LBRACELESS field_expr_list GREATERRBRACE
       { mkexp(Pexp_open(Fresh, mkrhs $1 1, mkexp (Pexp_override $4)))}
+  | mod_longident DOTBANG LBRACELESS field_expr_list GREATERRBRACE
+      { mkexp(Pexp_open(Override, mkrhs $1 1, mkexp (Pexp_override $4)))}
   | mod_longident DOT LBRACELESS GREATERRBRACE
       { mkexp(Pexp_open(Fresh, mkrhs $1 1, mkexp (Pexp_override [])))}
+  | mod_longident DOTBANG LBRACELESS GREATERRBRACE
+      { mkexp(Pexp_open(Override, mkrhs $1 1, mkexp (Pexp_override [])))}
   | mod_longident DOT LBRACELESS field_expr_list error
+      { unclosed "{<" 3 ">}" 6 }
+  | mod_longident DOTBANG LBRACELESS field_expr_list error
       { unclosed "{<" 3 ">}" 6 }
   | simple_expr SHARP label
       { mkexp(Pexp_send($1, $3)) }
@@ -1457,7 +1491,13 @@ simple_expr:
       { mkexp(Pexp_open(Fresh, mkrhs $1 1,
         mkexp (Pexp_constraint (ghexp (Pexp_pack $5),
                                 ghtyp (Ptyp_package $7))))) }
+  | mod_longident DOTBANG LPAREN MODULE module_expr COLON package_type RPAREN
+      { mkexp(Pexp_open(Override, mkrhs $1 1,
+        mkexp (Pexp_constraint (ghexp (Pexp_pack $5),
+                                ghtyp (Ptyp_package $7))))) }
   | mod_longident DOT LPAREN MODULE module_expr COLON error
+      { unclosed "(" 3 ")" 7 }
+  | mod_longident DOTBANG LPAREN MODULE module_expr COLON error
       { unclosed "(" 3 ")" 7 }
   | extension
       { mkexp (Pexp_extension $1) }
