@@ -1,10 +1,23 @@
+(**************************************************************************)
+(*                                                                        *)
+(*                                OCaml                                   *)
+(*                                                                        *)
+(*                       Pierre Chambart, OCamlPro                        *)
+(*                  Mark Shinwell, Jane Street Europe                     *)
+(*                                                                        *)
+(*   Copyright 2015 Institut National de Recherche en Informatique et     *)
+(*   en Automatique.  All rights reserved.  This file is distributed      *)
+(*   under the terms of the Q Public License version 1.0.                 *)
+(*                                                                        *)
+(**************************************************************************)
 
-(* Movable variables are variables that are used exactly once and are
-   not asigned *)
+(* "Moveable" identifiers are identifiers that are used exactly once and are
+   not assigned. *)
 type ident_info =
   { used : Ident.Set.t;
-    movable : Ident.Set.t;
-    assigned : Ident.Set.t }
+    moveable : Ident.Set.t;
+    assigned : Ident.Set.t;
+  }
 
 let make_ident_info (clam:Clambda.ulambda) : ident_info =
   let t : int Ident.Tbl.t = Ident.Tbl.create 10 in
@@ -77,7 +90,7 @@ let make_ident_info (clam:Clambda.ulambda) : ident_info =
       ()
   in
   loop clam;
-  let movable =
+  let moveable =
     Ident.Tbl.fold (fun id n acc ->
         if n = 1 && not (Ident.Set.mem id !assigned_ident)
         then Ident.Set.add id acc
@@ -91,7 +104,7 @@ let make_ident_info (clam:Clambda.ulambda) : ident_info =
     Ident.Tbl.fold (fun id _n acc -> Ident.Set.add id acc)
       t Ident.Set.empty
   in
-  { used; movable; assigned = !assigned_ident }
+  { used; moveable; assigned = !assigned_ident }
 
 type purity = Pure | Impure
 
@@ -222,11 +235,10 @@ let primitive_purity (prim:Lambda.primitive) (args:Clambda.ulambda list) =
   | Prevapply _
   | Pdirapply _ -> assert false
 
-(* This transformation substitute let bound pure expressions used only once.
-   This is usefull since cmmgen match paterns that does not contains lets
-*)
-
-let rec un_anf_and_purity ident_info env (clam:Clambda.ulambda) : Clambda.ulambda * purity =
+(** Substitute [let]-bound pure expressions that are used only once.  This is
+    done for the reason given in the .mli. *)
+let rec un_anf_and_purity ident_info env (clam : Clambda.ulambda)
+      : Clambda.ulambda * purity =
   match clam with
   | Uvar id ->
     begin match Ident.Map.find id env with
@@ -242,7 +254,7 @@ let rec un_anf_and_purity ident_info env (clam:Clambda.ulambda) : Clambda.ulambd
       clam, purity
     end
   | Uconst _ ->
-    (* constant closure are rewritten separately *)
+    (* Constant closures are rewritten separately. *)
     clam, Pure
   | Udirect_apply (label, args, dbg) ->
     let args = un_anf_list ident_info env args in
@@ -268,7 +280,7 @@ let rec un_anf_and_purity ident_info env (clam:Clambda.ulambda) : Clambda.ulambd
     un_anf_and_purity ident_info env def
   | Ulet (id, def, body) ->
     let def, def_purity = un_anf_and_purity ident_info env def in
-    begin match def_purity, Ident.Set.mem id ident_info.movable,
+    begin match def_purity, Ident.Set.mem id ident_info.moveable,
                 Ident.Set.mem id ident_info.used with
     | Pure, _, false ->
       un_anf_and_purity ident_info env body
