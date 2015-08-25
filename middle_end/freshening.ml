@@ -139,7 +139,7 @@ let rewrite_recursive_calls_with_symbols t
     let funs =
       Variable.Map.map (fun (ffun : Flambda.function_declaration) ->
         let body =
-          Flambda_iterators.map_named
+          Flambda_iterators.map_toplevel_named
             (function
               | Symbol sym when Symbol.Map.mem sym closure_symbols ->
                 Expr (Var (Symbol.Map.find sym closure_symbols))
