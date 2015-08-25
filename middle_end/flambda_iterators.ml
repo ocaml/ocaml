@@ -144,33 +144,46 @@ let rec iter_exprs_at_toplevel_of_program (program : Flambda.program) ~f =
 let iter_named_of_program program ~f =
   iter_exprs_at_toplevel_of_program program ~f:(iter_named f)
 
-let rec iter_on_set_of_closures_of_program (program : Flambda.program) ~f =
-  match program with
-  | Let_symbol (_, Set_of_closures set_of_closures, program) ->
-    f set_of_closures;
-    Variable.Map.iter (fun _ (function_decl : Flambda.function_declaration) ->
-        iter_on_sets_of_closures f function_decl.body)
-      set_of_closures.function_decls.funs;
-    iter_on_set_of_closures_of_program program ~f
-  | Let_rec_symbol (defs, program) ->
-    List.iter (function
-        | (_, Flambda.Set_of_closures set_of_closures) ->
-          f set_of_closures;
-          Variable.Map.iter (fun _ (function_decl : Flambda.function_declaration) ->
-              iter_on_sets_of_closures f function_decl.body)
-            set_of_closures.function_decls.funs
-        | _ -> ()) defs;
-    iter_on_set_of_closures_of_program program ~f
-  | Let_symbol (_, _, program)
-  | Import_symbol (_, program) ->
-    iter_on_set_of_closures_of_program program ~f
-  | Initialize_symbol (_, _, fields, program) ->
-    List.iter (iter_on_sets_of_closures f) fields;
-    iter_on_set_of_closures_of_program program ~f
-  | Effect (expr, program) ->
-    iter_on_sets_of_closures f expr;
-    iter_on_set_of_closures_of_program program ~f
-  | End _ -> ()
+let gen_iter_on_set_of_closures_of_program ~only_constant (program : Flambda.program) ~f =
+  let rec loop (program : Flambda.program) =
+    match program with
+    | Let_symbol (_, Set_of_closures set_of_closures, program) ->
+      f set_of_closures;
+      if not only_constant then
+        Variable.Map.iter (fun _ (function_decl : Flambda.function_declaration) ->
+            iter_on_sets_of_closures f function_decl.body)
+          set_of_closures.function_decls.funs;
+      loop program
+    | Let_rec_symbol (defs, program) ->
+      List.iter (function
+          | (_, Flambda.Set_of_closures set_of_closures) ->
+            f set_of_closures;
+            if not only_constant then
+              Variable.Map.iter (fun _ (function_decl : Flambda.function_declaration) ->
+                  iter_on_sets_of_closures f function_decl.body)
+                set_of_closures.function_decls.funs
+          | _ -> ()) defs;
+      loop program
+    | Let_symbol (_, _, program)
+    | Import_symbol (_, program) ->
+      loop program
+    | Initialize_symbol (_, _, fields, program) ->
+      if not only_constant then
+        List.iter (iter_on_sets_of_closures f) fields;
+      loop program
+    | Effect (expr, program) ->
+      if not only_constant then
+        iter_on_sets_of_closures f expr;
+      loop program
+    | End _ -> ()
+  in
+  loop program
+
+let iter_constant_sets_of_closures_of_program program ~f =
+  gen_iter_on_set_of_closures_of_program ~only_constant:true program ~f
+
+let iter_on_set_of_closures_of_program program ~f =
+  gen_iter_on_set_of_closures_of_program ~only_constant:false program ~f
 
 let iter_symbols_on_named named ~f =
   iter_named_on_named (function
@@ -393,10 +406,55 @@ let map_function_bodies (set_of_closures : Flambda.set_of_closures) ~f =
     ~free_vars:set_of_closures.free_vars
     ~specialised_args:set_of_closures.specialised_args
 
-let rec map_exprs_at_toplevel_of_program (program : Flambda.program)
-      ~(f : Flambda.t -> Flambda.t) : Flambda.program =
+let rec map_sets_of_closures_of_program (program : Flambda.program)
+    ~(f : Flambda.set_of_closures -> Flambda.set_of_closures) : Flambda.program =
+  let map_constant_set_of_closures (set_of_closures:Flambda.set_of_closures) =
+    let funs =
+      Variable.Map.map (fun (function_decl : Flambda.function_declaration) ->
+          let body = map_sets_of_closures ~f function_decl.body in
+          Flambda.create_function_declaration ~body
+            ~params:function_decl.params
+            ~stub:function_decl.stub
+            ~dbg:function_decl.dbg)
+        set_of_closures.function_decls.funs
+    in
+    let function_decls = { set_of_closures.function_decls with funs; } in
+    let set_of_closures = f set_of_closures in
+    Flambda.create_set_of_closures ~function_decls
+      ~free_vars:set_of_closures.free_vars
+      ~specialised_args:set_of_closures.specialised_args
+  in
   match program with
   | Let_symbol (symbol, Set_of_closures set_of_closures, program) ->
+    Let_symbol
+      (symbol,
+       Set_of_closures (map_constant_set_of_closures set_of_closures),
+       map_sets_of_closures_of_program program ~f)
+  | Let_symbol (symbol, const, program) ->
+    Let_symbol (symbol, const, map_sets_of_closures_of_program program ~f)
+  | Let_rec_symbol (defs, program) ->
+    let defs =
+      List.map (function
+          | (var, Flambda.Set_of_closures set_of_closures) ->
+            var, Flambda.Set_of_closures (map_constant_set_of_closures set_of_closures)
+          | def -> def)
+        defs
+    in
+    Let_rec_symbol (defs, map_sets_of_closures_of_program program ~f)
+  | Import_symbol (symbol, program) ->
+    Import_symbol (symbol, map_sets_of_closures_of_program program ~f)
+  | Initialize_symbol (symbol, tag, fields, program) ->
+    let fields = List.map (map_sets_of_closures ~f) fields in
+    Initialize_symbol (symbol, tag, fields,
+      map_sets_of_closures_of_program program ~f)
+  | Effect (expr, program) ->
+    Effect (map_sets_of_closures ~f expr,
+      map_sets_of_closures_of_program program ~f)
+  | End s -> End s
+
+let rec map_exprs_at_toplevel_of_program (program : Flambda.program)
+    ~(f : Flambda.t -> Flambda.t) : Flambda.program =
+  let map_constant_set_of_closures (set_of_closures:Flambda.set_of_closures) =
     let funs =
       Variable.Map.map (fun (function_decl : Flambda.function_declaration) ->
           let body = f function_decl.body in
@@ -407,16 +465,26 @@ let rec map_exprs_at_toplevel_of_program (program : Flambda.program)
         set_of_closures.function_decls.funs
     in
     let function_decls = { set_of_closures.function_decls with funs; } in
-    let set_of_closures =
-      Flambda.create_set_of_closures ~function_decls
-        ~free_vars:set_of_closures.free_vars
-        ~specialised_args:set_of_closures.specialised_args
-    in
-    Let_symbol (symbol, Set_of_closures set_of_closures,
-      map_exprs_at_toplevel_of_program program ~f)
+    Flambda.create_set_of_closures ~function_decls
+      ~free_vars:set_of_closures.free_vars
+      ~specialised_args:set_of_closures.specialised_args
+  in
+  match program with
+  | Let_symbol (symbol, Set_of_closures set_of_closures, program) ->
+    Let_symbol
+      (symbol,
+       Set_of_closures (map_constant_set_of_closures set_of_closures),
+       map_exprs_at_toplevel_of_program program ~f)
   | Let_symbol (symbol, const, program) ->
     Let_symbol (symbol, const, map_exprs_at_toplevel_of_program program ~f)
   | Let_rec_symbol (defs, program) ->
+    let defs =
+      List.map (function
+          | (var, Flambda.Set_of_closures set_of_closures) ->
+            var, Flambda.Set_of_closures (map_constant_set_of_closures set_of_closures)
+          | def -> def)
+        defs
+    in
     Let_rec_symbol (defs, map_exprs_at_toplevel_of_program program ~f)
   | Import_symbol (symbol, program) ->
     Import_symbol (symbol, map_exprs_at_toplevel_of_program program ~f)

@@ -74,6 +74,11 @@ val iter_on_sets_of_closures
   -> Flambda.t
   -> unit
 
+val iter_constant_sets_of_closures_of_program
+   : Flambda.program
+  -> f:(Flambda.set_of_closures -> unit)
+  -> unit
+
 val iter_on_set_of_closures_of_program
    : Flambda.program
   -> f:(Flambda.set_of_closures -> unit)
@@ -165,6 +170,11 @@ val map_sets_of_closures
    : Flambda.t
   -> f:(Flambda.set_of_closures -> Flambda.set_of_closures)
   -> Flambda.t
+
+val map_sets_of_closures_of_program
+   : Flambda.program
+  -> f:(Flambda.set_of_closures -> Flambda.set_of_closures)
+  -> Flambda.program
 
 val map_project_var_to_expr_opt
    : Flambda.t
