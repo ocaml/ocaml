@@ -31,6 +31,5 @@ type result = {
 }
 
 val convert
-   : program:Flambda.program
-  -> exported:Flambdaexport_types.exported
+   : Flambda.program * Flambdaexport_types.exported
   -> result

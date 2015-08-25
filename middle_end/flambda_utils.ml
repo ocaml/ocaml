@@ -192,13 +192,6 @@ and sameswitch (fs1 : Flambda.switch) (fs2 : Flambda.switch) =
 
 let can_be_merged = same
 
-(* Sharing key TODO
-   Not implemented yet: this avoids sharing anything *)
-(* CR mshinwell for pchambart: What is happening about this? *)
-
-type sharing_key = unit
-let make_key _ = None
-
 (* CR mshinwell: change "toplevel" name, potentially misleading *)
 (* CR mshinwell: this should use the explicit ignore functions *)
 let toplevel_substitution sb tree =
@@ -326,20 +319,20 @@ let rec all_lifted_constants (program : Flambda.program) =
   match program with
   | Let_symbol (symbol, decl, program) ->
     (symbol, decl) ::
-    (all_lifted_constant_symbols program)
+    (all_lifted_constants program)
   | Let_rec_symbol (decls, program) ->
     List.fold_left (fun l (symbol, decl) ->
         (symbol, decl) :: l)
-      (all_lifted_constant_symbols program)
+      (all_lifted_constants program)
       decls
   | Initialize_symbol (_, _, _, program)
   | Effect (_, program)
   | Import_symbol (_, program) ->
-    all_lifted_constant_symbols program
+    all_lifted_constants program
   | End _ -> []
 
-let all_lifted_constants_map program =
-  Symbol.Map.of_alist (all_lifted_constants program)
+let all_lifted_constants_as_map program =
+  Symbol.Map.of_list (all_lifted_constants program)
 
 let rec initialize_symbols (program:Flambda.program) =
   match program with
@@ -374,7 +367,7 @@ let needed_import_symbols (program:Flambda.program) =
   let defined_symbol =
     Symbol.Set.union
       (Symbol.Set.of_list
-         (List.map fst (constant_symbol_declarations program)))
+         (List.map fst (all_lifted_constants program)))
       (Symbol.Set.of_list
          (List.map (fun (s, _, _) -> s) (initialize_symbols program)))
   in
@@ -424,5 +417,20 @@ let all_lifted_constant_sets_of_closures program =
           function_decls = { set_of_closures_id } }) ->
         set := Set_of_closures_id.Set.add set_of_closures_id !set
       | _ -> ())
-    (constant_symbol_declarations program);
+    (all_lifted_constants program);
   !set
+
+(* Sharing key TODO
+   Not implemented yet: this avoids sharing anything *)
+(* CR mshinwell for pchambart: What is happening about this? *)
+
+type sharing_key = unit
+let make_key _ = None
+
+module Switch_storer =
+  Switch.Store
+    (struct
+      type t = Flambda.t
+      type key = sharing_key
+      let make_key = make_key
+    end)

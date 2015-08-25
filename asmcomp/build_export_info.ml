@@ -395,7 +395,7 @@ let constant_sets_of_closures_descr program =
   in
   List.fold_left add_set_of_closure
     Symbol.Map.empty
-    (Flambda_utils.constant_symbol_declarations program)
+    (Flambda_utils.all_lifted_constants program)
 
 let describe_constant_defining_value
     symbol
@@ -436,7 +436,7 @@ let build_export_info (program:Flambda.program) : ET.exported =
 
   Format.eprintf "declared constant symbols@ %a@."
     Symbol.Set.print
-    (Symbol.Set.of_list (List.map fst (Flambda_utils.constant_symbol_declarations program)));
+    (Symbol.Set.of_list (List.map fst (Flambda_utils.all_lifted_constants program)));
 
   let constant_sets_of_closures_descr = constant_sets_of_closures_descr program in
 
@@ -444,7 +444,7 @@ let build_export_info (program:Flambda.program) : ET.exported =
     List.map (fun (symbol, cst) ->
         let descr = describe_constant_defining_value symbol constant_sets_of_closures_descr cst in
         (symbol, new_descr descr))
-      (Flambda_utils.constant_symbol_declarations program)
+      (Flambda_utils.all_lifted_constants program)
   in
   symbol_table := Symbol.Map.of_list constant_approx;
 

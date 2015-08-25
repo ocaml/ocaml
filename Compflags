@@ -22,12 +22,12 @@ case $1 in
     ;;
 
     asmcomp/asmgen.* \
-  | asmcomp/clambdagen.* \
   | asmcomp/closure_offsets.* \
   | asmcomp/compilenv.* \
   | asmcomp/flambdaexport.* \
   | asmcomp/flambdaexport_types.* \
   | asmcomp/flambdasym.* \
+  | asmcomp/flambda_to_clambda* \
   | asmcomp/lift_constants.* \
   | asmcomp/share_constants.* \
   | asmcomp/lifted_flambda_utils.* \

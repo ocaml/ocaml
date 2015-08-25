@@ -19,4 +19,4 @@ type result = private {
   free_variable_offsets : int Var_within_closure.Map.t;
 }
 
-val compute : Lift_constants.result -> result
+val compute : Flambda.program -> result

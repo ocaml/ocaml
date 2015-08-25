@@ -76,8 +76,8 @@ module Env : sig
 
   val empty : t
 
-  val add_subst : t -> Ident.t -> Clambda.ulambda -> t
-  val find_subst_exn : t -> Ident.t -> Clambda.ulambda
+  val add_subst : t -> Variable.t -> Clambda.ulambda -> t
+  val find_subst_exn : t -> Variable.t -> Clambda.ulambda
 
   val add_fresh_ident : t -> Variable.t -> Ident.t * t
   val ident_for_var_exn : t -> Variable.t -> Ident.t
@@ -203,7 +203,7 @@ Flambda.print flam;
       let expr : Flambda.t =
         Static_catch (exn, [], Switch (arg, sw), failaction)
       in
-      to_clambda env expr
+      to_clambda t env expr
     end
   | String_switch (arg, sw, def) ->
     let arg = subst_var env arg in
@@ -253,6 +253,7 @@ Flambda.print flam;
 
 and to_clambda_named t env (named : Flambda.named) : Clambda.ulambda =
   match named with
+  | Predefined_exn _ -> assert false
   | Symbol sym ->
     let lbl = Linkage_name.to_string (Symbol.label sym) in
     (* CR pchambart: The constant should contains details about the variable to
@@ -296,13 +297,13 @@ and to_clambda_named t env (named : Flambda.named) : Clambda.ulambda =
   | Prim (p, args, dbg) -> Uprim (p, subst_vars env args, dbg)
   | Expr expr -> to_clambda t env expr
 
-and to_clambda_switch t env cases keys default =
+and to_clambda_switch t env cases num_keys default =
   let num_keys =
     if Ext_types.Int.Set.cardinal num_keys = 0 then 0
     else Ext_types.Int.Set.max_elt num_keys + 1
   in
   let index = Array.make num_keys 0 in
-  let store = Flambda.Switch_storer.mk_store () in
+  let store = Flambda_utils.Switch_storer.mk_store () in
   begin match default with
   | Some def when List.length cases < num_keys -> ignore (store.act_store def)
   | _ -> ()
@@ -360,11 +361,15 @@ and to_clambda_set_of_closures t env
 Format.eprintf "Clambdagen.to_clambda_set_of_closures: %a\n"
 Flambda.print_set_of_closures set_of_closures;
 *)
+  let all_functions = Variable.Map.bindings function_decls.funs in
   let env_var = Ident.create "env" in
-  let to_clambda_function (closure_id, (func : Flambda.function_declaration))
+  let to_clambda_function
+        (closure_id, (function_decl : Flambda.function_declaration))
         : Clambda.ufunction =
     let closure_id = Closure_id.wrap closure_id in
-    let fun_offset = Closure_id.Map.find closure_id fun_offset_table in
+    let fun_offset =
+      Closure_id.Map.find closure_id t.current_unit.fun_offset_table
+    in
     let env =
       (* Inside the body of the function, we cannot access variables
          declared outside, so start with a clean environment. *)
@@ -375,7 +380,7 @@ Flambda.print_set_of_closures set_of_closures;
         let var_offset =
           try
             Var_within_closure.Map.find
-              (Var_within_closure.wrap id) fv_offset_table
+              (Var_within_closure.wrap id) t.current_unit.fv_offset_table
           with Not_found ->
             Misc.fatal_errorf "Clambda.to_clambda_set_of_closures: offset for \
                 free variable %a is unknown.  Set of closures: %a"
@@ -393,51 +398,49 @@ Flambda.print_set_of_closures set_of_closures;
          current function's closure. *)
       let add_env_function pos env (id, _) =
         let offset =
-          Closure_id.Map.find (Closure_id.wrap id) fun_offset_table
+          Closure_id.Map.find (Closure_id.wrap id)
+            t.current_unit.fun_offset_table
         in
         let exp : Clambda.ulambda = Uoffset (Uvar env_var, offset - pos) in
         Env.add_subst env id exp
       in
-      List.fold_left (add_env_function fun_offset) env funct
+      List.fold_left (add_env_function fun_offset) env all_functions
     in
-    let env_body, params =
-      List.fold_right (fun var (env, params) ->
-          let id, env = Env.add_fresh_ident env var in
-          env, id :: params)
-        func.params (env, [])
-    in
-    { label = Compilenv.function_label closure_id;
-      arity = Flambda_utils.function_arity func;
-      params = params @ [env_var];
-      body = to_clambda env_body func.body;
-      dbg = func.dbg;
-    }
-  in
-  let funs =
-    List.map to_clambda_function (Variable.Map.bindings functs.funs)
-  in
-  let free_vars =
-    Variable.Map.bindings (Variable.Map.map (subst_var env) free_vars)
-  in
-  Uclosure (funs, List.map snd fv_ulam)
-
-and to_clambda_closed_set_of_closures t env symbol
-      ({ function_decls; } : Flambda.set_of_closures)
-      : Clambda.ustructured_constant =
-  let to_clambda_function (id, (function_decl : Flambda.function_declaration))
-        : Clambda.ufunction =
-    let env = Env.empty in
     let env_body, params =
       List.fold_right (fun var (env, params) ->
           let id, env = Env.add_fresh_ident env var in
           env, id :: params)
         function_decl.params (env, [])
     in
+    { label = Compilenv.function_label closure_id;
+      arity = Flambda_utils.function_arity function_decl;
+      params = params @ [env_var];
+      body = to_clambda t env_body function_decl.body;
+      dbg = function_decl.dbg;
+    }
+  in
+  let funs = List.map to_clambda_function all_functions in
+  let free_vars =
+    Variable.Map.bindings (Variable.Map.map (subst_var env) free_vars)
+  in
+  Uclosure (funs, List.map snd free_vars)
+
+and to_clambda_closed_set_of_closures t symbol
+      ({ function_decls; } : Flambda.set_of_closures)
+      : Clambda.ustructured_constant =
+  let to_clambda_function (id, (function_decl : Flambda.function_declaration))
+        : Clambda.ufunction =
+    let env_body, params =
+      List.fold_right (fun var (env, params) ->
+          let id, env = Env.add_fresh_ident env var in
+          env, id :: params)
+        function_decl.params (Env.empty, [])
+    in
     { label = Compilenv.function_label (Closure_id.wrap id);
       arity = Flambda_utils.function_arity function_decl;
       params;
-      body = to_clambda t env_body func.body;
-      dbg = func.dbg;
+      body = to_clambda t env_body function_decl.body;
+      dbg = function_decl.dbg;
     }
   in
   let ufunct =
@@ -481,10 +484,10 @@ let rec to_clambda_program t (program : Flambda.program) : Clambda.ulambda =
   | Let_rec_symbol (_, program)
   | Import_symbol (_, program) -> to_clambda_program t program
   | Initialize_symbol (symbol, _tag, fields, program) ->
-    Usequence (to_clambda_initialize_symbol t empty_env symbol fields,
+    Usequence (to_clambda_initialize_symbol t Env.empty symbol fields,
       to_clambda_program t program)
   | Effect (expr, program) ->
-    Usequence (to_clambda t empty_env expr, to_clambda_program t program)
+    Usequence (to_clambda t Env.empty expr, to_clambda_program t program)
   | End _ -> Uconst (Uconst_ptr 0)
 
 let accumulate_structured_constants t symbol
@@ -497,7 +500,7 @@ let accumulate_structured_constants t symbol
     Symbol.Map.add symbol (Clambda.Uconst_block (Tag.to_int tag, fields)) acc
   | Set_of_closures set_of_closures ->
     let to_clambda_set_of_closures =
-      to_clambda_closed_set_of_closures empty_env symbol set_of_closures
+      to_clambda_closed_set_of_closures t symbol set_of_closures
     in
     Symbol.Map.add symbol to_clambda_set_of_closures acc
   | Project_closure _ -> acc
@@ -509,11 +512,11 @@ type result = {
   exported : Flambdaexport_types.exported;
 }
 
-let convert ~program ~exported : result =
+let convert (program, exported) : result =
   let current_unit =
     let offsets = Closure_offsets.compute program in
-    { fv_offset_table = offsets.code_pointer_offsets;
-      fun_offset_table = offsets.free_variable_offsets;
+    { fun_offset_table = offsets.code_pointer_offsets;
+      fv_offset_table = offsets.free_variable_offsets;
       closures = Flambda_utils.make_closure_map program;
       constant_sets_of_closures =
         Flambda_utils.all_lifted_constant_sets_of_closures program;
@@ -521,8 +524,8 @@ let convert ~program ~exported : result =
   in
   let imported_units =
     let imported = Compilenv.approx_env () in
-    { fv_offset_table = imported.ex_offset_fv;
-      fun_offset_table = imported.ex_offset_fun;
+    { fun_offset_table = imported.ex_offset_fun;
+      fv_offset_table = imported.ex_offset_fv;
       closures = imported.ex_functions_off;
       constant_sets_of_closures = imported.ex_constant_closures;
     }
@@ -530,7 +533,7 @@ let convert ~program ~exported : result =
   let t = { current_unit; imported_units; } in
   let structured_constants =
     Symbol.Map.fold (accumulate_structured_constants t)
-      (Flambda_utils.all_lifted_constants_map program)
+      (Flambda_utils.all_lifted_constants_as_map program)
       Symbol.Map.empty
   in
   let preallocated_blocks =

@@ -119,3 +119,8 @@ val all_lifted_constants_as_map
 val all_lifted_constant_sets_of_closures
    : Flambda.program
   -> Set_of_closures_id.Set.t
+
+(** For the compilation of switch statements. *)
+module Switch_storer : sig
+  val mk_store : unit -> Flambda.t Switch.t_store
+end

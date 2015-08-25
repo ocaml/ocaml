@@ -35,7 +35,9 @@ let pass_dump_linear_if ppf flag message phrase =
   if !flag then fprintf ppf "*** %s@.%a@." message Printlinear.fundecl phrase;
   phrase
 
-let clambda_dump_if ppf (ulambda, preallocated_blocks, structured_constants, exported) =
+let clambda_dump_if ppf
+      ({ Flambda_to_clambda. expr = ulambda; preallocated_blocks = _;
+        structured_constants; exported = _; } as input) =
   if !dump_clambda then
     begin
       Format.fprintf ppf "@.clambda:@.";
@@ -53,9 +55,8 @@ let clambda_dump_if ppf (ulambda, preallocated_blocks, structured_constants, exp
             Printclambda.structured_constant cst)
         structured_constants
     end;
-  if !dump_cmm then
-    Format.fprintf ppf "@.cmm:@.";
-  (ulambda, preallocated_blocks, structured_constants, exported)
+  if !dump_cmm then Format.fprintf ppf "@.cmm:@.";
+  input
 
 let rec regalloc ppf round fd =
   if round > 50 then
@@ -181,9 +182,12 @@ try
   Emit.begin_assembly ();
   Timings.(start (Flambda_backend sourcefile));
   prep_flambda_for_export ppf flam ~backend
-  ++ Clambdagen.convert
+  ++ Flambda_to_clambda.convert
   ++ clambda_dump_if ppf
-  ++ (fun (expr, prealloc, const, exported) -> Un_anf.apply expr, prealloc, const, exported)
+  (* CR mshinwell: this is ugly *)
+  ++ (fun { Flambda_to_clambda. expr; preallocated_blocks;
+          structured_constants; exported; } ->
+        Un_anf.apply expr, preallocated_blocks, structured_constants, exported)
   ++ set_export_info
   ++ Timings.(stop_id (Flambda_backend sourcefile))
   ++ Timings.(start_id (Cmm sourcefile))
