@@ -89,6 +89,8 @@ inherit Selectgen.selector_generic as super
 method! regs_for tyv =
   Reg.createv (if !fpu = Soft then begin
                  (* Expand floats into pairs of integer registers *)
+                 (* CR mshinwell: we need to check this in conjunction with
+                    the unboxed external functionality *)
                  let rec expand = function
                    [] -> []
                  | Float :: tyl -> Int :: Int :: expand tyl

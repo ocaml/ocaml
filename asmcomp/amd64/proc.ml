@@ -234,8 +234,15 @@ let win64_loc_external_arguments arg =
   done;
   (loc, Misc.align !ofs 16)  (* keep stack 16-aligned *)
 
-let loc_external_arguments =
-  if win64 then win64_loc_external_arguments else unix_loc_external_arguments
+let loc_external_arguments arg =
+  let arg =
+    Array.map (fun regs -> assert (Array.length regs = 1); regs.(0)) arg
+  in
+  let loc, alignment =
+    if win64 then win64_loc_external_arguments arg
+    else unix_loc_external_arguments arg
+  in
+  Array.map (fun reg -> [|reg|]) loc, alignment
 
 let loc_exn_bucket = rax
 
