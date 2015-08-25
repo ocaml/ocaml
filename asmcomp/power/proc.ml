@@ -92,33 +92,73 @@ let stack_slot slot ty =
 let calling_conventions
     first_int last_int first_float last_float
     make_stack stack_ofs reg_use_stack arg =
-  let loc = Array.make (Array.length arg) Reg.dummy in
+  let loc = Array.make (Array.length arg) [| Reg.dummy |] in
   let int = ref first_int in
   let float = ref first_float in
   let ofs = ref stack_ofs in
   for i = 0 to Array.length arg - 1 do
-    match arg.(i).typ with
-    | Val | Int | Addr as ty ->
-        if !int <= last_int then begin
-          loc.(i) <- phys_reg !int;
-          incr int;
-          if reg_use_stack then ofs := !ofs + size_int
-        end else begin
-          loc.(i) <- stack_slot (make_stack !ofs) ty;
-          ofs := !ofs + size_int
-        end
-    | Float ->
-        if !float <= last_float then begin
-          loc.(i) <- phys_reg !float;
-          incr float;
-          (* On 64-bit platforms, passing a float in a float register
-             reserves a normal register as well *)
-          if size_int = 8 then incr int;
-          if reg_use_stack then ofs := !ofs + size_float
-        end else begin
-          loc.(i) <- stack_slot (make_stack !ofs) Float;
-          ofs := !ofs + size_float
-        end
+    match arg.(i) with
+    | [| arg |] ->
+      begin match arg.typ with
+      | Val | Int | Addr as ty ->
+          if !int <= last_int then begin
+            loc.(i) <- [| phys_reg !int |];
+            incr int;
+            if reg_use_stack then ofs := !ofs + size_int
+          end else begin
+            loc.(i) <- [| stack_slot (make_stack !ofs) ty |];
+            ofs := !ofs + size_int
+          end
+      | Float ->
+          if !float <= last_float then begin
+            loc.(i) <- [| phys_reg !float |];
+            incr float;
+            (* On 64-bit platforms, passing a float in a float register
+               reserves a normal register as well *)
+            if size_int = 8 then incr int;
+            if reg_use_stack then ofs := !ofs + size_float
+          end else begin
+            ofs := Misc.align !ofs size_float;
+            loc.(i) <- [| stack_slot (make_stack !ofs) Float |];
+            ofs := !ofs + size_float
+          end
+      end
+    | [| arg1; arg2 |] ->
+      (* Passing of 64-bit quantities to external functions
+         on 32-bit platform. *)
+      assert (size_int = 4);
+      begin match arg1.typ, arg2.typ with
+      | Int, Int ->
+          (* 64-bit quantities split across two registers must either be in a
+             consecutive pair of registers where the lowest numbered is an
+             even-numbered register; or in a stack slot that is 8-byte
+             aligned. *)
+          int := Misc.align !int 2;
+          let pos_least, pos_most = if big_endian then (1, 0) else (0, 1) in
+          if !int <= last_int - 1 then begin
+            let reg_least = phys_reg (!int + pos_least) in
+            let reg_most  = phys_reg (!int + pos_most ) in
+            loc.(i) <- [| reg_least; reg_most |];
+            int := !int + 2
+          end else begin
+            let size_int64 = 8 in
+            ofs := Misc.align !ofs size_int64;
+            let ofs_least = !ofs + size_int * pos_least in
+            let ofs_most  = !ofs + size_int * pos_most  in
+            let stack_least = stack_slot (make_stack ofs_least) Int in
+            let stack_most  = stack_slot (make_stack ofs_most ) Int in
+            loc.(i) <- [| stack_least; stack_most |];
+            ofs := !ofs + size_int64
+          end
+      | _, _ ->
+        fatal_error (Printf.sprintf "Proc.calling_conventions: bad register \
+                                     type(s) for multi-register argument: %s, %s"
+          (match arg1.typ with Int -> "I" | Addr -> "A" | Val -> "V" | Float -> "F")
+          (match arg2.typ with Int -> "I" | Addr -> "A" | Val -> "V" | Float -> "F"))
+      end
+    | _ ->
+      fatal_error "Proc.calling_conventions: bad number of registers for \
+                   multi-register argument"
   done;
   (loc, Misc.align !ofs 16)
   (* Keep stack 16-aligned. *)
@@ -127,12 +167,28 @@ let incoming ofs = Incoming ofs
 let outgoing ofs = Outgoing ofs
 let not_supported ofs = fatal_error "Proc.loc_results: cannot call"
 
+let single_regs arg = Array.map (fun arg -> [| arg |]) arg
+let ensure_single_regs res =
+  Array.map (function
+      | [| res |] -> res
+      | _ -> failwith "Proc.ensure_single_regs")
+    res
+
 let loc_arguments arg =
-  calling_conventions 0 7 100 112 outgoing 0 false arg
+  let (loc, ofs) =
+    calling_conventions 0 7 100 112 outgoing 0 false (single_regs arg)
+  in
+  (ensure_single_regs loc, ofs)
 let loc_parameters arg =
-  let (loc, ofs) = calling_conventions 0 7 100 112 incoming 0 false arg in loc
+  let (loc, ofs) =
+    calling_conventions 0 7 100 112 incoming 0 false (single_regs arg)
+  in
+  ensure_single_regs loc
 let loc_results res =
-  let (loc, ofs) = calling_conventions 0 7 100 112 not_supported 0 false res in loc
+  let (loc, ofs) =
+    calling_conventions 0 7 100 112 not_supported 0 false (single_regs res)
+  in
+  ensure_single_regs loc
 
 (* C calling conventions for ELF32:
      use GPR 3-10 and FPR 1-8 just like ML calling conventions.
@@ -174,7 +230,11 @@ let loc_external_arguments =
       let (loc, ofs) =
         calling_conventions 0 7 100 112 outgoing 0 true args in
       if Array.fold_left
-           (fun stk r -> match r.loc with Stack _ -> true | _ -> stk)
+           (fun stk r ->
+              assert (Array.length r = 1);
+              match r.(0).loc with
+              | Stack _ -> true
+              | _ -> stk)
            false loc
       then (loc, ofs)
       else (loc, 0)
@@ -185,8 +245,9 @@ let extcall_use_push = false
 
 let loc_external_results res =
   let (loc, ofs) =
-    calling_conventions 0 0 100 100 not_supported 0 false res
-  in loc
+    calling_conventions 0 1 100 100 not_supported 0 false (single_regs res)
+  in
+  ensure_single_regs loc
 
 (* Exceptions are in GPR 3 *)
 
