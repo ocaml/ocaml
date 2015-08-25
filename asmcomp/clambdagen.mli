@@ -1,15 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*                     Pierre Chambart, OCamlPro                       *)
-(*                                                                     *)
-(*  Copyright 2014 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                OCaml                                   *)
+(*                                                                        *)
+(*                       Pierre Chambart, OCamlPro                        *)
+(*                  Mark Shinwell, Jane Street Europe                     *)
+(*                                                                        *)
+(*   Copyright 2015 Institut National de Recherche en Informatique et     *)
+(*   en Automatique.  All rights reserved.  This file is distributed      *)
+(*   under the terms of the Q Public License version 1.0.                 *)
+(*                                                                        *)
+(**************************************************************************)
 
+(* CR mshinwell: update comment *)
 (* Converts a flambda expression to clambda.
    During the conversion it:
     * substitute variables bound by a closure by a field access
@@ -20,9 +22,15 @@
     * detect constants values and transform them to Uconst
    For everything else, it is basically the identity.
 *)
+
+type result = {
+  expr : Clambda.ulambda;
+  preallocated_blocks : Clambda.preallocated_block list;
+  structured_constants : Clambda.ustructured_constant Symbol.Map.t;
+  exported : Flambdaexport_types.exported;
+}
+
 val convert
-   : Lift_constants.result * Flambdaexport_types.exported
-   -> Clambda.ulambda
-      * Clambda.preallocated_block list
-      * Clambda.ustructured_constant Symbol.Map.t
-      * Flambdaexport_types.exported
+   : program:Flambda.program
+  -> exported:Flambdaexport_types.exported
+  -> result

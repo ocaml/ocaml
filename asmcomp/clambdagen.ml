@@ -17,6 +17,13 @@ type t = {
   constant_sets_of_closures : Set_of_closures_id.Set.t;
 }
 
+type result = {
+  expr : Clambda.ulambda;
+  preallocated_blocks : Clambda.preallocated_block list;
+  structured_constants : Clambda.ustructured_constant Symbol.Map.t;
+  exported : Flambdaexport_types.exported;
+}
+
 type ('a, 'b) declaration_position =
   | Current_unit of 'a
   | Imported_unit of 'b
@@ -270,19 +277,14 @@ and to_clambda_named t env (named : Flambda.named) : Clambda.ulambda =
   | Set_of_closures set_of_closures ->
     to_clambda_set_of_closures t env set_of_closures
   | Project_closure { set_of_closures; closure_id } ->
-    let ulam = subst_var env set_of_closures in
-    let offset = get_fun_offset t closure_id in
     (* CR mshinwell for pchambart: I don't understand how this comment
        relates to this code.  Can you explain? *)
     (* compilation of let rec in cmmgen assumes
        that a closure is not offseted (Cmmgen.expr_size) *)
-    build_uoffset ulam offset
+    build_uoffset (subst_var env set_of_closures) (get_fun_offset t closure_id)
   | Move_within_set_of_closures { closure; start_from; move_to } ->
-    let ulam = subst_var env closure in
-    let relative_offset =
-      (get_fun_offset t move_to) - (get_fun_offset t start_from)
-    in
-    build_uoffset ulam relative_offset
+    build_uoffset (subst_var env closure)
+      ((get_fun_offset t move_to) - (get_fun_offset t start_from))
   | Project_var { closure; var; closure_id } ->
     let ulam = subst_var env closure in
     let fun_offset = get_fun_offset t closure_id in
@@ -302,7 +304,7 @@ and to_clambda_named t env (named : Flambda.named) : Clambda.ulambda =
   | Prim (p, args, dbg) -> Uprim (p, subst_vars env args, dbg)
   | Expr expr -> to_clambda t env expr
 
-and to_clambda_switch env cases keys default =
+and to_clambda_switch t env cases keys default =
   let num_keys =
     if Ext_types.Int.Set.cardinal num_keys = 0 then 0
     else Ext_types.Int.Set.max_elt num_keys + 1
@@ -313,26 +315,25 @@ and to_clambda_switch env cases keys default =
   | Some def when List.length cases < num_keys -> ignore (store.act_store def)
   | _ -> ()
   end;
-  List.iter (fun (key, lam) -> index.(key) <- store.Switch.act_store lam)
-    cases;
-  let actions = Array.map (to_clambda t env) (store.Switch.act_get ()) in
+  List.iter (fun (key, lam) -> index.(key) <- store.act_store lam) cases;
+  let actions = Array.map (to_clambda t env) (store.act_get ()) in
   match actions with
   | [| |] -> [| |], [| |]  (* May happen when [default] is [None]. *)
   | _ -> index, actions
 
-and to_clambda_direct_apply func args direct_func dbg env : Clambda.ulambda =
+and to_clambda_direct_apply t func args direct_func dbg env : Clambda.ulambda =
   let closed = is_function_constant direct_func in
   let label = Compilenv.function_label direct_func in
   let uargs =
     let uargs = subst_vars env args in
-    if closed then uargs else uargs @ [subst_var env func] in
-
+    if closed then uargs else uargs @ [subst_var env func]
+  in
   (* If the function is closed, the function expression is always a
      variable, so it is ok to drop it. Note that it means that
      some Let can be dead. The un-anf pass should get rid of it *)
-  Clambda.Udirect_apply(label, uargs, dbg)
+  Clambda.Udirect_apply (label, uargs, dbg)
 
-and to_clambda_set_of_closures env
+and to_clambda_set_of_closures t env
     (({ function_decls = functs; free_vars = fv } : Flambda.set_of_closures)
       as set_of_closures) =
   (* Make the susbtitutions for variables bound by the closure:
@@ -462,42 +463,8 @@ and to_clambda_closed_set_of_closures env symbol
       dbg = func.dbg;
     }
   in
-
   let ufunct = List.map to_clambda_function funct in
-
   Uconst_closure (ufunct, closure_lbl, [])
-
-let to_clambda_initialize_symbol env symbol fields : Clambda.ulambda =
-  let fields = List.mapi (fun p expr -> p, to_clambda env expr) fields in
-  let to_clambda_field (p, field) : Clambda.ulambda =
-    (* This [Psetfield] can affect a pointer, but since we are
-       initializing a toplevel symbol, it is safe not to use
-       [caml_modify]. *)
-    let symbol_string = Linkage_name.to_string (Symbol.label symbol) in
-    Uprim (
-      Psetfield (p, false),
-      [Clambda.Uconst (Uconst_ref (symbol_string, None)); field],
-      Debuginfo.none
-    )
-  in
-  match fields with
-  | [] -> Uconst (Uconst_ptr 0)
-  | h :: t ->
-    List.fold_left (fun acc (p, field) ->
-        Clambda.Usequence (to_clambda_field (p, field), acc))
-      (to_clambda_field h) t
-
-let rec to_clambda_program (program : Flambda.program) : Clambda.ulambda =
-  match program with
-  | Let_symbol (_, _, program)
-  | Let_rec_symbol (_, program)
-  | Import_symbol (_, program) -> to_clambda_program program
-  | End _ -> Uconst (Uconst_ptr 0)
-  | Initialize_symbol (symbol, _tag, fields, program) ->
-    Usequence (to_clambda_initialize_symbol empty_env symbol fields,
-      to_clambda_program program)
-  | Effect (expr, program) ->
-    Usequence (to_clambda empty_env expr, to_clambda_program program)
 
 let to_clambda_allocated_constant (const : Allocated_const.t)
       : Clambda.ustructured_constant =
@@ -508,6 +475,37 @@ let to_clambda_allocated_constant (const : Allocated_const.t)
   | Nativeint i -> Uconst_nativeint i
   | Immstring s | String s -> Uconst_string s
   | Float_array a -> Uconst_float_array a
+
+let to_clambda_initialize_symbol t env symbol fields : Clambda.ulambda =
+  let fields =
+    List.mapi (fun index expr -> index, to_clambda t env expr) fields
+  in
+  let build_setfield (index, field) : Clambda.ulambda =
+    (* This [Psetfield] can affect a pointer, but since we are initializing
+       a toplevel symbol, it is safe not to use [caml_modify]. *)
+    let symbol = Linkage_name.to_string (Symbol.label symbol) in
+    Uprim (Psetfield (index, false),
+      [Clambda.Uconst (Uconst_ref (symbol, None)); field],
+      Debuginfo.none)
+  in
+  match fields with
+  | [] -> Uconst (Uconst_ptr 0)
+  | h :: t ->
+    List.fold_left (fun acc (p, field) ->
+        Clambda.Usequence (build_setfield (p, field), acc))
+      (build_setfield h) t
+
+let rec to_clambda_program t (program : Flambda.program) : Clambda.ulambda =
+  match program with
+  | Let_symbol (_, _, program)
+  | Let_rec_symbol (_, program)
+  | Import_symbol (_, program) -> to_clambda_program t program
+  | Initialize_symbol (symbol, _tag, fields, program) ->
+    Usequence (to_clambda_initialize_symbol t empty_env symbol fields,
+      to_clambda_program t program)
+  | Effect (expr, program) ->
+    Usequence (to_clambda t empty_env expr, to_clambda_program t program)
+  | End _ -> Uconst (Uconst_ptr 0)
 
 let add_structured_constant
     symbol (c:Flambda.constant_defining_value)
@@ -538,7 +536,7 @@ let add_constant_sets_of_closures
       constant_sets_of_closures
   | Project_closure _ -> constant_sets_of_closures
 
-let to_clambdaert ~program ~exported =
+let convert ~program ~exported : result =
   let t =
     { offsets = Closure_offsets.compute program;
       closures = Flambda_utils.make_closure_map program;
@@ -567,10 +565,8 @@ let to_clambdaert ~program ~exported =
       initialize_symbols
   in
   let expr = to_clambda_program t program in
+  let structured_constants =
+    Symbol.Map.disjoint_union structured_constants constant_sets_of_closures
+  in
   (* CR mshinwell for pchambart: add offsets to export info *)
-  expr,
-  preallocated_blocks,
-  Symbol.Map.disjoint_union
-    structured_constants
-    constant_sets_of_closures,
-  exported
+  { expr; preallocated_blocks; structured_constants; exported; }

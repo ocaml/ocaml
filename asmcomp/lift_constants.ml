@@ -11,6 +11,7 @@
 (*                                                                        *)
 (**************************************************************************)
 
+(* CR mshinwell: check comment is up to date *)
 (** The aim of this pass is to assign symbols to values known to be
     constant (in other words, whose values we know at compile time), with
     appropriate sharing of constants, and replace the occurrences of the
@@ -55,14 +56,6 @@
 *)
 
 open Alias_analysis
-
-type result = Flambda.program
-
-(** Like [Flambda.constant_defining_value] but using [Variable.t] for
-    inter-constant references rather than [Symbol.t].  This type also permits
-    projections from blocks (which we will entirely simplify away in this pass)
-    and non-allocated constants (which will never be assigned symbols). *)
-(* type constant_defining_value = Alias_analysis.constant_defining_value *)
 
 let rec tail_variable : Flambda.t -> Variable.t option = function
   | Var v -> Some v

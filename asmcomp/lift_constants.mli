@@ -26,8 +26,6 @@
    mshinwell: this CR may be out of date now
 *)
 
-type result = Flambda.program
-
 (* CR mshinwell: add comment *)
 val lift_constants
    : Flambda.program
