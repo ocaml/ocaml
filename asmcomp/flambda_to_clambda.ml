@@ -76,29 +76,28 @@ module Env : sig
 
   val empty : t
 
+  val add_subst : t -> Ident.t -> Clambda.ulambda -> t
+  val find_subst_exn : t -> Ident.t -> Clambda.ulambda
+
   val add_fresh_ident : t -> Variable.t -> Ident.t * t
   val ident_for_var_exn : t -> Variable.t -> Ident.t
 end = struct
   type t =
-    { const_subst : Clambda.ulambda Variable.Map.t;
-      subst : Clambda.ulambda Variable.Map.t;
+    { subst : Clambda.ulambda Variable.Map.t;
       var : Ident.t Variable.Map.t;
       toplevel : bool;
     }
 
   let empty =
-    { const_subst = Variable.Map.empty;
-      subst = Variable.Map.empty;
+    { subst = Variable.Map.empty;
       var = Variable.Map.empty;
       toplevel = false;
     }
 
-  let add_sb t id subst =
+  let add_subst t id subst =
     { t with subst = Variable.Map.add id subst t.subst }
 
-  let find_sb t id =
-    try Variable.Map.find id t.subst with
-    | Not_found -> Variable.Map.find id t.const_subst
+  let find_subst_exn t id = Variable.Map.find id t.subst
 
   let ident_for_var_exn t id = Variable.Map.find id t.var
 
@@ -108,7 +107,7 @@ end = struct
 end
 
 let subst_var env var : Clambda.ulambda =
-  try Env.find_sb env var
+  try Env.find_subst_exn env var
   with Not_found ->
     try Uvar (Env.ident_for_var_exn env var)
     with Not_found ->
@@ -325,7 +324,7 @@ and to_clambda_direct_apply t func args direct_func dbg env : Clambda.ulambda =
        some Let can be dead. The un-anf pass should get rid of it *)
     if closed then uargs else uargs @ [subst_var env func]
   in
-  Clambda.Udirect_apply (label, uargs, dbg)
+  Udirect_apply (label, uargs, dbg)
 
 (* CR mshinwell for mshinwell: improve comment *)
 (* Make the substitutions for variables bound by the closure:
@@ -356,7 +355,7 @@ and to_clambda_direct_apply t func args direct_func dbg env : Clambda.ulambda =
 *)
 and to_clambda_set_of_closures t env
       (({ function_decls; free_vars } : Flambda.set_of_closures)
-        as set_of_closures) =
+        as set_of_closures) : Clambda.ulambda =
 (*
 Format.eprintf "Clambdagen.to_clambda_set_of_closures: %a\n"
 Flambda.print_set_of_closures set_of_closures;
@@ -369,7 +368,7 @@ Flambda.print_set_of_closures set_of_closures;
     let env =
       (* Inside the body of the function, we cannot access variables
          declared outside, so start with a clean environment. *)
-      let env = Env.empty_with_const_subst_from env in
+      let env = Env.empty in
       (* Add the Clambda expressions for the free variables of the function
          to the environment. *)
       let add_env_free_variable id _ env =
@@ -384,7 +383,7 @@ Flambda.print_set_of_closures set_of_closures;
               Flambda.print_set_of_closures set_of_closures
         in
         let pos = var_offset - fun_offset in
-        Env.add_sb env id
+        Env.add_subst env id
           (Uprim (Pfield pos, [Clambda.Uvar env_var], Debuginfo.none))
       in
       let env = Variable.Map.fold add_env_free_variable free_vars env in
@@ -397,7 +396,7 @@ Flambda.print_set_of_closures set_of_closures;
           Closure_id.Map.find (Closure_id.wrap id) fun_offset_table
         in
         let exp : Clambda.ulambda = Uoffset (Uvar env_var, offset - pos) in
-        Env.add_sb env id exp
+        Env.add_subst env id exp
       in
       List.fold_left (add_env_function fun_offset) env funct
     in
@@ -420,14 +419,14 @@ Flambda.print_set_of_closures set_of_closures;
   let free_vars =
     Variable.Map.bindings (Variable.Map.map (subst_var env) free_vars)
   in
-  Clambda.Uclosure (funs, List.map snd fv_ulam)
+  Uclosure (funs, List.map snd fv_ulam)
 
 and to_clambda_closed_set_of_closures t env symbol
       ({ function_decls; } : Flambda.set_of_closures)
       : Clambda.ustructured_constant =
   let to_clambda_function (id, (function_decl : Flambda.function_declaration))
         : Clambda.ufunction =
-    let env = Env.empty_with_const_subst_from env in
+    let env = Env.empty in
     let env_body, params =
       List.fold_right (fun var (env, params) ->
           let id, env = Env.add_fresh_ident env var in
