@@ -121,7 +121,7 @@ defaultclean:
 	@$(ASM) -o $*.o $*.s
 
 .S.o:
-	@$(ASPP) $(ASPPFLAGS) -DSYS_$(SYSTEM) -o $*.o $*.S
+	@$(ASPP) $(ASPPFLAGS) -DSYS_$(SYSTEM) -DMODEL_$(MODEL) -o $*.o $*.S
 
 .s.o:
 	@$(ASPP) $(ASPPFLAGS) -DSYS_$(SYSTEM) -o $*.o $*.s

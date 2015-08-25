@@ -869,7 +869,6 @@ void declare_tokens(int assoc)
 {
     register int c;
     register bucket *bp;
-    int value;
     char *tag = 0;
 
     if (assoc != TOKEN) ++prec;
@@ -919,10 +918,9 @@ void declare_tokens(int assoc)
 
         c = nextc();
         if (c == EOF) unexpected_EOF();
-        value = UNDEFINED;
         if (isdigit(c))
         {
-            value = get_number();
+            int value = get_number();
             if (bp->value != UNDEFINED && value != bp->value)
                 revalued_warning(bp->name);
             bp->value = value;
@@ -1336,6 +1334,7 @@ loop:
         fprintf(f, " : '%s))\n", plhs[nrules]->name);
       if (sflag)
         fprintf(f, "\n");
+      FREE(a_line);
       return;
     }
     putc(c, f);

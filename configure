@@ -806,12 +806,12 @@ case "$target" in
                                 fi;;
   i[3456]86-*-gnu*)             arch=i386; system=gnu;;
   i[3456]86-*-mingw*)           arch=i386; system=mingw;;
-  powerpc*-*-linux*)            arch=power; model=ppc; system=elf;;
+  powerpc64le*-*-linux*)        arch=power; model=ppc64le; system=elf;;
+  powerpc*-*-linux*)            arch=power;
+                                if $arch64; then model=ppc64; else model=ppc; fi
+                                system=elf;;
   powerpc-*-netbsd*)            arch=power; model=ppc; system=elf;;
   powerpc-*-openbsd*)           arch=power; model=ppc; system=bsd_elf;;
-  powerpc-*-rhapsody*)          arch=power; model=ppc; system=rhapsody;;
-  powerpc-*-darwin*)            arch=power; system=rhapsody
-                                if $arch64;then model=ppc64;else model=ppc;fi;;
   armv6*-*-linux-gnueabihf)     arch=arm; model=armv6; system=linux_eabihf;;
   arm*-*-linux-gnueabihf)       arch=arm; system=linux_eabihf;;
   armv7*-*-linux-gnueabi)       arch=arm; model=armv7; system=linux_eabi;;
@@ -861,6 +861,9 @@ case "$arch,$nativecc,$system,$target" in
   *,*,rhapsody,*)      if $arch64; then partialld="ld -r -arch ppc64"; fi;;
   amd64,gcc*,macosx,*) partialld="ld -r -arch x86_64";;
   amd64,gcc*,solaris,*) partialld="ld -r -m elf_x86_64";;
+  power,gcc*,elf,ppc)   partialld="ld -r -m elf32ppclinux";;
+  power,gcc*,elf,ppc64)   partialld="ld -r -m elf64ppc";;
+  power,gcc*,elf,ppc64le)   partialld="ld -r -m elf64lppc";;
 esac
 
 asppprofflags='-DPROFILING'
@@ -877,10 +880,13 @@ case "$arch,$system" in
                   aspp="${TOOLPREF}gcc -m64 -c";;
   i386,solaris)   as="${TOOLPREF}as"
                   aspp="/usr/ccs/bin/${TOOLPREF}as -P";;
-  power,elf)      as="${TOOLPREF}as -u -m ppc"
-                  aspp="${TOOLPREF}gcc -c";;
-  power,rhapsody) as="${TOOLPREF}as -arch $model"
-                  aspp="$bytecc -c";;
+  power,elf)      if $arch64; then
+                    as="${TOOLPREF}as -a64 -mppc64"
+                    aspp="${TOOLPREF}gcc -m64 -c"
+                  else
+                    as="${TOOLPREF}as -mppc"
+                    aspp="${TOOLPREF}gcc -m32 -c"
+                  fi;;
   sparc,solaris)  as="${TOOLPREF}as"
                   case "$cc" in
                     *gcc*) aspp="${TOOLPREF}gcc -c";;

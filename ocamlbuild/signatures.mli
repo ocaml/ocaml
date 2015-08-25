@@ -574,49 +574,131 @@ module type PLUGIN = sig
       set of tags if the given option is Some. *)
   val ( --- ) : Tags.t -> Tags.elt option -> Tags.t
 
-  (** The type of the builder environments. Here an environment is just the
-      lookup function of it. Basically this function will resolve path variables
-      like % or more generally %(var_name). *)
+  (** Targets and dependencies in rules are patterns, which are
+      matched by the actual targets requested by the user. For
+      example, if a rule explains how to build "%.cmo" from "%.ml", it
+      will be fired if the user tries to build "foo.cmo".
+
+      The environment records the value of the pattern variables
+      (here "%") in this matching. In the context of our example, the
+      environment will be a function substituting "%" by "foo";
+      calling it on "%.cmo" will return "foo.cmo", and calling it on
+      "%.ml" will return "foo.ml".
+
+      For a typical example of use of the environment, see the
+      [ocamldep_ml_command] example in the documentation of {!action}
+      below. *)
   type env = Pathname.t -> Pathname.t
 
   (** A builder is a function that waits for conjonction of alternative targets.
       The alternatives are here to support some choices, for instance for an
       OCaml module an alternatives can be foo.cmo, foo.cmi, Foo.cmo, Foo.cmi.
       Conjonctions are here to help making parallelism, indeed commands that are
-      independant will be run concurently. *)
+      independant will be run concurently.
+
+      For an example of use of a builder function, see the [targets]
+      function given as an example in the documentation of the
+      {!action} type below.
+   *)
   type builder = Pathname.t list list -> (Pathname.t, exn) Outcome.t list
 
   (** This is the type for rule actions. An action receive as argument, the
       environment lookup function (see {!env}), and a function to dynamically
       build more targets (see {!builder}). An action should return the command
       to run in order to build the rule productions using the rule dependencies.
-  *)
+
+      For example, here is an action to build an [ocamldep] command,
+      for use in the example of rule given in the documentation of
+      {!rule} below:
+{[
+let ocamldep_ml_command env _build =
+  let arg = env "%.ml" and out = env "%.ml.depends" in
+  let tags = tags_of_pathname arg ++ "ocaml" ++ "ocamldep" in
+  Cmd(S[A "ocamldep"; T tags; A "-modules"; P arg; Sh ">"; Px out])
+]}
+
+      In the example above, the build function is not used, as there
+      are no dynamic dependencies. There are in the example below: we
+      build a list of targets dynamically read from a "foo.itarget"
+      file. The final command returned by the action links each of
+      them in the current directory.
+
+{[
+let target_list env build =
+    let itarget = env "%.itarget" in
+    let targets =
+      let dir = Pathname.dirname itarget in
+      let files = string_list_of_file itarget in
+      List.map (fun file -> [Pathname.concat dir file]) files
+    in
+    let results = List.map Outcome.good (build targets) in
+    let link_command result =
+      Cmd (S [A "ln"; A "-sf";
+              P (Pathname.concat !Options.build_dir result);
+              A Pathname.pwd])
+    in
+    Seq (List.map link_command results)
+]}
+   *)
   type action = env -> builder -> Command.t
 
   (** This is the main function for adding a rule to the ocamlbuild engine.
       - The first argument is the name of the rule (should be unique).
       - It takes files that the rule produces.
-        Use ~prod for one file, ~prods for list of files.
+        Use [~prod] for one file, [~prods] for list of files.
       - It also takes files that the rule uses.
-        Use ~dep for one file, ~deps for list of files.
+        Use [~dep] for one file, [~deps] for list of files.
       - It finally takes the action to perform in order to produce the
         productions files using the dependencies (see [action]).
 
       There are some more optional parameters:
-      - The ~insert argument allow to insert the rules precisely between other
+      - The [~insert] argument allows to insert the rules precisely between other
         rules.
-      - The ~stamp argument specify the name of a file that will be
+      - The [~stamp] argument specifies the name of a file that will be
         automatically produced by ocamlbuild. This file can serve as a virtual
         target (or phony target), since it will be filled up by a digest of
         it dependencies.
-      - The ~tags argument in deprecated, don't use it.
+      - The [~tags] argument in deprecated, don't use it.
 
-      Finally, the optional ~doc argument allows to give an informal
+      Finally, the optional [~doc] argument allows to give an informal
       explanation of the rule purpose and behavior, that will be
       displayed by [ocamlbuild -documentation]. For example, it is
       a good place to specify the commands that will be called, any
       new tags introduced by the rule, and dynamic dependencies.
-  *)
+
+      For example, here is how a rule producing [foo.ml.depends] from
+      [foo.ml] (calling [ocamldep]) is defined, slightly simplified from
+      the built-in definition.
+
+{[
+rule "ocaml dependencies ml"
+  ~prod:"%.ml.depends"
+  ~dep:"%.ml"
+  (ocamldep_ml_command)
+]}
+
+      The rule that builds a list of targets from a [%.itarget] file is
+      an example of use of the [?stamp] argument. It uses the
+      [target_list] action provided in the documentation of {!action}
+      above. Besides the targets listed in the [%.itarget] file, this
+      command will also produce a [%.otarget] file (the "stamp") that
+      contains the digest of all the [%.itarget] dependencies. This stamp
+      file is the name to use when you want to ask OCamlbuild to build
+      the targets listed: invoking [ocamlbuild foo.otarget] will build
+      the the targets listed in [foo.itarget]. Similarly, new rules
+      that would depend on that list of targets should depend on
+      [%.otarget] (output), not [%.itarget] (input).
+
+{[
+rule "target files"
+  ~dep:"%.itarget"
+  ~stamp:"%.otarget"
+  ~doc:"If foo.itarget contains a list of ocamlbuild targets, \
+        asking ocamlbuild to produce foo.otarget will \
+        build each of those targets in turn."
+  target_list
+]}
+   *)
   val rule : string ->
     ?tags:string list ->
     ?prods:string list ->

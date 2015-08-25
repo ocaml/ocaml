@@ -80,7 +80,7 @@ struct caml_thread_struct {
   struct longjmp_buffer * external_raise; /* Saved external_raise */
 #endif
   int backtrace_pos;            /* Saved backtrace_pos */
-  code_t * backtrace_buffer;    /* Saved backtrace_buffer */
+  backtrace_slot * backtrace_buffer;    /* Saved backtrace_buffer */
   value backtrace_last_exn;     /* Saved backtrace_last_exn (root) */
 };
 
