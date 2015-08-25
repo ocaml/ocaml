@@ -172,8 +172,8 @@ let rec split_let free_variables_map (expr:Flambda.t) =
   | Let(_, _, _, Var _) ->
     None
   | Let(Immutable, var, named, body) when should_copy named ->
-    Format.printf "look variable %a@."
-      Variable.print var;
+    (* Format.printf "look variable %a@." *)
+    (*   Variable.print var; *)
     (* Those are the cases that are better to duplicate than to lift.
        Symbol and Pfield must be duplicated to avoid relifting the
        code introduced to lift a variable (and ending up looping infinitely). *)

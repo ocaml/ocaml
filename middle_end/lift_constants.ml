@@ -93,9 +93,9 @@ let assign_symbols_and_collect_constant_definitions
     if not (Variable.Set.mem var inconstants.id) then begin
       let assign_symbol () =
         let symbol = make_variable_symbol "" var in
-        Format.eprintf "assign_symbol %a -> %a@."
-          Variable.print var
-          Symbol.print symbol;
+        (* Format.eprintf "assign_symbol %a -> %a@." *)
+        (*   Variable.print var *)
+        (*   Symbol.print symbol; *)
         Variable.Tbl.add var_to_symbol_tbl var symbol
       in
       let assign_existing_symbol = Variable.Tbl.add var_to_symbol_tbl var in
@@ -221,18 +221,18 @@ let resolve_variable
     (var:Variable.t) : Flambda.constant_defining_value_block_field =
   match Variable.Map.find var aliases with
   | exception Not_found ->
-    Format.eprintf "no alias for %a@."
-      Variable.print var;
+    (* Format.eprintf "no alias for %a@." *)
+    (*   Variable.print var; *)
     variable_field_definition var_to_symbol_tbl var_to_definition_tbl var
   | Symbol s ->
-    Format.eprintf "symbol alias %a -> %a@."
-      Variable.print var
-      Symbol.print s;
+    (* Format.eprintf "symbol alias %a -> %a@." *)
+    (*   Variable.print var *)
+    (*   Symbol.print s; *)
     Symbol s
   | Variable aliased_variable ->
-    Format.eprintf "variable alias %a -> %a@."
-      Variable.print var
-      Variable.print aliased_variable;
+    (* Format.eprintf "variable alias %a -> %a@." *)
+    (*   Variable.print var *)
+    (*   Variable.print aliased_variable; *)
     variable_field_definition var_to_symbol_tbl var_to_definition_tbl aliased_variable
 
 let translate_set_of_closures
@@ -256,6 +256,10 @@ let translate_set_of_closures
       | Symbol s -> Symbol s
       | Const c -> Const c
   in
+  (* let f_body body = *)
+  (*   let body = Flambda_iterators.map_all_let_and_let_rec_bindings ~f body in *)
+  (*   let free_variable = Flambda.free_variables body in *)
+  (* in *)
   Flambda_iterators.map_function_bodies set_of_closures
     ~f:(Flambda_iterators.map_all_let_and_let_rec_bindings ~f)
 
@@ -661,7 +665,7 @@ let replace_definitions_in_initialize_symbol_and_effects
     (Symbol.Tbl.to_map effect_tbl)
 
 let lift_constants program ~backend =
-  Format.eprintf "lift_constants input:@ %a\n" Flambda.print_program program;
+  (* Format.eprintf "lift_constants input:@ %a\n" Flambda.print_program program; *)
   let inconstants =
     Inconstant_idents.inconstants_on_program program
       ~for_clambda:true
@@ -742,6 +746,6 @@ let lift_constants program ~backend =
       (Flambda_utils.needed_import_symbols program)
       program
   in
-  Format.eprintf "@.lift_constants output:@ %a\n" Flambda.print_program program;
+  (* Format.eprintf "@.lift_constants output:@ %a\n" Flambda.print_program program; *)
   program
 
