@@ -61,6 +61,8 @@ Runtime system:
   which is still open (Alain Frisch, review by Damien Doligez)
 - Signal handling: for read-and-clear, use GCC/Clang atomic builtins
   if available.  (Xavier Leroy)
+- GPR#226: select higher levels of optimization for GCC and Clang when
+  compiling the run-time system and C stub code.  (Xavier Leroy)
 
 Standard library:
 - PR#6316: Scanf.scanf failure on %u formats when reading big integers

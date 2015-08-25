@@ -14,8 +14,12 @@
 int main()
 {
 #ifdef __STDC__
+#if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 199901L
   return 0;
 #else
   return 1;
+#endif
+#else
+  return 2;
 #endif
 }

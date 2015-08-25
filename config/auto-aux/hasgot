@@ -30,9 +30,9 @@ while : ; do
   shift
 done
 
-(echo "main() {"
+(echo "int main() {"
  for f in $*; do echo "  $f();"; done
- echo "}") >> hasgot.c
+ echo "  return 0; }") >> hasgot.c
 
 if test "$verbose" = yes; then
   echo "hasgot $args: $cc $opts -o tst hasgot.c $libs" >&2

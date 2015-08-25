@@ -26,9 +26,9 @@ typedef long long int64_t;
 #error "No 64-bit integer type available"
 #endif
 
-int64_t foo;
+volatile int64_t foo;
 
-void access_int64(int64_t *p)
+void access_int64(volatile int64_t *p)
 {
   foo = *p;
 }
@@ -49,8 +49,8 @@ int main(void)
   signal(SIGBUS, sig_handler);
 #endif
   if(setjmp(failure) == 0) {
-    access_int64((int64_t *) n);
-    access_int64((int64_t *) (n+1));
+    access_int64((volatile int64_t *) n);
+    access_int64((volatile int64_t *) (n+1));
     res = 0;
   } else {
     res = 1;
@@ -59,5 +59,5 @@ int main(void)
 #ifdef SIGBUS
   signal(SIGBUS, SIG_DFL);
 #endif
-  exit(res);
+  return res;
 }
