@@ -399,3 +399,27 @@ let contains_static_exn flam stexn =
       flam;
     false
   with Exit -> true
+
+let make_closure_map program =
+  let map = ref Closure_id.Map.empty in
+  let add_set_of_closures : Flambda.set_of_closures -> unit = fun
+    { function_decls } ->
+    Variable.Map.iter (fun var _ ->
+        let closure_id = Closure_id.wrap var in
+        map := Closure_id.Map.add closure_id function_decls !map)
+      function_decls.funs
+  in
+  Flambda_iterators.iter_on_set_of_closures_of_program
+    program
+    ~f:add_set_of_closures;
+  !map
+
+let all_lifted_constant_sets_of_closures program =
+  let set = ref Set_of_closures_id.Set.empty in
+  List.iter (function
+      | (_, Flambda.Set_of_closures {
+          function_decls = { set_of_closures_id } }) ->
+        set := Set_of_closures_id.Set.add set_of_closures_id !set
+      | _ -> ())
+    (constant_symbol_declarations program);
+  !set

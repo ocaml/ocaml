@@ -98,3 +98,13 @@ val needed_import_symbols : Flambda.program -> Symbol.Set.t
 val root_symbol : Flambda.program -> Symbol.t
 
 val contains_static_exn : Flambda.named -> Static_exception.t -> bool
+
+val make_closure_map
+   : Flambda.program
+  -> Flambda.function_declarations Closure_id.Map.t
+
+(** The identifiers of all constant sets of closures that have been lifted to
+    [Let_symbol] or [Let_rec_symbol] expressions. *)
+val all_lifted_constant_sets_of_closures
+   : Flambda.program
+  -> Set_of_closures_id.Set.t
