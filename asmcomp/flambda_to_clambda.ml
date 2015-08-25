@@ -11,28 +11,65 @@
 (*                                                                        *)
 (**************************************************************************)
 
-type t = {
+type for_one_or_more_units = {
   fun_offset_table : int Closure_id.Map.t;
   fv_offset_table : int Var_within_closure.Map.t;
-  extern_fun_offset_table : int Closure_id.Map.t;
-  extern_fv_offset_table : int Var_within_closure.Map.t;
-  ex_closures : Flambda.function_declarations Closure_id.Map.t;
-  ex_constant_closures : Set_of_closures_id.Set.t;
   closures : Flambda.function_declarations Closure_id.Map.t;
   constant_sets_of_closures : Set_of_closures_id.Set.t;
 }
 
-type result = {
-  expr : Clambda.ulambda;
-  preallocated_blocks : Clambda.preallocated_block list;
-  structured_constants : Clambda.ustructured_constant Symbol.Map.t;
-  exported : Flambdaexport_types.exported;
+type t = {
+  current_unit : for_one_or_more_units;
+  imported_units : for_one_or_more_units;
 }
 
 type ('a, 'b) declaration_position =
   | Current_unit of 'a
   | Imported_unit of 'b
   | Not_declared
+
+let get_fun_offset t closure_id =
+  let fun_offset_table =
+    if Closure_id.in_compilation_unit (Compilenv.current_unit ()) closure_id
+    then t.current_unit.fun_offset_table
+    else t.imported_units.fun_offset_table
+  in
+  try Closure_id.Map.find closure_id fun_offset_table
+  with Not_found ->
+    Misc.fatal_errorf "Flambda_to_clambda: missing offset for closure %a"
+      Closure_id.print closure_id
+
+let get_fv_offset t var_within_closure =
+  let fv_offset_table =
+    if Var_within_closure.in_compilation_unit (Compilenv.current_unit ())
+        var_within_closure
+    then t.current_unit.fv_offset_table
+    else t.imported_units.fv_offset_table
+  in
+  try Var_within_closure.Map.find var_within_closure fv_offset_table
+  with Not_found ->
+    Misc.fatal_errorf "Flambda_to_clambda: missing offset for variable %a"
+      Var_within_closure.print var_within_closure
+
+let function_declaration_position t closure_id =
+  try
+    Current_unit (Closure_id.Map.find closure_id t.current_unit.closures)
+  with Not_found ->
+    try
+      Imported_unit (Closure_id.Map.find closure_id t.imported_units.closures)
+    with Not_found -> Not_declared
+
+let is_function_constant t closure_id =
+  match function_declaration_position t closure_id with
+  | Current_unit { set_of_closures_id } ->
+    Set_of_closures_id.Set.mem set_of_closures_id
+      t.current_unit.constant_sets_of_closures
+  | Imported_unit { set_of_closures_id } ->
+    Set_of_closures_id.Set.mem set_of_closures_id
+      t.imported_units.constant_sets_of_closures
+  | Not_declared ->
+    Misc.fatal_errorf "Flambda_to_clambda: missing closure %a"
+      Closure_id.print closure_id
 
 module Env : sig
   type t
@@ -70,52 +107,6 @@ end = struct
     id, { t with var = Variable.Map.add var id t.var }
 end
 
-let to_clambda_const (const : Flambda.constant_defining_value_block_field)
-      : Clambda.uconstant =
-  match const with
-  | Symbol s ->
-    let lbl = Linkage_name.to_string (Symbol.label s) in
-    (* CR pchambart: The constant should contains details about the variable to
-       allow cmmgen to unbox *)
-    Uconst_ref (lbl, None)
-  | Const (Int i) -> Uconst_int i
-  | Const (Char c) -> Uconst_int (Char.code c)
-  | Const (Const_pointer i) -> Uconst_ptr i
-
-let get_fun_offset t off =
-  try
-    if Closure_id.in_compilation_unit (Compilenv.current_unit ()) off
-    then Closure_id.Map.find off t.fun_offset_table
-    else Closure_id.Map.find off t.extern_fun_offset_table
-  with Not_found ->
-    Misc.fatal_error
-      (Format.asprintf "missing offset %a" Closure_id.print off)
-
-let get_fv_offset t off =
-  if Var_within_closure.in_compilation_unit (Compilenv.current_unit ()) off
-  then
-    if not (Var_within_closure.Map.mem off t.fv_offset_table)
-    then Misc.fatal_error (Format.asprintf "env field offset not found: %a\n%!"
-                             Var_within_closure.print off)
-    else Var_within_closure.Map.find off t.fv_offset_table
-  else Var_within_closure.Map.find off t.extern_fv_offset_table
-
-let function_declaration_position t closure_id =
-  try Current_unit (Closure_id.Map.find closure_id t.closures) with
-  | Not_found ->
-    try Imported_unit (Closure_id.Map.find closure_id t.ex_closures) with
-    | Not_found -> Not_declared
-
-let is_function_constant t closure_id =
-  match function_declaration_position t closure_id with
-  | Current_unit { set_of_closures_id } ->
-    Set_of_closures_id.Set.mem set_of_closures_id t.constant_sets_of_closures
-  | Imported_unit { set_of_closures_id } ->
-    Set_of_closures_id.Set.mem set_of_closures_id t.ex_constant_closures
-  | Not_declared ->
-    Misc.fatal_errorf "Flambda_to_clambda: missing closure %a"
-      Closure_id.print closure_id
-
 let subst_var env var : Clambda.ulambda =
   try Env.find_sb env var
   with Not_found ->
@@ -130,6 +121,18 @@ let subst_vars env vars = List.map (subst_var env) vars
 let build_uoffset ulam offset : Clambda.ulambda =
   if offset = 0 then ulam
   else Uoffset (ulam, offset)
+
+let to_clambda_const (const : Flambda.constant_defining_value_block_field)
+      : Clambda.uconstant =
+  match const with
+  | Symbol s ->
+    let lbl = Linkage_name.to_string (Symbol.label s) in
+    (* CR pchambart: The constant should contain details about the variable to
+       allow cmmgen to unbox *)
+    Uconst_ref (lbl, None)
+  | Const (Int i) -> Uconst_int i
+  | Const (Char c) -> Uconst_int (Char.code c)
+  | Const (Const_pointer i) -> Uconst_ptr i
 
 let rec to_clambda t env (flam : Flambda.t) : Clambda.ulambda =
 (*
@@ -500,21 +503,32 @@ let accumulate_structured_constants t symbol
     Symbol.Map.add symbol to_clambda_set_of_closures acc
   | Project_closure _ -> acc
 
+type result = {
+  expr : Clambda.ulambda;
+  preallocated_blocks : Clambda.preallocated_block list;
+  structured_constants : Clambda.ustructured_constant Symbol.Map.t;
+  exported : Flambdaexport_types.exported;
+}
+
 let convert ~program ~exported : result =
-  let offsets = Closure_offsets.compute program in
-  let imported = Compilenv.approx_env () in
-  let t = {
-      fv_offset_table = offsets.code_pointer_offsets;
+  let current_unit =
+    let offsets = Closure_offsets.compute program in
+    { fv_offset_table = offsets.code_pointer_offsets;
       fun_offset_table = offsets.free_variable_offsets;
-      extern_fv_offset_table = imported.ex_offset_fv;
-      extern_fun_offset_table = imported.ex_offset_fun;
-      ex_closures = imported.ex_functions_off;
-      ex_constant_closures = imported.ex_constant_closures;
       closures = Flambda_utils.make_closure_map program;
       constant_sets_of_closures =
         Flambda_utils.all_lifted_constant_sets_of_closures program;
     }
   in
+  let imported_units =
+    let imported = Compilenv.approx_env () in
+    { fv_offset_table = imported.ex_offset_fv;
+      fun_offset_table = imported.ex_offset_fun;
+      closures = imported.ex_functions_off;
+      constant_sets_of_closures = imported.ex_constant_closures;
+    }
+  in
+  let t = { current_unit; imported_units; } in
   let structured_constants =
     Symbol.Map.fold (accumulate_structured_constants t)
       (Flambda_utils.all_lifted_constants_map program)
