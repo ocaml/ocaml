@@ -27,7 +27,7 @@ default:
 compile:
 	@$(OCAMLC) -c registry.ml
 	@for file in stub*.c; do \
-	  $(OCAMLC) -ccopt -I -ccopt $(CTOPDIR)/byterun/caml -c $$file; \
+	  $(OCAMLC) -ccopt -I -ccopt $(CTOPDIR)/byterun -c $$file; \
 	  $(OCAMLMKLIB) -o `echo $$file | sed -e 's/stub/plug/' -e 's/\.c//'` \
 	                `basename $$file c`$(O); \
 	done
