@@ -1291,8 +1291,7 @@ let rec is_unboxed_number e =
   match e with
   | Uconst(Uconst_ref(_, Uconst_float _)) -> Boxed Boxed_float
   | Uconst(Uconst_ref(_, Uconst_int32 _)) -> Boxed (Boxed_integer Pint32)
-  | Uconst(Uconst_ref(_, Uconst_int64 _)) when size_int = 8 ->
-      Boxed (Boxed_integer Pint64)
+  | Uconst(Uconst_ref(_, Uconst_int64 _)) -> Boxed (Boxed_integer Pint64)
   | Uconst(Uconst_ref(_, Uconst_nativeint _)) ->
       Boxed (Boxed_integer Pnativeint)
   | Uprim(p, _, _) ->
