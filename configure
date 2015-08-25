@@ -851,6 +851,7 @@ else
 fi
 
 nativecccompopts="$bytecccompopts"
+nativeccprofopts=''
 nativecclinkopts=''
 # FIXME the naming of nativecclinkopts is broken: these are options for
 # ld (for shared libs), not for cc
