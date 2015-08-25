@@ -34,6 +34,10 @@ Compilers:
 - PR#6737: fix Typedtree attributes on (fun x -> body) expressions
 - PR#6679: fix pprintast printing of constraints in type declarations
 - PR#6845: -no-check-prims to tell ocamlc not to check primitives in runtime
+- PR#6943: native-code generator for POWER/PowerPC 64 bits, both in
+  big-endian (ppc64) and little-endian (ppc64le) configuration.
+  (Xavier Leroy, with inspiration from RedHat's unofficial ppc64 and ppc64le
+   ports)
 - GPR#17: some cmm optimizations of integer operations with constants
   (Stephen Dolan, review by Pierre Chambart)
 - GPR#109: new unboxing strategy for float and int references (Vladimir Brankov,
