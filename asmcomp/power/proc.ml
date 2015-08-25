@@ -42,26 +42,15 @@ let word_addressed = false
 *)
 
 let int_reg_name =
-  if Config.system = "rhapsody" then
-    [| "r3"; "r4"; "r5"; "r6"; "r7"; "r8"; "r9"; "r10";
-       "r14"; "r15"; "r16"; "r17"; "r18"; "r19"; "r20"; "r21";
-       "r22"; "r23"; "r24"; "r25"; "r26"; "r27"; "r28" |]
-  else
-    [| "3"; "4"; "5"; "6"; "7"; "8"; "9"; "10";
-       "14"; "15"; "16"; "17"; "18"; "19"; "20"; "21";
-       "22"; "23"; "24"; "25"; "26"; "27"; "28" |]
+  [| "3"; "4"; "5"; "6"; "7"; "8"; "9"; "10";
+     "14"; "15"; "16"; "17"; "18"; "19"; "20"; "21";
+     "22"; "23"; "24"; "25"; "26"; "27"; "28" |]
 
 let float_reg_name =
-  if Config.system = "rhapsody" then
-    [| "f1"; "f2"; "f3"; "f4"; "f5"; "f6"; "f7"; "f8";
-       "f9"; "f10"; "f11"; "f12"; "f13"; "f14"; "f15"; "f16";
-       "f17"; "f18"; "f19"; "f20"; "f21"; "f22"; "f23"; "f24";
-       "f25"; "f26"; "f27"; "f28"; "f29"; "f30"; "f31" |]
-  else
-    [| "1"; "2"; "3"; "4"; "5"; "6"; "7"; "8";
-       "9"; "10"; "11"; "12"; "13"; "14"; "15"; "16";
-       "17"; "18"; "19"; "20"; "21"; "22"; "23"; "24";
-       "25"; "26"; "27"; "28"; "29"; "30"; "31" |]
+  [| "1"; "2"; "3"; "4"; "5"; "6"; "7"; "8";
+     "9"; "10"; "11"; "12"; "13"; "14"; "15"; "16";
+     "17"; "18"; "19"; "20"; "21"; "22"; "23"; "24";
+     "25"; "26"; "27"; "28"; "29"; "30"; "31" |]
 
 let num_register_classes = 2
 
@@ -101,7 +90,8 @@ let stack_slot slot ty =
 (* Calling conventions *)
 
 let calling_conventions
-    first_int last_int first_float last_float make_stack stack_ofs arg =
+    first_int last_int first_float last_float
+    make_stack stack_ofs reg_use_stack arg =
   let loc = Array.make (Array.length arg) Reg.dummy in
   let int = ref first_int in
   let float = ref first_float in
@@ -111,7 +101,8 @@ let calling_conventions
     | Val | Int | Addr as ty ->
         if !int <= last_int then begin
           loc.(i) <- phys_reg !int;
-          incr int
+          incr int;
+          if reg_use_stack then ofs := !ofs + size_int
         end else begin
           loc.(i) <- stack_slot (make_stack !ofs) ty;
           ofs := !ofs + size_int
@@ -119,7 +110,8 @@ let calling_conventions
     | Float ->
         if !float <= last_float then begin
           loc.(i) <- phys_reg !float;
-          incr float
+          incr float;
+          if reg_use_stack then ofs := !ofs + size_float
         end else begin
           loc.(i) <- stack_slot (make_stack !ofs) Float;
           ofs := !ofs + size_float
@@ -133,67 +125,65 @@ let outgoing ofs = Outgoing ofs
 let not_supported ofs = fatal_error "Proc.loc_results: cannot call"
 
 let loc_arguments arg =
-  calling_conventions 0 7 100 112 outgoing 0 arg
+  calling_conventions 0 7 100 112 outgoing 0 false arg
 let loc_parameters arg =
-  let (loc, ofs) = calling_conventions 0 7 100 112 incoming 0 arg in loc
+  let (loc, ofs) = calling_conventions 0 7 100 112 incoming 0 false arg in loc
 let loc_results res =
-  let (loc, ofs) = calling_conventions 0 7 100 112 not_supported 0 res in loc
+  let (loc, ofs) = calling_conventions 0 7 100 112 not_supported 0 false res in loc
 
-(* C calling conventions under PowerOpen:
-     use GPR 3-10 and FPR 1-13 just like ML calling
-     conventions, but always reserve stack space for all arguments.
-     Also, using a float register automatically reserves two int registers
-     (in 32-bit mode) or one int register (in 64-bit mode).
-     (If we were to call a non-prototyped C function, each float argument
-      would have to go both in a float reg and in the matching pair
-      of integer regs.)
-
-   C calling conventions under SVR4:
+(* C calling conventions for ELF32:
      use GPR 3-10 and FPR 1-8 just like ML calling conventions.
      Using a float register does not affect the int registers.
      Always reserve 8 bytes at bottom of stack, plus whatever is needed
-     to hold the overflow arguments. *)
-
-let poweropen_external_conventions first_int last_int
-                                   first_float last_float arg =
-  let loc = Array.make (Array.length arg) Reg.dummy in
-  let int = ref first_int in
-  let float = ref first_float in
-  let ofs = ref (14 * size_addr) in
-  for i = 0 to Array.length arg - 1 do
-    match arg.(i).typ with
-    | Val | Int | Addr as ty ->
-        if !int <= last_int then begin
-          loc.(i) <- phys_reg !int;
-          incr int
-        end else begin
-          loc.(i) <- stack_slot (Outgoing !ofs) ty;
-          ofs := !ofs + size_int
-        end
-    | Float ->
-        if !float <= last_float then begin
-          loc.(i) <- phys_reg !float;
-          incr float
-        end else begin
-          loc.(i) <- stack_slot (Outgoing !ofs) Float;
-          ofs := !ofs + size_float
-        end;
-        int := !int + (if ppc64 then 1 else 2)
-  done;
-  (loc, Misc.align !ofs 16) (* Keep stack 16-aligned *)
+     to hold the overflow arguments.
+   C calling conventions for ELF64v1:
+     Use GPR 3-10 for the first integer arguments.
+     Use FPR 1-13 for the first float arguments.
+     Always reserve stack space for all arguments, even when passed in 
+     registers.
+     Always reserve at least 8 words (64 bytes) for the arguments.
+     Always reserve 48 bytes at bottom of stack, plus whatever is needed
+     to hold the arguments.
+     The reserved 48 bytes are automatically added in emit.mlp
+     and need not appear here.
+   C calling conventions for ELF64v2:
+     Use GPR 3-10 for the first integer arguments.
+     Use FPR 1-13 for the first float arguments.
+     If all arguments fit in registers, don't reserve stack space.
+     Otherwise, reserve stack space for all arguments.
+     Always reserve 32 bytes at bottom of stack, plus whatever is needed
+     to hold the arguments.
+     The reserved 32 bytes are automatically added in emit.mlp
+     and need not appear here.
+*)
 
 let loc_external_arguments =
-  match Config.system with
-  | "rhapsody" -> poweropen_external_conventions 0 7 100 112
-  | "elf" | "bsd" | "bsd_elf" -> calling_conventions 0 7 100 107 outgoing 8
-  | _ -> assert false
+  match abi with
+  | ELF32 ->
+      calling_conventions 0 7 100 107 outgoing 8 false
+  | ELF64v1 ->
+      fun args ->
+      let (loc, ofs) =
+        calling_conventions 0 7 100 112 outgoing 0 true args in
+      (loc, max ofs 64)
+  | ELF64v2 ->
+      fun args ->
+      let (loc, ofs) =
+        calling_conventions 0 7 100 112 outgoing 0 true args in
+      if Array.fold_left
+           (fun stk r -> match r.loc with Stack _ -> true | _ -> stk)
+           false loc
+      then (loc, ofs)
+      else (loc, 0)
 
 let extcall_use_push = false
 
 (* Results are in GPR 3 and FPR 1 *)
 
 let loc_external_results res =
-  let (loc, ofs) = calling_conventions 0 0 100 100 not_supported 0 res in loc
+  let (loc, ofs) =
+    calling_conventions 0 0 100 100 not_supported 0 false res
+  in loc
 
 (* Exceptions are in GPR 3 *)
 
