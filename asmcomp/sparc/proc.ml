@@ -144,29 +144,46 @@ let loc_results res =
    are passed in %o0..%o5, then on the stack *)
 
 let loc_external_arguments arg =
-  let loc = ref [] in
+  let loc = Array.make (Array.length arg) [| |] in
   let reg = ref 0 (* %o0 *) in
   let ofs = ref (-4) in              (* start at sp + 92 = sp + 96 - 4 *)
-  for i = 0 to Array.length arg - 1 do
+  let next_loc typ =
     if !reg <= 5 (* %o5 *) then begin
-      match arg.(i).typ with
-      | Val | Int | Addr ->
-          loc := phys_reg !reg :: !loc;
-          incr reg
-      | Float ->
-          if !reg = 5 then fatal_error "Proc_sparc: cannot call";
-          loc := phys_reg (!reg + 1) :: phys_reg !reg :: !loc;
-          reg := !reg + 2
+      assert (size_component typ = size_int);
+      let loc = phys_reg !reg in
+      incr reg;
+      loc
     end else begin
-      loc := stack_slot (outgoing !ofs) arg.(i).typ :: !loc;
-      ofs := !ofs + size_component arg.(i).typ
+      let loc = stack_slot (outgoing !ofs) typ in
+      ofs := !ofs + size_component typ;
+      loc
     end
+  in
+  for i = 0 to Array.length arg - 1 do
+    match arg.(i) with
+    | [| { typ = (Val | Int | Addr as typ) } |] ->
+      loc.(i) <- [| next_loc typ |]
+    | [| { typ = Float } |] ->
+      if !reg <= 5 then begin
+        let loc1 = next_loc Int in
+        let loc2 = next_loc Int in
+        loc.(i) <- [| loc1; loc2 |]
+      end else
+        loc.(i) <- [| next_loc Float |]
+    | [| { typ = Int }; { typ = Int } |] ->
+      (* int64 unboxed *)
+      let loc1 = next_loc Int in
+      let loc2 = next_loc Int in
+      assert big_endian;
+      loc.(i) <- [| loc2; loc1 |]
+    | _ ->
+      fatal_error "Proc.loc_external_arguments: cannot call"
   done;
   (* Keep stack 8-aligned *)
-  (Array.of_list(List.rev !loc), Misc.align (!ofs + 4) 8)
+  (loc, Misc.align (!ofs + 4) 8)
 
 let loc_external_results res =
-  let (loc, ofs) = calling_conventions 0 0 100 100 not_supported res in loc
+  let (loc, ofs) = calling_conventions 0 1 100 100 not_supported res in loc
 
 let loc_exn_bucket = phys_reg 0         (* $o0 *)
 

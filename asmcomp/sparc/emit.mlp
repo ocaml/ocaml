@@ -290,7 +290,16 @@ let rec emit_instr i dslot =
               `	sub	%sp, 8, %sp\n`;
               `	std	{emit_reg src}, [%sp + 96]\n`;
               `	ld	[%sp + 96], {emit_reg dst}\n`;
-              `	ld	[%sp + 100], {emit_reg(next_in_pair dst)}\n`;
+              let dst2 = i.res.(1) in
+              begin match dst2 with
+                | {loc = Reg _; typ = Int} ->
+                    `	ld	[%sp + 100], {emit_reg dst2}\n`;
+                | {loc = Stack _; typ = Int} ->
+                    `	ld	[%sp + 100], %g1\n`;
+                    `	st	%g1, {emit_stack dst2}\n`;
+                | _ ->
+                    fatal_error "Emit: Imove Float [| _; _ |]"
+              end;
               `	add	%sp, 8, %sp\n`
           | {loc = Reg rs; typ = (Int | Addr)}, {loc = Stack sd} ->
               `	st	{emit_reg src}, {emit_stack dst}\n`
