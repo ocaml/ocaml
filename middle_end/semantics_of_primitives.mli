@@ -25,7 +25,8 @@
     (Exceptions arising from allocation points, for example "out of memory" or
     exceptions propagated from finalizers or signal handlers, are treated as
     "effects out of the ether".  The corresponding expressions are deemed to
-    have no effects.)
+    have no effects.  The same goes for floating point operations that may
+    cause hardware traps on some platforms.)
  
     "No coeffects" means that the primitive does not observe the effects (in
     the sense described above) of other expressions.  For example, it must not
@@ -39,11 +40,14 @@
 type effects = No_effects | Has_effects
 type coeffects = No_coeffects | Has_coeffects
 
-(** [second_arg_is_definitely_not_zero] should be set to [true] only if it
+(** Describe the semantics of a primitive.  This does not take into account of
+    the (non-)(co)effectfullness of the arguments in a primitive application.
+
+    [second_arg_is_definitely_not_zero] should be set to [true] only if it
     is known for sure that the second argument to which the primitive is
     being applied cannot be zero (either constant or non-constant).  It is
     conservative to set this argument to [false]. *)
-val semantics_of_primitive
+val for_primitive
    : Lambda.primitive
   -> second_arg_is_definitely_not_zero:bool
   -> effects * coeffects

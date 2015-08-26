@@ -66,6 +66,7 @@ let primitive (p : Lambda.primitive) (args, approxs) expr dbg ~size_int
       end
     | [Value_constptr x] ->
       begin match p with
+      (* CR mshinwell: I don't think Pidentity should ever appear *)
       | Pidentity -> S.const_ptr_expr expr x
       | Pnot -> S.const_bool_expr expr (x = 0)
       | Pisint -> S.const_bool_expr expr true
