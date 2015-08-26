@@ -171,7 +171,8 @@ let both_moveable a b =
   | Fixed, Moveable
   | Fixed, Fixed -> Fixed
 
-let primitive_moveable (prim : Lambda.primitive) (args : Clambda.ulambda list) =
+let primitive_moveable (prim : Lambda.primitive)
+      (args : Clambda.ulambda list) =
   let second_arg_is_definitely_not_zero =
     match args with
     | _::(Uconst
@@ -209,8 +210,9 @@ let rec un_anf_and_moveable ident_info env (clam : Clambda.ulambda)
   match clam with
   | Uvar id ->
     begin match Ident.Map.find id env with
+    (* [clam] is necessarily pure since an expression must be pure to be in the
+       environment *)
     | e -> e, Moveable
-    (* It is necessarily pure since an expression must be pure to be in the environment *)
     | exception Not_found ->
       let moveable =
         if Ident.Set.mem id ident_info.assigned then
@@ -230,16 +232,16 @@ let rec un_anf_and_moveable ident_info env (clam : Clambda.ulambda)
     let func = un_anf ident_info env func in
     let args = un_anf_list ident_info env args in
     Ugeneric_apply (func, args, dbg), Fixed
-  | Uclosure (functions, captured_variables) ->
+  | Uclosure (functions, variables_bound_by_the_closure) ->
     let functions =
-      List.map (fun (ufunction:Clambda.ufunction) ->
+      List.map (fun (ufunction : Clambda.ufunction) ->
           { ufunction with body = un_anf ident_info env ufunction.body })
         functions
     in
-    let captured_variables, moveable =
-      un_anf_list_and_moveable ident_info env captured_variables
+    let variables_bound_by_the_closure, moveable =
+      un_anf_list_and_moveable ident_info env variables_bound_by_the_closure
     in
-    Uclosure (functions, captured_variables), moveable
+    Uclosure (functions, variables_bound_by_the_closure), moveable
   | Uoffset (clam, n) ->
     let clam, moveable = un_anf_and_moveable ident_info env clam in
     Uoffset (clam, n), moveable
@@ -247,14 +249,19 @@ let rec un_anf_and_moveable ident_info env (clam : Clambda.ulambda)
     un_anf_and_moveable ident_info env def
   | Ulet (id, def, body) ->
     let def, def_moveable = un_anf_and_moveable ident_info env def in
-    begin match def_moveable, Ident.Set.mem id ident_info.linear,
-                Ident.Set.mem id ident_info.used with
+    let is_linear = Ident.Set.mem id ident_info.linear in
+    let is_used = Ident.Set.mem id ident_info.used in
+    begin match def_moveable, is_linear, is_used with
     | Moveable, _, false ->
+      (* A moveable expression that is never used may be eliminated. *)
       un_anf_and_moveable ident_info env body
-    | Moveable, true, _ ->
+    | Moveable, true, true ->
+      (* A moveable expression bound to a linear [Ident.t] may replace the
+         single occurrence of the identifier. *)
       let env = Ident.Map.add id def env in
       un_anf_and_moveable ident_info env body
-    | _ ->
+    | Moveable, false, true  (* Moveable but not used linearly. *)
+    | Fixed, _, _ ->
       let body, body_moveable = un_anf_and_moveable ident_info env body in
       Ulet (id, def, body), both_moveable def_moveable body_moveable
     end
@@ -266,7 +273,9 @@ let rec un_anf_and_moveable ident_info env (clam : Clambda.ulambda)
     Uletrec (defs, body), Fixed
   | Uprim (prim, args, dbg) ->
     let args, args_moveable = un_anf_list_and_moveable ident_info env args in
-    let moveable = both_moveable args_moveable (primitive_moveable prim args) in
+    let moveable =
+      both_moveable args_moveable (primitive_moveable prim args)
+    in
     Uprim (prim, args, dbg), moveable
   | Uswitch (cond, sw) ->
     let cond = un_anf ident_info env cond in
@@ -280,8 +289,7 @@ let rec un_anf_and_moveable ident_info env (clam : Clambda.ulambda)
   | Ustringswitch (cond, branches, default) ->
     let cond = un_anf ident_info env cond in
     let branches =
-      List.map
-        (fun (s, branch) -> s, un_anf ident_info env branch)
+      List.map (fun (s, branch) -> s, un_anf ident_info env branch)
         branches
     in
     let default = Misc.may_map (un_anf ident_info env) default in
@@ -334,11 +342,12 @@ and un_anf ident_info env clam : Clambda.ulambda =
   let clam, _moveable = un_anf_and_moveable ident_info env clam in
   clam
 
-and un_anf_list_and_moveable ident_info env clams : Clambda.ulambda list * moveable =
+and un_anf_list_and_moveable ident_info env clams
+      : Clambda.ulambda list * moveable =
   List.fold_right (fun clam (l, acc_moveable) ->
       let clam, moveable = un_anf_and_moveable ident_info env clam in
       clam :: l, both_moveable moveable acc_moveable)
-    clams ([],Moveable)
+    clams ([], Moveable)
 
 and un_anf_list ident_info env clams : Clambda.ulambda list =
   let clams, _moveable = un_anf_list_and_moveable ident_info env clams in
@@ -350,7 +359,7 @@ and un_anf_array ident_info env clams : Clambda.ulambda array =
 let apply clam =
   let ident_info = make_ident_info clam in
   let clam = un_anf ident_info Ident.Map.empty clam in
-  if !Clflags.dump_clambda then
-    Format.eprintf "@.un-anf:@ %a@."
-      Printclambda.clambda clam;
+  if !Clflags.dump_clambda then begin
+    Format.eprintf "@.un-anf:@ %a@." Printclambda.clambda clam
+  end;
   clam
