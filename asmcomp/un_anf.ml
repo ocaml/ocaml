@@ -159,30 +159,6 @@ let make_ident_info (clam : Clambda.ulambda) : ident_info =
   in
   { used; linear; assigned = !assigned_idents }
 
-(* We say that an expression is "pure" iff, when that expression is [let]-bound
-   to a linear [Ident.t], the expression may be evaluated (subject to data
-   dependencies)
-
-   evaluation of the expression is delayed until the (single) occurrence of
-   the [Ident.t].
-
-
-
-
-iff it has no effect
-   (cf. [Effect_analysis]) and also does not read from mutable values.  As
-   such, in addition to the properties of expressions with no effects,
-   modifying its surroundings does not modify its result.  In particular it
-   can be run before or after adjacent expressions if data dependencies permit.
-
-   We check purity syntactically, as an approximation to the common semantic
-   notion of referential transparency.
-
-   [Uvar] expressions need special care: without knowledge of the kind of
-   variable involved (specifically, whether or not it is mutable) we cannot
-   tell whether such an expression is pure.
-*)
-
 type purity = Pure | Impure
 
 let both_pure a b =
@@ -193,121 +169,35 @@ let both_pure a b =
   | Impure, Impure -> Impure
 
 let primitive_purity (prim : Lambda.primitive) (args : Clambda.ulambda list) =
-  match prim with
-  | Pnot
-  | Pnegint
-  | Paddint
-  | Psubint
-  | Pmulint
-  | Pandint
-  | Porint
-  | Pxorint
-  | Plslint
-  | Plsrint
-  | Pasrint
-  | Pintcomp _
-  | Poffsetint _
-  | Pintoffloat
-  | Pfloatofint
-  | Pnegfloat
-  | Pabsfloat
-  | Paddfloat
-  | Psubfloat
-  | Pmulfloat
-  | Pdivfloat
-  | Pfloatcomp _
-  | Pstringlength
-  | Pmakeblock _
-  | Parraylength _
-  | Pisint
-  | Pisout
-  | Pbittest
-  | Pbintofint _
-  | Pintofbint _
-  | Pcvtbint _
-  | Pnegbint _
-  | Paddbint _
-  | Psubbint _
-  | Pmulbint _
-  | Pandbint _
-  | Porbint _
-  | Pxorbint _
-  | Plslbint _
-  | Plsrbint _
-  | Pasrbint _
-  | Pbintcomp _
-  | Pbigarraydim _
-  | Pbswap16
-  | Pbbswap _
-  | Pint_as_pointer -> Pure
-  | Pdivint | Pmodint | Pdivbint _ | Pmodbint _ ->
-    begin match args with
-      | [_; Uconst
-           (Uconst_ref (_,
-                        Some ( Uconst_int32 0l
-                             | Uconst_int64 0L
-                             | Uconst_nativeint 0n))
-           | Uconst_int 0
-           | Uconst_ptr 0)] ->
-        Impure  (* will raise [Division_by_zero] *)
-      | [_; Uconst
-           (Uconst_ref (_,
-                        Some ( Uconst_int32 _
-                             | Uconst_int64 _
-                             | Uconst_nativeint _))
-           | Uconst_int _
-           | Uconst_ptr _)] ->
-        Pure
-      | _ ->
-        Impure  (* can raise [Division_by_zero] *)
-    end
-  | Pidentity
-  | Pignore
-  | Ploc _
-  | Pgetglobal _
-  | Pgetglobalfield _
-  | Pfield _
-  | Pfloatfield _
-  | Pccall _
-  | Pstringrefu
-  | Pmakearray _
-  | Parrayrefu _
-  | Pbigarrayref _
-  | Pstring_load_16 _
-  | Pstring_load_32 _
-  | Pstring_load_64 _
-  | Pbigstring_load_16 _
-  | Pbigstring_load_32 _
-  | Pbigstring_load_64 _
-  | Pduprecord _
-  | Pstringrefs
-  | Parrayrefs _
-  | Psetglobal _
-  | Psetfield _
-  | Psetfloatfield _
-  | Praise _
-  | Poffsetref _
-  | Pstringsetu
-  | Pstringsets
-  | Parraysetu _
-  | Parraysets _
-  | Pbigarrayset _
-  | Psetglobalfield _
-  | Pstring_set_16 _
-  | Pstring_set_32 _
-  | Pstring_set_64 _
-  | Pbigstring_set_16 _
-  | Pbigstring_set_32 _
-  | Pbigstring_set_64 _ -> Impure
-  | Psequand
-  | Psequor
-  | Pctconst _
-  | Plazyforce
-  | Prevapply _
-  | Pdirapply _ ->
-    Misc.fatal_errorf "The primitive %a should not occur in the input to \
-        the [Un_anf] pass."
-      Printlambda.primitive prim
+  let second_arg_is_definitely_not_zero =
+    match args with
+    | [_; Uconst
+         (Uconst_ref (_,
+                      Some ( Uconst_int32 0l
+                           | Uconst_int64 0L
+                           | Uconst_nativeint 0n))
+         | Uconst_int 0
+         | Uconst_ptr 0)] ->
+      false
+    | [_; Uconst
+         (Uconst_ref (_,
+                      Some ( Uconst_int32 _
+                           | Uconst_int64 _
+                           | Uconst_nativeint _))
+         | Uconst_int _
+         | Uconst_ptr _)] ->
+      true
+    | _ ->
+      false
+  in
+  match
+    Semantics_of_primitives.for_primitive prim
+      ~second_arg_is_definitely_not_zero
+  with
+  | No_effects, No_coeffects -> Pure
+  | No_effects, Has_coeffects
+  | Has_effects, No_coeffects
+  | Has_effects, Has_coeffects -> Impure
 
 (** Eliminate, through substitution, [let]-bindings of linear variables with
     referentially-transparent defining expressions. *)

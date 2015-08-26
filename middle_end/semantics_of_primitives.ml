@@ -45,9 +45,9 @@ let for_primitive (prim : Lambda.primitive)
   | Pdivint
   | Pmodint ->
     if second_arg_is_definitely_not_zero then
-      No_effects, No_coeffects  (* will not raise [Division_by_zero] *)
+      No_effects, No_coeffects  (* Will not raise [Division_by_zero]. *)
     else
-      Has_effects, No_coeffects  (* may raise [Division_by_zero] *)
+      Has_effects, No_coeffects  (* May raise [Division_by_zero]. *)
   | Poffsetint _ -> No_effects, No_coeffects
   | Poffsetref _ -> Has_effects, Has_coeffects
   | Pintoffloat
@@ -61,7 +61,7 @@ let for_primitive (prim : Lambda.primitive)
   | Pfloatcomp _ -> No_effects, No_coeffects
   | Pstringlength
   | Parraylength _ ->
-    No_effects, Has_coeffects  (* That old chestnut: [Obj.truncate] *)
+    No_effects, Has_coeffects  (* That old chestnut: [Obj.truncate]. *)
   | Pisint
   | Pisout
   | Pbittest
@@ -106,7 +106,7 @@ let for_primitive (prim : Lambda.primitive)
   | Pbigstring_load_16 false 
   | Pbigstring_load_32 false 
   | Pbigstring_load_64 false -> 
-    Has_effects, Has_coeffects  (* may trigger a bounds check exception *)
+    Has_effects, Has_coeffects  (* May trigger a bounds check exception. *)
   | Psetfield _
   | Psetfloatfield _
   | Psetglobal _

@@ -42,6 +42,8 @@ type coeffects = No_coeffects | Has_coeffects
 
 (** Describe the semantics of a primitive.  This does not take into account of
     the (non-)(co)effectfullness of the arguments in a primitive application.
+    To determine whether such an application is (co)effectfull, the arguments
+    must also be analysed.
 
     [second_arg_is_definitely_not_zero] should be set to [true] only if it
     is known for sure that the second argument to which the primitive is
