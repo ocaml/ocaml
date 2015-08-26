@@ -14,7 +14,8 @@
 #########################################################################
 
 case $1 in
-    middle_end/flambda_invariants.*)
+    middle_end/flambda_invariants.* \
+  | asmcomp/un_anf.*)
     # Same as below, but we also enable warning 9, to try to help catch
     # cases where we fail to examine some subterm.  (See comments at the top
     # of flambda_invariants.ml too.)
@@ -33,7 +34,6 @@ case $1 in
   | asmcomp/lifted_flambda_utils.* \
   | asmcomp/import_approx.* \
   | asmcomp/build_export_info.* \
-  | asmcomp/un_anf.* \
   | middle_end/* \
   | middle_end/base_types/*)
     # Strict compilation options for Flambda passes.

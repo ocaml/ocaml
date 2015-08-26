@@ -34,7 +34,7 @@ let ignore_direction_flag (_ : Asttypes.direction_flag) = ()
 let ignore_meth_kind (_ : Lambda.meth_kind) = ()
 
 let make_ident_info (clam : Clambda.ulambda) : ident_info =
-  let t : int Ident.Tbl.t = Ident.Tbl.create 10 in
+  let t : int Ident.Tbl.t = Ident.Tbl.create 42 in
   let assigned_idents = ref Ident.Set.empty in
   let rec loop : Clambda.ulambda -> unit = function
     (* No underscores in the pattern match, to reduce the chance of failing
@@ -62,7 +62,13 @@ let make_ident_info (clam : Clambda.ulambda) : ident_info =
       ignore_debuginfo dbg
     | Uclosure (functions, captured_variables) ->
       List.iter loop captured_variables;
-      List.iter (fun { Clambda. body } -> loop body) functions
+      List.iter (fun { Clambda. label; arity; params; body; dbg } ->
+          ignore_function_label label;
+          ignore_int arity;
+          ignore_ident_list params;
+          loop body;
+          ignore_debuginfo dbg)
+        functions
     | Uoffset (expr, offset) ->
       loop expr;
       ignore_int offset
@@ -137,6 +143,7 @@ let make_ident_info (clam : Clambda.ulambda) : ident_info =
   loop clam;
   let linear =
     Ident.Tbl.fold (fun id n acc ->
+        assert (n >= 1);
         if n = 1 && not (Ident.Set.mem id !assigned_idents)
         then Ident.Set.add id acc
         else acc)
@@ -152,7 +159,17 @@ let make_ident_info (clam : Clambda.ulambda) : ident_info =
   in
   { used; linear; assigned = !assigned_idents }
 
-(* We say that an expression is "pure" iff it has no effect
+(* We say that an expression is "pure" iff, when that expression is [let]-bound
+   to a linear [Ident.t], the expression may be evaluated (subject to data
+   dependencies)
+
+   evaluation of the expression is delayed until the (single) occurrence of
+   the [Ident.t].
+
+
+
+
+iff it has no effect
    (cf. [Effect_analysis]) and also does not read from mutable values.  As
    such, in addition to the properties of expressions with no effects,
    modifying its surroundings does not modify its result.  In particular it
@@ -168,14 +185,15 @@ let make_ident_info (clam : Clambda.ulambda) : ident_info =
 
 type purity = Pure | Impure
 
-let both_pure a b = match a, b with
+let both_pure a b =
+  match a, b with
   | Pure, Pure -> Pure
-  | _ -> Impure
+  | Pure, Impure
+  | Impure, Pure
+  | Impure, Impure -> Impure
 
-let primitive_purity (prim:Lambda.primitive) (args:Clambda.ulambda list) =
+let primitive_purity (prim : Lambda.primitive) (args : Clambda.ulambda list) =
   match prim with
-  | Psequand
-  | Psequor
   | Pnot
   | Pnegint
   | Paddint
@@ -221,12 +239,9 @@ let primitive_purity (prim:Lambda.primitive) (args:Clambda.ulambda list) =
   | Pbigarraydim _
   | Pbswap16
   | Pbbswap _
-  | Pint_as_pointer ->
-    Pure
-
-  | Pdivint | Pmodint
-  | Pdivbint _ | Pmodbint _ -> begin
-      match args with
+  | Pint_as_pointer -> Pure
+  | Pdivint | Pmodint | Pdivbint _ | Pmodbint _ ->
+    begin match args with
       | [_; Uconst
            (Uconst_ref (_,
                         Some ( Uconst_int32 0l
@@ -234,8 +249,7 @@ let primitive_purity (prim:Lambda.primitive) (args:Clambda.ulambda list) =
                              | Uconst_nativeint 0n))
            | Uconst_int 0
            | Uconst_ptr 0)] ->
-        (* raise Division_by_zero *)
-        Impure
+        Impure  (* will raise [Division_by_zero] *)
       | [_; Uconst
            (Uconst_ref (_,
                         Some ( Uconst_int32 _
@@ -245,10 +259,8 @@ let primitive_purity (prim:Lambda.primitive) (args:Clambda.ulambda list) =
            | Uconst_ptr _)] ->
         Pure
       | _ ->
-        (* can raise Division_by_zero *)
-        Impure
+        Impure  (* can raise [Division_by_zero] *)
     end
-
   | Pidentity
   | Pignore
   | Ploc _
@@ -286,14 +298,16 @@ let primitive_purity (prim:Lambda.primitive) (args:Clambda.ulambda list) =
   | Pstring_set_64 _
   | Pbigstring_set_16 _
   | Pbigstring_set_32 _
-  | Pbigstring_set_64 _ ->
-    Impure
-
-  (* removed by previous passes *)
+  | Pbigstring_set_64 _ -> Impure
+  | Psequand
+  | Psequor
   | Pctconst _
   | Plazyforce
   | Prevapply _
-  | Pdirapply _ -> assert false
+  | Pdirapply _ ->
+    Misc.fatal_errorf "The primitive %a should not occur in the input to \
+        the [Un_anf] pass."
+      Printlambda.primitive prim
 
 (** Eliminate, through substitution, [let]-bindings of linear variables with
     referentially-transparent defining expressions. *)
