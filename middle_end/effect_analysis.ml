@@ -39,10 +39,6 @@ let rec no_effects (flam : Flambda.t) =
     (* If there is a [raise] in [body], the whole [Try_with] may have an
        effect, so there is no need to test the handler. *)
     no_effects body
-  (* CR mshinwell for pchambart: Is there something subtle here about the
-     compilation of [While] and [For] which means that even a
-     non-side-effecting loop body does not imply that the loop itself has
-     no effects? *)
   | While _ | For _ | Apply _ | Send _ | Assign _ | Static_raise _ -> false
   | Proved_unreachable -> true
 

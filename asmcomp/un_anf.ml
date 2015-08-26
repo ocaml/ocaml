@@ -159,16 +159,19 @@ let make_ident_info (clam : Clambda.ulambda) : ident_info =
   in
   { used; linear; assigned = !assigned_idents }
 
-type purity = Pure | Impure
+(* We say that an expression is "moveable" iff it has neither effects nor
+   coeffects.  (See semantics_of_primitives.mli.) *)
 
-let both_pure a b =
+type moveable = Fixed | Moveable
+
+let both_moveable a b =
   match a, b with
-  | Pure, Pure -> Pure
-  | Pure, Impure
-  | Impure, Pure
-  | Impure, Impure -> Impure
+  | Moveable, Moveable -> Moveable
+  | Moveable, Fixed
+  | Fixed, Moveable
+  | Fixed, Fixed -> Fixed
 
-let primitive_purity (prim : Lambda.primitive) (args : Clambda.ulambda list) =
+let primitive_moveable (prim : Lambda.primitive) (args : Clambda.ulambda list) =
   let second_arg_is_definitely_not_zero =
     match args with
     | [_; Uconst
@@ -194,77 +197,77 @@ let primitive_purity (prim : Lambda.primitive) (args : Clambda.ulambda list) =
     Semantics_of_primitives.for_primitive prim
       ~second_arg_is_definitely_not_zero
   with
-  | No_effects, No_coeffects -> Pure
+  | No_effects, No_coeffects -> Moveable
   | No_effects, Has_coeffects
   | Has_effects, No_coeffects
-  | Has_effects, Has_coeffects -> Impure
+  | Has_effects, Has_coeffects -> Fixed
 
 (** Eliminate, through substitution, [let]-bindings of linear variables with
-    referentially-transparent defining expressions. *)
-let rec un_anf_and_purity ident_info env (clam : Clambda.ulambda)
-      : Clambda.ulambda * purity =
+    moveable defining expressions. *)
+let rec un_anf_and_moveable ident_info env (clam : Clambda.ulambda)
+      : Clambda.ulambda * moveable =
   match clam with
   | Uvar id ->
     begin match Ident.Map.find id env with
-    | e -> e, Pure
+    | e -> e, Moveable
     (* It is necessarily pure since an expression must be pure to be in the environment *)
     | exception Not_found ->
-      let purity =
+      let moveable =
         if Ident.Set.mem id ident_info.assigned then
-          Impure
+          Fixed
         else
-          Pure
+          Moveable
       in
-      clam, purity
+      clam, moveable
     end
   | Uconst _ ->
     (* Constant closures are rewritten separately. *)
-    clam, Pure
+    clam, Moveable
   | Udirect_apply (label, args, dbg) ->
     let args = un_anf_list ident_info env args in
-    Udirect_apply (label, args, dbg), Impure
+    Udirect_apply (label, args, dbg), Fixed
   | Ugeneric_apply (func, args, dbg) ->
     let func = un_anf ident_info env func in
     let args = un_anf_list ident_info env args in
-    Ugeneric_apply (func, args, dbg), Impure
+    Ugeneric_apply (func, args, dbg), Fixed
   | Uclosure (functions, captured_variables) ->
     let functions =
       List.map (fun (ufunction:Clambda.ufunction) ->
           { ufunction with body = un_anf ident_info env ufunction.body })
         functions
     in
-    let captured_variables, purity =
-      un_anf_list_and_purity ident_info env captured_variables
+    let captured_variables, moveable =
+      un_anf_list_and_moveable ident_info env captured_variables
     in
-    Uclosure (functions, captured_variables), purity
+    Uclosure (functions, captured_variables), moveable
   | Uoffset (clam, n) ->
-    let clam, purity = un_anf_and_purity ident_info env clam in
-    Uoffset (clam, n), purity
+    let clam, moveable = un_anf_and_moveable ident_info env clam in
+    Uoffset (clam, n), moveable
   | Ulet (id, def, Uvar id') when Ident.same id id' ->
-    un_anf_and_purity ident_info env def
+    un_anf_and_moveable ident_info env def
   | Ulet (id, def, body) ->
-    let def, def_purity = un_anf_and_purity ident_info env def in
-    begin match def_purity, Ident.Set.mem id ident_info.linear,
+    let def, def_moveable = un_anf_and_moveable ident_info env def in
+    begin match def_moveable, Ident.Set.mem id ident_info.linear,
                 Ident.Set.mem id ident_info.used with
-    | Pure, _, false ->
-      un_anf_and_purity ident_info env body
-    | Pure, true, _ ->
+    | Moveable, _, false ->
+      un_anf_and_moveable ident_info env body
+    | Moveable, true, _ ->
       let env = Ident.Map.add id def env in
-      un_anf_and_purity ident_info env body
+      un_anf_and_moveable ident_info env body
     | _ ->
-      let body, body_purity = un_anf_and_purity ident_info env body in
-      Ulet (id, def, body), both_pure def_purity body_purity
+      let body, body_moveable = un_anf_and_moveable ident_info env body in
+      Ulet (id, def, body), both_moveable def_moveable body_moveable
     end
   | Uletrec (defs, body) ->
     let defs =
       List.map (fun (id, def) -> id, un_anf ident_info env def) defs
     in
     let body = un_anf ident_info env body in
-    Uletrec (defs, body), Impure
+    Uletrec (defs, body), Fixed
   | Uprim (prim, args, dbg) ->
-    let args, args_purity = un_anf_list_and_purity ident_info env args in
-    let purity = both_pure args_purity (primitive_purity prim args) in
-    Uprim (prim, args, dbg), purity
+    let args, args_moveable = un_anf_list_and_moveable ident_info env args in
+    let moveable = both_moveable args_moveable (primitive_moveable prim args) in
+    Uprim (prim, args, dbg), moveable
   | Uswitch (cond, sw) ->
     let cond = un_anf ident_info env cond in
     let sw =
@@ -273,7 +276,7 @@ let rec un_anf_and_purity ident_info env (clam : Clambda.ulambda)
         us_actions_blocks = un_anf_array ident_info env sw.us_actions_blocks;
       }
     in
-    Uswitch (cond, sw), Impure
+    Uswitch (cond, sw), Fixed
   | Ustringswitch (cond, branches, default) ->
     let cond = un_anf ident_info env cond in
     let branches =
@@ -282,63 +285,63 @@ let rec un_anf_and_purity ident_info env (clam : Clambda.ulambda)
         branches
     in
     let default = Misc.may_map (un_anf ident_info env) default in
-    Ustringswitch (cond, branches, default), Impure
+    Ustringswitch (cond, branches, default), Fixed
   | Ustaticfail (n, args) ->
     let args = un_anf_list ident_info env args in
-    Ustaticfail (n, args), Impure
+    Ustaticfail (n, args), Fixed
   | Ucatch (n, ids, body, handler) ->
     let body = un_anf ident_info env body in
     let handler = un_anf ident_info env handler in
-    Ucatch (n, ids, body, handler), Impure
+    Ucatch (n, ids, body, handler), Fixed
   | Utrywith (body, id, handler) ->
     let body = un_anf ident_info env body in
     let handler = un_anf ident_info env handler in
-    Utrywith (body, id, handler), Impure
+    Utrywith (body, id, handler), Fixed
   | Uifthenelse (cond, ifso, ifnot) ->
-    let cond, cond_purity = un_anf_and_purity ident_info env cond in
-    let ifso, ifso_purity = un_anf_and_purity ident_info env ifso in
-    let ifnot, ifnot_purity = un_anf_and_purity ident_info env ifnot in
-    let purity =
-      both_pure cond_purity
-        (both_pure ifso_purity ifnot_purity)
+    let cond, cond_moveable = un_anf_and_moveable ident_info env cond in
+    let ifso, ifso_moveable = un_anf_and_moveable ident_info env ifso in
+    let ifnot, ifnot_moveable = un_anf_and_moveable ident_info env ifnot in
+    let moveable =
+      both_moveable cond_moveable
+        (both_moveable ifso_moveable ifnot_moveable)
     in
-    Uifthenelse (cond, ifso, ifnot), purity
+    Uifthenelse (cond, ifso, ifnot), moveable
   | Usequence (e1, e2) ->
     let e1 = un_anf ident_info env e1 in
     let e2 = un_anf ident_info env e2 in
-    Usequence (e1, e2), Impure
+    Usequence (e1, e2), Fixed
   | Uwhile (cond, body) ->
     let cond = un_anf ident_info env cond in
     let body = un_anf ident_info env body in
-    Uwhile (cond, body), Impure
+    Uwhile (cond, body), Fixed
   | Ufor (id, low, high, direction, body) ->
     let low = un_anf ident_info env low in
     let high = un_anf ident_info env high in
     let body = un_anf ident_info env body in
-    Ufor (id, low, high, direction, body), Impure
+    Ufor (id, low, high, direction, body), Fixed
   | Uassign (id, expr) ->
     let expr = un_anf ident_info env expr in
-    Uassign (id, expr), Impure
+    Uassign (id, expr), Fixed
   | Usend (kind, e1, e2, args, dbg) ->
     let e1 = un_anf ident_info env e1 in
     let e2 = un_anf ident_info env e2 in
     let args = un_anf_list ident_info env args in
-    Usend (kind, e1, e2, args, dbg), Impure
+    Usend (kind, e1, e2, args, dbg), Fixed
   | Uunreachable ->
-    Uunreachable, Impure
+    Uunreachable, Fixed
 
 and un_anf ident_info env clam : Clambda.ulambda =
-  let clam, _purity = un_anf_and_purity ident_info env clam in
+  let clam, _moveable = un_anf_and_moveable ident_info env clam in
   clam
 
-and un_anf_list_and_purity ident_info env clams : Clambda.ulambda list * purity =
-  List.fold_right (fun clam (l, acc_purity) ->
-      let clam, purity = un_anf_and_purity ident_info env clam in
-      clam :: l, both_pure purity acc_purity)
-    clams ([],Pure)
+and un_anf_list_and_moveable ident_info env clams : Clambda.ulambda list * moveable =
+  List.fold_right (fun clam (l, acc_moveable) ->
+      let clam, moveable = un_anf_and_moveable ident_info env clam in
+      clam :: l, both_moveable moveable acc_moveable)
+    clams ([],Moveable)
 
 and un_anf_list ident_info env clams : Clambda.ulambda list =
-  let clams, _purity = un_anf_list_and_purity ident_info env clams in
+  let clams, _moveable = un_anf_list_and_moveable ident_info env clams in
   clams
 
 and un_anf_array ident_info env clams : Clambda.ulambda array =
