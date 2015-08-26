@@ -21,53 +21,90 @@ type ident_info =
     assigned : Ident.Set.t;
   }
 
-(* CR mshinwell: consider explicit ignore thing here *)
+let ignore_uconstant (_ : Clambda.uconstant) = ()
+let ignore_function_label (_ : Clambda.function_label) = ()
+let ignore_debuginfo (_ : Debuginfo.t) = ()
+let ignore_int (_ : int) = ()
+let ignore_ident (_ : Ident.t) = ()
+let ignore_primitive (_ : Lambda.primitive) = ()
+let ignore_string (_ : string) = ()
+let ignore_int_array (_ : int array) = ()
+let ignore_ident_list (_ : Ident.t list) = ()
+let ignore_direction_flag (_ : Asttypes.direction_flag) = ()
+let ignore_meth_kind (_ : Lambda.meth_kind) = ()
+
 let make_ident_info (clam : Clambda.ulambda) : ident_info =
   let t : int Ident.Tbl.t = Ident.Tbl.create 10 in
   let assigned_idents = ref Ident.Set.empty in
   let rec loop : Clambda.ulambda -> unit = function
+    (* No underscores in the pattern match, to reduce the chance of failing
+       to traverse some subexpression. *)
     | Uvar id ->
       begin match Ident.Tbl.find t id with
       | n -> Ident.Tbl.replace t id (n + 1)
       | exception Not_found -> Ident.Tbl.add t id 1
       end
-    | Uconst _ ->
-      (* CR mshinwell: improve comment *)
-      (* Const cannot reference variables bound in this scope.
-         Only const_closure can contains variables, but they are
-         all bound by the closure *)
-      ()
-    | Udirect_apply (_, args, _) ->
-      List.iter loop args
-    | Ugeneric_apply (func, args, _) ->
+    | Uconst const ->
+      (* The only variables that might occur in [const] are those in constant
+         closures---and those are all bound by such closures.  It follows that
+         [const] cannot contain any variables that are bound in the current
+         scope, so we do not need to count them here.  (The function bodies
+         of the closures will be traversed when this function is called from
+         [Cmmgen.transl_function].) *)
+      ignore_uconstant const
+    | Udirect_apply (label, args, dbg) ->
+      ignore_function_label label;
+      List.iter loop args;
+      ignore_debuginfo dbg
+    | Ugeneric_apply (func, args, dbg) ->
       loop func;
-      List.iter loop args
+      List.iter loop args;
+      ignore_debuginfo dbg
     | Uclosure (functions, captured_variables) ->
       List.iter loop captured_variables;
-      List.iter (fun { Clambda.body } -> loop body) functions
-    | Uoffset (expr, _) ->
-      loop expr
-    | Ulet (_, def, body) ->
+      List.iter (fun { Clambda. body } -> loop body) functions
+    | Uoffset (expr, offset) ->
+      loop expr;
+      ignore_int offset
+    | Ulet (ident, def, body) ->
+      ignore_ident ident;
       loop def;
       loop body
     | Uletrec (defs, body) ->
-      List.iter (fun (_, def) -> loop def) defs;
+      List.iter (fun (ident, def) ->
+          ignore_ident ident;
+          loop def)
+        defs;
       loop body
-    | Uprim (_, args, _) ->
-      List.iter loop args
-    | Uswitch (cond, { us_actions_consts; us_actions_blocks }) ->
+    | Uprim (prim, args, dbg) ->
+      ignore_primitive prim;
+      List.iter loop args;
+      ignore_debuginfo dbg
+    | Uswitch (cond, { us_index_consts; us_actions_consts;
+          us_index_blocks; us_actions_blocks }) ->
       loop cond;
+      ignore_int_array us_index_consts;
       Array.iter loop us_actions_consts;
+      ignore_int_array us_index_blocks;
       Array.iter loop us_actions_blocks
     | Ustringswitch (cond, branches, default) ->
       loop cond;
-      List.iter (fun (_,branch) -> loop branch) branches;
+      List.iter (fun (str, branch) ->
+          ignore_string str;
+          loop branch)
+        branches;
       Misc.may loop default
-    | Ustaticfail (_, args) ->
+    | Ustaticfail (static_exn, args) ->
+      ignore_int static_exn;
       List.iter loop args
-    | Ucatch (_, _, body, handler)
-    | Utrywith (body, _, handler) ->
+    | Ucatch (static_exn, idents, body, handler) ->
+      ignore_int static_exn;
+      ignore_ident_list idents;
       loop body;
+      loop handler
+    | Utrywith (body, ident, handler) ->
+      loop body;
+      ignore_ident ident;
       loop handler
     | Uifthenelse (cond, ifso, ifnot) ->
       loop cond;
@@ -79,17 +116,21 @@ let make_ident_info (clam : Clambda.ulambda) : ident_info =
     | Uwhile (cond, body) ->
       loop cond;
       loop body
-    | Ufor (_, low, high, _, body) ->
+    | Ufor (ident, low, high, direction_flag, body) ->
+      ignore_ident ident;
       loop low;
       loop high;
+      ignore_direction_flag direction_flag;
       loop body
-    | Uassign (id, expr) ->
-      assigned_idents := Ident.Set.add id !assigned_idents;
+    | Uassign (ident, expr) ->
+      assigned_idents := Ident.Set.add ident !assigned_idents;
       loop expr
-    | Usend (_, e1, e2, args, _) ->
+    | Usend (meth_kind, e1, e2, args, dbg) ->
+      ignore_meth_kind meth_kind;
       loop e1;
       loop e2;
-      List.iter loop args
+      List.iter loop args;
+      ignore_debuginfo dbg
     | Uunreachable ->
       ()
   in
@@ -111,16 +152,18 @@ let make_ident_info (clam : Clambda.ulambda) : ident_info =
   in
   { used; linear; assigned = !assigned_idents }
 
-(* For the avoidance of doubt, we say that an expression is "referentially
-   transparent" iff it has no effect (cf. [Effect_analysis]) and also does
-   not read from mutable values.  As such, in addition to the properties of
-   expressions with no effects, modifying its surroundings does not modify
-   its result.  In particular it can be run before or after adjacent
-   expressions if data dependencies permit.
+(* We say that an expression is "pure" iff it has no effect
+   (cf. [Effect_analysis]) and also does not read from mutable values.  As
+   such, in addition to the properties of expressions with no effects,
+   modifying its surroundings does not modify its result.  In particular it
+   can be run before or after adjacent expressions if data dependencies permit.
+
+   We check purity syntactically, as an approximation to the common semantic
+   notion of referential transparency.
 
    [Uvar] expressions need special care: without knowledge of the kind of
    variable involved (specifically, whether or not it is mutable) we cannot
-   tell whether such an expression is referentially transparent.
+   tell whether such an expression is pure.
 *)
 
 type purity = Pure | Impure
