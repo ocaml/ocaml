@@ -11,9 +11,9 @@ To test one primitive we do:
 - the test is successful if A and B have the same contents
 
 Between each call, we call a function with 128 value arguments set to
-0 and a function with 128 unboxed float arguments set to 0., just to
+0 and a function with 32 unboxed float arguments set to 0., just to
 clean-up the registers and stacks in case garbage would make a test
-succeed.
+succeed. We don't pass more floats as it doesn't build on arm32.
 
 We construct the set of primitives to test as follow:
 - all combination of unboxed int32/int64/float arguments for functions

@@ -235,18 +235,6 @@ external cleanup_float
   -> float -> float -> float -> float -> float -> float -> float -> float
   -> float -> float -> float -> float -> float -> float -> float -> float
   -> float -> float -> float -> float -> float -> float -> float -> float
-  -> float -> float -> float -> float -> float -> float -> float -> float
-  -> float -> float -> float -> float -> float -> float -> float -> float
-  -> float -> float -> float -> float -> float -> float -> float -> float
-  -> float -> float -> float -> float -> float -> float -> float -> float
-  -> float -> float -> float -> float -> float -> float -> float -> float
-  -> float -> float -> float -> float -> float -> float -> float -> float
-  -> float -> float -> float -> float -> float -> float -> float -> float
-  -> float -> float -> float -> float -> float -> float -> float -> float
-  -> float -> float -> float -> float -> float -> float -> float -> float
-  -> float -> float -> float -> float -> float -> float -> float -> float
-  -> float -> float -> float -> float -> float -> float -> float -> float
-  -> float -> float -> float -> float -> float -> float -> float -> float
   -> float = "" "noalloc" "test_cleanup_normal" "float"
 
 let cleanup_args_and_stack () =
@@ -259,12 +247,6 @@ let cleanup_args_and_stack () =
   in
   let _ : float =
     cleanup_float
-       0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0.
-       0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0.
-       0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0.
-       0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0.
-       0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0.
-       0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0.
        0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0.
        0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0.
   in
