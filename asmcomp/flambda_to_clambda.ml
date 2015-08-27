@@ -509,7 +509,7 @@ type result = {
   expr : Clambda.ulambda;
   preallocated_blocks : Clambda.preallocated_block list;
   structured_constants : Clambda.ustructured_constant Symbol.Map.t;
-  exported : Flambda_export.exported;
+  exported : Export_info.exported;
 }
 
 let convert (program, exported) : result =

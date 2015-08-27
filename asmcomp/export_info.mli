@@ -92,20 +92,6 @@ val create_exported
     clashes. *)
 val merge : exported -> exported -> exported
 
-(** Transform the information from [exported] to be
-    suitable to be reexported as the information for a pack named [pack]
-    containing units [pack_units].
-    It mainly changes symbols of units [pack_units] to refer to
-    [pack] instead. *)
-val import_for_pack
-   : pack_units:Compilation_unit.Set.t
-  -> pack:Compilation_unit.t
-  -> exported
-  -> exported
-
-(** Drops the state after importing several units in the same pack. *)
-val clear_import_state : unit -> unit
-
 val find_description
    : Export_id.t
   -> exported

@@ -12,7 +12,7 @@
 (**************************************************************************)
 
 module Int = Ext_types.Int
-module ET = Flambda_export
+module ET = Export_info
 type env = ET.approx Variable.Map.t
 
 let ex_table : ET.descr Export_id.Map.t ref = ref Export_id.Map.empty
@@ -26,7 +26,7 @@ let reset () =
 
 let extern_id_descr ex =
   let export = Compilenv.approx_env () in
-  try Some (Flambda_export.find_description ex export)
+  try Some (Export_info.find_description ex export)
   with Not_found -> None
 
 let extern_symbol_descr sym =
@@ -38,7 +38,7 @@ let extern_symbol_descr sym =
     in
     try
       let id = Symbol.Map.find sym export.symbol_id in
-      let descr = Flambda_export.find_description id export in
+      let descr = Export_info.find_description id export in
       Some descr
     with
     | Not_found -> None
@@ -76,7 +76,7 @@ let describe_constant (c:Flambda.constant_defining_value_block_field) : ET.appro
   | Const (Const_pointer i) -> Value_id (new_descr (Value_int i))
 
 let describe_allocated_constant
-    (c:Allocated_const.t) : Flambda_export.descr =
+    (c:Allocated_const.t) : Export_info.descr =
   match c with
   | Float f ->
     Value_float f
@@ -399,9 +399,9 @@ let constant_sets_of_closures_descr program =
 
 let describe_constant_defining_value
     symbol
-    (set_of_closures_env:Flambda_export.value_set_of_closures Symbol.Map.t)
+    (set_of_closures_env:Export_info.value_set_of_closures Symbol.Map.t)
     (c:Flambda.constant_defining_value) :
-  Flambda_export.descr =
+  Export_info.descr =
   match c with
   | Allocated_const c -> describe_allocated_constant c
   | Block (tag, fields) ->
@@ -540,13 +540,13 @@ let build_export_info (program:Flambda.program) : ET.exported =
 (*   in *)
 
   (* let export : ET.exported = *)
-  (*   { Flambda_export.empty_export with *)
-  (*     values = Flambda_export.nest_eid_map !ex_table; *)
+  (*   { Export_info.empty_export with *)
+  (*     values = Export_info.nest_eid_map !ex_table; *)
   (*     globals = *)
   (*       Ident.Map.singleton *)
   (*         (Compilenv.current_unit_id ()) root_approx; *)
   (*     symbol_id = symbol_id; *)
-  (*     id_symbol = Flambda_export.nest_eid_map id_symbol; *)
+  (*     id_symbol = Export_info.nest_eid_map id_symbol; *)
   (*     functions = functions; *)
   (*     closures = closures; *)
   (*     constant_closures = constant_closures; *)
@@ -558,8 +558,8 @@ let build_export_info (program:Flambda.program) : ET.exported =
   in
 
   let export =
-    Flambda_export.create_exported
-      ~values:(Flambda_export.nest_eid_map !ex_table)
+    Export_info.create_exported
+      ~values:(Export_info.nest_eid_map !ex_table)
       ~globals:(
         Ident.Map.singleton
           (Compilenv.current_unit_id ()) root_approx)
@@ -573,7 +573,7 @@ let build_export_info (program:Flambda.program) : ET.exported =
   in
 
   Format.eprintf "Build_export_info returns %a@."
-    Flambda_export.print_all export;
+    Export_info.print_all export;
 
   export
 

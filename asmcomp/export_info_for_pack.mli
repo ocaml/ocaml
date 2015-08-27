@@ -3,7 +3,7 @@
 (*                                OCaml                                   *)
 (*                                                                        *)
 (*                       Pierre Chambart, OCamlPro                        *)
-(*           Mark Shinwell and Leo White, Jane Street Europe              *)
+(*                  Mark Shinwell, Jane Street Europe                     *)
 (*                                                                        *)
 (*   Copyright 2015 Institut National de Recherche en Informatique et     *)
 (*   en Automatique.  All rights reserved.  This file is distributed      *)
@@ -11,23 +11,19 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(* CR pchambart:
-   constant correspond to Clambda.uconstant
-   Allocated_constants correspond to Clambda.structured constant
+(** Transformations on export information that are only used for the
+    building of packs. *)
 
-   It could be replaced by clambda types if they were extended to
-   represent every case of Export_info
+(** Transform the information from [exported] to be
+    suitable to be reexported as the information for a pack named [pack]
+    containing units [pack_units].
+    It mainly changes symbols of units [pack_units] to refer to
+    [pack] instead. *)
+val import_for_pack
+   : pack_units:Compilation_unit.Set.t
+  -> pack:Compilation_unit.t
+  -> Export_info.exported
+  -> Export_info.exported
 
-   The constant type does not have a description of the contained
-   constant (the option in the Uconst_ref constructor). For rebuilding
-   clambda, we may need to find the description: this is usefull on
-   floats (and boxed integers) for unboxing.
-
-   mshinwell: this CR may be out of date now
-*)
-
-(* CR mshinwell: add comment *)
-val lift_constants
-   : Flambda.program
-  -> backend:(module Backend_intf.S)
-  -> Flambda.program
+(** Drops the state after importing several units in the same pack. *)
+val clear_import_state : unit -> unit

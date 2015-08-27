@@ -21,10 +21,10 @@ Transform an expression to prepare conversion to clambda
 During symbol assignment, some alias can be created (when building let rec for instance).
 They are replaced by their canonical representent in the Prepare functor application.
 
-Then the tables needed to build the Flambda_export.exported type are build.
+Then the tables needed to build the Export_info.exported type are build.
 *)
 
-module ET = Flambda_export
+module ET = Export_info
 
 let all_closures expr =
   let closures = ref Set_of_closures_id.Set.empty in
@@ -211,14 +211,14 @@ module Conv(P:Param1) = struct
       in
       try
         let id = Symbol.Map.find sym export.symbol_id in
-        let descr = Flambda_export.find_description id export in
+        let descr = Export_info.find_description id export in
         Some descr
       with
       | Not_found -> None
 
   let extern_id_descr ex =
     let export = Compilenv.approx_env () in
-    try Some (Flambda_export.find_description ex export)
+    try Some (Export_info.find_description ex export)
     with Not_found -> None
 
   let get_descr (approx : ET.approx) =
@@ -915,12 +915,12 @@ let convert (type a) ~compilation_unit (expr:a Flambda.t) =
   let module C2 = Prepare(P2) in
 
   let export : ET.exported =
-    { Flambda_export.empty_export with
-      values = Flambda_export.nest_eid_map C2.values;
+    { Export_info.empty_export with
+      values = Export_info.nest_eid_map C2.values;
       globals = Ident.Map.singleton
           (Compilenv.current_unit_id ()) C2.root_approx;
       symbol_id = C2.symbol_id;
-      id_symbol = Flambda_export.nest_eid_map C2.id_symbol;
+      id_symbol = Export_info.nest_eid_map C2.id_symbol;
       functions = C2.functions;
       closures = C2.closures;
       constant_closures = constant_closures;
