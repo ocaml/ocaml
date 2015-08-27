@@ -69,7 +69,13 @@ let rec import_ex ex =
   | Value_float f -> A.value_float f
   | Value_float_array size -> A.value_float_array size
   | Flambda_export.Value_boxed_int (t,i) -> A.value_boxed_int t i
-  | Value_string { size; contents } -> A.value_string size contents
+  | Value_string { size; contents } ->
+    let contents =
+      match contents with
+      | Unknown_or_mutable -> None
+      | Contents contents -> Some contents
+    in
+    A.value_string size contents
   | Value_mutable_block _ -> A.value_unknown
   | Value_block (tag, fields) ->
     A.value_block (tag, Array.map import_approx fields)

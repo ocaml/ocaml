@@ -11,9 +11,12 @@
 (*                                                                        *)
 (**************************************************************************)
 
-type value_string = Simple_value_approx.value_string = {
-  (* CR mshinwell: add variant type *)
-  contents : string option; (* None if unknown or mutable *)
+type value_string_contents =
+  | Contents of string
+  | Unknown_or_mutable
+
+type value_string = {
+  contents : value_string_contents;
   size : int;
 }
 
@@ -138,9 +141,9 @@ let print_approx ppf (export : exported) =
       fprintf ppf "(set_of_closures %a)" print_set_of_closures set_of_closures
     | Value_string { contents; size } -> begin
         match contents with
-        | None ->
+        | Unknown_or_mutable ->
             Format.fprintf ppf "string %i" size
-        | Some s ->
+        | Contents s ->
             let s =
               if size > 10
               then String.sub s 0 8 ^ "..."

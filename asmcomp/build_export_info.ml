@@ -88,12 +88,12 @@ let describe_allocated_constant
     Value_boxed_int (Nativeint, i)
   | String s ->
     let v_string : ET.value_string =
-      { size = String.length s; contents = None }
+      { size = String.length s; contents = Unknown_or_mutable }
     in
     Value_string v_string
   | Immstring c ->
     let v_string : ET.value_string =
-      { size = String.length c; contents = Some c }
+      { size = String.length c; contents = Contents c }
     in
     Value_string v_string
   | Float_array a ->

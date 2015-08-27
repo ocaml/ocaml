@@ -14,9 +14,12 @@
 (** Exported information (that is to say, information written into a .cmx
     file) about a compilation unit. *)
 
-type value_string = Simple_value_approx.value_string = {
-  (* CR mshinwell: add variant type *)
-  contents : string option; (* None if unknown or mutable *)
+type value_string_contents =
+  | Contents of string
+  | Unknown_or_mutable
+
+type value_string = {
+  contents : value_string_contents;
   size : int;
 }
 
