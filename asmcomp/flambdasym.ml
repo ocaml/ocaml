@@ -115,7 +115,7 @@ module Conv(P:Param1) = struct
 
   (* functions comming from a linked module *)
   let ex_closures () =
-    (Compilenv.approx_env ()).ET.functions_off
+    (Compilenv.approx_env ()).ET.closures
 
   let used_variable_within_closure = list_used_variable_within_closure P.expr
 
@@ -886,7 +886,7 @@ module Prepare(P:Param2) = struct
     Symbol.Map.fold (fun sym id map -> Export_id.Map.add id sym map)
       symbol_id Export_id.Map.empty
 
-  let functions_off =
+  let closures =
     let aux_fun ffunctions off_id _ map =
       let fun_id = Closure_id.wrap off_id in
       Closure_id.Map.add fun_id ffunctions map in
@@ -922,7 +922,7 @@ let convert (type a) ~compilation_unit (expr:a Flambda.t) =
       symbol_id = C2.symbol_id;
       id_symbol = Flambda_export.nest_eid_map C2.id_symbol;
       functions = C2.functions;
-      functions_off = C2.functions_off;
+      closures = C2.closures;
       constant_closures = constant_closures;
       ex_kept_arguments = C.ex_kept_arguments }
   in

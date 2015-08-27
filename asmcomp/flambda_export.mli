@@ -53,9 +53,9 @@ and approx =
 
 type exported = private {
   (* Code of exported functions indexed by function identifier *)
-  functions : Flambda.function_declarations Set_of_closures_id.Map.t;
+  sets_of_closures : Flambda.function_declarations Set_of_closures_id.Map.t;
   (* Code of exported functions indexed by offset identifier *)
-  functions_off : Flambda.function_declarations Closure_id.Map.t;
+  closures : Flambda.function_declarations Closure_id.Map.t;
   (* Structure of exported values  *)
   values : descr Export_id.Map.t Compilation_unit.Map.t;
   (* Global variables provided by the unit: usualy only the top-level
@@ -71,29 +71,26 @@ type exported = private {
   (* Symbols that are effectively constants (the top-level module is
      not always a constant for instance) *)
   constants : Symbol.Set.t;
-  constant_closures : Set_of_closures_id.Set.t;
+  constant_sets_of_closures : Set_of_closures_id.Set.t;
   invariant_arguments : Variable.Set.t Set_of_closures_id.Map.t;
 }
 
 val empty_export : exported
 
 val create_exported
-   : functions:Flambda.function_declarations Set_of_closures_id.Map.t
-  -> functions_off:Flambda.function_declarations Closure_id.Map.t
+   : sets_of_closures:Flambda.function_declarations Set_of_closures_id.Map.t
+  -> closures:Flambda.function_declarations Closure_id.Map.t
   -> values:descr Export_id.Map.t Compilation_unit.Map.t
   -> globals:approx Ident.Map.t
   -> id_symbol:Symbol.t Export_id.Map.t Compilation_unit.Map.t
   -> symbol_id:Export_id.t Symbol.Map.t
-  -> constant_closures:Set_of_closures_id.Set.t
+  -> constant_sets_of_closures:Set_of_closures_id.Set.t
   -> invariant_arguments:Variable.Set.t Set_of_closures_id.Map.t
   -> exported
 
-(** Union of export informations. Verify that there is no identifier
-    clash. *)
-val merge
-   : exported
-  -> exported
-  -> exported
+(** Union of export informations.  Verifies that there are no identifier
+    clashes. *)
+val merge : exported -> exported -> exported
 
 (** Transform the information from [exported] to be
     suitable to be reexported as the information for a pack named [pack]
@@ -119,12 +116,8 @@ val nest_eid_map
   -> 'a Export_id.Map.t Compilation_unit.Map.t
 
 (**/**)
-(* debug printing functions *)
-
+(* Debug printing functions. *)
 val print_approx : Format.formatter -> exported -> unit
-
 val print_symbols : Format.formatter -> exported -> unit
-
 val print_offsets : Format.formatter -> exported -> unit
-
 val print_all : Format.formatter -> exported -> unit

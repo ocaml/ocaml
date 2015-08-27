@@ -526,8 +526,8 @@ let convert (program, exported) : result =
     let imported = Compilenv.approx_env () in
     { fun_offset_table = imported.offset_fun;
       fv_offset_table = imported.offset_fv;
-      closures = imported.functions_off;
-      constant_sets_of_closures = imported.constant_closures;
+      closures = imported.closures;
+      constant_sets_of_closures = imported.constant_sets_of_closures;
     }
   in
   let t = { current_unit; imported_units; } in

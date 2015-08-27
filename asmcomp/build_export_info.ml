@@ -517,7 +517,7 @@ let build_export_info (program:Flambda.program) : ET.exported =
 (*       Set_of_closures_id.Map.empty *)
 (*   in *)
 
-(*   let functions_off = *)
+(*   let closures = *)
 (*     let aux_fun ffunctions off_id _ map = *)
 (*       let fun_id = Closure_id.wrap off_id in *)
 (*       Closure_id.Map.add fun_id ffunctions map in *)
@@ -548,7 +548,7 @@ let build_export_info (program:Flambda.program) : ET.exported =
   (*     symbol_id = symbol_id; *)
   (*     id_symbol = Flambda_export.nest_eid_map id_symbol; *)
   (*     functions = functions; *)
-  (*     functions_off = functions_off; *)
+  (*     closures = closures; *)
   (*     constant_closures = constant_closures; *)
   (*     invariant_arguments } *)
   (* in *)
@@ -566,9 +566,9 @@ let build_export_info (program:Flambda.program) : ET.exported =
       ~symbol_id:!symbol_table
       (* TODO all of the following *)
       ~id_symbol:Compilation_unit.Map.empty
-      ~functions:Set_of_closures_id.Map.empty
-      ~functions_off:Closure_id.Map.empty
-      ~constant_closures:Set_of_closures_id.Set.empty
+      ~sets_of_closures:Set_of_closures_id.Map.empty
+      ~closures:Closure_id.Map.empty
+      ~constant_sets_of_closures:Set_of_closures_id.Set.empty
       ~invariant_arguments:Set_of_closures_id.Map.empty
   in
 

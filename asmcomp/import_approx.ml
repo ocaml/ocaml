@@ -48,7 +48,9 @@ let import_set_of_closures =
   let aux set_of_closures_id =
     let ex_info = Compilenv.approx_env () in
     let function_declarations =
-      try Set_of_closures_id.Map.find set_of_closures_id ex_info.functions
+      try
+        Set_of_closures_id.Map.find set_of_closures_id
+          ex_info.sets_of_closures
       with Not_found ->
         Misc.fatal_errorf "[functions] does not map set of closures ID %a. \
             ex_info = %a"

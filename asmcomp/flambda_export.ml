@@ -49,8 +49,8 @@ and approx =
   | Value_symbol of Symbol.t
 
 type exported = {
-  functions : Flambda.function_declarations Set_of_closures_id.Map.t;
-  functions_off : Flambda.function_declarations Closure_id.Map.t;
+  sets_of_closures : Flambda.function_declarations Set_of_closures_id.Map.t;
+  closures : Flambda.function_declarations Closure_id.Map.t;
   values : descr Export_id.Map.t Compilation_unit.Map.t;
   globals : approx Ident.Map.t;
   id_symbol : Symbol.t Export_id.Map.t Compilation_unit.Map.t;
@@ -58,13 +58,13 @@ type exported = {
   offset_fun : int Closure_id.Map.t;
   offset_fv : int Var_within_closure.Map.t;
   constants : Symbol.Set.t;
-  constant_closures : Set_of_closures_id.Set.t;
+  constant_sets_of_closures : Set_of_closures_id.Set.t;
   invariant_arguments : Variable.Set.t Set_of_closures_id.Map.t;
 }
 
 let empty_export : exported = {
-  functions = Set_of_closures_id.Map.empty;
-  functions_off = Closure_id.Map.empty;
+  sets_of_closures = Set_of_closures_id.Map.empty;
+  closures = Closure_id.Map.empty;
   values =  Compilation_unit.Map.empty;
   globals = Ident.Map.empty;
   id_symbol =  Compilation_unit.Map.empty;
@@ -72,20 +72,20 @@ let empty_export : exported = {
   offset_fun = Closure_id.Map.empty;
   offset_fv = Var_within_closure.Map.empty;
   constants = Symbol.Set.empty;
-  constant_closures = Set_of_closures_id.Set.empty;
+  constant_sets_of_closures = Set_of_closures_id.Set.empty;
   invariant_arguments = Set_of_closures_id.Map.empty;
 }
 
-let create_exported ~functions ~functions_off ~values ~globals ~id_symbol
-      ~symbol_id ~constant_closures ~invariant_arguments =
+let create_exported ~sets_of_closures ~closures ~values ~globals ~id_symbol
+      ~symbol_id ~constant_sets_of_closures ~invariant_arguments =
   { empty_export with
-    functions;
-    functions_off;
+    sets_of_closures;
+    closures;
     values;
     globals;
     id_symbol;
     symbol_id;
-    constant_closures;
+    constant_sets_of_closures;
     invariant_arguments;
   }
 
@@ -225,15 +225,18 @@ let print_all ppf (export : exported) =
   fprintf ppf "constants@ %a@.@."
     Symbol.Set.print export.constants;
   fprintf ppf "functions@ %a@.@."
-    (Set_of_closures_id.Map.print Flambda.print_function_declarations) export.functions
+    (Set_of_closures_id.Map.print Flambda.print_function_declarations)
+    export.sets_of_closures
 
 let merge (e1 : exported) (e2 : exported) : exported =
   let int_eq (i:int) j = i = j in
   { values = eidmap_disjoint_union e1.values e2.values;
     globals = Ident.Map.disjoint_union e1.globals e2.globals;
-    functions = Set_of_closures_id.Map.disjoint_union e1.functions e2.functions;
-    functions_off =
-      Closure_id.Map.disjoint_union e1.functions_off e2.functions_off;
+    sets_of_closures =
+      Set_of_closures_id.Map.disjoint_union e1.sets_of_closures
+        e2.sets_of_closures;
+    closures =
+      Closure_id.Map.disjoint_union e1.closures e2.closures;
     id_symbol = eidmap_disjoint_union  e1.id_symbol e2.id_symbol;
     symbol_id = Symbol.Map.disjoint_union e1.symbol_id e2.symbol_id;
     offset_fun = Closure_id.Map.disjoint_union
@@ -241,8 +244,9 @@ let merge (e1 : exported) (e2 : exported) : exported =
     offset_fv = Var_within_closure.Map.disjoint_union
         ~eq:int_eq e1.offset_fv e2.offset_fv;
     constants = Symbol.Set.union e1.constants e2.constants;
-    constant_closures =
-      Set_of_closures_id.Set.union e1.constant_closures e2.constant_closures;
+    constant_sets_of_closures =
+      Set_of_closures_id.Set.union e1.constant_sets_of_closures
+        e2.constant_sets_of_closures;
     invariant_arguments =
       Set_of_closures_id.Map.disjoint_union
         e1.invariant_arguments e2.invariant_arguments;
@@ -313,7 +317,7 @@ let import_code_for_pack units pack expr =
       | e -> e)
     expr
 
-let import_ffunctions_for_pack units pack
+let import_function_declarations_for_pack units pack
       (ffuns : Flambda.function_declarations) =
   { ffuns with
     funs = Variable.Map.map (fun (ffun : Flambda.function_declaration) ->
@@ -323,15 +327,14 @@ let import_ffunctions_for_pack units pack
       ffuns.funs;
   }
 
-let functions_off functions =
+let closures sets_of_closures =
   let aux_fun ffunctions function_id _ map =
     Closure_id.Map.add
       (Closure_id.wrap function_id) ffunctions map in
   let aux _ (f : Flambda.function_declarations) map =
     Variable.Map.fold (aux_fun f) f.funs map
   in
-  Set_of_closures_id.Map.fold aux functions Closure_id.Map.empty
-
+  Set_of_closures_id.Map.fold aux sets_of_closures Closure_id.Map.empty
 
 let import_eidmap_for_pack units pack f map =
   nest_eid_map
@@ -351,16 +354,18 @@ let import_for_pack ~pack_units ~pack (exp : exported) =
   let import_approx = import_approx_for_pack pack_units pack in
   let import_eid = import_eid_for_pack pack_units pack in
   let import_eidmap f map = import_eidmap_for_pack pack_units pack f map in
-  let functions =
-    Set_of_closures_id.Map.map (import_ffunctions_for_pack pack_units pack)
-      exp.functions in
+  let sets_of_closures =
+    Set_of_closures_id.Map.map
+      (import_function_declarations_for_pack pack_units pack)
+      exp.sets_of_closures
+  in
   (* The only reachable global identifier of a pack is the pack itself *)
   let globals = Ident.Map.filter (fun unit _ ->
       Ident.same (Compilation_unit.get_persistent_ident pack) unit)
       exp.globals in
   let res : exported =
-    { functions;
-      functions_off = functions_off functions;
+    { sets_of_closures;
+      closures = closures sets_of_closures;
       globals = Ident.Map.map import_approx globals;
       offset_fun = exp.offset_fun;
       offset_fv = exp.offset_fv;
@@ -369,8 +374,10 @@ let import_for_pack ~pack_units ~pack (exp : exported) =
       symbol_id = Symbol.Map.map_keys import_sym
           (Symbol.Map.map import_eid exp.symbol_id);
       constants = Symbol.Set.map import_sym exp.constants;
-      constant_closures = exp.constant_closures;
-      invariant_arguments = exp.invariant_arguments } in
+      constant_sets_of_closures = exp.constant_sets_of_closures;
+      invariant_arguments = exp.invariant_arguments;
+    }
+  in
   res
 
 let clear_import_state () = Export_id.Tbl.clear rename_id_state
