@@ -11,9 +11,56 @@
 (*                                                                        *)
 (**************************************************************************)
 
-module ET (* phone home *) = Flambdaexport_types
+type value_string = Simple_value_approx.value_string = {
+  (* CR mshinwell: add variant type *)
+  contents : string option; (* None if unknown or mutable *)
+  size : int;
+}
 
-let empty_export : ET.exported = {
+type descr =
+  | Value_block of Tag.t * approx array
+  | Value_mutable_block of Tag.t * int
+  | Value_int of int
+  | Value_constptr of int
+  | Value_float of float
+  | Value_float_array of int
+  | Value_boxed_int : 'a Simple_value_approx.boxed_int * 'a -> descr
+  | Value_string of value_string
+  | Value_closure of value_closure
+  | Value_set_of_closures of value_set_of_closures
+
+(* CR mshinwell: rename fun_id -> closure_id, kill "ex_" prefixes *)
+and value_closure = {
+  fun_id : Closure_id.t;
+  set_of_closures : value_set_of_closures;
+}
+
+and value_set_of_closures = {
+  set_of_closures_id : Set_of_closures_id.t;
+  bound_vars : approx Var_within_closure.Map.t;
+  results : approx Closure_id.Map.t;
+}
+
+and approx =
+  | Value_unknown
+  | Value_id of Export_id.t
+  | Value_symbol of Symbol.t
+
+type exported = {
+  ex_functions : Flambda.function_declarations Set_of_closures_id.Map.t;
+  ex_functions_off : Flambda.function_declarations Closure_id.Map.t;
+  ex_values : descr Export_id.Map.t Compilation_unit.Map.t;
+  ex_globals : approx Ident.Map.t;
+  ex_id_symbol : Symbol.t Export_id.Map.t Compilation_unit.Map.t;
+  ex_symbol_id : Export_id.t Symbol.Map.t;
+  ex_offset_fun : int Closure_id.Map.t;
+  ex_offset_fv : int Var_within_closure.Map.t;
+  ex_constants : Symbol.Set.t;
+  ex_constant_closures : Set_of_closures_id.Set.t;
+  ex_invariant_arguments : Variable.Set.t Set_of_closures_id.Map.t;
+}
+
+let empty_export : exported = {
   ex_functions = Set_of_closures_id.Map.empty;
   ex_functions_off = Closure_id.Map.empty;
   ex_values =  Compilation_unit.Map.empty;
@@ -32,7 +79,7 @@ let find_ex_value eid map =
   let unit_map = Compilation_unit.Map.find unit map in
   Export_id.Map.find eid unit_map
 
-let find_description eid (ex : ET.exported) =
+let find_description eid (ex : exported) =
   find_ex_value eid ex.ex_values
 
 let eidmap_disjoint_union m1 m2 =
@@ -54,12 +101,12 @@ let nest_eid_map map =
   in
   Export_id.Map.fold add_map map Compilation_unit.Map.empty
 
-let print_approx ppf (export : ET.exported) =
+let print_approx ppf (export : exported) =
   let values = export.ex_values in
   let fprintf = Format.fprintf in
   let printed = ref Export_id.Set.empty in
   let printed_set_of_closures = ref Set_of_closures_id.Set.empty in
-  let rec print_approx ppf (approx : ET.approx) =
+  let rec print_approx ppf (approx : approx) =
     match approx with
     | Value_unknown -> fprintf ppf "?"
     | Value_id id ->
@@ -76,7 +123,7 @@ let print_approx ppf (export : ET.exported) =
            fprintf ppf "(%a: Not available)"
              Export_id.print id)
     | Value_symbol sym -> Symbol.print ppf sym
-  and print_descr ppf (descr : ET.descr) =
+  and print_descr ppf (descr : descr) =
     match descr with
     | Value_int i -> Format.pp_print_int ppf i
     | Value_constptr i -> fprintf ppf "%ip" i
@@ -105,7 +152,7 @@ let print_approx ppf (export : ET.exported) =
     | Value_float f -> Format.pp_print_float ppf f
     | Value_float_array size ->
         Format.fprintf ppf "float_array %i" size
-    | ET.Value_boxed_int (t, i) ->
+    | Value_boxed_int (t, i) ->
       let module A = Simple_value_approx in
       match t with
       | A.Int32 -> Format.fprintf ppf "%li" i
@@ -113,7 +160,7 @@ let print_approx ppf (export : ET.exported) =
       | A.Nativeint -> Format.fprintf ppf "%ni" i
   and print_fields ppf fields =
     Array.iter (fun approx -> fprintf ppf "%a@ " print_approx approx) fields
-  and print_set_of_closures ppf { ET. set_of_closures_id; bound_vars } =
+  and print_set_of_closures ppf {  set_of_closures_id; bound_vars } =
     if Set_of_closures_id.Set.mem set_of_closures_id !printed_set_of_closures
     then fprintf ppf "%a" Set_of_closures_id.print set_of_closures_id
     else begin
@@ -134,14 +181,14 @@ let print_approx ppf (export : ET.exported) =
   in
   Ident.Map.iter print_approxs export.ex_globals
 
-let print_symbols ppf (export : ET.exported) =
+let print_symbols ppf (export : exported) =
   let print_symbol eid sym =
     Format.fprintf ppf "%a -> %a@." Symbol.print sym Export_id.print eid
   in
   Compilation_unit.Map.iter (fun _ -> Export_id.Map.iter print_symbol)
     export.ex_id_symbol
 
-let print_offsets ppf (export : ET.exported) =
+let print_offsets ppf (export : exported) =
   Format.fprintf ppf "@[<v 2>offset_fun:@ ";
   Closure_id.Map.iter (fun cid off ->
       Format.fprintf ppf "%a -> %i@ "
@@ -152,7 +199,7 @@ let print_offsets ppf (export : ET.exported) =
         Var_within_closure.print vid off) export.ex_offset_fv;
   Format.fprintf ppf "@]@ "
 
-let print_all ppf (export : ET.exported) =
+let print_all ppf (export : exported) =
   let fprintf = Format.fprintf in
   fprintf ppf "approxs@ %a@.@."
     print_approx export;
@@ -165,7 +212,7 @@ let print_all ppf (export : ET.exported) =
   fprintf ppf "functions@ %a@.@."
     (Set_of_closures_id.Map.print Flambda.print_function_declarations) export.ex_functions
 
-let merge (e1 : ET.exported) (e2 : ET.exported) : ET.exported =
+let merge (e1 : exported) (e2 : exported) : exported =
   let int_eq (i:int) j = i = j in
   { ex_values = eidmap_disjoint_union e1.ex_values e2.ex_values;
     ex_globals = Ident.Map.disjoint_union e1.ex_globals e2.ex_globals;
@@ -209,14 +256,14 @@ let import_symbol_for_pack units pack symbol =
   then Symbol.create pack (Symbol.label symbol)
   else symbol
 
-let import_approx_for_pack units pack (approx : ET.approx) : ET.approx =
+let import_approx_for_pack units pack (approx : approx) : approx =
   match approx with
   | Value_symbol sym -> Value_symbol (import_symbol_for_pack units pack sym)
   | Value_id eid -> Value_id (import_eid_for_pack units pack eid)
   | Value_unknown -> Value_unknown
 
 let import_set_of_closures units pack
-      (set_of_closures : ET.value_set_of_closures) : ET.value_set_of_closures =
+      (set_of_closures : value_set_of_closures) : value_set_of_closures =
   { set_of_closures_id = set_of_closures.set_of_closures_id;
     bound_vars =
       Var_within_closure.Map.map (import_approx_for_pack units pack)
@@ -225,14 +272,14 @@ let import_set_of_closures units pack
       Closure_id.Map.map (import_approx_for_pack units pack)
         set_of_closures.results }
 
-let import_descr_for_pack units pack (descr : ET.descr) : ET.descr =
+let import_descr_for_pack units pack (descr : descr) : descr =
   match descr with
   | Value_int _
   | Value_constptr _
   | Value_string _
   | Value_float _
   | Value_float_array _
-  | ET.Value_boxed_int _ as desc -> desc
+  | Value_boxed_int _ as desc -> desc
   | Value_block (tag, fields) ->
     Value_block (tag, Array.map (import_approx_for_pack units pack) fields)
   | Value_closure {fun_id; set_of_closures} ->
@@ -283,7 +330,7 @@ let import_eidmap_for_pack units pack f map =
           map)
        Export_id.Map.empty)
 
-let import_for_pack ~pack_units ~pack (exp : ET.exported) =
+let import_for_pack ~pack_units ~pack (exp : exported) =
   let import_sym = import_symbol_for_pack pack_units pack in
   let import_desr = import_descr_for_pack pack_units pack in
   let import_approx = import_approx_for_pack pack_units pack in
@@ -296,7 +343,7 @@ let import_for_pack ~pack_units ~pack (exp : ET.exported) =
   let globals = Ident.Map.filter (fun unit _ ->
       Ident.same (Compilation_unit.get_persistent_ident pack) unit)
       exp.ex_globals in
-  let res : ET.exported =
+  let res : exported =
     { ex_functions;
       ex_functions_off = ex_functions_off ex_functions;
       ex_globals = Ident.Map.map import_approx globals;

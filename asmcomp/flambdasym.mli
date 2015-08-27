@@ -19,4 +19,4 @@ val convert
   -> Flambda.t
   -> unit Flambda.t
        * unit Flambda.t Symbol.Map.t
-       * Flambdaexport_types.exported
+       * Flambda_export.exported

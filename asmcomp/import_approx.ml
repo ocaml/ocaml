@@ -53,7 +53,7 @@ let import_set_of_closures =
         Misc.fatal_errorf "[ex_functions] does not map set of closures ID %a. \
             ex_info = %a"
           Set_of_closures_id.print set_of_closures_id
-          Flambdaexport.print_all ex_info
+          Flambda_export.print_all ex_info
     in
     import_function_declarations function_declarations
   in
@@ -62,13 +62,13 @@ let import_set_of_closures =
 let rec import_ex ex =
   ignore (Compilenv.approx_for_global (Export_id.unit ex));
   let ex_info = Compilenv.approx_env () in
-  match Flambdaexport.find_description ex ex_info with
+  match Flambda_export.find_description ex ex_info with
   | exception Not_found -> A.value_unknown
   | Value_int i -> A.value_int i
   | Value_constptr i -> A.value_constptr i
   | Value_float f -> A.value_float f
   | Value_float_array size -> A.value_float_array size
-  | Flambdaexport_types.Value_boxed_int (t,i) -> A.value_boxed_int t i
+  | Flambda_export.Value_boxed_int (t,i) -> A.value_boxed_int t i
   | Value_string { size; contents } -> A.value_string size contents
   | Value_mutable_block _ -> A.value_unknown
   | Value_block (tag, fields) ->
@@ -116,7 +116,7 @@ let rec import_ex ex =
     in
     A.value_set_of_closures value_set_of_closures
 
-and import_approx (ap : Flambdaexport_types.approx) =
+and import_approx (ap : Flambda_export.approx) =
   match ap with
   | Value_unknown -> A.value_unknown
   | Value_id ex -> A.value_extern ex

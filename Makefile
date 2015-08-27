@@ -103,8 +103,7 @@ ASMCOMP=\
   asmcomp/cmm.cmo asmcomp/printcmm.cmo \
   asmcomp/reg.cmo asmcomp/mach.cmo asmcomp/proc.cmo \
   asmcomp/clambda.cmo asmcomp/printclambda.cmo \
-  asmcomp/flambdaexport_types.cmo \
-  asmcomp/flambdaexport.cmo \
+  asmcomp/flambda_export.cmo \
   asmcomp/compilenv.cmo \
   asmcomp/lift_constants.cmo \
   asmcomp/share_constants.cmo \

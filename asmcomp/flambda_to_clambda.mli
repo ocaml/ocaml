@@ -27,9 +27,9 @@ type result = {
   expr : Clambda.ulambda;
   preallocated_blocks : Clambda.preallocated_block list;
   structured_constants : Clambda.ustructured_constant Symbol.Map.t;
-  exported : Flambdaexport_types.exported;
+  exported : Flambda_export.exported;
 }
 
 val convert
-   : Flambda.program * Flambdaexport_types.exported
+   : Flambda.program * Flambda_export.exported
   -> result

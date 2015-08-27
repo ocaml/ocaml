@@ -16,7 +16,7 @@
    Allocated_constants correspond to Clambda.structured constant
 
    It could be replaced by clambda types if they were extended to
-   represent every case of Flambdaexport_types
+   represent every case of Flambda_export
 
    The constant type does not have a description of the contained
    constant (the option in the Uconst_ref constructor). For rebuilding
