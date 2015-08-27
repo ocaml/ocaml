@@ -130,12 +130,12 @@ let rec describe (env : env) (flam : Flambda.t) : ET.approx =
   | Apply { func; kind } ->
     begin match kind with
     | Indirect -> Value_unknown
-    | Direct closure_id ->
+    | Direct closure_id' ->
       match get_descr (find_approx env func) with
-      | Some(Value_closure { fun_id; set_of_closures = { results } }) ->
-        assert (Closure_id.equal closure_id fun_id);
-        assert (Closure_id.Map.mem fun_id results);
-        Closure_id.Map.find fun_id results
+      | Some(Value_closure { closure_id; set_of_closures = { results } }) ->
+        assert (Closure_id.equal closure_id closure_id');
+        assert (Closure_id.Map.mem closure_id results);
+        Closure_id.Map.find closure_id results
       | _ -> Value_unknown
     end
 
@@ -272,7 +272,7 @@ and describe_named (env : env) (named : Flambda.named) : ET.approx =
   | Project_closure { set_of_closures; closure_id } -> begin
       match get_descr (find_approx env set_of_closures) with
       | Some(Value_set_of_closures set_of_closures) ->
-        let descr = ET.Value_closure { fun_id = closure_id; set_of_closures } in
+        let descr = ET.Value_closure { closure_id = closure_id; set_of_closures } in
         Value_id (new_descr descr)
       | _ ->
         (* CR pchambart: This should be [assert false], but currently there are a
@@ -282,17 +282,17 @@ and describe_named (env : env) (named : Flambda.named) : ET.approx =
 
   | Move_within_set_of_closures { closure; start_from; move_to } -> begin
       match get_descr (find_approx env closure) with
-      | Some(Value_closure { set_of_closures; fun_id }) ->
-        assert(Closure_id.equal fun_id start_from);
-        let descr = ET.Value_closure { fun_id = move_to; set_of_closures } in
+      | Some(Value_closure { set_of_closures; closure_id }) ->
+        assert(Closure_id.equal closure_id start_from);
+        let descr = ET.Value_closure { closure_id = move_to; set_of_closures } in
         Value_id (new_descr descr)
       | _ -> Value_unknown
     end
 
-  | Project_var { closure; closure_id; var } ->
+  | Project_var { closure; closure_id = closure_id'; var } ->
     begin match get_descr (find_approx env closure) with
-    | Some (Value_closure { set_of_closures = { bound_vars }; fun_id }) ->
-      assert (Closure_id.equal fun_id closure_id);
+    | Some (Value_closure { set_of_closures = { bound_vars }; closure_id }) ->
+      assert (Closure_id.equal closure_id closure_id');
       if not (Var_within_closure.Map.mem var bound_vars) then begin
         Misc.fatal_errorf "Project_var from %a (closure ID %a) of \
             variable %a that is not bound by the closure.  \
@@ -353,7 +353,7 @@ and describe_set_of_closures env (set : Flambda.set_of_closures)
         end;
         let descr =
           ET.Value_closure
-            { fun_id = Closure_id.wrap var;
+            { closure_id = Closure_id.wrap var;
               set_of_closures = initial_value_set_of_closure;
             }
         in
@@ -418,13 +418,13 @@ let describe_constant_defining_value
                            sym=%a\n"
           Symbol.print set_of_closures
     in
-    ET.Value_closure { fun_id = closure_id; set_of_closures }
+    ET.Value_closure { closure_id; set_of_closures }
 
 let record_project_closures (set_of_closures:ET.value_set_of_closures) =
   Closure_id.Map.iter (fun closure_id _ ->
       let symbol = Compilenv.closure_symbol closure_id in
       let export_id =
-        new_descr (Value_closure { fun_id = closure_id; set_of_closures })
+        new_descr (Value_closure { closure_id; set_of_closures })
       in
       new_symbol symbol export_id)
     set_of_closures.results

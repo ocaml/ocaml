@@ -32,9 +32,8 @@ type descr =
   | Value_closure of value_closure
   | Value_set_of_closures of value_set_of_closures
 
-(* CR mshinwell: rename fun_id -> closure_id, kill "ex_" prefixes *)
 and value_closure = {
-  fun_id : Closure_id.t;
+  closure_id : Closure_id.t;
   set_of_closures : value_set_of_closures;
 }
 
@@ -52,32 +51,23 @@ and approx =
 type exported = {
   (* Code of exported functions indexed by function identifier *)
   functions : Flambda.function_declarations Set_of_closures_id.Map.t;
-
   (* Code of exported functions indexed by offset identifier *)
   functions_off : Flambda.function_declarations Closure_id.Map.t;
-
   (* Structure of exported values  *)
   values : descr Export_id.Map.t Compilation_unit.Map.t;
-
   (* Global variables provided by the unit: usualy only the top-level
      module identifier, but packs contains multiple ones. *)
   globals : approx Ident.Map.t;
-
   id_symbol : Symbol.t Export_id.Map.t Compilation_unit.Map.t;
-
   (* Associates symbols and values *)
   symbol_id : Export_id.t Symbol.Map.t;
-
   (* Positions of function pointers in their closures *)
   offset_fun : int Closure_id.Map.t;
-
   (* Positions of value pointers in their closures *)
   offset_fv : int Var_within_closure.Map.t;
-
   (* Symbols that are effectively constants (the top-level module is
      not always a constant for instance) *)
   constants : Symbol.Set.t;
-
   constant_closures : Set_of_closures_id.Set.t;
   invariant_arguments : Variable.Set.t Set_of_closures_id.Map.t;
 }

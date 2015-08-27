@@ -73,7 +73,7 @@ let rec import_ex ex =
   | Value_mutable_block _ -> A.value_unknown
   | Value_block (tag, fields) ->
     A.value_block (tag, Array.map import_approx fields)
-  | Value_closure { fun_id;
+  | Value_closure { closure_id;
         set_of_closures = { set_of_closures_id; bound_vars } } ->
     let bound_vars = Var_within_closure.Map.map import_approx bound_vars in
     begin match
@@ -91,7 +91,7 @@ let rec import_ex ex =
           freshening = Freshening.Project_var.empty;
         }
       in
-      A.value_closure value_set_of_closures fun_id
+      A.value_closure value_set_of_closures closure_id
     end
   | Value_set_of_closures { set_of_closures_id; bound_vars } ->
     let bound_vars = Var_within_closure.Map.map import_approx bound_vars in

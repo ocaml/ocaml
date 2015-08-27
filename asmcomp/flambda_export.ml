@@ -29,9 +29,8 @@ type descr =
   | Value_closure of value_closure
   | Value_set_of_closures of value_set_of_closures
 
-(* CR mshinwell: rename fun_id -> closure_id, kill "ex_" prefixes *)
 and value_closure = {
-  fun_id : Closure_id.t;
+  closure_id : Closure_id.t;
   set_of_closures : value_set_of_closures;
 }
 
@@ -132,8 +131,8 @@ let print_approx ppf (export : exported) =
         print_fields fields
     | Value_mutable_block (tag, size) ->
       fprintf ppf "[mutable %a:%i]" Tag.print tag size
-    | Value_closure {fun_id; set_of_closures} ->
-      fprintf ppf "(closure %a, %a)" Closure_id.print fun_id
+    | Value_closure {closure_id; set_of_closures} ->
+      fprintf ppf "(closure %a, %a)" Closure_id.print closure_id
         print_set_of_closures set_of_closures
     | Value_set_of_closures set_of_closures ->
       fprintf ppf "(set_of_closures %a)" print_set_of_closures set_of_closures
@@ -282,9 +281,9 @@ let import_descr_for_pack units pack (descr : descr) : descr =
   | Value_boxed_int _ as desc -> desc
   | Value_block (tag, fields) ->
     Value_block (tag, Array.map (import_approx_for_pack units pack) fields)
-  | Value_closure {fun_id; set_of_closures} ->
+  | Value_closure {closure_id; set_of_closures} ->
     Value_closure {
-      fun_id;
+      closure_id;
       set_of_closures = import_set_of_closures units pack set_of_closures;
     }
   | Value_set_of_closures set_of_closures ->
