@@ -48,9 +48,9 @@ let import_set_of_closures =
   let aux set_of_closures_id =
     let ex_info = Compilenv.approx_env () in
     let function_declarations =
-      try Set_of_closures_id.Map.find set_of_closures_id ex_info.ex_functions
+      try Set_of_closures_id.Map.find set_of_closures_id ex_info.functions
       with Not_found ->
-        Misc.fatal_errorf "[ex_functions] does not map set of closures ID %a. \
+        Misc.fatal_errorf "[functions] does not map set of closures ID %a. \
             ex_info = %a"
           Set_of_closures_id.print set_of_closures_id
           Flambda_export.print_all ex_info
@@ -78,10 +78,10 @@ let rec import_ex ex =
     let bound_vars = Var_within_closure.Map.map import_approx bound_vars in
     begin match
       Set_of_closures_id.Map.find set_of_closures_id
-        ex_info.ex_invariant_arguments
+        ex_info.invariant_arguments
     with
     | exception Not_found ->
-      Misc.fatal_error "Set of closures ID not found in ex_invariant_arguments"
+      Misc.fatal_error "Set of closures ID not found in invariant_arguments"
     | unchanging_params ->
       let value_set_of_closures : A.value_set_of_closures =
         { function_decls = import_set_of_closures set_of_closures_id;
@@ -98,7 +98,7 @@ let rec import_ex ex =
     let unchanging_params =
       try
         Set_of_closures_id.Map.find set_of_closures_id
-          ex_info.ex_invariant_arguments
+          ex_info.invariant_arguments
       with
       | Not_found ->
         Misc.fatal_errorf "Export description of [Value_set_of_closures] \
@@ -128,7 +128,7 @@ let import_symbol sym =
   else
     let symbol_id_map =
       let global = Symbol.compilation_unit sym in
-      (Compilenv.approx_for_global global).ex_symbol_id
+      (Compilenv.approx_for_global global).symbol_id
     in
     match Symbol.Map.find sym symbol_id_map with
     | approx -> A.augment_with_symbol (import_ex approx) sym
@@ -161,7 +161,7 @@ and really_import_symbol sym =
 let import_global id =
   let unit = Compilenv.unit_for_global id in
   import_approx
-    (Ident.Map.find id (Compilenv.approx_for_global unit).ex_globals)
+    (Ident.Map.find id (Compilenv.approx_for_global unit).globals)
 
 let really_import_approx (approx : Simple_value_approx.t) =
   A.replace_description approx (really_import approx.descr)

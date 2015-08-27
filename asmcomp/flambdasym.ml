@@ -84,7 +84,7 @@ type const_sym =
 type infos = {
   global : (int, ET.approx) Hashtbl.t;
   ex_table : ET.descr Export_id.Map.t ref;
-  ex_symbol_id : Export_id.t Symbol.Map.t ref;
+  symbol_id : Export_id.t Symbol.Map.t ref;
   constants : unit Flambda.t Symbol.Tbl.t;
   symbol_alias : Symbol.t Symbol.Tbl.t;
 }
@@ -92,7 +92,7 @@ type infos = {
 let init_infos () =
   { global = Hashtbl.create 10;
     ex_table = ref Export_id.Map.empty;
-    ex_symbol_id = ref Symbol.Map.empty;
+    symbol_id = ref Symbol.Map.empty;
     constants = Symbol.Tbl.create 10;
     symbol_alias = Symbol.Tbl.create 10 }
 
@@ -115,7 +115,7 @@ module Conv(P:Param1) = struct
 
   (* functions comming from a linked module *)
   let ex_closures () =
-    (Compilenv.approx_env ()).ET.ex_functions_off
+    (Compilenv.approx_env ()).ET.functions_off
 
   let used_variable_within_closure = list_used_variable_within_closure P.expr
 
@@ -210,7 +210,7 @@ module Conv(P:Param1) = struct
         Compilenv.approx_for_global (Symbol.compilation_unit sym)
       in
       try
-        let id = Symbol.Map.find sym export.ex_symbol_id in
+        let id = Symbol.Map.find sym export.symbol_id in
         let descr = Flambda_export.find_description id export in
         Some descr
       with
@@ -230,16 +230,16 @@ module Conv(P:Param1) = struct
              extern_id_descr ex)
     | Value_symbol sym ->
         try
-          let ex = Symbol.Map.find sym !(infos.ex_symbol_id) in
+          let ex = Symbol.Map.find sym !(infos.symbol_id) in
           Some (Export_id.Map.find ex !(infos.ex_table))
         with Not_found ->
           extern_symbol_descr sym
 
   let add_symbol sym id =
-    infos.ex_symbol_id := Symbol.Map.add sym id !(infos.ex_symbol_id)
+    infos.symbol_id := Symbol.Map.add sym id !(infos.symbol_id)
 
   let symbol_id sym =
-    try Some (Symbol.Map.find sym !(infos.ex_symbol_id)) with Not_found -> None
+    try Some (Symbol.Map.find sym !(infos.symbol_id)) with Not_found -> None
 
   let add_constant lam ex_id =
     let sym = Compilenv.new_const_symbol' () in
@@ -808,14 +808,14 @@ module Prepare(P:Param2) = struct
     Flambda_iterators.map use_canonical_symbols P.expr,
     Symbol.Tbl.fold aux P.infos.constants Symbol.Map.empty
 
-  let ex_functions =
-    let ex_functions = ref Set_of_closures_id.Map.empty in
+  let functions =
+    let functions = ref Set_of_closures_id.Map.empty in
     let aux ({ function_decls } : Flambda.set_of_closures) _ =
-      ex_functions := Set_of_closures_id.Map.add function_decls.set_of_closures_id function_decls !ex_functions
+      functions := Set_of_closures_id.Map.add function_decls.set_of_closures_id function_decls !functions
     in
     Flambda_iterators.iter_on_sets_of_closures aux expr;
     Symbol.Map.iter (fun _ -> Flambda_iterators.iter_on_sets_of_closures aux) constants;
-    !ex_functions
+    !functions
 
   (* Preparing export information *)
 
@@ -865,35 +865,35 @@ module Prepare(P:Param2) = struct
     Value_id root_id
 
   (* replace symbol by their representative in value approximations *)
-  let ex_values =
+  let values =
     Export_id.Map.map canonical_descr !(P.infos.ex_table)
 
   (* build the symbol to id and id to symbol maps *)
   let module_symbol =
     Compilenv.current_unit_symbol ()
 
-  let ex_symbol_id =
+  let symbol_id =
     let aux sym ex map =
       let sym' = canonical_symbol sym in
       Symbol.Map.add sym' ex map
     in
-    Symbol.Map.fold aux !(P.infos.ex_symbol_id) Symbol.Map.empty
+    Symbol.Map.fold aux !(P.infos.symbol_id) Symbol.Map.empty
 
-  let ex_symbol_id =
+  let symbol_id =
     Symbol.Map.add module_symbol root_id
-      ex_symbol_id
-  let ex_id_symbol =
+      symbol_id
+  let id_symbol =
     Symbol.Map.fold (fun sym id map -> Export_id.Map.add id sym map)
-      ex_symbol_id Export_id.Map.empty
+      symbol_id Export_id.Map.empty
 
-  let ex_functions_off =
+  let functions_off =
     let aux_fun ffunctions off_id _ map =
       let fun_id = Closure_id.wrap off_id in
       Closure_id.Map.add fun_id ffunctions map in
     let aux _ (f : Flambda.function_declarations) map =
       Variable.Map.fold (aux_fun f) f.funs map
     in
-    Set_of_closures_id.Map.fold aux ex_functions Closure_id.Map.empty
+    Set_of_closures_id.Map.fold aux functions Closure_id.Map.empty
 
 end
 
@@ -916,14 +916,14 @@ let convert (type a) ~compilation_unit (expr:a Flambda.t) =
 
   let export : ET.exported =
     { Flambda_export.empty_export with
-      ex_values = Flambda_export.nest_eid_map C2.ex_values;
-      ex_globals = Ident.Map.singleton
+      values = Flambda_export.nest_eid_map C2.values;
+      globals = Ident.Map.singleton
           (Compilenv.current_unit_id ()) C2.root_approx;
-      ex_symbol_id = C2.ex_symbol_id;
-      ex_id_symbol = Flambda_export.nest_eid_map C2.ex_id_symbol;
-      ex_functions = C2.ex_functions;
-      ex_functions_off = C2.ex_functions_off;
-      ex_constant_closures = constant_closures;
+      symbol_id = C2.symbol_id;
+      id_symbol = Flambda_export.nest_eid_map C2.id_symbol;
+      functions = C2.functions;
+      functions_off = C2.functions_off;
+      constant_closures = constant_closures;
       ex_kept_arguments = C.ex_kept_arguments }
   in
   C2.expr, C2.constants, export

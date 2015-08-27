@@ -47,31 +47,31 @@ and approx =
   | Value_symbol of Symbol.t
 
 type exported = {
-  ex_functions : Flambda.function_declarations Set_of_closures_id.Map.t;
-  ex_functions_off : Flambda.function_declarations Closure_id.Map.t;
-  ex_values : descr Export_id.Map.t Compilation_unit.Map.t;
-  ex_globals : approx Ident.Map.t;
-  ex_id_symbol : Symbol.t Export_id.Map.t Compilation_unit.Map.t;
-  ex_symbol_id : Export_id.t Symbol.Map.t;
-  ex_offset_fun : int Closure_id.Map.t;
-  ex_offset_fv : int Var_within_closure.Map.t;
-  ex_constants : Symbol.Set.t;
-  ex_constant_closures : Set_of_closures_id.Set.t;
-  ex_invariant_arguments : Variable.Set.t Set_of_closures_id.Map.t;
+  functions : Flambda.function_declarations Set_of_closures_id.Map.t;
+  functions_off : Flambda.function_declarations Closure_id.Map.t;
+  values : descr Export_id.Map.t Compilation_unit.Map.t;
+  globals : approx Ident.Map.t;
+  id_symbol : Symbol.t Export_id.Map.t Compilation_unit.Map.t;
+  symbol_id : Export_id.t Symbol.Map.t;
+  offset_fun : int Closure_id.Map.t;
+  offset_fv : int Var_within_closure.Map.t;
+  constants : Symbol.Set.t;
+  constant_closures : Set_of_closures_id.Set.t;
+  invariant_arguments : Variable.Set.t Set_of_closures_id.Map.t;
 }
 
 let empty_export : exported = {
-  ex_functions = Set_of_closures_id.Map.empty;
-  ex_functions_off = Closure_id.Map.empty;
-  ex_values =  Compilation_unit.Map.empty;
-  ex_globals = Ident.Map.empty;
-  ex_id_symbol =  Compilation_unit.Map.empty;
-  ex_symbol_id = Symbol.Map.empty;
-  ex_offset_fun = Closure_id.Map.empty;
-  ex_offset_fv = Var_within_closure.Map.empty;
-  ex_constants = Symbol.Set.empty;
-  ex_constant_closures = Set_of_closures_id.Set.empty;
-  ex_invariant_arguments = Set_of_closures_id.Map.empty;
+  functions = Set_of_closures_id.Map.empty;
+  functions_off = Closure_id.Map.empty;
+  values =  Compilation_unit.Map.empty;
+  globals = Ident.Map.empty;
+  id_symbol =  Compilation_unit.Map.empty;
+  symbol_id = Symbol.Map.empty;
+  offset_fun = Closure_id.Map.empty;
+  offset_fv = Var_within_closure.Map.empty;
+  constants = Symbol.Set.empty;
+  constant_closures = Set_of_closures_id.Set.empty;
+  invariant_arguments = Set_of_closures_id.Map.empty;
 }
 
 let find_ex_value eid map =
@@ -80,7 +80,7 @@ let find_ex_value eid map =
   Export_id.Map.find eid unit_map
 
 let find_description eid (ex : exported) =
-  find_ex_value eid ex.ex_values
+  find_ex_value eid ex.values
 
 let eidmap_disjoint_union m1 m2 =
   Compilation_unit.Map.merge
@@ -102,7 +102,7 @@ let nest_eid_map map =
   Export_id.Map.fold add_map map Compilation_unit.Map.empty
 
 let print_approx ppf (export : exported) =
-  let values = export.ex_values in
+  let values = export.values in
   let fprintf = Format.fprintf in
   let printed = ref Export_id.Set.empty in
   let printed_set_of_closures = ref Set_of_closures_id.Set.empty in
@@ -179,24 +179,24 @@ let print_approx ppf (export : exported) =
   let print_approxs id approx =
     fprintf ppf "%a -> %a;@ " Ident.print id print_approx approx
   in
-  Ident.Map.iter print_approxs export.ex_globals
+  Ident.Map.iter print_approxs export.globals
 
 let print_symbols ppf (export : exported) =
   let print_symbol eid sym =
     Format.fprintf ppf "%a -> %a@." Symbol.print sym Export_id.print eid
   in
   Compilation_unit.Map.iter (fun _ -> Export_id.Map.iter print_symbol)
-    export.ex_id_symbol
+    export.id_symbol
 
 let print_offsets ppf (export : exported) =
   Format.fprintf ppf "@[<v 2>offset_fun:@ ";
   Closure_id.Map.iter (fun cid off ->
       Format.fprintf ppf "%a -> %i@ "
-        Closure_id.print cid off) export.ex_offset_fun;
+        Closure_id.print cid off) export.offset_fun;
   Format.fprintf ppf "@]@ @[<v 2>offset_fv:@ ";
   Var_within_closure.Map.iter (fun vid off ->
       Format.fprintf ppf "%a -> %i@ "
-        Var_within_closure.print vid off) export.ex_offset_fv;
+        Var_within_closure.print vid off) export.offset_fv;
   Format.fprintf ppf "@]@ "
 
 let print_all ppf (export : exported) =
@@ -204,33 +204,33 @@ let print_all ppf (export : exported) =
   fprintf ppf "approxs@ %a@.@."
     print_approx export;
   fprintf ppf "id_symbol@ %a@.@."
-    (Compilation_unit.Map.print (Export_id.Map.print Symbol.print)) export.ex_id_symbol;
+    (Compilation_unit.Map.print (Export_id.Map.print Symbol.print)) export.id_symbol;
   fprintf ppf "symbol_id@ %a@.@."
-    (Symbol.Map.print Export_id.print) export.ex_symbol_id;
+    (Symbol.Map.print Export_id.print) export.symbol_id;
   fprintf ppf "constants@ %a@.@."
-    Symbol.Set.print export.ex_constants;
+    Symbol.Set.print export.constants;
   fprintf ppf "functions@ %a@.@."
-    (Set_of_closures_id.Map.print Flambda.print_function_declarations) export.ex_functions
+    (Set_of_closures_id.Map.print Flambda.print_function_declarations) export.functions
 
 let merge (e1 : exported) (e2 : exported) : exported =
   let int_eq (i:int) j = i = j in
-  { ex_values = eidmap_disjoint_union e1.ex_values e2.ex_values;
-    ex_globals = Ident.Map.disjoint_union e1.ex_globals e2.ex_globals;
-    ex_functions = Set_of_closures_id.Map.disjoint_union e1.ex_functions e2.ex_functions;
-    ex_functions_off =
-      Closure_id.Map.disjoint_union e1.ex_functions_off e2.ex_functions_off;
-    ex_id_symbol = eidmap_disjoint_union  e1.ex_id_symbol e2.ex_id_symbol;
-    ex_symbol_id = Symbol.Map.disjoint_union e1.ex_symbol_id e2.ex_symbol_id;
-    ex_offset_fun = Closure_id.Map.disjoint_union
-        ~eq:int_eq e1.ex_offset_fun e2.ex_offset_fun;
-    ex_offset_fv = Var_within_closure.Map.disjoint_union
-        ~eq:int_eq e1.ex_offset_fv e2.ex_offset_fv;
-    ex_constants = Symbol.Set.union e1.ex_constants e2.ex_constants;
-    ex_constant_closures =
-      Set_of_closures_id.Set.union e1.ex_constant_closures e2.ex_constant_closures;
-    ex_invariant_arguments =
+  { values = eidmap_disjoint_union e1.values e2.values;
+    globals = Ident.Map.disjoint_union e1.globals e2.globals;
+    functions = Set_of_closures_id.Map.disjoint_union e1.functions e2.functions;
+    functions_off =
+      Closure_id.Map.disjoint_union e1.functions_off e2.functions_off;
+    id_symbol = eidmap_disjoint_union  e1.id_symbol e2.id_symbol;
+    symbol_id = Symbol.Map.disjoint_union e1.symbol_id e2.symbol_id;
+    offset_fun = Closure_id.Map.disjoint_union
+        ~eq:int_eq e1.offset_fun e2.offset_fun;
+    offset_fv = Var_within_closure.Map.disjoint_union
+        ~eq:int_eq e1.offset_fv e2.offset_fv;
+    constants = Symbol.Set.union e1.constants e2.constants;
+    constant_closures =
+      Set_of_closures_id.Set.union e1.constant_closures e2.constant_closures;
+    invariant_arguments =
       Set_of_closures_id.Map.disjoint_union
-        e1.ex_invariant_arguments e2.ex_invariant_arguments;
+        e1.invariant_arguments e2.invariant_arguments;
   }
 
 (* importing informations to build a pack: the global identifying the
@@ -308,14 +308,14 @@ let import_ffunctions_for_pack units pack
       ffuns.funs;
   }
 
-let ex_functions_off ex_functions =
+let functions_off functions =
   let aux_fun ffunctions function_id _ map =
     Closure_id.Map.add
       (Closure_id.wrap function_id) ffunctions map in
   let aux _ (f : Flambda.function_declarations) map =
     Variable.Map.fold (aux_fun f) f.funs map
   in
-  Set_of_closures_id.Map.fold aux ex_functions Closure_id.Map.empty
+  Set_of_closures_id.Map.fold aux functions Closure_id.Map.empty
 
 
 let import_eidmap_for_pack units pack f map =
@@ -336,26 +336,26 @@ let import_for_pack ~pack_units ~pack (exp : exported) =
   let import_approx = import_approx_for_pack pack_units pack in
   let import_eid = import_eid_for_pack pack_units pack in
   let import_eidmap f map = import_eidmap_for_pack pack_units pack f map in
-  let ex_functions =
+  let functions =
     Set_of_closures_id.Map.map (import_ffunctions_for_pack pack_units pack)
-      exp.ex_functions in
+      exp.functions in
   (* The only reachable global identifier of a pack is the pack itself *)
   let globals = Ident.Map.filter (fun unit _ ->
       Ident.same (Compilation_unit.get_persistent_ident pack) unit)
-      exp.ex_globals in
+      exp.globals in
   let res : exported =
-    { ex_functions;
-      ex_functions_off = ex_functions_off ex_functions;
-      ex_globals = Ident.Map.map import_approx globals;
-      ex_offset_fun = exp.ex_offset_fun;
-      ex_offset_fv = exp.ex_offset_fv;
-      ex_values = import_eidmap import_desr exp.ex_values;
-      ex_id_symbol = import_eidmap import_sym exp.ex_id_symbol;
-      ex_symbol_id = Symbol.Map.map_keys import_sym
-          (Symbol.Map.map import_eid exp.ex_symbol_id);
-      ex_constants = Symbol.Set.map import_sym exp.ex_constants;
-      ex_constant_closures = exp.ex_constant_closures;
-      ex_invariant_arguments = exp.ex_invariant_arguments } in
+    { functions;
+      functions_off = functions_off functions;
+      globals = Ident.Map.map import_approx globals;
+      offset_fun = exp.offset_fun;
+      offset_fv = exp.offset_fv;
+      values = import_eidmap import_desr exp.values;
+      id_symbol = import_eidmap import_sym exp.id_symbol;
+      symbol_id = Symbol.Map.map_keys import_sym
+          (Symbol.Map.map import_eid exp.symbol_id);
+      constants = Symbol.Set.map import_sym exp.constants;
+      constant_closures = exp.constant_closures;
+      invariant_arguments = exp.invariant_arguments } in
   res
 
 let clear_import_state () = Export_id.Tbl.clear rename_id_state

@@ -37,7 +37,7 @@ let extern_symbol_descr sym =
       Compilenv.approx_for_global (Symbol.compilation_unit sym)
     in
     try
-      let id = Symbol.Map.find sym export.ex_symbol_id in
+      let id = Symbol.Map.find sym export.symbol_id in
       let descr = Flambda_export.find_description id export in
       Some descr
     with
@@ -495,36 +495,36 @@ let build_export_info (program:Flambda.program) : ET.exported =
 (*     Compilenv.current_unit_symbol () *)
 (*   in *)
 
-(*   let ex_symbol_id = *)
+(*   let symbol_id = *)
 (*     Symbol.Map.add module_symbol root_id !symbol_table *)
 (*   in *)
 
-(*   let ex_id_symbol = *)
+(*   let id_symbol = *)
 (*     Symbol.Map.fold (fun sym id map -> Export_id.Map.add id sym map) *)
-(*       ex_symbol_id Export_id.Map.empty *)
+(*       symbol_id Export_id.Map.empty *)
 (*   in *)
 
 (*   let set_of_closures_map = Lifted_flambda_utils.set_of_closures_map lifted_flambda in *)
 
-(*   let ex_functions = *)
+(*   let functions = *)
 (*     Symbol.Map.fold (fun _symbol (set_of_closures : Flambda.set_of_closures) *)
-(*           ex_functions -> *)
+(*           functions -> *)
 (*         let function_decls = set_of_closures.function_decls in *)
 (*         Set_of_closures_id.Map.add function_decls.set_of_closures_id *)
-(*           set_of_closures.function_decls ex_functions *)
+(*           set_of_closures.function_decls functions *)
 (*       ) *)
 (*       lifted_flambda.set_of_closures_map *)
 (*       Set_of_closures_id.Map.empty *)
 (*   in *)
 
-(*   let ex_functions_off = *)
+(*   let functions_off = *)
 (*     let aux_fun ffunctions off_id _ map = *)
 (*       let fun_id = Closure_id.wrap off_id in *)
 (*       Closure_id.Map.add fun_id ffunctions map in *)
 (*     let aux _ (f : Flambda.function_declarations) map = *)
 (*       Variable.Map.fold (aux_fun f) f.funs map *)
 (*     in *)
-(*     Set_of_closures_id.Map.fold aux ex_functions Closure_id.Map.empty *)
+(*     Set_of_closures_id.Map.fold aux functions Closure_id.Map.empty *)
 (*   in *)
 
 (*   (\* TODO *\) *)
@@ -532,7 +532,7 @@ let build_export_info (program:Flambda.program) : ET.exported =
 (*     Lifted_flambda_utils.constants_set_of_closures_id_set lifted_flambda *)
 (*   in *)
 
-(*   let ex_invariant_arguments = *)
+(*   let invariant_arguments = *)
 (*     Set_of_closures_id.Map.map *)
 (*       (fun { Flambda.function_decls } -> *)
 (*          Invariant_params.unchanging_params_in_recursion function_decls *)
@@ -541,16 +541,16 @@ let build_export_info (program:Flambda.program) : ET.exported =
 
   (* let export : ET.exported = *)
   (*   { Flambda_export.empty_export with *)
-  (*     ex_values = Flambda_export.nest_eid_map !ex_table; *)
-  (*     ex_globals = *)
+  (*     values = Flambda_export.nest_eid_map !ex_table; *)
+  (*     globals = *)
   (*       Ident.Map.singleton *)
   (*         (Compilenv.current_unit_id ()) root_approx; *)
-  (*     ex_symbol_id = ex_symbol_id; *)
-  (*     ex_id_symbol = Flambda_export.nest_eid_map ex_id_symbol; *)
-  (*     ex_functions = ex_functions; *)
-  (*     ex_functions_off = ex_functions_off; *)
-  (*     ex_constant_closures = constant_closures; *)
-  (*     ex_invariant_arguments } *)
+  (*     symbol_id = symbol_id; *)
+  (*     id_symbol = Flambda_export.nest_eid_map id_symbol; *)
+  (*     functions = functions; *)
+  (*     functions_off = functions_off; *)
+  (*     constant_closures = constant_closures; *)
+  (*     invariant_arguments } *)
   (* in *)
 
   let root_approx : ET.approx =
@@ -559,24 +559,24 @@ let build_export_info (program:Flambda.program) : ET.exported =
 
   let export : ET.exported =
     { Flambda_export.empty_export with
-      ex_values = Flambda_export.nest_eid_map !ex_table;
-      ex_globals =
+      values = Flambda_export.nest_eid_map !ex_table;
+      globals =
         Ident.Map.singleton
           (Compilenv.current_unit_id ()) root_approx;
-      ex_symbol_id = !symbol_table;
-      ex_id_symbol =
+      symbol_id = !symbol_table;
+      id_symbol =
         (* TODO *)
         Compilation_unit.Map.empty;
-      ex_functions =
+      functions =
         (* TODO *)
         Set_of_closures_id.Map.empty;
-      ex_functions_off =
+      functions_off =
         (* TODO *)
         Closure_id.Map.empty;
-      ex_constant_closures =
+      constant_closures =
         (* TODO *)
         Set_of_closures_id.Set.empty;
-      ex_invariant_arguments =
+      invariant_arguments =
         (* TODO *)
         Set_of_closures_id.Map.empty }
   in

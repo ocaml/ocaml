@@ -524,10 +524,10 @@ let convert (program, exported) : result =
   in
   let imported_units =
     let imported = Compilenv.approx_env () in
-    { fun_offset_table = imported.ex_offset_fun;
-      fv_offset_table = imported.ex_offset_fv;
-      closures = imported.ex_functions_off;
-      constant_sets_of_closures = imported.ex_constant_closures;
+    { fun_offset_table = imported.offset_fun;
+      fv_offset_table = imported.offset_fv;
+      closures = imported.functions_off;
+      constant_sets_of_closures = imported.constant_closures;
     }
   in
   let t = { current_unit; imported_units; } in
