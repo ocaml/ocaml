@@ -557,28 +557,19 @@ let build_export_info (program:Flambda.program) : ET.exported =
     Value_symbol (Compilenv.current_unit_symbol ())
   in
 
-  let export : ET.exported =
-    { Flambda_export.empty_export with
-      values = Flambda_export.nest_eid_map !ex_table;
-      globals =
+  let export =
+    Flambda_export.create_exported
+      ~values:(Flambda_export.nest_eid_map !ex_table)
+      ~globals:(
         Ident.Map.singleton
-          (Compilenv.current_unit_id ()) root_approx;
-      symbol_id = !symbol_table;
-      id_symbol =
-        (* TODO *)
-        Compilation_unit.Map.empty;
-      functions =
-        (* TODO *)
-        Set_of_closures_id.Map.empty;
-      functions_off =
-        (* TODO *)
-        Closure_id.Map.empty;
-      constant_closures =
-        (* TODO *)
-        Set_of_closures_id.Set.empty;
-      invariant_arguments =
-        (* TODO *)
-        Set_of_closures_id.Map.empty }
+          (Compilenv.current_unit_id ()) root_approx)
+      ~symbol_id:!symbol_table
+      (* TODO all of the following *)
+      ~id_symbol:Compilation_unit.Map.empty
+      ~functions:Set_of_closures_id.Map.empty
+      ~functions_off:Closure_id.Map.empty
+      ~constant_closures:Set_of_closures_id.Set.empty
+      ~invariant_arguments:Set_of_closures_id.Map.empty
   in
 
   Format.eprintf "Build_export_info returns %a@."

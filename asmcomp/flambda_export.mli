@@ -51,7 +51,7 @@ and approx =
   | Value_id of Export_id.t
   | Value_symbol of Symbol.t
 
-type exported = {
+type exported = private {
   (* Code of exported functions indexed by function identifier *)
   functions : Flambda.function_declarations Set_of_closures_id.Map.t;
   (* Code of exported functions indexed by offset identifier *)
@@ -76,6 +76,17 @@ type exported = {
 }
 
 val empty_export : exported
+
+val create_exported
+   : functions:Flambda.function_declarations Set_of_closures_id.Map.t
+  -> functions_off:Flambda.function_declarations Closure_id.Map.t
+  -> values:descr Export_id.Map.t Compilation_unit.Map.t
+  -> globals:approx Ident.Map.t
+  -> id_symbol:Symbol.t Export_id.Map.t Compilation_unit.Map.t
+  -> symbol_id:Export_id.t Symbol.Map.t
+  -> constant_closures:Set_of_closures_id.Set.t
+  -> invariant_arguments:Variable.Set.t Set_of_closures_id.Map.t
+  -> exported
 
 (** Union of export informations. Verify that there is no identifier
     clash. *)

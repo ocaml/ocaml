@@ -76,6 +76,19 @@ let empty_export : exported = {
   invariant_arguments = Set_of_closures_id.Map.empty;
 }
 
+let create_exported ~functions ~functions_off ~values ~globals ~id_symbol
+      ~symbol_id ~constant_closures ~invariant_arguments =
+  { empty_export with
+    functions;
+    functions_off;
+    values;
+    globals;
+    id_symbol;
+    symbol_id;
+    constant_closures;
+    invariant_arguments;
+  }
+
 let find_ex_value eid map =
   let unit = Export_id.unit eid in
   let unit_map = Compilation_unit.Map.find unit map in
