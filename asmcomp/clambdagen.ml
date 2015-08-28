@@ -500,12 +500,23 @@ Format.eprintf "Clambdagen.conv_set_of_closures: %a\n"
     (* the label used for constant closures *)
     let closure_lbl = Linkage_name.to_string (Symbol.label symbol) in
 
+    (* inside the body of the function, we cannot access variables
+       declared outside, so take a clean substitution table. *)
+    let env = { empty_env with const_subst = env.const_subst } in
+    (* Closures are accessed by symbols *)
+    let env =
+      List.fold_left (fun env (var,_) ->
+          let closure_id = Closure_id.wrap var in
+          let symbol = Compilenv.closure_symbol closure_id in
+          let linkage_name = Symbol.label symbol in
+          let label = Linkage_name.to_string linkage_name in
+          add_sb var (Uconst (Uconst_ref (label, None))) env)
+        env
+        funct
+    in
+
     let conv_function (id, (func : Flambda.function_declaration))
       : Clambda.ufunction =
-
-      (* inside the body of the function, we cannot access variables
-         declared outside, so take a clean substitution table. *)
-      let env = { empty_env with const_subst = env.const_subst } in
 
       let env_body, params =
         List.fold_right (fun var (env, params) ->
