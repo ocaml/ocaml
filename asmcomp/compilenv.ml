@@ -29,7 +29,7 @@ exception Error of error
 let global_infos_table =
   (Hashtbl.create 17 : (string, unit_infos option) Hashtbl.t)
 let export_infos_table =
-  (Hashtbl.create 10 : (string, Export_info.exported) Hashtbl.t)
+  (Hashtbl.create 10 : (string, Export_info.t) Hashtbl.t)
 
 let imported_sets_of_closures_table =
   (Set_of_closures_id.Tbl.create 10
@@ -65,7 +65,7 @@ let structured_constants = ref structured_constants_empty
 let exported_constants = Hashtbl.create 17
 
 let current_unit_id = ref (Ident.create_persistent "___UNINITIALIZED___")
-let merged_environment = ref Export_info.empty_export
+let merged_environment = ref Export_info.empty
 
 let current_unit =
   { ui_name = "";
@@ -78,7 +78,7 @@ let current_unit =
     ui_apply_fun = [];
     ui_send_fun = [];
     ui_force_link = false;
-    ui_export_info = Export_info.empty_export }
+    ui_export_info = Export_info.empty }
 
 let symbolname_for_pack pack name =
   match pack with
@@ -121,8 +121,8 @@ let reset ?packname name =
   current_unit.ui_force_link <- false;
   Hashtbl.clear exported_constants;
   structured_constants := structured_constants_empty;
-  current_unit.ui_export_info <- Export_info.empty_export;
-  merged_environment := Export_info.empty_export;
+  current_unit.ui_export_info <- Export_info.empty;
+  merged_environment := Export_info.empty;
   Hashtbl.clear export_infos_table;
   let compilation_unit =
     Compilation_unit.create
@@ -272,7 +272,7 @@ let approx_for_global comp_unit =
   try Hashtbl.find export_infos_table modname with
   | Not_found ->
     let exported = match get_global_info id with
-      | None -> Export_info.empty_export
+      | None -> Export_info.empty
       | Some ui -> ui.ui_export_info in
     Hashtbl.add export_infos_table modname exported;
     merged_environment := Export_info.merge !merged_environment exported;

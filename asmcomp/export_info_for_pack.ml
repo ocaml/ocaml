@@ -110,7 +110,7 @@ let import_eidmap_for_pack units pack f map =
           map)
        Export_id.Map.empty)
 
-let import_for_pack ~pack_units ~pack (exp : exported) =
+let import_for_pack ~pack_units ~pack (exp : Export_info.t) =
   let import_sym = import_symbol_for_pack pack_units pack in
   let import_desr = import_descr_for_pack pack_units pack in
   let import_approx = import_approx_for_pack pack_units pack in
@@ -124,22 +124,19 @@ let import_for_pack ~pack_units ~pack (exp : exported) =
   (* The only reachable global identifier of a pack is the pack itself *)
   let globals = Ident.Map.filter (fun unit _ ->
       Ident.same (Compilation_unit.get_persistent_ident pack) unit)
-      exp.globals in
-  let res : exported =
-    { sets_of_closures;
-      closures = closures sets_of_closures;
-      globals = Ident.Map.map import_approx globals;
-      offset_fun = exp.offset_fun;
-      offset_fv = exp.offset_fv;
-      values = import_eidmap import_desr exp.values;
-      id_symbol = import_eidmap import_sym exp.id_symbol;
-      symbol_id = Symbol.Map.map_keys import_sym
-          (Symbol.Map.map import_eid exp.symbol_id);
-      constants = Symbol.Set.map import_sym exp.constants;
-      constant_sets_of_closures = exp.constant_sets_of_closures;
-      invariant_arguments = exp.invariant_arguments;
-    }
+      exp.globals
   in
-  res
+  Export_info.create ~sets_of_closures
+    ~closures:(closures sets_of_closures)
+    ~globals:(Ident.Map.map import_approx globals)
+    ~offset_fun:exp.offset_fun
+    ~offset_fv:exp.offset_fv
+    ~values:(import_eidmap import_desr exp.values)
+    ~id_symbol:(import_eidmap import_sym exp.id_symbol)
+    ~symbol_id:(Symbol.Map.map_keys import_sym
+        (Symbol.Map.map import_eid exp.symbol_id))
+    ~constants:(Symbol.Set.map import_sym exp.constants)
+    ~constant_sets_of_closures:exp.constant_sets_of_closures
+    ~invariant_arguments:exp.invariant_arguments
 
 let clear_import_state () = Export_id.Tbl.clear rename_id_state

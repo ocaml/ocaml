@@ -48,7 +48,7 @@ and approx =
   | Value_id of Export_id.t
   | Value_symbol of Symbol.t
 
-type exported = {
+type t = {
   sets_of_closures : Flambda.function_declarations Set_of_closures_id.Map.t;
   closures : Flambda.function_declarations Closure_id.Map.t;
   values : descr Export_id.Map.t Compilation_unit.Map.t;
@@ -62,10 +62,10 @@ type exported = {
   invariant_arguments : Variable.Set.t Set_of_closures_id.Map.t;
 }
 
-let empty_export : exported = {
+let empty : t = {
   sets_of_closures = Set_of_closures_id.Map.empty;
   closures = Closure_id.Map.empty;
-  values =  Compilation_unit.Map.empty;
+  values = Compilation_unit.Map.empty;
   globals = Ident.Map.empty;
   id_symbol =  Compilation_unit.Map.empty;
   symbol_id = Symbol.Map.empty;
@@ -76,15 +76,18 @@ let empty_export : exported = {
   invariant_arguments = Set_of_closures_id.Map.empty;
 }
 
-let create_exported ~sets_of_closures ~closures ~values ~globals ~id_symbol
-      ~symbol_id ~constant_sets_of_closures ~invariant_arguments =
-  { empty_export with
-    sets_of_closures;
+let create ~sets_of_closures ~closures ~values ~globals ~id_symbol
+      ~symbol_id ~offset_fun ~offset_fv ~constants ~constant_sets_of_closures
+      ~invariant_arguments =
+  { sets_of_closures;
     closures;
     values;
     globals;
     id_symbol;
     symbol_id;
+    offset_fun;
+    offset_fv;
+    constants;
     constant_sets_of_closures;
     invariant_arguments;
   }
@@ -94,7 +97,7 @@ let find_ex_value eid map =
   let unit_map = Compilation_unit.Map.find unit map in
   Export_id.Map.find eid unit_map
 
-let find_description eid (ex : exported) =
+let find_description eid (ex : t) =
   find_ex_value eid ex.values
 
 let eidmap_disjoint_union m1 m2 =
@@ -116,7 +119,7 @@ let nest_eid_map map =
   in
   Export_id.Map.fold add_map map Compilation_unit.Map.empty
 
-let print_approx ppf (export : exported) =
+let print_approx ppf (export : t) =
   let values = export.values in
   let fprintf = Format.fprintf in
   let printed = ref Export_id.Set.empty in
@@ -196,14 +199,14 @@ let print_approx ppf (export : exported) =
   in
   Ident.Map.iter print_approxs export.globals
 
-let print_symbols ppf (export : exported) =
+let print_symbols ppf (export : t) =
   let print_symbol eid sym =
     Format.fprintf ppf "%a -> %a@." Symbol.print sym Export_id.print eid
   in
   Compilation_unit.Map.iter (fun _ -> Export_id.Map.iter print_symbol)
     export.id_symbol
 
-let print_offsets ppf (export : exported) =
+let print_offsets ppf (export : t) =
   Format.fprintf ppf "@[<v 2>offset_fun:@ ";
   Closure_id.Map.iter (fun cid off ->
       Format.fprintf ppf "%a -> %i@ "
@@ -214,7 +217,7 @@ let print_offsets ppf (export : exported) =
         Var_within_closure.print vid off) export.offset_fv;
   Format.fprintf ppf "@]@ "
 
-let print_all ppf (export : exported) =
+let print_all ppf (export : t) =
   let fprintf = Format.fprintf in
   fprintf ppf "approxs@ %a@.@."
     print_approx export;
@@ -228,7 +231,7 @@ let print_all ppf (export : exported) =
     (Set_of_closures_id.Map.print Flambda.print_function_declarations)
     export.sets_of_closures
 
-let merge (e1 : exported) (e2 : exported) : exported =
+let merge (e1 : t) (e2 : t) : t =
   let int_eq (i:int) j = i = j in
   { values = eidmap_disjoint_union e1.values e2.values;
     globals = Ident.Map.disjoint_union e1.globals e2.globals;

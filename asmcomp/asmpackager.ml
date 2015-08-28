@@ -147,16 +147,16 @@ let build_package_cmx members cmxfile =
   let units = List.map (fun info ->
       { info with
         ui_export_info =
-          Export_info.import_for_pack ~pack_units
+          Export_info_for_pack.import_for_pack ~pack_units
             ~pack:(Compilenv.current_unit ()) info.ui_export_info })
       units in
   let ui = Compilenv.current_unit_infos() in
   let ui_export_info =
     List.fold_left (fun acc info -> Export_info.merge acc info.ui_export_info)
-      (Export_info.import_for_pack ~pack_units
+      (Export_info_for_pack.import_for_pack ~pack_units
          ~pack:(Compilenv.current_unit ()) ui.ui_export_info)
       units in
-  Export_info.clear_import_state ();
+  Export_info_for_pack.clear_import_state ();
   let pkg_infos =
     { ui_name = ui.ui_name;
       ui_symbol = ui.ui_symbol;

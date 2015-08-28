@@ -66,11 +66,11 @@ val set_global_approx: Clambda.value_approximation -> unit
 val record_global_approx_toplevel: unit -> unit
         (* Record the current approximation for the current toplevel phrase *)
 
-val set_export_info: Export_info.exported -> unit
+val set_export_info: Export_info.t -> unit
         (* Record the informations of the unit being compiled *)
-val approx_env: unit -> Export_info.exported
+val approx_env: unit -> Export_info.t
         (* Returns all the information loaded from extenal compilation units *)
-val approx_for_global: Compilation_unit.t -> Export_info.exported
+val approx_for_global: Compilation_unit.t -> Export_info.t
         (* Loads the exported information declaring the compilation_unit *)
 
 val need_curry_fun: int -> unit

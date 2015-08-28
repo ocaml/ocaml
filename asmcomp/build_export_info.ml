@@ -13,11 +13,11 @@
 
 module Int = Ext_types.Int
 module ET = Export_info
-type env = ET.approx Variable.Map.t
+type env = Export_info.approx Variable.Map.t
 
-let ex_table : ET.descr Export_id.Map.t ref = ref Export_id.Map.empty
+let ex_table : Export_info.descr Export_id.Map.t ref = ref Export_id.Map.empty
 let symbol_table : Export_id.t Symbol.Map.t ref = ref Symbol.Map.empty
-(* let global_approx : ET.approx Int.Map.t ref = ref Int.Map.empty *)
+(* let global_approx : Export_info.approx Int.Map.t ref = ref Int.Map.empty *)
 
 let reset () =
   ex_table := Export_id.Map.empty;
@@ -43,7 +43,7 @@ let extern_symbol_descr sym =
     with
     | Not_found -> None
 
-let get_descr (approx : ET.approx) =
+let get_descr (approx : Export_info.approx) =
   match approx with
   | Value_unknown -> None
   | Value_id ex ->
@@ -65,7 +65,7 @@ let new_descr descr =
 let new_symbol symbol id =
   symbol_table := Symbol.Map.add symbol id !symbol_table
 
-let describe_constant (c:Flambda.constant_defining_value_block_field) : ET.approx =
+let describe_constant (c:Flambda.constant_defining_value_block_field) : Export_info.approx =
   match c with
   | Symbol s -> Value_symbol s
   (* [Const_pointer] is an immediate value of a type whose values may be
@@ -87,24 +87,24 @@ let describe_allocated_constant
   | Nativeint i ->
     Value_boxed_int (Nativeint, i)
   | String s ->
-    let v_string : ET.value_string =
+    let v_string : Export_info.value_string =
       { size = String.length s; contents = Unknown_or_mutable }
     in
     Value_string v_string
   | Immstring c ->
-    let v_string : ET.value_string =
+    let v_string : Export_info.value_string =
       { size = String.length c; contents = Contents c }
     in
     Value_string v_string
   | Float_array a ->
     Value_float_array (List.length a)
 
-let find_approx env var : ET.approx =
+let find_approx env var : Export_info.approx =
   begin try Variable.Map.find var env with
   | Not_found -> Value_unknown
   end
 
-let rec describe (env : env) (flam : Flambda.t) : ET.approx =
+let rec describe (env : env) (flam : Flambda.t) : Export_info.approx =
   match flam with
   | Var var ->
     find_approx env var
@@ -113,7 +113,7 @@ let rec describe (env : env) (flam : Flambda.t) : ET.approx =
     (* Format.eprintf "Let %a@." Variable.print id; *)
     let approx = match kind with
       | Immutable -> describe_named env lam
-      | Mutable -> ET.Value_unknown
+      | Mutable -> Export_info.Value_unknown
     in
     let env = Variable.Map.add id approx env in
     describe env body
@@ -172,7 +172,7 @@ let rec describe (env : env) (flam : Flambda.t) : ET.approx =
   | Proved_unreachable ->
     Value_unknown
 
-and describe_named (env : env) (named : Flambda.named) : ET.approx =
+and describe_named (env : env) (named : Flambda.named) : Export_info.approx =
   match named with
   | Expr e ->
     describe env e
@@ -200,7 +200,7 @@ and describe_named (env : env) (named : Flambda.named) : ET.approx =
       (* | Const_nativeint i -> *)
       (*   Value_id (new_descr (Value_boxed_int (Nativeint, i))) *)
       (* | Const_string (s,_) -> *)
-      (*   let v_string : ET.value_string = *)
+      (*   let v_string : Export_info.value_string = *)
       (*     { size = String.length s; contents = None } *)
       (*   in *)
       (*   Value_id (new_descr (Value_string v_string)) *)
@@ -215,14 +215,14 @@ and describe_named (env : env) (named : Flambda.named) : ET.approx =
   (* | Const (Const_float_array c) -> *)
   (*   Value_id (new_descr (Value_float_array (List.length c))) *)
   (* | Const (Const_immstring c) -> *)
-  (*   let v_string : ET.value_string = *)
+  (*   let v_string : Export_info.value_string = *)
   (*     { size = String.length c; contents = Some c } *)
   (*   in *)
   (*   Value_id (new_descr (Value_string v_string)) *)
 
   | Prim(Pmakeblock(tag, Immutable), args, _dbg) ->
     let approxs = List.map (find_approx env) args in
-    let descr = ET.Value_block (Tag.create_exn tag, Array.of_list approxs) in
+    let descr = Export_info.Value_block (Tag.create_exn tag, Array.of_list approxs) in
     Value_id (new_descr descr)
 
   | Prim(Pfield i, [arg], _) -> begin
@@ -265,14 +265,14 @@ and describe_named (env : env) (named : Flambda.named) : ET.approx =
   | Set_of_closures set ->
     Format.eprintf "set_of_closures@.";
     let descr =
-      ET.Value_set_of_closures (describe_set_of_closures env set)
+      Export_info.Value_set_of_closures (describe_set_of_closures env set)
     in
     Value_id (new_descr descr)
 
   | Project_closure { set_of_closures; closure_id } -> begin
       match get_descr (find_approx env set_of_closures) with
       | Some(Value_set_of_closures set_of_closures) ->
-        let descr = ET.Value_closure { closure_id = closure_id; set_of_closures } in
+        let descr = Export_info.Value_closure { closure_id = closure_id; set_of_closures } in
         Value_id (new_descr descr)
       | _ ->
         (* CR pchambart: This should be [assert false], but currently there are a
@@ -284,7 +284,7 @@ and describe_named (env : env) (named : Flambda.named) : ET.approx =
       match get_descr (find_approx env closure) with
       | Some(Value_closure { set_of_closures; closure_id }) ->
         assert(Closure_id.equal closure_id start_from);
-        let descr = ET.Value_closure { closure_id = move_to; set_of_closures } in
+        let descr = Export_info.Value_closure { closure_id = move_to; set_of_closures } in
         Value_id (new_descr descr)
       | _ -> Value_unknown
     end
@@ -307,7 +307,7 @@ and describe_named (env : env) (named : Flambda.named) : ET.approx =
     end
 
 and describe_set_of_closures env (set : Flambda.set_of_closures)
-      : ET.value_set_of_closures =
+      : Export_info.value_set_of_closures =
   let bound_vars_approx = Variable.Map.map (find_approx env) set.free_vars in
   let specialised_args_approx =
     Variable.Map.map (find_approx env) set.specialised_args
@@ -322,11 +322,11 @@ and describe_set_of_closures env (set : Flambda.set_of_closures)
        description contains a [value_set_of_closures]. We could replace
        this field by a [Expr_id.t] or an [approx]. *)
     let initial_value_set_of_closure =
-      { ET.set_of_closures_id = set.function_decls.set_of_closures_id;
+      { Export_info.set_of_closures_id = set.function_decls.set_of_closures_id;
         bound_vars = Var_within_closure.wrap_map bound_vars_approx;
         results =
           Closure_id.wrap_map
-            (Variable.Map.map (fun _ -> ET.Value_unknown)
+            (Variable.Map.map (fun _ -> Export_info.Value_unknown)
                set.function_decls.funs);
       }
     in
@@ -352,12 +352,12 @@ and describe_set_of_closures env (set : Flambda.set_of_closures)
             Flambda.print_set_of_closures set
         end;
         let descr =
-          ET.Value_closure
+          Export_info.Value_closure
             { closure_id = Closure_id.wrap var;
               set_of_closures = initial_value_set_of_closure;
             }
         in
-        ET.Value_id (new_descr descr))
+        Export_info.Value_id (new_descr descr))
       set.function_decls.funs
   in
   let closure_env =
@@ -408,7 +408,7 @@ let describe_constant_defining_value
     let approxs = List.map describe_constant fields in
     Value_block (tag, Array.of_list approxs)
   | Set_of_closures _ ->
-    ET.Value_set_of_closures (Symbol.Map.find symbol set_of_closures_env)
+    Export_info.Value_set_of_closures (Symbol.Map.find symbol set_of_closures_env)
   | Project_closure (set_of_closures, closure_id) ->
     let set_of_closures =
       try
@@ -418,9 +418,9 @@ let describe_constant_defining_value
                            sym=%a\n"
           Symbol.print set_of_closures
     in
-    ET.Value_closure { closure_id; set_of_closures }
+    Export_info.Value_closure { closure_id; set_of_closures }
 
-let record_project_closures (set_of_closures:ET.value_set_of_closures) =
+let record_project_closures (set_of_closures:Export_info.value_set_of_closures) =
   Closure_id.Map.iter (fun closure_id _ ->
       let symbol = Compilenv.closure_symbol closure_id in
       let export_id =
@@ -429,7 +429,7 @@ let record_project_closures (set_of_closures:ET.value_set_of_closures) =
       new_symbol symbol export_id)
     set_of_closures.results
 
-let build_export_info (program:Flambda.program) : ET.exported =
+let build_export_info (program:Flambda.program) : Export_info.t =
   reset ();
 
   Format.eprintf "@.build export info@.";
@@ -453,7 +453,7 @@ let build_export_info (program:Flambda.program) : ET.exported =
   (*    We may want to split this part and sort the traversal of different *)
   (*    part according to dependencies. *)
   (*    Another solution is to preallocate ids for globals. *\) *)
-  (* let _root_description : ET.approx = describe Variable.Map.empty lifted_flambda.expr in *)
+  (* let _root_description : Export_info.approx = describe Variable.Map.empty lifted_flambda.expr in *)
 
 
   let _ = record_project_closures in
@@ -466,7 +466,7 @@ let build_export_info (program:Flambda.program) : ET.exported =
   (*       describe_set_of_closures Variable.Map.empty set_of_closures *)
   (*     in *)
   (*     record_project_closures descr; *)
-  (*     new_symbol symbol (new_descr (ET.Value_set_of_closures descr)) *)
+  (*     new_symbol symbol (new_descr (Export_info.Value_set_of_closures descr)) *)
   (*   ) *)
   (*   lifted_flambda.set_of_closures_map; *)
 
@@ -480,13 +480,13 @@ let build_export_info (program:Flambda.program) : ET.exported =
 (*     let fields = *)
 (*       Array.init size_global (fun i -> *)
 (*           try Int.Map.find i !global_approx with *)
-(*           | Not_found -> ET.Value_unknown *)
+(*           | Not_found -> Export_info.Value_unknown *)
 (*         ) *)
 (*     in *)
 (*     new_descr (Value_block (Tag.zero,fields)) *)
 (*   in *)
 
-(*   let root_approx : ET.approx = *)
+(*   let root_approx : Export_info.approx = *)
 (*     Value_id root_id *)
 (*   in *)
 
@@ -539,8 +539,8 @@ let build_export_info (program:Flambda.program) : ET.exported =
 (*       ) set_of_closures_map *)
 (*   in *)
 
-  (* let export : ET.exported = *)
-  (*   { Export_info.empty_export with *)
+  (* let export : Export_info.t = *)
+  (*   { Export_info.empty with *)
   (*     values = Export_info.nest_eid_map !ex_table; *)
   (*     globals = *)
   (*       Ident.Map.singleton *)
@@ -553,12 +553,12 @@ let build_export_info (program:Flambda.program) : ET.exported =
   (*     invariant_arguments } *)
   (* in *)
 
-  let root_approx : ET.approx =
+  let root_approx : Export_info.approx =
     Value_symbol (Compilenv.current_unit_symbol ())
   in
 
   let export =
-    Export_info.create_exported
+    Export_info.create
       ~values:(Export_info.nest_eid_map !ex_table)
       ~globals:(
         Ident.Map.singleton
@@ -566,6 +566,9 @@ let build_export_info (program:Flambda.program) : ET.exported =
       ~symbol_id:!symbol_table
       (* TODO all of the following *)
       ~id_symbol:Compilation_unit.Map.empty
+      ~offset_fun:Closure_id.Map.empty
+      ~offset_fv:Var_within_closure.Map.empty
+      ~constants:Symbol.Set.empty
       ~sets_of_closures:Set_of_closures_id.Map.empty
       ~closures:Closure_id.Map.empty
       ~constant_sets_of_closures:Set_of_closures_id.Set.empty

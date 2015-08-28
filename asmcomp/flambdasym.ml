@@ -21,7 +21,7 @@ Transform an expression to prepare conversion to clambda
 During symbol assignment, some alias can be created (when building let rec for instance).
 They are replaced by their canonical representent in the Prepare functor application.
 
-Then the tables needed to build the Export_info.exported type are build.
+Then the tables needed to build the Export_info.t type are build.
 *)
 
 module ET = Export_info
@@ -915,7 +915,7 @@ let convert (type a) ~compilation_unit (expr:a Flambda.t) =
   let module C2 = Prepare(P2) in
 
   let export : ET.exported =
-    { Export_info.empty_export with
+    { Export_info.empty with
       values = Export_info.nest_eid_map C2.values;
       globals = Ident.Map.singleton
           (Compilenv.current_unit_id ()) C2.root_approx;

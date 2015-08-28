@@ -22,8 +22,8 @@
 val import_for_pack
    : pack_units:Compilation_unit.Set.t
   -> pack:Compilation_unit.t
-  -> Export_info.exported
-  -> Export_info.exported
+  -> Export_info.t
+  -> Export_info.t
 
 (** Drops the state after importing several units in the same pack. *)
 val clear_import_state : unit -> unit

@@ -51,7 +51,7 @@ and approx =
   | Value_id of Export_id.t
   | Value_symbol of Symbol.t
 
-type exported = private {
+type t = private {
   (* Code of exported functions indexed by function identifier *)
   sets_of_closures : Flambda.function_declarations Set_of_closures_id.Map.t;
   (* Code of exported functions indexed by offset identifier *)
@@ -75,26 +75,29 @@ type exported = private {
   invariant_arguments : Variable.Set.t Set_of_closures_id.Map.t;
 }
 
-val empty_export : exported
+val empty : t
 
-val create_exported
+val create
    : sets_of_closures:Flambda.function_declarations Set_of_closures_id.Map.t
   -> closures:Flambda.function_declarations Closure_id.Map.t
   -> values:descr Export_id.Map.t Compilation_unit.Map.t
   -> globals:approx Ident.Map.t
   -> id_symbol:Symbol.t Export_id.Map.t Compilation_unit.Map.t
   -> symbol_id:Export_id.t Symbol.Map.t
+  -> offset_fun:int Closure_id.Map.t
+  -> offset_fv:int Var_within_closure.Map.t
+  -> constants:Symbol.Set.t
   -> constant_sets_of_closures:Set_of_closures_id.Set.t
   -> invariant_arguments:Variable.Set.t Set_of_closures_id.Map.t
-  -> exported
+  -> t
 
-(** Union of export informations.  Verifies that there are no identifier
+(** Union of export information.  Verifies that there are no identifier
     clashes. *)
-val merge : exported -> exported -> exported
+val merge : t -> t -> t
 
 val find_description
    : Export_id.t
-  -> exported
+  -> t
   -> descr
 
 val nest_eid_map
@@ -103,7 +106,7 @@ val nest_eid_map
 
 (**/**)
 (* Debug printing functions. *)
-val print_approx : Format.formatter -> exported -> unit
-val print_symbols : Format.formatter -> exported -> unit
-val print_offsets : Format.formatter -> exported -> unit
-val print_all : Format.formatter -> exported -> unit
+val print_approx : Format.formatter -> t -> unit
+val print_symbols : Format.formatter -> t -> unit
+val print_offsets : Format.formatter -> t -> unit
+val print_all : Format.formatter -> t -> unit

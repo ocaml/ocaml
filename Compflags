@@ -26,6 +26,7 @@ case $1 in
   | asmcomp/closure_offsets.* \
   | asmcomp/compilenv.* \
   | asmcomp/export_info.* \
+  | asmcomp/export_info_for_pack.* \
   | asmcomp/flambdasym.* \
   | asmcomp/flambda_to_clambda* \
   | asmcomp/lift_constants.* \
