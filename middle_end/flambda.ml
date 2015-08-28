@@ -595,17 +595,35 @@ let create_set_of_closures ~function_decls ~free_vars ~specialised_args =
     (* CR mshinwell for pchambart: Is this ok, or should we cause an error?
        I tend to think this one is ok, but for specialised_args below, we
        should be strict. *)
-    Variable.Map.filter (fun inner_var _outer_var ->
-        Variable.Set.mem inner_var expected_free_vars)
-      free_vars
+
+
+    (* CR pchambart: We do not seem to be able to maintain the
+       invariant that if a variable is not used inside the closure, it
+       is not used outside either. This would be a nice property for
+       better dead code elimination during inline_and_simplify, but it
+       is not obvious how to ensure that.
+
+       This would be true when the function is known never to have
+       been inlined.
+
+       Note that something like that may maybe enforcable in
+       inline_and_simplify, but there is no way to do that on other
+       passes. *)
+
+    (* Variable.Map.filter (fun inner_var _outer_var -> *)
+    (*     Variable.Set.mem inner_var expected_free_vars) *)
+    (*   free_vars *)
+
+    free_vars
+
   in
   let free_vars_domain = Variable.Map.keys free_vars in
-  if not (Variable.Set.subset free_vars_domain expected_free_vars) then begin
+  if not (Variable.Set.subset expected_free_vars free_vars_domain) then begin
     Misc.fatal_errorf "create_set_of_closures: [free_vars] mapping of \
         variables bound by the closure(s) is wrong.  (%a, expected to be a \
         subset of %a)@ \n%s\nfunction_decls:@ %a"
-      Variable.Set.print free_vars_domain
       Variable.Set.print expected_free_vars
+      Variable.Set.print free_vars_domain
       (Printexc.raw_backtrace_to_string (Printexc.get_callstack max_int))
       print_function_declarations function_decls
   end;

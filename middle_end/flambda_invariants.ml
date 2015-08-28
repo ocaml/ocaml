@@ -305,15 +305,26 @@ let variable_and_symbol_invariants flam =
             all_params, Variable.Set.union free_variables all_free_vars)
           funs (Variable.Set.empty, Variable.Set.empty)
       in
+      (* CR pchambart: This is not a property that we can certainly ensure.
+         If the function get inlined, it is possible for the inlined version
+         to still use that variable. To be able to ensure that, we need to
+         also ensure that the inlined version will certainly be transformed
+         in a same way that can drop the dependency. *)
       (* Check that the free variables rewriting map in the set of closures
          does not contain variables in its domain that are not actually free
          variables of any of the function bodies. *)
       let bad_free_vars =
         Variable.Set.diff (Variable.Map.keys free_vars) all_free_vars
       in
+(*
       if not (Variable.Set.is_empty bad_free_vars) then begin
         raise (Set_of_closures_free_vars_map_has_wrong_range bad_free_vars)
       end;
+*)
+      (* Ignore it to avoid the warning: TODO get rid of that when the
+         case is settled *)
+      ignore (Set_of_closures_free_vars_map_has_wrong_range bad_free_vars);
+
       (* Check that free variables variables are not bound somewhere
          else in the program *)
       declare_variables (Variable.Map.keys free_vars);
