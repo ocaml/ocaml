@@ -55,7 +55,7 @@ module Env = struct
   let find_global t pos =
     try Ext_types.Int.Map.find pos t.globals
     with Not_found ->
-      Misc.fatal_error ("Closure_conversion.Env.find_global: exn "
+      Misc.fatal_error ("Closure_conversion.Env.find_global: global "
         ^ string_of_int pos)
 
 end
