@@ -264,8 +264,7 @@ static void* domain_thread_func(void* v) {
 
   if (domain_self) {
     caml_gc_log("Domain starting");
-    /* FIXME exceptions */
-    caml_callback_exn(callback, Val_unit);
+    caml_callback(callback, Val_unit);
     domain_terminate();
   } else {
     caml_gc_log("Failed to create domain");
