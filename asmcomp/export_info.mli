@@ -72,7 +72,9 @@ type t = private {
   (* Symbols that are effectively constants (the top-level module is
      not always a constant for instance). *)
   constants : Symbol.Set.t;
+  (* CR mshinwell for pchambart: Add comment *)
   constant_sets_of_closures : Set_of_closures_id.Set.t;
+  (* CR mshinwell for pchambart: Add comment *)
   invariant_arguments : Variable.Set.t Set_of_closures_id.Map.t;
 }
 

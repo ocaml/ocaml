@@ -103,6 +103,12 @@ val make_closure_map
    : Flambda.program
   -> Flambda.function_declarations Closure_id.Map.t
 
+(** Like [make_closure_map], but takes a mapping from set of closures IDs to
+    function declarations, instead of a [program]. *)
+val make_closure_map'
+   : Flambda.function_declarations Set_of_closures_id.Map.t
+  -> Flambda.function_declarations Closure_id.Map.t
+
 (** The definitions of all constants that have been lifted out to [Let_symbol]
     or [Let_rec_symbol] constructions. *)
 val all_lifted_constants
