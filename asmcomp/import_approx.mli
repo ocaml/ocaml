@@ -11,7 +11,8 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(** Import simple value approximations from .cmx files. *)
+(** Create simple value approximations from the export information in
+    .cmx files. *)
 
 val really_import : Simple_value_approx.descr -> Simple_value_approx.descr
 val really_import_approx : Simple_value_approx.t -> Simple_value_approx.t
