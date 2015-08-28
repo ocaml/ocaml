@@ -37,6 +37,11 @@ void caml_clean_stack(value stack)
 {
   caml_fatal_error("Fibers unimplemented");
 }
+
+void caml_clean_stack_domain(value stack, struct domain* domain)
+{
+  caml_fatal_error("Fibers unimplemented");
+}
 #else
 
 /* One word at the base of the stack is used to store the stack pointer */
