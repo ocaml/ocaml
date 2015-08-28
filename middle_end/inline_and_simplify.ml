@@ -471,7 +471,6 @@ let rec simplify_project_var env r ~(project_var : Flambda.project_var)
    variable.
 *)
 and simplify_set_of_closures original_env r
-      ~constant
       (set_of_closures : Flambda.set_of_closures)
       : Flambda.set_of_closures * R.t =
   let function_decls =
@@ -544,13 +543,7 @@ and simplify_set_of_closures original_env r
           A.value_closure ~closure_var:closure internal_value_set_of_closures
             (Closure_id.wrap closure)
         in
-        let env = E.add env closure approx in
-        if constant then
-          let module Backend = (val (E.backend env) : Backend_intf.S) in
-          let symbol = Backend.closure_symbol (Closure_id.wrap closure) in
-          E.add_symbol env symbol approx
-        else
-          env
+        E.add env closure approx
       )
       function_decls.funs env
   in
@@ -728,7 +721,7 @@ and simplify_named env r (tree : Flambda.named) : Flambda.named * R.t =
   | Predefined_exn _ -> tree, ret r A.value_unknown
   | Set_of_closures set_of_closures ->
     let set_of_closures, r =
-      simplify_set_of_closures env r ~constant:false set_of_closures
+      simplify_set_of_closures env r set_of_closures
     in
     Set_of_closures set_of_closures, r
   | Project_closure project_closure ->
@@ -1035,8 +1028,89 @@ and simplify env r tree =
      exactly is happening here? *)
   f, ret r (Backend.really_import_approx (R.approx r))
 
-let simplify_constant_defining_value env r
-    symbol
+let constant_defining_value_approx
+    env
+    (constant_defining_value:Flambda.constant_defining_value) =
+  match constant_defining_value with
+  | Allocated_const const ->
+    approx_for_allocated_const const
+  | Block (tag, fields) ->
+    let fields =
+      List.map
+        (function
+          | Flambda.Symbol sym -> begin
+              match E.find_symbol_opt env sym with
+              | Some approx -> approx
+              | None -> A.value_unknown
+            end
+          | Flambda.Const cst -> simplify_const cst)
+        fields
+    in
+    A.value_block (tag, Array.of_list fields)
+  | Set_of_closures { function_decls; free_vars; specialised_args } ->
+    (* At toplevel, there is no freshening currently happening (this
+       cannot be the body of a currently inlined function), so we can
+       keep the original set_of_closures in the approximation. *)
+    assert(E.freshening env = Freshening.empty);
+    assert(Variable.Map.is_empty free_vars);
+    assert(Variable.Map.is_empty specialised_args);
+    let value_set_of_closures : A.value_set_of_closures =
+      { function_decls;
+        bound_vars = Var_within_closure.Map.empty;
+        unchanging_params = Variable.Set.empty;
+        specialised_args = Variable.Set.empty;
+        freshening = Freshening.Project_var.empty;
+      }
+    in
+    A.value_set_of_closures value_set_of_closures
+  | Project_closure (set_of_closures_symbol, closure_id) -> begin
+      match E.find_symbol_opt env set_of_closures_symbol with
+      | None ->
+        A.value_unknown
+      | Some set_of_closures_approx ->
+        let checked_approx =
+          A.checked_approx_for_set_of_closures_allowing_unknown_and_unresolved
+            set_of_closures_approx
+        in
+        match checked_approx with
+        | Ok value_set_of_closures ->
+          let closure_id =
+            A.freshen_and_check_closure_id value_set_of_closures closure_id
+          in
+          A.value_closure value_set_of_closures closure_id
+        | Unknown_or_unresolved ->
+          A.value_unknown
+        | Wrong ->
+          Misc.fatal_errorf "Wrong approximation for [Project_closure] \
+                             when being used as a [constant_defining_value]: %a"
+            Flambda.print_constant_defining_value constant_defining_value
+    end
+
+let define_let_rec_symbol_approx env defs =
+  (* First declare an empty version of the symbols *)
+  let env =
+    List.fold_left (fun env (symbol, _) ->
+        E.add_symbol env symbol A.value_unknown)
+      env defs
+  in
+  let rec loop times env =
+    if times <= 0 then
+      env
+    else
+      let env =
+        List.fold_left (fun env (symbol, constant_defining_value) ->
+            let approx =
+              constant_defining_value_approx env constant_defining_value
+            in
+            E.redefine_symbol env symbol approx)
+          env defs
+      in
+      loop (times-1) env
+  in
+  loop 2 env
+
+let simplify_constant_defining_value
+    env r symbol
     (constant_defining_value:Flambda.constant_defining_value) =
   let r, constant_defining_value, approx =
     match constant_defining_value with
@@ -1058,7 +1132,7 @@ let simplify_constant_defining_value env r
           Flambda.print_set_of_closures set_of_closures
       end;
       let set_of_closures, r =
-        simplify_set_of_closures env r ~constant:true set_of_closures
+        simplify_set_of_closures env r set_of_closures
       in
       r, ((Set_of_closures set_of_closures) : Flambda.constant_defining_value),
       R.approx r
@@ -1091,10 +1165,7 @@ let rec simplify_program env r (program : Flambda.program)
   : Flambda.program * R.t =
   match program with
   | Let_rec_symbol (defs, program) ->
-    let env = List.fold_left (fun env (symbol, _) ->
-        E.add_symbol env symbol A.value_unknown)
-        env defs
-    in
+    let env = define_let_rec_symbol_approx env defs in
     let env, r, defs =
       List.fold_left (fun (env, r, defs) (symbol, def) ->
           let r, def, approx =

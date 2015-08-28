@@ -291,6 +291,7 @@ let find_original_set_of_closure
     (aliases:Alias_analysis.allocation_point Variable.Map.t)
     (var_to_symbol_tbl:Symbol.t Variable.Tbl.t)
     (var_to_definition_tbl:Alias_analysis.constant_defining_value Variable.Tbl.t)
+    project_closure_map
     var =
   let rec loop var =
     match Variable.Map.find var aliases with
@@ -310,8 +311,13 @@ let find_original_set_of_closure
         | _ -> assert false
       end
     | Symbol s ->
-      (* Symbol are necessarilly set_of_closures here *)
-      s
+      match Symbol.Map.find s project_closure_map with
+      | exception Not_found ->
+        Format.eprintf "symbol alias %a@."
+          Symbol.print s;
+        (* Symbol are necessarilly set_of_closures here *)
+        s
+      | s -> s
   in
   loop var
 

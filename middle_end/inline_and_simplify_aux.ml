@@ -84,6 +84,10 @@ module Env = struct
   let find_symbol_exn t symbol =
     Symbol.Map.find symbol t.approx_sym
 
+  let find_symbol_opt t symbol =
+    try Some (Symbol.Map.find symbol t.approx_sym)
+    with Not_found -> None
+
   let add_symbol t symbol approx =
     match find_symbol_exn t symbol with
     | exception Not_found ->
