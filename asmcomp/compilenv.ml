@@ -440,7 +440,7 @@ let closure_symbol fv =
   let linkage_name =
     concat_symbol unitname ((Closure_id.unique_name fv) ^ "_closure")
   in
-  Symbol.create compilation_unit (Linkage_name.create linkage_name)
+  Symbol.unsafe_create compilation_unit (Linkage_name.create linkage_name)
 
 let function_label fv =
   let compilation_unit = Closure_id.get_compilation_unit fv in
