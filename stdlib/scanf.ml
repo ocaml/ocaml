@@ -23,6 +23,7 @@ open CamlinternalFormat
 *)
 type ('a, 'b, 'c, 'd, 'e, 'f) format6 =
   ('a, 'b, 'c, 'd, 'e, 'f) Pervasives.format6
+;;
 
 (* The run-time library for scanners. *)
 
@@ -286,7 +287,7 @@ module Scanning : SCANNING = struct
      calls to scanners indeed read from the same input buffer. In effect, if a
      scanner [scan1] is reading from [ib1] and stores an unused lookahead
      character [c1] into its input buffer [ib1], then another scanner [scan2]
-     not reading from the same buffer [ib1] will miss the character [c],
+     not reading from the same buffer [ib1] will miss the character [c1],
      seemingly vanished in the air from the point of view of [scan2].
 
      This mechanism works perfectly to read from strings, from files, and from
@@ -303,8 +304,8 @@ module Scanning : SCANNING = struct
      low level reading and high level scanning from the same input channel.
 
      This phenomenon of reading mess is even worse when one defines more than
-     one scanning buffer reading from the same input channel
-     [ic]. Unfortunately, we have no simple way to get rid of this problem
+     one scanning buffer reading from the same input channel [ic].
+     Unfortunately, we have no simple way to get rid of this problem
      (unless the basic input channel API is modified to offer a 'consider this
      char as unread' procedure to keep back the unused lookahead character as
      available in the input channel for further reading).
@@ -415,6 +416,7 @@ end
 
 type ('a, 'b, 'c, 'd) scanner =
      ('a, Scanning.in_channel, 'b, 'c, 'a -> 'd, 'd) format6 -> 'c
+;;
 
 (* Reporting errors. *)
 exception Scan_failure of string;;
@@ -437,6 +439,7 @@ let bad_end_of_input message =
     (Printf.sprintf
        "scanning of %s failed: \
         premature end of file occurred before end of token" message)
+;;
 
 let bad_float () =
   bad_input "no dot or exponent part found in float token"
@@ -448,6 +451,7 @@ let character_mismatch_err c ci =
 
 let character_mismatch c ci =
   bad_input (character_mismatch_err c ci)
+;;
 
 let rec skip_whites ib =
   let c = Scanning.peek_char ib in
@@ -457,6 +461,7 @@ let rec skip_whites ib =
       Scanning.invalidate_current_char ib; skip_whites ib
     | _ -> ()
   end
+;;
 
 (* Checking that [c] is indeed in the input, then skips it.
    In this case, the character [c] has been explicitly specified in the
@@ -480,6 +485,7 @@ let rec check_char ib c =
       | '\r' when c = '\n' ->
         Scanning.invalidate_current_char ib; check_char ib '\n'
       | _ -> character_mismatch c ci
+;;
 
 (* Extracting tokens from the output token buffer. *)
 
@@ -774,7 +780,7 @@ let scan_caml_float width precision ib =
    otherwise, stops when encountering the characters in the scanning
    indication [stp].
    It also stops at end of file or when the maximum number of characters has
-   been read.*)
+   been read. *)
 let scan_string stp width ib =
   let rec loop width =
     if width = 0 then width else
