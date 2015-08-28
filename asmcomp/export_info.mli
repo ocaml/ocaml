@@ -51,32 +51,35 @@ and approx =
   | Value_id of Export_id.t
   | Value_symbol of Symbol.t
 
+(** A structure that describes what a single compilation unit exports. *)
 type t = private {
-  (* Code of exported functions indexed by function identifier *)
+  (* Code of exported functions indexed by set of closures IDs. *)
   sets_of_closures : Flambda.function_declarations Set_of_closures_id.Map.t;
-  (* Code of exported functions indexed by offset identifier *)
+  (* Code of exported functions indexed by closure IDs. *)
   closures : Flambda.function_declarations Closure_id.Map.t;
-  (* Structure of exported values  *)
+  (* Structure of exported values. *)
   values : descr Export_id.Map.t Compilation_unit.Map.t;
-  (* Global variables provided by the unit: usualy only the top-level
-     module identifier, but packs contains multiple ones. *)
+  (* Global variables provided by the unit: usually only the top-level
+     module identifier, but packs may contain more than one. *)
   globals : approx Ident.Map.t;
   id_symbol : Symbol.t Export_id.Map.t Compilation_unit.Map.t;
-  (* Associates symbols and values *)
+  (* Associates symbols and values. *)
   symbol_id : Export_id.t Symbol.Map.t;
-  (* Positions of function pointers in their closures *)
+  (* Positions of function pointers in their closures. *)
   offset_fun : int Closure_id.Map.t;
-  (* Positions of value pointers in their closures *)
+  (* Positions of value pointers in their closures. *)
   offset_fv : int Var_within_closure.Map.t;
   (* Symbols that are effectively constants (the top-level module is
-     not always a constant for instance) *)
+     not always a constant for instance). *)
   constants : Symbol.Set.t;
   constant_sets_of_closures : Set_of_closures_id.Set.t;
   invariant_arguments : Variable.Set.t Set_of_closures_id.Map.t;
 }
 
+(** Export information for a compilation unit that exports nothing. *)
 val empty : t
 
+(** Create a new export information structure. *)
 val create
    : sets_of_closures:Flambda.function_declarations Set_of_closures_id.Map.t
   -> closures:Flambda.function_declarations Closure_id.Map.t
@@ -95,11 +98,13 @@ val create
     clashes. *)
 val merge : t -> t -> t
 
+(** Look up the description of an exported value given its export ID. *)
 val find_description
-   : Export_id.t
-  -> t
+   : t
+  -> Export_id.t
   -> descr
 
+(** Partition a mapping from export IDs by compilation unit. *)
 val nest_eid_map
    : 'a Export_id.Map.t
   -> 'a Export_id.Map.t Compilation_unit.Map.t

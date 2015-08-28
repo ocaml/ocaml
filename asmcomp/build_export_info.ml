@@ -26,7 +26,7 @@ let reset () =
 
 let extern_id_descr ex =
   let export = Compilenv.approx_env () in
-  try Some (Export_info.find_description ex export)
+  try Some (Export_info.find_description export ex)
   with Not_found -> None
 
 let extern_symbol_descr sym =
@@ -38,7 +38,7 @@ let extern_symbol_descr sym =
     in
     try
       let id = Symbol.Map.find sym export.symbol_id in
-      let descr = Export_info.find_description id export in
+      let descr = Export_info.find_description export id in
       Some descr
     with
     | Not_found -> None

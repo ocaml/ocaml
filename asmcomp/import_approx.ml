@@ -64,7 +64,7 @@ let import_set_of_closures =
 let rec import_ex ex =
   ignore (Compilenv.approx_for_global (Export_id.unit ex));
   let ex_info = Compilenv.approx_env () in
-  match Export_info.find_description ex ex_info with
+  match Export_info.find_description ex_info ex with
   | exception Not_found -> A.value_unknown
   | Value_int i -> A.value_int i
   | Value_constptr i -> A.value_constptr i
