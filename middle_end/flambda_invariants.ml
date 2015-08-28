@@ -83,7 +83,6 @@ exception Flambda_invariants_failed
 let variable_and_symbol_invariants flam =
   let all_declared_variables = ref Variable.Set.empty in
   let declare_variable var =
-    Format.eprintf "declare %a@." Variable.print var;
     if Variable.Set.mem var !all_declared_variables then
       raise (Binding_occurrence_of_variable_already_bound var);
     all_declared_variables := Variable.Set.add var !all_declared_variables
@@ -251,7 +250,6 @@ let variable_and_symbol_invariants flam =
       in
       let all_params, all_free_vars =
         Variable.Map.fold (fun fun_var function_decl acc ->
-            Format.eprintf "go to function %a@." Variable.print fun_var;
             let all_params, all_free_vars = acc in
             let { Flambda.params; body; free_variables; stub; dbg; } =
               function_decl
