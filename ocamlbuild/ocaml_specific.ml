@@ -270,9 +270,11 @@ rule "ocaml: mllib & cmo* -> cma"
   ~prod:"%.cma"
   ~dep:"%.mllib"
   ~doc:"Build a .cma archive file (bytecode library) containing \
-        the list of modules given in the .mllib file of the same name. \
+        the list of modules (`Foo`, `subdir/Bar`) given in the .mllib file \
+        of the same name, one per line. \
         Note that the .cma archive will contain exactly the modules listed, \
         so it may not be self-contained if some dependencies are missing."
+
   (Ocaml_compiler.byte_library_link_mllib "%.mllib" "%.cma");;
 
 rule "ocaml: d.cmo* -> d.cma"
@@ -296,7 +298,15 @@ rule "ocaml C stubs: clib & (o|obj)* -> (a|lib) & (so|dll)"
           else
 	    [])
   ~dep:"%(path)lib%(libname).clib"
-  ?doc:None (* TODO document *)
+  ~doc:"OCamlbuild can create a C library by calling ocamlmklib \
+        with the file paths listed (one per line) in libfoo.clib. \
+        To build a static library from libfoo.clib, you should \
+        request libfoo.a (or libfoo.lib on Windows), and to build \
+        a dynamic library you should request libfoo.so (or libfoo.dll \
+        on Windows). Finally, any file listed in the .clib \
+        with name 'bar/baz.o' will link 'bar/baz.obj' instead on Windows: \
+        using the .o extension will give portable clib files, even if \
+        it is not the object file extension on your system."
   (C_tools.link_C_library "%(path)lib%(libname).clib" ("%(path)lib%(libname)"-.-ext_lib) "%(path)%(libname)");;
 
 rule "ocaml: mllib & p.cmx* & p.o* -> p.cmxa & p.a"
@@ -430,14 +440,20 @@ rule "ocamldoc: document ocaml project odocl & *odoc -> docdir (man)"
   ~prod:"%.docdir/man"
   ~stamp:"%.docdir/man.stamp"
   ~dep:"%.odocl"
-  ?doc:None (* TODO document *)
+  ~doc:"If foo.odocl contains a list of capitalized module names, \
+        the target foo.docdir/man will call ocamldoc to produce \
+        documentation for this modules in man format."
   (Ocaml_tools.document_ocaml_project
       ~ocamldoc:Ocaml_tools.ocamldoc_l_dir "%.odocl" "%.docdir/man" "%.docdir");;
 
-rule "ocamldoc: document ocaml project odocl & *odoc -> man|latex|dot..."
+rule "ocamldoc: document ocaml project odocl & *odoc -> latex|dot..."
   ~prod:"%(dir).docdir/%(file)"
   ~dep:"%(dir).odocl"
-  ?doc:None (* TODO document *)
+  ~doc:"If foo.odocl contains a list of capitalized module names, \
+        the target foo.docdir/bar.tex (or bar.ltx) will call ocamldoc \
+        to produce documentation for these modules in LaTeX format. \
+        The target foo.docdir/bar.dot will generate a dot graph of module \
+        dependencies."
   (Ocaml_tools.document_ocaml_project
       ~ocamldoc:Ocaml_tools.ocamldoc_l_file "%(dir).odocl" "%(dir).docdir/%(file)" "%(dir).docdir");;
 
@@ -489,7 +505,11 @@ end else
 rule "ocaml C stubs: c -> o"
   ~prod:x_o
   ~dep:"%.c"
-  ?doc:None (* TODO document *)
+  ~doc:"The OCaml compiler can be passed .c files and will call \
+        the underlying C toolchain to produce corresponding .o files. \
+        Requiring foo.o from OCamlbuild may build it from foo.c. \
+        ocamlc or ocamlopt will be used depending on whether \
+        the 'native' flag is set on the .c file."
   begin fun env _build ->
     let c = env "%.c" in
     let o = env x_o in
@@ -507,7 +527,9 @@ rule "ocaml: ml & ml.depends & *cmi -> .inferred.mli"
 rule "ocaml: mltop -> top"
   ~prod:"%.top"
   ~dep:"%.mltop"
-  ?doc:None (* TODO document *)
+  ~doc:"If foo.mltop contains a list of module paths, then building foo.top \
+        will call the ocamlmktop tool to build a custom toplevel with those \
+        modules pre-linked."
   (Ocaml_compiler.byte_toplevel_link_mltop "%.mltop" "%.top");;
 
 rule "preprocess: ml -> pp.ml"
