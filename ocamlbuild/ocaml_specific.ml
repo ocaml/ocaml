@@ -837,6 +837,18 @@ flag ["ocaml"; "doc"; "docfile"; "extension:tex"] (A"-latex");;
 flag ["ocaml"; "doc"; "docfile"; "extension:ltx"] (A"-latex");;
 flag ["ocaml"; "doc"; "docfile"; "extension:texi"] (A"-texi");;
 
+pflag ["ocaml"; "doc"; "extension:dot"] "dot_colors"
+  (fun param -> S [A "-dot-colors"; A param]);;
+flag ["ocaml"; "doc"; "extension:dot"; "dot_include_all"] (A"-dot-include-all");;
+flag ["ocaml"; "doc"; "extension:dot"; "dot_reduce"] (A"-dot-reduce");;
+flag ["ocaml"; "doc"; "extension:dot"; "dot_types"] (A"-dot-types");;
+
+flag ["ocaml"; "doc"; "manpage"; "man_mini"] (A"-man-mini");;
+pflag ["ocaml"; "doc"; "manpage"] "man_suffix"
+  (fun param -> S [A "-man-suffix"; A param]);;
+pflag ["ocaml"; "doc"; "manpage"] "man_section"
+  (fun param -> S [A "-man-section"; A param]);;
+
 ocaml_lib "ocamlbuildlib";;
 ocaml_lib "ocamlbuildlightlib";;
 
