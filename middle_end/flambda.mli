@@ -163,7 +163,6 @@ and named =
   | Symbol of Symbol.t
   | Const of const
   | Allocated_const of Allocated_const.t
-  | Predefined_exn of Ident.t
   | Set_of_closures of set_of_closures
   | Project_closure of project_closure
   | Move_within_set_of_closures of move_within_set_of_closures

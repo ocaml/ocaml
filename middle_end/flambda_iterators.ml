@@ -73,7 +73,7 @@ let iter_general ~toplevel f f_named maybe_named =
   and aux_named (named : Flambda.named) =
     f_named named;
     match named with
-    | Symbol _ | Const _ | Allocated_const _ | Predefined_exn _
+    | Symbol _ | Const _ | Allocated_const _
     | Project_closure _ | Project_var _ | Move_within_set_of_closures _
     | Prim _ -> ()
     | Set_of_closures ({ function_decls = funcs; free_vars = _;
@@ -110,7 +110,7 @@ let iter_all_let_and_let_rec_bindings t ~f =
 let iter_on_sets_of_closures f t =
   iter_named (function
       | Set_of_closures clos -> f clos
-      | Symbol _ | Const _ | Allocated_const _ | Predefined_exn _
+      | Symbol _ | Const _ | Allocated_const _
       | Project_closure _ | Move_within_set_of_closures _ | Project_var _
       | Prim _ | Expr _ -> ())
     t
@@ -175,7 +175,7 @@ let rec iter_on_set_of_closures_of_program (program : Flambda.program) ~f =
 let iter_symbols_on_named named ~f =
   iter_named_on_named (function
       | Symbol sym -> f sym
-      | (Const _ | Allocated_const _ | Predefined_exn _ | Set_of_closures _
+      | (Const _ | Allocated_const _ | Set_of_closures _
       | Project_closure _ | Move_within_set_of_closures _ | Project_var _
       | Prim _ | Expr _) -> ())
     named
@@ -183,7 +183,7 @@ let iter_symbols_on_named named ~f =
 let iter_symbols named ~f =
   iter_named (function
       | Symbol sym -> f sym
-      | (Const _ | Allocated_const _ | Predefined_exn _ | Set_of_closures _
+      | (Const _ | Allocated_const _ | Set_of_closures _
       | Project_closure _ | Move_within_set_of_closures _ | Project_var _
       | Prim _ | Expr _) -> ())
     named
@@ -276,7 +276,7 @@ let map_general ~toplevel f f_named tree =
   and aux_named (id : Variable.t) (named : Flambda.named) =
     let named : Flambda.named =
       match named with
-      | Symbol _ | Const _ | Allocated_const _ | Predefined_exn _
+      | Symbol _ | Const _ | Allocated_const _
       | Project_closure _ | Move_within_set_of_closures _ | Project_var _
       | Prim _ -> named
       | Set_of_closures ({ function_decls; free_vars; specialised_args }) ->
@@ -319,7 +319,7 @@ let map_toplevel_named f_named tree =
 let map_symbols tree ~f =
   map_named (function
       | Symbol sym -> Symbol (f sym)
-      | (Const _ | Allocated_const _ | Predefined_exn _ | Set_of_closures _
+      | (Const _ | Allocated_const _ | Set_of_closures _
       | Project_closure _ | Move_within_set_of_closures _ | Project_var _
       | Prim _ | Expr _) as named -> named)
     tree
@@ -346,7 +346,7 @@ let map_symbols_on_set_of_closures
 let map_toplevel_sets_of_closures tree ~f =
   map_toplevel_named (function
       | Set_of_closures set_of_closures -> Set_of_closures (f set_of_closures)
-      | (Symbol _ | Const _ | Allocated_const _ | Predefined_exn _
+      | (Symbol _ | Const _ | Allocated_const _
       | Project_closure _ | Move_within_set_of_closures _ | Project_var _
       | Prim _ | Expr _) as named -> named)
     tree
@@ -362,7 +362,7 @@ let map_sets_of_closures tree ~f =
   map_named (function
       | Set_of_closures set_of_closures -> Set_of_closures (f set_of_closures)
       | (Symbol _ | Const _ | Allocated_const _ | Project_closure _
-      | Predefined_exn _ | Move_within_set_of_closures _ | Project_var _
+      | Move_within_set_of_closures _ | Project_var _
       | Prim _ | Expr _) as named -> named)
     tree
 
@@ -373,7 +373,7 @@ let map_project_var_to_expr_opt tree ~f =
         | None -> Project_var project_var
         | Some expr -> Expr expr
         end
-      | (Symbol _ | Const _ | Allocated_const _ | Predefined_exn _
+      | (Symbol _ | Const _ | Allocated_const _
       | Set_of_closures _ | Project_closure _ | Move_within_set_of_closures _
       | Prim _ | Expr _)
           as named -> named)

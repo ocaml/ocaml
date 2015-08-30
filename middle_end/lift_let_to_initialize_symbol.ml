@@ -24,7 +24,7 @@ let substitute_variable_to_symbol var symbol expr =
     in
     match named with
     | Symbol _ | Const _ | Expr _ -> named
-    | Allocated_const _ | Predefined_exn _ -> named
+    | Allocated_const _ -> named
     | Set_of_closures set_of_closures ->
       let set_of_closures =
         Flambda.create_set_of_closures

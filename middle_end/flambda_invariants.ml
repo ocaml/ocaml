@@ -67,7 +67,6 @@ exception Declared_closure_from_another_unit of Compilation_unit.t
 exception Closure_id_is_bound_multiple_times of Closure_id.t
 exception Unbound_closure_ids of Closure_id.Set.t
 exception Unbound_vars_within_closures of Var_within_closure.Set.t
-exception Identifier_is_not_a_predefined_exception of Ident.t
 
 exception Flambda_invariants_failed
 
@@ -196,10 +195,6 @@ let variable_and_symbol_invariants flam =
     | Symbol symbol -> check_symbol_is_bound env symbol
     | Const const -> ignore_const const
     | Allocated_const const -> ignore_allocated_const const
-    | Predefined_exn ident ->
-      if not (Ident.is_predef_exn ident) then begin
-        raise (Identifier_is_not_a_predefined_exception ident)
-      end
     | Set_of_closures ({ function_decls; free_vars; specialised_args; }
         as set_of_closures) ->
       let { Flambda.set_of_closures_id; funs; compilation_unit } =
@@ -411,7 +406,7 @@ let used_closure_ids (program:Flambda.program) =
     | Project_var { closure = _; closure_id; var = _ } ->
       used := Closure_id.Set.add closure_id !used
     | Set_of_closures _ | Symbol _ | Const _ | Allocated_const _
-    | Predefined_exn _ | Prim _ | Expr _ -> ()
+    | Prim _ | Expr _ -> ()
   in
   Flambda_iterators.iter_named_of_program ~f program;
   !used
@@ -596,10 +591,6 @@ let check_exn ?(kind=Normal) ?(cmxfile=false) (flam:Flambda.program) =
     | Prevapply_should_be_expanded ->
       Format.eprintf ">> The Prevapply primitive should never occur in an \
         Flambda expression (see closure_conversion.ml); use Apply instead"
-    | Identifier_is_not_a_predefined_exception ident ->
-      Format.eprintf ">> This identifier occurs within [Predefined_exn] \
-          yet it is not a predefined exception: %a"
-        Ident.print ident
     | exn -> raise exn
     end;
     Format.eprintf "\n@?";

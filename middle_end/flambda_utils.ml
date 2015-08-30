@@ -136,8 +136,6 @@ and same_named (named1 : Flambda.named) (named2 : Flambda.named) =
   | Allocated_const c1, Allocated_const c2 ->
     Allocated_const.compare c1 c2 = 0
   | Allocated_const _, _ | _, Allocated_const _ -> false
-  | Predefined_exn i1, Predefined_exn i2 -> Ident.same i1 i2
-  | Predefined_exn _, _ | _, Predefined_exn _ -> false
   | Set_of_closures s1, Set_of_closures s2 -> same_set_of_closures s1 s2
   | Set_of_closures _, _ | _, Set_of_closures _ -> false
   | Project_closure f1, Project_closure f2 -> same_project_closure f1 f2
@@ -218,7 +216,7 @@ let toplevel_substitution sb tree =
   let aux_named (named : Flambda.named) : Flambda.named =
     match named with
     | Symbol _ | Const _ | Expr _ -> named
-    | Allocated_const _ | Predefined_exn _ -> named
+    | Allocated_const _ -> named
     | Set_of_closures set_of_closures ->
       let set_of_closures =
         Flambda.create_set_of_closures

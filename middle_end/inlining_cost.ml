@@ -98,7 +98,7 @@ let lambda_smaller' lam ~than:threshold =
     match named with
     | Symbol _ -> ()
     (* CR mshinwell: are these cases correct? *)
-    | Const _ | Allocated_const _ | Predefined_exn _ -> incr size
+    | Const _ | Allocated_const _ -> incr size
     | Set_of_closures ({ function_decls = ffuns }) ->
       Variable.Map.iter (fun _ (ffun : Flambda.function_declaration) ->
           lambda_size ffun.body)
@@ -182,8 +182,7 @@ module Benefit = struct
       (* CR mshinwell for pchambart: check closure & const cases carefully *)
     | Prim _ | Project_closure _ | Project_var _
     | Move_within_set_of_closures _ -> b := remove_prim !b
-    | Symbol _ | Allocated_const _ | Const _ | Expr _
-    | Predefined_exn _ -> ()
+    | Symbol _ | Allocated_const _ | Const _ | Expr _ -> ()
 
   let remove_code lam b =
     let b = ref b in

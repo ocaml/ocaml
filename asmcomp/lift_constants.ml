@@ -134,8 +134,6 @@ let assign_symbols_and_collect_constant_definitions ~program
       | Prim _ ->
         Misc.fatal_errorf "Primitive not expected to be constant: @.%a@."
           Flambda.print_named named
-      | Predefined_exn exn ->
-        record_definition (Predefined_exn exn)
       | Project_var project_var ->
         record_definition (Project_var project_var)
       | Expr e -> begin
@@ -270,7 +268,6 @@ let translate_definition_and_resolve_alias
   | Field (_,_) -> None
   | Const _ -> None
   | Symbol _ -> None
-  | Predefined_exn _ -> failwith "TODO predefined_exn"
   | Variable _ -> None
 
 let translate_definitions_and_resolve_alias

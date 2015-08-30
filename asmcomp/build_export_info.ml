@@ -180,9 +180,6 @@ and describe_named (env : env) (named : Flambda.named) : Export_info.approx =
   | Symbol sym ->
     Value_symbol sym
 
-  | Predefined_exn _ ->
-    failwith "TODO build export predef exn"
-
   | Const c -> begin
       match c with
       | Int i ->

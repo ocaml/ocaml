@@ -14,7 +14,6 @@ type constant_defining_value =
   | Field of Variable.t * int
   | Const of Flambda.const
   | Symbol of Symbol.t
-  | Predefined_exn of Ident.t
   | Variable of Variable.t
 
 val second_take :

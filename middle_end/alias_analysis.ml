@@ -254,7 +254,6 @@ and collect_equations_named (t:equations) (var:Variable.t) : Flambda.named -> eq
        Should we do someting with the [Allocated_const (Block (...))] case,
        which contains free variables? *)
     Resolved (Ground_const (Variable var))
-  | Predefined_exn _ -> assert false (* CR mshinwell for pchambart: What to do? *)
 
   | Expr e ->
     collect_equations t e
@@ -506,7 +505,6 @@ type constant_defining_value =
   | Field of Variable.t * int
   | Const of Flambda.const
   | Symbol of Symbol.t
-  | Predefined_exn of Ident.t
   | Variable of Variable.t
 
 let fatal_error_f fmt =
@@ -535,8 +533,7 @@ let rec resolve_definition
   | Block _
   | Set_of_closures _
   | Project_closure _
-  | Const _
-  | Predefined_exn _ ->
+  | Const _ ->
     Variable var
   | Project_var {var} ->
     fetch_variable definitions (Var_within_closure.unwrap var)
@@ -581,7 +578,7 @@ and fetch_variable_field
   | Symbol _ | Variable _ | Project_var _ | Field _ ->
     (* Must have been resolved *)
     assert false
-  | Predefined_exn _ | Const _ | Allocated_const _
+  | Const _ | Allocated_const _
   | Set_of_closures _ | Project_closure _ ->
     fatal_error_f "Field access to %a which is not a block" Variable.print var
 

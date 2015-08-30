@@ -253,7 +253,6 @@ Flambda.print flam;
 
 and to_clambda_named t env (named : Flambda.named) : Clambda.ulambda =
   match named with
-  | Predefined_exn _ -> assert false
   | Symbol sym ->
     let lbl = Linkage_name.to_string (Symbol.label sym) in
     (* CR pchambart: The constant should contains details about the variable to

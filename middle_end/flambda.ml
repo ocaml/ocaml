@@ -83,7 +83,6 @@ and named =
   | Symbol of Symbol.t
   | Const of const
   | Allocated_const of Allocated_const.t
-  | Predefined_exn of Ident.t
   | Set_of_closures of set_of_closures
   | Project_closure of project_closure
   | Move_within_set_of_closures of move_within_set_of_closures
@@ -281,7 +280,6 @@ and print_named ppf (named : named) =
   | Symbol (symbol) -> Symbol.print ppf symbol
   | Const (cst) -> fprintf ppf "Const(%a)" print_const cst
   | Allocated_const (cst) -> fprintf ppf "Aconst(%a)" Allocated_const.print cst
-  | Predefined_exn ident -> fprintf ppf "Predef_exn(%a)" Ident.print ident
   | Project_closure (project_closure) ->
     print_project_closure ppf project_closure
   | Project_var (project_var) -> print_project_var ppf project_var
@@ -497,7 +495,7 @@ let iter ?ignore_uses_in_apply ?ignore_uses_in_project_var tree
     | Proved_unreachable -> ()
   and aux_named (named : named) =
     match named with
-    | Symbol _ | Const _ | Allocated_const _ | Predefined_exn _ -> ()
+    | Symbol _ | Const _ | Allocated_const _ -> ()
     | Set_of_closures { free_vars; specialised_args; _ } ->
       (* Sets of closures are, well, closed---except for the specialised
          argument list, which may identify variables currently in scope

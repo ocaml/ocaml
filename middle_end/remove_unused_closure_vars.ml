@@ -28,7 +28,7 @@ let remove_unused_closure_variables program =
         used_fun := Closure_id.Set.add start_from !used_fun;
         used_fun := Closure_id.Set.add move_to !used_fun
       | Symbol _ | Const _ | Set_of_closures _ | Prim _ | Expr _
-      | Allocated_const _ | Predefined_exn _ -> ()
+      | Allocated_const _ -> ()
     in
     Flambda_iterators.iter_named_of_program ~f:aux_named program;
     !used, !used_fun
