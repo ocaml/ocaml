@@ -840,38 +840,46 @@ and simplify_direct env r (tree : Flambda.t) : Flambda.t * R.t =
     let r = R.use_staticfail r i in
     Static_raise (i, args), ret r A.value_bottom
   | Static_catch (i, vars, body, handler) ->
-    let i, sb = Freshening.add_static_exception (E.freshening env) i in
-    let env = E.set_freshening env sb in
-    let body, r = simplify env r body in
-    if not (Static_exception.Set.mem i (R.used_staticfail r)) then
-      (* If the static exception is not used, we can drop the declaration *)
-      body, r
-    else begin
-      match (body : Flambda.t) with
-      | Static_raise (j, args) when
-          Static_exception.equal i
-            (Freshening.apply_static_exception (E.freshening env) j) ->
-        (* This is usually true, since whe checked that the static
-           exception was used.  The only case where it can be false
-           is when an argument can raise.  This could be avoided if
-           all arguments where guaranteed to be variables. *)
-        let handler =
-          List.fold_left2 (fun body var arg ->
-              Flambda.Let (Immutable, var, Flambda.Expr arg, body))
-            handler vars args
-        in
-        let r = R.exit_scope_catch r i in
-        simplify env r handler
+    begin
+      match body with
+      | Let (mut, var, def, body)
+        when not (Flambda_utils.contains_static_exn def i) ->
+        simplify_direct env r
+          (Flambda.Let (mut, var, def, Static_catch (i, vars, body, handler)))
       | _ ->
-        let vars, sb = Freshening.add_variables' (E.freshening env) vars in
-        let env =
-          List.fold_left (fun env id -> E.add env id A.value_unknown)
-            (E.set_freshening env sb) vars
-        in
-        let env = E.inside_branch env in
-        let handler, r = simplify env r handler in
-        let r = R.exit_scope_catch r i in
-        Static_catch (i, vars, body, handler), ret r A.value_unknown
+        let i, sb = Freshening.add_static_exception (E.freshening env) i in
+        let env = E.set_freshening env sb in
+        let body, r = simplify env r body in
+        if not (Static_exception.Set.mem i (R.used_staticfail r)) then
+          (* If the static exception is not used, we can drop the declaration *)
+          body, r
+        else begin
+          match (body : Flambda.t) with
+          | Static_raise (j, args) when
+              Static_exception.equal i
+                (Freshening.apply_static_exception (E.freshening env) j) ->
+            (* This is usually true, since whe checked that the static
+               exception was used.  The only case where it can be false
+               is when an argument can raise.  This could be avoided if
+               all arguments where guaranteed to be variables. *)
+            let handler =
+              List.fold_left2 (fun body var arg ->
+                  Flambda.Let (Immutable, var, Flambda.Expr arg, body))
+                handler vars args
+            in
+            let r = R.exit_scope_catch r i in
+            simplify env r handler
+          | _ ->
+            let vars, sb = Freshening.add_variables' (E.freshening env) vars in
+            let env =
+              List.fold_left (fun env id -> E.add env id A.value_unknown)
+                (E.set_freshening env sb) vars
+            in
+            let env = E.inside_branch env in
+            let handler, r = simplify env r handler in
+            let r = R.exit_scope_catch r i in
+            Static_catch (i, vars, body, handler), ret r A.value_unknown
+        end
     end
   | Try_with (body, id, handler) ->
     let body, r = simplify env r body in
