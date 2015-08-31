@@ -121,6 +121,13 @@ let build_uoffset ulam offset : Clambda.ulambda =
   if offset = 0 then ulam
   else Uoffset (ulam, offset)
 
+let to_clambda_symbol sym : Clambda.ulambda =
+  let lbl = Linkage_name.to_string (Symbol.label sym) in
+  (* CR pchambart: The constant should contains details about the variable to
+     allow cmmgen to unbox.
+     mshinwell: What are we going to do here? *)
+  Uconst (Uconst_ref (lbl, None))
+
 let to_clambda_const (const : Flambda.constant_defining_value_block_field)
       : Clambda.uconstant =
   match const with
@@ -253,12 +260,7 @@ Flambda.print flam;
 
 and to_clambda_named t env var (named : Flambda.named) : Clambda.ulambda =
   match named with
-  | Symbol sym ->
-    let lbl = Linkage_name.to_string (Symbol.label sym) in
-    (* CR pchambart: The constant should contains details about the variable to
-       allow cmmgen to unbox.
-       mshinwell: What are we going to do here? *)
-    Uconst (Uconst_ref (lbl, None))
+  | Symbol sym -> to_clambda_symbol sym
   | Const (Const_pointer n) -> Uconst (Uconst_ptr n)
   | Const (Int n) -> Uconst (Uconst_int n)
   | Const (Char c) -> Uconst (Uconst_int (Char.code c))
@@ -439,8 +441,7 @@ and to_clambda_closed_set_of_closures t symbol
       List.fold_left (fun env (var, _) ->
           let closure_id = Closure_id.wrap var in
           let symbol = Compilenv.closure_symbol closure_id in
-          let named : Flambda.named = Symbol symbol in
-          Env.add_subst env var (to_clambda_named t Env.empty var named))
+          Env.add_subst env var (to_clambda_symbol symbol))
         Env.empty
         functions
     in
@@ -478,9 +479,7 @@ let to_clambda_initialize_symbol t env symbol fields : Clambda.ulambda =
   let build_setfield (index, field) : Clambda.ulambda =
     (* This [Psetfield] can affect a pointer, but since we are initializing
        a toplevel symbol, it is safe not to use [caml_modify]. *)
-    let symbol = Linkage_name.to_string (Symbol.label symbol) in
-    Uprim (Psetfield (index, false),
-      [Clambda.Uconst (Uconst_ref (symbol, None)); field],
+    Uprim (Psetfield (index, false), [to_clambda_symbol symbol; field],
       Debuginfo.none)
   in
   match fields with
