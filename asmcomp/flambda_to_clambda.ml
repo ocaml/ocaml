@@ -142,16 +142,16 @@ Flambda.print flam;
   | Var var -> subst_var env var
   | Let (_, var, def, body) ->
     let id, env_body = Env.add_fresh_ident env var in
-    Ulet (id, to_clambda_named t env def, to_clambda t env_body body)
+    Ulet (id, to_clambda_named t env var def, to_clambda t env_body body)
   | Let_rec (defs, body) ->
     let env, defs =
       List.fold_right (fun (var, def) (env, defs) ->
           let id, env = Env.add_fresh_ident env var in
-          env, (id, def) :: defs)
+          env, (id, var, def) :: defs)
         defs (env, [])
     in
     let defs =
-      List.map (fun (id, def) -> id, to_clambda_named t env def) defs
+      List.map (fun (id, var, def) -> id, to_clambda_named t env var def) defs
     in
     Uletrec (defs, to_clambda t env body)
   | Apply { func; args; kind = Direct direct_func; dbg = dbg } ->
@@ -251,7 +251,7 @@ Flambda.print flam;
        Uprim(Praise, [Uconst (Uconst_pointer 0, None)], Debuginfo.none) *)
     Uunreachable
 
-and to_clambda_named t env (named : Flambda.named) : Clambda.ulambda =
+and to_clambda_named t env var (named : Flambda.named) : Clambda.ulambda =
   match named with
   | Symbol sym ->
     let lbl = Linkage_name.to_string (Symbol.label sym) in
@@ -427,13 +427,26 @@ Flambda.print_set_of_closures set_of_closures;
 and to_clambda_closed_set_of_closures t symbol
       ({ function_decls; } : Flambda.set_of_closures)
       : Clambda.ustructured_constant =
+  let functions = Variable.Map.bindings function_decls in
   let to_clambda_function (id, (function_decl : Flambda.function_declaration))
         : Clambda.ufunction =
+    (* All that we need in the environment, for translating one closure from
+       a closed set of closures, is the substitutions for variables bound to
+       the various closures in the set.  Such closures will always be
+       referenced via symbols. *)
+    let env =
+      List.fold_left (fun env (var, _) ->
+          let closure_id = Closure_id.wrap var in
+          let symbol = Compilenv.closure_symbol closure_id in
+          add_sb var (to_clambda_named t Env.empty var (Symbol symbol)))
+        env
+        functions
+    in
     let env_body, params =
       List.fold_right (fun var (env, params) ->
           let id, env = Env.add_fresh_ident env var in
           env, id :: params)
-        function_decl.params (Env.empty, [])
+        function_decl.params (env, [])
     in
     { label = Compilenv.function_label (Closure_id.wrap id);
       arity = Flambda_utils.function_arity function_decl;
@@ -442,9 +455,7 @@ and to_clambda_closed_set_of_closures t symbol
       dbg = function_decl.dbg;
     }
   in
-  let ufunct =
-    List.map to_clambda_function (Variable.Map.bindings function_decls.funs)
-  in
+  let ufunct = List.map to_clambda_function functions in
   let closure_lbl = Linkage_name.to_string (Symbol.label symbol) in
   Uconst_closure (ufunct, closure_lbl, [])
 

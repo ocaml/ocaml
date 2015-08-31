@@ -433,7 +433,8 @@ let rec print_program ppf (program : program) =
    subtraction as we pass back over binding points? *)
 
 let iter ?ignore_uses_in_apply ?ignore_uses_in_project_var tree
-      ~free_variable ~bound_variable =
+    ~free_variable ~bound_variable
+    ~enter_let ~leave_let_definition ~leave_let_body =
   let rec aux (flam : t) : unit =
     match flam with
     | Var var -> free_variable var
@@ -445,9 +446,12 @@ let iter ?ignore_uses_in_apply ?ignore_uses_in_project_var tree
       end;
       List.iter free_variable args
     | Let (_, var, defining_expr, body) ->
+      let acc = enter_let var in
       bound_variable var;
       aux_named defining_expr;
-      aux body
+      let acc = leave_let_definition acc in
+      aux body;
+      leave_let_body acc
     | Let_rec (bindings, body) ->
       List.iter (fun (var, defining_expr) ->
           bound_variable var;
@@ -522,13 +526,46 @@ let free_variables ?ignore_uses_in_apply ?ignore_uses_in_project_var tree =
   let bound = ref Variable.Set.empty in
   let free_variable id = free := Variable.Set.add id !free in
   let bound_variable id = bound := Variable.Set.add id !bound in
+  let enter_let _var = () in
+  let leave_let_definition () = () in
+  let leave_let_body () = () in
   iter ?ignore_uses_in_apply ?ignore_uses_in_project_var tree
-    ~free_variable ~bound_variable;
+    ~free_variable ~bound_variable
+    ~enter_let ~leave_let_definition ~leave_let_body;
   Variable.Set.diff !free !bound
 
 let free_variables_named tree =
   let var = Variable.create "dummy" in
   free_variables (Let (Immutable, var, tree, Var var))
+
+let free_variables_by_let ?ignore_uses_in_apply ?ignore_uses_in_project_var tree =
+  let free = ref Variable.Set.empty in
+  let bound = ref Variable.Set.empty in
+  let map = ref Variable.Map.empty in
+  let free_variable id = free := Variable.Set.add id !free in
+  let bound_variable id = bound := Variable.Set.add id !bound in
+  let enter_let var =
+    var
+  in
+  let leave_let_definition var =
+    let current_free = !free in
+    let current_bound = !bound in
+    free := Variable.Set.empty;
+    bound := Variable.Set.empty;
+    var, current_free, current_bound
+  in
+  let leave_let_body (var, previous_free, previous_bound) =
+    let new_free = !free in
+    let new_bound = !bound in
+    let var_really_free = Variable.Set.diff new_free new_bound in
+    map := Variable.Map.add var var_really_free !map;
+    free := Variable.Set.union new_free previous_free;
+    bound := Variable.Set.union new_bound previous_bound
+  in
+  iter ?ignore_uses_in_apply ?ignore_uses_in_project_var tree
+    ~free_variable ~bound_variable
+    ~enter_let ~leave_let_definition ~leave_let_body;
+  !map
 
 let create_function_declaration ~params ~body ~stub ~dbg
       : function_declaration =
@@ -556,17 +593,35 @@ let create_set_of_closures ~function_decls ~free_vars ~specialised_args =
     (* CR mshinwell for pchambart: Is this ok, or should we cause an error?
        I tend to think this one is ok, but for specialised_args below, we
        should be strict. *)
-    Variable.Map.filter (fun inner_var _outer_var ->
-        Variable.Set.mem inner_var expected_free_vars)
-      free_vars
+
+
+    (* CR pchambart: We do not seem to be able to maintain the
+       invariant that if a variable is not used inside the closure, it
+       is not used outside either. This would be a nice property for
+       better dead code elimination during inline_and_simplify, but it
+       is not obvious how to ensure that.
+
+       This would be true when the function is known never to have
+       been inlined.
+
+       Note that something like that may maybe enforcable in
+       inline_and_simplify, but there is no way to do that on other
+       passes. *)
+
+    (* Variable.Map.filter (fun inner_var _outer_var -> *)
+    (*     Variable.Set.mem inner_var expected_free_vars) *)
+    (*   free_vars *)
+
+    free_vars
+
   in
   let free_vars_domain = Variable.Map.keys free_vars in
-  if not (Variable.Set.equal expected_free_vars free_vars_domain) then begin
+  if not (Variable.Set.subset expected_free_vars free_vars_domain) then begin
     Misc.fatal_errorf "create_set_of_closures: [free_vars] mapping of \
         variables bound by the closure(s) is wrong.  (%a, expected to be a \
         subset of %a)@ \n%s\nfunction_decls:@ %a"
-      Variable.Set.print free_vars_domain
       Variable.Set.print expected_free_vars
+      Variable.Set.print free_vars_domain
       (Printexc.raw_backtrace_to_string (Printexc.get_callstack max_int))
       print_function_declarations function_decls
   end;
@@ -597,6 +652,25 @@ let used_params function_decl =
     (fun param -> Variable.Set.mem param function_decl.free_variables)
     (Variable.Set.of_list function_decl.params)
 
+let compare_const (c1:const) (c2:const) =
+  match c1, c2 with
+  | Int i1, Int i2 -> compare i1 i2
+  | Char i1, Char i2 -> compare i1 i2
+  | Const_pointer i1, Const_pointer i2 -> compare i1 i2
+  | Int _, (Char _ | Const_pointer _) -> -1
+  | (Char _ | Const_pointer _), Int _ -> 1
+  | Char _, Const_pointer _ -> -1
+  | Const_pointer _, Char _ -> 1
+
+let compare_constant_defining_value_block_field
+    (c1:constant_defining_value_block_field)
+    (c2:constant_defining_value_block_field) =
+  match c1, c2 with
+  | Symbol s1, Symbol s2 -> Symbol.compare s1 s2
+  | Const c1, Const c2 -> compare_const c1 c2
+  | Symbol _, Const _ -> -1
+  | Const _, Symbol _ -> 1
+
 module Constant_defining_value = struct
   module T = struct
     type t = constant_defining_value
@@ -605,11 +679,12 @@ module Constant_defining_value = struct
       match t1, t2 with
       | Allocated_const c1, Allocated_const c2 ->
         Allocated_const.compare c1 c2
-      | Block (tag1, _fields1), Block (tag2, _fields2) ->
+      | Block (tag1, fields1), Block (tag2, fields2) ->
         let c = Tag.compare tag1 tag2 in
         if c <> 0 then c
-        else failwith "TODO compare block"
-          (* Symbol.compare_lists fields1 fields2 *)
+        else
+          Misc.compare_lists compare_constant_defining_value_block_field
+            fields1 fields2
       | Set_of_closures set1, Set_of_closures set2 ->
         Set_of_closures_id.compare set1.function_decls.set_of_closures_id
           set2.function_decls.set_of_closures_id
@@ -636,9 +711,14 @@ module Constant_defining_value = struct
 
     let hash = Hashtbl.hash
 
+    let print = print_constant_defining_value
+
+    let output o v =
+      output_string o (Format.asprintf "%a" print v)
+
   end
 
   include T
-  module Map = Map.Make (T)
-  module Tbl = Hashtbl.Make (T)
+  module Identifiable = Ext_types.Identifiable.Make(T)
+  include Identifiable
 end

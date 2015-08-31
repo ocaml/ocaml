@@ -543,7 +543,8 @@ and simplify_set_of_closures original_env r
           A.value_closure ~closure_var:closure internal_value_set_of_closures
             (Closure_id.wrap closure)
         in
-        E.add env closure approx)
+        E.add env closure approx
+      )
       function_decls.funs env
   in
   let simplify_function fid (function_decl : Flambda.function_declaration)
@@ -718,7 +719,9 @@ and simplify_named env r (tree : Flambda.named) : Flambda.named * R.t =
   | Const cst -> tree, ret r (simplify_const cst)
   | Allocated_const cst -> tree, ret r (approx_for_allocated_const cst)
   | Set_of_closures set_of_closures ->
-    let set_of_closures, r = simplify_set_of_closures env r set_of_closures in
+    let set_of_closures, r =
+      simplify_set_of_closures env r set_of_closures
+    in
     Set_of_closures set_of_closures, r
   | Project_closure project_closure ->
     simplify_project_closure env r ~project_closure
@@ -836,38 +839,46 @@ and simplify_direct env r (tree : Flambda.t) : Flambda.t * R.t =
     let r = R.use_staticfail r i in
     Static_raise (i, args), ret r A.value_bottom
   | Static_catch (i, vars, body, handler) ->
-    let i, sb = Freshening.add_static_exception (E.freshening env) i in
-    let env = E.set_freshening env sb in
-    let body, r = simplify env r body in
-    if not (Static_exception.Set.mem i (R.used_staticfail r)) then
-      (* If the static exception is not used, we can drop the declaration *)
-      body, r
-    else begin
-      match (body : Flambda.t) with
-      | Static_raise (j, args) when
-          Static_exception.equal i
-            (Freshening.apply_static_exception (E.freshening env) j) ->
-        (* This is usually true, since whe checked that the static
-           exception was used.  The only case where it can be false
-           is when an argument can raise.  This could be avoided if
-           all arguments where guaranteed to be variables. *)
-        let handler =
-          List.fold_left2 (fun body var arg ->
-              Flambda.Let (Immutable, var, Flambda.Expr arg, body))
-            handler vars args
-        in
-        let r = R.exit_scope_catch r i in
-        simplify env r handler
+    begin
+      match body with
+      | Let (mut, var, def, body)
+        when not (Flambda_utils.contains_static_exn def i) ->
+        simplify_direct env r
+          (Flambda.Let (mut, var, def, Static_catch (i, vars, body, handler)))
       | _ ->
-        let vars, sb = Freshening.add_variables' (E.freshening env) vars in
-        let env =
-          List.fold_left (fun env id -> E.add env id A.value_unknown)
-            (E.set_freshening env sb) vars
-        in
-        let env = E.inside_branch env in
-        let handler, r = simplify env r handler in
-        let r = R.exit_scope_catch r i in
-        Static_catch (i, vars, body, handler), ret r A.value_unknown
+        let i, sb = Freshening.add_static_exception (E.freshening env) i in
+        let env = E.set_freshening env sb in
+        let body, r = simplify env r body in
+        if not (Static_exception.Set.mem i (R.used_staticfail r)) then
+          (* If the static exception is not used, we can drop the declaration *)
+          body, r
+        else begin
+          match (body : Flambda.t) with
+          | Static_raise (j, args) when
+              Static_exception.equal i
+                (Freshening.apply_static_exception (E.freshening env) j) ->
+            (* This is usually true, since whe checked that the static
+               exception was used.  The only case where it can be false
+               is when an argument can raise.  This could be avoided if
+               all arguments where guaranteed to be variables. *)
+            let handler =
+              List.fold_left2 (fun body var arg ->
+                  Flambda.Let (Immutable, var, Flambda.Expr arg, body))
+                handler vars args
+            in
+            let r = R.exit_scope_catch r i in
+            simplify env r handler
+          | _ ->
+            let vars, sb = Freshening.add_variables' (E.freshening env) vars in
+            let env =
+              List.fold_left (fun env id -> E.add env id A.value_unknown)
+                (E.set_freshening env sb) vars
+            in
+            let env = E.inside_branch env in
+            let handler, r = simplify env r handler in
+            let r = R.exit_scope_catch r i in
+            Static_catch (i, vars, body, handler), ret r A.value_unknown
+        end
     end
   | Try_with (body, id, handler) ->
     let body, r = simplify env r body in
@@ -1024,8 +1035,89 @@ and simplify env r tree =
      exactly is happening here? *)
   f, ret r (Backend.really_import_approx (R.approx r))
 
-let simplify_constant_defining_value env r
-    symbol
+let constant_defining_value_approx
+    env
+    (constant_defining_value:Flambda.constant_defining_value) =
+  match constant_defining_value with
+  | Allocated_const const ->
+    approx_for_allocated_const const
+  | Block (tag, fields) ->
+    let fields =
+      List.map
+        (function
+          | Flambda.Symbol sym -> begin
+              match E.find_symbol_opt env sym with
+              | Some approx -> approx
+              | None -> A.value_unknown
+            end
+          | Flambda.Const cst -> simplify_const cst)
+        fields
+    in
+    A.value_block (tag, Array.of_list fields)
+  | Set_of_closures { function_decls; free_vars; specialised_args } ->
+    (* At toplevel, there is no freshening currently happening (this
+       cannot be the body of a currently inlined function), so we can
+       keep the original set_of_closures in the approximation. *)
+    assert(E.freshening env = Freshening.empty);
+    assert(Variable.Map.is_empty free_vars);
+    assert(Variable.Map.is_empty specialised_args);
+    let value_set_of_closures : A.value_set_of_closures =
+      { function_decls;
+        bound_vars = Var_within_closure.Map.empty;
+        unchanging_params = Variable.Set.empty;
+        specialised_args = Variable.Set.empty;
+        freshening = Freshening.Project_var.empty;
+      }
+    in
+    A.value_set_of_closures value_set_of_closures
+  | Project_closure (set_of_closures_symbol, closure_id) -> begin
+      match E.find_symbol_opt env set_of_closures_symbol with
+      | None ->
+        A.value_unknown
+      | Some set_of_closures_approx ->
+        let checked_approx =
+          A.checked_approx_for_set_of_closures_allowing_unknown_and_unresolved
+            set_of_closures_approx
+        in
+        match checked_approx with
+        | Ok value_set_of_closures ->
+          let closure_id =
+            A.freshen_and_check_closure_id value_set_of_closures closure_id
+          in
+          A.value_closure value_set_of_closures closure_id
+        | Unknown_or_unresolved ->
+          A.value_unknown
+        | Wrong ->
+          Misc.fatal_errorf "Wrong approximation for [Project_closure] \
+                             when being used as a [constant_defining_value]: %a"
+            Flambda.print_constant_defining_value constant_defining_value
+    end
+
+let define_let_rec_symbol_approx env defs =
+  (* First declare an empty version of the symbols *)
+  let env =
+    List.fold_left (fun env (symbol, _) ->
+        E.add_symbol env symbol A.value_unknown)
+      env defs
+  in
+  let rec loop times env =
+    if times <= 0 then
+      env
+    else
+      let env =
+        List.fold_left (fun env (symbol, constant_defining_value) ->
+            let approx =
+              constant_defining_value_approx env constant_defining_value
+            in
+            E.redefine_symbol env symbol approx)
+          env defs
+      in
+      loop (times-1) env
+  in
+  loop 2 env
+
+let simplify_constant_defining_value
+    env r symbol
     (constant_defining_value:Flambda.constant_defining_value) =
   let r, constant_defining_value, approx =
     match constant_defining_value with
@@ -1080,10 +1172,7 @@ let rec simplify_program env r (program : Flambda.program)
   : Flambda.program * R.t =
   match program with
   | Let_rec_symbol (defs, program) ->
-    let env = List.fold_left (fun env (symbol, _) ->
-        E.add_symbol env symbol A.value_unknown)
-        env defs
-    in
+    let env = define_let_rec_symbol_approx env defs in
     let env, r, defs =
       List.fold_left (fun (env, r, defs) (symbol, def) ->
           let r, def, approx =

@@ -289,7 +289,8 @@ let simplify_using_env t ~is_present_in_env flam =
 let simplify_named_using_env t ~is_present_in_env named =
   let replaced_by_var_or_symbol, named =
     match t.var with
-    | Some var when is_present_in_env var -> true, Flambda.Expr (Var var)
+    | Some var when is_present_in_env var ->
+      true, Flambda.Expr (Var var)
     | _ ->
       match t.symbol with
       | Some sym -> true, (Flambda.Symbol sym:Flambda.named)
@@ -502,6 +503,25 @@ let check_approx_for_closure_allowing_unresolved t
   | Value_unresolved symbol -> Unresolved symbol
   | Value_set_of_closures _ | Value_block _ | Value_int _ | Value_char _
   | Value_constptr _ | Value_float _ | Value_boxed_int _ | Value_unknown
+  | Value_bottom | Value_extern _ | Value_string _ | Value_float_array _
+  | Value_symbol _ ->
+    Wrong
+
+type checked_approx_for_set_of_closures_allowing_unknown_and_unresolved =
+  | Wrong
+  | Unknown_or_unresolved
+  | Ok of value_set_of_closures
+
+let checked_approx_for_set_of_closures_allowing_unknown_and_unresolved t
+    : checked_approx_for_set_of_closures_allowing_unknown_and_unresolved =
+  match t.descr with
+  | Value_set_of_closures value_set_closures ->
+    Ok value_set_closures
+  | Value_unknown
+  | Value_unresolved _ ->
+    Unknown_or_unresolved
+  | Value_closure _ | Value_block _ | Value_int _ | Value_char _
+  | Value_constptr _ | Value_float _ | Value_boxed_int _
   | Value_bottom | Value_extern _ | Value_string _ | Value_float_array _
   | Value_symbol _ ->
     Wrong

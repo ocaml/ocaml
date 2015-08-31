@@ -63,20 +63,32 @@ let rec tail_variable : Flambda.t -> Variable.t option = function
   | Let (_,_,_,e) -> tail_variable e
   | _ -> None
 
+let closure_symbol ~(backend:(module Backend_intf.S)) closure_id =
+  let module Backend = (val backend) in
+  Backend.closure_symbol closure_id
+
+(* CR chambart: Copied from lift_let_to_initialize_symobl: to factorize *)
+let make_variable_symbol prefix var =
+  Symbol.create (Compilation_unit.get_current_exn ())
+    (Linkage_name.create
+       (prefix ^ Variable.unique_name (Variable.freshen var)))
+
 (** Traverse the given expression assigning symbols to [let]- and [let rec]-
     bound constant variables.  At the same time collect the definitions of
     such variables. *)
-let assign_symbols_and_collect_constant_definitions ~program
+let assign_symbols_and_collect_constant_definitions
+    ~(backend:(module Backend_intf.S))
+    ~program
     ~(inconstants : Inconstant_idents.result) =
   let var_to_symbol_tbl = Variable.Tbl.create 42 in
   let var_to_definition_tbl = Variable.Tbl.create 42 in
   let assign_symbol var (named : Flambda.named) =
     if not (Variable.Set.mem var inconstants.id) then begin
       let assign_symbol () =
-        let symbol = Compilenv.new_const_symbol' ~name:(Variable.unique_name var) () in
-        Format.eprintf "assign_symbol %a -> %a@."
-          Variable.print var
-          Symbol.print symbol;
+        let symbol = make_variable_symbol "" var in
+        (* Format.eprintf "assign_symbol %a -> %a@." *)
+        (*   Variable.print var *)
+        (*   Symbol.print symbol; *)
         Variable.Tbl.add var_to_symbol_tbl var symbol
       in
       let assign_existing_symbol = Variable.Tbl.add var_to_symbol_tbl var in
@@ -106,17 +118,20 @@ let assign_symbols_and_collect_constant_definitions ~program
            should add an invariant check forbidding direct access.) *)
         Variable.Map.iter (fun fun_var _ ->
             let closure_id = Closure_id.wrap fun_var in
-            let closure_symbol = Compilenv.closure_symbol closure_id in
+            let closure_symbol = closure_symbol ~backend closure_id in
             Variable.Tbl.add var_to_symbol_tbl fun_var closure_symbol;
+            let project_closure =
+              Alias_analysis.Project_closure
+                { set_of_closures = var; closure_id }
+            in
             Variable.Tbl.add var_to_definition_tbl fun_var
-              (Symbol closure_symbol))
+              project_closure)
           funs
-      | Move_within_set_of_closures { closure = _; start_from = _; move_to; } ->
-        let symbol = Compilenv.closure_symbol move_to in
-        assign_existing_symbol symbol;
-        record_definition (Symbol symbol)
+      | Move_within_set_of_closures ({ closure = _; start_from = _; move_to; } as move) ->
+        assign_existing_symbol (closure_symbol ~backend  move_to);
+        record_definition (Move_within_set_of_closures move)
       | Project_closure ({ closure_id } as project_closure) ->
-        assign_existing_symbol (Compilenv.closure_symbol closure_id);
+        assign_existing_symbol (closure_symbol ~backend  closure_id);
         record_definition (Project_closure project_closure)
       (* | Prim (Pgetglobal id, _, _) -> *)
       (*   let symbol = Compilenv.symbol_for_global' id in *)
@@ -161,6 +176,15 @@ let assign_symbols_and_collect_constant_definitions ~program
   in
   Flambda_iterators.iter_on_set_of_closures_of_program program
     ~f:record_set_of_closure_equalities;
+  Flambda_iterators.iter_constant_sets_of_closures_of_program ~f:(fun set_of_closures ->
+      Variable.Map.iter (fun fun_var _ ->
+          let closure_id = Closure_id.wrap fun_var in
+          let closure_symbol = closure_symbol ~backend closure_id in
+          Variable.Tbl.add var_to_definition_tbl fun_var
+            (Symbol closure_symbol);
+          Variable.Tbl.add var_to_symbol_tbl fun_var closure_symbol)
+        set_of_closures.Flambda.function_decls.funs)
+    program;
   var_to_symbol_tbl,
   var_to_definition_tbl
 
@@ -188,18 +212,18 @@ let resolve_variable
     (var:Variable.t) : Flambda.constant_defining_value_block_field =
   match Variable.Map.find var aliases with
   | exception Not_found ->
-    Format.eprintf "no alias for %a@."
-      Variable.print var;
+    (* Format.eprintf "no alias for %a@." *)
+    (*   Variable.print var; *)
     variable_field_definition var_to_symbol_tbl var_to_definition_tbl var
   | Symbol s ->
-    Format.eprintf "symbol alias %a -> %a@."
-      Variable.print var
-      Symbol.print s;
+    (* Format.eprintf "symbol alias %a -> %a@." *)
+    (*   Variable.print var *)
+    (*   Symbol.print s; *)
     Symbol s
   | Variable aliased_variable ->
-    Format.eprintf "variable alias %a -> %a@."
-      Variable.print var
-      Variable.print aliased_variable;
+    (* Format.eprintf "variable alias %a -> %a@." *)
+    (*   Variable.print var *)
+    (*   Variable.print aliased_variable; *)
     variable_field_definition var_to_symbol_tbl var_to_definition_tbl aliased_variable
 
 let translate_set_of_closures
@@ -223,14 +247,77 @@ let translate_set_of_closures
       | Symbol s -> Symbol s
       | Const c -> Const c
   in
+  (* let f_body body = *)
+  (*   let body = Flambda_iterators.map_all_let_and_let_rec_bindings ~f body in *)
+  (*   let free_variable = Flambda.free_variables body in *)
+  (* in *)
   Flambda_iterators.map_function_bodies set_of_closures
     ~f:(Flambda_iterators.map_all_let_and_let_rec_bindings ~f)
+
+let translate_constant_set_of_closures
+    (inconstants:Inconstant_idents.result)
+    (aliases:Alias_analysis.allocation_point Variable.Map.t)
+    (var_to_symbol_tbl:Symbol.t Variable.Tbl.t)
+    (var_to_definition_tbl:Alias_analysis.constant_defining_value Variable.Tbl.t)
+    (constant_defining_values:Flambda.constant_defining_value Symbol.Map.t) =
+  Symbol.Map.map (fun (const:Flambda.constant_defining_value) ->
+      match const with
+      | Flambda.Allocated_const _
+      | Flambda.Block _
+      | Flambda.Project_closure _ ->
+        const
+      | Flambda.Set_of_closures set_of_closures ->
+        let set_of_closures =
+          translate_set_of_closures
+            (inconstants:Inconstant_idents.result)
+            (aliases:Alias_analysis.allocation_point Variable.Map.t)
+            (var_to_symbol_tbl:Symbol.t Variable.Tbl.t)
+            (var_to_definition_tbl:Alias_analysis.constant_defining_value Variable.Tbl.t)
+            (set_of_closures:Flambda.set_of_closures)
+        in
+        Flambda.Set_of_closures set_of_closures)
+    constant_defining_values
+
+let find_original_set_of_closure
+    (aliases:Alias_analysis.allocation_point Variable.Map.t)
+    (var_to_symbol_tbl:Symbol.t Variable.Tbl.t)
+    (var_to_definition_tbl:Alias_analysis.constant_defining_value Variable.Tbl.t)
+    project_closure_map
+    var =
+  let rec loop var =
+    match Variable.Map.find var aliases with
+    | Variable var -> begin
+        match Variable.Tbl.find var_to_definition_tbl var with
+        | Project_closure { set_of_closures = var }
+        | Move_within_set_of_closures { closure = var } ->
+          loop var
+        | Set_of_closures _ -> begin
+            match Variable.Tbl.find var_to_symbol_tbl var with
+            | s ->
+              s
+            | exception Not_found ->
+              Format.eprintf "var: %a@." Variable.print var;
+              assert false
+          end
+        | _ -> assert false
+      end
+    | Symbol s ->
+      match Symbol.Map.find s project_closure_map with
+      | exception Not_found ->
+        Format.eprintf "symbol alias %a@."
+          Symbol.print s;
+        (* Symbol are necessarilly set_of_closures here *)
+        s
+      | s -> s
+  in
+  loop var
 
 let translate_definition_and_resolve_alias
     inconstants
     (aliases:Alias_analysis.allocation_point Variable.Map.t)
     (var_to_symbol_tbl:Symbol.t Variable.Tbl.t)
     (var_to_definition_tbl:Alias_analysis.constant_defining_value Variable.Tbl.t)
+    (project_closure_map:Symbol.t Symbol.Map.t)
     (definition:Alias_analysis.constant_defining_value)
   : Flambda.constant_defining_value option =
   match definition with
@@ -253,6 +340,16 @@ let translate_definition_and_resolve_alias
         Format.eprintf "var: %a@." Variable.print v;
         assert false
     end
+  | Move_within_set_of_closures { closure; move_to } ->
+    let set_of_closure_symbol =
+      find_original_set_of_closure
+        aliases
+        var_to_symbol_tbl
+        var_to_definition_tbl
+        project_closure_map
+        closure
+    in
+    Some (Flambda.Project_closure (set_of_closure_symbol, move_to))
   | Set_of_closures set_of_closures ->
     let set_of_closures =
       translate_set_of_closures
@@ -274,10 +371,12 @@ let translate_definitions_and_resolve_alias
     inconstants
     (aliases:Alias_analysis.allocation_point Variable.Map.t)
     (var_to_symbol_tbl:Symbol.t Variable.Tbl.t)
-    (var_to_definition_tbl:Alias_analysis.constant_defining_value Variable.Tbl.t) =
+    (var_to_definition_tbl:Alias_analysis.constant_defining_value Variable.Tbl.t)
+    project_closure_map =
   Variable.Tbl.fold (fun var def map ->
       match translate_definition_and_resolve_alias inconstants aliases
-              var_to_symbol_tbl var_to_definition_tbl def with
+              var_to_symbol_tbl var_to_definition_tbl
+              project_closure_map def with
       | None -> map
       | Some def ->
         let symbol = Variable.Tbl.find var_to_symbol_tbl var in
@@ -285,21 +384,22 @@ let translate_definitions_and_resolve_alias
     var_to_definition_tbl Symbol.Map.empty
 
 (* Resorting of graph including Initialize_symbol *)
-let constant_dependencies (const:Flambda.constant_defining_value) =
+let constant_dependencies ~backend:_ (const:Flambda.constant_defining_value) =
   let closure_dependencies (set_of_closures:Flambda.set_of_closures) =
     let set = ref Symbol.Set.empty in
     Flambda_iterators.iter_symbols_on_named ~f:(fun s ->
         set := Symbol.Set.add s !set)
       (Set_of_closures set_of_closures);
-    (* A set of closures do not depend on the closure it define *)
-    let closure_ids =
-      Symbol.Set.of_list
-        (List.map (fun var ->
-             Compilenv.closure_symbol (Closure_id.wrap var))
-            (Variable.Set.elements
-               (Variable.Map.keys set_of_closures.function_decls.funs)))
-    in
-    Symbol.Set.diff !set closure_ids
+    (* (\* A set of closures do not depend on the closure it define *\) *)
+    (* let closure_ids = *)
+    (*   Symbol.Set.of_list *)
+    (*     (List.map (fun var -> *)
+    (*          closure_symbol ~backend (Closure_id.wrap var)) *)
+    (*         (Variable.Set.elements *)
+    (*            (Variable.Map.keys set_of_closures.function_decls.funs))) *)
+    (* in *)
+    (* Symbol.Set.diff !set closure_ids *)
+    !set
   in
   match const with
   | Allocated_const _ -> Symbol.Set.empty
@@ -323,12 +423,14 @@ let expression_symbol_dependencies (expr:Flambda.t) =
     expr;
   !set
 
-let program_graph imported_symbols symbol_to_constant
+let program_graph
+    ~backend
+    imported_symbols symbol_to_constant
     (initialize_symbol_tbl : (Tag.t * Flambda.t list * Symbol.t option) Symbol.Tbl.t)
     (effect_tbl : (Flambda.t * Symbol.t option) Symbol.Tbl.t) =
   let graph_with_only_constant_parts =
     Symbol.Map.map (fun const ->
-        Symbol.Set.diff (constant_dependencies const) imported_symbols)
+        Symbol.Set.diff (constant_dependencies ~backend const) imported_symbols)
       symbol_to_constant
   in
   let graph_with_initialisation =
@@ -360,8 +462,8 @@ let program_graph imported_symbols symbol_to_constant
       )
       effect_tbl graph_with_initialisation
   in
-  Format.eprintf "@.dep graph:@ %a@."
-    (Symbol.Map.print Symbol.Set.print) graph;
+  (* Format.eprintf "@.dep graph:@ %a@." *)
+  (*   (Symbol.Map.print Symbol.Set.print) graph; *)
   let module Symbol_SCC = Sort_connected_components.Make (Symbol) in
   let components =
     Symbol_SCC.connected_components_sorted_from_roots_to_leaf
@@ -374,14 +476,14 @@ let add_definition_of_symbol constant_definitions
     (initialize_symbol_tbl : (Tag.t * Flambda.t list * Symbol.t option) Symbol.Tbl.t)
     (effect_tbl:(Flambda.t * Symbol.t option) Symbol.Tbl.t)
     program component : Flambda.program =
-  Format.eprintf "add_definition_of_symbols@.";
+  (* Format.eprintf "add_definition_of_symbols@."; *)
   let symbol_declaration sym =
     (* A symbol declared through an Initialize_symbol construct
        cannot be recursive, this is not allowed in the construction.
        This also couldn't have been introduced by this pass, so we can
        safely assert that this is not possible here *)
     assert(not (Symbol.Tbl.mem initialize_symbol_tbl sym));
-    Format.eprintf "add_definition_of_symbol %a@." Symbol.print sym;
+    (* Format.eprintf "add_definition_of_symbol %a@." Symbol.print sym; *)
     (sym, Symbol.Map.find sym constant_definitions)
   in
   let module Symbol_SCC = Sort_connected_components.Make (Symbol) in
@@ -390,18 +492,18 @@ let add_definition_of_symbol constant_definitions
     let l = List.map symbol_declaration l in
     Let_rec_symbol (l, program)
   | Symbol_SCC.No_loop sym ->
-    Format.eprintf "no loop component %a@." Symbol.print sym;
+    (* Format.eprintf "no loop component %a@." Symbol.print sym; *)
     match Symbol.Tbl.find initialize_symbol_tbl sym with
     | (tag, fields, _previous) ->
-      Format.eprintf "initialize@.";
+      (* Format.eprintf "initialize@."; *)
       Initialize_symbol (sym, tag, fields, program)
     | exception Not_found ->
       match Symbol.Tbl.find effect_tbl sym with
       | (expr, _previous) ->
-        Format.eprintf "effect@.";
+        (* Format.eprintf "effect@."; *)
         Effect (expr, program)
       | exception Not_found ->
-        Format.eprintf "symbol@.";
+        (* Format.eprintf "symbol@."; *)
         let decl = Symbol.Map.find sym constant_definitions in
         Let_symbol (sym, decl, program)
 
@@ -414,28 +516,41 @@ let add_definitions_of_symbols constant_definitions initialize_symbol_tbl
 let introduce_free_variables_in_set_of_closures
     (var_to_block_field_tbl:Flambda.constant_defining_value_block_field Variable.Tbl.t)
     { Flambda.function_decls; free_vars; specialised_args } =
-  (* TODO substitute free variable names: They could be used in
-     multiple closure in the set and it is forbidden to have a
-     variable bound multiple times. *)
-  let add_definition expr var : Flambda.t =
+  let add_definition_and_make_substitution var (expr, subst) =
     match Variable.Tbl.find var_to_block_field_tbl var with
-    | Symbol sym ->
-      Let (Immutable, var, Symbol sym, expr)
-    | Const c ->
-      Let (Immutable, var, Const c, expr)
+    | def ->
+      let fresh = Variable.freshen var in
+      let named : Flambda.named = match def with
+        | Symbol sym -> Symbol sym
+        | Const c -> Const c
+      in
+      Flambda.Let (Immutable, fresh, named, expr),
+      Variable.Map.add var fresh subst
     | exception Not_found ->
-      (* The variable is bound by the closure or the arguments *)
-      expr
+      (* The variable is bound by the closure or the arguments or not
+         constant. In either case it does not need to be binded *)
+      expr, subst
   in
   let function_decls : Flambda.function_declarations =
     { function_decls with
-      funs = Variable.Map.map
-          (fun (ffun : Flambda.function_declaration) ->
+      funs = Variable.Map.mapi
+          (fun fun_var (ffun : Flambda.function_declaration) ->
+             Format.printf "introduce in %a@."
+               Variable.print fun_var;
+             let variables_to_bind =
+               (* Closures from the same set must not be bound *)
+               Variable.Set.diff
+                 ffun.free_variables
+                 (Variable.Map.keys function_decls.funs)
+             in
+             let body, subst =
+               Variable.Set.fold
+                 add_definition_and_make_substitution
+                 variables_to_bind
+                 (ffun.body, Variable.Map.empty)
+             in
              let body =
-               List.fold_left
-                 add_definition
-                 ffun.body
-                 (Variable.Set.elements ffun.free_variables)
+               Flambda_utils.toplevel_substitution subst body
              in
              Flambda.create_function_declaration
                ~params:ffun.params
@@ -444,6 +559,12 @@ let introduce_free_variables_in_set_of_closures
                ~dbg:ffun.dbg)
           function_decls.funs;
     }
+  in
+  let free_vars =
+    (* Keep only those that are not rewriten to constants *)
+    Variable.Map.filter
+      (fun v _ -> not (Variable.Tbl.mem var_to_block_field_tbl v))
+      free_vars
   in
   Flambda.create_set_of_closures ~function_decls ~free_vars
     ~specialised_args
@@ -484,7 +605,7 @@ let program_symbols program =
     let r = ref 0 in
     fun () ->
       incr r;
-      Symbol.create (Compilenv.current_unit ())
+      Symbol.create (Compilation_unit.get_current_exn ())
         (Linkage_name.create ("fake_effect_symbol_" ^ string_of_int !r))
   in
   let initialize_symbol_tbl = Symbol.Tbl.create 42 in
@@ -555,8 +676,19 @@ let replace_definitions_in_initialize_symbol_and_effects
       Symbol.Tbl.replace effect_tbl symbol (expr,previous))
     (Symbol.Tbl.to_map effect_tbl)
 
-let lift_constants program ~backend:_ =
-  Format.eprintf "lift_constants input:@ %a\n" Flambda.print_program program;
+let project_closure_map symbol_definition_map =
+  Symbol.Map.fold (fun sym (const:Flambda.constant_defining_value) acc ->
+      match const with
+      | Project_closure (set_of_closures, _) ->
+        Symbol.Map.add sym set_of_closures acc
+      | Set_of_closures _
+      | Allocated_const _
+      | Block _ -> acc)
+    symbol_definition_map
+    Symbol.Map.empty
+
+let lift_constants program ~backend =
+  (* Format.eprintf "lift_constants input:@ %a\n" Flambda.print_program program; *)
   let inconstants =
     Inconstant_idents.inconstants_on_program program
       ~for_clambda:true
@@ -564,11 +696,11 @@ let lift_constants program ~backend:_ =
          This should be available in backend
          mshinwell: what is "this"?
          pchambart: The access to compilenv *)
-      ~compilation_unit:(Compilenv.current_unit ())
+      ~compilation_unit:(Compilation_unit.get_current_exn ())
   in
   let initialize_symbol_tbl, symbol_definition_tbl, effect_tbl = program_symbols program in
   let var_to_symbol_tbl, var_to_definition_tbl =
-    assign_symbols_and_collect_constant_definitions ~program ~inconstants
+    assign_symbols_and_collect_constant_definitions ~backend ~program ~inconstants
   in
   let aliases =
     let var_map = Variable.Tbl.to_map var_to_definition_tbl in
@@ -583,12 +715,24 @@ let lift_constants program ~backend:_ =
       (var_to_definition_tbl:Alias_analysis.constant_defining_value Variable.Tbl.t)
       initialize_symbol_tbl
       effect_tbl;
+  let symbol_definition_map =
+    translate_constant_set_of_closures
+      (inconstants:Inconstant_idents.result)
+      (aliases:Alias_analysis.allocation_point Variable.Map.t)
+      (var_to_symbol_tbl:Symbol.t Variable.Tbl.t)
+      (var_to_definition_tbl:Alias_analysis.constant_defining_value Variable.Tbl.t)
+      (Symbol.Tbl.to_map symbol_definition_tbl)
+  in
+  let project_closure_map =
+    project_closure_map symbol_definition_map
+  in
   let translated_definitions =
     translate_definitions_and_resolve_alias
       inconstants
       (aliases:Alias_analysis.allocation_point Variable.Map.t)
       (var_to_symbol_tbl:Symbol.t Variable.Tbl.t)
       (var_to_definition_tbl:Alias_analysis.constant_defining_value Variable.Tbl.t)
+      project_closure_map
   in
   let var_to_block_field_tbl =
     var_to_block_field
@@ -602,14 +746,38 @@ let lift_constants program ~backend:_ =
       translated_definitions
   in
   let constant_definitions =
+    let inter =
+      Symbol.Set.inter
+        (Symbol.Map.keys symbol_definition_map)
+        (Symbol.Map.keys translated_definitions)
+    in
+    Format.eprintf "symbol intersection %a@."
+      Symbol.Set.print inter;
     (* Add previous Let_symbol to the newly discovered ones *)
-    Symbol.Tbl.fold (fun symbol def map ->
-        Symbol.Map.add symbol def map)
-      symbol_definition_tbl
+    Symbol.Map.union_merge
+      (fun
+        (c1:Flambda.constant_defining_value)
+        (c2:Flambda.constant_defining_value) ->
+        match c1, c2 with
+        | Project_closure (s1, closure_id1),
+          Project_closure (s2, closure_id2) when
+            Symbol.equal s1 s2 &&
+            Closure_id.equal closure_id1 closure_id2 ->
+          c1
+        | Project_closure (s1, closure_id1),
+          Project_closure (s2, closure_id2) ->
+          Format.eprintf "not equal project closure@. s %a %a@. cid %a %a@."
+            Symbol.print s1 Symbol.print s2
+            Closure_id.print closure_id1 Closure_id.print closure_id2;
+          assert false
+        | _ ->
+          assert false
+      )
+      symbol_definition_map
       translated_definitions
   in
   let imported_symbols = Flambda_utils.imported_symbols program in
-  let components = program_graph imported_symbols constant_definitions
+  let components = program_graph ~backend imported_symbols constant_definitions
       initialize_symbol_tbl effect_tbl in
   let program =
     add_definitions_of_symbols constant_definitions
@@ -619,11 +787,17 @@ let lift_constants program ~backend:_ =
       components
   in
   let program =
+    Flambda_iterators.map_sets_of_closures_of_program
+      ~f:(introduce_free_variables_in_set_of_closures
+            var_to_block_field_tbl)
+      program
+  in
+  let program =
     Symbol.Set.fold
       (fun symbol program -> Flambda.Import_symbol (symbol, program))
       (Flambda_utils.needed_import_symbols program)
       program
   in
-  Format.eprintf "@.lift_constants output:@ %a\n" Flambda.print_program program;
+  (* Format.eprintf "@.lift_constants output:@ %a\n" Flambda.print_program program; *)
   program
 

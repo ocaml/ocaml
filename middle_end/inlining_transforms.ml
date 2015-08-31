@@ -222,7 +222,10 @@ let inline_by_copying_function_declaration ~env ~r
     in
     let expr, r = simplify (E.activate_freshening env) r expr in
     (* CR mshinwell: add control over when [Unbox_closures] is run *)
-    let expr = Unbox_closures.run env expr in
+
+    (* TODO: fix *)
+    (* let expr = Unbox_closures.run env expr in *)
+
     let expr = 
       Flambda_iterators.map_sets_of_closures expr
         ~f:(fun (set_of_closures : Flambda.set_of_closures) ->

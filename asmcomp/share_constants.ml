@@ -1,12 +1,5 @@
 
-module Constant_defining_value = struct
-  module T = struct
-    type t = Flambda.constant_defining_value
-    let hash = Hashtbl.hash
-    let equal = (=)
-  end
-  module Tbl = Hashtbl.Make(T)
-end
+module Constant_defining_value = Flambda.Constant_defining_value
 
 let update_constant_for_sharing sharing_symbol_tbl const : Flambda.constant_defining_value =
   let substitute_symbol sym =
@@ -61,16 +54,22 @@ let share_constants (program:Flambda.program) =
   let rec loop (program:Flambda.program) : Flambda.program =
     match program with
     | Let_symbol (symbol,def,program) ->
+      Format.eprintf "symbol %a@." Symbol.print symbol;
       begin match share_definition constant_to_symbol_tbl sharing_symbol_tbl symbol def with
       | None ->
+        Format.eprintf "do  share constant %a@." Symbol.print symbol;
         loop program
-      | Some def ->
-        Let_symbol (symbol,def,program)
+      | Some def' ->
+        Format.eprintf "not share constant %a@." Symbol.print symbol;
+        Format.eprintf "%a@ -> " Flambda.print_constant_defining_value def;
+        Format.eprintf "%a@." Flambda.print_constant_defining_value def';
+        Let_symbol (symbol,def',loop program)
       end
     | Let_rec_symbol (defs,program) ->
       let defs =
         Misc.filter_map
           (fun (symbol, def) ->
+             Format.eprintf "rec symbol %a@." Symbol.print symbol;
              Misc.may_map
                (fun def -> (symbol, def))
                (share_definition constant_to_symbol_tbl sharing_symbol_tbl symbol def))
@@ -80,11 +79,13 @@ let share_constants (program:Flambda.program) =
       | [] ->
         loop program
       | defs ->
-        Let_rec_symbol (defs,program)
+        Let_rec_symbol (defs,loop program)
       end
     | Import_symbol (symbol,program) ->
+      Format.eprintf "import symbol %a@." Symbol.print symbol;
       Import_symbol (symbol,loop program)
     | Initialize_symbol (symbol,tag,fields,program) ->
+      Format.eprintf "initialize symbol %a@." Symbol.print symbol;
       let fields =
         List.map (fun field ->
             Flambda_iterators.map_symbols
@@ -107,5 +108,5 @@ let share_constants (program:Flambda.program) =
     | End root -> End root
   in
   let program = loop program in
-  Format.eprintf "share_constants output:@ %a\n" Flambda.print_program program;
+  (* Format.eprintf "share_constants output:@ %a\n" Flambda.print_program program; *)
   program

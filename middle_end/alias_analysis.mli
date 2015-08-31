@@ -10,6 +10,7 @@ type constant_defining_value =
   | Block of Tag.t * Variable.t list
   | Set_of_closures of Flambda.set_of_closures
   | Project_closure of Flambda.project_closure
+  | Move_within_set_of_closures of Flambda.move_within_set_of_closures
   | Project_var of Flambda.project_var
   | Field of Variable.t * int
   | Const of Flambda.const

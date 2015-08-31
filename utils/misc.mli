@@ -54,6 +54,9 @@ val uniq_sort : ('a -> 'a -> int) -> 'a list -> 'a list
 val filter_map : ('a -> 'b option) -> 'a list -> 'b list
         (* [filter_map f l] is the list [List.map f l] with only the
            elements matching [Some _] *)
+val compare_lists : ('a -> 'a -> int) -> 'a list -> 'a list -> int
+        (* compare_lists is the lexicographic order supported by the
+           provided order *)
 val may: ('a -> unit) -> 'a option -> unit
 val may_map: ('a -> 'b) -> 'a option -> 'b option
 val may_fold: ('a -> 'b -> 'b) -> 'a option -> 'b -> 'b

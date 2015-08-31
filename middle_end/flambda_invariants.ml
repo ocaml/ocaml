@@ -21,6 +21,8 @@ type flambda_kind =
    We also avoid explicit record field access during the checking functions,
    preferring instead to use exhaustive record matches.
 *)
+(* CR pchambart: for sum types, we should probably add an exhaustive
+   pattern in ignores functions to be reminded if a type change *)
 let already_added_bound_variable_to_env (_ : Variable.t) = ()
 let will_traverse_named_expression_later (_ : Flambda.named) = ()
 let ignore_variable (_ : Variable.t) = ()
@@ -40,6 +42,7 @@ let ignore_set_of_closures_id (_ : Set_of_closures_id.t) = ()
 let ignore_closure_id (_ : Closure_id.t) = ()
 let ignore_var_within_closure (_ : Var_within_closure.t) = ()
 let ignore_compilation_unit (_ : Compilation_unit.t) = ()
+let ignore_tag (_ : Tag.t) = ()
 
 exception Binding_occurrence_not_from_current_compilation_unit of Variable.t
 exception Binding_occurrence_of_variable_already_bound of Variable.t
@@ -77,14 +80,21 @@ exception Flambda_invariants_failed
 (* CR mshinwell: What about checks for shadowed variables and symbols? *)
 
 let variable_and_symbol_invariants flam =
+  let all_declared_variables = ref Variable.Set.empty in
+  let declare_variable var =
+    if Variable.Set.mem var !all_declared_variables then
+      raise (Binding_occurrence_of_variable_already_bound var);
+    all_declared_variables := Variable.Set.add var !all_declared_variables
+  in
+  let declare_variables vars =
+    Variable.Set.iter declare_variable vars
+  in
   let add_binding_occurrence (var_env, sym_env) var is_mutable =
     let compilation_unit = Compilation_unit.get_current_exn () in
     if not (Variable.in_compilation_unit compilation_unit var) then
-      raise (Binding_occurrence_not_from_current_compilation_unit var)
-    else if Variable.Map.mem var var_env then
-      raise (Binding_occurrence_of_variable_already_bound var)
-    else
-      Variable.Map.add var is_mutable var_env, sym_env
+      raise (Binding_occurrence_not_from_current_compilation_unit var);
+    declare_variable var;
+    Variable.Map.add var is_mutable var_env, sym_env
   in
   let add_binding_occurrence_of_symbol (var_env, sym_env) sym =
     if Symbol.Set.mem sym sym_env then
@@ -195,8 +205,37 @@ let variable_and_symbol_invariants flam =
     | Symbol symbol -> check_symbol_is_bound env symbol
     | Const const -> ignore_const const
     | Allocated_const const -> ignore_allocated_const const
+<<<<<<< HEAD
     | Set_of_closures ({ function_decls; free_vars; specialised_args; }
         as set_of_closures) ->
+=======
+    | Predefined_exn ident ->
+      if not (Ident.is_predef_exn ident) then begin
+        raise (Identifier_is_not_a_predefined_exception ident)
+      end
+    | Set_of_closures set_of_closures ->
+      loop_set_of_closures env set_of_closures
+    | Project_closure { set_of_closures; closure_id; } ->
+      check_variable_is_bound env set_of_closures;
+      ignore_closure_id closure_id
+    | Move_within_set_of_closures { closure; start_from; move_to; } ->
+      check_variable_is_bound env closure;
+      ignore_closure_id start_from;
+      ignore_closure_id move_to;
+    | Project_var { closure; closure_id; var; } ->
+      check_variable_is_bound env closure;
+      ignore_closure_id closure_id;
+      ignore_var_within_closure var
+    | Prim (prim, args, dbg) ->
+      ignore_primitive prim;
+      check_variables_are_bound env args;
+      ignore_debuginfo dbg
+    | Expr expr ->
+      loop env expr
+  and loop_set_of_closures env
+      ({ Flambda.function_decls; free_vars; specialised_args; }
+       as set_of_closures) =
+>>>>>>> remotes/chambart/flambda4-more-anf
       let { Flambda.set_of_closures_id; funs; compilation_unit } =
         function_decls
       in
@@ -252,18 +291,47 @@ let variable_and_symbol_invariants flam =
             if all_params_size <> old_all_params_size + params_size then begin
               raise (Function_decls_have_overlapping_parameters all_params)
             end;
+            (* Check that parameters and function variables are not
+               bound somewhere else in the program *)
+            declare_variables params;
+            declare_variable fun_var;
+            (* Check that the body of the functions is correctly structured *)
+            let body_env =
+              let (var_env, sym_env) = env in
+              let var_env =
+                Variable.Set.fold (fun var ->
+                    Variable.Map.add var Flambda.Immutable)
+                  free_variables var_env
+              in
+              (var_env, sym_env)
+            in
+            loop body_env body;
             all_params, Variable.Set.union free_variables all_free_vars)
           funs (Variable.Set.empty, Variable.Set.empty)
       in
+      (* CR pchambart: This is not a property that we can certainly ensure.
+         If the function get inlined, it is possible for the inlined version
+         to still use that variable. To be able to ensure that, we need to
+         also ensure that the inlined version will certainly be transformed
+         in a same way that can drop the dependency. *)
       (* Check that the free variables rewriting map in the set of closures
          does not contain variables in its domain that are not actually free
          variables of any of the function bodies. *)
       let bad_free_vars =
         Variable.Set.diff (Variable.Map.keys free_vars) all_free_vars
       in
+(*
       if not (Variable.Set.is_empty bad_free_vars) then begin
         raise (Set_of_closures_free_vars_map_has_wrong_range bad_free_vars)
       end;
+*)
+      (* Ignore it to avoid the warning: TODO get rid of that when the
+         case is settled *)
+      ignore (Set_of_closures_free_vars_map_has_wrong_range bad_free_vars);
+
+      (* Check that free variables variables are not bound somewhere
+         else in the program *)
+      declare_variables (Variable.Map.keys free_vars);
       (* Check that every "specialised arg" is a parameter of one of the
          functions being declared, and that the variable to which the
          parameter is being specialised is bound. *)
@@ -273,23 +341,28 @@ let variable_and_symbol_invariants flam =
           end;
           check_variable_is_bound env specialised_to)
         specialised_args
-    | Project_closure { set_of_closures; closure_id; } ->
-      check_variable_is_bound env set_of_closures;
-      ignore_closure_id closure_id
-    | Move_within_set_of_closures { closure; start_from; move_to; } ->
-      check_variable_is_bound env closure;
-      ignore_closure_id start_from;
-      ignore_closure_id move_to;
-    | Project_var { closure; closure_id; var; } ->
-      check_variable_is_bound env closure;
+  in
+  let loop_constant_defining_value env (const : Flambda.constant_defining_value) =
+    match const with
+    | Flambda.Allocated_const c ->
+      ignore_allocated_const c
+    | Flambda.Block (tag,fields) ->
+      ignore_tag tag;
+      List.iter (fun (fields : Flambda.constant_defining_value_block_field) ->
+          match fields with
+          | Const c -> ignore_const c
+          | Symbol s -> check_symbol_is_bound env s)
+        fields
+    | Flambda.Set_of_closures set_of_closures ->
+      loop_set_of_closures env set_of_closures;
+      (* Constant set of closures must not have free variables *)
+      if not (Variable.Map.is_empty set_of_closures.free_vars) then
+        assert false; (* TODO: correct error *)
+      if not (Variable.Map.is_empty set_of_closures.specialised_args) then
+        assert false; (* TODO: correct error *)
+    | Flambda.Project_closure (symbol,closure_id) ->
       ignore_closure_id closure_id;
-      ignore_var_within_closure var
-    | Prim (prim, args, dbg) ->
-      ignore_primitive prim;
-      check_variables_are_bound env args;
-      ignore_debuginfo dbg
-    | Expr expr ->
-      loop env expr
+      check_symbol_is_bound env symbol
   in
   let rec loop_program env (program : Flambda.program) =
     match program with
@@ -299,8 +372,14 @@ let variable_and_symbol_invariants flam =
             add_binding_occurrence_of_symbol env symbol)
           env defs
       in
+      List.iter (fun (_, def) ->
+          loop_constant_defining_value env def)
+        defs;
       loop_program env program
-    | Let_symbol (symbol, _, program)
+    | Let_symbol (symbol, def, program) ->
+      loop_constant_defining_value env def;
+      let env = add_binding_occurrence_of_symbol env symbol in
+      loop_program env program
     | Import_symbol (symbol, program) ->
       let env = add_binding_occurrence_of_symbol env symbol in
       loop_program env program
@@ -408,6 +487,7 @@ let used_closure_ids (program:Flambda.program) =
     | Set_of_closures _ | Symbol _ | Const _ | Allocated_const _
     | Prim _ | Expr _ -> ()
   in
+  (* TODO: check closure_ids of constant_defining_values project_closures *)
   Flambda_iterators.iter_named_of_program ~f program;
   !used
 

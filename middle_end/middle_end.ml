@@ -33,6 +33,11 @@ let middle_end ppf ~sourcefile ~prefixname ~backend
     then Format.fprintf ppf "%s:@ %a@." s Flambda.print_program flam;
     check flam
   in
+  let (+-) v s =
+    if verbose then
+      Format.fprintf ppf "@.PASS: %s@." s;
+    v
+  in
   let (++) flam pass =
     if not !Clflags.full_flambda_invariant_check then
       pass flam
@@ -62,13 +67,23 @@ let middle_end ppf ~sourcefile ~prefixname ~backend
     if !round_number > !Clflags.simplify_rounds then flam
     else
       flam
+      +- "lift_lets 1"
       ++ Lift_code.lift_lets
+      +- "Lift_constants"
+      ++ Lift_constants.lift_constants ~backend
+      +- "Lift_let_to_initialize_symbol"
       ++ Lift_let_to_initialize_symbol.lift ~backend
+      +- "lift_lets 2"
       ++ Lift_code.lift_lets
+      +- "Remove_unused_closure_vars 1"
       ++ Remove_unused_closure_vars.remove_unused_closure_variables
+      +- "Inline_and_simplify"
       ++ Inline_and_simplify.run ~never_inline:false ~backend
+      +- "lift_lets 3"
       ++ Lift_code.lift_lets
+      +- "Remove_unused_closure_vars 2"
       ++ Remove_unused_closure_vars.remove_unused_closure_variables
+      +- "Remove_unused_arguments"
       ++ Remove_unused_arguments.separate_unused_arguments_in_closures
         ?force:None
       (* CR mshinwell: see CR in [Remove_unused_globals] *)
@@ -76,6 +91,7 @@ let middle_end ppf ~sourcefile ~prefixname ~backend
       (* CR mshinwell: the lifting of sets of closures seemed redundant,
          because we always have to generate a [let] with them now.  Do we
          need to insert something else here (lift_lets)? *)
+      +- "Inline_and_simplify noinline"
       ++ Inline_and_simplify.run ~never_inline:true ~backend
       ++ Remove_unused_closure_vars.remove_unused_closure_variables
       ++ Ref_to_variables.eliminate_ref

@@ -501,6 +501,8 @@ type constant_defining_value =
   | Block of Tag.t * Variable.t list
   | Set_of_closures of Flambda.set_of_closures
   | Project_closure of Flambda.project_closure
+  | Move_within_set_of_closures of
+      Flambda.move_within_set_of_closures
   | Project_var of Flambda.project_var
   | Field of Variable.t * int
   | Const of Flambda.const
@@ -533,7 +535,13 @@ let rec resolve_definition
   | Block _
   | Set_of_closures _
   | Project_closure _
+<<<<<<< HEAD
   | Const _ ->
+=======
+  | Move_within_set_of_closures _
+  | Const _
+  | Predefined_exn _ ->
+>>>>>>> remotes/chambart/flambda4-more-anf
     Variable var
   | Project_var {var} ->
     fetch_variable definitions (Var_within_closure.unwrap var)
@@ -578,8 +586,13 @@ and fetch_variable_field
   | Symbol _ | Variable _ | Project_var _ | Field _ ->
     (* Must have been resolved *)
     assert false
+<<<<<<< HEAD
   | Const _ | Allocated_const _
   | Set_of_closures _ | Project_closure _ ->
+=======
+  | Predefined_exn _ | Const _ | Allocated_const _
+  | Set_of_closures _ | Project_closure _ | Move_within_set_of_closures _->
+>>>>>>> remotes/chambart/flambda4-more-anf
     fatal_error_f "Field access to %a which is not a block" Variable.print var
 
 and fetch_symbol_field

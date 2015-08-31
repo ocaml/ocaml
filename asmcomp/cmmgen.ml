@@ -2418,6 +2418,16 @@ let emit_all_constants cont =
   Compilenv.clear_structured_constants ();
   emit_constants cont constants
 
+(* Build the NULL terminated array of gc roots *)
+
+let emit_gc_roots_table ~symbols cont =
+  let table_symbol = Compilenv.make_symbol (Some "gc_roots") in
+  Cdata(Cglobal_symbol table_symbol ::
+        Cdefine_symbol table_symbol ::
+        List.map (fun s -> Csymbol_address s) symbols @
+        [Cint 0n])
+  :: cont
+
 (* Translate a compilation unit *)
 
 let compunit size ulam =
@@ -2437,6 +2447,7 @@ let compunit size ulam =
       aux set c3
   in
   let c3 = aux StringSet.empty c1 in
+  let c4 = emit_gc_roots_table ~symbols:[glob] c3 in
   let space =
     (* These words will be registered as roots and as such must contain
        valid values, in case we are in no-naked-pointers mode.  Likewise
@@ -2448,7 +2459,7 @@ let compunit size ulam =
   in
   Cdata ([Cint(black_block_header 0 size);
          Cglobal_symbol glob;
-         Cdefine_symbol glob] @ space) :: c3
+         Cdefine_symbol glob] @ space) :: c4
 
 let preallocate_block { Clambda.symbol; tag; size } =
   let space =
@@ -2488,11 +2499,18 @@ let compunit_and_constants (ulam, preallocated_blocks, constants) =
       let c3 = emit_all_constants c2 in
       aux set c3
   in
+  let preallocate_block_symbols =
+    List.map (fun { Clambda.symbol } -> symbol)
+      preallocated_blocks
+  in
   let c3 = aux StringSet.empty c1' in
+  let c4 =
+    emit_gc_roots_table ~symbols:preallocate_block_symbols c3
+  in
   let blocks =
     List.map preallocate_block preallocated_blocks
   in
-  blocks @ c3
+  blocks @ c4
 
 (*
 CAMLprim value caml_cache_public_method (value meths, value tag, value *cache)
@@ -2830,7 +2848,7 @@ let cint_zero = Cint 0n
 
 let global_table namelist =
   let mksym name =
-    Csymbol_address (Compilenv.make_symbol ~unitname:name None)
+    Csymbol_address (Compilenv.make_symbol ~unitname:name (Some "gc_roots"))
   in
   Cdata(Cglobal_symbol "caml_globals" ::
         Cdefine_symbol "caml_globals" ::

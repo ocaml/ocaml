@@ -24,6 +24,9 @@
 include Ext_types.Identifiable
 
 val create : Compilation_unit.t -> Linkage_name.t -> t
+(* Create the symbol without prefixing with the compilation unit.
+   Used for predefined exceptions *)
+val unsafe_create : Compilation_unit.t -> Linkage_name.t -> t
 
 val compilation_unit : t -> Compilation_unit.t
 val label : t -> Linkage_name.t

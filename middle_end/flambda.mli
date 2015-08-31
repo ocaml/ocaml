@@ -286,14 +286,8 @@ and constant_defining_value_block_field =
   | Symbol of Symbol.t
   | Const of const
 
-module Constant_defining_value : sig
-  type t = constant_defining_value
-
-  module Map : Map.S with type key = constant_defining_value
-  module Tbl : Hashtbl.S with type key = constant_defining_value
-
-  val compare : t -> t -> int
-end
+module Constant_defining_value :
+  Ext_types.Identifiable with type t = constant_defining_value
 
 (** A "program" is the contents of one compilation unit. *)
 type program =
@@ -311,6 +305,13 @@ val free_variables
   -> Variable.Set.t
 
 val free_variables_named : named -> Variable.Set.t
+
+(* Free variables bound at each let declaration (not let-rec) *)
+val free_variables_by_let
+  : ?ignore_uses_in_apply:unit
+  -> ?ignore_uses_in_project_var:unit
+  -> t
+  -> Variable.Set.t Variable.Map.t
 
 (* CR mshinwell: try to move the non-recursive types out to a separate .mli *)
 (* CR mshinwell: consider moving [Flambda_utils] functions into here, now we

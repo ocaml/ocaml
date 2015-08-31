@@ -246,9 +246,9 @@ let is_predefined_exception sym =
 let symbol_for_global' id =
   let sym_label = Linkage_name.create (symbol_for_global id) in
   if Ident.is_predef_exn id then
-    Symbol.create predefined_exception_compilation_unit sym_label
+    Symbol.unsafe_create predefined_exception_compilation_unit sym_label
   else
-    Symbol.create (unit_for_global id) sym_label
+    Symbol.unsafe_create (unit_for_global id) sym_label
 
 (* Register the approximation of the module being compiled *)
 
@@ -319,7 +319,7 @@ let current_unit () =
   | None -> Misc.fatal_error "Compilenv.current_unit"
 
 let current_unit_symbol () =
-  Symbol.create (current_unit ()) (current_unit_linkage_name ())
+  Symbol.unsafe_create (current_unit ()) (current_unit_linkage_name ())
 
 let const_label = ref 0
 
@@ -426,7 +426,7 @@ let structured_constants () =
     ) structured_constants.strcst_all
 
 let new_const_symbol' ?name () =
-  Symbol.create (current_unit ())
+  Symbol.unsafe_create (current_unit ())
     (Linkage_name.create (new_const_symbol ?name ()))
 
 let concat_symbol unitname id =
@@ -440,7 +440,7 @@ let closure_symbol fv =
   let linkage_name =
     concat_symbol unitname ((Closure_id.unique_name fv) ^ "_closure")
   in
-  Symbol.create compilation_unit (Linkage_name.create linkage_name)
+  Symbol.unsafe_create compilation_unit (Linkage_name.create linkage_name)
 
 let function_label fv =
   let compilation_unit = Closure_id.get_compilation_unit fv in

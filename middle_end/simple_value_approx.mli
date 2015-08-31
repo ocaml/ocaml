@@ -315,3 +315,14 @@ type checked_approx_for_closure_allowing_unresolved =
 val check_approx_for_closure_allowing_unresolved
    : t
   -> checked_approx_for_closure_allowing_unresolved
+
+type checked_approx_for_set_of_closures_allowing_unknown_and_unresolved =
+  | Wrong
+  | Unknown_or_unresolved
+  | Ok of value_set_of_closures
+
+(** As for [checked_approx_for_closure_allowing_unresolved],
+    but unknown values are permitted. *)
+val checked_approx_for_set_of_closures_allowing_unknown_and_unresolved
+   : t
+  -> checked_approx_for_set_of_closures_allowing_unknown_and_unresolved
