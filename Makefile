@@ -17,7 +17,7 @@ include stdlib/StdlibModules
 
 CAMLC=boot/ocamlrun boot/ocamlc -g -nostdlib -I boot
 CAMLOPT=boot/ocamlrun ./ocamlopt -g -nostdlib -I stdlib -I otherlibs/dynlink
-COMPFLAGS=-strict-sequence -w +33..39+48+50 -warn-error A-53 -bin-annot \
+COMPFLAGS=-strict-sequence -w +33..39+48+50 -warn-error A -bin-annot \
           -safe-string $(INCLUDES)
 LINKFLAGS=
 
