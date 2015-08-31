@@ -842,7 +842,7 @@ and simplify_direct env r (tree : Flambda.t) : Flambda.t * R.t =
     begin
       match body with
       | Let (mut, var, def, body)
-        when not (Flambda_utils.contains_static_exn def i) ->
+          when not (Flambda_utils.might_raise_static_exn def i) ->
         simplify_direct env r
           (Flambda.Let (mut, var, def, Static_catch (i, vars, body, handler)))
       | _ ->

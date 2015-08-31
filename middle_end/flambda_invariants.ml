@@ -205,14 +205,6 @@ let variable_and_symbol_invariants flam =
     | Symbol symbol -> check_symbol_is_bound env symbol
     | Const const -> ignore_const const
     | Allocated_const const -> ignore_allocated_const const
-<<<<<<< HEAD
-    | Set_of_closures ({ function_decls; free_vars; specialised_args; }
-        as set_of_closures) ->
-=======
-    | Predefined_exn ident ->
-      if not (Ident.is_predef_exn ident) then begin
-        raise (Identifier_is_not_a_predefined_exception ident)
-      end
     | Set_of_closures set_of_closures ->
       loop_set_of_closures env set_of_closures
     | Project_closure { set_of_closures; closure_id; } ->
@@ -235,7 +227,6 @@ let variable_and_symbol_invariants flam =
   and loop_set_of_closures env
       ({ Flambda.function_decls; free_vars; specialised_args; }
        as set_of_closures) =
->>>>>>> remotes/chambart/flambda4-more-anf
       let { Flambda.set_of_closures_id; funs; compilation_unit } =
         function_decls
       in

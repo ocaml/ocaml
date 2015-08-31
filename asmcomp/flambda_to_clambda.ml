@@ -264,7 +264,8 @@ and to_clambda_named t env var (named : Flambda.named) : Clambda.ulambda =
   | Const (Char c) -> Uconst (Uconst_int (Char.code c))
   | Allocated_const _ ->
     Misc.fatal_errorf "[Allocated_const] should have been lifted to a \
-        [Let_symbol] construction before [Clambdagen]: %a"
+        [Let_symbol] construction before [Clambdagen]: %a = %a"
+      Variable.print var
       Flambda.print_named named
   | Set_of_closures set_of_closures ->
     to_clambda_set_of_closures t env set_of_closures
@@ -427,7 +428,7 @@ Flambda.print_set_of_closures set_of_closures;
 and to_clambda_closed_set_of_closures t symbol
       ({ function_decls; } : Flambda.set_of_closures)
       : Clambda.ustructured_constant =
-  let functions = Variable.Map.bindings function_decls in
+  let functions = Variable.Map.bindings function_decls.funs in
   let to_clambda_function (id, (function_decl : Flambda.function_declaration))
         : Clambda.ufunction =
     (* All that we need in the environment, for translating one closure from
@@ -438,8 +439,9 @@ and to_clambda_closed_set_of_closures t symbol
       List.fold_left (fun env (var, _) ->
           let closure_id = Closure_id.wrap var in
           let symbol = Compilenv.closure_symbol closure_id in
-          add_sb var (to_clambda_named t Env.empty var (Symbol symbol)))
-        env
+          let named : Flambda.named = Symbol symbol in
+          Env.add_subst env var (to_clambda_named t Env.empty var named))
+        Env.empty
         functions
     in
     let env_body, params =

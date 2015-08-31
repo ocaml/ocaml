@@ -509,16 +509,6 @@ type constant_defining_value =
   | Symbol of Symbol.t
   | Variable of Variable.t
 
-let fatal_error_f fmt =
-  let b = Buffer.create 10 in
-  let ppf = Format.formatter_of_buffer b in
-  Format.kfprintf (fun ppf ->
-      Format.pp_print_flush ppf ();
-      let s = Buffer.contents b in
-      Misc.fatal_error s)
-    ppf
-    fmt
-
 type definitions =
   {
     variable : constant_defining_value Variable.Map.t;
@@ -535,13 +525,8 @@ let rec resolve_definition
   | Block _
   | Set_of_closures _
   | Project_closure _
-<<<<<<< HEAD
-  | Const _ ->
-=======
-  | Move_within_set_of_closures _
   | Const _
-  | Predefined_exn _ ->
->>>>>>> remotes/chambart/flambda4-more-anf
+  | Move_within_set_of_closures _ ->
     Variable var
   | Project_var {var} ->
     fetch_variable definitions (Var_within_closure.unwrap var)
@@ -577,23 +562,18 @@ and fetch_variable_field
   | Block (_, fields) ->
     begin match List.nth fields field with
     | exception Not_found ->
-      fatal_error_f "No field %i in block %a" field Variable.print var
+      Misc.fatal_errorf "No field %i in block %a" field Variable.print var
     | v ->
       fetch_variable definitions v
     end
   | exception Not_found ->
-    fatal_error_f "No definition for field access to %a" Variable.print var
+    Misc.fatal_errorf "No definition for field access to %a" Variable.print var
   | Symbol _ | Variable _ | Project_var _ | Field _ ->
     (* Must have been resolved *)
     assert false
-<<<<<<< HEAD
   | Const _ | Allocated_const _
-  | Set_of_closures _ | Project_closure _ ->
-=======
-  | Predefined_exn _ | Const _ | Allocated_const _
-  | Set_of_closures _ | Project_closure _ | Move_within_set_of_closures _->
->>>>>>> remotes/chambart/flambda4-more-anf
-    fatal_error_f "Field access to %a which is not a block" Variable.print var
+  | Set_of_closures _ | Project_closure _ | Move_within_set_of_closures _ ->
+    Misc.fatal_errorf "Field access to %a which is not a block" Variable.print var
 
 and fetch_symbol_field
     (definitions: definitions)
@@ -603,16 +583,16 @@ and fetch_symbol_field
   | Block (_, fields) ->
     begin match List.nth fields field with
     | exception Not_found ->
-      fatal_error_f "No field %i in block %a" field Symbol.print sym
+      Misc.fatal_errorf "No field %i in block %a" field Symbol.print sym
     | Symbol s ->
       Symbol s
     | Const _ ->
       Symbol sym
     end
   | exception Not_found ->
-    fatal_error_f "No definition for field access to %a" Symbol.print sym
+    Misc.fatal_errorf "No definition for field access to %a" Symbol.print sym
   | Allocated_const _ | Set_of_closures _ | Project_closure _ ->
-    fatal_error_f "Field access to %a which is not a block" Symbol.print sym
+    Misc.fatal_errorf "Field access to %a which is not a block" Symbol.print sym
 
 let second_take variable symbol symbol_alias =
   let definitions = { variable; symbol; symbol_alias; } in
