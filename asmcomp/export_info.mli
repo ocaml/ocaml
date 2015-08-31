@@ -53,29 +53,30 @@ and approx =
 
 (** A structure that describes what a single compilation unit exports. *)
 type t = private {
-  (* Code of exported functions indexed by set of closures IDs. *)
   sets_of_closures : Flambda.function_declarations Set_of_closures_id.Map.t;
-  (* Code of exported functions indexed by closure IDs. *)
+  (** Code of exported functions indexed by set of closures IDs. *)
   closures : Flambda.function_declarations Closure_id.Map.t;
-  (* Structure of exported values. *)
+  (** Code of exported functions indexed by closure IDs. *)
   values : descr Export_id.Map.t Compilation_unit.Map.t;
-  (* Global variables provided by the unit: usually only the top-level
-     module identifier, but packs may contain more than one. *)
+  (** Structure of exported values. *)
   globals : approx Ident.Map.t;
+  (** Global variables provided by the unit: usually only the top-level
+      module identifier, but packs may contain more than one. *)
   id_symbol : Symbol.t Export_id.Map.t Compilation_unit.Map.t;
-  (* Associates symbols and values. *)
+  (* CR mshinwell for pchambart: add comment *)
   symbol_id : Export_id.t Symbol.Map.t;
-  (* Positions of function pointers in their closures. *)
+  (** Associates symbols and values. *)
   offset_fun : int Closure_id.Map.t;
-  (* Positions of value pointers in their closures. *)
+  (** Positions of function pointers in their closures. *)
   offset_fv : int Var_within_closure.Map.t;
-  (* Symbols that are effectively constants (the top-level module is
-     not always a constant for instance). *)
+  (** Positions of value pointers in their closures. *)
   constants : Symbol.Set.t;
-  (* CR mshinwell for pchambart: Add comment *)
+  (** Symbols that are effectively constants (the top-level module is
+      not always a constant for instance). *)
   constant_sets_of_closures : Set_of_closures_id.Set.t;
   (* CR mshinwell for pchambart: Add comment *)
   invariant_arguments : Variable.Set.t Set_of_closures_id.Map.t;
+  (* CR mshinwell for pchambart: Add comment *)
 }
 
 (** Export information for a compilation unit that exports nothing. *)
