@@ -1394,20 +1394,7 @@ let inline_asm_args env ty =
         get_types (get_type t1.desc :: acc) t2
     | t -> List.rev (get_type t :: acc)
   in
-  let types = get_types [] ty in
-  Printf.printf "%s\n%!" (String.concat " " (List.map (function
-      `Addr      -> "addr"
-    | `Float     -> "float"
-    | `Int       -> "int"
-    | `Int32     -> "int32"
-    | `Int64     -> "int64"
-    | `M128d     -> "m128d"
-    | `M128i     -> "m128i"
-    | `M256d     -> "m256d"
-    | `M256i     -> "m256i"
-    | `Nativeint -> "nativeint"
-    | `Unit      -> "unit") types));
-  types
+  get_types [] ty
 
 (* Translate a value declaration *)
 let transl_value_decl env loc valdecl =
