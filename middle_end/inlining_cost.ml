@@ -64,8 +64,9 @@ let lambda_smaller' lam ~than:threshold =
     | Assign _ -> incr size
     | Send _ -> size := !size + 8
     | Proved_unreachable -> ()
-    | Let (_, _, lam, body) ->
+    | Let (_, lam, body) ->
       lambda_named_size lam; lambda_size body
+    | Let_mutable (_, _, body) -> lambda_size body
     | Let_rec (bindings, body) ->
       List.iter (fun (_, lam) -> lambda_named_size lam) bindings;
       lambda_size body
@@ -96,7 +97,7 @@ let lambda_smaller' lam ~than:threshold =
   and lambda_named_size (named : Flambda.named) =
     if !size > threshold then raise Exit;
     match named with
-    | Symbol _ -> ()
+    | Symbol _ | Read_mutable _ -> ()
     (* CR mshinwell: are these cases correct? *)
     | Const _ | Allocated_const _ -> incr size
     | Set_of_closures ({ function_decls = ffuns }) ->
@@ -170,7 +171,8 @@ module Benefit = struct
     | Switch _ | String_switch _ | Static_raise _ | Try_with _
     | If_then_else _ | While _ | For _ -> b := remove_branch !b
     | Apply _ | Send _ -> b := remove_call !b
-    | Let _ | Let_rec _ | Proved_unreachable | Var _ | Static_catch _ -> ()
+    | Let _ | Let_mutable _ | Let_rec _ | Proved_unreachable | Var _
+    | Static_catch _ -> ()
 
   let remove_code_helper_named b (named : Flambda.named) =
     match named with
@@ -182,7 +184,7 @@ module Benefit = struct
       (* CR mshinwell for pchambart: check closure & const cases carefully *)
     | Prim _ | Project_closure _ | Project_var _
     | Move_within_set_of_closures _ -> b := remove_prim !b
-    | Symbol _ | Allocated_const _ | Const _ | Expr _ -> ()
+    | Symbol _ | Read_mutable _ | Allocated_const _ | Const _ | Expr _ -> ()
 
   let remove_code lam b =
     let b = ref b in

@@ -41,7 +41,8 @@ let description_of_toplevel_node (expr : Flambda.t) =
   | Assign _ -> "assign"
   | Send _ -> "send"
   | Proved_unreachable -> "unreachable"
-  | Let (_, id, _, _) -> Format.asprintf "let %a" Variable.print id
+  | Let (id, _, _) -> Format.asprintf "let %a" Variable.print id
+  | Let_mutable _ -> "let_mutable"
   | Let_rec _ -> "letrec"
   | If_then_else _ -> "if"
   | Switch _ -> "switch"
@@ -73,9 +74,14 @@ let rec same (l1 : Flambda.t) (l2 : Flambda.t) =
       && Variable.equal a1.func a2.func
       && Misc.samelist Variable.equal a1.args a2.args
   | Apply _, _ | _, Apply _ -> false
-  | Let (k1, v1, a1, b1), Let (k2, v2, a2, b2) ->
-    k1 = k2 && Variable.equal v1 v2 && same_named a1 a2 && same b1 b2
+  | Let (v1, a1, b1), Let (v2, a2, b2) ->
+    Variable.equal v1 v2 && same_named a1 a2 && same b1 b2
   | Let _, _ | _, Let _ -> false
+  | Let_mutable (mv1, v1, b1), Let_mutable (mv2, v2, b2) ->
+    Mutable_variable.equal mv1 mv2
+      && Variable.equal v1 v2
+      && same b1 b2
+  | Let_mutable _, _ | _, Let_mutable _ -> false
   | Let_rec (bl1, a1), Let_rec (bl2, a2) ->
     Misc.samelist samebinding bl1 bl2 && same a1 a2
   | Let_rec _, _ | _, Let_rec _ -> false
@@ -136,6 +142,8 @@ and same_named (named1 : Flambda.named) (named2 : Flambda.named) =
   | Allocated_const c1, Allocated_const c2 ->
     Allocated_const.compare c1 c2 = 0
   | Allocated_const _, _ | _, Allocated_const _ -> false
+  | Read_mutable mv1, Read_mutable mv2 -> Mutable_variable.equal mv1 mv2
+  | Read_mutable _, _ | _, Read_mutable _ -> false
   | Set_of_closures s1, Set_of_closures s2 -> same_set_of_closures s1 s2
   | Set_of_closures _, _ | _, Set_of_closures _ -> false
   | Project_closure f1, Project_closure f2 -> same_project_closure f1 f2
@@ -211,12 +219,12 @@ let toplevel_substitution sb tree =
       For { bound_var; from_value = sb from_value; to_value = sb to_value;
             direction; body }
     | Static_raise _ | Static_catch _ | Try_with _ | While _
-    | Let _ | Let_rec _ | Proved_unreachable -> flam
+    | Let _ | Let_mutable _ | Let_rec _ | Proved_unreachable -> flam
   in
   let aux_named (named : Flambda.named) : Flambda.named =
     match named with
     | Symbol _ | Const _ | Expr _ -> named
-    | Allocated_const _ -> named
+    | Allocated_const _ | Read_mutable _ -> named
     | Set_of_closures set_of_closures ->
       let set_of_closures =
         Flambda.create_set_of_closures

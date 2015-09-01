@@ -19,8 +19,8 @@ type lifter = Flambda.program -> Flambda.program
 let lift_lets_expr tree =
   let rec aux (expr : Flambda.t) : Flambda.t =
     match expr with
-    | Let (let_kind1, v1, Expr (Let (let_kind2, v2, def2, body2)), body1) ->
-      Let (let_kind2, v2, def2, aux (Flambda.Let (let_kind1, v1, Expr body2, body1)))
+    | Let (v1, Expr (Let (v2, def2, body2)), body1) ->
+      Let (v2, def2, aux (Flambda.Let (v1, Expr body2, body1)))
     | e -> e
   in
   Flambda_iterators.map aux (fun (named : Flambda.named) -> named) tree

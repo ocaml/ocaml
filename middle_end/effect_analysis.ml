@@ -22,7 +22,8 @@ let no_effects_prim (prim : Lambda.primitive) =
 let rec no_effects (flam : Flambda.t) =
   match flam with
   | Var _ -> true
-  | Let (_, _, def, body) -> no_effects_named def && no_effects body
+  | Let (_, def, body) -> no_effects_named def && no_effects body
+  | Let_mutable (_, _, body) -> no_effects body
   | Let_rec (defs, body) ->
     no_effects body
       && List.for_all (fun (_, def) -> no_effects_named def) defs
@@ -44,7 +45,7 @@ let rec no_effects (flam : Flambda.t) =
 
 and no_effects_named (named : Flambda.named) =
   match named with
-  | Symbol _ | Const _ | Allocated_const _
+  | Symbol _ | Const _ | Allocated_const _ | Read_mutable _
   | Set_of_closures _ | Project_closure _ | Project_var _
   | Move_within_set_of_closures _ -> true
   | Prim (prim, _, _) -> no_effects_prim prim

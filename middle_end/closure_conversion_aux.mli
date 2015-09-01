@@ -26,12 +26,14 @@ module Env : sig
 
   val find_var : t -> Ident.t -> Variable.t
 
+  val add_mutable_var : t -> Ident.t -> Mutable_variable.t -> t
+  val find_mutable_var : t -> Ident.t -> Mutable_variable.t
+
   val add_static_exception : t -> int -> Static_exception.t -> t
   val find_static_exception : t -> int -> Static_exception.t
 
   val add_global : t -> int -> Symbol.t -> t
   val find_global : t -> int -> Symbol.t
-
 end
 
 (** Used to represent information about a set of function declarations

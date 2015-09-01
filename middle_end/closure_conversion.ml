@@ -100,16 +100,17 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
   match lam with
   | Lvar id -> Var (Env.find_var env id)
   | Lconst cst -> name_expr (close_const cst)
-  | Llet (let_kind, id, defining_expr, body) ->
-    let let_kind : Flambda.let_kind =
-      match let_kind with
-      | Variable -> Mutable
-      | Strict | Alias | StrictOpt -> Immutable
-    in
+  | Llet ((Strict | Alias | StrictOpt), id, defining_expr, body) ->
     let var = Variable.of_ident id in
     let defining_expr = close_let_bound_expression t var env defining_expr in
     let body = close t (Env.add_var env id var) body in
-    Let (let_kind, var, defining_expr, body)
+    Let (var, defining_expr, body)
+  | Llet (Variable, id, defining_expr, body) ->
+    let mut_var = Mutable_variable.of_ident id in
+    let var = Variable.of_ident id in
+    let defining_expr = close_let_bound_expression t var env defining_expr in
+    let body = close t (Env.add_mutable_var env id mut_var) body in
+    Let (var, defining_expr, Let_mutable (mut_var, var, body))
   | Lfunction { kind; params; body; } ->
     let closure_bound_var =
       let name =
@@ -617,7 +618,7 @@ let lambda_to_flambda ~backend ~module_ident ~size lam =
         let result_v = Variable.create ("block_symbol_get_" ^ string_of_int pos) in
         let value_v = Variable.create ("block_symbol_get_field_" ^ string_of_int pos) in
         Flambda.Let
-          (Immutable, sym_v, Symbol block_symbol,
+          (sym_v, Symbol block_symbol,
            Let (result_v, Prim(Pfield 0, [sym_v], Debuginfo.none),
                Let (value_v, Prim(Pfield pos, [result_v], Debuginfo.none),
                    Var value_v))))

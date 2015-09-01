@@ -16,12 +16,14 @@ module IdentSet = Lambda.IdentSet
 module Env = struct
   type t = {
     variables : Variable.t Ident.tbl;
+    mutable_variables : Mutable_variable.t Ident.tbl;
     static_exceptions : Static_exception.t Ext_types.Int.Map.t;
     globals : Symbol.t Ext_types.Int.Map.t;
   }
 
   let empty = {
     variables = Ident.empty;
+    mutable_variables = Ident.empty;
     static_exceptions = Ext_types.Int.Map.empty;
     globals = Ext_types.Int.Map.empty;
   }
@@ -36,6 +38,15 @@ module Env = struct
     try Ident.find_same id t.variables
     with Not_found ->
       Misc.fatal_error ("Closure_conversion.Env.find_var: var "
+        ^ Ident.unique_name id)
+
+  let add_mutable_var t id mutable_var =
+    { t with mutable_variables = Ident.add id mutable_var t.mutable_variables }
+
+  let find_mutable_var t id =
+    try Ident.find_same id t.mutable_variables
+    with Not_found ->
+      Misc.fatal_error ("Closure_conversion.Env.find_mutable_var: mutable_var "
         ^ Ident.unique_name id)
 
   let add_static_exception t st_exn fresh_st_exn =

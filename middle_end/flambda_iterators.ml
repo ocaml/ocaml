@@ -14,8 +14,10 @@
 let apply_on_subexpressions f f_named (flam : Flambda.t) =
   match flam with
   | Var _ | Apply _ | Assign _ | Send _ | Proved_unreachable -> ()
-  | Let (_, _, defining_expr, body) ->
+  | Let (_, defining_expr, body) ->
     f_named defining_expr;
+    f body
+  | Let_mutable (_mut_var, _var, body) ->
     f body
   | Let_rec (defs, body) ->
     List.iter (fun (_,l) -> f_named l) defs;
@@ -48,9 +50,11 @@ let iter_general ~toplevel f f_named maybe_named =
     f t;
     match t with
     | Var _ | Apply _ | Assign _ | Send _ | Proved_unreachable -> ()
-    | Let ( _, _, f1, f2) ->
+    | Let (_, f1, f2) ->
       aux_named f1;
       aux f2
+    | Let_mutable (_mut_var, _var, body) ->
+      aux body
     | Let_rec (defs, body) ->
       List.iter (fun (_,l) -> aux_named l) defs;
       aux body
@@ -73,7 +77,7 @@ let iter_general ~toplevel f f_named maybe_named =
   and aux_named (named : Flambda.named) =
     f_named named;
     match named with
-    | Symbol _ | Const _ | Allocated_const _
+    | Symbol _ | Const _ | Allocated_const _ | Read_mutable _
     | Project_closure _ | Project_var _ | Move_within_set_of_closures _
     | Prim _ -> ()
     | Set_of_closures ({ function_decls = funcs; free_vars = _;
@@ -100,9 +104,9 @@ let iter_toplevel f f_named t = iter_general ~toplevel:true f f_named (Expr t)
 let iter_named_toplevel f f_named named =
   iter_general ~toplevel:true f f_named (Named named)
 
-let iter_all_let_and_let_rec_bindings t ~f =
+let iter_all_immutable_let_and_let_rec_bindings t ~f =
   iter_expr (function
-      | Let (_, var, named, _) -> f var named
+      | Let (var, named, _) -> f var named
       | Let_rec (defs, _) -> List.iter (fun (var, named) -> f var named) defs
       | _ -> ())
     t
@@ -110,7 +114,7 @@ let iter_all_let_and_let_rec_bindings t ~f =
 let iter_on_sets_of_closures f t =
   iter_named (function
       | Set_of_closures clos -> f clos
-      | Symbol _ | Const _ | Allocated_const _
+      | Symbol _ | Const _ | Allocated_const _ | Read_mutable _
       | Project_closure _ | Move_within_set_of_closures _ | Project_var _
       | Prim _ | Expr _ -> ())
     t
@@ -188,7 +192,7 @@ let iter_on_set_of_closures_of_program program ~f =
 let iter_symbols_on_named named ~f =
   iter_named_on_named (function
       | Symbol sym -> f sym
-      | (Const _ | Allocated_const _ | Set_of_closures _
+      | (Const _ | Allocated_const _ | Read_mutable _ | Set_of_closures _
       | Project_closure _ | Move_within_set_of_closures _ | Project_var _
       | Prim _ | Expr _) -> ())
     named
@@ -196,7 +200,7 @@ let iter_symbols_on_named named ~f =
 let iter_symbols named ~f =
   iter_named (function
       | Symbol sym -> f sym
-      | (Const _ | Allocated_const _ | Set_of_closures _
+      | (Const _ | Allocated_const _ | Read_mutable _ | Set_of_closures _
       | Project_closure _ | Move_within_set_of_closures _ | Project_var _
       | Prim _ | Expr _) -> ())
     named
@@ -241,10 +245,13 @@ let map_general ~toplevel f f_named tree =
     let exp : Flambda.t =
       match tree with
       | Var _ | Apply _ | Assign _ | Send _ | Proved_unreachable -> tree
-      | Let (str, id, lam, body) ->
+      | Let (id, lam, body) ->
         let lam = aux_named id lam in
         let body = aux body in
-        Let (str, id, lam, body)
+        Let (id, lam, body)
+      | Let_mutable (mut_var, var, body) ->
+        let body = aux body in
+        Let_mutable (mut_var, var, body)
       | Let_rec (defs, body) ->
         let defs = List.map (fun (id, lam) -> id, aux_named id lam) defs in
         let body = aux body in
@@ -289,7 +296,7 @@ let map_general ~toplevel f f_named tree =
   and aux_named (id : Variable.t) (named : Flambda.named) =
     let named : Flambda.named =
       match named with
-      | Symbol _ | Const _ | Allocated_const _
+      | Symbol _ | Const _ | Allocated_const _ | Read_mutable _
       | Project_closure _ | Move_within_set_of_closures _ | Project_var _
       | Prim _ -> named
       | Set_of_closures ({ function_decls; free_vars; specialised_args }) ->
@@ -332,7 +339,7 @@ let map_toplevel_named f_named tree =
 let map_symbols tree ~f =
   map_named (function
       | Symbol sym -> Symbol (f sym)
-      | (Const _ | Allocated_const _ | Set_of_closures _
+      | (Const _ | Allocated_const _ | Set_of_closures _ | Read_mutable _
       | Project_closure _ | Move_within_set_of_closures _ | Project_var _
       | Prim _ | Expr _) as named -> named)
     tree
@@ -359,7 +366,7 @@ let map_symbols_on_set_of_closures
 let map_toplevel_sets_of_closures tree ~f =
   map_toplevel_named (function
       | Set_of_closures set_of_closures -> Set_of_closures (f set_of_closures)
-      | (Symbol _ | Const _ | Allocated_const _
+      | (Symbol _ | Const _ | Allocated_const _ | Read_mutable _
       | Project_closure _ | Move_within_set_of_closures _ | Project_var _
       | Prim _ | Expr _) as named -> named)
     tree
@@ -376,7 +383,7 @@ let map_sets_of_closures tree ~f =
       | Set_of_closures set_of_closures -> Set_of_closures (f set_of_closures)
       | (Symbol _ | Const _ | Allocated_const _ | Project_closure _
       | Move_within_set_of_closures _ | Project_var _
-      | Prim _ | Expr _) as named -> named)
+      | Prim _ | Expr _ | Read_mutable _) as named -> named)
     tree
 
 let map_project_var_to_expr_opt tree ~f =
@@ -388,7 +395,7 @@ let map_project_var_to_expr_opt tree ~f =
         end
       | (Symbol _ | Const _ | Allocated_const _
       | Set_of_closures _ | Project_closure _ | Move_within_set_of_closures _
-      | Prim _ | Expr _)
+      | Prim _ | Expr _ | Read_mutable _)
           as named -> named)
     tree
 
@@ -502,6 +509,6 @@ let map_named_of_program (program : Flambda.program)
   map_exprs_at_toplevel_of_program program
       ~f:(fun expr -> map_named_with_id f expr)
 
-let map_all_let_and_let_rec_bindings (expr : Flambda.t)
+let map_all_immutable_let_and_let_rec_bindings (expr : Flambda.t)
       ~(f : Variable.t -> Flambda.named -> Flambda.named) : Flambda.t =
   map_named_with_id f expr
