@@ -289,16 +289,6 @@ value caml_interprete(code_t prog, asize_t prog_size)
 
     Assert(!Is_foreign(accu));
     Assert(!Is_foreign(env));
-#if 0
-    {
-      value* s;
-      for (s = sp; s < caml_stack_high; s++) {
-        Assert(*s != Debug_free_minor);
-        Assert(!Is_foreign(*s));
-        if (Is_minor(*s)) Assert(caml_domain_state->young_ptr < (char*)*s);
-      }
-    }
-#endif
     caml_bcodcount++;
     if (caml_icount-- == 0) caml_stop_here ();
     if (caml_startup_params.trace_flag>1) printf("\n##%ld\n", caml_bcodcount);
