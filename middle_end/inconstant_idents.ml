@@ -214,7 +214,8 @@ module NotConstants(P:Param) = struct
     match named with
     | Set_of_closures (set_of_closures) ->
       mark_loop_set_of_closures ~toplevel curr set_of_closures
-    | Const _ | Allocated_const _ | Read_mutable _ -> ()
+    | Const _ | Allocated_const _ -> ()
+    | Read_mutable _ -> mark_curr curr
     (* a symbol does not necessarilly points to a constant: toplevel
        modules are declared as symbols, but can constain not constant
        values *)

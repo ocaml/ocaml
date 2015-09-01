@@ -98,7 +98,16 @@ let imported_symbols = ref Symbol.Set.empty
 
 let rec close t env (lam : Lambda.lambda) : Flambda.t =
   match lam with
-  | Lvar id -> Var (Env.find_var env id)
+  | Lvar id ->
+    begin match Env.find_var_exn env id with
+    | var -> Var var
+    | exception Not_found ->
+      match Env.find_mutable_var_exn env id with
+      | mut_var -> name_expr (Read_mutable mut_var)
+      | exception Not_found ->
+        Misc.fatal_errorf "Closure_conversion.close: unbound identifier %a"
+          Ident.print id
+    end
   | Lconst cst -> name_expr (close_const cst)
   | Llet ((Strict | Alias | StrictOpt), id, defining_expr, body) ->
     let var = Variable.of_ident id in
@@ -333,7 +342,14 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
       Let (to_value, Expr (close t env hi),
         For { bound_var; from_value; to_value; direction; body; }))
   | Lassign (id, new_value) ->
-    let being_assigned = Env.find_mutable_var env id in
+    let being_assigned =
+      match Env.find_mutable_var_exn env id with
+      | being_assigned -> being_assigned
+      | exception Not_found ->
+        Misc.fatal_errorf "Closure_conversion.close: unbound mutable \
+            variable %s in assignment"
+          (Ident.unique_name id)
+    in
     let new_value_var = Variable.create "new_value" in
     Let (new_value_var, Expr (close t env new_value),
       Assign { being_assigned; new_value = new_value_var; })

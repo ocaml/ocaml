@@ -25,9 +25,10 @@ module Env : sig
   val add_vars : t -> Ident.t list -> Variable.t list -> t
 
   val find_var : t -> Ident.t -> Variable.t
+  val find_var_exn : t -> Ident.t -> Variable.t
 
   val add_mutable_var : t -> Ident.t -> Mutable_variable.t -> t
-  val find_mutable_var : t -> Ident.t -> Mutable_variable.t
+  val find_mutable_var_exn : t -> Ident.t -> Mutable_variable.t
 
   val add_static_exception : t -> int -> Static_exception.t -> t
   val find_static_exception : t -> int -> Static_exception.t

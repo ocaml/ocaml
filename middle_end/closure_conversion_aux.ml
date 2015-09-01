@@ -37,17 +37,18 @@ module Env = struct
   let find_var t id =
     try Ident.find_same id t.variables
     with Not_found ->
-      Misc.fatal_error ("Closure_conversion.Env.find_var: var "
-        ^ Ident.unique_name id)
+      Misc.fatal_errorf "Closure_conversion.Env.find_var: %s@ %s"
+        (Ident.unique_name id)
+        (Printexc.raw_backtrace_to_string (Printexc.get_callstack 42))
+
+  let find_var_exn t id =
+    Ident.find_same id t.variables
 
   let add_mutable_var t id mutable_var =
     { t with mutable_variables = Ident.add id mutable_var t.mutable_variables }
 
-  let find_mutable_var t id =
-    try Ident.find_same id t.mutable_variables
-    with Not_found ->
-      Misc.fatal_error ("Closure_conversion.Env.find_mutable_var: mutable_var "
-        ^ Ident.unique_name id)
+  let find_mutable_var_exn t id =
+    Ident.find_same id t.mutable_variables
 
   let add_static_exception t st_exn fresh_st_exn =
     { t with

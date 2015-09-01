@@ -205,6 +205,8 @@ let toplevel_substitution sb tree =
   let aux (flam : Flambda.t) : Flambda.t =
     match flam with
     | Var var -> Var (sb var)
+    | Let_mutable (mut_var, var, body) ->
+      Let_mutable (mut_var, sb var, body)
     | Assign { being_assigned; new_value; } ->
       Assign { being_assigned; new_value = sb new_value; }
     | Apply { func; args; kind; dbg; } ->
@@ -219,7 +221,7 @@ let toplevel_substitution sb tree =
       For { bound_var; from_value = sb from_value; to_value = sb to_value;
             direction; body }
     | Static_raise _ | Static_catch _ | Try_with _ | While _
-    | Let _ | Let_mutable _ | Let_rec _ | Proved_unreachable -> flam
+    | Let _ | Let_rec _ | Proved_unreachable -> flam
   in
   let aux_named (named : Flambda.named) : Flambda.named =
     match named with
