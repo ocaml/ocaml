@@ -122,15 +122,16 @@ module NotConstants(P:Param) = struct
   *)
   let rec mark_loop ~toplevel (curr : dep list) (flam : Flambda.t) =
     match flam with
-    | Let(str, var, lam, body) ->
-      if str = Flambda.Mutable then mark_curr [Var var];
+    | Let (var, lam, body) ->
       mark_named ~toplevel [Var var] lam;
       (* adds 'var in NC => curr in NC'
          This is not really necessary, but compiling this correctly is
          trickier than eliminating that earlier. *)
       mark_var var curr;
       mark_loop ~toplevel curr body
-
+    | Let_mutable (_mut_var, var, body) ->
+      mark_var var curr;
+      mark_loop ~toplevel curr body
     | Let_rec(defs, body) ->
       List.iter (fun (var, def) ->
           mark_named ~toplevel [Var var] def;
@@ -215,7 +216,7 @@ module NotConstants(P:Param) = struct
     match named with
     | Set_of_closures (set_of_closures) ->
       mark_loop_set_of_closures ~toplevel curr set_of_closures
-    | Const _ | Allocated_const _ -> ()
+    | Const _ | Allocated_const _ | Read_mutable _ -> ()
     (* a symbol does not necessarilly points to a constant: toplevel
        modules are declared as symbols, but can constain not constant
        values *)

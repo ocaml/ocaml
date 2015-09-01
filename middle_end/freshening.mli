@@ -55,12 +55,18 @@ val add_variables
   -> (Variable.t * 'a) list
   -> (Variable.t * 'a) list * t
 
+(** Like [add_variable], but for mutable variables. *)
+val add_mutable_variable : t -> Mutable_variable.t -> Mutable_variable.t * t
+
 (** As for [add_variable], but for static exception identifiers. *)
 val add_static_exception : t -> Static_exception.t -> Static_exception.t * t
 
 (** [apply_variable t var] applies the freshening [t] to [var].
     If no renaming is specified in [t] for [var] it is returned unchanged. *)
 val apply_variable : t -> Variable.t -> Variable.t
+
+(** As for [apply_variable], but for mutable variables. *)
+val apply_mutable_variable : t -> Mutable_variable.t -> Mutable_variable.t
 
 (** As for [apply_variable], but for static exception identifiers. *)
 val apply_static_exception : t -> Static_exception.t -> Static_exception.t

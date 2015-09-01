@@ -40,10 +40,16 @@ module Env : sig
 
   val add_outer_scope : t -> Variable.t -> Simple_value_approx.t -> t
 
+  (** Like [add], but for mutable variables. *)
+  val add_mutable : t -> Mutable_variable.t -> Simple_value_approx.t -> t
+
   (** Find the approximation of a given variable, raising a fatal error if
       the environment does not know about the variable.  Use [find_opt]
       instead if you need to catch the failure case. *)
   val find_exn : t -> Variable.t -> Simple_value_approx.t
+
+  (** Like [find_exn], but for mutable variables. *)
+  val find_mutable_exn : t -> Mutable_variable.t -> Simple_value_approx.t
 
   type scope = Current | Outer
 

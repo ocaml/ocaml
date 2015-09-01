@@ -60,7 +60,8 @@ open Alias_analysis
 let rec tail_variable : Flambda.t -> Variable.t option = function
   | Var v -> Some v
   | Let_rec (_, e)
-  | Let (_,_,_,e) -> tail_variable e
+  | Let_mutable (_, _, e)
+  | Let (_,_,e) -> tail_variable e
   | _ -> None
 
 let closure_symbol ~(backend:(module Backend_intf.S)) closure_id =
@@ -101,6 +102,7 @@ let assign_symbols_and_collect_constant_definitions
       | Allocated_const const ->
         assign_symbol ();
         record_definition (Allocated_const const)
+      | Read_mutable _ -> ()
       | Prim (Pmakeblock (tag, _), fields, _) ->
         assign_symbol ();
         record_definition (Block (Tag.create_exn tag, fields))
@@ -159,7 +161,8 @@ let assign_symbols_and_collect_constant_definitions
     end
   in
   let assign_symbol_program expr =
-    Flambda_iterators.iter_all_let_and_let_rec_bindings expr ~f:assign_symbol
+    Flambda_iterators.iter_all_immutable_let_and_let_rec_bindings expr
+      ~f:assign_symbol
   in
   Flambda_iterators.iter_exprs_at_toplevel_of_program
     ~f:assign_symbol_program
@@ -252,7 +255,7 @@ let translate_set_of_closures
   (*   let free_variable = Flambda.free_variables body in *)
   (* in *)
   Flambda_iterators.map_function_bodies set_of_closures
-    ~f:(Flambda_iterators.map_all_let_and_let_rec_bindings ~f)
+    ~f:(Flambda_iterators.map_all_immutable_let_and_let_rec_bindings ~f)
 
 let translate_constant_set_of_closures
     (inconstants:Inconstant_idents.result)
@@ -665,13 +668,13 @@ let replace_definitions_in_initialize_symbol_and_effects
   in
   Symbol.Map.iter (fun symbol (tag, fields, previous) ->
       let fields =
-        List.map (Flambda_iterators.map_all_let_and_let_rec_bindings ~f) fields
+        List.map (Flambda_iterators.map_all_immutable_let_and_let_rec_bindings ~f) fields
       in
       Symbol.Tbl.replace initialize_symbol_tbl symbol (tag,fields,previous))
     (Symbol.Tbl.to_map initialize_symbol_tbl);
   Symbol.Map.iter (fun symbol (expr, previous) ->
       let expr =
-        Flambda_iterators.map_all_let_and_let_rec_bindings ~f expr
+        Flambda_iterators.map_all_immutable_let_and_let_rec_bindings ~f expr
       in
       Symbol.Tbl.replace effect_tbl symbol (expr,previous))
     (Symbol.Tbl.to_map effect_tbl)

@@ -17,6 +17,7 @@ module Env = struct
   type t = {
     backend : (module Backend_intf.S);
     approx : (scope * Simple_value_approx.t) Variable.Map.t;
+    approx_mutable : Simple_value_approx.t Mutable_variable.Map.t;
     approx_sym : Simple_value_approx.t Symbol.Map.t;
     current_functions : Set_of_closures_id.Set.t;
     (* The functions currently being declared: used to avoid inlining
@@ -35,6 +36,7 @@ module Env = struct
   let create ~never_inline ~backend =
     { backend;
       approx = Variable.Map.empty;
+      approx_mutable = Mutable_variable.Map.empty;
       approx_sym = Symbol.Map.empty;
       current_functions = Set_of_closures_id.Set.empty;
       inlining_level = 0;
@@ -81,6 +83,11 @@ module Env = struct
   let add t var approx = add_internal t var approx ~scope:Current
   let add_outer_scope t var approx = add_internal t var approx ~scope:Outer
 
+  let add_mutable t mut_var approx =
+    { t with approx_mutable =
+        Mutable_variable.Map.add mut_var approx t.approx_mutable;
+    }
+
   let find_symbol_exn t symbol =
     Symbol.Map.find symbol t.approx_sym
 
@@ -116,6 +123,15 @@ module Env = struct
 
   let find_exn t id =
     snd (find_with_scope_exn t id)
+
+  let find_mutable_exn t mut_var =
+    try Mutable_variable.Map.find mut_var t.approx_mutable
+    with Not_found ->
+      Misc.fatal_errorf "Env.find_mutable_exn: Unbound variable \
+          %a@.%s@. Environment: %a@."
+        Mutable_variable.print mut_var
+        (Printexc.raw_backtrace_to_string (Printexc.get_callstack max_int))
+        print t
 
   let find_list_exn t vars =
     List.map (fun var -> find_exn t var) vars

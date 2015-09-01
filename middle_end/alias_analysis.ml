@@ -179,9 +179,10 @@ let constant_defining_value_block_field_id : Flambda.constant_defining_value_blo
 
 let rec collect_equations (t:equations) : Flambda.t -> equation_right = function
   | Var v -> alias (Var v)
-  | Let (_, v, def, body) ->
+  | Let (v, def, body) ->
     add t (Var v) (collect_equations_named t v def);
     collect_equations t body
+  | Let_mutable _ -> failwith "not yet implemented"
   | Assign { being_assigned; new_value } ->
     add t (Var being_assigned) (alias (Var new_value));
     Resolved Not_const
@@ -254,7 +255,7 @@ and collect_equations_named (t:equations) (var:Variable.t) : Flambda.named -> eq
        Should we do someting with the [Allocated_const (Block (...))] case,
        which contains free variables? *)
     Resolved (Ground_const (Variable var))
-
+  | Read_mutable _ -> failwith "not yet implemented"
   | Expr e ->
     collect_equations t e
 

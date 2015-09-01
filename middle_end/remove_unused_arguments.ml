@@ -23,10 +23,7 @@ let remove_params unused (fun_decl: Flambda.function_declaration) =
       Variable.Set.mem v fun_decl.free_variables) unused_params
   in
   let body = List.fold_left (fun body var ->
-      Flambda.Let(Immutable,
-           var,
-           Const(Const_pointer 0),
-           body))
+        Flambda.Let(var, Const(Const_pointer 0), body))
       fun_decl.body
       unused_params
   in

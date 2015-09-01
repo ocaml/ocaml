@@ -790,14 +790,7 @@ and simplify_direct env r (tree : Flambda.t) : Flambda.t * R.t =
     in
     let id, sb = Freshening.add_variable (E.freshening env) id in
     let env = E.set_freshening env sb in
-    let body, r =
-      let approx_of_bound_var =
-        match str with
-        | Immutable -> R.approx r
-        | Mutable -> A.value_unknown
-      in
-      simplify (E.add env id approx_of_bound_var) r body
-    in
+    let body, r = simplify (E.add env id (R.approx r)) r body in
     let free_variables_of_body = Free_variables.calculate body in
     let (expr : Flambda.t), r =
       if Variable.Set.mem id free_variables_of_body then
@@ -815,6 +808,17 @@ and simplify_direct env r (tree : Flambda.t) : Flambda.t * R.t =
         Flambda.Let (fresh_var, defining_expr, body), r
     in
     expr, r
+  | Let_mutable (mut_var, var, body) ->
+    (* CR mshinwell: add the dead let elimination, as above. *)
+    simplify_free_variable env var ~f:(fun env var ->
+      let mut_var, sb =
+        Freshening.add_mutable_variable (E.freshening env) mut_var
+      in
+      let env = E.set_freshening env sb in
+      let body, r =
+        simplify (E.add_mutable env mut_var A.value_unknown) r body
+      in
+      Flambda.Let_mutable (mut_var, var, body), r)
   | Let_rec (defs, body) ->
     let defs, sb = Freshening.add_variables (E.freshening env) defs in
     let env = E.set_freshening env sb in

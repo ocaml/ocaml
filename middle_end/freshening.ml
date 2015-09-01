@@ -13,10 +13,12 @@
 
 type tbl = {
   sb_var : Variable.t Variable.Map.t;
+  sb_mutable_var : Mutable_variable.t Mutable_variable.Map.t;
   sb_exn : Static_exception.t Static_exception.Map.t;
   (* Used to handle substitution sequences: we cannot call the substitution
      recursively because there can be name clashes. *)
   back_var : Variable.t list Variable.Map.t;
+  back_mutable_var : Mutable_variable.t list Mutable_variable.Map.t;
 }
 
 type t =
@@ -27,8 +29,10 @@ type subst = t
 
 let empty_tbl = {
   sb_var = Variable.Map.empty;
+  sb_mutable_var = Mutable_variable.Map.empty;
   sb_exn = Static_exception.Map.empty;
   back_var = Variable.Map.empty;
+  back_mutable_var = Mutable_variable.Map.empty;
 }
 
 let print ppf = function
@@ -40,11 +44,21 @@ let print ppf = function
           Variable.print var1
           Variable.print var2)
       tbl.sb_var;
+    Mutable_variable.Map.iter (fun mut_var1 mut_var2 ->
+        Format.fprintf ppf "(mutable) %a -> %a@ "
+          Mutable_variable.print mut_var1
+          Mutable_variable.print mut_var2)
+      tbl.sb_mutable_var;
     Variable.Map.iter (fun var vars ->
         Format.fprintf ppf "%a -> %a@ "
           Variable.print var
           Variable.Set.print (Variable.Set.of_list vars))
-      tbl.back_var
+      tbl.back_var;
+    Mutable_variable.Map.iter (fun mut_var mut_vars ->
+        Format.fprintf ppf "(mutable) %a -> %a@ "
+          Mutable_variable.print mut_var
+          Mutable_variable.Set.print (Mutable_variable.Set.of_list mut_vars))
+      tbl.back_mutable_var
 
 let empty = Inactive
 
@@ -66,6 +80,17 @@ let rec add_sb_var sb id id' =
     let l = try Variable.Map.find id' sb.back_var with Not_found -> [] in
     Variable.Map.add id' (id :: l) sb.back_var in
   { sb with back_var }
+
+let rec add_sb_mutable_var sb id id' =
+  let sb = { sb with sb_mutable_var = Mutable_variable.Map.add id id' sb.sb_mutable_var } in
+  let sb =
+    try let pre_vars = Mutable_variable.Map.find id sb.back_mutable_var in
+      List.fold_left (fun sb pre_id -> add_sb_mutable_var sb pre_id id') sb pre_vars
+    with Not_found -> sb in
+  let back_mutable_var =
+    let l = try Mutable_variable.Map.find id' sb.back_mutable_var with Not_found -> [] in
+    Mutable_variable.Map.add id' (id :: l) sb.back_mutable_var in
+  { sb with back_mutable_var }
 
 let apply_static_exception t i =
   match t with
@@ -112,6 +137,18 @@ let add_variables' t ids =
       let id', t = add_variable t id in
       id' :: ids, t) ids ([], t)
 
+let active_add_mutable_variable t id =
+  let id' = Mutable_variable.freshen id in
+  let t = add_sb_mutable_var t id id' in
+  id', t
+
+let add_mutable_variable t id =
+  match t with
+  | Inactive -> id, t
+  | Active t ->
+     let id', t = active_add_mutable_variable t id in
+     id', Active t
+
 let active_find_var_exn t id =
   try Variable.Map.find id t.sb_var with
   | Not_found ->
@@ -124,6 +161,13 @@ let apply_variable t var =
   | Active t ->
    try Variable.Map.find var t.sb_var with
    | Not_found -> var
+
+let apply_mutable_variable t mut_var =
+  match t with
+  | Inactive -> mut_var
+  | Active t ->
+   try Mutable_variable.Map.find mut_var t.sb_mutable_var with
+   | Not_found -> mut_var
 
 let rewrite_recursive_calls_with_symbols t
       (function_declarations : Flambda.function_declarations)

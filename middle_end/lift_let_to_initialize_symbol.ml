@@ -24,7 +24,7 @@ let substitute_variable_to_symbol var symbol expr =
     in
     match named with
     | Symbol _ | Const _ | Expr _ -> named
-    | Allocated_const _ -> named
+    | Allocated_const _ | Read_mutable _ -> named
     | Set_of_closures set_of_closures ->
       let set_of_closures =
         Flambda.create_set_of_closures
@@ -58,11 +58,17 @@ let substitute_variable_to_symbol var symbol expr =
       let fresh = Variable.freshen var in
       bind fresh (Var fresh)
     | Var _ -> expr
-    | Let (kind, v, named, body) ->
+    | Let (v, named, body) ->
       if Variable.Set.mem var (Flambda.free_variables_named named) then
         let fresh = Variable.freshen var in
         let named = substitute_named fresh named in
-        bind fresh (Let (kind, v, named, body))
+        bind fresh (Let (v, named, body))
+      else
+        expr
+    | Let_mutable (mut_var, var', body) ->
+      if Variable.equal var var' then
+        let fresh = Variable.freshen var in
+        bind fresh (Let_mutable (mut_var, fresh, body))
       else
         expr
     | Let_rec (defs, body) ->
@@ -169,8 +175,7 @@ let should_copy (named:Flambda.named) =
 
 let rec split_let free_variables_map (expr:Flambda.t) =
   match expr with
-  | Let(_, _, _, Var _) ->
-    None
+  | Let (_, _, Var _) -> None
   | Let (var, named, body) when should_copy named ->
     (* Format.printf "look variable %a@." *)
     (*   Variable.print var; *)
