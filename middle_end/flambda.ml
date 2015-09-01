@@ -12,10 +12,6 @@
 (*                                                                        *)
 (**************************************************************************)
 
-type let_kind =
-  | Immutable
-  | Mutable
-
 type call_kind =
   | Indirect
   | Direct of Closure_id.t
@@ -64,7 +60,8 @@ type project_var = {
 
 type t =
   | Var of Variable.t
-  | Let of let_kind * Variable.t * named * t
+  | Let of Variable.t * named * t
+  | Let_mutable of Mutable_variable.t * Variable.t * t
   | Let_rec of (Variable.t * named) list * t
   | Apply of apply
   | Send of send
@@ -83,6 +80,7 @@ and named =
   | Symbol of Symbol.t
   | Const of const
   | Allocated_const of Allocated_const.t
+  | Read_mutable of Mutable_variable.t
   | Set_of_closures of set_of_closures
   | Project_closure of project_closure
   | Move_within_set_of_closures of move_within_set_of_closures
@@ -178,15 +176,11 @@ let rec lam ppf (flam : t) =
       print_args args
   | Proved_unreachable ->
       fprintf ppf "unreachable"
-  | Let(_str, id, arg, body) ->
+  | Let(id, arg, body) ->
       let rec letbody (ul : t) =
         match ul with
-        | Let(str, id, arg, body) ->
-            let str = match str with
-              | Mutable -> "*"
-              | Immutable -> ""
-            in
-            fprintf ppf "@ @[<2>%a%s@ %a@]" Variable.print id str print_named arg;
+        | Let(id, arg, body) ->
+            fprintf ppf "@ @[<2>%a@ %a@]" Variable.print id print_named arg;
             letbody body
         | _ -> ul
       in
@@ -194,6 +188,11 @@ let rec lam ppf (flam : t) =
         Variable.print id print_named arg;
       let expr = letbody body in
       fprintf ppf ")@]@ %a)@]" lam expr
+  | Let_mutable (mut_var, var, body) ->
+    fprintf ppf "@[<2>(let_mutable@ @[<2>%a@ %a@]@ %a)@]"
+      Mutable_variable.print mut_var
+      Variable.print var
+      lam body
   | Let_rec(id_arg_list, body) ->
       let bindings ppf id_arg_list =
         let spc = ref false in
@@ -280,6 +279,8 @@ and print_named ppf (named : named) =
   | Symbol (symbol) -> Symbol.print ppf symbol
   | Const (cst) -> fprintf ppf "Const(%a)" print_const cst
   | Allocated_const (cst) -> fprintf ppf "Aconst(%a)" Allocated_const.print cst
+  | Read_mutable mut_var ->
+    fprintf ppf "Read_mut(%a)" Mutable_variable.print mut_var
   | Project_closure (project_closure) ->
     print_project_closure ppf project_closure
   | Project_var (project_var) -> print_project_var ppf project_var
@@ -445,13 +446,16 @@ let iter ?ignore_uses_in_apply ?ignore_uses_in_project_var tree
       | Some () -> ()
       end;
       List.iter free_variable args
-    | Let (_, var, defining_expr, body) ->
+    | Let (var, defining_expr, body) ->
       let acc = enter_let var in
       bound_variable var;
       aux_named defining_expr;
       let acc = leave_let_definition acc in
       aux body;
       leave_let_body acc
+    | Let_mutable (_mut_var, var, body) ->
+      free_variable var;
+      aux body
     | Let_rec (bindings, body) ->
       List.iter (fun (var, defining_expr) ->
           bound_variable var;
@@ -499,7 +503,7 @@ let iter ?ignore_uses_in_apply ?ignore_uses_in_project_var tree
     | Proved_unreachable -> ()
   and aux_named (named : named) =
     match named with
-    | Symbol _ | Const _ | Allocated_const _ -> ()
+    | Symbol _ | Const _ | Allocated_const _ | Read_mutable _ -> ()
     | Set_of_closures { free_vars; specialised_args; _ } ->
       (* Sets of closures are, well, closed---except for the specialised
          argument list, which may identify variables currently in scope

@@ -75,10 +75,6 @@
       expressions such as: [Prim (Pmakeblock(...), ...)].
 *)
 
-type let_kind =
-  | Immutable
-  | Mutable
-
 type call_kind =
   | Indirect
   | Direct of Closure_id.t
@@ -131,7 +127,8 @@ type project_var = {
 
 type t =
   | Var of Variable.t
-  | Let of let_kind * Variable.t * named * t
+  | Let of Variable.t * named * t
+  | Let_mutable of Mutable_variable.t * Variable.t * t
   | Let_rec of (Variable.t * named) list * t
   | Apply of apply
   | Send of send
@@ -163,6 +160,7 @@ and named =
   | Symbol of Symbol.t
   | Const of const
   | Allocated_const of Allocated_const.t
+  | Read_mutable of Mutable_variable.t
   | Set_of_closures of set_of_closures
   | Project_closure of project_closure
   | Move_within_set_of_closures of move_within_set_of_closures
