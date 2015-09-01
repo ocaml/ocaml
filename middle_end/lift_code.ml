@@ -64,5 +64,5 @@ let lifting_helper exprs ~evaluation_order ~create_body ~name =
     | `Left_to_right -> List.rev lets
   in
   List.fold_left (fun body (v, expr) ->
-      Flambda.Let (Immutable, v, Expr expr, body))
+      Flambda.Let (v, Expr expr, body))
     (create_body vars) lets

@@ -75,7 +75,7 @@ let simplify_free_variable env var ~f : Flambda.t * R.t =
     let var = Variable.rename var in
     let env = E.add env var approx in
     let body, r = f env var in
-    Let (Immutable, var, named, body), r
+    Let (var, named, body), r
 
 let simplify_free_variables env vars ~f : Flambda.t * R.t =
   let rec collect_bindings vars env bound_vars : Flambda.t * R.t =
@@ -95,7 +95,7 @@ let simplify_free_variables env vars ~f : Flambda.t * R.t =
           Flambda.print_named named;
         let env = E.add env var approx in
         let body, r = collect_bindings vars env (var::bound_vars) in
-        Let (Immutable, var, named, body), r
+        Let (var, named, body), r
   in
   collect_bindings vars env []
 
@@ -113,7 +113,7 @@ let simplify_free_variables_named env vars ~f : Flambda.named * R.t =
         let var = Variable.rename var in
         let env = E.add env var approx in
         let body, r = collect_bindings vars env (var::bound_vars) in
-        Let (Immutable, var, named, body), r
+        Let (var, named, body), r
   in
   let expr, r = collect_bindings vars env [] in
   Expr expr, r
@@ -694,7 +694,7 @@ and simplify_over_application env r ~args ~args_approxs ~function_decls
   in
   let func_var = Variable.create "full_apply" in
   let expr : Flambda.t =
-    Let (Immutable, func_var, Expr expr,
+    Let (func_var, Expr expr,
       Apply { func = func_var; args = remaining_args; kind = Indirect; dbg })
   in
   simplify env r expr
@@ -784,7 +784,7 @@ and simplify_direct env r (tree : Flambda.t) : Flambda.t * R.t =
        certain cases (e.g. when a variable is simplified to a constant). *)
     let defining_expr =
       match defining_expr with
-      | Expr (Let (Immutable, var1, defining_expr, Var var2))
+      | Expr (Let (var1, defining_expr, Var var2))
           when Variable.equal var1 var2 -> defining_expr
       | _ -> defining_expr
     in
@@ -812,7 +812,7 @@ and simplify_direct env r (tree : Flambda.t) : Flambda.t * R.t =
            intermediate language (in particular to make it more obvious that
            the variable is unused). *)
         let fresh_var = Variable.create "for_side_effect_only" in
-        Flambda.Let (Immutable, fresh_var, defining_expr, body), r
+        Flambda.Let (fresh_var, defining_expr, body), r
     in
     expr, r
   | Let_rec (defs, body) ->
@@ -863,7 +863,7 @@ and simplify_direct env r (tree : Flambda.t) : Flambda.t * R.t =
                all arguments where guaranteed to be variables. *)
             let handler =
               List.fold_left2 (fun body var arg ->
-                  Flambda.Let (Immutable, var, Flambda.Expr arg, body))
+                  Flambda.Let (var, Flambda.Expr arg, body))
                 handler vars args
             in
             let r = R.exit_scope_catch r i in

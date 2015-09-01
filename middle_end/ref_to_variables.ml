@@ -45,7 +45,7 @@ let variables_containing_ref lam =
   let map = ref Variable.Map.empty in
   let aux (flam : Flambda.t) =
     match flam with
-    | Let(Immutable, v,
+    | Let (v,
            Prim(Pmakeblock(0, Asttypes.Mutable), l, _, _), _, _) ->
         map := Variable.Map.add v (List.length l) !map
     | _ -> ()
@@ -75,7 +75,7 @@ let eliminate_ref lam =
 
   let aux (flam : Flambda.t) : Flambda.t =
     match flam with
-    | Let(Immutable, v,
+    | Let (v,
            Prim(Pmakeblock(0, Asttypes.Mutable), inits, _, _), body, _)
       when convertible_variable v ->
         let _, expr =

@@ -524,7 +524,7 @@ let introduce_free_variables_in_set_of_closures
         | Symbol sym -> Symbol sym
         | Const c -> Const c
       in
-      Flambda.Let (Immutable, fresh, named, expr),
+      Flambda.Let (fresh, named, expr),
       Variable.Map.add var fresh subst
     | exception Not_found ->
       (* The variable is bound by the closure or the arguments or not

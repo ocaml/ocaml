@@ -296,13 +296,13 @@ let make_closure_declaration ~id ~body ~params : Flambda.t =
     Variable.create "project_closure"
       ~current_compilation_unit:compilation_unit
   in
-  Let (Immutable, set_of_closures_var, Set_of_closures (set_of_closures),
-    Let (Immutable, project_closure_var, project_closure,
+  Let (set_of_closures_var, Set_of_closures (set_of_closures),
+    Let (project_closure_var, project_closure,
       Var (project_closure_var)))
 
 let bind ~bindings ~body =
   List.fold_left (fun expr (var, var_def) ->
-      Flambda.Let (Immutable, var, var_def, expr))
+      Flambda.Let (var, var_def, expr))
     body bindings
 
 let name_expr (named : Flambda.named) : Flambda.t =
@@ -311,7 +311,7 @@ let name_expr (named : Flambda.named) : Flambda.t =
       ~current_compilation_unit:(Compilation_unit.get_current_exn ())
       "named"
   in
-  Let (Immutable, var, named, Var var)
+  Let (var, named, Var var)
 
 let rec all_lifted_constants (program : Flambda.program) =
   match program with

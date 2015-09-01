@@ -144,7 +144,7 @@ let prep_flambda_for_export ppf flam ~backend =
   Symbol.Map.iter (fun _ set_of_closures ->
       let var = Variable.create "dummy" in
       let expr : Flambda.t =
-        Let (Immutable, var, Set_of_closures set_of_closures, Var var)
+        Let (var, Set_of_closures set_of_closures, Var var)
       in
       Flambda_invariants.check_exn ~kind ~cmxfile:true expr)
     lifted_constants.Lift_constants.set_of_closures_map;

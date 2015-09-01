@@ -540,7 +540,7 @@ let free_variables ?ignore_uses_in_apply ?ignore_uses_in_project_var tree =
 
 let free_variables_named tree =
   let var = Variable.create "dummy" in
-  free_variables (Let (Immutable, var, tree, Var var))
+  free_variables (Let (var, tree, Var var))
 
 let free_variables_by_let ?ignore_uses_in_apply ?ignore_uses_in_project_var tree =
   let free = ref Variable.Set.empty in
