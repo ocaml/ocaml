@@ -274,12 +274,11 @@ and for_loop = {
 }
 
 (** Like a subset of [Flambda.named], except that instead of [Variable.t]s we
-    have [Symbol.t]s, and everything is a constant (and entirely
-    constructive). *)
+    have [Symbol.t]s, and everything is a constant. *)
 and constant_defining_value =
   | Allocated_const of Allocated_const.t
   | Block of Tag.t * constant_defining_value_block_field list
-  | Set_of_closures of set_of_closures  (* [free_vars] must be empty *)
+  | Set_of_closures of set_of_closures  (** [free_vars] must be empty *)
   | Project_closure of Symbol.t * Closure_id.t
 
 and constant_defining_value_block_field =
@@ -296,7 +295,9 @@ type program =
   | Import_symbol of Symbol.t * program
   | Initialize_symbol of Symbol.t * Tag.t * t list * program
   | Effect of t * program
-  | End of Symbol.t (* The root symbol: the only symbol that can never be eliminated *)
+  | End of Symbol.t
+  (** [End] accepts the root symbol: the only symbol that can never be
+      eliminated. *)
 
 val free_variables
    : ?ignore_uses_in_apply:unit
