@@ -1032,7 +1032,9 @@ and simplify env r tree =
   let module Backend = (val (E.backend env) : Backend_intf.S) in
   (* CR mshinwell for pchambart: This call to [really_import_approx] is
      kind of confusing; it seems like some kind of catch-all.  What
-     exactly is happening here? *)
+     exactly is happening here?
+     It looks like this might only be needed in the "field" case.
+  *)
   f, ret r (Backend.really_import_approx (R.approx r))
 
 let constant_defining_value_approx

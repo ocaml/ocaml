@@ -292,6 +292,7 @@ module Constant_defining_value :
 type program =
   | Let_symbol of Symbol.t * constant_defining_value * program
   | Let_rec_symbol of (Symbol.t * constant_defining_value) list * program
+  (* CR mshinwell: remove Import_symbol and use a record *)
   | Import_symbol of Symbol.t * program
   | Initialize_symbol of Symbol.t * Tag.t * t list * program
   | Effect of t * program

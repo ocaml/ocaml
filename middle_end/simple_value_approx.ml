@@ -45,6 +45,7 @@ and descr =
   | Value_bottom
   | Value_extern of Export_id.t
   (* CR mshinwell: Why does Value_symbol need to be here?
+     Related to not forcing resolution of everything all at once.
      Why does Value_unresolved need an argument? We have [symbol] *)
   | Value_symbol of Symbol.t
   | Value_unresolved of Symbol.t (* No description was found for this symbol *)
