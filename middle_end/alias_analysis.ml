@@ -183,9 +183,12 @@ let rec collect_equations (t:equations) : Flambda.t -> equation_right = function
     add t (Var v) (collect_equations_named t v def);
     collect_equations t body
   | Let_mutable _ -> failwith "not yet implemented"
-  | Assign { being_assigned; new_value } ->
+  | Assign _ ->
+    failwith "not yet implemented"
+(*
     add t (Var being_assigned) (alias (Var new_value));
     Resolved Not_const
+*)
   | Let_rec (defs, body) ->
     List.iter (fun (v, def) ->
         add t (Var v) (collect_equations_named t v def))

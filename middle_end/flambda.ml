@@ -29,7 +29,7 @@ type apply = {
 }
 
 type assign = {
-  being_assigned : Variable.t;
+  being_assigned : Mutable_variable.t;
   new_value : Variable.t;
 }
 
@@ -159,7 +159,7 @@ let rec lam ppf (flam : t) =
       Variable.print_list args
   | Assign { being_assigned; new_value; } ->
     fprintf ppf "@[<2>(assign@ %a@ %a)@]"
-      Variable.print being_assigned
+      Mutable_variable.print being_assigned
       Variable.print new_value
   | Send { kind; meth; obj; args; dbg = _; } ->
     let print_args ppf args =
@@ -493,8 +493,7 @@ let iter ?ignore_uses_in_apply ?ignore_uses_in_project_var tree
       free_variable from_value;
       free_variable to_value;
       aux body
-    | Assign { being_assigned; new_value; } ->
-      free_variable being_assigned;
+    | Assign { being_assigned = _; new_value; } ->
       free_variable new_value
     | Send { kind = _; meth; obj; args; dbg = _ } ->
       free_variable meth;

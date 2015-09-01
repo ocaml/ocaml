@@ -96,7 +96,7 @@ type apply = {
 }
 
 type assign = {
-  being_assigned : Variable.t;
+  being_assigned : Mutable_variable.t;
   new_value : Variable.t;
 }
 

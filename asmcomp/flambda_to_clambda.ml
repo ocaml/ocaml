@@ -81,16 +81,21 @@ module Env : sig
 
   val add_fresh_ident : t -> Variable.t -> Ident.t * t
   val ident_for_var_exn : t -> Variable.t -> Ident.t
+
+  val add_fresh_mutable_ident : t -> Mutable_variable.t -> Ident.t * t
+  val ident_for_mutable_var_exn : t -> Mutable_variable.t -> Ident.t
 end = struct
   type t =
     { subst : Clambda.ulambda Variable.Map.t;
       var : Ident.t Variable.Map.t;
+      mutable_var : Ident.t Mutable_variable.Map.t;
       toplevel : bool;
     }
 
   let empty =
     { subst = Variable.Map.empty;
       var = Variable.Map.empty;
+      mutable_var = Mutable_variable.Map.empty;
       toplevel = false;
     }
 
@@ -104,6 +109,14 @@ end = struct
   let add_fresh_ident t var =
     let id = Variable.unique_ident var in
     id, { t with var = Variable.Map.add var id t.var }
+
+  let ident_for_mutable_var_exn t mut_var =
+    Mutable_variable.Map.find mut_var t.mutable_var
+
+  let add_fresh_mutable_ident t mut_var =
+    let id = Mutable_variable.unique_ident mut_var in
+    let mutable_var = Mutable_variable.Map.add mut_var id t.mutable_var in
+    id, { t with mutable_var; }
 end
 
 let subst_var env var : Clambda.ulambda =
@@ -147,9 +160,13 @@ Flambda.print flam;
 *)
   match flam with
   | Var var -> subst_var env var
-  | Let (_, var, def, body) ->
+  | Let (var, def, body) ->
     let id, env_body = Env.add_fresh_ident env var in
     Ulet (id, to_clambda_named t env var def, to_clambda t env_body body)
+  | Let_mutable (mut_var, var, body) ->
+    let id, env_body = Env.add_fresh_mutable_ident env mut_var in
+    let def = subst_var env var in
+    Ulet (id, def, to_clambda t env_body body)
   | Let_rec (defs, body) ->
     let env, defs =
       List.fold_right (fun (var, def) (env, defs) ->
@@ -243,10 +260,10 @@ Flambda.print flam;
       direction, to_clambda t env_body body)
   | Assign { being_assigned; new_value } ->
     let id =
-      try Env.ident_for_var_exn env being_assigned
+      try Env.ident_for_mutable_var_exn env being_assigned
       with Not_found ->
-        Misc.fatal_errorf "Unbound variable %a in [Assign]: %a"
-          Variable.print being_assigned
+        Misc.fatal_errorf "Unbound mutable variable %a in [Assign]: %a"
+          Mutable_variable.print being_assigned
           Flambda.print flam
     in
     Uassign (id, subst_var env new_value)
@@ -269,6 +286,13 @@ and to_clambda_named t env var (named : Flambda.named) : Clambda.ulambda =
         [Let_symbol] construction before [Clambdagen]: %a = %a"
       Variable.print var
       Flambda.print_named named
+  | Read_mutable mut_var ->
+    begin try Uvar (Env.ident_for_mutable_var_exn env mut_var)
+    with Not_found ->
+      Misc.fatal_errorf "Unbound mutable variable %a in [Read_mutable]: %a"
+        Mutable_variable.print mut_var
+        Flambda.print_named named
+    end
   | Set_of_closures set_of_closures ->
     to_clambda_set_of_closures t env set_of_closures
   | Project_closure { set_of_closures; closure_id } ->

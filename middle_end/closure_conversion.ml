@@ -333,7 +333,7 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
       Let (to_value, Expr (close t env hi),
         For { bound_var; from_value; to_value; direction; body; }))
   | Lassign (id, new_value) ->
-    let being_assigned = Env.find_var env id in
+    let being_assigned = Env.find_mutable_var env id in
     let new_value_var = Variable.create "new_value" in
     Let (new_value_var, Expr (close t env new_value),
       Assign { being_assigned; new_value = new_value_var; })

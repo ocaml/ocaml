@@ -45,11 +45,15 @@ let ignore_compilation_unit (_ : Compilation_unit.t) = ()
 let ignore_tag (_ : Tag.t) = ()
 
 exception Binding_occurrence_not_from_current_compilation_unit of Variable.t
+exception Mutable_binding_occurrence_not_from_current_compilation_unit of
+  Mutable_variable.t
 exception Binding_occurrence_of_variable_already_bound of Variable.t
+exception Binding_occurrence_of_mutable_variable_already_bound of
+  Mutable_variable.t
 exception Binding_occurrence_of_symbol_already_bound of Symbol.t
 exception Unbound_variable of Variable.t
+exception Unbound_mutable_variable of Mutable_variable.t
 exception Unbound_symbol of Symbol.t
-exception Assignment_to_non_mutable_variable of Variable.t
 exception Vars_in_function_body_not_bound_by_closure_or_params of
   Variable.Set.t * Flambda.set_of_closures * Variable.t
 exception Function_decls_have_overlapping_parameters of Variable.Set.t
@@ -89,48 +93,65 @@ let variable_and_symbol_invariants flam =
   let declare_variables vars =
     Variable.Set.iter declare_variable vars
   in
-  let add_binding_occurrence (var_env, sym_env) var is_mutable =
+  let all_declared_mutable_variables = ref Mutable_variable.Set.empty in
+  let declare_mutable_variable mut_var =
+    if Mutable_variable.Set.mem mut_var !all_declared_mutable_variables then
+      raise (Binding_occurrence_of_mutable_variable_already_bound mut_var);
+    all_declared_mutable_variables :=
+      Mutable_variable.Set.add mut_var !all_declared_mutable_variables
+  in
+  let add_binding_occurrence (var_env, mut_var_env, sym_env) var =
     let compilation_unit = Compilation_unit.get_current_exn () in
     if not (Variable.in_compilation_unit compilation_unit var) then
       raise (Binding_occurrence_not_from_current_compilation_unit var);
     declare_variable var;
-    Variable.Map.add var is_mutable var_env, sym_env
+    Variable.Set.add var var_env, mut_var_env, sym_env
   in
-  let add_binding_occurrence_of_symbol (var_env, sym_env) sym =
+  let add_mutable_binding_occurrence (var_env, mut_var_env, sym_env) mut_var =
+    let compilation_unit = Compilation_unit.get_current_exn () in
+    if not (Mutable_variable.in_compilation_unit compilation_unit mut_var) then
+      raise (Mutable_binding_occurrence_not_from_current_compilation_unit
+        mut_var);
+    declare_mutable_variable mut_var;
+    var_env, Mutable_variable.Set.add mut_var mut_var_env, sym_env
+  in
+  let add_binding_occurrence_of_symbol (var_env, mut_var_env, sym_env) sym =
     if Symbol.Set.mem sym sym_env then
       raise (Binding_occurrence_of_symbol_already_bound sym)
     else
-      var_env, Symbol.Set.add sym sym_env
+      var_env, mut_var_env, Symbol.Set.add sym sym_env
   in
-  let add_binding_occurrences env vars is_mutable =
-    List.fold_left (fun env var ->
-        add_binding_occurrence env var is_mutable)
-      env vars
+  let add_binding_occurrences env vars =
+    List.fold_left (fun env var -> add_binding_occurrence env var) env vars
   in
-  let check_variable_is_bound (var_env, _) var =
-    if not (Variable.Map.mem var var_env) then raise (Unbound_variable var)
+  let check_variable_is_bound (var_env, _, _) var =
+    if not (Variable.Set.mem var var_env) then raise (Unbound_variable var)
   in
-  let check_symbol_is_bound (_, sym_env) sym =
+  let check_symbol_is_bound (_, _, sym_env) sym =
     if not (Symbol.Set.mem sym sym_env) then raise (Unbound_symbol sym)
-  in
-  let check_variable_is_bound_and_get_mutability (var_env, _) var =
-    try Variable.Map.find var var_env
-    with Not_found -> raise (Unbound_variable var)
   in
   let check_variables_are_bound env vars =
     List.iter (check_variable_is_bound env) vars
   in
+  let check_mutable_variable_is_bound (_, mut_var_env, _) mut_var =
+    if not (Mutable_variable.Set.mem mut_var mut_var_env) then begin
+      raise (Unbound_mutable_variable mut_var)
+    end
+  in
   let rec loop env (flam : Flambda.t) =
     match flam with
     (* Expressions that can bind [Variable.t]s: *)
-    | Let (let_kind, var, def, body) ->
+    | Let (var, def, body) ->
       loop_named env def;
-      loop (add_binding_occurrence env var let_kind) body
+      loop (add_binding_occurrence env var) body
+    | Let_mutable (mut_var, var, body) ->
+      check_variable_is_bound env var;
+      loop (add_mutable_binding_occurrence env mut_var) body
     | Let_rec (defs, body) ->
       let env =
         List.fold_left (fun env (var, def) ->
             will_traverse_named_expression_later def;
-            add_binding_occurrence env var Flambda.Immutable)
+            add_binding_occurrence env var)
           env defs
       in
       List.iter (fun (var, def) ->
@@ -141,14 +162,14 @@ let variable_and_symbol_invariants flam =
       ignore_direction_flag direction;
       check_variable_is_bound env from_value;
       check_variable_is_bound env to_value;
-      loop (add_binding_occurrence env bound_var Flambda.Immutable) body
+      loop (add_binding_occurrence env bound_var) body
     | Static_catch (static_exn, vars, body, handler) ->
       ignore_static_exception static_exn;
       loop env body;
-      loop (add_binding_occurrences env vars Flambda.Immutable) handler
+      loop (add_binding_occurrences env vars) handler
     | Try_with (body, var, handler) ->
       loop env body;
-      loop (add_binding_occurrence env var Flambda.Immutable) handler
+      loop (add_binding_occurrence env var) handler
     (* Everything else: *)
     | Var var -> check_variable_is_bound env var
     | Apply { func; args; kind; dbg } ->
@@ -157,15 +178,7 @@ let variable_and_symbol_invariants flam =
       ignore_call_kind kind;
       ignore_debuginfo dbg;
     | Assign { being_assigned; new_value; } ->
-      let is_mutable =
-        check_variable_is_bound_and_get_mutability env being_assigned
-      in
-      (* CR-someday mshinwell: consider if the mutable/immutable distinction
-         on variables could be enforced by the type system *)
-      begin match (is_mutable : Flambda.let_kind) with
-      | Mutable -> ()
-      | Immutable -> raise (Assignment_to_non_mutable_variable being_assigned)
-      end;
+      check_mutable_variable_is_bound env being_assigned;
       check_variable_is_bound env new_value
     | Send { kind; meth; obj; args; dbg; } ->
       ignore_meth_kind kind;
@@ -205,6 +218,8 @@ let variable_and_symbol_invariants flam =
     | Symbol symbol -> check_symbol_is_bound env symbol
     | Const const -> ignore_const const
     | Allocated_const const -> ignore_allocated_const const
+    | Read_mutable mut_var ->
+      check_mutable_variable_is_bound env mut_var
     | Set_of_closures set_of_closures ->
       loop_set_of_closures env set_of_closures
     | Project_closure { set_of_closures; closure_id; } ->
@@ -288,13 +303,12 @@ let variable_and_symbol_invariants flam =
             declare_variable fun_var;
             (* Check that the body of the functions is correctly structured *)
             let body_env =
-              let (var_env, sym_env) = env in
+              let (var_env, mut_var_env, sym_env) = env in
               let var_env =
-                Variable.Set.fold (fun var ->
-                    Variable.Map.add var Flambda.Immutable)
+                Variable.Set.fold (fun var -> Variable.Set.add var)
                   free_variables var_env
               in
-              (var_env, sym_env)
+              (var_env, mut_var_env, sym_env)
             in
             loop body_env body;
             all_params, Variable.Set.union free_variables all_free_vars)
@@ -384,7 +398,9 @@ let variable_and_symbol_invariants flam =
     | End root ->
       check_symbol_is_bound env root
   in
-  loop_program (Variable.Map.empty, Symbol.Set.empty) flam
+  loop_program
+    (Variable.Set.empty, Mutable_variable.Set.empty, Symbol.Set.empty)
+    flam
 
 (* CR mshinwell: this function needs updating e.g. for Pgetglobal changes *)
 let primitive_invariants flam ~no_access_to_global_module_identifiers =
@@ -476,7 +492,7 @@ let used_closure_ids (program:Flambda.program) =
     | Project_var { closure = _; closure_id; var = _ } ->
       used := Closure_id.Set.add closure_id !used
     | Set_of_closures _ | Symbol _ | Const _ | Allocated_const _
-    | Prim _ | Expr _ -> ()
+    | Prim _ | Expr _ | Read_mutable _ -> ()
   in
   (* TODO: check closure_ids of constant_defining_values project_closures *)
   Flambda_iterators.iter_named_of_program ~f program;
@@ -574,21 +590,29 @@ let check_exn ?(kind=Normal) ?(cmxfile=false) (flam:Flambda.program) =
       Format.eprintf ">> Binding occurrence of variable marked as not being \
           from the current compilation unit: %a"
         Variable.print var
+    | Mutable_binding_occurrence_not_from_current_compilation_unit mut_var ->
+      Format.eprintf ">> Binding occurrence of mutable variable marked as not \
+          being from the current compilation unit: %a"
+        Mutable_variable.print mut_var
     | Binding_occurrence_of_variable_already_bound var ->
       Format.eprintf ">> Binding occurrence of variable that was already \
             bound: %a"
         Variable.print var
+    | Binding_occurrence_of_mutable_variable_already_bound mut_var ->
+      Format.eprintf ">> Binding occurrence of mutable variable that was already \
+            bound: %a"
+        Mutable_variable.print mut_var
     | Binding_occurrence_of_symbol_already_bound sym ->
       Format.eprintf ">> Binding occurrence of symbol that was already \
             bound: %a"
         Symbol.print sym
     | Unbound_variable var ->
       Format.eprintf ">> Unbound variable: %a" Variable.print var
+    | Unbound_mutable_variable mut_var ->
+      Format.eprintf ">> Unbound mutable variable: %a"
+        Mutable_variable.print mut_var
     | Unbound_symbol sym ->
       Format.eprintf ">> Unbound symbol: %a" Symbol.print sym
-    | Assignment_to_non_mutable_variable var ->
-      Format.eprintf ">> Assignment to non-mutable variable: %a"
-        Variable.print var
     | Vars_in_function_body_not_bound_by_closure_or_params
         (vars, set_of_closures, fun_var) ->
       Format.eprintf ">> Variable(s) (%a) in the body of a function declaration \

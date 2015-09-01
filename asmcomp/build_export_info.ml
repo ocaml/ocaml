@@ -109,13 +109,13 @@ let rec describe (env : env) (flam : Flambda.t) : Export_info.approx =
   | Var var ->
     find_approx env var
 
-  | Let(kind, id, lam, body) ->
+  | Let(id, lam, body) ->
     (* Format.eprintf "Let %a@." Variable.print id; *)
-    let approx = match kind with
-      | Immutable -> describe_named env lam
-      | Mutable -> Export_info.Value_unknown
-    in
+    let approx = describe_named env lam in
     let env = Variable.Map.add id approx env in
+    describe env body
+
+  | Let_mutable (_mut_var, _var, body) ->
     describe env body
 
   | Let_rec(defs, body) ->
@@ -179,6 +179,8 @@ and describe_named (env : env) (named : Flambda.named) : Export_info.approx =
 
   | Symbol sym ->
     Value_symbol sym
+
+  | Read_mutable _ -> Value_unknown
 
   | Const c -> begin
       match c with

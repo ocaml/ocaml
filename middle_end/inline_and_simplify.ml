@@ -718,6 +718,7 @@ and simplify_named env r (tree : Flambda.named) : Flambda.named * R.t =
     simplify_named_using_approx r tree approx
   | Const cst -> tree, ret r (simplify_const cst)
   | Allocated_const cst -> tree, ret r (approx_for_allocated_const cst)
+  | Read_mutable _ -> tree, ret r A.value_unknown
   | Set_of_closures set_of_closures ->
     let set_of_closures, r =
       simplify_set_of_closures env r set_of_closures
@@ -777,7 +778,7 @@ and simplify_direct env r (tree : Flambda.t) : Flambda.t * R.t =
        points. *)
     simplify_using_approx_and_env env r (Var var) (E.find_exn env var)
   | Apply apply -> simplify_apply env r ~apply
-  | Let (str, id, defining_expr, body) ->
+  | Let (id, defining_expr, body) ->
     let defining_expr, r = simplify_named env r defining_expr in
     (* When [defining_expr] is really a [Flambda.named] rather than an
        [Flambda.t], squash any intermediate [let], or we will never eliminate
@@ -794,7 +795,7 @@ and simplify_direct env r (tree : Flambda.t) : Flambda.t * R.t =
     let free_variables_of_body = Free_variables.calculate body in
     let (expr : Flambda.t), r =
       if Variable.Set.mem id free_variables_of_body then
-        Flambda.Let (str, id, defining_expr, body), r
+        Flambda.Let (id, defining_expr, body), r
       else if Effect_analysis.no_effects_named defining_expr then
         let r = R.map_benefit r (B.remove_code_named defining_expr) in
         body, r
@@ -845,10 +846,10 @@ and simplify_direct env r (tree : Flambda.t) : Flambda.t * R.t =
   | Static_catch (i, vars, body, handler) ->
     begin
       match body with
-      | Let (mut, var, def, body)
+      | Let (var, def, body)
           when not (Flambda_utils.might_raise_static_exn def i) ->
         simplify_direct env r
-          (Flambda.Let (mut, var, def, Static_catch (i, vars, body, handler)))
+          (Flambda.Let (var, def, Static_catch (i, vars, body, handler)))
       | _ ->
         let i, sb = Freshening.add_static_exception (E.freshening env) i in
         let env = E.set_freshening env sb in
@@ -937,9 +938,13 @@ and simplify_direct env r (tree : Flambda.t) : Flambda.t * R.t =
         For { bound_var; from_value; to_value; direction; body; },
           ret r A.value_unknown))
   | Assign { being_assigned; new_value; } ->
-    simplify_free_variable env being_assigned ~f:(fun env being_assigned ->
-      simplify_free_variable env new_value ~f:(fun _env new_value ->
-        Assign { being_assigned; new_value; }, ret r A.value_unknown))
+    (* No need to use something like [simplify_free_variable]: the
+       approximation of [being_assigned] is always unknown. *)
+    let being_assigned =
+      Freshening.apply_mutable_variable (E.freshening env) being_assigned
+    in
+    simplify_free_variable env new_value ~f:(fun _env new_value ->
+      Assign { being_assigned; new_value; }, ret r A.value_unknown)
   | Switch (arg, sw) ->
     (* When [arg] is known to be a variable whose approximation is that of a
        block with a fixed tag or a fixed integer, we can eliminate the
