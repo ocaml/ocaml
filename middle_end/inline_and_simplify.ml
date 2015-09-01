@@ -892,7 +892,7 @@ and simplify_direct env r (tree : Flambda.t) : Flambda.t * R.t =
        as true), we can drop the if and replace it by a sequence.
        if arg is not effectful we can also drop it. *)
     simplify_free_variable env arg ~f:(fun env arg ->
-      begin match (R.approx r).descr with
+      begin match (E.find_exn env arg).descr with
       | Value_constptr 0 ->  (* Constant [false]: keep [ifnot] *)
         let ifnot, r = simplify env r ifnot in
         ifnot, R.map_benefit r B.remove_branch
@@ -959,7 +959,7 @@ and simplify_direct env r (tree : Flambda.t) : Flambda.t * R.t =
         | None -> Proved_unreachable
         | Some f -> f
       in
-      begin match (R.approx r).descr with
+      begin match (E.find_exn env arg).descr with
       | Value_int i
       | Value_constptr i ->
         let lam =
