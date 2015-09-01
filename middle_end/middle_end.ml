@@ -84,8 +84,10 @@ let middle_end ppf ~sourcefile ~prefixname ~backend
       +- "Remove_unused_closure_vars 2"
       ++ Remove_unused_closure_vars.remove_unused_closure_variables
       +- "Remove_unused_arguments"
+(*
       ++ Remove_unused_arguments.separate_unused_arguments_in_closures
         ?force:None
+*)
       (* CR mshinwell: see CR in [Remove_unused_globals] *)
       (*++ Remove_unused_globals.remove_unused_globals *)
       (* CR mshinwell: the lifting of sets of closures seemed redundant,
