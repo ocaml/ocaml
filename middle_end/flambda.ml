@@ -435,8 +435,9 @@ let rec print_program ppf (program : program) =
 
 let iter ?ignore_uses_in_apply ?ignore_uses_in_project_var
     ?(free_variables_of_let_bodies = Variable.Map.empty)
-    tree ~free_variable ~bound_variable
+    tree ~free_variables ~bound_variable
     ~enter_let ~leave_let_definition ~leave_let_body =
+  let free_variable fv = free_variables (Variable.Set.singleton fv) in
   let rec aux (flam : t) : unit =
     match flam with
     | Var var -> free_variable var
@@ -453,7 +454,7 @@ let iter ?ignore_uses_in_apply ?ignore_uses_in_project_var
       aux_named defining_expr;
       let acc = leave_let_definition acc in
       begin match Variable.Map.find var free_variables_of_let_bodies with
-      | free_vars -> Variable.Set.iter free_variable free_vars
+      | free_vars -> free_variables free_vars
       | exception Not_found -> aux body
       end;
       leave_let_body acc
@@ -532,14 +533,14 @@ let free_variables ?ignore_uses_in_apply ?ignore_uses_in_project_var
       ?free_variables_of_let_bodies tree =
   let free = ref Variable.Set.empty in
   let bound = ref Variable.Set.empty in
-  let free_variable id = free := Variable.Set.add id !free in
+  let free_variables ids = free := Variable.Set.union ids !free in
   let bound_variable id = bound := Variable.Set.add id !bound in
   let enter_let _var = () in
   let leave_let_definition () = () in
   let leave_let_body () = () in
   iter ?ignore_uses_in_apply ?ignore_uses_in_project_var
     ?free_variables_of_let_bodies tree
-    ~free_variable ~bound_variable
+    ~free_variables ~bound_variable
     ~enter_let ~leave_let_definition ~leave_let_body;
   Variable.Set.diff !free !bound
 
@@ -551,7 +552,7 @@ let free_variables_by_let ?ignore_uses_in_apply ?ignore_uses_in_project_var tree
   let free = ref Variable.Set.empty in
   let bound = ref Variable.Set.empty in
   let map = ref Variable.Map.empty in
-  let free_variable id = free := Variable.Set.add id !free in
+  let free_variables ids = free := Variable.Set.union ids !free in
   let bound_variable id = bound := Variable.Set.add id !bound in
   let enter_let var =
     var
@@ -572,7 +573,7 @@ let free_variables_by_let ?ignore_uses_in_apply ?ignore_uses_in_project_var tree
     bound := Variable.Set.union new_bound previous_bound
   in
   iter ?ignore_uses_in_apply ?ignore_uses_in_project_var tree
-    ~free_variable ~bound_variable
+    ~free_variables ~bound_variable
     ~enter_let ~leave_let_definition ~leave_let_body;
   !map
 

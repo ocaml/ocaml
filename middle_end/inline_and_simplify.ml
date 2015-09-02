@@ -820,7 +820,7 @@ and simplify_direct env r (tree : Flambda.t) : Flambda.t * R.t =
       (* Cache the free variables of this [let] body to improve performance
          when the [let] is nested inside another. *)
       R.set_free_variables_of_let_bodies r
-        (Variable.Map.add id free_variables_of_body Variable.Map.empty)
+        (Variable.Map.singleton id free_variables_of_body)
     in
     expr, r
   | Let_mutable (mut_var, var, body) ->
