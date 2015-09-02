@@ -755,17 +755,25 @@ let rec map_filter f  =
 
 (* Sends back a pattern that complements constructor tags all_tag *)
 let complete_constrs p all_tags =
-  match p.pat_desc with
-  | Tpat_construct (_,c,_) ->
-      let not_tags = complete_tags c.cstr_consts c.cstr_nonconsts all_tags in
-      let constrs = get_variant_constructors p.pat_env c.cstr_res in
-      let others =
-        List.filter (fun cnstr -> List.mem cnstr.cstr_tag not_tags) constrs in
-      let const, nonconst =
-        List.partition (fun cnstr -> cnstr.cstr_arity = 0) others in
-      const @ nonconst
-  | _ -> fatal_error "Parmatch.complete_constrs"
+  let c =
+    match p.pat_desc with Tpat_construct (_, c, _) -> c | _ -> assert false in
+  let not_tags = complete_tags c.cstr_consts c.cstr_nonconsts all_tags in
+  let constrs = get_variant_constructors p.pat_env c.cstr_res in
+  let others =
+    List.filter (fun cnstr -> List.mem cnstr.cstr_tag not_tags) constrs in
+  let const, nonconst =
+    List.partition (fun cnstr -> cnstr.cstr_arity = 0) others in
+  const @ nonconst
 
+let build_other_constrs env p =
+  match p.pat_desc with
+    Tpat_construct (_, {cstr_tag=Cstr_constant _|Cstr_block _}, _) -> 
+      let get_tag = function
+        | {pat_desc = Tpat_construct (_,c,_)} -> c.cstr_tag
+        | _ -> fatal_error "Parmatch.get_tag" in
+      let all_tags =  List.map (fun (p,_) -> get_tag p) env in
+      pat_of_constrs p (complete_constrs p all_tags)
+  | _ -> extra_pat
 
 (* Auxiliary for build_other *)
 
@@ -787,16 +795,12 @@ let build_other ext env = match env with
       ({cstr_tag=Cstr_extension _} as c),_)},_) :: _ ->
     let c = {c with cstr_name = "*extension*"} in
       make_pat (Tpat_construct(lid, c, [])) Ctype.none Env.empty
-| ({pat_desc = Tpat_construct (_, _,_)} as p,_) :: _ ->
+| ({pat_desc = Tpat_construct (_, cd,_)} as p,_) :: _ ->
     begin match ext with
     | Some ext when Path.same ext (get_type_path p.pat_type p.pat_env) ->
         extra_pat
     | _ ->
-        let get_tag = function
-          | {pat_desc = Tpat_construct (_,c,_)} -> c.cstr_tag
-          | _ -> fatal_error "Parmatch.get_tag" in
-        let all_tags =  List.map (fun (p,_) -> get_tag p) env in
-        pat_of_constrs p (complete_constrs p all_tags)
+        build_other_constrs env p
     end
 | ({pat_desc = Tpat_variant (_,_,r)} as p,_) :: _ ->
     let tags =
@@ -960,7 +964,7 @@ let rec satisfiable pss qs = match pss with
         let q0 = discr_pat q pss in
         satisfiable (filter_one q0 pss) (simple_match_args q0 q @ qs)
 
-(* Also return the remaining cases *)
+(* Also return the remaining cases, to enable GADT handling *)
 let rec satisfiables pss qs = match pss with
 | [] -> if has_instances qs then [qs] else []
 | _  ->
@@ -972,14 +976,14 @@ let rec satisfiables pss qs = match pss with
         satisfiables pss (q::qs)
     | {pat_desc = (Tpat_any | Tpat_var(_))}::qs ->
         let q0 = discr_pat omega pss in
-        let wild () = 
-          List.map (fun qs -> omega::qs) (satisfiables (filter_extra pss) qs) in
+        let wild p = 
+          List.map (fun qs -> p::qs) (satisfiables (filter_extra pss) qs) in
         begin match filter_all q0 pss with
           (* first column of pss is made of variables only *)
         | [] ->
-            wild ()
+            wild omega
         | (p,_)::_ as constrs  ->
-            if full_match false constrs then
+            let for_constrs () =
               List.flatten (
               List.map
                 (fun (p,pss) ->
@@ -987,17 +991,14 @@ let rec satisfiables pss qs = match pss with
                   List.map (set_args p)
                     (satisfiables pss (simple_match_args p omega @ qs)))
                 constrs )
-            else (* activate this code for checking non-gadt constructors *)
-              match p.pat_desc with
+            in
+            if full_match false constrs then for_constrs () else
+            match p.pat_desc with
               Tpat_construct _ ->
-                let pats = pats_of_type ~always:true p.pat_env p.pat_type in
-              (*Format.eprintf "Type: %a@." Printtyp.raw_type_expr p.pat_type;*)
-                if List.length pats > 1 then
-                  List.flatten (
-                  List.map (fun q -> satisfiables pss (q :: qs)) pats )
-                else wild ()
+                (* activate this code for checking non-gadt constructors *)
+                wild (build_other_constrs constrs p) @ for_constrs ()
             | _ ->
-                wild ()
+                wild omega
         end
     | {pat_desc=Tpat_variant (l,_,r)}::_ when is_absent l r -> []
     | q::qs ->
