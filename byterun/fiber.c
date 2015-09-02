@@ -18,9 +18,8 @@ void caml_restore_stack_gc()
 {
 }
 
-struct caml_runqueue* caml_init_runqueue()
+void caml_init_main_stack()
 {
-  return 0;
 }
 
 void caml_scan_stack(scanning_action f, value stack)
@@ -62,9 +61,6 @@ CAMLexport __thread value * caml_extern_sp;
 
 CAMLexport __thread intnat caml_trap_sp_off = 1;
 CAMLexport __thread intnat caml_trap_barrier_off;
-CAMLexport __thread intnat caml_extra_args;
-CAMLexport __thread int caml_c_call_args;
-CAMLexport __thread code_t caml_saved_pc;
 
 caml_root caml_global_data;
 
@@ -318,7 +314,7 @@ value caml_finish_exception(value exn)
   CAMLreturn(Stack_handle_exception(old_stack));
 }
 
-struct caml_runqueue* caml_init_runqueue()
+void caml_init_main_stack()
 {
   value stack;
 
@@ -332,8 +328,6 @@ struct caml_runqueue* caml_init_runqueue()
   Stack_handle_exception(stack) = Val_long(0);
   Stack_handle_effect(stack) = Val_long(0);
   load_stack(stack);
-
-  return 0;
 }
 
 

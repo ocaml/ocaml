@@ -171,7 +171,7 @@ static void create_domain(uintnat initial_minor_heap_size, int is_main) {
     caml_init_major_gc();
     caml_reallocate_minor_heap(initial_minor_heap_size);
 
-    d->state.runqueue = caml_init_runqueue();
+    caml_init_main_stack();
 
     d->state.remembered_set = &caml_remembered_set;
     d->state.local_roots = &caml_local_roots;
