@@ -149,15 +149,16 @@ let make_ident_info (clam : Clambda.ulambda) : ident_info =
         else acc)
       t Ident.Set.empty
   in
+  let assigned = !assigned_idents in
   let used =
     (* This doesn't work transitively and thus is somewhat restricted.  In
        particular, it does not allow us to get rid of useless chains of [let]s.
        However it should be sufficient to remove the majority of unnecessary
        [let] bindings that might hinder [Cmmgen]. *)
     Ident.Tbl.fold (fun id _n acc -> Ident.Set.add id acc)
-      t Ident.Set.empty
+      t assigned
   in
-  { used; linear; assigned = !assigned_idents }
+  { used; linear; assigned; }
 
 (* We say that an expression is "moveable" iff it has neither effects nor
    coeffects.  (See semantics_of_primitives.mli.) *)
