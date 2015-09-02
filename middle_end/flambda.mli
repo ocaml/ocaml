@@ -75,6 +75,10 @@
       expressions such as: [Prim (Pmakeblock(...), ...)].
 *)
 
+(* CR mshinwell: add comment explaining that there must be no
+   shadowing (and that the invariant checks enforce this) or other
+   reuse of names. *)
+
 type call_kind =
   | Indirect
   | Direct of Closure_id.t
@@ -301,6 +305,7 @@ type program =
 val free_variables
    : ?ignore_uses_in_apply:unit
   -> ?ignore_uses_in_project_var:unit
+  -> ?free_variables_of_let_bodies:Variable.Set.t Variable.Map.t
   -> t
   -> Variable.Set.t
 

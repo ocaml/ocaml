@@ -433,8 +433,9 @@ let rec print_program ppf (program : program) =
    properly.  Check the original version.  Why don't we just do the
    subtraction as we pass back over binding points? *)
 
-let iter ?ignore_uses_in_apply ?ignore_uses_in_project_var tree
-    ~free_variable ~bound_variable
+let iter ?ignore_uses_in_apply ?ignore_uses_in_project_var
+    ?(free_variables_of_let_bodies = Variable.Map.empty)
+    tree ~free_variable ~bound_variable
     ~enter_let ~leave_let_definition ~leave_let_body =
   let rec aux (flam : t) : unit =
     match flam with
@@ -451,7 +452,10 @@ let iter ?ignore_uses_in_apply ?ignore_uses_in_project_var tree
       bound_variable var;
       aux_named defining_expr;
       let acc = leave_let_definition acc in
-      aux body;
+      begin match Variable.Map.find var free_variables_of_let_bodies with
+      | free_vars -> Variable.Set.iter free_variable free_vars
+      | exception Not_found -> aux body
+      end;
       leave_let_body acc
     | Let_mutable (_mut_var, var, body) ->
       free_variable var;
@@ -524,7 +528,8 @@ let iter ?ignore_uses_in_apply ?ignore_uses_in_project_var tree
   in
   aux tree
 
-let free_variables ?ignore_uses_in_apply ?ignore_uses_in_project_var tree =
+let free_variables ?ignore_uses_in_apply ?ignore_uses_in_project_var
+      ?free_variables_of_let_bodies tree =
   let free = ref Variable.Set.empty in
   let bound = ref Variable.Set.empty in
   let free_variable id = free := Variable.Set.add id !free in
@@ -532,7 +537,8 @@ let free_variables ?ignore_uses_in_apply ?ignore_uses_in_project_var tree =
   let enter_let _var = () in
   let leave_let_definition () = () in
   let leave_let_body () = () in
-  iter ?ignore_uses_in_apply ?ignore_uses_in_project_var tree
+  iter ?ignore_uses_in_apply ?ignore_uses_in_project_var
+    ?free_variables_of_let_bodies tree
     ~free_variable ~bound_variable
     ~enter_let ~leave_let_definition ~leave_let_body;
   Variable.Set.diff !free !bound

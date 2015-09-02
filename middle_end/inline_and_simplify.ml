@@ -770,7 +770,8 @@ and simplify_direct env r (tree : Flambda.t) : Flambda.t * R.t =
   debug_free_variables_check env tree ~name:"loop"
     ~calculate_free_variables:
       (Free_variables.calculate ?ignore_uses_in_apply:None
-        ?ignore_uses_in_project_var:None)
+        ?ignore_uses_in_project_var:None
+        ?free_variables_of_let_bodies:None)
     ~printer:Flambda.print;
   match tree with
   | Var var ->
@@ -796,7 +797,10 @@ and simplify_direct env r (tree : Flambda.t) : Flambda.t * R.t =
     let id, sb = Freshening.add_variable (E.freshening env) id in
     let env = E.set_freshening env sb in
     let body, r = simplify (E.add env id (R.approx r)) r body in
-    let free_variables_of_body = Free_variables.calculate body in
+    let free_variables_of_body =
+      Free_variables.calculate body
+        ~free_variables_of_let_bodies:(R.free_variables_of_let_bodies r)
+    in
     let (expr : Flambda.t), r =
       if Variable.Set.mem id free_variables_of_body then
         Flambda.Let (id, defining_expr, body), r
@@ -811,6 +815,12 @@ and simplify_direct env r (tree : Flambda.t) : Flambda.t * R.t =
            the variable is unused). *)
         let fresh_var = Variable.create "for_side_effect_only" in
         Flambda.Let (fresh_var, defining_expr, body), r
+    in
+    let r =
+      (* Cache the free variables of this [let] body to improve performance
+         when the [let] is nested inside another. *)
+      R.set_free_variables_of_let_bodies r
+        (Variable.Map.add id free_variables_of_body Variable.Map.empty)
     in
     expr, r
   | Let_mutable (mut_var, var, body) ->

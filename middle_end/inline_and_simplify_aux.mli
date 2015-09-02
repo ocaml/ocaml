@@ -219,4 +219,11 @@ module Result : sig
 
   val set_inlining_threshold : t -> Inlining_cost.inlining_threshold -> t
   val inlining_threshold : t -> Inlining_cost.inlining_threshold
+
+  val set_free_variables_of_let_bodies
+     : t
+    -> Variable.Set.t Variable.Map.t
+    -> t
+
+  val free_variables_of_let_bodies : t -> Variable.Set.t Variable.Map.t
 end

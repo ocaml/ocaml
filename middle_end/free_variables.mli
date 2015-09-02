@@ -35,6 +35,7 @@ val iter
 val calculate
    : ?ignore_uses_in_apply:unit
   -> ?ignore_uses_in_project_var:unit
+  -> ?free_variables_of_let_bodies:Variable.Set.t Variable.Map.t
   -> Flambda.t
   -> Variable.Set.t
 
