@@ -102,7 +102,7 @@ let assign_symbols_and_collect_constant_definitions
       | Allocated_const const ->
         assign_symbol ();
         record_definition (Allocated_const const)
-      | Read_mutable _ -> ()
+      | Read_mutable _ -> () (* CR mshinwell: should be assert false? *)
       | Prim (Pmakeblock (tag, _), fields, _) ->
         assign_symbol ();
         record_definition (Block (Tag.create_exn tag, fields))
