@@ -13,7 +13,7 @@
 
 module A = Simple_value_approx
 
-let reexported_missing_symbols = Symbol.Tbl.create 0
+let _reexported_missing_symbols = Symbol.Tbl.create 0
 
 let import_set_of_closures =
   let import_function_declarations (clos : Flambda.function_declarations)
@@ -141,6 +141,7 @@ let import_symbol sym =
     match Symbol.Map.find sym symbol_id_map with
     | approx -> A.augment_with_symbol (import_ex approx) sym
     | exception Not_found ->
+(*
       if not (Symbol.Tbl.mem reexported_missing_symbols sym) then begin
         Symbol.Tbl.add reexported_missing_symbols sym ();
         (* CR mshinwell: fix "some_file" *)
@@ -152,6 +153,7 @@ let import_symbol sym =
               Format.asprintf "%a" Compilation_unit.print
                 (Symbol.compilation_unit sym)));
       end;
+*)
       A.value_unresolved sym
 
 let rec really_import (approx : A.descr) =
