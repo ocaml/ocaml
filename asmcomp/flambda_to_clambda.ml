@@ -154,10 +154,6 @@ let to_clambda_const (const : Flambda.constant_defining_value_block_field)
   | Const (Const_pointer i) -> Uconst_ptr i
 
 let rec to_clambda t env (flam : Flambda.t) : Clambda.ulambda =
-(*
-Format.eprintf "Clambdagen.to_clambda: %a\n"
-Flambda.print flam;
-*)
   match flam with
   | Var var -> subst_var env var
   | Let (var, def, body) ->
@@ -307,7 +303,6 @@ and to_clambda_named t env var (named : Flambda.named) : Clambda.ulambda =
   | Project_var { closure; var; closure_id } ->
     let ulam = subst_var env closure in
     let fun_offset = get_fun_offset t closure_id in
-    Format.eprintf "Clambdagen: Project_var: %a\n" Flambda.print_named named;
     let var_offset = get_fv_offset t var in
     let pos = var_offset - fun_offset in
     Uprim (Pfield pos, [ulam], Debuginfo.none)
@@ -383,10 +378,6 @@ and to_clambda_direct_apply t func args direct_func dbg env : Clambda.ulambda =
 and to_clambda_set_of_closures t env
       (({ function_decls; free_vars } : Flambda.set_of_closures)
         as set_of_closures) : Clambda.ulambda =
-(*
-Format.eprintf "Clambdagen.to_clambda_set_of_closures: %a\n"
-Flambda.print_set_of_closures set_of_closures;
-*)
   let all_functions = Variable.Map.bindings function_decls.funs in
   let env_var = Ident.create "env" in
   let to_clambda_function

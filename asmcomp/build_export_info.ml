@@ -262,7 +262,7 @@ and describe_named (env : env) (named : Flambda.named) : Export_info.approx =
     Value_unknown
 
   | Set_of_closures set ->
-    Format.eprintf "set_of_closures@.";
+(*    Format.eprintf "set_of_closures@.";*)
     let descr =
       Export_info.Value_set_of_closures (describe_set_of_closures env set)
     in
@@ -364,8 +364,8 @@ and describe_set_of_closures env (set : Flambda.set_of_closures)
       (Variable.Map.fold Variable.Map.add bound_vars_approx
          (Variable.Map.fold Variable.Map.add specialised_args_approx env))
   in
-  let result_approx var (function_declaration:Flambda.function_declaration) =
-    Format.eprintf "closures %a@." Variable.print var;
+  let result_approx _var (function_declaration:Flambda.function_declaration) =
+(*    Format.eprintf "closures %a@." Variable.print var;*)
     describe closure_env function_declaration.body
   in
   let results =
@@ -430,13 +430,13 @@ let record_project_closures (set_of_closures:Export_info.value_set_of_closures) 
 
 let build_export_info (program:Flambda.program) : Export_info.t =
   reset ();
-
+(*
   Format.eprintf "@.build export info@.";
 
   Format.eprintf "declared constant symbols@ %a@."
     Symbol.Set.print
     (Symbol.Set.of_list (List.map fst (Flambda_utils.all_lifted_constants program)));
-
+*)
   let constant_sets_of_closures_descr = constant_sets_of_closures_descr program in
 
   let constant_approx =
@@ -573,9 +573,10 @@ let build_export_info (program:Flambda.program) : Export_info.t =
       ~constant_sets_of_closures:Set_of_closures_id.Set.empty
       ~invariant_arguments:Set_of_closures_id.Map.empty
   in
-
+(*
   Format.eprintf "Build_export_info returns %a@."
     Export_info.print_all export;
+*)
 
   export
 

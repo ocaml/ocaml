@@ -537,9 +537,11 @@ let introduce_free_variables_in_set_of_closures
   let function_decls : Flambda.function_declarations =
     { function_decls with
       funs = Variable.Map.mapi
-          (fun fun_var (ffun : Flambda.function_declaration) ->
+          (fun _fun_var (ffun : Flambda.function_declaration) ->
+(*
              Format.printf "introduce in %a@."
                Variable.print fun_var;
+*)
              let variables_to_bind =
                (* Closures from the same set must not be bound *)
                Variable.Set.diff
@@ -749,6 +751,7 @@ let lift_constants program ~backend =
       translated_definitions
   in
   let constant_definitions =
+(*
     let inter =
       Symbol.Set.inter
         (Symbol.Map.keys symbol_definition_map)
@@ -756,6 +759,7 @@ let lift_constants program ~backend =
     in
     Format.eprintf "symbol intersection %a@."
       Symbol.Set.print inter;
+*)
     (* Add previous Let_symbol to the newly discovered ones *)
     Symbol.Map.union_merge
       (fun

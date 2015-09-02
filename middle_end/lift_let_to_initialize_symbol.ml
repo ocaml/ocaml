@@ -290,10 +290,12 @@ let introduce_symbols expr =
   let rec loop expr =
     match split_let free_variables_map expr with
     | None -> [], expr
-    | Some (_, _, extracted, body) -> begin match extracted with
+    | Some (_, _, extracted, body) -> (*begin match extracted with
         | Initialisation (_symbol, _tag, _def) ->
+(*
           Format.printf "extracted initialize %a:@.@."
             Symbol.print _symbol;
+*)
           (* Format.printf "extracted initialize %a:@ %a@." *)
           (*   Symbol.print _symbol *)
           (*   (Format.pp_print_list Flambda.print) _def; *)
@@ -301,16 +303,18 @@ let introduce_symbols expr =
           (*   (symbol, tag, def, *)
           (*    program) *)
         | Effect _effect ->
+(*
           Format.printf "extracted effect@.@.";
+*)
           (* Flambda.Effect (effect, program)) *)
-      end;
+      end;*)
       let l, res = loop body in
       extracted :: l, res
   in
   loop expr
 
 let add_extracted introduced program =
-  Format.printf "add extracted@.";
+(*  Format.printf "add extracted@.";*)
   List.fold_right (fun extracted program ->
       match extracted with
       | Initialisation (symbol, tag, def) ->
@@ -356,5 +360,5 @@ let lift ~backend:_ (f:Flambda.program) =
   (* Format.printf "@.before lift@ %a@." Flambda.print_program f; *)
   let f = split_program f in
   (* Format.printf "@.after lift@ %a@." Flambda.print_program f; *)
-  Format.printf "@.after lift_let_to_initialize_symbol@.@.";
+(*  Format.printf "@.after lift_let_to_initialize_symbol@.@.";*)
   f

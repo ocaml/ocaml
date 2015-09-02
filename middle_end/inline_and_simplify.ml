@@ -82,17 +82,12 @@ let simplify_free_variables env vars ~f : Flambda.t * R.t =
     match vars with
     | [] -> f env (List.rev bound_vars)
     | var::vars ->
-      Format.eprintf "simplify_free_variables %a: "
-        Variable.print var;
       match simplify_free_variable_internal env var with
       | No_binding var ->
-        Format.eprintf "No binding %a\n" Variable.print var;
         collect_bindings vars env (var::bound_vars)
       | Binding (var, named) ->
         let approx = E.find_exn env var in
         let var = Variable.rename var in
-        Format.eprintf "Binding %a -> %a\n" Variable.print var
-          Flambda.print_named named;
         let env = E.add env var approx in
         let body, r = collect_bindings vars env (var::bound_vars) in
         Let (var, named, body), r
@@ -160,9 +155,11 @@ let populate_closure_approximations
   (* Add approximations of used free variables *)
   let env =
     Variable.Map.fold (fun id (_, desc) env ->
+(*
        Format.eprintf "populate_closure_approximations doing %a? %s (approx %a)\n"
         Variable.print id (if Variable.Set.mem id function_decl.free_variables then
           "yes" else "no") Simple_value_approx.print desc;
+*)
        if Variable.Set.mem id function_decl.free_variables
        then E.add_outer_scope env id desc
        else env) free_vars set_of_closures_env in
@@ -487,7 +484,9 @@ and simplify_set_of_closures original_env r
         let external_var =
           Freshening.apply_variable (E.freshening env) external_var
         in
+(*
         Format.eprintf "adding approx for free var %a\n" Variable.print external_var;
+*)
         external_var, E.find_exn env external_var)
       set_of_closures.free_vars
   in
