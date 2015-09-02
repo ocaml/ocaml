@@ -3578,8 +3578,9 @@ and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
       correct_levels ty_res, duplicate_ident_types loc caselist env
     else ty_res, env
   in
+  let do_init = has_gadts || List.length caselist > 1 in
   let lev, env =
-    if has_gadts then begin
+    if do_init then begin
       (* raise level for existentials *)
       begin_def ();
       Ident.set_current_time (get_current_level ());
@@ -3691,7 +3692,7 @@ and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
       List.iter (fun (pat, (env, _)) -> check_absent_variant env pat)
         pat_env_list;
       check_unused ~lev env (instance env ty_arg_check) cases);
-  if has_gadts then begin
+  if do_init then begin
     end_def ();
     (* Ensure that existential types do not escape *)
     unify_exp_types loc env (instance env ty_res) (newvar ()) ;

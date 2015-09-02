@@ -148,8 +148,8 @@ val ty_abc : ([ `A of int | `B of string | `C ], 'e) ty = Sum (<fun>, <fun>)
                                            ^^^^^^^^^^^^^^^^^
 Error: This pattern matches values of type a * a vlist
        but a pattern was expected which matches values of type
-         a#11 = ex#85 * ex#86
-       Type a is not compatible with type ex#85 
+         a#8 = ex#73 * ex#74
+       Type a is not compatible with type ex#73 
 #                                                         type (_, _) ty =
     Int : (int, 'd) ty
   | String : (string, 'f) ty

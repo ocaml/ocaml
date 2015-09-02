@@ -1909,7 +1909,8 @@ let check_unused pred tdefs casel =
               (* First look for redundant or partially redundant patterns *)
               let r = every_satisfiables (make_rows pss) (make_row qs) in
               let r =
-                if r = Unused then r else
+                (* Do not refine if there are no other lines *)
+                if r = Unused || pref = [] then r else
                 (* Then look for empty patterns *)
                 let sfs = satisfiables pss qs in
                 if sfs = [] then Unused else

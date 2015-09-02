@@ -337,14 +337,14 @@ type _ int_bar = IB_constr : < bar : int; .. > int_bar
      ^
 Error: This expression has type t = < foo : int; .. >
        but an expression was expected of type < foo : int >
-       Type ex#58 = < bar : int; .. > is not compatible with type <  > 
+       Type ex#50 = < bar : int; .. > is not compatible with type <  > 
        The second object type has no method bar
 #         Characters 98-99:
     (x:<foo:int;bar:int>)
      ^
 Error: This expression has type t = < foo : int; .. >
        but an expression was expected of type < bar : int; foo : int >
-       Type ex#60 = < bar : int; .. > is not compatible with type
+       Type ex#52 = < bar : int; .. > is not compatible with type
          < bar : int > 
        The first object type has an abstract row, it cannot be closed
 #         Characters 98-99:
@@ -352,7 +352,7 @@ Error: This expression has type t = < foo : int; .. >
      ^
 Error: This expression has type < bar : int; foo : int; .. >
        but an expression was expected of type 'a
-       The type constructor ex#63 would escape its scope
+       The type constructor ex#55 would escape its scope
 #         val g : 'a -> 'a int_foo -> 'a int_bar -> 'a = <fun>
 #         val g : 'a -> 'a int_foo -> 'a int_bar -> 'a * int * int = <fun>
 #       type 'a ty = Int : int -> int ty
