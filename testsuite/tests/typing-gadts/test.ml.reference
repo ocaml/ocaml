@@ -67,7 +67,11 @@ module PR6862 :
   end
 #         module Exhaustive2 :
   sig type _ t = Int : int t val f : bool t option -> unit end
-#           module PR6220 :
+#           Characters 146-147:
+    let g : int t -> int = function I -> 1 | _ -> 2 (* no warning *)
+                                             ^
+Warning 11: this match case is unused.
+module PR6220 :
   sig
     type 'a t = I : int t | F : float t
     val f : int t -> int
@@ -333,14 +337,14 @@ type _ int_bar = IB_constr : < bar : int; .. > int_bar
      ^
 Error: This expression has type t = < foo : int; .. >
        but an expression was expected of type < foo : int >
-       Type ex#59 = < bar : int; .. > is not compatible with type <  > 
+       Type ex#61 = < bar : int; .. > is not compatible with type <  > 
        The second object type has no method bar
 #         Characters 98-99:
     (x:<foo:int;bar:int>)
      ^
 Error: This expression has type t = < foo : int; .. >
        but an expression was expected of type < bar : int; foo : int >
-       Type ex#61 = < bar : int; .. > is not compatible with type
+       Type ex#63 = < bar : int; .. > is not compatible with type
          < bar : int > 
        The first object type has an abstract row, it cannot be closed
 #         Characters 98-99:
@@ -348,7 +352,7 @@ Error: This expression has type t = < foo : int; .. >
      ^
 Error: This expression has type < bar : int; foo : int; .. >
        but an expression was expected of type 'a
-       The type constructor ex#64 would escape its scope
+       The type constructor ex#66 would escape its scope
 #         val g : 'a -> 'a int_foo -> 'a int_bar -> 'a = <fun>
 #         val g : 'a -> 'a int_foo -> 'a int_bar -> 'a * int * int = <fun>
 #       type 'a ty = Int : int -> int ty

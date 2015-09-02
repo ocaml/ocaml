@@ -972,10 +972,12 @@ let rec satisfiables pss qs = match pss with
         satisfiables pss (q::qs)
     | {pat_desc = (Tpat_any | Tpat_var(_))}::qs ->
         let q0 = discr_pat omega pss in
+        let wild () = 
+          List.map (fun qs -> omega::qs) (satisfiables (filter_extra pss) qs) in
         begin match filter_all q0 pss with
           (* first column of pss is made of variables only *)
         | [] ->
-            List.map (fun qs -> omega::qs) (satisfiables (filter_extra pss) qs)
+            wild ()
         | (p,_)::_ as constrs  ->
             if full_match false constrs then
               List.flatten (
@@ -985,15 +987,17 @@ let rec satisfiables pss qs = match pss with
                   List.map (set_args p)
                     (satisfiables pss (simple_match_args p omega @ qs)))
                 constrs )
-            else (* activate this code for checking non-gadt constructors
+            else (* activate this code for checking non-gadt constructors *)
               match p.pat_desc with
               Tpat_construct _ ->
                 let pats = pats_of_type ~always:true p.pat_env p.pat_type in
-                List.flatten (
-                List.map (fun q -> satisfiables pss (q :: qs)) pats )
-            | _ ->*)
-                List.map (fun qs -> omega::qs)
-                  (satisfiables (filter_extra pss) qs)
+              (*Format.eprintf "Type: %a@." Printtyp.raw_type_expr p.pat_type;*)
+                if List.length pats > 1 then
+                  List.flatten (
+                  List.map (fun q -> satisfiables pss (q :: qs)) pats )
+                else wild ()
+            | _ ->
+                wild ()
         end
     | {pat_desc=Tpat_variant (l,_,r)}::_ when is_absent l r -> []
     | q::qs ->
@@ -1911,6 +1915,7 @@ let check_unused pred tdefs casel =
                 let sfs =
                   List.map (function [u] -> u | _ -> assert false) sfs in
                 let u = orify_many sfs in
+                (*Format.eprintf "%a@." pretty_val u;*)
                 let (pattern,constrs,labels) = Conv.conv u in
                 if pred constrs labels pattern = None then Unused else r
               in

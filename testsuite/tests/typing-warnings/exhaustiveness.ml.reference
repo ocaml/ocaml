@@ -10,12 +10,21 @@ val f : 'a option * 'b option -> int = <fun>
 #             type _ t = A : int t | B : bool t | C : char t | D : float t
 type (_, _, _, _) u = U : (int, int, int, int) u
 type v = E | F | G
-# * * * * * * *       Characters 274-275:
-  let f (x : int t option) = match x with A -> 1 | _ -> 2;; (* warn *)
-                                          ^
-Error: This variant pattern is expected to have type int t option
-       The constructor A does not belong to type option
-# val f : unit t option -> int = <fun>
+# * * * * * * *       Characters 254-282:
+  let f (x : int t) = match x with A -> 1 | _ -> 2;; (* warn *)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Warning 4: this pattern-matching is fragile.
+It will remain exhaustive when constructors are added to type t.
+Characters 276-277:
+  let f (x : int t) = match x with A -> 1 | _ -> 2;; (* warn *)
+                                            ^
+Warning 11: this match case is unused.
+val f : int t -> int = <fun>
+# Characters 53-54:
+  let f (x : unit t option) = match x with None -> 1 | _ -> 2;; (* warn? *)
+                                                       ^
+Warning 11: this match case is unused.
+val f : unit t option -> int = <fun>
 # Characters 53-59:
   let f (x : unit t option) = match x with None -> 1 | Some _ -> 2;; (* warn *)
                                                        ^^^^^^

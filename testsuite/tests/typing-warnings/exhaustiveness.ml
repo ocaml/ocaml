@@ -19,7 +19,7 @@ let f : type a b c d e f g.
 *)
 
 (* Unused cases *)
-let f (x : int t option) = match x with A -> 1 | _ -> 2;; (* warn *)
+let f (x : int t) = match x with A -> 1 | _ -> 2;; (* warn *)
 let f (x : unit t option) = match x with None -> 1 | _ -> 2;; (* warn? *)
 let f (x : unit t option) = match x with None -> 1 | Some _ -> 2;; (* warn *)
 let f (x : int t option) = match x with None -> 1 | _ -> 2;;
