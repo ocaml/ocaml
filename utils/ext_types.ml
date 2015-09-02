@@ -56,7 +56,9 @@ module type ExtHashtbl = sig
   include Hashtbl.S with type key = M.t
                      and type 'a t = 'a Hashtbl.Make(M).t
   val to_map : 'a t -> 'a Map.Make(M).t
+  val of_map : 'a Map.Make(M).t -> 'a t
   val memoize : 'a t -> (key -> 'a) -> key -> 'a
+  val map : 'a t -> ('a -> 'b) -> 'b t
 end
 
 
@@ -142,12 +144,18 @@ struct
   include Hashtbl.Make(M)
   module MMap = Map.Make(M)
   let to_map v = fold MMap.add v MMap.empty
+  let of_map m =
+    let t = create (MMap.cardinal m) in
+    MMap.iter (fun k v -> add t k v) m;
+    t
   let memoize t f = fun key ->
     try find t key with
     | Not_found ->
         let r = f key in
         add t key r;
         r
+  let map t f =
+    of_map (MMap.map f (to_map t))
 end
 
 module type BaseId = sig

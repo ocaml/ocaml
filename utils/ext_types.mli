@@ -67,7 +67,9 @@ module type ExtHashtbl = sig
   include Hashtbl.S with type key = M.t
                      and type 'a t = 'a Hashtbl.Make(M).t
   val to_map : 'a t -> 'a Map.Make(M).t
+  val of_map : 'a Map.Make(M).t -> 'a t
   val memoize : 'a t -> (key -> 'a) -> key -> 'a
+  val map : 'a t -> ('a -> 'b) -> 'b t
 end
 
 module ExtMap :
