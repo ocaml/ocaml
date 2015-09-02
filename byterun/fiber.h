@@ -14,17 +14,12 @@ CAMLextern __thread value * caml_stack_threshold;
 CAMLextern __thread value * caml_extern_sp;
 CAMLextern __thread intnat caml_trap_sp_off;
 CAMLextern __thread intnat caml_trap_barrier_off;
-CAMLextern __thread intnat caml_extra_args;
-CAMLextern __thread int caml_c_call_args;
-CAMLextern __thread code_t caml_saved_pc;
 
 value caml_handle(value body, value hval, value heff, value hexn, intnat extra_args);
 value caml_perform(value effect);
 value caml_continue(value cont, value ret, intnat extra_args);
 value caml_finish(value ret);
 value caml_finish_exception(value exn);
-
-struct caml_runqueue;
 
 void caml_scan_dirty_stack(scanning_action, value stack);
 void caml_scan_stack(scanning_action, value stack);
@@ -46,7 +41,7 @@ void caml_realloc_stack (asize_t required_size, value* save, int nsave);
 void caml_change_max_stack_size (uintnat new_max_size);
 int caml_on_current_stack(value*);
 
-struct caml_runqueue* caml_init_runqueue();
+void caml_init_main_stack();
 void caml_init_fibers();
 
 int caml_running_main_fiber();
