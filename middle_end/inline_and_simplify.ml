@@ -718,7 +718,12 @@ and simplify_named env r (tree : Flambda.named) : Flambda.named * R.t =
     simplify_named_using_approx r tree approx
   | Const cst -> tree, ret r (simplify_const cst)
   | Allocated_const cst -> tree, ret r (approx_for_allocated_const cst)
-  | Read_mutable _ -> tree, ret r A.value_unknown
+  | Read_mutable mut_var ->
+    (* See comment on the [Assign] case. *)
+    let mut_var =
+      Freshening.apply_mutable_variable (E.freshening env) mut_var
+    in
+    Read_mutable mut_var, ret r A.value_unknown
   | Set_of_closures set_of_closures ->
     let set_of_closures, r =
       simplify_set_of_closures env r set_of_closures
