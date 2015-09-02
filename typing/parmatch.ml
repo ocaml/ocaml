@@ -717,13 +717,13 @@ let pat_of_constrs ex_pat cstrs =
   if cstrs = [] then raise Empty else
   orify_many (List.map (pat_of_constr ex_pat) cstrs)
 
-let pats_of_type env ty =
+let pats_of_type ?(always=false) env ty =
   let ty' = Ctype.expand_head env ty in
   match ty'.desc with
   | Tconstr (path, _, _) ->
       begin match Env.find_type path env with
       | {type_kind = Type_variant cl}
-        when List.for_all (fun cd -> cd.Types.cd_res <> None) cl ->
+        when always || List.for_all (fun cd -> cd.Types.cd_res <> None) cl ->
           let cstrs = fst (Env.find_type_descrs path env) in
           List.map
             (pat_of_constr {omega with pat_type=ty; pat_env=env})
@@ -959,6 +959,47 @@ let rec satisfiable pss qs = match pss with
     | q::qs ->
         let q0 = discr_pat q pss in
         satisfiable (filter_one q0 pss) (simple_match_args q0 q @ qs)
+
+(* Also return the remaining cases *)
+let rec satisfiables pss qs = match pss with
+| [] -> if has_instances qs then [qs] else []
+| _  ->
+    match qs with
+    | [] -> []
+    | {pat_desc = Tpat_or(q1,q2,_)}::qs ->
+        satisfiables pss (q1::qs) @ satisfiables pss (q2::qs)
+    | {pat_desc = Tpat_alias(q,_,_)}::qs ->
+        satisfiables pss (q::qs)
+    | {pat_desc = (Tpat_any | Tpat_var(_))}::qs ->
+        let q0 = discr_pat omega pss in
+        begin match filter_all q0 pss with
+          (* first column of pss is made of variables only *)
+        | [] ->
+            List.map (fun qs -> omega::qs) (satisfiables (filter_extra pss) qs)
+        | (p,_)::_ as constrs  ->
+            if full_match false constrs then
+              List.flatten (
+              List.map
+                (fun (p,pss) ->
+                  if is_absent_pat p then [] else
+                  List.map (set_args p)
+                    (satisfiables pss (simple_match_args p omega @ qs)))
+                constrs )
+            else (* activate this code for checking non-gadt constructors
+              match p.pat_desc with
+              Tpat_construct _ ->
+                let pats = pats_of_type ~always:true p.pat_env p.pat_type in
+                List.flatten (
+                List.map (fun q -> satisfiables pss (q :: qs)) pats )
+            | _ ->*)
+                List.map (fun qs -> omega::qs)
+                  (satisfiables (filter_extra pss) qs)
+        end
+    | {pat_desc=Tpat_variant (l,_,r)}::_ when is_absent l r -> []
+    | q::qs ->
+        let q0 = discr_pat q pss in
+        List.map (set_args q0)
+          (satisfiables (filter_one q0 pss) (simple_match_args q0 q @ qs))
 
 (*
   Now another satisfiable function that additionally
@@ -1851,7 +1892,7 @@ let do_check_fragile_gadt = do_check_fragile_param exhaust_gadt
 (* Exported unused clause check *)
 (********************************)
 
-let check_unused tdefs casel =
+let check_unused pred tdefs casel =
   if Warnings.is_active Warnings.Unused_match then
     let rec do_rec pref = function
       | [] -> ()
@@ -1860,7 +1901,19 @@ let check_unused tdefs casel =
             begin try
               let pss =
                   get_mins le_pats (List.filter (compats qs) pref) in
+              (* First look for redundant or partially redundant patterns *)
               let r = every_satisfiables (make_rows pss) (make_row qs) in
+              let r =
+                if r = Unused then r else
+                (* Then look for empty patterns *)
+                let sfs = satisfiables pss qs in
+                if sfs = [] then Unused else
+                let sfs =
+                  List.map (function [u] -> u | _ -> assert false) sfs in
+                let u = orify_many sfs in
+                let (pattern,constrs,labels) = Conv.conv u in
+                if pred constrs labels pattern = None then Unused else r
+              in
               match r with
               | Unused ->
                   Location.prerr_warning

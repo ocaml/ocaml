@@ -937,6 +937,7 @@ type type_pat_mode =
   | Normal
   | Splitting_or   (* splitting an or-pattern *)
   | Inside_or      (* inside a non-split or-pattern *)
+  | Split_or       (* always split or-patterns *)
 
 exception Need_backtrack
 
@@ -1228,7 +1229,7 @@ let rec type_pat ~constrs ~labels ~no_existentials ~mode ~env sp expected_ty k =
   | Ppat_or(sp1, sp2) ->
       let state = save_state env in
       begin match
-        if mode = Splitting_or then raise Need_backtrack;
+        if mode = Split_or || mode = Splitting_or then raise Need_backtrack;
         let initial_pattern_variables = !pattern_variables in
         let p1 =
           try Some (type_pat ~mode:Inside_or sp1 expected_ty (fun x -> x))
@@ -1256,9 +1257,11 @@ let rec type_pat ~constrs ~labels ~no_existentials ~mode ~env sp expected_ty k =
       | exception Need_backtrack when mode <> Inside_or ->
           assert (constrs <> None);
           set_state state env;
-          try type_pat ~mode:Splitting_or sp1 expected_ty k with Error _ ->
+          let mode =
+            if mode = Split_or then mode else Splitting_or in
+          try type_pat ~mode sp1 expected_ty k with Error _ ->
             set_state state env;
-            type_pat ~mode:Splitting_or sp2 expected_ty k
+            type_pat ~mode sp2 expected_ty k
       end
   | Ppat_lazy sp1 ->
       let nv = newvar () in
@@ -1313,13 +1316,13 @@ let rec type_pat ~constrs ~labels ~no_existentials ~mode ~env sp expected_ty k =
   | Ppat_extension ext ->
       raise (Error_forward (Typetexp.error_of_extension ext))
 
-let type_pat ?(allow_existentials=false) ?constrs ?labels
+let type_pat ?(allow_existentials=false) ?constrs ?labels ?(mode=Normal)
     ?(lev=get_current_level()) env sp expected_ty =
   newtype_level := Some lev;
   try
     let r =
       type_pat ~no_existentials:(not allow_existentials) ~constrs ~labels
-        ~mode:Normal ~env sp expected_ty (fun x -> x) in
+        ~mode ~env sp expected_ty (fun x -> x) in
     iter_pattern (fun p -> p.pat_env <- !env) r;
     newtype_level := None;
     r
@@ -1330,14 +1333,14 @@ let type_pat ?(allow_existentials=false) ?constrs ?labels
 
 (* this function is passed to Partial.parmatch
    to type check gadt nonexhaustiveness *)
-let partial_pred ~lev env expected_ty constrs labels p =
+let partial_pred ~lev ?mode env expected_ty constrs labels p =
   let env = ref env in
   let state = save_state env in
   try
     reset_pattern None true;
     let typed_p =
       type_pat ~allow_existentials:true ~lev
-        ~constrs ~labels env p expected_ty
+        ~constrs ~labels ?mode env p expected_ty
     in
     set_state state env;
     (* types are invalidated but we don't need them here *)
@@ -1348,6 +1351,9 @@ let partial_pred ~lev env expected_ty constrs labels p =
 
 let check_partial ?(lev=get_current_level ()) env expected_ty =
   Parmatch.check_partial_gadt (partial_pred ~lev env expected_ty)
+
+let check_unused ?(lev=get_current_level ()) env expected_ty =
+  Parmatch.check_unused (partial_pred ~lev ~mode:Split_or env expected_ty) env
 
 let rec iter3 f lst1 lst2 lst3 =
   match lst1,lst2,lst3 with
@@ -3677,11 +3683,14 @@ and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
     else
       Partial
   in
+  let ty_arg_check =
+    (* Hack: use for_saving to copy variables too *)
+    Subst.type_expr (Subst.for_saving Subst.identity) ty_arg in
   add_delayed_check
     (fun () ->
       List.iter (fun (pat, (env, _)) -> check_absent_variant env pat)
         pat_env_list;
-      Parmatch.check_unused env cases);
+      check_unused ~lev env (instance env ty_arg_check) cases);
   if has_gadts then begin
     end_def ();
     (* Ensure that existential types do not escape *)
