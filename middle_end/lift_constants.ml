@@ -779,6 +779,50 @@ let lift_constants program ~backend =
       symbol_definition_map
       translated_definitions
   in
+  let constant_definitions =
+    Symbol.Map.map (fun (const:Flambda.constant_defining_value) ->
+        match const with
+        | Allocated_const _
+        | Block _
+        | Project_closure _ ->
+          const
+        | Set_of_closures set_of_closures ->
+          let set_of_closures =
+            Flambda_iterators.map_function_bodies
+              ~f:(Flambda_iterators.map_sets_of_closures
+                    ~f:(introduce_free_variables_in_set_of_closures
+                          var_to_block_field_tbl))
+              set_of_closures
+          in
+          Flambda.Set_of_closures
+            (introduce_free_variables_in_set_of_closures
+               var_to_block_field_tbl set_of_closures)
+      )
+      constant_definitions
+  in
+  let effect_tbl =
+    Symbol.Tbl.map effect_tbl
+      (fun (effect, dep) ->
+         let effect =
+           Flambda_iterators.map_sets_of_closures
+             ~f:(introduce_free_variables_in_set_of_closures
+                   var_to_block_field_tbl)
+             effect
+         in
+         effect, dep)
+  in
+  let initialize_symbol_tbl =
+    Symbol.Tbl.map initialize_symbol_tbl
+      (fun (tag, fields, dep) ->
+         let fields =
+           List.map
+             (Flambda_iterators.map_sets_of_closures
+                ~f:(introduce_free_variables_in_set_of_closures
+                      var_to_block_field_tbl))
+             fields
+         in
+         tag, fields, dep)
+  in
   let imported_symbols = Flambda_utils.imported_symbols program in
   let components = program_graph ~backend imported_symbols constant_definitions
       initialize_symbol_tbl effect_tbl in
@@ -788,12 +832,6 @@ let lift_constants program ~backend =
       effect_tbl
       (Flambda.End (Flambda_utils.root_symbol program))
       components
-  in
-  let program =
-    Flambda_iterators.map_sets_of_closures_of_program
-      ~f:(introduce_free_variables_in_set_of_closures
-            var_to_block_field_tbl)
-      program
   in
   let program =
     Symbol.Set.fold

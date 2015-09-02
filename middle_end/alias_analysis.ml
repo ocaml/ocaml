@@ -49,6 +49,7 @@ let fresh () = Eq_id.create ()
 type equation_left =
   | Eq_id of Eq_id.t (* introduced expression *)
   | Var of Variable.t
+  | Mut of Mutable_variable.t
   | Global of int
   | Symbol of Symbol.t
   | Var_within_closure of Var_within_closure.t
@@ -61,6 +62,8 @@ module Eq_left_m = struct
       Eq_id.compare x y
     | Var x, Var y ->
       Variable.compare x y
+    | Mut x, Mut y ->
+      Mutable_variable.compare x y
     | Global x, Global y ->
       Ext_types.Int.compare x y
     | Symbol x, Symbol y ->
@@ -76,6 +79,8 @@ module Eq_left_m = struct
     | _, Eq_id _ -> 1
     | Var _, _ -> -1
     | _, Var _ -> 1
+    | Mut _, _ -> -1
+    | _, Mut _ -> 1
     | Global _, _ -> -1
     | _, Global _ -> 1
     | Symbol _, _ -> -1
@@ -90,6 +95,7 @@ module Eq_left_m = struct
   let print ppf = function
     | Eq_id id -> Format.fprintf ppf "Eq_id %a" Eq_id.print id
     | Var var ->  Format.fprintf ppf "Var %a" Variable.print var
+    | Mut var ->  Format.fprintf ppf "Mut %a" Mutable_variable.print var
     | Global i -> Format.fprintf ppf "Global %i" i
     | Var_within_closure v ->
                   Format.fprintf ppf "Var_withing_closure %a" Var_within_closure.print v
@@ -164,7 +170,7 @@ let add_branch equations lval rval =
     let set = Eq_left.Set.union (to_lset equations rval) (to_lset equations r) in
     Eq_left.Tbl.replace equations lval (Alias (Set set))
   | exception Not_found ->
-    Misc.fatal_error "Alias_analysis : Missing equation to add"
+    Eq_left.Tbl.add equations lval rval
 
 let alias eq_left =
   Alias (Set (Eq_left.Set.singleton eq_left))
@@ -182,13 +188,12 @@ let rec collect_equations (t:equations) : Flambda.t -> equation_right = function
   | Let (v, def, body) ->
     add t (Var v) (collect_equations_named t v def);
     collect_equations t body
-  | Let_mutable _ -> failwith "not yet implemented"
-  | Assign _ ->
-    failwith "not yet implemented"
-(*
-    add t (Var being_assigned) (alias (Var new_value));
+  | Let_mutable (mut, def, body) ->
+    add t (Mut mut) (alias (Var def));
+    collect_equations t body
+  | Assign { being_assigned; new_value } ->
+    add_branch t (Mut being_assigned) (alias (Var new_value));
     Resolved Not_const
-*)
   | Let_rec (defs, body) ->
     List.iter (fun (v, def) ->
         add t (Var v) (collect_equations_named t v def))
@@ -258,7 +263,8 @@ and collect_equations_named (t:equations) (var:Variable.t) : Flambda.named -> eq
        Should we do someting with the [Allocated_const (Block (...))] case,
        which contains free variables? *)
     Resolved (Ground_const (Variable var))
-  | Read_mutable _ -> failwith "not yet implemented"
+  | Read_mutable mut ->
+    alias (Mut mut)
   | Expr e ->
     collect_equations t e
 
