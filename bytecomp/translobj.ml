@@ -94,7 +94,8 @@ let prim_makearray =
     prim_native_name = ""; prim_native_float = false }
 
 (* Also use it for required globals *)
-let transl_label_init expr =
+let transl_label_init_bytecode f =
+  let expr = f () in
   let expr =
     Hashtbl.fold
       (fun c id expr -> Llet(Alias, id, Lconst c, expr))
@@ -109,19 +110,27 @@ let transl_label_init expr =
   reset_labels ();
   expr
 
-let transl_store_label_init glob size f arg =
-  method_cache := Lprim(Pfield size, [Lprim(Pgetglobal glob, [])]);
-  let expr = f arg in
-  let (size, expr) =
-    if !method_count = 0 then (size, expr) else
-    (size+1,
-     Lsequence(
-     Lprim(Psetfield(size, false),
-           [Lprim(Pgetglobal glob, []);
-            Lprim (Pccall prim_makearray, [int !method_count; int 0])]),
-     expr))
+let transl_label_init_native f =
+  let method_cache_id = Ident.create "method_cache" in
+  method_cache := Lvar method_cache_id;
+  let expr = f () in
+  let expr =
+    if !method_count = 0 then expr
+    else
+      Llet (Strict, method_cache_id,
+        Lprim (Pccall prim_makearray, [int !method_count; int 0]),
+        expr)
   in
-  (size, transl_label_init expr)
+  transl_label_init_bytecode (fun () -> expr)
+
+let transl_label_init f =
+  if !Clflags.native_code then
+    transl_label_init_native f
+  else
+    transl_label_init_bytecode f
+
+let transl_store_label_init _ident size f arg =
+  size, f arg
 
 (* Share classes *)
 

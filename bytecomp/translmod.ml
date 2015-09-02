@@ -488,7 +488,7 @@ let transl_implementation_native module_name (str, cc) =
   let module_id = Ident.create_persistent module_name in
   module_id,
     transl_label_init
-      (transl_struct [] cc (global_path module_id) str)
+      (fun () -> transl_struct [] cc (global_path module_id) str)
 
 let transl_implementation module_name (str, cc) =
   let module_id, module_initializer =
@@ -894,7 +894,7 @@ let transl_toplevel_item item =
       lambda_unit
 
 let transl_toplevel_item_and_close itm =
-  close_toplevel_term (transl_label_init (transl_toplevel_item itm))
+  close_toplevel_term (transl_label_init (fun () -> transl_toplevel_item itm))
 
 let transl_toplevel_definition str =
   reset_labels ();
