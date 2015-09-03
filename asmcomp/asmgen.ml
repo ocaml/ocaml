@@ -123,8 +123,23 @@ let prep_flambda_for_export ppf flam ~backend =
   let kind = Flambda_invariants.Lifted in
   let program = Lift_constants.lift_constants flam ~backend in
   Flambda_invariants.check_exn ~kind program;
+  if !Clflags.dump_flambda
+  then begin
+    Format.fprintf ppf "@.After Lift_constants:@ %a@."
+      Flambda.print_program program
+  end;
   let program = Share_constants.share_constants program in
+  if !Clflags.dump_flambda
+  then begin
+    Format.fprintf ppf "@.After Share_constants (before invariants):@ %a@."
+      Flambda.print_program program
+  end;
   Flambda_invariants.check_exn ~kind program;
+  if !Clflags.dump_flambda
+  then begin
+    Format.fprintf ppf "@.After Share_constants:@ %a@."
+      Flambda.print_program program
+  end;
   (* let program = Inline_and_simplify.run ~never_inline:true ~backend program in *)
   (* Flambda_invariants.check_exn ~kind program; *)
   if !Clflags.dump_flambda

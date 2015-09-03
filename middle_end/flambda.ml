@@ -364,8 +364,8 @@ let print_function_declaration ppf (var, decl) =
 let print_constant_defining_value ppf (const : constant_defining_value) =
   match const with
   | Allocated_const const ->
-    fprintf ppf "Allocated_const (%a)" Allocated_const.print const
-  | Block (tag, []) -> fprintf ppf "Atom (tag %d)" (Tag.to_int tag)
+    fprintf ppf "(Allocated_const %a)" Allocated_const.print const
+  | Block (tag, []) -> fprintf ppf "(Atom (tag %d))" (Tag.to_int tag)
   | Block (tag, fields) ->
     let print_field ppf (field : constant_defining_value_block_field) =
       match field with
@@ -375,12 +375,12 @@ let print_constant_defining_value ppf (const : constant_defining_value) =
     let print_fields ppf =
       List.iter (fprintf ppf "@ %a" print_field)
     in
-    fprintf ppf "Block (tag %d, %a)" (Tag.to_int tag)
+    fprintf ppf "(Block (tag %d, %a))" (Tag.to_int tag)
       print_fields fields
   | Set_of_closures set_of_closures ->
-    fprintf ppf "Set_of_closures (%a)" print_set_of_closures set_of_closures
+    fprintf ppf "(Set_of_closures (%a))" print_set_of_closures set_of_closures
   | Project_closure (set_of_closures, closure_id) ->
-    fprintf ppf "Project_closure (%a, %a)" Symbol.print set_of_closures
+    fprintf ppf "(Project_closure (%a, %a))" Symbol.print set_of_closures
       Closure_id.print closure_id
 
 let rec print_program ppf (program : program) =

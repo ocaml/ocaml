@@ -73,22 +73,12 @@ let share_constants (program:Flambda.program) =
       end
     | Let_rec_symbol (defs,program) ->
       let defs =
-        Misc.filter_map
-          (fun (symbol, def) ->
-(*
-             Format.eprintf "rec symbol %a@." Symbol.print symbol;
-*)
-             Misc.may_map
-               (fun def -> (symbol, def))
-               (share_definition constant_to_symbol_tbl sharing_symbol_tbl symbol def))
+        List.map (fun (symbol, def) ->
+            let def = update_constant_for_sharing sharing_symbol_tbl def in
+            symbol, def)
           defs
       in
-      begin match defs with
-      | [] ->
-        loop program
-      | defs ->
-        Let_rec_symbol (defs,loop program)
-      end
+      Let_rec_symbol (defs, loop program)
     | Import_symbol (symbol,program) ->
 (*
       Format.eprintf "import symbol %a@." Symbol.print symbol;

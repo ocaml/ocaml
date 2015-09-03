@@ -612,7 +612,7 @@ let check_exn ?(kind=Normal) ?(cmxfile=false) (flam:Flambda.program) =
       Format.eprintf ">> Unbound mutable variable: %a"
         Mutable_variable.print mut_var
     | Unbound_symbol sym ->
-      Format.eprintf ">> Unbound symbol: %a" Symbol.print sym
+      Format.eprintf ">> Unbound symbol: %a %s" Symbol.print sym (Printexc.raw_backtrace_to_string (Printexc.get_callstack 100))
     | Vars_in_function_body_not_bound_by_closure_or_params
         (vars, set_of_closures, fun_var) ->
       Format.eprintf ">> Variable(s) (%a) in the body of a function declaration \
