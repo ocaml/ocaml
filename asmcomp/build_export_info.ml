@@ -182,6 +182,8 @@ and describe_named (env : env) (named : Flambda.named) : Export_info.approx =
 
   | Read_mutable _ -> Value_unknown
 
+  | Read_symbol_field _ -> Value_unknown (* CR mshinwell: needs fixing *)
+
   | Const c -> begin
       match c with
       | Int i ->

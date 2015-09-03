@@ -220,6 +220,9 @@ let variable_and_symbol_invariants flam =
     | Allocated_const const -> ignore_allocated_const const
     | Read_mutable mut_var ->
       check_mutable_variable_is_bound env mut_var
+    | Read_symbol_field (symbol, index) ->
+      check_symbol_is_bound env symbol;
+      assert (index >= 0)  (* CR mshinwell: add proper error *)
     | Set_of_closures set_of_closures ->
       loop_set_of_closures env set_of_closures
     | Project_closure { set_of_closures; closure_id; } ->
@@ -492,7 +495,7 @@ let used_closure_ids (program:Flambda.program) =
     | Project_var { closure = _; closure_id; var = _ } ->
       used := Closure_id.Set.add closure_id !used
     | Set_of_closures _ | Symbol _ | Const _ | Allocated_const _
-    | Prim _ | Expr _ | Read_mutable _ -> ()
+    | Prim _ | Expr _ | Read_mutable _ | Read_symbol_field _ -> ()
   in
   (* TODO: check closure_ids of constant_defining_values project_closures *)
   Flambda_iterators.iter_named_of_program ~f program;

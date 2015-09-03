@@ -289,6 +289,8 @@ and to_clambda_named t env var (named : Flambda.named) : Clambda.ulambda =
         Mutable_variable.print mut_var
         Flambda.print_named named
     end
+  | Read_symbol_field (symbol, field) ->
+    Uprim (Pfield field, [to_clambda_symbol symbol], Debuginfo.none)
   | Set_of_closures set_of_closures ->
     to_clambda_set_of_closures t env set_of_closures
   | Project_closure { set_of_closures; closure_id } ->
@@ -306,6 +308,8 @@ and to_clambda_named t env var (named : Flambda.named) : Clambda.ulambda =
     let var_offset = get_fv_offset t var in
     let pos = var_offset - fun_offset in
     Uprim (Pfield pos, [ulam], Debuginfo.none)
+  (* CR mshinwell: these next two cases are probably now redundant.  Delete the
+     primitives too *)
   | Prim (Pgetglobalfield (id, index), _, dbg) ->
     let ident = Ident.create_persistent (Compilenv.symbol_for_global id) in
     Uprim (Pfield index, [Clambda.Uprim (Pgetglobal ident, [], dbg)], dbg)
