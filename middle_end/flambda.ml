@@ -390,15 +390,16 @@ let rec print_program ppf (program : program) =
     let rec letbody (ul : program) =
       match ul with
       | Let_symbol (symbol, constant_defining_value, body) ->
-        fprintf ppf "@ @[<2>%a@ %a@]" Symbol.print symbol
+        fprintf ppf "@ @[<2>(%a@ %a)@]" Symbol.print symbol
           print_constant_defining_value constant_defining_value;
         letbody body
       | _ -> ul
     in
-    fprintf ppf "let@ @[<hv 1>(@[<2>%a@ %a@])@]@ "
+    fprintf ppf "@[<2>let_symbol@ @[<hv 1>(@[<2>%a@ %a@])@]@ "
       Symbol.print symbol
       print_constant_defining_value constant_defining_value;
     let program = letbody body in
+    fprintf ppf "@]@.";
     print_program ppf program
   | Let_rec_symbol (defs, program) ->
     let bindings ppf id_arg_list =
@@ -411,20 +412,20 @@ let rec print_program ppf (program : program) =
              print_constant_defining_value constant_defining_value)
         id_arg_list in
     fprintf ppf
-      "@[<2>letrec@ (@[<hv 1>%a@])@]@ "
+      "@[<2>let_rec_symbol@ (@[<hv 1>%a@])@]@."
       bindings defs;
     print_program ppf program
   | Import_symbol (symbol, program) ->
-    fprintf ppf "@[import_symbol@ %a@]@ " Symbol.print symbol;
+    fprintf ppf "@[import_symbol@ %a@]@." Symbol.print symbol;
     print_program ppf program
   | Initialize_symbol (symbol, tag, fields, program) ->
-    fprintf ppf "@[<2>let_global@ @[<hv 1>(@[<2>%a@ %a@ %a@])@]@]@ "
+    fprintf ppf "@[<2>initialize_symbol@ @[<hv 1>(@[<2>%a@ %a@ %a@])@]@]@."
       Symbol.print symbol
       Tag.print tag
       (Format.pp_print_list lam) fields;
     print_program ppf program
   | Effect (expr, program) ->
-    fprintf ppf "@[effect @[<hv 1>%a@]@@]@ "
+    fprintf ppf "@[effect @[<hv 1>%a@]@@]@."
       lam expr;
     print_program ppf program;
   | End root -> fprintf ppf "End %a" Symbol.print root
