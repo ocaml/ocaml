@@ -13,6 +13,7 @@ type constant_defining_value =
   | Move_within_set_of_closures of Flambda.move_within_set_of_closures
   | Project_var of Flambda.project_var
   | Field of Variable.t * int
+  | Symbol_field of Symbol.t * int
   | Const of Flambda.const
   | Symbol of Symbol.t
   | Variable of Variable.t

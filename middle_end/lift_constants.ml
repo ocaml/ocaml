@@ -106,6 +106,8 @@ let assign_symbols_and_collect_constant_definitions
       | Prim (Pmakeblock (tag, _), fields, _) ->
         assign_symbol ();
         record_definition (Block (Tag.create_exn tag, fields))
+      | Read_symbol_field (symbol, field) ->
+        record_definition (Symbol_field (symbol, field))
       | Set_of_closures (
           { function_decls = { funs; set_of_closures_id; _ };
             _ } as set) ->
@@ -365,7 +367,7 @@ let translate_definition_and_resolve_alias
     Some (Flambda.Set_of_closures set_of_closures)
 
   | Project_var _ -> None
-  | Field (_,_) -> None
+  | Field (_,_) | Symbol_field _ -> None
   | Const _ -> None
   | Symbol _ -> None
   | Variable _ -> None

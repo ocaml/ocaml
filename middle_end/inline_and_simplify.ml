@@ -726,6 +726,9 @@ and simplify_named env r (tree : Flambda.named) : Flambda.named * R.t =
       Freshening.apply_mutable_variable (E.freshening env) mut_var
     in
     Read_mutable mut_var, ret r A.value_unknown
+  | Read_symbol_field (symbol, field_index) ->
+    let approx = A.get_field (E.find_symbol_exn env symbol) ~field_index in
+    simplify_named_using_approx_and_env env r tree approx
   | Set_of_closures set_of_closures ->
     let set_of_closures, r =
       simplify_set_of_closures env r set_of_closures
@@ -744,8 +747,6 @@ and simplify_named env r (tree : Flambda.named) : Flambda.named * R.t =
         Misc.fatal_error "Pgetglobal is forbidden in Inline_and_simplify"
       | Pfield i, [arg] ->
         let approx = A.get_field (E.find_exn env arg) ~field_index:i in
-Format.eprintf "Simplifying Prim Pfield (index %d) arg=%a block approx=%a resulting field approx=%a\n"
-  i Variable.print arg A.print (E.find_exn env arg) A.print approx;
         simplify_named_using_approx_and_env env r tree approx
       | (Psetfield _ | Parraysetu _ | Parraysets _), block::_ ->
         let block_approx = E.find_exn env block in

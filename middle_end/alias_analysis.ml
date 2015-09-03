@@ -517,6 +517,7 @@ type constant_defining_value =
       Flambda.move_within_set_of_closures
   | Project_var of Flambda.project_var
   | Field of Variable.t * int
+  | Symbol_field of Symbol.t * int
   | Const of Flambda.const
   | Symbol of Symbol.t
   | Variable of Variable.t
@@ -552,11 +553,14 @@ let rec resolve_definition
         fetch_variable definitions v
     end
   | Field (v, n) ->
-    match fetch_variable definitions v with
+    begin match fetch_variable definitions v with
     | Symbol s ->
       fetch_symbol_field definitions s n
     | Variable v ->
       fetch_variable_field definitions v n
+    end
+  | Symbol_field (symbol, field) ->
+    fetch_symbol_field definitions symbol field
 
 and fetch_variable
     (definitions: definitions)
@@ -580,7 +584,7 @@ and fetch_variable_field
     end
   | exception Not_found ->
     Misc.fatal_errorf "No definition for field access to %a" Variable.print var
-  | Symbol _ | Variable _ | Project_var _ | Field _ ->
+  | Symbol _ | Variable _ | Project_var _ | Field _ | Symbol_field _ ->
     (* Must have been resolved *)
     assert false
   | Const _ | Allocated_const _
