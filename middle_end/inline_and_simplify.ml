@@ -801,13 +801,18 @@ and simplify_direct env r (tree : Flambda.t) : Flambda.t * R.t =
       Free_variables.calculate body
         ~free_variables_of_let_bodies:(R.free_variables_of_let_bodies r)
     in
+Format.eprintf "Simplifying let binding %a, fvs of body=%a, tree=%a\n" Variable.print id Variable.Set.print free_variables_of_body Flambda.print tree;
     let (expr : Flambda.t), r =
-      if Variable.Set.mem id free_variables_of_body then
+      if Variable.Set.mem id free_variables_of_body then begin
+Format.eprintf "Exit 1\n";
         Flambda.Let (id, defining_expr, body), r
-      else if Effect_analysis.no_effects_named defining_expr then
+end
+      else if Effect_analysis.no_effects_named defining_expr then begin
         let r = R.map_benefit r (B.remove_code_named defining_expr) in
+Format.eprintf "Exit 2\n";
         body, r
-      else
+      end else begin
+Format.eprintf "Exit 3\n";
         (* CR mshinwell: check that Pignore is inserted correctly by a later
            pass. *)
         (* Generate a fresh name for increasing legibility of the
@@ -815,6 +820,7 @@ and simplify_direct env r (tree : Flambda.t) : Flambda.t * R.t =
            the variable is unused). *)
         let fresh_var = Variable.create "for_side_effect_only" in
         Flambda.Let (fresh_var, defining_expr, body), r
+end
     in
     let r =
       (* Cache the free variables of this [let] body to improve performance
@@ -1203,6 +1209,7 @@ let rec simplify_program env r (program : Flambda.program)
           let r, def, approx =
             simplify_constant_defining_value env r symbol def
           in
+          let approx = A.augment_with_symbol approx symbol in
           let env = E.redefine_symbol env symbol approx in
           (env, r, (symbol, def) :: defs))
         (env, r, []) defs
@@ -1213,6 +1220,7 @@ let rec simplify_program env r (program : Flambda.program)
     let r, constant_defining_value, approx =
       simplify_constant_defining_value env r symbol constant_defining_value
     in
+    let approx = A.augment_with_symbol approx symbol in
     let env = E.add_symbol env symbol approx in
     let program, r = simplify_program env r program in
     Let_symbol (symbol, constant_defining_value, program), r
@@ -1231,11 +1239,22 @@ let rec simplify_program env r (program : Flambda.program)
     let program, r = simplify_program env r program in
     Import_symbol (symbol, program), r
   | Initialize_symbol (symbol, tag, fields, program) ->
+  Format.eprintf "START simplifying Initialize_symbol %a" Symbol.print symbol;
     let fields, approxs, r = simplify_list env r fields in
-    let approx = Simple_value_approx.value_block (tag, Array.of_list approxs) in
+    let approx =
+      A.augment_with_symbol (A.value_block (tag, Array.of_list approxs))
+        symbol
+    in
+Format.eprintf "Approx for symbol %a: %a\n" Symbol.print symbol Simple_value_approx.print approx;
     let module Backend = (val (E.backend env) : Backend_intf.S) in
     let env = E.add_symbol env symbol approx in
     let program, r = simplify_program env r program in
+begin match fields, approxs with
+| field::_, approx::_ ->
+  Format.eprintf "Simplifying Initialize_symbol %a: result field 0 is %a, approx %a\n"
+    Symbol.print symbol Flambda.print field A.print  approx
+| _ -> ()
+end;
     Initialize_symbol (symbol, tag, fields, program), r
   | Effect (expr, program) ->
     let expr, r = simplify env r expr in
