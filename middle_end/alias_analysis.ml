@@ -265,6 +265,8 @@ and collect_equations_named (t:equations) (var:Variable.t) : Flambda.named -> eq
     Resolved (Ground_const (Variable var))
   | Read_mutable mut ->
     alias (Mut mut)
+  | Read_symbol_field (_symbol, _field) ->
+    assert false
   | Expr e ->
     collect_equations t e
 

@@ -231,7 +231,7 @@ module NotConstants(P:Param) = struct
          and it is obviously the case. *)
       if not for_clambda
       then mark_curr curr
-    | Read_symbol_field (symbol, index) ->
+    | Read_symbol_field (_symbol, _index) ->
       assert false
     (* globals are symbols: handle like symbols *)
     | Prim(Lambda.Pgetglobal _id, [], _) ->
