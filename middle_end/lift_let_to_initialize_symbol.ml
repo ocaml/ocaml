@@ -9,11 +9,7 @@ let make_variable_symbol var =
 
 let substitute_variable_to_symbol var symbol expr =
   let bind fresh_var (expr:Flambda.t) : Flambda.t =
-    let intermediate_var = Variable.freshen fresh_var in
-    Let (intermediate_var, Symbol symbol,
-        Let (fresh_var,
-            Prim (Pfield 0, [intermediate_var], Debuginfo.none),
-            expr))
+    Let (fresh_var, Read_symbol_field (symbol, 0), expr)
   in
   let substitute_named fresh (named:Flambda.named) : Flambda.named =
     let sb to_substitute =
@@ -25,6 +21,7 @@ let substitute_variable_to_symbol var symbol expr =
     match named with
     | Symbol _ | Const _ | Expr _ -> named
     | Allocated_const _ | Read_mutable _ -> named
+    | Read_symbol_field _ -> named
     | Set_of_closures set_of_closures ->
       let set_of_closures =
         Flambda.create_set_of_closures

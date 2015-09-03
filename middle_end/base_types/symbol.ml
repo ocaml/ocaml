@@ -28,10 +28,8 @@ module T = struct
   let hash t = Hashtbl.hash t.label
   let equal t1 t2 = t1.label = t2.label
 
-  (* CR mshinwell for pchambart: I've always found this printing output a
-     bit confusing.  Could we just use "%a.%s"? *)
   let print ppf t =
-    Format.fprintf ppf "%a - %a"
+    Format.fprintf ppf "%a.%a"
       Compilation_unit.print t.compilation_unit
       Linkage_name.print t.label
 end

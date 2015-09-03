@@ -75,6 +75,7 @@ let simplify_free_variable env var ~f : Flambda.t * R.t =
     let var = Variable.rename var in
     let env = E.add env var approx in
     let body, r = f env var in
+Format.eprintf "simplify_free_variable inserting Let for %a\n" Variable.print var;
     Let (var, named, body), r
 
 let simplify_free_variables env vars ~f : Flambda.t * R.t =
@@ -90,6 +91,7 @@ let simplify_free_variables env vars ~f : Flambda.t * R.t =
         let var = Variable.rename var in
         let env = E.add env var approx in
         let body, r = collect_bindings vars env (var::bound_vars) in
+Format.eprintf "simplify_free_variables inserting Let for %a\n" Variable.print var;
         Let (var, named, body), r
   in
   collect_bindings vars env []
@@ -108,6 +110,7 @@ let simplify_free_variables_named env vars ~f : Flambda.named * R.t =
         let var = Variable.rename var in
         let env = E.add env var approx in
         let body, r = collect_bindings vars env (var::bound_vars) in
+Format.eprintf "simplify_free_variables_named inserting Let for %a\n" Variable.print var;
         Let (var, named, body), r
   in
   let expr, r = collect_bindings vars env [] in
@@ -741,6 +744,8 @@ and simplify_named env r (tree : Flambda.named) : Flambda.named * R.t =
         Misc.fatal_error "Pgetglobal is forbidden in Inline_and_simplify"
       | Pfield i, [arg] ->
         let approx = A.get_field (E.find_exn env arg) ~field_index:i in
+Format.eprintf "Simplifying Prim Pfield (index %d) arg=%a block approx=%a resulting field approx=%a\n"
+  i Variable.print arg A.print (E.find_exn env arg) A.print approx;
         simplify_named_using_approx_and_env env r tree approx
       | (Psetfield _ | Parraysetu _ | Parraysets _), block::_ ->
         let block_approx = E.find_exn env block in
@@ -784,7 +789,9 @@ and simplify_direct env r (tree : Flambda.t) : Flambda.t * R.t =
     simplify_using_approx_and_env env r (Var var) (E.find_exn env var)
   | Apply apply -> simplify_apply env r ~apply
   | Let (id, defining_expr, body) ->
+Format.eprintf "Simplifying let binding %a = %a in %a\n" Variable.print id Flambda.print_named defining_expr Flambda.print body;
     let defining_expr, r = simplify_named env r defining_expr in
+Format.eprintf "Defining expr simplifies to %a\n" Flambda.print_named defining_expr;
     (* When [defining_expr] is really a [Flambda.named] rather than an
        [Flambda.t], squash any intermediate [let], or we will never eliminate
        certain cases (e.g. when a variable is simplified to a constant). *)
@@ -1240,21 +1247,24 @@ let rec simplify_program env r (program : Flambda.program)
     Import_symbol (symbol, program), r
   | Initialize_symbol (symbol, tag, fields, program) ->
   Format.eprintf "START simplifying Initialize_symbol %a" Symbol.print symbol;
+List.iter (fun field ->
+Format.eprintf "Field: %a\n" Flambda.print field) fields;
     let fields, approxs, r = simplify_list env r fields in
     let approx =
       A.augment_with_symbol (A.value_block (tag, Array.of_list approxs))
         symbol
     in
 Format.eprintf "Approx for symbol %a: %a\n" Symbol.print symbol Simple_value_approx.print approx;
-    let module Backend = (val (E.backend env) : Backend_intf.S) in
-    let env = E.add_symbol env symbol approx in
-    let program, r = simplify_program env r program in
 begin match fields, approxs with
 | field::_, approx::_ ->
   Format.eprintf "Simplifying Initialize_symbol %a: result field 0 is %a, approx %a\n"
     Symbol.print symbol Flambda.print field A.print  approx
 | _ -> ()
 end;
+  Format.eprintf "END simplifying Initialize_symbol %a" Symbol.print symbol;
+    let module Backend = (val (E.backend env) : Backend_intf.S) in
+    let env = E.add_symbol env symbol approx in
+    let program, r = simplify_program env r program in
     Initialize_symbol (symbol, tag, fields, program), r
   | Effect (expr, program) ->
     let expr, r = simplify env r expr in

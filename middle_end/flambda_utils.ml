@@ -144,6 +144,9 @@ and same_named (named1 : Flambda.named) (named2 : Flambda.named) =
   | Allocated_const _, _ | _, Allocated_const _ -> false
   | Read_mutable mv1, Read_mutable mv2 -> Mutable_variable.equal mv1 mv2
   | Read_mutable _, _ | _, Read_mutable _ -> false
+  | Read_symbol_field (s1, i1), Read_symbol_field (s2, i2) ->
+    Symbol.equal s1 s2 && i1 = i2
+  | Read_symbol_field _, _ | _, Read_symbol_field _ -> false
   | Set_of_closures s1, Set_of_closures s2 -> same_set_of_closures s1 s2
   | Set_of_closures _, _ | _, Set_of_closures _ -> false
   | Project_closure f1, Project_closure f2 -> same_project_closure f1 f2
@@ -227,6 +230,7 @@ let toplevel_substitution sb tree =
     match named with
     | Symbol _ | Const _ | Expr _ -> named
     | Allocated_const _ | Read_mutable _ -> named
+    | Read_symbol_field _ -> named
     | Set_of_closures set_of_closures ->
       let set_of_closures =
         Flambda.create_set_of_closures
