@@ -727,7 +727,15 @@ and simplify_named env r (tree : Flambda.named) : Flambda.named * R.t =
     in
     Read_mutable mut_var, ret r A.value_unknown
   | Read_symbol_field (symbol, field_index) ->
-    let approx = A.get_field (E.find_symbol_exn env symbol) ~field_index in
+    let approx =
+      (* CR mshinwell: share code with above *)
+      match E.find_symbol_exn env symbol with
+      | exception Not_found ->
+        Misc.fatal_errorf "Symbol %a is unbound.  Maybe there is a missing \
+            [Let_symbol] or [Import_symbol]?"
+          Symbol.print symbol
+      | approx -> A.get_field approx ~field_index
+    in
     simplify_named_using_approx_and_env env r tree approx
   | Set_of_closures set_of_closures ->
     let set_of_closures, r =
