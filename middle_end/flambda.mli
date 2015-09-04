@@ -166,10 +166,29 @@ and named =
   | Allocated_const of Allocated_const.t
   | Read_mutable of Mutable_variable.t
   | Read_symbol_field of Symbol.t * int
-  (** CR mshinwell for mshinwell: write a proper comment about why we don't
-      ever deem Pfield to be constant, how a symbol/field combination uniquely
-      identifies a value (which may or may not be constant), and thus the
-      rationale for Read_symbol_field. *)
+  (** During the lifting of [let] bindings to [program] constructions after
+      closure conversion, we generate symbols and their corresponding
+      definitions (which may or may not be constant), together with field
+      accesses to such symbols.  We would like it to be the case that such
+      field accesses simplify directly to the relevant component of the
+      symbol concerned.  This can be done because the top-level structure of
+      symbols is statically allocated and fixed at compile time.  It may seem
+      that [Prim (Pfield, ...)] expressions could be used to perform the
+      field accesses.
+      However for simplicity, to avoid having to keep track of properties of
+      individual fields of blocks, [Inconstant_idents] never deems a
+      [Prim (Pfield, ...)] expression to be constant.  (Some such expressions
+      may however be replaced during [Inline_and_simplify] based on
+      approximation information.)  This means that [Lift_constants] will never
+      assign a symbol to such a projection.  In the context where the
+      expression being projected from is actually itself a symbol, this
+      would yield inefficient code and cause test cases such as
+      tests/asmcomp/staticalloc.ml to fail.
+      To circumvent this problem we use [Read_symbol_field] when generating
+      projections from the top level of symbols.  Owing to the properties of
+      symbols described above, such expressions may be eligible for declaration
+      as constant by [Inconstant_idents] (and thus themselves lifted to another
+      symbol), without any further complication. *)
   | Set_of_closures of set_of_closures
   | Project_closure of project_closure
   | Move_within_set_of_closures of move_within_set_of_closures
