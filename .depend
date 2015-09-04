@@ -719,7 +719,7 @@ middle_end/middle_end.cmi : bytecomp/lambda.cmi typing/ident.cmi \
 middle_end/ref_to_variables.cmi : middle_end/flambda.cmi
 middle_end/remove_unused_arguments.cmi : middle_end/flambda.cmi
 middle_end/remove_unused_closure_vars.cmi : middle_end/flambda.cmi
-middle_end/remove_unused_globals.cmi :
+middle_end/remove_unused_globals.cmi : middle_end/flambda.cmi
 middle_end/semantics_of_primitives.cmi : bytecomp/lambda.cmi
 middle_end/simple_value_approx.cmi : middle_end/base_types/variable.cmi \
     middle_end/base_types/var_within_closure.cmi \
@@ -912,15 +912,15 @@ middle_end/freshening.cmx : middle_end/base_types/variable.cmx \
 middle_end/inconstant_idents.cmo : middle_end/base_types/variable.cmi \
     middle_end/base_types/symbol.cmi \
     middle_end/base_types/set_of_closures_id.cmi utils/misc.cmi \
-    bytecomp/lambda.cmi middle_end/flambda.cmi utils/ext_types.cmi \
-    middle_end/base_types/compilation_unit.cmi \
+    bytecomp/lambda.cmi middle_end/flambda_utils.cmi middle_end/flambda.cmi \
+    utils/ext_types.cmi middle_end/base_types/compilation_unit.cmi \
     middle_end/base_types/closure_id.cmi parsing/asttypes.cmi \
     middle_end/inconstant_idents.cmi
 middle_end/inconstant_idents.cmx : middle_end/base_types/variable.cmx \
     middle_end/base_types/symbol.cmx \
     middle_end/base_types/set_of_closures_id.cmx utils/misc.cmx \
-    bytecomp/lambda.cmx middle_end/flambda.cmx utils/ext_types.cmx \
-    middle_end/base_types/compilation_unit.cmx \
+    bytecomp/lambda.cmx middle_end/flambda_utils.cmx middle_end/flambda.cmx \
+    utils/ext_types.cmx middle_end/base_types/compilation_unit.cmx \
     middle_end/base_types/closure_id.cmx parsing/asttypes.cmi \
     middle_end/inconstant_idents.cmi
 middle_end/inline_and_simplify.cmo : utils/warnings.cmi \
@@ -1061,23 +1061,24 @@ middle_end/lift_constants.cmx : middle_end/base_types/variable.cmx \
     middle_end/alias_analysis.cmx middle_end/lift_constants.cmi
 middle_end/lift_let_to_initialize_symbol.cmo : \
     middle_end/base_types/variable.cmi middle_end/base_types/tag.cmi \
-    middle_end/base_types/symbol.cmi middle_end/base_types/linkage_name.cmi \
-    middle_end/lift_code.cmi middle_end/flambda_utils.cmi \
-    middle_end/flambda_iterators.cmi middle_end/flambda.cmi \
-    bytecomp/debuginfo.cmi middle_end/base_types/compilation_unit.cmi \
+    middle_end/base_types/symbol.cmi utils/misc.cmi \
+    middle_end/base_types/linkage_name.cmi middle_end/lift_code.cmi \
+    middle_end/flambda_utils.cmi middle_end/flambda_iterators.cmi \
+    middle_end/flambda.cmi middle_end/base_types/compilation_unit.cmi \
     middle_end/lift_let_to_initialize_symbol.cmi
 middle_end/lift_let_to_initialize_symbol.cmx : \
     middle_end/base_types/variable.cmx middle_end/base_types/tag.cmx \
-    middle_end/base_types/symbol.cmx middle_end/base_types/linkage_name.cmx \
-    middle_end/lift_code.cmx middle_end/flambda_utils.cmx \
-    middle_end/flambda_iterators.cmx middle_end/flambda.cmx \
-    bytecomp/debuginfo.cmx middle_end/base_types/compilation_unit.cmx \
+    middle_end/base_types/symbol.cmx utils/misc.cmx \
+    middle_end/base_types/linkage_name.cmx middle_end/lift_code.cmx \
+    middle_end/flambda_utils.cmx middle_end/flambda_iterators.cmx \
+    middle_end/flambda.cmx middle_end/base_types/compilation_unit.cmx \
     middle_end/lift_let_to_initialize_symbol.cmi
 middle_end/lift_strings.cmo : bytecomp/lambda.cmi typing/ident.cmi \
     middle_end/lift_strings.cmi
 middle_end/lift_strings.cmx : bytecomp/lambda.cmx typing/ident.cmx \
     middle_end/lift_strings.cmi
 middle_end/middle_end.cmo : utils/timings.cmi \
+    middle_end/remove_unused_globals.cmi \
     middle_end/remove_unused_closure_vars.cmi middle_end/ref_to_variables.cmi \
     utils/misc.cmi middle_end/lift_let_to_initialize_symbol.cmi \
     middle_end/lift_constants.cmi middle_end/lift_code.cmi \
@@ -1086,6 +1087,7 @@ middle_end/middle_end.cmo : utils/timings.cmi \
     middle_end/eliminate_const_block.cmi middle_end/closure_conversion.cmi \
     utils/clflags.cmi middle_end/middle_end.cmi
 middle_end/middle_end.cmx : utils/timings.cmx \
+    middle_end/remove_unused_globals.cmx \
     middle_end/remove_unused_closure_vars.cmx middle_end/ref_to_variables.cmx \
     utils/misc.cmx middle_end/lift_let_to_initialize_symbol.cmx \
     middle_end/lift_constants.cmx middle_end/lift_code.cmx \
@@ -1119,8 +1121,12 @@ middle_end/remove_unused_closure_vars.cmx : \
     middle_end/flambda_iterators.cmx middle_end/flambda.cmx \
     middle_end/base_types/closure_id.cmx \
     middle_end/remove_unused_closure_vars.cmi
-middle_end/remove_unused_globals.cmo : middle_end/remove_unused_globals.cmi
-middle_end/remove_unused_globals.cmx : middle_end/remove_unused_globals.cmi
+middle_end/remove_unused_globals.cmo : middle_end/base_types/symbol.cmi \
+    utils/misc.cmi middle_end/flambda_iterators.cmi middle_end/flambda.cmi \
+    middle_end/effect_analysis.cmi middle_end/remove_unused_globals.cmi
+middle_end/remove_unused_globals.cmx : middle_end/base_types/symbol.cmx \
+    utils/misc.cmx middle_end/flambda_iterators.cmx middle_end/flambda.cmx \
+    middle_end/effect_analysis.cmx middle_end/remove_unused_globals.cmi
 middle_end/semantics_of_primitives.cmo : bytecomp/printlambda.cmi \
     utils/misc.cmi bytecomp/lambda.cmi middle_end/semantics_of_primitives.cmi
 middle_end/semantics_of_primitives.cmx : bytecomp/printlambda.cmx \
@@ -1735,10 +1741,10 @@ asmcomp/selection.cmx : asmcomp/selectgen.cmx asmcomp/proc.cmx \
     asmcomp/mach.cmx asmcomp/cmm.cmx utils/clflags.cmx asmcomp/arch.cmx \
     asmcomp/selection.cmi
 asmcomp/share_constants.cmo : middle_end/base_types/symbol.cmi \
-    utils/misc.cmi middle_end/flambda_iterators.cmi middle_end/flambda.cmi \
+    middle_end/flambda_iterators.cmi middle_end/flambda.cmi \
     asmcomp/share_constants.cmi
 asmcomp/share_constants.cmx : middle_end/base_types/symbol.cmx \
-    utils/misc.cmx middle_end/flambda_iterators.cmx middle_end/flambda.cmx \
+    middle_end/flambda_iterators.cmx middle_end/flambda.cmx \
     asmcomp/share_constants.cmi
 asmcomp/spill.cmo : asmcomp/reg.cmi asmcomp/proc.cmi utils/misc.cmi \
     asmcomp/mach.cmi asmcomp/spill.cmi
