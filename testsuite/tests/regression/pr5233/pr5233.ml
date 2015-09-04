@@ -45,6 +45,10 @@ let check o =
      printf " ok\n";
 ;;
 
+(* With flambda, the [Some ...] will be lifted to an
+   [Initialize_symbol], meaning that it will never be
+   collected.  As such, we expect the weak reference
+   to continue holding [Some]. *)
 Weak.set !smuggle 0 (Some (String.make size ' '));;
 
 (* Check the data just to make sure. *)
