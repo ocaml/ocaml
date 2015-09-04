@@ -48,6 +48,10 @@
 *)
 
 module Int = Ext_types.Int
+module Symbol_field = struct
+  include Ext_types.Identifiable.Make(Ext_types.Pair(Symbol)(Int))
+  include M
+end
 
 type result = {
   id : Variable.Set.t;
@@ -67,18 +71,22 @@ module NotConstants(P:Param) = struct
   type dep =
     | Closure of Set_of_closures_id.t
     | Var of Variable.t
-    | Local_symbol of Symbol.t
+    | Symbol of Symbol.t
+    | Symbol_field of Symbol_field.t
 
   (* Sets representing NC *)
   let variables = ref Variable.Set.empty
   let closures = ref Set_of_closures_id.Set.empty
   let symbols = ref Symbol.Set.empty
+  let symbol_fields = ref Symbol_field.Set.empty
 
   (* if the table associates [v1;v2;...;vn] to v, it represents
      v in NC => v1 in NC /\ v2 in NC ... /\ vn in NC *)
   let id_dep_table : dep list Variable.Tbl.t = Variable.Tbl.create 100
   let fun_dep_table : dep list Set_of_closures_id.Tbl.t = Set_of_closures_id.Tbl.create 100
   let symbol_dep_table : dep list Symbol.Tbl.t = Symbol.Tbl.create 100
+  let symbol_field_dep_table : dep list Symbol_field.Tbl.t =
+    Symbol_field.Tbl.create 100
 
   (* adds in the tables 'dep in NC => curr in NC' *)
   let register_implication ~in_nc:dep ~implies_in_nc:curr =
@@ -92,10 +100,14 @@ module NotConstants(P:Param) = struct
         let t = try Set_of_closures_id.Tbl.find fun_dep_table cl
         with Not_found -> [] in
         Set_of_closures_id.Tbl.replace fun_dep_table cl (curr :: t)
-      | Local_symbol symbol ->
+      | Symbol symbol ->
         let t = try Symbol.Tbl.find symbol_dep_table symbol
         with Not_found -> [] in
-        Symbol.Tbl.replace symbol_dep_table symbol (curr :: t))
+        Symbol.Tbl.replace symbol_dep_table symbol (curr :: t)
+      | Symbol_field field ->
+        let t = try Symbol_field.Tbl.find symbol_field_dep_table field
+          with Not_found -> [] in
+        Symbol_field.Tbl.replace symbol_field_dep_table field (curr :: t))
       curr
 
   (* adds 'curr in NC' *)
@@ -107,9 +119,12 @@ module NotConstants(P:Param) = struct
       | Closure cl ->
         if not (Set_of_closures_id.Set.mem cl !closures)
         then closures := Set_of_closures_id.Set.add cl !closures
-      | Local_symbol i ->
+      | Symbol i ->
         if not (Symbol.Set.mem i !symbols)
-        then symbols := Symbol.Set.add i !symbols)
+        then symbols := Symbol.Set.add i !symbols
+      | Symbol_field i ->
+        if not (Symbol_field.Set.mem i !symbol_fields)
+        then symbol_fields := Symbol_field.Set.add i !symbol_fields)
       curr
 
   (* First loop: iterates on the tree to mark dependencies.
@@ -216,22 +231,10 @@ module NotConstants(P:Param) = struct
       mark_loop_set_of_closures ~toplevel curr set_of_closures
     | Const _ | Allocated_const _ -> ()
     | Read_mutable _ -> mark_curr curr
-    (* a symbol does not necessarilly points to a constant: toplevel
-       modules are declared as symbols, but can constain not constant
-       values *)
-    | Symbol(_sym) ->
-      (* for a later patch: *)
-      (* if not (SymbolSet.mem sym *)
-      (*           (Compilenv.approx_env ()).Export_info.constants) *)
-      (* then mark_curr curr *)
-
-      (* Until we have informations from external modules, we consider
-         symbols are not constants (e.g. a module symbol).
-         For clambda constants are 'things that can be refered to by a symbol',
-         and it is obviously the case. *)
-      if not for_clambda
-      then mark_curr curr
-    | Read_symbol_field (_symbol, _index) -> ()
+    | Symbol symbol ->
+      register_implication ~in_nc:(Symbol symbol) ~implies_in_nc:curr
+    | Read_symbol_field (symbol, index) ->
+      register_implication ~in_nc:(Symbol_field (symbol, index)) ~implies_in_nc:curr
     (* globals are symbols: handle like symbols *)
     | Prim(Lambda.Pgetglobal _id, [], _) ->
       if not for_clambda
@@ -267,7 +270,7 @@ module NotConstants(P:Param) = struct
     | Project_var ({ closure; closure_id = _; var = _ }) ->
       mark_var closure curr
     | Prim(Lambda.Pfield _, [f1], _) ->
-      if for_clambda then mark_curr curr;
+      mark_curr curr;
       mark_var f1 curr
 
   (*
@@ -342,14 +345,14 @@ module NotConstants(P:Param) = struct
     match program with
     | End _ -> ()
     | Initialize_symbol (symbol,_tag,fields,program) ->
-      List.iter (fun field ->
-          mark_loop ~toplevel:true [Local_symbol symbol] field)
+      List.iteri (fun i field ->
+          mark_loop ~toplevel:true [Symbol symbol; Symbol_field (symbol,i)] field)
         fields;
       mark_program program
     | Effect (expr, program) ->
       mark_loop ~toplevel:true [] expr;
       mark_program program
-    | Import_symbol (_, program) ->
+    | Import_symbol (_symbol, program) ->
       mark_program program
     | Let_symbol (_, def, program) ->
       mark_constant_defining_value def;
@@ -357,6 +360,15 @@ module NotConstants(P:Param) = struct
     | Let_rec_symbol (defs, program) ->
       List.iter (fun (_, def) -> mark_constant_defining_value def) defs;
       mark_program program
+
+  (* There is no information available about the contents of imported
+     symbol, so we must consider all their fields inconstants. *)
+  (* CR pchambart: recover that from the cmx informations *)
+  let mark_external_symbol_fields_as_inconstant imported_symbols =
+    Symbol_field.Tbl.iter (fun (symbol, field) _ ->
+        if Symbol.Set.mem symbol imported_symbols then
+          mark_curr [Symbol_field (symbol, field)])
+      symbol_field_dep_table
 
   (* Second loop: propagates implications *)
   let propagate () =
@@ -368,7 +380,8 @@ module NotConstants(P:Param) = struct
       let deps = try match Queue.take q with
         | Var e -> Variable.Tbl.find id_dep_table e
         | Closure cl -> Set_of_closures_id.Tbl.find fun_dep_table cl
-        | Local_symbol s -> Symbol.Tbl.find symbol_dep_table s
+        | Symbol s -> Symbol.Tbl.find symbol_dep_table s
+        | Symbol_field s -> Symbol_field.Tbl.find symbol_field_dep_table s
       with Not_found -> [] in
       List.iter (function
         | Var id as e ->
@@ -379,15 +392,21 @@ module NotConstants(P:Param) = struct
           if not (Set_of_closures_id.Set.mem cl !closures)
           then (closures := Set_of_closures_id.Set.add cl !closures;
             Queue.push e q)
-        | Local_symbol s as e ->
+        | Symbol s as e ->
           if not (Symbol.Set.mem s !symbols)
           then (symbols := Symbol.Set.add s !symbols;
+                Queue.push e q)
+        | Symbol_field s as e ->
+          if not (Symbol_field.Set.mem s !symbol_fields)
+          then (symbol_fields := Symbol_field.Set.add s !symbol_fields;
             Queue.push e q))
         deps
     done
 
   let res =
     mark_program P.program;
+    mark_external_symbol_fields_as_inconstant
+      (Flambda_utils.imported_symbols P.program);
     propagate ();
     { id = !variables;
       closure = !closures; }
