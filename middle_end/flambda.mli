@@ -166,6 +166,10 @@ and named =
   | Allocated_const of Allocated_const.t
   | Read_mutable of Mutable_variable.t
   | Read_symbol_field of Symbol.t * int
+  (** CR mshinwell for mshinwell: write a proper comment about why we don't
+      ever deem Pfield to be constant, how a symbol/field combination uniquely
+      identifies a value (which may or may not be constant), and thus the
+      rationale for Read_symbol_field. *)
   | Set_of_closures of set_of_closures
   | Project_closure of project_closure
   | Move_within_set_of_closures of move_within_set_of_closures
