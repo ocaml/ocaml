@@ -11,10 +11,4 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(* CR mshinwell: I think we can just delete this module.
-   Inline_and_simplify should now remove unused global assignments.
-
-(** Eliminate assignments to global fields (Psetglobalfield (false, n)) by
-    replacing them with "ignore" if the global is unused. *)
 val remove_unused_globals : Flambda.program -> Flambda.program
-*)
