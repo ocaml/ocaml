@@ -27,7 +27,7 @@ type value_string = {
 type t = {
   descr : descr;
   var : Variable.t option;
-  symbol : Symbol.t option;
+  symbol : (Symbol.t * int option) option;
 }
 
 and descr =
@@ -110,15 +110,25 @@ let rec print_descr ppf = function
     | Nativeint -> Format.fprintf ppf "%ni" i
 
 and print ppf { descr; var; symbol; } =
+  let print ppf = function
+    | None -> Symbol.print_opt ppf None
+    | Some (sym, None) -> Symbol.print ppf sym
+    | Some (sym, Some field) ->
+        Format.fprintf ppf "%a.(%i)" Symbol.print sym field
+  in
   Format.fprintf ppf "{ descr=%a var=%a symbol=%a }"
     print_descr descr
     Variable.print_opt var
-    Symbol.print_opt symbol
+    print symbol
 
 let approx descr = { descr; var = None; symbol = None }
 
 let augment_with_variable t var = { t with var = Some var }
-let augment_with_symbol t symbol = { t with symbol = Some symbol }
+let augment_with_symbol t symbol = { t with symbol = Some (symbol, None) }
+let augment_with_symbol_field t symbol field =
+  match t.symbol with
+  | None -> { t with symbol = Some (symbol, Some field) }
+  | Some _ -> t
 let replace_description t descr = { t with descr }
 
 let value_unknown = approx Value_unknown
@@ -154,7 +164,7 @@ let value_set_of_closures ?set_of_closures_var value_set_of_closures =
 
 let value_block (t,b) = approx (Value_block (t,b))
 let value_extern ex = approx (Value_extern ex)
-let value_symbol sym = { (approx (Value_symbol sym)) with symbol = Some sym }
+let value_symbol sym = { (approx (Value_symbol sym)) with symbol = Some (sym, None) }
 let value_bottom = approx Value_bottom
 let value_unresolved sym = approx (Value_unresolved sym)
 
@@ -281,7 +291,9 @@ let simplify_using_env t ~is_present_in_env flam =
     | Some var when is_present_in_env var -> true, Flambda.Var var
     | _ ->
       match t.symbol with
-      | Some sym -> true, U.name_expr (Symbol sym)
+      | Some (sym, None) -> true, U.name_expr (Symbol sym)
+      | Some (sym, Some field) ->
+          true, U.name_expr (Read_symbol_field (sym, field))
       | None -> false, flam
   in
   let const, summary, approx = simplify t flam in
@@ -294,7 +306,9 @@ let simplify_named_using_env t ~is_present_in_env named =
       true, Flambda.Expr (Var var)
     | _ ->
       match t.symbol with
-      | Some sym -> true, (Flambda.Symbol sym:Flambda.named)
+      | Some (sym, None) -> true, (Flambda.Symbol sym:Flambda.named)
+      | Some (sym, Some field) ->
+          true, Flambda.Read_symbol_field (sym, field)
       | None -> false, named
   in
   let const, summary, approx = simplify_named t named in
@@ -428,9 +442,13 @@ and meet a1 a2 =
       let symbol =
         match a1.symbol, a2.symbol with
         | None, _ | _, None -> None
-        | Some v1, Some v2 ->
+        | Some (v1, field1), Some (v2, field2) ->
             if Symbol.equal v1 v2
-            then Some v1
+            then match field1, field2 with
+              | None, None -> a1.symbol
+              | Some f1, Some f2 when f1 = f2 ->
+                  a1.symbol
+              | _ -> None
             else None
       in
       { descr = meet_descr a1.descr a2.descr;

@@ -736,6 +736,7 @@ and simplify_named env r (tree : Flambda.named) : Flambda.named * R.t =
           Symbol.print symbol
       | approx -> A.get_field approx ~field_index
     in
+    let approx = A.augment_with_symbol_field approx symbol field_index in
     simplify_named_using_approx_and_env env r tree approx
   | Set_of_closures set_of_closures ->
     let set_of_closures, r =

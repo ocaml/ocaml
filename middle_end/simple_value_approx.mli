@@ -34,7 +34,7 @@ type value_string = {
     At a high level, an approximation for a value [v] has three parts:
     - the "description" (for example, "the constant integer 42");
     - an optional variable;
-    - an optional symbol.
+    - an optional symbol or symbol field.
     If the variable (resp. symbol) is present then that variable (resp.
     symbol) may be used to obtain the value [v].
 
@@ -104,7 +104,7 @@ type value_string = {
 type t = private {
   descr : descr;
   var : Variable.t option;
-  symbol : Symbol.t option;
+  symbol : (Symbol.t * int option) option;
 }
 
 and descr = private
@@ -205,6 +205,9 @@ val augment_with_variable : t -> Variable.t -> t
 
 (** Like [augment_with_variable], but for symbol information. *)
 val augment_with_symbol : t -> Symbol.t -> t
+
+(** Like [augment_with_symbol], but for symbol field information. *)
+val augment_with_symbol_field : t -> Symbol.t -> int -> t
 
 (** Replace the description within an approximation. *)
 val replace_description : t -> descr -> t
