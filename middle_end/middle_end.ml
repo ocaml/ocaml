@@ -71,6 +71,8 @@ let middle_end ppf ~sourcefile ~prefixname ~backend
       ++ Lift_code.lift_lets
       +- "Lift_constants"
       ++ Lift_constants.lift_constants ~backend
+      +- "Share_constants"
+      ++ Share_constants.share_constants
       +- "Lift_let_to_initialize_symbol"
       ++ Lift_let_to_initialize_symbol.lift ~backend
       +- "lift_lets 2"
