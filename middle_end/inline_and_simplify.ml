@@ -75,7 +75,6 @@ let simplify_free_variable env var ~f : Flambda.t * R.t =
     let var = Variable.rename var in
     let env = E.add env var approx in
     let body, r = f env var in
-Format.eprintf "simplify_free_variable inserting Let for %a\n" Variable.print var;
     Let (var, named, body), r
 
 let simplify_free_variables env vars ~f : Flambda.t * R.t =
@@ -91,7 +90,6 @@ let simplify_free_variables env vars ~f : Flambda.t * R.t =
         let var = Variable.rename var in
         let env = E.add env var approx in
         let body, r = collect_bindings vars env (var::bound_vars) in
-Format.eprintf "simplify_free_variables inserting Let for %a\n" Variable.print var;
         Let (var, named, body), r
   in
   collect_bindings vars env []
@@ -110,7 +108,6 @@ let simplify_free_variables_named env vars ~f : Flambda.named * R.t =
         let var = Variable.rename var in
         let env = E.add env var approx in
         let body, r = collect_bindings vars env (var::bound_vars) in
-Format.eprintf "simplify_free_variables_named inserting Let for %a\n" Variable.print var;
         Let (var, named, body), r
   in
   let expr, r = collect_bindings vars env [] in
@@ -158,11 +155,6 @@ let populate_closure_approximations
   (* Add approximations of used free variables *)
   let env =
     Variable.Map.fold (fun id (_, desc) env ->
-(*
-       Format.eprintf "populate_closure_approximations doing %a? %s (approx %a)\n"
-        Variable.print id (if Variable.Set.mem id function_decl.free_variables then
-          "yes" else "no") Simple_value_approx.print desc;
-*)
        if Variable.Set.mem id function_decl.free_variables
        then E.add_outer_scope env id desc
        else env) free_vars set_of_closures_env in
@@ -487,9 +479,6 @@ and simplify_set_of_closures original_env r
         let external_var =
           Freshening.apply_variable (E.freshening env) external_var
         in
-(*
-        Format.eprintf "adding approx for free var %a\n" Variable.print external_var;
-*)
         external_var, E.find_exn env external_var)
       set_of_closures.free_vars
   in
@@ -514,12 +503,7 @@ and simplify_set_of_closures original_env r
        argument throughout the body of the function. *)
     Variable.Map.map_keys (Freshening.apply_variable (E.freshening env))
       (Variable.Map.mapi (fun _id' id ->
-          let approx = E.find_exn environment_before_cleaning id in
-(*
-          Format.eprintf "param_approx %a := %a = %a\n"
-            Variable.print id'
-            Variable.print id
-            Simple_value_approx.print approx; *) approx)
+          E.find_exn environment_before_cleaning id)
         specialised_args)
   in
   let env =
@@ -799,9 +783,7 @@ and simplify_direct env r (tree : Flambda.t) : Flambda.t * R.t =
     simplify_using_approx_and_env env r (Var var) (E.find_exn env var)
   | Apply apply -> simplify_apply env r ~apply
   | Let (id, defining_expr, body) ->
-Format.eprintf "Simplifying let binding %a = %a in %a\n" Variable.print id Flambda.print_named defining_expr Flambda.print body;
     let defining_expr, r = simplify_named env r defining_expr in
-Format.eprintf "Defining expr simplifies to %a\n" Flambda.print_named defining_expr;
     (* When [defining_expr] is really a [Flambda.named] rather than an
        [Flambda.t], squash any intermediate [let], or we will never eliminate
        certain cases (e.g. when a variable is simplified to a constant). *)
@@ -818,18 +800,13 @@ Format.eprintf "Defining expr simplifies to %a\n" Flambda.print_named defining_e
       Free_variables.calculate body
         ~free_variables_of_let_bodies:(R.free_variables_of_let_bodies r)
     in
-Format.eprintf "Simplifying let binding %a, fvs of body=%a, tree=%a\n" Variable.print id Variable.Set.print free_variables_of_body Flambda.print tree;
     let (expr : Flambda.t), r =
-      if Variable.Set.mem id free_variables_of_body then begin
-Format.eprintf "Exit 1\n";
+      if Variable.Set.mem id free_variables_of_body then
         Flambda.Let (id, defining_expr, body), r
-end
-      else if Effect_analysis.no_effects_named defining_expr then begin
+      else if Effect_analysis.no_effects_named defining_expr then
         let r = R.map_benefit r (B.remove_code_named defining_expr) in
-Format.eprintf "Exit 2\n";
         body, r
-      end else begin
-Format.eprintf "Exit 3\n";
+      else
         (* CR mshinwell: check that Pignore is inserted correctly by a later
            pass. *)
         (* Generate a fresh name for increasing legibility of the
@@ -837,7 +814,6 @@ Format.eprintf "Exit 3\n";
            the variable is unused). *)
         let fresh_var = Variable.create "for_side_effect_only" in
         Flambda.Let (fresh_var, defining_expr, body), r
-end
     in
     let r =
       (* Cache the free variables of this [let] body to improve performance
@@ -1256,22 +1232,11 @@ let rec simplify_program env r (program : Flambda.program)
     let program, r = simplify_program env r program in
     Import_symbol (symbol, program), r
   | Initialize_symbol (symbol, tag, fields, program) ->
-  Format.eprintf "START simplifying Initialize_symbol %a" Symbol.print symbol;
-List.iter (fun field ->
-Format.eprintf "Field: %a\n" Flambda.print field) fields;
     let fields, approxs, r = simplify_list env r fields in
     let approx =
       A.augment_with_symbol (A.value_block (tag, Array.of_list approxs))
         symbol
     in
-Format.eprintf "Approx for symbol %a: %a\n" Symbol.print symbol Simple_value_approx.print approx;
-begin match fields, approxs with
-| field::_, approx::_ ->
-  Format.eprintf "Simplifying Initialize_symbol %a: result field 0 is %a, approx %a\n"
-    Symbol.print symbol Flambda.print field A.print  approx
-| _ -> ()
-end;
-  Format.eprintf "END simplifying Initialize_symbol %a" Symbol.print symbol;
     let module Backend = (val (E.backend env) : Backend_intf.S) in
     let env = E.add_symbol env symbol approx in
     let program, r = simplify_program env r program in
