@@ -182,8 +182,8 @@ and named =
       [Inconstant_idents] never deems a [Prim (Pfield, ...)] expression to be
       constant.  This would in general prevent field accesses to symbols from
       being simplified in the way we would like, since [Lift_constants] would
-      not assign new symbols (which are the things we would like to simplify
-      to) to the various projections from the symbols in question.
+      not assign new symbols (i.e. the things we would like to simplify to)
+      to the various projections from the symbols in question.
       To circumvent this problem we use [Read_symbol_field] when generating
       projections from the top level of symbols.  Owing to the properties of
       symbols described above, such expressions may be eligible for declaration
