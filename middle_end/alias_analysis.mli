@@ -18,8 +18,11 @@ type constant_defining_value =
   | Symbol of Symbol.t
   | Variable of Variable.t
 
+type initialize_symbol_field = Variable.t option
+
 val second_take :
   constant_defining_value Variable.Map.t ->
+  (initialize_symbol_field list) Symbol.Map.t ->
   Flambda.constant_defining_value Symbol.Map.t ->
   Variable.t Symbol.Map.t ->
   allocation_point Variable.Map.t

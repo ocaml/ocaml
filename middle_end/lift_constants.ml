@@ -169,6 +169,21 @@ let assign_symbols_and_collect_constant_definitions
   Flambda_iterators.iter_exprs_at_toplevel_of_program
     ~f:assign_symbol_program
     program;
+  let initialize_symbol_to_definition_tbl = Symbol.Tbl.create 42 in
+  let rec collect_initialize_declaration (program:Flambda.program) =
+    match program with
+    | Let_symbol (_,_,program)
+    | Let_rec_symbol (_,program)
+    | Import_symbol (_,program)
+    | Effect (_,program) ->
+        collect_initialize_declaration program
+    | Initialize_symbol (symbol,_tag,fields,program) ->
+        collect_initialize_declaration program;
+        let fields = List.map tail_variable fields in
+        Symbol.Tbl.add initialize_symbol_to_definition_tbl symbol fields
+    | End _ -> ()
+  in
+  collect_initialize_declaration program;
   let record_set_of_closure_equalities (set_of_closures:Flambda.set_of_closures) =
     Variable.Map.iter (fun arg var ->
         if not (Variable.Set.mem arg inconstants.id) then
@@ -191,7 +206,8 @@ let assign_symbols_and_collect_constant_definitions
         set_of_closures.Flambda.function_decls.funs)
     program;
   var_to_symbol_tbl,
-  var_to_definition_tbl
+  var_to_definition_tbl,
+  initialize_symbol_to_definition_tbl
 
 let variable_field_definition
     (var_to_symbol_tbl:Symbol.t Variable.Tbl.t)
@@ -706,14 +722,16 @@ let lift_constants program ~backend =
       ~compilation_unit:(Compilation_unit.get_current_exn ())
   in
   let initialize_symbol_tbl, symbol_definition_tbl, effect_tbl = program_symbols program in
-  let var_to_symbol_tbl, var_to_definition_tbl =
+  let var_to_symbol_tbl, var_to_definition_tbl, initialize_symbol_to_definition_tbl =
     assign_symbols_and_collect_constant_definitions ~backend ~program ~inconstants
   in
   let aliases =
     let var_map = Variable.Tbl.to_map var_to_definition_tbl in
+    let initialize_symbol_map =
+      Symbol.Tbl.to_map initialize_symbol_to_definition_tbl in
     let sym_map = Symbol.Map.empty in (* TODO: program toplevel *)
     let var_to_sym_map = Symbol.Map.empty (* Variable.Tbl.to_map var_to_symbol_tbl *) in
-    Alias_analysis.second_take var_map sym_map var_to_sym_map
+    Alias_analysis.second_take var_map initialize_symbol_map sym_map var_to_sym_map
   in
   replace_definitions_in_initialize_symbol_and_effects
       (inconstants:Inconstant_idents.result)

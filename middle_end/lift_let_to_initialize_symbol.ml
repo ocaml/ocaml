@@ -165,6 +165,7 @@ let should_copy (named:Flambda.named) =
   | Expr (Var _)
   | Symbol _
   | Prim (Pfield _, _, _)
+  | Read_symbol_field _
   | Const _ ->
     true
   | _ ->
@@ -250,12 +251,18 @@ let rec split_let free_variables_map (expr:Flambda.t) =
               Flambda.Let (var, named, expr))
       end
     end
-  | Let (var, def, body) ->
+  | Let (var, def, body) as expr ->
     (* Format.printf "not copy variable %a@." *)
     (*   Variable.print var; *)
     (* It is ok to precompute the free variables even if we modify the expression:
        the fact that those variables are free or not is not affected *)
-    let body_free_variables = Variable.Map.find var free_variables_map in
+    let body_free_variables =
+      try Variable.Map.find var free_variables_map with
+      | Not_found ->
+          Misc.fatal_errorf "no memoization for free variables of let binding of %a in %a"
+            Variable.print var
+            Flambda.print expr
+    in
     (* let body_free_variables = Flambda.free_variables body in *)
     if Variable.Set.mem var body_free_variables then begin
       let symbol = make_variable_symbol var in
