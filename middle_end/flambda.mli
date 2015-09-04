@@ -170,20 +170,20 @@ and named =
       closure conversion, we generate symbols and their corresponding
       definitions (which may or may not be constant), together with field
       accesses to such symbols.  We would like it to be the case that such
-      field accesses simplify directly to the relevant component of the
-      symbol concerned.  This can be done because the top-level structure of
-      symbols is statically allocated and fixed at compile time.  It may seem
-      that [Prim (Pfield, ...)] expressions could be used to perform the
-      field accesses.
-      However for simplicity, to avoid having to keep track of properties of
-      individual fields of blocks, [Inconstant_idents] never deems a
-      [Prim (Pfield, ...)] expression to be constant.  (Some such expressions
-      may however be replaced during [Inline_and_simplify] based on
-      approximation information.)  This means that [Lift_constants] will never
-      assign a symbol to such a projection.  In the context where the
-      expression being projected from is actually itself a symbol, this
-      would yield inefficient code and cause test cases such as
-      tests/asmcomp/staticalloc.ml to fail.
+      field accesses are simplified to the relevant component of the
+      symbol concerned.  (The rationale is to generate efficient code and
+      share constants as expected: see e.g. tests/asmcomp/staticalloc.ml.)
+      The components of the symbol would be identified by other symbols.
+      This sort of access pattern is feasible because the top-level structure
+      of symbols is statically allocated and fixed at compile time.
+      It may seem that [Prim (Pfield, ...)] expressions could be used to
+      perform the field accesses.  However for simplicity, to avoid having to
+      keep track of properties of individual fields of blocks,
+      [Inconstant_idents] never deems a [Prim (Pfield, ...)] expression to be
+      constant.  This would in general prevent field accesses to symbols from
+      being simplified in the way we would like, since [Lift_constants] would
+      not assign new symbols (which are the things we would like to simplify
+      to) to the various projections from the symbols in question.
       To circumvent this problem we use [Read_symbol_field] when generating
       projections from the top level of symbols.  Owing to the properties of
       symbols described above, such expressions may be eligible for declaration
