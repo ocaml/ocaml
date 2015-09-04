@@ -395,12 +395,13 @@ let () =
           None
     )
 
+external reraise : exn -> 'a = "%reraise"
 
 let rec report_exception_rec n ppf exn =
   try match error_of_exn exn with
   | Some err ->
       fprintf ppf "@[%a@]@." report_error err
-  | None -> raise exn
+  | None -> reraise exn
   with exn when n > 0 ->
     report_exception_rec (n-1) ppf exn
 

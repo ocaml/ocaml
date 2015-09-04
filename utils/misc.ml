@@ -201,7 +201,8 @@ let find_in_path_uncap path name =
 
 let remove_file filename =
   try
-    Sys.remove filename
+    if Sys.file_exists filename then
+      Sys.remove filename
   with Sys_error msg ->
     ()
 
