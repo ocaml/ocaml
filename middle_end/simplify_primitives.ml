@@ -22,8 +22,8 @@ let phy_equal (approxs:A.t list) =
       Misc.fatal_error "wrong number of arguments for equality"
   | [a1; a2] ->
       match a1.var, a2.var with
-      | Some v1, Some v2 ->
-          Variable.equal v1 v2
+      | Some v1, Some v2 when Variable.equal v1 v2 ->
+          true
       | _ ->
           match a1.symbol, a2.symbol with
           | Some (s1, None), Some (s2, None) ->
