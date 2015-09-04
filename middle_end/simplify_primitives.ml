@@ -16,6 +16,22 @@ module C = Inlining_cost
 module I = Simplify_boxed_integer_ops
 module S = Simplify_common
 
+let phy_equal (approxs:A.t list) =
+  match approxs with
+  | [] | [_] | _ :: _ :: _ :: _ ->
+      Misc.fatal_error "wrong number of arguments for equality"
+  | [a1; a2] ->
+      match a1.var, a2.var with
+      | Some v1, Some v2 ->
+          Variable.equal v1 v2
+      | _ ->
+          match a1.symbol, a2.symbol with
+          | Some (s1, None), Some (s2, None) ->
+              Symbol.equal s1 s2
+          | Some (s1, Some f1), Some (s2, Some f2) ->
+              Symbol.equal s1 s2 && f1 = f2
+          | _ -> false
+
 let primitive (p : Lambda.primitive) (args, approxs) expr dbg ~size_int
       ~big_endian : Flambda.named * A.t * Inlining_cost.Benefit.t =
   let fpc = !Clflags.float_const_prop in
@@ -29,6 +45,14 @@ let primitive (p : Lambda.primitive) (args, approxs) expr dbg ~size_int
         S.const_ptr_expr (Flambda.Expr (Var arg)) 0
       | _ -> S.const_ptr_expr expr 0
     end
+  | Pintcomp Ceq when phy_equal approxs ->
+    (* Not having [phy_equal approxs] does not tell anything
+       about the difference due to potential missing alias and
+       sharing that can be introduced by a later pass.
+       CR pchambart: Some cases could be made to effectively
+       safely returns false, when the approximation is known to
+       be different. *)
+    S.const_bool_expr expr true
   | _ ->
     match A.descrs approxs with
     | [Value_int x] ->
