@@ -904,6 +904,19 @@ let get_component = function
     None -> Lconst const_unit
   | Some id -> Lprim(Pgetglobal id, [])
 
+let transl_package_native component_names target_name coercion =
+  let size =
+    match coercion with
+    | Tcoerce_none -> List.length component_names
+    | Tcoerce_structure (l, _) -> List.length l
+    | Tcoerce_functor _
+    | Tcoerce_primitive _
+    | Tcoerce_alias _ -> assert false
+  in
+  size,
+  apply_coercion Strict coercion
+    (Lprim(Pmakeblock(0, Immutable), List.map get_component component_names))
+
 let transl_package component_names target_name coercion =
   let components =
     Lprim(Pmakeblock(0, Immutable), List.map get_component component_names) in

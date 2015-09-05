@@ -92,10 +92,10 @@ let make_package_object ppf members targetobj targetname coercion
         | PM_intf -> None
         | PM_impl _ -> Some(Ident.create_persistent m.pm_name))
       members in
+  let module_ident = Ident.create_persistent targetname in
   let size, lam =
-    (* TODO change: this is completely the wrong function !!! *)
-    Translmod.transl_store_package
-      components (Ident.create_persistent targetname) coercion
+    Translmod.transl_package_native
+      components module_ident coercion
   in
   let sourcefile = "pack" in
   let prefixname = chop_extension_if_any objtemp in
@@ -105,7 +105,7 @@ let make_package_object ppf members targetobj targetname coercion
       ~prefixname
       ~backend
       ~size
-      ~module_ident:(failwith "TODO")
+      ~module_ident
       ~module_initializer:lam
   in
   Asmgen.compile_implementation ~sourcefile
