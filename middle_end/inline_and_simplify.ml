@@ -699,6 +699,7 @@ and simplify_named env r (tree : Flambda.named) : Flambda.named * R.t =
       | Pgetglobal _, _ ->
         Misc.fatal_error "Pgetglobal is forbidden in Inline_and_simplify"
       | Pfield i, [arg] ->
+        (* CR pchambart: transform Pfield of Symbol to Read_symbol_field *)
         let approx = A.get_field (E.find_exn env arg) ~field_index:i in
         simplify_named_using_approx_and_env env r tree approx
       | (Psetfield _ | Parraysetu _ | Parraysets _), block::_ ->
