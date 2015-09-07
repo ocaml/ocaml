@@ -70,6 +70,8 @@ static void caml_insert_global_root(struct global_root_list * rootlist,
   struct global_root * e, * f;
   int i, new_level;
 
+  Assert(0 <= rootlist->level && rootlist->level < NUM_LEVELS);
+
   /* Init "cursor" to list head */
   e = (struct global_root *) rootlist;
   /* Find place to insert new node */
@@ -108,6 +110,8 @@ static void caml_delete_global_root(struct global_root_list * rootlist,
   struct global_root * update[NUM_LEVELS];
   struct global_root * e, * f;
   int i;
+
+  Assert(0 <= rootlist->level && rootlist->level < NUM_LEVELS);
 
   /* Init "cursor" to list head */
   e = (struct global_root *) rootlist;
@@ -154,6 +158,8 @@ static void caml_empty_global_roots(struct global_root_list * rootlist)
 {
   struct global_root * gr, * next;
   int i;
+
+  Assert(0 <= rootlist->level && rootlist->level < NUM_LEVELS);
 
   for (gr = rootlist->forward[0]; gr != NULL; /**/) {
     next = gr->forward[0];

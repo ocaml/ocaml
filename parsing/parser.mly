@@ -274,12 +274,13 @@ let varify_constructors var_names t =
   in
   loop t
 
+let mk_newtypes newtypes exp =
+  List.fold_right (fun newtype exp -> mkexp (Pexp_newtype (newtype, exp)))
+    newtypes exp
+
 let wrap_type_annotation newtypes core_type body =
   let exp = mkexp(Pexp_constraint(body,core_type)) in
-  let exp =
-    List.fold_right (fun newtype exp -> mkexp (Pexp_newtype (newtype, exp)))
-      newtypes exp
-  in
+  let exp = mk_newtypes newtypes exp in
   (exp, ghtyp(Ptyp_poly(newtypes,varify_constructors newtypes core_type)))
 
 let wrap_exp_attrs body (ext, attrs) =
@@ -344,27 +345,29 @@ let addlb lbs lb =
   { lbs with lbs_bindings = lb :: lbs.lbs_bindings }
 
 let val_of_let_bindings lbs =
-  match lbs.lbs_bindings with
-  | [ {lb_pattern = { ppat_desc = Ppat_any; ppat_loc = _ }; _} as lb ] ->
-      let exp = wrap_exp_attrs lb.lb_expression
-                  (lbs.lbs_extension, lbs.lbs_attributes) in
-      mkstr (Pstr_eval (exp, lb.lb_attributes))
-  | bindings ->
-      let bindings =
-        List.map
-          (fun lb ->
-             Vb.mk ~loc:lb.lb_loc ~attrs:lb.lb_attributes
-               ~docs:(Lazy.force lb.lb_docs)
-               ~text:(Lazy.force lb.lb_text)
-               lb.lb_pattern lb.lb_expression)
-          bindings
-      in
-      let str = mkstr(Pstr_value(lbs.lbs_rec, List.rev bindings)) in
-      if lbs.lbs_attributes <> [] then
-        raise Syntaxerr.(Error(Not_expecting(lbs.lbs_loc, "attributes")));
-      match lbs.lbs_extension with
-      | None -> str
-      | Some id -> ghstr (Pstr_extension((id, PStr [str]), []))
+  let str =
+    match lbs.lbs_bindings with
+    | [ {lb_pattern = { ppat_desc = Ppat_any; ppat_loc = _ }; _} as lb ] ->
+        let exp = wrap_exp_attrs lb.lb_expression
+                    (None, lbs.lbs_attributes) in
+        mkstr (Pstr_eval (exp, lb.lb_attributes))
+    | bindings ->
+        if lbs.lbs_attributes <> [] then
+          raise Syntaxerr.(Error(Not_expecting(lbs.lbs_loc, "attributes")));
+        let bindings =
+          List.map
+            (fun lb ->
+               Vb.mk ~loc:lb.lb_loc ~attrs:lb.lb_attributes
+                 ~docs:(Lazy.force lb.lb_docs)
+                 ~text:(Lazy.force lb.lb_text)
+                 lb.lb_pattern lb.lb_expression)
+            bindings
+        in
+        mkstr(Pstr_value(lbs.lbs_rec, List.rev bindings))
+  in
+  match lbs.lbs_extension with
+  | None -> str
+  | Some id -> ghstr (Pstr_extension((id, PStr [str]), []))
 
 let expr_of_let_bindings lbs body =
   let bindings =
@@ -1079,14 +1082,14 @@ method_:
 class_type:
     class_signature
       { $1 }
-  | QUESTION LIDENT COLON simple_core_type_or_tuple_no_attr MINUSGREATER
+  | QUESTION LIDENT COLON simple_core_type_or_tuple MINUSGREATER
     class_type
       { mkcty(Pcty_arrow(Optional $2 , $4, $6)) }
-  | OPTLABEL simple_core_type_or_tuple_no_attr MINUSGREATER class_type
+  | OPTLABEL simple_core_type_or_tuple MINUSGREATER class_type
       { mkcty(Pcty_arrow(Optional $1, $2, $4)) }
-  | LIDENT COLON simple_core_type_or_tuple_no_attr MINUSGREATER class_type
+  | LIDENT COLON simple_core_type_or_tuple MINUSGREATER class_type
       { mkcty(Pcty_arrow(Labelled $1, $3, $5)) }
-  | simple_core_type_or_tuple_no_attr MINUSGREATER class_type
+  | simple_core_type_or_tuple MINUSGREATER class_type
       { mkcty(Pcty_arrow(Nolabel, $1, $3)) }
  ;
 class_signature:
@@ -1248,8 +1251,8 @@ expr:
   | FUN ext_attributes labeled_simple_pattern fun_def
       { let (l,o,p) = $3 in
         mkexp_attrs (Pexp_fun(l, o, p, $4)) $2 }
-  | FUN ext_attributes LPAREN TYPE LIDENT RPAREN fun_def
-      { mkexp_attrs (Pexp_newtype($5, $7)) $2 }
+  | FUN ext_attributes LPAREN TYPE lident_list RPAREN fun_def
+      { mkexp_attrs (mk_newtypes $5 $7).pexp_desc $2 }
   | MATCH ext_attributes seq_expr WITH opt_bar match_cases
       { mkexp_attrs (Pexp_match($3, List.rev $6)) $2 }
   | TRY ext_attributes seq_expr WITH opt_bar match_cases
@@ -1526,8 +1529,8 @@ strict_binding:
       { $2 }
   | labeled_simple_pattern fun_binding
       { let (l, o, p) = $1 in ghexp(Pexp_fun(l, o, p, $2)) }
-  | LPAREN TYPE LIDENT RPAREN fun_binding
-      { mkexp(Pexp_newtype($3, $5)) }
+  | LPAREN TYPE lident_list RPAREN fun_binding
+      { mk_newtypes $3 $5 }
 ;
 match_cases:
     match_case { [$1] }
@@ -1547,8 +1550,8 @@ fun_def:
        let (l,o,p) = $1 in
        ghexp(Pexp_fun(l, o, p, $2))
       }
-  | LPAREN TYPE LIDENT RPAREN fun_def
-      { mkexp(Pexp_newtype($3, $5)) }
+  | LPAREN TYPE lident_list RPAREN fun_def
+      { mk_newtypes $3 $5 }
 ;
 expr_comma_list:
     expr_comma_list COMMA expr                  { $3 :: $1 }
@@ -1852,14 +1855,14 @@ sig_exception_declaration:
 generalized_constructor_arguments:
     /*empty*/                     { (Pcstr_tuple [],None) }
   | OF constructor_arguments      { ($2,None) }
-  | COLON constructor_arguments MINUSGREATER simple_core_type_no_attr
+  | COLON constructor_arguments MINUSGREATER simple_core_type
                                   { ($2,Some $4) }
-  | COLON simple_core_type_no_attr
+  | COLON simple_core_type
                                   { (Pcstr_tuple [],Some $2) }
 ;
 
 constructor_arguments:
-  | core_type_list_no_attr { Pcstr_tuple (List.rev $1) }
+  | core_type_list                   { Pcstr_tuple (List.rev $1) }
   | LBRACE label_declarations RBRACE { Pcstr_record $2 }
 ;
 label_declarations:
@@ -2029,13 +2032,6 @@ simple_core_type:
       { match $2 with [sty] -> sty | _ -> raise Parse_error }
 ;
 
-simple_core_type_no_attr:
-    simple_core_type2  %prec below_SHARP
-      { $1 }
-  | LPAREN core_type_comma_list RPAREN %prec below_SHARP
-      { match $2 with [sty] -> sty | _ -> raise Parse_error }
-;
-
 simple_core_type2:
     QUOTE ident
       { mktyp(Ptyp_var $2) }
@@ -2118,14 +2114,8 @@ name_tag_list:
   | name_tag_list name_tag                      { $2 :: $1 }
 ;
 simple_core_type_or_tuple:
-    simple_core_type %prec below_LBRACKETAT  { $1 }
+    simple_core_type { $1 }
   | simple_core_type STAR core_type_list
-      { mktyp(Ptyp_tuple($1 :: List.rev $3)) }
-;
-simple_core_type_or_tuple_no_attr:
-    simple_core_type_no_attr
-      { $1 }
-  | simple_core_type_no_attr STAR core_type_list_no_attr
       { mktyp(Ptyp_tuple($1 :: List.rev $3)) }
 ;
 core_type_comma_list:
@@ -2133,12 +2123,8 @@ core_type_comma_list:
   | core_type_comma_list COMMA core_type        { $3 :: $1 }
 ;
 core_type_list:
-    simple_core_type %prec below_LBRACKETAT  { [$1] }
+    simple_core_type                            { [$1] }
   | core_type_list STAR simple_core_type        { $3 :: $1 }
-;
-core_type_list_no_attr:
-    simple_core_type_no_attr                     { [$1] }
-  | core_type_list STAR simple_core_type_no_attr { $3 :: $1 }
 ;
 meth_list:
     field SEMI meth_list                     { let (f, c) = $3 in ($1 :: f, c) }

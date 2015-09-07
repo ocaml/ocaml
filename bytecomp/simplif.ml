@@ -530,6 +530,7 @@ let rec emit_tail_infos is_tail lambda =
       && not is_tail
       && Warnings.is_active Warnings.Expect_tailcall
         then Location.prerr_warning loc Warnings.Expect_tailcall;
+      emit_tail_infos false func;
       list_emit_tail_infos false l;
       if !Clflags.annotations then
         Stypes.record (Stypes.An_call (loc, call_kind l));
@@ -665,8 +666,8 @@ let rec map f lam =
    To be removed when the possibility to annotate functions is added *)
 let stubify body =
   let stub_prim =
-    Primitive.{prim_name = "*stub*"; prim_arity = 1; prim_alloc = false;
-               prim_native_name = "*stub*"; prim_native_float = false} in
+    Primitive.simple ~name:"*stub*" ~arity:1 ~alloc:false
+  in
   Lprim(Pccall stub_prim, [body])
 
 (* CR mshinwell: check all this is really new.  It should probably move

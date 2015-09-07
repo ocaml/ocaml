@@ -19,8 +19,8 @@ OTHERFILES=backtrace2.ml raw_backtrace.ml \
 OTHERFILESNOINLINING=backtraces_and_finalizers.ml
 
 default:
-	$(MAKE) byte
-#	@if $(BYTECODE_ONLY); then : ; else $(MAKE) native; fi
+	@$(MAKE) byte
+	@if $(BYTECODE_ONLY); then : ; else $(MAKE) native; fi
 
 .PHONY: byte
 byte:

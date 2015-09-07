@@ -84,6 +84,7 @@ module Options = Main_args.Make_optcomp_options (struct
   let _o s = option_with_arg "-o" s
   let _open s = option_with_arg "-open" s
   let _output_obj = option "-output-obj"
+  let _output_complete_obj = option "-output-complete-obj"
   let _p = option "-p"
   let _pack = option "-pack"
   let _pp _s = incompatible "-pp"
@@ -107,6 +108,7 @@ module Options = Main_args.Make_optcomp_options (struct
   let _w = option_with_arg "-w"
   let _warn_error = option_with_arg "-warn-error"
   let _warn_help = option "-warn-help"
+  let _color s = option_with_arg "-color" s
   let _where = option "-where"
 
   let _nopervasives = option "-nopervasives"

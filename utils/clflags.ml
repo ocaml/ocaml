@@ -29,6 +29,7 @@ and custom_runtime = ref false          (* -custom *)
 and no_check_prims = ref false          (* -no-check-prims *)
 and bytecode_compatible_32 = ref false  (* -compat-32 *)
 and output_c_object = ref false         (* -output-obj *)
+and output_complete_object = ref false  (* -output-complete-obj *)
 and all_ccopts = ref ([] : string list)     (* -ccopt *)
 and classic = ref false                 (* -nolabels *)
 and nopervasives = ref false            (* -nopervasives *)
@@ -120,6 +121,7 @@ let runtime_variant = ref "";;      (* -runtime-variant *)
 let keep_docs = ref false              (* -keep-docs *)
 let keep_locs = ref false              (* -keep-locs *)
 let unsafe_string = ref true;;         (* -safe-string / -unsafe-string *)
+
 let functor_heuristics = ref true;;    (* -no-functor-heuristics *)
 let inline_call_cost = ref 5           (* -inline-call-cost *)
 let inline_alloc_cost = ref 10         (* -inline-alloc-cost *)
@@ -131,3 +133,11 @@ let print_timings = ref false          (* -timings *)
 (* CR mshinwell: change to [false] before merge, and finish off
    command line arg support *)
 let full_flambda_invariant_check = ref true
+
+type color_setting = Auto | Always | Never
+let parse_color_setting = function
+  | "auto" -> Some Auto
+  | "always" -> Some Always
+  | "never" -> Some Never
+  | _ -> None
+let color = ref Auto ;; (* -color *)

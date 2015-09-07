@@ -511,3 +511,16 @@ void caml_init_gc (uintnat minor_size, uintnat major_size,
   caml_gc_message (0x20, "Initial allocation policy: %d\n",
                    caml_allocation_policy);
 }
+
+/* Control runtime warnings */
+
+CAMLprim value caml_ml_enable_runtime_warnings(value vbool)
+{
+  caml_runtime_warnings = Bool_val(vbool);
+  return Val_unit;
+}
+
+CAMLprim value caml_ml_runtime_warnings_enabled(value vbool)
+{
+  return Val_bool(caml_runtime_warnings);
+}

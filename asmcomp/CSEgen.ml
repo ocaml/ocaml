@@ -153,6 +153,12 @@ let set_unknown_regs n rs =
 let filter_equations pred n =
   { n with num_eqs = Equations.filter (fun (op,_) res -> pred op) n.num_eqs }
 
+(* Forget everything we know about registers of type [Addr]. *)
+
+let kill_addr_regs n =
+  { n with num_reg =
+              Reg.Map.filter (fun r n -> r.Reg.typ <> Cmm.Addr) n.num_reg }
+
 (* Prepend a set of moves before [i] to assign [srcs] to [dsts].  *)
 
 let insert_single_move i src dst = instr_cons (Iop Imove) [|src|] [|dst|] i
@@ -231,7 +237,8 @@ method private cse n i =
          - equations involving memory loads, since the callee can
            perform arbitrary memory stores;
          - equations involving arithmetic operations that can
-           produce bad pointers into the heap (see below for Ialloc);
+           produce [Addr]-typed derived pointers into the heap
+           (see below for Ialloc);
          - mappings from hardware registers to value numbers,
            since the callee does not preserve these registers.
          That doesn't leave much usable information: checkbounds
@@ -241,13 +248,18 @@ method private cse n i =
       {i with next = self#cse empty_numbering i.next}
   | Iop (Ialloc _) ->
       (* For allocations, we must avoid extending the live range of a
-         pseudoregister across the allocation if this pseudoreg can
-         contain a value that looks like a pointer into the heap but
-         is not a pointer to the beginning of a Caml object.  PR#6484
-         is an example of such a value (a derived pointer into a
-         block).  In the absence of more precise typing information,
-         we just forget everything. *)
-       {i with next = self#cse empty_numbering i.next}
+         pseudoregister across the allocation if this pseudoreg
+         is a derived heap pointer (a pointer into the heap that does
+         not point to the beginning of a Caml block).  PR#6484 is an
+         example of this situation.  Such pseudoregs have type [Addr].
+         Pseudoregs with types other than [Addr] can be kept.
+         Moreover, allocation can trigger the asynchronous execution
+         of arbitrary Caml code (finalizer, signal handler, context
+         switch), which can contain non-initializing stores.
+         Hence, all equations over loads must be removed. *)
+       let n1 = kill_addr_regs (self#kill_loads n) in
+       let n2 = set_unknown_regs n1 i.res in
+       {i with next = self#cse n2 i.next}
   | Iop op ->
       begin match self#class_of_operation op with
       | Op_pure | Op_checkbound | Op_load ->

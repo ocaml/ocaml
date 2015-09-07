@@ -46,9 +46,7 @@ let field_path path field =
 (* Compile type extensions *)
 
 let prim_set_oo_id =
-  Pccall {Primitive.prim_name = "caml_set_oo_id"; prim_arity = 1;
-          prim_alloc = false; prim_native_name = "";
-          prim_native_float = false}
+  Pccall (Primitive.simple ~name:"caml_set_oo_id" ~arity:1 ~alloc:false)
 
 let transl_extension_constructor env path ext =
   let name =

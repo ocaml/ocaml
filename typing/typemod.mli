@@ -40,6 +40,8 @@ val modtype_of_package:
         Path.t -> Longident.t list -> type_expr list -> module_type
 val simplify_signature: signature -> signature
 
+val path_of_module : Typedtree.module_expr -> Path.t option
+
 val save_signature:
   string -> Typedtree.signature -> string -> string ->
   Env.t -> Types.signature_item list -> unit

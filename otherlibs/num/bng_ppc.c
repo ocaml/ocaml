@@ -79,7 +79,7 @@
       : "=&r" (res), "=&r" (carryaccu)                                      \
       : "r" (arg1), "r" (arg2), "r" (arg3), "1" (carryaccu))
 
-#ifdef __ppc64__
+#if defined(__ppc64__) || defined(__PPC64__)
 #define BngMult(resh,resl,arg1,arg2)                                        \
   asm("mulld %0, %2, %3 \n\t"                                               \
       "mulhdu %1, %2, %3"                                                   \

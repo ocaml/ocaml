@@ -59,8 +59,8 @@ let num_register_classes = 2
 
 let register_class r =
   match r.typ with
-  | (Int | Addr)  -> 0
-  | Float         -> 1
+  | Val | Int | Addr  -> 0
+  | Float -> 1
 
 let num_available_registers =
   [| 23; 32 |] (* first 23 int regs allocatable; all float regs allocatable *)
@@ -111,7 +111,7 @@ let calling_conventions
   let ofs = ref 0 in
   for i = 0 to Array.length arg - 1 do
     match arg.(i).typ with
-      Int | Addr as ty ->
+    | Val | Int | Addr as ty ->
         if !int <= last_int then begin
           loc.(i) <- phys_reg !int;
           incr int
@@ -154,7 +154,11 @@ let loc_results res =
    Return values in r0...r1 or d0. *)
 
 let loc_external_arguments arg =
-  calling_conventions 0 7 100 107 outgoing arg
+  let arg =
+    Array.map (fun regs -> assert (Array.length regs = 1); regs.(0)) arg
+  in
+  let loc, alignment = calling_conventions 0 7 100 107 outgoing arg in
+  Array.map (fun reg -> [|reg|]) loc, alignment
 let loc_external_results res =
   let (loc, _) = calling_conventions 0 1 100 100 not_supported res in loc
 

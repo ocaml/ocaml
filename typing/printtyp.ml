@@ -955,16 +955,31 @@ let extension_constructor id ppf ext =
 
 (* Print a value declaration *)
 
+let rec add_native_repr_attributes ty attrs =
+  match ty, attrs with
+  | Otyp_arrow (label, a, b), attr_opt :: rest ->
+      let b = add_native_repr_attributes b rest in
+      let a =
+        match attr_opt with
+        | None -> a
+        | Some attr -> Otyp_attribute (a, attr)
+      in
+      Otyp_arrow (label, a, b)
+  | _, [Some attr] -> Otyp_attribute (ty, attr)
+  | _ ->
+      assert (List.for_all (fun x -> x = None) attrs);
+      ty
+
 let tree_of_value_description id decl =
   (* Format.eprintf "@[%a@]@." raw_type_expr decl.val_type; *)
   let id = Ident.name id in
   let ty = tree_of_type_scheme decl.val_type in
-  let prims =
+  let prims, native_repr_attributes =
     match decl.val_kind with
-    | Val_prim p -> Primitive.description_list p
-    | _ -> []
+    | Val_prim p -> Primitive.description_list_and_attributes p
+    | _ -> ([], [])
   in
-  Osig_value (id, ty, prims)
+  Osig_value (id, add_native_repr_attributes ty native_repr_attributes, prims)
 
 let value_description id ppf decl =
   !Oprint.out_sig_item ppf (tree_of_value_description id decl)

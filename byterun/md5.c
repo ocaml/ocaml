@@ -33,18 +33,16 @@ CAMLprim value caml_md5_string(value str, value ofs, value len)
   return res;
 }
 
-CAMLprim value caml_md5_chan(value vchan, value len)
+CAMLexport value caml_md5_channel(struct channel *chan, intnat toread)
 {
-  CAMLparam2 (vchan, len);
-  struct channel * chan = Channel(vchan);
+  CAMLparam0();
   struct MD5Context ctx;
   value res;
-  intnat toread, read;
+  intnat read;
   char buffer[4096];
 
   Lock(chan);
   caml_MD5Init(&ctx);
-  toread = Long_val(len);
   if (toread < 0){
     while (1){
       read = caml_getblock (chan, buffer, sizeof(buffer));
@@ -64,6 +62,12 @@ CAMLprim value caml_md5_chan(value vchan, value len)
   caml_MD5Final(&Byte_u(res, 0), &ctx);
   Unlock(chan);
   CAMLreturn (res);
+}
+
+CAMLprim value caml_md5_chan(value vchan, value len)
+{
+   CAMLparam2 (vchan, len);
+   CAMLreturn (caml_md5_channel(Channel(vchan), Long_val(len)));
 }
 
 CAMLexport void caml_md5_block(unsigned char digest[16],

@@ -440,14 +440,19 @@ let sort_files_by_dependencies files =
   if !worklist <> [] then begin
     Format.fprintf Format.err_formatter
       "@[Warning: cycle in dependencies. End of list is not sorted.@]@.";
-    Hashtbl.iter (fun _ (file, deps) ->
+    let sorted_deps =
+      let li = ref [] in
+      Hashtbl.iter (fun _ file_deps -> li := file_deps :: !li) h;
+      List.sort (fun (file1, _) (file2, _) -> String.compare file1 file2) !li
+    in
+    List.iter (fun (file, deps) ->
       Format.fprintf Format.err_formatter "\t@[%s: " file;
       List.iter (fun (modname, kind) ->
         Format.fprintf Format.err_formatter "%s.%s " modname
           (if kind=ML then "ml" else "mli");
       ) !deps;
       Format.fprintf Format.err_formatter "@]@.";
-      Printf.printf "%s " file) h;
+      Printf.printf "%s " file) sorted_deps;
   end;
   Printf.printf "\n%!";
   ()

@@ -23,22 +23,26 @@
 
 static char * parse_sign_and_base(char * p,
                                   /*out*/ int * base,
+                                  /*out*/ int * signedness,
                                   /*out*/ int * sign)
 {
   *sign = 1;
   if (*p == '-') {
     *sign = -1;
     p++;
-  }
-  *base = 10;
+  } else if (*p == '+')
+    p++;
+  *base = 10; *signedness = 1;
   if (*p == '0') {
     switch (p[1]) {
     case 'x': case 'X':
-      *base = 16; p += 2; break;
+      *base = 16; *signedness = 0; p += 2; break;
     case 'o': case 'O':
-      *base = 8; p += 2; break;
+      *base = 8; *signedness = 0; p += 2; break;
     case 'b': case 'B':
-      *base = 2; p += 2; break;
+      *base = 2; *signedness = 0; p += 2; break;
+    case 'u': case 'U':
+      *signedness = 0; p += 2; break;
     }
   }
   return p;
@@ -65,9 +69,9 @@ static intnat parse_intnat(value s, int nbits, const char *errmsg)
 {
   char * p;
   uintnat res, threshold;
-  int sign, base, d;
+  int sign, base, signedness, d;
 
-  p = parse_sign_and_base(String_val(s), &base, &sign);
+  p = parse_sign_and_base(String_val(s), &base, &signedness, &sign);
   threshold = ((uintnat) -1) / base;
   d = parse_digit(*p);
   if (d < 0 || d >= base) caml_failwith(errmsg);
@@ -85,7 +89,7 @@ static intnat parse_intnat(value s, int nbits, const char *errmsg)
   if (p != String_val(s) + caml_string_length(s)){
     caml_failwith(errmsg);
   }
-  if (base == 10) {
+  if (signedness) {
     /* Signed representation expected, allow -2^(nbits-1) to 2^(nbits-1) - 1 */
     if (sign >= 0) {
       if (res >= (uintnat)1 << (nbits - 1)) caml_failwith(errmsg);
@@ -530,9 +534,9 @@ CAMLprim value caml_int64_of_string(value s)
 {
   char * p;
   uint64_t res, threshold;
-  int sign, base, d;
+  int sign, base, signedness, d;
 
-  p = parse_sign_and_base(String_val(s), &base, &sign);
+  p = parse_sign_and_base(String_val(s), &base, &signedness, &sign);
   threshold = ((uint64_t) -1) / base;
   d = parse_digit(*p);
   if (d < 0 || d >= base) caml_failwith(INT64_ERRMSG);
@@ -551,7 +555,7 @@ CAMLprim value caml_int64_of_string(value s)
   if (p != String_val(s) + caml_string_length(s)){
     caml_failwith(INT64_ERRMSG);
   }
-  if (base == 10) {
+  if (signedness) {
     /* Signed representation expected, allow -2^63 to 2^63 - 1 only */
     if (sign >= 0) {
       if (res >= (uint64_t)1 << 63) caml_failwith(INT64_ERRMSG);

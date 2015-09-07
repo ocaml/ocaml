@@ -13,11 +13,13 @@
 #                                                                       #
 #########################################################################
 
-echo Configuring OCaml version `head -1 VERSION`
+ocamlversion=`head -1 VERSION`
+echo "Configuring OCaml version $ocamlversion"
 
 configure_options="$*"
 prefix=/usr/local
 bindir=''
+target_bindir=''
 libdir=''
 mandir=''
 manext=1
@@ -39,7 +41,6 @@ verbose=no
 with_curses=yes
 debugruntime=noruntimed
 with_sharedlibs=yes
-gcc_warnings="-Wall"
 partialld="ld -r"
 with_debugger=ocamldebugger
 with_ocamldoc=ocamldoc
@@ -96,6 +97,8 @@ while : ; do
         prefix=$2; shift;;
     -bindir|--bindir)
         bindir=$2; shift;;
+    -target-bindir|--target-bindir)
+        target_bindir="$2"; shift;;
     -libdir|--libdir)
         libdir=$2; shift;;
     -mandir|--mandir)
@@ -248,17 +251,23 @@ else
 fi
 inf "Configuring for target $target ..."
 
+if [ x"$host" = x"$target" ]; then
+  cross_compiler=false
+else
+  cross_compiler=true
+fi
+
 # Do we have gcc?
 
 if test -z "$ccoption"; then
   if sh ./searchpath "${TOOLPREF}gcc"; then
     cc="${TOOLPREF}gcc"
   else
-    if test x"$host" = x"$target"; then
-      cc="cc"
-    else
+    if $cross_compiler; then
       err "No cross-compiler found for ${target}.\n" \
           "It should be named ${TOOLPREF}gcc and be in the PATH."
+    else
+      cc="cc"
     fi
   fi
 else
@@ -267,50 +276,13 @@ fi
 
 inf "Using compiler $cc."
 
-# Check for buggy versions of GCC
-# These checks are not done for cross-compilation (yet at least) because after
-# 15 years, I doubt someone will try to use an experimental (2.96) or
-# known-unstable (2.7.2.1) version for cross-compilation.
+# Determine the C compiler family (GCC, Clang, etc)
 
-buggycc="no"
-
-case "$target,$cc" in
-  i[3456]86-*-*,gcc*)
-    case `$cc --version` in
-      2.7.2.1) cat <<'EOF'
-
-WARNING: you are using gcc version 2.7.2.1 on an Intel x86 processor.
-This version of gcc is known to generate incorrect code for the
-OCaml runtime system on some Intel x86 machines. (The symptom
-is a crash of boot/ocamlc when compiling stdlib/pervasives.mli.)
-In particular, the version of gcc 2.7.2.1 that comes with
-Linux RedHat 4.x / Intel is affected by this problem.
-Other Linux distributions might also be affected.
-If you are using one of these configurations, you are strongly advised
-to use another version of gcc, such as 2.95, which are
-known to work well with OCaml.
-
-Press <enter> to proceed or <interrupt> to stop.
-EOF
-        read reply;;
-      2.96*) cat <<'EOF'
-
-WARNING: you are using gcc version 2.96 on an Intel x86 processor.
-Certain patched versions of gcc 2.96 are known to generate incorrect
-code for the OCaml runtime system.  (The symptom is a segmentation
-violation on boot/ocamlc.)  Those incorrectly patched versions can be found
-in RedHat 7.2 and Mandrake 8.0 and 8.1; other Linux distributions
-might also be affected.  (See bug #57760 on bugzilla.redhat.com)
-
-Auto-configuration will now select gcc compiler flags that work around
-the problem.  Still, if you observe segmentation faults while running
-ocamlc or ocamlopt, you are advised to try another version of gcc,
-such as 2.95.3 or 3.2.
-
-EOF
-        buggycc="gcc.2.96";;
-
-            esac;;
+ccfamily=`$cc -E cckind.c | grep '^[a-z]' | tr -s ' ' '-'`
+case $? in
+  0) inf "Compiler family and version: $ccfamily.";;
+  *) err "Unable to preprocess the test program.\n" \
+         "Make sure the C compiler $cc is properly installed.";;
 esac
 
 # Configure the bytecode compiler
@@ -327,17 +299,49 @@ iflexdir=""
 SO="so"
 TOOLCHAIN="cc"
 
+# Choose reasonable options based on compiler kind
+# We select high optimization levels, provided we can turn off:
+# - strict type-based aliasing analysis (too risky for the OCaml runtime)
+# - strict no-overflow conditions on signed integer arithmetic
+#   (the OCaml runtime assumes Java-style behavior of signed integer arith.)
+# Concerning optimization level, -O3 is somewhat risky, so take -O2
+# Concerning language version, gnu99 is ISO C99 plus GNU extensions
+# that are often used in standard headers.  GCC defaults to gnu89,
+# which is not C99.  Clang defaults to gnu99 or gnu11, which is fine.
+
+case "$ocamlversion" in
+  *+dev*) gcc_warnings="-Wall -Werror";;
+       *) gcc_warnings="-Wall";;
+esac
+
+case "$ccfamily" in
+  clang-*)
+    bytecccompopts="-O2 -fno-strict-aliasing -fwrapv $gcc_warnings";;
+  gcc-[012]-*)
+    # Some versions known to miscompile OCaml, e,g, 2.7,2.1, some 2.96.
+    # Plus: C99 support unknown.
+    err "This version of GCC is too old.  Please use GCC version 3 or above.";;
+  gcc-3-[0123])
+    # No -fwrapv option yet
+    bytecccompopts="-std=gnu99 -O $gcc_warnings";;
+  gcc-*)
+    bytecccompopts="-std=gnu99 -O2 -fno-strict-aliasing -fwrapv $gcc_warnings";;
+  *)
+    bytecccompopts="-O";;
+esac
+
+# Adjust according to target
+
 case "$bytecc,$target" in
   cc,*-*-nextstep*)
     # GNU C extensions disabled, but __GNUC__ still defined!
-    bytecccompopts="-fno-defer-pop $gcc_warnings -U__GNUC__ -posix"
+    bytecccompopts="$bytecccompopts -U__GNUC__ -posix"
     bytecclinkopts="-posix";;
   *,*-*-rhapsody*)
     # Almost the same as NeXTStep
-    bytecccompopts="-fno-defer-pop $gcc_warnings -DSHRINKED_GNUC"
+    bytecccompopts="$bytecccompopts -DSHRINKED_GNUC"
     mathlib="";;
   *,*-*-darwin*)
-    bytecccompopts="$gcc_warnings"
     mathlib=""
     mkexe="$mkexe -Wl,-no_compact_unwind"
     # Tell gcc that we can use 32-bit code addresses for threaded code
@@ -346,15 +350,12 @@ case "$bytecc,$target" in
     echo "#  define ARCH_CODE32" >> m.h
     echo "#endif" >> m.h;;
   *,*-*-haiku*)
-    bytecccompopts="-fno-defer-pop $gcc_warnings"
     # No -lm library
     mathlib="";;
   *,*-*-beos*)
-    bytecccompopts="-fno-defer-pop $gcc_warnings"
     # No -lm library
     mathlib="";;
   *gcc,alpha*-*-osf*)
-    bytecccompopts="-fno-defer-pop $gcc_warnings"
     if cc="$bytecc" sh ./hasgot -mieee; then
       bytecccompopts="-mieee $bytecccompopts";
     fi
@@ -368,30 +369,22 @@ case "$bytecc,$target" in
     if cc="$bytecc" sh ./hasgot -mieee; then
       bytecccompopts="-mieee $bytecccompopts";
     fi;;
-  cc,mips-*-irix6*)
-    # Add -n32 flag to ensure compatibility with native-code compiler
-    bytecccompopts="-n32"
+  *,mips-*-irix6*)
     # Turn off warning "unused library"
     bytecclinkopts="-n32 -Wl,-woff,84";;
-  cc*,mips-*-irix6*)
-    # (For those who want to force "cc -64")
-    # Turn off warning "unused library"
-    bytecclinkopts="-Wl,-woff,84";;
   *,alpha*-*-unicos*)
     # For the Cray T3E
-    bytecccompopts="-DUMK";;
-  *gcc*,powerpc-*-aix*)
-    # Avoid name-space pollution by requiring Unix98-conformant includes
-    bytecccompopts="-fno-defer-pop $gcc_warnings -D_XOPEN_SOURCE=500";;
+    bytecccompopts="$bytecccompopts -DUMK";;
   *,powerpc-*-aix*)
-    bytecccompopts="-D_XOPEN_SOURCE=500";;
-  *gcc*,*-*-cygwin*)
+    # Avoid name-space pollution by requiring Unix98-conformant includes
+    bytecccompopts="$bytecccompopts -D_XOPEN_SOURCE=500";;
+  *,*-*-cygwin*)
     case $target in
       i686-*) flavor=cygwin;;
       x86_64-*) flavor=cygwin64;;
       *) err "unknown cygwin variant";;
     esac
-    bytecccompopts="-fno-defer-pop $gcc_warnings -U_WIN32"
+    bytecccompopts="$bytecccompopts -U_WIN32"
     dllccompopts="-U_WIN32 -DCAML_DLL"
     if test $with_sharedlibs = yes; then
       flexlink="flexlink -chain $flavor -merge-manifest -stack 16777216"
@@ -411,8 +404,7 @@ case "$bytecc,$target" in
     fi
     exe=".exe"
     ostype="Cygwin";;
-  *gcc*,*-*-mingw*)
-    bytecccompopts="-fno-defer-pop $gcc_warnings"
+  *,*-*-mingw*)
     dllccompopt="-DCAML_DLL"
     if test $with_sharedlibs = yes; then
       case "$target" in
@@ -435,63 +427,75 @@ case "$bytecc,$target" in
     TOOLCHAIN="mingw"
     SO="dll"
     ;;
-  *gcc*,x86_64-*-linux*)
-    bytecccompopts="-fno-defer-pop $gcc_warnings"
+  *,x86_64-*-linux*)
     # Tell gcc that we can use 32-bit code addresses for threaded code
     # unless we are compiled for a shared library (-fPIC option)
     echo "#ifndef __PIC__" >> m.h
     echo "#  define ARCH_CODE32" >> m.h
     echo "#endif" >> m.h;;
-  *gcc*)
-    bytecccompopts="-fno-defer-pop $gcc_warnings";;
 esac
 
-# Configure compiler to use in further tests
+# Configure compiler to use in further tests.
 
-cc="$bytecc -O $bytecclinkopts"
+cc="$bytecc $bytecclinkopts"
 export cc cclibs verbose
 
-# Check C compiler
+# Check C compiler.
 
-sh ./runtest ansi.c
+cc="$bytecc $bytecccompopts $bytecclinkopts" sh ./runtest ansi.c
 case $? in
-  0) inf "The C compiler is ANSI-compliant." ;;
-  1) err "The C compiler $cc is not ANSI-compliant.\n" \
-         "You need an ANSI C compiler to build OCaml.";;
+  0) inf "The C compiler is ISO C99 compliant." ;;
+  1) wrn "The C compiler is ANSI / ISO C90 compliant, but not ISO C99 compliant.";;
+  2) err "The C compiler $cc is not ISO C compliant.\n" \
+         "You need an ISO C99 compiler to build OCaml.";;
   *)
-     if test x"$host" != x"$target"; then
+     if $cross_compiler; then
        wrn "Unable to compile the test program.\n" \
            "This failure is expected for cross-compilation:\n" \
-           "we will assume the C compiler is ANSI-compliant."
+           "we will assume the C compiler is ISO C99-compliant."
      else
        err "Unable to compile the test program.\n" \
            "Make sure the C compiler $cc is properly installed."
      fi;;
 esac
 
-# Determine which ocamlrun executable to use; for cross-compilation, a native
-# "ocamlrun" executable must be available on the system.
-if test x"$target" != x"$host"; then
+# For cross-compilation, we need a host-based ocamlrun and ocamlyacc,
+# and the user must specify the target BINDIR
+if $cross_compiler; then
   if ! sh ./searchpath ocamlrun; then
     err "Cross-compilation requires an ocaml runtime environment\n" \
         "(the ocamlrun binary). Moreover, its version must be the same\n" \
         "as the one you're trying to build (`cut -f1 -d+ < ../../VERSION`)."
   else
-    ocaml_system_version=`ocamlrun -version | sed 's/[^0-9]*\([0-9.]\+\).*/\1/'`
-    ocaml_source_version=`sed -n '1 s/\([0-9\.]\+\).*/\1/ p' < ../../VERSION`
+    ocaml_system_version=`ocamlrun -version | sed 's/[^0-9]*\([0-9.]*\).*/\1/'`
+    ocaml_source_version=`sed -n '1 s/\([0-9\.]*\).*/\1/ p' < ../../VERSION`
     if test x"$ocaml_system_version" != x"$ocaml_source_version"; then
       err "While you have an ocaml runtime environment, its version\n" \
           "($ocaml_system_version) doesn't match the version of these sources\n" \
           "($ocaml_source_version)."
     else
-      CAMLRUN="ocamlrun"
+      echo "CAMLRUN=`./searchpath -p ocamlrun`" >> Makefile
     fi
   fi
-else
-  CAMLRUN=`cd ../.. && pwd`/boot/ocamlrun
-fi
 
-echo "CAMLRUN=$CAMLRUN" >> Makefile
+  if ! sh ./searchpath ocamlyacc; then
+    err "Cross-compilation requires an ocamlyacc binary."
+  else
+    ocamlyacc 2>/dev/null
+    if test "$?" -ne 1; then
+      err "While you have an ocamlyacc binary, it cannot be executed successfully."
+    else
+      echo "CAMLYACC=`./searchpath -p ocamlyacc`" >> Makefile
+    fi
+  fi
+
+  if [ -z "$target_bindir" ]; then
+    err "Cross-compilation requires -target-bindir."
+  else
+    echo "TARGET_BINDIR=$target_bindir" >> Makefile
+  fi
+fi # cross-compiler
+
 
 # Check the sizes of data types
 # OCaml needs a 32 or 64 bit architecture, a 32-bit integer type and
@@ -811,12 +815,12 @@ case "$target" in
                                 fi;;
   i[3456]86-*-gnu*)             arch=i386; system=gnu;;
   i[3456]86-*-mingw*)           arch=i386; system=mingw;;
-  powerpc*-*-linux*)            arch=power; model=ppc; system=elf;;
+  powerpc64le*-*-linux*)        arch=power; model=ppc64le; system=elf;;
+  powerpc*-*-linux*)            arch=power;
+                                if $arch64; then model=ppc64; else model=ppc; fi
+                                system=elf;;
   powerpc-*-netbsd*)            arch=power; model=ppc; system=elf;;
   powerpc-*-openbsd*)           arch=power; model=ppc; system=bsd_elf;;
-  powerpc-*-rhapsody*)          arch=power; model=ppc; system=rhapsody;;
-  powerpc-*-darwin*)            arch=power; system=rhapsody
-                                if $arch64;then model=ppc64;else model=ppc;fi;;
   armv6*-*-linux-gnueabihf)     arch=arm; model=armv6; system=linux_eabihf;;
   arm*-*-linux-gnueabihf)       arch=arm; system=linux_eabihf;;
   armv7*-*-linux-gnueabi)       arch=arm; model=armv7; system=linux_eabi;;
@@ -841,14 +845,13 @@ esac
 
 # Some platforms exist both in 32-bit and 64-bit variants, not distinguished
 # by $target.  Turn off native code compilation on platforms where 64-bit mode
-# is not supported.  (PR#4441)
+# is not supported  (PR#4441).
+# Sometimes, it's 32-bit mode that is not supported  (PR#6722).
 
-if $arch64; then
-  case "$arch,$model" in
-    sparc,default|power,ppc)
+case "$arch64,$arch,$model" in
+  true,sparc,*|true,power,ppc|false,amd64,*)
       arch=none; model=default; system=unknown;;
-  esac
-fi
+esac
 
 if test -z "$ccoption"; then
   nativecc="$bytecc"
@@ -856,23 +859,21 @@ else
   nativecc="$ccoption"
 fi
 
-nativecccompopts=''
+nativecccompopts="$bytecccompopts"
+nativeccprofopts=''
 nativecclinkopts=''
 # FIXME the naming of nativecclinkopts is broken: these are options for
 # ld (for shared libs), not for cc
 nativeccrpath="$byteccrpath"
 
 case "$arch,$nativecc,$system,$target" in
-  *,*,nextstep,*)      nativecccompopts="$gcc_warnings -U__GNUC__ -posix"
-                       nativecclinkopts="-posix";;
-  *,*,rhapsody,*darwin[1-5].*)
-                       nativecccompopts="$gcc_warnings -DSHRINKED_GNUC";;
-  *,*,rhapsody,*)      nativecccompopts="$gcc_warnings -DDARWIN_VERSION_6 $dl_defs"
-                       if $arch64; then partialld="ld -r -arch ppc64"; fi;;
-  *,gcc*,cygwin,*)     nativecccompopts="$gcc_warnings -U_WIN32";;
+  *,*,nextstep,*)      nativecclinkopts="-posix";;
+  *,*,rhapsody,*)      if $arch64; then partialld="ld -r -arch ppc64"; fi;;
   amd64,gcc*,macosx,*) partialld="ld -r -arch x86_64";;
   amd64,gcc*,solaris,*) partialld="ld -r -m elf_x86_64";;
-  *,gcc*,*,*)          nativecccompopts="$gcc_warnings";;
+  power,gcc*,elf,ppc)   partialld="ld -r -m elf32ppclinux";;
+  power,gcc*,elf,ppc64)   partialld="ld -r -m elf64ppc";;
+  power,gcc*,elf,ppc64le)   partialld="ld -r -m elf64lppc";;
 esac
 
 asppprofflags='-DPROFILING'
@@ -889,10 +890,13 @@ case "$arch,$system" in
                   aspp="${TOOLPREF}gcc -m64 -c";;
   i386,solaris)   as="${TOOLPREF}as"
                   aspp="/usr/ccs/bin/${TOOLPREF}as -P";;
-  power,elf)      as="${TOOLPREF}as -u -m ppc"
-                  aspp="${TOOLPREF}gcc -c";;
-  power,rhapsody) as="${TOOLPREF}as -arch $model"
-                  aspp="$bytecc -c";;
+  power,elf)      if $arch64; then
+                    as="${TOOLPREF}as -a64 -mppc64"
+                    aspp="${TOOLPREF}gcc -m64 -c"
+                  else
+                    as="${TOOLPREF}as -mppc"
+                    aspp="${TOOLPREF}gcc -m32 -c"
+                  fi;;
   sparc,solaris)  as="${TOOLPREF}as"
                   case "$cc" in
                     *gcc*) aspp="${TOOLPREF}gcc -c";;
@@ -923,6 +927,8 @@ case "$arch,$system" in
     case "$nativecc" in gcc*) ;; *) cc_profile='-xpg';; esac;;
   amd64,linux) profiling='prof';;
   amd64,openbsd) profiling='prof';;
+  amd64,freebsd) profiling='prof';;
+  amd64,netbsd) profiling='prof';;
   amd64,gnu) profiling='prof';;
   arm,linux*) profiling='prof';;
   power,elf) profiling='prof';;
@@ -964,7 +970,8 @@ if (SHELL=/bin/sh; export SHELL; (./sharpbang || ./sharpbang2) >/dev/null); then
           "under Cygwin"
       echo "SHARPBANGSCRIPTS=false" >> Makefile;;
     *-*-mingw*)
-      inf "We won't use it, though, because it's on the target platform it would be used and windows doesn't support it."
+      inf "We won't use it, though, because it's on the target platform " \
+          "it would be used and windows doesn't support it."
       echo "SHARPBANGSCRIPTS=false" >> Makefile;;
     *)
       echo "SHARPBANGSCRIPTS=true" >> Makefile;;
@@ -1618,9 +1625,21 @@ if sh ./hasgot -DPACKAGE=ocaml -i bfd.h && \
   inf "BFD library found."
   echo "#define HAS_LIBBFD" >> s.h
   echo "LIBBFD_LINK=-lbfd -ldl -liberty -lz" >> Makefile
+  echo LIBBFD_INCLUDE= >>Makefile
+elif sh ./hasgot -DPACKAGE=ocaml -I/opt/local/include -i bfd.h && \
+     sh ./hasgot -DPACKAGE=ocaml -L/opt/local/lib -lbfd -ldl \
+                 -liberty -lz -lintl bfd_openr
+then
+  # MacOSX with binutils from MacPorts
+  inf "BFD library found."
+  echo "#define HAS_LIBBFD" >> s.h
+  echo "LIBBFD_LINK=-L/opt/local/lib -lbfd -ldl -liberty -lz -lintl" >> Makefile
+  echo LIBBFD_INCLUDE=-I/opt/local/include >>Makefile
 else
-  wrn "BFD library not found, 'objinfo' will be unable to display info on .cmxs files."
+  wrn "BFD library not found, 'objinfo' will be unable to display info" \
+      " on .cmxs files."
   echo "LIBBFD_LINK=" >> Makefile
+  echo "LIBBFD_INCLUDE=" >> Makefile
 fi
 
 # Check whether assembler supports CFI directives
@@ -1655,15 +1674,6 @@ fi
 if $no_naked_pointers; then
   echo "#define NO_NAKED_POINTERS" >> m.h
 fi
-
-# Final twiddling of compiler options to work around known bugs
-
-nativeccprofopts="$nativecccompopts"
-case "$buggycc" in
-  gcc.2.96)
-    bytecccompopts="$bytecccompopts -fomit-frame-pointer"
-    nativecccompopts="$nativecccompopts -fomit-frame-pointer";;
-esac
 
 # Finish generated files
 

@@ -28,8 +28,12 @@
 
 #ifdef _MSC_VER
 #include <float.h>
+#ifndef isnan
 #define isnan _isnan
+#endif
+#ifndef isfinite
 #define isfinite _finite
+#endif
 #endif
 
 #ifdef ARCH_ALIGN_DOUBLE
@@ -150,6 +154,7 @@ CAMLprim value caml_float_of_string(value vs)
  error:
   if (buf != parse_buffer) caml_stat_free(buf);
   caml_failwith("float_of_string");
+  return Val_unit; /* not reached */
 }
 
 CAMLprim value caml_int_of_float(value f)
@@ -452,7 +457,8 @@ enum { FP_normal, FP_subnormal, FP_zero, FP_infinite, FP_nan };
 CAMLprim value caml_classify_float(value vd)
 {
   /* Cygwin 1.3 has problems with fpclassify (PR#1293), so don't use it */
-#if defined(fpclassify) && !defined(__CYGWIN32__) && !defined(__MINGW32__)
+  /* FIXME Cygwin 1.3 is ancient! Revisit this decision. */
+#if defined(fpclassify) && !defined(__CYGWIN__) && !defined(__MINGW32__)
   switch (fpclassify(Double_val(vd))) {
   case FP_NAN:
     return Val_int(FP_nan);

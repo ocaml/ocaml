@@ -14,6 +14,8 @@ BASEDIR=../..
 LIBRARIES=unix bigarray
 C_FILES=bigarrfstub
 F_FILES=bigarrf
+ADD_COMPFLAGS=-I $(OTOPDIR)/otherlibs/bigarray \
+	      -I $(OTOPDIR)/otherlibs/$(UNIXLIB)
 
 include $(BASEDIR)/makefiles/Makefile.several
 include $(BASEDIR)/makefiles/Makefile.common

@@ -71,16 +71,7 @@ let implementation ppf sourcefile outputprefix ~backend =
   let cmxfile = outputprefix ^ ".cmx" in
   let objfile = outputprefix ^ ext_obj in
   let comp ast =
-    if !Clflags.print_types
-    then
-      ast
-      ++ print_if ppf Clflags.dump_parsetree Printast.implementation
-      ++ print_if ppf Clflags.dump_source Pprintast.structure
-      ++ Typemod.type_implementation sourcefile outputprefix modulename env
-      ++ print_if ppf Clflags.dump_typedtree
-          Printtyped.implementation_with_coercion
-      ++ (fun _ -> ())
-    else begin
+    let (typedtree, coercion) =
       ast
       ++ print_if ppf Clflags.dump_parsetree Printast.implementation
       ++ print_if ppf Clflags.dump_source Pprintast.structure
@@ -89,6 +80,9 @@ let implementation ppf sourcefile outputprefix ~backend =
       ++ Timings.(stop_id (Typing sourcefile))
       ++ print_if ppf Clflags.dump_typedtree
           Printtyped.implementation_with_coercion
+    in
+    if not !Clflags.print_types then begin
+      (typedtree, coercion)
       ++ Timings.(start_id (Transl sourcefile))
       ++ do_transl modulename
       ++ Timings.(stop_id (Transl sourcefile))

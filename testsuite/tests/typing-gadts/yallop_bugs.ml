@@ -3,7 +3,7 @@
 type (_, _) eq = Refl : ('a, 'a) eq
 
 let magic : 'a 'b. 'a -> 'b =
-  fun (type a) (type b) (x : a) ->
+  fun (type a b) (x : a) ->
     let module M =
       (functor (T : sig type 'a t end) ->
        struct

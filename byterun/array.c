@@ -150,7 +150,7 @@ CAMLprim value caml_make_float_vect(value len)
 #undef Setup_for_gc
 #undef Restore_after_gc
   }else if (wosize > Max_wosize)
-    caml_invalid_argument("Array.make_float");
+    caml_invalid_argument("Array.create_float");
   else {
     result = caml_alloc_shr (wosize, Double_array_tag);
     result = caml_check_urgent_gc (result);

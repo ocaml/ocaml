@@ -6,7 +6,8 @@
 (*                                                                     *)
 (*  Copyright 2007 Institut National de Recherche en Informatique et   *)
 (*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
+(*  under the terms of the GNU Library General Public License, with    *)
+(*  the special exception on linking described in file ../LICENSE.     *)
 (*                                                                     *)
 (***********************************************************************)
 
@@ -73,15 +74,20 @@ rule "target files"
         build each of those targets in turn."
   begin fun env build ->
     let itarget = env "%.itarget" in
-    let dir = Pathname.dirname itarget in
-    let targets = string_list_of_file itarget in
-    List.iter ignore_good (build (List.map (fun x -> [dir/x]) targets));
-    if !Options.make_links then
-      let link x =
-        Cmd (S [A"ln"; A"-sf"; P (!Options.build_dir/x); A Pathname.parent_dir_name]) in
-      Seq (List.map (fun x -> link (dir/x)) targets)
-    else
-      Nop
+    let targets =
+      let dir = Pathname.dirname itarget in
+      let files = string_list_of_file itarget in
+      List.map (fun file -> [Pathname.concat dir file]) files
+    in
+    let results = List.map Outcome.good (build targets) in
+    let link_command result =
+      Cmd (S [A "ln"; A "-sf";
+              P (Pathname.concat !Options.build_dir result);
+              A Pathname.pwd])
+    in
+    if not !Options.make_links
+    then Nop
+    else Seq (List.map link_command results)
   end;;
 
 rule "ocaml: mli -> cmi"
@@ -637,6 +643,7 @@ let () =
     (fun param -> S [A "-for-pack"; A param]);
   pflag ["ocaml"; "native"; "compile"] "inline"
     (fun param -> S [A "-inline"; A param]);
+  pflag ["ocaml"; "compile"] "color" (fun setting -> S[A "-color"; A setting]);
   List.iter (fun pp ->
     pflag ["ocaml"; "compile"] pp
       (fun param -> S [A ("-" ^ pp); A param]);
@@ -742,7 +749,8 @@ flag ["ocaml"; "compile"; "keep_docs";] (A "-keep-docs");
 flag ["ocaml"; "compile"; "keep_locs";] (A "-keep-locs");
 flag ["ocaml"; "absname"; "compile"] (A "-absname");;
 flag ["ocaml"; "absname"; "infer_interface"] (A "-absname");;
-flag ["ocaml"; "byte"; "compile"; "compat_32";] (A "-compat-32");
+flag ["ocaml"; "byte"; "compile"; "compat_32";] (A "-compat-32");;
+flag ["ocaml";"compile";"native";"asm"] & S [A "-S"];;
 
 
 (* threads, with or without findlib *)

@@ -249,7 +249,12 @@ let mk_open f =
   "-open", Arg.String f, "<module>  Opens the module <module> before typing"
 
 let mk_output_obj f =
-  "-output-obj", Arg.Unit f, " Output a C object file instead of an executable"
+  "-output-obj", Arg.Unit f, " Output an object file instead of an executable"
+;;
+
+let mk_output_complete_obj f =
+  "-output-complete-obj", Arg.Unit f,
+  " Output an object file, including runtime, instead of an executable"
 ;;
 
 let mk_p f =
@@ -392,6 +397,19 @@ let mk_warn_error f =
 
 let mk_warn_help f =
   "-warn-help", Arg.Unit f, " Show description of warning numbers"
+;;
+
+let mk_color f =
+  "-color", Arg.Symbol (["auto"; "always"; "never"], f),
+  Printf.sprintf
+  "  Enable or disable colors in compiler messages\n\
+  \    The following settings are supported:\n\
+  \      auto    use heuristics to enable colors only if supported\n\
+  \      always  enable colors\n\
+  \      never   disable colors\n\
+  \    The default setting is 'auto', and the current heuristic\n\
+  \    checks that the TERM environment variable exists and is\n\
+  \    not empty or \"dumb\", and that isatty(stderr) holds."
 ;;
 
 let mk_where f =
@@ -570,6 +588,7 @@ module type Compiler_options = sig
   val _noautolink : unit -> unit
   val _o : string -> unit
   val _output_obj : unit -> unit
+  val _output_complete_obj : unit -> unit
   val _pack : unit -> unit
   val _pp : string -> unit
   val _principal : unit -> unit
@@ -581,6 +600,8 @@ module type Compiler_options = sig
   val _v : unit -> unit
   val _verbose : unit -> unit
   val _where : unit -> unit
+  val _color : string -> unit
+
   val _nopervasives : unit -> unit
   val _dtimings : unit -> unit
 end
@@ -698,10 +719,10 @@ struct
     mk_cc F._cc;
     mk_cclib F._cclib;
     mk_ccopt F._ccopt;
+    mk_color F._color;
     mk_compat_32 F._compat_32;
     mk_config F._config;
     mk_custom F._custom;
-    mk_custom F._no_check_prims;
     mk_dllib F._dllib;
     mk_dllpath F._dllpath;
     mk_dtypes F._annot;
@@ -730,6 +751,7 @@ struct
     mk_o F._o;
     mk_open F._open;
     mk_output_obj F._output_obj;
+    mk_output_complete_obj F._output_complete_obj;
     mk_pack_byt F._pack;
     mk_pp F._pp;
     mk_ppx F._ppx;
@@ -825,6 +847,7 @@ struct
     mk_cc F._cc;
     mk_cclib F._cclib;
     mk_ccopt F._ccopt;
+    mk_color F._color;
     mk_compact F._compact;
     mk_config F._config;
     mk_dtypes F._annot;
@@ -859,6 +882,7 @@ struct
     mk_o F._o;
     mk_open F._open;
     mk_output_obj F._output_obj;
+    mk_output_complete_obj F._output_complete_obj;
     mk_p F._p;
     mk_pack_opt F._pack;
     mk_pp F._pp;

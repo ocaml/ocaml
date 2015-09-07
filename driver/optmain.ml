@@ -127,6 +127,8 @@ module Options = Main_args.Make_optcomp_options (struct
   let _o s = output_name := Some s
   let _open s = open_modules := s :: !open_modules
   let _output_obj = set output_c_object
+  let _output_complete_obj s =
+    set output_c_object s; set output_complete_object s
   let _p = set gprofile
   let _pack = set make_package
   let _pp s = preprocessor := Some s
@@ -150,6 +152,11 @@ module Options = Main_args.Make_optcomp_options (struct
   let _w s = Warnings.parse_options false s
   let _warn_error s = Warnings.parse_options true s
   let _warn_help = Warnings.help_warnings
+  let _color option =
+    begin match Clflags.parse_color_setting option with
+          | None -> ()
+          | Some setting -> Clflags.color := setting
+    end
   let _where () = print_standard_library ()
 
   let _nopervasives = set nopervasives

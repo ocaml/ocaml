@@ -2,20 +2,21 @@
 /*                                                                     */
 /*                                OCaml                                */
 /*                                                                     */
-/*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         */
+/*                 Jeremie Dimino, Jane Street Europe                  */
 /*                                                                     */
-/*  Copyright 1996 Institut National de Recherche en Informatique et   */
+/*  Copyright 2015 Institut National de Recherche en Informatique et   */
 /*  en Automatique.  All rights reserved.  This file is distributed    */
-/*  under the terms of the GNU Library General Public License, with    */
-/*  the special exception on linking described in file ../../LICENSE.  */
+/*  under the terms of the Q Public License version 1.0.               */
 /*                                                                     */
 /***********************************************************************/
 
-signed char foo[]="\377";
+#include <caml/mlvalues.h>
 
-int main(int argc, char ** argv)
+int64_t test_int64_add(int64_t x, int64_t y) { return (x + y); }
+int64_t test_int64_sub(int64_t x, int64_t y) { return (x - y); }
+int64_t test_int64_mul(int64_t x, int64_t y) { return (x * y); }
+
+value test_ignore_int64(int64_t x)
 {
-  int i;
-  i = foo[0];
-  exit(i != -1);
+  return Val_unit;
 }

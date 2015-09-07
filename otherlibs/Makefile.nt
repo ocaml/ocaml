@@ -17,10 +17,5 @@ include ../Makefile
 
 # The Unix version now works fine under Windows
 
-# ... except the MS compiler doesn't like the -O flag
-ifeq "$CCOMPTYPE" "msvc"
-COPTFLAG=
-endif
-
 # Note .. is the current directory (this makefile is included from
 # a subdirectory)

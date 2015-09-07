@@ -205,9 +205,9 @@ type asm_line =
   | Cfi_adjust_cfa_offset of int
   | Cfi_endproc
   | Cfi_startproc
-  | File of int * string (* file_num * filename *)
+  | File of int * string (* (file_num, file_name) *)
   | Indirect_symbol of string
-  | Loc of int * int (* file_num x line *)
+  | Loc of int * int * int (* (file_num, line, col) *)
   | Private_extern of string
   | Set of string * constant
   | Size of string * constant

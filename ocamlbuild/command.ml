@@ -6,7 +6,8 @@
 (*                                                                     *)
 (*  Copyright 2007 Institut National de Recherche en Informatique et   *)
 (*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
+(*  under the terms of the GNU Library General Public License, with    *)
+(*  the special exception on linking described in file ../LICENSE.     *)
 (*                                                                     *)
 (***********************************************************************)
 
@@ -392,6 +393,9 @@ let dep tags deps = set_deps_of_tags (Tags.of_list tags) deps
 let pdep tags ptag deps =
   Param_tags.declare ptag
     (fun param -> dep (Param_tags.make ptag param :: tags) (deps param))
+
+let list_all_deps () =
+  !all_deps_of_tags
 
 (*
 let to_string_for_digest x =

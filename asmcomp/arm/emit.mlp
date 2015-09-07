@@ -103,10 +103,12 @@ let record_frame_label live dbg =
   let live_offset = ref [] in
   Reg.Set.iter
     (function
-        {typ = Addr; loc = Reg r} ->
+      | {typ = Val; loc = Reg r} ->
           live_offset := ((r lsl 1) + 1) :: !live_offset
-      | {typ = Addr; loc = Stack s} as reg ->
+      | {typ = Val; loc = Stack s} as reg ->
           live_offset := slot_offset s (register_class reg) :: !live_offset
+      | {typ = Addr} as r ->
+          Misc.fatal_error ("bad GC root " ^ Reg.name r)
       | _ -> ())
     live;
   frame_descriptors :=
@@ -852,8 +854,10 @@ let fundecl fundecl =
   let n = frame_size() in
   if n > 0 then begin
     ignore(emit_stack_adjustment (-n));
-    if !contains_calls then
+    if !contains_calls then begin
+      cfi_offset ~reg:14 (* lr *) ~offset:(-4);
       `	str	lr, [sp, #{emit_int(n - 4)}]\n`
+    end
   end;
   `{emit_label !tailrec_entry_point}:\n`;
   emit_all 0 fundecl.fun_body;

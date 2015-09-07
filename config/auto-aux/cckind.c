@@ -2,23 +2,27 @@
 /*                                                                     */
 /*                                OCaml                                */
 /*                                                                     */
-/*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         */
+/*            Xavier Leroy, projet Gallium, INRIA Rocquencourt         */
 /*                                                                     */
-/*  Copyright 2011 Institut National de Recherche en Informatique et   */
+/*  Copyright 2015 Institut National de Recherche en Informatique et   */
 /*  en Automatique.  All rights reserved.  This file is distributed    */
 /*  under the terms of the GNU Library General Public License, with    */
 /*  the special exception on linking described in file ../../LICENSE.  */
 /*                                                                     */
 /***********************************************************************/
 
-#include <math.h>
+/* Determine vendor and version of C compiler */
 
-volatile double x;
+/* This file is to be preprocessed and its output examined. */
+/* It is not C source code to be executed.  */
+/* This helps with cross-compilation. */
 
-int main(int argc, char **argv)
-{
-  x = 3.1415;
-  x = expm1(x);
-  x = log1p(x);
-  return 0;
-}
+#if defined(__INTEL_COMPILER)
+icc __INTEL_COMPILER
+#elif defined(__clang_major__) && defined(__clang_minor__)
+clang __clang_major __clang_minor__
+#elif defined(__GNUC__) && defined(__GNUC_MINOR__)
+gcc __GNUC__ __GNUC_MINOR__
+#else
+unknown
+#endif

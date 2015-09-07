@@ -13,15 +13,18 @@
 
 # Makefile for the dynamic link library
 
+# FIXME reduce redundancy by including ../Makefile
+
 include ../../config/Makefile
+CAMLRUN ?= ../../boot/ocamlrun
+CAMLYACC ?= ../../boot/ocamlyacc
 
 ROOTDIR   = ../..
-OCAMLRUN  = $(ROOTDIR)/boot/ocamlrun
-OCAMLC    = $(OCAMLRUN) $(ROOTDIR)/ocamlc -nostdlib -I $(ROOTDIR)/stdlib
-OCAMLOPT  = $(OCAMLRUN) $(ROOTDIR)/ocamlopt -nostdlib -I $(ROOTDIR)/stdlib
+OCAMLC    = $(CAMLRUN) $(ROOTDIR)/ocamlc -nostdlib -I $(ROOTDIR)/stdlib
+OCAMLOPT  = $(CAMLRUN) $(ROOTDIR)/ocamlopt -nostdlib -I $(ROOTDIR)/stdlib
 
 INCLUDES=-I ../../utils -I ../../typing -I ../../bytecomp -I ../../asmcomp
-COMPFLAGS=-w +33..39 -warn-error A -bin-annot -safe-string \
+COMPFLAGS=-w +33..39 -warn-error A -bin-annot -g -safe-string \
           -I ../../stdlib $(INCLUDES)
 
 OBJS=dynlinkaux.cmo dynlink.cmo
@@ -70,7 +73,7 @@ dynlink.cmx: dynlink.cmi natdynlink.ml
 	rm -f dynlink.mlopt
 
 extract_crc: dynlink.cma extract_crc.cmo
-	$(OCAMLC) $(COMPFLAGS) -o extract_crc ${BISECT_CMA} dynlink.cma extract_crc.cmo
+	$(OCAMLC) $(COMPFLAGS) -o extract_crc dynlink.cma extract_crc.cmo
 
 INSTALL_LIBDIR=$(DESTDIR)$(LIBDIR)
 
@@ -104,5 +107,6 @@ clean: partialclean
 
 depend:
 
-dynlink.cmo: dynlinkaux.cmi dynlink.cmi
+dynlink.cmi: dynlinkaux.cmi
+dynlink.cmo: dynlink.cmi dynlinkaux.cmo
 extract_crc.cmo: dynlink.cmi

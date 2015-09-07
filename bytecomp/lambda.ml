@@ -134,7 +134,7 @@ and comparison =
 and array_kind =
     Pgenarray | Paddrarray | Pintarray | Pfloatarray
 
-and boxed_integer =
+and boxed_integer = Primitive.boxed_integer =
     Pnativeint | Pint32 | Pint64
 
 and bigarray_kind =
@@ -560,10 +560,9 @@ let lam_of_loc kind loc =
   | Loc_FILE -> Lconst (Const_immstring file)
   | Loc_MODULE ->
     let filename = Filename.basename file in
-    let module_name =
-      try String.capitalize_ascii (Filename.chop_extension filename)
-      with Invalid_argument _ -> "//"^filename^"//"
-    in Lconst (Const_immstring module_name)
+    let name = Env.get_unit_name () in
+    let module_name = if name = "" then "//"^filename^"//" else name in
+    Lconst (Const_immstring module_name)
   | Loc_LOC ->
     let loc = Printf.sprintf "File %S, line %d, characters %d-%d"
         file lnum cnum enum in

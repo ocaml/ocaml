@@ -114,3 +114,6 @@ let _ =
 
   if !error then printf "TEST FAILED.\n" else printf "Test passed.\n"
 
+(* PR#6879 *)
+let f n = assert (1 mod n = 0)
+let () = f 1

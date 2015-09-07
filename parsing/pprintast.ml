@@ -1193,7 +1193,7 @@ class printer  ()= object(self:'self)
     | Pstr_recmodule decls -> (* 3.07 *)
         let aux f = function
           | ({pmb_expr={pmod_desc=Pmod_constraint (expr, typ)}} as pmb) ->
-              pp f "@[<hov2>and@ %s:%a@ =@ %a@]%a" pmb.pmb_name.txt
+              pp f "@[<hov2>@ and@ %s:%a@ =@ %a@]%a" pmb.pmb_name.txt
               self#module_type typ
               self#module_expr expr
               self#item_attributes pmb.pmb_attributes
@@ -1266,7 +1266,8 @@ class printer  ()= object(self:'self)
     in
     let constructor_declaration f pcd =
       pp f "|@;";
-      self#constructor_declaration f (pcd.pcd_name.txt, pcd.pcd_args, pcd.pcd_res, pcd.pcd_attributes)
+      self#constructor_declaration f (pcd.pcd_name.txt, pcd.pcd_args,
+                                      pcd.pcd_res, pcd.pcd_attributes)
     in
     let repr f =
       let intro f =
@@ -1298,7 +1299,9 @@ class printer  ()= object(self:'self)
       pp f "@[<2>type %a%a +=%a@]%a"
          (fun f -> function
                 | [] -> ()
-                | l ->  pp f "%a@;" (self#list self#type_param ~first:"(" ~last:")" ~sep:",") l)
+                | l ->  pp f "%a@;" (self#list self#type_param ~first:"("
+                                               ~last:")" ~sep:",")
+                                    l)
          x.ptyext_params
          self#longident_loc x.ptyext_path
          (self#list ~sep:"" extension_constructor)

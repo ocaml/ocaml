@@ -34,3 +34,8 @@ val report_error : formatter -> error -> unit
 
 val parse_implementation: formatter -> tool_name:string -> string -> Parsetree.structure
 val parse_interface: formatter -> tool_name:string -> string -> Parsetree.signature
+
+(* [call_external_preprocessor sourcefile pp] *)
+val call_external_preprocessor : string -> string -> string
+val open_and_check_magic : string -> string -> in_channel * bool
+val read_ast : string -> string -> 'a
