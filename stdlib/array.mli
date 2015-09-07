@@ -152,10 +152,14 @@ val fold_right : ('b -> 'a -> 'a) -> 'b array -> 'a -> 'a
    [f a.(0) (f a.(1) ( ... (f a.(n-1) x) ...))],
    where [n] is the length of the array [a]. *)
 
-external make_float: int -> float array = "caml_make_float_vect"
-(** [Array.make_float n] returns a fresh float array of length [n],
+external create_float: int -> float array = "caml_make_float_vect"
+(** [Array.create_float n] returns a fresh float array of length [n],
     with uninitialized data.
-    @since 4.02 *)
+    @since 4.03 *)
+
+val make_float: int -> float array
+  [@@ocaml.deprecated "Use Array.create_float instead."]
+(** @deprecated [Array.make_float] is an alias for {!Array.create_float}. *)
 
 (** {6 Sorting} *)
 
