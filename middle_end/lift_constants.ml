@@ -638,7 +638,7 @@ let var_to_block_field
     var_to_definition_tbl;
   var_to_block_field_tbl
 
-let program_symbols program =
+let program_symbols ~backend program =
   let new_fake_symbol =
     let r = ref 0 in
     fun () ->
@@ -649,13 +649,31 @@ let program_symbols program =
   let initialize_symbol_tbl = Symbol.Tbl.create 42 in
   let effect_tbl = Symbol.Tbl.create 42 in
   let symbol_definition_tbl = Symbol.Tbl.create 42 in
+  let add_project_closure_definitions def_symbol (const:Flambda.constant_defining_value) =
+    match const with
+    | Set_of_closures { function_decls = { funs } } ->
+        Variable.Map.iter (fun fun_var _ ->
+            let closure_id = Closure_id.wrap fun_var in
+            let closure_symbol = closure_symbol ~backend closure_id in
+            let project_closure =
+              Flambda.Project_closure (def_symbol, closure_id)
+            in
+            Symbol.Tbl.add symbol_definition_tbl closure_symbol
+              project_closure)
+          funs
+    | Project_closure _
+    | Allocated_const _
+    | Block _ -> ()
+  in
   let rec loop (program:Flambda.program) previous_effect =
     match program with
     | Flambda.Let_symbol (symbol,def,program) ->
+      add_project_closure_definitions symbol def;
       Symbol.Tbl.add symbol_definition_tbl symbol def;
       loop program previous_effect
     | Flambda.Let_rec_symbol (defs,program) ->
       List.iter (fun (symbol, def) ->
+          add_project_closure_definitions symbol def;
           Symbol.Tbl.add symbol_definition_tbl symbol def)
         defs;
       loop program previous_effect
@@ -736,7 +754,9 @@ let lift_constants program ~backend =
          pchambart: The access to compilenv *)
       ~compilation_unit:(Compilation_unit.get_current_exn ())
   in
-  let initialize_symbol_tbl, symbol_definition_tbl, effect_tbl = program_symbols program in
+  let initialize_symbol_tbl, symbol_definition_tbl, effect_tbl =
+    program_symbols ~backend program
+  in
   let var_to_symbol_tbl, var_to_definition_tbl, initialize_symbol_to_definition_tbl =
     assign_symbols_and_collect_constant_definitions ~backend ~program ~inconstants
   in
