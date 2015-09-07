@@ -62,8 +62,11 @@ run:
 	&& if $(BYTECODE_ONLY); then : ; else \
 	     printf " ocamlopt"; \
 	     ./program.native$(EXE) $(EXEC_ARGS) > $(MAIN_MODULE).result \
-	     && $(DIFF) $(MAIN_MODULE).reference $(MAIN_MODULE).result \
-	                >/dev/null; \
+	     && if [ -f "$(MAIN_MODULE).native.reference" ]; then \
+	       $(DIFF) $(MAIN_MODULE).native.reference $(MAIN_MODULE).result >/dev/null; \
+	     else \
+	       $(DIFF) $(MAIN_MODULE).reference $(MAIN_MODULE).result >/dev/null; \
+	     fi; \
 	   fi \
 	&& echo " => passed" || echo " => failed"
 
