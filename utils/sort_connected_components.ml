@@ -14,7 +14,7 @@ end = struct
     Array.iteri (fun src dsts -> List.iter (fun dst -> add dst src) dsts) graph;
     transposed
 
-  let depth_first_order graph =
+  let depth_first_order (graph : int list array) : int array =
     let size = Array.length graph in
     let marked = Array.make size false in
     let stack = Array.make size ~-1 in
@@ -34,6 +34,7 @@ end = struct
     for i = 0 to size - 1 do
       aux i
     done;
+    assert (List.for_all (fun i -> i >= 0 && i < size) (Array.to_list stack));
     stack
 
   let mark order graph =
