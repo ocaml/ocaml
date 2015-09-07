@@ -483,8 +483,6 @@ let program_graph
       )
       effect_tbl graph_with_initialisation
   in
-   Format.eprintf "@.dep graph:@ %a@." 
-     (Symbol.Map.print Symbol.Set.print) graph;
   let module Symbol_SCC = Sort_connected_components.Make (Symbol) in
   let components =
     Symbol_SCC.connected_components_sorted_from_roots_to_leaf
