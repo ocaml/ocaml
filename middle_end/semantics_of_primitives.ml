@@ -11,7 +11,7 @@
 (*                                                                        *)
 (**************************************************************************)
 
-type effects = No_effects | Has_effects
+type effects = No_effects | Only_generative_effects | Arbitrary_effects
 type coeffects = No_coeffects | Has_coeffects
 
 let for_primitive (prim : Lambda.primitive)
@@ -19,17 +19,17 @@ let for_primitive (prim : Lambda.primitive)
   match prim with
   | Pignore -> No_effects, No_coeffects
   | Pmakeblock _
-  | Pmakearray _ ->
-    No_effects, No_coeffects  (* Allocation: see note in the .mli. *)
+  | Pmakearray _ -> Only_generative_effects, No_coeffects
   | Pduprecord _ ->
-    No_effects, Has_coeffects  (* Might read a mutable record field. *)
+    Only_generative_effects,
+      Has_coeffects  (* Might read a mutable record field. *)
   | Pccall { prim_name =
       ( "caml_format_float" | "caml_format_int" | "caml_int32_format"
       | "caml_nativeint_format" | "caml_int64_format" ) } ->
     No_effects, No_coeffects
   | Plazyforce
-  | Pccall _ -> Has_effects, Has_coeffects
-  | Praise _ -> Has_effects, No_coeffects
+  | Pccall _ -> Arbitrary_effects, Has_coeffects
+  | Praise _ -> Arbitrary_effects, No_coeffects
   | Pnot
   | Pnegint
   | Paddint
@@ -47,9 +47,9 @@ let for_primitive (prim : Lambda.primitive)
     if second_arg_is_definitely_not_zero then
       No_effects, No_coeffects  (* Will not raise [Division_by_zero]. *)
     else
-      Has_effects, No_coeffects  (* May raise [Division_by_zero]. *)
+      Arbitrary_effects, No_coeffects  (* May raise [Division_by_zero]. *)
   | Poffsetint _ -> No_effects, No_coeffects
-  | Poffsetref _ -> Has_effects, Has_coeffects
+  | Poffsetref _ -> Arbitrary_effects, Has_coeffects
   | Pintoffloat
   | Pfloatofint
   | Pnegfloat
@@ -106,7 +106,7 @@ let for_primitive (prim : Lambda.primitive)
   | Pbigstring_load_16 false 
   | Pbigstring_load_32 false 
   | Pbigstring_load_64 false -> 
-    Has_effects, Has_coeffects  (* May trigger a bounds check exception. *)
+    Arbitrary_effects, Has_coeffects  (* May trigger a bounds check exception. *)
   | Psetfield _
   | Psetfloatfield _
   | Psetglobal _
@@ -124,7 +124,7 @@ let for_primitive (prim : Lambda.primitive)
   | Pbigstring_set_64 _ ->
     (* Whether or not some of these are "unsafe" is irrelevant; they always
        have an effect. *)
-    Has_effects, No_coeffects
+    Arbitrary_effects, No_coeffects
   | Pctconst _ -> No_effects, No_coeffects
   | Pbswap16
   | Pbbswap _ -> No_effects, No_coeffects

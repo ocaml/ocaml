@@ -11,6 +11,7 @@
 (*                                                                        *)
 (**************************************************************************)
 
+(* CR mshinwell: comment is out of date *)
 (** Description of the semantics of primitives, to be used for optimization
     purposes.
 
@@ -37,7 +38,7 @@
     respect to other expressions.
 *)
 
-type effects = No_effects | Has_effects
+type effects = No_effects | Only_generative_effects | Arbitrary_effects
 type coeffects = No_coeffects | Has_coeffects
 
 (** Describe the semantics of a primitive.  This does not take into account of

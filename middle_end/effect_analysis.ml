@@ -16,8 +16,9 @@ let no_effects_prim (prim : Lambda.primitive) =
     Semantics_of_primitives.for_primitive prim
       ~second_arg_is_definitely_not_zero:false
   with
-  | No_effects, (No_coeffects | Has_coeffects) -> true
-  | Has_effects, (No_coeffects | Has_coeffects) -> false
+  | (No_effects | Only_generative_effects), (No_coeffects | Has_coeffects) ->
+    true
+  | _ -> false
 
 let rec no_effects (flam : Flambda.t) =
   match flam with

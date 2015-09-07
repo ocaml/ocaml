@@ -201,8 +201,10 @@ let primitive_moveable (prim : Lambda.primitive)
   with
   | No_effects, No_coeffects -> Moveable
   | No_effects, Has_coeffects
-  | Has_effects, No_coeffects
-  | Has_effects, Has_coeffects -> Fixed
+  | Only_generative_effects, No_coeffects
+  | Only_generative_effects, Has_coeffects
+  | Arbitrary_effects, No_coeffects
+  | Arbitrary_effects, Has_coeffects -> Fixed
 
 (** Eliminate, through substitution, [let]-bindings of linear variables with
     moveable defining expressions. *)

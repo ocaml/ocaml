@@ -34,7 +34,6 @@ end = struct
     for i = 0 to size - 1 do
       aux i
     done;
-    assert (List.for_all (fun i -> i >= 0 && i < size) (Array.to_list stack));
     stack
 
   let mark order graph =
