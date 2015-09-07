@@ -101,8 +101,10 @@ let middle_end ppf ~sourcefile ~prefixname ~backend
       ++ Ref_to_variables.eliminate_ref
       +- "Inline_and_simplify noinline 2"
       ++ Inline_and_simplify.run ~never_inline:true ~backend
+(*
       +- "Remove_unused_globals"
       ++ Remove_unused_globals.remove_unused_globals
+*)
       ++ loop
   in
   let flam = loop flam in
