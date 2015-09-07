@@ -173,3 +173,22 @@ module Make(Id : Identifiable) = struct
   let connected_components_sorted_from_roots_to_leaf graph =
     Array.map fst (component_graph graph)
 end
+
+module I = Ext_types.Int
+module S = Make(I)
+let () =
+  let mab = 0 in
+  let p3919 = 3919 in
+  let s7259 = 7259 in
+  let s14980 = 14980 in
+  let p3870 = 3870 in
+  let m =
+    I.Map.add mab (I.Set.singleton p3919)
+      (I.Map.add p3919 (I.Set.singleton s7259)
+        (I.Map.add s14980 (I.Set.of_list [p3919; p3870])
+          (I.Map.add s7259 (I.Set.singleton p3919)
+            (I.Map.add p3870 I.Set.empty  (* not the same as the real bug *)
+              I.Map.empty))))
+  in
+  ignore (S.connected_components_sorted_from_roots_to_leaf m);
+  print_endline "ok"
