@@ -433,6 +433,32 @@ let rec print_program ppf (program : program) =
     print_program ppf program;
   | End root -> fprintf ppf "End %a" Symbol.print root
 
+let fold_lets t ~init ~for_defining_expr ~for_last_body =
+  let rec loop (t : t) ~acc ~rev_lets =
+    match t with
+    | Let (var, defining_expr, ((Let (_, _, _)) as body)) ->
+      let acc, defining_expr =
+        for_defining_expr acc var defining_expr
+      in
+      let rev_lets = (var, defining_expr) :: rev_lets in
+      loop body ~acc ~rev_lets
+    | Let (var, defining_expr, last_body) ->
+      let acc, defining_expr =
+        for_defining_expr acc var defining_expr
+      in
+      let rev_lets = (var, defining_expr) :: rev_lets in
+      let acc, last_body = for_last_body acc last_body in
+      let t =
+        List.fold_left (fun t (var, defining_expr) ->
+            Let (var, defining_expr, t))
+          last_body
+          rev_lets
+      in
+      acc, t
+    | _ -> for_last_body acc t
+  in
+  loop t ~acc:init ~rev_lets:[]
+
 (* CR mshinwell: this doesn't seem to cope with shadowed identifiers
    properly.  Check the original version.  Why don't we just do the
    subtraction as we pass back over binding points? *)
@@ -570,12 +596,10 @@ let free_variables_by_let ?ignore_uses_in_apply ?ignore_uses_in_project_var tree
     var, current_free, current_bound
   in
   let leave_let_body (var, previous_free, previous_bound) =
-    let new_free = !free in
-    let new_bound = !bound in
-    let var_really_free = Variable.Set.diff new_free new_bound in
-    map := Variable.Map.add var var_really_free !map;
-    free := Variable.Set.union new_free previous_free;
-    bound := Variable.Set.union new_bound previous_bound
+    let body_free = Variable.Set.diff !free !bound in
+    map := Variable.Map.add var body_free !map;
+    free := Variable.Set.union body_free previous_free;
+    bound := previous_bound
   in
   iter ?ignore_uses_in_apply ?ignore_uses_in_project_var tree
     ~free_variables ~bound_variable

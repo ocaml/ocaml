@@ -342,6 +342,32 @@ val free_variables_by_let
   -> t
   -> Variable.Set.t Variable.Map.t
 
+(** Used to avoid exceeding the stack limit when handling expressions with
+    multiple consecutive nested [Let]-expressions.  This saves rewriting large
+    simplification functions in CPS.
+
+    If the expression [e] is:
+        Let (v1, defining_expr1,
+          ...  (* all [Let]s *)
+          Let (vN, defining_exprN, body) ... )
+    then [fold_lets e ~init ~for_defining_expr ~for_last_body] is:
+        Let (v1, accum == for_defining_expr init defining_expr1,
+          ...
+          Let (vN, accum == for_defining_expr accum defining_exprN,
+            for_last_body accum body) ... )
+    The stack usage of [fold_lets] is independent of the depth of nesting of
+    the [Let]s.
+
+    If the expression [e] is not a [Let], then [for_last_body init e] is
+    returned.
+*)
+val fold_lets
+   : t
+  -> init:'a
+  -> for_defining_expr:('a -> Variable.t -> named -> 'a * named)
+  -> for_last_body:('a -> t -> 'a * t)
+  -> 'a * t
+
 (* CR mshinwell: try to move the non-recursive types out to a separate .mli *)
 (* CR mshinwell: consider moving [Flambda_utils] functions into here, now we
    are forced to have a .ml *)
