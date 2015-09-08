@@ -440,7 +440,8 @@ let declared_var_within_closure (flam:Flambda.program) =
     end;
     bound := Var_within_closure.Set.add var !bound
   in
-  Flambda_iterators.iter_on_set_of_closures_of_program ~f:(fun { Flambda.free_vars; _ } ->
+  Flambda_iterators.iter_on_set_of_closures_of_program
+    ~f:(fun { Flambda. free_vars; _ } ->
       Variable.Map.iter (fun id _ ->
           let var = Var_within_closure.wrap id in
           add_and_check var)
