@@ -99,8 +99,8 @@ let c_type_of_repr = function
   | Unboxed_float              -> "double"
   | Unboxed_integer Pint32     -> "int32_t"
   | Unboxed_integer Pint64     -> "int64_t"
-  | Unboxed_integer Pnativeint -> "long"
-  | Untagged_int               -> "long"
+  | Unboxed_integer Pnativeint -> "intnat"
+  | Untagged_int               -> "intnat"
 
 type proto =
   { params : native_repr list
@@ -210,21 +210,21 @@ let generate_stubs () =
       List.iteri proto.params ~f:(fun i p ->
         pr "  %(%d%d%);"
           (match p with
-           | Same_as_ocaml_repr         -> "set_long(%d, Long_val(x%d))"
+           | Same_as_ocaml_repr         -> "set_intnat(%d, Long_val(x%d))"
            | Unboxed_float              -> "set_double(%d, x%d)"
            | Unboxed_integer Pint32     -> "set_int32(%d, x%d)"
            | Unboxed_integer Pint64     -> "set_int64(%d, x%d)"
-           | Unboxed_integer Pnativeint -> "set_long(%d, x%d)"
-           | Untagged_int               -> "set_long(%d, x%d)")
+           | Unboxed_integer Pnativeint -> "set_intnat(%d, x%d)"
+           | Untagged_int               -> "set_intnat(%d, x%d)")
           i i);
       pr "  return %(%d%);"
         (match proto.return with
-         | Same_as_ocaml_repr         -> "Val_long(get_long(%d))"
+         | Same_as_ocaml_repr         -> "Val_long(get_intnat(%d))"
          | Unboxed_float              -> "get_double(%d)"
          | Unboxed_integer Pint32     -> "get_int32(%d)"
          | Unboxed_integer Pint64     -> "get_int64(%d)"
-         | Unboxed_integer Pnativeint -> "get_long(%d)"
-         | Untagged_int               -> "get_long(%d)")
+         | Unboxed_integer Pnativeint -> "get_intnat(%d)"
+         | Untagged_int               -> "get_intnat(%d)")
         (List.length proto.params);
       pr "}"
   )

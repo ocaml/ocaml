@@ -28,12 +28,12 @@ extern char *ocaml_buffer;
    equal. */
 extern char *c_buffer;
 
-#define get_long(n) *(long*)(ocaml_buffer+((n)*8))
+#define get_intnat(n) *(intnat*)(ocaml_buffer+((n)*8))
 #define get_int32(n) *(int32_t*)(ocaml_buffer+((n)*8))
 #define get_int64(n) *(int64_t*)(ocaml_buffer+((n)*8))
 #define get_double(n) *(double*)(ocaml_buffer+((n)*8))
 
-#define set_long(n, x) *(long*)(c_buffer+((n)*8)) = (x)
+#define set_intnat(n, x) *(intnat*)(c_buffer+((n)*8)) = (x)
 #define set_int32(n, x) *(int32_t*)(c_buffer+((n)*8)) = (x)
 #define set_int64(n, x) *(int64_t*)(c_buffer+((n)*8)) = (x)
 #define set_double(n, x) *(double*)(c_buffer+((n)*8)) = (x)
