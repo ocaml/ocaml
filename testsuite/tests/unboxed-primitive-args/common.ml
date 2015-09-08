@@ -190,6 +190,8 @@ let print_hex ~sizes ~arity buffer =
     done;
   done
 
+let printed_mismatches = ref 0
+
 let print_mismatch name proto ~ocaml_buffer ~c_buffer =
   let printf = Printf.printf in
   printf "Mismatch for %s\n" name;
@@ -209,7 +211,12 @@ let print_mismatch name proto ~ocaml_buffer ~c_buffer =
   let sizes = sizes proto |> Array.of_list in
   let arity = arity proto in
   printf "ocaml side : "; print_hex ~sizes ~arity ocaml_buffer; printf "\n";
-  printf "c side     : "; print_hex ~sizes ~arity     c_buffer; printf "\n"
+  printf "c side     : "; print_hex ~sizes ~arity     c_buffer; printf "\n";
+  incr printed_mismatches;
+  if !printed_mismatches >= 1000 then begin
+    printf "Output truncated at 1000 failures.";
+    exit 0
+  end
 
 external cleanup_normal
   :  int -> int -> int -> int -> int -> int -> int -> int
