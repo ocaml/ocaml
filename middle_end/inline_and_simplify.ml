@@ -781,7 +781,7 @@ and simplify_direct env r (tree : Flambda.t) : Flambda.t * R.t =
        points. *)
     simplify_using_approx_and_env env r (Var var) (E.find_exn env var)
   | Apply apply -> simplify_apply env r ~apply
-  | Let { var = id; defining_expr; body; free_vars_of_body } ->
+  | Let { var = id; defining_expr; body; free_vars_of_body = _ } ->
     let defining_expr, r = simplify_named env r defining_expr in
     (* When [defining_expr] is really a [Flambda.named] rather than an
        [Flambda.t], squash any intermediate [let], or we will never eliminate
@@ -795,6 +795,7 @@ and simplify_direct env r (tree : Flambda.t) : Flambda.t * R.t =
     let id, sb = Freshening.add_variable (E.freshening env) id in
     let env = E.set_freshening env sb in
     let body, r = simplify (E.add env id (R.approx r)) r body in
+    let free_vars_of_body = Flambda.free_variables body in
     let (expr : Flambda.t), r =
       if Variable.Set.mem id free_vars_of_body then
         (Flambda.create_let id defining_expr body), r
@@ -808,6 +809,7 @@ and simplify_direct env r (tree : Flambda.t) : Flambda.t * R.t =
            intermediate language (in particular to make it more obvious that
            the variable is unused). *)
         let fresh_var = Variable.create "for_side_effect_only" in
+        (* CR-someday mshinwell: wasteful second free variables traversal *)
         (Flambda.create_let fresh_var defining_expr body), r
     in
     expr, r
