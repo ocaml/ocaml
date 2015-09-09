@@ -368,6 +368,14 @@ val fold_lets
   -> for_last_body:('a -> t -> 'b * t)
   -> 'b * t
 
+(** Like [fold_lets], but just iteration.  [for_last_body] is never called
+    if the input expression is not a [Let]. *)
+val iter_lets
+   : t
+  -> for_defining_expr:(Variable.t -> named -> unit)
+  -> for_last_body:(t -> free_vars_of_body:Variable.Set.t -> unit)
+  -> unit
+
 (** Creates a [Let] expression.  (This computes the free variables of the
     body.) *)
 val create_let : Variable.t -> named -> t -> t

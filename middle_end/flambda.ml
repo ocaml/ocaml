@@ -440,7 +440,20 @@ let rec print_program ppf (program : program) =
     print_program ppf program;
   | End root -> fprintf ppf "End %a" Symbol.print root
 
-let free_variables ?ignore_uses_in_apply ?ignore_uses_in_project_var tree =
+let iter_lets t ~for_defining_expr ~for_last_body =
+  let rec loop (t : t) =
+    match t with
+    | Let { var; defining_expr; body = (Let _) as body; _ } ->
+      for_defining_expr var defining_expr;
+      loop body
+    | Let { var; defining_expr; body = last_body; free_vars_of_body } ->
+      for_defining_expr var defining_expr;
+      for_last_body last_body ~free_vars_of_body
+    | _ -> ()
+  in
+  loop t
+
+let rec free_variables ?ignore_uses_in_apply ?ignore_uses_in_project_var tree =
   let free = ref Variable.Set.empty in
   let bound = ref Variable.Set.empty in
   let free_variables ids = free := Variable.Set.union ids !free in
@@ -459,10 +472,13 @@ let free_variables ?ignore_uses_in_apply ?ignore_uses_in_project_var tree =
         | Some () -> ()
         end;
         List.iter free_variable args
-      | Let { var; defining_expr; body = _; free_vars_of_body } ->
-        bound_variable var;
-        aux_named defining_expr;
-        free_variables free_vars_of_body
+      | Let _ ->
+        iter_lets flam
+          ~for_defining_expr:(fun var defining_expr ->
+            bound_variable var;
+            aux_named defining_expr)
+          ~for_last_body:(fun _body ~free_vars_of_body ->
+            free_variables free_vars_of_body)
       | Let_mutable (_mut_var, var, body) ->
         free_variable var;
         aux body
@@ -539,7 +555,7 @@ let free_variables ?ignore_uses_in_apply ?ignore_uses_in_project_var tree =
     ~free_variables ~bound_variable;
   Variable.Set.diff !free !bound
 
-let create_let var defining_expr body : t =
+and create_let var defining_expr body : t =
   Let {
     var;
     defining_expr;
@@ -547,32 +563,11 @@ let create_let var defining_expr body : t =
     free_vars_of_body = free_variables body;
   }
 
-type proto_let =
-  { body : t;
-    free_vars_of_body : Variable.Set.t;
-  }
-
-let create_proto_let ~body : proto_let =
-  { body;
-    free_vars_of_body = free_variables body;
-  }
-
-let free_variables_of_proto_let_body proto_let =
-  proto_let.free_vars_of_body
-
-let create_let_from_proto_let var defining_expr proto_let : t =
-  Let {
-    var;
-    defining_expr;
-    body = proto_let.body;
-    free_vars_of_body = proto_let.free_vars_of_body;
-  }
-
-let free_variables_named tree =
+and free_variables_named tree =
   let var = Variable.create "dummy" in
   free_variables (create_let var tree (Var var))
 
-let fold_lets t ~init ~for_defining_expr ~for_last_body =
+and fold_lets t ~init ~for_defining_expr ~for_last_body =
   let rec loop (t : t) ~acc ~rev_lets =
     match t with
     | Let { var; defining_expr; body = (Let _) as body; _ } ->
@@ -597,6 +592,27 @@ let fold_lets t ~init ~for_defining_expr ~for_last_body =
     | _ -> for_last_body acc t
   in
   loop t ~acc:init ~rev_lets:[]
+
+type proto_let =
+  { body : t;
+    free_vars_of_body : Variable.Set.t;
+  }
+
+let create_proto_let ~body : proto_let =
+  { body;
+    free_vars_of_body = free_variables body;
+  }
+
+let free_variables_of_proto_let_body proto_let =
+  proto_let.free_vars_of_body
+
+let create_let_from_proto_let var defining_expr proto_let : t =
+  Let {
+    var;
+    defining_expr;
+    body = proto_let.body;
+    free_vars_of_body = proto_let.free_vars_of_body;
+  }
 
 let create_function_declaration ~params ~body ~stub ~dbg
       : function_declaration =
