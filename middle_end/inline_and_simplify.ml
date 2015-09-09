@@ -767,7 +767,7 @@ and simplify_direct env r (tree : Flambda.t) : Flambda.t * R.t =
         (* Generate a fresh name for increasing legibility of the
            intermediate language (in particular to make it more obvious that
            the variable is unused). *)
-        let fresh_var = Variable.create "for_svare_effect_only" in
+        let fresh_var = Variable.create "for_side_effect_only" in
         (Flambda.create_let_from_proto_let fresh_var defining_expr proto_let),
           r
     in

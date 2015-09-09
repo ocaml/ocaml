@@ -10,14 +10,7 @@
 (*   under the terms of the Q Public License version 1.0.                 *)
 (*                                                                        *)
 (**************************************************************************)
-
-(* CR mshinwell for pchambart: I don't understand the
-   directly_used_variables function well enough to adapt it to the new
-   types.  This function needs a comment, and it may need an exhaustive
-   match on primitives.
-*)
 (*
-
 let rename_var var =
   Variable.rename var
     ~current_compilation_unit:(Compilation_unit.get_current_exn ())
@@ -119,7 +112,9 @@ let eliminate_ref lam =
         exp
   in
   Flambda_iterators.map aux lam
-
 *)
+
+(* CR mshinwell: [Simplif] already does an optimization like this, which
+   should be sufficient for now. *)
 
 let eliminate_ref flam = flam
