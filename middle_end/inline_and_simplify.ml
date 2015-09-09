@@ -75,7 +75,7 @@ let simplify_free_variable env var ~f : Flambda.t * R.t =
     let var = Variable.rename var in
     let env = E.add env var approx in
     let body, r = f env var in
-    Let (var, named, body), r
+    (Flambda.create_let var named body), r
 
 let simplify_free_variables env vars ~f : Flambda.t * R.t =
   let rec collect_bindings vars env bound_vars : Flambda.t * R.t =
@@ -90,7 +90,7 @@ let simplify_free_variables env vars ~f : Flambda.t * R.t =
         let var = Variable.rename var in
         let env = E.add env var approx in
         let body, r = collect_bindings vars env (var::bound_vars) in
-        Let (var, named, body), r
+        (Flambda.create_let var named body), r
   in
   collect_bindings vars env []
 
@@ -108,7 +108,7 @@ let simplify_free_variables_named env vars ~f : Flambda.named * R.t =
         let var = Variable.rename var in
         let env = E.add env var approx in
         let body, r = collect_bindings vars env (var::bound_vars) in
-        Let (var, named, body), r
+        (Flambda.create_let var named body), r
   in
   let expr, r = collect_bindings vars env [] in
   Expr expr, r
@@ -680,8 +680,8 @@ and simplify_over_application env r ~args ~args_approxs ~function_decls
   in
   let func_var = Variable.create "full_apply" in
   let expr : Flambda.t =
-    Let (func_var, Expr expr,
-      Apply { func = func_var; args = remaining_args; kind = Indirect; dbg })
+    Flambda.create_let func_var (Expr expr)
+      (Apply { func = func_var; args = remaining_args; kind = Indirect; dbg })
   in
   simplify env r expr
 
@@ -769,8 +769,7 @@ and simplify_direct env r (tree : Flambda.t) : Flambda.t * R.t =
   debug_free_variables_check env tree ~name:"loop"
     ~calculate_free_variables:
       (Flambda.free_variables ?ignore_uses_in_apply:None
-        ?ignore_uses_in_project_var:None
-        ?free_variables_of_let_bodies:None)
+        ?ignore_uses_in_project_var:None)
     ~printer:Flambda.print;
   match tree with
   | Var var ->
@@ -789,7 +788,7 @@ and simplify_direct env r (tree : Flambda.t) : Flambda.t * R.t =
        certain cases (e.g. when a variable is simplified to a constant). *)
     let defining_expr =
       match defining_expr with
-      | Expr (Let (var1, defining_expr, Var var2))
+      | Expr (Let { var = var1; defining_expr; body = Var var2; _ })
           when Variable.equal var1 var2 -> defining_expr
       | _ -> defining_expr
     in
@@ -798,7 +797,7 @@ and simplify_direct env r (tree : Flambda.t) : Flambda.t * R.t =
     let body, r = simplify (E.add env id (R.approx r)) r body in
     let (expr : Flambda.t), r =
       if Variable.Set.mem id free_vars_of_body then
-        Flambda.Let (id, defining_expr, body), r
+        (Flambda.create_let id defining_expr body), r
       else if Effect_analysis.no_effects_named defining_expr then
         let r = R.map_benefit r (B.remove_code_named defining_expr) in
         body, r
@@ -809,7 +808,7 @@ and simplify_direct env r (tree : Flambda.t) : Flambda.t * R.t =
            intermediate language (in particular to make it more obvious that
            the variable is unused). *)
         let fresh_var = Variable.create "for_side_effect_only" in
-        Flambda.Let (fresh_var, defining_expr, body), r
+        (Flambda.create_let fresh_var defining_expr body), r
     in
     expr, r
   | Let_mutable (mut_var, var, body) ->
@@ -849,10 +848,10 @@ and simplify_direct env r (tree : Flambda.t) : Flambda.t * R.t =
   | Static_catch (i, vars, body, handler) ->
     begin
       match body with
-      | Let (var, def, body)
+      | Let { var; defining_expr = def; body; _ }
           when not (Flambda_utils.might_raise_static_exn def i) ->
         simplify_direct env r
-          (Flambda.Let (var, def, Static_catch (i, vars, body, handler)))
+          (Flambda.create_let var def (Static_catch (i, vars, body, handler)))
       | _ ->
         let i, sb = Freshening.add_static_exception (E.freshening env) i in
         let env = E.set_freshening env sb in
@@ -871,7 +870,7 @@ and simplify_direct env r (tree : Flambda.t) : Flambda.t * R.t =
                all arguments where guaranteed to be variables. *)
             let handler =
               List.fold_left2 (fun body var arg ->
-                  Flambda.Let (var, Flambda.Expr arg, body))
+                  Flambda.create_let var (Expr arg) body)
                 handler vars args
             in
             let r = R.exit_scope_catch r i in

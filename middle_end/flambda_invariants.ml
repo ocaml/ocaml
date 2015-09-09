@@ -141,8 +141,8 @@ let variable_and_symbol_invariants flam =
   let rec loop env (flam : Flambda.t) =
     match flam with
     (* Expressions that can bind [Variable.t]s: *)
-    | Let (var, def, body) ->
-      loop_named env def;
+    | Let { var; defining_expr; body; _ } ->
+      loop_named env defining_expr;
       loop (add_binding_occurrence env var) body
     | Let_mutable (mut_var, var, body) ->
       check_variable_is_bound env var;

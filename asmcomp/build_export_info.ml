@@ -109,7 +109,7 @@ let rec describe (env : env) (flam : Flambda.t) : Export_info.approx =
   | Var var ->
     find_approx env var
 
-  | Let(id, lam, body) ->
+  | Let { var = id; defining_expr = lam; body; _ } ->
     (* Format.eprintf "Let %a@." Variable.print id; *)
     let approx = describe_named env lam in
     let env = Variable.Map.add id approx env in

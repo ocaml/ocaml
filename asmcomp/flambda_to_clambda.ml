@@ -156,9 +156,10 @@ let to_clambda_const (const : Flambda.constant_defining_value_block_field)
 let rec to_clambda t env (flam : Flambda.t) : Clambda.ulambda =
   match flam with
   | Var var -> subst_var env var
-  | Let (var, def, body) ->
+  | Let { var; defining_expr; body; _ } ->
     let id, env_body = Env.add_fresh_ident env var in
-    Ulet (id, to_clambda_named t env var def, to_clambda t env_body body)
+    Ulet (id, to_clambda_named t env var defining_expr,
+      to_clambda t env_body body)
   | Let_mutable (mut_var, var, body) ->
     let id, env_body = Env.add_fresh_mutable_ident env mut_var in
     let def = subst_var env var in
