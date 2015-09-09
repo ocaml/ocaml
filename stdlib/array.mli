@@ -122,31 +122,31 @@ val of_list : 'a list -> 'a array
 (** [Array.of_list l] returns a fresh array containing the elements
    of [l]. *)
 
+external create_float: int -> float array = "caml_make_float_vect"
+(** [Array.create_float n] returns a fresh float array of length [n],
+    with uninitialized data.
+    @since 4.03 *)
+
+val make_float: int -> float array
+  [@@ocaml.deprecated "Use Array.create_float instead."]
+(** @deprecated [Array.make_float] is an alias for {!Array.create_float}. *)
+
+(** {6 Iterators} *)
+
 val iter : ('a -> unit) -> 'a array -> unit
 (** [Array.iter f a] applies function [f] in turn to all
    the elements of [a].  It is equivalent to
    [f a.(0); f a.(1); ...; f a.(Array.length a - 1); ()]. *)
 
-val iter2 : ('a -> 'b -> unit) -> 'a array -> 'b array -> unit
-(** [Array.iter2 f a b] applies function [f] to all the elements of [a]
-   and [b].
-   Raise [Invalid_argument] if the arrays are not the same size. *)
+val iteri : (int -> 'a -> unit) -> 'a array -> unit
+(** Same as {!Array.iter}, but the
+   function is applied to the index of the element as first argument,
+   and the element itself as second argument. *)
 
 val map : ('a -> 'b) -> 'a array -> 'b array
 (** [Array.map f a] applies function [f] to all the elements of [a],
    and builds an array with the results returned by [f]:
    [[| f a.(0); f a.(1); ...; f a.(Array.length a - 1) |]]. *)
-
-val map2 : ('a -> 'b -> 'c) -> 'a array -> 'b array -> 'c array
-(** [Array.map2 f a b] applies function [f] to all the elements of [a]
-   and [b], and builds an array with the results returned by [f]:
-   [[| f a.(0) b.(0); f a.(1) b.(1); ...; f a.(Array.length a - 1) b.(Array.length b - 1)|]].
-   Raise [Invalid_argument] if the arrays are not the same size. *)
-
-val iteri : (int -> 'a -> unit) -> 'a array -> unit
-(** Same as {!Array.iter}, but the
-   function is applied to the index of the element as first argument,
-   and the element itself as second argument. *)
 
 val mapi : (int -> 'a -> 'b) -> 'a array -> 'b array
 (** Same as {!Array.map}, but the
@@ -163,14 +163,18 @@ val fold_right : ('b -> 'a -> 'a) -> 'b array -> 'a -> 'a
    [f a.(0) (f a.(1) ( ... (f a.(n-1) x) ...))],
    where [n] is the length of the array [a]. *)
 
-external create_float: int -> float array = "caml_make_float_vect"
-(** [Array.create_float n] returns a fresh float array of length [n],
-    with uninitialized data.
-    @since 4.03 *)
+(** {6 Iterators on two arrays} *)
 
-val make_float: int -> float array
-  [@@ocaml.deprecated "Use Array.create_float instead."]
-(** @deprecated [Array.make_float] is an alias for {!Array.create_float}. *)
+val iter2 : ('a -> 'b -> unit) -> 'a array -> 'b array -> unit
+(** [Array.iter2 f a b] applies function [f] to all the elements of [a]
+   and [b].
+   Raise [Invalid_argument] if the arrays are not the same size. *)
+
+val map2 : ('a -> 'b -> 'c) -> 'a array -> 'b array -> 'c array
+(** [Array.map2 f a b] applies function [f] to all the elements of [a]
+   and [b], and builds an array with the results returned by [f]:
+   [[| f a.(0) b.(0); f a.(1) b.(1); ...; f a.(Array.length a - 1) b.(Array.length b - 1)|]].
+   Raise [Invalid_argument] if the arrays are not the same size. *)
 
 (** {6 Sorting} *)
 
