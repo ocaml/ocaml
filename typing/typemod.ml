@@ -1457,7 +1457,7 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
 let type_toplevel_phrase env s =
   Env.reset_required_globals ();
   type_structure ~toplevel:true false None env s Location.none
-(*let type_module_alias = type_module ~alias:true true false None*)
+let type_module_alias = type_module ~alias:true true false None
 let type_module = type_module true false None
 let type_structure = type_structure false None
 
@@ -1548,7 +1548,7 @@ let type_package env m p nl tl =
 
 (* Fill in the forward declarations *)
 let () =
-  Typecore.type_module := type_module;
+  Typecore.type_module := type_module_alias;
   Typetexp.transl_modtype_longident := transl_modtype_longident;
   Typetexp.transl_modtype := transl_modtype;
   Typecore.type_open := type_open_ ?toplevel:None;

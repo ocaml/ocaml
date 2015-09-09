@@ -171,6 +171,8 @@ Bug fixes:
 - PR#6931: Incorrect error message
 - PR#6938: fix regression on "%047.27{l,L,n}{d,i,x,X,o,u}"
   (Benoît Vaugon, report by Arduino Cascella)
+- PR#6944: let module X = Path in … is not typed as a module alias
+  (Jacques Garrigue, report by def)
 - PR#6982: unexpected type error when packing a module alias
 - GPR#205: Clear caml_backtrace_last_exn before registering as root (report
   and fix by Frederic Bour)
