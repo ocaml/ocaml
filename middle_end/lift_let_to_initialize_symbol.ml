@@ -251,20 +251,10 @@ let rec split_let free_variables_map (expr:Flambda.t) =
               Flambda.Let (var, named, expr))
       end
     end
-  | Let (var, def, body) as expr ->
+  | Let { var; defining_expr = def; body; free_vars_of_body; } as expr ->
     (* Format.printf "not copy variable %a@." *)
     (*   Variable.print var; *)
-    (* It is ok to precompute the free variables even if we modify the expression:
-       the fact that those variables are free or not is not affected *)
-    let body_free_variables =
-      try Variable.Map.find var free_variables_map with
-      | Not_found ->
-          Misc.fatal_errorf "no memoization for free variables of let binding of %a in %a"
-            Variable.print var
-            Flambda.print expr
-    in
-    (* let body_free_variables = Flambda.free_variables body in *)
-    if Variable.Set.mem var body_free_variables then begin
+    if Variable.Set.mem var free_vars_of_body then begin
       let symbol = make_variable_symbol var in
       let expr =
         let var' = Variable.freshen var in
@@ -276,7 +266,7 @@ let rec split_let free_variables_map (expr:Flambda.t) =
       (*   Flambda.print body Flambda.print body'; *)
       let body' = Lift_code.lift_lets_expr body' in
       let def_free_vars = Flambda.free_variables expr in
-      Some (def_free_vars, body_free_variables,
+      Some (def_free_vars, free_vars_of_body,
             Initialisation (symbol, Tag.create_exn 0, [expr]), body')
     end
     else begin
@@ -285,7 +275,7 @@ let rec split_let free_variables_map (expr:Flambda.t) =
         Flambda.Let (var', def, Var var')
       in
       let def_free_vars = Flambda.free_variables expr in
-      Some (def_free_vars, body_free_variables, Effect expr, body)
+      Some (def_free_vars, free_vars_of_body, Effect expr, body)
     end
   | _ -> None
 

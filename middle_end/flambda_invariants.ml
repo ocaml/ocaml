@@ -272,7 +272,7 @@ let variable_and_symbol_invariants flam =
             ignore_debuginfo dbg;
             (* Check that [free_variables], which is only present as an
                optimization, is not lying. *)
-            let free_variables' = Free_variables.calculate body in
+            let free_variables' = Flambda.free_variables body in
             if not (Variable.Set.subset free_variables' free_variables) then
               raise (Free_variables_set_is_lying (fun_var,
                 free_variables, free_variables', function_decl));
@@ -636,7 +636,7 @@ let check_exn ?(kind=Normal) ?(cmxfile=false) (flam:Flambda.program) =
         Variable.print var
     | Free_variables_set_is_lying (var, claimed, calculated, function_decl) ->
       Format.eprintf ">> Function declaration whose [free_variables] set (%a) \
-          is not a superset of the result of [Free_variables.calculate] \
+          is not a superset of the result of [Flambda.free_variables] \
           applied to the body of the function (%a).  Declaration: %a"
         Variable.Set.print claimed
         Variable.Set.print calculated

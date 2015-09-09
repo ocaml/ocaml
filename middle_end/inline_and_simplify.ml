@@ -687,7 +687,7 @@ and simplify_over_application env r ~args ~args_approxs ~function_decls
 
 and simplify_named env r (tree : Flambda.named) : Flambda.named * R.t =
   debug_free_variables_check env tree ~name:"simplify_named"
-    ~calculate_free_variables:Free_variables.calculate_named
+    ~calculate_free_variables:Flambda.free_variables_named
     ~printer:Flambda.print_named;
   match tree with
   | Symbol sym ->
@@ -768,7 +768,7 @@ and simplify_named env r (tree : Flambda.named) : Flambda.named * R.t =
 and simplify_direct env r (tree : Flambda.t) : Flambda.t * R.t =
   debug_free_variables_check env tree ~name:"loop"
     ~calculate_free_variables:
-      (Free_variables.calculate ?ignore_uses_in_apply:None
+      (Flambda.free_variables ?ignore_uses_in_apply:None
         ?ignore_uses_in_project_var:None
         ?free_variables_of_let_bodies:None)
     ~printer:Flambda.print;
@@ -782,7 +782,7 @@ and simplify_direct env r (tree : Flambda.t) : Flambda.t * R.t =
        points. *)
     simplify_using_approx_and_env env r (Var var) (E.find_exn env var)
   | Apply apply -> simplify_apply env r ~apply
-  | Let (id, defining_expr, body) ->
+  | Let { var = id; defining_expr; body; free_vars_of_body } ->
     let defining_expr, r = simplify_named env r defining_expr in
     (* When [defining_expr] is really a [Flambda.named] rather than an
        [Flambda.t], squash any intermediate [let], or we will never eliminate
@@ -796,12 +796,8 @@ and simplify_direct env r (tree : Flambda.t) : Flambda.t * R.t =
     let id, sb = Freshening.add_variable (E.freshening env) id in
     let env = E.set_freshening env sb in
     let body, r = simplify (E.add env id (R.approx r)) r body in
-    let free_variables_of_body =
-      Free_variables.calculate body
-        ~free_variables_of_let_bodies:(R.free_variables_of_let_bodies r)
-    in
     let (expr : Flambda.t), r =
-      if Variable.Set.mem id free_variables_of_body then
+      if Variable.Set.mem id free_vars_of_body then
         Flambda.Let (id, defining_expr, body), r
       else if Effect_analysis.no_effects_named defining_expr then
         let r = R.map_benefit r (B.remove_code_named defining_expr) in
@@ -814,12 +810,6 @@ and simplify_direct env r (tree : Flambda.t) : Flambda.t * R.t =
            the variable is unused). *)
         let fresh_var = Variable.create "for_side_effect_only" in
         Flambda.Let (fresh_var, defining_expr, body), r
-    in
-    let r =
-      (* Cache the free variables of this [let] body to improve performance
-         when the [let] is nested inside another. *)
-      R.set_free_variables_of_let_bodies r
-        (Variable.Map.singleton id free_variables_of_body)
     in
     expr, r
   | Let_mutable (mut_var, var, body) ->

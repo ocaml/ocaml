@@ -261,7 +261,7 @@ let toplevel_substitution sb tree =
   Flambda_iterators.map_toplevel aux aux_named tree
 
 let make_closure_declaration ~id ~body ~params : Flambda.t =
-  let free_variables = Free_variables.calculate body in
+  let free_variables = Flambda.free_variables body in
   let param_set = Variable.Set.of_list params in
   if not (Variable.Set.subset param_set free_variables) then begin
     Misc.fatal_error "Flambda_utils.make_closure_declaration"

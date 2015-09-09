@@ -213,7 +213,6 @@ module Result = struct
       used_staticfail : Static_exception.Set.t;
       inlining_threshold : Inlining_cost.inlining_threshold;
       benefit : Inlining_cost.Benefit.t;
-      free_variables_of_let_bodies : Variable.Set.t Variable.Map.t;
     }
 
   let create () =
@@ -223,7 +222,6 @@ module Result = struct
         (* CR pchambart: Add a warning if this is too big *)
         Inlining_cost.Can_inline_if_no_larger_than !Clflags.inline_threshold;
       benefit = Inlining_cost.Benefit.zero;
-      free_variables_of_let_bodies = Variable.Map.empty;
     }
 
   let approx t = t.approx
@@ -251,9 +249,4 @@ module Result = struct
     { t with inlining_threshold }
 
   let inlining_threshold t = t.inlining_threshold
-
-  let set_free_variables_of_let_bodies t free_variables_of_let_bodies =
-    { t with free_variables_of_let_bodies; }
-
-  let free_variables_of_let_bodies t = t.free_variables_of_let_bodies
 end

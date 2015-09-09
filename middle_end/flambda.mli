@@ -131,7 +131,7 @@ type project_var = {
 
 type t =
   | Var of Variable.t
-  | Let of Variable.t * named * t
+  | Let of let_expr
   | Let_mutable of Mutable_variable.t * Variable.t * t
   | Let_rec of (Variable.t * named) list * t
   | Apply of apply
@@ -207,6 +207,14 @@ and named =
    we should probably introduce [Mutable_var] into [named] if we introduce
    more complicated analyses on these in the future.  Alternatively, maybe
    consider removing mutable variables altogether. *)
+
+and let_expr = private {
+  var : Variable.t;
+  defining_expr : named;
+  body : t;
+  (* [free_vars_of_body] is an important optimization. *)
+  free_vars_of_body : Variable.Set.t;
+}
 
 and set_of_closures = private {
   function_decls : function_declarations;
@@ -329,18 +337,10 @@ type program =
 val free_variables
    : ?ignore_uses_in_apply:unit
   -> ?ignore_uses_in_project_var:unit
-  -> ?free_variables_of_let_bodies:Variable.Set.t Variable.Map.t
   -> t
   -> Variable.Set.t
 
 val free_variables_named : named -> Variable.Set.t
-
-(* Free variables bound at each let declaration (not let-rec) *)
-val free_variables_by_let
-  : ?ignore_uses_in_apply:unit
-  -> ?ignore_uses_in_project_var:unit
-  -> t
-  -> Variable.Set.t Variable.Map.t
 
 (** Used to avoid exceeding the stack limit when handling expressions with
     multiple consecutive nested [Let]-expressions.  This saves rewriting large
@@ -367,6 +367,8 @@ val fold_lets
   -> for_defining_expr:('a -> Variable.t -> named -> 'a * named)
   -> for_last_body:('a -> t -> 'b * t)
   -> 'b * t
+
+val create_let : Variable.t -> named -> t -> t
 
 (* CR mshinwell: try to move the non-recursive types out to a separate .mli *)
 (* CR mshinwell: consider moving [Flambda_utils] functions into here, now we

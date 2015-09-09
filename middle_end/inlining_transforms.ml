@@ -139,7 +139,7 @@ let inline_by_copying_function_body ~env ~r ~function_decls ~lhs_of_application
   in
   debug_free_variables_check env expr ~name:"inline_by_copying_function_body"
     ~calculate_free_variables:
-      (Free_variables.calculate ?ignore_uses_in_apply:None
+      (Flambda.free_variables ?ignore_uses_in_apply:None
         ?ignore_uses_in_project_var:None
         ?free_variables_of_let_bodies:None)
     ~printer:Flambda.print;

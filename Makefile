@@ -146,7 +146,6 @@ MIDDLE_END=\
   middle_end/semantics_of_primitives.cmo \
   middle_end/allocated_const.cmo \
   middle_end/flambda.cmo \
-  middle_end/free_variables.cmo \
   middle_end/flambda_iterators.cmo \
   middle_end/flambda_utils.cmo \
   middle_end/inlining_cost.cmo \
