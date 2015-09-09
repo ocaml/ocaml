@@ -167,31 +167,6 @@ let populate_closure_approximations
       env function_decl.params in
   env
 
-let debug_free_variables_check env tree ~name ~calculate_free_variables
-      ~printer =
-  (* CR mshinwell: add compiler option to enable this expensive check *)
-  let enabled =
-    try ignore (Sys.getenv "FLAMBDA_FV_CHECK"); true with _ -> false
-  in
-  if enabled then begin
-    let fv = calculate_free_variables tree in
-    Variable.Set.iter (fun var ->
-        let var = Freshening.apply_variable (E.freshening env) var in
-        match Inline_and_simplify_aux.Env.find_opt env var with
-        | Some _ -> ()
-        | None ->
-          Misc.fatal_errorf "Unbound variable (in compiler function `%s'): \
-              var=%a %a fv=%a env=%a %s\n"
-            name
-            Variable.print var
-            printer tree
-            Variable.Set.print fv
-            Inline_and_simplify_aux.Env.print env
-            (Printexc.raw_backtrace_to_string
-              (Printexc.get_callstack max_int)))
-      fv
-  end
-
 let simplify_const (const : Flambda.const) =
   match const with
   | Int i -> A.value_int i
@@ -686,9 +661,6 @@ and simplify_over_application env r ~args ~args_approxs ~function_decls
   simplify env r expr
 
 and simplify_named env r (tree : Flambda.named) : Flambda.named * R.t =
-  debug_free_variables_check env tree ~name:"simplify_named"
-    ~calculate_free_variables:Flambda.free_variables_named
-    ~printer:Flambda.print_named;
   match tree with
   | Symbol sym ->
     let approx =
@@ -766,11 +738,6 @@ and simplify_named env r (tree : Flambda.named) : Flambda.named * R.t =
     Expr expr, r
 
 and simplify_direct env r (tree : Flambda.t) : Flambda.t * R.t =
-  debug_free_variables_check env tree ~name:"loop"
-    ~calculate_free_variables:
-      (Flambda.free_variables ?ignore_uses_in_apply:None
-        ?ignore_uses_in_project_var:None)
-    ~printer:Flambda.print;
   match tree with
   | Var var ->
     let var = Freshening.apply_variable (E.freshening env) var in
