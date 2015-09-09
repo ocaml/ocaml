@@ -319,8 +319,6 @@ let add_extracted introduced program =
     introduced program
 
 let rec split_program (program:Flambda.program) : Flambda.program =
-Printf.eprintf "split_program starting\n%!";
-let result : Flambda.program =
   match program with
   | End s -> End s
   | Import_symbol(s, program) ->
@@ -349,10 +347,6 @@ let result : Flambda.program =
     let introduced, field = introduce_symbols field in
     add_extracted introduced
       (Flambda.Initialize_symbol(symbol, tag, [field], program))
-in
-Printf.eprintf "split_program ending\n%!";
-result
-
 
 let lift ~backend:_ (f:Flambda.program) =
   (* Format.printf "@.before lift@ %a@." Flambda.print_program f; *)
