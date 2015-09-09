@@ -14,7 +14,7 @@
 let apply_on_subexpressions f f_named (flam : Flambda.t) =
   match flam with
   | Var _ | Apply _ | Assign _ | Send _ | Proved_unreachable -> ()
-  | Let (_, defining_expr, body) ->
+  | Let { defining_expr; body; _ } ->
     f_named defining_expr;
     f body
   | Let_mutable (_mut_var, _var, body) ->
@@ -50,9 +50,9 @@ let iter_general ~toplevel f f_named maybe_named =
     f t;
     match t with
     | Var _ | Apply _ | Assign _ | Send _ | Proved_unreachable -> ()
-    | Let (_, f1, f2) ->
-      aux_named f1;
-      aux f2
+    | Let { defining_expr; body; } ->
+      aux_named defining_expr;
+      aux body
     | Let_mutable (_mut_var, _var, body) ->
       aux body
     | Let_rec (defs, body) ->
@@ -107,7 +107,7 @@ let iter_named_toplevel f f_named named =
 
 let iter_all_immutable_let_and_let_rec_bindings t ~f =
   iter_expr (function
-      | Let (var, named, _) -> f var named
+      | Let { var; defining_expr; _ } -> f var defining_expr
       | Let_rec (defs, _) -> List.iter (fun (var, named) -> f var named) defs
       | _ -> ())
     t
@@ -247,10 +247,10 @@ let map_general ~toplevel f f_named tree =
     let exp : Flambda.t =
       match tree with
       | Var _ | Apply _ | Assign _ | Send _ | Proved_unreachable -> tree
-      | Let (id, lam, body) ->
-        let lam = aux_named id lam in
+      | Let { var; defining_expr; body; _ } ->
+        let defining_expr = aux_named var defining_expr in
         let body = aux body in
-        Let (id, lam, body)
+        Flambda.create_let var defining_expr body
       | Let_mutable (mut_var, var, body) ->
         let body = aux body in
         Let_mutable (mut_var, var, body)

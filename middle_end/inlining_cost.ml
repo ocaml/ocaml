@@ -64,8 +64,9 @@ let lambda_smaller' lam ~than:threshold =
     | Assign _ -> incr size
     | Send _ -> size := !size + 8
     | Proved_unreachable -> ()
-    | Let (_, lam, body) ->
-      lambda_named_size lam; lambda_size body
+    | Let { defining_expr; body; _ } ->
+      lambda_named_size defining_expr;
+      lambda_size body
     | Let_mutable (_, _, body) -> lambda_size body
     | Let_rec (bindings, body) ->
       List.iter (fun (_, lam) -> lambda_named_size lam) bindings;

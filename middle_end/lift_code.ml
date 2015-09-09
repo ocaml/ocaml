@@ -19,8 +19,12 @@ type lifter = Flambda.program -> Flambda.program
 let lift_lets_expr tree =
   let rec aux (expr : Flambda.t) : Flambda.t =
     match expr with
-    | Let (v1, Expr (Let (v2, def2, body2)), body1) ->
-      Let (v2, def2, aux (Flambda.Let (v1, Expr body2, body1)))
+    | Let { var = v1;
+        defining_expr =
+          Expr (Let { var = v2; defining_expr = def2; body = body2; _ });
+        body = body1; _ } ->
+      Flambda.create_let v2 def2
+        (aux (Flambda.create_let v1 (Expr body2) body1))
     | e -> e
   in
   Flambda_iterators.map aux (fun (named : Flambda.named) -> named) tree
@@ -64,5 +68,5 @@ let lifting_helper exprs ~evaluation_order ~create_body ~name =
     | `Left_to_right -> List.rev lets
   in
   List.fold_left (fun body (v, expr) ->
-      Flambda.Let (v, Expr expr, body))
+      Flambda.create_let v (Expr expr) body)
     (create_body vars) lets

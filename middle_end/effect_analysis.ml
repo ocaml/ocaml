@@ -23,7 +23,8 @@ let no_effects_prim (prim : Lambda.primitive) =
 let rec no_effects (flam : Flambda.t) =
   match flam with
   | Var _ -> true
-  | Let (_, def, body) -> no_effects_named def && no_effects body
+  | Let { defining_expr; body; _ } ->
+    no_effects_named defining_expr && no_effects body
   | Let_mutable (_, _, body) -> no_effects body
   | Let_rec (defs, body) ->
     no_effects body

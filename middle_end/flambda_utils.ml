@@ -41,7 +41,7 @@ let description_of_toplevel_node (expr : Flambda.t) =
   | Assign _ -> "assign"
   | Send _ -> "send"
   | Proved_unreachable -> "unreachable"
-  | Let (id, _, _) -> Format.asprintf "let %a" Variable.print id
+  | Let { var; _ } -> Format.asprintf "let %a" Variable.print var
   | Let_mutable _ -> "let_mutable"
   | Let_rec _ -> "letrec"
   | If_then_else _ -> "if"
@@ -74,8 +74,10 @@ let rec same (l1 : Flambda.t) (l2 : Flambda.t) =
       && Variable.equal a1.func a2.func
       && Misc.samelist Variable.equal a1.args a2.args
   | Apply _, _ | _, Apply _ -> false
-  | Let (v1, a1, b1), Let (v2, a2, b2) ->
-    Variable.equal v1 v2 && same_named a1 a2 && same b1 b2
+  | Let { var = var1; defining_expr = defining_expr1; body = body1; _ },
+      Let { var = var2; defining_expr = defining_expr2; body = body2; _ } ->
+    Variable.equal var1 var2 && same_named defining_expr1 defining_expr2
+      && same body1 body2
   | Let _, _ | _, Let _ -> false
   | Let_mutable (mv1, v1, b1), Let_mutable (mv2, v2, b2) ->
     Mutable_variable.equal mv1 mv2
@@ -310,13 +312,13 @@ let make_closure_declaration ~id ~body ~params : Flambda.t =
     Variable.create "project_closure"
       ~current_compilation_unit:compilation_unit
   in
-  Let (set_of_closures_var, Set_of_closures (set_of_closures),
-    Let (project_closure_var, project_closure,
-      Var (project_closure_var)))
+  Flambda.create_let set_of_closures_var (Set_of_closures set_of_closures)
+    (Flambda.create_let project_closure_var project_closure
+      (Var (project_closure_var)))
 
 let bind ~bindings ~body =
   List.fold_left (fun expr (var, var_def) ->
-      Flambda.Let (var, var_def, expr))
+      Flambda.create_let var var_def expr)
     body bindings
 
 let name_expr (named : Flambda.named) : Flambda.t =
@@ -325,7 +327,7 @@ let name_expr (named : Flambda.named) : Flambda.t =
       ~current_compilation_unit:(Compilation_unit.get_current_exn ())
       "named"
   in
-  Let (var, named, Var var)
+  Flambda.create_let var named (Var var)
 
 let rec all_lifted_constants (program : Flambda.program) =
   match program with
