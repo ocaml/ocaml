@@ -1518,6 +1518,8 @@ let type_package env m p nl tl =
   let (mp, env) =
     match modl.mod_desc with
       Tmod_ident (mp,_) -> (mp, env)
+    | Tmod_constraint ({mod_desc=Tmod_ident (mp,_)}, mty, Tmodtype_implicit, _)
+        -> (mp, env)  (* PR#6982 *)
     | _ ->
       let (id, new_env) = Env.enter_module ~arg:true "%M" modl.mod_type env in
       (Pident id, new_env)
