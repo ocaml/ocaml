@@ -1106,6 +1106,8 @@ let instance_list env schl =
   tyl
 
 let reified_var_counter = ref Vars.empty
+let reset_reified_var_counter () =
+  reified_var_counter := Vars.empty
 
 (* names given to new type constructors.
    Used for existential types and
@@ -1115,7 +1117,8 @@ let get_new_abstract_name s =
     try Vars.find s !reified_var_counter + 1
     with Not_found -> 0 in
   reified_var_counter := Vars.add s index !reified_var_counter;
-  Printf.sprintf "%s#%d" s index
+  if index = 0 && s <> "" && s.[String.length s - 1] <> '$' then s else
+  Printf.sprintf "%s%d" s index
 
 let new_declaration newtype manifest =
   {
@@ -1138,8 +1141,8 @@ let instance_constructor ?in_pattern cstr =
         let decl = new_declaration (Some (newtype_lev, newtype_lev)) None in
         let name =
           match repr existential with
-            {desc = Tvar (Some name)} -> name
-          | _ -> "ex"
+            {desc = Tvar (Some name)} -> "$" ^ cstr.cstr_name ^ "_'" ^ name
+          | _ -> "$" ^ cstr.cstr_name
         in
         let (id, new_env) =
           Env.enter_type (get_new_abstract_name name) decl !env in
@@ -1940,6 +1943,7 @@ let reify env t =
   let newtype_level = get_newtype_level () in
   let create_fresh_constr lev name =
     let decl = new_declaration (Some (newtype_level, newtype_level)) None in
+    let name = match name with Some s -> "$'"^s | _ -> "$" in
     let name = get_new_abstract_name name in
     let (id, new_env) = Env.enter_type name decl !env in
     let t = newty2 lev (Tconstr (Path.Pident id,[],ref Mnil))  in
@@ -1953,8 +1957,7 @@ let reify env t =
       visited := TypeSet.add ty !visited;
       match ty.desc with
         Tvar o ->
-          let name = match o with Some s -> s | _ -> "ex" in
-          let t = create_fresh_constr ty.level name in
+          let t = create_fresh_constr ty.level o in
           link_type ty t
       | Tvariant r ->
           let r = row_repr r in
@@ -1963,8 +1966,7 @@ let reify env t =
             let m = r.row_more in
             match m.desc with
               Tvar o ->
-                let name = match o with Some s -> s | _ -> "ex" in
-                let t = create_fresh_constr m.level name in
+                let t = create_fresh_constr m.level o in
                 let row =
                   {r with row_fields=[]; row_fixed=true; row_more = t} in
                 link_type m (newty2 m.level (Tvariant row))

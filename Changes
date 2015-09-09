@@ -131,6 +131,9 @@ Bug fixes:
 - PR#5663: program rejected due to nongeneralizable type variable that
     appears nowhere
   (Jacques Garrigue, report by Stephen Weeks)
+- PR#5780: Strange type variable names in error messages (GADTs)
+    (only made the names more informative)
+  (Jacques Garrigue, report by Sebastien Furic)
 - PR#5887: move the byterun/*.h headers to byterun/caml/*.h to avoid header
     name clashes
   (Jérôme Vouillon and Adrien Nader and Peter Zotov)

@@ -334,6 +334,7 @@ let used_variables = ref (Tbl.empty : (string, type_expr * Location.t) Tbl.t)
 
 let reset_type_variables () =
   reset_global_level ();
+  Ctype.reset_reified_var_counter ();
   type_variables := Tbl.empty
 
 let narrow () =
