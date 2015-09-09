@@ -130,6 +130,14 @@ val all_lifted_constant_sets_of_closures
     symbol.) *)
 val all_sets_of_closures : Flambda.program -> Flambda.set_of_closures list
 
+val make_variable_symbol : Variable.t -> Symbol.t
+
+val substitute_variable_to_symbol
+   : Variable.t
+  -> Symbol.t
+  -> Flambda.t
+  -> Flambda.t
+
 (** For the compilation of switch statements. *)
 module Switch_storer : sig
   val mk_store : unit -> Flambda.t Switch.t_store

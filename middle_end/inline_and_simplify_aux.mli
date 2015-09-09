@@ -66,6 +66,7 @@ module Env : sig
   val redefine_symbol : t -> Symbol.t -> Simple_value_approx.t -> t
   val find_symbol_exn : t -> Symbol.t -> Simple_value_approx.t
   val find_symbol_opt : t -> Symbol.t -> Simple_value_approx.t option
+  val find_symbol_fatal : t -> Symbol.t -> Simple_value_approx.t
 
   (** Whether the environment has an approximation for the given variable. *)
   val mem : t -> Variable.t -> bool
