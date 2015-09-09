@@ -61,7 +61,7 @@ let rec tail_variable : Flambda.t -> Variable.t option = function
   | Var v -> Some v
   | Let_rec (_, e)
   | Let_mutable (_, _, e)
-  | Let (_,_,e) -> tail_variable e
+  | Let { body = e; _ } -> tail_variable e
   | _ -> None
 
 let closure_symbol ~(backend:(module Backend_intf.S)) closure_id =
@@ -543,8 +543,7 @@ let introduce_free_variables_in_set_of_closures
         | Symbol sym -> Symbol sym
         | Const c -> Const c
       in
-      Flambda.Let (fresh, named, expr),
-      Variable.Map.add var fresh subst
+      (Flambda.create_let fresh named expr), Variable.Map.add var fresh subst
     | exception Not_found ->
       (* The variable is bound by the closure or the arguments or not
          constant. In either case it does not need to be binded *)

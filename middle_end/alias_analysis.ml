@@ -185,7 +185,7 @@ let constant_defining_value_block_field_id : Flambda.constant_defining_value_blo
 
 let rec collect_equations (t:equations) : Flambda.t -> equation_right = function
   | Var v -> alias (Var v)
-  | Let (v, def, body) ->
+  | Let { var = v; defining_expr = def; body; _ } ->
     add t (Var v) (collect_equations_named t v def);
     collect_equations t body
   | Let_mutable (mut, def, body) ->

@@ -137,7 +137,7 @@ module NotConstants(P:Param) = struct
   *)
   let rec mark_loop ~toplevel (curr : dep list) (flam : Flambda.t) =
     match flam with
-    | Let (var, lam, body) ->
+    | Let { var; defining_expr = lam; body; _ } ->
       mark_named ~toplevel [Var var] lam;
       (* adds 'var in NC => curr in NC'
          This is not really necessary, but compiling this correctly is

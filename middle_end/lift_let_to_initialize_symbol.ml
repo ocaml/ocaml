@@ -9,7 +9,7 @@ let make_variable_symbol var =
 
 let substitute_variable_to_symbol var symbol expr =
   let bind fresh_var (expr:Flambda.t) : Flambda.t =
-    Let (fresh_var, Read_symbol_field (symbol, 0), expr)
+    Flambda.create_let fresh_var (Read_symbol_field (symbol, 0)) expr
   in
   let substitute_named fresh (named:Flambda.named) : Flambda.named =
     let sb to_substitute =
@@ -55,11 +55,11 @@ let substitute_variable_to_symbol var symbol expr =
       let fresh = Variable.freshen var in
       bind fresh (Var fresh)
     | Var _ -> expr
-    | Let (v, named, body) ->
+    | Let { var = v; defining_expr = named; body; _ } ->
       if Variable.Set.mem var (Flambda.free_variables_named named) then
         let fresh = Variable.freshen var in
         let named = substitute_named fresh named in
-        bind fresh (Let (v, named, body))
+        bind fresh (Flambda.create_let v named body)
       else
         expr
     | Let_mutable (mut_var, var', body) ->
@@ -171,10 +171,10 @@ let should_copy (named:Flambda.named) =
   | _ ->
     false
 
-let rec split_let free_variables_map (expr:Flambda.t) =
+let rec split_let (expr:Flambda.t) =
   match expr with
-  | Let (_, _, Var _) -> None
-  | Let (var, named, body) when should_copy named ->
+  | Let { body = Var _; _ } -> None
+  | Let { var; defining_expr = named; body; _ } when should_copy named ->
     (* Format.printf "look variable %a@." *)
     (*   Variable.print var; *)
     (* Those are the cases that are better to duplicate than to lift.
@@ -187,7 +187,7 @@ let rec split_let free_variables_map (expr:Flambda.t) =
           (Variable.Map.singleton var fresh)
           expr
       in
-      Flambda.Let (fresh, named, expr)
+      Flambda.create_let fresh named expr
     in
     let reintroduce_lets ~def_free_vars ~body_free_vars ~def ~body =
         let named_free_vars = Flambda.free_variables_named named in
@@ -199,14 +199,14 @@ let rec split_let free_variables_map (expr:Flambda.t) =
           (* Unused only once: no substitution needed *)
           let def_free_vars = Variable.Set.union def_free_vars named_free_vars in
           def_free_vars, body_free_vars,
-          Flambda.Let (var, named, def),
+          (Flambda.create_let var named def),
           body
         | false, true ->
           (* Unused only once: no substitution needed *)
           let body_free_vars = Variable.Set.union body_free_vars named_free_vars in
           def_free_vars, body_free_vars,
           def,
-          Flambda.Let (var, named, body)
+          Flambda.create_let var named body
         | true, true ->
           (* Used, in both: substitute in one.
              We assume the new definition is smaller, hence substitute in there *)
@@ -215,9 +215,9 @@ let rec split_let free_variables_map (expr:Flambda.t) =
           let body_free_vars = Variable.Set.union body_free_vars named_free_vars in
           def_free_vars, body_free_vars,
           def,
-          Flambda.Let (var, named, body)
+          Flambda.create_let var named body
     in
-    begin match split_let free_variables_map body with
+    begin match split_let body with
     | None -> None
     | Some (def_free_vars, body_free_vars, Effect effect, expr) ->
       let (def_free_vars, body_free_vars, effect, expr) =
@@ -238,7 +238,7 @@ let rec split_let free_variables_map (expr:Flambda.t) =
         let body_free_vars = Variable.Set.union body_free_vars named_free_vars in
         Some (def_free_vars, body_free_vars,
               Initialisation (sym, tag, fields),
-              Flambda.Let (var, named, expr))
+              Flambda.create_let var named expr)
       | true, (true | false) ->
         let named_free_vars = Flambda.free_variables_named named in
         let def_free_vars = Variable.Set.union def_free_vars named_free_vars in
@@ -248,17 +248,17 @@ let rec split_let free_variables_map (expr:Flambda.t) =
         in
         Some (def_free_vars, body_free_vars,
               Initialisation (sym, tag, fields),
-              Flambda.Let (var, named, expr))
+              Flambda.create_let var named expr)
       end
     end
-  | Let { var; defining_expr = def; body; free_vars_of_body; } as expr ->
+  | Let { var; defining_expr = def; body; free_vars_of_body; } ->
     (* Format.printf "not copy variable %a@." *)
     (*   Variable.print var; *)
     if Variable.Set.mem var free_vars_of_body then begin
       let symbol = make_variable_symbol var in
       let expr =
         let var' = Variable.freshen var in
-        Flambda.Let (var', def, Var var')
+        Flambda.create_let var' def (Var var')
       in
       let body' = substitute_variable_to_symbol var symbol body in
       (* Format.printf "@.introduce sym %a var %a@.def@ %a@.subst@ %a@.substituted@ %a@.@." *)
@@ -272,7 +272,7 @@ let rec split_let free_variables_map (expr:Flambda.t) =
     else begin
       let expr =
         let var' = Variable.freshen var in
-        Flambda.Let (var', def, Var var')
+        Flambda.create_let var' def (Var var')
       in
       let def_free_vars = Flambda.free_variables expr in
       Some (def_free_vars, free_vars_of_body, Effect expr, body)
@@ -280,9 +280,8 @@ let rec split_let free_variables_map (expr:Flambda.t) =
   | _ -> None
 
 let introduce_symbols expr =
-  let free_variables_map = Flambda.free_variables_by_let expr in
   let rec loop expr =
-    match split_let free_variables_map expr with
+    match split_let expr with
     | None -> [], expr
     | Some (_, _, extracted, body) -> (*begin match extracted with
         | Initialisation (_symbol, _tag, _def) ->

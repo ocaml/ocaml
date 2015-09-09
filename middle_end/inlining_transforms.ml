@@ -112,7 +112,7 @@ let inline_by_copying_function_body ~env ~r ~function_decls ~lhs_of_application
   let bindings_for_vars_bound_by_closure_and_params_to_args =
     fold_over_projections_of_vars_bound_by_closure ~closure_id_being_applied
       ~lhs_of_application ~function_decls ~init:bindings_for_params_to_args
-      ~f:(fun ~acc:body ~var ~expr -> Flambda.Let (var, expr, body))
+      ~f:(fun ~acc:body ~var ~expr -> Flambda.create_let var expr body)
   in
   (* CR mshinwell: How does this not add a variable that points to the
      function being applied itself?  Presumably it shouldn't do that. *)
@@ -123,13 +123,13 @@ let inline_by_copying_function_body ~env ~r ~function_decls ~lhs_of_application
   *)
   let expr =
     Variable.Map.fold (fun another_closure_in_the_same_set _ expr ->
-        Flambda.Let (another_closure_in_the_same_set,
-          Move_within_set_of_closures {
+        Flambda.create_let another_closure_in_the_same_set
+          (Move_within_set_of_closures {
             closure = lhs_of_application;
             start_from = closure_id_being_applied;
             move_to = Closure_id.wrap another_closure_in_the_same_set;
-          },
-          expr))
+          })
+          expr)
       function_decls.Flambda.funs
       bindings_for_vars_bound_by_closure_and_params_to_args
   in
@@ -140,8 +140,7 @@ let inline_by_copying_function_body ~env ~r ~function_decls ~lhs_of_application
   debug_free_variables_check env expr ~name:"inline_by_copying_function_body"
     ~calculate_free_variables:
       (Flambda.free_variables ?ignore_uses_in_apply:None
-        ?ignore_uses_in_project_var:None
-        ?free_variables_of_let_bodies:None)
+        ?ignore_uses_in_project_var:None)
     ~printer:Flambda.print;
 try
   simplify (E.activate_freshening env) r expr
@@ -201,9 +200,10 @@ let inline_by_copying_function_declaration ~env ~r
       in
       let func = new_var "dup_func" in
       let body : Flambda.t =
-        Let (set_of_closures_var, Set_of_closures set_of_closures,
-          Let (func, Project_closure project_closure,
-            Apply {
+        Flambda.create_let set_of_closures_var
+          (Set_of_closures set_of_closures)
+          (Flambda.create_let func (Project_closure project_closure)
+            (Apply {
               func;
               args;
               kind = Direct closure_id_being_applied;
