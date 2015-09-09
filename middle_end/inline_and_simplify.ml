@@ -781,7 +781,7 @@ and simplify_direct env r (tree : Flambda.t) : Flambda.t * R.t =
        points. *)
     simplify_using_approx_and_env env r (Var var) (E.find_exn env var)
   | Apply apply -> simplify_apply env r ~apply
-  | Let { var = id; defining_expr; body; free_vars_of_body = _ } ->
+  | Let { var; defining_expr; body; free_vars_of_body = _ } ->
     let defining_expr, r = simplify_named env r defining_expr in
     (* When [defining_expr] is really a [Flambda.named] rather than an
        [Flambda.t], squash any intermediate [let], or we will never eliminate
@@ -792,9 +792,9 @@ and simplify_direct env r (tree : Flambda.t) : Flambda.t * R.t =
           when Variable.equal var1 var2 -> defining_expr
       | _ -> defining_expr
     in
-    let id, sb = Freshening.add_variable (E.freshening env) id in
+    let var, sb = Freshening.add_variable (E.freshening env) var in
     let env = E.set_freshening env sb in
-    let body, r = simplify (E.add env id (R.approx r)) r body in
+    let body, r = simplify (E.add env var (R.approx r)) r body in
     (* The [proto_let] is to avoid calculating the free variables of [body]
        twice. *)
     let proto_let = Flambda.create_proto_let ~body in
@@ -802,8 +802,8 @@ and simplify_direct env r (tree : Flambda.t) : Flambda.t * R.t =
       Flambda.free_variables_of_proto_let_body proto_let
     in
     let (expr : Flambda.t), r =
-      if Variable.Set.mem id free_vars_of_body then
-        (Flambda.create_let_from_proto_let id defining_expr proto_let), r
+      if Variable.Set.mem var free_vars_of_body then
+        (Flambda.create_let_from_proto_let var defining_expr proto_let), r
       else if Effect_analysis.no_effects_named defining_expr then
         let r = R.map_benefit r (B.remove_code_named defining_expr) in
         body, r
@@ -813,7 +813,7 @@ and simplify_direct env r (tree : Flambda.t) : Flambda.t * R.t =
         (* Generate a fresh name for increasing legibility of the
            intermediate language (in particular to make it more obvious that
            the variable is unused). *)
-        let fresh_var = Variable.create "for_side_effect_only" in
+        let fresh_var = Variable.create "for_svare_effect_only" in
         (Flambda.create_let_from_proto_let fresh_var defining_expr proto_let),
           r
     in
