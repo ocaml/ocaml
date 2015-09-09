@@ -365,8 +365,8 @@ val fold_lets
    : t
   -> init:'a
   -> for_defining_expr:('a -> Variable.t -> named -> 'a * named)
-  -> for_last_body:('a -> t -> 'a * t)
-  -> 'a * t
+  -> for_last_body:('a -> t -> 'b * t)
+  -> 'b * t
 
 (* CR mshinwell: try to move the non-recursive types out to a separate .mli *)
 (* CR mshinwell: consider moving [Flambda_utils] functions into here, now we

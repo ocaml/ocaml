@@ -465,8 +465,7 @@ let fold_lets t ~init ~for_defining_expr ~for_last_body =
 
 let iter ?ignore_uses_in_apply ?ignore_uses_in_project_var
     ?(free_variables_of_let_bodies = Variable.Map.empty)
-    tree ~free_variables ~bound_variable
-    ~enter_let ~leave_let_definition ~leave_let_body =
+    tree ~free_variables ~bound_variable =
   let free_variable fv = free_variables (Variable.Set.singleton fv) in
   let rec aux (flam : t) : unit =
     match flam with
@@ -479,15 +478,12 @@ let iter ?ignore_uses_in_apply ?ignore_uses_in_project_var
       end;
       List.iter free_variable args
     | Let (var, defining_expr, body) ->
-      let acc = enter_let var in
       bound_variable var;
       aux_named defining_expr;
-      let acc = leave_let_definition acc in
       begin match Variable.Map.find var free_variables_of_let_bodies with
       | free_vars -> free_variables free_vars
       | exception Not_found -> aux body
-      end;
-      leave_let_body acc
+      end
     | Let_mutable (_mut_var, var, body) ->
       free_variable var;
       aux body
@@ -571,40 +567,130 @@ let free_variables ?ignore_uses_in_apply ?ignore_uses_in_project_var
   let leave_let_body () = () in
   iter ?ignore_uses_in_apply ?ignore_uses_in_project_var
     ?free_variables_of_let_bodies tree
-    ~free_variables ~bound_variable
-    ~enter_let ~leave_let_definition ~leave_let_body;
+    ~free_variables ~bound_variable;
   Variable.Set.diff !free !bound
 
 let free_variables_named tree =
   let var = Variable.create "dummy" in
   free_variables (Let (var, tree, Var var))
 
-let free_variables_by_let ?ignore_uses_in_apply ?ignore_uses_in_project_var tree =
-  let free = ref Variable.Set.empty in
-  let bound = ref Variable.Set.empty in
-  let map = ref Variable.Map.empty in
-  let free_variables ids = free := Variable.Set.union ids !free in
-  let bound_variable id = bound := Variable.Set.add id !bound in
-  let enter_let var =
-    var
+let free_variables_by_let tree =
+  let rec aux (flam : t) ~map ~free_vars ~bound_vars =
+    match flam with
+    | Var var -> map, Variable.Set.singleton var, bound_vars
+    | Apply { func; args; kind = _; dbg = _} ->
+      aux_list args ~map ~free_vars:(Variable.Set.add func free_vars)
+        ~bound_vars
+    | Let _ ->
+      let let_bound_vars, free_vars_up_to_body,
+          bound_vars_up_to_body, free_vars_body, bound_vars_body =
+        fold_lets flam ~init:([], free_vars, bound_vars)
+          ~for_defining_expr:(fun (let_bound_vars, free_vars, bound_vars)
+              var defining_expr ->
+            let free_vars, bound_vars =
+              aux_named defining_expr ~free_vars ~bound_vars
+            in
+            var::let_bound_vars, free_vars, bound_vars)
+          ~for_last_body:(fun (let_bound_vars, free_vars, bound_vars) body ->
+            let free_vars_body, bound_vars_body =
+              aux body ~free_vars:Variable.Set.empty
+                ~bound_vars:Variable.Set.empty
+            in
+            let_bound_vars, free_vars, bound_vars,
+              free_vars_body, bound_vars_body)
+      in
+      List.fold_left (fun map let_bound_var ->
+          let free_vars_body =
+
+          in
+          Variable.Map.add let_bound_var free_vars_body map)
+        map
+        let_bound_vars
+
+
+      let free_vars_body =
+        Variable.Set.diff (Variable.Set.diff free_vars_body bound_vars_body)
+          bound_vars
+      in
+      let map = Variable.Map.add 
+
+      bound_variable var;
+      aux_named defining_expr;
+      begin match Variable.Map.find var free_variables_of_let_bodies with
+      | free_vars -> free_variables free_vars
+      | exception Not_found -> aux body
+      end
+    | Let_mutable (_mut_var, var, body) ->
+      free_variable var;
+      aux body
+    | Let_rec (bindings, body) ->
+      List.iter (fun (var, defining_expr) ->
+          bound_variable var;
+          aux_named defining_expr)
+        bindings;
+      aux body
+    | Switch (scrutinee, switch) ->
+      free_variable scrutinee;
+      List.iter (fun (_, e) -> aux e) switch.consts;
+      List.iter (fun (_, e) -> aux e) switch.blocks;
+      Misc.may aux switch.failaction
+    | String_switch (scrutinee, cases, failaction) ->
+      free_variable scrutinee;
+      List.iter (fun (_, e) -> aux e) cases;
+      Misc.may aux failaction
+    | Static_raise (_, es) ->
+      List.iter aux es
+    | Static_catch (_, vars, e1, e2) ->
+      List.iter bound_variable vars;
+      aux e1;
+      aux e2
+    | Try_with (e1, var, e2) ->
+      aux e1;
+      bound_variable var;
+      aux e2
+    | If_then_else (var, e1, e2) ->
+      free_variable var;
+      aux e1;
+      aux e2
+    | While (e1, e2) ->
+      aux e1;
+      aux e2
+    | For { bound_var; from_value; to_value; direction = _; body; } ->
+      bound_variable bound_var;
+      free_variable from_value;
+      free_variable to_value;
+      aux body
+    | Assign { being_assigned = _; new_value; } ->
+      free_variable new_value
+    | Send { kind = _; meth; obj; args; dbg = _ } ->
+      free_variable meth;
+      free_variable obj;
+      List.iter free_variable args;
+    | Proved_unreachable -> ()
+  and aux_named (named : named) =
+    match named with
+    | Symbol _ | Const _ | Allocated_const _ | Read_mutable _
+    | Read_symbol_field _ -> ()
+    | Set_of_closures { free_vars; specialised_args; _ } ->
+      (* Sets of closures are, well, closed---except for the specialised
+         argument list, which may identify variables currently in scope
+         outside of the closure. *)
+      Variable.Map.iter (fun _ renamed_to -> free_variable renamed_to)
+        free_vars;
+      Variable.Map.iter (fun _ var -> free_variable var) specialised_args
+    | Project_closure { set_of_closures; closure_id = _ } ->
+      free_variable set_of_closures
+    | Project_var { closure; closure_id = _; var = _ } ->
+      begin match ignore_uses_in_project_var with
+      | None -> free_variable closure
+      | Some () -> ()
+      end
+    | Move_within_set_of_closures { closure; start_from = _; move_to = _ } ->
+      free_variable closure
+    | Prim (_, args, _) -> List.iter free_variable args
+    | Expr flam -> aux flam
   in
-  let leave_let_definition var =
-    let current_free = !free in
-    let current_bound = !bound in
-    free := Variable.Set.empty;
-    bound := Variable.Set.empty;
-    var, current_free, current_bound
-  in
-  let leave_let_body (var, previous_free, previous_bound) =
-    let body_free = Variable.Set.diff !free !bound in
-    map := Variable.Map.add var body_free !map;
-    free := Variable.Set.union body_free previous_free;
-    bound := previous_bound
-  in
-  iter ?ignore_uses_in_apply ?ignore_uses_in_project_var tree
-    ~free_variables ~bound_variable
-    ~enter_let ~leave_let_definition ~leave_let_body;
-  !map
+  aux tree
 
 let create_function_declaration ~params ~body ~stub ~dbg
       : function_declaration =
