@@ -547,6 +547,27 @@ let create_let var defining_expr body : t =
     free_vars_of_body = free_variables body;
   }
 
+type proto_let =
+  { body : t;
+    free_vars_of_body : Variable.Set.t;
+  }
+
+let create_proto_let ~body : proto_let =
+  { body;
+    free_vars_of_body = free_variables body;
+  }
+
+let free_variables_of_proto_let_body proto_let =
+  proto_let.free_vars_of_body
+
+let create_let_from_proto_let var defining_expr proto_let : t =
+  Let {
+    var;
+    defining_expr;
+    body = proto_let.body;
+    free_vars_of_body = proto_let.free_vars_of_body;
+  }
+
 let free_variables_named tree =
   let var = Variable.create "dummy" in
   free_variables (create_let var tree (Var var))

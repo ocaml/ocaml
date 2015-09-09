@@ -795,10 +795,15 @@ and simplify_direct env r (tree : Flambda.t) : Flambda.t * R.t =
     let id, sb = Freshening.add_variable (E.freshening env) id in
     let env = E.set_freshening env sb in
     let body, r = simplify (E.add env id (R.approx r)) r body in
-    let free_vars_of_body = Flambda.free_variables body in
+    (* The [proto_let] is to avoid calculating the free variables of [body]
+       twice. *)
+    let proto_let = Flambda.create_proto_let ~body in
+    let free_vars_of_body =
+      Flambda.free_variables_of_proto_let_body proto_let
+    in
     let (expr : Flambda.t), r =
       if Variable.Set.mem id free_vars_of_body then
-        (Flambda.create_let id defining_expr body), r
+        (Flambda.create_let_from_proto_let id defining_expr proto_let), r
       else if Effect_analysis.no_effects_named defining_expr then
         let r = R.map_benefit r (B.remove_code_named defining_expr) in
         body, r
@@ -809,8 +814,8 @@ and simplify_direct env r (tree : Flambda.t) : Flambda.t * R.t =
            intermediate language (in particular to make it more obvious that
            the variable is unused). *)
         let fresh_var = Variable.create "for_side_effect_only" in
-        (* CR-someday mshinwell: wasteful second free variables traversal *)
-        (Flambda.create_let fresh_var defining_expr body), r
+        (Flambda.create_let_from_proto_let fresh_var defining_expr proto_let),
+          r
     in
     expr, r
   | Let_mutable (mut_var, var, body) ->

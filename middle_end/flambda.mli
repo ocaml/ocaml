@@ -368,7 +368,16 @@ val fold_lets
   -> for_last_body:('a -> t -> 'b * t)
   -> 'b * t
 
+(** Creates a [Let] expression.  (This computes the free variables of the
+    body.) *)
 val create_let : Variable.t -> named -> t -> t
+
+(** Functions to avoid recalculating free variables of let bodies
+    unnecessarily.  See the main [Let] case in inline_and_simplify.ml. *)
+type proto_let
+val create_proto_let : body:t -> proto_let
+val free_variables_of_proto_let_body : proto_let -> Variable.Set.t
+val create_let_from_proto_let : Variable.t -> named -> proto_let -> t
 
 (* CR mshinwell: try to move the non-recursive types out to a separate .mli *)
 (* CR mshinwell: consider moving [Flambda_utils] functions into here, now we
