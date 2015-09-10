@@ -14,8 +14,9 @@ fi
 # valid for simulator: i386, x86_64
 
 if [ -z "$sdk" ]; then
-    sdk=8.3
+    sdk=8.4
 fi
+sdk=8.4
 
 
 export PLT="/Applications/Xcode.app/Contents/Developer/Platforms/${platform}.platform"
