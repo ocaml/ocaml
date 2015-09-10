@@ -19,7 +19,6 @@ let should_copy (named:Flambda.named) =
   match named with
   | Expr (Var _)
   | Symbol _
-  | Prim (Pfield _, _, _)
   | Read_symbol_field _
   | Const _ ->
     true
