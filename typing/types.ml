@@ -92,6 +92,7 @@ type value_description =
 
 and value_kind =
     Val_reg                             (* Regular value *)
+  | Val_lazy                            (* Lazy value *)
   | Val_prim of Primitive.description   (* Primitive *)
   | Val_ivar of mutable_flag * string   (* Instance variable (mutable ?) *)
   | Val_self of (Ident.t * type_expr) Meths.t ref *

@@ -369,7 +369,7 @@ let val_of_let_bindings lbs =
   | None -> str
   | Some id -> ghstr (Pstr_extension((id, PStr [str]), []))
 
-let expr_of_let_bindings lbs body =
+let expr_of_let_bindings lzy lbs body =
   let bindings =
     List.map
       (fun lb ->
@@ -378,7 +378,7 @@ let expr_of_let_bindings lbs body =
          Vb.mk ~loc:lb.lb_loc lb.lb_pattern lb.lb_expression)
       lbs.lbs_bindings
   in
-    mkexp_attrs (Pexp_let(lbs.lbs_rec, List.rev bindings, body))
+    mkexp_attrs (Pexp_let(lbs.lbs_rec, lzy, List.rev bindings, body))
       (lbs.lbs_extension, lbs.lbs_attributes)
 
 let class_of_let_bindings lbs body =
@@ -1241,7 +1241,9 @@ expr:
   | simple_expr simple_labeled_expr_list
       { mkexp(Pexp_apply($1, List.rev $2)) }
   | let_bindings IN seq_expr
-      { expr_of_let_bindings $1 $3 }
+      { expr_of_let_bindings false $1 $3 }
+  | LAZY let_bindings IN seq_expr
+      { expr_of_let_bindings true $2 $4 }
   | LET MODULE ext_attributes UIDENT module_binding_body IN seq_expr
       { mkexp_attrs (Pexp_letmodule(mkrhs $4 4, $5, $7)) $3 }
   | LET OPEN override_flag ext_attributes mod_longident IN seq_expr
