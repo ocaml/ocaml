@@ -628,6 +628,9 @@ module With_free_variables = struct
   let of_body_of_let let_expr =
     Expr (let_expr.body, let_expr.free_vars_of_body)
 
+  let of_expr expr =
+    Expr (expr, free_variables expr)
+
   let create_let_reusing_defining_expr var (t : named t) body =
     match t with
     | Named (defining_expr, free_vars_of_defining_expr) ->
@@ -637,6 +640,17 @@ module With_free_variables = struct
         body;
         free_vars_of_defining_expr;
         free_vars_of_body = free_variables body;
+      }
+
+  let create_let_reusing_body var defining_expr (t : expr t) =
+    match t with
+    | Expr (body, free_vars_of_body) ->
+      Let {
+        var;
+        defining_expr;
+        body;
+        free_vars_of_defining_expr = free_variables_named defining_expr;
+        free_vars_of_body;
       }
 
   let create_let_reusing_both var (t1 : named t) (t2 : expr t) =
@@ -654,35 +668,17 @@ module With_free_variables = struct
   let expr (t : expr t) =
     match t with
     | Expr (expr, free_vars) -> Named (Expr expr, free_vars)
+
+  let contents (type a) (t : a t) : a =
+    match t with
+    | Expr (expr, _) -> expr
+    | Named (named, _) -> named
+
+  let free_variables (type a) (t : a t) =
+    match t with
+    | Expr (_, free_vars) -> free_vars
+    | Named (_, free_vars) -> free_vars
 end
-
-(* CR mshinwell: deprecate in favour of [With_free_variables] *)
-type proto_let =
-  { body : t;
-    free_vars_of_body : Variable.Set.t;
-  }
-
-let create_proto_let ~body : proto_let =
-  { body;
-    free_vars_of_body = free_variables body;
-  }
-
-let create_proto_let_from_let (let_expr : let_expr) =
-  { body = let_expr.body;
-    free_vars_of_body = let_expr.free_vars_of_body;
-  }
-
-let free_variables_of_proto_let_body proto_let =
-  proto_let.free_vars_of_body
-
-let create_let_from_proto_let var defining_expr proto_let : t =
-  Let {
-    var;
-    defining_expr;
-    body = proto_let.body;
-    free_vars_of_defining_expr = free_variables_named defining_expr;
-    free_vars_of_body = proto_let.free_vars_of_body;
-  }
 
 let create_function_declaration ~params ~body ~stub ~dbg
       : function_declaration =

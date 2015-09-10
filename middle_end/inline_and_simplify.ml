@@ -750,18 +750,16 @@ and simplify_direct env r (tree : Flambda.t) : Flambda.t * R.t =
     let var, sb = Freshening.add_variable (E.freshening env) var in
     let env = E.set_freshening env sb in
     let body, r = simplify (E.add env var (R.approx r)) r body in
-    (* The [proto_let] is to avoid calculating the free variables of [body]
-       twice. *)
-    let proto_let = Flambda.create_proto_let ~body in
-    let free_vars_of_body =
-      Flambda.free_variables_of_proto_let_body proto_let
-    in
+    (* We take care not to calculate the free variables of [body] twice. *)
+    let module W = Flambda.With_free_variables in
+    let body = W.of_expr body in
+    let free_vars_of_body = W.free_variables body in
     let (expr : Flambda.t), r =
       if Variable.Set.mem var free_vars_of_body then
-        (Flambda.create_let_from_proto_let var defining_expr proto_let), r
+        (W.create_let_reusing_body var defining_expr body), r
       else if Effect_analysis.no_effects_named defining_expr then
         let r = R.map_benefit r (B.remove_code_named defining_expr) in
-        body, r
+        (W.contents body), r
       else
         (* CR mshinwell: check that Pignore is inserted correctly by a later
            pass. *)
@@ -769,8 +767,7 @@ and simplify_direct env r (tree : Flambda.t) : Flambda.t * R.t =
            intermediate language (in particular to make it more obvious that
            the variable is unused). *)
         let fresh_var = Variable.create "for_side_effect_only" in
-        (Flambda.create_let_from_proto_let fresh_var defining_expr proto_let),
-          r
+        (W.create_let_reusing_body fresh_var defining_expr body), r
     in
     expr, r
   | Let_mutable (mut_var, var, body) ->

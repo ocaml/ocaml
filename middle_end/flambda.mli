@@ -410,32 +410,48 @@ val create_let : Variable.t -> named -> t -> t
 module With_free_variables : sig
   type 'a t
 
+  (** O(1) time. *)
   val of_defining_expr_of_let : let_expr -> named t
+
+  (** O(1) time. *)
   val of_body_of_let : let_expr -> expr t
 
+  (** Takes the time required to calculate the free variables of the given
+      term (proportional to the size of the term, except that the calculation
+      for [Let] is O(1)). *)
+  val of_expr : expr -> expr t
+
+  (** Takes the time required to calculate the free variables of the given
+      [expr]. *)
   val create_let_reusing_defining_expr
      : Variable.t
     -> named t
     -> expr
     -> expr
 
+  (** Takes the time required to calculate the free variables of the given
+      [named]. *)
+  val create_let_reusing_body
+     : Variable.t
+    -> named
+    -> expr t
+    -> expr
+
+  (** O(1) time. *)
   val create_let_reusing_both
      : Variable.t
     -> named t
     -> expr t
     -> expr
 
+  (** The equivalent of the [Expr] constructor. *)
   val expr : expr t -> named t
-end
 
-(** Functions to avoid recalculating free variables of let bodies
-    unnecessarily.  See the main [Let] case in inline_and_simplify.ml. *)
-(* CR mshinwell: rename to [computed_free_variables] or something? *)
-type proto_let
-val create_proto_let : body:t -> proto_let
-val create_proto_let_from_let : let_expr -> proto_let
-val free_variables_of_proto_let_body : proto_let -> Variable.Set.t
-val create_let_from_proto_let : Variable.t -> named -> proto_let -> t
+  val contents : 'a t -> 'a
+
+  (** O(1) time. *)
+  val free_variables : _ t -> Variable.Set.t
+end
 
 (* CR mshinwell: try to move the non-recursive types out to a separate .mli *)
 (* CR mshinwell: consider moving [Flambda_utils] functions into here, now we
