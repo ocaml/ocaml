@@ -132,6 +132,10 @@ val all_sets_of_closures : Flambda.program -> Flambda.set_of_closures list
 
 val make_variable_symbol : Variable.t -> Symbol.t
 
+(* CR pchambart: this function should probably not be named like that:
+   it is accessing the first field of that symbol. Also a more general
+   version of that function may take a [named] instead of a symbol and
+   be called with [Read_symbol_field (symbol, 0)]. *)
 val substitute_variable_to_symbol
    : Variable.t
   -> Symbol.t
