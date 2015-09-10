@@ -17,7 +17,7 @@ CAMLYACC ?= ../boot/ocamlyacc
 TARGET_BINDIR ?= $(BINDIR)
 
 COMPILER=../ocamlc
-CAMLC=$(RUNTIME) $(COMPILER)
+CAMLC=$(CAMLRUN) $(COMPILER)
 COMPFLAGS=-strict-sequence -w +33..39 -g -warn-error A-53 -bin-annot -nostdlib \
           -safe-string
 OPTCOMPILER=../ocamlopt
