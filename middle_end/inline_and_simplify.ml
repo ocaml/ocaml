@@ -677,7 +677,8 @@ and simplify_named env r (tree : Flambda.named) : Flambda.named * R.t =
     Read_mutable mut_var, ret r A.value_unknown
   | Read_symbol_field (symbol, field_index) ->
     let approx =
-      A.augment_with_symbol_field (E.find_symbol_fatal env symbol)
+      A.augment_with_symbol_field
+        (A.get_field (E.find_symbol_fatal env symbol) ~field_index)
         symbol field_index
     in
     simplify_named_using_approx_and_env env r tree approx
