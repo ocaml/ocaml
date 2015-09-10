@@ -244,57 +244,59 @@ let rec iter_symbols_on_program (program:Flambda.program) ~f =
 
 let map_general ~toplevel f f_named tree =
   let rec aux (tree : Flambda.t) =
-    let exp : Flambda.t =
-      match tree with
-      | Var _ | Apply _ | Assign _ | Send _ | Proved_unreachable -> tree
-      | Let { var; defining_expr; body; _ } ->
-        let defining_expr = aux_named var defining_expr in
-        let body = aux body in
-        Flambda.create_let var defining_expr body
-      | Let_mutable (mut_var, var, body) ->
-        let body = aux body in
-        Let_mutable (mut_var, var, body)
-      | Let_rec (defs, body) ->
-        let defs = List.map (fun (id, lam) -> id, aux_named id lam) defs in
-        let body = aux body in
-        Let_rec (defs, body)
-      | Switch (arg, sw) ->
-        let sw =
-          { sw with
-            failaction = Misc.may_map aux sw.failaction;
-            consts = List.map (fun (i,v) -> i, aux v) sw.consts;
-            blocks = List.map (fun (i,v) -> i, aux v) sw.blocks;
-          }
-        in
-        Switch (arg, sw)
-      | String_switch (arg, sw, def) ->
-        let sw = List.map (fun (i,v) -> i, aux v) sw in
-        let def = Misc.may_map aux def in
-        String_switch(arg, sw, def)
-      | Static_raise(i, args) ->
-        let args = List.map aux args in
-        Static_raise (i, args)
-      | Static_catch (i, vars, body, handler) ->
-        let body = aux body in
-        let handler = aux handler in
-        Static_catch (i, vars, body, handler)
-      | Try_with(body, id, handler) ->
-        let body = aux body in
-        let handler = aux handler in
-        Try_with(body, id, handler)
-      | If_then_else(arg, ifso, ifnot) ->
-        let ifso = aux ifso in
-        let ifnot = aux ifnot in
-        If_then_else(arg, ifso, ifnot)
-      | While(cond, body) ->
-        let cond = aux cond in
-        let body = aux body in
-        While(cond, body)
-      | For { bound_var; from_value; to_value; direction; body; } ->
-        let body = aux body in
-        For { bound_var; from_value; to_value; direction; body; }
-    in
-    f exp
+    match tree with
+    | Let _ ->
+      Flambda.map_lets tree ~for_defining_expr:aux_named ~for_last_body:aux
+        ~after_rebuild:f
+    | _ ->
+      let exp : Flambda.t =
+        match tree with
+        | Var _ | Apply _ | Assign _ | Send _ | Proved_unreachable -> tree
+        | Let _ -> assert false
+        | Let_mutable (mut_var, var, body) ->
+          let body = aux body in
+          Let_mutable (mut_var, var, body)
+        | Let_rec (defs, body) ->
+          let defs = List.map (fun (id, lam) -> id, aux_named id lam) defs in
+          let body = aux body in
+          Let_rec (defs, body)
+        | Switch (arg, sw) ->
+          let sw =
+            { sw with
+              failaction = Misc.may_map aux sw.failaction;
+              consts = List.map (fun (i,v) -> i, aux v) sw.consts;
+              blocks = List.map (fun (i,v) -> i, aux v) sw.blocks;
+            }
+          in
+          Switch (arg, sw)
+        | String_switch (arg, sw, def) ->
+          let sw = List.map (fun (i,v) -> i, aux v) sw in
+          let def = Misc.may_map aux def in
+          String_switch(arg, sw, def)
+        | Static_raise(i, args) ->
+          let args = List.map aux args in
+          Static_raise (i, args)
+        | Static_catch (i, vars, body, handler) ->
+          let body = aux body in
+          let handler = aux handler in
+          Static_catch (i, vars, body, handler)
+        | Try_with(body, id, handler) ->
+          let body = aux body in
+          let handler = aux handler in
+          Try_with(body, id, handler)
+        | If_then_else(arg, ifso, ifnot) ->
+          let ifso = aux ifso in
+          let ifnot = aux ifnot in
+          If_then_else(arg, ifso, ifnot)
+        | While(cond, body) ->
+          let cond = aux cond in
+          let body = aux body in
+          While(cond, body)
+        | For { bound_var; from_value; to_value; direction; body; } ->
+          let body = aux body in
+          For { bound_var; from_value; to_value; direction; body; }
+      in
+      f exp
   and aux_named (id : Variable.t) (named : Flambda.named) =
     let named : Flambda.named =
       match named with

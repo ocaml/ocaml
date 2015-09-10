@@ -551,7 +551,34 @@ let free_variables_named tree =
   let var = Variable.create "dummy" in
   free_variables (create_let var tree (Var var))
 
+let map_lets t ~for_defining_expr ~for_last_body ~after_rebuild =
+  let rec loop (t : t) ~rev_lets =
+    match t with
+    | Let { var; defining_expr; body; _ } ->
+      let defining_expr =
+        for_defining_expr var defining_expr
+      in
+      let rev_lets = (var, defining_expr) :: rev_lets in
+      loop body ~rev_lets
+    | t ->
+      let last_body = for_last_body t in
+      List.fold_left (fun t (var, defining_expr) ->
+          after_rebuild (create_let var defining_expr t))
+        last_body
+        rev_lets
+  in
+  loop t ~rev_lets:[]
+(*
 let fold_lets t ~init ~for_defining_expr ~for_last_body =
+  let finish ~last_body ~acc ~rev_lets =
+    let t =
+      List.fold_left (fun t (var, defining_expr) ->
+          create_let var defining_expr t)
+        last_body
+        rev_lets
+    in
+    acc, t
+  in
   let rec loop (t : t) ~acc ~rev_lets =
     match t with
     | Let { var; defining_expr; body = (Let _) as body; _ } ->
@@ -566,16 +593,13 @@ let fold_lets t ~init ~for_defining_expr ~for_last_body =
       in
       let rev_lets = (var, defining_expr) :: rev_lets in
       let acc, last_body = for_last_body acc last_body in
-      let t =
-        List.fold_left (fun t (var, defining_expr) ->
-            create_let var defining_expr t)
-          last_body
-          rev_lets
-      in
-      acc, t
-    | _ -> for_last_body acc t
+      finish ~last_body ~acc ~rev_lets
+    | t ->
+      let acc, last_body = for_last_body acc t in
+      finish ~last_body ~acc ~rev_lets
   in
   loop t ~acc:init ~rev_lets:[]
+*)
 
 type proto_let =
   { body : t;

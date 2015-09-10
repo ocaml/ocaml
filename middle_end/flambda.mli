@@ -361,12 +361,22 @@ val free_variables_named : named -> Variable.Set.t
     If the expression [e] is not a [Let], then [for_last_body init e] is
     returned.
 *)
+(*
 val fold_lets
    : t
   -> init:'a
   -> for_defining_expr:('a -> Variable.t -> named -> 'a * named)
   -> for_last_body:('a -> t -> 'b * t)
   -> 'b * t
+*)
+
+(** Like [fold_lets], but just a map. *)
+val map_lets
+   : t
+  -> for_defining_expr:(Variable.t -> named -> named)
+  -> for_last_body:(t -> t)
+  -> after_rebuild:(t -> t)
+  -> t
 
 (*
 (** Like [fold_lets], but just iteration.  [for_last_body] is never called
