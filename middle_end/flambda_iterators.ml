@@ -47,33 +47,38 @@ type maybe_named =
 
 let iter_general ~toplevel f f_named maybe_named =
   let rec aux (t : Flambda.t) =
-    f t;
     match t with
-    | Var _ | Apply _ | Assign _ | Send _ | Proved_unreachable -> ()
-    | Let { defining_expr; body; } ->
-      aux_named defining_expr;
-      aux body
-    | Let_mutable (_mut_var, _var, body) ->
-      aux body
-    | Let_rec (defs, body) ->
-      List.iter (fun (_,l) -> aux_named l) defs;
-      aux body
-    | Try_with (f1,_,f2)
-    | While (f1,f2)
-    | Static_catch (_,_,f1,f2) ->
-      aux f1; aux f2
-    | For { body; _ } -> aux body
-    | If_then_else (_, f1, f2) ->
-      aux f1; aux f2
-    | Static_raise (_,l) ->
-      iter_list l
-    | Switch (_, sw) ->
-      List.iter (fun (_,l) -> aux l) sw.consts;
-      List.iter (fun (_,l) -> aux l) sw.blocks;
-      Misc.may aux sw.failaction
-    | String_switch (_, sw, def) ->
-      List.iter (fun (_,l) -> aux l) sw;
-      Misc.may aux def
+    | Let _ ->
+      Flambda.iter_lets t
+        ~for_defining_expr:(fun _var named -> aux_named named)
+        ~for_last_body:aux
+        ~for_each_let:f
+    | _ ->
+      f t;
+      match t with
+      | Var _ | Apply _ | Assign _ | Send _ | Proved_unreachable -> ()
+      | Let _ -> assert false
+      | Let_mutable (_mut_var, _var, body) ->
+        aux body
+      | Let_rec (defs, body) ->
+        List.iter (fun (_,l) -> aux_named l) defs;
+        aux body
+      | Try_with (f1,_,f2)
+      | While (f1,f2)
+      | Static_catch (_,_,f1,f2) ->
+        aux f1; aux f2
+      | For { body; _ } -> aux body
+      | If_then_else (_, f1, f2) ->
+        aux f1; aux f2
+      | Static_raise (_,l) ->
+        iter_list l
+      | Switch (_, sw) ->
+        List.iter (fun (_,l) -> aux l) sw.consts;
+        List.iter (fun (_,l) -> aux l) sw.blocks;
+        Misc.may aux sw.failaction
+      | String_switch (_, sw, def) ->
+        List.iter (fun (_,l) -> aux l) sw;
+        Misc.may aux def
   and aux_named (named : Flambda.named) =
     f_named named;
     match named with

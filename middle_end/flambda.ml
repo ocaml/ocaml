@@ -551,6 +551,18 @@ let free_variables_named tree =
   let var = Variable.create "dummy" in
   free_variables (create_let var tree (Var var))
 
+let iter_lets t ~for_defining_expr ~for_last_body ~for_each_let =
+  let rec loop (t : t) =
+    match t with
+    | Let { var; defining_expr; body; _ } ->
+      for_each_let t;
+      for_defining_expr var defining_expr;
+      loop body
+    | t ->
+      for_last_body t
+  in
+  loop t
+
 let map_lets t ~for_defining_expr ~for_last_body ~after_rebuild =
   let rec loop (t : t) ~rev_lets =
     match t with

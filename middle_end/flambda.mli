@@ -378,6 +378,13 @@ val map_lets
   -> after_rebuild:(t -> t)
   -> t
 
+val iter_lets
+   : t
+  -> for_defining_expr:(Variable.t -> named -> unit)
+  -> for_last_body:(t -> unit)
+  -> for_each_let:(t -> unit)
+  -> unit
+
 (*
 (** Like [fold_lets], but just iteration.  [for_last_body] is never called
     if the input expression is not a [Let]. *)
