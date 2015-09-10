@@ -17,8 +17,19 @@ module C = Inlining_cost
 type lifter = Flambda.program -> Flambda.program
 
 let lift_lets_expr tree =
-  Flambda_iterators.map Flambda.swizzle_lets
-    (fun (named : Flambda.named) -> named) tree
+  let module W = Flambda.With_free_variables in
+  let rec aux (expr : Flambda.t) : Flambda.t =
+    match expr with
+    | Let ({ var = v1;
+        defining_expr = Expr (Let ({ var = v2; _ } as let2)); _ }  as let1) ->
+      let body1 = W.of_body_of_let let1 in
+      let body2 = W.of_body_of_let let2 in
+      let inner_let = W.create_let_reusing_both v1 (W.expr body2) body1 in
+      let def2 = W.of_defining_expr_of_let let2 in
+      W.create_let_reusing_defining_expr v2 def2 (aux inner_let)
+    | e -> e
+  in
+  Flambda_iterators.map aux (fun (named : Flambda.named) -> named) tree
 
 let lift_lets program =
   Flambda_iterators.map_exprs_at_toplevel_of_program program ~f:lift_lets_expr
@@ -29,21 +40,7 @@ let lifting_helper exprs ~evaluation_order ~create_body ~name =
     List.fold_right (fun (flam : Flambda.t) (vars, lets) ->
         match flam with
         | Var v ->
-          (* Assumes that [v] is an immutable variable, otherwise this may
-             change the evaluation order. *)
-          (* XCR mshinwell for pchambart: Please justify why [v] is always
-             immutable.
-             pchambart: My bad, this is not the case. I was
-             convinced i did remove the reference to variable optimisation from
-             Simplif.simplif and this is not the case (this is better done by
-             Ref_to_variables).
-             We could either remove the optimisation in Simplif in case of native code
-             and add an assert requiring that no mutable variables here (in the Let case)
-             or get rid of this one that will be done in the end by the first inlining
-             pass.
-             mshinwell: as a note, we need to check what to do for the other
-             cases in which we now use this function (see Closure_conversion)
-          *)
+          (* Note that [v] is (statically) always an immutable variable. *)
           v::vars, lets
         | expr ->
           let v =

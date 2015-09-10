@@ -212,7 +212,8 @@ and let_expr = private {
   var : Variable.t;
   defining_expr : named;
   body : t;
-  (* [free_vars_of_body] is an important optimization. *)
+  (* These free variable caches are an important optimization. *)
+  free_vars_of_defining_expr : Variable.Set.t;
   free_vars_of_body : Variable.Set.t;
 }
 
@@ -322,6 +323,8 @@ and constant_defining_value_block_field =
 module Constant_defining_value :
   Ext_types.Identifiable with type t = constant_defining_value
 
+type expr = t
+
 (** A "program" is the contents of one compilation unit. *)
 type program =
   | Let_symbol of Symbol.t * constant_defining_value * program
@@ -334,13 +337,18 @@ type program =
   (** [End] accepts the root symbol: the only symbol that can never be
       eliminated. *)
 
+(** Compute the free variables of a term.  (This is O(1) for [Let]s). *)
 val free_variables
    : ?ignore_uses_in_apply:unit
   -> ?ignore_uses_in_project_var:unit
   -> t
   -> Variable.Set.t
 
-val free_variables_named : named -> Variable.Set.t
+(** Compute the free variables of a named expression. *)
+val free_variables_named
+   : ?ignore_uses_in_project_var:unit
+  -> named
+  -> Variable.Set.t
 
 (** Used to avoid exceeding the stack limit when handling expressions with
     multiple consecutive nested [Let]-expressions.  This saves rewriting large
@@ -396,8 +404,29 @@ val iter_lets
 *)
 
 (** Creates a [Let] expression.  (This computes the free variables of the
-    body.) *)
+    defining expression and the body.) *)
 val create_let : Variable.t -> named -> t -> t
+
+module With_free_variables : sig
+  type 'a t
+
+  val of_defining_expr_of_let : let_expr -> named t
+  val of_body_of_let : let_expr -> expr t
+
+  val create_let_reusing_defining_expr
+     : Variable.t
+    -> named t
+    -> expr
+    -> expr
+
+  val create_let_reusing_both
+     : Variable.t
+    -> named t
+    -> expr t
+    -> expr
+
+  val expr : expr t -> named t
+end
 
 (** Functions to avoid recalculating free variables of let bodies
     unnecessarily.  See the main [Let] case in inline_and_simplify.ml. *)
@@ -407,8 +436,6 @@ val create_proto_let : body:t -> proto_let
 val create_proto_let_from_let : let_expr -> proto_let
 val free_variables_of_proto_let_body : proto_let -> Variable.Set.t
 val create_let_from_proto_let : Variable.t -> named -> proto_let -> t
-
-val swizzle_lets : t -> t
 
 (* CR mshinwell: try to move the non-recursive types out to a separate .mli *)
 (* CR mshinwell: consider moving [Flambda_utils] functions into here, now we
