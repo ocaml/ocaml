@@ -45,32 +45,32 @@ let rec split_let (expr:Flambda.t) =
       Flambda.create_let fresh named expr
     in
     let reintroduce_lets ~def_free_vars ~body_free_vars ~def ~body =
-        let named_free_vars = Flambda.free_variables_named named in
-        match Variable.Set.mem var def_free_vars, Variable.Set.mem var body_free_vars with
-        | false, false ->
-          (* Unused everywhere: drop everywhere *)
-          def_free_vars, body_free_vars, def, body
-        | true, false ->
-          (* Unused only once: no substitution needed *)
-          let def_free_vars = Variable.Set.union def_free_vars named_free_vars in
-          def_free_vars, body_free_vars,
-          (Flambda.create_let var named def),
-          body
-        | false, true ->
-          (* Unused only once: no substitution needed *)
-          let body_free_vars = Variable.Set.union body_free_vars named_free_vars in
-          def_free_vars, body_free_vars,
-          def,
-          Flambda.create_let var named body
-        | true, true ->
-          (* Used, in both: substitute in one.
-             We assume the new definition is smaller, hence substitute in there *)
-          let def = copy_definition def in
-          let def_free_vars = Variable.Set.union def_free_vars named_free_vars in
-          let body_free_vars = Variable.Set.union body_free_vars named_free_vars in
-          def_free_vars, body_free_vars,
-          def,
-          Flambda.create_let var named body
+      let named_free_vars = Flambda.free_variables_named named in
+      match Variable.Set.mem var def_free_vars, Variable.Set.mem var body_free_vars with
+      | false, false ->
+        (* Unused everywhere: drop everywhere *)
+        def_free_vars, body_free_vars, def, body
+      | true, false ->
+        (* Unused only once: no substitution needed *)
+        let def_free_vars = Variable.Set.union def_free_vars named_free_vars in
+        def_free_vars, body_free_vars,
+        (Flambda.create_let var named def),
+        body
+      | false, true ->
+        (* Unused only once: no substitution needed *)
+        let body_free_vars = Variable.Set.union body_free_vars named_free_vars in
+        def_free_vars, body_free_vars,
+        def,
+        Flambda.create_let var named body
+      | true, true ->
+        (* Used, in both: substitute in one.
+           We assume the new definition is smaller, hence substitute in there *)
+        let def = copy_definition def in
+        let def_free_vars = Variable.Set.union def_free_vars named_free_vars in
+        let body_free_vars = Variable.Set.union body_free_vars named_free_vars in
+        def_free_vars, body_free_vars,
+        def,
+        Flambda.create_let var named body
     in
     begin match split_let body with
     | None -> None
@@ -107,6 +107,8 @@ let rec split_let (expr:Flambda.t) =
       end
     end
   | Let { var; defining_expr = def; body; free_vars_of_body; } ->
+    (* This [Let] is to be lifted (to either [Initialize_symbol] or
+       [Effect]). *)
     (* Format.printf "not copy variable %a@." *)
     (*   Variable.print var; *)
     if Variable.Set.mem var free_vars_of_body then begin

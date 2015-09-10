@@ -401,6 +401,7 @@ val create_let : Variable.t -> named -> t -> t
 
 (** Functions to avoid recalculating free variables of let bodies
     unnecessarily.  See the main [Let] case in inline_and_simplify.ml. *)
+(* CR mshinwell: rename to [computed_free_variables] or something? *)
 type proto_let
 val create_proto_let : body:t -> proto_let
 val create_proto_let_from_let : let_expr -> proto_let
