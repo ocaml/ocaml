@@ -137,9 +137,9 @@ let rec split_let (expr:Flambda.t) =
   | _ -> None
 
 let introduce_symbols expr =
-  let rec loop expr =
+  let rec loop expr ~all_extracted_rev =
     match split_let expr with
-    | None -> [], expr
+    | None -> all_extracted_rev, expr
     | Some (_, _, extracted, body) -> (*begin match extracted with
         | Initialisation (_symbol, _tag, _def) ->
 (*
@@ -158,10 +158,10 @@ let introduce_symbols expr =
 *)
           (* Flambda.Effect (effect, program)) *)
       end;*)
-      let l, res = loop body in
-      extracted :: l, res
+      loop body ~all_extracted_rev:(extracted :: all_extracted_rev)
   in
-  loop expr
+  let all_extracted_rev, expr = loop expr ~all_extracted_rev:[] in
+  (List.rev all_extracted_rev), expr
 
 let add_extracted introduced program =
 (*  Format.printf "add extracted@.";*)

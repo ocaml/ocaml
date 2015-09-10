@@ -441,103 +441,106 @@ let rec print_program ppf (program : program) =
   | End root -> fprintf ppf "End %a" Symbol.print root
 
 let free_variables ?ignore_uses_in_apply ?ignore_uses_in_project_var tree =
-  let free = ref Variable.Set.empty in
-  let bound = ref Variable.Set.empty in
-  let free_variables ids = free := Variable.Set.union ids !free in
-  let free_variable fv = free := Variable.Set.add fv !free in
-  let bound_variable id = bound := Variable.Set.add id !bound in
-  let iter ?ignore_uses_in_apply ?ignore_uses_in_project_var
-      tree ~free_variables ~bound_variable =
-    (* N.B. This function assumes that all bound identifiers are distinct. *)
-    let rec aux (flam : t) : unit =
-      match flam with
-      | Var var -> free_variable var
-      | Apply { func; args; kind = _; dbg = _} ->
-        begin match ignore_uses_in_apply with
-        | None ->
-          free_variable func
-        | Some () -> ()
-        end;
-        List.iter free_variable args
-      | Let { var; defining_expr; body = _; free_vars_of_body } ->
-        bound_variable var;
-        aux_named defining_expr;
-        free_variables free_vars_of_body
-      | Let_mutable (_mut_var, var, body) ->
-        free_variable var;
-        aux body
-      | Let_rec (bindings, body) ->
-        List.iter (fun (var, defining_expr) ->
-            bound_variable var;
-            aux_named defining_expr)
-          bindings;
-        aux body
-      | Switch (scrutinee, switch) ->
-        free_variable scrutinee;
-        List.iter (fun (_, e) -> aux e) switch.consts;
-        List.iter (fun (_, e) -> aux e) switch.blocks;
-        Misc.may aux switch.failaction
-      | String_switch (scrutinee, cases, failaction) ->
-        free_variable scrutinee;
-        List.iter (fun (_, e) -> aux e) cases;
-        Misc.may aux failaction
-      | Static_raise (_, es) ->
-        List.iter aux es
-      | Static_catch (_, vars, e1, e2) ->
-        List.iter bound_variable vars;
-        aux e1;
-        aux e2
-      | Try_with (e1, var, e2) ->
-        aux e1;
-        bound_variable var;
-        aux e2
-      | If_then_else (var, e1, e2) ->
-        free_variable var;
-        aux e1;
-        aux e2
-      | While (e1, e2) ->
-        aux e1;
-        aux e2
-      | For { bound_var; from_value; to_value; direction = _; body; } ->
-        bound_variable bound_var;
-        free_variable from_value;
-        free_variable to_value;
-        aux body
-      | Assign { being_assigned = _; new_value; } ->
-        free_variable new_value
-      | Send { kind = _; meth; obj; args; dbg = _ } ->
-        free_variable meth;
-        free_variable obj;
-        List.iter free_variable args;
-      | Proved_unreachable -> ()
-    and aux_named (named : named) =
-      match named with
-      | Symbol _ | Const _ | Allocated_const _ | Read_mutable _
-      | Read_symbol_field _ -> ()
-      | Set_of_closures { free_vars; specialised_args; _ } ->
-        (* Sets of closures are, well, closed---except for the specialised
-           argument list, which may identify variables currently in scope
-           outside of the closure. *)
-        Variable.Map.iter (fun _ renamed_to -> free_variable renamed_to)
-          free_vars;
-        Variable.Map.iter (fun _ var -> free_variable var) specialised_args
-      | Project_closure { set_of_closures; closure_id = _ } ->
-        free_variable set_of_closures
-      | Project_var { closure; closure_id = _; var = _ } ->
-        begin match ignore_uses_in_project_var with
-        | None -> free_variable closure
-        | Some () -> ()
-        end
-      | Move_within_set_of_closures { closure; start_from = _; move_to = _ } ->
-        free_variable closure
-      | Prim (_, args, _) -> List.iter free_variable args
-      | Expr flam -> aux flam
+  match tree with
+  | Var var -> Variable.Set.singleton var
+  | _ ->
+    let free = ref Variable.Set.empty in
+    let bound = ref Variable.Set.empty in
+    let free_variables ids = free := Variable.Set.union ids !free in
+    let free_variable fv = free := Variable.Set.add fv !free in
+    let bound_variable id = bound := Variable.Set.add id !bound in
+    let iter ?ignore_uses_in_apply ?ignore_uses_in_project_var
+        tree ~free_variables ~bound_variable =
+      (* N.B. This function assumes that all bound identifiers are distinct. *)
+      let rec aux (flam : t) : unit =
+        match flam with
+        | Var var -> free_variable var
+        | Apply { func; args; kind = _; dbg = _} ->
+          begin match ignore_uses_in_apply with
+          | None ->
+            free_variable func
+          | Some () -> ()
+          end;
+          List.iter free_variable args
+        | Let { var; defining_expr; body = _; free_vars_of_body } ->
+          bound_variable var;
+          aux_named defining_expr;
+          free_variables free_vars_of_body
+        | Let_mutable (_mut_var, var, body) ->
+          free_variable var;
+          aux body
+        | Let_rec (bindings, body) ->
+          List.iter (fun (var, defining_expr) ->
+              bound_variable var;
+              aux_named defining_expr)
+            bindings;
+          aux body
+        | Switch (scrutinee, switch) ->
+          free_variable scrutinee;
+          List.iter (fun (_, e) -> aux e) switch.consts;
+          List.iter (fun (_, e) -> aux e) switch.blocks;
+          Misc.may aux switch.failaction
+        | String_switch (scrutinee, cases, failaction) ->
+          free_variable scrutinee;
+          List.iter (fun (_, e) -> aux e) cases;
+          Misc.may aux failaction
+        | Static_raise (_, es) ->
+          List.iter aux es
+        | Static_catch (_, vars, e1, e2) ->
+          List.iter bound_variable vars;
+          aux e1;
+          aux e2
+        | Try_with (e1, var, e2) ->
+          aux e1;
+          bound_variable var;
+          aux e2
+        | If_then_else (var, e1, e2) ->
+          free_variable var;
+          aux e1;
+          aux e2
+        | While (e1, e2) ->
+          aux e1;
+          aux e2
+        | For { bound_var; from_value; to_value; direction = _; body; } ->
+          bound_variable bound_var;
+          free_variable from_value;
+          free_variable to_value;
+          aux body
+        | Assign { being_assigned = _; new_value; } ->
+          free_variable new_value
+        | Send { kind = _; meth; obj; args; dbg = _ } ->
+          free_variable meth;
+          free_variable obj;
+          List.iter free_variable args;
+        | Proved_unreachable -> ()
+      and aux_named (named : named) =
+        match named with
+        | Symbol _ | Const _ | Allocated_const _ | Read_mutable _
+        | Read_symbol_field _ -> ()
+        | Set_of_closures { free_vars; specialised_args; _ } ->
+          (* Sets of closures are, well, closed---except for the specialised
+             argument list, which may identify variables currently in scope
+             outside of the closure. *)
+          Variable.Map.iter (fun _ renamed_to -> free_variable renamed_to)
+            free_vars;
+          Variable.Map.iter (fun _ var -> free_variable var) specialised_args
+        | Project_closure { set_of_closures; closure_id = _ } ->
+          free_variable set_of_closures
+        | Project_var { closure; closure_id = _; var = _ } ->
+          begin match ignore_uses_in_project_var with
+          | None -> free_variable closure
+          | Some () -> ()
+          end
+        | Move_within_set_of_closures { closure; start_from = _; move_to = _ } ->
+          free_variable closure
+        | Prim (_, args, _) -> List.iter free_variable args
+        | Expr flam -> aux flam
+      in
+      aux tree
     in
-    aux tree
-  in
-  iter ?ignore_uses_in_apply ?ignore_uses_in_project_var tree
-    ~free_variables ~bound_variable;
-  Variable.Set.diff !free !bound
+    iter ?ignore_uses_in_apply ?ignore_uses_in_project_var tree
+      ~free_variables ~bound_variable;
+    Variable.Set.diff !free !bound
 
 let create_let var defining_expr body : t =
   Let {
@@ -621,6 +624,11 @@ type proto_let =
 let create_proto_let ~body : proto_let =
   { body;
     free_vars_of_body = free_variables body;
+  }
+
+let create_proto_let_from_let (let_expr : let_expr) =
+  { body = let_expr.body;
+    free_vars_of_body = let_expr.free_vars_of_body;
   }
 
 let free_variables_of_proto_let_body proto_let =

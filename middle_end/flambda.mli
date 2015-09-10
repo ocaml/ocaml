@@ -403,6 +403,7 @@ val create_let : Variable.t -> named -> t -> t
     unnecessarily.  See the main [Let] case in inline_and_simplify.ml. *)
 type proto_let
 val create_proto_let : body:t -> proto_let
+val create_proto_let_from_let : let_expr -> proto_let
 val free_variables_of_proto_let_body : proto_let -> Variable.Set.t
 val create_let_from_proto_let : Variable.t -> named -> proto_let -> t
 

@@ -505,11 +505,14 @@ let substitute_variable_to_symbol var symbol expr =
       let fresh = Variable.freshen var in
       bind fresh (Var fresh)
     | Var _ -> expr
-    | Let { var = v; defining_expr = named; body; _ } ->
+    | Let ({ var = v; defining_expr = named; _ } as let_expr) ->
       if Variable.Set.mem var (Flambda.free_variables_named named) then
+        (* The new [Let] that we build has the same body as [let_expr], so
+           we can avoid recalculating free variables. *)
+        let proto_let = Flambda.create_proto_let_from_let let_expr in
         let fresh = Variable.freshen var in
         let named = substitute_named fresh named in
-        bind fresh (Flambda.create_let v named body)
+        bind fresh (Flambda.create_let_from_proto_let v named proto_let)
       else
         expr
     | Let_mutable (mut_var, var', body) ->
