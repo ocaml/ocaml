@@ -42,6 +42,8 @@ Compilers:
   big-endian (ppc64) and little-endian (ppc64le) configuration.
   (Xavier Leroy, with inspiration from RedHat's unofficial ppc64 and ppc64le
    ports)
+- PR#6979: better code generation in x86-32 backend for copying floats to
+  the stack (Marc Lasson, review by Xavier Leroy)
 - GPR#17: some cmm optimizations of integer operations with constants
   (Stephen Dolan, review by Pierre Chambart)
 - GPR#109: new unboxing strategy for float and int references (Vladimir Brankov,
