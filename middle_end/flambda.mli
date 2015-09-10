@@ -408,6 +408,8 @@ val create_proto_let_from_let : let_expr -> proto_let
 val free_variables_of_proto_let_body : proto_let -> Variable.Set.t
 val create_let_from_proto_let : Variable.t -> named -> proto_let -> t
 
+val swizzle_lets : t -> t
+
 (* CR mshinwell: try to move the non-recursive types out to a separate .mli *)
 (* CR mshinwell: consider moving [Flambda_utils] functions into here, now we
    are forced to have a .ml *)

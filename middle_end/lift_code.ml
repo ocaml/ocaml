@@ -17,17 +17,8 @@ module C = Inlining_cost
 type lifter = Flambda.program -> Flambda.program
 
 let lift_lets_expr tree =
-  let rec aux (expr : Flambda.t) : Flambda.t =
-    match expr with
-    | Let { var = v1;
-        defining_expr =
-          Expr (Let { var = v2; defining_expr = def2; body = body2; _ });
-        body = body1; _ } ->
-      Flambda.create_let v2 def2
-        (aux (Flambda.create_let v1 (Expr body2) body1))
-    | e -> e
-  in
-  Flambda_iterators.map aux (fun (named : Flambda.named) -> named) tree
+  Flambda_iterators.map Flambda.swizzle_lets
+    (fun (named : Flambda.named) -> named) tree
 
 let lift_lets program =
   Flambda_iterators.map_exprs_at_toplevel_of_program program ~f:lift_lets_expr

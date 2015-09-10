@@ -550,6 +550,29 @@ let create_let var defining_expr body : t =
     free_vars_of_body = free_variables body;
   }
 
+let swizzle_lets t =
+  match t with
+  | Let { var = v1;
+      defining_expr =
+        Expr (Let { var = v2; defining_expr = def2; body = body2;
+          free_vars_of_body = free_vars_of_body2 });
+      body = body1; free_vars_of_body = free_vars_of_body1 } ->
+    Let {
+      var = v2;
+      defining_expr = def2;
+      body =
+        Let {
+          var = v1;
+          defining_expr = Expr body2;
+          body = body1;
+          free_vars_of_body = free_vars_of_body1;
+        };
+      free_vars_of_body =
+        Variable.Set.union (Variable.Set.remove v1 free_vars_of_body1)
+          free_vars_of_body2;
+    }
+  | expr -> expr
+
 let free_variables_named tree =
   let var = Variable.create "dummy" in
   free_variables (create_let var tree (Var var))
