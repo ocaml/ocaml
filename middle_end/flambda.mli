@@ -192,7 +192,7 @@ and named =
       [Read_symbol_field] may only be used when the definition of the symbol
       is in scope in the [program].  For external unresolved symbols, [Pfield]
       may still be used; it will be changed to [Read_symbol_field] by
-      [Inline_and_simplify] when the symbol is imported. *)
+      [Inline_and_simplify] when (and if) the symbol is imported. *)
   | Set_of_closures of set_of_closures
   | Project_closure of project_closure
   | Move_within_set_of_closures of move_within_set_of_closures
