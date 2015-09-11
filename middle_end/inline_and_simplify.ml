@@ -701,7 +701,7 @@ and simplify_named env r (tree : Flambda.named) : Flambda.named * R.t =
       | Pfield field_index, [arg] ->
         let tree, approx =
           let approx = E.find_exn env arg in
-          begin match approx.symbol with
+          begin (* match approx.symbol with
           (* If the [Pfield] is projecting directly from a symbol, rewrite the
              expression to [Read_symbol_field]. *)
           | Some (symbol, None) ->
@@ -711,7 +711,7 @@ and simplify_named env r (tree : Flambda.named) : Flambda.named * R.t =
                 symbol field_index
             in
             Flambda.Read_symbol_field (symbol, field_index), approx
-          | None | Some (_, Some _ ) ->
+          | None | Some (_, Some _ ) -> *)
             (* This [Pfield] is either not projecting from a symbol at all, or
                it is the projection of a projection from a symbol. *)
             let approx = A.get_field approx ~field_index in
