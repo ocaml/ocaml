@@ -141,7 +141,8 @@ let rec check_recordwith_updates id e =
 
 let rec size_of_lambda = function
   | Lfunction{kind; params; body} as funct ->
-      RHS_function (1 + IdentSet.cardinal(free_variables funct), List.length params)
+      RHS_function (1 + IdentSet.cardinal(free_variables funct),
+                    List.length params)
   | Llet (Strict, id, Lprim (Pduprecord (kind, size), _), body)
     when check_recordwith_updates id body ->
       begin match kind with
@@ -552,14 +553,16 @@ let rec comp_expr env exp sz cont =
               comp_init (add_var id (sz+1) new_env) (sz+1) rem
         and comp_nonrec new_env sz i = function
           | [] -> comp_rec new_env sz ndecl decl_size
-          | (id, exp, (RHS_block _ | RHS_floatblock _ | RHS_function _)) :: rem ->
+          | (id, exp, (RHS_block _ | RHS_floatblock _ | RHS_function _))
+            :: rem ->
               comp_nonrec new_env sz (i-1) rem
           | (id, exp, RHS_nonrec) :: rem ->
               comp_expr new_env exp sz
                 (Kassign (i-1) :: comp_nonrec new_env sz (i-1) rem)
         and comp_rec new_env sz i = function
           | [] -> comp_expr new_env body sz (add_pop ndecl cont)
-          | (id, exp, (RHS_block _ | RHS_floatblock _ | RHS_function _)) :: rem ->
+          | (id, exp, (RHS_block _ | RHS_floatblock _ | RHS_function _))
+            :: rem ->
               comp_expr new_env exp sz
                 (Kpush :: Kacc i :: Kccall("caml_update_dummy", 2) ::
                  comp_rec new_env sz (i-1) rem)

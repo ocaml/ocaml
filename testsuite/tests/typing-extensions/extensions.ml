@@ -200,10 +200,12 @@ type +'a foo = ..
 type 'a foo += A of (int -> 'a)
 ;;
 
-type 'a foo += B of ('a -> int) (* ERROR: Parameter variances are not satisfied *)
+type 'a foo += B of ('a -> int)
+    (* ERROR: Parameter variances are not satisfied *)
 ;;
 
-type _ foo += C : ('a -> int) -> 'a foo (* ERROR: Parameter variances are not satisfied *)
+type _ foo += C : ('a -> int) -> 'a foo
+    (* ERROR: Parameter variances are not satisfied *)
 ;;
 
 type 'a bar = ..

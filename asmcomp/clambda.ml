@@ -140,7 +140,7 @@ let compare_structured_constants c1 c2 =
   | Uconst_int32 x1, Uconst_int32 x2 -> Int32.compare x1 x2
   | Uconst_int64 x1, Uconst_int64 x2 -> Int64.compare x1 x2
   | Uconst_nativeint x1, Uconst_nativeint x2 -> Nativeint.compare x1 x2
-  | Uconst_block(t1, l1), Uconst_block(t2, l2) -> 
+  | Uconst_block(t1, l1), Uconst_block(t2, l2) ->
       let c = t1 - t2 (* no overflow possible here *) in
       if c <> 0 then c else compare_constant_lists l1 l2
   | Uconst_float_array l1, Uconst_float_array l2 ->

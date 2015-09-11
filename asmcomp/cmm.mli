@@ -30,7 +30,7 @@ type machtype_component =
 
 The purpose of these types is twofold.  First, they guide register
 allocation: type [Float] goes in FP registers, the other types go
-into integer registers.  Second, they determine how local variables are 
+into integer registers.  Second, they determine how local variables are
 tracked by the GC:
    - Variables of type [Val] are GC roots.  If they are pointers, the
      GC will not deallocate the addressed heap block, and will update

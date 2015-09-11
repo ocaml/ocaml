@@ -296,15 +296,24 @@ let primitives_table = create_hashtable 57 [
 ]
 
 let index_primitives_table =
-  let make_ba_ref n="%caml_ba_opt_ref_"^(string_of_int n),
-    fun () -> Pbigarrayref(!Clflags.fast, n, Pbigarray_unknown, Pbigarray_unknown_layout)
-  and make_ba_set n="%caml_ba_opt_set_"^(string_of_int n),
-    fun () -> Pbigarrayset(!Clflags.fast, n, Pbigarray_unknown, Pbigarray_unknown_layout) in
+  let make_ba_ref n =
+    "%caml_ba_opt_ref_"^(string_of_int n),
+    fun () -> Pbigarrayref(!Clflags.fast, n, Pbigarray_unknown,
+                           Pbigarray_unknown_layout)
+  and make_ba_set n =
+    "%caml_ba_opt_set_"^(string_of_int n),
+    fun () -> Pbigarrayset(!Clflags.fast, n, Pbigarray_unknown,
+                           Pbigarray_unknown_layout)
+  in
   create_hashtable 10 [
-    "%array_opt_get", ( fun () -> if !Clflags.fast then Parrayrefu Pgenarray else Parrayrefs Pgenarray );
-    "%array_opt_set", ( fun () -> if !Clflags.fast then Parraysetu Pgenarray else Parraysets Pgenarray );
-    "%string_opt_get", ( fun () -> if !Clflags.fast then Pstringrefu else Pstringrefs );
-    "%string_opt_set", ( fun () -> if !Clflags.fast then Pstringsetu else Pstringsets );
+    "%array_opt_get", ( fun () -> if !Clflags.fast then Parrayrefu Pgenarray
+                                  else Parrayrefs Pgenarray );
+    "%array_opt_set", ( fun () -> if !Clflags.fast then Parraysetu Pgenarray
+                                  else Parraysets Pgenarray );
+    "%string_opt_get", ( fun () -> if !Clflags.fast then Pstringrefu
+                                   else Pstringrefs );
+    "%string_opt_set", ( fun () -> if !Clflags.fast then Pstringsetu
+                                   else Pstringsets );
     make_ba_ref 1; make_ba_set 1;
     make_ba_ref 2; make_ba_set 2;
     make_ba_ref 3; make_ba_set 3;
@@ -522,7 +531,7 @@ let rec name_pattern default = function
 
 type binding =
   | Bind_value of value_binding list
-  | Bind_module of Ident.t * string loc * module_expr 
+  | Bind_module of Ident.t * string loc * module_expr
 
 let rec push_defaults loc bindings cases partial =
   match cases with
@@ -746,7 +755,8 @@ and transl_exp0 e =
       end
   | Texp_apply(funct, oargs) ->
       let should_be_tailcall = has_tailcall_attribute funct in
-      event_after e (transl_apply ~should_be_tailcall (transl_exp funct) oargs e.exp_loc)
+      event_after e (transl_apply ~should_be_tailcall (transl_exp funct) oargs
+                                  e.exp_loc)
   | Texp_match(arg, pat_expr_list, exn_pat_expr_list, partial) ->
     transl_match e arg pat_expr_list exn_pat_expr_list partial
   | Texp_try(body, pat_expr_list) ->

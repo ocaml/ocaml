@@ -101,7 +101,8 @@ CAMLexport void caml_print_exception_backtrace(void)
   struct caml_loc_info li;
 
   if (!caml_debug_info_available()) {
-    fprintf(stderr, "(Cannot print stack backtrace: no debug information available)\n");
+    fprintf(stderr, "(Cannot print stack backtrace: "
+                    "no debug information available)\n");
     return;
   }
 
@@ -143,7 +144,8 @@ CAMLprim value caml_get_exception_raw_backtrace(value unit)
 
     res = caml_alloc(saved_caml_backtrace_pos, 0);
     for (i = 0; i < saved_caml_backtrace_pos; i++) {
-      Field(res, i) = caml_val_raw_backtrace_slot(saved_caml_backtrace_buffer[i]);
+      Field(res, i) =
+        caml_val_raw_backtrace_slot(saved_caml_backtrace_buffer[i]);
     }
   }
 

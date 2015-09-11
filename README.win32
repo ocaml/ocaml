@@ -18,7 +18,7 @@ Here is a summary of the main differences between these ports:
 
                                       Native MS     Native MinGW        Cygwin
 
-64 bits?                            Win32 or Win64  Win32 or Win64     Win32 only
+64 bits?                            Win32 or Win64  Win32 or Win64    Win32 only
 
 Third-party software required
   - for base bytecode system            none            none            none

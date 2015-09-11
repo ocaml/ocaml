@@ -1,3 +1,16 @@
+(***********************************************************************)
+(*                                                                     *)
+(*                                OCaml                                *)
+(*                                                                     *)
+(*                         Benoit Vaugon, ENSTA                        *)
+(*                                                                     *)
+(*  Copyright 2014 Institut National de Recherche en Informatique et   *)
+(*  en Automatique.  All rights reserved.  This file is distributed    *)
+(*  under the terms of the GNU Library General Public License, with    *)
+(*  the special exception on linking described in file ../LICENSE.     *)
+(*                                                                     *)
+(***********************************************************************)
+
 (* No comments, OCaml stdlib internal use only. *)
 
 type padty = Left | Right | Zeros
@@ -126,7 +139,7 @@ and ('a1, 'b1, 'c1, 'd1, 'e1, 'f1,
      'a2, 'b2, 'c2, 'd2, 'e2, 'f2) fmtty_rel ->
     (('b1 -> 'c1) -> 'a1, 'b1, 'c1, 'd1, 'e1, 'f1,
      ('b2 -> 'c2) -> 'a2, 'b2, 'c2, 'd2, 'e2, 'f2) fmtty_rel
-| Any_ty :                                                  (* Used for custom formats *)
+| Any_ty :                                         (* Used for custom formats *)
     ('a1, 'b1, 'c1, 'd1, 'e1, 'f1,
      'a2, 'b2, 'c2, 'd2, 'e2, 'f2) fmtty_rel ->
     ('x -> 'a1, 'b1, 'c1, 'd1, 'e1, 'f1,

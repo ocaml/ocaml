@@ -166,11 +166,12 @@ let transl_labels loc env closed lbls =
          raise(Error(loc, Duplicate_label name));
        all_labels := StringSet.add name !all_labels)
     lbls;
-  let mk {pld_name=name;pld_mutable=mut;pld_type=arg;pld_loc=loc;pld_attributes=attrs} =
+  let mk {pld_name=name;pld_mutable=mut;pld_type=arg;pld_loc=loc;
+          pld_attributes=attrs} =
     let arg = Ast_helper.Typ.force_poly arg in
     let cty = transl_simple_type env closed arg in
-    {ld_id = Ident.create name.txt; ld_name = name; ld_mutable = mut; ld_type = cty;
-     ld_loc = loc; ld_attributes = attrs}
+    {ld_id = Ident.create name.txt; ld_name = name; ld_mutable = mut;
+     ld_type = cty; ld_loc = loc; ld_attributes = attrs}
   in
   let lbls = List.map mk lbls in
   let lbls' =

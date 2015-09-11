@@ -146,7 +146,7 @@ static value heap_stats (int returnstats)
     cur_hp = (header_t *) chunk;
     while (cur_hp < (header_t *) chunk_end){
       cur_hd = Hd_hp (cur_hp);
-                                           Assert (Next (cur_hp) <= (header_t *) chunk_end);
+      Assert (Next (cur_hp) <= (header_t *) chunk_end);
       switch (Color_hd (cur_hd)){
       case Caml_white:
         if (Wosize_hd (cur_hd) == 0){
@@ -155,7 +155,8 @@ static value heap_stats (int returnstats)
                   || Color_hp (prev_hp) != Caml_blue
                   || cur_hp == (header_t *) caml_gc_sweep_hp);
         }else{
-          if (caml_gc_phase == Phase_sweep && cur_hp >= (header_t *) caml_gc_sweep_hp){
+          if (caml_gc_phase == Phase_sweep
+              && cur_hp >= (header_t *) caml_gc_sweep_hp){
             ++ free_blocks;
             free_words += Whsize_hd (cur_hd);
             if (Whsize_hd (cur_hd) > largest_free){

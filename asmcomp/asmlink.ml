@@ -94,7 +94,9 @@ let lib_ccopts = ref []
 let add_ccobjs origin l =
   if not !Clflags.no_auto_link then begin
     lib_ccobjs := l.lib_ccobjs @ !lib_ccobjs;
-    let replace_origin = Misc.replace_substring ~before:"$CAMLORIGIN" ~after:origin in
+    let replace_origin =
+      Misc.replace_substring ~before:"$CAMLORIGIN" ~after:origin
+    in
     lib_ccopts := List.map replace_origin l.lib_ccopts @ !lib_ccopts
   end
 
@@ -283,7 +285,8 @@ let call_linker file_list startup_file output_name =
   let files, c_lib =
     if (not !Clflags.output_c_object) || main_dll || main_obj_runtime then
       files @ (List.rev !Clflags.ccobjs) @ runtime_lib (),
-      (if !Clflags.nopervasives || main_obj_runtime then "" else Config.native_c_libraries)
+      (if !Clflags.nopervasives || main_obj_runtime
+       then "" else Config.native_c_libraries)
     else
       files, ""
   in
@@ -327,7 +330,8 @@ let link ppf objfiles output_name =
     startup !Clflags.keep_startup_file startup_obj
     (fun () -> make_startup_file ppf units_tolink);
   Misc.try_finally
-    (fun () -> call_linker (List.map object_file_name objfiles) startup_obj output_name)
+    (fun () ->
+      call_linker (List.map object_file_name objfiles) startup_obj output_name)
     (fun () -> remove_file startup_obj)
 
 (* Error report *)

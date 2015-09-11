@@ -13,7 +13,7 @@
 
 #if defined(MODEL_ppc64le)
         .abiversion 2
-#endif	
+#endif
 
 #if defined(MODEL_ppc64) || defined(MODEL_ppc64le)
 #define EITHER(a,b) b
@@ -37,7 +37,7 @@
 #define TRAP_SIZE 16
 #define TRAP_HANDLER_OFFSET 0
 #define TRAP_PREVIOUS_OFFSET 4
-#define CALLBACK_LINK_SIZE 16	
+#define CALLBACK_LINK_SIZE 16
 #define CALLBACK_LINK_OFFSET 0
 #endif
 #if defined(MODEL_ppc64)
@@ -77,7 +77,7 @@
 
 #define ENDFUNCTION(name) \
   .size name, . - name
-  
+
 #endif
 
 #if defined(MODEL_ppc64)
@@ -109,7 +109,7 @@
 
 #define ENDFUNCTION(name) \
   .size name, . - name
-  
+
 #endif
 
 /* Accessing global variables.  */
@@ -157,7 +157,7 @@
 
 #if defined(MODEL_ppc64)
         .section ".opd","aw"
-#else        
+#else
         .section ".text"
 #endif
         .globl  caml_system__code_begin
@@ -465,7 +465,7 @@ FUNCTION(caml_start_program)
     /* Save TOC pointer if applicable */
 #ifdef TOC_SAVE_PARENT
         std     2, (STACKSIZE + TOC_SAVE_PARENT)(1)
-#endif        
+#endif
     /* Save all callee-save registers */
         addi    11, 1, CALLBACK_LINK_SIZE + RESERVED_STACK - WORD
         stgu    14, WORD(11)
@@ -609,7 +609,7 @@ FUNCTION(caml_start_program)
     /* Restore TOC pointer */
 #ifdef TOC_SAVE_PARENT
         ld      2, (STACKSIZE + TOC_SAVE_PARENT)(1)
-#endif        
+#endif
     /* Update caml_exception_pointer */
         Storeglobal(29, caml_exception_pointer, 11)
     /* Encode exception bucket as an exception result and return it */
@@ -651,7 +651,7 @@ ENDFUNCTION(caml_callback3_exn)
 
 #if defined(MODEL_ppc64)
         .section ".opd","aw"
-#else        
+#else
         .section ".text"
 #endif
 
@@ -690,4 +690,3 @@ TOCENTRY(caml_young_limit)
 TOCENTRY(caml_young_ptr)
 
 #endif
-

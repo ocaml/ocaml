@@ -59,7 +59,14 @@ class html =
     method private code_block b code =
       code_id <- code_id + 1;
       Printf.bprintf b
-      "<span class=\"code_expand\" onclick=\"if(document.getElementById('code%d').style.display=='none') {document.getElementById('code%d').style.display='block';} else {document.getElementById('code%d').style.display='none';}\"><img src=\"expand_collapse.png\" alt=\"+/-\"/></span>" code_id code_id code_id;
+      "<span class=\"code_expand\" onclick=\"\
+       if(document.getElementById('code%d').style.display=='none') {\
+         document.getElementById('code%d').style.display='block';\
+       } else {\
+         document.getElementById('code%d').style.display='none';\
+       }\">\
+       <img src=\"expand_collapse.png\" alt=\"+/-\"/></span>"
+           code_id code_id code_id;
       Printf.bprintf b "<div id=\"code%d\" class=\"codeblock\">" code_id;
       self#html_of_code b code;
       Printf.bprintf b "</div>"

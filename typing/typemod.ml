@@ -589,7 +589,9 @@ and transl_signature env sg =
             List.iter
               (fun decl -> check_name check_type names decl.ptype_name)
               sdecls;
-            let (decls, newenv) = Typedecl.transl_type_decl env rec_flag sdecls in
+            let (decls, newenv) =
+              Typedecl.transl_type_decl env rec_flag sdecls
+            in
             let (trem, rem, final_env) = transl_sig newenv srem in
             mksig (Tsig_type (rec_flag, decls)) env loc :: trem,
             map_rec_type_with_row_types ~rec_flag
@@ -1317,7 +1319,8 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
             (fun {md_id=id; md_type=mty} (name, _, smodl, attrs, loc) ->
                let modl =
                  Typetexp.with_warning_attribute attrs (fun () ->
-                   type_module true funct_body (anchor_recmodule id anchor) newenv smodl)
+                   type_module true funct_body (anchor_recmodule id anchor)
+                               newenv smodl)
                in
                let mty' =
                  enrich_module_type anchor (Ident.name id) modl.mod_type newenv

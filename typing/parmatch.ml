@@ -1834,7 +1834,8 @@ let do_check_partial ?pred exhaust loc casel pss = match pss with
                 end;
                 if contains_extension v then
                   Buffer.add_string buf
-                    "\nMatching over values of extensible variant types (the *extension* above)\n\
+                    "\nMatching over values of extensible variant types \
+                       (the *extension* above)\n\
                     must include a wild card pattern in order to be exhaustive."
                 ;
                 Buffer.contents buf

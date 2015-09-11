@@ -198,7 +198,3 @@ CAMLprim value caml_update_dummy(value dummy, value newval)
   }
   return Val_unit;
 }
-
-
-
-

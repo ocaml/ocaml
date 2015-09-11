@@ -273,7 +273,8 @@ let compile fold_case re =
   let rec emit_code = function
     Char c ->
       if fold_case then
-        emit_instr op_CHARNORM (Char.code (Char.lowercase c))[@ocaml.warnerror "-3"]
+        emit_instr op_CHARNORM (Char.code (Char.lowercase c))
+          [@ocaml.warnerror "-3"]
       else
         emit_instr op_CHAR (Char.code c)
   | String s ->
@@ -281,7 +282,8 @@ let compile fold_case re =
         0 -> ()
       | 1 ->
         if fold_case then
-          emit_instr op_CHARNORM (Char.code (Char.lowercase s.[0]))[@ocaml.warnerror "-3"]
+          emit_instr op_CHARNORM (Char.code (Char.lowercase s.[0]))
+            [@ocaml.warnerror "-3"]
         else
           emit_instr op_CHAR (Char.code s.[0])
       | _ ->
@@ -294,7 +296,8 @@ let compile fold_case re =
           emit_code (String (string_after s (i+1)))
         with Not_found ->
           if fold_case then
-            emit_instr op_STRINGNORM (cpool_index (String.lowercase s))[@ocaml.warnerror "-3"]
+            emit_instr op_STRINGNORM (cpool_index (String.lowercase s))
+              [@ocaml.warnerror "-3"]
           else
             emit_instr op_STRING (cpool_index s)
       end

@@ -1043,8 +1043,10 @@ fun k fmt -> match fmt with
   | Scan_next_char rest              -> take_format_readers k rest
 
   | Formatting_lit (_, rest)         -> take_format_readers k rest
-  | Formatting_gen (Open_tag (Format (fmt, _)), rest) -> take_format_readers k (concat_fmt fmt rest)
-  | Formatting_gen (Open_box (Format (fmt, _)), rest) -> take_format_readers k (concat_fmt fmt rest)
+  | Formatting_gen (Open_tag (Format (fmt, _)), rest) ->
+      take_format_readers k (concat_fmt fmt rest)
+  | Formatting_gen (Open_box (Format (fmt, _)), rest) ->
+      take_format_readers k (concat_fmt fmt rest)
 
   | Format_arg (_, _, rest)          -> take_format_readers k rest
   | Format_subst (_, fmtty, rest)    ->
@@ -1136,10 +1138,12 @@ fun ib fmt readers -> match fmt with
     pad_prec_scanf ib str_rest readers pad No_precision scan token_string
   | String (pad, Formatting_gen (Open_tag (Format (fmt', _)), rest)) ->
     let scan width _ ib = scan_string (Some '{') width ib in
-    pad_prec_scanf ib (concat_fmt fmt' rest) readers pad No_precision scan token_string
+    pad_prec_scanf ib (concat_fmt fmt' rest) readers pad No_precision scan
+                   token_string
   | String (pad, Formatting_gen (Open_box (Format (fmt', _)), rest)) ->
     let scan width _ ib = scan_string (Some '[') width ib in
-    pad_prec_scanf ib (concat_fmt fmt' rest) readers pad No_precision scan token_string
+    pad_prec_scanf ib (concat_fmt fmt' rest) readers pad No_precision scan
+                   token_string
   | String (pad, rest) ->
     let scan width _ ib = scan_string None width ib in
     pad_prec_scanf ib rest readers pad No_precision scan token_string

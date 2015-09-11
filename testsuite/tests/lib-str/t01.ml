@@ -502,7 +502,9 @@ let automated_test() =
     [||];
 
   start_test "Search for /^[a-z0-9][a-z0-9-]*\\(\\.[a-z0-9][A-Z0-9-]*\\)*\\.$/";
-  let r = Str.regexp_case_fold "^[a-z0-9][a-z0-9-]*\\(\\.[a-z0-9][A-Z0-9-]*\\)*\\.$" in
+  let r =
+    Str.regexp_case_fold "^[a-z0-9][a-z0-9-]*\\(\\.[a-z0-9][A-Z0-9-]*\\)*\\.$"
+  in
   let n = 1 in
   test_search_forward r n "a."
     [|"a."; "~"|];
@@ -523,8 +525,12 @@ let automated_test() =
   test_search_forward r n "-abc.peq."
     [||];
 
-  start_test "Search for /^\\*\\.[a-z]\\([a-z0-9-]*[a-z0-9]+\\)?\\(\\.[a-z]\\([a-z0-9-]*[a-z0-9]+\\)?\\)*$/";
-  let r = Str.regexp "^\\*\\.[a-z]\\([a-z0-9-]*[a-z0-9]+\\)?\\(\\.[a-z]\\([a-z0-9-]*[a-z0-9]+\\)?\\)*$" in
+  start_test "Search for /^\\*\\.[a-z]\\([a-z0-9-]*[a-z0-9]+\\)?\
+                         \\(\\.[a-z]\\([a-z0-9-]*[a-z0-9]+\\)?\\)*$/";
+  let r =
+    Str.regexp "^\\*\\.[a-z]\\([a-z0-9-]*[a-z0-9]+\\)?\
+                \\(\\.[a-z]\\([a-z0-9-]*[a-z0-9]+\\)?\\)*$"
+  in
   let n = 3 in
   test_search_forward r n "*.a"
     [|"*.a"; "~"; "~"; "~"|];
@@ -569,8 +575,12 @@ let automated_test() =
   test_search_forward r n "\"1234\" : things"
     [||];
 
-  start_test "Search for /^\\(a\\(b\\(c\\)\\)\\)\\(d\\(e\\(f\\)\\)\\)\\(h\\(i\\(j\\)\\)\\)$/";
-  let r = Str.regexp "^\\(a\\(b\\(c\\)\\)\\)\\(d\\(e\\(f\\)\\)\\)\\(h\\(i\\(j\\)\\)\\)$" in
+  start_test "Search for /^\\(a\\(b\\(c\\)\\)\\)\\(d\\(e\\(f\\)\\)\\)\
+                         \\(h\\(i\\(j\\)\\)\\)$/";
+  let r =
+    Str.regexp "^\\(a\\(b\\(c\\)\\)\\)\\(d\\(e\\(f\\)\\)\\)\
+                \\(h\\(i\\(j\\)\\)\\)$"
+  in
   let n = 9 in
   test_search_forward r n "abcdefhij"
     [|"abcdefhij"; "abc"; "bc"; "c"; "def"; "ef"; "f"; "hij"; "ij"; "j"|];
@@ -581,8 +591,11 @@ let automated_test() =
   test_search_forward r n ".^$*(+)|{?,?}"
     [|".^$*(+)|{?,?}"|];
 
-  start_test "Search for /\\(cat\\(a\\(ract\\|tonic\\)\\|erpillar\\)\\) \\1\\(\\)2\\(3\\)/";
-  let r = Str.regexp "\\(cat\\(a\\(ract\\|tonic\\)\\|erpillar\\)\\) \\1\\(\\)2\\(3\\)" in
+  start_test "Search for /\\(cat\\(a\\(ract\\|tonic\\)\\|erpillar\\)\\) \
+                         \\1\\(\\)2\\(3\\)/";
+  let r =
+    Str.regexp "\\(cat\\(a\\(ract\\|tonic\\)\\|erpillar\\)\\) \\1\\(\\)2\\(3\\)"
+  in
   let n = 5 in
   test_search_forward r n "cataract cataract23"
     [|"cataract cataract23"; "cataract"; "aract"; "ract"; ""; "3"|];
@@ -591,8 +604,12 @@ let automated_test() =
   test_search_forward r n "caterpillar caterpillar23"
     [|"caterpillar caterpillar23"; "caterpillar"; "erpillar"; "~"; ""; "3"|];
 
-  start_test "Search for /^From +\\([^ ]+\\) +[a-zA-Z][a-zA-Z][a-zA-Z] +[a-zA-Z][a-zA-Z][a-zA-Z] +[0-9]?[0-9] +[0-9][0-9]:[0-9][0-9]/";
-  let r = Str.regexp "^From +\\([^ ]+\\) +[a-zA-Z][a-zA-Z][a-zA-Z] +[a-zA-Z][a-zA-Z][a-zA-Z] +[0-9]?[0-9] +[0-9][0-9]:[0-9][0-9]" in
+  start_test "Search for /^From +\\([^ ]+\\) +[a-zA-Z][a-zA-Z][a-zA-Z] \
+              +[a-zA-Z][a-zA-Z][a-zA-Z] +[0-9]?[0-9] +[0-9][0-9]:[0-9][0-9]/";
+  let r =
+    Str.regexp "^From +\\([^ ]+\\) +[a-zA-Z][a-zA-Z][a-zA-Z] \
+                +[a-zA-Z][a-zA-Z][a-zA-Z] +[0-9]?[0-9] +[0-9][0-9]:[0-9][0-9]"
+  in
   let n = 1 in
   test_search_forward r n "From abcd  Mon Sep 01 12:33:02 1997"
     [|"From abcd  Mon Sep 01 12:33"; "abcd"|];
@@ -776,19 +793,38 @@ let automated_test() =
     let _NameChar = "[A-Za-z0-9_:.-]\\|[^\x00-\x7F]" in
     let _Name = "\\(" ^ _NameStrt ^ "\\)\\(" ^ _NameChar ^ "\\)*" in
     let _QuoteSE = "\"[^\"]*\"\\|'[^']*'" in
-    let _DT_IdentSE = _S ^ _Name ^ "\\(" ^ _S ^ "\\(" ^ _Name ^ "\\|" ^ _QuoteSE ^ "\\)\\)*" in
+    let _DT_IdentSE =
+      _S ^ _Name ^ "\\(" ^ _S ^ "\\(" ^ _Name ^ "\\|" ^ _QuoteSE ^ "\\)\\)*"
+    in
     let _MarkupDeclCE = "\\([^]\"'><]\\|" ^ _QuoteSE ^ "\\)*>" in
     let _S1 = "[\n\r\t ]" in
     let _UntilQMs = "[^?]*\\?+" in
-    let _PI_Tail = "\\?>\\|" ^ _S1 ^ _UntilQMs ^ "\\([^>?]" ^ _UntilQMs ^ "\\)*>" in
-    let _DT_ItemSE = "<\\(!\\(--" ^ _Until2Hyphens ^ ">\\|[^-]" ^ _MarkupDeclCE ^ "\\)\\|\\?" ^ _Name ^ "\\(" ^ _PI_Tail ^ "\\)\\)\\|%" ^ _Name ^ ";\\|" ^ _S1 in
-    let _DocTypeCE = _DT_IdentSE ^ "\\(" ^ _S ^ "\\)?\\(\\[\\(" ^ _DT_ItemSE ^ "\\)*]\\(" ^ _S ^ "\\)?\\)?>?" in
-    let _DeclCE = "--\\(" ^ _CommentCE ^ "\\)?\\|\\[_CDATA\\[\\(" ^ _CDATA_CE ^ "\\)?\\|_DOCTYPE\\(" ^ _DocTypeCE ^ "\\)?" in
+    let _PI_Tail =
+      "\\?>\\|" ^ _S1 ^ _UntilQMs ^ "\\([^>?]" ^ _UntilQMs ^ "\\)*>"
+    in
+    let _DT_ItemSE =
+      "<\\(!\\(--" ^ _Until2Hyphens ^ ">\\|[^-]" ^ _MarkupDeclCE ^ "\\)\\|\\?"
+      ^ _Name ^ "\\(" ^ _PI_Tail ^ "\\)\\)\\|%" ^ _Name ^ ";\\|" ^ _S1
+    in
+    let _DocTypeCE =
+      _DT_IdentSE ^ "\\(" ^ _S ^ "\\)?\\(\\[\\(" ^ _DT_ItemSE ^ "\\)*]\\("
+      ^ _S ^ "\\)?\\)?>?"
+    in
+    let _DeclCE =
+      "--\\(" ^ _CommentCE ^ "\\)?\\|\\[_CDATA\\[\\(" ^ _CDATA_CE
+      ^ "\\)?\\|_DOCTYPE\\(" ^ _DocTypeCE ^ "\\)?"
+    in
     let _PI_CE = _Name ^ "\\(" ^ _PI_Tail ^ "\\)?" in
     let _EndTagCE = _Name ^ "\\(" ^ _S ^ "\\)?>?" in
     let _AttValSE = "\"[^<\"]*\"\\|'[^<']*'" in
-    let _ElemTagCE = _Name ^ "\\(" ^ _S ^ _Name ^ "\\(" ^ _S ^ "\\)?=\\(" ^ _S ^ "\\)?\\(" ^ _AttValSE ^ "\\)\\)*\\(" ^ _S ^ "\\)?/?>?" in
-    let _MarkupSPE = "<\\(!\\(" ^ _DeclCE ^ "\\)?\\|\\?\\(" ^ _PI_CE ^ "\\)?\\|/\\(" ^ _EndTagCE ^ "\\)?\\|\\(" ^ _ElemTagCE ^ "\\)?\\)" in
+    let _ElemTagCE =
+      _Name ^ "\\(" ^ _S ^ _Name ^ "\\(" ^ _S ^ "\\)?=\\(" ^ _S ^ "\\)?\\("
+      ^ _AttValSE ^ "\\)\\)*\\(" ^ _S ^ "\\)?/?>?"
+    in
+    let _MarkupSPE =
+      "<\\(!\\(" ^ _DeclCE ^ "\\)?\\|\\?\\(" ^ _PI_CE ^ "\\)?\\|/\\("
+      ^ _EndTagCE ^ "\\)?\\|\\(" ^ _ElemTagCE ^ "\\)?\\)"
+    in
     let _XML_SPE = _TextSE ^ "\\|" ^ _MarkupSPE in
     let input = "\
 <?xml version=\"1.0\"?>
@@ -974,7 +1010,29 @@ escaped text]]>
   "\n";
   "</food>";
   "\n";
-  "<!--\n<food>\n\t<name></name>\n\t<mfr></mfr>\n\t<serving units=\"g\"></serving>\n\t<calories total=\"\" fat=\"\"/>\n\t<total-fat></total-fat>\n\t<saturated-fat></saturated-fat>\n\t<cholesterol></cholesterol>\n\t<sodium></sodium>\n\t<carb></carb>\n\t<fiber></fiber>\n\t<protein></protein>\n\t<vitamins>\n\t\t<a></a>\n\t\t<c></c>\n\t</vitamins>\n\t<minerals>\n\t\t<ca></ca>\n\t\t<fe></fe>\n\t</minerals>\n</food>\n-->";
+  "<!--\n\
+   <food>\n\
+   \t<name></name>\n\
+   \t<mfr></mfr>\n\
+   \t<serving units=\"g\"></serving>\n\
+   \t<calories total=\"\" fat=\"\"/>\n\
+   \t<total-fat></total-fat>\n\
+   \t<saturated-fat></saturated-fat>\n\
+   \t<cholesterol></cholesterol>\n\
+   \t<sodium></sodium>\n\
+   \t<carb></carb>\n\
+   \t<fiber></fiber>\n\
+   \t<protein></protein>\n\
+   \t<vitamins>\n\
+   \t\t<a></a>\n\
+   \t\t<c></c>\n\
+   \t</vitamins>\n\
+   \t<minerals>\n\
+   \t\t<ca></ca>\n\
+   \t\t<fe></fe>\n\
+   \t</minerals>\n\
+   </food>\n\
+   -->";
   "\n"] in
     let re = Str.regexp _XML_SPE in
     let rec process i l =

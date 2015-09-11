@@ -171,7 +171,8 @@ val no_apply_info : apply_info
 
 val mk_apply_info : ?tailcall:bool -> Location.t -> apply_info
 (** Build apply_info
-    @param tailcall if true, the application should be in tail position; default false *)
+    @param tailcall if true, the application should be in tail position;
+           default false *)
 
 type function_kind = Curried | Tupled
 

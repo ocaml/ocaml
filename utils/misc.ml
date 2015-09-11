@@ -178,7 +178,8 @@ let no_overflow_sub a b = (a lxor (lnot b)) lor (b lxor (a-b)) < 0
 
 let no_overflow_mul a b = b <> 0 && (a * b) / b = a
 
-let no_overflow_lsl a k = 0 <= k && k < Sys.word_size && min_int asr k <= a && a <= max_int asr k
+let no_overflow_lsl a k =
+  0 <= k && k < Sys.word_size && min_int asr k <= a && a <= max_int asr k
 
 (* String operations *)
 
@@ -346,10 +347,10 @@ let spellcheck env name =
     match edit_distance target head cutoff with
       | None -> acc
       | Some dist ->
-	 let (best_choice, best_dist) = acc in
-	 if dist < best_dist then ([head], dist)
-	 else if dist = best_dist then (head :: best_choice, dist)
-	 else acc
+         let (best_choice, best_dist) = acc in
+         if dist < best_dist then ([head], dist)
+         else if dist = best_dist then (head :: best_choice, dist)
+         else acc
   in
   fst (List.fold_left (compare name) ([], max_int) env)
 
@@ -497,7 +498,9 @@ module Color = struct
 
   let setup =
     let first = ref true in (* initialize only once *)
-    let formatter_l = [Format.std_formatter; Format.err_formatter; Format.str_formatter] in
+    let formatter_l =
+      [Format.std_formatter; Format.err_formatter; Format.str_formatter]
+    in
     fun o ->
       if !first then (
         first := false;

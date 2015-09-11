@@ -5,21 +5,23 @@ type 'a local_visit_action
 type ('a, 'result, 'visit_action) context =
     Local : ('a, 'a * insert, 'a local_visit_action) context
   | Global : ('a, 'a, 'a visit_action) context
-#           Characters 11-162:
-  ..........(type visit_action) : (_, _, visit_action) context -> _ -> visit_action =
+#             Characters 11-166:
+  ..........(type visit_action)
+      : (_, _, visit_action) context -> _ -> visit_action =
     function
     | Local -> fun _ -> raise Exit
     | Global -> fun _ -> raise Exit
 Error: This expression has type ($0, $0 * insert, 'a) context -> 'b -> 'a
        but an expression was expected of type 'c
        The type constructor $0 would escape its scope
-#           Characters 11-170:
-  ..........(type visit_action) : ('a, 'result, visit_action) context -> 'a -> visit_action =
+#             Characters 11-174:
+  ..........(type visit_action)
+      : ('a, 'result, visit_action) context -> 'a -> visit_action =
     function
     | Local -> fun _ -> raise Exit
     | Global -> fun _ -> raise Exit
 Error: This expression has type ($'a, $'a * insert, 'a) context -> $'a -> 'a
        but an expression was expected of type 'b
        The type constructor $'a would escape its scope
-#           val vexpr : (unit, 'a, 'b) context -> unit -> 'b = <fun>
+#             val vexpr : (unit, 'a, 'b) context -> unit -> 'b = <fun>
 # 

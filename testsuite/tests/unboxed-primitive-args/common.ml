@@ -61,7 +61,8 @@ let string_of : type a. a typ -> a -> string = function
   | Int32     -> Printf.sprintf "%ldl"
   | Int64     -> Printf.sprintf "%LdL"
   | Nativeint -> Printf.sprintf "%ndn"
-  | Float     -> fun f -> Printf.sprintf "float_of_bits 0x%LxL" (Int64.bits_of_float f)
+  | Float     ->
+      fun f -> Printf.sprintf "float_of_bits 0x%LxL" (Int64.bits_of_float f)
 
 let rec arity : type a. a proto -> int = function
   | Ret _ -> 0
@@ -129,8 +130,8 @@ module Buffer = struct
     | Nativeint -> set_nativeint
     | Float     -> set_float
 
-  (* This is almost a memcpy except that we use get/set which should ensure that the
-     values in [dst] don't overflow. *)
+  (* This is almost a memcpy except that we use get/set which should
+     ensure that the values in [dst] don't overflow. *)
   let copy_args ~src ~dst proto =
     let rec loop : type a. a proto -> int -> unit = fun proto arg ->
       match proto with

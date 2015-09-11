@@ -53,7 +53,8 @@ val execute_phrase : bool -> formatter -> Parsetree.toplevel_phrase -> bool
            phrase executed with no errors and [false] otherwise.
            First bool says whether the values and types of the results
            should be printed. Uncaught exceptions are always printed. *)
-val preprocess_phrase : formatter -> Parsetree.toplevel_phrase ->  Parsetree.toplevel_phrase
+val preprocess_phrase :
+    formatter -> Parsetree.toplevel_phrase ->  Parsetree.toplevel_phrase
         (* Preprocess the given toplevel phrase using regular and ppx
            preprocessors. Return the updated phrase. *)
 val use_file : formatter -> string -> bool

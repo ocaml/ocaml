@@ -105,7 +105,9 @@ module Options = Main_args.Make_bytecomp_options (struct
   let _open s = open_modules := s :: !open_modules
   let _output_obj () = output_c_object := true; custom_runtime := true
   let _output_complete_obj () =
-    output_c_object := true; output_complete_object := true; custom_runtime := true
+    output_c_object := true;
+    output_complete_object := true;
+    custom_runtime := true
   let _pack = set make_package
   let _pp s = preprocessor := Some s
   let _ppx s = first_ppx := s :: !first_ppx
@@ -201,7 +203,3 @@ let main () =
     exit 2
 
 let _ = main ()
-
-
-
-

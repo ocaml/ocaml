@@ -389,8 +389,7 @@ let rec default_error_reporter ppf ({loc; msg; sub; if_highlight} as err) =
   else begin
     print ppf loc;
     Format.pp_print_string ppf msg;
-    List.iter (fun err -> Format.fprintf ppf "@\n@[<2>%a@]" default_error_reporter err)
-              sub
+    List.iter (Format.fprintf ppf "@\n@[<2>%a@]" default_error_reporter) sub
   end
 
 let error_reporter = ref default_error_reporter

@@ -45,7 +45,7 @@ module OK = struct
   open M
   open N
   let f (r:M.t) = r.x
-end;; 
+end;;
 
 module M = struct
   type t = {x:int}

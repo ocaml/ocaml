@@ -295,7 +295,8 @@ let eval_rec_bindings bindings cont =
   | (id, None, rhs) :: rem ->
       patch_forwards rem
   | (id, Some(loc, shape), rhs) :: rem ->
-      Lsequence(Lapply(mod_prim "update_mod", [shape; Lvar id; rhs], no_apply_info),
+      Lsequence(Lapply(mod_prim "update_mod", [shape; Lvar id; rhs],
+                       no_apply_info),
                 patch_forwards rem)
   in
     bind_inits bindings

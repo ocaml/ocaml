@@ -21,8 +21,8 @@
  * [backtrace_prim.c] contains all backend-specific code, and has two different
  * implementations in [byterun/backtrace_prim.c] and [asmrun/backtrace_prim.c].
  *
- * [backtrace.c] has a unique implementation, and expose a uniform higher level API
- * above [backtrace_prim.c].
+ * [backtrace.c] has a unique implementation, and expose a uniform
+ * higher level API above [backtrace_prim.c].
  */
 
 /* Extract location information for the given raw_backtrace_slot */
@@ -41,7 +41,8 @@ struct caml_loc_info {
 int caml_debug_info_available(void);
 
 /* Extract locations from backtrace_slot */
-void caml_extract_location_info(backtrace_slot pc, /*out*/ struct caml_loc_info * li);
+void caml_extract_location_info(backtrace_slot pc,
+                                /*out*/ struct caml_loc_info * li);
 
 /* Expose a [backtrace_slot] as a OCaml value of type [raw_backtrace_slot].
  * The value returned should be an immediate and not an OCaml block, so that it
@@ -52,7 +53,8 @@ backtrace_slot caml_raw_backtrace_slot_val(value slot);
 
 #define BACKTRACE_BUFFER_SIZE 1024
 
-/* Besides decoding backtrace info, [backtrace_prim] has two other responsibilities:
+/* Besides decoding backtrace info, [backtrace_prim] has two other
+ * responsibilities:
  *
  * It defines the [caml_stash_backtrace] function, which is called to quickly
  * fill the backtrace buffer by walking the stack when an exception is raised.

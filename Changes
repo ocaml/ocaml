@@ -73,8 +73,8 @@ Runtime system:
 Standard library:
 - PR#6316: Scanf.scanf failure on %u formats when reading big integers
   (Xavier Leroy, Benoît Vaugon)
-- PR#6390, GPR#36: expose Sys.{int_size,max_wosize} for improved js_of_ocaml portability
-  (Hugo Heuzard)
+- PR#6390, GPR#36: expose Sys.{int_size,max_wosize} for improved js_of_ocaml
+  portability (Hugo Heuzard)
 * PR#6494: Add equal function in modules
   Bytes, Char, Digest, Int32, Int64, Nativeint, and String
   (Romain Calascibetta)
@@ -613,7 +613,8 @@ Type system:
   (Jacques Garrigue, suggestion by Leo White)
 * Module aliases are now typed in a specific way, which remembers their
   identity. Compiled interfaces become smaller, but may depend on the
-  original modules. This also changes the signature inferred by "module type of".
+  original modules. This also changes the signature inferred by
+  "module type of".
   (Jacques Garrigue, feedback from Leo White, Mark Shinwell and Nick Chapman)
 - PR#6331: Slight change in the criterion to distinguish private
   abbreviations and private row types: create a private abbreviation for

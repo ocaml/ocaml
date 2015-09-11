@@ -61,7 +61,7 @@ let toc_save_offset () =
   match abi with
   | ELF32 -> assert false
   | ELF64v1 | ELF64v2 -> frame_size() + 8
-  
+
 let (trap_size, trap_handler_offset, trap_previous_offset) =
   match abi with
   | ELF32 -> (16, 0, 4)
@@ -117,7 +117,7 @@ let slgi = if ppc64 then "sldi" else "slwi"
 
 (* Output a processor register *)
 
-let emit_gpr = emit_int  
+let emit_gpr = emit_int
 
 (* Output a pseudo-register *)
 
@@ -175,7 +175,7 @@ type tocentry =
   | TocLabel of int
   | TocInt of nativeint
   | TocFloat of int64
-  
+
 let tocref_entries : (tocentry, label) Hashtbl.t = Hashtbl.create 64
 
 let emit_tocentry = function
@@ -199,7 +199,7 @@ let emit_toctable () =
     tocref_entries
 
 (* Emit a load from a TOC entry *)
-  
+
 let emit_tocload emit_dest dest entry =
   let lbl = label_for_tocref entry in
   if !big_toc || !Clflags.for_package <> None then begin
@@ -544,7 +544,7 @@ let emit_instr i =
           if !big_toc || !Clflags.for_package <> None then begin
             `	addis	11, 2, {emit_label lbl}@toc@ha\n`;
             `	lfd	{emit_reg i.res.(0)}, {emit_label lbl}@toc@l(11) # {emit_tocentry entry}\n`
-          end else begin          
+          end else begin
             `	lfd	{emit_reg i.res.(0)}, {emit_label lbl}@toc(2) # {emit_tocentry entry}\n`
           end
         end
@@ -582,7 +582,7 @@ let emit_instr i =
             emit_call s;
             record_frame i.live i.dbg
         | ELF64v1 | ELF64v2 ->
-        (* For PPC64, we cannot just emit a "bl s; nop" sequence, because 
+        (* For PPC64, we cannot just emit a "bl s; nop" sequence, because
            of the following scenario:
               - current function f1 calls f2 that has the same TOC
               - f2 tailcalls f3 that has a different TOC
@@ -591,7 +591,7 @@ let emit_instr i =
            Because f2 tailcalls f3, r2 will not be restored to f2's TOC
            when f3 returns.  So, we're back into f1, with the wrong TOC in r2.
            We have two options:
-             1- Turn the call into an indirect call, like we do for 
+             1- Turn the call into an indirect call, like we do for
                 Itailcall_imm.  Cost: 6 instructions.
              2- Follow the "bl" with an instruction to restore r2
                 explicitly.  If the called function has a different TOC,
@@ -599,11 +599,11 @@ let emit_instr i =
                 by the linker, but this is harmless.
                 Cost: 3 instructions if same TOC, 7 if different TOC.
            Let's try option 2. *)
-            emit_call s;           
+            emit_call s;
             record_frame i.live i.dbg;
             `	nop\n`;
             emit_reload_toc()
-        end         
+        end
     | Lop(Itailcall_ind) ->
         begin match abi with
         | ELF32 ->
@@ -907,7 +907,7 @@ let emit_instr i =
           `	std     0, {emit_int trap_handler_offset}(1)\n`;
           `	std	29, {emit_int trap_previous_offset}(1)\n`;
           `	mr	29, 1\n`
-          end        
+          end
     | Lpoptrap ->
         `	{emit_string lg}	29, {emit_int trap_previous_offset}(1)\n`;
         `	addi	1, 1, {emit_int trap_size}\n`;
@@ -977,7 +977,7 @@ let fundecl fundecl =
     `	.type	{emit_symbol fundecl.fun_name}, @function\n`;
     `	.align	2\n`;
     `{emit_symbol fundecl.fun_name}:\n`
-  | ELF64v1 ->  
+  | ELF64v1 ->
     emit_string function_descr_space;
     `	.align 3\n`;
     `	.globl	{emit_symbol fundecl.fun_name}\n`;
@@ -994,7 +994,7 @@ let fundecl fundecl =
     `	.align	2\n`;
     `{emit_symbol fundecl.fun_name}:\n`;
     `0:	addis	2, 12, (.TOC. - 0b)@ha\n`;
-    `	addi	2, 2, (.TOC. - 0b)@l\n`; 
+    `	addi	2, 2, (.TOC. - 0b)@l\n`;
     `	.localentry {emit_symbol fundecl.fun_name}, . - 0b\n`
   end;
   emit_debug_info fundecl.fun_dbg;
@@ -1064,7 +1064,7 @@ let fundecl fundecl =
     emit_string rodata_space;
     `	.align	2\n`;
     `{emit_label !jumptables_lbl}:`;
-    List.iter 
+    List.iter
       (fun  lbl ->
           `	.long	{emit_label lbl} - {emit_label !jumptables_lbl}\n`)
       (List.rev !jumptables)

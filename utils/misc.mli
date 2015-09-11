@@ -105,8 +105,9 @@ val search_substring: string -> string -> int -> int
            does not occur. *)
 
 val replace_substring: before:string -> after:string -> string -> string
-        (* [search_substring ~before ~after str] replaces all occurences
-           of [before] with [after] in [str] and returns the resulting string. *)
+        (* [search_substring ~before ~after str] replaces all
+           occurences of [before] with [after] in [str] and returns
+           the resulting string. *)
 
 val rev_split_words: string -> string list
         (* [rev_split_words s] splits [s] in blank-separated words, and return

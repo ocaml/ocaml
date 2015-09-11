@@ -25,13 +25,15 @@ type native_repr =
 (* Generate primitives with up to this number of arguments *)
 let test_all_combination_up_to_n_args = 6
 
-(* Generate primitives using all combination of these argument representations. No need to
-   test all combination of other representations: regarding the calling convention
-   [Same_as_ocaml_repr], [Untagged_int] and [Unboxed_integer Pnativeint] are all the same,
-   and are the same as [Unboxed_integer Pint<word-size>].
+(* Generate primitives using all combination of these argument
+   representations. No need to test all combination of other
+   representations: regarding the calling convention
+   [Same_as_ocaml_repr], [Untagged_int] and
+   [Unboxed_integer Pnativeint] are all the same, and are the
+   same as [Unboxed_integer Pint<word-size>].
 
-   We have specific tests for the other representations and for the result representation
-   in [manual_tests].
+   We have specific tests for the other representations and for the
+   result representation in [manual_tests].
 *)
 let test_all_args_combination_of =
   [ Unboxed_float

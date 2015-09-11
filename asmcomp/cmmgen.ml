@@ -93,7 +93,8 @@ let rec add_const c n =
   if n = 0 then c
   else match c with
   | Cconst_int x when no_overflow_add x n -> Cconst_int (x + n)
-  | Cop(Caddi, ([Cconst_int x; c] | [c; Cconst_int x])) when no_overflow_add n x ->
+  | Cop(Caddi, ([Cconst_int x; c] | [c; Cconst_int x]))
+    when no_overflow_add n x ->
       let d = n + x in
       if d = 0 then c else Cop(Caddi, [c; Cconst_int d])
   | Cop(Csubi, [Cconst_int x; c]) when no_overflow_add n x ->
@@ -1325,7 +1326,8 @@ let rec is_unboxed_number e =
             Boxed Boxed_float
         | Pbigarrayref(_, _, Pbigarray_int32, _) -> Boxed (Boxed_integer Pint32)
         | Pbigarrayref(_, _, Pbigarray_int64, _) -> Boxed (Boxed_integer Pint64)
-        | Pbigarrayref(_, _, Pbigarray_native_int,_) -> Boxed (Boxed_integer Pnativeint)
+        | Pbigarrayref(_, _, Pbigarray_native_int,_) ->
+            Boxed (Boxed_integer Pnativeint)
         | Pstring_load_32(_) -> Boxed (Boxed_integer Pint32)
         | Pstring_load_64(_) -> Boxed (Boxed_integer Pint64)
         | Pbigstring_load_32(_) -> Boxed (Boxed_integer Pint32)
@@ -1717,7 +1719,8 @@ and transl_prim_1 p arg dbg =
         | Big_endian -> const_of_bool Arch.big_endian
         | Word_size -> tag_int (Cconst_int (8*Arch.size_int))
         | Int_size -> tag_int (Cconst_int ((8*Arch.size_int) - 1))
-        | Max_wosize -> tag_int (Cconst_int ((1 lsl ((8*Arch.size_int) - 10)) - 1 ))
+        | Max_wosize ->
+            tag_int (Cconst_int ((1 lsl ((8*Arch.size_int) - 10)) - 1 ))
         | Ostype_unix -> const_of_bool (Sys.os_type = "Unix")
         | Ostype_win32 -> const_of_bool (Sys.os_type = "Win32")
         | Ostype_cygwin -> const_of_bool (Sys.os_type = "Cygwin")
@@ -1826,14 +1829,16 @@ and transl_prim_2 p arg1 arg2 dbg =
       incr_int(sub_int (transl arg1) (transl arg2))
   | Pmulint ->
      begin
-       (* decrementing the non-constant part helps when the multiplication is followed by an addition;
+       (* decrementing the non-constant part helps when the multiplication is
+          followed by an addition;
           for example, using this trick compiles (100 * a + 7) into
             (+ ( * a 100) -85)
           rather than
             (+ ( * 200 (>>s a 1)) 15)
         *)
        match transl arg1, transl arg2 with
-         | Cconst_int _ as c1, c2 -> incr_int (mul_int (untag_int c1) (decr_int c2))
+         | Cconst_int _ as c1, c2 ->
+             incr_int (mul_int (untag_int c1) (decr_int c2))
          | c1, c2 -> incr_int (mul_int (decr_int c1) (untag_int c2))
      end
   | Pdivint ->
@@ -1900,8 +1905,10 @@ and transl_prim_2 p arg1 arg2 dbg =
      tag_int
        (bind "ba" (transl arg1) (fun ba ->
         bind "index" (untag_int (transl arg2)) (fun idx ->
-        bind "ba_data" (Cop(Cload Word_int, [field_address ba 1])) (fun ba_data ->
-          check_bound unsafe dbg (sub_int (Cop(Cload Word_int,[field_address ba 5]))
+        bind "ba_data" (Cop(Cload Word_int, [field_address ba 1]))
+         (fun ba_data ->
+          check_bound unsafe dbg (sub_int (Cop(Cload Word_int,
+                                               [field_address ba 5]))
                                           (Cconst_int 1)) idx
                       (unaligned_load_16 ba_data idx)))))
 
@@ -1916,8 +1923,10 @@ and transl_prim_2 p arg1 arg2 dbg =
      box_int Pint32
        (bind "ba" (transl arg1) (fun ba ->
         bind "index" (untag_int (transl arg2)) (fun idx ->
-        bind "ba_data" (Cop(Cload Word_int, [field_address ba 1])) (fun ba_data ->
-          check_bound unsafe dbg (sub_int (Cop(Cload Word_int,[field_address ba 5]))
+        bind "ba_data" (Cop(Cload Word_int, [field_address ba 1]))
+         (fun ba_data ->
+          check_bound unsafe dbg (sub_int (Cop(Cload Word_int,
+                                               [field_address ba 5]))
                                           (Cconst_int 3)) idx
                       (unaligned_load_32 ba_data idx)))))
 
@@ -1932,8 +1941,10 @@ and transl_prim_2 p arg1 arg2 dbg =
      box_int Pint64
        (bind "ba" (transl arg1) (fun ba ->
         bind "index" (untag_int (transl arg2)) (fun idx ->
-        bind "ba_data" (Cop(Cload Word_int, [field_address ba 1])) (fun ba_data ->
-          check_bound unsafe dbg (sub_int (Cop(Cload Word_int,[field_address ba 5]))
+        bind "ba_data" (Cop(Cload Word_int, [field_address ba 1]))
+         (fun ba_data ->
+          check_bound unsafe dbg (sub_int (Cop(Cload Word_int,
+                                               [field_address ba 5]))
                                           (Cconst_int 7)) idx
                       (unaligned_load_64 ba_data idx)))))
 
@@ -2128,8 +2139,10 @@ and transl_prim_3 p arg1 arg2 arg3 dbg =
        (bind "ba" (transl arg1) (fun ba ->
         bind "index" (untag_int (transl arg2)) (fun idx ->
         bind "newval" (untag_int (transl arg3)) (fun newval ->
-        bind "ba_data" (Cop(Cload Word_int, [field_address ba 1])) (fun ba_data ->
-          check_bound unsafe dbg (sub_int (Cop(Cload Word_int,[field_address ba 5]))
+        bind "ba_data" (Cop(Cload Word_int, [field_address ba 1]))
+             (fun ba_data ->
+          check_bound unsafe dbg (sub_int (Cop(Cload Word_int,
+                                               [field_address ba 5]))
                                           (Cconst_int 1))
                       idx (unaligned_set_16 ba_data idx newval))))))
 
@@ -2146,8 +2159,10 @@ and transl_prim_3 p arg1 arg2 arg3 dbg =
        (bind "ba" (transl arg1) (fun ba ->
         bind "index" (untag_int (transl arg2)) (fun idx ->
         bind "newval" (transl_unbox_int Pint32 arg3) (fun newval ->
-        bind "ba_data" (Cop(Cload Word_int, [field_address ba 1])) (fun ba_data ->
-          check_bound unsafe dbg (sub_int (Cop(Cload Word_int,[field_address ba 5]))
+        bind "ba_data" (Cop(Cload Word_int, [field_address ba 1]))
+             (fun ba_data ->
+          check_bound unsafe dbg (sub_int (Cop(Cload Word_int,
+                                               [field_address ba 5]))
                                           (Cconst_int 3))
                       idx (unaligned_set_32 ba_data idx newval))))))
 
@@ -2164,8 +2179,10 @@ and transl_prim_3 p arg1 arg2 arg3 dbg =
        (bind "ba" (transl arg1) (fun ba ->
         bind "index" (untag_int (transl arg2)) (fun idx ->
         bind "newval" (transl_unbox_int Pint64 arg3) (fun newval ->
-        bind "ba_data" (Cop(Cload Word_int, [field_address ba 1])) (fun ba_data ->
-          check_bound unsafe dbg (sub_int (Cop(Cload Word_int,[field_address ba 5]))
+        bind "ba_data" (Cop(Cload Word_int, [field_address ba 1]))
+             (fun ba_data ->
+          check_bound unsafe dbg (sub_int (Cop(Cload Word_int,
+                                               [field_address ba 5]))
                                           (Cconst_int 7)) idx
                       (unaligned_set_64 ba_data idx newval))))))
 
@@ -2202,7 +2219,8 @@ and transl_let id exp tr_body =
   |  No_unboxing ->
       Clet(id, transl exp, tr_body)
   | No_result ->
-      (* the let-bound expression never returns a value, we can ignore the body *)
+      (* the let-bound expression never returns a value, we can ignore
+         the body *)
       transl exp
   | Boxed boxed_number ->
       let unboxed_id = Ident.create (Ident.name id) in

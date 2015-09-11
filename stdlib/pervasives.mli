@@ -596,7 +596,7 @@ external  ( .() <- ) : 'a array -> int -> 'a -> unit = "%array_opt_set"
 
 (** {6 String index operators} *)
 
-external  ( .[] ) : string -> int -> char= "%string_opt_get"
+external  ( .[] ) : string -> int -> char = "%string_opt_get"
 (** Bracket index operator for strings.
  [ a.[index] ] is desugared to [ (.[]) a index ]. *)
 

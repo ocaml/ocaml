@@ -151,10 +151,10 @@ let calling_conventions
             ofs := !ofs + size_int64
           end
       | _, _ ->
+        let f = function Int -> "I" | Addr -> "A" | Val -> "V" | Float -> "F" in
         fatal_error (Printf.sprintf "Proc.calling_conventions: bad register \
-                                     type(s) for multi-register argument: %s, %s"
-          (match arg1.typ with Int -> "I" | Addr -> "A" | Val -> "V" | Float -> "F")
-          (match arg2.typ with Int -> "I" | Addr -> "A" | Val -> "V" | Float -> "F"))
+            type(s) for multi-register argument: %s, %s"
+          (f arg1.typ) (f arg2.typ)
       end
     | _ ->
       fatal_error "Proc.calling_conventions: bad number of registers for \
