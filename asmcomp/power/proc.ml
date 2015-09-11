@@ -154,7 +154,7 @@ let calling_conventions
         let f = function Int -> "I" | Addr -> "A" | Val -> "V" | Float -> "F" in
         fatal_error (Printf.sprintf "Proc.calling_conventions: bad register \
             type(s) for multi-register argument: %s, %s"
-          (f arg1.typ) (f arg2.typ)
+          (f arg1.typ) (f arg2.typ))
       end
     | _ ->
       fatal_error "Proc.calling_conventions: bad number of registers for \
