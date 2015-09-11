@@ -209,6 +209,8 @@ and let_expr = private {
   defining_expr : named;
   body : t;
   (* These free variable caches are an important optimization. *)
+  (* CR-someday mshinwell: we could consider having these be keys into some
+     kind of global cache, to reduce memory usage. *)
   free_vars_of_defining_expr : Variable.Set.t;
   free_vars_of_body : Variable.Set.t;
 }
