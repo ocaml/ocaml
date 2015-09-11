@@ -405,6 +405,10 @@ val iter_lets
     defining expression and the body.) *)
 val create_let : Variable.t -> named -> t -> t
 
+(** Apply the specified function [f] to the defining expression of the given
+    [Let]-expression, returning a new [Let]. *)
+val map_defining_expr_of_let : let_expr -> f:(named -> named) -> t
+
 module With_free_variables : sig
   type 'a t
 

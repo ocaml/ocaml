@@ -555,6 +555,22 @@ let create_let var defining_expr body : t =
     free_vars_of_body = free_variables body;
   }
 
+let map_defining_expr_of_let let_expr ~f =
+  let defining_expr = f let_expr.defining_expr in
+  let free_vars_of_defining_expr =
+    if defining_expr == let_expr.defining_expr then
+      let_expr.free_vars_of_defining_expr
+    else
+      free_variables_named defining_expr
+  in
+  Let {
+    var = let_expr.var;
+    defining_expr;
+    body = let_expr.body;
+    free_vars_of_defining_expr;
+    free_vars_of_body = let_expr.free_vars_of_body;
+  }
+
 let iter_lets t ~for_defining_expr ~for_last_body ~for_each_let =
   let rec loop (t : t) =
     match t with

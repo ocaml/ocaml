@@ -36,7 +36,7 @@ let tupled_function_call_stub original_params tuplified_version
     Apply ({
         func = tuplified_version;
         args = params;
-        (* CR mshinwell for mshinwell: investigate if there is some
+        (* CR-someday mshinwell for mshinwell: investigate if there is some
            redundancy here (func is also tuplified_version) *)
         kind = Direct (Closure_id.wrap tuplified_version);
         dbg = Debuginfo.none;
@@ -60,17 +60,14 @@ let add_debug_info (ev : Lambda.lambda_event) (flam : Flambda.t)
   | Lev_after _ ->
     begin match flam with
     | Apply ap ->
-      Apply { ap with dbg = Debuginfo.from_call ev}
-(* XXX resurrect this
-    | Prim (p, args, _dinfo, v) ->
-      Prim (p, args, Debuginfo.from_call ev, v)
-*)
+      Apply { ap with dbg = Debuginfo.from_call ev; }
+    | Let let_expr ->
+      Flambda.map_defining_expr_of_let let_expr ~f:(function
+        | Prim (p, args, _dinfo) ->
+          Prim (p, args, Debuginfo.from_call ev)
+        | defining_expr -> defining_expr)
     | Send { kind; meth; obj; args; dbg = _; } ->
       Send { kind; meth; obj; args; dbg = Debuginfo.from_call ev; }
-(*
-    | Fsequence (flam1, flam2, v) ->
-      Fsequence (flam1, add_debug_info ev flam2, v)
-*)
     | _ -> flam
     end
   | _ -> flam
@@ -93,7 +90,7 @@ let close_const (const : Lambda.structured_constant) : Flambda.named =
     Misc.fatal_error "Const_block should have been eliminated before closure \
         conversion"
 
-(* CR mshinwell: try to remove global state once we've shown this works *)
+(* CR-someday mshinwell: remove global state *)
 let imported_symbols = ref Symbol.Set.empty
 
 let rec close t env (lam : Lambda.lambda) : Flambda.t =
@@ -131,7 +128,7 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
       in
       Variable.create name
     in
-    (* CR mshinwell: some of this is now very similar to the let rec case
+    (* CR-soon mshinwell: some of this is now very similar to the let rec case
        below *)
     let set_of_closures_var = Variable.create "set_of_closures" in
     let set_of_closures =
@@ -149,7 +146,7 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
     Flambda.create_let set_of_closures_var set_of_closures
       (name_expr (Project_closure (project_closure)))
   | Lapply (funct, args, _loc) ->
-    (* CR-someday mshinwell: the location should probably not be lost. *)
+    (* CR-soon mshinwell: the location should probably not be lost. *)
     Lift_code.lifting_helper (close_list t env args)
       ~evaluation_order:`Right_to_left
       ~name:"apply_arg"
@@ -479,11 +476,11 @@ let lambda_to_flambda ~backend ~module_ident ~size lam =
   in
   let module_symbol = Backend.symbol_for_global' module_ident in
   let block_symbol =
-    let linkage_name = Linkage_name.create ("module_as_block") in
+    let linkage_name = Linkage_name.create "module_as_block" in
     Symbol.create compilation_unit linkage_name
   in
-  (* The global module block is built by accessing the fields of the
-     all the introduced symbols. *)
+  (* The global module block is built by accessing the fields of all the
+     introduced symbols. *)
   let fields =
     Array.init size (fun pos ->
       let pos_str = string_of_int pos in
@@ -498,16 +495,16 @@ let lambda_to_flambda ~backend ~module_ident ~size lam =
               (Prim (Pfield pos, [result_v], Debuginfo.none))
               (Var value_v))))
   in
-  let module_initializer =
-    Flambda.Initialize_symbol (
+  let module_initializer : Flambda.program =
+    Initialize_symbol (
       block_symbol,
       Tag.create_exn 0,
       [close t Env.empty lam],
-      Flambda.Initialize_symbol (
+      Initialize_symbol (
         module_symbol,
         Tag.create_exn 0,
         Array.to_list fields,
-        Flambda.End module_symbol))
+        End module_symbol))
   in
   Symbol.Set.fold (fun sym expr -> Flambda.Import_symbol (sym, expr))
     !imported_symbols
