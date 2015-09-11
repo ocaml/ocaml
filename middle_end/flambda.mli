@@ -149,17 +149,9 @@ type t =
   | Proved_unreachable
 
 (** Values of type [named] will always be [let]-bound to a [Variable.t].
-
     This has an important consequence: all expressions that we might deem
     constant (and thus assign to a symbol) have an associated variable.
-
-    (The split between [t] and [named] is very similar to the split in
-    the language used in Kennedy's "Compiling with Continuations, Continued".
-    The main difference, apart from the fact that we do not work in CPS style
-    for control flow constructs, is the presence of [Expr].  This could be
-    removed in the future to provide a more rigorous ANF-like representation.)
 *)
-
 and named =
   | Symbol of Symbol.t
   | Const of const
