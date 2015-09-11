@@ -188,7 +188,11 @@ and named =
       projections from the top level of symbols.  Owing to the properties of
       symbols described above, such expressions may be eligible for declaration
       as constant by [Inconstant_idents] (and thus themselves lifted to another
-      symbol), without any further complication. *)
+      symbol), without any further complication.
+      [Read_symbol_field] may only be used when the definition of the symbol
+      is in scope in the [program].  For external unresolved symbols, [Pfield]
+      may still be used; it will be changed to [Read_symbol_field] by
+      [Inline_and_simplify] when the symbol is imported. *)
   | Set_of_closures of set_of_closures
   | Project_closure of project_closure
   | Move_within_set_of_closures of move_within_set_of_closures
