@@ -467,148 +467,6 @@ and close_let_bound_expression t ?let_rec_ident let_bound_var env
       (name_expr (Project_closure (project_closure))))
   | lam -> Expr (close t env lam)
 
-(* type initialisation = *)
-(*   | Field_initialisation of Symbol.t *)
-(*   | Effect *)
-
-(* (\* This deconstruction has to handle initialisation of patterns that *)
-(*    are not simply compiled. *)
-
-(*    {[ *)
-(*      type t = *)
-(*        | A of (int * int * int) *)
-(*        | B of int * int *)
-
-(*      let (A (a, _, b) | B (b, a)) = A (1, 2, 3) *)
-(*    ]} *)
-
-(* (let (match/1012 = (makeblock 0 (makeblock 0 1 2 3))) *)
-(*   (catch *)
-(*     (switch* match/1012 *)
-(*      case tag 0: *)
-(*       (let (match/1017 =a (field 0 match/1012)) *)
-(*         (exit 2 (field 0 match/1017) (field 2 match/1017))) *)
-(*      case tag 1: (exit 2 (field 1 match/1012) (field 0 match/1012))) *)
-(*    with (2 a/1005 b/1006) *)
-(*     (seq (setfield_imm 0 (global Pattern!) a/1005) *)
-(*       (setfield_imm 1 (global Pattern!) b/1006)))) *)
-
-(* *\) *)
-
-(* let _build_initialization *)
-(*     compilation_unit t *)
-(*     (env, initialisations) *)
-(*     (lam, (init:Deconstruct_initialisation.initialisation)) = *)
-(*   match init with *)
-(*   | Field_initialisations pos -> begin *)
-(*       match pos with *)
-(*       | [] -> assert false *)
-(*       | [pos] -> *)
-(*         (\* If there is a single initialised global, we can assign it directly to a symbol *\) *)
-(*         let linkage_name = Linkage_name.create ("init_" ^ string_of_int pos) in *)
-(*         let symbol = Symbol.create compilation_unit linkage_name in *)
-(*         let elt = close t env lam, Field_initialisation symbol in *)
-(*         let env = Env.add_global env pos symbol in *)
-(*         env, elt :: initialisations *)
-(*       | _ -> *)
-(*         (\* If there are multiple initialised globals, the value *)
-(*            returned by the expression is a block containing the *)
-(*            results of the different fields. So the original result is *)
-(*            assigned to a symbol [block_symbol], that is accessed to *)
-(*            initialize the real globals. *)
-(*         *\) *)
-(*         let block_linkage_name = *)
-(*           Linkage_name.create ("init_intermediate_" ^ *)
-(*                                (String.concat "_" (List.map string_of_int pos))) *)
-(*         in *)
-(*         let block_symbol = Symbol.create compilation_unit block_linkage_name in *)
-(*         let block_elt = close t env lam, Field_initialisation block_symbol in *)
-(*         let elts = *)
-(*           List.mapi *)
-(*             (fun field pos -> *)
-(*                let linkage_name = Linkage_name.create ("init_" ^ string_of_int pos) in *)
-(*                let symbol = Symbol.create compilation_unit linkage_name in *)
-(*                let sym_v = Variable.create ("access_global_" ^ string_of_int pos) in *)
-(*                let result_v = Variable.create ("tmp_" ^ string_of_int pos) in *)
-(*                let value_v = Variable.create ("tmp_" ^ string_of_int pos) in *)
-(*                let expr = *)
-(*                  Flambda.Let *)
-(*                    (Immutable, sym_v, Symbol block_symbol, *)
-(*                     Let (result_v, Prim(Pfield 0, [sym_v], Debuginfo.none), *)
-(*                         Let (value_v, Prim(Pfield field, [result_v], Debuginfo.none), *)
-(*                             Var value_v))) *)
-(*                in *)
-(*                (pos, symbol), (expr, Field_initialisation symbol)) *)
-(*             (\* Deconstruct_initialisation build a block that is sorted *)
-(*                following the order of the fields in the final global *)
-(*                module block *\) *)
-(*             (List.sort compare pos) *)
-(*         in *)
-(*         let env = *)
-(*           List.fold_left (fun env ((pos, symbol), _) -> *)
-(*               Env.add_global env pos symbol) *)
-(*             env elts *)
-(*         in *)
-(*         let elts = List.map snd elts in *)
-(*         env,  elts @ block_elt :: initialisations *)
-(*     end *)
-(*   | Effect -> *)
-(*     let elt = close t env lam, Effect in *)
-(*     env, elt :: initialisations *)
-
-(* let lambda_to_flambda ~backend ~module_ident ~exported_fields module_initializer = *)
-(*   imported_symbols := Symbol.Set.empty; *)
-(*   let module Backend = (val backend : Backend_intf.S) in *)
-(*   let compilation_unit = Compilation_unit.get_current_exn () in *)
-(*   let t = *)
-(*     { current_unit_id = *)
-(*         Compilation_unit.get_persistent_ident compilation_unit; *)
-(*       symbol_for_global' = Backend.symbol_for_global'; *)
-(*     } *)
-(*   in *)
-(*   let initialisations = *)
-(*     Deconstruct_initialisation.split_module_initialization module_initializer *)
-(*   in *)
-(*   let module_symbol = Backend.symbol_for_global' module_ident in *)
-(*   let env, initialisations = *)
-(*     List.fold_left (build_initialization compilation_unit t) (Env.empty, []) initialisations *)
-(*   in *)
-(*   (\* The global module block is built by accessing the fields of the *)
-(*      all the introduced symbols.*\) *)
-(*   let fields = *)
-(*     Array.init exported_fields (fun i -> *)
-(*         match Env.find_global env i with *)
-(*         | symbol -> *)
-(*           let sym_v = Variable.create "global_symbol" in *)
-(*           let field_v = Variable.create "global_field" in *)
-(*           Flambda.Let( *)
-(*             Immutable,sym_v,Symbol symbol, *)
-(*             Let(Immutable,field_v,Prim (Pfield 0,[sym_v],Debuginfo.none), *)
-(*                 Var field_v)) *)
-(*         | exception Not_found -> *)
-(*           let field_v = Variable.create "global_unused" in *)
-(*           Flambda.Let(Immutable,field_v,Const (Int 0),Var field_v)) *)
-(*   in *)
-(*   let module_initializer = *)
-(*     Flambda.Initialize_symbol( *)
-(*       module_symbol, *)
-(*       Tag.create_exn 0, *)
-(*       Array.to_list fields, *)
-(*       Flambda.End module_symbol) *)
-(*   in *)
-(*   let module_initializer = *)
-(*     List.fold_left (fun program -> function *)
-(*         | flam, Field_initialisation symbol -> *)
-(*           Flambda.Initialize_symbol (symbol, Tag.create_exn 0, [flam], program) *)
-(*         | flam, Effect -> *)
-(*           Flambda.Effect (flam, program) *)
-(*       ) *)
-(*       module_initializer initialisations *)
-(*   in *)
-(*   Symbol.Set.fold (fun sym expr -> Flambda.Import_symbol (sym, expr)) *)
-(*     !imported_symbols *)
-(*     module_initializer *)
-
 let lambda_to_flambda ~backend ~module_ident ~size lam =
   imported_symbols := Symbol.Set.empty;
   let module Backend = (val backend : Backend_intf.S) in
@@ -620,40 +478,37 @@ let lambda_to_flambda ~backend ~module_ident ~size lam =
     }
   in
   let module_symbol = Backend.symbol_for_global' module_ident in
-
   let block_symbol =
     let linkage_name = Linkage_name.create ("module_as_block") in
     Symbol.create compilation_unit linkage_name
   in
-
-
   (* The global module block is built by accessing the fields of the
-     all the introduced symbols.*)
+     all the introduced symbols. *)
   let fields =
     Array.init size (fun pos ->
-        let sym_v = Variable.create ("block_symbol_" ^ string_of_int pos) in
-        let result_v = Variable.create ("block_symbol_get_" ^ string_of_int pos) in
-        let value_v = Variable.create ("block_symbol_get_field_" ^ string_of_int pos) in
-        Flambda.create_let
-          sym_v (Symbol block_symbol)
-           (Flambda.create_let result_v
-              (Prim (Pfield 0, [sym_v], Debuginfo.none))
-              (Flambda.create_let value_v
-                (Prim (Pfield pos, [result_v], Debuginfo.none))
-                (Var value_v))))
+      let pos_str = string_of_int pos in
+      let sym_v = Variable.create ("block_symbol_" ^ pos_str) in
+      let result_v = Variable.create ("block_symbol_get_" ^ pos_str) in
+      let value_v = Variable.create ("block_symbol_get_field_" ^ pos_str) in
+      Flambda.create_let
+        sym_v (Symbol block_symbol)
+         (Flambda.create_let result_v
+            (Prim (Pfield 0, [sym_v], Debuginfo.none))
+            (Flambda.create_let value_v
+              (Prim (Pfield pos, [result_v], Debuginfo.none))
+              (Var value_v))))
   in
   let module_initializer =
-    Flambda.Initialize_symbol(
+    Flambda.Initialize_symbol (
       block_symbol,
       Tag.create_exn 0,
       [close t Env.empty lam],
-      Flambda.Initialize_symbol(
+      Flambda.Initialize_symbol (
         module_symbol,
         Tag.create_exn 0,
         Array.to_list fields,
         Flambda.End module_symbol))
   in
-
   Symbol.Set.fold (fun sym expr -> Flambda.Import_symbol (sym, expr))
     !imported_symbols
     module_initializer
