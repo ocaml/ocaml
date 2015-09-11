@@ -196,47 +196,19 @@ beforedepend:: cvt_emit.ml
 # Reading cmt files
 
 READ_CMT= \
-          ../utils/misc.cmo \
-          ../utils/warnings.cmo \
-          ../utils/tbl.cmo \
-          ../utils/consistbl.cmo \
-          ../utils/config.cmo \
-          ../utils/clflags.cmo \
-          ../parsing/location.cmo \
-          ../parsing/longident.cmo \
-          ../parsing/docstrings.cmo \
-          ../parsing/lexer.cmo \
-          ../parsing/pprintast.cmo \
-          ../parsing/ast_helper.cmo \
-          ../parsing/ast_mapper.cmo \
-          ../typing/ident.cmo \
-          ../typing/path.cmo \
-          ../typing/types.cmo \
-          ../typing/typedtree.cmo \
-          ../typing/btype.cmo \
-          ../typing/subst.cmo \
-          ../typing/predef.cmo \
-          ../typing/datarepr.cmo \
-          ../typing/cmi_format.cmo \
-          ../typing/env.cmo \
-          ../typing/ctype.cmo \
-          ../typing/oprint.cmo \
-          ../typing/primitive.cmo \
-          ../typing/printtyp.cmo \
-          ../typing/mtype.cmo \
-          ../typing/envaux.cmo \
-          ../typing/tast_mapper.cmo \
-          ../typing/cmt_format.cmo \
-          ../typing/stypes.cmo \
-          ../typing/untypeast.cmo \
+          ../compilerlibs/ocamlcommon.cma \
+          ../compilerlibs/ocamlbytecomp.cma \
           \
           cmt2annot.cmo read_cmt.cmo
+
+READ_CMT_OPT1 = $(READ_CMT:.cmo=.cmx)
+READ_CMT_OPT = $(READ_CMT_OPT1:.cma=.cmxa)
 
 read_cmt: $(READ_CMT)
 	$(CAMLC) $(LINKFLAGS) -o read_cmt $(READ_CMT)
 
-read_cmt.opt: $(READ_CMT:.cmo=.cmx)
-	$(CAMLOPT) $(LINKFLAGS) -o read_cmt.opt $(READ_CMT:.cmo=.cmx)
+read_cmt.opt: $(READ_CMT_OPT)
+	$(CAMLOPT) $(LINKFLAGS) -o read_cmt.opt $(READ_CMT_OPT)
 
 clean::
 	rm -f read_cmt read_cmt.opt
