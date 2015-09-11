@@ -262,6 +262,7 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
         (Prim (Praise kind, [arg_var], Debuginfo.from_raise event)))
   | Lprim (Pfield pos, [Lprim (Pgetglobal id, [])])
     when Ident.same id t.current_unit_id ->
+    (* CR mshinwell: is this case now redundant? *)
     let symbol = Env.find_global env pos in
     let sym_v = Variable.create ("access_global_" ^ string_of_int pos) in
     let result_v = Variable.create ("access_global_field_" ^ string_of_int pos) in
