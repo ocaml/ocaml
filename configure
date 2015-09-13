@@ -864,7 +864,7 @@ nativecclinkopts=''
 # ld (for shared libs), not for cc
 nativeccrpath="$byteccrpath"
 
-case "$arch,$nativecc,$system,$target" in
+case "$arch,$nativecc,$system,$model" in
   *,*,nextstep,*)      nativecclinkopts="-posix";;
   *,*,rhapsody,*)      if $arch64; then partialld="ld -r -arch ppc64"; fi;;
   amd64,gcc*,macosx,*) partialld="ld -r -arch x86_64";;
