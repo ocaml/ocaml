@@ -38,7 +38,7 @@ module type SCANNING = sig
 
   val stdin : in_channel;;
   (* The scanning buffer reading from [Pervasives.stdin].
-      [stdib] is equivalent to [Scanning.from_channel Pervasives.stdin]. *)
+     [stdib] is equivalent to [Scanning.from_channel Pervasives.stdin]. *)
 
   val stdib : in_channel;;
   (* An alias for [Scanf.stdin], the scanning buffer reading from
@@ -46,32 +46,32 @@ module type SCANNING = sig
 
   val next_char : scanbuf -> char;;
   (* [Scanning.next_char ib] advance the scanning buffer for
-      one character.
-      If no more character can be read, sets a end of file condition and
-      returns '\000'. *)
+     one character.
+     If no more character can be read, sets a end of file condition and
+     returns '\000'. *)
 
   val invalidate_current_char : scanbuf -> unit;;
   (* [Scanning.invalidate_current_char ib] mark the current_char as already
-      scanned. *)
+     scanned. *)
 
   val peek_char : scanbuf -> char;;
   (* [Scanning.peek_char ib] returns the current char available in
-      the buffer or reads one if necessary (when the current character is
-      already scanned).
-      If no character can be read, sets an end of file condition and
-      returns '\000'. *)
+     the buffer or reads one if necessary (when the current character is
+     already scanned).
+     If no character can be read, sets an end of file condition and
+     returns '\000'. *)
 
   val checked_peek_char : scanbuf -> char;;
-  (* Same as above but always returns a valid char or fails:
-      instead of returning a null char when the reading method of the
-      input buffer has reached an end of file, the function raises exception
-      [End_of_file]. *)
+  (* Same as [Scanning.peek_char] above but always returns a valid char or
+     fails: instead of returning a null char when the reading method of the
+     input buffer has reached an end of file, the function raises exception
+     [End_of_file]. *)
 
   val store_char : int -> scanbuf -> char -> int;;
   (* [Scanning.store_char lim ib c] adds [c] to the token buffer
-      of the scanning buffer. It also advances the scanning buffer for one
-      character and returns [lim - 1], indicating the new limit
-      for the length of the current token. *)
+     of the scanning buffer [ib]. It also advances the scanning buffer for
+     one character and returns [lim - 1], indicating the new limit for the
+     length of the current token. *)
 
   val skip_char : int -> scanbuf -> int;;
   (* [Scanning.skip_char lim ib] ignores the current character. *)
@@ -82,41 +82,41 @@ module type SCANNING = sig
 
   val token : scanbuf -> string;;
   (* [Scanning.token ib] returns the string stored into the token
-      buffer of the scanning buffer: it returns the token matched by the
-      format. *)
+     buffer of the scanning buffer: it returns the token matched by the
+     format. *)
 
   val reset_token : scanbuf -> unit;;
   (* [Scanning.reset_token ib] resets the token buffer of
-      the given scanning buffer. *)
+     the given scanning buffer. *)
 
   val char_count : scanbuf -> int;;
   (* [Scanning.char_count ib] returns the number of characters
-      read so far from the given buffer. *)
+     read so far from the given buffer. *)
 
   val line_count : scanbuf -> int;;
   (* [Scanning.line_count ib] returns the number of new line
-      characters read so far from the given buffer. *)
+     characters read so far from the given buffer. *)
 
   val token_count : scanbuf -> int;;
   (* [Scanning.token_count ib] returns the number of tokens read
-      so far from [ib]. *)
+     so far from [ib]. *)
 
   val eof : scanbuf -> bool;;
   (* [Scanning.eof ib] returns the end of input condition
-      of the given buffer. *)
+     of the given buffer. *)
 
   val end_of_input : scanbuf -> bool;;
   (* [Scanning.end_of_input ib] tests the end of input condition
-      of the given buffer (if no char has ever been read, an attempt to
-      read one is performed). *)
+     of the given buffer (if no char has ever been read, an attempt to
+     read one is performed). *)
 
   val beginning_of_input : scanbuf -> bool;;
   (* [Scanning.beginning_of_input ib] tests the beginning of input
-      condition of the given buffer. *)
+     condition of the given buffer. *)
 
   val name_of_input : scanbuf -> string;;
   (* [Scanning.name_of_input ib] returns the name of the character
-      source for input buffer [ib]. *)
+     source for input buffer [ib]. *)
 
   val open_in : file_name -> in_channel;;
   val open_in_bin : file_name -> in_channel;;
@@ -134,8 +134,11 @@ end
 module Scanning : SCANNING = struct
 
   (* The run-time library for scanf. *)
+
+  type file_name = string;;
+
   type in_channel_name =
-    | From_file of string * Pervasives.in_channel
+    | From_file of file_name * Pervasives.in_channel
     | From_string
     | From_function
     | From_channel of Pervasives.in_channel
@@ -156,13 +159,11 @@ module Scanning : SCANNING = struct
 
   type scanbuf = in_channel;;
 
-  type file_name = string;;
-
   let null_char = '\000';;
 
-  (* Reads a new character from input buffer.  Next_char never fails,
-     even in case of end of input: it then simply sets the end of file
-     condition. *)
+  (* Reads a new character from input buffer.
+     Next_char never fails, even in case of end of input:
+     it then simply sets the end of file condition. *)
   let next_char ib =
     try
       let c = ib.get_next_char () in
@@ -180,7 +181,8 @@ module Scanning : SCANNING = struct
   ;;
 
   let peek_char ib =
-    if ib.current_char_is_valid then ib.current_char else next_char ib;;
+    if ib.current_char_is_valid then ib.current_char else next_char ib
+  ;;
 
   (* Returns a valid current char for the input buffer. In particular
      no irrelevant null character (as set by [next_char] in case of end
@@ -201,6 +203,7 @@ module Scanning : SCANNING = struct
   let eof ib = ib.eof;;
 
   let beginning_of_input ib = ib.char_count = 0;;
+
   let name_of_input ib =
     match ib.input_name with
     | From_file (fname, _ic) -> fname
@@ -212,8 +215,11 @@ module Scanning : SCANNING = struct
   let char_count ib =
     if ib.current_char_is_valid then ib.char_count - 1 else ib.char_count
   ;;
+
   let line_count ib = ib.line_count;;
+
   let reset_token ib = Buffer.reset ib.tokbuf;;
+
   let invalidate_current_char ib = ib.current_char_is_valid <- false;;
 
   let token ib =
@@ -324,7 +330,7 @@ module Scanning : SCANNING = struct
   let file_buffer_size = ref 1024;;
 
   (* The scanner closes the input channel at end of input. *)
-  let scan_close_at_end ic = close_in ic; raise End_of_file;;
+  let scan_close_at_end ic = Pervasives.close_in ic; raise End_of_file;;
 
   (* The scanner does not close the input channel at end of input:
      it just raises [End_of_file]. *)
@@ -375,7 +381,7 @@ module Scanning : SCANNING = struct
     match fname with
     | "-" -> stdin
     | fname ->
-      let ic = open_in fname in
+      let ic = Pervasives.open_in fname in
       from_ic_close_at_end (From_file (fname, ic)) ic
   ;;
 
@@ -383,7 +389,7 @@ module Scanning : SCANNING = struct
     match fname with
     | "-" -> stdin
     | fname ->
-      let ic = open_in_bin fname in
+      let ic = Pervasives.open_in_bin fname in
       from_ic_close_at_end (From_file (fname, ic)) ic
   ;;
 
@@ -431,14 +437,16 @@ let bad_token_length message =
   bad_input
     (Printf.sprintf
        "scanning of %s failed: \
-        the specified length was too short for token" message)
+        the specified length was too short for token"
+       message)
 ;;
 
 let bad_end_of_input message =
   bad_input
     (Printf.sprintf
        "scanning of %s failed: \
-        premature end of file occurred before end of token" message)
+        premature end of file occurred before end of token"
+       message)
 ;;
 
 let bad_float () =
@@ -478,13 +486,22 @@ let rec skip_whites ib =
    We are also careful to treat "\r\n" in the input as an end of line marker:
    it always matches a '\n' specification in the input format string. *)
 let rec check_char ib c =
-  if c = ' ' then skip_whites ib else
-    let ci = Scanning.checked_peek_char ib in
-    if ci = c then Scanning.invalidate_current_char ib else
-      match ci with
-      | '\r' when c = '\n' ->
-        Scanning.invalidate_current_char ib; check_char ib '\n'
-      | _ -> character_mismatch c ci
+  match c with
+  | ' ' -> skip_whites ib
+  | '\n' -> check_newline ib
+  | c -> check_this_char ib c
+
+and check_this_char ib c =
+  let ci = Scanning.checked_peek_char ib in
+  if ci = c then Scanning.invalidate_current_char ib else
+  character_mismatch c ci
+
+and check_newline ib =
+  let ci = Scanning.checked_peek_char ib in
+  match ci with
+  | '\n' -> Scanning.invalidate_current_char ib
+  | '\r' -> Scanning.invalidate_current_char ib; check_this_char ib '\n'
+  | _ -> character_mismatch '\n' ci
 ;;
 
 (* Extracting tokens from the output token buffer. *)
@@ -682,6 +699,7 @@ let scan_int_conv conv width ib =
 ;;
 
 (* Scanning floating point numbers. *)
+
 (* Fractional part is optional and can be reduced to 0 digits. *)
 let scan_frac_part width ib =
   if width = 0 then width else
@@ -768,12 +786,22 @@ let scan_caml_float width precision ib =
   match c with
   | '.' ->
     let width = Scanning.store_char width ib c in
+    (* The effective width available for scanning the fractional part is
+       the minimum of declared precision and width left. *)
     let precision = min width precision in
-    let width = width - (precision - scan_frac_part precision ib) in
+    (* After scanning the fractional part with [precision] provisional width,
+       [width_precision] is left. *)
+    let width_precision = scan_frac_part precision ib in
+    (* Hence, scanning the fractional part took exactly
+       [precision - width_precision] chars. *)
+    let frac_width = precision - width_precision in
+    (* And new provisional width is [width - width_precision. *)
+    let width = width - frac_width in
     scan_exp_part width ib
   | 'e' | 'E' ->
     scan_exp_part width ib
   | _ -> bad_float ()
+;;
 
 (* Scan a regular string:
    stops when encountering a space, if no scanning indication has been given;
