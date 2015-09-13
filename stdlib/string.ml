@@ -87,7 +87,7 @@ let escaped s =
   let rec needs_escape i =
     if i >= length s then false else
       match unsafe_get s i with
-      | '"' | '\\' | '\n' | '\t' | '\r' | '\b' -> true
+      | '\"' | '\\' | '\n' | '\t' | '\r' | '\b' -> true
       | ' ' .. '~' -> needs_escape (i+1)
       | _ -> true
   in
