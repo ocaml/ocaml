@@ -195,16 +195,22 @@ let primitive_moveable (prim : Lambda.primitive)
     | _ ->
       false
   in
-  match
-    Semantics_of_primitives.for_primitive prim
-      ~second_arg_is_definitely_not_zero
-  with
-  | No_effects, No_coeffects -> Moveable
-  | No_effects, Has_coeffects
-  | Only_generative_effects, No_coeffects
-  | Only_generative_effects, Has_coeffects
-  | Arbitrary_effects, No_coeffects
-  | Arbitrary_effects, Has_coeffects -> Fixed
+  match prim, args with
+  | Pfield _, [Uconst (Uconst_ref (_, _))] ->
+    (* Allow field access of symbols to be moveable.  (The comment in
+       flambda.mli on [Read_symbol_field] may be helpful to the reader.) *)
+    Moveable
+  | _ ->
+    match
+      Semantics_of_primitives.for_primitive prim
+        ~second_arg_is_definitely_not_zero
+    with
+    | No_effects, No_coeffects -> Moveable
+    | No_effects, Has_coeffects
+    | Only_generative_effects, No_coeffects
+    | Only_generative_effects, Has_coeffects
+    | Arbitrary_effects, No_coeffects
+    | Arbitrary_effects, Has_coeffects -> Fixed
 
 (** Eliminate, through substitution, [let]-bindings of linear variables with
     moveable defining expressions. *)
