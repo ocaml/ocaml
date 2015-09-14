@@ -23,7 +23,7 @@ and 'a data =
   | Sapp of 'a data * 'a data
   | Slazy of 'a data Lazy.t
   | Sgen of 'a gen
-  | Sbuffio of buffio
+  | Sbuffio : buffio -> char data
 and 'a gen = { mutable curr : 'a option option; func : int -> 'a option }
 and buffio =
   { ic : in_channel; buff : bytes; mutable len : int; mutable ind : int }
@@ -42,7 +42,7 @@ let fill_buff b =
   b.len <- input b.ic b.buff 0 (Bytes.length b.buff); b.ind <- 0
 ;;
 
-let rec get_data count d = match d with
+let rec get_data : type v. int -> v data -> v data = fun count d -> match d with
  (* Returns either Sempty or Scons(a, _) even when d is a generator
     or a buffer. In those cases, the item a is seen as extracted from
  the generator/buffer.
@@ -66,13 +66,13 @@ let rec get_data count d = match d with
  | Sbuffio b ->
      if b.ind >= b.len then fill_buff b;
      if b.len == 0 then Sempty else
-       let r = Obj.magic (Bytes.unsafe_get b.buff b.ind) in
+       let r = Bytes.unsafe_get b.buff b.ind in
        (* Warning: anyone using g thinks that an item has been read *)
        b.ind <- succ b.ind; Scons(r, d)
  | Slazy f -> get_data count (Lazy.force f)
 ;;
 
-let rec peek_data s =
+let rec peek_data : type v. v data' -> v option = fun s ->
  (* consult the first item of s *)
  match s.data with
    Sempty -> None
@@ -89,7 +89,7 @@ let rec peek_data s =
  | Sbuffio b ->
      if b.ind >= b.len then fill_buff b;
      if b.len == 0 then begin s.data <- Sempty; None end
-     else Some (Obj.magic (Bytes.unsafe_get b.buff b.ind))
+     else Some (Bytes.unsafe_get b.buff b.ind)
 ;;
 
 let peek = function
@@ -97,7 +97,7 @@ let peek = function
   | Some s -> peek_data s
 ;;
 
-let rec junk_data s =
+let rec junk_data : type v. v data' -> unit = fun s ->
   match s.data with
     Scons (_, d) -> s.count <- (succ s.count); s.data <- d
   | Sgen ({curr = Some _} as g) -> s.count <- (succ s.count); g.curr <- None
@@ -205,14 +205,14 @@ let slazy f = Some {count = 0; data = Slazy (lazy(data (f ())))};;
 
 (* For debugging use *)
 
-let rec dump f s =
+let rec dump : type v. (v -> unit) -> v t -> unit = fun f s ->
   print_string "{count = ";
   print_int (count s);
   print_string "; data = ";
   dump_data f (data s);
   print_string "}";
   print_newline ()
-and dump_data f =
+and dump_data : type v. (v -> unit) -> v data -> unit = fun f ->
   function
     Sempty -> print_string "Sempty"
   | Scons (a, d) ->
