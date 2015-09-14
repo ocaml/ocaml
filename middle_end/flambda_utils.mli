@@ -79,7 +79,7 @@ val bind
   -> body:Flambda.t
   -> Flambda.t
 
-val name_expr : Flambda.named -> Flambda.t
+val name_expr : ?name:string -> Flambda.named -> Flambda.t
 
 val compare_const : Flambda.const -> Flambda.const -> int
 

@@ -72,20 +72,20 @@ let add_debug_info (ev : Lambda.lambda_event) (flam : Flambda.t)
     end
   | _ -> flam
 
-let close_const (const : Lambda.structured_constant) : Flambda.named =
+let close_const (const : Lambda.structured_constant) : Flambda.named * string =
   match const with
-  | Const_base (Const_int c) -> Const (Int c)
-  | Const_base (Const_char c) -> Const (Char c)
-  | Const_base (Const_string (s, _)) -> Allocated_const (String s)
+  | Const_base (Const_int c) -> Const (Int c), "int"
+  | Const_base (Const_char c) -> Const (Char c), "char"
+  | Const_base (Const_string (s, _)) -> Allocated_const (String s), "string"
   (* CR mshinwell: unsure about [float_of_string] (ditto below) *)
-  | Const_base (Const_float c) -> Allocated_const (Float (float_of_string c))
-  | Const_base (Const_int32 c) -> Allocated_const (Int32 c)
-  | Const_base (Const_int64 c) -> Allocated_const (Int64 c)
-  | Const_base (Const_nativeint c) -> Allocated_const (Nativeint c)
-  | Const_pointer c -> Const (Const_pointer c)
-  | Const_immstring c -> Allocated_const (Immstring c)
+  | Const_base (Const_float c) -> Allocated_const (Float (float_of_string c)), "float"
+  | Const_base (Const_int32 c) -> Allocated_const (Int32 c), "int32"
+  | Const_base (Const_int64 c) -> Allocated_const (Int64 c), "int64"
+  | Const_base (Const_nativeint c) -> Allocated_const (Nativeint c), "nativeint"
+  | Const_pointer c -> Const (Const_pointer c), "pointer"
+  | Const_immstring c -> Allocated_const (Immstring c), "immstring"
   | Const_float_array c ->
-    Allocated_const (Float_array (List.map float_of_string c))
+    Allocated_const (Float_array (List.map float_of_string c)), "float_array"
   | Const_block _ ->
     Misc.fatal_error "Const_block should have been eliminated before closure \
         conversion"
@@ -105,7 +105,9 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
         Misc.fatal_errorf "Closure_conversion.close: unbound identifier %a"
           Ident.print id
     end
-  | Lconst cst -> name_expr (close_const cst)
+  | Lconst cst ->
+    let cst, name = close_const cst in
+    name_expr cst ~name:("const_" ^ name)
   | Llet ((Strict | Alias | StrictOpt), id, defining_expr, body) ->
     let var = Variable.of_ident id in
     let defining_expr = close_let_bound_expression t var env defining_expr in
@@ -118,19 +120,19 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
     let body = close t (Env.add_mutable_var env id mut_var) body in
     Flambda.create_let var defining_expr (Let_mutable (mut_var, var, body))
   | Lfunction { kind; params; body; } ->
+    let name =
+      (* Name anonymous functions by their source location, if known. *)
+      match body with
+      | Levent (_, { lev_loc }) ->
+        Format.asprintf "anon-fn[%a]" Location.print_compact lev_loc
+      | _ -> "anon-fn"
+    in
     let closure_bound_var =
-      let name =
-        (* Name anonymous functions by their source location, if known. *)
-        match body with
-        | Levent (_, { lev_loc }) ->
-          Format.asprintf "anon-fn[%a]" Location.print_compact lev_loc
-        | _ -> "anon-fn"
-      in
       Variable.create name
     in
     (* CR-soon mshinwell: some of this is now very similar to the let rec case
        below *)
-    let set_of_closures_var = Variable.create "set_of_closures" in
+    let set_of_closures_var = Variable.create ("set_of_closures_" ^ name) in
     let set_of_closures =
       let decl =
         Function_decl.create ~let_rec_ident:None ~closure_bound_var ~kind
@@ -144,7 +146,8 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
       }
     in
     Flambda.create_let set_of_closures_var set_of_closures
-      (name_expr (Project_closure (project_closure)))
+      (name_expr (Project_closure (project_closure))
+        ~name:("project_closure_" ^ name))
   | Lapply (funct, args, _loc) ->
     (* CR-soon mshinwell: the location should probably not be lost. *)
     Lift_code.lifting_helper (close_list t env args)
@@ -256,7 +259,8 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
     let arg_var = Variable.create "raise_arg" in
     Flambda.create_let arg_var (Expr (close t env arg))
       (name_expr
-        (Prim (Praise kind, [arg_var], Debuginfo.from_raise event)))
+        (Prim (Praise kind, [arg_var], Debuginfo.from_raise event))
+        ~name:"raise")
   | Lprim (Pfield pos, [Lprim (Pgetglobal id, [])])
     when Ident.same id t.current_unit_id ->
     (* CR mshinwell: is this case now redundant? *)
@@ -273,12 +277,12 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
   | Lprim (Pgetglobal id, []) when Ident.is_predef_exn id ->
     let symbol = t.symbol_for_global' id in
     imported_symbols := Symbol.Set.add symbol !imported_symbols;
-    name_expr (Symbol symbol)
+    name_expr (Symbol symbol) ~name:"predef_exn"
   | Lprim (Pgetglobal id, []) ->
     assert (not (Ident.same id t.current_unit_id));
     let symbol = t.symbol_for_global' id in
     imported_symbols := Symbol.Set.add symbol !imported_symbols;
-    name_expr (Symbol symbol)
+    name_expr (Symbol symbol) ~name:"Pgetglobal"
   | Lprim (p, args) ->
     (* One of the important consequences of the ANF-like representation
        here is that we obtain names corresponding to the components of
@@ -290,7 +294,7 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
       ~evaluation_order:`Right_to_left
       ~name:"prim_arg"
       ~create_body:(fun args ->
-        name_expr (Prim (p, args, Debuginfo.none)))
+        name_expr (Prim (p, args, Debuginfo.none)) ~name:"prim")
   | Lswitch (arg, sw) ->
     let scrutinee = Variable.create "switch" in
     let aux (i, lam) = i, close t env lam in
