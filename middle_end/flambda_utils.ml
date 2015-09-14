@@ -455,7 +455,7 @@ let all_sets_of_closures program =
 let make_variable_symbol var =
   Symbol.create (Compilation_unit.get_current_exn ())
     (Linkage_name.create
-       ("lifted_" ^ Variable.unique_name (Variable.freshen var)))
+       (Variable.unique_name (Variable.freshen var)))
 
 let substitute_variable_to_symbol var symbol expr =
   let bind fresh_var (expr:Flambda.t) : Flambda.t =

@@ -189,7 +189,11 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
          eliminate the [let rec] construction, instead producing a normal
          [Let] that binds a set of closures containing all of the functions.
       *)
-      let set_of_closures_var = Variable.create "set_of_closures" in
+      let name =
+        String.concat "_and_"
+          (List.map (fun (id, _) -> Ident.unique_name id) defs)
+      in
+      let set_of_closures_var = Variable.create name in
       let set_of_closures =
         close_functions t env (Function_decls.create function_declarations)
       in
@@ -453,12 +457,16 @@ and close_let_bound_expression t ?let_rec_ident let_bound_var env
   | Lfunction { kind; params; body; } ->
     (* Ensure that [let] and [let rec]-bound functions have appropriate
        names. *)
-    let closure_bound_var = Variable.rename let_bound_var in
+    let closure_bound_var =
+      Variable.rename let_bound_var ~append:"_closure"
+    in
     let decl =
       Function_decl.create ~let_rec_ident ~closure_bound_var ~kind ~params
         ~body
     in
-    let set_of_closures_var = Variable.create "set_of_closures_var" in
+    let set_of_closures_var =
+      Variable.rename let_bound_var ~append:"_set_of_closures"
+    in
     let set_of_closures = close_functions t env [decl] in
     let project_closure : Flambda.project_closure =
       { set_of_closures = set_of_closures_var;
@@ -466,7 +474,8 @@ and close_let_bound_expression t ?let_rec_ident let_bound_var env
       }
     in
     Expr (Flambda.create_let set_of_closures_var set_of_closures
-      (name_expr (Project_closure (project_closure))))
+      (name_expr (Project_closure (project_closure))
+        ~name:(Variable.unique_name let_bound_var)))
   | lam -> Expr (close t env lam)
 
 let lambda_to_flambda ~backend ~module_ident ~size lam =
