@@ -715,20 +715,18 @@ module PpxContext = struct
     let field name payload =
       let rec get_string = function
         | { pexp_desc = Pexp_constant (Const_string (str, None)) } -> str
-        | _ ->
-            raise_errorf
-              "Internal error: invalid [@@@ocaml.ppx.context { %s }] string syntax"
-              name
+        | _ -> raise_errorf "Internal error: invalid [@@@ocaml.ppx.context \
+                             { %s }] string syntax" name
       and get_bool pexp =
         match pexp with
-        | {pexp_desc = Pexp_construct ({txt = Longident.Lident "true"}, None)} ->
+        | {pexp_desc = Pexp_construct ({txt = Longident.Lident "true"},
+                                       None)} ->
             true
-        | {pexp_desc = Pexp_construct ({txt = Longident.Lident "false"}, None)} ->
+        | {pexp_desc = Pexp_construct ({txt = Longident.Lident "false"},
+                                       None)} ->
             false
-        | _ ->
-            raise_errorf
-              "Internal error: invalid [@@@ocaml.ppx.context { %s }] bool syntax"
-              name
+        | _ -> raise_errorf "Internal error: invalid [@@@ocaml.ppx.context \
+                             { %s }] bool syntax" name
       and get_list elem = function
         | {pexp_desc =
              Pexp_construct ({txt = Longident.Lident "::"},
@@ -737,17 +735,13 @@ module PpxContext = struct
         | {pexp_desc =
              Pexp_construct ({txt = Longident.Lident "[]"}, None)} ->
             []
-        | _ ->
-            raise_errorf
-              "Internal error: invalid [@@@ocaml.ppx.context { %s }] list syntax"
-              name
+        | _ -> raise_errorf "Internal error: invalid [@@@ocaml.ppx.context \
+                             { %s }] list syntax" name
       and get_pair f1 f2 = function
         | {pexp_desc = Pexp_tuple [e1; e2]} ->
             (f1 e1, f2 e2)
-        | _ ->
-            raise_errorf
-              "Internal error: invalid [@@@ocaml.ppx.context { %s }] pair syntax"
-              name
+        | _ -> raise_errorf "Internal error: invalid [@@@ocaml.ppx.context \
+                             { %s }] pair syntax" name
       and get_option elem = function
         | { pexp_desc =
               Pexp_construct ({ txt = Longident.Lident "Some" }, Some exp) } ->
@@ -755,10 +749,8 @@ module PpxContext = struct
         | { pexp_desc =
               Pexp_construct ({ txt = Longident.Lident "None" }, None) } ->
             None
-        | _ ->
-            raise_errorf
-              "Internal error: invalid [@@@ocaml.ppx.context { %s }] option syntax"
-              name
+        | _ -> raise_errorf "Internal error: invalid [@@@ocaml.ppx.context \
+                             { %s }] option syntax" name
       in
       match name with
       | "tool_name" ->

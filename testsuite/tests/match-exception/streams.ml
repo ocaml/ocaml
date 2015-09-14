@@ -17,7 +17,7 @@ let make_stream_up_to n =
 let stream_get (Stream (x, s)) = (x, Lazy.force s)
 ;;
 
-let rec iter_stream_match f s = 
+let rec iter_stream_match f s =
   match stream_get s
   with exception End_of_stream -> ()
   | (x, s') ->
@@ -26,7 +26,7 @@ let rec iter_stream_match f s =
       iter_stream_match f s'
     end
 ;;
-      
+
 let test_iter_stream =
   let limit = 10000000 in
   try

@@ -157,7 +157,8 @@ val read_signature: string -> string -> signature
 val save_signature: signature -> string -> string -> signature
         (* Arguments: signature, module name, file name. *)
 val save_signature_with_imports:
-    signature -> string -> string -> (string * Digest.t option) list -> signature
+    signature -> string -> string -> (string * Digest.t option) list
+    -> signature
         (* Arguments: signature, module name, file name,
            imported units with their CRCs. *)
 

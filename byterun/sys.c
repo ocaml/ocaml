@@ -105,7 +105,8 @@ CAMLprim value caml_sys_exit(value retcode)
     double majwords = caml_stat_major_words + (double) caml_allocated_words;
     double allocated_words =
       minwords + majwords - prowords;
-    caml_gc_message(0x400, "## Total allocated words: %ld\n", (long)allocated_words);
+    caml_gc_message(0x400, "## Total allocated words: %ld\n",
+                    (long)allocated_words);
   }
 
 #ifndef NATIVE_CODE
@@ -435,17 +436,17 @@ CAMLprim value caml_sys_const_max_wosize(value unit)
 
 CAMLprim value caml_sys_const_ostype_unix(value unit)
 {
-  return Val_long(0 == strcmp(OCAML_OS_TYPE,"Unix"));
+  return Val_bool(0 == strcmp(OCAML_OS_TYPE,"Unix"));
 }
 
 CAMLprim value caml_sys_const_ostype_win32(value unit)
 {
-  return Val_long(0 == strcmp(OCAML_OS_TYPE,"Win32"));
+  return Val_bool(0 == strcmp(OCAML_OS_TYPE,"Win32"));
 }
 
 CAMLprim value caml_sys_const_ostype_cygwin(value unit)
 {
-  return Val_long(0 == strcmp(OCAML_OS_TYPE,"Cygwin"));
+  return Val_bool(0 == strcmp(OCAML_OS_TYPE,"Cygwin"));
 }
 
 CAMLprim value caml_sys_get_config(value unit)
@@ -498,7 +499,8 @@ CAMLprim value caml_sys_isatty(value chan)
 
   fd = (Channel(chan))->fd;
 #ifdef _WIN32
-  ret = Val_bool(_isatty(fd)); /* https://msdn.microsoft.com/en-us/library/f4s0ddew.aspx */
+  ret = Val_bool(_isatty(fd));
+        /* https://msdn.microsoft.com/en-us/library/f4s0ddew.aspx */
 #else
   ret = Val_bool(isatty(fd));
 #endif

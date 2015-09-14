@@ -744,9 +744,14 @@ let emit_instr fallthrough i =
             stack_offset := !stack_offset + 8
         | {loc = Stack sl; typ = Float} ->
             let ofs = slot_offset sl 1 in
-            I.push (mem32 DWORD (ofs + 4) RSP);
-            I.push (mem32 DWORD (ofs + 4) RSP);
+            (* Use x87 stack to move from stack to stack,
+               instead of two 32-bit push instructions,
+               which could kill performance on modern CPUs (see #6979).
+            *)
+            I.fld (mem32 REAL8 ofs RSP);
+            I.sub (int 8) esp;
             cfi_adjust_cfa_offset 8;
+            I.fstp (mem32 REAL8 0 RSP);
             stack_offset := !stack_offset + 8
         | _ ->
             I.push (reg r);

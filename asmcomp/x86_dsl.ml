@@ -23,7 +23,7 @@
        precision instructions.  (As with Intel syntax.)
 
      - A legacy bug in GAS:
-       https://sourceware.org/binutils/docs-2.22/as/i386_002dBugs.html#i386_002dBugs
+   https://sourceware.org/binutils/docs-2.22/as/i386_002dBugs.html#i386_002dBugs
        is not replicated here.  It is managed by X86_gas.
 *)
 

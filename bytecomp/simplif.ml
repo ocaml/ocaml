@@ -342,7 +342,8 @@ let simplify_lets lam =
   | Lapply(Lfunction{kind = Curried; params; body}, args, _)
     when optimize && List.length params = List.length args ->
       count bv (beta_reduce params body args)
-  | Lapply(Lfunction{kind = Tupled; params; body}, [Lprim(Pmakeblock _, args)], _)
+  | Lapply(Lfunction{kind = Tupled; params; body},
+           [Lprim(Pmakeblock _, args)], _)
     when optimize && List.length params = List.length args ->
       count bv (beta_reduce params body args)
   | Lapply(l1, ll, _) ->

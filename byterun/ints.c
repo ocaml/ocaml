@@ -438,7 +438,9 @@ CAMLprim value caml_int64_mod(value v1, value v2)
   if (divisor == 0) caml_raise_zero_divide();
   /* PR#4740: on some processors, division crashes on overflow.
      Implement the same behavior as for type "int". */
-  if (dividend == ((int64_t)1 << 63) && divisor == -1) return caml_copy_int64(0);
+  if (dividend == ((int64_t)1 << 63) && divisor == -1){
+    return caml_copy_int64(0);
+  }
   return caml_copy_int64(Int64_val(v1) % divisor);
 }
 

@@ -68,9 +68,9 @@ module PR6862 :
 #               Characters 118-119:
       let eval (D x) = x
                        ^
-Error: This expression has type a#2 t but an expression was expected of type
-         'a
-       The type constructor a#2 would escape its scope
+Error: This expression has type $D_'a t
+       but an expression was expected of type 'a
+       The type constructor $D_'a would escape its scope
 #               module Rectype :
   sig type (_, _) t = C : ('a, 'a) t val f : ('s, 's * 's) t -> unit end
 #                         Characters 178-186:
@@ -309,22 +309,21 @@ type _ int_bar = IB_constr : < bar : int; .. > int_bar
      ^
 Error: This expression has type t = < foo : int; .. >
        but an expression was expected of type < foo : int >
-       Type ex#17 = < bar : int; .. > is not compatible with type <  > 
+       Type $0 = < bar : int; .. > is not compatible with type <  > 
        The second object type has no method bar
 #         Characters 98-99:
     (x:<foo:int;bar:int>)
      ^
 Error: This expression has type t = < foo : int; .. >
        but an expression was expected of type < bar : int; foo : int >
-       Type ex#19 = < bar : int; .. > is not compatible with type
-         < bar : int > 
+       Type $0 = < bar : int; .. > is not compatible with type < bar : int > 
        The first object type has an abstract row, it cannot be closed
 #         Characters 98-99:
     (x:<foo:int;bar:int;..>)
      ^
 Error: This expression has type < bar : int; foo : int; .. >
        but an expression was expected of type 'a
-       The type constructor ex#22 would escape its scope
+       The type constructor $1 would escape its scope
 #         val g : 'a -> 'a int_foo -> 'a int_bar -> 'a = <fun>
 #         val g : 'a -> 'a int_foo -> 'a int_bar -> 'a * int * int = <fun>
 #       type 'a ty = Int : int -> int ty

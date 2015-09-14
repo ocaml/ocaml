@@ -26,7 +26,8 @@ COBJS=startup_aux.o startup.o \
   misc.o freelist.o major_gc.o minor_gc.o memory.o alloc.o compare.o ints.o \
   floats.o str.o array.o io.o extern.o intern.o hash.o sys.o parsing.o \
   gc_ctrl.o terminfo.o md5.o obj.o lexing.o printexc.o callback.o weak.o \
-  compact.o finalise.o custom.o $(UNIX_OR_WIN32).o backtrace_prim.o backtrace.o \
+  compact.o finalise.o custom.o $(UNIX_OR_WIN32).o backtrace_prim.o \
+  backtrace.o \
   natdynlink.o debugger.o meta.o dynlink.o
 
 ASMOBJS=$(ARCH).o
@@ -77,7 +78,8 @@ libasmrun_shared.so: $(PICOBJS)
 
 INSTALL_LIBDIR=$(DESTDIR)$(LIBDIR)
 
-install: install-default install-$(RUNTIMED) install-$(PROFILING) install-$(SHARED)
+install: install-default install-$(RUNTIMED) install-$(PROFILING) \
+         install-$(SHARED)
 
 install-default:
 	cp libasmrun.a $(INSTALL_LIBDIR)/libasmrun.a

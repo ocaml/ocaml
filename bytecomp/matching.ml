@@ -2452,7 +2452,8 @@ let combine_constructor arg ex_pat cstr partial ctx def
             (cstr.cstr_consts, cstr.cstr_nonconsts, consts, nonconsts)
           with
           | (1, 1, [0, act1], [0, act2]) ->
-           (* Typically, match on lists, will avoid isint primitive in that case *)
+           (* Typically, match on lists, will avoid isint primitive in that
+              case *)
               Lifthenelse(arg, act2, act1)
           | (n,0,_,[])  -> (* The type defines constant constructors only *)
               call_switcher fail_opt arg 0 (n-1) consts

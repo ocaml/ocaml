@@ -105,7 +105,8 @@ static int cmp_ev_info(const void *a, const void *b)
   return 0;
 }
 
-struct ev_info *process_debug_events(code_t code_start, value events_heap, mlsize_t *num_events)
+struct ev_info *process_debug_events(code_t code_start, value events_heap,
+                                     mlsize_t *num_events)
 {
   CAMLparam1(events_heap);
   CAMLlocal3(l, ev, ev_start);
@@ -130,7 +131,8 @@ struct ev_info *process_debug_events(code_t code_start, value events_heap, mlsiz
     for (l = Field(events_heap, i); l != Val_int(0); l = Field(l, 1)) {
       ev = Field(l, 0);
 
-      events[j].ev_pc = (code_t)((char*)code_start + Long_val(Field(ev, EV_POS)));
+      events[j].ev_pc = (code_t)((char*)code_start
+                                 + Long_val(Field(ev, EV_POS)));
 
       ev_start = Field(Field(ev, EV_LOC), LOC_START);
 
@@ -165,7 +167,8 @@ struct ev_info *process_debug_events(code_t code_start, value events_heap, mlsiz
 
 /* Processes a (Instruct.debug_event list array) into a form suitable
    for quick lookup and registers it for the (code_start,code_size) pc range. */
-CAMLprim value caml_add_debug_info(code_t code_start, value code_size, value events_heap)
+CAMLprim value caml_add_debug_info(code_t code_start, value code_size,
+                                   value events_heap)
 {
   CAMLparam1(events_heap);
   struct debug_info *debug_info;
@@ -431,7 +434,8 @@ static struct ev_info *event_for_location(code_t pc)
 
 /* Extract location information for the given PC */
 
-void caml_extract_location_info(backtrace_slot slot, /*out*/ struct caml_loc_info * li)
+void caml_extract_location_info(backtrace_slot slot,
+                                /*out*/ struct caml_loc_info * li)
 {
   code_t pc = slot;
   struct ev_info *event = event_for_location(pc);

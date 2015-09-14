@@ -770,30 +770,38 @@ testing_function "big_int_of_int64";;
 test 1 eq_big_int
   (big_int_of_int64 0L, zero_big_int);;
 test 2 eq_big_int
-  (big_int_of_int64 9223372036854775807L, big_int_of_string "9223372036854775807");;
+  (big_int_of_int64 9223372036854775807L,
+   big_int_of_string "9223372036854775807");;
 test 3 eq_big_int
-  (big_int_of_int64 (-9223372036854775808L), big_int_of_string "-9223372036854775808");;
+  (big_int_of_int64 (-9223372036854775808L),
+   big_int_of_string "-9223372036854775808");;
 test 4 eq_big_int (*PR#4792*)
-  (big_int_of_int64 (Int64.of_int32 Int32.min_int), big_int_of_string "-2147483648");;
+  (big_int_of_int64 (Int64.of_int32 Int32.min_int),
+   big_int_of_string "-2147483648");;
 test 5 eq_big_int
   (big_int_of_int64 1234L, big_int_of_string "1234");;
 test 6 eq_big_int
-  (big_int_of_int64 0x1234567890ABCDEFL, big_int_of_string "1311768467294899695");;
+  (big_int_of_int64 0x1234567890ABCDEFL,
+   big_int_of_string "1311768467294899695");;
 test 7 eq_big_int
   (big_int_of_int64 (-1234L), big_int_of_string "-1234");;
 test 8 eq_big_int
-  (big_int_of_int64 (-0x1234567890ABCDEFL), big_int_of_string "-1311768467294899695");;
+  (big_int_of_int64 (-0x1234567890ABCDEFL),
+   big_int_of_string "-1311768467294899695");;
 
 testing_function "int64_of_big_int";;
 
 test 1 eq_int64
   (int64_of_big_int zero_big_int, 0L);;
 test 2 eq_int64
-  (int64_of_big_int (big_int_of_string "9223372036854775807"), 9223372036854775807L);;
+  (int64_of_big_int (big_int_of_string "9223372036854775807"),
+   9223372036854775807L);;
 test 3 eq_int64
-  (int64_of_big_int (big_int_of_string "-9223372036854775808"), -9223372036854775808L);;
+  (int64_of_big_int (big_int_of_string "-9223372036854775808"),
+   -9223372036854775808L);;
 test 4 eq_int64
-  (int64_of_big_int (big_int_of_string "-9223372036854775"), -9223372036854775L);;
+  (int64_of_big_int (big_int_of_string "-9223372036854775"),
+   -9223372036854775L);;
 test 5 eq_int64 (* PR#4804 *)
   (int64_of_big_int (big_int_of_string "2147483648"), 2147483648L);;
 let should_fail s =
@@ -908,7 +916,9 @@ test 3 eq_big_int
   (shift_right_big_int (big_int_of_string "5299989648942") 32,
    big_int_of_int 1234);;
 test 4 eq_big_int
-  (shift_right_big_int (big_int_of_string "5846006549323611672814739330865132078623730171904") 67,
+  (shift_right_big_int (big_int_of_string
+                          "5846006549323611672814739330865132078623730171904")
+                       67,
    big_int_of_string "39614081257132168796771975168");;
 test 5 eq_big_int
   (shift_right_big_int (big_int_of_string "-5299989648942") 32,
@@ -923,7 +933,9 @@ test 1 eq_big_int
   (shift_right_towards_zero_big_int (big_int_of_string "-5299989648942") 32,
    big_int_of_int (-1234));;
 test 2 eq_big_int
-  (shift_right_towards_zero_big_int (big_int_of_string "-16570089876543209725755392") 27,
+  (shift_right_towards_zero_big_int (big_int_of_string
+                                       "-16570089876543209725755392")
+                                    27,
    big_int_of_string "-123456790123456789");;
 
 testing_function "extract_big_int";;
@@ -956,7 +968,8 @@ test 9 eq_big_int
   (extract_big_int (minus_big_int (power_int_positive_int 2 64)) 64 20,
    big_int_of_int 0xFFFFF);;
 test 10 eq_big_int
-  (extract_big_int (pred_big_int (minus_big_int (power_int_positive_int 2 64))) 64 20,
+  (extract_big_int (pred_big_int (minus_big_int (power_int_positive_int 2 64)))
+                   64 20,
    big_int_of_int 0xFFFFE);;
 
 testing_function "hashing of big integers";;

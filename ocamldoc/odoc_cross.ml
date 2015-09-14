@@ -465,7 +465,8 @@ and associate_in_module_type module_list (acc_b_modif, acc_incomplete_top_module
 and associate_in_module_element module_list m_name (acc_b_modif, acc_incomplete_top_module_names, acc_names_not_found) element =
    match element with
      Element_module m -> associate_in_module module_list (acc_b_modif, acc_incomplete_top_module_names, acc_names_not_found) m
-   | Element_module_type mt -> associate_in_module_type module_list (acc_b_modif, acc_incomplete_top_module_names, acc_names_not_found) mt
+   | Element_module_type mt ->
+       associate_in_module_type module_list (acc_b_modif, acc_incomplete_top_module_names, acc_names_not_found) mt
    | Element_included_module im ->
        (
         match im.im_module with
@@ -492,9 +493,11 @@ and associate_in_module_element module_list m_name (acc_b_modif, acc_incomplete_
                 (true, acc_incomplete_top_module_names, acc_names_not_found)
        )
    | Element_class cl -> associate_in_class module_list (acc_b_modif, acc_incomplete_top_module_names, acc_names_not_found) cl
-   | Element_class_type ct -> associate_in_class_type module_list (acc_b_modif, acc_incomplete_top_module_names, acc_names_not_found) ct
+   | Element_class_type ct ->
+       associate_in_class_type module_list (acc_b_modif, acc_incomplete_top_module_names, acc_names_not_found) ct
    | Element_value _ -> (acc_b_modif, acc_incomplete_top_module_names, acc_names_not_found)
-   | Element_type_extension te -> associate_in_type_extension module_list (acc_b_modif, acc_incomplete_top_module_names, acc_names_not_found) te
+   | Element_type_extension te ->
+       associate_in_type_extension module_list (acc_b_modif, acc_incomplete_top_module_names, acc_names_not_found) te
    | Element_exception ex ->
        (
         match ex.ex_alias with
@@ -509,7 +512,9 @@ and associate_in_module_element module_list m_name (acc_b_modif, acc_incomplete_
                   with Not_found -> None
                 in
                 match ex_opt with
-                  None -> (acc_b_modif, (Name.head m_name) :: acc_incomplete_top_module_names, (NF_ex ea.ea_name) :: acc_names_not_found)
+                  None -> (acc_b_modif,
+                           (Name.head m_name) :: acc_incomplete_top_module_names,
+                           (NF_ex ea.ea_name) :: acc_names_not_found)
                 | Some e ->
                     ea.ea_ex <- Some e ;
                     (true, acc_incomplete_top_module_names, acc_names_not_found)
@@ -661,7 +666,9 @@ and associate_in_type_extension module_list (acc_b_modif, acc_incomplete_top_mod
                      with Not_found -> None
                    in
                      match xt_opt with
-                         None -> (acc_b_modif, (Name.head xt.xt_name) :: acc_incomplete_top_module_names, (NF_xt xa.xa_name) :: acc_names_not_found)
+                         None -> (acc_b_modif,
+                                  (Name.head xt.xt_name) :: acc_incomplete_top_module_names,
+                                  (NF_xt xa.xa_name) :: acc_names_not_found)
                        | Some x ->
                            xa.xa_xt <- Some x ;
                            (true, acc_incomplete_top_module_names, acc_names_not_found))

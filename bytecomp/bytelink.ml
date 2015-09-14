@@ -50,7 +50,9 @@ let add_ccobjs origin l =
     then begin
       if l.lib_custom then Clflags.custom_runtime := true;
       lib_ccobjs := l.lib_ccobjs @ !lib_ccobjs;
-      let replace_origin = Misc.replace_substring ~before:"$CAMLORIGIN" ~after:origin in
+      let replace_origin =
+        Misc.replace_substring ~before:"$CAMLORIGIN" ~after:origin
+      in
       lib_ccopts := List.map replace_origin l.lib_ccopts @ !lib_ccopts;
     end;
     lib_dllibs := l.lib_dllibs @ !lib_dllibs

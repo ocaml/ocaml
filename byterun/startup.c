@@ -138,7 +138,8 @@ void caml_read_section_descriptors(int fd, struct exec_trailer *trail)
    Return the length of the section data in bytes, or -1 if no section
    found with that name. */
 
-int32_t caml_seek_optional_section(int fd, struct exec_trailer *trail, char *name)
+int32_t caml_seek_optional_section(int fd, struct exec_trailer *trail,
+                                   char *name)
 {
   long ofs;
   int i;

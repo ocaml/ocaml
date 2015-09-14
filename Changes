@@ -42,6 +42,8 @@ Compilers:
   big-endian (ppc64) and little-endian (ppc64le) configuration.
   (Xavier Leroy, with inspiration from RedHat's unofficial ppc64 and ppc64le
    ports)
+- PR#6979: better code generation in x86-32 backend for copying floats to
+  the stack (Marc Lasson, review by Xavier Leroy)
 - GPR#17: some cmm optimizations of integer operations with constants
   (Stephen Dolan, review by Pierre Chambart)
 - GPR#109: new unboxing strategy for float and int references (Vladimir Brankov,
@@ -71,8 +73,8 @@ Runtime system:
 Standard library:
 - PR#6316: Scanf.scanf failure on %u formats when reading big integers
   (Xavier Leroy, Benoît Vaugon)
-- PR#6390, GPR#36: expose Sys.{int_size,max_wosize} for improved js_of_ocaml portability
-  (Hugo Heuzard)
+- PR#6390, GPR#36: expose Sys.{int_size,max_wosize} for improved js_of_ocaml
+  portability (Hugo Heuzard)
 * PR#6494: Add equal function in modules
   Bytes, Char, Digest, Int32, Int64, Nativeint, and String
   (Romain Calascibetta)
@@ -131,6 +133,9 @@ Bug fixes:
 - PR#5663: program rejected due to nongeneralizable type variable that
     appears nowhere
   (Jacques Garrigue, report by Stephen Weeks)
+- PR#5780: Strange type variable names in error messages (GADTs)
+    (only made the names more informative)
+  (Jacques Garrigue, report by Sebastien Furic)
 - PR#5887: move the byterun/*.h headers to byterun/caml/*.h to avoid header
     name clashes
   (Jérôme Vouillon and Adrien Nader and Peter Zotov)
@@ -168,6 +173,11 @@ Bug fixes:
 - PR#6931: Incorrect error message
 - PR#6938: fix regression on "%047.27{l,L,n}{d,i,x,X,o,u}"
   (Benoît Vaugon, report by Arduino Cascella)
+- PR#6944: let module X = Path in … is not typed as a module alias
+  (Jacques Garrigue, report by def)
+- PR#6982: unexpected type error when packing a module alias
+- PR#6985: `module type of struct include Bar end exposes
+           %s#row when Bar contains private row types
 - GPR#205: Clear caml_backtrace_last_exn before registering as root (report
   and fix by Frederic Bour)
 - GPR#220: minor -dsource error on recursive modules
@@ -603,7 +613,8 @@ Type system:
   (Jacques Garrigue, suggestion by Leo White)
 * Module aliases are now typed in a specific way, which remembers their
   identity. Compiled interfaces become smaller, but may depend on the
-  original modules. This also changes the signature inferred by "module type of".
+  original modules. This also changes the signature inferred by
+  "module type of".
   (Jacques Garrigue, feedback from Leo White, Mark Shinwell and Nick Chapman)
 - PR#6331: Slight change in the criterion to distinguish private
   abbreviations and private row types: create a private abbreviation for

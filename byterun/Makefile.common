@@ -118,7 +118,8 @@ caml/opnames.h : caml/instruct.h
 	    -e '/^#/d' \
 	    -e 's/enum /char * names_of_/' \
 	    -e 's/{$$/[] = {/' \
-	    -e 's/\([[:upper:]][[:upper:]_0-9]*\)/"\1"/g' caml/instruct.h > caml/opnames.h
+	    -e 's/\([[:upper:]][[:upper:]_0-9]*\)/"\1"/g' caml/instruct.h \
+	    > caml/opnames.h
 
 # caml/jumptbl.h is required only if you have GCC 2.0 or later
 caml/jumptbl.h : caml/instruct.h

@@ -339,6 +339,3 @@ let init () =
   Hashtbl.reset floating_table;
   Hashtbl.reset pre_extra_table;
   Hashtbl.reset post_extra_table
-
-
-

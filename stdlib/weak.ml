@@ -15,15 +15,15 @@
 
 type 'a t;;
 
-external create: int -> 'a t = "caml_weak_create";;
+external create : int -> 'a t = "caml_weak_create";;
 
 let length x = Obj.size(Obj.repr x) - 1;;
 
 external set : 'a t -> int -> 'a option -> unit = "caml_weak_set";;
-external get: 'a t -> int -> 'a option = "caml_weak_get";;
-external get_copy: 'a t -> int -> 'a option = "caml_weak_get_copy";;
-external check: 'a t -> int -> bool = "caml_weak_check";;
-external blit: 'a t -> int -> 'a t -> int -> int -> unit = "caml_weak_blit";;
+external get : 'a t -> int -> 'a option = "caml_weak_get";;
+external get_copy : 'a t -> int -> 'a option = "caml_weak_get_copy";;
+external check : 'a t -> int -> bool = "caml_weak_check";;
+external blit : 'a t -> int -> 'a t -> int -> int -> unit = "caml_weak_blit";;
 (* blit: src srcoff dst dstoff len *)
 
 let fill ar ofs len x =

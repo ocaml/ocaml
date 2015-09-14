@@ -255,7 +255,8 @@ let file_not_found_in_paths paths name =
     (String.concat "\n" paths)
 
 let tag_not_handled tag = "Tag @"^tag^" not handled by this generator"
-let should_escape_at_sign = "The character @ has a special meaning in ocamldoc comments, for commands such as @raise or @since. If you want to write a single @, you must escape it as \\@."
+let should_escape_at_sign = "The character @ has a special meaning in ocamldoc comments, for commands such as @raise or @since. \
+If you want to write a single @, you must escape it as \\@."
 let bad_tree = "Incorrect tree structure."
 let not_a_valid_tag s = s^" is not a valid tag."
 let fun_without_param f = "Function "^f^" has no parameter.";;
@@ -293,7 +294,8 @@ let module_type_not_found_in_typedtree mt = "Module type "^mt^" was not found in
 let module_not_found_in_typedtree m = "Module "^m^" was not found in typed tree."
 let class_not_found_in_typedtree c = "Class "^c^" was not found in typed tree."
 let class_type_not_found_in_typedtree ct = "Class type "^ct^" was not found in typed tree."
-let inherit_classexp_not_found_in_typedtree n = "Inheritance class expression number "^(string_of_int n)^" was not found in typed tree."
+let inherit_classexp_not_found_in_typedtree n =
+  "Inheritance class expression number "^(string_of_int n)^" was not found in typed tree."
 let attribute_not_found_in_typedtree att = "Class attribute "^att^" was not found in typed tree."
 let method_not_found_in_typedtree met = "Class method "^met^" was not found in typed tree."
 let misplaced_comment file pos =

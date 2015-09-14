@@ -53,7 +53,8 @@ exception Error_forward of Location.error
 open Typedtree
 
 let ctyp desc typ env loc =
-  { ctyp_desc = desc; ctyp_type = typ; ctyp_loc = loc; ctyp_env = env; ctyp_attributes = [] }
+  { ctyp_desc = desc; ctyp_type = typ; ctyp_loc = loc; ctyp_env = env;
+    ctyp_attributes = [] }
 
                        (**********************)
                        (*  Useful constants  *)
@@ -373,7 +374,9 @@ let add_val env loc lab (mut, virt, ty) val_sig =
 let rec class_type_field env self_type meths
     (fields, val_sig, concr_meths, inher) ctf =
   let loc = ctf.pctf_loc in
-  let mkctf desc = { ctf_desc = desc; ctf_loc = loc; ctf_attributes = ctf.pctf_attributes } in
+  let mkctf desc =
+    { ctf_desc = desc; ctf_loc = loc; ctf_attributes = ctf.pctf_attributes }
+  in
   match ctf.pctf_desc with
     Pctf_inherit sparent ->
       let parent = class_type env sparent in
@@ -525,7 +528,9 @@ let rec class_field self_loc cl_num self_type meths vars
      local_meths, local_vals)
   cf =
   let loc = cf.pcf_loc in
-  let mkcf desc = { cf_desc = desc; cf_loc = loc; cf_attributes = cf.pcf_attributes } in
+  let mkcf desc =
+    { cf_desc = desc; cf_loc = loc; cf_attributes = cf.pcf_attributes }
+  in
   match cf.pcf_desc with
     Pcf_inherit (ovf, sparent, super) ->
       let parent = class_expr cl_num val_env par_env sparent in
@@ -1005,10 +1010,10 @@ and class_expr cl_num val_env met_env scl =
         List.exists (fun l -> l <> Nolabel) labels &&
         begin
           Location.prerr_warning
-	    cl.cl_loc
-	    (Warnings.Labels_omitted
-	       (List.map Printtyp.string_of_label
-			 (List.filter ((<>) Nolabel) labels)));
+            cl.cl_loc
+            (Warnings.Labels_omitted
+               (List.map Printtyp.string_of_label
+                         (List.filter ((<>) Nolabel) labels)));
           true
         end
       in
@@ -1056,8 +1061,9 @@ and class_expr cl_num val_env met_env scl =
                   Some (option_some arg)
               with Not_found ->
                 sargs, more_sargs,
-                if Btype.is_optional l &&
-                  (List.mem_assoc Nolabel sargs || List.mem_assoc Nolabel more_sargs)
+                if Btype.is_optional l
+                   && (List.mem_assoc Nolabel sargs
+                       || List.mem_assoc Nolabel more_sargs)
                 then
                   Some (option_none ty0 Location.none)
                 else None
@@ -1417,7 +1423,8 @@ let class_infos define_class kind
         (fun name (mut, vr, ty) l -> if vr = Virtual then name :: l else l)
         sign.csig_vars [] in
     if mets <> []  || vals <> [] then
-      raise(Error(cl.pci_loc, env, Virtual_class(define_class, false, mets, vals)));
+      raise(Error(cl.pci_loc, env, Virtual_class(define_class, false, mets,
+                                                 vals)));
   end;
 
   (* Misc. *)
@@ -1662,7 +1669,9 @@ let rec unify_parents env ty cl =
   | Tcl_constraint (cl, _, _, _, _) -> unify_parents env ty cl
 and unify_parents_struct env ty st =
   List.iter
-    (function {cf_desc = Tcf_inherit (_, cl, _, _, _)} -> unify_parents env ty cl
+    (function
+      | {cf_desc = Tcf_inherit (_, cl, _, _, _)} ->
+          unify_parents env ty cl
       | _ -> ())
     st.cstr_fields
 

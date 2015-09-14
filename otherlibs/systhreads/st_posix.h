@@ -348,7 +348,8 @@ static void * caml_thread_tick(void * arg)
    The reason for the omission is that Android (GUI) applications
    are not supposed to fork at all, however this workaround is still
    included in case OCaml is used for an Android CLI utility. */
-int pthread_atfork(void (*prepare)(void), void (*parent)(void), void (*child)(void));
+int pthread_atfork(void (*prepare)(void), void (*parent)(void),
+                   void (*child)(void));
 #endif
 
 static int st_atfork(void (*fn)(void))

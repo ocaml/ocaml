@@ -17,7 +17,8 @@ let both l =
     [ make_set compare; make_set (fun x y -> compare y x) ]
 
 let () =
-  print_endline (String.concat "  " (List.map (String.concat "/") (both ["abc";"xyz";"def"])))
+  print_endline (String.concat "  " (List.map (String.concat "/")
+                                              (both ["abc";"xyz";"def"])))
 
 
 (* Hiding the internal representation *)
@@ -133,7 +134,8 @@ end = struct
     | Pair p ->
         let module P = (val p : PAIR with type t = s) in
         let (x1, x2) = TypEq.apply P.eq x in
-        Printf.sprintf "(%s,%s)" (Print.to_string P.t1 x1) (Print.to_string P.t2 x2)
+        Printf.sprintf "(%s,%s)" (Print.to_string P.t1 x1)
+                       (Print.to_string P.t2 x2)
 end
 
 let () =

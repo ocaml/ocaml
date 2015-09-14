@@ -157,7 +157,9 @@ let load_lambda ppf lam =
     fprintf ppf "%a%a@."
     Printinstr.instrlist init_code
     Printinstr.instrlist fun_code;
-  let (code, code_size, reloc, events) = Emitcode.to_memory init_code fun_code in
+  let (code, code_size, reloc, events) =
+    Emitcode.to_memory init_code fun_code
+  in
   Meta.add_debug_info code code_size [| events |];
   let can_free = (fun_code = []) in
   let initial_symtable = Symtable.current_state() in
@@ -500,7 +502,7 @@ let run_script ppf name args =
   Obj.truncate (Obj.repr Sys.argv) len;
   Arg.current := 0;
   Compmisc.init_path ~dir:(Filename.dirname name) true;
-                     (* Note: would use [Filename.abspath] here, if we had it. *)
+                   (* Note: would use [Filename.abspath] here, if we had it. *)
   toplevel_env := Compmisc.initial_env();
   Sys.interactive := false;
   let explicit_name =

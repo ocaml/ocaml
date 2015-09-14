@@ -466,8 +466,10 @@ let enter_orpat_variables loc env  p1_vs p2_vs =
           (x2,x1)::unify_vars rem1 rem2
           end
       | [],[] -> []
-      | (x,_,_,_,_)::_, [] -> raise (Error (loc, env, Orpat_vars (x, vars p2_vs)))
-      | [],(y,_,_,_,_)::_  -> raise (Error (loc, env, Orpat_vars (y, vars p1_vs)))
+      | (x,_,_,_,_)::_, [] ->
+          raise (Error (loc, env, Orpat_vars (x, vars p2_vs)))
+      | [],(y,_,_,_,_)::_  ->
+          raise (Error (loc, env, Orpat_vars (y, vars p1_vs)))
       | (x,_,_,_,_)::_, (y,_,_,_,_)::_ ->
           let err =
             if Ident.name x < Ident.name y
@@ -1644,7 +1646,8 @@ let create_package_type loc env (p, l) =
        Exp.letmodule ~loc:sexp.pexp_loc ~attrs:[mknoloc "#modulepat",PStr []]
          name
          (Mod.unpack ~loc
-            (Exp.ident ~loc:name.loc (mkloc (Longident.Lident name.txt) name.loc)))
+            (Exp.ident ~loc:name.loc (mkloc (Longident.Lident name.txt)
+                                            name.loc)))
          sexp
      )
     sexp unpacks
@@ -2513,7 +2516,8 @@ and type_expect_ ?in_function ?(recarg=Rejected) env sexp ty_expected =
             | Val_ivar (Mutable, _) -> name::li
             | _ -> li in
           let valid_vars = Env.fold_values collect_vars None env [] in
-          raise(Error(loc, env, Unbound_instance_variable (lab.txt, valid_vars)))
+          raise(Error(loc, env,
+                      Unbound_instance_variable (lab.txt, valid_vars)))
       end
   | Pexp_override lst ->
       let _ =
@@ -2541,7 +2545,8 @@ and type_expect_ ?in_function ?(recarg=Rejected) env sexp ty_expected =
             with
               Not_found ->
                 let vars = Vars.fold (fun var _ li -> var::li) !vars [] in
-                raise(Error(loc, env, Unbound_instance_variable (lab.txt, vars)))
+                raise(Error(loc, env,
+                            Unbound_instance_variable (lab.txt, vars)))
             end
           in
           let modifs = List.map type_override lst in
@@ -2912,7 +2917,8 @@ and type_format loc str env =
           let lid_loc = mk_lid_loc (Longident.Lident "Some") in
           mk_exp_loc (Pexp_construct (lid_loc, Some (mk_int n)))
       and mk_fmtty : type a b c d e f g h i j k l .
-          (a, b, c, d, e, f, g, h, i, j, k, l) fmtty_rel -> Parsetree.expression =
+          (a, b, c, d, e, f, g, h, i, j, k, l) fmtty_rel -> Parsetree.expression
+          =
       fun fmtty -> match fmtty with
         | Char_ty rest      -> mk_constr "Char_ty"      [ mk_fmtty rest ]
         | String_ty rest    -> mk_constr "String_ty"    [ mk_fmtty rest ]
@@ -3123,7 +3129,8 @@ and type_argument ?recarg env sarg ty_expected' ty_expected =
     | _ -> false
   in
   match expand_head env ty_expected' with
-    {desc = Tarrow(Nolabel,ty_arg,ty_res,_); level = lv} when is_inferred sarg ->
+    {desc = Tarrow(Nolabel,ty_arg,ty_res,_); level = lv}
+    when is_inferred sarg ->
       (* apply optional arguments when expected type is "" *)
       (* we must be very careful about not breaking the semantics *)
       if !Clflags.principal then begin_def ();
@@ -3274,10 +3281,10 @@ and type_application env funct sargs =
       List.for_all (fun (l,_) -> l = Nolabel) sargs &&
       List.exists (fun l -> l <> Nolabel) labels &&
       (Location.prerr_warning
-	 funct.exp_loc
-	 (Warnings.Labels_omitted
-	    (List.map Printtyp.string_of_label
-		      (List.filter ((<>) Nolabel) labels)));
+         funct.exp_loc
+         (Warnings.Labels_omitted
+            (List.map Printtyp.string_of_label
+                      (List.filter ((<>) Nolabel) labels)));
        true)
     end
   in
@@ -3344,7 +3351,8 @@ and type_application env funct sargs =
           with Not_found ->
             sargs, more_sargs,
             if optional = Optional &&
-              (List.mem_assoc Nolabel sargs || List.mem_assoc Nolabel more_sargs)
+              (List.mem_assoc Nolabel sargs
+               || List.mem_assoc Nolabel more_sargs)
             then begin
               may_warn funct.exp_loc
                 (Warnings.Without_principality "eliminated optional argument");
@@ -3374,7 +3382,9 @@ and type_application env funct sargs =
     (* Special case for ignore: avoid discarding warning *)
     Texp_ident (_, _, {val_kind=Val_prim{Primitive.prim_name="%ignore"}}),
     [Nolabel, sarg] ->
-      let ty_arg, ty_res = filter_arrow env (instance env funct.exp_type) Nolabel in
+      let ty_arg, ty_res =
+        filter_arrow env (instance env funct.exp_type) Nolabel
+      in
       let exp = type_expect env sarg ty_arg in
       begin match (expand_head env exp.exp_type).desc with
       | Tarrow _ ->
@@ -3884,7 +3894,8 @@ let report_error env ppf = function
   | Or_pattern_type_clash (id, trace) ->
       report_unification_error ppf env trace
         (function ppf ->
-          fprintf ppf "The variable %s on the left-hand side of this or-pattern has type" (Ident.name id))
+          fprintf ppf "The variable %s on the left-hand side of this \
+                       or-pattern has type" (Ident.name id))
         (function ppf ->
           fprintf ppf "but on the right-hand side it has type")
   | Multiply_bound_variable name ->
@@ -4017,7 +4028,8 @@ let report_error env ppf = function
   | Abstract_wrong_label (l, ty) ->
       let label_mark = function
         | Nolabel -> "but its first argument is not labelled"
-        | l -> sprintf "but its first argument is labelled %s" (prefixed_label_name l) in
+        | l -> sprintf "but its first argument is labelled %s"
+                       (prefixed_label_name l) in
       reset_and_mark_loops ty;
       fprintf ppf "@[<v>@[<2>This function should have type@ %a@]@,%s@]"
       type_expr ty (label_mark l)

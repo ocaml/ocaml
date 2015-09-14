@@ -69,7 +69,7 @@
   addi 2, 2, (.TOC. - 0b)@l; \
   .localentry name, . - 0b
 #endif
-        
+
 FUNCTION(call_gen_code)
     /* Allocate and link stack frame */
         stgu    1, -(WORD*18 + 8*18 + RESERVED_STACK)(1)

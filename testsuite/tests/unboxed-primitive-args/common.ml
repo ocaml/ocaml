@@ -61,7 +61,8 @@ let string_of : type a. a typ -> a -> string = function
   | Int32     -> Printf.sprintf "%ldl"
   | Int64     -> Printf.sprintf "%LdL"
   | Nativeint -> Printf.sprintf "%ndn"
-  | Float     -> fun f -> Printf.sprintf "float_of_bits 0x%LxL" (Int64.bits_of_float f)
+  | Float     ->
+      fun f -> Printf.sprintf "float_of_bits 0x%LxL" (Int64.bits_of_float f)
 
 let rec arity : type a. a proto -> int = function
   | Ret _ -> 0
@@ -129,8 +130,8 @@ module Buffer = struct
     | Nativeint -> set_nativeint
     | Float     -> set_float
 
-  (* This is almost a memcpy except that we use get/set which should ensure that the
-     values in [dst] don't overflow. *)
+  (* This is almost a memcpy except that we use get/set which should
+     ensure that the values in [dst] don't overflow. *)
   let copy_args ~src ~dst proto =
     let rec loop : type a. a proto -> int -> unit = fun proto arg ->
       match proto with
@@ -190,6 +191,8 @@ let print_hex ~sizes ~arity buffer =
     done;
   done
 
+let printed_mismatches = ref 0
+
 let print_mismatch name proto ~ocaml_buffer ~c_buffer =
   let printf = Printf.printf in
   printf "Mismatch for %s\n" name;
@@ -209,7 +212,12 @@ let print_mismatch name proto ~ocaml_buffer ~c_buffer =
   let sizes = sizes proto |> Array.of_list in
   let arity = arity proto in
   printf "ocaml side : "; print_hex ~sizes ~arity ocaml_buffer; printf "\n";
-  printf "c side     : "; print_hex ~sizes ~arity     c_buffer; printf "\n"
+  printf "c side     : "; print_hex ~sizes ~arity     c_buffer; printf "\n";
+  incr printed_mismatches;
+  if !printed_mismatches >= 1000 then begin
+    printf "Output truncated at 1000 failures.";
+    exit 0
+  end
 
 external cleanup_normal
   :  int -> int -> int -> int -> int -> int -> int -> int
