@@ -252,6 +252,11 @@ let primitive ppf = function
   | Pbbswap(bi) -> print_boxed_integer "bswap" ppf bi
   | Pint_as_pointer -> fprintf ppf "int_as_pointer"
 
+let string_of_primitive prim =
+  ignore (Format.flush_str_formatter ());
+  primitive Format.str_formatter prim;
+  "P" ^ (Format.flush_str_formatter ())
+
 let rec lam ppf = function
   | Lvar id ->
       Ident.print ppf id
