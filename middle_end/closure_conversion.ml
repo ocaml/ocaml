@@ -148,8 +148,7 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
     Flambda.create_let set_of_closures_var set_of_closures
       (name_expr (Project_closure (project_closure))
         ~name:("project_closure_" ^ name))
-  | Lapply (funct, args, _loc) ->
-    (* CR-soon mshinwell: the location should probably not be lost. *)
+  | Lapply (funct, args, loc) ->
     Lift_code.lifting_helper (close_list t env args)
       ~evaluation_order:`Right_to_left
       ~name:"apply_arg"
@@ -161,7 +160,7 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
               func = func_var;
               args;
               kind = Indirect;
-              dbg = Debuginfo.none;
+              dbg = Debuginfo.from_location Dinfo_call loc.apply_loc;
             })))
   | Lletrec (defs, body) ->
     let env =
