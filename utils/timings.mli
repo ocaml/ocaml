@@ -26,6 +26,7 @@ type part =
   | Flambda_backend of file
   | Cmm of file
   | Compile_phrases of file
+  | Regalloc
 
 val reset : unit -> unit
 (** erase all recorded times *)

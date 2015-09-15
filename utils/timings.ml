@@ -23,6 +23,7 @@ type part =
   | Flambda_backend of file
   | Cmm of file
   | Compile_phrases of file
+  | Regalloc
 
 let timings : (part, float * float option) Hashtbl.t = Hashtbl.create 20
 let reset () = Hashtbl.clear timings
@@ -94,6 +95,7 @@ let part_name = function
   | Flambda_pass (pass, file) -> Printf.sprintf "flambda-pass-%s(%s)" pass file
   | Cmm file -> Printf.sprintf "cmm(%s)" file
   | Compile_phrases file -> Printf.sprintf "compile_phrases(%s)" file
+  | Regalloc -> Printf.sprintf "regalloc"
 
 let timings_list () =
   let l = Hashtbl.fold (fun part times l -> (part, times) :: l) timings [] in
