@@ -547,6 +547,9 @@ and free_variables_named ?ignore_uses_in_project_var named =
   !free
 
 let create_let var defining_expr body : t =
+  (* CR mshinwell: change this to check [defining_expr] and if it is
+       Expr (let v = named in v)
+     replace it with [named]. *)
   Let {
     var;
     defining_expr;
