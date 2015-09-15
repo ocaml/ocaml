@@ -349,9 +349,12 @@ let is_definitely_immutable t =
 let get_field t ~field_index:i =
   match t.descr with
   | Value_block (_tag, fields) ->
-    if i >= 0 && i < Array.length fields
-    then fields.(i)
-    else value_unknown
+    if i >= 0 && i < Array.length fields then
+      fields.(i)
+    else
+      Misc.fatal_errorf "Simple_value_approx.get_field: attempt to project \
+          block approximation at field %d, but it only has %d fields"
+        i (Array.length fields)
   | Value_bottom
   | Value_int _ | Value_char _ | Value_constptr _ ->
     (* Something seriously wrong is happening: either the user is doing

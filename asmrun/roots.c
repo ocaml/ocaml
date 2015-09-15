@@ -24,7 +24,6 @@
 #include "caml/roots.h"
 #include <string.h>
 #include <stdio.h>
-#include <assert.h>
 
 /* Roots registered from C functions */
 
@@ -245,42 +244,27 @@ void caml_oldify_local_roots (void)
   value * root;
   struct caml__roots_block *lr;
   link *lnk;
-  int gc_root;
 
   /* The global roots */
   for (i = caml_globals_scanned;
        i <= caml_globals_inited && caml_globals[i] != 0;
        i++) {
-    gc_root = 0;
     for(glob = caml_globals[i]; *glob != 0; glob++) {
-      assert(Is_block(*glob) && Tag_val(*glob) < No_scan_tag);
       for (j = 0; j < Wosize_val(*glob); j++){
-        printf("i %d gc %d (glob %p) j %d field_addr %p field %p...", i, gc_root, (void*) glob, j,
-          (void*) &Field(*glob,j),
-          (void*) Field(*glob, j));fflush(stdout);
         Oldify (&Field (*glob, j));
-        printf("done\n");
-        fflush(stdout);
       }
-      gc_root++;
     }
   }
   caml_globals_scanned = caml_globals_inited;
 
-  printf("scanning dyn global roots...");fflush(stdout);
-
   /* Dynamic global roots */
   iter_list(caml_dyn_globals, lnk) {
     for(glob = (value *) lnk->data; *glob != 0; glob++) {
-      assert(Is_block(*glob) && Tag_val(*glob) < No_scan_tag);
       for (j = 0; j < Wosize_val(*glob); j++){
         Oldify (&Field (*glob, j));
       }
     }
   }
-
-  printf("done\n");
-  printf("scanning stack...");fflush(stdout);
 
   /* The stack and local roots */
   sp = caml_bottom_of_stack;
@@ -340,7 +324,6 @@ void caml_oldify_local_roots (void)
       }
     }
   }
-  printf("done\n");fflush(stdout);
   /* Global C roots */
   caml_scan_global_young_roots(&caml_oldify_one);
   /* Finalised values */
@@ -365,7 +348,6 @@ void caml_do_roots (scanning_action f)
   /* The global roots */
   for (i = 0; caml_globals[i] != 0; i++) {
     for(glob = caml_globals[i]; *glob != 0; glob++) {
-      assert(Is_block(*glob) && Tag_val(*glob) < No_scan_tag);
       for (j = 0; j < Wosize_val(*glob); j++)
         f (Field (*glob, j), &Field (*glob, j));
     }
@@ -374,7 +356,6 @@ void caml_do_roots (scanning_action f)
   /* Dynamic global roots */
   iter_list(caml_dyn_globals, lnk) {
     for(glob = (value *) lnk->data; *glob != 0; glob++) {
-      assert(Is_block(*glob) && Tag_val(*glob) < No_scan_tag);
       for (j = 0; j < Wosize_val(*glob); j++){
         f (Field (*glob, j), &Field (*glob, j));
       }

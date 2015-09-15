@@ -495,6 +495,8 @@ let lambda_to_flambda ~backend ~module_ident ~size lam =
   in
   (* The global module block is built by accessing the fields of all the
      introduced symbols. *)
+  (* CR mshinwell for mshinwell: Add a comment describing how modules are
+     compiled. *)
   let fields =
     Array.init size (fun pos ->
       let pos_str = string_of_int pos in
