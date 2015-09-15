@@ -423,6 +423,8 @@ module With_free_variables : sig
       for [Let] is O(1)). *)
   val of_expr : expr -> expr t
 
+  val of_named : named -> named t
+
   (** Takes the time required to calculate the free variables of the given
       [expr]. *)
   val create_let_reusing_defining_expr

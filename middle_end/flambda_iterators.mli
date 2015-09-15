@@ -24,6 +24,12 @@ val apply_on_subexpressions
   -> Flambda.t
   -> unit
 
+val map_subexpressions
+   : (Flambda.t -> Flambda.t)
+  -> (Variable.t -> Flambda.named -> Flambda.named)
+  -> Flambda.t
+  -> Flambda.t
+
 val iter
    : (Flambda.t -> unit)
   -> (Flambda.named -> unit)
