@@ -440,7 +440,7 @@ static void extern_rec(value v)
       } else if (d < 0x10000) {
         writecode16(CODE_SHARED16, d);
 #ifdef ARCH_SIXTYFOUR
-      } else if (d >= (uintnat)1 >> 32) {
+      } else if (d >= (uintnat)1 << 32) {
         writecode64(CODE_SHARED64, d);
 #endif
       } else {
