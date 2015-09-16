@@ -702,6 +702,53 @@ module With_free_variables = struct
     | Named (_, free_vars) -> free_vars
 end
 
+let fold_lets_option
+    t ~init
+    ~(for_defining_expr:('a -> Variable.t -> named -> 'a * Variable.t * named))
+    ~for_last_body
+    ~(filter_defining_expr:('b -> Variable.t -> named -> Variable.Set.t ->
+                            'b * Variable.t * named option)) =
+  let finish ~last_body ~acc ~rev_lets =
+    let module W = With_free_variables in
+    let acc, t =
+      List.fold_left (fun (acc, t) (var, defining_expr) ->
+          let free_vars_of_body = W.free_variables t in
+          let acc, var, defining_expr =
+            filter_defining_expr acc var defining_expr free_vars_of_body
+          in
+          match defining_expr with
+          | None -> acc, t
+          | Some defining_expr ->
+            let let_expr =
+              W.create_let_reusing_body var defining_expr t
+            in
+            acc, W.of_expr let_expr)
+        (acc, W.of_expr last_body)
+        rev_lets
+    in
+    W.contents t, acc
+  in
+  let rec loop (t : t) ~acc ~rev_lets =
+    match t with
+    | Let { var; defining_expr; body = (Let _) as body; _ } ->
+      let acc, var, defining_expr =
+        for_defining_expr acc var defining_expr
+      in
+      let rev_lets = (var, defining_expr) :: rev_lets in
+      loop body ~acc ~rev_lets
+    | Let { var; defining_expr; body = last_body; _ } ->
+      let acc, var, defining_expr =
+        for_defining_expr acc var defining_expr
+      in
+      let rev_lets = (var, defining_expr) :: rev_lets in
+      let last_body, acc = for_last_body acc last_body in
+      finish ~last_body ~acc ~rev_lets
+    | t ->
+      let last_body, acc = for_last_body acc t in
+      finish ~last_body ~acc ~rev_lets
+  in
+  loop t ~acc:init ~rev_lets:[]
+
 let create_function_declaration ~params ~body ~stub ~dbg
       : function_declaration =
   { params;

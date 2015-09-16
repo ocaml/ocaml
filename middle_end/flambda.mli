@@ -376,6 +376,17 @@ val fold_lets
   -> 'b * t
 *)
 
+(** Like [fold_lets], but can remove and rename definition before
+    reintroduction. *)
+val fold_lets_option
+   : t
+  -> init:'a
+  -> for_defining_expr:('a -> Variable.t -> named -> 'a * Variable.t * named)
+  -> for_last_body:('a -> t -> t * 'b)
+  -> filter_defining_expr:('b -> Variable.t -> named -> Variable.Set.t ->
+                           'b * Variable.t * named option)
+  -> t * 'b
+
 (** Like [fold_lets], but just a map. *)
 val map_lets
    : t
