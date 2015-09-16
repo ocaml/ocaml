@@ -36,7 +36,9 @@ let rec split_let_k : type t. Flambda.t -> (split_let_result -> t) -> t =
   fun (expr:Flambda.t) (k:split_let_result -> t) (* continuation *) ->
   match expr with
   | Let { body = Var _; _ } -> k None
-  | Let { var; defining_expr = named; body; _ } when should_copy named ->
+  | Let { var; defining_expr = named; body;
+          free_vars_of_defining_expr = named_free_vars; _ }
+      when should_copy named ->
     (* Those are the cases that are better to duplicate than to lift.
        Symbol and Pfield must be duplicated to avoid relifting the
        code introduced to lift a variable (and ending up looping infinitely). *)
@@ -50,7 +52,6 @@ let rec split_let_k : type t. Flambda.t -> (split_let_result -> t) -> t =
       Flambda.create_let fresh named expr
     in
     let reintroduce_lets ~def_free_vars ~body_free_vars ~def ~body =
-      let named_free_vars = Flambda.free_variables_named named in
       match Variable.Set.mem var def_free_vars, Variable.Set.mem var body_free_vars with
       | false, false ->
         (* Unused everywhere: drop everywhere *)
@@ -96,13 +97,11 @@ let rec split_let_k : type t. Flambda.t -> (split_let_result -> t) -> t =
          | false, false ->
            Some (def_free_vars, body_free_vars, Initialisation (init_var, sym, tag, fields), expr)
          | false, true ->
-           let named_free_vars = Flambda.free_variables_named named in
            let body_free_vars = Variable.Set.union body_free_vars named_free_vars in
            Some (def_free_vars, body_free_vars,
                  Initialisation (init_var, sym, tag, fields),
                  Flambda.create_let var named expr)
          | true, (true | false) ->
-           let named_free_vars = Flambda.free_variables_named named in
            let def_free_vars = Variable.Set.union def_free_vars named_free_vars in
            let body_free_vars = Variable.Set.union body_free_vars named_free_vars in
            let fields =
