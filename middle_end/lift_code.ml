@@ -111,15 +111,24 @@ and lift_lets_named _var (named:Flambda.named) : Flambda.named =
   | Project_var _ | Prim _ ->
     named
 
+(* CR mshinwell for pchambart: This fails on Core_kernel.  I dumped the
+   output using the code below, and diffed it, and it was identical...
+   Maybe something to do with using the "wrong" equality function?
 let lift_lets program =
   let program'' =
     Flambda_iterators.map_exprs_at_toplevel_of_program program ~f:lift_lets_expr
   in
   if !Clflags.full_flambda_invariant_check then begin
     let program' = lift_lets program in
-    assert(program' = program'')
+    if not (program' = program'') then begin
+      Misc.fatal_errorf "Lift_code.lift_lets: second lift_lets produced \
+          a different result.  First: %a Second %a"
+        Flambda.print_program program'
+        Flambda.print_program program''
+    end
   end;
   program''
+*)
 
 let lifting_helper exprs ~evaluation_order ~create_body ~name =
   let vars, lets =

@@ -132,7 +132,9 @@ let print_timings = ref false          (* -timings *)
 
 (* CR mshinwell: change to [false] before merge, and finish off
    command line arg support *)
-let full_flambda_invariant_check = ref true
+let full_flambda_invariant_check =
+  try ignore (Sys.getenv "DISABLE_FULL_FLAMBDA_INVARIANT_CHECK"); ref false
+  with _ -> ref true
 
 type color_setting = Auto | Always | Never
 let parse_color_setting = function
