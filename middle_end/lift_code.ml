@@ -16,24 +16,6 @@ module C = Inlining_cost
 
 type lifter = Flambda.program -> Flambda.program
 
-let lift_lets_expr tree =
-  let module W = Flambda.With_free_variables in
-  let rec aux (expr : Flambda.t) : Flambda.t =
-    match expr with
-    | Let ({ var = v1;
-        defining_expr = Expr (Let ({ var = v2; _ } as let2)); _ }  as let1) ->
-      let body1 = W.of_body_of_let let1 in
-      let body2 = W.of_body_of_let let2 in
-      let inner_let = W.create_let_reusing_both v1 (W.expr body2) body1 in
-      let def2 = W.of_defining_expr_of_let let2 in
-      W.create_let_reusing_defining_expr v2 def2 (aux inner_let)
-    | e -> e
-  in
-  Flambda_iterators.map aux (fun (named : Flambda.named) -> named) tree
-
-let lift_lets program =
-  Flambda_iterators.map_exprs_at_toplevel_of_program program ~f:lift_lets_expr
-
 let rebuild_let
     (defs : (Variable.t * Flambda.named Flambda.With_free_variables.t) list)
     (body : Flambda.t) =
@@ -110,6 +92,9 @@ and lift_lets_named _var (named:Flambda.named) : Flambda.named =
   | Read_symbol_field (_, _) | Project_closure _ | Move_within_set_of_closures _
   | Project_var _ | Prim _ ->
     named
+
+let lift_lets program =
+  Flambda_iterators.map_exprs_at_toplevel_of_program program ~f:lift_lets_expr
 
 (* CR mshinwell for pchambart: This fails on Core_kernel.  I dumped the
    output using the code below, and diffed it, and it was identical...
