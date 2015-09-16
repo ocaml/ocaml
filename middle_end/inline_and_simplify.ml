@@ -757,15 +757,6 @@ and simplify_direct env r (tree : Flambda.t) : Flambda.t * R.t =
   | Let _ ->
     let for_defining_expr (env, r) var defining_expr =
       let defining_expr, r = simplify_named env r defining_expr in
-      (* When [defining_expr] is really a [Flambda.named] rather than an
-         [Flambda.t], squash any intermediate [let], or we will never eliminate
-         certain cases (e.g. when a variable is simplified to a constant). *)
-      let defining_expr =
-        match defining_expr with
-        | Expr (Let { var = var1; defining_expr; body = Var var2; _ })
-          when Variable.equal var1 var2 -> defining_expr
-        | _ -> defining_expr
-      in
       let var, sb = Freshening.add_variable (E.freshening env) var in
       let env = E.set_freshening env sb in
       let env = E.add env var (R.approx r) in

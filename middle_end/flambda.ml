@@ -547,14 +547,18 @@ and free_variables_named ?ignore_uses_in_project_var named =
   !free
 
 let create_let var defining_expr body : t =
-  (* CR mshinwell: change this to check [defining_expr] and if it is
-       Expr (let v = named in v)
-     replace it with [named]. *)
+  let defining_expr, free_vars_of_defining_expr =
+    match defining_expr with
+    | Expr (Let { var = var1; defining_expr; body = Var var2;
+          free_vars_of_defining_expr; _ }) when Variable.equal var1 var2 ->
+      defining_expr, free_vars_of_defining_expr
+    | _ -> defining_expr, free_variables_named defining_expr
+  in
   Let {
     var;
     defining_expr;
     body;
-    free_vars_of_defining_expr = free_variables_named defining_expr;
+    free_vars_of_defining_expr;
     free_vars_of_body = free_variables body;
   }
 
