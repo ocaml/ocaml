@@ -25,9 +25,17 @@ let should_copy (named:Flambda.named) =
   | _ ->
     false
 
-let rec split_let (expr:Flambda.t) =
+type split_let_result =
+  (Variable.Set.t *
+   Variable.Set.t *
+   (Variable.t * Symbol.t * Tag.t * Flambda.t list, Flambda.t) kind *
+   Flambda.t)
+    option
+
+let rec split_let_k : type t. Flambda.t -> (split_let_result -> t) -> t =
+  fun (expr:Flambda.t) (k:split_let_result -> t) (* continuation *) ->
   match expr with
-  | Let { body = Var _; _ } -> None
+  | Let { body = Var _; _ } -> k None
   | Let { var; defining_expr = named; body; _ } when should_copy named ->
     (* Those are the cases that are better to duplicate than to lift.
        Symbol and Pfield must be duplicated to avoid relifting the
@@ -69,62 +77,71 @@ let rec split_let (expr:Flambda.t) =
         def,
         Flambda.create_let var named body
     in
-    begin match split_let body with
-    | None -> None
-    | Some (def_free_vars, body_free_vars, Effect effect, expr) ->
-      let (def_free_vars, body_free_vars, effect, expr) =
-        reintroduce_lets ~def_free_vars ~body_free_vars ~def:effect ~body:expr
-      in
-      Some (def_free_vars, body_free_vars, Effect effect, expr)
-    | Some (def_free_vars, body_free_vars, Initialisation (init_var, sym, tag, [field]), expr) ->
-      let (def_free_vars, body_free_vars, field, expr) =
-        reintroduce_lets ~def_free_vars ~body_free_vars ~def:field ~body:expr
-      in
-      Some (def_free_vars, body_free_vars, Initialisation (init_var, sym, tag, [field]), expr)
-    | Some (def_free_vars, body_free_vars, Initialisation (init_var, sym, tag, fields), expr) ->
-      begin match Variable.Set.mem var def_free_vars, Variable.Set.mem var body_free_vars with
-      | false, false ->
-        Some (def_free_vars, body_free_vars, Initialisation (init_var, sym, tag, fields), expr)
-      | false, true ->
-        let named_free_vars = Flambda.free_variables_named named in
-        let body_free_vars = Variable.Set.union body_free_vars named_free_vars in
-        Some (def_free_vars, body_free_vars,
-              Initialisation (init_var, sym, tag, fields),
-              Flambda.create_let var named expr)
-      | true, (true | false) ->
-        let named_free_vars = Flambda.free_variables_named named in
-        let def_free_vars = Variable.Set.union def_free_vars named_free_vars in
-        let body_free_vars = Variable.Set.union body_free_vars named_free_vars in
-        let fields =
-          List.map copy_definition fields
-        in
-        Some (def_free_vars, body_free_vars,
-              Initialisation (init_var, sym, tag, fields),
-              Flambda.create_let var named expr)
-      end
-    end
+    (split_let_k body @@ fun res ->
+     let res =
+       match res with
+       | None -> None
+       | Some (def_free_vars, body_free_vars, Effect effect, expr) ->
+         let (def_free_vars, body_free_vars, effect, expr) =
+           reintroduce_lets ~def_free_vars ~body_free_vars ~def:effect ~body:expr
+         in
+         Some (def_free_vars, body_free_vars, Effect effect, expr)
+       | Some (def_free_vars, body_free_vars, Initialisation (init_var, sym, tag, [field]), expr) ->
+         let (def_free_vars, body_free_vars, field, expr) =
+           reintroduce_lets ~def_free_vars ~body_free_vars ~def:field ~body:expr
+         in
+         Some (def_free_vars, body_free_vars, Initialisation (init_var, sym, tag, [field]), expr)
+       | Some (def_free_vars, body_free_vars, Initialisation (init_var, sym, tag, fields), expr) ->
+         begin match Variable.Set.mem var def_free_vars, Variable.Set.mem var body_free_vars with
+         | false, false ->
+           Some (def_free_vars, body_free_vars, Initialisation (init_var, sym, tag, fields), expr)
+         | false, true ->
+           let named_free_vars = Flambda.free_variables_named named in
+           let body_free_vars = Variable.Set.union body_free_vars named_free_vars in
+           Some (def_free_vars, body_free_vars,
+                 Initialisation (init_var, sym, tag, fields),
+                 Flambda.create_let var named expr)
+         | true, (true | false) ->
+           let named_free_vars = Flambda.free_variables_named named in
+           let def_free_vars = Variable.Set.union def_free_vars named_free_vars in
+           let body_free_vars = Variable.Set.union body_free_vars named_free_vars in
+           let fields =
+             List.map copy_definition fields
+           in
+           Some (def_free_vars, body_free_vars,
+                 Initialisation (init_var, sym, tag, fields),
+                 Flambda.create_let var named expr)
+         end
+     in
+     k res)
   | Let { var; defining_expr = def; body; free_vars_of_body; } ->
     (* This [Let] is to be lifted (to either [Initialize_symbol] or
        [Effect]). *)
-    if Variable.Set.mem var free_vars_of_body then begin
-      let expr =
-        let var' = Variable.freshen var in
-        Flambda.create_let var' def (Var var')
-      in
-      let symbol = Flambda_utils.make_variable_symbol var in
-      let def_free_vars = Flambda.free_variables expr in
-      Some (def_free_vars, free_vars_of_body,
-            Initialisation (var, symbol, Tag.create_exn 0, [expr]), body)
-    end
-    else begin
-      let expr =
-        let var' = Variable.freshen var in
-        Flambda.create_let var' def (Var var')
-      in
-      let def_free_vars = Flambda.free_variables expr in
-      Some (def_free_vars, free_vars_of_body, Effect expr, body)
-    end
-  | _ -> None
+    let res =
+      if Variable.Set.mem var free_vars_of_body then begin
+        let expr =
+          let var' = Variable.freshen var in
+          Flambda.create_let var' def (Var var')
+        in
+        let symbol = Flambda_utils.make_variable_symbol var in
+        let def_free_vars = Flambda.free_variables expr in
+        Some (def_free_vars, free_vars_of_body,
+              Initialisation (var, symbol, Tag.create_exn 0, [expr]), body)
+      end
+      else begin
+        let expr =
+          let var' = Variable.freshen var in
+          Flambda.create_let var' def (Var var')
+        in
+        let def_free_vars = Flambda.free_variables expr in
+        Some (def_free_vars, free_vars_of_body, Effect expr, body)
+      end
+    in
+    k res
+  | _ -> k None
+
+and split_let expr =
+  split_let_k expr (fun x -> x)
 
 let introduce_symbols expr =
   let rec loop expr ~all_extracted_rev =
