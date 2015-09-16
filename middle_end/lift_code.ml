@@ -72,9 +72,9 @@ let rec lift_lets_expr (expr:Flambda.t) : Flambda.t =
   match expr with
   | Let let_expr ->
     let defs, body = extract_lets [] let_expr in
-    let defs = List.map lift_lets_named_with_free_variables defs in
+    let rev_defs = List.rev_map lift_lets_named_with_free_variables defs in
     let body = lift_lets_expr (W.contents body) in
-    rebuild_let defs body
+    rebuild_let (List.rev rev_defs) body
   | e ->
     Flambda_iterators.map_subexpressions
       lift_lets_expr
