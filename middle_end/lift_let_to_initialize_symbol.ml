@@ -34,6 +34,7 @@ type split_let_result =
 
 let rec split_let_k : type t. Flambda.t -> (split_let_result -> t) -> t =
   fun (expr:Flambda.t) (k:split_let_result -> t) (* continuation *) ->
+  let module W = Flambda.With_free_variables in
   match expr with
   | Let { body = Var _; _ } -> k None
   | Let { var; defining_expr = named; body;
@@ -113,14 +114,15 @@ let rec split_let_k : type t. Flambda.t -> (split_let_result -> t) -> t =
          end
      in
      k res)
-  | Let { var; defining_expr = def; body; free_vars_of_body; } ->
+  | Let ({ var; body; free_vars_of_body; _ } as let_expr) ->
+    let def = W.of_defining_expr_of_let let_expr in
     (* This [Let] is to be lifted (to either [Initialize_symbol] or
        [Effect]). *)
     let res =
       if Variable.Set.mem var free_vars_of_body then begin
         let expr =
           let var' = Variable.freshen var in
-          Flambda.create_let var' def (Var var')
+          W.create_let_reusing_defining_expr var' def (Var var')
         in
         let symbol = Flambda_utils.make_variable_symbol var in
         let def_free_vars = Flambda.free_variables expr in
@@ -130,7 +132,7 @@ let rec split_let_k : type t. Flambda.t -> (split_let_result -> t) -> t =
       else begin
         let expr =
           let var' = Variable.freshen var in
-          Flambda.create_let var' def (Var var')
+          W.create_let_reusing_defining_expr var' def (Var var')
         in
         let def_free_vars = Flambda.free_variables expr in
         Some (def_free_vars, free_vars_of_body, Effect expr, body)
