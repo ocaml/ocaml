@@ -130,6 +130,8 @@ let inline_branch_cost = ref 10        (* -inline-branch-cost *)
 
 let print_timings = ref false          (* -timings *)
 
+let unbox_closures = ref false          (* -unbox-closures *)
+
 (* CR mshinwell: change to [false] before merge, and finish off
    command line arg support *)
 let full_flambda_invariant_check =
