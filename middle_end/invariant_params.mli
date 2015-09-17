@@ -27,6 +27,7 @@
 *)
 val unchanging_params_in_recursion
    : Flambda.function_declarations
+  -> backend:(module Backend_intf.S)
   -> Variable.Set.t
 
 (* CR mshinwell for lwhite: think about whether this function should

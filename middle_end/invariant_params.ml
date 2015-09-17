@@ -11,9 +11,6 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(* CR mshinwell: this pass needs fixing in the same way as
-   Find_recursive_functions *)
-
 (* CR pchambart to pchambart: in fact partial application doesn't work because
    there are no 'known' partial application left: they are converted to
    applications new partial function declaration.
@@ -123,7 +120,8 @@ let transitive_closure state =
   in
   fp state
 
-let unchanging_params_in_recursion (decls : Flambda.function_declarations) =
+let unchanging_params_in_recursion (decls : Flambda.function_declarations)
+      ~backend =
   let escaping_functions = ref Variable.Set.empty in
   let relation = ref Variable.Pair.Map.empty in
   let variables_at_position =
@@ -142,7 +140,8 @@ let unchanging_params_in_recursion (decls : Flambda.function_declarations) =
     | Arguments set ->
         relation :=
           Variable.Pair.Map.add (callee, callee_arg)
-            (Arguments (Variable.Pair.Set.add (caller, caller_arg) set)) !relation
+            (Arguments (Variable.Pair.Set.add (caller, caller_arg) set))
+            !relation
   in
   let mark ~callee ~callee_arg =
     relation := Variable.Pair.Map.add (callee, callee_arg) Anything !relation
@@ -152,7 +151,8 @@ let unchanging_params_in_recursion (decls : Flambda.function_declarations) =
     | exception Not_found -> None (* not a recursive call *)
     | arr ->
         if callee_pos < Array.length arr then
-          (* ignore overapplied parameters: they are applied to another function *)
+          (* ignore overapplied parameters: they are applied to another
+             function *)
           Some arr.(callee_pos)
         else None
   in
@@ -196,12 +196,28 @@ let unchanging_params_in_recursion (decls : Flambda.function_declarations) =
         args
     | _ -> ()
   in
+  let fun_vars_via_symbols =
+    Flambda_utils.fun_vars_referenced_in_decls decls ~backend
+      ~only_via_symbols:()
+  in
   Variable.Map.iter (fun caller (decl : Flambda.function_declaration) ->
       Flambda_iterators.iter (check_expr ~caller)
         (fun (_ : Flambda.named) -> ())
         decl.body;
       Variable.Set.iter test_escape
-        (Flambda.free_variables ~ignore_uses_in_apply:() decl.body))
+        (* CR-soon mshinwell: we should avoid recomputing this, cache in
+           [function_declaration].  See also comment on
+           [only_via_symbols] in [Flambda_utils]. *)
+        (Flambda.free_variables ~ignore_uses_in_apply:() decl.body);
+      let fun_vars_via_symbols =
+        match Variable.Map.find caller fun_vars_via_symbols with
+        | fun_vars -> fun_vars
+        | exception Not_found ->
+          Misc.fatal_errorf "Expected to find fun_var %a in the output of \
+              [fun_vars_referenced_in_decls], but it is absent"
+            Variable.print caller
+      in
+      Variable.Set.iter test_escape fun_vars_via_symbols)
     decls.funs;
   let relation =
     Variable.Map.fold (fun func_var

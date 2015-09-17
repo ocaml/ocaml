@@ -546,6 +546,7 @@ and simplify_set_of_closures original_env r
   in
   let unchanging_params =
     Invariant_params.unchanging_params_in_recursion function_decls
+      ~backend:(E.backend env)
   in
   let value_set_of_closures : A.value_set_of_closures =
     { internal_value_set_of_closures with

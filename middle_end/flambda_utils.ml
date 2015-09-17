@@ -641,7 +641,10 @@ module Switch_storer =
       let make_key = make_key
     end)
 
-let fun_vars_referenced_in_decls
+(* CR-soon mshinwell: [only_via_symbols] is a bit of a hack for
+   [Invariant_params], which needs to ignore the uses in the function bodies
+   that occur in lhs-of-application position.  Try to improve this. *)
+let fun_vars_referenced_in_decls ?only_via_symbols
       (function_decls : Flambda.function_declarations) ~backend =
   let fun_vars = Variable.Map.keys function_decls.funs in
   let symbols_to_fun_vars =
@@ -655,17 +658,19 @@ let fun_vars_referenced_in_decls
   in
   Variable.Map.map (fun (func_decl : Flambda.function_declaration) ->
       let from_symbols =
-        Symbol.Set.fold (fun symbol fun_vars ->
+        Symbol.Set.fold (fun symbol fun_vars' ->
             match Symbol.Map.find symbol symbols_to_fun_vars with
-            | exception Not_found -> fun_vars
+            | exception Not_found -> fun_vars'
             | fun_var ->
               assert (Variable.Set.mem fun_var fun_vars);
-              Variable.Set.add fun_var fun_vars)
+              Variable.Set.add fun_var fun_vars')
           func_decl.free_symbols
           Variable.Set.empty
       in
       let from_variables =
-        Variable.Set.inter func_decl.free_variables fun_vars
+        match only_via_symbols with
+        | None -> Variable.Set.inter func_decl.free_variables fun_vars
+        | Some () -> Variable.Set.empty
       in
       Variable.Set.union from_symbols from_variables)
     function_decls.funs
