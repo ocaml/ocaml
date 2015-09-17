@@ -293,11 +293,11 @@ let make_closure_declaration ~id ~body ~params : Flambda.t =
       ~current_compilation_unit:compilation_unit
   in
   let set_of_closures =
-    let function_decls : Flambda.function_declarations =
-      { set_of_closures_id = Set_of_closures_id.create compilation_unit;
-        funs = Variable.Map.singleton id function_declaration;
-        compilation_unit;
-      }
+    let function_decls =
+      Flambda.create_function_declarations
+        ~set_of_closures_id:(Set_of_closures_id.create compilation_unit)
+        ~funs:(Variable.Map.singleton id function_declaration)
+        ~compilation_unit
     in
     Flambda.create_set_of_closures ~function_decls ~free_vars
       ~specialised_args:Variable.Map.empty

@@ -550,8 +550,8 @@ let introduce_free_variables_in_set_of_closures
       expr, subst
   in
   let function_decls : Flambda.function_declarations =
-    { function_decls with
-      funs = Variable.Map.mapi
+    Flambda.update_function_declarations function_decls
+      ~funs:(Variable.Map.mapi
           (fun _fun_var (ffun : Flambda.function_declaration) ->
 (*
              Format.printf "introduce in %a@."
@@ -577,8 +577,7 @@ let introduce_free_variables_in_set_of_closures
                ~body
                ~stub:ffun.stub
                ~dbg:ffun.dbg)
-          function_decls.funs;
-    }
+          function_decls.funs)
   in
   let free_vars =
     (* Keep only those that are not rewriten to constants *)

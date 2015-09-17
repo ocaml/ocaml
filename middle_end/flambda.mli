@@ -487,6 +487,11 @@ val create_function_declarations
   -> compilation_unit:Compilation_unit.t
   -> function_declarations
 
+val update_function_declarations
+   : function_declarations
+  -> funs:function_declaration Variable.Map.t
+  -> function_declarations
+
 val create_set_of_closures
    : function_decls:function_declarations
   -> free_vars:Variable.t Variable.Map.t

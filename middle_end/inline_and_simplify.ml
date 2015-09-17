@@ -541,7 +541,9 @@ and simplify_set_of_closures original_env r
     Variable.Map.filter (fun id _ -> Variable.Set.mem id used_params)
       specialised_args
   in
-  let function_decls = { function_decls with funs } in
+  let function_decls =
+    Flambda.update_function_declarations function_decls ~funs
+  in
   let unchanging_params =
     Invariant_params.unchanging_params_in_recursion function_decls
   in

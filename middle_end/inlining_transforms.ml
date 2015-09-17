@@ -259,8 +259,10 @@ let inline_by_copying_function_declaration ~env ~r
               set_of_closures.free_vars
               ~eq:Variable.equal
           in
-          Flambda.create_set_of_closures
-            ~function_decls:{ function_decls with funs; }
+          let function_decls =
+            Flambda.update_function_declarations function_decls ~funs
+          in
+          Flambda.create_set_of_closures ~function_decls
             ~free_vars ~specialised_args:Variable.Map.empty)
     in
     Some (simplify env r expr)

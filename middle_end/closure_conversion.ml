@@ -421,14 +421,14 @@ and close_functions t external_env function_declarations : Flambda.named =
       Variable.Map.add tuplified_version fun_decl
         (Variable.Map.add closure_bound_var generic_function_stub map)
   in
-  let function_decls : Flambda.function_declarations =
-    { set_of_closures_id =
-        Set_of_closures_id.create (Compilation_unit.get_current_exn ());
-      funs =
-        List.fold_left close_one_function Variable.Map.empty
-          (Function_decls.to_list function_declarations);
-      compilation_unit = Compilation_unit.get_current_exn ();
-    }
+  let function_decls =
+    Flambda.create_function_declarations
+      ~set_of_closures_id:
+        (Set_of_closures_id.create (Compilation_unit.get_current_exn ()))
+      ~funs:
+        (List.fold_left close_one_function Variable.Map.empty
+          (Function_decls.to_list function_declarations))
+      ~compilation_unit:(Compilation_unit.get_current_exn ())
   in
   (* The closed representation of a set of functions is a "set of closures".
      (For avoidance of doubt, the runtime representation of the *whole set* is

@@ -357,17 +357,17 @@ let map_general ~toplevel f f_named tree =
       | Set_of_closures ({ function_decls; free_vars; specialised_args }) ->
         if toplevel then named
         else
-          let function_decls : Flambda.function_declarations =
-            { function_decls with
-              funs = Variable.Map.map
-                  (fun (ffun : Flambda.function_declaration) ->
-                    Flambda.create_function_declaration
-                      ~params:ffun.params
-                      ~body:(aux ffun.body)
-                      ~stub:ffun.stub
-                      ~dbg:ffun.dbg)
-                function_decls.funs;
-            }
+          let function_decls =
+            let funs =
+              Variable.Map.map (fun (func_decl : Flambda.function_declaration) ->
+                  Flambda.create_function_declaration
+                    ~params:func_decl.params
+                    ~body:(aux func_decl.body)
+                    ~stub:func_decl.stub
+                    ~dbg:func_decl.dbg)
+                function_decls.funs
+            in
+            Flambda.update_function_declarations function_decls ~funs
           in
           let set_of_closures =
             Flambda.create_set_of_closures ~function_decls ~free_vars
@@ -403,18 +403,18 @@ let map_symbols tree ~f =
 let map_symbols_on_set_of_closures
     { Flambda.function_decls; free_vars; specialised_args }
     ~f =
-  let function_decls : Flambda.function_declarations =
-    { function_decls with
-      funs = Variable.Map.map
-          (fun (ffun : Flambda.function_declaration) ->
-             let body = map_symbols ffun.body ~f in
-             Flambda.create_function_declaration
-               ~params:ffun.params
-               ~body
-               ~stub:ffun.stub
-               ~dbg:ffun.dbg)
-          function_decls.funs;
-    }
+  let function_decls =
+    let funs =
+      Variable.Map.map (fun (func_decl : Flambda.function_declaration) ->
+          let body = map_symbols func_decl.body ~f in
+          Flambda.create_function_declaration
+            ~params:func_decl.params
+             ~body
+             ~stub:func_decl.stub
+             ~dbg:func_decl.dbg)
+        function_decls.funs
+    in
+    Flambda.update_function_declarations function_decls ~funs
   in
   Flambda.create_set_of_closures ~function_decls ~free_vars
     ~specialised_args
@@ -479,8 +479,11 @@ let map_function_bodies (set_of_closures : Flambda.set_of_closures) ~f =
           ~dbg:function_decl.dbg)
       set_of_closures.function_decls.funs
   in
+  let function_decls =
+    Flambda.update_function_declarations set_of_closures.function_decls ~funs
+  in
   Flambda.create_set_of_closures
-    ~function_decls:{ set_of_closures.function_decls with funs; }
+    ~function_decls
     ~free_vars:set_of_closures.free_vars
     ~specialised_args:set_of_closures.specialised_args
 
@@ -496,7 +499,9 @@ let rec map_sets_of_closures_of_program (program : Flambda.program)
             ~dbg:function_decl.dbg)
         set_of_closures.function_decls.funs
     in
-    let function_decls = { set_of_closures.function_decls with funs; } in
+    let function_decls =
+      Flambda.update_function_declarations set_of_closures.function_decls ~funs
+    in
     let set_of_closures = f set_of_closures in
     Flambda.create_set_of_closures ~function_decls
       ~free_vars:set_of_closures.free_vars
@@ -542,7 +547,9 @@ let rec map_exprs_at_toplevel_of_program (program : Flambda.program)
             ~dbg:function_decl.dbg)
         set_of_closures.function_decls.funs
     in
-    let function_decls = { set_of_closures.function_decls with funs; } in
+    let function_decls =
+      Flambda.update_function_declarations set_of_closures.function_decls ~funs
+    in
     Flambda.create_set_of_closures ~function_decls
       ~free_vars:set_of_closures.free_vars
       ~specialised_args:set_of_closures.specialised_args

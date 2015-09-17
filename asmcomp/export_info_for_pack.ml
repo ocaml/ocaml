@@ -88,7 +88,7 @@ let import_function_declarations_for_pack units pack
           ~stub:function_decl.stub ~dbg:function_decl.dbg)
       function_decls.funs
   in
-  { function_decls with funs; }
+  Flambda.update_function_declarations function_decls ~funs
 
 let import_eidmap_for_pack units pack f map =
   Export_info.nest_eid_map

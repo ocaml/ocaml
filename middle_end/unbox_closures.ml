@@ -177,8 +177,11 @@ let run env expr =
             additional_specialised_args
             ~eq:Variable.equal
         in
+        let function_decls =
+          Flambda.update_function_declarations function_decls ~funs
+        in
         Flambda.create_set_of_closures
-          ~function_decls:{ function_decls with funs; }
+          ~function_decls
           ~free_vars:set_of_closures.free_vars
           ~specialised_args)
   in

@@ -196,7 +196,7 @@ let rewrite_recursive_calls_with_symbols t
           ~body ~stub:ffun.stub ~dbg:ffun.dbg)
         function_declarations.funs
     in
-    { function_declarations with funs }
+    Flambda.update_function_declarations function_declarations ~funs
 
 module Project_var = struct
   type t =
@@ -280,10 +280,13 @@ module Project_var = struct
             funs, subst)
           func_decls.funs (Variable.Map.empty, subst) in
       let current_unit = Compilation_unit.get_current_exn () in
-      { Flambda.
-        set_of_closures_id = Set_of_closures_id.create current_unit;
-        compilation_unit = current_unit;
-        funs }, Active subst, t
+      let function_decls =
+        Flambda.create_function_declarations
+          ~set_of_closures_id:(Set_of_closures_id.create current_unit)
+          ~compilation_unit:current_unit
+          ~funs
+      in
+      function_decls, Active subst, t
 
   let apply_closure_id t closure_id =
     try Closure_id.Map.find closure_id t.closure_id

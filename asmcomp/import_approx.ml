@@ -34,16 +34,15 @@ let import_set_of_closures =
         end
       | named -> named
     in
-    { clos with
-      funs =
+    Flambda.update_function_declarations clos
+      ~funs:(
         Variable.Map.map (fun (function_decl : Flambda.function_declaration) ->
             let body =
               Flambda_iterators.map_toplevel_named f_named function_decl.body
             in
             Flambda.create_function_declaration ~params:function_decl.params
               ~body ~stub:function_decl.stub ~dbg:function_decl.dbg)
-          clos.funs;
-    }
+          clos.funs)
   in
   let aux set_of_closures_id =
     let ex_info = Compilenv.approx_env () in

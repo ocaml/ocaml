@@ -55,15 +55,15 @@ let make_stub unused var (fun_decl : Flambda.function_declaration) =
   function_decl, renamed
 
 let separate_unused_arguments (set_of_closures : Flambda.set_of_closures) =
-  let decl = set_of_closures.function_decls in
-  let unused = Invariant_params.unused_arguments decl in
+  let function_decls = set_of_closures.function_decls in
+  let unused = Invariant_params.unused_arguments function_decls in
   let non_stub_arguments =
     Variable.Map.fold (fun _ (decl : Flambda.function_declaration) acc ->
         if decl.stub then
           acc
         else
           Variable.Set.union acc (Variable.Set.of_list decl.Flambda.params))
-      decl.funs Variable.Set.empty
+      function_decls.funs Variable.Set.empty
   in
   let unused = Variable.Set.inter non_stub_arguments unused in
   if Variable.Set.is_empty unused
@@ -81,14 +81,17 @@ let separate_unused_arguments (set_of_closures : Flambda.set_of_closures) =
           else
             Variable.Map.add fun_id fun_decl acc
         )
-        decl.funs Variable.Map.empty
+        function_decls.funs Variable.Map.empty
     in
     let specialised_args =
       Variable.Map.filter (fun param _ -> not (Variable.Set.mem param unused))
         set_of_closures.specialised_args
     in
+    let function_decls =
+      Flambda.update_function_declarations function_decls ~funs
+    in
     let set_of_closures =
-      Flambda.create_set_of_closures ~function_decls:{ decl with funs; }
+      Flambda.create_set_of_closures ~function_decls
         ~free_vars:set_of_closures.free_vars ~specialised_args
     in
     Some set_of_closures

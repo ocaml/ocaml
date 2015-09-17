@@ -55,7 +55,9 @@ let remove_unused_closure_variables program =
               || Closure_id.Set.mem (Closure_id.wrap fun_id) used_closure_ids)
           function_decls.funs
       in
-      let function_decls = { function_decls with funs } in
+      let function_decls =
+        Flambda.update_function_declarations function_decls ~funs
+      in
       let set_of_closures =
         Flambda.create_set_of_closures ~function_decls ~free_vars
           ~specialised_args:set_of_closures.specialised_args

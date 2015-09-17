@@ -731,6 +731,11 @@ let create_function_declarations ~set_of_closures_id ~funs ~compilation_unit =
     recursively_bound = Variable.Set.empty;
   }
 
+let update_function_declarations function_decls ~funs =
+  create_function_declarations ~funs
+    ~set_of_closures_id:function_decls.set_of_closures_id
+    ~compilation_unit:function_decls.compilation_unit
+
 let create_set_of_closures ~function_decls ~free_vars ~specialised_args =
   let all_fun_vars = Variable.Map.keys function_decls.funs in
   let expected_free_vars =
