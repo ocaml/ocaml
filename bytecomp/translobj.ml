@@ -93,7 +93,7 @@ let prim_makearray =
 
 (* Also use it for required globals *)
 let transl_label_init_bytecode f =
-  let expr = f () in
+  let expr, size = f () in
   let expr =
     Hashtbl.fold
       (fun c id expr -> Llet(Alias, id, Lconst c, expr))
@@ -106,12 +106,12 @@ let transl_label_init_bytecode f =
   in
   Env.reset_required_globals ();
   reset_labels ();
-  expr
+  expr, size
 
 let transl_label_init_native f =
   let method_cache_id = Ident.create "method_cache" in
   method_cache := Lvar method_cache_id;
-  let expr = f () in
+  let expr, size = f () in
   let expr =
     if !method_count = 0 then expr
     else
@@ -119,7 +119,7 @@ let transl_label_init_native f =
         Lprim (Pccall prim_makearray, [int !method_count; int 0]),
         expr)
   in
-  transl_label_init_bytecode (fun () -> expr)
+  transl_label_init_bytecode (fun () -> expr, size)
 
 let transl_label_init f =
   if !Clflags.native_code then

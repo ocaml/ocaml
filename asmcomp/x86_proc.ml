@@ -270,4 +270,3 @@ let generate_code asm =
   | Some f -> binary_content := Some (f instrs)
   | None -> binary_content := None
   end
-

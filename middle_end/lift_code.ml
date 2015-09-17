@@ -16,23 +16,104 @@ module C = Inlining_cost
 
 type lifter = Flambda.program -> Flambda.program
 
-let lift_lets_expr tree =
+let rebuild_let
+    (defs : (Variable.t * Flambda.named Flambda.With_free_variables.t) list)
+    (body : Flambda.t) =
   let module W = Flambda.With_free_variables in
-  let rec aux (expr : Flambda.t) : Flambda.t =
-    match expr with
-    | Let ({ var = v1;
-        defining_expr = Expr (Let ({ var = v2; _ } as let2)); _ }  as let1) ->
-      let body1 = W.of_body_of_let let1 in
-      let body2 = W.of_body_of_let let2 in
-      let inner_let = W.create_let_reusing_both v1 (W.expr body2) body1 in
-      let def2 = W.of_defining_expr_of_let let2 in
-      W.create_let_reusing_defining_expr v2 def2 (aux inner_let)
-    | e -> e
-  in
-  Flambda_iterators.map aux (fun (named : Flambda.named) -> named) tree
+  List.fold_left (fun body (var, def) ->
+      W.create_let_reusing_defining_expr var def body)
+    body defs
+
+let rec extract_lets
+    (acc:(Variable.t * Flambda.named Flambda.With_free_variables.t) list)
+    (let_expr:Flambda.let_expr) :
+  (Variable.t * Flambda.named Flambda.With_free_variables.t) list *
+  Flambda.t Flambda.With_free_variables.t =
+  let module W = Flambda.With_free_variables in
+  match let_expr with
+  | { var = v1; defining_expr = Expr (Let let2); _ } ->
+    let acc, body2 = extract_lets acc let2 in
+    let acc = (v1, W.expr body2) :: acc in
+    let body = W.of_body_of_let let_expr in
+    extract acc body
+  | { var = v; _ } ->
+    let acc = (v, W.of_defining_expr_of_let let_expr) :: acc in
+    let body = W.of_body_of_let let_expr in
+    extract acc body
+
+and extract acc (expr : Flambda.t Flambda.With_free_variables.t) =
+  let module W = Flambda.With_free_variables in
+  match W.contents expr with
+  | Let let_expr ->
+    extract_lets acc let_expr
+  | _ ->
+    acc, expr
+
+let rec lift_lets_expr (expr:Flambda.t) : Flambda.t =
+  let module W = Flambda.With_free_variables in
+  match expr with
+  | Let let_expr ->
+    let defs, body = extract_lets [] let_expr in
+    let rev_defs = List.rev_map lift_lets_named_with_free_variables defs in
+    let body = lift_lets_expr (W.contents body) in
+    rebuild_let (List.rev rev_defs) body
+  | e ->
+    Flambda_iterators.map_subexpressions
+      lift_lets_expr
+      lift_lets_named
+      e
+
+and lift_lets_named_with_free_variables
+    ((var, named):Variable.t * Flambda.named Flambda.With_free_variables.t) :
+  Variable.t * Flambda.named Flambda.With_free_variables.t =
+  let module W = Flambda.With_free_variables in
+  match W.contents named with
+  | Expr e ->
+    var, W.expr (W.of_expr (lift_lets_expr e))
+  | Set_of_closures set ->
+    var,
+    W.of_named
+      (Set_of_closures
+         (Flambda_iterators.map_function_bodies ~f:lift_lets_expr set))
+  | Symbol _ | Const _ | Allocated_const _ | Read_mutable _
+  | Read_symbol_field (_, _) | Project_closure _ | Move_within_set_of_closures _
+  | Project_var _ | Prim _ ->
+    var, named
+
+and lift_lets_named _var (named:Flambda.named) : Flambda.named =
+  let module W = Flambda.With_free_variables in
+  match named with
+  | Expr e ->
+    Expr (lift_lets_expr e)
+  | Set_of_closures set ->
+    Set_of_closures
+      (Flambda_iterators.map_function_bodies ~f:lift_lets_expr set)
+  | Symbol _ | Const _ | Allocated_const _ | Read_mutable _
+  | Read_symbol_field (_, _) | Project_closure _ | Move_within_set_of_closures _
+  | Project_var _ | Prim _ ->
+    named
 
 let lift_lets program =
   Flambda_iterators.map_exprs_at_toplevel_of_program program ~f:lift_lets_expr
+
+(* CR mshinwell for pchambart: This fails on Core_kernel.  I dumped the
+   output using the code below, and diffed it, and it was identical...
+   Maybe something to do with using the "wrong" equality function?
+let lift_lets program =
+  let program'' =
+    Flambda_iterators.map_exprs_at_toplevel_of_program program ~f:lift_lets_expr
+  in
+  if !Clflags.full_flambda_invariant_check then begin
+    let program' = lift_lets program in
+    if not (program' = program'') then begin
+      Misc.fatal_errorf "Lift_code.lift_lets: second lift_lets produced \
+          a different result.  First: %a Second %a"
+        Flambda.print_program program'
+        Flambda.print_program program''
+    end
+  end;
+  program''
+*)
 
 let lifting_helper exprs ~evaluation_order ~create_body ~name =
   let vars, lets =

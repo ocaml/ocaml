@@ -378,6 +378,17 @@ val fold_lets
   -> 'b * t
 *)
 
+(** Like [fold_lets], but can remove and rename definition before
+    reintroduction. *)
+val fold_lets_option
+   : t
+  -> init:'a
+  -> for_defining_expr:('a -> Variable.t -> named -> 'a * Variable.t * named)
+  -> for_last_body:('a -> t -> t * 'b)
+  -> filter_defining_expr:('b -> Variable.t -> named -> Variable.Set.t ->
+                           'b * Variable.t * named option)
+  -> t * 'b
+
 (** Like [fold_lets], but just a map. *)
 val map_lets
    : t
@@ -424,6 +435,8 @@ module With_free_variables : sig
       term (proportional to the size of the term, except that the calculation
       for [Let] is O(1)). *)
   val of_expr : expr -> expr t
+
+  val of_named : named -> named t
 
   (** Takes the time required to calculate the free variables of the given
       [expr]. *)

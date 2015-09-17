@@ -498,8 +498,10 @@ let to_clambda_initialize_symbol t env symbol fields : Clambda.ulambda =
   in
   let build_setfield (index, field) : Clambda.ulambda =
     (* This [Psetfield] can affect a pointer, but since we are initializing
-       a toplevel symbol, it is safe not to use [caml_modify]. *)
-    Uprim (Psetfield (index, false), [to_clambda_symbol symbol; field],
+       a toplevel symbol, it is safe not to use [caml_modify].  (Moreover, we
+       must not use [caml_modify], since the location being modified is
+       outside the heap.) *)
+   Uprim (Psetfield (index, false), [to_clambda_symbol symbol; field],
       Debuginfo.none)
   in
   match fields with

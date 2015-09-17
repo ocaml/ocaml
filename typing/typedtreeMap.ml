@@ -24,7 +24,8 @@ module type MapArgument = sig
   val enter_package_type : package_type -> package_type
   val enter_signature : signature -> signature
   val enter_signature_item : signature_item -> signature_item
-  val enter_module_type_declaration : module_type_declaration -> module_type_declaration
+  val enter_module_type_declaration :
+      module_type_declaration -> module_type_declaration
   val enter_module_type : module_type -> module_type
   val enter_module_expr : module_expr -> module_expr
   val enter_with_constraint : with_constraint -> with_constraint
@@ -52,7 +53,8 @@ module type MapArgument = sig
   val leave_package_type : package_type -> package_type
   val leave_signature : signature -> signature
   val leave_signature_item : signature_item -> signature_item
-  val leave_module_type_declaration : module_type_declaration -> module_type_declaration
+  val leave_module_type_declaration :
+      module_type_declaration -> module_type_declaration
   val leave_module_type : module_type -> module_type
   val leave_module_expr : module_expr -> module_expr
   val leave_with_constraint : with_constraint -> with_constraint
@@ -258,7 +260,8 @@ module MakeMap(Map : MapArgument) = struct
 
   and map_pat_extra pat_extra =
     match pat_extra with
-      | Tpat_constraint ct, loc, attrs -> (Tpat_constraint (map_core_type  ct), loc, attrs)
+      | Tpat_constraint ct, loc, attrs ->
+          (Tpat_constraint (map_core_type  ct), loc, attrs)
       | (Tpat_type _ | Tpat_unpack), _, _ -> pat_extra
 
   and map_expression exp =
@@ -417,27 +420,28 @@ module MakeMap(Map : MapArgument) = struct
       match item.sig_desc with
           Tsig_value vd ->
             Tsig_value (map_value_description vd)
-        | Tsig_type (rf, list) -> Tsig_type (rf, List.map map_type_declaration list)
+        | Tsig_type (rf, list) ->
+            Tsig_type (rf, List.map map_type_declaration list)
         | Tsig_typext tyext ->
-          Tsig_typext (map_type_extension tyext)
+            Tsig_typext (map_type_extension tyext)
         | Tsig_exception ext ->
-          Tsig_exception (map_extension_constructor ext)
+            Tsig_exception (map_extension_constructor ext)
         | Tsig_module md ->
-          Tsig_module {md with md_type = map_module_type md.md_type}
+            Tsig_module {md with md_type = map_module_type md.md_type}
         | Tsig_recmodule list ->
-          Tsig_recmodule
-              (List.map
-                 (fun md -> {md with md_type = map_module_type md.md_type})
-                 list
-              )
+            Tsig_recmodule
+                (List.map
+                   (fun md -> {md with md_type = map_module_type md.md_type})
+                   list
+                )
         | Tsig_modtype mtd ->
-          Tsig_modtype (map_module_type_declaration mtd)
+            Tsig_modtype (map_module_type_declaration mtd)
         | Tsig_open _ -> item.sig_desc
         | Tsig_include incl ->
-          Tsig_include {incl with incl_mod = map_module_type incl.incl_mod}
+            Tsig_include {incl with incl_mod = map_module_type incl.incl_mod}
         | Tsig_class list -> Tsig_class (List.map map_class_description list)
         | Tsig_class_type list ->
-          Tsig_class_type (List.map map_class_type_declaration list)
+            Tsig_class_type (List.map map_class_type_declaration list)
         | Tsig_attribute _ as x -> x
     in
     Map.leave_signature_item { item with sig_desc = sig_desc }

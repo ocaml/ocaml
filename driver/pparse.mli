@@ -20,20 +20,28 @@ exception Error of error
 
 val preprocess : string -> string
 val remove_preprocessed : string -> unit
-val file : formatter -> tool_name:string -> string -> (Lexing.lexbuf -> 'a) -> string -> 'a
+val file :
+  formatter -> tool_name:string -> string -> (Lexing.lexbuf -> 'a) -> string ->
+  'a
 val apply_rewriters: ?restore:bool -> tool_name:string -> string -> 'a -> 'a
-  (** If [restore = true] (the default), cookies set by external rewriters will be
-      kept for later calls. *)
+  (** If [restore = true] (the default), cookies set by external
+      rewriters will be kept for later calls. *)
 
-val apply_rewriters_str: ?restore:bool -> tool_name:string -> Parsetree.structure -> Parsetree.structure
-val apply_rewriters_sig: ?restore:bool -> tool_name:string -> Parsetree.signature -> Parsetree.signature
+val apply_rewriters_str:
+  ?restore:bool -> tool_name:string -> Parsetree.structure ->
+  Parsetree.structure
+val apply_rewriters_sig:
+  ?restore:bool -> tool_name:string -> Parsetree.signature ->
+  Parsetree.signature
 
 
 val report_error : formatter -> error -> unit
 
 
-val parse_implementation: formatter -> tool_name:string -> string -> Parsetree.structure
-val parse_interface: formatter -> tool_name:string -> string -> Parsetree.signature
+val parse_implementation:
+  formatter -> tool_name:string -> string -> Parsetree.structure
+val parse_interface:
+  formatter -> tool_name:string -> string -> Parsetree.signature
 
 (* [call_external_preprocessor sourcefile pp] *)
 val call_external_preprocessor : string -> string -> string

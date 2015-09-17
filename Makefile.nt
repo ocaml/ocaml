@@ -223,13 +223,13 @@ cleanboot:
 
 # Compile the native-code compiler
 opt-core:
-	$(MAKE) -f Makefile.nt runtimeopt
-	$(MAKE) -f Makefile.nt ocamlopt
-	$(MAKE) -f Makefile.nt libraryopt
+	$(MAKEREC) runtimeopt
+	$(MAKEREC) ocamlopt
+	$(MAKEREC) libraryopt
 
 opt:
-	$(MAKE) -f Makefile.nt opt-core
-	$(MAKE) -f Makefile.nt otherlibrariesopt ocamltoolsopt
+	$(MAKEREC) opt-core
+	$(MAKEREC) otherlibrariesopt ocamltoolsopt
 
 # Native-code versions of the tools
 opt.opt: core opt-core ocamlc.opt all ocamlopt.opt ocamllex.opt \
@@ -303,7 +303,7 @@ installopt:
 	  $(MAKEREC) -C otherlibs/$$i installopt || exit $$?; \
 	done
 	if test -f ocamlopt.opt ; then $(MAKEREC) installoptopt; fi
-	cd tools; $(MAKE) installopt
+	cd tools; $(MAKEREC) installopt
 
 installoptopt:
 	cp ocamlc.opt $(INSTALL_BINDIR)/ocamlc.opt$(EXE)
@@ -380,7 +380,7 @@ ocamlnat: ocamlopt otherlibs/dynlink/dynlink.cmxa $(NATTOPOBJS:.cmo=.cmx)
 toplevel/opttoploop.cmx: otherlibs/dynlink/dynlink.cmxa
 
 otherlibs/dynlink/dynlink.cmxa: otherlibs/dynlink/natdynlink.ml
-	cd otherlibs/dynlink && $(MAKE) -f Makefile.nt allopt
+	cd otherlibs/dynlink && $(MAKEREC) allopt
 
 
 # The configuration file
@@ -756,7 +756,7 @@ depend: beforedepend
 alldepend:: depend
 
 distclean:
-	$(MAKE) clean
+	$(MAKEREC) clean
 	rm -f asmrun/.depend.nt byterun/.depend.nt
 	rm -f boot/ocamlrun boot/ocamlrun.exe boot/camlheader boot/ocamlyacc \
 	      boot/*.cm* boot/libcamlrun.a

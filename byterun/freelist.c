@@ -115,7 +115,8 @@ static void fl_check (void)
    it is located in the high-address words of the free block, so that
    the linking of the free-list does not change in case 2.
 */
-static header_t *allocate_block (mlsize_t wh_sz, int flpi, value prev, value cur)
+static header_t *allocate_block (mlsize_t wh_sz, int flpi, value prev,
+                                 value cur)
 {
   header_t h = Hd_bp (cur);
                                              Assert (Whsize_hd (h) >= wh_sz);
@@ -493,12 +494,13 @@ void caml_fl_add_blocks (value bp)
 
     prev = Fl_head;
     cur = Next (prev);
-    while (cur != Val_NULL && cur < bp){   Assert (prev < bp || prev == Fl_head);
+    while (cur != Val_NULL && cur < bp){
+      Assert (prev < bp || prev == Fl_head);
       /* XXX TODO: extend flp on the fly */
       prev = cur;
       cur = Next (prev);
     }                                  Assert (prev < bp || prev == Fl_head);
-                                            Assert (cur > bp || cur == Val_NULL);
+                                       Assert (cur > bp || cur == Val_NULL);
     Next (Field (bp, 1)) = cur;
     Next (prev) = bp;
     /* When inserting blocks between [caml_fl_merge] and [caml_gc_sweep_hp],

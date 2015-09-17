@@ -54,5 +54,3 @@ B ./typing
 
 S ./utils
 B ./utils
-
-FLG -w +a-4-9+27-30-40-41-42 -safe-string

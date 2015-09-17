@@ -99,6 +99,7 @@ module Options = Main_args.Make_optcomp_options (struct
   let _strict_formats = option "-strict-formats"
   let _shared = option "-shared"
   let _thread = option "-thread"
+  let _unbox_closures = option "-unbox-closures"
   let _unsafe = option "-unsafe"
   let _unsafe_string = option "-unsafe-string"
   let _v = option "-v"

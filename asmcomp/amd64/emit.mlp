@@ -509,7 +509,7 @@ let emit_instr fallthrough i =
         if system <> S_win64 then begin
           (* TODO: investigate why such a diff.
              This comes from:
-             http://caml.inria.fr/cgi-bin/viewvc.cgi?view=revision&revision=12664
+            http://caml.inria.fr/cgi-bin/viewvc.cgi?view=revision&revision=12664
 
              If we do the same for Win64, we probably need to change
              amd64nt.asm accordingly.
@@ -732,7 +732,8 @@ let emit_instr fallthrough i =
         else (phys_reg 0 (*rax*), phys_reg 4 (*rdx*)) in
 
       I.lea (mem64_rip NONE lbl) (reg tmp1);
-      I.movsxd (mem64 DWORD 0 (arg64 i 0) ~scale:4 ~base:(reg64 tmp1)) (reg tmp2);
+      I.movsxd (mem64 DWORD 0 (arg64 i 0) ~scale:4 ~base:(reg64 tmp1))
+               (reg tmp2);
       I.add (reg tmp2) (reg tmp1);
       I.jmp (reg tmp1);
 
@@ -1000,4 +1001,3 @@ let end_assembly() =
       None
   in
   X86_proc.generate_code asm
-

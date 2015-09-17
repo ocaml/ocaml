@@ -109,6 +109,7 @@ val unsafe_string : bool ref
 val opaque : bool ref
 val print_timings : bool ref
 val full_flambda_invariant_check : bool ref
+val unbox_closures : bool ref
 
 type color_setting = Auto | Always | Never
 val parse_color_setting : string -> color_setting option

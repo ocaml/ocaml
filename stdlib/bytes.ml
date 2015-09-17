@@ -149,7 +149,7 @@ let escaped s =
   for i = 0 to length s - 1 do
     n := !n +
       (match unsafe_get s i with
-       | '"' | '\\' | '\n' | '\t' | '\r' | '\b' -> 2
+       | '\"' | '\\' | '\n' | '\t' | '\r' | '\b' -> 2
        | ' ' .. '~' -> 1
        | _ -> 4)
   done;
@@ -158,7 +158,7 @@ let escaped s =
     n := 0;
     for i = 0 to length s - 1 do
       begin match unsafe_get s i with
-      | ('"' | '\\') as c ->
+      | ('\"' | '\\') as c ->
           unsafe_set s' !n '\\'; incr n; unsafe_set s' !n c
       | '\n' ->
           unsafe_set s' !n '\\'; incr n; unsafe_set s' !n 'n'

@@ -33,25 +33,23 @@ let middle_end ppf ~sourcefile ~prefixname ~backend
     then Format.fprintf ppf "%s:@ %a@." s Flambda.print_program flam;
     check flam
   in
-  let (+-) v s =
-    if verbose then
-      Format.fprintf ppf "@.PASS: %s@." s;
-    v
-  in
-  let (++) flam pass =
-    if not !Clflags.full_flambda_invariant_check then
-      pass flam
-    else begin
-      incr pass_number;
-      if verbose then begin
+  let (+-+) flam (name, pass) =
+    incr pass_number;
+    if verbose then begin
+      Format.fprintf ppf "@.PASS: %s@." name;
+      if !Clflags.full_flambda_invariant_check then begin
         Format.fprintf ppf "Before pass %d, round %d:@ %a@." !pass_number
           !round_number Flambda.print_program flam;
         Format.eprintf "\n@?"
       end;
-      let flam = pass flam in
-      check flam;
-      flam
-    end
+    end;
+    let timing_pass = (Timings.Flambda_pass (name, sourcefile)) in
+    Timings.restart timing_pass;
+    let flam = pass flam in
+    Timings.accumulate timing_pass;
+    if !Clflags.full_flambda_invariant_check then
+      Timings.accumulate_time (Flambda_pass ("check", sourcefile)) check flam;
+    flam
   in
   Timings.(start (Flambda_middle_end sourcefile));
   let flam =
@@ -67,25 +65,20 @@ let middle_end ppf ~sourcefile ~prefixname ~backend
     if !round_number > !Clflags.simplify_rounds then flam
     else
       flam
-      +- "lift_lets 1"
-      ++ Lift_code.lift_lets
-      +- "Lift_constants"
-      ++ Lift_constants.lift_constants ~backend
-      +- "Share_constants"
-      ++ Share_constants.share_constants
-      +- "Lift_let_to_initialize_symbol"
-      ++ Lift_let_to_initialize_symbol.lift ~backend
-      +- "lift_lets 2"
-      ++ Lift_code.lift_lets
-      +- "Remove_unused_closure_vars 1"
-      ++ Remove_unused_closure_vars.remove_unused_closure_variables
-      +- "Inline_and_simplify"
-      ++ Inline_and_simplify.run ~never_inline:false ~backend
-      +- "lift_lets 3"
-      ++ Lift_code.lift_lets
-      +- "Remove_unused_closure_vars 2"
-      ++ Remove_unused_closure_vars.remove_unused_closure_variables
-      +- "Remove_unused_arguments"
+      +-+ ("lift_lets 1", Lift_code.lift_lets)
+      +-+ ("Lift_constants", Lift_constants.lift_constants ~backend)
+      +-+ ("Share_constants", Share_constants.share_constants)
+      +-+ ("Lift_let_to_initialize_symbol",
+           Lift_let_to_initialize_symbol.lift ~backend)
+      +-+ ("lift_lets 2", Lift_code.lift_lets)
+      +-+ ("Remove_unused_closure_vars 1",
+           Remove_unused_closure_vars.remove_unused_closure_variables)
+      +-+ ("Inline_and_simplify",
+           Inline_and_simplify.run ~never_inline:false ~backend)
+      +-+ ("lift_lets 3", Lift_code.lift_lets)
+      +-+ ("Remove_unused_closure_vars 2",
+           Remove_unused_closure_vars.remove_unused_closure_variables)
+      (* +- "Remove_unused_arguments" *)
 (*
       ++ Remove_unused_arguments.separate_unused_arguments_in_closures
         ?force:None
@@ -93,17 +86,17 @@ let middle_end ppf ~sourcefile ~prefixname ~backend
       (* CR mshinwell: the lifting of sets of closures seemed redundant,
          because we always have to generate a [let] with them now.  Do we
          need to insert something else here (lift_lets)? *)
-      +- "Inline_and_simplify noinline 1"
-      ++ Inline_and_simplify.run ~never_inline:true ~backend
-      +- "Remove_unused_closure_vars"
-      ++ Remove_unused_closure_vars.remove_unused_closure_variables
-      +- "Ref_to_variables"
-      ++ Ref_to_variables.eliminate_ref
-      +- "Inline_and_simplify noinline 2"
-      ++ Inline_and_simplify.run ~never_inline:true ~backend
-      +- "Remove_unused_globals"
-      ++ Remove_unused_globals.remove_unused_globals
-      ++ loop
+      +-+ ("Inline_and_simplify noinline 1",
+           Inline_and_simplify.run ~never_inline:true ~backend)
+      +-+ ("Remove_unused_closure_vars",
+           Remove_unused_closure_vars.remove_unused_closure_variables)
+      +-+ ("Ref_to_variables",
+           Ref_to_variables.eliminate_ref)
+      +-+ ("Inline_and_simplify noinline 2",
+           Inline_and_simplify.run ~never_inline:true ~backend)
+      +-+ ("Remove_unused_globals",
+           Remove_unused_globals.remove_unused_globals)
+      |> loop
   in
   let flam = loop flam in
   dump_and_check "End of middle end" flam;

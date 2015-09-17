@@ -728,8 +728,10 @@ let transl_class ids cl_id pub_meths cl vflag =
              Lvar class_init; Lvar env_init; lambda_unit]))))
   and lbody_virt lenvs =
     Lprim(Pmakeblock(0, Immutable),
-          [lambda_unit; Lfunction{kind = Curried; params = [cla]; body = cl_init};
-           lambda_unit; lenvs])
+          [lambda_unit;
+           Lfunction{kind = Curried; params = [cla]; body = cl_init};
+           lambda_unit;
+           lenvs])
   in
   (* Still easy: a class defined at toplevel *)
   if top && concrete then lclass lbody else

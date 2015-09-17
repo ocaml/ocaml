@@ -18,8 +18,11 @@ sig
         type u
 end
 
-module Make: functor (Html5: Html5_sigs.T with type 'a Xml.wrap = 'a and type 'a wrap = 'a and type 'a list_wrap = 'a list) -> S with
-        type t = Html5_types.div Html5.elt and
-        type u = < foo: Html5.uri >
+module Make: functor (Html5: Html5_sigs.T
+                             with type 'a Xml.wrap = 'a and
+                             type 'a wrap = 'a and
+                             type 'a list_wrap = 'a list)
+                     -> S with type t = Html5_types.div Html5.elt and
+                               type u = < foo: Html5.uri >
 end
 *)

@@ -106,7 +106,8 @@ let i1_call_jmp b s = function
   (* this is the encoding of jump labels: don't use * *)
   | Mem {arch=X86; idx=_;   scale=0; base=None; sym=Some _; _} as x ->
       i1 b s x
-  | Reg32 _ | Reg64 _ | Mem _  | Mem64_RIP _ as x -> bprintf b "\t%s\t*%a" s arg x
+  | Reg32 _ | Reg64 _ | Mem _  | Mem64_RIP _ as x ->
+      bprintf b "\t%s\t*%a" s arg x
   | Sym x -> bprintf b "\t%s\t%s" s x
   | _ -> assert false
 
@@ -279,7 +280,8 @@ let print_line b = function
       bprintf b "\t.file\t%d\t\"%s\""
         file_num (X86_proc.string_of_string_literal file_name)
   | Indirect_symbol s -> bprintf b "\t.indirect_symbol %s" s
-  | Loc (file_num, line, col) -> bprintf b "\t.loc\t%d\t%d\t%d" file_num line col
+  | Loc (file_num, line, col) ->
+      bprintf b "\t.loc\t%d\t%d\t%d" file_num line col
   | Private_extern s -> bprintf b "\t.private_extern %s" s
   | Set (arg1, arg2) -> bprintf b "\t.set %s, %a" arg1 cst arg2
   | Size (s, c) -> bprintf b "\t.size %s,%a" s cst c

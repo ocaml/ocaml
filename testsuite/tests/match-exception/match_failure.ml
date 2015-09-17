@@ -5,8 +5,8 @@ let return_some_3 () = Some (1 + 2)
 ;;
 
 let test_match_partial_match =
-  try 
-    let _ = (match return_some_3 () with 
+  try
+    let _ = (match return_some_3 () with
     | Some x when x < 3 -> "Some x"
     | exception Failure _ -> "failure"
     | exception Invalid_argument _ -> "invalid argument"

@@ -15,7 +15,8 @@ BASEDIR=../..
 COMPFLAGS=-I $(OTOPDIR)/otherlibs/$(UNIXLIBVAR)unix \
 	  -I $(OTOPDIR)/otherlibs/systhreads \
           -I $(OTOPDIR)/otherlibs/dynlink
-LD_PATH=$(TOPDIR)/otherlibs/$(UNIXLIBVAR)unix:$(TOPDIR)/otherlibs/systhreads:$(TOPDIR)/otherlibs/dynlink
+LD_PATH = $(TOPDIR)/otherlibs/$(UNIXLIBVAR)unix:$(TOPDIR)/otherlibs/systhreads\
+:$(TOPDIR)/otherlibs/dynlink
 
 .PHONY: default
 default:

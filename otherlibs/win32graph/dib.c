@@ -77,7 +77,7 @@ enum PAL_SIZE
    PALSIZE_MEDIUM,
    PALSIZE_LARGE
    };
-#define CopyPalette(hPal)         CopyPaletteChangingFlags (hPal, DONT_CHANGE_FLAGS)
+#define CopyPalette(hPal) CopyPaletteChangingFlags (hPal, DONT_CHANGE_FLAGS)
 #define CopyPalForAnimation(hPal) CopyPaletteChangingFlags (hPal, PC_RESERVED)
 // WIDTHBYTES takes # of bits in a scan line and rounds up to nearest
 //  word.
@@ -296,8 +296,9 @@ static HANDLE ReadDIBFile (int hFile,int dwBitsSize)
 
    // Go read the DIB file header and check if it's valid.
 
-   if ((_lread (hFile, (LPSTR) &bmfHeader, sizeof (bmfHeader)) != sizeof (bmfHeader)) ||
-        (bmfHeader.bfType != DIB_HEADER_MARKER))
+   if ((_lread (hFile, (LPSTR) &bmfHeader, sizeof (bmfHeader))
+        != sizeof (bmfHeader))
+       || (bmfHeader.bfType != DIB_HEADER_MARKER))
       {
         //              ShowDbgMsg("Not a DIB file!");
                 return NULL;
@@ -305,7 +306,8 @@ static HANDLE ReadDIBFile (int hFile,int dwBitsSize)
 
    // Allocate memory for DIB
 
-   hDIB = GlobalAlloc (GMEM_SHARE|GMEM_MOVEABLE | GMEM_ZEROINIT, dwBitsSize - sizeof(BITMAPFILEHEADER));
+   hDIB = GlobalAlloc (GMEM_SHARE|GMEM_MOVEABLE | GMEM_ZEROINIT,
+                       dwBitsSize - sizeof(BITMAPFILEHEADER));
 
    if (hDIB == 0)
      {
@@ -402,18 +404,18 @@ static void DIBPaint (HDC hDC,LPRECT lpDCRect,HANDLE hDIB)
       // Make sure to use the stretching mode best for color pictures.
         SetStretchBltMode (hDC, COLORONCOLOR);
         SetDIBitsToDevice (hDC,                          // hDC
-                         lpDCRect->left,               // DestX
-                         lpDCRect->top,                // DestY
-                         RECTWIDTH (lpDCRect),         // nDestWidth
-                         RECTHEIGHT (lpDCRect),        // nDestHeight
-                                                                 0,              // SrcX
-                         0,
+                           lpDCRect->left,               // DestX
+                           lpDCRect->top,                // DestY
+                           RECTWIDTH (lpDCRect),         // nDestWidth
+                           RECTHEIGHT (lpDCRect),        // nDestHeight
+                           0,                            // SrcX
+                           0,
  //                        (int) DIBHeight (lpDIBHdr),   // SrcY
-                                                                 0,                            // nStartScan
-                         (WORD) DIBHeight (lpDIBHdr),  // nNumScans
-                         lpDIBBits,                    // lpBits
-                         (LPBITMAPINFO) lpDIBHdr,      // lpBitsInfo
-                         DIB_RGB_COLORS);              // wUsage
+                           0,                            // nStartScan
+                           (WORD) DIBHeight (lpDIBHdr),  // nNumScans
+                           lpDIBBits,                    // lpBits
+                           (LPBITMAPINFO) lpDIBHdr,      // lpBitsInfo
+                           DIB_RGB_COLORS);              // wUsage
 
    GlobalUnlock (hDIB);
 }
@@ -442,7 +444,8 @@ HANDLE ChargerBitmap(char *FileName,POINT *lppt)
         unsigned int size;
 
         size = Getfilesize(FileName);
-        hFile=OpenFile((LPSTR) FileName, &ofstruct, OF_READ | OF_SHARE_DENY_WRITE);
+        hFile=OpenFile((LPSTR) FileName, &ofstruct,
+                       OF_READ | OF_SHARE_DENY_WRITE);
         result =  ReadDIBFile(hFile,size);
         if (hFile) _lclose(hFile);
         if (result) {

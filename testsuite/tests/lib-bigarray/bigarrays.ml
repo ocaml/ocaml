@@ -163,8 +163,9 @@ let _ =
     set 1 vals;
     a in
 
-  (* Test indexing arrays.  This test has to be copy-pasted, otherwise indexing may not
-     use the optimizations in Cmmgen.bigarray_indexing. *)
+  (* Test indexing arrays.  This test has to be copy-pasted, otherwise
+     indexing may not use the optimizations in
+     Cmmgen.bigarray_indexing. *)
   begin
     let v = 123 in
     let cb = Array1.create int8_signed c_layout 1000 in

@@ -205,10 +205,12 @@ let bigarray_set arr arg newval =
                        [Nolabel, arr; Nolabel, c1; Nolabel, newval]))
   | [c1;c2] ->
       mkexp(Pexp_apply(ghexp(Pexp_ident(set 2)),
-                       [Nolabel, arr; Nolabel, c1; Nolabel, c2; Nolabel, newval]))
+                       [Nolabel, arr; Nolabel, c1; Nolabel, c2;
+                        Nolabel, newval]))
   | [c1;c2;c3] ->
       mkexp(Pexp_apply(ghexp(Pexp_ident(set 3)),
-                       [Nolabel, arr; Nolabel, c1; Nolabel, c2; Nolabel, c3; Nolabel, newval]))
+                       [Nolabel, arr; Nolabel, c1; Nolabel, c2; Nolabel, c3;
+                        Nolabel, newval]))
   | coords ->
       mkexp(Pexp_apply(ghexp(Pexp_ident(set 0)),
                        [Nolabel, arr;
@@ -1373,7 +1375,7 @@ simple_expr:
       { mkexp(Pexp_open(Fresh, mkrhs $1 1, $4)) }
   | mod_longident DOT LPAREN RPAREN
       { mkexp(Pexp_open(Fresh, mkrhs $1 1,
-			mkexp(Pexp_construct(mkrhs (Lident "()") 1, None)))) }
+                        mkexp(Pexp_construct(mkrhs (Lident "()") 1, None)))) }
   | mod_longident DOT LPAREN seq_expr error
       { unclosed "(" 3 ")" 5 }
   | simple_expr DOT LPAREN seq_expr RPAREN
@@ -1952,7 +1954,8 @@ with_constraints:
   | with_constraints AND with_constraint        { $3 :: $1 }
 ;
 with_constraint:
-    TYPE type_parameters label_longident with_type_binder core_type_no_attr constraints
+    TYPE type_parameters label_longident with_type_binder core_type_no_attr
+    constraints
       { Pwith_type
           (mkrhs $3 3,
            (Type.mk (mkrhs (Longident.last $3) 3)
@@ -2215,7 +2218,7 @@ index_operator_core:
 ;
 
 opt_assign_arrow:
-	                                        { "" }
+                                                { "" }
   | LESSMINUS                                   { "<-" }
 ;
 

@@ -244,7 +244,8 @@ let match_generic_printer_type ppf desc path args printer_type =
     List.map (fun ty_var -> Ctype.newconstr printer_type [ty_var]) args in
   let ty_expected =
     List.fold_right
-      (fun ty_arg ty -> Ctype.newty (Tarrow (Asttypes.Nolabel, ty_arg, ty, Cunknown)))
+      (fun ty_arg ty -> Ctype.newty (Tarrow (Asttypes.Nolabel, ty_arg, ty,
+                                             Cunknown)))
       ty_args (Ctype.newconstr printer_type [ty_target]) in
   Ctype.unify !toplevel_env
     ty_expected
@@ -412,7 +413,8 @@ let trim_signature = function
            (function
                Sig_module (id, md, rs) ->
                  Sig_module (id, {md with md_attributes =
-                                  (Location.mknoloc "...", Parsetree.PStr []) :: md.md_attributes},
+                                    (Location.mknoloc "...", Parsetree.PStr [])
+                                    :: md.md_attributes},
                              rs)
              (*| Sig_modtype (id, Modtype_manifest mty) ->
                  Sig_modtype (id, Modtype_manifest (trim_modtype mty))*)

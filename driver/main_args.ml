@@ -327,6 +327,11 @@ let mk_dtimings f =
   "-dtimings", Arg.Unit f, " Print timings"
 ;;
 
+let mk_unbox_closures f =
+  "-unbox-closures", Arg.Unit f,
+  " Pass closure contents in arguments rather than in an allocated block"
+;;
+
 let mk_unsafe f =
   "-unsafe", Arg.Unit f,
   " Do not compile bounds checking on array and string access"
@@ -646,6 +651,7 @@ module type Optcommon_options = sig
   val _inline_alloc_cost : int -> unit
   val _inline_prim_cost : int -> unit
   val _inline_branch_cost : int -> unit
+  val _unbox_closures : unit -> unit
 
   val _dclambda : unit -> unit
   val _dcmm : unit -> unit
@@ -897,6 +903,7 @@ struct
     mk_strict_sequence F._strict_sequence;
     mk_strict_formats F._strict_formats;
     mk_thread F._thread;
+    mk_unbox_closures F._unbox_closures;
     mk_unsafe F._unsafe;
     mk_unsafe_string F._unsafe_string;
     mk_v F._v;
@@ -971,6 +978,7 @@ module Make_opttop_options (F : Opttop_options) = struct
     mk_stdin F._stdin;
     mk_strict_sequence F._strict_sequence;
     mk_strict_formats F._strict_formats;
+    mk_unbox_closures F._unbox_closures;
     mk_unsafe F._unsafe;
     mk_unsafe_string F._unsafe_string;
     mk_version F._version;

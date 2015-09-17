@@ -501,7 +501,8 @@ static asize_t clip_heap_chunk_size (asize_t request)
     request = Heap_chunk_min;
   }
   return
-    Wsize_bsize (((Bsize_wsize (request) + Page_size - 1) >> Page_log) << Page_log);
+    Wsize_bsize (((Bsize_wsize (request) + Page_size - 1)
+                  >> Page_log) << Page_log);
 }
 
 /* Compute the heap increment, make sure the request is at least that big,
@@ -538,14 +539,16 @@ void caml_init_major_heap (asize_t heap_size)
   caml_stat_heap_wsz = Wsize_bsize (clip_heap_chunk_size (heap_size));
   caml_stat_top_heap_wsz = caml_stat_heap_wsz;
   Assert (Bsize_wsize (caml_stat_heap_wsz) % Page_size == 0);
-  caml_heap_start = (char *) caml_alloc_for_heap (Bsize_wsize (caml_stat_heap_wsz));
+  caml_heap_start =
+    (char *) caml_alloc_for_heap (Bsize_wsize (caml_stat_heap_wsz));
   if (caml_heap_start == NULL)
     caml_fatal_error ("Fatal error: not enough memory for the initial heap.\n");
   Chunk_next (caml_heap_start) = NULL;
   caml_stat_heap_chunks = 1;
 
   if (caml_page_table_add(In_heap, caml_heap_start,
-                          caml_heap_start + Bsize_wsize (caml_stat_heap_wsz)) != 0) {
+                          caml_heap_start + Bsize_wsize (caml_stat_heap_wsz))
+      != 0) {
     caml_fatal_error ("Fatal error: not enough memory "
                       "for the initial page table.\n");
   }

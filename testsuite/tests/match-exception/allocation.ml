@@ -15,7 +15,8 @@ let test_multiple_match_does_not_allocate =
   let allocated_bytes'' = Gc.allocated_bytes () in
   let _ = f a b in
   let allocated_bytes''' = Gc.allocated_bytes () in
-  if allocated_bytes' -. allocated_bytes = allocated_bytes''' -. allocated_bytes''
+  if allocated_bytes' -. allocated_bytes
+     = allocated_bytes''' -. allocated_bytes''
   then
     Printf.printf "no allocations for multiple-value match\n"
   else

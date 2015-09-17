@@ -25,7 +25,8 @@ external invoke_traced_function : Obj.t -> Obj.t -> Obj.t -> Obj.t
                                 = "caml_invoke_traced_function"
 external get_section_table : unit -> (string * Obj.t) list
                            = "caml_get_section_table"
-external add_debug_info : bytes -> int -> Instruct.debug_event list array -> unit
+external add_debug_info :
+  bytes -> int -> Instruct.debug_event list array -> unit
                         = "caml_add_debug_info"
 external remove_debug_info : bytes -> unit
                            = "caml_remove_debug_info"

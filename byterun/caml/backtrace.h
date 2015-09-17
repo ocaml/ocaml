@@ -52,10 +52,11 @@
  */
 CAMLextern int caml_backtrace_active;
 
-/* The [backtrace_slot] type represents values stored in the [caml_backtrace_buffer].
- * In bytecode, it is the same as a [code_t], in native code it as a [frame_descr *].
- * The difference doesn't matter for code outside [backtrace_prim.c], so it is
- * just exposed as a [backtrace_slot].
+/* The [backtrace_slot] type represents values stored in the
+ * [caml_backtrace_buffer].  In bytecode, it is the same as a
+ * [code_t], in native code it as a [frame_descr *].  The difference
+ * doesn't matter for code outside [backtrace_prim.c], so it is just
+ * exposed as a [backtrace_slot].
  */
 typedef void * backtrace_slot;
 
@@ -106,15 +107,16 @@ CAMLprim value caml_record_backtrace(value vflag);
 /* Path to the file containing debug information, if any, or NULL. */
 CAMLextern char * caml_cds_file;
 
-/* Primitive called _only_ by runtime to record unwinded frames to backtrace.
- * A similar primitive exists for native code, but with a different prototype. */
+/* Primitive called _only_ by runtime to record unwinded frames to
+ * backtrace.  A similar primitive exists for native code, but with a
+ * different prototype. */
 extern void caml_stash_backtrace(value exn, code_t pc, value * sp, int reraise);
 
 #endif
 
 
-/* Default (C-level) printer for backtraces.
- * It is called if an exception causes a termination of the program or of a thread.
+/* Default (C-level) printer for backtraces.  It is called if an
+ * exception causes a termination of the program or of a thread.
  *
  * [Printexc] provide a higher-level printer mimicking its output but making
  * use of registered exception printers, and is used when possible in place of

@@ -41,6 +41,52 @@ let apply_on_subexpressions f f_named (flam : Flambda.t) =
     f f1; f f2
   | For { body; _ } -> f body
 
+let map_subexpressions f f_named (tree:Flambda.t) : Flambda.t =
+  match tree with
+  | Var _ | Apply _ | Assign _ | Send _ | Proved_unreachable -> tree
+  | Let { var; defining_expr; body; _ } ->
+    Flambda.create_let var (f_named var defining_expr) (f body)
+  | Let_rec (defs, body) ->
+    let defs = List.map (fun (id, lam) -> id, f_named id lam) defs in
+    Let_rec (defs, f body)
+  | Let_mutable (mut_var, var, body) ->
+    Let_mutable (mut_var, var, f body)
+  | Switch (arg, sw) ->
+    let sw =
+      { sw with
+        failaction = Misc.may_map f sw.failaction;
+        consts = List.map (fun (i,v) -> i, f v) sw.consts;
+        blocks = List.map (fun (i,v) -> i, f v) sw.blocks;
+      }
+    in
+    Switch (arg, sw)
+  | String_switch (arg, sw, def) ->
+    let sw = List.map (fun (i,v) -> i, f v) sw in
+    let def = Misc.may_map f def in
+    String_switch(arg, sw, def)
+  | Static_raise(i, args) ->
+    let args = List.map f args in
+    Static_raise (i, args)
+  | Static_catch (i, vars, body, handler) ->
+    let body = f body in
+    let handler = f handler in
+    Static_catch (i, vars, body, handler)
+  | Try_with(body, id, handler) ->
+    let body = f body in
+    let handler = f handler in
+    Try_with(body, id, handler)
+  | If_then_else(arg, ifso, ifnot) ->
+    let ifso = f ifso in
+    let ifnot = f ifnot in
+    If_then_else(arg, ifso, ifnot)
+  | While(cond, body) ->
+    let cond = f cond in
+    let body = f body in
+    While(cond, body)
+  | For { bound_var; from_value; to_value; direction; body; } ->
+    let body = f body in
+    For { bound_var; from_value; to_value; direction; body; }
+
 type maybe_named =
   | Expr of Flambda.t
   | Named of Flambda.named

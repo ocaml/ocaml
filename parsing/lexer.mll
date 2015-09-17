@@ -372,7 +372,8 @@ rule token = parse
         with Failure _ ->
           raise (Error(Literal_overflow "nativeint", Location.curr lexbuf)) }
   | (float_literal | int_literal) identchar+
-      { raise (Error(Invalid_literal (Lexing.lexeme lexbuf), Location.curr lexbuf)) }
+      { raise (Error(Invalid_literal (Lexing.lexeme lexbuf),
+                     Location.curr lexbuf)) }
   | "\""
       { reset_string_buffer();
         is_in_string := true;

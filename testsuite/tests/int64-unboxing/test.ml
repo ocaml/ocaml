@@ -17,7 +17,8 @@ external ( - ) : (int64 [@unboxed]) -> (int64 [@unboxed]) -> (int64 [@unboxed])
 external ( * ) : (int64 [@unboxed]) -> (int64 [@unboxed]) -> (int64 [@unboxed])
   = "" "noalloc" "test_int64_mul"
 
-external ignore_int64 : (int64 [@unboxed]) -> unit = "" "noalloc" "test_ignore_int64"
+external ignore_int64 :
+    (int64 [@unboxed]) -> unit = "" "noalloc" "test_ignore_int64"
 
 let f () =
   let r = ref 1L in

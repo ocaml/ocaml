@@ -589,7 +589,9 @@ and transl_signature env sg =
             List.iter
               (fun decl -> check_name check_type names decl.ptype_name)
               sdecls;
-            let (decls, newenv) = Typedecl.transl_type_decl env rec_flag sdecls in
+            let (decls, newenv) =
+              Typedecl.transl_type_decl env rec_flag sdecls
+            in
             let (trem, rem, final_env) = transl_sig newenv srem in
             mksig (Tsig_type (rec_flag, decls)) env loc :: trem,
             map_rec_type_with_row_types ~rec_flag
@@ -1317,7 +1319,8 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
             (fun {md_id=id; md_type=mty} (name, _, smodl, attrs, loc) ->
                let modl =
                  Typetexp.with_warning_attribute attrs (fun () ->
-                   type_module true funct_body (anchor_recmodule id anchor) newenv smodl)
+                   type_module true funct_body (anchor_recmodule id anchor)
+                               newenv smodl)
                in
                let mty' =
                  enrich_module_type anchor (Ident.name id) modl.mod_type newenv
@@ -1457,7 +1460,7 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
 let type_toplevel_phrase env s =
   Env.reset_required_globals ();
   type_structure ~toplevel:true false None env s Location.none
-(*let type_module_alias = type_module ~alias:true true false None*)
+let type_module_alias = type_module ~alias:true true false None
 let type_module = type_module true false None
 let type_structure = type_structure false None
 
@@ -1518,6 +1521,8 @@ let type_package env m p nl tl =
   let (mp, env) =
     match modl.mod_desc with
       Tmod_ident (mp,_) -> (mp, env)
+    | Tmod_constraint ({mod_desc=Tmod_ident (mp,_)}, mty, Tmodtype_implicit, _)
+        -> (mp, env)  (* PR#6982 *)
     | _ ->
       let (id, new_env) = Env.enter_module ~arg:true "%M" modl.mod_type env in
       (Pident id, new_env)
@@ -1546,7 +1551,7 @@ let type_package env m p nl tl =
 
 (* Fill in the forward declarations *)
 let () =
-  Typecore.type_module := type_module;
+  Typecore.type_module := type_module_alias;
   Typetexp.transl_modtype_longident := transl_modtype_longident;
   Typetexp.transl_modtype := transl_modtype;
   Typecore.type_open := type_open_ ?toplevel:None;

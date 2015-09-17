@@ -163,7 +163,7 @@ define camlblock
   set $mysize = $size
   set $camlnext = $arg0 + $camlwordsize * ($size + 1)
   printf "\n"
-  
+
   if $tag == 252
     x/s $arg0
   end
@@ -209,7 +209,7 @@ define camlblock
       if ($field & 1) == 1
         camlint $field
       end
-      printf "\n"        
+      printf "\n"
       set $count = $count + 1
     end
     if $count < $mysize

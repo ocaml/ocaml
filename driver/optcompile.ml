@@ -58,8 +58,9 @@ let (++) x f = f x
 let (+++) (x, y) f = (x, f y)
 
 let do_transl modulename modul =
-  let id, lam = Translmod.transl_implementation_native modulename modul in
-  let size = Translmod.structure_size modulename modul in
+  let id, (lam, size) =
+    Translmod.transl_implementation_native modulename modul
+  in
   (id, size), lam
 
 let implementation ppf sourcefile outputprefix ~backend =

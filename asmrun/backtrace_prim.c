@@ -93,7 +93,8 @@ void caml_stash_backtrace(value exn, uintnat pc, char * sp, char * trapsp)
   }
   if (caml_backtrace_buffer == NULL) {
     Assert(caml_backtrace_pos == 0);
-    caml_backtrace_buffer = malloc(BACKTRACE_BUFFER_SIZE * sizeof(backtrace_slot));
+    caml_backtrace_buffer = malloc(BACKTRACE_BUFFER_SIZE
+                                   * sizeof(backtrace_slot));
     if (caml_backtrace_buffer == NULL) return;
   }
 
@@ -164,7 +165,8 @@ CAMLprim value caml_get_current_callstack(value max_frames_value)
     for (trace_pos = 0; trace_pos < trace_size; trace_pos++) {
       frame_descr * descr = caml_next_frame_descriptor(&pc, &sp);
       Assert(descr != NULL);
-      Store_field(trace, trace_pos, caml_val_raw_backtrace_slot((backtrace_slot) descr));
+      Store_field(trace, trace_pos,
+                  caml_val_raw_backtrace_slot((backtrace_slot) descr));
     }
   }
 
@@ -172,7 +174,8 @@ CAMLprim value caml_get_current_callstack(value max_frames_value)
 }
 
 /* Extract location information for the given frame descriptor */
-void caml_extract_location_info(backtrace_slot slot, /*out*/ struct caml_loc_info * li)
+void caml_extract_location_info(backtrace_slot slot,
+                                /*out*/ struct caml_loc_info * li)
 {
   uintnat infoptr;
   uint32_t info1, info2;
@@ -210,7 +213,8 @@ void caml_extract_location_info(backtrace_slot slot, /*out*/ struct caml_loc_inf
   li->loc_endchr = ((info2 & 0xF) << 6) | (info1 >> 26);
 }
 
-CAMLprim value caml_add_debug_info(backtrace_slot start, value size, value events)
+CAMLprim value caml_add_debug_info(backtrace_slot start, value size,
+                                   value events)
 {
   return Val_unit;
 }

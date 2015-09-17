@@ -321,11 +321,11 @@ let bind ~bindings ~body =
       Flambda.create_let var var_def expr)
     body bindings
 
-let name_expr (named : Flambda.named) : Flambda.t =
+let name_expr ?(name = "named") (named : Flambda.named) : Flambda.t =
   let var =
     Variable.create
       ~current_compilation_unit:(Compilation_unit.get_current_exn ())
-      "named"
+      name
   in
   Flambda.create_let var named (Var var)
 
@@ -455,17 +455,17 @@ let all_sets_of_closures program =
 let make_variable_symbol var =
   Symbol.create (Compilation_unit.get_current_exn ())
     (Linkage_name.create
-       ("lifted_" ^ Variable.unique_name (Variable.freshen var)))
+       (Variable.unique_name (Variable.freshen var)))
 
-let substitute_variable_to_symbol var symbol expr =
-  let bind fresh_var (expr:Flambda.t) : Flambda.t =
+let substitute_variable_to_symbol substitution expr =
+  let bind var fresh_var (expr:Flambda.t) : Flambda.t =
+    let symbol = Variable.Map.find var substitution in
     Flambda.create_let fresh_var (Read_symbol_field (symbol, 0)) expr
   in
-  let substitute_named fresh (named:Flambda.named) : Flambda.named =
+  let substitute_named bindings (named:Flambda.named) : Flambda.named =
     let sb to_substitute =
-      if Variable.equal to_substitute var then
-        fresh
-      else
+      try Variable.Map.find to_substitute bindings with
+      | Not_found ->
         to_substitute
     in
     match named with
@@ -499,108 +499,123 @@ let substitute_variable_to_symbol var symbol expr =
     | Prim (prim, args, dbg) ->
       Prim (prim, List.map sb args, dbg)
   in
+  let make_var_subst var =
+    if Variable.Map.mem var substitution then
+      let fresh = Variable.freshen var in
+      fresh, (fun expr -> bind var fresh expr)
+    else
+      var, (fun x -> x)
+  in
   let f (expr:Flambda.t) : Flambda.t =
     match expr with
-    | Var v when Variable.equal v var ->
-      let fresh = Variable.freshen var in
-      bind fresh (Var fresh)
+    | Var v when Variable.Map.mem v substitution ->
+      let fresh = Variable.freshen v in
+      bind v fresh (Var fresh)
     | Var _ -> expr
     | Let ({ var = v; defining_expr = named; _ } as let_expr) ->
-      if Variable.Set.mem var (Flambda.free_variables_named named) then
-        (* The new [Let] that we build has the same body as [let_expr], so
-           we can avoid recalculating free variables. *)
-        let module W = Flambda.With_free_variables in
-        let body = W.of_body_of_let let_expr in
-        let fresh = Variable.freshen var in
-        let named = substitute_named fresh named in
-        bind fresh (W.create_let_reusing_body v named body)
-      else
-        expr
-    | Let_mutable (mut_var, var', body) ->
-      if Variable.equal var var' then
-        let fresh = Variable.freshen var in
-        bind fresh (Let_mutable (mut_var, fresh, body))
-      else
-        expr
-    | Let_rec (defs, body) ->
-      let need_substitution =
-        List.exists (fun (_, named) -> Variable.Set.mem var (Flambda.free_variables_named named))
-          defs
+      let to_substitute =
+        Variable.Set.filter
+          (fun v -> Variable.Map.mem v substitution)
+          (Flambda.free_variables_named named)
       in
-      if need_substitution then
-        let fresh = Variable.freshen var in
-        let defs =
-          List.map (fun (v, named) -> v, substitute_named fresh named) defs
-        in
-        bind fresh (Let_rec (defs, body))
-      else
+      if Variable.Set.is_empty to_substitute then
         expr
-    | If_then_else (cond, ifso, ifnot) when Variable.equal cond var ->
+      else
+        let bindings =
+          Variable.Map.of_set Variable.freshen to_substitute
+        in
+        let named =
+          substitute_named bindings named
+        in
+        let expr =
+          let module W = Flambda.With_free_variables in
+          W.create_let_reusing_body v named (W.of_body_of_let let_expr)
+        in
+        Variable.Map.fold (fun to_substitute fresh expr ->
+            bind to_substitute fresh expr)
+          bindings expr
+    | Let_mutable (mut_var, var, body) when Variable.Map.mem var substitution ->
       let fresh = Variable.freshen var in
-      bind fresh (If_then_else (fresh, ifso, ifnot))
+      bind var fresh (Let_mutable (mut_var, fresh, body))
+    | Let_mutable (_mut_var, _var, _body) ->
+      expr
+    | Let_rec (defs, body) ->
+      let free_variables_of_defs =
+        List.fold_left (fun set (_, named) ->
+            Variable.Set.union set (Flambda.free_variables_named named))
+          Variable.Set.empty defs
+      in
+      let to_substitute =
+        Variable.Set.filter
+          (fun v -> Variable.Map.mem v substitution)
+          free_variables_of_defs
+      in
+      if Variable.Set.is_empty to_substitute then
+        expr
+      else begin
+        let bindings =
+          Variable.Map.of_set Variable.freshen to_substitute
+        in
+        let defs =
+          List.map (fun (var, named) ->
+              var, substitute_named bindings named)
+            defs
+        in
+        let expr =
+          Flambda.Let_rec (defs, body)
+        in
+        Variable.Map.fold (fun to_substitute fresh expr ->
+            bind to_substitute fresh expr)
+          bindings expr
+      end
+    | If_then_else (cond, ifso, ifnot) when Variable.Map.mem cond substitution ->
+      let fresh = Variable.freshen cond in
+      bind cond fresh (If_then_else (fresh, ifso, ifnot))
     | If_then_else _ ->
       expr
-    | Switch (cond, sw) when Variable.equal cond var ->
-      let fresh = Variable.freshen var in
-      bind fresh (Switch (fresh, sw))
+    | Switch (cond, sw) when Variable.Map.mem cond substitution ->
+      let fresh = Variable.freshen cond in
+      bind cond fresh (Switch (fresh, sw))
     | Switch _ ->
       expr
-    | String_switch (cond, sw, def) when Variable.equal cond var ->
-      let fresh = Variable.freshen var in
-      bind fresh (String_switch (fresh, sw, def))
+    | String_switch (cond, sw, def) when Variable.Map.mem cond substitution ->
+      let fresh = Variable.freshen cond in
+      bind cond fresh (String_switch (fresh, sw, def))
     | String_switch _ ->
       expr
-    | Assign { being_assigned; new_value } when Variable.equal new_value var ->
-      let fresh = Variable.freshen var in
-      bind fresh (Assign { being_assigned; new_value = fresh })
+    | Assign { being_assigned; new_value } when Variable.Map.mem new_value substitution ->
+      let fresh = Variable.freshen new_value in
+      bind new_value fresh (Assign { being_assigned; new_value = fresh })
     | Assign _ ->
       expr
     | Static_raise (_exn, (_arg:Flambda.t list)) ->
       (* If the type change to variable, this needs to be
          updated with substitution *)
       expr
-    | For { bound_var; from_value; to_value; direction; body }
-      when Variable.equal var from_value || Variable.equal var to_value ->
-      let fresh = Variable.freshen var in
-      let from_value =
-        if Variable.equal var from_value then fresh else from_value
+    | For { bound_var; from_value; to_value; direction; body } ->
+      let from_value, bind_from_value = make_var_subst from_value in
+      let to_value, bind_to_value = make_var_subst to_value in
+      bind_from_value @@
+      bind_to_value @@
+      Flambda.For { bound_var; from_value; to_value; direction; body }
+    | Apply { func; args; kind; dbg } ->
+      let func, bind_func = make_var_subst func in
+      let args, bind_args =
+        List.split (List.map make_var_subst args)
       in
-      let to_value =
-        if Variable.equal var to_value then fresh else to_value
+      bind_func @@
+      List.fold_right (fun f expr -> f expr) bind_args @@
+      Flambda.Apply { func; args; kind; dbg }
+    | Send { kind; meth; obj; args; dbg } ->
+      let meth, bind_meth = make_var_subst meth in
+      let obj, bind_obj = make_var_subst obj in
+      let args, bind_args =
+        List.split (List.map make_var_subst args)
       in
-      bind fresh (For { bound_var; from_value; to_value; direction; body })
-    | For _ ->
-      expr
-    | Apply { func; args; kind; dbg }
-      when Variable.equal var func
-           || List.exists (Variable.equal var) args ->
-      let fresh = Variable.freshen var in
-      let func =
-        if Variable.equal var func then fresh else func
-      in
-      let args =
-        List.map (fun arg -> if Variable.equal var arg then fresh else arg) args
-      in
-      bind fresh (Apply { func; args; kind; dbg })
-    | Apply _ ->
-      expr
-    | Send { kind; meth; obj; args; dbg }
-      when Variable.equal var meth
-           || Variable.equal var obj
-           || List.exists (Variable.equal var) args ->
-      let fresh = Variable.freshen var in
-      let meth =
-        if Variable.equal var meth then fresh else meth
-      in
-      let obj =
-        if Variable.equal var obj then fresh else obj
-      in
-      let args =
-        List.map (fun arg -> if Variable.equal var arg then fresh else arg) args
-      in
-      bind fresh (Send { kind; meth; obj; args; dbg })
-    | Send _ ->
-      expr
+      bind_meth @@
+      bind_obj @@
+      List.fold_right (fun f expr -> f expr) bind_args @@
+      Flambda.Send { kind; meth; obj; args; dbg }
     | Proved_unreachable
     | While _
     | Try_with _

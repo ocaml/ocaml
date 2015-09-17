@@ -28,7 +28,7 @@ let abi =
   | "ppc64" -> ELF64v1
   | "ppc64le" -> ELF64v2
   | _ -> assert false
-  
+
 (* Machine-specific command-line options *)
 
 let big_toc = ref false
@@ -36,7 +36,7 @@ let big_toc = ref false
 let command_line_options = [
   "-flarge-toc", Arg.Set big_toc,
      " Support TOC (table of contents) greater than 64 kbytes"
-]     
+]
 
 (* Specific operations *)
 

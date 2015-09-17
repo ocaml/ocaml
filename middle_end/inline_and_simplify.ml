@@ -754,40 +754,38 @@ and simplify_direct env r (tree : Flambda.t) : Flambda.t * R.t =
        points. *)
     simplify_using_approx_and_env env r (Var var) (E.find_exn env var)
   | Apply apply -> simplify_apply env r ~apply
-  | Let { var; defining_expr; body; free_vars_of_body = _ } ->
-    let defining_expr, r = simplify_named env r defining_expr in
-    (* When [defining_expr] is really a [Flambda.named] rather than an
-       [Flambda.t], squash any intermediate [let], or we will never eliminate
-       certain cases (e.g. when a variable is simplified to a constant). *)
-    let defining_expr =
-      match defining_expr with
-      | Expr (Let { var = var1; defining_expr; body = Var var2; _ })
-          when Variable.equal var1 var2 -> defining_expr
-      | _ -> defining_expr
+  | Let _ ->
+    let for_defining_expr (env, r) var defining_expr =
+      let defining_expr, r = simplify_named env r defining_expr in
+      let var, sb = Freshening.add_variable (E.freshening env) var in
+      let env = E.set_freshening env sb in
+      let env = E.add env var (R.approx r) in
+      (env, r), var, defining_expr
     in
-    let var, sb = Freshening.add_variable (E.freshening env) var in
-    let env = E.set_freshening env sb in
-    let body, r = simplify (E.add env var (R.approx r)) r body in
-    (* We take care not to calculate the free variables of [body] twice. *)
-    let module W = Flambda.With_free_variables in
-    let body = W.of_expr body in
-    let free_vars_of_body = W.free_variables body in
-    let (expr : Flambda.t), r =
+    let for_last_body (env, r) body =
+      simplify env r body
+    in
+    let filter_defining_expr r var defining_expr free_vars_of_body =
       if Variable.Set.mem var free_vars_of_body then
-        (W.create_let_reusing_body var defining_expr body), r
+        r, var, Some defining_expr
       else if Effect_analysis.no_effects_named defining_expr then
         let r = R.map_benefit r (B.remove_code_named defining_expr) in
-        (W.contents body), r
+        r, var, None
       else
         (* CR mshinwell: check that Pignore is inserted correctly by a later
-           pass. *)
+           pass.
+           pchambart: Is it still relevant ? Why should we need ignore anymore ? *)
         (* Generate a fresh name for increasing legibility of the
            intermediate language (in particular to make it more obvious that
            the variable is unused). *)
         let fresh_var = Variable.create "for_side_effect_only" in
-        (W.create_let_reusing_body fresh_var defining_expr body), r
+        r, fresh_var, Some defining_expr
     in
-    expr, r
+    Flambda.fold_lets_option tree
+      ~init:(env, r)
+      ~for_defining_expr
+      ~for_last_body
+      ~filter_defining_expr
   | Let_mutable (mut_var, var, body) ->
     (* CR mshinwell: add the dead let elimination, as above. *)
     simplify_free_variable env var ~f:(fun env var ->
