@@ -65,9 +65,11 @@ and value_set_of_closures = {
 
 let descr t = t.descr
 
-let print_value_set_of_closures ppf { function_decls = { funs } } =
-  Format.fprintf ppf "(set_of_closures:@ %a)"
+let print_value_set_of_closures ppf
+      { function_decls = { funs }; unchanging_params; _ } =
+  Format.fprintf ppf "(set_of_closures:@ %a unchanging_params=%a)"
     (fun ppf -> Variable.Map.iter (fun id _ -> Variable.print ppf id)) funs
+    Variable.Set.print unchanging_params
 
 let rec print_descr ppf = function
   | Value_int i -> Format.pp_print_int ppf i

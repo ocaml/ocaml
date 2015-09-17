@@ -145,3 +145,23 @@ val substitute_variable_to_symbol
 module Switch_storer : sig
   val mk_store : unit -> Flambda.t Switch.t_store
 end
+
+(** Within a set of function declarations there is a set of function bodies,
+    each of which may (or may not) reference one of the other functions in
+    the same set.  Initially such intra-set references are by [Var]s (known
+    as "fun_var"s) but if the function is lifted by [Lift_constants] then the
+    references will be translated to [Symbol]s.  This means that optimization
+    passes that need to identify whether a given "fun_var" (i.e. a key in the
+    [funs] map in a value of type [function_declarations]) is used in one of
+    the function bodies need to examine the [free_symbols] as well as the
+    [free_variables] members of [function_declarations].  This function makes
+    that process easier by computing all used "fun_var"s in the bodies of
+    the given set of function declarations, including the cases where the
+    references are [Symbol]s.  The returned value is a map from "fun_var"s
+    to the "fun_var"s (if any) used in the body of the function associated
+    with that "fun_var".
+*)
+val fun_vars_referenced_in_decls
+   : Flambda.function_declarations
+  -> backend:(module Backend_intf.S)
+  -> Variable.Set.t Variable.Map.t

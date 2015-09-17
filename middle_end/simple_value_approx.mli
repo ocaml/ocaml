@@ -147,6 +147,10 @@ val descrs : t list -> descr list
 (** Pretty-printing of approximations to a formatter. *)
 val print : Format.formatter -> t -> unit
 val print_descr : Format.formatter -> descr -> unit
+val print_value_set_of_closures
+   : Format.formatter
+  -> value_set_of_closures
+  -> unit
 
 (** Basic construction of approximations. *)
 val value_unknown : t
