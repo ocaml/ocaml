@@ -35,6 +35,7 @@ dllib=''
 x11_include_dir=''
 x11_lib_dir=''
 graph_wanted=yes
+libedit_wanted=yes
 pthread_wanted=yes
 dl_defs=''
 verbose=no
@@ -130,6 +131,8 @@ while : ; do
     -x11lib*|--x11lib*)
         x11_lib_dir=$2; shift;;
     -no-graph|--no-graph) graph_wanted=no;;
+    -no-libedit|--no-libedit)
+      libedit_wanted=no;;
     -with-pthread*|--with-pthread*)
         ;; # Ignored for backward compatibility
     -no-pthread*|--no-pthread*)
@@ -1383,6 +1386,18 @@ esac
 
 echo "BNG_ARCH=$bng_arch" >> Makefile
 echo "BNG_ASM_LEVEL=$bng_asm_level" >> Makefile
+
+# Determine if the libedit library is supported
+
+if test "$libedit_wanted" = "yes"; then
+  if sh ./hasgot -i stdio.h -i histedit.h -ledit history_init; then
+    inf "libedit supported."
+    cclibs="$cclibs -ledit"
+    echo "#define HAS_LIBEDIT" >> s.h
+  else
+    inf "libedit not found."
+  fi
+fi
 
 # Determine if the POSIX threads library is supported
 

@@ -20,6 +20,9 @@
 #include <stdio.h>
 #include <sys/types.h>
 #include "caml/config.h"
+#ifdef HAS_LIBEDIT
+#include <histedit.h>
+#endif
 #ifdef HAS_UNISTD
 #include <unistd.h>
 #endif
@@ -813,4 +816,95 @@ CAMLprim value caml_ml_input_scan_line(value vchannel)
   res = caml_input_scan_line(channel);
   Unlock(channel);
   CAMLreturn (Val_long(res));
+}
+
+static value readline_fallback(value prompt, value buffer, value len) {
+  CAMLparam3 (prompt, buffer, len);
+  CAMLlocal1 (res);
+  int cnt = 0;
+  int eof = 0;
+
+  char *buf = String_val(buffer);
+  int max = Long_val(len);
+
+  fputs(String_val(prompt), stdout);
+  fflush(stdout);
+
+  while (cnt < max) {
+    ssize_t retcode;
+    do {
+      retcode = read(fileno(stdin), buf + cnt, 1);
+    } while (retcode == -1 && errno == EINTR);
+
+    if (retcode == 0) { eof = 1; }
+    if (retcode != 1) { break; }
+    cnt++;
+    if (buf[cnt - 1] == '\n') { break; }
+  }
+
+  res = caml_alloc_tuple(2);
+  Store_field(res, 0, Val_int(cnt));
+  Store_field(res, 1, Val_int(eof));
+
+  CAMLreturn (res);
+}
+
+#ifdef HAS_LIBEDIT
+static const char* readline_prompt(EditLine *el) {
+  const char *prompt;
+  el_get(el, EL_CLIENTDATA, &prompt);
+  return prompt;
+}
+#endif
+
+CAMLprim value caml_toplevel_readline(value prompt, value buffer, value len) {
+#ifdef HAS_LIBEDIT
+  CAMLparam3 (prompt, buffer, len);
+  CAMLlocal1 (res);
+  int cnt;
+
+  static EditLine *l = NULL;
+  static History *h = NULL;
+  static const char* line = NULL;
+
+  if (!isatty(fileno(stdout))) {
+    // If we're not an interactive TTY, libedit is probably not necessary to use
+    // and can do slightly odd things (notably sometimes not printing a prompt).
+    // Just use the fallback if so.
+    CAMLreturn (readline_fallback(prompt, buffer, len));
+  }
+
+  if (!l) {
+    HistEvent ev;
+    h = history_init();
+    history(h, &ev, H_SETSIZE, 100);
+
+    l = el_init("ocaml", stdin, stdout, stderr);
+    el_set(l, EL_EDITOR, "emacs");
+    el_set(l, EL_PROMPT, &readline_prompt);
+    el_set(l, EL_HIST, history, h);
+  }
+
+  if (line) {
+    cnt = strlen(line);
+  } else {
+    HistEvent ev;
+    el_set(l, EL_CLIENTDATA, String_val(prompt));
+    line = el_gets(l, &cnt);
+    if (line) { history(h, &ev, H_ENTER, line); }
+  }
+
+  if (cnt > Long_val(len)) { cnt = Long_val(len); }
+  memcpy(String_val(buffer), line, cnt);
+  line += cnt;
+  if (line && *line == '\0') { line = NULL; }
+
+  res = caml_alloc_tuple(2);
+  Store_field(res, 0, Val_int(cnt));
+  Store_field(res, 1, Val_int(feof(stdin)));
+
+  CAMLreturn (res);
+#else
+  return readline_fallback(prompt, buffer, len);
+#endif
 }
