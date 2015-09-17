@@ -286,8 +286,6 @@ let for_call_site ~env ~r ~(function_decls : Flambda.function_declarations)
     Find_recursive_functions.in_function_declarations function_decls
       ~backend:(E.backend env)
   in
-Format.eprintf "recursive functions %a\n"
-  Variable.Set.print recursive_functions;
   let probably_a_functor =
     is_probably_a_functor ~env ~args_approxs ~recursive_functions
   in
