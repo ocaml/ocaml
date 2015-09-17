@@ -63,8 +63,6 @@ let let_rec_dep defs dep =
   in
   fixpoint dep
 
-(* CR mshinwell: this pass has a bug (typing/includemod.ml) *)
-
 let rec loop (program:Flambda.program) : Flambda.program * Symbol.Set.t =
   match program with
   | Let_symbol (sym,def,program) ->

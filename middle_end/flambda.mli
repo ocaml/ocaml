@@ -267,8 +267,6 @@ and function_declarations = private {
   set_of_closures_id : Set_of_closures_id.t;
   funs : function_declaration Variable.Map.t;
   compilation_unit : Compilation_unit.t;
-  recursively_bound : Variable.Set.t;
-  (** The subset of the keys of [funs] that are recursively bound. *)
 }
 
 and function_declaration = private {
@@ -281,13 +279,15 @@ and function_declaration = private {
      above *)
   (* CR mshinwell: make lazy *)
   free_variables : Variable.Set.t;
+  free_symbols : Symbol.Set.t;
+  (** All symbols that occur in the function's body. *)
+  (* CR mshinwell for pchambart: Why don't we call this
+     [unconditionally_inline]? *)
+  stub : bool;
   (** A stub function is a generated function used to prepare arguments or
       return values to allow indirect calls to functions with a special calling
       convention.  For instance indirect calls to tuplified functions must go
       through a stub.  Stubs will be unconditionally inlined. *)
-  (* CR mshinwell for pchambart: Why don't we call this
-     [unconditionally_inline]? *)
-  stub : bool;
   dbg : Debuginfo.t;
 }
 
@@ -499,6 +499,19 @@ val create_set_of_closures
   -> set_of_closures
 
 val used_params : function_declaration -> Variable.Set.t
+
+type maybe_named =
+  | Is_expr of t
+  | Is_named of named
+
+(** This function is designed for the internal use of [Flambda_iterators].
+    See that module for iterators to be used over Flambda terms. *)
+val iter_general
+   : toplevel:bool
+  -> (t -> unit)
+  -> (named -> unit)
+  -> maybe_named
+  -> unit
 
 val print : Format.formatter -> t -> unit
 

@@ -74,8 +74,6 @@ exception Declared_closure_from_another_unit of Compilation_unit.t
 exception Closure_id_is_bound_multiple_times of Closure_id.t
 exception Unbound_closure_ids of Closure_id.Set.t
 exception Unbound_vars_within_closures of Var_within_closure.Set.t
-exception Set_of_recursively_bound_functions_is_wrong of
-  Flambda.function_declarations
 
 exception Flambda_invariants_failed
 
@@ -247,15 +245,12 @@ let variable_and_symbol_invariants flam =
   and loop_set_of_closures env
       ({ Flambda.function_decls; free_vars; specialised_args; }
        as set_of_closures) =
-      let { Flambda.set_of_closures_id; funs; compilation_unit;
-            recursively_bound; } =
+      let { Flambda.set_of_closures_id; funs; compilation_unit; } =
         function_decls
       in
       ignore_set_of_closures_id set_of_closures_id;
       ignore_compilation_unit compilation_unit;
       let functions_in_closure = Variable.Map.keys funs in
-      if not (Variable.Set.subset recursively_bound functions_in_closure) then
-        raise (Set_of_recursively_bound_functions_is_wrong function_decls);
       let variables_in_closure =
         Variable.Map.fold (fun var var_in_closure variables_in_closure ->
             (* [var] may occur in the body, but will effectively be renamed
@@ -269,7 +264,8 @@ let variable_and_symbol_invariants flam =
       let all_params, all_free_vars =
         Variable.Map.fold (fun fun_var function_decl acc ->
             let all_params, all_free_vars = acc in
-            let { Flambda.params; body; free_variables; stub; dbg; } =
+            (* CR-soon mshinwell: check function_decl.all_symbols *)
+            let { Flambda.params; body; free_variables; stub; dbg; _ } =
               function_decl
             in
             assert (Variable.Set.mem fun_var functions_in_closure);
@@ -695,11 +691,6 @@ let check_exn ?(kind=Normal) ?(cmxfile=false) (flam:Flambda.program) =
     | Prevapply_should_be_expanded ->
       Format.eprintf ">> The Prevapply primitive should never occur in an \
         Flambda expression (see closure_conversion.ml); use Apply instead"
-    | Set_of_recursively_bound_functions_is_wrong function_decls ->
-      Format.eprintf ">> The set of recursively-bound functions in this set \
-          of function declarations contains variable(s) that are not associated \
-          with any function in the declaration: %a"
-        Flambda.print_function_declarations function_decls
     | exn -> raise exn
     end;
     Format.eprintf "\n@?";

@@ -107,13 +107,13 @@ and function_declarations = {
   set_of_closures_id : Set_of_closures_id.t;
   funs : function_declaration Variable.Map.t;
   compilation_unit : Compilation_unit.t;
-  recursively_bound : Variable.Set.t;
 }
 
 and function_declaration = {
   params : Variable.t list;
   body : t;
   free_variables : Variable.Set.t;
+  free_symbols : Symbol.Set.t;
   stub : bool;
   dbg : Debuginfo.t;
 }
@@ -609,6 +609,64 @@ let map_lets t ~for_defining_expr ~for_last_body ~after_rebuild =
   in
   loop t ~rev_lets:[]
 
+type maybe_named =
+  | Is_expr of t
+  | Is_named of named
+
+let iter_general ~toplevel f f_named maybe_named =
+  let rec aux (t : t) =
+    match t with
+    | Let _ ->
+      iter_lets t
+        ~for_defining_expr:(fun _var named -> aux_named named)
+        ~for_last_body:aux
+        ~for_each_let:f
+    | _ ->
+      f t;
+      match t with
+      | Var _ | Apply _ | Assign _ | Send _ | Proved_unreachable -> ()
+      | Let _ -> assert false
+      | Let_mutable (_mut_var, _var, body) ->
+        aux body
+      | Let_rec (defs, body) ->
+        List.iter (fun (_,l) -> aux_named l) defs;
+        aux body
+      | Try_with (f1,_,f2)
+      | While (f1,f2)
+      | Static_catch (_,_,f1,f2) ->
+        aux f1; aux f2
+      | For { body; _ } -> aux body
+      | If_then_else (_, f1, f2) ->
+        aux f1; aux f2
+      | Static_raise (_,l) ->
+        iter_list l
+      | Switch (_, sw) ->
+        List.iter (fun (_,l) -> aux l) sw.consts;
+        List.iter (fun (_,l) -> aux l) sw.blocks;
+        Misc.may aux sw.failaction
+      | String_switch (_, sw, def) ->
+        List.iter (fun (_,l) -> aux l) sw;
+        Misc.may aux def
+  and aux_named (named : named) =
+    f_named named;
+    match named with
+    | Symbol _ | Const _ | Allocated_const _ | Read_mutable _
+    | Read_symbol_field _
+    | Project_closure _ | Project_var _ | Move_within_set_of_closures _
+    | Prim _ -> ()
+    | Set_of_closures ({ function_decls = funcs; free_vars = _;
+          specialised_args = _}) ->
+      if not toplevel then begin
+        Variable.Map.iter (fun _ (decl : function_declaration) ->
+            aux decl.body)
+          funcs.funs
+      end
+    | Expr flam -> aux flam
+  and iter_list l = List.iter aux l in
+  match maybe_named with
+  | Is_expr expr -> aux expr
+  | Is_named named -> aux_named named
+
 module With_free_variables = struct
   type 'a t =
     | Expr : expr * Variable.Set.t -> expr t
@@ -715,11 +773,23 @@ let fold_lets_option
   in
   loop t ~acc:init ~rev_lets:[]
 
+let free_symbols expr =
+  let symbols = ref Symbol.Set.empty in
+  iter_general ~toplevel:false
+    (fun (_ : t) -> ())
+    (fun (named : named) ->
+      match named with
+      | Symbol symbol -> symbols := Symbol.Set.add symbol !symbols
+      | _ -> ())
+    (Is_expr expr);
+  !symbols
+
 let create_function_declaration ~params ~body ~stub ~dbg
       : function_declaration =
   { params;
     body;
     free_variables = free_variables body;
+    free_symbols = free_symbols body;
     stub;
     dbg;
   }
@@ -728,7 +798,6 @@ let create_function_declarations ~set_of_closures_id ~funs ~compilation_unit =
   { set_of_closures_id;
     funs;
     compilation_unit;
-    recursively_bound = Variable.Set.empty;
   }
 
 let update_function_declarations function_decls ~funs =

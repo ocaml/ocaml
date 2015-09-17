@@ -87,74 +87,20 @@ let map_subexpressions f f_named (tree:Flambda.t) : Flambda.t =
     let body = f body in
     For { bound_var; from_value; to_value; direction; body; }
 
-type maybe_named =
-  | Expr of Flambda.t
-  | Named of Flambda.named
+let iter_general = Flambda.iter_general
 
-let iter_general ~toplevel f f_named maybe_named =
-  let rec aux (t : Flambda.t) =
-    match t with
-    | Let _ ->
-      Flambda.iter_lets t
-        ~for_defining_expr:(fun _var named -> aux_named named)
-        ~for_last_body:aux
-        ~for_each_let:f
-    | _ ->
-      f t;
-      match t with
-      | Var _ | Apply _ | Assign _ | Send _ | Proved_unreachable -> ()
-      | Let _ -> assert false
-      | Let_mutable (_mut_var, _var, body) ->
-        aux body
-      | Let_rec (defs, body) ->
-        List.iter (fun (_,l) -> aux_named l) defs;
-        aux body
-      | Try_with (f1,_,f2)
-      | While (f1,f2)
-      | Static_catch (_,_,f1,f2) ->
-        aux f1; aux f2
-      | For { body; _ } -> aux body
-      | If_then_else (_, f1, f2) ->
-        aux f1; aux f2
-      | Static_raise (_,l) ->
-        iter_list l
-      | Switch (_, sw) ->
-        List.iter (fun (_,l) -> aux l) sw.consts;
-        List.iter (fun (_,l) -> aux l) sw.blocks;
-        Misc.may aux sw.failaction
-      | String_switch (_, sw, def) ->
-        List.iter (fun (_,l) -> aux l) sw;
-        Misc.may aux def
-  and aux_named (named : Flambda.named) =
-    f_named named;
-    match named with
-    | Symbol _ | Const _ | Allocated_const _ | Read_mutable _
-    | Read_symbol_field _
-    | Project_closure _ | Project_var _ | Move_within_set_of_closures _
-    | Prim _ -> ()
-    | Set_of_closures ({ function_decls = funcs; free_vars = _;
-          specialised_args = _}) ->
-      if not toplevel then begin
-        Variable.Map.iter (fun _ (decl : Flambda.function_declaration) ->
-            aux decl.body)
-          funcs.funs
-      end
-    | Expr flam -> aux flam
-  and iter_list l = List.iter aux l in
-  match maybe_named with
-  | Expr expr -> aux expr
-  | Named named -> aux_named named
-
-let iter f f_named t = iter_general ~toplevel:false f f_named (Expr t)
+let iter f f_named t = iter_general ~toplevel:false f f_named (Is_expr t)
 let iter_expr f t = iter f (fun _ -> ()) t
-let iter_on_named f f_named t = iter_general ~toplevel:false f f_named (Named t)
+let iter_on_named f f_named t =
+  iter_general ~toplevel:false f f_named (Is_named t)
 let iter_named f_named t = iter (fun (_ : Flambda.t) -> ()) f_named t
 let iter_named_on_named f_named named =
-  iter_general ~toplevel:false (fun (_ : Flambda.t) -> ()) f_named (Named named)
+  iter_general ~toplevel:false (fun (_ : Flambda.t) -> ()) f_named
+    (Is_named named)
 
-let iter_toplevel f f_named t = iter_general ~toplevel:true f f_named (Expr t)
+let iter_toplevel f f_named t = iter_general ~toplevel:true f f_named (Is_expr t)
 let iter_named_toplevel f f_named named =
-  iter_general ~toplevel:true f f_named (Named named)
+  iter_general ~toplevel:true f f_named (Is_named named)
 
 let iter_all_immutable_let_and_let_rec_bindings t ~f =
   iter_expr (function

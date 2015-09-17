@@ -11,6 +11,9 @@
 (*                                                                        *)
 (**************************************************************************)
 
+(* CR mshinwell: this pass needs fixing in the same way as
+   Find_recursive_functions *)
+
 (* CR pchambart to pchambart: in fact partial application doesn't work because
    there are no 'known' partial application left: they are converted to
    applications new partial function declaration.

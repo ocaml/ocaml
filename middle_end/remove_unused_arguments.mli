@@ -26,4 +26,5 @@
 val separate_unused_arguments_in_closures
    : ?force:unit
   -> Flambda.program
+  -> backend:(module Backend_intf.S)
   -> Flambda.program

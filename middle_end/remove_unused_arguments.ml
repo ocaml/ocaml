@@ -101,9 +101,11 @@ let separate_unused_arguments (set_of_closures : Flambda.set_of_closures) =
    is only indirectly called, suppressing unused arguments does not
    benefit, and introduce an useless intermediate call *)
 let candidate_for_spliting_for_unused_arguments
-    (fun_decls : Flambda.function_declarations) =
+    (fun_decls : Flambda.function_declarations)
+    ~backend =
   let no_recursive_functions =
-    Variable.Set.is_empty fun_decls.recursively_bound
+    Variable.Set.is_empty
+      (Find_recursive_functions.in_function_declarations fun_decls ~backend)
   in
   let number_of_non_stub_functions =
     Variable.Map.cardinal
@@ -112,13 +114,14 @@ let candidate_for_spliting_for_unused_arguments
   in
   (not no_recursive_functions) || (number_of_non_stub_functions > 1)
 
-let separate_unused_arguments_in_closures_expr ~force tree =
+let separate_unused_arguments_in_closures_expr ~force tree ~backend =
   let aux_named (named : Flambda.named) : Flambda.named =
     match named with
     | Set_of_closures set_of_closures ->
       if force <> None ||
         candidate_for_spliting_for_unused_arguments
           set_of_closures.function_decls
+          ~backend
       then begin
         match separate_unused_arguments set_of_closures with
         | None -> named
@@ -130,6 +133,6 @@ let separate_unused_arguments_in_closures_expr ~force tree =
   in
   Flambda_iterators.map_named aux_named tree
 
-let separate_unused_arguments_in_closures ?force program =
+let separate_unused_arguments_in_closures ?force program ~backend =
   Flambda_iterators.map_exprs_at_toplevel_of_program program ~f:(fun expr ->
-    separate_unused_arguments_in_closures_expr ~force expr)
+    separate_unused_arguments_in_closures_expr ~force expr ~backend)
