@@ -282,9 +282,7 @@ let for_call_site ~env ~r ~(function_decls : Flambda.function_declarations)
   let fun_var =
     U.find_declaration_variable closure_id_being_applied function_decls
   in
-  let recursive_functions =
-    Find_recursive_functions.in_function_decls function_decls
-  in
+  let recursive_functions = function_decls.recursively_bound in
   let probably_a_functor =
     is_probably_a_functor ~env ~args_approxs ~recursive_functions
   in

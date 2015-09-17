@@ -100,8 +100,7 @@ let separate_unused_arguments (set_of_closures : Flambda.set_of_closures) =
 let candidate_for_spliting_for_unused_arguments
     (fun_decls : Flambda.function_declarations) =
   let no_recursive_functions =
-    Variable.Set.is_empty
-      (Find_recursive_functions.in_function_decls fun_decls)
+    Variable.Set.is_empty fun_decls.recursively_bound
   in
   let number_of_non_stub_functions =
     Variable.Map.cardinal

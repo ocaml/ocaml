@@ -263,10 +263,12 @@ and set_of_closures = private {
   specialised_args : Variable.t Variable.Map.t;
 }
 
-and function_declarations = {
+and function_declarations = private {
   set_of_closures_id : Set_of_closures_id.t;
   funs : function_declaration Variable.Map.t;
   compilation_unit : Compilation_unit.t;
+  recursively_bound : Variable.Set.t;
+  (** The subset of the keys of [funs] that are recursively bound. *)
 }
 
 and function_declaration = private {
@@ -465,6 +467,12 @@ val create_function_declaration
   -> stub:bool
   -> dbg:Debuginfo.t
   -> function_declaration
+
+val create_function_declarations
+   : set_of_closures_id:Set_of_closures_id.t
+  -> funs:function_declaration Variable.Map.t
+  -> compilation_unit:Compilation_unit.t
+  -> function_declarations
 
 val create_set_of_closures
    : function_decls:function_declarations

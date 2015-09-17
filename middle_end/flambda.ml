@@ -107,6 +107,7 @@ and function_declarations = {
   set_of_closures_id : Set_of_closures_id.t;
   funs : function_declaration Variable.Map.t;
   compilation_unit : Compilation_unit.t;
+  recursively_bound : Variable.Set.t;
 }
 
 and function_declaration = {
@@ -703,6 +704,13 @@ let create_function_declaration ~params ~body ~stub ~dbg
     free_variables = free_variables body;
     stub;
     dbg;
+  }
+
+let create_function_declarations ~set_of_closures_id ~funs ~compilation_unit =
+  { set_of_closures_id;
+    funs;
+    compilation_unit;
+    recursively_bound = Variable.Set.empty;
   }
 
 let create_set_of_closures ~function_decls ~free_vars ~specialised_args =
