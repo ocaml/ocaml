@@ -54,8 +54,8 @@ let sighandler signo =
   (* Thoroughly wipe the minor heap *)
   ignore (tak (18, 12, 6))
 
-external unix_getpid : unit -> int = "unix_getpid" "noalloc"
-external unix_kill : int -> int -> unit = "unix_kill" "noalloc"
+external unix_getpid : unit -> int = "unix_getpid" [@@noalloc]
+external unix_kill : int -> int -> unit = "unix_kill" [@@noalloc]
 
 let callbacksig () =
   let pid = unix_getpid() in

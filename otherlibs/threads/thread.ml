@@ -64,10 +64,10 @@ external thread_join : t -> unit = "thread_join"
 external thread_delay : float -> unit = "thread_delay"
 external thread_wait_pid : int -> resumption_status = "thread_wait_pid"
 external thread_wakeup : t -> unit = "thread_wakeup"
-external thread_self : unit -> t = "thread_self" "noalloc"
+external thread_self : unit -> t = "thread_self" [@@noalloc]
 external thread_kill : t -> unit = "thread_kill"
 external thread_uncaught_exception : exn -> unit = "thread_uncaught_exception"
-external thread_id : t -> int = "thread_id" "noalloc"
+external thread_id : t -> int = "thread_id" [@@noalloc]
 
 (* In sleep() below, we rely on the fact that signals are detected
    only at function applications and beginning of loops,

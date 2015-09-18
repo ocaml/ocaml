@@ -67,7 +67,7 @@ external send : obj -> tag -> t = "%send"
 external sendcache : obj -> tag -> t -> int -> t = "%sendcache"
 external sendself : obj -> label -> t = "%sendself"
 external get_public_method : obj -> tag -> closure
-    = "caml_get_public_method" "noalloc"
+    = "caml_get_public_method" [@@noalloc]
 
 (** {6 Table cache} *)
 

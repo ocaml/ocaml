@@ -22,8 +22,8 @@ external thread_uncaught_exception : exn -> unit =
             "caml_thread_uncaught_exception"
 
 external yield : unit -> unit = "caml_thread_yield"
-external self : unit -> t = "caml_thread_self" "noalloc"
-external id : t -> int = "caml_thread_id" "noalloc"
+external self : unit -> t = "caml_thread_self" [@@noalloc]
+external id : t -> int = "caml_thread_id" [@@noalloc]
 external join : t -> unit = "caml_thread_join"
 external exit : unit -> unit = "caml_thread_exit"
 

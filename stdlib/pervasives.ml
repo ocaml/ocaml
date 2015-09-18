@@ -168,9 +168,9 @@ external string_length : string -> int = "%string_length"
 external bytes_length : bytes -> int = "%string_length"
 external bytes_create : int -> bytes = "caml_create_string"
 external string_blit : string -> int -> bytes -> int -> int -> unit
-                     = "caml_blit_string" "noalloc"
+                     = "caml_blit_string" [@@noalloc]
 external bytes_blit : bytes -> int -> bytes -> int -> int -> unit
-                        = "caml_blit_string" "noalloc"
+                        = "caml_blit_string" [@@noalloc]
 external bytes_unsafe_to_string : bytes -> string = "%identity"
 external bytes_unsafe_of_string : string -> bytes = "%identity"
 
