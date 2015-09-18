@@ -1652,9 +1652,12 @@ let correct_abbrev env path params ty =
 
 exception Occur
 
+let allow_recursive env ty =
+  (!Clflags.recursive_types || !umode = Pattern) && is_contractive env ty
+
 let rec occur_rec env visited ty0 ty =
   if ty == ty0  then raise Occur;
-  let occur_ok = !Clflags.recursive_types && is_contractive env ty in
+  let occur_ok = allow_recursive env ty in
   match ty.desc with
     Tconstr(p, tl, abbrev) ->
       begin try
@@ -1669,7 +1672,7 @@ let rec occur_rec env visited ty0 ty =
         match ty'.desc with
           Tobject _ | Tvariant _ -> ()
         | _ ->
-            if not (!Clflags.recursive_types && is_contractive env ty') then
+            if not (allow_recursive env ty') then
               iter_type_expr (occur_rec env (ty'::visited) ty0) ty'
       with Cannot_expand ->
         if not occur_ok then raise Occur
