@@ -28,6 +28,11 @@ let get_no_payload_attribute name attrs =
   | _ :: (name, _) :: _ ->
     raise (Error (name.loc, Multiple_attributes name.txt))
 
+let has_no_payload_attribute name attrs =
+  match get_no_payload_attribute name attrs with
+  | None   -> false
+  | Some _ -> true
+
 open Format
 
 let report_error ppf = function

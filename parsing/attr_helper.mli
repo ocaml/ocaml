@@ -20,6 +20,7 @@ type error =
   | No_payload_expected of string
 
 val get_no_payload_attribute : string -> attributes -> string loc option
+val has_no_payload_attribute : string -> attributes -> bool
 
 exception Error of Location.t * error
 
