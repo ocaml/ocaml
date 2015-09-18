@@ -1360,17 +1360,18 @@ type native_repr_attribute =
   | Native_repr_attr_absent
   | Native_repr_attr_present of native_repr_kind
 
-let get_native_repr_attribute core_type =
+let get_native_repr_attribute attrs ~global_repr =
   match
-    let attrs = core_type.ptyp_attributes in
     Attr_helper.get_no_payload_attribute "unboxed"  attrs,
-    Attr_helper.get_no_payload_attribute "untagged" attrs
+    Attr_helper.get_no_payload_attribute "untagged" attrs,
+    global_repr
   with
-  | None, None ->
-    Native_repr_attr_absent
-  | Some _, None -> Native_repr_attr_present Unboxed
-  | None, Some _ -> Native_repr_attr_present Untagged
-  | Some { Location.loc }, _ ->
+  | None, None, None -> Native_repr_attr_absent
+  | None, None, Some repr -> Native_repr_attr_present repr
+  | Some _, None, None -> Native_repr_attr_present Unboxed
+  | None, Some _, None -> Native_repr_attr_present Untagged
+  | Some { Location.loc }, _, _
+  | _, Some { Location.loc }, _ ->
     raise (Error (loc, Multiple_native_repr_attributes))
 
 let native_repr_of_type env kind ty =
@@ -1388,8 +1389,8 @@ let native_repr_of_type env kind ty =
   | _ ->
     None
 
-let make_native_repr env core_type ty =
-  match get_native_repr_attribute core_type with
+let make_native_repr env core_type ty ~global_repr =
+  match get_native_repr_attribute core_type.ptyp_attributes ~global_repr with
   | Native_repr_attr_absent -> Same_as_ocaml_repr
   | Native_repr_attr_present kind ->
     begin match native_repr_of_type env kind ty with
@@ -1398,14 +1399,16 @@ let make_native_repr env core_type ty =
     | Some repr -> repr
     end
 
-let rec parse_native_repr_attributes env core_type ty =
+let rec parse_native_repr_attributes env core_type ty ~global_repr =
   match core_type.ptyp_desc, (Ctype.repr ty).desc with
   | Ptyp_arrow (_, ct1, ct2), Tarrow (_, t1, t2, _) ->
-    let repr_arg = make_native_repr env ct1 t1 in
-    let repr_args, repr_res = parse_native_repr_attributes env ct2 t2 in
+    let repr_arg = make_native_repr env ct1 t1 ~global_repr in
+    let repr_args, repr_res =
+      parse_native_repr_attributes env ct2 t2 ~global_repr
+    in
     (repr_arg :: repr_args, repr_res)
   | Ptyp_arrow _, _ | _, Tarrow _ -> assert false
-  | _ -> ([], make_native_repr env core_type ty)
+  | _ -> ([], make_native_repr env core_type ty ~global_repr)
 
 (* Translate a value declaration *)
 let transl_value_decl env loc valdecl =
@@ -1419,8 +1422,15 @@ let transl_value_decl env loc valdecl =
   | [] ->
       raise (Error(valdecl.pval_loc, Val_in_structure))
   | _ ->
+      let global_repr =
+        match
+          get_native_repr_attribute valdecl.pval_attributes ~global_repr:None
+        with
+        | Native_repr_attr_present repr -> Some repr
+        | Native_repr_attr_absent -> None
+      in
       let native_repr_args, native_repr_res =
-        parse_native_repr_attributes env valdecl.pval_type ty
+        parse_native_repr_attributes env valdecl.pval_type ty ~global_repr
       in
       let prim =
         Primitive.parse_declaration valdecl
