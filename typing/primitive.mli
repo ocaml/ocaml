@@ -42,8 +42,10 @@ val parse_declaration
   -> native_repr_res:native_repr
   -> description
 
-val description_list_and_attributes
-  : description -> string list * string option list
+val print
+  :  description
+  -> Outcometree.out_val_decl
+  -> Outcometree.out_val_decl
 
 val native_name: description -> string
 val byte_name: description -> string
