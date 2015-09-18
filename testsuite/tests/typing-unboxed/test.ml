@@ -29,6 +29,21 @@ end = struct
   external b : (int [@untagged]) -> int = "b"
 end;;
 
+module Global_attributes = struct
+
+  external a : float -> float = "a" "noalloc" "a_nat" "float"
+  external b : float -> float = "b" "noalloc" "b_nat"
+  external c : float -> float = "c" "c_nat" "float"
+  external d : float -> float = "d" "noalloc"
+  external e : float -> float = "e"
+
+  external f : (int32 [@unboxed]) -> (int32 [@unboxed]) = "f" "noalloc"
+  external g : int32 -> int32 = "g" [@@unboxed] [@@noalloc]
+
+  external h : (int [@untagged]) -> (int [@untagged]) = "h" "noalloc"
+  external i : int -> int = "i" [@@untagged] [@@noalloc]
+end;;
+
 (* Bad: attributes not reported in the interface *)
 
 module Bad1 : sig
