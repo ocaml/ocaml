@@ -399,43 +399,39 @@ external get_public_method : obj -> tag -> closure
 
 (**** table collection access ****)
 
-type _ tables' =
-  | Empty : [>`Empty] tables'
-  | Cons :
-      {key : closure; mutable data: any_tables; mutable next: any_tables} ->
-      [>`Cons] tables'
+type tables =
+  | Empty
+  | Cons of {key : closure; mutable data: tables; mutable next: tables}
 
-and any_tables = [`Empty | `Cons] tables'
-
-type tables = [`Cons] tables'
-
-let set_data : tables -> any_tables -> unit = fun (Cons tables) v ->
-  tables.data <- v
-let set_next : tables -> any_tables -> unit = fun (Cons tables) v ->
-  tables.next <- v
-let get_key : tables -> closure = fun (Cons tables) ->
-  tables.key
-let get_data : tables -> any_tables = fun (Cons tables) ->
-  tables.data
-let get_next : tables -> any_tables = fun (Cons tables) ->
-  tables.next
-
-let cast_cons : tables -> any_tables = fun (Cons _ as t) ->
-  (t :> [`Empty | `Cons] tables')
+let set_data tables v = match tables with
+  | Empty -> assert false
+  | Cons tables -> tables.data <- v
+let set_next tables v = match tables with
+  | Empty -> assert false
+  | Cons tables -> tables.next <- v
+let get_key = function
+  | Empty -> assert false
+  | Cons tables -> tables.key
+let get_data = function
+  | Empty -> assert false
+  | Cons tables -> tables.data
+let get_next = function
+  | Empty -> assert false
+  | Cons tables -> tables.next
 
 let empty_tables () =
   Cons {key = Obj.magic 0; data = Empty; next = Empty}
 
-let build_path n keys (tables:tables) : [>`Cons] tables'  =
+let build_path n keys tables =
   let res = Cons {key = Obj.magic 0; data = Empty; next = Empty} in
   let r = ref res in
   for i = 0 to n do
-    r := Cons {key = keys.(i); data = cast_cons !r; next = Empty}
+    r := Cons {key = keys.(i); data = !r; next = Empty}
   done;
-  set_data tables (cast_cons !r);
+  set_data tables !r;
   res
 
-let rec lookup_keys i keys (tables:tables) =
+let rec lookup_keys i keys tables =
   if i < 0 then tables else
   let key = keys.(i) in
   let rec lookup_key (tables:tables) =
@@ -449,12 +445,12 @@ let rec lookup_keys i keys (tables:tables) =
       | Cons _ as next -> lookup_key next
       | Empty ->
           let next : tables = Cons {key; data = Empty; next = Empty} in
-          set_next tables (cast_cons next);
+          set_next tables next;
           build_path (i-1) keys next
   in
   lookup_key tables
 
-let lookup_tables (root:tables) keys : tables =
+let lookup_tables root keys =
   match get_data root with
   | Cons _ as root_data ->
     lookup_keys (Array.length keys - 1) keys root_data
