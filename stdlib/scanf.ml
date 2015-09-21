@@ -396,13 +396,28 @@ module Scanning : SCANNING = struct
   let from_file = open_in;;
   let from_file_bin = open_in_bin;;
 
+  module IcIb :
+    Hashtbl.HashedType
+    with type t = Pervasives.in_channel * in_channel =
+  struct
+    type t = Pervasives.in_channel * in_channel;;
+    let equal (ic1, _ib1) (ic2, _ib2) = ic1 == ic2;;
+    let hash (ic, _ib) = Hashtbl.hash ic;;
+  end
+  ;;
+
+  module Memo = Weak.Make (IcIb);;
+
+  let memo_table = Memo.create 10;;
+
   let memo_from_ic =
-    let memo = ref [] in
     (fun scan_close_ic ic ->
-     try List.assq ic !memo with
+     try
+       let _, ib = Memo.find memo_table (ic, stdin) in
+       ib with
      | Not_found ->
        let ib = from_ic scan_close_ic (From_channel ic) ic in
-       memo := (ic, ib) :: !memo;
+       Memo.add memo_table (ic, ib);
        ib)
   ;;
 
@@ -412,7 +427,9 @@ module Scanning : SCANNING = struct
     match ib.input_name with
     | From_file (_fname, ic) -> Pervasives.close_in ic
     | From_string | From_function -> ()
-    | From_channel ic -> Pervasives.close_in ic
+    | From_channel ic ->
+      Memo.remove memo_table (ic, ib);
+      Pervasives.close_in ic
   ;;
 
 end
@@ -514,7 +531,7 @@ let token_bool ib =
   match Scanning.token ib with
   | "true" -> true
   | "false" -> false
-  | s -> bad_input (Printf.sprintf "invalid boolean %S" s)
+  | s -> bad_input (Printf.sprintf "invalid boolean '%s'" s)
 ;;
 
 (* Extract an integer literal token.
