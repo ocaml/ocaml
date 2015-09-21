@@ -420,18 +420,13 @@ let get_data : tables -> any_tables = fun (Cons tables) ->
 let get_next : tables -> any_tables = fun (Cons tables) ->
   tables.next
 
-let empty = (Empty :> [`Empty | `Cons] tables')
 let cast_cons : tables -> any_tables = fun (Cons _ as t) ->
   (t :> [`Empty | `Cons] tables')
-
-(* let v = cast_cons (Cons {key = Obj.magic 0; data = empty; next = empty}) *)
 
 let empty_tables () =
   Cons {key = Obj.magic 0; data = Empty; next = Empty}
 
 let build_path n keys (tables:tables) : [>`Cons] tables'  =
-  (* Be careful not to create a seemingly immutable block, otherwise it could
-     be statically allocated.  See #5779. *)
   let res = Cons {key = Obj.magic 0; data = Empty; next = Empty} in
   let r = ref res in
   for i = 0 to n do
