@@ -77,7 +77,7 @@ let error text =
 let check_not_windows feature =
   match Sys.os_type with
   | "Win32" ->
-      error ("'"^feature^"' feature not supported on Windows")
+      error ("\'"^feature^"\' feature not supported on Windows")
   | _ ->
       ()
 
@@ -124,7 +124,7 @@ let add_breakpoint_at_pc pc =
     new_breakpoint (any_event_at_pc pc)
   with
   | Not_found ->
-    eprintf "Can't add breakpoint at pc %i: no event there.@." pc;
+    eprintf "Can\'t add breakpoint at pc %i: no event there.@." pc;
     raise Toplevel
 
 let add_breakpoint_after_pc pc =
@@ -137,7 +137,7 @@ let add_breakpoint_after_pc pc =
         try_add (n+1)
     end else begin
       error
-        "Can't add breakpoint at beginning of function: no event there"
+        "Can\'t add breakpoint at beginning of function: no event there"
     end
   in try_add 0
 
@@ -548,8 +548,8 @@ let instr_address ppf lexbuf =
 let extract_filename arg =
   (* Allow enclosing filename in quotes *)
   let l = String.length arg in
-  let pos1 = if l > 0 && arg.[0] = '"' then 1 else 0 in
-  let pos2 = if l > 0 && arg.[l-1] = '"' then l-1 else l in
+  let pos1 = if l > 0 && arg.[0] = '\"' then 1 else 0 in
+  let pos2 = if l > 0 && arg.[l-1] = '\"' then l-1 else l in
   String.sub arg pos1 (pos2 - pos1)
 
 let instr_source ppf lexbuf =
@@ -610,7 +610,7 @@ let instr_break ppf lexbuf =
          | Some ev ->
              new_breakpoint ev
          | None ->
-             error "Can't add breakpoint at this point.")
+             error "Can\'t add breakpoint at this point.")
     | BA_pc pc ->                               (* break PC *)
         add_breakpoint_at_pc pc
     | BA_function expr ->                       (* break FUNCTION *)
@@ -656,7 +656,7 @@ let instr_break ppf lexbuf =
                  event_near_pos module_name (point_of_coord buffer line col)
            with
            | Not_found -> (* event_at_pos / event_near pos *)
-               eprintf "Can't find any event there.@.";
+               eprintf "Can\'t find any event there.@.";
                raise Toplevel
            | Out_of_range -> (* pos_of_line / point_of_coord *)
                eprintf "Position out of range.@.";
@@ -668,7 +668,7 @@ let instr_break ppf lexbuf =
                             position)
         with
         | Not_found ->
-            eprintf "Can't find any event there.@."
+            eprintf "Can\'t find any event there.@."
 
 let instr_delete ppf lexbuf =
   match integer_list_eol Lexer.lexeme lexbuf with
@@ -1159,7 +1159,7 @@ using \"load_printer\"." };
 "mode of loading.\n\
 It can be either:\n\
   direct: the program is directly called by the debugger.\n\
-  runtime: the debugger execute `ocamlrun programname arguments'.\n\
+  runtime: the debugger execute `ocamlrun programname arguments\'.\n\
   manual: the program is not launched by the debugger,\n\
     but manually by the user." };
      { var_name = "processcount";
