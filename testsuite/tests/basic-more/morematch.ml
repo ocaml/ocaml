@@ -751,11 +751,11 @@ test "eber" eber {x=1 ; y=0 ; z=false} 0 ; ()
 (* Enchainement des test d'intervalle *)
 
 let escaped = function
-  | '"' | '\\' | '\n' | '\t' -> 2
+  | '\"' | '\\' | '\n' | '\t' -> 2
   | c -> 1
 ;;
 
-test "escaped" escaped '"' 2 ;
+test "escaped" escaped '\"' 2 ;
 test "escaped" escaped '\\' 2 ;
 test "escaped" escaped '\n' 2 ;
 test "escaped" escaped '\t' 2 ;
