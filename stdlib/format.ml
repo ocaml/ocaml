@@ -293,7 +293,7 @@ let format_pp_token state size = function
   | Pp_begin (off, ty) ->
     let insertion_point = state.pp_margin - state.pp_space_left in
     if insertion_point > state.pp_max_indent then
-      (* can't open a block right there. *)
+      (* can not open a block right there. *)
       begin pp_force_break_line state end;
     let offset = state.pp_space_left - off in
     let bl_type =
@@ -432,7 +432,8 @@ let enqueue_advance state tok = pp_enqueue state tok; advance_left state;;
 
 (* To enqueue a string : try to advance. *)
 let make_queue_elem size tok len =
-  { elem_size = size; token = tok; length = len; };;
+  { elem_size = size; token = tok; length = len; }
+;;
 
 let enqueue_string_as state size s =
   let len = int_of_size size in
@@ -569,7 +570,9 @@ let pp_set_print_tags state b = state.pp_print_tags <- b;;
 let pp_set_mark_tags state b = state.pp_mark_tags <- b;;
 let pp_get_print_tags state () = state.pp_print_tags;;
 let pp_get_mark_tags state () = state.pp_mark_tags;;
-let pp_set_tags state b = pp_set_print_tags state b; pp_set_mark_tags state b;;
+let pp_set_tags state b =
+  pp_set_print_tags state b; pp_set_mark_tags state b
+;;
 
 let pp_get_formatter_tag_functions state () = {
   mark_open_tag = state.pp_mark_open_tag;
@@ -585,10 +588,10 @@ let pp_set_formatter_tag_functions state {
      print_open_tag = pot;
      print_close_tag = pct;
   } =
-   state.pp_mark_open_tag <- mot;
-   state.pp_mark_close_tag <- mct;
-   state.pp_print_open_tag <- pot;
-   state.pp_print_close_tag <- pct
+  state.pp_mark_open_tag <- mot;
+  state.pp_mark_close_tag <- mct;
+  state.pp_print_open_tag <- pot;
+  state.pp_print_close_tag <- pct
 ;;
 
 (* Initialize pretty-printer. *)
@@ -602,7 +605,8 @@ let pp_rinit state =
   state.pp_current_indent <- 0;
   state.pp_curr_depth <- 0;
   state.pp_space_left <- state.pp_margin;
-  pp_open_sys_box state;;
+  pp_open_sys_box state
+;;
 
 (* Flushing pretty-printer queue. *)
 let pp_flush_queue state b =
@@ -655,14 +659,16 @@ and pp_open_vbox state indent = pp_open_box_gen state indent Pp_vbox
 
 and pp_open_hvbox state indent = pp_open_box_gen state indent Pp_hvbox
 and pp_open_hovbox state indent = pp_open_box_gen state indent Pp_hovbox
-and pp_open_box state indent = pp_open_box_gen state indent Pp_box;;
+and pp_open_box state indent = pp_open_box_gen state indent Pp_box
+;;
 
 (* Print a new line after printing all queued text
    (same for print_flush but without a newline). *)
 let pp_print_newline state () =
   pp_flush_queue state true; state.pp_out_flush ()
 and pp_print_flush state () =
-  pp_flush_queue state false; state.pp_out_flush ();;
+  pp_flush_queue state false; state.pp_out_flush ()
+;;
 
 (* To get a newline when one does not want to close the current block. *)
 let pp_force_newline state () =
@@ -807,6 +813,7 @@ let pp_set_min_space_left state n =
 let pp_set_max_indent state n =
   pp_set_min_space_left state (state.pp_margin - n)
 ;;
+
 let pp_get_max_indent state () = state.pp_max_indent;;
 
 let pp_set_margin state n =
@@ -857,7 +864,8 @@ let pp_get_formatter_out_functions state () = {
 ;;
 
 let pp_set_formatter_output_functions state f g =
-  state.pp_out_string <- f; state.pp_out_flush <- g;;
+  state.pp_out_string <- f; state.pp_out_flush <- g
+;;
 let pp_get_formatter_output_functions state () =
   (state.pp_out_string, state.pp_out_flush)
 ;;
@@ -969,18 +977,14 @@ and err_formatter = formatter_of_out_channel Pervasives.stderr
 and str_formatter = formatter_of_buffer stdbuf
 ;;
 
-let flush_str_formatter () =
-  pp_flush_queue str_formatter false;
-  let s = Buffer.contents stdbuf in
-  Buffer.reset stdbuf;
-  s
-;;
-
-let flush_buf_formatter buf ppf =
+let flush_buffer_formatter buf ppf =
   pp_flush_queue ppf false;
   let s = Buffer.contents buf in
   Buffer.reset buf;
   s
+;;
+
+let flush_str_formatter () = flush_buffer_formatter stdbuf str_formatter;;
 
 (**************************************************************
 
@@ -1171,26 +1175,32 @@ let rec strput_acc ppf acc = match acc with
 
  **************************************************************)
 
-let kfprintf k o (Format (fmt, _)) =
-  make_printf (fun o acc -> output_acc o acc; k o) o End_of_acc fmt
-let ikfprintf k x (Format (fmt, _)) =
-  make_printf (fun _ _ -> k x) x End_of_acc fmt
+let kfprintf k ppf (Format (fmt, _)) =
+  make_printf
+    (fun ppf acc -> output_acc ppf acc; k ppf)
+    ppf End_of_acc fmt
 
-let fprintf ppf fmt = kfprintf ignore ppf fmt
-let ifprintf ppf fmt = ikfprintf ignore ppf fmt
-let printf fmt = fprintf std_formatter fmt
-let eprintf fmt = fprintf err_formatter fmt
+and ikfprintf k ppf (Format (fmt, _)) =
+  make_printf
+    (fun _ _ -> k ppf)
+    ppf End_of_acc fmt
+;;
+
+let fprintf ppf = kfprintf ignore ppf;;
+let ifprintf ppf = ikfprintf ignore ppf;;
+let printf fmt = fprintf std_formatter fmt;;
+let eprintf fmt = fprintf err_formatter fmt;;
 
 let ksprintf k (Format (fmt, _)) =
   let b = Buffer.create 512 in
   let ppf = formatter_of_buffer b in
-  let k' () acc =
+  let k () acc =
     strput_acc ppf acc;
-    k (flush_buf_formatter b ppf) in
-  make_printf k' () End_of_acc fmt
+    k (flush_buffer_formatter b ppf) in
+  make_printf k () End_of_acc fmt
+;;
 
-let sprintf fmt =
-  ksprintf (fun s -> s) fmt
+let sprintf fmt = ksprintf (fun s -> s) fmt;;
 
 let kasprintf k (Format (fmt, _)) =
   let b = Buffer.create 512 in
@@ -1199,9 +1209,8 @@ let kasprintf k (Format (fmt, _)) =
     output_acc ppf acc;
     k (flush_buffer_formatter b ppf) in
   make_printf k ppf End_of_acc fmt
-;;
 
-let asprintf fmt = kasprintf (fun s -> s) fmt;;
+let asprintf fmt = kasprintf (fun s -> s) fmt
 
 (**************************************************************
 
@@ -1213,6 +1222,7 @@ let asprintf fmt = kasprintf (fun s -> s) fmt;;
 let bprintf b (Format (fmt, _) : ('a, formatter, unit) format) =
   let k ppf acc = output_acc ppf acc; pp_flush_queue ppf false in
   make_printf k (formatter_of_buffer b) End_of_acc fmt
+;;
 
 (* Deprecated alias for ksprintf. *)
 let kprintf = ksprintf;;
