@@ -1,4 +1,6 @@
-OVERVIEW:
+= README
+
+== OVERVIEW
 
 OCaml is an implementation of the ML language, based on the Caml Light
 dialect extended with a complete class-based object system and a
@@ -21,18 +23,18 @@ native-code compiler currently runs on the following platforms:
 
 Tier 1 (actively used and maintained by the core OCaml team):
 
-    AMD64 (Opteron)    Linux, MacOS X, MS Windows
-    IA32 (Pentium)     Linux, FreeBSD, MacOS X, MS Windows
-    PowerPC            Linux, MacOS X
-    ARM                Linux
+AMD64 (Opteron)::    Linux, MacOS X, MS Windows
+IA32 (Pentium)::     Linux, FreeBSD, MacOS X, MS Windows
+PowerPC::            Linux, MacOS X
+ARM::                Linux
 
 Tier 2 (maintained when possible, with help from users):
 
-    AMD64              FreeBSD, OpenBSD, NetBSD
-    IA32 (Pentium)     NetBSD, OpenBSD, Solaris 9
-    PowerPC            NetBSD
-    ARM                NetBSD
-    SPARC              Solaris, Linux, NetBSD
+AMD64::              FreeBSD, OpenBSD, NetBSD
+IA32 (Pentium)::     NetBSD, OpenBSD, Solaris 9
+PowerPC::            NetBSD
+ARM::                NetBSD
+SPARC::              Solaris, Linux, NetBSD
 
 Other operating systems for the processors above have not been tested,
 but the compiler may work under other operating systems with little work.
@@ -42,36 +44,36 @@ Light. OCaml is almost upwards compatible with Caml Special Light,
 except for a few additional reserved keywords that have forced some
 renaming of standard library functions.
 
-CONTENTS:
+== CONTENTS
 
-  Changes               what's new with each release
-  INSTALL               instructions for installation
-  LICENSE               license and copyright notice
-  Makefile              main Makefile
-  README                this file
-  README.win32          infos on the MS Windows ports of OCaml
-  asmcomp/              native-code compiler and linker
-  asmrun/               native-code runtime library
-  boot/                 bootstrap compiler
-  bytecomp/             bytecode compiler and linker
-  byterun/              bytecode interpreter and runtime system
-  config/               autoconfiguration stuff
-  debugger/             source-level replay debugger
-  driver/               driver code for the compilers
-  emacs/                OCaml editing mode and debugger interface for GNU Emacs
-  lex/                  lexer generator
-  maccaml/              the Macintosh GUI
-  ocamldoc/             documentation generator
-  otherlibs/            several external libraries
-  parsing/              syntax analysis
-  stdlib/               standard library
-  tools/                various utilities
-  toplevel/             interactive system
-  typing/               typechecking
-  utils/                utility libraries
-  yacc/                 parser generator
+  Changes::               what's new with each release
+  INSTALL::               instructions for installation
+  LICENSE::               license and copyright notice
+  Makefile::              main Makefile
+  README.adoc::           this file
+  README.win32.adoc::     infos on the MS Windows ports of OCaml
+  asmcomp/::              native-code compiler and linker
+  asmrun/::               native-code runtime library
+  boot/::                 bootstrap compiler
+  bytecomp/::             bytecode compiler and linker
+  byterun/::              bytecode interpreter and runtime system
+  config/::               autoconfiguration stuff
+  debugger/::             source-level replay debugger
+  driver/::               driver code for the compilers
+  emacs/::                OCaml editing mode and debugger interface for GNU Emacs
+  lex/::                  lexer generator
+  maccaml/::              the Macintosh GUI
+  ocamldoc/::             documentation generator
+  otherlibs/::            several external libraries
+  parsing/::              syntax analysis
+  stdlib/::               standard library
+  tools/::                various utilities
+  toplevel/::             interactive system
+  typing/::               typechecking
+  utils/::                utility libraries
+  yacc/::                 parser generator
 
-COPYRIGHT:
+== COPYRIGHT
 
 All files marked "Copyright INRIA" in this distribution are copyright
 1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006,
@@ -79,25 +81,25 @@ All files marked "Copyright INRIA" in this distribution are copyright
 Informatique et en Automatique (INRIA) and distributed under the
 conditions stated in file LICENSE.
 
-INSTALLATION:
+== INSTALLATION
 
 See the file INSTALL for installation instructions on Unix, Linux and
 MacOS X machines.  For MS Windows, see README.win32.
 
-DOCUMENTATION:
+== DOCUMENTATION
 
 The OCaml manual is distributed in HTML, PDF, Postscript, DVI, and
 Emacs Info files.  It is available on the World Wide Web, at
 
-        http://caml.inria.fr/
+http://caml.inria.fr/
 
-AVAILABILITY:
+== AVAILABILITY
 
 The complete OCaml distribution can be accessed at
 
-        http://caml.inria.fr/
+http://caml.inria.fr/
 
-KEEPING IN TOUCH WITH THE CAML COMMUNITY:
+== KEEPING IN TOUCH WITH THE CAML COMMUNITY
 
 There exists a mailing list of users of the OCaml implementations
 developed at INRIA. The purpose of this list is to share
@@ -107,19 +109,19 @@ French. The list has more than 1000 subscribers.
 
 Messages to the list should be sent to:
 
-              caml-list@inria.fr
+mailto:caml-list@inria.fr[]
 
 You can subscribe to this list via the Web interface at
 
-        https://sympa.inria.fr/sympa/subscribe/caml-list
+https://sympa.inria.fr/sympa/subscribe/caml-list
 
 Archives of the list are available on the Web site above.
 
-The Usenet news groups comp.lang.ml and comp.lang.functional
+The Usenet news `groups comp.lang.ml` and `comp.lang.functional`
 also contains discussions about the ML family of programming languages,
 including OCaml.
 
-BUG REPORTS AND USER FEEDBACK:
+== BUG REPORTS AND USER FEEDBACK
 
 Please report bugs using the Web interface to the bug-tracking system
 at http://caml.inria.fr/bin/caml-bugs
@@ -128,4 +130,4 @@ To be effective, bug reports should include a complete program
 (preferably small) that exhibits the unexpected behavior, and the
 configuration you are using (machine type, etc).
 
-You can also contact the implementors directly at caml@inria.fr.
+You can also contact the implementors directly at mailto:caml@inria.fr[].
