@@ -11,7 +11,7 @@ module M :
     external a : int -> (int [@untagged]) = "a"
     external b : (int [@untagged]) -> int = "b"
   end
-#                             module Global_attributes :
+#                               module Global_attributes :
   sig
     external a : float -> float = "a" "a_nat" [@@unboxed] [@@noalloc]
     external b : float -> float = "b" "b_nat" [@@noalloc]
@@ -23,7 +23,23 @@ module M :
     external h : int -> int = "h" [@@untagged] [@@noalloc]
     external i : int -> int = "i" [@@untagged] [@@noalloc]
   end
-#               Characters 110-166:
+#                               Characters 63-122:
+    external a : float -> float = "a" "noalloc" "a_nat" "float"
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Warning 3: deprecated: [@@unboxed] + [@@noalloc] should be used instead of "float"
+Characters 125-176:
+    external b : float -> float = "b" "noalloc" "b_nat"
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Warning 3: deprecated: [@@noalloc] should be used instead of "noalloc"
+Characters 179-228:
+    external c : float -> float = "c" "c_nat" "float"
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Warning 3: deprecated: [@@unboxed] + [@@noalloc] should be used instead of "float"
+Characters 231-274:
+    external d : float -> float = "d" "noalloc"
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Warning 3: deprecated: [@@noalloc] should be used instead of "noalloc"
+Characters 389-445:
   ......struct
     external f : int -> (int [@untagged]) = "f"
   end..
