@@ -129,7 +129,7 @@ let rset() =
 
 let _ =
   Random.init 42;
-  for i = 1 to 25000 do test (relt()) (rset()) (rset()) done
+  for i = 1 to 10000 do test (relt()) (rset()) (rset()) done
 
 let () =
   (* #6645: check that adding an element to set that already contains

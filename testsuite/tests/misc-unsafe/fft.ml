@@ -183,4 +183,4 @@ let test np =
   print_newline()
 
 let _ =
-  let np = ref 16 in for i = 1 to 16 do test !np; np := !np*2 done
+  let np = ref 16 in for i = 1 to 15 do test !np; np := !np*2 done
