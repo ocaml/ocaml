@@ -1792,10 +1792,10 @@ let report_error ppf = function
   | Val_in_structure ->
       fprintf ppf "Value declarations are only allowed in signatures"
   | Invalid_native_repr_attribute_payload kind ->
-      fprintf ppf "[@%s] attribute does not accept a payload"
+      fprintf ppf "[@@%s] attribute does not accept a payload"
         (string_of_native_repr_kind kind)
   | Multiple_native_repr_attributes ->
-      fprintf ppf "Too many [@unboxed]/[@untagged] attributes"
+      fprintf ppf "Too many [@@unboxed]/[@@untagged] attributes"
   | Cannot_unbox_or_untag_type Unboxed ->
       fprintf ppf "Don't know how to unbox this type. Only float, int32, \
                    int64 and nativeint can be unboxed"

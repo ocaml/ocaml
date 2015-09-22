@@ -132,7 +132,7 @@ let report_error ppf err =
   match err with
   | Float_with_native_repr_attribute ->
       fprintf ppf "Cannot use \"float\" in conjunction with \
-                   [@unboxed ]/[@untagged ]"
+                   [@@unboxed]/[@@untagged]"
 
 let () =
   Location.register_error_of_exn
