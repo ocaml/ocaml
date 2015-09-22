@@ -1,0 +1,13 @@
+primitives
+prims.c
+ocamlrun
+ocamlrun.exe
+ocamlrund
+ocamlrund.exe
+ld.conf
+interp.a.lst
+*.[sd]obj
+*.lib
+.gdb_history
+*.d.c
+*.pic.c
