@@ -154,7 +154,7 @@ or:
 
     ./configure -cc "gcc -fPIC" -aspp "gcc -c -fPIC"
 +
-  On a 64-bit POWER architecture host running Linux, OCaml only operates
+On a 64-bit POWER architecture host running Linux, OCaml only operates
   in a 32-bit environment.  If your system compiler is configured as 32-bit,
   e.g. Red Hat 5.9, you don't need to do anything special.  If that is
   not the case (e.g. Red Hat 6.4), then IBM's "Advance Toolchain" can
@@ -235,7 +235,7 @@ or:
         make opt > log.opt 2>&1     # in sh
         make opt >& log.opt         # in csh
 
-5. Compile fast versions of the OCaml compilers, by compiling them
+5. anchor:step-5[] Compile fast versions of the OCaml compilers, by compiling them
 with the native-code compiler (you have only compiled them to bytecode
 so far).  Just do:
 
@@ -274,7 +274,7 @@ autoconfiguration):
         ocamlprof        execution count profiler
         ocamlcp          the bytecode compiler in profiling mode
 +
-and also, if you built them during step 5,
+and also, if you built them during <<step-5,step 5>>,
 
         ocamlc.opt       the batch bytecode compiler compiled with ocamlopt
         ocamlopt.opt     the batch native-code compiler compiled with ocamlopt

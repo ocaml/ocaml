@@ -1,4 +1,4 @@
-= README
+= README =
 
 == OVERVIEW
 
@@ -84,14 +84,17 @@ conditions stated in file LICENSE.
 == INSTALLATION
 
 See the file INSTALL for installation instructions on Unix, Linux and
-MacOS X machines.  For MS Windows, see README.win32.
+MacOS X machines.  For MS Windows, see link:README.win32.adoc[].
 
 == DOCUMENTATION
 
 The OCaml manual is distributed in HTML, PDF, Postscript, DVI, and
-Emacs Info files.  It is available on the World Wide Web, at
+Emacs Info files.  It is available at
 
 http://caml.inria.fr/
+
+The community also maintains the Web site http://ocaml.org, with tutorials
+and other useful informations for OCaml users.
 
 == AVAILABILITY
 
@@ -120,6 +123,9 @@ Archives of the list are available on the Web site above.
 The Usenet news `groups comp.lang.ml` and `comp.lang.functional`
 also contains discussions about the ML family of programming languages,
 including OCaml.
+
+The IRC channel `#ocaml` on https://freenode.net/[Freenode] also has several
+hundred users and welcomes questions.
 
 == BUG REPORTS AND USER FEEDBACK
 
