@@ -46,9 +46,9 @@ let c4 =
           A.useful approx && Variable.Set.mem id unchanging_params)
         function_decl.params args_approxs
 in
-Format.eprintf "c1 %b c2 %b c3 %b c4 %b unc %a v.unc %a"
-  c1 c2 c3 c4 Variable.Set.print unchanging_params
-  Variable.Set.print value_set_of_closures.unchanging_params;
+(* Format.eprintf "c1 %b c2 %b c3 %b c4 %b unc %a v.unc %a@." *)
+(*   c1 c2 c3 c4 Variable.Set.print unchanging_params *)
+(*   Variable.Set.print value_set_of_closures.unchanging_params; *)
 c1 && c2 && c3 && c4
 
 let inline_non_recursive env r ~function_decls ~lhs_of_application
