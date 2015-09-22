@@ -32,7 +32,8 @@ type description =
     prim_native_repr_res: native_repr }
 
 type error =
-  | Float_with_native_repr_attribute
+  | Old_style_float_with_native_repr_attribute
+  | Old_style_noalloc_with_noalloc_attribute
 
 exception Error of Location.t * error
 
@@ -81,6 +82,18 @@ let parse_declaration valdecl ~native_repr_args ~native_repr_res =
     | [] ->
         fatal_error "Primitive.parse_declaration"
   in
+  let noalloc_attribute =
+    Attr_helper.has_no_payload_attribute ["noalloc"; "ocaml.noalloc"]
+      valdecl.pval_attributes
+  in
+  if old_style_float &&
+     not (List.for_all is_ocaml_repr native_repr_args &&
+          is_ocaml_repr native_repr_res) then
+    raise (Error (valdecl.pval_loc,
+                  Old_style_float_with_native_repr_attribute));
+  if old_style_noalloc && noalloc_attribute then
+    raise (Error (valdecl.pval_loc,
+                  Old_style_noalloc_with_noalloc_attribute));
   (* The compiler used to assume "noalloc" with "float", we just make this
      explicit now (GPR#167): *)
   let old_style_noalloc = old_style_noalloc || old_style_float in
@@ -92,15 +105,7 @@ let parse_declaration valdecl ~native_repr_args ~native_repr_res =
     Location.prerr_warning valdecl.pval_loc
       (Warnings.Deprecated "[@@noalloc] should be used instead of \
                             \"noalloc\"");
-  let noalloc =
-    old_style_noalloc ||
-    Attr_helper.has_no_payload_attribute ["noalloc"; "ocaml.noalloc"]
-      valdecl.pval_attributes
-  in
-  if old_style_float &&
-     not (List.for_all is_ocaml_repr native_repr_args &&
-          is_ocaml_repr native_repr_res) then
-    raise (Error (valdecl.pval_loc, Float_with_native_repr_attribute));
+  let noalloc = old_style_noalloc || noalloc_attribute in
   let native_repr_args, native_repr_res =
     if old_style_float then
       (make_native_repr_args arity Unboxed_float, Unboxed_float)
@@ -181,9 +186,12 @@ let byte_name p =
 
 let report_error ppf err =
   match err with
-  | Float_with_native_repr_attribute ->
+  | Old_style_float_with_native_repr_attribute ->
     Format.fprintf ppf "Cannot use \"float\" in conjunction with \
-                   [%@unboxed]/[%@untagged]"
+                        [%@unboxed]/[%@untagged]"
+  | Old_style_noalloc_with_noalloc_attribute ->
+    Format.fprintf ppf "Cannot use \"noalloc\" in conjunction with \
+                        [%@%@noalloc]"
 
 let () =
   Location.register_error_of_exn

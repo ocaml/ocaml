@@ -51,6 +51,7 @@ val native_name: description -> string
 val byte_name: description -> string
 
 type error =
-  | Float_with_native_repr_attribute
+  | Old_style_float_with_native_repr_attribute
+  | Old_style_noalloc_with_noalloc_attribute
 
 exception Error of Location.t * error
