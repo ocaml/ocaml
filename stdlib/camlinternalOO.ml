@@ -348,17 +348,17 @@ let dummy_class loc =
 (**** Objects ****)
 
 let create_object table =
-  (* XXX Appel de [obj_block] *)
+  (* XXX Appel de [obj_block] | Call to [obj_block]  *)
   let obj = Obj.new_block Obj.object_tag table.size in
-  (* XXX Appel de [caml_modify] *)
+  (* XXX Appel de [caml_modify] | Call to [caml_modify] *)
   Obj.set_field obj 0 (Obj.repr table.methods);
   Obj.obj (set_id obj)
 
 let create_object_opt obj_0 table =
   if (Obj.magic obj_0 : bool) then obj_0 else begin
-    (* XXX Appel de [obj_block] *)
+    (* XXX Appel de [obj_block] | Call to [obj_block]  *)
     let obj = Obj.new_block Obj.object_tag table.size in
-    (* XXX Appel de [caml_modify] *)
+    (* XXX Appel de [caml_modify] | Call to [caml_modify] *)
     Obj.set_field obj 0 (Obj.repr table.methods);
     Obj.obj (set_id obj)
   end

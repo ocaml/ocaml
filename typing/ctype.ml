@@ -317,7 +317,7 @@ let associate_fields fields1 fields2 =
 
 (**** Check whether an object is open ****)
 
-(* +++ Il faudra penser a eventuellement expanser l'abreviation *)
+(* +++ The abbreviation should eventually be expanded *)
 let rec object_row ty =
   let ty = repr ty in
   match ty.desc with
@@ -2554,7 +2554,8 @@ and unify3 env t1 t1' t2 t2' =
       | (_, _) ->
           raise (Unify [])
       end;
-      (* XXX Commentaires + changer "create_recursion" *)
+      (* XXX Commentaires + changer "create_recursion"
+         ||| Comments + change "create_recursion" *)
       if create_recursion then
         match t2.desc with
           Tconstr (p, tl, abbrev) ->

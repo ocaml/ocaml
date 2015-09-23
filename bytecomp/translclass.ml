@@ -17,7 +17,7 @@ open Lambda
 open Translobj
 open Translcore
 
-(* XXX Rajouter des evenements... *)
+(* XXX Rajouter des evenements... | Add more events... *)
 
 type error = Illegal_class_expr | Tags of label * label
 
@@ -397,6 +397,7 @@ let rec get_class_meths cl =
 
 (*
    XXX Il devrait etre peu couteux d'ecrire des classes :
+   |   Writing classes should be cheap
      class c x y = d e f
 *)
 let rec transl_class_rebind obj_init cl vf =
@@ -580,21 +581,21 @@ open M
 
 
 (*
-   Traduction d'une classe.
-   Plusieurs cas:
-    * reapplication d'une classe connue -> transl_class_rebind
-    * classe sans dependances locales -> traduction directe
-    * avec dependances locale -> creation d'un arbre de stubs,
-      avec un noeud pour chaque classe locale heritee
-   Une classe est un 4-uplet:
+   Class translation.
+   Three subcases:
+    * reapplication of a known class -> transl_class_rebind
+    * class without local dependencies -> direct translation
+    * with local dependencies -> generate a stubs tree,
+      with a node for every local classes inherited
+   A class is a 4-tuple:
     (obj_init, class_init, env_init, env)
-    obj_init: fonction de creation d'objet (unit -> obj)
-    class_init: fonction d'heritage (table -> env_init)
-      (une seule par code source)
-    env_init: parametrage par l'environnement local (env -> params -> obj_init)
-      (une par combinaison de class_init herites)
+    obj_init: creation function (unit -> obj)
+    class_init: inheritance function (table -> env_init)
+      (one by source code)
+    env_init: parameterisation by the local environment (env -> params -> obj_init)
+      (one for each combination of inherited class_init )
     env: environnement local
-   Si ids=0 (objet immediat), alors on ne conserve que env_init.
+   If ids=0 (immediate object), then only env_init is conserved.
 *)
 
 let prerr_ids msg ids =

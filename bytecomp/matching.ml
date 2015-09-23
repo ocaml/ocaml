@@ -26,7 +26,7 @@ let dbg = false
 (*  See Peyton-Jones, ``The Implementation of functional programming
     languages'', chapter 5. *)
 (*
-  Bon, au commencement du monde c'etait vrai.
+  Well, it was true at the beginning of the world.
   Now, see Lefessant-Maranget ``Optimizing Pattern-Matching'' ICFP'2001
 *)
 
@@ -2256,7 +2256,7 @@ let mk_failaction_neg partial ctx def = match partial with
 
 
 
-(* Conforme a l'article et plus simple qu'avant *)
+(* In line with the article and simpler than before *)
 let mk_failaction_pos partial seen ctx defs  =
   if dbg then begin
     prerr_endline "**POS**" ;
