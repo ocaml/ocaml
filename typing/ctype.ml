@@ -948,7 +948,7 @@ let rec copy ?env ?partial ?keep_names ty =
       | Tconstr (p, tl, _) ->
           let abbrevs = proper_abbrevs p tl !abbreviations in
           begin match find_repr p !abbrevs with
-            Some ty when repr ty != t -> (* XXX Commentaire... *)
+            Some ty when repr ty != t ->
               Tlink ty
           | _ ->
           (*
