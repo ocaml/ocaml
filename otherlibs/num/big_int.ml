@@ -876,5 +876,3 @@ let float_of_big_int x =
     ldexp (round_big_int_to_float top exact) n
   end
 
-(* XL: suppression de big_int_of_float et nat_of_float. *)
-

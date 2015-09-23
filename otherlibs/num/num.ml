@@ -389,8 +389,6 @@ let string_of_big_int_for_num bi =
 
 (* Coercion with string type *)
 
-(* XL: suppression de sys_string_of_num *)
-
 let string_of_normalized_num = function
   Int i -> string_of_int i
 | Big_int bi -> string_of_big_int_for_num bi
@@ -414,8 +412,6 @@ let float_of_num = function
   Int i -> float i
 | Big_int bi -> float_of_big_int bi
 | Ratio r -> float_of_ratio r
-
-(* XL: suppression de num_of_float, float_num *)
 
 let succ_num = function
   Int i -> if i = biggest_int
