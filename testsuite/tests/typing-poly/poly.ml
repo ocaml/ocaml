@@ -378,7 +378,7 @@ class c = object (self)
   method m :  'a. ([> 'a t] as 'a) -> 'a = fun x -> self#m x
 end;;
 
-(* usage avant instance *)
+(* use before instancing *)
 class c = object method m : 'a. 'a option -> ([> `A] as 'a) = fun x -> `A end;;
 
 (* various old bugs *)
