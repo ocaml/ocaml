@@ -404,7 +404,7 @@ module Class :
         {
           cta_name : Name.t ; (** Complete name of the target class type. *)
           mutable cta_class : cct option ;  (** The target t_class or t_class_type, if we found it.*)
-          cta_type_parameters : Types.type_expr list ; (** The type parameters. A VOIR : mettre des string ? *)
+          cta_type_parameters : Types.type_expr list ; (** The type parameters. FIXME : use strings? *)
         }
 
     and class_type_kind = Odoc_class.class_type_kind =
