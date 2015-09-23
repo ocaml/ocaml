@@ -49,35 +49,6 @@ open Btype
      policy can then be easily changed.
 *)
 
-(*
-   A faire
-   =======
-   - Revoir affichage des types.
-   - Etendre la portee d'un alias [... as 'a] a tout le type englobant.
-   - #-type implementes comme de vraies abreviations.
-   - Niveaux plus fins pour les identificateurs :
-       Champ [global] renomme en [level];
-       Niveau -1 : global
-               0 : module toplevel
-               1 : module contenu dans module toplevel
-              ...
-     En fait, incrementer le niveau a chaque fois que l'on rentre dans
-     un module.
-
-       3   4 6
-        \ / /
-       1 2 5
-        \|/
-         0
-
-     [Subst] doit ecreter les niveaux (pour qu'un variable non
-     generalisable dans un module de niveau 2 ne se retrouve pas
-     generalisable lorsque l'on l'utilise au niveau 0).
-
-   - Traitement de la trace de l'unification separe de la fonction
-     [unify].
-*)
-
 (**** Errors ****)
 
 exception Unify of (type_expr * type_expr) list
