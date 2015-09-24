@@ -128,11 +128,10 @@ let byte_name p =
   p.prim_name
 
 let report_error ppf err =
-  let open Format in
   match err with
   | Float_with_native_repr_attribute ->
-      fprintf ppf "Cannot use \"float\" in conjunction with \
-                   [@@unboxed]/[@@untagged]"
+    Format.fprintf ppf "Cannot use \"float\" in conjunction with \
+                   [%@unboxed]/[%@untagged]"
 
 let () =
   Location.register_error_of_exn
