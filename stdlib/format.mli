@@ -765,18 +765,22 @@ val pp_open_tbox : formatter -> unit -> unit
 (** @deprecated
   @since 4.03.0
 *)
+
 val pp_close_tbox : formatter -> unit -> unit
 (** @deprecated
   @since 4.03.0
 *)
+
 val pp_print_tbreak : formatter -> int -> int -> unit
 (** @deprecated
   @since 4.03.0
 *)
+
 val pp_set_tab : formatter -> unit -> unit
 (** @deprecated
   @since 4.03.0
 *)
+
 val pp_print_tab : formatter -> unit -> unit
 (** @deprecated
   @since 4.03.0
