@@ -138,22 +138,22 @@ module Scanning : SCANNING = struct
   type file_name = string;;
 
   type in_channel_name =
-    | From_file of file_name * Pervasives.in_channel
-    | From_string
-    | From_function
     | From_channel of Pervasives.in_channel
+    | From_file of file_name * Pervasives.in_channel
+    | From_function
+    | From_string
   ;;
 
   type in_channel = {
-    mutable eof : bool;
-    mutable current_char : char;
-    mutable current_char_is_valid : bool;
-    mutable char_count : int;
-    mutable line_count : int;
-    mutable token_count : int;
-    mutable get_next_char : unit -> char;
-    tokbuf : Buffer.t;
-    input_name : in_channel_name;
+    mutable ic_eof : bool;
+    mutable ic_current_char : char;
+    mutable ic_current_char_is_valid : bool;
+    mutable ic_char_count : int;
+    mutable ic_line_count : int;
+    mutable ic_token_count : int;
+    mutable ic_get_next_char : unit -> char;
+    ic_token_buffer : Buffer.t;
+    ic_input_name : in_channel_name;
   }
   ;;
 
@@ -166,22 +166,24 @@ module Scanning : SCANNING = struct
      it then simply sets the end of file condition. *)
   let next_char ib =
     try
-      let c = ib.get_next_char () in
-      ib.current_char <- c;
-      ib.current_char_is_valid <- true;
-      ib.char_count <- succ ib.char_count;
-      if c = '\n' then ib.line_count <- succ ib.line_count;
+      let c = ib.ic_get_next_char () in
+      ib.ic_current_char <- c;
+      ib.ic_current_char_is_valid <- true;
+      ib.ic_char_count <- succ ib.ic_char_count;
+      if c = '\n' then ib.ic_line_count <- succ ib.ic_line_count;
       c with
     | End_of_file ->
       let c = null_char in
-      ib.current_char <- c;
-      ib.current_char_is_valid <- false;
-      ib.eof <- true;
+      ib.ic_current_char <- c;
+      ib.ic_current_char_is_valid <- false;
+      ib.ic_eof <- true;
       c
   ;;
 
   let peek_char ib =
-    if ib.current_char_is_valid then ib.current_char else next_char ib
+    if ib.ic_current_char_is_valid
+    then ib.ic_current_char
+    else next_char ib
   ;;
 
   (* Returns a valid current char for the input buffer. In particular
@@ -191,46 +193,46 @@ module Scanning : SCANNING = struct
      new character. *)
   let checked_peek_char ib =
     let c = peek_char ib in
-    if ib.eof then raise End_of_file;
+    if ib.ic_eof then raise End_of_file;
     c
   ;;
 
   let end_of_input ib =
     ignore (peek_char ib);
-    ib.eof
+    ib.ic_eof
   ;;
 
-  let eof ib = ib.eof;;
+  let eof ib = ib.ic_eof;;
 
-  let beginning_of_input ib = ib.char_count = 0;;
+  let beginning_of_input ib = ib.ic_char_count = 0;;
 
   let name_of_input ib =
-    match ib.input_name with
+    match ib.ic_input_name with
+    | From_channel _ic -> "unnamed Pervasives input channel"
     | From_file (fname, _ic) -> fname
-    | From_string -> "unnamed character string"
     | From_function -> "unnamed function"
-    | From_channel _ic -> "unnamed pervasives input channel"
+    | From_string -> "unnamed character string"
   ;;
 
   let char_count ib =
-    if ib.current_char_is_valid then ib.char_count - 1 else ib.char_count
+    if ib.ic_current_char_is_valid then ib.ic_char_count - 1 else ib.ic_char_count
   ;;
 
-  let line_count ib = ib.line_count;;
+  let line_count ib = ib.ic_line_count;;
 
-  let reset_token ib = Buffer.reset ib.tokbuf;;
+  let reset_token ib = Buffer.reset ib.ic_token_buffer;;
 
-  let invalidate_current_char ib = ib.current_char_is_valid <- false;;
+  let invalidate_current_char ib = ib.ic_current_char_is_valid <- false;;
 
   let token ib =
-    let tokbuf = ib.tokbuf in
-    let tok = Buffer.contents tokbuf in
-    Buffer.clear tokbuf;
-    ib.token_count <- succ ib.token_count;
+    let token_buffer = ib.ic_token_buffer in
+    let tok = Buffer.contents token_buffer in
+    Buffer.clear token_buffer;
+    ib.ic_token_count <- succ ib.ic_token_count;
     tok
   ;;
 
-  let token_count ib = ib.token_count;;
+  let token_count ib = ib.ic_token_count;;
 
   let skip_char width ib =
     invalidate_current_char ib;
@@ -240,22 +242,22 @@ module Scanning : SCANNING = struct
   let ignore_char width ib = skip_char (width - 1) ib;;
 
   let store_char width ib c =
-    Buffer.add_char ib.tokbuf c;
+    Buffer.add_char ib.ic_token_buffer c;
     ignore_char width ib
   ;;
 
   let default_token_buffer_size = 1024;;
 
   let create iname next = {
-    eof = false;
-    current_char = null_char;
-    current_char_is_valid = false;
-    char_count = 0;
-    line_count = 0;
-    token_count = 0;
-    get_next_char = next;
-    tokbuf = Buffer.create default_token_buffer_size;
-    input_name = iname;
+    ic_eof = false;
+    ic_current_char = null_char;
+    ic_current_char_is_valid = false;
+    ic_char_count = 0;
+    ic_line_count = 0;
+    ic_token_count = 0;
+    ic_get_next_char = next;
+    ic_token_buffer = Buffer.create default_token_buffer_size;
+    ic_input_name = iname;
   }
   ;;
 
@@ -377,59 +379,60 @@ module Scanning : SCANNING = struct
 
   let stdib = stdin;;
 
-  let open_in fname =
+  let open_in_file open_in fname =
     match fname with
     | "-" -> stdin
     | fname ->
-      let ic = Pervasives.open_in fname in
+      let ic = open_in fname in
       from_ic_close_at_end (From_file (fname, ic)) ic
   ;;
 
-  let open_in_bin fname =
-    match fname with
-    | "-" -> stdin
-    | fname ->
-      let ic = Pervasives.open_in_bin fname in
-      from_ic_close_at_end (From_file (fname, ic)) ic
-  ;;
+  let open_in = open_in_file Pervasives.open_in;;
+  let open_in_bin = open_in_file Pervasives.open_in_bin;;
 
   let from_file = open_in;;
   let from_file_bin = open_in_bin;;
 
-  module IcIb :
+  module Ib :
     Hashtbl.HashedType
-    with type t = Pervasives.in_channel * in_channel =
+    with type t = in_channel =
   struct
-    type t = Pervasives.in_channel * in_channel;;
-    let equal (ic1, _ib1) (ic2, _ib2) = ic1 == ic2;;
-    let hash (ic, _ib) = Hashtbl.hash ic;;
+    type t = in_channel;;
+    let equal ib1 ib2 = ib1.ic_input_name = ib2.ic_input_name;;
+    let hash ib = Hashtbl.hash ib;;
   end
   ;;
 
-  module Memo = Weak.Make (IcIb);;
+  module Memo = Weak.Make (Ib);;
 
-  let memo_table = Memo.create 10;;
+  let memo_table = Memo.create 17;;
 
-  let memo_from_ic =
-    (fun scan_close_ic ic ->
-     try
-       let _, ib = Memo.find memo_table (ic, stdin) in
-       ib with
-     | Not_found ->
-       let ib = from_ic scan_close_ic (From_channel ic) ic in
-       Memo.add memo_table (ic, ib);
-       ib)
+  let memo_from_ic scan_close_ic ic =
+    let ic_name = From_channel ic in
+    let ib_option =
+      Memo.fold
+        (fun ib opt ->
+         match opt with
+         | None -> if ib.ic_input_name == ic_name then Some ib else opt
+         | opt -> opt)
+        memo_table None in
+    match ib_option with
+    | None ->
+      let ib = from_ic scan_close_ic ic_name ic in
+      Memo.add memo_table ib;
+      ib
+    | Some ib -> ib
   ;;
 
   let from_channel = memo_from_ic scan_raise_at_end;;
 
   let close_in ib =
-    match ib.input_name with
+    match ib.ic_input_name with
+    | From_channel ic ->
+      Memo.remove memo_table ib;
+      Pervasives.close_in ic
     | From_file (_fname, ic) -> Pervasives.close_in ic
     | From_string | From_function -> ()
-    | From_channel ic ->
-      Memo.remove memo_table (ic, ib);
-      Pervasives.close_in ic
   ;;
 
 end
