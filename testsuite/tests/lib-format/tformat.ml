@@ -503,6 +503,19 @@ try
   test (sprintf "@@" = "@");
   test (sprintf "@@@@" = "@@");
   test (sprintf "@@%%" = "@%");
+
+
+  let make_space n fmt v =
+    pp_open_tbox fmt () ;
+    pp_set_tab_at fmt n ;
+    fprintf fmt v ;
+    pp_print_tab fmt () ;
+    pp_close_tbox fmt ()
+  in
+
+  say "\ntabulations\n%!";
+  test (asprintf "%a%s" (make_space 10) "bla" "blo" = "bla       blo");
+
   say "\nend of tests\n%!";
 
 with e ->

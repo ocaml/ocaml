@@ -37,7 +37,7 @@ type pp_token =
 | Pp_text of string            (* normal text *)
 | Pp_break of int * int        (* complete break *)
 | Pp_tbreak of int * int       (* go to next tabulation *)
-| Pp_stab                      (* set a tabulation *)
+| Pp_stab of int option        (* set a tabulation *)
 | Pp_begin of int * block_type (* beginning of a block *)
 | Pp_end                       (* end of a block *)
 | Pp_tbegin of tblock          (* beginning of a tabulation block *)
@@ -320,13 +320,17 @@ let format_pp_token state size = function
     | [] -> () (* No more tabulation block to close. *)
     end
 
-  | Pp_stab ->
+  | Pp_stab i ->
     begin match state.pp_tbox_stack with
     | Pp_tbox tabs :: _ ->
       let rec add_tab n = function
         | [] -> [n]
         | x :: l as ls -> if n < x then n :: ls else x :: add_tab n l in
-      tabs := add_tab (state.pp_margin - state.pp_space_left) !tabs
+      let i = match i with
+        | Some i when i <= state.pp_margin -> i
+        | _ -> state.pp_margin - state.pp_space_left
+      in
+      tabs := add_tab i !tabs
     | [] -> () (* No opened tabulation block. *)
     end
 
@@ -484,7 +488,7 @@ let set_size state ty =
           queue_elem.elem_size <- size_of_int (state.pp_right_total + size);
           state.pp_scan_stack <- t
         end
-      | Pp_text _ | Pp_stab | Pp_tbegin _ | Pp_tend | Pp_end
+      | Pp_text _ | Pp_stab _ | Pp_tbegin _ | Pp_tend | Pp_end
       | Pp_newline | Pp_if_newline
       | Pp_open_tag _ | Pp_close_tag ->
         () (* scan_push is only used for breaks and boxes. *)
@@ -733,11 +737,15 @@ let pp_print_tbreak state width offset =
 
 let pp_print_tab state () = pp_print_tbreak state 0 0;;
 
-let pp_set_tab state () =
+let pp_set_tab_loc state i =
   if state.pp_curr_depth < state.pp_max_boxes then
     let elem =
-      make_queue_elem (size_of_int 0) Pp_stab 0 in
+      make_queue_elem (size_of_int 0) (Pp_stab i) 0 in
     enqueue_advance state elem
+
+let pp_set_tab state () = pp_set_tab_loc state None
+
+let pp_set_tab_at state i = pp_set_tab_loc state (Some i)
 ;;
 
 
@@ -1019,6 +1027,7 @@ and close_tbox = pp_close_tbox std_formatter
 and print_tbreak = pp_print_tbreak std_formatter
 
 and set_tab = pp_set_tab std_formatter
+and set_tab_at = pp_set_tab_at std_formatter
 and print_tab = pp_print_tab std_formatter
 
 and set_margin = pp_set_margin std_formatter
