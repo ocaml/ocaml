@@ -1052,10 +1052,14 @@ let constant_defining_value_approx
     assert(E.freshening env = Freshening.empty);
     assert(Variable.Map.is_empty free_vars);
     assert(Variable.Map.is_empty specialised_args);
+    let unchanging_params =
+      Invariant_params.unchanging_params_in_recursion function_decls
+        ~backend:(E.backend env)
+    in
     let value_set_of_closures : A.value_set_of_closures =
       { function_decls;
         bound_vars = Var_within_closure.Map.empty;
-        unchanging_params = Variable.Set.empty;
+        unchanging_params;
         specialised_args = Variable.Set.empty;
         freshening = Freshening.Project_var.empty;
       }
