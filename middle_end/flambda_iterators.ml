@@ -109,6 +109,15 @@ let iter_all_immutable_let_and_let_rec_bindings t ~f =
       | _ -> ())
     t
 
+let iter_all_toplevel_immutable_let_and_let_rec_bindings t ~f =
+  iter_general ~toplevel:true
+    (function
+      | Let { var; defining_expr; _ } -> f var defining_expr
+      | Let_rec (defs, _) -> List.iter (fun (var, named) -> f var named) defs
+      | _ -> ())
+    (fun _ -> ())
+    (Is_expr t)
+
 let iter_on_sets_of_closures f t =
   iter_named (function
       | Set_of_closures clos -> f clos

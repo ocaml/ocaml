@@ -95,6 +95,11 @@ val iter_all_immutable_let_and_let_rec_bindings
   -> f:(Variable.t -> Flambda.named -> unit)
   -> unit
 
+val iter_all_toplevel_immutable_let_and_let_rec_bindings
+   : Flambda.t
+  -> f:(Variable.t -> Flambda.named -> unit)
+  -> unit
+
 val iter_exprs_at_toplevel_of_program
    : Flambda.program
   -> f:(Flambda.t -> unit)

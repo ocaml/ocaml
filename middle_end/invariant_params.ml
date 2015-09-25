@@ -120,8 +120,50 @@ let transitive_closure state =
   in
   fp state
 
+(* CR pchambart: to move to Flambda_utils and document *)
+(* Finds variables that represents the functions.
+   In a construction like:
+     let f x =
+       let g = Symbol f_closure in
+       ..
+   the variable g is bound to the symbol f_closure which
+   is the current closure.
+   The result of [function_variable_alias] will contains
+   the assotiation [g -> f]
+*)
+let function_variable_alias
+    (function_decls : Flambda.function_declarations)
+    ~backend =
+  let fun_vars = Variable.Map.keys function_decls.funs in
+  let symbols_to_fun_vars =
+    let module Backend = (val backend : Backend_intf.S) in
+    Variable.Set.fold (fun fun_var symbols_to_fun_vars ->
+        let closure_id = Closure_id.wrap fun_var in
+        let symbol = Backend.closure_symbol closure_id in
+        Symbol.Map.add symbol fun_var symbols_to_fun_vars)
+      fun_vars
+      Symbol.Map.empty
+  in
+  let fun_var_bindings = ref Variable.Map.empty in
+  Variable.Map.iter (fun _ ( function_decl : Flambda.function_declaration ) ->
+      Flambda_iterators.iter_all_toplevel_immutable_let_and_let_rec_bindings
+        ~f:(fun var named ->
+           match named with
+           | Symbol sym ->
+             begin match Symbol.Map.find sym symbols_to_fun_vars with
+             | exception Not_found -> ()
+             | fun_var ->
+               fun_var_bindings :=
+                 Variable.Map.add var fun_var !fun_var_bindings
+             end
+           | _ -> ())
+        function_decl.body)
+    function_decls.funs;
+  !fun_var_bindings
+
 let unchanging_params_in_recursion (decls : Flambda.function_declarations)
-      ~backend =
+    ~backend =
+  let function_variable_alias = function_variable_alias ~backend decls in
   let escaping_functions = ref Variable.Set.empty in
   let relation = ref Variable.Pair.Map.empty in
   let variables_at_position =
@@ -172,8 +214,13 @@ let unchanging_params_in_recursion (decls : Flambda.function_declarations)
           mark ~callee ~callee_arg
   in
   let test_escape var =
-    if Variable.Map.mem var decls.funs
-    then escaping_functions := Variable.Set.add var !escaping_functions
+    let fun_var =
+      match Variable.Map.find var function_variable_alias with
+      | exception Not_found -> var
+      | fun_var -> fun_var
+    in
+    if Variable.Map.mem fun_var decls.funs
+    then escaping_functions := Variable.Set.add fun_var !escaping_functions
   in
   let arity ~callee =
     match Variable.Map.find callee decls.funs with
@@ -182,7 +229,12 @@ let unchanging_params_in_recursion (decls : Flambda.function_declarations)
   in
   let check_expr ~caller (expr : Flambda.t) =
     match expr with
-    | Apply { func = callee; args } ->
+    | Apply { func; args } ->
+      let callee =
+        match Variable.Map.find func function_variable_alias with
+        | exception Not_found -> func
+        | callee -> callee
+      in
       let num_args = List.length args in
       for callee_pos = num_args to (arity ~callee) - 1 do
         match find_callee_arg ~callee ~callee_pos with
@@ -196,10 +248,6 @@ let unchanging_params_in_recursion (decls : Flambda.function_declarations)
         args
     | _ -> ()
   in
-  let fun_vars_via_symbols =
-    Flambda_utils.fun_vars_referenced_in_decls decls ~backend
-      ~only_via_symbols:()
-  in
   Variable.Map.iter (fun caller (decl : Flambda.function_declaration) ->
       Flambda_iterators.iter (check_expr ~caller)
         (fun (_ : Flambda.named) -> ())
@@ -208,16 +256,7 @@ let unchanging_params_in_recursion (decls : Flambda.function_declarations)
         (* CR-soon mshinwell: we should avoid recomputing this, cache in
            [function_declaration].  See also comment on
            [only_via_symbols] in [Flambda_utils]. *)
-        (Flambda.free_variables ~ignore_uses_in_apply:() decl.body);
-      let fun_vars_via_symbols =
-        match Variable.Map.find caller fun_vars_via_symbols with
-        | fun_vars -> fun_vars
-        | exception Not_found ->
-          Misc.fatal_errorf "Expected to find fun_var %a in the output of \
-              [fun_vars_referenced_in_decls], but it is absent"
-            Variable.print caller
-      in
-      Variable.Set.iter test_escape fun_vars_via_symbols)
+        (Flambda.free_variables ~ignore_uses_in_apply:() decl.body))
     decls.funs;
   let relation =
     Variable.Map.fold (fun func_var
