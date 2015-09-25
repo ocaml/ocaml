@@ -142,7 +142,7 @@ val iter : ('a -> unit) -> 'a array -> unit
 
 val iteri : (int -> 'a -> unit) -> 'a array -> unit
 (** Same as {!Array.iter}, but the
-   function is applied to the index of the element as first argument,
+   function is applied with the index of the element as first argument,
    and the element itself as second argument. *)
 
 val map : ('a -> 'b) -> 'a array -> 'b array
