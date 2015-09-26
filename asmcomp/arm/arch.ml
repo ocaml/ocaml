@@ -45,6 +45,8 @@ let string_of_fpu = function
 (* Machine-specific command-line options *)
 
 let (arch, fpu, thumb, supp_pic, supp_pie) =
+  (* NB. We'll use polymorphic comparison on arch, e.g. arch < ARMv6, here
+     and there *)
   let (def_arch, def_fpu, def_thumb, supp_pic, supp_pie) =
     begin match abi, Config.model with
     (* Defaults for architecture, FPU, Thumb, PIC and PIE *)
