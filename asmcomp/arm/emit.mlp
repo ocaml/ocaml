@@ -1103,8 +1103,12 @@ let end_assembly () =
       `	.type	{emit_label lbl}, %function\n`;
     `	.word	{emit_label lbl}\n` in
   let efa_label_rel_macosx =
+    (* Work around a limitation of the Apple assembler. We cannot directly
+       define a .word as a relative offset. But we can define a helper label
+       with such a value, and define the .word as the helper. *)
     let sylab1 = new_label() in
     let sylab2 = ref 99 in
+      (* first helper label uses 100 for better formatting *)
     (fun lbl ofs ->
        incr sylab2;
        `Lofs_{emit_int sylab1}_{emit_int !sylab2} =	{emit_label lbl} - . + {emit_int32 ofs}\n`;
