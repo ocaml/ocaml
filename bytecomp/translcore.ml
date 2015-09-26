@@ -1037,14 +1037,14 @@ and transl_apply ?(should_be_tailcall=false) lam sargs loc =
   in
   build_apply lam [] (List.map (fun (l, x,o) -> may_map transl_exp x, o) sargs)
 
-and transl_function loc untuplify_fn repr partial cases =
+and transl_function_core loc untuplify_fn repr partial cases =
   match cases with
     [{c_lhs=pat; c_guard=None;
       c_rhs={exp_desc = Texp_function(_, pl,partial')} as exp}]
     when Parmatch.fluid pat ->
       let param = name_pattern "param" cases in
       let ((_, params), body) =
-        transl_function exp.exp_loc false repr partial' pl in
+        transl_function_core exp.exp_loc false repr partial' pl in
       ((Curried, param :: params),
        Matching.for_function loc None (Lvar param) [pat, body] partial)
   | {c_lhs={pat_desc = Tpat_tuple pl}} :: _ when untuplify_fn ->
@@ -1070,6 +1070,13 @@ and transl_function loc untuplify_fn repr partial cases =
       ((Curried, [param]),
        Matching.for_function loc repr (Lvar param)
          (transl_cases cases) partial)
+
+and transl_function loc untuplify_fn repr partial cases =
+  let try_in_handler' = !try_in_handler in
+  try_in_handler := false;
+  Misc.try_finally
+    (fun () -> transl_function_core loc untuplify_fn repr partial cases)
+    (fun () -> try_in_handler := try_in_handler')
 
 and transl_let rec_flag pat_expr_list body =
   match rec_flag with
