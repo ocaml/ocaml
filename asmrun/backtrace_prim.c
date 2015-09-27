@@ -87,10 +87,7 @@ frame_descr * caml_next_frame_descriptor(uintnat * pc, char ** sp)
    [caml_get_current_callstack] was implemented. */
 void caml_stash_backtrace(value exn, uintnat pc, char * sp, char * trapsp)
 {
-  if (exn != caml_backtrace_last_exn) {
-    caml_backtrace_pos = 0;
-    caml_backtrace_last_exn = exn;
-  }
+  caml_backtrace_last_exn = exn;
   if (caml_backtrace_buffer == NULL) {
     Assert(caml_backtrace_pos == 0);
     caml_backtrace_buffer = malloc(BACKTRACE_BUFFER_SIZE
