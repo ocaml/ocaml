@@ -10,4 +10,4 @@
 #                                                                       #
 #########################################################################
 
-sed -e 1q testsignal.result | grep -q '^[ab]*Got ctrl-C, exiting...$'
+sed -e 1q signal.result | grep -q '^[ab]*Got ctrl-C, exiting...$'
