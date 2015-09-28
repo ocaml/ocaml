@@ -98,7 +98,7 @@ let test_trunc_line ofile =
 (* The test *)
 
 let main() =
-  let ifile = try Sys.argv.(1) with _ -> "testio.ml" in
+  let ifile = if Array.length Sys.argv > 1 then Sys.argv.(1) else "fileio.ml" in
   let ofile = Filename.temp_file "testio" "" in
   test "256-byte chunks, 256-byte chunks"
        (copy_file 256) (copy_file 256) ifile ofile;
@@ -118,15 +118,12 @@ let main() =
        (copy_file 613) (copy_file 1027) ifile ofile;
   test "0...8192 byte chunks"
        (copy_random 8192) (copy_random 8192) ifile ofile;
-  test "line per line, short lines"
-       copy_line copy_line "test-file-short-lines" ofile;
   let linesfile = Filename.temp_file "lines" "" in
   make_lines linesfile;
-  test "line per line, short and long lines"
+  test "line per line"
        copy_line copy_line linesfile ofile;
   test_trunc_line ofile;
   Sys.remove linesfile;
-  Sys.remove ofile;
-  exit 0
+  Sys.remove ofile
 
 let _ = Unix.handle_unix_error main (); exit 0

@@ -16,9 +16,7 @@ passed
 passed
 0...8192 byte chunks
 passed
-line per line, short lines
-passed
-line per line, short and long lines
+line per line
 passed
 truncated line
 passed

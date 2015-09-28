@@ -10,36 +10,31 @@
 (*                                                                     *)
 (***********************************************************************)
 
-open Printf
-open Thread
+let sieve primes =
+  Event.sync (Event.send primes 2);
+  let integers = Event.new_channel () in
+  let rec enumerate n =
+    Event.sync (Event.send integers n);
+    enumerate (n + 2)
+  and filter input =
+    let n = Event.sync (Event.receive input)
+    and output = Event.new_channel () in
+    Event.sync (Event.send primes n);
+    ignore(Thread.create filter output);
+    (* On elimine de la sortie ceux qui sont des multiples de n *)
+    while true do
+        let m = Event.sync (Event.receive input) in
+        (* print_int n; print_string ": "; print_int m; print_newline(); *)
+        if m mod n <> 0 then Event.sync (Event.send output m)
+      done in
+  ignore(Thread.create filter integers);
+  ignore(Thread.create enumerate 3)
 
-let rec integers n ch =
-  Event.sync (Event.send ch n);
-  integers (n+1) ch
+let primes = Event.new_channel ()
 
-let rec sieve n chin chout =
-  let m = Event.sync (Event.receive chin)
-  in if m mod n = 0
-     then sieve n chin chout
-     else Event.sync (Event.send chout m);
-          sieve n chin chout
-
-let rec print_primes ch max =
-  let n = Event.sync (Event.receive ch)
-  in if n > max
-     then ()
-     else begin
-            printf "%d\n" n; flush stdout;
-            let ch_after_n = Event.new_channel ()
-            in Thread.create (sieve n ch) ch_after_n;
-               print_primes ch_after_n max
-          end
-
-let go max =
-  let ch = Event.new_channel ()
-  in Thread.create (integers 2) ch;
-     print_primes ch max;;
-
-let _ = go 500
-
-;;
+let _ =
+  ignore(Thread.create sieve primes);
+  for i = 1 to 50 do
+    let n = Event.sync (Event.receive primes) in
+    print_int n; print_newline()
+  done

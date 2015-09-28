@@ -10,16 +10,30 @@
 (*                                                                     *)
 (***********************************************************************)
 
-let sighandler _ =
-  print_string "Got ctrl-C, exiting..."; print_newline();
-  exit 0
+(* The bank account example, using events and channels *)
 
-let print_message delay c =
-  while true do
-    print_char c; flush stdout; Thread.delay delay
-  done
+open Printf
+open Event
+
+type account = int channel * int channel
+
+let account (put_ch, get_ch) =
+  let rec acc balance =
+    select [
+      wrap (send get_ch balance) (fun () -> acc balance);
+      wrap (receive put_ch) (fun amount ->
+        if balance + amount < 0 then failwith "negative balance";
+        acc (balance + amount))
+    ]
+  in acc 0
+
+let get ((put_ch, get_ch): account) = sync (receive get_ch)
+let put ((put_ch, get_ch): account) amount = sync (send put_ch amount)
 
 let _ =
-  Sys.signal Sys.sigint (Sys.Signal_handle sighandler);
-  Thread.create (print_message 0.6666666666) 'a';
-  print_message 1.0 'b'
+  let a : account = (new_channel(), new_channel()) in
+  ignore (Thread.create account a);
+  put a 100;
+  printf "Current balance: %d\n" (get a);
+  for i = 1 to 99 do put a (-2); put a 1 done;
+  printf "Final balance: %d\n" (get a)

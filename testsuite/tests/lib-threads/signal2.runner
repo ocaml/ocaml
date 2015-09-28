@@ -10,4 +10,9 @@
 #                                                                       #
 #########################################################################
 
-LC_ALL=C $SORT testA.result | $DIFF testA.reference -
+$RUNTIME ./program >signal2.result &
+pid=$!
+sleep 2
+kill -INT $pid
+sleep 1
+kill -9 $pid 2>&- || true

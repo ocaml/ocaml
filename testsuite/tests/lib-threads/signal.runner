@@ -10,9 +10,7 @@
 #                                                                       #
 #########################################################################
 
-$RUNTIME ./program >testsignal2.result &
+$RUNTIME ./program >signal.result &
 pid=$!
-sleep 3
+sleep 2
 kill -INT $pid
-sleep 1
-kill -9 $pid 2>&- || true

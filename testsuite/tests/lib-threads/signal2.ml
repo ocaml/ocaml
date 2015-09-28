@@ -10,22 +10,14 @@
 (*                                                                     *)
 (***********************************************************************)
 
-open Event
-
-let ch = (new_channel() : string channel)
-
-let rec sender msg =
-  sync (send ch msg);
-  sender msg
-
-let rec receiver name =
-  print_string (name ^ ": " ^ sync (receive ch) ^ "\n");
-  flush stdout;
-  receiver name
+let print_message delay c =
+  while true do
+    print_char c; flush stdout; Thread.delay delay
+  done
 
 let _ =
-  Thread.create sender "hello";
-  Thread.create sender "world";
-  Thread.create receiver "A";
-  receiver "B";
-  exit 0
+  ignore (Thread.sigmask Unix.SIG_BLOCK [Sys.sigint; Sys.sigterm]);
+  ignore (Thread.create (print_message 0.6666666666) 'a');
+  ignore (Thread.create (print_message 1.0) 'b');
+  let s = Thread.wait_signal [Sys.sigint; Sys.sigterm] in
+  Printf.printf "Got signal %d, exiting...\n" s

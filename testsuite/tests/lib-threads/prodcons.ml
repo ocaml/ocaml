@@ -28,8 +28,6 @@ let create size init =
     notempty = Condition.create();
     notfull = Condition.create() }
 
-let output_lock = Mutex.create()
-
 let put p data =
   Mutex.lock p.lock;
   while (p.writepos + 1) mod Array.length p.buffer = p.readpos do
@@ -53,23 +51,24 @@ let get p =
 
 (* Test *)
 
-let buff = create 20 0
-
-let rec produce n =
-  Mutex.lock output_lock;
-  print_int n; print_string "-->"; print_newline();
-  Mutex.unlock output_lock;
+let rec produce buff n max =
   put buff n;
-  if n < 10000 then produce (n+1)
+  if n < max then produce buff (n+1) max
 
-let rec consume () =
+let rec consume buff cur max =
   let n = get buff in
-  Mutex.lock output_lock;
-  print_string "-->"; print_int n; print_newline();
-  Mutex.unlock output_lock;
-  if n < 10000 then consume ()
+  if n <> cur then false
+  else if n = max then true
+  else consume buff (cur + 1) max
 
-let t1 = Thread.create produce 0
-let _ = consume ()
-
-;;
+let _ =
+  let buff1 = create 20 0 and buff2 = create 30 0 in
+  let ok1 = ref false and ok2 = ref false in
+  let _p1 = Thread.create (fun () -> produce buff1 0 10000) ()
+  and _p2 = Thread.create (fun () -> produce buff2 0 8000) ()
+  and c1 = Thread.create (fun () -> ok1 := consume buff1 0 10000) () in
+  ok2 := consume buff2 0 8000;
+  Thread.join c1;
+  if !ok1 && !ok2
+  then print_string "passed\n"
+  else print_string "FAILED\n"
