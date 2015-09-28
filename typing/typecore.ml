@@ -4043,10 +4043,11 @@ and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
           in
         if cases <> [] then begin
           let first_branch = (List.hd cases).c_rhs in
-          List.iter (fun c ->
+          list_iteri (fun i c ->
+            (* Note: I think when i=0 the unification is not needed *)
             ignore (unify_exp_easytype env c.c_rhs first_branch.exp_type  
               (easytype_report ~swap:true 
-                (format_string "The previous branches have type") 
+                (format_string (if i = 1 then "The previous branch has type" else "The previous branches have type")) 
                 (format_string "but this branch has type")))
             ) cases;
           ignore (unify_exp_easytype env first_branch ty_res  

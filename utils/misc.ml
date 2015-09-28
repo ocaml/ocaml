@@ -63,6 +63,13 @@ let rec samelist pred l1 l2 =
   | (hd1 :: tl1, hd2 :: tl2) -> pred hd1 hd2 && samelist pred tl1 tl2
   | (_, _) -> false
 
+let list_iteri f l =
+  let rec aux i = function
+    | [] -> ()
+    | h::t -> (f i h); (aux (i+1) t)
+    in
+  aux 0 l
+
 (* Options *)
 
 let may f = function
