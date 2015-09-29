@@ -69,6 +69,13 @@ CAMLextern int caml_failed_assert (char *, char *, int);
 #define CAMLassert(x) ((void) 0)
 #endif
 
+
+#define CAML_STATIC_ASSERT_3(b, l) \
+  typedef char static_assertion_failure_line_##l[(b) ? 1 : -1]
+#define CAML_STATIC_ASSERT_2(b, l) CAML_STATIC_ASSERT_3(b, l)
+#define CAML_STATIC_ASSERT(b) CAML_STATIC_ASSERT_2(b, __LINE__)
+
+
 /* <private> */
 
 CAMLextern void caml_fatal_error (char *msg) Noreturn;
