@@ -182,25 +182,37 @@ let format_labelled_type ppf (l,ty) =
    made of the list of types of the arguments, and the return type.
    Note: this function generalizes "list_labels", so this code could
    be later used to implement "list_labels" (provided there are no
-   performance issues here). *)
+   performance issues here). 
+   Note: see related function "filter_arrow", factorization might be possible *)
 
 let decompose_function_type env ty_fun =
   let rec aux visited lty_args ty =
     let ty = expand_head env ty in
     if List.memq ty visited then
-      List.rev lty_args, ty, false
+      List.rev lty_args, ty
     else match ty.desc with
     | Tarrow (l, ty_arg, ty_res, _) ->
         aux (ty::visited) ((l,ty_arg)::lty_args) ty_res
     | _ ->
-        List.rev lty_args, ty, is_Tvar ty
+        List.rev lty_args, ty
     in
   wrap_trace_gadt_instances env (aux [] []) ty_fun
 
 (* Helper function for reporting application errors *)
-let message_for_application_error_easytype expected provided =
+let message_for_application_error_easytype ppf env show_func_name expected provided 
+  expected_return =
+  let expected_return_is_var =
+    is_Tvar expected_return in
+    (* For future use:
+    let (sub_args_ty, sub_ret_ty) = decompose_function_type env instantiated_return in
+    sub_args_ty <> [] in *)
   let nb1 = List.length expected in
   let nb2 = List.length provided in
+  if nb2 > nb1 && not expected_return_is_var then begin
+    Format.fprintf ppf "@[The function%a is applied to too many arguments.@]" show_func_name ();
+  end else begin
+    Format.fprintf ppf "@[The function%a cannot be applied to the arguments provided.@]" show_func_name ();
+  end;
   let nb = max nb1 nb2 in
   let col0_width = if nb >= 100 then 3 else 2 in
   let coli_width = 35 in
@@ -242,7 +254,12 @@ let message_for_application_error_easytype expected provided =
       print_row t0 t1 t2;
     done;
   done;
-  Buffer.contents b
+  Format.fprintf ppf "@.@.%s" (Buffer.contents b);
+  if nb2 > nb1 && expected_return_is_var then begin
+    Format.fprintf ppf "@[The function%a, when applied to the first %s, @\nproduces a value of type: %a.@]" show_func_name () (if nb1 = 1 then "argument" else Printf.sprintf "%d arguments" nb1) format_type expected_return;
+    (* For future use:
+       "@\ninstantiated as:\n@[<b 2>   %a@]" instantiated_return; *)
+  end 
 
 (* end easytype *)
 
@@ -1931,7 +1948,9 @@ and type_expect_ ?in_function env sexp ty_expected =
       let funct_sch = funct.exp_type in
       generalize funct_sch;
       let ty = instance env funct_sch in 
-      let expected_ltys, return_ty, _ = decompose_function_type env funct_sch in
+      (* Note: maybe useful for future use: 
+         let _, instantiated_return_ty = decompose_function_type env ty in *)
+      let expected_ltys, expected_return_ty = decompose_function_type env funct_sch in
       let has_format_arg = 
          List.exists (fun (lab,ty_arg) -> is_format env loc ty_arg) expected_ltys in
       if has_format_arg then begin
@@ -2002,12 +2021,7 @@ and type_expect_ ?in_function env sexp ty_expected =
                 show_type_list provided_ltys;
                 Format.fprintf ppf ".@]@\n";
               end else begin
-                if List.length provided_ltys > List.length expected_ltys then begin
-                  Format.fprintf ppf "@[The function%a is applied to too many arguments.@]" show_func_name ();
-                end else begin
-                  Format.fprintf ppf "@[The function%a cannot be applied to the arguments provided.@]" show_func_name ();
-                end;
-                Format.fprintf ppf "@.@.%s" (message_for_application_error_easytype (strings_of_type_list expected_ltys) (strings_of_type_list provided_ltys));
+                message_for_application_error_easytype ppf env show_func_name (strings_of_type_list expected_ltys) (strings_of_type_list provided_ltys) expected_return_ty;
                 (* Note: classic inline version
                   Format.fprintf ppf "@[The function%a expects argument%s of type%s @," show_func_name () (format_plural expected_ltys) (format_plural expected_ltys);
                   show_type_list expected_ltys;
@@ -3664,11 +3678,13 @@ and type_application_easytype env funct sargs (targs:expression list) =
             type_unknown_args args omitted ty_fun0
               (sargs @ more_sargs) (targs @ more_targs)
   in
+  let ty = funct.exp_type in
+  let ty_inst = instance env ty in
   match funct.exp_desc, sargs with
     (* Special case for ignore: avoid discarding warning *)
     Texp_ident (_, _, {val_kind=Val_prim{Primitive.prim_name="%ignore"}}),
     ["", sarg] ->
-      let ty_arg, ty_res = filter_arrow env (instance env funct.exp_type) "" in
+      let ty_arg, ty_res = filter_arrow env ty_inst "" in
       let exp = type_expect env sarg ty_arg in
       begin match (expand_head env exp.exp_type).desc with
       | Tarrow _ ->
@@ -3679,11 +3695,10 @@ and type_application_easytype env funct sargs (targs:expression list) =
       end;
       (["", Some exp, Required], ty_res)
   | _ ->
-      let ty = funct.exp_type in
       if ignore_labels then
-        type_args [] [] ty (instance env ty) ty [] [] sargs targs
+        type_args [] [] ty ty_inst ty [] [] sargs targs
       else 
-        type_args [] [] ty (instance env ty) ty sargs targs [] []
+        type_args [] [] ty ty_inst ty sargs targs [] []
 
 
 
@@ -3847,7 +3862,7 @@ and type_statement_easytype env sexp report =
       | _ -> false
       in
     let exp_ty = expand_head env exp.exp_type in
-    let ltys, ret_ty, _ = decompose_function_type env exp_ty in 
+    let ltys, ret_ty = decompose_function_type env exp_ty in 
     if not (is_type_unit ret_ty) then None else begin
       match ltys with
       | [] -> None (* was not a function *)
