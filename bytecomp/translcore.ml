@@ -1179,6 +1179,9 @@ and transl_match e arg pat_expr_list exn_pat_expr_list partial =
     static_catch [transl_exp arg] [val_id]
       (Matching.for_function e.exp_loc None (Lvar val_id) cases partial)
 
+and prim_bvar_create =
+  Pccall { prim_name = "caml_bvar_create"; prim_arity = 1; prim_alloc = true;
+           prim_native_name = ""; prim_native_float = false }
 
 and transl_handler e body val_caselist exn_caselist eff_caselist =
   let val_fun =
@@ -1202,9 +1205,11 @@ and transl_handler e body val_caselist exn_caselist eff_caselist =
   let eff_fun =
     let param = name_pattern "eff" eff_caselist in
     let cont = Ident.create "k" in
+    let raw_cont = Ident.create "cont" in
     let eff_cases = transl_cases ~cont eff_caselist in
-      Lfunction(Curried, [param; cont],
-        Matching.for_handler (Lvar param) (Lvar cont) eff_cases)
+      Lfunction(Curried, [param; raw_cont],
+        Llet(StrictOpt, cont, Lprim (prim_bvar_create, [Lvar raw_cont]),
+          Matching.for_handler (Lvar param) (Lvar cont) eff_cases))
   in
   let body_fun =
     let param = Ident.create "param" in
