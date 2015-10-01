@@ -110,6 +110,7 @@ to adjust the paths accordingly.
     set FLEXDLLDIR=%PFPATH%\flexdll
     vcvars32
     echo VCPATH="`cygpath -p '%Path%'`" >C:\cygwin\tmp\msenv
+    echo LIB="%LIB%" >>C:\cygwin\tmp\msenv
     echo LIBPATH="%LIBPATH%" >>C:\cygwin\tmp\msenv
     echo INCLUDE="%INCLUDE%;%FLEXDLLDIR%" >>C:\cygwin\tmp\msenv
     echo FLPATH="`cygpath '%FLEXDLLDIR%'`" >>C:\cygwin\tmp\msenv
@@ -410,7 +411,9 @@ to adjust the paths accordingly.
     cd "%PFPATH%\Microsoft Visual Studio 9.0\VC\bin"
     vcvars64
     echo VCPATH="`cygpath -p '%Path%'`" >C:\cygwin\tmp\msenv
+    echo LIB="%LIB%" >>C:\cygwin\tmp\msenv
     echo LIBPATH="%LIBPATH%" >>C:\cygwin\tmp\msenv
+    echo INCLUDE="%INCLUDE%" >>C:\cygwin\tmp\msenv
     echo FLPATH="`cygpath '%PFPATH%\flexdll'`" >>C:\cygwin\tmp\msenv
     echo PATH="$VCPATH:$FLPATH:$PATH" >>C:\cygwin\tmp\msenv
     echo export PATH LIB LIBPATH INCLUDE >>C:\cygwin\tmp\msenv
