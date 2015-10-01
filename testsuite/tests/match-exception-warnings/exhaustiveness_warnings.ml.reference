@@ -1,5 +1,5 @@
 
-# * * * *               Characters 210-289:
+Characters 210-289:
   ....match None with
       | exception e -> ()
       | Some false -> ()
@@ -8,4 +8,4 @@ Warning 8: this pattern-matching is not exhaustive.
 Here is an example of a value that is not matched:
 Some true
 val test_match_exhaustiveness : unit -> unit = <fun>
-# 
+
