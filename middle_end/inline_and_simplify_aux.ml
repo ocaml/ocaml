@@ -88,6 +88,10 @@ module Env = struct
         Mutable_variable.Map.add mut_var approx t.approx_mutable;
     }
 
+  let really_import_approx t approx =
+    let module Backend = (val (t.backend) : Backend_intf.S) in
+    Backend.really_import_approx approx
+
   let find_symbol_exn t symbol =
     Symbol.Map.find symbol t.approx_sym
 
