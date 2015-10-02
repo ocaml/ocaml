@@ -94,6 +94,8 @@ let middle_end ppf ~sourcefile ~prefixname ~backend
            Ref_to_variables.eliminate_ref)
       +-+ ("Inline_and_simplify noinline 2",
            Inline_and_simplify.run ~never_inline:true ~backend)
+      +-+ ("Initialize_symbol_to_let_symbol",
+           Initialize_symbol_to_let_symbol.run)
       +-+ ("Remove_unused_globals",
            Remove_unused_globals.remove_unused_globals)
       |> loop
