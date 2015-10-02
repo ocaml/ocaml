@@ -1235,6 +1235,7 @@ let run ~never_inline ~backend program =
   (* CR mshinwell: Why does this always set [never_inline:false]? *)
   let initial_env = E.create ~never_inline:false ~backend in
   let result, r = simplify_program initial_env r program in
+  let result = Flambda_utils.introduce_needed_import_symbols result in
   Clflags.inlining_stats := stats;
   if not (Static_exception.Set.is_empty (R.used_staticfail r))
   then begin

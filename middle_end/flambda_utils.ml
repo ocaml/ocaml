@@ -387,6 +387,14 @@ let needed_import_symbols (program:Flambda.program) =
   in
   Symbol.Set.diff dependencies defined_symbol
 
+let introduce_needed_import_symbols program : Flambda.program =
+  Symbol.Set.fold (fun symbol program ->
+      Flambda.Import_symbol (symbol, program))
+    (Symbol.Set.diff
+       (needed_import_symbols program)
+       (imported_symbols program))
+    program
+
 let rec root_symbol (program:Flambda.program) =
   match program with
   | Effect (_, program)

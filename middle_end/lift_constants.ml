@@ -927,12 +927,7 @@ let lift_constants program ~backend =
       (Flambda.End (Flambda_utils.root_symbol program))
       components
   in
-  let program =
-    Symbol.Set.fold
-      (fun symbol program -> Flambda.Import_symbol (symbol, program))
-      (Flambda_utils.needed_import_symbols program)
-      program
-  in
+  let program = Flambda_utils.introduce_needed_import_symbols program in
   (* Format.eprintf "@.lift_constants output:@ %a\n" Flambda.print_program program; *)
   program
 
