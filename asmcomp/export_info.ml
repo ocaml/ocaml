@@ -146,6 +146,8 @@ let print_approx ppf (t : t) =
   let values = t.values in
   let fprintf = Format.fprintf in
   let printed = ref Export_id.Set.empty in
+  let recorded_symbol = ref Symbol.Set.empty in
+  let symbols_to_print = Queue.create () in
   let printed_set_of_closures = ref Set_of_closures_id.Set.empty in
   let rec print_approx ppf (approx : approx) =
     match approx with
@@ -157,11 +159,16 @@ let print_approx ppf (t : t) =
         try
           let descr = find_value id values in
           printed := Export_id.Set.add id !printed;
-          fprintf ppf "(%a: %a)" Export_id.print id print_descr descr
+          fprintf ppf "@[<hov 2>(%a:@ %a)@]" Export_id.print id print_descr descr
         with Not_found ->
           fprintf ppf "(%a: Not available)" Export_id.print id
       end
-    | Value_symbol sym -> Symbol.print ppf sym
+    | Value_symbol sym ->
+      if not (Symbol.Set.mem sym !recorded_symbol) then begin
+        recorded_symbol := Symbol.Set.add sym !recorded_symbol;
+        Queue.push sym symbols_to_print;
+      end;
+      Symbol.print ppf sym
   and print_descr ppf (descr : descr) =
     match descr with
     | Value_int i -> Format.pp_print_int ppf i
@@ -217,7 +224,24 @@ let print_approx ppf (t : t) =
   let print_approxs id approx =
     fprintf ppf "%a -> %a;@ " Ident.print id print_approx approx
   in
-  Ident.Map.iter print_approxs t.globals
+  let rec print_recorded_symbols () =
+    if not (Queue.is_empty symbols_to_print) then begin
+      let sym = Queue.pop symbols_to_print in
+      begin match Symbol.Map.find sym t.symbol_id with
+      | exception Not_found -> ()
+      | id ->
+        fprintf ppf "@[<hov 2>%a:@ %a@];@ "
+          Symbol.print sym
+          print_approx (Value_id id)
+      end;
+      print_recorded_symbols ();
+    end
+  in
+  fprintf ppf "@[<hov 2>Globals:@ ";
+  Ident.Map.iter print_approxs t.globals;
+  fprintf ppf "@]@ @[<hov 2>Symbols:@ ";
+  print_recorded_symbols ();
+  fprintf ppf "@]"
 
 let print_symbols ppf (t : t) =
   let print_symbol eid sym =
