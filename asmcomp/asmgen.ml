@@ -160,7 +160,7 @@ let prep_flambda_for_export ppf flam ~backend =
     Format.fprintf ppf "@.After Inline_and_simplify:@ %a@."
       Flambda.print_program program
   end;
-  let export = Build_export_info.build_export_info program in
+  let export = Build_export_info.build_export_info ~backend program in
   (* Compilenv.set_export_info export; *)
   (* if !Clflags.dump_flambda *)
   (* then begin *)

@@ -14,4 +14,7 @@
 (** Construct export information, for emission into .cmx files, from an
     Flambda program. *)
 
-val build_export_info : Flambda.program -> Export_info.t
+val build_export_info :
+  backend:(module Backend_intf.S) ->
+  Flambda.program ->
+  Export_info.t
