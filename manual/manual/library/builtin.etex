@@ -181,7 +181,10 @@ exception Invalid_argument of string
 \index{Invalidargument@\verb`Invalid_argument`}
 \begin{ocamldocdescription}
    Exception raised by library functions to signal that the given
-   arguments do not make sense.
+   arguments do not make sense.  The string gives some information
+   to the programmer.  As a general rule, this exception should not
+   be caught, it denotes a programming error and the code should be
+   modified not to trigger it.
 \end{ocamldocdescription}
 
 \begin{ocamldoccode}
@@ -189,8 +192,11 @@ exception Failure of string
 \end{ocamldoccode}
 \index{Failure@\verb`Failure`}
 \begin{ocamldocdescription}
-   Exception raised by library functions to signal that they are
-   undefined on the given arguments.
+  Exception raised by library functions to signal that they are
+  undefined on the given arguments.  The string is meant to give some
+  information to the programmer; you must \emph{not} pattern match on
+  the string literal because it may change in future versions (use
+  \verb`Failure _` instead).
 \end{ocamldocdescription}
 
 \begin{ocamldoccode}
@@ -228,8 +234,11 @@ exception Sys_error of string
 \end{ocamldoccode}
 \index{Syserror@\verb`Sys_error`}
 \begin{ocamldocdescription}
-   Exception raised by the input/output functions to report
-   an operating system error.
+  Exception raised by the input/output functions to report an
+  operating system error.  The string is meant to give some
+  information to the programmer; you must \emph{not} pattern match on
+  the string literal because it may change in future versions (use
+  \verb`Sys_error _` instead).
 \end{ocamldocdescription}
 
 \begin{ocamldoccode}
