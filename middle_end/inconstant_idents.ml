@@ -376,6 +376,8 @@ module NotConstants(P:Param) = struct
     let q = Queue.create () in
     Variable.Set.iter (fun v -> Queue.push (Var v) q) !variables;
     Set_of_closures_id.Set.iter (fun v -> Queue.push (Closure v) q) !closures;
+    Symbol.Set.iter (fun v -> Queue.push (Symbol v) q) !symbols;
+    Symbol_field.Set.iter (fun v -> Queue.push (Symbol_field v) q) !symbol_fields;
     while not (Queue.is_empty q) do
       let deps = try match Queue.take q with
         | Var e -> Variable.Tbl.find id_dep_table e
