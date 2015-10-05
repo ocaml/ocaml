@@ -74,9 +74,15 @@ let get_descr env (approx : Export_info.approx) =
   | Value_symbol sym ->
     get_symbol_descr env sym
 
+let fresh_id () =
+  Export_id.create (Compilenv.current_unit ())
+
+let record_descr env id (descr:Export_info.descr) =
+  env.ex_table := Export_id.Map.add id descr !(env.ex_table)
+
 let new_descr env (descr:Export_info.descr) =
-  let id = Export_id.create (Compilenv.current_unit ()) in
-  env.ex_table := Export_id.Map.add id descr !(env.ex_table);
+  let id = fresh_id () in
+  record_descr env id descr;
   id
 
 (* let new_symbol env symbol id = *)
@@ -436,26 +442,27 @@ and describe_set_of_closures env (set : Flambda.set_of_closures)
 (*     Export_info.Value_closure { closure_id; set_of_closures } *)
 
 let describe_constant_defining_value env
+    id
     (const:Flambda.constant_defining_value) =
   let local_env = add_empty_env env in
   match const with
   | Allocated_const alloc_const ->
     let descr = describe_allocated_constant alloc_const in
-    new_descr local_env descr
+    record_descr local_env id descr
   | Block (tag, fields) ->
     let approxs = List.map (describe_constant local_env) fields in
-    new_descr local_env (Value_block (tag, Array.of_list approxs))
+    record_descr local_env id (Value_block (tag, Array.of_list approxs))
   | Set_of_closures set_of_closures ->
     let descr =
       Export_info.Value_set_of_closures
         (describe_set_of_closures local_env set_of_closures)
     in
-    new_descr local_env descr
+    record_descr local_env id descr
   | Project_closure (sym, closure_id) -> begin
       match get_symbol_descr local_env sym with
       | Some(Value_set_of_closures set_of_closures) ->
         let descr = Export_info.Value_closure { closure_id = closure_id; set_of_closures } in
-        new_descr local_env descr
+        record_descr local_env id descr
       | _ ->
         assert false
     end
@@ -463,11 +470,33 @@ let describe_constant_defining_value env
 let rec describe_program (env:general_env) (program : Flambda.program) =
   match program with
   | Let_symbol (symbol, constant_defining_value, program) ->
-    let id = describe_constant_defining_value env constant_defining_value in
+    let id = fresh_id () in
     let env = { env with sym = Symbol.Map.add symbol id env.sym } in
+    describe_constant_defining_value env id constant_defining_value;
     describe_program env program
-  | Let_rec_symbol (_defs, _program) ->
-    assert false
+  | Let_rec_symbol (defs, program) ->
+    let env, defs =
+      List.fold_left (fun ((env:general_env), defs) (symbol, def) ->
+          let id = fresh_id () in
+          { env with sym = Symbol.Map.add symbol id env.sym },
+          (id, def) :: defs)
+        (env, []) defs
+    in
+    (* Project_closure are separated to be handled last. Those are the
+       only values that need a description for their argument. *)
+    let projects_closure, other_constants =
+      List.partition (function
+          | _, Flambda.Project_closure _ -> true
+          | _ -> false)
+        defs
+    in
+    List.iter (fun (id, def) ->
+        describe_constant_defining_value env id def)
+      other_constants;
+    List.iter (fun (id, def) ->
+        describe_constant_defining_value env id def)
+      projects_closure;
+    describe_program env program
   | Import_symbol (_symbol, program) ->
     describe_program env program
   | Initialize_symbol (symbol, tag, fields, program) ->
