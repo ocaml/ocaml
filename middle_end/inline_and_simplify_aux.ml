@@ -107,6 +107,13 @@ module Env = struct
         Symbol.print symbol
     | approx -> approx
 
+  let find_or_load_symbol t symbol =
+    match find_symbol_exn t symbol with
+    | exception Not_found ->
+      let module Backend = (val (t.backend) : Backend_intf.S) in
+      Backend.import_symbol symbol
+    | approx -> approx
+
   let add_symbol t symbol approx =
     match find_symbol_exn t symbol with
     | exception Not_found ->

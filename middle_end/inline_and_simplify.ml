@@ -674,7 +674,10 @@ and simplify_over_application env r ~args ~args_approxs ~function_decls
 and simplify_named env r (tree : Flambda.named) : Flambda.named * R.t =
   match tree with
   | Symbol sym ->
-    let approx = E.find_symbol_fatal env sym in
+    (* New Symbol construction could have been introduced during
+       transformation (by simplify_named_using_approx_and_env).
+       When this comes from another compilation unit, we must load it. *)
+    let approx = E.find_or_load_symbol env sym in
     (* CR mshinwell for mshinwell: Check this is the correct simplification
        function to use *)
     simplify_named_using_approx r tree approx
@@ -689,7 +692,7 @@ and simplify_named env r (tree : Flambda.named) : Flambda.named * R.t =
   | Read_symbol_field (symbol, field_index) ->
     let approx =
       A.augment_with_symbol_field
-        (A.get_field (E.find_symbol_fatal env symbol) ~field_index)
+        (A.get_field (E.find_or_load_symbol env symbol) ~field_index)
         symbol field_index
     in
     simplify_named_using_approx_and_env env r tree approx
@@ -764,7 +767,8 @@ and simplify_direct env r (tree : Flambda.t) : Flambda.t * R.t =
        consequence: it brings bindings of constants closer to their use
        points. *)
     simplify_using_approx_and_env env r (Var var) (E.find_exn env var)
-  | Apply apply -> simplify_apply env r ~apply
+  | Apply apply ->
+    simplify_apply env r ~apply
   | Let _ ->
     let for_defining_expr (env, r) var defining_expr =
       let defining_expr, r = simplify_named env r defining_expr in

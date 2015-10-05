@@ -68,6 +68,10 @@ module Env : sig
   val find_symbol_opt : t -> Symbol.t -> Simple_value_approx.t option
   val find_symbol_fatal : t -> Symbol.t -> Simple_value_approx.t
 
+  (* Like [find_symbol_exn], but load the symbol approximation using
+     the backend if not available in the environment. *)
+  val find_or_load_symbol : t -> Symbol.t -> Simple_value_approx.t
+
   (** Whether the environment has an approximation for the given variable. *)
   val mem : t -> Variable.t -> bool
 
