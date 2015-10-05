@@ -714,7 +714,7 @@ and simplify_named env r (tree : Flambda.named) : Flambda.named * R.t =
         Misc.fatal_error "Pgetglobal is forbidden in Inline_and_simplify"
       | Pfield field_index, [arg] ->
         let tree, approx =
-          let approx = E.find_exn env arg in
+          let approx = E.really_import_approx env (E.find_exn env arg) in
           begin match approx.symbol with
           (* If the [Pfield] is projecting directly from a symbol, rewrite the
              expression to [Read_symbol_field]. *)
