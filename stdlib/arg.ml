@@ -102,6 +102,18 @@ let usage speclist errmsg =
 
 let current = ref 0;;
 
+let bool_of_string_opt x =
+  try Some (bool_of_string x)
+  with Invalid_argument _ -> None
+
+let int_of_string_opt x =
+  try Some (int_of_string x)
+  with Failure _ -> None
+
+let float_of_string_opt x =
+  try Some (float_of_string x)
+  with Failure _ -> None
+
 let parse_argv_dynamic ?(current=current) argv speclist anonfun errmsg =
   let l = Array.length argv in
   let b = Buffer.create 200 in
@@ -139,9 +151,9 @@ let parse_argv_dynamic ?(current=current) argv speclist anonfun errmsg =
         | Unit f -> f ();
         | Bool f when !current + 1 < l ->
             let arg = argv.(!current + 1) in
-            begin try f (bool_of_string arg)
-            with Invalid_argument "bool_of_string" ->
-                   raise (Stop (Wrong (s, arg, "a boolean")))
+            begin match bool_of_string_opt arg with
+            | None -> raise (Stop (Wrong (s, arg, "a boolean")))
+            | Some s -> f s
             end;
             incr current;
         | Set r -> r := true;
@@ -163,30 +175,30 @@ let parse_argv_dynamic ?(current=current) argv speclist anonfun errmsg =
             incr current;
         | Int f when !current + 1 < l ->
             let arg = argv.(!current + 1) in
-            begin try f (int_of_string arg)
-            with Failure "int_of_string" ->
-                   raise (Stop (Wrong (s, arg, "an integer")))
+            begin match int_of_string_opt arg with
+            | None -> raise (Stop (Wrong (s, arg, "an integer")))
+            | Some x -> f x
             end;
             incr current;
         | Set_int r when !current + 1 < l ->
             let arg = argv.(!current + 1) in
-            begin try r := (int_of_string arg)
-            with Failure "int_of_string" ->
-                   raise (Stop (Wrong (s, arg, "an integer")))
+            begin match int_of_string_opt arg with
+            | None -> raise (Stop (Wrong (s, arg, "an integer")))
+            | Some x -> r := x
             end;
             incr current;
         | Float f when !current + 1 < l ->
             let arg = argv.(!current + 1) in
-            begin try f (float_of_string arg);
-            with Failure "float_of_string" ->
-                   raise (Stop (Wrong (s, arg, "a float")))
+            begin match float_of_string_opt arg with
+            | None -> raise (Stop (Wrong (s, arg, "a float")))
+            | Some x -> f x
             end;
             incr current;
         | Set_float r when !current + 1 < l ->
             let arg = argv.(!current + 1) in
-            begin try r := (float_of_string arg);
-            with Failure "float_of_string" ->
-                   raise (Stop (Wrong (s, arg, "a float")))
+            begin match float_of_string_opt arg with
+            | None -> raise (Stop (Wrong (s, arg, "a float")))
+            | Some x -> r := x
             end;
             incr current;
         | Tuple specs ->

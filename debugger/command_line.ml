@@ -185,7 +185,7 @@ let interprete_line ppf line =
     with
     | Parsing.Parse_error ->
         error "Syntax error."
-    | Failure "int_of_string" ->
+    | Lexer.Int_overflow ->
       error "Integer overflow"
 
 let line_loop ppf line_buffer =
