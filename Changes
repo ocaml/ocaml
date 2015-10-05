@@ -188,6 +188,8 @@ Bug fixes:
   (Gabriel Scherer and Mark Shinwell and Xavier Leroy)
 - GPR#233: Make CamlinternalMod.init_mod robust to optimization
   (Pierre Chambart, Mark Shinwell)
+- GPR#250: Check for negative start element in Array.sub (report and fix by
+  Jeremy Yallop)
 
 Features wishes:
 - PR#4714: List.cons

@@ -59,7 +59,7 @@ let append a1 a2 =
   else append_prim a1 a2
 
 let sub a ofs len =
-  if len < 0 || ofs > length a - len
+  if ofs < 0 || len < 0 || ofs > length a - len
   then invalid_arg "Array.sub"
   else unsafe_sub a ofs len
 

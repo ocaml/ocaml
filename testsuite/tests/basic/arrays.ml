@@ -132,6 +132,9 @@ let test8 () =
   with Invalid_argument _ -> ());
   (try
     ignore (Array.sub [|3;4|] max_int 1); print_string "Test 8.3: failed\n"
+  with Invalid_argument _ -> ());
+  (try
+    ignore (Array.sub [|3;4|] (-1) 1); print_string "Test 8.4: failed\n"
   with Invalid_argument _ -> ())
 
 let _ =
