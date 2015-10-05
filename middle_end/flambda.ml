@@ -806,6 +806,10 @@ let update_function_declarations function_decls ~funs =
     ~compilation_unit:function_decls.compilation_unit
 
 let create_set_of_closures ~function_decls ~free_vars ~specialised_args =
+  let function_decls =
+    { function_decls with
+      compilation_unit = Compilation_unit.get_current_exn () }
+  in
   let all_fun_vars = Variable.Map.keys function_decls.funs in
   let expected_free_vars =
     Variable.Map.fold (fun _fun_var function_decl expected_free_vars ->
