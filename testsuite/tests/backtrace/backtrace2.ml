@@ -44,7 +44,7 @@ let test_Not_found () =
   in
   try aux 5
   (** Test the raise to reraise heuristic with included try_with.
-      Currently the wrong backtrace is used. *)
+      It correctly doesn't translate it as a reraise (wrong backtrace) *)
   with exn ->
     print_string "test_Not_found"; print_newline();
     (try Hashtbl.find (Hashtbl.create 3) 0 with Not_found -> raise exn)

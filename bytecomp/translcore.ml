@@ -647,7 +647,9 @@ let rec cut n l =
 
 (* Translation of expressions *)
 
-let try_ids = Hashtbl.create 8
+let last_try_id = ref None
+(** Information for raise to reraise automatic translation.
+    [Some _] if the pattern of the last [try with] is a variable *)
 
 let has_tailcall_attribute e =
   List.exists (fun ({txt},_) -> txt="tailcall") e.exp_attributes
@@ -730,12 +732,10 @@ and transl_exp0 e =
           (Praise k, [arg1]) ->
             let targ = List.hd argl in
             let k =
-              match k, targ with
-              | Raise_regular, Lvar id
-                when Hashtbl.mem try_ids id ->
+              match k, targ, !last_try_id with
+              | Raise_regular, Lvar id, Some id' when Ident.equal id id' ->
                   Raise_reraise
-              | _ ->
-                  k
+              | _ -> k
             in
             wrap0 (Lprim(Praise k, [event_after arg1 targ]))
         | (Ploc kind, []) ->
@@ -978,15 +978,18 @@ and transl_cases cases =
   List.map transl_case cases
 
 and transl_case_try {c_lhs; c_guard; c_rhs} =
-  match c_lhs.pat_desc with
-  | Tpat_var (id, _)
-  | Tpat_alias (_, id, _) ->
-      Hashtbl.replace try_ids id ();
-      Misc.try_finally
-        (fun () -> c_lhs, transl_guard c_guard c_rhs)
-        (fun () -> Hashtbl.remove try_ids id)
-  | _ ->
-      c_lhs, transl_guard c_guard c_rhs
+  let old_try_id = !last_try_id in
+  Misc.try_finally begin fun () ->
+    match c_lhs.pat_desc with
+    | Tpat_var (id, _)
+    | Tpat_alias (_, id, _) ->
+        last_try_id := Some id;
+        c_lhs, transl_guard c_guard c_rhs
+    | _ ->
+        last_try_id := None;
+        c_lhs, transl_guard c_guard c_rhs
+  end
+    (fun () -> last_try_id := old_try_id)
 
 and transl_cases_try cases =
   List.map transl_case_try cases
