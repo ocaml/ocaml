@@ -392,7 +392,7 @@ let print_constant_defining_value ppf (const : constant_defining_value) =
     fprintf ppf "(Block (tag %d, %a))" (Tag.to_int tag)
       print_fields fields
   | Set_of_closures set_of_closures ->
-    fprintf ppf "(Set_of_closures (%a))" print_set_of_closures set_of_closures
+    fprintf ppf "@[<2>(Set_of_closures (@ %a))@]" print_set_of_closures set_of_closures
   | Project_closure (set_of_closures, closure_id) ->
     fprintf ppf "(Project_closure (%a, %a))" Symbol.print set_of_closures
       Closure_id.print closure_id
