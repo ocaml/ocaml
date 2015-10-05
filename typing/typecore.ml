@@ -311,6 +311,13 @@ let explicit_arity =
       | _ -> false
     )
 
+let semi_opaque =
+  List.exists
+    (function
+      | ({txt="ocaml.semi_opaque"|"semi_opaque"; _}, _) -> true
+      | _ -> false
+    )
+
 (* Typing of patterns *)
 
 (* unification inside type_pat*)
@@ -1067,6 +1074,14 @@ let rec type_pat ~constrs ~labels ~no_existentials ~mode ~env sp expected_ty =
                                      Warnings.Wildcard_arg_to_constant_constr;
             replicate_list sp constr.cstr_arity
         | Some sp -> [sp] in
+      begin match sargs with
+      | [{ppat_desc = Ppat_constant _} as sp] when semi_opaque constr.cstr_attributes ->
+            Location.prerr_warning sp.ppat_loc
+              (Warnings.Deprecated
+                 "The argument of this constructor should not be matched against a \
+                  constant literal")
+      | _ -> ()
+      end;
       if List.length sargs <> constr.cstr_arity then
         raise(Error(loc, !env, Constructor_arity_mismatch(lid.txt,
                                      constr.cstr_arity, List.length sargs)));
