@@ -92,6 +92,9 @@ let create ~sets_of_closures ~closures ~values ~globals ~id_symbol
     invariant_arguments;
   }
 
+let add_offsets t ~offset_fun ~offset_fv =
+  { t with offset_fun; offset_fv }
+
 let merge (t1 : t) (t2 : t) : t =
   let eidmap_disjoint_union map1 map2 =
     Compilation_unit.Map.merge (fun _id map1 map2 ->

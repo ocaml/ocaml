@@ -579,5 +579,11 @@ let convert (program, exported) : result =
       (Flambda_utils.initialize_symbols program)
   in
   let expr = to_clambda_program t program in
-  (* CR mshinwell for pchambart: add offsets to export info *)
+  (* XCR mshinwell for pchambart: add offsets to export info
+     pchambart: done, but reexported are still missing *)
+  let exported =
+    Export_info.add_offsets exported
+      ~offset_fun:current_unit.fun_offset_table
+      ~offset_fv:current_unit.fv_offset_table
+  in
   { expr; preallocated_blocks; structured_constants; exported; }
