@@ -1,5 +1,5 @@
 
-#                   Characters 137-194:
+Characters 137-194:
   ...........................................function
       | One, One -> "two"
       | Two, Two -> "four"
@@ -12,4 +12,4 @@ module Add :
       type _ t = One : [ `One ] t | Two : T.two t
       val add : 'a t * 'a t -> string
     end
-# 
+

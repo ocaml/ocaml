@@ -1,15 +1,15 @@
 
-#         Characters 35-52:
+Characters 35-52:
     type unused = int
     ^^^^^^^^^^^^^^^^^
 Warning 34: unused type unused.
 module Unused : sig  end
-#             Characters 68-93:
+Characters 68-93:
     type nonrec unused = used
     ^^^^^^^^^^^^^^^^^^^^^^^^^
 Warning 34: unused type unused.
 module Unused_nonrec : sig  end
-#           Characters 40-65:
+Characters 40-65:
     type unused = A of unused
     ^^^^^^^^^^^^^^^^^^^^^^^^^
 Warning 34: unused type unused.
@@ -18,4 +18,4 @@ Characters 40-65:
     ^^^^^^^^^^^^^^^^^^^^^^^^^
 Warning 37: unused constructor A.
 module Unused_rec : sig  end
-# 
+

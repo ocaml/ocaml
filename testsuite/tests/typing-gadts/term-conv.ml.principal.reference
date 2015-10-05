@@ -1,5 +1,5 @@
 
-#                                                       module Typeable :
+module Typeable :
   sig
     type 'a ty =
         Int : int ty
@@ -12,7 +12,7 @@
     val check_eq : 't ty -> 't' ty -> ('t, 't') eq
     val gcast : 't ty -> 't' ty -> 't -> 't'
   end
-#                               module HOAS :
+module HOAS :
   sig
     type _ term =
         Tag : 't Typeable.ty * int -> 't term
@@ -21,7 +21,7 @@
       | App : ('s -> 't) term * 's term -> 't term
     val intp : 't term -> 't
   end
-#                                                               module DeBruijn :
+module DeBruijn :
   sig
     type ('env, 't) ix =
         ZeroIx : ('env * 't, 't) ix
@@ -38,7 +38,7 @@
     val prj : ('env, 't) ix -> 'env stack -> 't
     val intp : ('env, 't) term -> 'env stack -> 't
   end
-#                                                                             module Convert :
+module Convert :
   sig
     type (_, _) layout =
         EmptyLayout : ('env, unit) layout
@@ -51,7 +51,7 @@
     val cvt : ('env, 'env) layout -> 't HOAS.term -> ('env, 't) DeBruijn.term
     val convert : 'a HOAS.term -> (unit, 'a) DeBruijn.term
   end
-#                                               module Main :
+module Main :
   sig
     val i : 'a Typeable.ty -> ('a -> 'a) HOAS.term
     val zero : 'a Typeable.ty -> (('a -> 'a) -> 'a -> 'a) HOAS.term
@@ -68,4 +68,4 @@
     val plus_2_3' : (unit, (int -> int) -> int -> int) DeBruijn.term
     val eval_plus_2_3' : int
   end
-# 
+
