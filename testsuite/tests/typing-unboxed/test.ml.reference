@@ -154,4 +154,16 @@ Error: Don't know how to unbox this type. Only float, int32, int64 and nativeint
 #   *     external i : int -> float = "i"
 # external j : int -> float * float = "j"
 # external k : int -> float = "k"
+#       Characters 58-119:
+  external l : float -> float = "l" "l_nat" "float" [@@unboxed];;
+  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: Cannot use "float" in conjunction with [@unboxed]/[@untagged]
+# Characters 0-62:
+  external m : (float [@unboxed]) -> float = "m" "m_nat" "float";;
+  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: Cannot use "float" in conjunction with [@unboxed]/[@untagged]
+# Characters 0-55:
+  external n : float -> float = "n" "noalloc" [@@noalloc];;
+  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: Cannot use "noalloc" in conjunction with [@@noalloc]
 # 

@@ -116,3 +116,9 @@ external h : (int [@unboxed]) -> float = "h";;
 external i : int -> float [@unboxed] = "i";;
 external j : int -> (float [@unboxed]) * float = "j";;
 external k : int -> (float [@unboxd]) = "k";;
+
+(* Bad: old style annotations + new style attributes *)
+
+external l : float -> float = "l" "l_nat" "float" [@@unboxed];;
+external m : (float [@unboxed]) -> float = "m" "m_nat" "float";;
+external n : float -> float = "n" "noalloc" [@@noalloc];;
