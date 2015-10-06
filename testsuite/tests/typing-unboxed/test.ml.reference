@@ -11,6 +11,18 @@ module M :
     external a : int -> (int [@untagged]) = "a"
     external b : (int [@untagged]) -> int = "b"
   end
+#                             module Global_attributes :
+  sig
+    external a : float -> float = "a" "a_nat" [@@unboxed] [@@noalloc]
+    external b : float -> float = "b" "b_nat" [@@noalloc]
+    external c : float -> float = "c" "c_nat" [@@unboxed] [@@noalloc]
+    external d : float -> float = "d" [@@noalloc]
+    external e : float -> float = "e"
+    external f : int32 -> int32 = "f" [@@unboxed] [@@noalloc]
+    external g : int32 -> int32 = "g" [@@unboxed] [@@noalloc]
+    external h : int -> int = "h" [@@untagged] [@@noalloc]
+    external i : int -> int = "i" [@@untagged] [@@noalloc]
+  end
 #               Characters 110-166:
   ......struct
     external f : int -> (int [@untagged]) = "f"
