@@ -15,7 +15,7 @@ open Obj
 
 (**** Object representation ****)
 
-external set_id: 'a -> 'a = "caml_set_oo_id" "noalloc"
+external set_id: 'a -> 'a = "caml_set_oo_id" [@@noalloc]
 
 (**** Object copy ****)
 
@@ -395,7 +395,7 @@ external send : obj -> tag -> 'a = "%send"
 external sendcache : obj -> tag -> t -> int -> 'a = "%sendcache"
 external sendself : obj -> label -> 'a = "%sendself"
 external get_public_method : obj -> tag -> closure
-    = "caml_get_public_method" "noalloc"
+    = "caml_get_public_method" [@@noalloc]
 
 (**** table collection access ****)
 

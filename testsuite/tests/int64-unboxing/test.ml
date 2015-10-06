@@ -10,15 +10,15 @@
 (*                                                                     *)
 (***********************************************************************)
 
-external ( + ) : (int64 [@unboxed]) -> (int64 [@unboxed]) -> (int64 [@unboxed])
-  = "" "noalloc" "test_int64_add"
-external ( - ) : (int64 [@unboxed]) -> (int64 [@unboxed]) -> (int64 [@unboxed])
-  = "" "noalloc" "test_int64_sub"
-external ( * ) : (int64 [@unboxed]) -> (int64 [@unboxed]) -> (int64 [@unboxed])
-  = "" "noalloc" "test_int64_mul"
+external ( + ) : int64 -> int64 -> int64
+  = "" "test_int64_add" [@@noalloc] [@@unboxed]
+external ( - ) : int64 -> int64 -> int64
+  = "" "test_int64_sub" [@@noalloc] [@@unboxed]
+external ( * ) : int64 -> int64 -> int64
+  = "" "test_int64_mul" [@@noalloc] [@@unboxed]
 
-external ignore_int64 :
-    (int64 [@unboxed]) -> unit = "" "noalloc" "test_ignore_int64"
+external ignore_int64 : (int64 [@unboxed]) -> unit
+  = "" "test_ignore_int64" [@@noalloc]
 
 let f () =
   let r = ref 1L in

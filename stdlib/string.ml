@@ -20,9 +20,9 @@ external create : int -> bytes = "caml_create_string"
 external unsafe_get : string -> int -> char = "%string_unsafe_get"
 external unsafe_set : bytes -> int -> char -> unit = "%string_unsafe_set"
 external unsafe_blit : string -> int ->  bytes -> int -> int -> unit
-                     = "caml_blit_string" "noalloc"
+                     = "caml_blit_string" [@@noalloc]
 external unsafe_fill : bytes -> int -> int -> char -> unit
-                     = "caml_fill_string" "noalloc"
+                     = "caml_fill_string" [@@noalloc]
 
 module B = Bytes
 
