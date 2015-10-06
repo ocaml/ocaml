@@ -63,7 +63,7 @@ let callbacksig () =
   let s = String.make 5 'b' in
   (* Send a signal to self.  We want s to remain in a register and
      not be spilled on the stack, hence we declare unix_kill
-     "noalloc". *)
+     [@@noalloc]. *)
   unix_kill pid Sys.sigusr1;
   (* Allocate some more so that the signal will be tested *)
   let u = (s, s) in

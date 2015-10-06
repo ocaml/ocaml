@@ -15,7 +15,7 @@ external ( + ) : int64 -> int64 -> int64
 external ( - ) : int64 -> int64 -> int64
   = "" "test_int64_sub" [@@noalloc] [@@unboxed]
 external ( * ) : int64 -> int64 -> int64
-  = "" "noalloc" "test_int64_mul" [@@noalloc] [@@unboxed]
+  = "" "test_int64_mul" [@@noalloc] [@@unboxed]
 
 external ignore_int64 : (int64 [@unboxed]) -> unit
   = "" "test_ignore_int64" [@@noalloc]
