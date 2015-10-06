@@ -36,7 +36,7 @@ type error =
 
 exception Error of Location.t * error
 
-let is_ocaml_repor = function
+let is_ocaml_repr = function
   | Same_as_ocaml_repr -> true
   | Unboxed_float
   | Unboxed_integer _
@@ -70,7 +70,7 @@ let simple ~name ~arity ~alloc =
 
 let parse_declaration valdecl ~native_repr_args ~native_repr_res =
   let arity = List.length native_repr_args in
-  let name, native_name, noalloc, float =
+  let name, native_name, old_style_noalloc, old_style_float =
     match valdecl.pval_prim with
     | name :: "noalloc" :: name2 :: "float" :: _ -> (name, name2, true, true)
     | name :: "noalloc" :: name2 :: _ -> (name, name2, true, false)
@@ -81,20 +81,28 @@ let parse_declaration valdecl ~native_repr_args ~native_repr_res =
     | [] ->
         fatal_error "Primitive.parse_declaration"
   in
+  (* The compiler used to assume "noalloc" with "float", we just make this
+     explicit now (GPR#167): *)
+  let old_style_noalloc = old_style_noalloc || old_style_float in
+  if old_style_float then
+    Location.prerr_warning valdecl.pval_loc
+      (Warnings.Deprecated "[@@unboxed] + [@@noalloc] should be used instead \
+                            of \"float\"")
+  else if old_style_noalloc then
+    Location.prerr_warning valdecl.pval_loc
+      (Warnings.Deprecated "[@@noalloc] should be used instead of \
+                            \"noalloc\"");
   let noalloc =
-    noalloc ||
+    old_style_noalloc ||
     Attr_helper.has_no_payload_attribute ["noalloc"; "ocaml.noalloc"]
       valdecl.pval_attributes
   in
-  (* The compiler used to assume "noalloc" with "float", we just make this
-     explicit now (GPR#167): *)
-  let noalloc = noalloc || float in
-  if float &&
-     not (List.for_all is_ocaml_repor native_repr_args &&
-          is_ocaml_repor native_repr_res) then
+  if old_style_float &&
+     not (List.for_all is_ocaml_repr native_repr_args &&
+          is_ocaml_repr native_repr_res) then
     raise (Error (valdecl.pval_loc, Float_with_native_repr_attribute));
   let native_repr_args, native_repr_res =
-    if float then
+    if old_style_float then
       (make_native_repr_args arity Unboxed_float, Unboxed_float)
     else
       (native_repr_args, native_repr_res)

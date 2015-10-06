@@ -30,6 +30,7 @@ end = struct
 end;;
 
 module Global_attributes = struct
+  [@@@ocaml.warning "-3"]
 
   external a : float -> float = "a" "noalloc" "a_nat" "float"
   external b : float -> float = "b" "noalloc" "b_nat"
@@ -43,6 +44,14 @@ module Global_attributes = struct
   external h : (int [@untagged]) -> (int [@untagged]) = "h" "noalloc"
   external i : int -> int = "i" [@@untagged] [@@noalloc]
 end;;
+
+module Old_style_warning = struct
+  [@@@ocaml.warning "+3"]
+  external a : float -> float = "a" "noalloc" "a_nat" "float"
+  external b : float -> float = "b" "noalloc" "b_nat"
+  external c : float -> float = "c" "c_nat" "float"
+  external d : float -> float = "d" "noalloc"
+end
 
 (* Bad: attributes not reported in the interface *)
 
