@@ -350,16 +350,16 @@ typing/typedecl.cmo : utils/warnings.cmi typing/typetexp.cmi \
     typing/predef.cmi typing/path.cmi parsing/parsetree.cmi utils/misc.cmi \
     parsing/longident.cmi parsing/location.cmi typing/includecore.cmi \
     typing/ident.cmi typing/env.cmi typing/ctype.cmi utils/config.cmi \
-    utils/clflags.cmi typing/btype.cmi parsing/asttypes.cmi \
-    parsing/ast_helper.cmi typing/typedecl.cmi
+    utils/clflags.cmi typing/btype.cmi parsing/attr_helper.cmi \
+    parsing/asttypes.cmi parsing/ast_helper.cmi typing/typedecl.cmi
 typing/typedecl.cmx : utils/warnings.cmx typing/typetexp.cmx \
     typing/types.cmx typing/typedtree.cmx parsing/syntaxerr.cmx \
     typing/subst.cmx typing/printtyp.cmx typing/primitive.cmx \
     typing/predef.cmx typing/path.cmx parsing/parsetree.cmi utils/misc.cmx \
     parsing/longident.cmx parsing/location.cmx typing/includecore.cmx \
     typing/ident.cmx typing/env.cmx typing/ctype.cmx utils/config.cmx \
-    utils/clflags.cmx typing/btype.cmx parsing/asttypes.cmi \
-    parsing/ast_helper.cmx typing/typedecl.cmi
+    utils/clflags.cmx typing/btype.cmx parsing/attr_helper.cmx \
+    parsing/asttypes.cmi parsing/ast_helper.cmx typing/typedecl.cmi
 typing/typedtreeIter.cmo : typing/typedtree.cmi utils/misc.cmi \
     parsing/asttypes.cmi typing/typedtreeIter.cmi
 typing/typedtreeIter.cmx : typing/typedtree.cmx utils/misc.cmx \

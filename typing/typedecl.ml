@@ -21,10 +21,6 @@ open Typetexp
 
 type native_repr_kind = Unboxed | Untagged
 
-let string_of_native_repr_kind = function
-  | Unboxed -> "unboxed"
-  | Untagged -> "untagged"
-
 type error =
     Repeated_parameter
   | Duplicate_constructor of string
@@ -52,7 +48,6 @@ type error =
   | Unbound_type_var_ext of type_expr * extension_constructor
   | Varying_anonymous
   | Val_in_structure
-  | Invalid_native_repr_attribute_payload of native_repr_kind
   | Multiple_native_repr_attributes
   | Cannot_unbox_or_untag_type of native_repr_kind
 
@@ -1367,25 +1362,16 @@ type native_repr_attribute =
 
 let get_native_repr_attribute core_type =
   match
-    List.filter
-      (fun (n, _) ->
-         match n.Location.txt with
-         | "unboxed" | "untagged" -> true
-         | _ -> false)
-      core_type.ptyp_attributes
+    let attrs = core_type.ptyp_attributes in
+    Attr_helper.get_no_payload_attribute "unboxed"  attrs,
+    Attr_helper.get_no_payload_attribute "untagged" attrs
   with
-  | [] ->
+  | None, None ->
     Native_repr_attr_absent
-  | _ :: (n, _) :: _ ->
-    raise (Error (n.Location.loc, Multiple_native_repr_attributes))
-  | [(n, payload)] ->
-    let kind = if n.txt = "unboxed" then Unboxed else Untagged in
-    match payload with
-    | PStr [] ->
-      Native_repr_attr_present kind
-    | _ ->
-      raise (Error (n.Location.loc,
-                    Invalid_native_repr_attribute_payload kind))
+  | Some _, None -> Native_repr_attr_present Unboxed
+  | None, Some _ -> Native_repr_attr_present Untagged
+  | Some { Location.loc }, _ ->
+    raise (Error (loc, Multiple_native_repr_attributes))
 
 let native_repr_of_type env kind ty =
   match kind, (Ctype.expand_head_opt env ty).desc with
@@ -1791,9 +1777,6 @@ let report_error ppf = function
         "cannot be checked"
   | Val_in_structure ->
       fprintf ppf "Value declarations are only allowed in signatures"
-  | Invalid_native_repr_attribute_payload kind ->
-      fprintf ppf "[@@%s] attribute does not accept a payload"
-        (string_of_native_repr_kind kind)
   | Multiple_native_repr_attributes ->
       fprintf ppf "Too many [@@unboxed]/[@@untagged] attributes"
   | Cannot_unbox_or_untag_type Unboxed ->
