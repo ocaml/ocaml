@@ -27,6 +27,11 @@ Language features:
   they can be unboxed or untagged. Supports untagging int and unboxing
   int32, int64, nativeint and float.
   (Jérémie Dimino, Mark Shinwell)
+- GPR240: replace special annotations on externals by attributes:
+  * "float" is generalized to [@@unboxed]
+  * "noalloc" becomes [@@noalloc]
+  Deprecate "float" and "noalloc".
+  (Jérémie Dimino)
 
 Compilers:
 - PR#6501: harden the native-code generator against certain uses of "%identity"
