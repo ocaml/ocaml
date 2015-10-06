@@ -19,8 +19,8 @@ type error =
 
 exception Error of Location.t * error
 
-let get_no_payload_attribute name attrs =
-  match List.filter (fun (n, _) -> n.txt = name) attrs with
+let get_no_payload_attribute alt_names attrs =
+  match List.filter (fun (n, _) -> List.mem n.txt alt_names) attrs with
   | [] -> None
   | [ (name, PStr []) ] -> Some name
   | [ (name, _) ] ->
@@ -28,8 +28,8 @@ let get_no_payload_attribute name attrs =
   | _ :: (name, _) :: _ ->
     raise (Error (name.loc, Multiple_attributes name.txt))
 
-let has_no_payload_attribute name attrs =
-  match get_no_payload_attribute name attrs with
+let has_no_payload_attribute alt_names attrs =
+  match get_no_payload_attribute alt_names attrs with
   | None   -> false
   | Some _ -> true
 

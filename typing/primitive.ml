@@ -83,7 +83,8 @@ let parse_declaration valdecl ~native_repr_args ~native_repr_res =
   in
   let noalloc =
     noalloc ||
-    Attr_helper.has_no_payload_attribute "noalloc" valdecl.pval_attributes
+    Attr_helper.has_no_payload_attribute ["noalloc"; "ocaml.noalloc"]
+      valdecl.pval_attributes
   in
   (* The compiler used to assume "noalloc" with "float", we just make this
      explicit now (GPR#167): *)
