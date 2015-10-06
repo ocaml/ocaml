@@ -273,9 +273,9 @@ typing/predef.cmo : typing/types.cmi typing/path.cmi parsing/location.cmi \
 typing/predef.cmx : typing/types.cmx typing/path.cmx parsing/location.cmx \
     typing/ident.cmx typing/btype.cmx parsing/asttypes.cmi typing/predef.cmi
 typing/primitive.cmo : parsing/parsetree.cmi utils/misc.cmi \
-    parsing/location.cmi typing/primitive.cmi
+    parsing/location.cmi parsing/attr_helper.cmi typing/primitive.cmi
 typing/primitive.cmx : parsing/parsetree.cmi utils/misc.cmx \
-    parsing/location.cmx typing/primitive.cmi
+    parsing/location.cmx parsing/attr_helper.cmx typing/primitive.cmi
 typing/printtyped.cmo : typing/typedtree.cmi parsing/printast.cmi \
     typing/path.cmi utils/misc.cmi parsing/longident.cmi parsing/location.cmi \
     typing/ident.cmi parsing/asttypes.cmi typing/printtyped.cmi
