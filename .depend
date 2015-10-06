@@ -28,6 +28,8 @@ parsing/ast_helper.cmi : parsing/parsetree.cmi parsing/longident.cmi \
     parsing/location.cmi parsing/docstrings.cmi parsing/asttypes.cmi
 parsing/ast_mapper.cmi : parsing/parsetree.cmi parsing/location.cmi
 parsing/asttypes.cmi : parsing/location.cmi
+parsing/attr_helper.cmi : parsing/parsetree.cmi parsing/location.cmi \
+    parsing/asttypes.cmi
 parsing/docstrings.cmi : parsing/parsetree.cmi parsing/location.cmi
 parsing/lexer.cmi : parsing/parser.cmi parsing/location.cmi
 parsing/location.cmi : utils/warnings.cmi
@@ -55,6 +57,10 @@ parsing/ast_mapper.cmx : parsing/parsetree.cmi utils/misc.cmx \
     parsing/longident.cmx parsing/location.cmx utils/config.cmx \
     utils/clflags.cmx parsing/asttypes.cmi parsing/ast_helper.cmx \
     parsing/ast_mapper.cmi
+parsing/attr_helper.cmo : parsing/parsetree.cmi parsing/location.cmi \
+    parsing/asttypes.cmi parsing/attr_helper.cmi
+parsing/attr_helper.cmx : parsing/parsetree.cmi parsing/location.cmx \
+    parsing/asttypes.cmi parsing/attr_helper.cmi
 parsing/docstrings.cmo : utils/warnings.cmi parsing/parsetree.cmi \
     parsing/location.cmi parsing/asttypes.cmi parsing/docstrings.cmi
 parsing/docstrings.cmx : utils/warnings.cmx parsing/parsetree.cmi \
