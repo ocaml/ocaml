@@ -26,6 +26,7 @@ CAMLextern __thread value * caml_extern_sp;
 CAMLextern __thread intnat caml_trap_sp_off;
 CAMLextern __thread intnat caml_trap_barrier_off;
 
+value caml_find_performer(value stack);
 
 void caml_scan_dirty_stack(scanning_action, value stack);
 void caml_scan_stack(scanning_action, value stack);

@@ -197,6 +197,8 @@ sp is a local copy of the global variable caml_extern_sp. */
 static __thread intnat caml_bcodcount;
 #endif
 
+static caml_root raise_unhandled;
+
 /* The interpreter itself */
 value caml_interprete(code_t prog, asize_t prog_size)
 {
@@ -236,10 +238,18 @@ value caml_interprete(code_t prog, asize_t prog_size)
 #endif
 
   if (prog == NULL) {           /* Interpreter is initializing */
+    static opcode_t raise_unhandled_code[] = { ACC, 0, RAISE };
 #ifdef THREADED_CODE
     caml_instr_table = (char **) jumptable;
     caml_instr_base = Jumptbl_base;
+    caml_thread_code(raise_unhandled_code, 
+                     sizeof(raise_unhandled_code));
 #endif
+    value raise_unhandled_closure =
+      caml_alloc_small(1, Closure_tag);
+    Init_field(raise_unhandled_closure, 0, 
+               Val_bytecode(raise_unhandled_code));
+    raise_unhandled = caml_create_root(raise_unhandled_closure);
     caml_global_data = caml_create_root(Val_unit);
     caml_init_callbacks();
     return Val_unit;
@@ -1229,7 +1239,6 @@ value caml_interprete(code_t prog, asize_t prog_size)
       Restart_curr_instr;
 
 /* Context switching */
-    {
       value resume_fn, resume_arg;
 
     Instruct(RESUME):
@@ -1243,15 +1252,8 @@ value caml_interprete(code_t prog, asize_t prog_size)
       sp[4] = Val_long(extra_args);
       goto do_resume;
 
-do_resume: {
-      value parent = caml_current_stack;
-      do {
-        value delegator = Stack_parent(accu);
-        Stack_parent(accu) = parent;
-        parent = accu;
-        accu = delegator;
-      } while (accu != Val_unit);
-      accu = parent;
+do_resume:
+      accu = caml_find_performer(accu);
 
       caml_extern_sp = sp;
       caml_switch_stack(accu);
@@ -1264,7 +1266,6 @@ do_resume: {
       env = accu;
       extra_args = 0;
       goto check_stacks;
-}
 
     Instruct(RESUMETERM):
       resume_fn = sp[0];
@@ -1274,7 +1275,6 @@ do_resume: {
       sp[1] = Val_long(extra_args);
       goto do_resume;
 
-    }
 
     Instruct(PERFORM): {
       value eff = accu;
@@ -1313,21 +1313,24 @@ do_resume: {
       value performer = sp[0];
       value self = caml_current_stack;
       value parent = Stack_parent(caml_current_stack);
-      
-      // ?? Unhandled delegated effects
-      // Delegated discontinue (OK)
-      Stack_parent(self) = performer;
-      
 
       sp = sp + *pc - 2;
       sp[0] = Val_long(caml_trap_sp_off);
       sp[1] = Val_long(extra_args);
 
+      if (parent == Val_long(0)) {
+        accu = performer;
+        resume_fn = caml_read_root(raise_unhandled);
+        resume_arg = Field(caml_read_root(caml_global_data), UNHANDLED_EXN);
+        goto do_resume;
+      }
+
+      Stack_parent(self) = performer;
+
       caml_extern_sp = sp;
       value old_stack = caml_switch_stack(parent);
       sp = caml_extern_sp;
       Assert(old_stack == self);
-
 
       caml_trap_sp_off = Long_val(sp[0]);
       extra_args = Long_val(sp[1]);

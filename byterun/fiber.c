@@ -125,6 +125,26 @@ void caml_init_main_stack()
   load_stack(stack);
 }
 
+/*
+  Find the stack that performed an effect,
+  skipping over several stacks that delegated
+  the effect if necessary.
+
+  Reverses the parent pointers to point
+  performer -> delegator instead of 
+  delegator -> performer.
+*/
+value caml_find_performer(value stack)
+{
+  value parent = caml_current_stack;
+  do {
+    value delegator = Stack_parent(stack);
+    Stack_parent(stack) = parent;
+    parent = stack;
+    stack = delegator;
+  } while (stack != Val_unit);
+  return parent;
+}
 
 
 /*
