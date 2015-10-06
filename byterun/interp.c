@@ -74,15 +74,6 @@ sp is a local copy of the global variable caml_extern_sp. */
 #define Restore_after_c_call \
   { sp = caml_extern_sp; env = *sp++; saved_pc = NULL; }
 
-/* Context switch interface */
-#define Setup_for_context_switch \
-  { sp -= 3; sp[0] = Val_pc(pc); sp[1] = env; \
-    sp[2] = Val_long(extra_args); caml_extern_sp = sp; }
-#define Setup_for_tail_context_switch \
-  { caml_extern_sp = sp + *pc; }
-#define Restore_after_context_switch \
-  { sp = caml_extern_sp; }
-
 /* An event frame must look like accu + a C_CALL frame + a RETURN 1 frame */
 #define Setup_for_event \
   { sp -= 6; \
@@ -1355,21 +1346,4 @@ do_resume:
     }
   }
 #endif
-}
-
-void caml_prepare_bytecode(code_t prog, asize_t prog_size) {
-  /* other implementations of the interpreter (such as an hypothetical
-     JIT translator) might want to do something with a bytecode before
-     running it */
-  Assert(prog);
-  Assert(prog_size>0);
-  /* actually, the threading of the bytecode might be done here */
-}
-
-void caml_release_bytecode(code_t prog, asize_t prog_size) {
-  /* other implementations of the interpreter (such as an hypothetical
-     JIT translator) might want to know when a bytecode is removed */
-  /* check that we have a program */
-  Assert(prog);
-  Assert(prog_size>0);
 }

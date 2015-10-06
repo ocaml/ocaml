@@ -37,21 +37,6 @@ CAMLprim value caml_static_free(value blk)
   return Val_unit;
 }
 
-/* signal to the interpreter machinery that a bytecode is no more
-   needed (before freeing it) - this might be useful for a JIT
-   implementation */
-
-CAMLprim value caml_static_release_bytecode(value blk, value size)
-{
-#ifndef NATIVE_CODE
-  caml_release_bytecode((code_t) blk, (asize_t) Long_val(size));
-#else
-  caml_failwith("Meta.static_release_bytecode impossible with native code");
-#endif
-  return Val_unit;
-}
-
-
 CAMLprim value caml_static_resize(value blk, value new_size)
 {
   return (value) caml_stat_resize((char *) blk, (asize_t) Long_val(new_size));
@@ -173,44 +158,6 @@ CAMLprim value caml_get_public_method (value obj, value tag)
   /* return 0 if tag is not there */
   return (tag == Field(meths,li) ? Field (meths, li-1) : 0);
 }
-
-/* these two functions might be useful to an hypothetical JIT */
-
-#ifdef CAML_JIT
-#ifdef NATIVE_CODE
-#define MARK 1
-#else
-#define MARK 0
-#endif
-value caml_cache_public_method (value meths, value tag, value *cache)
-{
-  int li = 3, hi = Field(meths,0), mi;
-  while (li < hi) {
-    mi = ((li+hi) >> 1) | 1;
-    if (tag < Field(meths,mi)) hi = mi-2;
-    else li = mi;
-  }
-  *cache = (li-3)*sizeof(value) + MARK;
-  return Field (meths, li-1);
-}
-
-value caml_cache_public_method2 (value *meths, value tag, value *cache)
-{
-  value ofs = *cache & meths[1];
-  if (*(value*)(((char*)(meths+3)) + ofs - MARK) == tag)
-    return *(value*)(((char*)(meths+2)) + ofs - MARK);
-  {
-    int li = 3, hi = meths[0], mi;
-    while (li < hi) {
-      mi = ((li+hi) >> 1) | 1;
-      if (tag < meths[mi]) hi = mi-2;
-      else li = mi;
-    }
-    *cache = (li-3)*sizeof(value) + MARK;
-    return meths[li-1];
-  }
-}
-#endif /*CAML_JIT*/
 
 /* Allocate OO ids in chunks, to avoid contention */
 #define Id_chunk 1024
