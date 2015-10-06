@@ -26,11 +26,6 @@ CAMLextern __thread value * caml_extern_sp;
 CAMLextern __thread intnat caml_trap_sp_off;
 CAMLextern __thread intnat caml_trap_barrier_off;
 
-value caml_handle(value body, value hval, value heff, value hexn, intnat extra_args);
-value caml_perform(value effect);
-value caml_continue(value cont, value ret, intnat extra_args);
-value caml_finish(value ret);
-value caml_finish_exception(value exn);
 
 void caml_scan_dirty_stack(scanning_action, value stack);
 void caml_scan_stack(scanning_action, value stack);
