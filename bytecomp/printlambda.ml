@@ -124,10 +124,9 @@ let primitive ppf = function
   | Psetfloatfield n -> fprintf ppf "setfloatfield %i" n
   | Pduprecord (rep, size) -> fprintf ppf "duprecord %a %i" record_rep rep size
   | Plazyforce -> fprintf ppf "force"
-  | Phandle -> fprintf ppf "handle"
   | Pperform -> fprintf ppf "perform"
-  | Pcontinue -> fprintf ppf "continue"
-  | Pdiscontinue -> fprintf ppf "discontinue"
+  | Presume -> fprintf ppf "resume"
+  | Pdelegate -> fprintf ppf "delegate"
   | Pccall p -> fprintf ppf "%s" p.prim_name
   | Praise k -> fprintf ppf "%s" (Lambda.raise_kind k)
   | Psequand -> fprintf ppf "&&"

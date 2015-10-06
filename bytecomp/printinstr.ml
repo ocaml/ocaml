@@ -97,13 +97,10 @@ let instruction ppf = function
   | Kgetmethod -> fprintf ppf "\tgetmethod"
   | Kgetpubmet n -> fprintf ppf "\tgetpubmet %i" n
   | Kgetdynmet -> fprintf ppf "\tgetdynmet"
-  | Khandle -> fprintf ppf "\thandle"
   | Kperform -> fprintf ppf "\tperform"
-  | Kcontinue -> fprintf ppf "\tcontinue"
-  | Kdiscontinue -> fprintf ppf "\tdiscontinue"
-  | Khandleterm n -> fprintf ppf "\thandleterm %i" n
-  | Kcontinueterm n -> fprintf ppf "\tcontinueterm %i" n
-  | Kdiscontinueterm n -> fprintf ppf "\tdiscontinueterm %i" n
+  | Kresume -> fprintf ppf "\tresume"
+  | Kresumeterm n -> fprintf ppf "\tresumeterm %i" n
+  | Kdelegateterm n -> fprintf ppf "\tdelegateterm %i" n
   | Kstop -> fprintf ppf "\tstop"
   | Kevent ev -> fprintf ppf "\tevent \"%s\" %i-%i"
                          ev.ev_loc.Location.loc_start.Lexing.pos_fname

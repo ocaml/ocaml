@@ -37,12 +37,16 @@ let invalid_arg s = raise(Invalid_argument s)
 exception Exit
 
 (* Effects *)
+type ('a, 'b) stack
+external take_cont : ('a, 'b) continuation -> ('a, 'b) stack = "caml_bvar_take"
+external resume : ('a, 'b) stack -> ('c -> 'a) -> 'c -> 'b = "%resume"
+
+let continue k v =
+  resume (take_cont k) (fun x -> x) v
+let discontinue k e =
+  resume (take_cont k) (fun e -> raise e) e
 
 external perform : 'a eff -> 'a = "%perform"
-
-external continue: ('a, 'b) continuation -> 'a -> 'b = "%continue"
-
-external discontinue: ('a, 'b) continuation -> exn -> 'b = "%discontinue"
 
 let delegate e k =
   match perform e with

@@ -7,8 +7,19 @@
 #include "roots.h"
 
 
+/* One word at the base of the stack is used to store the stack pointer */
+#define Stack_ctx_words 6
+#define Stack_base(stk) (Op_val(stk) + Stack_ctx_words)
+#define Stack_high(stk) (Op_val(stk) + Wosize_val(stk))
+#define Stack_sp(stk) (*(long*)(Op_val(stk) + 0))
+#define Stack_dirty_domain(stk) (*(struct domain**)(Op_val(stk) + 1))
+#define Stack_handle_value(stk) (*(Op_val(stk) + 2))
+#define Stack_handle_exception(stk) (*(Op_val(stk) + 3))
+#define Stack_handle_effect(stk) (*(Op_val(stk) + 4))
+#define Stack_parent(stk) (*(Op_val(stk) + 5))
+
+
 CAMLextern __thread value caml_current_stack;
-CAMLextern __thread value caml_parent_stack;
 CAMLextern __thread value * caml_stack_high;
 CAMLextern __thread value * caml_stack_threshold;
 CAMLextern __thread value * caml_extern_sp;
@@ -41,8 +52,9 @@ void caml_realloc_stack (asize_t required_size, value* save, int nsave);
 void caml_change_max_stack_size (uintnat new_max_size);
 int caml_on_current_stack(value*);
 
+value caml_switch_stack(value stk);
+
 void caml_init_main_stack();
-void caml_init_fibers();
 
 int caml_running_main_fiber();
 value caml_fiber_death();

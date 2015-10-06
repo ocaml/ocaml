@@ -43,18 +43,7 @@ void caml_clean_stack_domain(value stack, struct domain* domain)
 }
 #else
 
-/* One word at the base of the stack is used to store the stack pointer */
-#define Stack_ctx_words 5
-#define Stack_base(stk) (Op_val(stk) + Stack_ctx_words)
-#define Stack_high(stk) (Op_val(stk) + Wosize_val(stk))
-#define Stack_sp(stk) (*(long*)(Op_val(stk) + 0))
-#define Stack_dirty_domain(stk) (*(struct domain**)(Op_val(stk) + 1))
-#define Stack_handle_value(stk) (*(Op_val(stk) + 2))
-#define Stack_handle_exception(stk) (*(Op_val(stk) + 3))
-#define Stack_handle_effect(stk) (*(Op_val(stk) + 4))
-
 CAMLexport __thread value caml_current_stack;
-CAMLexport __thread value caml_parent_stack = Val_long(0);
 CAMLexport __thread value * caml_stack_high; /* one-past-the-end */
 CAMLexport __thread value * caml_stack_threshold; /* low + Stack_threshold */
 CAMLexport __thread value * caml_extern_sp;
@@ -86,180 +75,37 @@ static void load_stack(value newstack)
   caml_current_stack = newstack;
 }
 
-static opcode_t finish_code[] = { FINISH };
-
-void caml_init_fibers ()
-{
-#ifdef THREADED_CODE
-  caml_thread_code(finish_code, sizeof(finish_code));
-#endif
-}
-
-
 #define Fiber_stack_wosize ((Stack_threshold / sizeof(value)) *2)
 
-value caml_handle(value body, value hval, value hexn, value heff, intnat extra_args)
+CAMLprim value caml_alloc_stack(value hval, value hexn, value heff)
 {
-  CAMLparam4(body, hval, hexn, heff);
-  CAMLlocal1(new_stack);
-  value old_stack;
-  value *sp, *high;
+  CAMLparam3(hval, hexn, heff);
+  CAMLlocal1(stack);
+  value* sp;
+  value* high;
 
-  /* Push the trapsp, parent stack and extra args */
-  /* FIXME caml_trap_barrier_off? */
-  sp = caml_extern_sp;
-  sp -= 3;
-  sp[0] = Val_long(extra_args);
-  sp[1] = caml_parent_stack;
-  sp[2] = Val_long(caml_trap_sp_off);
-  caml_extern_sp = sp;
+  stack = caml_alloc(Fiber_stack_wosize, Stack_tag);
+  high = sp = Stack_high(stack);
 
-  /* create a new stack */
-  new_stack = caml_alloc(Fiber_stack_wosize, Stack_tag);
-  high = Stack_high(new_stack);
-  sp = high;
-
-  sp -= 4;
-  sp[0] = Val_long(0); /* () */
-  sp[1] = Val_pc(finish_code);  /* pc */
-  sp[2] = Val_long(0); /* env */
-  sp[3] = Val_long(0); /* extra_args */
-
-  Stack_sp(new_stack) = sp - high;
-  Stack_dirty_domain(new_stack) = 0;
-  Stack_handle_value(new_stack) = hval;
-  Stack_handle_exception(new_stack) = hexn;
-  Stack_handle_effect(new_stack) = heff;
-
-  /* Switch to the new stack */
-  old_stack = save_stack();
-  load_stack(new_stack);
-
-  /* Set trapsp and parent stack */
-  caml_trap_sp_off = 1;
-  caml_parent_stack = old_stack;
-
-  CAMLreturn(body);
-}
-
-value caml_perform(value effect)
-{
-  CAMLparam1(effect);
-  CAMLlocal2(old_stack, new_stack);
-  value *sp;
-
-  /* push the trapsp */
-  sp = caml_extern_sp;
+  // ?
   sp -= 1;
-  sp[0] = Val_long(caml_trap_sp_off);
-  caml_extern_sp = sp;
+  sp[0] = Val_long(1); /* trapsp ?? */
 
-  /* Switch to the parent stack */
-  old_stack = save_stack();
-  new_stack = caml_parent_stack;
-  load_stack(new_stack);
+  Stack_sp(stack) = sp - high;
+  Stack_dirty_domain(stack) = 0;
+  Stack_handle_value(stack) = hval;
+  Stack_handle_exception(stack) = hexn;
+  Stack_handle_effect(stack) = heff;
+  Stack_parent(stack) = Val_unit;
 
-  /* Set trapsp and parent stack */
-  sp = caml_extern_sp;
-  caml_parent_stack = sp[1];
-  caml_trap_sp_off = Long_val(sp[2]);
-
-  /* Complete the call frame */
-  sp[1] = effect;
-  sp[2] = old_stack;
-
-  CAMLreturn(Stack_handle_effect(old_stack));
+  CAMLreturn (stack);
 }
 
-/* bvar functions from memory.c */
-value caml_bvar_take(value bv);
-value caml_continue(value cont, value ret, intnat extra_args)
+value caml_switch_stack(value stk)
 {
-  CAMLparam1(ret);
-  CAMLlocal2(old_stack, new_stack);
-  value *sp;
-
-  /* Retrieve stack from continuation */
-  new_stack = caml_bvar_take(cont);
-
-  /* Push the trapsp, parent stack and extra args */
-  sp = caml_extern_sp;
-  sp -= 3;
-  sp[0] = Val_long(extra_args);
-  sp[1] = caml_parent_stack;
-  sp[2] = Val_long(caml_trap_sp_off);
-  caml_extern_sp = sp;
-
-  /* Switch to the new stack */
-  old_stack = save_stack();
-  load_stack(new_stack);
-
-  /* Set trapsp and parent stack */
-  sp = caml_extern_sp;
-  caml_trap_sp_off = Long_val(sp[0]);
-  caml_parent_stack = old_stack;
-  sp += 1;
-  caml_extern_sp = sp;
-
-  CAMLreturn(ret);
-}
-
-value caml_finish(value ret)
-{
-  CAMLparam1(ret);
-  value old_stack, new_stack;
-  value *sp;
-  value extra_args_v;
-
-  /* Switch to the parent stack */
-  old_stack = save_stack();
-  new_stack = caml_parent_stack;
-  load_stack(new_stack);
-
-  sp = caml_extern_sp;
-
-  /* Set trapsp and parent stack */
-  extra_args_v = sp[0];
-  caml_parent_stack = sp[1];
-  caml_trap_sp_off = Long_val(sp[2]);
-  sp += 1;
-
-  /* Complete the call frame and replace extra_args */
-  sp[0] = extra_args_v;
-  sp[1] = ret;
-
-  caml_extern_sp = sp;
-
-  CAMLreturn(Stack_handle_value(old_stack));
-}
-
-value caml_finish_exception(value exn)
-{
-  CAMLparam1(exn);
-  CAMLlocal2(old_stack, new_stack);
-  value *sp;
-  value extra_args_v;
-
-  /* Switch to the parent stack */
-  old_stack = save_stack();
-  new_stack = caml_parent_stack;
-  load_stack(new_stack);
-
-  sp = caml_extern_sp;
-
-  /* Set trapsp and parent stack */
-  extra_args_v = sp[0];
-  caml_parent_stack = sp[1];
-  caml_trap_sp_off = Long_val(sp[2]);
-  sp += 1;
-
-  /* Complete the call frame and replace extra_args */
-  sp[0] = extra_args_v;
-  sp[1] = exn;
-
-  caml_extern_sp = sp;
-
-  CAMLreturn(Stack_handle_exception(old_stack));
+  value s = save_stack();
+  load_stack(stk);
+  return s;
 }
 
 void caml_init_main_stack()
@@ -275,6 +121,7 @@ void caml_init_main_stack()
   Stack_handle_value(stack) = Val_long(0);
   Stack_handle_exception(stack) = Val_long(0);
   Stack_handle_effect(stack) = Val_long(0);
+  Stack_parent(stack) = Val_unit;
   load_stack(stack);
 }
 
@@ -319,6 +166,7 @@ void caml_realloc_stack(asize_t required_space, value* saved_vals, int nsaved)
   Stack_handle_value(new_stack) = Stack_handle_value(old_stack);
   Stack_handle_exception(new_stack) = Stack_handle_exception(old_stack);
   Stack_handle_effect(new_stack) = Stack_handle_effect(old_stack);
+  Stack_parent(new_stack) = Stack_parent(old_stack);
 
   Stack_dirty_domain(new_stack) = 0;
   if (Stack_dirty_domain(old_stack)) {
@@ -334,6 +182,7 @@ void caml_realloc_stack(asize_t required_space, value* saved_vals, int nsaved)
   Stack_handle_value(old_stack) = Val_long(0);
   Stack_handle_exception(old_stack) = Val_long(0);
   Stack_handle_effect(old_stack) = Val_long(0);
+  Stack_parent(old_stack) = Val_unit;
 
   CAMLreturn0;
 }
@@ -431,6 +280,7 @@ void caml_scan_stack(scanning_action f, value stack)
   f(Stack_handle_value(stack), &Stack_handle_value(stack));
   f(Stack_handle_exception(stack), &Stack_handle_exception(stack));
   f(Stack_handle_effect(stack), &Stack_handle_effect(stack));
+  f(Stack_parent(stack), &Stack_parent(stack));
 
   high = Stack_high(stack);
   low = high + Stack_sp(stack);

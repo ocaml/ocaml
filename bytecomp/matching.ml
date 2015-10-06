@@ -2991,18 +2991,9 @@ let for_trywith param pat_act_list =
     (fun () -> Lprim(Praise Raise_reraise, [param]))
     param pat_act_list Partial
 
-let for_handler param cont pat_act_list =
-  let id_exn = Ident.create "exn" in
-  let id_val = Ident.create "val" in
-  let static_exception_id = next_negative_raise_count () in
-  let delegate =
-    Lstaticcatch
-      (Ltrywith (Lstaticraise (static_exception_id, [Lprim (Pperform, [param])]),
-                 id_exn, Lprim (Pdiscontinue, [cont; (Lvar id_exn)])),
-       (static_exception_id, [id_val]),
-       Lprim(Pcontinue, [cont; (Lvar id_val)]))
-  in
-  compile_matching Location.none None (fun () -> delegate)
+let for_handler param raw_cont pat_act_list =
+  compile_matching Location.none None 
+    (fun () -> Lprim (Pdelegate, [param; raw_cont]))
     param pat_act_list Partial
 
 let for_let loc param pat body =
