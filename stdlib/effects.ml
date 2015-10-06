@@ -1,3 +1,4 @@
+(*
 external perform : 'a eff -> 'a = "%perform"
 
 type ('b,'c) handler =
@@ -20,3 +21,13 @@ let delegate e k =
   match perform e with
   | v -> continue k v
   | exception e -> discontinue k e
+
+(*
+type ('a, 'b) stack
+external bvar_of_cont : ('a, 'b) continuation -> ('a, 'b) stack Domain.BVar.t = "%identity"
+external resume : ('a, 'b) stack -> ('c -> 'a) -> 'c -> 'b = "%resume"
+
+let continue' k v = resume (Domain.BVar.take (bvar_of_cont k)) (fun x -> x) v
+let discontinue' k e = resume (Domain.BVar.take (bvar_of_cont k)) (fun e -> raise e) e
+*)
+*)
