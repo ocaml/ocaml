@@ -975,12 +975,18 @@ let tree_of_value_description id decl =
   (* Format.eprintf "@[%a@]@." raw_type_expr decl.val_type; *)
   let id = Ident.name id in
   let ty = tree_of_type_scheme decl.val_type in
-  let prims, native_repr_attributes =
-    match decl.val_kind with
-    | Val_prim p -> Primitive.description_list_and_attributes p
-    | _ -> ([], [])
+  let vd =
+    { oval_name = id;
+      oval_type = ty;
+      oval_prims = [];
+      oval_attributes = [] }
   in
-  Osig_value (id, add_native_repr_attributes ty native_repr_attributes, prims)
+  let vd =
+    match decl.val_kind with
+    | Val_prim p -> Primitive.print p vd
+    | _ -> vd
+  in
+  Osig_value vd
 
 let value_description id ppf decl =
   !Oprint.out_sig_item ppf (tree_of_value_description id decl)

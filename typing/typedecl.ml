@@ -21,10 +21,6 @@ open Typetexp
 
 type native_repr_kind = Unboxed | Untagged
 
-let string_of_native_repr_kind = function
-  | Unboxed -> "unboxed"
-  | Untagged -> "untagged"
-
 type error =
     Repeated_parameter
   | Duplicate_constructor of string
@@ -52,7 +48,6 @@ type error =
   | Unbound_type_var_ext of type_expr * extension_constructor
   | Varying_anonymous
   | Val_in_structure
-  | Invalid_native_repr_attribute_payload of native_repr_kind
   | Multiple_native_repr_attributes
   | Cannot_unbox_or_untag_type of native_repr_kind
 
@@ -1365,27 +1360,19 @@ type native_repr_attribute =
   | Native_repr_attr_absent
   | Native_repr_attr_present of native_repr_kind
 
-let get_native_repr_attribute core_type =
+let get_native_repr_attribute attrs ~global_repr =
   match
-    List.filter
-      (fun (n, _) ->
-         match n.Location.txt with
-         | "unboxed" | "untagged" -> true
-         | _ -> false)
-      core_type.ptyp_attributes
+    Attr_helper.get_no_payload_attribute ["unboxed"; "ocaml.unboxed"]  attrs,
+    Attr_helper.get_no_payload_attribute ["untagged"; "ocaml.untagged"] attrs,
+    global_repr
   with
-  | [] ->
-    Native_repr_attr_absent
-  | _ :: (n, _) :: _ ->
-    raise (Error (n.Location.loc, Multiple_native_repr_attributes))
-  | [(n, payload)] ->
-    let kind = if n.txt = "unboxed" then Unboxed else Untagged in
-    match payload with
-    | PStr [] ->
-      Native_repr_attr_present kind
-    | _ ->
-      raise (Error (n.Location.loc,
-                    Invalid_native_repr_attribute_payload kind))
+  | None, None, None -> Native_repr_attr_absent
+  | None, None, Some repr -> Native_repr_attr_present repr
+  | Some _, None, None -> Native_repr_attr_present Unboxed
+  | None, Some _, None -> Native_repr_attr_present Untagged
+  | Some { Location.loc }, _, _
+  | _, Some { Location.loc }, _ ->
+    raise (Error (loc, Multiple_native_repr_attributes))
 
 let native_repr_of_type env kind ty =
   match kind, (Ctype.expand_head_opt env ty).desc with
@@ -1402,8 +1389,8 @@ let native_repr_of_type env kind ty =
   | _ ->
     None
 
-let make_native_repr env core_type ty =
-  match get_native_repr_attribute core_type with
+let make_native_repr env core_type ty ~global_repr =
+  match get_native_repr_attribute core_type.ptyp_attributes ~global_repr with
   | Native_repr_attr_absent -> Same_as_ocaml_repr
   | Native_repr_attr_present kind ->
     begin match native_repr_of_type env kind ty with
@@ -1412,14 +1399,16 @@ let make_native_repr env core_type ty =
     | Some repr -> repr
     end
 
-let rec parse_native_repr_attributes env core_type ty =
+let rec parse_native_repr_attributes env core_type ty ~global_repr =
   match core_type.ptyp_desc, (Ctype.repr ty).desc with
   | Ptyp_arrow (_, ct1, ct2), Tarrow (_, t1, t2, _) ->
-    let repr_arg = make_native_repr env ct1 t1 in
-    let repr_args, repr_res = parse_native_repr_attributes env ct2 t2 in
+    let repr_arg = make_native_repr env ct1 t1 ~global_repr in
+    let repr_args, repr_res =
+      parse_native_repr_attributes env ct2 t2 ~global_repr
+    in
     (repr_arg :: repr_args, repr_res)
   | Ptyp_arrow _, _ | _, Tarrow _ -> assert false
-  | _ -> ([], make_native_repr env core_type ty)
+  | _ -> ([], make_native_repr env core_type ty ~global_repr)
 
 (* Translate a value declaration *)
 let transl_value_decl env loc valdecl =
@@ -1433,8 +1422,15 @@ let transl_value_decl env loc valdecl =
   | [] ->
       raise (Error(valdecl.pval_loc, Val_in_structure))
   | _ ->
+      let global_repr =
+        match
+          get_native_repr_attribute valdecl.pval_attributes ~global_repr:None
+        with
+        | Native_repr_attr_present repr -> Some repr
+        | Native_repr_attr_absent -> None
+      in
       let native_repr_args, native_repr_res =
-        parse_native_repr_attributes env valdecl.pval_type ty
+        parse_native_repr_attributes env valdecl.pval_type ty ~global_repr
       in
       let prim =
         Primitive.parse_declaration valdecl
@@ -1791,9 +1787,6 @@ let report_error ppf = function
         "cannot be checked"
   | Val_in_structure ->
       fprintf ppf "Value declarations are only allowed in signatures"
-  | Invalid_native_repr_attribute_payload kind ->
-      fprintf ppf "[@@%s] attribute does not accept a payload"
-        (string_of_native_repr_kind kind)
   | Multiple_native_repr_attributes ->
       fprintf ppf "Too many [@@unboxed]/[@@untagged] attributes"
   | Cannot_unbox_or_untag_type Unboxed ->

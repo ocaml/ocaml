@@ -42,13 +42,16 @@ val parse_declaration
   -> native_repr_res:native_repr
   -> description
 
-val description_list_and_attributes
-  : description -> string list * string option list
+val print
+  :  description
+  -> Outcometree.out_val_decl
+  -> Outcometree.out_val_decl
 
 val native_name: description -> string
 val byte_name: description -> string
 
 type error =
-  | Float_with_native_repr_attribute
+  | Old_style_float_with_native_repr_attribute
+  | Old_style_noalloc_with_noalloc_attribute
 
 exception Error of Location.t * error

@@ -10,28 +10,24 @@
 (*                                                                     *)
 (***********************************************************************)
 
-external ( + ) : int64 -> int64 -> int64
-  = "" "test_int64_add" [@@noalloc] [@@unboxed]
-external ( - ) : int64 -> int64 -> int64
-  = "" "test_int64_sub" [@@noalloc] [@@unboxed]
-external ( * ) : int64 -> int64 -> int64
-  = "" "test_int64_mul" [@@noalloc] [@@unboxed]
+(** Helpers for attributes *)
 
-external ignore_int64 : (int64 [@unboxed]) -> unit
-  = "" "test_ignore_int64" [@@noalloc]
+open Asttypes
+open Parsetree
 
-let f () =
-  let r = ref 1L in
-  for i = 0 to 100000 do
-    let n = !r + !r in
-    r := n * n
-  done;
-  ignore_int64 !r
+type error =
+  | Multiple_attributes of string
+  | No_payload_expected of string
 
-let () =
-  let a0 = Gc.allocated_bytes () in
-  let a1 = Gc.allocated_bytes () in
-  let _x = f () in
-  let a2 = Gc.allocated_bytes () in
-  let alloc = (a2 -. 2. *. a1 +. a0) in
-  assert(alloc = 0.)
+(** The [string list] argument of the following functions is a list of
+    alternative names for the attribute we are looking for. For instance:
+
+    {[
+      ["foo"; "ocaml.foo"]
+    ]} *)
+val get_no_payload_attribute : string list -> attributes -> string loc option
+val has_no_payload_attribute : string list -> attributes -> bool
+
+exception Error of Location.t * error
+
+val report_error: Format.formatter -> error -> unit
