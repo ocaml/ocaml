@@ -213,7 +213,6 @@ value caml_interprete(code_t prog, asize_t prog_size)
   intnat extra_args;
   struct caml_exception_context * initial_external_raise;
   int initial_stack_words;
-  value initial_parent_stack;
   intnat initial_trap_sp_off;
   volatile code_t saved_pc = NULL;
   struct longjmp_buffer raise_buf;
@@ -250,7 +249,6 @@ value caml_interprete(code_t prog, asize_t prog_size)
   jumptbl_base = Jumptbl_base;
 #endif
   initial_trap_sp_off = caml_trap_sp_off;
-  initial_parent_stack = Val_unit; // ?? caml_parent_stack;
   initial_stack_words = caml_stack_high - caml_extern_sp;
   initial_external_raise = caml_external_raise;
   caml_callback_depth++;
@@ -903,7 +901,6 @@ value caml_interprete(code_t prog, asize_t prog_size)
       if (caml_trap_sp_off > 0) {
         if (Stack_parent(caml_current_stack) == Val_long(0)) {
           caml_external_raise = initial_external_raise;
-          // ?? caml_parent_stack = initial_parent_stack;
           caml_trap_sp_off = initial_trap_sp_off;
           caml_extern_sp = caml_stack_high - initial_stack_words;
           caml_callback_depth--;
@@ -1209,7 +1206,6 @@ value caml_interprete(code_t prog, asize_t prog_size)
 
     Instruct(STOP):
       caml_external_raise = initial_external_raise;
-      // ?? caml_parent_stack = initial_parent_stack;
       caml_trap_sp_off = initial_trap_sp_off;
       caml_extern_sp = sp;
       caml_callback_depth--;
