@@ -56,11 +56,20 @@ val new_const_symbol : unit -> string
 val new_const_label : unit -> int
 
 val new_structured_constant:
+  ?mutability:Asttypes.mutable_flag ->
   Clambda.ustructured_constant ->
   shared:bool -> (* can be shared with another structually equal constant *)
   string
+
+type structured_constant = {
+  label : string;
+  exported : bool;
+  mutability : Asttypes.mutable_flag;
+  value : Clambda.ustructured_constant;
+}
+
 val structured_constants:
-  unit -> (string * bool * Clambda.ustructured_constant) list
+  unit -> structured_constant list
 val add_exported_constant: string -> unit
 
 type structured_constants
