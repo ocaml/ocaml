@@ -693,21 +693,24 @@ let build_export_info ~(backend:(module Backend_intf.S))
   in
 
   let export =
-    Export_info.create
-      ~values:(Export_info.nest_eid_map !(env.ex_table))
-      ~globals:(
-        Ident.Map.singleton
-          (Compilenv.current_unit_id ()) root_approx)
-      ~symbol_id:env.sym
-      (* TODO all of the following *)
-      ~id_symbol:Compilation_unit.Map.empty
-      ~offset_fun:Closure_id.Map.empty
-      ~offset_fv:Var_within_closure.Map.empty
-      ~constants:Symbol.Set.empty
-      ~sets_of_closures:(Set_of_closures_id.Map.map (fun { Flambda.function_decls } -> function_decls) set_of_closures_map)
-      ~closures
-      ~constant_sets_of_closures:Set_of_closures_id.Set.empty
-      ~invariant_arguments:invariant_arguments
+    if !Clflags.opaque then
+      Export_info.empty
+    else
+      Export_info.create
+        ~values:(Export_info.nest_eid_map !(env.ex_table))
+        ~globals:(
+          Ident.Map.singleton
+            (Compilenv.current_unit_id ()) root_approx)
+        ~symbol_id:env.sym
+        (* TODO all of the following *)
+        ~id_symbol:Compilation_unit.Map.empty
+        ~offset_fun:Closure_id.Map.empty
+        ~offset_fv:Var_within_closure.Map.empty
+        ~constants:Symbol.Set.empty
+        ~sets_of_closures:(Set_of_closures_id.Map.map (fun { Flambda.function_decls } -> function_decls) set_of_closures_map)
+        ~closures
+        ~constant_sets_of_closures:Set_of_closures_id.Set.empty
+        ~invariant_arguments:invariant_arguments
   in
 
   (* Format.eprintf "Build_export_info returns@ %a@." *)

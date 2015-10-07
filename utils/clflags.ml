@@ -75,7 +75,9 @@ and dump_instr = ref false              (* -dinstr *)
 
 let keep_asm_file = ref false           (* -S *)
 let optimize_for_speed = ref true       (* -compact *)
-and opaque = ref false                  (* -opaque *)
+and opaque = ref true                   (* -opaque *)
+(* CR pchambart: to change. Made to true by default to avoid problems
+   while cross-module-inlining has bugs. *)
 
 and dump_cmm = ref false                (* -dcmm *)
 let dump_selection = ref false          (* -dsel *)
