@@ -162,17 +162,18 @@ let add_offsets t ~offset_fun ~offset_fv =
   { t with offset_fun; offset_fv }
 
 let merge (t1 : t) (t2 : t) : t =
-  let eidmap_disjoint_union map1 map2 =
+  let eidmap_disjoint_union ?eq map1 map2 =
     Compilation_unit.Map.merge (fun _id map1 map2 ->
         match map1, map2 with
         | None, None -> None
         | None, Some map
         | Some map, None -> Some map
-        | Some map1, Some map2 -> Some (Export_id.Map.disjoint_union map1 map2))
+        | Some map1, Some map2 ->
+          Some (Export_id.Map.disjoint_union ?eq map1 map2))
       map1 map2
   in
   let int_eq (i : int) j = i = j in
-  { values = eidmap_disjoint_union t1.values t2.values;
+  { values = eidmap_disjoint_union ~eq:equal_descr t1.values t2.values;
     globals = Ident.Map.disjoint_union t1.globals t2.globals;
     sets_of_closures =
       Set_of_closures_id.Map.disjoint_union t1.sets_of_closures
@@ -190,6 +191,7 @@ let merge (t1 : t) (t2 : t) : t =
         t2.constant_sets_of_closures;
     invariant_arguments =
       Set_of_closures_id.Map.disjoint_union
+        ~eq:Variable.Set.equal
         t1.invariant_arguments t2.invariant_arguments;
   }
 
