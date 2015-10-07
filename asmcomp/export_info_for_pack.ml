@@ -31,7 +31,7 @@ let import_eid_for_pack units pack id =
 let import_symbol_for_pack units pack symbol =
   let compilation_unit = Symbol.compilation_unit symbol in
   if Compilation_unit.Set.mem compilation_unit units
-  then Symbol.create pack (Symbol.label symbol)
+  then Symbol.import_for_pack ~pack symbol
   else symbol
 
 let import_approx_for_pack units pack (approx : Export_info.approx)
@@ -80,6 +80,8 @@ let import_descr_for_pack units pack (descr : Export_info.descr)
 let import_code_for_pack units pack expr =
   Flambda_iterators.map_named (function
       | Symbol sym -> Symbol (import_symbol_for_pack units pack sym)
+      | Read_symbol_field (sym, field) ->
+        Read_symbol_field (import_symbol_for_pack units pack sym, field)
       | e -> e)
     expr
 

@@ -50,6 +50,9 @@ let create compilation_unit label =
 let unsafe_create compilation_unit label =
   { compilation_unit; label; }
 
+let import_for_pack ~pack:compilation_unit symbol =
+  { compilation_unit; label = symbol.label; }
+
 let compilation_unit t = t.compilation_unit
 let label t = t.label
 
