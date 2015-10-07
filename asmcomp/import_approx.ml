@@ -125,10 +125,8 @@ let rec import_ex ex =
     let approx = A.value_set_of_closures value_set_of_closures in
     match aliased_symbol with
     | None ->
-      Format.printf "don't augment approx@.";
       approx
     | Some symbol ->
-      Format.printf "augment approx %a@." Symbol.print symbol;
       A.augment_with_symbol approx symbol
 
 and import_approx (ap : Export_info.approx) =
