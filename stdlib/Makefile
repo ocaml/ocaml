@@ -13,13 +13,11 @@
 
 include Makefile.shared
 
-allopt:
-	$(MAKE) stdlib.cmxa std_exit.cmx
-	$(MAKE) allopt-$(PROFILING)
+allopt: allopt-$(PROFILING)
 
-allopt-noprof:
+allopt-noprof: stdlib.cmxa std_exit.cmx
 
-allopt-prof: stdlib.p.cmxa std_exit.p.cmx
+allopt-prof: stdlib.cmxa std_exit.cmx stdlib.p.cmxa std_exit.p.cmx
 	rm -f std_exit.p.cmi
 
 installopt: installopt-default installopt-$(PROFILING)
