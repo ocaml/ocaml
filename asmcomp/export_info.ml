@@ -41,6 +41,7 @@ and value_set_of_closures = {
   set_of_closures_id : Set_of_closures_id.t;
   bound_vars : approx Var_within_closure.Map.t;
   results : approx Closure_id.Map.t;
+  aliased_symbol : Symbol.t option;
 }
 
 and approx =
@@ -207,15 +208,22 @@ let print_approx ppf (t : t) =
       | A.Nativeint -> Format.fprintf ppf "%ni" i
   and print_fields ppf fields =
     Array.iter (fun approx -> fprintf ppf "%a@ " print_approx approx) fields
-  and print_set_of_closures ppf { set_of_closures_id; bound_vars } =
+  and print_set_of_closures ppf
+      { set_of_closures_id; bound_vars; aliased_symbol } =
     if Set_of_closures_id.Set.mem set_of_closures_id !printed_set_of_closures
     then fprintf ppf "%a" Set_of_closures_id.print set_of_closures_id
     else begin
       printed_set_of_closures :=
         Set_of_closures_id.Set.add set_of_closures_id !printed_set_of_closures;
-      fprintf ppf "{%a: %a}"
+      let print_alias ppf = function
+        | None -> ()
+        | Some symbol ->
+          Format.fprintf ppf "@ (alias: %a)" Symbol.print symbol
+      in
+      fprintf ppf "{%a: %a%a}"
         Set_of_closures_id.print set_of_closures_id
         print_binding bound_vars
+        print_alias aliased_symbol
     end
   and print_binding ppf bound_vars =
     Var_within_closure.Map.iter (fun clos_id approx ->

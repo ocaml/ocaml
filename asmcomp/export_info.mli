@@ -44,6 +44,7 @@ and value_set_of_closures = {
   set_of_closures_id : Set_of_closures_id.t;
   bound_vars : approx Var_within_closure.Map.t;
   results : approx Closure_id.Map.t;
+  aliased_symbol : Symbol.t option;
 }
 
 and approx =

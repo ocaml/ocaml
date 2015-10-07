@@ -177,6 +177,7 @@ val value_unresolved : Symbol.t -> t
 val value_closure
    : ?closure_var:Variable.t
   -> ?set_of_closures_var:Variable.t
+  -> ?set_of_closures_symbol:Symbol.t
   -> value_set_of_closures
   -> Closure_id.t
   -> t
@@ -305,7 +306,8 @@ val check_approx_for_set_of_closures : t -> checked_approx_for_set_of_closures
 
 type checked_approx_for_closure =
   | Wrong
-  | Ok of value_closure * Variable.t option * value_set_of_closures
+  | Ok of value_closure * Variable.t option
+          * Symbol.t option * value_set_of_closures
 
 (** Try to prove that a value with the given approximation may be used as a
     closure.  Values coming from external compilation units with unresolved
@@ -315,7 +317,8 @@ val check_approx_for_closure : t -> checked_approx_for_closure
 type checked_approx_for_closure_allowing_unresolved =
   | Wrong
   | Unresolved of Symbol.t
-  | Ok of value_closure * Variable.t option * value_set_of_closures
+  | Ok of value_closure * Variable.t option
+          * Symbol.t option * value_set_of_closures
 
 (** As for [check_approx_for_closure], but values coming from external
     compilation units with unresolved approximations are permitted. *)

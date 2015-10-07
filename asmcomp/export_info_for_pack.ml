@@ -51,6 +51,10 @@ let import_set_of_closures units pack
     results =
       Closure_id.Map.map (import_approx_for_pack units pack)
         set_of_closures.results;
+    aliased_symbol =
+      Misc.may_map
+        (import_symbol_for_pack units pack)
+        set_of_closures.aliased_symbol;
   }
 
 let import_descr_for_pack units pack (descr : Export_info.descr)

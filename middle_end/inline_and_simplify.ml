@@ -250,7 +250,7 @@ let simplify_move_within_set_of_closures env r
     Misc.fatal_errorf "Wrong approximation when moving within set of \
         closures: %a"
       Flambda.print_move_within_set_of_closures move_within_set_of_closures
-  | Ok (_value_closure, set_of_closures_var, value_set_of_closures) ->
+  | Ok (_value_closure, set_of_closures_var, set_of_closures_symbol, value_set_of_closures) ->
     let freshen =
       (* CR mshinwell: potentially misleading name---not freshening with new
          names, but with previously fresh names *)
@@ -283,13 +283,38 @@ let simplify_move_within_set_of_closures env r
           in
           Project_closure project_closure, ret r approx
         | Some _ | None ->
-          (* The set of closures is not available in scope, and we have no
-             other information by which to simplify the move. *)
-          let move_within : Flambda.move_within_set_of_closures =
-            { closure; start_from; move_to; }
-          in
-          let approx = A.value_closure value_set_of_closures move_to in
-          Move_within_set_of_closures move_within, ret r approx
+          match set_of_closures_symbol with
+          | Some set_of_closures_symbol ->
+            let set_of_closures_var = Variable.create "symbol" in
+            let project_closure : Flambda.project_closure =
+              { set_of_closures = set_of_closures_var;
+                closure_id = move_to;
+              }
+            in
+            let project_closure_var = Variable.create "project_closure" in
+            let let1 =
+              Flambda.create_let project_closure_var
+                (Project_closure project_closure)
+                (Var project_closure_var)
+            in
+            let expr =
+              Flambda.create_let set_of_closures_var
+                (Symbol set_of_closures_symbol)
+                let1
+            in
+            let approx =
+              A.value_closure ~set_of_closures_var ~set_of_closures_symbol
+                value_set_of_closures move_to
+            in
+            Expr expr, ret r approx
+          | None ->
+            (* The set of closures is not available in scope, and we have no
+               other information by which to simplify the move. *)
+            let move_within : Flambda.move_within_set_of_closures =
+              { closure; start_from; move_to; }
+            in
+            let approx = A.value_closure value_set_of_closures move_to in
+            Move_within_set_of_closures move_within, ret r approx
 
 (* Transform an expression denoting an access to a variable bound in
    a closure.  Variables in the closure ([project_var.closure]) may
@@ -347,7 +372,8 @@ let rec simplify_project_var env r ~(project_var : Flambda.project_var)
     E.really_import_approx env (E.find_exn env closure)
   in
   match A.check_approx_for_closure_allowing_unresolved approx with
-  | Ok (value_closure, _set_of_closures_var, value_set_of_closures) ->
+  | Ok (value_closure, _set_of_closures_var, _set_of_closures_symbol,
+        value_set_of_closures) ->
     let module F = Freshening.Project_var in
     let freshening = value_set_of_closures.freshening in
     let var = F.apply_var_within_closure freshening project_var.var in
@@ -579,7 +605,8 @@ and simplify_apply env r ~(apply : Flambda.apply) : Flambda.t * R.t =
          application is currently [Indirect]).  If successful---in which case we
          then have a direct application---consider inlining. *)
       match A.check_approx_for_closure lhs_of_application_approx with
-      | Ok (value_closure, _set_of_closures_var, value_set_of_closures) ->
+      | Ok (value_closure, _set_of_closures_var,
+            _set_of_closures_symbol, value_set_of_closures) ->
         let closure_id_being_applied = value_closure.closure_id in
         let function_decls = value_set_of_closures.function_decls in
         let function_decl =

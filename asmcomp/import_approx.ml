@@ -81,7 +81,7 @@ let rec import_ex ex =
   | Value_block (tag, fields) ->
     A.value_block (tag, Array.map import_approx fields)
   | Value_closure { closure_id;
-        set_of_closures = { set_of_closures_id; bound_vars } } ->
+        set_of_closures = { set_of_closures_id; bound_vars; aliased_symbol } } ->
     let bound_vars = Var_within_closure.Map.map import_approx bound_vars in
     begin match
       Set_of_closures_id.Map.find set_of_closures_id
@@ -98,9 +98,10 @@ let rec import_ex ex =
           freshening = Freshening.Project_var.empty;
         }
       in
-      A.value_closure value_set_of_closures closure_id
+      A.value_closure ?set_of_closures_symbol:aliased_symbol
+        value_set_of_closures closure_id
     end
-  | Value_set_of_closures { set_of_closures_id; bound_vars } ->
+  | Value_set_of_closures { set_of_closures_id; bound_vars; aliased_symbol } ->
     let bound_vars = Var_within_closure.Map.map import_approx bound_vars in
     let unchanging_params =
       try
@@ -121,7 +122,14 @@ let rec import_ex ex =
         freshening = Freshening.Project_var.empty;
       }
     in
-    A.value_set_of_closures value_set_of_closures
+    let approx = A.value_set_of_closures value_set_of_closures in
+    match aliased_symbol with
+    | None ->
+      Format.printf "don't augment approx@.";
+      approx
+    | Some symbol ->
+      Format.printf "augment approx %a@." Symbol.print symbol;
+      A.augment_with_symbol approx symbol
 
 and import_approx (ap : Export_info.approx) =
   match ap with

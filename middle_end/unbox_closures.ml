@@ -23,7 +23,8 @@ let rewrite_function_decl ~env
         let approx = E.find_exn env specialised_to in
         match A.check_approx_for_closure approx with
         | Wrong -> map  (* Ignore specialised args that aren't closures. *)
-        | Ok (_value_closure, _approx_var, value_set_of_closures) ->
+        | Ok (_value_closure, _approx_var, _approx_symbol,
+              value_set_of_closures) ->
           Var_within_closure.Map.fold (fun var _approx map ->
               let var = Var_within_closure.unwrap var in
               let param = Variable.rename ~append:"_unboxed_param" var in
@@ -118,7 +119,7 @@ let rewrite_function_decl ~env
                   let approx = E.find_exn env specialised_to in
                   match A.check_approx_for_closure approx with
                   | Wrong -> assert false
-                  | Ok (value_closure, _, _) ->
+                  | Ok (value_closure, _, _, _) ->
                     wrapper_param, value_closure.closure_id
           in
           let binding_var = Variable.rename var in

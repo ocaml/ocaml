@@ -359,6 +359,7 @@ and describe_set_of_closures env (set : Flambda.set_of_closures)
           Closure_id.wrap_map
             (Variable.Map.map (fun _ -> Export_info.Value_unknown)
                set.function_decls.funs);
+        aliased_symbol = None;
       }
     in
     Variable.Map.mapi (fun var
@@ -415,6 +416,7 @@ and describe_set_of_closures env (set : Flambda.set_of_closures)
   { set_of_closures_id = set.function_decls.set_of_closures_id;
     bound_vars = Var_within_closure.wrap_map bound_vars_approx;
     results = Closure_id.wrap_map results;
+    aliased_symbol = None;
   }
 
 (* let describe_constant_defining_value *)
@@ -443,6 +445,7 @@ and describe_set_of_closures env (set : Flambda.set_of_closures)
 
 let describe_constant_defining_value env
     id
+    symbol
     (const:Flambda.constant_defining_value) =
   let local_env = add_empty_env env in
   match const with
@@ -455,7 +458,8 @@ let describe_constant_defining_value env
   | Set_of_closures set_of_closures ->
     let descr =
       Export_info.Value_set_of_closures
-        (describe_set_of_closures local_env set_of_closures)
+        { (describe_set_of_closures local_env set_of_closures) with
+          aliased_symbol = Some symbol }
     in
     record_descr local_env id descr
   | Project_closure (sym, closure_id) -> begin
@@ -463,8 +467,21 @@ let describe_constant_defining_value env
       | Some(Value_set_of_closures set_of_closures) ->
         let descr = Export_info.Value_closure { closure_id = closure_id; set_of_closures } in
         record_descr local_env id descr
-      | _ ->
-        assert false
+      | None ->
+        Misc.fatal_errorf
+          "Cannot project symbol %a to closure_id %a. No available description@."
+          Symbol.print sym
+          Closure_id.print closure_id
+      | Some (Value_closure _) ->
+        Misc.fatal_errorf
+          "Cannot project symbol %a to closure_id %a. closure instead of set of closure@."
+          Symbol.print sym
+          Closure_id.print closure_id
+      | Some _ ->
+        Misc.fatal_errorf
+          "Cannot project symbol %a to closure_id %a. Not a set of closure@."
+          Symbol.print sym
+          Closure_id.print closure_id
     end
 
 let rec describe_program (env:general_env) (program : Flambda.program) =
@@ -472,29 +489,29 @@ let rec describe_program (env:general_env) (program : Flambda.program) =
   | Let_symbol (symbol, constant_defining_value, program) ->
     let id = fresh_id () in
     let env = { env with sym = Symbol.Map.add symbol id env.sym } in
-    describe_constant_defining_value env id constant_defining_value;
+    describe_constant_defining_value env id symbol constant_defining_value;
     describe_program env program
   | Let_rec_symbol (defs, program) ->
     let env, defs =
       List.fold_left (fun ((env:general_env), defs) (symbol, def) ->
           let id = fresh_id () in
           { env with sym = Symbol.Map.add symbol id env.sym },
-          (id, def) :: defs)
+          (id, symbol, def) :: defs)
         (env, []) defs
     in
     (* Project_closure are separated to be handled last. Those are the
        only values that need a description for their argument. *)
     let projects_closure, other_constants =
       List.partition (function
-          | _, Flambda.Project_closure _ -> true
+          | _, _, Flambda.Project_closure _ -> true
           | _ -> false)
         defs
     in
-    List.iter (fun (id, def) ->
-        describe_constant_defining_value env id def)
+    List.iter (fun (id, symbol, def) ->
+        describe_constant_defining_value env id symbol def)
       other_constants;
-    List.iter (fun (id, def) ->
-        describe_constant_defining_value env id def)
+    List.iter (fun (id, symbol, def) ->
+        describe_constant_defining_value env id symbol def)
       projects_closure;
     describe_program env program
   | Import_symbol (_symbol, program) ->

@@ -140,12 +140,12 @@ let value_constptr i = approx (Value_constptr i)
 let value_float f = approx (Value_float f)
 let value_boxed_int bi i = approx (Value_boxed_int (bi,i))
 
-let value_closure ?closure_var ?set_of_closures_var value_set_of_closures
-      closure_id =
+let value_closure ?closure_var ?set_of_closures_var ?set_of_closures_symbol
+      value_set_of_closures closure_id =
   let approx_set_of_closures =
     { descr = Value_set_of_closures value_set_of_closures;
       var = set_of_closures_var;
-      symbol = None;
+      symbol = Misc.may_map (fun s -> s, None) set_of_closures_symbol;
     }
   in
   let value_closure =
@@ -506,7 +506,8 @@ let check_approx_for_set_of_closures t : checked_approx_for_set_of_closures =
 type checked_approx_for_closure_allowing_unresolved =
   | Wrong
   | Unresolved of Symbol.t
-  | Ok of value_closure * Variable.t option * value_set_of_closures
+  | Ok of value_closure * Variable.t option
+          * Symbol.t option * value_set_of_closures
 
 let check_approx_for_closure_allowing_unresolved t
       : checked_approx_for_closure_allowing_unresolved =
@@ -515,8 +516,12 @@ let check_approx_for_closure_allowing_unresolved t
     (* CR mshinwell: not exactly sure yet what to allow here *)
     begin match value_closure.set_of_closures.descr with
     | Value_set_of_closures value_set_of_closures ->
+      let symbol = match value_closure.set_of_closures.symbol with
+        | Some (symbol, None) -> Some symbol
+        | None | Some (_, Some _) -> None
+      in
       Ok (value_closure, value_closure.set_of_closures.var,
-        value_set_of_closures)
+          symbol, value_set_of_closures)
     | Value_unresolved _
     | Value_closure _ | Value_block _ | Value_int _ | Value_char _
     | Value_constptr _ | Value_float _ | Value_boxed_int _ | Value_unknown
@@ -552,12 +557,13 @@ let checked_approx_for_set_of_closures_allowing_unknown_and_unresolved t
 
 type checked_approx_for_closure =
   | Wrong
-  | Ok of value_closure * Variable.t option * value_set_of_closures
+  | Ok of value_closure * Variable.t option
+          * Symbol.t option * value_set_of_closures
 
 let check_approx_for_closure t : checked_approx_for_closure =
   match check_approx_for_closure_allowing_unresolved t with
-  | Ok (value_closure, set_of_closures_var, value_set_of_closures) ->
-    Ok (value_closure, set_of_closures_var, value_set_of_closures)
+  | Ok (value_closure, set_of_closures_var, set_of_closures_symbol, value_set_of_closures) ->
+    Ok (value_closure, set_of_closures_var, set_of_closures_symbol, value_set_of_closures)
   | Wrong | Unresolved _ -> Wrong
 
 let approx_for_bound_var value_set_of_closures var =
