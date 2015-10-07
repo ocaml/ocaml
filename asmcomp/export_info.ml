@@ -49,6 +49,71 @@ and approx =
   | Value_id of Export_id.t
   | Value_symbol of Symbol.t
 
+let equal_approx (a1:approx) (a2:approx) =
+  match a1, a2 with
+  | Value_unknown, Value_unknown ->
+    true
+  | Value_id id1, Value_id id2 ->
+    Export_id.equal id1 id2
+  | Value_symbol s1, Value_symbol s2 ->
+    Symbol.equal s1 s2
+  | (Value_unknown | Value_symbol _ | Value_id _),
+    (Value_unknown | Value_symbol _ | Value_id _) ->
+    false
+
+let equal_array eq a1 a2 =
+  Array.length a1 = Array.length a2 &&
+  try
+    Array.iteri (fun i v1 -> if not (eq a2.(i) v1) then raise Exit) a1;
+    true
+  with Exit -> false
+
+let equal_option eq o1 o2 =
+  match o1, o2 with
+  | None, None -> true
+  | Some v1, Some v2 -> eq v1 v2
+  | Some _, None | None, Some _ -> false
+
+let equal_set_of_closures (s1:value_set_of_closures) (s2:value_set_of_closures) =
+  Set_of_closures_id.equal s1.set_of_closures_id s2.set_of_closures_id &&
+  Var_within_closure.Map.equal equal_approx s1.bound_vars s2.bound_vars &&
+  Closure_id.Map.equal equal_approx s1.results s2.results &&
+  equal_option Symbol.equal s1.aliased_symbol s2.aliased_symbol
+
+let equal_descr (d1:descr) (d2:descr) : bool =
+  match d1, d2 with
+  | Value_block (t1, f1), Value_block (t2, f2) ->
+    Tag.equal t1 t2 && equal_array equal_approx f1 f2
+  | Value_mutable_block (t1, s1), Value_mutable_block (t2, s2) ->
+    Tag.equal t1 t2 &&
+    s1 = s2
+  | Value_int i1, Value_int i2 ->
+    i1 = i2
+  | Value_constptr i1, Value_constptr i2 ->
+    i1 = i2
+  | Value_float f1, Value_float f2 ->
+    f1 = f2
+  | Value_float_array s1, Value_float_array s2 ->
+    s1 = s2
+  | Value_boxed_int (t1, v1), Value_boxed_int (t2, v2) ->
+    Simple_value_approx.equal_boxed_int t1 v1 t2 v2
+  | Value_string s1, Value_string s2 ->
+    s1 = s2
+  | Value_closure c1, Value_closure c2 ->
+    Closure_id.equal c1.closure_id c2.closure_id &&
+    equal_set_of_closures c1.set_of_closures c2.set_of_closures
+  | Value_set_of_closures s1, Value_set_of_closures s2 ->
+    equal_set_of_closures s1 s2
+  | ( Value_block (_, _) | Value_mutable_block (_, _) | Value_int _
+    | Value_constptr _ | Value_float _ |Value_float_array _
+    | Value_boxed_int _ | Value_string _ | Value_closure _
+    | Value_set_of_closures _ ),
+    ( Value_block (_, _) | Value_mutable_block (_, _) | Value_int _
+    | Value_constptr _ | Value_float _ |Value_float_array _
+    | Value_boxed_int _ | Value_string _ | Value_closure _
+    | Value_set_of_closures _ ) ->
+    false
+
 type t = {
   sets_of_closures : Flambda.function_declarations Set_of_closures_id.Map.t;
   closures : Flambda.function_declarations Closure_id.Map.t;

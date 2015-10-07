@@ -217,6 +217,8 @@ val augment_with_symbol_field : t -> Symbol.t -> int -> t
 (** Replace the description within an approximation. *)
 val replace_description : t -> descr -> t
 
+val equal_boxed_int : 'a boxed_int -> 'a -> 'b boxed_int -> 'b -> bool
+
 (* CR mshinwell for pchambart: Add comment describing semantics.  (Maybe
    we should move the comment from the .ml file into here.) *)
 val meet : t -> t -> t
