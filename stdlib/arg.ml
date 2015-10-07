@@ -55,6 +55,12 @@ let rec assoc3 x l =
   | _ :: t -> assoc3 x t
 ;;
 
+let split s =
+  let i = String.index s '=' in
+  let len = String.length s in
+  String.sub s 0 i, String.sub s (i+1) (len-(i+1))
+;;
+
 let make_symlist prefix sep suffix l =
   match l with
   | [] -> "<none>"
@@ -130,60 +136,76 @@ let parse_argv_dynamic ?(current=current) argv speclist anonfun errmsg =
   while !current < l do
     let s = argv.(!current) in
     if String.length s >= 1 && s.[0] = '-' then begin
-      let action =
-        try assoc3 s !speclist
-        with Not_found -> stop (Unknown s)
+      let action, follow =
+        try assoc3 s !speclist, None
+        with Not_found ->
+          try
+            let keyword, arg = split s in
+            assoc3 keyword !speclist, Some arg
+          with Not_found -> stop (Unknown s)
+      in
+      let no_arg () =
+        match follow with
+        | None -> ()
+        | Some arg -> stop (Wrong (s, arg, "no argument")) in
+      let get_arg () =
+        match follow with
+        | None ->
+          if !current + 1 < l then argv.(!current + 1)
+          else stop (Missing s)
+        | Some arg -> arg
       in
       begin try
         let rec treat_action = function
-        | Unit f -> f ();
-        | Bool f when !current + 1 < l ->
-            let arg = argv.(!current + 1) in
+        | Unit f -> no_arg (); f ();
+        | Bool f ->
+            let arg = get_arg () in
             begin try f (bool_of_string arg)
             with Invalid_argument "bool_of_string" ->
                    raise (Stop (Wrong (s, arg, "a boolean")))
             end;
             incr current;
-        | Set r -> r := true;
-        | Clear r -> r := false;
-        | String f when !current + 1 < l ->
-            f argv.(!current + 1);
+        | Set r -> no_arg (); r := true;
+        | Clear r -> no_arg (); r := false;
+        | String f ->
+            let arg = get_arg () in
+            f arg;
             incr current;
-        | Symbol (symb, f) when !current + 1 < l ->
-            let arg = argv.(!current + 1) in
+        | Symbol (symb, f) ->
+            let arg = get_arg () in
             if List.mem arg symb then begin
-              f argv.(!current + 1);
+              f arg;
               incr current;
             end else begin
               raise (Stop (Wrong (s, arg, "one of: "
                                           ^ (make_symlist "" " " "" symb))))
             end
-        | Set_string r when !current + 1 < l ->
-            r := argv.(!current + 1);
+        | Set_string r ->
+            r := get_arg ();
             incr current;
-        | Int f when !current + 1 < l ->
-            let arg = argv.(!current + 1) in
+        | Int f ->
+            let arg = get_arg () in
             begin try f (int_of_string arg)
             with Failure "int_of_string" ->
                    raise (Stop (Wrong (s, arg, "an integer")))
             end;
             incr current;
-        | Set_int r when !current + 1 < l ->
-            let arg = argv.(!current + 1) in
+        | Set_int r ->
+            let arg = get_arg () in
             begin try r := (int_of_string arg)
             with Failure "int_of_string" ->
                    raise (Stop (Wrong (s, arg, "an integer")))
             end;
             incr current;
-        | Float f when !current + 1 < l ->
-            let arg = argv.(!current + 1) in
+        | Float f ->
+            let arg = get_arg () in
             begin try f (float_of_string arg);
             with Failure "float_of_string" ->
                    raise (Stop (Wrong (s, arg, "a float")))
             end;
             incr current;
-        | Set_float r when !current + 1 < l ->
-            let arg = argv.(!current + 1) in
+        | Set_float r ->
+            let arg = get_arg () in
             begin try r := (float_of_string arg);
             with Failure "float_of_string" ->
                    raise (Stop (Wrong (s, arg, "a float")))
@@ -196,7 +218,6 @@ let parse_argv_dynamic ?(current=current) argv speclist anonfun errmsg =
               f argv.(!current + 1);
               incr current;
             done;
-        | _ -> raise (Stop (Missing s))
         in
         treat_action action
       with Bad m -> stop (Message m);
