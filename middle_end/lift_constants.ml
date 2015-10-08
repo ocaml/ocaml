@@ -325,10 +325,7 @@ let find_original_set_of_closure
     | Symbol s ->
       match Symbol.Map.find s project_closure_map with
       | exception Not_found ->
-        Format.eprintf "symbol alias %a@."
-          Symbol.print s;
-        (* Symbol are necessarilly set_of_closures here *)
-        s
+        assert false
       | s -> s
   in
   loop var
