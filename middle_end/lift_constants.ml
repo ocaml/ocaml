@@ -760,7 +760,7 @@ let lift_constants program ~backend =
     let var_map = Variable.Tbl.to_map var_to_definition_tbl in
     let initialize_symbol_map =
       Symbol.Tbl.to_map initialize_symbol_to_definition_tbl in
-    let sym_map = Symbol.Map.empty in (* TODO: program toplevel *)
+    let sym_map = Flambda_utils.all_lifted_constants_as_map program in
     let var_to_sym_map = Symbol.Map.empty (* Variable.Tbl.to_map var_to_symbol_tbl *) in
     Alias_analysis.second_take var_map initialize_symbol_map sym_map var_to_sym_map
   in
