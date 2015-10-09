@@ -798,21 +798,21 @@ class latex =
           self#latex_of_module_parameter fmt father p;
           self#latex_of_module_kind fmt father k
       | Module_apply (k1, k2) ->
-          (* TODO: l'application n'est pas correcte dans un .mli.
-             Que faire ? -> afficher le module_type du typedtree  *)
+          (* TODO: application is not correct in a .mli.
+             Fix? -> print the typedtree module_type *)
           self#latex_of_module_kind fmt father k1;
           self#latex_of_text fmt [Code "("];
           self#latex_of_module_kind fmt father k2;
           self#latex_of_text fmt [Code ")"]
       | Module_with (k, s) ->
-          (* TODO: a modifier quand Module_with sera plus detaille *)
+          (* TODO: modify when Module_with will be more detailled *)
           self#latex_of_module_type_kind fmt father k;
           self#latex_of_text fmt
             [ Code " ";
               Code (self#relative_idents father s) ;
             ]
       | Module_constraint (k, tk) ->
-          (* TODO: on affiche quoi ? *)
+          (* TODO: what should we print? *)
           self#latex_of_module_kind fmt father k
       | Module_typeof s ->
           self#latex_of_text fmt
@@ -834,7 +834,7 @@ class latex =
           self#latex_of_text fmt [Latex "\\end{ocamldocobjectend}\n"]
 
       | Class_apply capp ->
-          (* TODO: afficher le type final a partir du typedtree *)
+          (* TODO: print final type from typedtree *)
           self#latex_of_text fmt [Raw "class application not handled yet"]
 
       | Class_constr cco ->

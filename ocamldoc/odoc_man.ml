@@ -1284,7 +1284,7 @@ class man =
               self#man_of_module_type_body b mt
 
           | Res_section _ ->
-              (* normalement on ne peut pas avoir de module ici. *)
+              (* normaly, we cannot have modules here. *)
               ()
         in
         List.iter f l;

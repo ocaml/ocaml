@@ -173,7 +173,7 @@ text_element:
 ;
 
 list:
-| string { [] (* A VOIR : un test pour voir qu'il n'y a que des blancs *) }
+| string { [] (* TODO: a test to check that there is only space characters *) }
 | string list { $2 }
 | list string  { $1 }
 | item { [ $1 ] }
