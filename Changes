@@ -102,6 +102,8 @@ Standard library:
   (Guillaume Bury)
 - GPR#239: remove type-unsafe code from Stream
   (Pierre Chambart, review by Gabriel Scherer and Jeremy Yallop)
+- GPR#250: Check for negative start element in Array.sub
+  (report and fix by Jeremy Yallop)
 
 Type system:
 - PR#5545: Type annotations on methods cannot control the choice of abbreviation
@@ -197,8 +199,8 @@ Bug fixes:
   (Pierre Chambart, Mark Shinwell)
 - GPR#249: fix a few hardcoded ar commands
   (Daniel Bünzli)
-- GPR#250: Check for negative start element in Array.sub
-  (report and fix by Jeremy Yallop)
+- GPR#251: fix cross-compilation with ocamldoc enabled
+  (whitequark)
 
 Features wishes:
 - PR#4714: List.cons

@@ -31,7 +31,11 @@ OCAMLPP=-pp './remove_DEBUG'
 MKDIR=mkdir -p
 CP=cp -f
 OCAMLDOC=ocamldoc
-OCAMLDOC_RUN=sh ./runocamldoc $(SUPPORTS_SHARED_LIBRARIES)
+ifeq ($(TARGET) & $(SUPPORTS_SHARED_LIBRARIES),$(HOST) & true)
+OCAMLDOC_RUN=$(CAMLRUN) -I ../otherlibs/unix -I ../otherlibs/str $(OCAMLDOC)
+else
+OCAMLDOC_RUN=$(CAMLRUN) $(OCAMLDOC)
+endif
 OCAMLDOC_OPT=$(OCAMLDOC).opt
 OCAMLDOC_LIBCMA=odoc_info.cma
 OCAMLDOC_LIBCMI=odoc_info.cmi
