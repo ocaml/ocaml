@@ -70,7 +70,7 @@ all-shared: libasmrun_pic.a libasmrun_shared.so
 
 libasmrun_pic.a: $(PICOBJS)
 	rm -f libasmrun_pic.a
-	ar rc libasmrun_pic.a $(PICOBJS)
+	$(ARCMD) rc libasmrun_pic.a $(PICOBJS)
 	$(RANLIB) libasmrun_pic.a
 
 libasmrun_shared.so: $(PICOBJS)
