@@ -552,22 +552,26 @@ echo "#define SIZEOF_LONGLONG $5" >> m.h
 
 # Determine endianness
 
-sh ./runtest endian.c
-case $? in
-  0) inf "This is a big-endian architecture."
-     echo "#define ARCH_BIG_ENDIAN" >> m.h;;
-  1) inf "This is a little-endian architecture."
-     echo "#undef ARCH_BIG_ENDIAN" >> m.h;;
-  2) err "This architecture seems to be neither big endian nor little" \
-         "endian.\n OCaml won't run on this architecture.";;
-  *) case $target in
+ret=`sh ./preprocesstest endian.c`
+if test "$?" -eq 0; then
+  set $ret
+  case "$1" in
+    0) inf "This is a big-endian architecture."
+       echo "#define ARCH_BIG_ENDIAN" >> m.h;;
+    1) inf "This is a little-endian architecture."
+       echo "#undef ARCH_BIG_ENDIAN" >> m.h;;
+    *) err "This architecture seems to be neither big endian nor little" \
+           "endian.\n OCaml won't run on this architecture.";;
+  esac
+else
+  case $target in
        *-*-mingw*) inf "This is a little-endian architecture."
                    echo "#undef ARCH_BIG_ENDIAN" >> m.h;;
        *) wrn "Something went wrong during endianness determination.\n" \
               "You will have to figure out endianness yourself\n" \
               "(option ARCH_BIG_ENDIAN in m.h).";;
-     esac;;
-esac
+     esac
+fi
 
 # Determine alignment constraints
 

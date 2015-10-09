@@ -1,40 +1,26 @@
-/***********************************************************************/
-/*                                                                     */
-/*                                OCaml                                */
-/*                                                                     */
-/*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         */
-/*                                                                     */
-/*  Copyright 1996 Institut National de Recherche en Informatique et   */
-/*  en Automatique.  All rights reserved.  This file is distributed    */
-/*  under the terms of the GNU Library General Public License, with    */
-/*  the special exception on linking described in file ../../LICENSE.  */
-/*                                                                     */
-/***********************************************************************/
-
-#include <string.h>
-#include "m.h"
-
-#ifndef ARCH_SIXTYFOUR
-long intval = 0x41424344L;
-char * bigendian = "ABCD";
-char * littleendian = "DCBA";
-#else
-long intval = 0x4142434445464748L;
-char * bigendian = "ABCDEFGH";
-char * littleendian = "HGFEDCBA";
+// Try to find the right includes
+#if defined(__linux__) || defined(__CYGWIN__)
+#  define _BSD_SOURCE
+#  include <endian.h>
+#elif defined(__APPLE__)
+#  include <libkern/OSByteOrder.h>
+#elif defined(BSD)
+#   include <sys/endian.h>
+#elif defined(_WIN16) || defined(_WIN32) || defined(_WIN64)
+#  include <winsock2.h>
+#  include <sys/param.h>
 #endif
 
-int main(void)
-{
-  long n[2];
-  char * p;
-
-  n[0] = intval;
-  n[1] = 0;
-  p = (char *) n;
-  if (strcmp(p, bigendian) == 0)
-    return 0;
-  if (strcmp(p, littleendian) == 0)
-    return 1;
-  return 2;
-}
+#if defined(__BIG_ENDIAN__) || \
+  defined(__BYTE_ORDER__) && __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__ || \
+  defined(__BYTE_ORDER) && __BYTE_ORDER == __BIG_ENDIAN || \
+  defined(BYTE_ORDER) && BYTE_ORDER == BIG_ENDIAN
+0
+#elif defined(__LITTLE_ENDIAN__) || \
+  defined(__BYTE_ORDER__) && __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__ || \
+  defined(__BYTE_ORDER) && __BYTE_ORDER == __LITTLE_ENDIAN || \
+  defined(BYTE_ORDER) && BYTE_ORDER == LITTLE_ENDIAN
+1
+#else
+#  error Cannot detect endianess of target
+#endif
