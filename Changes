@@ -100,6 +100,8 @@ Standard library:
   (Maxence Guesdon)
 - GPR#216: add the missing POSIX.1-2001 signals in Sys
   (Guillaume Bury)
+- GPR#239: remove type-unsafe code from Stream
+  (Pierre Chambart, review by Gabriel Scherer and Jeremy Yallop)
 
 Type system:
 - PR#5545: Type annotations on methods cannot control the choice of abbreviation
