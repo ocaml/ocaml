@@ -2891,7 +2891,7 @@ and compile_no_test divide up_ctx repr partial ctx to_match =
    and change the subject values.
 LM:
    Lazy pattern was PR #5992, initial patch by lwp25.
-   I have  generalized teh patch, so as to also find mutable fields.
+   I have  generalized the patch, so as to also find mutable fields.
 *)
 
 let find_in_pat pred =
