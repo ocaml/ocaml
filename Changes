@@ -253,6 +253,8 @@ Features wishes:
   (François Bobot, Gabriel Scherer, review by Xavier Leroy)
 - GPR#245: remove a few remaining French comments
   (user 'Octachron')
+- GPR#252: improve build instructions in MSVC Windows README
+  (Philip Daian)
 
 OCaml 4.02.3 (27 Jul 2015):
 ---------------------------
