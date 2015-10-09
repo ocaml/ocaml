@@ -210,7 +210,7 @@ let mult_big_int bi1 bi2 =
            else (ignore (mult_nat res 0 size_res (bi1.abs_value) 0 size_bi1
                            (bi2.abs_value) 0 size_bi2);res) }
 
-(* (quotient, rest) of the euclidian division of 2 big_int *)
+(* (quotient, remainder ) of the euclidian division of 2 big_int *)
 let quomod_big_int bi1 bi2 =
  if bi2.sign = 0 then raise Division_by_zero
  else
@@ -218,8 +218,8 @@ let quomod_big_int bi1 bi2 =
   and size_bi2 = num_digits_big_int bi2 in
    match compare_nat (bi1.abs_value) 0 size_bi1
                      (bi2.abs_value) 0 size_bi2 with
-      -1 -> (* 1/2  -> 0, reste 1, -1/2  -> -1, reste 1 *)
-            (* 1/-2 -> 0, reste 1, -1/-2 -> 1, reste 1 *)
+      -1 -> (* 1/2  -> 0, remains 1, -1/2  -> -1, remains 1 *)
+            (* 1/-2 -> 0, remains 1, -1/-2 -> 1, remains 1 *)
              if bi1.sign >= 0 then
                (big_int_of_int 0, bi1)
              else if bi2.sign >= 0 then

@@ -183,18 +183,18 @@ let gcd_nat nat1 off1 len1 nat2 off2 len2 =
       !real_len1
   end
 
-(* Racine carrée entière par la méthode de Newton (entière par défaut). *)
+(* Integer square root using newton method (nearest integer by default) *)
 
-(* Théorème: la suite xn+1 = (xn + a/xn) / 2 converge vers la racine *)
-(* carrée entière de a par défaut, si on part d'une valeur x0 *)
-(* strictement plus grande que la racine de a, sauf quand a est un *)
-(* carré - 1, cas auquel la suite alterne entre la racine par défaut *)
-(* et par excès. Dans tous les cas, le dernier terme de la partie *)
-(* strictement décroissante de la suite est le résultat cherché. *)
+(* Theorem: the sequence x_{n+1} = ( x_n + a/x_n )/2 converges toward
+   the integer square root (by default) of a for any starting value x_0
+   strictly greater than the square root of a except if a + 1 is a
+   perfect square. In this situation, the sequence alternates between
+   the excess and default integer square root. In any case, the last
+   strictly decreasing term is the expected result *)
 
 let sqrt_nat rad off len =
  let len = num_digits_nat rad off len in
- (* Copie de travail du radicande *)
+ (* Working copy of radicand *)
  let len_parity = len mod 2 in
  let rad_len = len + 1 + len_parity in
  let rad =
@@ -205,17 +205,18 @@ let sqrt_nat rad off len =
    res in
  let cand_len = (len + 1) / 2 in  (* ceiling len / 2 *)
  let cand_rest = rad_len - cand_len in
- (* Racine carrée supposée cand = "|FFFF .... |" *)
+ (* Candidate square root cand = "|FFFF .... |" *)
  let cand = make_nat cand_len in
- (* Amélioration de la racine de départ:
-    on calcule nbb le nombre de bits significatifs du premier digit du candidat
-    (la moitié du nombre de bits significatifs dans les deux premiers
-     digits du radicande étendu à une longueur paire).
-    shift_cand est word_size - nbb *)
+ (* Improve starting square root:
+    We compute nbb, the number of significant bits of the first digit of the 
+    candidate
+    (half of the number of significant bits in the first two digits
+     of the radicand extended to an even length).
+    shift_cand is word_size - nbb *)
  let shift_cand =
    ((num_leading_zero_bits_in_digit rad (len-1)) +
      Sys.word_size * len_parity) / 2 in
- (* Tous les bits du radicande sont à 0, on rend 0. *)
+ (* All radicand bits are zeroed, we give back 0. *)
  if shift_cand = Sys.word_size then cand else
  begin
   complement_nat cand 0 cand_len;
@@ -227,7 +228,7 @@ let sqrt_nat rad off len =
    blit_nat next_cand 0 rad 0 rad_len;
            (* next_cand <- next_cand / cand *)
    div_nat next_cand 0 rad_len cand 0 cand_len;
-           (* next_cand (poids fort) <- next_cand (poids fort) + cand,
+           (* next_cand (strong weight) <- next_cand (strong weight) + cand,
               i.e. next_cand <- cand + rad / cand *)
    ignore (add_nat next_cand cand_len cand_rest cand 0 cand_len 0);
         (* next_cand <- next_cand / 2 *)
@@ -296,7 +297,13 @@ let raw_string_of_digit nat off =
 
 (* XL: suppression de string_of_digit et de sys_string_of_digit.
    La copie est de toute facon faite dans string_of_nat, qui est le
-   seul point d entree public dans ce code. *)
+   seul point d entree public dans ce code.
+
+   |   Deletion of string_of_digit and sys_string_of_digit.
+   The copy is already done in string_of_nat which is the only
+   public entry point in this code
+
+*)
 
 (******
 let sys_string_of_digit nat off =
@@ -339,9 +346,9 @@ let make_power_base base power_base =
   (!i - 2, !j)
 
 (*
-   int_to_string place la representation de l entier int en base base
-   dans la chaine s en le rangeant de la fin indiquee par pos vers le
-   debut, sur times places et affecte a pos sa nouvelle valeur.
+   int_to_string places the representation of the integer int in base 'base'
+   in the string s by starting from the end position pos and going towards
+   the start, for 'times' places and updates the value of pos.
 *)
 let int_to_string int s pos_ref base times =
   let i = ref int
@@ -406,8 +413,9 @@ let power_base_int base i =
     --                               --
 *)
 
-(* XL: ai specialise le code d origine a length_of_digit = 32. *)
-(* Puis suppression (inutile?) *)
+(* XL: ai specialise le code d origine a length_of_digit = 32.
+  |    the original code have been specialized to a length_of_digit = 32. *)
+(* Now deleted (useless?) *)
 
 (******
 let num_digits_max_vector =
@@ -516,8 +524,8 @@ let base_digit_of_char c base =
     else failwith "invalid digit"
 
 (*
-   La sous-chaine (s, off, len) represente un nat en base base que
-   on determine ici
+   The substring (s, off, len) represents a nat in base 'base' which is
+determined here
 *)
 let sys_nat_of_string base s off len =
   let power_base = make_nat (succ length_of_digit) in
@@ -535,8 +543,8 @@ let sys_nat_of_string base s off len =
 
   for i = off to bound do
     (*
-       on lit pint (au maximum) chiffres, on en fait un int
-       et on l integre au nombre
+       we read (at most) pint digits, we transform them in a int
+       and integrate it to the number
      *)
       let c = String.get s i  in
         begin match c with
@@ -564,7 +572,7 @@ let sys_nat_of_string base s off len =
            end
   done;
   (*
-     On recadre le nat
+     We reframe nat
   *)
   let nat = create_nat !current_len in
     blit_nat nat 0 nat1 0 !current_len;

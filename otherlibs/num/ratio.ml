@@ -546,7 +546,9 @@ let string_of_ratio r =
     else string_of_big_int r.numerator ^ "/" ^ string_of_big_int r.denominator
 
 (* XL: j'ai puissamment simplifie "ratio_of_string" en virant la notation
-   scientifique. *)
+   scientifique.
+  | I have strongly simplified "ratio_of_string" by deleting scientific notation
+*)
 
 let ratio_of_string s =
   try
