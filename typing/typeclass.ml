@@ -1735,7 +1735,7 @@ let report_error env ppf = function
       fprintf ppf "This argument cannot be applied with%s" (mark_label l)
   | Pattern_type_clash ty ->
       (* XXX Trace *)
-      (* XXX Revoir message d'erreur *)
+      (* XXX Revoir message d'erreur | Improve error message *)
       Printtyp.reset_and_mark_loops ty;
       fprintf ppf "@[%s@ %a@]"
         "This pattern cannot match self: it only matches values of type"
@@ -1747,7 +1747,7 @@ let report_error env ppf = function
       fprintf ppf "@[The class type@ %a@ is not yet completely defined@]"
       Printtyp.longident cl
   | Abbrev_type_clash (abbrev, actual, expected) ->
-      (* XXX Afficher une trace ? *)
+      (* XXX Afficher une trace ? | Print a trace? *)
       Printtyp.reset_and_mark_loops_list [abbrev; actual; expected];
       fprintf ppf "@[The abbreviation@ %a@ expands to type@ %a@ \
        but is used with type@ %a@]"
