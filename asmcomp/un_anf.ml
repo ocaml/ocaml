@@ -366,6 +366,7 @@ let primitive_moveable (prim : Lambda.primitive)
 *)
 
 type env = {
+  rewrite_mutable_aliases : bool;
   definitions : Clambda.ulambda Ident.Map.t;
   valid_mutable_aliases_map : Ident.Set.t Ident.Map.t;
   valid_mutable_aliases_revmap : Ident.t Ident.Map.t;
@@ -408,7 +409,9 @@ let check_set_equality set1 set2 =
 let rec un_anf_and_moveable ident_info (env:env) (clam : Clambda.ulambda)
       : Clambda.ulambda * Ident.Set.t * moveable =
   match clam with
-  | Uvar id when Ident.Map.mem id env.valid_mutable_aliases_revmap ->
+  | Uvar id when
+      env.rewrite_mutable_aliases &&
+      Ident.Map.mem id env.valid_mutable_aliases_revmap ->
     let alias = Ident.Map.find id env.valid_mutable_aliases_revmap in
     un_anf_and_moveable ident_info env (Clambda.Uvar alias)
   | Uvar id ->
@@ -664,24 +667,36 @@ and un_anf_array ident_info env clams : Clambda.ulambda array * Ident.Set.t =
   let l, assigned = un_anf_list ident_info env (Array.to_list clams) in
   Array.of_list l, assigned
 
-let empty_env =
-  { definitions = Ident.Map.empty;
+let empty_env rewrite_mutable_aliases =
+  { rewrite_mutable_aliases;
+    definitions = Ident.Map.empty;
     valid_mutable_aliases_map = Ident.Map.empty;
     valid_mutable_aliases_revmap = Ident.Map.empty;
   }
 
 let apply clam =
-  let ident_info = make_ident_info clam in
-  let clam, assigned = un_anf ident_info empty_env clam in
-  check_set_equality assigned (assigned_idents clam);
 
-  (* This needs to be run a second time to ensure that dead variables
-     introduced by substitution of mutable variable access are
-     removed. This is important as it could introduce useless
-     allocation of boxed values otherwise. *)
-  let ident_info = make_ident_info clam in
-  let clam, assigned = un_anf ident_info empty_env clam in
-  check_set_equality assigned (assigned_idents clam);
+  let pass rewrite_mutable_aliases clam =
+    let ident_info = make_ident_info clam in
+    let clam, assigned =
+      un_anf ident_info (empty_env rewrite_mutable_aliases) clam
+    in
+    check_set_equality assigned (assigned_idents clam);
+    clam
+  in
+
+  (* The first pass simplifies pure expressions as much as possible.
+     It does not subsitute mutable variable accesses to keep as many
+     expression pure as possible.
+
+     The second one rewrite mutable accesses.
+
+     The third one eliminate dead variables introduced by the second
+     one. *)
+
+  let clam = pass false clam in
+  let clam = pass true clam in
+  let clam = pass false clam in
 
   if !Clflags.dump_clambda then begin
     Format.eprintf "@.un-anf:@ %a@." Printclambda.clambda clam
