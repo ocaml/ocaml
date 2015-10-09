@@ -243,6 +243,8 @@ Features wishes:
   (Bernhard Schommer, Gabriel Scherer, report by Alain Frisch)
 - GPR#189: Added .dylib and .so as extensions for ocamlmklib
   (Edgar Aroutiounian, Peter Zotov)
+- GPR#237: a CONTRIBUTING document
+  (François Bobot, Gabriel Scherer, review by Xavier Leroy)
 
 OCaml 4.02.3 (27 Jul 2015):
 ---------------------------
