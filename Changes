@@ -247,6 +247,8 @@ Features wishes:
   (Edgar Aroutiounian, Peter Zotov)
 - GPR#237: a CONTRIBUTING document
   (François Bobot, Gabriel Scherer, review by Xavier Leroy)
+- GPR#245: remove a few remaining French comments
+  (user 'Octachron')
 
 OCaml 4.02.3 (27 Jul 2015):
 ---------------------------
