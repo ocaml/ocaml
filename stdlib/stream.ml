@@ -15,8 +15,8 @@
    the empty stream. This is type safe because the empty stream is never
    patched. *)
 
-type 'a t = 'a data' option
-and 'a data' = { mutable count : int; mutable data : 'a data }
+type 'a t = 'a cell option
+and 'a cell = { mutable count : int; mutable data : 'a data }
 and 'a data =
     Sempty
   | Scons of 'a * 'a data
@@ -72,7 +72,7 @@ let rec get_data : type v. int -> v data -> v data = fun count d -> match d with
  | Slazy f -> get_data count (Lazy.force f)
 ;;
 
-let rec peek_data : type v. v data' -> v option = fun s ->
+let rec peek_data : type v. v cell -> v option = fun s ->
  (* consult the first item of s *)
  match s.data with
    Sempty -> None
@@ -97,7 +97,7 @@ let peek = function
   | Some s -> peek_data s
 ;;
 
-let rec junk_data : type v. v data' -> unit = fun s ->
+let rec junk_data : type v. v cell -> unit = fun s ->
   match s.data with
     Scons (_, d) -> s.count <- (succ s.count); s.data <- d
   | Sgen ({curr = Some _} as g) -> s.count <- (succ s.count); g.curr <- None
