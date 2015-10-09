@@ -215,7 +215,9 @@ module Scanning : SCANNING = struct
   ;;
 
   let char_count ib =
-    if ib.ic_current_char_is_valid then ib.ic_char_count - 1 else ib.ic_char_count
+    if ib.ic_current_char_is_valid
+    then ib.ic_char_count - 1
+    else ib.ic_char_count
   ;;
 
   let line_count ib = ib.ic_line_count;;
@@ -413,7 +415,7 @@ module Scanning : SCANNING = struct
       Memo.fold
         (fun ib opt ->
          match opt with
-         | None -> if ib.ic_input_name == ic_name then Some ib else opt
+         | None -> if ib.ic_input_name = ic_name then Some ib else opt
          | opt -> opt)
         memo_table None in
     match ib_option with

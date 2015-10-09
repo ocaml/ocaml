@@ -213,9 +213,9 @@ let test_hwb bdd vars =
 
 let main () =
   let n =
-    if Array.length Sys.argv >= 2 then int_of_string Sys.argv.(1) else 22 in
+    if Array.length Sys.argv >= 2 then int_of_string Sys.argv.(1) else 20 in
   let ntests =
-    if Array.length Sys.argv >= 3 then int_of_string Sys.argv.(2) else 100 in
+    if Array.length Sys.argv >= 3 then int_of_string Sys.argv.(2) else 10 in
   let bdd = hwb n in
   let succeeded = ref true in
   for i = 1 to ntests do

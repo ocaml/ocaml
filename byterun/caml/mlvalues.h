@@ -302,4 +302,6 @@ CAMLextern value caml_set_oo_id(value obj);
 }
 #endif
 
+extern intnat caml_stat_top_heap_wsz;
+
 #endif /* CAML_MLVALUES_H */

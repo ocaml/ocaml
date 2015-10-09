@@ -326,10 +326,6 @@ Libraries:
 - PR#6834: Add Obj.{first,last}_non_constant_constructor_tag
   (Mark Shinwell, request by Gabriel Scherer)
 
-Libraries:
-- PR#6285: Add support for nanosecond precision in Unix.stat()
-  (Jérémie Dimino, report by user 'gfxmonk')
-
 Runtime:
 - PR#6078: Release the runtime system when calling caml_dlopen
   (Jérémie Dimino)
@@ -504,8 +500,6 @@ Feature wishes:
   (Christophe Troestler, review by Damien Doligez)
 - GPR#171: allow custom warning printers / catchers
   (Benjamin Canou, review by Damien Doligez)
-- Misplaced assertion in major_gc.c for no-naked-pointers mode
-  (Stephen Dolan, Mark Shinwell)
 - GPR#191: Making gc.h and some part of memory.h public
   (Thomas Refis)
 
@@ -517,6 +511,7 @@ OCaml 4.02.1 (14 Oct 2014):
 Standard library:
 * Add optional argument ?limit to Arg.align.
 
+Bug Fixes:
 - PR#4099: Bug in Makefile.nt: won't stop on error
   (George Necula)
 - PR#6181: Improve MSVC build

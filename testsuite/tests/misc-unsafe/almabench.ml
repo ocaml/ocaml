@@ -312,6 +312,7 @@ let _ =
     Printf.printf "%d %.2f %.2f\n%!" p position.(0) position.(1)
   done;
   (* Benchmark *)
+(**
   for i = 0 to test_loops - 1 do
     jd.(0) <- j2000;
     jd.(1) <- 0.0;
@@ -323,3 +324,4 @@ let _ =
       done
     done
   done
+**)

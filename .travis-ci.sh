@@ -12,7 +12,7 @@
 
 case $XARCH in
 i386)
-  ./configure
+  myconfigure
   make world.opt
   sudo make install
   (cd testsuite && make all)
