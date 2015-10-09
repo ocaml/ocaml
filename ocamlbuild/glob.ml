@@ -74,8 +74,8 @@ module NFA =
         | QEPSILON -> epsilons := (q1,q2) :: !epsilons; q1
         | QCLASS cl -> transitions := (q1,cl,q2) :: !transitions; q1
       in
-      (* Construit les transitions correspondant au motif donne et arrivant
-       * sur l'etat qf.  Retourne l'etat d'origine. *)
+      (* Build the transitions corresponding to the given pattern and arriving
+       * on state qf. Return the original state. *)
       let rec loop qf = function
         | Epsilon  -> qf
         | Word u   ->

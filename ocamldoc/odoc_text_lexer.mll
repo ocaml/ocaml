@@ -20,16 +20,16 @@ let char_number = ref 0
 
 let string_buffer = Buffer.create 32
 
-(** Fonction de remise a zero de la chaine de caracteres tampon *)
+(** Reset the buffer *)
 let reset_string_buffer () = Buffer.reset string_buffer
 
-(** Fonction d'ajout d'un caractere dans la chaine de caracteres tampon *)
-let ajout_char_string = Buffer.add_char string_buffer
+(** Add a character to the buffer *)
+let add_char_string = Buffer.add_char string_buffer
 
 (** Add a string to the buffer. *)
-let ajout_string = Buffer.add_string string_buffer
+let add_string = Buffer.add_string string_buffer
 
-let lecture_string () = Buffer.contents string_buffer
+let read_string () = Buffer.contents string_buffer
 
 
 (** the variable which will contain the description string.

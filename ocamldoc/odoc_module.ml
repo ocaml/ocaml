@@ -245,7 +245,7 @@ let rec module_elements ?(trans=true) m =
           }
     | Module_constraint (k, tk) ->
         print_DEBUG "Odoc_module.module_element: Module_constraint";
-      (* A VOIR : utiliser k ou tk ? *)
+      (* FIXME : use k or tk ? *)
         module_elements ~trans: trans
           { m_name = "" ;
             m_info = None ;

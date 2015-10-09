@@ -475,7 +475,7 @@ module Analyser =
 
         | (Parsetree.Pctf_constraint (_, _)) ->
             (* of (core_type * core_type) *)
-            (* A VOIR : cela correspond aux contraintes, non ? on ne les garde pas pour l'instant *)
+            (* FIXME: this corresponds to constraints, isn't it? We don't keep them for now *)
             let (comment_opt, eles_comments) = get_comments_in_class last_pos loc.Location.loc_start.Lexing.pos_cnum in
             let (inher_l, eles) = f loc.Location.loc_end.Lexing.pos_cnum q in
             (inher_l, eles_comments @ eles)
@@ -844,7 +844,7 @@ module Analyser =
             let (maybe_more, types) = f ~first: true 0 pos_start_ele name_type_decl_list in
             (maybe_more, extended_env, types)
 
-        | Parsetree.Psig_open _ -> (* A VOIR *)
+        | Parsetree.Psig_open _ -> (* FIXME *)
             let ele_comments = match comment_opt with
               None -> []
             | Some i ->
@@ -895,7 +895,7 @@ module Analyser =
             new_module.m_info <- merge_infos new_module.m_info info_after_opt ;
             let new_env = Odoc_env.add_module env new_module.m_name in
             let new_env2 =
-              match new_module.m_type with (* A VOIR : cela peut-il etre Tmty_ident ? dans ce cas, on aurait pas la signature *)
+              match new_module.m_type with (* FIXME : can this be a Tmty_ident? in this case, we would'nt have the signature *)
                 Types.Mty_signature s -> Odoc_env.add_signature new_env new_module.m_name ~rel: (Name.simple new_module.m_name) s
               | _ -> new_env
             in
@@ -915,7 +915,7 @@ module Analyser =
                       raise (Failure (Odoc_messages.module_not_found current_module_name name))
                   in
                   match sig_module_type with
-                    (* A VOIR : cela peut-il etre Tmty_ident ? dans ce cas, on aurait pas la signature *)
+                    (* FIXME : can this be a Tmty_ident? in this case, we would'nt have the signature *)
                     Types.Mty_signature s ->
                       Odoc_env.add_signature e complete_name ~rel: name s
                   | _ ->
@@ -1030,7 +1030,7 @@ module Analyser =
             mt.mt_info <- merge_infos mt.mt_info info_after_opt ;
             let new_env = Odoc_env.add_module_type env mt.mt_name in
             let new_env2 =
-              match sig_mtype with (* A VOIR : cela peut-il etre Tmty_ident ? dans ce cas, on aurait pas la signature *)
+              match sig_mtype with (* FIXME : can this be a Tmty_ident? in this case, we would'nt have the signature *)
                 Some (Types.Mty_signature s) -> Odoc_env.add_signature new_env mt.mt_name ~rel: (Name.simple mt.mt_name) s
               | _ -> new_env
             in
@@ -1064,7 +1064,7 @@ module Analyser =
                 im_info = comment_opt;
               }
             in
-            (0, env, [ Element_included_module im ]) (* A VOIR : etendre l'environnement ? avec quoi ? *)
+            (0, env, [ Element_included_module im ]) (* FIXME : extend the environment? How? *)
 
         | Parsetree.Psig_class class_description_list ->
             (* we start by extending the environment *)
@@ -1227,7 +1227,7 @@ module Analyser =
             match sig_module_type with
               Types.Mty_ident path -> Name.from_path path
             | _ -> Name.from_longident longident.txt
-              (* A VOIR cela arrive quand on fait module type F : functor ... -> Toto, Toto n'est pas un ident mais une structure *)
+              (* FIXME this happens for module type F : functor ... -> Toto, Toto is not an ident but a structure *)
           in
           Module_type_alias { mta_name = Odoc_env.full_module_type_name env name ;
                               mta_module = None }
@@ -1434,8 +1434,8 @@ module Analyser =
           ([], Class_structure (inher_l, ele))
 
       | (Parsetree.Pcty_arrow (parse_label, _, pclass_type), Types.Cty_arrow (label, type_expr, class_type)) ->
-          (* label = string. Dans les signatures, pas de nom de parametres a l'interieur des tuples *)
-          (* si label = "", pas de label. ici on a l'information pour savoir si on a un label explicite. *)
+          (* label = string. In signature, there is no parameter names inside tuples *)
+          (* if label = "", no label . Here we have the information to determine if a label is explicit or not. *)
           if parse_label = label then
             (
              let new_param = Simple_name
@@ -1489,7 +1489,7 @@ module Analyser =
 (*
       | (Parsetree.Pcty_constr (longident, _) (*of Longident.t * core_type list *),
          Types.Cty_signature class_signature) ->
-           (* A VOIR : c'est pour le cas des contraintes de classes :
+           (* FIXME : this for the case of class contraints :
               class type cons = object
                 method m : int
               end

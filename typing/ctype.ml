@@ -49,35 +49,6 @@ open Btype
      policy can then be easily changed.
 *)
 
-(*
-   A faire
-   =======
-   - Revoir affichage des types.
-   - Etendre la portee d'un alias [... as 'a] a tout le type englobant.
-   - #-type implementes comme de vraies abreviations.
-   - Niveaux plus fins pour les identificateurs :
-       Champ [global] renomme en [level];
-       Niveau -1 : global
-               0 : module toplevel
-               1 : module contenu dans module toplevel
-              ...
-     En fait, incrementer le niveau a chaque fois que l'on rentre dans
-     un module.
-
-       3   4 6
-        \ / /
-       1 2 5
-        \|/
-         0
-
-     [Subst] doit ecreter les niveaux (pour qu'un variable non
-     generalisable dans un module de niveau 2 ne se retrouve pas
-     generalisable lorsque l'on l'utilise au niveau 0).
-
-   - Traitement de la trace de l'unification separe de la fonction
-     [unify].
-*)
-
 (**** Errors ****)
 
 exception Unify of (type_expr * type_expr) list
@@ -317,7 +288,7 @@ let associate_fields fields1 fields2 =
 
 (**** Check whether an object is open ****)
 
-(* +++ Il faudra penser a eventuellement expanser l'abreviation *)
+(* +++ The abbreviation should eventually be expanded *)
 let rec object_row ty =
   let ty = repr ty in
   match ty.desc with
@@ -977,7 +948,7 @@ let rec copy ?env ?partial ?keep_names ty =
       | Tconstr (p, tl, _) ->
           let abbrevs = proper_abbrevs p tl !abbreviations in
           begin match find_repr p !abbrevs with
-            Some ty when repr ty != t -> (* XXX Commentaire... *)
+            Some ty when repr ty != t ->
               Tlink ty
           | _ ->
           (*
@@ -2554,7 +2525,8 @@ and unify3 env t1 t1' t2 t2' =
       | (_, _) ->
           raise (Unify [])
       end;
-      (* XXX Commentaires + changer "create_recursion" *)
+      (* XXX Commentaires + changer "create_recursion"
+         ||| Comments + change "create_recursion" *)
       if create_recursion then
         match t2.desc with
           Tconstr (p, tl, abbrev) ->

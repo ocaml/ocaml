@@ -1303,8 +1303,8 @@ class html =
           if not !html_short_functors then
             bs b "</div>"
       | Module_apply (k1, k2) ->
-          (* TODO: l'application n'est pas correcte dans un .mli.
-             Que faire ? -> afficher le module_type du typedtree  *)
+          (* TODO: application is not correct in a .mli.
+             What to do -> print typedtree module_type    *)
           self#html_of_module_kind b father k1;
           self#html_of_text b [Code "("];
           self#html_of_module_kind b father k2;
@@ -1316,7 +1316,7 @@ class html =
           bs b (self#create_fully_qualified_module_idents_links father s);
           bs b "</code>"
       | Module_constraint (k, tk) ->
-          (* TODO: on affiche quoi ? *)
+          (* TODO: what to print ? *)
           self#html_of_module_kind b father ?modu k
       | Module_typeof s ->
           bs b "<code class=\"type\">module type of ";

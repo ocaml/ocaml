@@ -1501,7 +1501,7 @@ let get_mins le ps =
 
 (*
   lub p q is a pattern that matches all values matched by p and q
-  may raise Empty, when p and q and not compatible
+  may raise Empty, when p and q are not compatible
 *)
 
 let rec lub p q = match p.pat_desc,q.pat_desc with

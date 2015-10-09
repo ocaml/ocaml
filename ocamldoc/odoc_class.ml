@@ -113,9 +113,9 @@ let rec class_elements ?(trans=true) cl =
       Class_structure (_, elements) -> elements
     | Class_constraint (c_kind, ct_kind) ->
         iter_kind c_kind
-      (* A VOIR : utiliser le c_kind ou le ct_kind ?
-         Pour l'instant, comme le ct_kind n'est pas analyse,
-         on cherche dans le c_kind
+      (* FIXME : use c_kind or ct_kind ?
+         For now, as ct_kind is not analyzed,
+         we search inside c_kind
          class_type_elements ~trans: trans
          { clt_name = "" ; clt_info = None ;
           clt_type_parameters = [] ;

@@ -20,11 +20,11 @@
 open Printf;;
 
 (*
-  Criteres:
-  0. overhead en pile: doit etre logn au maximum.
-  1. stable ou non.
-  2. overhead en espace.
-  3. vitesse.
+  Criteria:
+  0. stack overhead: at most log n.
+  1. stable or not.
+  2. space overhead.
+  3. speed.
 *)
 
 (************************************************************************)
@@ -467,8 +467,8 @@ let bench3c limit name f aux =
 (* merge sort on lists *)
 
 (* FIXME to do: cutoff
-         to do: cascader les pattern-matchings (enlever les paires)
-         to do: fermeture intermediaire pour merge
+         to do: cascade pattern-matchings (delete pairs)
+         to do: intermediary closure for merge
 *)
 let (@@) = List.rev_append;;
 
@@ -1712,11 +1712,11 @@ let amerge_1j cmp a =
   end;
 ;;
 
-(* FIXME a essayer: *)
-(* list->array->list direct et array->list->array direct *)
+(* FIXME try: *)
+(* list->array->list direct and array->list->array direct *)
 (* overhead = 1/3, 1/4, etc. *)
 (* overhead = sqrt (n) *)
-(* overhead = n/3 jusqu'a 30k, 30k jusqu'a 900M, sqrt (n) au-dela *)
+(* overhead = n/3 up to 30k, 30k up to 900M, sqrt (n) beyond *)
 
 (************************************************************************)
 (* merge sort on arrays, merge with loop *)
@@ -2267,7 +2267,7 @@ let amerge_3j cmp a =
   end;
 ;;
 
-(* FIXME essayer bottom-up merge on arrays ? *)
+(* FIXME try bottom-up merge on arrays? *)
 
 (************************************************************************)
 (* Shell sort on arrays *)
@@ -3928,8 +3928,8 @@ let aheap_1 cmp a =
 (************************************************************************)
 (* Heap sort on arrays (top-down, binary) *)
 
-(* FIXME essayer application partielle de trickledown (merge avec down) *)
-(* FIXME essayer expanser maxson dans trickledown; supprimer l'exception. *)
+(* FIXME try partial application of trickledown (merge with down) *)
+(* FIXME try to expand maxson in trickledown; delete the exception. *)
 
 let aheap_2 cmp a =
   let maxson l i e =
@@ -4151,7 +4151,7 @@ let aheap_6 cmp a =
   if l > 1 then (let e = a.(1) in a.(1) <- a.(0); a.(0) <- e);
 ;;
 
-(* FIXME essayer cutoff pour heapsort *)
+(* FIXME try cutoff for heapsort *)
 
 (************************************************************************)
 (* Insertion sort with dichotomic search *)
