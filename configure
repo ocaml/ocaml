@@ -495,7 +495,7 @@ fi # cross-compiler
 # a 64-bit integer type
 
 inf "Checking the sizes of integers and pointers..."
-ret=`sh ./runtest sizes.c`
+ret=`sh ./preprocesstest sizes.c`
 # $1 = sizeof(int)
 # $2 = sizeof(long)
 # $3 = sizeof(pointers)
