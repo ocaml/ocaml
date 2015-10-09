@@ -21,7 +21,7 @@ let sieve primes =
     and output = Event.new_channel () in
     Event.sync (Event.send primes n);
     ignore(Thread.create filter output);
-    (* On elimine de la sortie ceux qui sont des multiples de n *)
+    (* We remove from the output the multiples of n *)
     while true do
         let m = Event.sync (Event.receive input) in
         (* print_int n; print_string ": "; print_int m; print_newline(); *)
