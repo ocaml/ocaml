@@ -208,7 +208,7 @@ let sqrt_nat rad off len =
  (* Candidate square root cand = "|FFFF .... |" *)
  let cand = make_nat cand_len in
  (* Improve starting square root:
-    We compute nbb, the number of significant bits of the first digit of the 
+    We compute nbb, the number of significant bits of the first digit of the
     candidate
     (half of the number of significant bits in the first two digits
      of the radicand extended to an even length).
@@ -360,8 +360,6 @@ let int_to_string int s pos_ref base times =
         i := !i / base
      done
 
-(* XL: suppression de adjust_string *)
-
 let power_base_int base i =
   if i = 0 || base = 1 then
     nat_of_int 1
@@ -463,8 +461,6 @@ let num_digits_max_vector =
    | n -> failwith "num_digits_max_vector"
 ******)
 
-(* XL: suppression de string_list_of_nat *)
-
 let unadjusted_string_of_nat nat off len_nat =
   let len = num_digits_nat nat off len_nat in
   if len = 1 then
@@ -491,9 +487,6 @@ let unadjusted_string_of_nat nat off len_nat =
                       String.blit str 0
                                   s (!pos_ref - String.length str)
                                   (String.length str);
-                      (* XL: il y avait pmax a la place de String.length str
-                         mais ca ne marche pas avec le blit de Caml Light,
-                         qui ne verifie pas les debordements *)
                       pos_ref := !pos_ref - pmax;
                       len_copy := num_digits_nat copy2 0 !len_copy;
                       blit_nat copy1 0 copy2 0 !len_copy;
@@ -511,10 +504,6 @@ let string_of_nat nat =
     with Exit -> ()
     end;
     String.sub s !index (String.length s - !index)
-
-(* XL: suppression de sys_string_of_nat *)
-
-(* XL: suppression de debug_string_nat *)
 
 let base_digit_of_char c base =
   let n = Char.code c in

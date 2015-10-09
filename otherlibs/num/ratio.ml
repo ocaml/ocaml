@@ -607,7 +607,6 @@ let float_of_ratio r =
     end
   end
 
-(* XL: suppression de ratio_of_float *)
 
 let power_ratio_positive_int r n =
   create_ratio (power_big_int_positive_int (r.numerator) n)
