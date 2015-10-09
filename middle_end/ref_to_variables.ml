@@ -30,8 +30,13 @@ let variables_not_used_as_local_reference (tree:Flambda.t) =
     | Prim(_, _, _)
     | Symbol _ |Const _ | Allocated_const _ | Read_mutable _
     | Read_symbol_field _ | Project_closure _
-    | Move_within_set_of_closures _ | Project_var _ | Set_of_closures _ ->
+    | Move_within_set_of_closures _ | Project_var _ ->
       set := Variable.Set.union !set (Flambda.free_variables_named flam)
+    | Set_of_closures set_of_closures ->
+      set := Variable.Set.union !set (Flambda.free_variables_named flam);
+      Variable.Map.iter (fun _ (function_decl : Flambda.function_declaration) ->
+          loop function_decl.body)
+        set_of_closures.function_decls.funs
     | Expr e ->
       loop e
   and loop (flam : Flambda.t) =
@@ -76,7 +81,6 @@ let variables_not_used_as_local_reference (tree:Flambda.t) =
     | Static_raise _ | Proved_unreachable
     | Apply _ | Send _ | Assign _ ->
       set := Variable.Set.union !set (Flambda.free_variables flam)
-    (* | _ -> assert false *)
   in
   loop tree;
   !set
