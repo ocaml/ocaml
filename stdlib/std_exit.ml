@@ -14,11 +14,3 @@
 (* Ensure that [at_exit] functions are called at the end of every program *)
 
 let _ = do_at_exit()
-
-let () =
-  try
-    let fn = Sys.getenv "OCAML_GC_STATS" in
-    let oc = open_out fn in
-    Gc.print_stat oc;
-    close_out oc
-  with _ -> ()
