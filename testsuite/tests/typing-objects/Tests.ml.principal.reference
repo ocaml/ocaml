@@ -29,7 +29,7 @@ Error: This class should be virtual. The following methods are undefined : f
                                                    ^^^^^^^^
 Error: This pattern cannot match self: it only matches values of type
        < f : int >
-#           Characters 31-109:
+#           Characters 32-110:
   class ['a] c () = object
     constraint 'a = int
     method f x = (x : bool c)

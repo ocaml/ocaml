@@ -58,7 +58,7 @@ and virtual d x = object (_ : 'a)
   method g = true
 end;;
 
-(* Contraint not respected *)
+(* Constraint not respected *)
 class ['a] c () = object
   constraint 'a = int
   method f x = (x : bool c)
@@ -74,7 +74,7 @@ class ['a, 'b] d () = object
   inherit ['a, 'b] c ()
 end;;
 
-(* Non-generic contraint *)
+(* Non-generic constraint *)
 let x = ref [];;
 class ['a] c () = object
   method f = (x : 'a)
