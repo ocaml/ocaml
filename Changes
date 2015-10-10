@@ -189,6 +189,7 @@ Bug fixes:
            %s#row when Bar contains private row types
 - PR#6992: Segfault from bug in GADT/module typing
 - PR#6993: Segfault from recursive modules violating exhaustiveness assumptions
+- PR#7012: Variable name forgotten when it starts with a capital letter
 - GPR#205: Clear caml_backtrace_last_exn before registering as root (report
   and fix by Frederic Bour)
 - GPR#220: minor -dsource error on recursive modules
