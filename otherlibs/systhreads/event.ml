@@ -84,7 +84,9 @@ let basic_sync abort_env genev =
     (* Suspend on all events *)
     for i = 0 to Array.length bev - 1 do bev.(i).suspend() done;
     (* Wait until the condition is signalled *)
-    Condition.wait condition masterlock
+    Condition.wait condition masterlock;
+    (* PR#7013: protect against spurious wake-up *)
+    while !performed < 0 do Condition.wait condition masterlock done
   end;
   Mutex.unlock masterlock;
   (* Extract the result *)

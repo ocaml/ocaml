@@ -122,6 +122,8 @@ Other libraries:
 - PR#6896: serious reimplementation of Big_int.float_of_big_int and
   Ratio.float_of_ratio, ensuring that the result is correctly rounded.
   (Xavier Leroy)
+- PR#7013: spurious wake-up in the Event module
+  (Xavier Leroy)
 
 OCamlbuild:
 - PR#6794, PR#6809: pass package-specific include flags when building C files
