@@ -552,8 +552,13 @@ echo "#define SIZEOF_LONGLONG $5" >> m.h
 
 # Determine endianness
 
-sh ./runtest endian.c
-case $? in
+if $cross_compiler; then
+  ret=`sh ./preprocesstest endian2.c`
+else
+  sh ./runtest endian.c
+  ret=$?
+fi
+case "$ret" in
   0) inf "This is a big-endian architecture."
      echo "#define ARCH_BIG_ENDIAN" >> m.h;;
   1) inf "This is a little-endian architecture."
@@ -563,7 +568,7 @@ case $? in
   *) case $target in
        *-*-mingw*) inf "This is a little-endian architecture."
                    echo "#undef ARCH_BIG_ENDIAN" >> m.h;;
-       *) wrn "Something went wrong during endianness determination.\n" \
+       *) err "Something went wrong during endianness determination.\n" \
               "You will have to figure out endianness yourself\n" \
               "(option ARCH_BIG_ENDIAN in m.h).";;
      esac;;
