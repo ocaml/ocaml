@@ -18,11 +18,20 @@ let rec f msg n =
   if n = 0 then raise(Error msg) else 1 + f msg (n-1)
 
 let g msg =
+  let exception_raised_internally () =
+    try Hashtbl.find (Hashtbl.create 3) 0
+    with Not_found -> false in
   try
     f msg 5
   with Error "a" -> print_string "a"; print_newline(); 0
      | Error "b" as exn -> print_string "b"; print_newline(); raise exn
      | Error "c" -> raise (Error "c")
+     (** [Error "d"] not catched *)
+     | Error "e" as exn ->
+         let bt = Printexc.get_raw_backtrace () in
+         print_string "e"; print_newline ();
+         ignore (exception_raised_internally ());
+         Printexc.reraise_raw_backtrace exn bt
 
 let backtrace args =
   try
@@ -49,4 +58,5 @@ let _ =
   run [| "b" |];
   run [| "c" |];
   run [| "d" |];
+  run [| "e" |];
   run [| |]

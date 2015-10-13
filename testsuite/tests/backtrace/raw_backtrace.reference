@@ -8,12 +8,12 @@ Called from file "raw_backtrace.ml", line 18, characters 42-53
 Called from file "raw_backtrace.ml", line 18, characters 42-53
 Called from file "raw_backtrace.ml", line 18, characters 42-53
 Called from file "raw_backtrace.ml", line 18, characters 42-53
-Called from file "raw_backtrace.ml", line 22, characters 4-11
-Re-raised at file "raw_backtrace.ml", line 24, characters 68-71
-Called from file "raw_backtrace.ml", line 29, characters 11-23
+Called from file "raw_backtrace.ml", line 25, characters 4-11
+Re-raised at file "raw_backtrace.ml", line 27, characters 68-71
+Called from file "raw_backtrace.ml", line 38, characters 11-23
 Uncaught exception Raw_backtrace.Error("c")
-Raised at file "raw_backtrace.ml", line 25, characters 26-37
-Called from file "raw_backtrace.ml", line 29, characters 11-23
+Raised at file "raw_backtrace.ml", line 28, characters 26-37
+Called from file "raw_backtrace.ml", line 38, characters 11-23
 Uncaught exception Raw_backtrace.Error("d")
 Raised at file "raw_backtrace.ml", line 18, characters 21-32
 Called from file "raw_backtrace.ml", line 18, characters 42-53
@@ -21,7 +21,13 @@ Called from file "raw_backtrace.ml", line 18, characters 42-53
 Called from file "raw_backtrace.ml", line 18, characters 42-53
 Called from file "raw_backtrace.ml", line 18, characters 42-53
 Called from file "raw_backtrace.ml", line 18, characters 42-53
-Called from file "raw_backtrace.ml", line 22, characters 4-11
-Called from file "raw_backtrace.ml", line 29, characters 11-23
+Called from file "raw_backtrace.ml", line 25, characters 4-11
+Called from file "raw_backtrace.ml", line 38, characters 11-23
+e
+Uncaught exception Raw_backtrace.Error("e")
+Raised at file "raw_backtrace.ml", line 18, characters 21-32
+Called from file "raw_backtrace.ml", line 18, characters 42-53
+Re-raised at file "raw_backtrace.ml", line 34, characters 40-43
+Called from file "raw_backtrace.ml", line 38, characters 11-23
 Uncaught exception Invalid_argument("index out of bounds")
-Raised by primitive operation at file "raw_backtrace.ml", line 29, characters 14-22
+Raised by primitive operation at file "raw_backtrace.ml", line 38, characters 14-22

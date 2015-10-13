@@ -88,6 +88,10 @@ type raw_backtrace = raw_backtrace_slot array
 external get_raw_backtrace:
   unit -> raw_backtrace = "caml_get_exception_raw_backtrace"
 
+external reraise_raw_backtrace: exn -> raw_backtrace -> 'a
+  = "caml_reraise_raw_backtrace" "noalloc"
+(** The compiler insert automatically the [reraise] *)
+
 type backtrace_slot =
   | Known_location of bool   (* is_raise *)
                     * string (* filename *)

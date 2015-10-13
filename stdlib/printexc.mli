@@ -123,6 +123,14 @@ val raw_backtrace_to_string: raw_backtrace -> string
     @since 4.01.0
 *)
 
+external reraise_raw_backtrace: exn -> raw_backtrace -> 'a
+  = "caml_reraise_raw_backtrace" "noalloc"
+(** Reraise the exception using the given raw_backtrace for the
+    origins of the exception
+
+    @since trunk
+*)
+
 (** {6 Current call stack} *)
 
 val get_callstack: int -> raw_backtrace

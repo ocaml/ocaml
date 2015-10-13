@@ -152,6 +152,30 @@ CAMLprim value caml_get_exception_raw_backtrace(value unit)
   CAMLreturn(res);
 }
 
+/* Copy back a backtrace, the raise is done by the compiler after this call */
+CAMLprim value caml_reraise_raw_backtrace(value exn, value backtrace)
+{
+  CAMLparam2(exn,backtrace);
+  intnat i;
+
+  /** Currently in order to simplify the prototype the buffer is not
+      initialized (cf. comment in caml_record_backtrace)
+   */
+  if (caml_backtrace_buffer == NULL){
+    caml_backtrace_pos = 0;
+    caml_backtrace_last_exn = Val_unit;
+    CAMLreturn(Val_unit);
+  }
+
+  caml_backtrace_last_exn = exn;
+
+  for(i=0; i < Wosize_val(backtrace) && i < BACKTRACE_BUFFER_SIZE; i++){
+    caml_backtrace_buffer[i] = caml_raw_backtrace_slot_val(Field(backtrace, i));
+  }
+
+  CAMLreturn(Val_unit);
+}
+
 /* Convert the raw backtrace to a data structure usable from OCaml */
 CAMLprim value caml_convert_raw_backtrace_slot(value backtrace_slot)
 {

@@ -738,6 +738,20 @@ and transl_exp0 e =
               | _ -> k
             in
             wrap0 (Lprim(Praise k, [event_after arg1 targ]))
+        | _ when p.prim_name = "caml_reraise_raw_backtrace" ->
+            (* Should not fail by typing *)
+            let targ,bt = match argl with [a;b] -> a,b | _ -> assert false in
+            let arg1 = List.hd args in
+            let exn = Ident.create "exn" in
+            Llet(Strict, exn, targ,
+                 event_before e begin
+                   Lsequence(
+                     wrap  (Lprim (prim, [Lvar exn;bt])),
+                     wrap0 (Lprim(Praise Raise_reraise,
+                                  [event_after arg1 (Lvar exn)]))
+                   )
+                 end
+                )
         | (Ploc kind, []) ->
           lam_of_loc kind e.exp_loc
         | (Ploc kind, [arg1]) ->
