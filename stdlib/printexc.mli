@@ -125,6 +125,14 @@ val raw_backtrace_to_string: raw_backtrace -> string
     @since 4.01.0
 *)
 
+external raise_with_backtrace: exn -> raw_backtrace -> 'a
+  = "%raise_with_backtrace"
+(** Reraise the exception using the given raw_backtrace for the
+    origin of the exception
+
+    @since 4.03.0
+*)
+
 (** {6 Current call stack} *)
 
 val get_callstack: int -> raw_backtrace

@@ -89,6 +89,9 @@ type raw_backtrace
 external get_raw_backtrace:
   unit -> raw_backtrace = "caml_get_exception_raw_backtrace"
 
+external raise_with_backtrace: exn -> raw_backtrace -> 'a
+  = "%raise_with_backtrace"
+
 type backtrace_slot =
   | Known_location of {
       is_raise    : bool;
