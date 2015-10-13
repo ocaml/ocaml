@@ -721,15 +721,23 @@ let pats_of_type ?(always=false) env ty =
   let ty' = Ctype.expand_head env ty in
   match ty'.desc with
   | Tconstr (path, _, _) ->
-      begin match Env.find_type path env with
-      | {type_kind = Type_variant cl}
-        when always || List.for_all (fun cd -> cd.Types.cd_res <> None) cl ->
+      begin match (Env.find_type path env).type_kind with
+      | Type_variant cl when always || List.length cl = 1 ||
+        List.for_all (fun cd -> cd.Types.cd_res <> None) cl ->
           let cstrs = fst (Env.find_type_descrs path env) in
-          List.map
-            (pat_of_constr {omega with pat_type=ty; pat_env=env})
-            cstrs
+          List.map (pat_of_constr (make_pat Tpat_any ty env)) cstrs
+      | Type_record (ldl, _) ->
+          let labels = snd (Env.find_type_descrs path env) in
+          let fields =
+            List.map (fun ld ->
+              mknoloc (Longident.Lident "?pat_of_label?"), ld, omega)
+              labels
+          in
+          [make_pat (Tpat_record (fields, Closed)) ty env]
       | _ -> [omega]
       end
+  | Ttuple tl ->
+      [make_pat (Tpat_tuple (omegas (List.length tl))) ty env]
   | _ -> [omega]
 
 let rec get_variant_constructors env ty =

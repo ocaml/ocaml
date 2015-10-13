@@ -24,3 +24,11 @@ let f (x : unit t option) = match x with None -> 1 | _ -> 2;; (* warn? *)
 let f (x : unit t option) = match x with None -> 1 | Some _ -> 2;; (* warn *)
 let f (x : int t option) = match x with None -> 1 | _ -> 2;;
 let f (x : int t option) = match x with None -> 1;; (* warn *)
+
+(* Example with record, type, single case *)
+
+type 'a box = Box of 'a
+type 'a pair = {left: 'a; right: 'a};;
+
+let f : (int t box pair * bool) option -> unit = function None -> ();;
+let f : (string t box pair * bool) option -> unit = function None -> ();;

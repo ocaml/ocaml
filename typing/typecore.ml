@@ -967,8 +967,13 @@ let rec type_pat ~constrs ~labels ~no_existentials ~mode ~explode ~env
         let (sp, constrs, labels) = Parmatch.ppat_of_type !env expected_ty in
 	if sp.ppat_desc = Parsetree.Ppat_any then k' Tpat_any else
         if mode = Inside_or then raise Need_backtrack else
+        let explode =
+          match sp.ppat_desc with
+            Parsetree.Ppat_or _ -> explode - 10
+          | _ -> explode - 1
+        in
         type_pat ~constrs:(Some constrs) ~labels:(Some labels)
-          ~explode:(explode-1) sp expected_ty k
+          ~explode sp expected_ty k
       else k' Tpat_any
   | Ppat_var name ->
       assert (constrs = None);
@@ -1353,11 +1358,11 @@ let partial_pred ~lev ?mode ?explode env expected_ty constrs labels p =
     None
 
 let check_partial ?(lev=get_current_level ()) env expected_ty =
-  Parmatch.check_partial_gadt (partial_pred ~lev ~explode:1 env expected_ty)
+  Parmatch.check_partial_gadt (partial_pred ~lev ~explode:10 env expected_ty)
 
 let check_unused ?(lev=get_current_level ()) env expected_ty =
   Parmatch.check_unused
-    (partial_pred ~lev ~mode:Split_or ~explode:1 env expected_ty) env
+    (partial_pred ~lev ~mode:Split_or ~explode:10 env expected_ty) env
 
 let rec iter3 f lst1 lst2 lst3 =
   match lst1,lst2,lst3 with
