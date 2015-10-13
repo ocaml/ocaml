@@ -72,6 +72,7 @@ exception Sequential_logical_operator_primitives_must_be_expanded of
 exception Var_within_closure_bound_multiple_times of Var_within_closure.t
 exception Declared_closure_from_another_unit of Compilation_unit.t
 exception Closure_id_is_bound_multiple_times of Closure_id.t
+exception Set_of_closures_id_is_bound_multiple_times of Set_of_closures_id.t
 exception Unbound_closure_ids of Closure_id.Set.t
 exception Unbound_vars_within_closures of Var_within_closure.Set.t
 
@@ -485,6 +486,25 @@ let no_closure_id_is_bound_multiple_times program =
     raise (Closure_id_is_bound_multiple_times closure_id)
   | _, None -> ()
 
+let declared_set_of_closures_ids program =
+  let bound = ref Set_of_closures_id.Set.empty in
+  let bound_multiple_times = ref None in
+  let add_and_check var =
+    if Set_of_closures_id.Set.mem var !bound
+    then bound_multiple_times := Some var;
+    bound := Set_of_closures_id.Set.add var !bound
+  in
+  Flambda_iterators.iter_on_set_of_closures_of_program program
+    ~f:(fun { Flambda. function_decls; _; } ->
+        add_and_check function_decls.set_of_closures_id);
+  !bound, !bound_multiple_times
+
+let no_set_of_closures_id_is_bound_multiple_times program =
+  match declared_set_of_closures_ids program with
+  | _, Some set_of_closures_id ->
+    raise (Set_of_closures_id_is_bound_multiple_times set_of_closures_id)
+  | _, None -> ()
+
 let used_closure_ids (program:Flambda.program) =
   let used = ref Closure_id.Set.empty in
   let f (flam : Flambda.named) =
@@ -581,6 +601,7 @@ let check_exn ?(kind=Normal) ?(cmxfile=false) (flam:Flambda.program) =
   try
     variable_and_symbol_invariants flam;
     no_closure_id_is_bound_multiple_times flam;
+    no_set_of_closures_id_is_bound_multiple_times flam;
     every_used_function_from_current_compilation_unit_is_declared flam;
     no_var_within_closure_is_bound_multiple_times flam;
     every_used_var_within_closure_from_current_compilation_unit_is_declared flam;
@@ -658,6 +679,9 @@ let check_exn ?(kind=Normal) ?(cmxfile=false) (flam:Flambda.program) =
     | Closure_id_is_bound_multiple_times closure_id ->
       Format.eprintf ">> Closure ID is bound multiple times: %a"
         Closure_id.print closure_id
+    | Set_of_closures_id_is_bound_multiple_times set_of_closures_id ->
+      Format.eprintf ">> Set of closures ID is bound multiple times: %a"
+        Set_of_closures_id.print set_of_closures_id
     | Declared_closure_from_another_unit compilation_unit ->
       Format.eprintf ">> Closure declared as being from another compilation \
           unit: %a"
