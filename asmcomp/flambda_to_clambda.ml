@@ -87,6 +87,8 @@ module Env : sig
 
   val add_allocated_const : t -> Symbol.t -> Allocated_const.t -> t
   val allocated_const_for_symbol : t -> Symbol.t -> Allocated_const.t option
+
+  val keep_only_symbols : t -> t
 end = struct
   type t =
     { subst : Clambda.ulambda Variable.Map.t;
@@ -133,6 +135,10 @@ end = struct
     try
       Some (Symbol.Map.find sym t.allocated_constant_for_symbol)
     with Not_found -> None
+
+  let keep_only_symbols t =
+    { empty with
+      allocated_constant_for_symbol = t.allocated_constant_for_symbol; }
 
 end
 
@@ -480,7 +486,7 @@ and to_clambda_set_of_closures t env
   in
   Uclosure (funs, List.map snd free_vars)
 
-and to_clambda_closed_set_of_closures t symbol
+and to_clambda_closed_set_of_closures t env symbol
       ({ function_decls; } : Flambda.set_of_closures)
       : Clambda.ustructured_constant =
   let functions = Variable.Map.bindings function_decls.funs in
@@ -495,7 +501,7 @@ and to_clambda_closed_set_of_closures t symbol
           let closure_id = Closure_id.wrap var in
           let symbol = Compilenv.closure_symbol closure_id in
           Env.add_subst env var (to_clambda_symbol env symbol))
-        Env.empty
+        (Env.keep_only_symbols env)
         functions
     in
     let env_body, params =
@@ -544,7 +550,23 @@ let to_clambda_initialize_symbol t env symbol fields : Clambda.ulambda =
         Clambda.Usequence (build_setfield (p, field), acc))
       (build_setfield h) t
 
-let rec to_clambda_program t env (program : Flambda.program) : Clambda.ulambda =
+let accumulate_structured_constants t env symbol
+      (c : Flambda.constant_defining_value) acc =
+  match c with
+  | Allocated_const c ->
+    Symbol.Map.add symbol (to_clambda_allocated_constant c) acc
+  | Block (tag, fields) ->
+    let fields = List.map to_clambda_const fields in
+    Symbol.Map.add symbol (Clambda.Uconst_block (Tag.to_int tag, fields)) acc
+  | Set_of_closures set_of_closures ->
+    let to_clambda_set_of_closures =
+      to_clambda_closed_set_of_closures t env symbol set_of_closures
+    in
+    Symbol.Map.add symbol to_clambda_set_of_closures acc
+  | Project_closure _ -> acc
+
+let rec to_clambda_program t env constants (program : Flambda.program) :
+  Clambda.ulambda * Clambda.ustructured_constant Symbol.Map.t =
   match program with
   | Let_symbol (symbol, alloc, program) ->
     (* Useful only for unboxing. Since floats and boxed integers will
@@ -556,30 +578,32 @@ let rec to_clambda_program t env (program : Flambda.program) : Clambda.ulambda =
       | _ ->
         env
     in
-    to_clambda_program t env program
-  | Let_rec_symbol (_, program) -> to_clambda_program t env program
-  | Import_symbol (_, program) -> to_clambda_program t env program
-  | Initialize_symbol (symbol, _tag, fields, program) ->
-    Usequence (to_clambda_initialize_symbol t env symbol fields,
-      to_clambda_program t env program)
-  | Effect (expr, program) ->
-    Usequence (to_clambda t env expr, to_clambda_program t env program)
-  | End _ -> Uconst (Uconst_ptr 0)
-
-let accumulate_structured_constants t symbol
-      (c : Flambda.constant_defining_value) acc =
-  match c with
-  | Allocated_const c ->
-    Symbol.Map.add symbol (to_clambda_allocated_constant c) acc
-  | Block (tag, fields) ->
-    let fields = List.map to_clambda_const fields in
-    Symbol.Map.add symbol (Clambda.Uconst_block (Tag.to_int tag, fields)) acc
-  | Set_of_closures set_of_closures ->
-    let to_clambda_set_of_closures =
-      to_clambda_closed_set_of_closures t symbol set_of_closures
+    let constants =
+      accumulate_structured_constants t env symbol alloc constants
     in
-    Symbol.Map.add symbol to_clambda_set_of_closures acc
-  | Project_closure _ -> acc
+    to_clambda_program t env constants program
+  | Let_rec_symbol (defs, program) ->
+    let constants =
+      List.fold_left (fun constants (symbol, alloc) ->
+          accumulate_structured_constants t env symbol alloc constants)
+        constants defs
+    in
+    to_clambda_program t env constants program
+  | Import_symbol (_, program) ->
+    to_clambda_program t env constants program
+  | Initialize_symbol (symbol, _tag, fields, program) ->
+    (* The tag is ignored here: It is used separately to generate the
+       preallocated block. Only the initialisation code is generated
+       here. *)
+    let e1 = to_clambda_initialize_symbol t env symbol fields in
+    let e2, constants = to_clambda_program t env constants program in
+    Usequence (e1, e2), constants
+  | Effect (expr, program) ->
+    let e1 = to_clambda t env expr in
+    let e2, constants = to_clambda_program t env constants program in
+    Usequence (e1, e2), constants
+  | End _ ->
+    Uconst (Uconst_ptr 0), constants
 
 type result = {
   expr : Clambda.ulambda;
@@ -607,11 +631,6 @@ let convert (program, exported) : result =
     }
   in
   let t = { current_unit; imported_units; } in
-  let structured_constants =
-    Symbol.Map.fold (accumulate_structured_constants t)
-      (Flambda_utils.all_lifted_constants_as_map program)
-      Symbol.Map.empty
-  in
   let preallocated_blocks =
     List.map (fun (symbol, tag, fields) ->
         { Clambda.
@@ -621,7 +640,9 @@ let convert (program, exported) : result =
         })
       (Flambda_utils.initialize_symbols program)
   in
-  let expr = to_clambda_program t Env.empty program in
+  let expr, structured_constants =
+    to_clambda_program t Env.empty Symbol.Map.empty program
+  in
   (* XCR mshinwell for pchambart: add offsets to export info
      pchambart: done, but reexported are still missing *)
   let exported =
