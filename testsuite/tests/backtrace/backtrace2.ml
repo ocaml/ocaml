@@ -27,7 +27,7 @@ let test_Error msg =
      | Error "c" -> raise (Error "c")
      (** [Error "d"] not catched *)
      (** Test reraise when an exception is used in the middle of the exception
-         handler. Currently the wrong backtrace is used. *)
+         handler. *)
      | Error "e" as exn ->
          print_string "e"; print_newline ();
          ignore (exception_raised_internally ()); raise exn

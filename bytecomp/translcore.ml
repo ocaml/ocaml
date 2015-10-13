@@ -325,6 +325,12 @@ let prim_makearray =
 let prim_obj_dup =
   Primitive.simple ~name:"caml_obj_dup" ~arity:1 ~alloc:true
 
+let prim_reraise_raw_backtrace =
+  Primitive.simple ~name:"caml_reraise_raw_backtrace" ~arity:2 ~alloc:false
+
+let prim_get_raw_backtrace =
+  Primitive.simple ~name:"caml_get_exception_raw_backtrace" ~arity:1 ~alloc:true
+
 let find_primitive loc prim_name =
   match prim_name with
       "%revapply" -> Prevapply loc
@@ -651,6 +657,11 @@ let last_try_id = ref None
 (** Information for raise to reraise automatic translation.
     [Some _] if the pattern of the last [try with] is a variable *)
 
+let last_try_bt = ref None
+(** [Some id] if the backtrace is needed in this [try with] and it is
+    binded on id *)
+
+
 let has_tailcall_attribute e =
   List.exists (fun ({txt},_) -> txt="tailcall") e.exp_attributes
 
@@ -729,15 +740,25 @@ and transl_exp0 e =
         let prim = transl_primitive_application
             e.exp_loc p e.exp_env prim_type args in
         match (prim, args) with
-          (Praise k, [arg1]) ->
+          (Praise k, [arg1]) -> begin
             let targ = List.hd argl in
-            let k =
-              match k, targ, !last_try_id with
-              | Raise_regular, Lvar id, Some id' when Ident.equal id id' ->
-                  Raise_reraise
-              | _ -> k
-            in
-            wrap0 (Lprim(Praise k, [event_after arg1 targ]))
+            match k, targ, !last_try_id with
+            | Raise_regular, Lvar id, Some id' when Ident.equal id id' ->
+                (* Add a binding to the raw_backtrace at the start
+                      of the handler if needed *)
+                let bt = match !last_try_bt with
+                  | None ->
+                      let bt = Ident.create "bt" in
+                      last_try_bt := Some bt; bt
+                  | Some bt -> bt in
+                Lsequence(
+                  wrap  (Lprim (Pccall prim_reraise_raw_backtrace,
+                                [targ;Lvar bt])),
+                  wrap0 (Lprim(Praise Raise_reraise, [event_after arg1 targ]))
+                )
+            | _ ->
+                wrap0 (Lprim(Praise k, [event_after arg1 targ]))
+          end
         | _ when p.prim_name = "caml_reraise_raw_backtrace" ->
             (* Should not fail by typing *)
             let targ,bt = match argl with [a;b] -> a,b | _ -> assert false in
@@ -978,8 +999,16 @@ and transl_exp0 e =
 and transl_list expr_list =
   List.map transl_exp expr_list
 
-and transl_guard guard rhs =
-  let expr = event_before rhs (transl_exp rhs) in
+and transl_guard ?(for_a_try_with=false) guard rhs =
+  let lam_rhs = transl_exp rhs in
+  let lam_rhs = match !last_try_bt with
+    | Some bt when for_a_try_with ->
+        (* If a backtrace is needed inside rhs. *)
+        Llet(StrictOpt,bt,
+             Lprim (Pccall prim_get_raw_backtrace,[lambda_unit]),
+             lam_rhs)
+    | _ -> lam_rhs in
+  let expr = event_before rhs lam_rhs in
   match guard with
   | None -> expr
   | Some cond ->
@@ -993,17 +1022,21 @@ and transl_cases cases =
 
 and transl_case_try {c_lhs; c_guard; c_rhs} =
   let old_try_id = !last_try_id in
+  let old_try_bt = !last_try_bt in
   Misc.try_finally begin fun () ->
+    last_try_bt := None;
     match c_lhs.pat_desc with
     | Tpat_var (id, _)
     | Tpat_alias (_, id, _) ->
         last_try_id := Some id;
-        c_lhs, transl_guard c_guard c_rhs
+        c_lhs, transl_guard ~for_a_try_with:true c_guard c_rhs
     | _ ->
         last_try_id := None;
-        c_lhs, transl_guard c_guard c_rhs
+        c_lhs, transl_guard ~for_a_try_with:true c_guard c_rhs
   end
-    (fun () -> last_try_id := old_try_id)
+    (fun () ->
+       last_try_id := old_try_id;
+       last_try_bt := old_try_bt)
 
 and transl_cases_try cases =
   List.map transl_case_try cases
