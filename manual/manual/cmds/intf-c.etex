@@ -1910,6 +1910,141 @@ word is reserved for storing the custom operations; the other
 \var{used} and \var{max} are used to control the speed of garbage
 collection, as described for "caml_alloc_custom".
 
+\section{Advanced topic: cheaper C call}
+\label{s:C-cheaper-call}
+
+This section describe how to make calling C functions cheaper.
+
+{\bf Note:} this only applies to the native compiler. So whenever you
+use any of these methods, you have to provide an alternative byte-code
+stub that ignores all the special annotations.
+
+\subsection{Passing unboxed values}
+
+We said earlier that all OCaml objects are represented by the C type
+"value", and one has to use macros such as "Int_val" to decode data
+from the "value" type. It is however possible to tell OCaml to do this
+for us and pass arguments unboxed to the C function. Similarly it is
+possible to tell OCaml to expect the result unboxed and box it for us.
+
+The motivation is that, by letting the OCaml compiler deal with
+boxing, it can often decide to suppress it entirely.
+
+For instance let's consider this example:
+
+\begin{verbatim}
+external foo : float -> float -> float = "foo"
+
+let f a b =
+  let len = Array.length a in
+  assert (Array.length b = len);
+  let res = Array.make len 0. in
+  for i = 0 to len - 1 do
+    res.(i) <- foo a.(i) b.(i)
+  done
+\end{verbatim}
+
+Float arrays are unboxed in OCaml, however the C function "foo" expect
+its arguments as boxed floats and returns a boxed float. Hence the
+OCaml compiler has no choice but to box "a.(i)" and "b.(i)" and unbox
+the result of "foo".  This results in the allocation of "3 * len"
+temporary float values.
+
+Now if we annotate the arguments and result with "[@@unboxed]", the
+compiler will be able to avoid all these allocations:
+
+\begin{verbatim}
+external foo
+  :  (float [@unboxed])
+  -> (float [@unboxed])
+  -> (float [@unboxed])
+  = "foo_byte" "foo"
+\end{verbatim}
+
+In this case the C functions must look like:
+
+\begin{verbatim}
+CAMLprim double foo(double a, double b)
+{
+  ...
+}
+
+CAMLprim value foo_byte(value a, value b)
+{
+  return caml_copy_double(foo(Double_val(a), Double_val(b)))
+}
+\end{verbatim}
+
+For convenicence, when all arguments and the result are annotated with
+"[@unboxed]", it is possible to put the attribute only once on the
+declaration itself. So we can also write instead:
+
+\begin{verbatim}
+external foo : float -> float -> float = "foo_byte" "foo" [@@unboxed]
+\end{verbatim}
+
+The following table summarize what OCaml types can be unboxed, and
+what C types should be used in correspondence:
+
+\begin{tableau}{|l|l|}{OCaml type}{C type}
+\entree{"float"}{"double"}
+\entree{"int32"}{"int32_t"}
+\entree{"int64"}{"int64_t"}
+\entree{"nativeint"}{"intnat"}
+\end{tableau}
+
+Similarly, it is possible to pass untagged OCaml integers between
+OCaml and C. This is done by annotating the arguments and/or result
+with "[@@untagged]":
+
+\begin{verbatim}
+external f : string -> (int [@untagged]) = "f_byte" "f"
+\end{verbatim}
+
+The corresponding C type must be "intnat".
+
+{\bf Note:} do not use the C "int" type in correspondence with "(int
+[@untagged])". This is because they often differ in size.
+
+\subsection{Direct C call}
+
+In order to be able to run the garbage collector in the middle of a C
+function, the OCaml compiler generates some bookkeeping code around C
+calls. Technically it wraps every C call with the C function
+"caml_c_call" which is part of the OCaml runtime.
+
+For small functions that are called repeatedly, this indirection can
+have a big impact on performances. However this is not needed if we
+know that the C function doesn't allocate and doesn't raise
+exceptions. We can instruct the OCaml compiler of this fact by
+annotating the external declaration with the attribute "[@@noalloc]":
+
+\begin{verbatim}
+external bar : int -> int -> int = "foo" [@@noalloc]
+\end{verbatim}
+
+In this case calling "bar" from OCaml is as cheap as calling any other
+OCaml function, except for the fact that the OCaml compiler can't
+inline C functions...
+
+\subsection{Example: calling C library functions without indirection}
+
+Using these attributes, it is possible to call C library functions
+with no indirection. For instance many math functions are defined this
+way in the OCaml standard library:
+
+\begin{verbatim}
+external sqrt : float -> float = "caml_sqrt_float" "sqrt"
+  [@@unboxed] [@@noalloc]
+(** Square root. *)
+
+external exp : float -> float = "caml_exp_float" "exp" [@@unboxed] [@@noalloc]
+(** Exponential. *)
+
+external log : float -> float = "caml_log_float" "log" [@@unboxed] [@@noalloc]
+(** Natural logarithm. *)
+\end{verbatim}
+
 \section{Advanced topic: multithreading}
 \label{s:C-multithreading}
 
