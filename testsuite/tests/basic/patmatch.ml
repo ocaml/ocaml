@@ -1610,3 +1610,44 @@ let f = function
   | _ -> false
 
 let () =  printf "PR#6676=Ok\n%!"
+
+(* GPR#234, allow ``[]`` as a user defined constructor *)
+module GPR234HList = struct
+
+  type _ cell =
+    | Int : int -> int cell
+    | Pair : int * int -> (int * int) cell
+    | StrInt : string -> string cell
+
+  type hlist =
+    | [] : hlist
+    | ( :: ) : 'a cell * hlist -> hlist
+
+  type 'b foldf = {
+    f: 'a. 'a cell -> 'b -> 'b
+  }
+
+  let fold_hlist : 'b foldf -> 'b -> hlist -> 'b = fun f init l ->
+    let rec loop : hlist -> 'b -> 'b = fun l acc ->
+      match l with
+      | [] -> acc
+      | hd :: tl -> loop tl (f.f hd acc) in
+    loop l init
+
+  let to_int_fold : type a. a cell -> int -> int = fun cell acc ->
+    match cell with
+    | Int x -> x + acc
+    | Pair (x, y) -> x + y + acc
+    | StrInt str -> int_of_string str + acc
+
+  let sum l = fold_hlist {f=to_int_fold} 0 l
+
+  let l = [Int 3; Pair (4, 5); StrInt "30"]
+
+  let test () = Printf.printf "%d\n" (sum l)
+
+end
+
+let () = GPR234HList.test ()
+
+let () = printf "GPR#234=Ok\n%!"
