@@ -802,7 +802,8 @@ let create_function_declarations ~set_of_closures_id ~funs ~compilation_unit =
 
 let update_function_declarations function_decls ~funs =
   create_function_declarations ~funs
-    ~set_of_closures_id:function_decls.set_of_closures_id
+    ~set_of_closures_id:
+      (Set_of_closures_id.create (Compilation_unit.get_current_exn ()))
     ~compilation_unit:function_decls.compilation_unit
 
 let create_set_of_closures ~function_decls ~free_vars ~specialised_args =
