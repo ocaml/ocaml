@@ -34,7 +34,8 @@ valuable changes on their own.)
 
 You should not leave trailing whitespace; not have line longer than 80
 columns, not use tab characters (spaces only), and not use non-ASCII
-characters.
+characters. These typographical rules can be checked with the script
+`tools/check-typo`.
 
 Otherwise, there are no strongly enforced guidelines specific to the
 compiler -- and, as a result, the style may differ in the different
