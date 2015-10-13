@@ -311,10 +311,10 @@ let explicit_arity =
       | _ -> false
     )
 
-let semi_opaque =
+let warn_on_literal_pattern =
   List.exists
     (function
-      | ({txt="ocaml.semi_opaque"|"semi_opaque"; _}, _) -> true
+      | ({txt="ocaml.warn_on_literal_pattern"|"warn_on_literal_pattern"; _}, _) -> true
       | _ -> false
     )
 
@@ -1075,7 +1075,7 @@ let rec type_pat ~constrs ~labels ~no_existentials ~mode ~env sp expected_ty =
             replicate_list sp constr.cstr_arity
         | Some sp -> [sp] in
       begin match sargs with
-      | [{ppat_desc = Ppat_constant _} as sp] when semi_opaque constr.cstr_attributes ->
+      | [{ppat_desc = Ppat_constant _} as sp] when warn_on_literal_pattern constr.cstr_attributes ->
             Location.prerr_warning sp.ppat_loc
               (Warnings.Deprecated
                  "The argument of this constructor should not be matched against a \
