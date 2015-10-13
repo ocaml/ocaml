@@ -1077,9 +1077,7 @@ let rec type_pat ~constrs ~labels ~no_existentials ~mode ~env sp expected_ty =
       begin match sargs with
       | [{ppat_desc = Ppat_constant _} as sp] when warn_on_literal_pattern constr.cstr_attributes ->
             Location.prerr_warning sp.ppat_loc
-              (Warnings.Deprecated
-                 "The argument of this constructor should not be matched against a \
-                  constant literal")
+              Warnings.Fragile_literal_pattern
       | _ -> ()
       end;
       if List.length sargs <> constr.cstr_arity then
