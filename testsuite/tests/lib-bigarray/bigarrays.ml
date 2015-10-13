@@ -411,6 +411,12 @@ let _ =
   test 1 (Array1.dim (from_list int [1;2;3;4;5])) 5;
   test 2 (Array1.dim (from_list_fortran int [1;2;3])) 3;
 
+  testing_function "byte_size";
+  test 1 (Array1.byte_size (from_list int [1;2;3;4;5])) 40;
+  test 2 (Array1.byte_size (from_list int [])) 0;
+  test 3 (Array1.byte_size (from_list int64 (List.map Int64.of_int [1;2;3;4;5]))) 40;
+  test 4 (Array1.byte_size (from_list int64 (List.map Int64.of_int []))) 0;
+
   testing_function "kind & layout";
   let a = from_list int [1;2;3] in
   test 1 (Array1.kind a) int;
@@ -595,6 +601,10 @@ let _ =
   test 3 (Array2.dim1 b) 4;
   test 4 (Array2.dim2 b) 6;
 
+  testing_function "byte_size";
+  let a = Array2.create int c_layout 4 6 in
+  test 1 (Array2.byte_size a) 192;
+
   testing_function "sub";
   let a = make_array2 int c_layout 0 5 3 id in
   let b = Array2.sub_left a 2 2 in
@@ -746,6 +756,10 @@ let _ =
   test 5 (Array3.dim2 b) 5;
   test 6 (Array3.dim3 b) 6;
 
+  testing_function "byte_size";
+  let a = Array3.create int c_layout 4 5 6 in
+  test 1 (Array3.byte_size a) 960;
+
   testing_function "slice1";
   let a = make_array3 int c_layout 0 3 3 3 id in
   test 1 (Array3.slice_left_1 a 0 0) (from_list int [0;1;2]);
@@ -756,6 +770,40 @@ let _ =
   let a = make_array3 int fortran_layout 1 3 3 3 id in
   test 6 (Array3.slice_right_1 a 1 2) (from_list_fortran int [112;212;312]);
   test 7 (Array3.slice_right_1 a 3 1) (from_list_fortran int [131;231;331]);
+
+(* Genarray byte_size *)
+  testing_function "byte_size";
+  let a = Genarray.create int c_layout [|2;2;2;2;2|] in
+  test 1 (Genarray.byte_size a) 256;
+
+(* Kind size *)
+  testing_function "kind_byte_size";
+  let arr1 = Array1.create Float32 c_layout 1 in
+  test 1 (kind_byte_size Float32) (Array1.byte_size arr1);
+  let arr1 = Array1.create Float64 c_layout 1 in
+  test 2 (kind_byte_size Float64) (Array1.byte_size arr1);
+  let arr1 = Array1.create Int8_signed c_layout 1 in
+  test 3 (kind_byte_size Int8_signed) (Array1.byte_size arr1);
+  let arr1 = Array1.create Int8_unsigned c_layout 1 in
+  test 4 (kind_byte_size Int8_unsigned) (Array1.byte_size arr1);
+  let arr1 = Array1.create Int16_signed c_layout 1 in
+  test 5 (kind_byte_size Int16_signed) (Array1.byte_size arr1);
+  let arr1 = Array1.create Int16_unsigned c_layout 1 in
+  test 6 (kind_byte_size Int16_unsigned) (Array1.byte_size arr1);
+  let arr1 = Array1.create Int32 c_layout 1 in
+  test 7 (kind_byte_size Int32) (Array1.byte_size arr1);
+  let arr1 = Array1.create Int64 c_layout 1 in
+  test 8 (kind_byte_size Int64) (Array1.byte_size arr1);
+  let arr1 = Array1.create Int c_layout 1 in
+  test 9 (kind_byte_size Int) (Array1.byte_size arr1);
+  let arr1 = Array1.create Nativeint c_layout 1 in
+  test 10 (kind_byte_size Nativeint) (Array1.byte_size arr1);
+  let arr1 = Array1.create Complex32 c_layout 1 in
+  test 11 (kind_byte_size Complex32) (Array1.byte_size arr1);
+  let arr1 = Array1.create Complex64 c_layout 1 in
+  test 12 (kind_byte_size Complex64) (Array1.byte_size arr1);
+  let arr1 = Array1.create Char c_layout 1 in
+  test 13 (kind_byte_size Char) (Array1.byte_size arr1);
 
 (* Reshaping *)
   print_newline();
