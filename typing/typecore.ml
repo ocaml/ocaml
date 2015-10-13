@@ -945,11 +945,13 @@ exception Need_backtrack
    constructors and labels.
    Unification may update the typing environment. *)
 (* constrs <> None => called from parmatch: backtrack on or-patterns
-   labels <> None => explode Ppat_any for gadts *)
-let rec type_pat ~constrs ~labels ~no_existentials ~mode ~env sp expected_ty k =
+   explode > 0 => explode Ppat_any for gadts *)
+let rec type_pat ~constrs ~labels ~no_existentials ~mode ~explode ~env
+    sp expected_ty k =
   let mode' = if mode = Splitting_or then Normal else mode in
-  let type_pat ?(constrs=constrs) ?(labels=labels) ?(mode=mode') ?(env=env) =
-    type_pat ~constrs ~labels ~no_existentials ~mode ~env in
+  let type_pat ?(constrs=constrs) ?(labels=labels) ?(mode=mode')
+      ?(explode=explode) ?(env=env) =
+    type_pat ~constrs ~labels ~no_existentials ~mode ~explode ~env in
   let loc = sp.ppat_loc in
   let rp k x : pattern = if constrs = None then k (rp x) else k x in
   match sp.ppat_desc with
@@ -961,11 +963,12 @@ let rec type_pat ~constrs ~labels ~no_existentials ~mode ~env sp expected_ty k =
         pat_attributes = sp.ppat_attributes;
         pat_env = !env }
       in
-      if labels <> None then
+      if explode > 0 then
         let (sp, constrs, labels) = Parmatch.ppat_of_type !env expected_ty in
 	if sp.ppat_desc = Parsetree.Ppat_any then k' Tpat_any else
         if mode = Inside_or then raise Need_backtrack else
-        type_pat ~constrs:(Some constrs) ~labels:None sp expected_ty k
+        type_pat ~constrs:(Some constrs) ~labels:(Some labels)
+          ~explode:(explode-1) sp expected_ty k
       else k' Tpat_any
   | Ppat_var name ->
       assert (constrs = None);
@@ -1045,7 +1048,7 @@ let rec type_pat ~constrs ~labels ~no_existentials ~mode ~env sp expected_ty k =
       in
       let p = if c1 <= c2 then loop c1 c2 else loop c2 c1 in
       let p = {p with ppat_loc=loc} in
-      type_pat ~labels:None p expected_ty k
+      type_pat ~explode:0 p expected_ty k
         (* TODO: record 'extra' to remember about interval *)
   | Ppat_interval _ ->
       raise (Error (loc, !env, Invalid_interval))
@@ -1317,12 +1320,12 @@ let rec type_pat ~constrs ~labels ~no_existentials ~mode ~env sp expected_ty k =
       raise (Error_forward (Typetexp.error_of_extension ext))
 
 let type_pat ?(allow_existentials=false) ?constrs ?labels ?(mode=Normal)
-    ?(lev=get_current_level()) env sp expected_ty =
+    ?(explode=0) ?(lev=get_current_level()) env sp expected_ty =
   newtype_level := Some lev;
   try
     let r =
       type_pat ~no_existentials:(not allow_existentials) ~constrs ~labels
-        ~mode ~env sp expected_ty (fun x -> x) in
+        ~mode ~explode ~env sp expected_ty (fun x -> x) in
     iter_pattern (fun p -> p.pat_env <- !env) r;
     newtype_level := None;
     r
@@ -1333,14 +1336,14 @@ let type_pat ?(allow_existentials=false) ?constrs ?labels ?(mode=Normal)
 
 (* this function is passed to Partial.parmatch
    to type check gadt nonexhaustiveness *)
-let partial_pred ~lev ?mode env expected_ty constrs labels p =
+let partial_pred ~lev ?mode ?explode env expected_ty constrs labels p =
   let env = ref env in
   let state = save_state env in
   try
     reset_pattern None true;
     let typed_p =
       type_pat ~allow_existentials:true ~lev
-        ~constrs ~labels ?mode env p expected_ty
+        ~constrs ~labels ?mode ?explode env p expected_ty
     in
     set_state state env;
     (* types are invalidated but we don't need them here *)
@@ -1350,10 +1353,11 @@ let partial_pred ~lev ?mode env expected_ty constrs labels p =
     None
 
 let check_partial ?(lev=get_current_level ()) env expected_ty =
-  Parmatch.check_partial_gadt (partial_pred ~lev env expected_ty)
+  Parmatch.check_partial_gadt (partial_pred ~lev ~explode:1 env expected_ty)
 
 let check_unused ?(lev=get_current_level ()) env expected_ty =
-  Parmatch.check_unused (partial_pred ~lev ~mode:Split_or env expected_ty) env
+  Parmatch.check_unused
+    (partial_pred ~lev ~mode:Split_or ~explode:1 env expected_ty) env
 
 let rec iter3 f lst1 lst2 lst3 =
   match lst1,lst2,lst3 with
