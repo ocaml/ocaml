@@ -84,12 +84,16 @@ module Env : sig
 
   val add_fresh_mutable_ident : t -> Mutable_variable.t -> Ident.t * t
   val ident_for_mutable_var_exn : t -> Mutable_variable.t -> Ident.t
+
+  val add_allocated_const : t -> Symbol.t -> Allocated_const.t -> t
+  val allocated_const_for_symbol : t -> Symbol.t -> Allocated_const.t option
 end = struct
   type t =
     { subst : Clambda.ulambda Variable.Map.t;
       var : Ident.t Variable.Map.t;
       mutable_var : Ident.t Mutable_variable.Map.t;
       toplevel : bool;
+      allocated_constant_for_symbol : Allocated_const.t Symbol.Map.t;
     }
 
   let empty =
@@ -97,6 +101,7 @@ end = struct
       var = Variable.Map.empty;
       mutable_var = Mutable_variable.Map.empty;
       toplevel = false;
+      allocated_constant_for_symbol = Symbol.Map.empty;
     }
 
   let add_subst t id subst =
@@ -117,6 +122,18 @@ end = struct
     let id = Mutable_variable.unique_ident mut_var in
     let mutable_var = Mutable_variable.Map.add mut_var id t.mutable_var in
     id, { t with mutable_var; }
+
+  let add_allocated_const t sym cons =
+    { t with
+      allocated_constant_for_symbol =
+        Symbol.Map.add sym cons t.allocated_constant_for_symbol;
+    }
+
+  let allocated_const_for_symbol t sym =
+    try
+      Some (Symbol.Map.find sym t.allocated_constant_for_symbol)
+    with Not_found -> None
+
 end
 
 let subst_var env var : Clambda.ulambda =
@@ -134,20 +151,36 @@ let build_uoffset ulam offset : Clambda.ulambda =
   if offset = 0 then ulam
   else Uoffset (ulam, offset)
 
-let to_clambda_symbol sym : Clambda.ulambda =
+let to_uconst_symbol env symbol : Clambda.ustructured_constant option =
+  match Env.allocated_const_for_symbol env symbol with
+  | Some (Float f) ->
+    Some (Clambda.Uconst_float f)
+  | Some (Int32 i) ->
+    Some (Clambda.Uconst_int32 i)
+  | Some (Int64 i) ->
+    Some (Clambda.Uconst_int64 i)
+  | Some (Nativeint i) ->
+    Some (Clambda.Uconst_nativeint i)
+  | None | Some _ ->
+    None
+
+let to_clambda_symbol env sym : Clambda.ulambda =
   let lbl = Linkage_name.to_string (Symbol.label sym) in
-  (* CR pchambart: The constant should contains details about the variable to
+  (* XCR pchambart: The constant should contains details about the variable to
      allow cmmgen to unbox.
-     mshinwell: What are we going to do here? *)
-  Uconst (Uconst_ref (lbl, None))
+     mshinwell: What are we going to do here?
+     pchambart: done *)
+  Uconst (Uconst_ref (lbl, to_uconst_symbol env sym))
 
 let to_clambda_const (const : Flambda.constant_defining_value_block_field)
       : Clambda.uconstant =
   match const with
   | Symbol s ->
     let lbl = Linkage_name.to_string (Symbol.label s) in
-    (* CR pchambart: The constant should contain details about the variable to
-       allow cmmgen to unbox *)
+    (* XCR pchambart: The constant should contain details about the variable to
+       allow cmmgen to unbox
+       pchambart: In that case, it doesn't matter. Those are only fields of
+       constant blocks. They are not amenable to unboxing. *)
     Uconst_ref (lbl, None)
   | Const (Int i) -> Uconst_int i
   | Const (Char c) -> Uconst_int (Char.code c)
@@ -274,7 +307,7 @@ let rec to_clambda t env (flam : Flambda.t) : Clambda.ulambda =
 
 and to_clambda_named t env var (named : Flambda.named) : Clambda.ulambda =
   match named with
-  | Symbol sym -> to_clambda_symbol sym
+  | Symbol sym -> to_clambda_symbol env sym
   | Const (Const_pointer n) -> Uconst (Uconst_ptr n)
   | Const (Int n) -> Uconst (Uconst_int n)
   | Const (Char c) -> Uconst (Uconst_int (Char.code c))
@@ -291,7 +324,7 @@ and to_clambda_named t env var (named : Flambda.named) : Clambda.ulambda =
         Flambda.print_named named
     end
   | Read_symbol_field (symbol, field) ->
-    Uprim (Pfield field, [to_clambda_symbol symbol], Debuginfo.none)
+    Uprim (Pfield field, [to_clambda_symbol env symbol], Debuginfo.none)
   | Set_of_closures set_of_closures ->
     to_clambda_set_of_closures t env set_of_closures
   | Project_closure { set_of_closures; closure_id } ->
@@ -461,7 +494,7 @@ and to_clambda_closed_set_of_closures t symbol
       List.fold_left (fun env (var, _) ->
           let closure_id = Closure_id.wrap var in
           let symbol = Compilenv.closure_symbol closure_id in
-          Env.add_subst env var (to_clambda_symbol symbol))
+          Env.add_subst env var (to_clambda_symbol env symbol))
         Env.empty
         functions
     in
@@ -501,7 +534,7 @@ let to_clambda_initialize_symbol t env symbol fields : Clambda.ulambda =
        a toplevel symbol, it is safe not to use [caml_modify].  (Moreover, we
        must not use [caml_modify], since the location being modified is
        outside the heap.) *)
-   Uprim (Psetfield (index, false), [to_clambda_symbol symbol; field],
+   Uprim (Psetfield (index, false), [to_clambda_symbol env symbol; field],
       Debuginfo.none)
   in
   match fields with
@@ -511,16 +544,26 @@ let to_clambda_initialize_symbol t env symbol fields : Clambda.ulambda =
         Clambda.Usequence (build_setfield (p, field), acc))
       (build_setfield h) t
 
-let rec to_clambda_program t (program : Flambda.program) : Clambda.ulambda =
+let rec to_clambda_program t env (program : Flambda.program) : Clambda.ulambda =
   match program with
-  | Let_symbol (_, _, program)
-  | Let_rec_symbol (_, program)
-  | Import_symbol (_, program) -> to_clambda_program t program
+  | Let_symbol (symbol, alloc, program) ->
+    (* Useful only for unboxing. Since floats and boxed integers will
+       never be part of a Let_rec_symbol, handling only the Let_symbol
+       is sufficient. *)
+    let env = match alloc with
+      | Allocated_const const ->
+        Env.add_allocated_const env symbol const
+      | _ ->
+        env
+    in
+    to_clambda_program t env program
+  | Let_rec_symbol (_, program) -> to_clambda_program t env program
+  | Import_symbol (_, program) -> to_clambda_program t env program
   | Initialize_symbol (symbol, _tag, fields, program) ->
-    Usequence (to_clambda_initialize_symbol t Env.empty symbol fields,
-      to_clambda_program t program)
+    Usequence (to_clambda_initialize_symbol t env symbol fields,
+      to_clambda_program t env program)
   | Effect (expr, program) ->
-    Usequence (to_clambda t Env.empty expr, to_clambda_program t program)
+    Usequence (to_clambda t env expr, to_clambda_program t env program)
   | End _ -> Uconst (Uconst_ptr 0)
 
 let accumulate_structured_constants t symbol
@@ -578,7 +621,7 @@ let convert (program, exported) : result =
         })
       (Flambda_utils.initialize_symbols program)
   in
-  let expr = to_clambda_program t program in
+  let expr = to_clambda_program t Env.empty program in
   (* XCR mshinwell for pchambart: add offsets to export info
      pchambart: done, but reexported are still missing *)
   let exported =
