@@ -1618,6 +1618,7 @@ module GPR234HList = struct
     | Int : int -> int cell
     | Pair : int * int -> (int * int) cell
     | StrInt : string -> string cell
+    | List : int list -> int list cell
 
   type hlist =
     | [] : hlist
@@ -1639,12 +1640,15 @@ module GPR234HList = struct
     | Int x -> x + acc
     | Pair (x, y) -> x + y + acc
     | StrInt str -> int_of_string str + acc
+    | List l -> acc + List.fold_left (+) 0 l
 
   let sum l = fold_hlist {f=to_int_fold} 0 l
 
-  let l = [Int 3; Pair (4, 5); StrInt "30"]
+  let l = List [1; 2; 3] (* still fine to use normal list here *)
 
-  let test () = Printf.printf "%d\n" (sum l)
+  let ll = [Int 3; Pair (4, 5); StrInt "30"; l]
+
+  let test () = Printf.printf "%d\n" (sum ll)
 
 end
 
