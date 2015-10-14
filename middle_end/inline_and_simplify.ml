@@ -203,9 +203,7 @@ let simplify_project_closure env r ~(project_closure : Flambda.project_closure)
     Freshening.apply_variable (E.freshening env)
       project_closure.set_of_closures
   in
-  let set_of_closures_approx =
-    E.really_import_approx env (E.find_exn env set_of_closures)
-  in
+  let set_of_closures_approx = E.find_exn env set_of_closures in
   match A.check_approx_for_set_of_closures set_of_closures_approx with
   | Wrong ->
     Misc.fatal_errorf "Wrong approximation when projecting closure: %a"
@@ -242,9 +240,7 @@ let simplify_move_within_set_of_closures env r
     Freshening.apply_variable (E.freshening env)
       move_within_set_of_closures.closure
   in
-  let closure_approx =
-    E.really_import_approx env (E.find_exn env closure)
-  in
+  let closure_approx = E.find_exn env closure in
   match A.check_approx_for_closure closure_approx with
   | Wrong ->
     Misc.fatal_errorf "Wrong approximation when moving within set of \
@@ -368,9 +364,7 @@ let rec simplify_project_var env r ~(project_var : Flambda.project_var)
   let closure =
     Freshening.apply_variable (E.freshening env) project_var.closure
   in
-  let approx =
-    E.really_import_approx env (E.find_exn env closure)
-  in
+  let approx = E.find_exn env closure in
   match A.check_approx_for_closure_allowing_unresolved approx with
   | Ok (value_closure, _set_of_closures_var, _set_of_closures_symbol,
         value_set_of_closures) ->
@@ -596,9 +590,7 @@ and simplify_apply env r ~(apply : Flambda.apply) : Flambda.t * R.t =
   let { Flambda. func = lhs_of_application; args; kind = _; dbg } = apply in
   simplify_free_variable env lhs_of_application ~f:(fun env lhs_of_application ->
     simplify_free_variables env args ~f:(fun env args ->
-      let lhs_of_application_approx =
-         E.really_import_approx env (E.find_exn env lhs_of_application)
-      in
+      let lhs_of_application_approx = E.find_exn env lhs_of_application in
       let args_approxs = List.map (fun arg -> E.find_exn env arg) args in
       (* By using the approximation of the left-hand side of the application,
          attempt to determine which function is being applied (even if the
@@ -741,7 +733,7 @@ and simplify_named env r (tree : Flambda.named) : Flambda.named * R.t =
         Misc.fatal_error "Pgetglobal is forbidden in Inline_and_simplify"
       | Pfield field_index, [arg] ->
         let tree, approx =
-          let approx = E.really_import_approx env (E.find_exn env arg) in
+          let approx = E.find_exn env arg in
           begin match approx.symbol with
           (* If the [Pfield] is projecting directly from a symbol, rewrite the
              expression to [Read_symbol_field]. *)
@@ -1109,9 +1101,6 @@ let constant_defining_value_approx
       | None ->
         A.value_unknown
       | Some set_of_closures_approx ->
-        let set_of_closures_approx =
-          E.really_import_approx env set_of_closures_approx
-        in
         let checked_approx =
           A.checked_approx_for_set_of_closures_allowing_unknown_and_unresolved
             set_of_closures_approx
@@ -1183,8 +1172,7 @@ let simplify_constant_defining_value
     | Project_closure (set_of_closures_symbol, closure_id) ->
       (* No simplifications are necessary here. *)
       let set_of_closures_approx =
-        E.really_import_approx env
-          (E.find_symbol_exn env set_of_closures_symbol)
+        E.find_symbol_exn env set_of_closures_symbol
       in
       let closure_approx =
         match A.check_approx_for_set_of_closures set_of_closures_approx with

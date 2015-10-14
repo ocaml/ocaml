@@ -172,12 +172,6 @@ module Env : sig
      : t
     -> Inlining_stats.Closure_stack.t
 
-  (** Shortcut for calling Backend.really_import_approx *)
-  val really_import_approx
-     : t
-    -> Simple_value_approx.t
-    -> Simple_value_approx.t
-
   (** Print a human-readable version of the given environment. *)
   val print : Format.formatter -> t -> unit
 end

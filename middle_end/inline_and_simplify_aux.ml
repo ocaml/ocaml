@@ -92,11 +92,16 @@ module Env = struct
     let module Backend = (val (t.backend) : Backend_intf.S) in
     Backend.really_import_approx approx
 
+  let really_import_approx_with_scope t (scope, approx) =
+    scope, really_import_approx t approx
+
   let find_symbol_exn t symbol =
-    Symbol.Map.find symbol t.approx_sym
+    really_import_approx t
+      (Symbol.Map.find symbol t.approx_sym)
 
   let find_symbol_opt t symbol =
-    try Some (Symbol.Map.find symbol t.approx_sym)
+    try Some (really_import_approx t
+                (Symbol.Map.find symbol t.approx_sym))
     with Not_found -> None
 
   let find_symbol_fatal t symbol =
@@ -139,7 +144,9 @@ module Env = struct
       }
 
   let find_with_scope_exn t id =
-    try Variable.Map.find id t.approx
+    try
+      really_import_approx_with_scope t
+        (Variable.Map.find id t.approx)
     with Not_found ->
       Misc.fatal_errorf "Inlining_env.find_with_scope_exn: Unbound variable \
           %a@.%s@. Environment: %a@."
@@ -163,7 +170,8 @@ module Env = struct
     List.map (fun var -> find_exn t var) vars
 
   let find_opt t id =
-    try Some (snd (Variable.Map.find id t.approx))
+    try Some (really_import_approx t
+                (snd (Variable.Map.find id t.approx)))
     with Not_found -> None
 
   let activate_freshening t =
