@@ -285,6 +285,8 @@ Other libraries:
   Before, a handled signal could cause Unix.sleep to return early.
   Now, the sleep is restarted until the given time is elapsed.
   (Xavier Leroy)
+- PR#6263: add kind_byte_size and byte_size functions to Bigarray module.
+  (Runhang Li)
 - PR#6289: Unix.utimes uses the current time only if both arguments
     are exactly 0.0.  Also, use sub-second resolution if available.
   (Xavier Leroy, report by Christophe Troestler)
