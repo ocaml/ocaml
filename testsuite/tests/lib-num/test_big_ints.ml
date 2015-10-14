@@ -388,7 +388,7 @@ test 9
 eq_big_int (big_int_of_string "-3456", big_int_of_int (-3456));;
 
 
-let implode = List.fold_left (^) "";; (* Au diable l'efficacite *)
+let implode = List.fold_left (^) "";; (* To hell with efficiency *)
 
 let l = rev [
 "174679877494298468451661416292903906557638850173895426081611831060970135303";

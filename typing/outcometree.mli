@@ -24,6 +24,9 @@ type out_ident =
   | Oide_dot of out_ident * string
   | Oide_ident of string
 
+type out_attribute =
+  { oattr_name: string }
+
 type out_value =
   | Oval_array of out_value list
   | Oval_char of char
@@ -60,7 +63,7 @@ type out_type =
       bool * out_variant * bool * (string list) option
   | Otyp_poly of string list * out_type
   | Otyp_module of string * string list * out_type list
-  | Otyp_attribute of out_type * string
+  | Otyp_attribute of out_type * out_attribute
 
 and out_variant =
   | Ovar_fields of (string * bool * out_type list) list
@@ -92,7 +95,7 @@ and out_sig_item =
   | Osig_modtype of string * out_module_type
   | Osig_module of string * out_module_type * out_rec_status
   | Osig_type of out_type_decl * out_rec_status
-  | Osig_value of string * out_type * string list
+  | Osig_value of out_val_decl
   | Osig_ellipsis
 and out_type_decl =
   { otype_name: string;
@@ -112,6 +115,11 @@ and out_type_extension =
     otyext_params: string list;
     otyext_constructors: (string * out_type list * out_type option) list;
     otyext_private: Asttypes.private_flag }
+and out_val_decl =
+  { oval_name: string;
+    oval_type: out_type;
+    oval_prims: string list;
+    oval_attributes: out_attribute list }
 and out_rec_status =
   | Orec_not
   | Orec_first

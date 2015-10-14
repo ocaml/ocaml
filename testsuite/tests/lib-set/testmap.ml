@@ -131,4 +131,4 @@ let rmap() =
 
 let _ =
   Random.init 42;
-  for i = 1 to 25000 do test (rkey()) (rdata()) (rmap()) (rmap()) done
+  for i = 1 to 10000 do test (rkey()) (rdata()) (rmap()) (rmap()) done

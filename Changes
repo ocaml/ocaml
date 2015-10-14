@@ -27,6 +27,11 @@ Language features:
   they can be unboxed or untagged. Supports untagging int and unboxing
   int32, int64, nativeint and float.
   (Jérémie Dimino, Mark Shinwell)
+- GPR240: replace special annotations on externals by attributes:
+  * "float" is generalized to [@@unboxed]
+  * "noalloc" becomes [@@noalloc]
+  Deprecate "float" and "noalloc".
+  (Jérémie Dimino)
 
 Compilers:
 - PR#6501: harden the native-code generator against certain uses of "%identity"
@@ -95,6 +100,10 @@ Standard library:
   (Maxence Guesdon)
 - GPR#216: add the missing POSIX.1-2001 signals in Sys
   (Guillaume Bury)
+- GPR#239: remove type-unsafe code from Stream
+  (Pierre Chambart, review by Gabriel Scherer and Jeremy Yallop)
+- GPR#250: Check for negative start element in Array.sub
+  (report and fix by Jeremy Yallop)
 
 Type system:
 - PR#5545: Type annotations on methods cannot control the choice of abbreviation
@@ -112,6 +121,8 @@ Toplevel and debugger:
 Other libraries:
 - PR#6896: serious reimplementation of Big_int.float_of_big_int and
   Ratio.float_of_ratio, ensuring that the result is correctly rounded.
+  (Xavier Leroy)
+- PR#7013: spurious wake-up in the Event module
   (Xavier Leroy)
 
 OCamlbuild:
@@ -178,6 +189,9 @@ Bug fixes:
 - PR#6982: unexpected type error when packing a module alias
 - PR#6985: `module type of struct include Bar end exposes
            %s#row when Bar contains private row types
+- PR#6992: Segfault from bug in GADT/module typing
+- PR#6993: Segfault from recursive modules violating exhaustiveness assumptions
+- PR#7012: Variable name forgotten when it starts with a capital letter
 - GPR#205: Clear caml_backtrace_last_exn before registering as root (report
   and fix by Frederic Bour)
 - GPR#220: minor -dsource error on recursive modules
@@ -186,6 +200,10 @@ Bug fixes:
   (Gabriel Scherer and Mark Shinwell and Xavier Leroy)
 - GPR#233: Make CamlinternalMod.init_mod robust to optimization
   (Pierre Chambart, Mark Shinwell)
+- GPR#249: fix a few hardcoded ar commands
+  (Daniel Bünzli)
+- GPR#251: fix cross-compilation with ocamldoc enabled
+  (whitequark)
 
 Features wishes:
 - PR#4714: List.cons
@@ -234,6 +252,12 @@ Features wishes:
   (Bernhard Schommer, Gabriel Scherer, report by Alain Frisch)
 - GPR#189: Added .dylib and .so as extensions for ocamlmklib
   (Edgar Aroutiounian, Peter Zotov)
+- GPR#237: a CONTRIBUTING document
+  (François Bobot, Gabriel Scherer, review by Xavier Leroy)
+- GPR#245: remove a few remaining French comments
+  (user 'Octachron')
+- GPR#252: improve build instructions in MSVC Windows README
+  (Philip Daian)
 
 OCaml 4.02.3 (27 Jul 2015):
 ---------------------------
@@ -316,10 +340,6 @@ Libraries:
   (Damien Doligez, report by Berke Durak)
 - PR#6834: Add Obj.{first,last}_non_constant_constructor_tag
   (Mark Shinwell, request by Gabriel Scherer)
-
-Libraries:
-- PR#6285: Add support for nanosecond precision in Unix.stat()
-  (Jérémie Dimino, report by user 'gfxmonk')
 
 Runtime:
 - PR#6078: Release the runtime system when calling caml_dlopen
@@ -495,8 +515,6 @@ Feature wishes:
   (Christophe Troestler, review by Damien Doligez)
 - GPR#171: allow custom warning printers / catchers
   (Benjamin Canou, review by Damien Doligez)
-- Misplaced assertion in major_gc.c for no-naked-pointers mode
-  (Stephen Dolan, Mark Shinwell)
 - GPR#191: Making gc.h and some part of memory.h public
   (Thomas Refis)
 
@@ -508,6 +526,7 @@ OCaml 4.02.1 (14 Oct 2014):
 Standard library:
 * Add optional argument ?limit to Arg.align.
 
+Bug Fixes:
 - PR#4099: Bug in Makefile.nt: won't stop on error
   (George Necula)
 - PR#6181: Improve MSVC build

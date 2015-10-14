@@ -85,10 +85,10 @@ let keyword_table =
     "while", WHILE;
     "with", WITH;
 
+    "lor", INFIXOP3("lor"); (* Should be INFIXOP2 *)
+    "lxor", INFIXOP3("lxor"); (* Should be INFIXOP2 *)
     "mod", INFIXOP3("mod");
     "land", INFIXOP3("land");
-    "lor", INFIXOP3("lor");
-    "lxor", INFIXOP3("lxor");
     "lsl", INFIXOP4("lsl");
     "lsr", INFIXOP4("lsr");
     "asr", INFIXOP4("asr")
@@ -394,18 +394,18 @@ rule token = parse
         is_in_string := false;
         lexbuf.lex_start_p <- string_start;
         STRING (get_stored_string(), Some delim) }
-  | "'" newline "'"
+  | "\'" newline "\'"
       { update_loc lexbuf None 1 false 1;
         CHAR (Lexing.lexeme_char lexbuf 1) }
-  | "'" [^ '\\' '\'' '\010' '\013'] "'"
+  | "\'" [^ '\\' '\'' '\010' '\013'] "\'"
       { CHAR(Lexing.lexeme_char lexbuf 1) }
-  | "'\\" ['\\' '\'' '"' 'n' 't' 'b' 'r' ' '] "'"
+  | "\'\\" ['\\' '\'' '\"' 'n' 't' 'b' 'r' ' '] "\'"
       { CHAR(char_for_backslash (Lexing.lexeme_char lexbuf 2)) }
-  | "'\\" ['0'-'9'] ['0'-'9'] ['0'-'9'] "'"
+  | "\'\\" ['0'-'9'] ['0'-'9'] ['0'-'9'] "\'"
       { CHAR(char_for_decimal_code lexbuf 2) }
-  | "'\\" 'x' ['0'-'9' 'a'-'f' 'A'-'F'] ['0'-'9' 'a'-'f' 'A'-'F'] "'"
+  | "\'\\" 'x' ['0'-'9' 'a'-'f' 'A'-'F'] ['0'-'9' 'a'-'f' 'A'-'F'] "\'"
       { CHAR(char_for_hexadecimal_code lexbuf 3) }
-  | "'\\" _
+  | "\'\\" _
       { let l = Lexing.lexeme lexbuf in
         let esc = String.sub l 1 (String.length l - 1) in
         raise (Error(Illegal_escape esc, Location.curr lexbuf))
@@ -441,7 +441,7 @@ rule token = parse
         STAR
       }
   | "#" [' ' '\t']* (['0'-'9']+ as num) [' ' '\t']*
-        ("\"" ([^ '\010' '\013' '"' ] * as name) "\"")?
+        ("\"" ([^ '\010' '\013' '\"' ] * as name) "\"")?
         [^ '\010' '\013'] * newline
       { update_loc lexbuf name (int_of_string num) true 0;
         token lexbuf
@@ -450,7 +450,7 @@ rule token = parse
   | "&"  { AMPERSAND }
   | "&&" { AMPERAMPER }
   | "`"  { BACKQUOTE }
-  | "'"  { QUOTE }
+  | "\'"  { QUOTE }
   | "("  { LPAREN }
   | ")"  { RPAREN }
   | "*"  { STAR }
@@ -534,7 +534,7 @@ and comment = parse
   | "\""
       {
         string_start_loc := Location.curr lexbuf;
-        store_string_char '"';
+        store_string_char '\"';
         is_in_string := true;
         begin try string lexbuf
         with Error (Unterminated_string, str_start) ->
@@ -547,7 +547,7 @@ and comment = parse
                           loc))
         end;
         is_in_string := false;
-        store_string_char '"';
+        store_string_char '\"';
         comment lexbuf }
   | "{" lowercase* "|"
       {
@@ -572,20 +572,20 @@ and comment = parse
         store_string_char '}';
         comment lexbuf }
 
-  | "''"
+  | "\'\'"
       { store_lexeme lexbuf; comment lexbuf }
-  | "'" newline "'"
+  | "\'" newline "\'"
       { update_loc lexbuf None 1 false 1;
         store_lexeme lexbuf;
         comment lexbuf
       }
-  | "'" [^ '\\' '\'' '\010' '\013' ] "'"
+  | "\'" [^ '\\' '\'' '\010' '\013' ] "\'"
       { store_lexeme lexbuf; comment lexbuf }
-  | "'\\" ['\\' '"' '\'' 'n' 't' 'b' 'r' ' '] "'"
+  | "\'\\" ['\\' '\"' '\'' 'n' 't' 'b' 'r' ' '] "\'"
       { store_lexeme lexbuf; comment lexbuf }
-  | "'\\" ['0'-'9'] ['0'-'9'] ['0'-'9'] "'"
+  | "\'\\" ['0'-'9'] ['0'-'9'] ['0'-'9'] "\'"
       { store_lexeme lexbuf; comment lexbuf }
-  | "'\\" 'x' ['0'-'9' 'a'-'f' 'A'-'F'] ['0'-'9' 'a'-'f' 'A'-'F'] "'"
+  | "\'\\" 'x' ['0'-'9' 'a'-'f' 'A'-'F'] ['0'-'9' 'a'-'f' 'A'-'F'] "\'"
       { store_lexeme lexbuf; comment lexbuf }
   | eof
       { match !comment_start_loc with
@@ -604,13 +604,13 @@ and comment = parse
       { store_lexeme lexbuf; comment lexbuf }
 
 and string = parse
-    '"'
+    '\"'
       { () }
   | '\\' newline ([' ' '\t'] * as space)
       { update_loc lexbuf None 1 false (String.length space);
         string lexbuf
       }
-  | '\\' ['\\' '\'' '"' 'n' 't' 'b' 'r' ' ']
+  | '\\' ['\\' '\'' '\"' 'n' 't' 'b' 'r' ' ']
       { store_string_char(char_for_backslash(Lexing.lexeme_char lexbuf 1));
         string lexbuf }
   | '\\' ['0'-'9'] ['0'-'9'] ['0'-'9']

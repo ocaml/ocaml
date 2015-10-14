@@ -177,7 +177,7 @@ let generate_ml () =
   pr "";
   iter_protos ~f:(fun proto ->
     let name = function_name_of_proto proto in
-    pr "external %s : %s = \"\" \"noalloc\" %S"
+    pr "external %s : %s = \"\" %S [@@noalloc]"
       name (ocaml_type_of_proto proto) name;
   );
   pr "";

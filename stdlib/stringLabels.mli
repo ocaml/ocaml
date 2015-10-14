@@ -209,7 +209,7 @@ external unsafe_set : bytes -> int -> char -> unit = "%string_unsafe_set"
   [@@ocaml.deprecated]
 external unsafe_blit :
   src:string -> src_pos:int -> dst:bytes -> dst_pos:int -> len:int ->
-    unit = "caml_blit_string" "noalloc"
+    unit = "caml_blit_string" [@@noalloc]
 external unsafe_fill :
-  bytes -> pos:int -> len:int -> char -> unit = "caml_fill_string" "noalloc"
+  bytes -> pos:int -> len:int -> char -> unit = "caml_fill_string" [@@noalloc]
   [@@ocaml.deprecated]

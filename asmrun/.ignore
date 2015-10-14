@@ -5,6 +5,7 @@ libasmrunp.a
 .depend.nt
 alloc.c
 array.c
+backtrace.c
 callback.c
 compact.c
 compare.c

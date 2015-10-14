@@ -11,7 +11,7 @@
 (***********************************************************************)
 
 (** Main module for bytecode.
-@todo coucou le todo*)
+@todo todo*)
 
 open Config
 open Clflags

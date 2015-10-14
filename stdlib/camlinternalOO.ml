@@ -15,7 +15,7 @@ open Obj
 
 (**** Object representation ****)
 
-external set_id: 'a -> 'a = "caml_set_oo_id" "noalloc"
+external set_id: 'a -> 'a = "caml_set_oo_id" [@@noalloc]
 
 (**** Object copy ****)
 
@@ -348,17 +348,17 @@ let dummy_class loc =
 (**** Objects ****)
 
 let create_object table =
-  (* XXX Appel de [obj_block] *)
+  (* XXX Appel de [obj_block] | Call to [obj_block]  *)
   let obj = Obj.new_block Obj.object_tag table.size in
-  (* XXX Appel de [caml_modify] *)
+  (* XXX Appel de [caml_modify] | Call to [caml_modify] *)
   Obj.set_field obj 0 (Obj.repr table.methods);
   Obj.obj (set_id obj)
 
 let create_object_opt obj_0 table =
   if (Obj.magic obj_0 : bool) then obj_0 else begin
-    (* XXX Appel de [obj_block] *)
+    (* XXX Appel de [obj_block] | Call to [obj_block]  *)
     let obj = Obj.new_block Obj.object_tag table.size in
-    (* XXX Appel de [caml_modify] *)
+    (* XXX Appel de [caml_modify] | Call to [caml_modify] *)
     Obj.set_field obj 0 (Obj.repr table.methods);
     Obj.obj (set_id obj)
   end
@@ -395,7 +395,7 @@ external send : obj -> tag -> 'a = "%send"
 external sendcache : obj -> tag -> t -> int -> 'a = "%sendcache"
 external sendself : obj -> label -> 'a = "%sendself"
 external get_public_method : obj -> tag -> closure
-    = "caml_get_public_method" "noalloc"
+    = "caml_get_public_method" [@@noalloc]
 
 (**** table collection access ****)
 

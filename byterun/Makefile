@@ -45,7 +45,7 @@ all-shared: libcamlrun_pic.a libcamlrun_shared.so
 .PHONY: all-shared
 
 libcamlrun_pic.a: $(PICOBJS)
-	ar rc libcamlrun_pic.a $(PICOBJS)
+	$(ARCMD) rc libcamlrun_pic.a $(PICOBJS)
 	$(RANLIB) libcamlrun_pic.a
 
 libcamlrun_shared.so: $(PICOBJS)

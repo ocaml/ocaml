@@ -178,6 +178,7 @@ again:
     }
   }
   if (retcode == -1) caml_sys_io_error(NO_ARG);
+  CAMLassert (retcode > 0);
   return retcode;
 }
 

@@ -1,3 +1,15 @@
+(***********************************************************************)
+(*                                                                     *)
+(*                                OCaml                                *)
+(*                                                                     *)
+(*              Jacques Garrigue, Nagoya University                    *)
+(*                                                                     *)
+(*  Copyright 2013 Institut National de Recherche en Informatique et   *)
+(*  en Automatique.  All rights reserved.  This file is distributed    *)
+(*  under the terms of the Q Public License version 1.0.               *)
+(*                                                                     *)
+(***********************************************************************)
+
 (* PR6216: wrong inlining of GADT match *)
 
 type _ t =

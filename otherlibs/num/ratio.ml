@@ -546,7 +546,9 @@ let string_of_ratio r =
     else string_of_big_int r.numerator ^ "/" ^ string_of_big_int r.denominator
 
 (* XL: j'ai puissamment simplifie "ratio_of_string" en virant la notation
-   scientifique. *)
+   scientifique.
+  | I have strongly simplified "ratio_of_string" by deleting scientific notation
+*)
 
 let ratio_of_string s =
   try
@@ -605,7 +607,6 @@ let float_of_ratio r =
     end
   end
 
-(* XL: suppression de ratio_of_float *)
 
 let power_ratio_positive_int r n =
   create_ratio (power_big_int_positive_int (r.numerator) n)

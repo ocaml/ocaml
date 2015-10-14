@@ -662,10 +662,10 @@ and tree_of_row_field sch (l, f) =
   | Rpresent None | Reither(true, [], _, _) -> (l, false, [])
   | Rpresent(Some ty) -> (l, false, [tree_of_typexp sch ty])
   | Reither(c, tyl, _, _) ->
-      if c (* contradiction: un constructeur constant qui a un argument *)
+      if c (* contradiction: constant constructor with an argument *)
       then (l, true, tree_of_typlist sch tyl)
       else (l, false, tree_of_typlist sch tyl)
-  | Rabsent -> (l, false, [] (* une erreur, en fait *))
+  | Rabsent -> (l, false, [] (* actually, an error *))
 
 and tree_of_typlist sch tyl =
   List.map (tree_of_typexp sch) tyl
@@ -728,7 +728,7 @@ and type_scheme ppf ty = reset_and_mark_loops ty; typexp true 0 ppf ty
 let type_scheme_max ?(b_reset_names=true) ppf ty =
   if b_reset_names then reset_names () ;
   typexp true 0 ppf ty
-(* Fin Maxence *)
+(* End Maxence *)
 
 let tree_of_type_scheme ty = reset_and_mark_loops ty; tree_of_typexp true ty
 
@@ -975,12 +975,18 @@ let tree_of_value_description id decl =
   (* Format.eprintf "@[%a@]@." raw_type_expr decl.val_type; *)
   let id = Ident.name id in
   let ty = tree_of_type_scheme decl.val_type in
-  let prims, native_repr_attributes =
-    match decl.val_kind with
-    | Val_prim p -> Primitive.description_list_and_attributes p
-    | _ -> ([], [])
+  let vd =
+    { oval_name = id;
+      oval_type = ty;
+      oval_prims = [];
+      oval_attributes = [] }
   in
-  Osig_value (id, add_native_repr_attributes ty native_repr_attributes, prims)
+  let vd =
+    match decl.val_kind with
+    | Val_prim p -> Primitive.print p vd
+    | _ -> vd
+  in
+  Osig_value vd
 
 let value_description id ppf decl =
   !Oprint.out_sig_item ppf (tree_of_value_description id decl)

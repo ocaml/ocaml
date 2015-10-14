@@ -26,7 +26,7 @@ let dbg = false
 (*  See Peyton-Jones, ``The Implementation of functional programming
     languages'', chapter 5. *)
 (*
-  Bon, au commencement du monde c'etait vrai.
+  Well, it was true at the beginning of the world.
   Now, see Lefessant-Maranget ``Optimizing Pattern-Matching'' ICFP'2001
 *)
 
@@ -2256,7 +2256,7 @@ let mk_failaction_neg partial ctx def = match partial with
 
 
 
-(* Conforme a l'article et plus simple qu'avant *)
+(* In line with the article and simpler than before *)
 let mk_failaction_pos partial seen ctx defs  =
   if dbg then begin
     prerr_endline "**POS**" ;
@@ -2891,7 +2891,7 @@ and compile_no_test divide up_ctx repr partial ctx to_match =
    and change the subject values.
 LM:
    Lazy pattern was PR #5992, initial patch by lwp25.
-   I have  generalized teh patch, so as to also find mutable fields.
+   I have  generalized the patch, so as to also find mutable fields.
 *)
 
 let find_in_pat pred =

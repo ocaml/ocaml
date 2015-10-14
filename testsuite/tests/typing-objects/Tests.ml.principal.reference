@@ -4,7 +4,7 @@
 = <fun>
 #               class ['a] c : unit -> object constraint 'a = int method f : int c end
 and ['a] d : unit -> object constraint 'a = int method f : int c end
-#                 Characters 234-275:
+#                 Characters 230-271:
   ....and d () = object
     inherit ['a] c ()
   end..
@@ -24,7 +24,7 @@ and ['a] d : unit -> object constraint 'a = int #c end
     method virtual f : int
   end..
 Error: This class should be virtual. The following methods are undefined : f
-#               Characters 139-147:
+#               Characters 144-152:
   class virtual c ((x : 'a): < f : int >) = object (_ : 'a) end
                                                    ^^^^^^^^
 Error: This pattern cannot match self: it only matches values of type
@@ -59,7 +59,7 @@ Error: The type of this class,
        class ['a] c :
          unit -> object constraint 'a = '_b list ref method f : 'a end,
        contains type variables that cannot be generalized
-#       Characters 20-52:
+#       Characters 21-53:
   type 'a c = <f : 'a c; g : 'a d>
   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: In the definition of d, type int c should be 'a c

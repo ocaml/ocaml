@@ -189,9 +189,9 @@ let list_data data =
 
 let _ =
   printf "-- Random integers, large range\n%!";
-  TI1.test (random_integers 100_000 1_000_000);
+  TI1.test (random_integers 20_000 1_000_000);
   printf "-- Random integers, narrow range\n%!";
-  TI2.test (random_integers 100_000 1_000);
+  TI2.test (random_integers 20_000 1_000);
   let d =
     try file_data "../../LICENSE" with Sys_error _ -> string_data in
   printf "-- Strings, generic interface\n%!";

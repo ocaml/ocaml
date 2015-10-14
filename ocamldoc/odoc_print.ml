@@ -78,8 +78,8 @@ let simpl_class_type t =
     match t with
       Types.Cty_constr (p,texp_list,ct) -> t
     | Types.Cty_signature cs ->
-        (* on vire les vals et methods pour ne pas qu'elles soient imprimees
-           quand on affichera le type *)
+        (* we delete vals and methods in order to not print them when 
+           displaying the type *)
         let tnil = { Types.desc = Types.Tnil ; Types.level = 0; Types.id = 0 } in
         Types.Cty_signature { Types.csig_self = { cs.Types.csig_self with
                                                   Types.desc = Types.Tobject (tnil, ref None) };
@@ -95,6 +95,6 @@ let simpl_class_type t =
 
 let string_of_class_type ?(complete=false) t =
   let t2 = if complete then t else simpl_class_type t in
-  (* A VOIR : ma propre version de Printtyp.class_type pour ne pas faire reset_names *)
+  (* FIXME : my own Printtyp.class_type variant to avoid reset_names *)
   Printtyp.class_type modtype_fmt t2;
   flush_modtype_fmt ()

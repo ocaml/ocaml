@@ -236,14 +236,14 @@ external cleanup_normal
   -> int -> int -> int -> int -> int -> int -> int -> int
   -> int -> int -> int -> int -> int -> int -> int -> int
   -> int -> int -> int -> int -> int -> int -> int -> int
-  -> int = "" "noalloc" "test_cleanup_normal"
+  -> int = "" "test_cleanup_normal" [@@noalloc]
 
 external cleanup_float
   :  float -> float -> float -> float -> float -> float -> float -> float
   -> float -> float -> float -> float -> float -> float -> float -> float
   -> float -> float -> float -> float -> float -> float -> float -> float
   -> float -> float -> float -> float -> float -> float -> float -> float
-  -> float = "" "noalloc" "test_cleanup_normal" "float"
+  -> float = "" "test_cleanup_normal" [@@noalloc] [@@unboxed]
 
 let cleanup_args_and_stack () =
   let _ : int =

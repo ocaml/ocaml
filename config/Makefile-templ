@@ -74,7 +74,7 @@ SHARPBANGSCRIPTS=true
 
 ### Magic declarations for ocamlbuild -- leave unchanged
 #ml let syslib x = "-l"^x;;
-#ml let mklib out files opts = Printf.sprintf "ar rc %s %s %s; ranlib %s" out opts files out;;
+#ml let mklib out files opts = Printf.sprintf "%sar rc %s %s %s; %sranlib %s" toolpref out opts files toolpref out;;
 
 ### How to invoke ranlib
 RANLIB=ranlib
