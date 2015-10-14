@@ -60,9 +60,9 @@ Language features:
 - PR#6681 GPR#326: signature items are now accepted as payloads for
   extension and attributes, using the syntax [%foo: SIG ] or [@foo: SIG ].
   (Alain Frisch and Gabriel Radanne)
-- GPR#234: allow "[]" as a user-defined type constructor. Demand parenthesis
-  around "::" when using "::" as type constructor.
-  (Runhang Li)
+* GPR#234: allow "[]" as a user-defined constructor. Demand parenthesis
+  around "::" when using "::" as user-defined constructor.
+  (Runhang Li, review by Damien Doligez)
 
 Compilers:
 - PR#4080, PR#6537, PR#5333: fix stack overflow in the compiler when -pack'ing
