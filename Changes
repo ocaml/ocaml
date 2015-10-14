@@ -49,6 +49,8 @@ Compilers:
    ports)
 - PR#6979: better code generation in x86-32 backend for copying floats to
   the stack (Marc Lasson, review by Xavier Leroy)
+- PR#7018: fix missing identifier renaming during inlining (Alain Frisch,
+  review by Xavier Leroy)
 - GPR#17: some cmm optimizations of integer operations with constants
   (Stephen Dolan, review by Pierre Chambart)
 - GPR#109: new unboxing strategy for float and int references (Vladimir Brankov,

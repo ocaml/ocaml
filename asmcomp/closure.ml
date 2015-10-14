@@ -618,7 +618,13 @@ let rec substitute fpc sb ulam =
   | Ustaticfail (nfail, args) ->
       Ustaticfail (nfail, List.map (substitute fpc sb) args)
   | Ucatch(nfail, ids, u1, u2) ->
-      Ucatch(nfail, ids, substitute fpc sb u1, substitute fpc sb u2)
+      let ids' = List.map Ident.rename ids in
+      let sb' =
+        List.fold_right2
+          (fun id id' s -> Tbl.add id (Uvar id') s)
+          ids ids' sb
+      in
+      Ucatch(nfail, ids', substitute fpc sb u1, substitute fpc sb' u2)
   | Utrywith(u1, id, u2) ->
       let id' = Ident.rename id in
       Utrywith(substitute fpc sb u1, id',
