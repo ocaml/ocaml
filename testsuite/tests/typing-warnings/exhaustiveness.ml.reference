@@ -16,6 +16,11 @@ type v = E | F | G
 Warning 8: this pattern-matching is not exhaustive.
 Here is an example of a value that is not matched:
 (A, A, A, A, A, A, B, (E|F), _, _)
+Characters 172-200:
+     | _, _, _, _, _, _, _, G, _, _ -> 1
+       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Warning 51: this match case is unreachable.
+Consider replacing it with '<pat> -> _'
 val f :
   'a t * 'b t * 'c t * 'd t * 'e t * 'f t * 'g t * v * ('a, 'b, 'c, 'd) u *
   ('e, 'f, 'g, 'g) u -> int = <fun>
@@ -27,17 +32,20 @@ It will remain exhaustive when constructors are added to type t.
 Characters 62-63:
   let f (x : int t) = match x with A -> 1 | _ -> 2;; (* warn *)
                                             ^
-Warning 11: this match case is unused.
+Warning 51: this match case is unreachable.
+Consider replacing it with '<pat> -> _'
 val f : int t -> int = <fun>
-#   Characters 55-56:
-    match x with None -> 1 | _ -> 2 | _ -> _ ;; (* warn? *)
-                             ^
-Warning 11: this match case is unused.
+# Characters 53-54:
+  let f (x : unit t option) = match x with None -> 1 | _ -> 2 ;; (* warn? *)
+                                                       ^
+Warning 51: this match case is unreachable.
+Consider replacing it with '<pat> -> _'
 val f : unit t option -> int = <fun>
-#   Characters 55-61:
-    match x with None -> 1 | Some _ -> 2 | _ -> _ ;; (* warn *)
-                             ^^^^^^
-Warning 11: this match case is unused.
+# Characters 53-59:
+  let f (x : unit t option) = match x with None -> 1 | Some _ -> 2 ;; (* warn *)
+                                                       ^^^^^^
+Warning 51: this match case is unreachable.
+Consider replacing it with '<pat> -> _'
 val f : unit t option -> int = <fun>
 # val f : int t option -> int = <fun>
 # Characters 27-49:

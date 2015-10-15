@@ -1921,7 +1921,10 @@ let check_unused pred tdefs casel =
               if r = Unused && refute && q.pat_desc = Tpat_any then () else
               let r =
                 (* Do not refine if there are no other lines *)
-                if r = Unused || pref = [] then r else
+                let skip =
+                  r = Unused || pref = [] ||
+                  not(refute || Warnings.is_active Warnings.Unreachable_case) in
+                if skip then r else
                 (* Then look for empty patterns *)
                 let sfs = satisfiables pss qs in
                 if sfs = [] then Unused else
@@ -1931,8 +1934,11 @@ let check_unused pred tdefs casel =
                 (*Format.eprintf "%a@." pretty_val u;*)
                 let (pattern,constrs,labels) = Conv.conv u in
                 let pattern = {pattern with Parsetree.ppat_loc = q.pat_loc} in
-                if pred refute constrs labels pattern = None && not refute
-                then Unused else r
+                match pred refute constrs labels pattern with
+                  None when not refute ->
+                    Location.prerr_warning q.pat_loc Warnings.Unreachable_case;
+                    Used
+                | _ -> r
               in
               match r with
               | Unused ->

@@ -15,15 +15,13 @@ let f : type a b c d e f g.
        * (a,b,c,d) u * (e,f,g,g) u -> int =
  function A, A, A, A, A, A, A, _, U, U -> 1
    | _, _, _, _, _, _, _, G, _, _ -> 1
-   (* | _ -> _ *)
+   (*| _ -> _ *)
 ;;
 
 (* Unused cases *)
 let f (x : int t) = match x with A -> 1 | _ -> 2;; (* warn *)
-let f (x : unit t option) =
-  match x with None -> 1 | _ -> 2 | _ -> _ ;; (* warn? *)
-let f (x : unit t option) =
-  match x with None -> 1 | Some _ -> 2 | _ -> _ ;; (* warn *)
+let f (x : unit t option) = match x with None -> 1 | _ -> 2 ;; (* warn? *)
+let f (x : unit t option) = match x with None -> 1 | Some _ -> 2 ;; (* warn *)
 let f (x : int t option) = match x with None -> 1 | _ -> 2;;
 let f (x : int t option) = match x with None -> 1;; (* warn *)
 

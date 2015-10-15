@@ -1364,16 +1364,10 @@ let check_partial ?(lev=get_current_level ()) env expected_ty loc cases =
     (partial_pred ~lev ~explode env expected_ty) loc cases
 
 let check_unused ?(lev=get_current_level ()) env expected_ty cases =
-  let closed =
-    List.exists
-      (function {c_lhs={pat_desc=Tpat_any}; c_rhs=None} -> true | _ -> false)
-      cases
-  in
   Parmatch.check_unused
     (fun refute constrs labels spat ->
-      let explode = if closed || refute then 5 else 0 in
       match
-        partial_pred ~lev ~mode:Split_or ~explode
+        partial_pred ~lev ~mode:Split_or ~explode:5
           env expected_ty constrs labels spat
       with
         Some pat when refute ->

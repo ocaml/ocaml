@@ -70,7 +70,8 @@ module PR6862 :
 #           Characters 146-147:
     let g : int t -> int = function I -> 1 | _ -> 2 (* no warning *)
                                              ^
-Warning 11: this match case is unused.
+Warning 51: this match case is unreachable.
+Consider replacing it with '<pat> -> _'
 module PR6220 :
   sig
     type 'a t = I : int t | F : float t
@@ -109,9 +110,9 @@ module PR6801 :
 #               Characters 118-119:
       let eval (D x) = x
                        ^
-Error: This expression has type a#4 t but an expression was expected of type
+Error: This expression has type a#6 t but an expression was expected of type
          'a
-       The type constructor a#4 would escape its scope
+       The type constructor a#6 would escape its scope
 #               module Rectype :
   sig type (_, _) t = C : ('a, 'a) t val f : ('s, 's * 's) t -> unit end
 #                         Characters 180-188:
@@ -337,14 +338,14 @@ type _ int_bar = IB_constr : < bar : int; .. > int_bar
      ^
 Error: This expression has type t = < foo : int; .. >
        but an expression was expected of type < foo : int >
-       Type ex#44 = < bar : int; .. > is not compatible with type <  > 
+       Type ex#50 = < bar : int; .. > is not compatible with type <  > 
        The second object type has no method bar
 #         Characters 98-99:
     (x:<foo:int;bar:int>)
      ^
 Error: This expression has type t = < foo : int; .. >
        but an expression was expected of type < bar : int; foo : int >
-       Type ex#46 = < bar : int; .. > is not compatible with type
+       Type ex#52 = < bar : int; .. > is not compatible with type
          < bar : int > 
        The first object type has an abstract row, it cannot be closed
 #         Characters 98-99:
@@ -352,7 +353,7 @@ Error: This expression has type t = < foo : int; .. >
      ^
 Error: This expression has type < bar : int; foo : int; .. >
        but an expression was expected of type 'a
-       The type constructor ex#49 would escape its scope
+       The type constructor ex#55 would escape its scope
 #         val g : 'a -> 'a int_foo -> 'a int_bar -> 'a = <fun>
 #         val g : 'a -> 'a int_foo -> 'a int_bar -> 'a * int * int = <fun>
 #       type 'a ty = Int : int -> int ty
