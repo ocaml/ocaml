@@ -64,6 +64,7 @@ type t =
   | No_cmi_file of string                   (* 49 *)
   | Bad_docstring of bool                   (* 50 *)
   | Expect_tailcall                         (* 51 *)
+  | Fragile_literal_pattern                 (* 52 *)
 ;;
 
 val parse_options : bool -> string -> unit;;

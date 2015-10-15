@@ -11,6 +11,8 @@
 (*                                                                     *)
 (***********************************************************************)
 
+exception Int_overflow
+
 val line: Lexing.lexbuf -> string
 val lexeme: Lexing.lexbuf -> Parser.token
 val argument: Lexing.lexbuf -> Parser.token
