@@ -29,7 +29,9 @@ let timings : (part, float * float option) Hashtbl.t = Hashtbl.create 20
 let reset () = Hashtbl.clear timings
 
 let start part =
-  assert(not (Hashtbl.mem timings part));
+  (* Cannot assert it is not here: a source file can be compiled
+     multiple times on the same command line *)
+  (* assert(not (Hashtbl.mem timings part)); *)
   let time = Sys.time () in
   Hashtbl.add timings part (time, None)
 
