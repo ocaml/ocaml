@@ -424,7 +424,8 @@ module BR = Branch_relaxation.Make (struct
     | ELF64v2 -> (fun a b c -> c)
 
   let load_store_size = function
-    | Ibased(s, d) -> 2
+    | Ibased(s, d) ->
+        if !big_toc || !Clflags.for_package <> None then 3 else 2
     | Iindexed ofs -> if is_immediate ofs then 1 else 3
     | Iindexed2 -> 1
 
@@ -434,7 +435,8 @@ module BR = Branch_relaxation.Make (struct
     | Lop(Iconst_int n | Iconst_blockheader n) ->
       if is_native_immediate n then 1 else 2
     | Lop(Iconst_float s) -> size 2 1 1
-    | Lop(Iconst_symbol s) -> size 2 1 1
+    | Lop(Iconst_symbol s) ->
+        size 2 1 (if !big_toc || !Clflags.for_package <> None then 2 else 1)
     | Lop(Icall_ind) -> size 2 5 4
     | Lop(Icall_imm s) -> size 1 3 3
     | Lop(Itailcall_ind) -> size 5 7 6
