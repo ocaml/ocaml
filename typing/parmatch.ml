@@ -1906,7 +1906,8 @@ let do_check_fragile_gadt = do_check_fragile_param exhaust_gadt
 (********************************)
 
 let check_unused pred tdefs casel =
-  if Warnings.is_active Warnings.Unused_match then
+  if Warnings.is_active Warnings.Unused_match
+  || List.exists (fun c -> c.c_rhs = None) casel then
     let rec do_rec pref = function
       | [] -> ()
       | {c_lhs=q; c_guard; c_rhs} :: rem ->
