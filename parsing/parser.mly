@@ -1490,6 +1490,8 @@ match_case:
       { Exp.case $1 $3 }
   | pattern WHEN seq_expr MINUSGREATER seq_expr
       { Exp.case $1 ~guard:$3 $5 }
+  | pattern MINUSGREATER UNDERSCORE
+      { Exp.case_lhs $1 }
 ;
 fun_def:
     MINUSGREATER seq_expr                       { $2 }

@@ -958,14 +958,7 @@ and class_expr cl_num val_env met_env scl =
       in
       let partial =
         Typecore.check_partial val_env pat.pat_type pat.pat_loc
-          [{c_lhs=pat;
-            c_guard=None;
-            c_rhs = (* Dummy expression *)
-            {exp_desc = Texp_constant (Asttypes.Const_int 1);
-             exp_loc = Location.none; exp_extra = [];
-             exp_type = Ctype.none;
-             exp_attributes = [];
-             exp_env = Env.empty }}]
+          [{c_lhs = pat; c_guard = None; c_rhs = None}]
       in
       Ctype.raise_nongen_level ();
       let cl = class_expr cl_num val_env' met_env scl' in

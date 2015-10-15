@@ -329,7 +329,7 @@ let case sub {c_lhs; c_guard; c_rhs} =
   {
    pc_lhs = sub.pat sub c_lhs;
    pc_guard = map_opt (sub.expr sub) c_guard;
-   pc_rhs = sub.expr sub c_rhs;
+   pc_rhs = Some (sub.expr sub c_rhs);
   }
 
 let value_binding sub vb =

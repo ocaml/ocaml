@@ -1341,8 +1341,16 @@ class printer  ()= object(self:'self)
 
   method case_list f l : unit =
     let aux f {pc_lhs; pc_guard; pc_rhs} =
-      pp f "@;| @[<2>%a%a@;->@;%a@]"
-        self#pattern pc_lhs (self#option self#expression ~first:"@;when@;") pc_guard self#under_pipe#expression pc_rhs in
+      match pc_rhs with
+      | Some pc_rhs ->
+          pp f "@;| @[<2>%a%a@;->@;%a@]"
+            self#pattern pc_lhs
+            (self#option self#expression ~first:"@;when@;") pc_guard
+            self#under_pipe#expression pc_rhs
+      | None ->
+          pp f "@;| @[<2>%a@;-> _@]"
+            self#pattern pc_lhs
+    in
     self#list aux f l ~sep:""
   method label_x_expression_param f (l,e) =
     let simple_name = match e.pexp_desc with

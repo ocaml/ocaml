@@ -1909,13 +1909,16 @@ let check_unused pred tdefs casel =
   if Warnings.is_active Warnings.Unused_match then
     let rec do_rec pref = function
       | [] -> ()
-      | {c_lhs=q; c_guard} :: rem ->
+      | {c_lhs=q; c_guard; c_rhs} :: rem ->
           let qs = [q] in
             begin try
               let pss =
                   get_mins le_pats (List.filter (compats qs) pref) in
               (* First look for redundant or partially redundant patterns *)
               let r = every_satisfiables (make_rows pss) (make_row qs) in
+              let refute = (c_rhs = None) in
+              (* Do not warn for unused _ -> _ *)
+              if r = Unused && refute && q.pat_desc = Tpat_any then () else
               let r =
                 (* Do not refine if there are no other lines *)
                 if r = Unused || pref = [] then r else
@@ -1927,7 +1930,9 @@ let check_unused pred tdefs casel =
                 let u = orify_many sfs in
                 (*Format.eprintf "%a@." pretty_val u;*)
                 let (pattern,constrs,labels) = Conv.conv u in
-                if pred constrs labels pattern = None then Unused else r
+                let pattern = {pattern with Parsetree.ppat_loc = q.pat_loc} in
+                if pred refute constrs labels pattern = None && not refute
+                then Unused else r
               in
               match r with
               | Unused ->

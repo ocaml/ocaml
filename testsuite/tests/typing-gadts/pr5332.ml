@@ -12,6 +12,7 @@ let f : type env a. (env, a) typ -> (env, a) typ -> int = fun ta tb ->
    | Tint, Tint -> 0
    | Tbool, Tbool -> 1
    | Tvar var, tb -> 2
+   | _ -> _   (* error *)
 ;;
-let x = f Tint (Tvar Zero)
-;;
+(* let x = f Tint (Tvar Zero) ;; *)
+

@@ -68,6 +68,7 @@ type error =
   | No_value_clauses
   | Exception_pattern_below_toplevel
   | Inlined_record_escape
+  | Unrefuted_pattern of pattern
 
 exception Error of Location.t * Env.t * error
 exception Error_forward of Location.error
@@ -174,7 +175,7 @@ let iter_expression f e =
 
   and case {pc_lhs = _; pc_guard; pc_rhs} =
     may expr pc_guard;
-    expr pc_rhs
+    may expr pc_rhs
 
   and binding x =
     expr x.pvb_expr
@@ -244,7 +245,7 @@ let all_idents_cases el =
   List.iter
     (fun cp ->
       may (iter_expression f) cp.pc_guard;
-      iter_expression f cp.pc_rhs
+      may (iter_expression f) cp.pc_rhs
     )
     el;
   Hashtbl.fold (fun x () rest -> x :: rest) idents []
@@ -969,7 +970,7 @@ let rec type_pat ~constrs ~labels ~no_existentials ~mode ~explode ~env
         if mode = Inside_or then raise Need_backtrack else
         let explode =
           match sp.ppat_desc with
-            Parsetree.Ppat_or _ -> explode - 10
+            Parsetree.Ppat_or _ -> explode - 5
           | _ -> explode - 1
         in
         type_pat ~constrs:(Some constrs) ~labels:(Some labels)
@@ -1357,12 +1358,28 @@ let partial_pred ~lev ?mode ?explode env expected_ty constrs labels p =
     set_state state env;
     None
 
-let check_partial ?(lev=get_current_level ()) env expected_ty =
-  Parmatch.check_partial_gadt (partial_pred ~lev ~explode:10 env expected_ty)
+let check_partial ?(lev=get_current_level ()) env expected_ty loc cases =
+  let explode = match cases with [_] -> 5 | _ -> 0 in
+  Parmatch.check_partial_gadt
+    (partial_pred ~lev ~explode env expected_ty) loc cases
 
-let check_unused ?(lev=get_current_level ()) env expected_ty =
+let check_unused ?(lev=get_current_level ()) env expected_ty cases =
+  let closed =
+    List.exists
+      (function {c_lhs={pat_desc=Tpat_any}; c_rhs=None} -> true | _ -> false)
+      cases
+  in
   Parmatch.check_unused
-    (partial_pred ~lev ~mode:Split_or ~explode:10 env expected_ty) env
+    (fun refute constrs labels spat ->
+      let explode = if closed || refute then 5 else 0 in
+      match
+        partial_pred ~lev ~mode:Split_or ~explode
+          env expected_ty constrs labels spat
+      with
+        Some pat when refute ->
+          raise (Error (spat.ppat_loc, env, Unrefuted_pattern pat))
+      | r -> r)
+    env cases
 
 let rec iter3 f lst1 lst2 lst3 =
   match lst1,lst2,lst3 with
@@ -1493,7 +1510,7 @@ let rec final_subexpression sexp =
   | Pexp_sequence (_, e)
   | Pexp_try (e, _)
   | Pexp_ifthenelse (_, e, _)
-  | Pexp_match (_, {pc_rhs=e} :: _)
+  | Pexp_match (_, {pc_rhs=Some e} :: _)
     -> final_subexpression e
   | _ -> sexp
 
@@ -1620,9 +1637,9 @@ let rec type_approx env sexp =
   | Pexp_fun (p, _, _, e) ->
       let ty = if is_optional p then type_option (newvar ()) else newvar () in
       newty (Tarrow(p, ty, type_approx env e, Cok))
-  | Pexp_function ({pc_rhs=e}::_) ->
+  | Pexp_function ({pc_rhs=Some e}::_) ->
       newty (Tarrow(Nolabel, newvar (), type_approx env e, Cok))
-  | Pexp_match (_, {pc_rhs=e}::_) -> type_approx env e
+  | Pexp_match (_, {pc_rhs=Some e}::_) -> type_approx env e
   | Pexp_try (e, _) -> type_approx env e
   | Pexp_tuple l -> newty (Ttuple(List.map (type_approx env) l))
   | Pexp_ifthenelse (_,e,_) -> type_approx env e
@@ -3609,10 +3626,9 @@ and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
     List.map
       (fun {pc_lhs; pc_guard; pc_rhs} ->
         let loc =
-          let open Location in
-          match pc_guard with
-          | None -> pc_rhs.pexp_loc
-          | Some g -> {pc_rhs.pexp_loc with loc_start=g.pexp_loc.loc_start}
+          match pc_rhs with
+          | None -> pc_lhs.ppat_loc
+          | Some e -> e.pexp_loc
         in
         if !Clflags.principal then begin_def (); (* propagation of pattern *)
         let scope = Some (Annot.Idef loc) in
@@ -3654,6 +3670,10 @@ and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
   let cases =
     List.map2
       (fun (pat, (ext_env, unpacks)) {pc_lhs; pc_guard; pc_rhs} ->
+        match pc_guard, pc_rhs with
+        | None, None -> { c_lhs = pat; c_guard = None; c_rhs = None}
+        | Some _, None -> assert false
+        | _, Some pc_rhs ->
         let sexp = wrap_unpacks pc_rhs unpacks in
         let ty_res' =
           if !Clflags.principal then begin
@@ -3678,14 +3698,14 @@ and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
         {
          c_lhs = pat;
          c_guard = guard;
-         c_rhs = {exp with exp_type = instance env ty_res'}
+         c_rhs = Some {exp with exp_type = instance env ty_res'}
         }
       )
       pat_env_list caselist
   in
   if !Clflags.principal || has_gadts then begin
     let ty_res' = instance env ty_res in
-    List.iter (fun c -> unify_exp env c.c_rhs ty_res') cases
+    List.iter (fun c -> may (fun e -> unify_exp env e ty_res') c.c_rhs) cases
   end;
   let partial =
     if partial_flag then
@@ -3706,6 +3726,10 @@ and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
     (* Ensure that existential types do not escape *)
     unify_exp_types loc env (instance env ty_res) (newvar ()) ;
   end;
+  let cases = Misc.filter_map
+      (function {c_rhs=None} -> None
+        | {c_lhs;c_guard;c_rhs=Some c_rhs} -> Some{c_lhs;c_guard;c_rhs}) cases
+  in
   cases, partial
 
 (* Typing of let bindings *)
@@ -3874,10 +3898,10 @@ and type_let ?(check = fun s -> Warnings.Unused_var s)
   && Warnings.is_active Warnings.Unused_rec_flag then
     Location.prerr_warning (List.hd spat_sexp_list).pvb_pat.ppat_loc
       Warnings.Unused_rec_flag;
-  List.iter2
-    (fun pat exp ->
-      ignore(check_partial env pat.pat_type pat.pat_loc [case pat exp]))
-    pat_list exp_list;
+  List.iter
+    (fun pat ->
+      ignore(check_partial env pat.pat_type pat.pat_loc [case pat None]))
+    pat_list;
   end_def();
   List.iter2
     (fun pat exp ->
@@ -4169,6 +4193,12 @@ let report_error env ppf = function
       fprintf ppf
         "@[This form is not allowed as the type of the inlined record could \
          escape.@]"
+  | Unrefuted_pattern pat ->
+      fprintf ppf
+        "@[%s@ %s@ %a@]"
+        "This match case could not be refuted."
+        "Here is an example of value that would reach it:"
+        Parmatch.top_pretty pat
 
 let report_error env ppf err =
   wrap_printing_env env (fun () -> report_error env ppf err)

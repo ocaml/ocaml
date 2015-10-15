@@ -129,6 +129,7 @@ module PR6437 = struct
   let rec f : type g1 g2. (g1, g2) ctx * g1 var -> g2 var = function
     | Cons g, O -> O
     | Cons g, S n -> S (f (g, n))
+    | _ -> _
   (*| Nil, _ -> (assert false) *)  (* warns, but shouldn't *)
 end;;
 

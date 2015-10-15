@@ -842,7 +842,7 @@ and case i ppf {pc_lhs; pc_guard; pc_rhs} =
   | None -> ()
   | Some g -> line (i+1) ppf "<when>\n"; expression (i + 2) ppf g
   end;
-  expression (i+1) ppf pc_rhs;
+  option (i+1) expression ppf pc_rhs;
 
 and value_binding i ppf x =
   line i ppf "<def>\n";

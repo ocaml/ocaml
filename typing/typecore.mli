@@ -43,7 +43,7 @@ val type_self_pattern:
         Env.t * Env.t * Env.t
 val check_partial:
         ?lev:int -> Env.t -> type_expr ->
-	Location.t -> Typedtree.case list -> Typedtree.partial
+	Location.t -> Typedtree.case_pat list -> Typedtree.partial
 val type_expect:
         ?in_function:(Location.t * type_expr) ->
         Env.t -> Parsetree.expression -> type_expr -> Typedtree.expression
@@ -113,6 +113,7 @@ type error =
   | No_value_clauses
   | Exception_pattern_below_toplevel
   | Inlined_record_escape
+  | Unrefuted_pattern of Typedtree.pattern
 
 exception Error of Location.t * Env.t * error
 exception Error_forward of Location.error

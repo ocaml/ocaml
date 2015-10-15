@@ -109,12 +109,16 @@ and meth =
     Tmeth_name of string
   | Tmeth_val of Ident.t
 
-and case =
+and case = expression case_expr
+
+and 'rhs case_expr =
     {
      c_lhs: pattern;
      c_guard: expression option;
-     c_rhs: expression;
+     c_rhs: 'rhs;
     }
+
+and case_pat = expression option case_expr
 
 (* Value expressions for the class language *)
 

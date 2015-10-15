@@ -63,7 +63,7 @@ val plus_assoc :
 #             val smaller : ('a succ, 'b succ) le -> ('a, 'b) le = <fun>
 #   type (_, _) diff = Diff : 'c nat * ('a, 'c, 'b) plus -> ('a, 'b) diff
 #   * * * * * * * * *                 val diff : ('a, 'b) le -> 'a nat -> 'b nat -> ('a, 'b) diff = <fun>
-#               val diff : ('a, 'b) le -> 'a nat -> 'b nat -> ('a, 'b) diff = <fun>
+#                 val diff : ('a, 'b) le -> 'a nat -> 'b nat -> ('a, 'b) diff = <fun>
 #               val diff : ('a, 'b) le -> 'b nat -> ('a, 'b) diff = <fun>
 #             type (_, _) filter = Filter : ('m, 'n) le * ('a, 'm) seq -> ('a, 'n) filter
 val leS' : ('m, 'n) le -> ('m, 'n succ) le = <fun>

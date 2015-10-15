@@ -120,7 +120,14 @@ module Exp = struct
     {
      pc_lhs = lhs;
      pc_guard = guard;
-     pc_rhs = rhs;
+     pc_rhs = Some rhs;
+    }
+
+  let case_lhs lhs =
+    {
+     pc_lhs = lhs;
+     pc_guard = None;
+     pc_rhs = None;
     }
 end
 
