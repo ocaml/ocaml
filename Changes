@@ -34,6 +34,8 @@ Language features:
   (Jérémie Dimino)
 
 Compilers:
+- PR#4800: better compilation of tuple assignment (Gabriel Scherer and
+  Alain Frisch)
 - PR#6501: harden the native-code generator against certain uses of "%identity"
   (Xavier Leroy, report by Antoine Miné).
 - PR#6636: add --version option

@@ -3013,8 +3013,131 @@ let for_trywith param pat_act_list =
     (fun () -> Lprim(Praise Raise_reraise, [param]))
     param pat_act_list Partial
 
-let for_let loc param pat body =
+let simple_for_let loc param pat body =
   compile_matching loc None (partial_function loc) param [pat, body] Partial
+
+
+(* Optimize binding of immediate tuples
+
+   The goal of the implementation of 'for_let' below, which replaces
+   'simple_for_let', is to avoid tuple allocation in cases such as
+   this one:
+
+     let (x,y) =
+        let foo = ... in
+        if foo then (1, 2) else (3,4)
+     in bar
+
+   The compiler easily optimizes the simple `let (x,y) = (1,2) in ...`
+   case (call to Matching.for_multiple_match from Translcore), but
+   didn't optimize situations where the rhs tuples are hidden under
+   a more complex context.
+
+   The idea comes from Alain Frisch which suggested and implemented
+   the following compilation method, based on Lassign:
+
+     let x = dummy in let y = dummy in
+     begin
+      let foo = ... in
+      if foo then
+        (let x1 = 1 in let y1 = 2 in x <- x1; y <- y1)
+      else
+        (let x2 = 3 in let y2 = 4 in x <- x2; y <- y2)
+     end;
+     bar
+
+   The current implementation from Gabriel Scherer uses Lstaticcatch /
+   Lstaticraise instead:
+
+     catch
+       let foo = ... in
+       if foo then
+         (let x1 = 1 in let y1 = 2 in exit x1 y1)
+       else
+        (let x2 = 3 in let y2 = 4 in exit x2 y2)
+     with x y ->
+       bar
+
+   The catch/exit is used to avoid duplication of the let body ('bar'
+   in the example), on 'if' branches for example; it is useless for
+   linear contexts such as 'let', but we don't need to be careful to
+   generate nice code because Simplif will remove such useless
+   catch/exit.
+*)
+
+let rec map_return f = function
+  | Llet (k, id, l1, l2) -> Llet (k, id, l1, map_return f l2)
+  | Lletrec (l1, l2) -> Lletrec (l1, map_return f l2)
+  | Lifthenelse (lcond, lthen, lelse) ->
+      Lifthenelse (lcond, map_return f lthen, map_return f lelse)
+  | Lsequence (l1, l2) -> Lsequence (l1, map_return f l2)
+  | Levent (l, ev) -> Levent (map_return f l, ev)
+  | Ltrywith (l1, id, l2) -> Ltrywith (map_return f l1, id, map_return f l2)
+  | Lstaticcatch (l1, b, l2) -> Lstaticcatch (map_return f l1, b, map_return f l2)
+  | Lstaticraise _ | Lprim(Praise _, _) as l -> l
+  | l -> f l
+
+(* The 'opt' reference indicates if the optimization is worthy.
+
+   It is shared by the different calls to 'assign_pat' performed from
+   'map_return'. For example with the code
+     let (x, y) = if foo then z else (1,2)
+   the else-branch will activate the optimization for both branches.
+
+   That means that the optimization is activated if *there exists* an
+   interesting tuple in one hole of the let-rhs context. We could
+   choose to activate it only if *all* holes are interesting. We made
+   that choice because being optimistic is extremely cheap (one static
+   exit/catch overhead in the "wrong cases"), while being pessimistic
+   can be costly (one unnecessary tuple allocation).
+*)
+
+let assign_pat opt nraise catch_ids loc pat lam =
+  let rec collect acc pat lam = match pat.pat_desc, lam with
+  | Tpat_tuple patl, Lprim(Pmakeblock _, lams) ->
+      opt := true;
+      List.fold_left2 collect acc patl lams
+  | Tpat_tuple patl, Lconst(Const_block(_, scl)) ->
+      opt := true;
+      let collect_const acc pat sc = collect acc pat (Lconst sc) in
+      List.fold_left2 collect_const acc patl scl
+  | _ ->
+    (* pattern idents will be bound in staticcatch (let body), so we
+       refresh them here to guarantee binders  uniqueness *)
+    let pat_ids = pat_bound_idents pat in
+    let fresh_ids = List.map (fun (id, _) -> id, Ident.rename id) pat_ids in
+    (fresh_ids, alpha_pat fresh_ids pat, lam) :: acc
+  in
+
+  (* sublets were accumulated by 'collect' with the leftmost tuple
+     pattern at the bottom of the list; to respect right-to-left
+     evaluation order for tuples, we must evaluate sublets
+     top-to-bottom. To preserve tail-rec, we will fold_left the
+     reversed list. *)
+  let rev_sublets = List.rev (collect [] pat lam) in
+  let exit =
+    (* build an Ident.tbl to avoid quadratic refreshing costs *)
+    let add t (id, fresh_id) = Ident.add id fresh_id t in
+    let add_ids acc (ids, _pat, _lam) = List.fold_left add acc ids in
+    let tbl = List.fold_left add_ids Ident.empty rev_sublets in
+    let fresh_var id = Lvar (Ident.find_same id tbl) in
+    Lstaticraise(nraise, List.map fresh_var catch_ids)
+  in
+  let push_sublet code (_ids, pat, lam) = simple_for_let loc lam pat code in
+  List.fold_left push_sublet exit rev_sublets
+
+let for_let loc param pat body =
+  match pat.pat_desc with
+  | Tpat_any | Tpat_var _ ->
+      (* fast path *)
+      simple_for_let loc param pat body
+  | _ ->
+      let opt = ref false in
+      let nraise = next_raise_count () in
+      let catch_ids = List.map fst (pat_bound_idents pat) in
+      let bind = map_return (assign_pat opt nraise catch_ids loc pat) param in
+      if !opt then Lstaticcatch(bind, (nraise, catch_ids), body)
+      else simple_for_let loc param pat body
 
 (* Handling of tupled functions and matchings *)
 

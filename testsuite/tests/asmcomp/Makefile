@@ -47,7 +47,7 @@ parsecmm.mli parsecmm.ml: parsecmm.mly
 lexcmm.ml: lexcmm.mll
 	@$(OCAMLLEX) -q lexcmm.mll
 
-MLCASES=optargs staticalloc
+MLCASES=optargs staticalloc bind_tuples
 
 CASES=fib tak quicksort quicksort2 soli \
       arith checkbound tagged-fib tagged-integr tagged-quicksort tagged-tak
