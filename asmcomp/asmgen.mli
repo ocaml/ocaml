@@ -14,7 +14,10 @@
 
 val compile_implementation :
     ?toplevel:(string -> bool) ->
-    string -> Format.formatter -> int * Lambda.lambda -> unit
+    sourcefile:string ->
+    string ->
+    backend:(module Backend_intf.S) ->
+    Format.formatter -> Flambda.program -> unit
 val compile_phrase :
     Format.formatter -> Cmm.phrase -> unit
 
@@ -24,5 +27,7 @@ val report_error: Format.formatter -> error -> unit
 
 
 val compile_unit:
+  sourcefile:string ->
+  string(*prefixname*) ->
   string(*asm file*) -> bool(*keep asm*) ->
   string(*obj file*) -> (unit -> unit) -> unit

@@ -35,8 +35,28 @@ let pass_dump_linear_if ppf flag message phrase =
   if !flag then fprintf ppf "*** %s@.%a@." message Printlinear.fundecl phrase;
   phrase
 
-let clambda_dump_if ppf ulambda =
-  if !dump_clambda then Printclambda.clambda ppf ulambda; ulambda
+let clambda_dump_if ppf
+      ({ Flambda_to_clambda. expr = ulambda; preallocated_blocks = _;
+        structured_constants; exported = _; } as input) =
+  if !dump_clambda then
+    begin
+      Format.fprintf ppf "@.clambda:@.";
+      Printclambda.clambda ppf ulambda;
+      (* List.iter (fun (lbls,cst) -> *)
+      (*     let lbl = match lbls with *)
+      (*       | [] -> assert false *)
+      (*       | (lbl, _) :: _ -> lbl in *)
+      (*     Format.fprintf ppf "%s: %a@." lbl *)
+      (*       Printclambda.structured_constant cst) *)
+      (*   structured_constants *)
+      Symbol.Map.iter (fun sym cst ->
+          Format.fprintf ppf "%a:@ %a@."
+            Symbol.print sym
+            Printclambda.structured_constant cst)
+        structured_constants
+    end;
+  if !dump_cmm then Format.fprintf ppf "@.cmm:@.";
+  input
 
 let rec regalloc ppf round fd =
   if round > 50 then
@@ -75,7 +95,7 @@ let compile_fundecl (ppf : formatter) fd_cmm =
   ++ Split.fundecl
   ++ pass_dump_if ppf dump_split "After live range splitting"
   ++ liveness ppf
-  ++ regalloc ppf 1
+  ++ Timings.(accumulate_time Regalloc (regalloc ppf 1))
   ++ Linearize.fundecl
   ++ pass_dump_linear_if ppf dump_linear "Linearized code"
   ++ Scheduling.fundecl
@@ -99,7 +119,67 @@ let compile_genfuns ppf f =
        | _ -> ())
     (Cmmgen.generic_functions true [Compilenv.current_unit_infos ()])
 
-let compile_unit asm_filename keep_asm obj_filename gen =
+let prep_flambda_for_export ppf flam ~backend =
+  let kind = Flambda_invariants.Lifted in
+  if !Clflags.dump_flambda
+  then begin
+    Format.fprintf ppf "@.Starting Lift_constants:@."
+  end;
+  let program = Lift_constants.lift_constants flam ~backend in
+  if !Clflags.dump_flambda
+  then begin
+    Format.fprintf ppf "@.After Lift_constants (before invariants):@ %a@."
+      Flambda.print_program program
+  end;
+  Flambda_invariants.check_exn ~kind program;
+  if !Clflags.dump_flambda
+  then begin
+    Format.fprintf ppf "@.After Lift_constants:@ %a@."
+      Flambda.print_program program
+  end;
+  if !Clflags.dump_flambda
+  then begin
+    Format.fprintf ppf "@.Starting Share_constants:@."
+  end;
+  let program = Share_constants.share_constants program in
+  if !Clflags.dump_flambda
+  then begin
+    Format.fprintf ppf "@.After Share_constants (before invariants):@ %a@."
+      Flambda.print_program program
+  end;
+  Flambda_invariants.check_exn ~kind program;
+  if !Clflags.dump_flambda
+  then begin
+    Format.fprintf ppf "@.After Share_constants:@ %a@."
+      Flambda.print_program program
+  end;
+  (* let program = Inline_and_simplify.run ~never_inline:true ~backend program in *)
+  (* Flambda_invariants.check_exn ~kind program; *)
+  if !Clflags.dump_flambda
+  then begin
+    Format.fprintf ppf "@.After Inline_and_simplify:@ %a@."
+      Flambda.print_program program
+  end;
+  let export = Build_export_info.build_export_info ~backend program in
+  (* Compilenv.set_export_info export; *)
+  (* if !Clflags.dump_flambda *)
+  (* then begin *)
+  (*   Format.fprintf ppf "After Build_export_info:@ %a@." *)
+  (*     Flambda.print_program program *)
+  (* end; *)
+  Flambda_invariants.check_exn ~kind program;
+(*
+  Symbol.Map.iter (fun _ set_of_closures ->
+      let var = Variable.create "dummy" in
+      let expr : Flambda.t =
+        Let (var, Set_of_closures set_of_closures, Var var)
+      in
+      Flambda_invariants.check_exn ~kind ~cmxfile:true expr)
+    lifted_constants.Lift_constants.set_of_closures_map;
+*)
+  program, export
+
+let compile_unit ~sourcefile _output_prefix asm_filename keep_asm obj_filename gen =
   let create_asm = keep_asm || not !Emitaux.binary_backend_available in
   Emitaux.create_asm_file := create_asm;
   try
@@ -112,19 +192,38 @@ let compile_unit asm_filename keep_asm obj_filename gen =
       if not keep_asm then remove_file asm_filename;
       raise exn
     end;
+    Timings.(start (Assemble sourcefile));
     if Proc.assemble_file asm_filename obj_filename <> 0
     then raise(Error(Assembler_error asm_filename));
+    Timings.(stop (Assemble sourcefile));
     if create_asm && not keep_asm then remove_file asm_filename
   with exn ->
     remove_file obj_filename;
     raise exn
 
-let gen_implementation ?toplevel ppf (size, lam) =
+let set_export_info (ulambda, prealloc, structured_constants, export) =
+  Compilenv.set_export_info export;
+  (ulambda, prealloc, structured_constants)
+
+let gen_implementation ?toplevel ~sourcefile ~backend ppf flam =
   Emit.begin_assembly ();
-  Closure.intro size lam
+  Timings.(start (Flambda_backend sourcefile));
+  prep_flambda_for_export ppf flam ~backend
+  ++ Flambda_to_clambda.convert
   ++ clambda_dump_if ppf
-  ++ Cmmgen.compunit size
-  ++ List.iter (compile_phrase ppf) ++ (fun () -> ());
+  (* CR mshinwell: this is ugly *)
+  ++ (fun { Flambda_to_clambda. expr; preallocated_blocks;
+          structured_constants; exported; } ->
+        Un_anf.apply expr, preallocated_blocks, structured_constants, exported)
+  ++ set_export_info
+  ++ Timings.(stop_id (Flambda_backend sourcefile))
+  ++ Timings.(start_id (Cmm sourcefile))
+  ++ Cmmgen.compunit_and_constants
+  ++ Timings.(stop_id (Cmm sourcefile))
+  ++ Timings.(start_id (Compile_phrases sourcefile))
+  ++ List.iter (compile_phrase ppf)
+  ++ Timings.(stop_id (Compile_phrases sourcefile))
+  ++ (fun () -> ());
   (match toplevel with None -> () | Some f -> compile_genfuns ppf f);
 
   (* We add explicit references to external primitive symbols.  This
@@ -140,14 +239,16 @@ let gen_implementation ?toplevel ppf (size, lam) =
     );
   Emit.end_assembly ()
 
-let compile_implementation ?toplevel prefixname ppf (size, lam) =
+let compile_implementation ?toplevel ~sourcefile prefixname ~backend ppf
+      flam =
   let asmfile =
     if !keep_asm_file || !Emitaux.binary_backend_available
     then prefixname ^ ext_asm
     else Filename.temp_file "camlasm" ext_asm
   in
-  compile_unit asmfile !keep_asm_file (prefixname ^ ext_obj)
-    (fun () -> gen_implementation ?toplevel ppf (size, lam))
+  compile_unit ~sourcefile prefixname asmfile !keep_asm_file (prefixname ^ ext_obj)
+    (fun () ->
+       gen_implementation ?toplevel ~sourcefile ~backend ppf flam)
 
 (* Error report *)
 

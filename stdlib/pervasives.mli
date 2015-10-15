@@ -1132,3 +1132,5 @@ val valid_float_lexem : string -> string
 val unsafe_really_input : in_channel -> bytes -> int -> int -> unit
 
 val do_at_exit : unit -> unit
+
+val last_exit_function : (unit -> unit) ref

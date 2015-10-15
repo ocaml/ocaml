@@ -67,6 +67,7 @@ val dump_typedtree : bool ref
 val dump_rawlambda : bool ref
 val dump_lambda : bool ref
 val dump_clambda : bool ref
+val dump_flambda : bool ref
 val dump_instr : bool ref
 val keep_asm_file : bool ref
 val optimize_for_speed : bool ref
@@ -86,6 +87,14 @@ val keep_startup_file : bool ref
 val dump_combine : bool ref
 val native_code : bool ref
 val inline_threshold : int ref
+val inlining_stats : bool ref
+val simplify_rounds : int ref
+val unroll : int ref
+val functor_heuristics : bool ref
+val inline_call_cost : int ref
+val inline_alloc_cost : int ref
+val inline_prim_cost : int ref
+val inline_branch_cost : int ref
 val dont_write_files : bool ref
 val std_include_flag : string -> string
 val std_include_dir : unit -> string list
@@ -98,6 +107,9 @@ val keep_docs : bool ref
 val keep_locs : bool ref
 val unsafe_string : bool ref
 val opaque : bool ref
+val print_timings : bool ref
+val full_flambda_invariant_check : bool ref
+val unbox_closures : bool ref
 
 type color_setting = Auto | Always | Never
 val parse_color_setting : string -> color_setting option

@@ -104,7 +104,7 @@ extern char * caml_bottom_of_stack;
 extern uintnat caml_last_return_address;
 extern value * caml_gc_regs;
 extern char * caml_exception_pointer;
-extern value caml_globals[];
+extern value * caml_globals[];
 extern intnat caml_globals_inited;
 extern intnat * caml_frametable[];
 

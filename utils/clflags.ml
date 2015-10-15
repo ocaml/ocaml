@@ -70,6 +70,7 @@ and dump_typedtree = ref false          (* -dtypedtree *)
 and dump_rawlambda = ref false          (* -drawlambda *)
 and dump_lambda = ref false             (* -dlambda *)
 and dump_clambda = ref false            (* -dclambda *)
+and dump_flambda = ref false            (* -dflambda *)
 and dump_instr = ref false              (* -dinstr *)
 
 let keep_asm_file = ref false           (* -S *)
@@ -92,6 +93,9 @@ let keep_startup_file = ref false       (* -dstartup *)
 let dump_combine = ref false            (* -dcombine *)
 let native_code = ref false             (* set to true under ocamlopt *)
 let inline_threshold = ref 10
+let inlining_stats = ref false
+let simplify_rounds = ref 1
+let unroll = ref 0
 let force_slash = ref false             (* for ocamldep *)
 
 let dont_write_files = ref false        (* set to true under ocamldoc *)
@@ -117,6 +121,22 @@ let runtime_variant = ref "";;      (* -runtime-variant *)
 let keep_docs = ref false              (* -keep-docs *)
 let keep_locs = ref false              (* -keep-locs *)
 let unsafe_string = ref true;;         (* -safe-string / -unsafe-string *)
+
+let functor_heuristics = ref true;;    (* -no-functor-heuristics *)
+let inline_call_cost = ref 5           (* -inline-call-cost *)
+let inline_alloc_cost = ref 10         (* -inline-alloc-cost *)
+let inline_prim_cost = ref 3           (* -inline-prim-cost *)
+let inline_branch_cost = ref 10        (* -inline-branch-cost *)
+
+let print_timings = ref false          (* -timings *)
+
+let unbox_closures = ref false          (* -unbox-closures *)
+
+(* CR mshinwell: change to [false] before merge, and finish off
+   command line arg support *)
+let full_flambda_invariant_check =
+  try ignore (Sys.getenv "DISABLE_FULL_FLAMBDA_INVARIANT_CHECK"); ref false
+  with _ -> ref true
 
 type color_setting = Auto | Always | Never
 let parse_color_setting = function

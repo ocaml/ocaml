@@ -57,7 +57,13 @@ let print_if ppf flag printer arg =
 let (++) x f = f x
 let (+++) (x, y) f = (x, f y)
 
-let implementation ppf sourcefile outputprefix =
+let do_transl modulename modul =
+  let id, (lam, size) =
+    Translmod.transl_implementation_native modulename modul
+  in
+  (id, size), lam
+
+let implementation ppf sourcefile outputprefix ~backend =
   Compmisc.init_path true;
   let modulename = module_of_filename ppf sourcefile outputprefix in
   Env.set_unit_name modulename;
@@ -70,18 +76,30 @@ let implementation ppf sourcefile outputprefix =
       ast
       ++ print_if ppf Clflags.dump_parsetree Printast.implementation
       ++ print_if ppf Clflags.dump_source Pprintast.structure
+      ++ Timings.(start_id (Typing sourcefile))
       ++ Typemod.type_implementation sourcefile outputprefix modulename env
+      ++ Timings.(stop_id (Typing sourcefile))
       ++ print_if ppf Clflags.dump_typedtree
-        Printtyped.implementation_with_coercion
+          Printtyped.implementation_with_coercion
     in
     if not !Clflags.print_types then begin
       (typedtree, coercion)
-      ++ Translmod.transl_store_implementation modulename
+      ++ Timings.(start_id (Transl sourcefile))
+      ++ do_transl modulename
+      ++ Timings.(stop_id (Transl sourcefile))
       +++ print_if ppf Clflags.dump_rawlambda Printlambda.lambda
+      ++ Timings.(start_id (Generate sourcefile))
       +++ Simplif.simplify_lambda
       +++ print_if ppf Clflags.dump_lambda Printlambda.lambda
-      ++ Asmgen.compile_implementation outputprefix ppf;
+      ++ (fun ((module_ident, size), lam) ->
+          Middle_end.middle_end ppf ~sourcefile ~prefixname:outputprefix
+            ~size
+            ~module_ident
+            ~backend
+            ~module_initializer:lam)
+      ++ Asmgen.compile_implementation ~sourcefile outputprefix ~backend ppf;
       Compilenv.save_unit_info cmxfile;
+      Timings.(stop (Generate sourcefile));
     end;
     Warnings.check_fatal ();
     Stypes.dump (Some (outputprefix ^ ".annot"))

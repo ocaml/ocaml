@@ -82,7 +82,7 @@ defaultpromote:
 	done
 
 defaultclean:
-	@rm -f *.cmo *.cmi *.cmx *.cma *.cmxa *.cmxs *.$(O) *.$(SO) *.$(A)
+	@rm -f *.cmo *.cmi *.cmx *.cma *.cmxa *.cmxs *.$(O) *.$(SO) *.$(A) *.cmp *.out
 	@for dsym in *.dSYM; do \
 	  if [ -d $$dsym ]; then \
 	    rm -fr $$dsym; \

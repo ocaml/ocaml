@@ -847,6 +847,12 @@ mutually recursive types.
 50
 \ \ Unexpected documentation comment.
 
+51
+\ \ Abusive use of Obj.magic (only apply to ocamlopt).
+
+52
+\ \ Missing symbol information (only apply to ocamlopt).
+
 The letters stand for the following sets of warnings.  Any letter not
 mentioned here corresponds to the empty set.
 

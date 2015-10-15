@@ -399,19 +399,20 @@ external get_public_method : obj -> tag -> closure
 
 (**** table collection access ****)
 
-type tables = Empty | Cons of closure * tables * tables
+type tables =
+  | Empty
+  | Cons of {key : closure; mutable data: tables; mutable next: tables}
 type mut_tables =
     {key: closure; mutable data: tables; mutable next: tables}
 external mut : tables -> mut_tables = "%identity"
-external demut : mut_tables -> tables = "%identity"
 
 let build_path n keys tables =
   (* Be careful not to create a seemingly immutable block, otherwise it could
      be statically allocated.  See #5779. *)
-  let res = demut {key = Obj.magic 0; data = Empty; next = Empty} in
+  let res = Cons {key = Obj.magic 0; data = Empty; next = Empty} in
   let r = ref res in
   for i = 0 to n do
-    r := Cons (keys.(i), !r, Empty)
+    r := Cons {key = keys.(i); data = !r; next = Empty}
   done;
   tables.data <- !r;
   res
@@ -422,7 +423,7 @@ let rec lookup_keys i keys tables =
   let rec lookup_key tables =
     if tables.key == key then lookup_keys (i-1) keys tables.data else
     if tables.next <> Empty then lookup_key (mut tables.next) else
-    let next = Cons (key, Empty, Empty) in
+    let next = Cons {key; data = Empty; next = Empty} in
     tables.next <- next;
     build_path (i-1) keys (mut next)
   in

@@ -43,6 +43,7 @@ module type Common_options = sig
   val _dtypedtree : unit -> unit
   val _drawlambda : unit -> unit
   val _dlambda : unit -> unit
+  val _dflambda : unit -> unit
 
   val anonymous : string -> unit
 end
@@ -83,6 +84,7 @@ module type Compiler_options =  sig
   val _color : string -> unit
 
   val _nopervasives : unit -> unit
+  val _dtimings : unit -> unit
 end
 ;;
 
@@ -117,6 +119,15 @@ end;;
 module type Optcommon_options = sig
   val _compact : unit -> unit
   val _inline : int -> unit
+  val _inlining_stats : unit -> unit
+  val _rounds : int -> unit
+  val _unroll : int -> unit
+  val _no_functor_heuristics : unit -> unit
+  val _inline_call_cost : int -> unit
+  val _inline_alloc_cost : int -> unit
+  val _inline_prim_cost : int -> unit
+  val _inline_branch_cost : int -> unit
+  val _unbox_closures : unit -> unit
 
   val _dclambda : unit -> unit
   val _dcmm : unit -> unit

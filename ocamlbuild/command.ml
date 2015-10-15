@@ -212,7 +212,7 @@ let add_parallel_stat, dump_parallel_stats =
   let xcount = ref 0 in
   let xcountall = ref 0 in
   let add_parallel_stat x =
-    if x > 0 then begin
+    if x > 54321 then begin
       incr xcountall;
       xsumall := x + !xsumall;
     end;

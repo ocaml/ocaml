@@ -14,6 +14,21 @@ open Config
 open Clflags
 open Compenv
 
+module Backend = struct
+  (* See backend_intf.mli. *)
+
+  let symbol_for_global' = Compilenv.symbol_for_global'
+  let closure_symbol = Compilenv.closure_symbol
+
+  let really_import_approx = Import_approx.really_import_approx
+  let import_global = Import_approx.import_global
+  let import_symbol = Import_approx.import_symbol
+
+  let size_int = Arch.size_int
+  let big_endian = Arch.big_endian
+end
+let backend = (module Backend : Backend_intf.S)
+
 let process_interface_file ppf name =
   let opref = output_prefix name in
   Optcompile.interface ppf name opref;
@@ -21,7 +36,7 @@ let process_interface_file ppf name =
 
 let process_implementation_file ppf name =
   let opref = output_prefix name in
-  Optcompile.implementation ppf name opref;
+  Optcompile.implementation ppf name opref ~backend;
   objfiles := (opref ^ ".cmx") :: !objfiles
 
 let cmxa_present = ref false;;
@@ -56,11 +71,11 @@ let ppf = Format.err_formatter
 
 (* Error messages to standard error formatter *)
 let anonymous filename =
-  readenv ppf Before_compile; process_file ppf filename;;
+  readenv ppf (Before_compile filename); process_file ppf filename;;
 let impl filename =
-  readenv ppf Before_compile; process_implementation_file ppf filename;;
+  readenv ppf (Before_compile filename); process_implementation_file ppf filename;;
 let intf filename =
-  readenv ppf Before_compile; process_interface_file ppf filename;;
+  readenv ppf (Before_compile filename); process_interface_file ppf filename;;
 
 let show_config () =
   Config.print_config stdout;
@@ -87,6 +102,14 @@ module Options = Main_args.Make_optcomp_options (struct
   let _I dir = include_dirs := dir :: !include_dirs
   let _impl = impl
   let _inline n = inline_threshold := n * 8
+  let _inlining_stats () = inlining_stats := true
+  let _rounds n = simplify_rounds := n
+  let _unroll n = unroll := n
+  let _no_functor_heuristics () = functor_heuristics := false
+  let _inline_call_cost n = inline_call_cost := n
+  let _inline_alloc_cost n = inline_alloc_cost := n
+  let _inline_prim_cost n = inline_prim_cost := n
+  let _inline_branch_cost n = inline_branch_cost := n
   let _intf = intf
   let _intf_suffix s = Config.interface_suffix := s
   let _keep_docs = set keep_docs
@@ -120,6 +143,7 @@ module Options = Main_args.Make_optcomp_options (struct
   let _shared () = shared := true; dlcode := true
   let _S = set keep_asm_file
   let _thread = set use_threads
+  let _unbox_closures = set unbox_closures
   let _unsafe = set fast
   let _unsafe_string = set unsafe_string
   let _v () = print_version_and_library "native-code compiler"
@@ -143,6 +167,7 @@ module Options = Main_args.Make_optcomp_options (struct
   let _drawlambda = set dump_rawlambda
   let _dlambda = set dump_lambda
   let _dclambda = set dump_clambda
+  let _dflambda = set dump_flambda
   let _dcmm = set dump_cmm
   let _dsel = set dump_selection
   let _dcombine = set dump_combine
@@ -157,12 +182,14 @@ module Options = Main_args.Make_optcomp_options (struct
   let _dscheduling = set dump_scheduling
   let _dlinear = set dump_linear
   let _dstartup = set keep_startup_file
+  let _dtimings = set print_timings
   let _opaque = set opaque
 
   let anonymous = anonymous
 end);;
 
 let main () =
+  Timings.start Timings.All;
   native_code := true;
   let ppf = Format.err_formatter in
   try
@@ -187,7 +214,7 @@ let main () =
       Compmisc.init_path true;
       let target = extract_output !output_name in
       Asmpackager.package_files ppf (Compmisc.initial_env ())
-        (get_objfiles ()) target;
+        (get_objfiles ()) target ~backend;
       Warnings.check_fatal ();
     end
     else if !shared then begin
@@ -216,6 +243,8 @@ let main () =
       Asmlink.link ppf (get_objfiles ()) target;
       Warnings.check_fatal ();
     end;
+    Timings.stop Timings.All;
+    if !Clflags.print_timings then Timings.print Format.std_formatter;
     exit 0
   with x ->
       Location.report_exception ppf x;

@@ -113,6 +113,33 @@ let mk_inline f =
   "-inline", Arg.Int f, "<n>  Set aggressiveness of inlining to <n>"
 ;;
 
+let mk_inlining_stats f =
+  "-inlining-stats", Arg.Unit f, " Emit .i files containing inlining statistics"
+;;
+
+let mk_rounds f =
+  "-rounds", Arg.Int f, "<n>  Set number of simplification rounds to <n>"
+;;
+
+let mk_unroll f =
+  "-unroll", Arg.Int f, "<n>  Set maximal number of times a function can be unrolled"
+;;
+
+let mk_no_functor_heuristics f =
+  "-no-functor-heuristics", Arg.Unit f, " Disable the heuristics that force toplevel function applications to be inlined"
+;;
+
+let mk_inline_cost arg descr f =
+  Printf.sprintf "-inline-%s-cost" arg,
+  Arg.Int f,
+  Printf.sprintf "<n>  Set how much a function size can increase for each removed %s" descr
+;;
+
+let mk_inline_call_cost = mk_inline_cost "call" "call"
+let mk_inline_alloc_cost = mk_inline_cost "alloc" "allocation"
+let mk_inline_prim_cost = mk_inline_cost "prim" "primitive"
+let mk_inline_branch_cost = mk_inline_cost "branch" "conditionnal"
+
 let mk_intf f =
   "-intf", Arg.String f, "<file>  Compile <file> as a .mli file"
 ;;
@@ -296,6 +323,15 @@ let mk_thread f =
   " Generate code that supports the system threads library"
 ;;
 
+let mk_dtimings f =
+  "-dtimings", Arg.Unit f, " Print timings"
+;;
+
+let mk_unbox_closures f =
+  "-unbox-closures", Arg.Unit f,
+  " Pass closure contents in arguments rather than in an allocated block"
+;;
+
 let mk_unsafe f =
   "-unsafe", Arg.Unit f,
   " Do not compile bounds checking on array and string access"
@@ -417,6 +453,10 @@ let mk_dclambda f =
   "-dclambda", Arg.Unit f, " (undocumented)"
 ;;
 
+let mk_dflambda f =
+  "-dflambda", Arg.Unit f, " (undocumented)"
+;;
+
 let mk_dinstr f =
   "-dinstr", Arg.Unit f, " (undocumented)"
 ;;
@@ -527,6 +567,7 @@ module type Common_options = sig
   val _dtypedtree : unit -> unit
   val _drawlambda : unit -> unit
   val _dlambda : unit -> unit
+  val _dflambda : unit -> unit
 
   val anonymous : string -> unit
 end;;
@@ -567,6 +608,7 @@ module type Compiler_options = sig
   val _color : string -> unit
 
   val _nopervasives : unit -> unit
+  val _dtimings : unit -> unit
 end
 ;;
 
@@ -601,6 +643,15 @@ end;;
 module type Optcommon_options = sig
   val _compact : unit -> unit
   val _inline : int -> unit
+  val _inlining_stats : unit -> unit
+  val _rounds : int -> unit
+  val _unroll : int -> unit
+  val _no_functor_heuristics : unit -> unit
+  val _inline_call_cost : int -> unit
+  val _inline_alloc_cost : int -> unit
+  val _inline_prim_cost : int -> unit
+  val _inline_branch_cost : int -> unit
+  val _unbox_closures : unit -> unit
 
   val _dclambda : unit -> unit
   val _dcmm : unit -> unit
@@ -741,7 +792,9 @@ struct
     mk_dtypedtree F._dtypedtree;
     mk_drawlambda F._drawlambda;
     mk_dlambda F._dlambda;
+    mk_dflambda F._dflambda;
     mk_dinstr F._dinstr;
+    mk_dtimings F._dtimings;
   ]
 end;;
 
@@ -784,6 +837,7 @@ struct
     mk_dtypedtree F._dtypedtree;
     mk_drawlambda F._drawlambda;
     mk_dlambda F._dlambda;
+    mk_dflambda F._dflambda;
     mk_dinstr F._dinstr;
   ]
 end;;
@@ -809,6 +863,14 @@ struct
     mk_I F._I;
     mk_impl F._impl;
     mk_inline F._inline;
+    mk_inlining_stats F._inlining_stats;
+    mk_rounds F._rounds;
+    mk_unroll F._unroll;
+    mk_no_functor_heuristics F._no_functor_heuristics;
+    mk_inline_call_cost F._inline_call_cost;
+    mk_inline_alloc_cost F._inline_alloc_cost;
+    mk_inline_prim_cost F._inline_prim_cost;
+    mk_inline_branch_cost F._inline_branch_cost;
     mk_intf F._intf;
     mk_intf_suffix F._intf_suffix;
     mk_keep_docs F._keep_docs;
@@ -841,6 +903,7 @@ struct
     mk_strict_sequence F._strict_sequence;
     mk_strict_formats F._strict_formats;
     mk_thread F._thread;
+    mk_unbox_closures F._unbox_closures;
     mk_unsafe F._unsafe;
     mk_unsafe_string F._unsafe_string;
     mk_v F._v;
@@ -861,6 +924,7 @@ struct
     mk_drawlambda F._drawlambda;
     mk_dlambda F._dlambda;
     mk_dclambda F._dclambda;
+    mk_dflambda F._dflambda;
     mk_dcmm F._dcmm;
     mk_dsel F._dsel;
     mk_dcombine F._dcombine;
@@ -875,6 +939,7 @@ struct
     mk_dscheduling F._dscheduling;
     mk_dlinear F._dlinear;
     mk_dstartup F._dstartup;
+    mk_dtimings F._dtimings;
     mk_opaque F._opaque;
   ]
 end;;
@@ -886,6 +951,14 @@ module Make_opttop_options (F : Opttop_options) = struct
     mk_I F._I;
     mk_init F._init;
     mk_inline F._inline;
+    mk_inlining_stats F._inlining_stats;
+    mk_rounds F._rounds;
+    mk_unroll F._unroll;
+    mk_no_functor_heuristics F._no_functor_heuristics;
+    mk_inline_call_cost F._inline_call_cost;
+    mk_inline_alloc_cost F._inline_alloc_cost;
+    mk_inline_prim_cost F._inline_prim_cost;
+    mk_inline_branch_cost F._inline_branch_cost;
     mk_labels F._labels;
     mk_no_alias_deps F._no_alias_deps;
     mk_no_app_funct F._no_app_funct;
@@ -905,6 +978,7 @@ module Make_opttop_options (F : Opttop_options) = struct
     mk_stdin F._stdin;
     mk_strict_sequence F._strict_sequence;
     mk_strict_formats F._strict_formats;
+    mk_unbox_closures F._unbox_closures;
     mk_unsafe F._unsafe;
     mk_unsafe_string F._unsafe_string;
     mk_version F._version;
@@ -920,6 +994,7 @@ module Make_opttop_options (F : Opttop_options) = struct
     mk_dtypedtree F._dtypedtree;
     mk_drawlambda F._drawlambda;
     mk_dclambda F._dclambda;
+    mk_dflambda F._dflambda;
     mk_dcmm F._dcmm;
     mk_dsel F._dsel;
     mk_dcombine F._dcombine;

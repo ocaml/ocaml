@@ -356,7 +356,7 @@ let mli_file_dependencies source_file =
     end
 
 let file_dependencies_as kind source_file =
-  Compenv.readenv ppf Before_compile;
+  Compenv.readenv ppf (Before_compile source_file);
   load_path := [];
   List.iter add_to_load_path (
       (!Compenv.last_include_dirs @

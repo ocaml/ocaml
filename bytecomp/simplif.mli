@@ -19,6 +19,8 @@ open Lambda
 
 val simplify_lambda: lambda -> lambda
 
+val map: (lambda -> lambda) -> lambda -> lambda
+
 (* To be filled by asmcomp/selectgen.ml *)
 val is_tail_native_heuristic: (int -> bool) ref
                           (* # arguments -> can tailcall *)

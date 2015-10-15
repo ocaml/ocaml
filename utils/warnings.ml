@@ -69,6 +69,8 @@ type t =
   | No_cmi_file of string                   (* 49 *)
   | Bad_docstring of bool                   (* 50 *)
   | Expect_tailcall                         (* 51 *)
+  | Assignment_on_non_mutable_value         (* 52 *)
+  | Missing_symbol_information of string * string (* 53 *)
 ;;
 
 (* If you remove a warning, leave a hole in the numbering.  NEVER change
@@ -129,9 +131,11 @@ let number = function
   | No_cmi_file _ -> 49
   | Bad_docstring _ -> 50
   | Expect_tailcall -> 51
+  | Assignment_on_non_mutable_value -> 52
+  | Missing_symbol_information _ -> 53
 ;;
 
-let last_warning_number = 51
+let last_warning_number = 53
 (* Must be the max number returned by the [number] function. *)
 
 let letter = function
@@ -397,6 +401,13 @@ let message = function
       else "ambiguous documentation comment"
   | Expect_tailcall ->
       Printf.sprintf "expected tailcall"
+  | Assignment_on_non_mutable_value ->
+      "Assignment on non-mutable value"
+  | Missing_symbol_information (symbol, unit) ->
+      Printf.sprintf
+        "No information found for the symbol %s, potentially inhibiting optimisation.\n\
+         A .cmx or .cmxa file is probably missing.  Check the -I arguments given to the compiler."
+        symbol
 ;;
 
 let nerrors = ref 0;;
@@ -483,6 +494,8 @@ let descriptions =
    49, "Missing cmi file when looking up module alias.";
    50, "Unexpected documentation comment.";
    51, "Warning on non-tail calls if @tailcall present";
+   52, "Assignment on non-mutable value";
+   53, "Missing symbol information (is a .cmx file missing?)";
   ]
 ;;
 

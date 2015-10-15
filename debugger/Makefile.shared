@@ -32,6 +32,7 @@ OTHEROBJS=\
   $(UNIXDIR)/unix.cma \
   ../utils/misc.cmo ../utils/config.cmo ../utils/tbl.cmo \
   ../utils/clflags.cmo ../utils/consistbl.cmo ../utils/warnings.cmo \
+  ../utils/ext_types.cmo \
   ../parsing/location.cmo ../parsing/longident.cmo ../parsing/docstrings.cmo \
   ../parsing/ast_helper.cmo ../parsing/ast_mapper.cmo \
   ../parsing/attr_helper.cmo \
@@ -84,7 +85,7 @@ OBJS=\
 all: ocamldebug$(EXE)
 
 ocamldebug$(EXE): $(OBJS) $(OTHEROBJS)
-	$(CAMLC) $(LINKFLAGS) -o ocamldebug$(EXE) -linkall $(OTHEROBJS) $(OBJS)
+	$(CAMLC) $(LINKFLAGS) -o ocamldebug$(EXE) -linkall ${BISECT_CMA} $(OTHEROBJS) $(OBJS)
 
 install:
 	cp ocamldebug$(EXE) $(INSTALL_BINDIR)/ocamldebug$(EXE)

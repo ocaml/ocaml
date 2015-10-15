@@ -18,7 +18,7 @@ TARGET_BINDIR ?= $(BINDIR)
 
 COMPILER=../ocamlc
 CAMLC=$(CAMLRUN) $(COMPILER)
-COMPFLAGS=-strict-sequence -w +33..39 -g -warn-error A -bin-annot -nostdlib \
+COMPFLAGS=-strict-sequence -w +33..39 -g -warn-error A-53 -bin-annot -nostdlib \
           -safe-string
 OPTCOMPILER=../ocamlopt
 CAMLOPT=$(CAMLRUN) $(OPTCOMPILER)
@@ -59,10 +59,10 @@ install-runtimed: target_camlheaderd
 .PHONY: install-runtimed
 
 stdlib.cma: $(OBJS)
-	$(CAMLC) -a -o stdlib.cma $(OBJS)
+	$(CAMLC) -a -g -o stdlib.cma $(OBJS)
 
 stdlib.cmxa: $(OBJS:.cmo=.cmx)
-	$(CAMLOPT) -a -o stdlib.cmxa $(OBJS:.cmo=.cmx)
+	$(CAMLOPT) -a -g -o stdlib.cmxa $(OBJS:.cmo=.cmx)
 
 sys.ml: sys.mlp ../VERSION
 	sed -e "s|%%VERSION%%|`sed -e 1q ../VERSION`|" sys.mlp >sys.ml
@@ -82,7 +82,7 @@ clean::
 	$(CAMLC) $(COMPFLAGS) `./Compflags $@` -c $<
 
 .ml.cmx:
-	$(CAMLOPT) $(COMPFLAGS) `./Compflags $@` -c $<
+	$(CAMLOPT) $(COMPFLAGS) -inlining-stats `./Compflags $@` -c $<
 
 .ml.p.cmx:
 	$(CAMLOPT) $(COMPFLAGS) `./Compflags $@` -p -c -o $*.p.cmx $<

@@ -77,7 +77,7 @@ partialclean:
 	rm -f *.cm*
 
 clean:: partialclean
-	rm -f *.dll *.so *.a *.lib *.o *.obj
+	rm -f *.dll *.so *.a *.lib *.o *.obj *.out
 
 .SUFFIXES: .ml .mli .cmi .cmo .cmx .$(O)
 

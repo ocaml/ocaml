@@ -475,7 +475,7 @@ method emit_expr env exp =
         try
           Tbl.find v env
         with Not_found ->
-          fatal_error ("Selection.emit_expr: unbound var " ^ Ident.name v) in
+          fatal_error ("Selection.emit_expr: unbound var " ^ Ident.unique_name v) in
       begin match self#emit_expr env e1 with
         None -> None
       | Some r1 -> self#adjust_types r1 rv; self#insert_moves r1 rv; Some [||]

@@ -16,6 +16,8 @@
 *)
 type tree = Tree of tree list
 
+let print_endline _ = ()
+
 let test =
   let rec x = (Tree [(print_endline "x"; y); z])
   and y = Tree (print_endline "y"; [])

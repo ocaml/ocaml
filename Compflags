@@ -1,0 +1,44 @@
+#!/bin/sh
+#########################################################################
+#                                                                       #
+#                                OCaml                                  #
+#                                                                       #
+#            Xavier Leroy, projet Cristal, INRIA Rocquencourt           #
+#                    Mark Shinwell, Jane Street Europe                  #
+#                                                                       #
+#   Copyright 2004, 2015 Institut National de Recherche en Informatique #
+#   et en Automatique.  All rights reserved.  This file is distributed  #
+#   under the terms of the GNU Library General Public License, with     #
+#   the special exception on linking described in file ../LICENSE.      #
+#                                                                       #
+#########################################################################
+
+case $1 in
+    middle_end/flambda_invariants.* \
+  | asmcomp/un_anf.*)
+    # Same as below, but we also enable warning 9, to try to help catch
+    # cases where we fail to examine some subterm.  (See comments at the top
+    # of flambda_invariants.ml too.)
+    echo '-w +a-4+27-30-40-41-42 -principal -safe-string -strict-formats'
+    ;;
+
+    asmcomp/asmgen.* \
+  | asmcomp/closure_offsets.* \
+  | asmcomp/compilenv.* \
+  | asmcomp/export_info.* \
+  | asmcomp/export_info_for_pack.* \
+  | asmcomp/flambdasym.* \
+  | asmcomp/flambda_to_clambda* \
+  | asmcomp/lift_constants.* \
+  | asmcomp/share_constants.* \
+  | asmcomp/lifted_flambda_utils.* \
+  | asmcomp/import_approx.* \
+  | asmcomp/build_export_info.* \
+  | middle_end/* \
+  | middle_end/base_types/*)
+    # Strict compilation options for Flambda passes.
+    # Constructor/record field disambiguation is kept in check by
+    # using -principal (which is also morally correct).
+    echo '-w +a-4-9+27-30-40-41-42 -principal -safe-string -strict-formats'
+    ;;
+esac
