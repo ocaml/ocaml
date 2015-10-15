@@ -34,7 +34,7 @@ Language features:
   (Jérémie Dimino)
 - GPR#254: @ocaml.arg_on_literal_pattern attribute on constructors to
   warn when the argument is matches against a constant pattern.  This
-  attributes is applied on predefined exception constructors which
+  attribute is applied on predefined exception constructors which
   take an purely informational (with no stability guarantee) message.
   (Alain Frisch)
 
