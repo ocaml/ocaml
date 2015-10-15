@@ -95,4 +95,6 @@ Some (PlusS _)
 val harder : (zero succ, zero succ, zero succ) plus option -> bool = <fun>
 #     val harder : (zero succ, zero succ, zero succ) plus option -> bool = <fun>
 #         val inv_zero : ('a, 'b, 'c) plus -> ('c, 'd, zero) plus -> bool = <fun>
+#         type _ t = Int : int t
+# val f : bool t -> 'a = <fun>
 # 

@@ -89,3 +89,9 @@ let inv_zero : type a b c d. (a,b,c) plus -> (c,d,zero) plus -> bool =
     match p1, p2 with
     | Plus0, Plus0 -> true
 ;;
+
+
+(* Empty match *)
+
+type _ t = Int : int t;;
+let f (x : bool t) = match x with _ -> _;;

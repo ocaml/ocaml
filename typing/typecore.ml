@@ -3724,6 +3724,7 @@ and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
       (function {c_rhs=None} -> None
         | {c_lhs;c_guard;c_rhs=Some c_rhs} -> Some{c_lhs;c_guard;c_rhs}) cases
   in
+  if cases = [] then [], Partial else
   cases, partial
 
 (* Typing of let bindings *)
