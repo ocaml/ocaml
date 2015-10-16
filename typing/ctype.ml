@@ -1637,22 +1637,17 @@ let rec occur_rec env visited ty0 ty =
         iter_type_expr (occur_rec env (ty::visited) ty0) ty
       with Occur -> try
         let ty' = try_expand_head try_expand_once env ty in
-        (* Maybe we could simply make a recursive call here,
-           but it seems it could make the occur check loop
-           (see change in rev. 1.58) *)
-        if ty' == ty0 || List.memq ty' visited then raise Occur;
-        match ty'.desc with
-          Tobject _ | Tvariant _ -> ()
-        | _ ->
-            if allow_recursive env ty' then () else
-            iter_type_expr (occur_rec env (ty'::visited) ty0) ty'
+        (* This call used to be inlined, but there seems no reason for it.
+           Message was referring to change in rev. 1.58 of the CVS repo. *)
+        occur_rec env visited ty0 ty'
       with Cannot_expand ->
         raise Occur
       end
   | Tobject _ | Tvariant _ ->
       ()
   | _ ->
-      iter_type_expr (occur_rec env visited ty0) ty
+      if List.memq ty visited then () else
+      iter_type_expr (occur_rec env (ty::visited) ty0) ty
 
 let type_changed = ref false (* trace possible changes to the studied type *)
 
