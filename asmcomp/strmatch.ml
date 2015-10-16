@@ -221,10 +221,6 @@ module Make(I:I) = struct
 
     module OMap = Map.Make(O)
 
-    let do_find key env =
-      try OMap.find key env
-      with Not_found -> assert false
-
     let divide cases =
       let env =
         List.fold_left

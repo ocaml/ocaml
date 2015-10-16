@@ -129,8 +129,6 @@ let find_reload_at_exit k =
   with
   | Not_found -> Misc.fatal_error "Spill.find_reload_at_exit"
 
-let reload_at_break = ref Reg.Set.empty
-
 let rec reload i before =
   incr current_date;
   record_use i.arg;

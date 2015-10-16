@@ -69,7 +69,6 @@ let boxedint32_header = block_header Obj.custom_tag 2
 let boxedint64_header = block_header Obj.custom_tag (1 + 8 / size_addr)
 let boxedintnat_header = block_header Obj.custom_tag 2
 
-let alloc_block_header tag sz = Cconst_blockheader(block_header tag sz)
 let alloc_float_header = Cconst_blockheader(float_header)
 let alloc_floatarray_header len = Cconst_blockheader(floatarray_header len)
 let alloc_closure_header sz = Cconst_blockheader(white_closure_header sz)
@@ -1173,7 +1172,6 @@ struct
 
   type act = expression
 
-  let default = Cexit (0,[])
   let make_const i =  Cconst_int i
   let make_prim p args = Cop (p,args)
   let make_offset arg n = add_const arg n
@@ -2932,8 +2930,6 @@ let predef_exception i name =
                        ])) cont)
 
 (* Header for a plugin *)
-
-let mapflat f l = List.flatten (List.map f l)
 
 let plugin_header units =
   let mk (ui,crc) =

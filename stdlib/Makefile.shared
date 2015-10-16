@@ -18,7 +18,7 @@ TARGET_BINDIR ?= $(BINDIR)
 
 COMPILER=../ocamlc
 CAMLC=$(CAMLRUN) $(COMPILER)
-COMPFLAGS=-strict-sequence -w +33..39 -g -warn-error A -bin-annot -nostdlib \
+COMPFLAGS=-strict-sequence -w +32+33..39 -g -warn-error A -bin-annot -nostdlib \
           -safe-string
 OPTCOMPILER=../ocamlopt
 CAMLOPT=$(CAMLRUN) $(OPTCOMPILER)
