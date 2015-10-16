@@ -1372,19 +1372,21 @@ let expand_abbrev_gen kind find_type_expansion env ty =
     {desc = Tconstr (path, args, abbrev); level = level} ->
       let lookup_abbrev = proper_abbrevs path args abbrev in
       begin match find_expans kind path !lookup_abbrev with
-        Some ty ->
+        Some ty' ->
           (* prerr_endline
             ("found a "^string_of_kind kind^" expansion for "^Path.name path);*)
           if level <> generic_level then
             begin try
-              update_level env level ty
+              update_level env level ty'
             with Unify _ ->
               (* XXX This should not happen.
                  However, levels are not correctly restored after a
                  typing error *)
               ()
             end;
-          ty
+          let ty' = repr ty' in
+          assert (ty != ty');
+          ty'
       | None ->
           let (params, body, lv) =
             try find_type_expansion path env with Not_found ->
@@ -2346,14 +2348,11 @@ let rec unify (env:Env.t ref) t1 t2 =
 
 and unify2 env t1 t2 =
   (* Second step: expansion of abbreviations *)
-  let rec expand_both t1'' t2'' =
-    let t1' = expand_head_unif !env t1 in
-    let t2' = expand_head_unif !env t2 in
-    (* Expansion may have changed the representative of the types... *)
-    if unify_eq !env t1' t1'' && unify_eq !env t2' t2'' then (t1',t2') else
-    expand_both t1' t2'
-  in
-  let t1', t2' = expand_both t1 t2 in
+  (* Expansion may change the representative of the types. *)
+  ignore (expand_head_unif !env t1);
+  ignore (expand_head_unif !env t2);
+  let t1' = expand_head_unif !env t1 in
+  let t2' = expand_head_unif !env t2 in
   let lv = min t1'.level t2'.level in
   update_level !env lv t2;
   update_level !env lv t1;

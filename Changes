@@ -195,6 +195,7 @@ Bug fixes:
   (Benoît Vaugon, report by Arduino Cascella)
 - PR#6944: let module X = Path in … is not typed as a module alias
   (Jacques Garrigue, report by def)
+- PR#6954: Infinite loop in type checker with module aliases
 - PR#6982: unexpected type error when packing a module alias
 - PR#6985: `module type of struct include Bar end exposes
            %s#row when Bar contains private row types
