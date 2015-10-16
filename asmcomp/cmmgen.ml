@@ -813,10 +813,23 @@ let box_number bn arg =
   | Boxed_float -> box_float arg
   | Boxed_integer bi -> box_int bi arg
 
-let unbox_number bn arg =
-  match bn with
-  | Boxed_float -> unbox_float arg
-  | Boxed_integer bi -> unbox_int bi arg
+let unboxed_ids : (Ident.t * boxed_number) Ident.tbl ref = ref Ident.empty
+
+let is_unboxed_id id =
+  try Some (Ident.find_same id !unboxed_ids)
+  with Not_found -> None
+
+let add_unboxed_id id unboxed_id bn f =
+  let o = !unboxed_ids in
+  try
+    unboxed_ids := Ident.add id (unboxed_id, bn) !unboxed_ids;
+    let r = f () in
+    unboxed_ids := o;
+    r
+  with exn ->
+    unboxed_ids := o;
+    raise exn
+
 
 (* Big arrays *)
 
@@ -1290,6 +1303,12 @@ let rec is_unboxed_number e =
     | _, _ -> No_unboxing
   in
   match e with
+  | Uvar id ->
+      begin match is_unboxed_id id with
+      | None -> No_unboxing
+      | Some (_, bn) -> Boxed bn
+      end
+
   | Uconst(Uconst_ref(_, Uconst_float _)) -> Boxed Boxed_float
   | Uconst(Uconst_ref(_, Uconst_int32 _)) -> Boxed (Boxed_integer Pint32)
   | Uconst(Uconst_ref(_, Uconst_int64 _)) -> Boxed (Boxed_integer Pint64)
@@ -1351,59 +1370,6 @@ let rec is_unboxed_number e =
       join (is_unboxed_number e1) e2
   | _ -> No_unboxing
 
-let box_chunk = function
-  | Boxed_float -> Double_u
-  | Boxed_integer Pint32 -> Thirtytwo_unsigned
-  | Boxed_integer _ -> Word_int
-
-let box_offset = function
-  | Boxed_float -> 0
-  | Boxed_integer _ -> size_addr
-
-let subst_boxed_number boxed_number boxed_id unboxed_id exp =
-  let rec subst = function
-    | Cvar id when Ident.same id boxed_id ->
-        box_number boxed_number (Cvar unboxed_id)
-    | Clet(id, arg, body) -> Clet(id, subst arg, subst body)
-    | Cassign(id, arg) when Ident.same id boxed_id ->
-        Cassign(unboxed_id, subst(unbox_number boxed_number arg))
-    | Cassign(id, arg) -> Cassign(id, subst arg)
-    | Cop(Cload chunk, [Cvar id])
-      when Ident.same id boxed_id &&
-           chunk = box_chunk boxed_number &&
-           0 = box_offset boxed_number ->
-        Cvar unboxed_id
-    | Cop(Cload chunk, [Cop(Cadda, [Cvar id; Cconst_int ofs])])
-      when Ident.same id boxed_id
-           && chunk = box_chunk boxed_number &&
-           ofs = box_offset boxed_number ->
-        Cvar unboxed_id
-    | Cop(op, argv) -> Cop(op, List.map subst argv)
-    (* 64 bits integer on 32 bit target *)
-    | Ctuple [Cop (Cload Thirtytwo_unsigned,
-                   [Cop (Cadda, [Cconst_int ofs1; Cvar id1])]);
-              Cop (Cload Thirtytwo_unsigned,
-                   [Cop (Cadda, [Cconst_int ofs2; Cvar id2])])]
-      when size_int = 4 && boxed_number = Boxed_integer Pint64 &&
-           Ident.same id1 boxed_id && Ident.same id2 boxed_id &&
-           ((ofs1, ofs2) = int64_for_32bit_target_offsets) ->
-        Cvar unboxed_id
-    | Ctuple argv -> Ctuple(List.map subst argv)
-    | Csequence(e1, e2) -> Csequence(subst e1, subst e2)
-    | Cifthenelse(e1, e2, e3) -> Cifthenelse(subst e1, subst e2, subst e3)
-    | Cswitch(arg, index, cases) ->
-        Cswitch(subst arg, index, Array.map subst cases)
-    | Cloop e -> Cloop(subst e)
-    | Ccatch(nfail, ids, e1, e2) -> Ccatch(nfail, ids, subst e1, subst e2)
-    | Cexit (nfail, el) -> Cexit (nfail, List.map subst el)
-    | Ctrywith(e1, id, e2) -> Ctrywith(subst e1, id, subst e2)
-    | Cvar _
-    | Cconst_int _ | Cconst_natint _ | Cconst_float _ | Cconst_symbol _
-    | Cconst_pointer _ | Cconst_natpointer _
-    | Cconst_blockheader _ as e -> e
-  in
-  subst exp
-
 (* Translate an expression *)
 
 let functions = (Queue.create() : ufunction Queue.t)
@@ -1419,7 +1385,10 @@ let strmatch_compile =
 
 let rec transl = function
     Uvar id ->
-      Cvar id
+      begin match is_unboxed_id id with
+      | None -> Cvar id
+      | Some (unboxed_id, bn) -> box_number bn (Cvar unboxed_id)
+      end
   | Uconst sc ->
       transl_constant sc
   | Uclosure(fundecls, []) ->
@@ -1487,7 +1456,7 @@ let rec transl = function
         | _ ->
             bind "met" (lookup_tag obj (transl met)) (call_met obj args))
   | Ulet(id, exp, body) ->
-      transl_let id exp (transl body)
+      transl_let id exp body
   | Uletrec(bindings, body) ->
       transl_letrec bindings (transl body)
 
@@ -1654,7 +1623,12 @@ let rec transl = function
                                 Cexit (raise_num,[]), Ctuple [])))))),
                  Ctuple []))))
   | Uassign(id, exp) ->
-      return_unit(Cassign(id, transl exp))
+      begin match is_unboxed_id id with
+      | None ->
+          return_unit (Cassign(id, transl exp))
+      | Some (unboxed_id, bn) ->
+          return_unit(Cassign(unboxed_id, transl_unbox_number bn exp))
+      end
 
 and transl_ccall prim args dbg =
   let transl_arg native_repr arg =
@@ -2214,20 +2188,20 @@ and transl_unbox_number bn arg =
   | Boxed_float -> transl_unbox_float arg
   | Boxed_integer bi -> transl_unbox_int bi arg
 
-and transl_let id exp tr_body =
+and transl_let id exp body =
   match is_unboxed_number exp with
   |  No_unboxing ->
-      Clet(id, transl exp, tr_body)
+      Clet(id, transl exp, transl body)
   | No_result ->
       (* the let-bound expression never returns a value, we can ignore
          the body *)
       transl exp
   | Boxed boxed_number ->
       let unboxed_id = Ident.create (Ident.name id) in
-      let subst_body =
-        subst_boxed_number boxed_number id unboxed_id tr_body
-      in
-      Clet(unboxed_id, transl_unbox_number boxed_number exp, subst_body)
+      Clet(unboxed_id, transl_unbox_number boxed_number exp,
+           add_unboxed_id id unboxed_id boxed_number
+             (fun () -> transl body)
+          )
 
 and make_catch ncatch body handler = match body with
 | Cexit (nexit,[]) when nexit=ncatch -> handler
@@ -2358,7 +2332,7 @@ and transl_letrec bindings cont =
     | (id, exp, (RHS_block _ | RHS_floatblock _)) :: rem ->
         fill_nonrec rem
     | (id, exp, RHS_nonrec) :: rem ->
-        transl_let id exp (fill_nonrec rem)
+        Clet(id, transl exp, fill_nonrec rem)
   and fill_blocks = function
     | [] -> cont
     | (id, exp, (RHS_block _ | RHS_floatblock _)) :: rem ->
