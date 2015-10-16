@@ -56,16 +56,6 @@ let set_inst_var obj id expr =
   let kind = if Typeopt.maybe_pointer expr then Paddrarray else Pintarray in
   Lprim(Parraysetu kind, [Lvar obj; Lvar id; transl_exp expr])
 
-let copy_inst_var obj id expr templ offset =
-  let kind = if Typeopt.maybe_pointer expr then Paddrarray else Pintarray in
-  let id' = Ident.create (Ident.name id) in
-  Llet(Strict, id', Lprim (Pidentity, [Lvar id]),
-  Lprim(Parraysetu kind,
-        [Lvar obj; Lvar id';
-         Lprim(Parrayrefu kind, [Lvar templ; Lprim(Paddint,
-                                                   [Lvar id';
-                                                    Lvar offset])])]))
-
 let transl_val tbl create name =
   mkappl (oo_prim (if create then "new_variable" else "get_variable"),
           [Lvar tbl; transl_label name])
@@ -598,9 +588,11 @@ open M
    If ids=0 (immediate object), then only env_init is conserved.
 *)
 
+(*
 let prerr_ids msg ids =
   let names = List.map Ident.unique_toplevel_name ids in
   prerr_endline (String.concat " " (msg :: names))
+*)
 
 let transl_class ids cl_id pub_meths cl vflag =
   (* First check if it is not only a rebind *)

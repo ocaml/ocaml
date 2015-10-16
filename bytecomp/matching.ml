@@ -1409,11 +1409,6 @@ let make_variant_matching_nonconst p lab def ctx = function
         ctx=ctx ;
         pat = normalize_pat p}
 
-let get_key_variant p = match p.pat_desc with
-| Tpat_variant(lab, Some _ , _) ->  Cstr_block (Btype.hash_variant lab)
-| Tpat_variant(lab, None , _) -> Cstr_constant (Btype.hash_variant lab)
-|  _ -> assert false
-
 let divide_variant row ctx {cases = cl; args = al; default=def} =
   let row = Btype.row_repr row in
   let rec divide = function
@@ -1887,46 +1882,6 @@ let make_test_sequence fail tst lt_tst arg const_lambda_list =
   hs (make_test_sequence const_lambda_list)
 
 
-let rec explode_inter offset i j act k =
-  if i <= j then
-    explode_inter offset i (j-1) act ((j-offset,act)::k)
-  else
-    k
-
-let max_vals cases acts =
-  let vals = Array.make (Array.length acts) 0 in
-  for i=Array.length cases-1 downto 0 do
-    let l,h,act = cases.(i) in
-    vals.(act) <- h - l + 1 + vals.(act)
-  done ;
-  let max = ref 0 in
-  for i = Array.length vals-1 downto 0 do
-    if vals.(i) >= vals.(!max) then
-      max := i
-  done ;
-  if vals.(!max) > 1 then
-    !max
-  else
-    -1
-
-let as_int_list cases acts =
-  let default = max_vals cases acts in
-  let min_key,_,_ = cases.(0)
-  and _,max_key,_ = cases.(Array.length cases-1) in
-
-  let rec do_rec i k =
-    if i >= 0 then
-      let low, high, act =  cases.(i) in
-      if act = default then
-        do_rec (i-1) k
-      else
-        do_rec (i-1) (explode_inter min_key low high acts.(act) k)
-    else
-      k in
-  min_key, max_key,do_rec (Array.length cases-1) [],
-  (if default >= 0 then Some acts.(default) else None)
-
-
 module SArg = struct
   type primitive = Lambda.primitive
 
@@ -2036,8 +1991,6 @@ let reintroduce_fail sw = match sw.sw_failaction with
 
 module Switcher = Switch.Make(SArg)
 open Switch
-
-let lambda_of_int i =  Lconst (Const_base (Const_int i))
 
 let rec last def = function
   | [] -> def
@@ -2151,53 +2104,11 @@ let call_switcher fail arg low high int_lambda_list =
   Switcher.zyva edges arg cases actions
 
 
-let exists_ctx ok ctx =
-  List.exists
-    (function
-      | {right=p::_} -> ok p
-      | _ -> assert false)
-    ctx
-
 let rec list_as_pat = function
   | [] -> fatal_error "Matching.list_as_pat"
   | [pat] -> pat
   | pat::rem ->
       {pat with pat_desc = Tpat_or (pat,list_as_pat rem,None)}
-
-
-let rec pat_as_list k = function
-  | {pat_desc=Tpat_or (p1,p2,_)} ->
-      pat_as_list (pat_as_list k p2) p1
-  | p -> p::k
-
-(* Extracting interesting patterns *)
-exception All
-
-let rec extract_pat seen k p = match p.pat_desc with
-| Tpat_or (p1,p2,_) ->
-    let k1,seen1 = extract_pat seen k p1 in
-    extract_pat seen1 k1 p2
-| Tpat_alias (p,_,_) ->
-    extract_pat  seen k p
-| Tpat_var _|Tpat_any ->
-    raise All
-| _ ->
-    let q = normalize_pat p in
-    if  List.exists (compat q) seen then
-      k, seen
-    else
-      q::k, q::seen
-
-let extract_mat seen pss =
-  let r,_ =
-    List.fold_left
-      (fun (k,seen) ps -> match ps with
-      | p::_ -> extract_pat seen k p
-      | _ -> assert false)
-      ([],seen)
-      pss in
-  r
-
 
 
 let complete_pats_constrs = function
@@ -2206,33 +2117,6 @@ let complete_pats_constrs = function
         (pat_of_constr p)
         (complete_constrs p (List.map get_key_constr pats))
   | _ -> assert false
-
-
-let mk_res get_key env last_choice idef cant_fail ctx =
-
-  let env,fail,jumps_fail = match last_choice with
-  | [] ->
-      env, None, jumps_empty
-  | [p] when group_var p ->
-      env,
-      Some (Lstaticraise (idef,[])),
-      jumps_singleton idef ctx
-  | _ ->
-      (idef,cant_fail,last_choice)::env,
-      None, jumps_empty in
-  let klist,jumps =
-    List.fold_right
-      (fun (i,cant_fail,pats) (klist,jumps) ->
-        let act = Lstaticraise (i,[])
-        and pat = list_as_pat pats in
-        let klist =
-          List.fold_right
-            (fun pat klist -> (get_key pat,act)::klist)
-            pats klist
-        and ctx = if cant_fail then ctx else ctx_lub pat ctx in
-        klist,jumps_add i ctx jumps)
-      env ([],jumps_fail) in
-  fail, klist, jumps
 
 
 (*
@@ -3279,13 +3163,6 @@ let do_for_multiple_match loc paraml pat_act_list partial =
 
 (* #PR4828: Believe it or not, the 'paraml' argument below
    may not be side effect free. *)
-
-let arg_to_var arg cls = match arg with
-| Lvar v -> v,arg
-| _ ->
-    let v = name_pattern "match" cls in
-    v,Lvar v
-
 
 let param_to_var param = match param with
 | Lvar v -> v,None
