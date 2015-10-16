@@ -123,9 +123,6 @@ type recarg =
   | Rejected
 
 
-let fst3 (x, _, _) = x
-let snd3 (_,x,_) = x
-
 let case lhs rhs =
   {c_lhs = lhs; c_guard = None; c_rhs = rhs}
 
@@ -1293,16 +1290,6 @@ let partial_pred ~lev env expected_ty constrs labels p =
 
 let check_partial ?(lev=get_current_level ()) env expected_ty =
   Parmatch.check_partial_gadt (partial_pred ~lev env expected_ty)
-
-let rec iter3 f lst1 lst2 lst3 =
-  match lst1,lst2,lst3 with
-  | x1::xs1,x2::xs2,x3::xs3 ->
-      f x1 x2 x3;
-      iter3 f xs1 xs2 xs3
-  | [],[],[] ->
-      ()
-  | _ ->
-      assert false
 
 let add_pattern_variables ?check ?check_as env =
   let pv = get_ref pattern_variables in

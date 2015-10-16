@@ -36,7 +36,6 @@ let rec fmt_longident_aux f x =
       fprintf f "%a(%a)" fmt_longident_aux y fmt_longident_aux z;
 ;;
 
-let fmt_longident_noloc f x = fprintf f "\"%a\"" fmt_longident_aux x;;
 let fmt_longident f x = fprintf f "\"%a\"" fmt_longident_aux x.txt;;
 
 let fmt_ident = Ident.print
@@ -50,7 +49,6 @@ let rec fmt_path_aux f x =
 ;;
 
 let fmt_path f x = fprintf f "\"%a\"" fmt_path_aux x;;
-let fmt_path_loc f x = fprintf f "\"%a\"" fmt_path_aux x.txt;;
 
 let fmt_constant f x =
   match x with
@@ -129,12 +127,7 @@ let option i f ppf x =
 ;;
 
 let longident i ppf li = line i ppf "%a\n" fmt_longident li;;
-let path i ppf li = line i ppf "%a\n" fmt_path li;;
-let ident i ppf li = line i ppf "%a\n" fmt_ident li;;
 let string i ppf s = line i ppf "\"%s\"\n" s;;
-let string_loc i ppf s = line i ppf "\"%s\"\n" s.txt;;
-let bool i ppf x = line i ppf "%s\n" (string_of_bool x);;
-let label i ppf x = line i ppf "label=\"%s\"\n" x;;
 let arg_label i ppf = function
   | Nolabel -> line i ppf "Nolabel\n"
   | Optional s -> line i ppf "Optional \"%s\"\n" s
@@ -766,15 +759,6 @@ and structure_item i ppf x =
   | Tstr_attribute (s, arg) ->
       line i ppf "Tstr_attribute \"%s\"\n" s.txt;
       Printast.payload i ppf arg
-
-and string_x_module_type i ppf (s, _, mty) =
-  ident i ppf s;
-  module_type (i+1) ppf mty;
-
-and string_x_modtype_x_module i ppf (s, _, mty, modl) =
-  ident i ppf s;
-  module_type (i+1) ppf mty;
-  module_expr (i+1) ppf modl;
 
 and longident_x_with_constraint i ppf (li, _, wc) =
   line i ppf "%a\n" fmt_path li;

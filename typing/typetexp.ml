@@ -385,11 +385,6 @@ let transl_type_param env styp =
           ctyp_loc = loc; ctyp_attributes = styp.ptyp_attributes; }
   | _ -> assert false
 
-let wrap_method ty =
-  match (Ctype.repr ty).desc with
-    Tpoly _ -> ty
-  | _ -> Ctype.newty (Tpoly (ty, []))
-
 let new_pre_univar ?name () =
   let v = newvar ?name () in pre_univars := v :: !pre_univars; v
 

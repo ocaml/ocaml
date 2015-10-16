@@ -69,7 +69,6 @@ module EnvLazy : sig
 
   val force : ('a -> 'b) -> ('a,'b) t -> 'b
   val create : 'a -> ('a,'b) t
-  val is_val : ('a,'b) t -> bool
   val get_arg : ('a,'b) t -> 'a option
 
 end  = struct
@@ -93,9 +92,6 @@ end  = struct
           with e ->
             x := Raise e;
             raise e
-
-  let is_val x =
-    match !x with Done _ -> true | _ -> false
 
   let get_arg x =
     match !x with Thunk a -> Some a | _ -> None
@@ -142,9 +138,6 @@ module EnvTbl =
           )
       in
       Ident.add id (x, slot) tbl
-
-    let add_dont_track id x tbl =
-      Ident.add id (x, nothing) tbl
 
     let find_same_not_using id tbl =
       fst (Ident.find_same id tbl)
@@ -882,13 +875,6 @@ let lookup_type lid env =
   let (path, (decl, _)) = lookup_type lid env in
   mark_type_used env (Longident.last lid) decl;
   (path, decl)
-
-(* [path] must be the path to a type, not to a module ! *)
-let path_subst_last path id =
-  match path with
-    Pident _ -> Pident id
-  | Pdot (p, name, pos) -> Pdot(p, Ident.name id, pos)
-  | Papply (p1, p2) -> assert false
 
 let mark_type_path env path =
   try

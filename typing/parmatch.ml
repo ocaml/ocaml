@@ -671,17 +671,6 @@ let full_match_gadt env = match env with
     List.length env = c.cstr_consts + c.cstr_nonconsts
   | _ -> true
 
-let extendable_match env = match env with
-| ({pat_desc=Tpat_construct(_,{cstr_tag=(Cstr_constant _|Cstr_block _)},_)}
-     as p,_) :: _ ->
-    let path = get_type_path p.pat_type p.pat_env in
-    not
-      (Path.same path Predef.path_bool ||
-      Path.same path Predef.path_list ||
-      Path.same path Predef.path_option)
-| _ -> false
-
-
 let should_extend ext env = match ext with
 | None -> false
 | Some ext -> match env with
@@ -1237,6 +1226,7 @@ type answer =
 type 'a row = {no_ors : 'a list ; ors : 'a list ; active : 'a list}
 
 
+(*
 let pretty_row {ors=ors ; no_ors=no_ors; active=active} =
   pretty_line ors ; prerr_string " *" ;
   pretty_line no_ors ; prerr_string " *" ;
@@ -1250,6 +1240,7 @@ let pretty_rows rs =
       prerr_endline "")
     rs ;
   prerr_endline "end matrix"
+*)
 
 (* Initial build *)
 let make_row ps = {ors=[] ; no_ors=[]; active=ps}

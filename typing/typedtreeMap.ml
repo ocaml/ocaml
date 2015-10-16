@@ -76,12 +76,6 @@ end
 
 module MakeMap(Map : MapArgument) = struct
 
-  let may_map f v =
-    match v with
-        None -> v
-      | Some x -> Some (f x)
-
-
   open Misc
 
   let rec map_structure str =
