@@ -172,10 +172,11 @@ let iter_expression f e =
     | Pexp_letmodule (_, me, e) -> expr e; module_expr me
     | Pexp_object { pcstr_fields = fs } -> List.iter class_field fs
     | Pexp_pack me -> module_expr me
+    | Pexp_unreachable -> ()
 
   and case {pc_lhs = _; pc_guard; pc_rhs} =
     may expr pc_guard;
-    may expr pc_rhs
+    expr pc_rhs
 
   and binding x =
     expr x.pvb_expr
@@ -245,7 +246,7 @@ let all_idents_cases el =
   List.iter
     (fun cp ->
       may (iter_expression f) cp.pc_guard;
-      may (iter_expression f) cp.pc_rhs
+      iter_expression f cp.pc_rhs
     )
     el;
   Hashtbl.fold (fun x () rest -> x :: rest) idents []
@@ -615,7 +616,7 @@ end) = struct
   open Name
 
   let get_type_path env d =
-    match (get_type d).desc with
+    match (repr (get_type d)).desc with
     | Tconstr(p, _, _) -> p
     | _ -> assert false
 
@@ -1504,7 +1505,7 @@ let rec final_subexpression sexp =
   | Pexp_sequence (_, e)
   | Pexp_try (e, _)
   | Pexp_ifthenelse (_, e, _)
-  | Pexp_match (_, {pc_rhs=Some e} :: _)
+  | Pexp_match (_, {pc_rhs=e} :: _)
     -> final_subexpression e
   | _ -> sexp
 
@@ -1631,9 +1632,9 @@ let rec type_approx env sexp =
   | Pexp_fun (p, _, _, e) ->
       let ty = if is_optional p then type_option (newvar ()) else newvar () in
       newty (Tarrow(p, ty, type_approx env e, Cok))
-  | Pexp_function ({pc_rhs=Some e}::_) ->
+  | Pexp_function ({pc_rhs=e}::_) ->
       newty (Tarrow(Nolabel, newvar (), type_approx env e, Cok))
-  | Pexp_match (_, {pc_rhs=Some e}::_) -> type_approx env e
+  | Pexp_match (_, {pc_rhs=e}::_) -> type_approx env e
   | Pexp_try (e, _) -> type_approx env e
   | Pexp_tuple l -> newty (Ttuple(List.map (type_approx env) l))
   | Pexp_ifthenelse (_,e,_) -> type_approx env e
@@ -2838,6 +2839,13 @@ and type_expect_ ?in_function ?(recarg=Rejected) env sexp ty_expected =
   | Pexp_extension ext ->
       raise (Error_forward (Typetexp.error_of_extension ext))
 
+  | Pexp_unreachable ->
+      re { exp_desc = Texp_unreachable;
+           exp_loc = loc; exp_extra = [];
+           exp_type = instance env ty_expected;
+           exp_attributes = sexp.pexp_attributes;
+           exp_env = env }
+
 and type_function ?in_function loc attrs env ty_expected l caselist =
   let (loc_fun, ty_fun) =
     match in_function with Some p -> p
@@ -3620,9 +3628,10 @@ and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
     List.map
       (fun {pc_lhs; pc_guard; pc_rhs} ->
         let loc =
-          match pc_rhs with
-          | None -> pc_lhs.ppat_loc
-          | Some e -> e.pexp_loc
+          let open Location in
+          match pc_guard with
+          | None -> pc_rhs.pexp_loc
+          | Some g -> {pc_rhs.pexp_loc with loc_start=g.pexp_loc.loc_start}
         in
         if !Clflags.principal then begin_def (); (* propagation of pattern *)
         let scope = Some (Annot.Idef loc) in
@@ -3664,10 +3673,6 @@ and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
   let cases =
     List.map2
       (fun (pat, (ext_env, unpacks)) {pc_lhs; pc_guard; pc_rhs} ->
-        match pc_guard, pc_rhs with
-        | None, None -> { c_lhs = pat; c_guard = None; c_rhs = None}
-        | Some _, None -> assert false
-        | _, Some pc_rhs ->
         let sexp = wrap_unpacks pc_rhs unpacks in
         let ty_res' =
           if !Clflags.principal then begin
@@ -3692,14 +3697,14 @@ and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
         {
          c_lhs = pat;
          c_guard = guard;
-         c_rhs = Some {exp with exp_type = instance env ty_res'}
+         c_rhs = {exp with exp_type = instance env ty_res'}
         }
       )
       pat_env_list caselist
   in
   if !Clflags.principal || has_gadts then begin
     let ty_res' = instance env ty_res in
-    List.iter (fun c -> may (fun e -> unify_exp env e ty_res') c.c_rhs) cases
+    List.iter (fun c -> unify_exp env c.c_rhs ty_res') cases
   end;
   let partial =
     if partial_flag then
@@ -3720,11 +3725,6 @@ and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
     (* Ensure that existential types do not escape *)
     unify_exp_types loc env (instance env ty_res) (newvar ()) ;
   end;
-  let cases = Misc.filter_map
-      (function {c_rhs=None} -> None
-        | {c_lhs;c_guard;c_rhs=Some c_rhs} -> Some{c_lhs;c_guard;c_rhs}) cases
-  in
-  if cases = [] then [], Partial else
   cases, partial
 
 (* Typing of let bindings *)
@@ -3893,10 +3893,10 @@ and type_let ?(check = fun s -> Warnings.Unused_var s)
   && Warnings.is_active Warnings.Unused_rec_flag then
     Location.prerr_warning (List.hd spat_sexp_list).pvb_pat.ppat_loc
       Warnings.Unused_rec_flag;
-  List.iter
-    (fun pat ->
-      ignore(check_partial env pat.pat_type pat.pat_loc [case pat None]))
-    pat_list;
+  List.iter2
+    (fun pat exp ->
+      ignore(check_partial env pat.pat_type pat.pat_loc [case pat exp]))
+    pat_list exp_list;
   end_def();
   List.iter2
     (fun pat exp ->

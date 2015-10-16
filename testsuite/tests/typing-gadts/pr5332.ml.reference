@@ -7,7 +7,7 @@
   | Tbool : ('env, bool) typ
   | Tvar : ('env, 'a) var -> ('env, 'a) typ
 #             Characters 162-163:
-     | _ -> _   (* error *)
+     | _ -> .   (* error *)
        ^
 Error: This match case could not be refuted.
        Here is an example of value that would reach it: (Tint, Tvar Zero)

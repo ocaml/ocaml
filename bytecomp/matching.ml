@@ -2948,6 +2948,7 @@ let check_partial is_mutable is_lazy pat_act_list = function
   | Partial -> Partial
   | Total ->
       if
+        pat_act_list = [] ||  (* allow empty case list *)
         List.exists
           (fun (pats, lam) ->
             is_mutable pats && (is_guarded lam || is_lazy pats))

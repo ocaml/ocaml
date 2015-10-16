@@ -1907,7 +1907,7 @@ let do_check_fragile_gadt = do_check_fragile_param exhaust_gadt
 
 let check_unused pred tdefs casel =
   if Warnings.is_active Warnings.Unused_match
-  || List.exists (fun c -> c.c_rhs = None) casel then
+  || List.exists (fun c -> c.c_rhs.exp_desc = Texp_unreachable) casel then
     let rec do_rec pref = function
       | [] -> ()
       | {c_lhs=q; c_guard; c_rhs} :: rem ->
@@ -1917,7 +1917,7 @@ let check_unused pred tdefs casel =
                   get_mins le_pats (List.filter (compats qs) pref) in
               (* First look for redundant or partially redundant patterns *)
               let r = every_satisfiables (make_rows pss) (make_row qs) in
-              let refute = (c_rhs = None) in
+              let refute = (c_rhs.exp_desc = Texp_unreachable) in
               (* Do not warn for unused _ -> _ *)
               if r = Unused && refute && q.pat_desc = Tpat_any then () else
               let r =

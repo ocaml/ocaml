@@ -26,6 +26,7 @@ type error =
   | Illegal_letrec_expr
   | Free_super_var
   | Unknown_builtin_primitive of string
+  | Unreachable_reached
 
 exception Error of Location.t * error
 
@@ -956,6 +957,8 @@ and transl_exp0 e =
           cl_env = e.exp_env;
           cl_attributes = [];
          }
+  | Texp_unreachable ->
+      raise (Error (e.exp_loc, Unreachable_reached))
 
 and transl_list expr_list =
   List.map transl_exp expr_list
@@ -971,6 +974,8 @@ and transl_case {c_lhs; c_guard; c_rhs} =
   c_lhs, transl_guard c_guard c_rhs
 
 and transl_cases cases =
+  let cases =
+    List.filter (fun c -> c.c_rhs.exp_desc <> Texp_unreachable) cases in
   List.map transl_case cases
 
 and transl_case_try {c_lhs; c_guard; c_rhs} =
@@ -985,9 +990,14 @@ and transl_case_try {c_lhs; c_guard; c_rhs} =
       c_lhs, transl_guard c_guard c_rhs
 
 and transl_cases_try cases =
+  let cases =
+    List.filter (fun c -> c.c_rhs.exp_desc <> Texp_unreachable) cases in
   List.map transl_case_try cases
 
 and transl_tupled_cases patl_expr_list =
+  let patl_expr_list =
+    List.filter (fun (_,_,e) -> e.exp_desc <> Texp_unreachable)
+      patl_expr_list in
   List.map (fun (patl, guard, expr) -> (patl, transl_guard guard expr))
     patl_expr_list
 
@@ -1241,7 +1251,9 @@ let report_error ppf = function
       fprintf ppf
         "Ancestor names can only be used to select inherited methods"
   | Unknown_builtin_primitive prim_name ->
-    fprintf ppf  "Unknown builtin primitive \"%s\"" prim_name
+      fprintf ppf "Unknown builtin primitive \"%s\"" prim_name
+  | Unreachable_reached ->
+      fprintf ppf "Unreachable expression was reached"
 
 let () =
   Location.register_error_of_exn

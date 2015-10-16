@@ -392,7 +392,7 @@ let message = function
       Printf.sprintf "expected tailcall"
   | Unreachable_case ->
       "this match case is unreachable.\n\
-       Consider replacing it with '<pat> -> _'"
+       Consider replacing it with a refutation case '<pat> -> .'"
 ;;
 
 let nerrors = ref 0;;

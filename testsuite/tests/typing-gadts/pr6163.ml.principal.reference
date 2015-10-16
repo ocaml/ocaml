@@ -6,7 +6,7 @@
       [ `Succ of [< [< [< [ `Zero ] pre_nat ] pre_nat ] pre_nat ] ] nat -> 
       aux
 #                 Characters 162-163:
-    | _ -> _
+    | _ -> .  (* error *)
       ^
 Error: This match case could not be refuted.
        Here is an example of value that would reach it:

@@ -20,7 +20,7 @@ Characters 172-200:
      | _, _, _, _, _, _, _, G, _, _ -> 1
        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Warning 51: this match case is unreachable.
-Consider replacing it with '<pat> -> _'
+Consider replacing it with a refutation case '<pat> -> .'
 val f :
   'a t * 'b t * 'c t * 'd t * 'e t * 'f t * 'g t * v * ('a, 'b, 'c, 'd) u *
   ('e, 'f, 'g, 'g) u -> int = <fun>
@@ -33,19 +33,19 @@ Characters 62-63:
   let f (x : int t) = match x with A -> 1 | _ -> 2;; (* warn *)
                                             ^
 Warning 51: this match case is unreachable.
-Consider replacing it with '<pat> -> _'
+Consider replacing it with a refutation case '<pat> -> .'
 val f : int t -> int = <fun>
 # Characters 53-54:
   let f (x : unit t option) = match x with None -> 1 | _ -> 2 ;; (* warn? *)
                                                        ^
 Warning 51: this match case is unreachable.
-Consider replacing it with '<pat> -> _'
+Consider replacing it with a refutation case '<pat> -> .'
 val f : unit t option -> int = <fun>
 # Characters 53-59:
   let f (x : unit t option) = match x with None -> 1 | Some _ -> 2 ;; (* warn *)
                                                        ^^^^^^
 Warning 51: this match case is unreachable.
-Consider replacing it with '<pat> -> _'
+Consider replacing it with a refutation case '<pat> -> .'
 val f : unit t option -> int = <fun>
 # val f : int t option -> int = <fun>
 # Characters 27-49:

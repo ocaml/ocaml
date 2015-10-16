@@ -82,7 +82,7 @@ let harder : (zero succ, zero succ, zero succ) plus option -> bool =
   function None -> false
 ;;
 let harder : (zero succ, zero succ, zero succ) plus option  -> bool =
-  function None -> false | Some (PlusS _) -> _
+  function None -> false | Some (PlusS _) -> .
 ;;
 let inv_zero : type a b c d. (a,b,c) plus -> (c,d,zero) plus -> bool =
   fun p1 p2 ->
@@ -94,4 +94,4 @@ let inv_zero : type a b c d. (a,b,c) plus -> (c,d,zero) plus -> bool =
 (* Empty match *)
 
 type _ t = Int : int t;;
-let f (x : bool t) = match x with _ -> _;;
+let f (x : bool t) = match x with _ -> . ;;

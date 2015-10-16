@@ -204,7 +204,7 @@ let rec diff : type a b. (a,b) le -> a nat -> b nat -> (a,b) diff =
   | NZ, m, LeZ _ -> Diff (m, PlusZ m)
   | NS x, NS y, LeS q ->
       (match diff q x y with Diff (m, p) -> Diff (m, PlusS p))
-  | _ -> _
+  | _ -> .
 ;;
 
 let rec diff : type a b. (a,b) le -> b nat -> (a,b) diff =

@@ -329,7 +329,7 @@ let case sub {c_lhs; c_guard; c_rhs} =
   {
    pc_lhs = sub.pat sub c_lhs;
    pc_guard = map_opt (sub.expr sub) c_guard;
-   pc_rhs = Some (sub.expr sub c_rhs);
+   pc_rhs = sub.expr sub c_rhs;
   }
 
 let value_binding sub vb =
@@ -444,6 +444,8 @@ let expression sub exp =
         Pexp_object (sub.class_structure sub cl)
     | Texp_pack (mexpr) ->
         Pexp_pack (sub.module_expr sub mexpr)
+    | Texp_unreachable ->
+        Pexp_unreachable
   in
   List.fold_right (exp_extra sub) exp.exp_extra
     (Exp.mk ~loc ~attrs desc)

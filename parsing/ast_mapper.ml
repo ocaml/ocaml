@@ -376,6 +376,7 @@ module E = struct
     | Pexp_open (ovf, lid, e) ->
         open_ ~loc ~attrs ovf (map_loc sub lid) (sub.expr sub e)
     | Pexp_extension x -> extension ~loc ~attrs (sub.extension sub x)
+    | Pexp_unreachable -> unreachable ~loc ~attrs ()
 end
 
 module P = struct
@@ -600,7 +601,7 @@ let default_mapper =
          {
            pc_lhs = this.pat this pc_lhs;
            pc_guard = map_opt (this.expr this) pc_guard;
-           pc_rhs = map_opt (this.expr this) pc_rhs;
+           pc_rhs = this.expr this pc_rhs;
          }
       );
 

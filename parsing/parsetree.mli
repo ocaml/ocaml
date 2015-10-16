@@ -320,12 +320,14 @@ and expression_desc =
         *)
   | Pexp_extension of extension
         (* [%id] *)
+  | Pexp_unreachable
+        (* . *)
 
 and case =   (* (P -> E) or (P when E0 -> E) *)
     {
      pc_lhs: pattern;
      pc_guard: expression option;
-     pc_rhs: expression option;
+     pc_rhs: expression;
     }
 
 (* Value descriptions *)

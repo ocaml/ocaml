@@ -105,21 +105,18 @@ and expression_desc =
   | Texp_lazy of expression
   | Texp_object of class_structure * string list
   | Texp_pack of module_expr
+  | Texp_unreachable
 
 and meth =
     Tmeth_name of string
   | Tmeth_val of Ident.t
 
-and case = expression case_expr
-
-and 'rhs case_expr =
+and case =
     {
      c_lhs: pattern;
      c_guard: expression option;
-     c_rhs: 'rhs;
+     c_rhs: expression;
     }
-
-and case_pat = expression option case_expr
 
 (* Value expressions for the class language *)
 

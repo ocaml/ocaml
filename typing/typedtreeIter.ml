@@ -345,6 +345,8 @@ module MakeIterator(Iter : IteratorArgument) : sig
             iter_class_structure cl
         | Texp_pack (mexpr) ->
             iter_module_expr mexpr
+        | Texp_unreachable ->
+            ()
       end;
       Iter.leave_expression exp;
 

@@ -365,6 +365,8 @@ and expression i ppf x =
   | Pexp_extension (s, arg) ->
       line i ppf "Pexp_extension \"%s\"\n" s.txt;
       payload i ppf arg
+  | Pexp_unreachable ->
+      line i ppf "Pexp_unreachable"
 
 and value_description i ppf x =
   line i ppf "value_description %a %a\n" fmt_string_loc
@@ -842,7 +844,7 @@ and case i ppf {pc_lhs; pc_guard; pc_rhs} =
   | None -> ()
   | Some g -> line (i+1) ppf "<when>\n"; expression (i + 2) ppf g
   end;
-  option (i+1) expression ppf pc_rhs;
+  expression (i+1) ppf pc_rhs;
 
 and value_binding i ppf x =
   line i ppf "<def>\n";

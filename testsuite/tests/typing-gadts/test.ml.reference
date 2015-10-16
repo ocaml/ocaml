@@ -71,7 +71,7 @@ module PR6862 :
     let g : int t -> int = function I -> 1 | _ -> 2 (* no warning *)
                                              ^
 Warning 51: this match case is unreachable.
-Consider replacing it with '<pat> -> _'
+Consider replacing it with a refutation case '<pat> -> .'
 module PR6220 :
   sig
     type 'a t = I : int t | F : float t
