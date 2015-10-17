@@ -203,7 +203,6 @@ Bug fixes:
 - PR#6992: Segfault from bug in GADT/module typing
 - PR#6993: Segfault from recursive modules violating exhaustiveness assumptions
 - PR#7012: Variable name forgotten when it starts with a capital letter
-  (Jacques Garrigue, report by Thomas Leonard through user 'Octachron')
 - PR#7016: Stack overflow in GADT typing
 - GPR#205: Clear caml_backtrace_last_exn before registering as root (report
   and fix by Frederic Bour)
