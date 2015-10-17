@@ -68,6 +68,8 @@ Compilers:
   (Xavier Leroy, review by Pierre Chambart)
 - GPR#207: Colors in compiler messages (warnings, errors)
   (Simon Cruanes, review by Gabriel Scherer)
+- GPR#258: more precise information on PowerPC instruction sizes
+  (Pierre Chambart, Xavier Leroy)
 
 Runtime system:
 - PR#3612: allow allocating custom block with finalizers in the minor heap
