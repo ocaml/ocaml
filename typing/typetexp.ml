@@ -946,7 +946,13 @@ let report_error env ppf = function
   | Not_a_variant ty ->
       Printtyp.reset_and_mark_loops ty;
       fprintf ppf "@[The type %a@ is not a polymorphic variant type@]"
-        Printtyp.type_expr ty
+        Printtyp.type_expr ty;
+      begin match ty.desc with
+        | Tvar (Some s) ->
+           (* PR#7012: help the user that wrote 'Foo instead of `Foo *)
+           Misc.did_you_mean ppf (fun () -> ["`" ^ s])
+        | _ -> ()
+      end
   | Variant_tags (lab1, lab2) ->
       fprintf ppf
         "@[Variant tags `%s@ and `%s have the same hash value.@ %s@]"
