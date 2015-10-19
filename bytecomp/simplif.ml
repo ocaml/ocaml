@@ -656,8 +656,11 @@ exception CanEscape
    by removing the part for the local exception. *)
 
 let rec handler_for local raised = function
-  | Lifthenelse(Lprim(Pintcomp Ceq, [Lvar v; exn]) as comp, body, rest)
-  | Lifthenelse(Lprim(Pintcomp Ceq, [Lprim(Pfield 0, [Lvar v]); exn]) as comp, body, rest)
+  | Lifthenelse
+      (Lprim
+         (Pintcomp Ceq, [Lvar v | Lprim(Pfield 0, [Lvar v]); exn]) as comp,
+       body, rest
+      )
     when Ident.same raised v ->
       begin match exn with
       | Lvar v when Ident.same local v ->
