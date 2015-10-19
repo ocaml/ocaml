@@ -648,27 +648,31 @@ let remove_event = function
 
 exception CanEscape
 
-let handler_for local raised =
-  let rec loop = function
-    | Lifthenelse(Lprim(Pintcomp Ceq, [Lvar v; exn]) as comp, body, rest)
-    | Lifthenelse(Lprim(Pintcomp Ceq, [Lprim(Pfield 0, [Lvar v]); exn]) as comp, body, rest)
-      when Ident.same raised v ->
-        begin match exn with
-        | Lvar v when Ident.same local v ->
-            Some (body, rest)
-        | Lvar _ | Lprim((Pfield _ | Pgetglobal _), _) ->
-            begin match loop rest with
-            | Some (h, rest) -> Some (h, Lifthenelse(comp, body, rest))
-            | None -> None
-            end
-        | _ -> raise CanEscape
-        end
-    | Lprim(Praise Raise_reraise, [Lvar v]) when Ident.same raised v ->
-        None
-    | _ ->
-        raise CanEscape
-  in
-  loop
+(* Analyze a try..with handler to extract the branch corresponding
+   to the local exception 'local'.  'raised' is the id bound to the captured
+   exception.  The function returns None if the handler doesn't deal with
+   the local exception (i.e. it reraises it), or Some (h, rest) if h
+   is the handler for the local exception and rest is a new handler obtained
+   by removing the part for the local exception. *)
+
+let rec handler_for local raised = function
+  | Lifthenelse(Lprim(Pintcomp Ceq, [Lvar v; exn]) as comp, body, rest)
+  | Lifthenelse(Lprim(Pintcomp Ceq, [Lprim(Pfield 0, [Lvar v]); exn]) as comp, body, rest)
+    when Ident.same raised v ->
+      begin match exn with
+      | Lvar v when Ident.same local v ->
+          Some (body, rest)
+      | Lvar _ | Lprim((Pfield _ | Pgetglobal _), _) ->
+          begin match handler_for local raised rest with
+          | Some (h, rest) -> Some (h, Lifthenelse(comp, body, rest))
+          | None -> None
+          end
+      | _ -> raise CanEscape
+      end
+  | Lprim(Praise Raise_reraise, [Lvar v]) when Ident.same raised v ->
+      None
+  | _ ->
+      raise CanEscape
 
 let static id =
   let rec loop lam =
@@ -712,13 +716,9 @@ let static id =
   in
   loop
 
-let check id =
-  let rec loop = function
-    | Lvar v when Ident.same v id -> raise CanEscape
-    | lam -> map loop lam
-  in
-  loop
-
+let rec check id = function
+  | Lvar v when Ident.same v id -> raise CanEscape
+  | lam -> map (check id) lam
 
 let rec simplify_local_raises l =
   let l = map simplify_local_raises l in
@@ -736,7 +736,7 @@ let rec simplify_local_raises l =
 
 let simplify_lambda lam =
   let res = simplify_lets (simplify_exits lam) in
-  let res = simplify_local_raises res (* if !Clflags.native_code then simplify_local_raises res else res *) in
+  let res = simplify_local_raises res in
   if !Clflags.annotations || Warnings.is_active Warnings.Expect_tailcall
     then emit_tail_infos true res;
   res

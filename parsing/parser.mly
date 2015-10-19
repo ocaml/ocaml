@@ -1243,7 +1243,8 @@ expr:
       { expr_of_let_bindings $1 $3 }
   | LET MODULE ext_attributes UIDENT module_binding_body IN seq_expr
       { mkexp_attrs (Pexp_letmodule(mkrhs $4 4, $5, $7)) $3 }
-  | LET EXCEPTION ext_attributes constr_ident generalized_constructor_arguments attributes IN seq_expr
+  | LET EXCEPTION ext_attributes constr_ident generalized_constructor_arguments
+    attributes IN seq_expr
       { let args, res = $5 in
         let ex =
           Te.decl (mkrhs $4 4) ~args ?res ~attrs:$6
