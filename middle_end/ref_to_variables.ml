@@ -78,8 +78,9 @@ let variables_not_used_as_local_reference (tree:Flambda.t) =
       set := Variable.Set.add from_value !set;
       set := Variable.Set.add to_value !set;
       loop body
-    | Static_raise _ | Proved_unreachable
-    | Apply _ | Send _ | Assign _ ->
+    | Static_raise (_, args) ->
+      List.iter loop args
+    | Proved_unreachable | Apply _ | Send _ | Assign _ ->
       set := Variable.Set.union !set (Flambda.free_variables flam)
   in
   loop tree;
