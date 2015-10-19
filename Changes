@@ -204,6 +204,8 @@ Bug fixes:
            %s#row when Bar contains private row types
 - PR#6992: Segfault from bug in GADT/module typing
 - PR#6993: Segfault from recursive modules violating exhaustiveness assumptions
+- PR#7008: Fatal error in ocamlc with empty compilation unit name
+  (Damien Doligez)
 - PR#7012: Variable name forgotten when it starts with a capital letter
   (Jacques Garrigue, Gabriel Scherer, report by Thomas Leonard and Octachron)
 - PR#7016: Stack overflow in GADT typing
