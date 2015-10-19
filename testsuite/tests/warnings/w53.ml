@@ -43,3 +43,65 @@ let f5 i =
     with E | F | Exit -> 0
        | Not_found -> 1
        | G (x, y) -> x + y
+
+
+(* ok *)
+let f6 x =
+  let exception[@static] Ret of bool * int in
+  let r = ref 0 in
+  try
+    for _i = 1 to 10000 do
+      r := !r + x;
+      if !r > 1000 then raise (Ret (true, !r));
+
+      r := !r + x;
+      if !r > 1000 then raise (Ret (false, !r));
+    done;
+    !r
+  with
+  | Ret (true, x) -> x
+  | Ret (false, x) -> x
+
+
+(* ok *)
+let f7 x =
+  let exception[@static] Ret of bool * int in
+  let exception[@static] Foo in
+  let r = ref 0 in
+  try
+    for _i = 1 to 10000 do
+      r := !r + x;
+      if !r > 1000 then raise (Ret (true, !r));
+
+      r := !r + x;
+      if !r > 1000 then raise (Ret (false, !r));
+
+      if !r = 200 then raise Foo;
+      if !r = 100 then raise Exit;
+    done;
+    !r
+  with
+  | Ret (true, x) -> x
+  | Ret (false, x) -> -x
+  | Foo | Exit -> 42
+
+
+let f8 x =
+  let exception[@static] Ret of bool * int in (* bad *)
+  let exception[@static] Foo in (* bad, but could be turned into static exn *)
+  let r = ref 0 in
+  try
+    for _i = 1 to 10000 do
+      r := !r + x;
+      if !r > 1000 then raise (Ret (true, !r));
+
+      r := !r + x;
+      if !r > 1000 then raise (Ret (false, !r));
+
+      if !r = 200 then raise Foo;
+      if !r = 100 then raise Exit;
+    done;
+    !r
+  with
+  | Ret (true, x) -> x
+  | Foo | Exit -> 42
