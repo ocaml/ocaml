@@ -185,9 +185,6 @@ Bug fixes:
 - PR#6752: Extensible variant types and scope escaping
 - PR#6808: the parsing of OCAMLRUNPARAM is too lax
   (Damien Doligez)
-* PR#6816: reject identifiers following numeric literals without spacing, e.g.
-    let foo = 1 in (fun a b -> a,b) 23foo
-  (Hugo Heuzard)
 - PR#6874: Inefficient code generated for module function arguments
 - PR#6897: Bad error message for some pattern matching on extensible variants
 - PR#6899: Optional parameters and non generalizable type variables
