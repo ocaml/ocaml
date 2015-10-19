@@ -87,8 +87,8 @@ let f7 x =
 
 
 let f8 x =
+  let exception[@static] Foo in (* ok *)
   let exception[@static] Ret of bool * int in (* bad *)
-  let exception[@static] Foo in (* bad, but could be turned into static exn *)
   let r = ref 0 in
   try
     for _i = 1 to 10000 do

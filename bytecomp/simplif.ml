@@ -648,12 +648,19 @@ let remove_event = function
 
 exception CanEscape
 
-(* Analyze a try..with handler to extract the branch corresponding
-   to the local exception 'local'.  'raised' is the id bound to the captured
-   exception.  The function returns None if the handler doesn't deal with
-   the local exception (i.e. it reraises it), or Some (h, rest) if h
-   is the handler for the local exception and rest is a new handler obtained
-   by removing the part for the local exception. *)
+(* Analyze a try..with handler to extract the branch corresponding to
+   the local exception 'local'.  'raised' is the id bound to the
+   captured exception.  The function returns Reraise (resp. Exit i) if
+   the handler doesn't deal with the local exception and just reraises
+   it (resp. does some check on other exception constructors and if
+   none matches finish with a staticraise i), or Split (h, rest) if h
+   is the handler for the local exception and rest is a new handler
+   obtained by removing the part for the local exception. *)
+
+type handler =
+  | Split of lambda * lambda
+  | Reraise
+  | Exit of int
 
 let rec handler_for local raised tag_ids = function
   | Lifthenelse
@@ -664,11 +671,11 @@ let rec handler_for local raised tag_ids = function
     when Ident.same raised v || List.exists (Ident.same v) tag_ids ->
       begin match exn with
       | Lvar v when Ident.same local v ->
-          Some (body, rest)
+          Split (body, rest)
       | Lvar _ | Lprim((Pfield _ | Pgetglobal _), _) ->
           begin match handler_for local raised tag_ids rest with
-          | Some (h, rest) -> Some (h, Lifthenelse(comp, body, rest))
-          | None -> None
+          | Split (h, rest) -> Split (h, Lifthenelse(comp, body, rest))
+          | Reraise | Exit _ as r -> r
           end
       | _ -> raise CanEscape
       end
@@ -677,13 +684,27 @@ let rec handler_for local raised tag_ids = function
          in bytecode -g mode *)
 
       begin match handler_for local raised (id :: tag_ids) e with
-      | Some (h, rest) when IdentSet.mem id (free_variables rest) ->
-          Some (h, Llet(Alias, id, e0, rest))
+      | Split (h, rest) when IdentSet.mem id (free_variables rest) ->
+          Split (h, Llet(Alias, id, e0, rest))
       | r -> r
       end
 
+  | Lstaticraise (i, []) ->
+      Exit i
+
+  | Lstaticcatch (e1, (i, []), e2) ->
+      begin match handler_for local raised tag_ids e1 with
+      | Exit j when i = j ->
+          begin match handler_for local raised tag_ids e2 with
+          | Split (h, rest) -> Split (h, Lstaticcatch (e1, (i, []), rest))
+          | Reraise | Exit _ as r -> r
+          end
+      | _ -> raise CanEscape
+      end
+
   | Lprim(Praise Raise_reraise, [Lvar v]) when Ident.same raised v ->
-      None
+      Reraise
+
   | _ ->
       raise CanEscape
 
@@ -701,8 +722,8 @@ let rec static id lam =
     match lam with
     | Ltrywith(body, v, handler) ->
         begin match handler_for id v [] handler with
-        | None -> lam
-        | Some (h, other_handlers) ->
+        | Reraise | Exit _ -> lam
+        | Split (h, other_handlers) ->
             staticify_trywith id body v h other_handlers
         end
     | _ -> lam
