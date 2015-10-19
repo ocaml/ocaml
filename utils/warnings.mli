@@ -65,6 +65,7 @@ type t =
   | Bad_docstring of bool                   (* 50 *)
   | Expect_tailcall                         (* 51 *)
   | Fragile_literal_pattern                 (* 52 *)
+  | Exception_not_static                    (* 53 *)
 ;;
 
 val parse_options : bool -> string -> unit;;

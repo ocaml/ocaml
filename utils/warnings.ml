@@ -70,6 +70,7 @@ type t =
   | Bad_docstring of bool                   (* 50 *)
   | Expect_tailcall                         (* 51 *)
   | Fragile_literal_pattern                 (* 52 *)
+  | Exception_not_static                    (* 53 *)
 ;;
 
 (* If you remove a warning, leave a hole in the numbering.  NEVER change
@@ -131,9 +132,10 @@ let number = function
   | Bad_docstring _ -> 50
   | Expect_tailcall -> 51
   | Fragile_literal_pattern -> 52
+  | Exception_not_static -> 53
 ;;
 
-let last_warning_number = 52
+let last_warning_number = 53
 (* Must be the max number returned by the [number] function. *)
 
 let letter = function
@@ -403,6 +405,8 @@ let message = function
       Printf.sprintf "the argument of this constructor should not be matched against a \
                       constant pattern; the actual value of the argument could change \
                       in the future"
+  | Exception_not_static ->
+      "this exception is not static"
 ;;
 
 let nerrors = ref 0;;
@@ -490,6 +494,7 @@ let descriptions =
    50, "Unexpected documentation comment.";
    51, "Warning on non-tail calls if @tailcall present.";
    52, "Fragile constant pattern.";
+   54, "Local exception marked with @static is not static."
   ]
 ;;
 

@@ -761,6 +761,15 @@ let rec simplify_local_raises l =
       begin try check id (static id scope)
       with CanEscape -> l
       end
+  | Lprim(Pstatic_exn loc,
+          [Llet(Strict, id,
+                Lprim(Pccall{Primitive.prim_name = "caml_set_oo_id"}, _),
+               scope) as l0]) ->
+      begin try check id (static id scope)
+      with CanEscape ->
+        Location.prerr_warning loc Warnings.Exception_not_static;
+        l0
+      end
   | _ -> l
 
 

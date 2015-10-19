@@ -126,6 +126,9 @@ type primitive =
   (* Integer to external pointer *)
   | Pint_as_pointer
 
+  (* Marker for static exception *)
+  | Pstatic_exn of Location.t
+
 and comparison =
     Ceq | Cneq | Clt | Cgt | Cle | Cge
 
