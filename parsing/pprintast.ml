@@ -610,8 +610,10 @@ class printer  ()= object(self:'self)
     | Pexp_letmodule (s, me, e) ->
         pp f "@[<hov2>let@ module@ %s@ =@ %a@ in@ %a@]" s.txt
           self#reset#module_expr me  self#expression e
-    | Pexp_letexception  _ ->
-        assert false (* TODO *)
+    | Pexp_letexception (cd, e) ->
+        pp f "@[<hov2>let@ exception@ %a@ in@ %a@]"
+          self#extension_constructor cd
+          self#expression e
     | Pexp_assert e ->
         pp f "@[<hov2>assert@ %a@]" self#simple_expr e
     | Pexp_lazy (e) ->
