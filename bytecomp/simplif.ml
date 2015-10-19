@@ -601,11 +601,142 @@ and list_emit_tail_infos_fun f is_tail =
 and list_emit_tail_infos is_tail =
   List.iter (emit_tail_infos is_tail)
 
+(* Detect raises which jump to the innermost try-with handler
+   and turn them into staticraises. *)
+
+let map f = function
+  | Lvar _ | Lconst _ as lam -> lam
+  | Lapply(e1, el, loc) -> Lapply(f e1, List.map f el, loc)
+  | Lfunction {kind; params; body} -> Lfunction {kind; params; body=f body}
+  | Llet(str, v, e1, e2) -> Llet(str, v, f e1, f e2)
+  | Lletrec(idel, e2) ->
+      Lletrec(List.map (fun (v, e) -> (v, f e)) idel, f e2)
+  | Lprim(p, el) -> Lprim(p, List.map f el)
+  | Lswitch(e, sw) ->
+      Lswitch(f e,
+        {sw_numconsts = sw.sw_numconsts;
+         sw_consts =
+            List.map (fun (n, e) -> (n, f e)) sw.sw_consts;
+         sw_numblocks = sw.sw_numblocks;
+         sw_blocks =
+            List.map (fun (n, e) -> (n, f e)) sw.sw_blocks;
+         sw_failaction = match sw.sw_failaction with
+         | None -> None
+         | Some l -> Some (f l)})
+  | Lstringswitch(e, sw, default) ->
+      Lstringswitch
+        (f e,
+         List.map (fun (s, e) -> (s, f e)) sw,
+         Misc.may_map f default)
+  | Lstaticraise (i,args) -> Lstaticraise (i,List.map f args)
+  | Lstaticcatch(e1, i, e2) -> Lstaticcatch(f e1, i, f e2)
+  | Ltrywith(e1, v, e2) -> Ltrywith(f e1, v, f e2)
+  | Lifthenelse(e1, e2, e3) -> Lifthenelse(f e1, f e2, f e3)
+  | Lsequence(e1, e2) -> Lsequence(f e1, f e2)
+  | Lwhile(e1, e2) -> Lwhile(f e1, f e2)
+  | Lfor(v, e1, e2, dir, e3) -> Lfor(v, f e1, f e2, dir, f e3)
+  | Lassign(v, e) -> Lassign(v, f e)
+  | Lsend(k, m, o, el, loc) -> Lsend(k, f m, f o, List.map f el, loc)
+  | Levent(l, ev) -> Levent(f l, ev)
+  | Lifused(v, e) -> Lifused(v, f e)
+
+
+let remove_event = function
+  | Levent(l, _) -> l
+  | l -> l
+
+
+exception CanEscape
+
+let handler_for local raised =
+  let rec loop = function
+    | Lifthenelse(Lprim(Pintcomp Ceq, [Lvar v; exn]) as comp, body, rest)
+    | Lifthenelse(Lprim(Pintcomp Ceq, [Lprim(Pfield 0, [Lvar v]); exn]) as comp, body, rest)
+      when Ident.same raised v ->
+        begin match exn with
+        | Lvar v when Ident.same local v ->
+            Some (body, rest)
+        | Lvar _ | Lprim((Pfield _ | Pgetglobal _), _) ->
+            begin match loop rest with
+            | Some (h, rest) -> Some (h, Lifthenelse(comp, body, rest))
+            | None -> None
+            end
+        | _ -> raise CanEscape
+        end
+    | Lprim(Praise Raise_reraise, [Lvar v]) when Ident.same raised v ->
+        None
+    | _ ->
+        raise CanEscape
+  in
+  loop
+
+let static id =
+  let rec loop lam =
+    let lam = map loop lam in
+    match lam with
+    | Ltrywith(e, v, handler) ->
+        begin match handler_for id v handler with
+        | None -> lam
+        | Some (h, rest) ->
+            let slot = next_negative_raise_count () in
+            let nargs = ref (-1) in
+            let rec rewrite = function
+              | Lprim(Praise _, [exn]) as lam ->
+                  let exn = remove_event exn in
+                  begin match exn with
+                  | Lvar v when Ident.same v id -> nargs := 0; Lstaticraise(slot, [])
+                  | Lprim(Pmakeblock(0, _), Lvar v :: args) when Ident.same v id -> nargs := List.length args; Lstaticraise(slot, args)
+                  | _ -> map rewrite lam
+                  end
+              | Lfunction _ as lam -> lam
+              | lam -> map rewrite lam
+            in
+            let e = rewrite e in
+            let e =
+              match rest with
+              | Lprim(Praise Raise_reraise, [Lvar v2]) when Ident.same v v2 -> e
+              | _ -> Ltrywith(e, v, rest)
+            in
+            if !nargs < 0 then e (* handler unused -> warning? *)
+            else if !nargs = 0 then Lstaticcatch(e, (slot, []), h)
+            else
+              let args = Array.init !nargs (fun i -> Ident.create (Printf.sprintf "arg%i" i)) in
+              let rec subst = function
+                | Lprim(Pfield i, [Lvar v2]) when Ident.same v v2 -> Lvar args.(i - 1)
+                | lam -> map subst lam
+              in
+              Lstaticcatch(e, (slot, Array.to_list args), subst h)
+        end
+    | _ ->
+        lam
+  in
+  loop
+
+let check id =
+  let rec loop = function
+    | Lvar v when Ident.same v id -> raise CanEscape
+    | lam -> map loop lam
+  in
+  loop
+
+
+let rec simplify_local_raises l =
+  let l = map simplify_local_raises l in
+  match l with
+  | Llet(Strict, id, Lprim(Pccall{Primitive.prim_name = "caml_set_oo_id"; _},_),
+         scope) ->
+      begin try check id (static id scope)
+      with CanEscape -> l
+      end
+  | _ -> l
+
+
 (* The entry point:
    simplification + emission of tailcall annotations, if needed. *)
 
 let simplify_lambda lam =
   let res = simplify_lets (simplify_exits lam) in
+  let res = simplify_local_raises res (* if !Clflags.native_code then simplify_local_raises res else res *) in
   if !Clflags.annotations || Warnings.is_active Warnings.Expect_tailcall
     then emit_tail_infos true res;
   res

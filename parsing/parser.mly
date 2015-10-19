@@ -1243,6 +1243,14 @@ expr:
       { expr_of_let_bindings $1 $3 }
   | LET MODULE ext_attributes UIDENT module_binding_body IN seq_expr
       { mkexp_attrs (Pexp_letmodule(mkrhs $4 4, $5, $7)) $3 }
+  | LET EXCEPTION ext_attributes constr_ident generalized_constructor_arguments attributes IN seq_expr
+      { let args, res = $5 in
+        let ex =
+          Te.decl (mkrhs $4 4) ~args ?res ~attrs:$6
+            ~loc:(symbol_rloc())
+        in
+        mkexp_attrs (Pexp_letexception(ex, $8)) $3
+      }
   | LET OPEN override_flag ext_attributes mod_longident IN seq_expr
       { mkexp_attrs (Pexp_open($3, mkrhs $5 5, $7)) $4 }
   | FUNCTION ext_attributes opt_bar match_cases
