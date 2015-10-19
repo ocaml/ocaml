@@ -1709,7 +1709,6 @@ and make_float_padding_precision : type x y a b c d e f .
     fun w p x ->
       let str = fix_padding padty w (convert_float fconv p x) in
       make_printf k o (Acc_data_string (acc, str)) fmt
-
 and make_custom : type x y a b c d e f .
   (b -> (b, c) acc -> f) -> b -> (b, c) acc ->
   (a, b, c, d, e, f) fmt ->
@@ -1719,6 +1718,108 @@ and make_custom : type x y a b c d e f .
   | Custom_succ arity ->
     fun x ->
       make_custom k o acc rest arity (f x)
+
+let const x _ = x
+
+let rec make_iprintf : type a b c d e f.
+  (b -> f) -> b -> (a, b, c, d, e, f) fmt -> a =
+  fun k o fmt -> match fmt with
+    | Char rest ->
+        const (make_iprintf k o rest)
+    | Caml_char rest ->
+        const (make_iprintf k o rest)
+    | String (No_padding, rest) ->
+        const (make_iprintf k o rest)
+    | String (Lit_padding _, rest) ->
+        const (make_iprintf k o rest)
+    | String (Arg_padding _, rest) ->
+        const (const (make_iprintf k o rest))
+    | Caml_string (No_padding, rest) ->
+        const (make_iprintf k o rest)
+    | Caml_string (Lit_padding _, rest) ->
+        const (make_iprintf k o rest)
+    | Caml_string (Arg_padding _, rest) ->
+        const (const (make_iprintf k o rest))
+    | Int (_, pad, prec, rest) ->
+        fn_of_padding_precision k o rest pad prec
+    | Int32 (_, pad, prec, rest) ->
+        fn_of_padding_precision k o rest pad prec
+    | Nativeint (_, pad, prec, rest) ->
+        fn_of_padding_precision k o rest pad prec
+    | Int64 (_, pad, prec, rest) ->
+        fn_of_padding_precision k o rest pad prec
+    | Float (_, pad, prec, rest) ->
+        fn_of_padding_precision k o rest pad prec
+    | Bool rest ->
+        const (make_iprintf k o rest)
+    | Alpha rest ->
+        const (const (make_iprintf k o rest))
+    | Theta rest ->
+        const (make_iprintf k o rest)
+    | Custom (arity, _, rest) ->
+        fn_of_custom_arity k o rest arity
+    | Reader _ ->
+        (* This case is impossible, by typing of formats.  See the
+           note in the corresponding case for make_printf. *)
+        assert false
+    | Flush rest ->
+        make_iprintf k o rest
+    | String_literal (_, rest) ->
+        make_iprintf k o rest
+    | Char_literal (_, rest) ->
+        make_iprintf k o rest
+    | Format_arg (_, _, rest) ->
+        const (make_iprintf k o rest)
+    | Format_subst (_, fmtty, rest) ->
+        fun (Format (fmt, _)) ->
+          make_iprintf k o
+            (concat_fmt (recast fmt fmtty) rest)
+    | Scan_char_set (_, _, rest) ->
+        const (make_iprintf k o rest)
+    | Scan_get_counter (_, rest) ->
+        const (make_iprintf k o rest)
+    | Scan_next_char rest ->
+        const (make_iprintf k o rest)
+    | Ignored_param (ign, rest) ->
+        make_ignored_param (fun x _ -> k x) o (End_of_acc) ign rest
+    | Formatting_lit (_, rest) ->
+        make_iprintf k o rest
+    | Formatting_gen (Open_tag (Format (fmt', _)), rest) ->
+        make_iprintf (fun koc -> make_iprintf k koc rest) o fmt'
+    | Formatting_gen (Open_box (Format (fmt', _)), rest) ->
+        make_iprintf (fun koc -> make_iprintf k koc rest) o fmt'
+    | End_of_format ->
+        k o
+and fn_of_padding_precision :
+  type x y z a b c d e f.
+  (b -> f) -> b -> (a, b, c, d, e, f) fmt ->
+  (x, y) padding -> (y, z -> a) precision -> x =
+  fun k o fmt pad prec -> match pad, prec with
+    | No_padding   , No_precision    ->
+        const (make_iprintf k o fmt)
+    | No_padding   , Lit_precision _ ->
+        const (make_iprintf k o fmt)
+    | No_padding   , Arg_precision   ->
+        const (const (make_iprintf k o fmt))
+    | Lit_padding _, No_precision    ->
+        const (make_iprintf k o fmt)
+    | Lit_padding _, Lit_precision _ ->
+        const (make_iprintf k o fmt)
+    | Lit_padding _, Arg_precision   ->
+        const (const (make_iprintf k o fmt))
+    | Arg_padding _, No_precision    ->
+        const (const (make_iprintf k o fmt))
+    | Arg_padding _, Lit_precision _ ->
+        const (const (make_iprintf k o fmt))
+    | Arg_padding _, Arg_precision   ->
+        const (const (const (make_iprintf k o fmt)))
+and fn_of_custom_arity : type x y a b c d e f .
+  (b -> f) -> b -> (a, b, c, d, e, f) fmt -> (a, x, y) custom_arity -> y =
+  fun k o fmt -> function
+    | Custom_zero ->
+        make_iprintf k o fmt
+    | Custom_succ arity ->
+        const (fn_of_custom_arity k o fmt arity)
 
 (******************************************************************************)
                           (* Continuations for make_printf *)
