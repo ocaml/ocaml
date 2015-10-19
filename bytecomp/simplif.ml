@@ -674,47 +674,59 @@ let rec handler_for local raised = function
   | _ ->
       raise CanEscape
 
-let static id =
-  let rec loop lam =
-    let lam = map loop lam in
-    match lam with
-    | Ltrywith(e, v, handler) ->
-        begin match handler_for id v handler with
-        | None -> lam
-        | Some (h, rest) ->
-            let slot = next_negative_raise_count () in
-            let nargs = ref (-1) in
-            let rec rewrite = function
-              | Lprim(Praise _, [exn]) as lam ->
-                  let exn = remove_event exn in
-                  begin match exn with
-                  | Lvar v when Ident.same v id -> nargs := 0; Lstaticraise(slot, [])
-                  | Lprim(Pmakeblock(0, _), Lvar v :: args) when Ident.same v id -> nargs := List.length args; Lstaticraise(slot, args)
-                  | _ -> map rewrite lam
-                  end
-              | Lfunction _ as lam -> lam
-              | lam -> map rewrite lam
-            in
-            let e = rewrite e in
-            let e =
-              match rest with
-              | Lprim(Praise Raise_reraise, [Lvar v2]) when Ident.same v v2 -> e
-              | _ -> Ltrywith(e, v, rest)
-            in
-            if !nargs < 0 then e (* handler unused -> warning? *)
-            else if !nargs = 0 then Lstaticcatch(e, (slot, []), h)
-            else
-              let args = Array.init !nargs (fun i -> Ident.create (Printf.sprintf "arg%i" i)) in
-              let rec subst = function
-                | Lprim(Pfield i, [Lvar v2]) when Ident.same v v2 -> Lvar args.(i - 1)
-                | lam -> map subst lam
-              in
-              Lstaticcatch(e, (slot, Array.to_list args), subst h)
+let rec static id lam =
+  let lam = map (static id) lam in
+  match lam with
+  | Ltrywith(body, v, handler) ->
+      begin match handler_for id v handler with
+      | None -> lam
+      | Some (h, other_handlers) ->
+          staticify_trywith id body v h other_handlers
+      end
+  | _ -> lam
+
+and staticify_trywith id body v handler other_handlers =
+  let slot = next_negative_raise_count () in
+  let nargs = ref (-1) in
+
+  (* rewrite raise into staticraise in body *)
+  let rec rewrite = function
+    | Lprim(Praise _, [exn]) as lam ->
+        let exn = remove_event exn in
+        begin match exn with
+        | Lvar v when Ident.same v id ->
+            nargs := 0;
+            Lstaticraise(slot, [])
+        | Lprim(Pmakeblock(0, _), Lvar v :: args) when Ident.same v id ->
+            nargs := List.length args;
+            Lstaticraise(slot, args)
+        | _ ->
+            map rewrite lam
         end
-    | _ ->
-        lam
+    | Lfunction _ as lam -> lam
+    | lam -> map rewrite lam
   in
-  loop
+  let body = rewrite body in
+
+  (* recreate the try...with if it deals with other exceptions *)
+  let body =
+    match other_handlers with
+    | Lprim(Praise Raise_reraise, [Lvar v2]) when Ident.same v v2 -> body
+    | lam -> Ltrywith(body, v, lam)
+  in
+
+  if !nargs < 0 then body (* handler unused -> warning? *)
+  else if !nargs = 0 then Lstaticcatch(body, (slot, []), handler)
+  else
+    (* rewrite the handler to get its arguments through
+       staticcatch parameters instead of from the exception block *)
+    let mk_arg i = Ident.create (Printf.sprintf "arg%i" i) in
+    let args = Array.init !nargs mk_arg in
+    let rec subst = function
+      | Lprim(Pfield i, [Lvar v2]) when Ident.same v v2 -> Lvar args.(i - 1)
+      | lam -> map subst lam
+    in
+    Lstaticcatch(body, (slot, Array.to_list args), subst handler)
 
 let rec check id = function
   | Lvar v when Ident.same v id -> raise CanEscape
@@ -723,7 +735,7 @@ let rec check id = function
 let rec simplify_local_raises l =
   let l = map simplify_local_raises l in
   match l with
-  | Llet(Strict, id, Lprim(Pccall{Primitive.prim_name = "caml_set_oo_id"; _},_),
+  | Llet(Strict, id, Lprim(Pccall{Primitive.prim_name = "caml_set_oo_id"}, _),
          scope) ->
       begin try check id (static id scope)
       with CanEscape -> l
