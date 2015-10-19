@@ -494,7 +494,7 @@ let descriptions =
    50, "Unexpected documentation comment.";
    51, "Warning on non-tail calls if @tailcall present.";
    52, "Fragile constant pattern.";
-   54, "Local exception marked with @static is not static."
+   53, "Local exception marked with @static is not static."
   ]
 ;;
 
