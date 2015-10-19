@@ -96,7 +96,7 @@ static inline int16_t read16s(void)
 static inline uint32_t read32u(void)
 {
   uint32_t res =
-    (intern_src[0] << 24) + (intern_src[1] << 16)
+    ((uint32_t)(intern_src[0]) << 24) + (intern_src[1] << 16)
     + (intern_src[2] << 8) + intern_src[3];
   intern_src += 4;
   return res;
@@ -105,7 +105,7 @@ static inline uint32_t read32u(void)
 static inline int32_t read32s(void)
 {
   int32_t res =
-    (intern_src[0] << 24) + (intern_src[1] << 16)
+    ((uint32_t)(intern_src[0]) << 24) + (intern_src[1] << 16)
     + (intern_src[2] << 8) + intern_src[3];
   intern_src += 4;
   return res;

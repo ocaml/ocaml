@@ -715,19 +715,15 @@ CAMLexport intnat caml_output_value_to_block(value v, value flags,
   extern_ptr = extern_userprovided_output;
   extern_limit = buf + len;
   data_len = extern_value(v, flags, header, &header_len);
-  if (header_len == 20) {
-    /* Good guess! */
-    memcpy(buf, header, 20);
-    return 20 + data_len;
-  } else {
-    /* Need to shift the output to make room for big header. 
+  if (header_len != 20) {
+    /* Bad guess!  Need to shift the output to make room for big header. 
        Make sure there is room. */
     if (header_len + data_len > len)
       caml_failwith("Marshal.to_buffer: buffer overflow");
     memmove(buf + header_len, buf + 20, data_len);
-    memcpy(buf, header, header_len);
-    return header_len + data_len;
   }
+  memcpy(buf, header, header_len);
+  return header_len + data_len;
 }
 
 CAMLprim value caml_output_value_to_buffer(value buf, value ofs, value len,
