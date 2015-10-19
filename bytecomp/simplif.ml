@@ -689,7 +689,8 @@ let rec handler_for local raised tag_ids = function
 
 let rec static id lam =
   match lam with
-  | Ltrywith(body, v, Lstaticcatch(e1, i, e2)) ->
+  | Ltrywith(body, v, Lstaticcatch(e1, i, e2))
+    when not (IdentSet.mem v (free_variables e2)) ->
       (* When multiple handlers in the try...with blocks have the same
          action (or or-pattern are used), they can be shared with a staticcatch.
          Let's put the staticcatch handler out of the trywith to simplify
