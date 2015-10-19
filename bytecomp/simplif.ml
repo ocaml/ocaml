@@ -753,24 +753,26 @@ let rec check id = function
   | Lvar v when Ident.same v id -> raise CanEscape
   | lam -> map (check id) lam
 
-let rec simplify_local_raises l =
-  let l = map simplify_local_raises l in
-  match l with
-  | Llet(Strict, id, Lprim(Pccall{Primitive.prim_name = "caml_set_oo_id"}, _),
-         scope) ->
-      begin try check id (static id scope)
-      with CanEscape -> l
-      end
-  | Lprim(Pstatic_exn loc,
-          [Llet(Strict, id,
-                Lprim(Pccall{Primitive.prim_name = "caml_set_oo_id"}, _),
-               scope) as l0]) ->
-      begin try check id (static id scope)
-      with CanEscape ->
-        Location.prerr_warning loc Warnings.Exception_not_static;
-        l0
-      end
-  | _ -> l
+let rec simplify_local_raises loc = function
+  | Lprim(Pstatic_exn loc, [l]) ->
+      simplify_local_raises (Some loc) l
+  | l0 ->
+      let l1 = map (simplify_local_raises None) l0 in
+      let l2 =
+        match l1 with
+        | Llet(Strict, id, Lprim(Pccall{Primitive.prim_name = "caml_set_oo_id"}, _),
+               scope) ->
+            begin try Some (check id (static id scope))
+            with CanEscape -> None
+            end
+        | _ -> None
+      in
+      match l2, loc with
+      | Some l2, _ -> l2
+      | None, None -> l1
+      | None, Some loc ->
+          Location.prerr_warning loc Warnings.Exception_not_static;
+          l1
 
 
 (* The entry point:
@@ -778,7 +780,7 @@ let rec simplify_local_raises l =
 
 let simplify_lambda lam =
   let res = simplify_lets (simplify_exits lam) in
-  let res = simplify_local_raises res in
+  let res = simplify_local_raises None res in
   if !Clflags.annotations || Warnings.is_active Warnings.Expect_tailcall
     then emit_tail_infos true res;
   res
