@@ -1181,10 +1181,7 @@ let kfprintf k ppf (Format (fmt, _)) =
     ppf End_of_acc fmt
 
 and ikfprintf k ppf (Format (fmt, _)) =
-  make_printf
-    (fun _ _ -> k ppf)
-    ppf End_of_acc fmt
-;;
+  make_iprintf k ppf fmt
 
 let fprintf ppf = kfprintf ignore ppf;;
 let ifprintf ppf = ikfprintf ignore ppf;;
