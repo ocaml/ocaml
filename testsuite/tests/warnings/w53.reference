@@ -1,0 +1,4 @@
+File "w53.ml", line 24, characters 2-85:
+Warning 53: this exception is not static
+File "w53.ml", line 3, characters 2-34:
+Warning 53: this exception is not static
