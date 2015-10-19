@@ -655,38 +655,56 @@ exception CanEscape
    is the handler for the local exception and rest is a new handler obtained
    by removing the part for the local exception. *)
 
-let rec handler_for local raised = function
+let rec handler_for local raised tag_ids = function
   | Lifthenelse
       (Lprim
          (Pintcomp Ceq, [Lvar v | Lprim(Pfield 0, [Lvar v]); exn]) as comp,
        body, rest
       )
-    when Ident.same raised v ->
+    when Ident.same raised v || List.exists (Ident.same v) tag_ids ->
       begin match exn with
       | Lvar v when Ident.same local v ->
           Some (body, rest)
       | Lvar _ | Lprim((Pfield _ | Pgetglobal _), _) ->
-          begin match handler_for local raised rest with
+          begin match handler_for local raised tag_ids rest with
           | Some (h, rest) -> Some (h, Lifthenelse(comp, body, rest))
           | None -> None
           end
       | _ -> raise CanEscape
       end
+  | Llet(Alias, id, (Lprim(Pfield 0, [Lvar v]) as e0), e) when Ident.same raised v ->
+      (* this case is required when the alias-let is not inlined, which happens
+         in bytecode -g mode *)
+
+      begin match handler_for local raised (id :: tag_ids) e with
+      | Some (h, rest) when IdentSet.mem id (free_variables rest) ->
+          Some (h, Llet(Alias, id, e0, rest))
+      | r -> r
+      end
+
   | Lprim(Praise Raise_reraise, [Lvar v]) when Ident.same raised v ->
       None
   | _ ->
       raise CanEscape
 
 let rec static id lam =
-  let lam = map (static id) lam in
   match lam with
-  | Ltrywith(body, v, handler) ->
-      begin match handler_for id v handler with
-      | None -> lam
-      | Some (h, other_handlers) ->
-          staticify_trywith id body v h other_handlers
-      end
-  | _ -> lam
+  | Ltrywith(body, v, Lstaticcatch(e1, i, e2)) ->
+      (* When multiple handlers in the try...with blocks have the same
+         action (or or-pattern are used), they can be shared with a staticcatch.
+         Let's put the staticcatch handler out of the trywith to simplify
+         detection. *)
+      static id (Lstaticcatch(Ltrywith(body, v, static id e1), i, e2))
+  | lam ->
+    let lam = map (static id) lam in
+    match lam with
+    | Ltrywith(body, v, handler) ->
+        begin match handler_for id v [] handler with
+        | None -> lam
+        | Some (h, other_handlers) ->
+            staticify_trywith id body v h other_handlers
+        end
+    | _ -> lam
 
 and staticify_trywith id body v handler other_handlers =
   let slot = next_negative_raise_count () in
