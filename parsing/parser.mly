@@ -46,6 +46,20 @@ let mkoperator name pos =
 let mkpatvar name pos =
   Pat.mk ~loc:(rhs_loc pos) (Ppat_var (mkrhs name pos))
 
+(** When a the backtrace is binded it is added as a pattern on a pair.
+    When it is not, the tuple is not added so that the parsetree is
+    backward compatible. That gives a badly type case list but it is
+    fixed during typing if needed.
+*)
+let mkbacktrace_binding backtrace case =
+  match backtrace with
+  | None -> case
+  | Some bt ->
+      let bt = mkpat (Ppat_var bt) in
+      let bt = mkpat (Ppat_construct (mknoloc (Lident "Some"),
+                                      Some bt)) in
+      mkpat (Ppat_tuple [bt; case])
+
 (*
   Ghost expressions and patterns:
   expressions and patterns that do not appear explicitly in the
@@ -1257,7 +1271,7 @@ expr:
       { mkexp_attrs (mk_newtypes $5 $7).pexp_desc $2 }
   | MATCH ext_attributes seq_expr WITH opt_bar match_cases
       { mkexp_attrs (Pexp_match($3, List.rev $6)) $2 }
-  | TRY ext_attributes seq_expr WITH opt_bar match_cases
+  | TRY ext_attributes seq_expr WITH opt_bar match_try_cases
       { mkexp_attrs (Pexp_try($3, List.rev $6)) $2 }
   | TRY ext_attributes seq_expr WITH error
       { syntax_error() }
@@ -1538,11 +1552,25 @@ match_cases:
     match_case { [$1] }
   | match_cases BAR match_case { $3 :: $1 }
 ;
+match_try_cases:
+    match_try_case { [$1] }
+  | match_try_cases BAR match_try_case { $3 :: $1 }
+;
+optional_backtrace_binding:
+    /*empty*/                                   { None }
+  | REC LIDENT                                  { Some (mkrhs $2 2) }
+;
 match_case:
     pattern MINUSGREATER seq_expr
       { Exp.case $1 $3 }
   | pattern WHEN seq_expr MINUSGREATER seq_expr
       { Exp.case $1 ~guard:$3 $5 }
+;
+match_try_case:
+    pattern optional_backtrace_binding MINUSGREATER seq_expr
+      { (Exp.case (mkbacktrace_binding $2 $1) $4) }
+  | pattern WHEN seq_expr optional_backtrace_binding MINUSGREATER seq_expr
+      { (Exp.case (mkbacktrace_binding $4 $1) ~guard:$3 $6) }
 ;
 fun_def:
     MINUSGREATER seq_expr                       { $2 }

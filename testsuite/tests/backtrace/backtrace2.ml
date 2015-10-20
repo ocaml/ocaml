@@ -49,13 +49,23 @@ let test_Not_found () =
     print_string "test_Not_found"; print_newline();
     (try Hashtbl.find (Hashtbl.create 3) 0 with Not_found -> raise exn)
 
+exception Localized of exn
+
+let test_localized () =
+  let rec aux n =
+    if n = 0 then raise Not_found else 1 + aux (n-1)
+  in
+  try aux 5
+  with exn rec bt ->
+    Printexc.reraise_raw_backtrace (Localized exn) bt
 
 let run g args =
   try
     ignore (g args.(0)); print_string "No exception\n"
   with exn ->
     Printf.printf "Uncaught exception %s\n" (Printexc.to_string exn);
-    Printexc.print_backtrace stdout
+    Printexc.print_backtrace stdout;
+    flush stdout
 
 let _ =
   Printexc.record_backtrace true;
@@ -67,4 +77,5 @@ let _ =
   run test_Error [| "f" |];
   run test_Error [| |];
   run test_Not_found  [| () |];
+  run test_localized  [| () |];
   ()

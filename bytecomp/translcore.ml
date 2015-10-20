@@ -1003,7 +1003,7 @@ and transl_guard ?(for_a_try_with=false) guard rhs =
   let lam_rhs = transl_exp rhs in
   let lam_rhs = match !last_try_bt with
     | Some bt when for_a_try_with ->
-        (* If a backtrace is needed inside rhs. *)
+        (* If a backtrace is needed inside rhs or binded by the user. *)
         Llet(StrictOpt,bt,
              Lprim (Pccall prim_get_raw_backtrace,[lambda_unit]),
              lam_rhs)
@@ -1025,6 +1025,14 @@ and transl_case_try {c_lhs; c_guard; c_rhs} =
   let old_try_bt = !last_try_bt in
   Misc.try_finally begin fun () ->
     last_try_bt := None;
+    let c_lhs = match c_lhs.pat_desc with
+      | Tpat_tuple [
+          {pat_desc = Tpat_construct(_,_,[
+               {pat_desc = Tpat_var (bt,_)}])};exn] ->
+          last_try_bt := Some bt;
+          exn
+      | Tpat_tuple [_ (* None *); exn] -> exn
+      | _ -> c_lhs in
     match c_lhs.pat_desc with
     | Tpat_var (id, _)
     | Tpat_alias (_, id, _) ->

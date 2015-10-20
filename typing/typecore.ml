@@ -1987,8 +1987,38 @@ and type_expect_ ?in_function ?(recarg=Rejected) env sexp ty_expected =
         exp_env = env }
   | Pexp_try(sbody, caselist) ->
       let body = type_expect env sbody ty_expected in
+      (* The cases [exn] are in fact pairs when there is a backtrace binding
+         [(Some bt_option, exn)] and transformed back during translcore.
+      *)
+      let it_is_a_backtrace_binding = function
+        | {pc_lhs={ppat_desc=Ppat_tuple _}} -> true
+        | _ -> false
+      in
+      let add_none = function
+        | case when it_is_a_backtrace_binding case -> case
+        | case ->
+            let bt =
+              Ast_helper.Pat.construct
+                (mknoloc (Longident.Lident "None")) None in
+            { case with pc_lhs = Ast_helper.Pat.tuple [bt; case.pc_lhs] }
+      in
+      let caselist,match_ty =
+        if List.exists it_is_a_backtrace_binding caselist
+        then List.map add_none caselist,
+             (* This type is typed only when (rec bt) is used.
+                Otherwise you can't compile the stdlib... *)
+             let ty_raw_backtrace = Typetexp.transl_simple_type env false
+                 (Ast_helper.Typ.constr ~loc
+                    (mkloc
+                       (Longident.Ldot(Longident.Lident "Printexc",
+                                       "raw_backtrace"))
+                       loc) []) in
+             newty (Ttuple ([type_option ty_raw_backtrace.ctyp_type;
+                             Predef.type_exn ]))
+
+        else caselist, Predef.type_exn in
       let cases, _ =
-        type_cases env Predef.type_exn ty_expected false loc caselist in
+        type_cases env match_ty ty_expected false loc caselist in
       re {
         exp_desc = Texp_try(body, cases);
         exp_loc = loc; exp_extra = [];

@@ -240,7 +240,8 @@ and expression_desc =
   | Pexp_match of expression * case list
         (* match E0 with P1 -> E1 | ... | Pn -> En *)
   | Pexp_try of expression * case list
-        (* try E0 with P1 -> E1 | ... | Pn -> En *)
+        (* try E0 with P1 [rec bt] -> E1 | ... | Pn [rec bt] -> En
+           In case the optional [rec bt] is used, the pattern used is a Pair *)
   | Pexp_tuple of expression list
         (* (E1, ..., En)
 
