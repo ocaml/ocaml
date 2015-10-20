@@ -369,16 +369,19 @@ type env = {
   rewrite_mutable_aliases : bool;
   definitions : Clambda.ulambda Ident.Map.t;
   valid_mutable_aliases_map : Ident.Set.t Ident.Map.t;
+  (** [valid_mutable_aliases_map] maps mutable identifiers to their
+      aliases. *)
   valid_mutable_aliases_revmap : Ident.t Ident.Map.t;
 }
 
+(** Remove from [env] any mutable aliases that are invalidated as a result of
+    the identifier(s) [assigned] being assigned to. *)
 let remove_assigned env assigned =
   let valid_mutable_aliases_revmap,
       valid_mutable_aliases_map =
-    Ident.Set.fold (fun id (revmap, map) ->
-        match Ident.Map.find id env.valid_mutable_aliases_map with
-        | exception Not_found ->
-          (revmap, map)
+    Ident.Set.fold (fun assigned_to (revmap, map) ->
+        match Ident.Map.find assigned_to env.valid_mutable_aliases_map with
+        | exception Not_found -> revmap, map
         | invalid_set ->
           Ident.Set.fold Ident.Map.remove invalid_set revmap,
           Ident.Map.remove id map)
@@ -404,14 +407,21 @@ let check_set_equality set1 set2 =
       Ident.Set.print more_left Ident.Set.print more_right
   end
 
-(** Eliminate, through substitution, [let]-bindings of linear variables with
-    moveable defining expressions. *)
-let rec un_anf_and_moveable ident_info (env:env) (clam : Clambda.ulambda)
+(** 1. Eliminate, through substitution, [let]-bindings of linear variables
+    with moveable defining expressions.
+    2. Eliminate [let]-bindings of variables that are never used in the
+    [let] body and whose defining expressions are moveable.
+    3. If [env.rewrite_mutable_aliases] is [true], substitute uses of
+    (valid) mutable aliases for the corresponding mutable variables
+    themselves.
+*)
+let rec un_anf_and_moveable ident_info (env : env) (clam : Clambda.ulambda)
       : Clambda.ulambda * Ident.Set.t * moveable =
   match clam with
   | Uvar id when
       env.rewrite_mutable_aliases &&
       Ident.Map.mem id env.valid_mutable_aliases_revmap ->
+    (* Find which mutable variable [id] is an alias of. *)
     let alias = Ident.Map.find id env.valid_mutable_aliases_revmap in
     un_anf_and_moveable ident_info env (Clambda.Uvar alias)
   | Uvar id ->
@@ -654,10 +664,13 @@ and un_anf_list_and_moveable ident_info env clams
     clams ([], Ident.Set.empty, Moveable)
 
 and un_anf_list ident_info env clams : Clambda.ulambda list * Ident.Set.t =
-  let clams, assigned, _moveable = un_anf_list_and_moveable ident_info env clams in
+  let clams, assigned, _moveable =
+    un_anf_list_and_moveable ident_info env clams
+  in
   clams, assigned
 
-and un_anf_list_snd ident_info env clams : ('a * Clambda.ulambda) list * Ident.Set.t =
+and un_anf_list_snd ident_info env clams
+      : ('a * Clambda.ulambda) list * Ident.Set.t =
   List.fold_right (fun (v, clam) (l, acc_assigned) ->
       let clam, assigned = un_anf ident_info env clam in
       (v, clam) :: l, Ident.Set.union assigned acc_assigned)
