@@ -70,6 +70,8 @@ Compilers:
   (Simon Cruanes, review by Gabriel Scherer)
 - GPR#258: more precise information on PowerPC instruction sizes
   (Pierre Chambart, Xavier Leroy)
+- PR#7022, GPR#259: unbox float and boxed ints earlier, avoid second pass
+  (Alain Frisch)
 
 Runtime system:
 - PR#3612: allow allocating custom block with finalizers in the minor heap
