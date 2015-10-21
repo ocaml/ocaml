@@ -384,7 +384,7 @@ let remove_assigned env assigned =
         | exception Not_found -> revmap, map
         | invalid_set ->
           Ident.Set.fold Ident.Map.remove invalid_set revmap,
-          Ident.Map.remove id map)
+          Ident.Map.remove assigned_to map)
       assigned
       (env.valid_mutable_aliases_revmap, env.valid_mutable_aliases_map)
   in
