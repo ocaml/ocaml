@@ -256,7 +256,7 @@ let unchanging_params_in_recursion (decls : Flambda.function_declarations)
         (* CR-soon mshinwell: we should avoid recomputing this, cache in
            [function_declaration].  See also comment on
            [only_via_symbols] in [Flambda_utils]. *)
-        (Flambda.free_variables ~ignore_uses_in_apply:() decl.body))
+        (Flambda.used_variables ~ignore_uses_in_apply:() decl.body))
     decls.funs;
   let relation =
     Variable.Map.fold (fun func_var

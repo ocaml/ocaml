@@ -444,7 +444,8 @@ let rec print_program ppf (program : program) =
     print_program ppf program;
   | End root -> fprintf ppf "End %a" Symbol.print root
 
-let rec free_variables ?ignore_uses_in_apply ?ignore_uses_in_project_var tree =
+let rec variables_usage ?ignore_uses_in_apply ?ignore_uses_in_project_var
+    ~all_used_variables tree =
   match tree with
   | Var var -> Variable.Set.singleton var
   | _ ->
@@ -475,7 +476,8 @@ let rec free_variables ?ignore_uses_in_apply ?ignore_uses_in_project_var tree =
         List.iter (fun (var, defining_expr) ->
             bound_variable var;
             free_variables
-              (free_variables_named ?ignore_uses_in_project_var defining_expr))
+              (variables_usage_named ?ignore_uses_in_project_var
+                 ~all_used_variables defining_expr))
           bindings;
         aux body
       | Switch (scrutinee, switch) ->
@@ -518,9 +520,13 @@ let rec free_variables ?ignore_uses_in_apply ?ignore_uses_in_project_var tree =
       | Proved_unreachable -> ()
     in
     aux tree;
-    Variable.Set.diff !free !bound
+    if all_used_variables then
+      !free
+    else
+      Variable.Set.diff !free !bound
 
-and free_variables_named ?ignore_uses_in_project_var named =
+and variables_usage_named ?ignore_uses_in_project_var
+    ~all_used_variables named =
   let free = ref Variable.Set.empty in
   let free_variable fv = free := Variable.Set.add fv !free in
   begin match named with
@@ -543,9 +549,26 @@ and free_variables_named ?ignore_uses_in_project_var named =
   | Move_within_set_of_closures { closure; start_from = _; move_to = _ } ->
     free_variable closure
   | Prim (_, args, _) -> List.iter free_variable args
-  | Expr flam -> free := Variable.Set.union (free_variables flam) !free
+  | Expr flam ->
+    free := Variable.Set.union (variables_usage ~all_used_variables flam) !free
   end;
   !free
+
+let free_variables ?ignore_uses_in_apply ?ignore_uses_in_project_var tree =
+  variables_usage ?ignore_uses_in_apply ?ignore_uses_in_project_var
+    ~all_used_variables:false tree
+
+let free_variables_named ?ignore_uses_in_project_var named =
+  variables_usage_named ?ignore_uses_in_project_var
+    ~all_used_variables:false named
+
+let used_variables ?ignore_uses_in_apply ?ignore_uses_in_project_var tree =
+  variables_usage ?ignore_uses_in_apply ?ignore_uses_in_project_var
+    ~all_used_variables:true tree
+
+let used_variables_named ?ignore_uses_in_project_var named =
+  variables_usage_named ?ignore_uses_in_project_var
+    ~all_used_variables:true named
 
 let create_let var defining_expr body : t =
   let defining_expr, free_vars_of_defining_expr =
