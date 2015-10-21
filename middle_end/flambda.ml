@@ -465,10 +465,21 @@ let rec variables_usage ?ignore_uses_in_apply ?ignore_uses_in_project_var
         | Some () -> ()
         end;
         List.iter free_variable args
-      | Let { var; free_vars_of_defining_expr; free_vars_of_body; _ } ->
+      | Let { var; free_vars_of_defining_expr; free_vars_of_body;
+              defining_expr; body; _ } ->
         bound_variable var;
-        free_variables free_vars_of_defining_expr;
-        free_variables free_vars_of_body
+        if all_used_variables then begin
+          free_variables
+            (variables_usage_named ?ignore_uses_in_project_var
+               ~all_used_variables defining_expr);
+          free_variables
+            (variables_usage ?ignore_uses_in_apply ?ignore_uses_in_project_var
+               ~all_used_variables body)
+        end
+        else begin
+          free_variables free_vars_of_defining_expr;
+          free_variables free_vars_of_body
+        end
       | Let_mutable (_mut_var, var, body) ->
         free_variable var;
         aux body
