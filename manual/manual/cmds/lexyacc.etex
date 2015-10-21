@@ -350,8 +350,8 @@ module Make (M : sig
              end)
 = struct
 
-let refill_handler k lexbuf arg =
-    M.bind (M.on_refill lexbuf) (fun () -> k lexbuf arg)
+let refill_handler k lexbuf =
+    M.bind (M.on_refill lexbuf) (fun () -> k lexbuf)
 
 }
 
