@@ -319,7 +319,7 @@ and to_clambda_named t env var (named : Flambda.named) : Clambda.ulambda =
   | Const (Char c) -> Uconst (Uconst_int (Char.code c))
   | Allocated_const _ ->
     Misc.fatal_errorf "[Allocated_const] should have been lifted to a \
-        [Let_symbol] construction before [Clambdagen]: %a = %a"
+        [Let_symbol] construction before [Flambda_to_clambda]: %a = %a"
       Variable.print var
       Flambda.print_named named
   | Read_mutable mut_var ->
