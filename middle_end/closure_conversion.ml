@@ -243,7 +243,7 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
     let cond = Variable.create "cond_sequor" in
     Flambda.create_let const_true (Const (Int 1))
       (Flambda.create_let cond (Expr arg1)
-        (If_then_else (cond, Var (const_true), arg2)))
+        (If_then_else (cond, Var const_true, arg2)))
   | Lprim (Psequand, [arg1; arg2]) ->
     let arg1 = close t env arg1 in
     let arg2 = close t env arg2 in
@@ -251,7 +251,7 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
     let cond = Variable.create "cond_sequand" in
     Flambda.create_let const_false (Const (Int 0))
       (Flambda.create_let cond (Expr arg1)
-        (If_then_else (cond, arg2, Var (const_false))))
+        (If_then_else (cond, arg2, Var const_false)))
   | Lprim ((Psequand | Psequor), _) ->
     Misc.fatal_error "Psequand / Psequor must have exactly two arguments"
   | Lprim (Pidentity, [arg]) -> close t env arg
