@@ -247,7 +247,7 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
   | Lprim (Psequand, [arg1; arg2]) ->
     let arg1 = close t env arg1 in
     let arg2 = close t env arg2 in
-    let const_false = Variable.create "const_true" in
+    let const_false = Variable.create "const_false" in
     let cond = Variable.create "cond_sequand" in
     Flambda.create_let const_false (Const (Int 0))
       (Flambda.create_let cond (Expr arg1)
