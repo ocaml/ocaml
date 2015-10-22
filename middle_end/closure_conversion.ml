@@ -264,19 +264,13 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
       (name_expr
         (Prim (Praise kind, [arg_var], Debuginfo.from_raise event))
         ~name:"raise")
-  | Lprim (Pfield pos, [Lprim (Pgetglobal id, [])])
-    when Ident.same id t.current_unit_id ->
-    (* CR mshinwell: is this case now redundant? *)
-    let symbol = Env.find_global env pos in
-    let sym_v = Variable.create ("access_global_" ^ string_of_int pos) in
-    let result_v = Variable.create ("access_global_field_" ^ string_of_int pos) in
-    Flambda.create_let sym_v (Symbol symbol)
-      (Flambda.create_let result_v (Prim(Pfield 0, [sym_v], Debuginfo.none))
-        (Var result_v))
-  | Lprim (Psetfield (pos, _), [Lprim (Pgetglobal id, []); _]) ->
-    assert (Ident.same id t.current_unit_id);
-    Misc.fatal_errorf "[Psetfield %i] (to the current compilation unit) is \
-        forbidden upon entry to the middle end" pos
+  | Lprim (Pfield _, [Lprim (Pgetglobal id, [])])
+      when Ident.same id t.current_unit_id ->
+    Misc.fatal_errorf "[Pfield (Pgetglobal ...) for the current compilation \
+        unit is forbidden upon entry to the middle end"
+  | Lprim (Psetfield (_, _), [Lprim (Pgetglobal _, []); _]) ->
+    Misc.fatal_errorf "[Psetfield (Pgetglobal ...) is \
+        forbidden upon entry to the middle end"
   | Lprim (Pgetglobal id, []) when Ident.is_predef_exn id ->
     let symbol = t.symbol_for_global' id in
     imported_symbols := Symbol.Set.add symbol !imported_symbols;
