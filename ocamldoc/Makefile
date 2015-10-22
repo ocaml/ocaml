@@ -11,16 +11,16 @@
 #(***********************************************************************)
 
 include ../config/Makefile
+CAMLRUN ?= ../boot/ocamlrun
+CAMLYACC ?= ../boot/ocamlyacc
 
 # Various commands and dir
 ##########################
 ROOTDIR   = ..
-OCAMLRUN  = $(ROOTDIR)/boot/ocamlrun
-OCAMLC    = $(OCAMLRUN) $(ROOTDIR)/ocamlc -nostdlib -I $(ROOTDIR)/stdlib
-OCAMLOPT  = $(OCAMLRUN) $(ROOTDIR)/ocamlopt -nostdlib -I $(ROOTDIR)/stdlib
-OCAMLDEP  = $(OCAMLRUN) $(ROOTDIR)/tools/ocamldep
-OCAMLLEX  = $(OCAMLRUN) $(ROOTDIR)/boot/ocamllex
-OCAMLYACC = $(ROOTDIR)/yacc/ocamlyacc
+OCAMLC    = $(CAMLRUN) $(ROOTDIR)/ocamlc -nostdlib -I $(ROOTDIR)/stdlib
+OCAMLOPT  = $(CAMLRUN) $(ROOTDIR)/ocamlopt -nostdlib -I $(ROOTDIR)/stdlib
+OCAMLDEP  = $(CAMLRUN) $(ROOTDIR)/tools/ocamldep
+OCAMLLEX  = $(CAMLRUN) $(ROOTDIR)/boot/ocamllex
 OCAMLLIB  = $(LIBDIR)
 OCAMLBIN  = $(BINDIR)
 
@@ -30,8 +30,16 @@ OCAMLPP=-pp './remove_DEBUG'
 ##############
 MKDIR=mkdir -p
 CP=cp -f
-OCAMLDOC=ocamldoc
-OCAMLDOC_RUN=sh ./runocamldoc $(SUPPORTS_SHARED_LIBRARIES)
+OCAMLDOC=./ocamldoc
+ifeq "$(TARGET)" "$(HOST)"
+  ifeq "$(SUPPORTS_SHARED_LIBRARIES)" "true"
+    OCAMLDOC_RUN=$(CAMLRUN) -I ../otherlibs/unix -I ../otherlibs/str $(OCAMLDOC)
+  else
+    OCAMLDOC_RUN=$(OCAMLDOC)
+  endif
+else
+  OCAMLDOC_RUN=$(CAMLRUN) $(OCAMLDOC)
+endif
 OCAMLDOC_OPT=$(OCAMLDOC).opt
 OCAMLDOC_LIBCMA=odoc_info.cma
 OCAMLDOC_LIBCMI=odoc_info.cmi
@@ -233,10 +241,10 @@ odoc_see_lexer.ml: odoc_see_lexer.mll
 	$(OCAMLLEX) $<
 
 .mly.ml:
-	$(OCAMLYACC) -v $<
+	$(CAMLYACC) -v $<
 
 .mly.mli:
-	$(OCAMLYACC) -v $<
+	$(CAMLYACC) -v $<
 
 # Installation targets
 ######################
@@ -290,7 +298,8 @@ test_framed: dummy
 
 test_latex: dummy
 	$(MKDIR) $@
-	$(OCAMLDOC_RUN) -latex -sort -o $@/test.tex -d $@ $(INCLUDES) odoc*.ml odoc*.mli test2.txt ../stdlib/*.mli ../otherlibs/unix/unix.mli
+	$(OCAMLDOC_RUN) -latex -sort -o $@/test.tex -d $@ $(INCLUDES) odoc*.ml \
+	        odoc*.mli test2.txt ../stdlib/*.mli ../otherlibs/unix/unix.mli
 
 test_latex_simple: dummy
 	$(MKDIR) $@
@@ -343,8 +352,8 @@ clean:: dummy
 	@rm -f generators/*.cm[aiox] generators/*.$(A) generators/*.$(O) generators/*.cmx[as]
 
 depend::
-	$(OCAMLYACC) odoc_text_parser.mly
-	$(OCAMLYACC) odoc_parser.mly
+	$(CAMLYACC) odoc_text_parser.mly
+	$(CAMLYACC) odoc_parser.mly
 	$(OCAMLLEX) odoc_text_lexer.mll
 	$(OCAMLLEX) odoc_lexer.mll
 	$(OCAMLLEX) odoc_ocamlhtml.mll

@@ -6,7 +6,8 @@
 (*                                                                     *)
 (*  Copyright 2007 Institut National de Recherche en Informatique et   *)
 (*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
+(*  under the terms of the GNU Library General Public License, with    *)
+(*  the special exception on linking described in file ../LICENSE.     *)
 (*                                                                     *)
 (***********************************************************************)
 
@@ -66,9 +67,7 @@ let cp_pf src dest =
   reset_filesys_cache_for_file dest;
   run["cp";"-pf";src;dest] dest
 
-(* L'Arrete du 2007-03-07 prend en consideration
-   differement les archives. Pour les autres fichiers
-   le decret du 2007-02-01 est toujours valable :-) *)
+(* Archive files are handled specially during copy *)
 let cp src dst =
   if Filename.check_suffix src ".a"
   && Filename.check_suffix dst ".a"

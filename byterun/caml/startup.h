@@ -32,7 +32,8 @@ extern int caml_attempt_open(char **name, struct exec_trailer *trail,
 extern void caml_read_section_descriptors(int fd, struct exec_trailer *trail);
 extern int32_t caml_seek_optional_section(int fd, struct exec_trailer *trail,
                                         char *name);
-extern int32_t caml_seek_section(int fd, struct exec_trailer *trail, char *name);
+extern int32_t caml_seek_section(int fd, struct exec_trailer *trail,
+                                 char *name);
 
 
 #endif /* CAML_STARTUP_H */

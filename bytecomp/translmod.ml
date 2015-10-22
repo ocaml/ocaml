@@ -46,9 +46,7 @@ let field_path path field =
 (* Compile type extensions *)
 
 let prim_set_oo_id =
-  Pccall {Primitive.prim_name = "caml_set_oo_id"; prim_arity = 1;
-          prim_alloc = false; prim_native_name = "";
-          prim_native_float = false}
+  Pccall (Primitive.simple ~name:"caml_set_oo_id" ~arity:1 ~alloc:false)
 
 let transl_extension_constructor env path ext =
   let name =
@@ -298,7 +296,8 @@ let eval_rec_bindings bindings cont =
   | (id, None, rhs) :: rem ->
       patch_forwards rem
   | (id, Some(loc, shape), rhs) :: rem ->
-      Lsequence(Lapply(mod_prim "update_mod", [shape; Lvar id; rhs], no_apply_info),
+      Lsequence(Lapply(mod_prim "update_mod", [shape; Lvar id; rhs],
+                       no_apply_info),
                 patch_forwards rem)
   in
     bind_inits bindings

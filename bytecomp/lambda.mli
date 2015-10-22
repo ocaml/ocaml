@@ -132,7 +132,7 @@ and comparison =
 and array_kind =
     Pgenarray | Paddrarray | Pintarray | Pfloatarray
 
-and boxed_integer =
+and boxed_integer = Primitive.boxed_integer =
     Pnativeint | Pint32 | Pint64
 
 and bigarray_kind =
@@ -178,8 +178,10 @@ val no_apply_info : apply_info
 val mk_apply_info : ?tailcall:bool -> ?inlined_attribute:inline_attribute ->
   Location.t -> apply_info
 (** Build apply_info
-    @param tailcall if true, the application should be in tail position; default false
-    @param inlined_attribute specify wether the function should be inlined or not
+    @param tailcall if true, the application should be in tail position;
+    default false
+    @param inlined_attribute specify wether the function should be inlined
+    or not
 *)
 
 type function_kind = Curried | Tupled

@@ -72,6 +72,22 @@ let status = ref Terminfo.Uninitialised
 
 let num_loc_lines = ref 0 (* number of lines already printed after input *)
 
+let print_updating_num_loc_lines ppf f arg =
+  let open Format in
+  let out_functions = pp_get_formatter_out_functions ppf () in
+  let out_string str start len =
+    let rec count i c =
+      if i = start + len then c
+      else if String.get str i = '\n' then count (succ i) (succ c)
+      else count (succ i) c in
+    num_loc_lines := !num_loc_lines + count start 0 ;
+    out_functions.out_string str start len in
+  pp_set_formatter_out_functions ppf
+    { out_functions with out_string } ;
+  f ppf arg ;
+  pp_print_flush ppf ();
+  pp_set_formatter_out_functions ppf out_functions
+
 (* Highlight the locations using standout mode. *)
 
 let highlight_terminfo ppf num_lines lb locs =
@@ -234,7 +250,11 @@ let get_pos_info pos =
   (pos.pos_fname, pos.pos_lnum, pos.pos_cnum - pos.pos_bol)
 ;;
 
+let setup_colors () =
+  Misc.Color.setup !Clflags.color
+
 let print_loc ppf loc =
+  setup_colors ();
   let (file, line, startchar) = get_pos_info loc.loc_start in
   let endchar = loc.loc_end.pos_cnum - loc.loc_start.pos_cnum + startchar in
   if file = "//toplevel//" then begin
@@ -242,39 +262,52 @@ let print_loc ppf loc =
       fprintf ppf "Characters %i-%i"
               loc.loc_start.pos_cnum loc.loc_end.pos_cnum
   end else begin
-    fprintf ppf "%s%a%s%i" msg_file print_filename file msg_line line;
+    fprintf ppf "%s@{<loc>%a%s%i" msg_file print_filename file msg_line line;
     if startchar >= 0 then
-      fprintf ppf "%s%i%s%i" msg_chars startchar msg_to endchar
+      fprintf ppf "%s%i%s%i" msg_chars startchar msg_to endchar;
+    fprintf ppf "@}"
   end
 ;;
 
 let print ppf loc =
+  setup_colors ();
   if loc.loc_start.pos_fname = "//toplevel//"
   && highlight_locations ppf [loc] then ()
-  else fprintf ppf "%a%s@." print_loc loc msg_colon
+  else fprintf ppf "@{<loc>%a@}%s@." print_loc loc msg_colon
+;;
+
+let error_prefix = "Error"
+let warning_prefix = "Warning"
+
+let print_error_prefix ppf () =
+  setup_colors ();
+  fprintf ppf "@{<error>%s@}:" error_prefix;
+  ()
 ;;
 
 let print_error ppf loc =
   print ppf loc;
-  fprintf ppf "Error: ";
+  print_error_prefix ppf ()
 ;;
 
-let print_error_cur_file ppf = print_error ppf (in_file !input_name);;
+let print_error_cur_file ppf () = print_error ppf (in_file !input_name);;
 
-let print_warning loc ppf w =
+let default_warning_printer loc ppf w =
   if Warnings.is_active w then begin
-    let printw ppf w =
-      let n = Warnings.print ppf w in
-      num_loc_lines := !num_loc_lines + n
-    in
+    setup_colors ();
     print ppf loc;
-    fprintf ppf "Warning %a@." printw w;
-    pp_print_flush ppf ();
-    incr num_loc_lines;
+    fprintf ppf "@{<warning>%s@} %a@." warning_prefix Warnings.print w
   end
 ;;
 
-let prerr_warning loc w = print_warning loc err_formatter w;;
+let warning_printer = ref default_warning_printer ;;
+
+let print_warning loc ppf w =
+  print_updating_num_loc_lines ppf (!warning_printer loc) w
+;;
+
+let formatter_for_warnings = ref err_formatter;;
+let prerr_warning loc w = print_warning loc !formatter_for_warnings w;;
 
 let echo_eof () =
   print_newline ();
@@ -297,8 +330,31 @@ type error =
     if_highlight: string; (* alternative message if locations are highlighted *)
   }
 
-let errorf ?(loc = none) ?(sub = []) ?(if_highlight = "") =
-  Printf.ksprintf (fun msg -> {loc; msg; sub; if_highlight})
+let pp_ksprintf ?before k fmt =
+  let buf = Buffer.create 64 in
+  let ppf = Format.formatter_of_buffer buf in
+  Misc.Color.set_color_tag_handling ppf;
+  begin match before with
+    | None -> ()
+    | Some f -> f ppf
+  end;
+  kfprintf
+    (fun _ ->
+      pp_print_flush ppf ();
+      let msg = Buffer.contents buf in
+      k msg)
+    ppf fmt
+
+let errorf ?(loc = none) ?(sub = []) ?(if_highlight = "") fmt =
+  pp_ksprintf
+    (fun msg -> {loc; msg; sub; if_highlight})
+    fmt
+
+let errorf_prefixed ?(loc=none) ?(sub=[]) ?(if_highlight="") fmt =
+  pp_ksprintf
+    ~before:(fun ppf -> fprintf ppf "%a " print_error_prefix ())
+    (fun msg -> {loc; msg; sub; if_highlight})
+    fmt
 
 let error ?(loc = none) ?(sub = []) ?(if_highlight = "") msg =
   {loc; msg; sub; if_highlight}
@@ -317,7 +373,7 @@ let error_of_exn exn =
   in
   loop !error_of_exn
 
-let rec report_error ppf ({loc; msg; sub; if_highlight} as err) =
+let rec default_error_reporter ppf ({loc; msg; sub; if_highlight} as err) =
   let highlighted =
     if if_highlight <> "" then
       let rec collect_locs locs {loc; sub; if_highlight; _} =
@@ -333,18 +389,17 @@ let rec report_error ppf ({loc; msg; sub; if_highlight} as err) =
   else begin
     print ppf loc;
     Format.pp_print_string ppf msg;
-    List.iter (fun err -> Format.fprintf ppf "@\n@[<2>%a@]" report_error err)
-              sub
+    List.iter (Format.fprintf ppf "@\n@[<2>%a@]" default_error_reporter) sub
   end
 
+let error_reporter = ref default_error_reporter
+
+let report_error ppf err =
+  print_updating_num_loc_lines ppf !error_reporter err
+;;
+
 let error_of_printer loc print x =
-  let buf = Buffer.create 64 in
-  let ppf = Format.formatter_of_buffer buf in
-  pp_print_string ppf "Error: ";
-  print ppf x;
-  pp_print_flush ppf ();
-  let msg = Buffer.contents buf in
-  errorf ~loc "%s" msg
+  errorf_prefixed ~loc "%a@?" print x
 
 let error_of_printer_file print x =
   error_of_printer (in_file !input_name) print x
@@ -353,11 +408,12 @@ let () =
   register_error_of_exn
     (function
       | Sys_error msg ->
-          Some (errorf ~loc:(in_file !input_name) "Error: I/O error: %s" msg)
+          Some (errorf_prefixed ~loc:(in_file !input_name)
+                "I/O error: %s" msg)
       | Warnings.Errors n ->
           Some
-            (errorf ~loc:(in_file !input_name)
-               "Error: Some fatal warnings were triggered (%d occurrences)" n)
+            (errorf_prefixed ~loc:(in_file !input_name)
+             "Some fatal warnings were triggered (%d occurrences)" n)
       | _ ->
           None
     )
@@ -384,4 +440,4 @@ let () =
     )
 
 let raise_errorf ?(loc = none) ?(sub = []) ?(if_highlight = "") =
-  Printf.ksprintf (fun msg -> raise (Error ({loc; msg; sub; if_highlight})))
+  pp_ksprintf (fun msg -> raise (Error ({loc; msg; sub; if_highlight})))

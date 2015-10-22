@@ -334,6 +334,7 @@ let used_variables = ref (Tbl.empty : (string, type_expr * Location.t) Tbl.t)
 
 let reset_type_variables () =
   reset_global_level ();
+  Ctype.reset_reified_var_counter ();
   type_variables := Tbl.empty
 
 let narrow () =
@@ -343,12 +344,12 @@ let widen (gl, tv) =
   restore_global_level gl;
   type_variables := tv
 
-let strict_lowercase c = (c = '_' || c >= 'a' && c <= 'z')
+let strict_ident c = (c = '_' || c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z')
 
 let validate_name = function
     None -> None
   | Some name as s ->
-      if name <> "" && strict_lowercase name.[0] then s else None
+      if name <> "" && strict_ident name.[0] then s else None
 
 let new_global_var ?name () =
   new_global_var ?name:(validate_name name) ()

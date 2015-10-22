@@ -10,7 +10,7 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(function "quicksort" (lo: int hi: int a: addr)
+(function "quicksort" (lo: int hi: int a: val)
   (if (< lo hi)
       (let (i lo
             j hi

@@ -131,8 +131,8 @@ and class_expr_desc =
     Tcl_ident of Path.t * Longident.t loc * core_type list
   | Tcl_structure of class_structure
   | Tcl_fun of
-      arg_label * pattern * (Ident.t * string loc * expression) list * class_expr *
-        partial
+      arg_label * pattern * (Ident.t * string loc * expression) list
+      * class_expr * partial
   | Tcl_apply of class_expr * (arg_label * expression option * optional) list
   | Tcl_let of rec_flag * value_binding list *
                   (Ident.t * string loc * expression) list * class_expr
@@ -181,8 +181,8 @@ and module_expr =
    }
 
 and module_type_constraint =
-  Tmodtype_implicit
-| Tmodtype_explicit of module_type
+    Tmodtype_implicit
+  | Tmodtype_explicit of module_type
 
 and module_expr_desc =
     Tmod_ident of Path.t * Longident.t loc

@@ -474,26 +474,33 @@ let test_match tok = match tok with
       5
   | ITEM2(Edif, TLIST [ID id], TLIST lst) ->
       6
-  | ITEM2(Instance, TLIST [ID instid], TLIST[ITEM2(Viewref, TLIST [ID netlist],
-                                                   TLIST[ITEM(Cellref, TLIST [ID cellid])])]) -> 7
+  | ITEM2(Instance,
+          TLIST [ID instid],
+          TLIST[ITEM2(Viewref, TLIST [ID netlist],
+                      TLIST[ITEM(Cellref, TLIST [ID cellid])])]) ->
+      7
 
-                                                     
-  | ITEM2(Instance, TLIST [ID instid], TLIST[ITEM2(Viewref, TLIST [ID netlist],
-                                                  TLIST[ITEM2(Cellref, TLIST [ID cellid],
-                                                              TLIST [ITEM (Libraryref, TLIST [ID libid])])])]) -> 8
+
+  | ITEM2(Instance,
+          TLIST [ID instid],
+          TLIST[ITEM2(Viewref, TLIST [ID netlist],
+                      TLIST[ITEM2(Cellref, TLIST [ID cellid],
+                                  TLIST [ITEM (Libraryref,
+                                               TLIST [ID libid])])])]) ->
+      8
 (* *)
   | ITEM2(Instance, TLIST [ID instid],
-		    TLIST [ITEM2(viewref,
-				 TLIST [ID netlist],
-				 TLIST [ITEM2(cellref,
-					      TLIST [ID cellid],
-					      TLIST [ITEM(libraryref,
-							  TLIST [ID libid])])]);
-		    ITEM2(property, TLIST [ID xstlib],
-				    TLIST [ITEM2(bool1,
-						 TLIST [],
-						 TLIST [ITEM(True, TLIST [])]);
-				    ITEM(owner, TLIST [str])])]) ->  9
+                    TLIST [ITEM2(viewref,
+                                 TLIST [ID netlist],
+                                 TLIST [ITEM2(cellref,
+                                              TLIST [ID cellid],
+                                              TLIST [ITEM(libraryref,
+                                                          TLIST [ID libid])])]);
+                    ITEM2(property, TLIST [ID xstlib],
+                                    TLIST [ITEM2(bool1,
+                                                 TLIST [],
+                                                 TLIST [ITEM(True, TLIST [])]);
+                                    ITEM(owner, TLIST [str])])]) ->  9
 (* *)
   | ITEM2(Interface, TLIST [], TLIST lst) -> 100
   | ITEM2(Joined, TLIST [], TLIST lst) -> 10
@@ -508,9 +515,13 @@ let test_match tok = match tok with
   | ITEM2(Net, _, _) -> 16
   | ITEM2(Port, TLIST [], TLIST lst) -> 17
   | ITEM2(Port, TLIST [ID id], TLIST lst) -> 18
-  | ITEM2(Portref, TLIST [ID id], TLIST [ITEM (Instanceref, TLIST [ID ref])]) ->19
-  | ITEM2(Portref, TLIST [], TLIST [ITEM (Member, TLIST [ID mref; INT idx])]) -> 20
-  | ITEM2(Portref, TLIST [], TLIST[ITEM (Member, TLIST [ID mref; INT idx]); ITEM (Instanceref, TLIST [ID instref])]) -> 21
+  | ITEM2(Portref, TLIST [ID id], TLIST [ITEM (Instanceref, TLIST [ID ref])]) ->
+      19
+  | ITEM2(Portref, TLIST [], TLIST [ITEM (Member, TLIST [ID mref; INT idx])]) ->
+      20
+  | ITEM2(Portref, TLIST [], TLIST[ITEM (Member, TLIST [ID mref; INT idx]);
+                                   ITEM (Instanceref, TLIST [ID instref])]) ->
+      21
   | ITEM2(Program, TLIST [STRING progid], TLIST lst) ->21
   | ITEM2(Property, TLIST [ID part], TLIST lst) -> 22
   | ITEM2(Status, TLIST lst1, TLIST lst2) -> 23
@@ -537,7 +548,9 @@ let test_match tok = match tok with
   | ITEM (Rename, TLIST [ID id; STRING str]) -> 33
   | ITEM (String, TLIST [STRING str]) -> 32
   | ITEM (String, TLIST lst) -> 34
-  | ITEM (Timestamp, TLIST [INT yr; INT mon; INT day; INT hour; INT min; INT sec]) -> 32
+  | ITEM (Timestamp, TLIST [INT yr; INT mon; INT day; INT hour; INT min;
+                            INT sec]) ->
+      32
   | ITEM (Version, TLIST [STRING str]) -> 32
   | ITEM (Viewtype, TLIST [ID "NETLIST"]) -> 32
   | ITEM (Designator, TLIST lst) -> 34
@@ -895,7 +908,8 @@ let test_match tok = match tok with
   | ITEM2(Ediflevel, _, _) -> failwith " ITEM2(Ediflevel, _, _) "
   | ITEM2(Edifversion, _, _) -> failwith " ITEM2(Edifversion, _, _) "
   | ITEM2(Else, _, _) -> failwith " ITEM2(Else, _, _) "
-  | ITEM2(Enclosuredistance, _, _) -> failwith " ITEM2(Enclosuredistance, _, _) "
+  | ITEM2(Enclosuredistance, _, _) ->
+      failwith " ITEM2(Enclosuredistance, _, _) "
   | ITEM2(Endtype, _, _) -> failwith " ITEM2(Endtype, _, _) "
   | ITEM2(Entry, _, _) -> failwith " ITEM2(Entry, _, _) "
   | ITEM2(Equal, _, _) -> failwith " ITEM2(Equal, _, _) "
@@ -908,8 +922,10 @@ let test_match tok = match tok with
   | ITEM2(Figure, _, _) -> failwith " ITEM2(Figure, _, _) "
   | ITEM2(Figurearea, _, _) -> failwith " ITEM2(Figurearea, _, _) "
   | ITEM2(Figuregroup, _, _) -> failwith " ITEM2(Figuregroup, _, _) "
-  | ITEM2(Figuregroupobject, _, _) -> failwith " ITEM2(Figuregroupobject, _, _) "
-  | ITEM2(Figuregroupoverride, _, _) -> failwith " ITEM2(Figuregroupoverride, _, _) "
+  | ITEM2(Figuregroupobject, _, _) ->
+      failwith " ITEM2(Figuregroupobject, _, _) "
+  | ITEM2(Figuregroupoverride, _, _) ->
+      failwith " ITEM2(Figuregroupoverride, _, _) "
   | ITEM2(Figuregroupref, _, _) -> failwith " ITEM2(Figuregroupref, _, _) "
   | ITEM2(Figureperimeter, _, _) -> failwith " ITEM2(Figureperimeter, _, _) "
   | ITEM2(Figurewidth, _, _) -> failwith " ITEM2(Figurewidth, _, _) "
@@ -924,11 +940,13 @@ let test_match tok = match tok with
   | ITEM2(Gridmap, _, _) -> failwith " ITEM2(Gridmap, _, _) "
   | ITEM2(If, _, _) -> failwith " ITEM2(If, _, _) "
   | ITEM2(Ignore, _, _) -> failwith " ITEM2(Ignore, _, _) "
-  | ITEM2(Includefiguregroup, _, _) -> failwith " ITEM2(Includefiguregroup, _, _) "
+  | ITEM2(Includefiguregroup, _, _) ->
+      failwith " ITEM2(Includefiguregroup, _, _) "
   | ITEM2(Increasing, _, _) -> failwith " ITEM2(Increasing, _, _) "
   | ITEM2(Initial, _, _) -> failwith " ITEM2(Initial, _, _) "
   | ITEM2(Instance, arg1, arg2) -> failwith (" ITEM2(Instance, ) ")
-  | ITEM2(Instancebackannotate, _, _) -> failwith " ITEM2(Instancebackannotate, _, _) "
+  | ITEM2(Instancebackannotate, _, _) ->
+      failwith " ITEM2(Instancebackannotate, _, _) "
   | ITEM2(Instancegroup, _, _) -> failwith " ITEM2(Instancegroup, _, _) "
   | ITEM2(Instancemap, _, _) -> failwith " ITEM2(Instancemap, _, _) "
   | ITEM2(Instancenamedef, _, _) -> failwith " ITEM2(Instancenamedef, _, _) "
@@ -936,9 +954,11 @@ let test_match tok = match tok with
   | ITEM2(Integer, _, _) -> failwith " ITEM2(Integer, _, _) "
   | ITEM2(Integerdisplay, _, _) -> failwith " ITEM2(Integerdisplay, _, _) "
   | ITEM2(Interface, _, _) -> failwith " ITEM2(Interface, _, _) "
-  | ITEM2(Interfiguregroupspacing, _, _) -> failwith " ITEM2(Interfiguregroupspacing, _, _) "
+  | ITEM2(Interfiguregroupspacing, _, _) ->
+      failwith " ITEM2(Interfiguregroupspacing, _, _) "
   | ITEM2(Intersection, _, _) -> failwith " ITEM2(Intersection, _, _) "
-  | ITEM2(Intrafiguregroupspacing, _, _) -> failwith " ITEM2(Intrafiguregroupspacing, _, _) "
+  | ITEM2(Intrafiguregroupspacing, _, _) ->
+      failwith " ITEM2(Intrafiguregroupspacing, _, _) "
   | ITEM2(Inverse, _, _) -> failwith " ITEM2(Inverse, _, _) "
   | ITEM2(Isolated, _, _) -> failwith " ITEM2(Isolated, _, _) "
   | ITEM2(Iterate, _, _) -> failwith " ITEM2(Iterate, _, _) "
@@ -1013,7 +1033,8 @@ let test_match tok = match tok with
   | ITEM2(Pathdelay, _, _) -> failwith " ITEM2(Pathdelay, _, _) "
   | ITEM2(Pathwidth, _, _) -> failwith " ITEM2(Pathwidth, _, _) "
   | ITEM2(Permutable, _, _) -> failwith " ITEM2(Permutable, _, _) "
-  | ITEM2(Physicaldesignrule, _, _) -> failwith " ITEM2(Physicaldesignrule, _, _) "
+  | ITEM2(Physicaldesignrule, _, _) ->
+      failwith " ITEM2(Physicaldesignrule, _, _) "
   | ITEM2(Plug, _, _) -> failwith " ITEM2(Plug, _, _) "
   | ITEM2(Point, _, _) -> failwith " ITEM2(Point, _, _) "
   | ITEM2(Pointdisplay, _, _) -> failwith " ITEM2(Pointdisplay, _, _) "
@@ -1026,7 +1047,8 @@ let test_match tok = match tok with
   | ITEM2(Portbundle, _, _) -> failwith " ITEM2(Portbundle, _, _) "
   | ITEM2(Portdelay, _, _) -> failwith " ITEM2(Portdelay, _, _) "
   | ITEM2(Portgroup, _, _) -> failwith " ITEM2(Portgroup, _, _) "
-  | ITEM2(Portimplementation, _, _) -> failwith " ITEM2(Portimplementation, _, _) "
+  | ITEM2(Portimplementation, _, _) ->
+      failwith " ITEM2(Portimplementation, _, _) "
   | ITEM2(Portinstance, _, _) -> failwith " ITEM2(Portinstance, _, _) "
   | ITEM2(Portlist, _, _) -> failwith " ITEM2(Portlist, _, _) "
   | ITEM2(Portlistalias, _, _) -> failwith " ITEM2(Portlistalias, _, _) "
@@ -1057,7 +1079,8 @@ let test_match tok = match tok with
   | ITEM2(Statement, _, _) -> failwith " ITEM2(Statement, _, _) "
   | ITEM2(Status, _, _) -> failwith " ITEM2(Status, _, _) "
   | ITEM2(Steady, _, _) -> failwith " ITEM2(Steady, _, _) "
-  | ITEM2(Strictlyincreasing, _, _) -> failwith " ITEM2(Strictlyincreasing, _, _) "
+  | ITEM2(Strictlyincreasing, _, _) ->
+      failwith " ITEM2(Strictlyincreasing, _, _) "
   | ITEM2(String, _, _) -> failwith " ITEM2(String, _, _) "
   | ITEM2(Stringdisplay, _, _) -> failwith " ITEM2(Stringdisplay, _, _) "
   | ITEM2(Strong, _, _) -> failwith " ITEM2(Strong, _, _) "
@@ -1224,9 +1247,11 @@ let test_match tok = match tok with
   | ITEM(Integer, _) -> failwith " ITEM(Integer, _) "
   | ITEM(Integerdisplay, _) -> failwith " ITEM(Integerdisplay, _) "
   | ITEM(Interface, _) -> failwith " ITEM(Interface, _) "
-  | ITEM(Interfiguregroupspacing, _) -> failwith " ITEM(Interfiguregroupspacing, _) "
+  | ITEM(Interfiguregroupspacing, _) ->
+      failwith " ITEM(Interfiguregroupspacing, _) "
   | ITEM(Intersection, _) -> failwith " ITEM(Intersection, _) "
-  | ITEM(Intrafiguregroupspacing, _) -> failwith " ITEM(Intrafiguregroupspacing, _) "
+  | ITEM(Intrafiguregroupspacing, _) ->
+      failwith " ITEM(Intrafiguregroupspacing, _) "
   | ITEM(Inverse, _) -> failwith " ITEM(Inverse, _) "
   | ITEM(Isolated, _) -> failwith " ITEM(Isolated, _) "
   | ITEM(Iterate, _) -> failwith " ITEM(Iterate, _) "
@@ -1401,7 +1426,8 @@ let test_match tok = match tok with
   | ITEM(RPAREN, _) -> failwith " ITEM(RPAREN, _) "
   | ITEM(EMPTY, _) -> failwith " ITEM(EMPTY, _) "
   | ITEM ((ITEM _|ITEM2 _), _) -> failwith " ITEM ((ITEM _|ITEM2 _), _) "
-  | ITEM2 ((ITEM _|ITEM2 _), _, _) -> failwith " ITEM2 ((ITEM _|ITEM2 _), _, _) "
+  | ITEM2 ((ITEM _|ITEM2 _), _, _) ->
+      failwith " ITEM2 ((ITEM _|ITEM2 _), _, _) "
 
 let () =  printf "PR#6646=Ok\n%!"
 

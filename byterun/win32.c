@@ -25,6 +25,7 @@
 #include <errno.h>
 #include <string.h>
 #include <signal.h>
+#include "caml/address_class.h"
 #include "caml/fail.h"
 #include "caml/memory.h"
 #include "caml/misc.h"
@@ -418,13 +419,7 @@ static void caml_reset_stack (void *faulting_address)
   caml_raise_stack_overflow();
 }
 
-extern char * caml_code_area_start, * caml_code_area_end;
 CAMLextern int caml_is_in_code(void *);
-
-#define Is_in_code_area(pc) \
- ( ((char *)(pc) >= caml_code_area_start && \
-    (char *)(pc) <= caml_code_area_end)     \
-   || (Classify_addr(pc) & In_code_area) )
 
 static LONG CALLBACK
     caml_UnhandledExceptionFilter (EXCEPTION_POINTERS* exn_info)

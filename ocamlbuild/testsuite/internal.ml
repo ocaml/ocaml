@@ -160,6 +160,13 @@ let () = test "OutputObj"
   ~tree:[T.f "hello.ml" ~content:"print_endline \"Hello, World!\""]
   ~targets:("hello.byte.o",["hello.byte.c";"hello.native.o"]) ();;
 
+let () = test "OutputShared"
+  ~options:[`no_ocamlfind]
+  ~description:"output_shared targets for native and bytecode (PR #6733)"
+  ~tree:[T.f "hello.ml" ~content:"print_endline \"Hello, World!\"";
+         T.f "_tags" ~content:"<*.so>: runtime_variant(_pic)"]
+  ~targets:("hello.byte.so",["hello.native.so"]) ();;
+
 let () = test "StrictSequenceFlag"
   ~options:[`no_ocamlfind; `quiet]
   ~description:"strict_sequence tag"
@@ -313,12 +320,5 @@ let () = test "OpenDependencies"
   ]
   ~matching:[M.f "b.byte"]
   ~targets:("b.byte",[]) ();;
-
-let () = test "OCamlcC"
-  ~options:[`no_ocamlfind]
-  ~description:"Build a C file using ocamlc (PR#6475)"
-  ~tree:[T.d "nested" [T.f "foo.c" ~content:"void f(){}"]]
-  ~matching:[_build [M.d "nested" [M.f "foo.o"]]]
-  ~targets:("nested/foo.o",[]) ();;
 
 run ~root:"_test_internal";;

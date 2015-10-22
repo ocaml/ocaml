@@ -21,14 +21,14 @@ external create : int -> bytes = "caml_create_string"
 external unsafe_get : bytes -> int -> char = "%string_unsafe_get"
 external unsafe_set : bytes -> int -> char -> unit = "%string_unsafe_set"
 external unsafe_fill : bytes -> int -> int -> char -> unit
-                     = "caml_fill_string" "noalloc"
+                     = "caml_fill_string" [@@noalloc]
 external unsafe_to_string : bytes -> string = "%identity"
 external unsafe_of_string : string -> bytes = "%identity"
 
 external unsafe_blit : bytes -> int -> bytes -> int -> int -> unit
-                     = "caml_blit_string" "noalloc"
+                     = "caml_blit_string" [@@noalloc]
 external unsafe_blit_string : string -> int -> bytes -> int -> int -> unit
-                     = "caml_blit_string" "noalloc"
+                     = "caml_blit_string" [@@noalloc]
 
 let make n c =
   let s = create n in
@@ -149,7 +149,7 @@ let escaped s =
   for i = 0 to length s - 1 do
     n := !n +
       (match unsafe_get s i with
-       | '"' | '\\' | '\n' | '\t' | '\r' | '\b' -> 2
+       | '\"' | '\\' | '\n' | '\t' | '\r' | '\b' -> 2
        | ' ' .. '~' -> 1
        | _ -> 4)
   done;
@@ -158,7 +158,7 @@ let escaped s =
     n := 0;
     for i = 0 to length s - 1 do
       begin match unsafe_get s i with
-      | ('"' | '\\') as c ->
+      | ('\"' | '\\') as c ->
           unsafe_set s' !n '\\'; incr n; unsafe_set s' !n c
       | '\n' ->
           unsafe_set s' !n '\\'; incr n; unsafe_set s' !n 'n'

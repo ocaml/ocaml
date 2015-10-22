@@ -16,6 +16,7 @@ open Format
 open Cmm
 
 let machtype_component ppf = function
+  | Val -> fprintf ppf "val"
   | Addr -> fprintf ppf "addr"
   | Int -> fprintf ppf "int"
   | Float -> fprintf ppf "float"
@@ -43,7 +44,8 @@ let chunk = function
   | Sixteen_signed -> "signed int16"
   | Thirtytwo_unsigned -> "unsigned int32"
   | Thirtytwo_signed -> "signed int32"
-  | Word -> ""
+  | Word_int -> "int"
+  | Word_val -> "val"
   | Single -> "float32"
   | Double -> "float64"
   | Double_u -> "float64u"
@@ -52,10 +54,8 @@ let operation = function
   | Capply(ty, d) -> "app" ^ Debuginfo.to_string d
   | Cextcall(lbl, ty, alloc, d) ->
       Printf.sprintf "extcall \"%s\"%s" lbl (Debuginfo.to_string d)
-  | Cload Word -> "load"
   | Cload c -> Printf.sprintf "load %s" (chunk c)
   | Calloc -> "alloc"
-  | Cstore Word -> "store"
   | Cstore c -> Printf.sprintf "store %s" (chunk c)
   | Caddi -> "+"
   | Csubi -> "-"
@@ -70,8 +70,8 @@ let operation = function
   | Clsr -> ">>u"
   | Casr -> ">>s"
   | Ccmpi c -> comparison c
+  | Caddv -> "+v"
   | Cadda -> "+a"
-  | Csuba -> "-a"
   | Ccmpa c -> Printf.sprintf "%sa" (comparison c)
   | Cnegf -> "~f"
   | Cabsf -> "absf"

@@ -28,7 +28,12 @@ val rotate_registers: bool
 val loc_arguments: Reg.t array -> Reg.t array * int
 val loc_results: Reg.t array -> Reg.t array
 val loc_parameters: Reg.t array -> Reg.t array
-val loc_external_arguments: Reg.t array -> Reg.t array * int
+(* For argument number [n] split across multiple registers, the target-specific
+   implementation of [loc_external_arguments] must return [regs] such that
+   [regs.(n).(0)] is to hold the least significant part of the value.
+   (All that matters for the input to [loc_external_arguments] is the pattern
+   of lengths and register types of the various supplied arrays.) *)
+val loc_external_arguments: Reg.t array array -> Reg.t array array * int
 val loc_external_results: Reg.t array -> Reg.t array
 val loc_exn_bucket: Reg.t
 

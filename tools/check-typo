@@ -194,7 +194,7 @@ IGNORE_DIRS="
         }
 
         3 <= NR && NR <= 5 \
-        && (/ OCaml / || / ocamlbuild / || / OCamldoc /) {
+        && (/  OCaml  / || / ocamlbuild / || / OCamldoc /) {
           header_ocaml = NR;
         }
 

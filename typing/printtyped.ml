@@ -275,7 +275,8 @@ and expression i ppf x =
   line i ppf "expression %a\n" fmt_location x.exp_loc;
   attributes i ppf x.exp_attributes;
   let i =
-    List.fold_left (fun i (extra,_,attrs) -> expression_extra i ppf extra attrs; i+1)
+    List.fold_left (fun i (extra,_,attrs) ->
+                      expression_extra i ppf extra attrs; i+1)
       (i+1) x.exp_extra
   in
   match x.exp_desc with
@@ -379,7 +380,8 @@ and expression i ppf x =
       module_expr i ppf me
 
 and value_description i ppf x =
-  line i ppf "value_description %a %a\n" fmt_ident x.val_id fmt_location x.val_loc;
+  line i ppf "value_description %a %a\n" fmt_ident x.val_id fmt_location
+       x.val_loc;
   attributes i ppf x.val_attributes;
   core_type (i+1) ppf x.val_desc;
   list (i+1) string ppf x.val_prim;
@@ -387,7 +389,8 @@ and value_description i ppf x =
 and type_parameter i ppf (x, _variance) = core_type i ppf x
 
 and type_declaration i ppf x =
-  line i ppf "type_declaration %a %a\n" fmt_ident x.typ_id fmt_location x.typ_loc;
+  line i ppf "type_declaration %a %a\n" fmt_ident x.typ_id fmt_location
+       x.typ_loc;
   attributes i ppf x.typ_attributes;
   let i = i+1 in
   line i ppf "ptype_params =\n";
@@ -477,7 +480,8 @@ and class_type_field i ppf x =
            fmt_virtual_flag vf;
       core_type (i+1) ppf ct;
   | Tctf_method (s, pf, vf, ct) ->
-      line i ppf "Tctf_method \"%s\" %a %a\n" s fmt_private_flag pf fmt_virtual_flag vf;
+      line i ppf "Tctf_method \"%s\" %a %a\n" s fmt_private_flag pf
+           fmt_virtual_flag vf;
       core_type (i+1) ppf ct;
   | Tctf_constraint (ct1, ct2) ->
       line i ppf "Tctf_constraint\n";
@@ -781,7 +785,8 @@ and core_type_x_core_type_x_location i ppf (ct1, ct2, l) =
   core_type (i+1) ppf ct1;
   core_type (i+1) ppf ct2;
 
-and constructor_decl i ppf {cd_id; cd_name = _; cd_args; cd_res; cd_loc; cd_attributes} =
+and constructor_decl i ppf {cd_id; cd_name = _; cd_args; cd_res; cd_loc;
+                            cd_attributes} =
   line i ppf "%a\n" fmt_location cd_loc;
   line (i+1) ppf "%a\n" fmt_ident cd_id;
   attributes i ppf cd_attributes;
@@ -792,7 +797,8 @@ and constructor_arguments i ppf = function
   | Cstr_tuple l -> list i core_type ppf l
   | Cstr_record l -> list i label_decl ppf l
 
-and label_decl i ppf {ld_id; ld_name = _; ld_mutable; ld_type; ld_loc; ld_attributes} =
+and label_decl i ppf {ld_id; ld_name = _; ld_mutable; ld_type; ld_loc;
+                      ld_attributes} =
   line i ppf "%a\n" fmt_location ld_loc;
   attributes i ppf ld_attributes;
   line (i+1) ppf "%a\n" fmt_mutable_flag ld_mutable;

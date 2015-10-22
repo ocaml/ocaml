@@ -378,7 +378,7 @@ class c = object (self)
   method m :  'a. ([> 'a t] as 'a) -> 'a = fun x -> self#m x
 end;;
 
-(* usage avant instance *)
+(* use before instancing *)
 class c = object method m : 'a. 'a option -> ([> `A] as 'a) = fun x -> `A end;;
 
 (* various old bugs *)
@@ -674,16 +674,16 @@ let n = object
   method m : 'x 'o. ([< `Foo of 'x] as 'o) -> 'x = fun x -> assert false
 end;;
 (* ok, but not with -principal *)
-let n = 
+let n =
   object method m : 'x. [< `Foo of 'x] -> 'x = fun x -> assert false end;;
 (* fail *)
-let (n : < m : 'a. [< `Foo of int] -> 'a >) = 
+let (n : < m : 'a. [< `Foo of int] -> 'a >) =
   object method m : 'x. [< `Foo of 'x] -> 'x = fun x -> assert false end;;
 (* fail *)
 let (n : 'b -> < m : 'a . ([< `Foo of int] as 'b) -> 'a >) = fun x ->
   object method m : 'x. [< `Foo of 'x] -> 'x = fun x -> assert false end;;
 
 (* PR#6171 *)
-let f b (x: 'x) = 
+let f b (x: 'x) =
   let module M = struct type t = A end in
   if b then x else M.A;;

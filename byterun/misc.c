@@ -18,6 +18,13 @@
 #include "caml/misc.h"
 #include "caml/memory.h"
 
+caml_timing_hook caml_major_slice_begin_hook = NULL;
+caml_timing_hook caml_major_slice_end_hook = NULL;
+caml_timing_hook caml_minor_gc_begin_hook = NULL;
+caml_timing_hook caml_minor_gc_end_hook = NULL;
+caml_timing_hook caml_finalise_begin_hook = NULL;
+caml_timing_hook caml_finalise_end_hook = NULL;
+
 #ifdef DEBUG
 
 int caml_failed_assert (char * expr, char * file, int line)
@@ -171,4 +178,20 @@ CAMLexport char * caml_strconcat(int n, ...)
   va_end(args);
   *p = 0;
   return res;
+}
+
+/* Runtime warnings */
+
+uintnat caml_runtime_warnings = 1;
+static int caml_runtime_warnings_first = 1;
+
+int caml_runtime_warnings_active(void)
+{
+  if (!caml_runtime_warnings) return 0;
+  if (caml_runtime_warnings_first) {
+    fprintf(stderr, "[ocaml] (use Sys.enable_runtime_warnings to control "
+                    "these warnings)\n");
+    caml_runtime_warnings_first = 0;
+  }
+  return 1;
 }

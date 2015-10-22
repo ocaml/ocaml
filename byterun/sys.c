@@ -22,7 +22,9 @@
 #include <time.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#if !_WIN32
+#if _WIN32
+#include <io.h> /* for isatty */
+#else
 #include <sys/wait.h>
 #endif
 #include "caml/config.h"
@@ -49,6 +51,7 @@
 #include "caml/stacks.h"
 #include "caml/sys.h"
 #include "caml/gc_ctrl.h"
+#include "caml/io.h"
 
 static char * error_message(void)
 {
@@ -102,7 +105,8 @@ CAMLprim value caml_sys_exit(value retcode)
     double majwords = caml_stat_major_words + (double) caml_allocated_words;
     double allocated_words =
       minwords + majwords - prowords;
-    caml_gc_message(0x400, "## Total allocated words: %ld\n", (long)allocated_words);
+    caml_gc_message(0x400, "## Total allocated words: %ld\n",
+                    (long)allocated_words);
   }
 
 #ifndef NATIVE_CODE
@@ -280,7 +284,7 @@ CAMLprim value caml_sys_getenv(value var)
 }
 
 char * caml_exe_name;
-static char ** caml_main_argv;
+char ** caml_main_argv;
 
 CAMLprim value caml_sys_get_argv(value unit)
 {
@@ -432,17 +436,17 @@ CAMLprim value caml_sys_const_max_wosize(value unit)
 
 CAMLprim value caml_sys_const_ostype_unix(value unit)
 {
-  return Val_long(0 == strcmp(OCAML_OS_TYPE,"Unix"));
+  return Val_bool(0 == strcmp(OCAML_OS_TYPE,"Unix"));
 }
 
 CAMLprim value caml_sys_const_ostype_win32(value unit)
 {
-  return Val_long(0 == strcmp(OCAML_OS_TYPE,"Win32"));
+  return Val_bool(0 == strcmp(OCAML_OS_TYPE,"Win32"));
 }
 
 CAMLprim value caml_sys_const_ostype_cygwin(value unit)
 {
-  return Val_long(0 == strcmp(OCAML_OS_TYPE,"Cygwin"));
+  return Val_bool(0 == strcmp(OCAML_OS_TYPE,"Cygwin"));
 }
 
 CAMLprim value caml_sys_get_config(value unit)
@@ -484,4 +488,22 @@ CAMLprim value caml_sys_read_directory(value path)
   result = caml_copy_string_array((char const **) tbl.contents);
   caml_ext_table_free(&tbl, 1);
   CAMLreturn(result);
+}
+
+/* Return true if the value is a filedescriptor (int) that is
+ * (presumably) open on an interactive terminal */
+CAMLprim value caml_sys_isatty(value chan)
+{
+  int fd;
+  value ret;
+
+  fd = (Channel(chan))->fd;
+#ifdef _WIN32
+  ret = Val_bool(_isatty(fd));
+        /* https://msdn.microsoft.com/en-us/library/f4s0ddew.aspx */
+#else
+  ret = Val_bool(isatty(fd));
+#endif
+
+  return ret;
 }

@@ -15,9 +15,9 @@
 #include <signal.h>
 #include <setjmp.h>
 
-double foo;
+volatile double foo;
 
-void access_double(double *p)
+void access_double(volatile double *p)
 {
   foo = *p;
 }
@@ -38,8 +38,8 @@ int main(void)
   signal(SIGBUS, sig_handler);
 #endif
   if(setjmp(failure) == 0) {
-    access_double((double *) n);
-    access_double((double *) (n+1));
+    access_double((volatile double *) n);
+    access_double((volatile double *) (n+1));
     res = 0;
   } else {
     res = 1;
@@ -48,5 +48,5 @@ int main(void)
 #ifdef SIGBUS
   signal(SIGBUS, SIG_DFL);
 #endif
-  exit(res);
+  return res;
 }

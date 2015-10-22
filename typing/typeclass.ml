@@ -53,7 +53,8 @@ exception Error_forward of Location.error
 open Typedtree
 
 let ctyp desc typ env loc =
-  { ctyp_desc = desc; ctyp_type = typ; ctyp_loc = loc; ctyp_env = env; ctyp_attributes = [] }
+  { ctyp_desc = desc; ctyp_type = typ; ctyp_loc = loc; ctyp_env = env;
+    ctyp_attributes = [] }
 
                        (**********************)
                        (*  Useful constants  *)
@@ -153,23 +154,26 @@ let rec abbreviate_class_type path params cty =
   | Cty_arrow (l, ty, cty) ->
       Cty_arrow (l, ty, abbreviate_class_type path params cty)
 
+(* Check that all type variables are generalizable *)
+(* Use Env.empty to prevent expansion of recursively defined object types;
+   cf. typing-poly/poly.ml *)
 let rec closed_class_type =
   function
     Cty_constr (_, params, _) ->
-      List.for_all Ctype.closed_schema params
+      List.for_all (Ctype.closed_schema Env.empty) params
   | Cty_signature sign ->
-      Ctype.closed_schema sign.csig_self
+      Ctype.closed_schema Env.empty sign.csig_self
         &&
-      Vars.fold (fun _ (_, _, ty) cc -> Ctype.closed_schema ty && cc)
+      Vars.fold (fun _ (_, _, ty) cc -> Ctype.closed_schema Env.empty ty && cc)
         sign.csig_vars
         true
   | Cty_arrow (_, ty, cty) ->
-      Ctype.closed_schema ty
+      Ctype.closed_schema Env.empty ty
         &&
       closed_class_type cty
 
 let closed_class cty =
-  List.for_all Ctype.closed_schema cty.cty_params
+  List.for_all (Ctype.closed_schema Env.empty) cty.cty_params
     &&
   closed_class_type cty.cty_type
 
@@ -370,7 +374,9 @@ let add_val env loc lab (mut, virt, ty) val_sig =
 let rec class_type_field env self_type meths
     (fields, val_sig, concr_meths, inher) ctf =
   let loc = ctf.pctf_loc in
-  let mkctf desc = { ctf_desc = desc; ctf_loc = loc; ctf_attributes = ctf.pctf_attributes } in
+  let mkctf desc =
+    { ctf_desc = desc; ctf_loc = loc; ctf_attributes = ctf.pctf_attributes }
+  in
   match ctf.pctf_desc with
     Pctf_inherit sparent ->
       let parent = class_type env sparent in
@@ -522,7 +528,9 @@ let rec class_field self_loc cl_num self_type meths vars
      local_meths, local_vals)
   cf =
   let loc = cf.pcf_loc in
-  let mkcf desc = { cf_desc = desc; cf_loc = loc; cf_attributes = cf.pcf_attributes } in
+  let mkcf desc =
+    { cf_desc = desc; cf_loc = loc; cf_attributes = cf.pcf_attributes }
+  in
   match cf.pcf_desc with
     Pcf_inherit (ovf, sparent, super) ->
       let parent = class_expr cl_num val_env par_env sparent in
@@ -954,7 +962,7 @@ and class_expr cl_num val_env met_env scl =
         | _ -> true
       in
       let partial =
-        Parmatch.check_partial pat.pat_loc
+        Typecore.check_partial val_env pat.pat_type pat.pat_loc
           [{c_lhs=pat;
             c_guard=None;
             c_rhs = (* Dummy expression *)
@@ -1001,7 +1009,11 @@ and class_expr cl_num val_env met_env scl =
         List.for_all (fun (l,_) -> l = Nolabel) sargs &&
         List.exists (fun l -> l <> Nolabel) labels &&
         begin
-          Location.prerr_warning cl.cl_loc Warnings.Labels_omitted;
+          Location.prerr_warning
+            cl.cl_loc
+            (Warnings.Labels_omitted
+               (List.map Printtyp.string_of_label
+                         (List.filter ((<>) Nolabel) labels)));
           true
         end
       in
@@ -1049,8 +1061,9 @@ and class_expr cl_num val_env met_env scl =
                   Some (option_some arg)
               with Not_found ->
                 sargs, more_sargs,
-                if Btype.is_optional l &&
-                  (List.mem_assoc Nolabel sargs || List.mem_assoc Nolabel more_sargs)
+                if Btype.is_optional l
+                   && (List.mem_assoc Nolabel sargs
+                       || List.mem_assoc Nolabel more_sargs)
                 then
                   Some (option_none ty0 Location.none)
                 else None
@@ -1410,7 +1423,8 @@ let class_infos define_class kind
         (fun name (mut, vr, ty) l -> if vr = Virtual then name :: l else l)
         sign.csig_vars [] in
     if mets <> []  || vals <> [] then
-      raise(Error(cl.pci_loc, env, Virtual_class(define_class, false, mets, vals)));
+      raise(Error(cl.pci_loc, env, Virtual_class(define_class, false, mets,
+                                                 vals)));
   end;
 
   (* Misc. *)
@@ -1655,7 +1669,9 @@ let rec unify_parents env ty cl =
   | Tcl_constraint (cl, _, _, _, _) -> unify_parents env ty cl
 and unify_parents_struct env ty st =
   List.iter
-    (function {cf_desc = Tcf_inherit (_, cl, _, _, _)} -> unify_parents env ty cl
+    (function
+      | {cf_desc = Tcf_inherit (_, cl, _, _, _)} ->
+          unify_parents env ty cl
       | _ -> ())
     st.cstr_fields
 
@@ -1719,7 +1735,7 @@ let report_error env ppf = function
       fprintf ppf "This argument cannot be applied with%s" (mark_label l)
   | Pattern_type_clash ty ->
       (* XXX Trace *)
-      (* XXX Revoir message d'erreur *)
+      (* XXX Revoir message d'erreur | Improve error message *)
       Printtyp.reset_and_mark_loops ty;
       fprintf ppf "@[%s@ %a@]"
         "This pattern cannot match self: it only matches values of type"
@@ -1731,7 +1747,7 @@ let report_error env ppf = function
       fprintf ppf "@[The class type@ %a@ is not yet completely defined@]"
       Printtyp.longident cl
   | Abbrev_type_clash (abbrev, actual, expected) ->
-      (* XXX Afficher une trace ? *)
+      (* XXX Afficher une trace ? | Print a trace? *)
       Printtyp.reset_and_mark_loops_list [abbrev; actual; expected];
       fprintf ppf "@[The abbreviation@ %a@ expands to type@ %a@ \
        but is used with type@ %a@]"

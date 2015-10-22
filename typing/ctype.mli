@@ -146,6 +146,7 @@ val try_expand_once_opt: Env.t -> type_expr -> type_expr
 val expand_head_opt: Env.t -> type_expr -> type_expr
 (** The compiler's own version of [expand_head] necessary for type-based
     optimisations. *)
+
 val full_expand: Env.t -> type_expr -> type_expr
 val extract_concrete_typedecl:
         Env.t -> type_expr -> Path.t * Path.t * type_declaration
@@ -245,7 +246,7 @@ val cyclic_abbrev: Env.t -> Ident.t -> type_expr -> bool
 val is_contractive: Env.t -> type_expr -> bool
 val normalize_type: Env.t -> type_expr -> unit
 
-val closed_schema: type_expr -> bool
+val closed_schema: Env.t -> type_expr -> bool
         (* Check whether the given type scheme contains no non-generic
            type variables *)
 
@@ -272,6 +273,7 @@ val collapse_conj_params: Env.t -> type_expr list -> unit
 
 val get_current_level: unit -> int
 val wrap_trace_gadt_instances: Env.t -> ('a -> 'b) -> 'a -> 'b
+val reset_reified_var_counter: unit -> unit
 
 (* Stubs *)
 val package_subtype :

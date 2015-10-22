@@ -6,7 +6,8 @@
 (*                                                                     *)
 (*  Copyright 2007 Institut National de Recherche en Informatique et   *)
 (*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
+(*  under the terms of the GNU Library General Public License, with    *)
+(*  the special exception on linking described in file ../LICENSE.     *)
 (*                                                                     *)
 (***********************************************************************)
 
@@ -43,11 +44,13 @@ val link_gen :
   string -> string -> Rule.action
 val byte_link : string -> string -> Rule.action
 val byte_output_obj : string -> string -> Rule.action
+val byte_output_shared : string -> string -> Rule.action
 val byte_library_link : string -> string -> Rule.action
 val byte_debug_link : string -> string -> Rule.action
 val byte_debug_library_link : string -> string -> Rule.action
 val native_link : string -> string -> Rule.action
 val native_output_obj : string -> string -> Rule.action
+val native_output_shared : string -> string -> Rule.action
 val native_library_link : string -> string -> Rule.action
 val native_shared_library_link : ?tags:(string list) -> string -> string -> Rule.action
 val native_profile_link : string -> string -> Rule.action

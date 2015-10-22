@@ -244,7 +244,8 @@ let match_generic_printer_type ppf desc path args printer_type =
     List.map (fun ty_var -> Ctype.newconstr printer_type [ty_var]) args in
   let ty_expected =
     List.fold_right
-      (fun ty_arg ty -> Ctype.newty (Tarrow (Asttypes.Nolabel, ty_arg, ty, Cunknown)))
+      (fun ty_arg ty -> Ctype.newty (Tarrow (Asttypes.Nolabel, ty_arg, ty,
+                                             Cunknown)))
       ty_args (Ctype.newconstr printer_type [ty_target]) in
   Ctype.unify !toplevel_env
     ty_expected
@@ -259,15 +260,17 @@ let match_printer_type ppf desc =
   let printer_type_new = printer_type ppf "printer_type_new" in
   let printer_type_old = printer_type ppf "printer_type_old" in
   Ctype.init_def(Ident.current_time());
-  match extract_target_parameters desc.val_type with
-  | None ->
-     (try
-        (match_simple_printer_type ppf desc printer_type_new, false)
-      with Ctype.Unify _ ->
-        (match_simple_printer_type ppf desc printer_type_old, true))
-  | Some (path, args) ->
-     (* only 'new' style is available for generic printers *)
-     match_generic_printer_type ppf desc path args printer_type_new, false
+  try
+    (match_simple_printer_type ppf desc printer_type_new, false)
+  with Ctype.Unify _ ->
+    try
+      (match_simple_printer_type ppf desc printer_type_old, true)
+    with Ctype.Unify _ as exn ->
+      match extract_target_parameters desc.val_type with
+      | None -> raise exn
+      | Some (path, args) ->
+          (match_generic_printer_type ppf desc path args printer_type_new,
+           false)
 
 let find_printer_type ppf lid =
   try
@@ -410,7 +413,8 @@ let trim_signature = function
            (function
                Sig_module (id, md, rs) ->
                  Sig_module (id, {md with md_attributes =
-                                  (Location.mknoloc "...", Parsetree.PStr []) :: md.md_attributes},
+                                    (Location.mknoloc "...", Parsetree.PStr [])
+                                    :: md.md_attributes},
                              rs)
              (*| Sig_modtype (id, Modtype_manifest mty) ->
                  Sig_modtype (id, Modtype_manifest (trim_modtype mty))*)

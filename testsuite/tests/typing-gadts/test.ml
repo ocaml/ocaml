@@ -91,6 +91,12 @@ module Exhaustive =
   end
 ;;
 
+module PR6862 = struct
+  class c (Some x) = object method x : int = x end
+  type _ opt = Just : 'a -> 'a opt | Nothing : 'a opt
+  class d (Just x) = object method x : int = x end
+end;;
+
 module Existential_escape =
   struct
     type _ t = C : int -> int t
@@ -155,6 +161,13 @@ module Normal_constrs = struct
   type b = B
 
   let f = function A -> 1 | B -> 2
+end;;
+
+module PR6849 = struct
+  type 'a t = Foo : int t
+
+  let f : int -> int = function
+      Foo -> 5
 end;;
 
 type _ t = Int : int t ;;
@@ -337,7 +350,7 @@ let f : type a b. (a,b) eq -> < m : a; .. > -> < m : b > =
 let f : type a b. (a,b) eq -> [> `A of a] -> [> `A of b] =
   fun Eq o -> o ;; (* fail *)
 
-let f (type a) (type b) (eq : (a,b) eq) (v : [> `A of a]) : [> `A of b] =
+let f (type a b) (eq : (a,b) eq) (v : [> `A of a]) : [> `A of b] =
   match eq with Eq -> v ;; (* should fail *)
 
 let f : type a b. (a,b) eq -> [< `A of a | `B] -> [< `A of b | `B] =

@@ -35,8 +35,8 @@ default:
 	fi
 
 all:
-	$(MAKE) arch codegen
-	$(MAKE) tests
+	@$(MAKE) arch codegen
+	@$(MAKE) tests
 
 codegen: parsecmm.ml lexcmm.ml $(OBJS:.cmo=.cmi) $(OBJS) main.cmo
 	@$(OCAMLC) $(LINKFLAGS) -o codegen $(OTHEROBJS) $(OBJS) main.cmo
@@ -88,9 +88,6 @@ clean: defaultclean
 	@rm -f $(CASES:=.s)
 
 include $(BASEDIR)/makefiles/Makefile.common
-
-power.o: power-$(SYSTEM).o
-	@cp power-$(SYSTEM).o power.o
 
 promote:
 

@@ -589,7 +589,9 @@ and transl_signature env sg =
             List.iter
               (fun decl -> check_name check_type names decl.ptype_name)
               sdecls;
-            let (decls, newenv) = Typedecl.transl_type_decl env rec_flag sdecls in
+            let (decls, newenv) =
+              Typedecl.transl_type_decl env rec_flag sdecls
+            in
             let (trem, rem, final_env) = transl_sig newenv srem in
             mksig (Tsig_type (rec_flag, decls)) env loc :: trem,
             map_rec_type_with_row_types ~rec_flag
@@ -843,34 +845,38 @@ let rec path_of_module mexp =
       path_of_module mexp
   | _ -> raise Not_a_path
 
+let path_of_module mexp =
+ try Some (path_of_module mexp) with Not_a_path -> None
+
 (* Check that all core type schemes in a structure are closed *)
 
-let rec closed_modtype = function
+let rec closed_modtype env = function
     Mty_ident p -> true
   | Mty_alias p -> true
-  | Mty_signature sg -> List.for_all closed_signature_item sg
-  | Mty_functor(id, param, body) -> closed_modtype body
+  | Mty_signature sg ->
+      let env = Env.add_signature sg env in
+      List.for_all (closed_signature_item env) sg
+  | Mty_functor(id, param, body) ->
+      let env = Env.add_module ~arg:true id (Btype.default_mty param) env in
+      closed_modtype env body
 
-and closed_signature_item = function
-    Sig_value(id, desc) -> Ctype.closed_schema desc.val_type
-  | Sig_module(id, md, _) -> closed_modtype md.md_type
+and closed_signature_item env = function
+    Sig_value(id, desc) -> Ctype.closed_schema env desc.val_type
+  | Sig_module(id, md, _) -> closed_modtype env md.md_type
   | _ -> true
 
-let check_nongen_scheme env str =
-  match str.str_desc with
-    Tstr_value(rec_flag, pat_exp_list) ->
-      List.iter
-        (fun {vb_expr=exp} ->
-          if not (Ctype.closed_schema exp.exp_type) then
-            raise(Error(exp.exp_loc, env, Non_generalizable exp.exp_type)))
-        pat_exp_list
-  | Tstr_module {mb_expr=md;_} ->
-      if not (closed_modtype md.mod_type) then
-        raise(Error(md.mod_loc, env, Non_generalizable_module md.mod_type))
+let check_nongen_scheme env sig_item =
+  match sig_item with
+    Sig_value(_id, vd) ->
+      if not (Ctype.closed_schema env vd.val_type) then
+        raise (Error (vd.val_loc, env, Non_generalizable vd.val_type))
+  | Sig_module (_id, md, _) ->
+      if not (closed_modtype env md.md_type) then
+        raise(Error(md.md_loc, env, Non_generalizable_module md.md_type))
   | _ -> ()
 
-let check_nongen_schemes env str =
-  List.iter (check_nongen_scheme env) str
+let check_nongen_schemes env sg =
+  List.iter (check_nongen_scheme env) sg
 
 (* Helpers for typing recursive modules *)
 
@@ -1109,7 +1115,7 @@ let rec type_module ?(alias=false) sttn funct_body anchor env smod =
            mod_loc = smod.pmod_loc }
   | Pmod_apply(sfunct, sarg) ->
       let arg = type_module true funct_body None env sarg in
-      let path = try Some (path_of_module arg) with Not_a_path -> None in
+      let path = path_of_module arg in
       let funct =
         type_module (sttn && path <> None) funct_body None env sfunct in
       begin match Env.scrape_alias env funct.mod_type with
@@ -1313,7 +1319,8 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
             (fun {md_id=id; md_type=mty} (name, _, smodl, attrs, loc) ->
                let modl =
                  Typetexp.with_warning_attribute attrs (fun () ->
-                   type_module true funct_body (anchor_recmodule id anchor) newenv smodl)
+                   type_module true funct_body (anchor_recmodule id anchor)
+                               newenv smodl)
                in
                let mty' =
                  enrich_module_type anchor (Ident.name id) modl.mod_type newenv
@@ -1453,7 +1460,7 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
 let type_toplevel_phrase env s =
   Env.reset_required_globals ();
   type_structure ~toplevel:true false None env s Location.none
-(*let type_module_alias = type_module ~alias:true true false None*)
+let type_module_alias = type_module ~alias:true true false None
 let type_module = type_module true false None
 let type_structure = type_structure false None
 
@@ -1489,7 +1496,7 @@ let type_module_type_of env smod =
   (* PR#6307: expand aliases at root and submodules *)
   let mty = Mtype.remove_aliases env mty in
   (* PR#5036: must not contain non-generalized type variables *)
-  if not (closed_modtype mty) then
+  if not (closed_modtype env mty) then
     raise(Error(smod.pmod_loc, env, Non_generalizable_module mty));
   tmty, mty
 
@@ -1514,6 +1521,8 @@ let type_package env m p nl tl =
   let (mp, env) =
     match modl.mod_desc with
       Tmod_ident (mp,_) -> (mp, env)
+    | Tmod_constraint ({mod_desc=Tmod_ident (mp,_)}, mty, Tmodtype_implicit, _)
+        -> (mp, env)  (* PR#6982 *)
     | _ ->
       let (id, new_env) = Env.enter_module ~arg:true "%M" modl.mod_type env in
       (Pident id, new_env)
@@ -1542,7 +1551,7 @@ let type_package env m p nl tl =
 
 (* Fill in the forward declarations *)
 let () =
-  Typecore.type_module := type_module;
+  Typecore.type_module := type_module_alias;
   Typetexp.transl_modtype_longident := transl_modtype_longident;
   Typetexp.transl_modtype := transl_modtype;
   Typecore.type_open := type_open_ ?toplevel:None;
@@ -1590,7 +1599,7 @@ let type_implementation sourcefile outputprefix modulename initial_env ast =
         (Cmt_format.Implementation str) (Some sourcefile) initial_env None;
       (str, coercion)
     end else begin
-      check_nongen_schemes finalenv str.str_items;
+      check_nongen_schemes finalenv sg;
       normalize_signature finalenv simple_sg;
       let coercion =
         Includemod.compunit initial_env sourcefile sg

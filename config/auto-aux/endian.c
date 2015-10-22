@@ -11,6 +11,7 @@
 /*                                                                     */
 /***********************************************************************/
 
+#include <string.h>
 #include "m.h"
 
 #ifndef ARCH_SIXTYFOUR
@@ -23,7 +24,7 @@ char * bigendian = "ABCDEFGH";
 char * littleendian = "HGFEDCBA";
 #endif
 
-main(void)
+int main(void)
 {
   long n[2];
   char * p;
@@ -32,8 +33,8 @@ main(void)
   n[1] = 0;
   p = (char *) n;
   if (strcmp(p, bigendian) == 0)
-    exit(0);
+    return 0;
   if (strcmp(p, littleendian) == 0)
-    exit(1);
-  exit(2);
+    return 1;
+  return 2;
 }

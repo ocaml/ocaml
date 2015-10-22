@@ -41,7 +41,7 @@ val type_scheme: formatter -> type_expr -> unit
 val reset_names: unit -> unit
 val type_scheme_max: ?b_reset_names: bool ->
         formatter -> type_expr -> unit
-(* Fin Maxence *)
+(* End Maxence *)
 val tree_of_value_description: Ident.t -> value_description -> out_sig_item
 val value_description: Ident.t -> formatter -> value_description -> unit
 val tree_of_type_declaration:
@@ -51,7 +51,8 @@ val tree_of_extension_constructor:
     Ident.t -> extension_constructor -> ext_status -> out_sig_item
 val extension_constructor:
     Ident.t -> formatter -> extension_constructor -> unit
-val tree_of_module: Ident.t -> ?ellipsis:bool -> module_type -> rec_status -> out_sig_item
+val tree_of_module:
+    Ident.t -> ?ellipsis:bool -> module_type -> rec_status -> out_sig_item
 val modtype: formatter -> module_type -> unit
 val signature: formatter -> signature -> unit
 val tree_of_modtype_declaration:

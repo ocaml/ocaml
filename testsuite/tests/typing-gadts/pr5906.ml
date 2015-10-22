@@ -7,7 +7,8 @@ type (_, _, _) binop =
   | Leq: ('a, 'a, bool) binop
   | Add: (int, int, int) binop
 
-let eval (type a) (type b) (type c) (bop:(a,b,c) binop) (x:a constant) (y:b constant) : c constant =
+let eval (type a) (type b) (type c) (bop:(a,b,c) binop) (x:a constant)
+         (y:b constant) : c constant =
   match bop, x, y with
   | Eq, Bool x, Bool y -> Bool (if x then y else not y)
   | Leq, Int x, Int y -> Bool (x <= y)

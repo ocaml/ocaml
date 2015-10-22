@@ -15,7 +15,8 @@ BASEDIR=../..
 COMPFLAGS=-I $(OTOPDIR)/otherlibs/$(UNIXLIBVAR)unix \
 	  -I $(OTOPDIR)/otherlibs/systhreads \
           -I $(OTOPDIR)/otherlibs/dynlink
-LD_PATH=$(TOPDIR)/otherlibs/$(UNIXLIBVAR)unix:$(TOPDIR)/otherlibs/systhreads:$(TOPDIR)/otherlibs/dynlink
+LD_PATH = $(TOPDIR)/otherlibs/$(UNIXLIBVAR)unix:$(TOPDIR)/otherlibs/systhreads\
+:$(TOPDIR)/otherlibs/dynlink
 
 .PHONY: default
 default:
@@ -104,7 +105,7 @@ mylib.cmxa: plugin.cmx plugin2.cmx
 
 factorial.$(O): factorial.c
 	@$(OCAMLOPT) -c -ccopt "$(SHAREDCCCOMPOPTS)" -ccopt -I \
-	             -ccopt $(CTOPDIR)/byterun/caml \
+	             -ccopt $(CTOPDIR)/byterun \
 	             factorial.c
 
 .PHONY: promote

@@ -452,7 +452,7 @@ let run_script ppf name args =
   Obj.truncate (Obj.repr Sys.argv) len;
   Arg.current := 0;
   Compmisc.init_path ~dir:(Filename.dirname name) true;
-                     (* Note: would use [Filename.abspath] here, if we had it. *)
+                   (* Note: would use [Filename.abspath] here, if we had it. *)
   toplevel_env := Compmisc.initial_env();
   Sys.interactive := false;
   let explicit_name =

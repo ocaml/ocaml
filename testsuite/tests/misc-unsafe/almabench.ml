@@ -47,7 +47,8 @@ and test_length = 36525
 and sineps = 0.3977771559319137
 and coseps = 0.9174820620691818
 
-and amas = [|  6023600.0; 408523.5; 328900.5; 3098710.0; 1047.355; 3498.5; 22869.0; 19314.0 |]
+and amas = [|  6023600.0; 408523.5; 328900.5; 3098710.0;
+               1047.355; 3498.5; 22869.0; 19314.0 |]
 
 (*
  * tables giving the mean keplerian elements, limited to t**2 terms:
@@ -311,6 +312,7 @@ let _ =
     Printf.printf "%d %.2f %.2f\n%!" p position.(0) position.(1)
   done;
   (* Benchmark *)
+(**
   for i = 0 to test_loops - 1 do
     jd.(0) <- j2000;
     jd.(1) <- 0.0;
@@ -322,3 +324,4 @@ let _ =
       done
     done
   done
+**)

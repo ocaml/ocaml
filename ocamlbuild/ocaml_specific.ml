@@ -6,7 +6,8 @@
 (*                                                                     *)
 (*  Copyright 2007 Institut National de Recherche en Informatique et   *)
 (*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
+(*  under the terms of the GNU Library General Public License, with    *)
+(*  the special exception on linking described in file ../LICENSE.     *)
 (*                                                                     *)
 (***********************************************************************)
 
@@ -61,7 +62,9 @@ let x_p_dll = "%.p"-.-ext_dll;;
 (* -output-obj targets *)
 let x_byte_c = "%.byte.c";;
 let x_byte_o = "%.byte"-.-ext_obj;;
+let x_byte_so = "%.byte"-.-ext_dll;;
 let x_native_o = "%.native"-.-ext_obj;;
+let x_native_so = "%.native"-.-ext_dll;;
 
 rule "target files"
   ~dep:"%.itarget"
@@ -71,15 +74,20 @@ rule "target files"
         build each of those targets in turn."
   begin fun env build ->
     let itarget = env "%.itarget" in
-    let dir = Pathname.dirname itarget in
-    let targets = string_list_of_file itarget in
-    List.iter ignore_good (build (List.map (fun x -> [dir/x]) targets));
-    if !Options.make_links then
-      let link x =
-        Cmd (S [A"ln"; A"-sf"; P (!Options.build_dir/x); A Pathname.parent_dir_name]) in
-      Seq (List.map (fun x -> link (dir/x)) targets)
-    else
-      Nop
+    let targets =
+      let dir = Pathname.dirname itarget in
+      let files = string_list_of_file itarget in
+      List.map (fun file -> [Pathname.concat dir file]) files
+    in
+    let results = List.map Outcome.good (build targets) in
+    let link_command result =
+      Cmd (S [A "ln"; A "-sf";
+              P (Pathname.concat !Options.build_dir result);
+              A Pathname.pwd])
+    in
+    if not !Options.make_links
+    then Nop
+    else Seq (List.map link_command results)
   end;;
 
 rule "ocaml: mli -> cmi"
@@ -221,6 +229,15 @@ rule "ocaml: cmo* -> byte.c"
   ~dep:"%.cmo"
   (Ocaml_compiler.byte_output_obj "%.cmo" x_byte_c);;
 
+rule "ocaml: cmo* -> byte.(so|dll|dylib)"
+  ~prod:x_byte_so
+  ~dep:"%.cmo"
+  ~doc:"The foo.byte.so target, or foo.byte.dll under Windows, \
+  or foo.byte.dylib under Mac OS X will produce a shared library file
+  by passing the -output-obj and -cclib -shared options \
+  to the OCaml compiler. See also foo.native.{so,dll,dylib}."
+  (Ocaml_compiler.byte_output_shared "%.cmo" x_byte_so);;
+
 rule "ocaml: p.cmx* & p.o* -> p.native"
   ~prod:"%.p.native"
   ~deps:["%.p.cmx"; x_p_o]
@@ -238,6 +255,11 @@ rule "ocaml: cmx* & o* -> native.(o|obj)"
   ~prod:x_native_o
   ~deps:["%.cmx"; x_o]
   (Ocaml_compiler.native_output_obj "%.cmx" x_native_o);;
+
+rule "ocaml: cmx* & o* -> native.(so|dll|dylib)"
+  ~prod:x_native_so
+  ~deps:["%.cmx"; x_o]
+  (Ocaml_compiler.native_output_shared "%.cmx" x_native_so);;
 
 rule "ocaml: mllib & d.cmo* -> d.cma"
   ~prod:"%.d.cma"
@@ -621,6 +643,7 @@ let () =
     (fun param -> S [A "-for-pack"; A param]);
   pflag ["ocaml"; "native"; "compile"] "inline"
     (fun param -> S [A "-inline"; A param]);
+  pflag ["ocaml"; "compile"] "color" (fun setting -> S[A "-color"; A setting]);
   List.iter (fun pp ->
     pflag ["ocaml"; "compile"] pp
       (fun param -> S [A ("-" ^ pp); A param]);
@@ -639,6 +662,8 @@ let () =
     (fun param -> S [A "-open"; A param]);
   pflag ["ocaml"; "compile"] "open"
     (fun param -> S [A "-open"; A param]);
+  pflag ["ocaml"; "link"] "runtime_variant"
+    (fun param -> S [A "-runtime-variant"; A param]);
   ()
 
 let camlp4_flags camlp4s =
@@ -693,6 +718,7 @@ flag ["c";     "debug"; "compile"] (A "-g");
 flag ["c";     "debug"; "link"] (A "-g");
 flag ["ocaml"; "link"; "native"; "output_obj"] (A"-output-obj");;
 flag ["ocaml"; "link"; "byte"; "output_obj"] (A"-output-obj");;
+flag ["ocaml"; "link"; "output_shared"] & (S[A"-cclib"; A"-shared"]);;
 flag ["ocaml"; "dtypes"; "compile"] (A "-dtypes");;
 flag ["ocaml"; "annot"; "compile"] (A "-annot");;
 flag ["ocaml"; "annot"; "pack"] (A "-annot");;
@@ -719,10 +745,12 @@ flag ["ocaml"; "compile"; "no_alias_deps";] (A "-no-alias-deps");;
 flag ["ocaml"; "compile"; "strict_formats";] (A "-strict-formats");;
 flag ["ocaml"; "native"; "compile"; "opaque";] (A "-opaque");;
 flag ["ocaml"; "native"; "compile"; "no_float_const_prop";] (A "-no-float-const-prop");
+flag ["ocaml"; "compile"; "keep_docs";] (A "-keep-docs");
 flag ["ocaml"; "compile"; "keep_locs";] (A "-keep-locs");
 flag ["ocaml"; "absname"; "compile"] (A "-absname");;
 flag ["ocaml"; "absname"; "infer_interface"] (A "-absname");;
-flag ["ocaml"; "byte"; "compile"; "compat_32";] (A "-compat-32");
+flag ["ocaml"; "byte"; "compile"; "compat_32";] (A "-compat-32");;
+flag ["ocaml";"compile";"native";"asm"] & S [A "-S"];;
 
 
 (* threads, with or without findlib *)

@@ -12,13 +12,15 @@
 #########################################################################
 
 include ../config/Makefile
+CAMLRUN ?= ../boot/ocamlrun
+CAMLYACC ?= ../boot/ocamlyacc
 
 CC=$(BYTECC)
 
 COMMONOBJS=\
-  interp.o misc.o stacks.o fix_code.o startup.o \
+  interp.o misc.o stacks.o fix_code.o startup_aux.o startup.o \
   freelist.o major_gc.o minor_gc.o memory.o alloc.o roots.o globroots.o \
-  fail.o signals.o signals_byt.o printexc.o backtrace.o \
+  fail.o signals.o signals_byt.o printexc.o backtrace_prim.o backtrace.o \
   compare.o ints.o floats.o str.o array.o io.o extern.o intern.o \
   hash.o sys.o meta.o parsing.o gc_ctrl.o terminfo.o md5.o obj.o \
   lexing.o callback.o debugger.o weak.o compact.o finalise.o custom.o \
@@ -28,10 +30,11 @@ PRIMS=\
   alloc.c array.c compare.c extern.c floats.c gc_ctrl.c hash.c \
   intern.c interp.c ints.c io.c lexing.c md5.c meta.c obj.c parsing.c \
   signals.c str.c sys.c terminfo.c callback.c weak.c finalise.c stacks.c \
-  dynlink.c backtrace.c
+  dynlink.c backtrace_prim.c backtrace.c
 
 PUBLIC_INCLUDES=\
-  alloc.h callback.h config.h custom.h fail.h hash.h intext.h \
+  address_class.h alloc.h callback.h config.h custom.h fail.h gc.h \
+  hash.h intext.h \
   memory.h misc.h mlvalues.h printexc.h signals.h compatibility.h \
   version.h
 
@@ -56,7 +59,7 @@ INSTALL_LIBDIR=$(DESTDIR)$(LIBDIR)
 
 
 install::
-	cp ocamlrun$(EXE) $(INSTALL_BINDIR)/ocamlrun$(EXE)
+	cp $(CAMLRUN)$(EXE) $(INSTALL_BINDIR)/ocamlrun$(EXE)
 	cp libcamlrun.$(A) $(INSTALL_LIBDIR)/libcamlrun.$(A)
 	cd $(INSTALL_LIBDIR); $(RANLIB) libcamlrun.$(A)
 	if test -d $(INSTALL_LIBDIR)/caml; then : ; \
@@ -72,6 +75,10 @@ install:: install-$(RUNTIMED)
 install-noruntimed:
 .PHONY: install-noruntimed
 
+# TODO: when cross-compiling, do not install ocamlrund
+# it doesn't hurt to install it, but it's useless and might be confusing
+# because it's an executable for the target machine, while we're installing
+# binaries for the host.
 install-runtimed:
 	cp ocamlrund$(EXE) $(INSTALL_BINDIR)/ocamlrund$(EXE)
 	cp libcamlrund.$(A) $(INSTALL_LIBDIR)/libcamlrund.$(A)
@@ -111,7 +118,8 @@ caml/opnames.h : caml/instruct.h
 	    -e '/^#/d' \
 	    -e 's/enum /char * names_of_/' \
 	    -e 's/{$$/[] = {/' \
-	    -e 's/\([[:upper:]][[:upper:]_0-9]*\)/"\1"/g' caml/instruct.h > caml/opnames.h
+	    -e 's/\([[:upper:]][[:upper:]_0-9]*\)/"\1"/g' caml/instruct.h \
+	    > caml/opnames.h
 
 # caml/jumptbl.h is required only if you have GCC 2.0 or later
 caml/jumptbl.h : caml/instruct.h

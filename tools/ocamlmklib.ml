@@ -20,15 +20,15 @@ let compiler_path name =
 
 let bytecode_objs = ref []  (* .cmo,.cma,.ml,.mli files to pass to ocamlc *)
 and native_objs = ref []    (* .cmx,.cmxa,.ml,.mli files to pass to ocamlopt *)
-and c_objs = ref []         (* .o, .a, .obj, .lib, .dll files to pass
-                               to mksharedlib and ar *)
+and c_objs = ref []         (* .o, .a, .obj, .lib, .dll, .dylib, .so files to
+                               pass to mksharedlib and ar *)
 and caml_libs = ref []      (* -cclib to pass to ocamlc, ocamlopt *)
 and caml_opts = ref []      (* -ccopt to pass to ocamlc, ocamlopt *)
 and dynlink = ref supports_shared_libraries
 and failsafe = ref false    (* whether to fall back on static build only *)
 and c_libs = ref []         (* libs to pass to mksharedlib and ocamlc -cclib *)
-and c_Lopts = ref []        (* options to pass to mksharedlib and ocamlc -cclib *)
-and c_opts = ref []         (* options to pass to mksharedlib and ocamlc -ccopt *)
+and c_Lopts = ref []      (* options to pass to mksharedlib and ocamlc -cclib *)
+and c_opts = ref []       (* options to pass to mksharedlib and ocamlc -ccopt *)
 and ld_opts = ref []        (* options to pass only to the linker *)
 and ocamlc = ref (compiler_path "ocamlc")
 and ocamlc_opts = ref []    (* options to pass only to ocamlc *)
@@ -75,7 +75,9 @@ let parse_arguments argv =
     else if ends_with s ".ml" || ends_with s ".mli" then
      (bytecode_objs := s :: !bytecode_objs;
       native_objs := s :: !native_objs)
-    else if List.exists (ends_with s) [".o"; ".a"; ".obj"; ".lib"; ".dll"] then
+    else if List.exists (ends_with s)
+                        [".o"; ".a"; ".obj"; ".lib"; ".dll"; ".dylib"; ".so"]
+    then
       c_objs := s :: !c_objs
     else if s = "-cclib" then
       caml_libs := next_arg () :: "-cclib" :: !caml_libs
@@ -153,7 +155,7 @@ let parse_arguments argv =
 
 let usage = "\
 Usage: ocamlmklib [options] <.cmo|.cma|.cmx|.cmxa|.ml|.mli|.o|.a|.obj|.lib|\
-                             .dll files>\
+                             .dll|.dylib files>\
 \nOptions are:\
 \n  -cclib <lib>   C library passed to ocamlc -a or ocamlopt -a only\
 \n  -ccopt <opt>   C option passed to ocamlc -a or ocamlopt -a only\
@@ -261,7 +263,8 @@ let build_libs () =
   end;
   if !bytecode_objs <> [] then
     scommand
-      (sprintf "%s -a %s %s %s -o %s.cma %s %s -dllib -l%s -cclib -l%s %s %s %s %s"
+      (sprintf "%s -a %s %s %s -o %s.cma %s %s -dllib -l%s -cclib -l%s \
+                   %s %s %s %s"
                   (transl_path !ocamlc)
                   (if !debug then "-g" else "")
                   (if !dynlink then "" else "-custom")

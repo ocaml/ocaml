@@ -148,6 +148,7 @@ val reset_cache_toplevel: unit -> unit
 
 (* Remember the name of the current compilation unit. *)
 val set_unit_name: string -> unit
+val get_unit_name: unit -> string
 
 (* Read, save a signature to/from a file *)
 
@@ -156,7 +157,8 @@ val read_signature: string -> string -> signature
 val save_signature: signature -> string -> string -> signature
         (* Arguments: signature, module name, file name. *)
 val save_signature_with_imports:
-    signature -> string -> string -> (string * Digest.t option) list -> signature
+    signature -> string -> string -> (string * Digest.t option) list
+    -> signature
         (* Arguments: signature, module name, file name,
            imported units with their CRCs. *)
 

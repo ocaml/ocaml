@@ -19,6 +19,8 @@ open Primitive
 open Types
 open Typetexp
 
+type native_repr_kind = Unboxed | Untagged
+
 type error =
     Repeated_parameter
   | Duplicate_constructor of string
@@ -46,6 +48,8 @@ type error =
   | Unbound_type_var_ext of type_expr * extension_constructor
   | Varying_anonymous
   | Val_in_structure
+  | Multiple_native_repr_attributes
+  | Cannot_unbox_or_untag_type of native_repr_kind
 
 open Typedtree
 
@@ -157,11 +161,12 @@ let transl_labels loc env closed lbls =
          raise(Error(loc, Duplicate_label name));
        all_labels := StringSet.add name !all_labels)
     lbls;
-  let mk {pld_name=name;pld_mutable=mut;pld_type=arg;pld_loc=loc;pld_attributes=attrs} =
+  let mk {pld_name=name;pld_mutable=mut;pld_type=arg;pld_loc=loc;
+          pld_attributes=attrs} =
     let arg = Ast_helper.Typ.force_poly arg in
     let cty = transl_simple_type env closed arg in
-    {ld_id = Ident.create name.txt; ld_name = name; ld_mutable = mut; ld_type = cty;
-     ld_loc = loc; ld_attributes = attrs}
+    {ld_id = Ident.create name.txt; ld_name = name; ld_mutable = mut;
+     ld_type = cty; ld_loc = loc; ld_attributes = attrs}
   in
   let lbls = List.map mk lbls in
   let lbls' =
@@ -1022,24 +1027,26 @@ let transl_type_decl env rec_flag sdecl_list =
   let current_slot = ref None in
   let warn_unused = Warnings.is_active (Warnings.Unused_type_declaration "") in
   let id_slots id =
-    if not warn_unused then id, None
-    else
-      (* See typecore.ml for a description of the algorithm used
-         to detect unused declarations in a set of recursive definitions. *)
-      let slot = ref [] in
-      let td = Env.find_type (Path.Pident id) temp_env in
-      let name = Ident.name id in
-      Env.set_type_used_callback
-        name td
-        (fun old_callback ->
-          match !current_slot with
-          | Some slot -> slot := (name, td) :: !slot
-          | None ->
-              List.iter (fun (name, d) -> Env.mark_type_used env name d)
-                (get_ref slot);
-              old_callback ()
-        );
-      id, Some slot
+    match rec_flag with
+    | Asttypes.Recursive when warn_unused ->
+        (* See typecore.ml for a description of the algorithm used
+             to detect unused declarations in a set of recursive definitions. *)
+        let slot = ref [] in
+        let td = Env.find_type (Path.Pident id) temp_env in
+        let name = Ident.name id in
+        Env.set_type_used_callback
+          name td
+          (fun old_callback ->
+             match !current_slot with
+             | Some slot -> slot := (name, td) :: !slot
+             | None ->
+                 List.iter (fun (name, d) -> Env.mark_type_used env name d)
+                   (get_ref slot);
+                 old_callback ()
+          );
+        id, Some slot
+    | Asttypes.Recursive | Asttypes.Nonrecursive ->
+        id, None
   in
   let transl_declaration name_sdecl (id, slot) =
     current_slot := slot; transl_declaration temp_env name_sdecl id in
@@ -1349,6 +1356,60 @@ let transl_exception env sext =
   let newenv = Env.add_extension ~check:true ext.ext_id ext.ext_type env in
     ext, newenv
 
+type native_repr_attribute =
+  | Native_repr_attr_absent
+  | Native_repr_attr_present of native_repr_kind
+
+let get_native_repr_attribute attrs ~global_repr =
+  match
+    Attr_helper.get_no_payload_attribute ["unboxed"; "ocaml.unboxed"]  attrs,
+    Attr_helper.get_no_payload_attribute ["untagged"; "ocaml.untagged"] attrs,
+    global_repr
+  with
+  | None, None, None -> Native_repr_attr_absent
+  | None, None, Some repr -> Native_repr_attr_present repr
+  | Some _, None, None -> Native_repr_attr_present Unboxed
+  | None, Some _, None -> Native_repr_attr_present Untagged
+  | Some { Location.loc }, _, _
+  | _, Some { Location.loc }, _ ->
+    raise (Error (loc, Multiple_native_repr_attributes))
+
+let native_repr_of_type env kind ty =
+  match kind, (Ctype.expand_head_opt env ty).desc with
+  | Untagged, Tconstr (path, _, _) when Path.same path Predef.path_int ->
+    Some Untagged_int
+  | Unboxed, Tconstr (path, _, _) when Path.same path Predef.path_float ->
+    Some Unboxed_float
+  | Unboxed, Tconstr (path, _, _) when Path.same path Predef.path_int32 ->
+    Some (Unboxed_integer Pint32)
+  | Unboxed, Tconstr (path, _, _) when Path.same path Predef.path_int64 ->
+    Some (Unboxed_integer Pint64)
+  | Unboxed, Tconstr (path, _, _) when Path.same path Predef.path_nativeint ->
+    Some (Unboxed_integer Pnativeint)
+  | _ ->
+    None
+
+let make_native_repr env core_type ty ~global_repr =
+  match get_native_repr_attribute core_type.ptyp_attributes ~global_repr with
+  | Native_repr_attr_absent -> Same_as_ocaml_repr
+  | Native_repr_attr_present kind ->
+    begin match native_repr_of_type env kind ty with
+    | None ->
+      raise (Error (core_type.ptyp_loc, Cannot_unbox_or_untag_type kind))
+    | Some repr -> repr
+    end
+
+let rec parse_native_repr_attributes env core_type ty ~global_repr =
+  match core_type.ptyp_desc, (Ctype.repr ty).desc with
+  | Ptyp_arrow (_, ct1, ct2), Tarrow (_, t1, t2, _) ->
+    let repr_arg = make_native_repr env ct1 t1 ~global_repr in
+    let repr_args, repr_res =
+      parse_native_repr_attributes env ct2 t2 ~global_repr
+    in
+    (repr_arg :: repr_args, repr_res)
+  | Ptyp_arrow _, _ | _, Tarrow _ -> assert false
+  | _ -> ([], make_native_repr env core_type ty ~global_repr)
+
 (* Translate a value declaration *)
 let transl_value_decl env loc valdecl =
   let cty = Typetexp.transl_type_scheme env valdecl.pval_type in
@@ -1360,10 +1421,24 @@ let transl_value_decl env loc valdecl =
         val_attributes = valdecl.pval_attributes }
   | [] ->
       raise (Error(valdecl.pval_loc, Val_in_structure))
-  | decl ->
-      let arity = Ctype.arity ty in
-      let prim = Primitive.parse_declaration arity decl in
-      if arity = 0 && (prim.prim_name = "" || prim.prim_name.[0] <> '%') then
+  | _ ->
+      let global_repr =
+        match
+          get_native_repr_attribute valdecl.pval_attributes ~global_repr:None
+        with
+        | Native_repr_attr_present repr -> Some repr
+        | Native_repr_attr_absent -> None
+      in
+      let native_repr_args, native_repr_res =
+        parse_native_repr_attributes env valdecl.pval_type ty ~global_repr
+      in
+      let prim =
+        Primitive.parse_declaration valdecl
+          ~native_repr_args
+          ~native_repr_res
+      in
+      if prim.prim_arity = 0 &&
+         (prim.prim_name = "" || prim.prim_name.[0] <> '%') then
         raise(Error(valdecl.pval_type.ptyp_loc, Null_arity_external));
       if !Clflags.native_code
       && prim.prim_arity > 5
@@ -1712,6 +1787,14 @@ let report_error ppf = function
         "cannot be checked"
   | Val_in_structure ->
       fprintf ppf "Value declarations are only allowed in signatures"
+  | Multiple_native_repr_attributes ->
+      fprintf ppf "Too many [@@unboxed]/[@@untagged] attributes"
+  | Cannot_unbox_or_untag_type Unboxed ->
+      fprintf ppf "Don't know how to unbox this type. Only float, int32, \
+                   int64 and nativeint can be unboxed"
+  | Cannot_unbox_or_untag_type Untagged ->
+      fprintf ppf "Don't know how to untag this type. Only int \
+                   can be untagged"
 
 let () =
   Location.register_error_of_exn

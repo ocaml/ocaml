@@ -1,3 +1,16 @@
+(***********************************************************************)
+(*                                                                     *)
+(*                                OCaml                                *)
+(*                                                                     *)
+(*                         Benoit Vaugon, ENSTA                        *)
+(*                                                                     *)
+(*  Copyright 2014 Institut National de Recherche en Informatique et   *)
+(*  en Automatique.  All rights reserved.  This file is distributed    *)
+(*  under the terms of the GNU Library General Public License, with    *)
+(*  the special exception on linking described in file ../LICENSE.     *)
+(*                                                                     *)
+(***********************************************************************)
+
 (* No comments, OCaml stdlib internal use only. *)
 
 type padty = Left | Right | Zeros
@@ -29,10 +42,10 @@ type ('a, 'b) precision =
 
 type prec_option = int option
 
-type ('a, 'b, 'c, 'd) custom_arity =
-  | Custom_zero : ('a, 'b, 'a, 'b) custom_arity
-  | Custom_succ : ('a, 'b, 'c, 'd) custom_arity ->
-    ('a, 'b, 'x -> 'c, 'x -> 'd) custom_arity
+type ('a, 'b, 'c) custom_arity =
+  | Custom_zero : ('a, string, 'a) custom_arity
+  | Custom_succ : ('a, 'b, 'c) custom_arity ->
+    ('a, 'x -> 'b, 'x -> 'c) custom_arity
 
 type block_type = Pp_hbox | Pp_vbox | Pp_hvbox | Pp_hovbox | Pp_box | Pp_fits
 
@@ -126,7 +139,7 @@ and ('a1, 'b1, 'c1, 'd1, 'e1, 'f1,
      'a2, 'b2, 'c2, 'd2, 'e2, 'f2) fmtty_rel ->
     (('b1 -> 'c1) -> 'a1, 'b1, 'c1, 'd1, 'e1, 'f1,
      ('b2 -> 'c2) -> 'a2, 'b2, 'c2, 'd2, 'e2, 'f2) fmtty_rel
-| Any_ty :                                                  (* Used for custom formats *)
+| Any_ty :                                         (* Used for custom formats *)
     ('a1, 'b1, 'c1, 'd1, 'e1, 'f1,
      'a2, 'b2, 'c2, 'd2, 'e2, 'f2) fmtty_rel ->
     ('x -> 'a1, 'b1, 'c1, 'd1, 'e1, 'f1,
@@ -246,7 +259,7 @@ and ('a, 'b, 'c, 'd, 'e, 'f) fmt =
 
 (* Custom printing format *)
 | Custom :
-    ('c, 'a, 'x, 'y) custom_arity * ('b -> 'x) * ('a, 'b, 'c, 'd, 'e, 'f) fmt ->
+    ('a, 'x, 'y) custom_arity * (unit -> 'x) * ('a, 'b, 'c, 'd, 'e, 'f) fmt ->
     ('y, 'b, 'c, 'd, 'e, 'f) fmt
 
 | End_of_format :

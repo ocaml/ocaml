@@ -6,7 +6,8 @@
 (*                                                                     *)
 (*  Copyright 2007 Institut National de Recherche en Informatique et   *)
 (*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
+(*  under the terms of the GNU Library General Public License, with    *)
+(*  the special exception on linking described in file ../LICENSE.     *)
 (*                                                                     *)
 (***********************************************************************)
 
@@ -111,6 +112,8 @@ module Cache = struct
   let print_cache_entry f e =
     fprintf f "@[<2>{ @[<2>built =@ %a@];@ @[<2>changed =@ %a@];@ @[<2>dependencies =@ %a@]@ }@]"
       print_build_status e.built print_knowledge e.changed Resources.print e.dependencies
+
+  module Hashtbl = Hashtbl.Make(struct type t = Pathname.t let hash = Hashtbl.hash let equal (x:string) y = x = y end)
 
   let cache = Hashtbl.create 103
 

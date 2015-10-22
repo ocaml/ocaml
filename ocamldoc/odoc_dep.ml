@@ -48,8 +48,8 @@ module Dep =
 
     type node = {
         id : id ;
-        mutable near : S.t ; (** fils directs *)
-        mutable far : (id * S.t) list ; (** fils indirects, par quel fils *)
+        mutable near : S.t ; (** direct children *)
+        mutable far : (id * S.t) list ; (** indirect children, from which children path *)
         reflex : bool ; (** reflexive or not, we keep
                            information here to remove the node itself from its direct children *)
       }
@@ -77,7 +77,7 @@ module Dep =
       if S.mem n.id acc then
         acc
       else
-        (* optimisation plus tard : utiliser le champ far si non vide ? *)
+        (* potential optimisation: use far field if nonempty? *)
         S.fold
           (fun child -> fun acc2 ->
             trans_closure graph acc2 (get_node graph child))

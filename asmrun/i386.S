@@ -19,7 +19,7 @@
 /* Linux/BSD with ELF binaries and Solaris do not prefix identifiers with _.
    Linux/BSD with a.out binaries and NextStep do. */
 
-#if defined(SYS_solaris)
+#if (defined(SYS_solaris) && !defined(__GNUC__))
 #define CONCAT(a,b) a/**/b
 #else
 #define CONCAT(a,b) a##b
@@ -116,7 +116,7 @@
 #endif
 
 /* PR#6038: GCC and Clang seem to require 16-byte alignment nowadays,
-   even if only MacOS X's ABI formally requires it. */	
+   even if only MacOS X's ABI formally requires it. */
 #define ALIGN_STACK(amount) subl $ amount, %esp ; CFI_ADJUST(amount)
 #define UNDO_ALIGN_STACK(amount) addl $ amount, %esp ; CFI_ADJUST(-amount)
 

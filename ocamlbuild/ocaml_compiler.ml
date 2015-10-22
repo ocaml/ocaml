@@ -6,7 +6,8 @@
 (*                                                                     *)
 (*  Copyright 2007 Institut National de Recherche en Informatique et   *)
 (*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
+(*  under the terms of the GNU Library General Public License, with    *)
+(*  the special exception on linking described in file ../LICENSE.     *)
 (*                                                                     *)
 (***********************************************************************)
 
@@ -156,7 +157,7 @@ let byte_compile_ocaml_interf mli cmi env build =
 let compile_ocaml_interf mli cmi env build =
   let mli = env mli and cmi = env cmi in
   prepare_compile build mli;
-  let tags = tags_of_pathname mli++"interf" in 
+  let tags = tags_of_pathname mli++"interf" in
   let comp_c = if Tags.mem "native" tags then ocamlopt_c else ocamlc_c in
   comp_c tags mli cmi
 
@@ -266,6 +267,9 @@ let byte_link = byte_link_gen ocamlc_link_prog
 let byte_output_obj = byte_link_gen ocamlc_link_prog
   (fun tags -> tags++"ocaml"++"link"++"byte"++"output_obj")
 
+let byte_output_shared = byte_link_gen ocamlc_link_prog
+  (fun tags -> tags++"ocaml"++"link"++"byte"++"output_obj"++"output_shared")
+
 let byte_library_link = byte_link_gen byte_lib_linker byte_lib_linker_tags
 
 let byte_debug_link_gen =
@@ -285,6 +289,9 @@ let native_link x = native_link_gen ocamlopt_link_prog
 
 let native_output_obj x = native_link_gen ocamlopt_link_prog
   (fun tags -> tags++"ocaml"++"link"++"native"++"output_obj") x
+
+let native_output_shared x = native_link_gen ocamlopt_link_prog
+  (fun tags -> tags++"ocaml"++"link"++"native"++"output_obj"++"output_shared") x
 
 let native_library_link x =
   native_link_gen native_lib_linker native_lib_linker_tags x

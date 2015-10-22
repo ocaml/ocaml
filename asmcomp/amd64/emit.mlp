@@ -26,6 +26,12 @@ open X86_ast
 open X86_proc
 open X86_dsl
 
+(* [Branch_relaxation] is not used in this file, but is required by
+   emit.mlp files for certain other targets; the reference here ensures
+   that when releases are being prepared the .depend files are correct
+   for all targets. *)
+open! Branch_relaxation
+
 let _label s = D.label ~typ:QWORD s
 
 (* Override proc.ml *)
@@ -239,10 +245,12 @@ let record_frame_label live dbg =
   let live_offset = ref [] in
   Reg.Set.iter
     (function
-      | {typ = Addr; loc = Reg r} ->
+      | {typ = Val; loc = Reg r} ->
           live_offset := ((r lsl 1) + 1) :: !live_offset
-      | {typ = Addr; loc = Stack s} as reg ->
+      | {typ = Val; loc = Stack s} as reg ->
           live_offset := slot_offset s (register_class reg) :: !live_offset
+      | {typ = Addr} as r ->
+          Misc.fatal_error ("bad GC root " ^ Reg.name r)
       | _ -> ()
     )
     live;
@@ -394,12 +402,16 @@ let emit_float_test cmp neg i lbl =
 let output_epilogue f =
   if frame_required() then begin
     let n = frame_size() - 8 - (if fp then 8 else 0) in
-    I.add (int n) rsp;
-    cfi_adjust_cfa_offset (-n);
+    if n <> 0
+    then begin
+      I.add (int n) rsp;
+      cfi_adjust_cfa_offset (-n);
+    end;
     if fp then I.pop rbp;
     f ();
     (* reset CFA back cause function body may continue *)
-    cfi_adjust_cfa_offset n
+    if n <> 0
+    then cfi_adjust_cfa_offset n
   end
   else
     f ()
@@ -497,7 +509,7 @@ let emit_instr fallthrough i =
         if system <> S_win64 then begin
           (* TODO: investigate why such a diff.
              This comes from:
-             http://caml.inria.fr/cgi-bin/viewvc.cgi?view=revision&revision=12664
+            http://caml.inria.fr/cgi-bin/viewvc.cgi?view=revision&revision=12664
 
              If we do the same for Win64, we probably need to change
              amd64nt.asm accordingly.
@@ -510,13 +522,15 @@ let emit_instr fallthrough i =
   | Lop(Istackoffset n) ->
       if n < 0
       then I.add (int (-n)) rsp
-      else I.sub (int n) rsp;
-      cfi_adjust_cfa_offset n;
+      else if n > 0
+      then I.sub (int n) rsp;
+      if n <> 0
+      then cfi_adjust_cfa_offset n;
       stack_offset := !stack_offset + n
   | Lop(Iload(chunk, addr)) ->
       let dest = res i 0 in
       begin match chunk with
-      | Word ->
+      | Word_int | Word_val ->
           I.mov (addressing addr QWORD i 0) dest
       | Byte_unsigned ->
           I.movzx (addressing addr BYTE i 0) dest
@@ -537,7 +551,7 @@ let emit_instr fallthrough i =
       end
   | Lop(Istore(chunk, addr, _)) ->
       begin match chunk with
-      | Word ->
+      | Word_int | Word_val ->
           I.mov (arg i 0) (addressing addr QWORD i 1)
       | Byte_unsigned | Byte_signed ->
           I.mov (arg8 i 0) (addressing addr BYTE i 1)
@@ -718,7 +732,8 @@ let emit_instr fallthrough i =
         else (phys_reg 0 (*rax*), phys_reg 4 (*rdx*)) in
 
       I.lea (mem64_rip NONE lbl) (reg tmp1);
-      I.movsxd (mem64 DWORD 0 (arg64 i 0) ~scale:4 ~base:(reg64 tmp1)) (reg tmp2);
+      I.movsxd (mem64 DWORD 0 (arg64 i 0) ~scale:4 ~base:(reg64 tmp1))
+               (reg tmp2);
       I.add (reg tmp2) (reg tmp1);
       I.jmp (reg tmp1);
 
@@ -817,8 +832,11 @@ let fundecl fundecl =
   if !Clflags.gprofile then emit_profile();
   if frame_required() then begin
     let n = frame_size() - 8 - (if fp then 8 else 0) in
-    I.sub (int n) rsp;
-    cfi_adjust_cfa_offset n;
+    if n <> 0
+    then begin
+      I.sub (int n) rsp;
+      cfi_adjust_cfa_offset n;
+    end;
   end;
   def_label !tailrec_entry_point;
   emit_all true fundecl.fun_body;
@@ -983,4 +1001,3 @@ let end_assembly() =
       None
   in
   X86_proc.generate_code asm
-

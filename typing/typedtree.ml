@@ -132,8 +132,8 @@ and class_expr_desc =
     Tcl_ident of Path.t * Longident.t loc * core_type list
   | Tcl_structure of class_structure
   | Tcl_fun of
-      arg_label * pattern * (Ident.t * string loc * expression) list * class_expr *
-        partial
+      arg_label * pattern * (Ident.t * string loc * expression) list
+      * class_expr * partial
   | Tcl_apply of class_expr * (arg_label * expression option * optional) list
   | Tcl_let of rec_flag * value_binding list *
                   (Ident.t * string loc * expression) list * class_expr

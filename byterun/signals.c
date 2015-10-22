@@ -238,11 +238,33 @@ void caml_urge_major_slice (void)
 #ifndef SIGPROF
 #define SIGPROF -1
 #endif
+#ifndef SIGBUS
+#define SIGBUS -1
+#endif
+#ifndef SIGPOLL
+#define SIGPOLL -1
+#endif
+#ifndef SIGSYS
+#define SIGSYS -1
+#endif
+#ifndef SIGTRAP
+#define SIGTRAP -1
+#endif
+#ifndef SIGURG
+#define SIGURG -1
+#endif
+#ifndef SIGXCPU
+#define SIGXCPU -1
+#endif
+#ifndef SIGXFSZ
+#define SIGXFSZ -1
+#endif
 
 static int posix_signals[] = {
   SIGABRT, SIGALRM, SIGFPE, SIGHUP, SIGILL, SIGINT, SIGKILL, SIGPIPE,
   SIGQUIT, SIGSEGV, SIGTERM, SIGUSR1, SIGUSR2, SIGCHLD, SIGCONT,
-  SIGSTOP, SIGTSTP, SIGTTIN, SIGTTOU, SIGVTALRM, SIGPROF
+  SIGSTOP, SIGTSTP, SIGTTIN, SIGTTOU, SIGVTALRM, SIGPROF, SIGBUS,
+  SIGPOLL, SIGSYS, SIGTRAP, SIGURG, SIGXCPU, SIGXFSZ
 };
 
 CAMLexport int caml_convert_signal_number(int signo)

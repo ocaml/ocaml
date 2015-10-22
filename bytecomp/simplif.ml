@@ -342,7 +342,8 @@ let simplify_lets lam =
   | Lapply(Lfunction{kind = Curried; params; body}, args, _)
     when optimize && List.length params = List.length args ->
       count bv (beta_reduce params body args)
-  | Lapply(Lfunction{kind = Tupled; params; body}, [Lprim(Pmakeblock _, args)], _)
+  | Lapply(Lfunction{kind = Tupled; params; body},
+           [Lprim(Pmakeblock _, args)], _)
     when optimize && List.length params = List.length args ->
       count bv (beta_reduce params body args)
   | Lapply(l1, ll, _) ->
@@ -434,12 +435,19 @@ let simplify_lets lam =
   | Lapply(Lfunction{kind = Curried; params; body}, args, _)
     when optimize && List.length params = List.length args ->
       simplif (beta_reduce params body args)
-  | Lapply(Lfunction{kind = Tupled; params; body}, [Lprim(Pmakeblock _, args)], _)
+  | Lapply(Lfunction{kind = Tupled; params; body},
+           [Lprim(Pmakeblock _, args)], _)
     when optimize && List.length params = List.length args ->
       simplif (beta_reduce params body args)
   | Lapply(l1, ll, loc) -> Lapply(simplif l1, List.map simplif ll, loc)
   | Lfunction{kind; params; body = l; attr} ->
-     Lfunction{kind; params; body = simplif l; attr}
+      begin match simplif l with
+        Lfunction{kind=Curried; params=params'; body; attr}
+        when kind = Curried && optimize ->
+          Lfunction{kind; params = params @ params'; body; attr}
+      | body ->
+          Lfunction{kind; params; body; attr}
+      end
   | Llet(str, v, Lvar w, l2) when optimize ->
       Hashtbl.add subst v (simplif (Lvar w));
       simplif l2
@@ -523,6 +531,7 @@ let rec emit_tail_infos is_tail lambda =
       && not is_tail
       && Warnings.is_active Warnings.Expect_tailcall
         then Location.prerr_warning loc Warnings.Expect_tailcall;
+      emit_tail_infos false func;
       list_emit_tail_infos false l;
       if !Clflags.annotations then
         Stypes.record (Stypes.An_call (loc, call_kind l));

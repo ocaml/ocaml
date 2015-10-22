@@ -23,7 +23,7 @@ let reference n =
   else if n = 9 then "\\t"
   else if n = 10 then "\\n"
   else if n = 13 then "\\r"
-  else if n = Char.code '"' then "\\\""
+  else if n = Char.code '\"' then "\\\""
   else if n = Char.code '\\' then "\\\\"
   else if n < 32 || n > 126 then Printf.sprintf "\\%03d" n
   else char n

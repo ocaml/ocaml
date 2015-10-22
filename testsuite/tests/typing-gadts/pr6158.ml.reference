@@ -11,5 +11,5 @@ Error: This pattern matches values of type (int s, int s) eq
        Type int s is not compatible with type int t 
 #     module M :
   functor (S : sig type 'a t = T of 'a type 'a s = T of 'a end) ->
-    sig val f : (a#0 S.s, a#0 S.t) eq -> unit end
+    sig val f : ($'a S.s, $'a S.t) eq -> unit end
 # 

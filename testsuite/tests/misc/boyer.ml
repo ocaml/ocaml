@@ -880,7 +880,7 @@ let term = cterm_to_term(
 
 let _ =
   let ok = ref true in
-  for i = 1 to 50 do
+  for i = 1 to 10 do
     if not (tautp (apply_subst subst term)) then ok := false
   done;
   if !ok then
@@ -888,22 +888,3 @@ let _ =
   else
     print_string "Cannot prove!\n";
   exit 0
-
-(*********
-with
-    failure s ->
-      print_string "Exception failure("; print_string s; print_string ")\n"
-  | Unify ->
-      print_string "Exception Unify\n"
-  | match_failure(file,start,stop) ->
-      print_string "Exception match_failure(";
-      print_string file;
-      print_string ",";
-      print_int start;
-      print_string ",";
-      print_int stop;
-      print_string ")\n"
-  | _ ->
-      print_string "Exception ?\n"
-
-**********)

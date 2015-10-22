@@ -304,6 +304,9 @@ Recognize file names ending with
 as interface files (instead of the default .mli).
 .TP
 .B \-keep-locs
+Keep documentation strings in generated .cmi files.
+.TP
+.B \-keep-locs
 Keep locations in generated .cmi files.
 .TP
 .B \-labels
@@ -600,7 +603,8 @@ compiling your program with later versions of OCaml when they add new
 warnings or modify existing warnings.
 
 The default setting is
-.B \-warn\-error\ -a (all warnings are non-fatal).
+.B \-warn\-error \-a
+(all warnings are non-fatal).
 .TP
 .B \-warn\-help
 Show the description of all available warning numbers.

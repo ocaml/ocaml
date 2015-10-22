@@ -1,4 +1,5 @@
 (***********************************************************************)
+(*                                                                     *)
 (*                             OCamldoc                                *)
 (*                                                                     *)
 (*            Maxence Guesdon, projet Cristal, INRIA Rocquencourt      *)
@@ -8,8 +9,6 @@
 (*  under the terms of the Q Public License version 1.0.               *)
 (*                                                                     *)
 (***********************************************************************)
-
-(* $Id$ *)
 
 (** Representation and manipulation of type extensions. *)
 

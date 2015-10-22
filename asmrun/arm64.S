@@ -175,11 +175,12 @@ caml_alloc1:
         ret
 2:      stp     x29, x30, [sp, -16]!
         CFI_ADJUST(16)
-    /* Record the lowest address of the caller's stack frame.  This is the address
-       immediately above the pair of words (x29 and x30) we just pushed.  Those must
-       not be included since otherwise the distance from [caml_bottom_of_stack] to the
-       highest address in the caller's stack frame won't match the frame size contained
-       in the relevant frame descriptor. */
+    /* Record the lowest address of the caller's stack frame.  This is the
+       address immediately above the pair of words (x29 and x30) we just
+       pushed.  Those must not be included since otherwise the distance from
+       [caml_bottom_of_stack] to the highest address in the caller's stack
+       frame won't match the frame size contained in the relevant frame
+       descriptor. */
         add     x29, sp, #16
         STOREGLOBAL(x29, caml_bottom_of_stack)
         add     x29, sp, #0
@@ -207,7 +208,8 @@ caml_alloc2:
         ret
 2:      stp     x29, x30, [sp, -16]!
         CFI_ADJUST(16)
-    /* Record the lowest address of the caller's stack frame.  See comment above. */
+    /* Record the lowest address of the caller's stack frame.
+       See comment above. */
         add     x29, sp, #16
         STOREGLOBAL(x29, caml_bottom_of_stack)
         add     x29, sp, #0
@@ -235,7 +237,8 @@ caml_alloc3:
         ret
 2:      stp     x29, x30, [sp, -16]!
         CFI_ADJUST(16)
-    /* Record the lowest address of the caller's stack frame.  See comment above. */
+    /* Record the lowest address of the caller's stack frame.
+       See comment above. */
         add     x29, sp, #16
         STOREGLOBAL(x29, caml_bottom_of_stack)
         add     x29, sp, #0
@@ -263,7 +266,8 @@ caml_allocN:
         ret
 2:      stp     x29, x30, [sp, -16]!
         CFI_ADJUST(16)
-    /* Record the lowest address of the caller's stack frame.  See comment above. */
+    /* Record the lowest address of the caller's stack frame.
+       See comment above. */
         add     x29, sp, #16
         STOREGLOBAL(x29, caml_bottom_of_stack)
         add     x29, sp, #0

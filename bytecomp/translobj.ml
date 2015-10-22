@@ -11,7 +11,6 @@
 (***********************************************************************)
 
 open Misc
-open Primitive
 open Asttypes
 open Longident
 open Lambda
@@ -90,8 +89,7 @@ let string s = Lconst (Const_base (Const_string (s, None)))
 let int n = Lconst (Const_base (Const_int n))
 
 let prim_makearray =
-  { prim_name = "caml_make_vect"; prim_arity = 2; prim_alloc = true;
-    prim_native_name = ""; prim_native_float = false }
+  Primitive.simple ~name:"caml_make_vect" ~arity:2 ~alloc:true
 
 (* Also use it for required globals *)
 let transl_label_init expr =
