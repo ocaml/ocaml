@@ -45,24 +45,6 @@ let field_path path field =
 
 (* Compile type extensions *)
 
-let prim_set_oo_id =
-  Pccall (Primitive.simple ~name:"caml_set_oo_id" ~arity:1 ~alloc:false)
-
-let transl_extension_constructor env path ext =
-  let name =
-    match path with
-      None -> Ident.name ext.ext_id
-    | Some p -> Path.name p
-  in
-  match ext.ext_kind with
-    Text_decl(args, ret) ->
-      Lprim(prim_set_oo_id,
-            [Lprim(Pmakeblock(Obj.object_tag, Mutable),
-                   [Lconst(Const_base(Const_string (name,None)));
-                    Lconst(Const_base(Const_int 0))])])
-  | Text_rebind(path, lid) ->
-      transl_path ~loc:ext.ext_loc env path
-
 let transl_type_extension env rootpath tyext body =
   List.fold_right
     (fun ext body ->
