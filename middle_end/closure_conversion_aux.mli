@@ -50,6 +50,7 @@ module Function_decls : sig
       -> kind:Lambda.function_kind
       -> params:Ident.t list
       -> body:Lambda.lambda
+      -> inline:Lambda.inline_attribute
       -> t
 
     val let_rec_ident : t -> Ident.t
@@ -57,6 +58,7 @@ module Function_decls : sig
     val kind : t -> Lambda.function_kind
     val params : t -> Ident.t list
     val body : t -> Lambda.lambda
+    val inline : t -> Lambda.inline_attribute
 
     (* [primitive_wrapper t] is [None] iff [t] is not a wrapper for a function
        with default optionnal arguments. Otherwise it is [Some body], where

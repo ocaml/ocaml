@@ -51,7 +51,7 @@ let tupled_function_call_stub original_params tuplified_version
       (0, call) params
   in
   Flambda.create_function_declaration ~params:[tuple_param]
-    ~body ~stub:true ~dbg:Debuginfo.none
+    ~body ~stub:true ~dbg:Debuginfo.none ~inline:Always_inline
 
 (** Propagate an [Lev_after] debugging event into an adjacent Flambda node. *)
 let add_debug_info (ev : Lambda.lambda_event) (flam : Flambda.t)
@@ -119,7 +119,7 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
     let defining_expr = close_let_bound_expression t var env defining_expr in
     let body = close t (Env.add_mutable_var env id mut_var) body in
     Flambda.create_let var defining_expr (Let_mutable (mut_var, var, body))
-  | Lfunction { kind; params; body; } ->
+  | Lfunction { kind; params; body; attr; } ->
     let name =
       (* Name anonymous functions by their source location, if known. *)
       match body with
@@ -136,7 +136,7 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
     let set_of_closures =
       let decl =
         Function_decl.create ~let_rec_ident:None ~closure_bound_var ~kind
-          ~params ~body
+          ~params ~body ~inline:attr.inline
       in
       close_functions t env (Function_decls.create [decl])
     in
@@ -148,7 +148,7 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
     Flambda.create_let set_of_closures_var set_of_closures
       (name_expr (Project_closure (project_closure))
         ~name:("project_closure_" ^ name))
-  | Lapply (funct, args, loc) ->
+  | Lapply (funct, args, apply_info) ->
     Lift_code.lifting_helper (close_list t env args)
       ~evaluation_order:`Right_to_left
       ~name:"apply_arg"
@@ -160,7 +160,8 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
               func = func_var;
               args;
               kind = Indirect;
-              dbg = Debuginfo.from_location Dinfo_call loc.apply_loc;
+              dbg = Debuginfo.from_location Dinfo_call apply_info.apply_loc;
+              inlined = apply_info.apply_inlined;
             })))
   | Lletrec (defs, body) ->
     let env =
@@ -172,11 +173,12 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
       (* Identify any bindings in the [let rec] that are functions.  These
          will be named after the corresponding identifier in the [let rec]. *)
       List.map (function
-          | (let_rec_ident, Lambda.Lfunction { kind; params; body; }) ->
+          | (let_rec_ident, Lambda.Lfunction { kind; params; body; attr; }) ->
             let closure_bound_var = Variable.of_ident let_rec_ident in
             let function_declaration =
               Function_decl.create ~let_rec_ident:(Some let_rec_ident)
                 ~closure_bound_var ~kind ~params ~body
+                ~inline:attr.inline
             in
             Some function_declaration
           | _ -> None)
@@ -429,6 +431,7 @@ and close_functions t external_env function_declarations : Flambda.named =
     let body = close t closure_env body in
     let fun_decl =
       Flambda.create_function_declaration ~params ~body ~stub ~dbg
+        ~inline:(Function_decl.inline decl)
     in
     match Function_decl.kind decl with
     | Curried -> Variable.Map.add closure_bound_var fun_decl map
@@ -472,7 +475,7 @@ and close_list t sb l = List.map (close t sb) l
 and close_let_bound_expression t ?let_rec_ident let_bound_var env
       (lam : Lambda.lambda) : Flambda.named =
   match lam with
-  | Lfunction { kind; params; body; } ->
+  | Lfunction { kind; params; body; attr; } ->
     (* Ensure that [let] and [let rec]-bound functions have appropriate
        names. *)
     let closure_bound_var =
@@ -480,7 +483,7 @@ and close_let_bound_expression t ?let_rec_ident let_bound_var env
     in
     let decl =
       Function_decl.create ~let_rec_ident ~closure_bound_var ~kind ~params
-        ~body
+        ~body ~inline:attr.inline
     in
     let set_of_closures_var =
       Variable.rename let_bound_var ~append:"_set_of_closures"

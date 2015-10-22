@@ -587,7 +587,10 @@ and simplify_set_of_closures original_env r
   set_of_closures, ret r (A.value_set_of_closures value_set_of_closures)
 
 and simplify_apply env r ~(apply : Flambda.apply) : Flambda.t * R.t =
-  let { Flambda. func = lhs_of_application; args; kind = _; dbg } = apply in
+  let {
+    Flambda. func = lhs_of_application; args; kind = _; dbg;
+    inline = inline_requested;
+  } = apply in
   simplify_free_variable env lhs_of_application ~f:(fun env lhs_of_application ->
     simplify_free_variables env args ~f:(fun env args ->
       let lhs_of_application_approx = E.find_exn env lhs_of_application in
@@ -616,14 +619,15 @@ and simplify_apply env r ~(apply : Flambda.apply) : Flambda.t * R.t =
         if nargs = arity then
           simplify_full_application env r ~function_decls ~lhs_of_application
             ~closure_id_being_applied ~function_decl ~value_set_of_closures
-            ~args ~args_approxs ~dbg
+            ~args ~args_approxs ~dbg ~inline_requested
         else if nargs > arity then
           simplify_over_application env r ~args ~args_approxs ~function_decls
             ~lhs_of_application ~closure_id_being_applied ~function_decl
-            ~value_set_of_closures ~dbg
+            ~value_set_of_closures ~dbg ~inline_requested
         else if nargs > 0 && nargs < arity then
           simplify_partial_application env r ~lhs_of_application
             ~closure_id_being_applied ~function_decl ~args ~dbg
+            ~inline_requested
         else
           Misc.fatal_errorf "Function with arity %d when simplifying \
               application expression: %a"
@@ -634,15 +638,29 @@ and simplify_apply env r ~(apply : Flambda.apply) : Flambda.t * R.t =
 
 and simplify_full_application env r ~function_decls ~lhs_of_application
       ~closure_id_being_applied ~function_decl ~value_set_of_closures ~args
-      ~args_approxs ~dbg =
+      ~args_approxs ~dbg ~inline_requested =
   Inlining_decision.for_call_site ~env ~r ~function_decls
     ~lhs_of_application ~closure_id_being_applied ~function_decl
     ~value_set_of_closures ~args ~args_approxs ~dbg ~simplify
+    ~inline_requested
 
 and simplify_partial_application env r ~lhs_of_application
-      ~closure_id_being_applied ~function_decl ~args ~dbg =
+      ~closure_id_being_applied ~function_decl ~args ~dbg ~inline_requested =
   let arity = Flambda_utils.function_arity function_decl in
   assert (arity > List.length args);
+  (* For simplicity, we disallow [@inline] attributes on partial
+     applications.  The user may always write an explicit wrapper instead
+     with such an attribute. *)
+  (* CR-someday mshinwell: Pierre noted that we might like a function to be
+     inlined when applied to its first set of arguments, e.g. for some kind
+     of type class like thing. *)
+  begin match inline_requested with
+  | Always_inline | Never_inline ->
+    Location.prerr_warning (Debuginfo.to_location dbg)
+      (Warnings.Inlining_impossible "[@inlined] attributes may not be used \
+        on partial applications")
+  | Default_inline -> ()
+  end;
   let freshened_params =
     List.map (fun id -> Variable.freshen id) function_decl.Flambda.params
   in
@@ -656,6 +674,7 @@ and simplify_partial_application env r ~lhs_of_application
         args = freshened_params;
         kind = Direct closure_id_being_applied;
         dbg;
+        inline = Default_inline;
       }
     in
     Flambda_utils.make_closure_declaration ~id:(Variable.create "partial_fun")
@@ -672,7 +691,7 @@ and simplify_partial_application env r ~lhs_of_application
 
 and simplify_over_application env r ~args ~args_approxs ~function_decls
       ~lhs_of_application ~closure_id_being_applied ~function_decl
-      ~value_set_of_closures ~dbg =
+      ~value_set_of_closures ~dbg ~inline_requested =
   let arity = Flambda_utils.function_arity function_decl in
   assert (arity < List.length args);
   assert (List.length args = List.length args_approxs);
@@ -682,11 +701,13 @@ and simplify_over_application env r ~args ~args_approxs ~function_decls
     simplify_full_application env r ~function_decls ~lhs_of_application
       ~closure_id_being_applied ~function_decl ~value_set_of_closures
       ~args:full_app_args ~args_approxs:full_app_approxs ~dbg
+      ~inline_requested
   in
   let func_var = Variable.create "full_apply" in
   let expr : Flambda.t =
     Flambda.create_let func_var (Expr expr)
-      (Apply { func = func_var; args = remaining_args; kind = Indirect; dbg })
+      (Apply { func = func_var; args = remaining_args; kind = Indirect; dbg;
+        inline = inline_requested; })
   in
   simplify env r expr
 

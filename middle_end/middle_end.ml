@@ -101,6 +101,19 @@ let middle_end ppf ~sourcefile ~prefixname ~backend
            Remove_unused_globals.remove_unused_globals)
       |> loop
   in
+  (* Check that there aren't any unused "always inline" attributes. *)
+  Flambda_iterators.iter_apply flam ~f:(fun apply ->
+      match apply.inline with
+      | Default_inline | Never_inline -> ()
+      | Always_inline ->
+        (* CR-someday mshinwell: consider a different error message if
+           this triggers as a result of the propagation of a user's
+           attribute into the second part of an over application
+           (inline_and_simplify.ml line 710). *)
+        Locations.prerr_warning (Debuginfo.to_location apply.dbg)
+          (Warnings.Inlining_impossible "[@inlined] attribute was not \
+            used on this function application (the optimizer did not \
+            know what function was being applied)"));
   let flam = loop flam in
   dump_and_check "End of middle end" flam;
   Inlining_stats.save_then_forget_decisions ~output_prefix:prefixname;

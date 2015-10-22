@@ -80,9 +80,10 @@ module Function_decls = struct
       kind : Lambda.function_kind;
       params : Ident.t list;
       body : Lambda.lambda;
+      inline : Lambda.inline_attribute;
     }
 
-    let create ~let_rec_ident ~closure_bound_var ~kind ~params ~body =
+    let create ~let_rec_ident ~closure_bound_var ~kind ~params ~body ~inline =
       let let_rec_ident =
         match let_rec_ident with
         | None -> Ident.create "unnamed_function"
@@ -93,6 +94,7 @@ module Function_decls = struct
         kind;
         params;
         body;
+        inline;
       }
 
     let let_rec_ident t = t.let_rec_ident
@@ -101,6 +103,7 @@ module Function_decls = struct
     let params t = t.params
     let body t = t.body
     let used_idents t = Lambda.free_variables t.body
+    let inline t = t.inline
 
     (* CR-someday mshinwell: eliminate "*stub*" *)
     let primitive_wrapper t =

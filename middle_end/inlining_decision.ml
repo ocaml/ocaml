@@ -241,7 +241,7 @@ let for_call_site ~env ~r ~(function_decls : Flambda.function_declarations)
       ~lhs_of_application ~closure_id_being_applied
       ~(function_decl : Flambda.function_declaration)
       ~(value_set_of_closures : Simple_value_approx.value_set_of_closures)
-      ~args ~args_approxs ~dbg ~simplify =
+      ~args ~args_approxs ~dbg ~simplify ~inline_requested =
   if List.length args <> List.length args_approxs then begin
     Misc.fatal_error "Inlining_decision.for_call_site: inconsistent lengths \
         of [args] and [args_approxs]"
@@ -260,13 +260,22 @@ let for_call_site ~env ~r ~(function_decls : Flambda.function_declarations)
       func = lhs_of_application;
       args;
       kind = Direct closure_id_being_applied;
-      dbg
+      dbg;
+      inline = inline_requested;
     }, R.set_approx r A.value_unknown
   in
   (* CR mshinwell for pchambart: Mysterious constant.  Turn into a compiler
      option? *)
   let max_level = 3 in
-  let unconditionally_inline = function_decl.stub in
+  let unconditionally_inline =
+    match inline_requested with
+    | Always_inline -> true
+    | Never_inline ->
+      (* CR-someday mshinwell: consider whether there could be better
+         behaviour for stubs *)
+      false
+    | Default_inline -> function_decl.stub
+  in
   let num_params = List.length function_decl.params in
   let only_use_of_function = false in
   let inlining_threshold = R.inlining_threshold r in
@@ -281,15 +290,18 @@ let for_call_site ~env ~r ~(function_decls : Flambda.function_declarations)
     is_probably_a_functor ~env ~args_approxs ~recursive_functions
   in
   let recursive = Variable.Set.mem fun_var recursive_functions in
-  let fun_cost =
-    (* CR mshinwell: should clarify exactly what "unconditionally" means. *)
-    if unconditionally_inline || (only_use_of_function && not recursive)
-       || probably_a_functor
-    then
-      inlining_threshold
-    else
-      Inlining_cost.can_try_inlining function_decl.body inlining_threshold
-        ~bonus:num_params
+  let fun_cost : Inlining_cost.inlining_threshold =
+    match inline_requested with
+    | Never_inline -> Never_inline
+    | Always_inline | Default_inline ->
+      (* CR mshinwell: should clarify exactly what "unconditionally" means. *)
+      if unconditionally_inline || (only_use_of_function && not recursive)
+         || probably_a_functor
+      then
+        inlining_threshold
+      else
+        Inlining_cost.can_try_inlining function_decl.body inlining_threshold
+          ~bonus:num_params
   in
   let expr, r =
     match fun_cost with

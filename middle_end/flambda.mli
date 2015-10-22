@@ -97,6 +97,7 @@ type apply = {
   args : Variable.t list;
   kind : call_kind;
   dbg : Debuginfo.t;
+  inline : Lambda.inline_attribute;
 }
 
 type assign = {
@@ -281,14 +282,14 @@ and function_declaration = private {
   free_variables : Variable.Set.t;
   free_symbols : Symbol.Set.t;
   (** All symbols that occur in the function's body. *)
-  (* CR mshinwell for pchambart: Why don't we call this
-     [unconditionally_inline]? *)
   stub : bool;
   (** A stub function is a generated function used to prepare arguments or
       return values to allow indirect calls to functions with a special calling
       convention.  For instance indirect calls to tuplified functions must go
       through a stub.  Stubs will be unconditionally inlined. *)
   dbg : Debuginfo.t;
+  inline : Lambda.inline_attribute;
+  (** Inlining requirements from the source code. *)
 }
 
 (** Equivalent to the similar type in [Lambda]. *)
@@ -492,6 +493,7 @@ val create_function_declaration
   -> body:t
   -> stub:bool
   -> dbg:Debuginfo.t
+  -> inline:Lambda.inline_attribute
   -> function_declaration
 
 val create_function_declarations

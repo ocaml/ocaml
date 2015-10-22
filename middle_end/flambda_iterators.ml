@@ -335,6 +335,13 @@ let map_general ~toplevel f f_named tree =
   in
   aux tree
 
+let iter_apply tree ~f =
+  iter (function
+      | Apply apply -> f apply
+      | _ -> ())
+    (fun _ -> ())
+    tree
+
 let map f f_named tree = map_general ~toplevel:false f (fun _ n -> f_named n) tree
 let map_expr f tree = map f (fun named -> named) tree
 let map_named f_named tree = map (fun expr -> expr) f_named tree
