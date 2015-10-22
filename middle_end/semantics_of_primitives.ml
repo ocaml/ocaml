@@ -14,10 +14,7 @@
 type effects = No_effects | Only_generative_effects | Arbitrary_effects
 type coeffects = No_coeffects | Has_coeffects
 
-let for_primitive (prim : Lambda.primitive)
-    (* CR pchambart: removve second_arg_is_definitely_not_zero
-       not used anymore *)
-      ~second_arg_is_definitely_not_zero:_ =
+let for_primitive (prim : Lambda.primitive) =
   match prim with
   | Pignore -> No_effects, No_coeffects
   | Pmakeblock _

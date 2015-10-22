@@ -280,27 +280,6 @@ let both_moveable a b =
 
 let primitive_moveable (prim : Lambda.primitive)
       (args : Clambda.ulambda list) =
-  let second_arg_is_definitely_not_zero =
-    match args with
-    | _::(Uconst
-         (Uconst_ref (_,
-                      Some ( Uconst_int32 0l
-                           | Uconst_int64 0L
-                           | Uconst_nativeint 0n))
-         | Uconst_int 0
-         | Uconst_ptr 0))::_ ->
-      false
-    | _::(Uconst
-        (Uconst_ref (_,
-                      Some ( Uconst_int32 _
-                           | Uconst_int64 _
-                           | Uconst_nativeint _))
-         | Uconst_int _
-         | Uconst_ptr _))::_ ->
-      true
-    | _ ->
-      false
-  in
   match prim, args with
   | Pfield _, [Uconst (Uconst_ref (_, _))] ->
     (* CR mshinwell: Actually, maybe this shouldn't be needed; these should
@@ -311,10 +290,7 @@ let primitive_moveable (prim : Lambda.primitive)
        flambda.mli on [Read_symbol_field] may be helpful to the reader.) *)
     Moveable
   | _ ->
-    match
-      Semantics_of_primitives.for_primitive prim
-        ~second_arg_is_definitely_not_zero
-    with
+    match Semantics_of_primitives.for_primitive prim with
     | No_effects, No_coeffects -> Moveable
     | No_effects, Has_coeffects
     | Only_generative_effects, No_coeffects

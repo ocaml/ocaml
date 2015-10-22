@@ -12,10 +12,7 @@
 (**************************************************************************)
 
 let no_effects_prim (prim : Lambda.primitive) =
-  match
-    Semantics_of_primitives.for_primitive prim
-      ~second_arg_is_definitely_not_zero:false
-  with
+  match Semantics_of_primitives.for_primitive prim with
   | (No_effects | Only_generative_effects), (No_coeffects | Has_coeffects) ->
     true
   | _ -> false
