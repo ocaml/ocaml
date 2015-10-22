@@ -194,8 +194,8 @@ let simplify_exits lam =
   let rec simplif = function
   | (Lvar _|Lconst _) as l -> l
   | Lapply(l1, ll, info) -> Lapply(simplif l1, List.map simplif ll, info)
-  | Lfunction{kind; params; body = l} ->
-     Lfunction{kind; params; body = simplif l}
+  | Lfunction{kind; params; body = l; attr} ->
+      Lfunction{kind; params; body = simplif l; attr}
   | Llet(kind, v, l1, l2) -> Llet(kind, v, simplif l1, simplif l2)
   | Lletrec(bindings, body) ->
       Lletrec(List.map (fun (v, l) -> (v, simplif l)) bindings, simplif body)
@@ -440,13 +440,13 @@ let simplify_lets lam =
     when optimize && List.length params = List.length args ->
       simplif (beta_reduce params body args)
   | Lapply(l1, ll, loc) -> Lapply(simplif l1, List.map simplif ll, loc)
-  | Lfunction{kind; params; body = l} ->
+  | Lfunction{kind; params; body = l; attr} ->
       begin match simplif l with
-        Lfunction{kind=Curried; params=params'; body}
+        Lfunction{kind=Curried; params=params'; body; attr}
         when kind = Curried && optimize ->
-          Lfunction{kind; params = params @ params'; body}
+          Lfunction{kind; params = params @ params'; body; attr}
       | body ->
-          Lfunction{kind; params; body}
+          Lfunction{kind; params; body; attr}
       end
   | Llet(str, v, Lvar w, l2) when optimize ->
       Hashtbl.add subst v (simplif (Lvar w));
@@ -610,8 +610,8 @@ let rec map f lam =
     | Lconst cst -> lam
     | Lapply(e1, el, loc) ->
         Lapply(map f e1, List.map (map f) el, loc)
-    | Lfunction{kind; params; body} ->
-        Lfunction{kind; params; body = map f body}
+    | Lfunction{kind; params; body; attr} ->
+        Lfunction{kind; params; body = map f body; attr}
     | Llet(str, v, e1, e2) ->
         Llet(str, v, map f e1, map f e2)
     | Lletrec(idel, e2) ->
@@ -682,7 +682,7 @@ let stubify body =
    'Some' constructor, only to deconstruct it immediately in the
    function's body. *)
 
-let split_default_wrapper fun_id kind params body =
+let split_default_wrapper fun_id kind params body attr =
   let rec aux map = function
     | Llet(Strict, id, (Lifthenelse(Lvar optparam, _, _) as def), rest) when
         Ident.name optparam = "*opt*" && List.mem optparam params
@@ -711,20 +711,23 @@ let split_default_wrapper fun_id kind params body =
             Ident.empty inner_params new_ids
         in
         let body = Lambda.subst_lambda subst body in
-        let inner_fun = Lfunction { kind = Curried; params = new_ids; body } in
+        let inner_fun =
+          Lfunction { kind = Curried; params = new_ids; body; attr; }
+        in
         (wrapper_body, (inner_id, inner_fun))
   in
   try
+    (* CR mshinwell: ensure wrapper function gets inlined *)
     let wrapper_body, inner = aux [] body in
-    [(fun_id, Lfunction{kind; params; body = stubify wrapper_body}); inner]
+    [(fun_id, Lfunction{kind; params; body = stubify wrapper_body; attr}); inner]
   with Exit ->
-    [(fun_id, Lfunction{kind; params; body})]
+    [(fun_id, Lfunction{kind; params; body; attr})]
 
 let simplify_default_wrapper lam =
   let f = function
     | Llet(( Strict | Alias | StrictOpt), id,
-           Lfunction{kind; params; body = fbody}, body) ->
-        begin match split_default_wrapper id kind params fbody with
+           Lfunction{kind; params; body = fbody; attr}, body) ->
+        begin match split_default_wrapper id kind params fbody attr with
         | [fun_id, def] ->
             Llet(Alias, fun_id, def, body)
         | [fun_id, def; inner_fun_id, def_inner] ->
@@ -739,8 +742,8 @@ let simplify_default_wrapper lam =
             List.flatten
               (List.map
                  (function
-                   | (id, Lfunction{kind; params; body}) ->
-                       split_default_wrapper id kind params body
+                   | (id, Lfunction{kind; params; body; attr}) ->
+                       split_default_wrapper id kind params body attr
                    | _ -> assert false)
                  defs)
           in

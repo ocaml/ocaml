@@ -64,8 +64,12 @@ type t =
   | No_cmi_file of string                   (* 49 *)
   | Bad_docstring of bool                   (* 50 *)
   | Expect_tailcall                         (* 51 *)
-  | Assignment_on_non_mutable_value         (* 52 *)
-  | Missing_symbol_information of string * string (* 53 *)
+  | Fragile_literal_pattern                 (* 52 *)
+  | Misplaced_attribute of string           (* 53 *)
+  | Duplicated_attribute of string          (* 54 *)
+  | Inlining_impossible of string           (* 55 *)
+  | Assignment_on_non_mutable_value         (* 56 *)
+  | Missing_symbol_information of string * string (* 57 *)
 ;;
 
 val parse_options : bool -> string -> unit;;
