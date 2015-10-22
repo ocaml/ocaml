@@ -39,6 +39,7 @@ type error =
   | Scoping_pack of Longident.t * type_expr
   | Recursive_module_require_explicit_type
   | Apply_generative
+  | Cannot_scrape_alias of Path.t
 
 exception Error of Location.t * Env.t * error
 exception Error_forward of Location.error
@@ -58,11 +59,15 @@ let rec path_concat head p =
 let extract_sig env loc mty =
   match Env.scrape_alias env mty with
     Mty_signature sg -> sg
+  | Mty_alias path ->
+      raise(Error(loc, env, Cannot_scrape_alias path))
   | _ -> raise(Error(loc, env, Signature_expected))
 
 let extract_sig_open env loc mty =
   match Env.scrape_alias env mty with
     Mty_signature sg -> sg
+  | Mty_alias path ->
+      raise(Error(loc, env, Cannot_scrape_alias path))
   | _ -> raise(Error(loc, env, Structure_expected mty))
 
 (* Compute the environment after opening a module *)
@@ -1145,6 +1150,8 @@ let rec type_module ?(alias=false) sttn funct_body anchor env smod =
                mod_env = env;
                mod_attributes = smod.pmod_attributes;
                mod_loc = smod.pmod_loc }
+      | Mty_alias path ->
+          raise(Error(sfunct.pmod_loc, env, Cannot_scrape_alias path))
       | _ ->
           raise(Error(sfunct.pmod_loc, env, Cannot_apply funct.mod_type))
       end
@@ -1769,6 +1776,10 @@ let report_error ppf = function
       fprintf ppf "Recursive modules require an explicit module type."
   | Apply_generative ->
       fprintf ppf "This is a generative functor. It can only be applied to ()"
+  | Cannot_scrape_alias p ->
+      fprintf ppf
+        "This is an alias for module %a, which is missing"
+        path p
 
 let report_error env ppf err =
   Printtyp.wrap_printing_env env (fun () -> report_error ppf err)

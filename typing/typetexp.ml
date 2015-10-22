@@ -52,6 +52,7 @@ type error =
   | Ill_typed_functor_application of Longident.t
   | Illegal_reference_to_recursive_module
   | Access_functor_as_structure of Longident.t
+  | Cannot_scrape_alias of Longident.t * Path.t
 
 exception Error of Location.t * Env.t * error
 exception Error_forward of Location.error
@@ -205,6 +206,8 @@ let rec narrow_unbound_lid_error : 'a. _ -> _ -> _ -> _ -> 'a =
       begin match Env.scrape_alias env md.md_type with
         Mty_functor _ ->
           raise (Error (loc, env, Access_functor_as_structure mlid))
+      | Mty_alias p ->
+          raise (Error (loc, env, Cannot_scrape_alias(mlid, p)))
       | _ -> ()
       end
   | Longident.Lapply (flid, mlid) ->
@@ -998,6 +1001,10 @@ let report_error env ppf = function
       fprintf ppf "Illegal recursive module reference"
   | Access_functor_as_structure lid ->
       fprintf ppf "The module %a is a functor, not a structure" longident lid
+  | Cannot_scrape_alias(lid, p) ->
+      fprintf ppf
+        "The module %a is an alias for module %a, which is missing"
+        longident lid path p
 
 let () =
   Location.register_error_of_exn

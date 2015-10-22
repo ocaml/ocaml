@@ -70,6 +70,7 @@ type error =
   | Scoping_pack of Longident.t * type_expr
   | Recursive_module_require_explicit_type
   | Apply_generative
+  | Cannot_scrape_alias of Path.t
 
 exception Error of Location.t * Env.t * error
 exception Error_forward of Location.error
