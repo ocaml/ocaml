@@ -335,44 +335,6 @@ let new_const_symbol ?name () =
   in
   make_symbol (Some name)
 
-let snapshot () = !structured_constants
-let backtrack s = structured_constants := s
-
-let add_structured_constant lbl cst ~shared =
-  let {strcst_shared; strcst_original; strcst_alias; strcst_all} = !structured_constants in
-  let res, name =
-    if shared then
-      if CstMap.mem cst strcst_shared
-      then
-        let name = CstMap.find cst strcst_shared in
-        let aliases =
-          try StringMap.find name strcst_alias
-          with Not_found -> []
-        in
-        {
-          strcst_shared;
-          strcst_all;
-          strcst_original = StringMap.add lbl name strcst_original;
-          strcst_alias = StringMap.add name (lbl::aliases) strcst_alias;
-        }, name
-      else
-        {
-          strcst_shared = CstMap.add cst lbl strcst_shared;
-          strcst_original;
-          strcst_all = (lbl, cst) :: strcst_all;
-          strcst_alias;
-        }, lbl
-    else
-      {
-        strcst_shared;
-        strcst_original;
-        strcst_all = (lbl, cst) :: strcst_all;
-        strcst_alias;
-      }, lbl
-  in
-  structured_constants := res;
-  name
-
 let canonical_symbol lbl =
   try StringMap.find lbl (!structured_constants).strcst_original
   with Not_found -> lbl
@@ -405,9 +367,6 @@ let new_structured_constant cst ~shared =
     lbl
 let clear_structured_constants () =
   structured_constants := structured_constants_empty
-
-let add_exported_constant s =
-  Hashtbl.replace exported_constants s ()
 
 let structured_constants () =
   let structured_constants = !structured_constants in
