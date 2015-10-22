@@ -91,16 +91,7 @@ let inline_non_recursive env r ~function_decls ~lhs_of_application
       E.note_entering_closure env ~closure_id:closure_id_being_applied
         ~where:Inline_by_copying_function_body
     in
-try
     simplify (E.inlining_level_up env) r body
-with _exn ->
-  Format.eprintf "Exception from simplify (inlining_decision), \
-        closure id being applied is %a, term is %a, \
-        original function decls %a"
-    Closure_id.print closure_id_being_applied
-    Flambda.print body
-    Flambda.print_function_declarations function_decls;
-  Misc.fatal_error "failure"
   end else begin
     (* Inlining the body of the function did not appear sufficiently
        beneficial; however, it may become so if we inline within the body
