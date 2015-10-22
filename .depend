@@ -1322,6 +1322,7 @@ asmcomp/compilenv.cmi : middle_end/base_types/symbol.cmi \
     middle_end/base_types/compilation_unit.cmi asmcomp/cmx_format.cmi \
     middle_end/base_types/closure_id.cmi asmcomp/clambda.cmi
 asmcomp/deadcode.cmi : asmcomp/mach.cmi
+asmcomp/debuginfo.cmi : parsing/location.cmi bytecomp/lambda.cmi
 asmcomp/emit.cmi : asmcomp/linearize.cmi asmcomp/cmm.cmi
 asmcomp/emitaux.cmi : bytecomp/debuginfo.cmi
 asmcomp/export_info.cmi : middle_end/base_types/variable.cmi \
@@ -1534,6 +1535,10 @@ asmcomp/deadcode.cmo : asmcomp/reg.cmi asmcomp/proc.cmi asmcomp/mach.cmi \
     asmcomp/deadcode.cmi
 asmcomp/deadcode.cmx : asmcomp/reg.cmx asmcomp/proc.cmx asmcomp/mach.cmx \
     asmcomp/deadcode.cmi
+asmcomp/debuginfo.cmo : parsing/location.cmi bytecomp/lambda.cmi \
+    asmcomp/debuginfo.cmi
+asmcomp/debuginfo.cmx : parsing/location.cmx bytecomp/lambda.cmx \
+    asmcomp/debuginfo.cmi
 asmcomp/emit.cmo : asmcomp/x86_proc.cmi asmcomp/x86_masm.cmi \
     asmcomp/x86_gas.cmi asmcomp/x86_dsl.cmi asmcomp/x86_ast.cmi \
     asmcomp/reg.cmi asmcomp/proc.cmi utils/misc.cmi asmcomp/mach.cmi \
