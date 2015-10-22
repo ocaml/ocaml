@@ -304,33 +304,3 @@ let extension_constructors env id ext1 ext2 =
       else false
     else false
   else false
-
-(* Inclusion between class types *)
-let encode_val (mut, ty) rem =
-  begin match mut with
-    Asttypes.Mutable   -> Predef.type_unit
-  | Asttypes.Immutable -> Btype.newgenvar ()
-  end
-  ::ty::rem
-
-let meths meths1 meths2 =
-  Meths.fold
-    (fun nam t2 (ml1, ml2) ->
-       (begin try
-          Meths.find nam meths1 :: ml1
-        with Not_found ->
-          ml1
-        end,
-        t2 :: ml2))
-    meths2 ([], [])
-
-let vars vars1 vars2 =
-  Vars.fold
-    (fun lab v2 (vl1, vl2) ->
-       (begin try
-          encode_val (Vars.find lab vars1) vl1
-        with Not_found ->
-          vl1
-        end,
-        encode_val v2 vl2))
-    vars2 ([], [])

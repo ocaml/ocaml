@@ -116,10 +116,6 @@ let check_type_decl env loc id row_id newdecl decl rs rem =
   Includemod.type_declarations env id newdecl decl;
   Typedecl.check_coherence env loc id newdecl
 
-let rec make_params n = function
-    [] -> []
-  | _ :: l -> ("a" ^ string_of_int n) :: make_params (n+1) l
-
 let update_rec_next rs rem =
   match rs with
     Trec_next -> rem
@@ -130,10 +126,6 @@ let update_rec_next rs rem =
       | Sig_module (id, mty, Trec_next) :: rem ->
           Sig_module (id, mty, rs) :: rem
       | _ -> rem
-
-let sig_item desc typ env loc = {
-  Typedtree.sig_desc = desc; sig_loc = loc; sig_env = env
-}
 
 let make p n i =
   let open Variance in
@@ -1501,12 +1493,6 @@ let type_module_type_of env smod =
   tmty, mty
 
 (* For Typecore *)
-
-let rec get_manifest_types = function
-    [] -> []
-  | Sig_type (id, {type_params=[]; type_manifest=Some ty}, _) :: rem ->
-      (Ident.name id, ty) :: get_manifest_types rem
-  | _ :: rem -> get_manifest_types rem
 
 let type_package env m p nl tl =
   (* Same as Pexp_letmodule *)

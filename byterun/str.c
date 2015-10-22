@@ -266,7 +266,7 @@ CAMLprim value caml_string_greaterequal(value s1, value s2)
 CAMLprim value caml_blit_string(value s1, value ofs1, value s2, value ofs2,
                                 value n)
 {
-  memmove(&Byte(s2, Long_val(ofs2)), &Byte(s1, Long_val(ofs1)), Int_val(n));
+  memmove(&Byte(s2, Long_val(ofs2)), &Byte(s1, Long_val(ofs1)), Long_val(n));
   return Val_unit;
 }
 
@@ -278,7 +278,7 @@ CAMLprim value caml_fill_string(value s, value offset, value len, value init)
 
 CAMLprim value caml_bitvect_test(value bv, value n)
 {
-  int pos = Int_val(n);
+  intnat pos = Long_val(n);
   return Val_int(Byte_u(bv, pos >> 3) & (1 << (pos & 7)));
 }
 

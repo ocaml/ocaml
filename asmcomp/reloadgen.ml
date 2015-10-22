@@ -16,15 +16,6 @@ open Misc
 open Reg
 open Mach
 
-let access_stack r =
-  try
-    for i = 0 to Array.length r - 1 do
-      match r.(i).loc with Stack _ -> raise Exit | _ -> ()
-    done;
-    false
-  with Exit ->
-    true
-
 let insert_move src dst next =
   if src.loc = dst.loc
   then next

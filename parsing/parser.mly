@@ -69,9 +69,6 @@ let ghtyp d = Typ.mk ~loc:(symbol_gloc ()) d
 let ghloc d = { txt = d; loc = symbol_gloc () }
 let ghstr d = Str.mk ~loc:(symbol_gloc()) d
 
-let ghunit () =
-  ghexp (Pexp_construct (mknoloc (Lident "()"), None))
-
 let mkinfix arg1 name arg2 =
   mkexp(Pexp_apply(mkoperator name 2, [Nolabel, arg1; Nolabel, arg2]))
 

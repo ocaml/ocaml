@@ -1802,7 +1802,7 @@ let report_error env ppf = function
       let print_common ppf kind ty0 real lab ty =
         let ty1 =
           if real then ty0 else Btype.newgenty(Tobject(ty0, ref None)) in
-        Printtyp.mark_loops ty1;
+        List.iter Printtyp.mark_loops [ty; ty1];
         fprintf ppf
           "The %s %s@ has type@;<1 2>%a@ where@ %a@ is unbound"
             kind lab Printtyp.type_expr ty Printtyp.type_expr ty0

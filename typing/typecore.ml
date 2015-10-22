@@ -123,9 +123,6 @@ type recarg =
   | Rejected
 
 
-let fst3 (x, _, _) = x
-let snd3 (_,x,_) = x
-
 let case lhs rhs =
   {c_lhs = lhs; c_guard = None; c_rhs = rhs}
 
@@ -308,6 +305,13 @@ let explicit_arity =
   List.exists
     (function
       | ({txt="ocaml.explicit_arity"|"explicit_arity"; _}, _) -> true
+      | _ -> false
+    )
+
+let warn_on_literal_pattern =
+  List.exists
+    (function
+      | ({txt="ocaml.warn_on_literal_pattern"|"warn_on_literal_pattern"; _}, _) -> true
       | _ -> false
     )
 
@@ -1067,6 +1071,12 @@ let rec type_pat ~constrs ~labels ~no_existentials ~mode ~env sp expected_ty =
                                      Warnings.Wildcard_arg_to_constant_constr;
             replicate_list sp constr.cstr_arity
         | Some sp -> [sp] in
+      begin match sargs with
+      | [{ppat_desc = Ppat_constant _} as sp] when warn_on_literal_pattern constr.cstr_attributes ->
+            Location.prerr_warning sp.ppat_loc
+              Warnings.Fragile_literal_pattern
+      | _ -> ()
+      end;
       if List.length sargs <> constr.cstr_arity then
         raise(Error(loc, !env, Constructor_arity_mismatch(lid.txt,
                                      constr.cstr_arity, List.length sargs)));
@@ -1280,16 +1290,6 @@ let partial_pred ~lev env expected_ty constrs labels p =
 
 let check_partial ?(lev=get_current_level ()) env expected_ty =
   Parmatch.check_partial_gadt (partial_pred ~lev env expected_ty)
-
-let rec iter3 f lst1 lst2 lst3 =
-  match lst1,lst2,lst3 with
-  | x1::xs1,x2::xs2,x3::xs3 ->
-      f x1 x2 x3;
-      iter3 f xs1 xs2 xs3
-  | [],[],[] ->
-      ()
-  | _ ->
-      assert false
 
 let add_pattern_variables ?check ?check_as env =
   let pv = get_ref pattern_variables in

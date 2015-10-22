@@ -51,9 +51,6 @@ let boxed_integer_name = function
   | Pint32 -> "int32"
   | Pint64 -> "int64"
 
-let print_boxed_integer name ppf bi =
-  fprintf ppf "%s_%s" (boxed_integer_name bi) name
-
 let print_boxed_integer_conversion ppf bi1 bi2 =
   fprintf ppf "%s_of_%s" (boxed_integer_name bi2) (boxed_integer_name bi1)
 

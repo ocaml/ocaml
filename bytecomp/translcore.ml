@@ -319,9 +319,6 @@ let index_primitives_table =
     make_ba_ref 3; make_ba_set 3;
 ]
 
-let prim_makearray =
-  Primitive.simple ~name:"caml_make_vect" ~arity:2 ~alloc:true
-
 let prim_obj_dup =
   Primitive.simple ~name:"caml_obj_dup" ~arity:1 ~alloc:true
 

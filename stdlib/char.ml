@@ -20,7 +20,6 @@ let chr n =
   if n < 0 || n > 255 then invalid_arg "Char.chr" else unsafe_chr n
 
 external string_create: int -> string = "caml_create_string"
-external string_unsafe_get : string -> int -> char = "%string_unsafe_get"
 external string_unsafe_set : string -> int -> char -> unit
                            = "%string_unsafe_set"
 

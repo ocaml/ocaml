@@ -15,6 +15,8 @@
 
 open Parser
 
+exception Int_overflow
+
 }
 
 rule line =     (* Read a whole line *)
@@ -63,7 +65,9 @@ and lexeme =    (* Read a lexeme *)
     | '0' ['x' 'X'] ['0'-'9' 'A'-'F' 'a'-'f']+
     | '0' ['o' 'O'] ['0'-'7']+
     | '0' ['b' 'B'] ['0'-'1']+
-      { INTEGER (Int64.of_string (Lexing.lexeme lexbuf)) }
+      { try INTEGER (Int64.of_string (Lexing.lexeme lexbuf))
+        with Failure _ -> raise Int_overflow
+      }
   | '*'
       { STAR }
   | "-"

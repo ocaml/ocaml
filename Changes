@@ -32,8 +32,15 @@ Language features:
   * "noalloc" becomes [@@noalloc]
   Deprecate "float" and "noalloc".
   (Jérémie Dimino)
+- GPR#254: @ocaml.arg_on_literal_pattern attribute on constructors to
+  warn when the argument is matches against a constant pattern.  This
+  attribute is applied on predefined exception constructors which
+  take an purely informational (with no stability guarantee) message.
+  (Alain Frisch)
 
 Compilers:
+- PR#4800: better compilation of tuple assignment (Gabriel Scherer and
+  Alain Frisch)
 - PR#6501: harden the native-code generator against certain uses of "%identity"
   (Xavier Leroy, report by Antoine Miné).
 - PR#6636: add --version option
@@ -49,6 +56,8 @@ Compilers:
    ports)
 - PR#6979: better code generation in x86-32 backend for copying floats to
   the stack (Marc Lasson, review by Xavier Leroy)
+- PR#7018: fix missing identifier renaming during inlining (Alain Frisch,
+  review by Xavier Leroy)
 - GPR#17: some cmm optimizations of integer operations with constants
   (Stephen Dolan, review by Pierre Chambart)
 - GPR#109: new unboxing strategy for float and int references (Vladimir Brankov,
@@ -59,6 +68,10 @@ Compilers:
   (Xavier Leroy, review by Pierre Chambart)
 - GPR#207: Colors in compiler messages (warnings, errors)
   (Simon Cruanes, review by Gabriel Scherer)
+- GPR#258: more precise information on PowerPC instruction sizes
+  (Pierre Chambart, Xavier Leroy)
+- PR#7022, GPR#259: unbox float and boxed ints earlier, avoid second pass
+  (Alain Frisch)
 
 Runtime system:
 - PR#3612: allow allocating custom block with finalizers in the minor heap
@@ -174,24 +187,29 @@ Bug fixes:
 - PR#6752: Extensible variant types and scope escaping
 - PR#6808: the parsing of OCAMLRUNPARAM is too lax
   (Damien Doligez)
-* PR#6816: reject identifiers following numeric literals without spacing, e.g.
-    let foo = 1 in (fun a b -> a,b) 23foo
-  (Hugo Heuzard)
 - PR#6874: Inefficient code generated for module function arguments
 - PR#6897: Bad error message for some pattern matching on extensible variants
 - PR#6899: Optional parameters and non generalizable type variables
   (Thomas Refis and Leo White)
+- PR#6907: Stack overflow printing error in class declaration
 - PR#6931: Incorrect error message
 - PR#6938: fix regression on "%047.27{l,L,n}{d,i,x,X,o,u}"
   (Benoît Vaugon, report by Arduino Cascella)
 - PR#6944: let module X = Path in … is not typed as a module alias
   (Jacques Garrigue, report by def)
+- PR#6954: Infinite loop in type checker with module aliases
 - PR#6982: unexpected type error when packing a module alias
 - PR#6985: `module type of struct include Bar end exposes
            %s#row when Bar contains private row types
 - PR#6992: Segfault from bug in GADT/module typing
 - PR#6993: Segfault from recursive modules violating exhaustiveness assumptions
+- PR#7003: String.sub causes segmentation fault
+  (Damien Doligez, report by Radek Micek)
+- PR#7008: Fatal error in ocamlc with empty compilation unit name
+  (Damien Doligez, report by Cesar Kunz)
 - PR#7012: Variable name forgotten when it starts with a capital letter
+  (Jacques Garrigue, Gabriel Scherer, report by Thomas Leonard and Octachron)
+- PR#7016: Stack overflow in GADT typing
 - GPR#205: Clear caml_backtrace_last_exn before registering as root (report
   and fix by Frederic Bour)
 - GPR#220: minor -dsource error on recursive modules

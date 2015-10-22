@@ -43,7 +43,6 @@ let params = {
 
 (**** Parameters ****)
 
-let step = Sys.word_size / 16
 let initial_object_size = 2
 
 (**** Items ****)
