@@ -424,7 +424,8 @@ bytecomp/simplif.cmi : bytecomp/lambda.cmi
 bytecomp/switch.cmi :
 bytecomp/symtable.cmi : utils/misc.cmi typing/ident.cmi \
     bytecomp/cmo_format.cmi
-bytecomp/translattribute.cmi : typing/typedtree.cmi bytecomp/lambda.cmi
+bytecomp/translattribute.cmi : typing/typedtree.cmi parsing/parsetree.cmi \
+    parsing/location.cmi bytecomp/lambda.cmi
 bytecomp/translclass.cmi : typing/typedtree.cmi parsing/location.cmi \
     bytecomp/lambda.cmi typing/ident.cmi parsing/asttypes.cmi
 bytecomp/translcore.cmi : typing/types.cmi typing/typedtree.cmi \
