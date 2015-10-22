@@ -154,7 +154,6 @@ MIDDLE_END=\
   middle_end/freshening.cmo \
   middle_end/simple_value_approx.cmo \
   middle_end/lift_code.cmo \
-  middle_end/lift_strings.cmo \
   middle_end/closure_conversion_aux.cmo \
   middle_end/closure_conversion.cmo \
   middle_end/initialize_symbol_to_let_symbol.cmo \
