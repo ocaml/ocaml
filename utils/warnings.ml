@@ -70,7 +70,9 @@ type t =
   | Bad_docstring of bool                   (* 50 *)
   | Expect_tailcall                         (* 51 *)
   | Fragile_literal_pattern                 (* 52 *)
-  | Inlining_impossible of string           (* 53 *)
+  | Misplaced_attribute of string           (* 53 *)
+  | Duplicated_attribute of string          (* 54 *)
+  | Inlining_impossible of string           (* 55 *)
 ;;
 
 (* If you remove a warning, leave a hole in the numbering.  NEVER change
