@@ -125,10 +125,10 @@ val iter_symbols_on_program
   -> f:(Symbol.t -> unit)
   -> unit
 
-val iter_apply
-   : Flambda.t
+val iter_apply_on_program
+   : Flambda.program
   -> f:(Flambda.apply -> unit)
-  -> Flambda.t
+  -> unit
 
 val map
    : (Flambda.t -> Flambda.t)

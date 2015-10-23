@@ -29,7 +29,7 @@ let remove_params unused (fun_decl: Flambda.function_declaration) =
       unused_params
   in
   Flambda.create_function_declaration ~params:used_params ~body
-    ~stub:fun_decl.stub ~dbg:fun_decl.dbg
+    ~stub:fun_decl.stub ~dbg:fun_decl.dbg ~inline:fun_decl.inline
 
 let make_stub unused var (fun_decl : Flambda.function_declaration) =
   let renamed = rename_var var in
@@ -46,11 +46,12 @@ let make_stub unused var (fun_decl : Flambda.function_declaration) =
       args;
       kind;
       dbg;
+      inline = Default_inline;
     }
   in
   let function_decl =
     Flambda.create_function_declaration ~params:(List.map snd args') ~body
-      ~stub:true ~dbg:fun_decl.dbg
+      ~stub:true ~dbg:fun_decl.dbg ~inline:fun_decl.inline
   in
   function_decl, renamed
 

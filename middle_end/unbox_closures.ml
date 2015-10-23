@@ -69,12 +69,13 @@ let rewrite_function_decl ~env
             args = apply.args @ closure_element_params;
             kind = Direct (Closure_id.wrap new_fun_var);
             dbg = apply.dbg;
+            inline = Default_inline;
           })
   in
   let rewritten_function_decl =
     Flambda.create_function_declaration ~params:all_params
       ~body:body_using_params_not_closures ~stub:function_decl.stub
-      ~dbg:function_decl.dbg
+      ~dbg:function_decl.dbg ~inline:function_decl.inline
   in
   let wrapper_params =
     List.map (fun param -> Variable.rename ~append:"_unbox_closures" param)
@@ -141,6 +142,7 @@ let rewrite_function_decl ~env
         args = wrapper_params @ extra_args;
         kind = Direct (Closure_id.wrap new_fun_var);
         dbg = Debuginfo.none;
+        inline = Default_inline;
       }
     in
     Flambda_utils.bind ~bindings:bindings_for_closure_element_params ~body
@@ -148,6 +150,7 @@ let rewrite_function_decl ~env
   let wrapper : Flambda.function_declaration =
     Flambda.create_function_declaration ~params:wrapper_params
       ~body:wrapper_body ~stub:true ~dbg:Debuginfo.none
+      ~inline:Default_inline
   in
   let funs =
     Variable.Map.add new_fun_var rewritten_function_decl

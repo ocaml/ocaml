@@ -193,7 +193,7 @@ let rewrite_recursive_calls_with_symbols t
             ffun.body
         in
         Flambda.create_function_declaration ~params:ffun.params
-          ~body ~stub:ffun.stub ~dbg:ffun.dbg)
+          ~body ~stub:ffun.stub ~dbg:ffun.dbg ~inline:ffun.inline)
         function_declarations.funs
     in
     Flambda.update_function_declarations function_declarations ~funs
@@ -264,6 +264,7 @@ module Project_var = struct
         let function_decl =
           Flambda.create_function_declaration ~params
             ~body ~stub:func_decl.stub ~dbg:func_decl.dbg
+            ~inline:func_decl.inline
         in
         function_decl, subst
       in

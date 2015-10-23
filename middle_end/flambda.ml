@@ -26,6 +26,7 @@ type apply = {
   args : Variable.t list;
   kind : call_kind;
   dbg : Debuginfo.t;
+  inline : Lambda.inline_attribute;
 }
 
 type assign = {
@@ -116,6 +117,7 @@ and function_declaration = {
   free_symbols : Symbol.Set.t;
   stub : bool;
   dbg : Debuginfo.t;
+  inline : Lambda.inline_attribute;
 }
 
 and switch = {
@@ -818,7 +820,7 @@ let free_symbols expr =
     (Is_expr expr);
   !symbols
 
-let create_function_declaration ~params ~body ~stub ~dbg
+let create_function_declaration ~params ~body ~stub ~dbg ~inline
       : function_declaration =
   { params;
     body;
@@ -826,6 +828,7 @@ let create_function_declaration ~params ~body ~stub ~dbg
     free_symbols = free_symbols body;
     stub;
     dbg;
+    inline;
   }
 
 let create_function_declarations ~set_of_closures_id ~funs ~compilation_unit =

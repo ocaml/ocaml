@@ -319,7 +319,8 @@ let map_general ~toplevel f f_named tree =
                     ~params:func_decl.params
                     ~body:(aux func_decl.body)
                     ~stub:func_decl.stub
-                    ~dbg:func_decl.dbg)
+                    ~dbg:func_decl.dbg
+                    ~inline:func_decl.inline)
                 function_decls.funs
             in
             Flambda.update_function_declarations function_decls ~funs
@@ -335,12 +336,13 @@ let map_general ~toplevel f f_named tree =
   in
   aux tree
 
-let iter_apply tree ~f =
-  iter (function
-      | Apply apply -> f apply
-      | _ -> ())
-    (fun _ -> ())
-    tree
+let iter_apply_on_program program ~f =
+  iter_exprs_at_toplevel_of_program program ~f:(fun expr ->
+    iter (function
+        | Apply apply -> f apply
+        | _ -> ())
+      (fun _ -> ())
+      expr)
 
 let map f f_named tree = map_general ~toplevel:false f (fun _ n -> f_named n) tree
 let map_expr f tree = map f (fun named -> named) tree
@@ -373,7 +375,8 @@ let map_symbols_on_set_of_closures
             ~params:func_decl.params
              ~body
              ~stub:func_decl.stub
-             ~dbg:func_decl.dbg)
+             ~dbg:func_decl.dbg
+             ~inline:func_decl.inline)
         function_decls.funs
     in
     Flambda.update_function_declarations function_decls ~funs
@@ -438,7 +441,8 @@ let map_function_bodies (set_of_closures : Flambda.set_of_closures) ~f =
         Flambda.create_function_declaration ~body:(f function_decl.body)
           ~params:function_decl.params
           ~stub:function_decl.stub
-          ~dbg:function_decl.dbg)
+          ~dbg:function_decl.dbg
+          ~inline:function_decl.inline)
       set_of_closures.function_decls.funs
   in
   let function_decls =
@@ -458,7 +462,8 @@ let rec map_sets_of_closures_of_program (program : Flambda.program)
           Flambda.create_function_declaration ~body
             ~params:function_decl.params
             ~stub:function_decl.stub
-            ~dbg:function_decl.dbg)
+            ~dbg:function_decl.dbg
+            ~inline:function_decl.inline)
         set_of_closures.function_decls.funs
     in
     let function_decls =
@@ -506,7 +511,8 @@ let rec map_exprs_at_toplevel_of_program (program : Flambda.program)
           Flambda.create_function_declaration ~body
             ~params:function_decl.params
             ~stub:function_decl.stub
-            ~dbg:function_decl.dbg)
+            ~dbg:function_decl.dbg
+            ~inline:function_decl.inline)
         set_of_closures.function_decls.funs
     in
     let function_decls =

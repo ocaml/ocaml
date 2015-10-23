@@ -43,6 +43,7 @@ let ignore_closure_id (_ : Closure_id.t) = ()
 let ignore_var_within_closure (_ : Var_within_closure.t) = ()
 let ignore_compilation_unit (_ : Compilation_unit.t) = ()
 let ignore_tag (_ : Tag.t) = ()
+let ignore_inline_attribute (_ : Lambda.inline_attribute) = ()
 
 exception Binding_occurrence_not_from_current_compilation_unit of Variable.t
 exception Mutable_binding_occurrence_not_from_current_compilation_unit of
@@ -173,11 +174,12 @@ let variable_and_symbol_invariants flam =
       loop (add_binding_occurrence env var) handler
     (* Everything else: *)
     | Var var -> check_variable_is_bound env var
-    | Apply { func; args; kind; dbg } ->
+    | Apply { func; args; kind; dbg; inline } ->
       check_variable_is_bound env func;
       check_variables_are_bound env args;
       ignore_call_kind kind;
       ignore_debuginfo dbg;
+      ignore_inline_attribute inline
     | Assign { being_assigned; new_value; } ->
       check_mutable_variable_is_bound env being_assigned;
       check_variable_is_bound env new_value

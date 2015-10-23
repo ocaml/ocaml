@@ -214,8 +214,8 @@ let toplevel_substitution sb tree =
       Let_mutable (mut_var, sb var, body)
     | Assign { being_assigned; new_value; } ->
       Assign { being_assigned; new_value = sb new_value; }
-    | Apply { func; args; kind; dbg; } ->
-      Apply { func = sb func; args = List.map sb args; kind; dbg; }
+    | Apply { func; args; kind; dbg; inline; } ->
+      Apply { func = sb func; args = List.map sb args; kind; dbg; inline; }
     | If_then_else (cond, e1, e2) -> If_then_else (sb cond, e1, e2)
     | Switch (cond, sw) -> Switch (sb cond, sw)
     | String_switch (cond, branches, def) ->
@@ -276,7 +276,7 @@ let make_closure_declaration ~id ~body ~params : Flambda.t =
   let subst id = Variable.Map.find id sb in
   let function_declaration =
     Flambda.create_function_declaration ~params:(List.map subst params)
-      ~body ~stub:false ~dbg:Debuginfo.none
+      ~body ~stub:false ~dbg:Debuginfo.none ~inline:Default_inline
   in
   assert (Variable.Set.equal (Variable.Set.map subst free_variables)
     function_declaration.free_variables);
@@ -606,14 +606,14 @@ let substitute_variable_to_symbol substitution expr =
       bind_from_value @@
       bind_to_value @@
       Flambda.For { bound_var; from_value; to_value; direction; body }
-    | Apply { func; args; kind; dbg } ->
+    | Apply { func; args; kind; dbg; inline } ->
       let func, bind_func = make_var_subst func in
       let args, bind_args =
         List.split (List.map make_var_subst args)
       in
       bind_func @@
       List.fold_right (fun f expr -> f expr) bind_args @@
-      Flambda.Apply { func; args; kind; dbg }
+      Flambda.Apply { func; args; kind; dbg; inline }
     | Send { kind; meth; obj; args; dbg } ->
       let meth, bind_meth = make_var_subst meth in
       let obj, bind_obj = make_var_subst obj in

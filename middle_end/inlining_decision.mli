@@ -27,6 +27,7 @@ val for_call_site
   -> args_approxs:Simple_value_approx.t list
   -> dbg:Debuginfo.t
   -> simplify:Inlining_decision_intf.simplify
+  -> inline_requested:Lambda.inline_attribute
   -> Flambda.t * Inline_and_simplify_aux.Result.t
 
 (** When a function declaration is encountered by [for_call_site], the body

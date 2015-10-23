@@ -268,7 +268,7 @@ let for_call_site ~env ~r ~(function_decls : Flambda.function_declarations)
      option? *)
   let max_level = 3 in
   let unconditionally_inline =
-    match inline_requested with
+    match (inline_requested : Lambda.inline_attribute) with
     | Always_inline -> true
     | Never_inline ->
       (* CR-someday mshinwell: consider whether there could be better
@@ -291,7 +291,7 @@ let for_call_site ~env ~r ~(function_decls : Flambda.function_declarations)
   in
   let recursive = Variable.Set.mem fun_var recursive_functions in
   let fun_cost : Inlining_cost.inlining_threshold =
-    match inline_requested with
+    match (inline_requested : Lambda.inline_attribute) with
     | Never_inline -> Never_inline
     | Always_inline | Default_inline ->
       (* CR mshinwell: should clarify exactly what "unconditionally" means. *)

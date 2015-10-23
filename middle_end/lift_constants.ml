@@ -573,7 +573,8 @@ let introduce_free_variables_in_set_of_closures
                ~params:ffun.params
                ~body
                ~stub:ffun.stub
-               ~dbg:ffun.dbg)
+               ~dbg:ffun.dbg
+               ~inline:ffun.inline)
           function_decls.funs)
   in
   let free_vars =

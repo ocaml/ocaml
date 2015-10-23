@@ -553,6 +553,7 @@ and simplify_set_of_closures original_env r
     let function_decl =
       Flambda.create_function_declaration ~params:function_decl.params
         ~body ~stub:function_decl.stub ~dbg:function_decl.dbg
+        ~inline:function_decl.inline
     in
     let used_params' = Flambda.used_params function_decl in
     Variable.Map.add fid function_decl funs,
@@ -633,7 +634,8 @@ and simplify_apply env r ~(apply : Flambda.apply) : Flambda.t * R.t =
               application expression: %a"
             arity Flambda.print (Flambda.Apply apply)
       | Wrong ->  (* Insufficient approximation information to simplify. *)
-        Apply ({ func = lhs_of_application; args; kind = Indirect; dbg }),
+        Apply ({ func = lhs_of_application; args; kind = Indirect; dbg;
+            inline = inline_requested; }),
           ret r A.value_unknown))
 
 and simplify_full_application env r ~function_decls ~lhs_of_application
@@ -654,7 +656,7 @@ and simplify_partial_application env r ~lhs_of_application
   (* CR-someday mshinwell: Pierre noted that we might like a function to be
      inlined when applied to its first set of arguments, e.g. for some kind
      of type class like thing. *)
-  begin match inline_requested with
+  begin match (inline_requested : Lambda.inline_attribute) with
   | Always_inline | Never_inline ->
     Location.prerr_warning (Debuginfo.to_location dbg)
       (Warnings.Inlining_impossible "[@inlined] attributes may not be used \

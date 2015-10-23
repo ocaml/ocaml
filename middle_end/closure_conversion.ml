@@ -40,6 +40,7 @@ let tupled_function_call_stub original_params tuplified_version
            redundancy here (func is also tuplified_version) *)
         kind = Direct (Closure_id.wrap tuplified_version);
         dbg = Debuginfo.none;
+        inline = Default_inline;
       })
   in
   let _, body =
@@ -161,7 +162,7 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
               args;
               kind = Indirect;
               dbg = Debuginfo.from_location Dinfo_call apply_info.apply_loc;
-              inlined = apply_info.apply_inlined;
+              inline = apply_info.apply_inlined;
             })))
   | Lletrec (defs, body) ->
     let env =

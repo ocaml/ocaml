@@ -208,6 +208,7 @@ let inline_by_copying_function_declaration ~env ~r
               args;
               kind = Direct closure_id_being_applied;
               dbg;
+              inline = function_decl.inline;
             }))
       in
       Flambda_utils.bind ~bindings:free_vars_for_lets ~body
@@ -250,7 +251,8 @@ let inline_by_copying_function_declaration ~env ~r
                 in
                 Flambda.create_function_declaration
                   ~params:function_decl.params ~body
-                  ~stub:function_decl.stub ~dbg:function_decl.dbg)
+                  ~stub:function_decl.stub ~dbg:function_decl.dbg
+                  ~inline:function_decl.inline)
               set_of_closures.function_decls.funs
           in
           let free_vars =
