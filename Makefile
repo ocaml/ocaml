@@ -70,7 +70,8 @@ TYPING=typing/ident.cmo typing/path.cmo \
 
 COMP=bytecomp/lambda.cmo bytecomp/printlambda.cmo \
   bytecomp/typeopt.cmo bytecomp/switch.cmo bytecomp/matching.cmo \
-  bytecomp/translobj.cmo bytecomp/translcore.cmo \
+  bytecomp/translobj.cmo bytecomp/translattribute.cmo \
+  bytecomp/translcore.cmo \
   bytecomp/translclass.cmo bytecomp/translmod.cmo \
   bytecomp/simplif.cmo bytecomp/runtimedef.cmo \
   bytecomp/debuginfo.cmo \
@@ -153,8 +154,6 @@ MIDDLE_END=\
   middle_end/freshening.cmo \
   middle_end/simple_value_approx.cmo \
   middle_end/lift_code.cmo \
-  middle_end/lift_strings.cmo \
-  middle_end/deconstruct_initialisation.cmo \
   middle_end/closure_conversion_aux.cmo \
   middle_end/closure_conversion.cmo \
   middle_end/initialize_symbol_to_let_symbol.cmo \

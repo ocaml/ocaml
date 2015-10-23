@@ -1,9 +1,18 @@
+(***********************************************************************)
+(*                                                                     *)
+(*                                OCaml                                *)
+(*                                                                     *)
+(*                     Pierre Chambart, OCamlPro                       *)
+(*                                                                     *)
+(*  Copyright 2015 Institut National de Recherche en Informatique et   *)
+(*  en Automatique.  All rights reserved.  This file is distributed    *)
+(*  under the terms of the Q Public License version 1.0.               *)
+(*                                                                     *)
+(***********************************************************************)
 
 type allocation_point =
   | Symbol of Symbol.t
   | Variable of Variable.t
-
-val run : Flambda.program -> allocation_point Variable.Map.t
 
 type constant_defining_value =
   | Allocated_const of Allocated_const.t

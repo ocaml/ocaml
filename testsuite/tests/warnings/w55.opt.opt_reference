@@ -1,0 +1,12 @@
+File "w55.opt.ml", line 4, characters 10-26:
+Warning 55: Inlining impossible in this context: Function information unavailable
+File "w55.opt.ml", line 8, characters 10-27:
+Warning 55: Inlining impossible in this context: Unknown function
+File "w55.opt.ml", line 12, characters 10-26:
+Warning 55: Inlining impossible in this context: Partial application
+File "w55.opt.ml", line 18, characters 12-30:
+Warning 55: Inlining impossible in this context: Over-application
+File "w55.opt.ml", line 18, characters 12-30:
+Warning 55: Inlining impossible in this context: Function information unavailable
+File "w55.opt.ml", line 21, characters 10-26:
+Warning 55: Inlining impossible in this context: Function information unavailable

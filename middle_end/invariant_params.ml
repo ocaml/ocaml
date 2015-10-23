@@ -148,6 +148,9 @@ let function_variable_alias
   Variable.Map.iter (fun _ ( function_decl : Flambda.function_declaration ) ->
       Flambda_iterators.iter_all_toplevel_immutable_let_and_let_rec_bindings
         ~f:(fun var named ->
+           (* CR mshinwell: consider having the body passed to this function
+              and using fv calculation instead of used_variables.  Need to
+              be careful of "let rec" *)
            match named with
            | Symbol sym ->
              begin match Symbol.Map.find sym symbols_to_fun_vars with
@@ -256,7 +259,7 @@ let unchanging_params_in_recursion (decls : Flambda.function_declarations)
         (* CR-soon mshinwell: we should avoid recomputing this, cache in
            [function_declaration].  See also comment on
            [only_via_symbols] in [Flambda_utils]. *)
-        (Flambda.free_variables ~ignore_uses_in_apply:() decl.body))
+        (Flambda.used_variables ~ignore_uses_in_apply:() decl.body))
     decls.funs;
   let relation =
     Variable.Map.fold (fun func_var

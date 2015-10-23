@@ -351,6 +351,19 @@ val free_variables_named
   -> named
   -> Variable.Set.t
 
+(** Compute the free variables of a term.  (This is O(1) for [Let]s). *)
+val used_variables
+   : ?ignore_uses_in_apply:unit
+  -> ?ignore_uses_in_project_var:unit
+  -> t
+  -> Variable.Set.t
+
+(** Compute the free variables of a named expression. *)
+val used_variables_named
+   : ?ignore_uses_in_project_var:unit
+  -> named
+  -> Variable.Set.t
+
 (** Used to avoid exceeding the stack limit when handling expressions with
     multiple consecutive nested [Let]-expressions.  This saves rewriting large
     simplification functions in CPS.

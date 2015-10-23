@@ -14,8 +14,7 @@
 type effects = No_effects | Only_generative_effects | Arbitrary_effects
 type coeffects = No_coeffects | Has_coeffects
 
-let for_primitive (prim : Lambda.primitive)
-      ~second_arg_is_definitely_not_zero =
+let for_primitive (prim : Lambda.primitive) =
   match prim with
   | Pignore -> No_effects, No_coeffects
   | Pmakeblock _
@@ -44,10 +43,7 @@ let for_primitive (prim : Lambda.primitive)
   | Pintcomp _ -> No_effects, No_coeffects
   | Pdivint
   | Pmodint ->
-    if second_arg_is_definitely_not_zero then
-      No_effects, No_coeffects  (* Will not raise [Division_by_zero]. *)
-    else
-      Arbitrary_effects, No_coeffects  (* May raise [Division_by_zero]. *)
+    No_effects, No_coeffects  (* Will not raise [Division_by_zero]. *)
   | Poffsetint _ -> No_effects, No_coeffects
   | Poffsetref _ -> Arbitrary_effects, Has_coeffects
   | Pintoffloat

@@ -4,19 +4,31 @@
 (*                                                                     *)
 (*                     Pierre Chambart, OCamlPro                       *)
 (*                                                                     *)
-(*  Copyright 2014 Institut National de Recherche en Informatique et   *)
+(*  Copyright 2015 Institut National de Recherche en Informatique et   *)
 (*  en Automatique.  All rights reserved.  This file is distributed    *)
 (*  under the terms of the Q Public License version 1.0.               *)
 (*                                                                     *)
 (***********************************************************************)
 
-(** Prepare flambda for conversion to clambda: attributes symbols to
-    constants and build the exported informations. The generated
-    flambda is not suitable for any other transformations *)
+val check_attribute
+   : Typedtree.expression
+  -> string Location.loc * _
+  -> unit
 
-val convert
-   : compilation_unit:Compilation_unit.t
-  -> Flambda.t
-  -> unit Flambda.t
-       * unit Flambda.t Symbol.Map.t
-       * Export_info.t
+val add_inline_attribute
+   : Lambda.lambda
+  -> Location.t
+  -> Parsetree.attribute list
+  -> Lambda.lambda
+
+val get_inline_attribute
+   : (string Location.loc * Parsetree.payload) list
+  -> Lambda.inline_attribute
+
+val get_inlined_attribute
+   : Typedtree.expression
+  -> Lambda.inline_attribute * Typedtree.expression
+
+val get_tailcall_attribute
+   : Typedtree.expression
+  -> bool * Typedtree.expression

@@ -236,6 +236,31 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
           ~name:"send_arg"
           ~create_body:(fun args ->
               Send { kind; meth = meth_var; obj = obj_var; args; dbg; })))
+  | Lprim ((Pdivint | Pmodint) as prim, [arg1; arg2]) when not !Clflags.fast -> (* not -unsafe *)
+    let arg2 = close t env arg2 in
+    let arg1 = close t env arg1 in
+    let numerator = Variable.create "numerator" in
+    let denominator = Variable.create "denominator" in
+    let zero = Variable.create "zero" in
+    let is_zero = Variable.create "is_zero" in
+    let exn = Variable.create "division_by_zero" in
+    let exn_symbol = t.symbol_for_global' (Ident.create_predef_exn "Division_by_zero") in
+    imported_symbols := Symbol.Set.add exn_symbol !imported_symbols;
+    Flambda.create_let zero (Const (Int 0))
+      (Flambda.create_let exn (Symbol exn_symbol)
+         (Flambda.create_let denominator (Expr arg2)
+            (Flambda.create_let numerator (Expr arg1)
+               (Flambda.create_let is_zero (Prim (Pintcomp Ceq, [zero; denominator], Debuginfo.none))
+                  (If_then_else
+                     (is_zero,
+                      name_expr (Prim (Praise Raise_regular, [exn], Debuginfo.none)) ~name:"dummy",
+                      (* CR pchambart: find the right event. *)
+                      (* Debuginfo.from_raise event *)
+                      name_expr ~name:"result"
+                        (Prim (prim, [numerator; denominator], Debuginfo.none))
+                     ))))))
+  | Lprim ((Pdivint | Pmodint), _) when not !Clflags.fast ->
+    Misc.fatal_error "Pdivint / Pmodint must have exactly two arguments"
   | Lprim (Psequor, [arg1; arg2]) ->
     let arg1 = close t env arg1 in
     let arg2 = close t env arg2 in
@@ -243,15 +268,15 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
     let cond = Variable.create "cond_sequor" in
     Flambda.create_let const_true (Const (Int 1))
       (Flambda.create_let cond (Expr arg1)
-        (If_then_else (cond, Var (const_true), arg2)))
+        (If_then_else (cond, Var const_true, arg2)))
   | Lprim (Psequand, [arg1; arg2]) ->
     let arg1 = close t env arg1 in
     let arg2 = close t env arg2 in
-    let const_false = Variable.create "const_true" in
+    let const_false = Variable.create "const_false" in
     let cond = Variable.create "cond_sequand" in
     Flambda.create_let const_false (Const (Int 0))
       (Flambda.create_let cond (Expr arg1)
-        (If_then_else (cond, arg2, Var (const_false))))
+        (If_then_else (cond, arg2, Var const_false)))
   | Lprim ((Psequand | Psequor), _) ->
     Misc.fatal_error "Psequand / Psequor must have exactly two arguments"
   | Lprim (Pidentity, [arg]) -> close t env arg
@@ -264,19 +289,13 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
       (name_expr
         (Prim (Praise kind, [arg_var], Debuginfo.from_raise event))
         ~name:"raise")
-  | Lprim (Pfield pos, [Lprim (Pgetglobal id, [])])
-    when Ident.same id t.current_unit_id ->
-    (* CR mshinwell: is this case now redundant? *)
-    let symbol = Env.find_global env pos in
-    let sym_v = Variable.create ("access_global_" ^ string_of_int pos) in
-    let result_v = Variable.create ("access_global_field_" ^ string_of_int pos) in
-    Flambda.create_let sym_v (Symbol symbol)
-      (Flambda.create_let result_v (Prim(Pfield 0, [sym_v], Debuginfo.none))
-        (Var result_v))
-  | Lprim (Psetfield (pos, _), [Lprim (Pgetglobal id, []); _]) ->
-    assert (Ident.same id t.current_unit_id);
-    Misc.fatal_errorf "[Psetfield %i] (to the current compilation unit) is \
-        forbidden upon entry to the middle end" pos
+  | Lprim (Pfield _, [Lprim (Pgetglobal id, [])])
+      when Ident.same id t.current_unit_id ->
+    Misc.fatal_errorf "[Pfield (Pgetglobal ...) for the current compilation \
+        unit is forbidden upon entry to the middle end"
+  | Lprim (Psetfield (_, _), [Lprim (Pgetglobal _, []); _]) ->
+    Misc.fatal_errorf "[Psetfield (Pgetglobal ...) is \
+        forbidden upon entry to the middle end"
   | Lprim (Pgetglobal id, []) when Ident.is_predef_exn id ->
     let symbol = t.symbol_for_global' id in
     imported_symbols := Symbol.Set.add symbol !imported_symbols;

@@ -16,19 +16,13 @@ type result = {
   closure : Set_of_closures_id.Set.t;
 }
 
-(** [inconstants] with [for_clambda = true] finds those variables and
-    set-of-closures identifiers that cannot be compiled to constants by
-    [Clambdagen].
+(** [inconstants_on_program] with [for_clambda = true] finds those variables
+    and set-of-closures identifiers that cannot be compiled to constants by
+    [Flambda_to_clambda].
 
     When [for_clambda] is false, field accesses to a constant are
     considered constant.
 *)
-(* val inconstants *)
-(*    : for_clambda:bool *)
-(*   -> compilation_unit:Compilation_unit.t *)
-(*   -> Flambda.t *)
-(*   -> result *)
-
 val inconstants_on_program
    : for_clambda:bool
   -> compilation_unit:Compilation_unit.t
