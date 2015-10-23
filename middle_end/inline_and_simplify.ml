@@ -365,6 +365,12 @@ let rec simplify_project_var env r ~(project_var : Flambda.project_var)
     Freshening.apply_variable (E.freshening env) project_var.closure
   in
   let approx = E.find_exn env closure in
+  let closure =
+    match A.simplify_var_to_var_using_env approx
+            ~is_present_in_env:(fun var -> E.mem env var) with
+    | None -> closure
+    | Some var -> var
+  in
   match A.check_approx_for_closure_allowing_unresolved approx with
   | Ok (value_closure, _set_of_closures_var, _set_of_closures_symbol,
         value_set_of_closures) ->
