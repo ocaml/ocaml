@@ -131,7 +131,6 @@ let import_for_pack ~pack_units ~pack (exp : Export_info.t) =
     ~values:(import_eidmap import_descr exp.values)
     ~symbol_id:(Symbol.Map.map_keys import_sym
       (Symbol.Map.map import_eid exp.symbol_id))
-    ~constants:(Symbol.Set.map import_sym exp.constants)
     ~constant_sets_of_closures:exp.constant_sets_of_closures
     ~invariant_arguments:exp.invariant_arguments
 

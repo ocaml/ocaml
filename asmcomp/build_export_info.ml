@@ -490,7 +490,6 @@ let build_export_info ~(backend:(module Backend_intf.S))
         ~symbol_id:env.sym
         ~offset_fun:Closure_id.Map.empty
         ~offset_fv:Var_within_closure.Map.empty
-        ~constants:Symbol.Set.empty
         ~sets_of_closures:(Set_of_closures_id.Map.map (fun { Flambda.function_decls } -> function_decls) set_of_closures_map)
         ~closures
         ~constant_sets_of_closures:Set_of_closures_id.Set.empty

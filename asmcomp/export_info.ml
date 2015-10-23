@@ -122,7 +122,6 @@ type t = {
   symbol_id : Export_id.t Symbol.Map.t;
   offset_fun : int Closure_id.Map.t;
   offset_fv : int Var_within_closure.Map.t;
-  constants : Symbol.Set.t;
   constant_sets_of_closures : Set_of_closures_id.Set.t;
   invariant_arguments : Variable.Set.t Set_of_closures_id.Map.t;
 }
@@ -135,13 +134,12 @@ let empty : t = {
   symbol_id = Symbol.Map.empty;
   offset_fun = Closure_id.Map.empty;
   offset_fv = Var_within_closure.Map.empty;
-  constants = Symbol.Set.empty;
   constant_sets_of_closures = Set_of_closures_id.Set.empty;
   invariant_arguments = Set_of_closures_id.Map.empty;
 }
 
 let create ~sets_of_closures ~closures ~values ~globals ~symbol_id
-      ~offset_fun ~offset_fv ~constants ~constant_sets_of_closures
+      ~offset_fun ~offset_fv ~constant_sets_of_closures
       ~invariant_arguments =
   { sets_of_closures;
     closures;
@@ -150,7 +148,6 @@ let create ~sets_of_closures ~closures ~values ~globals ~symbol_id
     symbol_id;
     offset_fun;
     offset_fv;
-    constants;
     constant_sets_of_closures;
     invariant_arguments;
   }
@@ -181,7 +178,6 @@ let merge (t1 : t) (t2 : t) : t =
         ~eq:int_eq t1.offset_fun t2.offset_fun;
     offset_fv = Var_within_closure.Map.disjoint_union
         ~eq:int_eq t1.offset_fv t2.offset_fv;
-    constants = Symbol.Set.union t1.constants t2.constants;
     constant_sets_of_closures =
       Set_of_closures_id.Set.union t1.constant_sets_of_closures
         t2.constant_sets_of_closures;
@@ -332,8 +328,6 @@ let print_all ppf (t : t) =
   let fprintf = Format.fprintf in
   fprintf ppf "approxs@ %a@.@."
     print_approx t;
-  fprintf ppf "constants@ %a@.@."
-    Symbol.Set.print t.constants;
   fprintf ppf "functions@ %a@.@."
     (Set_of_closures_id.Map.print Flambda.print_function_declarations)
     t.sets_of_closures

@@ -69,9 +69,6 @@ type t = private {
   (** Positions of function pointers in their closures. *)
   offset_fv : int Var_within_closure.Map.t;
   (** Positions of value pointers in their closures. *)
-  constants : Symbol.Set.t;
-  (** Symbols that are effectively constants (the top-level module is
-      not always a constant for instance). *)
   constant_sets_of_closures : Set_of_closures_id.Set.t;
   (* CR mshinwell for pchambart: Add comment *)
   invariant_arguments : Variable.Set.t Set_of_closures_id.Map.t;
@@ -90,7 +87,6 @@ val create
   -> symbol_id:Export_id.t Symbol.Map.t
   -> offset_fun:int Closure_id.Map.t
   -> offset_fv:int Var_within_closure.Map.t
-  -> constants:Symbol.Set.t
   -> constant_sets_of_closures:Set_of_closures_id.Set.t
   -> invariant_arguments:Variable.Set.t Set_of_closures_id.Map.t
   -> t
