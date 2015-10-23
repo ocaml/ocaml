@@ -30,26 +30,14 @@ let should_duplicate_recursive_function env
       ~(value_set_of_closures : A.value_set_of_closures)
       ~args_approxs ~unchanging_params =
   assert (List.length function_decl.params = List.length args_approxs);
-let c1 =
   (not (E.inside_set_of_closures_declaration
       function_decls.set_of_closures_id env))
-in
-let c2 =
-   (not (Variable.Set.is_empty value_set_of_closures.unchanging_params))
-in
-let c3 =
-  Var_within_closure.Map.is_empty
-        value_set_of_closures.bound_vars (* closed *)
-in
-let c4 =
-  List.exists2 (fun id approx ->
-          A.useful approx && Variable.Set.mem id unchanging_params)
-        function_decl.params args_approxs
-in
-(* Format.eprintf "c1 %b c2 %b c3 %b c4 %b unc %a v.unc %a@." *)
-(*   c1 c2 c3 c4 Variable.Set.print unchanging_params *)
-(*   Variable.Set.print value_set_of_closures.unchanging_params; *)
-c1 && c2 && c3 && c4
+    && (not (Variable.Set.is_empty value_set_of_closures.unchanging_params))
+    && Var_within_closure.Map.is_empty
+      value_set_of_closures.bound_vars (* closed *)
+    && List.exists2 (fun id approx ->
+        A.useful approx && Variable.Set.mem id unchanging_params)
+      function_decl.params args_approxs
 
 let inline_non_recursive env r ~function_decls ~lhs_of_application
     ~closure_id_being_applied ~(function_decl : Flambda.function_declaration)
@@ -103,16 +91,7 @@ let inline_non_recursive env r ~function_decls ~lhs_of_application
       E.note_entering_closure env ~closure_id:closure_id_being_applied
         ~where:Inline_by_copying_function_body
     in
-try
     simplify (E.inlining_level_up env) r body
-with _exn ->
-  Format.eprintf "Exception from simplify (inlining_decision), \
-        closure id being applied is %a, term is %a, \
-        original function decls %a"
-    Closure_id.print closure_id_being_applied
-    Flambda.print body
-    Flambda.print_function_declarations function_decls;
-  Misc.fatal_error "failure"
   end else begin
     (* Inlining the body of the function did not appear sufficiently
        beneficial; however, it may become so if we inline within the body
