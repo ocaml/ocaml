@@ -17,28 +17,6 @@ module R = Inline_and_simplify_aux.Result
 module U = Flambda_utils
 module W = Inlining_cost.Whether_sufficient_benefit
 
-let is_probably_a_functor ~env ~args_approxs ~recursive_functions =
-  !Clflags.functor_heuristics
-    && E.at_toplevel env
-    && (not (E.is_inside_branch env))
-    && List.for_all A.known args_approxs
-    && Variable.Set.is_empty recursive_functions
-
-let should_duplicate_recursive_function env
-      ~(function_decl : Flambda.function_declaration)
-      ~(function_decls : Flambda.function_declarations)
-      ~(value_set_of_closures : A.value_set_of_closures)
-      ~args_approxs ~unchanging_params =
-  assert (List.length function_decl.params = List.length args_approxs);
-  (not (E.inside_set_of_closures_declaration
-      function_decls.set_of_closures_id env))
-    && (not (Variable.Set.is_empty value_set_of_closures.unchanging_params))
-    && Var_within_closure.Map.is_empty
-      value_set_of_closures.bound_vars (* closed *)
-    && List.exists2 (fun id approx ->
-        A.useful approx && Variable.Set.mem id unchanging_params)
-      function_decl.params args_approxs
-
 let inline_non_recursive env r ~function_decls ~lhs_of_application
     ~closure_id_being_applied ~(function_decl : Flambda.function_declaration)
     ~only_use_of_function ~no_simplification ~probably_a_functor
@@ -176,6 +154,21 @@ let unroll_recursive env r ~max_level ~lhs_of_application
   in
   !tried_unrolling, result
 
+let should_duplicate_recursive_function env
+      ~(function_decl : Flambda.function_declaration)
+      ~(function_decls : Flambda.function_declarations)
+      ~(value_set_of_closures : A.value_set_of_closures)
+      ~args_approxs ~unchanging_params =
+  assert (List.length function_decl.params = List.length args_approxs);
+  (not (E.inside_set_of_closures_declaration
+      function_decls.set_of_closures_id env))
+    && (not (Variable.Set.is_empty value_set_of_closures.unchanging_params))
+    && Var_within_closure.Map.is_empty
+      value_set_of_closures.bound_vars (* closed *)
+    && List.exists2 (fun id approx ->
+        A.useful approx && Variable.Set.mem id unchanging_params)
+      function_decl.params args_approxs
+
 let inline_recursive env r ~max_level ~lhs_of_application
       ~(function_decls : Flambda.function_declarations)
       ~closure_id_being_applied ~function_decl
@@ -230,6 +223,13 @@ let inline_recursive env r ~max_level ~lhs_of_application
         (Did_not_try_copying_decl (Tried_unrolling tried_unrolling));
       no_simplification ()
     end
+
+let is_probably_a_functor ~env ~args_approxs ~recursive_functions =
+  !Clflags.functor_heuristics
+    && E.at_toplevel env
+    && (not (E.is_inside_branch env))
+    && List.for_all A.known args_approxs
+    && Variable.Set.is_empty recursive_functions
 
 (* CR mshinwell: We deleted the [only_use_of_function] stuff in [for_call_site],
    which used to identify when the function declaration was only used once,
