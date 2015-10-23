@@ -91,13 +91,15 @@ val create
   -> invariant_arguments:Variable.Set.t Set_of_closures_id.Map.t
   -> t
 
-(* CR pchambart: Should we separate [t] in 2 types: one created by the
+(* CR-someday pchambart: Should we separate [t] in 2 types: one created by the
    current [create] function, returned by [Build_export_info]. And
    another built using t and offset_informations returned by
-   [flambda_to_clambda] ? *)
-(** Record function offset informations *)
-val add_offsets :
-  t
+   [flambda_to_clambda] ?
+   mshinwell: I think we should, but after we've done the first release.
+*)
+(** Record information about the layout of closures. *)
+val add_offsets
+   : t
   -> offset_fun:int Closure_id.Map.t
   -> offset_fv:int Var_within_closure.Map.t
   -> t
