@@ -65,6 +65,48 @@ module PR6862 :
     type _ opt = Just : 'a -> 'a opt | Nothing : 'a opt
     class d : int opt -> object method x : int end
   end
+#         module Exhaustive2 :
+  sig type _ t = Int : int t val f : bool t option -> unit end
+#           Characters 146-147:
+    let g : int t -> int = function I -> 1 | _ -> 2 (* no warning *)
+                                             ^
+Warning 56: this match case is unreachable.
+Consider replacing it with a refutation case '<pat> -> .'
+module PR6220 :
+  sig
+    type 'a t = I : int t | F : float t
+    val f : int t -> int
+    val g : int t -> int
+  end
+#                 module PR6403 :
+  sig
+    type (_, _) eq = Refl : ('a, 'a) eq
+    type empty = { bottom : 'a. 'a; }
+    type ('a, 'b) sum = Left of 'a | Right of 'b
+    val notequal : ((int, bool) eq, empty) sum -> empty
+  end
+#                               module PR6437 :
+  sig
+    type ('a, 'b) ctx =
+        Nil : (unit, unit) ctx
+      | Cons : ('a, 'b) ctx -> ('a * unit, 'b * unit) ctx
+    type 'a var = O : ('a * unit) var | S : 'a var -> ('a * unit) var
+    val f : ('g1, 'g2) ctx * 'g1 var -> 'g2 var
+  end
+#                     Characters 175-221:
+  ....match x with
+      | String s -> print_endline s.................
+Warning 8: this pattern-matching is not exhaustive.
+Here is an example of a value that is not matched:
+Any
+module PR6801 :
+  sig
+    type _ value =
+        String : string -> string value
+      | Float : float -> float value
+      | Any
+    val print_string_value : string value -> unit
+  end
 #               Characters 118-119:
       let eval (D x) = x
                        ^
@@ -73,7 +115,7 @@ Error: This expression has type $D_'a t
        The type constructor $D_'a would escape its scope
 #               module Rectype :
   sig type (_, _) t = C : ('a, 'a) t val f : ('s, 's * 's) t -> unit end
-#                         Characters 178-186:
+#                         Characters 180-188:
           | (IntLit _ | BoolLit _) -> ()
              ^^^^^^^^
 Error: This pattern matches values of type int t
@@ -252,7 +294,7 @@ val f : 'a ty -> 'a t -> int = <fun>
     | TA, D z -> z
 Warning 8: this pattern-matching is not exhaustive.
 Here is an example of a value that is not matched:
-(TE TC, D [|  |])
+(TE TC, D [| 0. |])
 val f : 'a ty -> 'a t -> int = <fun>
 #                   Characters 147-154:
     | D [|1.0|], TE TC -> 14
@@ -274,7 +316,7 @@ Error: This pattern matches values of type 'a array
     | {left=TA; right=D z} -> z
 Warning 8: this pattern-matching is not exhaustive.
 Here is an example of a value that is not matched:
-{left=TE TC; right=D [|  |]}
+{left=TE TC; right=D [| 0. |]}
 type ('a, 'b) pair = { left : 'a; right : 'b; }
 val f : 'a ty -> 'a t -> int = <fun>
 #           module M : sig type 'a t val eq : ('a t, 'b t) eq end

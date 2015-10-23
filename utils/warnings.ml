@@ -73,6 +73,7 @@ type t =
   | Misplaced_attribute of string           (* 53 *)
   | Duplicated_attribute of string          (* 54 *)
   | Inlining_impossible of string           (* 55 *)
+  | Unreachable_case                        (* 56 *)
 ;;
 
 (* If you remove a warning, leave a hole in the numbering.  NEVER change
@@ -137,9 +138,10 @@ let number = function
   | Misplaced_attribute _ -> 53
   | Duplicated_attribute _ -> 54
   | Inlining_impossible _ -> 55
+  | Unreachable_case -> 56
 ;;
 
-let last_warning_number = 55
+let last_warning_number = 56
 ;;
 (* Must be the max number returned by the [number] function. *)
 
@@ -407,9 +409,13 @@ let message = function
   | Expect_tailcall ->
       Printf.sprintf "expected tailcall"
   | Fragile_literal_pattern ->
-      Printf.sprintf "the argument of this constructor should not be matched against a \
-                      constant pattern; the actual value of the argument could change \
-                      in the future"
+      Printf.sprintf
+        "the argument of this constructor should not be matched against a\n\
+         constant pattern; the actual value of the argument could change\n\
+         in the future"
+  | Unreachable_case ->
+      "this match case is unreachable.\n\
+       Consider replacing it with a refutation case '<pat> -> .'"
   | Misplaced_attribute attr_name ->
       Printf.sprintf "the %S attribute cannot appear in this context" attr_name
   | Duplicated_attribute attr_name ->
@@ -506,6 +512,7 @@ let descriptions =
    53, "Attribute cannot appear in this context";
    54, "Attribute used more than once on an expression";
    55, "Inlining impossible";
+   56, "Unreachable case in a pattern-matching (based on type information)."
   ]
 ;;
 

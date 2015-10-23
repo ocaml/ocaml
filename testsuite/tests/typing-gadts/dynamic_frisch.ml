@@ -444,7 +444,6 @@ let ty_abc : ([`A of int | `B of string | `C] as 'a, 'e) ty =
         Thd, v -> `A v
       | Ttl Thd, v -> `B v
       | Ttl (Ttl Thd), Noarg -> `C
-      | _ -> assert false
   end)
 
 type 'a vlist = [`Nil | `Cons of 'a * 'a vlist]

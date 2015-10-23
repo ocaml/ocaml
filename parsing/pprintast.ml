@@ -626,6 +626,8 @@ class printer  ()= object(self:'self)
     | Pexp_variant (l,Some eo) ->
         pp f "@[<2>`%s@;%a@]" l  self#simple_expr eo
     | Pexp_extension e -> self#extension f e
+    | Pexp_unreachable ->
+        pp f "."
     | _ -> self#expression1 f x
   method expression1 f x =
     if x.pexp_attributes <> [] then self#expression f x

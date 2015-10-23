@@ -37,6 +37,11 @@ val reset_global_level: unit -> unit
 val increase_global_level: unit -> int
 val restore_global_level: int -> unit
         (* This pair of functions is only used in Typetexp *)
+type levels =
+    { current_level: int; nongen_level: int; global_level: int;
+      saved_level: (int * int) list; }
+val save_levels: unit -> levels
+val set_levels: levels -> unit
 
 val newty: type_desc -> type_expr
 val newvar: ?name:string -> unit -> type_expr

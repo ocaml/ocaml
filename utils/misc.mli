@@ -25,6 +25,8 @@ val for_all2: ('a -> 'b -> bool) -> 'a list -> 'b list -> bool
         (* Same as [List.for_all] but for a binary predicate.
            In addition, this [for_all2] never fails: given two lists
            with different lengths, it returns false. *)
+val filter_map: ('a -> 'b option) -> 'a list -> 'b list
+        (* Same as [List.map] but removes [None] from the output *)
 val replicate_list: 'a -> int -> 'a list
         (* [replicate_list elem n] is the list with [n] elements
            all identical to [elem]. *)

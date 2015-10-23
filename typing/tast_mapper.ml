@@ -328,6 +328,8 @@ let expr sub x =
         Texp_object (sub.class_structure sub cl, sl)
     | Texp_pack mexpr ->
         Texp_pack (sub.module_expr sub mexpr)
+    | Texp_unreachable ->
+        Texp_unreachable
   in
   {x with exp_extra; exp_desc; exp_env}
 
