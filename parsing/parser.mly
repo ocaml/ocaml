@@ -1540,6 +1540,8 @@ match_case:
       { Exp.case $1 $3 }
   | pattern WHEN seq_expr MINUSGREATER seq_expr
       { Exp.case $1 ~guard:$3 $5 }
+  | pattern MINUSGREATER DOT
+      { Exp.case $1 (Exp.unreachable ~loc:(rhs_loc 3) ())}
 ;
 fun_def:
     MINUSGREATER seq_expr                       { $2 }

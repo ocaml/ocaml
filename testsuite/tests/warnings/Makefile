@@ -22,6 +22,13 @@ run-all:
 	  $(DIFF) $$F.reference $$F.result >/dev/null \
 	  && echo " => passed" || echo " => failed"; \
 	done;
+	@for file in *.opt.ml; do \
+	  printf " ... testing '$$file':"; \
+	  F="`basename $$file .ml`"; \
+	  $(OCAMLOPT) $(FLAGS) -o $(EXECNAME) $$file 2>$$F.opt_result; \
+	  $(DIFF) $$F.opt_reference $$F.opt_result >/dev/null \
+	  && echo " => passed" || echo " => failed"; \
+	done;
 
 promote: defaultpromote
 

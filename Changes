@@ -5,6 +5,13 @@ OCaml 4.03.0:
 
 Language features:
 - PR#5528: inline records for constructor arguments (Alain Frisch)
+- PR#6220, PR#6403, PR#6437, PR#6801:
+  Improved redundancy and exhaustiveness checks for GADTs.
+  Namely, the redundancy checker now checks whether the uncovered pattern
+  of the pattern is actually inhabited, exploding at most one wild card.
+  This is also done for exhaustiveness when there is only one case.
+  Additionnally, one can now write unreachable cases, of the form,
+  "pat -> .", which are treated by the redundancy check. (Jacques Garrigue)
 - PR#6374: allow "_ t" as a short-hand for "(_, _, ..) t" for n-ary type
   constructors (Alain Frisch)
 - PR#6714: allow [@@ocaml.warning] on most structure and signature items:
@@ -37,6 +44,9 @@ Language features:
   attribute is applied on predefined exception constructors which
   take an purely informational (with no stability guarantee) message.
   (Alain Frisch)
+- GPR#173: [@inline] and [@inlined] attributes (for function declarations
+  and call sites respectively) to control inlining
+  (Pierre Chambart, Mark Shinwell)
 
 Compilers:
 - PR#4800: better compilation of tuple assignment (Gabriel Scherer and

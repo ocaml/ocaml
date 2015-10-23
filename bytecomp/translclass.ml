@@ -26,10 +26,10 @@ exception Error of Location.t * error
 let lfunction params body =
   if params = [] then body else
   match body with
-  | Lfunction {kind = Curried; params = params'; body = body'} ->
-      Lfunction {kind = Curried; params = params @ params'; body = body'}
+  | Lfunction {kind = Curried; params = params'; body = body'; attr} ->
+      Lfunction {kind = Curried; params = params @ params'; body = body'; attr}
   |  _ ->
-      Lfunction {kind = Curried; params; body}
+      Lfunction {kind = Curried; params; body; attr = default_function_attribute}
 
 let lapply func args loc =
   match func with
@@ -158,6 +158,7 @@ let rec build_object_init cl_table obj params inh_init obj_init cl =
        let build params rem =
          let param = name_pattern "param" pat in
          Lfunction {kind = Curried; params = param::params;
+                    attr = default_function_attribute;
                     body = Matching.for_function
                              pat.pat_loc None (Lvar param) [pat, rem] partial}
        in
@@ -403,6 +404,7 @@ let rec transl_class_rebind obj_init cl vf =
       let build params rem =
         let param = name_pattern "param" pat in
         Lfunction {kind = Curried; params = param::params;
+                   attr = default_function_attribute;
                    body = Matching.for_function
                             pat.pat_loc None (Lvar param) [pat, rem] partial}
       in
@@ -704,6 +706,7 @@ let transl_class ids cl_id pub_meths cl vflag =
   let concrete = (vflag = Concrete)
   and lclass lam =
     let cl_init = llets (Lfunction{kind = Curried;
+                                   attr = default_function_attribute;
                                    params = [cla]; body = cl_init}) in
     Llet(Strict, class_init, cl_init, lam (free_variables cl_init))
   and lbody fv =
@@ -721,10 +724,10 @@ let transl_class ids cl_id pub_meths cl vflag =
              Lvar class_init; Lvar env_init; lambda_unit]))))
   and lbody_virt lenvs =
     Lprim(Pmakeblock(0, Immutable),
-          [lambda_unit;
-           Lfunction{kind = Curried; params = [cla]; body = cl_init};
-           lambda_unit;
-           lenvs])
+          [lambda_unit; Lfunction{kind = Curried;
+                                  attr = default_function_attribute;
+                                  params = [cla]; body = cl_init};
+           lambda_unit; lenvs])
   in
   (* Still easy: a class defined at toplevel *)
   if top && concrete then lclass lbody else
@@ -767,6 +770,7 @@ let transl_class ids cl_id pub_meths cl vflag =
   let lclass lam =
     Llet(Strict, class_init,
          Lfunction{kind = Curried; params = [cla];
+                   attr = default_function_attribute;
                    body = def_ids cla cl_init}, lam)
   and lcache lam =
     if inh_keys = [] then Llet(Alias, cached, Lvar tables, lam) else
@@ -783,7 +787,7 @@ let transl_class ids cl_id pub_meths cl vflag =
             Lsequence(mkappl (oo_prim "init_class", [Lvar cla]),
                       lset cached 0 (Lvar env_init))))
   and lclass_virt () =
-    lset cached 0 (Lfunction{kind = Curried;
+    lset cached 0 (Lfunction{kind = Curried; attr = default_function_attribute;
                              params = [cla]; body = def_ids cla cl_init})
   in
   llets (

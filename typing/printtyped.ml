@@ -371,6 +371,8 @@ and expression i ppf x =
   | Texp_pack me ->
       line i ppf "Texp_pack";
       module_expr i ppf me
+  | Texp_unreachable ->
+      line i ppf "Texp_unreachable"
 
 and value_description i ppf x =
   line i ppf "value_description %a %a\n" fmt_ident x.val_id fmt_location

@@ -19,6 +19,7 @@ open Lambda
 
 val transl_exp: expression -> lambda
 val transl_apply: ?should_be_tailcall:bool
+                  -> ?inlined_attribute:inline_attribute
                   -> lambda -> (arg_label * expression option * optional) list
                   -> Location.t -> lambda
 val transl_let: rec_flag -> value_binding list -> lambda -> lambda
@@ -32,6 +33,7 @@ type error =
   | Illegal_letrec_expr
   | Free_super_var
   | Unknown_builtin_primitive of string
+  | Unreachable_reached
 
 exception Error of Location.t * error
 

@@ -6,14 +6,9 @@
     Tint : ('env, int) typ
   | Tbool : ('env, bool) typ
   | Tvar : ('env, 'a) var -> ('env, 'a) typ
-#           Characters 72-156:
-  .match ta, tb with
-     | Tint, Tint -> 0
-     | Tbool, Tbool -> 1
-     | Tvar var, tb -> 2
-Warning 8: this pattern-matching is not exhaustive.
-Here is an example of a value that is not matched:
-(Tbool, Tvar _)
-val f : ('env, 'a) typ -> ('env, 'a) typ -> int = <fun>
-#   Exception: Match_failure ("//toplevel//", 9, 1).
-# 
+#             Characters 162-163:
+     | _ -> .   (* error *)
+       ^
+Error: This match case could not be refuted.
+       Here is an example of value that would reach it: (Tint, Tvar Zero)
+#     

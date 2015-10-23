@@ -171,7 +171,7 @@ and (_, _) ty_sel =
 and (_, _) ty_case =
     TCarg : ('b, 'a) ty_sel * ('a, 'e) ty -> ('e, 'b) ty_case
   | TCnoarg : ('b, noarg) ty_sel -> ('e, 'b) ty_case
-#                                                                     val ty_abc : ([ `A of int | `B of string | `C ], 'e) ty = Sum <obj>
+#                                                                   val ty_abc : ([ `A of int | `B of string | `C ], 'e) ty = Sum <obj>
 type 'a vlist = [ `Cons of 'a * 'a vlist | `Nil ]
 val ty_list : ('a, 'e) ty -> ('a vlist, 'e) ty = <fun>
 #   * * * * * * * * *   

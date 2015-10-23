@@ -97,6 +97,53 @@ module PR6862 = struct
   class d (Just x) = object method x : int = x end
 end;;
 
+module Exhaustive2 = struct
+  type _ t = Int : int t
+  let f (x : bool t option) = match x with None -> ()
+end;;
+
+module PR6220 = struct
+  type 'a t = I : int t | F : float t
+  let f : int t -> int = function I -> 1
+  let g : int t -> int = function I -> 1 | _ -> 2 (* no warning *)
+end;;
+
+module PR6403 = struct
+  type (_, _) eq = Refl : ('a, 'a) eq
+  type empty = { bottom : 'a . 'a }
+  type ('a, 'b) sum = Left of 'a | Right of 'b
+
+  let notequal : ((int, bool) eq, empty) sum -> empty = function
+    | Right empty -> empty
+end;;
+
+module PR6437 = struct
+  type ('a, 'b) ctx =
+    | Nil : (unit, unit) ctx
+    | Cons : ('a, 'b) ctx -> ('a * unit, 'b * unit) ctx
+
+  type 'a var =
+    | O : ('a * unit) var
+    | S : 'a var -> ('a * unit) var
+
+  let rec f : type g1 g2. (g1, g2) ctx * g1 var -> g2 var = function
+    | Cons g, O -> O
+    | Cons g, S n -> S (f (g, n))
+    | _ -> .
+  (*| Nil, _ -> (assert false) *)  (* warns, but shouldn't *)
+end;;
+
+module PR6801 = struct
+  type _ value =
+    | String : string -> string value
+    | Float : float -> float value
+    | Any
+
+  let print_string_value (x : string value) =
+    match x with
+    | String s -> print_endline s (* warn : Any *)
+end;;
+
 module Existential_escape =
   struct
     type _ t = C : int -> int t
@@ -114,7 +161,7 @@ module Rectype =
 ;;
 
 module Or_patterns =
-struct
+  struct
       type _ t =
       | IntLit : int -> int t
       | BoolLit : bool -> bool t
