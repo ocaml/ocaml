@@ -472,7 +472,7 @@ let rec variables_usage ?ignore_uses_in_apply ?ignore_uses_in_project_var
         bound_variable var;
         if all_used_variables then begin
           free_variables
-            (variables_usage_named ?ignore_uses_in_project_var
+            (variables_usage_named ?ignore_uses_in_project_var ?ignore_uses_in_apply
                ~all_used_variables defining_expr);
           free_variables
             (variables_usage ?ignore_uses_in_apply ?ignore_uses_in_project_var
@@ -539,6 +539,7 @@ let rec variables_usage ?ignore_uses_in_apply ?ignore_uses_in_project_var
       Variable.Set.diff !free !bound
 
 and variables_usage_named ?ignore_uses_in_project_var
+    ?ignore_uses_in_apply
     ~all_used_variables named =
   let free = ref Variable.Set.empty in
   let free_variable fv = free := Variable.Set.add fv !free in
@@ -563,7 +564,7 @@ and variables_usage_named ?ignore_uses_in_project_var
     free_variable closure
   | Prim (_, args, _) -> List.iter free_variable args
   | Expr flam ->
-    free := Variable.Set.union (variables_usage ~all_used_variables flam) !free
+    free := Variable.Set.union (variables_usage ?ignore_uses_in_apply ~all_used_variables flam) !free
   end;
   !free
 
