@@ -224,12 +224,12 @@ typing/includeclass.cmo : typing/types.cmi typing/printtyp.cmi \
 typing/includeclass.cmx : typing/types.cmx typing/printtyp.cmx \
     typing/ctype.cmx typing/includeclass.cmi
 typing/includecore.cmo : typing/types.cmi typing/typedtree.cmi \
-    typing/predef.cmi typing/path.cmi utils/misc.cmi typing/ident.cmi \
-    typing/env.cmi typing/ctype.cmi typing/btype.cmi parsing/asttypes.cmi \
+    typing/path.cmi utils/misc.cmi typing/ident.cmi typing/env.cmi \
+    typing/ctype.cmi typing/btype.cmi parsing/asttypes.cmi \
     typing/includecore.cmi
 typing/includecore.cmx : typing/types.cmx typing/typedtree.cmx \
-    typing/predef.cmx typing/path.cmx utils/misc.cmx typing/ident.cmx \
-    typing/env.cmx typing/ctype.cmx typing/btype.cmx parsing/asttypes.cmi \
+    typing/path.cmx utils/misc.cmx typing/ident.cmx typing/env.cmx \
+    typing/ctype.cmx typing/btype.cmx parsing/asttypes.cmi \
     typing/includecore.cmi
 typing/includemod.cmo : typing/types.cmi typing/typedtree.cmi utils/tbl.cmi \
     typing/subst.cmi typing/printtyp.cmi typing/primitive.cmi typing/path.cmi \
@@ -269,10 +269,12 @@ typing/parmatch.cmx : utils/warnings.cmx typing/types.cmx \
     typing/parmatch.cmi
 typing/path.cmo : typing/ident.cmi typing/path.cmi
 typing/path.cmx : typing/ident.cmx typing/path.cmi
-typing/predef.cmo : typing/types.cmi typing/path.cmi parsing/location.cmi \
-    typing/ident.cmi typing/btype.cmi parsing/asttypes.cmi typing/predef.cmi
-typing/predef.cmx : typing/types.cmx typing/path.cmx parsing/location.cmx \
-    typing/ident.cmx typing/btype.cmx parsing/asttypes.cmi typing/predef.cmi
+typing/predef.cmo : typing/types.cmi typing/path.cmi parsing/parsetree.cmi \
+    parsing/location.cmi typing/ident.cmi typing/btype.cmi \
+    parsing/asttypes.cmi typing/predef.cmi
+typing/predef.cmx : typing/types.cmx typing/path.cmx parsing/parsetree.cmi \
+    parsing/location.cmx typing/ident.cmx typing/btype.cmx \
+    parsing/asttypes.cmi typing/predef.cmi
 typing/primitive.cmo : utils/warnings.cmi parsing/parsetree.cmi \
     typing/outcometree.cmi utils/misc.cmi parsing/location.cmi \
     parsing/attr_helper.cmi typing/primitive.cmi
