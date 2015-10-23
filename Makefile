@@ -174,6 +174,7 @@ MIDDLE_END=\
   middle_end/inlining_stats_types.cmo \
   middle_end/inlining_stats.cmo \
   middle_end/inline_and_simplify_aux.cmo \
+  middle_end/augment_closure.cmo \
   middle_end/unbox_closures.cmo \
   middle_end/inlining_transforms.cmo \
   middle_end/inlining_decision.cmo \

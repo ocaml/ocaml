@@ -739,10 +739,21 @@ and simplify_named env r (tree : Flambda.named) : Flambda.named * R.t =
     in
     simplify_named_using_approx_and_env env r tree approx
   | Set_of_closures set_of_closures ->
-    let set_of_closures, r =
-      simplify_set_of_closures env r set_of_closures
-    in
-    Set_of_closures set_of_closures, r
+    begin
+      match
+        if !Clflags.unbox_closures then
+          Augment_closure.run ~env ~set_of_closures
+        else
+          None
+      with
+      | Some expr ->
+        simplify_named env r (Flambda.Expr expr)
+      | None ->
+        let set_of_closures, r =
+          simplify_set_of_closures env r set_of_closures
+        in
+        Set_of_closures set_of_closures, r
+    end
   | Project_closure project_closure ->
     simplify_project_closure env r ~project_closure
   | Project_var project_var -> simplify_project_var env r ~project_var
