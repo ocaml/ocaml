@@ -139,7 +139,6 @@ end = struct
   let keep_only_symbols t =
     { empty with
       allocated_constant_for_symbol = t.allocated_constant_for_symbol; }
-
 end
 
 let subst_var env var : Clambda.ulambda =
@@ -159,35 +158,21 @@ let build_uoffset ulam offset : Clambda.ulambda =
 
 let to_uconst_symbol env symbol : Clambda.ustructured_constant option =
   match Env.allocated_const_for_symbol env symbol with
-  | Some (Float f) ->
-    Some (Clambda.Uconst_float f)
-  | Some (Int32 i) ->
-    Some (Clambda.Uconst_int32 i)
-  | Some (Int64 i) ->
-    Some (Clambda.Uconst_int64 i)
-  | Some (Nativeint i) ->
-    Some (Clambda.Uconst_nativeint i)
-  | None | Some _ ->
-    None
+  | Some (Float f) -> Some (Clambda.Uconst_float f)
+  | Some (Int32 i) -> Some (Clambda.Uconst_int32 i)
+  | Some (Int64 i) -> Some (Clambda.Uconst_int64 i)
+  | Some (Nativeint i) -> Some (Clambda.Uconst_nativeint i)
+  | None | Some _ -> None
 
 let to_clambda_symbol env sym : Clambda.ulambda =
   let lbl = Linkage_name.to_string (Symbol.label sym) in
-  (* XCR pchambart: The constant should contains details about the variable to
-     allow cmmgen to unbox.
-     mshinwell: What are we going to do here?
-     pchambart: done *)
   Uconst (Uconst_ref (lbl, to_uconst_symbol env sym))
 
 let to_clambda_const (const : Flambda.constant_defining_value_block_field)
       : Clambda.uconstant =
   match const with
   | Symbol s ->
-    let lbl = Linkage_name.to_string (Symbol.label s) in
-    (* XCR pchambart: The constant should contain details about the variable to
-       allow cmmgen to unbox
-       pchambart: In that case, it doesn't matter. Those are only fields of
-       constant blocks. They are not amenable to unboxing. *)
-    Uconst_ref (lbl, None)
+    Uconst_ref (Linkage_name.to_string (Symbol.label s), None)
   | Const (Int i) -> Uconst_int i
   | Const (Char c) -> Uconst_int (Char.code c)
   | Const (Const_pointer i) -> Uconst_ptr i
@@ -643,8 +628,6 @@ let convert (program, exported) : result =
   let expr, structured_constants =
     to_clambda_program t Env.empty Symbol.Map.empty program
   in
-  (* XCR mshinwell for pchambart: add offsets to export info
-     pchambart: done, but reexported are still missing *)
   let exported =
     Export_info.add_offsets exported
       ~offset_fun:current_unit.fun_offset_table
