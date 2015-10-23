@@ -449,6 +449,9 @@ let build_export_info ~(backend:(module Backend_intf.S))
        the module as global identifier.
        mshinwell: Is "that" the variable "_global_symbol"? *)
     let _global_symbol, env = describe_program (create_empty_env ()) program in
+    let root_approx : Export_info.approx =
+      Value_symbol (Compilenv.current_unit_symbol ())
+    in
     let globals =
       Ident.Map.singleton (Compilenv.current_unit_id ()) root_approx
     in
@@ -480,9 +483,6 @@ let build_export_info ~(backend:(module Backend_intf.S))
            Invariant_params.unchanging_params_in_recursion
              ~backend function_decls
         ) set_of_closures_map
-    in
-    let root_approx : Export_info.approx =
-      Value_symbol (Compilenv.current_unit_symbol ())
     in
     Export_info.create
       ~values:(Export_info.nest_eid_map !(env.ex_table))
