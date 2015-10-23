@@ -141,6 +141,7 @@ type t =
   | Switch of Variable.t * switch
   (* Restrictions on [Lambda.Lstringswitch] also apply to [String_switch]. *)
   | String_switch of Variable.t * (string * t) list * t option
+  (* CR mshinwell: Static_raise should take Variable.t list *)
   | Static_raise of Static_exception.t * t list
   | Static_catch of Static_exception.t * Variable.t list * t * t
   | Try_with of t * Variable.t * t
