@@ -161,18 +161,28 @@ type structured_constant =
   | Const_float_array of string list
   | Const_immstring of string
 
+type inline_attribute =
+  | Always_inline (* [@inline] or [@inline always] *)
+  | Never_inline (* [@inline never] *)
+  | Default_inline (* no [@inline] attribute *)
+
 type apply_info = {
   apply_loc : Location.t;
   apply_should_be_tailcall : bool; (* true if [@tailcall] was specified *)
+  apply_inlined : inline_attribute; (* specified with [@inlined] attribute *)
 }
 
 val no_apply_info : apply_info
 (** Default [apply_info]: no location, no tailcall *)
 
-val mk_apply_info : ?tailcall:bool -> Location.t -> apply_info
+val mk_apply_info : ?tailcall:bool -> ?inlined_attribute:inline_attribute ->
+  Location.t -> apply_info
 (** Build apply_info
     @param tailcall if true, the application should be in tail position;
-           default false *)
+    default false
+    @param inlined_attribute specify wether the function should be inlined
+    or not
+*)
 
 type function_kind = Curried | Tupled
 
@@ -190,6 +200,10 @@ type let_kind = Strict | Alias | StrictOpt | Variable
 type meth_kind = Self | Public | Cached
 
 type shared_code = (int * int) list     (* stack size -> code label *)
+
+type function_attribute = {
+  inline : inline_attribute;
+}
 
 type lambda =
     Lvar of Ident.t
@@ -218,7 +232,8 @@ type lambda =
 and lfunction =
   { kind: function_kind;
     params: Ident.t list;
-    body: lambda }
+    body: lambda;
+    attr: function_attribute; } (* specified with [@inline] attribute *)
 
 and lambda_switch =
   { sw_numconsts: int;                  (* Number of integer cases *)
@@ -259,6 +274,8 @@ val bind : let_kind -> Ident.t -> lambda -> lambda -> lambda
 
 val commute_comparison : comparison -> comparison
 val negate_comparison : comparison -> comparison
+
+val default_function_attribute : function_attribute
 
 (***********************)
 (* For static failures *)

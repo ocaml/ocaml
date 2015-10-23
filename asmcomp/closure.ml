@@ -101,7 +101,7 @@ let occurs_var var u =
    'Some' constructor, only to deconstruct it immediately in the
    function's body. *)
 
-let split_default_wrapper fun_id kind params body =
+let split_default_wrapper fun_id kind params body attr =
   let rec aux map = function
     | Llet(Strict, id, (Lifthenelse(Lvar optparam, _, _) as def), rest) when
         Ident.name optparam = "*opt*" && List.mem optparam params
@@ -129,14 +129,16 @@ let split_default_wrapper fun_id kind params body =
             Ident.empty inner_params new_ids
         in
         let body = Lambda.subst_lambda subst body in
-        let inner_fun = Lfunction{kind = Curried; params = new_ids; body} in
+        let inner_fun = Lfunction{kind = Curried; params = new_ids; body;
+                                  attr} in
         (wrapper_body, (inner_id, inner_fun))
   in
   try
     let wrapper_body, inner = aux [] body in
-    [(fun_id, Lfunction{kind; params; body = wrapper_body}); inner]
+    [(fun_id, Lfunction{kind; params; body = wrapper_body;
+                        attr = default_function_attribute}); inner]
   with Exit ->
-    [(fun_id, Lfunction{kind; params; body})]
+    [(fun_id, Lfunction{kind; params; body; attr})]
 
 
 (* Determine whether the estimated size of a clambda term is below
@@ -708,17 +710,23 @@ let rec is_pure = function
   | Levent(lam, ev) -> is_pure lam
   | _ -> false
 
+let warning_if_forced_inline ~loc ~attribute warning =
+  if attribute = Always_inline then
+    Location.prerr_warning loc (Warnings.Inlining_impossible warning)
+
 (* Generate a direct application *)
 
-let direct_apply fundesc funct ufunct uargs =
+let direct_apply fundesc funct ufunct uargs ~loc ~attribute =
   let app_args =
     if fundesc.fun_closed then uargs else uargs @ [ufunct] in
   let app =
-    match fundesc.fun_inline with
-    | None ->
+    match fundesc.fun_inline, attribute with
+    | _, Never_inline | None, _ ->
+        warning_if_forced_inline ~loc ~attribute "Function information unavailable";
         Udirect_apply(fundesc.fun_label, app_args, Debuginfo.none)
-    | Some(params, body) ->
-        bind_params fundesc.fun_float_const_prop params app_args body in
+    | Some(params, body), _  ->
+        bind_params fundesc.fun_float_const_prop params app_args body
+  in
   (* If ufunct can contain side-effects or function definitions,
      we must make sure that it is evaluated exactly once.
      If the function is not closed, we evaluate ufunct as part of the
@@ -851,17 +859,17 @@ let rec close fenv cenv = function
 
     (* We convert [f a] to [let a' = a in fun b c -> f a' b c]
        when fun_arity > nargs *)
-  | Lapply(funct, args, {apply_loc=loc}) ->
+  | Lapply(funct, args, {apply_loc=loc; apply_inlined=attribute}) ->
       let nargs = List.length args in
       begin match (close fenv cenv funct, close_list fenv cenv args) with
         ((ufunct, Value_closure(fundesc, approx_res)),
          [Uprim(Pmakeblock(_, _), uargs, _)])
         when List.length uargs = - fundesc.fun_arity ->
-          let app = direct_apply fundesc funct ufunct uargs in
+          let app = direct_apply ~loc ~attribute fundesc funct ufunct uargs in
           (app, strengthen_approx app approx_res)
       | ((ufunct, Value_closure(fundesc, approx_res)), uargs)
         when nargs = fundesc.fun_arity ->
-          let app = direct_apply fundesc funct ufunct uargs in
+          let app = direct_apply ~loc ~attribute fundesc funct ufunct uargs in
           (app, strengthen_approx app approx_res)
 
       | ((ufunct, Value_closure(fundesc, approx_res)), uargs)
@@ -886,18 +894,22 @@ let rec close fenv cenv = function
           (Lfunction{
                kind = Curried;
                params = final_args;
-               body = Lapply(funct, internal_args, mk_apply_info loc)})
+               body = Lapply(funct, internal_args, mk_apply_info loc);
+               attr = default_function_attribute})
         in
         let new_fun = iter first_args new_fun in
+        warning_if_forced_inline ~loc ~attribute "Partial application";
         (new_fun, approx)
 
       | ((ufunct, Value_closure(fundesc, approx_res)), uargs)
         when fundesc.fun_arity > 0 && nargs > fundesc.fun_arity ->
           let (first_args, rem_args) = split_list fundesc.fun_arity uargs in
-          (Ugeneric_apply(direct_apply fundesc funct ufunct first_args,
-                          rem_args, Debuginfo.none),
+          warning_if_forced_inline ~loc ~attribute "Over-application";
+          (Ugeneric_apply(direct_apply ~loc ~attribute fundesc funct ufunct
+                          first_args, rem_args, Debuginfo.none),
            Value_unknown)
       | ((ufunct, _), uargs) ->
+          warning_if_forced_inline ~loc ~attribute "Unknown function";
           (Ugeneric_apply(ufunct, uargs, Debuginfo.none), Value_unknown)
       end
   | Lsend(kind, met, obj, args, _) ->
@@ -1086,11 +1098,15 @@ and close_functions fenv cenv fun_defs =
     List.flatten
       (List.map
          (function
-           | (id, Lfunction{kind; params; body}) ->
-               split_default_wrapper id kind params body
+           | (id, Lfunction{kind; params; body; attr}) ->
+               split_default_wrapper id kind params body attr
            | _ -> assert false
          )
          fun_defs)
+  in
+  let inline_attribute = match fun_defs with
+    | [_, Lfunction{kind; params; body; attr = { inline }}] -> inline
+    | _ -> Default_inline (* recursive functions can't be inlined *)
   in
 
   (* Update and check nesting depth *)
@@ -1170,8 +1186,13 @@ and close_functions fenv cenv fun_defs =
         0
         fun_params
     in
-    if lambda_smaller ubody
-        (!Clflags.inline_threshold + n)
+    let threshold =
+      match inline_attribute with
+      | Default_inline -> !Clflags.inline_threshold + n
+      | Always_inline -> max_int
+      | Never_inline -> min_int
+    in
+    if lambda_smaller ubody threshold
     then fundesc.fun_inline <- Some(fun_params, ubody);
 
     (f, (id, env_pos, Value_closure(fundesc, approx))) in

@@ -70,6 +70,9 @@ type t =
   | Bad_docstring of bool                   (* 50 *)
   | Expect_tailcall                         (* 51 *)
   | Fragile_literal_pattern                 (* 52 *)
+  | Misplaced_attribute of string           (* 53 *)
+  | Duplicated_attribute of string          (* 54 *)
+  | Inlining_impossible of string           (* 55 *)
 ;;
 
 (* If you remove a warning, leave a hole in the numbering.  NEVER change
@@ -131,9 +134,13 @@ let number = function
   | Bad_docstring _ -> 50
   | Expect_tailcall -> 51
   | Fragile_literal_pattern -> 52
+  | Misplaced_attribute _ -> 53
+  | Duplicated_attribute _ -> 54
+  | Inlining_impossible _ -> 55
 ;;
 
-let last_warning_number = 52
+let last_warning_number = 55
+;;
 (* Must be the max number returned by the [number] function. *)
 
 let letter = function
@@ -403,6 +410,12 @@ let message = function
       Printf.sprintf "the argument of this constructor should not be matched against a \
                       constant pattern; the actual value of the argument could change \
                       in the future"
+  | Misplaced_attribute attr_name ->
+      Printf.sprintf "the %S attribute cannot appear in this context" attr_name
+  | Duplicated_attribute attr_name ->
+      Printf.sprintf "the %S attribute is used more than once on this expression" attr_name
+  | Inlining_impossible reason ->
+      Printf.sprintf "Inlining impossible in this context: %s" reason
 ;;
 
 let nerrors = ref 0;;
@@ -486,10 +499,13 @@ let descriptions =
    46, "Error in environment variable.";
    47, "Illegal attribute payload.";
    48, "Implicit elimination of optional arguments.";
-   49, "Missing cmi file when looking up module alias.";
+   49, "Absent cmi file when looking up module alias.";
    50, "Unexpected documentation comment.";
    51, "Warning on non-tail calls if @tailcall present.";
    52, "Fragile constant pattern.";
+   53, "Attribute cannot appear in this context";
+   54, "Attribute used more than once on an expression";
+   55, "Inlining impossible";
   ]
 ;;
 

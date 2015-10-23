@@ -246,20 +246,33 @@ let primitive ppf = function
   | Pbbswap(bi) -> print_boxed_integer "bswap" ppf bi
   | Pint_as_pointer -> fprintf ppf "int_as_pointer"
 
+let function_attribute ppf { inline } =
+  match inline with
+  | Default_inline -> ()
+  | Always_inline -> fprintf ppf "always_inline@ "
+  | Never_inline -> fprintf ppf "never_inline@ "
+
+let apply_tailcall_attribute ppf tailcall =
+  if tailcall then
+    fprintf ppf " @@tailcall"
+
+let apply_inlined_attribute ppf = function
+  | Default_inline -> ()
+  | Always_inline -> fprintf ppf " always_inline"
+  | Never_inline -> fprintf ppf " never_inline"
+
 let rec lam ppf = function
   | Lvar id ->
       Ident.print ppf id
   | Lconst cst ->
       struct_const ppf cst
-  | Lapply(lfun, largs, info) when info.apply_should_be_tailcall ->
+  | Lapply(lfun, largs, info) ->
       let lams ppf largs =
         List.iter (fun l -> fprintf ppf "@ %a" lam l) largs in
-      fprintf ppf "@[<2>(apply@ %a%a @@tailcall)@]" lam lfun lams largs
-  | Lapply(lfun, largs, _) ->
-      let lams ppf largs =
-        List.iter (fun l -> fprintf ppf "@ %a" lam l) largs in
-      fprintf ppf "@[<2>(apply@ %a%a)@]" lam lfun lams largs
-  | Lfunction{kind; params; body} ->
+      fprintf ppf "@[<2>(apply@ %a%a%a%a)@]" lam lfun lams largs
+        apply_tailcall_attribute info.apply_should_be_tailcall
+        apply_inlined_attribute info.apply_inlined
+  | Lfunction{kind; params; body; attr} ->
       let pr_params ppf params =
         match kind with
         | Curried ->
@@ -273,7 +286,8 @@ let rec lam ppf = function
                 Ident.print ppf param)
               params;
             fprintf ppf ")" in
-      fprintf ppf "@[<2>(function%a@ %a)@]" pr_params params lam body
+      fprintf ppf "@[<2>(function%a@ %a%a)@]" pr_params params
+        function_attribute attr lam body
   | Llet(str, id, arg, body) ->
       let kind = function
         Alias -> "a" | Strict -> "" | StrictOpt -> "o" | Variable -> "v" in

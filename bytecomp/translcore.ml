@@ -400,7 +400,8 @@ let transl_primitive loc p env ty =
   | Plazyforce ->
       let parm = Ident.create "prim" in
       Lfunction{kind = Curried; params = [parm];
-                body = Matching.inline_lazy_force (Lvar parm) Location.none }
+                body = Matching.inline_lazy_force (Lvar parm) Location.none;
+                attr = default_function_attribute }
   | Ploc kind ->
     let lam = lam_of_loc kind loc in
     begin match p.prim_arity with
@@ -408,6 +409,7 @@ let transl_primitive loc p env ty =
       | 1 -> (* TODO: we should issue a warning ? *)
         let param = Ident.create "prim" in
         Lfunction{kind = Curried; params = [param];
+                  attr = default_function_attribute;
                   body = Lprim(Pmakeblock(0, Immutable), [lam; Lvar param])}
       | _ -> assert false
     end
@@ -416,6 +418,7 @@ let transl_primitive loc p env ty =
         if n <= 0 then [] else Ident.create "prim" :: make_params (n-1) in
       let params = make_params p.prim_arity in
       Lfunction{ kind = Curried; params;
+                 attr = default_function_attribute;
                  body = Lprim(prim, List.map (fun id -> Lvar id) params) }
 
 let transl_primitive_application loc prim env ty args =
@@ -646,10 +649,8 @@ let rec cut n l =
 
 let try_ids = Hashtbl.create 8
 
-let has_tailcall_attribute e =
-  List.exists (fun ({txt},_) -> txt="tailcall") e.exp_attributes
-
 let rec transl_exp e =
+  List.iter (Translattribute.check_attribute e) e.exp_attributes;
   let eval_once =
     (* Whether classes for immediate objects must be cached *)
     match e.exp_desc with
@@ -667,11 +668,13 @@ and transl_exp0 e =
         let kind = if public_send then Public else Self in
         let obj = Ident.create "obj" and meth = Ident.create "meth" in
         Lfunction{kind = Curried; params = [obj; meth];
+                  attr = default_function_attribute;
                   body = Lsend(kind, Lvar meth, Lvar obj, [], e.exp_loc)}
       else if p.prim_name = "%sendcache" then
         let obj = Ident.create "obj" and meth = Ident.create "meth" in
         let cache = Ident.create "cache" and pos = Ident.create "pos" in
         Lfunction{kind = Curried; params = [obj; meth; cache; pos];
+                  attr = default_function_attribute;
                   body = Lsend(Cached, Lvar meth, Lvar obj,
                                [Lvar cache; Lvar pos], e.exp_loc)}
       else
@@ -692,7 +695,11 @@ and transl_exp0 e =
             let pl = push_defaults e.exp_loc [] pat_expr_list partial in
             transl_function e.exp_loc !Clflags.native_code repr partial pl)
       in
-      Lfunction{kind; params; body}
+      let attr = {
+        inline = Translattribute.get_inline_attribute e.exp_attributes;
+      }
+      in
+      Lfunction{kind; params; body; attr}
   | Texp_apply({ exp_desc = Texp_ident(path, _, {val_kind = Val_prim p});
                 exp_type = prim_type } as funct, oargs)
     when List.length oargs >= p.prim_arity
@@ -702,8 +709,15 @@ and transl_exp0 e =
         if args' = []
         then event_after e f
         else
-          let should_be_tailcall = has_tailcall_attribute funct in
-          event_after e (transl_apply ~should_be_tailcall f args' e.exp_loc)
+          let should_be_tailcall, funct =
+            Translattribute.get_tailcall_attribute funct
+          in
+          let inlined_attribute, funct =
+            Translattribute.get_inlined_attribute funct
+          in
+          let e = { e with exp_desc = Texp_apply(funct, oargs) } in
+          event_after e (transl_apply ~should_be_tailcall ~inlined_attribute
+                           f args' e.exp_loc)
       in
       let wrap0 f =
         if args' = [] then f else wrap f in
@@ -751,9 +765,15 @@ and transl_exp0 e =
             end
       end
   | Texp_apply(funct, oargs) ->
-      let should_be_tailcall = has_tailcall_attribute funct in
-      event_after e (transl_apply ~should_be_tailcall (transl_exp funct) oargs
-                                  e.exp_loc)
+      let should_be_tailcall, funct =
+        Translattribute.get_tailcall_attribute funct
+      in
+      let inlined_attribute, funct =
+        Translattribute.get_inlined_attribute funct
+      in
+      let e = { e with exp_desc = Texp_apply(funct, oargs) } in
+      event_after e (transl_apply ~should_be_tailcall ~inlined_attribute
+                       (transl_exp funct) oargs e.exp_loc)
   | Texp_match(arg, pat_expr_list, exn_pat_expr_list, partial) ->
     transl_match e arg pat_expr_list exn_pat_expr_list partial
   | Texp_try(body, pat_expr_list) ->
@@ -944,6 +964,7 @@ and transl_exp0 e =
       (* other cases compile to a lazy block holding a function *)
       | _ ->
          let fn = Lfunction {kind = Curried; params = [Ident.create "param"];
+                             attr = default_function_attribute;
                              body = transl_exp e} in
           Lprim(Pmakeblock(Config.lazy_tag, Mutable), [fn])
       end
@@ -992,7 +1013,7 @@ and transl_tupled_cases patl_expr_list =
   List.map (fun (patl, guard, expr) -> (patl, transl_guard guard expr))
     patl_expr_list
 
-and transl_apply ?(should_be_tailcall=false) lam sargs loc =
+and transl_apply ?(should_be_tailcall=false) ?inlined_attribute lam sargs loc =
   let lapply funct args =
     match funct with
       Lsend(k, lmet, lobj, largs, loc) ->
@@ -1002,7 +1023,8 @@ and transl_apply ?(should_be_tailcall=false) lam sargs loc =
     | Lapply(lexp, largs, info) ->
         Lapply(lexp, largs @ args, {info with apply_loc=loc})
     | lexp ->
-        Lapply(lexp, args, mk_apply_info ~tailcall:should_be_tailcall loc)
+        Lapply(lexp, args, mk_apply_info ~tailcall:should_be_tailcall
+                 ?inlined_attribute loc)
   in
   let rec build_apply lam args = function
       (None, optional) :: l ->
@@ -1025,12 +1047,14 @@ and transl_apply ?(should_be_tailcall=false) lam sargs loc =
         and id_arg = Ident.create "param" in
         let body =
           match build_apply handle ((Lvar id_arg, optional)::args') l with
-            Lfunction{kind = Curried; params = ids; body = lam} ->
-              Lfunction{kind = Curried; params = id_arg::ids; body = lam}
-          | Levent(Lfunction{kind = Curried; params = ids; body = lam}, _) ->
-              Lfunction{kind = Curried; params = id_arg::ids; body = lam}
+            Lfunction{kind = Curried; params = ids; body = lam; attr} ->
+              Lfunction{kind = Curried; params = id_arg::ids; body = lam; attr}
+          | Levent(Lfunction{kind = Curried; params = ids;
+                             body = lam; attr}, _) ->
+              Lfunction{kind = Curried; params = id_arg::ids; body = lam; attr}
           | lam ->
-              Lfunction{kind = Curried; params = [id_arg]; body = lam}
+              Lfunction{kind = Curried; params = [id_arg]; body = lam;
+                        attr = default_function_attribute}
         in
         List.fold_left
           (fun body (id, lam) -> Llet(Strict, id, lam, body))
@@ -1082,8 +1106,11 @@ and transl_let rec_flag pat_expr_list body =
       let rec transl = function
         [] ->
           body
-      | {vb_pat=pat; vb_expr=expr} :: rem ->
-          Matching.for_let pat.pat_loc (transl_exp expr) pat (transl rem)
+      | {vb_pat=pat; vb_expr=expr; vb_attributes=attr; vb_loc} :: rem ->
+          let lam =
+            Translattribute.add_inline_attribute (transl_exp expr) vb_loc attr
+          in
+          Matching.for_let pat.pat_loc lam pat (transl rem)
       in transl pat_expr_list
   | Recursive ->
       let idlist =
@@ -1093,8 +1120,11 @@ and transl_let rec_flag pat_expr_list body =
             | Tpat_alias ({pat_desc=Tpat_any}, id,_) -> id
             | _ -> raise(Error(pat.pat_loc, Illegal_letrec_pat)))
         pat_expr_list in
-      let transl_case {vb_pat=pat; vb_expr=expr} id =
-        let lam = transl_exp expr in
+      let transl_case {vb_pat=pat; vb_expr=expr; vb_attributes; vb_loc} id =
+        let lam =
+          Translattribute.add_inline_attribute (transl_exp expr) vb_loc
+            vb_attributes
+        in
         if not (check_recursive_lambda idlist lam) then
           raise(Error(expr.exp_loc, Illegal_letrec_expr));
         (id, lam) in

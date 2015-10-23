@@ -91,6 +91,7 @@ let rec apply_coercion strict restr arg =
       let param = Ident.create "funarg" in
       name_lambda strict arg (fun id ->
         Lfunction{kind = Curried; params = [param];
+                  attr = default_function_attribute;
                   body = apply_coercion
                            Strict cc_res
                            (Lapply(Lvar id,
@@ -353,10 +354,12 @@ let rec transl_module cc rootpath mexp =
         (function
         | Tcoerce_none ->
             Lfunction{kind = Curried; params = [param];
+                      attr = default_function_attribute;
                       body = transl_module Tcoerce_none bodypath body}
         | Tcoerce_functor(ccarg, ccres) ->
             let param' = Ident.create "funarg" in
             Lfunction{kind = Curried; params = [param'];
+                      attr = default_function_attribute;
                       body = Llet(Alias, param,
                                   apply_coercion Alias ccarg (Lvar param'),
                                   transl_module ccres bodypath body)}
