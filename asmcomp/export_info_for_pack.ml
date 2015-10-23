@@ -129,7 +129,6 @@ let import_for_pack ~pack_units ~pack (exp : Export_info.t) =
     ~offset_fun:exp.offset_fun
     ~offset_fv:exp.offset_fv
     ~values:(import_eidmap import_descr exp.values)
-    ~id_symbol:(import_eidmap import_sym exp.id_symbol)
     ~symbol_id:(Symbol.Map.map_keys import_sym
       (Symbol.Map.map import_eid exp.symbol_id))
     ~constants:(Symbol.Set.map import_sym exp.constants)

@@ -447,12 +447,10 @@ let rec describe_program (env:general_env) (program : Flambda.program) =
     symbol, env
 
 let build_export_info ~(backend:(module Backend_intf.S))
-    (program:Flambda.program) : Export_info.t =
-
+      (program:Flambda.program) : Export_info.t =
   (* CR pchambart: Should probably use that instead of the ident of
      the module as global identifier. *)
   let _global_symbol, env = describe_program (create_empty_env ()) program in
-
   let set_of_closures_map =
     let r = ref Set_of_closures_id.Map.empty in
     Flambda_iterators.iter_on_set_of_closures_of_program program
@@ -461,7 +459,6 @@ let build_export_info ~(backend:(module Backend_intf.S))
               s.function_decls.set_of_closures_id s !r);
     !r
   in
-
   let closures =
     let aux_fun ffunctions off_id _ map =
       let fun_id = Closure_id.wrap off_id in
@@ -471,7 +468,6 @@ let build_export_info ~(backend:(module Backend_intf.S))
     in
     Set_of_closures_id.Map.fold aux set_of_closures_map Closure_id.Map.empty
   in
-
   let invariant_arguments =
     Set_of_closures_id.Map.map
       (fun { Flambda.function_decls } ->
@@ -479,11 +475,9 @@ let build_export_info ~(backend:(module Backend_intf.S))
            ~backend function_decls
       ) set_of_closures_map
   in
-
   let root_approx : Export_info.approx =
     Value_symbol (Compilenv.current_unit_symbol ())
   in
-
   let export =
     if !Clflags.opaque then
       Export_info.empty
@@ -494,7 +488,6 @@ let build_export_info ~(backend:(module Backend_intf.S))
           Ident.Map.singleton
             (Compilenv.current_unit_id ()) root_approx)
         ~symbol_id:env.sym
-        ~id_symbol:Compilation_unit.Map.empty
         ~offset_fun:Closure_id.Map.empty
         ~offset_fv:Var_within_closure.Map.empty
         ~constants:Symbol.Set.empty
@@ -503,9 +496,4 @@ let build_export_info ~(backend:(module Backend_intf.S))
         ~constant_sets_of_closures:Set_of_closures_id.Set.empty
         ~invariant_arguments:invariant_arguments
   in
-
-  (* Format.eprintf "Build_export_info returns@ %a@." *)
-  (*   Export_info.print_all export; *)
-
   export
-

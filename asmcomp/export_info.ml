@@ -119,7 +119,6 @@ type t = {
   closures : Flambda.function_declarations Closure_id.Map.t;
   values : descr Export_id.Map.t Compilation_unit.Map.t;
   globals : approx Ident.Map.t;
-  id_symbol : Symbol.t Export_id.Map.t Compilation_unit.Map.t;
   symbol_id : Export_id.t Symbol.Map.t;
   offset_fun : int Closure_id.Map.t;
   offset_fv : int Var_within_closure.Map.t;
@@ -133,7 +132,6 @@ let empty : t = {
   closures = Closure_id.Map.empty;
   values = Compilation_unit.Map.empty;
   globals = Ident.Map.empty;
-  id_symbol = Compilation_unit.Map.empty;
   symbol_id = Symbol.Map.empty;
   offset_fun = Closure_id.Map.empty;
   offset_fv = Var_within_closure.Map.empty;
@@ -142,14 +140,13 @@ let empty : t = {
   invariant_arguments = Set_of_closures_id.Map.empty;
 }
 
-let create ~sets_of_closures ~closures ~values ~globals ~id_symbol
-      ~symbol_id ~offset_fun ~offset_fv ~constants ~constant_sets_of_closures
+let create ~sets_of_closures ~closures ~values ~globals ~symbol_id
+      ~offset_fun ~offset_fv ~constants ~constant_sets_of_closures
       ~invariant_arguments =
   { sets_of_closures;
     closures;
     values;
     globals;
-    id_symbol;
     symbol_id;
     offset_fun;
     offset_fv;
@@ -179,7 +176,6 @@ let merge (t1 : t) (t2 : t) : t =
       Set_of_closures_id.Map.disjoint_union t1.sets_of_closures
         t2.sets_of_closures;
     closures = Closure_id.Map.disjoint_union t1.closures t2.closures;
-    id_symbol = eidmap_disjoint_union t1.id_symbol t2.id_symbol;
     symbol_id = Symbol.Map.disjoint_union t1.symbol_id t2.symbol_id;
     offset_fun = Closure_id.Map.disjoint_union
         ~eq:int_eq t1.offset_fun t2.offset_fun;
@@ -321,13 +317,6 @@ let print_approx ppf (t : t) =
   print_recorded_symbols ();
   fprintf ppf "@]"
 
-let print_symbols ppf (t : t) =
-  let print_symbol eid sym =
-    Format.fprintf ppf "%a -> %a@." Symbol.print sym Export_id.print eid
-  in
-  Compilation_unit.Map.iter (fun _ -> Export_id.Map.iter print_symbol)
-    t.id_symbol
-
 let print_offsets ppf (t : t) =
   Format.fprintf ppf "@[<v 2>offset_fun:@ ";
   Closure_id.Map.iter (fun cid off ->
@@ -343,11 +332,6 @@ let print_all ppf (t : t) =
   let fprintf = Format.fprintf in
   fprintf ppf "approxs@ %a@.@."
     print_approx t;
-  fprintf ppf "id_symbol@ %a@.@."
-    (Compilation_unit.Map.print (Export_id.Map.print Symbol.print))
-    t.id_symbol;
-  fprintf ppf "symbol_id@ %a@.@."
-    (Symbol.Map.print Export_id.print) t.symbol_id;
   fprintf ppf "constants@ %a@.@."
     Symbol.Set.print t.constants;
   fprintf ppf "functions@ %a@.@."

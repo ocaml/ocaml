@@ -63,8 +63,6 @@ type t = private {
   globals : approx Ident.Map.t;
   (** Global variables provided by the unit: usually only the top-level
       module identifier, but packs may contain more than one. *)
-  id_symbol : Symbol.t Export_id.Map.t Compilation_unit.Map.t;
-  (* CR mshinwell for pchambart: add comment *)
   symbol_id : Export_id.t Symbol.Map.t;
   (** Associates symbols and values. *)
   offset_fun : int Closure_id.Map.t;
@@ -89,7 +87,6 @@ val create
   -> closures:Flambda.function_declarations Closure_id.Map.t
   -> values:descr Export_id.Map.t Compilation_unit.Map.t
   -> globals:approx Ident.Map.t
-  -> id_symbol:Symbol.t Export_id.Map.t Compilation_unit.Map.t
   -> symbol_id:Export_id.t Symbol.Map.t
   -> offset_fun:int Closure_id.Map.t
   -> offset_fv:int Var_within_closure.Map.t
@@ -127,6 +124,5 @@ val nest_eid_map
 (**/**)
 (* Debug printing functions. *)
 val print_approx : Format.formatter -> t -> unit
-val print_symbols : Format.formatter -> t -> unit
 val print_offsets : Format.formatter -> t -> unit
 val print_all : Format.formatter -> t -> unit
