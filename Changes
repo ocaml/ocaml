@@ -97,6 +97,8 @@ Runtime system:
   if available.  (Xavier Leroy)
 - GPR#226: select higher levels of optimization for GCC and Clang when
   compiling the run-time system and C stub code.  (Xavier Leroy)
+- GPR#262: Multiple GC roots per compilation unit (Pierre Chambart, Mark
+  Shinwell, review by Damien Doligez)
 
 Standard library:
 - PR#6316: Scanf.scanf failure on %u formats when reading big integers
