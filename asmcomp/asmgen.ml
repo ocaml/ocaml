@@ -153,30 +153,13 @@ let prep_flambda_for_export ppf flam ~backend =
     Format.fprintf ppf "@.After Share_constants:@ %a@."
       Flambda.print_program program
   end;
-  (* let program = Inline_and_simplify.run ~never_inline:true ~backend program in *)
-  (* Flambda_invariants.check_exn ~kind program; *)
   if !Clflags.dump_flambda
   then begin
     Format.fprintf ppf "@.After Inline_and_simplify:@ %a@."
       Flambda.print_program program
   end;
   let export = Build_export_info.build_export_info ~backend program in
-  (* Compilenv.set_export_info export; *)
-  (* if !Clflags.dump_flambda *)
-  (* then begin *)
-  (*   Format.fprintf ppf "After Build_export_info:@ %a@." *)
-  (*     Flambda.print_program program *)
-  (* end; *)
   Flambda_invariants.check_exn ~kind program;
-(*
-  Symbol.Map.iter (fun _ set_of_closures ->
-      let var = Variable.create "dummy" in
-      let expr : Flambda.t =
-        Let (var, Set_of_closures set_of_closures, Var var)
-      in
-      Flambda_invariants.check_exn ~kind ~cmxfile:true expr)
-    lifted_constants.Lift_constants.set_of_closures_map;
-*)
   program, export
 
 let compile_unit ~sourcefile _output_prefix asm_filename keep_asm obj_filename gen =

@@ -15,28 +15,26 @@ module Int = Ext_types.Int
 module ET = Export_info
 
 type general_env =
-  {
-    sym : Export_id.t Symbol.Map.t;
+  { sym : Export_id.t Symbol.Map.t;
     ex_table : Export_info.descr Export_id.Map.t ref;
   }
 
 type env =
-  {
-    var : Export_info.approx Variable.Map.t;
+  { var : Export_info.approx Variable.Map.t;
     sym : Export_id.t Symbol.Map.t;
     ex_table : Export_info.descr Export_id.Map.t ref;
   }
 
 let create_empty_env () =
-  {
-    sym = Symbol.Map.empty;
+  { sym = Symbol.Map.empty;
     ex_table = ref Export_id.Map.empty;
   }
 
 let add_empty_env (env:general_env) =
   { var = Variable.Map.empty;
     sym = env.sym;
-    ex_table = env.ex_table }
+    ex_table = env.ex_table;
+  }
 
 let extern_id_descr ex =
   let export = Compilenv.approx_env () in
@@ -96,16 +94,12 @@ let describe_constant env (c:Flambda.constant_defining_value_block_field) : Expo
   | Const (Const_pointer i) -> Value_id (new_descr env (Value_int i))
 
 let describe_allocated_constant
-    (c:Allocated_const.t) : Export_info.descr =
+      (c : Allocated_const.t) : Export_info.descr =
   match c with
-  | Float f ->
-    Value_float f
-  | Int32 i ->
-    Value_boxed_int (Int32, i)
-  | Int64 i ->
-    Value_boxed_int (Int64, i)
-  | Nativeint i ->
-    Value_boxed_int (Nativeint, i)
+  | Float f -> Value_float f
+  | Int32 i -> Value_boxed_int (Int32, i)
+  | Int64 i -> Value_boxed_int (Int64, i)
+  | Nativeint i -> Value_boxed_int (Nativeint, i)
   | String s ->
     let v_string : Export_info.value_string =
       { size = String.length s; contents = Unknown_or_mutable }
@@ -116,13 +110,11 @@ let describe_allocated_constant
       { size = String.length c; contents = Contents c }
     in
     Value_string v_string
-  | Float_array a ->
-    Value_float_array (List.length a)
+  | Float_array a -> Value_float_array (List.length a)
 
 let find_approx env var : Export_info.approx =
-  begin try Variable.Map.find var env.var with
+  try Variable.Map.find var env.var with
   | Not_found -> Value_unknown
-  end
 
 let rec describe (env : env) (flam : Flambda.t) : Export_info.approx =
   match flam with
@@ -243,7 +235,6 @@ and describe_named (env : env) (named : Flambda.named) : Export_info.approx =
     Value_unknown
 
   | Set_of_closures set ->
-(*    Format.eprintf "set_of_closures@.";*)
     let descr =
       Export_info.Value_set_of_closures (describe_set_of_closures env set)
     in
@@ -361,10 +352,8 @@ and describe_set_of_closures env (set : Flambda.set_of_closures)
     aliased_symbol = None;
   }
 
-let describe_constant_defining_value env
-    id
-    symbol
-    (const:Flambda.constant_defining_value) =
+let describe_constant_defining_value env id symbol
+      (const : Flambda.constant_defining_value) =
   let local_env = add_empty_env env in
   match const with
   | Allocated_const alloc_const ->
@@ -382,22 +371,27 @@ let describe_constant_defining_value env
     record_descr local_env id descr
   | Project_closure (sym, closure_id) -> begin
       match get_symbol_descr local_env sym with
-      | Some(Value_set_of_closures set_of_closures) ->
-        let descr = Export_info.Value_closure { closure_id = closure_id; set_of_closures } in
+      | Some (Value_set_of_closures set_of_closures) ->
+        let descr =
+          Export_info.Value_closure
+            { closure_id = closure_id; set_of_closures }
+        in
         record_descr local_env id descr
       | None ->
         Misc.fatal_errorf
-          "Cannot project symbol %a to closure_id %a. No available description@."
+          "Cannot project symbol %a to closure_id %a.  \
+            No available description@."
           Symbol.print sym
           Closure_id.print closure_id
       | Some (Value_closure _) ->
         Misc.fatal_errorf
-          "Cannot project symbol %a to closure_id %a. closure instead of set of closure@."
+          "Cannot project symbol %a to closure_id %a.  \
+            Closure instead of set of closure@."
           Symbol.print sym
           Closure_id.print closure_id
       | Some _ ->
         Misc.fatal_errorf
-          "Cannot project symbol %a to closure_id %a. Not a set of closure@."
+          "Cannot project symbol %a to closure_id %a.  Not a set of closures@."
           Symbol.print sym
           Closure_id.print closure_id
     end
@@ -417,7 +411,7 @@ let rec describe_program (env:general_env) (program : Flambda.program) =
           (id, symbol, def) :: defs)
         (env, []) defs
     in
-    (* Project_closure are separated to be handled last. Those are the
+    (* [Project_closure]s are separated to be handled last.  They are the
        only values that need a description for their argument. *)
     let projects_closure, other_constants =
       List.partition (function
@@ -447,65 +441,56 @@ let rec describe_program (env:general_env) (program : Flambda.program) =
     symbol, env
 
 let build_export_info ~(backend:(module Backend_intf.S))
-    (program:Flambda.program) : Export_info.t =
-
-  (* CR pchambart: Should probably use that instead of the ident of
-     the module as global identifier. *)
-  let _global_symbol, env = describe_program (create_empty_env ()) program in
-
-  let set_of_closures_map =
-    let r = ref Set_of_closures_id.Map.empty in
-    Flambda_iterators.iter_on_set_of_closures_of_program program
-      ~f:(fun s ->
-          r := Set_of_closures_id.Map.add
-              s.function_decls.set_of_closures_id s !r);
-    !r
-  in
-
-  let closures =
-    let aux_fun ffunctions off_id _ map =
-      let fun_id = Closure_id.wrap off_id in
-      Closure_id.Map.add fun_id ffunctions map in
-    let aux _ ({ function_decls } : Flambda.set_of_closures) map =
-      Variable.Map.fold (aux_fun function_decls) function_decls.funs map
+      (program:Flambda.program) : Export_info.t =
+  if !Clflags.opaque then
+    Export_info.empty
+  else
+    (* CR pchambart: Should probably use that instead of the ident of
+       the module as global identifier.
+       mshinwell: Is "that" the variable "_global_symbol"? *)
+    let _global_symbol, env = describe_program (create_empty_env ()) program in
+    let root_approx : Export_info.approx =
+      Value_symbol (Compilenv.current_unit_symbol ())
     in
-    Set_of_closures_id.Map.fold aux set_of_closures_map Closure_id.Map.empty
-  in
-
-  let invariant_arguments =
-    Set_of_closures_id.Map.map
-      (fun { Flambda.function_decls } ->
-         Invariant_params.unchanging_params_in_recursion
-           ~backend function_decls
-      ) set_of_closures_map
-  in
-
-  let root_approx : Export_info.approx =
-    Value_symbol (Compilenv.current_unit_symbol ())
-  in
-
-  let export =
-    if !Clflags.opaque then
-      Export_info.empty
-    else
-      Export_info.create
-        ~values:(Export_info.nest_eid_map !(env.ex_table))
-        ~globals:(
-          Ident.Map.singleton
-            (Compilenv.current_unit_id ()) root_approx)
-        ~symbol_id:env.sym
-        ~id_symbol:Compilation_unit.Map.empty
-        ~offset_fun:Closure_id.Map.empty
-        ~offset_fv:Var_within_closure.Map.empty
-        ~constants:Symbol.Set.empty
-        ~sets_of_closures:(Set_of_closures_id.Map.map (fun { Flambda.function_decls } -> function_decls) set_of_closures_map)
-        ~closures
-        ~constant_sets_of_closures:Set_of_closures_id.Set.empty
-        ~invariant_arguments:invariant_arguments
-  in
-
-  (* Format.eprintf "Build_export_info returns@ %a@." *)
-  (*   Export_info.print_all export; *)
-
-  export
-
+    let globals =
+      Ident.Map.singleton (Compilenv.current_unit_id ()) root_approx
+    in
+    let set_of_closures_map =
+      let r = ref Set_of_closures_id.Map.empty in
+      Flambda_iterators.iter_on_set_of_closures_of_program program
+        ~f:(fun s ->
+            r := Set_of_closures_id.Map.add
+                s.function_decls.set_of_closures_id s !r);
+      !r
+    in
+    let sets_of_closures =
+      Set_of_closures_id.Map.map
+        (fun { Flambda.function_decls } -> function_decls)
+        set_of_closures_map
+    in
+    let closures =
+      let aux_fun ffunctions off_id _ map =
+        let fun_id = Closure_id.wrap off_id in
+        Closure_id.Map.add fun_id ffunctions map in
+      let aux _ ({ function_decls } : Flambda.set_of_closures) map =
+        Variable.Map.fold (aux_fun function_decls) function_decls.funs map
+      in
+      Set_of_closures_id.Map.fold aux set_of_closures_map Closure_id.Map.empty
+    in
+    let invariant_arguments =
+      Set_of_closures_id.Map.map
+        (fun { Flambda.function_decls } ->
+           Invariant_params.unchanging_params_in_recursion
+             ~backend function_decls
+        ) set_of_closures_map
+    in
+    Export_info.create
+      ~values:(Export_info.nest_eid_map !(env.ex_table))
+      ~globals
+      ~symbol_id:env.sym
+      ~offset_fun:Closure_id.Map.empty
+      ~offset_fv:Var_within_closure.Map.empty
+      ~sets_of_closures
+      ~closures
+      ~constant_sets_of_closures:Set_of_closures_id.Set.empty
+      ~invariant_arguments:invariant_arguments

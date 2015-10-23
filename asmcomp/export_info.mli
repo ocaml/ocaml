@@ -63,17 +63,12 @@ type t = private {
   globals : approx Ident.Map.t;
   (** Global variables provided by the unit: usually only the top-level
       module identifier, but packs may contain more than one. *)
-  id_symbol : Symbol.t Export_id.Map.t Compilation_unit.Map.t;
-  (* CR mshinwell for pchambart: add comment *)
   symbol_id : Export_id.t Symbol.Map.t;
   (** Associates symbols and values. *)
   offset_fun : int Closure_id.Map.t;
   (** Positions of function pointers in their closures. *)
   offset_fv : int Var_within_closure.Map.t;
   (** Positions of value pointers in their closures. *)
-  constants : Symbol.Set.t;
-  (** Symbols that are effectively constants (the top-level module is
-      not always a constant for instance). *)
   constant_sets_of_closures : Set_of_closures_id.Set.t;
   (* CR mshinwell for pchambart: Add comment *)
   invariant_arguments : Variable.Set.t Set_of_closures_id.Map.t;
@@ -89,22 +84,22 @@ val create
   -> closures:Flambda.function_declarations Closure_id.Map.t
   -> values:descr Export_id.Map.t Compilation_unit.Map.t
   -> globals:approx Ident.Map.t
-  -> id_symbol:Symbol.t Export_id.Map.t Compilation_unit.Map.t
   -> symbol_id:Export_id.t Symbol.Map.t
   -> offset_fun:int Closure_id.Map.t
   -> offset_fv:int Var_within_closure.Map.t
-  -> constants:Symbol.Set.t
   -> constant_sets_of_closures:Set_of_closures_id.Set.t
   -> invariant_arguments:Variable.Set.t Set_of_closures_id.Map.t
   -> t
 
-(* CR pchambart: Should we separate [t] in 2 types: one created by the
+(* CR-someday pchambart: Should we separate [t] in 2 types: one created by the
    current [create] function, returned by [Build_export_info]. And
    another built using t and offset_informations returned by
-   [flambda_to_clambda] ? *)
-(** Record function offset informations *)
-val add_offsets :
-  t
+   [flambda_to_clambda] ?
+   mshinwell: I think we should, but after we've done the first release.
+*)
+(** Record information about the layout of closures. *)
+val add_offsets
+   : t
   -> offset_fun:int Closure_id.Map.t
   -> offset_fv:int Var_within_closure.Map.t
   -> t
@@ -127,6 +122,5 @@ val nest_eid_map
 (**/**)
 (* Debug printing functions. *)
 val print_approx : Format.formatter -> t -> unit
-val print_symbols : Format.formatter -> t -> unit
 val print_offsets : Format.formatter -> t -> unit
 val print_all : Format.formatter -> t -> unit
