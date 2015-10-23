@@ -120,10 +120,10 @@ let inline_non_recursive env r ~function_decls ~lhs_of_application
     else begin
       (* r_inlined contains an approximation that may be invalid for the
          untransformed expression: it may reference functions that only
-         exists if the body of the function is effectively inlined.
+         exists if the body of the function is in fact inlined.
          If the function approximation contained an approximation that
-         does not depends on the effective value of its arguments, it
-         could be returned instead of [A.value_unknown] *)
+         does not depend on the actual values of its arguments, it
+         could be returned instead of [A.value_unknown]. *)
       no_simplification ()
     end
   end
