@@ -4206,7 +4206,7 @@ let report_error env ppf = function
       fprintf ppf
         "@[%s@ %s@ %a@]"
         "This match case could not be refuted."
-        "Here is an example of value that would reach it:"
+        "Here is an example of a value that would reach it:"
         Parmatch.top_pretty pat
 
 let report_error env ppf err =
