@@ -314,7 +314,7 @@ and print_named ppf (named : named) =
 and print_function_declaration ppf var (f : function_declaration) =
   let idents ppf =
     List.iter (fprintf ppf "@ %a" Variable.print) in
-  fprintf ppf "@ (%a@ =@ fun@[<2>%a@] ->@ @[<2>%a@])"
+  fprintf ppf "@[<2>(%a@ =@ fun@[<2>%a@] ->@ @[<2>%a@])@]@ "
     Variable.print var idents f.params lam f.body
 
 and print_set_of_closures ppf (set_of_closures : set_of_closures) =
@@ -335,7 +335,7 @@ and print_set_of_closures ppf (set_of_closures : set_of_closures) =
           spec_args
       end
     in
-    fprintf ppf "@[<2>(set_of_closures id=%a %a@ free_vars={%a@ }@ \
+    fprintf ppf "@[<2>(set_of_closures id=%a@ %a@ free_vars={%a@ }@ \
         specialised_args={%a})@]"
       Set_of_closures_id.print function_decls.set_of_closures_id
       funs function_decls.funs
