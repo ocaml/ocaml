@@ -750,6 +750,11 @@ and simplify_named env r (tree : Flambda.named) : Flambda.named * R.t =
       | Some expr ->
         simplify_named env r (Flambda.Expr expr)
       | None ->
+        let set_of_closures =
+          Remove_unused_arguments.separate_unused_arguments_in_set_of_closures
+            set_of_closures
+            ~backend:(E.backend env)
+        in
         let set_of_closures, r =
           simplify_set_of_closures env r set_of_closures
         in

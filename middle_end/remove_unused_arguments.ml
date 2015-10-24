@@ -115,6 +115,15 @@ let candidate_for_spliting_for_unused_arguments
   in
   (not no_recursive_functions) || (number_of_non_stub_functions > 1)
 
+let separate_unused_arguments_in_set_of_closures set_of_closures ~backend =
+  if candidate_for_spliting_for_unused_arguments
+      set_of_closures.Flambda.function_decls
+      ~backend
+  then match separate_unused_arguments set_of_closures with
+    | None -> set_of_closures
+    | Some set_of_closures -> set_of_closures
+  else set_of_closures
+
 let separate_unused_arguments_in_closures_expr ~force tree ~backend =
   let aux_named (named : Flambda.named) : Flambda.named =
     match named with
