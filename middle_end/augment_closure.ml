@@ -69,6 +69,7 @@ let rewrite_set_of_closures
     in
     Flambda.create_function_declaration
       ~body
+      ~inline:function_decl.inline
       ~params:function_decl.params
       ~stub:function_decl.stub
       ~dbg:function_decl.dbg
