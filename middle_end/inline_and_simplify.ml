@@ -746,12 +746,7 @@ and simplify_named env r (tree : Flambda.named) : Flambda.named * R.t =
     simplify_named_using_approx_and_env env r tree approx
   | Set_of_closures set_of_closures ->
     begin
-      match
-        if !Clflags.unbox_closures then
-          Augment_closure.run ~env ~set_of_closures
-        else
-          None
-      with
+      match Augment_closure.run ~env ~set_of_closures with
       | Some expr ->
         simplify_named env r (Flambda.Expr expr)
       | None ->
