@@ -76,6 +76,8 @@ let compute (program:Flambda.program) =
     List.fold_left add_closure_offsets
       init (Flambda_utils.all_sets_of_closures program)
   in
-  (* Format.eprintf "Closures_offsets results:@ function_offsets:@ %a@." *)
-  (*   (Closure_id.Map.print Format.pp_print_int) r.function_offsets; *)
+  (* Format.eprintf "@[<2>Closures_offsets results:@ @[function_offsets:@ %a@]\ *)
+  (*                 @ @[free_variable_offsets:@ %a@]@]@." *)
+  (*   (Closure_id.Map.print Format.pp_print_int) r.function_offsets *)
+  (*   (Var_within_closure.Map.print Format.pp_print_int) r.free_variable_offsets; *)
   r

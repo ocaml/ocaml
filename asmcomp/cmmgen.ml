@@ -628,7 +628,7 @@ let make_checkbound dbg = function
 let fundecls_size fundecls =
   let sz = ref (-1) in
   List.iter
-    (fun f -> sz := !sz + 1 + (if f.arity = 1 then 2 else 3))
+    (fun f -> sz := !sz + 1 + (if f.arity <= 1 then 2 else 3))
     fundecls;
   !sz
 
@@ -1425,10 +1425,10 @@ let rec transl = function
               if pos = 0
               then alloc_closure_header block_size
               else alloc_infix_header pos in
-            if f.arity = 1 then
+            if f.arity <= 1 then
               header ::
               Cconst_symbol f.label ::
-              int_const 1 ::
+              int_const f.arity ::
               transl_fundecls (pos + 3) rem
             else
               header ::
@@ -2899,13 +2899,7 @@ let rec intermediate_curry_functions arity num =
 
 let curry_function arity =
   if arity >= 0
-  then if arity = 0
-    then
-      (* Calls to functions of arity 0 are direct calls *)
-      [Cdata([Cglobal_symbol "caml_curry0";
-              Cdefine_symbol "caml_curry0";
-              Cint 0n])]
-    else intermediate_curry_functions arity 0
+  then intermediate_curry_functions arity 0
   else [tuplify_function (-arity)]
 
 
