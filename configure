@@ -295,10 +295,11 @@ TOOLCHAIN="cc"
 # - strict type-based aliasing analysis (too risky for the OCaml runtime)
 # - strict no-overflow conditions on signed integer arithmetic
 #   (the OCaml runtime assumes Java-style behavior of signed integer arith.)
-# Concerning optimization level, -O3 is somewhat risky, so take -O2
+# Concerning optimization level, -O3 is somewhat risky, so take -O2.
 # Concerning language version, gnu99 is ISO C99 plus GNU extensions
-# that are often used in standard headers.  GCC defaults to gnu89,
-# which is not C99.  Clang defaults to gnu99 or gnu11, which is fine.
+# that are often used in standard headers.  Older GCC versions
+# defaults to gnu89, which is not C99.  Clang defaults to gnu99 or
+# gnu11, which is fine.
 
 case "$ocamlversion" in
   *+dev*) gcc_warnings="-Wall -Werror";;
@@ -311,9 +312,12 @@ case "$ccfamily" in
   gcc-[012]-*)
     # Some versions known to miscompile OCaml, e,g, 2.7,2.1, some 2.96.
     # Plus: C99 support unknown.
-    err "This version of GCC is too old.  Please use GCC version 3 or above.";;
-  gcc-3-[0123])
-    # No -fwrapv option yet
+    err "This version of GCC is too old.  Please use GCC version 4.2 or above.";;
+  gcc-3-*|gcc-4-[01])
+    # No -fwrapv option before GCC 3.4.
+    # Known problems with -fwrapv fixed in 4.2 only.
+    wrn "This verion of GCC is rather old.  Reducing optimization level."
+    wrn "Consider using GCC version 4.2 or above."
     bytecccompopts="-std=gnu99 -O $gcc_warnings";;
   gcc-*)
     bytecccompopts="-std=gnu99 -O2 -fno-strict-aliasing -fwrapv $gcc_warnings";;
