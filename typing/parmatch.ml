@@ -710,7 +710,7 @@ let pats_of_type ?(always=false) env ty =
   let ty' = Ctype.expand_head env ty in
   match ty'.desc with
   | Tconstr (path, _, _) ->
-      begin match (Env.find_type path env).type_kind with
+      begin try match (Env.find_type path env).type_kind with
       | Type_variant cl when always || List.length cl = 1 ||
         List.for_all (fun cd -> cd.Types.cd_res <> None) cl ->
           let cstrs = fst (Env.find_type_descrs path env) in
@@ -724,6 +724,7 @@ let pats_of_type ?(always=false) env ty =
           in
           [make_pat (Tpat_record (fields, Closed)) ty env]
       | _ -> [omega]
+      with Not_found -> [omega]
       end
   | Ttuple tl ->
       [make_pat (Tpat_tuple (omegas (List.length tl))) ty env]
@@ -732,13 +733,15 @@ let pats_of_type ?(always=false) env ty =
 let rec get_variant_constructors env ty =
   match (Ctype.repr ty).desc with
   | Tconstr (path,_,_) -> begin
-      match Env.find_type path env with
+      try match Env.find_type path env with
       | {type_kind=Type_variant _} ->
           fst (Env.find_type_descrs path env)
       | {type_manifest = Some _} ->
           get_variant_constructors env
             (Ctype.expand_head_once env (clean_copy ty))
       | _ -> fatal_error "Parmatch.get_variant_constructors"
+      with Not_found ->
+        fatal_error "Parmatch.get_variant_constructors"
     end
   | _ -> fatal_error "Parmatch.get_variant_constructors"
 
