@@ -20,7 +20,7 @@ Language features:
 - GPR#26: support for "(type a b)" as syntactic sugar for "(type a) (type b)"
   (Gabriel Scherer)
 * GPR#69: Custom index operators: ( .() ), ( .[] ), ( .{} ) etc.
-  (user 'Octachron')
+  (Florian Angeletti)
   The syntax "foo.(bar) <- baz" now desugars into "( .()<- ) foo bar baz"; this
   should allow user to define their own notations by overriding.
   The bigarray notations ( .{} ), ( .{,} ) etc. are defined in the Bigarray
@@ -223,10 +223,11 @@ Bug fixes:
 - PR#7008: Fatal error in ocamlc with empty compilation unit name
   (Damien Doligez, report by Cesar Kunz)
 - PR#7012: Variable name forgotten when it starts with a capital letter
-  (Jacques Garrigue, Gabriel Scherer, report by Thomas Leonard and Octachron)
+  (Jacques Garrigue, Gabriel Scherer,
+   report by Thomas Leonard and Florian Angeletti)
 - PR#7016: Stack overflow in GADT typing
-- GPR#205: Clear caml_backtrace_last_exn before registering as root (report
-  and fix by Frederic Bour)
+- GPR#205: Clear caml_backtrace_last_exn before registering as root
+  (report and fix by Frederic Bour)
 - GPR#220: minor -dsource error on recursive modules
   (Hongbo Zhang)
 - GPR#228: fix a dangling internal pointer in (bytecode )debug_info
@@ -288,7 +289,7 @@ Features wishes:
 - GPR#237: a CONTRIBUTING document
   (François Bobot, Gabriel Scherer, review by Xavier Leroy)
 - GPR#245: remove a few remaining French comments
-  (user 'Octachron')
+  (Florian Angeletti)
 - GPR#252: improve build instructions in MSVC Windows README
   (Philip Daian)
 
