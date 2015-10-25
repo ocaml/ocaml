@@ -823,8 +823,13 @@ module_type:
       { unclosed "sig" 1 "end" 3 }
   | FUNCTOR functor_args MINUSGREATER module_type
       %prec below_WITH
-      { List.fold_left (fun acc (n, t) -> mkmty(Pmty_functor(n, t, acc)))
-                       $4 $2 }
+      { List.fold_left
+          (fun acc (n, t) ->
+           mkmty(Pmty_functor(n, t, acc)))
+        $4 $2 }
+  | module_type MINUSGREATER module_type
+      %prec below_WITH
+      { mkmty(Pmty_functor(mknoloc "_", Some $1, $3)) }
   | module_type WITH with_constraints
       { mkmty(Pmty_with($1, List.rev $3)) }
   | MODULE TYPE OF module_expr %prec below_LBRACKETAT
@@ -2009,7 +2014,7 @@ core_type:
       { Typ.attr $1 $2 }
 ;
 core_type_no_attr:
-    core_type2
+    core_type2 %prec MINUSGREATER
       { $1 }
   | core_type2 AS QUOTE ident
       { mktyp(Ptyp_alias($1, $4)) }
