@@ -121,6 +121,9 @@ Standard library:
 - PR#6694, PR#6695: deprecate functions using ISO-8859-1 character set
   in Char, Bytes, String and provide alternatives using US-ASCII.
   (Peter Zotov)
+- GPR#164: more efficient (branchless) implementation of Pervasives.compare
+  specialized at type 'float'.
+  (Vladimir Brankov)
 - GPR#201: generalize types of Printf.{ifprintf,ikfprintf}
   (Maxence Guesdon)
 - GPR#216: add the missing POSIX.1-2001 signals in Sys
