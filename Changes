@@ -134,6 +134,8 @@ Standard library:
   (Pierre Chambart, review by Gabriel Scherer and Jeremy Yallop)
 - GPR#250: Check for negative start element in Array.sub
   (report and fix by Jeremy Yallop)
+- GPR#265: new implementation of Queue avoiding Obj.magic
+  (Jérémie Dimino)
 
 Type system:
 - PR#5545: Type annotations on methods cannot control the choice of abbreviation
