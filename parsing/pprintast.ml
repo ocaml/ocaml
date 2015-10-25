@@ -915,8 +915,12 @@ class printer  ()= object(self:'self)
     | Pmty_functor (_, None, mt2) ->
         pp f "@[<hov2>functor () ->@ %a@]" self#module_type mt2
     | Pmty_functor (s, Some mt1, mt2) ->
-        pp f "@[<hov2>functor@ (%s@ :@ %a)@ ->@ %a@]" s.txt
-          self#module_type mt1  self#module_type mt2
+        if s.txt = "_" then
+          pp f "@[<hov2>%a@ ->@ %a@]"
+             self#module_type mt1  self#module_type mt2
+        else
+          pp f "@[<hov2>functor@ (%s@ :@ %a)@ ->@ %a@]" s.txt
+             self#module_type mt1  self#module_type mt2
     | Pmty_with (mt, l) ->
         let with_constraint f = function
           | Pwith_type (li, ({ptype_params= ls ;_} as td)) ->

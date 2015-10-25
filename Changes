@@ -19,6 +19,8 @@ Language features:
   (Peter Zotov)
 - GPR#26: support for "(type a b)" as syntactic sugar for "(type a) (type b)"
   (Gabriel Scherer)
+- GPR#42: short functor type syntax: "S -> T" for "functor (_ : S) -> T"
+  (Leo White)
 * GPR#69: Custom index operators: ( .() ), ( .[] ), ( .{} ) etc.
   (Florian Angeletti)
   The syntax "foo.(bar) <- baz" now desugars into "( .()<- ) foo bar baz"; this
