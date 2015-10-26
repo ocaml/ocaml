@@ -153,6 +153,8 @@ let prep_flambda_for_export ppf flam ~backend =
     Format.fprintf ppf "@.After Share_constants:@ %a@."
       Flambda.print_program program
   end;
+  (* CR mshinwell for pchambart: Are we missing a call to
+     [Inline_and_simplify] here? *)
   if !Clflags.dump_flambda
   then begin
     Format.fprintf ppf "@.After Inline_and_simplify:@ %a@."
