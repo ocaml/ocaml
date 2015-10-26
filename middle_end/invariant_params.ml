@@ -164,7 +164,7 @@ let function_variable_alias
     function_decls.funs;
   !fun_var_bindings
 
-let unchanging_params_in_recursion (decls : Flambda.function_declarations)
+let invariant_params_in_recursion (decls : Flambda.function_declarations)
     ~backend =
   let function_variable_alias = function_variable_alias ~backend decls in
   let escaping_functions = ref Variable.Set.empty in

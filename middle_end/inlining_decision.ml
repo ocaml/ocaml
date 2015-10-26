@@ -158,22 +158,22 @@ let should_duplicate_recursive_function env
       ~(function_decl : Flambda.function_declaration)
       ~(function_decls : Flambda.function_declarations)
       ~(value_set_of_closures : A.value_set_of_closures)
-      ~args_approxs ~unchanging_params =
+      ~args_approxs ~invariant_params =
   assert (List.length function_decl.params = List.length args_approxs);
   (not (E.inside_set_of_closures_declaration
       function_decls.set_of_closures_id env))
-    && (not (Variable.Set.is_empty value_set_of_closures.unchanging_params))
+    && (not (Variable.Set.is_empty value_set_of_closures.invariant_params))
     && Var_within_closure.Map.is_empty
       value_set_of_closures.bound_vars (* closed *)
     && List.exists2 (fun id approx ->
-        A.useful approx && Variable.Set.mem id unchanging_params)
+        A.useful approx && Variable.Set.mem id invariant_params)
       function_decl.params args_approxs
 
 let inline_recursive env r ~max_level ~lhs_of_application
       ~(function_decls : Flambda.function_declarations)
       ~closure_id_being_applied ~function_decl
       ~(value_set_of_closures : Simple_value_approx.value_set_of_closures)
-      ~unchanging_params ~args ~args_approxs ~dbg ~simplify ~no_simplification
+      ~invariant_params ~args ~args_approxs ~dbg ~simplify ~no_simplification
       ~(made_decision : Inlining_stats_types.Decision.t -> unit) =
   let tried_unrolling, unrolling_result =
     (* First try unrolling the recursive call, if we're allowed to. *)
@@ -188,13 +188,13 @@ let inline_recursive env r ~max_level ~lhs_of_application
        declaration at the call site, specialising parameters whose arguments
        we know. *)
     if should_duplicate_recursive_function env ~function_decls
-        ~function_decl ~value_set_of_closures ~args_approxs ~unchanging_params
+        ~function_decl ~value_set_of_closures ~args_approxs ~invariant_params
     then
       let copied_function_declaration =
         Inlining_transforms.inline_by_copying_function_declaration ~env
           ~r:(R.clear_benefit r) ~lhs_of_application
           ~function_decls ~closure_id_being_applied ~function_decl
-          ~args ~args_approxs ~unchanging_params
+          ~args ~args_approxs ~invariant_params
           ~specialised_args:value_set_of_closures.specialised_args ~dbg
           ~simplify
       in
@@ -317,7 +317,7 @@ let for_call_site ~env ~r ~(function_decls : Flambda.function_declarations)
       no_simplification ()
     | (Can_inline_if_no_larger_than _) as remaining_inlining_threshold ->
       let r = R.set_inlining_threshold r remaining_inlining_threshold in
-      let unchanging_params = value_set_of_closures.unchanging_params in
+      let invariant_params = value_set_of_closures.invariant_params in
       (* Try inlining if the function is non-recursive and not too far above
          the threshold (or if the function is to be unconditionally
          inlined). *)
@@ -337,7 +337,7 @@ let for_call_site ~env ~r ~(function_decls : Flambda.function_declarations)
       end else if recursive then
         inline_recursive env r ~max_level ~lhs_of_application ~function_decls
           ~closure_id_being_applied ~function_decl ~value_set_of_closures
-          ~unchanging_params ~args ~args_approxs ~dbg ~simplify
+          ~invariant_params ~args ~args_approxs ~dbg ~simplify
           ~no_simplification ~made_decision
       else begin
         made_decision (Can_inline_but_tried_nothing (Level_exceeded false));

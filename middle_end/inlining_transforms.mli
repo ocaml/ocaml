@@ -86,7 +86,7 @@ val inline_by_copying_function_declaration
   -> function_decl:Flambda.function_declaration
   -> args:Variable.t list
   -> args_approxs:Simple_value_approx.t list
-  -> unchanging_params:Variable.Set.t
+  -> invariant_params:Variable.Set.t
   -> specialised_args:Variable.Set.t
   -> dbg:Debuginfo.t
   -> simplify:Inlining_decision_intf.simplify

@@ -13,19 +13,19 @@
 
 (* CR mshinwell for lwhite: rename "unchanging" -> "invariant" *)
 
-(* [unchanging_params_in_recursion] calculates the set of parameters whose
+(* [invariant_params_in_recursion] calculates the set of parameters whose
    values are known not to change during the execution of a recursive
    function.  As such, occurrences of the parameters may always be replaced
    by the corresponding values.
 
-   For example, [x] would be in [unchanging_params] for both of the following
+   For example, [x] would be in [invariant_params] for both of the following
    functions:
 
      let rec f x y = (f x y) + (f x (y+1))
 
      let rec f x l = List.iter (f x) l
 *)
-val unchanging_params_in_recursion
+val invariant_params_in_recursion
    : Flambda.function_declarations
   -> backend:(module Backend_intf.S)
   -> Variable.Set.t

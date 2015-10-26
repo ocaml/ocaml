@@ -90,11 +90,11 @@ let rec import_ex ex =
     with
     | exception Not_found ->
       Misc.fatal_error "Set of closures ID not found in invariant_params"
-    | unchanging_params ->
+    | invariant_params ->
       let value_set_of_closures : A.value_set_of_closures =
         { function_decls = import_set_of_closures set_of_closures_id;
           bound_vars;
-          unchanging_params = unchanging_params;
+          invariant_params = invariant_params;
           specialised_args = Variable.Set.empty;
           freshening = Freshening.Project_var.empty;
         }
@@ -104,7 +104,7 @@ let rec import_ex ex =
     end
   | Value_set_of_closures { set_of_closures_id; bound_vars; aliased_symbol } ->
     let bound_vars = Var_within_closure.Map.map import_approx bound_vars in
-    let unchanging_params =
+    let invariant_params =
       try
         Set_of_closures_id.Map.find set_of_closures_id
           ex_info.invariant_params
@@ -118,7 +118,7 @@ let rec import_ex ex =
     let value_set_of_closures : A.value_set_of_closures =
       { function_decls = import_set_of_closures set_of_closures_id;
         bound_vars;
-        unchanging_params = unchanging_params;
+        invariant_params = invariant_params;
         specialised_args = Variable.Set.empty;
         freshening = Freshening.Project_var.empty;
       }

@@ -134,7 +134,7 @@ and value_closure = {
 and value_set_of_closures = {
   function_decls : Flambda.function_declarations;
   bound_vars : t Var_within_closure.Map.t;
-  unchanging_params : Variable.Set.t;
+  invariant_params : Variable.Set.t;
   specialised_args : Variable.Set.t;
   (* Any freshening that has been applied to [function_decls]. *)
   freshening : Freshening.Project_var.t;

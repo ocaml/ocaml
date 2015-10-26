@@ -32,7 +32,7 @@ type 'a by_copying_function_declaration =
   -> func:Flambda.function_declaration
   -> args_with_approxs:
       (Flambda.t list) * (Simple_value_approx.t list)
-  -> unchanging_params:Variable.Set.t
+  -> invariant_params:Variable.Set.t
   -> specialised_args:Variable.Set.t
   -> dbg:Debuginfo.t
   -> (Flambda.t * Inline_and_simplify_aux.Result.t) option

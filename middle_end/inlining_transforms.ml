@@ -21,13 +21,13 @@ let new_var name =
     ~current_compilation_unit:(Compilation_unit.get_current_exn ())
 
 let which_function_parameters_can_we_specialize ~params ~args
-      ~args_approxs ~unchanging_params =
+      ~args_approxs ~invariant_params =
   assert (List.length params = List.length args);
   assert (List.length args = List.length args_approxs);
   List.fold_right2 (fun (var, arg) approx (spec_args, args, args_decl) ->
       let spec_args =
         if Simple_value_approx.useful approx
-          && Variable.Set.mem var unchanging_params
+          && Variable.Set.mem var invariant_params
         then
           Variable.Map.add var arg spec_args
         else
@@ -124,10 +124,10 @@ let inline_by_copying_function_declaration ~env ~r
     ~(function_decls : Flambda.function_declarations)
     ~lhs_of_application ~closure_id_being_applied
     ~(function_decl : Flambda.function_declaration)
-    ~args ~args_approxs ~unchanging_params ~specialised_args ~dbg ~simplify =
+    ~args ~args_approxs ~invariant_params ~specialised_args ~dbg ~simplify =
   let more_specialised_args, args, args_decl =
     which_function_parameters_can_we_specialize
-      ~params:function_decl.params ~args ~args_approxs ~unchanging_params
+      ~params:function_decl.params ~args ~args_approxs ~invariant_params
   in
   let more_specialised_args_keys = Variable.Map.keys more_specialised_args in
   if Variable.Set.equal more_specialised_args_keys specialised_args
