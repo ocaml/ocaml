@@ -36,7 +36,7 @@ all: lib
 	@$(MAKE) report
 
 all-basic: lib
-	@for dir in tests/basic-*; do \
+	@for dir in tests/basic*; do \
 	  $(MAKE) $(NO_PRINT) exec-one DIR=$$dir; \
 	done 2>&1 | tee _log
 	@$(MAKE) report
