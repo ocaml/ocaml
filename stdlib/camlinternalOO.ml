@@ -398,40 +398,62 @@ external get_public_method : obj -> tag -> closure
 
 (**** table collection access ****)
 
-type tables = Empty | Cons of closure * tables * tables
-type mut_tables =
-    {key: closure; mutable data: tables; mutable next: tables}
-external mut : tables -> mut_tables = "%identity"
-external demut : mut_tables -> tables = "%identity"
+type tables =
+  | Empty
+  | Cons of {key : closure; mutable data: tables; mutable next: tables}
+
+let set_data tables v = match tables with
+  | Empty -> assert false
+  | Cons tables -> tables.data <- v
+let set_next tables v = match tables with
+  | Empty -> assert false
+  | Cons tables -> tables.next <- v
+let get_key = function
+  | Empty -> assert false
+  | Cons tables -> tables.key
+let get_data = function
+  | Empty -> assert false
+  | Cons tables -> tables.data
+let get_next = function
+  | Empty -> assert false
+  | Cons tables -> tables.next
+
+let empty_tables () =
+  Cons {key = Obj.magic 0; data = Empty; next = Empty}
 
 let build_path n keys tables =
-  (* Be careful not to create a seemingly immutable block, otherwise it could
-     be statically allocated.  See #5779. *)
-  let res = demut {key = Obj.magic 0; data = Empty; next = Empty} in
+  let res = Cons {key = Obj.magic 0; data = Empty; next = Empty} in
   let r = ref res in
   for i = 0 to n do
-    r := Cons (keys.(i), !r, Empty)
+    r := Cons {key = keys.(i); data = !r; next = Empty}
   done;
-  tables.data <- !r;
+  set_data tables !r;
   res
 
 let rec lookup_keys i keys tables =
   if i < 0 then tables else
   let key = keys.(i) in
-  let rec lookup_key tables =
-    if tables.key == key then lookup_keys (i-1) keys tables.data else
-    if tables.next <> Empty then lookup_key (mut tables.next) else
-    let next = Cons (key, Empty, Empty) in
-    tables.next <- next;
-    build_path (i-1) keys (mut next)
+  let rec lookup_key (tables:tables) =
+    if get_key tables == key then
+      match get_data tables with
+      | Empty -> assert false
+      | Cons _ as tables_data ->
+          lookup_keys (i-1) keys tables_data
+    else
+      match get_next tables with
+      | Cons _ as next -> lookup_key next
+      | Empty ->
+          let next : tables = Cons {key; data = Empty; next = Empty} in
+          set_next tables next;
+          build_path (i-1) keys next
   in
-  lookup_key (mut tables)
+  lookup_key tables
 
 let lookup_tables root keys =
-  let root = mut root in
-  if root.data <> Empty then
-    lookup_keys (Array.length keys - 1) keys root.data
-  else
+  match get_data root with
+  | Cons _ as root_data ->
+    lookup_keys (Array.length keys - 1) keys root_data
+  | Empty ->
     build_path (Array.length keys - 1) keys root
 
 (**** builtin methods ****)
