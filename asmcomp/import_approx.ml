@@ -13,19 +13,19 @@
 
 module A = Simple_value_approx
 
-let _reexported_missing_symbols = Symbol.Tbl.create 0
-
 let import_set_of_closures =
   let import_function_declarations (clos : Flambda.function_declarations)
         : Flambda.function_declarations =
-    let orig_var_map (clos : Flambda.function_declarations) =
-      Variable.Map.fold (fun id _ acc ->
-           let fun_id = Closure_id.wrap id in
-           let sym = Compilenv.closure_symbol fun_id in
-           Symbol.Map.add sym id acc)
+    (* CR mshinwell for pchambart: Do we still need to do this rewriting?
+       I'm wondering if maybe we don't have to any more. *)
+    let sym_to_fun_var_map (clos : Flambda.function_declarations) =
+      Variable.Map.fold (fun fun_var _ acc ->
+           let closure_id = Closure_id.wrap fun_var in
+           let sym = Compilenv.closure_symbol closure_id in
+           Symbol.Map.add sym fun_var acc)
         clos.funs Symbol.Map.empty
     in
-    let sym_map = orig_var_map clos in
+    let sym_map = sym_to_fun_var_map clos in
     let f_named (named : Flambda.named) =
       match named with
       | Symbol sym ->
@@ -34,16 +34,17 @@ let import_set_of_closures =
         end
       | named -> named
     in
-    Flambda.update_function_declarations clos
-      ~funs:(
-        Variable.Map.map (fun (function_decl : Flambda.function_declaration) ->
-            let body =
-              Flambda_iterators.map_toplevel_named f_named function_decl.body
-            in
-            Flambda.create_function_declaration ~params:function_decl.params
-              ~body ~stub:function_decl.stub ~dbg:function_decl.dbg
-              ~inline:function_decl.inline)
-          clos.funs)
+    let funs =
+      Variable.Map.map (fun (function_decl : Flambda.function_declaration) ->
+          let body =
+            Flambda_iterators.map_toplevel_named f_named function_decl.body
+          in
+          Flambda.create_function_declaration ~params:function_decl.params
+            ~body ~stub:function_decl.stub ~dbg:function_decl.dbg
+            ~inline:function_decl.inline)
+        clos.funs
+    in
+    Flambda.update_function_declarations clos ~funs
   in
   let aux set_of_closures_id =
     let ex_info = Compilenv.approx_env () in
@@ -64,13 +65,32 @@ let import_set_of_closures =
 let rec import_ex ex =
   ignore (Compilenv.approx_for_global (Export_id.unit ex));
   let ex_info = Compilenv.approx_env () in
+  let import_value_set_of_closures ~set_of_closures_id ~bound_vars
+        ~(ex_info : Export_info.t) ~what : A.value_set_of_closures =
+    let bound_vars = Var_within_closure.Map.map import_approx bound_vars in
+    match
+      Set_of_closures_id.Map.find set_of_closures_id ex_info.invariant_params
+    with
+    | exception Not_found ->
+      Misc.fatal_errorf "Set of closures ID %a not found in invariant_params \
+          (when importing [%s])"
+        Set_of_closures_id.print set_of_closures_id
+        what
+    | invariant_params ->
+      { function_decls = import_set_of_closures set_of_closures_id;
+        bound_vars;
+        invariant_params = invariant_params;
+        specialised_args = Variable.Set.empty;
+        freshening = Freshening.Project_var.empty;
+      }
+  in
   match Export_info.find_description ex_info ex with
   | exception Not_found -> A.value_unknown
   | Value_int i -> A.value_int i
   | Value_constptr i -> A.value_constptr i
   | Value_float f -> A.value_float f
   | Value_float_array size -> A.value_float_array size
-  | Export_info.Value_boxed_int (t,i) -> A.value_boxed_int t i
+  | Export_info.Value_boxed_int (t, i) -> A.value_boxed_int t i
   | Value_string { size; contents } ->
     let contents =
       match contents with
@@ -82,53 +102,23 @@ let rec import_ex ex =
   | Value_block (tag, fields) ->
     A.value_block (tag, Array.map import_approx fields)
   | Value_closure { closure_id;
-        set_of_closures = { set_of_closures_id; bound_vars; aliased_symbol } } ->
-    let bound_vars = Var_within_closure.Map.map import_approx bound_vars in
-    begin match
-      Set_of_closures_id.Map.find set_of_closures_id
-        ex_info.invariant_params
-    with
-    | exception Not_found ->
-      Misc.fatal_error "Set of closures ID not found in invariant_params"
-    | invariant_params ->
-      let value_set_of_closures : A.value_set_of_closures =
-        { function_decls = import_set_of_closures set_of_closures_id;
-          bound_vars;
-          invariant_params = invariant_params;
-          specialised_args = Variable.Set.empty;
-          freshening = Freshening.Project_var.empty;
-        }
-      in
-      A.value_closure ?set_of_closures_symbol:aliased_symbol
-        value_set_of_closures closure_id
-    end
-  | Value_set_of_closures { set_of_closures_id; bound_vars; aliased_symbol } ->
-    let bound_vars = Var_within_closure.Map.map import_approx bound_vars in
-    let invariant_params =
-      try
-        Set_of_closures_id.Map.find set_of_closures_id
-          ex_info.invariant_params
-      with
-      | Not_found ->
-        Misc.fatal_errorf "Export description of [Value_set_of_closures] \
-            names [set_of_closures_id] %a that is not present in \
-            [invariant_params]"
-          Set_of_closures_id.print set_of_closures_id
+        set_of_closures =
+          { set_of_closures_id; bound_vars; aliased_symbol } } ->
+    let value_set_of_closures =
+      import_value_set_of_closures ~set_of_closures_id ~bound_vars ~ex_info
+        ~what:"Value_closure"
     in
-    let value_set_of_closures : A.value_set_of_closures =
-      { function_decls = import_set_of_closures set_of_closures_id;
-        bound_vars;
-        invariant_params = invariant_params;
-        specialised_args = Variable.Set.empty;
-        freshening = Freshening.Project_var.empty;
-      }
+    A.value_closure ?set_of_closures_symbol:aliased_symbol
+      value_set_of_closures closure_id
+  | Value_set_of_closures { set_of_closures_id; bound_vars; aliased_symbol } ->
+    let value_set_of_closures =
+      import_value_set_of_closures ~set_of_closures_id ~bound_vars ~ex_info
+        ~what:"Value_set_of_closures"
     in
     let approx = A.value_set_of_closures value_set_of_closures in
     match aliased_symbol with
-    | None ->
-      approx
-    | Some symbol ->
-      A.augment_with_symbol approx symbol
+    | None -> approx
+    | Some symbol -> A.augment_with_symbol approx symbol
 
 and import_approx (ap : Export_info.approx) =
   match ap with
@@ -147,20 +137,11 @@ let import_symbol sym =
     match Symbol.Map.find sym symbol_id_map with
     | approx -> A.augment_with_symbol (import_ex approx) sym
     | exception Not_found ->
-(*
-      if not (Symbol.Tbl.mem reexported_missing_symbols sym) then begin
-        Symbol.Tbl.add reexported_missing_symbols sym ();
-        (* CR mshinwell: fix "some_file" *)
-        (* CR mshinwell: Shouldn't this be a fatal error if it's the
-           current compilation unit? *)
-        Location.prerr_warning (Location.in_file "some_file")
-          (Warnings.Missing_symbol_information
-             (Format.asprintf "%a" Symbol.print sym,
-              Format.asprintf "%a" Compilation_unit.print
-                (Symbol.compilation_unit sym)));
-      end;
-*)
       A.value_unresolved sym
+
+(* Note for code reviewers: Observe that [really_import] iterates until
+   the approximation description is fully resolved (or a necessary .cmx
+   file is missing). *)
 
 let rec really_import (approx : A.descr) =
   match approx with
@@ -176,8 +157,7 @@ and really_import_symbol sym =
 
 let import_global id =
   let unit = Compilenv.unit_for_global id in
-  import_approx
-    (Ident.Map.find id (Compilenv.approx_for_global unit).globals)
+  import_approx (Ident.Map.find id (Compilenv.approx_for_global unit).globals)
 
 let really_import_approx (approx : Simple_value_approx.t) =
   A.replace_description approx (really_import approx.descr)
