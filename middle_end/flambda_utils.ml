@@ -225,7 +225,9 @@ let toplevel_substitution sb tree =
     | For { bound_var; from_value; to_value; direction; body } ->
       For { bound_var; from_value = sb from_value; to_value = sb to_value;
             direction; body }
-    | Static_raise _ | Static_catch _ | Try_with _ | While _
+    | Static_raise (static_exn, args) ->
+      Static_raise (static_exn, List.map sb args)
+    | Static_catch _ | Try_with _ | While _
     | Let _ | Let_rec _ | Proved_unreachable -> flam
   in
   let aux_named (named : Flambda.named) : Flambda.named =
