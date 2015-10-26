@@ -86,10 +86,10 @@ let rec import_ex ex =
     let bound_vars = Var_within_closure.Map.map import_approx bound_vars in
     begin match
       Set_of_closures_id.Map.find set_of_closures_id
-        ex_info.invariant_arguments
+        ex_info.invariant_params
     with
     | exception Not_found ->
-      Misc.fatal_error "Set of closures ID not found in invariant_arguments"
+      Misc.fatal_error "Set of closures ID not found in invariant_params"
     | unchanging_params ->
       let value_set_of_closures : A.value_set_of_closures =
         { function_decls = import_set_of_closures set_of_closures_id;
@@ -107,12 +107,12 @@ let rec import_ex ex =
     let unchanging_params =
       try
         Set_of_closures_id.Map.find set_of_closures_id
-          ex_info.invariant_arguments
+          ex_info.invariant_params
       with
       | Not_found ->
         Misc.fatal_errorf "Export description of [Value_set_of_closures] \
             names [set_of_closures_id] %a that is not present in \
-            [invariant_arguments]"
+            [invariant_params]"
           Set_of_closures_id.print set_of_closures_id
     in
     let value_set_of_closures : A.value_set_of_closures =

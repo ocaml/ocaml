@@ -123,7 +123,7 @@ type t = {
   offset_fun : int Closure_id.Map.t;
   offset_fv : int Var_within_closure.Map.t;
   constant_sets_of_closures : Set_of_closures_id.Set.t;
-  invariant_arguments : Variable.Set.t Set_of_closures_id.Map.t;
+  invariant_params : Variable.Set.t Set_of_closures_id.Map.t;
 }
 
 let empty : t = {
@@ -135,12 +135,12 @@ let empty : t = {
   offset_fun = Closure_id.Map.empty;
   offset_fv = Var_within_closure.Map.empty;
   constant_sets_of_closures = Set_of_closures_id.Set.empty;
-  invariant_arguments = Set_of_closures_id.Map.empty;
+  invariant_params = Set_of_closures_id.Map.empty;
 }
 
 let create ~sets_of_closures ~closures ~values ~globals ~symbol_id
       ~offset_fun ~offset_fv ~constant_sets_of_closures
-      ~invariant_arguments =
+      ~invariant_params =
   { sets_of_closures;
     closures;
     values;
@@ -149,7 +149,7 @@ let create ~sets_of_closures ~closures ~values ~globals ~symbol_id
     offset_fun;
     offset_fv;
     constant_sets_of_closures;
-    invariant_arguments;
+    invariant_params;
   }
 
 let add_offsets t ~offset_fun ~offset_fv =
@@ -181,10 +181,10 @@ let merge (t1 : t) (t2 : t) : t =
     constant_sets_of_closures =
       Set_of_closures_id.Set.union t1.constant_sets_of_closures
         t2.constant_sets_of_closures;
-    invariant_arguments =
+    invariant_params =
       Set_of_closures_id.Map.disjoint_union
         ~eq:Variable.Set.equal
-        t1.invariant_arguments t2.invariant_arguments;
+        t1.invariant_params t2.invariant_params;
   }
 
 let find_value eid map =

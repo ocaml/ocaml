@@ -133,6 +133,6 @@ let import_for_pack ~pack_units ~pack (exp : Export_info.t) =
     ~symbol_id:(Symbol.Map.map_keys import_sym
       (Symbol.Map.map import_eid exp.symbol_id))
     ~constant_sets_of_closures:exp.constant_sets_of_closures
-    ~invariant_arguments:exp.invariant_arguments
+    ~invariant_params:exp.invariant_params
 
 let clear_import_state () = Export_id.Tbl.clear rename_id_state

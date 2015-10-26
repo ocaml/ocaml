@@ -221,7 +221,12 @@ and set_of_closures = private {
   function_decls : function_declarations;
   (* CR mshinwell: consider renaming [free_vars].  Also, it's still really
      confusing which side of this map to use when.  "Vars bound by the
-     closure" is the domain. *)
+     closure" is the domain.
+     Another example of when this is confusing:
+      let bound_vars_approx =
+        Variable.Map.map (Env.find_approx env) set.free_vars
+      in
+     in [Build_export_info]. *)
   free_vars : Variable.t Variable.Map.t;
   (** Parameters known to always alias some variable in the scope of the set
       of closures declaration. For instance, supposing all call sites of f
