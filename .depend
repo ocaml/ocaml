@@ -1460,23 +1460,21 @@ asmcomp/build_export_info.cmo : middle_end/base_types/variable.cmi \
     middle_end/base_types/tag.cmi middle_end/base_types/symbol.cmi \
     middle_end/base_types/set_of_closures_id.cmi utils/misc.cmi \
     middle_end/invariant_params.cmi typing/ident.cmi \
-    middle_end/flambda_iterators.cmi middle_end/flambda.cmi \
-    utils/ext_types.cmi asmcomp/export_info.cmi \
-    middle_end/base_types/export_id.cmi asmcomp/compilenv.cmi \
-    middle_end/base_types/closure_id.cmi utils/clflags.cmi \
-    middle_end/backend_intf.cmi middle_end/allocated_const.cmi \
-    asmcomp/build_export_info.cmi
+    middle_end/flambda_utils.cmi middle_end/flambda.cmi \
+    asmcomp/export_info.cmi middle_end/base_types/export_id.cmi \
+    asmcomp/compilenv.cmi middle_end/base_types/closure_id.cmi \
+    utils/clflags.cmi middle_end/backend_intf.cmi \
+    middle_end/allocated_const.cmi asmcomp/build_export_info.cmi
 asmcomp/build_export_info.cmx : middle_end/base_types/variable.cmx \
     middle_end/base_types/var_within_closure.cmx \
     middle_end/base_types/tag.cmx middle_end/base_types/symbol.cmx \
     middle_end/base_types/set_of_closures_id.cmx utils/misc.cmx \
     middle_end/invariant_params.cmx typing/ident.cmx \
-    middle_end/flambda_iterators.cmx middle_end/flambda.cmx \
-    utils/ext_types.cmx asmcomp/export_info.cmx \
-    middle_end/base_types/export_id.cmx asmcomp/compilenv.cmx \
-    middle_end/base_types/closure_id.cmx utils/clflags.cmx \
-    middle_end/backend_intf.cmi middle_end/allocated_const.cmx \
-    asmcomp/build_export_info.cmi
+    middle_end/flambda_utils.cmx middle_end/flambda.cmx \
+    asmcomp/export_info.cmx middle_end/base_types/export_id.cmx \
+    asmcomp/compilenv.cmx middle_end/base_types/closure_id.cmx \
+    utils/clflags.cmx middle_end/backend_intf.cmi \
+    middle_end/allocated_const.cmx asmcomp/build_export_info.cmi
 asmcomp/clambda.cmo : bytecomp/lambda.cmi typing/ident.cmi \
     bytecomp/debuginfo.cmi parsing/asttypes.cmi asmcomp/clambda.cmi
 asmcomp/clambda.cmx : bytecomp/lambda.cmx typing/ident.cmx \

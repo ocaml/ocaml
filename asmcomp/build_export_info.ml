@@ -39,6 +39,8 @@ module Env : sig
     val export_id_to_descr_map : t -> Export_info.descr Export_id.Map.t
   end
 
+  (** Creates a new environment, sharing the mapping from export IDs to
+      export descriptions with the given global environment. *)
   val empty_of_global : Global.t -> t
 end = struct
   let fresh_id () = Export_id.create (Compilenv.current_unit ())
@@ -46,12 +48,14 @@ end = struct
   module Global = struct
     type t =
       { sym : Export_id.t Symbol.Map.t;
-        ex_table : Export_info.descr Export_id.Map.t;
+        (* Note that [ex_table]s themselves are shared (hence [ref] and not
+           [mutable]). *)
+        ex_table : Export_info.descr Export_id.Map.t ref;
       }
 
     let create_empty () =
       { sym = Symbol.Map.empty;
-        ex_table = Export_id.Map.empty;
+        ex_table = ref Export_id.Map.empty;
       }
 
     let add_symbol t sym export_id =
@@ -67,15 +71,15 @@ end = struct
       export_id, add_symbol t sym export_id
 
     let symbol_to_export_id_map t = t.sym
-    let export_id_to_descr_map t = t.ex_table
+    let export_id_to_descr_map t = !(t.ex_table)
   end
 
-  (* CR-someday mshinwell: The half-mutable nature of [t] is kind of nasty.
-     Consider making it immutable. *)
+  (* CR-someday mshinwell: The half-mutable nature of [t] with sharing of
+     the [ex_table] is kind of nasty.  Consider making it immutable. *)
   type t =
     { var : Export_info.approx Variable.Map.t;
       sym : Export_id.t Symbol.Map.t;
-      mutable ex_table : Export_info.descr Export_id.Map.t;
+      ex_table : Export_info.descr Export_id.Map.t ref;
     }
 
   let empty_of_global (env : Global.t) =
@@ -102,13 +106,13 @@ end = struct
       | Not_found -> None
 
   let get_id_descr t export_id =
-    try Some (Export_id.Map.find export_id t.ex_table)
+    try Some (Export_id.Map.find export_id !(t.ex_table))
     with Not_found -> extern_id_descr export_id
 
   let get_symbol_descr t sym =
     try
       let export_id = Symbol.Map.find sym t.sym in
-      Some (Export_id.Map.find export_id t.ex_table)
+      Some (Export_id.Map.find export_id !(t.ex_table))
     with
     | Not_found -> extern_symbol_descr sym
 
@@ -119,12 +123,12 @@ end = struct
     | Value_symbol sym -> get_symbol_descr t sym
 
   let record_descr t id (descr : Export_info.descr) =
-    if Export_id.Map.mem id t.ex_table then begin
+    if Export_id.Map.mem id !(t.ex_table) then begin
       Misc.fatal_errorf "Build_export_info.Env.record_descr: cannot rebind \
           export ID %a in environment"
         Export_id.print id
     end;
-    t.ex_table <- Export_id.Map.add id descr t.ex_table
+    t.ex_table := Export_id.Map.add id descr !(t.ex_table)
 
   let new_descr t (descr : Export_info.descr) =
     let id = fresh_id () in
