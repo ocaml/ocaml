@@ -151,5 +151,8 @@ let separate_unused_arguments_in_closures ?force program ~backend =
 
 *)
 
+let separate_unused_arguments_in_set_of_closures set_of_closures ~backend:_ =
+  set_of_closures
+
 let separate_unused_arguments_in_closures ?force:_ program ~backend:_ =
   program
