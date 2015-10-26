@@ -333,6 +333,9 @@ let unused_arguments (decls : Flambda.function_declarations) : Variable.Set.t =
           | Argument param ->
             if not (Variable.equal arg param) then used_variable arg)
         args
+    | Apply { func; args; kind = Indirect; _ } ->
+      used_variable func;
+      List.iter used_variable args
     | _ -> ()
   in
   Variable.Map.iter (fun _caller (decl : Flambda.function_declaration) ->
