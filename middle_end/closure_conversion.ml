@@ -239,7 +239,8 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
           ~name:"send_arg"
           ~create_body:(fun args ->
               Send { kind; meth = meth_var; obj = obj_var; args; dbg; })))
-  | Lprim ((Pdivint | Pmodint) as prim, [arg1; arg2]) when not !Clflags.fast -> (* not -unsafe *)
+  | Lprim ((Pdivint | Pmodint) as prim, [arg1; arg2])
+      when not !Clflags.fast -> (* not -unsafe *)
     let arg2 = close t env arg2 in
     let arg1 = close t env arg1 in
     let numerator = Variable.create "numerator" in
@@ -247,21 +248,27 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
     let zero = Variable.create "zero" in
     let is_zero = Variable.create "is_zero" in
     let exn = Variable.create "division_by_zero" in
-    let exn_symbol = t.symbol_for_global' (Ident.create_predef_exn "Division_by_zero") in
+    let exn_symbol =
+      t.symbol_for_global' (Ident.create_predef_exn "Division_by_zero")
+    in
     imported_symbols := Symbol.Set.add exn_symbol !imported_symbols;
     Flambda.create_let zero (Const (Int 0))
       (Flambda.create_let exn (Symbol exn_symbol)
-         (Flambda.create_let denominator (Expr arg2)
-            (Flambda.create_let numerator (Expr arg1)
-               (Flambda.create_let is_zero (Prim (Pintcomp Ceq, [zero; denominator], Debuginfo.none))
-                  (If_then_else
-                     (is_zero,
-                      name_expr (Prim (Praise Raise_regular, [exn], Debuginfo.none)) ~name:"dummy",
-                      (* CR pchambart: find the right event. *)
-                      (* Debuginfo.from_raise event *)
-                      name_expr ~name:"result"
-                        (Prim (prim, [numerator; denominator], Debuginfo.none))
-                     ))))))
+        (Flambda.create_let denominator (Expr arg2)
+          (Flambda.create_let numerator (Expr arg1)
+            (Flambda.create_let is_zero
+              (Prim (Pintcomp Ceq, [zero; denominator], Debuginfo.none))
+                (If_then_else (is_zero,
+                  name_expr (Prim (Praise Raise_regular, [exn],
+                      Debuginfo.none))
+                    ~name:"dummy",
+                  (* CR pchambart: find the right event.
+                     mshinwell: I briefly looked at this, and couldn't
+                     figure it out. *)
+                  (* Debuginfo.from_raise event *)
+                  name_expr ~name:"result"
+                    (Prim (prim, [numerator; denominator],
+                      Debuginfo.none))))))))
   | Lprim ((Pdivint | Pmodint), _) when not !Clflags.fast ->
     Misc.fatal_error "Pdivint / Pmodint must have exactly two arguments"
   | Lprim (Psequor, [arg1; arg2]) ->
