@@ -11,6 +11,8 @@
 (*                                                                        *)
 (**************************************************************************)
 
+(*
+
 let rename_var var =
   Variable.rename var
     ~current_compilation_unit:(Compilation_unit.get_current_exn ())
@@ -146,3 +148,8 @@ let separate_unused_arguments_in_closures_expr ~force tree ~backend =
 let separate_unused_arguments_in_closures ?force program ~backend =
   Flambda_iterators.map_exprs_at_toplevel_of_program program ~f:(fun expr ->
     separate_unused_arguments_in_closures_expr ~force expr ~backend)
+
+*)
+
+let separate_unused_arguments_in_closures ?force:_ program ~backend:_ =
+  program
