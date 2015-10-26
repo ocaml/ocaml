@@ -152,8 +152,11 @@ let create ~sets_of_closures ~closures ~values ~globals ~symbol_id
     invariant_params;
   }
 
-let add_offsets t ~offset_fun ~offset_fv =
-  { t with offset_fun; offset_fv }
+let add_clambda_info t ~offset_fun ~offset_fv ~constant_sets_of_closures =
+  assert (Closure_id.Map.cardinal t.offset_fun = 0);
+  assert (Var_within_closure.Map.cardinal t.offset_fv = 0);
+  assert (Set_of_closures_id.Set.cardinal t.constant_sets_of_closures = 0);
+  { t with offset_fun; offset_fv; constant_sets_of_closures; }
 
 let merge (t1 : t) (t2 : t) : t =
   let eidmap_disjoint_union ?eq map1 map2 =

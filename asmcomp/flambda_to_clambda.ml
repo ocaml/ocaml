@@ -629,8 +629,9 @@ let convert (program, exported) : result =
     to_clambda_program t Env.empty Symbol.Map.empty program
   in
   let exported =
-    Export_info.add_offsets exported
+    Export_info.add_clambda_info exported
       ~offset_fun:current_unit.fun_offset_table
       ~offset_fv:current_unit.fv_offset_table
+      ~constant_sets_of_closures:current_unit.constant_sets_of_closures
   in
   { expr; preallocated_blocks; structured_constants; exported; }

@@ -98,11 +98,14 @@ val create
    [flambda_to_clambda] ?
    mshinwell: I think we should, but after we've done the first release.
 *)
-(** Record information about the layout of closures. *)
-val add_offsets
+(** Record information about the layout of closures and which sets of
+    closures are constant.  These are all worked out during the
+    [Flambda_to_clambda] pass. *)
+val add_clambda_info
    : t
   -> offset_fun:int Closure_id.Map.t
   -> offset_fv:int Var_within_closure.Map.t
+  -> constant_sets_of_closures:Set_of_closures_id.Set.t
   -> t
 
 (** Union of export information.  Verifies that there are no identifier
