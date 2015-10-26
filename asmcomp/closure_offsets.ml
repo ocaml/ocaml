@@ -19,8 +19,6 @@ type result = {
 let add_closure_offsets
       { function_offsets; free_variable_offsets }
       ({ function_decls; free_vars } : Flambda.set_of_closures) =
-  (* Format.eprintf "add_closure_offsets:@ %a\n" *)
-  (*   Flambda.print_set_of_closures set_of_closures; *)
   (* Build the table mapping the functions declared by the set of closures
      to the positions of their individual "infix" closures inside the runtime
      closure block.  (All of the environment entries will come afterwards.) *)
@@ -61,12 +59,6 @@ let add_closure_offsets
   }
 
 let compute (program:Flambda.program) =
-  (* Format.eprintf "Closure_offsets.compute@ \n"; *)
-  (* let sets = Lifted_flambda_utils.sets_of_closures lifted_constants in *)
-  (* List.iter (fun (set_of_closures : Flambda.set_of_closures) -> *)
-  (*     Format.eprintf "Closures_offsets.compute set: %a @ " *)
-  (*       Set_of_closures_id.print set_of_closures.function_decls.set_of_closures_id) *)
-  (*   sets; *)
   let init : result =
     { function_offsets = Closure_id.Map.empty;
       free_variable_offsets = Var_within_closure.Map.empty;
@@ -76,8 +68,4 @@ let compute (program:Flambda.program) =
     List.fold_left add_closure_offsets
       init (Flambda_utils.all_sets_of_closures program)
   in
-  (* Format.eprintf "@[<2>Closures_offsets results:@ @[function_offsets:@ %a@]\ *)
-  (*                 @ @[free_variable_offsets:@ %a@]@]@." *)
-  (*   (Closure_id.Map.print Format.pp_print_int) r.function_offsets *)
-  (*   (Var_within_closure.Map.print Format.pp_print_int) r.free_variable_offsets; *)
   r
