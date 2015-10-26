@@ -418,9 +418,6 @@ let get_next = function
   | Empty -> assert false
   | Cons tables -> tables.next
 
-let empty_tables () =
-  Cons {key = Obj.magic 0; data = Empty; next = Empty}
-
 let build_path n keys tables =
   let res = Cons {key = Obj.magic 0; data = Empty; next = Empty} in
   let r = ref res in
