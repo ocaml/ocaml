@@ -211,7 +211,7 @@ let variable_and_symbol_invariants flam =
       Misc.may (loop env) e_opt
     | Static_raise (static_exn, es) ->
       ignore_static_exception static_exn;
-      List.iter (loop env) es
+      List.iter (check_variable_is_bound env) es
     | While (e1, e2) ->
       loop env e1;
       loop env e2

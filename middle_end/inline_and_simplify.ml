@@ -891,9 +891,9 @@ and simplify_direct env r (tree : Flambda.t) : Flambda.t * R.t =
     Let_rec (defs, body), r
   | Static_raise (i, args) ->
     let i = Freshening.apply_static_exception (E.freshening env) i in
-    let args, _, r = simplify_list env r args in
-    let r = R.use_staticfail r i in
-    Static_raise (i, args), ret r A.value_bottom
+    simplify_free_variables env args ~f:(fun _env args ->
+      let r = R.use_staticfail r i in
+      Static_raise (i, args), ret r A.value_bottom)
   | Static_catch (i, vars, body, handler) ->
     begin
       match body with
@@ -910,16 +910,12 @@ and simplify_direct env r (tree : Flambda.t) : Flambda.t * R.t =
           body, r
         else begin
           match (body : Flambda.t) with
-          | Static_raise (j, args) when
-              Static_exception.equal i
-                (Freshening.apply_static_exception (E.freshening env) j) ->
-            (* This is usually true, since whe checked that the static
-               exception was used.  The only case where it can be false
-               is when an argument can raise.  This could be avoided if
-               all arguments where guaranteed to be variables. *)
+          | Static_raise (j, args) ->
+            assert (Static_exception.equal i
+                (Freshening.apply_static_exception (E.freshening env) j));
             let handler =
               List.fold_left2 (fun body var arg ->
-                  Flambda.create_let var (Expr arg) body)
+                  Flambda.create_let var (Expr (Var arg)) body)
                 handler vars args
             in
             let r = R.exit_scope_catch r i in

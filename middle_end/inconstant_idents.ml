@@ -197,7 +197,7 @@ module NotConstants(P:Param) = struct
 
     | Static_raise (_,l) ->
       mark_curr curr;
-      List.iter (mark_loop ~toplevel []) l
+      List.iter (fun v -> mark_var v curr) l
 
     | Apply ({func; args; _ }) ->
       mark_curr curr;

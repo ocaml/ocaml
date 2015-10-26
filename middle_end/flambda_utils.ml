@@ -96,7 +96,7 @@ let rec same (l1 : Flambda.t) (l2 : Flambda.t) =
       Misc.sameoption same d1 d2
   | String_switch _, _ | _, String_switch _ -> false
   | Static_raise (e1, a1), Static_raise (e2, a2) ->
-    Static_exception.equal e1 e2 && Misc.samelist same a1 a2
+    Static_exception.equal e1 e2 && Misc.samelist Variable.equal a1 a2
   | Static_raise _, _ | _, Static_raise _ -> false
   | Static_catch (s1, v1, a1, b1), Static_catch (s2, v2, a2, b2) ->
     Static_exception.equal s1 s2 && Misc.samelist Variable.equal v1 v2 &&
@@ -621,10 +621,12 @@ let substitute_variable_to_symbol substitution expr =
       bind new_value fresh (Assign { being_assigned; new_value = fresh })
     | Assign _ ->
       expr
-    | Static_raise (_exn, (_arg:Flambda.t list)) ->
-      (* If the type change to variable, this needs to be
-         updated with substitution *)
-      expr
+    | Static_raise (exn, args) ->
+      let args, bind_args =
+        List.split (List.map make_var_subst args)
+      in
+      List.fold_right (fun f expr -> f expr) bind_args @@
+        Flambda.Static_raise (exn, args)
     | For { bound_var; from_value; to_value; direction; body } ->
       let from_value, bind_from_value = make_var_subst from_value in
       let to_value, bind_to_value = make_var_subst to_value in

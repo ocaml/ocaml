@@ -70,7 +70,7 @@ type t =
   | If_then_else of Variable.t * t * t
   | Switch of Variable.t * switch
   | String_switch of Variable.t * (string * t) list * t option
-  | Static_raise of Static_exception.t * t list
+  | Static_raise of Static_exception.t * Variable.t list
   | Static_catch of Static_exception.t * Variable.t list * t * t
   | Try_with of t * Variable.t * t
   | While of t * t
@@ -260,7 +260,7 @@ let rec lam ppf (flam : t) =
        "@[<1>(stringswitch %a@ @[<v 0>%a@])@]" Variable.print arg switch cases
   | Static_raise (i, ls)  ->
       let lams ppf largs =
-        List.iter (fun l -> fprintf ppf "@ %a" lam l) largs in
+        List.iter (fun l -> fprintf ppf "@ %a" Variable.print l) largs in
       fprintf ppf "@[<2>(exit@ %a%a)@]" Static_exception.print i lams ls;
   | Static_catch(i, vars, lbody, lhandler) ->
       fprintf ppf "@[<2>(catch@ %a@;<1 -1>with (%a%a)@ %a)@]"
@@ -503,7 +503,7 @@ let rec variables_usage ?ignore_uses_in_apply ?ignore_uses_in_project_var
         List.iter (fun (_, e) -> aux e) cases;
         Misc.may aux failaction
       | Static_raise (_, es) ->
-        List.iter aux es
+        List.iter free_variable es
       | Static_catch (_, vars, e1, e2) ->
         List.iter bound_variable vars;
         aux e1;
@@ -661,7 +661,8 @@ let iter_general ~toplevel f f_named maybe_named =
     | _ ->
       f t;
       match t with
-      | Var _ | Apply _ | Assign _ | Send _ | Proved_unreachable -> ()
+      | Var _ | Apply _ | Assign _ | Send _ | Proved_unreachable
+      | Static_raise _ -> ()
       | Let _ -> assert false
       | Let_mutable (_mut_var, _var, body) ->
         aux body
@@ -675,8 +676,6 @@ let iter_general ~toplevel f f_named maybe_named =
       | For { body; _ } -> aux body
       | If_then_else (_, f1, f2) ->
         aux f1; aux f2
-      | Static_raise (_,l) ->
-        iter_list l
       | Switch (_, sw) ->
         List.iter (fun (_,l) -> aux l) sw.consts;
         List.iter (fun (_,l) -> aux l) sw.blocks;
@@ -699,7 +698,7 @@ let iter_general ~toplevel f f_named maybe_named =
           funcs.funs
       end
     | Expr flam -> aux flam
-  and iter_list l = List.iter aux l in
+  in
   match maybe_named with
   | Is_expr expr -> aux expr
   | Is_named named -> aux_named named

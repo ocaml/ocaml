@@ -223,11 +223,6 @@ let rec to_clambda t env (flam : Flambda.t) : Clambda.ulambda =
           us_actions_blocks = block_actions;
         })
     in
-    let simple_expr (flam : Flambda.t) =
-      match flam with
-      | Var _ -> true
-      | _ -> false
-    in
     (* Check that the [failaction] may be duplicated.  If this is not the
        case, share it through a static raise / static catch. *)
     (* CR pchambart for pchambart: This is overly simplified. We should verify
@@ -236,8 +231,7 @@ let rec to_clambda t env (flam : Flambda.t) : Clambda.ulambda =
     *)
     begin match sw.failaction with
     | None -> aux ()
-    | Some (Static_raise (_, args)) when List.for_all simple_expr args ->
-      aux ()
+    | Some (Static_raise _) -> aux ()
     | Some failaction ->
       let exn = Static_exception.create () in
       let sw =
@@ -257,7 +251,7 @@ let rec to_clambda t env (flam : Flambda.t) : Clambda.ulambda =
     Ustringswitch (arg, sw, def)
   | Static_raise (static_exn, args) ->
     Ustaticfail (Static_exception.to_int static_exn,
-      List.map (to_clambda t env) args)
+      List.map (subst_var env) args)
   | Static_catch (static_exn, vars, body, handler) ->
     let env_handler, ids =
       List.fold_right (fun var (env, ids) ->

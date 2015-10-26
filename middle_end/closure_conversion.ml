@@ -314,7 +314,7 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
        blocks being made (with [Pmakeblock]).  This information can be used
        by the simplification pass to increase the likelihood of eliminating
        the allocation, since some field accesses can be tracked back to known
-       field values. *)
+       field values. ,*)
     let name = Printlambda.string_of_primitive p in
     Lift_code.lifting_helper (close_list t env args)
       ~evaluation_order:`Right_to_left
@@ -340,7 +340,12 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
         List.map (fun (s, e) -> s, close t env e) sw,
         Misc.may_map (close t env) def))
   | Lstaticraise (i, args) ->
-    Static_raise (Env.find_static_exception env i, close_list t env args)
+    Lift_code.lifting_helper (close_list t env args)
+      ~evaluation_order:`Right_to_left
+      ~name:"staticraise_arg"
+      ~create_body:(fun args ->
+        let static_exn = Env.find_static_exception env i in
+        Static_raise (static_exn, args))
   | Lstaticcatch (body, (i, ids), handler) ->
     let st_exn = Static_exception.create () in
     let env = Env.add_static_exception env i st_exn in

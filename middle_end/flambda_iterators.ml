@@ -13,7 +13,8 @@
 
 let apply_on_subexpressions f f_named (flam : Flambda.t) =
   match flam with
-  | Var _ | Apply _ | Assign _ | Send _ | Proved_unreachable -> ()
+  | Var _ | Apply _ | Assign _ | Send _ | Proved_unreachable
+  | Static_raise _ -> ()
   | Let { defining_expr; body; _ } ->
     f_named defining_expr;
     f body
@@ -29,8 +30,6 @@ let apply_on_subexpressions f f_named (flam : Flambda.t) =
   | String_switch (_, sw, def) ->
     List.iter (fun (_,l) -> f l) sw;
     Misc.may f def
-  | Static_raise (_,l) ->
-    List.iter f l
   | Static_catch (_,_,f1,f2) ->
     f f1; f f2;
   | Try_with (f1,_,f2) ->
@@ -43,7 +42,8 @@ let apply_on_subexpressions f f_named (flam : Flambda.t) =
 
 let map_subexpressions f f_named (tree:Flambda.t) : Flambda.t =
   match tree with
-  | Var _ | Apply _ | Assign _ | Send _ | Proved_unreachable -> tree
+  | Var _ | Apply _ | Assign _ | Send _ | Proved_unreachable
+  | Static_raise _ -> tree
   | Let { var; defining_expr; body; _ } ->
     Flambda.create_let var (f_named var defining_expr) (f body)
   | Let_rec (defs, body) ->
@@ -64,9 +64,6 @@ let map_subexpressions f f_named (tree:Flambda.t) : Flambda.t =
     let sw = List.map (fun (i,v) -> i, f v) sw in
     let def = Misc.may_map f def in
     String_switch(arg, sw, def)
-  | Static_raise(i, args) ->
-    let args = List.map f args in
-    Static_raise (i, args)
   | Static_catch (i, vars, body, handler) ->
     let body = f body in
     let handler = f handler in
@@ -257,7 +254,8 @@ let map_general ~toplevel f f_named tree =
     | _ ->
       let exp : Flambda.t =
         match tree with
-        | Var _ | Apply _ | Assign _ | Send _ | Proved_unreachable -> tree
+        | Var _ | Apply _ | Assign _ | Send _ | Proved_unreachable
+        | Static_raise _ -> tree
         | Let _ -> assert false
         | Let_mutable (mut_var, var, body) ->
           let body = aux body in
@@ -279,9 +277,6 @@ let map_general ~toplevel f f_named tree =
           let sw = List.map (fun (i,v) -> i, aux v) sw in
           let def = Misc.may_map aux def in
           String_switch(arg, sw, def)
-        | Static_raise(i, args) ->
-          let args = List.map aux args in
-          Static_raise (i, args)
         | Static_catch (i, vars, body, handler) ->
           let body = aux body in
           let handler = aux handler in

@@ -82,7 +82,7 @@ let lambda_smaller' lam ~than:threshold =
           lambda_size lam)
         sw;
       Misc.may lambda_size def
-    | Static_raise (_, args) -> lambda_list_size args
+    | Static_raise _ -> ()
     | Static_catch (_, _, body, handler) ->
       incr size; lambda_size body; lambda_size handler
     | Try_with (body, _, handler) ->
@@ -94,7 +94,6 @@ let lambda_smaller' lam ~than:threshold =
       size := !size + 2; lambda_size cond; lambda_size body
     | For { body; _ } ->
       size := !size + 4; lambda_size body
-  and lambda_list_size l = List.iter lambda_size l
   and lambda_named_size (named : Flambda.named) =
     if !size > threshold then raise Exit;
     match named with
