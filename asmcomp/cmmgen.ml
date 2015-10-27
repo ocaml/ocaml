@@ -301,7 +301,8 @@ let validate d m p =
 let rec div_int c1 c2 dbg =
   match (c1, c2) with
     (c1, Cconst_int 0) ->
-      Misc.fatal_error "Explicit division by zero cannot be generated"
+      Csequence(c1, Cop(Craise (Raise_regular, dbg),
+                        [Cconst_symbol "caml_exn_Division_by_zero"]))
   | (c1, Cconst_int 1) ->
       c1
   | (Cconst_int 0 as c1, c2) ->
@@ -338,13 +339,20 @@ let rec div_int c1 c2 dbg =
           let t = if p > 0 then Cop(Casr, [t; Cconst_int p]) else t in
           add_int t (lsr_int c1 (Cconst_int (Nativeint.size - 1))))
       end
-  | (c1, c2) ->
+  | (c1, c2) when !Clflags.fast ->
       Cop(Cdivi, [c1; c2])
+  | (c1, c2) ->
+      bind "divisor" c2 (fun c2 ->
+        Cifthenelse(c2,
+                    Cop(Cdivi, [c1; c2]),
+                    Cop(Craise (Raise_regular, dbg),
+                        [Cconst_symbol "caml_exn_Division_by_zero"])))
 
 let mod_int c1 c2 dbg =
   match (c1, c2) with
     (c1, Cconst_int 0) ->
-      Misc.fatal_error "Explicit division by zero cannot be generated"
+      Csequence(c1, Cop(Craise (Raise_regular, dbg),
+                        [Cconst_symbol "caml_exn_Division_by_zero"]))
   | (c1, Cconst_int (1 | (-1))) ->
       Csequence(c1, Cconst_int 0)
   | (Cconst_int 0, c2) ->
@@ -370,8 +378,14 @@ let mod_int c1 c2 dbg =
       else
         bind "dividend" c1 (fun c1 ->
           sub_int c1 (mul_int (div_int c1 c2 dbg) c2))
-  | (c1, c2) ->
+  | (c1, c2) when !Clflags.fast ->
       Cop(Cmodi, [c1; c2])
+  | (c1, c2) ->
+      bind "divisor" c2 (fun c2 ->
+        Cifthenelse(c2,
+                    Cop(Cmodi, [c1; c2]),
+                    Cop(Craise (Raise_regular, dbg),
+                        [Cconst_symbol "caml_exn_Division_by_zero"])))
 
 (* Division or modulo on boxed integers.  The overflow case min_int / -1
    can occur, in which case we force x / -1 = -x and x mod -1 = 0. (PR#5513). *)
