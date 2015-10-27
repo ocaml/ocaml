@@ -1073,8 +1073,8 @@ and set_tags =
 let compute_tag output tag_acc =
   let buf = Buffer.create 16 in
   let ppf = formatter_of_buffer buf in
-  let () = output ppf tag_acc in
-  let () = pp_print_flush ppf () in
+  output ppf tag_acc;
+  pp_print_flush ppf ();
   let len = Buffer.length buf in
   if len < 2 then Buffer.contents buf
   else Buffer.sub buf 1 (len - 2)
@@ -1122,7 +1122,7 @@ let rec output_acc ppf acc = match acc with
     output_acc ppf p;
     pp_open_tag ppf (compute_tag output_acc acc')
   | Acc_formatting_gen (p, Acc_open_box acc') ->
-    let () = output_acc ppf p in
+    output_acc ppf p;
     let (indent, bty) = open_box_of_string (compute_tag output_acc acc') in
     pp_open_box_gen ppf indent bty
   | Acc_string_literal (p, s)
@@ -1157,7 +1157,7 @@ let rec strput_acc ppf acc = match acc with
     strput_acc ppf p;
     pp_open_tag ppf (compute_tag strput_acc acc')
   | Acc_formatting_gen (p, Acc_open_box acc') ->
-    let () = strput_acc ppf p in
+    strput_acc ppf p;
     let (indent, bty) = open_box_of_string (compute_tag strput_acc acc') in
     pp_open_box_gen ppf indent bty
   | Acc_string_literal (p, s)

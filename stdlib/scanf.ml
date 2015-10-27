@@ -1286,13 +1286,13 @@ fun ib fmt readers -> match fmt with
   | Scan_char_set (width_opt, char_set, Formatting_lit (fmting_lit, rest)) ->
     let stp, str = stopper_of_formatting_lit fmting_lit in
     let width = width_of_pad_opt width_opt in
-    let _ = scan_chars_in_char_set char_set (Some stp) width ib in
+    scan_chars_in_char_set char_set (Some stp) width ib;
     let s = token_string ib in
     let str_rest = String_literal (str, rest) in
     Cons (s, make_scanf ib str_rest readers)
   | Scan_char_set (width_opt, char_set, rest) ->
     let width = width_of_pad_opt width_opt in
-    let _ = scan_chars_in_char_set char_set None width ib in
+    scan_chars_in_char_set char_set None width ib;
     let s = token_string ib in
     Cons (s, make_scanf ib rest readers)
   | Scan_get_counter (counter, rest) ->

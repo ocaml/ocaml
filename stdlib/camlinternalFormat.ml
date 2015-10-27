@@ -1826,7 +1826,7 @@ let open_box_of_string str =
         try int_of_string (String.sub str nstart (nend - nstart))
         with Failure _ -> invalid_box () in
     let exp_end = parse_spaces nend in
-    let () = if exp_end <> len then invalid_box () in
+    if exp_end <> len then invalid_box ();
     let box_type = match box_name with
       | "" | "b" -> Pp_box
       | "h"      -> Pp_hbox
