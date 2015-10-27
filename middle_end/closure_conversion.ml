@@ -301,10 +301,10 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
         ~name:"raise")
   | Lprim (Pfield _, [Lprim (Pgetglobal id, [])])
       when Ident.same id t.current_unit_id ->
-    Misc.fatal_errorf "[Pfield (Pgetglobal ...) for the current compilation \
+    Misc.fatal_errorf "[Pfield (Pgetglobal ...)] for the current compilation \
         unit is forbidden upon entry to the middle end"
   | Lprim (Psetfield (_, _), [Lprim (Pgetglobal _, []); _]) ->
-    Misc.fatal_errorf "[Psetfield (Pgetglobal ...) is \
+    Misc.fatal_errorf "[Psetfield (Pgetglobal ...)] is \
         forbidden upon entry to the middle end"
   | Lprim (Pgetglobal id, []) when Ident.is_predef_exn id ->
     let symbol = t.symbol_for_global' id in
