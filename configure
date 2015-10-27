@@ -688,7 +688,7 @@ if test $with_sharedlibs = "yes"; then
         *gcc*)
           sharedcccompopts="-fPIC"
           if sh ./solaris-ld; then
-            mksharedlib="$bytecc -shared"
+            mksharedlib="ld -G"
             byteccrpath="-R"
             mksharedlibrpath="-R"
           else
