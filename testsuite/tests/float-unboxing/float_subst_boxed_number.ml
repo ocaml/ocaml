@@ -38,6 +38,20 @@ module PR_6770 = struct
 end
 
 
+let check_noalloc name f =
+  let a0 = Gc.allocated_bytes () in
+  let a1 = Gc.allocated_bytes () in
+  let _x = f () in
+  let a2 = Gc.allocated_bytes () in
+  let alloc = (a2 -. 2. *. a1 +. a0) in
+
+  (* is there a better to test whether we run in native code? *)
+  match Filename.basename Sys.argv.(0) with
+  | "program.byte" | "program.byte.exe" -> ()
+  | "program.native" | "program.native.exe" ->
+    if alloc > 100. then failwith name
+  | _ -> assert false
+
 module GPR_109 = struct
 
   let f () =
@@ -49,18 +63,16 @@ module GPR_109 = struct
     done;
     !r
 
-  let test () =
-    let a0 = Gc.allocated_bytes () in
-    let a1 = Gc.allocated_bytes () in
-    let _x = f () in
-    let a2 = Gc.allocated_bytes () in
-    let alloc = (a2 -. 2. *. a1 +. a0) in
-    assert(alloc < 100.)
-
-    let () =
-      (* is there a better to test whether we run in native code? *)
-      match Filename.basename Sys.argv.(0) with
-      | "program.byte" | "program.byte.exe" -> ()
-      | "program.native" | "program.native.exe" -> test ()
-      | _ -> assert false
+  let () = check_noalloc "gpr 1O9" f
 end
+
+
+let unbox_classify_float () =
+  let x = ref 100. in
+  for i = 1 to 1000 do
+    assert (classify_float !x = FP_normal);
+    x := !x +. 1.
+  done
+
+let () =
+  check_noalloc "classify float" unbox_classify_float

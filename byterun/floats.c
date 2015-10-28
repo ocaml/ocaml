@@ -451,12 +451,12 @@ CAMLprim value caml_float_compare(value vf, value vg)
 
 enum { FP_normal, FP_subnormal, FP_zero, FP_infinite, FP_nan };
 
-CAMLprim value caml_classify_float(value vd)
+CAMLprim value caml_classify_float_unboxed(double vd)
 {
   /* Cygwin 1.3 has problems with fpclassify (PR#1293), so don't use it */
   /* FIXME Cygwin 1.3 is ancient! Revisit this decision. */
 #if defined(fpclassify) && !defined(__CYGWIN__) && !defined(__MINGW32__)
-  switch (fpclassify(Double_val(vd))) {
+  switch (fpclassify(vd)) {
   case FP_NAN:
     return Val_int(FP_nan);
   case FP_INFINITE:
@@ -472,7 +472,7 @@ CAMLprim value caml_classify_float(value vd)
   union double_as_two_int32 u;
   uint32_t h, l;
 
-  u.d = Double_val(vd);
+  u.d = vd;
   h = u.i.h;  l = u.i.l;
   l = l | (h & 0xFFFFF);
   h = h & 0x7FF00000;
@@ -488,6 +488,11 @@ CAMLprim value caml_classify_float(value vd)
   }
   return Val_int(FP_normal);
 #endif
+}
+
+CAMLprim value caml_classify_float(value vd)
+{
+  return caml_classify_float_unboxed(Double_val(vd));
 }
 
 /* The [caml_init_ieee_float] function should initialize floating-point hardware
