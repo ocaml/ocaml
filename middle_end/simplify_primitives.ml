@@ -41,6 +41,9 @@ let not_phys_equal (approxs:A.t list) =
   | [a1; a2] ->
     (* There should never be any symbol aliases when this pass is run
        (from [Inline_and_simplify]). *)
+    (* CR mshinwell: If this code is safe in that context, we should
+       add a variable to make sure we can't interleave the passes
+       wrongly, or similar. *)
     match a1.symbol, a2.symbol with
     | Some (s1, None), Some (s2, None) -> not (Symbol.equal s1 s2)
     | _ -> false
