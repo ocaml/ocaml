@@ -275,10 +275,17 @@ val simplify_var_to_var_using_env
 
 val simplify_var : t -> (Flambda.named * t) option
 
-(** Given the approximation of a value, expected to correspond to a block
+type get_field_result =
+  | Ok of t
+  | Unreachable
+
+(** Given the approximation [t] of a value, expected to correspond to a block
     (in the [Pmakeblock] sense of the word), and a field index then return
-    an appropriate approximation for that field of the block. *)
-val get_field : t -> field_index:int -> t
+    an appropriate approximation for that field of the block (or
+    [Unreachable] if the code with the approximation [t] is unreachable).
+    N.B. Not all cases of unreachable code are returned as [Unreachable].
+*)
+val get_field : t -> field_index:int -> get_field_result
 
 (** Find the approximation for a bound variable in a set-of-closures
     approximation.  A fatal error is produced if the variable is not bound in

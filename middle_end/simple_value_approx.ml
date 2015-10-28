@@ -348,12 +348,17 @@ let is_definitely_immutable t =
   | Value_unresolved _ | Value_unknown | Value_bottom -> false
   | Value_extern _ | Value_symbol _ -> assert false
 
-let get_field t ~field_index:i =
+type get_field_result =
+  | Ok of t
+  | Unreachable
+
+let get_field t ~field_index:i : get_field_result =
   match t.descr with
   | Value_block (_tag, fields) ->
     if i >= 0 && i < Array.length fields then
-      fields.(i)
+      Ok fields.(i)
     else
+(*
       (* CR mshinwell: I worry that it's possible to trigger this fatal
          error if a .cmx file is missing (during the compilation of
          a dead exception match case, for example, where the outermost
@@ -363,16 +368,18 @@ let get_field t ~field_index:i =
           Approximation: %a"
         i (Array.length fields)
         print t
+*)
+      Unreachable
   | Value_bottom
   | Value_int _ | Value_char _ | Value_constptr _ ->
     (* Something seriously wrong is happening: either the user is doing
        something exceptionally unsafe, or it is an unreachable branch.
        We consider this as unreachable and mark the result accordingly. *)
-    value_bottom
+    Ok value_bottom
   | Value_float_array _ ->
     (* CR mshinwell: comment needs improvement *)
     (* float_arrays are immutable *)
-    value_unknown
+    Ok value_unknown
   | Value_string _ | Value_float _ | Value_boxed_int _
     (* The user is doing something unsafe. *)
   | Value_set_of_closures _ | Value_closure _
@@ -380,11 +387,11 @@ let get_field t ~field_index:i =
   | Value_symbol _ | Value_extern _
     (* These should have been resolved. *)
   | Value_unknown ->
-    value_unknown
+    Ok value_unknown
   | Value_unresolved sym ->
     (* We don't know anything, but we must remember that it comes
        from another compilation unit in case it contains a closure. *)
-    value_unresolved sym
+    Ok (value_unresolved sym)
 
 let descrs approxs = List.map (fun v -> v.descr) approxs
 

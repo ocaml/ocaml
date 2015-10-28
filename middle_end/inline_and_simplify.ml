@@ -738,12 +738,13 @@ and simplify_named env r (tree : Flambda.named) : Flambda.named * R.t =
     in
     Read_mutable mut_var, ret r A.value_unknown
   | Read_symbol_field (symbol, field_index) ->
-    let approx =
-      A.augment_with_symbol_field
-        (A.get_field (E.find_or_load_symbol env symbol) ~field_index)
-        symbol field_index
-    in
-    simplify_named_using_approx_and_env env r tree approx
+    let approx = E.find_or_load_symbol env symbol in
+    begin match A.get_field approx ~field_index with
+    | Unreachable -> (Flambda.Expr Proved_unreachable), r
+    | Ok approx ->
+      let approx = A.augment_with_symbol_field approx symbol field_index in
+      simplify_named_using_approx_and_env env r tree approx
+    end
   | Set_of_closures set_of_closures ->
     begin
       match Augment_closure.run ~env ~set_of_closures with
@@ -772,28 +773,28 @@ and simplify_named env r (tree : Flambda.named) : Flambda.named * R.t =
       | Pgetglobal _, _ ->
         Misc.fatal_error "Pgetglobal is forbidden in Inline_and_simplify"
       | Pfield field_index, [arg] ->
-        let tree, approx =
-          let approx = E.find_exn env arg in
-          begin match approx.symbol with
-          (* If the [Pfield] is projecting directly from a symbol, rewrite the
-             expression to [Read_symbol_field]. *)
-          | Some (symbol, None) ->
-            let approx =
-              A.augment_with_symbol_field
-                (A.get_field approx ~field_index)
-                symbol field_index
-            in
-            Flambda.Read_symbol_field (symbol, field_index), approx
-          | None | Some (_, Some _ ) ->
-            (* This [Pfield] is either not projecting from a symbol at all, or
-               it is the projection of a projection from a symbol. *)
-            let approx = A.get_field approx ~field_index in
-            let module Backend = (val (E.backend env) : Backend_intf.S) in
-            let approx' = Backend.really_import_approx approx in
-            tree, approx'
-          end
-        in
-        simplify_named_using_approx_and_env env r tree approx
+        let arg_approx = E.find_exn env arg in
+        begin match A.get_field arg_approx ~field_index with
+        | Unreachable -> (Flambda.Expr Proved_unreachable, r)
+        | Ok approx ->
+          let tree, approx =
+            match arg_approx.symbol with
+            (* If the [Pfield] is projecting directly from a symbol, rewrite
+               the expression to [Read_symbol_field]. *)
+            | Some (symbol, None) ->
+              let approx =
+                A.augment_with_symbol_field approx symbol field_index
+              in
+              Flambda.Read_symbol_field (symbol, field_index), approx
+            | None | Some (_, Some _ ) ->
+              (* This [Pfield] is either not projecting from a symbol at all,
+                 or it is the projection of a projection from a symbol. *)
+              let module Backend = (val (E.backend env) : Backend_intf.S) in
+              let approx' = Backend.really_import_approx approx in
+              tree, approx'
+          in
+          simplify_named_using_approx_and_env env r tree approx
+        end
       | (Psetfield _ | Parraysetu _ | Parraysets _), block::_ ->
         let block_approx = E.find_exn env block in
         if A.is_definitely_immutable block_approx then begin
