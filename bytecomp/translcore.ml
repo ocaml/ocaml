@@ -1170,7 +1170,8 @@ and transl_record env all_labels repres lbl_expr_list opt_init_expr =
       lbl_expr_list;
     let ll = Array.to_list lv in
     let mut =
-      if List.exists (fun lbl -> lbl.lbl_mut = Mutable) all_labels
+      if List.exists (fun lbl -> lbl.lbl_mut = Mutable)
+        (Array.to_list all_labels)
       then Mutable
       else Immutable in
     let lam =
