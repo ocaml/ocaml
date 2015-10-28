@@ -50,6 +50,16 @@
 #define Mark_scanned(sp, retaddr) Saved_return_address(sp) = (retaddr) | 1
 #endif
 
+#ifdef TARGET_s390x
+#define Saved_return_address(sp) *((intnat *)((sp) - SIZEOF_PTR))
+#define Already_scanned(sp, retaddr) ((retaddr) & 1)
+#define Mark_scanned(sp, retaddr) \
+          (*((intnat *)((sp) - SIZEOF_PTR)) = (retaddr) | 1)
+#define Mask_already_scanned(retaddr) ((retaddr) & ~1)
+#define Trap_frame_size 16
+#define Callback_link(sp) ((struct caml_context *)((sp) + Trap_frame_size))
+#endif
+
 #ifdef TARGET_arm
 #define Saved_return_address(sp) *((intnat *)((sp) - 4))
 #define Callback_link(sp) ((struct caml_context *)((sp) + 8))
