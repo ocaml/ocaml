@@ -355,8 +355,10 @@ let get_field t ~field_index:i =
       fields.(i)
     else
       Misc.fatal_errorf "Simple_value_approx.get_field: attempt to project \
-          block approximation at field %d, but it only has %d fields"
+          block approximation at field %d, but it only has %d fields.  \
+          Approximation: %a"
         i (Array.length fields)
+        print t
   | Value_bottom
   | Value_int _ | Value_char _ | Value_constptr _ ->
     (* Something seriously wrong is happening: either the user is doing

@@ -19,3 +19,4 @@ val create_exn : int -> t
 val to_int : t -> int
 
 val zero : t
+val object_tag : t

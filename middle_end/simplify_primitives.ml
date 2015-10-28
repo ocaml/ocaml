@@ -34,6 +34,17 @@ let phy_equal (approxs:A.t list) =
               Symbol.equal s1 s2 && f1 = f2
           | _ -> false
 
+let not_phys_equal (approxs:A.t list) =
+  match approxs with
+  | [] | [_] | _ :: _ :: _ :: _ ->
+    Misc.fatal_error "wrong number of arguments for equality"
+  | [a1; a2] ->
+    (* There should never be any symbol aliases when this pass is run
+       (from [Inline_and_simplify]). *)
+    match a1.symbol, a2.symbol with
+    | Some (s1, _), Some (s2, _) -> not (Symbol.equal s1 s2)
+    | _ -> false
+
 let primitive (p : Lambda.primitive) (args, approxs) expr dbg ~size_int
       ~big_endian : Flambda.named * A.t * Inlining_cost.Benefit.t =
   let fpc = !Clflags.float_const_prop in
@@ -55,6 +66,8 @@ let primitive (p : Lambda.primitive) (args, approxs) expr dbg ~size_int
        safely returns false, when the approximation is known to
        be different. *)
     S.const_bool_expr expr true
+  | Pintcomp Ceq when not_phys_equal approxs ->
+    S.const_bool_expr expr false
   | _ ->
     match A.descrs approxs with
     | [Value_int x] ->

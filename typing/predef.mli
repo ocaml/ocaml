@@ -63,3 +63,6 @@ val build_initial_env:
 
 val builtin_values: (string * Ident.t) list
 val builtin_idents: (string * Ident.t) list
+
+(** All predefined exceptions *)
+val all_predef_exns : Ident.t list

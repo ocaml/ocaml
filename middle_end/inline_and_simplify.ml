@@ -788,7 +788,9 @@ and simplify_named env r (tree : Flambda.named) : Flambda.named * R.t =
             (* This [Pfield] is either not projecting from a symbol at all, or
                it is the projection of a projection from a symbol. *)
             let approx = A.get_field approx ~field_index in
-            tree, approx
+            let module Backend = (val (E.backend env) : Backend_intf.S) in
+            let approx' = Backend.really_import_approx approx in
+            tree, approx'
           end
         in
         simplify_named_using_approx_and_env env r tree approx
@@ -1290,6 +1292,22 @@ let debug_benefit =
   try ignore (Sys.getenv "BENEFIT"); true
   with _ -> false
 
+let add_predef_exns_to_environment ~env ~backend =
+  let module Backend = (val backend : Backend_intf.S) in
+  List.fold_left (fun env predef_exn ->
+      assert (Ident.is_predef_exn predef_exn);
+      let symbol = Backend.symbol_for_global' predef_exn in
+      let name = Ident.name predef_exn in
+      let approx =
+        A.value_block (Tag.object_tag,
+          [| A.value_string (String.length name) (Some name);
+             A.value_unknown;
+          |])
+      in
+      E.add_symbol env symbol (A.augment_with_symbol approx symbol))
+    env
+    Predef.all_predef_exns
+
 let run ~never_inline ~backend program =
   let r =
     if never_inline then
@@ -1299,8 +1317,10 @@ let run ~never_inline ~backend program =
   in
   let stats = !Clflags.inlining_stats in
   if never_inline then Clflags.inlining_stats := false;
-  (* CR mshinwell: Why does this always set [never_inline:false]? *)
-  let initial_env = E.create ~never_inline:false ~backend in
+  let initial_env =
+    add_predef_exns_to_environment ~env:(E.create ~never_inline:false ~backend)
+      ~backend
+  in
   let result, r = simplify_program initial_env r program in
   let result = Flambda_utils.introduce_needed_import_symbols result in
   Clflags.inlining_stats := stats;
