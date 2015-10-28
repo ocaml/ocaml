@@ -354,6 +354,10 @@ let get_field t ~field_index:i =
     if i >= 0 && i < Array.length fields then
       fields.(i)
     else
+      (* CR mshinwell: I worry that it's possible to trigger this fatal
+         error if a .cmx file is missing (during the compilation of
+         a dead exception match case, for example, where the outermost
+         exception constructor is from another unit whose .cmx is missing). *)
       Misc.fatal_errorf "Simple_value_approx.get_field: attempt to project \
           block approximation at field %d, but it only has %d fields.  \
           Approximation: %a"
