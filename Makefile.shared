@@ -118,10 +118,12 @@ ASMCOMP=\
   asmcomp/asmlink.cmo asmcomp/asmlibrarian.cmo asmcomp/asmpackager.cmo \
   driver/opterrors.cmo driver/optcompile.cmo
 
-TOPLEVEL=toplevel/genprintval.cmo toplevel/toploop.cmo \
+TOPSHARED=toplevel/toploop_shared.cmo
+
+TOPLEVEL=toplevel/genprintval.cmo $(TOPSHARED) toplevel/toploop.cmo \
   toplevel/trace.cmo toplevel/topdirs.cmo toplevel/topmain.cmo
 
-OPTTOPLEVEL=toplevel/genprintval.cmo toplevel/opttoploop.cmo \
+OPTTOPLEVEL=toplevel/genprintval.cmo $(TOPSHARED) toplevel/opttoploop.cmo \
   toplevel/opttopdirs.cmo toplevel/opttopmain.cmo
 
 BYTESTART=driver/main.cmo
