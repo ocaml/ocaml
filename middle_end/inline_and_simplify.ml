@@ -241,13 +241,19 @@ let simplify_move_within_set_of_closures env r
       move_within_set_of_closures.closure
   in
   let closure_approx = E.find_exn env closure in
-  match A.check_approx_for_closure closure_approx with
+  match A.check_approx_for_closure_allowing_unresolved closure_approx with
   | Wrong ->
     Misc.fatal_errorf "Wrong approximation when moving within set of \
         closures.  Approximation: %a  Term: %a"
       A.print closure_approx
       Flambda.print_move_within_set_of_closures move_within_set_of_closures
-  | Ok (_value_closure, set_of_closures_var, set_of_closures_symbol, value_set_of_closures) ->
+  | Unresolved _sym ->
+    (* CR mshinwell for pchambart: I added this.  I think this happened
+       when a .cmx file was unavailable.  Is this correct? *)
+    Move_within_set_of_closures move_within_set_of_closures,
+      ret r A.value_unknown
+  | Ok (_value_closure, set_of_closures_var, set_of_closures_symbol,
+        value_set_of_closures) ->
     let freshen =
       (* CR mshinwell: potentially misleading name---not freshening with new
          names, but with previously fresh names *)
