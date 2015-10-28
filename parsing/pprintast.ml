@@ -440,39 +440,40 @@ and sugar_expr ctxt f e =
   | Pexp_apply ({ pexp_desc = Pexp_ident {txt = id; _};
                   pexp_attributes=[]; _}, args)
     when List.for_all (fun (lab, _) -> lab = Nolabel) args -> begin
+      let print a left right print_index indexes rem_args =
+        match rem_args with
+        | None ->
+            pp f "@[%a.%s%a%s@]"
+              (simple_expr ctxt) a
+              left (list ~sep:"," print_index) indexes right; true
+        | Some v ->
+            pp f "@[%a.%s%a%s@ <-@;<1 2>%a@]"
+              (simple_expr ctxt) a
+              left (list ~sep:"," print_index) indexes right
+              (simple_expr ctxt) v; true in
       match id, List.map snd args with
       | Lident "!", [e] ->
-        pp f "@[<hov>!%a@]" (simple_expr ctxt) e; true
-      | Ldot (path, ("get"|"set" as func)), a :: other_args -> begin
-          let print left right print_index indexes rem_args =
-            match func, rem_args with
-            | "get", [] ->
-              pp f "@[%a.%s%a%s@]"
-                (simple_expr ctxt) a
-                left (list ~sep:"," print_index) indexes right; true
-            | "set", [v] ->
-              pp f "@[%a.%s%a%s@ <-@;<1 2>%a@]"
-                (simple_expr ctxt) a
-                left (list ~sep:"," print_index) indexes right
-                (simple_expr ctxt) v; true
-            | _ -> false
-          in
-          match path, other_args with
-          | Lident "Array", i :: rest ->
-            print "(" ")" (expression ctxt) [i] rest
-          | Lident "String", i :: rest ->
-            print "[" "]" (expression ctxt) [i] rest
-          | Ldot (Lident "Bigarray", "Array1"), i1 :: rest ->
-            print "{" "}" (simple_expr ctxt) [i1] rest
-          | Ldot (Lident "Bigarray", "Array2"), i1 :: i2 :: rest ->
-            print "{" "}" (simple_expr ctxt) [i1; i2] rest
-          | Ldot (Lident "Bigarray", "Array3"), i1 :: i2 :: i3 :: rest ->
-            print "{" "}" (simple_expr ctxt) [i1; i2; i3] rest
-          | Ldot (Lident "Bigarray", "Genarray"),
-            {pexp_desc = Pexp_array indexes; pexp_attributes = []} :: rest ->
-            print "{" "}" (simple_expr ctxt) indexes rest
-          | _ -> false
-        end
+          pp f "@[<hov>!%a@]" (simple_expr ctxt) e; true
+      | Lident (".[]"|".{}" as s), [a; i] ->
+          let left = String.sub s 1 1 and right = String.sub s 2 1 in
+          print a left right (expression ctxt) [i] None
+      | Lident (".[]<-"|".{}<-" as s), [a; i; v] ->
+          let left = String.sub s 1 1 and right = String.sub s 2 1 in
+          print a left right (expression ctxt) [i] (Some v)
+      | Lident (".{,}"|".{,,}"), a :: is ->
+          print a "{" "}" (simple_expr ctxt) is None
+      | Lident ".{,}<-", [a; i1; i2; v] ->
+          print a "{" "}" (simple_expr ctxt) [i1;i2] (Some v)
+      | Lident ".{,,}<-", [a; i1; i2; i3; v] ->
+          print a "{" "}" (simple_expr ctxt) [i1;i2;i3] (Some v)
+      | Lident ".{,..,}", [a; {pexp_desc = Pexp_array ls; pexp_attributes = []}] ->
+          print a "{" "}" (simple_expr ctxt) ls None
+      | Lident ".{,..,}<-", [a; {pexp_desc = Pexp_array ls; pexp_attributes = []}; v] ->
+          print a "{" "}" (simple_expr ctxt) ls (Some v)
+      | Ldot (Lident "Array", ("get"|"unsafe_get") ), a :: i ->
+          print a "(" ")" (expression ctxt) i None
+      | Ldot (Lident "Array", ("set"|"unsafe_set") ), [a;i;v] ->
+          print a "(" ")" (expression ctxt) [i] (Some v)
       | _ -> false
     end
   | _ -> false
