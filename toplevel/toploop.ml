@@ -12,18 +12,13 @@
 
 (* The interactive toplevel loop *)
 
-open Path
-open Format
 open Config
-open Misc
-open Parsetree
-open Typedtree
-open Outcometree
 
 include Toploop_shared
+
 (* The table of toplevel value bindings and its accessors *)
 
-module StringMap = Map.Make(String)
+module StringMap = Misc.StringMap
 
 let toplevel_value_bindings : Obj.t StringMap.t ref = ref StringMap.empty
 
@@ -31,7 +26,7 @@ let getvalue name =
   try
     StringMap.find name !toplevel_value_bindings
   with Not_found ->
-    fatal_error (name ^ " unbound at toplevel")
+    Misc.fatal_error (name ^ " unbound at toplevel")
 
 let setvalue name v =
   toplevel_value_bindings := StringMap.add name v !toplevel_value_bindings
@@ -39,7 +34,9 @@ let setvalue name v =
 (* Return the value referred to by a path *)
 
 let () =
-  let rec eval_path = function
+  let rec eval_path =
+    let open Path in
+    function
     | Pident id ->
         if Ident.persistent id || Ident.global id then
           Symtable.get_global_value id
@@ -53,7 +50,7 @@ let () =
     | Pdot(p, s, pos) ->
         Obj.field (eval_path p) pos
     | Papply(p1, p2) ->
-        fatal_error "Toploop.eval_path"
+        Misc.fatal_error "Toploop.eval_path"
   in
   set_eval_path eval_path
 
@@ -61,7 +58,6 @@ let () =
 (* Load in-core and execute a lambda term *)
 
 let may_trace = ref false (* Global lock on tracing *)
-type evaluation_outcome = Result of Obj.t | Exception of exn
 
 let backtrace = ref None
 
@@ -70,12 +66,12 @@ let record_backtrace () =
   then backtrace := Some (Printexc.get_backtrace ())
 
 let load_lambda ppf lam =
-  if !Clflags.dump_rawlambda then fprintf ppf "%a@." Printlambda.lambda lam;
+  if !Clflags.dump_rawlambda then Format.fprintf ppf "%a@." Printlambda.lambda lam;
   let slam = Simplif.simplify_lambda lam in
-  if !Clflags.dump_lambda then fprintf ppf "%a@." Printlambda.lambda slam;
+  if !Clflags.dump_lambda then Format.fprintf ppf "%a@." Printlambda.lambda slam;
   let (init_code, fun_code) = Bytegen.compile_phrase slam in
   if !Clflags.dump_instr then
-    fprintf ppf "%a%a@."
+    Format.fprintf ppf "%a%a@."
     Printinstr.instrlist init_code
     Printinstr.instrlist fun_code;
   let (code, code_size, reloc, events) =
@@ -97,7 +93,7 @@ let load_lambda ppf lam =
       Meta.static_release_bytecode code code_size;
       Meta.static_free code;
     end;
-    Result retval
+    Ok retval
   with x ->
     may_trace := false;
     record_backtrace ();
@@ -108,28 +104,33 @@ let load_lambda ppf lam =
     end;
     toplevel_value_bindings := initial_bindings; (* PR#6211 *)
     Symtable.restore_state initial_symtable;
-    Exception x
+    Error x
 
 (* Print the outcome of an evaluation *)
 
 let pr_item = pr_item (fun id -> getvalue (Translmod.toplevel_name id))
 
+let print_backtrace ppf =
+  if Printexc.backtrace_status () then
+    match !backtrace with
+    | None -> ()
+    | Some b ->
+        Format.pp_print_string ppf b;
+        Format.pp_print_flush ppf ();
+        backtrace := None
+
 (* Print an exception produced by an evaluation *)
 
 let print_exception_outcome ppf exn =
   print_exception_outcome ppf exn;
-  if Printexc.backtrace_status ()
-  then
-    match !backtrace with
-      | None -> ()
-      | Some b ->
-          print_string b;
-          backtrace := None
+  print_backtrace ppf
 
 (* Execute a toplevel phrase *)
 
 let () =
   set_execute_phrase (fun print_outcome ppf phr ->
+    let open Parsetree in
+    let open Outcometree in
     match phr with
     | Ptop_def sstr ->
         let oldenv = !toplevel_env in
@@ -146,9 +147,10 @@ let () =
           let res = load_lambda ppf lam in
           let out_phr =
             match res with
-            | Result v ->
+            | Ok v ->
                 if print_outcome then
                   Printtyp.wrap_printing_env oldenv (fun () ->
+                    let open Typedtree in
                     match str.str_items with
                     | [ { str_desc = Tstr_eval (exp, _attrs) }] ->
                         let outv = outval_of_value newenv v exp.exp_type in
@@ -156,8 +158,9 @@ let () =
                         Ophr_eval (outv, ty)
                     | [] -> Ophr_signature []
                     | _ -> Ophr_signature (pr_item newenv sg'))
-                else Ophr_signature []
-            | Exception exn ->
+                    else
+                      Ophr_signature []
+            | Error exn ->
                 toplevel_env := oldenv;
                 if exn = Out_of_memory then Gc.full_major();
                 let outv =
@@ -166,15 +169,7 @@ let () =
                 Ophr_exception (exn, outv)
           in
           !print_out_phrase ppf out_phr;
-          if Printexc.backtrace_status ()
-          then begin
-            match !backtrace with
-              | None -> ()
-              | Some b ->
-                  pp_print_string ppf b;
-                  pp_print_flush ppf ();
-                  backtrace := None;
-          end;
+          print_backtrace ppf;
           begin match out_phr with
           | Ophr_eval (_, _) | Ophr_signature _ -> true
           | Ophr_exception _ -> false
@@ -183,26 +178,7 @@ let () =
           toplevel_env := oldenv; raise x
         end
     | Ptop_dir(dir_name, dir_arg) ->
-        let d =
-          try Some (Hashtbl.find directive_table dir_name)
-          with Not_found -> None
-        in
-        begin match d with
-        | None ->
-            fprintf ppf "Unknown directive `%s'.@." dir_name;
-            false
-        | Some d ->
-            match d, dir_arg with
-            | Directive_none f, Pdir_none -> f (); true
-            | Directive_string f, Pdir_string s -> f s; true
-            | Directive_int f, Pdir_int n -> f n; true
-            | Directive_ident f, Pdir_ident lid -> f lid; true
-            | Directive_bool f, Pdir_bool b -> f b; true
-            | _ ->
-                fprintf ppf "Wrong type of argument for directive `%s'.@."
-                  dir_name;
-                false
-        end
+        execute_topdir ppf dir_name dir_arg
   )
 
 (* Toplevel initialization. Performed here instead of at the
@@ -235,27 +211,5 @@ let set_paths () =
 
 let loop ppf =
   Location.formatter_for_warnings := ppf;
-  fprintf ppf "        OCaml version %s@.@." Config.version;
-  initialize_toplevel_env ();
-  let lb = Lexing.from_function refill_lexbuf in
-  Location.init lb "//toplevel//";
-  Location.input_name := "//toplevel//";
-  Location.input_lexbuf := Some lb;
-  Sys.catch_break true;
-  load_ocamlinit ppf;
-  while true do
-    let snap = Btype.snapshot () in
-    try
-      Lexing.flush_input lb;
-      Location.reset();
-      first_line := true;
-      let phr = try !parse_toplevel_phrase lb with Exit -> raise PPerror in
-      let phr = preprocess_phrase ppf phr  in
-      Env.reset_cache_toplevel ();
-      ignore(execute_phrase true ppf phr)
-    with
-    | End_of_file -> exit 0
-    | Sys.Break -> fprintf ppf "Interrupted.@."; Btype.backtrack snap
-    | PPerror -> ()
-    | x -> Location.report_exception ppf x; Btype.backtrack snap
-  done
+  Format.fprintf ppf "        OCaml version %s@.@." Config.version;
+  loop_no_header ppf

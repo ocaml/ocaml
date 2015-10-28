@@ -154,6 +154,24 @@ let set_execute_phrase = (:=) execute_phrase_ref
 let execute_phrase print_outcome ppf phr =
   !execute_phrase_ref print_outcome ppf phr
 
+(* Execute a toplevel directive *)
+
+let execute_topdir ppf dir_name dir_arg =
+  let open Parsetree in
+  match Hashtbl.find directive_table dir_name, dir_arg with
+  | exception Not_found ->
+      Format.fprintf ppf "Unknown directive `%s'.@." dir_name;
+      false
+  | Directive_none f, Pdir_none -> f (); true
+  | Directive_string f, Pdir_string s -> f s; true
+  | Directive_int f, Pdir_int n -> f n; true
+  | Directive_ident f, Pdir_ident lid -> f lid; true
+  | Directive_bool f, Pdir_bool b -> f b; true
+  | _ ->
+      Format.fprintf ppf "Wrong type of argument for directive `%s'.@."
+        dir_name;
+      false
+
 (* Read and execute commands from a file, or from stdin if [name] is "". *)
 
 let use_print_results = ref true
@@ -277,6 +295,35 @@ let load_ocamlinit ppf =
 
 let initialize_toplevel_env () =
   toplevel_env := Compmisc.initial_env()
+
+(* The interactive loop *)
+
+let loop_no_header ppf =
+  initialize_toplevel_env ();
+  let lb = Lexing.from_function refill_lexbuf in
+  Location.init lb "//toplevel//";
+  Location.input_name := "//toplevel//";
+  Location.input_lexbuf := Some lb;
+  Sys.catch_break true;
+  load_ocamlinit ppf;
+  while true do
+    let snap = Btype.snapshot () in
+    try
+      Lexing.flush_input lb;
+      Location.reset();
+      first_line := true;
+      let phr = try !parse_toplevel_phrase lb with Exit -> raise PPerror in
+      let phr = preprocess_phrase ppf phr  in
+      Env.reset_cache_toplevel ();
+      if !Clflags.dump_parsetree then Printast.top_phrase ppf phr;
+      if !Clflags.dump_source then Pprintast.top_phrase ppf phr;
+      ignore(execute_phrase true ppf phr)
+    with
+    | End_of_file -> exit 0
+    | Sys.Break -> Format.fprintf ppf "Interrupted.@."; Btype.backtrack snap
+    | PPerror -> ()
+    | x -> Location.report_exception ppf x; Btype.backtrack snap
+  done
 
 (* Execute a script.  If [name] is "", read the script from stdin. *)
 
