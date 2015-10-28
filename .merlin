@@ -7,9 +7,6 @@ B ./bytecomp
 S ./driver
 B ./driver
 
-S ./lex
-B ./lex
-
 S ./otherlibs/bigarray
 B ./otherlibs/bigarray
 
