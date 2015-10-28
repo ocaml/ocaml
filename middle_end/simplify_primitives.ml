@@ -42,7 +42,7 @@ let not_phys_equal (approxs:A.t list) =
     (* There should never be any symbol aliases when this pass is run
        (from [Inline_and_simplify]). *)
     match a1.symbol, a2.symbol with
-    | Some (s1, _), Some (s2, _) -> not (Symbol.equal s1 s2)
+    | Some (s1, None), Some (s2, None) -> not (Symbol.equal s1 s2)
     | _ -> false
 
 let primitive (p : Lambda.primitive) (args, approxs) expr dbg ~size_int
