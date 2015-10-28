@@ -913,8 +913,7 @@ and simplify_direct env r (tree : Flambda.t) : Flambda.t * R.t =
         else begin
           match (body : Flambda.t) with
           | Static_raise (j, args) ->
-            assert (Static_exception.equal i
-                (Freshening.apply_static_exception (E.freshening env) j));
+            assert (Static_exception.equal i j);
             let handler =
               List.fold_left2 (fun body var arg ->
                   Flambda.create_let var (Expr (Var arg)) body)
