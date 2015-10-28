@@ -382,7 +382,9 @@ Features wishes:
 - PR#6742: remove duplicate virtual_flag information from Tstr_class
 - PR#6719: improve Buffer.add_channel when not enough input is available
   (Simon Cruanes)
-* PR#6816: reject integer and float literals followed by alphanum
+* PR#6816: reject integer and float literals directly followed by an identifier.
+  This was prevously read as two separate tokens.
+  [let abc = 1 in (+) 123abc] was accepted and is now rejected.
   (Hugo Heuzard)
 - PR#6876: improve warning 6 by listing the omitted labels.
   (Eyyüb Sari)
@@ -416,6 +418,12 @@ Features wishes:
   (Florian Angeletti)
 - GPR#252: improve build instructions in MSVC Windows README
   (Philip Daian)
+* GPR#170: Parse arbitrary precision integers.
+  Accept a single [A-Za-z] as modifier for integers (generalizing 'l','L','n') and floats.
+  May cause breakage (ie. ppx preprocessor) because of changes in the parsetree.
+  This changes PR#6816 a little bit by reading the literal [123a] as a single token that can
+  later be rewritten by a ppx preprocessor.
+  (Hugo Heuzard)
 
 OCaml 4.02.3 (27 Jul 2015):
 ---------------------------
