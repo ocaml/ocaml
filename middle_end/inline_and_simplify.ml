@@ -244,7 +244,8 @@ let simplify_move_within_set_of_closures env r
   match A.check_approx_for_closure closure_approx with
   | Wrong ->
     Misc.fatal_errorf "Wrong approximation when moving within set of \
-        closures: %a"
+        closures.  Approximation: %a  Term: %a"
+      A.print closure_approx
       Flambda.print_move_within_set_of_closures move_within_set_of_closures
   | Ok (_value_closure, set_of_closures_var, set_of_closures_symbol, value_set_of_closures) ->
     let freshen =
