@@ -35,16 +35,12 @@ type specific_operation =
 (* Addressing modes *)
 
 type addressing_mode =
-    Ibased of string * int              (* symbol + displ *)
   | Iindexed of int                     (* reg + displ *)
-  | Iindexed2                           (* reg + reg *)
+  | Iindexed2 of int                    (* reg + reg + displ *)
 
 (* Sizes, endianness *)
 
 let big_endian = true
-
-let s390x =
-  match Config.model with "s390x" -> true | _ -> false
 
 let size_addr = 8
 let size_int = size_addr
@@ -62,27 +58,23 @@ let identity_addressing = Iindexed 0
 
 let offset_addressing addr delta =
   match addr with
-    Ibased(s, n) -> Ibased(s, n + delta)
   | Iindexed n -> Iindexed(n + delta)
-  | Iindexed2 -> assert false
+  | Iindexed2 n -> Iindexed2(n + delta)
 
 let num_args_addressing = function
-    Ibased(s, n) -> 0
   | Iindexed n -> 1
-  | Iindexed2 -> 2
+  | Iindexed2 n -> 2
 
 (* Printing operations and addressing modes *)
 
 let print_addressing printreg addr ppf arg =
   match addr with
-  | Ibased(s, n) ->
-      let idx = if n <> 0 then Printf.sprintf " + %i" n else "" in
-      fprintf ppf "\"%s\"%s" s idx
   | Iindexed n ->
       let idx = if n <> 0 then Printf.sprintf " + %i" n else "" in
       fprintf ppf "%a%s" printreg arg.(0) idx
-  | Iindexed2 ->
-      fprintf ppf "%a + %a" printreg arg.(0) printreg arg.(1)
+  | Iindexed2 n ->
+      let idx = if n <> 0 then Printf.sprintf " + %i" n else "" in
+      fprintf ppf "%a + %a%s" printreg arg.(0) printreg arg.(1) idx
 
 let print_specific_operation printreg op ppf arg =
   match op with

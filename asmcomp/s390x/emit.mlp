@@ -112,32 +112,16 @@ let emit_load_store instr addressing_mode addr n arg =
 if (compare instr "stey") = 0 then begin
   `	ledbr	{emit_fpr 15}, {emit_reg arg}\n`;
   match addressing_mode with
-    Ibased(s, d) ->
-    if !pic_code then begin
-      `	lg	{emit_gpr 1}, {emit_symbol s}@GOT({emit_gpr 12})\n`;
-      `	{emit_string instr}	{emit_fpr 15},{emit_int d}({emit_gpr 1})\n`
-    end else begin
-      `	larl	{emit_gpr 1}, {emit_symbol_offset (s,d)}\n`;
-      `	{emit_string instr}	{emit_fpr 15},0({emit_gpr 1})\n`
-    end
   | Iindexed ofs ->
       `	{emit_string instr}	{emit_fpr 15}, {emit_int ofs}({emit_reg addr.(n)})\n`
-  | Iindexed2 ->
-      `	{emit_string instr}	{emit_fpr 15}, 0({emit_reg addr.(n)},{emit_reg addr.(n+1)})\n`
+  | Iindexed2 ofs ->
+      `	{emit_string instr}	{emit_fpr 15}, {emit_int ofs}({emit_reg addr.(n)},{emit_reg addr.(n+1)})\n`
 end else begin
   match addressing_mode with
-    Ibased(s, d) ->
-    if !pic_code then begin
-      `	lg	{emit_gpr 1}, {emit_symbol s}@GOT({emit_gpr 12})\n`;
-      `	{emit_string instr}	{emit_reg arg},{emit_int d}({emit_gpr 1})\n`
-    end else begin
-      `	larl	{emit_gpr 1}, {emit_symbol_offset (s,d)}\n`;
-      `	{emit_string instr}	{emit_reg arg},0({emit_gpr 1})\n`
-    end
   | Iindexed ofs ->
       `	{emit_string instr}	{emit_reg arg}, {emit_int ofs}({emit_reg addr.(n)})\n`
-  | Iindexed2 ->
-      `	{emit_string instr}	{emit_reg arg}, 0({emit_reg addr.(n)},{emit_reg addr.(n+1)})\n`
+  | Iindexed2 ofs ->
+      `	{emit_string instr}	{emit_reg arg}, {emit_int ofs}({emit_reg addr.(n)},{emit_reg addr.(n+1)})\n`
 end
 
 (* After a comparison, extract the result as 0 or 1 *)

@@ -23,18 +23,15 @@ open Mach
 exception Use_default
 
 type addressing_expr =
-    Asymbol of string
   | Alinear of expression
   | Aadd of expression * expression
 
 let rec select_addr = function
-    Cconst_symbol s ->
-      (Asymbol s, 0)
-  | Cop((Caddi | Cadda), [arg; Cconst_int m]) ->
+  | Cop((Caddi | Cadda | Caddv), [arg; Cconst_int m]) ->
       let (a, n) = select_addr arg in (a, n + m)
-  | Cop((Caddi | Cadda), [Cconst_int m; arg]) ->
+  | Cop((Caddi | Cadda | Caddv), [Cconst_int m; arg]) ->
       let (a, n) = select_addr arg in (a, n + m)
-  | Cop((Caddi | Cadda), [arg1; arg2]) ->
+  | Cop((Caddi | Cadda | Caddv), [arg1; arg2]) ->
       begin match (select_addr arg1, select_addr arg2) with
           ((Alinear e1, n1), (Alinear e2, n2)) ->
               (Aadd(e1, e2), n1 + n2)
@@ -65,15 +62,14 @@ inherit Selectgen.selector_generic as super
 method is_immediate n = (n <= 2147483647) && (n >= -2147483648)
 
 method select_addressing chunk exp =
-  match select_addr exp with
-    (Asymbol s, d) ->
-      (Ibased(s, d), Ctuple [])
-  | (Alinear e, d) ->
-      (Iindexed d, e)
-  | (Aadd(e1, e2), d) ->
-      if d = 0
-      then (Iindexed2, Ctuple[e1; e2])
-      else (Iindexed d, Cop(Cadda, [e1; e2]))
+  let (a, d) = select_addr exp in
+  (* 20-bit signed displacement *)
+  if d < 0x80000 && d >= -0x80000 then begin
+    match a with
+    | Alinear e -> (Iindexed d, e)
+    | Aadd(e1, e2) -> (Iindexed2 d, Ctuple [e1; e2])
+  end else
+    (Iindexed 0, exp)
 
 method! select_operation op args =
   match (op, args) with
