@@ -48,10 +48,8 @@ let slot_offset loc cls =
 
 (* Output a symbol *)
 
-let emit_symbol =
-  match Config.system with
-  | "elf" | "bsd" | "bsd_elf" -> (fun s -> Emitaux.emit_symbol '.' s)
-  | _ -> assert false
+let emit_symbol s = Emitaux.emit_symbol '.' s
+
 (* Output function call *)
 
 let emit_call s =
@@ -59,12 +57,10 @@ let emit_call s =
     `brasl      %r14, {emit_symbol s}@PLT`
    else
     `brasl      %r14, {emit_symbol s}`
+
 (* Output a label *)
 
-let label_prefix =
-  match Config.system with
-  | "elf" | "bsd" | "bsd_elf" -> ".L"
-  | _ -> assert false
+let label_prefix = ".L"
 
 let emit_label lbl =
   emit_string label_prefix; emit_int lbl
@@ -74,30 +70,19 @@ let emit_data_label lbl =
 
 (* Section switching *)
 
-let data_space =
-  match Config.system with
-  | "elf" | "bsd" | "bsd_elf" -> "	.section \".data\"\n"
-  | _ -> assert false
+let data_space = "	.section \".data\"\n"
 
-let code_space =
-  match Config.system with
-  | "elf" | "bsd" | "bsd_elf" -> "	.section \".text\"\n"
-  | _ -> assert false
+let code_space = "	.section \".text\"\n"
 
-let rodata_space =
-  match Config.system with
-  | "elf" | "bsd" | "bsd_elf" -> "	.section \".rodata\"\n"
-  | _ -> assert false
-
+let rodata_space = "	.section \".rodata\"\n"
 
 let datag = ".quad"
 
 (* Output a pseudo-register *)
 
 let emit_reg r =
-  match r with
-     {loc = Reg rs; typ = (Int | Addr)} -> emit_string "%r"; emit_string (register_name rs)
-  |  {loc = Reg rs; typ = Float} -> emit_string "%f"; emit_string (register_name rs)
+  match r.loc with
+  | Reg r -> emit_string (register_name r)
   | _ -> fatal_error "Emit.emit_reg"
 
 
@@ -189,10 +174,12 @@ let record_frame live dbg =
   let live_offset = ref [] in
   Reg.Set.iter
     (function
-        {typ = Addr; loc = Reg r} ->
+      | {typ = Val; loc = Reg r} ->
           live_offset := (r lsl 1) + 1 :: !live_offset
-      | {typ = Addr; loc = Stack s} as reg ->
+      | {typ = Val; loc = Stack s} as reg ->
           live_offset := slot_offset s (register_class reg) :: !live_offset
+      | {typ = Addr} as r ->
+          Misc.fatal_error ("bad GC root " ^ Reg.name r)
       | _ -> ())
     live;
   frame_descriptors :=
@@ -311,15 +298,15 @@ let emit_instr i =
         let src = i.arg.(0) and dst = i.res.(0) in
         if src.loc <> dst.loc then begin
            match (src, dst) with
-              {loc = Reg rs; typ = (Int | Addr)}, {loc = Reg rd} ->
+              {loc = Reg rs; typ = (Val | Int | Addr)}, {loc = Reg rd} ->
                 `	lgr     {emit_reg dst}, {emit_reg src}\n`
             | {loc = Reg rs; typ = Float}, {loc = Reg rd; typ = Float} ->
                 `	ldr     {emit_reg dst}, {emit_reg src}\n`
-            | {loc = Reg rs; typ = (Int | Addr)}, {loc = Stack sd} ->
+            | {loc = Reg rs; typ = (Val | Int | Addr)}, {loc = Stack sd} ->
                 `	stg     {emit_reg src}, {emit_stack dst}\n`
             | {loc = Reg rs; typ = Float}, {loc = Stack sd} ->
                 `	std     {emit_reg src}, {emit_stack dst}\n`
-            | {loc = Stack ss; typ = (Int | Addr)}, {loc = Reg rd} ->
+            | {loc = Stack ss; typ = (Val | Int | Addr)}, {loc = Reg rd} ->
                 `	lg      {emit_reg dst}, {emit_stack src}\n`
             | {loc = Stack ss; typ = Float}, {loc = Reg rd} ->
                 `	ldy      {emit_reg dst}, {emit_stack src}\n`
@@ -413,7 +400,7 @@ let emit_instr i =
           | Sixteen_signed -> "lgh"
           | Thirtytwo_unsigned -> "llgf"
           | Thirtytwo_signed -> "lgf"
-	  | Word -> "lg"
+	  | Word_int | Word_val -> "lg"
           | Single -> "ley"
           | Double | Double_u -> "ldy" in
         emit_load_store loadinstr addr i.arg 0 i.res.(0);
@@ -425,7 +412,7 @@ let emit_instr i =
             Byte_unsigned | Byte_signed -> "stcy"
           | Sixteen_unsigned | Sixteen_signed -> "sthy"
 	  | Thirtytwo_unsigned | Thirtytwo_signed -> "sty"
-	  | Word -> "stg"
+	  | Word_int | Word_val -> "stg"
           | Single -> "stey"
           | Double | Double_u -> "stdy" in
              emit_load_store storeinstr addr i.arg 1 i.arg.(0)
@@ -756,10 +743,7 @@ emit_debug_info fundecl.fun_dbg;
 
 let declare_global_data s =
   `	.globl	{emit_symbol s}\n`;
-  match Config.system with
-  | "elf" | "bsd" | "bsd_elf" ->
-    `	.type	{emit_symbol s}, @object\n`
-  | _ -> assert false
+  `	.type	{emit_symbol s}, @object\n`
 
 let emit_item = function
     Cglobal_symbol s ->

@@ -46,18 +46,17 @@ let word_addressed = false
 *)
 
 let int_reg_name =
-    [| "2"; "3"; "4"; "5"; "6"; "7"; "8"; "9"; |]
+    [| "%r2"; "%r3"; "%r4"; "%r5"; "%r6"; "%r7"; "%r8"; "%r9"; |]
 
 let float_reg_name =
-    [| "0"; "2"; "4"; "6"; "1"; "3"; "5"; "7"; 
-       "8"; "9"; "10"; "11"; "12"; "13"; "14"; |]
+    [| "%f0"; "%f2"; "%f4"; "%f6"; "%f1"; "%f3"; "%f5"; "%f7"; 
+       "%f8"; "%f9"; "%f10"; "%f11"; "%f12"; "%f13"; "%f14"; |]
 
 let num_register_classes = 2
 
 let register_class r =
   match r.typ with
-    Int -> 0
-  | Addr -> 0
+  | Val | Int | Addr -> 0
   | Float -> 1
 
 let num_available_registers = [| 8; 15 |]
@@ -98,7 +97,7 @@ let calling_conventions
   let ofs = ref stack_ofs in
   for i = 0 to Array.length arg - 1 do
     match arg.(i).typ with
-      Int | Addr as ty ->
+    | Val | Int | Addr as ty ->
         if !int <= last_int then begin
           loc.(i) <- phys_reg !int;
           incr int
@@ -135,7 +134,12 @@ let loc_results res =
      Always reserve 8 bytes at bottom of stack, plus whatever is needed
      to hold the overflow arguments. *)
 
-let loc_external_arguments = calling_conventions 0 4 100 103 outgoing 0
+let loc_external_arguments arg =
+  let arg =
+    Array.map (fun regs -> assert (Array.length regs = 1); regs.(0)) arg in
+  let (loc, alignment) =
+    calling_conventions 0 4 100 103 outgoing 0 arg in
+  (Array.map (fun reg -> [|reg|]) loc, alignment)
 
 let extcall_use_push = false
 
