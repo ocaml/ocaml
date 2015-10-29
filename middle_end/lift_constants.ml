@@ -87,9 +87,6 @@ let assign_symbols_and_collect_constant_definitions
     if not (Variable.Set.mem var inconstants.id) then begin
       let assign_symbol () =
         let symbol = make_variable_symbol "" var in
-        (* Format.eprintf "assign_symbol %a -> %a@." *)
-        (*   Variable.print var *)
-        (*   Symbol.print symbol; *)
         Variable.Tbl.add var_to_symbol_tbl var symbol
       in
       let assign_existing_symbol = Variable.Tbl.add var_to_symbol_tbl var in
@@ -115,11 +112,6 @@ let assign_symbols_and_collect_constant_definitions
                        inconstants.closure));
         assign_symbol ();
         record_definition (Set_of_closures set);
-        (* CR mshinwell: the following seems to be needed because of the
-           behaviour of [Closure_conversion_aux.closure_env_without_parameters]
-           and maybe [reference_recursive_function_directly].  We should think
-           about this.  (Could we always use projections instead?  If so we
-           should add an invariant check forbidding direct access.) *)
         Variable.Map.iter (fun fun_var _ ->
             let closure_id = Closure_id.wrap fun_var in
             let closure_symbol = closure_symbol ~backend closure_id in
@@ -137,19 +129,11 @@ let assign_symbols_and_collect_constant_definitions
       | Project_closure ({ closure_id } as project_closure) ->
         assign_existing_symbol (closure_symbol ~backend  closure_id);
         record_definition (Project_closure project_closure)
-      (* | Prim (Pgetglobal id, _, _) -> *)
-      (*   let symbol = Compilenv.symbol_for_global' id in *)
-      (*   assign_existing_symbol symbol; *)
-      (*   record_definition (Symbol symbol) *)
       | Prim (Pfield index, [block], _) ->
-        (* | Prim (Pgetglobalfield index, [block], _) -> *)
         record_definition (Field (block, index))
       | Prim (Pfield _, _, _) ->
         Misc.fatal_errorf "[Pfield] with the wrong number of arguments"
           Flambda.print_named named
-      (* | Prim (Pgetglobalfield _, _, _) -> *)
-      (*   Misc.fatal_errorf "[Pgetglobalfield] with the wrong number of arguments" *)
-      (*     Flambda.print_named named *)
       | Prim _ ->
         Misc.fatal_errorf "Primitive not expected to be constant: @.%a@."
           Flambda.print_named named
@@ -233,18 +217,9 @@ let resolve_variable
     (var:Variable.t) : Flambda.constant_defining_value_block_field =
   match Variable.Map.find var aliases with
   | exception Not_found ->
-    (* Format.eprintf "no alias for %a@." *)
-    (*   Variable.print var; *)
     variable_field_definition var_to_symbol_tbl var_to_definition_tbl var
-  | Symbol s ->
-    (* Format.eprintf "symbol alias %a -> %a@." *)
-    (*   Variable.print var *)
-    (*   Symbol.print s; *)
-    Symbol s
+  | Symbol s -> Symbol s
   | Variable aliased_variable ->
-    (* Format.eprintf "variable alias %a -> %a@." *)
-    (*   Variable.print var *)
-    (*   Variable.print aliased_variable; *)
     variable_field_definition var_to_symbol_tbl var_to_definition_tbl aliased_variable
 
 let translate_set_of_closures
@@ -268,10 +243,6 @@ let translate_set_of_closures
       | Symbol s -> Symbol s
       | Const c -> Const c
   in
-  (* let f_body body = *)
-  (*   let body = Flambda_iterators.map_all_let_and_let_rec_bindings ~f body in *)
-  (*   let free_variable = Flambda.free_variables body in *)
-  (* in *)
   Flambda_iterators.map_function_bodies set_of_closures
     ~f:(Flambda_iterators.map_all_immutable_let_and_let_rec_bindings ~f)
 
@@ -408,15 +379,6 @@ let constant_dependencies ~backend:_ (const:Flambda.constant_defining_value) =
     Flambda_iterators.iter_symbols_on_named ~f:(fun s ->
         set := Symbol.Set.add s !set)
       (Set_of_closures set_of_closures);
-    (* (\* A set of closures do not depend on the closure it define *\) *)
-    (* let closure_ids = *)
-    (*   Symbol.Set.of_list *)
-    (*     (List.map (fun var -> *)
-    (*          closure_symbol ~backend (Closure_id.wrap var)) *)
-    (*         (Variable.Set.elements *)
-    (*            (Variable.Map.keys set_of_closures.function_decls.funs))) *)
-    (* in *)
-    (* Symbol.Set.diff !set closure_ids *)
     !set
   in
   match const with
@@ -473,7 +435,6 @@ let program_graph
           | None -> Symbol.Set.empty
           | Some previous -> Symbol.Set.singleton previous
         in
-        (* Format.printf "effect dep: %a %a@." Symbol.print sym Flambda.print expr; *)
         let deps = Symbol.Set.union (expression_symbol_dependencies expr) order_dep in
         let deps = Symbol.Set.diff deps imported_symbols in
         Symbol.Map.add sym deps
@@ -492,14 +453,12 @@ let add_definition_of_symbol constant_definitions
     (initialize_symbol_tbl : (Tag.t * Flambda.t list * Symbol.t option) Symbol.Tbl.t)
     (effect_tbl:(Flambda.t * Symbol.t option) Symbol.Tbl.t)
     program component : Flambda.program =
-  (* Format.eprintf "add_definition_of_symbols@."; *)
   let symbol_declaration sym =
     (* A symbol declared through an Initialize_symbol construct
        cannot be recursive, this is not allowed in the construction.
        This also couldn't have been introduced by this pass, so we can
        safely assert that this is not possible here *)
     assert(not (Symbol.Tbl.mem initialize_symbol_tbl sym));
-    (* Format.eprintf "add_definition_of_symbol %a@." Symbol.print sym; *)
     (sym, Symbol.Map.find sym constant_definitions)
   in
   let module Symbol_SCC = Sort_connected_components.Make (Symbol) in
@@ -508,18 +467,14 @@ let add_definition_of_symbol constant_definitions
     let l = List.map symbol_declaration l in
     Let_rec_symbol (l, program)
   | Symbol_SCC.No_loop sym ->
-    (* Format.eprintf "no loop component %a@." Symbol.print sym; *)
     match Symbol.Tbl.find initialize_symbol_tbl sym with
     | (tag, fields, _previous) ->
-      (* Format.eprintf "initialize@."; *)
       Initialize_symbol (sym, tag, fields, program)
     | exception Not_found ->
       match Symbol.Tbl.find effect_tbl sym with
       | (expr, _previous) ->
-        (* Format.eprintf "effect@."; *)
         Effect (expr, program)
       | exception Not_found ->
-        (* Format.eprintf "symbol@."; *)
         let decl = Symbol.Map.find sym constant_definitions in
         Let_symbol (sym, decl, program)
 
@@ -543,17 +498,13 @@ let introduce_free_variables_in_set_of_closures
       (Flambda.create_let fresh named expr), Variable.Map.add var fresh subst
     | exception Not_found ->
       (* The variable is bound by the closure or the arguments or not
-         constant. In either case it does not need to be binded *)
+         constant. In either case it does not need to be bound *)
       expr, subst
   in
   let function_decls : Flambda.function_declarations =
     Flambda.update_function_declarations function_decls
       ~funs:(Variable.Map.mapi
           (fun _fun_var (ffun : Flambda.function_declaration) ->
-(*
-             Format.printf "introduce in %a@."
-               Variable.print fun_var;
-*)
              let variables_to_bind =
                (* Closures from the same set must not be bound *)
                Variable.Set.diff
@@ -581,12 +532,6 @@ let introduce_free_variables_in_set_of_closures
     (* Keep only those that are not rewriten to constants *)
     Variable.Map.filter
       (fun v _ ->
-(*
-        if Variable.Tbl.mem var_to_block_field_tbl v then begin
-          Format.eprintf "dropping variable %a rewritten to a constant\n"
-            Variable.print v;
-        end;
-*)
         not (Variable.Tbl.mem var_to_block_field_tbl v))
       free_vars
   in
@@ -680,8 +625,9 @@ let program_symbols ~backend program =
       (* previous_effect is used to keep the order of initialize and effect
          values. Their effects order must be kept ordered.
          it is used as an extra dependency when sorting the symbols. *)
-      (* CR pchambart: if the fields expressions are pure, we could drop
-         this dependency *)
+      (* CR-someday pchambart: if the fields expressions are pure, we could drop
+         this dependency
+         mshinwell: deferred CR *)
       Symbol.Tbl.add initialize_symbol_tbl symbol (tag,fields,previous_effect);
       loop program (Some symbol)
     | Flambda.Effect (expr,program) ->
@@ -745,10 +691,6 @@ let lift_constants program ~backend =
   let inconstants =
     Inconstant_idents.inconstants_on_program program
       ~for_clambda:true
-      (* CR pchambart: get rid of this.
-         This should be available in backend
-         mshinwell: what is "this"?
-         pchambart: The access to compilenv *)
       ~compilation_unit:(Compilation_unit.get_current_exn ())
   in
   let initialize_symbol_tbl, symbol_definition_tbl, effect_tbl =
@@ -803,15 +745,6 @@ let lift_constants program ~backend =
       translated_definitions
   in
   let constant_definitions =
-(*
-    let inter =
-      Symbol.Set.inter
-        (Symbol.Map.keys symbol_definition_map)
-        (Symbol.Map.keys translated_definitions)
-    in
-    Format.eprintf "symbol intersection %a@."
-      Symbol.Set.print inter;
-*)
     (* Add previous Let_symbol to the newly discovered ones *)
     Symbol.Map.union_merge
       (fun
@@ -879,8 +812,7 @@ let lift_constants program ~backend =
          in
          tag, fields, dep)
   in
-  (* CR mshinwell: tidy this up once correct.
-     If a variable bound by a closure gets replaced by a symbol and
+  (* If a variable bound by a closure gets replaced by a symbol and
      thus eliminated from the [free_vars] set of the closure, we need to
      rewrite any subsequent [Project_var] expressions that project that
      variable. *)
@@ -926,6 +858,5 @@ let lift_constants program ~backend =
       components
   in
   let program = Flambda_utils.introduce_needed_import_symbols program in
-  (* Format.eprintf "@.lift_constants output:@ %a\n" Flambda.print_program program; *)
   program
 
