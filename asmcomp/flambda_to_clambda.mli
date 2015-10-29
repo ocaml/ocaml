@@ -11,18 +11,6 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(* CR mshinwell: update comment *)
-(* Converts a flambda expression to clambda.
-   During the conversion it:
-    * substitute variables bound by a closure by a field access
-      inside the closure
-    * replace symbolic closure offset by the real integer offset.
-    * build the switch tables
-    * add closure parameter for direct calls
-    * detect constants values and transform them to Uconst
-   For everything else, it is basically the identity.
-*)
-
 type result = {
   expr : Clambda.ulambda;
   preallocated_blocks : Clambda.preallocated_block list;
@@ -30,6 +18,16 @@ type result = {
   exported : Export_info.t;
 }
 
-val convert
-   : Flambda.program * Export_info.t
-  -> result
+(** Convert an Flambda program, with associated proto-export information,
+    to Clambda.
+    This yields a Clambda expression together with augmented export
+    information and details about required statically-allocated values
+    (preallocated blocks, for [Initialize_symbol], and structured
+    constants).
+
+    It is during this process that accesses to variables within
+    closures are transformed to field accesses within closure values.
+    For direct calls, the hidden closure parameter is added.  Switch
+    tables are also built.
+*)
+val convert : Flambda.program * Export_info.t -> result

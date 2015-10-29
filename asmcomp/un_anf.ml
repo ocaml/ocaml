@@ -674,6 +674,9 @@ let apply clam =
     clam
   in
 
+  (* CR mshinwell: after merging with trunk we should be able to
+     remove the second and third passes completely *)
+
   (* The first pass simplifies pure expressions as much as possible.
      It does not subsitute mutable variable accesses to keep as many
      expression pure as possible.

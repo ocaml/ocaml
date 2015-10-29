@@ -72,8 +72,8 @@ type t = private {
   constant_sets_of_closures : Set_of_closures_id.Set.t;
   (* CR mshinwell for pchambart: Add comment *)
   invariant_params : Variable.Set.t Set_of_closures_id.Map.t;
-  (* Function parameters known to be invariant (see [Invariant_params]) indexed
-     by set of closures ID. *)
+  (* Function parameters known to be invariant (see [Invariant_params])
+     indexed by set of closures ID. *)
 }
 
 (** Export information for a compilation unit that exports nothing. *)
