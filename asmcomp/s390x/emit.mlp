@@ -90,7 +90,9 @@ let emit_gpr r = emit_string "%r"; emit_int r
 
 let emit_fpr r = emit_string "%f"; emit_int r
 
-  
+(* Special registers *)
+
+let reg_f15 = phys_reg 115  
 
 (* Output a stack reference *)
 
@@ -109,20 +111,11 @@ let emit_symbol_offset (s, d) =
   if d <> 0 then emit_int d
 
 let emit_load_store instr addressing_mode addr n arg =
-if (compare instr "stey") = 0 then begin
-  `	ledbr	{emit_fpr 15}, {emit_reg arg}\n`;
-  match addressing_mode with
-  | Iindexed ofs ->
-      `	{emit_string instr}	{emit_fpr 15}, {emit_int ofs}({emit_reg addr.(n)})\n`
-  | Iindexed2 ofs ->
-      `	{emit_string instr}	{emit_fpr 15}, {emit_int ofs}({emit_reg addr.(n)},{emit_reg addr.(n+1)})\n`
-end else begin
   match addressing_mode with
   | Iindexed ofs ->
       `	{emit_string instr}	{emit_reg arg}, {emit_int ofs}({emit_reg addr.(n)})\n`
   | Iindexed2 ofs ->
       `	{emit_string instr}	{emit_reg arg}, {emit_int ofs}({emit_reg addr.(n)},{emit_reg addr.(n+1)})\n`
-end
 
 (* After a comparison, extract the result as 0 or 1 *)
 let emit_set_comp cmp res =
@@ -375,7 +368,8 @@ let emit_instr i =
       | Lop(Istackoffset n) ->
         `	lay     {emit_gpr 15}, {emit_int (-n)} ({emit_gpr 15})\n`;
         stack_offset := !stack_offset + n
-    | Lop(Iload(chunk, addr)) ->
+
+     | Lop(Iload(chunk, addr)) ->
         let loadinstr =
           match chunk with
             Byte_unsigned -> "llgc"
@@ -390,6 +384,10 @@ let emit_instr i =
         emit_load_store loadinstr addr i.arg 0 i.res.(0);
         if chunk = Single then
           `	ldebr	{emit_reg i.res.(0)}, {emit_reg i.res.(0)}\n`
+
+    | Lop(Istore(Single, addr, _)) ->
+        `	ledbr	{emit_fpr 15}, {emit_reg i.arg.(0)}\n`;
+        emit_load_store "stey" addr i.arg 1 reg_f15
     | Lop(Istore(chunk, addr, _)) ->
         let storeinstr =
           match chunk with
@@ -397,9 +395,9 @@ let emit_instr i =
           | Sixteen_unsigned | Sixteen_signed -> "sthy"
 	  | Thirtytwo_unsigned | Thirtytwo_signed -> "sty"
 	  | Word_int | Word_val -> "stg"
-          | Single -> "stey"
+          | Single -> assert false
           | Double | Double_u -> "stdy" in
-             emit_load_store storeinstr addr i.arg 1 i.arg.(0)
+        emit_load_store storeinstr addr i.arg 1 i.arg.(0)
         
     | Lop(Ialloc n) ->
         if !call_gc_label = 0 then call_gc_label := new_label();
