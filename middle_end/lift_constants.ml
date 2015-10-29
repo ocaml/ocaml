@@ -36,6 +36,7 @@ let assign_symbols_and_collect_constant_definitions
     ~(inconstants : Inconstant_idents.result) =
   let var_to_symbol_tbl = Variable.Tbl.create 42 in
   let var_to_definition_tbl = Variable.Tbl.create 42 in
+  let module AA = Alias_analysis in
   let assign_symbol var (named : Flambda.named) =
     if not (Variable.Set.mem var inconstants.id) then begin
       let assign_symbol () =
@@ -47,24 +48,24 @@ let assign_symbols_and_collect_constant_definitions
       match named with
       | Symbol symbol ->
         assign_existing_symbol symbol;
-        record_definition (Symbol symbol)
-      | Const const -> record_definition (Const const)
+        record_definition (AA.Symbol symbol)
+      | Const const -> record_definition (AA.Const const)
       | Allocated_const const ->
         assign_symbol ();
-        record_definition (Allocated_const const)
+        record_definition (AA.Allocated_const const)
       | Read_mutable _ -> () (* CR mshinwell: should be assert false? *)
       | Prim (Pmakeblock (tag, _), fields, _) ->
         assign_symbol ();
-        record_definition (Block (Tag.create_exn tag, fields))
+        record_definition (AA.Block (Tag.create_exn tag, fields))
       | Read_symbol_field (symbol, field) ->
-        record_definition (Symbol_field (symbol, field))
+        record_definition (AA.Symbol_field (symbol, field))
       | Set_of_closures (
           { function_decls = { funs; set_of_closures_id; _ };
             _ } as set) ->
         assert (not (Set_of_closures_id.Set.mem set_of_closures_id
                        inconstants.closure));
         assign_symbol ();
-        record_definition (Set_of_closures set);
+        record_definition (AA.Set_of_closures set);
         Variable.Map.iter (fun fun_var _ ->
             let closure_id = Closure_id.wrap fun_var in
             let closure_symbol = closure_symbol ~backend closure_id in
@@ -78,12 +79,12 @@ let assign_symbols_and_collect_constant_definitions
           funs
       | Move_within_set_of_closures ({ closure = _; start_from = _; move_to; } as move) ->
         assign_existing_symbol (closure_symbol ~backend  move_to);
-        record_definition (Move_within_set_of_closures move)
+        record_definition (AA.Move_within_set_of_closures move)
       | Project_closure ({ closure_id } as project_closure) ->
         assign_existing_symbol (closure_symbol ~backend  closure_id);
-        record_definition (Project_closure project_closure)
+        record_definition (AA.Project_closure project_closure)
       | Prim (Pfield index, [block], _) ->
-        record_definition (Field (block, index))
+        record_definition (AA.Field (block, index))
       | Prim (Pfield _, _, _) ->
         Misc.fatal_errorf "[Pfield] with the wrong number of arguments"
           Flambda.print_named named
@@ -91,13 +92,13 @@ let assign_symbols_and_collect_constant_definitions
         Misc.fatal_errorf "Primitive not expected to be constant: @.%a@."
           Flambda.print_named named
       | Project_var project_var ->
-        record_definition (Project_var project_var)
+        record_definition (AA.Project_var project_var)
       | Expr e -> begin
           match tail_variable e with
           (* CR mshinwell for pchambart: What should happen here?
              Move [tail_variable] to [Flambda_utils] once decided *)
           | None -> () (* Fail ? *)
-          | Some v -> record_definition (Variable v)
+          | Some v -> record_definition (AA.Variable v)
         end
     end
   in
@@ -126,11 +127,11 @@ let assign_symbols_and_collect_constant_definitions
   let record_set_of_closure_equalities (set_of_closures:Flambda.set_of_closures) =
     Variable.Map.iter (fun arg var ->
         if not (Variable.Set.mem arg inconstants.id) then
-          Variable.Tbl.add var_to_definition_tbl arg (Variable var))
+          Variable.Tbl.add var_to_definition_tbl arg (AA.Variable var))
       set_of_closures.free_vars;
     Variable.Map.iter (fun arg var ->
         if not (Variable.Set.mem arg inconstants.id) then
-          Variable.Tbl.add var_to_definition_tbl arg (Variable var))
+          Variable.Tbl.add var_to_definition_tbl arg (AA.Variable var))
       set_of_closures.specialised_args
   in
   Flambda_iterators.iter_on_set_of_closures_of_program program
@@ -140,7 +141,7 @@ let assign_symbols_and_collect_constant_definitions
           let closure_id = Closure_id.wrap fun_var in
           let closure_symbol = closure_symbol ~backend closure_id in
           Variable.Tbl.add var_to_definition_tbl fun_var
-            (Symbol closure_symbol);
+            (AA.Symbol closure_symbol);
           Variable.Tbl.add var_to_symbol_tbl fun_var closure_symbol)
         set_of_closures.Flambda.function_decls.funs)
     program;
