@@ -559,7 +559,6 @@ let emit_instr i =
           else
             `	lg	{emit_gpr 12}, {emit_int(n - size_addr)}({emit_gpr 15})\n`;
           `	agfi	{emit_gpr 15}, {emit_int n}\n`;
-          `	nill	{emit_gpr 14}, 0xFFFE\n`;
           `	br	{emit_gpr 14}\n`
     | Llabel lbl ->
         `{emit_label lbl}:\n`
@@ -651,7 +650,6 @@ let emit_instr i =
           `	lgr     {emit_gpr 15},{emit_gpr 13}\n`;
           `	lg      {emit_gpr 13}, {emit_int size_addr}({emit_gpr 15})\n`;
           `	agfi    {emit_gpr 15}, 16\n`;
-          `	nill	{emit_gpr 1}, 0xFFFE\n`;
           `	br	{emit_gpr 1}\n`
         end
 
