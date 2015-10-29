@@ -11,52 +11,6 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(* CR mshinwell: check comment is up to date *)
-(** The aim of this pass is to assign symbols to values known to be
-    constant (in other words, whose values we know at compile time), with
-    appropriate sharing of constants, and replace the occurrences of the
-    constants with their corresponding symbols.
-
-    This pass uses the results of two other passes, [Inconstant_idents] and
-    [Alias_analysis].  The relationship between these two deserves some
-    attention.
-
-    [Inconstant_idents] is a "backwards" analysis that propagates implications
-    about inconstantness of variables and set of closures IDs.
-
-    [Alias_analysis] is a "forwards" analysis that is analagous to the
-    propagation of [Simple_value_approx.t] values during [Inline_and_simplify].
-    It gives us information about relationships between values but not actually
-    about their constantness.
-
-    Combining these two into a single pass has been attempted previously,
-    but was not thought to be successful; this experiment could be repeated in
-    the future.  (If "constant" is considered as "top" and "inconstant" is
-    considered as "bottom", then [Alias_analysis] corresponds to a least fixed
-    point and [Inconstant_idents] corresponds to a greatest fixed point.)
-
-    At a high level, this pass operates as follows.  Symbols are assigned to
-    variables known to be constant and their defining expressions examined.
-    Based on the results of [Alias_analysis], we simplify the destructive
-    elements within the defining expressions (specifically, projection of
-    fields from blocks), to eventually yield [Flambda.constant_defining_value]s
-    that are entirely constructive.  These will be bound to symbols in the
-    resulting program.
-
-    Another approach to this pass could be to only use the results of
-    [Inconstant_idents] and then repeatedly lift constants and run
-    [Inline_and_simplify] until a fixpoint.  It was thought more robust to
-    instead use [Alias_analysis], where the fixpointing involves a less
-    complicated function.
-
-    We still run [Inline_and_simplify] once after this pass since the lifting
-    of constants may enable more functions to become closed; the simplification
-    pass provides an easy way of cleaning up (e.g. making sure [free_vars]
-    maps in sets of closures are correct).
-*)
-
-open Alias_analysis
-
 let rec tail_variable : Flambda.t -> Variable.t option = function
   | Var v -> Some v
   | Let_rec (_, e)
@@ -68,7 +22,6 @@ let closure_symbol ~(backend:(module Backend_intf.S)) closure_id =
   let module Backend = (val backend) in
   Backend.closure_symbol closure_id
 
-(* CR chambart: Copied from lift_let_to_initialize_symobl: to factorize *)
 let make_variable_symbol prefix var =
   Symbol.create (Compilation_unit.get_current_exn ())
     (Linkage_name.create
@@ -141,6 +94,8 @@ let assign_symbols_and_collect_constant_definitions
         record_definition (Project_var project_var)
       | Expr e -> begin
           match tail_variable e with
+          (* CR mshinwell for pchambart: What should happen here?
+             Move [tail_variable] to [Flambda_utils] once decided *)
           | None -> () (* Fail ? *)
           | Some v -> record_definition (Variable v)
         end
@@ -207,7 +162,7 @@ let variable_field_definition
         Variable.print var;
       assert false
     | exception Not_found ->
-      Misc.fatal_errorf "No assotiated symbol for the constant %a"
+      Misc.fatal_errorf "No associated symbol for the constant %a"
         Variable.print var
 
 let resolve_variable
@@ -705,7 +660,7 @@ let lift_constants program ~backend =
       Symbol.Tbl.to_map initialize_symbol_to_definition_tbl in
     let sym_map = Flambda_utils.all_lifted_constants_as_map program in
     let var_to_sym_map = Symbol.Map.empty (* Variable.Tbl.to_map var_to_symbol_tbl *) in
-    Alias_analysis.second_take var_map initialize_symbol_map sym_map var_to_sym_map
+    Alias_analysis.run var_map initialize_symbol_map sym_map var_to_sym_map
   in
   replace_definitions_in_initialize_symbol_and_effects
       (inconstants:Inconstant_idents.result)

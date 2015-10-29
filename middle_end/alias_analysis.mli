@@ -29,10 +29,15 @@ type constant_defining_value =
 
 type initialize_symbol_field = Variable.t option
 
-val second_take :
-  constant_defining_value Variable.Map.t ->
-  (initialize_symbol_field list) Symbol.Map.t ->
-  Flambda.constant_defining_value Symbol.Map.t ->
-  Variable.t Symbol.Map.t ->
-  allocation_point Variable.Map.t
-
+(** Simple alias analysis working over information about which
+    symbols have been assigned to variables; and which constants have
+    been assigned to symbols.  The return value gives the assignment
+    of the defining values of constants to variables.
+    Also see comments for [Lift_constants], whose input feeds this
+    pass. *)
+val run
+   : constant_defining_value Variable.Map.t
+  -> initialize_symbol_field list Symbol.Map.t
+  -> Flambda.constant_defining_value Symbol.Map.t
+  -> Variable.t Symbol.Map.t
+  -> allocation_point Variable.Map.t

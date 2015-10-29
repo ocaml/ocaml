@@ -129,6 +129,6 @@ and fetch_symbol_field
   | Allocated_const _ | Set_of_closures _ | Project_closure _ ->
     Misc.fatal_errorf "Field access to %a which is not a block" Symbol.print sym
 
-let second_take variable initialize_symbol symbol symbol_alias =
+let run variable initialize_symbol symbol symbol_alias =
   let definitions = { variable; initialize_symbol; symbol; symbol_alias; } in
   Variable.Map.mapi (resolve_definition definitions) definitions.variable

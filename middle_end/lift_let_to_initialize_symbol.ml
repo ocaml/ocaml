@@ -199,14 +199,12 @@ let rec split_program (program:Flambda.program) : Flambda.program =
     let introduced, to_substitute, expr = introduce_symbols expr in
     add_extracted introduced to_substitute
       (Flambda.Effect (expr, program))
-
   | Initialize_symbol(symbol, tag, ((_::_::_) as fields), program) ->
     (* TMP: removed to lighten debug *)
     Initialize_symbol(symbol, tag, fields, split_program program)
-
+  (* CR mshinwell for pchambart: Should this next case be kept? *)
   (* | Initialize_symbol(sym, _, [], _) -> *)
   (*   Misc.fatal_errorf "initialize an empty symbol %a" Symbol.print sym *)
-
   | Initialize_symbol(sym, tag, [], program) ->
     Initialize_symbol(sym, tag, [], split_program program)
 
@@ -216,9 +214,4 @@ let rec split_program (program:Flambda.program) : Flambda.program =
     add_extracted introduced to_substitute
       (Flambda.Initialize_symbol(symbol, tag, [field], program))
 
-let lift ~backend:_ (f:Flambda.program) =
-  (* Format.printf "@.before lift@ %a@." Flambda.print_program f; *)
-  let f = split_program f in
-  (* Format.printf "@.after lift@ %a@." Flambda.print_program f; *)
-(*  Format.printf "@.after lift_let_to_initialize_symbol@.@.";*)
-  f
+let lift ~backend:_ (f : Flambda.program) = split_program f

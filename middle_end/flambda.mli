@@ -209,11 +209,13 @@ and let_expr = private {
   var : Variable.t;
   defining_expr : named;
   body : t;
-  (* These free variable caches are an important optimization. *)
   (* CR-someday mshinwell: we could consider having these be keys into some
      kind of global cache, to reduce memory usage. *)
   free_vars_of_defining_expr : Variable.Set.t;
+  (** A cache of the free variables in the defining expression of the [let]. *)
   free_vars_of_body : Variable.Set.t;
+  (** A cache of the free variables of the body of the [let].  This is an
+      important optimization. *)
 }
 
 and set_of_closures = private {
@@ -271,28 +273,36 @@ and set_of_closures = private {
 
 and function_declarations = private {
   set_of_closures_id : Set_of_closures_id.t;
+  (** An identifier (unique across all Flambda trees currently in memory)
+      of the set of closures associated with this set of function
+      declarations. *)
   funs : function_declaration Variable.Map.t;
+  (** The function(s) defined by the set of function declarations.  The
+      keys of this map are often referred to in the code as "fun_var"s. *)
   compilation_unit : Compilation_unit.t;
+  (** Which compilation unit the function declarations live within. *)
 }
 
 and function_declaration = private {
   params : Variable.t list;
   body : t;
+  (* CR mshinwell: inconsistent naming free_variables/free_vars here and
+     above *)
+  free_variables : Variable.Set.t;
   (** All variables free in the *body* of the function.  For example, a
       variable that is bound as one of the function's parameters will still
       be included in this set.  This field is present as an optimization. *)
-  (* CR mshinwell: inconsistent naming free_variables/free_vars here and
-     above *)
-  (* CR mshinwell: make lazy *)
-  free_variables : Variable.Set.t;
   free_symbols : Symbol.Set.t;
-  (** All symbols that occur in the function's body. *)
+  (** All symbols that occur in the function's body.  (Symbols can never be
+      bound in a function's body; the only thing that binds symbols is the
+      [program] constructions below.) *)
   stub : bool;
   (** A stub function is a generated function used to prepare arguments or
       return values to allow indirect calls to functions with a special calling
       convention.  For instance indirect calls to tuplified functions must go
       through a stub.  Stubs will be unconditionally inlined. *)
   dbg : Debuginfo.t;
+  (** Debug info for the function declaration. *)
   inline : Lambda.inline_attribute;
   (** Inlining requirements from the source code. *)
 }
@@ -315,11 +325,15 @@ and for_loop = {
 }
 
 (** Like a subset of [Flambda.named], except that instead of [Variable.t]s we
-    have [Symbol.t]s, and everything is a constant. *)
+    have [Symbol.t]s, and everything is a constant.  Values of this type
+    describe constants that will be directly assigned to symbols in the
+    object file (see below). *)
 and constant_defining_value =
   | Allocated_const of Allocated_const.t
   | Block of Tag.t * constant_defining_value_block_field list
-  | Set_of_closures of set_of_closures  (** [free_vars] must be empty *)
+  | Set_of_closures of set_of_closures
+    (** A closed (and thus constant) set of closures.  (That is to say,
+        [free_vars] must be empty.) *)
   | Project_closure of Symbol.t * Closure_id.t
 
 and constant_defining_value_block_field =
@@ -331,14 +345,27 @@ module Constant_defining_value :
 
 type expr = t
 
-(** A "program" is the contents of one compilation unit. *)
+(** A "program" is the contents of one compilation unit.  It describes the
+    various values that are assigned to symbols (and in some cases fields of
+    such symbols) in the object file.  As such, it is closely related to
+    the compilation of toplevel modules. *)
 type program =
   | Let_symbol of Symbol.t * constant_defining_value * program
+  (** Define the given symbol to have the given constant value. *)
   | Let_rec_symbol of (Symbol.t * constant_defining_value) list * program
-  (* CR mshinwell: remove Import_symbol and use a record *)
+  (** As for [Let_symbol], but recursive. *)
+  (* CR mshinwell: find the example from email of [Let_rec_symbol] *)
+  (* CR-someday mshinwell: remove Import_symbol and use a record *)
   | Import_symbol of Symbol.t * program
   | Initialize_symbol of Symbol.t * Tag.t * t list * program
+  (** Define the given symbol as a constant block of the given size and
+      tag; but with a possibly non-constant initializer.  The initializer
+      will be executed at most once (from the entry point of the compilation
+      unit). *)
   | Effect of t * program
+  (** Cause the given expression, which may have a side effect, to be
+      executed.  The resulting value is discarded.  [Effect] constructions
+      are never re-ordered. *)
   | End of Symbol.t
   (** [End] accepts the root symbol: the only symbol that can never be
       eliminated. *)
