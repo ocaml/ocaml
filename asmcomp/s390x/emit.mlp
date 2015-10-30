@@ -111,6 +111,19 @@ let emit_load_store instr addressing_mode addr n arg =
   | Iindexed2 ofs ->
       `	{emit_string instr}	{emit_reg arg}, {emit_int ofs}({emit_reg addr.(n)},{emit_reg addr.(n+1)})\n`
 
+(* Adjust the stack pointer down by N.  
+   Choose the shortest instruction possible for the value of N. *)
+
+let emit_stack_adjust n =
+  let n = -n in
+  if n = 0 then ()
+  else if n >= 0 && n < 4096 then
+    `	la	%r15, {emit_int n}(%r15)\n`
+  else if n >= -0x80000 && n < 0x80000 then
+    `	lay	%r15, {emit_int n}(%r15)\n`
+  else
+    `	agfi	%r15, {emit_int n}\n`
+
 (* After a comparison, extract the result as 0 or 1 *)
 let emit_set_comp cmp res =
     `	lgfi	%r1, 1\n`;
@@ -302,26 +315,18 @@ let emit_instr i =
 	 `{emit_label lbl}:\n`;
     | Lop(Itailcall_ind) ->
         let n = frame_size() in
-        if !contains_calls then begin
+        if !contains_calls then
           `	lg	%r14, {emit_int(n - size_addr)}(%r15)\n`;
-          `	agfi	%r15, {emit_int n}\n`;
-        end else begin
-          if n > 0 then
-            `	agfi	%r15, {emit_int n}\n`;
-        end;
+	emit_stack_adjust (-n);
         `	br	{emit_reg i.arg.(0)}\n`
     | Lop(Itailcall_imm s) ->
         if s = !function_name then
           `	brcl	15,{emit_label !tailrec_entry_point}\n`
         else begin
           let n = frame_size() in
-          if !contains_calls then begin
-          `	lg	%r14, {emit_int(n - size_addr)}(%r15)\n`;
-          `	agfi	%r15, {emit_int n}\n`;
-          end else begin
-            if n > 0 then
-              `	agfi	%r15, {emit_int n}\n`;
-          end;
+          if !contains_calls then
+            `	lg	%r14, {emit_int(n - size_addr)}(%r15)\n`;
+	  emit_stack_adjust (-n);
           `	brcl	15,{emit_symbol s}\n`
         end
               
@@ -343,8 +348,8 @@ let emit_instr i =
           `	brasl   %r14, {emit_symbol s}\n`
        end
 
-      | Lop(Istackoffset n) ->
-        `	lay     %r15, {emit_int (-n)} (%r15)\n`;
+     | Lop(Istackoffset n) ->
+        emit_stack_adjust n;
         stack_offset := !stack_offset + n
 
      | Lop(Iload(chunk, addr)) ->
@@ -512,8 +517,7 @@ let emit_instr i =
         `	lg	%r14, {emit_int(n - size_addr)}(%r15)\n`
     | Lreturn ->
         let n = frame_size() in
-        if n > 0 then
-          `	agfi	%r15, {emit_int n}\n`;
+	emit_stack_adjust (-n);
         `	br	%r14\n`
     | Llabel lbl ->
         `{emit_label lbl}:\n`
@@ -581,13 +585,13 @@ let emit_instr i =
         `	brasl   %r14, {emit_label lbl}\n`;
     | Lpushtrap ->
         stack_offset := !stack_offset + 16;
-        `	agfi	%r15, -16\n`;
+	emit_stack_adjust 16;
         `	stg     %r14, 0(%r15)\n`;
         `	stg     %r13, {emit_int size_addr}(%r15)\n`;
         `	lgr     %r13, %r15\n`
     | Lpoptrap ->
         `	lg      %r13, {emit_int size_addr}(%r15)\n`;
-        `	agfi    %r15, 16\n`;
+	emit_stack_adjust (-16);
         stack_offset := !stack_offset - 16
     | Lraise k ->
         begin match !Clflags.debug, k with
@@ -602,30 +606,12 @@ let emit_instr i =
         | false, _
         | true, Lambda.Raise_notrace ->
           `	lg      %r1, 0(%r13)\n`;
-          `	lgr     %r15,%r13\n`;
+          `	lgr     %r15, %r13\n`;
           `	lg      %r13, {emit_int size_addr}(%r15)\n`;
-          `	agfi    %r15, 16\n`;
+	  emit_stack_adjust (-16);
           `	br	%r1\n`
         end
 
-
-(* Checks if a pseudo-instruction expands to instructions
-   that do not branch and do not affect CR0 nor R12. *)
-
-(* No branch delay slots needed on Z *)
-let is_simple_instr i = false
-
-
-let no_interference res arg =
-  try
-    for i = 0 to Array.length arg - 1 do
-      for j = 0 to Array.length res - 1 do
-        if arg.(i).loc = res.(j).loc then raise Exit
-      done
-    done;
-    true
-  with Exit ->
-    false
 
 (* Emit a sequence of instructions *)
 
@@ -659,8 +645,7 @@ emit_debug_info fundecl.fun_dbg;
   `	.align	8\n`;
   `{emit_symbol fundecl.fun_name}:\n`;
   let n = frame_size() in
-  if n > 0 then
-    `	lay	%r15, {emit_int(-n)}(%r15)\n`;
+  emit_stack_adjust n;
   if !contains_calls then
     `	stg     %r14, {emit_int(n - size_addr)}(%r15)\n`;
   `{emit_label !tailrec_entry_point}:\n`;
