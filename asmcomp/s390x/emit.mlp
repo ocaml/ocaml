@@ -452,11 +452,8 @@ let emit_instr i =
         end
     | Lop(Iintop Icheckbound) ->
         let lbl = bound_error_label i.dbg in
-	`	cgr	{emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}\n`;
-	`	jle	{emit_label lbl}\n`;
-	(* Check for negative index *)
-	`	cgfi	{emit_reg i.arg.(1)}, (0)\n`;
-	`	jl	{emit_label lbl}\n`
+	`	clgr	{emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}\n`;
+	`	brcl	12, {emit_label lbl}\n`  (* branch if unsigned le *)
     | Lop(Iintop op) ->
         let instr = name_for_intop op in
         `	{emit_string instr}	{emit_reg i.res.(0)}, {emit_reg i.arg.(1)}\n`;
@@ -473,11 +470,12 @@ let emit_instr i =
         end
     | Lop(Iintop_imm(Icheckbound, n)) ->
        let lbl = bound_error_label i.dbg in 
-	`	cgfi	{emit_reg i.arg.(0)}, {emit_int n}\n`;  
-	`	jle	{emit_label lbl}\n`; 
-	`	lgfi	%r1, {emit_int n}\n`;
-	`	cgfi	%r1, (0)\n`; 
-	`	jl	{emit_label lbl}\n`
+       if n >= 0 then begin
+	`	clgfi	{emit_reg i.arg.(0)}, {emit_int n}\n`;  
+	`	brcl	12, {emit_label lbl}\n`  (* branch if unsigned le *)
+       end else begin
+	`	brcl	15, {emit_label lbl}\n`  (* branch always *)
+       end
     | Lop(Iintop_imm(Ilsl, n)) ->
         `	sllg	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)},{emit_int n}(%r0)\n`;
     | Lop(Iintop_imm(Ilsr, n)) ->
