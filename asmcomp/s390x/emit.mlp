@@ -33,7 +33,6 @@ let frame_size () =
     !stack_offset +                     (* Trap frame, outgoing parameters *)
     size_int * num_stack_slots.(0) +    (* Local int variables *)
     size_float * num_stack_slots.(1) +  (* Local float variables *)
-    size_addr + 			(* Slot for storing and restoring GOT pointer *)
     (if !contains_calls then size_addr else 0) in (* The return address *)
   Misc.align size 8
 
@@ -105,11 +104,6 @@ let emit_stack r =
 
 (* Output a load or store operation *)
 
-let emit_symbol_offset (s, d) =
-  emit_symbol s;
-  if d > 0 then `+`;
-  if d <> 0 then emit_int d
-
 let emit_load_store instr addressing_mode addr n arg =
   match addressing_mode with
   | Iindexed ofs ->
@@ -129,20 +123,6 @@ let emit_set_comp cmp res =
     | Clt -> `	locgrl	{emit_reg res}, {emit_gpr 1}\n`
     | Cge -> `	locgrnl	{emit_reg res}, {emit_gpr 1}\n`
   end
-
-let nativelow n = 
-   let m = Nativeint.logand n (Nativeint.of_int 0xFFFFFFFF) in
-      if (Nativeint.compare m  0x7FFF_FFFFn) > 0 
-      then let k = Nativeint.logand m 0x7FFFFFFFn in 
-         Nativeint.sub k 2147483648n
-      else m
-      
-let nativehigh n = 
-    let m = Nativeint.shift_right n 32 in
-      if (Nativeint.compare m  0x7FFF_FFFFn) > 0 
-      then let k = Nativeint.logand m 0x7FFFFFFFn in 
-         Nativeint.sub k 2147483648n
-      else m
 
 (* Record live pointers at call points *)
 
@@ -305,7 +285,7 @@ let emit_instr i =
         `	ld  {emit_reg i.res.(0)}, 0({emit_gpr 1})\n`
      | Lop(Iconst_symbol s) ->
         if !pic_code then
-        `	lg	{emit_reg i.res.(0)}, {emit_symbol s}@GOT({emit_gpr 12})\n`
+        `	lgrl	{emit_reg i.res.(0)}, {emit_symbol s}@GOTENT\n`
         else
         `	larl {emit_reg i.res.(0)}, {emit_symbol s}\n`;
     | Lop(Icall_ind) ->
@@ -348,7 +328,7 @@ let emit_instr i =
      | Lop(Iextcall(s, alloc)) ->
         if alloc then begin
           if !pic_code then begin
-          `	lg	{emit_gpr 1}, {emit_symbol s}@GOT({emit_gpr 12})\n`;
+          `	lgrl	{emit_gpr 1}, {emit_symbol s}@GOTENT\n`;
           `	brasl	{emit_gpr 14}, {emit_symbol "caml_c_call"}@PLT\n`
           end else begin
           `	larl {emit_gpr 1}, {emit_symbol s}\n`;
@@ -410,8 +390,7 @@ let emit_instr i =
         `	brasl   {emit_gpr 14}, {emit_label !call_gc_label}\n`;
         let fr_lbl = record_frame i.live Debuginfo.none in
 	 `{emit_label fr_lbl}:\n`;
-        `	{emit_label lbl}:\n`;
-        `	larl	{emit_gpr 12},_GLOBAL_OFFSET_TABLE_\n`
+        `	{emit_label lbl}:\n`
     | Lop(Iintop Isub) ->
         `	lgr     {emit_gpr 1}, {emit_reg i.arg.(0)}\n`;
         `	sgr	{emit_gpr 1}, {emit_reg i.arg.(1)}\n`;
@@ -536,12 +515,8 @@ let emit_instr i =
     | Lreturn ->
         let n = frame_size() in
         if n > 0 then
-          if !contains_calls then
-            `	lg	{emit_gpr 12}, {emit_int(n - (size_addr+size_addr))}({emit_gpr 15})\n`
-          else
-            `	lg	{emit_gpr 12}, {emit_int(n - size_addr)}({emit_gpr 15})\n`;
           `	agfi	{emit_gpr 15}, {emit_int n}\n`;
-          `	br	{emit_gpr 14}\n`
+        `	br	{emit_gpr 14}\n`
     | Llabel lbl ->
         `{emit_label lbl}:\n`
     | Lbranch lbl ->
@@ -686,16 +661,10 @@ emit_debug_info fundecl.fun_dbg;
   `	.align	8\n`;
   `{emit_symbol fundecl.fun_name}:\n`;
   let n = frame_size() in
-  if !contains_calls then begin
+  if n > 0 then
     `	lay	{emit_gpr 15}, {emit_int(-n)}({emit_gpr 15})\n`;
+  if !contains_calls then
     `	stg     {emit_gpr 14}, {emit_int(n - size_addr)}({emit_gpr 15})\n`;
-    `	stg     {emit_gpr 12}, {emit_int(n - (size_addr+size_addr))}({emit_gpr 15})\n`
-  end else begin
-    if n > 0 then
-    `	lay	{emit_gpr 15}, {emit_int(-n)}({emit_gpr 15})\n`;
-    `	stg     {emit_gpr 12}, {emit_int(n - (size_addr))}({emit_gpr 15})\n`
-  end;
-  `	larl	{emit_gpr 12},_GLOBAL_OFFSET_TABLE_\n`;
   `{emit_label !tailrec_entry_point}:\n`;
   emit_all fundecl.fun_body;
   (* Emit the glue code to call the GC *)
