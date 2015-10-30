@@ -124,8 +124,8 @@ let emit_stack_adjust n =
 
 (* After a comparison, extract the result as 0 or 1 *)
 let emit_set_comp cmp res =
-    `	lgfi	%r1, 1\n`;
-    `	lgfi	{emit_reg res}, 0\n`;
+    `	lghi	%r1, 1\n`;
+    `	lghi	{emit_reg res}, 0\n`;
   begin match cmp with
       Ceq -> `	locgre	{emit_reg res}, %r1\n`
     | Cne -> `	locgrne	{emit_reg res}, %r1\n`
@@ -290,7 +290,9 @@ let emit_instr i =
                 fatal_error "Emit: Imove"
         end
     | Lop(Iconst_int n | Iconst_blockheader n) ->
-        if n >= -0x8000_0000n && n <= 0x7FFF_FFFFn then begin
+        if n >= -0x8000n && n <= 0x7FFFn then begin
+          `	lghi	{emit_reg i.res.(0)}, {emit_nativeint n}\n`;
+        end else if n >= -0x8000_0000n && n <= 0x7FFF_FFFFn then begin
           `	lgfi	{emit_reg i.res.(0)}, {emit_nativeint n}\n`;
         end else begin
           let lbl = new_label() in
@@ -551,11 +553,11 @@ let emit_instr i =
             let branch = name_for_float_comparison cmp neg in
             `	{emit_string branch}	{emit_label lbl}\n`
         | Ioddtest ->
-            `	lgfi	%r0, 1\n`;
+            `	lghi	%r0, 1\n`;
             `	ngr	%r0, {emit_reg i.arg.(0)}\n`;
             `	brcl	4,	{emit_label lbl}\n`
         | Ieventest ->
-            `	lgfi	%r0, 1\n`;
+            `	lghi	%r0, 1\n`;
             `	ngr	%r0, {emit_reg i.arg.(0)}\n`;
             `	brcl	8,{emit_label lbl}\n`
         end
