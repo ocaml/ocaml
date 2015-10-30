@@ -553,12 +553,10 @@ let emit_instr i =
             let branch = name_for_float_comparison cmp neg in
             `	{emit_string branch}	{emit_label lbl}\n`
         | Ioddtest ->
-            `	lghi	%r0, 1\n`;
-            `	ngr	%r0, {emit_reg i.arg.(0)}\n`;
-            `	brcl	4,	{emit_label lbl}\n`
+            `	tmll	{emit_reg i.arg.(0)}, 1\n`;
+            `	brcl	1, {emit_label lbl}\n`
         | Ieventest ->
-            `	lghi	%r0, 1\n`;
-            `	ngr	%r0, {emit_reg i.arg.(0)}\n`;
+            `	tmll	{emit_reg i.arg.(0)}, 1\n`;
             `	brcl	8,{emit_label lbl}\n`
         end
     | Lcondbranch3(lbl0, lbl1, lbl2) ->
