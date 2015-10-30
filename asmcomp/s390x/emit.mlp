@@ -346,16 +346,19 @@ let emit_instr i =
           if !contains_calls then
             `	lg	%r14, {emit_int(n - size_addr)}(%r15)\n`;
 	  emit_stack_adjust (-n);
-          `	brcl	15,{emit_symbol s}\n`
+          if !pic_code then
+            `	brcl	15, {emit_symbol s}@PLT\n`
+          else
+            `	brcl	15, {emit_symbol s}\n`
         end
               
      | Lop(Iextcall(s, alloc)) ->
         if alloc then begin
           if !pic_code then begin
-          `	lgrl	%r1, {emit_symbol s}@GOTENT\n`;
+          `	lgrl	%r7, {emit_symbol s}@GOTENT\n`;
           `	brasl	%r14, {emit_symbol "caml_c_call"}@PLT\n`
           end else begin
-          `	larl %r1, {emit_symbol s}\n`;
+          `	larl %r7, {emit_symbol s}\n`;
           `	brasl	%r14, {emit_symbol "caml_c_call"}\n`
           end;
           let lbl = record_frame i.live i.dbg in

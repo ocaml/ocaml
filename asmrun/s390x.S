@@ -110,14 +110,14 @@ caml_c_call:
         Storeglobal(%r15, caml_bottom_of_stack)
     /* Save return address */
         ldgr	%f15, %r14
-    /* Get ready to call C function (address in r1) */
+    /* Get ready to call C function (address in r7) */
     /* Record lowest stack address and return address */
         Storeglobal(%r14, caml_last_return_address)
     /* Make the exception handler and alloc ptr available to the C code */
         Storeglobal(%r11, caml_young_ptr)
         Storeglobal(%r13, caml_exception_pointer)
     /* Call the function */
-        basr %r14, %r1
+        basr %r14, %r7
     /* restore return address */
         lgdr	%r14,%f15
     /* Reload allocation pointer and allocation limit*/
