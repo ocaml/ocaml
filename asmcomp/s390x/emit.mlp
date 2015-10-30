@@ -337,12 +337,10 @@ let emit_instr i =
           let lbl = record_frame i.live i.dbg in
 	   `{emit_label lbl}:\n`;
         end else begin
-          `	lay     {emit_gpr 15}, {emit_int (-160)} ({emit_gpr 15})\n`;
           if !pic_code then
           `	brasl   {emit_gpr 14}, {emit_symbol s}@PLT\n`
           else
-          `	brasl   {emit_gpr 14}, {emit_symbol s}\n`;
-          `	lay     {emit_gpr 15}, {emit_int (160)} ({emit_gpr 15})\n`
+          `	brasl   {emit_gpr 14}, {emit_symbol s}\n`
        end
 
       | Lop(Istackoffset n) ->

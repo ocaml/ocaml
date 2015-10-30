@@ -35,87 +35,72 @@ caml_system__code_begin:
         .type   caml_call_gc, @function
 caml_call_gc:
     /* Set up stack frame */
-#define FRAMESIZE (16*8 + 16*8 + 32)
-        agfi	%r15, -FRAMESIZE
-        stg     %r15, 0(%r15)
-        larl  %r12,_GLOBAL_OFFSET_TABLE_
+#define FRAMESIZE (16*8 + 16*8)
+        lay	%r15, -FRAMESIZE(%r15)
     /* Record return address into OCaml code */
         Storeglobal(%r14, caml_last_return_address)
     /* Record lowest stack address */
-        lgr	%r0, %r15
-        agfi    %r0, FRAMESIZE
+        lay	%r0, FRAMESIZE(%r15)
         Storeglobal(%r0, caml_bottom_of_stack)
     /* Record pointer to register array */
-        lgr	%r0, %r15
-        agfi    %r0, 8*16 + 32
+        lay	%r0, (8*16)(%r15)
         Storeglobal(%r0, caml_gc_regs)
     /* Save current allocation pointer for debugging purposes */
         Storeglobal(%r11, caml_young_ptr)
     /* Save exception pointer (if e.g. a sighandler raises) */
         Storeglobal(%r13, caml_exception_pointer)
     /* Save all registers used by the code generator */
-        lgr	%r1, %r15
-        agfi    %r1, 8*16 + 32 - 8
-        stmg    %r2,%r9, 8(%r1)
-        lgr	%r1, %r15
-        agfi    %r1, 32 - 8
-        std     %f0, 8(%r1)
-        std     %f1, 16(%r1)
-        std     %f2, 24(%r1)
-        std     %f3, 32(%r1)
-        std     %f4, 40(%r1)
-        std     %f5, 48(%r1)
-        std     %f6, 56(%r1)
-        std     %f7, 64(%r1)
-        std     %f8, 72(%r1)
-        std     %f9, 80(%r1)
-        std     %f10, 88(%r1)
-        std     %f11, 96(%r1)
-        std     %f12, 104(%r1)
-        std     %f13, 112(%r1)
-        std     %f14, 120(%r1)
-        std     %f15, 128(%r1)
+        stmg    %r2,%r9, (8*16)(%r15)
+	stg	%r12, (8*16 + 8*8)(%r15)
+        std     %f0, 0(%r15)
+        std     %f1, 8(%r15)
+        std     %f2, 16(%r15)
+        std     %f3, 24(%r15)
+        std     %f4, 32(%r15)
+        std     %f5, 40(%r15)
+        std     %f6, 48(%r15)
+        std     %f7, 56(%r15)
+        std     %f8, 64(%r15)
+        std     %f9, 72(%r15)
+        std     %f10, 80(%r15)
+        std     %f11, 88(%r15)
+        std     %f12, 96(%r15)
+        std     %f13, 108(%r15)
+        std     %f14, 112(%r15)
+        std     %f15, 120(%r15)
     /* Call the GC */
         lay %r15, -160(%r15)
         stg     %r15, 0(%r15)
         brasl   %r14, caml_garbage_collection@PLT
-        larl  %r12,_GLOBAL_OFFSET_TABLE_
         lay %r15, 160(%r15)
     /* Reload new allocation pointer and allocation limit */
         Loadglobal(%r11, caml_young_ptr)
         Loadglobal(%r10, caml_young_limit)
     /* Restore all regs used by the code generator */
-        lgr	%r1, %r15
-        agfi    %r1, 8*16 + 32 - 8
-        lmg     %r2,%r9, 8(%r1)
-        lgr	%r1, %r15
-        agfi    %r1, 32 - 8
-        ld     %f0, 8(%r1)
-        ld     %f1, 16(%r1)
-        ld     %f2, 24(%r1)
-        ld     %f3, 32(%r1)
-        ld     %f4, 40(%r1)
-        ld     %f5, 48(%r1)
-        ld     %f6, 56(%r1)
-        ld     %f7, 64(%r1)
-        ld     %f8, 72(%r1)
-        ld     %f9, 80(%r1)
-        ld     %f10, 88(%r1)
-        ld     %f11, 96(%r1)
-        ld     %f12, 104(%r1)
-        ld     %f13, 112(%r1)
-        ld     %f14, 120(%r1)
-        ld     %f15, 128(%r1)
+        lmg     %r2,%r9, (8*16)(%r15)
+	lg	%r12, (8*16 + 8*8)(%r15)
+        ld      %f0, 0(%r15)
+        ld      %f1, 8(%r15)
+        ld      %f2, 16(%r15)
+        ld      %f3, 24(%r15)
+        ld      %f4, 32(%r15)
+        ld      %f5, 40(%r15)
+        ld      %f6, 48(%r15)
+        ld      %f7, 56(%r15)
+        ld      %f8, 64(%r15)
+        ld      %f9, 72(%r15)
+        ld      %f10, 80(%r15)
+        ld      %f11, 88(%r15)
+        ld      %f12, 96(%r15)
+        ld      %f13, 108(%r15)
+        ld      %f14, 112(%r15)
+        ld      %f15, 120(%r15)
     /* Return to caller, restarting the allocation */
         Loadglobal(%r1, caml_last_return_address)
         agfi   %r1, -30     /* Restart the allocation (7 instructions) */
-    /* Say we are back into OCaml code */
-        lgfi   %r0, 0
-        Storeglobal(%r0, caml_last_return_address)
     /* Deallocate stack frame */
-        agfi	%r15, FRAMESIZE
+        lay	%r15, FRAMESIZE(%r15)
     /* Return */
-        larl  %r12,_GLOBAL_OFFSET_TABLE_
         br    %r1
 
 /* Call a C function from OCaml */
@@ -124,9 +109,6 @@ caml_call_gc:
         .type   caml_c_call, @function
 caml_c_call:
         Storeglobal(%r15, caml_bottom_of_stack)
-
-        lay %r15, -160(%r15)
-
     /* Save return address */
         ldgr	%f15, %r14
     /* Get ready to call C function (address in r1) */
@@ -136,11 +118,9 @@ caml_c_call:
         Storeglobal(%r11, caml_young_ptr)
         Storeglobal(%r13, caml_exception_pointer)
     /* Call the function */
-
-        basr %r14, %r1;
+        basr %r14, %r1
     /* restore return address */
         lgdr	%r14,%f15
-        lay %r15, 160(%r15)
     /* Reload allocation pointer and allocation limit*/
         Loadglobal(%r11, caml_young_ptr)
         Loadglobal(%r10, caml_young_limit)
@@ -149,13 +129,12 @@ caml_c_call:
         Storeglobal(%r0, caml_last_return_address)
 
     /* Return to caller */
-        br %r14;
+        br %r14
 
 /* Raise an exception from OCaml */
         .globl  caml_raise_exn
         .type   caml_raise_exn, @function
 caml_raise_exn:
-        larl  %r12,_GLOBAL_OFFSET_TABLE_
         Loadglobal32(%r0, caml_backtrace_active)
         cgfi	%r0, 0
         jne     .L110
@@ -166,7 +145,7 @@ caml_raise_exn:
         lg     %r13, 8(13)
         agfi   %r15, 16
     /* Branch to handler */
-        br	%r1;
+        br	%r1
 .L110:
         lgfi      %r0, 0
         Storeglobal32(%r0, caml_backtrace_pos)
@@ -178,7 +157,6 @@ caml_raise_exn:
         lgr     %r5, %r13           /* arg4: SP of handler */
         agfi    %r15, -160       /* reserve stack space for C call */
         brasl   %r14, caml_stash_backtrace@PLT
-        larl  %r12,_GLOBAL_OFFSET_TABLE_
         agfi    %r15, 160 
         lgdr	%r2,%f15        /* restore exn bucket */
         j       .L111           /* raise the exn */
@@ -186,7 +164,6 @@ caml_raise_exn:
         .globl  caml_reraise_exn
         .type   caml_reraise_exn, @function
 caml_reraise_exn:
-	larl  %r12,_GLOBAL_OFFSET_TABLE_
         Loadglobal32(%r0, caml_backtrace_active)
         cgfi	%r0, 0
         jne    .L114
@@ -203,7 +180,6 @@ caml_reraise_exn:
         .globl  caml_raise_exception
         .type   caml_raise_exception, @function
 caml_raise_exception:
-        larl  %r12,_GLOBAL_OFFSET_TABLE_
         Loadglobal32(0, caml_backtrace_active)
         cgfi	%r0, 0
         jne    .L112
@@ -230,7 +206,6 @@ caml_raise_exception:
              /* reserve stack space for C call */
         lay %r15, -160(%r15)
         brasl   %r14, caml_stash_backtrace@PLT
-        larl  %r12,_GLOBAL_OFFSET_TABLE_
         lay %r15, 160(%r15)
         lgdr	%r2,%f15        /* restore exn bucket */        /* restore exn bucket */
         j       .L113           /* raise the exn */
@@ -373,6 +348,7 @@ caml_callback3_exn:
 	.globl	caml_ml_array_bound_error
 	.type	caml_ml_array_bound_error, @function
 caml_ml_array_bound_error:
+	lay	%r15, -160(%r15)    /* Reserve stack space for C call */
 	larl	%r1, caml_array_bound_error
 	j	caml_c_call
         .globl  caml_system__code_end
