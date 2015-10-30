@@ -98,7 +98,7 @@ let reg_f15 = phys_reg 115
 let emit_stack r =
   match r.loc with
     Stack s ->
-      let ofs = slot_offset s (register_class r) in `{emit_int ofs}({emit_gpr 15})`
+      let ofs = slot_offset s (register_class r) in `{emit_int ofs}(%r15)`
   | _ -> fatal_error "Emit.emit_stack"
 
 
@@ -113,15 +113,15 @@ let emit_load_store instr addressing_mode addr n arg =
 
 (* After a comparison, extract the result as 0 or 1 *)
 let emit_set_comp cmp res =
-    `	lgfi	{emit_gpr 1}, 1\n`;
+    `	lgfi	%r1, 1\n`;
     `	lgfi	{emit_reg res}, 0\n`;
   begin match cmp with
-      Ceq -> `	locgre	{emit_reg res}, {emit_gpr 1}\n`
-    | Cne -> `	locgrne	{emit_reg res}, {emit_gpr 1}\n`
-    | Cgt -> `	locgrh	{emit_reg res}, {emit_gpr 1}\n`
-    | Cle -> `	locgrnh	{emit_reg res}, {emit_gpr 1}\n`
-    | Clt -> `	locgrl	{emit_reg res}, {emit_gpr 1}\n`
-    | Cge -> `	locgrnl	{emit_reg res}, {emit_gpr 1}\n`
+      Ceq -> `	locgre	{emit_reg res}, %r1\n`
+    | Cne -> `	locgrne	{emit_reg res}, %r1\n`
+    | Cgt -> `	locgrh	{emit_reg res}, %r1\n`
+    | Cle -> `	locgrnh	{emit_reg res}, %r1\n`
+    | Clt -> `	locgrl	{emit_reg res}, %r1\n`
+    | Cge -> `	locgrnl	{emit_reg res}, %r1\n`
   end
 
 (* Record live pointers at call points *)
@@ -281,33 +281,33 @@ let emit_instr i =
     | Lop(Iconst_float f) ->
         let lbl = new_label() in
         float_literals := (Int64.bits_of_float f, lbl) :: !float_literals;
-        `	larl {emit_gpr 1}, {emit_label lbl}\n`;
-        `	ld  {emit_reg i.res.(0)}, 0({emit_gpr 1})\n`
+        `	larl %r1, {emit_label lbl}\n`;
+        `	ld  {emit_reg i.res.(0)}, 0(%r1)\n`
      | Lop(Iconst_symbol s) ->
         if !pic_code then
         `	lgrl	{emit_reg i.res.(0)}, {emit_symbol s}@GOTENT\n`
         else
         `	larl {emit_reg i.res.(0)}, {emit_symbol s}\n`;
     | Lop(Icall_ind) ->
-        `	basr	{emit_gpr 14}, {emit_reg i.arg.(0)}\n`;
+        `	basr	%r14, {emit_reg i.arg.(0)}\n`;
         let lbl = record_frame i.live i.dbg in
 	 `{emit_label lbl}:\n`
 
     | Lop(Icall_imm s) ->
         if !pic_code then
-        `	brasl	{emit_gpr 14}, {emit_symbol s}@PLT\n`
+        `	brasl	%r14, {emit_symbol s}@PLT\n`
         else
-        `	brasl   {emit_gpr 14}, {emit_symbol s}\n`;
+        `	brasl   %r14, {emit_symbol s}\n`;
         let lbl = record_frame i.live i.dbg in
 	 `{emit_label lbl}:\n`;
     | Lop(Itailcall_ind) ->
         let n = frame_size() in
         if !contains_calls then begin
-          `	lg	{emit_gpr 14}, {emit_int(n - size_addr)}({emit_gpr 15})\n`;
-          `	agfi	{emit_gpr 15}, {emit_int n}\n`;
+          `	lg	%r14, {emit_int(n - size_addr)}(%r15)\n`;
+          `	agfi	%r15, {emit_int n}\n`;
         end else begin
           if n > 0 then
-            `	agfi	{emit_gpr 15}, {emit_int n}\n`;
+            `	agfi	%r15, {emit_int n}\n`;
         end;
         `	br	{emit_reg i.arg.(0)}\n`
     | Lop(Itailcall_imm s) ->
@@ -316,11 +316,11 @@ let emit_instr i =
         else begin
           let n = frame_size() in
           if !contains_calls then begin
-          `	lg	{emit_gpr 14}, {emit_int(n - size_addr)}({emit_gpr 15})\n`;
-          `	agfi	{emit_gpr 15}, {emit_int n}\n`;
+          `	lg	%r14, {emit_int(n - size_addr)}(%r15)\n`;
+          `	agfi	%r15, {emit_int n}\n`;
           end else begin
             if n > 0 then
-              `	agfi	{emit_gpr 15}, {emit_int n}\n`;
+              `	agfi	%r15, {emit_int n}\n`;
           end;
           `	brcl	15,{emit_symbol s}\n`
         end
@@ -328,23 +328,23 @@ let emit_instr i =
      | Lop(Iextcall(s, alloc)) ->
         if alloc then begin
           if !pic_code then begin
-          `	lgrl	{emit_gpr 1}, {emit_symbol s}@GOTENT\n`;
-          `	brasl	{emit_gpr 14}, {emit_symbol "caml_c_call"}@PLT\n`
+          `	lgrl	%r1, {emit_symbol s}@GOTENT\n`;
+          `	brasl	%r14, {emit_symbol "caml_c_call"}@PLT\n`
           end else begin
-          `	larl {emit_gpr 1}, {emit_symbol s}\n`;
-          `	brasl	{emit_gpr 14}, {emit_symbol "caml_c_call"}\n`
+          `	larl %r1, {emit_symbol s}\n`;
+          `	brasl	%r14, {emit_symbol "caml_c_call"}\n`
           end;
           let lbl = record_frame i.live i.dbg in
 	   `{emit_label lbl}:\n`;
         end else begin
           if !pic_code then
-          `	brasl   {emit_gpr 14}, {emit_symbol s}@PLT\n`
+          `	brasl   %r14, {emit_symbol s}@PLT\n`
           else
-          `	brasl   {emit_gpr 14}, {emit_symbol s}\n`
+          `	brasl   %r14, {emit_symbol s}\n`
        end
 
       | Lop(Istackoffset n) ->
-        `	lay     {emit_gpr 15}, {emit_int (-n)} ({emit_gpr 15})\n`;
+        `	lay     %r15, {emit_int (-n)} (%r15)\n`;
         stack_offset := !stack_offset + n
 
      | Lop(Iload(chunk, addr)) ->
@@ -364,7 +364,7 @@ let emit_instr i =
           `	ldebr	{emit_reg i.res.(0)}, {emit_reg i.res.(0)}\n`
 
     | Lop(Istore(Single, addr, _)) ->
-        `	ledbr	{emit_fpr 15}, {emit_reg i.arg.(0)}\n`;
+        `	ledbr	%f15, {emit_reg i.arg.(0)}\n`;
         emit_load_store "stey" addr i.arg 1 reg_f15
     | Lop(Istore(chunk, addr, _)) ->
         let storeinstr =
@@ -380,47 +380,47 @@ let emit_instr i =
     | Lop(Ialloc n) ->
         if !call_gc_label = 0 then call_gc_label := new_label();
         let lbl = new_label() in
-        `	agfi	{emit_gpr 11}, {emit_int(-n)}\n`;
-        `	lgr     {emit_reg i.res.(0)}, {emit_gpr 11}\n`;
+        `	agfi	%r11, {emit_int(-n)}\n`;
+        `	lgr     {emit_reg i.res.(0)}, %r11\n`;
         `	agfi	{emit_reg i.res.(0)}, {emit_int size_addr}\n`;
-        `	clgr	{emit_gpr 11}, {emit_gpr 10}\n`;
+        `	clgr	%r11, %r10\n`;
         `	jnl	{emit_label lbl}\n`;
-        `	brasl   {emit_gpr 14}, {emit_label !call_gc_label}\n`;
+        `	brasl   %r14, {emit_label !call_gc_label}\n`;
         let fr_lbl = record_frame i.live Debuginfo.none in
 	 `{emit_label fr_lbl}:\n`;
         `	{emit_label lbl}:\n`
     | Lop(Iintop Isub) ->
-        `	lgr     {emit_gpr 1}, {emit_reg i.arg.(0)}\n`;
-        `	sgr	{emit_gpr 1}, {emit_reg i.arg.(1)}\n`;
-        `	lgr     {emit_reg i.res.(0)}, {emit_gpr 1}\n`
+        `	lgr     %r1, {emit_reg i.arg.(0)}\n`;
+        `	sgr	%r1, {emit_reg i.arg.(1)}\n`;
+        `	lgr     {emit_reg i.res.(0)}, %r1\n`
     | Lop(Iintop Imulh) ->
        let lbl1 = new_label() in
-        `	lpgr	{emit_gpr 1}, {emit_reg i.arg.(0)}\n`;
-        `	lpgr	{emit_gpr 0}, {emit_reg i.arg.(1)}\n`;
-        `	mlgr	{emit_gpr 0}, {emit_gpr 0}\n`;
-        `	ldgr	{emit_fpr 15}, {emit_gpr 1}\n`;
-        `	lgr	{emit_gpr 1}, {emit_reg i.arg.(0)}\n`;
-        `	xgr	{emit_gpr 1}, {emit_reg i.arg.(1)}\n`;
-        `	cgfi	{emit_gpr 1}, 0\n`;
+        `	lpgr	%r1, {emit_reg i.arg.(0)}\n`;
+        `	lpgr	%r0, {emit_reg i.arg.(1)}\n`;
+        `	mlgr	%r0, %r0\n`;
+        `	ldgr	%f15, %r1\n`;
+        `	lgr	%r1, {emit_reg i.arg.(0)}\n`;
+        `	xgr	%r1, {emit_reg i.arg.(1)}\n`;
+        `	cgfi	%r1, 0\n`;
         `	jnl	{emit_label lbl1}\n`;
-        `	lgdr	{emit_gpr 1},{emit_fpr 15}\n`;
-        `	xilf	{emit_gpr 0},0xFFFFFFFF\n`;
-        `	xihf	{emit_gpr 0},0xFFFFFFFF\n`;
-        `	xilf	{emit_gpr 1},0xFFFFFFFF\n`;
-        `	xihf	{emit_gpr 1},0xFFFFFFFF\n`;
-        `	algfi	{emit_gpr 1},1\n`;
-        `	lgfi	{emit_gpr 1},0\n`;
-        `	alcgr	{emit_gpr 0},{emit_gpr 1}\n`;
+        `	lgdr	%r1,%f15\n`;
+        `	xilf	%r0,0xFFFFFFFF\n`;
+        `	xihf	%r0,0xFFFFFFFF\n`;
+        `	xilf	%r1,0xFFFFFFFF\n`;
+        `	xihf	%r1,0xFFFFFFFF\n`;
+        `	algfi	%r1,1\n`;
+        `	lgfi	%r1,0\n`;
+        `	alcgr	%r0,%r1\n`;
         `	{emit_label lbl1}:\n`;
-        `	lgr	{emit_reg i.res.(0)}, {emit_gpr 0}\n`
+        `	lgr	{emit_reg i.res.(0)}, %r0\n`
     | Lop(Iintop Imod) ->
-        `	lgr     {emit_gpr 1}, {emit_reg i.arg.(0)}\n`;
-        `	dsgr    {emit_gpr 0}, {emit_reg i.arg.(1)}\n`;
-        `	lgr     {emit_reg i.res.(0)}, {emit_gpr 0}\n`
+        `	lgr     %r1, {emit_reg i.arg.(0)}\n`;
+        `	dsgr    %r0, {emit_reg i.arg.(1)}\n`;
+        `	lgr     {emit_reg i.res.(0)}, %r0\n`
     | Lop(Iintop Idiv) ->
-        `	lgr     {emit_gpr 1}, {emit_reg i.arg.(0)}\n`;
-        `	dsgr    {emit_gpr 0}, {emit_reg i.arg.(1)}\n`;
-        `	lgr     {emit_reg i.res.(0)}, {emit_gpr 1}\n`
+        `	lgr     %r1, {emit_reg i.arg.(0)}\n`;
+        `	dsgr    %r0, {emit_reg i.arg.(1)}\n`;
+        `	lgr     {emit_reg i.res.(0)}, %r1\n`
     | Lop(Iintop Ilsl) ->
         `	sllg    {emit_reg i.res.(0)}, {emit_reg i.arg.(0)}, 0({emit_reg i.arg.(1)})\n`;
     | Lop(Iintop Ilsr) ->
@@ -461,8 +461,8 @@ let emit_instr i =
        let lbl = bound_error_label i.dbg in 
 	`	cgfi	{emit_reg i.arg.(0)}, {emit_int n}\n`;  
 	`	jle	{emit_label lbl}\n`; 
-	`	lgfi	{emit_gpr 1}, {emit_int n}\n`;
-	`	cgfi	{emit_gpr 1}, (0)\n`; 
+	`	lgfi	%r1, {emit_int n}\n`;
+	`	cgfi	%r1, (0)\n`; 
 	`	jl	{emit_label lbl}\n`
     | Lop(Iintop_imm(Ilsl, n)) ->
         `	sllg	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)},{emit_int n}(%r0)\n`;
@@ -473,18 +473,18 @@ let emit_instr i =
     | Lop(Iintop_imm(Iand, n)) ->
           let lbl = new_label() in
           int_literals := ((Nativeint.of_int n), lbl) :: !int_literals;
-          `	lgrl	{emit_gpr 1}, {emit_label lbl}\n`;
-          `	ngr	{emit_reg i.res.(0)}, {emit_gpr 1}\n`
+          `	lgrl	%r1, {emit_label lbl}\n`;
+          `	ngr	{emit_reg i.res.(0)}, %r1\n`
     | Lop(Iintop_imm(Ior, n)) ->
           let lbl = new_label() in
           int_literals := ((Nativeint.of_int n), lbl) :: !int_literals;
-          `	lgrl	{emit_gpr 1}, {emit_label lbl}\n`;
-          `	ogr	{emit_reg i.res.(0)}, {emit_gpr 1}\n`
+          `	lgrl	%r1, {emit_label lbl}\n`;
+          `	ogr	{emit_reg i.res.(0)}, %r1\n`
     | Lop(Iintop_imm(Ixor, n)) ->
           let lbl = new_label() in
           int_literals := ((Nativeint.of_int n), lbl) :: !int_literals;
-          `	lgrl	{emit_gpr 1}, {emit_label lbl}\n`;
-          `	xgr	{emit_reg i.res.(0)}, {emit_gpr 1}\n`
+          `	lgrl	%r1, {emit_label lbl}\n`;
+          `	xgr	{emit_reg i.res.(0)}, %r1\n`
     | Lop(Iintop_imm(Imul, n)) ->
           `	msgfi	{emit_reg i.res.(0)}, {emit_int n}\n`
     | Lop(Iintop_imm(Iadd, n)) ->
@@ -509,12 +509,12 @@ let emit_instr i =
         `	{emit_string instr}	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}\n`
     | Lreloadretaddr ->
         let n = frame_size() in
-        `	lg	{emit_gpr 14}, {emit_int(n - size_addr)}({emit_gpr 15})\n`
+        `	lg	%r14, {emit_int(n - size_addr)}(%r15)\n`
     | Lreturn ->
         let n = frame_size() in
         if n > 0 then
-          `	agfi	{emit_gpr 15}, {emit_int n}\n`;
-        `	br	{emit_gpr 14}\n`
+          `	agfi	%r15, {emit_int n}\n`;
+        `	br	%r14\n`
     | Llabel lbl ->
         `{emit_label lbl}:\n`
     | Lbranch lbl ->
@@ -540,12 +540,12 @@ let emit_instr i =
             let branch = name_for_float_comparison cmp neg in
             `	{emit_string branch}	{emit_label lbl}\n`
         | Ioddtest ->
-            `	lgfi	{emit_gpr 0}, 1\n`;
-            `	ngr	{emit_gpr 0}, {emit_reg i.arg.(0)}\n`;
+            `	lgfi	%r0, 1\n`;
+            `	ngr	%r0, {emit_reg i.arg.(0)}\n`;
             `	brcl	4,	{emit_label lbl}\n`
         | Ieventest ->
-            `	lgfi	{emit_gpr 0}, 1\n`;
-            `	ngr	{emit_gpr 0}, {emit_reg i.arg.(0)}\n`;
+            `	lgfi	%r0, 1\n`;
+            `	ngr	%r0, {emit_reg i.arg.(0)}\n`;
             `	brcl	8,{emit_label lbl}\n`
         end
     | Lcondbranch3(lbl0, lbl1, lbl2) ->
@@ -564,12 +564,12 @@ let emit_instr i =
         end
     | Lswitch jumptbl ->
         let lbl = new_label() in
-        `	larl	{emit_gpr 0}, {emit_label lbl}\n`;
-        `	sllg	{emit_gpr 1}, {emit_reg i.arg.(0)}, 2(%r0)\n`;
-        `	agr	{emit_gpr 1}, {emit_gpr 0}\n`;
-        `	lgf	{emit_gpr 1}, 0({emit_gpr 1})\n`;
-        `	agr	{emit_gpr 1}, {emit_gpr 0}\n`;
-        `	br	{emit_gpr 1}\n`;
+        `	larl	%r0, {emit_label lbl}\n`;
+        `	sllg	%r1, {emit_reg i.arg.(0)}, 2(%r0)\n`;
+        `	agr	%r1, %r0\n`;
+        `	lgf	%r1, 0(%r1)\n`;
+        `	agr	%r1, %r0\n`;
+        `	br	%r1\n`;
         emit_string rodata_space;
         `	.align	8\n`;
         `{emit_label lbl}:`;
@@ -578,34 +578,34 @@ let emit_instr i =
         done;
         emit_string code_space
     | Lsetuptrap lbl ->
-        `	brasl   {emit_gpr 14}, {emit_label lbl}\n`;
+        `	brasl   %r14, {emit_label lbl}\n`;
     | Lpushtrap ->
         stack_offset := !stack_offset + 16;
-        `	agfi	{emit_gpr 15}, -16\n`;
-        `	stg     {emit_gpr 14}, 0({emit_gpr 15})\n`;
-        `	stg     {emit_gpr 13}, {emit_int size_addr}({emit_gpr 15})\n`;
-        `	lgr     {emit_gpr 13}, {emit_gpr 15}\n`
+        `	agfi	%r15, -16\n`;
+        `	stg     %r14, 0(%r15)\n`;
+        `	stg     %r13, {emit_int size_addr}(%r15)\n`;
+        `	lgr     %r13, %r15\n`
     | Lpoptrap ->
-        `	lg      {emit_gpr 13}, {emit_int size_addr}({emit_gpr 15})\n`;
-        `	agfi    {emit_gpr 15}, 16\n`;
+        `	lg      %r13, {emit_int size_addr}(%r15)\n`;
+        `	agfi    %r15, 16\n`;
         stack_offset := !stack_offset - 16
     | Lraise k ->
         begin match !Clflags.debug, k with
         | true, Lambda.Raise_regular ->
-          `	brasl   {emit_gpr 14}, {emit_symbol "caml_raise_exn"}\n`;
+          `	brasl   %r14, {emit_symbol "caml_raise_exn"}\n`;
           let lbl = record_frame Reg.Set.empty i.dbg in
 	   `{emit_label lbl}:\n`
         | true, Lambda.Raise_reraise ->
-          `	brasl   {emit_gpr 14}, {emit_symbol "caml_reraise_exn"}\n`;
+          `	brasl   %r14, {emit_symbol "caml_reraise_exn"}\n`;
           let lbl = record_frame Reg.Set.empty i.dbg in
 	   `{emit_label lbl}:\n`
         | false, _
         | true, Lambda.Raise_notrace ->
-          `	lg      {emit_gpr 1}, 0({emit_gpr 13})\n`;
-          `	lgr     {emit_gpr 15},{emit_gpr 13}\n`;
-          `	lg      {emit_gpr 13}, {emit_int size_addr}({emit_gpr 15})\n`;
-          `	agfi    {emit_gpr 15}, 16\n`;
-          `	br	{emit_gpr 1}\n`
+          `	lg      %r1, 0(%r13)\n`;
+          `	lgr     %r15,%r13\n`;
+          `	lg      %r13, {emit_int size_addr}(%r15)\n`;
+          `	agfi    %r15, 16\n`;
+          `	br	%r1\n`
         end
 
 
@@ -660,9 +660,9 @@ emit_debug_info fundecl.fun_dbg;
   `{emit_symbol fundecl.fun_name}:\n`;
   let n = frame_size() in
   if n > 0 then
-    `	lay	{emit_gpr 15}, {emit_int(-n)}({emit_gpr 15})\n`;
+    `	lay	%r15, {emit_int(-n)}(%r15)\n`;
   if !contains_calls then
-    `	stg     {emit_gpr 14}, {emit_int(n - size_addr)}({emit_gpr 15})\n`;
+    `	stg     %r14, {emit_int(n - size_addr)}(%r15)\n`;
   `{emit_label !tailrec_entry_point}:\n`;
   emit_all fundecl.fun_body;
   (* Emit the glue code to call the GC *)
