@@ -46,14 +46,14 @@ let rec select_addr = function
 let pseudoregs_for_operation op arg res =
   match op with
   (* Two-address binary operations: arg.(0) and res.(0) must be the same *)
-    Iintop(Iadd|Imul|Iand|Ior|Ixor)  | Iaddf|Isubf|Imulf|Idivf ->
+  | Iintop(Iadd|Isub|Imul|Iand|Ior|Ixor)  | Iaddf|Isubf|Imulf|Idivf ->
       ([|res.(0); arg.(1)|], res)
-    | Ispecific(sop) ->
+  | Ispecific(sop) ->
     ( [| arg.(0); arg.(1); res.(0) |], [| res.(0) |])
-    (* One-address unary operations: arg.(0) and res.(0) must be the same *)
-    |  Iintop_imm((Isub|Imul|Iand|Ior|Ixor), _) -> (res, res)
-    (* Other instructions are regular *)
-    | _ -> raise Use_default
+  (* One-address unary operations: arg.(0) and res.(0) must be the same *)
+  |  Iintop_imm((Imul|Iand|Ior|Ixor), _) -> (res, res)
+  (* Other instructions are regular *)
+  | _ -> raise Use_default
 
 class selector = object (self)
 
@@ -77,9 +77,9 @@ method! select_operation op args =
     (Cmulhi, _) -> (Iintop Imulh, args)
   (* The and, or and xor instructions have a different range of immediate 
      operands than the other instructions *)
-  | (Cand, _) -> self#select_logical Iand args
-  | (Cor, _) -> self#select_logical Ior args
-  | (Cxor, _) -> self#select_logical Ixor args
+  | (Cand, _) -> self#select_logical Iand (-0x1_0000_0000) (-1) args
+  | (Cor, _) -> self#select_logical Ior 0 0xFFFF_FFFF args
+  | (Cxor, _) -> self#select_logical Ixor  0 0xFFFF_FFFF args
   (* Recognize mult-add and mult-sub instructions *)
   | (Caddf, [Cop(Cmulf, [arg1; arg2]); arg3]) ->
       (Ispecific Imultaddf, [arg1; arg2; arg3])
@@ -90,10 +90,10 @@ method! select_operation op args =
   | _ ->
       super#select_operation op args
 
-method select_logical op = function
-    [arg; Cconst_int n] when n >= 0 && n <= 0xFFFFFFFF ->
+method select_logical op lo hi = function
+    [arg; Cconst_int n] when n >= lo && n <= hi ->
       (Iintop_imm(op, n), [arg])
-  | [Cconst_int n; arg] when n >= 0 && n <= 0xFFFFFFFF ->
+  | [Cconst_int n; arg] when n >= lo && n <= hi ->
       (Iintop_imm(op, n), [arg])
   | args ->
       (Iintop op, args)

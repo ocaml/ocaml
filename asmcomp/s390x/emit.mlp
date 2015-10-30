@@ -122,6 +122,19 @@ let emit_stack_adjust n =
   else
     `	agfi	%r15, {emit_int n}\n`
 
+(* Emit a 'add immediate' *)
+
+let emit_addimm res arg n =
+  if n >= 0 && n < 4096 then
+    `	la	{emit_reg res}, {emit_int n}({emit_reg arg})\n`
+  else if n >= -0x80000 && n < 0x80000 then
+    `	lay	{emit_reg res}, {emit_int n}({emit_reg arg})\n`
+  else begin
+    if arg.loc <> res.loc then
+      `	lgr	{emit_reg res}, {emit_reg arg}\n`;
+    `	agfi	{emit_reg res}, {emit_int n}\n`
+  end
+
 (* After a comparison, extract the result as 0 or 1 *)
 let emit_set_comp cmp res =
     `	lghi	%r1, 1\n`;
@@ -234,14 +247,12 @@ let name_for_float_comparison cmp neg =
 
 let name_for_intop = function
     Iadd  -> "agr"
+  | Isub  -> "sgr"
   | Imul  -> "msgr"
   | Iand  -> "ngr"
   | Ior   -> "ogr"
   | Ixor  -> "xgr"
   | _ -> Misc.fatal_error "Emit.Intop"
-
-let name_for_intop_imm = function
-  | _ -> Misc.fatal_error "Emit.Intop_imm"
 
 let name_for_floatop1 = function
     Inegf -> "lcdbr"
@@ -403,10 +414,6 @@ let emit_instr i =
         `	clgr	%r11, %r10\n`;
         `	brcl	4, {emit_label lbl_call_gc}\n`;  (* less than *)
 	`	la	{emit_reg i.res.(0)}, 8(%r11)\n`
-    | Lop(Iintop Isub) ->
-        `	lgr     %r1, {emit_reg i.arg.(0)}\n`;
-        `	sgr	%r1, {emit_reg i.arg.(1)}\n`;
-        `	lgr     {emit_reg i.res.(0)}, %r1\n`
     | Lop(Iintop Imulh) ->
        let lbl1 = new_label() in
         `	lpgr	%r1, {emit_reg i.arg.(0)}\n`;
@@ -455,10 +462,13 @@ let emit_instr i =
 	`	clgr	{emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}\n`;
 	`	brcl	12, {emit_label lbl}\n`  (* branch if unsigned le *)
     | Lop(Iintop op) ->
+        assert (i.arg.(0).loc = i.res.(0).loc);
         let instr = name_for_intop op in
-        `	{emit_string instr}	{emit_reg i.res.(0)}, {emit_reg i.arg.(1)}\n`;
+        `	{emit_string instr}	{emit_reg i.res.(0)}, {emit_reg i.arg.(1)}\n`
+    | Lop(Iintop_imm(Iadd, n)) ->
+        emit_addimm i.res.(0) i.arg.(0) n
     | Lop(Iintop_imm(Isub, n)) ->
-        `	agfi	{emit_reg i.res.(0)}, {emit_int(-n)}\n`
+        emit_addimm i.res.(0) i.arg.(0) (-n)
     | Lop(Iintop_imm(Icomp cmp, n)) ->
         begin match cmp with
           Isigned c ->
@@ -483,29 +493,19 @@ let emit_instr i =
     | Lop(Iintop_imm(Iasr, n)) ->
         `	srag	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)},{emit_int n}(%r0)\n`;
     | Lop(Iintop_imm(Iand, n)) ->
-          let lbl = new_label() in
-          int_literals := ((Nativeint.of_int n), lbl) :: !int_literals;
-          `	lgrl	%r1, {emit_label lbl}\n`;
-          `	ngr	{emit_reg i.res.(0)}, %r1\n`
+        assert (i.arg.(0).loc = i.res.(0).loc);
+        `	nilf	{emit_reg i.res.(0)}, {emit_int (n land 0xFFFF_FFFF)}\n`
     | Lop(Iintop_imm(Ior, n)) ->
-          let lbl = new_label() in
-          int_literals := ((Nativeint.of_int n), lbl) :: !int_literals;
-          `	lgrl	%r1, {emit_label lbl}\n`;
-          `	ogr	{emit_reg i.res.(0)}, %r1\n`
+        assert (i.arg.(0).loc = i.res.(0).loc);
+        `	oilf	{emit_reg i.res.(0)}, {emit_int n}\n`
     | Lop(Iintop_imm(Ixor, n)) ->
-          let lbl = new_label() in
-          int_literals := ((Nativeint.of_int n), lbl) :: !int_literals;
-          `	lgrl	%r1, {emit_label lbl}\n`;
-          `	xgr	{emit_reg i.res.(0)}, %r1\n`
+        assert (i.arg.(0).loc = i.res.(0).loc);
+        `	xilf	{emit_reg i.res.(0)}, {emit_int n}\n`
     | Lop(Iintop_imm(Imul, n)) ->
+        assert (i.arg.(0).loc = i.res.(0).loc);
           `	msgfi	{emit_reg i.res.(0)}, {emit_int n}\n`
-    | Lop(Iintop_imm(Iadd, n)) ->
-          `	lgr     {emit_reg i.res.(0)}, {emit_reg i.arg.(0)}\n`;
-          `	agfi	{emit_reg i.res.(0)}, {emit_int n}\n`
-    | Lop(Iintop_imm(op, n)) ->
-        let instr = name_for_intop_imm op in
-        `	lgr     {emit_reg i.res.(0)}, {emit_reg i.arg.(0)}\n`;
-        `	{emit_string instr}	{emit_reg i.res.(0)}, {emit_int n}\n`
+    | Lop(Iintop_imm((Imulh | Idiv | Imod), _)) ->
+        assert false
     | Lop(Inegf | Iabsf as op) ->
         let instr = name_for_floatop1 op in
         `	{emit_string instr}	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}\n`
