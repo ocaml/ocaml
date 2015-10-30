@@ -95,9 +95,8 @@ caml_call_gc:
         ld      %f13, 108(%r15)
         ld      %f14, 112(%r15)
         ld      %f15, 120(%r15)
-    /* Return to caller, restarting the allocation */
+    /* Return to caller */
         Loadglobal(%r1, caml_last_return_address)
-        agfi   %r1, -30     /* Restart the allocation (7 instructions) */
     /* Deallocate stack frame */
         lay	%r15, FRAMESIZE(%r15)
     /* Return */

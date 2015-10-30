@@ -75,8 +75,6 @@ let code_space = "	.section \".text\"\n"
 
 let rodata_space = "	.section \".rodata\"\n"
 
-let datag = ".quad"
-
 (* Output a pseudo-register *)
 
 let emit_reg r =
@@ -158,6 +156,22 @@ let record_frame live dbg =
       fd_live_offset = !live_offset;
       fd_debuginfo = dbg } :: !frame_descriptors;
   lbl
+
+(* Record calls to caml_call_gc, emitted out of line. *)
+
+type gc_call =
+  { gc_lbl: label;                      (* Entry label *)
+    gc_return_lbl: label;               (* Where to branch after GC *)
+    gc_frame_lbl: label }               (* Label of frame descriptor *)
+
+let call_gc_sites = ref ([] : gc_call list)
+
+let emit_call_gc gc =
+  `{emit_label gc.gc_lbl}:	{emit_call "caml_call_gc"}\n`;
+  `{emit_label gc.gc_frame_lbl}:	brcl 15, {emit_label gc.gc_return_lbl}\n`
+
+(* Record calls to caml_ml_array_bound_error, emitted out of line. *)
+
 type bound_error_call =
   { bd_lbl: label;                      (* Entry label *)
     bd_frame: label }                   (* Label of frame descriptor *)
@@ -185,14 +199,11 @@ let emit_call_bound_errors () =
   List.iter emit_call_bound_error !bound_error_sites;
   if !bound_error_call > 0 then
     `{emit_label !bound_error_call}:	{emit_call "caml_ml_array_bound_error"}\n`
+
 (* Record floating-point and large integer literals *)
 
 let float_literals = ref ([] : (int64 * int) list)
 let int_literals = ref ([] : (nativeint * int) list)
-
-let pic_externals = false
-
-let external_functions = ref StringSet.empty
 
 (* Names for conditional branches after comparisons *)
 
@@ -252,11 +263,6 @@ let name_for_specific = function
 let function_name = ref ""
 (* Entry point for tail recursive calls *)
 let tailrec_entry_point = ref 0
-(* Names of functions defined in the current file *)
-let defined_functions = ref StringSet.empty
-(* Label of glue code for calling the GC *)
-let call_gc_label = ref 0
-
 
 (* Output the assembly code for an instruction *)
 
@@ -383,17 +389,18 @@ let emit_instr i =
         emit_load_store storeinstr addr i.arg 1 i.arg.(0)
         
     | Lop(Ialloc n) ->
-        if !call_gc_label = 0 then call_gc_label := new_label();
-        let lbl = new_label() in
-        `	agfi	%r11, {emit_int(-n)}\n`;
-        `	lgr     {emit_reg i.res.(0)}, %r11\n`;
-        `	agfi	{emit_reg i.res.(0)}, {emit_int size_addr}\n`;
+	let lbl_redo = new_label() in
+	let lbl_call_gc = new_label() in
+        let lbl_frame = record_frame i.live i.dbg in
+        call_gc_sites :=
+          { gc_lbl = lbl_call_gc;
+            gc_return_lbl = lbl_redo;
+            gc_frame_lbl = lbl_frame } :: !call_gc_sites;
+	`{emit_label lbl_redo}:`;
+        `	lay	%r11, {emit_int(-n)}(%r11)\n`;
         `	clgr	%r11, %r10\n`;
-        `	jnl	{emit_label lbl}\n`;
-        `	brasl   %r14, {emit_label !call_gc_label}\n`;
-        let fr_lbl = record_frame i.live Debuginfo.none in
-	 `{emit_label fr_lbl}:\n`;
-        `	{emit_label lbl}:\n`
+        `	brcl	4, {emit_label lbl_call_gc}\n`;  (* less than *)
+	`	la	{emit_reg i.res.(0)}, 8(%r11)\n`
     | Lop(Iintop Isub) ->
         `	lgr     %r1, {emit_reg i.arg.(0)}\n`;
         `	sgr	%r1, {emit_reg i.arg.(1)}\n`;
@@ -626,21 +633,16 @@ let rec emit_all i =
 
 let fundecl fundecl =
   function_name := fundecl.fun_name;
-  defined_functions := StringSet.add fundecl.fun_name !defined_functions;
   tailrec_entry_point := new_label();
   stack_offset := 0;
-  call_gc_label := 0;
+  call_gc_sites := [];
   bound_error_sites := [];
   bound_error_call := 0;
   float_literals := [];
   int_literals := [];
   `	.globl	{emit_symbol fundecl.fun_name}\n`;
-emit_debug_info fundecl.fun_dbg;
-  begin match Config.system with
-  | "elf" | "bsd" | "bsd_elf" ->
-      `	.type	{emit_symbol fundecl.fun_name}, @function\n`
-  | _ -> ()
-  end;
+  emit_debug_info fundecl.fun_dbg;
+  `	.type	{emit_symbol fundecl.fun_name}, @function\n`;
   emit_string code_space;
   `	.align	8\n`;
   `{emit_symbol fundecl.fun_name}:\n`;
@@ -651,10 +653,8 @@ emit_debug_info fundecl.fun_dbg;
   `{emit_label !tailrec_entry_point}:\n`;
   emit_all fundecl.fun_body;
   (* Emit the glue code to call the GC *)
-  if !call_gc_label > 0 then begin
-    `{emit_label !call_gc_label}:\n`;
-    `	brcl	15,{emit_symbol "caml_call_gc"}\n`
-  end;
+  List.iter emit_call_gc !call_gc_sites;
+  (* Emit the glue code to handle bound errors *)
   emit_call_bound_errors();
   (* Emit the numeric literals *)
   if !float_literals <> [] || !int_literals <> [] then begin
@@ -667,7 +667,7 @@ emit_debug_info fundecl.fun_dbg;
       !float_literals;
     List.iter
       (fun (n, lbl) ->
-        `{emit_label lbl}:	{emit_string datag}	{emit_nativeint n}\n`)
+        `{emit_label lbl}:	.quad	{emit_nativeint n}\n`)
       !int_literals
   end
 
@@ -691,15 +691,15 @@ let emit_item = function
   | Cint32 n ->
       `	.long	{emit_nativeint n}\n`
   | Cint n ->
-      `	{emit_string datag}	{emit_nativeint n}\n`
+      `	.quad	{emit_nativeint n}\n`
   | Csingle f ->
       emit_float32_directive ".long" (Int32.bits_of_float f)
   | Cdouble f ->
       emit_float64_directive ".quad" (Int64.bits_of_float f)
   | Csymbol_address s ->
-      `	{emit_string datag}	{emit_symbol s}\n`
+      `	.quad	{emit_symbol s}\n`
   | Clabel_address lbl ->
-      `	{emit_string datag}	{emit_data_label lbl}\n`
+      `	.quad	{emit_data_label lbl}\n`
   | Cstring s ->
       emit_bytes_directive "	.byte	" s
   | Cskip n ->
@@ -717,8 +717,6 @@ let data l =
 
 let begin_assembly() =
   reset_debug_info();
-  defined_functions := StringSet.empty;
-  external_functions := StringSet.empty;
   (* Emit the beginning of the segments *)
   let lbl_begin = Compilenv.make_symbol (Some "data_begin") in
   emit_string data_space;
@@ -742,7 +740,7 @@ let end_assembly() =
   let lbl_end = Compilenv.make_symbol (Some "data_end") in
   declare_global_data lbl_end;
   `{emit_symbol lbl_end}:\n`;
-  `	{emit_string datag}	0\n`;
+  `	.quad	0\n`;
   (* Emit the frame descriptors *)
   emit_string rodata_space;
   `	.align	8\n`;
@@ -750,10 +748,10 @@ let end_assembly() =
   declare_global_data lbl;
   `{emit_symbol lbl}:\n`;
   emit_frames
-    { efa_label = (fun l -> `	{emit_string datag}	{emit_label l}\n`);
+    { efa_label = (fun l -> `	.quad	{emit_label l}\n`);
       efa_16 = (fun n -> `	.short	{emit_int n}\n`);
       efa_32 = (fun n -> `	.long	{emit_int32 n}\n`);
-      efa_word = (fun n -> `	{emit_string datag}	{emit_int n}\n`);
+      efa_word = (fun n -> `	.quad	{emit_int n}\n`);
       efa_align = (fun n -> `	.align	{emit_int n}\n`);
       efa_label_rel = (fun lbl ofs ->
                            `	.long	({emit_label lbl} - .) + {emit_int32 ofs}\n`);
