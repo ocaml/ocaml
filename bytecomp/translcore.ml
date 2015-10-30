@@ -825,6 +825,8 @@ and transl_exp0 e =
             Lprim(Pmakeblock(0, Immutable),
                   transl_path e.exp_env path :: ll)
       end
+  | Texp_extension_constructor (_, path) ->
+      transl_path e.exp_env path
   | Texp_variant(l, arg) ->
       let tag = Btype.hash_variant l in
       begin match arg with

@@ -114,6 +114,8 @@ type error =
   | Exception_pattern_below_toplevel
   | Inlined_record_escape
   | Unrefuted_pattern of Typedtree.pattern
+  | Invalid_extension_constructor_payload
+  | Not_an_extension_constructor
 
 exception Error of Location.t * Env.t * error
 exception Error_forward of Location.error
