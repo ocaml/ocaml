@@ -348,7 +348,7 @@ caml_callback3_exn:
 	.type	caml_ml_array_bound_error, @function
 caml_ml_array_bound_error:
 	lay	%r15, -160(%r15)    /* Reserve stack space for C call */
-	larl	%r1, caml_array_bound_error
+	larl	%r7, caml_array_bound_error
 	j	caml_c_call
         .globl  caml_system__code_end
 caml_system__code_end:
