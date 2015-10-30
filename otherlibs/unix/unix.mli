@@ -770,7 +770,7 @@ val alarm : int -> int
 val sleep : int -> unit
 (** Stop execution for the given number of seconds. *)
 
-val usleep : float -> unit
+val sleepf : float -> unit
 (** Stop execution for the given number of seconds (more accurate). *)
 
 val times : unit -> process_times
