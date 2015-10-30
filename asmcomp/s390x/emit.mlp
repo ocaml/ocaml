@@ -513,6 +513,7 @@ let emit_instr i =
         let instr = name_for_floatop1 op in
         `	{emit_string instr}	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}\n`
     | Lop(Iaddf | Isubf | Imulf | Idivf as op) ->
+        assert (i.arg.(0).loc = i.res.(0).loc);
         let instr = name_for_floatop2 op in
         `	{emit_string instr}	{emit_reg i.res.(0)}, {emit_reg i.arg.(1)}\n`;
     | Lop(Ifloatofint) ->
@@ -520,6 +521,7 @@ let emit_instr i =
     | Lop(Iintoffloat) ->
         `	cgdbr	{emit_reg i.res.(0)}, 0, {emit_reg i.arg.(0)}\n`
     | Lop(Ispecific sop) ->
+        assert (i.arg.(2).loc = i.res.(0).loc);
         let instr = name_for_specific sop in
         `	{emit_string instr}	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}\n`
     | Lreloadretaddr ->
