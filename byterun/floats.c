@@ -438,15 +438,18 @@ CAMLprim value caml_gt_float(value f, value g)
   return Val_bool(Double_val(f) > Double_val(g));
 }
 
-CAMLprim value caml_float_compare(value vf, value vg)
+intnat caml_float_compare_unboxed(double f, double g)
 {
-  double f = Double_val(vf);
-  double g = Double_val(vg);
   /* If one or both of f and g is NaN, order according to the convention
      NaN = NaN and NaN < x for all other floats x. */
   /* This branchless implementation is from GPR#164.
      Note that [f == f] if and only if f is not NaN. */
-  return Val_int((f > g) - (f < g) + (f == f) - (g == g));
+  return (f > g) - (f < g) + (f == f) - (g == g);
+}
+
+CAMLprim value caml_float_compare(value vf, value vg)
+{
+  return Val_int(caml_float_compare_unboxed(Double_val(vf),Double_val(vg)));
 }
 
 enum { FP_normal, FP_subnormal, FP_zero, FP_infinite, FP_nan };

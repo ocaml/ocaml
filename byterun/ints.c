@@ -305,12 +305,14 @@ double caml_int32_to_float_unboxed(int32_t x)
 CAMLprim value caml_int32_to_float(value v)
 { return caml_copy_double((double)(Int32_val(v))); }
 
+intnat caml_int32_compare_unboxed(int32_t i1, int32_t i2)
+{
+  return (i1 > i2) - (i1 < i2);
+}
+
 CAMLprim value caml_int32_compare(value v1, value v2)
 {
-  int32_t i1 = Int32_val(v1);
-  int32_t i2 = Int32_val(v2);
-  int res = (i1 > i2) - (i1 < i2);
-  return Val_int(res);
+  return Val_int(caml_int32_compare_unboxed(Int32_val(v1),Int32_val(v2)));
 }
 
 CAMLprim value caml_int32_format(value fmt, value arg)
@@ -539,11 +541,14 @@ CAMLprim value caml_int64_of_nativeint(value v)
 CAMLprim value caml_int64_to_nativeint(value v)
 { return caml_copy_nativeint((intnat) (Int64_val(v))); }
 
+intnat caml_int64_compare_unboxed(int64_t i1, int64_t i2)
+{
+  return (i1 > i2) - (i1 < i2);
+}
+
 CAMLprim value caml_int64_compare(value v1, value v2)
 {
-  int64_t i1 = Int64_val(v1);
-  int64_t i2 = Int64_val(v2);
-  return Val_int((i1 > i2) - (i1 < i2));
+  return Val_int(caml_int64_compare_unboxed(Int64_val(v1),Int64_val(v2)));
 }
 
 CAMLprim value caml_int64_format(value fmt, value arg)
@@ -796,12 +801,15 @@ CAMLprim value caml_nativeint_of_int32(value v)
 CAMLprim value caml_nativeint_to_int32(value v)
 { return caml_copy_int32(Nativeint_val(v)); }
 
+intnat caml_nativeint_compare_unboxed(intnat i1, intnat i2)
+{
+  return (i1 > i2) - (i1 < i2);
+}
+
 CAMLprim value caml_nativeint_compare(value v1, value v2)
 {
-  intnat i1 = Nativeint_val(v1);
-  intnat i2 = Nativeint_val(v2);
-  int res = (i1 > i2) - (i1 < i2);
-  return Val_int(res);
+  return Val_int(caml_nativeint_compare_unboxed(Nativeint_val(v1),
+                                                Nativeint_val(v2)));
 }
 
 CAMLprim value caml_nativeint_format(value fmt, value arg)
