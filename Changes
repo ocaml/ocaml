@@ -105,7 +105,7 @@ Runtime system:
   Shinwell, review by Damien Doligez)
 
 Standard library:
-- PR#7034: More efficient ifprintf implementation
+- PR#6017, PR#7034, GPR#267: More efficient ifprintf implementation
   (Jeremy Yallop, review by Gabriel Scherer)
 - PR#6316: Scanf.scanf failure on %u formats when reading big integers
   (Xavier Leroy, Benoît Vaugon)
