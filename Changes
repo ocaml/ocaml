@@ -105,6 +105,8 @@ Runtime system:
   Shinwell, review by Damien Doligez)
 
 Standard library:
+- PR#7034: More efficient ifprintf implementation
+  (Jeremy Yallop, review by Gabriel Scherer)
 - PR#6316: Scanf.scanf failure on %u formats when reading big integers
   (Xavier Leroy, Benoît Vaugon)
 - PR#6390, GPR#36: expose Sys.{int_size,max_wosize} for improved js_of_ocaml
