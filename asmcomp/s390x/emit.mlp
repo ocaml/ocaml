@@ -136,6 +136,9 @@ let emit_addimm res arg n =
   end
 
 (* After a comparison, extract the result as 0 or 1 *)
+(* The locgr instruction is not available in the z10 architecture,
+   so this code is currently unused. *)
+(*
 let emit_set_comp cmp res =
     `	lghi	%r1, 1\n`;
     `	lghi	{emit_reg res}, 0\n`;
@@ -147,6 +150,7 @@ let emit_set_comp cmp res =
     | Clt -> `	locgrl	{emit_reg res}, %r1\n`
     | Cge -> `	locgrnl	{emit_reg res}, %r1\n`
   end
+*)
 
 (* Record live pointers at call points *)
 
@@ -218,12 +222,12 @@ let emit_call_bound_errors () =
 let float_literals = ref ([] : (int64 * int) list)
 let int_literals = ref ([] : (nativeint * int) list)
 
-(* Names for conditional branches after comparisons *)
+(* Masks for conditional branches after comparisons *)
 
 let branch_for_comparison = function
-    Ceq -> "brcl	8," | Cne -> "brcl	7,"
-  | Cle -> "brcl	12," | Cgt -> "brcl	2,"
-  | Cge -> "brcl	10," | Clt -> "brcl	4,"
+    Ceq -> 8  | Cne -> 7
+  | Cle -> 12 | Cgt -> 2
+  | Cge -> 10 | Clt -> 4
 
 let name_for_int_comparison = function
     Isigned cmp -> ("cgr", branch_for_comparison cmp)
@@ -234,14 +238,14 @@ let name_for_int_comparison_imm = function
   | Iunsigned cmp -> ("clgfi", branch_for_comparison cmp)
 
 (* bit 0 = eq, bit 1 = lt, bit 2 = gt, bit 3 = unordered*)
-let name_for_float_comparison cmp neg =
+let branch_for_float_comparison cmp neg =
    match cmp with
-     Ceq -> if neg then "brcl	7," else "brcl	8,"
-   | Cne -> if neg then "brcl	8,"  else "brcl	7,"
-   | Cle -> if neg then "brcl	3,"  else "brcl	12,"
-   | Cgt -> if neg then "brcl	13," else "brcl	2,"
-   | Cge -> if neg then "brcl	5,"  else "brcl	10,"
-   | Clt -> if neg then "brcl	11," else "brcl	4,"
+     Ceq -> if neg then 7  else 8
+   | Cne -> if neg then 8  else 7
+   | Cle -> if neg then 3  else 12
+   | Cgt -> if neg then 13 else 2
+   | Cge -> if neg then 5  else 10
+   | Clt -> if neg then 11 else 4
 
 (* Names for various instructions *)
 
@@ -453,14 +457,13 @@ let emit_instr i =
     | Lop(Iintop Iasr) ->
         `	srag	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}, 0({emit_reg i.arg.(1)})\n`;
     | Lop(Iintop(Icomp cmp)) ->
-        begin match cmp with
-          Isigned c ->
-            `	cgr	{emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}\n`;
-            emit_set_comp c i.res.(0)
-        | Iunsigned c ->
-            `	clgr	{emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}\n`;
-            emit_set_comp c i.res.(0)
-        end
+        let lbl = new_label() in
+        let (comp, mask) = name_for_int_comparison cmp in
+        `	{emit_string comp}	{emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}\n`;
+        `	lghi	{emit_reg i.res.(0)}, 1\n`;
+	`	brc	{emit_int mask}, {emit_label lbl}\n`;
+        `	lghi	{emit_reg i.res.(0)}, 0\n`;
+	`{emit_label lbl}:\n`
     | Lop(Iintop Icheckbound) ->
         let lbl = bound_error_label i.dbg in
 	`	clgr	{emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}\n`;
@@ -474,14 +477,13 @@ let emit_instr i =
     | Lop(Iintop_imm(Isub, n)) ->
         emit_addimm i.res.(0) i.arg.(0) (-n)
     | Lop(Iintop_imm(Icomp cmp, n)) ->
-        begin match cmp with
-          Isigned c ->
-            `	cgfi	{emit_reg i.arg.(0)}, {emit_int n}\n`;
-            emit_set_comp c i.res.(0)
-        | Iunsigned c ->
-            `	clgfi	{emit_reg i.arg.(0)}, {emit_int n}\n`;
-            emit_set_comp c i.res.(0)
-        end
+        let lbl = new_label() in
+        let (comp, mask) = name_for_int_comparison_imm cmp in
+        `	{emit_string comp}	{emit_reg i.arg.(0)}, {emit_int n}\n`;
+        `	lghi	{emit_reg i.res.(0)}, 1\n`;
+	`	brc	{emit_int mask}, {emit_label lbl}\n`;
+        `	lghi	{emit_reg i.res.(0)}, 0\n`;
+	`{emit_label lbl}:\n`
     | Lop(Iintop_imm(Icheckbound, n)) ->
        let lbl = bound_error_label i.dbg in 
        if n >= 0 then begin
@@ -546,37 +548,37 @@ let emit_instr i =
             `	cgfi	{emit_reg i.arg.(0)}, 0\n`;
             `	brcl	8,	{emit_label lbl}\n`
         | Iinttest cmp ->
-            let (comp, branch) = name_for_int_comparison cmp in
+            let (comp, mask) = name_for_int_comparison cmp in
             `	{emit_string comp}	{emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}\n`;
-            `	{emit_string branch}	{emit_label lbl}\n`
+            `	brcl	{emit_int mask}, {emit_label lbl}\n`
         | Iinttest_imm(cmp, n) ->
-            let (comp, branch) = name_for_int_comparison_imm cmp in
+            let (comp, mask) = name_for_int_comparison_imm cmp in
             `	{emit_string comp}	{emit_reg i.arg.(0)}, {emit_int n}\n`;
-            `	{emit_string branch}	{emit_label lbl}\n`
+            `	brcl	{emit_int mask}, {emit_label lbl}\n`
         | Ifloattest(cmp, neg) ->
             `	cdbr	{emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}\n`;
-            let branch = name_for_float_comparison cmp neg in
-            `	{emit_string branch}	{emit_label lbl}\n`
+            let mask = branch_for_float_comparison cmp neg in
+            `	brcl	{emit_int mask}, {emit_label lbl}\n`
         | Ioddtest ->
             `	tmll	{emit_reg i.arg.(0)}, 1\n`;
             `	brcl	1, {emit_label lbl}\n`
         | Ieventest ->
             `	tmll	{emit_reg i.arg.(0)}, 1\n`;
-            `	brcl	8,{emit_label lbl}\n`
+            `	brcl	8, {emit_label lbl}\n`
         end
     | Lcondbranch3(lbl0, lbl1, lbl2) ->
         `	cgfi	{emit_reg i.arg.(0)}, 1\n`;
         begin match lbl0 with
           None -> ()
-        | Some lbl -> `	brcl	4,{emit_label lbl}\n`
+        | Some lbl -> `	brcl	4, {emit_label lbl}\n`
         end;
         begin match lbl1 with
           None -> ()
-        | Some lbl -> `	brcl	8,	{emit_label lbl}\n`
+        | Some lbl -> `	brcl	8, {emit_label lbl}\n`
         end;
         begin match lbl2 with
           None -> ()
-        | Some lbl -> `	brcl	2,	{emit_label lbl}\n`
+        | Some lbl -> `	brcl	2, {emit_label lbl}\n`
         end
     | Lswitch jumptbl ->
         let lbl = new_label() in

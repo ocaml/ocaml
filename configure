@@ -901,7 +901,7 @@ case "$arch,$system" in
                     as="${TOOLPREF}as -mppc"
                     aspp="${TOOLPREF}gcc -m32 -c"
                   fi;;
-  s390x,elf)      as="${TOOLPREF}as -m 64"
+  s390x,elf)      as="${TOOLPREF}as -m 64 -march=$model"
                   aspp="${TOOLPREF}gcc -c -Wa,-march=$model";;
   sparc,solaris)  as="${TOOLPREF}as"
                   case "$cc" in
