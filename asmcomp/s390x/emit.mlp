@@ -417,26 +417,27 @@ let emit_instr i =
         `	clgr	%r11, %r10\n`;
         `	brcl	4, {emit_label lbl_call_gc}\n`;  (* less than *)
 	`	la	{emit_reg i.res.(0)}, 8(%r11)\n`
+
     | Lop(Iintop Imulh) ->
-       let lbl1 = new_label() in
-        `	lpgr	%r1, {emit_reg i.arg.(0)}\n`;
-        `	lpgr	%r0, {emit_reg i.arg.(1)}\n`;
-        `	mlgr	%r0, %r0\n`;
-        `	ldgr	%f15, %r1\n`;
-        `	lgr	%r1, {emit_reg i.arg.(0)}\n`;
-        `	xgr	%r1, {emit_reg i.arg.(1)}\n`;
-        `	cgfi	%r1, 0\n`;
-        `	jnl	{emit_label lbl1}\n`;
-        `	lgdr	%r1,%f15\n`;
-        `	xilf	%r0,0xFFFFFFFF\n`;
-        `	xihf	%r0,0xFFFFFFFF\n`;
-        `	xilf	%r1,0xFFFFFFFF\n`;
-        `	xihf	%r1,0xFFFFFFFF\n`;
-        `	algfi	%r1,1\n`;
-        `	lgfi	%r1,0\n`;
-        `	alcgr	%r0,%r1\n`;
-        `	{emit_label lbl1}:\n`;
-        `	lgr	{emit_reg i.res.(0)}, %r0\n`
+       (* Hacker's Delight section 8.3:
+            mul-high-signed(a, b) = mul-high-unsigned(a, b)
+                                    - a  if b < 0
+				    - b  if a < 0
+          or, without branches,
+            mul-high-signed(a, b) = mul-high-unsigned(a, b)
+                                    - (a & (b >>s 63))
+				    - (b & (a >>s 63))
+       *)
+       `	lgr	%r1, {emit_reg i.arg.(0)}\n`;
+       `	mlgr	%r0, {emit_reg i.arg.(1)}\n`;
+         (* r0:r1 is 128-bit unsigned product; r0 is the high bits *)
+       `	srag	%r1, {emit_reg i.arg.(0)}, 63\n`;
+       `	ngr	%r1, {emit_reg i.arg.(1)}\n`;
+       `	sgr	%r0, %r1\n`;
+       `	srag	%r1, {emit_reg i.arg.(1)}, 63\n`;
+       `	ngr	%r1, {emit_reg i.arg.(0)}\n`;
+       `	sgr	%r0, %r1\n`;
+       `	lgr	{emit_reg i.res.(0)}, %r0\n`
     | Lop(Iintop Imod) ->
         `	lgr     %r1, {emit_reg i.arg.(0)}\n`;
         `	dsgr    %r0, {emit_reg i.arg.(1)}\n`;
