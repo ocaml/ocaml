@@ -12,50 +12,48 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* Instruction scheduling for the Z processor*)
+(* Instruction scheduling for the Z processor *)
 
 open Arch
 open Mach
+
+(* The z10 processor is in-order, dual-issue.  It could benefit from some
+   basic-block scheduling, although precise latency information
+   is not available.
+   The z196 and later are out-of-order processors.  Basic-block
+   scheduling probably makes no difference. *)
 
 class scheduler = object
 
 inherit Schedgen.scheduler_generic
 
-(* Latencies (in cycles). Based roughly on the "common model". *)
+(* Latencies (in cycles). Wild guesses.  We multiply all latencies by 2
+   to favor dual-issue. *)
 
 method oper_latency = function
-    Ireload -> 2
-  | Iload(_, _) -> 2
-  | Iconst_float _ -> 2 (* turned into a load *)
-  | Iconst_symbol _ -> 1
-  | Iintop(Imul) -> 9
-  | Iintop(Imulh) -> 20
-  | Iintop_imm(Imul, _) -> 5
-  | Iintop(Idiv | Imod) -> 36
-  | Iaddf | Isubf -> 4
-  | Imulf -> 5
-  | Idivf -> 33
-  | Ispecific(Imultaddf | Imultsubf) -> 5
-  | _ -> 1
+    Ireload -> 4
+  | Iload(_, _) -> 4
+  | Iconst_float _ -> 4 (* turned into a load *)
+  | Iintop(Imul) -> 10
+  | Iintop_imm(Imul, _) -> 10
+  | Iaddf | Isubf | Imulf -> 8
+  | Idivf -> 40
+  | Ispecific(Imultaddf | Imultsubf) -> 8
+  | _ -> 2
 
-method reload_retaddr_latency = 12
-  (* If we can have that many cycles between the reloadretaddr and the
-     return, we can expect that the blr branch will be completely folded. *)
+method reload_retaddr_latency = 4
 
 (* Issue cycles.  Rough approximations. *)
 
 method oper_issue_cycles = function
-    Iconst_float _ | Iconst_symbol _ -> 2
   | Ialloc _ -> 4
-  | Iintop(Imod) -> 40 (* assuming full stall *)
+  | Iintop(Imulh) -> 15
+  | Iintop(Idiv|Imod) -> 20
   | Iintop(Icomp _) -> 4
   | Iintop_imm(Icomp _, _) -> 4
-  | Ifloatofint -> 9
-  | Iintoffloat -> 4
   | _ -> 1
 
-method reload_retaddr_issue_cycles = 3
-  (* load then stalling mtlr *)
+method reload_retaddr_issue_cycles = 1
 
 end
 
