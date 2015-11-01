@@ -839,86 +839,86 @@ val reshape_3 :
 
 (** {6 Index operators for big arrays } *)
 
-(** The [Indexing] structure provides array-like notations for
+(** The [Operators] structure provides array-like notations for
    accessing and modifying big arrays contents:
     - [ a.{i} ] for access
     - [ a.{i} <- x ] for assignment.
 
     A pair of (access, assignment) operators is defined for every
-   dimensions. For ease of use, the [Indexing] module is included
+   dimensions. For ease of use, the [Operators] module is included
    inside the [Bigarray] module. Consequently, opening either the
-   [Bigarray] or [Bigarray.Indexing] module brings in scope all the big
-   array index operators.
+   [Bigarray] or [Bigarray.Operators] module brings in scope all the 
+   big array index operators.
 
   @since 4.03.0
 *)
-module Indexing : sig
+module Operators : sig
 
-(** {7 Dimension 1} *)
+  (** {7 Dimension 1} *)
 
-external ( .{} ) : ('a, 'b, 'c) Array1.t -> int -> 'a = "%caml_ba_opt_ref_1"
-(** Index operator for unidimensional arrays. When this operator is in
-    scope, [ bigarray.{ i } ] is desugared to [ ( .{} ) bigarray i ].
-*)
+  external ( .{} ) : ('a, 'b, 'c) Array1.t -> int -> 'a = "%caml_ba_opt_ref_1"
+  (** Index operator for unidimensional arrays. When this operator is in
+      scope, [ bigarray.{ i } ] is desugared to [ ( .{} ) bigarray i ].
+  *)
 
-external ( .{} <- ) : ('a, 'b, 'c) Array1.t -> int -> 'a -> unit
-  = "%caml_ba_opt_set_1"
-(** Indexed assignment operator for unidimensional arrays. When this
-   operator is in scope, [ bigarray.{ i } <- x ] is desugared to
-   [ ( .{} <- ) bigarray i x ].
-*)
-
-
-(** {7 Dimension 2} *)
-
-external ( .{,} ) : ('a, 'b, 'c) Array2.t -> int -> int -> 'a
-  = "%caml_ba_opt_ref_2"
-(** Index operator for bidimensional arrays. When this operator is in
-   scope, [ bigarray.{ i,j } ] is desugared to
-   [ ( .{,} ) bigarray i j ].
- *)
-
-external ( .{,} <- ) : ('a, 'b, 'c) Array2.t -> int -> int -> 'a -> unit
-  = "%caml_ba_opt_set_2"
-(** Indexed assignment operator for bidimensional arrays.  When this
-   operator is in scope, [ bigarray.{ i,j } <- x ] is desugared to
-   [ ( .{,} <- ) bigarray i j x ].
-*)
+  external ( .{} <- ) : ('a, 'b, 'c) Array1.t -> int -> 'a -> unit
+    = "%caml_ba_opt_set_1"
+  (** Indexed assignment operator for unidimensional arrays. When this
+      operator is in scope, [ bigarray.{ i } <- x ] is desugared to
+      [ ( .{} <- ) bigarray i x ].
+  *)
 
 
-(** {7 Dimension 3} *)
+  (** {7 Dimension 2} *)
 
-external ( .{,,} ) : ('a, 'b, 'c) Array3.t -> int -> int -> int -> 'a
-                   = "%caml_ba_opt_ref_3"
-(** Index operator for tridimensional arrays. When this operator is in
-   scope, [ bigarray.{ i,j,k } ] is desugared to
-   [ ( .{,,} ) bigarray i j k ].
-*)
+  external ( .{,} ) : ('a, 'b, 'c) Array2.t -> int -> int -> 'a
+    = "%caml_ba_opt_ref_2"
+  (** Index operator for bidimensional arrays. When this operator is in
+      scope, [ bigarray.{ i,j } ] is desugared to
+      [ ( .{,} ) bigarray i j ].
+  *)
 
-external ( .{,,} <- ) : ('a, 'b, 'c) Array3.t -> int -> int -> int -> 'a -> unit
-                      = "%caml_ba_opt_set_3"
-(** Indexed assignment operator for tridimensional arrays. When this
-   operator is in scope, [ bigarray.{ i,j,k } <- x ] is desugared to
-   [ ( .{,,} <- ) bigarray i j k x ].
-*)
+  external ( .{,} <- ) : ('a, 'b, 'c) Array2.t -> int -> int -> 'a -> unit
+    = "%caml_ba_opt_set_2"
+  (** Indexed assignment operator for bidimensional arrays.  When this
+      operator is in scope, [ bigarray.{ i,j } <- x ] is desugared to
+      [ ( .{,} <- ) bigarray i j x ].
+  *)
 
-(** {7 Generic Dimension} *)
 
-external ( .{,..,} ) : ('a, 'b, 'c) Genarray.t -> int array -> 'a
-  = "caml_ba_get_generic"
-(** Index operator for generic arrays. When this operator is in scope,
-   [ bigarray.{ i,j,k,l,...} ] is  desugared to
-   [ ( .{,..,} ) bigarray [| i;j;k;l;...|] ].
-*)
+  (** {7 Dimension 3} *)
 
-external ( .{,..,} <- ) : ('a, 'b, 'c) Genarray.t -> int array -> 'a -> unit
-  = "caml_ba_set_generic"
-(** Indexed assignment operator for generic arrays.  When this operator
-   is in scope, [ bigarray.{ i,j,k,l,...} <- x ] is desugared to
-   [ ( .{,..,} <- ) bigarray [| i;j;k;l;...|] x ].
-*)
+  external ( .{,,} ) : ('a, 'b, 'c) Array3.t -> int -> int -> int -> 'a
+    = "%caml_ba_opt_ref_3"
+  (** Index operator for tridimensional arrays. When this operator is in
+      scope, [ bigarray.{ i,j,k } ] is desugared to
+      [ ( .{,,} ) bigarray i j k ].
+  *)
+
+  external ( .{,,} <- ) : ('a, 'b, 'c) Array3.t -> int -> int -> int -> 'a -> unit
+    = "%caml_ba_opt_set_3"
+  (** Indexed assignment operator for tridimensional arrays. When this
+      operator is in scope, [ bigarray.{ i,j,k } <- x ] is desugared to
+      [ ( .{,,} <- ) bigarray i j k x ].
+  *)
+
+  (** {7 Generic Dimension} *)
+
+  external ( .{,..,} ) : ('a, 'b, 'c) Genarray.t -> int array -> 'a
+    = "caml_ba_get_generic"
+  (** Index operator for generic arrays. When this operator is in scope,
+      [ bigarray.{ i,j,k,l,...} ] is  desugared to
+      [ ( .{,..,} ) bigarray [| i;j;k;l;...|] ].
+  *)
+
+  external ( .{,..,} <- ) : ('a, 'b, 'c) Genarray.t -> int array -> 'a -> unit
+    = "caml_ba_set_generic"
+  (** Indexed assignment operator for generic arrays.  When this operator
+      is in scope, [ bigarray.{ i,j,k,l,...} <- x ] is desugared to
+      [ ( .{,..,} <- ) bigarray [| i;j;k;l;...|] x ].
+  *)
 end
 
-(** Indexing operators are available by default when opening the
-   [Bigarray] module *)
-include (module type of Indexing)
+(** Index operators are available by default when opening the
+    [Bigarray] module *)
+include (module type of Operators)
