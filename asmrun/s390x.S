@@ -218,30 +218,23 @@ caml_start_program:
 
 /* Code shared between caml_start_program and caml_callback */
 .L102:
-    /* Allocate and link stack frame */
-        stg	%r15, -320(%r15)
-        agfi	%r15, -320
-    /* Save return address */
-        stg     %r14, 8(%r15)
-    /* Save all callee-save registers */
-    /* GPR 14 at sp+16 ... GPR 31 at sp+84
-       FPR 14 at sp+92 ... FPR 31 at sp+228 */
-        lgr	%r1, %r15
-        agfi    %r1, 16-8
-        stmg    %r6,%r13, 8(%r1)
-	stg	%r15, 72(%r1)
-	std     %f0, 80(%r1)
-        std     %f8, 88(%r1)
-        std     %f9, 96(%r1)
-        std     %f10, 104(%r1)
-        std     %f11, 112(%r1)
-        std     %f12, 120(%r1)
-        std     %f13, 128(%r1)
-        std     %f14, 136(%r1)
-        std     %f15, 144(%r1)
+    /* Allocate stack frame */
+        lay	%r15, -144(%r15)
+    /* Save all callee-save registers + return address */
+    /* GPR 6..14 at sp + 0 ... sp + 64
+       FPR 10..15 at sp + 72 ... sp + 128 */
+        stmg    %r6,%r14, 0(%r15)
+        std     %f8, 72(%r15)
+        std     %f9, 80(%r15)
+        std     %f10, 88(%r15)
+        std     %f11, 96(%r15)
+        std     %f12, 104(%r15)
+        std     %f13, 112(%r15)
+        std     %f14, 120(%r15)
+        std     %f15, 128(%r15)
 
     /* Set up a callback link */
-        agfi    %r15, -32
+        lay     %r15, -32(%r15)
         Loadglobal(%r1, caml_bottom_of_stack)
         stg     %r1, 0(%r15)
         Loadglobal(%r1, caml_last_return_address)
@@ -252,56 +245,49 @@ caml_start_program:
         brasl   %r14, .L103
         j       .L104
 .L103:
-        agfi    %r15,  -16
+	lay	%r15, -16(%r15)
         stg     %r14, 0(%r15)
         Loadglobal(%r1, caml_exception_pointer)
-        stg      %r1, 8(%r15)
+        stg     %r1, 8(%r15)
         lgr     %r13, %r15
     /* Reload allocation pointers */
         Loadglobal(%r11, caml_young_ptr)
         Loadglobal(%r10, caml_young_limit)
-    /* Say we are back into OCaml code */
-        lgfi   %r1, 0
-        Storeglobal(%r1, caml_last_return_address)
     /* Call the OCaml code */
         lgr %r1,%r0
-.L105:
         basr %r14, %r1
+.L105:
     /* Pop the trap frame, restoring caml_exception_pointer */
         lg     %r0, 8(%r15)
         Storeglobal(%r0, caml_exception_pointer)
-        agfi    %r15, 16
+        la	%r15, 16(%r15)
     /* Pop the callback link, restoring the global variables */
 .L106:
         lg      %r5, 0(%r15)
         lg      %r6, 8(%r15)
-        nill	%r6, 0xFFFE
         lg      %r1, 16(%r15)
         Storeglobal(%r5, caml_bottom_of_stack)
         Storeglobal(%r6, caml_last_return_address)
         Storeglobal(%r1, caml_gc_regs)
-        agfi    %r15, 32
+        la	%r15, 32(%r15)
+
     /* Update allocation pointer */
         Storeglobal(%r11, caml_young_ptr)
-    /* Restore callee-save registers */
-        lgr	%r1, %r15
-        agfi    %r1, 16-8
-        lmg     %r6,%r13, 8(%r1)
-	ld     %f0, 80(%r1)
-        ld     %f8, 88(%r1)
-        ld     %f9, 96(%r1)
-        ld     %f10, 104(%r1)
-        ld     %f11, 112(%r1)
-        ld     %f12, 120(%r1)
-        ld     %f13, 128(%r1)
-        ld     %f14, 136(%r1)
-        ld     %f15, 144(%r1)
 
-    /* Reload return address */
-        lg     %r1, 8(%r15)
+	/* Restore registers */
+        lmg    %r6,%r14, 0(%r15)
+        ld     %f8, 72(%r15)
+        ld     %f9, 80(%r15)
+        ld     %f10, 88(%r15)
+        ld     %f11, 96(%r15)
+        ld     %f12, 104(%r15)
+        ld     %f13, 112(%r15)
+        ld     %f14, 120(%r15)
+        ld     %f15, 128(%r15)
+
     /* Return */
-        agfi    %r15,  320
-        br	%r1
+	lay	%r15, 144(%r15)
+	br	%r14
 
     /* The trap handler: */
 .L104:
@@ -361,7 +347,7 @@ caml_system__code_end:
         .type   caml_system__frametable, @object
 caml_system__frametable:
         .quad   1               /* one descriptor */
-        .quad   .L105 + 2       /* return address into callback */
+        .quad   .L105           /* return address into callback */
         .short  -1              /* negative size count => use callback link */
         .short  0               /* no roots here */
 	.align	8
