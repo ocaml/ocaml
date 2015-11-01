@@ -75,7 +75,7 @@ method! select_operation op args =
   match (op, args) with
   (* Z does not support immediate operands for multiply high *)
     (Cmulhi, _) -> (Iintop Imulh, args)
-  (* The and, or and xor instructions have a different range of immediate 
+  (* The and, or and xor instructions have a different range of immediate
      operands than the other instructions *)
   | (Cand, _) -> self#select_logical Iand (-0x1_0000_0000) (-1) args
   | (Cor, _) -> self#select_logical Ior 0 0xFFFF_FFFF args
