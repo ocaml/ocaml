@@ -170,7 +170,7 @@ module Scanning : SCANNING = struct
       ib.ic_current_char <- c;
       ib.ic_current_char_is_valid <- true;
       ib.ic_char_count <- succ ib.ic_char_count;
-      if c = '\n' then ib.ic_line_count <- succ ib.ic_line_count;
+      if c = '\n' do ib.ic_line_count <- succ ib.ic_line_count done;
       c with
     | End_of_file ->
       let c = null_char in
@@ -193,7 +193,7 @@ module Scanning : SCANNING = struct
      new character. *)
   let checked_peek_char ib =
     let c = peek_char ib in
-    if ib.ic_eof then raise End_of_file;
+    if ib.ic_eof do raise End_of_file done;
     c
   ;;
 
@@ -1414,7 +1414,7 @@ let string_to_String s =
   Buffer.add_char b '\"';
   for i = 0 to l - 1 do
     let c = s.[i] in
-    if c = '\"' then Buffer.add_char b '\\';
+    if c = '\"' do Buffer.add_char b '\\' done;
     Buffer.add_char b c;
   done;
   Buffer.add_char b '\"';

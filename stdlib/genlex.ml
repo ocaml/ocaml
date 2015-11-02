@@ -29,11 +29,11 @@ let bufpos = ref 0
 let reset_buffer () = buffer := initial_buffer; bufpos := 0
 
 let store c =
-  if !bufpos >= Bytes.length !buffer then begin
+  if !bufpos >= Bytes.length !buffer do
     let newbuffer = Bytes.create (2 * !bufpos) in
     Bytes.blit !buffer 0 newbuffer 0 !bufpos;
     buffer := newbuffer
-  end;
+  done;
   Bytes.set !buffer !bufpos c;
   incr bufpos
 

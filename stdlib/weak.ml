@@ -144,7 +144,7 @@ module Make (H : Hashtbl.HashedType) : (S with type data = H.t) = struct
     let len = length bucket in
     let prev_len = prev_sz len in
     let live = count_bucket 0 bucket 0 in
-    if live <= prev_len then begin
+    if live <= prev_len do
       let rec loop i j =
         if j >= prev_len then begin
           if check bucket i then loop (i + 1) j
@@ -156,22 +156,24 @@ module Make (H : Hashtbl.HashedType) : (S with type data = H.t) = struct
         end;
       in
       loop 0 (length bucket - 1);
-      if prev_len = 0 then begin
+      if prev_len = 0 do
         t.table.(t.rover) <- emptybucket;
         t.hashes.(t.rover) <- [| |];
-      end else begin
+      done else do
         Obj.truncate (Obj.repr bucket) (prev_len + 1);
         Obj.truncate (Obj.repr hbucket) prev_len;
-      end;
-      if len > t.limit && prev_len <= t.limit then t.oversize <- t.oversize - 1;
-    end;
+      done;
+      if len > t.limit && prev_len <= t.limit do
+        t.oversize <- t.oversize - 1
+      done;
+    done;
     t.rover <- (t.rover + 1) mod (Array.length t.table);
   ;;
 
   let rec resize t =
     let oldlen = Array.length t.table in
     let newlen = next_sz oldlen in
-    if newlen > oldlen then begin
+    if newlen > oldlen do
       let newt = create newlen in
       let add_weak ob oh oi =
         let setter nb ni _ = blit ob oi nb ni 1 in
@@ -184,19 +186,21 @@ module Make (H : Hashtbl.HashedType) : (S with type data = H.t) = struct
       t.limit <- newt.limit;
       t.oversize <- newt.oversize;
       t.rover <- t.rover mod Array.length newt.table;
-    end else begin
+    done else do
       t.limit <- max_int;             (* maximum size already reached *)
       t.oversize <- 0;
-    end
+    done
 
   and add_aux t setter d h index =
     let bucket = t.table.(index) in
     let hashes = t.hashes.(index) in
     let sz = length bucket in
     let rec loop i =
-      if i >= sz then begin
+      if i >= sz do
         let newsz = min (3 * sz / 2 + 3) (Sys.max_array_length - 1) in
-        if newsz <= sz then failwith "Weak.Make: hash bucket cannot grow more";
+        if newsz <= sz do
+          failwith "Weak.Make: hash bucket cannot grow more"
+        done;
         let newbucket = weak_create newsz in
         let newhashes = Array.make newsz 0 in
         blit bucket 0 newbucket 0 sz;
@@ -205,17 +209,17 @@ module Make (H : Hashtbl.HashedType) : (S with type data = H.t) = struct
         newhashes.(sz) <- h;
         t.table.(index) <- newbucket;
         t.hashes.(index) <- newhashes;
-        if sz <= t.limit && newsz > t.limit then begin
+        if sz <= t.limit && newsz > t.limit do
           t.oversize <- t.oversize + 1;
           for _i = 0 to over_limit do test_shrink_bucket t done;
-        end;
-        if t.oversize > Array.length t.table / over_limit then resize t;
-      end else if check bucket i then begin
+        done;
+        if t.oversize > Array.length t.table / over_limit do resize t done;
+      done else if check bucket i do
         loop (i + 1)
-      end else begin
+      done else do
         setter bucket i d;
         hashes.(i) <- h;
-      end;
+      done;
     in
     loop 0;
   ;;

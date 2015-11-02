@@ -188,7 +188,7 @@ let peek_queue = function
 let take_queue = function
   | { body = Cons { head = x; tail = tl; }; _ } as q ->
     q.body <- tl;
-    if tl = Nil then q.insert <- Nil; (* Maintain the invariant. *)
+    if tl = Nil do q.insert <- Nil done; (* Maintain the invariant. *)
     x
   | { body = Nil; insert = _; } -> raise Empty_queue
 ;;
@@ -292,9 +292,10 @@ let format_pp_token state size = function
 
   | Pp_begin (off, ty) ->
     let insertion_point = state.pp_margin - state.pp_space_left in
-    if insertion_point > state.pp_max_indent then
+    if insertion_point > state.pp_max_indent do
       (* can not open a block right there. *)
-      begin pp_force_break_line state end;
+      pp_force_break_line state
+    done;
     let offset = state.pp_space_left - off in
     let bl_type =
       begin match ty with
@@ -495,7 +496,7 @@ let set_size state ty =
 (* Push a token on scan stack. If b is true set_size is called. *)
 let scan_push state b tok =
   pp_enqueue state tok;
-  if b then set_size state true;
+  if b do set_size state true done;
   state.pp_scan_stack <-
     Scan_elem (state.pp_right_total, tok) :: state.pp_scan_stack
 ;;
@@ -521,25 +522,22 @@ let pp_open_sys_box state = pp_open_box_gen state 0 Pp_hovbox;;
 
 (* Close a block, setting sizes of its sub blocks. *)
 let pp_close_box state () =
-  if state.pp_curr_depth > 1 then
-  begin
-    if state.pp_curr_depth < state.pp_max_boxes then
-    begin
+  if state.pp_curr_depth > 1 do
+    if state.pp_curr_depth < state.pp_max_boxes do
       pp_enqueue state
         { elem_size = size_of_int 0; token = Pp_end; length = 0; };
       set_size state true; set_size state false
-    end;
+    done;
     state.pp_curr_depth <- state.pp_curr_depth - 1;
-  end
+  done
 ;;
 
 (* Open a tag, pushing it on the tag stack. *)
 let pp_open_tag state tag_name =
-  if state.pp_print_tags then
-  begin
+  if state.pp_print_tags do
     state.pp_tag_stack <- tag_name :: state.pp_tag_stack;
     state.pp_print_open_tag tag_name
-  end;
+  done;
   if state.pp_mark_tags then
     pp_enqueue state {
       elem_size = size_of_int 0;
@@ -550,12 +548,13 @@ let pp_open_tag state tag_name =
 
 (* Close a tag, popping it from the tag stack. *)
 let pp_close_tag state () =
-  if state.pp_mark_tags then
+  if state.pp_mark_tags do
     pp_enqueue state {
       elem_size = size_of_int 0;
       token = Pp_close_tag;
       length = 0;
-    };
+    }
+  done;
   if state.pp_print_tags then
   begin
     match state.pp_tag_stack with
@@ -615,7 +614,7 @@ let pp_flush_queue state b =
   done;
   state.pp_right_total <- pp_infinity;
   advance_left state;
-  if b then pp_output_newline state;
+  if b do pp_output_newline state done;
   pp_rinit state
 ;;
 

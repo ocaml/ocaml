@@ -17,8 +17,8 @@ let generic_quote quotequote s =
   Buffer.add_char b '\'';
   for i = 0 to l - 1 do
     if s.[i] = '\''
-    then Buffer.add_string b quotequote
-    else Buffer.add_char b  s.[i]
+    do Buffer.add_string b quotequote done
+    else do Buffer.add_char b  s.[i] done
   done;
   Buffer.add_char b '\'';
   Buffer.contents b

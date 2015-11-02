@@ -61,21 +61,21 @@ external c_new_engine : lex_tables -> int -> lexbuf -> int
 
 let engine tbl state buf =
   let result = c_engine tbl state buf in
-  if result >= 0 then begin
+  if result >= 0 do
     buf.lex_start_p <- buf.lex_curr_p;
     buf.lex_curr_p <- {buf.lex_curr_p
                        with pos_cnum = buf.lex_abs_pos + buf.lex_curr_pos};
-  end;
+  done;
   result
 ;;
 
 let new_engine tbl state buf =
   let result = c_new_engine tbl state buf in
-  if result >= 0 then begin
+  if result >= 0 do
     buf.lex_start_p <- buf.lex_curr_p;
     buf.lex_curr_p <- {buf.lex_curr_p
                        with pos_cnum = buf.lex_abs_pos + buf.lex_curr_pos};
-  end;
+  done;
   result
 ;;
 
@@ -92,31 +92,32 @@ let lex_refill read_fun aux_buffer lexbuf =
         ^       ^                     ^           ^
         0    start_pos             buffer_end    Bytes.length buffer
   *)
-  if lexbuf.lex_buffer_len + n > Bytes.length lexbuf.lex_buffer then begin
+  if lexbuf.lex_buffer_len + n > Bytes.length lexbuf.lex_buffer do
     (* There is not enough space at the end of the buffer *)
     if lexbuf.lex_buffer_len - lexbuf.lex_start_pos + n
        <= Bytes.length lexbuf.lex_buffer
-    then begin
+    do
       (* But there is enough space if we reclaim the junk at the beginning
          of the buffer *)
       Bytes.blit lexbuf.lex_buffer lexbuf.lex_start_pos
                   lexbuf.lex_buffer 0
                   (lexbuf.lex_buffer_len - lexbuf.lex_start_pos)
-    end else begin
+    done else do
       (* We must grow the buffer.  Doubling its size will provide enough
          space since n <= String.length aux_buffer <= String.length buffer.
          Watch out for string length overflow, though. *)
       let newlen =
         min (2 * Bytes.length lexbuf.lex_buffer) Sys.max_string_length in
-      if lexbuf.lex_buffer_len - lexbuf.lex_start_pos + n > newlen
-      then failwith "Lexing.lex_refill: cannot grow buffer";
+      if lexbuf.lex_buffer_len - lexbuf.lex_start_pos + n > newlen do
+        failwith "Lexing.lex_refill: cannot grow buffer"
+      done;
       let newbuf = Bytes.create newlen in
       (* Copy the valid data to the beginning of the new buffer *)
       Bytes.blit lexbuf.lex_buffer lexbuf.lex_start_pos
                   newbuf 0
                   (lexbuf.lex_buffer_len - lexbuf.lex_start_pos);
       lexbuf.lex_buffer <- newbuf
-    end;
+    done;
     (* Reallocation or not, we have shifted the data left by
        start_pos characters; update the positions *)
     let s = lexbuf.lex_start_pos in
@@ -131,7 +132,7 @@ let lex_refill read_fun aux_buffer lexbuf =
       if v >= 0 then
         t.(i) <- v-s
     done
-  end;
+  done;
   (* There is now enough space at the end of the buffer *)
   Bytes.blit aux_buffer 0 lexbuf.lex_buffer lexbuf.lex_buffer_len n;
   lexbuf.lex_buffer_len <- lexbuf.lex_buffer_len + n
