@@ -34,6 +34,8 @@ let phy_equal (approxs:A.t list) =
               Symbol.equal s1 s2 && f1 = f2
           | _ -> false
 
+(* mshinwell: this is possibly wrong for Initialize_symbol, we think,
+   since you can effectively introduce symbol aliases like that
 let not_phys_equal (approxs:A.t list) =
   match approxs with
   | [] | [_] | _ :: _ :: _ :: _ ->
@@ -47,6 +49,7 @@ let not_phys_equal (approxs:A.t list) =
     match a1.symbol, a2.symbol with
     | Some (s1, None), Some (s2, None) -> not (Symbol.equal s1 s2)
     | _ -> false
+*)
 
 let primitive (p : Lambda.primitive) (args, approxs) expr dbg ~size_int
       ~big_endian : Flambda.named * A.t * Inlining_cost.Benefit.t =
@@ -69,8 +72,6 @@ let primitive (p : Lambda.primitive) (args, approxs) expr dbg ~size_int
        safely returns false, when the approximation is known to
        be different. *)
     S.const_bool_expr expr true
-  | Pintcomp Ceq when not_phys_equal approxs ->
-    S.const_bool_expr expr false
   | _ ->
     match A.descrs approxs with
     | [Value_int x] ->
