@@ -163,7 +163,8 @@ let iter_expression f e =
     | Pexp_while (e1, e2)
     | Pexp_sequence (e1, e2)
     | Pexp_setfield (e1, _, e2) -> expr e1; expr e2
-    | Pexp_ifthenelse (e1, e2, eo) -> expr e1; expr e2; may expr eo
+    | Pexp_ifthenelse (e1, e2, eo)
+    | Pexp_ifdo (e1, e2, eo) -> expr e1; expr e2; may expr eo
     | Pexp_for (_, e1, e2, _, e3) -> expr e1; expr e2; expr e3
     | Pexp_override sel -> List.iter (fun (_, e) -> expr e) sel
     | Pexp_letmodule (_, me, e) -> expr e; module_expr me
@@ -2307,6 +2308,20 @@ and type_expect_ ?in_function ?(recarg=Rejected) env sexp ty_expected =
             exp_attributes = sexp.pexp_attributes;
             exp_env = env }
       end
+  | Pexp_ifdo(scond, sifso, sifnot) ->
+      let cond = type_expect env scond Predef.type_bool in
+      let ifso = type_statement env sifso in
+      let ifnot =
+        match sifnot with
+        | None -> None
+        | Some sifnot -> Some (type_statement env sifnot)
+      in
+      rue {
+        exp_desc = Texp_ifthenelse(cond, ifso, ifnot);
+        exp_loc = loc; exp_extra = [];
+        exp_type = instance_def Predef.type_unit;
+        exp_attributes = sexp.pexp_attributes;
+        exp_env = env }
   | Pexp_sequence(sexp1, sexp2) ->
       let exp1 = type_statement env sexp1 in
       let exp2 = type_expect env sexp2 ty_expected in

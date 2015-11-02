@@ -173,7 +173,8 @@ let rec add_expr bv exp =
   | Pexp_field(e, fld) -> add_expr bv e; add bv fld
   | Pexp_setfield(e1, fld, e2) -> add_expr bv e1; add bv fld; add_expr bv e2
   | Pexp_array el -> List.iter (add_expr bv) el
-  | Pexp_ifthenelse(e1, e2, opte3) ->
+  | Pexp_ifthenelse(e1, e2, opte3)
+  | Pexp_ifdo(e1, e2, opte3) ->
       add_expr bv e1; add_expr bv e2; add_opt add_expr bv opte3
   | Pexp_sequence(e1, e2) -> add_expr bv e1; add_expr bv e2
   | Pexp_while(e1, e2) -> add_expr bv e1; add_expr bv e2

@@ -269,6 +269,9 @@ and expression_desc =
         (* [| E1; ...; En |] *)
   | Pexp_ifthenelse of expression * expression * expression option
         (* if E1 then E2 else E3 *)
+  | Pexp_ifdo of expression * expression * expression option
+        (* if E1 do E2 done
+           if E1 do E2 else if E3 do E4 done else do E5 done *)
   | Pexp_sequence of expression * expression
         (* E1; E2 *)
   | Pexp_while of expression * expression

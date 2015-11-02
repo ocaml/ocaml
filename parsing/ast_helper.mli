@@ -116,6 +116,8 @@ module Exp:
     val array: ?loc:loc -> ?attrs:attrs -> expression list -> expression
     val ifthenelse: ?loc:loc -> ?attrs:attrs -> expression -> expression
                     -> expression option -> expression
+    val ifdo: ?loc:loc -> ?attrs:attrs -> expression -> expression
+                    -> expression option -> expression
     val sequence: ?loc:loc -> ?attrs:attrs -> expression -> expression
                   -> expression
     val while_: ?loc:loc -> ?attrs:attrs -> expression -> expression

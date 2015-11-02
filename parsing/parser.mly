@@ -561,8 +561,10 @@ The precedences must be listed from low to high.
 %nonassoc below_WITH
 %nonassoc FUNCTION WITH                 /* below BAR  (match ... with ...) */
 %nonassoc AND             /* above WITH (module rec A: SIG with ... and ...) */
-%nonassoc THEN                          /* below ELSE (if ... then ...) */
-%nonassoc ELSE                          /* (if ... then ... else ...) */
+%nonassoc THEN DONE                     /* below ELSE (if ... then ...)
+                                                      (if ... do ... done) */
+%nonassoc ELSE                          /* (if ... then ... else ...)
+                                           (if .. do .. done else do .. done) */
 %nonassoc LESSMINUS                     /* below COLONEQUAL (lbl <- x := e) */
 %right    COLONEQUAL                    /* expr (e := e := e) */
 %nonassoc AS
@@ -1247,6 +1249,18 @@ let_pattern:
   | pattern COLON core_type
       { mkpat(Ppat_constraint($1, $3)) }
 ;
+imperative_else:
+    DO seq_expr DONE
+      { $2 }
+  | imperative_if
+      { $1 }
+;
+imperative_if:
+    IF ext_attributes seq_expr DO seq_expr DONE ELSE imperative_else
+      { mkexp_attrs (Pexp_ifdo($3, $5, Some $8)) $2 }
+  | IF ext_attributes seq_expr DO seq_expr DONE
+      { mkexp_attrs (Pexp_ifdo($3, $5, None)) $2 }
+;
 expr:
     simple_expr %prec below_SHARP
       { $1 }
@@ -1281,6 +1295,8 @@ expr:
       { mkexp_attrs(Pexp_ifthenelse($3, $5, Some $7)) $2 }
   | IF ext_attributes seq_expr THEN expr
       { mkexp_attrs (Pexp_ifthenelse($3, $5, None)) $2 }
+  | imperative_if
+      { $1 }
   | WHILE ext_attributes seq_expr DO seq_expr DONE
       { mkexp_attrs (Pexp_while($3, $5)) $2 }
   | FOR ext_attributes pattern EQUAL seq_expr direction_flag seq_expr DO
