@@ -86,6 +86,10 @@ Compilers:
   (Alain Frisch)
 - GPR#263: improve code generation for if-equivalents of (&&) and (||)
   (Pierre Chambart)
+- GPR#271: Fix incorrect mutability flag when records are built using "with"
+  (Mark Shinwell)
+- GPR#270: Make [transl_exception_constructor] generate [Immutable] blocks
+  (Mark Shinwell)
 
 Runtime system:
 - PR#3612: allow allocating custom block with finalizers in the minor heap
