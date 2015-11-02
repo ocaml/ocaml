@@ -250,7 +250,11 @@ let simplify_move_within_set_of_closures env r
   | Unresolved _sym ->
     (* CR mshinwell for pchambart: I added this.  I think this happened
        when a .cmx file was unavailable.  Is this correct? *)
-    Move_within_set_of_closures move_within_set_of_closures,
+    Move_within_set_of_closures {
+        closure;
+        start_from = move_within_set_of_closures.start_from;
+        move_to = move_within_set_of_closures.move_to;
+      },
       ret r A.value_unknown
   | Ok (_value_closure, set_of_closures_var, set_of_closures_symbol,
         value_set_of_closures) ->
