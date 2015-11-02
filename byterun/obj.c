@@ -245,6 +245,12 @@ CAMLprim value caml_set_oo_id (value obj) {
   return obj;
 }
 
+CAMLprim value caml_fresh_oo_id (value v) {
+  v = oo_last_id;
+  oo_last_id += 2;
+  return v;
+}
+
 CAMLprim value caml_int_as_pointer (value n) {
   return n - 1;
 }
