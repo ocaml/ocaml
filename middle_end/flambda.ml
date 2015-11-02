@@ -348,7 +348,7 @@ and print_project_closure ppf (project_closure : project_closure) =
 
 and print_move_within_set_of_closures ppf
       (move_within_set_of_closures : move_within_set_of_closures) =
-  fprintf ppf "@[<2>(move_within_set_of_closures@ %a - %a@ %a)@]"
+  fprintf ppf "@[<2>(move_within_set_of_closures@ %a <-- %a@ (closure = %a))@]"
     Closure_id.print move_within_set_of_closures.move_to
     Closure_id.print move_within_set_of_closures.start_from
     Variable.print move_within_set_of_closures.closure
