@@ -3593,6 +3593,12 @@ and type_construct env loc lid sarg ty_expected attrs =
 
 and type_statement env sexp =
   let loc = (final_subexpression sexp).pexp_loc in
+  if Warnings.is_active Warnings.Imperative_if_construct then (
+    match sexp.pexp_desc with
+    | Pexp_ifthenelse _ ->
+        Location.prerr_warning sexp.pexp_loc Warnings.Imperative_if_construct
+    | _ -> ()
+  );
   begin_def();
   let exp = type_exp env sexp in
   end_def();

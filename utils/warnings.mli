@@ -69,6 +69,7 @@ type t =
   | Duplicated_attribute of string          (* 54 *)
   | Inlining_impossible of string           (* 55 *)
   | Unreachable_case                        (* 56 *)
+  | Imperative_if_construct                 (* 57 *)
 ;;
 
 val parse_options : bool -> string -> unit;;
