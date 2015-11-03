@@ -137,12 +137,15 @@ static void init_frame_descriptors(link *new_frametables)
     caml_frame_descriptors =
       (frame_descr **) caml_stat_alloc(tblsize * sizeof(frame_descr *));
     for (i = 0; i < tblsize; i++) caml_frame_descriptors[i] = NULL;
+
+    fill_hashtable(new_frametables);
   } else {
     num_descr += increase;
+    fill_hashtable(new_frametables);
+    tail->next = frametables;
   }
 
-  fill_hashtable(new_frametables);
-  tail->next = frametables;
+  frametables = new_frametables;
 }
 
 void caml_init_frame_descriptors(void) {
