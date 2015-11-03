@@ -393,6 +393,24 @@ let get_field t ~field_index:i : get_field_result =
        from another compilation unit in case it contains a closure. *)
     Ok (value_unresolved sym)
 
+type checked_approx_for_block =
+  | Wrong
+  | Ok of Tag.t * t array
+
+let check_approx_for_block t =
+  match t.descr with
+  | Value_block (tag, fields) ->
+    Ok (tag, fields)
+  | Value_bottom
+  | Value_int _ | Value_char _ | Value_constptr _
+  | Value_float_array _
+  | Value_string _ | Value_float _ | Value_boxed_int _
+  | Value_set_of_closures _ | Value_closure _
+  | Value_symbol _ | Value_extern _
+  | Value_unknown
+  | Value_unresolved _ ->
+    Wrong
+
 let descrs approxs = List.map (fun v -> v.descr) approxs
 
 let equal_boxed_int (type t1) (type t2)

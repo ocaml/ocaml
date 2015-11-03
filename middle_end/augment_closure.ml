@@ -121,7 +121,7 @@ let rewrite_set_of_closures
     in
     let body =
       Flambda_iterators.map_toplevel_named (function
-          | (Prim (Pfield i, [v], _) as named) when
+          | (Prim (Pfield i, [v], _)) when
               Block_field.Map.mem (v, i) block_in_free_vars ->
             let { new_var } = Block_field.Map.find (v, i) block_in_free_vars in
             used_new_vars := Variable.Set.add
