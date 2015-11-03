@@ -301,7 +301,7 @@ type pers_struct =
     ps_flags: pers_flags list }
 
 let persistent_structures =
-  (Hashtbl.create 17 : (string, pers_struct) Hashtbl.t)
+  (Hashtbl.create 17 : (string, pers_struct option) Hashtbl.t)
 
 (* Consistency between persistent structures *)
 
@@ -336,7 +336,7 @@ let check_consistency ps =
 
 let save_pers_struct crc ps =
   let modname = ps.ps_name in
-  Hashtbl.add persistent_structures modname ps;
+  Hashtbl.add persistent_structures modname (Some ps);
   Consistbl.set crc_units modname crc ps.ps_filename;
   add_import modname
 
@@ -367,16 +367,23 @@ let read_pers_struct check modname filename =
         error (Need_recursive_types(ps.ps_name, !current_unit)))
     ps.ps_flags;
   if check then check_consistency ps;
-  Hashtbl.add persistent_structures modname ps;
+  Hashtbl.add persistent_structures modname (Some ps);
   ps
 
 let find_pers_struct check name =
   if name = "*predef*" then raise Not_found;
-  try
-    Hashtbl.find persistent_structures name
-  with Not_found ->
-    let filename = find_in_path_uncap !load_path (name ^ ".cmi") in
-    read_pers_struct check name filename
+  match Hashtbl.find persistent_structures name with
+  | Some ps -> ps
+  | None -> raise Not_found
+  | exception Not_found ->
+      let filename =
+        try
+          find_in_path_uncap !load_path (name ^ ".cmi")
+        with Not_found ->
+          Hashtbl.add persistent_structures name None;
+          raise Not_found
+      in
+      read_pers_struct check name filename
 
 (* Emits a warning if there is no valid cmi for name *)
 let check_pers_struct name =
@@ -438,7 +445,7 @@ let reset_cache_toplevel () =
   (* Delete 'missing cmi' entries from the cache. *)
   let l =
     Hashtbl.fold
-      (fun name r acc -> name :: acc)
+      (fun name r acc -> if r = None then name :: acc else acc)
       persistent_structures []
   in
   List.iter (Hashtbl.remove persistent_structures) l;
@@ -1019,9 +1026,11 @@ let iter_env proj1 proj2 f env () =
     in iter_env_cont := (path, cont) :: !iter_env_cont
   in
   Hashtbl.iter
-    (fun s ps ->
-       let id = Pident (Ident.create_persistent s) in
-       iter_components id id ps.ps_comps)
+    (fun s pso ->
+      match pso with None -> ()
+      | Some ps ->
+          let id = Pident (Ident.create_persistent s) in
+          iter_components id id ps.ps_comps)
     persistent_structures;
   Ident.iter
     (fun id ((path, comps), _) -> iter_components (Pident id) path comps)
@@ -1041,7 +1050,7 @@ let same_types env1 env2 =
 
 let used_persistent () =
   let r = ref Concr.empty in
-  Hashtbl.iter (fun s ps -> r := Concr.add s !r)
+  Hashtbl.iter (fun s pso -> if pso != None then r := Concr.add s !r)
     persistent_structures;
   !r
 
@@ -1777,8 +1786,11 @@ let fold_modules f lid env acc =
       in
       Hashtbl.fold
         (fun name ps acc ->
-           f name (Pident(Ident.create_persistent name))
-             (md (Mty_signature (Lazy.force ps.ps_sig))) acc)
+          match ps with
+              None -> acc
+            | Some ps ->
+              f name (Pident(Ident.create_persistent name))
+                     (md (Mty_signature (Lazy.force ps.ps_sig))) acc)
         persistent_structures
         acc
     | Some l ->
