@@ -1012,7 +1012,7 @@ Other libraries:
 Type system:
 - PR#5759: use well-disciplined type information propagation to
   disambiguate label and constructor names
-  (Jacques Garrigue, Alain Frisch and Leo P. White)
+  (Jacques Garrigue, Alain Frisch and Leo White)
 * Propagate type information towards pattern-matching, even in the presence of
   polymorphic variants (discarding only information about possibly-present
   constructors). As a result, matching against absent constructors is no longer
@@ -1061,7 +1061,7 @@ Compilers:
 - PR#5571: incorrect ordinal number in error message
   (Alain Frisch, report by John Carr)
 - PR#6073: add signature to Tstr_include
-  (patch by Leo P. White)
+  (patch by Leo White)
 
 Standard library:
 - PR#5899: expose a way to inspect the current call stack,
@@ -1235,7 +1235,7 @@ Bug fixes:
 - PR#5814: read_cmt -annot does not report internal references
   (Alain Frisch)
 - PR#5815: Multiple exceptions in signatures gives an error
-  (Leo P. White)
+  (Leo White)
 - PR#5816: read_cmt -annot does not work for partial .cmt files
   (Alain Frisch)
 - PR#5819: segfault when using [with] on large recursive record (ocamlopt)
@@ -1273,7 +1273,7 @@ Bug fixes:
 - PR#5891: ocamlbuild: support rectypes tag for mlpack
   (Khoo Yit Phang)
 - PR#5892: GADT exhaustiveness check is broken
-  (Jacques Garrigue and Leo P. White)
+  (Jacques Garrigue and Leo White)
 - PR#5906: GADT exhaustiveness check is still broken
   (Jacques Garrigue, report by Sébastien Briais)
 - PR#5907: Undetected cycle during typecheck causes exceptions
@@ -1301,7 +1301,7 @@ Bug fixes:
 - PR#5945: Mix-up of Minor_heap_min and Minor_heap_max units
   (Benoît Vaugon)
 - PR#5948: GADT with polymorphic variants bug
-  (Jacques Garrigue, report by Leo P. White)
+  (Jacques Garrigue, report by Leo White)
 - PR#5953: Unix.system does not handle EINTR
   (Jérémie Dimino)
 - PR#5965: disallow auto-reference to a recursive module in its definition
@@ -1319,13 +1319,13 @@ Bug fixes:
 - PR#5982: caml_leave_blocking section and errno corruption
   (Jérémie Dimino)
 - PR#5985: Unexpected interaction between variance and GADTs
-  (Jacques Garrigue, Jeremy Yallop and Leo P. White and Gabriel Scherer)
+  (Jacques Garrigue, Jeremy Yallop and Leo White and Gabriel Scherer)
 - PR#5988: missing from the documentation: -impl is a valid flag for ocamlopt
   (Damien Doligez, report by Vincent Bernardoff)
 - PR#5989: Assumed inequalities involving private rows
   (Jacques Garrigue, report by Jeremy Yallop)
 - PR#5992: Crash when pattern-matching lazy values modifies the scrutinee
-  (Luc Maranget, Leo P. White)
+  (Luc Maranget, Leo White)
 - PR#5993: Variance of private type abbreviations not checked for modules
   (Jacques Garrigue)
 - PR#5997: Non-compatibility assumed for concrete types with same constructor
@@ -1371,7 +1371,7 @@ Bug fixes:
 - PR#6158: Fatal error using GADTs
   (Jacques Garrigue, report by Jeremy Yallop)
 - PR#6163: Assert_failure using polymorphic variants in GADTs
-  (Jacques Garrigue, report by Leo P. White)
+  (Jacques Garrigue, report by Leo White)
 - PR#6164: segmentation fault on Num.power_num of 0/1
   (Fabrice Le Fessant, report by Johannes Kanig)
 - PR#6210: Camlp4 location error
