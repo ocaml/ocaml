@@ -455,6 +455,12 @@ value caml_classify_float_unboxed(double vd)
 {
   /* Cygwin 1.3 has problems with fpclassify (PR#1293), so don't use it */
   /* FIXME Cygwin 1.3 is ancient! Revisit this decision. */
+
+  /* Informal benchmarking (see GPR#272) suggests that the emulation
+     version is faster than calling the libc.  We could switch to it,
+     and also provide an even faster version for 64-bit systems as
+     suggested by XL.  -- AF */
+
 #if defined(fpclassify) && !defined(__CYGWIN__) && !defined(__MINGW32__)
   switch (fpclassify(vd)) {
   case FP_NAN:
