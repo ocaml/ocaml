@@ -128,7 +128,7 @@ CAMLprim value unix_gethostbyname(value name)
 #if HAS_GETHOSTBYNAME_R
   struct hostent h;
   char buffer[NETDB_BUFFER_SIZE];
-  int h_errno;
+  int err;
 #endif
 
 #if HAS_GETHOSTBYNAME_R || GETHOSTBYNAME_IS_REENTRANT
@@ -140,14 +140,14 @@ CAMLprim value unix_gethostbyname(value name)
 #if HAS_GETHOSTBYNAME_R == 5
   {
     enter_blocking_section();
-    hp = gethostbyname_r(hostname, &h, buffer, sizeof(buffer), &h_errno);
+    hp = gethostbyname_r(hostname, &h, buffer, sizeof(buffer), &err);
     leave_blocking_section();
   }
 #elif HAS_GETHOSTBYNAME_R == 6
   {
     int rc;
     enter_blocking_section();
-    rc = gethostbyname_r(hostname, &h, buffer, sizeof(buffer), &hp, &h_errno);
+    rc = gethostbyname_r(hostname, &h, buffer, sizeof(buffer), &hp, &err);
     leave_blocking_section();
     if (rc != 0) hp = NULL;
   }
