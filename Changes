@@ -144,6 +144,7 @@ Standard library:
   (report and fix by Jeremy Yallop)
 - GPR#265: new implementation of Queue avoiding Obj.magic
   (Jérémie Dimino)
+- GPR#272: Switch classify_float to [@@unboxed] (Alain Frisch)
 - GPR#277: Switch the following externals to [@@unboxed]:
   * {Nativeint,Int32,Int64}.{of,to}_float
   * Int{32,64}.float_of_bits
