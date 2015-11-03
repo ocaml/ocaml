@@ -409,6 +409,13 @@ let rec simplify_project_var env r ~(project_var : Flambda.project_var)
     end;
     let approx = A.approx_for_bound_var value_set_of_closures var in
     let expr : Flambda.named = Project_var { closure; closure_id; var; } in
+    let unwrapped = Var_within_closure.unwrap var in
+    let expr =
+      if E.mem env unwrapped then
+        Flambda.Expr (Var unwrapped)
+      else
+        expr
+    in
     simplify_named_using_approx_and_env env r expr approx
   | Unresolved symbol ->
     (* This value comes from a symbol for which we couldn't find any
