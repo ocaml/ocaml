@@ -114,6 +114,7 @@ module Env : sig
   val at_toplevel : t -> bool
 
   val is_inside_branch : t -> bool
+  val branch_depth : t -> int
   val inside_branch : t -> t
   val inside_simplify : t -> t
 

@@ -23,6 +23,9 @@ let option_with_arg opt arg =
 let option_with_int opt arg =
   compargs := (string_of_int arg) :: opt :: !compargs
 ;;
+let option_with_float opt arg =
+  compargs := (string_of_float arg) :: opt :: !compargs
+;;
 
 let make_archive = ref false;;
 let with_impl = ref false;;
@@ -66,6 +69,7 @@ module Options = Main_args.Make_optcomp_options (struct
   let _inline_alloc_cost n = option_with_int "-inline-alloc-cost" n
   let _inline_prim_cost n = option_with_int "-inline-prim-cost" n
   let _inline_branch_cost n = option_with_int "-inline-branch-cost" n
+  let _branch_inline_factor n = option_with_float "-branch-inline-factor" n
   let _no_functor_heuristics = option "-no-functor-heuristics"
   let _intf s = with_intf := true; option_with_arg "-intf" s
   let _intf_suffix s = option_with_arg "-intf-suffix" s

@@ -95,6 +95,7 @@ val inline_call_cost : int ref
 val inline_alloc_cost : int ref
 val inline_prim_cost : int ref
 val inline_branch_cost : int ref
+val branch_inline_factor : float ref
 val dont_write_files : bool ref
 val std_include_flag : string -> string
 val std_include_dir : unit -> string list
