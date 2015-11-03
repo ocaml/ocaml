@@ -144,6 +144,10 @@ Standard library:
   (report and fix by Jeremy Yallop)
 - GPR#265: new implementation of Queue avoiding Obj.magic
   (Jérémie Dimino)
+- GPR#277: Switch the following externals to [@@unboxed]:
+  * {Nativeint,Int32,Int64}.{of,to}_float
+  * Int{32,64}.float_of_bits
+  * Int{32,64}.bits_of_float
 
 Type system:
 - PR#5545: Type annotations on methods cannot control the choice of abbreviation
