@@ -23,12 +23,12 @@ value test_set_buffers(value v_ocaml_buffer, value v_c_buffer)
   return Val_unit;
 }
 
-value test_cleanup_normal()
+value test_cleanup_normal(void)
 {
   return Val_int(0);
 }
 
-double test_cleanup_float()
+double test_cleanup_float(void)
 {
   return 0.;
 }
