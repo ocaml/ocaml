@@ -15,8 +15,6 @@
 #include <caml/memory.h>
 #include "unixsupport.h"
 
-extern char ** cstringvect();
-
 CAMLprim value unix_execve(value path, value args, value env)
 {
   char ** argv;

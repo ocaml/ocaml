@@ -15,7 +15,6 @@
 #include <caml/memory.h>
 #include "unixsupport.h"
 
-extern char ** cstringvect();
 #ifndef _WIN32
 extern char ** environ;
 #endif

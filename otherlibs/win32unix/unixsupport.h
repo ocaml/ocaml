@@ -60,6 +60,7 @@ extern value unix_error_of_code (int errcode);
 extern void unix_error (int errcode, char * cmdname, value arg);
 extern void uerror (char * cmdname, value arg);
 extern value unix_freeze_buffer (value);
+extern char ** cstringvect(value arg);
 
 /* Information stored in flags_fd, describing more precisely the socket
  * and its status. The whole flags_fd is initialized to 0.

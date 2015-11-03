@@ -39,6 +39,8 @@ CAMLnoreturn_end;
 
 #define DIR_Val(v) *((DIR **) &Field(v, 0))
 
+extern char ** cstringvect(value arg);
+
 #ifdef __cplusplus
 }
 #endif
