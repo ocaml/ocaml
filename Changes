@@ -237,6 +237,8 @@ Bug fixes:
            %s#row when Bar contains private row types
 - PR#6992: Segfault from bug in GADT/module typing
 - PR#6993: Segfault from recursive modules violating exhaustiveness assumptions
+- PR#6998: Typer fails reading unnecessary cmis with -no-alias-deps and -w -49
+  (Leo White, report by Valentin Gatien-Baron)
 - PR#7003: String.sub causes segmentation fault
   (Damien Doligez, report by Radek Micek)
 - PR#7008: Fatal error in ocamlc with empty compilation unit name
