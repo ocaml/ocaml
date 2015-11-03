@@ -159,12 +159,12 @@ let populate_closure_approximations
       ~(free_vars : (_ * A.t) Variable.Map.t)
       ~(parameter_approximations : A.t Variable.Map.t)
       ~set_of_closures_env =
-  (* Add approximations of used free variables *)
+  (* Add approximations of free variables *)
   let env =
     Variable.Map.fold (fun id (_, desc) env ->
-       if Variable.Set.mem id function_decl.free_variables
-       then E.add_outer_scope env id desc
-       else env) free_vars set_of_closures_env in
+        E.add_outer_scope env id desc)
+      free_vars set_of_closures_env in
+
   (* Add known approximations of function parameters *)
   let env =
     List.fold_left (fun env id ->
