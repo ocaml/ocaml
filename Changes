@@ -53,6 +53,8 @@ Language features:
   (Valentin Gatien-Baron, review by Jérémie Dimino)
 - PR#6806: Allow type annotations before the "->" in "fun <args> -> <expr>"
   (Valentin Gatien-Baron, review by Jérémie Dimino)
+- GPR#278: Add an imperative if construction
+  (Thomas Refis)
 
 Compilers:
 - PR#4800: better compilation of tuple assignment (Gabriel Scherer and
