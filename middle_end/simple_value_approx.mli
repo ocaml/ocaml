@@ -287,6 +287,14 @@ type get_field_result =
 *)
 val get_field : t -> field_index:int -> get_field_result
 
+type checked_approx_for_block =
+  | Wrong
+  | Ok of Tag.t * t array
+
+(** Try to prove that a value with the given approximation may be used
+    as a block. *)
+val check_approx_for_block : t -> checked_approx_for_block
+
 (** Find the approximation for a bound variable in a set-of-closures
     approximation.  A fatal error is produced if the variable is not bound in
     the given approximation. *)
