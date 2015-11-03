@@ -86,6 +86,10 @@ Compilers:
   (Alain Frisch)
 - GPR#263: improve code generation for if-equivalents of (&&) and (||)
   (Pierre Chambart)
+- GPR#271: Fix incorrect mutability flag when records are built using "with"
+  (Mark Shinwell)
+- GPR#270: Make [transl_exception_constructor] generate [Immutable] blocks
+  (Mark Shinwell)
 
 Runtime system:
 - PR#3612: allow allocating custom block with finalizers in the minor heap
@@ -105,6 +109,8 @@ Runtime system:
   Shinwell, review by Damien Doligez)
 
 Standard library:
+- PR#6017, PR#7034, GPR#267: More efficient ifprintf implementation
+  (Jeremy Yallop, review by Gabriel Scherer)
 - PR#6316: Scanf.scanf failure on %u formats when reading big integers
   (Xavier Leroy, Benoît Vaugon)
 - PR#6390, GPR#36: expose Sys.{int_size,max_wosize} for improved js_of_ocaml
@@ -138,6 +144,10 @@ Standard library:
   (report and fix by Jeremy Yallop)
 - GPR#265: new implementation of Queue avoiding Obj.magic
   (Jérémie Dimino)
+- GPR#277: Switch the following externals to [@@unboxed]:
+  * {Nativeint,Int32,Int64}.{of,to}_float
+  * Int{32,64}.float_of_bits
+  * Int{32,64}.bits_of_float
 
 Type system:
 - PR#5545: Type annotations on methods cannot control the choice of abbreviation
@@ -219,6 +229,8 @@ Bug fixes:
 - PR#6944: let module X = Path in … is not typed as a module alias
   (Jacques Garrigue, report by def)
 - PR#6954: Infinite loop in type checker with module aliases
+- PR#6972, GPR#276: 4.02.3 regression on documentation comments in .cmt files
+  (Leo White, report by Olivier Andrieu)
 - PR#6982: unexpected type error when packing a module alias
 - PR#6985: `module type of struct include Bar end exposes
            %s#row when Bar contains private row types

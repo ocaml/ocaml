@@ -27,13 +27,13 @@
 # - presence of a copyright header (missing-header)
 # - absence of a leftover "$Id" string (svn-keyword)
 
-# Exceptions are handled with a SVN property: "ocaml:typo".
+# Exceptions are handled with a git attribute: "ocaml-typo".
 # Its value for a given file is a comma-separated list of rule names,
 # which lists the rules that should be disabled for this file.
 # The rule names are the ones shown above in parentheses.
 
 # Built-in exceptions:
-# - Any binary file (i.e. with svn:mime-type = application/octet-stream)
+# - Any binary file (i.e. with git attribute "binary")
 #   is automatically exempt from all the rules.
 # - Any file whose name matches one of the following patterns is
 #   automatically exempt from all rules
@@ -68,21 +68,24 @@
 # on the command line (or by default the current directory), and check
 # every file therein for compliance to the rules.
 
-# Directories named .svn and _build (and their contents) are always ignored.
-# This program ignores any file that is not under svn control, unless
+# Directories named .git (and their contents) are always ignored.
+# This program ignores any file that is not under git control, unless
 # explicitly given on the command line.
 
-# If a directory has the SVN property "ocaml:typo" set to "prune",
+# If a directory has the git attribute "ocaml-typo" set to "prune",
 # then it and its contents are ignored.
 
 # You can ignore a rule by giving the option -<rule> on the command
 # line (before any file names).
 
+# First prevent i18n from messing up everything.
+export LC_ALL=C
+
 # Special case for recursive call from the find command (see IGNORE_DIRS).
 case "$1" in
   --check-prune)
-    case `svn propget ocaml:typo "$2" 2>/dev/null` in
-      prune) echo "INFO: pruned directory $2 (ocaml:typo=prune)" >&2; exit 0;;
+    case `git check-attr ocaml-typo "$2" 2>/dev/null` in
+      *prune*) echo "INFO: pruned directory $2 (ocaml-typo=prune)" >&2; exit 0;;
       *) exit 3;;
     esac;;
 esac
@@ -104,8 +107,7 @@ while : ; do
 done
 
 IGNORE_DIRS="
-  -name .svn -prune -o
-  -name _build -prune -o
+  -name .git -prune -o
   -type d -exec $0 --check-prune {} ; -prune -o
 "
 
@@ -115,10 +117,8 @@ IGNORE_DIRS="
   esac
 ) | (
   while read f; do
-    case `svn status "$f" 2>&1` in
-      '?'*) is_svn=false;;
-      I*) is_svn=false;;
-      svn:*"is not a working copy") is_svn=false;;
+    case `git ls-files "$f" 2>&1` in
+      "") is_svn=false;;
       *) is_svn=true;;
     esac
     case "$*" in
@@ -128,16 +128,17 @@ IGNORE_DIRS="
     if $is_svn || $is_cmd_line; then :; else continue; fi
     svnrules=''
     if $is_svn; then
-      case `svn propget svn:mime-type "$f"` in
-        application/octet-stream) continue;;
+      case `git check-attr binary "$f"` in
+        *'binary: set') continue;;
       esac
-      svnrules=`svn propget ocaml:typo "$f"`
+      svnrules=`git check-attr ocaml-typo "$f" | sed -e 's/.*: //'`
+      case $svnrules in unspecified) svnrules= ;; esac
     fi
     rules="$userrules"
     add_hd(){ rules="missing-header,$rules"; }
     case "$f" in
       Makefile*|*/Makefile*) rules="tab,$rules";;
-      */.ignore) add_hd;;
+      */.gitignore) add_hd;;
       *.mlpack|*.mllib|*.mltop|*.odocl|*.itarget|*.clib) add_hd;;
       *.reference|*/reference|*/.depend*) continue;;
     esac
@@ -230,7 +231,7 @@ IGNORE_DIRS="
           for (i in r){
             name = r[i];
             if (name != "" && !counts[name]){
-              err("unused-prop", sprintf("unused [%s] in ocaml:typo", name));
+              err("unused-prop", sprintf("unused [%s] in ocaml-typo", name));
             }
           }
         }

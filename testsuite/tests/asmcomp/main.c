@@ -47,9 +47,9 @@ int cmpint(const void * i, const void * j)
 int main(int argc, char **argv)
 {
 #ifdef UNIT_INT
-  { extern int FUN();
-    extern int call_gen_code();
-    printf("%d\n", call_gen_code(FUN));
+  { extern long FUN(void);
+    extern long call_gen_code(long (*)(void));
+    printf("%ld\n", call_gen_code(FUN));
   }
 #else
   if (argc < 2) {
@@ -57,23 +57,20 @@ int main(int argc, char **argv)
     exit(2);
   }
 #ifdef INT_INT
-  { extern int FUN();
-    extern int call_gen_code();
-    printf("%d\n", call_gen_code(FUN, atoi(argv[1])));
+  { extern long FUN(long);
+    extern long call_gen_code(long (*)(long), long);
+    printf("%ld\n", call_gen_code(FUN, atoi(argv[1])));
   }
 #endif
 #ifdef INT_FLOAT
-  { extern double FUN();
-#ifdef __mc68020__
-#define call_gen_code call_gen_code_float
-#endif
-    extern double call_gen_code();
+  { extern double FUN(long);
+    extern double call_gen_code(double (*)(long), long);
     printf("%f\n", call_gen_code(FUN, atoi(argv[1])));
   }
 #endif
 #ifdef SORT
-  { extern void FUN();
-    extern void call_gen_code();
+  { extern void FUN(long, long, long *);
+    extern void call_gen_code(void (*)(long, long, long *), long, long, long *);
     long n;
     long * a, * b;
     long i;
@@ -100,8 +97,8 @@ int main(int argc, char **argv)
 #endif
 #endif
 #ifdef CHECKBOUND
-  { extern void checkbound1(), checkbound2();
-    extern void call_gen_code();
+  { extern void checkbound1(long), checkbound2(long, long);
+    extern void call_gen_code(void *, ...);
     long x, y;
     x = atoi(argv[1]);
     if (argc >= 3) {

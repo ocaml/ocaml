@@ -19,7 +19,7 @@ let kfprintf k o (Format (fmt, _)) =
 let kbprintf k b (Format (fmt, _)) =
   make_printf (fun b acc -> bufput_acc b acc; k b) b End_of_acc fmt
 let ikfprintf k oc (Format (fmt, _)) =
-  make_printf (fun oc _ -> k oc) oc End_of_acc fmt
+  make_iprintf k oc fmt
 
 let fprintf oc fmt = kfprintf ignore oc fmt
 let bprintf b fmt = kbprintf ignore b fmt
