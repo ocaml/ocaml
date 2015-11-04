@@ -30,7 +30,8 @@ type const =
 
 (** The application of a function to a list of arguments. *)
 type apply = {
-  (* CR mshinwell: rename func -> callee, and lhs_of_application -> callee *)
+  (* CR-soon mshinwell: rename func -> callee, and
+     lhs_of_application -> callee *)
   func : Variable.t;
   args : Variable.t list;
   kind : call_kind;
@@ -191,7 +192,7 @@ and let_expr = private {
 *)
 and set_of_closures = private {
   function_decls : function_declarations;
-  (* CR mshinwell: consider renaming [free_vars].  Also, it's still really
+  (* CR-soon mshinwell: consider renaming [free_vars].  Also, it's still really
      confusing which side of this map to use when.  "Vars bound by the
      closure" is the domain.
      Another example of when this is confusing:
@@ -261,7 +262,7 @@ and function_declarations = private {
 and function_declaration = private {
   params : Variable.t list;
   body : t;
-  (* CR mshinwell: inconsistent naming free_variables/free_vars here and
+  (* CR-soon mshinwell: inconsistent naming free_variables/free_vars here and
      above *)
   free_variables : Variable.Set.t;
   (** All variables free in the *body* of the function.  For example, a

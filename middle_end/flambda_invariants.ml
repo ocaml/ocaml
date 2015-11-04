@@ -111,7 +111,7 @@ let variable_and_symbol_invariants flam =
   in
   let add_mutable_binding_occurrence (var_env, mut_var_env, sym_env) mut_var =
     let compilation_unit = Compilation_unit.get_current_exn () in
-    if not (Mutable_variable.in_compilation_unit compilation_unit mut_var) then
+    if not (Mutable_variable.in_compilation_unit mut_var compilation_unit) then
       raise (Mutable_binding_occurrence_not_from_current_compilation_unit
         mut_var);
     declare_mutable_variable mut_var;

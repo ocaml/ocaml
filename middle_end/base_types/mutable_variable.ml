@@ -48,8 +48,6 @@ let create ?current_compilation_unit name =
 
 let of_ident ident = create (Ident.name ident)
 
-let unwrap t = t.ident
-
 let unique_ident t =
   { t.ident with
     name =
@@ -76,29 +74,10 @@ let rename ?current_compilation_unit ?append t =
 let freshen t =
   rename t ~current_compilation_unit:(Compilation_unit.get_current_exn ())
 
-let in_compilation_unit cu t =
-  Compilation_unit.equal cu t.compilation_unit
-
-let get_compilation_unit t = t.compilation_unit
-
-let unique_name t = Ident.unique_name t.ident
+let in_compilation_unit t cu =
+  Compilation_unit.equal t.compilation_unit cu
 
 let output_full c t =
   Compilation_unit.output c t.compilation_unit;
   Printf.fprintf c ".";
   Ident.output c t.ident
-
-let print_list ppf ts =
-  List.iter (fun t -> Format.fprintf ppf "@ %a" print t) ts
-
-let debug_when_stamp_matches t ~stamp ~f =
-  if t.ident.stamp = stamp then f ()
-
-let print_opt ppf = function
-  | None -> Format.fprintf ppf "<no var>"
-  | Some t -> print ppf t
-
-type pair = t * t
-module Pair = Ext_types.Identifiable.Make (Ext_types.Pair (T) (T))
-
-let compare_lists l1 l2 = Misc.compare_lists compare l1 l2
