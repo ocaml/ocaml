@@ -43,7 +43,6 @@ module type Common_options = sig
   val _dtypedtree : unit -> unit
   val _drawlambda : unit -> unit
   val _dlambda : unit -> unit
-  val _dflambda : unit -> unit
 
   val anonymous : string -> unit
 end
@@ -130,6 +129,8 @@ module type Optcommon_options = sig
   val _unbox_closures : unit -> unit
   val _branch_inline_factor : float -> unit
 
+  val _dflambda : unit -> unit
+  val _dflambda_let : int -> unit
   val _dclambda : unit -> unit
   val _dcmm : unit -> unit
   val _dsel : unit -> unit

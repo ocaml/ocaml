@@ -461,6 +461,10 @@ let mk_dflambda f =
   "-dflambda", Arg.Unit f, " (undocumented)"
 ;;
 
+let mk_dflambda_let f =
+  "-dflambda-let", Arg.Int f, " (undocumented)"
+;;
+
 let mk_dinstr f =
   "-dinstr", Arg.Unit f, " (undocumented)"
 ;;
@@ -571,7 +575,6 @@ module type Common_options = sig
   val _dtypedtree : unit -> unit
   val _drawlambda : unit -> unit
   val _dlambda : unit -> unit
-  val _dflambda : unit -> unit
 
   val anonymous : string -> unit
 end;;
@@ -658,6 +661,8 @@ module type Optcommon_options = sig
   val _unbox_closures : unit -> unit
   val _branch_inline_factor : float -> unit
 
+  val _dflambda : unit -> unit
+  val _dflambda_let : int -> unit
   val _dclambda : unit -> unit
   val _dcmm : unit -> unit
   val _dsel : unit -> unit
@@ -797,7 +802,6 @@ struct
     mk_dtypedtree F._dtypedtree;
     mk_drawlambda F._drawlambda;
     mk_dlambda F._dlambda;
-    mk_dflambda F._dflambda;
     mk_dinstr F._dinstr;
     mk_dtimings F._dtimings;
   ]
@@ -842,7 +846,6 @@ struct
     mk_dtypedtree F._dtypedtree;
     mk_drawlambda F._drawlambda;
     mk_dlambda F._dlambda;
-    mk_dflambda F._dflambda;
     mk_dinstr F._dinstr;
   ]
 end;;
@@ -862,6 +865,8 @@ struct
     mk_compact F._compact;
     mk_config F._config;
     mk_dtypes F._annot;
+    mk_dflambda F._dflambda;
+    mk_dflambda_let F._dflambda_let;
     mk_for_pack_opt F._for_pack;
     mk_g_opt F._g;
     mk_i F._i;

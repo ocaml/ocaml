@@ -585,6 +585,14 @@ let used_variables_named ?ignore_uses_in_project_var named =
     ~all_used_variables:true named
 
 let create_let var defining_expr body : t =
+  begin match !Clflags.dump_flambda_let with
+  | None -> ()
+  | Some stamp ->
+    Variable.debug_when_stamp_matches var ~stamp ~f:(fun () ->
+      Printf.eprintf "Creation of [Let] with stamp %d:\n%s\n%!"
+        stamp
+        (Printexc.raw_backtrace_to_string (Printexc.get_callstack max_int)))
+  end;
   let defining_expr, free_vars_of_defining_expr =
     match defining_expr with
     | Expr (Let { var = var1; defining_expr; body = Var var2;
