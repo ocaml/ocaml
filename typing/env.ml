@@ -387,16 +387,17 @@ let find_pers_struct check name =
 
 (* Emits a warning if there is no valid cmi for name *)
 let check_pers_struct name =
-  match find_pers_struct false name with
-  | _ -> ()
-  | exception Not_found ->
+  try
+    ignore (find_pers_struct false name)
+  with
+  | Not_found ->
       let warn = Warnings.No_cmi_file(name, None) in
         Location.prerr_warning Location.none warn
-  | exception Cmi_format.Error err ->
+  | Cmi_format.Error err ->
       let msg = Format.asprintf "%a" Cmi_format.report_error err in
       let warn = Warnings.No_cmi_file(name, Some msg) in
         Location.prerr_warning Location.none warn
-  | exception Error err ->
+  | Error err ->
       let msg =
         match err with
         | Illegal_renaming(name, ps_name, filename) ->
