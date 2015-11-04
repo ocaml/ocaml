@@ -146,11 +146,10 @@ val all_function_decls_indexed_by_closure_id
 
 val make_variable_symbol : Variable.t -> Symbol.t
 
-(* CR pchambart: this function should probably not be named like that:
-   it is accessing the first field of that symbol. Also a more general
-   version of that function may take a [named] instead of a symbol and
-   be called with [Read_symbol_field (symbol, 0)]. *)
-val substitute_variable_to_symbol
+(* CR-someday pchambart: A more general version of this function might
+   take a [named] instead of a symbol and be called with
+   [Read_symbol_field (symbol, 0)]. *)
+val substitute_read_symbol_field_for_variables
    : Symbol.t Variable.Map.t
   -> Flambda.t
   -> Flambda.t

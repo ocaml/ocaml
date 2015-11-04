@@ -162,7 +162,7 @@ let introduce_symbols expr =
       Variable.Map.empty all_extracted_rev
   in
   let expr =
-    Flambda_utils.substitute_variable_to_symbol to_substitute expr
+    Flambda_utils.substitute_read_symbol_field_for_variables to_substitute expr
   in
   (List.rev all_extracted_rev), to_substitute, expr
 
@@ -172,7 +172,7 @@ let add_extracted introduced to_substitute program =
       | Initialisation (_init_var, symbol, tag, def) ->
           let def =
             List.map
-              (Flambda_utils.substitute_variable_to_symbol to_substitute)
+              (Flambda_utils.substitute_read_symbol_field_for_variables to_substitute)
               def
           in
         Flambda.Initialize_symbol
@@ -180,7 +180,7 @@ let add_extracted introduced to_substitute program =
            program)
       | Effect effect ->
         let effect =
-          Flambda_utils.substitute_variable_to_symbol to_substitute effect
+          Flambda_utils.substitute_read_symbol_field_for_variables to_substitute effect
         in
         Flambda.Effect (effect, program))
     introduced program

@@ -493,7 +493,7 @@ let make_variable_symbol var =
     (Linkage_name.create
        (Variable.unique_name (Variable.freshen var)))
 
-let substitute_variable_to_symbol substitution expr =
+let substitute_read_symbol_field_for_variables substitution expr =
   let bind var fresh_var (expr:Flambda.t) : Flambda.t =
     let symbol = Variable.Map.find var substitution in
     Flambda.create_let fresh_var (Read_symbol_field (symbol, 0)) expr
