@@ -950,7 +950,9 @@ let iter_env_cont = ref []
 
 let rec scrape_alias_safe env mty =
   match mty with
-  | Mty_alias (Pident id) when Ident.persistent id -> false
+  | Mty_alias (Pident id)
+    when Ident.persistent id
+      && not (Hashtbl.mem persistent_structures (Ident.name id)) -> false
   | Mty_alias path -> (* PR#6600: find_module may raise Not_found *)
       scrape_alias_safe env (find_module path env).md_type
   | _ -> true
