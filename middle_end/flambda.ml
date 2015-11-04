@@ -314,8 +314,14 @@ and print_named ppf (named : named) =
 and print_function_declaration ppf var (f : function_declaration) =
   let idents ppf =
     List.iter (fprintf ppf "@ %a" Variable.print) in
-  fprintf ppf "@[<2>(%a@ =@ fun@[<2>%a@] ->@ @[<2>%a@])@]@ "
-    Variable.print var idents f.params lam f.body
+  let stub =
+    if f.stub then
+      " *stub*"
+    else
+      ""
+  in
+  fprintf ppf "@[<2>(%a%s@ =@ fun@[<2>%a@] ->@ @[<2>%a@])@]@ "
+    Variable.print var stub idents f.params lam f.body
 
 and print_set_of_closures ppf (set_of_closures : set_of_closures) =
   match set_of_closures with
