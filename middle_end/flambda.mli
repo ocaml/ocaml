@@ -310,7 +310,7 @@ and constant_defining_value =
         but instead more complicated constructions. *)
   | Block of Tag.t * constant_defining_value_block_field list
     (** A pre-allocated block full of constants (either simple constants
-        or more complicated constructions, see below). *)
+        or references to other constants, see below). *)
   | Set_of_closures of set_of_closures
     (** A closed (and thus constant) set of closures.  (That is to say,
         [free_vars] must be empty.) *)
