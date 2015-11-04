@@ -43,6 +43,7 @@ let inline_non_recursive env r ~function_decls ~lhs_of_application
     end else begin
       let sufficient_benefit =
         W.create ~original:(fst (no_simplification ())) body
+          ~branch_depth:(E.branch_depth env)
           ~probably_a_functor (R.benefit r_inlined)
       in
       let keep_inlined_version = W.evaluate sufficient_benefit in
@@ -82,6 +83,7 @@ let inline_non_recursive env r ~function_decls ~lhs_of_application
     in
     let wsb =
       W.create ~original:(fst (no_simplification ()))
+        ~branch_depth:(E.branch_depth env)
         body ~probably_a_functor (R.benefit r_inlined)
     in
     let keep_inlined_version = W.evaluate wsb in
@@ -132,6 +134,7 @@ let unroll_recursive env r ~max_level ~lhs_of_application
         tried_unrolling := true;
         let wsb =
           W.create body ~original:(fst (no_simplification()))
+            ~branch_depth:(E.branch_depth env)
             ~probably_a_functor:false (R.benefit r_inlined)
         in
         let keep_unrolled_version =
@@ -202,6 +205,7 @@ let inline_recursive env r ~max_level ~lhs_of_application
       | Some (expr, r_inlined) ->
         let wsb =
           W.create ~original:(fst (no_simplification ()))
+            ~branch_depth:(E.branch_depth env)
             expr ~probably_a_functor:false (R.benefit r_inlined)
         in
         let keep_inlined_version = W.evaluate wsb in

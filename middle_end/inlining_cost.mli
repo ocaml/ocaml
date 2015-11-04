@@ -73,6 +73,7 @@ module Whether_sufficient_benefit : sig
 
   val create
      : original:Flambda.t
+    -> branch_depth: int
     -> Flambda.t
     -> Benefit.t
     -> probably_a_functor:bool

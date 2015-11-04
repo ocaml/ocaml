@@ -140,6 +140,10 @@ let mk_inline_alloc_cost = mk_inline_cost "alloc" "allocation"
 let mk_inline_prim_cost = mk_inline_cost "prim" "primitive"
 let mk_inline_branch_cost = mk_inline_cost "branch" "conditionnal"
 
+let mk_branch_inline_factor f =
+  "-branch-inline-factor", Arg.Float f, "<n>  Control the probability for calls inside branch to be inlined"
+;;
+
 let mk_intf f =
   "-intf", Arg.String f, "<file>  Compile <file> as a .mli file"
 ;;
@@ -652,6 +656,7 @@ module type Optcommon_options = sig
   val _inline_prim_cost : int -> unit
   val _inline_branch_cost : int -> unit
   val _unbox_closures : unit -> unit
+  val _branch_inline_factor : float -> unit
 
   val _dclambda : unit -> unit
   val _dcmm : unit -> unit
@@ -871,6 +876,7 @@ struct
     mk_inline_alloc_cost F._inline_alloc_cost;
     mk_inline_prim_cost F._inline_prim_cost;
     mk_inline_branch_cost F._inline_branch_cost;
+    mk_branch_inline_factor F._branch_inline_factor;
     mk_intf F._intf;
     mk_intf_suffix F._intf_suffix;
     mk_keep_docs F._keep_docs;
@@ -959,6 +965,7 @@ module Make_opttop_options (F : Opttop_options) = struct
     mk_inline_alloc_cost F._inline_alloc_cost;
     mk_inline_prim_cost F._inline_prim_cost;
     mk_inline_branch_cost F._inline_branch_cost;
+    mk_branch_inline_factor F._branch_inline_factor;
     mk_labels F._labels;
     mk_no_alias_deps F._no_alias_deps;
     mk_no_app_funct F._no_app_funct;

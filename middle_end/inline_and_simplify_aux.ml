@@ -23,7 +23,7 @@ module Env = struct
     (* The functions currently being declared: used to avoid inlining
        recursively *)
     inlining_level : int;
-    inside_branch : bool;
+    inside_branch : int;
     inside_simplify : bool;
     (* Number of times "inline" has been called recursively *)
     freshening : Freshening.t;
@@ -40,7 +40,7 @@ module Env = struct
       approx_sym = Symbol.Map.empty;
       current_functions = Set_of_closures_id.Set.empty;
       inlining_level = 0;
-      inside_branch = false;
+      inside_branch = 0;
       inside_simplify = false;
       freshening = Freshening.empty;
       never_inline;
@@ -188,10 +188,12 @@ module Env = struct
   let at_toplevel t =
     t.closure_depth = 0
 
-  let is_inside_branch env = env.inside_branch
+  let is_inside_branch env = env.inside_branch > 0
+
+  let branch_depth env = env.inside_branch
 
   let inside_branch t =
-    { t with inside_branch = true }
+    { t with inside_branch = t.inside_branch + 1 }
 
   let inside_simplify t =
     { t with inside_simplify = true }
