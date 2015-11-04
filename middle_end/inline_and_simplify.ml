@@ -255,8 +255,6 @@ let simplify_move_within_set_of_closures env r
       A.print closure_approx
       Flambda.print_move_within_set_of_closures move_within_set_of_closures
   | Unresolved _sym ->
-    (* CR mshinwell for pchambart: I added this.  I think this happened
-       when a .cmx file was unavailable.  Is this correct? *)
     Move_within_set_of_closures {
         closure;
         start_from = move_within_set_of_closures.start_from;
@@ -773,6 +771,7 @@ and simplify_named env r (tree : Flambda.named) : Flambda.named * R.t =
   | Read_symbol_field (symbol, field_index) ->
     let approx = E.find_or_load_symbol env symbol in
     begin match A.get_field approx ~field_index with
+    (* CR mshinwell: Think about [Unreachable] vs. [Value_bottom]. *)
     | Unreachable -> (Flambda.Expr Proved_unreachable), r
     | Ok approx ->
       let approx = A.augment_with_symbol_field approx symbol field_index in
