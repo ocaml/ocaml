@@ -164,9 +164,10 @@ let value_set_of_closures ?set_of_closures_var value_set_of_closures =
     symbol = None;
   }
 
-let value_block (t,b) = approx (Value_block (t,b))
+let value_block t b = approx (Value_block (t, b))
 let value_extern ex = approx (Value_extern ex)
-let value_symbol sym = { (approx (Value_symbol sym)) with symbol = Some (sym, None) }
+let value_symbol sym =
+  { (approx (Value_symbol sym)) with symbol = Some (sym, None) }
 let value_bottom = approx Value_bottom
 let value_unresolved sym = approx (Value_unresolved sym)
 

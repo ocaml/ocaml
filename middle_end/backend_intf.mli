@@ -11,20 +11,19 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(* Knowledge that the middle end needs about the backend. *)
+(** Knowledge that the middle end needs about the backend. *)
 
 module type S = sig
-  (* CR mshinwell for pchambart: Can you define exactly what makes an
-     [Ident.t] "global"? *)
+  (** Compute the symbol for the given identifier. *)
   val symbol_for_global' : (Ident.t -> Symbol.t)
 
-  (* If the given approximation is that of a symbol (Value_symbol) or an
-     external (Value_extern), attempt to find a more informative
-     approximation from a previously-written compilation artifact.  In the
-     native code backend, for example, this might consult a .cmx file. *)
+  (** If the given approximation is that of a symbol (Value_symbol) or an
+      external (Value_extern), attempt to find a more informative
+      approximation from a previously-written compilation artifact.  In the
+      native code backend, for example, this might consult a .cmx file. *)
   val really_import_approx : Simple_value_approx.t -> Simple_value_approx.t
 
-  (* Find the approximation for the given global identifier. *)
+  (** Find the approximation for the given global identifier. *)
   val import_global : Ident.t -> Simple_value_approx.t
 
   (* CR mshinwell for pchambart: At first sight it looks like
@@ -39,10 +38,10 @@ module type S = sig
 
   val closure_symbol : Closure_id.t -> Symbol.t
 
-  (* The natural size of an integer on the target architecture
-     (cf. [Arch.size_int] in the native code backend). *)
+  (** The natural size of an integer on the target architecture
+      (cf. [Arch.size_int] in the native code backend). *)
   val size_int : int
 
-  (* [true] iff the target architecture is big endian. *)
+  (** [true] iff the target architecture is big endian. *)
   val big_endian : bool
 end

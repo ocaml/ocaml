@@ -162,7 +162,7 @@ val value_float_array : int -> t
 val value_string : int -> string option -> t
 val value_boxed_int : 'i boxed_int -> 'i -> t
 val value_constptr : int -> t
-val value_block : Tag.t * t array -> t  (* CR mshinwell: curry *)
+val value_block : Tag.t -> t array -> t
 val value_extern : Export_id.t -> t
 val value_symbol : Symbol.t -> t
 val value_bottom : t

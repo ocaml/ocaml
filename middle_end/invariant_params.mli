@@ -11,8 +11,6 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(* CR mshinwell for lwhite: rename "unchanging" -> "invariant" *)
-
 (* [invariant_params_in_recursion] calculates the set of parameters whose
    values are known not to change during the execution of a recursive
    function.  As such, occurrences of the parameters may always be replaced

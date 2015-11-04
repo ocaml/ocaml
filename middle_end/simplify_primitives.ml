@@ -38,7 +38,7 @@ let primitive (p : Lambda.primitive) (args, approxs) expr dbg ~size_int
   match p with
   | Pmakeblock(tag, Asttypes.Immutable) ->
     let tag = Tag.create_exn tag in
-    expr, A.value_block(tag, Array.of_list approxs), C.Benefit.zero
+    expr, A.value_block tag (Array.of_list approxs), C.Benefit.zero
   | Pignore -> begin
       match args, A.descrs approxs with
       | [arg], [(Value_int 0 | Value_constptr 0)] ->

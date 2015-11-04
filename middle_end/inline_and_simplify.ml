@@ -1166,7 +1166,7 @@ let constant_defining_value_approx
           | Flambda.Const cst -> simplify_const cst)
         fields
     in
-    A.value_block (tag, Array.of_list fields)
+    A.value_block tag (Array.of_list fields)
   | Set_of_closures { function_decls; free_vars; specialised_args } ->
     (* At toplevel, there is no freshening currently happening (this
        cannot be the body of a currently inlined function), so we can
@@ -1249,7 +1249,7 @@ let simplify_constant_defining_value
             | Flambda.Const cst -> simplify_const cst)
           fields
       in
-      r, constant_defining_value, A.value_block (tag, Array.of_list fields)
+      r, constant_defining_value, A.value_block tag (Array.of_list fields)
     | Set_of_closures set_of_closures ->
       if Variable.Map.cardinal set_of_closures.free_vars <> 0 then begin
         Misc.fatal_errorf "Set of closures bound by [Let_symbol] is not \
@@ -1328,8 +1328,7 @@ let rec simplify_program env r (program : Flambda.program)
   | Initialize_symbol (symbol, tag, fields, program) ->
     let fields, approxs, r = simplify_list env r fields in
     let approx =
-      A.augment_with_symbol (A.value_block (tag, Array.of_list approxs))
-        symbol
+      A.augment_with_symbol (A.value_block tag (Array.of_list approxs)) symbol
     in
     let module Backend = (val (E.backend env) : Backend_intf.S) in
     let env = E.add_symbol env symbol approx in
@@ -1353,10 +1352,10 @@ let add_predef_exns_to_environment ~env ~backend =
       let symbol = Backend.symbol_for_global' predef_exn in
       let name = Ident.name predef_exn in
       let approx =
-        A.value_block (Tag.object_tag,
+        A.value_block Tag.object_tag
           [| A.value_string (String.length name) (Some name);
              A.value_unknown;
-          |])
+          |]
       in
       E.add_symbol env symbol (A.augment_with_symbol approx symbol))
     env

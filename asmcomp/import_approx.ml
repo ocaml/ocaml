@@ -100,7 +100,7 @@ let rec import_ex ex =
     A.value_string size contents
   | Value_mutable_block _ -> A.value_unknown
   | Value_block (tag, fields) ->
-    A.value_block (tag, Array.map import_approx fields)
+    A.value_block tag (Array.map import_approx fields)
   | Value_closure { closure_id;
         set_of_closures =
           { set_of_closures_id; bound_vars; aliased_symbol } } ->
