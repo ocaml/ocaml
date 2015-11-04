@@ -15,4 +15,4 @@
     unit), that identifies a closure within a particular set of closures
     (viz. [Project_closure]). *)
 
-include Closure_element_intf.S
+include module type of Closure_element

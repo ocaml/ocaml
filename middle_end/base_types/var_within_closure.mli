@@ -16,4 +16,4 @@
     [Project_var], and not [Var], nodes are tagged with these
     identifiers. *)
 
-include Closure_element_intf.S
+include module type of Closure_element

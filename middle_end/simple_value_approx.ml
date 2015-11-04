@@ -355,21 +355,14 @@ type get_field_result =
 let get_field t ~field_index:i : get_field_result =
   match t.descr with
   | Value_block (_tag, fields) ->
-    if i >= 0 && i < Array.length fields then
+    if i >= 0 && i < Array.length fields then begin
       Ok fields.(i)
-    else
-(*
-      (* CR mshinwell: I worry that it's possible to trigger this fatal
-         error if a .cmx file is missing (during the compilation of
-         a dead exception match case, for example, where the outermost
-         exception constructor is from another unit whose .cmx is missing). *)
-      Misc.fatal_errorf "Simple_value_approx.get_field: attempt to project \
-          block approximation at field %d, but it only has %d fields.  \
-          Approximation: %a"
-        i (Array.length fields)
-        print t
-*)
+    end else begin
+      (* This (unfortunately) cannot be a fatal error; it can happen if a
+         .cmx file is missing.  However for debugging the compiler this can
+         be a useful point to put a [Misc.fatal_errorf]. *)
       Unreachable
+    end
   | Value_bottom
   | Value_int _ | Value_char _ | Value_constptr _ ->
     (* Something seriously wrong is happening: either the user is doing
@@ -377,8 +370,7 @@ let get_field t ~field_index:i : get_field_result =
        We consider this as unreachable and mark the result accordingly. *)
     Ok value_bottom
   | Value_float_array _ ->
-    (* CR mshinwell: comment needs improvement *)
-    (* float_arrays are immutable *)
+    (* Float arrays are mutable. *)
     Ok value_unknown
   | Value_string _ | Value_float _ | Value_boxed_int _
     (* The user is doing something unsafe. *)

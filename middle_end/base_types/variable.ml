@@ -83,7 +83,7 @@ let rename ?current_compilation_unit ?append t =
 let freshen t =
   rename t ~current_compilation_unit:(Compilation_unit.get_current_exn ())
 
-let in_compilation_unit cu t =
+let in_compilation_unit t cu =
   Compilation_unit.equal cu t.compilation_unit
 
 let get_compilation_unit t = t.compilation_unit

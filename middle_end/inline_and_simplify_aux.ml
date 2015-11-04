@@ -132,7 +132,11 @@ module Env = struct
       { t with
         approx_sym = Symbol.Map.add symbol approx t.approx_sym;
       }
-    | _ -> assert false (* CR mshinwell: fatal_errorf *)
+    | _ ->
+      Misc.fatal_errorf "Attempt to redefine symbol %a (to %a) in environment \
+          for [Inline_and_simplify]"
+        Symbol.print symbol
+        Simple_value_approx.print approx
 
   let redefine_symbol t symbol approx =
     match find_symbol_exn t symbol with
@@ -223,7 +227,8 @@ module Env = struct
   let freshening t = t.freshening
   let never_inline t = t.never_inline
 
-  (* CR mshinwell: this is a bit contorted (see use in inlining_decision.ml) *)
+  (* CR-soon mshinwell: this is a bit contorted (see use in
+     inlining_decision.ml) *)
   let note_entering_closure t ~closure_id ~where =
     { t with
       inlining_stats_closure_stack =
@@ -255,7 +260,8 @@ module Result = struct
     { approx = Simple_value_approx.value_unknown;
       used_staticfail = Static_exception.Set.empty;
       inlining_threshold =
-        (* CR pchambart: Add a warning if this is too big *)
+        (* CR-soon pchambart: Add a warning if this is too big
+           mshinwell: later *)
         Inlining_cost.Can_inline_if_no_larger_than !Clflags.inline_threshold;
       benefit = Inlining_cost.Benefit.zero;
     }
@@ -278,7 +284,7 @@ module Result = struct
 
   let benefit t = t.benefit
 
-  let clear_benefit t =
+  let reset_benefit t =
     { t with benefit = Inlining_cost.Benefit.zero; }
 
   let set_inlining_threshold t inlining_threshold =

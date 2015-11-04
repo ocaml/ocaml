@@ -104,7 +104,7 @@ let variable_and_symbol_invariants flam =
   in
   let add_binding_occurrence (var_env, mut_var_env, sym_env) var =
     let compilation_unit = Compilation_unit.get_current_exn () in
-    if not (Variable.in_compilation_unit compilation_unit var) then
+    if not (Variable.in_compilation_unit var compilation_unit) then
       raise (Binding_occurrence_not_from_current_compilation_unit var);
     declare_variable var;
     Variable.Set.add var var_env, mut_var_env, sym_env
@@ -541,11 +541,13 @@ let every_used_function_from_current_compilation_unit_is_declared (program:Flamb
   let declared, _ = declared_closure_ids program in
   let used = used_closure_ids program in
   let used_from_current_unit =
-    Closure_id.Set.filter
-      (Closure_id.in_compilation_unit current_compilation_unit)
-      used in
+    Closure_id.Set.filter (fun cu ->
+        Closure_id.in_compilation_unit cu current_compilation_unit)
+      used
+  in
   let counter_examples =
-    Closure_id.Set.diff used_from_current_unit declared in
+    Closure_id.Set.diff used_from_current_unit declared
+  in
   if Closure_id.Set.is_empty counter_examples
   then ()
   else raise (Unbound_closure_ids counter_examples)
@@ -556,9 +558,10 @@ let every_used_var_within_closure_from_current_compilation_unit_is_declared
   let declared, _ = declared_var_within_closure flam in
   let used = used_vars_within_closures flam in
   let used_from_current_unit =
-    Var_within_closure.Set.filter
-      (Var_within_closure.in_compilation_unit current_compilation_unit)
-      used in
+    Var_within_closure.Set.filter (fun cu ->
+        Var_within_closure.in_compilation_unit cu current_compilation_unit)
+      used
+  in
   let counter_examples =
     Var_within_closure.Set.diff used_from_current_unit declared in
   if Var_within_closure.Set.is_empty counter_examples

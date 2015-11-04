@@ -34,7 +34,7 @@ module Closure_stack = struct
     let print_elt (closure_id, _where) =
       let output =
         let current_unit = Compilation_unit.get_current_exn () in
-        if Closure_id.in_compilation_unit current_unit closure_id then
+        if Closure_id.in_compilation_unit closure_id current_unit then
           Closure_id.output
         else
           Closure_id.output_full

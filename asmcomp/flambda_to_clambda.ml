@@ -30,7 +30,7 @@ type ('a, 'b) declaration_position =
 
 let get_fun_offset t closure_id =
   let fun_offset_table =
-    if Closure_id.in_compilation_unit (Compilenv.current_unit ()) closure_id
+    if Closure_id.in_compilation_unit closure_id (Compilenv.current_unit ())
     then t.current_unit.fun_offset_table
     else t.imported_units.fun_offset_table
   in
@@ -41,8 +41,8 @@ let get_fun_offset t closure_id =
 
 let get_fv_offset t var_within_closure =
   let fv_offset_table =
-    if Var_within_closure.in_compilation_unit (Compilenv.current_unit ())
-        var_within_closure
+    if Var_within_closure.in_compilation_unit var_within_closure
+        (Compilenv.current_unit ())
     then t.current_unit.fv_offset_table
     else t.imported_units.fv_offset_table
   in

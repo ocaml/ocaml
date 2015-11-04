@@ -38,8 +38,7 @@ val rename
   -> t
   -> t
 
-(* CR mshinwell: type t first *)
-val in_compilation_unit : Compilation_unit.t -> t -> bool
+val in_compilation_unit : t -> Compilation_unit.t -> bool
 
 val unique_name : t -> string
 

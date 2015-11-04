@@ -273,7 +273,8 @@ let make_closure_declaration ~id ~body ~params : Flambda.t =
   let sb =
     Variable.Set.fold
       (fun id sb -> Variable.Map.add id (Variable.freshen id) sb)
-      free_variables Variable.Map.empty in
+      free_variables Variable.Map.empty
+  in
   let body = toplevel_substitution sb body in
   let subst id = Variable.Map.find id sb in
   let function_declaration =
@@ -283,10 +284,10 @@ let make_closure_declaration ~id ~body ~params : Flambda.t =
   assert (Variable.Set.equal (Variable.Set.map subst free_variables)
     function_declaration.free_variables);
   let free_vars =
-    (* CR mshinwell: can be simplified now *)
     Variable.Map.fold (fun id id' fv' ->
         Variable.Map.add id' id fv')
-      (Variable.Map.filter (fun id _ -> not (Variable.Set.mem id param_set)) sb)
+      (Variable.Map.filter (fun id _ -> not (Variable.Set.mem id param_set))
+        sb)
       Variable.Map.empty
   in
   let compilation_unit = Compilation_unit.get_current_exn () in
@@ -662,11 +663,8 @@ let substitute_variable_to_symbol substitution expr =
   in
   Flambda_iterators.map_toplevel f (fun v -> v) expr
 
-
-(* Sharing key TODO
-   Not implemented yet: this avoids sharing anything *)
-(* CR mshinwell for pchambart: What is happening about this? *)
-
+(* CR-soon mshinwell: implement this so that sharing can occur in
+   matches.  Should probably leave this for the first release. *)
 type sharing_key = unit
 let make_key _ = None
 
@@ -678,10 +676,7 @@ module Switch_storer =
       let make_key = make_key
     end)
 
-(* CR-soon mshinwell: [only_via_symbols] is a bit of a hack for
-   [Invariant_params], which needs to ignore the uses in the function bodies
-   that occur in lhs-of-application position.  Try to improve this. *)
-let fun_vars_referenced_in_decls ?only_via_symbols
+let fun_vars_referenced_in_decls
       (function_decls : Flambda.function_declarations) ~backend =
   let fun_vars = Variable.Map.keys function_decls.funs in
   let symbols_to_fun_vars =
@@ -705,9 +700,7 @@ let fun_vars_referenced_in_decls ?only_via_symbols
           Variable.Set.empty
       in
       let from_variables =
-        match only_via_symbols with
-        | None -> Variable.Set.inter func_decl.free_variables fun_vars
-        | Some () -> Variable.Set.empty
+        Variable.Set.inter func_decl.free_variables fun_vars
       in
       Variable.Set.union from_symbols from_variables)
     function_decls.funs

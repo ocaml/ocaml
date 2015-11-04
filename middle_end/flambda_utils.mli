@@ -174,11 +174,8 @@ end
     references are [Symbol]s.  The returned value is a map from "fun_var"s
     to the "fun_var"s (if any) used in the body of the function associated
     with that "fun_var".
-    If [only_via_symbols] is set, references in the bodies to [fun_var]s that
-    are [Variable]s are ignored.
 *)
 val fun_vars_referenced_in_decls
-   : ?only_via_symbols:unit
-  -> Flambda.function_declarations
+   : Flambda.function_declarations
   -> backend:(module Backend_intf.S)
   -> Variable.Set.t Variable.Map.t

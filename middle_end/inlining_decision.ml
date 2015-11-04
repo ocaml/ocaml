@@ -27,7 +27,7 @@ let inline_non_recursive env r ~function_decls ~lhs_of_application
        the function, without doing any further inlining upon it, to the call
        site. *)
     let r =
-      R.set_inlining_threshold (R.clear_benefit r) Inlining_cost.Never_inline
+      R.set_inlining_threshold (R.reset_benefit r) Inlining_cost.Never_inline
     in
     Inlining_transforms.inline_by_copying_function_body ~env ~r
       ~function_decls ~lhs_of_application ~closure_id_being_applied
@@ -77,7 +77,7 @@ let inline_non_recursive env r ~function_decls ~lhs_of_application
        first.  We try that next. *)
     let body, r_inlined =
       Inlining_transforms.inline_by_copying_function_body ~env
-        ~r:(R.clear_benefit r)
+        ~r:(R.reset_benefit r)
         ~function_decls ~lhs_of_application ~closure_id_being_applied
         ~function_decl ~args ~simplify
     in
@@ -128,7 +128,7 @@ let unroll_recursive env r ~max_level ~lhs_of_application
         let env = E.inside_unrolled_function env in
         let body, r_inlined =
           Inlining_transforms.inline_by_copying_function_body ~env
-            ~r:(R.clear_benefit r) ~function_decls ~lhs_of_application
+            ~r:(R.reset_benefit r) ~function_decls ~lhs_of_application
             ~closure_id_being_applied ~function_decl ~args ~simplify
         in
         tried_unrolling := true;
@@ -195,7 +195,7 @@ let inline_recursive env r ~max_level ~lhs_of_application
     then
       let copied_function_declaration =
         Inlining_transforms.inline_by_copying_function_declaration ~env
-          ~r:(R.clear_benefit r) ~lhs_of_application
+          ~r:(R.reset_benefit r) ~lhs_of_application
           ~function_decls ~closure_id_being_applied ~function_decl
           ~args ~args_approxs ~invariant_params
           ~specialised_args:value_set_of_closures.specialised_args ~dbg

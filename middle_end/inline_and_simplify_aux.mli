@@ -218,10 +218,9 @@ module Result : sig
     -> (Inlining_cost.Benefit.t -> Inlining_cost.Benefit.t)
     -> t
 
-  (* CR mshinwell: rename [clear_benefit], it might be misconstrued *)
   (** Set the benefit of inlining the subexpression corresponding to the
       given result structure to zero. *)
-  val clear_benefit : t -> t
+  val reset_benefit : t -> t
 
   val set_inlining_threshold : t -> Inlining_cost.inlining_threshold -> t
   val inlining_threshold : t -> Inlining_cost.inlining_threshold
