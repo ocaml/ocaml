@@ -335,8 +335,24 @@ type program =
   | Let_symbol of Symbol.t * constant_defining_value * program
   (** Define the given symbol to have the given constant value. *)
   | Let_rec_symbol of (Symbol.t * constant_defining_value) list * program
-  (** As for [Let_symbol], but recursive. *)
-  (* CR mshinwell: find the example from email of [Let_rec_symbol] *)
+  (** As for [Let_symbol], but recursive.  This is needed to treat examples
+      like this, where a constant set of closures is lifted to toplevel:
+
+        let rec f x = f x
+
+      After lifting this produces (in pseudo-Flambda):
+
+        Let_rec_symbol set_of_closures_symbol =
+          (Set_of_closures { f x ->
+            let applied_function = Symbol f_closure in
+            Apply (applied_function, x) })
+        and f_closure = Project_closure (set_of_closures_symbol, f)
+
+      Use of [Let_rec_symbol], by virtue of the special handling in
+      [Inline_and_simplify.define_let_rec_symbol_approx], enables the
+      approximation of the set of closures to be present in order to
+      correctly simplify the [Project_closure] construction.  (See
+      [Inline_and_simplify.simplify_project_closure] for that part.) *)
   (* CR-someday mshinwell: remove Import_symbol and use a record *)
   | Import_symbol of Symbol.t * program
   | Initialize_symbol of Symbol.t * Tag.t * t list * program
@@ -369,7 +385,8 @@ val free_variables_named
   -> named
   -> Variable.Set.t
 
-(** Compute the free variables of a term.  (This is O(1) for [Let]s). *)
+(** Compute _all_ variables occuring inside an expression.  (This is O(1)
+    for [Let]s). *)
 val used_variables
    : ?ignore_uses_in_apply:unit
   -> ?ignore_uses_in_project_var:unit
@@ -469,6 +486,8 @@ module With_free_variables : sig
   val free_variables : _ t -> Variable.Set.t
 end
 
+(** Create a function declaration.  This calculates the free variables and
+    symbols occurring in the specified [body]. *)
 val create_function_declaration
    : params:Variable.t list
   -> body:t
@@ -477,23 +496,30 @@ val create_function_declaration
   -> inline:Lambda.inline_attribute
   -> function_declaration
 
+(** Create a set of function declarations given the individual declarations. *)
 val create_function_declarations
    : set_of_closures_id:Set_of_closures_id.t
   -> funs:function_declaration Variable.Map.t
   -> compilation_unit:Compilation_unit.t
   -> function_declarations
 
+(** Convenience function to replace the [funs] member of a set of
+    function declarations. *)
 val update_function_declarations
    : function_declarations
   -> funs:function_declaration Variable.Map.t
   -> function_declarations
 
+(** Create a set of closures.  Checks are made to ensure that [free_vars]
+    and [specialised_args] are reasonable. *)
 val create_set_of_closures
    : function_decls:function_declarations
   -> free_vars:Variable.t Variable.Map.t
   -> specialised_args:Variable.t Variable.Map.t
   -> set_of_closures
 
+(** Given a function declaration, find which of its parameters (if any)
+    are used in the body. *)
 val used_params : function_declaration -> Variable.Set.t
 
 type maybe_named =

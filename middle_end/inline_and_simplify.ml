@@ -1210,6 +1210,7 @@ let constant_defining_value_approx
             Flambda.print_constant_defining_value constant_defining_value
     end
 
+(* See documentation on [Let_rec_symbol] in flambda.mli. *)
 let define_let_rec_symbol_approx env defs =
   (* First declare an empty version of the symbols *)
   let env =
