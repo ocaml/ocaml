@@ -95,11 +95,11 @@ let simplify_free_variables env vars ~f : Flambda.t * R.t =
   collect_bindings vars env []
 
 let simplify_free_variables_named env vars ~f : Flambda.named * R.t =
-  let rec collect_bindings vars env bound_vars : Flambda.t * R.t =
+  let rec collect_bindings vars env bound_vars : Flambda.maybe_named * R.t =
     match vars with
     | [] ->
       let named, r = f env (List.rev bound_vars) in
-      Flambda_utils.name_expr named, r
+      Is_named named, r
     | var::vars ->
       match simplify_free_variable_internal env var with
       | No_binding var -> collect_bindings vars env (var::bound_vars)
@@ -108,10 +108,17 @@ let simplify_free_variables_named env vars ~f : Flambda.named * R.t =
         let var = Variable.rename var in
         let env = E.add env var approx in
         let body, r = collect_bindings vars env (var::bound_vars) in
-        (Flambda.create_let var named body), r
+        let body =
+          match body with
+          | Is_named body -> Flambda_utils.name_expr body
+          | Is_expr body -> body
+        in
+        Is_expr (Flambda.create_let var named body), r
   in
-  let expr, r = collect_bindings vars env [] in
-  Expr expr, r
+  let named_or_expr, r = collect_bindings vars env [] in
+  match named_or_expr with
+  | Is_named named -> named, r
+  | Is_expr expr -> Expr expr, r
 
 let simplify_named_using_approx r lam approx =
   let lam, _summary, approx = A.simplify_named approx lam in
