@@ -49,6 +49,8 @@ Language features:
 - GPR#173: [@inline] and [@inlined] attributes (for function declarations
   and call sites respectively) to control inlining
   (Pierre Chambart, Mark Shinwell)
+- PR#6806: Syntax shortcut for putting a type annotation on a record field
+  (Valentin Gatien-Baron, review by Jérémie Dimino)
 
 Compilers:
 - PR#4800: better compilation of tuple assignment (Gabriel Scherer and
