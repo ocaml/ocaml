@@ -65,8 +65,8 @@ module Function_decls : sig
        [body] is the body of the wrapper. *)
     val primitive_wrapper : t -> Lambda.lambda option
 
-    (* Like [used_idents_by_function], but for just one function. *)
-    val used_idents : t -> Lambda.IdentSet.t
+    (* Like [all_free_idents], but for just one function. *)
+    val free_idents : t -> Lambda.IdentSet.t
   end
 
   type t = Function_decl.t list

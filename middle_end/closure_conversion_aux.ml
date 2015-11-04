@@ -102,7 +102,7 @@ module Function_decls = struct
     let kind t = t.kind
     let params t = t.params
     let body t = t.body
-    let used_idents t = Lambda.free_variables t.body
+    let free_idents t = Lambda.free_variables t.body
     let inline t = t.inline
 
     (* CR-someday mshinwell: eliminate "*stub*" *)
@@ -123,31 +123,23 @@ module Function_decls = struct
   (* All parameters of functions in [ts]. *)
   let all_params t = List.concat (List.map Function_decl.params t)
 
-  (* CR mshinwell for pchambart: Should improve the name of this function.
-     How about "free_variables_in_body"?
-     pchambart: I wanted to avoid mixing 'ident' and 'var' names. This one
-       returns sets of idents. I'm not sure but maybe "free_idents_in_body"
-       isn't too strange.
-       Also "free_variables_in_body" would suggest that we look at a
-       single function. maybe a plural ?
-  *)
   (* All identifiers free in the bodies of the given function declarations,
      indexed by the identifiers corresponding to the functions themselves. *)
-  let used_idents_by_function t =
+  let free_idents_by_function t =
     List.fold_right (fun decl map ->
         Variable.Map.add (Function_decl.closure_bound_var decl)
-          (Function_decl.used_idents decl) map)
+          (Function_decl.free_idents decl) map)
       t Variable.Map.empty
 
-  let all_used_idents t =
+  let all_free_idents t =
     Variable.Map.fold (fun _ -> IdentSet.union)
-      (used_idents_by_function t) IdentSet.empty
+      (free_idents_by_function t) IdentSet.empty
 
   let set_diff (from : IdentSet.t) (idents : Ident.t list) =
     List.fold_right IdentSet.remove idents from
 
   let all_free_idents t =
-    set_diff (set_diff (all_used_idents t) (all_params t)) (let_rec_idents t)
+    set_diff (set_diff (all_free_idents t) (all_params t)) (let_rec_idents t)
 
   let closure_env_without_parameters external_env t =
     let closure_env =

@@ -19,7 +19,6 @@ external swap32 : int32 -> int32 = "%bswap_int32"
 external swap64 : int64 -> int64 = "%bswap_int64"
 external swapnative : nativeint -> nativeint = "%bswap_native"
 
-(* CR mshinwell: rename [eid] and/or [annot] to be consistent *)
 let const_int_expr expr n =
   if Effect_analysis.no_effects_named expr then
     let (new_expr, approx) = A.make_const_int_named n in

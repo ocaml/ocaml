@@ -16,40 +16,21 @@ module C = Inlining_cost
 module I = Simplify_boxed_integer_ops
 module S = Simplify_common
 
-let phy_equal (approxs:A.t list) =
+let phys_equal (approxs:A.t list) =
   match approxs with
   | [] | [_] | _ :: _ :: _ :: _ ->
       Misc.fatal_error "wrong number of arguments for equality"
   | [a1; a2] ->
-      (* CR pchambart: incorrect if the variable is not bound
-         in the environment *)
-      (* match a1.var, a2.var with *)
-      (* | Some v1, Some v2 when Variable.equal v1 v2 -> *)
-      (*     true *)
-      (* | _ -> *)
-          match a1.symbol, a2.symbol with
-          | Some (s1, None), Some (s2, None) ->
-              Symbol.equal s1 s2
-          | Some (s1, Some f1), Some (s2, Some f2) ->
-              Symbol.equal s1 s2 && f1 = f2
-          | _ -> false
-
-(* mshinwell: this is possibly wrong for Initialize_symbol, we think,
-   since you can effectively introduce symbol aliases like that
-let not_phys_equal (approxs:A.t list) =
-  match approxs with
-  | [] | [_] | _ :: _ :: _ :: _ ->
-    Misc.fatal_error "wrong number of arguments for equality"
-  | [a1; a2] ->
-    (* There should never be any symbol aliases when this pass is run
-       (from [Inline_and_simplify]). *)
-    (* CR mshinwell: If this code is safe in that context, we should
-       add a variable to make sure we can't interleave the passes
-       wrongly, or similar. *)
+    (* N.B. The following would be incorrect if the variables are not
+       bound in the environment:
+       match a1.var, a2.var with
+       | Some v1, Some v2 when Variable.equal v1 v2 -> true
+       | _ -> ...
+    *)
     match a1.symbol, a2.symbol with
-    | Some (s1, None), Some (s2, None) -> not (Symbol.equal s1 s2)
+    | Some (s1, None), Some (s2, None) -> Symbol.equal s1 s2
+    | Some (s1, Some f1), Some (s2, Some f2) -> Symbol.equal s1 s2 && f1 = f2
     | _ -> false
-*)
 
 let primitive (p : Lambda.primitive) (args, approxs) expr dbg ~size_int
       ~big_endian : Flambda.named * A.t * Inlining_cost.Benefit.t =
@@ -64,14 +45,29 @@ let primitive (p : Lambda.primitive) (args, approxs) expr dbg ~size_int
         S.const_ptr_expr (Flambda.Expr (Var arg)) 0
       | _ -> S.const_ptr_expr expr 0
     end
-  | Pintcomp Ceq when phy_equal approxs ->
-    (* Not having [phy_equal approxs] does not tell anything
-       about the difference due to potential missing alias and
-       sharing that can be introduced by a later pass.
-       CR pchambart: Some cases could be made to effectively
-       safely returns false, when the approximation is known to
-       be different. *)
+  | Pintcomp Ceq when phys_equal approxs ->
     S.const_bool_expr expr true
+    (* N.B. Having [not (phys_equal approxs)] would not on its own tell us
+       anything about whether the two values concerned are unequal.  To judge
+       that, it would be necessary to prove that the approximations are
+       different, which would in turn entail them being completely known.
+
+       It may seem that in the case where we have two approximations each
+       annotated with a symbol that we should be able to judge inequality
+       even if part of the approximation description(s) are unknown.  This is
+       unfortunately not the case.  Here is an example:
+
+         let a = f 1
+         let b = f 1
+         let c = a, a
+         let d = a, a
+
+       If [Share_constants] is run before [f] is completely inlined (assuming
+       [f] always generates the same result; effects of [f] aren't in fact
+       relevant) then [c] and [d] will not be shared.  However if [f] is
+       inlined later, [a] and [b] could be shared and thus [c] and [d] could
+       be too.  As such, any intermediate non-aliasing judgement would be
+       invalid. *)
   | _ ->
     match A.descrs approxs with
     | [Value_int x] ->
@@ -109,7 +105,8 @@ let primitive (p : Lambda.primitive) (args, approxs) expr dbg ~size_int
       end
     | [Value_constptr x] ->
       begin match p with
-      (* CR mshinwell: I don't think Pidentity should ever appear *)
+      (* [Pidentity] should probably never appear, but is here for
+         completeness. *)
       | Pidentity -> S.const_ptr_expr expr x
       | Pnot -> S.const_bool_expr expr (x = 0)
       | Pisint -> S.const_bool_expr expr true
@@ -120,7 +117,7 @@ let primitive (p : Lambda.primitive) (args, approxs) expr dbg ~size_int
         | Word_size -> S.const_int_expr expr (8*size_int)
         | Int_size -> S.const_int_expr expr (8*size_int - 1)
         | Max_wosize ->
-          (* CR mshinwell: this function should maybe not live here. *)
+          (* CR-someday mshinwell: this function should maybe not live here. *)
           S.const_int_expr expr ((1 lsl ((8*size_int) - 10)) - 1)
         | Ostype_unix -> S.const_bool_expr expr (Sys.os_type = "Unix")
         | Ostype_win32 -> S.const_bool_expr expr (Sys.os_type = "Win32")

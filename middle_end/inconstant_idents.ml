@@ -302,10 +302,9 @@ module NotConstants(P:Param) = struct
     (* adds 'id in NC => curr in NC' *)
     List.iter (fun var -> mark_var var curr) vars
 
-  (* CR mshinwell: [toplevel] is now unused, is that correct?
-     XCR pchambart: [toplevel] is intended for allowing allocations of
-        mutable block statically. This is not yet activated because of
-        missing parts in the gc currently. *)
+  (* [toplevel] is intended for allowing static allocations of mutable
+     blocks.  This feature should be available in a future release once the
+     necessary GC changes have been merged. (See GPR#178.) *)
   and mark_loop_set_of_closures ~toplevel:_ curr
         { Flambda. function_decls; free_vars; specialised_args } =
     (* If a function in the set of closures is specialised, do not consider
@@ -362,7 +361,7 @@ module NotConstants(P:Param) = struct
       mark_program program
 
   (* There is no information available about the contents of imported
-     symbol, so we must consider all their fields inconstants. *)
+     symbols, so we must consider all their fields as inconstant. *)
   (* CR pchambart: recover that from the cmx informations *)
   let mark_external_symbol_fields_as_inconstant imported_symbols =
     Symbol_field.Tbl.iter (fun (symbol, field) _ ->

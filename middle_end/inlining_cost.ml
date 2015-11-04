@@ -211,8 +211,6 @@ module Benefit = struct
   let benefit_factor = 1
 
   let evaluate t =
-    (* CR mshinwell for pchambart: Shouldn't the "Clflags" variables be
-       called "benefit", not "cost"? *)
     benefit_factor *
       (t.remove_call * !Clflags.inline_call_cost
        + t.remove_alloc * !Clflags.inline_alloc_cost

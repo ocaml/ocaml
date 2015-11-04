@@ -580,8 +580,6 @@ and simplify_set_of_closures original_env r
   in
   let simplify_function fid (function_decl : Flambda.function_declaration)
         (funs, used_params, r)
-        (* CR mshinwell: check we really did not need _used_params, and
-           remove it *)
         : Flambda.function_declaration Variable.Map.t * Variable.Set.t * R.t =
     let closure_env =
       populate_closure_approximations ~function_decl ~free_vars

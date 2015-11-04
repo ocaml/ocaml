@@ -21,6 +21,7 @@ let name_expr = Flambda_utils.name_expr
 type t = {
   current_unit_id : Ident.t;
   symbol_for_global' : (Ident.t -> Symbol.t);
+  mutable imported_symbols : Symbol.Set.t;
 }
 
 (** Generate a wrapper ("stub") function that accepts a tuple argument and
@@ -78,11 +79,12 @@ let close_const (const : Lambda.structured_constant) : Flambda.named * string =
   | Const_base (Const_int c) -> Const (Int c), "int"
   | Const_base (Const_char c) -> Const (Char c), "char"
   | Const_base (Const_string (s, _)) -> Allocated_const (String s), "string"
-  (* CR mshinwell: unsure about [float_of_string] (ditto below) *)
-  | Const_base (Const_float c) -> Allocated_const (Float (float_of_string c)), "float"
+  | Const_base (Const_float c) ->
+    Allocated_const (Float (float_of_string c)), "float"
   | Const_base (Const_int32 c) -> Allocated_const (Int32 c), "int32"
   | Const_base (Const_int64 c) -> Allocated_const (Int64 c), "int64"
-  | Const_base (Const_nativeint c) -> Allocated_const (Nativeint c), "nativeint"
+  | Const_base (Const_nativeint c) ->
+    Allocated_const (Nativeint c), "nativeint"
   | Const_pointer c -> Const (Const_pointer c), "pointer"
   | Const_immstring c -> Allocated_const (Immstring c), "immstring"
   | Const_float_array c ->
@@ -90,9 +92,6 @@ let close_const (const : Lambda.structured_constant) : Flambda.named * string =
   | Const_block _ ->
     Misc.fatal_error "Const_block should have been eliminated before closure \
         conversion"
-
-(* CR-someday mshinwell: remove global state *)
-let imported_symbols = ref Symbol.Set.empty
 
 let rec close t env (lam : Lambda.lambda) : Flambda.t =
   match lam with
@@ -251,7 +250,7 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
     let exn_symbol =
       t.symbol_for_global' (Ident.create_predef_exn "Division_by_zero")
     in
-    imported_symbols := Symbol.Set.add exn_symbol !imported_symbols;
+    t.imported_symbols <- Symbol.Set.add exn_symbol t.imported_symbols;
     Flambda.create_let zero (Const (Int 0))
       (Flambda.create_let exn (Symbol exn_symbol)
         (Flambda.create_let denominator (Expr arg2)
@@ -308,12 +307,12 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
         forbidden upon entry to the middle end"
   | Lprim (Pgetglobal id, []) when Ident.is_predef_exn id ->
     let symbol = t.symbol_for_global' id in
-    imported_symbols := Symbol.Set.add symbol !imported_symbols;
+    t.imported_symbols <- Symbol.Set.add symbol t.imported_symbols;
     name_expr (Symbol symbol) ~name:"predef_exn"
   | Lprim (Pgetglobal id, []) ->
     assert (not (Ident.same id t.current_unit_id));
     let symbol = t.symbol_for_global' id in
-    imported_symbols := Symbol.Set.add symbol !imported_symbols;
+    t.imported_symbols <- Symbol.Set.add symbol t.imported_symbols;
     name_expr (Symbol symbol) ~name:"Pgetglobal"
   | Lprim (p, args) ->
     (* One of the important consequences of the ANF-like representation
@@ -424,7 +423,7 @@ and close_functions t external_env function_declarations : Flambda.named =
     let params = Function_decl.params decl in
     (* Create fresh variables for the elements of the closure (cf.
        the comment on [Function_decl.closure_env_without_parameters], above).
-       This induces a renaming on [Function_decl.used_idents]; the results of
+       This induces a renaming on [Function_decl.free_idents]; the results of
        that renaming are stored in [free_variables]. *)
     let closure_env =
       List.fold_right (fun id env -> Env.add_var env id (Variable.of_ident id))
@@ -513,13 +512,13 @@ and close_let_bound_expression t ?let_rec_ident let_bound_var env
   | lam -> Expr (close t env lam)
 
 let lambda_to_flambda ~backend ~module_ident ~size lam =
-  imported_symbols := Symbol.Set.empty;
   let module Backend = (val backend : Backend_intf.S) in
   let compilation_unit = Compilation_unit.get_current_exn () in
   let t =
     { current_unit_id =
         Compilation_unit.get_persistent_ident compilation_unit;
       symbol_for_global' = Backend.symbol_for_global';
+      imported_symbols = Symbol.Set.empty;
     }
   in
   let module_symbol = Backend.symbol_for_global' module_ident in
@@ -529,7 +528,7 @@ let lambda_to_flambda ~backend ~module_ident ~size lam =
   in
   (* The global module block is built by accessing the fields of all the
      introduced symbols. *)
-  (* CR mshinwell for mshinwell: Add a comment describing how modules are
+  (* CR-soon mshinwell for mshinwell: Add a comment describing how modules are
      compiled. *)
   let fields =
     Array.init size (fun pos ->
@@ -557,5 +556,5 @@ let lambda_to_flambda ~backend ~module_ident ~size lam =
         End module_symbol))
   in
   Symbol.Set.fold (fun sym expr -> Flambda.Import_symbol (sym, expr))
-    !imported_symbols
+    t.imported_symbols
     module_initializer
