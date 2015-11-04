@@ -502,7 +502,15 @@ and simplify_set_of_closures original_env r
   let free_vars =
     Variable.Map.map (fun external_var ->
         let external_var =
-          Freshening.apply_variable (E.freshening env) external_var
+          let var =
+            Freshening.apply_variable (E.freshening env) external_var
+          in
+          match
+            A.simplify_var_to_var_using_env (E.find_exn env var)
+              ~is_present_in_env:(fun var -> E.mem env var)
+          with
+          | None -> var
+          | Some var -> var
         in
         external_var, E.find_exn env external_var)
       set_of_closures.free_vars
