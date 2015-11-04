@@ -110,38 +110,59 @@ let mk_init f =
 ;;
 
 let mk_inline f =
-  "-inline", Arg.Int f, "<n>  Set aggressiveness of inlining to <n>"
+  "-inline", Arg.Int f,
+    Printf.sprintf "<n>  Aggressiveness of inlining (default %d, higher \
+        numbers mean more aggressive)"
+      !Clflags.inline_threshold
 ;;
 
 let mk_inlining_stats f =
-  "-inlining-stats", Arg.Unit f, " Emit .i files containing inlining statistics"
+  "-inlining-stats", Arg.Unit f, " Emit `.inlining' file showing the \
+      inliner's decisions"
 ;;
 
 let mk_rounds f =
-  "-rounds", Arg.Int f, "<n>  Set number of simplification rounds to <n>"
+  "-rounds", Arg.Int f,
+    Printf.sprintf "<n>  Repeat tree optimization phase this many times \
+        (default %d)"
+      !Clflags.simplify_rounds
 ;;
 
 let mk_unroll f =
-  "-unroll", Arg.Int f, "<n>  Set maximal number of times a function can be unrolled"
+  "-unroll", Arg.Int f,
+    Printf.sprintf "<n>  Unroll recursive functions at most this many times \
+        (default %d)"
+      !Clflags.unroll
 ;;
 
 let mk_no_functor_heuristics f =
-  "-no-functor-heuristics", Arg.Unit f, " Disable the heuristics that force toplevel function applications to be inlined"
+  "-no-functor-heuristics", Arg.Unit f, " Disable functor detection \
+        heuristics that force inlining of toplevel function applications"
 ;;
 
-let mk_inline_cost arg descr f =
+let mk_inline_cost arg descr default f =
   Printf.sprintf "-inline-%s-cost" arg,
   Arg.Int f,
-  Printf.sprintf "<n>  Set how much a function size can increase for each removed %s" descr
+  Printf.sprintf "<n>  The cost of not removing %s during inlining \
+      (default %d, higher numbers more costly)"
+    descr
+    default
 ;;
 
-let mk_inline_call_cost = mk_inline_cost "call" "call"
-let mk_inline_alloc_cost = mk_inline_cost "alloc" "allocation"
-let mk_inline_prim_cost = mk_inline_cost "prim" "primitive"
-let mk_inline_branch_cost = mk_inline_cost "branch" "conditionnal"
+let mk_inline_call_cost =
+  mk_inline_cost "call" "a call" !Clflags.inline_call_cost
+let mk_inline_alloc_cost =
+  mk_inline_cost "alloc" "an allocation" !Clflags.inline_alloc_cost
+let mk_inline_prim_cost =
+  mk_inline_cost "prim" "a primitive" !Clflags.inline_prim_cost
+let mk_inline_branch_cost =
+  mk_inline_cost "branch" "a conditional" !Clflags.inline_branch_cost
 
 let mk_branch_inline_factor f =
-  "-branch-inline-factor", Arg.Float f, "<n>  Control the probability for calls inside branch to be inlined"
+  "-branch-inline-factor", Arg.Float f,
+    Printf.sprintf "<n>  Estimate the probability of a \
+        branch being cold as 1/(1+n) (used for inlining) (default %.2f)"
+    !Clflags.branch_inline_factor
 ;;
 
 let mk_intf f =
@@ -462,7 +483,7 @@ let mk_dflambda f =
 ;;
 
 let mk_dflambda_let f =
-  "-dflambda-let", Arg.Int f, " (undocumented)"
+  "-dflambda-let", Arg.Int f, "<stamp>  (undocumented)"
 ;;
 
 let mk_dinstr f =

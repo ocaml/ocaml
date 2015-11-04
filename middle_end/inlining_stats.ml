@@ -89,7 +89,7 @@ let record_decision decision ~closure_stack ~debuginfo =
   end
 
 let really_save_then_forget_decisions ~output_prefix =
-  let out_channel = open_out (output_prefix ^ ".i") in
+  let out_channel = open_out (output_prefix ^ ".inlining") in
   Closure_id.Tbl.iter (fun closure_id bucket ->
       Printf.fprintf out_channel "%a\n" Closure_id.output closure_id;
       let bucket =
