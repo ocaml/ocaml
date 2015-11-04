@@ -469,10 +469,10 @@ let rec variables_usage ?ignore_uses_in_apply ?ignore_uses_in_project_var
       | Apply { func; args; kind = _; dbg = _} ->
         begin match ignore_uses_in_apply with
         | None ->
-          free_variable func
+          free_variable func;
+          List.iter free_variable args
         | Some () -> ()
         end;
-        List.iter free_variable args
       | Let { var; free_vars_of_defining_expr; free_vars_of_body;
               defining_expr; body; _ } ->
         bound_variable var;
