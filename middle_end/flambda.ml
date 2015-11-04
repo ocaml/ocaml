@@ -476,7 +476,11 @@ let rec variables_usage ?ignore_uses_in_apply ?ignore_uses_in_project_var
       | Let { var; free_vars_of_defining_expr; free_vars_of_body;
               defining_expr; body; _ } ->
         bound_variable var;
-        if all_used_variables then begin
+        if all_used_variables
+           || ignore_uses_in_apply <> None
+           || ignore_uses_in_project_var <> None then begin
+          (* In those cases whe can't benefit from the pre-computed free
+             variables sets *)
           free_variables
             (variables_usage_named ?ignore_uses_in_project_var ?ignore_uses_in_apply
                ~all_used_variables defining_expr);
