@@ -521,7 +521,14 @@ and simplify_set_of_closures original_env r
       set_of_closures.free_vars
   in
   let specialised_args =
-    Variable.Map.map (Freshening.apply_variable (E.freshening env))
+    Variable.Map.map (fun external_var ->
+        let var = Freshening.apply_variable (E.freshening env) external_var in
+        match
+          A.simplify_var_to_var_using_env (E.find_exn env var)
+            ~is_present_in_env:(fun var -> E.mem env var)
+        with
+        | None -> var
+        | Some var -> var)
       set_of_closures.specialised_args
   in
   let environment_before_cleaning = env in
