@@ -159,12 +159,12 @@ let populate_closure_approximations
       ~(free_vars : (_ * A.t) Variable.Map.t)
       ~(parameter_approximations : A.t Variable.Map.t)
       ~set_of_closures_env =
-  (* Add approximations of used free variables *)
+  (* Add approximations of free variables *)
   let env =
     Variable.Map.fold (fun id (_, desc) env ->
-       if Variable.Set.mem id function_decl.free_variables
-       then E.add_outer_scope env id desc
-       else env) free_vars set_of_closures_env in
+        E.add_outer_scope env id desc)
+      free_vars set_of_closures_env in
+
   (* Add known approximations of function parameters *)
   let env =
     List.fold_left (fun env id ->
@@ -409,6 +409,13 @@ let rec simplify_project_var env r ~(project_var : Flambda.project_var)
     end;
     let approx = A.approx_for_bound_var value_set_of_closures var in
     let expr : Flambda.named = Project_var { closure; closure_id; var; } in
+    let unwrapped = Var_within_closure.unwrap var in
+    let expr =
+      if E.mem env unwrapped then
+        Flambda.Expr (Var unwrapped)
+      else
+        expr
+    in
     simplify_named_using_approx_and_env env r expr approx
   | Unresolved symbol ->
     (* This value comes from a symbol for which we couldn't find any
@@ -778,9 +785,18 @@ and simplify_named env r (tree : Flambda.named) : Flambda.named * R.t =
         simplify_named env r (Flambda.Expr expr)
       | None ->
         let set_of_closures =
-          Remove_unused_arguments.separate_unused_arguments_in_set_of_closures
+          if E.never_inline env then
             set_of_closures
-            ~backend:(E.backend env)
+          else
+            let set_of_closures =
+              Remove_unused_arguments.separate_unused_arguments_in_set_of_closures
+                set_of_closures
+                ~backend:(E.backend env)
+            in
+            if !Clflags.unbox_closures then
+              Unbox_closures.rewrite_set_of_closures set_of_closures
+            else
+              set_of_closures
         in
         let set_of_closures, r =
           simplify_set_of_closures env r set_of_closures

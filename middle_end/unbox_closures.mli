@@ -10,7 +10,6 @@
 (*                                                                        *)
 (**************************************************************************)
 
-val run
-   : Inline_and_simplify_aux.Env.t
-  -> Flambda.t
-  -> Flambda.t
+val rewrite_set_of_closures
+   : Flambda.set_of_closures
+  -> Flambda.set_of_closures
