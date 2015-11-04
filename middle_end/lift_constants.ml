@@ -444,7 +444,14 @@ let introduce_free_variables_in_set_of_closures
     (var_to_block_field_tbl:Flambda.constant_defining_value_block_field Variable.Tbl.t)
     { Flambda.function_decls; free_vars; specialised_args } =
   let add_definition_and_make_substitution var (expr, subst) =
-    match Variable.Tbl.find var_to_block_field_tbl var with
+    let searched_var =
+      match Variable.Map.find var specialised_args with
+      | exception Not_found -> var
+      | external_var ->
+        (* specialised arguments bound to constant can be rewritten *)
+        external_var
+    in
+    match Variable.Tbl.find var_to_block_field_tbl searched_var with
     | def ->
       let fresh = Variable.freshen var in
       let named : Flambda.named = match def with
@@ -490,6 +497,13 @@ let introduce_free_variables_in_set_of_closures
       (fun v _ ->
         not (Variable.Tbl.mem var_to_block_field_tbl v))
       free_vars
+  in
+  let specialised_args =
+    (* Keep only those that are not rewriten to constants *)
+    Variable.Map.filter
+      (fun _ v ->
+        not (Variable.Tbl.mem var_to_block_field_tbl v))
+      specialised_args
   in
   Flambda.create_set_of_closures ~function_decls ~free_vars
     ~specialised_args
