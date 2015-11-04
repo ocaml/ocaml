@@ -123,8 +123,8 @@ let mk_inlining_stats f =
 
 let mk_rounds f =
   "-rounds", Arg.Int f,
-    Printf.sprintf "<n>  Repeat tree optimization phase this many times \
-        (default %d)"
+    Printf.sprintf "<n>  Repeat tree optimization and inlining phase this \
+        many times (default %d)"
       !Clflags.simplify_rounds
 ;;
 
@@ -878,6 +878,7 @@ struct
     mk_absname F._absname;
     mk_annot F._annot;
     mk_binannot F._binannot;
+    mk_branch_inline_factor F._branch_inline_factor;
     mk_c F._c;
     mk_cc F._cc;
     mk_cclib F._cclib;
@@ -894,15 +895,11 @@ struct
     mk_I F._I;
     mk_impl F._impl;
     mk_inline F._inline;
-    mk_inlining_stats F._inlining_stats;
-    mk_rounds F._rounds;
-    mk_unroll F._unroll;
-    mk_no_functor_heuristics F._no_functor_heuristics;
-    mk_inline_call_cost F._inline_call_cost;
     mk_inline_alloc_cost F._inline_alloc_cost;
-    mk_inline_prim_cost F._inline_prim_cost;
     mk_inline_branch_cost F._inline_branch_cost;
-    mk_branch_inline_factor F._branch_inline_factor;
+    mk_inline_call_cost F._inline_call_cost;
+    mk_inline_prim_cost F._inline_prim_cost;
+    mk_inlining_stats F._inlining_stats;
     mk_intf F._intf;
     mk_intf_suffix F._intf_suffix;
     mk_keep_docs F._keep_docs;
@@ -912,6 +909,7 @@ struct
     mk_no_alias_deps F._no_alias_deps;
     mk_no_app_funct F._no_app_funct;
     mk_no_float_const_prop F._no_float_const_prop;
+    mk_no_functor_heuristics F._no_functor_heuristics;
     mk_noassert F._noassert;
     mk_noautolink_opt F._noautolink;
     mk_nodynlink F._nodynlink;
@@ -927,6 +925,7 @@ struct
     mk_ppx F._ppx;
     mk_principal F._principal;
     mk_rectypes F._rectypes;
+    mk_rounds F._rounds;
     mk_runtime_variant F._runtime_variant;
     mk_S F._S;
     mk_safe_string F._safe_string;
@@ -936,6 +935,7 @@ struct
     mk_strict_formats F._strict_formats;
     mk_thread F._thread;
     mk_unbox_closures F._unbox_closures;
+    mk_unroll F._unroll;
     mk_unsafe F._unsafe;
     mk_unsafe_string F._unsafe_string;
     mk_v F._v;
