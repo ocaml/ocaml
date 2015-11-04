@@ -93,9 +93,11 @@ let really_save_then_forget_decisions ~output_prefix =
   Closure_id.Tbl.iter (fun closure_id bucket ->
       Printf.fprintf out_channel "%a\n" Closure_id.output closure_id;
       let bucket =
+        let rebased_time = ref (-1) in
         (* Rebase timestamps to start at zero within each bucket. *)
-        List.mapi (fun rebased_time (key, (closure_stack, decision)) ->
-            key, (rebased_time, closure_stack, decision))
+        List.rev_map (fun (key, (closure_stack, decision)) ->
+            incr rebased_time;
+            key, (!rebased_time, closure_stack, decision))
           (List.rev bucket)
       in
       let bucket = List.sort Line_number_then_time.compare_fst bucket in
