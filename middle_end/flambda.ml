@@ -341,8 +341,8 @@ and print_set_of_closures ppf (set_of_closures : set_of_closures) =
           spec_args
       end
     in
-    fprintf ppf "@[<2>(set_of_closures id=%a@ %a@ free_vars={%a@ }@ \
-        specialised_args={%a})@]"
+    fprintf ppf "@[<2>(set_of_closures id=%a@ %a@ @[<2>free_vars={%a@ }@]@ \
+        @[<2>specialised_args={%a})@]@]"
       Set_of_closures_id.print function_decls.set_of_closures_id
       funs function_decls.funs
       vars free_vars spec specialised_args
