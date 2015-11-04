@@ -785,9 +785,18 @@ and simplify_named env r (tree : Flambda.named) : Flambda.named * R.t =
         simplify_named env r (Flambda.Expr expr)
       | None ->
         let set_of_closures =
-          Remove_unused_arguments.separate_unused_arguments_in_set_of_closures
+          if E.never_inline env then
             set_of_closures
-            ~backend:(E.backend env)
+          else
+            let set_of_closures =
+              Remove_unused_arguments.separate_unused_arguments_in_set_of_closures
+                set_of_closures
+                ~backend:(E.backend env)
+            in
+            if !Clflags.unbox_closures then
+              Unbox_closures.rewrite_set_of_closures set_of_closures
+            else
+              set_of_closures
         in
         let set_of_closures, r =
           simplify_set_of_closures env r set_of_closures
