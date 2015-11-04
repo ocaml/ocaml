@@ -259,6 +259,8 @@ Bug fixes:
   (Daniel Bünzli)
 - GPR#251: fix cross-compilation with ocamldoc enabled
   (whitequark)
+- GPR#280: Fix stdlib dependencies for .p.cmx (Pierre Chambart,
+  Mark Shinwell)
 
 Features wishes:
 - PR#4714: List.cons
