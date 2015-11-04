@@ -599,6 +599,12 @@ and simplify_set_of_closures original_env r
         ~body ~stub:function_decl.stub ~dbg:function_decl.dbg
         ~inline:function_decl.inline
     in
+    let function_decl =
+      Unbox_closures.rewrite_function_declaration
+        ~free_vars:(Variable.Map.map fst free_vars)
+        ~function_decl
+        ~specialised_args
+    in
     let used_params' = Flambda.used_params function_decl in
     Variable.Map.add fid function_decl funs,
       Variable.Set.union used_params used_params', r
@@ -800,7 +806,8 @@ and simplify_named env r (tree : Flambda.named) : Flambda.named * R.t =
                 ~backend:(E.backend env)
             in
             if !Clflags.unbox_closures then
-              Unbox_closures.rewrite_set_of_closures set_of_closures
+              Unbox_closures.introduce_specialised_args_for_free_vars
+                set_of_closures
             else
               set_of_closures
         in
