@@ -28,9 +28,16 @@ module T = struct
     Ident.same v1.ident v2.ident &&
     Compilation_unit.equal v1.compilation_unit v2.compilation_unit
   let print ppf v =
-    Format.fprintf ppf "%a.%a"
-      Compilation_unit.print v.compilation_unit
-      Ident.print v.ident
+    if Compilation_unit.equal v.compilation_unit
+        (Compilation_unit.get_current_exn ())
+    then begin
+      Format.fprintf ppf "%a"
+        Ident.print v.ident
+    end else begin
+      Format.fprintf ppf "%a.%a"
+        Compilation_unit.print v.compilation_unit
+        Ident.print v.ident
+    end
 end
 
 include T
