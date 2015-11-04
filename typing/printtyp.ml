@@ -360,7 +360,7 @@ let best_type_path p =
     let (p', s) = normalize_type_path !printing_env p in
     let get_path () = get_best_path (PathMap.find  p' !printing_map) in
     while !printing_cont <> [] &&
-      try ignore (get_path ()); false with Not_found -> true
+      try fst (path_size (get_path ())) > !printing_depth with Not_found -> true
     do
       printing_cont := List.map snd (Env.run_iter_cont !printing_cont);
       incr printing_depth;
