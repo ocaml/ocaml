@@ -196,6 +196,11 @@ val map_project_var_to_expr_opt
   -> f:(Flambda.project_var -> Flambda.t option)
   -> Flambda.t
 
+val map_toplevel_project_var_to_expr_opt
+   : Flambda.t
+  -> f:(Flambda.project_var -> Flambda.t option)
+  -> Flambda.t
+
 val map_project_var_to_named_opt
    : Flambda.t
   -> f:(Flambda.project_var -> Flambda.named option)

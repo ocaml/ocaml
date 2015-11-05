@@ -417,6 +417,19 @@ let map_project_var_to_expr_opt tree ~f =
           as named -> named)
     tree
 
+let map_toplevel_project_var_to_expr_opt tree ~f =
+  map_toplevel_named (function
+      | Project_var project_var ->
+        begin match f project_var with
+        | None -> Project_var project_var
+        | Some expr -> Expr expr
+        end
+      | (Symbol _ | Const _ | Allocated_const _
+      | Set_of_closures _ | Project_closure _ | Move_within_set_of_closures _
+      | Prim _ | Expr _ | Read_mutable _ | Read_symbol_field _)
+          as named -> named)
+    tree
+
 let map_project_var_to_named_opt tree ~f =
   map_named (function
       | Project_var project_var ->

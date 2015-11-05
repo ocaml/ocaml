@@ -34,7 +34,7 @@ let rewrite_function_decl
     Flambda_utils.toplevel_substitution
       params_for_vars_bound_by_closure
       function_decl.body
-    |> Flambda_iterators.map_project_var_to_expr_opt
+    |> Flambda_iterators.map_toplevel_project_var_to_expr_opt
       ~f:(fun { var } ->
           let var = Var_within_closure.unwrap var in
           match Variable.Map.find var params_for_vars_bound_by_closure with
