@@ -247,6 +247,8 @@ Bug fixes:
 - PR#7016: Stack overflow in GADT typing
 - PR#7030: libasmrun_shared.so fails to build on SPARC Solaris
   (report and fix by Patrick Star)
+- PR#7036: Module alias is not taken into account when checking module
+  type compatibility (in a class type) (Jacques Garrigue)
 - GPR#205: Clear caml_backtrace_last_exn before registering as root
   (report and fix by Frederic Bour)
 - GPR#220: minor -dsource error on recursive modules

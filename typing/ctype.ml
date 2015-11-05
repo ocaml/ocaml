@@ -698,7 +698,14 @@ let rec normalize_package_path env p =
   in
   match t with
   | Some (Mty_ident p) -> normalize_package_path env p
-  | Some (Mty_signature _ | Mty_functor _ | Mty_alias _) | None -> p
+  | Some (Mty_signature _ | Mty_functor _ | Mty_alias _) | None ->
+      match p with
+        Path.Pdot (p1, s, n) ->
+          (* For module aliases *)
+          let p1' = Env.normalize_path None env p1 in
+          if Path.same p1 p1' then p else
+          normalize_package_path env (Path.Pdot (p1', s, n))
+      | _ -> p
 
 let rec update_level env level ty =
   let ty = repr ty in
