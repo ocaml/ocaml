@@ -309,8 +309,9 @@ Features wishes:
   (Vladimir Brankov, review by Gabriel Scherer)
 - GPR#147: [type 'a result = Ok of 'a | Error of 'b] in Pervasives
   (Yaron Minsky)
-- GPR#156: Optimize reallocation of caml_frame_descriptors (dynlink speedup)
-  (Pierre Chambart, review by François Bobot, Xavier Leroy and Damien Doligez)
+- GPR#156, GPR#279: optimize caml_frame_descriptors realloc (dynlink speedup)
+  (Pierre Chambart, Alain Frisch,
+   review by François Bobot, Xavier Leroy and Damien Doligez)
 - GPR#171: allow custom warning printers / catchers
   (Benjamin Canou, review by Damien Doligez)
 - GPR#191: Making gc.h and some part of memory.h public
