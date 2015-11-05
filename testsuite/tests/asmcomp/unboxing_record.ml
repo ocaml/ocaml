@@ -16,7 +16,7 @@ type 'a record =
   { mutable a : int;
     mutable b : 'a }
 
-let () =
+let f () =
   let x0 = Gc.allocated_bytes () in
   let x1 = Gc.allocated_bytes () in
   let record = { a = 0; b = 0. } in
@@ -31,3 +31,6 @@ let () =
   assert(abs_float (v2 -. float ((1001 * 1002) / 2)) < 0.01);
   assert(x1 -. x0 = x2 -. x1)
   (* check that we have not allocated anything between x1 and x2 *)
+  [@@inline never]
+
+let () = f ()
