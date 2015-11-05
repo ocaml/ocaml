@@ -126,6 +126,7 @@ module Options = Main_args.Make_optcomp_options (struct
   let _nodynlink = clear dlcode
   let _nolabels = set classic
   let _nostdlib = set no_std_include
+  let _unbox_closures = clear unbox_closures
   let _o s = output_name := Some s
   let _open s = open_modules := s :: !open_modules
   let _output_obj = set output_c_object
@@ -145,7 +146,6 @@ module Options = Main_args.Make_optcomp_options (struct
   let _shared () = shared := true; dlcode := true
   let _S = set keep_asm_file
   let _thread = set use_threads
-  let _unbox_closures = set unbox_closures
   let _unsafe = set fast
   let _unsafe_string = set unsafe_string
   let _v () = print_version_and_library "native-code compiler"

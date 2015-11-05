@@ -357,8 +357,8 @@ let mk_dtimings f =
 ;;
 
 let mk_unbox_closures f =
-  "-unbox-closures", Arg.Unit f,
-  " Pass closure contents in arguments rather than in an allocated block"
+  "-no-unbox-closures", Arg.Unit f,
+  " Do not unbox closures into function arguments"
 ;;
 
 let mk_unsafe f =
@@ -921,6 +921,7 @@ struct
     mk_nodynlink F._nodynlink;
     mk_nolabels F._nolabels;
     mk_nostdlib F._nostdlib;
+    mk_unbox_closures F._unbox_closures;
     mk_o F._o;
     mk_open F._open;
     mk_output_obj F._output_obj;
@@ -940,7 +941,6 @@ struct
     mk_strict_sequence F._strict_sequence;
     mk_strict_formats F._strict_formats;
     mk_thread F._thread;
-    mk_unbox_closures F._unbox_closures;
     mk_unroll F._unroll;
     mk_unsafe F._unsafe;
     mk_unsafe_string F._unsafe_string;
