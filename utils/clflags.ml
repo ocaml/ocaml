@@ -98,6 +98,7 @@ let inlining_stats = ref false
 let simplify_rounds = ref 1
 let unroll = ref 0
 let force_slash = ref false             (* for ocamldep *)
+let clambda_checks = ref false          (* -clambda-checks *)
 
 let dont_write_files = ref false        (* set to true under ocamldoc *)
 

@@ -32,7 +32,13 @@ let add_closure_offsets
         + 1  (* arity *)
         + (if arity > 1 then 1 else 0)  (* partial application code pointer *)
     in
-    let map = Closure_id.Map.add (Closure_id.wrap id) pos map in
+    let closure_id = Closure_id.wrap id in
+    if Closure_id.Map.mem closure_id map then begin
+      Misc.fatal_errorf "Closure_offsets.add_closure_offsets: function \
+          offset for %a would be defined multiple times"
+        Closure_id.print closure_id
+    end;
+    let map = Closure_id.Map.add closure_id pos map in
     (map, env_pos)
   in
   let function_offsets, free_variable_pos =
@@ -46,7 +52,11 @@ let add_closure_offsets
      possible that the closure is accessed from outside its body. *)
   let assign_free_variable_offset var _ (map, pos) =
     let var_within_closure = Var_within_closure.wrap var in
-    assert (not (Var_within_closure.Map.mem var_within_closure map));
+    if Var_within_closure.Map.mem var_within_closure map then begin
+      Misc.fatal_errorf "Closure_offsets.add_closure_offsets: free variable \
+          offset for %a would be defined multiple times"
+        Var_within_closure.print var_within_closure
+    end;
     let map = Var_within_closure.Map.add var_within_closure pos map in
     (map, pos + 1)
   in

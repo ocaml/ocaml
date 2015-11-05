@@ -71,6 +71,37 @@ let is_function_constant t closure_id =
     Misc.fatal_errorf "Flambda_to_clambda: missing closure %a"
       Closure_id.print closure_id
 
+(* Instrumentation of closure and field accesses to try to catch compiler
+   bugs. *)
+
+let check_closure ulam : Clambda.ulambda =
+  if not !Clflags.clambda_checks then ulam
+  else
+    let desc =
+      Primitive.simple ~name:"caml_check_value_is_closure"
+        ~arity:1 ~alloc:false
+    in
+    Uprim (Pccall desc, [ulam], Debuginfo.none)
+
+let check_field ulam pos named_opt : Clambda.ulambda =
+  if not !Clflags.clambda_checks then ulam
+  else
+    let desc =
+      Primitive.simple ~name:"caml_check_field_access"
+        ~arity:3 ~alloc:false
+    in
+    let str =
+      match named_opt with
+      | None -> "<none>"
+      | Some named -> Format.asprintf "%a" Flambda.print_named named
+    in
+    let str_const =
+      Compilenv.new_structured_constant (Uconst_string str) ~shared:true
+    in
+    Uprim (Pccall desc, [ulam; Clambda.Uconst (Uconst_int pos);
+        Clambda.Uconst (Uconst_ref (str_const, None))],
+      Debuginfo.none)
+
 module Env : sig
   type t
 
@@ -207,7 +238,8 @@ let rec to_clambda t env (flam : Flambda.t) : Clambda.ulambda =
        it already appears in the list of parameters of the clambda
        function for generic calls. Notice that for direct calls it is
        added here. *)
-    Ugeneric_apply (subst_var env func, subst_vars env args, dbg)
+    let callee = subst_var env func in
+    Ugeneric_apply (check_closure callee, subst_vars env args, dbg)
   | Switch (arg, sw) ->
     let aux () : Clambda.ulambda =
       let const_index, const_actions =
@@ -317,26 +349,39 @@ and to_clambda_named t env var (named : Flambda.named) : Clambda.ulambda =
        relates to this code.  Can you explain? *)
     (* compilation of let rec in cmmgen assumes
        that a closure is not offseted (Cmmgen.expr_size) *)
-    build_uoffset (subst_var env set_of_closures) (get_fun_offset t closure_id)
+    check_closure (
+      build_uoffset
+        (check_closure (subst_var env set_of_closures))
+        (get_fun_offset t closure_id))
   | Move_within_set_of_closures { closure; start_from; move_to } ->
-    build_uoffset (subst_var env closure)
-      ((get_fun_offset t move_to) - (get_fun_offset t start_from))
+    check_closure (build_uoffset (check_closure (subst_var env closure))
+      ((get_fun_offset t move_to) - (get_fun_offset t start_from)))
   | Project_var { closure; var; closure_id } ->
     let ulam = subst_var env closure in
     let fun_offset = get_fun_offset t closure_id in
     let var_offset = get_fv_offset t var in
     let pos = var_offset - fun_offset in
-    Uprim (Pfield pos, [ulam], Debuginfo.none)
+    Uprim (Pfield pos, [check_field (check_closure ulam) pos (Some named)],
+      Debuginfo.none)
   (* CR mshinwell: these next two cases are probably now redundant.  Delete the
      primitives too *)
   | Prim (Pgetglobalfield (id, index), _, dbg) ->
     let ident = Ident.create_persistent (Compilenv.symbol_for_global id) in
-    Uprim (Pfield index, [Clambda.Uprim (Pgetglobal ident, [], dbg)], dbg)
+    Uprim (Pfield index,
+      [check_field (Clambda.Uprim (Pgetglobal ident, [], dbg)) index None],
+      dbg)
   | Prim (Psetglobalfield index, [arg], dbg) ->
     let ident = Ident.create_persistent (Compilenv.make_symbol None) in
     Uprim (Psetfield (index, false), [
-        Clambda.Uprim (Pgetglobal ident, [], dbg);
+        check_field (Clambda.Uprim (Pgetglobal ident, [], dbg)) index None;
         subst_var env arg;
+      ], dbg)
+  | Prim (Pfield index, [block], dbg) ->
+    Uprim (Pfield index, [check_field (subst_var env block) index None], dbg)
+  | Prim (Psetfield (index, maybe_ptr), [block; new_value], dbg) ->
+    Uprim (Psetfield (index, maybe_ptr), [
+        check_field (subst_var env block) index None;
+        subst_var env new_value;
       ], dbg)
   | Prim (p, args, dbg) -> Uprim (p, subst_vars env args, dbg)
   | Expr expr -> to_clambda t env expr

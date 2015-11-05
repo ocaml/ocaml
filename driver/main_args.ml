@@ -43,6 +43,10 @@ let mk_ccopt f =
   "<opt>  Pass option <opt> to the C compiler and linker"
 ;;
 
+let mk_clambda_checks f =
+  "-clambda-checks", Arg.Unit f, " Instrument clambda code with closure and field access checks"
+;;
+
 let mk_compact f =
   "-compact", Arg.Unit f, " Optimize code size rather than speed"
 ;;
@@ -682,6 +686,7 @@ module type Optcommon_options = sig
   val _unbox_closures : unit -> unit
   val _branch_inline_factor : float -> unit
 
+  val _clambda_checks : unit -> unit
   val _dflambda : unit -> unit
   val _dflambda_let : int -> unit
   val _dclambda : unit -> unit
@@ -883,6 +888,7 @@ struct
     mk_cc F._cc;
     mk_cclib F._cclib;
     mk_ccopt F._ccopt;
+    mk_clambda_checks F._clambda_checks;
     mk_color F._color;
     mk_compact F._compact;
     mk_config F._config;

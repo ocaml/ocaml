@@ -672,6 +672,9 @@ let rec expr_size env = function
       RHS_block (sz + 1)
   | Uprim (Pduprecord (Record_float, sz), _, _) ->
       RHS_floatblock sz
+  | Uprim (Pccall { prim_name; _ }, closure::_, _)
+        when prim_name = "caml_check_value_is_closure" ->
+      expr_size env closure
   | Usequence(exp, exp') ->
       expr_size env exp'
   | _ -> RHS_nonrec

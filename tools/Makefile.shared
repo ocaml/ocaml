@@ -73,10 +73,10 @@ ocamlprof: $(CSLPROF) profiling.cmo
 	$(CAMLC) $(LINKFLAGS) -o ocamlprof ${BISECT_CMA} $(CSLPROF_IMPORTS) $(CSLPROF)
 
 ocamlcp: ocamlcp.cmo
-	$(CAMLC) $(LINKFLAGS) -o ocamlcp ${BISECT_CMA} warnings.cmo main_args.cmo ocamlcp.cmo
+	$(CAMLC) $(LINKFLAGS) -o ocamlcp ${BISECT_CMA} warnings.cmo config.cmo clflags.cmo main_args.cmo ocamlcp.cmo
 
 ocamloptp: ocamloptp.cmo
-	$(CAMLC) $(LINKFLAGS) -o ocamloptp ${BISECT_CMA} warnings.cmo main_args.cmo \
+	$(CAMLC) $(LINKFLAGS) -o ocamloptp ${BISECT_CMA} warnings.cmo config.cmo clflags.cmo main_args.cmo \
 	         ocamloptp.cmo
 
 opt:: profiling.cmx

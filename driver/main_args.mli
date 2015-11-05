@@ -129,6 +129,7 @@ module type Optcommon_options = sig
   val _unbox_closures : unit -> unit
   val _branch_inline_factor : float -> unit
 
+  val _clambda_checks : unit -> unit
   val _dflambda : unit -> unit
   val _dflambda_let : int -> unit
   val _dclambda : unit -> unit
