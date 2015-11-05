@@ -1557,7 +1557,8 @@ match_case:
       { Exp.case $1 (Exp.unreachable ~loc:(rhs_loc 3) ())}
 ;
 fun_def:
-    MINUSGREATER seq_expr                       { $2 }
+    MINUSGREATER seq_expr                        { $2 }
+  | COLON simple_core_type MINUSGREATER seq_expr { mkexp (Pexp_constraint ($4, $2)) }
 /* Cf #5939: we used to accept (fun p when e0 -> e) */
   | labeled_simple_pattern fun_def
       {
