@@ -153,6 +153,7 @@ Standard library:
   * {Nativeint,Int32,Int64}.{of,to}_float
   * Int{32,64}.float_of_bits
   * Int{32,64}.bits_of_float
+  (Jérémie Dimino)
 
 Type system:
 - PR#5545: Type annotations on methods cannot control the choice of abbreviation
