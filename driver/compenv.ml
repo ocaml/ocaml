@@ -198,6 +198,8 @@ let read_one_param ppf position name v =
       | "runtime-variant" -> runtime_variant := v
       | "cc" -> c_compiler := Some v
 
+      | "clambda-checks" -> set "clambda-checks" [ clambda_checks ] v
+
       (* assembly sources *)
       |  "s" ->
         set "s" [ Clflags.keep_asm_file ; Clflags.keep_startup_file ] v
