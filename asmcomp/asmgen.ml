@@ -120,10 +120,17 @@ let compile_genfuns ppf f =
     (Cmmgen.generic_functions true [Compilenv.current_unit_infos ()])
 
 let prep_flambda_for_export ppf flam ~backend =
-  let kind = Flambda_invariants.Lifted in
+  let check pass flam =
+    try Flambda_invariants.check_exn flam
+    with exn ->
+      Misc.fatal_errorf "Before backend, after pass %s@.%s:@.%a"
+        pass (Printexc.to_string exn)
+        Flambda.print_program flam
+  in
   if !Clflags.dump_flambda
   then begin
-    Format.fprintf ppf "@.Starting Lift_constants:@."
+    Format.fprintf ppf "@.Starting Lift_constants:@ %a@."
+      Flambda.print_program flam
   end;
   let program = Lift_constants.lift_constants flam ~backend in
   if !Clflags.dump_flambda
@@ -131,7 +138,7 @@ let prep_flambda_for_export ppf flam ~backend =
     Format.fprintf ppf "@.After Lift_constants (before invariants):@ %a@."
       Flambda.print_program program
   end;
-  Flambda_invariants.check_exn ~kind program;
+  check "Lift_constants" program;
   if !Clflags.dump_flambda
   then begin
     Format.fprintf ppf "@.After Lift_constants:@ %a@."
@@ -147,21 +154,13 @@ let prep_flambda_for_export ppf flam ~backend =
     Format.fprintf ppf "@.After Share_constants (before invariants):@ %a@."
       Flambda.print_program program
   end;
-  Flambda_invariants.check_exn ~kind program;
+  check "Share_constants" program;
   if !Clflags.dump_flambda
   then begin
     Format.fprintf ppf "@.After Share_constants:@ %a@."
       Flambda.print_program program
   end;
-  (* CR mshinwell for pchambart: Are we missing a call to
-     [Inline_and_simplify] here? *)
-  if !Clflags.dump_flambda
-  then begin
-    Format.fprintf ppf "@.After Inline_and_simplify:@ %a@."
-      Flambda.print_program program
-  end;
   let export = Build_export_info.build_export_info ~backend program in
-  Flambda_invariants.check_exn ~kind program;
   program, export
 
 let compile_unit ~sourcefile _output_prefix asm_filename keep_asm obj_filename gen =
