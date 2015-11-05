@@ -104,12 +104,12 @@ let add_buffer b bs =
 
 (* read up to [len] bytes from [ic] into [b]. *)
 let rec add_channel_rec b ic len =
-  if len > 0 then (
+  if len > 0 do
     let n = input ic b.buffer b.position len in
     b.position <- b.position + n;
     if n = 0 then raise End_of_file
     else add_channel_rec b ic (len-n)   (* n <= len *)
-  )
+  done
 
 let add_channel b ic len =
   if len < 0 || len > Sys.max_string_length do (* PR#5004 *)
@@ -186,5 +186,5 @@ let add_substitute b f s =
          add_char b current;
          subst current (i + 1)
     end else
-    if previous = '\\' then add_char b previous in
+    if previous = '\\' do add_char b previous done in
   subst ' ' 0;;

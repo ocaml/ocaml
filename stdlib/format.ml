@@ -259,11 +259,12 @@ let break_same_line state width =
 let pp_force_break_line state =
   match state.pp_format_stack with
   | Format_elem (bl_ty, width) :: _ ->
-    if width > state.pp_space_left then
-      (match bl_ty with
-       | Pp_fits -> () | Pp_hbox -> ()
-       | Pp_vbox | Pp_hvbox | Pp_hovbox | Pp_box ->
-         break_line state width)
+    if width > state.pp_space_left do
+      match bl_ty with
+      | Pp_fits -> () | Pp_hbox -> ()
+      | Pp_vbox | Pp_hvbox | Pp_hovbox | Pp_box ->
+        break_line state width
+    done
   | [] -> pp_output_newline state
 ;;
 
@@ -361,7 +362,7 @@ let format_pp_token state size = function
 
   | Pp_if_newline ->
     if state.pp_current_indent != state.pp_margin - state.pp_space_left
-    then pp_skip_token state
+    do pp_skip_token state done
 
   | Pp_break (n, off) ->
     begin match state.pp_format_stack with
@@ -416,12 +417,12 @@ let rec advance_loop state =
     if not
          (size < 0 &&
           (state.pp_right_total - state.pp_left_total < state.pp_space_left))
-    then begin
+    do
       ignore (take_queue state.pp_queue);
       format_pp_token state (if size < 0 then pp_infinity else size) tok;
       state.pp_left_total <- len + state.pp_left_total;
       advance_loop state
-    end
+    done
 ;;
 
 let advance_left state =
@@ -474,17 +475,15 @@ let set_size state ty =
     if left_tot < state.pp_left_total then clear_scan_stack state else
       begin match tok with
       | Pp_break (_, _) | Pp_tbreak (_, _) ->
-        if ty then
-        begin
+        if ty do
           queue_elem.elem_size <- size_of_int (state.pp_right_total + size);
           state.pp_scan_stack <- t
-        end
+        done
       | Pp_begin (_, _) ->
-        if not ty then
-        begin
+        if not ty do
           queue_elem.elem_size <- size_of_int (state.pp_right_total + size);
           state.pp_scan_stack <- t
-        end
+        done
       | Pp_text _ | Pp_stab | Pp_tbegin _ | Pp_tend | Pp_end
       | Pp_newline | Pp_if_newline
       | Pp_open_tag _ | Pp_close_tag ->
@@ -514,7 +513,7 @@ let pp_open_box_gen state indent br_ty =
         0 in
     scan_push state false elem else
   if state.pp_curr_depth = state.pp_max_boxes
-  then enqueue_string state state.pp_ellipsis
+  do enqueue_string state state.pp_ellipsis done
 ;;
 
 (* The box which is always opened. *)
@@ -538,12 +537,13 @@ let pp_open_tag state tag_name =
     state.pp_tag_stack <- tag_name :: state.pp_tag_stack;
     state.pp_print_open_tag tag_name
   done;
-  if state.pp_mark_tags then
+  if state.pp_mark_tags do
     pp_enqueue state {
       elem_size = size_of_int 0;
       token = Pp_open_tag tag_name;
       length = 0;
     }
+  done
 ;;
 
 (* Close a tag, popping it from the tag stack. *)
@@ -555,14 +555,13 @@ let pp_close_tag state () =
       length = 0;
     }
   done;
-  if state.pp_print_tags then
-  begin
+  if state.pp_print_tags do
     match state.pp_tag_stack with
     | tag_name :: tags ->
       state.pp_print_close_tag tag_name;
       state.pp_tag_stack <- tags
     | _ -> () (* No more tag to close. *)
-  end
+  done
 ;;
 
 let pp_set_print_tags state b = state.pp_print_tags <- b;;
@@ -627,7 +626,7 @@ let pp_flush_queue state b =
 (* To format a string. *)
 let pp_print_as_size state size s =
   if state.pp_curr_depth < state.pp_max_boxes
-  then enqueue_string_as state size s
+  do enqueue_string_as state size s done
 ;;
 
 let pp_print_as state isize s =
@@ -671,14 +670,16 @@ and pp_print_flush state () =
 
 (* To get a newline when one does not want to close the current block. *)
 let pp_force_newline state () =
-  if state.pp_curr_depth < state.pp_max_boxes then
+  if state.pp_curr_depth < state.pp_max_boxes do
     enqueue_advance state (make_queue_elem (size_of_int 0) Pp_newline 0)
+  done
 ;;
 
 (* To format something if the line has just been broken. *)
 let pp_print_if_newline state () =
-  if state.pp_curr_depth < state.pp_max_boxes then
+  if state.pp_curr_depth < state.pp_max_boxes do
     enqueue_advance state (make_queue_elem (size_of_int 0) Pp_if_newline 0)
+  done
 ;;
 
 (* Breaks: indicate where a block may be broken.
@@ -686,13 +687,14 @@ let pp_print_if_newline state () =
    block else (the value of) width blanks are printed.
    To do (?) : add a maximum width and offset value. *)
 let pp_print_break state width offset =
-  if state.pp_curr_depth < state.pp_max_boxes then
+  if state.pp_curr_depth < state.pp_max_boxes do
     let elem =
       make_queue_elem
         (size_of_int (- state.pp_right_total))
         (Pp_break (width, offset))
         width in
     scan_push state true elem
+  done
 ;;
 
 let pp_print_space state () = pp_print_break state 1 0
@@ -702,41 +704,42 @@ and pp_print_cut state () = pp_print_break state 0 0
 (* Tabulation boxes. *)
 let pp_open_tbox state () =
   state.pp_curr_depth <- state.pp_curr_depth + 1;
-  if state.pp_curr_depth < state.pp_max_boxes then
+  if state.pp_curr_depth < state.pp_max_boxes do
     let elem =
       make_queue_elem (size_of_int 0) (Pp_tbegin (Pp_tbox (ref []))) 0 in
     enqueue_advance state elem
+  done
 ;;
 
 (* Close a tabulation block. *)
 let pp_close_tbox state () =
-  if state.pp_curr_depth > 1 then
-  begin
-   if state.pp_curr_depth < state.pp_max_boxes then
-     let elem = make_queue_elem (size_of_int 0) Pp_tend 0 in
-     enqueue_advance state elem;
-     state.pp_curr_depth <- state.pp_curr_depth - 1
-  end
+  if state.pp_curr_depth > 1 && state.pp_curr_depth < state.pp_max_boxes do
+   let elem = make_queue_elem (size_of_int 0) Pp_tend 0 in
+   enqueue_advance state elem;
+   state.pp_curr_depth <- state.pp_curr_depth - 1
+  done
 ;;
 
 (* Print a tabulation break. *)
 let pp_print_tbreak state width offset =
-  if state.pp_curr_depth < state.pp_max_boxes then
+  if state.pp_curr_depth < state.pp_max_boxes do
     let elem =
       make_queue_elem
         (size_of_int (- state.pp_right_total))
         (Pp_tbreak (width, offset))
         width in
     scan_push state true elem
+  done
 ;;
 
 let pp_print_tab state () = pp_print_tbreak state 0 0;;
 
 let pp_set_tab state () =
-  if state.pp_curr_depth < state.pp_max_boxes then
+  if state.pp_curr_depth < state.pp_max_boxes do
     let elem =
       make_queue_elem (size_of_int 0) Pp_stab 0 in
     enqueue_advance state elem
+  done
 ;;
 
 
@@ -771,7 +774,7 @@ let pp_print_text ppf s =
          as it is unclear what a right semantics would be *)
       | _ -> incr right
   done;
-  if !left <> len then flush ()
+  if !left <> len do flush () done
 
 
 (**************************************************************
@@ -781,7 +784,7 @@ let pp_print_text ppf s =
  **************************************************************)
 
 (* Fit max_boxes. *)
-let pp_set_max_boxes state n = if n > 1 then state.pp_max_boxes <- n;;
+let pp_set_max_boxes state n = if n > 1 do state.pp_max_boxes <- n done;;
 
 (* To know the current maximum number of boxes allowed. *)
 let pp_get_max_boxes state () = state.pp_max_boxes;;
@@ -799,11 +802,12 @@ let pp_limit n =
 ;;
 
 let pp_set_min_space_left state n =
-  if n >= 1 then
+  if n >= 1 do
     let n = pp_limit n in
     state.pp_min_space_left <- n;
     state.pp_max_indent <- state.pp_margin - state.pp_min_space_left;
     pp_rinit state
+  done
 ;;
 
 (* Initially, we have :
@@ -816,7 +820,7 @@ let pp_set_max_indent state n =
 let pp_get_max_indent state () = state.pp_max_indent;;
 
 let pp_set_margin state n =
-  if n >= 1 then
+  if n >= 1 do
     let n = pp_limit n in
     state.pp_margin <- n;
     let new_max_indent =
@@ -830,6 +834,7 @@ let pp_set_margin state n =
                 (state.pp_margin / 2)) 1 in
     (* Rebuild invariants. *)
     pp_set_max_indent state new_max_indent
+  done
 ;;
 
 let pp_get_margin state () = state.pp_margin;;
@@ -886,12 +891,13 @@ let display_newline state () = state.pp_out_string "\n" 0  1;;
 (* Default function to output spaces. *)
 let blank_line = String.make 80 ' ';;
 let rec display_blanks state n =
-  if n > 0 then
-  if n <= 80 then state.pp_out_string blank_line 0 n else
-  begin
-    state.pp_out_string blank_line 0 80;
-    display_blanks state (n - 80)
-  end
+  if n > 0 do
+   if n <= 80 do state.pp_out_string blank_line 0 n done else
+    do
+      state.pp_out_string blank_line 0 80;
+      display_blanks state (n - 80)
+    done
+  done
 ;;
 
 let pp_set_formatter_out_channel state os =

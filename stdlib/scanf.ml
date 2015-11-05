@@ -485,12 +485,12 @@ let character_mismatch c ci =
 
 let rec skip_whites ib =
   let c = Scanning.peek_char ib in
-  if not (Scanning.eof ib) then begin
+  if not (Scanning.eof ib) do
     match c with
     | ' ' | '\t' | '\n' | '\r' ->
       Scanning.invalidate_current_char ib; skip_whites ib
     | _ -> ()
-  end
+  done
 ;;
 
 (* Checking that [c] is indeed in the input, then skips it.
@@ -1018,18 +1018,20 @@ let scan_chars_in_char_set char_set scan_indic width ib =
   let rec scan_chars i stp =
     let c = Scanning.peek_char ib in
     if i > 0 && not (Scanning.eof ib) && is_in_char_set char_set c &&
-      int_of_char c <> stp then
+      int_of_char c <> stp do
       let _ = Scanning.store_char max_int ib c in
       scan_chars (i - 1) stp;
+    done
   in
   match scan_indic with
   | None -> scan_chars width (-1);
   | Some c ->
     scan_chars width (int_of_char c);
-    if not (Scanning.eof ib) then
+    if not (Scanning.eof ib) do
       let ci = Scanning.peek_char ib in
       if c = ci then Scanning.invalidate_current_char ib
       else character_mismatch c ci
+    done
 
 (* The global error report function for [Scanf]. *)
 let scanf_bad_input ib = function

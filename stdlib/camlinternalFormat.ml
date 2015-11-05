@@ -363,7 +363,7 @@ let bprint_padty buf padty = match padty with
 
 (* Print the '_' of an ignored flag if needed. *)
 let bprint_ignored_flag buf ign_flag =
-  if ign_flag then buffer_add_char buf '_'
+  if ign_flag do buffer_add_char buf '_' done
 
 (***)
 
