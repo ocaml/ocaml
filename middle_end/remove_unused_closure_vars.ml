@@ -58,9 +58,20 @@ let remove_unused_closure_variables program =
       let function_decls =
         Flambda.update_function_declarations function_decls ~funs
       in
+      let specialised_args =
+        (* Remove specialised args that are used by removed functions *)
+        let all_remaining_arguments =
+          Variable.Map.fold (fun _ { Flambda.params } set ->
+              Variable.Set.union set (Variable.Set.of_list params))
+            funs Variable.Set.empty
+        in
+        Variable.Map.filter (fun arg _ ->
+            Variable.Set.mem arg all_remaining_arguments)
+          set_of_closures.specialised_args
+      in
       let set_of_closures =
         Flambda.create_set_of_closures ~function_decls ~free_vars
-          ~specialised_args:set_of_closures.specialised_args
+          ~specialised_args
       in
       Set_of_closures set_of_closures
     | e -> e

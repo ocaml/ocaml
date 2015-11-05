@@ -314,8 +314,14 @@ and print_named ppf (named : named) =
 and print_function_declaration ppf var (f : function_declaration) =
   let idents ppf =
     List.iter (fprintf ppf "@ %a" Variable.print) in
-  fprintf ppf "@[<2>(%a@ =@ fun@[<2>%a@] ->@ @[<2>%a@])@]@ "
-    Variable.print var idents f.params lam f.body
+  let stub =
+    if f.stub then
+      " *stub*"
+    else
+      ""
+  in
+  fprintf ppf "@[<2>(%a%s@ =@ fun@[<2>%a@] ->@ @[<2>%a@])@]@ "
+    Variable.print var stub idents f.params lam f.body
 
 and print_set_of_closures ppf (set_of_closures : set_of_closures) =
   match set_of_closures with
@@ -335,8 +341,8 @@ and print_set_of_closures ppf (set_of_closures : set_of_closures) =
           spec_args
       end
     in
-    fprintf ppf "@[<2>(set_of_closures id=%a@ %a@ free_vars={%a@ }@ \
-        specialised_args={%a})@]"
+    fprintf ppf "@[<2>(set_of_closures id=%a@ %a@ @[<2>free_vars={%a@ }@]@ \
+        @[<2>specialised_args={%a})@]@]"
       Set_of_closures_id.print function_decls.set_of_closures_id
       funs function_decls.funs
       vars free_vars spec specialised_args
@@ -463,14 +469,18 @@ let rec variables_usage ?ignore_uses_in_apply ?ignore_uses_in_project_var
       | Apply { func; args; kind = _; dbg = _} ->
         begin match ignore_uses_in_apply with
         | None ->
-          free_variable func
+          free_variable func;
+          List.iter free_variable args
         | Some () -> ()
         end;
-        List.iter free_variable args
       | Let { var; free_vars_of_defining_expr; free_vars_of_body;
               defining_expr; body; _ } ->
         bound_variable var;
-        if all_used_variables then begin
+        if all_used_variables
+           || ignore_uses_in_apply <> None
+           || ignore_uses_in_project_var <> None then begin
+          (* In those cases whe can't benefit from the pre-computed free
+             variables sets *)
           free_variables
             (variables_usage_named ?ignore_uses_in_project_var ?ignore_uses_in_apply
                ~all_used_variables defining_expr);

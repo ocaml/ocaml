@@ -151,11 +151,23 @@ let do_rewrite_set_of_closures (set_of_closures : Flambda.set_of_closures) =
     ~free_vars:set_of_closures.free_vars
     ~specialised_args
 
+let contains_stub (fun_decls : Flambda.function_declarations) =
+  let number_of_stub_functions =
+    Variable.Map.cardinal
+      (Variable.Map.filter (fun _ { Flambda.stub } -> stub)
+         fun_decls.funs)
+  in
+  number_of_stub_functions > 0
+
 let introduce_specialised_args_for_free_vars
     (set_of_closures : Flambda.set_of_closures) =
-  if Variable.Map.is_empty set_of_closures.specialised_args
-     || (Variable.Map.is_empty set_of_closures.free_vars)
-  then
+  let candidate_for_transformation =
+    not (Variable.Map.is_empty set_of_closures.free_vars)
+    && (Variable.Map.is_empty set_of_closures.specialised_args
+        || contains_stub set_of_closures.function_decls)
+  in
+
+  if not candidate_for_transformation then
     set_of_closures
   else
     (* let () = *)
