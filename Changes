@@ -53,6 +53,9 @@ Language features:
   (Valentin Gatien-Baron, review by Jérémie Dimino)
 - PR#6806: Allow type annotations before the "->" in "fun <args> -> <expr>"
   (Valentin Gatien-Baron, review by Jérémie Dimino)
+- GPR#282: change short-paths penalty heuristic to assign the same cost to
+  idents containing double underscores as to idents starting with an underscore
+  (Thomas Refis, Leo White)
 
 Compilers:
 - PR#4800: better compilation of tuple assignment (Gabriel Scherer and
@@ -94,6 +97,9 @@ Compilers:
   (Mark Shinwell)
 - GPR#270: Make [transl_exception_constructor] generate [Immutable] blocks
   (Mark Shinwell)
+- GPR#282: relax short-paths safety check in presence of module aliases, take
+  penalty into account while building the printing map.
+  (Thomas Refis, Leo White)
 
 Runtime system:
 - PR#3612: allow allocating custom block with finalizers in the minor heap
