@@ -67,7 +67,8 @@ OCAMLMKLIB=$(OCAMLRUN) $(OTOPDIR)/tools/ocamlmklib \
 		                  $(OTOPDIR)/ocamlopt $(OCFLAGS)"
 OCAMLYACC=$(TOPDIR)/yacc/ocamlyacc$(EXE)
 OCAMLBUILD=$(TOPDIR)/_build/ocamlbuild/ocamlbuild.native
-DUMPOBJ=$(OCAMLRUN) $(OTOPDIR)/tool/dumpobj
+DUMPOBJ=$(OCAMLRUN) $(OTOPDIR)/tools/dumpobj
+OBJINFO=$(OCAMLRUN) $(OTOPDIR)/tools/objinfo
 BYTECODE_ONLY=[ "$(ARCH)" = "none" -o "$(ASM)" = "none" ]
 NATIVECODE_ONLY=false
 
