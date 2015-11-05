@@ -225,6 +225,13 @@ CAMLprim value caml_frexp_float(value f)
   CAMLreturn (res);
 }
 
+// Seems dumb but intnat could not correspond to int type.
+double caml_ldexp_float_unboxed(double f, intnat i)
+{
+  return ldexp(f, i);
+}
+
+
 CAMLprim value caml_ldexp_float(value f, value i)
 {
   return caml_copy_double(ldexp(Double_val(f), Int_val(i)));
@@ -438,15 +445,18 @@ CAMLprim value caml_gt_float(value f, value g)
   return Val_bool(Double_val(f) > Double_val(g));
 }
 
-CAMLprim value caml_float_compare(value vf, value vg)
+intnat caml_float_compare_unboxed(double f, double g)
 {
-  double f = Double_val(vf);
-  double g = Double_val(vg);
   /* If one or both of f and g is NaN, order according to the convention
      NaN = NaN and NaN < x for all other floats x. */
   /* This branchless implementation is from GPR#164.
      Note that [f == f] if and only if f is not NaN. */
-  return Val_int((f > g) - (f < g) + (f == f) - (g == g));
+  return (f > g) - (f < g) + (f == f) - (g == g);
+}
+
+CAMLprim value caml_float_compare(value vf, value vg)
+{
+  return Val_int(caml_float_compare_unboxed(Double_val(vf),Double_val(vg)));
 }
 
 enum { FP_normal, FP_subnormal, FP_zero, FP_infinite, FP_nan };

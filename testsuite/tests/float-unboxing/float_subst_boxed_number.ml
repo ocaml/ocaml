@@ -74,5 +74,15 @@ let unbox_classify_float () =
     x := !x +. 1.
   done
 
+let unbox_compare_float () =
+  let module M = struct type sf = { mutable x: float; y: float; } end in
+  let x = { M.x=100. ; y=1. } in
+  for i = 1 to 1000 do
+    assert (compare x.M.x x.M.y >= 0);
+    x.M.x <- x.M.x +. 1.
+  done
+
 let () =
-  check_noalloc "classify float" unbox_classify_float
+  check_noalloc "classify float" unbox_classify_float;
+  check_noalloc "compare float" unbox_compare_float;
+  ()

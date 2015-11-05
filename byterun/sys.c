@@ -334,14 +334,14 @@ CAMLprim value caml_sys_system_command(value command)
   CAMLreturn (Val_int(retcode));
 }
 
-CAMLprim value caml_sys_time(value unit)
+double caml_sys_time_unboxed(value unit)
 {
 #ifdef HAS_GETRUSAGE
   struct rusage ru;
 
   getrusage (RUSAGE_SELF, &ru);
-  return caml_copy_double (ru.ru_utime.tv_sec + ru.ru_utime.tv_usec / 1e6
-                           + ru.ru_stime.tv_sec + ru.ru_stime.tv_usec / 1e6);
+  return ru.ru_utime.tv_sec + ru.ru_utime.tv_usec / 1e6
+    + ru.ru_stime.tv_sec + ru.ru_stime.tv_usec / 1e6;
 #else
   #ifdef HAS_TIMES
     #ifndef CLK_TCK
@@ -353,12 +353,17 @@ CAMLprim value caml_sys_time(value unit)
     #endif
     struct tms t;
     times(&t);
-    return caml_copy_double((double)(t.tms_utime + t.tms_stime) / CLK_TCK);
+    return (double)(t.tms_utime + t.tms_stime) / CLK_TCK;
   #else
     /* clock() is standard ANSI C */
-    return caml_copy_double((double)clock() / CLOCKS_PER_SEC);
+    return (double)clock() / CLOCKS_PER_SEC;
   #endif
 #endif
+}
+
+CAMLprim value caml_sys_time(value unit)
+{
+  return caml_copy_double(caml_sys_time_unboxed(unit));
 }
 
 #ifdef _WIN32

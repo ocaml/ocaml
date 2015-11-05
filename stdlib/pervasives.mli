@@ -454,7 +454,9 @@ external frexp : float -> float * int = "caml_frexp_float"
    zero.  When [f] is non-zero, they are defined by
    [f = x *. 2 ** n] and [0.5 <= x < 1.0]. *)
 
-external ldexp : float -> int -> float = "caml_ldexp_float"
+
+external ldexp : (float [@unboxed]) -> (int [@untagged]) -> (float [@unboxed]) =
+  "caml_ldexp_float" "caml_ldexp_float_unboxed" [@@noalloc]
 (** [ldexp x n] returns [x *. 2 ** n]. *)
 
 external modf : float -> float * float = "caml_modf_float"
