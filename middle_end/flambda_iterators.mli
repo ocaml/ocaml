@@ -74,7 +74,6 @@ val iter_named_toplevel
   -> Flambda.named
   -> unit
 
-(* CR mshinwell: rename to iter_on_set_of_closures *)
 val iter_on_sets_of_closures
    : (Flambda.set_of_closures -> unit)
   -> Flambda.t

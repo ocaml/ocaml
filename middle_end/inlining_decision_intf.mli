@@ -11,7 +11,7 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(* CR mshinwell: name of this source file could now be improved *)
+(* CR-someday mshinwell: name of this source file could now be improved *)
 
 type 'a by_copying_function_body =
      env:Inline_and_simplify_aux.Env.t
