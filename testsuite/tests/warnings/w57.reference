@@ -4,3 +4,6 @@ imperative if constructions
 File "w57.ml", line 4, characters 9-33:
 Warning 57: fragile "if .. then ..", consider using "if .. do .. done" for
 imperative if constructions
+File "w57.ml", line 6, characters 9-24:
+Warning 57: fragile "if .. then ..", consider using "if .. do .. done" for
+imperative if constructions
