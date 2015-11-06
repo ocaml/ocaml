@@ -587,6 +587,17 @@ CAMLexport void * caml_stat_alloc (asize_t sz)
   return result;
 }
 
+/* [sz] is a number of bytes */
+CAMLexport void * caml_stat_alloc_no_raise (asize_t sz)
+{
+  void * result = malloc (sz);
+
+#ifdef DEBUG
+  memset (result, Debug_uninit_stat, sz);
+#endif
+  return result;
+}
+
 CAMLexport void caml_stat_free (void * blk)
 {
   free (blk);
