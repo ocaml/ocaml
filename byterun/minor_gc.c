@@ -330,6 +330,8 @@ void caml_empty_minor_heap (void)
     CAML_INSTR_INT ("minor/promoted#", caml_allocated_words - prev_alloc_words);
     ++ caml_stat_minor_collections;
     if (caml_minor_gc_end_hook != NULL) (*caml_minor_gc_end_hook) ();
+  }else{
+    caml_final_empty_young ();
   }
 #ifdef DEBUG
   {

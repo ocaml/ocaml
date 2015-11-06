@@ -320,8 +320,12 @@ install:
 	cd stdlib; $(MAKE) install
 	cp lex/ocamllex $(INSTALL_BINDIR)/ocamllex$(EXE)
 	cp $(CAMLYACC)$(EXE) $(INSTALL_BINDIR)/ocamlyacc$(EXE)
-	cp utils/*.cmi parsing/*.cmi typing/*.cmi bytecomp/*.cmi driver/*.cmi \
-	   toplevel/*.cmi $(INSTALL_COMPLIBDIR)
+	cp utils/*.cmi utils/*.cmt utils/*.cmti \
+	   parsing/*.cmi parsing/*.cmt parsing/*.cmti \
+	   typing/*.cmi typing/*.cmt typing/*.cmti \
+	   bytecomp/*.cmi bytecomp/*.cmt bytecomp/*.cmti \
+	   driver/*.cmi driver/*.cmt driver/*.cmti \
+	   toplevel/*.cmi toplevel/*.cmt toplevel/*.cmti $(INSTALL_COMPLIBDIR)
 	cp compilerlibs/ocamlcommon.cma compilerlibs/ocamlbytecomp.cma \
 	   compilerlibs/ocamltoplevel.cma $(BYTESTART) $(TOPLEVELSTART) \
 	   $(INSTALL_COMPLIBDIR)
@@ -345,7 +349,7 @@ installopt:
 	cd asmrun; $(MAKE) install
 	cp ocamlopt $(INSTALL_BINDIR)/ocamlopt$(EXE)
 	cd stdlib; $(MAKE) installopt
-	cp asmcomp/*.cmi $(INSTALL_COMPLIBDIR)
+	cp asmcomp/*.cmi asmcomp/*.cmt asmcomp/*.cmti $(INSTALL_COMPLIBDIR)
 	cp compilerlibs/ocamloptcomp.cma $(OPTSTART) $(INSTALL_COMPLIBDIR)
 	if test -n "$(WITH_OCAMLDOC)"; then (cd ocamldoc; $(MAKE) installopt); \
 		else :; fi

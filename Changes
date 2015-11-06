@@ -1,3 +1,22 @@
+OCaml 4.02.3:
+-------------
+
+Bug fixes:
+- PR#6908: Top-level custom printing for GADTs: interface change in 4.02.2
+  (Grégoire Henry, report by Jeremy Yallop)
+- PR#6919: corrupted final_table
+  (ygrek)
+- PR#6926: Regression: ocamldoc lost unattached comment
+  (Damien Doligez, report by François Bobot)
+- PR#6930: Aliased result type of GADT constructor results in assertion failure
+  (Jacques Garrigue)
+
+Feature wishes:
+- PR#6691: install .cmt[i] files for stdlib and compiler-libs
+  (David Sheets, request by Gabriel Radanne)
+- GPR#37: New primitive: caml_alloc_dummy_function
+  (Hugo Heuzard)
+
 OCaml 4.02.2:
 -------------
 
