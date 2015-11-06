@@ -103,15 +103,16 @@ ASMCOMP=asmcomp/arch.cmo asmcomp/debuginfo.cmo \
 TOPLEVEL=toplevel/genprintval.cmo toplevel/toploop.cmo \
   toplevel/trace.cmo toplevel/topdirs.cmo toplevel/topmain.cmo
 
+OPTTOPLEVEL=toplevel/genprintval.cmo toplevel/opttoploop.cmo \
+  toplevel/opttopdirs.cmo toplevel/opttopmain.cmo
+
 BYTESTART=driver/main.cmo
 
 OPTSTART=driver/optmain.cmo
 
 TOPLEVELSTART=toplevel/topstart.cmo
 
-NATTOPOBJS=$(UTILS) $(PARSING) $(TYPING) $(COMP) $(ASMCOMP) \
-  toplevel/genprintval.cmo toplevel/opttoploop.cmo toplevel/opttopdirs.cmo \
-  toplevel/opttopmain.cmo toplevel/opttopstart.cmo
+OPTTOPLEVELSTART=toplevel/opttopstart.cmo
 
 PERVASIVES=$(STDLIB_MODULES) outcometree topdirs toploop
 
@@ -367,8 +368,10 @@ installoptopt:
 	cp compilerlibs/ocamlcommon.cmxa compilerlibs/ocamlcommon.a \
 	   compilerlibs/ocamlbytecomp.cmxa compilerlibs/ocamlbytecomp.a \
 	   compilerlibs/ocamloptcomp.cmxa compilerlibs/ocamloptcomp.a \
+	   compilerlibs/ocamlopttoplevel.cmxa compilerlibs/ocamlopttoplevel.a \
 	   $(BYTESTART:.cmo=.cmx) $(BYTESTART:.cmo=.o) \
 	   $(OPTSTART:.cmo=.cmx) $(OPTSTART:.cmo=.o) \
+           $(OPTTOPLEVELSTART:.cmo=.cmx) $(OPTTOPLEVELSTART:.cmo=.o) \
 	   $(INSTALL_COMPLIBDIR)
 	cd $(INSTALL_COMPLIBDIR) && $(RANLIB) ocamlcommon.a ocamlbytecomp.a \
 	   ocamloptcomp.a
@@ -434,9 +437,17 @@ partialclean::
 
 # The native toplevel
 
-ocamlnat: ocamlopt otherlibs/dynlink/dynlink.cmxa $(NATTOPOBJS:.cmo=.cmx)
-	$(CAMLOPT) $(LINKFLAGS) otherlibs/dynlink/dynlink.cmxa -o ocamlnat \
-	           $(NATTOPOBJS:.cmo=.cmx) -linkall
+compilerlibs/ocamlopttoplevel.cmxa: $(OPTTOPLEVEL:.cmo=.cmx)
+	$(CAMLOPT) -a -o $@ $(OPTTOPLEVEL:.cmo=.cmx)
+partialclean::
+	rm -f compilerlibs/ocamlopttoplevel.cmxa
+
+ocamlnat: compilerlibs/ocamlcommon.cmxa compilerlibs/ocamloptcomp.cmxa \
+	  otherlibs/dynlink/dynlink.cmxa compilerlibs/ocamlopttoplevel.cmxa $(OPTTOPLEVELSTART:.cmo=.cmx)
+	$(CAMLOPT) $(LINKFLAGS) -linkall -o ocamlnat \
+	  otherlibs/dynlink/dynlink.cmxa compilerlibs/ocamlcommon.cmxa \
+	  compilerlibs/ocamloptcomp.cmxa compilerlibs/ocamlopttoplevel.cmxa \
+	  $(OPTTOPLEVELSTART:.cmo=.cmx)
 
 toplevel/opttoploop.cmx: otherlibs/dynlink/dynlink.cmxa
 

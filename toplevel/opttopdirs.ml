@@ -34,6 +34,15 @@ let dir_directory s =
   Config.load_path := d :: !Config.load_path
 
 let _ = Hashtbl.add directive_table "directory" (Directive_string dir_directory)
+(* To remove a directory from the load path *)
+let dir_remove_directory s =
+  let d = expand_directory Config.standard_library s in
+  Config.load_path := List.filter (fun d' -> d' <> d) !Config.load_path
+
+let _ =
+  Hashtbl.add directive_table "remove_directory"
+    (Directive_string dir_remove_directory)
+
 let _ = Hashtbl.add directive_table "show_dirs"
   (Directive_none
      (fun () ->
@@ -135,7 +144,7 @@ let find_printer_type ppf lid =
 let dir_install_printer ppf lid =
   try
     let (ty_arg, path, is_old_style) = find_printer_type ppf lid in
-    let v = eval_path path in
+    let v = eval_path !toplevel_env path in
     let print_function =
       if is_old_style then
         (fun formatter repr -> Obj.obj v (Obj.obj repr))
