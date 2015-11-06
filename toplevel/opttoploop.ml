@@ -20,6 +20,7 @@ open Parsetree
 open Types
 open Typedtree
 open Outcometree
+open Ast_helper
 
 type res = Ok of Obj.t | Err of string
 type evaluation_outcome = Result of Obj.t | Exception of exn
@@ -74,12 +75,15 @@ let rec eval_path = function
   | Papply(p1, p2) ->
       fatal_error "Toploop.eval_path"
 
+let eval_path env path =
+  eval_path (Env.normalize_path (Some Location.none) env path)
+
 (* To print values *)
 
 module EvalPath = struct
   type valu = Obj.t
   exception Error
-  let eval_path p = try eval_path p with _ -> raise Error
+  let eval_path env p = try eval_path env p with _ -> raise Error
   let same_value v1 v2 = (v1 == v2)
 end
 
@@ -105,7 +109,13 @@ let outval_of_value env obj ty =
 let print_value env obj ppf ty =
   !print_out_value ppf (outval_of_value env obj ty)
 
+type ('a, 'b) gen_printer = ('a, 'b) Genprintval.gen_printer =
+  | Zero of 'b
+  | Succ of ('a -> ('a, 'b) gen_printer)
+
 let install_printer = Printer.install_printer
+let install_generic_printer = Printer.install_generic_printer
+let install_generic_printer' = Printer.install_generic_printer'
 let remove_printer = Printer.remove_printer
 
 (* Hooks for parsing functions *)
@@ -116,6 +126,25 @@ let print_location = Location.print_error (* FIXME change back to print *)
 let print_error = Location.print_error
 let print_warning = Location.print_warning
 let input_name = Location.input_name
+
+let parse_mod_use_file name lb =
+  let modname =
+    String.capitalize (Filename.chop_extension (Filename.basename name))
+  in
+  let items =
+    List.concat
+      (List.map
+         (function Ptop_def s -> s | Ptop_dir _ -> [])
+         (!parse_use_file lb))
+  in
+  [ Ptop_def
+      [ Str.module_
+          (Mb.mk
+             (Location.mknoloc modname)
+             (Mod.structure items)
+          )
+       ]
+   ]
 
 (* Hooks for initialization *)
 
@@ -153,7 +182,9 @@ let load_lambda ppf (size, lam) =
 
 (* Print the outcome of an evaluation *)
 
-let rec pr_item env = function
+let rec pr_item env items =
+  Printtyp.hide_rec_items items;
+  match items with
   | Sig_value(id, decl) :: rem ->
       let tree = Printtyp.tree_of_value_description id decl in
       let valopt =
@@ -175,8 +206,8 @@ let rec pr_item env = function
   | Sig_typext(id, ext, es) :: rem ->
       let tree = Printtyp.tree_of_extension_constructor id ext es in
       Some (tree, None, rem)
-  | Sig_module(id, mty, rs) :: rem ->
-      let tree = Printtyp.tree_of_module id mty rs in
+  | Sig_module(id, md, rs) :: rem ->
+      let tree = Printtyp.tree_of_module id md.md_type rs in
       Some (tree, None, rem)
   | Sig_modtype(id, decl) :: rem ->
       let tree = Printtyp.tree_of_modtype_declaration id decl in
@@ -225,9 +256,10 @@ let execute_phrase print_outcome ppf phr =
       phrase_name := Printf.sprintf "TOP%i" !phrase_seqid;
       Compilenv.reset ?packname:None !phrase_name;
       Typecore.reset_delayed_checks ();
-      let (str, sg, newenv) = Typemod.type_structure oldenv sstr Location.none
-      in
+      let (str, sg, newenv) = Typemod.type_toplevel_phrase oldenv sstr in
       if !Clflags.dump_typedtree then Printtyped.implementation ppf str;
+      let sg' = Typemod.simplify_signature sg in
+      ignore (Includemod.signatures oldenv sg sg');
       Typecore.force_delayed_checks ();
       let res = Translmod.transl_store_phrases !phrase_name str in
       Warnings.check_fatal ();
@@ -239,16 +271,14 @@ let execute_phrase print_outcome ppf phr =
           | Result v ->
               Compilenv.record_global_approx_toplevel ();
               if print_outcome then
+                Printtyp.wrap_printing_env oldenv (fun () ->
                 match str.str_items with
-                | [ {str_desc = Tstr_eval exp} ] ->
+                | [ {str_desc = Tstr_eval (exp, _attrs)} ] ->
                     let outv = outval_of_value newenv v exp.exp_type in
                     let ty = Printtyp.tree_of_type_scheme exp.exp_type in
                     Ophr_eval (outv, ty)
                 | [] -> Ophr_signature []
-                | _ ->
-                    Ophr_signature (item_list newenv
-                                             (Typemod.simplify_signature sg))
-
+                | _ -> Ophr_signature (item_list newenv sg'))
               else Ophr_signature []
           | Exception exn ->
               toplevel_env := oldenv;
@@ -267,19 +297,26 @@ let execute_phrase print_outcome ppf phr =
         toplevel_env := oldenv; raise x
       end
   | Ptop_dir(dir_name, dir_arg) ->
-      try
-        match (Hashtbl.find directive_table dir_name, dir_arg) with
-        | (Directive_none f, Pdir_none) -> f (); true
-        | (Directive_string f, Pdir_string s) -> f s; true
-        | (Directive_int f, Pdir_int n) -> f n; true
-        | (Directive_ident f, Pdir_ident lid) -> f lid; true
-        | (Directive_bool f, Pdir_bool b) -> f b; true
-        | (_, _) ->
-            fprintf ppf "Wrong type of argument for directive `%s'.@." dir_name;
-            false
-      with Not_found ->
-        fprintf ppf "Unknown directive `%s'.@." dir_name;
-        false
+      let d =
+        try Some (Hashtbl.find directive_table dir_name)
+        with Not_found -> None
+      in
+      begin match d with
+      | None ->
+          fprintf ppf "Unknown directive `%s'.@." dir_name;
+          false
+      | Some d ->
+          match d, dir_arg with
+          | Directive_none f, Pdir_none -> f (); true
+          | Directive_string f, Pdir_string s -> f s; true
+          | Directive_int f, Pdir_int n -> f n; true
+          | Directive_ident f, Pdir_ident lid -> f lid; true
+          | Directive_bool f, Pdir_bool b -> f b; true
+          | _ ->
+              fprintf ppf "Wrong type of argument for directive `%s'.@."
+                dir_name;
+              false
+      end
 
 (* Temporary assignment to a reference *)
 
@@ -294,11 +331,25 @@ let protect r newval body =
     r := oldval;
     raise x
 
-(* Read and execute commands from a file *)
+(* Read and execute commands from a file, or from stdin if [name] is "". *)
 
 let use_print_results = ref true
 
-let use_file ppf name =
+let preprocess_phrase ppf phr =
+  let phr =
+    match phr with
+    | Ptop_def str ->
+        let str =
+          Pparse.apply_rewriters_str ~restore:true ~tool_name:"ocaml" str
+        in
+        Ptop_def str
+    | phr -> phr
+  in
+  if !Clflags.dump_parsetree then Printast.top_phrase ppf phr;
+  if !Clflags.dump_source then Pprintast.top_phrase ppf phr;
+  phr
+
+let use_file ppf wrap_mod name =
   try
     let (filename, ic, must_close) =
       if name = "" then
@@ -318,10 +369,12 @@ let use_file ppf name =
         try
           List.iter
             (fun ph ->
-              if !Clflags.dump_parsetree then Printast.top_phrase ppf ph;
-              if !Clflags.dump_source then Pprintast.top_phrase ppf ph;
+              let ph = preprocess_phrase ppf ph in
               if not (execute_phrase !use_print_results ppf ph) then raise Exit)
-            (!parse_use_file lb);
+            (if wrap_mod then
+               parse_mod_use_file name lb
+             else
+               !parse_use_file lb);
           true
         with
         | Exit -> false
@@ -330,6 +383,9 @@ let use_file ppf name =
     if must_close then close_in ic;
     success
   with Not_found -> fprintf ppf "Cannot find file %s.@." name; false
+
+let mod_use_file ppf name = use_file ppf true name
+let use_file ppf name = use_file ppf false name
 
 let use_silently ppf name =
   protect use_print_results false (fun () -> use_file ppf name)
@@ -345,8 +401,8 @@ let read_input_default prompt buffer len =
   try
     while true do
       if !i >= len then raise Exit;
-      let c = input_char stdin in
-      buffer.[!i] <- c;
+      let c = input_char Pervasives.stdin in
+      Bytes.set buffer !i c;
       incr i;
       if c = '\n' then raise Exit;
     done;
@@ -418,6 +474,7 @@ let initialize_toplevel_env () =
 exception PPerror
 
 let loop ppf =
+  Location.formatter_for_warnings := ppf;
   fprintf ppf "        OCaml version %s - native toplevel@.@." Config.version;
   initialize_toplevel_env ();
   let lb = Lexing.from_function refill_lexbuf in
@@ -433,6 +490,8 @@ let loop ppf =
       Location.reset();
       first_line := true;
       let phr = try !parse_toplevel_phrase lb with Exit -> raise PPerror in
+      let phr = preprocess_phrase ppf phr  in
+      Env.reset_cache_toplevel ();
       if !Clflags.dump_parsetree then Printast.top_phrase ppf phr;
       if !Clflags.dump_source then Pprintast.top_phrase ppf phr;
       ignore(execute_phrase true ppf phr)
@@ -443,7 +502,7 @@ let loop ppf =
     | x -> Location.report_exception ppf x; Btype.backtrack snap
   done
 
-(* Execute a script *)
+(* Execute a script.  If [name] is "", read the script from stdin. *)
 
 let run_script ppf name args =
   let len = Array.length args in
