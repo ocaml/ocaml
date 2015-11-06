@@ -44,7 +44,6 @@
 #   from the "tabs" rule.
 # - Any file whose name matches one of the following patterns is
 #   automatically exempt from the "missing-header" rule.
-#     */.ignore
 #     *.mlpack
 #     *.mllib
 #     *.mltop
@@ -138,7 +137,6 @@ IGNORE_DIRS="
     add_hd(){ rules="missing-header,$rules"; }
     case "$f" in
       Makefile*|*/Makefile*) rules="tab,$rules";;
-      */.gitignore) add_hd;;
       *.mlpack|*.mllib|*.mltop|*.odocl|*.itarget|*.clib) add_hd;;
       *.reference|*/reference|*/.depend*) continue;;
     esac
