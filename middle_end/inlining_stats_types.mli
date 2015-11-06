@@ -32,7 +32,8 @@ module Decision : sig
     | Level_exceeded of bool
 
   type t =
-    | Function_obviously_too_large
+    | Function_obviously_too_large of int
+    | Function_prevented_from_inlining
     | Inlined of Inlined.t
     | Tried of Inlined.t
     | Did_not_try_copying_decl of Tried_unrolling.t

@@ -310,7 +310,14 @@ let for_call_site ~env ~r ~(function_decls : Flambda.function_declarations)
   let expr, r =
     match fun_cost with
     | Never_inline ->
-      made_decision Function_obviously_too_large;
+      let reason : Inlining_stats_types.Decision.t =
+        match inlining_threshold with
+        | Never_inline ->
+          Function_prevented_from_inlining
+        | Can_inline_if_no_larger_than threshold ->
+          Function_obviously_too_large threshold
+      in
+      made_decision reason;
       no_simplification ()
     | Can_inline_if_no_larger_than _ when E.never_inline env ->
       (* This case only occurs when examining the body of a stub function

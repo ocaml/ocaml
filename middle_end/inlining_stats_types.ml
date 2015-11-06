@@ -46,14 +46,18 @@ module Decision = struct
     | Level_exceeded of bool
 
   type t =
-    | Function_obviously_too_large
+    | Function_obviously_too_large of int
+    | Function_prevented_from_inlining
     | Inlined of Inlined.t
     | Tried of Inlined.t
     | Did_not_try_copying_decl of Tried_unrolling.t
     | Can_inline_but_tried_nothing of level_exceeded
 
   let to_string = function
-    | Function_obviously_too_large -> "function obviously too large"
+    | Function_obviously_too_large threshold ->
+      Printf.sprintf "function obviously too large (threshold: %i)"
+        threshold
+    | Function_prevented_from_inlining -> "function prevented from inlining"
     | Inlined inlined ->
       Printf.sprintf "inlined (%s)" (Inlined.to_string inlined)
     | Tried inlined ->
