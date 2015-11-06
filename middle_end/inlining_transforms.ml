@@ -130,8 +130,7 @@ let inline_by_copying_function_declaration ~env ~r
       ~params:function_decl.params ~args ~args_approxs ~invariant_params
   in
   let more_specialised_args_keys = Variable.Map.keys more_specialised_args in
-  if Variable.Set.equal more_specialised_args_keys specialised_args
-      || Variable.Set.subset more_specialised_args_keys specialised_args
+  if Variable.Set.subset more_specialised_args_keys specialised_args
   then
     (* CR mshinwell: talk to Pierre about the narrowing seen in the List.map
        example. *)
