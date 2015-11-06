@@ -21,21 +21,30 @@ let new_var name =
     ~current_compilation_unit:(Compilation_unit.get_current_exn ())
 
 let which_function_parameters_can_we_specialize ~params ~args
-      ~args_approxs ~invariant_params =
+      ~args_approxs ~invariant_params ~specialised_args =
   assert (List.length params = List.length args);
   assert (List.length args = List.length args_approxs);
-  List.fold_right2 (fun (var, arg) approx (spec_args, args, args_decl) ->
+  List.fold_right2 (fun (var, arg) approx
+    (worth_specialising_args, spec_args, args, args_decl) ->
       let spec_args =
-        if Simple_value_approx.useful approx
-          && Variable.Set.mem var invariant_params
+        if Variable.Set.mem var invariant_params ||
+           Variable.Set.mem var specialised_args
         then
           Variable.Map.add var arg spec_args
         else
           spec_args
       in
-      spec_args, arg :: args, args_decl)
+      let worth_specialising_args =
+        if Simple_value_approx.useful approx
+          && Variable.Set.mem var invariant_params
+        then
+          Variable.Set.add var worth_specialising_args
+        else
+          worth_specialising_args
+      in
+      worth_specialising_args, spec_args, arg :: args, args_decl)
     (List.combine params args) args_approxs
-    (Variable.Map.empty, [], [])
+    (Variable.Set.empty, Variable.Map.empty, [], [])
 
 (** Fold over all variables bound by the given closure, which is bound to the
     variable [lhs_of_application], and corresponds to the given
@@ -125,12 +134,13 @@ let inline_by_copying_function_declaration ~env ~r
     ~lhs_of_application ~closure_id_being_applied
     ~(function_decl : Flambda.function_declaration)
     ~args ~args_approxs ~invariant_params ~specialised_args ~dbg ~simplify =
-  let more_specialised_args, args, args_decl =
+  let worth_specialising_args, specialisable_args, args, args_decl =
     which_function_parameters_can_we_specialize
-      ~params:function_decl.params ~args ~args_approxs ~invariant_params
+      ~params:function_decl.params ~args ~args_approxs
+      ~invariant_params
+      ~specialised_args
   in
-  let more_specialised_args_keys = Variable.Map.keys more_specialised_args in
-  if Variable.Set.subset more_specialised_args_keys specialised_args
+  if Variable.Set.subset worth_specialising_args specialised_args
   then
     (* CR mshinwell: talk to Pierre about the narrowing seen in the List.map
        example. *)
@@ -157,7 +167,7 @@ let inline_by_copying_function_declaration ~env ~r
       (* This is the new set of closures, with more precise specialisation
          information than the one being copied. *)
       Flambda.create_set_of_closures ~function_decls ~free_vars
-        ~specialised_args:more_specialised_args
+        ~specialised_args:specialisable_args
     in
     (* Generate a copy of the function application, including the function
        declaration(s), but with variables (not yet bound) in place of the
