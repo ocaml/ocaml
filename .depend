@@ -758,7 +758,7 @@ middle_end/simplify_primitives.cmi : middle_end/base_types/variable.cmi \
     middle_end/inlining_cost.cmi middle_end/flambda.cmi \
     bytecomp/debuginfo.cmi
 middle_end/unbox_closures.cmi : middle_end/base_types/variable.cmi \
-    middle_end/flambda.cmi
+    middle_end/flambda.cmi middle_end/backend_intf.cmi
 middle_end/alias_analysis.cmo : middle_end/base_types/variable.cmi \
     middle_end/base_types/var_within_closure.cmi \
     middle_end/base_types/tag.cmi middle_end/base_types/symbol.cmi \
@@ -1208,17 +1208,15 @@ middle_end/simplify_primitives.cmx : middle_end/base_types/tag.cmx \
     middle_end/inlining_cost.cmx middle_end/flambda.cmx utils/clflags.cmx \
     parsing/asttypes.cmi middle_end/simplify_primitives.cmi
 middle_end/unbox_closures.cmo : middle_end/base_types/variable.cmi \
-    middle_end/base_types/var_within_closure.cmi \
     middle_end/simple_value_approx.cmi middle_end/inline_and_simplify_aux.cmi \
-    middle_end/flambda_utils.cmi middle_end/flambda_iterators.cmi \
-    middle_end/flambda.cmi bytecomp/debuginfo.cmi \
-    middle_end/base_types/closure_id.cmi middle_end/unbox_closures.cmi
+    middle_end/flambda_utils.cmi middle_end/flambda.cmi \
+    bytecomp/debuginfo.cmi middle_end/base_types/closure_id.cmi \
+    middle_end/backend_intf.cmi middle_end/unbox_closures.cmi
 middle_end/unbox_closures.cmx : middle_end/base_types/variable.cmx \
-    middle_end/base_types/var_within_closure.cmx \
     middle_end/simple_value_approx.cmx middle_end/inline_and_simplify_aux.cmx \
-    middle_end/flambda_utils.cmx middle_end/flambda_iterators.cmx \
-    middle_end/flambda.cmx bytecomp/debuginfo.cmx \
-    middle_end/base_types/closure_id.cmx middle_end/unbox_closures.cmi
+    middle_end/flambda_utils.cmx middle_end/flambda.cmx \
+    bytecomp/debuginfo.cmx middle_end/base_types/closure_id.cmx \
+    middle_end/backend_intf.cmi middle_end/unbox_closures.cmi
 middle_end/base_types/closure_element.cmi : \
     middle_end/base_types/variable.cmi utils/ext_types.cmi \
     middle_end/base_types/compilation_unit.cmi

@@ -44,4 +44,8 @@ module type S = sig
 
   (** [true] iff the target architecture is big endian. *)
   val big_endian : bool
+
+  (** Optimization passes should try not to add arguments to functions
+      that cause the total number of arguments to exceed this value. *)
+  val max_sensible_number_of_arguments : int
 end

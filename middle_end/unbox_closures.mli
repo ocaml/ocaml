@@ -12,7 +12,8 @@
 (**************************************************************************)
 
 val introduce_specialised_args_for_free_vars
-   : Flambda.set_of_closures
+   : backend:(module Backend_intf.S)
+  -> Flambda.set_of_closures
   -> Flambda.set_of_closures
 
 val replace_free_vars_by_equal_specialised_args

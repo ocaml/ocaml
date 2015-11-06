@@ -86,7 +86,21 @@ let create_wrapper
     ~dbg:Debuginfo.none
     ~inline:Default_inline
 
+let too_many_arguments ~backend
+      ~(function_decl : Flambda.function_declaration) ~bound_by_closure =
+  let num_existing_arguments = List.length function_decl.params in
+  let used_bound_by_closure =
+    Variable.Set.inter function_decl.free_variables bound_by_closure
+  in
+  let num_used_bound_by_closure =
+    Variable.Set.cardinal used_bound_by_closure
+  in
+  let module Backend = (val backend : Backend_intf.S) in
+  let max_arguments = Backend.max_sensible_number_of_arguments in
+  num_existing_arguments + num_used_bound_by_closure > max_arguments
+
 let add_wrapper
+    ~backend
     ~fun_var
     ~(function_decls : Flambda.function_declarations)
     ~(function_decl : Flambda.function_declaration)
@@ -94,9 +108,12 @@ let add_wrapper
     ~funs
     ~additional_specialised_args =
   let closure_id = Closure_id.wrap fun_var in
-  if Variable.Set.is_empty
-      (Flambda_utils.variables_bound_by_the_closure closure_id function_decls)
-     || function_decl.stub
+  let bound_by_closure =
+    Flambda_utils.variables_bound_by_the_closure closure_id function_decls
+  in
+  if Variable.Set.is_empty bound_by_closure
+    || function_decl.stub
+    || too_many_arguments ~backend ~function_decl ~bound_by_closure
   then
     let funs = Variable.Map.add fun_var function_decl funs in
     funs, additional_specialised_args
@@ -114,13 +131,14 @@ let add_wrapper
     in
     funs, additional_specialised_args
 
-let do_rewrite_set_of_closures (set_of_closures : Flambda.set_of_closures) =
+let do_rewrite_set_of_closures ~backend
+      (set_of_closures : Flambda.set_of_closures) =
   let function_decls = set_of_closures.function_decls in
   let free_vars = set_of_closures.free_vars in
   let funs, additional_specialised_args =
     Variable.Map.fold
       (fun fun_var function_decl (funs, additional_specialised_args) ->
-         add_wrapper ~function_decls ~fun_var ~free_vars
+         add_wrapper ~backend ~function_decls ~fun_var ~free_vars
            ~function_decl
            ~funs ~additional_specialised_args)
       function_decls.funs
@@ -150,7 +168,7 @@ let contains_stub (fun_decls : Flambda.function_declarations) =
   in
   number_of_stub_functions > 0
 
-let introduce_specialised_args_for_free_vars
+let introduce_specialised_args_for_free_vars ~backend
     (set_of_closures : Flambda.set_of_closures) =
   let candidate_for_transformation =
     not (Variable.Map.is_empty set_of_closures.free_vars)
@@ -165,7 +183,9 @@ let introduce_specialised_args_for_free_vars
     (*   Format.eprintf "Before Unbox_closures:@ %a@.@." *)
     (*     Flambda.print_set_of_closures set_of_closures *)
     (* in *)
-    let set_of_closures = do_rewrite_set_of_closures set_of_closures in
+    let set_of_closures =
+      do_rewrite_set_of_closures set_of_closures ~backend
+    in
     (* let () = *)
     (*   Format.eprintf "After Unbox_closures:@ %a@.@." *)
     (*     Flambda.print_set_of_closures set_of_closures *)

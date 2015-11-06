@@ -806,6 +806,7 @@ and simplify_named env r (tree : Flambda.named) : Flambda.named * R.t =
             if !Clflags.unbox_closures then
               Unbox_closures.introduce_specialised_args_for_free_vars
                 set_of_closures
+                ~backend:(E.backend env)
             else
               set_of_closures
         in
