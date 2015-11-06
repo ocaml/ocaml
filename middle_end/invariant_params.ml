@@ -324,7 +324,8 @@ let unused_arguments (decls : Flambda.function_declarations) : Variable.Set.t =
   in
   let check_expr (expr : Flambda.t) =
     match expr with
-    | Apply { func = _; args; kind = Direct callee } ->
+    | Apply { func; args; kind = Direct callee } ->
+      used_variable func;
       List.iteri (fun callee_pos arg ->
           match
             find_callee_arg ~callee ~callee_pos ~application_expr:expr
