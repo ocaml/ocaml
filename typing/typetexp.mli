@@ -64,6 +64,8 @@ type error =
   | Ill_typed_functor_application of Longident.t
   | Illegal_reference_to_recursive_module
   | Access_functor_as_structure of Longident.t
+  | Apply_structure_as_functor of Longident.t
+  | Cannot_scrape_alias of Longident.t * Path.t
 
 exception Error of Location.t * Env.t * error
 
