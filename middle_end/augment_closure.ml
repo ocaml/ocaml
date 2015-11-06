@@ -104,8 +104,8 @@ let rewrite_set_of_closures
   let rewrite_function_decl
       (function_decl:Flambda.function_declaration) =
     let body =
-      (* TODO: replace by a 'toplevel' iterator *)
-      Flambda_iterators.map_project_var_to_expr_opt ~f:(fun project_var ->
+      Flambda_iterators.map_toplevel_project_var_to_expr_opt
+        ~f:(fun project_var ->
           match
             Closure_field.Map.find
               (project_var.closure, project_var.var)
