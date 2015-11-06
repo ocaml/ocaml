@@ -557,7 +557,7 @@ static void intern_alloc(mlsize_t whsize, mlsize_t num_objects)
       ((Bsize_wsize(whsize) + Page_size - 1) >> Page_log) << Page_log;
     intern_extra_block = caml_alloc_for_heap(request);
     if (intern_extra_block == NULL) {
-      intern_obj_table = NULL; 
+      intern_obj_table = NULL;
       intern_block = 0;
       intern_cleanup();
       caml_raise_out_of_memory();
