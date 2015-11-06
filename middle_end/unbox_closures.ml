@@ -2,6 +2,7 @@
 (*                                                                        *)
 (*                                OCaml                                   *)
 (*                                                                        *)
+(*                       Pierre Chambart, OCamlPro                        *)
 (*           Mark Shinwell and Leo White, Jane Street Europe              *)
 (*                                                                        *)
 (*   Copyright 2015 Institut National de Recherche en Informatique et     *)
@@ -34,16 +35,6 @@ let rewrite_function_decl
     Flambda_utils.toplevel_substitution
       params_for_vars_bound_by_closure
       function_decl.body
-    |> Flambda_iterators.map_toplevel_project_var_to_expr_opt
-      ~f:(fun { var } ->
-          let var = Var_within_closure.unwrap var in
-          match Variable.Map.find var params_for_vars_bound_by_closure with
-          | exception Not_found ->
-            (* Format.printf "not found %a@." Variable.print var; *)
-            None
-          | var' ->
-            (* Format.printf "found %a -> %a@." Variable.print var Variable.print var'; *)
-            Some (Flambda.Var var'))
   in
   let additional_specialised_args =
     Variable.Map.fold
