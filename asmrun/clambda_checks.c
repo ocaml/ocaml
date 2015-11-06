@@ -20,12 +20,28 @@
 
 #include <caml/mlvalues.h>
 
-value caml_check_value_is_closure(value v)
+value caml_check_value_is_closure(value v, value v_descr)
 {
+  const char* descr = String_val(v_descr);
   value orig_v = v;
 
-  assert(Is_block(v));
-  assert(Tag_val(v) == Closure_tag || Tag_val(v) == Infix_tag);
+  if (v == (value) 0) {
+    fprintf(stderr, "NULL is not a closure: %s\n",
+      descr);
+    abort();
+  }
+  if (!Is_block(v)) {
+    fprintf(stderr,
+      "Expecting a closure, got a non-boxed value %p: %s\n",
+      (void*) v, descr);
+    abort();
+  }
+  if (!(Tag_val(v) == Closure_tag || Tag_val(v) == Infix_tag)) {
+    fprintf(stderr,
+      "Expecting a closure, got a boxed value with tag %i: %s\n",
+      Tag_val(v), descr);
+    abort();
+  }
   if (Tag_val(v) == Infix_tag) {
     v -= Infix_offset_val(v);
     assert(Tag_val(v) == Closure_tag);

@@ -74,14 +74,20 @@ let is_function_constant t closure_id =
 (* Instrumentation of closure and field accesses to try to catch compiler
    bugs. *)
 
-let check_closure ulam : Clambda.ulambda =
+let check_closure ulam named : Clambda.ulambda =
   if not !Clflags.clambda_checks then ulam
   else
     let desc =
       Primitive.simple ~name:"caml_check_value_is_closure"
-        ~arity:1 ~alloc:false
+        ~arity:2 ~alloc:false
     in
-    Uprim (Pccall desc, [ulam], Debuginfo.none)
+    let str = Format.asprintf "%a" Flambda.print_named named in
+    let str_const =
+      Compilenv.new_structured_constant (Uconst_string str) ~shared:true
+    in
+    Uprim (Pccall desc,
+           [ulam; Clambda.Uconst (Uconst_ref (str_const, None))],
+           Debuginfo.none)
 
 let check_field ulam pos named_opt : Clambda.ulambda =
   if not !Clflags.clambda_checks then ulam
@@ -239,7 +245,8 @@ let rec to_clambda t env (flam : Flambda.t) : Clambda.ulambda =
        function for generic calls. Notice that for direct calls it is
        added here. *)
     let callee = subst_var env func in
-    Ugeneric_apply (check_closure callee, subst_vars env args, dbg)
+    Ugeneric_apply (check_closure callee (Flambda.Expr (Var func)),
+      subst_vars env args, dbg)
   | Switch (arg, sw) ->
     let aux () : Clambda.ulambda =
       let const_index, const_actions =
@@ -351,17 +358,23 @@ and to_clambda_named t env var (named : Flambda.named) : Clambda.ulambda =
        that a closure is not offseted (Cmmgen.expr_size) *)
     check_closure (
       build_uoffset
-        (check_closure (subst_var env set_of_closures))
+        (check_closure (subst_var env set_of_closures)
+           (Flambda.Expr (Var set_of_closures)))
         (get_fun_offset t closure_id))
+      named
   | Move_within_set_of_closures { closure; start_from; move_to } ->
-    check_closure (build_uoffset (check_closure (subst_var env closure))
+    check_closure (build_uoffset
+      (check_closure (subst_var env closure)
+         (Flambda.Expr (Var closure)))
       ((get_fun_offset t move_to) - (get_fun_offset t start_from)))
+      named
   | Project_var { closure; var; closure_id } ->
     let ulam = subst_var env closure in
     let fun_offset = get_fun_offset t closure_id in
     let var_offset = get_fv_offset t var in
     let pos = var_offset - fun_offset in
-    Uprim (Pfield pos, [check_field (check_closure ulam) pos (Some named)],
+    Uprim (Pfield pos,
+      [check_field (check_closure ulam (Expr (Var closure))) pos (Some named)],
       Debuginfo.none)
   (* CR mshinwell: these next two cases are probably now redundant.  Delete the
      primitives too *)
