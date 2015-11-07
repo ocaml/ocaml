@@ -178,7 +178,6 @@ let file_aux ppf ~tool_name inputfile (type a) parse_fun invariant_fun
         (input_value ic : a)
       end else begin
         seek_in ic 0;
-        Location.input_name := inputfile;
         let lexbuf = Lexing.from_channel ic in
         Location.init lexbuf inputfile;
         parse_fun lexbuf
