@@ -157,6 +157,8 @@ sort.cmo : array.cmi sort.cmi
 sort.cmx : array.cmx sort.cmi
 stack.cmo : list.cmi stack.cmi
 stack.cmx : list.cmx stack.cmi
+std_init.cmo :
+std_init.cmx :
 std_exit.cmo :
 std_exit.cmx :
 stdLabels.cmo : stringLabels.cmi listLabels.cmi bytesLabels.cmi \
@@ -283,6 +285,8 @@ sort.cmo : array.cmi sort.cmi
 sort.p.cmx : array.cmx sort.cmi
 stack.cmo : list.cmi stack.cmi
 stack.p.cmx : list.cmx stack.cmi
+std_init.cmo :
+std_init.cmx :
 std_exit.cmo :
 std_exit.cmx :
 stdLabels.cmo : stringLabels.cmi listLabels.cmi bytesLabels.cmi \
