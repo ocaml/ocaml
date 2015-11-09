@@ -792,26 +792,38 @@ and transl_exp0 e =
         Lprim(Pmakeblock(0, Immutable), ll)
       end
   | Texp_construct(_, cstr, args) ->
-      let ll = transl_list args in
-      if cstr.cstr_inlined <> None then begin match ll with
-        | [x] -> x
-        | _ -> assert false
-      end else begin match cstr.cstr_tag with
-        Cstr_constant n ->
-          Lconst(Const_pointer n)
-      | Cstr_block n ->
-          begin try
-            Lconst(Const_block(n, List.map extract_constant ll))
-          with Not_constant ->
-            Lprim(Pmakeblock(n, Immutable), ll)
-          end
-      | Cstr_extension(path, is_const) ->
-          if is_const then
-            transl_path e.exp_env path
-          else
-            Lprim(Pmakeblock(0, Immutable),
-                  transl_path e.exp_env path :: ll)
+      let mk ll =
+        if cstr.cstr_inlined <> None then begin match ll with
+          | [x] -> x
+          | _ -> assert false
+        end else begin match cstr.cstr_tag with
+            Cstr_constant n ->
+              Lconst(Const_pointer n)
+          | Cstr_block n ->
+              begin try
+                Lconst(Const_block(n, List.map extract_constant ll))
+              with Not_constant ->
+                Lprim(Pmakeblock(n, Immutable), ll)
+              end
+          | Cstr_extension(path, is_const) ->
+              if is_const then
+                transl_path e.exp_env path
+              else
+                Lprim(Pmakeblock(0, Immutable),
+                      transl_path e.exp_env path :: ll)
+        end
+      in
+      begin match cstr.cstr_arity, transl_list args with
+      | n, [l] when n > 1 ->
+          let id = Ident.create "tuple" in
+          let rec gen i =
+            if i = n then [] else Lprim(Pfield i, [Lvar id]) :: gen (i + 1)
+          in
+          Llet(Strict, id, l, mk (gen 0))
+      | _, ll ->
+          mk ll
       end
+
   | Texp_variant(l, arg) ->
       let tag = Btype.hash_variant l in
       begin match arg with
