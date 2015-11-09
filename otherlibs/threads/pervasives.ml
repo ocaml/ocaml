@@ -610,15 +610,11 @@ external sys_exit : int -> 'a = "caml_sys_exit"
 
 let exit_function = ref flush_all
 
-let last_exit_function = ref (fun () -> ())
-
 let at_exit f =
   let g = !exit_function in
   exit_function := (fun () -> f(); g())
 
-let do_at_exit () =
-  (!exit_function) ();
-  (!last_exit_function) ()
+let do_at_exit () = (!exit_function) ()
 
 let exit retcode =
   do_at_exit ();
