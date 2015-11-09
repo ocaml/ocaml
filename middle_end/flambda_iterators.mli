@@ -124,6 +124,11 @@ val iter_symbols_on_program
   -> f:(Symbol.t -> unit)
   -> unit
 
+val iter_constant_defining_values_on_program
+  : Flambda.program
+  -> f:(Flambda.constant_defining_value -> unit)
+  -> unit
+
 val iter_apply_on_program
    : Flambda.program
   -> f:(Flambda.apply -> unit)

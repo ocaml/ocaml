@@ -680,10 +680,17 @@ let convert (program, exported) : result =
   let expr, structured_constants =
     to_clambda_program t Env.empty Symbol.Map.empty program
   in
+  let offset_fun, offset_fv =
+    Closure_offsets.compute_reexported_offsets program
+      ~current_unit_offset_fun:current_unit.fun_offset_table
+      ~current_unit_offset_fv:current_unit.fv_offset_table
+      ~imported_units_offset_fun:imported_units.fun_offset_table
+      ~imported_units_offset_fv:imported_units.fv_offset_table
+  in
   let exported =
     Export_info.add_clambda_info exported
-      ~offset_fun:current_unit.fun_offset_table
-      ~offset_fv:current_unit.fv_offset_table
+      ~offset_fun
+      ~offset_fv
       ~constant_sets_of_closures:current_unit.constant_sets_of_closures
   in
   { expr; preallocated_blocks; structured_constants; exported; }

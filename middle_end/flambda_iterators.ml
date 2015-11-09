@@ -235,7 +235,7 @@ let rec iter_symbols_on_program (program:Flambda.program) ~f =
       defs;
     iter_symbols_on_program program ~f
   | Import_symbol (_, program) ->
-    (* Do we expect to iter on that one ? *)
+    (* CR pchambart: Do we expect to iter on that one ? *)
     iter_symbols_on_program program ~f
   | Initialize_symbol (_, _, fields, program) ->
     List.iter (iter_symbols ~f) fields;
@@ -243,6 +243,23 @@ let rec iter_symbols_on_program (program:Flambda.program) ~f =
   | Effect (expr, program) ->
     iter_symbols ~f expr;
     iter_symbols_on_program program ~f
+  | End _ -> ()
+
+let rec iter_constant_defining_values_on_program
+      (program : Flambda.program) ~f =
+  match program with
+  | Let_symbol (_, const, program) ->
+    f const;
+    iter_constant_defining_values_on_program program ~f
+  | Let_rec_symbol (defs, program) ->
+    List.iter (fun (_, const) -> f const) defs;
+    iter_constant_defining_values_on_program program ~f
+  | Import_symbol (_, program) ->
+    iter_constant_defining_values_on_program program ~f
+  | Initialize_symbol (_, _, _, program) ->
+    iter_constant_defining_values_on_program program ~f
+  | Effect (_, program) ->
+    iter_constant_defining_values_on_program program ~f
   | End _ -> ()
 
 let map_general ~toplevel f f_named tree =

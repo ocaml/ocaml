@@ -20,7 +20,7 @@ let new_var name =
   Variable.create name
     ~current_compilation_unit:(Compilation_unit.get_current_exn ())
 
-let which_function_parameters_can_we_specialize ~params ~args
+let which_function_parameters_can_we_specialise ~params ~args
       ~args_approxs ~invariant_params ~specialised_args =
   assert (List.length params = List.length args);
   assert (List.length args = List.length args_approxs);
@@ -135,17 +135,17 @@ let inline_by_copying_function_declaration ~env ~r
     ~(function_decl : Flambda.function_declaration)
     ~args ~args_approxs ~invariant_params ~specialised_args ~dbg ~simplify =
   let worth_specialising_args, specialisable_args, args, args_decl =
-    which_function_parameters_can_we_specialize
+    which_function_parameters_can_we_specialise
       ~params:function_decl.params ~args ~args_approxs
       ~invariant_params
       ~specialised_args
   in
   if Variable.Set.subset worth_specialising_args specialised_args
   then
-    (* CR mshinwell: talk to Pierre about the narrowing seen in the List.map
-       example. *)
-    (* If the function already has the right set of specialised arguments,
-       then there is nothing to do to improve it here. *)
+    (* Don't duplicate the function definition if we would make its
+       specialisation information worse.  (Note that this judgement is made
+       based only on those arguments found to be invariant with known-useful
+       approximations, rather than on all invariant arguments.) *)
     None
   else
     let env = E.inlining_level_up env in
