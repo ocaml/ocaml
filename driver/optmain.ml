@@ -29,7 +29,7 @@ module Backend = struct
 
   (* CR mshinwell: this needs tying through to [Proc], although it may
      necessitate the introduction of a new field in that module. *)
-  let max_sensible_number_of_arguments = 15
+  let max_sensible_number_of_arguments = 9
 end
 let backend = (module Backend : Backend_intf.S)
 

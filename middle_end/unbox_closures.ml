@@ -86,6 +86,9 @@ let create_wrapper
     ~dbg:Debuginfo.none
     ~inline:Default_inline
 
+(* It is important to limit the number of arguments added by this pass:
+   if arguments end up being passed on the stack, tail call optimization
+   will be disabled (see asmcomp/selectgen.ml). *)
 let too_many_arguments ~backend
       ~(function_decl : Flambda.function_declaration) ~bound_by_closure =
   let num_existing_arguments = List.length function_decl.params in

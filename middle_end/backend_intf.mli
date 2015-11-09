@@ -45,7 +45,9 @@ module type S = sig
   (** [true] iff the target architecture is big endian. *)
   val big_endian : bool
 
-  (** Optimization passes should try not to add arguments to functions
-      that cause the total number of arguments to exceed this value. *)
+  (** The maximum number of arguments that is is reasonable for a function
+      to have.  This should be fewer than the threshold that causes non-self
+      tail call optimization to be inhibited (in particular, if it would
+      entail passing arguments on the stack; see [Selectgen]). *)
   val max_sensible_number_of_arguments : int
 end
