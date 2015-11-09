@@ -115,12 +115,15 @@ parsing/location.cmi : utils/warnings.cmi
 parsing/longident.cmo : utils/misc.cmi parsing/longident.cmi
 parsing/longident.cmx : utils/misc.cmx parsing/longident.cmi
 parsing/longident.cmi :
-parsing/parse.cmo : parsing/syntaxerr.cmi parsing/parser.cmi \
-    parsing/location.cmi parsing/lexer.cmi parsing/docstrings.cmi \
-    parsing/parse.cmi
-parsing/parse.cmx : parsing/syntaxerr.cmx parsing/parser.cmx \
-    parsing/location.cmx parsing/lexer.cmx parsing/docstrings.cmx \
-    parsing/parse.cmi
+parsing/menhirLib.cmo : parsing/menhirLib.cmi
+parsing/menhirLib.cmx : parsing/menhirLib.cmi
+parsing/menhirLib.cmi :
+parsing/parse.cmo : parsing/syntaxerr.cmi parsing/parser_menhir.cmi \
+    parsing/parser.cmi parsing/location.cmi parsing/lexer.cmi \
+    parsing/docstrings.cmi parsing/parse.cmi
+parsing/parse.cmx : parsing/syntaxerr.cmx parsing/parser_menhir.cmx \
+    parsing/parser.cmx parsing/location.cmx parsing/lexer.cmx \
+    parsing/docstrings.cmx parsing/parse.cmi
 parsing/parse.cmi : parsing/parsetree.cmi
 parsing/parser.cmo : parsing/syntaxerr.cmi parsing/parsetree.cmi \
     parsing/longident.cmi parsing/location.cmi parsing/docstrings.cmi \
@@ -132,6 +135,16 @@ parsing/parser.cmx : parsing/syntaxerr.cmx parsing/parsetree.cmi \
     parsing/parser.cmi
 parsing/parser.cmi : parsing/parsetree.cmi parsing/location.cmi \
     parsing/docstrings.cmi
+parsing/parser_menhir.cmo : parsing/syntaxerr.cmi parsing/parsetree.cmi \
+    parsing/parser.cmi parsing/menhirLib.cmi parsing/longident.cmi \
+    parsing/location.cmi parsing/docstrings.cmi utils/clflags.cmi \
+    parsing/asttypes.cmi parsing/ast_helper.cmi parsing/parser_menhir.cmi
+parsing/parser_menhir.cmx : parsing/syntaxerr.cmx parsing/parsetree.cmi \
+    parsing/parser.cmx parsing/menhirLib.cmx parsing/longident.cmx \
+    parsing/location.cmx parsing/docstrings.cmx utils/clflags.cmx \
+    parsing/asttypes.cmi parsing/ast_helper.cmx parsing/parser_menhir.cmi
+parsing/parser_menhir.cmi : parsing/parsetree.cmi parsing/parser.cmi \
+    parsing/menhirLib.cmi
 parsing/parsetree.cmi : parsing/longident.cmi parsing/location.cmi \
     parsing/asttypes.cmi
 parsing/pprintast.cmo : parsing/parsetree.cmi utils/misc.cmi \
@@ -2424,13 +2437,15 @@ driver/optmain.cmx : utils/warnings.cmx utils/profile.cmx asmcomp/proc.cmx \
     driver/optmain.cmi
 driver/optmain.cmi :
 driver/pparse.cmo : utils/warnings.cmi utils/profile.cmi \
-    parsing/parsetree.cmi parsing/parse.cmi utils/misc.cmi \
-    parsing/location.cmi utils/config.cmi utils/clflags.cmi utils/ccomp.cmi \
-    parsing/ast_mapper.cmi parsing/ast_invariants.cmi driver/pparse.cmi
+    parsing/printast.cmi parsing/parsetree.cmi parsing/parse.cmi \
+    utils/misc.cmi parsing/location.cmi utils/config.cmi utils/clflags.cmi \
+    utils/ccomp.cmi parsing/ast_mapper.cmi parsing/ast_invariants.cmi \
+    driver/pparse.cmi
 driver/pparse.cmx : utils/warnings.cmx utils/profile.cmx \
-    parsing/parsetree.cmi parsing/parse.cmx utils/misc.cmx \
-    parsing/location.cmx utils/config.cmx utils/clflags.cmx utils/ccomp.cmx \
-    parsing/ast_mapper.cmx parsing/ast_invariants.cmx driver/pparse.cmi
+    parsing/printast.cmx parsing/parsetree.cmi parsing/parse.cmx \
+    utils/misc.cmx parsing/location.cmx utils/config.cmx utils/clflags.cmx \
+    utils/ccomp.cmx parsing/ast_mapper.cmx parsing/ast_invariants.cmx \
+    driver/pparse.cmi
 driver/pparse.cmi : parsing/parsetree.cmi utils/misc.cmi
 toplevel/expunge.cmo : bytecomp/symtable.cmi bytecomp/runtimedef.cmi \
     utils/misc.cmi typing/ident.cmi bytecomp/bytesections.cmi
