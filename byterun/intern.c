@@ -576,8 +576,8 @@ static void intern_alloc(mlsize_t whsize, mlsize_t num_objects)
          intern_block into gray and break the Assert 3 lines down */
       if (intern_block == 0) {
         intern_obj_table = NULL;
-	intern_cleanup();
-	caml_raise_out_of_memory();
+        intern_cleanup();
+        caml_raise_out_of_memory();
       }
     }
     intern_header = Hd_val(intern_block);
