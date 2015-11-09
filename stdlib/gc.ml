@@ -98,12 +98,3 @@ let create_alarm f =
 ;;
 
 let delete_alarm a = a := false;;
-
-let () =
-  last_exit_function := (fun () ->
-      try
-        let fn = Sys.getenv "OCAML_GC_STATS" in
-        let oc = open_out fn in
-        print_stat oc;
-        close_out oc
-      with _ -> ())

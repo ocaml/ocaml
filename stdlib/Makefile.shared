@@ -41,12 +41,12 @@ OTHERS=array.cmo list.cmo char.cmo bytes.cmo string.cmo sys.cmo \
   arrayLabels.cmo listLabels.cmo bytesLabels.cmo \
   stringLabels.cmo moreLabels.cmo stdLabels.cmo
 
-all: stdlib.cma std_exit.cmo camlheader target_camlheader camlheader_ur
+all: stdlib.cma std_init.cmo std_exit.cmo camlheader target_camlheader camlheader_ur
 
 INSTALL_LIBDIR=$(DESTDIR)$(LIBDIR)
 
 install: install-$(RUNTIMED)
-	cp stdlib.cma std_exit.cmo *.cmi *.cmt *.cmti *.mli *.ml \
+	cp stdlib.cma std_init.cmo std_exit.cmo *.cmi *.cmt *.cmti *.mli *.ml \
 	  camlheader_ur \
 	  $(INSTALL_LIBDIR)
 	cp target_camlheader $(INSTALL_LIBDIR)/camlheader
@@ -88,18 +88,18 @@ clean::
 	$(CAMLOPT) $(COMPFLAGS) `./Compflags $@` -p -c -o $*.p.cmx $<
 
 # Dependencies on the compiler
-$(OBJS) std_exit.cmo: $(COMPILER)
-$(OBJS:.cmo=.cmi) std_exit.cmi: $(COMPILER)
-$(OBJS:.cmo=.cmx) std_exit.cmx: $(OPTCOMPILER)
-$(OBJS:.cmo=.p.cmx) std_exit.p.cmx: $(OPTCOMPILER)
+$(OBJS) std_init.cmo std_exit.cmo: $(COMPILER)
+$(OBJS:.cmo=.cmi) std_init.cmi std_exit.cmi: $(COMPILER)
+$(OBJS:.cmo=.cmx) std_init.cmx std_exit.cmx: $(OPTCOMPILER)
+$(OBJS:.cmo=.p.cmx) std_init.p.cmx std_exit.p.cmx: $(OPTCOMPILER)
 
 # Dependencies on Pervasives (not tracked by ocamldep)
-$(OTHERS) std_exit.cmo: pervasives.cmi
-$(OTHERS:.cmo=.cmi) std_exit.cmi: pervasives.cmi
-$(OBJS:.cmo=.cmx) std_exit.cmx: pervasives.cmi
-$(OBJS:.cmo=.p.cmx) std_exit.p.cmx: pervasives.cmi
-$(OTHERS:.cmo=.cmx) std_exit.cmx: pervasives.cmx
-$(OTHERS:.cmo=.p.cmx) std_exit.p.cmx: pervasives.cmx
+$(OTHERS) std_init.cmo std_exit.cmo: pervasives.cmi
+$(OTHERS:.cmo=.cmi) std_init.cmi std_exit.cmi: pervasives.cmi
+$(OBJS:.cmo=.cmx) std_init.cmx std_exit.cmx: pervasives.cmi
+$(OBJS:.cmo=.p.cmx) std_init.p.cmx std_exit.p.cmx: pervasives.cmi
+$(OTHERS:.cmo=.cmx) std_init.cmx std_exit.cmx: pervasives.cmx
+$(OTHERS:.cmo=.p.cmx) std_init.p.cmx std_exit.p.cmx: pervasives.cmx
 
 clean::
 	rm -f *.cm* *.$(O) *.$(A)
