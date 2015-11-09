@@ -58,12 +58,23 @@ let rewrite_function_decl
 let create_wrapper
     ~(function_decls : Flambda.function_declarations)
     ~(function_decl : Flambda.function_declaration)
-    ~fun_var =
+    ~fun_var
+    ~specialised_args
+    ~additional_specialised_args =
   let closure_id = Closure_id.wrap fun_var in
   let new_fun_var = Variable.rename ~append:"_unbox_closures" fun_var in
   let wrapper_params =
     List.map (fun param -> Variable.rename ~append:"_wrapper_param" param)
       function_decl.params
+  in
+  let additional_specialised_args =
+    List.fold_left2 (fun additional_specialised_args wrapper_param param ->
+        match Variable.Map.find param specialised_args with
+        | exception Not_found ->
+          additional_specialised_args
+        | outside_var ->
+          Variable.Map.add wrapper_param outside_var additional_specialised_args)
+      additional_specialised_args wrapper_params function_decl.params
   in
   let extra_args =
     Variable.Set.elements
@@ -78,6 +89,7 @@ let create_wrapper
       inline = Default_inline;
     }
   in
+  additional_specialised_args,
   new_fun_var,
   Flambda.create_function_declaration
     ~params:wrapper_params
@@ -108,6 +120,7 @@ let add_wrapper
     ~(function_decls : Flambda.function_declarations)
     ~(function_decl : Flambda.function_declaration)
     ~(free_vars : Variable.t Variable.Map.t)
+    ~specialised_args
     ~funs
     ~additional_specialised_args =
   let closure_id = Closure_id.wrap fun_var in
@@ -125,8 +138,9 @@ let add_wrapper
       rewrite_function_decl ~closure_id ~free_vars ~function_decls ~function_decl
         ~additional_specialised_args
     in
-    let new_fun_var, wrapper =
+    let additional_specialised_args, new_fun_var, wrapper =
       create_wrapper ~fun_var ~function_decls ~function_decl
+        ~additional_specialised_args ~specialised_args
     in
     let funs =
       Variable.Map.add new_fun_var rewritten_function_decl
@@ -142,6 +156,7 @@ let do_rewrite_set_of_closures ~backend
     Variable.Map.fold
       (fun fun_var function_decl (funs, additional_specialised_args) ->
          add_wrapper ~backend ~function_decls ~fun_var ~free_vars
+           ~specialised_args:set_of_closures.specialised_args
            ~function_decl
            ~funs ~additional_specialised_args)
       function_decls.funs
