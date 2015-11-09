@@ -561,7 +561,7 @@ and simplify_set_of_closures original_env r
           Var_within_closure.Map.add (Var_within_closure.wrap id) desc map)
           free_vars Var_within_closure.Map.empty;
       invariant_params = Variable.Set.empty;
-      specialised_args = Variable.Map.keys specialised_args;
+      specialised_args = specialised_args;
       freshening;
     }
   in
@@ -1183,7 +1183,7 @@ let constant_defining_value_approx
       { function_decls;
         bound_vars = Var_within_closure.Map.empty;
         invariant_params;
-        specialised_args = Variable.Set.empty;
+        specialised_args = Variable.Map.empty;
         freshening = Freshening.Project_var.empty;
       }
     in

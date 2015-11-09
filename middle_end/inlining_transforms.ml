@@ -139,14 +139,17 @@ let inline_by_copying_function_declaration ~env ~r
     ~(function_decls : Flambda.function_declarations)
     ~lhs_of_application ~closure_id_being_applied
     ~(function_decl : Flambda.function_declaration)
-    ~args ~args_approxs ~invariant_params ~specialised_args ~dbg ~simplify =
+    ~args ~args_approxs ~invariant_params
+    ~(specialised_args:Variable.t Variable.Map.t)
+    ~dbg ~simplify =
+  let specialised_args_set = Variable.Map.keys specialised_args in
   let worth_specialising_args, specialisable_args, args, args_decl =
     which_function_parameters_can_we_specialise
       ~params:function_decl.params ~args ~args_approxs
       ~invariant_params
-      ~specialised_args
+      ~specialised_args:specialised_args_set
   in
-  if Variable.Set.subset worth_specialising_args specialised_args
+  if Variable.Set.subset worth_specialising_args specialised_args_set
   then
     (* Don't duplicate the function definition if we would make its
        specialisation information worse.  (Note that this judgement is made

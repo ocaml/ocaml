@@ -87,7 +87,7 @@ val inline_by_copying_function_declaration
   -> args:Variable.t list
   -> args_approxs:Simple_value_approx.t list
   -> invariant_params:Variable.Set.t
-  -> specialised_args:Variable.Set.t
+  -> specialised_args:Variable.t Variable.Map.t
   -> dbg:Debuginfo.t
   -> simplify:Inlining_decision_intf.simplify
   -> (Flambda.t * Inline_and_simplify_aux.Result.t) option

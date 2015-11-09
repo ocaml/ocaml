@@ -80,7 +80,7 @@ let rec import_ex ex =
       { function_decls = import_set_of_closures set_of_closures_id;
         bound_vars;
         invariant_params = invariant_params;
-        specialised_args = Variable.Set.empty;
+        specialised_args = Variable.Map.empty;
         freshening = Freshening.Project_var.empty;
       }
   in
