@@ -31,13 +31,21 @@ let remove_params unused (fun_decl: Flambda.function_declaration) =
   Flambda.create_function_declaration ~params:used_params ~body
     ~stub:fun_decl.stub ~dbg:fun_decl.dbg ~inline:fun_decl.inline
 
-let make_stub unused var (fun_decl : Flambda.function_declaration) =
+let make_stub unused var (fun_decl : Flambda.function_declaration)
+    ~specialised_args ~additional_specialised_args =
   let renamed = rename_var var in
-  let args' = List.map (fun var -> var, rename_var var) fun_decl.params in
-  let args =
-    List.map (fun (_, var) -> var)
-      (List.filter (fun (var, _) -> not (Variable.Set.mem var unused)) args')
+  let args' =
+    List.map (fun var -> var, rename_var var) fun_decl.params
+    |> List.filter (fun (var, _) -> not (Variable.Set.mem var unused)) in
+  let additional_specialised_args =
+    List.fold_left (fun additional_specialised_args (original_arg,arg) ->
+        match Variable.Map.find original_arg specialised_args with
+        | exception Not_found -> additional_specialised_args
+        | outside_var ->
+          Variable.Map.add arg outside_var additional_specialised_args)
+      additional_specialised_args args'
   in
+  let args = List.map (fun (_, var) -> var) args' in
   let kind = Flambda.Direct (Closure_id.wrap renamed) in
   let dbg = fun_decl.dbg in
   let body : Flambda.t =
@@ -53,7 +61,7 @@ let make_stub unused var (fun_decl : Flambda.function_declaration) =
     Flambda.create_function_declaration ~params:(List.map snd args') ~body
       ~stub:true ~dbg:fun_decl.dbg ~inline:fun_decl.inline
   in
-  function_decl, renamed
+  function_decl, renamed, additional_specialised_args
 
 let separate_unused_arguments (set_of_closures : Flambda.set_of_closures) =
   let function_decls = set_of_closures.function_decls in
@@ -70,23 +78,31 @@ let separate_unused_arguments (set_of_closures : Flambda.set_of_closures) =
   if Variable.Set.is_empty unused
   then None
   else begin
-    let funs =
-      Variable.Map.fold (fun fun_id (fun_decl : Flambda.function_declaration) acc ->
+    let funs, additional_specialised_args =
+      Variable.Map.fold (fun fun_id (fun_decl : Flambda.function_declaration)
+                          (funs, additional_specialised_args) ->
           if List.exists (fun v -> Variable.Set.mem v unused) fun_decl.params
           then begin
-            let stub, renamed_fun_id = make_stub unused fun_id fun_decl in
+            let stub, renamed_fun_id, additional_specialised_args =
+              make_stub unused fun_id fun_decl
+                ~specialised_args:set_of_closures.specialised_args
+                ~additional_specialised_args
+            in
             let cleaned = remove_params unused fun_decl in
             Variable.Map.add fun_id stub
-              (Variable.Map.add renamed_fun_id cleaned acc)
+              (Variable.Map.add renamed_fun_id cleaned funs),
+            additional_specialised_args
           end
           else
-            Variable.Map.add fun_id fun_decl acc
+            Variable.Map.add fun_id fun_decl funs,
+            additional_specialised_args
         )
-        function_decls.funs Variable.Map.empty
+        function_decls.funs (Variable.Map.empty, Variable.Map.empty)
     in
     let specialised_args =
-      Variable.Map.filter (fun param _ -> not (Variable.Set.mem param unused))
-        set_of_closures.specialised_args
+      Variable.Map.disjoint_union additional_specialised_args
+        (Variable.Map.filter (fun param _ -> not (Variable.Set.mem param unused))
+           set_of_closures.specialised_args)
     in
     let function_decls =
       Flambda.update_function_declarations function_decls ~funs
