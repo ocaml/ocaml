@@ -571,9 +571,14 @@ static void intern_alloc(mlsize_t whsize, mlsize_t num_objects)
     }else if (wosize <= Max_young_wosize){
       intern_block = caml_alloc_small (wosize, String_tag);
     }else{
-      intern_block = caml_alloc_shr (wosize, String_tag);
+      intern_block = caml_alloc_shr_no_raise (wosize, String_tag);
       /* do not do the urgent_gc check here because it might darken
          intern_block into gray and break the Assert 3 lines down */
+      if (intern_block == 0) {
+        intern_obj_table = NULL;
+	intern_cleanup();
+	caml_raise_out_of_memory();
+      }
     }
     intern_header = Hd_val(intern_block);
     intern_color = Color_hd(intern_header);

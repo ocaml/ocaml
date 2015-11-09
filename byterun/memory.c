@@ -405,12 +405,12 @@ color_t caml_allocation_color (void *hp)
   }
 }
 
-CAMLexport value caml_alloc_shr (mlsize_t wosize, tag_t tag)
+CAMLexport value caml_alloc_shr_no_raise (mlsize_t wosize, tag_t tag)
 {
   header_t *hp;
   value *new_block;
 
-  if (wosize > Max_wosize) caml_raise_out_of_memory ();
+  if (wosize > Max_wosize) return 0;
   hp = caml_fl_allocate (wosize);
   if (hp == NULL){
     new_block = expand_heap (wosize);
@@ -418,7 +418,7 @@ CAMLexport value caml_alloc_shr (mlsize_t wosize, tag_t tag)
       if (caml_in_minor_collection)
         caml_fatal_error ("Fatal error: out of memory.\n");
       else
-        caml_raise_out_of_memory ();
+        return 0;
     }
     caml_fl_add_blocks ((value) new_block);
     hp = caml_fl_allocate (wosize);
@@ -450,6 +450,14 @@ CAMLexport value caml_alloc_shr (mlsize_t wosize, tag_t tag)
   }
 #endif
   return Val_hp (hp);
+}
+
+CAMLexport value caml_alloc_shr (mlsize_t wosize, tag_t tag) {
+  value v = caml_alloc_shr_no_raise(wosize, tag);
+  if (v == 0) {
+    caml_raise_out_of_memory();
+  }
+  return v;
 }
 
 /* Dependent memory is all memory blocks allocated out of the heap
