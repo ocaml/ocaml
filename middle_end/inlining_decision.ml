@@ -235,12 +235,6 @@ let is_probably_a_functor ~env ~args_approxs ~recursive_functions =
     && List.for_all A.known args_approxs
     && Variable.Set.is_empty recursive_functions
 
-(* CR mshinwell: We deleted the [only_use_of_function] stuff in [for_call_site],
-   which used to identify when the function declaration was only used once,
-   within the application expression itself (which is no longer
-   expressible).  We should consider handling this case elsewhere and
-   setting [stub]. *)
-
 let for_call_site ~env ~r ~(function_decls : Flambda.function_declarations)
       ~lhs_of_application ~closure_id_being_applied
       ~(function_decl : Flambda.function_declaration)
@@ -340,9 +334,6 @@ let for_call_site ~env ~r ~(function_decls : Flambda.function_declarations)
           ~only_use_of_function ~no_simplification ~probably_a_functor
           ~args ~simplify
       else if E.inlining_level env > max_level then begin
-        (* CR mshinwell for pchambart: This branch is taken even if
-           [recursive = true].  Is that correct?  It's not the inverse of the
-           condition just above. *)
         made_decision (Can_inline_but_tried_nothing (Level_exceeded true));
         no_simplification ()
       end else if recursive then
