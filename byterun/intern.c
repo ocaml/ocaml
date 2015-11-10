@@ -110,23 +110,36 @@ static intnat read64s(void)
 
 static void intern_cleanup(void)
 {
-  if (intern_input_malloced) caml_stat_free(intern_input);
-  if (intern_obj_table != NULL) caml_stat_free(intern_obj_table);
+  if (intern_input_malloced) {
+    caml_stat_free(intern_input);
+    intern_input_malloced = 0;
+  }
+  if (intern_obj_table != NULL) {
+    caml_stat_free(intern_obj_table);
+    intern_obj_table = NULL;
+  }
   if (intern_extra_block != NULL) {
     /* free newly allocated heap chunk */
     caml_free_for_heap(intern_extra_block);
+    intern_extra_block = NULL;
   } else if (intern_block != 0) {
     /* restore original header for heap block, otherwise GC is confused */
     Hd_val(intern_block) = intern_header;
+    intern_block = 0;
   }
   /* free the recursion stack */
   intern_free_stack();
 }
 
+/* To be called from ocaml to cleanup after catching an exception raised here. */
+CAMLprim value caml_intern_cleanup(value unit) {
+  intern_cleanup ();
+  return Val_unit;
+}
+
 static void readfloat(double * dest, unsigned int code)
 {
   if (sizeof(double) != 8) {
-    intern_cleanup();
     caml_invalid_argument("input_value: non-standard floats");
   }
   readblock((char *) dest, 8);
@@ -151,7 +164,6 @@ static void readfloats(double * dest, mlsize_t len, unsigned int code)
 {
   mlsize_t i;
   if (sizeof(double) != 8) {
-    intern_cleanup();
     caml_invalid_argument("input_value: non-standard floats");
   }
   readblock((char *) dest, len * 8);
@@ -221,7 +233,6 @@ static void intern_free_stack(void)
 static void intern_stack_overflow(void)
 {
   caml_gc_message (0x04, "Stack overflow in un-marshaling value\n", 0);
-  intern_free_stack();
   caml_raise_out_of_memory();
 }
 
@@ -371,7 +382,6 @@ static void intern_rec(value *dest)
         v = Val_long(read64s());
         break;
 #else
-        intern_cleanup();
         caml_failwith("input_value: integer too large");
         break;
 #endif
@@ -401,7 +411,6 @@ static void intern_rec(value *dest)
         size = Wosize_hd(header);
         goto read_block;
 #else
-        intern_cleanup();
         caml_failwith("input_value: data block too large");
         break;
 #endif
@@ -446,7 +455,6 @@ static void intern_rec(value *dest)
           if (function_placeholder != NULL) {
             v = *function_placeholder;
           } else {
-            intern_cleanup();
             intern_bad_code_pointer(digest);
           }
         }
@@ -463,7 +471,6 @@ static void intern_rec(value *dest)
       case CODE_CUSTOM:
         ops = caml_find_custom_operations((char *) intern_src);
         if (ops == NULL) {
-          intern_cleanup();
           caml_failwith("input_value: unknown custom block identifier");
         }
         while (*intern_src++ != 0) /*nothing*/;  /*skip identifier*/
@@ -486,7 +493,6 @@ static void intern_rec(value *dest)
         intern_dest += 1 + size;
         break;
       default:
-        intern_cleanup();
         caml_failwith("input_value: ill-formed message");
       }
     }
@@ -507,9 +513,6 @@ static void intern_alloc(mlsize_t whsize, mlsize_t num_objects)
   mlsize_t wosize;
 
   if (whsize == 0) {
-    intern_obj_table = NULL;
-    intern_extra_block = NULL;
-    intern_block = 0;
     return;
   }
   wosize = Wosize_whsize(whsize);
@@ -562,6 +565,8 @@ static void intern_add_to_heap(mlsize_t whsize)
     caml_allocated_words +=
       Wsize_bsize ((char *) intern_dest - intern_extra_block);
     caml_add_to_heap(intern_extra_block);
+  } else {
+    intern_block = 0;
   }
 }
 
@@ -595,6 +600,8 @@ value caml_input_val(struct channel *chan)
     caml_stat_free(block);
     caml_failwith("input_value: truncated object");
   }
+  /* Clean start */
+  intern_cleanup();
   intern_input = (unsigned char *) block;
   intern_input_malloced = 1;
   intern_src = intern_input;
@@ -603,8 +610,7 @@ value caml_input_val(struct channel *chan)
   intern_rec(&res);
   intern_add_to_heap(whsize);
   /* Free everything */
-  caml_stat_free(intern_input);
-  if (intern_obj_table != NULL) caml_stat_free(intern_obj_table);
+  intern_cleanup();
   return caml_check_urgent_gc(res);
 }
 
@@ -625,9 +631,10 @@ CAMLexport value caml_input_val_from_string(value str, intnat ofs)
   CAMLparam1 (str);
   mlsize_t num_objects, whsize;
   CAMLlocal1 (obj);
+  /* Clean start */
+  intern_cleanup();
 
   intern_src = &Byte_u(str, ofs + 2*4);
-  intern_input_malloced = 0;
   num_objects = read32u();
 #ifdef ARCH_SIXTYFOUR
   intern_src += 4;  /* skip size_32 */
@@ -643,7 +650,7 @@ CAMLexport value caml_input_val_from_string(value str, intnat ofs)
   intern_rec(&obj);
   intern_add_to_heap(whsize);
   /* Free everything */
-  if (intern_obj_table != NULL) caml_stat_free(intern_obj_table);
+  intern_cleanup();
   CAMLreturn (caml_check_urgent_gc(obj));
 }
 
@@ -671,7 +678,7 @@ static value input_val_from_block(void)
   intern_rec(&obj);
   intern_add_to_heap(whsize);
   /* Free internal data structures */
-  if (intern_obj_table != NULL) caml_stat_free(intern_obj_table);
+  intern_cleanup();
   return caml_check_urgent_gc(obj);
 }
 
@@ -679,6 +686,8 @@ CAMLexport value caml_input_value_from_malloc(char * data, intnat ofs)
 {
   uint32_t magic;
   value obj;
+  /* Clean start */
+  intern_cleanup();
 
   intern_input = (unsigned char *) data;
   intern_src = intern_input + ofs;
@@ -688,8 +697,9 @@ CAMLexport value caml_input_value_from_malloc(char * data, intnat ofs)
     caml_failwith("input_value_from_malloc: bad object");
   intern_src += 4;  /* Skip block_len */
   obj = input_val_from_block();
+
   /* Free the input */
-  caml_stat_free(intern_input);
+  intern_cleanup();
   return obj;
 }
 
@@ -699,10 +709,11 @@ CAMLexport value caml_input_value_from_block(char * data, intnat len)
   uint32_t magic;
   mlsize_t block_len;
   value obj;
+  /* Clean start */
+  intern_cleanup();
 
   intern_input = (unsigned char *) data;
   intern_src = intern_input;
-  intern_input_malloced = 0;
   magic = read32u();
   if (magic != Intext_magic_number)
     caml_failwith("input_value_from_block: bad object");
@@ -710,6 +721,8 @@ CAMLexport value caml_input_value_from_block(char * data, intnat len)
   if (5*4 + block_len > len)
     caml_failwith("input_value_from_block: bad block length");
   obj = input_val_from_block();
+
+  /* No need to clean here */
   return obj;
 }
 
@@ -720,14 +733,17 @@ CAMLprim value caml_marshal_data_size(value buff, value ofs)
 {
   uint32_t magic;
   mlsize_t block_len;
+  /* Clean start */
+  intern_cleanup();
 
   intern_src = &Byte_u(buff, Long_val(ofs));
-  intern_input_malloced = 0;
   magic = read32u();
   if (magic != Intext_magic_number){
     caml_failwith("Marshal.data_size: bad object");
   }
   block_len = read32u();
+
+  /* No need to clean here */
   return Val_long(block_len);
 }
 
@@ -892,6 +908,5 @@ CAMLexport void caml_deserialize_block_float_8(void * data, intnat len)
 
 CAMLexport void caml_deserialize_error(char * msg)
 {
-  intern_cleanup();
   caml_failwith(msg);
 }
