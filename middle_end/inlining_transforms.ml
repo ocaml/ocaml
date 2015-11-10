@@ -227,8 +227,9 @@ let inline_by_copying_function_declaration ~env ~r
             if Variable.Set.mem param all_functions_parameters then
               match Variable.Map.find v specialisable_renaming with
               | exception Not_found ->
-                Misc.fatal_errorf "Missing renaming for specialised argument of a function \
-                                   being duplicated but not directly applied: %a -> %a"
+                Misc.fatal_errorf
+                  "Missing renaming for specialised argument of a function \
+                    being duplicated but not directly applied: %a -> %a"
                   Variable.print param Variable.print v
               | argument_from_the_current_application ->
                 Some argument_from_the_current_application
