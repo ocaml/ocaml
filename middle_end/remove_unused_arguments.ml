@@ -36,16 +36,19 @@ let make_stub unused var (fun_decl : Flambda.function_declaration)
   let renamed = rename_var var in
   let args' =
     List.map (fun var -> var, rename_var var) fun_decl.params
-    |> List.filter (fun (var, _) -> not (Variable.Set.mem var unused)) in
+  in
+  let used_args' =
+    List.filter (fun (var, _) -> not (Variable.Set.mem var unused)) args'
+  in
   let additional_specialised_args =
     List.fold_left (fun additional_specialised_args (original_arg,arg) ->
         match Variable.Map.find original_arg specialised_args with
         | exception Not_found -> additional_specialised_args
         | outside_var ->
           Variable.Map.add arg outside_var additional_specialised_args)
-      additional_specialised_args args'
+      additional_specialised_args used_args'
   in
-  let args = List.map (fun (_, var) -> var) args' in
+  let args = List.map (fun (_, var) -> var) used_args' in
   let kind = Flambda.Direct (Closure_id.wrap renamed) in
   let dbg = fun_decl.dbg in
   let body : Flambda.t =
