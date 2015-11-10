@@ -377,7 +377,6 @@ static void intern_rec(value *dest)
         v = Val_long(read64s());
         break;
 #else
-        intern_cleanup();
         caml_failwith("input_value: integer too large");
         break;
 #endif
@@ -451,7 +450,6 @@ static void intern_rec(value *dest)
           if (function_placeholder != NULL) {
             v = *function_placeholder;
           } else {
-            intern_cleanup();
             intern_bad_code_pointer(digest);
           }
         }
@@ -468,7 +466,6 @@ static void intern_rec(value *dest)
       case CODE_CUSTOM:
         ops = caml_find_custom_operations((char *) intern_src);
         if (ops == NULL) {
-          intern_cleanup();
           caml_failwith("input_value: unknown custom block identifier");
         }
         while (*intern_src++ != 0) /*nothing*/;  /*skip identifier*/
@@ -491,7 +488,6 @@ static void intern_rec(value *dest)
         intern_dest += 1 + size;
         break;
       default:
-        intern_cleanup();
         caml_failwith("input_value: ill-formed message");
       }
     }
@@ -896,6 +892,5 @@ CAMLexport void caml_deserialize_block_float_8(void * data, intnat len)
 
 CAMLexport void caml_deserialize_error(char * msg)
 {
-  intern_cleanup();
   caml_failwith(msg);
 }
