@@ -162,6 +162,10 @@ Working version
   (Xavier Clerc, review by Gabriel Scherer, Sébastien Hinderer, and
    Xavier Leroy)
 
+- GPR#1945: new "-stop-after parse" option to stop compilation
+  after the parsing pass
+  (Gabriel Scherer, review by Jérémie Dimino)
+
 - GRP#1953: Add locations to attributes in the parsetree.
   (Hugo Heuzard, review by Gabriel Radanne)
 

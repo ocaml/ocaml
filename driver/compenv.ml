@@ -421,6 +421,20 @@ let read_one_param ppf position name v =
 
   | "plugin" -> !load_plugin v
 
+  | "stop-after" ->
+    let module P = Clflags.Compiler_pass in
+    begin match P.of_string v with
+    | None ->
+        Printf.ksprintf (print_error ppf)
+          "bad value %s for option \"stop-after\" (expected one of: %s)"
+          v (String.concat ", " P.pass_names)
+    | Some pass ->
+        Clflags.stop_after := Some pass;
+        begin match pass with
+        | P.Parsing | P.Typing ->
+            compile_only := true
+        end;
+    end
   | _ ->
     if not (List.mem name !can_discard) then begin
       can_discard := name :: !can_discard;

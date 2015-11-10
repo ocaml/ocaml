@@ -112,11 +112,13 @@ let implementation ~tool_name ~native ~backend ~sourcefile ~outputprefix =
   in
   Profile.record_call info.sourcefile @@ fun () ->
   let parsed = parse_impl info in
-  let typed = typecheck_impl info parsed in
-  if not !Clflags.print_types then begin
-    let exceptionally () =
-      List.iter (fun suf -> remove_file (suf info)) sufs;
-    in
-    Misc.try_finally ~exceptionally (fun () -> backend info typed)
+  if Clflags.(should_stop_after Compiler_pass.Parsing) then () else begin
+    let typed = typecheck_impl info parsed in
+    if Clflags.(should_stop_after Compiler_pass.Typing) then () else begin
+      let exceptionally () =
+        List.iter (fun suf -> remove_file (suf info)) sufs;
+      in
+      Misc.try_finally ~exceptionally (fun () -> backend info typed)
+    end;
   end;
   Warnings.check_fatal ();

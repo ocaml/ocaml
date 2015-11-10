@@ -217,6 +217,16 @@ val color : Misc.Color.setting option ref
 
 val unboxed_types : bool ref
 
+module Compiler_pass : sig
+  type t = Parsing | Typing
+  val of_string : string -> t option
+  val to_string : t -> string
+  val passes : t list
+  val pass_names : string list
+end
+val stop_after : Compiler_pass.t option ref
+val should_stop_after : Compiler_pass.t -> bool
+
 val arg_spec : (string * Arg.spec * string) list ref
 
 (* [add_arguments __LOC__ args] will add the arguments from [args] at

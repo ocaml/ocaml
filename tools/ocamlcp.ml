@@ -63,6 +63,7 @@ module Options = Main_args.Make_bytecomp_options (struct
   let _dtypes = option "-dtypes"
   let _for_pack = option_with_arg "-for-pack"
   let _g = option "-g"
+  let _stop_after = option_with_arg "-stop-after"
   let _i = option "-i"
   let _I s = option_with_arg "-I" s
   let _impl s = with_impl := true; option_with_arg "-impl" s
