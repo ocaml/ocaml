@@ -70,7 +70,11 @@ let inline_non_recursive env r ~function_decls ~lhs_of_application
       E.note_entering_closure env ~closure_id:closure_id_being_applied
         ~where:Inline_by_copying_function_body
     in
-    simplify (E.inlining_level_up env) r body
+    let env =
+      if not function_decl.stub then env
+      else E.inlining_level_up env
+    in
+    simplify env r body
   end else begin
     (* Inlining the body of the function did not appear sufficiently
        beneficial; however, it may become so if we inline within the body
@@ -262,9 +266,7 @@ let for_call_site ~env ~r ~(function_decls : Flambda.function_declarations)
       inline = inline_requested;
     }, R.set_approx r A.value_unknown
   in
-  (* CR mshinwell for pchambart: Mysterious constant.  Turn into a compiler
-     option? *)
-  let max_level = 3 in
+  let max_level = !Clflags.max_inlining_depth in
   let unconditionally_inline =
     match (inline_requested : Lambda.inline_attribute) with
     | Always_inline -> true

@@ -85,11 +85,17 @@ let copy_of_function's_body_with_freshened_params
     (= "variables bound by the closure"), and any function identifiers
     introduced by the corresponding set of closures. *)
 let inline_by_copying_function_body ~env ~r ~function_decls ~lhs_of_application
-      ~closure_id_being_applied ~function_decl ~args ~simplify =
+      ~closure_id_being_applied
+      ~(function_decl : Flambda.function_declaration) ~args ~simplify =
   assert (E.mem env lhs_of_application);
   assert (List.for_all (E.mem env) args);
   let r = R.map_benefit r B.remove_call in
-  let env = E.inlining_level_up env in
+  let env =
+    (* Don't allow the inlining level to inhibit inlining of stubs (e.g.
+       wrappers created by [Unbox_closures]). *)
+    if function_decl.stub then env
+    else E.inlining_level_up env
+  in
   let freshened_params, body =
     copy_of_function's_body_with_freshened_params ~function_decl
   in
@@ -148,7 +154,10 @@ let inline_by_copying_function_declaration ~env ~r
        approximations, rather than on all invariant arguments.) *)
     None
   else
-    let env = E.inlining_level_up env in
+    let env =
+      if function_decl.stub then env
+      else E.inlining_level_up env
+    in
     let set_of_closures_var = new_var "dup_set_of_closures" in
     (* The free variable map for the duplicated declaration(s) maps the
        "internal" names used within the function bodies to fresh names,

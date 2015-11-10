@@ -134,6 +134,7 @@ let branch_inline_factor = ref 0.6     (* -branch-inline-factor *)
 let print_timings = ref false          (* -timings *)
 
 let unbox_closures = ref true           (* -unbox-closures *)
+let max_inlining_depth = ref 3          (* -max-inlining-depth *)
 
 (* CR mshinwell: change to [false] before merge, and finish off
    command line arg support *)

@@ -207,6 +207,13 @@ let mk_make_runtime_2 f =
   "-make_runtime", Arg.Unit f, " (deprecated) same as -make-runtime"
 ;;
 
+let mk_max_inlining_depth f =
+  "-max-inlining-depth", Arg.Int f,
+    Printf.sprintf "<n>  Inline inside inlined functions up to this depth \
+        (default %d)"
+      !Clflags.max_inlining_depth
+;;
+
 let mk_modern f =
   "-modern", Arg.Unit f, " (deprecated) same as -labels"
 ;;
@@ -676,6 +683,7 @@ module type Optcommon_options = sig
   val _compact : unit -> unit
   val _inline : int -> unit
   val _inlining_stats : unit -> unit
+  val _max_inlining_depth : int -> unit
   val _rounds : int -> unit
   val _unroll : int -> unit
   val _no_functor_heuristics : unit -> unit
@@ -912,6 +920,7 @@ struct
     mk_keep_locs F._keep_locs;
     mk_labels F._labels;
     mk_linkall F._linkall;
+    mk_max_inlining_depth F._max_inlining_depth;
     mk_no_alias_deps F._no_alias_deps;
     mk_no_app_funct F._no_app_funct;
     mk_no_float_const_prop F._no_float_const_prop;
