@@ -439,7 +439,9 @@ let input_line chan =
 
 external input_byte : in_channel -> int = "caml_ml_input_char"
 external input_binary_int : in_channel -> int = "caml_ml_input_int"
-external input_value : in_channel -> 'a = "caml_input_value"
+external intern_cleanup : unit -> unit = "caml_intern_cleanup" 
+external input_value_unsafe : in_channel -> 'a = "caml_input_value"
+let input_value ic = try input_value_unsafe ic with e -> intern_cleanup (); raise e
 external seek_in : in_channel -> int -> unit = "caml_ml_seek_in"
 external pos_in : in_channel -> int = "caml_ml_pos_in"
 external in_channel_length : in_channel -> int = "caml_ml_channel_size"
