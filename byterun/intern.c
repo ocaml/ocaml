@@ -539,7 +539,6 @@ static void intern_alloc(mlsize_t whsize, mlsize_t num_objects)
     intern_color = Color_hd(intern_header);
     Assert (intern_color == Caml_white || intern_color == Caml_black);
     intern_dest = (header_t *) Hp_val(intern_block);
-    intern_extra_block = NULL;
   }
   obj_counter = 0;
   if (num_objects > 0)
@@ -685,7 +684,6 @@ static value input_val_from_block(void)
 CAMLexport value caml_input_value_from_malloc(char * data, intnat ofs)
 {
   uint32_t magic;
-  value obj;
   /* Clean start */
   intern_cleanup();
 
@@ -696,11 +694,7 @@ CAMLexport value caml_input_value_from_malloc(char * data, intnat ofs)
   if (magic != Intext_magic_number)
     caml_failwith("input_value_from_malloc: bad object");
   intern_src += 4;  /* Skip block_len */
-  obj = input_val_from_block();
-
-  /* Free the input */
-  intern_cleanup();
-  return obj;
+  return input_val_from_block();
 }
 
 /* [len] is a number of bytes */
@@ -708,7 +702,6 @@ CAMLexport value caml_input_value_from_block(char * data, intnat len)
 {
   uint32_t magic;
   mlsize_t block_len;
-  value obj;
   /* Clean start */
   intern_cleanup();
 
@@ -720,10 +713,7 @@ CAMLexport value caml_input_value_from_block(char * data, intnat len)
   block_len = read32u();
   if (5*4 + block_len > len)
     caml_failwith("input_value_from_block: bad block length");
-  obj = input_val_from_block();
-
-  /* No need to clean here */
-  return obj;
+  return input_val_from_block();
 }
 
 /* [ofs] is a [value] that represents a number of bytes

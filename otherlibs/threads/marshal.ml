@@ -34,10 +34,13 @@ let to_buffer buff ofs len v flags =
   then invalid_arg "Marshal.to_buffer: substring out of bounds"
   else to_buffer_unsafe buff ofs len v flags
 
-external from_channel: in_channel -> 'a = "caml_input_value"
+external intern_cleanup: unit -> unit = "caml_intern_cleanup"
+external from_channel_unsafe: in_channel -> 'a = "caml_input_value"
+let from_channel ic = try from_channel_unsafe ic with e -> intern_cleanup (); raise e
 external from_bytes_unsafe: bytes -> int -> 'a
-         = "caml_input_value_from_string"
+                           = "caml_input_value_from_string"
 external data_size_unsafe: bytes -> int -> int = "caml_marshal_data_size"
+let data_size_unsafe buff ofs = try data_size_unsafe buff ofs with e -> intern_cleanup (); raise e
 
 let header_size = 20
 let data_size buff ofs =
@@ -53,7 +56,7 @@ let from_bytes buff ofs =
     let len = data_size_unsafe buff ofs in
     if ofs > Bytes.length buff - (header_size + len)
     then invalid_arg "Marshal.from_bytes"
-    else from_bytes_unsafe buff ofs
+    else try from_bytes_unsafe buff ofs with e -> intern_cleanup (); raise e
   end
 
 let from_string buff ofs = from_bytes (Bytes.unsafe_of_string buff) ofs

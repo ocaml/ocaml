@@ -524,8 +524,11 @@ let input_binary_int ic =
   let b4 = input_byte ic in
   (n1 lsl 24) + (b2 lsl 16) + (b3 lsl 8) + b4
 
-external unmarshal : bytes -> int -> 'a = "caml_input_value_from_string"
-external marshal_data_size : bytes -> int -> int = "caml_marshal_data_size"
+external intern_cleanup : unit -> unit = "caml_intern_cleanup"
+external unmarshal_unsafe : bytes -> int -> 'a = "caml_input_value_from_string"
+let unmarshal s = try unmarshal_unsafe s with e -> intern_cleanup (); raise e
+external marshal_data_size_unsafe : bytes -> int -> int = "caml_marshal_data_size"
+let marshal_data_size s n = try marshal_data_size_unsafe s n with e -> intern_cleanup (); raise e
 
 let input_value ic =
   let header = bytes_create 20 in
