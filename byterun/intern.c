@@ -56,10 +56,6 @@ static value * intern_obj_table;
 static unsigned int intern_color;
 /* Color to assign to newly created headers */
 
-static header_t intern_header;
-/* Original header of the destination block.
-   Meaningful only if intern_extra_block is NULL. */
-
 static value intern_block;
 /* Point to the heap block allocated as destination block.
    Meaningful only if intern_extra_block is NULL. */
@@ -122,10 +118,6 @@ static void intern_cleanup(void)
     /* free newly allocated heap chunk */
     caml_free_for_heap(intern_extra_block);
     intern_extra_block = NULL;
-  } else if (intern_block != 0) {
-    /* restore original header for heap block, otherwise GC is confused */
-    Hd_val(intern_block) = intern_header;
-    intern_block = 0;
   }
   /* free the recursion stack */
   intern_free_stack();
@@ -133,13 +125,14 @@ static void intern_cleanup(void)
 
 /* To be called from ocaml to cleanup after catching an exception raised here. */
 CAMLprim value caml_intern_cleanup(value unit) {
-  intern_cleanup ();
+  intern_cleanup();
   return Val_unit;
 }
 
 static void readfloat(double * dest, unsigned int code)
 {
   if (sizeof(double) != 8) {
+    intern_cleanup();
     caml_invalid_argument("input_value: non-standard floats");
   }
   readblock((char *) dest, 8);
@@ -164,6 +157,7 @@ static void readfloats(double * dest, mlsize_t len, unsigned int code)
 {
   mlsize_t i;
   if (sizeof(double) != 8) {
+    intern_cleanup();
     caml_invalid_argument("input_value: non-standard floats");
   }
   readblock((char *) dest, len * 8);
@@ -233,6 +227,7 @@ static void intern_free_stack(void)
 static void intern_stack_overflow(void)
 {
   caml_gc_message (0x04, "Stack overflow in un-marshaling value\n", 0);
+  intern_free_stack();
   caml_raise_out_of_memory();
 }
 
@@ -382,6 +377,7 @@ static void intern_rec(value *dest)
         v = Val_long(read64s());
         break;
 #else
+        intern_cleanup();
         caml_failwith("input_value: integer too large");
         break;
 #endif
@@ -455,6 +451,7 @@ static void intern_rec(value *dest)
           if (function_placeholder != NULL) {
             v = *function_placeholder;
           } else {
+            intern_cleanup();
             intern_bad_code_pointer(digest);
           }
         }
@@ -471,6 +468,7 @@ static void intern_rec(value *dest)
       case CODE_CUSTOM:
         ops = caml_find_custom_operations((char *) intern_src);
         if (ops == NULL) {
+          intern_cleanup();
           caml_failwith("input_value: unknown custom block identifier");
         }
         while (*intern_src++ != 0) /*nothing*/;  /*skip identifier*/
@@ -493,6 +491,7 @@ static void intern_rec(value *dest)
         intern_dest += 1 + size;
         break;
       default:
+        intern_cleanup();
         caml_failwith("input_value: ill-formed message");
       }
     }
@@ -516,7 +515,7 @@ static void intern_alloc(mlsize_t whsize, mlsize_t num_objects)
     return;
   }
   wosize = Wosize_whsize(whsize);
-  if (wosize > Max_wosize) {
+  if (wosize >= Max_wosize) {
     /* Round desired size up to next page */
     asize_t request =
       ((Bsize_wsize(whsize) + Page_size - 1) >> Page_log) << Page_log;
@@ -526,19 +525,17 @@ static void intern_alloc(mlsize_t whsize, mlsize_t num_objects)
     intern_dest = (header_t *) intern_extra_block;
   } else {
     /* this is a specialised version of caml_alloc from alloc.c */
-    if (wosize == 0){
-      intern_block = Atom (String_tag);
-    }else if (wosize <= Max_young_wosize){
+    wosize += 1;
+    if (wosize <= Max_young_wosize){
       intern_block = caml_alloc_small (wosize, String_tag);
     }else{
       intern_block = caml_alloc_shr (wosize, String_tag);
       /* do not do the urgent_gc check here because it might darken
          intern_block into gray and break the Assert 3 lines down */
     }
-    intern_header = Hd_val(intern_block);
-    intern_color = Color_hd(intern_header);
+    intern_color = Color_val(intern_block);
     Assert (intern_color == Caml_white || intern_color == Caml_black);
-    intern_dest = (header_t *) Hp_val(intern_block);
+    intern_dest = ((header_t *) Hp_val(intern_block)) + 1;
   }
   obj_counter = 0;
   if (num_objects > 0)
@@ -564,7 +561,8 @@ static void intern_add_to_heap(mlsize_t whsize)
     caml_allocated_words +=
       Wsize_bsize ((char *) intern_dest - intern_extra_block);
     caml_add_to_heap(intern_extra_block);
-  } else {
+  } else if (intern_block != 0) {
+    Hd_val(intern_block) = Make_header(0, String_tag, intern_color);
     intern_block = 0;
   }
 }
@@ -898,5 +896,6 @@ CAMLexport void caml_deserialize_block_float_8(void * data, intnat len)
 
 CAMLexport void caml_deserialize_error(char * msg)
 {
+  intern_cleanup();
   caml_failwith(msg);
 }
