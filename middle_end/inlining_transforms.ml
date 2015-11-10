@@ -149,6 +149,33 @@ let inline_by_copying_function_declaration ~env ~r
       ~invariant_params
       ~specialised_args:specialised_args_set
   in
+  (* The other closures from the same set of closures may have
+     specialised arguments. Those refer to variables that may not be
+     bound anymore in the current environment. The only allowed
+     remaining specialised arguments after duplicating a function are
+     those that either comes from the free variables of set of
+     closures or the arguments of the closure being applied (and
+     propagated transitively to other functions). This is ensured by
+     the fact that no closure not directly required by the closure
+     being applied are kept in the set. If an argument of an other
+     function of the set does not come from the closure being applied
+     then, that function cannot be applied (unreachable from the one
+     being aplied).
+
+     For specialised arguments of other function to reference a valid
+     value, they need to be rewritten accordingly to the ones of the
+     closure being applied. *)
+  let specialisable_renaming =
+    Variable.Map.fold (fun param outside_var map ->
+        match Variable.Map.find param specialised_args with
+        | exception Not_found ->
+          (* Newly specialised argument: no other function argument
+             may need renaming for that one *)
+          map
+        | original_outside_var ->
+          Variable.Map.add original_outside_var outside_var map)
+      specialisable_args Variable.Map.empty
+  in
   if Variable.Set.subset worth_specialising_args specialised_args_set
   then
     (* Don't duplicate the function definition if we would make its
@@ -174,6 +201,40 @@ let inline_by_copying_function_declaration ~env ~r
           let from_closure = new_var "from_closure" in
           Variable.Map.add internal_var from_closure map,
             (from_closure, expr)::for_lets)
+    in
+    let required_functions =
+      Flambda_utils.closures_required_by_entry_point ~backend:(E.backend env)
+        ~entry_point:closure_id_being_applied
+        function_decls
+    in
+    let funs =
+      Variable.Map.filter (fun func _ ->
+          Variable.Set.mem func required_functions)
+        function_decls.funs
+    in
+    let function_decls =
+      Flambda.update_function_declarations ~funs function_decls
+    in
+    let all_functions_parameters =
+      Flambda_utils.all_functions_parameters function_decls
+    in
+    let specialisable_args =
+      Variable.Map.merge (fun param v1 v2 ->
+          match v1, v2 with
+          | None, None -> None
+          | Some v, _ -> Some v
+          | None, Some v ->
+            if Variable.Set.mem param all_functions_parameters then
+              match Variable.Map.find v specialisable_renaming with
+              | exception Not_found ->
+                Misc.fatal_errorf "Missing renaming for specialised argument of a function \
+                                   being duplicated but not directly applied: %a -> %a"
+                  Variable.print param Variable.print v
+              | argument_from_the_current_application ->
+                Some argument_from_the_current_application
+            else
+              None)
+        specialisable_args specialised_args
     in
     let set_of_closures =
       (* This is the new set of closures, with more precise specialisation

@@ -704,3 +704,34 @@ let fun_vars_referenced_in_decls
       in
       Variable.Set.union from_symbols from_variables)
     function_decls.funs
+
+let closures_required_by_entry_point ~(entry_point : Closure_id.t) ~backend
+    (function_decls : Flambda.function_declarations) =
+  let dependencies =
+    fun_vars_referenced_in_decls function_decls ~backend
+  in
+  let set = ref Variable.Set.empty in
+  let queue = Queue.create () in
+  let add v =
+    if not (Variable.Set.mem v !set) then begin
+      set := Variable.Set.add v !set;
+      Queue.push v queue
+    end
+  in
+  add (Closure_id.unwrap entry_point);
+  while not (Queue.is_empty queue) do
+    let fun_var = Queue.pop queue in
+    match Variable.Map.find fun_var dependencies with
+    | exception Not_found -> ()
+    | fun_dependencies ->
+      Variable.Set.iter (fun dep ->
+          if Variable.Map.mem dep function_decls.funs then
+            add dep)
+        fun_dependencies
+  done;
+  !set
+
+let all_functions_parameters (function_decls : Flambda.function_declarations) =
+  Variable.Map.fold (fun _ ({ params } : Flambda.function_declaration) set ->
+      Variable.Set.union set (Variable.Set.of_list params))
+    function_decls.funs Variable.Set.empty
