@@ -223,6 +223,13 @@ let simplify_project_closure env r ~(project_closure : Flambda.project_closure)
       set_of_closures;
       closure_id = project_closure.closure_id;
     }, ret r (A.value_unresolved symbol)
+  | Unknown ->
+    (* CR-soon mshinwell: see CR comment in e.g. simple_value_approx.ml
+       [check_approx_for_closure_allowing_unresolved] *)
+    Project_closure {
+      set_of_closures;
+      closure_id = project_closure.closure_id;
+    }, ret r (A.value_unknown Other)
   | Unknown_because_of_unresolved_symbol symbol ->
     Project_closure {
       set_of_closures;
@@ -266,6 +273,13 @@ let simplify_move_within_set_of_closures env r
         move_to = move_within_set_of_closures.move_to;
       },
       ret r (A.value_unresolved sym)
+  | Unknown ->
+    Move_within_set_of_closures {
+        closure;
+        start_from = move_within_set_of_closures.start_from;
+        move_to = move_within_set_of_closures.move_to;
+      },
+      ret r (A.value_unknown Other)
   | Unknown_because_of_unresolved_symbol sym ->
     (* For example: a move upon a (move upon a closure whose .cmx file
        is missing). *)
@@ -435,6 +449,9 @@ let rec simplify_project_var env r ~(project_var : Flambda.project_var)
        have been renamed.  So we don't need to change the variable or
        closure ID in the [Project_var] expression. *)
     Project_var { project_var with closure }, ret r (A.value_unresolved symbol)
+  | Unknown ->
+    Project_var { project_var with closure },
+      ret r (A.value_unknown Other)
   | Unknown_because_of_unresolved_symbol symbol ->
     Project_var { project_var with closure },
       ret r (A.value_unknown (Unresolved_symbol symbol))
@@ -1224,6 +1241,7 @@ let constant_defining_value_approx
           in
           A.value_closure value_set_of_closures closure_id
         | Unresolved sym -> A.value_unresolved sym
+        | Unknown -> A.value_unknown Other
         | Unknown_because_of_unresolved_symbol sym ->
           A.value_unknown (Unresolved_symbol sym)
         | Wrong ->
@@ -1296,6 +1314,7 @@ let simplify_constant_defining_value
           in
           A.value_closure value_set_of_closures closure_id
         | Unresolved sym -> A.value_unresolved sym
+        | Unknown -> A.value_unknown Other
         | Unknown_because_of_unresolved_symbol sym ->
           A.value_unknown (Unresolved_symbol sym)
         | Wrong ->

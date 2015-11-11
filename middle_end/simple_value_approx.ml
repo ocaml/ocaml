@@ -519,6 +519,7 @@ let freshen_and_check_closure_id
 type checked_approx_for_set_of_closures =
   | Wrong
   | Unresolved of Symbol.t
+  | Unknown
   | Unknown_because_of_unresolved_symbol of Symbol.t
   | Ok of Variable.t option * value_set_of_closures
 
@@ -541,6 +542,7 @@ let check_approx_for_set_of_closures t : checked_approx_for_set_of_closures =
 type checked_approx_for_closure_allowing_unresolved =
   | Wrong
   | Unresolved of Symbol.t
+  | Unknown
   | Unknown_because_of_unresolved_symbol of Symbol.t
   | Ok of value_closure * Variable.t option
           * Symbol.t option * value_set_of_closures
@@ -569,10 +571,13 @@ let check_approx_for_closure_allowing_unresolved t
     Unknown_because_of_unresolved_symbol symbol
   | Value_unresolved symbol -> Unresolved symbol
   | Value_set_of_closures _ | Value_block _ | Value_int _ | Value_char _
-  | Value_constptr _ | Value_float _ | Value_boxed_int _ | Value_unknown _
+  | Value_constptr _ | Value_float _ | Value_boxed_int _
   | Value_bottom | Value_extern _ | Value_string _ | Value_float_array _
   | Value_symbol _ ->
     Wrong
+  (* CR-soon mshinwell: This should be unwound once the reason for a value
+     being unknown can be correctly propagated through the export info. *)
+  | Value_unknown Other -> Unknown
 
 type checked_approx_for_closure =
   | Wrong
@@ -583,7 +588,8 @@ let check_approx_for_closure t : checked_approx_for_closure =
   match check_approx_for_closure_allowing_unresolved t with
   | Ok (value_closure, set_of_closures_var, set_of_closures_symbol, value_set_of_closures) ->
     Ok (value_closure, set_of_closures_var, set_of_closures_symbol, value_set_of_closures)
-  | Wrong | Unresolved _ | Unknown_because_of_unresolved_symbol _ -> Wrong
+  | Wrong | Unknown | Unresolved _ | Unknown_because_of_unresolved_symbol _ ->
+    Wrong
 
 let approx_for_bound_var value_set_of_closures var =
   try

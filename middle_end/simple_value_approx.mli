@@ -317,6 +317,7 @@ val freshen_and_check_closure_id
 type checked_approx_for_set_of_closures =
   | Wrong
   | Unresolved of Symbol.t
+  | Unknown
   | Unknown_because_of_unresolved_symbol of Symbol.t
   (* In the [Ok] case, there may not be a variable associated with the set of
      closures; it might be out of scope. *)
@@ -340,6 +341,7 @@ val check_approx_for_closure : t -> checked_approx_for_closure
 type checked_approx_for_closure_allowing_unresolved =
   | Wrong
   | Unresolved of Symbol.t
+  | Unknown
   | Unknown_because_of_unresolved_symbol of Symbol.t
   | Ok of value_closure * Variable.t option
           * Symbol.t option * value_set_of_closures
