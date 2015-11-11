@@ -27,6 +27,7 @@ CAMLprim value win_system(cmd)
   char *buf;
   intnat len;
 
+  caml_unix_check_path(cmd, "system");
   len = caml_string_length (cmd);
   buf = caml_stat_alloc (len + 1);
   memmove (buf, String_val (cmd), len + 1);
