@@ -60,7 +60,7 @@ let int_tag = 1000
 let out_of_heap_tag = 1001
 let unaligned_tag = 1002
 
-let extension_slot x =
+let extension_constructor x =
   let x = repr x in
   let slot =
     if (is_block x) && (tag x) <> object_tag && (size x) >= 1 then field x 0
@@ -68,24 +68,13 @@ let extension_slot x =
   in
   let name =
     if (is_block slot) && (tag slot) = object_tag then field slot 0
-    else raise Not_found
+    else invalid_arg "Obj.extension_constructor"
   in
-    if (tag name) = string_tag then slot
-    else raise Not_found
+    if (tag name) = string_tag then (obj slot : extension_constructor)
+    else invalid_arg "Obj.extension_constructor"
 
-let extension_name x =
-  try
-    let slot = extension_slot x in
-      (obj (field slot 0) : string)
-  with Not_found -> invalid_arg "Obj.extension_name"
+let extension_name (slot : extension_constructor) =
+  (obj (field (repr slot) 0) : string)
 
-let extension_id x =
-  try
-    let slot = extension_slot x in
-      (obj (field slot 1) : int)
-  with Not_found -> invalid_arg "Obj.extension_id"
-
-let extension_slot x =
-  try
-    extension_slot x
-  with Not_found -> invalid_arg "Obj.extension_slot"
+let extension_id (slot : extension_constructor) =
+  (obj (field (repr slot) 1) : int)
