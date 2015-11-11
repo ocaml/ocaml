@@ -42,6 +42,7 @@ static value alloc_proto_entry(struct protoent *entry)
 CAMLprim value unix_getprotobyname(value name)
 {
   struct protoent * entry;
+  if (! caml_string_is_c_safe(name)) raise_not_found();
   entry = getprotobyname(String_val(name));
   if (entry == (struct protoent *) NULL) raise_not_found();
   return alloc_proto_entry(entry);

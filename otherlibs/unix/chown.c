@@ -21,6 +21,7 @@ CAMLprim value unix_chown(value path, value uid, value gid)
   CAMLparam1(path);
   char * p;
   int ret;
+  caml_unix_check_path(path, "chown");
   p = caml_strdup(String_val(path));
   caml_enter_blocking_section();
   ret = chown(p, Int_val(uid), Int_val(gid));

@@ -65,6 +65,10 @@ void get_sockaddr(value mladr,
       if (len >= sizeof(adr->s_unix.sun_path)) {
         unix_error(ENAMETOOLONG, "", path);
       }
+      /* "Abstract" sockets in Linux have names starting with '\0' */
+      if (Byte(path, 0) != 0 && ! caml_string_is_c_safe(path)) {
+        unix_error(ENOENT, "", path);
+      }
       memmove (adr->s_unix.sun_path, String_val(path), len + 1);
       *adr_len =
         ((char *)&(adr->s_unix.sun_path) - (char *)&(adr->s_unix))

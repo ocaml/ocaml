@@ -22,6 +22,7 @@ extern char ** environ;
 CAMLprim value unix_execvp(value path, value args)
 {
   char ** argv;
+  caml_unix_check_path(path, "execvp");
   argv = cstringvect(args);
   (void) execvp(String_val(path), argv);
   stat_free((char *) argv);
@@ -34,6 +35,7 @@ CAMLprim value unix_execvpe(value path, value args, value env)
 {
   char ** argv;
   char ** saved_environ;
+  caml_unix_check_path(path, "execvpe");
   argv = cstringvect(args);
   saved_environ = environ;
   environ = cstringvect(env);

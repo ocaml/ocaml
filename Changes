@@ -239,6 +239,9 @@ Bug fixes:
   (Benoît Vaugon, report by Arduino Cascella)
 - PR#6944: let module X = Path in … is not typed as a module alias
   (Jacques Garrigue, report by def)
+- PR#6945 and GPR#227: protect Sys and Unix functions against string
+    arguments containing the null character '\000'
+  (c-cube and Xavier Leroy, report by Daniel Bünzli)
 - PR#6954: Infinite loop in type checker with module aliases
 - PR#6972, GPR#276: 4.02.3 regression on documentation comments in .cmt files
   (Leo White, report by Olivier Andrieu)

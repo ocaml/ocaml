@@ -62,6 +62,9 @@ CAMLprim value unix_getaddrinfo(value vnode, value vserv, value vopts)
   struct addrinfo * res, * r;
   int retcode;
 
+  if (! (caml_string_is_c_safe(vnode) && caml_string_is_c_safe(vserv)))
+    return Val_int(0);
+
   /* Extract "node" parameter */
   if (caml_string_length(vnode) == 0) {
     node = NULL;

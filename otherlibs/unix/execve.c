@@ -19,6 +19,7 @@ CAMLprim value unix_execve(value path, value args, value env)
 {
   char ** argv;
   char ** envp;
+  caml_unix_check_path(path, "execve");
   argv = cstringvect(args);
   envp = cstringvect(env);
   (void) execve(String_val(path), argv, envp);

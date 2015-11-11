@@ -95,6 +95,16 @@ CAMLexport void caml_sys_io_error(value arg)
   }
 }
 
+/* Check that [name] can safely be used as a file path */
+
+static void caml_sys_check_path(value name)
+{
+  if (! caml_string_is_c_safe(name)) {
+    errno = ENOENT;
+    caml_sys_error(name);
+  }
+}
+
 CAMLprim value caml_sys_exit(value retcode)
 {
   if ((caml_verb_gc & 0x400) != 0) {
@@ -141,6 +151,7 @@ CAMLprim value caml_sys_open(value path, value vflags, value vperm)
   int fd, flags, perm;
   char * p;
 
+  caml_sys_check_path(path);
   p = caml_strdup(String_val(path));
   flags = caml_convert_flag_list(vflags, sys_open_flags);
   perm = Int_val(vperm);
@@ -176,6 +187,7 @@ CAMLprim value caml_sys_file_exists(value name)
   char * p;
   int ret;
 
+  if (! caml_string_is_c_safe(name)) return Val_false;
   p = caml_strdup(String_val(name));
   caml_enter_blocking_section();
 #ifdef _WIN32
@@ -200,6 +212,7 @@ CAMLprim value caml_sys_is_directory(value name)
   char * p;
   int ret;
 
+  caml_sys_check_path(name);
   p = caml_strdup(String_val(name));
   caml_enter_blocking_section();
 #ifdef _WIN32
@@ -223,6 +236,7 @@ CAMLprim value caml_sys_remove(value name)
   CAMLparam1(name);
   char * p;
   int ret;
+  caml_sys_check_path(name);
   p = caml_strdup(String_val(name));
   caml_enter_blocking_section();
   ret = unlink(p);
@@ -237,6 +251,8 @@ CAMLprim value caml_sys_rename(value oldname, value newname)
   char * p_old;
   char * p_new;
   int ret;
+  caml_sys_check_path(oldname);
+  caml_sys_check_path(newname);
   p_old = caml_strdup(String_val(oldname));
   p_new = caml_strdup(String_val(newname));
   caml_enter_blocking_section();
@@ -254,6 +270,7 @@ CAMLprim value caml_sys_chdir(value dirname)
   CAMLparam1(dirname);
   char * p;
   int ret;
+  caml_sys_check_path(dirname);
   p = caml_strdup(String_val(dirname));
   caml_enter_blocking_section();
   ret = chdir(p);
@@ -278,6 +295,7 @@ CAMLprim value caml_sys_getenv(value var)
 {
   char * res;
 
+  if (! caml_string_is_c_safe(var)) caml_raise_not_found();
   res = getenv(String_val(var));
   if (res == 0) caml_raise_not_found();
   return caml_copy_string(res);
@@ -479,6 +497,7 @@ CAMLprim value caml_sys_read_directory(value path)
   char * p;
   int ret;
 
+  caml_sys_check_path(path);
   caml_ext_table_init(&tbl, 50);
   p = caml_strdup(String_val(path));
   caml_enter_blocking_section();
