@@ -105,7 +105,14 @@ value alloc_sockaddr(union sock_addr_union * adr /*in*/,
   switch(adr->s_gen.sa_family) {
 #ifndef _WIN32
   case AF_UNIX:
-    { value n = copy_string(adr->s_unix.sun_path);
+    { char * path;
+      value n;
+      /* PR#7039: harden against unnamed sockets */
+      if (adr_len > (char *)&(adr->s_unix.sun_path) - (char *)&(adr->s_unix))
+        path = adr->s_unix.sun_path;
+      else
+        path = "";
+      n = copy_string(path);
       Begin_root (n);
         res = alloc_small(1, 0);
         Field(res,0) = n;
