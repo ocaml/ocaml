@@ -169,7 +169,7 @@ let populate_closure_approximations
   let env =
     List.fold_left (fun env id ->
        let approx = try Variable.Map.find id parameter_approximations
-                    with Not_found -> A.value_unknown in
+                    with Not_found -> (A.value_unknown Other) in
        E.add env id approx)
       env function_decl.params in
   env
@@ -223,6 +223,11 @@ let simplify_project_closure env r ~(project_closure : Flambda.project_closure)
       set_of_closures;
       closure_id = project_closure.closure_id;
     }, ret r (A.value_unresolved symbol)
+  | Unknown_because_of_unresolved_symbol symbol ->
+    Project_closure {
+      set_of_closures;
+      closure_id = project_closure.closure_id;
+    }, ret r (A.value_unknown (Unresolved_symbol symbol))
   | Ok (set_of_closures_var, value_set_of_closures) ->
     let closure_id =
       A.freshen_and_check_closure_id value_set_of_closures
@@ -261,6 +266,15 @@ let simplify_move_within_set_of_closures env r
         move_to = move_within_set_of_closures.move_to;
       },
       ret r (A.value_unresolved sym)
+  | Unknown_because_of_unresolved_symbol sym ->
+    (* For example: a move upon a (move upon a closure whose .cmx file
+       is missing). *)
+    Move_within_set_of_closures {
+        closure;
+        start_from = move_within_set_of_closures.start_from;
+        move_to = move_within_set_of_closures.move_to;
+      },
+      ret r (A.value_unknown (Unresolved_symbol sym))
   | Ok (_value_closure, set_of_closures_var, set_of_closures_symbol,
         value_set_of_closures) ->
     let freshen =
@@ -421,6 +435,9 @@ let rec simplify_project_var env r ~(project_var : Flambda.project_var)
        have been renamed.  So we don't need to change the variable or
        closure ID in the [Project_var] expression. *)
     Project_var { project_var with closure }, ret r (A.value_unresolved symbol)
+  | Unknown_because_of_unresolved_symbol symbol ->
+    Project_var { project_var with closure },
+      ret r (A.value_unknown (Unresolved_symbol symbol))
   | Wrong ->
     (* We must have the correct approximation of the value to ensure
        we take account of all freshenings. *)
@@ -684,7 +701,7 @@ and simplify_apply env r ~(apply : Flambda.apply) : Flambda.t * R.t =
       | Wrong ->  (* Insufficient approximation information to simplify. *)
         Apply ({ func = lhs_of_application; args; kind = Indirect; dbg;
             inline = inline_requested; }),
-          ret r A.value_unknown))
+          ret r (A.value_unknown Other)))
 
 and simplify_full_application env r ~function_decls ~lhs_of_application
       ~closure_id_being_applied ~function_decl ~value_set_of_closures ~args
@@ -778,7 +795,7 @@ and simplify_named env r (tree : Flambda.named) : Flambda.named * R.t =
     let mut_var =
       Freshening.apply_mutable_variable (E.freshening env) mut_var
     in
-    Read_mutable mut_var, ret r A.value_unknown
+    Read_mutable mut_var, ret r (A.value_unknown Other)
   | Read_symbol_field (symbol, field_index) ->
     let approx = E.find_or_load_symbol env symbol in
     begin match A.get_field approx ~field_index with
@@ -855,7 +872,7 @@ and simplify_named env r (tree : Flambda.named) : Flambda.named * R.t =
           Location.prerr_warning (Debuginfo.to_location dbg)
             Warnings.Assignment_on_non_mutable_value
         end;
-        tree, ret r A.value_unknown
+        tree, ret r (A.value_unknown Other)
       | (Psequand | Psequor), _ ->
         Misc.fatal_error "Psequand and Psequor must be expanded (see handling \
             in closure_conversion.ml)"
@@ -925,7 +942,7 @@ and simplify_direct env r (tree : Flambda.t) : Flambda.t * R.t =
       in
       let env = E.set_freshening env sb in
       let body, r =
-        simplify (E.add_mutable env mut_var A.value_unknown) r body
+        simplify (E.add_mutable env mut_var (A.value_unknown Other)) r body
       in
       Flambda.Let_mutable (mut_var, var, body), r)
   | Let_rec (defs, body) ->
@@ -933,7 +950,7 @@ and simplify_direct env r (tree : Flambda.t) : Flambda.t * R.t =
     let env = E.set_freshening env sb in
     let def_env =
       List.fold_left (fun env_acc (id, _lam) ->
-          E.add env_acc id A.value_unknown)
+          E.add env_acc id (A.value_unknown Other))
         env defs
     in
     let defs, body_env, r =
@@ -979,22 +996,24 @@ and simplify_direct env r (tree : Flambda.t) : Flambda.t * R.t =
           | _ ->
             let vars, sb = Freshening.add_variables' (E.freshening env) vars in
             let env =
-              List.fold_left (fun env id -> E.add env id A.value_unknown)
+              List.fold_left (fun env id ->
+                  E.add env id (A.value_unknown Other))
                 (E.set_freshening env sb) vars
             in
             let env = E.inside_branch env in
             let handler, r = simplify env r handler in
             let r = R.exit_scope_catch r i in
-            Static_catch (i, vars, body, handler), ret r A.value_unknown
+            Static_catch (i, vars, body, handler),
+              ret r (A.value_unknown Other)
         end
     end
   | Try_with (body, id, handler) ->
     let body, r = simplify env r body in
     let id, sb = Freshening.add_variable (E.freshening env) id in
-    let env = E.add (E.set_freshening env sb) id A.value_unknown in
+    let env = E.add (E.set_freshening env sb) id (A.value_unknown Other) in
     let env = E.inside_branch env in
     let handler, r = simplify env r handler in
-    Try_with (body, id, handler), ret r A.value_unknown
+    Try_with (body, id, handler), ret r (A.value_unknown Other)
   | If_then_else (arg, ifso, ifnot) ->
     (* When arg is the constant false or true (or something considered
        as true), we can drop the if and replace it by a sequence.
@@ -1020,12 +1039,13 @@ and simplify_direct env r (tree : Flambda.t) : Flambda.t * R.t =
     let cond, r = simplify env r cond in
     let env = E.inside_simplify env in
     let body, r = simplify env r body in
-    While (cond, body), ret r A.value_unknown
+    While (cond, body), ret r (A.value_unknown Other)
   | Send { kind; meth; obj; args; dbg; } ->
     simplify_free_variable env meth ~f:(fun env meth ->
       simplify_free_variable env obj ~f:(fun env obj ->
         simplify_free_variables env args ~f:(fun _env args ->
-          Send { kind; meth; obj; args; dbg; }, ret r A.value_unknown)))
+          Send { kind; meth; obj; args; dbg; },
+            ret r (A.value_unknown Other))))
   | For { bound_var; from_value; to_value; direction; body; } ->
     simplify_free_variable env from_value ~f:(fun env from_value ->
       simplify_free_variable env to_value ~f:(fun env to_value ->
@@ -1034,12 +1054,13 @@ and simplify_direct env r (tree : Flambda.t) : Flambda.t * R.t =
         in
         let env =
           E.inside_simplify
-            (E.add (E.set_freshening env sb) bound_var A.value_unknown)
+            (E.add (E.set_freshening env sb) bound_var
+              (A.value_unknown Other))
         in
         let env = E.inside_simplify env in
         let body, r = simplify env r body in
         For { bound_var; from_value; to_value; direction; body; },
-          ret r A.value_unknown))
+          ret r (A.value_unknown Other)))
   | Assign { being_assigned; new_value; } ->
     (* No need to use something like [simplify_free_variable]: the
        approximation of [being_assigned] is always unknown. *)
@@ -1047,7 +1068,7 @@ and simplify_direct env r (tree : Flambda.t) : Flambda.t * R.t =
       Freshening.apply_mutable_variable (E.freshening env) being_assigned
     in
     simplify_free_variable env new_value ~f:(fun _env new_value ->
-      Assign { being_assigned; new_value; }, ret r A.value_unknown)
+      Assign { being_assigned; new_value; }, ret r (A.value_unknown Other))
   | Switch (arg, sw) ->
     (* When [arg] is known to be a variable whose approximation is that of a
        block with a fixed tag or a fixed integer, we can eliminate the
@@ -1125,7 +1146,7 @@ and simplify_direct env r (tree : Flambda.t) : Flambda.t * R.t =
           let def, r = simplify env r def in
           Some def, r
       in
-      String_switch (arg, sw, def), ret r A.value_unknown)
+      String_switch (arg, sw, def), ret r (A.value_unknown Other))
   | Proved_unreachable -> tree, ret r A.value_bottom
 
 and simplify_list env r l =
@@ -1162,7 +1183,7 @@ let constant_defining_value_approx
           | Flambda.Symbol sym -> begin
               match E.find_symbol_opt env sym with
               | Some approx -> approx
-              | None -> A.value_unknown
+              | None -> A.value_unresolved sym
             end
           | Flambda.Const cst -> simplify_const cst)
         fields
@@ -1191,20 +1212,20 @@ let constant_defining_value_approx
   | Project_closure (set_of_closures_symbol, closure_id) -> begin
       match E.find_symbol_opt env set_of_closures_symbol with
       | None ->
-        A.value_unknown
+        A.value_unresolved set_of_closures_symbol
       | Some set_of_closures_approx ->
         let checked_approx =
-          A.checked_approx_for_set_of_closures_allowing_unknown_and_unresolved
-            set_of_closures_approx
+          A.check_approx_for_set_of_closures set_of_closures_approx
         in
         match checked_approx with
-        | Ok value_set_of_closures ->
+        | Ok (_, value_set_of_closures) ->
           let closure_id =
             A.freshen_and_check_closure_id value_set_of_closures closure_id
           in
           A.value_closure value_set_of_closures closure_id
-        | Unknown_or_unresolved ->
-          A.value_unknown
+        | Unresolved sym -> A.value_unresolved sym
+        | Unknown_because_of_unresolved_symbol sym ->
+          A.value_unknown (Unresolved_symbol sym)
         | Wrong ->
           Misc.fatal_errorf "Wrong approximation for [Project_closure] \
                              when being used as a [constant_defining_value]: %a"
@@ -1216,7 +1237,7 @@ let define_let_rec_symbol_approx env defs =
   (* First declare an empty version of the symbols *)
   let env =
     List.fold_left (fun env (symbol, _) ->
-        E.add_symbol env symbol A.value_unknown)
+        E.add_symbol env symbol (A.value_unresolved symbol))
       env defs
   in
   let rec loop times env =
@@ -1274,8 +1295,9 @@ let simplify_constant_defining_value
             A.freshen_and_check_closure_id value_set_of_closures closure_id
           in
           A.value_closure value_set_of_closures closure_id
-        | Unresolved _symbol ->
-          A.value_unknown  (* CR mshinwell: is this correct? *)
+        | Unresolved sym -> A.value_unresolved sym
+        | Unknown_because_of_unresolved_symbol sym ->
+          A.value_unknown (Unresolved_symbol sym)
         | Wrong ->
           Misc.fatal_errorf "Wrong approximation for [Project_closure] \
                              when being used as a [constant_defining_value]: %a"
@@ -1355,7 +1377,7 @@ let add_predef_exns_to_environment ~env ~backend =
       let approx =
         A.value_block Tag.object_tag
           [| A.value_string (String.length name) (Some name);
-             A.value_unknown;
+             A.value_unknown Other;
           |]
       in
       E.add_symbol env symbol (A.augment_with_symbol approx symbol))

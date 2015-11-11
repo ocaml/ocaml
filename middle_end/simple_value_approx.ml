@@ -24,6 +24,10 @@ type value_string = {
   size : int;
 }
 
+type unknown_because_of =
+  | Unresolved_symbol of Symbol.t
+  | Other
+
 type t = {
   descr : descr;
   var : Variable.t option;
@@ -41,7 +45,7 @@ and descr =
   | Value_closure of value_closure
   | Value_string of value_string
   | Value_float_array of int (* size *)
-  | Value_unknown
+  | Value_unknown of unknown_because_of
   | Value_bottom
   | Value_extern of Export_id.t
   (* CR mshinwell: Why does Value_symbol need to be here?
@@ -79,7 +83,12 @@ let rec print_descr ppf = function
     let p ppf fields =
       Array.iter (fun v -> Format.fprintf ppf "%a@ " print v) fields in
     Format.fprintf ppf "[%i:@ @[<1>%a@]]" (Tag.to_int tag) p fields
-  | Value_unknown -> Format.fprintf ppf "?"
+  | Value_unknown reason ->
+    begin match reason with
+    | Unresolved_symbol symbol ->
+      Format.fprintf ppf "?(due to unresolved symbol '%a')" Symbol.print symbol
+    | Other -> Format.fprintf ppf "?"
+    end;
   | Value_bottom -> Format.fprintf ppf "bottom"
   | Value_extern id -> Format.fprintf ppf "_%a_" Export_id.print id
   | Value_symbol sym -> Format.fprintf ppf "%a" Symbol.print sym
@@ -133,7 +142,7 @@ let augment_with_symbol_field t symbol field =
   | Some _ -> t
 let replace_description t descr = { t with descr }
 
-let value_unknown = approx Value_unknown
+let value_unknown reason = approx (Value_unknown reason)
 let value_int i = approx (Value_int i)
 let value_char i = approx (Value_char i)
 let value_constptr i = approx (Value_constptr i)
@@ -236,7 +245,7 @@ let simplify t (lam : Flambda.t) : simplification_result =
       U.name_expr (Symbol sym), Replaced_term, t
     | Value_string _ | Value_float_array _
     | Value_block _ | Value_set_of_closures _ | Value_closure _
-    | Value_unknown | Value_bottom | Value_extern _ | Value_unresolved _ ->
+    | Value_unknown _ | Value_bottom | Value_extern _ | Value_unresolved _ ->
       lam, Nothing_done, t
   else
     lam, Nothing_done, t
@@ -263,7 +272,7 @@ let simplify_named t (named : Flambda.named) : simplification_result_named =
       Symbol sym, Replaced_term, t
     | Value_string _ | Value_float_array _
     | Value_block _ | Value_set_of_closures _ | Value_closure _
-    | Value_unknown | Value_bottom | Value_extern _ | Value_unresolved _ ->
+    | Value_unknown _ | Value_bottom | Value_extern _ | Value_unresolved _ ->
       named, Nothing_done, t
   else
     named, Nothing_done, t
@@ -279,7 +288,8 @@ let simplify_var t : (Flambda.named * t) option =
   | Value_symbol sym -> Some (Symbol sym, t)
   | Value_string _ | Value_float_array _
   | Value_block _ | Value_set_of_closures _ | Value_closure _
-  | Value_unknown | Value_bottom | Value_extern _ | Value_unresolved _ -> None
+  | Value_unknown _ | Value_bottom | Value_extern _
+  | Value_unresolved _ -> None
 
 let join_summaries summary ~replaced_by_var_or_symbol =
   match replaced_by_var_or_symbol, summary with
@@ -325,7 +335,7 @@ let simplify_var_to_var_using_env t ~is_present_in_env =
 let known t =
   match t.descr with
   | Value_unresolved _
-  | Value_unknown -> false
+  | Value_unknown _ -> false
   | Value_string _ | Value_float_array _
   | Value_bottom | Value_block _ | Value_int _ | Value_char _
   | Value_constptr _ | Value_set_of_closures _ | Value_closure _
@@ -333,7 +343,7 @@ let known t =
 
 let useful t =
   match t.descr with
-  | Value_unresolved _ | Value_unknown | Value_bottom -> false
+  | Value_unresolved _ | Value_unknown _ | Value_bottom -> false
   | Value_string _ | Value_float_array _ | Value_block _ | Value_int _
   | Value_char _ | Value_constptr _ | Value_set_of_closures _
   | Value_float _ | Value_boxed_int _ | Value_closure _ | Value_extern _
@@ -346,7 +356,7 @@ let is_definitely_immutable t =
   | Value_set_of_closures _ | Value_float _ | Value_boxed_int _
   | Value_closure _ -> true
   | Value_string { contents = None } | Value_float_array _
-  | Value_unresolved _ | Value_unknown | Value_bottom -> false
+  | Value_unresolved _ | Value_unknown _ | Value_bottom -> false
   | Value_extern _ | Value_symbol _ -> assert false
 
 type get_field_result =
@@ -372,15 +382,16 @@ let get_field t ~field_index:i : get_field_result =
     Ok value_bottom
   | Value_float_array _ ->
     (* Float arrays are mutable. *)
-    Ok value_unknown
+    Ok (value_unknown Other)
   | Value_string _ | Value_float _ | Value_boxed_int _
     (* The user is doing something unsafe. *)
   | Value_set_of_closures _ | Value_closure _
     (* This is used by [CamlinternalMod]. *)
-  | Value_symbol _ | Value_extern _
+  | Value_symbol _ | Value_extern _ ->
     (* These should have been resolved. *)
-  | Value_unknown ->
-    Ok value_unknown
+    Ok (value_unknown Other)
+  | Value_unknown reason ->
+    Ok (value_unknown reason)
   | Value_unresolved sym ->
     (* We don't know anything, but we must remember that it comes
        from another compilation unit in case it contains a closure. *)
@@ -400,7 +411,7 @@ let check_approx_for_block t =
   | Value_string _ | Value_float _ | Value_boxed_int _
   | Value_set_of_closures _ | Value_closure _
   | Value_symbol _ | Value_extern _
-  | Value_unknown
+  | Value_unknown _
   | Value_unresolved _ ->
     Wrong
 
@@ -453,7 +464,7 @@ let rec meet_descr d1 d2 = match d1, d2 with
   | Value_block (tag1, a1), Value_block (tag2, a2)
     when tag1 = tag2 && Array.length a1 = Array.length a2 ->
       Value_block (tag1, Array.mapi (fun i v -> meet v a2.(i)) a1)
-  | _ -> Value_unknown
+  | _ -> Value_unknown Other
 
 and meet a1 a2 =
   match a1, a2 with
@@ -508,21 +519,21 @@ let freshen_and_check_closure_id
 type checked_approx_for_set_of_closures =
   | Wrong
   | Unresolved of Symbol.t
+  | Unknown_because_of_unresolved_symbol of Symbol.t
   | Ok of Variable.t option * value_set_of_closures
 
 let check_approx_for_set_of_closures t : checked_approx_for_set_of_closures =
   match t.descr with
-  | Value_unresolved symbol ->
-    (* CR mshinwell: is it possible to check that this value really does
-       come from another compilation unit? *)
-    Unresolved symbol
+  | Value_unresolved symbol -> Unresolved symbol
+  | Value_unknown (Unresolved_symbol symbol) ->
+    Unknown_because_of_unresolved_symbol symbol
   | Value_set_of_closures value_set_of_closures ->
     (* Note that [var] might be [None]; we might be reaching the set of
        closures via approximations only, with the variable originally bound
        to the set now out of scope. *)
     Ok (t.var, value_set_of_closures)
   | Value_closure _ | Value_block _ | Value_int _ | Value_char _
-  | Value_constptr _ | Value_float _ | Value_boxed_int _ | Value_unknown
+  | Value_constptr _ | Value_float _ | Value_boxed_int _ | Value_unknown _
   | Value_bottom | Value_extern _ | Value_string _ | Value_float_array _
   | Value_symbol _ ->
     Wrong
@@ -530,6 +541,7 @@ let check_approx_for_set_of_closures t : checked_approx_for_set_of_closures =
 type checked_approx_for_closure_allowing_unresolved =
   | Wrong
   | Unresolved of Symbol.t
+  | Unknown_because_of_unresolved_symbol of Symbol.t
   | Ok of value_closure * Variable.t option
           * Symbol.t option * value_set_of_closures
 
@@ -548,33 +560,16 @@ let check_approx_for_closure_allowing_unresolved t
           symbol, value_set_of_closures)
     | Value_unresolved _
     | Value_closure _ | Value_block _ | Value_int _ | Value_char _
-    | Value_constptr _ | Value_float _ | Value_boxed_int _ | Value_unknown
+    | Value_constptr _ | Value_float _ | Value_boxed_int _ | Value_unknown _
     | Value_bottom | Value_extern _ | Value_string _ | Value_float_array _
     | Value_symbol _ ->
       Wrong
     end
+  | Value_unknown (Unresolved_symbol symbol) ->
+    Unknown_because_of_unresolved_symbol symbol
   | Value_unresolved symbol -> Unresolved symbol
   | Value_set_of_closures _ | Value_block _ | Value_int _ | Value_char _
-  | Value_constptr _ | Value_float _ | Value_boxed_int _ | Value_unknown
-  | Value_bottom | Value_extern _ | Value_string _ | Value_float_array _
-  | Value_symbol _ ->
-    Wrong
-
-type checked_approx_for_set_of_closures_allowing_unknown_and_unresolved =
-  | Wrong
-  | Unknown_or_unresolved
-  | Ok of value_set_of_closures
-
-let checked_approx_for_set_of_closures_allowing_unknown_and_unresolved t
-    : checked_approx_for_set_of_closures_allowing_unknown_and_unresolved =
-  match t.descr with
-  | Value_set_of_closures value_set_closures ->
-    Ok value_set_closures
-  | Value_unknown
-  | Value_unresolved _ ->
-    Unknown_or_unresolved
-  | Value_closure _ | Value_block _ | Value_int _ | Value_char _
-  | Value_constptr _ | Value_float _ | Value_boxed_int _
+  | Value_constptr _ | Value_float _ | Value_boxed_int _ | Value_unknown _
   | Value_bottom | Value_extern _ | Value_string _ | Value_float_array _
   | Value_symbol _ ->
     Wrong
@@ -588,7 +583,7 @@ let check_approx_for_closure t : checked_approx_for_closure =
   match check_approx_for_closure_allowing_unresolved t with
   | Ok (value_closure, set_of_closures_var, set_of_closures_symbol, value_set_of_closures) ->
     Ok (value_closure, set_of_closures_var, set_of_closures_symbol, value_set_of_closures)
-  | Wrong | Unresolved _ -> Wrong
+  | Wrong | Unresolved _ | Unknown_because_of_unresolved_symbol _ -> Wrong
 
 let approx_for_bound_var value_set_of_closures var =
   try

@@ -52,7 +52,7 @@ end) : Simplify_boxed_integer_ops_intf.S with type t := I.t = struct
       eval_conv A.Int64 I.to_int64
     | Pnegbint kind when kind = I.kind -> eval I.neg
     | Pbbswap kind when kind = I.kind -> eval I.swap
-    | _ -> expr, A.value_unknown, C.Benefit.zero
+    | _ -> expr, A.value_unknown Other, C.Benefit.zero
 
   let simplify_binop (p : Lambda.primitive) (kind : I.t A.boxed_int)
         expr (n1 : I.t) (n2 : I.t) =
@@ -69,7 +69,7 @@ end) : Simplify_boxed_integer_ops_intf.S with type t := I.t = struct
     | Pxorbint kind when kind = I.kind -> eval I.logxor
     | Pbintcomp (kind, c) when kind = I.kind ->
       S.const_comparison_expr expr c n1 n2
-    | _ -> expr, A.value_unknown, C.Benefit.zero
+    | _ -> expr, A.value_unknown Other, C.Benefit.zero
 
   let simplify_binop_int (p : Lambda.primitive) (kind : I.t A.boxed_int)
         expr (n1 : I.t) (n2 : int) ~size_int =
@@ -79,7 +79,7 @@ end) : Simplify_boxed_integer_ops_intf.S with type t := I.t = struct
     | Plslbint kind when kind = I.kind && precond -> eval I.shift_left
     | Plsrbint kind when kind = I.kind && precond -> eval I.shift_right_logical
     | Pasrbint kind when kind = I.kind && precond -> eval I.shift_right
-    | _ -> expr, A.value_unknown, C.Benefit.zero
+    | _ -> expr, A.value_unknown Other, C.Benefit.zero
 end
 
 module Simplify_boxed_nativeint = Simplify_boxed_integer_operator (struct

@@ -25,6 +25,10 @@ type value_string = {
   size : int;
 }
 
+type unknown_because_of =
+  | Unresolved_symbol of Symbol.t
+  | Other
+
 (** A value of type [t] corresponds to an "approximation" of the result of
     a computation in the program being compiled.  That is to say, it
     represents what knowledge we have about such a result at compile time.
@@ -118,7 +122,7 @@ and descr = private
   | Value_closure of value_closure
   | Value_string of value_string
   | Value_float_array of int (* size *)
-  | Value_unknown
+  | Value_unknown of unknown_because_of
   | Value_bottom
   | Value_extern of Export_id.t
   | Value_symbol of Symbol.t
@@ -153,7 +157,7 @@ val print_value_set_of_closures
   -> unit
 
 (** Basic construction of approximations. *)
-val value_unknown : t
+val value_unknown : unknown_because_of -> t
 val value_int : int -> t
 val value_char : char -> t
 val value_float : float -> t
@@ -313,6 +317,7 @@ val freshen_and_check_closure_id
 type checked_approx_for_set_of_closures =
   | Wrong
   | Unresolved of Symbol.t
+  | Unknown_because_of_unresolved_symbol of Symbol.t
   (* In the [Ok] case, there may not be a variable associated with the set of
      closures; it might be out of scope. *)
   | Ok of Variable.t option * value_set_of_closures
@@ -335,6 +340,7 @@ val check_approx_for_closure : t -> checked_approx_for_closure
 type checked_approx_for_closure_allowing_unresolved =
   | Wrong
   | Unresolved of Symbol.t
+  | Unknown_because_of_unresolved_symbol of Symbol.t
   | Ok of value_closure * Variable.t option
           * Symbol.t option * value_set_of_closures
 
@@ -343,14 +349,3 @@ type checked_approx_for_closure_allowing_unresolved =
 val check_approx_for_closure_allowing_unresolved
    : t
   -> checked_approx_for_closure_allowing_unresolved
-
-type checked_approx_for_set_of_closures_allowing_unknown_and_unresolved =
-  | Wrong
-  | Unknown_or_unresolved
-  | Ok of value_set_of_closures
-
-(** As for [checked_approx_for_closure_allowing_unresolved],
-    but unknown values are permitted. *)
-val checked_approx_for_set_of_closures_allowing_unknown_and_unresolved
-   : t
-  -> checked_approx_for_set_of_closures_allowing_unknown_and_unresolved

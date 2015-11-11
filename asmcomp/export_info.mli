@@ -47,6 +47,13 @@ and value_set_of_closures = {
   aliased_symbol : Symbol.t option;
 }
 
+(* CR-soon mshinwell: Fix the export information so we can correctly
+   propagate "unresolved due to..." in the manner of [Simple_value_approx].
+   Unfortunately this seems to be complicated by the fact that, during
+   [Import_approx], resolution can fail not only due to missing symbols but
+   also due to missing export IDs.  The argument type of
+   [Simple_value_approx.t] may need updating to reflect this (make the
+   symbol optional?  It's only for debugging anyway.) *)
 and approx =
   | Value_unknown
   | Value_id of Export_id.t

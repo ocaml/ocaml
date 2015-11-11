@@ -85,7 +85,7 @@ let rec import_ex ex =
       }
   in
   match Export_info.find_description ex_info ex with
-  | exception Not_found -> A.value_unknown
+  | exception Not_found -> A.value_unknown Other
   | Value_int i -> A.value_int i
   | Value_constptr i -> A.value_constptr i
   | Value_float f -> A.value_float f
@@ -98,7 +98,7 @@ let rec import_ex ex =
       | Contents contents -> Some contents
     in
     A.value_string size contents
-  | Value_mutable_block _ -> A.value_unknown
+  | Value_mutable_block _ -> A.value_unknown Other
   | Value_block (tag, fields) ->
     A.value_block tag (Array.map import_approx fields)
   | Value_closure { closure_id;
@@ -122,13 +122,13 @@ let rec import_ex ex =
 
 and import_approx (ap : Export_info.approx) =
   match ap with
-  | Value_unknown -> A.value_unknown
+  | Value_unknown -> A.value_unknown Other
   | Value_id ex -> A.value_extern ex
   | Value_symbol sym -> A.value_symbol sym
 
 let import_symbol sym =
   if Compilenv.is_predefined_exception sym then
-    A.value_unknown
+    A.value_unknown Other
   else
     let symbol_id_map =
       let global = Symbol.compilation_unit sym in

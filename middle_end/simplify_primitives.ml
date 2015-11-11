@@ -82,7 +82,7 @@ let primitive (p : Lambda.primitive) (args, approxs) expr dbg ~size_int
         S.const_boxed_int_expr expr Nativeint (Nativeint.of_int x)
       | Pbintofint Pint32 -> S.const_boxed_int_expr expr Int32 (Int32.of_int x)
       | Pbintofint Pint64 -> S.const_boxed_int_expr expr Int64 (Int64.of_int x)
-      | _ -> expr, A.value_unknown, C.Benefit.zero
+      | _ -> expr, A.value_unknown Other, C.Benefit.zero
       end
     | [(Value_int x | Value_constptr x); (Value_int y | Value_constptr y)] ->
       let shift_precond = 0 <= y && y < 8 * size_int in
@@ -101,7 +101,7 @@ let primitive (p : Lambda.primitive) (args, approxs) expr dbg ~size_int
       | Pintcomp cmp -> S.const_comparison_expr expr cmp x y
       | Pisout -> S.const_bool_expr expr (y > x || y < 0)
       (* [Psequand] and [Psequor] have special simplification rules, above. *)
-      | _ -> expr, A.value_unknown, C.Benefit.zero
+      | _ -> expr, A.value_unknown Other, C.Benefit.zero
       end
     | [Value_constptr x] ->
       begin match p with
@@ -123,14 +123,14 @@ let primitive (p : Lambda.primitive) (args, approxs) expr dbg ~size_int
         | Ostype_win32 -> S.const_bool_expr expr (Sys.os_type = "Win32")
         | Ostype_cygwin -> S.const_bool_expr expr (Sys.os_type = "Cygwin")
         end
-      | _ -> expr, A.value_unknown, C.Benefit.zero
+      | _ -> expr, A.value_unknown Other, C.Benefit.zero
       end
     | [Value_float x] when fpc ->
       begin match p with
       | Pintoffloat -> S.const_int_expr expr (int_of_float x)
       | Pnegfloat -> S.const_float_expr expr (-. x)
       | Pabsfloat -> S.const_float_expr expr (abs_float x)
-      | _ -> expr, A.value_unknown, C.Benefit.zero
+      | _ -> expr, A.value_unknown Other, C.Benefit.zero
       end
     | [Value_float n1; Value_float n2] when fpc ->
       begin match p with
@@ -139,7 +139,7 @@ let primitive (p : Lambda.primitive) (args, approxs) expr dbg ~size_int
       | Pmulfloat -> S.const_float_expr expr (n1 *. n2)
       | Pdivfloat -> S.const_float_expr expr (n1 /. n2)
       | Pfloatcomp c  -> S.const_comparison_expr expr c n1 n2
-      | _ -> expr, A.value_unknown, C.Benefit.zero
+      | _ -> expr, A.value_unknown Other, C.Benefit.zero
       end
     | [A.Value_boxed_int(A.Nativeint, n)] ->
       I.Simplify_boxed_nativeint.simplify_unop p Nativeint expr n
@@ -172,13 +172,13 @@ let primitive (p : Lambda.primitive) (args, approxs) expr dbg ~size_int
         begin match p with
         | Pstringrefu
         | Pstringrefs -> S.const_char_expr expr s.[x]
-        | _ -> expr, A.value_unknown, C.Benefit.zero
+        | _ -> expr, A.value_unknown Other, C.Benefit.zero
         end
     | [Value_string { size; contents = None };
        (Value_int x | Value_constptr x)]
       when x >= 0 && x < size && p = Lambda.Pstringrefs ->
         Flambda.Prim (Pstringrefu, args, dbg),
-          A.value_unknown,
+          A.value_unknown Other,
           (* we improved it, but there is no way to account for that: *)
           C.Benefit.zero
-    | _ -> expr, A.value_unknown, C.Benefit.zero
+    | _ -> expr, A.value_unknown Other, C.Benefit.zero

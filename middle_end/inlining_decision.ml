@@ -264,7 +264,7 @@ let for_call_site ~env ~r ~(function_decls : Flambda.function_declarations)
       kind = Direct closure_id_being_applied;
       dbg;
       inline = inline_requested;
-    }, R.set_approx r A.value_unknown
+    }, R.set_approx r (A.value_unknown Other)
   in
   let max_level = !Clflags.max_inlining_depth in
   let unconditionally_inline =
