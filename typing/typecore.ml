@@ -1126,9 +1126,6 @@ let rec type_pat ~constrs ~labels ~no_existentials ~mode ~explode ~env
               Warnings.Fragile_literal_pattern
       | _ -> ()
       end;
-      if List.length sargs <> constr.cstr_arity then
-        raise(Error(loc, !env, Constructor_arity_mismatch(lid.txt,
-                                     constr.cstr_arity, List.length sargs)));
       let (ty_args, ty_res) =
         instance_constructor ~in_pattern:(env, get_newtype_level ()) constr
       in
@@ -1151,7 +1148,18 @@ let rec type_pat ~constrs ~labels ~no_existentials ~mode ~explode ~env
       in
       if constr.cstr_inlined <> None then List.iter check_non_escaping sargs;
 
-      map_fold_cont (fun (p,t) -> type_pat p t) (List.combine sargs ty_args)
+      let args =
+        if List.length sargs <> constr.cstr_arity then
+          match sargs with
+          | [sarg] ->
+              [(sarg, newty (Ttuple ty_args))]
+          | _ ->
+              raise(Error(loc, !env, Constructor_arity_mismatch
+                            (lid.txt, constr.cstr_arity, List.length sargs)))
+        else
+          List.combine sargs ty_args
+      in
+      map_fold_cont (fun (p,t) -> type_pat p t) args
       (fun args ->
         rp k {
           pat_desc=Tpat_construct(lid, constr, args);
@@ -3523,9 +3531,6 @@ and type_construct env loc lid sarg ty_expected attrs =
         constr.cstr_arity > 1 || explicit_arity attrs
       -> sel
     | Some se -> [se] in
-  if List.length sargs <> constr.cstr_arity then
-    raise(Error(loc, env, Constructor_arity_mismatch
-                  (lid.txt, constr.cstr_arity, List.length sargs)));
   let separate = !Clflags.principal || Env.has_local_constraints env in
   if separate then (begin_def (); begin_def ());
   let (ty_args, ty_res) = instance_constructor constr in
@@ -3566,8 +3571,18 @@ and type_construct env loc lid sarg ty_expected attrs =
         end
   in
   let args =
-    List.map2 (fun e (t,t0) -> type_argument ~recarg env e t t0) sargs
-      (List.combine ty_args ty_args0) in
+    if List.length sargs <> constr.cstr_arity then
+      match sargs with
+      | [sarg] ->
+          [type_argument env sarg
+             (newty (Ttuple ty_args)) (newty (Ttuple ty_args0))]
+      | _ ->
+          raise(Error(loc, env, Constructor_arity_mismatch
+                        (lid.txt, constr.cstr_arity, List.length sargs)))
+    else
+      List.map2 (fun e (t,t0) -> type_argument ~recarg env e t t0) sargs
+        (List.combine ty_args ty_args0)
+  in
   if constr.cstr_private = Private then
     raise(Error(loc, env, Private_type ty_res));
   (* NOTE: shouldn't we call "re" on this final expression? -- AF *)

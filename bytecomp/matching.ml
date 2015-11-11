@@ -1345,15 +1345,27 @@ let matcher_constr cstr = match cstr.cstr_arity with
 let make_constr_matching p def ctx = function
     [] -> fatal_error "Matching.make_constr_matching"
   | ((arg, mut) :: argl) ->
-      let cstr = pat_as_constr p in
+      let cstr, nargs =
+        match p with
+        | {pat_desc=Tpat_construct (_, cstr, args)} -> cstr, List.length args
+        | _ -> fatal_error "Matching.make_constr_matching"
+      in
       let newargs =
         if cstr.cstr_inlined <> None then
           (arg, Alias) :: argl
-        else match cstr.cstr_tag with
-          Cstr_constant _ | Cstr_block _ ->
-            make_field_args Alias arg 0 (cstr.cstr_arity - 1) argl
-        | Cstr_extension _ ->
-            make_field_args Alias arg 1 cstr.cstr_arity argl in
+        else
+          let start =
+            match cstr.cstr_tag with
+            | Cstr_constant _ | Cstr_block _ -> 0
+            | Cstr_extension _ -> 1
+          in
+          if cstr.cstr_arity > 1 && nargs = 1 then
+            (Lprim(Pmakeblock(0, Immutable),
+                   List.map fst (make_field_args Alias arg start (start + cstr.cstr_arity - 1) [])), Alias) ::
+            argl
+          else
+            make_field_args Alias arg start (start + cstr.cstr_arity - 1) argl
+      in
       {pm=
         {cases = []; args = newargs;
           default = make_default (matcher_constr cstr) def} ;
