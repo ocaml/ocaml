@@ -225,6 +225,7 @@ CAMLextern value caml_hash_variant(char const * tag);
 #define String_tag 252
 #define String_val(x) ((char *) Bp_val(x))
 CAMLextern mlsize_t caml_string_length (value);   /* size in bytes */
+CAMLextern int caml_string_is_c_safe (value); /* non-zero iff string contains no 0 */
 
 /* Floating-point numbers. */
 #define Double_tag 253

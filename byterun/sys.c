@@ -95,6 +95,15 @@ CAMLexport void caml_sys_io_error(value arg)
   }
 }
 
+/* check that the string is a proper path */
+static inline void caml_sys_check_path(value name)
+{
+  if (! caml_string_is_c_safe(name)) {
+    errno = ENOENT;
+    caml_sys_error(name);
+  }
+}
+
 CAMLprim value caml_sys_exit(value retcode)
 {
   if ((caml_verb_gc & 0x400) != 0) {
@@ -141,6 +150,7 @@ CAMLprim value caml_sys_open(value path, value vflags, value vperm)
   int fd, flags, perm;
   char * p;
 
+  caml_sys_check_path(path);
   p = caml_strdup(String_val(path));
   flags = caml_convert_flag_list(vflags, sys_open_flags);
   perm = Int_val(vperm);
@@ -176,6 +186,7 @@ CAMLprim value caml_sys_file_exists(value name)
   char * p;
   int ret;
 
+  caml_sys_check_path(name);
   p = caml_strdup(String_val(name));
   caml_enter_blocking_section();
 #ifdef _WIN32
@@ -200,6 +211,7 @@ CAMLprim value caml_sys_is_directory(value name)
   char * p;
   int ret;
 
+  caml_sys_check_path(name);
   p = caml_strdup(String_val(name));
   caml_enter_blocking_section();
 #ifdef _WIN32
@@ -223,6 +235,7 @@ CAMLprim value caml_sys_remove(value name)
   CAMLparam1(name);
   char * p;
   int ret;
+  caml_sys_check_path(name);
   p = caml_strdup(String_val(name));
   caml_enter_blocking_section();
   ret = unlink(p);
@@ -254,6 +267,7 @@ CAMLprim value caml_sys_chdir(value dirname)
   CAMLparam1(dirname);
   char * p;
   int ret;
+  caml_sys_check_path(dirname);
   p = caml_strdup(String_val(dirname));
   caml_enter_blocking_section();
   ret = chdir(p);
@@ -277,6 +291,8 @@ CAMLprim value caml_sys_getcwd(value unit)
 CAMLprim value caml_sys_getenv(value var)
 {
   char * res;
+
+  // FIXME is there a need to check for null bytes here?
 
   res = getenv(String_val(var));
   if (res == 0) caml_raise_not_found();
@@ -479,6 +495,7 @@ CAMLprim value caml_sys_read_directory(value path)
   char * p;
   int ret;
 
+  caml_sys_check_path(path);
   caml_ext_table_init(&tbl, 50);
   p = caml_strdup(String_val(path));
   caml_enter_blocking_section();
