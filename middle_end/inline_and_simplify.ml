@@ -254,13 +254,13 @@ let simplify_move_within_set_of_closures env r
         closures.  Approximation: %a  Term: %a"
       A.print closure_approx
       Flambda.print_move_within_set_of_closures move_within_set_of_closures
-  | Unresolved _sym ->
+  | Unresolved sym ->
     Move_within_set_of_closures {
         closure;
         start_from = move_within_set_of_closures.start_from;
         move_to = move_within_set_of_closures.move_to;
       },
-      ret r A.value_unknown
+      ret r (A.value_unresolved sym)
   | Ok (_value_closure, set_of_closures_var, set_of_closures_symbol,
         value_set_of_closures) ->
     let freshen =
