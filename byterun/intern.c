@@ -588,7 +588,7 @@ static void intern_alloc(mlsize_t whsize, mlsize_t num_objects)
   }
   obj_counter = 0;
   if (num_objects > 0) {
-    intern_obj_table = (value *) caml_stat_alloc_no_raise(num_objects * sizeof(value));
+    intern_obj_table = (value *) malloc(num_objects * sizeof(value));
     if (intern_obj_table == NULL) {
       intern_cleanup();
       caml_raise_out_of_memory();
