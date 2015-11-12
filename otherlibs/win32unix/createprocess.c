@@ -26,6 +26,7 @@ value win_create_process_native(value cmd, value cmdline, value env,
   char * exefile, * envp;
   int flags;
 
+  caml_unix_check_path(cmd, "create_process");
   exefile = search_exe_in_path(String_val(cmd));
   if (env != Val_int(0)) {
     envp = String_val(Field(env, 0));

@@ -15,7 +15,7 @@
 #include "caml/alloc.h"
 #include <stdio.h>
 
-value stub1() {
+value stub1(void) {
   CAMLparam0();
   CAMLlocal1(x);
   printf("This is stub1!\n"); fflush(stdout);

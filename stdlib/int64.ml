@@ -27,8 +27,12 @@ external shift_right : int64 -> int -> int64 = "%int64_asr"
 external shift_right_logical : int64 -> int -> int64 = "%int64_lsr"
 external of_int : int -> int64 = "%int64_of_int"
 external to_int : int64 -> int = "%int64_to_int"
-external of_float : float -> int64 = "caml_int64_of_float"
-external to_float : int64 -> float = "caml_int64_to_float"
+external of_float : float -> int64
+  = "caml_int64_of_float" "caml_int64_of_float_unboxed"
+  [@@unboxed] [@@noalloc]
+external to_float : int64 -> float
+  = "caml_int64_to_float" "caml_int64_to_float_unboxed"
+  [@@unboxed] [@@noalloc]
 external of_int32 : int32 -> int64 = "%int64_of_int32"
 external to_int32 : int64 -> int32 = "%int64_to_int32"
 external of_nativeint : nativeint -> int64 = "%int64_of_nativeint"
@@ -49,8 +53,12 @@ let to_string n = format "%d" n
 
 external of_string : string -> int64 = "caml_int64_of_string"
 
-external bits_of_float : float -> int64 = "caml_int64_bits_of_float"
-external float_of_bits : int64 -> float = "caml_int64_float_of_bits"
+external bits_of_float : float -> int64
+  = "caml_int64_bits_of_float" "caml_int64_bits_of_float_unboxed"
+  [@@unboxed] [@@noalloc]
+external float_of_bits : int64 -> float
+  = "caml_int64_float_of_bits" "caml_int64_float_of_bits_unboxed"
+  [@@unboxed] [@@noalloc]
 
 type t = int64
 

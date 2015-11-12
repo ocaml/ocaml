@@ -103,18 +103,21 @@ let comparisons_table = create_hashtable 11 [
        Pbintcomp(Pint64, Cge),
        false);
   "%compare",
+      let unboxed_compare name native_repr =
+        Pccall( Primitive.make ~name ~alloc:false
+                  ~native_name:(name^"_unboxed")
+                  ~native_repr_args:[native_repr;native_repr]
+                  ~native_repr_res:Untagged_int
+              ) in
       (Pccall(Primitive.simple ~name:"caml_compare" ~arity:2 ~alloc:true),
+       (* Not unboxed since the comparison is done directly on tagged int *)
        Pccall(Primitive.simple ~name:"caml_int_compare" ~arity:2 ~alloc:false),
-       Pccall(Primitive.simple ~name:"caml_float_compare" ~arity:2
-                ~alloc:false),
+       unboxed_compare "caml_float_compare" Unboxed_float,
        Pccall(Primitive.simple ~name:"caml_string_compare" ~arity:2
                 ~alloc:false),
-       Pccall(Primitive.simple ~name:"caml_nativeint_compare" ~arity:2
-                ~alloc:false),
-       Pccall(Primitive.simple ~name:"caml_int32_compare" ~arity:2
-                ~alloc:false),
-       Pccall(Primitive.simple ~name:"caml_int64_compare" ~arity:2
-                ~alloc:false),
+       unboxed_compare "caml_nativeint_compare" (Unboxed_integer Pnativeint),
+       unboxed_compare "caml_int32_compare" (Unboxed_integer Pint32),
+       unboxed_compare "caml_int64_compare" (Unboxed_integer Pint64),
        false)
 ]
 
@@ -1170,7 +1173,8 @@ and transl_record env all_labels repres lbl_expr_list opt_init_expr =
       lbl_expr_list;
     let ll = Array.to_list lv in
     let mut =
-      if List.exists (fun (_, lbl, expr) -> lbl.lbl_mut = Mutable) lbl_expr_list
+      if List.exists (fun lbl -> lbl.lbl_mut = Mutable)
+        (Array.to_list all_labels)
       then Mutable
       else Immutable in
     let lam =

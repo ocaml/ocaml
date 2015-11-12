@@ -225,6 +225,13 @@ CAMLprim value caml_frexp_float(value f)
   CAMLreturn (res);
 }
 
+// Seems dumb but intnat could not correspond to int type.
+double caml_ldexp_float_unboxed(double f, intnat i)
+{
+  return ldexp(f, i);
+}
+
+
 CAMLprim value caml_ldexp_float(value f, value i)
 {
   return caml_copy_double(ldexp(Double_val(f), Int_val(i)));
@@ -438,25 +445,34 @@ CAMLprim value caml_gt_float(value f, value g)
   return Val_bool(Double_val(f) > Double_val(g));
 }
 
-CAMLprim value caml_float_compare(value vf, value vg)
+intnat caml_float_compare_unboxed(double f, double g)
 {
-  double f = Double_val(vf);
-  double g = Double_val(vg);
   /* If one or both of f and g is NaN, order according to the convention
      NaN = NaN and NaN < x for all other floats x. */
   /* This branchless implementation is from GPR#164.
      Note that [f == f] if and only if f is not NaN. */
-  return Val_int((f > g) - (f < g) + (f == f) - (g == g));
+  return (f > g) - (f < g) + (f == f) - (g == g);
+}
+
+CAMLprim value caml_float_compare(value vf, value vg)
+{
+  return Val_int(caml_float_compare_unboxed(Double_val(vf),Double_val(vg)));
 }
 
 enum { FP_normal, FP_subnormal, FP_zero, FP_infinite, FP_nan };
 
-CAMLprim value caml_classify_float(value vd)
+value caml_classify_float_unboxed(double vd)
 {
   /* Cygwin 1.3 has problems with fpclassify (PR#1293), so don't use it */
   /* FIXME Cygwin 1.3 is ancient! Revisit this decision. */
+
+  /* Informal benchmarking (see GPR#272) suggests that the emulation
+     version is faster than calling the libc.  We could switch to it,
+     and also provide an even faster version for 64-bit systems as
+     suggested by XL.  -- AF */
+
 #if defined(fpclassify) && !defined(__CYGWIN__) && !defined(__MINGW32__)
-  switch (fpclassify(Double_val(vd))) {
+  switch (fpclassify(vd)) {
   case FP_NAN:
     return Val_int(FP_nan);
   case FP_INFINITE:
@@ -472,7 +488,7 @@ CAMLprim value caml_classify_float(value vd)
   union double_as_two_int32 u;
   uint32_t h, l;
 
-  u.d = Double_val(vd);
+  u.d = vd;
   h = u.i.h;  l = u.i.l;
   l = l | (h & 0xFFFFF);
   h = h & 0x7FF00000;
@@ -488,6 +504,11 @@ CAMLprim value caml_classify_float(value vd)
   }
   return Val_int(FP_normal);
 #endif
+}
+
+CAMLprim value caml_classify_float(value vd)
+{
+  return caml_classify_float_unboxed(Double_val(vd));
 }
 
 /* The [caml_init_ieee_float] function should initialize floating-point hardware

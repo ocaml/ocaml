@@ -66,6 +66,7 @@ CAMLprim value unix_stat(value path)
   int ret;
   struct _stati64 buf;
 
+  caml_unix_check_path(path, "stat");
   ret = _stati64(String_val(path), &buf);
   if (ret == -1) uerror("stat", path);
   if (buf.st_size > Max_long) {
@@ -79,6 +80,8 @@ CAMLprim value unix_stat_64(value path)
 {
   int ret;
   struct _stati64 buf;
+
+  caml_unix_check_path(path, "stat");
   ret = _stati64(String_val(path), &buf);
   if (ret == -1) uerror("stat", path);
   return stat_aux(1, &buf);

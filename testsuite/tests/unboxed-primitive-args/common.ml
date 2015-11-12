@@ -243,7 +243,7 @@ external cleanup_float
   -> float -> float -> float -> float -> float -> float -> float -> float
   -> float -> float -> float -> float -> float -> float -> float -> float
   -> float -> float -> float -> float -> float -> float -> float -> float
-  -> float = "" "test_cleanup_normal" [@@noalloc] [@@unboxed]
+  -> float = "" "test_cleanup_float" [@@noalloc] [@@unboxed]
 
 let cleanup_args_and_stack () =
   let _ : int =

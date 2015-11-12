@@ -1,0 +1,33 @@
+boot/ocamlc binary
+boot/ocamllex binary
+boot/ocamldep binary
+
+.gitattributes           ocaml-typo=missing-header
+.gitignore               ocaml-typo=missing-header
+.merlin                  ocaml-typo=missing-header
+.ocp-indent              ocaml-typo=missing-header
+Changes                  ocaml-typo=non-ascii,missing-header
+CONTRIBUTING.md          ocaml-typo=missing-header
+INSTALL                  ocaml-typo=missing-header
+LICENSE                  ocaml-typo=non-printing,missing-header
+
+asmcomp/*/emit.mlp       ocaml-typo=tab,long-line,unused-prop
+
+asmrun/i386.S            ocaml-typo=long-line
+
+config/gnu               ocaml-typo=prune
+
+emacs/*.el               ocaml-typo=long-line,unused-prop
+emacs/COPYING            ocaml-typo=tab,non-printing,missing-header
+emacs/ocamltags.in       ocaml-typo=non-printing
+emacs/README*            ocaml-typo=missing-header
+
+experimental             ocaml-typo=prune
+
+ocamlbuild/*             ocaml-typo=long-line
+ocamlbuild/AUTHORS       ocaml-typo=missing-header
+ocamlbuild/ChangeLog     ocaml-typo=tab,missing-header
+ocamlbuild/TODO          ocaml-typo=missing-header
+
+ocamldoc/Changes.txt     ocaml-typo=missing-header
+ocamldoc/ocamldoc.sty    ocaml-typo=missing-header

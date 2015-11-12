@@ -17,6 +17,7 @@
 CAMLprim value unix_mkdir(path, perm)
      value path, perm;
 {
+  caml_unix_check_path(path, "mkdir");
   if (_mkdir(String_val(path)) == -1) uerror("mkdir", path);
   return Val_unit;
 }

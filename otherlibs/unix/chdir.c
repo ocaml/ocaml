@@ -21,6 +21,7 @@ CAMLprim value unix_chdir(value path)
   CAMLparam1(path);
   char * p;
   int ret;
+  caml_unix_check_path(path, "chdir");
   p = caml_strdup(String_val(path));
   caml_enter_blocking_section();
   ret = chdir(p);
