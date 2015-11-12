@@ -180,7 +180,6 @@ let simplify_const (const : Flambda.const) =
   | Char c -> A.value_char c
   | Const_pointer i -> A.value_constptr i
 
-(* CR mshinwell: function name is misleading, it only computes an approx *)
 let approx_for_allocated_const (const : Allocated_const.t) =
   match const with
   | String s -> A.value_string (String.length s) None
