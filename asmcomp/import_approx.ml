@@ -87,6 +87,7 @@ let rec import_ex ex =
   match Export_info.find_description ex_info ex with
   | exception Not_found -> A.value_unknown Other
   | Value_int i -> A.value_int i
+  | Value_char c -> A.value_char c
   | Value_constptr i -> A.value_constptr i
   | Value_float f -> A.value_float f
   | Value_float_array size -> A.value_float_array size

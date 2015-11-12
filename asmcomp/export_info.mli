@@ -27,6 +27,7 @@ type descr =
   | Value_block of Tag.t * approx array
   | Value_mutable_block of Tag.t * int
   | Value_int of int
+  | Value_char of char
   | Value_constptr of int
   | Value_float of float
   | Value_float_array of int
