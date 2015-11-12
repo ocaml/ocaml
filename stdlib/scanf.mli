@@ -85,11 +85,11 @@ module Scanning : sig
 
 type in_channel
 (** The notion of input channel for the [Scanf] module:
-   those channels provide all the machinery necessary to read from a given
-   [Pervasives.in_channel] value.
+   those channels provide all the machinery necessary to read from any source
+   of characters, including a [Pervasives.in_channel] value.
    A [Scanf.Scanning.in_channel] value is also called a {i formatted input
    channel} or equivalently a {i scanning buffer}.
-   The type [scanbuf] below is an alias for [in_channel].
+   The type [Scanning.scanbuf] below is an alias for [Scanning.in_channel].
    @since 3.12.0
 *)
 
@@ -107,8 +107,8 @@ type scanbuf = in_channel
 
 val stdin : in_channel
 (** The standard input notion for the [Scanf] module.
-    [Scanning.stdin] is the formatted input channel attached to
-    [Pervasives.stdin].
+    [Scanning.stdin] is the [Scanning.in_channel] formatted input channel
+    attached to [Pervasives.stdin].
 
     Note: in the interactive system, when input is read from [stdin], the
     newline character that triggers the evaluation is incorporated in the
@@ -124,8 +124,8 @@ type file_name = string
 *)
 
 val open_in : file_name -> in_channel
-(** [Scanning.open_in fname] returns a formatted input channel for bufferized
-    reading in text mode from file [fname].
+(** [Scanning.open_in fname] returns a [Scanning.in_channel] formatted input
+    channel for bufferized reading in text mode from file [fname].
 
     Note:
     [open_in] returns a formatted input channel that efficiently reads
@@ -136,8 +136,8 @@ val open_in : file_name -> in_channel
 *)
 
 val open_in_bin : file_name -> in_channel
-(** [Scanning.open_in_bin fname] returns a formatted input channel for
-    bufferized reading in binary mode from file [fname].
+(** [Scanning.open_in_bin fname] returns a [Scanning.in_channel] formatted
+    input channel for bufferized reading in binary mode from file [fname].
     @since 3.12.0
 *)
 
@@ -148,21 +148,21 @@ val close_in : in_channel -> unit
 *)
 
 val from_file : file_name -> in_channel
-(** An alias for [open_in] above. *)
+(** An alias for [Scanning.open_in] above. *)
 
 val from_file_bin : string -> in_channel
-(** An alias for [open_in_bin] above. *)
+(** An alias for [Scanning.open_in_bin] above. *)
 
 val from_string : string -> in_channel
-(** [Scanning.from_string s] returns a formatted input channel which reads
-    from the given string.
+(** [Scanning.from_string s] returns a [Scanning.in_channel] formatted
+    input channel which reads from the given string.
     Reading starts from the first character in the string.
     The end-of-input condition is set when the end of the string is reached.
 *)
 
 val from_function : (unit -> char) -> in_channel
-(** [Scanning.from_function f] returns a formatted input channel with the
-    given function as its reading method.
+(** [Scanning.from_function f] returns a [Scanning.in_channel] formatted
+    input channel with the given function as its reading method.
 
     When scanning needs one more character, the given function is called.
 
@@ -171,24 +171,25 @@ val from_function : (unit -> char) -> in_channel
 *)
 
 val from_channel : Pervasives.in_channel -> in_channel
-(** [Scanning.from_channel ic] returns a formatted input channel which reads
-    from the regular input channel [ic] argument, starting at the current
-    reading position.
+(** [Scanning.from_channel ic] returns a [Scanning.in_channel] formatted
+    input channel which reads from the regular [Pervasives.in_channel] input
+    channel [ic] argument.
+    Reading starts at the current reading position of [ic].
 *)
 
 val end_of_input : in_channel -> bool
 (** [Scanning.end_of_input ic] tests the end-of-input condition of the given
-    formatted input channel.
+    [Scanning.in_channel] formatted input channel.
 *)
 
 val beginning_of_input : in_channel -> bool
-(** [Scanning.beginning_of_input ic] tests the beginning of input condition of
-    the given formatted input channel.
+(** [Scanning.beginning_of_input ic] tests the beginning of input condition
+    of the given [Scanning.in_channel] formatted input channel.
 *)
 
 val name_of_input : in_channel -> string
 (** [Scanning.name_of_input ic] returns the name of the character source
-    for the formatted input channel [ic].
+    for the given [Scanning.in_channel] formatted input channel.
     @since 3.09.0
 *)
 
@@ -209,7 +210,7 @@ type ('a, 'b, 'c, 'd) scanner =
     precisely, if [scan] is some formatted input function, then [scan
     ic fmt f] applies [f] to the arguments specified by the format
     string [fmt], when [scan] has read those arguments from the
-    formatted input channel [ic].
+    [Scanning.in_channel] formatted input channel [ic].
 
     For instance, the [scanf] function below has type [('a, 'b, 'c, 'd)
     scanner], since it is a formatted input function that reads from
@@ -233,8 +234,8 @@ exception Scan_failure of string
 
 val bscanf : Scanning.in_channel -> ('a, 'b, 'c, 'd) scanner
 (** [bscanf ic fmt r1 ... rN f] reads arguments for the function [f], from the
-    formatted input channel [ic], according to the format string [fmt], and
-    applies [f] to these values.
+    [Scanning.in_channel] formatted input channel [ic], according to the
+    format string [fmt], and applies [f] to these values.
     The result of this call to [f] is returned as the result of the entire
     [bscanf] call.
     For instance, if [f] is the function [fun s i -> i + 1], then
@@ -420,7 +421,8 @@ val bscanf : Scanning.in_channel -> ('a, 'b, 'c, 'd) scanner
     - As usual in format strings, [%] and [@] characters must be escaped
     using [%%] and [%@]; this rule still holds within range specifications
     and scanning indications.
-    For instance, ["%s@%%"] reads a string up to the next [%] character.
+    For instance, format ["%s@%%"] reads a string up to the next [%]
+    character, and format ["%s@%@"] reads a string up to the next [@].
     - The scanning indications introduce slight differences in the syntax of
     [Scanf] format strings, compared to those used for the [Printf]
     module. However, the scanning indications are similar to those used in
@@ -535,3 +537,4 @@ val unescaped : string -> string
     argument, still return a copy, contrary to String.escaped.
     @since 4.00.0
 *)
+
