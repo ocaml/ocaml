@@ -165,8 +165,9 @@ let descr_of_constant (c : Flambda.const) : Export_info.descr =
      boxed (typically a variant type with both constant and non-constant
      constructors). *)
   | Int i -> Value_int i
+  (* CR mshinwell: We should have [Value_char]. *)
   | Char c -> Value_int (Char.code c)
-  | Const_pointer i -> Value_int i
+  | Const_pointer i -> Value_constptr i
 
 let descr_of_allocated_constant (c : Allocated_const.t) : Export_info.descr =
   match c with
