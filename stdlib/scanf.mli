@@ -456,20 +456,6 @@ val bscanf : Scanning.in_channel -> ('a, 'b, 'c, 'd) scanner
 
 (** {6 Specialised formatted input functions} *)
 
-val fscanf : Pervasives.in_channel -> ('a, 'b, 'c, 'd) scanner
-(** Same as {!Scanf.bscanf}, but reads from the given regular input channel.
-
-    Warning: since all formatted input functions operate from a {e formatted
-    input channel}, be aware that each [fscanf] invocation will operate with a
-    formatted input channel reading from the given channel. This extra level
-    of bufferization can lead to a strange scanning behaviour if you use low
-    level primitives on the channel (reading characters, seeking the reading
-    position, and so on).
-
-    As a consequence, never mix direct low level reading and high level
-    scanning from the same regular input channel.
-*)
-
 val sscanf : string -> ('a, 'b, 'c, 'd) scanner
 (** Same as {!Scanf.bscanf}, but reads from the given string. *)
 
@@ -492,12 +478,6 @@ val ksscanf :
   string -> (Scanning.in_channel -> exn -> 'd) ->
     ('a, 'b, 'c, 'd) scanner
 (** Same as {!Scanf.kscanf} but reads from the given string.
-    @since 4.02.0 *)
-
-val kfscanf :
-  Pervasives.in_channel -> (Scanning.in_channel -> exn -> 'd) ->
-    ('a, 'b, 'c, 'd) scanner
-(** Same as {!Scanf.kscanf}, but reads from the given regular input channel.
     @since 4.02.0 *)
 
 (** {6 Reading format strings from input} *)
@@ -537,4 +517,27 @@ val unescaped : string -> string
     argument, still return a copy, contrary to String.escaped.
     @since 4.00.0
 *)
+
+(** {6 Deprecated} *)
+
+val fscanf : Pervasives.in_channel -> ('a, 'b, 'c, 'd) scanner
+  [@@ocaml.deprecated "Use Scanning.from_channel then Scanf.bscanf."]
+(** @deprecated [Scanf.fscanf] is error prone and deprecated since 4.03.0.
+
+    This function violates an invariant of the [Scanf] module:
+    To preserve scanning semantics, all scanning functions defined in [Scanf]
+    must read from a user defined [Scanning.in_channel] formatted input
+    channel.
+
+    If you need to read from a [Pervasives.in_channel] input channel
+    [ic], simply define a [Scanning.in_channel] formatted input channel as in
+    [let ib = Scanning.from_channel ic],
+    then use [Scanf.bscanf ib] as usual.
+*)
+
+val kfscanf :
+  Pervasives.in_channel -> (Scanning.in_channel -> exn -> 'd) ->
+    ('a, 'b, 'c, 'd) scanner
+  [@@ocaml.deprecated "Use Scanning.from_channel then Scanf.kscanf."]
+(** @deprecated [Scanf.kfscanf] is error prone and deprecated since 4.03.0. *)
 
