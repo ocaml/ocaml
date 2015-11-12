@@ -272,22 +272,6 @@ module NotConstants(P:Param) = struct
     | Prim(Lambda.Pfield _, [f1], _) ->
       mark_curr curr;
       mark_var f1 curr
-
-  (*
-    | Prim(Lambda.Pgetglobalfield(id,i), [], _) ->
-      (* adds 'global i in NC => curr in NC' *)
-      if Ident.same id (Compilation_unit.get_persistent_ident compilation_unit)
-      then
-        register_implication ~in_nc:(Global i) ~implies_in_nc:curr
-      else
-        mark_curr curr
-
-    | Prim(Lambda.Psetglobalfield (_,i), [f], _) ->
-      mark_curr curr;
-      (* adds 'f in NC => global i in NC' *)
-      register_implication ~in_nc:(Var f) ~implies_in_nc:[Global i]
-*)
-
     | Prim (_, args, _) ->
       mark_curr curr;
       mark_vars args curr

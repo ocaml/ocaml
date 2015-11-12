@@ -376,19 +376,6 @@ and to_clambda_named t env var (named : Flambda.named) : Clambda.ulambda =
     Uprim (Pfield pos,
       [check_field (check_closure ulam (Expr (Var closure))) pos (Some named)],
       Debuginfo.none)
-  (* CR mshinwell: these next two cases are probably now redundant.  Delete the
-     primitives too *)
-  | Prim (Pgetglobalfield (id, index), _, dbg) ->
-    let ident = Ident.create_persistent (Compilenv.symbol_for_global id) in
-    Uprim (Pfield index,
-      [check_field (Clambda.Uprim (Pgetglobal ident, [], dbg)) index None],
-      dbg)
-  | Prim (Psetglobalfield index, [arg], dbg) ->
-    let ident = Ident.create_persistent (Compilenv.make_symbol None) in
-    Uprim (Psetfield (index, false), [
-        check_field (Clambda.Uprim (Pgetglobal ident, [], dbg)) index None;
-        subst_var env arg;
-      ], dbg)
   | Prim (Pfield index, [block], dbg) ->
     Uprim (Pfield index, [check_field (subst_var env block) index None], dbg)
   | Prim (Psetfield (index, maybe_ptr), [block; new_value], dbg) ->

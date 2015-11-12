@@ -82,7 +82,6 @@ let for_primitive (prim : Lambda.primitive) =
   | Pfield _
   | Pfloatfield _
   | Pgetglobal _
-  | Pgetglobalfield _
   | Parrayrefu _
   | Pstringrefu
   | Pstring_load_16 true 
@@ -106,7 +105,6 @@ let for_primitive (prim : Lambda.primitive) =
   | Psetfield _
   | Psetfloatfield _
   | Psetglobal _
-  | Psetglobalfield _
   | Parraysetu _
   | Parraysets _
   | Pstringsetu

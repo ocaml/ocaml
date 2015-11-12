@@ -39,8 +39,6 @@ type primitive =
     (* Globals *)
   | Pgetglobal of Ident.t
   | Psetglobal of Ident.t
-  | Pgetglobalfield of Ident.t * int
-  | Psetglobalfield of int
   (* Operations on heap blocks *)
   | Pmakeblock of int * mutable_flag
   | Pfield of int

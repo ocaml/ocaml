@@ -28,9 +28,6 @@
     are converted to applications of the [Pmakeblock] primitive.
   - [Levent] debugging event nodes are removed and the information within
     them attached to function, method and [raise] calls.
-  - Access to global fields of the current compilation unit (of the form
-    [Lprim (Pfield _ | Psetfield _, [Lprim (Pgetglobal _, []); ...])])
-    are converted to [Pgetglobalfield] and [Psetglobalfield] primitives.
   - Tuplified functions are converted to curried functions and a stub
     function emitted to call the curried version.  For example:
       let rec f (x, y) = f (x + 1, y + 1)

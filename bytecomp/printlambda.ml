@@ -110,9 +110,6 @@ let primitive ppf = function
   | Ploc kind -> fprintf ppf "%s" (string_of_loc_kind kind)
   | Pgetglobal id -> fprintf ppf "global %a" Ident.print id
   | Psetglobal id -> fprintf ppf "setglobal %a" Ident.print id
-  | Pgetglobalfield (id,i) -> fprintf ppf "global %a.%i" Ident.print id i
-  | Psetglobalfield i ->
-      fprintf ppf "setglobalfield %i" i
   | Pmakeblock(tag, Immutable) -> fprintf ppf "makeblock %i" tag
   | Pmakeblock(tag, Mutable) -> fprintf ppf "makemutable %i" tag
   | Pfield n -> fprintf ppf "field %i" n
@@ -260,8 +257,6 @@ let string_of_primitive = function
   | Ploc _ -> "Ploc"
   | Pgetglobal _ -> "Pgetglobal"
   | Psetglobal _ -> "Psetglobal"
-  | Pgetglobalfield _ -> "Pgetglobalfield"
-  | Psetglobalfield _ -> "Psetglobalfield"
   | Pmakeblock _ -> "Pmakeblock"
   | Pfield _ -> "Pfield"
   | Psetfield _ -> "Psetfield"

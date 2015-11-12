@@ -42,8 +42,6 @@ let prim_size (prim : Lambda.primitive) args =
   | Pbittest -> 3
   | Pbigarrayref (_, ndims, _, _) -> 4 + ndims * 6
   | Pbigarrayset (_, ndims, _, _) -> 4 + ndims * 6
-  | Pgetglobalfield _ -> 2
-  | Psetglobalfield _ -> 2
   | Psequand | Psequor ->
     Misc.fatal_error "Psequand and Psequor are not allowed in Prim \
         expressions; translate out instead (cf. closure_conversion.ml)"

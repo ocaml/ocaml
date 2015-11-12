@@ -409,18 +409,12 @@ let variable_and_symbol_invariants flam =
     (Variable.Set.empty, Mutable_variable.Set.empty, Symbol.Set.empty)
     flam
 
-(* CR mshinwell: this function needs updating e.g. for Pgetglobal changes *)
 let primitive_invariants flam ~no_access_to_global_module_identifiers =
   Flambda_iterators.iter_named (function
       | Prim (prim, _, _) ->
         begin match prim with
         | Psequand | Psequor ->
           raise (Sequential_logical_operator_primitives_must_be_expanded prim)
-        | Pgetglobalfield _ | Psetglobalfield _ | Psetglobal _ ->
-          (* if no_access_to_global_module_identifiers then begin *)
-          (*   raise (Access_to_global_module_identifier prim) *)
-          (* end *)
-          ()
         | Pgetglobal id ->
           if no_access_to_global_module_identifiers
             && not (Ident.is_predef_exn id) then
