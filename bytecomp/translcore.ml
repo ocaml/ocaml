@@ -395,10 +395,22 @@ let specialize_primitive loc p env ty ~has_constant_constructor =
 
 (* Eta-expand a primitive *)
 
-let transl_primitive loc p env ty =
+let used_primitives = Hashtbl.create 7
+let add_used_primitive loc p env path =
+  match path with
+    Some (Path.Pdot _ as path) ->
+      let path = Env.normalize_path (Some loc) env path in
+      let unit = Path.head path in
+      if Ident.global unit && not (Hashtbl.mem used_primitives path)
+      then Hashtbl.add used_primitives path loc
+  | _ -> ()
+
+let transl_primitive loc p env ty path =
   let prim =
     try specialize_primitive loc p env ty ~has_constant_constructor:false
-    with Not_found -> Pccall p
+    with Not_found ->
+      add_used_primitive loc p env path;
+      Pccall p
   in
   match prim with
   | Plazyforce ->
@@ -425,7 +437,7 @@ let transl_primitive loc p env ty =
                  attr = default_function_attribute;
                  body = Lprim(prim, List.map (fun id -> Lvar id) params) }
 
-let transl_primitive_application loc prim env ty args =
+let transl_primitive_application loc prim env ty path args =
   let prim_name = prim.prim_name in
   try
     let has_constant_constructor = match args with
@@ -439,6 +451,7 @@ let transl_primitive_application loc prim env ty args =
   with Not_found ->
     if String.length prim_name > 0 && prim_name.[0] = '%' then
       raise(Error(loc, Unknown_builtin_primitive prim_name));
+    add_used_primitive loc prim env path;
     Pccall prim
 
 
@@ -682,7 +695,7 @@ and transl_exp0 e =
                   body = Lsend(Cached, Lvar meth, Lvar obj,
                                [Lvar cache; Lvar pos], e.exp_loc)}
       else
-        transl_primitive e.exp_loc p e.exp_env e.exp_type
+        transl_primitive e.exp_loc p e.exp_env e.exp_type (Some path)
   | Texp_ident(path, _, {val_kind = Val_anc _}) ->
       raise(Error(e.exp_loc, Free_super_var))
   | Texp_ident(path, _, {val_kind = Val_reg | Val_self _}) ->
@@ -740,7 +753,7 @@ and transl_exp0 e =
         | _ -> assert false
       else begin
         let prim = transl_primitive_application
-            e.exp_loc p e.exp_env prim_type args in
+            e.exp_loc p e.exp_env prim_type (Some path) args in
         match (prim, args) with
           (Praise k, [arg1]) ->
             let targ = List.hd argl in

@@ -97,12 +97,12 @@ let transl_label_init expr =
       (fun c id expr -> Llet(Alias, id, Lconst c, expr))
       consts expr
   in
-  let expr =
+  (*let expr =
     List.fold_right
       (fun id expr -> Lsequence(Lprim(Pgetglobal id, []), expr))
       (Env.get_required_globals ()) expr
   in
-  Env.reset_required_globals ();
+  Env.reset_required_globals ();*)
   reset_labels ();
   expr
 
