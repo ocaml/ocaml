@@ -192,6 +192,8 @@ OCamlbuild:
 Bug fixes:
 - PR#3612: memory leak in bigarray read from file
   (Pierre Chambart, report by Gary Huber)
+* PR#4166, PR#6956: force linking when calling external C primitives
+  (Jacques Garrigue, reports by Markus Mottl and Christophe Troestler)
 * PR#4539: change exception string raised when comparing functional values
   (Nicolas Braud-Santoni, report by Eric Cooper)
 - PR#4832: Filling bigarrays may block out runtime
