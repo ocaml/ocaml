@@ -71,14 +71,6 @@ val default_warning_printer : t -> formatter -> Warnings.t -> unit
 
 val highlight_locations: formatter -> t list -> bool
 
-type 'a loc = {
-  txt : 'a;
-  loc : t;
-}
-
-val mknoloc : 'a -> 'a loc
-val mkloc : 'a -> t -> 'a loc
-
 val print: formatter -> t -> unit
 val print_compact: formatter -> t -> unit
 val print_filename: formatter -> string -> unit
@@ -144,3 +136,11 @@ val default_error_reporter : formatter -> error -> unit
 
 val report_exception: formatter -> exn -> unit
   (* Reraise the exception if it is unknown. *)
+
+type 'a loc = {
+  txt : 'a;
+  loc : t;
+}
+
+val mknoloc : 'a -> 'a loc
+val mkloc : 'a -> t -> 'a loc

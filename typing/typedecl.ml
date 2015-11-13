@@ -55,6 +55,8 @@ type error =
   | Cannot_unbox_or_untag_type of native_repr_kind
   | Deep_unbox_or_untag_attribute of native_repr_kind
   | Bad_immediate_attribute
+  | Multiple_boxing_attributes
+  | Invalid_boxing_attribute_payload
 
 open Typedtree
 
@@ -157,6 +159,25 @@ let make_params env params =
   in
     List.map make_param params
 
+let boxing_attribute attrs =
+  let dyn_attrs =
+    List.filter
+      (fun (n, _) ->
+       match n.Location.txt with
+       | "ocaml.dynamic_boxing" | "dynamic_boxing" -> true
+       | _ -> false)
+      attrs
+  in
+  match dyn_attrs with
+  | [] -> false
+  | _ :: (n, _) :: _ ->
+      raise (Error (n.Location.loc, Multiple_boxing_attributes))
+  | [(n, payload)] ->
+      match payload with
+      | PStr [] -> true
+      | _ ->
+          raise (Error (n.Location.loc, Invalid_boxing_attribute_payload))
+
 let transl_labels env closed lbls =
   assert (lbls <> []);
   let all_labels = ref StringSet.empty in
@@ -202,7 +223,8 @@ let transl_array loc env pad =
   let ty = ad.ad_type.ctyp_type in
   let ty = match ty.desc with Tpoly(t,[]) -> t | _ -> ty in
   let repr =
-    if is_float env ty then Array_float
+    if boxing_attribute pad.pad_attributes then Array_dynamic
+    else if is_float env ty then Array_float
     else Array_regular
   in
   let length =
@@ -1929,6 +1951,10 @@ let report_error ppf = function
       fprintf ppf "@[%s@ %s@]"
         "Types marked with the immediate attribute must be"
         "non-pointer types like int or bool"
+  | Multiple_boxing_attributes ->
+      fprintf ppf "Multiple boxing attributes"
+  | Invalid_boxing_attribute_payload ->
+      fprintf ppf "Invalid boxing attribute payload"
 
 let () =
   Location.register_error_of_exn
