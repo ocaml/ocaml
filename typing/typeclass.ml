@@ -630,10 +630,12 @@ let rec class_field self_loc cl_num self_type meths vars
 
   | Pcf_method (lab, priv, Cfk_virtual sty) ->
       let cty = virtual_method val_env meths self_type lab.txt priv sty loc in
+      if Concr.mem lab.txt local_meths then
+        raise(Error(loc, val_env, Duplicate ("method", lab.txt)));
       (val_env, met_env, par_env,
         lazy (mkcf(Tcf_method (lab, priv, Tcfk_virtual cty)))
        ::fields,
-        concr_meths, warn_vals, inher, local_meths, local_vals)
+        concr_meths, warn_vals, inher, Concr.add lab.txt local_meths, local_vals)
 
   | Pcf_method (lab, priv, Cfk_concrete (ovf, expr))  ->
       let expr =
