@@ -98,7 +98,7 @@ let really_save_then_forget_decisions ~output_prefix =
         List.rev_map (fun (key, (closure_stack, decision)) ->
             incr rebased_time;
             key, (!rebased_time, closure_stack, decision))
-          (List.rev bucket)
+          bucket
       in
       let bucket = List.sort Line_number_then_time.compare_fst bucket in
       List.iter (fun (key, (time, closure_stack, decision)) ->
