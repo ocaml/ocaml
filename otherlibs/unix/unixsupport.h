@@ -41,7 +41,7 @@ extern void caml_unix_check_path(value path, char * cmdname);
 
 #define DIR_Val(v) *((DIR **) &Field(v, 0))
 
-extern char ** cstringvect(value arg);
+extern char ** cstringvect(value arg, char * cmdname);
 
 #ifdef __cplusplus
 }

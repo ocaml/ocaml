@@ -813,12 +813,18 @@ let make_cmdline args =
     else f in
   String.concat " " (List.map maybe_quote (Array.to_list args))
 
+let make_process_env env =
+  Array.iter
+    (fun s -> if String.contains s '\000' then raise(Unix_error(EINVAL, "", s)))
+    env;
+  String.concat "\000" (Array.to_list env) ^ "\000"
+
 let create_process prog args fd1 fd2 fd3 =
   win_create_process prog (make_cmdline args) None fd1 fd2 fd3
 
 let create_process_env prog args env fd1 fd2 fd3 =
   win_create_process prog (make_cmdline args)
-                     (Some(String.concat "\000" (Array.to_list env) ^ "\000"))
+                     (Some(make_process_env env))
                      fd1 fd2 fd3
 
 external system: string -> process_status = "win_system"
@@ -877,7 +883,7 @@ let open_process_full cmd env =
   let inchan = in_channel_of_descr in_read in
   let outchan = out_channel_of_descr out_write in
   let errchan = in_channel_of_descr err_read in
-  open_proc cmd (Some(String.concat "\000" (Array.to_list env) ^ "\000"))
+  open_proc cmd (Some(make_process_env env))
                 (Process_full(inchan, outchan, errchan))
                 out_read in_write err_write;
   close out_read; close in_write; close err_write;

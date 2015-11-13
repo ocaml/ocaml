@@ -15,6 +15,7 @@
 #include "unixsupport.h"
 #include <windows.h>
 #include <caml/osdeps.h>
+#include <errno.h>
 
 static int win_has_console(void);
 
@@ -27,6 +28,10 @@ value win_create_process_native(value cmd, value cmdline, value env,
   int flags;
 
   caml_unix_check_path(cmd, "create_process");
+  if (! caml_string_is_c_safe(cmdline))
+    unix_error(EINVAL, "create_process", cmdline);
+  /* [env] is checked for null bytes at construction time, see unix.ml */
+
   exefile = search_exe_in_path(String_val(cmd));
   if (env != Val_int(0)) {
     envp = String_val(Field(env, 0));
