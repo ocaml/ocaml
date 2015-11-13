@@ -12,7 +12,6 @@
 /***********************************************************************/
 
 /* Operations on arrays */
-#include <stdio.h>
 #include <string.h>
 #include "caml/alloc.h"
 #include "caml/fail.h"
