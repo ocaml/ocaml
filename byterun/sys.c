@@ -339,6 +339,10 @@ CAMLprim value caml_sys_system_command(value command)
   int status, retcode;
   char *buf;
 
+  if (! caml_string_is_c_safe (command)) {
+    errno = EINVAL;
+    caml_sys_error(command);
+  }
   buf = caml_strdup(String_val(command));
   caml_enter_blocking_section ();
   status = system(buf);
