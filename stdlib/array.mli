@@ -15,6 +15,9 @@
 
 (** Array operations. *)
 
+type 'a t = 'a array = [| mutable 'a [@dynamic_boxing] |]
+(** Alias for the array type *)
+
 external length : 'a array -> int = "%array_length"
 (** Return the length (number of elements) of the given array. *)
 
@@ -248,7 +251,6 @@ val fast_sort : ('a -> 'a -> int) -> 'a array -> unit
 (** Same as {!Array.sort} or {!Array.stable_sort}, whichever is faster
     on typical input.
 *)
-
 
 (**/**)
 (** {6 Undocumented functions} *)

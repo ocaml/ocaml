@@ -15,6 +15,8 @@
 
 (* Array operations *)
 
+type 'a t = 'a array = [| mutable 'a [@dynamic_boxing] |]
+
 external length : 'a array -> int = "%array_length"
 external get: 'a array -> int -> 'a = "%array_safe_get"
 external set: 'a array -> int -> 'a -> unit = "%array_safe_set"
