@@ -558,6 +558,7 @@ class latex =
                 end
              | Type_variant _ -> "="^(if priv then " private" else "")
              | Type_record _ -> "= "^(if priv then "private " else "")^"{"
+             | Type_array _ -> "= "^(if priv then "private " else "")^"[|"
              | Type_open -> "= .."
             ) ;
           flush2 ()
@@ -635,6 +636,15 @@ class latex =
                ) l
              in
              List.flatten fields @ [ CodePre "}" ]
+          | Type_array (mut, typ) ->
+              let s_body =
+                p fmt2
+                  "@[<h 6> %s%s"
+                  (if mut then "mutable " else "")
+                  (self#normal_type mod_name typ);
+                flush2 ()
+              in
+                 [ CodePre s_body ] @ [ CodePre "|]" ]
           | Type_open ->
              (* FIXME ? *)
              []

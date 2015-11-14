@@ -247,6 +247,8 @@ module Analyser =
                 (name.txt, comment_opt) :: (f (ele2 :: q))
           in
           (0, f name_mutable_type_list)
+      | Parsetree.Ptype_array _ ->
+          (0, [])
       | Parsetree.Ptype_open ->
           (0, [])
 
@@ -309,6 +311,10 @@ module Analyser =
 
       | Types.Type_record (l, _) ->
           Odoc_type.Type_record (List.map (get_field env name_comment_list) l)
+
+      | Types.Type_array ad ->
+          Odoc_type.Type_array
+            (ad.ad_mutable = Mutable, Odoc_env.subst_type env ad.ad_type)
 
       | Types.Type_open ->
           Odoc_type.Type_open

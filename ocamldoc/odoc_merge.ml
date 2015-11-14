@@ -291,6 +291,9 @@ let merge_types merge_options mli ml =
       in
       List.iter f l1
 
+  | Type_array _, Type_array _ ->
+      ()
+
   | Type_open, Type_open ->
       ()
 

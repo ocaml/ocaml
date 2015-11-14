@@ -1609,11 +1609,13 @@ class html =
           None, Type_abstract
         | None, Type_open -> "\n<pre>"
         | None, Type_variant _
-        | None, Type_record _ -> "\n<pre><code>"
+        | None, Type_record _
+        | None, Type_array _ -> "\n<pre><code>"
         | Some _, Type_abstract
         | Some _, Type_open -> "\n<pre>"
         | Some _, Type_variant _
-        | Some _, Type_record _ -> "\n<pre>"
+        | Some _, Type_record _
+        | Some _, Type_array _ -> "\n<pre>"
         );
       bp b "<span id=\"%s\">" (Naming.type_target t);
       bs b ((self#keyword "type")^" ");
@@ -1746,6 +1748,21 @@ class html =
           in
           print_concat b "\n" print_one l;
           bs b "</table>\n}\n"
+      | Type_array (mut, typ) ->
+          bs b "= ";
+          if priv then bs b "private " ;
+          bs b "[|";
+          bs b
+            (
+             match t.ty_manifest with
+               None -> "</code></pre>"
+             | Some _ -> "</pre>"
+            );
+          bs b "<code>";
+          if mut then bs b (self#keyword "mutable&nbsp;") ;
+          self#html_of_type_expr b father typ;
+          bs b "</code>\n";
+          bs b "\n|]\n"
       | Type_open ->
           bs b "= ..";
           bs b "</pre>"
