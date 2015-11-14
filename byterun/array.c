@@ -31,11 +31,6 @@ CAMLexport mlsize_t caml_array_length(value array)
     return Wosize_val(array);
 }
 
-CAMLexport int caml_is_double_array(value array)
-{
-  return (Tag_val(array) == Double_array_tag);
-}
-
 CAMLprim value caml_array_get_addr(value array, value index)
 {
   intnat idx = Long_val(index);

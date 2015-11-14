@@ -226,6 +226,11 @@ let primitives_table = create_hashtable 57 [
   "%obj_size", Parraylength Pgenarray;
   "%obj_field", Parrayrefu Pgenarray;
   "%obj_set_field", Parraysetu(Pgenarray, Pointer);
+  "%float_array_length", Parraylength Pfloatarray;
+  "%float_array_safe_get", Parrayrefs Pfloatarray;
+  "%float_array_safe_set", Parraysets (Pfloatarray, Immediate);
+  "%float_array_unsafe_get", Parrayrefu Pfloatarray;
+  "%float_array_unsafe_set", Parraysetu (Pfloatarray, Immediate);
   "%obj_is_int", Pisint;
   "%lazy_force", Plazyforce;
   "%nativeint_of_int", Pbintofint Pnativeint;
