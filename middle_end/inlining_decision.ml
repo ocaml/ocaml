@@ -180,7 +180,8 @@ let inline_recursive env r ~max_level ~lhs_of_application
       ~(function_decls : Flambda.function_declarations)
       ~closure_id_being_applied ~function_decl
       ~(value_set_of_closures : Simple_value_approx.value_set_of_closures)
-      ~invariant_params ~args ~args_approxs ~dbg ~simplify ~no_simplification
+      ~invariant_params ~param_aliasing
+      ~args ~args_approxs ~dbg ~simplify ~no_simplification
       ~(made_decision : Inlining_stats_types.Decision.t -> unit) =
   let tried_unrolling, unrolling_result =
     (* First try unrolling the recursive call, if we're allowed to. *)
@@ -202,6 +203,7 @@ let inline_recursive env r ~max_level ~lhs_of_application
           ~r:(R.reset_benefit r) ~lhs_of_application
           ~function_decls ~closure_id_being_applied ~function_decl
           ~args ~args_approxs ~invariant_params
+          ~param_aliasing
           ~specialised_args:value_set_of_closures.specialised_args ~dbg
           ~simplify
       in
@@ -325,6 +327,7 @@ let for_call_site ~env ~r ~(function_decls : Flambda.function_declarations)
     | (Can_inline_if_no_larger_than _) as remaining_inlining_threshold ->
       let r = R.set_inlining_threshold r remaining_inlining_threshold in
       let invariant_params = value_set_of_closures.invariant_params in
+      let param_aliasing = value_set_of_closures.param_aliasing in
       (* Try inlining if the function is non-recursive and not too far above
          the threshold (or if the function is to be unconditionally
          inlined). *)
@@ -341,7 +344,7 @@ let for_call_site ~env ~r ~(function_decls : Flambda.function_declarations)
       end else if recursive then
         inline_recursive env r ~max_level ~lhs_of_application ~function_decls
           ~closure_id_being_applied ~function_decl ~value_set_of_closures
-          ~invariant_params ~args ~args_approxs ~dbg ~simplify
+          ~invariant_params ~param_aliasing ~args ~args_approxs ~dbg ~simplify
           ~no_simplification ~made_decision
       else begin
         made_decision (Can_inline_but_tried_nothing (Level_exceeded false));

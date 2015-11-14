@@ -63,6 +63,7 @@ and value_set_of_closures = {
   function_decls : Flambda.function_declarations;
   bound_vars : t Var_within_closure.Map.t;
   invariant_params : Variable.Set.t;
+  param_aliasing : Variable.Set.t Variable.Map.t;
   specialised_args : Variable.t Variable.Map.t;
   freshening : Freshening.Project_var.t;
 }

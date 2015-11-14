@@ -22,11 +22,22 @@
      let rec f x y = (f x y) + (f x (y+1))
 
      let rec f x l = List.iter (f x) l
+
+   For invariant parameters it also computes the set of parameters of functions
+   in the set of closures that are always aliased to it. For example in the set
+   of closures:
+
+     let rec f x y = (f x y) + (f x (y+1)) + g x
+     and g z = z + 1
+
+   The map of aliases is
+
+     x -> { x; z }
 *)
 val invariant_params_in_recursion
    : Flambda.function_declarations
   -> backend:(module Backend_intf.S)
-  -> Variable.Set.t
+  -> Variable.Set.t * Variable.Set.t Variable.Map.t
 
 (* CR-soon mshinwell: think about whether this function should
    be in this file.  Should it be called "unused_parameters"? *)

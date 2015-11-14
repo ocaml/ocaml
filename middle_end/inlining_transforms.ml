@@ -140,6 +140,7 @@ let inline_by_copying_function_declaration ~env ~r
     ~lhs_of_application ~closure_id_being_applied
     ~(function_decl : Flambda.function_declaration)
     ~args ~args_approxs ~invariant_params
+    ~(param_aliasing:Variable.Set.t Variable.Map.t)
     ~(specialised_args:Variable.t Variable.Map.t)
     ~dbg ~simplify =
   let specialised_args_set = Variable.Map.keys specialised_args in
@@ -148,6 +149,19 @@ let inline_by_copying_function_declaration ~env ~r
       ~params:function_decl.params ~args ~args_approxs
       ~invariant_params
       ~specialised_args:specialised_args_set
+  in
+  (* Arguments of functions that are not directly called but are
+     aliased to arguments of a directly called one may need to be
+     marked as specialiased. *)
+  let specialisable_args_with_aliases =
+    Variable.Map.fold (fun arg outside_var map ->
+        match Variable.Map.find arg param_aliasing with
+        | exception Not_found -> map
+        | set ->
+            Variable.Set.fold (fun alias map ->
+                Variable.Map.add alias outside_var map)
+              set map)
+      specialisable_args specialisable_args
   in
   (* The other closures from the same set of closures may have
      specialised arguments. Those refer to variables that may not be
@@ -174,7 +188,7 @@ let inline_by_copying_function_declaration ~env ~r
           map
         | original_outside_var ->
           Variable.Map.add original_outside_var outside_var map)
-      specialisable_args Variable.Map.empty
+      specialisable_args_with_aliases Variable.Map.empty
   in
   if Variable.Set.subset worth_specialising_args specialised_args_set
   then
@@ -235,7 +249,7 @@ let inline_by_copying_function_declaration ~env ~r
                 Some argument_from_the_current_application
             else
               None)
-        specialisable_args specialised_args
+        specialisable_args_with_aliases specialised_args
     in
     let set_of_closures =
       (* This is the new set of closures, with more precise specialisation
