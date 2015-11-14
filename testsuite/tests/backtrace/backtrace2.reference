@@ -31,8 +31,8 @@ Re-raised at file "backtrace2.ml", line 33, characters 56-59
 Called from file "backtrace2.ml", line 64, characters 11-23
 f
 Uncaught exception Backtrace2.Error("f")
-Raised at file "hashtbl.ml", line 136, characters 19-28
-Called from file "backtrace2.ml", line 21, characters 8-41
+Raised at file "backtrace2.ml", line 19, characters 23-34
+Called from file "backtrace2.ml", line 19, characters 44-55
 Re-raised at file "backtrace2.ml", line 39, characters 68-71
 Called from file "backtrace2.ml", line 64, characters 11-23
 Uncaught exception Invalid_argument("index out of bounds")

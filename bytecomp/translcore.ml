@@ -797,7 +797,8 @@ and transl_exp0 e =
   | Texp_try(body, pat_expr_list) ->
       let id = name_pattern "exn" pat_expr_list in
       Ltrywith(transl_exp body, id,
-               Matching.for_trywith (Lvar id) (transl_cases_try pat_expr_list))
+               Matching.for_trywith (Lvar id)
+                 (transl_cases_try id pat_expr_list))
   | Texp_tuple el ->
       let ll = transl_list el in
       begin try
@@ -999,10 +1000,10 @@ and transl_exp0 e =
 and transl_list expr_list =
   List.map transl_exp expr_list
 
-and transl_guard ?(for_a_try_with=false) guard rhs =
+and transl_guard ?for_a_try_with guard rhs =
   let lam_rhs = transl_exp rhs in
   let lam_rhs = match !last_try_bt with
-    | Some bt when for_a_try_with ->
+    | Some bt when for_a_try_with <> None ->
         (* If a backtrace is needed inside rhs or binded by the user. *)
         Llet(StrictOpt,bt,
              Lprim (Pccall prim_get_raw_backtrace,[lambda_unit]),
@@ -1012,7 +1013,22 @@ and transl_guard ?(for_a_try_with=false) guard rhs =
   match guard with
   | None -> expr
   | Some cond ->
-      event_before cond (Lifthenelse(transl_exp cond, expr, staticfail))
+      let cond' = transl_exp cond in
+      let cond' =
+        match for_a_try_with with
+        | None -> cond'
+        | Some exn ->
+            (* restore the backtrace after the execution of the when clause  *)
+            let bt = Ident.create "bt" in
+            let res = Ident.create "res" in
+            Llet(StrictOpt,bt,
+                 Lprim (Pccall prim_get_raw_backtrace,[lambda_unit]),
+                 Llet(Strict,res,cond',
+                      Lsequence(Lprim (Pccall prim_reraise_raw_backtrace,
+                                       [Lvar exn;Lvar bt]),
+                                Lvar res)))
+      in
+      event_before cond (Lifthenelse(cond', expr, staticfail))
 
 and transl_case {c_lhs; c_guard; c_rhs} =
   c_lhs, transl_guard c_guard c_rhs
@@ -1020,7 +1036,7 @@ and transl_case {c_lhs; c_guard; c_rhs} =
 and transl_cases cases =
   List.map transl_case cases
 
-and transl_case_try {c_lhs; c_guard; c_rhs} =
+and transl_case_try exn {c_lhs; c_guard; c_rhs} =
   let old_try_id = !last_try_id in
   let old_try_bt = !last_try_bt in
   Misc.try_finally begin fun () ->
@@ -1037,17 +1053,17 @@ and transl_case_try {c_lhs; c_guard; c_rhs} =
     | Tpat_var (id, _)
     | Tpat_alias (_, id, _) ->
         last_try_id := Some id;
-        c_lhs, transl_guard ~for_a_try_with:true c_guard c_rhs
+        c_lhs, transl_guard ~for_a_try_with:exn c_guard c_rhs
     | _ ->
         last_try_id := None;
-        c_lhs, transl_guard ~for_a_try_with:true c_guard c_rhs
+        c_lhs, transl_guard ~for_a_try_with:exn c_guard c_rhs
   end
     (fun () ->
        last_try_id := old_try_id;
        last_try_bt := old_try_bt)
 
-and transl_cases_try cases =
-  List.map transl_case_try cases
+and transl_cases_try exn cases =
+  List.map (transl_case_try exn) cases
 
 and transl_tupled_cases patl_expr_list =
   List.map (fun (patl, guard, expr) -> (patl, transl_guard guard expr))

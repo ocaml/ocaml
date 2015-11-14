@@ -32,7 +32,7 @@ let test_Error msg =
          print_string "e"; print_newline ();
          ignore (exception_raised_internally ()); raise exn
      (** Test reraise of backtrace when a `when` clause use exceptions.
-         Currently the wrong backtrace is used.
+
      *)
      | Error "f" when exception_raised_internally () ->
          assert false (** absurd: when false *)
