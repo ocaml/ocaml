@@ -403,6 +403,40 @@ let class_of_let_bindings lbs body =
       raise Syntaxerr.(Error(Not_expecting(lbs.lbs_loc, "attributes")));
     mkclass(Pcl_let (lbs.lbs_rec, List.rev bindings, body))
 
+let mk_deep_with
+    (exten: expression)
+    (fields: (Longident.t Asttypes.loc list * expression) list) =
+  let mk_toplevel_field (labels, expr) =
+    match labels with
+    | [] ->
+        invalid_arg "mk_deep_field"
+    | label :: next_labels ->
+        let mk_exten exten label = mkexp (Pexp_field (exten, label)) in
+        let rec mk_expr exten = function
+          | [] ->
+              expr
+          | deep_label :: next_deep_labels ->
+              let fields =
+                [ deep_label,
+                  mk_expr (mk_exten exten deep_label) next_deep_labels ]
+              in
+              mkexp (Pexp_record (fields, Some exten))
+        in
+        label, mk_expr (mk_exten exten label) next_labels
+  in
+  let fields = List.map mk_toplevel_field fields in
+  Some exten, fields
+
+(* Same as [exp_of_label] but for a non-empty list of already-located labels. *)
+let exp_of_deep_label labels pos =
+  let rec last = function
+    | [] -> invalid_arg "exp_of_deep_label"
+    | [ x ] -> x
+    | _ :: tl -> last tl
+  in
+  let label = last labels in
+  mkexp (Pexp_ident(mkloc (Lident(Longident.last label.txt)) label.loc))
+
 %}
 
 /* Tokens */
@@ -1573,7 +1607,7 @@ expr_comma_list:
   | expr COMMA expr                             { [$3; $1] }
 ;
 record_expr:
-    simple_expr WITH lbl_expr_list              { (Some $1, $3) }
+    simple_expr WITH deep_lbl_expr_list         { mk_deep_with $1 $3 }
   | lbl_expr_list                               { (None, $1) }
 ;
 lbl_expr_list:
@@ -1586,6 +1620,21 @@ lbl_expr:
       { (mkrhs $1 1, mkexp_opt_constraint $4 $2) }
   | label_longident opt_type_constraint
       { (mkrhs $1 1, mkexp_opt_constraint (exp_of_label $1 1) $2) }
+;
+deep_lbl_expr_list:
+     deep_lbl_expr { [$1] }
+  |  deep_lbl_expr SEMI deep_lbl_expr_list { $1 :: $3 }
+  |  deep_lbl_expr SEMI { [$1] }
+;
+deep_lbl_expr:
+    deep_label_longident opt_type_constraint EQUAL expr
+      { $1, (mkexp_opt_constraint $4 $2) }
+  | deep_label_longident opt_type_constraint
+      { $1, (mkexp_opt_constraint (exp_of_deep_label $1 1) $2) }
+;
+deep_label_longident:
+    label_longident { [mkrhs $1 1] }
+  | label_longident DOT deep_label_longident { mkrhs $1 1 :: $3 }
 ;
 field_expr_list:
     field_expr opt_semi { [$1] }
