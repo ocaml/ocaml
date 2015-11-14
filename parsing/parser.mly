@@ -409,12 +409,14 @@ let mk_deep_with
        ((Longident.t Asttypes.loc *
          Longident.t Asttypes.loc list) *
         expression) list) =
+  let exists_deep = ref false in
   let mk_toplevel_field ((label, next_labels), expr) =
     let mk_exten exten label = mkexp (Pexp_field (exten, label)) in
     let rec mk_expr exten = function
       | [] ->
           expr
       | deep_label :: next_deep_labels ->
+          exists_deep := true;
           let fields =
             [ deep_label,
               mk_expr (mk_exten exten deep_label) next_deep_labels ]
@@ -424,6 +426,11 @@ let mk_deep_with
     label, mk_expr (mk_exten exten label) next_labels
   in
   let fields = List.map mk_toplevel_field fields in
+  if !exists_deep then
+    begin match exten.pexp_desc with
+    | Pexp_ident _ -> ()
+    | _ -> raise Syntaxerr.(Error(Expecting(exten.pexp_loc, "identifier")))
+    end;
   Some exten, fields
 
 (* Same as [exp_of_label] but for a non-empty list of already-located labels. *)
