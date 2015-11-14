@@ -405,36 +405,35 @@ let class_of_let_bindings lbs body =
 
 let mk_deep_with
     (exten: expression)
-    (fields: (Longident.t Asttypes.loc list * expression) list) =
-  let mk_toplevel_field (labels, expr) =
-    match labels with
-    | [] ->
-        invalid_arg "mk_deep_field"
-    | label :: next_labels ->
-        let mk_exten exten label = mkexp (Pexp_field (exten, label)) in
-        let rec mk_expr exten = function
-          | [] ->
-              expr
-          | deep_label :: next_deep_labels ->
-              let fields =
-                [ deep_label,
-                  mk_expr (mk_exten exten deep_label) next_deep_labels ]
-              in
-              mkexp (Pexp_record (fields, Some exten))
-        in
-        label, mk_expr (mk_exten exten label) next_labels
+    (fields:
+       ((Longident.t Asttypes.loc *
+         Longident.t Asttypes.loc list) *
+        expression) list) =
+  let mk_toplevel_field ((label, next_labels), expr) =
+    let mk_exten exten label = mkexp (Pexp_field (exten, label)) in
+    let rec mk_expr exten = function
+      | [] ->
+          expr
+      | deep_label :: next_deep_labels ->
+          let fields =
+            [ deep_label,
+              mk_expr (mk_exten exten deep_label) next_deep_labels ]
+          in
+          mkexp (Pexp_record (fields, Some exten))
+    in
+    label, mk_expr (mk_exten exten label) next_labels
   in
   let fields = List.map mk_toplevel_field fields in
   Some exten, fields
 
 (* Same as [exp_of_label] but for a non-empty list of already-located labels. *)
-let exp_of_deep_label labels pos =
+let exp_of_deep_label (hd, tl) pos =
   let rec last = function
-    | [] -> invalid_arg "exp_of_deep_label"
+    | [] -> hd
     | [ x ] -> x
     | _ :: tl -> last tl
   in
-  let label = last labels in
+  let label = last tl in
   mkexp (Pexp_ident(mkloc (Lident(Longident.last label.txt)) label.loc))
 
 %}
@@ -1633,8 +1632,9 @@ deep_lbl_expr:
       { $1, (mkexp_opt_constraint (exp_of_deep_label $1 1) $2) }
 ;
 deep_label_longident:
-    label_longident { [mkrhs $1 1] }
-  | label_longident DOT deep_label_longident { mkrhs $1 1 :: $3 }
+    label_longident { mkrhs $1 1, [] }
+  | label_longident DOT deep_label_longident
+    { let hd, tl = $3 in mkrhs $1 1, hd :: tl }
 ;
 field_expr_list:
     field_expr opt_semi { [$1] }
