@@ -560,8 +560,30 @@ let rec build_as_type env p =
           let row = row_repr row in
           newty (Tvariant{row with row_closed=false; row_more=newvar()})
       end
-  | Tpat_any | Tpat_var _ | Tpat_constant _
-  | Tpat_array _ | Tpat_lazy _ -> p.pat_type
+  | Tpat_array (lbl, argl) ->
+      if lbl.lbl_private = Private then p.pat_type
+      else begin
+        let ty = newvar () in
+        let _, ty_arg, ty_res = instance_label false lbl in
+        unify_pat env {p with pat_type = ty} ty_res;
+        let refinable =
+          lbl.lbl_mut = Immutable &&
+          match (repr lbl.lbl_arg).desc with Tpoly _ -> false | _ -> true
+        in
+        List.iter
+          (fun arg ->
+             if refinable then begin
+               let arg = {arg with pat_type = build_as_type env arg} in
+               unify_pat env arg ty_arg
+             end else begin
+               let _, ty_arg', ty_res' = instance_label false lbl in
+               unify env ty_arg ty_arg';
+               unify_pat env p ty_res'
+             end)
+          argl;
+        ty
+      end
+  | Tpat_any | Tpat_var _ | Tpat_constant _ | Tpat_lazy _ -> p.pat_type
 
 let build_or_pat env loc lid =
   let path, decl = Typetexp.find_type env loc lid
