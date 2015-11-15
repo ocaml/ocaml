@@ -32,6 +32,7 @@ CAMLprim value unix_utimes(value path, value atime, value mtime)
   struct utimbuf times, * t;
   char * p;
   int ret;
+  caml_unix_check_path(path, "utimes");
   times.actime = Double_val(atime);
   times.modtime = Double_val(mtime);
   if (times.actime || times.modtime)
@@ -60,8 +61,10 @@ CAMLprim value unix_utimes(value path, value atime, value mtime)
   struct timeval tv[2], * t;
   char * p;
   int ret;
-  double at = Double_val(atime);
-  double mt = Double_val(mtime);
+  double at, mt;
+  caml_unix_check_path(path, "utimes");
+  at = Double_val(atime);
+  mt = Double_val(mtime);
   tv[0].tv_sec = at;
   tv[0].tv_usec = (at - tv[0].tv_sec) * 1000000;
   tv[1].tv_sec = mt;

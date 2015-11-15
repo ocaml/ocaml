@@ -49,6 +49,7 @@ static value alloc_passwd_entry(struct passwd *entry)
 CAMLprim value unix_getpwnam(value name)
 {
   struct passwd * entry;
+  if (! caml_string_is_c_safe(name)) raise_not_found();
   entry = getpwnam(String_val(name));
   if (entry == (struct passwd *) NULL) raise_not_found();
   return alloc_passwd_entry(entry);
