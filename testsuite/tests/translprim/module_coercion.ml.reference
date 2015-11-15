@@ -1,10 +1,10 @@
 (setglobal Module_coercion!
   (let (M = (makeblock 0))
     (makeblock 0 M
-      (makeblock 0 (function prim (array.length[int] prim))
-        (function prim prim (array.get[int] prim prim))
+      (makeblock 0 (function prim (array.length[addr] prim))
+        (function prim prim (array.get[addr] prim prim))
         (function prim prim
-          (array.unsafe_get[int] prim prim))
+          (array.unsafe_get[addr] prim prim))
         (function prim prim prim
           (array.set[int] prim prim prim))
         (function prim prim prim
