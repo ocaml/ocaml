@@ -653,9 +653,18 @@ let rec cut n l =
 
 (* Translation of expressions *)
 
-let last_try_id = ref None
-(** Information for raise to reraise automatic translation.
-    [Some _] if the pattern of the last [try with] is a variable *)
+type last_try_id =
+  | OutsideExnHandler
+  (** Outside any exception handler *)
+  | InExnVarBinded of Ident.t
+  (** In an exception handler where the exception is binded to a
+      variable *)
+  | InExnHandler
+  (** In an exception handler where the exception is not binded to a
+      variable *)
+
+let last_try_id  = ref OutsideExnHandler
+(** Information for raise to reraise automatic translation *)
 
 let last_try_bt = ref None
 (** [Some id] if the backtrace is needed in this [try with] and it is
@@ -676,8 +685,23 @@ let rec transl_exp e =
   Translobj.oo_wrap e.exp_env true transl_exp0 e
 
 and transl_exp0 e =
+  (* This test should be done during typing but here it is easier
+         to know when we are inside a try_with *)
+  begin match e.exp_desc with
+  | Texp_ident(path, _, {val_attributes = attrs} )
+    when
+      Warnings.is_active (Warnings.Backtrace_outside_exn_handler "") &&
+      !last_try_id = OutsideExnHandler &&
+      List.exists (function | ({txt = "ocaml.only_in_exn_handler"
+                                    | "only_in_exn_handler"},_) -> true
+                            | _ -> false) attrs ->
+      Location.prerr_warning e.exp_loc
+        (Warnings.Backtrace_outside_exn_handler (Path.name path))
+  | _ -> ()
+  end;
+
   match e.exp_desc with
-    Texp_ident(path, _, {val_kind = Val_prim p}) ->
+  | Texp_ident(path, _, {val_kind = Val_prim p}) ->
       let public_send = p.prim_name = "%send" in
       if public_send || p.prim_name = "%sendself" then
         let kind = if public_send then Public else Self in
@@ -743,7 +767,8 @@ and transl_exp0 e =
           (Praise k, [arg1]) -> begin
             let targ = List.hd argl in
             match k, targ, !last_try_id with
-            | Raise_regular, Lvar id, Some id' when Ident.equal id id' ->
+            | Raise_regular, Lvar id, InExnVarBinded id'
+              when Ident.equal id id' ->
                 (* Add a binding to the raw_backtrace at the start
                       of the handler if needed *)
                 let bt = match !last_try_bt with
@@ -1052,10 +1077,10 @@ and transl_case_try exn {c_lhs; c_guard; c_rhs} =
     match c_lhs.pat_desc with
     | Tpat_var (id, _)
     | Tpat_alias (_, id, _) ->
-        last_try_id := Some id;
+        last_try_id := InExnVarBinded id;
         c_lhs, transl_guard ~for_a_try_with:exn c_guard c_rhs
     | _ ->
-        last_try_id := None;
+        last_try_id := InExnHandler;
         c_lhs, transl_guard ~for_a_try_with:exn c_guard c_rhs
   end
     (fun () ->

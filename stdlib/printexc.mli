@@ -35,7 +35,7 @@ val catch: ('a -> 'b) -> 'a -> 'b
    using the debugger or the stack backtrace facility.
    So, do not use [Printexc.catch] in new code.  *)
 
-val print_backtrace: out_channel -> unit
+val print_backtrace: out_channel -> unit [@@only_in_exn_handler]
 (** [Printexc.print_backtrace oc] prints an exception backtrace
     on the output channel [oc].  The backtrace lists the program
     locations where the most-recently raised exception was raised
@@ -43,7 +43,7 @@ val print_backtrace: out_channel -> unit
     @since 3.11.0
 *)
 
-val get_backtrace: unit -> string
+val get_backtrace: unit -> string [@@only_in_exn_handler]
 (** [Printexc.get_backtrace ()] returns a string containing the
     same exception backtrace that [Printexc.print_backtrace] would
     print.
@@ -101,7 +101,7 @@ type raw_backtrace
     @since 4.01.0
 *)
 
-val get_raw_backtrace: unit -> raw_backtrace
+val get_raw_backtrace: unit -> raw_backtrace [@@only_in_exn_handler]
 (** [Printexc.get_raw_backtrace ()] returns the same exception
     backtrace that [Printexc.print_backtrace] would print, but in
     a raw format.

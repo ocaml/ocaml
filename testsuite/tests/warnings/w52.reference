@@ -1,0 +1,2 @@
+File "w52.ml", line 7, characters 2-26:
+Warning 52: the external function Printexc.print_backtrace shouldn't be used outside exception handler

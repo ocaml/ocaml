@@ -64,6 +64,7 @@ type t =
   | No_cmi_file of string                   (* 49 *)
   | Bad_docstring of bool                   (* 50 *)
   | Expect_tailcall                         (* 51 *)
+  | Backtrace_outside_exn_handler of string (* 52 *)
 ;;
 
 val parse_options : bool -> string -> unit;;
@@ -74,11 +75,14 @@ val is_error : t -> bool;;
 val defaults_w : string;;
 val defaults_warn_error : string;;
 
-val print : formatter -> t -> unit;;
+val print : formatter -> t -> unit
+(** Print the given warning in the given formatter and increment the
+    total number of error if the warning is an error *)
 
 exception Errors of int;;
 
-val check_fatal : unit -> unit;;
+val check_fatal : unit -> unit
+(** Raise [Errors] if the number of error is not null *)
 
 val help_warnings: unit -> unit
 
