@@ -429,7 +429,8 @@ external gmtime : float -> tm = "unix_gmtime"
 external localtime : float -> tm = "unix_localtime"
 external mktime : tm -> float * tm = "unix_mktime"
 let alarm n = invalid_arg "Unix.alarm not implemented"
-external sleep : int -> unit = "unix_sleep"
+external sleepf : float -> unit = "unix_sleep"
+let sleep n = sleepf (float n)
 external times: unit -> process_times = "unix_times"
 external utimes : string -> float -> float -> unit = "unix_utimes"
 

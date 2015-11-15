@@ -427,7 +427,8 @@ external gmtime : float -> tm = "unix_gmtime"
 external localtime : float -> tm = "unix_localtime"
 external mktime : tm -> float * tm = "unix_mktime"
 external alarm : int -> int = "unix_alarm"
-external sleep : int -> unit = "unix_sleep"
+external sleepf : float -> unit = "unix_sleep"
+let sleep duration = sleepf (float duration)
 external times : unit -> process_times = "unix_times"
 external utimes : string -> float -> float -> unit = "unix_utimes"
 

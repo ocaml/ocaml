@@ -174,6 +174,12 @@ Toplevel and debugger:
    review by Gabriel Scherer and Jacques-Henri Jourdan)
 
 Other libraries:
+- PR#4023 and GPR#68: add Unix.sleepf (sleep with sub-second resolution)
+  (Evgenii Lepikhin and Xavier Leroy)
+* Protect Unix.sleep against interruptions by handled signals.
+  Before, a handled signal could cause Unix.sleep to return early.
+  Now, the sleep is restarted until the given time is elapsed.
+  (Xavier Leroy)
 - PR#6896: serious reimplementation of Big_int.float_of_big_int and
   Ratio.float_of_ratio, ensuring that the result is correctly rounded.
   (Xavier Leroy)
