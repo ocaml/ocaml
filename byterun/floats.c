@@ -463,27 +463,23 @@ enum { FP_normal, FP_subnormal, FP_zero, FP_infinite, FP_nan };
 
 value caml_classify_float_unboxed(double vd)
 {
-  /* Cygwin 1.3 has problems with fpclassify (PR#1293), so don't use it */
-  /* FIXME Cygwin 1.3 is ancient! Revisit this decision. */
+#ifdef ARCH_SIXTYFOUR
+  union { double d; uint64_t i; } u;
+  uint64_t n;
+  uint32_t e;
 
-  /* Informal benchmarking (see GPR#272) suggests that the emulation
-     version is faster than calling the libc.  We could switch to it,
-     and also provide an even faster version for 64-bit systems as
-     suggested by XL.  -- AF */
-
-#if defined(fpclassify) && !defined(__CYGWIN__) && !defined(__MINGW32__)
-  switch (fpclassify(vd)) {
-  case FP_NAN:
-    return Val_int(FP_nan);
-  case FP_INFINITE:
-    return Val_int(FP_infinite);
-  case FP_ZERO:
-    return Val_int(FP_zero);
-  case FP_SUBNORMAL:
-    return Val_int(FP_subnormal);
-  default: /* case FP_NORMAL */
-    return Val_int(FP_normal);
+  u.d = vd;
+  n = u.i << 1;                 /* shift sign bit off */
+  if (n == 0) return Val_int(FP_zero);
+  e = n >> 53;                  /* extract exponent */
+  if (e == 0) return Val_int(FP_subnormal);
+  if (e == 0x7FF) {
+    if (n << 11 == 0)           /* shift exponent off */
+      return Val_int(FP_infinite);
+    else
+      return Val_int(FP_nan);
   }
+  return Val_int(FP_normal);
 #else
   union double_as_two_int32 u;
   uint32_t h, l;
