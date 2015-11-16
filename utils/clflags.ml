@@ -136,7 +136,25 @@ let branch_inline_factor = ref 0.6     (* -branch-inline-factor *)
 let print_timings = ref false          (* -timings *)
 
 let unbox_closures = ref true           (* -no-unbox-closures *)
+let remove_unused_arguments = ref true  (* -no-remove-unused-arguments *)
 let max_inlining_depth = ref 3          (* -max-inlining-depth *)
+
+let all_passes = ref []
+let dumped_passes_list = ref []
+let dumped_passes s =
+  assert(List.mem s !all_passes);
+  List.mem s !dumped_passes_list
+
+let set_dumped_passes s enabled =
+  assert(List.mem s !all_passes);
+  let passes_without_s = List.filter ((<>) s) !dumped_passes_list in
+  let dumped_passes =
+    if enabled then
+      s :: passes_without_s
+    else
+      passes_without_s
+  in
+  dumped_passes_list := dumped_passes
 
 (* CR mshinwell: change to [false] before merge, and finish off
    command line arg support *)
