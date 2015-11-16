@@ -37,20 +37,20 @@ static unsigned char * intern_input;
 /* Pointer to beginning of block holding input data.
    Meaningful only if intern_input_malloced = 1. */
 
-static int intern_input_malloced;
+static int intern_input_malloced = 0;
 /* 1 if intern_input was allocated by caml_stat_alloc()
    and needs caml_stat_free() on error, 0 otherwise. */
 
 static header_t * intern_dest;
 /* Writing pointer in destination block */
 
-static char * intern_extra_block;
+static char * intern_extra_block = NULL;
 /* If non-NULL, point to new heap chunk allocated with caml_alloc_for_heap. */
 
 static asize_t obj_counter;
 /* Count how many objects seen so far */
 
-static value * intern_obj_table;
+static value * intern_obj_table = NULL;
 /* The pointers to objects already seen */
 
 static unsigned int intern_color;
@@ -60,7 +60,7 @@ static header_t intern_header;
 /* Original header of the destination block.
    Meaningful only if intern_extra_block is NULL. */
 
-static value intern_block;
+static value intern_block = 0;
 /* Point to the heap block allocated as destination block.
    Meaningful only if intern_extra_block is NULL. */
 
@@ -136,14 +136,22 @@ static inline void readblock(void * dest, intnat len)
 
 static void intern_cleanup(void)
 {
-  if (intern_input_malloced) caml_stat_free(intern_input);
-  if (intern_obj_table != NULL) caml_stat_free(intern_obj_table);
+  if (intern_input_malloced) {
+     caml_stat_free(intern_input);
+     intern_input_malloced = 0;
+  }
+  if (intern_obj_table != NULL) {
+    caml_stat_free(intern_obj_table);
+    intern_obj_table = NULL;
+  }
   if (intern_extra_block != NULL) {
     /* free newly allocated heap chunk */
     caml_free_for_heap(intern_extra_block);
+    intern_extra_block = NULL;
   } else if (intern_block != 0) {
     /* restore original header for heap block, otherwise GC is confused */
     Hd_val(intern_block) = intern_header;
+    intern_block = 0;
   }
   /* free the recursion stack */
   intern_free_stack();
@@ -557,8 +565,6 @@ static void intern_alloc(mlsize_t whsize, mlsize_t num_objects)
       ((Bsize_wsize(whsize) + Page_size - 1) >> Page_log) << Page_log;
     intern_extra_block = caml_alloc_for_heap(request);
     if (intern_extra_block == NULL) {
-      intern_obj_table = NULL;
-      intern_block = 0;
       intern_cleanup();
       caml_raise_out_of_memory();
     }
@@ -575,7 +581,6 @@ static void intern_alloc(mlsize_t whsize, mlsize_t num_objects)
       /* do not do the urgent_gc check here because it might darken
          intern_block into gray and break the Assert 3 lines down */
       if (intern_block == 0) {
-        intern_obj_table = NULL;
         intern_cleanup();
         caml_raise_out_of_memory();
       }
