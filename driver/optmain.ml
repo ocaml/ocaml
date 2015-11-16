@@ -108,7 +108,7 @@ module Options = Main_args.Make_optcomp_options (struct
   let _impl = impl
   let _inline n = set_inline_threshold n
   let _inlining_stats () = inlining_stats := true
-  let _dump_pass pass = set_dumped_passes pass true
+  let _dump_pass pass = set_dumped_pass pass true
   let _rounds n = simplify_rounds := n
   let _unroll n = unroll := n
   let _no_functor_heuristics () = functor_heuristics := false

@@ -141,11 +141,11 @@ let max_inlining_depth = ref 3          (* -max-inlining-depth *)
 
 let all_passes = ref []
 let dumped_passes_list = ref []
-let dumped_passes s =
+let dumped_pass s =
   assert(List.mem s !all_passes);
   List.mem s !dumped_passes_list
 
-let set_dumped_passes s enabled =
+let set_dumped_pass s enabled =
   assert(List.mem s !all_passes);
   let passes_without_s = List.filter ((<>) s) !dumped_passes_list in
   let dumped_passes =

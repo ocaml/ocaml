@@ -14,6 +14,9 @@
 module A = Simple_value_approx
 module E = Inline_and_simplify_aux.Env
 
+let pass_name = "unbox-closures"
+let () = Clflags.all_passes := pass_name :: !Clflags.all_passes
+
 let rewrite_function_decl
     ~closure_id
     ~(function_decls : Flambda.function_declarations)
@@ -196,19 +199,19 @@ let introduce_specialised_args_for_free_vars ~backend
 
   if not candidate_for_transformation then
     set_of_closures
-  else
-    (* let () = *)
-    (*   Format.eprintf "Before Unbox_closures:@ %a@.@." *)
-    (*     Flambda.print_set_of_closures set_of_closures *)
-    (* in *)
+  else begin
+    let dump = Clflags.dumped_pass pass_name in
+    if dump then
+      Format.eprintf "Before Unbox_closures:@ %a@.@."
+        Flambda.print_set_of_closures set_of_closures;
     let set_of_closures =
       do_rewrite_set_of_closures set_of_closures ~backend
     in
-    (* let () = *)
-    (*   Format.eprintf "After Unbox_closures:@ %a@.@." *)
-    (*     Flambda.print_set_of_closures set_of_closures *)
-    (* in *)
+    if dump then
+      Format.eprintf "After Unbox_closures:@ %a@.@."
+        Flambda.print_set_of_closures set_of_closures;
     set_of_closures
+  end
 
 let replace_free_vars_by_equal_specialised_args
     ~(function_decl : Flambda.function_declaration)

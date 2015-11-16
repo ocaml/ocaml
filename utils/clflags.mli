@@ -117,8 +117,8 @@ val clambda_checks : bool ref
 val max_inlining_depth : int ref
 
 val all_passes : string list ref
-val dumped_passes : string -> bool
-val set_dumped_passes : string -> bool -> unit
+val dumped_pass : string -> bool
+val set_dumped_pass : string -> bool -> unit
 
 type color_setting = Auto | Always | Never
 val parse_color_setting : string -> color_setting option
