@@ -333,8 +333,8 @@ let for_call_site ~env ~r ~(function_decls : Flambda.function_declarations)
          inlined). *)
       (* CR mshinwell for pchambart: I don't understand why this was applying
          inline_non_recursive to recursive functions. *)
-      if (not recursive)
-        && (unconditionally_inline || E.inlining_level env <= max_level)
+      if unconditionally_inline
+        || (not recursive && E.inlining_level env <= max_level)
       then
         inline_non_recursive env r ~function_decls ~lhs_of_application
           ~closure_id_being_applied ~function_decl ~made_decision
