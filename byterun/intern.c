@@ -134,6 +134,14 @@ static inline void readblock(void * dest, intnat len)
   intern_src += len;
 }
 
+
+/* This is asserted at the beginning of demarshaling primitives.
+   If it fails, it probably means that an exception was raised
+   without calling intern_cleanup() during the previous demarshaling. */
+#define intern_in_clean_state() \
+  (intern_input_malloc == 0 && intern_obj_table == NULL \
+   && intern_extra_block == NULL && intern_block == 0)
+
 static void intern_cleanup(void)
 {
   if (intern_input_malloced) {
@@ -708,6 +716,8 @@ value caml_input_val(struct channel *chan)
     caml_stat_free(block);
     caml_failwith("input_value: truncated object");
   }
+  /* We should be in a clean state. */
+  Assert(intern_in_clean_state());
   intern_input = (unsigned char *) block;
   intern_input_malloced = 1;
   intern_src = intern_input;
@@ -741,6 +751,8 @@ CAMLexport value caml_input_val_from_string(value str, intnat ofs)
   CAMLlocal1 (obj);
   struct marshal_header h;
 
+  /* We should be in a clean state. */
+  Assert (intern_in_clean_state());
   intern_src = &Byte_u(str, ofs);
   intern_input_malloced = 0;
   caml_parse_header("input_val_from_string", &h);
