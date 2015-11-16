@@ -2715,12 +2715,15 @@ and unify_row_field env fixed1 fixed2 more l f1 f2 =
 
 
 let unify env ty1 ty2 =
+  let snap = Btype.snapshot () in
   try
     unify env ty1 ty2
   with
     Unify trace ->
+      undo_compress snap;
       raise (Unify (expand_trace !env trace))
   | Recursive_abbrev ->
+      undo_compress snap;
       raise (Unification_recursive_abbrev (expand_trace !env [(ty1,ty2)]))
 
 let unify_gadt ~newtype_level:lev (env:Env.t ref) ty1 ty2 =

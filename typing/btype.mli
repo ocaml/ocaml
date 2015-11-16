@@ -183,6 +183,10 @@ val backtrack: snapshot -> unit
         (* Backtrack to a given snapshot. Only possible if you have
            not already backtracked to a previous snapshot.
            Calls [cleanup_abbrev] internally *)
+val undo_compress: snapshot -> unit
+        (* Backtrack only path compression. Only meaningful if you have
+           not already backtracked to a previous snapshot.
+           Does not call [cleanup_abbrev] *)
 
 (* Functions to use when modifying a type (only Ctype?) *)
 val link_type: type_expr -> type_expr -> unit
