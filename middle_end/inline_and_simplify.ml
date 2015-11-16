@@ -1402,7 +1402,9 @@ let add_predef_exns_to_environment ~env ~backend =
     env
     Predef.all_predef_exns
 
-let run ~never_inline ~backend program =
+let num_saved_inlining_stats = ref 0
+
+let run ~never_inline ~backend ~prefixname program =
   let r =
     if never_inline then
       R.set_inlining_threshold (R.create ()) Inlining_cost.Never_inline
@@ -1417,7 +1419,6 @@ let run ~never_inline ~backend program =
   in
   let result, r = simplify_program initial_env r program in
   let result = Flambda_utils.introduce_needed_import_symbols result in
-  Clflags.inlining_stats := stats;
   if not (Static_exception.Set.is_empty (R.used_staticfail r))
   then begin
     Misc.fatal_error (Format.asprintf "remaining static exceptions: %a@.%a@."
@@ -1428,4 +1429,12 @@ let run ~never_inline ~backend program =
   if debug_benefit then
     Format.printf "benefit:@ %a@."
       B.print (R.benefit r);
+  if !Clflags.inlining_stats then begin
+    let output_prefix =
+      Printf.sprintf "%s.%d" prefixname !num_saved_inlining_stats
+    in
+    Inlining_stats.save_then_forget_decisions ~output_prefix;
+    incr num_saved_inlining_stats
+  end;
+  Clflags.inlining_stats := stats;
   result

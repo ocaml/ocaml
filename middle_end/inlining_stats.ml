@@ -31,22 +31,47 @@ module Closure_stack = struct
     | hd::tl -> (fst hd), tl
 
   let save t ~out_channel =
-    let print_elt (closure_id, _where) =
+    let print_elt (closure_id, where) ~last_one =
+      let current_unit = Compilation_unit.get_current_exn () in
       let output =
-        let current_unit = Compilation_unit.get_current_exn () in
         if Closure_id.in_compilation_unit closure_id current_unit then
           Closure_id.output
         else
           Closure_id.output_full
       in
-      Printf.fprintf out_channel "%a" output closure_id
+      begin match (where : Inlining_stats_types.where_entering_closure) with
+        | Inline_by_copying_function_declaration closure_ids ->
+          let closure_ids = Closure_id.Set.remove closure_id closure_ids in
+          if Closure_id.Set.cardinal closure_ids < 1 then
+            Printf.fprintf out_channel "in copy of %a" output closure_id
+          else begin
+            Printf.fprintf out_channel "in copy of %a (and" output closure_id;
+            Closure_id.Set.iter (fun closure_id ->
+                Printf.fprintf out_channel " %a" output closure_id)
+              closure_ids;
+            Printf.fprintf out_channel ")"
+          end
+        | Transform_set_of_closures_expression ->
+          Printf.fprintf out_channel "decl of %a" output closure_id
+        | Inline_by_copying_function_body ->
+          Printf.fprintf out_channel "inlined body of %a" output closure_id
+        | Inlining_decision ->
+          Printf.fprintf out_channel "%a" output closure_id
+      end;
+      if not last_one then begin
+        match (where : Inlining_stats_types.where_entering_closure) with
+        | Inline_by_copying_function_declaration _
+        | Inline_by_copying_function_body ->
+          Printf.fprintf out_channel ": "
+        | Transform_set_of_closures_expression
+        | Inlining_decision -> Printf.fprintf out_channel " -> "
+      end
     in
     let rec loop = function
       | [] -> Printf.fprintf out_channel "[]"
-      | [elt] -> print_elt elt
+      | [elt] -> print_elt elt ~last_one:true
       | elt::elts ->
-        print_elt elt;
-        Printf.fprintf out_channel " -> ";
+        print_elt elt ~last_one:false;
         loop elts
     in
     loop t

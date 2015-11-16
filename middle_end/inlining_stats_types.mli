@@ -12,6 +12,7 @@ module Copying_body : sig
     | Unconditionally
     | Decl_local_to_application
     | Evaluated of Inlining_cost.Whether_sufficient_benefit.t
+    | Stub
 
   val to_string : t -> string
 end
@@ -45,7 +46,7 @@ end
 type where_entering_closure =
   | Transform_set_of_closures_expression
   | Inline_by_copying_function_body
-  | Inline_by_copying_function_declaration
+  | Inline_by_copying_function_declaration of Closure_id.Set.t
   | Inlining_decision
 
 val char_of_where : where_entering_closure -> char

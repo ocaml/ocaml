@@ -35,7 +35,7 @@ let inline_non_recursive env r ~function_decls ~lhs_of_application
   in
   let keep_inlined_version =
     if function_decl.stub then begin
-      made_decision (Inlined (Copying_body Unconditionally));
+      made_decision (Inlined (Copying_body Stub));
       true
     end else if only_use_of_function then begin
       made_decision (Inlined (Copying_body Decl_local_to_application));
@@ -93,6 +93,8 @@ let inline_non_recursive env r ~function_decls ~lhs_of_application
     let keep_inlined_version = W.evaluate wsb in
     let decision : Inlining_stats_types.Decision.t =
       if keep_inlined_version then
+        (* CR mshinwell: This "with_subfunctions" name isn't
+           descriptive enough. *)
         Inlined (Copying_body_with_subfunctions (Evaluated wsb))
       else
         Tried (Copying_body_with_subfunctions (Evaluated wsb))
@@ -319,8 +321,6 @@ let for_call_site ~env ~r ~(function_decls : Flambda.function_declarations)
       (* This case only occurs when examining the body of a stub function
          but not in the context of inlining said function.  As such, there
          is nothing to do here (and no decision to report). *)
-      (* CR mshinwell: Below there's a comment saying that we never look
-         inside stubs... *)
       no_simplification ()
     | (Can_inline_if_no_larger_than _) as remaining_inlining_threshold ->
       let r = R.set_inlining_threshold r remaining_inlining_threshold in
@@ -328,8 +328,10 @@ let for_call_site ~env ~r ~(function_decls : Flambda.function_declarations)
       (* Try inlining if the function is non-recursive and not too far above
          the threshold (or if the function is to be unconditionally
          inlined). *)
-      if unconditionally_inline
-        || (not recursive && E.inlining_level env <= max_level)
+      (* CR mshinwell for pchambart: I don't understand why this was applying
+         inline_non_recursive to non-recursive functions. *)
+      if (not recursive)
+        && (unconditionally_inline || E.inlining_level env <= max_level)
       then
         inline_non_recursive env r ~function_decls ~lhs_of_application
           ~closure_id_being_applied ~function_decl ~made_decision

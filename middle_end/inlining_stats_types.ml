@@ -14,11 +14,13 @@ module Copying_body = struct
     | Unconditionally
     | Decl_local_to_application
     | Evaluated of Wsb.t
+    | Stub
 
   let to_string = function
     | Unconditionally -> "unconditionally"
     | Decl_local_to_application -> "decl local to application expression"
     | Evaluated wsb -> Wsb.to_string wsb
+    | Stub -> "stub"
 end
 
 module Inlined = struct
@@ -75,11 +77,11 @@ end
 type where_entering_closure =
   | Transform_set_of_closures_expression
   | Inline_by_copying_function_body
-  | Inline_by_copying_function_declaration
+  | Inline_by_copying_function_declaration of Closure_id.Set.t
   | Inlining_decision
 
 let char_of_where = function
   | Transform_set_of_closures_expression -> 'T'
   | Inline_by_copying_function_body -> 'B'
-  | Inline_by_copying_function_declaration -> 'D'
+  | Inline_by_copying_function_declaration _ -> 'D'
   | Inlining_decision -> 'I'

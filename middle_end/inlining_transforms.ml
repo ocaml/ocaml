@@ -273,7 +273,12 @@ let inline_by_copying_function_declaration ~env ~r
       Flambda_utils.bind ~body:duplicated_application ~bindings:args_decl
     in
     let env =
+      let closure_ids =
+        Closure_id.Set.of_list (
+          List.map Closure_id.wrap
+            (Variable.Set.elements (Variable.Map.keys function_decls.funs)))
+      in
       E.note_entering_closure env ~closure_id:closure_id_being_applied
-        ~where:Inline_by_copying_function_declaration
+        ~where:(Inline_by_copying_function_declaration closure_ids)
     in
     Some (simplify (E.activate_freshening env) r expr)

@@ -27,5 +27,6 @@
 val run
    : never_inline:bool
   -> backend:(module Backend_intf.S)
+  -> prefixname:string
   -> Flambda.program
   -> Flambda.program
