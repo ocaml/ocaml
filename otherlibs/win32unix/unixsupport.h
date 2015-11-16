@@ -61,7 +61,7 @@ extern void unix_error (int errcode, char * cmdname, value arg);
 extern void uerror (char * cmdname, value arg);
 extern void caml_unix_check_path(value path, char * cmdname);
 extern value unix_freeze_buffer (value);
-extern char ** cstringvect(value arg);
+extern char ** cstringvect(value arg, char * cmdname);
 
 /* Information stored in flags_fd, describing more precisely the socket
  * and its status. The whole flags_fd is initialized to 0.
