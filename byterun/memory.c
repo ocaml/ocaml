@@ -405,8 +405,6 @@ color_t caml_allocation_color (void *hp)
   }
 }
 
-/* The implementation of this function is obtained by copy/pasting the implementation
-   of caml_alloc_shr below and replacing caml_raise_out_of_memory() by return 0; */
 CAMLexport value caml_alloc_shr_no_raise (mlsize_t wosize, tag_t tag)
 {
   header_t *hp;
@@ -455,49 +453,10 @@ CAMLexport value caml_alloc_shr_no_raise (mlsize_t wosize, tag_t tag)
 }
 
 CAMLexport value caml_alloc_shr (mlsize_t wosize, tag_t tag) {
-  header_t *hp;
-  value *new_block;
-
-  if (wosize > Max_wosize) caml_raise_out_of_memory();
-  hp = caml_fl_allocate (wosize);
-  if (hp == NULL){
-    new_block = expand_heap (wosize);
-    if (new_block == NULL) {
-      if (caml_in_minor_collection)
-        caml_fatal_error ("Fatal error: out of memory.\n");
-      else
-        caml_raise_out_of_memory();
-    }
-    caml_fl_add_blocks ((value) new_block);
-    hp = caml_fl_allocate (wosize);
-  }
-
-  Assert (Is_in_heap (Val_hp (hp)));
-
-  /* Inline expansion of caml_allocation_color. */
-  if (caml_gc_phase == Phase_mark
-      || (caml_gc_phase == Phase_sweep && (addr)hp >= (addr)caml_gc_sweep_hp)){
-    Hd_hp (hp) = Make_header (wosize, tag, Caml_black);
-  }else{
-    Assert (caml_gc_phase == Phase_idle
-            || (caml_gc_phase == Phase_sweep
-                && (addr)hp < (addr)caml_gc_sweep_hp));
-    Hd_hp (hp) = Make_header (wosize, tag, Caml_white);
-  }
-  Assert (Hd_hp (hp) == Make_header (wosize, tag, caml_allocation_color (hp)));
-  caml_allocated_words += Whsize_wosize (wosize);
-  if (caml_allocated_words > caml_minor_heap_wsz){
-    caml_urge_major_slice ();
-  }
-#ifdef DEBUG
-  {
-    uintnat i;
-    for (i = 0; i < wosize; i++){
-      Field (Val_hp (hp), i) = Debug_uninit_major;
-    }
-  }
-#endif
-  return Val_hp (hp);
+  value res = caml_alloc_shr_no_raise (wosize, tag);
+  if (res == 0)
+    caml_raise_out_of_memory();
+  return res;
 }
 
 /* Dependent memory is all memory blocks allocated out of the heap
