@@ -332,7 +332,7 @@ let for_call_site ~env ~r ~(function_decls : Flambda.function_declarations)
          the threshold (or if the function is to be unconditionally
          inlined). *)
       (* CR mshinwell for pchambart: I don't understand why this was applying
-         inline_non_recursive to non-recursive functions. *)
+         inline_non_recursive to recursive functions. *)
       if (not recursive)
         && (unconditionally_inline || E.inlining_level env <= max_level)
       then
