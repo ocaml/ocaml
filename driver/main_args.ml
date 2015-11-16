@@ -125,6 +125,13 @@ let mk_inlining_stats f =
       inliner's decisions"
 ;;
 
+let mk_dump_pass f =
+  "-dump-pass", Arg.String f,
+  Format.asprintf " Record transformations performed by passes [%a]"
+    (Format.pp_print_list Format.pp_print_string)
+    !Clflags.all_passes
+;;
+
 let mk_rounds f =
   "-rounds", Arg.Int f,
     Printf.sprintf "<n>  Repeat tree optimization and inlining phase this \
@@ -683,6 +690,7 @@ module type Optcommon_options = sig
   val _compact : unit -> unit
   val _inline : int -> unit
   val _inlining_stats : unit -> unit
+  val _dump_pass : string -> unit
   val _max_inlining_depth : int -> unit
   val _rounds : int -> unit
   val _unroll : int -> unit
@@ -987,6 +995,7 @@ struct
     mk_dlinear F._dlinear;
     mk_dstartup F._dstartup;
     mk_dtimings F._dtimings;
+    mk_dump_pass F._dump_pass;
     mk_opaque F._opaque;
   ]
 end;;
@@ -1057,6 +1066,7 @@ module Make_opttop_options (F : Opttop_options) = struct
     mk_dscheduling F._dscheduling;
     mk_dlinear F._dlinear;
     mk_dstartup F._dstartup;
+    mk_dump_pass F._dump_pass;
   ]
 end;;
 

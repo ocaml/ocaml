@@ -119,6 +119,7 @@ module type Optcommon_options = sig
   val _compact : unit -> unit
   val _inline : int -> unit
   val _inlining_stats : unit -> unit
+  val _dump_pass : string -> unit
   val _max_inlining_depth : int -> unit
   val _rounds : int -> unit
   val _unroll : int -> unit
