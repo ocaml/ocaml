@@ -290,7 +290,31 @@ let invariant_params_in_recursion (decls : Flambda.function_declarations)
       Variable.Set.union (Variable.Set.of_list params) set)
     decls.funs Variable.Set.empty
   in
-  Variable.Set.diff params not_unchanging
+  let unchanging = Variable.Set.diff params not_unchanging in
+  let aliased_to =
+    Variable.Pair.Map.fold (fun (_, var) set aliases ->
+        match set with
+        | Arguments set
+          when Variable.Set.mem var unchanging ->
+            Variable.Pair.Set.fold (fun (_, caller_args) aliases ->
+                if Variable.Set.mem caller_args unchanging then
+                  let alias_set =
+                    match Variable.Map.find caller_args aliases with
+                    | exception Not_found ->
+                        Variable.Set.singleton var
+                    | alias_set ->
+                        Variable.Set.add var alias_set
+                  in
+                  Variable.Map.add caller_args alias_set aliases
+                else
+                  aliases)
+              set aliases
+        | Anything | Arguments _ ->
+            aliases)
+      result Variable.Map.empty
+  in
+  unchanging,
+  aliased_to
 
 type argument =
   | Used

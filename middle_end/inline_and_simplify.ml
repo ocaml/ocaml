@@ -594,6 +594,7 @@ and simplify_set_of_closures original_env r
           Var_within_closure.Map.add (Var_within_closure.wrap id) desc map)
           free_vars Var_within_closure.Map.empty;
       invariant_params = Variable.Set.empty;
+      param_aliasing = Variable.Map.empty;
       specialised_args = specialised_args;
       freshening;
     }
@@ -652,13 +653,13 @@ and simplify_set_of_closures original_env r
   let function_decls =
     Flambda.update_function_declarations function_decls ~funs
   in
-  let invariant_params =
+  let invariant_params, param_aliasing =
     Invariant_params.invariant_params_in_recursion function_decls
       ~backend:(E.backend env)
   in
   let value_set_of_closures : A.value_set_of_closures =
     { internal_value_set_of_closures with
-      function_decls; invariant_params;
+      function_decls; invariant_params; param_aliasing;
     }
   in
   let set_of_closures =
@@ -1212,7 +1213,7 @@ let constant_defining_value_approx
     assert(E.freshening env = Freshening.empty);
     assert(Variable.Map.is_empty free_vars);
     assert(Variable.Map.is_empty specialised_args);
-    let invariant_params =
+    let invariant_params, param_aliasing =
       Invariant_params.invariant_params_in_recursion function_decls
         ~backend:(E.backend env)
     in
@@ -1220,6 +1221,7 @@ let constant_defining_value_approx
       { function_decls;
         bound_vars = Var_within_closure.Map.empty;
         invariant_params;
+        param_aliasing;
         specialised_args = Variable.Map.empty;
         freshening = Freshening.Project_var.empty;
       }
