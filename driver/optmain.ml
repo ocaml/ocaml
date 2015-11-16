@@ -106,7 +106,7 @@ module Options = Main_args.Make_optcomp_options (struct
   let _i () = print_types := true; compile_only := true
   let _I dir = include_dirs := dir :: !include_dirs
   let _impl = impl
-  let _inline n = inline_threshold := n * 8
+  let _inline n = set_inline_threshold n
   let _inlining_stats () = inlining_stats := true
   let _rounds n = simplify_rounds := n
   let _unroll n = unroll := n

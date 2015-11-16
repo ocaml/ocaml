@@ -93,7 +93,9 @@ let dump_linear = ref false             (* -dlinear *)
 let keep_startup_file = ref false       (* -dstartup *)
 let dump_combine = ref false            (* -dcombine *)
 let native_code = ref false             (* set to true under ocamlopt *)
-let inline_threshold = ref 10
+let inline_threshold = ref 0
+let set_inline_threshold n = inline_threshold := n * 8
+let () = set_inline_threshold 10
 let inlining_stats = ref false
 let simplify_rounds = ref 1
 let unroll = ref 0
@@ -133,7 +135,7 @@ let branch_inline_factor = ref 0.6     (* -branch-inline-factor *)
 
 let print_timings = ref false          (* -timings *)
 
-let unbox_closures = ref true           (* -unbox-closures *)
+let unbox_closures = ref true           (* -no-unbox-closures *)
 let max_inlining_depth = ref 3          (* -max-inlining-depth *)
 
 (* CR mshinwell: change to [false] before merge, and finish off

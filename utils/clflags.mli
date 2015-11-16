@@ -88,6 +88,7 @@ val keep_startup_file : bool ref
 val dump_combine : bool ref
 val native_code : bool ref
 val inline_threshold : int ref
+val set_inline_threshold : int -> unit
 val inlining_stats : bool ref
 val simplify_rounds : int ref
 val unroll : int ref
