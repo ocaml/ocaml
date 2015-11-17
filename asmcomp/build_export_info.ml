@@ -496,8 +496,8 @@ let build_export_info ~(backend : (module Backend_intf.S))
     let invariant_params =
       Set_of_closures_id.Map.map
         (fun { Flambda. function_decls; _ } ->
-           fst (Invariant_params.invariant_params_in_recursion
-                  ~backend function_decls))
+           Invariant_params.invariant_params_in_recursion
+             ~backend function_decls)
         (Flambda_utils.all_sets_of_closures_map program)
     in
     let values =

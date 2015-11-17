@@ -126,7 +126,7 @@ type t = {
   offset_fun : int Closure_id.Map.t;
   offset_fv : int Var_within_closure.Map.t;
   constant_sets_of_closures : Set_of_closures_id.Set.t;
-  invariant_params : Variable.Set.t Set_of_closures_id.Map.t;
+  invariant_params : Variable.Set.t Variable.Map.t Set_of_closures_id.Map.t;
 }
 
 let empty : t = {
@@ -189,7 +189,7 @@ let merge (t1 : t) (t2 : t) : t =
         t2.constant_sets_of_closures;
     invariant_params =
       Set_of_closures_id.Map.disjoint_union
-        ~eq:Variable.Set.equal
+        ~eq:(Variable.Map.equal Variable.Set.equal)
         t1.invariant_params t2.invariant_params;
   }
 

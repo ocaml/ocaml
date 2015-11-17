@@ -313,8 +313,15 @@ let invariant_params_in_recursion (decls : Flambda.function_declarations)
             aliases)
       result Variable.Map.empty
   in
-  unchanging,
-  aliased_to
+  (* We complete the set of aliases such that there does not miss any
+     unchanging param *)
+  Variable.Map.of_set (fun var ->
+      match Variable.Map.find var aliased_to with
+      | exception Not_found ->
+        Variable.Set.empty
+      | set ->
+        set)
+    unchanging
 
 type argument =
   | Used

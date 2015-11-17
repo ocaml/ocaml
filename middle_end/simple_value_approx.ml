@@ -62,8 +62,7 @@ and value_closure = {
 and value_set_of_closures = {
   function_decls : Flambda.function_declarations;
   bound_vars : t Var_within_closure.Map.t;
-  invariant_params : Variable.Set.t;
-  param_aliasing : Variable.Set.t Variable.Map.t;
+  invariant_params : Variable.Set.t Variable.Map.t;
   specialised_args : Variable.t Variable.Map.t;
   freshening : Freshening.Project_var.t;
 }
@@ -74,7 +73,7 @@ let print_value_set_of_closures ppf
       { function_decls = { funs }; invariant_params; _ } =
   Format.fprintf ppf "(set_of_closures:@ %a invariant_params=%a)"
     (fun ppf -> Variable.Map.iter (fun id _ -> Variable.print ppf id)) funs
-    Variable.Set.print invariant_params
+    (Variable.Map.print Variable.Set.print) invariant_params
 
 let rec print_descr ppf = function
   | Value_int i -> Format.pp_print_int ppf i
