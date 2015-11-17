@@ -73,8 +73,9 @@ let rec import_ex ex =
     with
     | exception Not_found ->
       Misc.fatal_errorf "Set of closures ID %a not found in invariant_params \
-          (when importing [%s])"
+          (when importing [%a: %s])"
         Set_of_closures_id.print set_of_closures_id
+        Export_id.print ex
         what
     | invariant_params ->
       { function_decls = import_set_of_closures set_of_closures_id;
@@ -107,7 +108,7 @@ let rec import_ex ex =
           { set_of_closures_id; bound_vars; aliased_symbol } } ->
     let value_set_of_closures =
       import_value_set_of_closures ~set_of_closures_id ~bound_vars ~ex_info
-        ~what:"Value_closure"
+        ~what:(Format.asprintf "Value_closure %a" Closure_id.print closure_id)
     in
     A.value_closure ?set_of_closures_symbol:aliased_symbol
       value_set_of_closures closure_id
