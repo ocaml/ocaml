@@ -85,9 +85,9 @@ type primitive =
   | Pduparray of array_kind * mutable_flag
   | Parraylength of array_kind
   | Parrayrefu of array_kind
-  | Parraysetu of array_kind
+  | Parraysetu of array_kind * immediate_or_pointer
   | Parrayrefs of array_kind
-  | Parraysets of array_kind
+  | Parraysets of array_kind * immediate_or_pointer
   (* Test if the argument is a block or an immediate integer *)
   | Pisint
   (* Test if the (integer) argument is outside an interval *)
@@ -151,7 +151,7 @@ and block_shape =
   value_kind list option
 
 and array_kind =
-    Pgenarray | Paddrarray | Pintarray | Pfloatarray
+    Pgenarray | Paddrarray | Pfloatarray
 
 and boxed_integer = Primitive.boxed_integer =
     Pnativeint | Pint32 | Pint64

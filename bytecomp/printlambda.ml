@@ -46,8 +46,14 @@ let rec struct_const ppf = function
 let array_kind = function
   | Pgenarray -> "gen"
   | Paddrarray -> "addr"
-  | Pintarray -> "int"
   | Pfloatarray -> "float"
+
+let array_set_kind k p =
+  match k, p with
+  | Pgenarray, _ -> "gen"
+  | Pfloatarray, _ -> "float"
+  | Paddrarray, Pointer -> "addr"
+  | Paddrarray, Immediate -> "int"
 
 let boxed_integer_name = function
   | Pnativeint -> "nativeint"
@@ -211,9 +217,11 @@ let primitive ppf = function
   | Pduparray (k, Mutable) -> fprintf ppf "duparray[%s]" (array_kind k)
   | Pduparray (k, Immutable) -> fprintf ppf "duparray_imm[%s]" (array_kind k)
   | Parrayrefu k -> fprintf ppf "array.unsafe_get[%s]" (array_kind k)
-  | Parraysetu k -> fprintf ppf "array.unsafe_set[%s]" (array_kind k)
+  | Parraysetu(k, p) ->
+      fprintf ppf "array.unsafe_set[%s]" (array_set_kind k p)
   | Parrayrefs k -> fprintf ppf "array.get[%s]" (array_kind k)
-  | Parraysets k -> fprintf ppf "array.set[%s]" (array_kind k)
+  | Parraysets(k, p) ->
+      fprintf ppf "array.set[%s]" (array_set_kind k p)
   | Pctconst c ->
      let const_name = match c with
        | Big_endian -> "big_endian"

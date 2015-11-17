@@ -151,13 +151,38 @@ CAMLprim value caml_make_float_vect(value len)
     Alloc_small (result, wosize, Double_array_tag);
 #undef Setup_for_gc
 #undef Restore_after_gc
-  }else if (wosize > Max_wosize)
-    caml_invalid_argument("Array.create_float");
-  else {
+  } else if (wosize > Max_wosize) {
+    caml_invalid_argument("illegal array size");
+  } else {
     result = caml_alloc_shr (wosize, Double_array_tag);
     result = caml_check_urgent_gc (result);
   }
   return result;
+}
+
+/* [len] is a [value] representing number of floats */
+CAMLprim value caml_make_addr_vect(value len)
+{
+  CAMLparam1 (len);
+  CAMLlocal1 (res);
+  mlsize_t size, i;
+
+  size = Long_val(len);
+  if (size == 0) {
+    res = Atom(0);
+  } else {
+    if (size < Max_young_wosize) {
+      res = caml_alloc_small(size, 0);
+      for (i = 0; i < size; i++) Field(res, i) = Val_unit;
+    } else if (size > Max_wosize) {
+      caml_invalid_argument("illegal array size");
+    } else {
+      res = caml_alloc_shr(size, 0);
+      for (i = 0; i < size; i++) caml_initialize(&Field(res, i), Val_unit);
+      res = caml_check_urgent_gc (res);
+    }
+  }
+  CAMLreturn (res);
 }
 
 /* [len] is a [value] representing number of words or floats */

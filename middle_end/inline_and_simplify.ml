@@ -1016,7 +1016,7 @@ and simplify_named env r (tree : Flambda.named) : Flambda.named * R.t =
           end
         end
       | Pfield _, _, _ -> Misc.fatal_error "Pfield arity error"
-      | (Parraysetu kind | Parraysets kind),
+      | (Parraysetu(kind, _) | Parraysets(kind, _)),
         [_block; _field; _value],
         [block_approx; _field_approx; value_approx] ->
         if A.is_definitely_immutable block_approx then begin
@@ -1025,22 +1025,13 @@ and simplify_named env r (tree : Flambda.named) : Flambda.named * R.t =
         end;
         let kind = match A.descr block_approx, A.descr value_approx with
           | (Value_float_array _, _)
-          | (_, Value_float _) ->
-            begin match kind with
-            | Pfloatarray | Pgenarray -> ()
-            | Paddrarray | Pintarray ->
-              (* CR pchambart: Do a proper warning here *)
-              Misc.fatal_errorf "Assignment of a float to a specialised non-float array: %a"
-                Flambda.print_named tree
-            end;
-            Lambda.Pfloatarray
+          | (_, Value_float _) -> Lambda.Pfloatarray
             (* CR pchambart: This should be accounted by the benefit *)
-          | _ ->
-            kind
+          | _ -> kind
         in
         let prim : Lambda.primitive = match prim with
-          | Parraysetu _ -> Parraysetu kind
-          | Parraysets _ -> Parraysets kind
+          | Parraysetu(_, init) -> Parraysetu(kind, init)
+          | Parraysets(_, init) -> Parraysets(kind, init)
           | _ -> assert false
         in
         Prim (prim, args, dbg), ret r (A.value_unknown Other)

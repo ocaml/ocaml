@@ -156,7 +156,7 @@ let rec size_of_lambda = function
   | Llet(_str, _k, _id, _arg, body) -> size_of_lambda body
   | Lletrec(_bindings, body) -> size_of_lambda body
   | Lprim(Pmakeblock _, args) -> RHS_block (List.length args)
-  | Lprim (Pmakearray ((Paddrarray|Pintarray), _), args) ->
+  | Lprim (Pmakearray (Paddrarray, _), args) ->
       RHS_block (List.length args)
   | Lprim (Pmakearray (Pfloatarray, _), args) ->
       RHS_floatblock (List.length args)
@@ -360,14 +360,14 @@ let comp_primitive p args =
   | Parrayrefs Pgenarray -> Kccall("caml_array_get", 2)
   | Parrayrefs Pfloatarray -> Kccall("caml_array_get_float", 2)
   | Parrayrefs _ -> Kccall("caml_array_get_addr", 2)
-  | Parraysets Pgenarray -> Kccall("caml_array_set", 3)
-  | Parraysets Pfloatarray -> Kccall("caml_array_set_float", 3)
+  | Parraysets (Pgenarray, _) -> Kccall("caml_array_set", 3)
+  | Parraysets (Pfloatarray, _) -> Kccall("caml_array_set_float", 3)
   | Parraysets _ -> Kccall("caml_array_set_addr", 3)
   | Parrayrefu Pgenarray -> Kccall("caml_array_unsafe_get", 2)
   | Parrayrefu Pfloatarray -> Kccall("caml_array_unsafe_get_float", 2)
   | Parrayrefu _ -> Kgetvectitem
-  | Parraysetu Pgenarray -> Kccall("caml_array_unsafe_set", 3)
-  | Parraysetu Pfloatarray -> Kccall("caml_array_unsafe_set_float", 3)
+  | Parraysetu (Pgenarray, _) -> Kccall("caml_array_unsafe_set", 3)
+  | Parraysetu (Pfloatarray, _) -> Kccall("caml_array_unsafe_set_float", 3)
   | Parraysetu _ -> Ksetvectitem
   | Pctconst c ->
      let const_name = match c with
@@ -640,7 +640,7 @@ let rec comp_expr env exp sz cont =
          Kaddint::cont)
   | Lprim(Pmakearray (kind, _), args) ->
       begin match kind with
-        Pintarray | Paddrarray ->
+      | Paddrarray ->
           comp_args env args sz (Kmakeblock(List.length args, 0) :: cont)
       | Pfloatarray ->
           comp_args env args sz (Kmakefloatblock(List.length args) :: cont)

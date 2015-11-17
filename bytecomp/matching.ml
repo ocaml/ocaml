@@ -205,10 +205,10 @@ let ctx_matcher p =
           p,rem
       | Tpat_any -> p,rem
       | _ -> raise NoMatch)
-  | Tpat_array omegas ->
+  | Tpat_array (_,omegas) ->
       let len = List.length omegas in
       (fun q rem -> match q.pat_desc with
-      | Tpat_array args when List.length args=len ->
+      | Tpat_array (_,args) when List.length args=len ->
           p,args @ rem
       | Tpat_any -> p, omegas @ rem
       | _ -> raise NoMatch)
@@ -547,7 +547,7 @@ let rec exc_inside p = match p.pat_desc with
     -> false
   | Tpat_construct (_,_,ps)
   | Tpat_tuple ps
-  | Tpat_array ps
+  | Tpat_array (_,ps)
       -> exc_insides ps
   | Tpat_variant (_, Some q,_)
   | Tpat_alias (q,_,_)
@@ -704,7 +704,7 @@ let rec extract_vars r p = match p.pat_desc with
       r lpats
 | Tpat_construct (_, _, pats) ->
     List.fold_left extract_vars r pats
-| Tpat_array pats ->
+| Tpat_array (_, pats) ->
     List.fold_left extract_vars r pats
 | Tpat_variant (_,Some p, _) -> extract_vars r p
 | Tpat_lazy p -> extract_vars r p
@@ -1611,7 +1611,10 @@ let divide_tuple arity p ctx pm =
 
 let record_matching_line num_fields lbl_pat_list =
   let patv = Array.make num_fields omega in
-  List.iter (fun (_, lbl, pat) -> patv.(lbl.lbl_pos) <- pat) lbl_pat_list;
+  List.iter
+    (fun (_, lbl, pat) ->
+       patv.(lbl.lbl_pos) <- pat)
+    lbl_pat_list;
   Array.to_list patv
 
 let get_args_record num_fields p rem = match p with
@@ -1632,12 +1635,7 @@ let make_record_matching all_labels def = function
       let rec make_args pos =
         if pos >= Array.length all_labels then argl else begin
           let lbl = all_labels.(pos) in
-          let access =
-            match lbl.lbl_repres with
-              Record_regular | Record_inlined _ -> Pfield lbl.lbl_pos
-            | Record_float -> Pfloatfield lbl.lbl_pos
-            | Record_extension -> Pfield (lbl.lbl_pos + 1)
-          in
+          let access = Typeopt.access_record_label lbl in
           let str =
             match lbl.lbl_mut with
               Immutable -> Alias
@@ -1660,16 +1658,16 @@ let divide_record all_labels p ctx pm =
 (* Matching against an array pattern *)
 
 let get_key_array = function
-  | {pat_desc=Tpat_array patl} -> List.length patl
+  | {pat_desc=Tpat_array (_,patl)} -> List.length patl
   | _ -> assert false
 
 let get_args_array p rem = match p with
-| {pat_desc=Tpat_array patl} -> patl@rem
+| {pat_desc=Tpat_array (_,patl)} -> patl@rem
 | _ -> assert false
 
 let matcher_array len p rem = match p.pat_desc with
 | Tpat_or (_,_,_) -> raise OrPat
-| Tpat_array args when List.length args=len -> args @ rem
+| Tpat_array (_,args) when List.length args=len -> args @ rem
 | Tpat_any -> Parmatch.omegas len @ rem
 | _ -> raise NoMatch
 
@@ -2751,8 +2749,8 @@ and do_compile_matching repr partial ctx arg pmh = match pmh with
         (compile_match repr partial) partial
         divide_constructor (combine_constructor arg pat cstr partial)
         ctx pm
-  | Tpat_array _ ->
-      let kind = Typeopt.array_pattern_kind pat in
+  | Tpat_array (lbl, _) ->
+      let kind = Typeopt.array_pattern_kind lbl pat in
       compile_test (compile_match repr partial) partial
         (divide_array kind) (combine_array arg kind partial)
         ctx pm
@@ -2809,7 +2807,7 @@ let find_in_pat pred =
     begin match p.pat_desc with
     | Tpat_alias (p,_,_) | Tpat_variant (_,Some p,_) | Tpat_lazy p ->
         find_rec p
-    | Tpat_tuple ps|Tpat_construct (_,_,ps) | Tpat_array ps ->
+    | Tpat_tuple ps|Tpat_construct (_,_,ps) | Tpat_array (_,ps) ->
         List.exists find_rec ps
     | Tpat_record (lpats,_) ->
         List.exists

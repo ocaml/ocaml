@@ -45,11 +45,11 @@ let prim_size (prim : Lambda.primitive) args =
   | Parraylength _ -> 2
   | Parrayrefu Pgenarray -> 12
   | Parrayrefu _ -> 2
-  | Parraysetu Pgenarray -> 16
+  | Parraysetu(Pgenarray, _) -> 16
   | Parraysetu _ -> 4
   | Parrayrefs Pgenarray -> 18
   | Parrayrefs _ -> 8
-  | Parraysets Pgenarray -> 22
+  | Parraysets(Pgenarray, _) -> 22
   | Parraysets _ -> 10
   | Pbittest -> 3
   | Pbigarrayref (_, ndims, _, _) -> 4 + ndims * 6

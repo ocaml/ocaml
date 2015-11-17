@@ -44,16 +44,17 @@ let maybe_pointer_type env ty =
 
 let maybe_pointer exp = maybe_pointer_type exp.exp_env exp.exp_type
 
-let array_element_kind env ty =
+let rec array_element_kind env ty =
   match scrape env ty with
   | Tvar _ | Tunivar _ ->
       Pgenarray
-  | Tconstr(p, _args, _abbrev) ->
-      if Path.same p Predef.path_int || Path.same p Predef.path_char then
-        Pintarray
-      else if Path.same p Predef.path_float then
+  | Tpoly(ty, _) -> array_element_kind env ty
+  | Tconstr(p, _, _) ->
+      if Path.same p Predef.path_float then
         Pfloatarray
-      else if Path.same p Predef.path_string
+      else if Path.same p Predef.path_int
+           || Path.same p Predef.path_char
+           || Path.same p Predef.path_string
            || Path.same p Predef.path_array
            || Path.same p Predef.path_nativeint
            || Path.same p Predef.path_int32
@@ -62,22 +63,15 @@ let array_element_kind env ty =
       else begin
         try
           match Env.find_type p env with
-            {type_kind = Type_abstract} ->
-              Pgenarray
-          | {type_kind = Type_variant cstrs}
-            when List.for_all (fun c -> c.Types.cd_args = Types.Cstr_tuple [])
-                cstrs ->
-              Pintarray
-          | {type_kind = _} ->
-              Paddrarray
+            {type_kind = Type_abstract} -> Pgenarray
+          | {type_kind = _} -> Paddrarray
         with Not_found ->
           (* This can happen due to e.g. missing -I options,
              causing some .cmi files to be unavailable.
              Maybe we should emit a warning. *)
           Pgenarray
       end
-  | _ ->
-      Paddrarray
+  | _ -> Paddrarray
 
 let array_type_kind env ty =
   match scrape env ty with
@@ -88,9 +82,91 @@ let array_type_kind env ty =
       (* This can happen with e.g. Obj.field *)
       Pgenarray
 
-let array_kind exp = array_type_kind exp.exp_env exp.exp_type
+let array_type_pointer env ty =
+  match scrape env ty with
+  | Tconstr(p, [elt_ty], _) | Tpoly({desc = Tconstr(p, [elt_ty], _)}, _)
+    when Path.same p Predef.path_array ->
+      maybe_pointer_type env elt_ty
+  | _ ->
+      (* This can happen with e.g. Obj.field *)
+      Pointer
 
-let array_pattern_kind pat = array_type_kind pat.pat_env pat.pat_type
+let array_label_kind env lbl ty =
+  let repr =
+    match lbl.lbl_kind with
+    | Array k -> k
+    | ArrayLength k -> k
+    | Record _ -> assert false
+  in
+    match repr with
+    | Array_regular -> Paddrarray
+    | Array_dynamic -> array_type_kind env ty
+    | Array_float -> Pfloatarray
+
+let array_expression_kind lbl exp =
+  array_label_kind exp.exp_env lbl exp.exp_type
+
+let array_pattern_kind lbl pat =
+  array_label_kind pat.pat_env lbl pat.pat_type
+
+(* Access and set primitives for record labels *)
+let access_label lbl arg =
+  match lbl.lbl_kind with
+  | Record (Record_regular | Record_inlined _) -> Pfield lbl.lbl_pos
+  | Record Record_float -> Pfloatfield lbl.lbl_pos
+  | Record Record_extension -> Pfield (lbl.lbl_pos + 1)
+  | ArrayLength Array_regular -> Parraylength Paddrarray
+  | ArrayLength Array_dynamic ->
+      let kind = array_type_kind arg.exp_env arg.exp_type in
+        Parraylength kind
+  | ArrayLength Array_float -> Parraylength Pfloatarray
+  | Array _ -> assert false
+
+let set_record_label lbl newval init =
+  match lbl.lbl_kind with
+  | Record(Record_regular | Record_inlined _) ->
+      Psetfield(lbl.lbl_pos, maybe_pointer newval, init)
+  | Record Record_float ->
+      Psetfloatfield(lbl.lbl_pos, init)
+  | Record Record_extension ->
+      Psetfield(lbl.lbl_pos + 1, maybe_pointer newval, init)
+  | ArrayLength _ -> assert false
+  | Array _ -> assert false
+
+let access_record_label lbl =
+  match lbl.lbl_kind with
+  | Record (Record_regular | Record_inlined _) -> Pfield lbl.lbl_pos
+  | Record Record_float -> Pfloatfield lbl.lbl_pos
+  | Record Record_extension -> Pfield (lbl.lbl_pos + 1)
+  | ArrayLength _ -> assert false
+  | Array _ -> assert false
+
+(* Access and set primitives for array labels *)
+let access_array_label lbl res =
+  let kind =
+  match lbl.lbl_kind with
+  | Array Array_regular -> Paddrarray
+  | Array Array_dynamic ->
+      array_element_kind res.exp_env res.exp_type
+  | Array Array_float -> Pfloatarray
+  | ArrayLength _ -> assert false
+  | Record _ -> assert false
+  in
+    if !Clflags.fast then Parrayrefu kind
+    else Parrayrefs kind
+
+let set_array_label lbl newval =
+  let kind =
+  match lbl.lbl_kind with
+  | Array Array_regular -> Paddrarray
+  | Array Array_dynamic ->
+      array_element_kind newval.exp_env newval.exp_type
+  | Array Array_float -> Pfloatarray
+  | ArrayLength _ -> assert false
+  | Record _ -> assert false
+  in
+    if !Clflags.fast then Parraysetu (kind, maybe_pointer newval)
+    else Parraysets (kind, maybe_pointer newval)
 
 let bigarray_decode_type env ty tbl dfl =
   match scrape env ty with
