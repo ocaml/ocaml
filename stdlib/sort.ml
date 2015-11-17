@@ -58,20 +58,20 @@ let array cmp arr =
          probability of picking a pathological pivot.  It also
          avoids extra comparisons on i and j in the two tight "while"
          loops below. *)
-      if cmp (unsafe_get arr mid) (unsafe_get arr lo) then swap arr mid lo;
-      if cmp (unsafe_get arr hi) (unsafe_get arr mid) then begin
+      if cmp (unsafe_get arr mid) (unsafe_get arr lo) do swap arr mid lo done;
+      if cmp (unsafe_get arr hi) (unsafe_get arr mid) do
         swap arr mid hi;
-        if cmp (unsafe_get arr mid) (unsafe_get arr lo) then swap arr mid lo
-      end;
+        if cmp (unsafe_get arr mid) (unsafe_get arr lo) do swap arr mid lo done
+      done;
       let pivot = unsafe_get arr mid in
       let i = ref (lo + 1) and j = ref (hi - 1) in
       if not (cmp pivot (unsafe_get arr hi))
          || not (cmp (unsafe_get arr lo) pivot)
-      then raise (Invalid_argument "Sort.array");
+      do raise (Invalid_argument "Sort.array") done;
       while !i < !j do
         while not (cmp pivot (unsafe_get arr !i)) do incr i done;
         while not (cmp (unsafe_get arr !j) pivot) do decr j done;
-        if !i < !j then swap arr !i !j;
+        if !i < !j do swap arr !i !j done;
         incr i; decr j
       done;
       (* Recursion on smaller half, tail-call on larger half *)

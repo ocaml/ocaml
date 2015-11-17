@@ -300,6 +300,11 @@ and expression i ppf x =
       expression i ppf e1;
       expression i ppf e2;
       option i expression ppf eo;
+  | Pexp_ifdo (e1, e2, eo) ->
+      line i ppf "Pexp_ifdo\n";
+      expression i ppf e1;
+      expression i ppf e2;
+      option i expression ppf eo;
   | Pexp_sequence (e1, e2) ->
       line i ppf "Pexp_sequence\n";
       expression i ppf e1;

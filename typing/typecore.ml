@@ -163,7 +163,8 @@ let iter_expression f e =
     | Pexp_while (e1, e2)
     | Pexp_sequence (e1, e2)
     | Pexp_setfield (e1, _, e2) -> expr e1; expr e2
-    | Pexp_ifthenelse (e1, e2, eo) -> expr e1; expr e2; may expr eo
+    | Pexp_ifthenelse (e1, e2, eo)
+    | Pexp_ifdo (e1, e2, eo) -> expr e1; expr e2; may expr eo
     | Pexp_for (_, e1, e2, _, e3) -> expr e1; expr e2; expr e3
     | Pexp_override sel -> List.iter (fun (_, e) -> expr e) sel
     | Pexp_letmodule (_, me, e) -> expr e; module_expr me
@@ -2288,6 +2289,9 @@ and type_expect_ ?in_function ?(recarg=Rejected) env sexp ty_expected =
       let cond = type_expect env scond Predef.type_bool in
       begin match sifnot with
         None ->
+          if Warnings.is_active Warnings.Imperative_if_construct then
+            Location.prerr_warning sexp.pexp_loc
+              Warnings.Imperative_if_construct;
           let ifso = type_expect env sifso Predef.type_unit in
           rue {
             exp_desc = Texp_ifthenelse(cond, ifso, None);
@@ -2307,6 +2311,20 @@ and type_expect_ ?in_function ?(recarg=Rejected) env sexp ty_expected =
             exp_attributes = sexp.pexp_attributes;
             exp_env = env }
       end
+  | Pexp_ifdo(scond, sifso, sifnot) ->
+      let cond = type_expect env scond Predef.type_bool in
+      let ifso = type_statement env sifso in
+      let ifnot =
+        match sifnot with
+        | None -> None
+        | Some sifnot -> Some (type_statement env sifnot)
+      in
+      rue {
+        exp_desc = Texp_ifthenelse(cond, ifso, ifnot);
+        exp_loc = loc; exp_extra = [];
+        exp_type = instance_def Predef.type_unit;
+        exp_attributes = sexp.pexp_attributes;
+        exp_env = env }
   | Pexp_sequence(sexp1, sexp2) ->
       let exp1 = type_statement env sexp1 in
       let exp2 = type_expect env sexp2 ty_expected in
@@ -3578,6 +3596,14 @@ and type_construct env loc lid sarg ty_expected attrs =
 
 and type_statement env sexp =
   let loc = (final_subexpression sexp).pexp_loc in
+  if Warnings.is_active Warnings.Imperative_if_construct then (
+    (* No need to warn if the if contains only one branch, [type_expect] will
+       have emited the warning already. *)
+    match sexp.pexp_desc with
+    | Pexp_ifthenelse (_, _, Some _) ->
+        Location.prerr_warning sexp.pexp_loc Warnings.Imperative_if_construct
+    | _ -> ()
+  );
   begin_def();
   let exp = type_exp env sexp in
   end_def();

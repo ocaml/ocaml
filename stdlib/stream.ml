@@ -60,7 +60,7 @@ let rec get_data : type v. int -> v data -> v data = fun count d -> match d with
          (* Warning: anyone using g thinks that an item has been read *)
      end
  | Sbuffio b ->
-     if b.ind >= b.len then fill_buff b;
+     if b.ind >= b.len do fill_buff b done;
      if b.len == 0 then Sempty else
        let r = Bytes.unsafe_get b.buff b.ind in
        (* Warning: anyone using g thinks that an item has been read *)
@@ -83,7 +83,7 @@ let rec peek_data : type v. v cell -> v option = fun s ->
  | Sgen {curr = Some a} -> a
  | Sgen g -> let x = g.func s.count in g.curr <- Some x; x
  | Sbuffio b ->
-     if b.ind >= b.len then fill_buff b;
+     if b.ind >= b.len do fill_buff b done;
      if b.len == 0 then begin s.data <- Sempty; None end
      else Some (Bytes.unsafe_get b.buff b.ind)
 ;;

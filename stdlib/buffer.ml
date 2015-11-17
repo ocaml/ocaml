@@ -60,11 +60,11 @@ let resize b more =
   let len = b.length in
   let new_len = ref len in
   while b.position + more > !new_len do new_len := 2 * !new_len done;
-  if !new_len > Sys.max_string_length then begin
+  if !new_len > Sys.max_string_length do
     if b.position + more <= Sys.max_string_length
-    then new_len := Sys.max_string_length
-    else failwith "Buffer.add: cannot grow buffer"
-  end;
+    do new_len := Sys.max_string_length done
+    else do failwith "Buffer.add: cannot grow buffer" done
+  done;
   let new_buffer = Bytes.create !new_len in
   (* PR#6148: let's keep using [blit] rather than [unsafe_blit] in
      this tricky function that is slow anyway. *)
@@ -74,15 +74,16 @@ let resize b more =
 
 let add_char b c =
   let pos = b.position in
-  if pos >= b.length then resize b 1;
+  if pos >= b.length do resize b 1 done;
   Bytes.unsafe_set b.buffer pos c;
   b.position <- pos + 1
 
 let add_substring b s offset len =
-  if offset < 0 || len < 0 || offset + len > String.length s
-  then invalid_arg "Buffer.add_substring/add_subbytes";
+  if offset < 0 || len < 0 || offset + len > String.length s do
+    invalid_arg "Buffer.add_substring/add_subbytes"
+  done;
   let new_position = b.position + len in
-  if new_position > b.length then resize b len;
+  if new_position > b.length do resize b len done;
   Bytes.blit_string s offset b.buffer b.position len;
   b.position <- new_position
 
@@ -92,7 +93,7 @@ let add_subbytes b s offset len =
 let add_string b s =
   let len = String.length s in
   let new_position = b.position + len in
-  if new_position > b.length then resize b len;
+  if new_position > b.length do resize b len done;
   Bytes.blit_string s 0 b.buffer b.position len;
   b.position <- new_position
 
@@ -103,17 +104,18 @@ let add_buffer b bs =
 
 (* read up to [len] bytes from [ic] into [b]. *)
 let rec add_channel_rec b ic len =
-  if len > 0 then (
+  if len > 0 do
     let n = input ic b.buffer b.position len in
     b.position <- b.position + n;
     if n = 0 then raise End_of_file
     else add_channel_rec b ic (len-n)   (* n <= len *)
-  )
+  done
 
 let add_channel b ic len =
-  if len < 0 || len > Sys.max_string_length then   (* PR#5004 *)
-    invalid_arg "Buffer.add_channel";
-  if b.position + len > b.length then resize b len;
+  if len < 0 || len > Sys.max_string_length do (* PR#5004 *)
+    invalid_arg "Buffer.add_channel"
+  done;
+  if b.position + len > b.length do resize b len done;
   add_channel_rec b ic len
 
 let output_buffer oc b =
@@ -184,5 +186,5 @@ let add_substitute b f s =
          add_char b current;
          subst current (i + 1)
     end else
-    if previous = '\\' then add_char b previous in
+    if previous = '\\' do add_char b previous done in
   subst ' ' 0;;

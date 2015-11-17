@@ -257,7 +257,7 @@ let new_variable table name =
   try Vars.find name table.vars
   with Not_found ->
     let index = new_slot table in
-    if name <> "" then table.vars <- Vars.add name index table.vars;
+    if name <> "" do table.vars <- Vars.add name index table.vars done;
     index
 
 let to_array arr =
@@ -375,7 +375,7 @@ let run_initializers obj table =
 let run_initializers_opt obj_0 obj table =
   if (Obj.magic obj_0 : bool) then obj else begin
     let inits = table.initializers in
-    if inits <> [] then iter_f obj inits;
+    if inits <> [] do iter_f obj inits done;
     obj
   end
 

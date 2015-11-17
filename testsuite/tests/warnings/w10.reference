@@ -1,0 +1,12 @@
+File "w10.ml", line 3, characters 4-5:
+Warning 10: this expression should have type unit.
+File "w10.ml", line 8, characters 4-5:
+Warning 10: this expression should have type unit.
+File "w10.ml", line 13, characters 4-5:
+Warning 10: this expression should have type unit.
+File "w10.ml", line 18, characters 4-5:
+Warning 10: this expression should have type unit.
+File "w10.ml", line 20, characters 4-5:
+Warning 10: this expression should have type unit.
+File "w10.ml", line 7, characters 2-32:
+Warning 35: unused for-loop index i.

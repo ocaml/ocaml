@@ -74,6 +74,7 @@ type t =
   | Duplicated_attribute of string          (* 54 *)
   | Inlining_impossible of string           (* 55 *)
   | Unreachable_case                        (* 56 *)
+  | Imperative_if_construct                 (* 57 *)
 ;;
 
 (* If you remove a warning, leave a hole in the numbering.  NEVER change
@@ -139,9 +140,10 @@ let number = function
   | Duplicated_attribute _ -> 54
   | Inlining_impossible _ -> 55
   | Unreachable_case -> 56
+  | Imperative_if_construct -> 57
 ;;
 
-let last_warning_number = 56
+let last_warning_number = 57
 ;;
 (* Must be the max number returned by the [number] function. *)
 
@@ -255,7 +257,7 @@ let parse_options errflag s =
   current := {error; active}
 
 (* If you change these, don't forget to change them in man/ocamlc.m *)
-let defaults_w = "+a-4-6-7-9-27-29-32..39-41..42-44-45-48-50";;
+let defaults_w = "+a-4-6-7-9-27-29-32..39-41..42-44-45-48-50-57";;
 let defaults_warn_error = "-a";;
 
 let () = parse_options false defaults_w;;
@@ -426,6 +428,9 @@ let message = function
       Printf.sprintf "the %S attribute is used more than once on this expression" attr_name
   | Inlining_impossible reason ->
       Printf.sprintf "Inlining impossible in this context: %s" reason
+  | Imperative_if_construct ->
+      "fragile \"if .. then ..\", consider using \"if .. do .. done\" for\n\
+      imperative if constructions"
 ;;
 
 let nerrors = ref 0;;
@@ -516,7 +521,8 @@ let descriptions =
    53, "Attribute cannot appear in this context";
    54, "Attribute used more than once on an expression";
    55, "Inlining impossible";
-   56, "Unreachable case in a pattern-matching (based on type information)."
+   56, "Unreachable case in a pattern-matching (based on type information).";
+   57, "If statement on the left-hand side of a sequence";
   ]
 ;;
 

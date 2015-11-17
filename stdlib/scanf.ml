@@ -170,7 +170,7 @@ module Scanning : SCANNING = struct
       ib.ic_current_char <- c;
       ib.ic_current_char_is_valid <- true;
       ib.ic_char_count <- succ ib.ic_char_count;
-      if c = '\n' then ib.ic_line_count <- succ ib.ic_line_count;
+      if c = '\n' do ib.ic_line_count <- succ ib.ic_line_count done;
       c with
     | End_of_file ->
       let c = null_char in
@@ -193,7 +193,7 @@ module Scanning : SCANNING = struct
      new character. *)
   let checked_peek_char ib =
     let c = peek_char ib in
-    if ib.ic_eof then raise End_of_file;
+    if ib.ic_eof do raise End_of_file done;
     c
   ;;
 
@@ -485,12 +485,12 @@ let character_mismatch c ci =
 
 let rec skip_whites ib =
   let c = Scanning.peek_char ib in
-  if not (Scanning.eof ib) then begin
+  if not (Scanning.eof ib) do
     match c with
     | ' ' | '\t' | '\n' | '\r' ->
       Scanning.invalidate_current_char ib; skip_whites ib
     | _ -> ()
-  end
+  done
 ;;
 
 (* Checking that [c] is indeed in the input, then skips it.
@@ -1018,18 +1018,20 @@ let scan_chars_in_char_set char_set scan_indic width ib =
   let rec scan_chars i stp =
     let c = Scanning.peek_char ib in
     if i > 0 && not (Scanning.eof ib) && is_in_char_set char_set c &&
-      int_of_char c <> stp then
+      int_of_char c <> stp do
       let _ = Scanning.store_char max_int ib c in
       scan_chars (i - 1) stp;
+    done
   in
   match scan_indic with
   | None -> scan_chars width (-1);
   | Some c ->
     scan_chars width (int_of_char c);
-    if not (Scanning.eof ib) then
+    if not (Scanning.eof ib) do
       let ci = Scanning.peek_char ib in
       if c = ci then Scanning.invalidate_current_char ib
       else character_mismatch c ci
+    done
 
 (* The global error report function for [Scanf]. *)
 let scanf_bad_input ib = function
@@ -1414,7 +1416,7 @@ let string_to_String s =
   Buffer.add_char b '\"';
   for i = 0 to l - 1 do
     let c = s.[i] in
-    if c = '\"' then Buffer.add_char b '\\';
+    if c = '\"' do Buffer.add_char b '\\' done;
     Buffer.add_char b c;
   done;
   Buffer.add_char b '\"';

@@ -140,8 +140,8 @@ let sort cmp a =
     let i31 = i+i+i+1 in
     let x = ref i31 in
     if i31+2 < l then begin
-      if cmp (get a i31) (get a (i31+1)) < 0 then x := i31+1;
-      if cmp (get a !x) (get a (i31+2)) < 0 then x := i31+2;
+      if cmp (get a i31) (get a (i31+1)) < 0 do x := i31+1 done;
+      if cmp (get a !x) (get a (i31+2)) < 0 do x := i31+2 done;
       !x
     end else
       if i31+1 < l && cmp (get a i31) (get a (i31+1)) < 0

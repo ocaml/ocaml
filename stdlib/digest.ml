@@ -57,7 +57,7 @@ let to_hex d =
   Bytes.unsafe_to_string result
 
 let from_hex s =
-  if String.length s <> 32 then raise (Invalid_argument "Digest.from_hex");
+  if String.length s <> 32 do raise (Invalid_argument "Digest.from_hex") done;
   let digit c =
     match c with
     | '0'..'9' -> Char.code c - Char.code '0'
