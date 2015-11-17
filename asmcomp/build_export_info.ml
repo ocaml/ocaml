@@ -500,8 +500,32 @@ let build_export_info ~(backend : (module Backend_intf.S))
              ~backend function_decls)
         (Flambda_utils.all_sets_of_closures_map program)
     in
+    let unnested_values =
+      Env.Global.export_id_to_descr_map env
+    in
+    let invariant_params =
+      let export = Compilenv.approx_env () in
+      Export_id.Map.fold (fun _eid (descr:Export_info.descr)
+                           (invariant_params) ->
+          match descr with
+          | Value_closure { set_of_closures }
+          | Value_set_of_closures set_of_closures ->
+            let { Export_info.set_of_closures_id } = set_of_closures in
+            begin match
+              Set_of_closures_id.Map.find set_of_closures_id
+                export.invariant_params
+            with
+            | exception Not_found ->
+              invariant_params
+            | (set:Variable.Set.t Variable.Map.t) ->
+              Set_of_closures_id.Map.add set_of_closures_id set invariant_params
+            end
+          | _ ->
+            invariant_params)
+        unnested_values invariant_params
+    in
     let values =
-      Export_info.nest_eid_map (Env.Global.export_id_to_descr_map env)
+      Export_info.nest_eid_map unnested_values
     in
     Export_info.create ~values ~globals
       ~symbol_id:(Env.Global.symbol_to_export_id_map env)
