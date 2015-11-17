@@ -12,9 +12,9 @@
 
 (** Helpers to produce Parsetree fragments *)
 
-open Parsetree
 open Asttypes
 open Docstrings
+open Parsetree
 
 type lid = Longident.t loc
 type str = string loc

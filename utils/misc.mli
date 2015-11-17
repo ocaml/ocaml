@@ -89,6 +89,13 @@ val no_overflow_lsl: int -> int -> bool
         (* [no_overflow_lsl n k] returns [true] if the computation of
            [n lsl k] does not overflow. *)
 
+module Int_literal_converter : sig
+  val int : string -> int
+  val int32 : string -> int32
+  val int64 : string -> int64
+  val nativeint : string -> nativeint
+end
+
 val chop_extension_if_any: string -> string
         (* Like Filename.chop_extension but returns the initial file
            name if it has no extension *)
