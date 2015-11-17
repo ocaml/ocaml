@@ -461,7 +461,7 @@ let module_expr sub x =
   {x with mod_desc; mod_env}
 
 let module_binding sub x =
-  let mb_expr = module_expr sub x.mb_expr in
+  let mb_expr = sub.module_expr sub x.mb_expr in
   {x with mb_expr}
 
 let class_expr sub x =
