@@ -238,7 +238,7 @@ and pattern i ppf x =
   | Tpat_record (l, _c) ->
       line i ppf "Tpat_record\n";
       list i longident_x_pattern ppf l;
-  | Tpat_array (l) ->
+  | Tpat_array (_, l) ->
       line i ppf "Tpat_array\n";
       list i pattern ppf l;
   | Tpat_or (p1, p2, _) ->
@@ -326,9 +326,25 @@ and expression i ppf x =
       expression i ppf e1;
       longident i ppf li;
       expression i ppf e2;
-  | Texp_array (l) ->
+  | Texp_arrayfield (e1, lio, _, e2) ->
+      line i ppf "Texp_arrayfield\n";
+      expression i ppf e1;
+      option i longident ppf lio;
+      expression i ppf e2;
+  | Texp_setarrayfield (e1, lio, _, e2, e3) ->
+      line i ppf "Texp_setarrayfield\n";
+      expression i ppf e1;
+      option i longident ppf lio;
+      expression i ppf e2;
+      expression i ppf e3;
+  | Texp_array (_, l) ->
       line i ppf "Texp_array\n";
       list i expression ppf l;
+  | Texp_arraycomprehension (_, e1, s, _, e2, df, e3) ->
+      line i ppf "Texp_arraycomprehension \"%a\" %a\n" fmt_ident s fmt_direction_flag df;
+      expression i ppf e1;
+      expression i ppf e2;
+      expression i ppf e3;
   | Texp_ifthenelse (e1, e2, eo) ->
       line i ppf "Texp_ifthenelse\n";
       expression i ppf e1;
@@ -423,6 +439,9 @@ and type_kind i ppf x =
       list (i+1) label_decl ppf l;
   | Ttype_open ->
       line i ppf "Ttype_open\n"
+  | Ttype_array ad ->
+      line i ppf "Ttype_array\n";
+      array_decl (i+1) ppf ad
 
 and type_extension i ppf x =
   line i ppf "type_extension\n";
@@ -803,6 +822,12 @@ and label_decl i ppf {ld_id; ld_name = _; ld_mutable; ld_type; ld_loc;
   line (i+1) ppf "%a\n" fmt_mutable_flag ld_mutable;
   line (i+1) ppf "%a" fmt_ident ld_id;
   core_type (i+1) ppf ld_type
+
+and array_decl i ppf {ad_mutable; ad_type; ad_loc; ad_attributes} =
+  line i ppf "%a\n" fmt_location ad_loc;
+  attributes i ppf ad_attributes;
+  line (i+1) ppf "%a\n" fmt_mutable_flag ad_mutable;
+  core_type (i+1) ppf ad_type
 
 and longident_x_pattern i ppf (li, _, p) =
   line i ppf "%a\n" fmt_longident li;

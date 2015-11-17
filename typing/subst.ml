@@ -236,6 +236,17 @@ let constructor_declaration s c =
     cd_attributes = attrs s c.cd_attributes;
   }
 
+let array_declaration s a =
+  {
+    ad_id = a.ad_id;
+    ad_length = label_declaration s a.ad_length;
+    ad_mutable = a.ad_mutable;
+    ad_type = typexp s a.ad_type;
+    ad_repr = a.ad_repr;
+    ad_loc = loc s a.ad_loc;
+    ad_attributes = attrs s a.ad_attributes;
+  }
+
 let type_declaration s decl =
   let decl =
     { type_params = List.map (typexp s) decl.type_params;
@@ -247,6 +258,8 @@ let type_declaration s decl =
             Type_variant (List.map (constructor_declaration s) cstrs)
         | Type_record(lbls, rep) ->
             Type_record (List.map (label_declaration s) lbls, rep)
+        | Type_array a ->
+            Type_array (array_declaration s a)
         | Type_open -> Type_open
         end;
       type_manifest =

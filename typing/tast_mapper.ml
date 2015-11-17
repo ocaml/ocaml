@@ -137,6 +137,10 @@ let label_decl sub x =
   let ld_type = sub.typ sub x.ld_type in
   {x with ld_type}
 
+let array_decl sub x =
+  let ad_type = sub.typ sub x.ad_type in
+  {x with ad_type}
+
 let constructor_args sub = function
   | Cstr_tuple l -> Cstr_tuple (List.map (sub.typ sub) l)
   | Cstr_record l -> Cstr_record (List.map (label_decl sub) l)
@@ -151,6 +155,7 @@ let type_kind sub = function
   | Ttype_variant list -> Ttype_variant (List.map (constructor_decl sub) list)
   | Ttype_record list -> Ttype_record (List.map (label_decl sub) list)
   | Ttype_open -> Ttype_open
+  | Ttype_array ad -> Ttype_array (array_decl sub ad)
 
 let type_declaration sub x =
   let typ_cstrs =
@@ -202,7 +207,7 @@ let pat sub x =
     | Tpat_variant (l, po, rd) -> Tpat_variant (l, opt (sub.pat sub) po, rd)
     | Tpat_record (l, closed) ->
         Tpat_record (List.map (tuple3 id id (sub.pat sub)) l, closed)
-    | Tpat_array l -> Tpat_array (List.map (sub.pat sub) l)
+    | Tpat_array(lbl, l) -> Tpat_array (lbl, List.map (sub.pat sub) l)
     | Tpat_or (p1, p2, rd) ->
         Tpat_or (sub.pat sub p1, sub.pat sub p2, rd)
     | Tpat_alias (p, id, s) -> Tpat_alias (sub.pat sub p, id, s)
@@ -269,8 +274,27 @@ let expr sub x =
           ld,
           sub.expr sub exp2
         )
-    | Texp_array list ->
-        Texp_array (List.map (sub.expr sub) list)
+    | Texp_arrayfield (exp1, lid, ld, exp2) ->
+        Texp_arrayfield (sub.expr sub exp1, lid, ld, sub.expr sub exp2)
+    | Texp_setarrayfield (exp1, lid, ld, exp2, exp3) ->
+        Texp_setarrayfield (
+          sub.expr sub exp1,
+          lid,
+          ld,
+          sub.expr sub exp2,
+          sub.expr sub exp3
+        )
+    | Texp_array(arr, list) ->
+        Texp_array (arr, List.map (sub.expr sub) list)
+    | Texp_arraycomprehension (arr, exp1, id, pat, exp2, dir, exp3) ->
+        Texp_arraycomprehension (
+          arr,
+          sub.expr sub exp1,
+          id, pat,
+          sub.expr sub exp2,
+          dir,
+          sub.expr sub exp3
+        )
     | Texp_ifthenelse (exp1, exp2, expo) ->
         Texp_ifthenelse (
           sub.expr sub exp1,

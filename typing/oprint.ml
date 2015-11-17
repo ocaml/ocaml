@@ -226,7 +226,7 @@ and print_simple_out_type ppf =
       print_out_type ppf ty;
       pp_print_char ppf ')';
       pp_close_box ppf ()
-  | Otyp_abstract | Otyp_open
+  | Otyp_abstract | Otyp_open | Otyp_array _
   | Otyp_sum _ | Otyp_manifest (_, _) -> ()
   | Otyp_record lbls -> print_record_decl ppf lbls
   | Otyp_module (p, n, tyl) ->
@@ -516,6 +516,11 @@ and print_out_type_decl kwd ppf td =
       fprintf ppf " =%a@;<1 2>%a"
         print_private td.otype_private
         (print_list print_out_constr (fun ppf -> fprintf ppf "@ | ")) constrs
+  | Otyp_array(mut, typ) ->
+      fprintf ppf " =%a@;<1 2>[|%s@ %a@;<1 -2>|]"
+        print_private td.otype_private
+        (if mut then " mutable" else "")
+        print_out_type typ
   | Otyp_open ->
       fprintf ppf " = .."
   | ty ->

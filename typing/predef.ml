@@ -111,6 +111,7 @@ let all_predef_exns = [
 ]
 
 let path_match_failure = Pident ident_match_failure
+and path_invalid_argument = Pident ident_invalid_argument
 and path_assert_failure = Pident ident_assert_failure
 and path_undefined_recursive_module = Pident ident_undefined_recursive_module
 
@@ -138,6 +139,29 @@ let cstr id args =
     cd_attributes = [];
   }
 
+let name_array_project = ".()"
+let name_array_length = "length"
+
+let arr id length_id mut repr typ =
+  let length =
+    {
+      ld_id = length_id;
+      ld_mutable = Asttypes.Immutable;
+      ld_type = type_int;
+      ld_loc = Location.none;
+      ld_attributes = []
+    }
+  in
+  {
+    ad_id = id;
+    ad_length = length;
+    ad_mutable = mut;
+    ad_repr = repr;
+    ad_type = typ;
+    ad_loc = Location.none;
+    ad_attributes = [];
+  }
+
 let ident_false = ident_create "false"
 and ident_true = ident_create "true"
 and ident_void = ident_create "()"
@@ -145,6 +169,8 @@ and ident_nil = ident_create "[]"
 and ident_cons = ident_create "::"
 and ident_none = ident_create "None"
 and ident_some = ident_create "Some"
+and ident_array_project = ident_create name_array_project
+and ident_array_length = ident_create name_array_length
 let common_initial_env add_type add_extension empty_env =
   let decl_bool =
     {decl_abstr with
@@ -162,7 +188,11 @@ let common_initial_env add_type add_extension empty_env =
     {decl_abstr with
      type_params = [tvar];
      type_arity = 1;
-     type_variance = [Variance.full]}
+     type_kind =
+       Type_array (arr ident_array_project
+                     ident_array_length Asttypes.Mutable
+                     Array_dynamic tvar);
+     type_variance = [Variance.full];}
   and decl_list =
     let tvar = newgenvar() in
     {decl_abstr with

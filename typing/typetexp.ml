@@ -48,6 +48,7 @@ type error =
   | Unbound_value of Longident.t
   | Unbound_constructor of Longident.t
   | Unbound_label of Longident.t
+  | Unbound_array
   | Unbound_module of Longident.t
   | Unbound_class of Longident.t
   | Unbound_modtype of Longident.t
@@ -882,6 +883,8 @@ let report_error env ppf = function
   | Unbound_label lid ->
       fprintf ppf "Unbound record field %a" longident lid;
       spellcheck ppf fold_labels env lid;
+  | Unbound_array ->
+      fprintf ppf "Unbound array projection"
   | Unbound_class lid ->
       fprintf ppf "Unbound class %a" longident lid;
       spellcheck ppf fold_classs env lid;

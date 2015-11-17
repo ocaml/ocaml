@@ -189,6 +189,38 @@ let transl_labels env closed lbls =
       lbls in
   lbls, lbls'
 
+let transl_array loc env pad =
+  let styp = Ast_helper.Typ.force_poly pad.pad_type in
+  let cty = transl_simple_type env true styp in
+  let ad =
+    {ad_id = Ident.create Predef.name_array_project;
+     ad_id_length = Ident.create Predef.name_array_length;
+     ad_mutable = pad.pad_mutable;
+     ad_type = cty; ad_loc = pad.pad_loc;
+     ad_attributes = pad.pad_attributes}
+  in
+  let ty = ad.ad_type.ctyp_type in
+  let ty = match ty.desc with Tpoly(t,[]) -> t | _ -> ty in
+  let repr =
+    if is_float env ty then Array_float
+    else Array_regular
+  in
+  let length =
+    { ld_id = ad.ad_id_length;
+      ld_mutable = Immutable; ld_type = Predef.type_int;
+      ld_loc = loc; ld_attributes = []; }
+  in
+  let ad' =
+    { Types.ad_id = ad.ad_id;
+            ad_length = length;
+            ad_mutable = ad.ad_mutable;
+            ad_type = ty;
+            ad_repr = repr;
+            ad_loc = ad.ad_loc;
+            ad_attributes = ad.ad_attributes; }
+  in
+  ad, ad'
+
 let transl_constructor_arguments env closed = function
   | Pcstr_tuple l ->
       let l = List.map (transl_simple_type env closed) l in
@@ -288,7 +320,10 @@ let transl_declaration env sdecl id =
           in
           Ttype_record lbls, Type_record(lbls', rep)
       | Ptype_open -> Ttype_open, Type_open
-      in
+      | Ptype_array pad ->
+          let ad, ad' = transl_array sdecl.ptype_loc env pad in
+            Ttype_array ad, Type_array ad'
+  in
     let (tman, man) = match sdecl.ptype_manifest with
         None -> None, None
       | Some sty ->
@@ -402,7 +437,8 @@ let check_constraints env sdecl (_, decl) =
   | Type_variant l ->
       let find_pl = function
           Ptype_variant pl -> pl
-        | Ptype_record _ | Ptype_abstract | Ptype_open -> assert false
+        | Ptype_record _ | Ptype_abstract | Ptype_open | Ptype_array _ ->
+            assert false
       in
       let pl = find_pl sdecl.ptype_kind in
       let pl_index =
@@ -435,11 +471,20 @@ let check_constraints env sdecl (_, decl) =
   | Type_record (l, _) ->
       let find_pl = function
           Ptype_record pl -> pl
-        | Ptype_variant _ | Ptype_abstract | Ptype_open -> assert false
+        | Ptype_variant _ | Ptype_abstract | Ptype_open | Ptype_array _ ->
+            assert false
       in
       let pl = find_pl sdecl.ptype_kind in
       check_constraints_labels env visited l pl
   | Type_open -> ()
+  | Type_array ad ->
+      let find_pl = function
+        | Ptype_array pl -> pl
+        | Ptype_variant _ | Ptype_record _ | Ptype_abstract | Ptype_open ->
+            assert false
+      in
+      let pl = find_pl sdecl.ptype_kind in
+        check_constraints_rec env pl.pad_type.ptyp_loc visited ad.ad_type
   end;
   begin match decl.type_manifest with
   | None -> ()
@@ -457,7 +502,8 @@ let check_constraints env sdecl (_, decl) =
 *)
 let check_coherence env loc id decl =
   match decl with
-    { type_kind = (Type_variant _ | Type_record _| Type_open);
+    { type_kind = (Type_variant _ | Type_record _
+                   | Type_array _ | Type_open);
       type_manifest = Some ty } ->
       begin match (Ctype.repr ty).desc with
         Tconstr(path, args, _) ->
@@ -882,6 +928,10 @@ let compute_variance_decl env check decl (required, _ as rloc) =
       compute_variance_type env check rloc decl
         (mn @ List.map (fun {Types.ld_mutable; ld_type} ->
              (ld_mutable = Mutable, ld_type)) ftl)
+  | Type_array ad ->
+      compute_variance_type env check rloc decl
+        (mn @ [ad.ad_mutable = Mutable, ad.ad_type])
+
 
 let is_hash id =
   let s = Ident.name id in
@@ -1012,7 +1062,8 @@ let check_duplicates sdecl_list =
             with Not_found -> Hashtbl.add labels cname.txt sdecl.ptype_name.txt)
           fl
     | Ptype_abstract -> ()
-    | Ptype_open -> ())
+    | Ptype_open -> ()
+    | Ptype_array _ -> ())
     sdecl_list
 
 (* Force recursion to go through id for private types*)
@@ -1768,6 +1819,9 @@ let report_error ppf = function
       | Type_record (tl, _), _ ->
           explain_unbound ppf ty tl (fun l -> l.Types.ld_type)
             "field" (fun l -> Ident.name l.Types.ld_id ^ ": ")
+      | Type_array ad, _ ->
+          explain_unbound ppf ty [ad] (fun ad -> ad.Types.ad_type)
+            "array" (fun _ -> "")
       | Type_abstract, Some ty' ->
           explain_unbound_single ppf ty ty'
       | _ -> ()

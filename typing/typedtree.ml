@@ -53,7 +53,7 @@ and pattern_desc =
   | Tpat_record of
       (Longident.t loc * label_description * pattern) list *
         closed_flag
-  | Tpat_array of pattern list
+  | Tpat_array of label_description * pattern list
   | Tpat_or of pattern * pattern * row_desc option
   | Tpat_lazy of pattern
 
@@ -91,7 +91,15 @@ and expression_desc =
   | Texp_field of expression * Longident.t loc * label_description
   | Texp_setfield of
       expression * Longident.t loc * label_description * expression
-  | Texp_array of expression list
+  | Texp_arrayfield of
+      expression * Longident.t loc option * label_description * expression
+  | Texp_setarrayfield of
+      expression * Longident.t loc option * label_description
+      * expression * expression
+  | Texp_array of label_description * expression list
+  | Texp_arraycomprehension of
+      label_description * expression * Ident.t * Parsetree.pattern * expression *
+        direction_flag * expression
   | Texp_ifthenelse of expression * expression * expression option
   | Texp_sequence of expression * expression
   | Texp_while of expression * expression
@@ -409,6 +417,7 @@ and type_kind =
   | Ttype_variant of constructor_declaration list
   | Ttype_record of label_declaration list
   | Ttype_open
+  | Ttype_array of array_declaration
 
 and label_declaration =
     {
@@ -433,6 +442,16 @@ and constructor_declaration =
 and constructor_arguments =
   | Cstr_tuple of core_type list
   | Cstr_record of label_declaration list
+
+and array_declaration =
+    {
+     ad_id: Ident.t;
+     ad_id_length: Ident.t;
+     ad_mutable: mutable_flag;
+     ad_type: core_type;
+     ad_loc: Location.t;
+     ad_attributes: attributes;
+    }
 
 and type_extension =
   {
@@ -524,7 +543,7 @@ let iter_pattern_desc f = function
   | Tpat_variant(_, pat, _) -> may f pat
   | Tpat_record (lbl_pat_list, _) ->
       List.iter (fun (_, _, pat) -> f pat) lbl_pat_list
-  | Tpat_array patl -> List.iter f patl
+  | Tpat_array(_, patl) -> List.iter f patl
   | Tpat_or(p1, p2, _) -> f p1; f p2
   | Tpat_lazy p -> f p
   | Tpat_any
@@ -541,8 +560,8 @@ let map_pattern_desc f d =
       Tpat_record (List.map (fun (lid, l,p) -> lid, l, f p) lpats, closed)
   | Tpat_construct (lid, c,pats) ->
       Tpat_construct (lid, c, List.map f pats)
-  | Tpat_array pats ->
-      Tpat_array (List.map f pats)
+  | Tpat_array(l, pats) ->
+      Tpat_array (l, List.map f pats)
   | Tpat_lazy p1 -> Tpat_lazy (f p1)
   | Tpat_variant (x1, Some p1, x2) ->
       Tpat_variant (x1, Some (f p1), x2)

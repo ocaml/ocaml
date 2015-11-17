@@ -798,6 +798,7 @@ let rec tree_of_type_decl id decl =
         cstrs
   | Type_record(l, _rep) ->
       List.iter (fun l -> mark_loops l.ld_type) l
+  | Type_array a -> mark_loops a.ad_type
   | Type_open -> ()
   end;
 
@@ -816,6 +817,7 @@ let rec tree_of_type_decl id decl =
       | Type_variant tll ->
           decl.type_private = Private ||
           List.exists (fun cd -> cd.cd_res <> None) tll
+      | Type_array _ -> decl.type_private = Private
       | Type_open ->
           decl.type_manifest = None
     in
@@ -851,6 +853,11 @@ let rec tree_of_type_decl id decl =
     | Type_record(lbls, _rep) ->
         tree_of_manifest (Otyp_record (List.map tree_of_label lbls)),
         decl.type_private
+    | Type_array a ->
+        let mut = a.ad_mutable = Mutable in
+        let typ = tree_of_typexp false a.ad_type in
+          tree_of_manifest (Otyp_array(mut, typ)),
+          decl.type_private
     | Type_open ->
         tree_of_manifest Otyp_open,
         Public

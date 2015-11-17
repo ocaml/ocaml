@@ -34,6 +34,9 @@ type type_mismatch =
   | Field_missing of bool * Ident.t
   | Record_representation of bool
   | Immediate
+  | Array_representation of array_representation * array_representation
+  | Array_type
+  | Array_mutable
 
 val value_descriptions:
     Env.t -> value_description -> value_description -> module_coercion
