@@ -141,7 +141,10 @@ let add_type_declaration bv td =
       List.iter (add_constructor_decl bv) cstrs
   | Ptype_record lbls ->
       List.iter (fun pld -> add_type bv pld.pld_type) lbls
-  | Ptype_open -> () in
+  | Ptype_open -> ()
+  | Ptype_array pad ->
+    add_type bv pad.pad_type
+  in
   add_tkind td.ptype_kind
 
 let add_extension_constructor bv ext =
@@ -231,7 +234,13 @@ let rec add_expr bv exp =
       add_opt add_expr bv opte
   | Pexp_field(e, fld) -> add_expr bv e; add bv fld
   | Pexp_setfield(e1, fld, e2) -> add_expr bv e1; add bv fld; add_expr bv e2
+  | Pexp_arrayfield(e1, fld, e2) ->
+      add_expr bv e1; add_opt add bv fld; add_expr bv e2
+  | Pexp_setarrayfield(e1, fld, e2, e3) ->
+      add_expr bv e1; add_opt add bv fld; add_expr bv e2; add_expr bv e3
   | Pexp_array el -> List.iter (add_expr bv) el
+  | Pexp_arraycomprehension(e1, _, e2, _, e3) ->
+      add_expr bv e1; add_expr bv e2; add_expr bv e3
   | Pexp_ifthenelse(e1, e2, opte3) ->
       add_expr bv e1; add_expr bv e2; add_opt add_expr bv opte3
   | Pexp_sequence(e1, e2) -> add_expr bv e1; add_expr bv e2
