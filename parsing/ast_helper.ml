@@ -111,7 +111,13 @@ module Exp = struct
   let record ?loc ?attrs a b = mk ?loc ?attrs (Pexp_record (a, b))
   let field ?loc ?attrs a b = mk ?loc ?attrs (Pexp_field (a, b))
   let setfield ?loc ?attrs a b c = mk ?loc ?attrs (Pexp_setfield (a, b, c))
+  let arrayfield ?loc ?attrs a b c =
+    mk ?loc ?attrs (Pexp_arrayfield (a, b, c))
+  let setarrayfield ?loc ?attrs a b c d =
+    mk ?loc ?attrs (Pexp_setarrayfield (a, b, c, d))
   let array ?loc ?attrs a = mk ?loc ?attrs (Pexp_array a)
+  let arraycomprehension ?loc ?attrs a b c d e =
+    mk ?loc ?attrs (Pexp_arraycomprehension(a, b, c, d, e))
   let ifthenelse ?loc ?attrs a b c = mk ?loc ?attrs (Pexp_ifthenelse (a, b, c))
   let sequence ?loc ?attrs a b = mk ?loc ?attrs (Pexp_sequence (a, b))
   let while_ ?loc ?attrs a b = mk ?loc ?attrs (Pexp_while (a, b))
@@ -437,6 +443,15 @@ module Type = struct
      pld_type = typ;
      pld_loc = loc;
      pld_attributes = add_info_attrs info attrs;
+    }
+
+  let array ?(loc = !default_loc) ?(attrs = []) ?(info = empty_info)
+        ?(mut = Immutable) typ =
+    {
+     pad_mutable = mut;
+     pad_type = typ;
+     pad_loc = loc;
+     pad_attributes = add_info_attrs info attrs;
     }
 
 end

@@ -25,6 +25,7 @@ open Parsetree
 open Location
 
 type iterator = {
+  array_declaration: iterator -> array_declaration -> unit;
   attribute: iterator -> attribute -> unit;
   attributes: iterator -> attribute list -> unit;
   case: iterator -> case -> unit;
@@ -134,6 +135,7 @@ module T = struct
     | Ptype_variant l ->
         List.iter (sub.constructor_declaration sub) l
     | Ptype_record l -> List.iter (sub.label_declaration sub) l
+    | Ptype_array a -> sub.array_declaration sub a
     | Ptype_open -> ()
 
   let iter_constructor_arguments sub = function
@@ -330,7 +332,16 @@ module E = struct
     | Pexp_setfield (e1, lid, e2) ->
         sub.expr sub e1; iter_loc sub lid;
         sub.expr sub e2
+    | Pexp_arrayfield(e1, lido, e2) ->
+        sub.expr sub e1; iter_opt (iter_loc sub) lido;
+        sub.expr sub e2
+    | Pexp_setarrayfield(e1, lido, e2, e3) ->
+        sub.expr sub e1; iter_opt (iter_loc sub) lido;
+        sub.expr sub e2; sub.expr sub e3
     | Pexp_array el -> List.iter (sub.expr sub) el
+    | Pexp_arraycomprehension(e1, p, e2, _d, e3) ->
+        sub.expr sub e1; sub.pat sub p; sub.expr sub e2;
+        sub.expr sub e3
     | Pexp_ifthenelse (e1, e2, e3) ->
         sub.expr sub e1; sub.expr sub e2;
         iter_opt (sub.expr sub) e3
@@ -572,6 +583,13 @@ let default_iterator =
          this.typ this pld_type;
          this.location this pld_loc;
          this.attributes this pld_attributes
+      );
+
+    array_declaration =
+      (fun this {pad_type; pad_loc; pad_mutable = _; pad_attributes} ->
+         this.typ this pad_type;
+         this.location this pad_loc;
+         this.attributes this pad_attributes
       );
 
     cases = (fun this l -> List.iter (this.case this) l);

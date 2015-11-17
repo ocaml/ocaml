@@ -22,6 +22,7 @@ open Parsetree
 (** {2 A generic Parsetree iterator} *)
 
 type iterator = {
+  array_declaration: iterator -> array_declaration -> unit;
   attribute: iterator -> attribute -> unit;
   attributes: iterator -> attribute list -> unit;
   case: iterator -> case -> unit;

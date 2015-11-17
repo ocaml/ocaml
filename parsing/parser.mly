@@ -611,7 +611,7 @@ The precedences must be listed from low to high.
 %nonassoc IN
 %nonassoc below_SEMI
 %nonassoc SEMI                          /* below EQUAL ({lbl=...; lbl=...}) */
-%nonassoc LET                           /* above SEMI ( ...; let ... in ...) */
+%nonassoc LET FOR                       /* above SEMI ( ...; let ... in ...) */
 %nonassoc below_WITH
 %nonassoc FUNCTION WITH                 /* below BAR  (match ... with ...) */
 %nonassoc AND             /* above WITH (module rec A: SIG with ... and ...) */
@@ -1448,8 +1448,9 @@ expr:
   | simple_expr DOT label_longident LESSMINUS expr
       { mkexp(Pexp_setfield($1, mkrhs $3 3, $5)) }
   | simple_expr DOT LPAREN seq_expr RPAREN LESSMINUS expr
-      { mkexp(Pexp_apply(ghexp(Pexp_ident(array_function "Array" "set")),
-                         [Nolabel,$1; Nolabel,$4; Nolabel,$7])) }
+      { mkexp(Pexp_setarrayfield($1, None, $4, $7)) }
+  | simple_expr DOT mod_longident DOT LPAREN seq_expr RPAREN LESSMINUS expr
+      { mkexp(Pexp_setarrayfield($1, Some (mkrhs $3 3), $6, $9)) }
   | simple_expr DOT LBRACKET seq_expr RBRACKET LESSMINUS expr
       { mkexp(Pexp_apply(ghexp(Pexp_ident(array_function "String" "set")),
                          [Nolabel,$1; Nolabel,$4; Nolabel,$7])) }
@@ -1502,10 +1503,13 @@ simple_expr:
   | mod_longident DOT LPAREN seq_expr error
       { unclosed "(" 3 ")" 5 }
   | simple_expr DOT LPAREN seq_expr RPAREN
-      { mkexp(Pexp_apply(ghexp(Pexp_ident(array_function "Array" "get")),
-                         [Nolabel,$1; Nolabel,$4])) }
+      { mkexp(Pexp_arrayfield($1, None, $4)) }
   | simple_expr DOT LPAREN seq_expr error
       { unclosed "(" 3 ")" 5 }
+  | simple_expr DOT mod_longident DOT LPAREN seq_expr RPAREN
+      { mkexp(Pexp_arrayfield($1, Some (mkrhs $3 3), $6)) }
+  | simple_expr DOT mod_longident DOT LPAREN seq_expr error
+      { unclosed "(" 5 ")" 7 }
   | simple_expr DOT LBRACKET seq_expr RBRACKET
       { mkexp(Pexp_apply(ghexp(Pexp_ident(array_function "String" "get")),
                          [Nolabel,$1; Nolabel,$4])) }
@@ -1527,12 +1531,19 @@ simple_expr:
       { unclosed "{" 3 "}" 5 }
   | LBRACKETBAR expr_semi_list opt_semi BARRBRACKET
       { mkexp (Pexp_array(List.rev $2)) }
+  | LBRACKETBAR expr FOR pattern EQUAL
+      seq_expr direction_flag seq_expr BARRBRACKET
+      { mkexp (Pexp_arraycomprehension($2, $4, $6, $7, $8)) }
   | LBRACKETBAR expr_semi_list opt_semi error
       { unclosed "[|" 1 "|]" 4 }
   | LBRACKETBAR BARRBRACKET
       { mkexp (Pexp_array []) }
   | mod_longident DOT LBRACKETBAR expr_semi_list opt_semi BARRBRACKET
       { mkexp(Pexp_open(Fresh, mkrhs $1 1, mkexp(Pexp_array(List.rev $4)))) }
+  | mod_longident DOT LBRACKETBAR expr FOR pattern EQUAL
+      seq_expr direction_flag seq_expr BARRBRACKET
+      { mkexp(Pexp_open(Fresh, mkrhs $1 1,
+          mkexp (Pexp_arraycomprehension($4, $6, $8, $9, $10)))) }
   | mod_longident DOT LBRACKETBAR BARRBRACKET
       { mkexp(Pexp_open(Fresh, mkrhs $1 1, mkexp(Pexp_array []))) }
   | mod_longident DOT LBRACKETBAR expr_semi_list opt_semi error
@@ -1970,6 +1981,10 @@ type_kind:
       { (Ptype_variant(List.rev $3), Private, None) }
   | EQUAL DOTDOT
       { (Ptype_open, Public, None) }
+  | EQUAL array_declaration
+      { (Ptype_array $2, Public, None) }
+  | EQUAL PRIVATE array_declaration
+      { (Ptype_array $3, Private, None) }
   | EQUAL private_flag LBRACE label_declarations RBRACE
       { (Ptype_record $4, $2, None) }
   | EQUAL core_type EQUAL private_flag constructor_declarations
@@ -1978,6 +1993,8 @@ type_kind:
       { (Ptype_open, Public, Some $2) }
   | EQUAL core_type EQUAL private_flag LBRACE label_declarations RBRACE
       { (Ptype_record $6, $4, Some $2) }
+  | EQUAL core_type EQUAL private_flag array_declaration
+      { (Ptype_array $5, $4, Some $2) }
 ;
 optional_type_parameters:
     /*empty*/                                   { [] }
@@ -2093,6 +2110,11 @@ label_declaration_semi:
          ~loc:(symbol_rloc()) ~info
       }
 ;
+array_declaration:
+    LBRACKETBAR mutable_flag poly_type_no_attr attributes BARRBRACKET
+      {
+        Type.array $3 ~mut:$2 ~attrs:$4 ~loc:(symbol_rloc())
+      }
 
 /* Type Extensions */
 
@@ -2411,6 +2433,7 @@ operator:
   | PLUSEQ                                      { "+=" }
   | PERCENT                                     { "%" }
 ;
+
 constr_ident:
     UIDENT                                      { $1 }
   | LBRACKET RBRACKET                           { "[]" }

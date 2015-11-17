@@ -49,6 +49,7 @@ type mapper = {
   include_declaration: mapper -> include_declaration -> include_declaration;
   include_description: mapper -> include_description -> include_description;
   label_declaration: mapper -> label_declaration -> label_declaration;
+  array_declaration: mapper -> array_declaration -> array_declaration;
   location: mapper -> Location.t -> Location.t;
   module_binding: mapper -> module_binding -> module_binding;
   module_declaration: mapper -> module_declaration -> module_declaration;
@@ -137,6 +138,7 @@ module T = struct
     | Ptype_variant l ->
         Ptype_variant (List.map (sub.constructor_declaration sub) l)
     | Ptype_record l -> Ptype_record (List.map (sub.label_declaration sub) l)
+    | Ptype_array a -> Ptype_array (sub.array_declaration sub a)
     | Ptype_open -> Ptype_open
 
   let map_constructor_arguments sub = function
@@ -344,7 +346,16 @@ module E = struct
     | Pexp_setfield (e1, lid, e2) ->
         setfield ~loc ~attrs (sub.expr sub e1) (map_loc sub lid)
           (sub.expr sub e2)
+    | Pexp_arrayfield (e1, lio, e2) ->
+        arrayfield ~loc ~attrs (sub.expr sub e1)
+          (map_opt (map_loc sub) lio) (sub.expr sub e2)
+    | Pexp_setarrayfield (e1, lio, e2, e3) ->
+        setarrayfield ~loc ~attrs (sub.expr sub e1)
+          (map_opt (map_loc sub) lio) (sub.expr sub e2) (sub.expr sub e3)
     | Pexp_array el -> array ~loc ~attrs (List.map (sub.expr sub) el)
+    | Pexp_arraycomprehension (e1, p, e2, d, e3) ->
+        arraycomprehension ~loc ~attrs (sub.expr sub e1) (sub.pat sub p) (sub.expr sub e2)
+             d (sub.expr sub e3)
     | Pexp_ifthenelse (e1, e2, e3) ->
         ifthenelse ~loc ~attrs (sub.expr sub e1) (sub.expr sub e2)
           (map_opt (sub.expr sub) e3)
@@ -604,6 +615,14 @@ let default_mapper =
            ~mut:pld_mutable
            ~loc:(this.location this pld_loc)
            ~attrs:(this.attributes this pld_attributes)
+      );
+    array_declaration =
+      (fun this {pad_type; pad_loc; pad_mutable; pad_attributes} ->
+         Type.array
+           (this.typ this pad_type)
+           ~mut:pad_mutable
+           ~loc:(this.location this pad_loc)
+           ~attrs:(this.attributes this pad_attributes)
       );
 
     cases = (fun this l -> List.map (this.case this) l);
