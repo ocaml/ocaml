@@ -991,7 +991,14 @@ let report_error env ppf = function
         s "Multiple occurences are not allowed."
   | Unbound_value lid ->
       fprintf ppf "Unbound value %a" longident lid;
-      spellcheck ppf fold_values env lid;
+      begin match lid with
+      | Longident.Lident (".{}" | ".{,}" | ".{,,}" | ".{,..,}"
+                         |".{}<-" | ".{,}<-" | ".{,,}<-" | ".{,..,}<-"
+                         ) ->
+          fprintf ppf " (you might want to 'open Bigarray')"
+      | _ ->
+          spellcheck ppf fold_values env lid
+      end
   | Unbound_module lid ->
       fprintf ppf "Unbound module %a" longident lid;
       spellcheck ppf fold_modules env lid;
