@@ -539,7 +539,7 @@ let transl_implementation_native module_name (str, cc) =
     transl_label_init
       (fun () -> transl_struct [] cc (global_path module_id) str)
   in
-  module_id, (Lprim(Psetglobal module_id, [wrap_globals body]), size)
+  module_id, (wrap_globals body, size)
 
 let transl_implementation module_name (str, cc) =
   let module_id, (module_initializer, _size) =
