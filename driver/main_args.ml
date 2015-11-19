@@ -44,7 +44,7 @@ let mk_ccopt f =
 ;;
 
 let mk_clambda_checks f =
-  "-clambda-checks", Arg.Unit f, " Instrument clambda code with closure and field access checks"
+  "-clambda-checks", Arg.Unit f, " Instrument clambda code with closure and field access checks (for debugging the compiler)"
 ;;
 
 let mk_compact f =
@@ -117,24 +117,24 @@ let mk_inline f =
   "-inline", Arg.Int f,
     Printf.sprintf "<n>  Aggressiveness of inlining (default %d, higher \
         numbers mean more aggressive)"
-      !Clflags.inline_threshold
+      (!Clflags.inline_threshold / 8)
 ;;
 
 let mk_inlining_stats f =
-  "-inlining-stats", Arg.Unit f, " Emit `.inlining' file showing the \
-      inliner's decisions"
+  "-inlining-stats", Arg.Unit f, " Emit `.<n>.inlining' file(s) (one per \
+      round) showing the inliner's decisions"
 ;;
 
 let mk_dump_pass f =
   "-dump-pass", Arg.String f,
-  Format.asprintf " Record transformations performed by passes [%a]"
+  Format.asprintf " Record transformations performed by these passes: %a"
     (Format.pp_print_list Format.pp_print_string)
     !Clflags.all_passes
 ;;
 
 let mk_rounds f =
   "-rounds", Arg.Int f,
-    Printf.sprintf "<n>  Repeat tree optimization and inlining phase this \
+    Printf.sprintf "<n>  Repeat tree optimization and inlining phases this \
         many times (default %d)"
       !Clflags.simplify_rounds
 ;;
@@ -216,8 +216,8 @@ let mk_make_runtime_2 f =
 
 let mk_max_inlining_depth f =
   "-max-inlining-depth", Arg.Int f,
-    Printf.sprintf "<n>  Inline inside inlined functions up to this depth \
-        (default %d)"
+    Printf.sprintf "<n>  Maximum depth of search for inlining opportunities \
+        inside inlined functions (default %d)"
       !Clflags.max_inlining_depth
 ;;
 
@@ -265,6 +265,11 @@ let mk_nodynlink f =
 let mk_noinit f =
   "-noinit", Arg.Unit f,
   " Do not load any init file"
+
+let mk_no_inline_recursive_functions f =
+  "-no-inline-recursive-functions", Arg.Unit f,
+  " Do not duplicate and specialise declarations of recursive functions"
+;;
 
 let mk_nolabels f =
   "-nolabels", Arg.Unit f, " Ignore non-optional labels in types"
@@ -331,6 +336,11 @@ let mk_rectypes f =
   "-rectypes", Arg.Unit f, " Allow arbitrary recursive types"
 ;;
 
+let mk_remove_unused_arguments f =
+  "-remove-unused-arguments", Arg.Unit f,
+  " Remove unused function arguments (experimental)"
+;;
+
 let mk_runtime_variant f =
   "-runtime-variant", Arg.String f,
   "<str>  Use the <str> variant of the run-time system"
@@ -371,8 +381,8 @@ let mk_dtimings f =
 ;;
 
 let mk_unbox_closures f =
-  "-no-unbox-closures", Arg.Unit f,
-  " Do not unbox closures into function arguments"
+  "-unbox-closures", Arg.Unit f,
+  " Unbox closures into function arguments (experimental)"
 ;;
 
 let mk_unsafe f =
@@ -701,6 +711,8 @@ module type Optcommon_options = sig
   val _inline_branch_cost : int -> unit
   val _unbox_closures : unit -> unit
   val _branch_inline_factor : float -> unit
+  val _no_inline_recursive_functions : unit -> unit
+  val _remove_unused_arguments : unit -> unit
 
   val _clambda_checks : unit -> unit
   val _dflambda : unit -> unit
@@ -936,9 +948,9 @@ struct
     mk_noassert F._noassert;
     mk_noautolink_opt F._noautolink;
     mk_nodynlink F._nodynlink;
+    mk_no_inline_recursive_functions F._no_inline_recursive_functions;
     mk_nolabels F._nolabels;
     mk_nostdlib F._nostdlib;
-    mk_unbox_closures F._unbox_closures;
     mk_o F._o;
     mk_open F._open;
     mk_output_obj F._output_obj;
@@ -949,6 +961,7 @@ struct
     mk_ppx F._ppx;
     mk_principal F._principal;
     mk_rectypes F._rectypes;
+    mk_remove_unused_arguments F._remove_unused_arguments;
     mk_rounds F._rounds;
     mk_runtime_variant F._runtime_variant;
     mk_S F._S;
@@ -958,6 +971,7 @@ struct
     mk_strict_sequence F._strict_sequence;
     mk_strict_formats F._strict_formats;
     mk_thread F._thread;
+    mk_unbox_closures F._unbox_closures;
     mk_unroll F._unroll;
     mk_unsafe F._unsafe;
     mk_unsafe_string F._unsafe_string;
@@ -1021,6 +1035,7 @@ module Make_opttop_options (F : Opttop_options) = struct
     mk_no_app_funct F._no_app_funct;
     mk_noassert F._noassert;
     mk_noinit F._noinit;
+    mk_no_inline_recursive_functions F._no_inline_recursive_functions;
     mk_nolabels F._nolabels;
     mk_noprompt F._noprompt;
     mk_nopromptcont F._nopromptcont;
@@ -1029,6 +1044,7 @@ module Make_opttop_options (F : Opttop_options) = struct
     mk_ppx F._ppx;
     mk_principal F._principal;
     mk_rectypes F._rectypes;
+    mk_remove_unused_arguments F._remove_unused_arguments;
     mk_S F._S;
     mk_safe_string F._safe_string;
     mk_short_paths F._short_paths;

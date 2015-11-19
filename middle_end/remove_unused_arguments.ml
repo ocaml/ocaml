@@ -123,16 +123,20 @@ let separate_unused_arguments (set_of_closures : Flambda.set_of_closures) =
 let candidate_for_spliting_for_unused_arguments
     (fun_decls : Flambda.function_declarations)
     ~backend =
-  let no_recursive_functions =
-    Variable.Set.is_empty
-      (Find_recursive_functions.in_function_declarations fun_decls ~backend)
-  in
-  let number_of_non_stub_functions =
-    Variable.Map.cardinal
-      (Variable.Map.filter (fun _ { Flambda.stub } -> not stub)
-         fun_decls.funs)
-  in
-  (not no_recursive_functions) || (number_of_non_stub_functions > 1)
+  if not !Clflags.remove_unused_arguments then begin
+    false
+  end else begin
+    let no_recursive_functions =
+      Variable.Set.is_empty
+        (Find_recursive_functions.in_function_declarations fun_decls ~backend)
+    in
+    let number_of_non_stub_functions =
+      Variable.Map.cardinal
+        (Variable.Map.filter (fun _ { Flambda.stub } -> not stub)
+           fun_decls.funs)
+    in
+    (not no_recursive_functions) || (number_of_non_stub_functions > 1)
+  end
 
 let separate_unused_arguments_in_set_of_closures set_of_closures ~backend =
   if candidate_for_spliting_for_unused_arguments
@@ -143,14 +147,12 @@ let separate_unused_arguments_in_set_of_closures set_of_closures ~backend =
     | Some set_of_closures -> set_of_closures
   else set_of_closures
 
-let separate_unused_arguments_in_closures_expr ~force tree ~backend =
+let separate_unused_arguments_in_closures_expr tree ~backend =
   let aux_named (named : Flambda.named) : Flambda.named =
     match named with
     | Set_of_closures set_of_closures ->
-      if force <> None ||
-        candidate_for_spliting_for_unused_arguments
-          set_of_closures.function_decls
-          ~backend
+      if candidate_for_spliting_for_unused_arguments
+          set_of_closures.function_decls ~backend
       then begin
         match separate_unused_arguments set_of_closures with
         | None -> named
@@ -162,6 +164,6 @@ let separate_unused_arguments_in_closures_expr ~force tree ~backend =
   in
   Flambda_iterators.map_named aux_named tree
 
-let separate_unused_arguments_in_closures ?force program ~backend =
+let separate_unused_arguments_in_closures program ~backend =
   Flambda_iterators.map_exprs_at_toplevel_of_program program ~f:(fun expr ->
-    separate_unused_arguments_in_closures_expr ~force expr ~backend)
+    separate_unused_arguments_in_closures_expr expr ~backend)

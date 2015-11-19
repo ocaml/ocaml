@@ -135,8 +135,9 @@ let branch_inline_factor = ref 0.6     (* -branch-inline-factor *)
 
 let print_timings = ref false          (* -timings *)
 
-let unbox_closures = ref true           (* -no-unbox-closures *)
-let remove_unused_arguments = ref true  (* -no-remove-unused-arguments *)
+let unbox_closures = ref false          (* -unbox-closures *)
+let remove_unused_arguments = ref false (* -remove-unused-arguments *)
+let inline_recursive_functions = ref true  (* -no-inline-recursive-functions *)
 let max_inlining_depth = ref 3          (* -max-inlining-depth *)
 
 let all_passes = ref []

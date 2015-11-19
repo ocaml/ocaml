@@ -78,11 +78,6 @@ let middle_end ppf ~sourcefile ~prefixname ~backend
       +-+ ("lift_lets 3", Lift_code.lift_lets)
       +-+ ("Remove_unused_closure_vars 2",
            Remove_unused_closure_vars.remove_unused_closure_variables)
-      (* +- "Remove_unused_arguments" *)
-(*
-      ++ Remove_unused_arguments.separate_unused_arguments_in_closures
-        ?force:None
-*)
       +-+ ("Inline_and_simplify noinline 1",
            Inline_and_simplify.run ~never_inline:true ~backend
              ~prefixname)

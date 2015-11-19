@@ -130,9 +130,9 @@ module Options = Main_args.Make_optcomp_options (struct
   let _noassert = set noassert
   let _noautolink = set no_auto_link
   let _nodynlink = clear dlcode
+  let _no_inline_recursive_functions = clear inline_recursive_functions
   let _nolabels = set classic
   let _nostdlib = set no_std_include
-  let _unbox_closures = clear unbox_closures
   let _o s = output_name := Some s
   let _open s = open_modules := s :: !open_modules
   let _output_obj = set output_c_object
@@ -144,6 +144,7 @@ module Options = Main_args.Make_optcomp_options (struct
   let _ppx s = first_ppx := s :: !first_ppx
   let _principal = set principal
   let _rectypes = set recursive_types
+  let _remove_unused_arguments = set remove_unused_arguments
   let _runtime_variant s = runtime_variant := s
   let _safe_string = clear unsafe_string
   let _short_paths = clear real_paths
@@ -152,6 +153,7 @@ module Options = Main_args.Make_optcomp_options (struct
   let _shared () = shared := true; dlcode := true
   let _S = set keep_asm_file
   let _thread = set use_threads
+  let _unbox_closures = set unbox_closures
   let _unsafe = set fast
   let _unsafe_string = set unsafe_string
   let _v () = print_version_and_library "native-code compiler"

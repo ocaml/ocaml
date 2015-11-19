@@ -115,6 +115,8 @@ val full_flambda_invariant_check : bool ref
 val unbox_closures : bool ref
 val clambda_checks : bool ref
 val max_inlining_depth : int ref
+val inline_recursive_functions : bool ref
+val remove_unused_arguments : bool ref
 
 val all_passes : string list ref
 val dumped_pass : string -> bool

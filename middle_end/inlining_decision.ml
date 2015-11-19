@@ -169,7 +169,8 @@ let should_duplicate_recursive_function env
       ~(value_set_of_closures : A.value_set_of_closures)
       ~args_approxs ~(invariant_params : Variable.Set.t Variable.Map.t) =
   assert (List.length function_decl.params = List.length args_approxs);
-  (not (E.inside_set_of_closures_declaration
+  !Clflags.inline_recursive_functions
+    && (not (E.inside_set_of_closures_declaration
       function_decls.set_of_closures_id env))
     && (not (Variable.Map.is_empty value_set_of_closures.invariant_params))
     && Var_within_closure.Map.is_empty
