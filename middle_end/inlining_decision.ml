@@ -307,8 +307,15 @@ let for_call_site ~env ~r ~(function_decls : Flambda.function_declarations)
           ~bonus:num_params
   in
   let expr, r =
-    match fun_cost with
-    | Never_inline ->
+    if E.never_inline env then
+      (* This case only occurs when examining the body of a stub function
+         but not in the context of inlining said function.  As such, there
+         is nothing to do here (and no decision to report). *)
+      no_simplification ()
+    else if fun_cost = Inlining_cost.Never_inline && not function_decl.stub then
+      (* CR pchambart: should we also accept unconditionnal inline ?
+         It is some kind of user defined stub, but if we restrict to stub
+         we are certain that no abusive use of [@@inline] can blow things up *)
       let reason : Inlining_stats_types.Decision.t =
         match inlining_threshold with
         | Never_inline ->
@@ -318,12 +325,8 @@ let for_call_site ~env ~r ~(function_decls : Flambda.function_declarations)
       in
       made_decision reason;
       no_simplification ()
-    | Can_inline_if_no_larger_than _ when E.never_inline env ->
-      (* This case only occurs when examining the body of a stub function
-         but not in the context of inlining said function.  As such, there
-         is nothing to do here (and no decision to report). *)
-      no_simplification ()
-    | (Can_inline_if_no_larger_than _) as remaining_inlining_threshold ->
+    else
+      let remaining_inlining_threshold = fun_cost in
       let r = R.set_inlining_threshold r remaining_inlining_threshold in
       let invariant_params = value_set_of_closures.invariant_params in
       (* Try inlining if the function is non-recursive and not too far above
