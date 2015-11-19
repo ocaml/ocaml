@@ -99,7 +99,7 @@ let print_out_value ppf tree =
     | Oval_char c -> fprintf ppf "%C" c
     | Oval_string s ->
         begin try fprintf ppf "%S" s with
-          Invalid_argument "String.create" -> fprintf ppf "<huge string>"
+          Invalid_argument _ (* "String.create" *)-> fprintf ppf "<huge string>"
         end
     | Oval_list tl ->
         fprintf ppf "@[<1>[%a]@]" (print_tree_list print_tree_1 ";") tl
@@ -352,19 +352,35 @@ let out_sig_item = ref (fun _ -> failwith "Oprint.out_sig_item")
 let out_signature = ref (fun _ -> failwith "Oprint.out_signature")
 let out_type_extension = ref (fun _ -> failwith "Oprint.out_type_extension")
 
-let rec print_out_functor ppf =
+let rec print_out_functor funct ppf =
   function
     Omty_functor (_, None, mty_res) ->
-      fprintf ppf "() %a" print_out_functor mty_res
-  | Omty_functor (name , Some mty_arg, mty_res) ->
-      fprintf ppf "(%s : %a) %a" name
-        print_out_module_type mty_arg print_out_functor mty_res
-  | m -> fprintf ppf "->@ %a" print_out_module_type m
+      if funct then fprintf ppf "() %a" (print_out_functor true) mty_res
+      else fprintf ppf "functor@ () %a" (print_out_functor true) mty_res
+  | Omty_functor (name, Some mty_arg, mty_res) -> begin
+      match name, funct with
+      | "_", true ->
+          fprintf ppf "->@ %a ->@ %a"
+            print_out_module_type mty_arg (print_out_functor false) mty_res
+      | "_", false ->
+          fprintf ppf "%a ->@ %a"
+            print_out_module_type mty_arg (print_out_functor false) mty_res
+      | name, true ->
+          fprintf ppf "(%s : %a) %a" name
+            print_out_module_type mty_arg (print_out_functor true) mty_res
+      | name, false ->
+            fprintf ppf "functor@ (%s : %a) %a" name
+              print_out_module_type mty_arg (print_out_functor true) mty_res
+    end
+  | m ->
+      if funct then fprintf ppf "->@ %a" print_out_module_type m
+      else print_out_module_type ppf m
+
 and print_out_module_type ppf =
   function
     Omty_abstract -> ()
   | Omty_functor _ as t ->
-      fprintf ppf "@[<2>functor@ %a@]" print_out_functor t
+      fprintf ppf "@[<2>%a@]" (print_out_functor false) t
   | Omty_ident id -> fprintf ppf "%a" print_ident id
   | Omty_signature sg ->
       fprintf ppf "@[<hv 2>sig@ %a@;<1 -2>end@]" !out_signature sg

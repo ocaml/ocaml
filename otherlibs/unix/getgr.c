@@ -40,6 +40,7 @@ static value alloc_group_entry(struct group *entry)
 CAMLprim value unix_getgrnam(value name)
 {
   struct group * entry;
+  if (! caml_string_is_c_safe(name)) raise_not_found();
   entry = getgrnam(String_val(name));
   if (entry == NULL) raise_not_found();
   return alloc_group_entry(entry);

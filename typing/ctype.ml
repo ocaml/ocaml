@@ -87,6 +87,20 @@ let nongen_level = ref 0
 let global_level = ref 1
 let saved_level = ref []
 
+type levels =
+    { current_level: int; nongen_level: int; global_level: int;
+      saved_level: (int * int) list; }
+let save_levels () =
+  { current_level = !current_level;
+    nongen_level = !nongen_level;
+    global_level = !global_level;
+    saved_level = !saved_level }
+let set_levels l =
+  current_level := l.current_level;
+  nongen_level := l.nongen_level;
+  global_level := l.global_level;
+  saved_level := l.saved_level
+
 let get_current_level () = !current_level
 let init_def level = current_level := level; nongen_level := level
 let begin_def () =
@@ -153,7 +167,6 @@ let proper_abbrevs path tl abbrev =
 
 let newty2             = Btype.newty2
 let newty desc         = newty2 !current_level desc
-let new_global_ty desc = newty2 !global_level desc
 
 let newvar ?name ()         = newty2 !current_level (Tvar name)
 let newvar2 ?name level     = newty2 level (Tvar name)
@@ -189,17 +202,6 @@ type unification_mode =
 let umode = ref Expression
 let generate_equations = ref false
 let assume_injective = ref false
-
-let set_mode_expression f =
-  let old_unification_mode = !umode in
-  try
-    umode := Expression;
-    let ret = f () in
-    umode := old_unification_mode;
-    ret
-  with e ->
-    umode := old_unification_mode;
-    raise e
 
 let set_mode_pattern ~generate ~injective f =
   let old_unification_mode = !umode
@@ -696,7 +698,14 @@ let rec normalize_package_path env p =
   in
   match t with
   | Some (Mty_ident p) -> normalize_package_path env p
-  | Some (Mty_signature _ | Mty_functor _ | Mty_alias _) | None -> p
+  | Some (Mty_signature _ | Mty_functor _ | Mty_alias _) | None ->
+      match p with
+        Path.Pdot (p1, s, n) ->
+          (* For module aliases *)
+          let p1' = Env.normalize_path None env p1 in
+          if Path.same p1 p1' then p else
+          normalize_package_path env (Path.Pdot (p1', s, n))
+      | _ -> p
 
 let rec update_level env level ty =
   let ty = repr ty in
@@ -1339,7 +1348,7 @@ let apply env params body args =
    type or module definition is overridden in the environnement.
 *)
 let previous_env = ref Env.empty
-let string_of_kind = function Public -> "public" | Private -> "private"
+(*let string_of_kind = function Public -> "public" | Private -> "private"*)
 let check_abbrev_env env =
   if env != !previous_env then begin
     (* prerr_endline "cleanup expansion cache"; *)
@@ -1372,19 +1381,21 @@ let expand_abbrev_gen kind find_type_expansion env ty =
     {desc = Tconstr (path, args, abbrev); level = level} ->
       let lookup_abbrev = proper_abbrevs path args abbrev in
       begin match find_expans kind path !lookup_abbrev with
-        Some ty ->
+        Some ty' ->
           (* prerr_endline
             ("found a "^string_of_kind kind^" expansion for "^Path.name path);*)
           if level <> generic_level then
             begin try
-              update_level env level ty
+              update_level env level ty'
             with Unify _ ->
               (* XXX This should not happen.
                  However, levels are not correctly restored after a
                  typing error *)
               ()
             end;
-          ty
+          let ty' = repr ty' in
+          assert (ty != ty');
+          ty'
       | None ->
           let (params, body, lv) =
             try find_type_expansion path env with Not_found ->
@@ -1564,58 +1575,12 @@ let generic_private_abbrev env path =
     | _ -> false
   with Not_found -> false
 
-let is_contractive env ty =
-  try match (repr ty).desc with
-    Tconstr (p, _, _) ->
-      let decl = Env.find_type p env in
-      in_pervasives p && decl.type_manifest = None || is_datatype decl
-  | _ -> true
+let is_contractive env p =
+  try
+    let decl = Env.find_type p env in
+    in_pervasives p && decl.type_manifest = None || is_datatype decl
   with Not_found -> false
 
-(* Code moved to Typedecl
-
-(* The marks are already used by [expand_abbrev]... *)
-let visited = ref []
-
-let rec non_recursive_abbrev env ty0 ty =
-  let ty = repr ty in
-  if ty == repr ty0 then raise Recursive_abbrev;
-  if not (List.memq ty !visited) then begin
-    visited := ty :: !visited;
-    match ty.desc with
-      Tconstr(p, args, abbrev) ->
-        begin try
-          non_recursive_abbrev env ty0 (try_expand_once_opt env ty)
-        with Cannot_expand ->
-          if !Clflags.recursive_types &&
-            (in_pervasives p ||
-             try is_datatype (Env.find_type p env) with Not_found -> false)
-          then ()
-          else iter_type_expr (non_recursive_abbrev env ty0) ty
-        end
-    | Tobject _ | Tvariant _ ->
-        ()
-    | _ ->
-        if !Clflags.recursive_types then () else
-        iter_type_expr (non_recursive_abbrev env ty0) ty
-  end
-
-let correct_abbrev env path params ty =
-  check_abbrev_env env;
-  let ty0 = newgenvar () in
-  visited := [];
-  let abbrev = Mcons (Public, path, ty0, ty0, Mnil) in
-  simple_abbrevs := abbrev;
-  try
-    non_recursive_abbrev env ty0
-      (subst env generic_level Public (ref abbrev) None [] [] ty);
-    simple_abbrevs := Mnil;
-    visited := []
-  with exn ->
-    simple_abbrevs := Mnil;
-    visited := [];
-    raise exn
-*)
 
                               (*****************)
                               (*  Occur check  *)
@@ -1624,44 +1589,46 @@ let correct_abbrev env path params ty =
 
 exception Occur
 
-let allow_recursive env ty =
-  (!Clflags.recursive_types || !umode = Pattern) && is_contractive env ty
-
-let rec occur_rec env visited ty0 ty =
+let rec occur_rec env allow_recursive visited ty0 = function
+  | {desc=Tlink ty} ->
+      occur_rec env allow_recursive visited ty0 ty
+  | ty ->
   if ty == ty0  then raise Occur;
-  if allow_recursive env ty then () else
   match ty.desc with
     Tconstr(p, tl, abbrev) ->
+      if allow_recursive && is_contractive env p then () else
       begin try
-        if List.memq ty visited then raise Occur;
-        iter_type_expr (occur_rec env (ty::visited) ty0) ty
+        if TypeSet.mem ty visited then raise Occur;
+        let visited = TypeSet.add ty visited in
+        iter_type_expr (occur_rec env allow_recursive visited ty0) ty
       with Occur -> try
         let ty' = try_expand_head try_expand_once env ty in
-        (* Maybe we could simply make a recursive call here,
-           but it seems it could make the occur check loop
-           (see change in rev. 1.58) *)
-        if ty' == ty0 || List.memq ty' visited then raise Occur;
-        match ty'.desc with
-          Tobject _ | Tvariant _ -> ()
-        | _ ->
-            if allow_recursive env ty' then () else
-            iter_type_expr (occur_rec env (ty'::visited) ty0) ty'
+        (* This call used to be inlined, but there seems no reason for it.
+           Message was referring to change in rev. 1.58 of the CVS repo. *)
+        occur_rec env allow_recursive visited ty0 ty'
       with Cannot_expand ->
         raise Occur
       end
   | Tobject _ | Tvariant _ ->
       ()
   | _ ->
-      iter_type_expr (occur_rec env visited ty0) ty
+      if allow_recursive ||  TypeSet.mem ty visited then () else begin
+        let visited = TypeSet.add ty visited in
+        iter_type_expr (occur_rec env allow_recursive visited ty0) ty
+      end
 
 let type_changed = ref false (* trace possible changes to the studied type *)
 
 let merge r b = if b then r := true
 
 let occur env ty0 ty =
+  let allow_recursive = !Clflags.recursive_types || !umode = Pattern  in
   let old = !type_changed in
   try
-    while type_changed := false; occur_rec env [] ty0 ty; !type_changed
+    while
+      type_changed := false;
+      occur_rec env allow_recursive TypeSet.empty ty0 ty;
+      !type_changed
     do () (* prerr_endline "changed" *) done;
     merge type_changed old
   with exn ->
@@ -1681,7 +1648,7 @@ let rec local_non_recursive_abbrev visited env p ty =
     match ty.desc with
       Tconstr(p', args, abbrev) ->
         if Path.same p p' then raise Occur;
-        if is_contractive env ty then () else
+        if is_contractive env p' then () else
         let visited = ty :: visited in
         begin try
           List.iter (local_non_recursive_abbrev visited env p) args
@@ -2351,14 +2318,11 @@ let rec unify (env:Env.t ref) t1 t2 =
 
 and unify2 env t1 t2 =
   (* Second step: expansion of abbreviations *)
-  let rec expand_both t1'' t2'' =
-    let t1' = expand_head_unif !env t1 in
-    let t2' = expand_head_unif !env t2 in
-    (* Expansion may have changed the representative of the types... *)
-    if unify_eq !env t1' t1'' && unify_eq !env t2' t2'' then (t1',t2') else
-    expand_both t1' t2'
-  in
-  let t1', t2' = expand_both t1 t2 in
+  (* Expansion may change the representative of the types. *)
+  ignore (expand_head_unif !env t1);
+  ignore (expand_head_unif !env t2);
+  let t1' = expand_head_unif !env t1 in
+  let t2' = expand_head_unif !env t2 in
   let lv = min t1'.level t2'.level in
   update_level !env lv t2;
   update_level !env lv t1;
@@ -2600,9 +2564,6 @@ and unify_kind k1 k2 =
   | (Fpresent, Fvar r)            -> set_kind r k1
   | (Fpresent, Fpresent)          -> ()
   | _                             -> assert false
-
-and unify_pairs mode env tpl =
-  List.iter (fun (t1, t2) -> unify env t1 t2) tpl
 
 and unify_row env row1 row2 =
   let row1 = row_repr row1 and row2 = row_repr row2 in
@@ -3168,11 +3129,6 @@ let matches env ty ty' =
                  (*********************************************)
                  (*  Equivalence between parameterized types  *)
                  (*********************************************)
-
-let rec get_object_row ty =
-  match repr ty with
-  | {desc=Tfield (_, _, _, tl)} -> get_object_row tl
-  | ty -> ty
 
 let expand_head_rigid env ty =
   let old = !rigid_variants in
@@ -3888,23 +3844,6 @@ let subtypes = TypePairs.create 17
 let subtype_error env trace =
   raise (Subtype (expand_trace env (List.rev trace), []))
 
-(* check list inclusion, assuming lists are ordered *)
-let rec included nl1 nl2 =
-  match nl1, nl2 with
-    (a::nl1', b::nl2') ->
-      if a = b then included nl1' nl2' else
-      a > b && included nl1 nl2'
-  | ([], _) -> true
-  | (_, []) -> false
-
-let rec extract_assoc nl1 nl2 tl2 =
-  match (nl1, nl2, tl2) with
-    (a::nl1', b::nl2, t::tl2) ->
-      if a = b then t :: extract_assoc nl1' nl2 tl2
-      else extract_assoc nl1 nl2 tl2
-  | ([], _, _) -> []
-  | _ -> assert false
-
 let rec subtype_rec env trace t1 t2 cstrs =
   let t1 = repr t1 in
   let t2 = repr t2 in
@@ -3978,11 +3917,6 @@ let rec subtype_rec env trace t1 t2 cstrs =
         with Unify _ ->
           (trace, t1, t2, !univar_pairs)::cstrs
         end
-(*    | (Tpackage (p1, nl1, tl1), Tpackage (p2, nl2, tl2))
-      when eq_package_path env p1 p2 && included nl2 nl1 ->
-        List.map2 (fun t1 t2 -> (trace, t1, t2, !univar_pairs))
-          (extract_assoc nl2 nl1 tl1) tl2
-        @ cstrs *)
     | (Tpackage (p1, nl1, tl1), Tpackage (p2, nl2, tl2)) ->
         begin try
           let ntl1 = complete_type_list env nl2 t1.level (Mty_ident p1) nl1 tl1

@@ -303,9 +303,12 @@ void unix_error(int errcode, char *cmdname, value cmdarg)
   mlraise(res);
 }
 
-void uerror(cmdname, cmdarg)
-     char * cmdname;
-     value cmdarg;
+void uerror(char * cmdname, value cmdarg)
 {
   unix_error(errno, cmdname, cmdarg);
+}
+
+void caml_unix_check_path(value path, char * cmdname)
+{
+  if (! caml_string_is_c_safe(path)) unix_error(ENOENT, cmdname, path);
 }

@@ -25,11 +25,6 @@ open Parsetree
 let prefix_symbols  = [ '!'; '?'; '~' ] ;;
 let infix_symbols = [ '='; '<'; '>'; '@'; '^'; '|'; '&'; '+'; '-'; '*'; '/';
                       '$'; '%' ]
-let operator_chars = [ '!'; '$'; '%'; '&'; '*'; '+'; '-'; '.'; '/';
-                       ':'; '<'; '='; '>'; '?'; '@'; '^'; '|'; '~' ]
-let numeric_chars  = [ '0'; '1'; '2'; '3'; '4'; '5'; '6'; '7'; '8'; '9' ]
-
-(* type fixity = Infix| Prefix  *)
 
 let special_infix_strings =
   ["asr"; "land"; "lor"; "lsl"; "lsr"; "lxor"; "mod"; "or"; ":="; "!=" ]
@@ -424,90 +419,64 @@ class printer  ()= object(self:'self)
     if e.pexp_attributes <> [] then false
       (* should also check attributes underneath *)
     else match e.pexp_desc with
-    | Pexp_apply
-        ({pexp_desc=
-          Pexp_ident
-            {txt= Ldot (Lident (("Array"|"String") as s),"get");_};_},
-         [(_,e1);(_,e2)]) -> begin
-              let fmt:(_,_,_)format =
-                if s= "Array" then "@[%a.(%a)@]" else "@[%a.[%a]@]" in
-              pp f fmt   self#simple_expr e1 self#expression e2;
-              true
-            end
-    |Pexp_apply
-        ({pexp_desc=
-          Pexp_ident
-            {txt= Ldot (Lident (("Array"|"String") as s),
-                        "set");_};_},[(_,e1);(_,e2);(_,e3)])
-      ->
-        let fmt :(_,_,_) format=
-          if s= "Array" then
-            "@[%a.(%a)@ <-@;%a@]"
-          else
-            "@[%a.[%a]@ <-@;%a@]" in  (* @;< gives error here *)
-        pp f fmt self#simple_expr e1  self#expression e2  self#expression e3;
-        true
-    | Pexp_apply ({pexp_desc=Pexp_ident {txt=Lident "!";_};_}, [(_,e)]) -> begin
-        pp f "@[<hov>!%a@]" self#simple_expr e;
-        true
-    end
-    | Pexp_apply
-        ({pexp_desc=Pexp_ident
-                     {txt= Ldot (Ldot (Lident "Bigarray", array),
-                                 ("get"|"set" as gs)) ;_};_},
-         label_exprs) ->
-           begin match array, gs, label_exprs with
-           | "Genarray", "get",
-             [(_,a);(_,{pexp_desc=Pexp_array ls;_})] ->
-               pp f "@[%a.{%a}@]" self#simple_expr a
-                 (self#list ~sep:"," self#simple_expr ) ls;
-               true
-           | "Genarray", "set",
-             [(_,a);(_,{pexp_desc=Pexp_array ls;_});(_,c)] ->
-               pp f "@[%a.{%a}@ <-@ %a@]" self#simple_expr a
-                 (self#list ~sep:"," self#simple_expr ) ls self#simple_expr c;
-               true
-           | "Array1", "set", [(_,a);(_,i);(_,v)] ->
-               pp f "@[%a.{%a}@ <-@ %a@]"
-                  self#simple_expr a
-                  self#simple_expr i
-                  self#simple_expr v;
-               true
-           | "Array2", "set", [(_,a);(_,i1);(_,i2);(_,v)] ->
-               pp f "@[%a.{%a,%a}@ <-@ %a@]"
-                  self#simple_expr a
-                  self#simple_expr i1
-                  self#simple_expr i2
-                  self#simple_expr v;
-               true
-           | "Array3", "set", [(_,a);(_,i1);(_,i2);(_,i3);(_,v)] ->
-               pp f "@[%a.{%a,%a,%a}@ <-@ %a@]"
-                  self#simple_expr a
-                  self#simple_expr i1
-                  self#simple_expr i2
-                  self#simple_expr i3
-                  self#simple_expr v;
-               true
-           | "Array1", "get", [(_,a);(_,i)] ->
-               pp f "@[%a.{%a}@]"
-                  self#simple_expr a
-                  self#simple_expr i;
-               true
-           | "Array2", "get", [(_,a);(_,i1);(_,i2)] ->
-               pp f "@[%a.{%a,%a}@]"
-                  self#simple_expr a
-                  self#simple_expr i1
-                  self#simple_expr i2;
-               true
-           | "Array3", "get", [(_,a);(_,i1);(_,i2);(_,i3)] ->
-               pp f "@[%a.{%a,%a,%a}@]"
-                  self#simple_expr a
-                  self#simple_expr i1
-                  self#simple_expr i2
-                  self#simple_expr i3;
-               true
-           | _ -> false
-           end
+    | Pexp_apply ({ pexp_desc = Pexp_ident { txt = Lident s; _ }; _ }, args)
+      when List.for_all (fun (lab, _) -> lab = Nolabel) args -> begin
+        let args = List.map snd args in
+        match s, args with
+        | "!", [e] ->
+          pp f "@[<hov>!%a@]" self#simple_expr e;
+          true
+        | (".()"|".[]"|".{}"), [a; i] ->
+          let left = String.sub s 0 2 and right = String.sub s 2 1 in
+          pp f "@[%a%s%a%s@]"
+            self#simple_expr a
+            left self#expression i right;
+          true
+        | (".()<-"|".[]<-"|".{}<-"), [a; i; v] ->
+          let left = String.sub s 0 2 and right = String.sub s 2 1 in
+          pp f "@[%a%s%a%s@ <-@;%a@]" (* @;< gives error here *)
+            self#simple_expr a
+            left self#expression i right
+            self#expression v;
+          true
+        | ".{,}", [a; i1; i2] ->
+          pp f "@[%a.{%a,%a}@]"
+            self#simple_expr a
+            self#simple_expr i1
+            self#simple_expr i2;
+          true
+        | ".{,}<-", [a; i1; i2; v] ->
+          pp f "@[%a.{%a,%a}@ <-@ %a@]"
+            self#simple_expr a
+            self#simple_expr i1
+            self#simple_expr i2
+            self#simple_expr v;
+          true
+        | ".{,,}", [a; i1; i2; i3] ->
+          pp f "@[%a.{%a,%a,%a}@]"
+            self#simple_expr a
+            self#simple_expr i1
+            self#simple_expr i2
+            self#simple_expr i3;
+          true
+        | ".{,,}<-", [a; i1; i2; i3; v] ->
+          pp f "@[%a.{%a,%a,%a}@ <-@ %a@]"
+            self#simple_expr a
+            self#simple_expr i1
+            self#simple_expr i2
+            self#simple_expr i3
+            self#simple_expr v;
+          true
+        | ".{,..,}", [a; {pexp_desc = Pexp_array ls; pexp_attributes = []}] ->
+          pp f "@[%a.{%a}@]" self#simple_expr a
+            (self#list ~sep:"," self#simple_expr ) ls;
+          true
+        | ".{,..,}<-", [a; {pexp_desc = Pexp_array ls; pexp_attributes = []}; v] ->
+          pp f "@[%a.{%a}@ <-@ %a@]" self#simple_expr a
+            (self#list ~sep:"," self#simple_expr ) ls self#simple_expr v;
+          true
+        | _ -> false
+      end
     | _ -> false
   method expression f x =
     if x.pexp_attributes <> [] then begin
@@ -631,6 +600,8 @@ class printer  ()= object(self:'self)
     | Pexp_variant (l,Some eo) ->
         pp f "@[<2>`%s@;%a@]" l  self#simple_expr eo
     | Pexp_extension e -> self#extension f e
+    | Pexp_unreachable ->
+        pp f "."
     | _ -> self#expression1 f x
   method expression1 f x =
     if x.pexp_attributes <> [] then self#expression f x
@@ -918,8 +889,12 @@ class printer  ()= object(self:'self)
     | Pmty_functor (_, None, mt2) ->
         pp f "@[<hov2>functor () ->@ %a@]" self#module_type mt2
     | Pmty_functor (s, Some mt1, mt2) ->
-        pp f "@[<hov2>functor@ (%s@ :@ %a)@ ->@ %a@]" s.txt
-          self#module_type mt1  self#module_type mt2
+        if s.txt = "_" then
+          pp f "@[<hov2>%a@ ->@ %a@]"
+             self#module_type mt1  self#module_type mt2
+        else
+          pp f "@[<hov2>functor@ (%s@ :@ %a)@ ->@ %a@]" s.txt
+             self#module_type mt1  self#module_type mt2
     | Pmty_with (mt, l) ->
         let with_constraint f = function
           | Pwith_type (li, ({ptype_params= ls ;_} as td)) ->

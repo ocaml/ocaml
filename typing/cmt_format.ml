@@ -135,12 +135,6 @@ let read filename =
     close_in ic;
     raise e
 
-let string_of_file filename =
-  let ic = open_in filename in
-  let s = Misc.string_of_file ic in
-  close_in ic;
-  s
-
 let read_cmt filename =
   match read filename with
       _, None -> raise (Error (Not_a_typedtree filename))

@@ -150,7 +150,7 @@ export LC_ALL=C
 $make -f Makefile$nt distclean || :
 
 if $docheckout; then
-  svn update --accept theirs-full
+  git pull
 fi
 
 case $nt in

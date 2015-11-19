@@ -128,8 +128,6 @@ let option i f ppf x =
 let longident_loc i ppf li = line i ppf "%a\n" fmt_longident_loc li;;
 let string i ppf s = line i ppf "\"%s\"\n" s;;
 let string_loc i ppf s = line i ppf "%a\n" fmt_string_loc s;;
-let bool i ppf x = line i ppf "%s\n" (string_of_bool x);;
-let label i ppf x = line i ppf "label=\"%s\"\n" x;;
 let arg_label i ppf = function
   | Nolabel -> line i ppf "Nolabel\n"
   | Optional s -> line i ppf "Optional \"%s\"\n" s
@@ -365,6 +363,8 @@ and expression i ppf x =
   | Pexp_extension (s, arg) ->
       line i ppf "Pexp_extension \"%s\"\n" s.txt;
       payload i ppf arg
+  | Pexp_unreachable ->
+      line i ppf "Pexp_unreachable"
 
 and value_description i ppf x =
   line i ppf "value_description %a %a\n" fmt_string_loc

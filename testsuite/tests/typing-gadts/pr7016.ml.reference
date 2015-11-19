@@ -1,0 +1,13 @@
+
+#     type (_, _) t =
+    Nil : ('tl, 'tl) t
+  | Cons : 'a * ('b, 'tl) t -> ('a * 'b, 'tl) t
+#   Characters 10-44:
+  let get1 (Cons (x, _) : (_ * 'a, 'a) t) = x ;; (* warn, cf PR#6993 *)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Warning 8: this pattern-matching is not exhaustive.
+Here is an example of a value that is not matched:
+Nil
+val get1 : ('b * 'a, 'a) t -> 'b = <fun>
+#       val get1' : ('b * 'a as 'a, 'a) t -> 'b = <fun>
+# 

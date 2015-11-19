@@ -56,13 +56,9 @@ let transl_extension_constructor env path ext =
   in
   match ext.ext_kind with
     Text_decl(args, ret) ->
-      let id = Ident.create "set_oo_id" in
-      Llet(Strict, id,
-           Lprim(Pmakeblock(Obj.object_tag, Immutable),
-                 [Lconst(Const_base(Const_string (name,None)));
-                  Lprim (prim_fresh_oo_id,
-                    [Lconst (Const_base (Const_int 0))])]),
-           Lvar id)
+      Lprim (Pmakeblock (Obj.object_tag, Immutable),
+        [Lconst (Const_base (Const_string (name, None)));
+         Lprim (prim_fresh_oo_id, [Lconst (Const_base (Const_int 0))])])
   | Text_rebind(path, lid) ->
       transl_path ~loc:ext.ext_loc env path
 
@@ -101,7 +97,7 @@ let rec apply_coercion strict restr arg =
                                    [apply_coercion Alias cc_arg (Lvar param)],
                                    no_apply_info))})
   | Tcoerce_primitive { pc_loc; pc_desc; pc_env; pc_type; } ->
-      transl_primitive pc_loc pc_desc pc_env pc_type
+      transl_primitive pc_loc pc_desc pc_env pc_type None
   | Tcoerce_alias (path, cc) ->
       name_lambda strict arg
         (fun id -> apply_coercion Alias cc (transl_normal_path path))
@@ -405,7 +401,7 @@ and transl_structure fields cc rootpath = function
                     match cc with
                       Tcoerce_primitive p ->
                         transl_primitive p.pc_loc
-                          p.pc_desc p.pc_env p.pc_type
+                          p.pc_desc p.pc_env p.pc_type None
                     | _ -> apply_coercion Strict cc (get_field pos))
                   pos_cc_list))
           and id_pos_list =
@@ -498,15 +494,52 @@ and pure_module m =
 let _ =
   Translcore.transl_module := transl_module
 
+(* Introduce dependencies on modules referenced only by "external". *)
+
+let scan_used_globals lam =
+  let globals = ref IdentSet.empty in
+  let rec scan lam =
+    Lambda.iter scan lam;
+    match lam with
+      Lprim ((Pgetglobal id | Psetglobal id), _) ->
+        globals := IdentSet.add id !globals
+    | _ -> ()
+  in
+  scan lam; !globals
+
+let wrap_globals body =
+  let globals = scan_used_globals body in
+  let add_global id req =
+    if IdentSet.mem id globals then req else IdentSet.add id req in
+  let required =
+    Hashtbl.fold (fun path loc -> add_global (Path.head path))
+      used_primitives IdentSet.empty
+  in
+  let required =
+    List.fold_right add_global (Env.get_required_globals ()) required
+  in
+  Env.reset_required_globals ();
+  Hashtbl.clear used_primitives;
+  IdentSet.fold
+    (fun id expr -> Lsequence(Lprim(Pgetglobal id, []), expr))
+    required body
+  (* Location.prerr_warning loc
+        (Warnings.Nonrequired_global (Ident.name (Path.head path),
+                                      "uses the primitive " ^
+                                      Printtyp.string_of_path path))) *)
+
 (* Compile an implementation *)
 
 let transl_implementation_native module_name (str, cc) =
   reset_labels ();
   primitive_declarations := [];
+  Hashtbl.clear used_primitives;
   let module_id = Ident.create_persistent module_name in
-  module_id,
+  let body, size =
     transl_label_init
       (fun () -> transl_struct [] cc (global_path module_id) str)
+  in
+  module_id, (wrap_globals body, size)
 
 let transl_implementation module_name (str, cc) =
   let module_id, (module_initializer, _size) =
@@ -612,6 +645,7 @@ let transl_toplevel_item_and_close itm =
 
 let transl_toplevel_definition str =
   reset_labels ();
+  Hashtbl.clear used_primitives;
   make_sequence transl_toplevel_item_and_close str.str_items
 
 (* Compile the initialization code for a packed library *)
@@ -661,4 +695,6 @@ let () =
 let reset () =
   primitive_declarations := [];
   toploop_ident.Ident.flags <- 0;
-  aliased_idents := Ident.empty
+  aliased_idents := Ident.empty;
+  Env.reset_required_globals ();
+  Hashtbl.clear used_primitives

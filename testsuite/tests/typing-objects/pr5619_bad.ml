@@ -14,7 +14,6 @@ class foo =
     method cast =
       function
           Foo -> (self :> <foo : string>)
-        | _ -> raise Exit
   end
 ;;
 
@@ -24,6 +23,6 @@ class foo: foo_t =
     method cast: type a. a name -> a =
       function
           Foo -> (self :> foo_t)
-        | _ -> ((raise Exit) : a)
+        | _ -> raise Exit
   end
 ;;

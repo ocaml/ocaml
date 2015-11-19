@@ -69,7 +69,6 @@ module EnvLazy : sig
 
   val force : ('a -> 'b) -> ('a,'b) t -> 'b
   val create : 'a -> ('a,'b) t
-  val is_val : ('a,'b) t -> bool
   val get_arg : ('a,'b) t -> 'a option
 
 end  = struct
@@ -93,9 +92,6 @@ end  = struct
           with e ->
             x := Raise e;
             raise e
-
-  let is_val x =
-    match !x with Done _ -> true | _ -> false
 
   let get_arg x =
     match !x with Thunk a -> Some a | _ -> None
@@ -142,9 +138,6 @@ module EnvTbl =
           )
       in
       Ident.add id (x, slot) tbl
-
-    let add_dont_track id x tbl =
-      Ident.add id (x, nothing) tbl
 
     let find_same_not_using id tbl =
       fst (Ident.find_same id tbl)
@@ -914,13 +907,6 @@ let lookup_type lid env =
   mark_type_used env (Longident.last lid) decl;
   (path, decl)
 
-(* [path] must be the path to a type, not to a module ! *)
-let path_subst_last path id =
-  match path with
-    Pident _ -> Pident id
-  | Pdot (p, name, pos) -> Pdot(p, Ident.name id, pos)
-  | Papply (p1, p2) -> assert false
-
 let mark_type_path env path =
   try
     let decl = find_type path env in
@@ -1010,24 +996,27 @@ let lookup_cltype lid env =
 type iter_cont = unit -> unit
 let iter_env_cont = ref []
 
-let rec scrape_alias_safe env mty =
+let rec scrape_alias_for_visit env mty =
   match mty with
-  | Mty_alias (Pident id) when Ident.persistent id -> false
+  | Mty_alias (Pident id)
+    when Ident.persistent id
+      && not (Hashtbl.mem persistent_structures (Ident.name id)) -> false
   | Mty_alias path -> (* PR#6600: find_module may raise Not_found *)
-      scrape_alias_safe env (find_module path env).md_type
+      begin try scrape_alias_for_visit env (find_module path env).md_type
+      with Not_found -> false
+      end
   | _ -> true
 
 let iter_env proj1 proj2 f env () =
   Ident.iter (fun id (x,_) -> f (Pident id) x) (proj1 env);
   let rec iter_components path path' mcomps =
     let cont () =
-      let safe =
+      let visit =
         match EnvLazy.get_arg mcomps with
-          None -> true
-        | Some (env, sub, path, mty) ->
-            try scrape_alias_safe env mty with Not_found -> false
+        | None -> true
+        | Some (env, sub, path, mty) -> scrape_alias_for_visit env mty
       in
-      if not safe then () else
+      if not visit then () else
       match EnvLazy.force !components_of_module_maker' mcomps with
         Structure_comps comps ->
           Tbl.iter

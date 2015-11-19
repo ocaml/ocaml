@@ -12,191 +12,10 @@
 
 # The main Makefile
 
-include config/Makefile
-CAMLRUN ?= boot/ocamlrun
-CAMLYACC ?= boot/ocamlyacc
-include stdlib/StdlibModules
+include Makefile.shared
 
-CAMLC=boot/ocamlrun boot/ocamlc -g -nostdlib -I boot
-CAMLOPT=boot/ocamlrun ./ocamlopt -g -nostdlib -I stdlib -I otherlibs/dynlink
-COMPFLAGS=-strict-sequence -w +33..39+48+50 -warn-error A-53 -bin-annot \
-          -safe-string $(INCLUDES)
-LINKFLAGS=
-
-YACCFLAGS=-v
-CAMLLEX=$(CAMLRUN) boot/ocamllex
-CAMLDEP=$(CAMLRUN) tools/ocamldep
-DEPFLAGS=$(INCLUDES)
 SHELL=/bin/sh
 MKDIR=mkdir -p
-
-OCAMLBUILDBYTE=$(WITH_OCAMLBUILD:=.byte)
-OCAMLBUILDNATIVE=$(WITH_OCAMLBUILD:=.native)
-
-OCAMLDOC_OPT=$(WITH_OCAMLDOC:=.opt)
-
-INCLUDES=-I utils -I parsing -I typing -I bytecomp -I middle_end \
-         -I middle_end/base_types -I asmcomp -I driver -I toplevel
-
-UTILS=utils/config.cmo utils/timings.cmo utils/clflags.cmo \
-  utils/misc.cmo utils/tbl.cmo \
-  utils/terminfo.cmo utils/ccomp.cmo utils/warnings.cmo \
-  utils/consistbl.cmo \
-  utils/ext_types.cmo \
-  utils/sort_connected_components.cmo
-
-PARSING=parsing/location.cmo parsing/longident.cmo \
-  parsing/docstrings.cmo parsing/ast_helper.cmo \
-  parsing/syntaxerr.cmo parsing/parser.cmo \
-  parsing/lexer.cmo parsing/parse.cmo parsing/printast.cmo \
-  parsing/pprintast.cmo \
-  parsing/ast_mapper.cmo parsing/attr_helper.cmo
-
-TYPING=typing/ident.cmo typing/path.cmo \
-  typing/primitive.cmo typing/types.cmo \
-  typing/btype.cmo typing/oprint.cmo \
-  typing/subst.cmo typing/predef.cmo \
-  typing/datarepr.cmo typing/cmi_format.cmo typing/env.cmo \
-  typing/typedtree.cmo typing/printtyped.cmo typing/ctype.cmo \
-  typing/printtyp.cmo typing/includeclass.cmo \
-  typing/mtype.cmo typing/envaux.cmo typing/includecore.cmo \
-  typing/typedtreeIter.cmo typing/typedtreeMap.cmo \
-  typing/tast_mapper.cmo \
-  typing/cmt_format.cmo \
-  typing/includemod.cmo typing/typetexp.cmo typing/parmatch.cmo \
-  typing/stypes.cmo typing/typecore.cmo \
-  typing/typedecl.cmo typing/typeclass.cmo \
-  typing/typemod.cmo typing/untypeast.cmo
-
-COMP=bytecomp/lambda.cmo bytecomp/printlambda.cmo \
-  bytecomp/typeopt.cmo bytecomp/switch.cmo bytecomp/matching.cmo \
-  bytecomp/translobj.cmo bytecomp/translattribute.cmo \
-  bytecomp/translcore.cmo \
-  bytecomp/translclass.cmo bytecomp/translmod.cmo \
-  bytecomp/simplif.cmo bytecomp/runtimedef.cmo \
-  bytecomp/debuginfo.cmo \
-  driver/pparse.cmo driver/main_args.cmo \
-  driver/compenv.cmo driver/compmisc.cmo
-
-COMMON=$(UTILS) $(PARSING) $(TYPING) $(COMP)
-
-BYTECOMP=bytecomp/meta.cmo bytecomp/instruct.cmo bytecomp/bytegen.cmo \
-  bytecomp/printinstr.cmo bytecomp/opcodes.cmo bytecomp/emitcode.cmo \
-  bytecomp/bytesections.cmo bytecomp/dll.cmo bytecomp/symtable.cmo \
-  bytecomp/bytelink.cmo bytecomp/bytelibrarian.cmo bytecomp/bytepackager.cmo \
-  driver/errors.cmo driver/compile.cmo
-
-INTEL_ASM=\
-  asmcomp/x86_proc.cmo \
-  asmcomp/x86_dsl.cmo \
-  asmcomp/x86_gas.cmo \
-  asmcomp/x86_masm.cmo
-
-ARCH_SPECIFIC_ASMCOMP=
-ifeq ($(ARCH),i386)
-ARCH_SPECIFIC_ASMCOMP=$(INTEL_ASM)
-endif
-ifeq ($(ARCH),amd64)
-ARCH_SPECIFIC_ASMCOMP=$(INTEL_ASM)
-endif
-
-ASMCOMP=\
-  $(ARCH_SPECIFIC_ASMCOMP) \
-  asmcomp/arch.cmo \
-  asmcomp/cmm.cmo asmcomp/printcmm.cmo \
-  asmcomp/reg.cmo asmcomp/mach.cmo asmcomp/proc.cmo \
-  asmcomp/clambda.cmo asmcomp/printclambda.cmo \
-  asmcomp/export_info.cmo \
-  asmcomp/export_info_for_pack.cmo \
-  asmcomp/compilenv.cmo \
-  asmcomp/build_export_info.cmo \
-  asmcomp/closure_offsets.cmo \
-  asmcomp/flambda_to_clambda.cmo \
-  asmcomp/import_approx.cmo \
-  asmcomp/un_anf.cmo \
-  asmcomp/strmatch.cmo asmcomp/cmmgen.cmo \
-  asmcomp/printmach.cmo asmcomp/selectgen.cmo asmcomp/selection.cmo \
-  asmcomp/comballoc.cmo \
-  asmcomp/CSEgen.cmo asmcomp/CSE.cmo \
-  asmcomp/liveness.cmo \
-  asmcomp/spill.cmo asmcomp/split.cmo \
-  asmcomp/interf.cmo asmcomp/coloring.cmo \
-  asmcomp/reloadgen.cmo asmcomp/reload.cmo \
-  asmcomp/deadcode.cmo \
-  asmcomp/printlinear.cmo asmcomp/linearize.cmo \
-  asmcomp/schedgen.cmo asmcomp/scheduling.cmo \
-  asmcomp/branch_relaxation_intf.cmo \
-  asmcomp/branch_relaxation.cmo \
-  asmcomp/emitaux.cmo asmcomp/emit.cmo asmcomp/asmgen.cmo \
-  asmcomp/asmlink.cmo asmcomp/asmlibrarian.cmo asmcomp/asmpackager.cmo \
-  driver/opterrors.cmo driver/optcompile.cmo
-
-MIDDLE_END=\
-  middle_end/base_types/tag.cmo \
-  middle_end/base_types/linkage_name.cmo \
-  middle_end/base_types/compilation_unit.cmo \
-  middle_end/base_types/variable.cmo \
-  middle_end/base_types/mutable_variable.cmo \
-  middle_end/base_types/set_of_closures_id.cmo \
-  middle_end/base_types/closure_element.cmo \
-  middle_end/base_types/closure_id.cmo \
-  middle_end/base_types/var_within_closure.cmo \
-  middle_end/base_types/static_exception.cmo \
-  middle_end/base_types/export_id.cmo \
-  middle_end/base_types/symbol.cmo \
-  middle_end/semantics_of_primitives.cmo \
-  middle_end/allocated_const.cmo \
-  middle_end/flambda.cmo \
-  middle_end/flambda_iterators.cmo \
-  middle_end/flambda_utils.cmo \
-  middle_end/inlining_cost.cmo \
-  middle_end/effect_analysis.cmo \
-  middle_end/freshening.cmo \
-  middle_end/simple_value_approx.cmo \
-  middle_end/lift_code.cmo \
-  middle_end/closure_conversion_aux.cmo \
-  middle_end/closure_conversion.cmo \
-  middle_end/initialize_symbol_to_let_symbol.cmo \
-  middle_end/lift_let_to_initialize_symbol.cmo \
-  middle_end/find_recursive_functions.cmo \
-  middle_end/invariant_params.cmo \
-  middle_end/inconstant_idents.cmo \
-  middle_end/alias_analysis.cmo \
-  middle_end/lift_constants.cmo \
-  middle_end/share_constants.cmo \
-  middle_end/simplify_common.cmo \
-  middle_end/eliminate_const_block.cmo \
-  middle_end/remove_unused_arguments.cmo \
-  middle_end/remove_unused_closure_vars.cmo \
-  middle_end/remove_unused_globals.cmo \
-  middle_end/simplify_boxed_integer_ops.cmo \
-  middle_end/simplify_primitives.cmo \
-  middle_end/inlining_stats_types.cmo \
-  middle_end/inlining_stats.cmo \
-  middle_end/inline_and_simplify_aux.cmo \
-  middle_end/augment_closure.cmo \
-  middle_end/unbox_closures.cmo \
-  middle_end/inlining_transforms.cmo \
-  middle_end/inlining_decision.cmo \
-  middle_end/inline_and_simplify.cmo \
-  middle_end/ref_to_variables.cmo \
-  middle_end/flambda_invariants.cmo \
-  middle_end/middle_end.cmo
-
-TOPLEVEL=toplevel/genprintval.cmo toplevel/toploop.cmo \
-  toplevel/trace.cmo toplevel/topdirs.cmo toplevel/topmain.cmo
-
-BYTESTART=driver/main.cmo
-
-OPTSTART=driver/optmain.cmo
-
-TOPLEVELSTART=toplevel/topstart.cmo
-
-NATTOPOBJS=$(UTILS) $(PARSING) $(TYPING) $(COMP) $(MIDDLE_END) $(ASMCOMP) \
-  toplevel/genprintval.cmo toplevel/opttoploop.cmo toplevel/opttopdirs.cmo \
-  toplevel/opttopmain.cmo toplevel/opttopstart.cmo
-
-PERVASIVES=$(STDLIB_MODULES) outcometree topdirs toploop
 
 # For users who don't read the INSTALL file
 defaultentry:
@@ -470,32 +289,31 @@ clean:: partialclean
 # Shared parts of the system
 
 compilerlibs/ocamlcommon.cma: $(COMMON)
-	$(CAMLC) -a -g -linkall -o $@ $(COMMON)
+	$(CAMLC) -a -linkall -o $@ $(COMMON)
 partialclean::
 	rm -f compilerlibs/ocamlcommon.cma
 
 # The bytecode compiler
 
 compilerlibs/ocamlbytecomp.cma: $(BYTECOMP)
-	$(CAMLC) -a -g -o $@ $(BYTECOMP)
+	$(CAMLC) -a -o $@ $(BYTECOMP)
 partialclean::
 	rm -f compilerlibs/ocamlbytecomp.cma
 
 ocamlc: compilerlibs/ocamlcommon.cma compilerlibs/ocamlbytecomp.cma $(BYTESTART)
 	$(CAMLC) $(LINKFLAGS) -compat-32 -o ocamlc \
-	   ${BISECT_CMA} \
 	   compilerlibs/ocamlcommon.cma compilerlibs/ocamlbytecomp.cma $(BYTESTART)
 
 # The native-code compiler
 
 compilerlibs/ocamloptcomp.cma: $(MIDDLE_END) $(ASMCOMP)
-	$(CAMLC) -a -g -o $@ $(MIDDLE_END) $(ASMCOMP)
+	$(CAMLC) -a -o $@ $(MIDDLE_END) $(ASMCOMP)
+
 partialclean::
 	rm -f compilerlibs/ocamloptcomp.cma
 
 ocamlopt: compilerlibs/ocamlcommon.cma compilerlibs/ocamloptcomp.cma $(OPTSTART)
 	$(CAMLC) $(LINKFLAGS) -o ocamlopt \
-	  ${BISECT_CMA} \
 	  compilerlibs/ocamlcommon.cma compilerlibs/ocamloptcomp.cma $(OPTSTART)
 
 partialclean::
@@ -511,7 +329,6 @@ partialclean::
 ocaml: compilerlibs/ocamlcommon.cma compilerlibs/ocamlbytecomp.cma \
        compilerlibs/ocamltoplevel.cma $(TOPLEVELSTART) expunge
 	$(CAMLC) $(LINKFLAGS) -linkall -o ocaml.tmp \
-	  ${BISECT_CMA} \
 	  compilerlibs/ocamlcommon.cma compilerlibs/ocamlbytecomp.cma \
 	  compilerlibs/ocamltoplevel.cma $(TOPLEVELSTART)
 	- $(CAMLRUN) ./expunge ocaml.tmp ocaml $(PERVASIVES)
@@ -607,7 +424,6 @@ partialclean::
 ocamlc.opt: compilerlibs/ocamlcommon.cmxa compilerlibs/ocamlbytecomp.cmxa \
             $(BYTESTART:.cmo=.cmx)
 	$(CAMLOPT) $(LINKFLAGS) -ccopt "$(BYTECCLINKOPTS)" -o ocamlc.opt \
-          ${BISECT_CMXA} \
 	  compilerlibs/ocamlcommon.cmxa compilerlibs/ocamlbytecomp.cmxa \
 	  $(BYTESTART:.cmo=.cmx) -cclib "$(BYTECCLIBS)"
 
@@ -624,7 +440,6 @@ partialclean::
 ocamlopt.opt: compilerlibs/ocamlcommon.cmxa compilerlibs/ocamloptcomp.cmxa \
               $(OPTSTART:.cmo=.cmx)
 	$(CAMLOPT) $(LINKFLAGS) -o ocamlopt.opt \
-	   ${BISECT_CMXA} \
 	   compilerlibs/ocamlcommon.cmxa compilerlibs/ocamloptcomp.cmxa \
 	   $(OPTSTART:.cmo=.cmx)
 
@@ -732,8 +547,7 @@ tools/cvt_emit: tools/cvt_emit.mll
 
 expunge: compilerlibs/ocamlcommon.cma compilerlibs/ocamlbytecomp.cma \
          toplevel/expunge.cmo
-	$(CAMLC) $(LINKFLAGS) -o expunge \
-		 ${BISECT_CMA} compilerlibs/ocamlcommon.cma \
+	$(CAMLC) $(LINKFLAGS) -o expunge compilerlibs/ocamlcommon.cma \
 	         compilerlibs/ocamlbytecomp.cma toplevel/expunge.cmo
 
 partialclean::
@@ -932,14 +746,12 @@ clean::
 	$(CAMLOPT) $(COMPFLAGS) `./Compflags $@` ${PPX_BISECT_OPT} -c $<
 
 partialclean::
-	for d in utils parsing typing bytecomp middle_end asmcomp driver toplevel tools; \
-	  do rm -f $$d/*.cm[ioxtp] $$d/*.cmti $$d/*.annot $$d/*.[so] $$d/*~; done
+	for d in utils parsing typing bytecomp asmcomp middle_end middle_end/base_types driver toplevel tools; \
+	  do rm -f $$d/*.cm[ioxt] $$d/*.cmti $$d/*.annot $$d/*.[so] $$d/*~; done
 	rm -f *~
-	rm -f bisect*.out
-	rm -f asmcomp/*/*.cmp
 
 depend: beforedepend
-	(for d in utils parsing typing bytecomp middle_end middle_end/base_types asmcomp driver toplevel; \
+	(for d in utils parsing typing bytecomp asmcomp middle_end middle_end/base_types driver toplevel; \
 	 do $(CAMLDEP) $(DEPFLAGS) $$d/*.mli $$d/*.ml; \
 	 done) > .depend
 

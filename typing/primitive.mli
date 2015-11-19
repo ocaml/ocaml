@@ -30,10 +30,20 @@ type description = private
     prim_native_repr_args: native_repr list;
     prim_native_repr_res: native_repr }
 
+(* Invariant [List.length d.prim_native_repr_args = d.prim_arity] *)
+
 val simple
   :  name:string
   -> arity:int
   -> alloc:bool
+  -> description
+
+val make
+  :  name:string
+  -> alloc:bool
+  -> native_name:string
+  -> native_repr_args: native_repr list
+  -> native_repr_res: native_repr
   -> description
 
 val parse_declaration

@@ -104,6 +104,7 @@ and expression_desc =
   | Texp_lazy of expression
   | Texp_object of class_structure * string list
   | Texp_pack of module_expr
+  | Texp_unreachable
 
 and meth =
     Tmeth_name of string

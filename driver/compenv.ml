@@ -58,6 +58,7 @@ let last_objfiles = ref []
 (* Check validity of module name *)
 let is_unit_name name =
   try
+    if name = "" then raise Exit;
     begin match name.[0] with
     | 'A'..'Z' -> ()
     | _ ->

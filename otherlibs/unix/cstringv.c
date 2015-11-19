@@ -11,16 +11,20 @@
 /*                                                                     */
 /***********************************************************************/
 
+#include <errno.h>
 #include <caml/mlvalues.h>
 #include <caml/memory.h>
 #include "unixsupport.h"
 
-char ** cstringvect(value arg)
+char ** cstringvect(value arg, char * cmdname)
 {
   char ** res;
   mlsize_t size, i;
 
   size = Wosize_val(arg);
+  for (i = 0; i < size; i++)
+    if (! caml_string_is_c_safe(Field(arg, i)))
+      unix_error(EINVAL, cmdname, Field(arg, i));
   res = (char **) caml_stat_alloc((size + 1) * sizeof(char *));
   for (i = 0; i < size; i++) res[i] = String_val(Field(arg, i));
   res[size] = NULL;

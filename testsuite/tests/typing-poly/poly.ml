@@ -459,10 +459,10 @@ class type ['a, 'b] a = object
 end and ['a, 'b] b = object
   method a: ('a, 'b) #a as 'a
   method as_b: ('a, 'b) b
-end
+end;;
 
-class type ['b] ca = object ('s) inherit ['s, 'b] a end
-class type ['a] cb = object ('s) inherit ['a, 's] b end
+class type ['b] ca = object ('s) inherit ['s, 'b] a end;;
+class type ['a] cb = object ('s) inherit ['a, 's] b end;;
 
 type bt = 'b ca cb as 'b
 ;;

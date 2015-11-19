@@ -150,7 +150,8 @@ external copysign : float -> float -> float
 external mod_float : float -> float -> float = "caml_fmod_float" "fmod"
   [@@unboxed] [@@noalloc]
 external frexp : float -> float * int = "caml_frexp_float"
-external ldexp : float -> int -> float = "caml_ldexp_float"
+external ldexp : (float [@unboxed]) -> (int [@untagged]) -> (float [@unboxed]) =
+  "caml_ldexp_float" "caml_ldexp_float_unboxed" [@@noalloc]
 external modf : float -> float * float = "caml_modf_float"
 external float : int -> float = "%floatofint"
 external float_of_int : int -> float = "%floatofint"
@@ -176,7 +177,8 @@ type fpclass =
   | FP_zero
   | FP_infinite
   | FP_nan
-external classify_float : float -> fpclass = "caml_classify_float"
+external classify_float : (float [@unboxed]) -> fpclass =
+  "caml_classify_float" "caml_classify_float_unboxed" [@@noalloc]
 
 (* String and byte sequence operations -- more in modules String and Bytes *)
 
@@ -188,7 +190,6 @@ external string_blit : string -> int -> bytes -> int -> int -> unit
 external bytes_blit : bytes -> int -> bytes -> int -> int -> unit
                         = "caml_blit_string" [@@noalloc]
 external bytes_unsafe_to_string : bytes -> string = "%identity"
-external bytes_unsafe_of_string : string -> bytes = "%identity"
 
 let ( ^ ) s1 s2 =
   let l1 = string_length s1 and l2 = string_length s2 in

@@ -75,6 +75,7 @@ type t =
   | Inlining_impossible of string           (* 55 *)
   | Assignment_on_non_mutable_value         (* 56 *)
   | Missing_symbol_information of string * string (* 57 *)
+  | Unreachable_case                        (* 58 *)
 ;;
 
 (* If you remove a warning, leave a hole in the numbering.  NEVER change
@@ -141,8 +142,9 @@ let number = function
   | Inlining_impossible _ -> 55
   | Assignment_on_non_mutable_value -> 56
   | Missing_symbol_information _ -> 57
+  | Unreachable_case -> 58
 
-let last_warning_number = 57
+let last_warning_number = 58
 ;;
 
 (* Must be the max number returned by the [number] function. *)
@@ -415,9 +417,13 @@ let message = function
   | Expect_tailcall ->
       Printf.sprintf "expected tailcall"
   | Fragile_literal_pattern ->
-      Printf.sprintf "the argument of this constructor should not be matched against a \
-                      constant pattern; the actual value of the argument could change \
-                      in the future"
+      Printf.sprintf
+        "the argument of this constructor should not be matched against a\n\
+         constant pattern; the actual value of the argument could change\n\
+         in the future"
+  | Unreachable_case ->
+      "this match case is unreachable.\n\
+       Consider replacing it with a refutation case '<pat> -> .'"
   | Misplaced_attribute attr_name ->
       Printf.sprintf "the %S attribute cannot appear in this context" attr_name
   | Duplicated_attribute attr_name ->
@@ -523,6 +529,7 @@ let descriptions =
    55, "Inlining impossible";
    56, "Assignment on non-mutable value";
    57, "Missing symbol information (is a .cmx file missing?)";
+   58, "Unreachable case in a pattern-matching (based on type information)."
   ]
 ;;
 

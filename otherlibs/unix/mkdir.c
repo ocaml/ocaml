@@ -23,6 +23,7 @@ CAMLprim value unix_mkdir(value path, value perm)
   CAMLparam2(path, perm);
   char * p;
   int ret;
+  caml_unix_check_path(path, "mkdir");
   p = caml_strdup(String_val(path));
   caml_enter_blocking_section();
   ret = mkdir(p, Int_val(perm));

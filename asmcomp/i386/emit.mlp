@@ -439,13 +439,12 @@ let emit_floatspecial = function
 let float_constants = ref ([] : (int64 * int) list)
 
 let add_float_constant cst =
-  let repr = Int64.bits_of_float cst in
   try
-    List.assoc repr !float_constants
+    List.assoc cst !float_constants
   with
     Not_found ->
       let lbl = new_label() in
-      float_constants := (repr, lbl) :: !float_constants;
+      float_constants := (cst, lbl) :: !float_constants;
       lbl
 
 let emit_float64_split_directive x =
@@ -502,7 +501,7 @@ let emit_instr fallthrough i =
       end else
         I.mov (nat n) (reg i.res.(0))
   | Lop(Iconst_float f) ->
-      begin match Int64.bits_of_float f with
+      begin match f with
       | 0x0000_0000_0000_0000L ->       (* +0.0 *)
           I.fldz ()
       | 0x8000_0000_0000_0000L ->       (* -0.0 *)

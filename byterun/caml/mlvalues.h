@@ -68,7 +68,7 @@ typedef uintnat mark_t;
 
 /* Conversion macro names are always of the form  "to_from". */
 /* Example: Val_long as in "Val from long" or "Val of long". */
-#define Val_long(x)     (((intnat)(x) << 1) + 1)
+#define Val_long(x)     ((intnat) (((uintnat)(x) << 1)) + 1)
 #define Long_val(x)     ((x) >> 1)
 #define Max_long (((intnat)1 << (8 * sizeof(value) - 2)) - 1)
 #define Min_long (-((intnat)1 << (8 * sizeof(value) - 2)))
@@ -225,6 +225,8 @@ CAMLextern value caml_hash_variant(char const * tag);
 #define String_tag 252
 #define String_val(x) ((char *) Bp_val(x))
 CAMLextern mlsize_t caml_string_length (value);   /* size in bytes */
+CAMLextern int caml_string_is_c_safe (value);
+  /* true if string contains no '\0' null characters */
 
 /* Floating-point numbers. */
 #define Double_tag 253
