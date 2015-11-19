@@ -475,6 +475,10 @@ let bad_float () =
   bad_input "no dot or exponent part found in float token"
 ;;
 
+let bad_hex_float () =
+  bad_input "not a valid float in hexadecimal notation"
+;;
+
 let character_mismatch_err c ci =
   Printf.sprintf "looking for %C, found %C" c ci
 ;;
@@ -824,6 +828,63 @@ let scan_caml_float width precision ib =
     scan_exp_part width ib
   | _ -> bad_float ()
 ;;
+
+let check_case_insensitive_string width ib error str =
+  let lowercase c = match c with
+    | 'A' .. 'Z' -> char_of_int (int_of_char c - int_of_char 'A' + int_of_char 'a')
+    | _ -> c in
+  let len = String.length str in
+  let width = ref width in
+  for i = 0 to len - 1 do
+    let c = Scanning.peek_char ib in
+    if lowercase c <> lowercase str.[i] then error ();
+    if !width = 0 then error ();
+    width := Scanning.store_char !width ib c;
+  done;
+  !width
+
+let scan_hex_float width precision ib =
+  if width = 0 || Scanning.end_of_input ib then bad_hex_float ();
+  let width = scan_sign width ib in
+  if width = 0 || Scanning.end_of_input ib then bad_hex_float ();
+  match Scanning.peek_char ib with
+  | '0' as c -> (
+    let width = Scanning.store_char width ib c in
+    if width = 0 || Scanning.end_of_input ib then bad_hex_float ();
+    let width = check_case_insensitive_string width ib bad_hex_float "x" in
+    if width = 0 || Scanning.end_of_input ib then width else
+      let width = match Scanning.peek_char ib with
+        | '.' | 'p' | 'P' -> width
+        | _ -> scan_hexadecimal_int width ib in
+      if width = 0 || Scanning.end_of_input ib then width else
+        let width = match Scanning.peek_char ib with
+          | '.' as c -> (
+            let width = Scanning.store_char width ib c in
+            if width = 0 || Scanning.end_of_input ib then width else
+              match Scanning.peek_char ib with
+              | 'p' | 'P' -> width
+              | _ ->
+                let precision = min width precision in
+                width - (precision - scan_hexadecimal_int precision ib)
+          )
+          | _ -> width in
+        if width = 0 || Scanning.end_of_input ib then width else
+          match Scanning.peek_char ib with
+          | 'p' | 'P' as c ->
+            let width = Scanning.store_char width ib c in
+            if width = 0 then bad_hex_float ();
+            scan_optionally_signed_decimal_int width ib
+          | _ -> width
+  )
+  | 'n' | 'N' as c ->
+    let width = Scanning.store_char width ib c in
+    if width = 0 || Scanning.end_of_input ib then bad_hex_float ();
+    check_case_insensitive_string width ib bad_hex_float "an"
+  | 'i' | 'I' as c ->
+    let width = Scanning.store_char width ib c in
+    if width = 0 || Scanning.end_of_input ib then bad_hex_float ();
+    check_case_insensitive_string width ib bad_hex_float "nfinity"
+  | _ -> bad_hex_float ()
 
 (* Scan a regular string:
    stops when encountering a space, if no scanning indication has been given;
@@ -1223,7 +1284,9 @@ fun ib fmt readers -> match fmt with
                | Float_E | Float_pE | Float_sE | Float_g | Float_pg | Float_sg
                | Float_G | Float_pG | Float_sG), pad, prec, rest) ->
     pad_prec_scanf ib rest readers pad prec scan_float token_float
-
+  | Float ((Float_h | Float_ph | Float_sh | Float_H | Float_pH | Float_sH),
+           pad, prec, rest) ->
+    pad_prec_scanf ib rest readers pad prec scan_hex_float token_float
   | Bool rest ->
     let _ = scan_bool ib in
     let b = token_bool ib in

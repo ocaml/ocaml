@@ -46,6 +46,10 @@ Language features:
   attribute is applied on predefined exception constructors which
   take an purely informational (with no stability guarantee) message.
   (Alain Frisch)
+- GPR#268: hexadecimal notation for floating-point literals
+  In OCaml source code, FP literals can be written using the hexadecimal
+  notation 0x<mantissa in hex>p<exponent> from ISO C99.
+  (Xavier Leroy)
 - GPR#173: [@inline] and [@inlined] attributes (for function declarations
   and call sites respectively) to control inlining
   (Pierre Chambart, Mark Shinwell)
@@ -156,6 +160,9 @@ Standard library:
   (report and fix by Jeremy Yallop)
 - GPR#265: new implementation of Queue avoiding Obj.magic
   (Jérémie Dimino)
+- GPR#268: '%h' and '%H' modifiers for printf and scanf to support
+  floating-point numbers in hexadecimal notation
+  (Xavier Leroy, Benoît Vaugon)
 - GPR#272: Switch classify_float to [@@unboxed] (Alain Frisch)
 - Improve speed of classify_float by not going through fpclassify()
   (Alain Frisch, Xavier Leroy)
