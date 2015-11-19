@@ -214,4 +214,5 @@
       (floataset d 37 (-f f))
       (floataset d 38 (absf f))
 
+      (addraset r 116 (mulh x y))
 )))))))

@@ -102,6 +102,7 @@ let access_array base numelt size =
 %token LTI
 %token MODI
 %token MULF
+%token MULH
 %token MULI
 %token NEA
 %token NEF
@@ -289,6 +290,7 @@ binaryop:
   | GTF                         { Ccmpf Cgt }
   | GEF                         { Ccmpf Cge }
   | CHECKBOUND                  { Ccheckbound Debuginfo.none }
+  | MULH                        { Cmulhi }
 ;
 sequence:
     expr sequence               { Csequence($1, $2) }
