@@ -316,7 +316,7 @@ let emit_instr i =
           end
     | Lop(Iconst_float f) ->
         let lbl = new_label() in
-        float_literals := (Int64.bits_of_float f, lbl) :: !float_literals;
+        float_literals := (f, lbl) :: !float_literals;
         `	larl	%r1, {emit_label lbl}\n`;
         `	ld	{emit_reg i.res.(0)}, 0(%r1)\n`
      | Lop(Iconst_symbol s) ->
