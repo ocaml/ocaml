@@ -113,6 +113,8 @@ Runtime system:
   which is still open (Alain Frisch, review by Damien Doligez)
 - Signal handling: for read-and-clear, use GCC/Clang atomic builtins
   if available.  (Xavier Leroy)
+- PR#6910, GPR#224: marshaling (output_value, input_value, et al)
+  now support marshaled data bigger than 4 Gb.  (Xavier Leroy)
 - GPR#226: select higher levels of optimization for GCC and Clang when
   compiling the run-time system and C stub code.  (Xavier Leroy)
 - GPR#262: Multiple GC roots per compilation unit (Pierre Chambart, Mark
