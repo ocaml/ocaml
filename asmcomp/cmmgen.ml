@@ -2588,7 +2588,7 @@ let preallocate_block { Clambda.symbol; tag; size } =
 (* Translate a compilation unit *)
 
 let compunit_and_constants (ulam, preallocated_blocks, constants) =
-  let init_code = transl ulam in
+  let init_code = transl empty_env ulam in
   let c1 = [Cfunction {fun_name = Compilenv.make_symbol (Some "entry");
                        fun_args = [];
                        fun_body = init_code; fun_fast = false;
