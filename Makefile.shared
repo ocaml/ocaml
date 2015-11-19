@@ -33,8 +33,8 @@ OCAMLBUILDNATIVE=$(WITH_OCAMLBUILD:=.native)
 
 OCAMLDOC_OPT=$(WITH_OCAMLDOC:=.opt)
 
-INCLUDES=-I utils -I parsing -I typing -I bytecomp -I asmcomp -I driver \
-	 -I toplevel
+INCLUDES=-I utils -I parsing -I typing -I bytecomp -I middle_end \
+         -I middle_end/base_types -I asmcomp -I driver -I toplevel
 
 UTILS=utils/config.cmo utils/timings.cmo utils/clflags.cmo \
   utils/misc.cmo utils/tbl.cmo \
@@ -190,7 +190,7 @@ OPTSTART=driver/optmain.cmo
 
 TOPLEVELSTART=toplevel/topstart.cmo
 
-NATTOPOBJS=$(UTILS) $(PARSING) $(TYPING) $(COMP) $(ASMCOMP) \
+NATTOPOBJS=$(UTILS) $(PARSING) $(TYPING) $(COMP) $(MIDDLE_END) $(ASMCOMP) \
   toplevel/genprintval.cmo toplevel/opttoploop.cmo toplevel/opttopdirs.cmo \
   toplevel/opttopmain.cmo toplevel/opttopstart.cmo
 
