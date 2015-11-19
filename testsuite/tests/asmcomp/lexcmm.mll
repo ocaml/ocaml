@@ -55,6 +55,7 @@ let keyword_table =
     "let", LET;
     "load", LOAD;
     "mod", MODI;
+    "mulh", MULH;
     "or", OR;
     "proj", PROJ;
     "raise", RAISE Lambda.Raise_regular;

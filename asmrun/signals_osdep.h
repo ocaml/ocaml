@@ -283,6 +283,23 @@
   #define CONTEXT_YOUNG_LIMIT (context->regs->gpr[30])
   #define CONTEXT_YOUNG_PTR (context->regs->gpr[31])
   #define CONTEXT_SP (context->regs->gpr[1])
+  
+/****************** s390x, ELF (Linux) */
+#elif defined(TARGET_s390x) && defined(SYS_elf)
+
+  #define DECLARE_SIGNAL_HANDLER(name) \
+    static void name(int sig, struct sigcontext * context)
+
+  #define SET_SIGACT(sigact,name) \
+     sigact.sa_handler = (void (*)(int)) (name); \
+     sigact.sa_flags = 0
+
+  typedef unsigned long context_reg;
+  #define CONTEXT_PC (context->sregs->regs.psw.addr)
+  #define CONTEXT_EXCEPTION_POINTER (context->sregs->regs.gprs[13])
+  #define CONTEXT_YOUNG_LIMIT (context->sregs->regs.gprs[10])
+  #define CONTEXT_YOUNG_PTR (context->sregs->regs.gprs[11])
+  #define CONTEXT_SP (context->sregs->regs.gprs[15])
 
 /****************** PowerPC, BSD */
 
