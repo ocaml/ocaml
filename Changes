@@ -101,6 +101,8 @@ Compilers:
   (Mark Shinwell)
 - GPR#270: Make [transl_exception_constructor] generate [Immutable] blocks
   (Mark Shinwell)
+- GPR#275: native-code generator for IBM z System running Linux
+  (Bill O'Farrell, Tristan Amini, Xavier Leroy)
 - GPR#282: relax short-paths safety check in presence of module aliases, take
   penalty into account while building the printing map.
   (Thomas Refis, Leo White)
