@@ -623,9 +623,9 @@ static void intern_add_to_heap(mlsize_t whsize)
     caml_allocated_words +=
       Wsize_bsize ((char *) intern_dest - intern_extra_block);
     caml_add_to_heap(intern_extra_block);
-    intern_extra_block = NULL; // To prevent intern_cleanup freeing
+    intern_extra_block = NULL; // To prevent intern_cleanup freeing it
   } else {
-    intern_block = 0; // To preven intern_cleanup rewriting its header
+    intern_block = 0; // To prevent intern_cleanup rewriting its header
   }
 }
 
