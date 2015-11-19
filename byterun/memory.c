@@ -405,20 +405,36 @@ color_t caml_allocation_color (void *hp)
   }
 }
 
-CAMLexport value caml_alloc_shr_no_raise (mlsize_t wosize, tag_t tag)
+
+static int caml_alloc_shr_return = 0;
+
+/* Invariant:
+       caml_alloc_shr_return is set => no exception inside caml_alloc_shr
+
+   If this invariant is broken, then the function caml_alloc_shr_no_raise will
+   not be able to set caml_alloc_shr_return back to 0. */
+CAMLexport value caml_alloc_shr (mlsize_t wosize, tag_t tag)
 {
   header_t *hp;
   value *new_block;
 
-  if (wosize > Max_wosize) return 0;
+  if (wosize > Max_wosize) {
+    if (caml_alloc_shr_return)
+      return 0;
+    else
+      caml_raise_out_of_memory();
+  }
+
   hp = caml_fl_allocate (wosize);
   if (hp == NULL){
     new_block = expand_heap (wosize);
     if (new_block == NULL) {
       if (caml_in_minor_collection)
         caml_fatal_error ("Fatal error: out of memory.\n");
-      else
+      else if (caml_alloc_shr_return)
         return 0;
+      else
+        caml_raise_out_of_memory();
     }
     caml_fl_add_blocks ((value) new_block);
     hp = caml_fl_allocate (wosize);
@@ -452,10 +468,11 @@ CAMLexport value caml_alloc_shr_no_raise (mlsize_t wosize, tag_t tag)
   return Val_hp (hp);
 }
 
-CAMLexport value caml_alloc_shr (mlsize_t wosize, tag_t tag) {
-  value res = caml_alloc_shr_no_raise (wosize, tag);
-  if (res == 0)
-    caml_raise_out_of_memory();
+CAMLexport value caml_alloc_shr_no_raise (mlsize_t wosize, tag_t tag) {
+  value res;
+  caml_alloc_shr_return = 1;
+  res = caml_alloc_shr (wosize, tag);
+  caml_alloc_shr_return = 0;
   return res;
 }
 
