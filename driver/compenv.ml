@@ -237,6 +237,10 @@ let read_one_param ppf position name v =
 
       | "unbox-closures" ->
           set "unbox-closures" [ unbox_closures ] v
+      | "remove-unused-arguments" ->
+          set "remove-unused-arguments" [ remove_unused_arguments ] v
+      | "no-inline-recursive-functions" ->
+          clear "no-inline-recursive-functions" [ inline_recursive_functions ] v
 
       | "inlining-stats" ->
           if !native_code then
