@@ -53,10 +53,6 @@ val const_boxed_int_expr
   -> 'a
   -> Flambda.named * Simple_value_approx.t * Inlining_cost.Benefit.t
 
-(* CR mshinwell: This function is horrible, it uses polymorphic comparisons
-   (including on floats).  Apart from fixing it, we should also take care to
-   document exactly which floating-point comparison semantics is being
-   used. *)
 val const_comparison_expr
    : Flambda.named
   -> Lambda.comparison
