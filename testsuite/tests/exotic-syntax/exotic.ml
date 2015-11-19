@@ -80,6 +80,13 @@ end;;
 (* private polymorphic method with local type *)
 object method private f : type t . int = 1 end;;
 
+(* type annotations on record fields, both in patterns and expressions, and both
+   with and without punning *)
+let get_int { contents : int } = contents
+let get_int2 { contents : int = c } = c
+let set_int contents = { contents : int }
+let set_int2 c = { contents : int = c }
+;;
 
 (* More exotic: not even found in the manual (up to version 4.00),
    but used in some programs found in the wild.

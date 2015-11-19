@@ -59,8 +59,8 @@ double F, G;
              #arg, #res, X, Y, arg, result); \
   }
 
-extern void call_gen_code();
-extern void testarith();
+extern void call_gen_code(void (*)(void));
+extern void testarith(void);
 static intnat mulhs(intnat x, intnat y);
 
 void do_test(void)

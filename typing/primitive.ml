@@ -69,6 +69,14 @@ let simple ~name ~arity ~alloc =
    prim_native_repr_args = make_native_repr_args arity Same_as_ocaml_repr;
    prim_native_repr_res = Same_as_ocaml_repr}
 
+let make ~name ~alloc ~native_name ~native_repr_args ~native_repr_res =
+  {prim_name = name;
+   prim_arity = List.length native_repr_args;
+   prim_alloc = alloc;
+   prim_native_name = native_name;
+   prim_native_repr_args = native_repr_args;
+   prim_native_repr_res = native_repr_res}
+
 let parse_declaration valdecl ~native_repr_args ~native_repr_res =
   let arity = List.length native_repr_args in
   let name, native_name, old_style_noalloc, old_style_float =

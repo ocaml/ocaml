@@ -698,7 +698,14 @@ let rec normalize_package_path env p =
   in
   match t with
   | Some (Mty_ident p) -> normalize_package_path env p
-  | Some (Mty_signature _ | Mty_functor _ | Mty_alias _) | None -> p
+  | Some (Mty_signature _ | Mty_functor _ | Mty_alias _) | None ->
+      match p with
+        Path.Pdot (p1, s, n) ->
+          (* For module aliases *)
+          let p1' = Env.normalize_path None env p1 in
+          if Path.same p1 p1' then p else
+          normalize_package_path env (Path.Pdot (p1', s, n))
+      | _ -> p
 
 let rec update_level env level ty =
   let ty = repr ty in
@@ -1568,58 +1575,12 @@ let generic_private_abbrev env path =
     | _ -> false
   with Not_found -> false
 
-let is_contractive env ty =
-  try match (repr ty).desc with
-    Tconstr (p, _, _) ->
-      let decl = Env.find_type p env in
-      in_pervasives p && decl.type_manifest = None || is_datatype decl
-  | _ -> true
+let is_contractive env p =
+  try
+    let decl = Env.find_type p env in
+    in_pervasives p && decl.type_manifest = None || is_datatype decl
   with Not_found -> false
 
-(* Code moved to Typedecl
-
-(* The marks are already used by [expand_abbrev]... *)
-let visited = ref []
-
-let rec non_recursive_abbrev env ty0 ty =
-  let ty = repr ty in
-  if ty == repr ty0 then raise Recursive_abbrev;
-  if not (List.memq ty !visited) then begin
-    visited := ty :: !visited;
-    match ty.desc with
-      Tconstr(p, args, abbrev) ->
-        begin try
-          non_recursive_abbrev env ty0 (try_expand_once_opt env ty)
-        with Cannot_expand ->
-          if !Clflags.recursive_types &&
-            (in_pervasives p ||
-             try is_datatype (Env.find_type p env) with Not_found -> false)
-          then ()
-          else iter_type_expr (non_recursive_abbrev env ty0) ty
-        end
-    | Tobject _ | Tvariant _ ->
-        ()
-    | _ ->
-        if !Clflags.recursive_types then () else
-        iter_type_expr (non_recursive_abbrev env ty0) ty
-  end
-
-let correct_abbrev env path params ty =
-  check_abbrev_env env;
-  let ty0 = newgenvar () in
-  visited := [];
-  let abbrev = Mcons (Public, path, ty0, ty0, Mnil) in
-  simple_abbrevs := abbrev;
-  try
-    non_recursive_abbrev env ty0
-      (subst env generic_level Public (ref abbrev) None [] [] ty);
-    simple_abbrevs := Mnil;
-    visited := []
-  with exn ->
-    simple_abbrevs := Mnil;
-    visited := [];
-    raise exn
-*)
 
                               (*****************)
                               (*  Occur check  *)
@@ -1628,39 +1589,46 @@ let correct_abbrev env path params ty =
 
 exception Occur
 
-let allow_recursive env ty =
-  (!Clflags.recursive_types || !umode = Pattern) && is_contractive env ty
-
-let rec occur_rec env visited ty0 ty =
+let rec occur_rec env allow_recursive visited ty0 = function
+  | {desc=Tlink ty} ->
+      occur_rec env allow_recursive visited ty0 ty
+  | ty ->
   if ty == ty0  then raise Occur;
-  if allow_recursive env ty then () else
   match ty.desc with
     Tconstr(p, tl, abbrev) ->
+      if allow_recursive && is_contractive env p then () else
       begin try
-        if List.memq ty visited then raise Occur;
-        iter_type_expr (occur_rec env (ty::visited) ty0) ty
+        if TypeSet.mem ty visited then raise Occur;
+        let visited = TypeSet.add ty visited in
+        iter_type_expr (occur_rec env allow_recursive visited ty0) ty
       with Occur -> try
         let ty' = try_expand_head try_expand_once env ty in
         (* This call used to be inlined, but there seems no reason for it.
            Message was referring to change in rev. 1.58 of the CVS repo. *)
-        occur_rec env visited ty0 ty'
+        occur_rec env allow_recursive visited ty0 ty'
       with Cannot_expand ->
         raise Occur
       end
   | Tobject _ | Tvariant _ ->
       ()
   | _ ->
-      if List.memq ty visited then () else
-      iter_type_expr (occur_rec env (ty::visited) ty0) ty
+      if allow_recursive ||  TypeSet.mem ty visited then () else begin
+        let visited = TypeSet.add ty visited in
+        iter_type_expr (occur_rec env allow_recursive visited ty0) ty
+      end
 
 let type_changed = ref false (* trace possible changes to the studied type *)
 
 let merge r b = if b then r := true
 
 let occur env ty0 ty =
+  let allow_recursive = !Clflags.recursive_types || !umode = Pattern  in
   let old = !type_changed in
   try
-    while type_changed := false; occur_rec env [] ty0 ty; !type_changed
+    while
+      type_changed := false;
+      occur_rec env allow_recursive TypeSet.empty ty0 ty;
+      !type_changed
     do () (* prerr_endline "changed" *) done;
     merge type_changed old
   with exn ->
@@ -1680,7 +1648,7 @@ let rec local_non_recursive_abbrev visited env p ty =
     match ty.desc with
       Tconstr(p', args, abbrev) ->
         if Path.same p p' then raise Occur;
-        if is_contractive env ty then () else
+        if is_contractive env p' then () else
         let visited = ty :: visited in
         begin try
           List.iter (local_non_recursive_abbrev visited env p) args

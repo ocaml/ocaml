@@ -1,44 +1,17 @@
-#!/bin/sh
-
 #########################################################################
 #                                                                       #
 #                                 OCaml                                 #
 #                                                                       #
-#          Damien Doligez, projet Gallium, INRIA Rocquencourt           #
+#           Damien Doligez, projet Gallium, INRIA Rocquencourt          #
 #                                                                       #
-#   Copyright 2011 Institut National de Recherche en Informatique et    #
+#   Copyright 2013 Institut National de Recherche en Informatique et    #
 #   en Automatique.  All rights reserved.  This file is distributed     #
 #   under the terms of the Q Public License version 1.0.                #
 #                                                                       #
 #########################################################################
 
-(
-  cat <<EOF
-*.o
-*.a
-*.so
-*.obj
-*.lib
-*.dll
+MAIN_MODULE=pr7042
 
-*.cm[ioxat]
-*.cmx[as]
-*.cmti
-*.annot
-
-*.result
-*.byte
-*.native
-program
-*.exe
-*.exe.manifest
-
-.depend
-.depend.nt
-.DS_Store
-
-EOF
-
-  if [ -f .ignore ]; then cat .ignore; fi
-
-) | svn propset svn:ignore -F - .
+BASEDIR=../../..
+include $(BASEDIR)/makefiles/Makefile.one
+include $(BASEDIR)/makefiles/Makefile.common

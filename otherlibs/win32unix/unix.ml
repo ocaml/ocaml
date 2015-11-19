@@ -429,7 +429,8 @@ external gmtime : float -> tm = "unix_gmtime"
 external localtime : float -> tm = "unix_localtime"
 external mktime : tm -> float * tm = "unix_mktime"
 let alarm n = invalid_arg "Unix.alarm not implemented"
-external sleep : int -> unit = "unix_sleep"
+external sleepf : float -> unit = "unix_sleep"
+let sleep n = sleepf (float n)
 external times: unit -> process_times = "unix_times"
 external utimes : string -> float -> float -> unit = "unix_utimes"
 
@@ -813,12 +814,18 @@ let make_cmdline args =
     else f in
   String.concat " " (List.map maybe_quote (Array.to_list args))
 
+let make_process_env env =
+  Array.iter
+    (fun s -> if String.contains s '\000' then raise(Unix_error(EINVAL, "", s)))
+    env;
+  String.concat "\000" (Array.to_list env) ^ "\000"
+
 let create_process prog args fd1 fd2 fd3 =
   win_create_process prog (make_cmdline args) None fd1 fd2 fd3
 
 let create_process_env prog args env fd1 fd2 fd3 =
   win_create_process prog (make_cmdline args)
-                     (Some(String.concat "\000" (Array.to_list env) ^ "\000"))
+                     (Some(make_process_env env))
                      fd1 fd2 fd3
 
 external system: string -> process_status = "win_system"
@@ -877,7 +884,7 @@ let open_process_full cmd env =
   let inchan = in_channel_of_descr in_read in
   let outchan = out_channel_of_descr out_write in
   let errchan = in_channel_of_descr err_read in
-  open_proc cmd (Some(String.concat "\000" (Array.to_list env) ^ "\000"))
+  open_proc cmd (Some(make_process_env env))
                 (Process_full(inchan, outchan, errchan))
                 out_read in_write err_write;
   close out_read; close in_write; close err_write;

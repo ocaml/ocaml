@@ -19,7 +19,7 @@ CAMLprim value unix_sleep(t)
      value t;
 {
   enter_blocking_section();
-  Sleep(Int_val(t) * 1000);
+  Sleep(Double_val(t) * 1e3);
   leave_blocking_section();
   return Val_unit;
 }

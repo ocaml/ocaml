@@ -285,13 +285,12 @@ let num_literals = ref 0
 
 (* Label a floating-point literal *)
 let float_literal f =
-  let repr = Int64.bits_of_float f in
   try
-    List.assoc repr !float_literals
+    List.assoc f !float_literals
   with Not_found ->
     let lbl = new_label() in
     num_literals := !num_literals + 2;
-    float_literals := (repr, lbl) :: !float_literals;
+    float_literals := (f, lbl) :: !float_literals;
     lbl
 
 (* Label a GOTREL literal *)
@@ -393,9 +392,8 @@ let emit_instr i =
     | Lop(Iconst_int n | Iconst_blockheader n) ->
         emit_intconst i.res.(0) (Nativeint.to_int32 n)
     | Lop(Iconst_float f) when !fpu = Soft ->
-        let bits = Int64.bits_of_float f in
-        let high_bits = Int64.to_int32 (Int64.shift_right_logical bits 32)
-        and low_bits = Int64.to_int32 bits in
+        let high_bits = Int64.to_int32 (Int64.shift_right_logical f 32)
+        and low_bits = Int64.to_int32 f in
         if is_immediate low_bits || is_immediate high_bits then begin
           let ninstr_low = emit_intconst i.res.(0) low_bits
           and ninstr_high = emit_intconst i.res.(1) high_bits in
@@ -427,7 +425,7 @@ let emit_instr i =
               let ex = ((ex + 3) land 0x07) lxor 0x04 in
               Some((sg lsl 7) lor (ex lsl 4) lor mn)
           end in
-        begin match encode (Int64.bits_of_float f) with
+        begin match encode f with
           None ->
             let lbl = float_literal f in
             `	fldd	{emit_reg i.res.(0)}, {emit_label lbl}\n`

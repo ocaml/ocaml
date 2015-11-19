@@ -15,14 +15,13 @@
 #include <caml/memory.h>
 #include "unixsupport.h"
 
-extern char ** cstringvect();
-
 CAMLprim value unix_execve(value path, value args, value env)
 {
   char ** argv;
   char ** envp;
-  argv = cstringvect(args);
-  envp = cstringvect(env);
+  caml_unix_check_path(path, "execve");
+  argv = cstringvect(args, "execve");
+  envp = cstringvect(env, "execve");
   (void) execve(String_val(path), argv, envp);
   stat_free((char *) argv);
   stat_free((char *) envp);

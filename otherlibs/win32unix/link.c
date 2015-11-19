@@ -32,6 +32,8 @@ CAMLprim value unix_link(value path1, value path2)
     (tCreateHardLink) GetProcAddress(hModKernel32, "CreateHardLinkA");
   if (pCreateHardLink == NULL)
     invalid_argument("Unix.link not implemented");
+  caml_unix_check_path(path1, "link");
+  caml_unix_check_path(path2, "link");
   if (! pCreateHardLink(String_val(path2), String_val(path1), NULL)) {
     win32_maperr(GetLastError());
     uerror("link", path2);

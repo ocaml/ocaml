@@ -565,13 +565,12 @@ let emit_instr i =
     | Lop(Iconst_int n | Iconst_blockheader n) ->
         emit_intconst i.res.(0) n
     | Lop(Iconst_float f) ->
-        let b = Int64.bits_of_float f in
-        if b = 0L then
+        if f = 0L then
           `	fmov	{emit_reg i.res.(0)}, xzr\n`
-        else if is_immediate_float b then
-          `	fmov	{emit_reg i.res.(0)}, #{emit_printf "0x%Lx" b}\n`
+        else if is_immediate_float f then
+          `	fmov	{emit_reg i.res.(0)}, #{emit_printf "0x%Lx" f}\n`
         else begin
-          let lbl = float_literal b in
+          let lbl = float_literal f in
           `	adrp	{emit_reg reg_tmp1}, {emit_label lbl}\n`;
           `	ldr	{emit_reg i.res.(0)}, [{emit_reg reg_tmp1}, #:lo12:{emit_label lbl}]\n`
         end

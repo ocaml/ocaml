@@ -199,13 +199,13 @@ let read_dyn_header filename ic =
                                 (Filename.quote filename)
                                 tempfile) in
         if rc <> 0 then failwith "cannot read";
-        let tc = open_in tempfile in
+        let tc = Scanf.Scanning.from_file tempfile in
         try_finally
           (fun () ->
-            let ofs = Scanf.fscanf tc "%Ld" (fun x -> x) in
+            let ofs = Scanf.bscanf tc "%Ld" (fun x -> x) in
             LargeFile.seek_in ic ofs;
             Some(input_value ic : dynheader))
-          (fun () -> close_in tc))
+          (fun () -> Scanf.Scanning.close_in tc))
       (fun () -> remove_file tempfile)
   with Failure _ | Sys_error _ -> None
 

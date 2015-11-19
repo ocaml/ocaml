@@ -762,51 +762,41 @@ val pp_get_all_formatter_output_functions :
 (** Tabulation boxes are deprecated. *)
 
 val pp_open_tbox : formatter -> unit -> unit
-(** @deprecated
-  @since 4.03.0
-*)
+[@@ocaml.deprecated "Tabulation boxes are not supported any more."]
+(** @deprecated since 4.03.0 *)
 
 val pp_close_tbox : formatter -> unit -> unit
-(** @deprecated
-  @since 4.03.0
-*)
+[@@ocaml.deprecated "Tabulation boxes are not supported any more."]
+(** @deprecated since 4.03.0 *)
 
 val pp_print_tbreak : formatter -> int -> int -> unit
-(** @deprecated
-  @since 4.03.0
-*)
+[@@ocaml.deprecated "Tabulation boxes are not supported any more."]
+(** @deprecated since 4.03.0 *)
 
 val pp_set_tab : formatter -> unit -> unit
-(** @deprecated
-  @since 4.03.0
-*)
+[@@ocaml.deprecated "Tabulation boxes are not supported any more."]
+(** @deprecated since 4.03.0 *)
 
 val pp_print_tab : formatter -> unit -> unit
-(** @deprecated
-  @since 4.03.0
-*)
+[@@ocaml.deprecated "Tabulation boxes are not supported any more."]
+(** @deprecated since 4.03.0 *)
 
 val open_tbox : unit -> unit
-(** @deprecated
-  @since 4.03.0
-*)
+[@@ocaml.deprecated "Tabulation boxes are not supported any more."]
+(** @deprecated since 4.03.0 *)
 
 val close_tbox : unit -> unit
-(** @deprecated
-  @since 4.03.0
-*)
+[@@ocaml.deprecated "Tabulation boxes are not supported any more."]
+(** @deprecated since 4.03.0 *)
 
 val print_tbreak : int -> int -> unit
-(** @deprecated
-  @since 4.03.0
-*)
+[@@ocaml.deprecated "Tabulation boxes are not supported any more."]
+(** @deprecated since 4.03.0 *)
 
 val set_tab : unit -> unit
-(** @deprecated
-  @since 4.03.0
-*)
+[@@ocaml.deprecated "Tabulation boxes are not supported any more."]
+(** @deprecated since 4.03.0 *)
 
 val print_tab : unit -> unit
-(** @deprecated
-  @since 4.03.0
-*)
+[@@ocaml.deprecated "Tabulation boxes are not supported any more."]
+(** @deprecated since 4.03.0 *)

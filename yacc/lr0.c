@@ -48,7 +48,7 @@ void initialize_states (void);
 void save_reductions (void);
 void new_itemsets (void);
 void save_shifts (void);
-void print_derives ();
+void print_derives (void);
 void show_cores (void), show_ritems (void), show_rrhs (void), show_shifts (void);
 
 void allocate_itemsets(void)

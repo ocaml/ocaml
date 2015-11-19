@@ -62,6 +62,7 @@ CAMLprim value unix_open(value path, value flags, value perm)
   int fd, cv_flags;
   char * p;
 
+  caml_unix_check_path(path, "open");
   cv_flags = convert_flag_list(flags, open_flag_table);
   p = caml_strdup(String_val(path));
   /* open on a named FIFO can block (PR#1533) */

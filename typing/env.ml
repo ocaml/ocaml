@@ -297,7 +297,6 @@ type pers_struct =
     ps_sig: signature Lazy.t;
     ps_comps: module_components;
     ps_crcs: (string * Digest.t option) list;
-    mutable ps_crcs_checked: bool;
     ps_filename: string;
     ps_flags: pers_flags list }
 
@@ -321,7 +320,6 @@ let clear_imports () =
   imported_units := StringSet.empty
 
 let check_consistency ps =
-  if not ps.ps_crcs_checked then
   try
     List.iter
       (fun (name, crco) ->
@@ -331,7 +329,6 @@ let check_consistency ps =
               add_import name;
               Consistbl.check crc_units name crc ps.ps_filename)
       ps.ps_crcs;
-    ps.ps_crcs_checked <- true;
   with Consistbl.Inconsistency(name, source, auth) ->
     error (Inconsistent_import(name, auth, source))
 
@@ -343,7 +340,8 @@ let save_pers_struct crc ps =
   Consistbl.set crc_units modname crc ps.ps_filename;
   add_import modname
 
-let read_pers_struct modname filename =
+let read_pers_struct check modname filename =
+  add_import modname;
   let cmi = read_cmi filename in
   let name = cmi.cmi_name in
   let sign = cmi.cmi_sign in
@@ -360,44 +358,80 @@ let read_pers_struct modname filename =
              ps_crcs = crcs;
              ps_filename = filename;
              ps_flags = flags;
-             ps_crcs_checked = false;
            } in
   if ps.ps_name <> modname then
     error (Illegal_renaming(modname, ps.ps_name, filename));
-  add_import name;
   List.iter
     (function Rectypes ->
       if not !Clflags.recursive_types then
         error (Need_recursive_types(ps.ps_name, !current_unit)))
     ps.ps_flags;
+  if check then check_consistency ps;
   Hashtbl.add persistent_structures modname (Some ps);
   ps
 
-let find_pers_struct ?(check=true) name =
+let find_pers_struct check name =
   if name = "*predef*" then raise Not_found;
-  let r =
-    try Some (Hashtbl.find persistent_structures name)
-    with Not_found -> None
-  in
-  let ps =
-    match r with
-    | Some None -> raise Not_found
-    | Some (Some sg) -> sg
-    | None ->
-       (* PR#6843: record the weak dependency ([add_import]) even if
-          the [find_in_path_uncap] call below fails to find the .cmi,
-          to help make builds more deterministic. *)
-        add_import name;
-        let filename =
-          try find_in_path_uncap !load_path (name ^ ".cmi")
-          with Not_found ->
-            Hashtbl.add persistent_structures name None;
-            raise Not_found
-        in
-        read_pers_struct name filename
-  in
-  if check then check_consistency ps;
-  ps
+  match Hashtbl.find persistent_structures name with
+  | Some ps -> ps
+  | None -> raise Not_found
+  | exception Not_found ->
+      let filename =
+        try
+          find_in_path_uncap !load_path (name ^ ".cmi")
+        with Not_found ->
+          Hashtbl.add persistent_structures name None;
+          raise Not_found
+      in
+      read_pers_struct check name filename
+
+(* Emits a warning if there is no valid cmi for name *)
+let check_pers_struct name =
+  try
+    ignore (find_pers_struct false name)
+  with
+  | Not_found ->
+      let warn = Warnings.No_cmi_file(name, None) in
+        Location.prerr_warning Location.none warn
+  | Cmi_format.Error err ->
+      let msg = Format.asprintf "%a" Cmi_format.report_error err in
+      let warn = Warnings.No_cmi_file(name, Some msg) in
+        Location.prerr_warning Location.none warn
+  | Error err ->
+      let msg =
+        match err with
+        | Illegal_renaming(name, ps_name, filename) ->
+            Format.asprintf
+              " %a@ contains the compiled interface for @ \
+               %s when %s was expected"
+              Location.print_filename filename ps_name name
+        | Inconsistent_import _ -> assert false
+        | Need_recursive_types(name, _) ->
+            Format.sprintf
+              "%s uses recursive types"
+              name
+        | Missing_module _ -> assert false
+        | Illegal_value_name _ -> assert false
+      in
+      let warn = Warnings.No_cmi_file(name, Some msg) in
+        Location.prerr_warning Location.none warn
+
+let read_pers_struct modname filename =
+  read_pers_struct true modname filename
+
+let find_pers_struct name =
+  find_pers_struct true name
+
+let check_pers_struct name =
+  if not (Hashtbl.mem persistent_structures name) then begin
+    (* PR#6843: record the weak dependency ([add_import]) regardless of
+       whether the check suceeds, to help make builds more
+       deterministic. *)
+    add_import name;
+    if (Warnings.is_active (Warnings.No_cmi_file("", None))) then
+      !add_delayed_check_forward
+        (fun () -> check_pers_struct name)
+  end
 
 let reset_cache () =
   current_unit := "";
@@ -724,10 +758,7 @@ and lookup_module ~load lid env : Path.t =
         p
       with Not_found ->
         if s = !current_unit then raise Not_found;
-        if !Clflags.transparent_modules && not load then
-          try ignore (find_pers_struct ~check:false s)
-          with Not_found ->
-            Location.prerr_warning Location.none (Warnings.No_cmi_file s)
+        if !Clflags.transparent_modules && not load then check_pers_struct s
         else ignore (find_pers_struct s);
         Pident(Ident.create_persistent s)
       end
@@ -965,24 +996,27 @@ let lookup_cltype lid env =
 type iter_cont = unit -> unit
 let iter_env_cont = ref []
 
-let rec scrape_alias_safe env mty =
+let rec scrape_alias_for_visit env mty =
   match mty with
-  | Mty_alias (Pident id) when Ident.persistent id -> false
+  | Mty_alias (Pident id)
+    when Ident.persistent id
+      && not (Hashtbl.mem persistent_structures (Ident.name id)) -> false
   | Mty_alias path -> (* PR#6600: find_module may raise Not_found *)
-      scrape_alias_safe env (find_module path env).md_type
+      begin try scrape_alias_for_visit env (find_module path env).md_type
+      with Not_found -> false
+      end
   | _ -> true
 
 let iter_env proj1 proj2 f env () =
   Ident.iter (fun id (x,_) -> f (Pident id) x) (proj1 env);
   let rec iter_components path path' mcomps =
     let cont () =
-      let safe =
+      let visit =
         match EnvLazy.get_arg mcomps with
-          None -> true
-        | Some (env, sub, path, mty) ->
-            try scrape_alias_safe env mty with Not_found -> false
+        | None -> true
+        | Some (env, sub, path, mty) -> scrape_alias_for_visit env mty
       in
-      if not safe then () else
+      if not visit then () else
       match EnvLazy.force !components_of_module_maker' mcomps with
         Structure_comps comps ->
           Tbl.iter
@@ -1643,7 +1677,6 @@ let open_signature ?(loc = Location.none) ?(toplevel = false) ovf root sg env =
 
 let read_signature modname filename =
   let ps = read_pers_struct modname filename in
-  check_consistency ps;
   Lazy.force ps.ps_sig
 
 (* Return the CRC of the interface of the given compilation unit *)
@@ -1662,7 +1695,7 @@ let crc_of_unit name =
 
 (* Return the list of imported interfaces with their CRCs *)
 
-let imports() =
+let imports () =
   Consistbl.extract (StringSet.elements !imported_units) crc_units
 
 (* Save a signature to a file *)
@@ -1695,7 +1728,6 @@ let save_signature_with_imports sg modname filename imports =
         ps_crcs = (cmi.cmi_name, Some crc) :: imports;
         ps_filename = filename;
         ps_flags = cmi.cmi_flags;
-        ps_crcs_checked = false;
       } in
     save_pers_struct crc ps;
     sg

@@ -40,6 +40,11 @@ CAMLprim value caml_ml_string_length(value s)
   return Val_long(temp - Byte (s, temp));
 }
 
+CAMLexport int caml_string_is_c_safe (value s)
+{
+  return strlen(String_val(s)) == caml_string_length(s);
+}
+
 /* [len] is a value that represents a number of bytes (chars) */
 CAMLprim value caml_create_string(value len)
 {

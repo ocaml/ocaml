@@ -21,12 +21,15 @@
 #ifdef HAS_UNISTD
 #include <unistd.h>
 #endif
+#include <errno.h>
 #include <limits.h>
 #include <grp.h>
 #include "unixsupport.h"
 
 CAMLprim value unix_initgroups(value user, value group)
 {
+  if (! caml_string_is_c_safe(user)) 
+    unix_error(EINVAL, "initgroups", user);
   if (initgroups(String_val(user), Int_val(group)) == -1) {
     uerror("initgroups", Nothing);
   }
