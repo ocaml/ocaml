@@ -494,6 +494,8 @@ and pure_module m =
 let _ =
   Translcore.transl_module := transl_module
 
+(* Introduce dependencies on modules referenced only by "external". *)
+
 let scan_used_globals lam =
   let globals = ref IdentSet.empty in
   let rec scan lam =
@@ -533,10 +535,17 @@ let transl_implementation_native module_name (str, cc) =
   primitive_declarations := [];
   Hashtbl.clear used_primitives;
   let module_id = Ident.create_persistent module_name in
-  let body =
+  let body, size =
     transl_label_init
-      (transl_struct [] cc (global_path module_id) str) in
-  Lprim(Psetglobal module_id, [wrap_globals body])
+      (fun () -> transl_struct [] cc (global_path module_id) str)
+  in
+  module_id, (Lprim(Psetglobal module_id, [wrap_globals body]), size)
+
+let transl_implementation module_name (str, cc) =
+  let module_id, (module_initializer, _size) =
+    transl_implementation_native module_name (str, cc)
+  in
+  Lprim (Psetglobal module_id, [module_initializer])
 
 (* Compile a toplevel phrase *)
 
