@@ -207,8 +207,11 @@ and set_of_closures = private {
       the closure". *)
   specialised_args : Variable.t Variable.Map.t;
   (** Parameters known to always alias some variable in the scope of the set
-      of closures declaration. For instance, supposing all call sites of f
-      are represented in this example,
+      of closures declaration.  These are the only parameters that may,
+      during [Inline_and_simplify], have non-unknown approximations.
+
+      For instance, supposing all call sites of f are represented in this
+      example,
         [let x = ... in
          let f a b c = ... in
          let y = ... in
