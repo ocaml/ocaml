@@ -550,11 +550,11 @@ let emit_instr i =
         begin match abi with
         | ELF32 ->
           let lbl = new_label() in
-          float_literals := (Int64.bits_of_float f, lbl) :: !float_literals;
+          float_literals := (f, lbl) :: !float_literals;
           `	addis	11, 0, {emit_upper emit_label lbl}\n`;
           `	lfd	{emit_reg i.res.(0)}, {emit_lower emit_label lbl}(11)\n`
         | ELF64v1 | ELF64v2 ->
-          let entry = TocFloat (Int64.bits_of_float f) in
+          let entry = TocFloat f in
           let lbl = label_for_tocref entry in
           if !big_toc || !Clflags.for_package <> None then begin
             `	addis	11, 2, {emit_label lbl}@toc@ha\n`;
