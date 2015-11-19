@@ -82,11 +82,7 @@ let add_ccobjs origin l =
 
 (* First pass: determine which units are needed *)
 
-module IdentSet =
-  Set.Make(struct
-    type t = Ident.t
-    let compare = compare
-  end)
+module IdentSet = Lambda.IdentSet
 
 let missing_globals = ref IdentSet.empty
 

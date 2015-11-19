@@ -76,12 +76,6 @@ end
 
 module MakeMap(Map : MapArgument) = struct
 
-  let may_map f v =
-    match v with
-        None -> v
-      | Some x -> Some (f x)
-
-
   open Misc
 
   let rec map_structure str =
@@ -380,6 +374,8 @@ module MakeMap(Map : MapArgument) = struct
           Texp_object (map_class_structure cl, string_list)
         | Texp_pack (mexpr) ->
           Texp_pack (map_module_expr mexpr)
+        | Texp_unreachable ->
+          Texp_unreachable
     in
     let exp_extra = List.map map_exp_extra exp.exp_extra in
     Map.leave_expression {

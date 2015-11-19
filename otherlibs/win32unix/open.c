@@ -39,6 +39,7 @@ CAMLprim value unix_open(value path, value flags, value perm)
   SECURITY_ATTRIBUTES attr;
   HANDLE h;
 
+  caml_unix_check_path(path, "open");
   fileaccess = convert_flag_list(flags, open_access_flags);
   sharemode = FILE_SHARE_READ | FILE_SHARE_WRITE
               | convert_flag_list(flags, open_share_flags);

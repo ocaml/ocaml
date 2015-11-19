@@ -44,8 +44,8 @@ struct channel {
   int old_revealed;             /* For Cash only */
   int refcount;                 /* For flush_all and for Cash */
   int flags;                    /* Bitfield */
-  char * name;                  /* Optional name (to report fd leaks) */
   char buff[IO_BUFFER_SIZE];    /* The buffer itself */
+  char * name;                  /* Optional name (to report fd leaks) */
 };
 
 enum {

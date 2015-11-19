@@ -201,6 +201,7 @@ let rec add_expr bv exp =
   | Pexp_pack m -> add_module bv m
   | Pexp_open (_ovf, m, e) -> open_module bv m.txt; add_expr bv e
   | Pexp_extension _ -> ()
+  | Pexp_unreachable -> ()
 
 and add_cases bv cases =
   List.iter (add_case bv) cases

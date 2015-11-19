@@ -163,6 +163,9 @@ Any user-visible change should have a Changelog entry:
 - with the issue number `PR#{N}` if from mantis, `GPR#{N}` if from github
   (several numbers separated by commas can be used)
 
+- maintaining the order: each section lists Mantis PRs first in ascending
+  numerical order, followed by Github PRs
+
 - with a concise readable description of the change (possibly taken
   from a commit message, but it should make sense to end-users
   reading release notes)

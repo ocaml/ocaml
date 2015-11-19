@@ -27,7 +27,25 @@
 
 /* Magic number */
 
-#define Intext_magic_number 0x8495A6BE
+#define Intext_magic_number_small 0x8495A6BE
+#define Intext_magic_number_big 0x8495A6BF
+
+/* Header format for the "small" model: 20 bytes
+       0   "small" magic number
+       4   length of marshaled data, in bytes
+       8   number of shared blocks
+      12   size in words when read on a 32-bit platform
+      16   size in words when read on a 64-bit platform
+   The 4 numbers are 32 bits each, in big endian.
+
+   Header format for the "big" model: 32 bytes
+       0   "big" magic number
+       4   four reserved bytes, currently set to 0
+       8   length of marshaled data, in bytes
+      16   number of shared blocks
+      24   size in words when read on a 64-bit platform
+   The 3 numbers are 64 bits each, in big endian.
+*/
 
 /* Codes for the compact format */
 
@@ -41,16 +59,20 @@
 #define CODE_SHARED8 0x4
 #define CODE_SHARED16 0x5
 #define CODE_SHARED32 0x6
+#define CODE_SHARED64 0x14
 #define CODE_BLOCK32 0x8
 #define CODE_BLOCK64 0x13
 #define CODE_STRING8 0x9
 #define CODE_STRING32 0xA
+#define CODE_STRING64 0x15
 #define CODE_DOUBLE_BIG 0xB
 #define CODE_DOUBLE_LITTLE 0xC
 #define CODE_DOUBLE_ARRAY8_BIG 0xD
 #define CODE_DOUBLE_ARRAY8_LITTLE 0xE
 #define CODE_DOUBLE_ARRAY32_BIG 0xF
 #define CODE_DOUBLE_ARRAY32_LITTLE 0x7
+#define CODE_DOUBLE_ARRAY64_BIG 0x16
+#define CODE_DOUBLE_ARRAY64_LITTLE 0x17
 #define CODE_CODEPOINTER 0x10
 #define CODE_INFIXPOINTER 0x11
 #define CODE_CUSTOM 0x12
@@ -59,10 +81,12 @@
 #define CODE_DOUBLE_NATIVE CODE_DOUBLE_BIG
 #define CODE_DOUBLE_ARRAY8_NATIVE CODE_DOUBLE_ARRAY8_BIG
 #define CODE_DOUBLE_ARRAY32_NATIVE CODE_DOUBLE_ARRAY32_BIG
+#define CODE_DOUBLE_ARRAY64_NATIVE CODE_DOUBLE_ARRAY64_BIG
 #else
 #define CODE_DOUBLE_NATIVE CODE_DOUBLE_LITTLE
 #define CODE_DOUBLE_ARRAY8_NATIVE CODE_DOUBLE_ARRAY8_LITTLE
 #define CODE_DOUBLE_ARRAY32_NATIVE CODE_DOUBLE_ARRAY32_LITTLE
+#define CODE_DOUBLE_ARRAY64_NATIVE CODE_DOUBLE_ARRAY64_LITTLE
 #endif
 
 /* Size-ing data structures for extern.  Chosen so that

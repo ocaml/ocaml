@@ -36,6 +36,7 @@ CAMLprim value unix_readlink(value path)
   char buffer[PATH_MAX];
   int len;
   char * p;
+  caml_unix_check_path(path, "readlink");
   p = caml_strdup(String_val(path));
   caml_enter_blocking_section();
   len = readlink(p, buffer, sizeof(buffer) - 1);

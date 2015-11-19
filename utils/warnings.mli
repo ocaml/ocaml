@@ -70,6 +70,7 @@ type t =
   | Inlining_impossible of string           (* 55 *)
   | Assignment_on_non_mutable_value         (* 56 *)
   | Missing_symbol_information of string * string (* 57 *)
+  | Unreachable_case                        (* 58 *)
 ;;
 
 val parse_options : bool -> string -> unit;;

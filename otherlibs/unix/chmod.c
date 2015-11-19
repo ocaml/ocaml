@@ -23,6 +23,7 @@ CAMLprim value unix_chmod(value path, value perm)
   CAMLparam2(path, perm);
   char * p;
   int ret;
+  caml_unix_check_path(path, "chmod");
   p = caml_strdup(String_val(path));
   caml_enter_blocking_section();
   ret = chmod(p, Int_val(perm));

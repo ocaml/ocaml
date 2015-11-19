@@ -268,7 +268,7 @@ let test_buffer () =
   test 208 (Marshal.from_bytes s 0 = longstring);
   test 209
     (try marshal_to_buffer s 0 512 verylongstring []; false
-     with Failure "Marshal.to_buffer: buffer overflow" -> true);
+     with Failure s when s = "Marshal.to_buffer: buffer overflow" -> true);
   marshal_to_buffer s 0 512 3.141592654 [];
   test 210 (Marshal.from_bytes s 0 = 3.141592654);
   marshal_to_buffer s 0 512 () [];
@@ -323,7 +323,7 @@ let test_buffer () =
   let rec big n = if n <= 0 then A else H(n, big(n-1)) in
   test 223
     (try marshal_to_buffer s 0 512 (big 1000) []; false
-     with Failure "Marshal.to_buffer: buffer overflow" -> true)
+     with Failure s when s = "Marshal.to_buffer: buffer overflow" -> true)
 
 let test_size() =
   let s = Marshal.to_string (G(A, G(B 2, G(C 3.14, G(D "glop", E 'e'))))) [] in
@@ -355,7 +355,7 @@ let test_block () =
   test 408 (marshal_from_block s 512 = longstring);
   test 409
     (try marshal_to_block s 512 verylongstring []; false
-     with Failure "Marshal.to_buffer: buffer overflow" -> true);
+     with Failure s when s = "Marshal.to_buffer: buffer overflow" -> true);
   marshal_to_block s 512 3.141592654 [];
   test 410 (marshal_from_block s 512 = 3.141592654);
   marshal_to_block s 512 () [];

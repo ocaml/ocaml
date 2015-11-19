@@ -472,6 +472,7 @@ external localtime : float -> tm = "unix_localtime"
 external mktime : tm -> float * tm = "unix_mktime"
 external alarm : int -> int = "unix_alarm"
 
+let sleepf = delay
 let sleep secs = delay (float secs)
 
 external times : unit -> process_times = "unix_times"

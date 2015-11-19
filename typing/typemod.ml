@@ -39,6 +39,7 @@ type error =
   | Scoping_pack of Longident.t * type_expr
   | Recursive_module_require_explicit_type
   | Apply_generative
+  | Cannot_scrape_alias of Path.t
 
 exception Error of Location.t * Env.t * error
 exception Error_forward of Location.error
@@ -58,11 +59,15 @@ let rec path_concat head p =
 let extract_sig env loc mty =
   match Env.scrape_alias env mty with
     Mty_signature sg -> sg
+  | Mty_alias path ->
+      raise(Error(loc, env, Cannot_scrape_alias path))
   | _ -> raise(Error(loc, env, Signature_expected))
 
 let extract_sig_open env loc mty =
   match Env.scrape_alias env mty with
     Mty_signature sg -> sg
+  | Mty_alias path ->
+      raise(Error(loc, env, Cannot_scrape_alias path))
   | _ -> raise(Error(loc, env, Structure_expected mty))
 
 (* Compute the environment after opening a module *)
@@ -116,10 +121,6 @@ let check_type_decl env loc id row_id newdecl decl rs rem =
   Includemod.type_declarations env id newdecl decl;
   Typedecl.check_coherence env loc id newdecl
 
-let rec make_params n = function
-    [] -> []
-  | _ :: l -> ("a" ^ string_of_int n) :: make_params (n+1) l
-
 let update_rec_next rs rem =
   match rs with
     Trec_next -> rem
@@ -130,10 +131,6 @@ let update_rec_next rs rem =
       | Sig_module (id, mty, Trec_next) :: rem ->
           Sig_module (id, mty, rs) :: rem
       | _ -> rem
-
-let sig_item desc typ env loc = {
-  Typedtree.sig_desc = desc; sig_loc = loc; sig_env = env
-}
 
 let make p n i =
   let open Variance in
@@ -1153,6 +1150,8 @@ let rec type_module ?(alias=false) sttn funct_body anchor env smod =
                mod_env = env;
                mod_attributes = smod.pmod_attributes;
                mod_loc = smod.pmod_loc }
+      | Mty_alias path ->
+          raise(Error(sfunct.pmod_loc, env, Cannot_scrape_alias path))
       | _ ->
           raise(Error(sfunct.pmod_loc, env, Cannot_apply funct.mod_type))
       end
@@ -1502,12 +1501,6 @@ let type_module_type_of env smod =
 
 (* For Typecore *)
 
-let rec get_manifest_types = function
-    [] -> []
-  | Sig_type (id, {type_params=[]; type_manifest=Some ty}, _) :: rem ->
-      (Ident.name id, ty) :: get_manifest_types rem
-  | _ :: rem -> get_manifest_types rem
-
 let type_package env m p nl tl =
   (* Same as Pexp_letmodule *)
   (* remember original level *)
@@ -1783,6 +1776,10 @@ let report_error ppf = function
       fprintf ppf "Recursive modules require an explicit module type."
   | Apply_generative ->
       fprintf ppf "This is a generative functor. It can only be applied to ()"
+  | Cannot_scrape_alias p ->
+      fprintf ppf
+        "This is an alias for module %a, which is missing"
+        path p
 
 let report_error env ppf err =
   Printtyp.wrap_printing_env env (fun () -> report_error ppf err)

@@ -192,6 +192,7 @@ CAMLexport int caml_flush_partial(struct channel *channel)
   int towrite, written;
 
   towrite = channel->curr - channel->buff;
+  CAMLassert (towrite >= 0);
   if (towrite > 0) {
     written = do_write(channel->fd, channel->buff, towrite);
     channel->offset += written;

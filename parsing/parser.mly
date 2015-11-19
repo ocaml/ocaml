@@ -69,9 +69,6 @@ let ghtyp d = Typ.mk ~loc:(symbol_gloc ()) d
 let ghloc d = { txt = d; loc = symbol_gloc () }
 let ghstr d = Str.mk ~loc:(symbol_gloc()) d
 
-let ghunit () =
-  ghexp (Pexp_construct (mknoloc (Lident "()"), None))
-
 let mkinfix arg1 name arg2 =
   mkexp(Pexp_apply(mkoperator name 2, [Nolabel, arg1; Nolabel, arg2]))
 
@@ -148,6 +145,14 @@ let mkexp_constraint e (t1, t2) =
   | Some t, None -> ghexp(Pexp_constraint(e, t))
   | _, Some t -> ghexp(Pexp_coerce(e, t1, t))
   | None, None -> assert false
+
+let mkexp_opt_constraint e = function
+  | None -> e
+  | Some constraint_ -> mkexp_constraint e constraint_
+
+let mkpat_opt_constraint p = function
+  | None -> p
+  | Some typ -> mkpat (Ppat_constraint(p, typ))
 
 let array_function par assign=
   let op = if assign then par^"<-" else par in
@@ -826,8 +831,13 @@ module_type:
       { unclosed "sig" 1 "end" 3 }
   | FUNCTOR functor_args MINUSGREATER module_type
       %prec below_WITH
-      { List.fold_left (fun acc (n, t) -> mkmty(Pmty_functor(n, t, acc)))
-                       $4 $2 }
+      { List.fold_left
+          (fun acc (n, t) ->
+           mkmty(Pmty_functor(n, t, acc)))
+        $4 $2 }
+  | module_type MINUSGREATER module_type
+      %prec below_WITH
+      { mkmty(Pmty_functor(mknoloc "_", Some $1, $3)) }
   | module_type WITH with_constraints
       { mkmty(Pmty_with($1, List.rev $3)) }
   | MODULE TYPE OF module_expr %prec below_LBRACKETAT
@@ -1543,9 +1553,12 @@ match_case:
       { Exp.case $1 $3 }
   | pattern WHEN seq_expr MINUSGREATER seq_expr
       { Exp.case $1 ~guard:$3 $5 }
+  | pattern MINUSGREATER DOT
+      { Exp.case $1 (Exp.unreachable ~loc:(rhs_loc 3) ())}
 ;
 fun_def:
-    MINUSGREATER seq_expr                       { $2 }
+    MINUSGREATER seq_expr                        { $2 }
+  | COLON simple_core_type MINUSGREATER seq_expr { mkexp (Pexp_constraint ($4, $2)) }
 /* Cf #5939: we used to accept (fun p when e0 -> e) */
   | labeled_simple_pattern fun_def
       {
@@ -1569,10 +1582,10 @@ lbl_expr_list:
   |  lbl_expr SEMI { [$1] }
 ;
 lbl_expr:
-    label_longident EQUAL expr
-      { (mkrhs $1 1,$3) }
-  | label_longident
-      { (mkrhs $1 1, exp_of_label $1 1) }
+    label_longident opt_type_constraint EQUAL expr
+      { (mkrhs $1 1, mkexp_opt_constraint $4 $2) }
+  | label_longident opt_type_constraint
+      { (mkrhs $1 1, mkexp_opt_constraint (exp_of_label $1 1) $2) }
 ;
 field_expr_list:
     field_expr opt_semi { [$1] }
@@ -1594,6 +1607,10 @@ type_constraint:
   | COLONGREATER core_type                      { (None, Some $2) }
   | COLON error                                 { syntax_error() }
   | COLONGREATER error                          { syntax_error() }
+;
+opt_type_constraint:
+    type_constraint { Some $1 }
+  | /* empty */ { None }
 ;
 
 /* Patterns */
@@ -1700,10 +1717,14 @@ lbl_pattern_list:
       { let (fields, closed) = $3 in $1 :: fields, closed }
 ;
 lbl_pattern:
-    label_longident EQUAL pattern
-      { (mkrhs $1 1,$3) }
-  | label_longident
-      { (mkrhs $1 1, pat_of_label $1 1) }
+    label_longident opt_pattern_type_constraint EQUAL pattern
+     { (mkrhs $1 1, mkpat_opt_constraint $4 $2) }
+  | label_longident opt_pattern_type_constraint
+     { (mkrhs $1 1, mkpat_opt_constraint (pat_of_label $1 1) $2) }
+;
+opt_pattern_type_constraint:
+    COLON core_type { Some $2 }
+  | /* empty */ { None }
 ;
 
 /* Value descriptions */
@@ -2010,7 +2031,7 @@ core_type:
       { Typ.attr $1 $2 }
 ;
 core_type_no_attr:
-    core_type2
+    core_type2 %prec MINUSGREATER
       { $1 }
   | core_type2 AS QUOTE ident
       { mktyp(Ptyp_alias($1, $4)) }

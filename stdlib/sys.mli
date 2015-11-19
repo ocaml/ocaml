@@ -53,7 +53,8 @@ external getenv : string -> string = "caml_sys_getenv"
 external command : string -> int = "caml_sys_system_command"
 (** Execute the given shell command and return its exit code. *)
 
-external time : unit -> float = "caml_sys_time"
+external time : unit -> (float [@unboxed]) =
+  "caml_sys_time" "caml_sys_time_unboxed" [@@noalloc]
 (** Return the processor time, in seconds, used by the program
    since the beginning of execution. *)
 

@@ -13,10 +13,6 @@
 
 type 'a shared = Shared of 'a | Single of 'a
 
-let share_out = function
-  | Shared act|Single act -> act
-
-
 type 'a t_store =
     {act_get : unit -> 'a array ;
      act_get_shared : unit -> 'a shared array ;
@@ -143,6 +139,7 @@ type 'a t_ctx =  {off : int ; arg : 'a}
 let cut = ref 8
 and more_cut = ref 16
 
+(*
 let pint chan i =
   if i = min_int then Printf.fprintf chan "-oo"
   else if i=max_int then Printf.fprintf chan "oo"
@@ -157,8 +154,9 @@ let pcases chan cases =
       Printf.fprintf chan "%a..%a:%d " pint l pint h act
   done
 
-    let prerr_inter i = Printf.fprintf stderr
+let prerr_inter i = Printf.fprintf stderr
         "cases=%a" pcases i.cases
+*)
 
 let get_act cases i =
   let _,_,r = cases.(i) in
@@ -174,6 +172,7 @@ type ctests = {
 
 let too_much = {n=max_int ; ni=max_int}
 
+(*
 let ptests chan {n=n ; ni=ni} =
   Printf.fprintf chan "{n=%d ; ni=%d}" n ni
 
@@ -181,23 +180,7 @@ let pta chan t =
   for i =0 to Array.length t-1 do
     Printf.fprintf chan "%d: %a\n" i ptests t.(i)
   done
-
-let count_tests s =
-  let r =
-    Array.init
-      (Array.length s.actions)
-      (fun _ -> {n=0 ; ni=0 }) in
-  let c = s.cases in
-  let imax = Array.length c-1 in
-  for i=0 to imax do
-    let l,h,act = c.(i) in
-    let x = r.(act) in
-    x.n <- x.n+1 ;
-    if l < h && i<> 0 && i<>imax then
-      x.ni <- x.ni+1 ;
-  done ;
-  r
-
+*)
 
 let less_tests c1 c2 =
   if c1.n < c2.n then
@@ -212,8 +195,6 @@ let less_tests c1 c2 =
 
 and eq_tests c1 c2 = c1.n = c2.n && c1.ni=c2.ni
 
-let min_tests c1 c2 = if less_tests c1 c2 then c1 else c2
-
 let less2tests (c1,d1) (c2,d2) =
   if eq_tests c1 c2 then
     less_tests d1 d2
@@ -226,10 +207,12 @@ let add_test t1 t2 =
 
 type t_ret = Inter of int * int  | Sep of int | No
 
+(*
 let pret chan = function
   | Inter (i,j)-> Printf.fprintf chan "Inter %d %d" i j
   | Sep i -> Printf.fprintf chan "Sep %d" i
   | No -> Printf.fprintf chan "No"
+*)
 
 let coupe cases i =
   let l,_,_ = cases.(i) in
@@ -310,6 +293,7 @@ let coupe_inter i j cases =
 
 type kind = Kvalue of int | Kinter of int | Kempty
 
+(*
 let pkind chan = function
   | Kvalue i ->Printf.fprintf chan "V%d" i
   | Kinter i -> Printf.fprintf chan "I%d" i
@@ -320,6 +304,7 @@ let rec pkey chan  = function
   | [k] -> pkind chan k
   | k::rem ->
       Printf.fprintf chan "%a %a" pkey rem pkind k
+*)
 
 let t = Hashtbl.create 17
 
@@ -551,18 +536,6 @@ and enum top cases =
         make_if_test Arg.leint arg 0 ifso ifnot
     | _ ->
         make_if_test Arg.ltint arg i ifso ifnot
-
-    and make_if_le arg i ifso ifnot = match i with
-    | -1 ->
-        make_if_test Arg.ltint arg 0 ifso ifnot
-    | _ ->
-        make_if_test Arg.leint arg i ifso ifnot
-
-    and make_if_gt arg i  ifso ifnot = match i with
-    | -1 ->
-        make_if_test Arg.geint arg 0 ifso ifnot
-    | _ ->
-        make_if_test Arg.gtint arg i ifso ifnot
 
     and make_if_ge arg i  ifso ifnot = match i with
     | 1 ->

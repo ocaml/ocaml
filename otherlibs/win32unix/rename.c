@@ -20,6 +20,8 @@ CAMLprim value unix_rename(value path1, value path2)
   static int supports_MoveFileEx = -1; /* don't know yet */
   BOOL ok;
 
+  caml_unix_check_path(path1, "rename");
+  caml_unix_check_path(path2, "rename");
   if (supports_MoveFileEx < 0) {
     OSVERSIONINFO VersionInfo;
     VersionInfo.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);

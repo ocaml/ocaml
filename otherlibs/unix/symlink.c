@@ -25,6 +25,8 @@ CAMLprim value unix_symlink(value path1, value path2)
   char * p1;
   char * p2;
   int ret;
+  caml_unix_check_path(path1, "symlink");
+  caml_unix_check_path(path2, "symlink");
   p1 = caml_strdup(String_val(path1));
   p2 = caml_strdup(String_val(path2));
   caml_enter_blocking_section();

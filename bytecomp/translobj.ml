@@ -85,7 +85,6 @@ let reset_labels () =
 
 (* Insert labels *)
 
-let string s = Lconst (Const_base (Const_string (s, None)))
 let int n = Lconst (Const_base (Const_int n))
 
 let prim_makearray =
@@ -99,12 +98,12 @@ let transl_label_init_bytecode f =
       (fun c id expr -> Llet(Alias, id, Lconst c, expr))
       consts expr
   in
-  let expr =
+  (*let expr =
     List.fold_right
       (fun id expr -> Lsequence(Lprim(Pgetglobal id, []), expr))
       (Env.get_required_globals ()) expr
   in
-  Env.reset_required_globals ();
+  Env.reset_required_globals ();*)
   reset_labels ();
   expr, size
 

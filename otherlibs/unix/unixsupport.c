@@ -307,3 +307,9 @@ void uerror(char *cmdname, value cmdarg)
 {
   unix_error(errno, cmdname, cmdarg);
 }
+
+void caml_unix_check_path(value path, char * cmdname)
+{
+  if (! caml_string_is_c_safe(path)) unix_error(ENOENT, cmdname, path);
+}
+

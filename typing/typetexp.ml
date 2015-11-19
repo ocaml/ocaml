@@ -52,6 +52,8 @@ type error =
   | Ill_typed_functor_application of Longident.t
   | Illegal_reference_to_recursive_module
   | Access_functor_as_structure of Longident.t
+  | Apply_structure_as_functor of Longident.t
+  | Cannot_scrape_alias of Longident.t * Path.t
 
 exception Error of Location.t * Env.t * error
 exception Error_forward of Location.error
@@ -203,14 +205,30 @@ let rec narrow_unbound_lid_error : 'a. _ -> _ -> _ -> _ -> 'a =
       check_module mlid;
       let md = Env.find_module (Env.lookup_module true mlid env) env in
       begin match Env.scrape_alias env md.md_type with
-        Mty_functor _ ->
+      | Mty_functor _ ->
           raise (Error (loc, env, Access_functor_as_structure mlid))
+      | Mty_alias p ->
+          raise (Error (loc, env, Cannot_scrape_alias(mlid, p)))
       | _ -> ()
       end
   | Longident.Lapply (flid, mlid) ->
       check_module flid;
+      let fmd = Env.find_module (Env.lookup_module true flid env) env in
+      begin match Env.scrape_alias env fmd.md_type with
+      | Mty_signature _ ->
+          raise (Error (loc, env, Apply_structure_as_functor flid))
+      | Mty_alias p ->
+          raise (Error (loc, env, Cannot_scrape_alias(flid, p)))
+      | _ -> ()
+      end;
+      let mmd = Env.find_module (Env.lookup_module true mlid env) env in
       check_module mlid;
-      raise (Error (loc, env, Ill_typed_functor_application lid))
+      begin match Env.scrape_alias env mmd.md_type with
+      | Mty_alias p ->
+          raise (Error (loc, env, Cannot_scrape_alias(mlid, p)))
+      | _ ->
+          raise (Error (loc, env, Ill_typed_functor_application lid))
+      end
   end;
   raise (Error (loc, env, make_error lid))
 
@@ -384,11 +402,6 @@ let transl_type_param env styp =
         { ctyp_desc = Ttyp_var name; ctyp_type = ty; ctyp_env = env;
           ctyp_loc = loc; ctyp_attributes = styp.ptyp_attributes; }
   | _ -> assert false
-
-let wrap_method ty =
-  match (Ctype.repr ty).desc with
-    Tpoly _ -> ty
-  | _ -> Ctype.newty (Tpoly (ty, []))
 
 let new_pre_univar ?name () =
   let v = newvar ?name () in pre_univars := v :: !pre_univars; v
@@ -951,7 +964,13 @@ let report_error env ppf = function
   | Not_a_variant ty ->
       Printtyp.reset_and_mark_loops ty;
       fprintf ppf "@[The type %a@ is not a polymorphic variant type@]"
-        Printtyp.type_expr ty
+        Printtyp.type_expr ty;
+      begin match ty.desc with
+        | Tvar (Some s) ->
+           (* PR#7012: help the user that wrote 'Foo instead of `Foo *)
+           Misc.did_you_mean ppf (fun () -> ["`" ^ s])
+        | _ -> ()
+      end
   | Variant_tags (lab1, lab2) ->
       fprintf ppf
         "@[Variant tags `%s@ and `%s have the same hash value.@ %s@]"
@@ -997,6 +1016,12 @@ let report_error env ppf = function
       fprintf ppf "Illegal recursive module reference"
   | Access_functor_as_structure lid ->
       fprintf ppf "The module %a is a functor, not a structure" longident lid
+  | Apply_structure_as_functor lid ->
+      fprintf ppf "The module %a is a structure, not a functor" longident lid
+  | Cannot_scrape_alias(lid, p) ->
+      fprintf ppf
+        "The module %a is an alias for module %a, which is missing"
+        longident lid path p
 
 let () =
   Location.register_error_of_exn

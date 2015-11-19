@@ -277,10 +277,21 @@ let rec normalize_type_path ?(cache=false) env p =
   with
     Not_found -> (p, Id)
 
+let penalty s =
+  if s <> "" && s.[0] = '_' then
+    10
+  else
+    try
+      for i = 0 to String.length s - 2 do
+        if s.[i] = '_' && s.[i + 1] = '_' then
+          raise Exit
+      done;
+      1
+    with Exit -> 10
+
 let rec path_size = function
     Pident id ->
-      (let s = Ident.name id in if s <> "" && s.[0] = '_' then 10 else 1),
-      -Ident.binding_time id
+      penalty (Ident.name id), -Ident.binding_time id
   | Pdot (p, _, _) ->
       let (l, b) = path_size p in (1+l, b)
   | Papply (p1, p2) ->
@@ -360,7 +371,7 @@ let best_type_path p =
     let (p', s) = normalize_type_path !printing_env p in
     let get_path () = get_best_path (PathMap.find  p' !printing_map) in
     while !printing_cont <> [] &&
-      try ignore (get_path ()); false with Not_found -> true
+      try fst (path_size (get_path ())) > !printing_depth with Not_found -> true
     do
       printing_cont := List.map snd (Env.run_iter_cont !printing_cont);
       incr printing_depth;
@@ -425,13 +436,6 @@ let check_name_of_type t = ignore(name_of_type t)
 let remove_names tyl =
   let tyl = List.map repr tyl in
   names := List.filter (fun (ty,_) -> not (List.memq ty tyl)) !names
-
-
-let non_gen_mark sch ty =
-  if sch && is_Tvar ty && ty.level <> generic_level then "_" else ""
-
-let print_name_of_type sch ppf t =
-  fprintf ppf "'%s%s" (non_gen_mark sch t) (name_of_type t)
 
 let visited_objects = ref ([] : type_expr list)
 let aliased = ref ([] : type_expr list)
@@ -539,9 +543,6 @@ let reset_and_mark_loops_list tyl =
 
 (* Disabled in classic mode when printing an unification error *)
 let print_labels = ref true
-let print_label ppf l =
-  if !print_labels && l <> Nolabel || is_optional l
-  then fprintf ppf "%s:" (string_of_label l)
 
 let rec tree_of_typexp sch ty =
   let ty = repr ty in
@@ -754,11 +755,6 @@ let filter_params tyl =
       [] tyl
   in List.rev params
 
-let string_of_mutable = function
-  | Immutable -> ""
-  | Mutable -> "mutable "
-
-
 let mark_loops_constructor_arguments = function
   | Cstr_tuple l -> List.iter mark_loops l
   | Cstr_record l -> List.iter (fun l -> mark_loops l.ld_type) l
@@ -956,21 +952,6 @@ let extension_constructor id ppf ext =
 
 (* Print a value declaration *)
 
-let rec add_native_repr_attributes ty attrs =
-  match ty, attrs with
-  | Otyp_arrow (label, a, b), attr_opt :: rest ->
-      let b = add_native_repr_attributes b rest in
-      let a =
-        match attr_opt with
-        | None -> a
-        | Some attr -> Otyp_attribute (a, attr)
-      in
-      Otyp_arrow (label, a, b)
-  | _, [Some attr] -> Otyp_attribute (ty, attr)
-  | _ ->
-      assert (List.for_all (fun x -> x = None) attrs);
-      ty
-
 let tree_of_value_description id decl =
   (* Format.eprintf "@[%a@]@." raw_type_expr decl.val_type; *)
   let id = Ident.name id in
@@ -992,10 +973,6 @@ let value_description id ppf decl =
   !Oprint.out_sig_item ppf (tree_of_value_description id decl)
 
 (* Print a class type *)
-
-let class_var sch ppf l (m, t) =
-  fprintf ppf
-    "@ @[<2>val %s%s :@ %a@]" (string_of_mutable m) l (typexp sch 0) t
 
 let method_type (_, kind, ty) =
   match field_kind_repr kind, repr ty with
@@ -1102,10 +1079,6 @@ let tree_of_class_param param variance =
     Otyp_var (_, s) -> s
   | _ -> "?"),
   if is_Tvar (repr param) then (true, true) else variance
-
-let tree_of_class_params params =
-  let tyl = tree_of_typlist true params in
-  List.map (function Otyp_var (_, s) -> s | _ -> "?") tyl
 
 let class_variance =
   List.map Variance.(fun v -> mem May_pos v, mem May_neg v)

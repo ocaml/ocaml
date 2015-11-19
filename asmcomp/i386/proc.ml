@@ -87,7 +87,6 @@ let phys_reg n =
 let eax = phys_reg 0
 let ecx = phys_reg 2
 let edx = phys_reg 3
-let tos = phys_reg 100
 
 let stack_slot slot ty =
   Reg.at_location ty (Stack slot)
@@ -146,7 +145,6 @@ let loc_parameters arg =
   let (loc, ofs) = calling_conventions 0 5 100 99 incoming arg in loc
 let loc_results res =
   let (loc, ofs) = calling_conventions 0 5 100 100 not_supported res in loc
-let extcall_use_push = true
 let loc_external_arguments arg =
   fatal_error "Proc.loc_external_arguments"
 let loc_external_results res =

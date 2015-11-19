@@ -878,10 +878,6 @@ and comp_binary_test env cond ifso ifnot sz cont =
 
   comp_expr env cond sz cont_cond
 
-(* Compile string switch *)
-
-and comp_string_switch env arg cases default sz cont = ()
-
 (**** Compilation of a code block (with tracking of stack usage) ****)
 
 let comp_block env exp sz cont =

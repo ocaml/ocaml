@@ -518,11 +518,15 @@ let check_well_founded env loc path to_check ty =
       | _ -> raise Ctype.Cannot_expand
     with
     | Ctype.Cannot_expand ->
+        let rec_ok =
+          match ty.desc with
+            Tconstr(p,_,_) ->
+              !Clflags.recursive_types && Ctype.is_contractive env p
+          | Tobject _ | Tvariant _ -> true
+          | _ -> !Clflags.recursive_types
+        in
         let nodes =
-          if !Clflags.recursive_types && Ctype.is_contractive env ty
-          || match ty.desc with Tobject _ | Tvariant _ -> true | _ -> false
-          then TypeSet.empty
-          else exp_nodes in
+          if rec_ok then TypeSet.empty else exp_nodes in
         Btype.iter_type_expr (check ty0 nodes) ty
     | Ctype.Unify _ ->
         (* Will be detected by check_recursion *)

@@ -139,8 +139,8 @@ printf.cmo : camlinternalFormatBasics.cmi camlinternalFormat.cmi buffer.cmi \
     printf.cmi
 printf.cmx : camlinternalFormatBasics.cmx camlinternalFormat.cmx buffer.cmx \
     printf.cmi
-queue.cmo : obj.cmi queue.cmi
-queue.cmx : obj.cmx queue.cmi
+queue.cmo : queue.cmi
+queue.cmx : queue.cmi
 random.cmo : pervasives.cmi nativeint.cmi int64.cmi int32.cmi digest.cmi \
     char.cmi array.cmi random.cmi
 random.cmx : pervasives.cmx nativeint.cmx int64.cmx int32.cmx digest.cmx \
@@ -267,8 +267,13 @@ printf.cmo : camlinternalFormatBasics.cmi camlinternalFormat.cmi buffer.cmi \
     printf.cmi
 printf.p.cmx : camlinternalFormatBasics.cmx camlinternalFormat.cmx buffer.cmx \
     printf.cmi
+<<<<<<< HEAD
 queue.cmo : obj.cmi queue.cmi
 queue.p.cmx : obj.cmx queue.cmi
+=======
+queue.cmo : queue.cmi
+queue.p.cmx : queue.cmi
+>>>>>>> ocaml/trunk
 random.cmo : pervasives.cmi nativeint.cmi int64.cmi int32.cmi digest.cmi \
     char.cmi array.cmi random.cmi
 random.p.cmx : pervasives.cmx nativeint.cmx int64.cmx int32.cmx digest.cmx \
@@ -285,8 +290,11 @@ sort.cmo : array.cmi sort.cmi
 sort.p.cmx : array.cmx sort.cmi
 stack.cmo : list.cmi stack.cmi
 stack.p.cmx : list.cmx stack.cmi
+<<<<<<< HEAD
 std_init.cmo :
 std_init.cmx :
+=======
+>>>>>>> ocaml/trunk
 std_exit.cmo :
 std_exit.cmx :
 stdLabels.cmo : stringLabels.cmi listLabels.cmi bytesLabels.cmi \

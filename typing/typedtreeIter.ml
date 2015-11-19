@@ -345,6 +345,8 @@ module MakeIterator(Iter : IteratorArgument) : sig
             iter_class_structure cl
         | Texp_pack (mexpr) ->
             iter_module_expr mexpr
+        | Texp_unreachable ->
+            ()
       end;
       Iter.leave_expression exp;
 
@@ -621,7 +623,6 @@ module DefaultIteratorArgument = struct
       let enter_class_type _ = ()
       let enter_class_type_field _ = ()
       let enter_core_type _ = ()
-      let enter_core_field_type _ = ()
       let enter_class_structure _ = ()
     let enter_class_field _ = ()
     let enter_structure_item _ = ()
@@ -648,7 +649,6 @@ module DefaultIteratorArgument = struct
       let leave_class_type _ = ()
       let leave_class_type_field _ = ()
       let leave_core_type _ = ()
-      let leave_core_field_type _ = ()
       let leave_class_structure _ = ()
     let leave_class_field _ = ()
     let leave_structure_item _ = ()
