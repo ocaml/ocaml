@@ -51,6 +51,7 @@ let const_comparison_expr expr (cmp : Lambda.comparison) x y =
   (* Using the [Pervasives] comparison functions here in the compiler
      coincides with the definitions of such functions in the code
      compiled by the user, and is thus correct. *)
+  const_bool_expr expr
     (match cmp with
      | Ceq -> x = y
      | Cneq -> x <> y
