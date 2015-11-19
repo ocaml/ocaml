@@ -71,7 +71,14 @@ let inline_non_recursive env r ~function_decls ~lhs_of_application
         ~where:Inline_by_copying_function_body
     in
     let env =
-      if not function_decl.stub then env
+      if not function_decl.stub ||
+         (* Stub functions should not prevent other functions
+            from being evaluated for inlining *)
+         E.inlining_level env = 0
+         (* If the function was considered for inlining without considering
+            its sub-functions, and it is not below another inlining choice,
+            then we are certain that this code will be kept. *)
+      then env
       else E.inlining_level_up env
     in
     simplify env r body
