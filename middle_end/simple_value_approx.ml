@@ -183,27 +183,45 @@ let value_unresolved sym = approx (Value_unresolved sym)
 let value_string size contents = approx (Value_string {size; contents })
 let value_float_array size = approx (Value_float_array size)
 
-let name_expr_fst (named, thing) = (Flambda_utils.name_expr named), thing
+let name_expr_fst (named, thing) ~name =
+  (Flambda_utils.name_expr named ~name), thing
 
 let make_const_int_named n : Flambda.named * t =
   Const (Int n), value_int n
-let make_const_int n = name_expr_fst (make_const_int_named n)
+let make_const_int (n : int) =
+  let name =
+    match n with
+    | 0 -> "const_zero"
+    | 1 -> "const_one"
+    | _ -> "const_int"
+  in
+  name_expr_fst (make_const_int_named n) ~name
 
 let make_const_char_named n : Flambda.named * t =
   Const (Char n), value_char n
-let make_const_char n = name_expr_fst (make_const_char_named n)
+let make_const_char n =
+  name_expr_fst (make_const_char_named n) ~name:"const_char"
 
 let make_const_ptr_named n : Flambda.named * t =
   Const (Const_pointer n), value_constptr n
-let make_const_ptr n = name_expr_fst (make_const_ptr_named n)
+let make_const_ptr (n : int) =
+  let name =
+    match n with
+    | 0 -> "const_ptr_zero"
+    | 1 -> "const_ptr_one"
+    | _ -> "const_ptr"
+  in
+  name_expr_fst (make_const_ptr_named n) ~name
 
 let make_const_bool_named b : Flambda.named * t =
   make_const_ptr_named (if b then 1 else 0)
-let make_const_bool b = name_expr_fst (make_const_bool_named b)
+let make_const_bool b =
+  name_expr_fst (make_const_bool_named b) ~name:"const_bool"
 
 let make_const_float_named f : Flambda.named * t =
   Allocated_const (Float f), value_float f
-let make_const_float f = name_expr_fst (make_const_float_named f)
+let make_const_float f =
+  name_expr_fst (make_const_float_named f) ~name:"const_float"
 
 let make_const_boxed_int_named (type bi) (t:bi boxed_int) (i:bi)
       : Flambda.named * t =
@@ -214,7 +232,8 @@ let make_const_boxed_int_named (type bi) (t:bi boxed_int) (i:bi)
     | Nativeint -> Nativeint i
   in
   Allocated_const c, value_boxed_int t i
-let make_const_boxed_int t i = name_expr_fst (make_const_boxed_int_named t i)
+let make_const_boxed_int t i =
+  name_expr_fst (make_const_boxed_int_named t i) ~name:"const_boxed_int"
 
 type simplification_summary =
   | Nothing_done
@@ -242,7 +261,7 @@ let simplify t (lam : Flambda.t) : simplification_result =
       let const, approx = make_const_boxed_int t i in
       const, Replaced_term, approx
     | Value_symbol sym ->
-      U.name_expr (Symbol sym), Replaced_term, t
+      U.name_expr (Symbol sym) ~name:"symbol", Replaced_term, t
     | Value_string _ | Value_float_array _
     | Value_block _ | Value_set_of_closures _ | Value_closure _
     | Value_unknown _ | Value_bottom | Value_extern _ | Value_unresolved _ ->
@@ -304,9 +323,10 @@ let simplify_using_env t ~is_present_in_env flam =
     | Some var when is_present_in_env var -> true, Flambda.Var var
     | _ ->
       match t.symbol with
-      | Some (sym, None) -> true, U.name_expr (Symbol sym)
+      | Some (sym, None) -> true,
+        U.name_expr (Symbol sym) ~name:"symbol"
       | Some (sym, Some field) ->
-          true, U.name_expr (Read_symbol_field (sym, field))
+        true, U.name_expr (Read_symbol_field (sym, field)) ~name:"symbol_field"
       | None -> false, flam
   in
   let const, summary, approx = simplify t flam in
@@ -321,7 +341,7 @@ let simplify_named_using_env t ~is_present_in_env named =
       match t.symbol with
       | Some (sym, None) -> true, (Flambda.Symbol sym:Flambda.named)
       | Some (sym, Some field) ->
-          true, Flambda.Read_symbol_field (sym, field)
+        true, Flambda.Read_symbol_field (sym, field)
       | None -> false, named
   in
   let const, summary, approx = simplify_named t named in

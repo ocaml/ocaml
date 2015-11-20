@@ -324,7 +324,7 @@ let bind ~bindings ~body =
       Flambda.create_let var var_def expr)
     body bindings
 
-let name_expr ?(name = "named") (named : Flambda.named) : Flambda.t =
+let name_expr (named : Flambda.named) ~name : Flambda.t =
   let var =
     Variable.create
       ~current_compilation_unit:(Compilation_unit.get_current_exn ())

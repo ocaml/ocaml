@@ -110,7 +110,7 @@ let simplify_free_variables_named env vars ~f : Flambda.named * R.t =
         let body, r = collect_bindings vars env (var::bound_vars) in
         let body =
           match body with
-          | Is_named body -> Flambda_utils.name_expr body
+          | Is_named body -> Flambda_utils.name_expr body ~name:"simplify_fv"
           | Is_expr body -> body
         in
         Is_expr (Flambda.create_let var named body), r

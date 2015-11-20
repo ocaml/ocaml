@@ -100,7 +100,7 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
     | var -> Var var
     | exception Not_found ->
       match Env.find_mutable_var_exn env id with
-      | mut_var -> name_expr (Read_mutable mut_var)
+      | mut_var -> name_expr (Read_mutable mut_var) ~name:"read_mutable"
       | exception Not_found ->
         Misc.fatal_errorf "Closure_conversion.close: unbound identifier %a"
           Ident.print id

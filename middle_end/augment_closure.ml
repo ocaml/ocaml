@@ -198,7 +198,9 @@ let run ~env ~(set_of_closures:Flambda.set_of_closures) : Flambda.t option =
   else
     let expr =
       Variable.Map.fold Flambda.create_let
-        add_closures (Flambda_utils.name_expr (Set_of_closures set_of_closures))
+        add_closures
+          (Flambda_utils.name_expr (Set_of_closures set_of_closures)
+            ~name:"augment_closure")
     in
     let expr =
       Variable.Map.fold Flambda.create_let
