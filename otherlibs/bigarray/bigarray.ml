@@ -62,7 +62,7 @@ let complex32 = Complex32
 let complex64 = Complex64
 let char = Char
 
-let kind_byte_size : type a b. (a, b) kind -> int = function
+let kind_size_in_bytes : type a b. (a, b) kind -> int = function
   | Float32 -> 4
   | Float64 -> 8
   | Int8_signed -> 1
@@ -109,8 +109,8 @@ module Genarray = struct
   external kind: ('a, 'b, 'c) t -> ('a, 'b) kind = "caml_ba_kind"
   external layout: ('a, 'b, 'c) t -> 'c layout = "caml_ba_layout"
 
-  let byte_size arr =
-    (kind_byte_size (kind arr)) * (Array.fold_left ( * ) 1 (dims arr))
+  let size_in_bytes arr =
+    (kind_size_in_bytes (kind arr)) * (Array.fold_left ( * ) 1 (dims arr))
 
   external sub_left: ('a, 'b, c_layout) t -> int -> int -> ('a, 'b, c_layout) t
      = "caml_ba_sub"
@@ -146,8 +146,8 @@ module Array1 = struct
   external kind: ('a, 'b, 'c) t -> ('a, 'b) kind = "caml_ba_kind"
   external layout: ('a, 'b, 'c) t -> 'c layout = "caml_ba_layout"
 
-  let byte_size arr =
-    (kind_byte_size (kind arr)) * (dim arr)
+  let size_in_bytes arr =
+    (kind_size_in_bytes (kind arr)) * (dim arr)
 
   external sub: ('a, 'b, 'c) t -> int -> int -> ('a, 'b, 'c) t = "caml_ba_sub"
   external blit: ('a, 'b, 'c) t -> ('a, 'b, 'c) t -> unit = "caml_ba_blit"
@@ -180,8 +180,8 @@ module Array2 = struct
   external kind: ('a, 'b, 'c) t -> ('a, 'b) kind = "caml_ba_kind"
   external layout: ('a, 'b, 'c) t -> 'c layout = "caml_ba_layout"
 
-  let byte_size arr =
-    (kind_byte_size (kind arr)) * (dim1 arr) * (dim2 arr)
+  let size_in_bytes arr =
+    (kind_size_in_bytes (kind arr)) * (dim1 arr) * (dim2 arr)
 
   external sub_left: ('a, 'b, c_layout) t -> int -> int -> ('a, 'b, c_layout) t
      = "caml_ba_sub"
@@ -231,8 +231,8 @@ module Array3 = struct
   external kind: ('a, 'b, 'c) t -> ('a, 'b) kind = "caml_ba_kind"
   external layout: ('a, 'b, 'c) t -> 'c layout = "caml_ba_layout"
 
-  let byte_size arr =
-    (kind_byte_size (kind arr)) * (dim1 arr) * (dim2 arr) * (dim3 arr) 
+  let size_in_bytes arr =
+    (kind_size_in_bytes (kind arr)) * (dim1 arr) * (dim2 arr) * (dim3 arr)
 
   external sub_left: ('a, 'b, c_layout) t -> int -> int -> ('a, 'b, c_layout) t
      = "caml_ba_sub"
