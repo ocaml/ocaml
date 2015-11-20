@@ -9,36 +9,33 @@ HACHA=hacha
 INFO=-fix -exec xxdate.exe -info -w 79
 HTML=-fix -exec xxdate.exe -O
 TEXT=-fix -exec xxdate.exe -text -w 79
+SRC = $(abspath ../../)
 
-ifeq ($(wildcard ../release/),)
-	SRC = ../../release
-else
-	SRC = ../release
-endif
+export LD_LIBRARY_PATH ?= $(SRC)/otherlibs/unix/:$(SRC)/otherlibs/str/
+export DYLD_LIBRARY_PATH ?= $(SRC)/otherlibs/unix/:$(SRC)/otherlibs/str/
 
-SRC2=../$(SRC)
-OCAMLDOC=$(SRC2)/byterun/ocamlrun $(SRC2)/ocamldoc/ocamldoc -hide Pervasives
-MLIS=$(SRC2)/stdlib/*.mli \
-	$(SRC2)/utils/*.mli \
-	$(SRC2)/parsing/*.mli \
-	$(SRC2)/otherlibs/bigarray/bigarray.mli \
-	$(SRC2)/otherlibs/dynlink/dynlink.mli \
-	$(SRC2)/otherlibs/graph/graphics.mli \
-	$(SRC2)/otherlibs/graph/graphicsX11.mli \
-	$(SRC2)/otherlibs/num/num.mli \
-	$(SRC2)/otherlibs/num/arith_status.mli \
-	$(SRC2)/otherlibs/num/big_int.mli \
-	$(SRC2)/otherlibs/num/ratio.mli \
-	$(SRC2)/otherlibs/str/*.mli \
-	$(SRC2)/otherlibs/systhreads/*.mli \
-	$(SRC2)/otherlibs/unix/*.mli
+OCAMLDOC=$(SRC)/byterun/ocamlrun $(SRC)/ocamldoc/ocamldoc -hide Pervasives
+MLIS=$(SRC)/stdlib/*.mli \
+	$(SRC)/utils/*.mli \
+	$(SRC)/parsing/*.mli \
+	$(SRC)/otherlibs/bigarray/bigarray.mli \
+	$(SRC)/otherlibs/dynlink/dynlink.mli \
+	$(SRC)/otherlibs/graph/graphics.mli \
+	$(SRC)/otherlibs/graph/graphicsX11.mli \
+	$(SRC)/otherlibs/num/num.mli \
+	$(SRC)/otherlibs/num/arith_status.mli \
+	$(SRC)/otherlibs/num/big_int.mli \
+	$(SRC)/otherlibs/num/ratio.mli \
+	$(SRC)/otherlibs/str/*.mli \
+	$(SRC)/otherlibs/systhreads/*.mli \
+	$(SRC)/otherlibs/unix/*.mli
 
 manual: files
 	cd texstuff; \
 	TEXINPUTS=$(TEXINPUTS) latex manual.tex
 
 labltk: cmds/browser.tex library/liblabltk.tex library/tk.mli
-	cd library; $(MAKE) Tk.tex RELEASEDIR=$(SRC2)
+	cd library; $(MAKE) Tk.tex RELEASEDIR=$(SRC)
 	cd texstuff; \
 	TEXINPUTS=$(TEXINPUTS) latex labltk.tex
 
@@ -63,16 +60,16 @@ html: files
 	mkdir -p libref ; \
 	$(OCAMLDOC) -colorize-code -sort -html \
 	-d libref \
-	-I $(SRC2)/stdlib  \
-	-I $(SRC2)/utils  \
-	-I $(SRC2)/parsing \
-	-I $(SRC2)/otherlibs/bigarray \
-	-I $(SRC2)/otherlibs/dynlink \
-	-I $(SRC2)/otherlibs/graph \
-	-I $(SRC2)/otherlibs/num \
-	-I $(SRC2)/otherlibs/str \
-	-I $(SRC2)/otherlibs/systhreads \
-	-I $(SRC2)/otherlibs/unix \
+	-I $(SRC)/stdlib  \
+	-I $(SRC)/utils  \
+	-I $(SRC)/parsing \
+	-I $(SRC)/otherlibs/bigarray \
+	-I $(SRC)/otherlibs/dynlink \
+	-I $(SRC)/otherlibs/graph \
+	-I $(SRC)/otherlibs/num \
+	-I $(SRC)/otherlibs/str \
+	-I $(SRC)/otherlibs/systhreads \
+	-I $(SRC)/otherlibs/unix \
 	$(MLIS) ; \
 	cp -f ../style.css libref ; \
 	${HEVEA} ${HTML} -I .. -I ../refman -I ../library -I ../cmds \
@@ -96,17 +93,17 @@ text: files
 	         ../manual.inf -e macros.tex ../manual.tex
 
 files: $(FILES)
-	cd refman; $(MAKE) all RELEASEDIR=$(SRC2)
-	cd library; $(MAKE) all RELEASEDIR=$(SRC2)
-	cd cmds; $(MAKE) all RELEASEDIR=$(SRC2)
-	cd tutorials; $(MAKE) all RELEASEDIR=$(SRC2)
+	cd refman; $(MAKE) all RELEASEDIR=$(SRC)
+	cd library; $(MAKE) all RELEASEDIR=$(SRC)
+	cd cmds; $(MAKE) all RELEASEDIR=$(SRC)
+	cd tutorials; $(MAKE) all RELEASEDIR=$(SRC)
 
 all:
-	$(MAKE) manual pdfmanual RELEASEDIR=$(SRC2)
-	$(MAKE) manual pdfmanual RELEASEDIR=$(SRC2)
-	$(MAKE) index RELEASEDIR=$(SRC2)
-	$(MAKE) manual pdfmanual RELEASEDIR=$(SRC2)
-	$(MAKE) html text info RELEASEDIR=$(SRC2)
+	$(MAKE) manual pdfmanual RELEASEDIR=$(SRC)
+	$(MAKE) manual pdfmanual RELEASEDIR=$(SRC)
+	$(MAKE) index RELEASEDIR=$(SRC)
+	$(MAKE) manual pdfmanual RELEASEDIR=$(SRC)
+	$(MAKE) html text info RELEASEDIR=$(SRC)
 
 clean:
 	rm -f $(FILES)
