@@ -34,7 +34,8 @@ static unsigned char * intern_src;
 /* Reading pointer in block holding input data. */
 
 static unsigned char * intern_input = NULL;
-/* Pointer to beginning of block holding input data. */
+/* Pointer to beginning of block holding input data,
+   if non-NULL this pointer will be freed by the cleanup function. */
 
 static header_t * intern_dest;
 /* Writing pointer in destination block */
@@ -130,12 +131,17 @@ static inline void readblock(void * dest, intnat len)
 }
 
 
-/* This is asserted at the beginning of demarshaling primitives.
-   If it fails, it probably means that an exception was raised
-   without calling intern_cleanup() during the previous demarshaling. */
-#define intern_in_clean_state() \
-  (intern_input == NULL && intern_obj_table == NULL \
-   && intern_extra_block == NULL && intern_block == 0)
+
+static void intern_init(void * src, void * input)
+{
+  /* This is asserted at the beginning of demarshaling primitives.
+     If it fails, it probably means that an exception was raised
+     without calling intern_cleanup() during the previous demarshaling. */
+  Assert (intern_input == NULL && intern_obj_table == NULL \
+     && intern_extra_block == NULL && intern_block == 0);
+  intern_src = src;
+  intern_input = input;
+}
 
 static void intern_cleanup(void)
 {
@@ -714,10 +720,8 @@ value caml_input_val(struct channel *chan)
     caml_stat_free(block);
     caml_failwith("input_value: truncated object");
   }
-  /* We should be in a clean state. */
-  Assert(intern_in_clean_state());
-  intern_input = (unsigned char *) block;
-  intern_src = intern_input;
+  /* Initialize global state */
+  intern_init(block, block);
   intern_alloc(h.whsize, h.num_objects);
   /* Fill it in */
   intern_rec(&res);
@@ -747,9 +751,8 @@ CAMLexport value caml_input_val_from_string(value str, intnat ofs)
   CAMLlocal1 (obj);
   struct marshal_header h;
 
-  /* We should be in a clean state. */
-  Assert (intern_in_clean_state());
-  intern_src = &Byte_u(str, ofs);
+  /* Initialize global state */
+  intern_init(&Byte_u(str, ofs), NULL);
   caml_parse_header("input_val_from_string", &h);
   if (ofs + h.header_len + h.data_len > caml_string_length(str))
     caml_failwith("input_val_from_string: bad length");
@@ -785,35 +788,25 @@ static value input_val_from_block(struct marshal_header * h)
 CAMLexport value caml_input_value_from_malloc(char * data, intnat ofs)
 {
   struct marshal_header h;
-  value obj;
 
-  Assert(intern_in_clean_state());
-  intern_input = (unsigned char *) data;
-  intern_src = intern_input + ofs;
+  intern_init(data + ofs, data);
 
   caml_parse_header("input_value_from_malloc", &h);
-  obj = input_val_from_block(&h);
 
-  /* Free the input */
-  intern_cleanup();
-  return obj;
+  return input_val_from_block(&h);
 }
 
 /* [len] is a number of bytes */
 CAMLexport value caml_input_value_from_block(char * data, intnat len)
 {
   struct marshal_header h;
-  value obj;
 
-  Assert(intern_in_clean_state());
-  intern_input = (unsigned char *) data;
-  intern_src = intern_input;
+  /* Initialize global state */
+  intern_init(data, NULL);
   caml_parse_header("input_value_from_block", &h);
   if (h.header_len + h.data_len > len)
     caml_failwith("input_val_from_block: bad length");
-  obj = input_val_from_block(&h);
-
-  return obj;
+  return input_val_from_block(&h);
 }
 
 /* [ofs] is a [value] that represents a number of bytes
@@ -829,7 +822,6 @@ CAMLprim value caml_marshal_data_size(value buff, value ofs)
   int header_len;
   uintnat data_len;
 
-  Assert(intern_in_clean_state());
   intern_src = &Byte_u(buff, Long_val(ofs));
   magic = read32u();
   switch(magic) {
