@@ -312,6 +312,11 @@ cmpbyt: $(CMPBYT)
 clean::
 	rm -f cmpbyt
 
+ifeq "$(RUNTIMEI)" "true"
+install::
+	cp ocaml-instr-graph ocaml-instr-report $(INSTALL_BINDIR)/
+endif
+
 # Common stuff
 
 .SUFFIXES:

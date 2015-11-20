@@ -27,7 +27,7 @@ CAMLexport struct caml__roots_block *caml_local_roots = NULL;
 
 CAMLexport void (*caml_scan_roots_hook) (scanning_action f) = NULL;
 
-/* FIXME should rename to [caml_oldify_young_roots] and synchronise with
+/* FIXME should rename to [caml_oldify_minor_roots] and synchronise with
    asmrun/roots.c */
 /* Call [caml_oldify_one] on (at least) all the roots that point to the minor
    heap. */
@@ -60,23 +60,54 @@ void caml_oldify_local_roots (void)
 
 /* Call [caml_darken] on all roots */
 
-void caml_darken_all_roots (void)
+void caml_darken_all_roots_start (void)
 {
-  caml_do_roots (caml_darken);
+  caml_do_roots (caml_darken, 1);
 }
 
-void caml_do_roots (scanning_action f)
+uintnat caml_incremental_roots_count = 1;
+
+intnat caml_darken_all_roots_slice (intnat work)
 {
+  return 0;
+}
+
+/* Note, in byte-code there is only one global root, so [do_globals] is
+   ignored and [caml_darken_all_roots_slice] does nothing. */
+void caml_do_roots (scanning_action f, int do_globals)
+{
+  CAML_INSTR_SETUP (tmr, "major_roots");
   /* Global variables */
   f(caml_global_data, &caml_global_data);
+  CAML_INSTR_TIME (tmr, "major_roots/global");
   /* The stack and the local C roots */
   caml_do_local_roots(f, caml_extern_sp, caml_stack_high, caml_local_roots);
+  CAML_INSTR_TIME (tmr, "major_roots/local");
   /* Global C roots */
   caml_scan_global_roots(f);
+  CAML_INSTR_TIME (tmr, "major_roots/C");
   /* Finalised values */
   caml_final_do_strong_roots (f);
+  CAML_INSTR_TIME (tmr, "major_roots/finalised");
+  /* Objects in the minor heap are roots for the major GC. */
+  {
+    value *hp;
+    asize_t sz, i;
+    for (hp = caml_young_ptr;
+         hp < caml_young_alloc_end;
+         hp += Whsize_wosize (sz)){
+      sz = Wosize_hp (hp);
+      if (Tag_hp (hp) < No_scan_tag){
+        for (i = 0; i < sz; i++){
+          f(Field(Val_hp(hp), i), &Field(Val_hp(hp), i));
+        }
+      }
+    }
+  }
+  CAML_INSTR_TIME (tmr, "major_roots/minor_heap");
   /* Hook */
   if (caml_scan_roots_hook != NULL) (*caml_scan_roots_hook)(f);
+  CAML_INSTR_TIME (tmr, "major_roots/hook");
 }
 
 CAMLexport void caml_do_local_roots (scanning_action f, value *stack_low,

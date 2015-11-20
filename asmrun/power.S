@@ -179,7 +179,7 @@ FUNCTION(caml_call_gc)
     /* Record pointer to register array */
         addi    0, 1, 8*32 + PARAM_SAVE_AREA + RESERVED_STACK
         Storeglobal(0, caml_gc_regs, 11)
-    /* Save current allocation pointer for debugging purposes */
+    /* Save current allocation pointer (needed by the GC) */
         Storeglobal(31, caml_young_ptr, 11)
     /* Save exception pointer (if e.g. a sighandler raises) */
         Storeglobal(29, caml_exception_pointer, 11)

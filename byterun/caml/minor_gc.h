@@ -17,8 +17,10 @@
 
 #include "address_class.h"
 
-CAMLextern value *caml_young_start, *caml_young_ptr;
-CAMLextern value *caml_young_end, *caml_young_limit;
+CAMLextern value *caml_young_start, *caml_young_end;
+CAMLextern value *caml_young_alloc_start, *caml_young_alloc_end;
+CAMLextern value *caml_young_ptr, *caml_young_limit;
+CAMLextern value *caml_young_trigger;
 extern asize_t caml_minor_heap_wsz;
 extern int caml_in_minor_collection;
 
@@ -34,9 +36,18 @@ struct caml_ref_table {
 CAMLextern struct caml_ref_table caml_ref_table, caml_weak_ref_table,
                                  caml_finalize_table;
 
+#define Add_to_ref_table(tbl, p)                  \
+  do {                                            \
+    if ((tbl).ptr >= (tbl).limit){                \
+      Assert ((tbl).ptr == (tbl).limit);          \
+      caml_realloc_ref_table (&(tbl));            \
+    }                                             \
+    *(tbl).ptr++ = (p);                           \
+  } while(0)
+
 extern void caml_set_minor_heap_size (asize_t); /* size in bytes */
 extern void caml_empty_minor_heap (void);
-CAMLextern void caml_minor_collection (void);
+CAMLextern void caml_gc_dispatch (void);
 CAMLextern void garbage_collection (void); /* def in asmrun/signals_asm.c */
 extern void caml_realloc_ref_table (struct caml_ref_table *);
 extern void caml_alloc_table (struct caml_ref_table *, asize_t, asize_t);

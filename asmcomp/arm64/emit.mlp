@@ -145,13 +145,15 @@ let record_frame live dbg =
 
 type gc_call =
   { gc_lbl: label;                      (* Entry label *)
+    gc_size: int;                       (* How much to add back to [young_ptr] *)
     gc_return_lbl: label;               (* Where to branch after GC *)
     gc_frame_lbl: label }               (* Label of frame descriptor *)
 
 let call_gc_sites = ref ([] : gc_call list)
 
 let emit_call_gc gc =
-  `{emit_label gc.gc_lbl}:	bl	{emit_symbol "caml_call_gc"}\n`;
+  `{emit_label gc.gc_lbl}:	add {emit_reg reg_alloc_ptr}, {emit_reg reg_alloc_ptr}, #{emit_int gc.gc_size}\n`;
+  `	bl	{emit_symbol "caml_call_gc"}\n`;
   `{emit_label gc.gc_frame_lbl}:	b	{emit_label gc.gc_return_lbl}\n`
 
 (* Record calls to caml_ml_array_bound_error.
@@ -362,7 +364,7 @@ let num_call_gc_and_check_bound_points instr =
 let max_out_of_line_code_offset instr ~num_call_gc ~num_check_bound =
   if num_call_gc < 1 && num_check_bound < 1 then 0
   else begin
-    let size_of_call_gc = 2 in
+    let size_of_call_gc = 3 in
     let size_of_check_bound = 1 in
     let size_of_last_thing =
       (* Call-GC points come before check-bound points. *)
@@ -528,6 +530,7 @@ let assembly_code_for_allocation i ~n ~far =
     end;
     call_gc_sites :=
       { gc_lbl = lbl_call_gc;
+        gc_size = n;
         gc_return_lbl = lbl_redo;
         gc_frame_lbl = lbl_frame } :: !call_gc_sites
   end else begin

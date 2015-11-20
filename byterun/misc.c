@@ -17,6 +17,7 @@
 #include "caml/config.h"
 #include "caml/misc.h"
 #include "caml/memory.h"
+#include "caml/version.h"
 
 caml_timing_hook caml_major_slice_begin_hook = NULL;
 caml_timing_hook caml_major_slice_end_hook = NULL;
@@ -49,7 +50,7 @@ uintnat caml_verb_gc = 0;
 
 void caml_gc_message (int level, char *msg, uintnat arg)
 {
-  if (level < 0 || (caml_verb_gc & level) != 0){
+  if ((caml_verb_gc & level) != 0){
     fprintf (stderr, msg, arg);
     fflush (stderr);
   }
@@ -195,3 +196,81 @@ int caml_runtime_warnings_active(void)
   }
   return 1;
 }
+
+#ifdef CAML_INSTR
+/* Timers for profiling GC and allocation (experimental, Linux-only) */
+
+#include <limits.h>
+#include <sys/types.h>
+#include <unistd.h>
+
+struct CAML_INSTR_BLOCK *CAML_INSTR_LOG = NULL;
+intnat CAML_INSTR_STARTTIME, CAML_INSTR_STOPTIME;
+
+#define Get_time(p,i) ((p)->ts[(i)].tv_nsec + 1000000000 * (p)->ts[(i)].tv_sec)
+
+void CAML_INSTR_INIT (void)
+{
+  char *s;
+
+  CAML_INSTR_STARTTIME = 0;
+  s = getenv ("OCAML_INSTR_START");
+  if (s != NULL) CAML_INSTR_STARTTIME = atol (s);
+  CAML_INSTR_STOPTIME = LONG_MAX;
+  s = getenv ("OCAML_INSTR_STOP");
+  if (s != NULL) CAML_INSTR_STOPTIME = atol (s);
+}
+
+void CAML_INSTR_ATEXIT (void)
+{
+  int i;
+  struct CAML_INSTR_BLOCK *p, *prev, *next;
+  FILE *f = NULL;
+  char *fname;
+
+  fname = getenv ("OCAML_INSTR_FILE");
+  if (fname != NULL){
+    char *mode = "a";
+    char buf [1000];
+    char *name = fname;
+
+    if (name[0] == '@'){
+      snprintf (buf, sizeof(buf), "%s.%d", name + 1, getpid ());
+      name = buf;
+    }
+    if (name[0] == '+'){
+      mode = "a";
+      name = name + 1;
+    }else if (name [0] == '>' || name[0] == '-'){
+      mode = "w";
+      name = name + 1;
+    }
+    f = fopen (name, mode);
+  }
+
+  if (f != NULL){
+    /* reverse the list */
+    prev = NULL;
+    p = CAML_INSTR_LOG;
+    while (p != NULL){
+      next = p->next;
+      p->next = prev;
+      prev = p;
+      p = next;
+    }
+    CAML_INSTR_LOG = prev;
+    fprintf (f, "==== OCAML INSTRUMENTATION DATA %s\n", OCAML_VERSION_STRING);
+    for (p = CAML_INSTR_LOG; p != NULL; p = p->next){
+      for (i = 0; i < p->index; i++){
+        fprintf (f, "@@ %19ld %19ld %s\n",
+                 Get_time (p, i), Get_time(p, i+1), p->tag[i+1]);
+      }
+      if (p->tag[0][0] != '\000'){
+        fprintf (f, "@@ %19ld %19ld %s\n",
+                 Get_time (p, 0), Get_time(p, p->index), p->tag[0]);
+      }
+    }
+    fclose (f);
+  }
+}
+#endif /* CAML_INSTR */

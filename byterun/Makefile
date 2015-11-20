@@ -15,9 +15,11 @@ include Makefile.common
 
 CFLAGS=-DCAML_NAME_SPACE $(BYTECCCOMPOPTS) $(IFLEXDIR)
 DFLAGS=-DCAML_NAME_SPACE -g -DDEBUG $(BYTECCCOMPOPTS) $(IFLEXDIR)
+IFLAGS=$(CFLAGS) -DCAML_INSTR
 
 OBJS=$(COMMONOBJS) $(UNIX_OR_WIN32).o main.o
 DOBJS=$(OBJS:.o=.d.o) instrtrace.d.o
+IOBJS=$(OBJS:.o=.i.o)
 PICOBJS=$(OBJS:.o=.pic.o)
 
 all:: all-$(SHARED)
@@ -30,6 +32,9 @@ ocamlrund$(EXE): libcamlrund.a prims.o
 	$(MKEXE) $(MKEXEDEBUGFLAG) $(BYTECCLINKOPTS) -o ocamlrund$(EXE) \
 		  prims.o libcamlrund.a $(BYTECCLIBS)
 
+ocamlruni$(EXE): prims.o libcamlruni.a
+	$(MKEXE) $(BYTECCLINKOPTS) -o $@ $^ $(BYTECCLIBS)
+
 libcamlrun.a: $(OBJS)
 	$(ARCMD) rc libcamlrun.a $(OBJS)
 	$(RANLIB) libcamlrun.a
@@ -37,6 +42,10 @@ libcamlrun.a: $(OBJS)
 libcamlrund.a: $(DOBJS)
 	$(ARCMD) rc libcamlrund.a $(DOBJS)
 	$(RANLIB) libcamlrund.a
+
+libcamlruni.a: $(IOBJS)
+	$(ARCMD) rc $@ $^
+	$(RANLIB) $@
 
 all-noshared:
 .PHONY: all-noshared
@@ -68,12 +77,18 @@ clean::
 %.d.o: %.c
 	$(CC) -c $(DFLAGS) $< -o $@
 
+%.i.o: %.c
+	$(CC) -c $(IFLAGS) -o $@ $<
+
 %.pic.o: %.c
 	$(CC) -c $(CFLAGS) $(SHAREDCCCOMPOPTS) $< -o $@
 
 depend : prims.c caml/opnames.h caml/jumptbl.h caml/version.h
 	-$(CC) -MM $(BYTECCCOMPOPTS) *.c > .depend
-	-$(CC) -MM $(BYTECCCOMPOPTS) -DDEBUG *.c | sed -e 's/\.o/.d.o/' >> .depend
+	-$(CC) -MM $(BYTECCCOMPOPTS) -DDEBUG *.c | sed -e 's/\.o/.d.o/' \
+	       >> .depend
+	-$(CC) -MM $(BYTECCCOMPOPTS) -DCAML_INSTR *.c | sed -e 's/\.o/.i.o/' \
+	       >> .depend
 	-$(CC) -MM $(BYTECCCOMPOPTS) *.c | sed -e 's/\.o/.pic.o/' >> .depend
 .PHONY: depend
 

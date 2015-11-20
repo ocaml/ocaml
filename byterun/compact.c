@@ -185,7 +185,7 @@ static void do_compaction (void)
     /* Invert roots first because the threads library needs some heap
        data structures to find its roots.  Fortunately, it doesn't need
        the headers (see above). */
-    caml_do_roots (invert_root);
+    caml_do_roots (invert_root, 1);
     caml_final_do_weak_roots (invert_root);
 
     ch = caml_heap_start;
@@ -398,8 +398,14 @@ uintnat caml_percent_max;  /* used in gc_ctrl.c and memory.c */
 void caml_compact_heap (void)
 {
   uintnat target_wsz, live;
+  CAML_INSTR_SETUP(tmr, "compact");
+
+  CAMLassert (caml_young_ptr == caml_young_alloc_end);
+  CAMLassert (caml_ref_table.ptr == caml_ref_table.base);
+  CAMLassert (caml_weak_ref_table.ptr == caml_weak_ref_table.base);
 
   do_compaction ();
+  CAML_INSTR_TIME (tmr, "compact/main");
   /* Compaction may fail to shrink the heap to a reasonable size
      because it deals in complete chunks: if a very large chunk
      is at the beginning of the heap, everything gets moved to
@@ -428,8 +434,14 @@ void caml_compact_heap (void)
   live = caml_stat_heap_wsz - caml_fl_cur_wsz;
   target_wsz = live + caml_percent_free * (live / 100 + 1)
                  + Wsize_bsize (Page_size);
-  target_wsz = caml_round_heap_chunk_wsz (target_wsz);
+  target_wsz = caml_clip_heap_chunk_wsz (target_wsz);
+
+#ifdef HAS_HUGE_PAGES
+  if (caml_use_huge_pages && caml_stat_heap_size <= HUGE_PAGE_SIZE) return;
+#endif
+
   if (target_wsz < caml_stat_heap_wsz / 2){
+    /* Recompact. */
     char *chunk;
 
     caml_gc_message (0x10, "Recompacting heap (target=%luk words)\n",
@@ -456,6 +468,7 @@ void caml_compact_heap (void)
     Assert (caml_stat_heap_chunks == 1);
     Assert (Chunk_next (caml_heap_start) == NULL);
     Assert (caml_stat_heap_wsz == Wsize_bsize (Chunk_size (chunk)));
+    CAML_INSTR_TIME (tmr, "compact/recompact");
   }
 }
 
@@ -473,7 +486,11 @@ void caml_compact_heap_maybe (void)
                                           Assert (caml_gc_phase == Phase_idle);
   if (caml_percent_max >= 1000000) return;
   if (caml_stat_major_collections < 3) return;
-  if (caml_stat_heap_wsz <= 2 * caml_round_heap_chunk_wsz (0)) return;
+  if (caml_stat_heap_wsz <= 2 * caml_clip_heap_chunk_wsz (0)) return;
+
+#ifdef HAS_HUGE_PAGES
+  if (caml_use_huge_pages && caml_stat_heap_size <= HUGE_PAGE_SIZE) return;
+#endif
 
   fw = 3.0 * caml_fl_cur_wsz - 2.0 * caml_fl_wsz_at_phase_change;
   if (fw < 0) fw = caml_fl_cur_wsz;
@@ -492,9 +509,9 @@ void caml_compact_heap_maybe (void)
                    (uintnat) fp);
   if (fp >= caml_percent_max){
     caml_gc_message (0x200, "Automatic compaction triggered.\n", 0);
+    caml_empty_minor_heap ();  /* minor heap must be empty for compaction */
     caml_finish_major_cycle ();
 
-    /* We just did a complete GC, so we can measure the overhead exactly. */
     fw = caml_fl_cur_wsz;
     fp = 100.0 * fw / (caml_stat_heap_wsz - fw);
     caml_gc_message (0x200, "Measured overhead: %"

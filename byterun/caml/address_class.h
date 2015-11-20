@@ -16,11 +16,17 @@
 #ifndef CAML_ADDRESS_CLASS_H
 #define CAML_ADDRESS_CLASS_H
 
+#include "config.h"
 #include "misc.h"
 #include "mlvalues.h"
 
 /* Use the following macros to test an address for the different classes
    it might belong to. */
+
+#define Is_in_heap(a) (Classify_addr(a) & In_heap)
+#define Is_in_heap_or_young(a) (Classify_addr(a) & (In_heap | In_young))
+#define Is_in_value_area(a)                                     \
+  (Classify_addr(a) & (In_heap | In_young | In_static_data))
 
 #define Is_young(val) \
   (Assert (Is_block (val)), \

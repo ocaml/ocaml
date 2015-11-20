@@ -27,10 +27,36 @@
 #include "caml/signals.h"
 #include "caml/weak.h"
 
+/* Pointers into the minor heap.
+   [caml_young_base]
+       The [malloc] block that contains the heap.
+   [caml_young_start] ... [caml_young_end]
+       The whole range of the minor heap: all young blocks are inside
+       this interval.
+   [caml_young_alloc_start]...[caml_young_alloc_end]
+       The allocation arena: newly-allocated blocks are carved from
+       this interval.
+   [caml_young_alloc_mid] is the mid-point of this interval.
+   [caml_young_ptr], [caml_young_trigger], [caml_young_limit]
+       These pointers are all inside the allocation arena.
+       - [caml_young_ptr] is where the next allocation will take place.
+       - [caml_young_trigger] is how far we can allocate before triggering
+         [caml_gc_dispatch]. Currently, it is either [caml_young_alloc_start]
+         or the mid-point of the allocation arena.
+       - [caml_young_limit] is the pointer that is compared to
+         [caml_young_ptr] for allocation. It is either
+         [caml_young_alloc_end] if a signal is pending and we are in
+         native code, or [caml_young_trigger].
+*/
+
 asize_t caml_minor_heap_wsz;
 static void *caml_young_base = NULL;
 CAMLexport value *caml_young_start = NULL, *caml_young_end = NULL;
+CAMLexport value *caml_young_alloc_start = NULL,
+                 *caml_young_alloc_mid = NULL,
+                 *caml_young_alloc_end = NULL;
 CAMLexport value *caml_young_ptr = NULL, *caml_young_limit = NULL;
+CAMLexport value *caml_young_trigger = NULL;
 
 CAMLexport struct caml_ref_table
   caml_ref_table = { NULL, NULL, NULL, NULL, NULL, 0, 0},
@@ -39,10 +65,6 @@ CAMLexport struct caml_ref_table
 /* table of custom blocks containing finalizers in the minor heap */
 
 int caml_in_minor_collection = 0;
-
-#ifdef DEBUG
-static unsigned long minor_gc_counter = 0;
-#endif
 
 /* [sz] and [rsv] are numbers of entries */
 void caml_alloc_table (struct caml_ref_table *tbl, asize_t sz, asize_t rsv)
@@ -75,32 +97,73 @@ static void clear_table (struct caml_ref_table *tbl)
     tbl->limit = tbl->threshold;
 }
 
-/* [size] is a number of bytes */
-void caml_set_minor_heap_size (asize_t size)
+void caml_set_minor_heap_size (asize_t bsz)
 {
   char *new_heap;
   void *new_heap_base;
 
-  Assert (size >= Bsize_wsize(Minor_heap_min));
-  Assert (size <= Bsize_wsize(Minor_heap_max));
-  Assert (size % sizeof (value) == 0);
-  if (caml_young_ptr != caml_young_end) caml_minor_collection ();
-                                    Assert (caml_young_ptr == caml_young_end);
-  new_heap = caml_aligned_malloc(size, 0, &new_heap_base);
+  Assert (bsz >= Bsize_wsize(Minor_heap_min));
+  Assert (bsz <= Bsize_wsize(Minor_heap_max));
+  Assert (bsz % sizeof (value) == 0);
+  if (caml_young_ptr != caml_young_alloc_end){
+    CAML_INSTR_INT ("force_minor/set_minor_heap_size@", 1);
+    caml_requested_minor_gc = 0;
+    caml_young_trigger = caml_young_alloc_mid;
+    caml_young_limit = caml_young_trigger;
+    caml_empty_minor_heap ();
+  }
+  CAMLassert (caml_young_ptr == caml_young_alloc_end);
+#ifdef MMAP_INTERVAL
+  {
+    static uintnat minor_heap_mapped_bsz = 0;
+    uintnat new_mapped_bsz;
+    new_mapped_bsz = Round_mmap_size (bsz);
+    void *block;
+
+    CAMLassert (caml_young_start != NULL);
+    if (new_mapped_bsz > minor_heap_mapped_bsz){
+      uintnat addbsz = new_mapped_bsz - minor_heap_mapped_bsz;
+      new_heap = (char *) caml_young_start - addbsz;
+      block = caml_mmap_heap (new_heap, addbsz, PROT_READ | PROT_WRITE,
+                              MAP_FIXED);
+      if (block != new_heap){
+        if (minor_heap_mapped_bsz == 0){
+          caml_fatal_error ("cannot initialize minor heap: mmap failed\n");
+        }else{
+          caml_raise_out_of_memory ();
+        }
+      }
+      new_heap_base = new_heap;
+    }else if (new_mapped_bsz < minor_heap_mapped_bsz){
+      uintnat subbsz = minor_heap_mapped_bsz - new_mapped_bsz;
+      (void) caml_mmap_heap (caml_young_start, subbsz, PROT_NONE,
+                             MAP_FIXED | MAP_NORESERVE);
+      new_heap_base = new_heap = (char *) caml_young_start + subbsz;
+    }else{
+      new_heap_base = new_heap = caml_young_base;
+    }
+  }
+#else
+  new_heap = caml_aligned_malloc(bsz, 0, &new_heap_base);
   if (new_heap == NULL) caml_raise_out_of_memory();
-  if (caml_page_table_add(In_young, new_heap, new_heap + size) != 0)
+  if (caml_page_table_add(In_young, new_heap, new_heap + bsz) != 0)
     caml_raise_out_of_memory();
 
   if (caml_young_start != NULL){
     caml_page_table_remove(In_young, caml_young_start, caml_young_end);
     free (caml_young_base);
   }
+#endif
   caml_young_base = new_heap_base;
   caml_young_start = (value *) new_heap;
-  caml_young_end = (value *) (new_heap + size);
-  caml_young_limit = caml_young_start;
-  caml_young_ptr = caml_young_end;
-  caml_minor_heap_wsz = Wsize_bsize (size);
+  caml_young_end = (value *) (new_heap + bsz);
+  caml_young_alloc_start = caml_young_start;
+  caml_young_alloc_mid = caml_young_alloc_start + Wsize_bsize (bsz) / 2;
+  caml_young_alloc_end = caml_young_end;
+  caml_young_trigger = caml_young_alloc_start;
+  caml_young_limit = caml_young_trigger;
+  caml_young_ptr = caml_young_alloc_end;
+  caml_minor_heap_wsz = Wsize_bsize (bsz);
 
   reset_table (&caml_ref_table);
   reset_table (&caml_weak_ref_table);
@@ -232,16 +295,20 @@ void caml_empty_minor_heap (void)
   value **r;
   uintnat prev_alloc_words;
 
-  if (caml_young_ptr != caml_young_end){
+  if (caml_young_ptr != caml_young_alloc_end){
     if (caml_minor_gc_begin_hook != NULL) (*caml_minor_gc_begin_hook) ();
+    CAML_INSTR_SETUP (tmr, "minor");
     prev_alloc_words = caml_allocated_words;
     caml_in_minor_collection = 1;
     caml_gc_message (0x02, "<", 0);
     caml_oldify_local_roots();
+    CAML_INSTR_TIME (tmr, "minor/local_roots");
     for (r = caml_ref_table.base; r < caml_ref_table.ptr; r++){
       caml_oldify_one (**r, *r);
     }
+    CAML_INSTR_TIME (tmr, "minor/ref_table");
     caml_oldify_mopup ();
+    CAML_INSTR_TIME (tmr, "minor/copy");
     for (r = caml_weak_ref_table.base; r < caml_weak_ref_table.ptr; r++){
       if (Is_block (**r) && Is_young (**r)){
         if (Hd_val (**r) == 0){
@@ -258,18 +325,22 @@ void caml_empty_minor_heap (void)
         final_fun((value)*r);
       }
     }
-    if (caml_young_ptr < caml_young_start) caml_young_ptr = caml_young_start;
-    caml_stat_minor_words += caml_young_end - caml_young_ptr;
-    caml_young_ptr = caml_young_end;
-    caml_young_limit = caml_young_start;
+    CAML_INSTR_TIME (tmr, "minor/update_weak");
+    CAMLassert (caml_young_ptr >= caml_young_alloc_start);
+    caml_stat_minor_words += caml_young_alloc_end - caml_young_ptr;
+    caml_gc_clock += (double) (caml_young_alloc_end - caml_young_ptr)
+                     / caml_minor_heap_wsz;
+    caml_young_ptr = caml_young_alloc_end;
     clear_table (&caml_ref_table);
     clear_table (&caml_weak_ref_table);
     clear_table (&caml_finalize_table);
     caml_gc_message (0x02, ">", 0);
     caml_in_minor_collection = 0;
-    caml_stat_promoted_words += caml_allocated_words - prev_alloc_words;
-    ++ caml_stat_minor_collections;
     caml_final_empty_young ();
+    CAML_INSTR_TIME (tmr, "minor/finalized");
+    caml_stat_promoted_words += caml_allocated_words - prev_alloc_words;
+    CAML_INSTR_INT ("minor/promoted#", caml_allocated_words - prev_alloc_words);
+    ++ caml_stat_minor_collections;
     if (caml_minor_gc_end_hook != NULL) (*caml_minor_gc_end_hook) ();
   }else{
     caml_final_empty_young ();
@@ -277,34 +348,81 @@ void caml_empty_minor_heap (void)
 #ifdef DEBUG
   {
     value *p;
-    for (p = caml_young_start; p < caml_young_end; ++p){
+    for (p = caml_young_alloc_start; p < caml_young_alloc_end; ++p){
       *p = Debug_free_minor;
     }
-    ++ minor_gc_counter;
   }
 #endif
 }
 
-/* Do a minor collection and a slice of major collection, call finalisation
+#ifdef CAML_INSTR
+extern uintnat caml_instr_alloc_jump;
+#endif
+
+/* Do a minor collection or a slice of major collection, call finalisation
    functions, etc.
-   Leave the minor heap empty.
+   Leave enough room in the minor heap to allocate at least one object.
+*/
+CAMLexport void caml_gc_dispatch (void)
+{
+  value *trigger = caml_young_trigger; /* save old value of trigger */
+#ifdef CAML_INSTR
+  CAML_INSTR_SETUP(tmr, "dispatch");
+  CAML_INSTR_TIME (tmr, "overhead");
+  CAML_INSTR_INT ("alloc/jump#", caml_instr_alloc_jump);
+  caml_instr_alloc_jump = 0;
+#endif
+
+  if (trigger == caml_young_alloc_start || caml_requested_minor_gc){
+    /* The minor heap is full, we must do a minor collection. */
+    /* reset the pointers first because the end hooks might allocate */
+    caml_requested_minor_gc = 0;
+    caml_young_trigger = caml_young_alloc_mid;
+    caml_young_limit = caml_young_trigger;
+    caml_empty_minor_heap ();
+    if (caml_gc_phase == Phase_idle) caml_major_collection_slice (-1);
+    CAML_INSTR_TIME (tmr, "dispatch/minor");
+
+    caml_final_do_calls ();
+    CAML_INSTR_TIME (tmr, "dispatch/finalizers");
+
+    while (caml_young_ptr - caml_young_alloc_start < Max_young_whsize){
+      /* The finalizers or the hooks have filled up the minor heap, we must
+         repeat the minor collection. */
+      caml_requested_minor_gc = 0;
+      caml_young_trigger = caml_young_alloc_mid;
+      caml_young_limit = caml_young_trigger;
+      caml_empty_minor_heap ();
+      if (caml_gc_phase == Phase_idle) caml_major_collection_slice (-1);
+      CAML_INSTR_TIME (tmr, "dispatch/finalizers_minor");
+    }
+  }
+  if (trigger != caml_young_alloc_start || caml_requested_major_slice){
+    /* The minor heap is half-full, do a major GC slice. */
+    caml_requested_major_slice = 0;
+    caml_young_trigger = caml_young_alloc_start;
+    caml_young_limit = caml_young_trigger;
+    caml_major_collection_slice (-1);
+    CAML_INSTR_TIME (tmr, "dispatch/major");
+  }
+}
+
+/* For backward compatibility with Lablgtk: do a minor collection to
+   ensure that the minor heap is empty.
 */
 CAMLexport void caml_minor_collection (void)
 {
-  caml_empty_minor_heap ();
-
-  caml_major_collection_slice (0);
-  caml_force_major_slice = 0;
-
-  caml_final_do_calls ();
-
-  caml_empty_minor_heap ();
+  caml_requested_minor_gc = 1;
+  caml_gc_dispatch ();
 }
 
 CAMLexport value caml_check_urgent_gc (value extra_root)
 {
   CAMLparam1 (extra_root);
-  if (caml_force_major_slice) caml_minor_collection();
+  if (caml_requested_major_slice || caml_requested_minor_gc){
+    CAML_INSTR_INT ("force_minor/check_urgent_gc@", 1);
+    caml_gc_dispatch();
+  }
   CAMLreturn (extra_root);
 }
 
@@ -316,13 +434,14 @@ void caml_realloc_ref_table (struct caml_ref_table *tbl)
   if (tbl->base == NULL){
     caml_alloc_table (tbl, caml_minor_heap_wsz / 8, 256);
   }else if (tbl->limit == tbl->threshold){
+    CAML_INSTR_INT ("request_minor/realloc_ref_table@", 1);
     caml_gc_message (0x08, "ref_table threshold crossed\n", 0);
     tbl->limit = tbl->end;
-    caml_urge_major_slice ();
-  }else{ /* This will almost never happen with the bytecode interpreter. */
+    caml_request_minor_gc ();
+  }else{
     asize_t sz;
     asize_t cur_ptr = tbl->ptr - tbl->base;
-                                             Assert (caml_force_major_slice);
+    CAMLassert (caml_requested_minor_gc);
 
     tbl->size *= 2;
     sz = (tbl->size + tbl->reserve) * sizeof (value *);

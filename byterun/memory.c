@@ -30,6 +30,18 @@
 #define inline _inline
 #endif
 
+int caml_huge_fallback_count = 0;
+/* Number of times that mmapping big pages fails and we fell back to small
+   pages. This counter is available to the program through
+   [Gc.huge_fallback_count].
+*/
+
+uintnat caml_use_huge_pages = 0;
+/* True iff the program allocates heap chunks by mmapping huge pages.
+   This is set when parsing [OCAMLRUNPARAM] and must stay constant
+   after that.
+*/
+
 extern uintnat caml_percent_free;                   /* major_gc.c */
 
 /* Page table management */
@@ -221,25 +233,56 @@ int caml_page_table_remove(int kind, void * start, void * end)
   return 0;
 }
 
+
+/* Initialize the [alloc_for_heap] system.
+   This function must be called exactly once, and it must be called
+   before the first call to [alloc_for_heap].
+   It returns 0 on success and -1 on failure.
+*/
+int caml_init_alloc_for_heap (void)
+{
+  return 0;
+}
+
 /* Allocate a block of the requested size, to be passed to
    [caml_add_to_heap] later.
-   [request] must be a multiple of [Page_size], it is a number of bytes.
-   [caml_alloc_for_heap] returns NULL if the request cannot be satisfied.
-   The returned pointer is a hp, but the header must be initialized by
-   the caller.
+   [request] will be rounded up to some implementation-dependent size.
+   The caller must use [Chunk_size] on the result to recover the actual
+   size.
+   Return NULL if the request cannot be satisfied. The returned pointer
+   is a hp, but the header (and the contents) must be initialized by the
+   caller.
 */
 char *caml_alloc_for_heap (asize_t request)
 {
-  char *mem;
-  void *block;
-                                              Assert (request % Page_size == 0);
-  mem = caml_aligned_malloc (request + sizeof (heap_chunk_head),
-                             sizeof (heap_chunk_head), &block);
-  if (mem == NULL) return NULL;
-  mem += sizeof (heap_chunk_head);
-  Chunk_size (mem) = request;
-  Chunk_block (mem) = block;
-  return mem;
+  if (caml_use_huge_pages){
+#ifdef HAS_HUGE_PAGES
+    uintnat size = Round_mmap_size (sizeof (heap_chunk_head) + request);
+    void *block;
+    char *mem;
+    block = mmap (NULL, size, PROT_READ | PROT_WRITE,
+                  MAP_PRIVATE | MAP_ANONYMOUS | MAP_HUGETLB, -1, 0);
+    if (block == MAP_FAILED) return NULL;
+    mem = (char *) block + sizeof (heap_chunk_head);
+    Chunk_size (mem) = size - sizeof (heap_chunk_head);
+    Chunk_block (mem) = block;
+    return mem;
+#else
+    return NULL;
+#endif
+  }else{
+    char *mem;
+    void *block;
+
+    request = ((request + Page_size - 1) >> Page_log) << Page_log;
+    mem = caml_aligned_malloc (request + sizeof (heap_chunk_head),
+                               sizeof (heap_chunk_head), &block);
+    if (mem == NULL) return NULL;
+    mem += sizeof (heap_chunk_head);
+    Chunk_size (mem) = request;
+    Chunk_block (mem) = block;
+    return mem;
+  }
 }
 
 /* Use this function to free a block allocated with [caml_alloc_for_heap]
@@ -247,7 +290,15 @@ char *caml_alloc_for_heap (asize_t request)
 */
 void caml_free_for_heap (char *mem)
 {
-  free (Chunk_block (mem));
+  if (caml_use_huge_pages){
+#ifdef HAS_HUGE_PAGES
+    munmap (Chunk_block (mem), Chunk_size (mem) + sizeof (heap_chunk_head));
+#else
+    CAMLassert (0);
+#endif
+  }else{
+    free (Chunk_block (mem));
+  }
 }
 
 /* Take a chunk of memory as argument, which must be the result of a
@@ -263,10 +314,9 @@ void caml_free_for_heap (char *mem)
 */
 int caml_add_to_heap (char *m)
 {
-                                     Assert (Chunk_size (m) % Page_size == 0);
 #ifdef DEBUG
   /* Should check the contents of the block. */
-#endif /* debug */
+#endif /* DEBUG */
 
   caml_gc_message (0x04, "Growing heap to %luk bytes\n",
                    (Bsize_wsize (caml_stat_heap_wsz) + Chunk_size (m)) / 1024);
@@ -314,14 +364,14 @@ static value *expand_heap (mlsize_t request)
   asize_t over_request, malloc_request, remain;
 
   Assert (request <= Max_wosize);
-  over_request = Whsize_wosize (request + request / 100 * caml_percent_free);
-  malloc_request = caml_round_heap_chunk_wsz (over_request);
+  over_request = request + request / 100 * caml_percent_free;
+  malloc_request = caml_clip_heap_chunk_wsz (over_request);
   mem = (value *) caml_alloc_for_heap (Bsize_wsize (malloc_request));
   if (mem == NULL){
     caml_gc_message (0x04, "No room for growing heap\n", 0);
     return NULL;
   }
-  remain = malloc_request;
+  remain = Wsize_bsize (Chunk_size (mem));
   prev = hp = mem;
   /* FIXME find a way to do this with a call to caml_make_free_blocks */
   while (Wosize_whsize (remain) > Max_wosize){
@@ -451,7 +501,8 @@ static inline value caml_alloc_shr_aux (mlsize_t wosize, tag_t tag,
   Assert (Hd_hp (hp) == Make_header (wosize, tag, caml_allocation_color (hp)));
   caml_allocated_words += Whsize_wosize (wosize);
   if (caml_allocated_words > caml_minor_heap_wsz){
-    caml_urge_major_slice ();
+    CAML_INSTR_INT ("request_major/alloc_shr@", 1);
+    caml_request_major_slice ();
   }
 #ifdef DEBUG
   {
@@ -512,13 +563,15 @@ CAMLexport void caml_adjust_gc_speed (mlsize_t res, mlsize_t max)
   if (res > max) res = max;
   caml_extra_heap_resources += (double) res / (double) max;
   if (caml_extra_heap_resources > 1.0){
+    CAML_INSTR_INT ("request_major/adjust_gc_speed_1@", 1);
     caml_extra_heap_resources = 1.0;
-    caml_urge_major_slice ();
+    caml_request_major_slice ();
   }
   if (caml_extra_heap_resources
            > (double) caml_minor_heap_wsz / 2.0
              / (double) caml_stat_heap_wsz) {
-    caml_urge_major_slice ();
+    CAML_INSTR_INT ("request_major/adjust_gc_speed_2@", 1);
+    caml_request_major_slice ();
   }
 }
 
@@ -535,10 +588,7 @@ CAMLexport CAMLweakdef void caml_initialize (value *fp, value val)
   CAMLassert(Is_in_heap(fp));
   *fp = val;
   if (Is_block (val) && Is_young (val)) {
-    if (caml_ref_table.ptr >= caml_ref_table.limit){
-      caml_realloc_ref_table (&caml_ref_table);
-    }
-    *caml_ref_table.ptr++ = fp;
+    Add_to_ref_table (caml_ref_table, fp);
   }
 }
 
@@ -586,12 +636,7 @@ CAMLexport CAMLweakdef void caml_modify (value *fp, value val)
     }
     /* Check for condition 1. */
     if (Is_block(val) && Is_young(val)) {
-      /* Add [fp] to remembered set */
-      if (caml_ref_table.ptr >= caml_ref_table.limit){
-        CAMLassert (caml_ref_table.ptr == caml_ref_table.limit);
-        caml_realloc_ref_table (&caml_ref_table);
-      }
-      *caml_ref_table.ptr++ = fp;
+      Add_to_ref_table (caml_ref_table, fp);
     }
   }
 }

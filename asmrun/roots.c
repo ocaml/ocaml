@@ -335,27 +335,77 @@ void caml_oldify_local_roots (void)
   if (caml_scan_roots_hook != NULL) (*caml_scan_roots_hook)(&caml_oldify_one);
 }
 
-/* Call [darken] on all roots */
+static mlsize_t incr_roots_i, incr_roots_j, roots_count;
+static value *incr_roots_glob;
+uintnat caml_incremental_roots_count = 0;
 
-void caml_darken_all_roots (void)
+/* Call [caml_darken] on all roots, incrementally:
+   [caml_darken_all_roots_start] does the non-incremental part and
+   sets things up for [caml_darken_all_roots_slice].
+*/
+void caml_darken_all_roots_start (void)
 {
-  caml_do_roots (caml_darken);
+  caml_do_roots (caml_darken, 0);
+  incr_roots_i = 0;
+  incr_roots_glob = caml_globals[incr_roots_i];
+  incr_roots_j = 0;
+  roots_count = 0;
 }
 
-void caml_do_roots (scanning_action f)
+/* Call [caml_darken] on at most [work] global roots. Return the
+   number of roots darkened; if this is less than [work], then the
+   work is done and there are no more roots to darken.
+ */
+intnat caml_darken_all_roots_slice (intnat work)
+{
+  mlsize_t j = incr_roots_j;
+  mlsize_t sz;
+  intnat work_done = 0;
+  CAML_INSTR_SETUP (tmr, "");
+
+  if (incr_roots_glob == NULL) goto finished;
+  sz = Wosize_val (*incr_roots_glob);
+  while (work_done < work){
+    while (j >= sz){
+      ++ incr_roots_glob;
+      while (*incr_roots_glob == 0){
+        ++ incr_roots_i;
+        incr_roots_glob = caml_globals[incr_roots_i];
+        if (incr_roots_glob == 0) goto finished;
+      }
+      j = 0;
+      sz = Wosize_val (*incr_roots_glob);
+    }
+    caml_darken (Field (*incr_roots_glob, j), &Field (*incr_roots_glob, j));
+    ++ work_done;
+    ++ j;
+  }
+ finished:
+  incr_roots_j = j;
+  roots_count += work_done;
+  if (work_done < work){
+    caml_incremental_roots_count = roots_count;
+  }
+  CAML_INSTR_TIME (tmr, "major/mark/global_roots_slice");
+  return work_done;
+}
+
+void caml_do_roots (scanning_action f, int do_globals)
 {
   int i, j;
   value * glob;
   link *lnk;
+  CAML_INSTR_SETUP (tmr, "major_roots");
 
-  /* The global roots */
-  for (i = 0; caml_globals[i] != 0; i++) {
-    for(glob = caml_globals[i]; *glob != 0; glob++) {
-      for (j = 0; j < Wosize_val(*glob); j++)
-        f (Field (*glob, j), &Field (*glob, j));
+  if (do_globals){
+    /* The global roots */
+    for (i = 0; caml_globals[i] != 0; i++) {
+      for(glob = caml_globals[i]; *glob != 0; glob++) {
+        for (j = 0; j < Wosize_val(*glob); j++)
+          f (Field (*glob, j), &Field (*glob, j));
+      }
     }
   }
-
   /* Dynamic global roots */
   iter_list(caml_dyn_globals, lnk) {
     for(glob = (value *) lnk->data; *glob != 0; glob++) {
@@ -364,16 +414,36 @@ void caml_do_roots (scanning_action f)
       }
     }
   }
-
+  CAML_INSTR_TIME (tmr, "major_roots/dynamic_global");
   /* The stack and local roots */
   caml_do_local_roots(f, caml_bottom_of_stack, caml_last_return_address,
                       caml_gc_regs, caml_local_roots);
+  CAML_INSTR_TIME (tmr, "major_roots/local");
   /* Global C roots */
   caml_scan_global_roots(f);
+  CAML_INSTR_TIME (tmr, "major_roots/C");
   /* Finalised values */
   caml_final_do_strong_roots (f);
+  CAML_INSTR_TIME (tmr, "major_roots/finalised");
+  /* Objects in the minor heap are roots for the major GC. */
+  {
+    value *hp;
+    asize_t sz, i;
+    for (hp = caml_young_ptr;
+         hp < caml_young_alloc_end;
+         hp += Whsize_wosize (sz)){
+      sz = Wosize_hp (hp);
+      if (Tag_hp (hp) < No_scan_tag){
+        for (i = 0; i < sz; i++){
+          f(Field(Val_hp(hp), i), &Field(Val_hp(hp), i));
+        }
+      }
+    }
+  }
+  CAML_INSTR_TIME (tmr, "major_roots/minor_heap");
   /* Hook */
   if (caml_scan_roots_hook != NULL) (*caml_scan_roots_hook)(f);
+  CAML_INSTR_TIME (tmr, "major_roots/hook");
 }
 
 void caml_do_local_roots(scanning_action f, char * bottom_of_stack,

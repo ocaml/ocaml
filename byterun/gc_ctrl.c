@@ -12,21 +12,26 @@
 /***********************************************************************/
 
 #include "caml/alloc.h"
+#include "caml/backtrace.h"
 #include "caml/compact.h"
 #include "caml/custom.h"
+#include "caml/fail.h"
 #include "caml/finalise.h"
 #include "caml/freelist.h"
 #include "caml/gc.h"
 #include "caml/gc_ctrl.h"
 #include "caml/major_gc.h"
+#include "caml/memory.h"
 #include "caml/minor_gc.h"
 #include "caml/misc.h"
 #include "caml/mlvalues.h"
+#include "caml/signals.h"
 #ifdef NATIVE_CODE
 #include "stack.h"
 #else
 #include "caml/stacks.h"
 #endif
+#include "caml/startup_aux.h"
 
 #ifndef NATIVE_CODE
 extern uintnat caml_max_stack_size;    /* defined in stacks.c */
@@ -214,7 +219,7 @@ static value heap_stats (int returnstats)
 
     /* get a copy of these before allocating anything... */
     double minwords = caml_stat_minor_words
-                      + (double) (caml_young_end - caml_young_ptr);
+                      + (double) (caml_young_alloc_end - caml_young_ptr);
     double prowords = caml_stat_promoted_words;
     double majwords = caml_stat_major_words + (double) caml_allocated_words;
     intnat mincoll = caml_stat_minor_collections;
@@ -255,8 +260,12 @@ void caml_heap_check (void)
 
 CAMLprim value caml_gc_stat(value v)
 {
+  value result;
+  CAML_INSTR_SETUP (tmr, "");
   Assert (v == Val_unit);
-  return heap_stats (1);
+  result = heap_stats (1);
+  CAML_INSTR_TIME (tmr, "explicit/gc_stat");
+  return result;
 }
 
 CAMLprim value caml_gc_quick_stat(value v)
@@ -266,7 +275,7 @@ CAMLprim value caml_gc_quick_stat(value v)
 
   /* get a copy of these before allocating anything... */
   double minwords = caml_stat_minor_words
-                    + (double) (caml_young_end - caml_young_ptr);
+                    + (double) (caml_young_alloc_end - caml_young_ptr);
   double prowords = caml_stat_promoted_words;
   double majwords = caml_stat_major_words + (double) caml_allocated_words;
   intnat mincoll = caml_stat_minor_collections;
@@ -303,7 +312,7 @@ CAMLprim value caml_gc_counters(value v)
 
   /* get a copy of these before allocating anything... */
   double minwords = caml_stat_minor_words
-                    + (double) (caml_young_end - caml_young_ptr);
+                    + (double) (caml_young_alloc_end - caml_young_ptr);
   double prowords = caml_stat_promoted_words;
   double majwords = caml_stat_major_words + (double) caml_allocated_words;
 
@@ -314,12 +323,17 @@ CAMLprim value caml_gc_counters(value v)
   CAMLreturn (res);
 }
 
+CAMLprim value caml_gc_huge_fallback_count (value v)
+{
+  return Val_long (caml_huge_fallback_count);
+}
+
 CAMLprim value caml_gc_get(value v)
 {
   CAMLparam0 ();   /* v is ignored */
   CAMLlocal1 (res);
 
-  res = caml_alloc_tuple (7);
+  res = caml_alloc_tuple (8);
   Store_field (res, 0, Val_long (caml_minor_heap_wsz));                 /* s */
   Store_field (res, 1, Val_long (caml_major_heap_increment));           /* i */
   Store_field (res, 2, Val_long (caml_percent_free));                   /* o */
@@ -331,6 +345,7 @@ CAMLprim value caml_gc_get(value v)
   Store_field (res, 5, Val_long (0));
 #endif
   Store_field (res, 6, Val_long (caml_allocation_policy));              /* a */
+  Store_field (res, 7, Val_long (caml_major_window));                   /* w */
   CAMLreturn (res);
 }
 
@@ -353,12 +368,20 @@ static intnat norm_minsize (intnat s)
   return s;
 }
 
+static uintnat norm_window (intnat w)
+{
+  if (w < 1) w = 1;
+  if (w > Max_major_window) w = Max_major_window;
+  return w;
+}
+
 CAMLprim value caml_gc_set(value v)
 {
   uintnat newpf, newpm;
   asize_t newheapincr;
   asize_t newminwsz;
   uintnat oldpolicy;
+  CAML_INSTR_SETUP (tmr, "");
 
   caml_verb_gc = Long_val (Field (v, 3));
 
@@ -396,6 +419,15 @@ CAMLprim value caml_gc_set(value v)
                      caml_allocation_policy);
   }
 
+  if (Wosize_val (v) >= 8){
+    int old_window = caml_major_window;
+    caml_set_major_window (norm_window (Long_val (Field (v, 7))));
+    if (old_window != caml_major_window){
+      caml_gc_message (0x20, "New smoothing window size: %d\n",
+                       caml_major_window);
+    }
+  }
+
     /* Minor heap size comes last because it will trigger a minor collection
        (thus invalidating [v]) and it can raise [Out_of_memory]. */
   newminwsz = norm_minsize (Long_val (Field (v, 0)));
@@ -404,12 +436,17 @@ CAMLprim value caml_gc_set(value v)
                      newminwsz / 1024);
     caml_set_minor_heap_size (Bsize_wsize (newminwsz));
   }
+  CAML_INSTR_TIME (tmr, "explicit/gc_set");
   return Val_unit;
 }
 
 CAMLprim value caml_gc_minor(value v)
-{                                                    Assert (v == Val_unit);
-  caml_minor_collection ();
+{
+  CAML_INSTR_SETUP (tmr, "");
+  Assert (v == Val_unit);
+  caml_request_minor_gc ();
+  caml_gc_dispatch ();
+  CAML_INSTR_TIME (tmr, "explicit/gc_minor");
   return Val_unit;
 }
 
@@ -429,17 +466,22 @@ static void test_and_compact (void)
 }
 
 CAMLprim value caml_gc_major(value v)
-{                                                    Assert (v == Val_unit);
+{
+  CAML_INSTR_SETUP (tmr, "");
+  Assert (v == Val_unit);
   caml_gc_message (0x1, "Major GC cycle requested\n", 0);
   caml_empty_minor_heap ();
   caml_finish_major_cycle ();
   test_and_compact ();
   caml_final_do_calls ();
+  CAML_INSTR_TIME (tmr, "explicit/gc_major");
   return Val_unit;
 }
 
 CAMLprim value caml_gc_full_major(value v)
-{                                                    Assert (v == Val_unit);
+{
+  CAML_INSTR_SETUP (tmr, "");
+  Assert (v == Val_unit);
   caml_gc_message (0x1, "Full major GC cycle requested\n", 0);
   caml_empty_minor_heap ();
   caml_finish_major_cycle ();
@@ -448,18 +490,24 @@ CAMLprim value caml_gc_full_major(value v)
   caml_finish_major_cycle ();
   test_and_compact ();
   caml_final_do_calls ();
+  CAML_INSTR_TIME (tmr, "explicit/gc_full_major");
   return Val_unit;
 }
 
 CAMLprim value caml_gc_major_slice (value v)
 {
+  CAML_INSTR_SETUP (tmr, "");
   Assert (Is_long (v));
   caml_empty_minor_heap ();
-  return Val_long (caml_major_collection_slice (Long_val (v)));
+  caml_major_collection_slice (Long_val (v));
+  CAML_INSTR_TIME (tmr, "explicit/gc_major_slice");
+  return Val_long (0);
 }
 
 CAMLprim value caml_gc_compaction(value v)
-{                                                    Assert (v == Val_unit);
+{
+  CAML_INSTR_SETUP (tmr, "");
+  Assert (v == Val_unit);
   caml_gc_message (0x10, "Heap compaction requested\n", 0);
   caml_empty_minor_heap ();
   caml_finish_major_cycle ();
@@ -468,7 +516,33 @@ CAMLprim value caml_gc_compaction(value v)
   caml_finish_major_cycle ();
   caml_compact_heap ();
   caml_final_do_calls ();
+  CAML_INSTR_TIME (tmr, "explicit/gc_compact");
   return Val_unit;
+}
+
+CAMLprim value caml_get_minor_free (value v)
+{
+  return Val_int (caml_young_ptr - caml_young_alloc_start);
+}
+
+CAMLprim value caml_get_major_bucket (value v)
+{
+  long i = Long_val (v);
+  if (i < 0) caml_invalid_argument ("Gc.get_bucket");
+  if (i < caml_major_window){
+    i += caml_major_ring_index;
+    if (i >= caml_major_window) i -= caml_major_window;
+    CAMLassert (0 <= i && i < caml_major_window);
+    return Val_long ((long) (caml_major_ring[i] * 1e6));
+  }else{
+    return Val_long (0);
+  }
+}
+
+CAMLprim value caml_get_major_credit (value v)
+{
+  CAMLassert (v == Val_unit);
+  return Val_long ((long) (caml_major_work_credit * 1e6));
 }
 
 uintnat caml_normalize_heap_increment (uintnat i)
@@ -483,11 +557,15 @@ uintnat caml_normalize_heap_increment (uintnat i)
    [major_incr] is either a percentage or a number of words */
 void caml_init_gc (uintnat minor_size, uintnat major_size,
                    uintnat major_incr, uintnat percent_fr,
-                   uintnat percent_m)
+                   uintnat percent_m, uintnat window)
 {
   uintnat major_heap_size =
     Bsize_wsize (caml_normalize_heap_increment (major_size));
 
+  CAML_INSTR_INIT ();
+  if (caml_init_alloc_for_heap () != 0){
+    caml_fatal_error ("cannot initialize heap: mmap failed\n");
+  }
   if (caml_page_table_initialize(Bsize_wsize(minor_size) + major_heap_size)){
     caml_fatal_error ("OCaml runtime error: cannot initialize page table\n");
   }
@@ -496,6 +574,7 @@ void caml_init_gc (uintnat minor_size, uintnat major_size,
   caml_percent_free = norm_pfree (percent_fr);
   caml_percent_max = norm_pmax (percent_m);
   caml_init_major_heap (major_heap_size);
+  caml_major_window = norm_window (window);
   caml_gc_message (0x20, "Initial minor heap size: %luk words\n",
                    caml_minor_heap_wsz / 1024);
   caml_gc_message (0x20, "Initial major heap size: %luk bytes\n",
@@ -511,6 +590,54 @@ void caml_init_gc (uintnat minor_size, uintnat major_size,
   }
   caml_gc_message (0x20, "Initial allocation policy: %d\n",
                    caml_allocation_policy);
+  caml_gc_message (0x20, "Initial smoothing window: %d\n",
+                   caml_major_window);
+}
+
+
+/* FIXME After the startup_aux.c unification, move these functions there. */
+
+CAMLprim value caml_runtime_variant (value unit)
+{
+  CAMLassert (unit == Val_unit);
+#if defined (DEBUG)
+  return caml_copy_string ("d");
+#elif defined (CAML_INSTR)
+  return caml_copy_string ("i");
+#elif defined (MMAP_INTERVAL)
+  return caml_copy_string ("m");
+#else
+  return caml_copy_string ("");
+#endif
+}
+
+extern int caml_parser_trace;
+
+CAMLprim value caml_runtime_parameters (value unit)
+{
+  CAMLassert (unit == Val_unit);
+  return caml_alloc_sprintf
+    ("a=%d,b=%s,H=%lu,i=%lu,l=%lu,o=%lu,O=%lu,p=%d,s=%lu,t=%d,v=%lu,w=%d,W=%lu",
+     /* a */ caml_allocation_policy,
+     /* b */ caml_backtrace_active,
+     /* h */ /* missing */ /* FIXME add when changed to min_heap_size */
+     /* H */ caml_use_huge_pages,
+     /* i */ caml_major_heap_increment,
+#ifdef NATIVE_CODE
+     /* l */ 0,
+#else
+     /* l */ caml_max_stack_size,
+#endif
+     /* o */ caml_percent_free,
+     /* O */ caml_percent_max,
+     /* p */ caml_parser_trace,
+     /* R */ /* missing */
+     /* s */ caml_minor_heap_wsz,
+     /* t */ caml_trace_level,
+     /* v */ caml_verb_gc,
+     /* w */ caml_major_window,
+     /* W */ caml_runtime_warnings
+     );
 }
 
 /* Control runtime warnings */

@@ -618,8 +618,7 @@ static void intern_add_to_heap(mlsize_t whsize)
   /* Add new heap chunk to heap if needed */
   if (intern_extra_block != NULL) {
     /* If heap chunk not filled totally, build free block at end */
-    asize_t request =
-      ((Bsize_wsize(whsize) + Page_size - 1) >> Page_log) << Page_log;
+    asize_t request = Chunk_size (intern_extra_block);
     header_t * end_extra_block =
       (header_t *) intern_extra_block + Wsize_bsize(request);
     Assert(intern_block == 0);
