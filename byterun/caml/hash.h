@@ -30,7 +30,7 @@ CAMLextern uint32_t caml_hash_mix_float(uint32_t h, float d);
 CAMLextern uint32_t caml_hash_mix_string(uint32_t h, value s);
 
 #ifdef __cplusplus
-extern "C" {
+}
 #endif
 
 
