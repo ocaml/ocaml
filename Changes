@@ -101,7 +101,8 @@ Other libraries:
 - PR#6896: serious reimplementation of Big_int.float_of_big_int and
   Ratio.float_of_ratio, ensuring that the result is correctly rounded.
   (Xavier Leroy)
-- PR#6263: add kind_byte_size and byte_size functions to Bigarray module.
+- PR#6263: add kind_size_in_bytes and size_in_bytes functions
+  to Bigarray module.
   (Runhang Li)
 
 OCamlbuild:
