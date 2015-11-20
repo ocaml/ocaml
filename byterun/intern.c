@@ -130,8 +130,6 @@ static inline void readblock(void * dest, intnat len)
   intern_src += len;
 }
 
-
-
 static void intern_init(void * src, void * input)
 {
   /* This is asserted at the beginning of demarshaling primitives.
