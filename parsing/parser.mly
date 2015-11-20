@@ -1354,6 +1354,15 @@ expr:
       { expr_of_let_bindings $1 $3 }
   | LET MODULE ext_attributes UIDENT module_binding_body IN seq_expr
       { mkexp_attrs (Pexp_letmodule(mkrhs $4 4, $5, $7)) $3 }
+  | LET EXCEPTION ext_attributes constr_ident generalized_constructor_arguments
+    attributes IN seq_expr
+      { let args, res = $5 in
+        let ex =
+          Te.decl (mkrhs $4 4) ~args ?res ~attrs:$6
+            ~loc:(symbol_rloc())
+        in
+        mkexp_attrs (Pexp_letexception(ex, $8)) $3
+      }
   | LET OPEN override_flag ext_attributes mod_longident IN seq_expr
       { mkexp_attrs (Pexp_open($3, mkrhs $5 5, $7)) $4 }
   | FUNCTION ext_attributes opt_bar match_cases
@@ -1616,7 +1625,7 @@ let_binding_body:
   | val_ident COLON TYPE lident_list DOT core_type EQUAL seq_expr
       { let exp, poly = wrap_type_annotation $4 $6 $8 in
         (ghpat(Ppat_constraint(mkpatvar $1 1, poly)), exp) }
-  | pattern EQUAL seq_expr
+  | pattern_no_exn EQUAL seq_expr
       { ($1, $3) }
   | simple_pattern_not_ident COLON core_type EQUAL seq_expr
       { (ghpat(Ppat_constraint($1, $3)), $5) }
@@ -1722,36 +1731,58 @@ opt_type_constraint:
 /* Patterns */
 
 pattern:
-    simple_pattern
-      { $1 }
   | pattern AS val_ident
       { mkpat(Ppat_alias($1, mkrhs $3 3)) }
   | pattern AS error
       { expecting 3 "identifier" }
   | pattern_comma_list  %prec below_COMMA
       { mkpat(Ppat_tuple(List.rev $1)) }
-  | constr_longident pattern %prec prec_constr_appl
-      { mkpat(Ppat_construct(mkrhs $1 1, Some $2)) }
-  | name_tag pattern %prec prec_constr_appl
-      { mkpat(Ppat_variant($1, Some $2)) }
   | pattern COLONCOLON pattern
       { mkpat_cons (rhs_loc 2) (ghpat(Ppat_tuple[$1;$3])) (symbol_rloc()) }
   | pattern COLONCOLON error
       { expecting 3 "pattern" }
-  | LPAREN COLONCOLON RPAREN LPAREN pattern COMMA pattern RPAREN
-      { mkpat_cons (rhs_loc 2) (ghpat(Ppat_tuple[$5;$7])) (symbol_rloc()) }
-  | LPAREN COLONCOLON RPAREN LPAREN pattern COMMA pattern error
-      { unclosed "(" 4 ")" 8 }
   | pattern BAR pattern
       { mkpat(Ppat_or($1, $3)) }
   | pattern BAR error
       { expecting 3 "pattern" }
-  | LAZY ext_attributes simple_pattern
-      { mkpat_attrs (Ppat_lazy $3) $2}
   | EXCEPTION ext_attributes pattern %prec prec_constr_appl
       { mkpat_attrs (Ppat_exception $3) $2}
   | pattern attribute
       { Pat.attr $1 $2 }
+  | pattern_gen { $1 }
+;
+pattern_no_exn:
+  | pattern_no_exn AS val_ident
+      { mkpat(Ppat_alias($1, mkrhs $3 3)) }
+  | pattern_no_exn AS error
+      { expecting 3 "identifier" }
+  | pattern_no_exn_comma_list  %prec below_COMMA
+      { mkpat(Ppat_tuple(List.rev $1)) }
+  | pattern_no_exn COLONCOLON pattern
+      { mkpat_cons (rhs_loc 2) (ghpat(Ppat_tuple[$1;$3])) (symbol_rloc()) }
+  | pattern_no_exn COLONCOLON error
+      { expecting 3 "pattern" }
+  | pattern_no_exn BAR pattern
+      { mkpat(Ppat_or($1, $3)) }
+  | pattern_no_exn BAR error
+      { expecting 3 "pattern" }
+  | pattern_no_exn attribute
+      { Pat.attr $1 $2 }
+  | pattern_gen { $1 }
+;
+pattern_gen:
+    simple_pattern
+      { $1 }
+  | constr_longident pattern %prec prec_constr_appl
+      { mkpat(Ppat_construct(mkrhs $1 1, Some $2)) }
+  | name_tag pattern %prec prec_constr_appl
+      { mkpat(Ppat_variant($1, Some $2)) }
+  | LPAREN COLONCOLON RPAREN LPAREN pattern COMMA pattern RPAREN
+      { mkpat_cons (rhs_loc 2) (ghpat(Ppat_tuple[$5;$7])) (symbol_rloc()) }
+  | LPAREN COLONCOLON RPAREN LPAREN pattern COMMA pattern error
+      { unclosed "(" 4 ")" 8 }
+  | LAZY ext_attributes simple_pattern
+      { mkpat_attrs (Ppat_lazy $3) $2}
 ;
 simple_pattern:
     val_ident %prec below_EQUAL
@@ -1812,6 +1843,11 @@ pattern_comma_list:
     pattern_comma_list COMMA pattern            { $3 :: $1 }
   | pattern COMMA pattern                       { [$3; $1] }
   | pattern COMMA error                         { expecting 3 "pattern" }
+;
+pattern_no_exn_comma_list:
+    pattern_no_exn_comma_list COMMA pattern     { $3 :: $1 }
+  | pattern_no_exn COMMA pattern                { [$3; $1] }
+  | pattern_no_exn COMMA error                  { expecting 3 "pattern" }
 ;
 pattern_semi_list:
     pattern                                     { [$1] }

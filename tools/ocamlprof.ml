@@ -284,6 +284,9 @@ and rw_exp iflag sexp =
       rewrite_mod iflag smod;
       rewrite_exp iflag sexp
 
+  | Pexp_letexception (_cd, exp) ->
+      rewrite_exp iflag exp
+
   | Pexp_assert (cond) -> rewrite_exp iflag cond
 
   | Pexp_lazy (expr) -> rewrite_exp iflag expr

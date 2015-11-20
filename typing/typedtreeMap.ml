@@ -371,6 +371,11 @@ module MakeMap(Map : MapArgument) = struct
             map_module_expr mexpr,
             map_expression exp
           )
+        | Texp_letexception (cd, exp) ->
+          Texp_letexception (
+            map_extension_constructor cd,
+            map_expression exp
+          )
         | Texp_assert exp -> Texp_assert (map_expression exp)
         | Texp_lazy exp -> Texp_lazy (map_expression exp)
         | Texp_object (cl, string_list) ->

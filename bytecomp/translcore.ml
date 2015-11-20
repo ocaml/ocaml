@@ -44,6 +44,26 @@ let transl_object =
   ref (fun id s cl -> assert false :
        Ident.t -> string list -> class_expr -> lambda)
 
+(* Compile an exception/extension definition *)
+
+let prim_fresh_oo_id =
+  Pccall (Primitive.simple ~name:"caml_fresh_oo_id" ~arity:1 ~alloc:false)
+
+let transl_extension_constructor env path ext =
+  let name =
+    match path, !Clflags.for_package with
+      None, _ -> Ident.name ext.ext_id
+    | Some p, None -> Path.name p
+    | Some p, Some pack -> Printf.sprintf "%s.%s" pack (Path.name p)
+  in
+  match ext.ext_kind with
+    Text_decl(args, ret) ->
+      Lprim (Pmakeblock (Obj.object_tag, Immutable),
+        [Lconst (Const_base (Const_string (name, None)));
+         Lprim (prim_fresh_oo_id, [Lconst (Const_base (Const_int 0))])])
+  | Text_rebind(path, lid) ->
+      transl_path ~loc:ext.ext_loc env path
+
 (* Translation of primitives *)
 
 let comparisons_table = create_hashtable 11 [
@@ -957,6 +977,9 @@ and transl_exp0 e =
              (Lvar cpy))
   | Texp_letmodule(id, _, modl, body) ->
       Llet(Strict, id, !transl_module Tcoerce_none None modl, transl_exp body)
+  | Texp_letexception(cd, body) ->
+      Llet(Strict, cd.ext_id, transl_extension_constructor e.exp_env None cd,
+           transl_exp body)
   | Texp_pack modl ->
       !transl_module Tcoerce_none None modl
   | Texp_assert {exp_desc=Texp_construct(_, {cstr_name="false"}, _)} ->

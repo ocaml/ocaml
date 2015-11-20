@@ -166,6 +166,7 @@ let iter_expression f e =
     | Pexp_send (e, _)
     | Pexp_constraint (e, _)
     | Pexp_coerce (e, _, _)
+    | Pexp_letexception (_, e)
     | Pexp_field (e, _) -> expr e
     | Pexp_while (e1, e2)
     | Pexp_sequence (e1, e2)
@@ -2729,6 +2730,16 @@ and type_expect_ ?in_function ?(recarg=Rejected) env sexp ty_expected =
         exp_type = ty;
         exp_attributes = sexp.pexp_attributes;
         exp_env = env }
+  | Pexp_letexception(cd, sbody) ->
+      let (cd, newenv) = Typedecl.transl_exception env cd in
+      let body = type_expect newenv sbody ty_expected in
+      re {
+        exp_desc = Texp_letexception(cd, body);
+        exp_loc = loc; exp_extra = [];
+        exp_type = body.exp_type;
+        exp_attributes = sexp.pexp_attributes;
+        exp_env = env }
+
   | Pexp_assert (e) ->
       let cond = type_expect env e Predef.type_bool in
       let exp_type =

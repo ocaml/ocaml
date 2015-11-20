@@ -1503,7 +1503,7 @@ typedef: ...
    | typedef item-attribute
 ;
 exception-definition:
-        'exception' constr-name { attribute } [ 'of' typexpr { '*' typexpr } ]
+        'exception' constr-decl
       | 'exception' constr-name '=' constr
 ;
 module-items:
@@ -2096,3 +2096,25 @@ let invalid = function
   | Point p -> p  (* INVALID *)
   | ...
 \end{verbatim}
+
+
+\section{Local exceptions}
+\ikwd{let\@\texttt{let}}
+\ikwd{exception\@\texttt{exception}}
+
+(Introduced in OCaml 4.04)
+
+It is possible to define local exceptions in expressions:
+
+\begin{syntax}
+expr:
+       ...
+     | "let" "exception" constr-decl "in" expr
+\end{syntax}
+
+
+The syntactic scope of the exception constructor is the inner
+expression, but nothing prevents exception values created with this
+constructor from escaping this scope.  Two executions of the definition
+above result in two incompatible exception constructors (as for any
+exception definition).
