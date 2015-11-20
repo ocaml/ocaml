@@ -349,8 +349,6 @@ Features wishes:
 - GPR#156, GPR#279: optimize caml_frame_descriptors realloc (dynlink speedup)
   (Pierre Chambart, Alain Frisch,
    review by François Bobot, Xavier Leroy and Damien Doligez)
-- GPR#171: allow custom warning printers / catchers
-  (Benjamin Canou, review by Damien Doligez)
 - GPR#191: Making gc.h and some part of memory.h public
   (Thomas Refis)
 - GPR#196: Make [Thread.id] and [Thread.self] [noalloc]
