@@ -132,6 +132,8 @@ module type Optcommon_options = sig
   val _branch_inline_factor : float -> unit
   val _no_inline_recursive_functions : unit -> unit
   val _remove_unused_arguments : unit -> unit
+  val _o2 : unit -> unit
+  val _o3 : unit -> unit
 
   val _clambda_checks : unit -> unit
   val _dflambda : unit -> unit

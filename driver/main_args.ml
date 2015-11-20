@@ -132,6 +132,15 @@ let mk_dump_pass f =
     !Clflags.all_passes
 ;;
 
+let mk_o2 f =
+  "-O2", Arg.Unit f, " Apply increased optimization for speed"
+;;
+
+let mk_o3 f =
+  "-O3", Arg.Unit f, " Apply aggressive optimization for speed (may \
+    significantly increase code size and compilation time)"
+;;
+
 let mk_rounds f =
   "-rounds", Arg.Int f,
     Printf.sprintf "<n>  Repeat tree optimization and inlining phases this \
@@ -713,6 +722,8 @@ module type Optcommon_options = sig
   val _branch_inline_factor : float -> unit
   val _no_inline_recursive_functions : unit -> unit
   val _remove_unused_arguments : unit -> unit
+  val _o2 : unit -> unit
+  val _o3 : unit -> unit
 
   val _clambda_checks : unit -> unit
   val _dflambda : unit -> unit
@@ -952,6 +963,8 @@ struct
     mk_nolabels F._nolabels;
     mk_nostdlib F._nostdlib;
     mk_o F._o;
+    mk_o2 F._o2;
+    mk_o3 F._o3;
     mk_open F._open;
     mk_output_obj F._output_obj;
     mk_output_complete_obj F._output_complete_obj;
@@ -1040,6 +1053,8 @@ module Make_opttop_options (F : Opttop_options) = struct
     mk_noprompt F._noprompt;
     mk_nopromptcont F._nopromptcont;
     mk_nostdlib F._nostdlib;
+    mk_o2 F._o2;
+    mk_o3 F._o3;
     mk_open F._open;
     mk_ppx F._ppx;
     mk_principal F._principal;

@@ -134,6 +134,17 @@ module Options = Main_args.Make_optcomp_options (struct
   let _nolabels = set classic
   let _nostdlib = set no_std_include
   let _o s = output_name := Some s
+  let _o2 () =
+    set_inline_threshold 50;
+    simplify_rounds := 3;
+    inline_call_cost := 20;
+    inline_alloc_cost := 3;
+    inline_prim_cost := 3;
+    inline_branch_cost := 3;
+    functor_heuristics := true
+  let _o3 () =
+    _o2 ();
+    unroll := 1
   let _open s = open_modules := s :: !open_modules
   let _output_obj = set output_c_object
   let _output_complete_obj s =
