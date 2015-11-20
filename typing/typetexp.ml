@@ -150,10 +150,35 @@ let find_class env loc lid =
   Builtin_attributes.check_deprecated loc decl.cty_attributes (Path.name path);
   r
 
+(* With the simplification of index operators, the expressions a.{..}
+  are no longer resolved to Bigarray.Array[n].[g|s]et. To ease the transition
+  period, we catch the cases where the index operators .{}/.{,}.. are not bound
+  in the current scope and tranlate then to Bigarray.(..)  with a deprecated
+  warning. *)
+let lookup_value_deprecated loc ?(loc=loc) lid env=
+  let lookup_deprecated lid env =
+    match lid with
+    | Longident.Lident(
+        ".{}" | ".{}<-"
+        | ".{,}" | ".{,}<-"
+        | ".{,,}" | ".{,,}<-"
+        | ".{,..,}" | ".{,..,}<-" as s) ->
+        let lid' =  Longident.( Ldot( Lident "Bigarray" , s ) ) in
+        let r = Env.lookup_value ~loc lid' env in
+        Location.prerr_warning loc ( Warnings.Deprecated (
+            Printf.sprintf
+              "implicit use of Bigarray.( %s ) when it was not in scope. \
+               To avoid this warning, you can open either the \
+               Bigarray.Operators or Bigarray module." s ));
+        r
+    | _ -> raise Not_found in
+  try Env.lookup_value ~loc lid env with
+  | Not_found -> lookup_deprecated lid env
+
 let find_value env loc lid =
   Env.check_value_name (Longident.last lid) loc;
   let (path, decl) as r =
-    find_component Env.lookup_value (fun lid -> Unbound_value lid) env loc lid
+    find_component (lookup_value_deprecated loc) (fun lid -> Unbound_value lid) env loc lid
   in
   Builtin_attributes.check_deprecated loc decl.val_attributes (Path.name path);
   r
