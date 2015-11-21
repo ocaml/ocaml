@@ -95,3 +95,10 @@ let inv_zero : type a b c d. (a,b,c) plus -> (c,d,zero) plus -> bool =
 
 type _ t = Int : int t;;
 let f (x : bool t) = match x with _ -> . ;;
+
+
+(* trefis in PR#6437 *)
+
+let f () = match None with _ -> .;;
+let g () = match None with _ -> () | exception _ -> .;;
+let h () = match None with _ -> .  | exception _ -> .;; 
