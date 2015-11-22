@@ -19,6 +19,10 @@
 #include <sys/types.h>
 #include <netdb.h>
 
+#ifdef SYS_netbsd
+#error "this OS doesn't have gethostbyaddr_r"
+#endif
+
 int main(int argc, char ** argv)
 {
 #if NUM_ARGS == 7
