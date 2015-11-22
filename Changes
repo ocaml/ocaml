@@ -103,7 +103,7 @@ Other libraries:
   (Xavier Leroy)
 - PR#6263: add kind_size_in_bytes and size_in_bytes functions
   to Bigarray module.
-  (Runhang Li)
+  (Runhang Li, review by Mark Shinwell)
 
 OCamlbuild:
 - PR#6794, PR#6809: pass package-specific include flags when building C files
