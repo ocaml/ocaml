@@ -76,6 +76,9 @@ let rec loadfiles ppf name =
   | Not_found ->
       fprintf ppf "Cannot find file %s@." name;
       false
+  | Sys_error msg ->
+      fprintf ppf "%s: %s@." name msg;
+      false
   | Dynlink.Error e ->
       raise(Error(Load_failure e))
 
