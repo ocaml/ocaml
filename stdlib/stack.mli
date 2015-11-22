@@ -47,7 +47,7 @@ val is_empty : 'a t -> bool
 (** Return [true] if the given stack is empty, [false] otherwise. *)
 
 val length : 'a t -> int
-(** Return the number of elements in a stack. *)
+(** Return the number of elements in a stack. Time complexity O(1) *)
 
 val iter : ('a -> unit) -> 'a t -> unit
 (** [iter f s] applies [f] in turn to all elements of [s],
