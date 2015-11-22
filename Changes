@@ -171,8 +171,8 @@ Standard library:
   (report and fix by Jeremy Yallop)
 - GPR#265: new implementation of Queue avoiding Obj.magic
   (Jérémie Dimino)
-- GPR#268: '%h' and '%H' modifiers for printf and scanf to support
-  floating-point numbers in hexadecimal notation
+- GPR#268, GPR#303: '%h' and '%H' modifiers for printf and scanf to
+  support floating-point numbers in hexadecimal notation
   (Xavier Leroy, Benoît Vaugon)
 - GPR#272: Switch classify_float to [@@unboxed] (Alain Frisch)
 - Improve speed of classify_float by not going through fpclassify()
