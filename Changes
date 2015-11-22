@@ -287,7 +287,7 @@ Other libraries:
   (Xavier Leroy)
 - PR#6263: add kind_size_in_bytes and size_in_bytes functions
   to Bigarray module.
-  (Runhang Li)
+  (Runhang Li, review by Mark Shinwell)
 - PR#6289: Unix.utimes uses the current time only if both arguments
     are exactly 0.0.  Also, use sub-second resolution if available.
   (Xavier Leroy, report by Christophe Troestler)
