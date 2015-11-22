@@ -77,7 +77,11 @@ module type S =
     val add: key -> 'a -> 'a t -> 'a t
     (** [add x y m] returns a map containing the same bindings as
        [m], plus a binding of [x] to [y]. If [x] was already bound
-       in [m], its previous binding disappears. *)
+       in [m] to a value that is physically equal to [y],
+       [m] is returned unchanged (the result of the function is
+       then physically equal to [m]). Otherwise, the previous binding
+       of [x] in [m] disappears.
+       @before 4.03 Physical equality was not ensured. *)
 
     val singleton: key -> 'a -> 'a t
     (** [singleton x y] returns the one-element map that contains a binding [y]
@@ -87,7 +91,10 @@ module type S =
 
     val remove: key -> 'a t -> 'a t
     (** [remove x m] returns a map containing the same bindings as
-       [m], except for [x] which is unbound in the returned map. *)
+       [m], except for [x] which is unbound in the returned map.
+       If [x] was not in [m], [m] is returned unchanged
+       (the result of the function is then physically equal to [m]).
+       @before 4.03 Physical equality was not ensured. *)
 
     val merge:
          (key -> 'a option -> 'b option -> 'c option) -> 'a t -> 'b t -> 'c t
@@ -132,8 +139,11 @@ module type S =
 
     val filter: (key -> 'a -> bool) -> 'a t -> 'a t
     (** [filter p m] returns the map with all the bindings in [m]
-        that satisfy predicate [p].
+        that satisfy predicate [p]. If [p] satisfies every binding in [m],
+        [m] is returned unchanged (the result of the function is then
+        physically equal to [m])
         @since 3.12.0
+       @before 4.03 Physical equality was not ensured.
      *)
 
     val partition: (key -> 'a -> bool) -> 'a t -> 'a t * 'a t
