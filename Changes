@@ -146,7 +146,10 @@ Standard library:
   (Christopher McAlpine)
 - PR#6645, GPR#174: Guarantee that Set.add, Set.remove, Set.filter
   return the original set if no change is required (Alain Frisch,
-  Mohamed Iguernelala)
+  Mohamed Iguernlala)
+- GPR#175: Guarantee that Map.add, Map.remove, Map.filter
+  return the original map if no change is required.
+  (Mohamed Iguernlala)
 - PR#6694, PR#6695: deprecate functions using ISO-8859-1 character set
   in Char, Bytes, String and provide alternatives using US-ASCII.
   (Peter Zotov)
