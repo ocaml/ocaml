@@ -804,31 +804,6 @@ let scan_float width precision ib =
     scan_exp_part width ib, precision
 ;;
 
-let scan_caml_float width precision ib =
-  let width = scan_optionally_signed_decimal_int width ib in
-  if width = 0 then bad_float () else
-  let c = Scanning.peek_char ib in
-  if Scanning.eof ib then bad_float () else
-  match c with
-  | '.' ->
-    let width = Scanning.store_char width ib c in
-    (* The effective width available for scanning the fractional part is
-       the minimum of declared precision and width left. *)
-    let precision = min width precision in
-    (* After scanning the fractional part with [precision] provisional width,
-       [width_precision] is left. *)
-    let width_precision = scan_frac_part precision ib in
-    (* Hence, scanning the fractional part took exactly
-       [precision - width_precision] chars. *)
-    let frac_width = precision - width_precision in
-    (* And new provisional width is [width - width_precision. *)
-    let width = width - frac_width in
-    scan_exp_part width ib
-  | 'e' | 'E' ->
-    scan_exp_part width ib
-  | _ -> bad_float ()
-;;
-
 let check_case_insensitive_string width ib error str =
   let lowercase c = match c with
     | 'A' .. 'Z' -> char_of_int (int_of_char c - int_of_char 'A' + int_of_char 'a')
@@ -842,6 +817,7 @@ let check_case_insensitive_string width ib error str =
     width := Scanning.store_char !width ib c;
   done;
   !width
+;;
 
 let scan_hex_float width precision ib =
   if width = 0 || Scanning.end_of_input ib then bad_hex_float ();
@@ -872,7 +848,7 @@ let scan_hex_float width precision ib =
           match Scanning.peek_char ib with
           | 'p' | 'P' as c ->
             let width = Scanning.store_char width ib c in
-            if width = 0 then bad_hex_float ();
+            if width = 0 || Scanning.end_of_input ib then bad_hex_float ();
             scan_optionally_signed_decimal_int width ib
           | _ -> width
   )
@@ -885,6 +861,75 @@ let scan_hex_float width precision ib =
     if width = 0 || Scanning.end_of_input ib then bad_hex_float ();
     check_case_insensitive_string width ib bad_hex_float "nfinity"
   | _ -> bad_hex_float ()
+;;
+
+let scan_caml_float_rest width precision ib =
+  if width = 0 || Scanning.end_of_input ib then bad_float ();
+  let width = scan_decimal_digits width ib in
+  if width = 0 || Scanning.end_of_input ib then bad_float ();
+  match Scanning.peek_char ib with
+  | '.' as c ->
+    let width = Scanning.store_char width ib c in
+    (* The effective width available for scanning the fractional part is
+       the minimum of declared precision and width left. *)
+    let precision = min width precision in
+    (* After scanning the fractional part with [precision] provisional width,
+       [width_precision] is left. *)
+    let width_precision = scan_frac_part precision ib in
+    (* Hence, scanning the fractional part took exactly
+       [precision - width_precision] chars. *)
+    let frac_width = precision - width_precision in
+    (* And new provisional width is [width - width_precision. *)
+    let width = width - frac_width in
+    scan_exp_part width ib
+  | 'e' | 'E' ->
+    scan_exp_part width ib
+  | _ -> bad_float ()
+;;
+
+let scan_caml_float width precision ib =
+  if width = 0 || Scanning.end_of_input ib then bad_float ();
+  let width = scan_sign width ib in
+  if width = 0 || Scanning.end_of_input ib then bad_float ();
+  match Scanning.peek_char ib with
+  | '0' as c -> (
+    let width = Scanning.store_char width ib c in
+    if width = 0 || Scanning.end_of_input ib then bad_float ();
+    match Scanning.peek_char ib with
+    | 'x' | 'X' as c -> (
+      let width = Scanning.store_char width ib c in
+      if width = 0 || Scanning.end_of_input ib then bad_float ();
+      let width = scan_hexadecimal_int width ib in
+      if width = 0 || Scanning.end_of_input ib then bad_float ();
+      let width = match Scanning.peek_char ib with
+        | '.' as c -> (
+          let width = Scanning.store_char width ib c in
+          if width = 0 || Scanning.end_of_input ib then width else
+            match Scanning.peek_char ib with
+            | 'p' | 'P' -> width
+            | _ ->
+              let precision = min width precision in
+              width - (precision - scan_hexadecimal_int precision ib)
+        )
+        | 'p' | 'P' -> width
+        | _ -> bad_float () in
+      if width = 0 || Scanning.end_of_input ib then width else
+        match Scanning.peek_char ib with
+        | 'p' | 'P' as c ->
+          let width = Scanning.store_char width ib c in
+          if width = 0 || Scanning.end_of_input ib then bad_hex_float ();
+          scan_optionally_signed_decimal_int width ib
+        | _ -> width
+    )
+    | _ ->
+      scan_caml_float_rest width precision ib
+  )
+  | '1' .. '9' as c ->
+    let width = Scanning.store_char width ib c in
+    if width = 0 || Scanning.end_of_input ib then bad_float ();
+    scan_caml_float_rest width precision ib
+  | _ -> bad_float ()
+;;
 
 (* Scan a regular string:
    stops when encountering a space, if no scanning indication has been given;
