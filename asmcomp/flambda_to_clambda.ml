@@ -175,7 +175,8 @@ end = struct
 
   let keep_only_symbols t =
     { empty with
-      allocated_constant_for_symbol = t.allocated_constant_for_symbol; }
+      allocated_constant_for_symbol = t.allocated_constant_for_symbol;
+    }
 end
 
 let subst_var env var : Clambda.ulambda =
@@ -193,23 +194,33 @@ let build_uoffset ulam offset : Clambda.ulambda =
   if offset = 0 then ulam
   else Uoffset (ulam, offset)
 
+let to_clambda_allocated_constant (const : Allocated_const.t)
+      : Clambda.ustructured_constant =
+  match const with
+  | Float f -> Uconst_float f
+  | Int32 i -> Uconst_int32 i
+  | Int64 i -> Uconst_int64 i
+  | Nativeint i -> Uconst_nativeint i
+  | Immstring s | String s -> Uconst_string s
+  | Float_array a -> Uconst_float_array a
+
 let to_uconst_symbol env symbol : Clambda.ustructured_constant option =
   match Env.allocated_const_for_symbol env symbol with
-  | Some (Float f) -> Some (Clambda.Uconst_float f)
-  | Some (Int32 i) -> Some (Clambda.Uconst_int32 i)
-  | Some (Int64 i) -> Some (Clambda.Uconst_int64 i)
-  | Some (Nativeint i) -> Some (Clambda.Uconst_nativeint i)
+  | Some ((Float _ | Int32 _ | Int64 _ | Nativeint _) as const) ->
+    Some (to_clambda_allocated_constant const)
   | None | Some _ -> None
 
-let to_clambda_symbol env sym : Clambda.ulambda =
+let to_clambda_symbol' env sym : Clambda.uconstant =
   let lbl = Linkage_name.to_string (Symbol.label sym) in
-  Uconst (Uconst_ref (lbl, to_uconst_symbol env sym))
+  Uconst_ref (lbl, to_uconst_symbol env sym)
 
-let to_clambda_const (const : Flambda.constant_defining_value_block_field)
+let to_clambda_symbol env sym : Clambda.ulambda =
+  Uconst (to_clambda_symbol' env sym)
+
+let to_clambda_const env (const : Flambda.constant_defining_value_block_field)
       : Clambda.uconstant =
   match const with
-  | Symbol s ->
-    Uconst_ref (Linkage_name.to_string (Symbol.label s), None)
+  | Symbol symbol -> to_clambda_symbol' env symbol
   | Const (Int i) -> Uconst_int i
   | Const (Char c) -> Uconst_int (Char.code c)
   | Const (Const_pointer i) -> Uconst_ptr i
@@ -457,8 +468,10 @@ and to_clambda_set_of_closures t env
     in
     let env =
       (* Inside the body of the function, we cannot access variables
-         declared outside, so start with a clean environment. *)
-      let env = Env.empty in
+         declared outside, so start with a suitably clean environment.
+         Note that we must not forget the information about which allocated
+         constants contain which unboxed values. *)
+      let env = Env.keep_only_symbols env in
       (* Add the Clambda expressions for the free variables of the function
          to the environment. *)
       let add_env_free_variable id _ env =
@@ -545,16 +558,6 @@ and to_clambda_closed_set_of_closures t env symbol
   let closure_lbl = Linkage_name.to_string (Symbol.label symbol) in
   Uconst_closure (ufunct, closure_lbl, [])
 
-let to_clambda_allocated_constant (const : Allocated_const.t)
-      : Clambda.ustructured_constant =
-  match const with
-  | Float f -> Uconst_float f
-  | Int32 i -> Uconst_int32 i
-  | Int64 i -> Uconst_int64 i
-  | Nativeint i -> Uconst_nativeint i
-  | Immstring s | String s -> Uconst_string s
-  | Float_array a -> Uconst_float_array a
-
 let to_clambda_initialize_symbol t env symbol fields : Clambda.ulambda =
   let fields =
     List.mapi (fun index expr -> index, to_clambda t env expr) fields
@@ -580,7 +583,7 @@ let accumulate_structured_constants t env symbol
   | Allocated_const c ->
     Symbol.Map.add symbol (to_clambda_allocated_constant c) acc
   | Block (tag, fields) ->
-    let fields = List.map to_clambda_const fields in
+    let fields = List.map (to_clambda_const env) fields in
     Symbol.Map.add symbol (Clambda.Uconst_block (Tag.to_int tag, fields)) acc
   | Set_of_closures set_of_closures ->
     let to_clambda_set_of_closures =
@@ -596,11 +599,10 @@ let rec to_clambda_program t env constants (program : Flambda.program) :
     (* Useful only for unboxing. Since floats and boxed integers will
        never be part of a Let_rec_symbol, handling only the Let_symbol
        is sufficient. *)
-    let env = match alloc with
-      | Allocated_const const ->
-        Env.add_allocated_const env symbol const
-      | _ ->
-        env
+    let env =
+      match alloc with
+      | Allocated_const const -> Env.add_allocated_const env symbol const
+      | _ -> env
     in
     let constants =
       accumulate_structured_constants t env symbol alloc constants
