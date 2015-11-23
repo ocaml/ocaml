@@ -31,14 +31,19 @@ let lfunction params body =
   |  _ ->
       Lfunction {kind = Curried; params; body; attr = default_function_attribute}
 
-let lapply func args loc =
-  match func with
-    Lapply(func', args', _) ->
-      Lapply(func', args' @ args, loc)
+let lapply ap =
+  match ap.ap_func with
+    Lapply ap' ->
+      Lapply {ap with ap_func = ap'.ap_func; ap_args = ap'.ap_args @ ap.ap_args}
   | _ ->
-      Lapply(func, args, loc)
+      Lapply ap
 
-let mkappl (func, args) = Lapply (func, args, no_apply_info);;
+let mkappl (func, args) =
+  Lapply {ap_should_be_tailcall=false;
+          ap_loc=Location.none;
+          ap_func=func;
+          ap_args=args;
+          ap_inlined=Default_inline};;
 
 let lsequence l1 l2 =
   if l2 = lambda_unit then l1 else Lsequence(l1, l2)
@@ -442,7 +447,13 @@ let transl_class_rebind ids cl vf =
   try
     let obj_init = Ident.create "obj_init"
     and self = Ident.create "self" in
-    let obj_init0 = lapply (Lvar obj_init) [Lvar self] no_apply_info in
+    let obj_init0 =
+      lapply {ap_should_be_tailcall=false;
+              ap_loc=Location.none;
+              ap_func=Lvar obj_init;
+              ap_args=[Lvar self];
+              ap_inlined=Default_inline}
+    in
     let path, obj_init' = transl_class_rebind_0 self obj_init0 cl vf in
     if not (Translcore.check_recursive_lambda ids obj_init') then
       raise(Error(cl.cl_loc, Illegal_class_expr));
@@ -504,12 +515,12 @@ let rec builtin_meths self env env2 body =
   match body with
   | Llet(_, s', Lvar s, body) when List.mem s self ->
       builtin_meths (s'::self) env env2 body
-  | Lapply(f, [arg], _) when const_path f ->
+  | Lapply{ap_func = f; ap_args = [arg]} when const_path f ->
       let s, args = conv arg in ("app_"^s, f :: args)
-  | Lapply(f, [arg; p], _) when const_path f && const_path p ->
+  | Lapply{ap_func = f; ap_args = [arg; p]} when const_path f && const_path p ->
       let s, args = conv arg in
       ("app_"^s^"_const", f :: args @ [p])
-  | Lapply(f, [p; arg], _) when const_path f && const_path p ->
+  | Lapply{ap_func = f; ap_args = [p; arg]} when const_path f && const_path p ->
       let s, args = conv arg in
       ("app_const_"^s, f :: p :: args)
   | Lsend(Self, Lvar n, Lvar s, [arg], _) when List.mem s self ->

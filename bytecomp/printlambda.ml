@@ -266,12 +266,12 @@ let rec lam ppf = function
       Ident.print ppf id
   | Lconst cst ->
       struct_const ppf cst
-  | Lapply(lfun, largs, info) ->
+  | Lapply ap ->
       let lams ppf largs =
         List.iter (fun l -> fprintf ppf "@ %a" lam l) largs in
-      fprintf ppf "@[<2>(apply@ %a%a%a%a)@]" lam lfun lams largs
-        apply_tailcall_attribute info.apply_should_be_tailcall
-        apply_inlined_attribute info.apply_inlined
+      fprintf ppf "@[<2>(apply@ %a%a%a%a)@]" lam ap.ap_func lams ap.ap_args
+        apply_tailcall_attribute ap.ap_should_be_tailcall
+        apply_inlined_attribute ap.ap_inlined
   | Lfunction{kind; params; body; attr} ->
       let pr_params ppf params =
         match kind with
