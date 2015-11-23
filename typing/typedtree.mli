@@ -101,6 +101,8 @@ and pattern_desc =
          *)
   | Tpat_lazy of pattern
         (** lazy P *)
+  | Tpat_exception of pattern
+        (** exception P *)
 
 and expression =
   { exp_desc: expression_desc;
@@ -162,13 +164,12 @@ and expression_desc =
                          (Labelled "y", Some (Texp_constant Const_int 3))
                         ])
          *)
-  | Texp_match of expression * case list * case list * partial
+  | Texp_match of expression * case list * partial
         (** match E0 with
             | P1 -> E1
             | P2 -> E2
-            | exception P3 -> E3
 
-            [Texp_match (E0, [(P1, E1); (P2, E2)], [(P3, E3)], _)]
+            [Texp_match (E0, [(P1, E1); (P2, E2)], _)]
          *)
   | Texp_try of expression * case list
         (** try E with P1 -> E1 | ... | PN -> EN *)
@@ -635,3 +636,8 @@ val mknoloc: 'a -> 'a Asttypes.loc
 val mkloc: 'a -> Location.t -> 'a Asttypes.loc
 
 val pat_bound_idents: pattern -> Ident.t list
+
+val pat_equiv : pattern -> pattern -> bool
+
+(* Splits an or pattern into its value (left) and exception (right) parts. *)
+val split_pattern  : pattern -> pattern option * pattern option
