@@ -91,7 +91,7 @@ let make_package_object ppf members targetobj targetname coercion =
         | PM_intf -> None
         | PM_impl _ -> Some(Ident.create_persistent m.pm_name))
       members in
-  Asmgen.compile_implementation
+  Asmgen.compile_implementation ~sourcefile:"pack"
     (chop_extension_if_any objtemp) ppf
     (Translmod.transl_store_package
        components (Ident.create_persistent targetname) coercion);

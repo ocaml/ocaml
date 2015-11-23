@@ -157,12 +157,14 @@ module Options = Main_args.Make_optcomp_options (struct
   let _dscheduling = set dump_scheduling
   let _dlinear = set dump_linear
   let _dstartup = set keep_startup_file
+  let _dtimings = set print_timings
   let _opaque = set opaque
 
   let anonymous = anonymous
 end);;
 
 let main () =
+  Timings.(start All);
   native_code := true;
   let ppf = Format.err_formatter in
   try
@@ -216,6 +218,8 @@ let main () =
       Asmlink.link ppf (get_objfiles ()) target;
       Warnings.check_fatal ();
     end;
+    Timings.(stop All);
+    if !Clflags.print_timings then Timings.print Format.std_formatter;
     exit 0
   with x ->
       Location.report_exception ppf x;

@@ -66,7 +66,9 @@ let implementation ppf sourcefile outputprefix =
       Pparse.parse_implementation ~tool_name ppf sourcefile
       ++ print_if ppf Clflags.dump_parsetree Printast.implementation
       ++ print_if ppf Clflags.dump_source Pprintast.structure
+      ++ Timings.(start_id (Typing sourcefile))
       ++ Typemod.type_implementation sourcefile outputprefix modulename env
+      ++ Timings.(stop_id (Typing sourcefile))
       ++ print_if ppf Clflags.dump_typedtree
         Printtyped.implementation_with_coercion
     in
@@ -76,8 +78,11 @@ let implementation ppf sourcefile outputprefix =
     end else begin
       let bytecode =
         (typedtree, coercion)
+        ++ Timings.(start_id (Transl sourcefile))
         ++ Translmod.transl_implementation modulename
+        ++ Timings.(stop_id (Transl sourcefile))
         ++ print_if ppf Clflags.dump_rawlambda Printlambda.lambda
+        ++ Timings.(start_id (Generate sourcefile))
         ++ Simplif.simplify_lambda
         ++ print_if ppf Clflags.dump_lambda Printlambda.lambda
         ++ Bytegen.compile_implementation modulename
@@ -88,6 +93,7 @@ let implementation ppf sourcefile outputprefix =
       try
         bytecode
         ++ Emitcode.to_file oc modulename objfile;
+        Timings.(stop (Generate sourcefile));
         Warnings.check_fatal ();
         close_out oc;
         Stypes.dump (Some (outputprefix ^ ".annot"))
