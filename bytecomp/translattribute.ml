@@ -73,7 +73,7 @@ let add_inline_attribute expr loc attributes =
           Location.prerr_warning loc
             (Warnings.Duplicated_attribute "inline")
       end;
-      Lfunction { funct with attr = { inline = inline_attribute } }
+      Lfunction { funct with attr = { attr with inline = inline_attribute } }
   | expr, (Always_inline | Never_inline) ->
       Location.prerr_warning loc
         (Warnings.Misplaced_attribute "inline");

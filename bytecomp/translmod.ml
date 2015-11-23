@@ -367,7 +367,8 @@ let rec transl_module cc rootpath mexp =
         | Tcoerce_functor(ccarg, ccres) ->
             let param' = Ident.create "funarg" in
             Lfunction{kind = Curried; params = [param'];
-                      attr = default_function_attribute;
+                      attr = { default_function_attribute with
+                               is_a_functor = true };
                       body = Llet(Alias, param,
                                   apply_coercion Alias ccarg (Lvar param'),
                                   transl_module ccres bodypath body)}
