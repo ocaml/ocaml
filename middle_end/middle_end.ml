@@ -94,7 +94,6 @@ let middle_end ppf ~sourcefile ~prefixname ~backend
            Remove_unused_globals.remove_unused_globals)
       |> loop
   in
-(*
   (* Check that there aren't any unused "always inline" attributes. *)
   Flambda_iterators.iter_apply_on_program flam ~f:(fun apply ->
       match apply.inline with
@@ -108,7 +107,6 @@ let middle_end ppf ~sourcefile ~prefixname ~backend
           (Warnings.Inlining_impossible "[@inlined] attribute was not \
             used on this function application (the optimizer did not \
             know what function was being applied)"));
-*)
   let flam = loop flam in
   dump_and_check "End of middle end" flam;
   Timings.(stop (Flambda_middle_end sourcefile));
