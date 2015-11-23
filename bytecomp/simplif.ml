@@ -24,8 +24,9 @@ let rec eliminate_ref id = function
     Lvar v as lam ->
       if Ident.same v id then raise Real_reference else lam
   | Lconst cst as lam -> lam
-  | Lapply(e1, el, info) ->
-      Lapply(eliminate_ref id e1, List.map (eliminate_ref id) el, info)
+  | Lapply ap ->
+      Lapply{ap with ap_func = eliminate_ref id ap.ap_func;
+                     ap_args = List.map (eliminate_ref id) ap.ap_args}
   | Lfunction{kind; params; body} as lam ->
       if IdentSet.mem id (free_variables lam)
       then raise Real_reference
@@ -106,7 +107,7 @@ let simplify_exits lam =
 
   let rec count = function
   | (Lvar _| Lconst _) -> ()
-  | Lapply(l1, ll, _) -> count l1; List.iter count ll
+  | Lapply ap -> count ap.ap_func; List.iter count ap.ap_args
   | Lfunction{kind; params; body = l} -> count l
   | Llet(str, v, l1, l2) ->
       count l2; count l1
@@ -193,9 +194,11 @@ let simplify_exits lam =
 
   let rec simplif = function
   | (Lvar _|Lconst _) as l -> l
-  | Lapply(l1, ll, info) -> Lapply(simplif l1, List.map simplif ll, info)
+  | Lapply ap ->
+      Lapply{ap with ap_func = simplif ap.ap_func;
+                     ap_args = List.map simplif ap.ap_args}
   | Lfunction{kind; params; body = l; attr} ->
-      Lfunction{kind; params; body = simplif l; attr}
+     Lfunction{kind; params; body = simplif l; attr}
   | Llet(kind, v, l1, l2) -> Llet(kind, v, simplif l1, simplif l2)
   | Lletrec(bindings, body) ->
       Lletrec(List.map (fun (v, l) -> (v, simplif l)) bindings, simplif body)
@@ -203,16 +206,24 @@ let simplify_exits lam =
     let ll = List.map simplif ll in
     match p, ll with
         (* Simplify %revapply, for n-ary functions with n > 1 *)
-      | Prevapply loc, [x; Lapply(f, args, info)]
-      | Prevapply loc, [x; Levent (Lapply(f, args, info),_)] ->
-        Lapply(f, args@[x], {info with apply_loc=loc})
-      | Prevapply loc, [x; f] -> Lapply(f, [x], mk_apply_info loc)
+      | Prevapply loc, [x; Lapply ap]
+      | Prevapply loc, [x; Levent (Lapply ap,_)] ->
+        Lapply {ap with ap_args = ap.ap_args @ [x]; ap_loc = loc}
+      | Prevapply loc, [x; f] -> Lapply {ap_should_be_tailcall=false;
+                                         ap_loc=loc;
+                                         ap_func=f;
+                                         ap_args=[x];
+                                         ap_inlined=Default_inline}
 
         (* Simplify %apply, for n-ary functions with n > 1 *)
-      | Pdirapply loc, [Lapply(f, args, info); x]
-      | Pdirapply loc, [Levent (Lapply(f, args, info),_); x] ->
-        Lapply(f, args@[x], {info with apply_loc=loc})
-      | Pdirapply loc, [f; x] -> Lapply(f, [x], mk_apply_info loc)
+      | Pdirapply loc, [Lapply ap; x]
+      | Pdirapply loc, [Levent (Lapply ap,_); x] ->
+        Lapply {ap with ap_args = ap.ap_args @ [x]; ap_loc = loc}
+      | Pdirapply loc, [f; x] -> Lapply {ap_should_be_tailcall=false;
+                                         ap_loc=loc;
+                                         ap_func=f;
+                                         ap_args=[x];
+                                         ap_inlined=Default_inline}
 
       | _ -> Lprim(p, ll)
      end
@@ -339,14 +350,13 @@ let simplify_lets lam =
   | Lconst cst -> ()
   | Lvar v ->
       use_var bv v 1
-  | Lapply(Lfunction{kind = Curried; params; body}, args, _)
+  | Lapply{ap_func = Lfunction{kind = Curried; params; body}; ap_args = args}
     when optimize && List.length params = List.length args ->
       count bv (beta_reduce params body args)
-  | Lapply(Lfunction{kind = Tupled; params; body},
-           [Lprim(Pmakeblock _, args)], _)
+  | Lapply{ap_func = Lfunction{kind = Tupled; params; body}; ap_args = [Lprim(Pmakeblock _, args)]}
     when optimize && List.length params = List.length args ->
       count bv (beta_reduce params body args)
-  | Lapply(l1, ll, _) ->
+  | Lapply{ap_func = l1; ap_args = ll} ->
       count bv l1; List.iter (count bv) ll
   | Lfunction{kind; params; body = l} ->
       count Tbl.empty l
@@ -432,14 +442,13 @@ let simplify_lets lam =
         l
       end
   | Lconst cst as l -> l
-  | Lapply(Lfunction{kind = Curried; params; body}, args, _)
+  | Lapply{ap_func = Lfunction{kind = Curried; params; body}; ap_args = args}
     when optimize && List.length params = List.length args ->
       simplif (beta_reduce params body args)
-  | Lapply(Lfunction{kind = Tupled; params; body},
-           [Lprim(Pmakeblock _, args)], _)
+  | Lapply{ap_func = Lfunction{kind = Tupled; params; body}; ap_args = [Lprim(Pmakeblock _, args)]}
     when optimize && List.length params = List.length args ->
       simplif (beta_reduce params body args)
-  | Lapply(l1, ll, loc) -> Lapply(simplif l1, List.map simplif ll, loc)
+  | Lapply ap -> Lapply {ap with ap_func = simplif ap.ap_func; ap_args = List.map simplif ap.ap_args}
   | Lfunction{kind; params; body = l; attr} ->
       begin match simplif l with
         Lfunction{kind=Curried; params=params'; body; attr}
@@ -526,15 +535,15 @@ let rec emit_tail_infos is_tail lambda =
   match lambda with
   | Lvar _ -> ()
   | Lconst _ -> ()
-  | Lapply (func, l, ({apply_loc=loc} as info)) ->
-      if info.apply_should_be_tailcall
+  | Lapply ap ->
+      if ap.ap_should_be_tailcall
       && not is_tail
       && Warnings.is_active Warnings.Expect_tailcall
-        then Location.prerr_warning loc Warnings.Expect_tailcall;
-      emit_tail_infos false func;
-      list_emit_tail_infos false l;
+        then Location.prerr_warning ap.ap_loc Warnings.Expect_tailcall;
+      emit_tail_infos false ap.ap_func;
+      list_emit_tail_infos false ap.ap_args;
       if !Clflags.annotations then
-        Stypes.record (Stypes.An_call (loc, call_kind l));
+        Stypes.record (Stypes.An_call (ap.ap_loc, call_kind ap.ap_args))
   | Lfunction {body = lam} ->
       emit_tail_infos true lam
   | Llet (_, _, lam, body) ->

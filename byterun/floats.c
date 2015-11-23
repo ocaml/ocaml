@@ -193,6 +193,7 @@ static int caml_float_of_hex(const char * s, double * res)
                                 /* -1 if no decimal point seen */
   int exp = 0;                  /* exponent */
   char * p;                     /* for converting the exponent */
+  double f;
 
   while (*s != 0) {
     char c = *s++;
@@ -240,7 +241,7 @@ static int caml_float_of_hex(const char * s, double * res)
   /* Convert mantissa to FP.  We use a signed conversion because we can
      (m has 60 bits at most) and because it is faster 
      on several architectures. */
-  double f = (double) (int64_t) m;
+  f = (double) (int64_t) m;
   /* Adjust exponent to take decimal point and extra digits into account */
   if (dec_point >= 0) exp = exp + (dec_point - n_bits);
   exp = exp + x_bits;

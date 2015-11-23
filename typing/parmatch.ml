@@ -1930,7 +1930,7 @@ let check_unused pred tdefs casel =
               let r =
                 (* Do not refine if there are no other lines *)
                 let skip =
-                  r = Unused || pref = [] ||
+                  r = Unused || (not refute && pref = []) ||
                   not(refute || Warnings.is_active Warnings.Unreachable_case) in
                 if skip then r else
                 (* Then look for empty patterns *)

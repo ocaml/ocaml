@@ -97,4 +97,19 @@ val harder : (zero succ, zero succ, zero succ) plus option -> bool = <fun>
 #         val inv_zero : ('a, 'b, 'c) plus -> ('c, 'd, zero) plus -> bool = <fun>
 #         type _ t = Int : int t
 # val f : bool t -> 'a = <fun>
+#         Characters 54-55:
+  let f () = match None with _ -> .;;
+                             ^
+Error: This match case could not be refuted.
+       Here is an example of a value that would reach it: _
+# Characters 47-48:
+  let g () = match None with _ -> () | exception _ -> .;;
+                                                 ^
+Error: This match case could not be refuted.
+       Here is an example of a value that would reach it: _
+# Characters 27-28:
+  let h () = match None with _ -> .  | exception _ -> .;; 
+                             ^
+Error: This match case could not be refuted.
+       Here is an example of a value that would reach it: _
 # 

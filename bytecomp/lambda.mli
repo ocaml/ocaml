@@ -166,24 +166,6 @@ type inline_attribute =
   | Never_inline (* [@inline never] *)
   | Default_inline (* no [@inline] attribute *)
 
-type apply_info = {
-  apply_loc : Location.t;
-  apply_should_be_tailcall : bool; (* true if [@tailcall] was specified *)
-  apply_inlined : inline_attribute; (* specified with [@inlined] attribute *)
-}
-
-val no_apply_info : apply_info
-(** Default [apply_info]: no location, no tailcall *)
-
-val mk_apply_info : ?tailcall:bool -> ?inlined_attribute:inline_attribute ->
-  Location.t -> apply_info
-(** Build apply_info
-    @param tailcall if true, the application should be in tail position;
-    default false
-    @param inlined_attribute specify wether the function should be inlined
-    or not
-*)
-
 type function_kind = Curried | Tupled
 
 type let_kind = Strict | Alias | StrictOpt | Variable
@@ -208,7 +190,7 @@ type function_attribute = {
 type lambda =
     Lvar of Ident.t
   | Lconst of structured_constant
-  | Lapply of lambda * lambda list * apply_info
+  | Lapply of lambda_apply
   | Lfunction of lfunction
   | Llet of let_kind * Ident.t * lambda * lambda
   | Lletrec of (Ident.t * lambda) list * lambda
@@ -234,6 +216,13 @@ and lfunction =
     params: Ident.t list;
     body: lambda;
     attr: function_attribute; } (* specified with [@inline] attribute *)
+
+and lambda_apply =
+  { ap_func : lambda;
+    ap_args : lambda list;
+    ap_loc : Location.t;
+    ap_should_be_tailcall : bool;       (* true if [@tailcall] was specified *)
+    ap_inlined : inline_attribute }     (* specified with the [@inline] attribute *)
 
 and lambda_switch =
   { sw_numconsts: int;                  (* Number of integer cases *)
