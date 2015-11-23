@@ -415,7 +415,12 @@ static inline value caml_alloc_shr_aux (mlsize_t wosize, tag_t tag,
   header_t *hp;
   value *new_block;
 
-  if (wosize > Max_wosize) caml_raise_out_of_memory ();
+  if (wosize > Max_wosize) {
+    if (raise_oom)
+      caml_raise_out_of_memory ();
+    else
+      return 0;
+  }
   hp = caml_fl_allocate (wosize);
   if (hp == NULL){
     new_block = expand_heap (wosize);
