@@ -184,9 +184,8 @@ let subst_var env var : Clambda.ulambda =
   with Not_found ->
     try Uvar (Env.ident_for_var_exn env var)
     with Not_found ->
-      Misc.fatal_errorf "Flambda_to_clambda: unbound variable %a@.%s@."
+      Misc.fatal_errorf "Flambda_to_clambda: unbound variable %a@."
         Variable.print var
-        (Printexc.raw_backtrace_to_string (Printexc.get_callstack 400000))
 
 let subst_vars env vars = List.map (subst_var env) vars
 
