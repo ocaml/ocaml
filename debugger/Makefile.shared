@@ -34,6 +34,7 @@ OTHEROBJS=\
   ../utils/clflags.cmo ../utils/misc.cmo \
   ../utils/consistbl.cmo ../utils/warnings.cmo \
   ../utils/terminfo.cmo \
+  ../utils/ext_types.cmo \
   ../parsing/location.cmo ../parsing/longident.cmo ../parsing/docstrings.cmo \
   ../parsing/ast_helper.cmo ../parsing/ast_mapper.cmo \
   ../parsing/attr_helper.cmo \

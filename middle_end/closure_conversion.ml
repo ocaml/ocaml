@@ -148,20 +148,21 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
     Flambda.create_let set_of_closures_var set_of_closures
       (name_expr (Project_closure (project_closure))
         ~name:("project_closure_" ^ name))
-  | Lapply (funct, args, apply_info) ->
-    Lift_code.lifting_helper (close_list t env args)
+  | Lapply { ap_func; ap_args; ap_loc; ap_should_be_tailcall = _;
+        ap_inlined; } ->
+    Lift_code.lifting_helper (close_list t env ap_args)
       ~evaluation_order:`Right_to_left
       ~name:"apply_arg"
       ~create_body:(fun args ->
-        let func = close t env funct in
+        let func = close t env ap_func in
         let func_var = Variable.create "apply_funct" in
         Flambda.create_let func_var (Expr func)
           (Apply ({
               func = func_var;
               args;
               kind = Indirect;
-              dbg = Debuginfo.from_location Dinfo_call apply_info.apply_loc;
-              inline = apply_info.apply_inlined;
+              dbg = Debuginfo.from_location Dinfo_call ap_loc;
+              inline = ap_inlined;
             })))
   | Lletrec (defs, body) ->
     let env =
@@ -291,7 +292,15 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
   | Lprim (Pidentity, [arg]) -> close t env arg
   | Lprim (Pdirapply loc, [funct; arg])
   | Lprim (Prevapply loc, [arg; funct]) ->
-    close t env (Lambda.Lapply (funct, [arg], Lambda.mk_apply_info loc))
+    let apply : Lambda.lambda_apply =
+      { ap_func = funct;
+        ap_args = [arg];
+        ap_loc = loc;
+        ap_should_be_tailcall = false;
+        ap_inlined = Default_inline;
+      }
+    in
+    close t env (Lambda.Lapply apply)
   | Lprim (Praise kind, [Levent (arg, event)]) ->
     let arg_var = Variable.create "raise_arg" in
     Flambda.create_let arg_var (Expr (close t env arg))

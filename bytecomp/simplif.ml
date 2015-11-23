@@ -617,8 +617,15 @@ let rec map f lam =
   let lam = match lam with
       Lvar v -> lam
     | Lconst cst -> lam
-    | Lapply(e1, el, loc) ->
-        Lapply(map f e1, List.map (map f) el, loc)
+    | Lapply { ap_func; ap_args; ap_loc; ap_should_be_tailcall;
+          ap_inlined; } ->
+        Lapply {
+          ap_func = map f ap_func;
+          ap_args = List.map (map f) ap_args;
+          ap_loc;
+          ap_should_be_tailcall;
+          ap_inlined;
+        }
     | Lfunction{kind; params; body; attr} ->
         Lfunction{kind; params; body = map f body; attr}
     | Llet(str, v, e1, e2) ->
@@ -710,7 +717,13 @@ let split_default_wrapper fun_id kind params body attr =
         let map_param p = try List.assoc p map with Not_found -> p in
         let args = List.map (fun p -> Lvar (map_param p)) params in
         let wrapper_body =
-          Lapply (Lvar inner_id, args, Lambda.mk_apply_info Location.none)
+          Lapply {
+            ap_func = Lvar inner_id;
+            ap_args = args;
+            ap_loc = Location.none;
+            ap_should_be_tailcall = false;
+            ap_inlined = Always_inline;
+          }
         in
         let inner_params = List.map map_param params in
         let new_ids = List.map Ident.rename inner_params in
