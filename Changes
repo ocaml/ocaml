@@ -128,6 +128,8 @@ Compilers:
 - GPR#282: relax short-paths safety check in presence of module aliases, take
   penalty into account while building the printing map.
   (Thomas Refis, Leo White)
+- GPR#306: Instrument the compiler to debug performance regressions
+  (Pierre Chambart)
 - PR#6920: fix debug informations around uses of %apply or %revapply
   (Jérémie Dimino)
 
