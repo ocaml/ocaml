@@ -19,6 +19,7 @@ package manager may not do this for you. Run `kpsewhich hevea.sty` to check.
 
 Building
 --------
+0. The OCaml distribution must be installed once for the next point.
 
 1. Run `make tools` in the manual to build the tools needed for making the
 manual
@@ -29,6 +30,7 @@ NB: If you already set `LD_LIBRARY_PATH` (OS X: `DYLD_LIBRARY_PATH`)
  in you environnement don't forget to add
  `otherlibs/unix:otherlibs/str` to it in an absolute way.
 
+NB: If you run `make` before `make tools`, you can end in an unstable state that can be fixed by `make clean`
 
 Outputs
 -------
