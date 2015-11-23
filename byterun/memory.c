@@ -420,14 +420,12 @@ static inline value caml_alloc_shr_aux (mlsize_t wosize, tag_t tag,
   if (hp == NULL){
     new_block = expand_heap (wosize);
     if (new_block == NULL) {
-      if (raise_oom) {
-        if (caml_in_minor_collection)
-          caml_fatal_error ("Fatal error: out of memory.\n");
-        else
-          caml_raise_out_of_memory ();
-      } else {
+      if (!raise_oom)
         return 0;
-      }
+      else if (caml_in_minor_collection)
+        caml_fatal_error ("Fatal error: out of memory.\n");
+      else
+        caml_raise_out_of_memory ();
     }
     caml_fl_add_blocks ((value) new_block);
     hp = caml_fl_allocate (wosize);
