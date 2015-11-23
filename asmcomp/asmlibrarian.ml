@@ -35,6 +35,7 @@ let read_info name =
      The linker, which is the only one that reads .cmxa files, does not
      need the approximation. *)
   info.ui_approx <- Clambda.Value_unknown;
+  info.ui_export_info <- Export_info.empty;
   (Filename.chop_suffix filename ".cmx" ^ ext_obj, (info, crc))
 
 let create_archive file_list lib_name =
