@@ -394,6 +394,8 @@ and to_clambda_named t env var (named : Flambda.named) : Clambda.ulambda =
         check_field (subst_var env block) index None;
         subst_var env new_value;
       ], dbg)
+  | Prim (Popaque, args, dbg) ->
+    Uprim (Pidentity, subst_vars env args, dbg)
   | Prim (p, args, dbg) -> Uprim (p, subst_vars env args, dbg)
   | Expr expr -> to_clambda t env expr
 

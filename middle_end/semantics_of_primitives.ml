@@ -123,6 +123,7 @@ let for_primitive (prim : Lambda.primitive) =
   | Pbswap16
   | Pbbswap _ -> No_effects, No_coeffects
   | Pint_as_pointer -> No_effects, No_coeffects
+  | Popaque -> Arbitrary_effects, Has_coeffects
   | Ploc _ ->
     Misc.fatal_error "[Ploc] should have been eliminated by [Translcore]"
   | Pidentity

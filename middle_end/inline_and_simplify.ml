@@ -900,6 +900,11 @@ and simplify_named env r (tree : Flambda.named) : Flambda.named * R.t =
             ~size_int:Backend.size_int ~big_endian:Backend.big_endian
         in
         let r = R.map_benefit r (B.(+) benefit) in
+        let approx =
+          match p with
+          | Popaque -> A.value_unknown Other
+          | _ -> approx
+        in
         expr, ret r approx
       end)
   | Expr expr ->
