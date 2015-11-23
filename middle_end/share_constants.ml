@@ -66,21 +66,10 @@ let share_constants (program:Flambda.program) =
   let rec loop (program:Flambda.program) : Flambda.program =
     match program with
     | Let_symbol (symbol,def,program) ->
-(*
-      Format.eprintf "symbol %a@." Symbol.print symbol;
-*)
       begin match share_definition constant_to_symbol_tbl sharing_symbol_tbl symbol def with
       | None ->
-(*
-        Format.eprintf "do  share constant %a@." Symbol.print symbol;
-*)
         loop program
       | Some def' ->
-(*
-        Format.eprintf "not share constant %a@." Symbol.print symbol;
-        Format.eprintf "%a@ -> " Flambda.print_constant_defining_value def;
-        Format.eprintf "%a@." Flambda.print_constant_defining_value def';
-*)
         Let_symbol (symbol,def',loop program)
       end
     | Let_rec_symbol (defs,program) ->
@@ -92,14 +81,8 @@ let share_constants (program:Flambda.program) =
       in
       Let_rec_symbol (defs, loop program)
     | Import_symbol (symbol,program) ->
-(*
-      Format.eprintf "import symbol %a@." Symbol.print symbol;
-*)
       Import_symbol (symbol,loop program)
     | Initialize_symbol (symbol,tag,fields,program) ->
-(*
-      Format.eprintf "initialize symbol %a@." Symbol.print symbol;
-*)
       let fields =
         List.map (fun field ->
             Flambda_iterators.map_symbols
@@ -122,5 +105,4 @@ let share_constants (program:Flambda.program) =
     | End root -> End root
   in
   let program = loop program in
-  (* Format.eprintf "share_constants output:@ %a\n" Flambda.print_program program; *)
   program
