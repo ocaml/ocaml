@@ -59,13 +59,6 @@ val symbol_for_global: Ident.t -> string
         (* Return the asm symbol that refers to the given global identifier *)
 val symbol_for_global': Ident.t -> Symbol.t
 
-val global_approx: Ident.t -> Clambda.value_approximation
-        (* Return the approximation for the given global identifier *)
-val set_global_approx: Clambda.value_approximation -> unit
-        (* Record the approximation of the unit being compiled *)
-val record_global_approx_toplevel: unit -> unit
-        (* Record the current approximation for the current toplevel phrase *)
-
 val set_export_info: Export_info.t -> unit
         (* Record the informations of the unit being compiled *)
 val approx_env: unit -> Export_info.t

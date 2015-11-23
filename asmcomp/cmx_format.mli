@@ -31,9 +31,6 @@ type unit_infos =
     mutable ui_imports_cmi:
               (string * Digest.t option) list; (* Interfaces imported *)
     mutable ui_imports_cmx:(string * Digest.t option) list; (* Infos imported *)
-    (* CR mshinwell: Can [ui_approx] be deleted?  Seems like [ui_export_info]
-       should supercede it. *)
-    mutable ui_approx: Clambda.value_approximation; (* Approx of the structure*)
     mutable ui_curry_fun: int list;             (* Currying functions needed *)
     mutable ui_apply_fun: int list;             (* Apply functions needed *)
     mutable ui_send_fun: int list;              (* Send functions needed *)

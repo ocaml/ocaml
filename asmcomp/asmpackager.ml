@@ -168,7 +168,6 @@ let build_package_cmx members cmxfile =
           filter(Asmlink.extract_crc_interfaces());
       ui_imports_cmx =
           filter(Asmlink.extract_crc_implementations());
-      ui_approx = ui.ui_approx;
       ui_curry_fun =
           union(List.map (fun info -> info.ui_curry_fun) units);
       ui_apply_fun =

@@ -16,7 +16,6 @@
 
 open Config
 open Misc
-open Clambda
 open Cmx_format
 
 type error =
@@ -73,7 +72,6 @@ let current_unit =
     ui_defines = [];
     ui_imports_cmi = [];
     ui_imports_cmx = [];
-    ui_approx = Value_unknown;
     ui_curry_fun = [];
     ui_apply_fun = [];
     ui_send_fun = [];
@@ -204,21 +202,6 @@ let get_global_info global_ident = (
 let cache_unit_info ui =
   Hashtbl.add global_infos_table ui.ui_name (Some ui)
 
-(* Return the approximation of a global identifier *)
-
-let toplevel_approx = Hashtbl.create 16
-
-let record_global_approx_toplevel _id =
-  Hashtbl.add toplevel_approx current_unit.ui_name current_unit.ui_approx
-
-let global_approx id =
-  if Ident.is_predef_exn id then Value_unknown
-  else try Hashtbl.find toplevel_approx (Ident.name id)
-  with Not_found ->
-    match get_global_info id with
-      | None -> Value_unknown
-      | Some ui -> ui.ui_approx
-
 (* Return the symbol used to refer to a global identifier *)
 
 let symbol_for_global id =
@@ -249,11 +232,6 @@ let symbol_for_global' id =
     Symbol.unsafe_create predefined_exception_compilation_unit sym_label
   else
     Symbol.unsafe_create (unit_for_global id) sym_label
-
-(* Register the approximation of the module being compiled *)
-
-let set_global_approx approx =
-  current_unit.ui_approx <- approx
 
 (* Exporting and importing cross module information *)
 
