@@ -16,7 +16,7 @@ Language features:
   constructors (Alain Frisch)
 - PR#6714: allow [@@ocaml.warning] on most structure and signature items:
   values, modules, module types
-  (Peter Zotov)
+  (whitequark)
 - GPR#26: support for "(type a b)" as syntactic sugar for "(type a) (type b)"
   (Gabriel Scherer)
 - GPR#42: short functor type syntax: "S -> T" for "functor (_ : S) -> T"
@@ -67,7 +67,7 @@ Compilers:
 - PR#6501: harden the native-code generator against certain uses of "%identity"
   (Xavier Leroy, report by Antoine Miné).
 - PR#6636: add --version option
-  (Peter Zotov)
+  (whitequark)
 - improve type-specialization of unapplied primitives
   (Frédéric Bour, review by Gabriel Scherer)
 - PR#6737: fix Typedtree attributes on (fun x -> body) expressions
@@ -115,7 +115,7 @@ Runtime system:
   types {,u}int{32,64}.
   (Xavier Leroy)
 - PR#6760: closures evaluated in the toplevel can now be marshalled
-  (Peter Zotov, review by Jacques-Henri Jourdan)
+  (whitequark, review by Jacques-Henri Jourdan)
 - PR#6902, GPR#210: runtime emits a warning when finalizing an I/O channel
   which is still open (Alain Frisch, review by Damien Doligez)
 - Signal handling: for read-and-clear, use GCC/Clang atomic builtins
@@ -152,7 +152,7 @@ Standard library:
   (Mohamed Iguernlala)
 - PR#6694, PR#6695: deprecate functions using ISO-8859-1 character set
   in Char, Bytes, String and provide alternatives using US-ASCII.
-  (Peter Zotov)
+  (whitequark)
 - GPR#164: more efficient (branchless) implementation of Pervasives.compare
   specialized at type 'float'.
   (Vladimir Brankov)
@@ -193,7 +193,7 @@ Type system:
 
 Toplevel and debugger:
 - PR#6468: toplevel now supports backtraces if invoked with OCAMLRUNPARAM=b
-  (Peter Zotov and Jake Donham,
+  (whitequark and Jake Donham,
    review by Gabriel Scherer and Jacques-Henri Jourdan)
 - PR#6935, GPR#298: crash in debugger when load_printer is given a directory
   (Junsong Li, review by Gabriel Scherer)
@@ -213,7 +213,7 @@ Other libraries:
 
 OCamlbuild:
 - PR#6794, PR#6809: pass package-specific include flags when building C files
-  (Jérémie Dimino, request by Peter Zotov)
+  (Jérémie Dimino, request by whitequark)
 - GPR#208: add "asm" tag to ocamlbuild to enable flag -S
   (ygrek)
 - Changed OCamlbuild's license to LGPLv2 with static linking exception.
@@ -237,7 +237,7 @@ Bug fixes:
   (Jacques Garrigue, report by Sebastien Furic)
 - PR#5887: move the byterun/*.h headers to byterun/caml/*.h to avoid header
     name clashes
-  (Jérôme Vouillon and Adrien Nader and Peter Zotov)
+  (Jérôme Vouillon and Adrien Nader and whitequark)
 * PR#6081: ocaml should add script's directory to search path, not current
     directory
   (Thomas Leonard and Damien Doligez)
@@ -361,7 +361,7 @@ Features wishes:
 - GPR#165, GPR#221: fix windows compilation warnings
   (Bernhard Schommer, Gabriel Scherer, report by Alain Frisch)
 - GPR#189: Added .dylib and .so as extensions for ocamlmklib
-  (Edgar Aroutiounian, Peter Zotov)
+  (Edgar Aroutiounian, whitequark)
 - GPR#237: a CONTRIBUTING document
   (François Bobot, Gabriel Scherer, review by Xavier Leroy)
 - GPR#245: remove a few remaining French comments
@@ -409,10 +409,10 @@ Compilers:
   incrementally
   (Jacques Garrigue)
 - PR#6642: replace $CAMLORIGIN in -ccopt with the path to cma or cmxa
-  (Peter Zotov, Gabriel Scherer, review by Damien Doligez)
+  (whitequark, Gabriel Scherer, review by Damien Doligez)
 - PR#6797: new option -output-complete-obj
   to output an object file with included runtime and autolink libraries
-  (Peter Zotov)
+  (whitequark)
 - PR#6845: -no-check-prims to tell ocamlc not to check primitives in runtime
   (Alain Frisch)
 - GPR#149: Attach documentation comments to parse tree
@@ -428,18 +428,18 @@ OCamlbuild:
 - PR#6237: explicit "infer" tag to control or disable menhir --infer
   (Hugo Heuzard)
 - PR#6625: pass -linkpkg to files built with -output-obj.
-  (Peter Zotov)
+  (whitequark)
 - PR#6702: explicit "linkpkg" and "dontlink(foo)" flags
-  (Peter Zotov, Gabriel Scherer)
+  (whitequark, Gabriel Scherer)
 - PR#6712: Ignore common VCS directories
-  (Peter Zotov)
+  (whitequark)
 - PR#6720: pass -g to C compilers when tag 'debug' is set
-  (Peter Zotov, Gabriel Scherer)
+  (whitequark, Gabriel Scherer)
 - PR#6733: add .byte.so and .native.so targets to pass
   -output-obj -cclib -shared.
-  (Peter Zotov)
+  (whitequark)
 - PR#6733: "runtime_variant(X)" to pass -runtime-variant X option.
-  (Peter Zotov)
+  (whitequark)
 - PR#6774: new menhir-specific flags "only_tokens" and "external_tokens(Foo)"
   (François Pottier)
 
@@ -461,7 +461,7 @@ Build system:
 - PR#5418 (comments) : generate dependencies with $(CC) instead of gcc
   (Damien Doligez and Michael Grünewald)
 - PR#6266: Cross compilation for iOs, Android etc
-  (Peter Zotov, review by Damien Doligez and Mark Shinwell)
+  (whitequark, review by Damien Doligez and Mark Shinwell)
 
 Installation procedure:
 - Update instructions for x86-64 PIC mode and POWER architecture builds
@@ -478,7 +478,7 @@ Bug fixes:
   (Gabriel Scherer, request by the Coq team)
 - PR#5887: move the byterun/*.h headers to byterun/caml/*.h to avoid
   header name clashes
-  (Jérôme Vouillon and Adrien Nader and Peter Zotov)
+  (Jérôme Vouillon and Adrien Nader and whitequark)
 - PR#6281: Graphics window does not acknowledge second click (double click)
   (Kyle Headley)
 - PR#6490: incorrect backtraces in gdb on AArch64.  Also fixes incorrect
@@ -491,9 +491,9 @@ Bug fixes:
 - PR#6607: The manual doesn't mention 0x200 flag for OCAMLRUNPARAM=v
   (Alain Frisch)
 - PR#6616: allow meaningful use of -use-runtime without -custom.
-  (Peter Zotov)
+  (whitequark)
 - PR#6617: allow android build with pthreads support (since SDK r10c)
-  (Peter Zotov)
+  (whitequark)
 - PR#6626: ocamlbuild on cygwin cannot find ocamlfind
   (Gergely Szilvasy)
 - PR#6628: Configure script rejects legitimate arguments
@@ -523,9 +523,9 @@ Bug fixes:
   type variable in place of a local abstract type
   (Jacques Garrigue, report by Mikhail Mandrykin)
 - PR#6693 (part two): Incorrect relocation types in x86-64 runtime system
-  (Peter Zotov, review by Jacques-Henri Jourdan, Xavier Leroy and Mark Shinwell)
+  (whitequark, review by Jacques-Henri Jourdan, Xavier Leroy and Mark Shinwell)
 - PR#6717: Pprintast does not print let-pattern attributes
-  (Gabriel Scherer, report by Peter Zotov)
+  (Gabriel Scherer, report by whitequark)
 - PR#6727: Printf.sprintf "%F" misbehavior
   (Benoît Vaugon, report by Vassili Karpov)
 - PR#6747: ocamlobjinfo: missing symbol caml_plugin_header due to underscore
@@ -548,12 +548,12 @@ Bug fixes:
 - PR#6775: Digest.file leaks file descriptor on error
   (Valentin Gatien-Baron)
 - PR#6779: Cross-compilers cannot link bytecode using custom primitives
-  (Damien Doligez, request by Peter Zotov)
+  (Damien Doligez, request by whitequark)
 - PR#6787: Soundness bug with polymorphic variants
   (Jacques Garrigue, with help from Leo White and Grégoire Henry,
    report by Michael O'Connor)
 - PR#6790: otherlibs should be built with -g
-  (Damien Doligez, report by Peter Zotov)
+  (Damien Doligez, report by whitequark)
 - PR#6791: "%s@[", "%s@{" regression in Scanf
   (Benoît Vaugon)
 - PR#6793: ocamlbuild passes nonsensical "-ocamlc ..." commands to menhir
@@ -616,9 +616,9 @@ Feature wishes:
 - PR#6452, GPR#140: add internal suport for custom printing formats
   (Jérémie Dimino)
 - PR#6641: add -g, -ocamlcflags, -ocamloptflags options to ocamlmklib
-  (Peter Zotov)
+  (whitequark)
 - PR#6693: also build libasmrun_shared.so and lib{asm,caml}run_pic.a
-  (Peter Zotov, review by Mark Shinwell)
+  (whitequark, review by Mark Shinwell)
 - PR#6842: export Typemod.modtype_of_package
   (Jacques Garrigue, request by Jun Furuse)
 - GPR#139: more versatile specification of locations of .annot
@@ -644,7 +644,7 @@ Bug Fixes:
 - PR#6207: Configure doesn't detect features correctly on Haiku
   (Jessica Hamilton)
 - PR#6466: Non-exhaustive matching warning message for open types is confusing
-  (Peter Zotov)
+  (whitequark)
 - PR#6529: fix quadratic-time algorithm in Consistbl.extract.
   (Xavier Leroy, Alain Frisch, relase-worthy report by Jacques-Pascal Deplaix)
 - PR#6530: Add stack overflow handling for native code (OpenBSD i386 and amd64)
@@ -658,7 +658,7 @@ Bug Fixes:
 - PR#6544: Bytes and CamlinternalFormat missing from threads stdlib.cma
   (Christopher Zimmermann)
 - PR#6546: -dsource omits parens for `List ((`String "A")::[]) in patterns
-  (Gabriel Scherer, report by Peter Zotov)
+  (Gabriel Scherer, report by whitequark)
 - PR#6547: __MODULE__ aborts the compiler if the module name cannot be inferred
   (Jacques Garrigue, report by Kaustuv Chaudhuri)
 - PR#6549: Debug section is sometimes not readable when using -pack
@@ -1038,15 +1038,15 @@ Features wishes:
 - PR#6358: obey DESTDIR in install targets
   (Gabriel Scherer, request by François Berenger)
 - PR#6388, PR#6424: more parsetree correctness checks for -ppx users
-  (Alain Frisch, request by Peter Zotov and Jun Furuse)
+  (Alain Frisch, request by whitequark and Jun Furuse)
 - PR#6406: Expose OCaml version in C headers
-  (Peter Zotov and Romain Calascibetta)
+  (whitequark and Romain Calascibetta)
 - PR#6446: improve "unused declaration" warnings wrt. name shadowing
   (Alain Frisch)
 - PR#6495: ocamlbuild tags 'safe_string', 'unsafe_string'
   (Anil Madhavapeddy)
 - PR#6497: pass context information to -ppx preprocessors
-  (Peter Zotov, Alain Frisch)
+  (whitequark, Alain Frisch)
 - ocamllex: user-definable refill action
   (Frédéric Bour, review by Gabriel Scherer and Luc Maranget)
 - shorten syntax for functor signatures: "functor (M1:S1) (M2:S2) .. -> .."
