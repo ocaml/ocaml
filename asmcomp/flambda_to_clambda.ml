@@ -208,7 +208,8 @@ let to_uconst_symbol env symbol : Clambda.ustructured_constant option =
   match Env.allocated_const_for_symbol env symbol with
   | Some ((Float _ | Int32 _ | Int64 _ | Nativeint _) as const) ->
     Some (to_clambda_allocated_constant const)
-  | None | Some _ -> None
+  | None  (* CR-soon mshinwell: Try to make this an error. *)
+  | Some _ -> None
 
 let to_clambda_symbol' env sym : Clambda.uconstant =
   let lbl = Linkage_name.to_string (Symbol.label sym) in
