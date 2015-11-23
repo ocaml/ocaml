@@ -722,7 +722,7 @@ let split_default_wrapper fun_id kind params body attr =
             ap_args = args;
             ap_loc = Location.none;
             ap_should_be_tailcall = false;
-            ap_inlined = Always_inline;
+            ap_inlined = Default_inline;
           }
         in
         let inner_params = List.map map_param params in
