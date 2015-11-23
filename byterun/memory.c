@@ -26,6 +26,10 @@
 #include "caml/mlvalues.h"
 #include "caml/signals.h"
 
+#ifdef _MSC_VER
+#define inline _inline
+#endif
+
 extern uintnat caml_percent_free;                   /* major_gc.c */
 
 /* Page table management */
@@ -405,17 +409,25 @@ color_t caml_allocation_color (void *hp)
   }
 }
 
-CAMLexport value caml_alloc_shr (mlsize_t wosize, tag_t tag)
+static inline value caml_alloc_shr_aux (mlsize_t wosize, tag_t tag,
+                                        int raise_oom)
 {
   header_t *hp;
   value *new_block;
 
-  if (wosize > Max_wosize) caml_raise_out_of_memory ();
+  if (wosize > Max_wosize) {
+    if (raise_oom)
+      caml_raise_out_of_memory ();
+    else
+      return 0;
+  }
   hp = caml_fl_allocate (wosize);
   if (hp == NULL){
     new_block = expand_heap (wosize);
     if (new_block == NULL) {
-      if (caml_in_minor_collection)
+      if (!raise_oom)
+        return 0;
+      else if (caml_in_minor_collection)
         caml_fatal_error ("Fatal error: out of memory.\n");
       else
         caml_raise_out_of_memory ();
@@ -450,6 +462,16 @@ CAMLexport value caml_alloc_shr (mlsize_t wosize, tag_t tag)
   }
 #endif
   return Val_hp (hp);
+}
+
+CAMLexport value caml_alloc_shr_no_raise (mlsize_t wosize, tag_t tag)
+{
+  return caml_alloc_shr_aux(wosize, tag, 0);
+}
+
+CAMLexport value caml_alloc_shr (mlsize_t wosize, tag_t tag)
+{
+  return caml_alloc_shr_aux(wosize, tag, 1);
 }
 
 /* Dependent memory is all memory blocks allocated out of the heap
