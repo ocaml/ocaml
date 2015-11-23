@@ -26,6 +26,10 @@
 #include "caml/mlvalues.h"
 #include "caml/signals.h"
 
+#ifdef _MSC_VER
+#define inline _inline
+#endif
+
 extern uintnat caml_percent_free;                   /* major_gc.c */
 
 /* Page table management */
