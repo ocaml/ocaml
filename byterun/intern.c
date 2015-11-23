@@ -30,6 +30,10 @@
 #include "caml/misc.h"
 #include "caml/reverse.h"
 
+#ifdef _MSC_VER
+#define inline _inline
+#endif
+
 static unsigned char * intern_src;
 /* Reading pointer in block holding input data. */
 
