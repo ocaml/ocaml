@@ -315,6 +315,8 @@ Bug fixes:
   (whitequark)
 - GPR#280: Fix stdlib dependencies for .p.cmx (Pierre Chambart,
   Mark Shinwell)
+- GPR#283: Fix memory leaks in intern.c when OOM is raised
+  (Marc Lasson, review by Alain Frisch)
 
 Features wishes:
 - PR#4714: List.cons
