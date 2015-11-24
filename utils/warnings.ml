@@ -431,7 +431,7 @@ let message = function
   | Inlining_impossible reason ->
       Printf.sprintf "Inlining impossible in this context: %s" reason
   | Assignment_on_non_mutable_value ->
-      "Assignment on non-mutable value.\n
+      "Assignment on non-mutable value.\n\
        Have you been naughty with [Obj]?  If not this may be a bug in the compiler."
   | Missing_symbol_information (symbol, unit) ->
       Printf.sprintf
