@@ -28,7 +28,7 @@ module type Texter =
 module Info_retriever =
   functor (MyTexter : Texter) ->
   struct
-    let create_see s =
+    let create_see file s =
       try
         let lexbuf = Lexing.from_string s in
         let (see_ref, s) = Odoc_parser.see_info Odoc_see_lexer.main lexbuf in
@@ -64,7 +64,7 @@ module Info_retriever =
                  i_desc = (match desc with "" -> None | _ -> Some (MyTexter.text_of_string desc));
                  i_authors = !Odoc_comments_global.authors;
                  i_version = !Odoc_comments_global.version;
-                 i_sees = (List.map create_see !Odoc_comments_global.sees) ;
+                 i_sees = (List.map (create_see file) !Odoc_comments_global.sees) ;
                  i_since = !Odoc_comments_global.since;
                  i_before = Odoc_merge.merge_before_tags
                      (List.map (fun (n, s) ->
@@ -87,19 +87,16 @@ module Info_retriever =
                                !Odoc_comments_global.customs)
                }
             )
-               with
-                 Failure s ->
-                   incr Odoc_global.errors ;
-                    Printf.eprintf "File %S, line %d:\n%s\n%!" file (!Odoc_lexer.line_number + 1) s;
-                   (0, None)
-               | Odoc_text.Text_syntax (l, c, s) ->
-                   incr Odoc_global.errors ;
-                   prerr_endline (file^" : "^(Odoc_messages.text_parse_error l c s));
-                   (0, None)
-               | _ ->
-                   incr Odoc_global.errors ;
-                   prerr_endline (file^" : "^Odoc_messages.parse_error^"\n");
-                   (0, None)
+      with e ->
+        let (l, c, message) = match e with
+          | Failure s -> (!Odoc_lexer.line_number + 1, 0, s)
+          | Odoc_text.Text_syntax (l, c, s) -> (l, c, Odoc_messages.text_parse_error l c s)
+          | _other -> (0, 0, Odoc_messages.parse_error)
+        in begin
+          incr Odoc_global.errors;
+          prerr_endline (Odoc_messages.error_location file l c ^ message);
+          (0, None)
+        end
 
     (** This function takes a string where a simple comment may has been found. It returns
        false if there is a blank line or the first comment is a special one, or if there is

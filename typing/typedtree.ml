@@ -563,7 +563,11 @@ let rec bound_idents pat =
   | d -> iter_pattern_desc bound_idents d
 
 let pat_bound_idents pat =
-  idents := []; bound_idents pat; let res = !idents in idents := []; res
+  idents := [];
+  bound_idents pat;
+  let res = !idents in
+  idents := [];
+  List.map fst res
 
 let rev_let_bound_idents_with_loc bindings =
   idents := [];

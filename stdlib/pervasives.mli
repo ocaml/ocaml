@@ -597,7 +597,7 @@ external snd : 'a * 'b -> 'b = "%field1"
 *)
 
 val ( @ ) : 'a list -> 'a list -> 'a list
-(** List concatenation. *)
+(** List concatenation.  Not tail-recursive (length of the first argument). *)
 
 
 
