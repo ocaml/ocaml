@@ -30,6 +30,8 @@ val map_subexpressions
   -> Flambda.t
   -> Flambda.t
 
+(** CR-soon lwhite: add comment to clarify that these recurse unlike the
+ones above *)
 val iter
    : (Flambda.t -> unit)
   -> (Flambda.named -> unit)

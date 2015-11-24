@@ -159,6 +159,7 @@ type program =
 let fprintf = Format.fprintf
 module Int = Ext_types.Int
 
+(** CR-someday lwhite: use better name than this *)
 let rec lam ppf (flam : t) =
   match flam with
   | Var (id) ->
