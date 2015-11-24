@@ -17,6 +17,7 @@
 .DS_Store
 *.out
 *.out.dSYM
+*.inlining
 
 # local to root directory
 
