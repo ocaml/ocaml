@@ -324,28 +324,35 @@ module Analyser =
     let filter_out_erased_items_from_signature erased signature =
       if Name.Set.is_empty erased then signature
       else List.fold_right (fun sig_item acc ->
-        let take_item psig_desc = { sig_item with Parsetree.psig_desc } :: acc in
-        match sig_item.Parsetree.psig_desc with
-        | Parsetree.Psig_attribute _
-        | Parsetree.Psig_extension _
-        | Parsetree.Psig_value _
-        | Parsetree.Psig_typext _
-        | Parsetree.Psig_exception _
-        | Parsetree.Psig_open _
+        let take_item pstr_desc = { sig_item with Parsetree.pstr_desc } :: acc in
+        match sig_item.Parsetree.pstr_desc with
+        | Parsetree.Pstr_attribute _
+        | Parsetree.Pstr_extension _
+        | Parsetree.Pstr_primitive _
+        | Parsetree.Pstr_typext _
+        | Parsetree.Pstr_exception _
+        | Parsetree.Pstr_open _
         | Parsetree.Psig_include _
         | Parsetree.Psig_class _
-        | Parsetree.Psig_class_type _ as tp -> take_item tp
-        | Parsetree.Psig_type (rf, types) ->
+        | Parsetree.Pstr_class_type _ as tp -> take_item tp
+        | Parsetree.Pstr_type (rf, types) ->
           (match List.filter (fun td -> not (Name.Set.mem td.Parsetree.ptype_name.txt erased)) types with
           | [] -> acc
-          | types -> take_item (Parsetree.Psig_type (rf, types)))
+          | types -> take_item (Parsetree.Pstr_type (rf, types)))
         | Parsetree.Psig_module {Parsetree.pmd_name=name}
-        | Parsetree.Psig_modtype {Parsetree.pmtd_name=name} as m ->
+        | Parsetree.Pstr_modtype {Parsetree.pmtd_name=name} as m ->
           if Name.Set.mem name.txt erased then acc else take_item m
         | Parsetree.Psig_recmodule mods ->
           (match List.filter (fun pmd -> not (Name.Set.mem pmd.Parsetree.pmd_name.txt erased)) mods with
           | [] -> acc
-          | mods -> take_item (Parsetree.Psig_recmodule mods)))
+          | mods -> take_item (Parsetree.Psig_recmodule mods))
+
+        | Parsetree.Pstr_eval _
+        | Parsetree.Pstr_value _
+        | Parsetree.Pstr_module _
+        | Parsetree.Pstr_recmodule _
+        | Parsetree.Pstr_class _
+        | Parsetree.Pstr_include _ -> acc)
         signature []
 
     (** Analysis of the elements of a class, from the information in the parsetree and in the class
@@ -555,33 +562,33 @@ module Analyser =
         | ele :: q ->
             let (assoc_com, ele_comments) =  get_comments_in_module
                 last_pos
-                ele.Parsetree.psig_loc.Location.loc_start.Lexing.pos_cnum
+                ele.Parsetree.pstr_loc.Location.loc_start.Lexing.pos_cnum
             in
             let (maybe_more, new_env, elements) = analyse_signature_item_desc
                 acc_env
                 signat
                 table
                 current_module_name
-                ele.Parsetree.psig_loc
-                ele.Parsetree.psig_loc.Location.loc_start.Lexing.pos_cnum
-                ele.Parsetree.psig_loc.Location.loc_end.Lexing.pos_cnum
+                ele.Parsetree.pstr_loc
+                ele.Parsetree.pstr_loc.Location.loc_start.Lexing.pos_cnum
+                ele.Parsetree.pstr_loc.Location.loc_end.Lexing.pos_cnum
                 (match q with
                   [] -> pos_limit
-                | ele2 :: _ -> ele2.Parsetree.psig_loc.Location.loc_start.Lexing.pos_cnum
+                | ele2 :: _ -> ele2.Parsetree.pstr_loc.Location.loc_start.Lexing.pos_cnum
                 )
                 assoc_com
-                ele.Parsetree.psig_desc
+                ele.Parsetree.pstr_desc
             in
             let new_pos =
-              match ele.Parsetree.psig_desc with
-              | Parsetree.Psig_attribute ({Asttypes.txt = "ocaml.text"}, _) -> last_pos
+              match ele.Parsetree.pstr_desc with
+              | Parsetree.Pstr_attribute ({Asttypes.txt = "ocaml.text"}, _) -> last_pos
                   (* This "signature item" is actually a doc comment; the item is ignored
                      but don't skip the comment. *)
               | _ ->
-                 (ele.Parsetree.psig_loc.Location.loc_end.Lexing.pos_cnum + maybe_more)
+                 (ele.Parsetree.pstr_loc.Location.loc_end.Lexing.pos_cnum + maybe_more)
                    (* for the comments of constructors in types,
                       which are after the constructor definition and can
-                      go beyond ele.Parsetree.psig_loc.Location.loc_end.Lexing.pos_cnum *)
+                      go beyond ele.Parsetree.pstr_loc.Location.loc_end.Lexing.pos_cnum *)
             in
             f (acc_eles @ (ele_comments @ elements))
               new_env
@@ -595,7 +602,7 @@ module Analyser =
     and analyse_signature_item_desc env signat table current_module_name
         sig_item_loc pos_start_ele pos_end_ele pos_limit comment_opt sig_item_desc =
         match sig_item_desc with
-          Parsetree.Psig_value value_desc ->
+          Parsetree.Pstr_primitive value_desc ->
             let name_pre = value_desc.Parsetree.pval_name in
             let type_expr =
               try Signature_search.search_value table name_pre.txt
@@ -627,7 +634,7 @@ module Analyser =
             let new_env = Odoc_env.add_value env v.val_name in
             (maybe_more, new_env, [ Element_value v ])
 
-        | Parsetree.Psig_typext tyext ->
+        | Parsetree.Pstr_typext tyext ->
           let new_env, types_ext_list, last_ext =
             List.fold_left
               (fun (env_acc, exts_acc, _) -> fun {Parsetree.pext_name = { txt = name }} ->
@@ -708,7 +715,7 @@ module Analyser =
               new_te.te_info <- merge_infos new_te.te_info info_after_opt ;
               (maybe_more + maybe_more2, new_env, [ Element_type_extension new_te ])
 
-        | Parsetree.Psig_exception ext ->
+        | Parsetree.Pstr_exception ext ->
             let name = ext.Parsetree.pext_name in
             let types_ext =
               try Signature_search.search_extension table name.txt
@@ -746,7 +753,7 @@ module Analyser =
             let new_env = Odoc_env.add_extension env e.ex_name in
             (maybe_more, new_env, [ Element_exception e ])
 
-        | Parsetree.Psig_type (rf, name_type_decl_list) ->
+        | Parsetree.Pstr_type (rf, name_type_decl_list) ->
             let extended_env =
               List.fold_left
                 (fun acc_env td ->
@@ -844,7 +851,7 @@ module Analyser =
             let (maybe_more, types) = f ~first: true 0 pos_start_ele name_type_decl_list in
             (maybe_more, extended_env, types)
 
-        | Parsetree.Psig_open _ -> (* FIXME *)
+        | Parsetree.Pstr_open _ -> (* FIXME *)
             let ele_comments = match comment_opt with
               None -> []
             | Some i ->
@@ -995,7 +1002,7 @@ module Analyser =
             let (maybe_more, mods) = f ~first: true 0 pos_start_ele decls in
             (maybe_more, new_env, mods)
 
-        | Parsetree.Psig_modtype {Parsetree.pmtd_name=name; pmtd_type=pmodtype_decl} ->
+        | Parsetree.Pstr_modtype {Parsetree.pmtd_name=name; pmtd_type=pmodtype_decl} ->
             let complete_name = Name.concat current_module_name name.txt in
             let sig_mtype =
               try Signature_search.search_module_type table name.txt
@@ -1142,7 +1149,7 @@ module Analyser =
             in
             (maybe_more, new_env, eles)
 
-        | Parsetree.Psig_class_type class_type_declaration_list ->
+        | Parsetree.Pstr_class_type class_type_declaration_list ->
             (* we start by extending the environment *)
             let new_env =
               List.fold_left
@@ -1214,8 +1221,14 @@ module Analyser =
               f ~first: true 0 pos_start_ele class_type_declaration_list
             in
             (maybe_more, new_env, eles)
-        | Parsetree.Psig_attribute _
-        | Parsetree.Psig_extension _ ->
+        | Parsetree.Pstr_attribute _
+        | Parsetree.Pstr_extension _
+        | Parsetree.Pstr_eval _
+        | Parsetree.Pstr_value _
+        | Parsetree.Pstr_module _
+        | Parsetree.Pstr_recmodule _
+        | Parsetree.Pstr_class _
+        | Parsetree.Pstr_include _ ->
             (0, env, [])
 
     (** Return a module_type_kind from a Parsetree.module_type and a Types.module_type *)
