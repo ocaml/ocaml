@@ -227,10 +227,15 @@ let rec un_anf_and_moveable ident_info env (clam : Clambda.ulambda)
           { ufunction with body = un_anf ident_info env ufunction.body })
         functions
     in
-    let variables_bound_by_the_closure, moveable =
+    let variables_bound_by_the_closure, _moveable =
       un_anf_list_and_moveable ident_info env variables_bound_by_the_closure
     in
-    Uclosure (functions, variables_bound_by_the_closure), moveable
+    (* CR-soon mshinwell: We need to refine the way this module works so
+       that we don't do things such as pushing closure creations in loops.
+       The current "linear" notion doesn't seem quite right.  For the moment
+       let's just stop moving closures at all.  This shouldn't interfere
+       with Cmmgen. *)
+    Uclosure (functions, variables_bound_by_the_closure), Fixed
   | Uoffset (clam, n) ->
     let clam, moveable = un_anf_and_moveable ident_info env clam in
     Uoffset (clam, n), moveable
