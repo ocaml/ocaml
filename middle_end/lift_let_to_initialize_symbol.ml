@@ -17,7 +17,6 @@ type ('a, 'b) kind =
 
 let should_copy (named:Flambda.named) =
   match named with
-  | Expr (Var _)
   | Symbol _
   | Read_symbol_field _
   | Const _ ->
@@ -25,164 +24,125 @@ let should_copy (named:Flambda.named) =
   | _ ->
     false
 
-type split_let_result =
-  (Variable.Set.t *
-   Variable.Set.t *
-   (Variable.t * Symbol.t * Tag.t * Flambda.t list, Flambda.t) kind *
-   Flambda.t)
-    option
+type accumulated =
+  { copied_lets : (Variable.t * Flambda.named) list;
+    extracted_lets : (Variable.t * Flambda.t) list;
+    terminator : Flambda.expr }
 
-let rec split_let_k : type t. Flambda.t -> (split_let_result -> t) -> t =
-  fun (expr:Flambda.t) (k:split_let_result -> t) (* continuation *) ->
-  let module W = Flambda.With_free_variables in
+let rec accumulate ~substitution ~copied_lets ~extracted_lets (expr:Flambda.t) =
   match expr with
-  | Let { body = Var _; _ } -> k None
-  | Let { var; defining_expr = named; body;
-          free_vars_of_defining_expr = named_free_vars; _ }
-      when should_copy named ->
-    (* Those are the cases that are better to duplicate than to lift.
-       Symbol and Pfield must be duplicated to avoid relifting the
-       code introduced to lift a variable (and ending up looping infinitely). *)
-    let copy_definition expr =
-      let fresh = Variable.freshen var in
-      let expr =
-        Flambda_utils.toplevel_substitution
-          (Variable.Map.singleton var fresh)
-          expr
+  | Let { var; body = Var var'; _ } when Variable.equal var var' ->
+      { copied_lets; extracted_lets;
+        terminator = Flambda_utils.toplevel_substitution substitution expr }
+  | Let { var; defining_expr = Expr (Var alias); body; _ } ->
+      let alias =
+        match Variable.Map.find alias substitution with
+        | exception Not_found -> alias
+        | original_alias -> original_alias
       in
-      Flambda.create_let fresh named expr
-    in
-    let reintroduce_lets ~def_free_vars ~body_free_vars ~def ~body =
-      match Variable.Set.mem var def_free_vars, Variable.Set.mem var body_free_vars with
-      | false, false ->
-        (* Unused everywhere: drop everywhere *)
-        def_free_vars, body_free_vars, def, body
-      | true, false ->
-        (* Unused only once: no substitution needed *)
-        let def_free_vars = Variable.Set.union def_free_vars named_free_vars in
-        def_free_vars, body_free_vars,
-        (Flambda.create_let var named def),
+      accumulate
+        ~substitution:(Variable.Map.add var alias substitution)
+        ~copied_lets
+        ~extracted_lets
         body
-      | false, true ->
-        (* Unused only once: no substitution needed *)
-        let body_free_vars = Variable.Set.union body_free_vars named_free_vars in
-        def_free_vars, body_free_vars,
-        def,
-        Flambda.create_let var named body
-      | true, true ->
-        (* Used, in both: substitute in one.
-           We assume the new definition is smaller, hence substitute in there *)
-        let def = copy_definition def in
-        let def_free_vars = Variable.Set.union def_free_vars named_free_vars in
-        let body_free_vars = Variable.Set.union body_free_vars named_free_vars in
-        def_free_vars, body_free_vars,
-        def,
-        Flambda.create_let var named body
-    in
-    (split_let_k body @@ fun res ->
-     let res =
-       match res with
-       | None -> None
-       | Some (def_free_vars, body_free_vars, Effect effect, expr) ->
-         let (def_free_vars, body_free_vars, effect, expr) =
-           reintroduce_lets ~def_free_vars ~body_free_vars ~def:effect ~body:expr
-         in
-         Some (def_free_vars, body_free_vars, Effect effect, expr)
-       | Some (def_free_vars, body_free_vars, Initialisation (init_var, sym, tag, [field]), expr) ->
-         let (def_free_vars, body_free_vars, field, expr) =
-           reintroduce_lets ~def_free_vars ~body_free_vars ~def:field ~body:expr
-         in
-         Some (def_free_vars, body_free_vars, Initialisation (init_var, sym, tag, [field]), expr)
-       | Some (def_free_vars, body_free_vars, Initialisation (init_var, sym, tag, fields), expr) ->
-         begin match Variable.Set.mem var def_free_vars, Variable.Set.mem var body_free_vars with
-         | false, false ->
-           Some (def_free_vars, body_free_vars, Initialisation (init_var, sym, tag, fields), expr)
-         | false, true ->
-           let body_free_vars = Variable.Set.union body_free_vars named_free_vars in
-           Some (def_free_vars, body_free_vars,
-                 Initialisation (init_var, sym, tag, fields),
-                 Flambda.create_let var named expr)
-         | true, (true | false) ->
-           let def_free_vars = Variable.Set.union def_free_vars named_free_vars in
-           let body_free_vars = Variable.Set.union body_free_vars named_free_vars in
-           let fields =
-             List.map copy_definition fields
-           in
-           Some (def_free_vars, body_free_vars,
-                 Initialisation (init_var, sym, tag, fields),
-                 Flambda.create_let var named expr)
-         end
-     in
-     k res)
-  | Let ({ var; body; free_vars_of_body; _ } as let_expr) ->
-    let def = W.of_defining_expr_of_let let_expr in
-    (* This [Let] is to be lifted (to either [Initialize_symbol] or
-       [Effect]). *)
-    let res =
-      if Variable.Set.mem var free_vars_of_body then begin
-        let expr =
-          let var' = Variable.freshen var in
-          W.create_let_reusing_defining_expr var' def (Var var')
+  | Let { var; defining_expr = named; body; _ } ->
+      if should_copy named then
+        accumulate
+          ~substitution
+          ~copied_lets:((var, named)::copied_lets)
+          ~extracted_lets
+          body
+      else
+        let extracted =
+          let renamed = Variable.rename var in
+          Flambda_utils.toplevel_substitution substitution
+            (Flambda.create_let renamed named (Var renamed))
         in
-        let symbol = Flambda_utils.make_variable_symbol var in
-        let def_free_vars = Flambda.free_variables expr in
-        Some (def_free_vars, free_vars_of_body,
-              Initialisation (var, symbol, Tag.create_exn 0, [expr]), body)
-      end
-      else begin
-        let expr =
-          let var' = Variable.freshen var in
-          W.create_let_reusing_defining_expr var' def (Var var')
-        in
-        let def_free_vars = Flambda.free_variables expr in
-        Some (def_free_vars, free_vars_of_body, Effect expr, body)
-      end
-    in
-    k res
-  | _ -> k None
+        accumulate
+          ~substitution
+          ~copied_lets
+          ~extracted_lets:((var, extracted)::extracted_lets)
+          body
+  | _ ->
+      { copied_lets; extracted_lets;
+        terminator = Flambda_utils.toplevel_substitution substitution expr }
 
-and split_let expr =
-  split_let_k expr (fun x -> x)
+let rebuild_expr
+    ~(extracted_definitions:Symbol.t Variable.Map.t)
+    ~(copied_definitions:Flambda.named Variable.Map.t)
+    ~(substitute:bool)
+    (expr:Flambda.t) =
+  let expr_with_read_symbols =
+    Flambda_utils.substitute_read_symbol_field_for_variables
+      extracted_definitions expr
+  in
+  let free_variables =
+    Flambda.free_variables expr_with_read_symbols
+  in
+  let substitution =
+    if substitute then
+      Variable.Map.of_set (fun x -> Variable.rename x) free_variables
+    else
+      Variable.Map.of_set (fun x -> x) free_variables
+  in
+  let expr_with_read_symbols =
+    Flambda_utils.toplevel_substitution substitution
+      expr_with_read_symbols
+  in
+  Variable.Map.fold (fun var declaration body ->
+      let definition = Variable.Map.find var copied_definitions in
+      Flambda.create_let declaration definition body)
+    substitution expr_with_read_symbols
+
+let rebuild (used_variables:Variable.Set.t) (accumulated:accumulated) =
+  let copied_definitions = Variable.Map.of_list accumulated.copied_lets in
+  let extracted_definitions =
+    Variable.Map.mapi
+      (fun var _ -> Flambda_utils.make_variable_symbol var)
+      (Variable.Map.of_list accumulated.extracted_lets)
+  in
+  let extracted =
+    List.map (fun (var, decl) ->
+        let expr =
+          rebuild_expr ~extracted_definitions ~copied_definitions
+            ~substitute:true decl
+        in
+        if Variable.Set.mem var used_variables then
+          Initialisation
+            (Variable.Map.find var extracted_definitions,
+             Tag.create_exn 0,
+             [expr])
+        else
+          Effect expr)
+      accumulated.extracted_lets
+  in
+  let terminator =
+    (* We don't need to substitute the variables in the terminator, we
+       suppose that we did for every other occurence. Avoiding this
+       substitution allows this transformation to be idempotent. *)
+    rebuild_expr ~extracted_definitions ~copied_definitions
+      ~substitute:false accumulated.terminator
+  in
+  List.rev extracted,
+  terminator
 
 let introduce_symbols expr =
-  let rec loop expr ~all_extracted_rev =
-    match split_let expr with
-    | None -> all_extracted_rev, expr
-    | Some (_, _, extracted, body) ->
-      loop body ~all_extracted_rev:(extracted :: all_extracted_rev)
+  let accumulated =
+    accumulate
+      ~substitution:Variable.Map.empty
+      ~copied_lets:[] ~extracted_lets:[] expr
   in
-  let all_extracted_rev, expr = loop expr ~all_extracted_rev:[] in
-  let to_substitute =
-    List.fold_left (fun to_substitute extracted ->
-        match extracted with
-        | Initialisation (init_var, symbol, _tag, _def) ->
-          Variable.Map.add init_var symbol to_substitute
-        | Effect _effect ->
-          to_substitute)
-      Variable.Map.empty all_extracted_rev
-  in
-  let expr =
-    Flambda_utils.substitute_read_symbol_field_for_variables to_substitute expr
-  in
-  (List.rev all_extracted_rev), to_substitute, expr
+  let used_variables = Flambda.used_variables expr in
+  let extracted, terminator = rebuild used_variables accumulated in
+  extracted, terminator
 
-let add_extracted introduced to_substitute program =
+let add_extracted introduced program =
   List.fold_right (fun extracted program ->
       match extracted with
-      | Initialisation (_init_var, symbol, tag, def) ->
-          let def =
-            List.map
-              (Flambda_utils.substitute_read_symbol_field_for_variables to_substitute)
-              def
-          in
-        Flambda.Initialize_symbol
-          (symbol, tag, def,
-           program)
+      | Initialisation (symbol, tag, def) ->
+          Flambda.Initialize_symbol (symbol, tag, def, program)
       | Effect effect ->
-        let effect =
-          Flambda_utils.substitute_read_symbol_field_for_variables to_substitute effect
-        in
-        Flambda.Effect (effect, program))
+          Flambda.Effect (effect, program))
     introduced program
 
 let rec split_program (program:Flambda.program) : Flambda.program =
@@ -196,22 +156,21 @@ let rec split_program (program:Flambda.program) : Flambda.program =
     Let_rec_symbol (defs, split_program program)
   | Effect (expr, program) ->
     let program = split_program program in
-    let introduced, to_substitute, expr = introduce_symbols expr in
-    add_extracted introduced to_substitute
+    let introduced, expr = introduce_symbols expr in
+    add_extracted introduced
       (Flambda.Effect (expr, program))
   | Initialize_symbol(symbol, tag, ((_::_::_) as fields), program) ->
-    (* TMP: removed to lighten debug *)
+    (* CR pchambart: currently the only initialize_symbol with more
+       than 1 field is the module block. This could evold, in that case
+       this pattern should be handled properly. *)
     Initialize_symbol(symbol, tag, fields, split_program program)
-  (* CR mshinwell for pchambart: Should this next case be kept? *)
-  (* | Initialize_symbol(sym, _, [], _) -> *)
-  (*   Misc.fatal_errorf "initialize an empty symbol %a" Symbol.print sym *)
   | Initialize_symbol(sym, tag, [], program) ->
-    Initialize_symbol(sym, tag, [], split_program program)
-
+    Let_symbol(sym, Block (tag, []), split_program program)
   | Initialize_symbol(symbol, tag, [field], program) ->
     let program = split_program program in
-    let introduced, to_substitute, field = introduce_symbols field in
-    add_extracted introduced to_substitute
+    let introduced, field = introduce_symbols field in
+    add_extracted introduced
       (Flambda.Initialize_symbol(symbol, tag, [field], program))
 
-let lift ~backend:_ (f : Flambda.program) = split_program f
+let lift ~backend:_ (f : Flambda.program) =
+  split_program f
