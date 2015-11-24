@@ -720,7 +720,7 @@ and transl_exp0 e =
   | Texp_apply({ exp_desc = Texp_ident(path, _, {val_kind = Val_prim p});
                 exp_type = prim_type } as funct, oargs)
     when List.length oargs >= p.prim_arity
-    && List.for_all (fun (_, arg,_) -> arg <> None) oargs ->
+    && List.for_all (fun (_, arg) -> arg <> None) oargs ->
       let args, args' = cut p.prim_arity oargs in
       let wrap f =
         if args' = []
@@ -739,7 +739,7 @@ and transl_exp0 e =
       let wrap0 f =
         if args' = [] then f else wrap f in
       let args =
-         List.map (function _, Some x, _ -> x | _ -> assert false) args in
+         List.map (function _, Some x -> x | _ -> assert false) args in
       let argl = transl_list args in
       let public_send = p.prim_name = "%send"
         || not !Clflags.native_code && p.prim_name = "%sendcache"in
@@ -1073,7 +1073,7 @@ and transl_apply ?(should_be_tailcall=false) ?(inlined = Default_inline) lam sar
               Lvar id
         in
         let args, args' =
-          if List.for_all (fun (_,opt) -> opt = Optional) args then [], args
+          if List.for_all (fun (_,opt) -> opt) args then [], args
           else args, [] in
         let lam =
           if args = [] then lam else lapply lam (List.rev_map fst args) in
@@ -1099,7 +1099,7 @@ and transl_apply ?(should_be_tailcall=false) ?(inlined = Default_inline) lam sar
     | [] ->
         lapply lam (List.rev_map fst args)
   in
-  (build_apply lam [] (List.map (fun (l, x,o) -> may_map transl_exp x, o) sargs) : Lambda.lambda)
+  (build_apply lam [] (List.map (fun (l, x) -> may_map transl_exp x, Btype.is_optional l) sargs) : Lambda.lambda)
 
 and transl_function loc untuplify_fn repr partial cases =
   match cases with
