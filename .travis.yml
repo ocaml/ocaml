@@ -2,7 +2,7 @@
 #                                                                       #
 #                                 OCaml                                 #
 #                                                                       #
-#              Anil Madhavapeddy, OCaml Labs                            #
+#              Anil Madhavapeddy, University of Cambridge               #
 #                                                                       #
 #   Copyright 2014 Institut National de Recherche en Informatique et    #
 #   en Automatique.  All rights reserved.  This file is distributed     #
@@ -12,5 +12,22 @@
 
 language: c
 script: bash -ex .travis-ci.sh
+sudo: false
+addons:
+  apt:
+    sources:
+    - llvm-toolchain-precise-3.6
+    - ubuntu-toolchain-r-test
+    packages:
+    - build-essential
+    - clang-3.6
+    - m4
+    - aspcud
 env:
-   - XARCH=i386
+- MODE=gcc
+- MODE=gcc CONFIGURE_FLAGS=-with-debug-runtime
+- MODE=clang-scan
+before_install:
+- openssl aes-256-cbc -K $encrypted_9df4cc675af8_key -iv $encrypted_9df4cc675af8_iv
+  -in .deploy_key.enc -out .deploy_key -d
+- chmod 600 .deploy_key

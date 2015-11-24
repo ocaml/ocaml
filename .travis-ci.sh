@@ -2,7 +2,7 @@
 #                                                                       #
 #                                 OCaml                                 #
 #                                                                       #
-#              Anil Madhavapeddy, OCaml Labs                            #
+#              Anil Madhavapeddy, University of Cambridge               #
 #                                                                       #
 #   Copyright 2014 Institut National de Recherche en Informatique et    #
 #   en Automatique.  All rights reserved.  This file is distributed     #
@@ -10,26 +10,47 @@
 #                                                                       #
 #########################################################################
 
-case $XARCH in
-i386)
-  ./configure
-  make world.opt
-  sudo make install
-  (cd testsuite && make all)
+# Temporarily place to install OCaml into
+PREFIX=`pwd`/ocaml-inst
+
+# Configure Git with sensible defaults
+git config --global user.email "some@name.com"
+git config --global user.name "Some Name"
+
+case $MODE in
+# Do a build, run the test suite and confirm that OPAM works
+gcc)
+  ./configure -prefix ${PREFIX} ${CONFIGURE_FLAGS}
+  make -j2 world.opt
+  make install
+  export PATH=$PATH:${PREFIX}/bin
+  cd testsuite && make all
   mkdir external-packages
   cd external-packages
   git clone git://github.com/ocaml/camlp4
-  (cd camlp4 && ./configure && make && sudo make install)
-  git clone git://github.com/ocaml/opam
-  (cd opam && ./configure && make lib-ext && make && sudo make install)
-  git config --global user.email "some@name.com"
-  git config --global user.name "Some Name"
+  cd camlp4 && ./configure --bindir=${PREFIX} && make && make install
+  cd .. 
+  git clone -b 1.2 git://github.com/ocaml/opam
+  cd opam && ./configure --prefix=${PREFIX} && make lib-ext && make && make install
   opam init -y -a git://github.com/ocaml/opam-repository
   opam install -y oasis
-  # opam pin add -y utop git://github.com/diml/utop
+  ;;
+# Perform a clang static analysis and publish the results
+clang-scan)
+  eval `ssh-agent -s`
+  ssh-add .deploy_key
+  git clone git@github.com:${TRAVIS_REPO_SLUG} .gh-pages
+  git -C .gh-pages checkout --orphan gh-pages
+  git -C .gh-pages reset
+  git -C .gh-pages clean -dxf
+  scan-build-3.6 -o .gh-pages ./configure -prefix ${PREFIX}
+  scan-build-3.6 -o .gh-pages make -j2 world.opt
+  git -C .gh-pages add .
+  git -C .gh-pages commit -m "Update Pages"
+  git -C .gh-pages push origin gh-pages -f
   ;;
 *)
-  echo unknown arch
+  echo unknown mode
   exit 1
   ;;
 esac
