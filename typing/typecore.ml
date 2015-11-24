@@ -3849,7 +3849,7 @@ and type_let ?(check = fun s -> Warnings.Unused_var s)
             (* has one of the identifier of this pattern been used? *)
           let slot = ref [] in
           List.iter
-            (fun (id,_) ->
+            (fun id ->
               let vd = Env.find_value (Path.Pident id) new_env in
               (* note: Env.find_value does not trigger the value_used event *)
               let name = Ident.name id in
