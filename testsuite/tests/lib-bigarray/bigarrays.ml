@@ -412,9 +412,11 @@ let _ =
   test 2 (Array1.dim (from_list_fortran int [1;2;3])) 3;
 
   testing_function "size_in_bytes_one";
-  test 1 (Array1.size_in_bytes (from_list int [1;2;3;4;5])) 40;
+  test 1 (Array1.size_in_bytes (from_list int [1;2;3;4;5]))
+    (5 * (kind_size_in_bytes int));
   test 2 (Array1.size_in_bytes (from_list int [])) 0;
-  test 3 (Array1.size_in_bytes (from_list int64 (List.map Int64.of_int [1;2;3;4;5]))) 40;
+  let int64list = (from_list int64 (List.map Int64.of_int [1;2;3;4;5])) in
+  test 3 (Array1.size_in_bytes int64list) (5 * (kind_size_in_bytes int64));
   test 4 (Array1.size_in_bytes (from_list int64 (List.map Int64.of_int []))) 0;
 
   testing_function "kind & layout";
@@ -603,7 +605,7 @@ let _ =
 
   testing_function "size_in_bytes_two";
   let a = Array2.create int c_layout 4 6 in
-  test 1 (Array2.size_in_bytes a) 192;
+  test 1 (Array2.size_in_bytes a) (24 * (kind_size_in_bytes int));
 
   testing_function "sub";
   let a = make_array2 int c_layout 0 5 3 id in
@@ -758,7 +760,7 @@ let _ =
 
   testing_function "size_in_bytes_three";
   let a = Array3.create int c_layout 4 5 6 in
-  test 1 (Array3.size_in_bytes a) 960;
+  test 1 (Array3.size_in_bytes a) (120 * (kind_size_in_bytes int));
 
   testing_function "slice1";
   let a = make_array3 int c_layout 0 3 3 3 id in
@@ -773,7 +775,7 @@ let _ =
 
   testing_function "size_in_bytes_general";
   let a = Genarray.create int c_layout [|2;2;2;2;2|] in
-  test 1 (Genarray.size_in_bytes a) 256;
+  test 1 (Genarray.size_in_bytes a) (32 * (kind_size_in_bytes int));
 
 (* Kind size *)
   testing_function "kind_size_in_bytes";
