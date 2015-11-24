@@ -299,21 +299,21 @@ let simplify_named t (named : Flambda.named) : simplification_result_named =
 (* CR mshinwell: bad name.  This function and its call site in
    [Inline_and_simplify] is also messy. *)
 let simplify_var t : (Flambda.named * t) option =
-  match t.symbol with
-  | Some (sym, None) -> Some (Symbol sym, t)
-  | Some (sym, Some field) -> Some (Read_symbol_field (sym, field), t)
-  | None ->
-    match t.descr with
-    | Value_int n -> Some (make_const_int_named n)
-    | Value_char n -> Some (make_const_char_named n)
-    | Value_constptr n -> Some (make_const_ptr_named n)
-    | Value_float f -> Some (make_const_float_named f)
-    | Value_boxed_int (t, i) -> Some (make_const_boxed_int_named t i)
-    | Value_symbol sym -> Some (Symbol sym, t)
-    | Value_string _ | Value_float_array _
-    | Value_block _ | Value_set_of_closures _ | Value_closure _
-    | Value_unknown _ | Value_bottom | Value_extern _
-    | Value_unresolved _ -> None
+  match t.descr with
+  | Value_int n -> Some (make_const_int_named n)
+  | Value_char n -> Some (make_const_char_named n)
+  | Value_constptr n -> Some (make_const_ptr_named n)
+  | Value_float f -> Some (make_const_float_named f)
+  | Value_boxed_int (t, i) -> Some (make_const_boxed_int_named t i)
+  | Value_symbol sym -> Some (Symbol sym, t)
+  | Value_string _ | Value_float_array _
+  | Value_block _ | Value_set_of_closures _ | Value_closure _
+  | Value_unknown _ | Value_bottom | Value_extern _
+  | Value_unresolved _ ->
+    match t.symbol with
+    | Some (sym, None) -> Some (Symbol sym, t)
+    | Some (sym, Some field) -> Some (Read_symbol_field (sym, field), t)
+    | None -> None
 
 let join_summaries summary ~replaced_by_var_or_symbol =
   match replaced_by_var_or_symbol, summary with
