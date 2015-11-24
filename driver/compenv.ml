@@ -230,6 +230,7 @@ let read_one_param ppf position name v =
       | "inline-prim-cost" -> int_setter ppf "inline-prim-cost" inline_prim_cost v
       | "inline-branch-cost" -> int_setter ppf "inline-branch-cost" inline_branch_cost v
       | "branch-inline-factor" -> float_setter ppf "branch-inline-factor" branch_inline_factor v
+      | "max-inlining-depth" -> int_setter ppf "max-inlining-depth" max_inlining_depth v
 
       | "functor-heuristics" ->
           if !native_code then
