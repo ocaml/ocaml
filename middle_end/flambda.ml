@@ -665,6 +665,7 @@ let map_lets t ~for_defining_expr ~for_last_body ~after_rebuild =
   in
   loop t ~rev_lets:[]
 
+(** CR-someday lwhite: Why not use two functions? *)
 type maybe_named =
   | Is_expr of t
   | Is_named of named
