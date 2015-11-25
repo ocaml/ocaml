@@ -1244,7 +1244,7 @@ expr:
       {
         match $5 with
         | Str m -> mkexp_attrs (Pexp_letmodule(mkrhs $4 4, m, $7)) $3
-        | Sig m -> assert false (* TODO *)
+        | Sig m -> raise Syntaxerr.(Error (Invalid_module_type (m.pmty_loc)))
       }
   | LET OPEN override_flag ext_attributes mod_longident IN seq_expr
       { mkexp_attrs (Pexp_open($3, mkrhs $5 5, $7)) $4 }
