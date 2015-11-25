@@ -1,0 +1,58 @@
+
+#     # Ptop_def
+  []
+Ptop_def
+  []
+Ptop_def
+  []
+Ptop_dir "cd"
+Pdir_string "."
+Ptop_dir "print_depth"
+Pdir_int 20
+#   Ptop_def
+  []
+#   Ptop_def
+  [
+    structure_item (//toplevel//[5,1+0]..[5,1+9])
+      Pstr_value Nonrec
+      [
+        <def>
+          pattern (//toplevel//[5,1+4]..[5,1+5])
+            Ppat_var "x" (//toplevel//[5,1+4]..[5,1+5])
+          expression (//toplevel//[5,1+8]..[5,1+9])
+            Pexp_constant Const_int 3
+      ]
+  ]
+
+val x : int = 3
+# Ptop_def
+  [
+    structure_item (//toplevel//[5,1+-1]..[5,1+11])
+      Pstr_type Rec
+      [
+        type_declaration "t" (//toplevel//[5,1+4]..[5,1+5]) (//toplevel//[5,1+-1]..[5,1+11])
+          ptype_params =
+            []
+          ptype_cstrs =
+            []
+          ptype_kind =
+            Ptype_abstract
+          ptype_private = Public
+          ptype_manifest =
+            Some
+              core_type (//toplevel//[5,1+8]..[5,1+11])
+                Ptyp_constr "int" (//toplevel//[5,1+8]..[5,1+11])
+                []
+      ]
+  ]
+
+type t = int
+#   Ptop_dir "show_val"
+Pdir_ident "x"
+val x : int
+# Ptop_dir "show_type"
+Pdir_ident "t"
+type nonrec t = int
+#   # Ptop_def
+  []
+
