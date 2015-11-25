@@ -128,6 +128,8 @@ Runtime system:
   Shinwell, review by Damien Doligez)
 
 Standard library:
+- PR#5197, GPR#63: Arg: allow flags such as --flag=arg as well as --flag arg
+  (Richard Jones)
 - PR#6017, PR#7034, GPR#267: More efficient ifprintf implementation
   (Jeremy Yallop, review by Gabriel Scherer)
 - PR#6316: Scanf.scanf failure on %u formats when reading big integers
