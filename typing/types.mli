@@ -55,7 +55,7 @@ open Asttypes
 type type_expr =
   { mutable desc: type_desc;
     mutable level: int;
-    mutable id: int }
+    id: int }
 
 and type_desc =
   | Tvar of string option
