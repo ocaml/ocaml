@@ -610,6 +610,7 @@ let check_exn ?(kind=Normal) ?(cmxfile=false) (flam:Flambda.program) =
       every_static_exception_is_caught_at_a_single_position flam;
       every_declared_closure_is_from_current_compilation_unit flam)
   with exn -> begin
+  (* CR-someday split printing code into its own function *)
     begin match exn with
     | Binding_occurrence_not_from_current_compilation_unit var ->
       Format.eprintf ">> Binding occurrence of variable marked as not being \
