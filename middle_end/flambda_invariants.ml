@@ -310,12 +310,12 @@ let variable_and_symbol_invariants flam =
             declare_variable fun_var;
             (* Check that the body of the functions is correctly structured *)
             let body_env =
-              let (var_env, mut_var_env, sym_env) = env in
+              let (var_env, _, sym_env) = env in
               let var_env =
                 Variable.Set.fold (fun var -> Variable.Set.add var)
                   free_variables var_env
               in
-              (var_env, mut_var_env, sym_env)
+              (var_env, Mutable_variable.Set.empty, sym_env)
             in
             loop body_env body;
             all_params, Variable.Set.union free_variables all_free_vars)
