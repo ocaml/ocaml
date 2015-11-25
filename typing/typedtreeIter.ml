@@ -270,7 +270,7 @@ module MakeIterator(Iter : IteratorArgument) : sig
             iter_cases cases
         | Texp_apply (exp, list) ->
             iter_expression exp;
-            List.iter (fun (label, expo, _) ->
+            List.iter (fun (label, expo) ->
                 match expo with
                   None -> ()
                 | Some exp -> iter_expression exp
@@ -482,7 +482,7 @@ module MakeIterator(Iter : IteratorArgument) : sig
 
         | Tcl_apply (cl, args) ->
             iter_class_expr cl;
-            List.iter (fun (label, expo, _) ->
+            List.iter (fun (label, expo) ->
                 match expo with
                   None -> ()
                 | Some exp -> iter_expression exp
