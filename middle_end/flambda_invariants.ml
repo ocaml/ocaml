@@ -315,7 +315,9 @@ let variable_and_symbol_invariants flam =
                 Variable.Set.fold (fun var -> Variable.Set.add var)
                   free_variables var_env
               in
-              (var_env, Mutable_variable.Set.empty, sym_env)
+              (* Mutable variables cannot be captured by closures *)
+              let mut_env = Mutable_variable.Set.empty in
+              (var_env, mut_env, sym_env)
             in
             loop body_env body;
             all_params, Variable.Set.union free_variables all_free_vars)
