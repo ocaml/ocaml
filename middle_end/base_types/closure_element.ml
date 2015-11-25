@@ -11,10 +11,6 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(** CR-someday lwhite: closure_element is not really a kind of variable,
-    so this statement is a bit misleading. Perhaps both variable and
-    closure_element should include from a parent type
-    (e.g. unit_element). *)
 include Variable
 
 let wrap t = t

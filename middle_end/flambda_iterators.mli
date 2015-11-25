@@ -30,7 +30,7 @@ val map_subexpressions
   -> Flambda.t
   -> Flambda.t
 
-(** CR-someday lwhite: add comment to clarify that these recurse unlike the
+(* CR-someday lwhite: add comment to clarify that these recurse unlike the
 ones above *)
 val iter
    : (Flambda.t -> unit)
@@ -55,6 +55,10 @@ val iter_named
    : (Flambda.named -> unit)
   -> Flambda.t
   -> unit
+
+(* CR-someday lwhite: These names are pretty indecipherable, perhaps
+   create submodules for the normal and "on_named" variants of each
+   function. *)
 
 val iter_named_on_named
    : (Flambda.named -> unit)
