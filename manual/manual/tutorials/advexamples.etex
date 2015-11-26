@@ -315,7 +315,7 @@ class ostring s =
   object
      method get n = String.get s n
      method print = print_string s
-     method copy = new ostring (String.copy s)
+     method copy = new ostring s
   end;;
 \end{caml_example}
 However, the method "copy" returns an object of the class "ostring",
@@ -338,7 +338,7 @@ class better_string s =
      val repr = s
      method get n = String.get repr n
      method print = print_string repr
-     method copy = {< repr = String.copy repr >}
+     method copy = {< repr = repr >}
      method sub start len = {< repr = String.sub s  start len >}
   end;;
 \end{caml_example}
@@ -357,7 +357,7 @@ class ostring s =
      method repr = repr
      method get n = String.get repr n
      method print = print_string repr
-     method copy = {< repr = String.copy repr >}
+     method copy = {< repr = repr >}
      method sub start len = {< repr = String.sub s start len >}
      method concat (t : 'mytype) = {< repr = repr ^ t#repr >}
   end;;
