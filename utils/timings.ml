@@ -33,18 +33,12 @@ let start part =
   let time = Sys.time () in
   Hashtbl.add timings part (time, None)
 
-let start_id part x =
-  start part; x
-
 let stop part =
   assert(Hashtbl.mem timings part);
   let time = Sys.time () in
   let (start, stop) = Hashtbl.find timings part in
   assert(stop = None);
   Hashtbl.replace timings part (start, Some (time -. start))
-
-let stop_id part x =
-  stop part; x
 
 let time part f x =
   start part;

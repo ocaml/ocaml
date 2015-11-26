@@ -32,34 +32,8 @@ val reset : unit -> unit
 val get : part -> float option
 (** returns the runtime in seconds of a completed part *)
 
-val start : part -> unit
-(** Mark the beginning of a section *)
-
-val start_id : part -> 'a -> 'a
-(** Behave like [start] but is the identity on the second argument.
-    Usefull for introducing timings in patterns like
-    [ function1
-      ++ start_id some_part
-      ++ function2
-      ++ stop_id some_part
-      ...]
-*)
-
-val stop : part -> unit
-(** Mark the end of a section. It is an error to call stop without
-    having called start earlier *)
-
-val stop_id : part -> 'a -> 'a
-(** Behave like [stop] but is the identity in the second argument *)
-
 val time : part -> ('a -> 'b) -> 'a -> 'b
 (** [time part f arg] Record the runtime of [f arg] *)
-
-val restart : part -> unit
-(** Start a timer for a part that can run multiple times *)
-
-val accumulate : part -> unit
-(** Stop and accumulate a timer started with restart *)
 
 val accumulate_time : part -> ('a -> 'b) -> 'a -> 'b
 (** Like time for parts that can run multiple times *)
