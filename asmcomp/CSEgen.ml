@@ -17,14 +17,51 @@ open Mach
 
 type valnum = int
 
+(* Classification of operations *)
+
+type op_class =
+  | Op_pure           (* pure arithmetic, produce one or several result *)
+  | Op_checkbound     (* checkbound-style: no result, can raise an exn *)
+  | Op_load           (* memory load *)
+  | Op_store of bool  (* memory store, false = init, true = assign *)
+  | Op_other   (* anything else that does not allocate nor store in memory *)
+
 (* We maintain sets of equations of the form
        valnums = operation(valnums)
    plus a mapping from registers to valnums (value numbers). *)
 
 type rhs = operation * valnum array
 
-module Equations =
-  Map.Make(struct type t = rhs let compare = Pervasives.compare end)
+module Equations = struct
+  module Rhs_map =
+    Map.Make(struct type t = rhs let compare = Pervasives.compare end)
+
+  type 'a t =
+    { load_equations : 'a Rhs_map.t;
+      other_equations : 'a Rhs_map.t }
+
+  let empty =
+    { load_equations = Rhs_map.empty;
+      other_equations = Rhs_map.empty }
+
+  let add op_class op v m =
+    match op_class with
+    | Op_load ->
+      { m with load_equations = Rhs_map.add op v m.load_equations }
+    | _ ->
+      { m with other_equations = Rhs_map.add op v m.other_equations }
+
+  let find op_class op m =
+    match op_class with
+    | Op_load ->
+      Rhs_map.find op m.load_equations
+    | _ ->
+      Rhs_map.find op m.other_equations
+
+  let remove_loads m =
+    { load_equations = Rhs_map.empty;
+      other_equations = m.other_equations }
+end
 
 type numbering =
   { num_next: int;                      (* next fresh value number *)
@@ -76,9 +113,9 @@ let valnum_regs n rs =
 (* Look up the set of equations for an equation with the given rhs.
    Return [Some res] if there is one, where [res] is the lhs. *)
 
-let find_equation n rhs =
+let find_equation op_class n rhs =
   try
-    Some(Equations.find rhs n.num_eqs)
+    Some(Equations.find op_class rhs n.num_eqs)
   with Not_found ->
     None
 
@@ -138,9 +175,9 @@ let set_move n src dst =
 (* Record the equation [fresh valnums = rhs] and associate the given
    result registers [rs] to [fresh valnums]. *)
 
-let set_fresh_regs n rs rhs =
+let set_fresh_regs n rs rhs op_class =
   let (n1, vs) = fresh_valnum_regs n rs in
-  { n1 with num_eqs = Equations.add rhs vs n.num_eqs }
+  { n1 with num_eqs = Equations.add op_class rhs vs n.num_eqs }
 
 (* Forget everything we know about the given result registers,
    which are receiving unpredictable values at run-time. *)
@@ -150,8 +187,8 @@ let set_unknown_regs n rs =
 
 (* Keep only the equations satisfying the given predicate. *)
 
-let filter_equations pred n =
-  { n with num_eqs = Equations.filter (fun (op,_) res -> pred op) n.num_eqs }
+let remove_load_numbering n =
+  { n with num_eqs = Equations.remove_loads n.num_eqs }
 
 (* Forget everything we know about registers of type [Addr]. *)
 
@@ -172,15 +209,6 @@ let insert_move srcs dsts i =
          let tmps = Reg.createv_like srcs in
          let i1 = array_fold2 insert_single_move i tmps dsts in
          array_fold2 insert_single_move i1 srcs tmps
-
-(* Classification of operations *)
-
-type op_class =
-  | Op_pure           (* pure arithmetic, produce one or several result *)
-  | Op_checkbound     (* checkbound-style: no result, can raise an exn *)
-  | Op_load           (* memory load *)
-  | Op_store of bool  (* memory store, false = init, true = assign *)
-  | Op_other   (* anything else that does not allocate nor store in memory *)
 
 class cse_generic = object (self)
 
@@ -217,7 +245,7 @@ method is_cheap_operation op =
    non-initializing store *)
 
 method private kill_loads n =
-  filter_equations (fun o -> self#class_of_operation o <> Op_load) n
+  remove_load_numbering n
 
 (* Perform CSE on the given instruction [i] and its successors.
    [n] is the value numbering current at the beginning of [i]. *)
@@ -262,10 +290,10 @@ method private cse n i =
        {i with next = self#cse n2 i.next}
   | Iop op ->
       begin match self#class_of_operation op with
-      | Op_pure | Op_checkbound | Op_load ->
+      | (Op_pure | Op_checkbound | Op_load) as op_class ->
           let (n1, varg) = valnum_regs n i.arg in
           let n2 = set_unknown_regs n1 (Proc.destroyed_at_oper i.desc) in
-          begin match find_equation n1 (op, varg) with
+          begin match find_equation op_class n1 (op, varg) with
           | Some vres ->
               (* This operation was computed earlier. *)
               (* Are there registers that hold the results computed earlier? *)
@@ -289,7 +317,7 @@ method private cse n i =
               end
           | None ->
               (* This operation produces a result we haven't seen earlier. *)
-              let n3 = set_fresh_regs n2 i.res (op, varg) in
+              let n3 = set_fresh_regs n2 i.res (op, varg) op_class in
               {i with next = self#cse n3 i.next}
           end
       | Op_store false | Op_other ->
