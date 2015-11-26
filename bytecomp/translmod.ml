@@ -312,13 +312,21 @@ let eval_rec_bindings bindings cont =
     bind_inits bindings
 
 let compile_recmodule compile_rhs bindings cont =
-  eval_rec_bindings
+  let reordered_bindings =
     (reorder_rec_bindings
        (List.map
           (fun {mb_id=id; mb_expr=modl; _} ->
             (id, modl.mod_loc, init_shape modl, compile_rhs id modl))
           bindings))
-    cont
+  in
+  if !Clflags.native_code then
+    Lletrec
+      ((List.map
+          (fun (id, _, rhs) -> id, rhs)
+          reordered_bindings),
+       cont)
+  else
+    eval_rec_bindings reordered_bindings cont
 
 (* Extract the list of "value" identifiers bound by a signature.
    "Value" identifiers are identifiers for signature components that
