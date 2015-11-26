@@ -248,7 +248,7 @@ let is_probably_a_functor ~env ~args_approxs ~recursive_functions =
     && E.at_toplevel env
     && (not (E.is_inside_branch env))
     && List.for_all A.known args_approxs
-    && Variable.Set.is_empty recursive_functions
+    && Variable.Set.is_empty (Lazy.force recursive_functions)
 
 let for_call_site ~env ~r ~(function_decls : Flambda.function_declarations)
       ~lhs_of_application ~closure_id_being_applied
@@ -294,19 +294,23 @@ let for_call_site ~env ~r ~(function_decls : Flambda.function_declarations)
     U.find_declaration_variable closure_id_being_applied function_decls
   in
   let recursive_functions =
-    Find_recursive_functions.in_function_declarations function_decls
-      ~backend:(E.backend env)
+    lazy
+      (Find_recursive_functions.in_function_declarations function_decls
+         ~backend:(E.backend env))
   in
   let probably_a_functor =
     is_probably_a_functor ~env ~args_approxs ~recursive_functions
   in
-  let recursive = Variable.Set.mem fun_var recursive_functions in
+  let recursive =
+    lazy (Variable.Set.mem fun_var (Lazy.force recursive_functions))
+  in
   let fun_cost : Inlining_cost.inlining_threshold =
     match (inline_requested : Lambda.inline_attribute) with
     | Never_inline -> Never_inline
     | Always_inline | Default_inline ->
       (* CR mshinwell: should clarify exactly what "unconditionally" means. *)
-      if unconditionally_inline || (only_use_of_function && not recursive)
+      if unconditionally_inline
+         || (only_use_of_function && not (Lazy.force recursive))
          || probably_a_functor
       then
         inlining_threshold
@@ -343,7 +347,7 @@ let for_call_site ~env ~r ~(function_decls : Flambda.function_declarations)
       (* CR mshinwell for pchambart: I don't understand why this was applying
          inline_non_recursive to recursive functions. *)
       if unconditionally_inline
-        || (not recursive && E.inlining_level env <= max_level)
+        || (E.inlining_level env <= max_level && not (Lazy.force recursive))
       then
         inline_non_recursive env r ~function_decls ~lhs_of_application
           ~closure_id_being_applied ~function_decl ~made_decision
@@ -352,7 +356,7 @@ let for_call_site ~env ~r ~(function_decls : Flambda.function_declarations)
       else if E.inlining_level env > max_level then begin
         made_decision (Can_inline_but_tried_nothing (Level_exceeded true));
         no_simplification ()
-      end else if recursive then
+      end else if Lazy.force recursive then
         inline_recursive env r ~max_level ~lhs_of_application ~function_decls
           ~closure_id_being_applied ~function_decl ~value_set_of_closures
           ~invariant_params ~args ~args_approxs ~dbg ~simplify
