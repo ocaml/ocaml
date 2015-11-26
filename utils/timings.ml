@@ -27,7 +27,7 @@ type part =
   | Clambda of file
   | Cmm of file
   | Compile_phrases of file
-  | Regalloc
+  | Regalloc of build_kind
 
 let timings : (part, float * float option) Hashtbl.t = Hashtbl.create 20
 let reset () = Hashtbl.clear timings
@@ -83,6 +83,11 @@ let get part =
   | _, None -> None
   | exception Not_found -> None
 
+let kind_name = function
+  | File f -> Printf.sprintf "sourcefile(%s)" f
+  | Pack p -> Printf.sprintf "pack(%s)" p
+  | Startup -> "startup"
+
 let part_name = function
   | All -> "all"
   | Parsing file -> Printf.sprintf "parsing(%s)" file
@@ -93,7 +98,7 @@ let part_name = function
   | Clambda file -> Printf.sprintf "clambda(%s)" file
   | Cmm file -> Printf.sprintf "cmm(%s)" file
   | Compile_phrases file -> Printf.sprintf "compile_phrases(%s)" file
-  | Regalloc -> Printf.sprintf "regalloc"
+  | Regalloc k -> Printf.sprintf "regalloc(%s)" (kind_name k)
 
 let timings_list () =
   let l = Hashtbl.fold (fun part times l -> (part, times) :: l) timings [] in

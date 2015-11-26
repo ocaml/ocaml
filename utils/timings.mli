@@ -29,7 +29,7 @@ type part =
   | Clambda of file
   | Cmm of file
   | Compile_phrases of file
-  | Regalloc
+  | Regalloc of build_kind
 
 val reset : unit -> unit
 (** erase all recorded times *)
