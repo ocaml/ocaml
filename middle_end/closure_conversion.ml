@@ -25,7 +25,7 @@ type t = {
 }
 
 (** Generate a wrapper ("stub") function that accepts a tuple argument and
-    calls another function with (curried) arguments extracted in the obvious
+    calls another function with arguments extracted in the obvious
     manner from the tuple. *)
 let tupled_function_call_stub original_params tuplified_version
       : Flambda.function_declaration =
