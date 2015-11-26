@@ -243,13 +243,13 @@ Though all examples so far were written in purely applicative style,
 OCaml is also equipped with full imperative features. This includes the
 usual "while" and "for" loops, as well as mutable data structures such
 as arrays. Arrays are either given in extension between "[|" and "|]"
-brackets, or allocated and initialized with the "Array.create"
+brackets, or allocated and initialized with the "Array.make"
 function, then filled up later by assignments. For instance, the
 function below sums two vectors (represented as float arrays) componentwise.
 \begin{caml_example}
 let add_vect v1 v2 =
   let len = min (Array.length v1) (Array.length v2) in
-  let res = Array.create len 0.0 in
+  let res = Array.make len 0.0 in
   for i = 0 to len - 1 do
     res.(i) <- v1.(i) +. v2.(i)
   done;
