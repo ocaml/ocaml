@@ -112,10 +112,12 @@ let compile_unit ~sourcefile asm_filename keep_asm obj_filename gen =
       if not keep_asm then remove_file asm_filename;
       raise exn
     end;
-    Timings.(start (Assemble sourcefile));
-    if Proc.assemble_file asm_filename obj_filename <> 0
+    let assemble_result =
+      Timings.(time (Assemble sourcefile))
+        (Proc.assemble_file asm_filename) obj_filename
+    in
+    if assemble_result <> 0
     then raise(Error(Assembler_error asm_filename));
-    Timings.(stop (Assemble sourcefile));
     if create_asm && not keep_asm then remove_file asm_filename
   with exn ->
     remove_file obj_filename;
@@ -123,16 +125,11 @@ let compile_unit ~sourcefile asm_filename keep_asm obj_filename gen =
 
 let gen_implementation ?toplevel ~sourcefile ppf (size, lam) =
   Emit.begin_assembly ();
-  Timings.(start (Clambda sourcefile));
-  Closure.intro size lam
-  ++ Timings.(stop_id (Clambda sourcefile))
+  Timings.(time (Clambda sourcefile)) (Closure.intro size) lam
   ++ clambda_dump_if ppf
-  ++ Timings.(start_id (Cmm sourcefile))
-  ++ Cmmgen.compunit size
-  ++ Timings.(stop_id (Cmm sourcefile))
-  ++ Timings.(start_id (Compile_phrases sourcefile))
-  ++ List.iter (compile_phrase ppf)
-  ++ Timings.(stop_id (Compile_phrases sourcefile))
+  ++ Timings.(time (Cmm sourcefile)) (Cmmgen.compunit size)
+  ++ Timings.(time (Compile_phrases sourcefile))
+       (List.iter (compile_phrase ppf))
   ++ (fun () -> ());
   (match toplevel with None -> () | Some f -> compile_genfuns ppf f);
 

@@ -71,17 +71,15 @@ let implementation ppf sourcefile outputprefix =
       ast
       ++ print_if ppf Clflags.dump_parsetree Printast.implementation
       ++ print_if ppf Clflags.dump_source Pprintast.structure
-      ++ Timings.(start_id (Typing sourcefile))
-      ++ Typemod.type_implementation sourcefile outputprefix modulename env
-      ++ Timings.(stop_id (Typing sourcefile))
+      ++ Timings.(time (Typing sourcefile))
+          (Typemod.type_implementation sourcefile outputprefix modulename env)
       ++ print_if ppf Clflags.dump_typedtree
         Printtyped.implementation_with_coercion
     in
     if not !Clflags.print_types then begin
       (typedtree, coercion)
-      ++ Timings.(start_id (Transl sourcefile))
-      ++ Translmod.transl_store_implementation modulename
-      ++ Timings.(stop_id (Transl sourcefile))
+      ++ Timings.(time (Transl sourcefile))
+          (Translmod.transl_store_implementation modulename)
       +++ print_if ppf Clflags.dump_rawlambda Printlambda.lambda
       ++ Timings.(start_id (Generate sourcefile))
       +++ Simplif.simplify_lambda

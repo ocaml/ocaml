@@ -164,7 +164,6 @@ module Options = Main_args.Make_optcomp_options (struct
 end);;
 
 let main () =
-  Timings.(start All);
   native_code := true;
   let ppf = Format.err_formatter in
   try
@@ -218,11 +217,11 @@ let main () =
       Asmlink.link ppf (get_objfiles ()) target;
       Warnings.check_fatal ();
     end;
-    Timings.(stop All);
-    if !Clflags.print_timings then Timings.print Format.std_formatter;
-    exit 0
   with x ->
       Location.report_exception ppf x;
       exit 2
 
-let _ = main ()
+let _ =
+  Timings.(time All) main ();
+  if !Clflags.print_timings then Timings.print Format.std_formatter;
+  exit 0
