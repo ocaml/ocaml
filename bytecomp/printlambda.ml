@@ -357,7 +357,9 @@ let string_of_primitive = function
   | Pint_as_pointer -> "Pint_as_pointer"
   | Popaque -> "Popaque"
 
-let function_attribute ppf { inline } =
+let function_attribute ppf { inline; is_a_functor } =
+  if is_a_functor then
+    fprintf ppf "is_a_functor@ ";
   match inline with
   | Default_inline -> ()
   | Always_inline -> fprintf ppf "always_inline@ "
