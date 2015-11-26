@@ -32,7 +32,7 @@ let oper_result_type = function
       | _ -> typ_int
       end
   | Calloc -> typ_val
-  | Cstore c -> typ_void
+  | Cstore (c, _) -> typ_void
   | Caddi | Csubi | Cmuli | Cmulhi | Cdivi | Cmodi |
     Cand | Cor | Cxor | Clsl | Clsr | Casr |
     Ccmpi _ | Ccmpa _ | Ccmpf _ -> typ_int
@@ -254,13 +254,18 @@ method select_operation op args =
   | (Cload chunk, [arg]) ->
       let (addr, eloc) = self#select_addressing chunk arg in
       (Iload(chunk, addr), [eloc])
-  | (Cstore chunk, [arg1; arg2]) ->
+  | (Cstore (chunk, init), [arg1; arg2]) ->
       let (addr, eloc) = self#select_addressing chunk arg1 in
+      let is_assign =
+        match init with
+        | Lambda.Initialization -> false
+        | Lambda.Assignment -> true
+      in
       if chunk = Word_int || chunk = Word_val then begin
-        let (op, newarg2) = self#select_store true addr arg2 in
+        let (op, newarg2) = self#select_store is_assign addr arg2 in
         (op, [newarg2; eloc])
       end else begin
-        (Istore(chunk, addr, true), [arg2; eloc])
+        (Istore(chunk, addr, is_assign), [arg2; eloc])
         (* Inversion addr/datum in Istore *)
       end
   | (Calloc, _) -> (Ialloc 0, args)

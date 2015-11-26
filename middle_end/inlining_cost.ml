@@ -20,7 +20,14 @@ let prim_size (prim : Lambda.primitive) args =
   | Psetglobal _ -> 1
   | Pmakeblock _ -> 5 + List.length args
   | Pfield _ -> 1
-  | Psetfield (_, isptr) -> if isptr then 4 else 1
+  | Psetfield (_, isptr, init) ->
+    begin match init with
+    | Initialization -> 1  (* never causes a write barrier hit *)
+    | Assignment ->
+      match isptr with
+      | Pointer -> 4
+      | Immediate -> 1
+    end
   | Pfloatfield _ -> 1
   | Psetfloatfield _ -> 1
   | Pduprecord _ -> 10 + List.length args

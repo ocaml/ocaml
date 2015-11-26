@@ -110,11 +110,26 @@ let primitive ppf = function
   | Pmakeblock(tag, Immutable) -> fprintf ppf "makeblock %i" tag
   | Pmakeblock(tag, Mutable) -> fprintf ppf "makemutable %i" tag
   | Pfield n -> fprintf ppf "field %i" n
-  | Psetfield(n, ptr) ->
-      let instr = if ptr then "setfield_ptr " else "setfield_imm " in
-      fprintf ppf "%s%i" instr n
+  | Psetfield(n, ptr, init) ->
+      let instr =
+        match ptr with
+        | Pointer -> "ptr"
+        | Immediate -> "imm"
+      in
+      let init =
+        match init with
+        | Initialization -> "(init)"
+        | Assignment -> ""
+      in
+      fprintf ppf "setfield_%s%s %i" instr init n
   | Pfloatfield n -> fprintf ppf "floatfield %i" n
-  | Psetfloatfield n -> fprintf ppf "setfloatfield %i" n
+  | Psetfloatfield (n, init) ->
+      let init =
+        match init with
+        | Initialization -> "(init)"
+        | Assignment -> ""
+      in
+      fprintf ppf "setfloatfield%s %i" init n
   | Pduprecord (rep, size) -> fprintf ppf "duprecord %a %i" record_rep rep size
   | Plazyforce -> fprintf ppf "force"
   | Pccall p -> fprintf ppf "%s" p.prim_name

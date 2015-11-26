@@ -389,8 +389,8 @@ and to_clambda_named t env var (named : Flambda.named) : Clambda.ulambda =
       Debuginfo.none)
   | Prim (Pfield index, [block], dbg) ->
     Uprim (Pfield index, [check_field (subst_var env block) index None], dbg)
-  | Prim (Psetfield (index, maybe_ptr), [block; new_value], dbg) ->
-    Uprim (Psetfield (index, maybe_ptr), [
+  | Prim (Psetfield (index, maybe_ptr, init), [block; new_value], dbg) ->
+    Uprim (Psetfield (index, maybe_ptr, init), [
         check_field (subst_var env block) index None;
         subst_var env new_value;
       ], dbg)
@@ -565,11 +565,10 @@ let to_clambda_initialize_symbol t env symbol fields : Clambda.ulambda =
     List.mapi (fun index expr -> index, to_clambda t env expr) fields
   in
   let build_setfield (index, field) : Clambda.ulambda =
-    (* This [Psetfield] can affect a pointer, but since we are initializing
-       a toplevel symbol, it is safe not to use [caml_modify].  (Moreover, we
-       must not use [caml_modify], since the location being modified is
-       outside the heap.) *)
-   Uprim (Psetfield (index, false), [to_clambda_symbol env symbol; field],
+    (* Note that this will never cause a write barrier hit, owing to
+       the [Initialization]. *)
+    Uprim (Psetfield (index, Pointer, Initialization),
+      [to_clambda_symbol env symbol; field],
       Debuginfo.none)
   in
   match fields with

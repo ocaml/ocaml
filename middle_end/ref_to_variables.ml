@@ -24,7 +24,7 @@ let variables_not_used_as_local_reference (tree:Flambda.t) =
     (* Directly used block: does not prevent use as a variable *)
     | Prim(Pfield _, [_], _)
     | Prim(Poffsetref _, [_], _) -> ()
-    | Prim(Psetfield(_, _), [_block; v], _) ->
+    | Prim(Psetfield _, [_block; v], _) ->
       (* block is not prevented to be used as a local reference, but v is *)
       set := Variable.Set.add v !set
     | Prim(_, _, _)
@@ -168,7 +168,7 @@ let eliminate_ref_of_expr flam =
          end
          else
            Expr Proved_unreachable)
-    | Prim(Psetfield(field, _), [v; new_value], _)
+    | Prim(Psetfield (field, _, _), [v; new_value], _)
       when convertible_variable v ->
       (match get_variable v field with
        | None -> Expr Proved_unreachable
