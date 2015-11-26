@@ -449,7 +449,7 @@ method emit_expr env exp =
       Some(self#insert_op (Iconst_blockheader n) [||] r)
   | Cconst_float n ->
       let r = self#regs_for typ_float in
-      Some(self#insert_op (Iconst_float n) [||] r)
+      Some(self#insert_op (Iconst_float (Int64.bits_of_float n)) [||] r)
   | Cconst_symbol n ->
       let r = self#regs_for typ_val in
       Some(self#insert_op (Iconst_symbol n) [||] r)

@@ -55,6 +55,12 @@ let rec assoc3 x l =
   | _ :: t -> assoc3 x t
 ;;
 
+let split s =
+  let i = String.index s '=' in
+  let len = String.length s in
+  String.sub s 0 i, String.sub s (i+1) (len-(i+1))
+;;
+
 let make_symlist prefix sep suffix l =
   match l with
   | [] -> "<none>"
@@ -142,73 +148,93 @@ let parse_argv_dynamic ?(current=current) argv speclist anonfun errmsg =
   while !current < l do
     let s = argv.(!current) in
     if String.length s >= 1 && s.[0] = '-' then begin
-      let action =
-        try assoc3 s !speclist
-        with Not_found -> stop (Unknown s)
+      let action, follow =
+        try assoc3 s !speclist, None
+        with Not_found ->
+          try
+            let keyword, arg = split s in
+            assoc3 keyword !speclist, Some arg
+          with Not_found -> stop (Unknown s)
+      in
+      let no_arg () =
+        match follow with
+        | None -> ()
+        | Some arg -> stop (Wrong (s, arg, "no argument")) in
+      let get_arg () =
+        match follow with
+        | None ->
+          if !current + 1 < l then argv.(!current + 1)
+          else stop (Missing s)
+        | Some arg -> arg
+      in
+      let consume_arg () =
+        match follow with
+        | None -> incr current
+        | Some _ -> ()
       in
       begin try
         let rec treat_action = function
         | Unit f -> f ();
-        | Bool f when !current + 1 < l ->
-            let arg = argv.(!current + 1) in
+        | Bool f ->
+            let arg = get_arg () in
             begin match bool_of_string_opt arg with
             | None -> raise (Stop (Wrong (s, arg, "a boolean")))
             | Some s -> f s
             end;
-            incr current;
-        | Set r -> r := true;
-        | Clear r -> r := false;
-        | String f when !current + 1 < l ->
-            f argv.(!current + 1);
-            incr current;
-        | Symbol (symb, f) when !current + 1 < l ->
-            let arg = argv.(!current + 1) in
+            consume_arg ();
+        | Set r -> no_arg (); r := true;
+        | Clear r -> no_arg (); r := false;
+        | String f ->
+            let arg = get_arg () in
+            f arg;
+            consume_arg ();
+        | Symbol (symb, f) ->
+            let arg = get_arg () in
             if List.mem arg symb then begin
-              f argv.(!current + 1);
-              incr current;
+              f arg;
+              consume_arg ();
             end else begin
               raise (Stop (Wrong (s, arg, "one of: "
                                           ^ (make_symlist "" " " "" symb))))
             end
-        | Set_string r when !current + 1 < l ->
-            r := argv.(!current + 1);
-            incr current;
-        | Int f when !current + 1 < l ->
-            let arg = argv.(!current + 1) in
+        | Set_string r ->
+            r := get_arg ();
+            consume_arg ();
+        | Int f ->
+            let arg = get_arg () in
             begin match int_of_string_opt arg with
             | None -> raise (Stop (Wrong (s, arg, "an integer")))
             | Some x -> f x
             end;
-            incr current;
-        | Set_int r when !current + 1 < l ->
-            let arg = argv.(!current + 1) in
+            consume_arg ();
+        | Set_int r ->
+            let arg = get_arg () in
             begin match int_of_string_opt arg with
             | None -> raise (Stop (Wrong (s, arg, "an integer")))
             | Some x -> r := x
             end;
-            incr current;
-        | Float f when !current + 1 < l ->
-            let arg = argv.(!current + 1) in
+            consume_arg ();
+        | Float f ->
+            let arg = get_arg () in
             begin match float_of_string_opt arg with
             | None -> raise (Stop (Wrong (s, arg, "a float")))
             | Some x -> f x
             end;
-            incr current;
-        | Set_float r when !current + 1 < l ->
-            let arg = argv.(!current + 1) in
+            consume_arg ();
+        | Set_float r ->
+            let arg = get_arg () in
             begin match float_of_string_opt arg with
             | None -> raise (Stop (Wrong (s, arg, "a float")))
             | Some x -> r := x
             end;
-            incr current;
+            consume_arg ();
         | Tuple specs ->
             List.iter treat_action specs;
         | Rest f ->
             while !current < l - 1 do
               f argv.(!current + 1);
-              incr current;
+              consume_arg ();
             done;
-        | _ -> raise (Stop (Missing s))
         in
         treat_action action
       with Bad m -> stop (Message m);

@@ -312,6 +312,8 @@ val bscanf : Scanning.in_channel -> ('a, 'b, 'c, 'd) scanner
     - [f], [e], [E], [g], [G]: reads an optionally signed
       floating-point number in decimal notation, in the style [dddd.ddd
       e/E+-dd].
+    - [h], [H]: reads an optionally signed floating-point number
+      in hexadecimal notation.
     - [F]: reads a floating point number according to the lexical
       conventions of OCaml (hence the decimal point is mandatory if the
       exponent part is not mentioned).

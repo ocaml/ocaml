@@ -144,7 +144,7 @@ int caml_set_signal_action(int signo, int action)
 
 /* Machine- and OS-dependent handling of bound check trap */
 
-#if defined(TARGET_power) || (defined(TARGET_sparc) && defined(SYS_solaris))
+#if defined(TARGET_power) || defined(TARGET_s390x) || (defined(TARGET_sparc) && defined(SYS_solaris))
 DECLARE_SIGNAL_HANDLER(trap_handler)
 {
 #if defined(SYS_solaris)
@@ -264,6 +264,14 @@ void caml_init_signals(void)
     act.sa_flags |= SA_NODEFER;
 #endif
     sigaction(SIGTRAP, &act, NULL);
+  }
+#endif
+
+#if defined(TARGET_s390x)
+  { struct sigaction act;
+    sigemptyset(&act.sa_mask);
+    SET_SIGACT(act, trap_handler);
+    sigaction(SIGFPE, &act, NULL);
   }
 #endif
 

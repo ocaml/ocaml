@@ -797,7 +797,7 @@ module Analyser =
                     Odoc_messages.object_end
           in
           let param_exps = List.fold_left
-              (fun acc -> fun (_, exp_opt, _) ->
+              (fun acc -> fun (_, exp_opt) ->
                 match exp_opt with
                   None -> acc
                 | Some e -> acc @ [e])
@@ -1464,7 +1464,7 @@ module Analyser =
           )
 
       | Parsetree.Pstr_recmodule mods ->
-          (* FIXME Here problem: no link with module types 
+          (* FIXME Here problem: no link with module types
              in module constraints *)
           let new_env =
             List.fold_left

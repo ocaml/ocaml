@@ -996,24 +996,27 @@ let lookup_cltype lid env =
 type iter_cont = unit -> unit
 let iter_env_cont = ref []
 
-let rec scrape_alias_safe env mty =
+let rec scrape_alias_for_visit env mty =
   match mty with
-  | Mty_alias (Pident id) when Ident.persistent id -> false
+  | Mty_alias (Pident id)
+    when Ident.persistent id
+      && not (Hashtbl.mem persistent_structures (Ident.name id)) -> false
   | Mty_alias path -> (* PR#6600: find_module may raise Not_found *)
-      scrape_alias_safe env (find_module path env).md_type
+      begin try scrape_alias_for_visit env (find_module path env).md_type
+      with Not_found -> false
+      end
   | _ -> true
 
 let iter_env proj1 proj2 f env () =
   Ident.iter (fun id (x,_) -> f (Pident id) x) (proj1 env);
   let rec iter_components path path' mcomps =
     let cont () =
-      let safe =
+      let visit =
         match EnvLazy.get_arg mcomps with
-          None -> true
-        | Some (env, sub, path, mty) ->
-            try scrape_alias_safe env mty with Not_found -> false
+        | None -> true
+        | Some (env, sub, path, mty) -> scrape_alias_for_visit env mty
       in
-      if not safe then () else
+      if not visit then () else
       match EnvLazy.force !components_of_module_maker' mcomps with
         Structure_comps comps ->
           Tbl.iter

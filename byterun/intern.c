@@ -30,27 +30,27 @@
 #include "caml/misc.h"
 #include "caml/reverse.h"
 
+#ifdef _MSC_VER
+#define inline _inline
+#endif
+
 static unsigned char * intern_src;
 /* Reading pointer in block holding input data. */
 
-static unsigned char * intern_input;
-/* Pointer to beginning of block holding input data.
-   Meaningful only if intern_input_malloced = 1. */
-
-static int intern_input_malloced;
-/* 1 if intern_input was allocated by caml_stat_alloc()
-   and needs caml_stat_free() on error, 0 otherwise. */
+static unsigned char * intern_input = NULL;
+/* Pointer to beginning of block holding input data,
+   if non-NULL this pointer will be freed by the cleanup function. */
 
 static header_t * intern_dest;
 /* Writing pointer in destination block */
 
-static char * intern_extra_block;
+static char * intern_extra_block = NULL;
 /* If non-NULL, point to new heap chunk allocated with caml_alloc_for_heap. */
 
 static asize_t obj_counter;
 /* Count how many objects seen so far */
 
-static value * intern_obj_table;
+static value * intern_obj_table = NULL;
 /* The pointers to objects already seen */
 
 static unsigned int intern_color;
@@ -60,7 +60,7 @@ static header_t intern_header;
 /* Original header of the destination block.
    Meaningful only if intern_extra_block is NULL. */
 
-static value intern_block;
+static value intern_block = 0;
 /* Point to the heap block allocated as destination block.
    Meaningful only if intern_extra_block is NULL. */
 
@@ -73,51 +73,96 @@ CAMLnoreturn_end;
 
 static void intern_free_stack(void);
 
-#define Sign_extend_shift ((sizeof(intnat) - 1) * 8)
-#define Sign_extend(x) (((intnat)(x) << Sign_extend_shift) >> Sign_extend_shift)
+static inline unsigned char read8u(void)
+{ return *intern_src++; }
 
-#define read8u() (*intern_src++)
-#define read8s() Sign_extend(*intern_src++)
-#define read16u() \
-  (intern_src += 2, \
-   (intern_src[-2] << 8) + intern_src[-1])
-#define read16s() \
-  (intern_src += 2, \
-   (Sign_extend(intern_src[-2]) << 8) + intern_src[-1])
-#define read32u() \
-  (intern_src += 4, \
-   ((uintnat)(intern_src[-4]) << 24) + (intern_src[-3] << 16) + \
-   (intern_src[-2] << 8) + intern_src[-1])
-#define read32s() \
-  (intern_src += 4, \
-   (Sign_extend(intern_src[-4]) << 24) + (intern_src[-3] << 16) + \
-   (intern_src[-2] << 8) + intern_src[-1])
+static inline signed char read8s(void)
+{ return *intern_src++; }
+
+static inline uint16_t read16u(void)
+{
+  uint16_t res = (intern_src[0] << 8) + intern_src[1];
+  intern_src += 2;
+  return res;
+}
+
+static inline int16_t read16s(void)
+{
+  int16_t res = (intern_src[0] << 8) + intern_src[1];
+  intern_src += 2;
+  return res;
+}
+
+static inline uint32_t read32u(void)
+{
+  uint32_t res =
+    ((uint32_t)(intern_src[0]) << 24) + (intern_src[1] << 16)
+    + (intern_src[2] << 8) + intern_src[3];
+  intern_src += 4;
+  return res;
+}
+
+static inline int32_t read32s(void)
+{
+  int32_t res =
+    ((uint32_t)(intern_src[0]) << 24) + (intern_src[1] << 16)
+    + (intern_src[2] << 8) + intern_src[3];
+  intern_src += 4;
+  return res;
+}
 
 #ifdef ARCH_SIXTYFOUR
-static intnat read64s(void)
+static uintnat read64u(void)
 {
-  intnat res;
-  int i;
-  res = 0;
-  for (i = 0; i < 8; i++) res = (res << 8) + intern_src[i];
+  uintnat res =
+    ((uintnat) (intern_src[0]) << 56)
+    + ((uintnat) (intern_src[1]) << 48)
+    + ((uintnat) (intern_src[2]) << 40)
+    + ((uintnat) (intern_src[3]) << 32)
+    + ((uintnat) (intern_src[4]) << 24)
+    + ((uintnat) (intern_src[5]) << 16)
+    + ((uintnat) (intern_src[6]) << 8)
+    + (uintnat) (intern_src[7]);
   intern_src += 8;
   return res;
 }
 #endif
 
-#define readblock(dest,len) \
-  (memmove((dest), intern_src, (len)), intern_src += (len))
+static inline void readblock(void * dest, intnat len)
+{
+  memcpy(dest, intern_src, len);
+  intern_src += len;
+}
+
+static void intern_init(void * src, void * input)
+{
+  /* This is asserted at the beginning of demarshaling primitives.
+     If it fails, it probably means that an exception was raised
+     without calling intern_cleanup() during the previous demarshaling. */
+  Assert (intern_input == NULL && intern_obj_table == NULL \
+     && intern_extra_block == NULL && intern_block == 0);
+  intern_src = src;
+  intern_input = input;
+}
 
 static void intern_cleanup(void)
 {
-  if (intern_input_malloced) caml_stat_free(intern_input);
-  if (intern_obj_table != NULL) caml_stat_free(intern_obj_table);
+  if (intern_input != NULL) {
+     caml_stat_free(intern_input);
+     intern_input = NULL;
+  }
+  if (intern_obj_table != NULL) {
+    caml_stat_free(intern_obj_table);
+    intern_obj_table = NULL;
+  }
   if (intern_extra_block != NULL) {
     /* free newly allocated heap chunk */
     caml_free_for_heap(intern_extra_block);
+    intern_extra_block = NULL;
   } else if (intern_block != 0) {
     /* restore original header for heap block, otherwise GC is confused */
     Hd_val(intern_block) = intern_header;
+    intern_block = 0;
   }
   /* free the recursion stack */
   intern_free_stack();
@@ -368,7 +413,7 @@ static void intern_rec(value *dest)
         break;
       case CODE_INT64:
 #ifdef ARCH_SIXTYFOUR
-        v = Val_long(read64s());
+        v = Val_long((intnat) (read64u()));
         break;
 #else
         intern_cleanup();
@@ -389,21 +434,22 @@ static void intern_rec(value *dest)
       case CODE_SHARED32:
         ofs = read32u();
         goto read_shared;
+#ifdef ARCH_SIXTYFOUR
+      case CODE_SHARED64:
+        ofs = read64u();
+        goto read_shared;
+#endif
       case CODE_BLOCK32:
         header = (header_t) read32u();
         tag = Tag_hd(header);
         size = Wosize_hd(header);
         goto read_block;
-      case CODE_BLOCK64:
 #ifdef ARCH_SIXTYFOUR
-        header = (header_t) read64s();
+      case CODE_BLOCK64:
+        header = (header_t) read64u();
         tag = Tag_hd(header);
         size = Wosize_hd(header);
         goto read_block;
-#else
-        intern_cleanup();
-        caml_failwith("input_value: data block too large");
-        break;
 #endif
       case CODE_STRING8:
         len = read8u();
@@ -411,6 +457,11 @@ static void intern_rec(value *dest)
       case CODE_STRING32:
         len = read32u();
         goto read_string;
+#ifdef ARCH_SIXTYFOUR
+      case CODE_STRING64:
+        len = read64u();
+        goto read_string;
+#endif
       case CODE_DOUBLE_LITTLE:
       case CODE_DOUBLE_BIG:
         v = Val_hp(intern_dest);
@@ -434,6 +485,12 @@ static void intern_rec(value *dest)
       case CODE_DOUBLE_ARRAY32_BIG:
         len = read32u();
         goto read_double_array;
+#ifdef ARCH_SIXTYFOUR
+      case CODE_DOUBLE_ARRAY64_LITTLE:
+      case CODE_DOUBLE_ARRAY64_BIG:
+        len = read64u();
+        goto read_double_array;
+#endif
       case CODE_CODEPOINTER:
         ofs = read32u();
         readblock(digest, 16);
@@ -507,9 +564,8 @@ static void intern_alloc(mlsize_t whsize, mlsize_t num_objects)
   mlsize_t wosize;
 
   if (whsize == 0) {
-    intern_obj_table = NULL;
-    intern_extra_block = NULL;
-    intern_block = 0;
+    Assert (intern_extra_block == NULL && intern_block == 0
+         && intern_obj_table == NULL);
     return;
   }
   wosize = Wosize_whsize(whsize);
@@ -518,9 +574,13 @@ static void intern_alloc(mlsize_t whsize, mlsize_t num_objects)
     asize_t request =
       ((Bsize_wsize(whsize) + Page_size - 1) >> Page_log) << Page_log;
     intern_extra_block = caml_alloc_for_heap(request);
-    if (intern_extra_block == NULL) caml_raise_out_of_memory();
+    if (intern_extra_block == NULL) {
+      intern_cleanup();
+      caml_raise_out_of_memory();
+    }
     intern_color = caml_allocation_color(intern_extra_block);
     intern_dest = (header_t *) intern_extra_block;
+    Assert (intern_block == 0);
   } else {
     /* this is a specialised version of caml_alloc from alloc.c */
     if (wosize == 0){
@@ -528,21 +588,29 @@ static void intern_alloc(mlsize_t whsize, mlsize_t num_objects)
     }else if (wosize <= Max_young_wosize){
       intern_block = caml_alloc_small (wosize, String_tag);
     }else{
-      intern_block = caml_alloc_shr (wosize, String_tag);
+      intern_block = caml_alloc_shr_no_raise (wosize, String_tag);
       /* do not do the urgent_gc check here because it might darken
          intern_block into gray and break the Assert 3 lines down */
+      if (intern_block == 0) {
+        intern_cleanup();
+        caml_raise_out_of_memory();
+      }
     }
     intern_header = Hd_val(intern_block);
     intern_color = Color_hd(intern_header);
     Assert (intern_color == Caml_white || intern_color == Caml_black);
     intern_dest = (header_t *) Hp_val(intern_block);
-    intern_extra_block = NULL;
+    Assert (intern_extra_block == NULL);
   }
   obj_counter = 0;
-  if (num_objects > 0)
-    intern_obj_table = (value *) caml_stat_alloc(num_objects * sizeof(value));
-  else
-    intern_obj_table = NULL;
+  if (num_objects > 0) {
+    intern_obj_table = (value *) malloc(num_objects * sizeof(value));
+    if (intern_obj_table == NULL) {
+      intern_cleanup();
+      caml_raise_out_of_memory();
+    }
+  } else
+    Assert(intern_obj_table == NULL);
 }
 
 static void intern_add_to_heap(mlsize_t whsize)
@@ -554,6 +622,7 @@ static void intern_add_to_heap(mlsize_t whsize)
       ((Bsize_wsize(whsize) + Page_size - 1) >> Page_log) << Page_log;
     header_t * end_extra_block =
       (header_t *) intern_extra_block + Wsize_bsize(request);
+    Assert(intern_block == 0);
     Assert(intern_dest <= end_extra_block);
     if (intern_dest < end_extra_block){
       caml_make_free_blocks ((value *) intern_dest,
@@ -562,49 +631,105 @@ static void intern_add_to_heap(mlsize_t whsize)
     caml_allocated_words +=
       Wsize_bsize ((char *) intern_dest - intern_extra_block);
     caml_add_to_heap(intern_extra_block);
+    intern_extra_block = NULL; // To prevent intern_cleanup freeing it
+  } else {
+    intern_block = 0; // To prevent intern_cleanup rewriting its header
   }
 }
 
+/* Parsing the header */
+
+struct marshal_header {
+  uint32_t magic;
+  int header_len;
+  uintnat data_len;
+  uintnat num_objects;
+  uintnat whsize;
+};
+
+static void caml_parse_header(char * fun_name,
+                              /*out*/ struct marshal_header * h)
+{
+  char errmsg[100];
+
+  h->magic = read32u();
+  switch(h->magic) {
+  case Intext_magic_number_small:
+    h->header_len = 20;
+    h->data_len = read32u();
+    h->num_objects = read32u();
+#ifdef ARCH_SIXTYFOUR
+    read32u();
+    h->whsize = read32u();
+#else
+    h->whsize = read32u();
+    read32u();
+#endif
+    break;
+  case Intext_magic_number_big:
+#ifdef ARCH_SIXTYFOUR
+    h->header_len = 32;
+    read32u();
+    h->data_len = read64u();
+    h->num_objects = read64u();
+    h->whsize = read64u();
+#else
+    errmsg[sizeof(errmsg) - 1] = 0;
+    snprintf(errmsg, sizeof(errmsg) - 1, 
+             "%s: object too large to be read back on a 32-bit platform",
+             fun_name);
+    caml_failwith(errmsg);
+#endif
+    break;
+  default:
+    errmsg[sizeof(errmsg) - 1] = 0;
+    snprintf(errmsg, sizeof(errmsg) - 1, 
+             "%s: bad object",
+             fun_name);
+    caml_failwith(errmsg);
+  }
+}
+
+/* Reading from a channel */
+
 value caml_input_val(struct channel *chan)
 {
-  uint32_t magic;
-  mlsize_t block_len, num_objects, whsize;
+  char header[32];
+  struct marshal_header h;
   char * block;
   value res;
 
   if (! caml_channel_binary_mode(chan))
     caml_failwith("input_value: not a binary channel");
-  magic = caml_getword(chan);
-  if (magic != Intext_magic_number) caml_failwith("input_value: bad object");
-  block_len = caml_getword(chan);
-  num_objects = caml_getword(chan);
-#ifdef ARCH_SIXTYFOUR
-  caml_getword(chan); /* skip size_32 */
-  whsize = caml_getword(chan);
-#else
-  whsize = caml_getword(chan);
-  caml_getword(chan); /* skip size_64 */
-#endif
+  /* Read and parse the header */
+  if (caml_really_getblock(chan, header, 20) == 0)
+    caml_failwith("input_value: truncated object");
+  intern_src = (unsigned char *) header;
+  if (read32u() == Intext_magic_number_big) {
+    /* Finish reading the header */
+    if (caml_really_getblock(chan, header + 20, 32 - 20) == 0)
+      caml_failwith("input_value: truncated object");
+  }
+  intern_src = (unsigned char *) header;
+  caml_parse_header("input_value", &h);
   /* Read block from channel */
-  block = caml_stat_alloc(block_len);
+  block = caml_stat_alloc(h.data_len);
   /* During [caml_really_getblock], concurrent [caml_input_val] operations
      can take place (via signal handlers or context switching in systhreads),
      and [intern_input] may change.  So, wait until [caml_really_getblock]
      is over before using [intern_input] and the other global vars. */
-  if (caml_really_getblock(chan, block, block_len) == 0) {
+  if (caml_really_getblock(chan, block, h.data_len) == 0) {
     caml_stat_free(block);
     caml_failwith("input_value: truncated object");
   }
-  intern_input = (unsigned char *) block;
-  intern_input_malloced = 1;
-  intern_src = intern_input;
-  intern_alloc(whsize, num_objects);
+  /* Initialize global state */
+  intern_init(block, block);
+  intern_alloc(h.whsize, h.num_objects);
   /* Fill it in */
   intern_rec(&res);
-  intern_add_to_heap(whsize);
+  intern_add_to_heap(h.whsize);
   /* Free everything */
-  caml_stat_free(intern_input);
-  if (intern_obj_table != NULL) caml_stat_free(intern_obj_table);
+  intern_cleanup();
   return caml_check_urgent_gc(res);
 }
 
@@ -620,30 +745,27 @@ CAMLprim value caml_input_value(value vchan)
   CAMLreturn (res);
 }
 
+/* Reading from memory-resident blocks */
+
 CAMLexport value caml_input_val_from_string(value str, intnat ofs)
 {
   CAMLparam1 (str);
-  mlsize_t num_objects, whsize;
   CAMLlocal1 (obj);
+  struct marshal_header h;
 
-  intern_src = &Byte_u(str, ofs + 2*4);
-  intern_input_malloced = 0;
-  num_objects = read32u();
-#ifdef ARCH_SIXTYFOUR
-  intern_src += 4;  /* skip size_32 */
-  whsize = read32u();
-#else
-  whsize = read32u();
-  intern_src += 4;  /* skip size_64 */
-#endif
+  /* Initialize global state */
+  intern_init(&Byte_u(str, ofs), NULL);
+  caml_parse_header("input_val_from_string", &h);
+  if (ofs + h.header_len + h.data_len > caml_string_length(str))
+    caml_failwith("input_val_from_string: bad length");
   /* Allocate result */
-  intern_alloc(whsize, num_objects);
-  intern_src = &Byte_u(str, ofs + 5*4); /* If a GC occurred */
+  intern_alloc(h.whsize, h.num_objects);
+  intern_src = &Byte_u(str, ofs + h.header_len); /* If a GC occurred */
   /* Fill it in */
   intern_rec(&obj);
-  intern_add_to_heap(whsize);
+  intern_add_to_heap(h.whsize);
   /* Free everything */
-  if (intern_obj_table != NULL) caml_stat_free(intern_obj_table);
+  intern_cleanup();
   CAMLreturn (caml_check_urgent_gc(obj));
 }
 
@@ -652,83 +774,77 @@ CAMLprim value caml_input_value_from_string(value str, value ofs)
   return caml_input_val_from_string(str, Long_val(ofs));
 }
 
-static value input_val_from_block(void)
+static value input_val_from_block(struct marshal_header * h)
 {
-  mlsize_t num_objects, whsize;
   value obj;
-
-  num_objects = read32u();
-#ifdef ARCH_SIXTYFOUR
-  intern_src += 4;  /* skip size_32 */
-  whsize = read32u();
-#else
-  whsize = read32u();
-  intern_src += 4;  /* skip size_64 */
-#endif
   /* Allocate result */
-  intern_alloc(whsize, num_objects);
+  intern_alloc(h->whsize, h->num_objects);
   /* Fill it in */
   intern_rec(&obj);
-  intern_add_to_heap(whsize);
+  intern_add_to_heap(h->whsize);
   /* Free internal data structures */
-  if (intern_obj_table != NULL) caml_stat_free(intern_obj_table);
+  intern_cleanup();
   return caml_check_urgent_gc(obj);
 }
 
 CAMLexport value caml_input_value_from_malloc(char * data, intnat ofs)
 {
-  uint32_t magic;
-  value obj;
+  struct marshal_header h;
 
-  intern_input = (unsigned char *) data;
-  intern_src = intern_input + ofs;
-  intern_input_malloced = 1;
-  magic = read32u();
-  if (magic != Intext_magic_number)
-    caml_failwith("input_value_from_malloc: bad object");
-  intern_src += 4;  /* Skip block_len */
-  obj = input_val_from_block();
-  /* Free the input */
-  caml_stat_free(intern_input);
-  return obj;
+  intern_init(data + ofs, data);
+
+  caml_parse_header("input_value_from_malloc", &h);
+
+  return input_val_from_block(&h);
 }
 
 /* [len] is a number of bytes */
 CAMLexport value caml_input_value_from_block(char * data, intnat len)
 {
-  uint32_t magic;
-  mlsize_t block_len;
-  value obj;
+  struct marshal_header h;
 
-  intern_input = (unsigned char *) data;
-  intern_src = intern_input;
-  intern_input_malloced = 0;
-  magic = read32u();
-  if (magic != Intext_magic_number)
-    caml_failwith("input_value_from_block: bad object");
-  block_len = read32u();
-  if (5*4 + block_len > len)
-    caml_failwith("input_value_from_block: bad block length");
-  obj = input_val_from_block();
-  return obj;
+  /* Initialize global state */
+  intern_init(data, NULL);
+  caml_parse_header("input_value_from_block", &h);
+  if (h.header_len + h.data_len > len)
+    caml_failwith("input_val_from_block: bad length");
+  return input_val_from_block(&h);
 }
 
 /* [ofs] is a [value] that represents a number of bytes
    result is a [value] that represents a number of bytes
-*/
+   To handle both the small and the big format,
+   we assume 20 bytes are available at [buff + ofs],
+   and we return the data size + the length of the part of the header 
+   that remains to be read. */
+
 CAMLprim value caml_marshal_data_size(value buff, value ofs)
 {
   uint32_t magic;
-  mlsize_t block_len;
+  int header_len;
+  uintnat data_len;
 
   intern_src = &Byte_u(buff, Long_val(ofs));
-  intern_input_malloced = 0;
   magic = read32u();
-  if (magic != Intext_magic_number){
+  switch(magic) {
+  case Intext_magic_number_small:
+    header_len = 20;
+    data_len = read32u();
+    break;
+  case Intext_magic_number_big:
+#ifdef ARCH_SIXTYFOUR
+    header_len = 32;
+    read32u();
+    data_len = read64u();
+#else
+    caml_failwith("Marshal.data_size: "
+                  "object too large to be read back on a 32-bit platform");
+#endif
+    break;
+  default:
     caml_failwith("Marshal.data_size: bad object");
   }
-  block_len = read32u();
-  return Val_long(block_len);
+  return Val_long((header_len - 20) + data_len);
 }
 
 /* Resolution of code pointers */
@@ -829,7 +945,7 @@ CAMLexport double caml_deserialize_float_8(void)
 
 CAMLexport void caml_deserialize_block_1(void * data, intnat len)
 {
-  memmove(data, intern_src, len);
+  memcpy(data, intern_src, len);
   intern_src += len;
 }
 
@@ -841,7 +957,7 @@ CAMLexport void caml_deserialize_block_2(void * data, intnat len)
     Reverse_16(q, p);
   intern_src = p;
 #else
-  memmove(data, intern_src, len * 2);
+  memcpy(data, intern_src, len * 2);
   intern_src += len * 2;
 #endif
 }
@@ -854,7 +970,7 @@ CAMLexport void caml_deserialize_block_4(void * data, intnat len)
     Reverse_32(q, p);
   intern_src = p;
 #else
-  memmove(data, intern_src, len * 4);
+  memcpy(data, intern_src, len * 4);
   intern_src += len * 4;
 #endif
 }
@@ -867,7 +983,7 @@ CAMLexport void caml_deserialize_block_8(void * data, intnat len)
     Reverse_64(q, p);
   intern_src = p;
 #else
-  memmove(data, intern_src, len * 8);
+  memcpy(data, intern_src, len * 8);
   intern_src += len * 8;
 #endif
 }
@@ -875,7 +991,7 @@ CAMLexport void caml_deserialize_block_8(void * data, intnat len)
 CAMLexport void caml_deserialize_block_float_8(void * data, intnat len)
 {
 #if ARCH_FLOAT_ENDIANNESS == 0x01234567
-  memmove(data, intern_src, len * 8);
+  memcpy(data, intern_src, len * 8);
   intern_src += len * 8;
 #elif ARCH_FLOAT_ENDIANNESS == 0x76543210
   unsigned char * p, * q;

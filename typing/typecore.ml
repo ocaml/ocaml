@@ -1519,8 +1519,8 @@ let rec is_nonexpansive exp =
       List.for_all (fun vb -> is_nonexpansive vb.vb_expr) pat_exp_list &&
       is_nonexpansive body
   | Texp_function _ -> true
-  | Texp_apply(e, (_,None,_)::el) ->
-      is_nonexpansive e && List.for_all is_nonexpansive_opt (List.map snd3 el)
+  | Texp_apply(e, (_,None)::el) ->
+      is_nonexpansive e && List.for_all is_nonexpansive_opt (List.map snd el)
   | Texp_match(e, cases, [], _) ->
       is_nonexpansive e &&
       List.for_all
@@ -2511,8 +2511,8 @@ and type_expect_ ?in_function ?(recarg=Rejected) env sexp ty_expected =
                                   exp_loc = obj.exp_loc; exp_extra = [];
                                   exp_type = desc.val_type;
                                   exp_attributes = []; (* check *)
-                                  exp_env = env},
-                            Required ])
+                                  exp_env = env}
+                          ])
                   in
                   (Tmeth_name met, Some (re {exp_desc = exp;
                                              exp_loc = loc; exp_extra = [];
@@ -3006,6 +3006,12 @@ and type_format loc str env =
         | Float_G  -> mk_constr "Float_G"  []
         | Float_pG -> mk_constr "Float_pG" []
         | Float_sG -> mk_constr "Float_sG" []
+        | Float_h  -> mk_constr "Float_h"  []
+        | Float_ph -> mk_constr "Float_ph" []
+        | Float_sh -> mk_constr "Float_sh" []
+        | Float_H  -> mk_constr "Float_H"  []
+        | Float_pH -> mk_constr "Float_pH" []
+        | Float_sH -> mk_constr "Float_sH" []
         | Float_F  -> mk_constr "Float_F"  []
       and mk_counter cnt = match cnt with
         | Line_counter  -> mk_constr "Line_counter"  []
@@ -3245,7 +3251,7 @@ and type_argument ?recarg env sarg ty_expected' ty_expected =
         match (expand_head env ty_fun).desc with
         | Tarrow (l,ty_arg,ty_fun,_) when is_optional l ->
             let ty = option_none (instance env ty_arg) sarg.pexp_loc in
-            make_args ((l, Some ty, Optional) :: args) ty_fun
+            make_args ((l, Some ty) :: args) ty_fun
         | Tarrow (l,_,ty_res',_) when l = Nolabel || !Clflags.classic ->
             List.rev args, ty_fun, no_labels ty_res'
         | Tvar _ ->  List.rev args, ty_fun, false
@@ -3282,14 +3288,14 @@ and type_argument ?recarg env sarg ty_expected' ty_expected =
           {texp with exp_type = ty_res; exp_desc =
            Texp_apply
              (texp,
-              args @ [Nolabel, Some eta_var, Required])}
+              args @ [Nolabel, Some eta_var])}
         in
         { texp with exp_type = ty_fun; exp_desc =
           Texp_function(Nolabel, [case eta_pat e], Total) }
       in
       Location.prerr_warning texp.exp_loc
         (Warnings.Eliminated_optional_arguments
-           (List.map (fun (l, _, _) -> Printtyp.string_of_label l) args));
+           (List.map (fun (l, _) -> Printtyp.string_of_label l) args));
       if warn then Location.prerr_warning texp.exp_loc
           (Warnings.Without_principality "eliminated optional argument");
       if is_nonexpansive texp then func texp else
@@ -3321,13 +3327,12 @@ and type_application env funct sargs =
   let ignored = ref [] in
   let rec type_unknown_args
       (args :
-      (Asttypes.arg_label * (unit -> Typedtree.expression) option *
-         Typedtree.optional) list)
+      (Asttypes.arg_label * (unit -> Typedtree.expression) option) list)
     omitted ty_fun = function
       [] ->
         (List.map
-            (function l, None, x -> l, None, x
-                | l, Some f, x -> l, Some (f ()), x)
+            (function l, None -> l, None
+                | l, Some f -> l, Some (f ()))
            (List.rev args),
          instance env (result_type omitted ty_fun))
     | (l1, sarg1) :: sargl ->
@@ -3364,14 +3369,14 @@ and type_application env funct sargs =
                   raise(Error(funct.exp_loc, env, Apply_non_function
                                 (expand_head env funct.exp_type)))
         in
-        let optional = if is_optional l1 then Optional else Required in
+        let optional = is_optional l1 in
         let arg1 () =
           let arg1 = type_expect env sarg1 ty1 in
-          if optional = Optional then
+          if optional then
             unify_exp env arg1 (type_option(newvar()));
           arg1
         in
-        type_unknown_args ((l1, Some arg1, optional) :: args) omitted ty2 sargl
+        type_unknown_args ((l1, Some arg1) :: args) omitted ty2 sargl
   in
   let ignore_labels =
     !Clflags.classic ||
@@ -3404,7 +3409,7 @@ and type_application env funct sargs =
           end
         in
         let name = label_name l
-        and optional = if is_optional l then Optional else Required in
+        and optional = is_optional l in
         let sargs, more_sargs, arg =
           if ignore_labels && not (is_optional l) then begin
             (* In classic mode, omitted = [] *)
@@ -3437,11 +3442,11 @@ and type_application env funct sargs =
                     (Warnings.Not_principal "commuting this argument");
                 (l', sarg0, sargs @ sargs1, sargs2)
             in
-            if optional = Required && is_optional l' then
+            if not optional && is_optional l' then
               Location.prerr_warning sarg0.pexp_loc
                 (Warnings.Nonoptional_label (Printtyp.string_of_label l));
             sargs, more_sargs,
-            if optional = Required || is_optional l' then
+            if not optional || is_optional l' then
               Some (fun () -> type_argument env sarg0 ty ty0)
             else begin
               may_warn sarg0.pexp_loc
@@ -3452,7 +3457,7 @@ and type_application env funct sargs =
             end
           with Not_found ->
             sargs, more_sargs,
-            if optional = Optional &&
+            if optional &&
               (List.mem_assoc Nolabel sargs
                || List.mem_assoc Nolabel more_sargs)
             then begin
@@ -3469,7 +3474,7 @@ and type_application env funct sargs =
         let omitted =
           if arg = None then (l,ty,lv) :: omitted else omitted in
         let ty_old = if sargs = [] then ty_fun else ty_old in
-        type_args ((l,arg,optional)::args) omitted ty_fun ty_fun0
+        type_args ((l,arg)::args) omitted ty_fun ty_fun0
           ty_old sargs more_sargs
     | _ ->
         match sargs with
@@ -3495,7 +3500,7 @@ and type_application env funct sargs =
           add_delayed_check (fun () -> check_application_result env false exp)
       | _ -> ()
       end;
-      ([Nolabel, Some exp, Required], ty_res)
+      ([Nolabel, Some exp], ty_res)
   | _ ->
       let ty = funct.exp_type in
       if ignore_labels then
@@ -3843,7 +3848,7 @@ and type_let ?(check = fun s -> Warnings.Unused_var s)
             (* has one of the identifier of this pattern been used? *)
           let slot = ref [] in
           List.iter
-            (fun (id,_) ->
+            (fun id ->
               let vd = Env.find_value (Path.Pident id) new_env in
               (* note: Env.find_value does not trigger the value_used event *)
               let name = Ident.name id in

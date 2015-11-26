@@ -55,6 +55,9 @@ val fprintf : out_channel -> ('a, out_channel, unit) format -> 'a
      in the style [d.ddd e+-dd] (mantissa and exponent).
    - [g] or [G]: convert a floating-point argument to decimal notation,
      in style [f] or [e], [E] (whichever is more compact).
+   - [h] or [H]: convert a floating-point argument to hexadecimal notation,
+     in the style [0xh.hhhh e+-dd] (hexadecimal mantissa, exponent in
+     decimal and denotes a power of 2).
    - [B]: convert a boolean argument to the string [true] or [false]
    - [b]: convert a boolean argument (deprecated; do not use in new
      programs).

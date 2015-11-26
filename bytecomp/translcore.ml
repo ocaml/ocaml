@@ -720,7 +720,7 @@ and transl_exp0 e =
   | Texp_apply({ exp_desc = Texp_ident(path, _, {val_kind = Val_prim p});
                 exp_type = prim_type } as funct, oargs)
     when List.length oargs >= p.prim_arity
-    && List.for_all (fun (_, arg,_) -> arg <> None) oargs ->
+    && List.for_all (fun (_, arg) -> arg <> None) oargs ->
       let args, args' = cut p.prim_arity oargs in
       let wrap f =
         if args' = []
@@ -729,17 +729,17 @@ and transl_exp0 e =
           let should_be_tailcall, funct =
             Translattribute.get_tailcall_attribute funct
           in
-          let inlined_attribute, funct =
+          let inlined, funct =
             Translattribute.get_inlined_attribute funct
           in
           let e = { e with exp_desc = Texp_apply(funct, oargs) } in
-          event_after e (transl_apply ~should_be_tailcall ~inlined_attribute
+          event_after e (transl_apply ~should_be_tailcall ~inlined
                            f args' e.exp_loc)
       in
       let wrap0 f =
         if args' = [] then f else wrap f in
       let args =
-         List.map (function _, Some x, _ -> x | _ -> assert false) args in
+         List.map (function _, Some x -> x | _ -> assert false) args in
       let argl = transl_list args in
       let public_send = p.prim_name = "%send"
         || not !Clflags.native_code && p.prim_name = "%sendcache"in
@@ -785,11 +785,11 @@ and transl_exp0 e =
       let should_be_tailcall, funct =
         Translattribute.get_tailcall_attribute funct
       in
-      let inlined_attribute, funct =
+      let inlined, funct =
         Translattribute.get_inlined_attribute funct
       in
       let e = { e with exp_desc = Texp_apply(funct, oargs) } in
-      event_after e (transl_apply ~should_be_tailcall ~inlined_attribute
+      event_after e (transl_apply ~should_be_tailcall ~inlined
                        (transl_exp funct) oargs e.exp_loc)
   | Texp_match(arg, pat_expr_list, exn_pat_expr_list, partial) ->
     transl_match e arg pat_expr_list exn_pat_expr_list partial
@@ -907,8 +907,11 @@ and transl_exp0 e =
       in
       event_after e lam
   | Texp_new (cl, {Location.loc=loc}, _) ->
-      Lapply(Lprim(Pfield 0, [transl_path ~loc e.exp_env cl]),
-             [lambda_unit], no_apply_info)
+      Lapply{ap_should_be_tailcall=false;
+             ap_loc=loc;
+             ap_func=Lprim(Pfield 0, [transl_path ~loc e.exp_env cl]);
+             ap_args=[lambda_unit];
+             ap_inlined=Default_inline}
   | Texp_instvar(path_self, path, _) ->
       Lprim(Parrayrefu Paddrarray,
             [transl_normal_path path_self; transl_normal_path path])
@@ -917,8 +920,11 @@ and transl_exp0 e =
   | Texp_override(path_self, modifs) ->
       let cpy = Ident.create "copy" in
       Llet(Strict, cpy,
-           Lapply(Translobj.oo_prim "copy", [transl_normal_path path_self],
-                  no_apply_info),
+           Lapply{ap_should_be_tailcall=false;
+                  ap_loc=Location.none;
+                  ap_func=Translobj.oo_prim "copy";
+                  ap_args=[transl_normal_path path_self];
+                  ap_inlined=Default_inline},
            List.fold_right
              (fun (path, _, expr) rem ->
                 Lsequence(transl_setinstvar (Lvar cpy) path expr, rem))
@@ -1039,18 +1045,21 @@ and transl_tupled_cases patl_expr_list =
   List.map (fun (patl, guard, expr) -> (patl, transl_guard guard expr))
     patl_expr_list
 
-and transl_apply ?(should_be_tailcall=false) ?inlined_attribute lam sargs loc =
+and transl_apply ?(should_be_tailcall=false) ?(inlined = Default_inline) lam sargs loc =
   let lapply funct args =
     match funct with
       Lsend(k, lmet, lobj, largs, loc) ->
         Lsend(k, lmet, lobj, largs @ args, loc)
     | Levent(Lsend(k, lmet, lobj, largs, loc), _) ->
         Lsend(k, lmet, lobj, largs @ args, loc)
-    | Lapply(lexp, largs, info) ->
-        Lapply(lexp, largs @ args, {info with apply_loc=loc})
+    | Lapply ap ->
+        Lapply {ap with ap_args = ap.ap_args @ args; ap_loc = loc}
     | lexp ->
-        Lapply(lexp, args, mk_apply_info ~tailcall:should_be_tailcall
-                 ?inlined_attribute loc)
+        Lapply {ap_should_be_tailcall=should_be_tailcall;
+                ap_loc=loc;
+                ap_func=lexp;
+                ap_args=args;
+                ap_inlined=inlined}
   in
   let rec build_apply lam args = function
       (None, optional) :: l ->
@@ -1064,7 +1073,7 @@ and transl_apply ?(should_be_tailcall=false) ?inlined_attribute lam sargs loc =
               Lvar id
         in
         let args, args' =
-          if List.for_all (fun (_,opt) -> opt = Optional) args then [], args
+          if List.for_all (fun (_,opt) -> opt) args then [], args
           else args, [] in
         let lam =
           if args = [] then lam else lapply lam (List.rev_map fst args) in
@@ -1090,7 +1099,7 @@ and transl_apply ?(should_be_tailcall=false) ?inlined_attribute lam sargs loc =
     | [] ->
         lapply lam (List.rev_map fst args)
   in
-  build_apply lam [] (List.map (fun (l, x,o) -> may_map transl_exp x, o) sargs)
+  (build_apply lam [] (List.map (fun (l, x) -> may_map transl_exp x, Btype.is_optional l) sargs) : Lambda.lambda)
 
 and transl_function loc untuplify_fn repr partial cases =
   match cases with

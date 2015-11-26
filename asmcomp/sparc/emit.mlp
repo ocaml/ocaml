@@ -323,7 +323,7 @@ let rec emit_instr i dslot =
         (* On UltraSPARC, the fzero instruction could be used to set a
            floating point register pair to zero. *)
         let lbl = new_label() in
-        float_constants := (lbl, Int64.bits_of_float f) :: !float_constants;
+        float_constants := (lbl, f) :: !float_constants;
         `	sethi	%hi({emit_label lbl}), %g1\n`;
         `	ldd	[%g1 + %lo({emit_label lbl})], {emit_reg i.res.(0)}\n`
     | Lop(Iconst_symbol s) ->

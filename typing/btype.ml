@@ -503,10 +503,16 @@ let unmark_class_type cty =
                   (*******************************************)
 
 (* Search whether the expansion has been memorized. *)
+
+let lte_public p1 p2 =  (* Private <= Public *)
+  match p1, p2 with
+  | Private, _ | _, Public -> true
+  | Public, Private -> false
+
 let rec find_expans priv p1 = function
     Mnil -> None
   | Mcons (priv', p2, ty0, ty, _)
-    when priv' >= priv && Path.same p1 p2 -> Some ty
+    when lte_public priv priv' && Path.same p1 p2 -> Some ty
   | Mcons (_, _, _, _, rem)   -> find_expans priv p1 rem
   | Mlink {contents = rem} -> find_expans priv p1 rem
 

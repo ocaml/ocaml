@@ -1517,7 +1517,11 @@ let inline_lazy_force_cond arg loc =
                 (* ... if (tag == Obj.lazy_tag) then Lazy.force varg else ... *)
                 Lprim(Pintcomp Ceq,
                       [Lvar tag; Lconst(Const_base(Const_int Obj.lazy_tag))]),
-                Lapply(force_fun, [varg], mk_apply_info loc),
+                Lapply{ap_should_be_tailcall=false;
+                       ap_loc=loc;
+                       ap_func=force_fun;
+                       ap_args=[varg];
+                       ap_inlined=Default_inline},
                 (* ... arg *)
                   varg))))
 
@@ -1535,7 +1539,11 @@ let inline_lazy_force_switch arg loc =
                sw_blocks =
                  [ (Obj.forward_tag, Lprim(Pfield 0, [varg]));
                    (Obj.lazy_tag,
-                    Lapply(force_fun, [varg], mk_apply_info loc)) ];
+                    Lapply{ap_should_be_tailcall=false;
+                           ap_loc=loc;
+                           ap_func=force_fun;
+                           ap_args=[varg];
+                           ap_inlined=Default_inline}) ];
                sw_failaction = Some varg } ))))
 
 let inline_lazy_force arg loc =
@@ -2990,7 +2998,7 @@ let assign_pat opt nraise catch_ids loc pat lam =
     (* pattern idents will be bound in staticcatch (let body), so we
        refresh them here to guarantee binders  uniqueness *)
     let pat_ids = pat_bound_idents pat in
-    let fresh_ids = List.map (fun (id, _) -> id, Ident.rename id) pat_ids in
+    let fresh_ids = List.map (fun id -> id, Ident.rename id) pat_ids in
     (fresh_ids, alpha_pat fresh_ids pat, lam) :: acc
   in
 
@@ -3019,7 +3027,7 @@ let for_let loc param pat body =
   | _ ->
       let opt = ref false in
       let nraise = next_raise_count () in
-      let catch_ids = List.map fst (pat_bound_idents pat) in
+      let catch_ids = pat_bound_idents pat in
       let bind = map_return (assign_pat opt nraise catch_ids loc pat) param in
       if !opt then Lstaticcatch(bind, (nraise, catch_ids), body)
       else simple_for_let loc param pat body

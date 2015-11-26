@@ -366,7 +366,7 @@ let expression sub exp =
                           (sub.cases sub cases))
     | Texp_apply (exp, list) ->
         Pexp_apply (sub.expr sub exp,
-          List.fold_right (fun (label, expo, _) list ->
+          List.fold_right (fun (label, expo) list ->
               match expo with
                 None -> list
               | Some exp -> (label, sub.expr sub exp) :: list
@@ -596,7 +596,7 @@ let class_expr sub cexpr =
 
     | Tcl_apply (cl, args) ->
         Pcl_apply (sub.class_expr sub cl,
-          List.fold_right (fun (label, expo, _) list ->
+          List.fold_right (fun (label, expo) list ->
               match expo with
                 None -> list
               | Some exp -> (label, sub.expr sub exp) :: list

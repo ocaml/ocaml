@@ -818,7 +818,7 @@ and longident_x_expression i ppf (li, _, e) =
   line i ppf "%a\n" fmt_longident li;
   expression (i+1) ppf e;
 
-and label_x_expression i ppf (l, e, _) =
+and label_x_expression i ppf (l, e) =
   line i ppf "<arg>\n";
   arg_label (i+1) ppf l;
   (match e with None -> () | Some e -> expression (i+1) ppf e)

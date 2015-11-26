@@ -36,7 +36,7 @@ type operation =
   | Ispill
   | Ireload
   | Iconst_int of nativeint
-  | Iconst_float of float
+  | Iconst_float of int64
   | Iconst_symbol of string
   | Iconst_blockheader of nativeint
   | Icall_ind

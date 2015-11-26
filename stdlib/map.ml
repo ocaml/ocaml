@@ -103,14 +103,16 @@ module Make(Ord: OrderedType) = struct
     let rec add x data = function
         Empty ->
           Node(Empty, x, data, Empty, 1)
-      | Node(l, v, d, r, h) ->
+      | Node(l, v, d, r, h) as m ->
           let c = Ord.compare x v in
           if c = 0 then
-            Node(l, x, data, r, h)
+            if d == data then m else Node(l, x, data, r, h)
           else if c < 0 then
-            bal (add x data l) v d r
+            let ll = add x data l in
+            if l == ll then m else bal ll v d r
           else
-            bal l v d (add x data r)
+            let rr = add x data r in
+            if r == rr then m else bal l v d rr
 
     let rec find x = function
         Empty ->
@@ -153,14 +155,13 @@ module Make(Ord: OrderedType) = struct
     let rec remove x = function
         Empty ->
           Empty
-      | Node(l, v, d, r, h) ->
+      | (Node(l, v, d, r, h) as t) ->
           let c = Ord.compare x v in
-          if c = 0 then
-            merge l r
+          if c = 0 then merge l r
           else if c < 0 then
-            bal (remove x l) v d r
+            let ll = remove x l in if l == ll then t else bal ll v d r
           else
-            bal l v d (remove x r)
+            let rr = remove x r in if r == rr then t else bal l v d rr
 
     let rec iter f = function
         Empty -> ()
@@ -271,12 +272,13 @@ module Make(Ord: OrderedType) = struct
 
     let rec filter p = function
         Empty -> Empty
-      | Node(l, v, d, r, _) ->
+      | Node(l, v, d, r, _) as t ->
           (* call [p] in the expected left-to-right order *)
           let l' = filter p l in
           let pvd = p v d in
           let r' = filter p r in
-          if pvd then join l' v d r' else concat l' r'
+          if pvd then if l==l' && r==r' then t else join l' v d r'
+          else concat l' r'
 
     let rec partition p = function
         Empty -> (Empty, Empty)
