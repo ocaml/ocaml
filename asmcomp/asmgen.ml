@@ -59,29 +59,29 @@ let (++) x f = f x
 let compile_fundecl (ppf : formatter) fd_cmm =
   Proc.init ();
   Reg.reset();
+  let build = Compilenv.current_build () in
   fd_cmm
-  ++ Selection.fundecl
+  ++ Timings.(accumulate_time (Selection build)) Selection.fundecl
   ++ pass_dump_if ppf dump_selection "After instruction selection"
-  ++ Comballoc.fundecl
+  ++ Timings.(accumulate_time (Comballoc build)) Comballoc.fundecl
   ++ pass_dump_if ppf dump_combine "After allocation combining"
-  ++ CSE.fundecl
+  ++ Timings.(accumulate_time (CSE build)) CSE.fundecl
   ++ pass_dump_if ppf dump_cse "After CSE"
-  ++ liveness ppf
-  ++ Deadcode.fundecl
+  ++ Timings.(accumulate_time (Liveness build)) (liveness ppf)
+  ++ Timings.(accumulate_time (Deadcode build)) Deadcode.fundecl
   ++ pass_dump_if ppf dump_live "Liveness analysis"
-  ++ Spill.fundecl
-  ++ liveness ppf
+  ++ Timings.(accumulate_time (Spill build)) Spill.fundecl
+  ++ Timings.(accumulate_time (Liveness build)) (liveness ppf)
   ++ pass_dump_if ppf dump_spill "After spilling"
-  ++ Split.fundecl
+  ++ Timings.(accumulate_time (Split build)) Split.fundecl
   ++ pass_dump_if ppf dump_split "After live range splitting"
-  ++ liveness ppf
-  ++ Timings.(accumulate_time (Regalloc (Compilenv.current_build ()))
-                (regalloc ppf 1))
-  ++ Linearize.fundecl
+  ++ Timings.(accumulate_time (Liveness build)) (liveness ppf)
+  ++ Timings.(accumulate_time (Regalloc build)) (regalloc ppf 1)
+  ++ Timings.(accumulate_time (Linearize build)) Linearize.fundecl
   ++ pass_dump_linear_if ppf dump_linear "Linearized code"
-  ++ Scheduling.fundecl
+  ++ Timings.(accumulate_time (Scheduling build)) Scheduling.fundecl
   ++ pass_dump_linear_if ppf dump_scheduling "After instruction scheduling"
-  ++ Emit.fundecl
+  ++ Timings.(accumulate_time (Emit build)) Emit.fundecl
 
 let compile_phrase ppf p =
   if !dump_cmm then fprintf ppf "%a@." Printcmm.phrase p;

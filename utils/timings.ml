@@ -27,7 +27,17 @@ type part =
   | Clambda of file
   | Cmm of file
   | Compile_phrases of file
+  | Selection of build_kind
+  | Comballoc of build_kind
+  | CSE of build_kind
+  | Liveness of build_kind
+  | Deadcode of build_kind
+  | Spill of build_kind
+  | Split of build_kind
   | Regalloc of build_kind
+  | Linearize of build_kind
+  | Scheduling of build_kind
+  | Emit of build_kind
 
 let timings : (part, float * float option) Hashtbl.t = Hashtbl.create 20
 let reset () = Hashtbl.clear timings
@@ -98,7 +108,17 @@ let part_name = function
   | Clambda file -> Printf.sprintf "clambda(%s)" file
   | Cmm file -> Printf.sprintf "cmm(%s)" file
   | Compile_phrases file -> Printf.sprintf "compile_phrases(%s)" file
+  | Selection k -> Printf.sprintf "selection(%s)" (kind_name k)
+  | Comballoc k -> Printf.sprintf "comballoc(%s)" (kind_name k)
+  | CSE k -> Printf.sprintf "cse(%s)" (kind_name k)
+  | Liveness k -> Printf.sprintf "liveness(%s)" (kind_name k)
+  | Deadcode k -> Printf.sprintf "deadcode(%s)" (kind_name k)
+  | Spill k -> Printf.sprintf "spill(%s)" (kind_name k)
+  | Split k -> Printf.sprintf "split(%s)" (kind_name k)
   | Regalloc k -> Printf.sprintf "regalloc(%s)" (kind_name k)
+  | Linearize k -> Printf.sprintf "linearize(%s)" (kind_name k)
+  | Scheduling k -> Printf.sprintf "scheduling(%s)" (kind_name k)
+  | Emit k -> Printf.sprintf "emit(%s)" (kind_name k)
 
 let timings_list () =
   let l = Hashtbl.fold (fun part times l -> (part, times) :: l) timings [] in

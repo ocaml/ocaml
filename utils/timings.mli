@@ -29,7 +29,17 @@ type part =
   | Clambda of file
   | Cmm of file
   | Compile_phrases of file
+  | Selection of build_kind
+  | Comballoc of build_kind
+  | CSE of build_kind
+  | Liveness of build_kind
+  | Deadcode of build_kind
+  | Spill of build_kind
+  | Split of build_kind
   | Regalloc of build_kind
+  | Linearize of build_kind
+  | Scheduling of build_kind
+  | Emit of build_kind
 
 val reset : unit -> unit
 (** erase all recorded times *)
