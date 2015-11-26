@@ -203,7 +203,8 @@ let scan_file obj_name tolink = match read_file obj_name with
 let make_startup_file ppf units_list =
   let compile_phrase p = Asmgen.compile_phrase ppf p in
   Location.input_name := "caml_startup"; (* set name of "current" input *)
-  Compilenv.reset "_startup"; (* set the name of the "current" compunit *)
+  Compilenv.reset ~sourcefile:Timings.Startup "_startup";
+  (* set the name of the "current" compunit *)
   Emit.begin_assembly ();
   let name_list =
     List.flatten (List.map (fun (info,_,_) -> info.ui_defines) units_list) in
@@ -236,7 +237,7 @@ let make_startup_file ppf units_list =
 let make_shared_startup_file ppf units =
   let compile_phrase p = Asmgen.compile_phrase ppf p in
   Location.input_name := "caml_startup";
-  Compilenv.reset "_shared_startup";
+  Compilenv.reset ~sourcefile:Timings.Startup "_shared_startup";
   Emit.begin_assembly ();
   List.iter compile_phrase
     (Cmmgen.generic_functions true (List.map fst units));

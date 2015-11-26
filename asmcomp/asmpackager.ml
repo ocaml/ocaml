@@ -175,7 +175,8 @@ let package_files ppf initial_env files targetcmx =
   (* Set the name of the current "input" *)
   Location.input_name := targetcmx;
   (* Set the name of the current compunit *)
-  Compilenv.reset ?packname:!Clflags.for_package targetname;
+  Compilenv.reset ~sourcefile:(Timings.Pack targetname)
+    ?packname:!Clflags.for_package targetname;
   try
     let coercion =
       Typemod.package_units initial_env files targetcmi targetname in

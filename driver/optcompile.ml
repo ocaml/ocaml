@@ -63,7 +63,8 @@ let implementation ppf sourcefile outputprefix =
   let modulename = module_of_filename ppf sourcefile outputprefix in
   Env.set_unit_name modulename;
   let env = Compmisc.initial_env() in
-  Compilenv.reset ?packname:!Clflags.for_package modulename;
+  Compilenv.reset ~sourcefile:(Timings.File sourcefile)
+    ?packname:!Clflags.for_package modulename;
   let cmxfile = outputprefix ^ ".cmx" in
   let objfile = outputprefix ^ ext_obj in
   let comp ast =

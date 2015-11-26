@@ -14,6 +14,11 @@
 
 type file = string
 
+type build_kind =
+  | File of file
+  | Pack of string
+  | Startup
+
 type part =
   | All
   | Parsing of file
