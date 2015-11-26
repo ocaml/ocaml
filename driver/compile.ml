@@ -80,11 +80,12 @@ let implementation ppf sourcefile outputprefix =
         ++ Timings.(time (Transl sourcefile))
             (Translmod.transl_implementation modulename)
         ++ print_if ppf Clflags.dump_rawlambda Printlambda.lambda
-        ++ Timings.(start_id (Generate sourcefile))
-        ++ Simplif.simplify_lambda
-        ++ print_if ppf Clflags.dump_lambda Printlambda.lambda
-        ++ Bytegen.compile_implementation modulename
-        ++ print_if ppf Clflags.dump_instr Printinstr.instrlist
+        ++ Timings.(accumulate_time (Generate sourcefile))
+            (fun lambda ->
+              Simplif.simplify_lambda lambda
+              ++ print_if ppf Clflags.dump_lambda Printlambda.lambda
+              ++ Bytegen.compile_implementation modulename
+              ++ print_if ppf Clflags.dump_instr Printinstr.instrlist)
       in
       let objfile = outputprefix ^ ".cmo" in
       let oc = open_out_bin objfile in

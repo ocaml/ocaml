@@ -81,12 +81,12 @@ let implementation ppf sourcefile outputprefix =
       ++ Timings.(time (Transl sourcefile))
           (Translmod.transl_store_implementation modulename)
       +++ print_if ppf Clflags.dump_rawlambda Printlambda.lambda
-      ++ Timings.(start_id (Generate sourcefile))
-      +++ Simplif.simplify_lambda
-      +++ print_if ppf Clflags.dump_lambda Printlambda.lambda
-      ++ Asmgen.compile_implementation ~sourcefile outputprefix ppf;
-      Compilenv.save_unit_info cmxfile;
-      Timings.(stop (Generate sourcefile));
+      ++ Timings.(time (Generate sourcefile))
+          (fun (size, lambda) ->
+            (size, Simplif.simplify_lambda lambda)
+            +++ print_if ppf Clflags.dump_lambda Printlambda.lambda
+            ++ Asmgen.compile_implementation ~sourcefile outputprefix ppf;
+            Compilenv.save_unit_info cmxfile)
     end;
     Warnings.check_fatal ();
     Stypes.dump (Some (outputprefix ^ ".annot"))
