@@ -243,11 +243,12 @@ let inline_recursive env r ~max_level ~lhs_of_application
       no_simplification ()
     end
 
-let is_probably_a_functor ~env ~args_approxs ~recursive_functions =
+let is_probably_a_functor ~env ~args_approxs ~recursive_functions
+    ~function_decl =
   !Clflags.functor_heuristics
     && E.at_toplevel env
     && (not (E.is_inside_branch env))
-    && List.for_all A.known args_approxs
+    && ((List.for_all A.known args_approxs) || function_decl.Flambda.is_a_functor)
     && Variable.Set.is_empty (Lazy.force recursive_functions)
 
 let for_call_site ~env ~r ~(function_decls : Flambda.function_declarations)
@@ -299,7 +300,7 @@ let for_call_site ~env ~r ~(function_decls : Flambda.function_declarations)
          ~backend:(E.backend env))
   in
   let probably_a_functor =
-    is_probably_a_functor ~env ~args_approxs ~recursive_functions
+    is_probably_a_functor ~env ~args_approxs ~recursive_functions ~function_decl
   in
   let recursive =
     lazy (Variable.Set.mem fun_var (Lazy.force recursive_functions))
