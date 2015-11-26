@@ -26,16 +26,16 @@ let const_int_expr expr n =
   else expr, A.value_int n, C.Benefit.zero
 let const_char_expr expr c =
   if Effect_analysis.no_effects_named expr then
-    let (new_expr, approx) = A.make_const_int_named (Char.code c) in
+    let (new_expr, approx) = A.make_const_char_named c in
     new_expr, approx, C.Benefit.remove_code_named expr C.Benefit.zero
-  else expr, A.value_int (Char.code c), C.Benefit.zero
+  else expr, A.value_char c, C.Benefit.zero
 let const_ptr_expr expr n =
   if Effect_analysis.no_effects_named expr then
     let (new_expr, approx) = A.make_const_ptr_named n in
     new_expr, approx, C.Benefit.remove_code_named expr C.Benefit.zero
   else expr, A.value_constptr n, C.Benefit.zero
 let const_bool_expr expr b =
-  const_ptr_expr expr (if b then 1 else 0)
+  const_int_expr expr (if b then 1 else 0)
 let const_float_expr expr f =
   if Effect_analysis.no_effects_named expr then
     let (new_expr, approx) = A.make_const_float_named f in

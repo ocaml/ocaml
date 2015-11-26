@@ -11,6 +11,9 @@
 (*                                                                        *)
 (**************************************************************************)
 
+(** CR-someday lwhite: "Closure_id" is quite a generic name. I wonder wether something
+    like "Closure_label" would better capture that it is the label of a projection. *)
+
 (** An identifier, unique across the whole program (not just one compilation
     unit), that identifies a closure within a particular set of closures
     (viz. [Project_closure]). *)

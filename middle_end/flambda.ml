@@ -159,18 +159,25 @@ type program =
 let fprintf = Format.fprintf
 module Int = Ext_types.Int
 
+(** CR-someday lwhite: use better name than this *)
 let rec lam ppf (flam : t) =
   match flam with
   | Var (id) ->
       Variable.print ppf id
-  | Apply({func; args; kind}) ->
+  | Apply({func; args; kind; inline}) ->
     let direct ppf () =
       match kind with
       | Indirect -> ()
       | Direct closure_id -> fprintf ppf "*[%a]" Closure_id.print closure_id
     in
-    fprintf ppf "@[<2>(apply%a@ %a%a)@]" direct () Variable.print func
-      Variable.print_list args
+    let inline ppf () =
+      match inline with
+      | Always_inline -> fprintf ppf "<always>"
+      | Never_inline -> fprintf ppf "<never>"
+      | Default_inline -> ()
+    in
+    fprintf ppf "@[<2>(apply%a%a@ %a%a)@]" direct () inline ()
+      Variable.print func Variable.print_list args
   | Assign { being_assigned; new_value; } ->
     fprintf ppf "@[<2>(assign@ %a@ %a)@]"
       Mutable_variable.print being_assigned
@@ -664,6 +671,7 @@ let map_lets t ~for_defining_expr ~for_last_body ~after_rebuild =
   in
   loop t ~rev_lets:[]
 
+(** CR-someday lwhite: Why not use two functions? *)
 type maybe_named =
   | Is_expr of t
   | Is_named of named

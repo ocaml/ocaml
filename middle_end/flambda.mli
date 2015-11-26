@@ -23,10 +23,11 @@ type call_kind =
 type const =
   | Int of int
   | Char of char
-  (* [Const_pointer] is an immediate value of a type whose values may be
+  (** [Char] is kept separate from [Int] to improve printing *)
+  | Const_pointer of int
+  (** [Const_pointer] is an immediate value of a type whose values may be
      boxed (typically a variant type with both constant and non-constant
      constructors). *)
-  | Const_pointer of int
 
 (** The application of a function to a list of arguments. *)
 type apply = {
@@ -93,6 +94,7 @@ type t =
   | Let of let_expr
   | Let_mutable of Mutable_variable.t * Variable.t * t
   | Let_rec of (Variable.t * named) list * t
+  (** CR-someday lwhite: give Let_rec the same fields as Let. *)
   | Apply of apply
   | Send of send
   | Assign of assign

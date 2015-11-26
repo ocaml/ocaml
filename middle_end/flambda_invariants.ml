@@ -310,12 +310,14 @@ let variable_and_symbol_invariants flam =
             declare_variable fun_var;
             (* Check that the body of the functions is correctly structured *)
             let body_env =
-              let (var_env, mut_var_env, sym_env) = env in
+              let (var_env, _, sym_env) = env in
               let var_env =
                 Variable.Set.fold (fun var -> Variable.Set.add var)
                   free_variables var_env
               in
-              (var_env, mut_var_env, sym_env)
+              (* Mutable variables cannot be captured by closures *)
+              let mut_env = Mutable_variable.Set.empty in
+              (var_env, mut_env, sym_env)
             in
             loop body_env body;
             all_params, Variable.Set.union free_variables all_free_vars)
@@ -610,6 +612,7 @@ let check_exn ?(kind=Normal) ?(cmxfile=false) (flam:Flambda.program) =
       every_static_exception_is_caught_at_a_single_position flam;
       every_declared_closure_is_from_current_compilation_unit flam)
   with exn -> begin
+  (* CR-someday split printing code into its own function *)
     begin match exn with
     | Binding_occurrence_not_from_current_compilation_unit var ->
       Format.eprintf ">> Binding occurrence of variable marked as not being \

@@ -196,12 +196,14 @@ val value_set_of_closures
 (** Take the given constant and produce an appropriate approximation for it
     together with an Flambda expression representing it. *)
 val make_const_int : int -> Flambda.t * t
+val make_const_char : char -> Flambda.t * t
 val make_const_ptr : int -> Flambda.t * t
 val make_const_bool : bool -> Flambda.t * t
 val make_const_float : float -> Flambda.t * t
 val make_const_boxed_int : 'i boxed_int -> 'i -> Flambda.t * t
 
 val make_const_int_named : int -> Flambda.named * t
+val make_const_char_named : char -> Flambda.named * t
 val make_const_ptr_named : int -> Flambda.named * t
 val make_const_bool_named : bool -> Flambda.named * t
 val make_const_float_named : float -> Flambda.named * t
