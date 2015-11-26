@@ -20,7 +20,7 @@
 #if defined(__INTEL_COMPILER)
 icc __INTEL_COMPILER
 #elif defined(__clang_major__) && defined(__clang_minor__)
-clang __clang_major __clang_minor__
+clang __clang_major__ __clang_minor__
 #elif defined(__GNUC__) && defined(__GNUC_MINOR__)
 gcc __GNUC__ __GNUC_MINOR__
 #else
