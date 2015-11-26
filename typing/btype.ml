@@ -69,6 +69,7 @@ let rec field_kind_repr =
     Fvar {contents = Some kind} -> field_kind_repr kind
   | kind                        -> kind
 
+(*
 let rec repr =
   function
     {desc = Tlink t'} ->
@@ -82,6 +83,11 @@ let rec repr =
   | {desc = Tfield (_, k, _, t')} when field_kind_repr k = Fabsent ->
       repr t'
   | t -> t
+*)
+
+(* Path compression must be undone by backtracking *)
+let repr_link' = ref (fun _ -> assert false)
+let repr t = !repr_link' 0 t t.desc t
 
 let rec commu_repr = function
     Clink r when !r <> Cunknown -> commu_repr !r
@@ -595,6 +601,7 @@ let extract_label l ls = extract_label_aux [] l ls
 
 type change =
     Ctype of type_expr * type_desc
+  | Ccompress of type_expr * type_desc * type_desc
   | Clevel of type_expr * int
   | Cname of
       (Path.t * type_expr list) option ref * (Path.t * type_expr list) option
@@ -606,6 +613,7 @@ type change =
 
 let undo_change = function
     Ctype  (ty, desc) -> ty.desc <- desc
+  | Ccompress  (ty, desc, _) -> ty.desc <- desc
   | Clevel (ty, level) -> ty.level <- level
   | Cname  (r, v) -> r := v
   | Crow   (r, v) -> r := v
@@ -695,3 +703,41 @@ let backtrack (changes, old) =
       changes := Unchanged;
       last_snapshot := old;
       Weak.set trail 0 (Some changes)
+
+let rec rev_compress_log log r =
+  match !r with
+    Unchanged | Invalid ->
+      log
+  | Change (Ccompress _, next) ->
+      rev_compress_log (r::log) next
+  | Change (_, next) ->
+      rev_compress_log log next
+
+let undo_compress (changes, old) =
+  match !changes with
+    Unchanged
+  | Invalid -> ()
+  | Change _ ->
+      let log = rev_compress_log [] changes in
+      List.iter
+	(fun r -> match !r with
+	  Change (Ccompress (ty, desc, d), next) when ty.desc == d ->
+	    ty.desc <- desc; r := !next
+	| _ -> ())
+	log
+
+let rec repr_link n t d =
+ function
+   {desc = Tlink t' as d'} ->
+     repr_link (succ n) t d' t'
+ | {desc = Tfield (_, k, _, t') as d'} when field_kind_repr k = Fabsent ->
+     repr_link (succ n) t d' t'
+ | t' ->
+     if n > 1 then begin
+       log_change (Ccompress (t, t.desc, d)); t.desc <- d
+     end;
+     t'
+
+let () = repr_link' := repr_link
+
+let repr t = repr_link 0 t t.desc t
