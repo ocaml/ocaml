@@ -667,8 +667,8 @@ asmcomp/cmmgen.cmi : asmcomp/cmx_format.cmi asmcomp/cmm.cmi \
 asmcomp/cmx_format.cmi : asmcomp/clambda.cmi
 asmcomp/coloring.cmi :
 asmcomp/comballoc.cmi : asmcomp/mach.cmi
-asmcomp/compilenv.cmi : typing/ident.cmi asmcomp/cmx_format.cmi \
-    asmcomp/clambda.cmi
+asmcomp/compilenv.cmi : utils/timings.cmi typing/ident.cmi \
+    asmcomp/cmx_format.cmi asmcomp/clambda.cmi
 asmcomp/deadcode.cmi : asmcomp/mach.cmi
 asmcomp/debuginfo.cmi : parsing/location.cmi bytecomp/lambda.cmi
 asmcomp/emit.cmi : asmcomp/linearize.cmi asmcomp/cmm.cmi
@@ -738,26 +738,26 @@ asmcomp/asmlibrarian.cmx : utils/misc.cmx parsing/location.cmx \
     utils/config.cmx asmcomp/compilenv.cmx asmcomp/cmx_format.cmi \
     utils/clflags.cmx asmcomp/clambda.cmx utils/ccomp.cmx asmcomp/asmlink.cmx \
     asmcomp/asmlibrarian.cmi
-asmcomp/asmlink.cmo : bytecomp/runtimedef.cmi utils/misc.cmi \
-    parsing/location.cmi asmcomp/emitaux.cmi asmcomp/emit.cmi \
+asmcomp/asmlink.cmo : utils/timings.cmi bytecomp/runtimedef.cmi \
+    utils/misc.cmi parsing/location.cmi asmcomp/emitaux.cmi asmcomp/emit.cmi \
     utils/consistbl.cmi utils/config.cmi asmcomp/compilenv.cmi \
     asmcomp/cmx_format.cmi asmcomp/cmmgen.cmi utils/clflags.cmi \
     utils/ccomp.cmi asmcomp/asmgen.cmi asmcomp/asmlink.cmi
-asmcomp/asmlink.cmx : bytecomp/runtimedef.cmx utils/misc.cmx \
-    parsing/location.cmx asmcomp/emitaux.cmx asmcomp/emit.cmx \
+asmcomp/asmlink.cmx : utils/timings.cmx bytecomp/runtimedef.cmx \
+    utils/misc.cmx parsing/location.cmx asmcomp/emitaux.cmx asmcomp/emit.cmx \
     utils/consistbl.cmx utils/config.cmx asmcomp/compilenv.cmx \
     asmcomp/cmx_format.cmi asmcomp/cmmgen.cmx utils/clflags.cmx \
     utils/ccomp.cmx asmcomp/asmgen.cmx asmcomp/asmlink.cmi
 asmcomp/asmpackager.cmo : typing/typemod.cmi bytecomp/translmod.cmi \
-    utils/misc.cmi parsing/location.cmi typing/ident.cmi typing/env.cmi \
-    utils/config.cmi asmcomp/compilenv.cmi asmcomp/cmx_format.cmi \
-    utils/clflags.cmi utils/ccomp.cmi asmcomp/asmlink.cmi asmcomp/asmgen.cmi \
-    asmcomp/asmpackager.cmi
+    utils/timings.cmi utils/misc.cmi parsing/location.cmi typing/ident.cmi \
+    typing/env.cmi utils/config.cmi asmcomp/compilenv.cmi \
+    asmcomp/cmx_format.cmi utils/clflags.cmi utils/ccomp.cmi \
+    asmcomp/asmlink.cmi asmcomp/asmgen.cmi asmcomp/asmpackager.cmi
 asmcomp/asmpackager.cmx : typing/typemod.cmx bytecomp/translmod.cmx \
-    utils/misc.cmx parsing/location.cmx typing/ident.cmx typing/env.cmx \
-    utils/config.cmx asmcomp/compilenv.cmx asmcomp/cmx_format.cmi \
-    utils/clflags.cmx utils/ccomp.cmx asmcomp/asmlink.cmx asmcomp/asmgen.cmx \
-    asmcomp/asmpackager.cmi
+    utils/timings.cmx utils/misc.cmx parsing/location.cmx typing/ident.cmx \
+    typing/env.cmx utils/config.cmx asmcomp/compilenv.cmx \
+    asmcomp/cmx_format.cmi utils/clflags.cmx utils/ccomp.cmx \
+    asmcomp/asmlink.cmx asmcomp/asmgen.cmx asmcomp/asmpackager.cmi
 asmcomp/branch_relaxation.cmo : utils/misc.cmi asmcomp/mach.cmi \
     asmcomp/linearize.cmi asmcomp/cmm.cmi asmcomp/branch_relaxation_intf.cmo \
     asmcomp/branch_relaxation.cmi
