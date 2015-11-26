@@ -36,10 +36,10 @@ val regexp : string -> regexp
               To include a [\]] character in a set, make it the first
               character of the set. To include a [-] character in a set,
               make it the first or the last character of the set.
-   - [^     ] Matches at beginning of line (either at the beginning of
-              the matched string, or just after a newline character).
-   - [$     ] Matches at end of line (either at the end of the matched
-              string, or just before a newline character).
+   - [^     ] Matches at beginning of line: either at the beginning of
+              the matched string, or just after a '\n' character.
+   - [$     ] Matches at end of line: either at the end of the matched
+              string, or just before a '\n' character.
    - [\|    ] (infix) Alternative between two expressions.
    - [\(..\)] Grouping and naming of the enclosed expression.
    - [\1    ] The text matched by the first [\(...\)] expression
