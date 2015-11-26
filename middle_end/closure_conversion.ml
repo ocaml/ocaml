@@ -27,19 +27,19 @@ type t = {
 (** Generate a wrapper ("stub") function that accepts a tuple argument and
     calls another function with arguments extracted in the obvious
     manner from the tuple. *)
-let tupled_function_call_stub original_params tuplified_version
+let tupled_function_call_stub original_params unboxed_version
       : Flambda.function_declaration =
   let tuple_param =
-    Variable.rename ~append:"tupled_stub_param" tuplified_version
+    Variable.rename ~append:"tupled_stub_param" unboxed_version
   in
   let params = List.map (fun p -> Variable.rename p) original_params in
   let call : Flambda.t =
     Apply ({
-        func = tuplified_version;
+        func = unboxed_version;
         args = params;
         (* CR-someday mshinwell for mshinwell: investigate if there is some
-           redundancy here (func is also tuplified_version) *)
-        kind = Direct (Closure_id.wrap tuplified_version);
+           redundancy here (func is also unboxed_version) *)
+        kind = Direct (Closure_id.wrap unboxed_version);
         dbg = Debuginfo.none;
         inline = Default_inline;
       })
@@ -459,11 +459,11 @@ and close_functions t external_env function_declarations : Flambda.named =
     match Function_decl.kind decl with
     | Curried -> Variable.Map.add closure_bound_var fun_decl map
     | Tupled ->
-      let tuplified_version = Variable.rename closure_bound_var in
+      let unboxed_version = Variable.rename closure_bound_var in
       let generic_function_stub =
-        tupled_function_call_stub params tuplified_version
+        tupled_function_call_stub params unboxed_version
       in
-      Variable.Map.add tuplified_version fun_decl
+      Variable.Map.add unboxed_version fun_decl
         (Variable.Map.add closure_bound_var generic_function_stub map)
   in
   let function_decls =
