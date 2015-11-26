@@ -601,7 +601,7 @@ let extract_label l ls = extract_label_aux [] l ls
 
 type change =
     Ctype of type_expr * type_desc
-  | Ccompress of type_expr * type_desc
+  | Ccompress of type_expr * type_desc * type_desc
   | Clevel of type_expr * int
   | Cname of
       (Path.t * type_expr list) option ref * (Path.t * type_expr list) option
@@ -613,7 +613,7 @@ type change =
 
 let undo_change = function
     Ctype  (ty, desc) -> ty.desc <- desc
-  | Ccompress  (ty, desc) -> ty.desc <- desc
+  | Ccompress  (ty, desc, _) -> ty.desc <- desc
   | Clevel (ty, level) -> ty.level <- level
   | Cname  (r, v) -> r := v
   | Crow   (r, v) -> r := v
@@ -704,24 +704,27 @@ let backtrack (changes, old) =
       last_snapshot := old;
       Weak.set trail 0 (Some changes)
 
-let rec undo_compress_log accu r =
+let rec rev_compress_log log r =
   match !r with
-    Unchanged | Invalid as d ->
-      List.iter (fun r -> r := d) accu
-  | Change (Ccompress (ty, desc), next) ->
-      ty.desc <- desc;
-      undo_compress_log (r::accu) next
-  | Change (_, next) as d ->
-      List.iter (fun r -> r := d) accu;
-      undo_compress_log [] next
+    Unchanged | Invalid ->
+      log
+  | Change (Ccompress _, next) ->
+      rev_compress_log (r::log) next
+  | Change (_, next) ->
+      rev_compress_log log next
 
 let undo_compress (changes, old) =
   match !changes with
-    Unchanged -> last_snapshot := old
+    Unchanged
   | Invalid -> ()
   | Change _ ->
-      undo_compress_log [] changes;
-      last_snapshot := old
+      let log = rev_compress_log [] changes in
+      List.iter
+	(fun r -> match !r with
+	  Change (Ccompress (ty, desc, d), next) when ty.desc == d ->
+	    ty.desc <- desc; r := !next
+	| _ -> ())
+	log
 
 let rec repr_link n t d =
  function
@@ -731,7 +734,7 @@ let rec repr_link n t d =
      repr_link (succ n) t d' t'
  | t' ->
      if n > 1 then begin
-       log_change (Ccompress (t, t.desc)); t.desc <- d
+       log_change (Ccompress (t, t.desc, d)); t.desc <- d
      end;
      t'
 
