@@ -14,7 +14,7 @@ open Clflags
 
 let compile_file filename =
   Clflags.dlcode := false;
-  Compilenv.reset "test";
+  Compilenv.reset ~sourcefile:(Timings.File filename) "test";
   Emit.begin_assembly();
   let ic = open_in filename in
   let lb = Lexing.from_channel ic in
