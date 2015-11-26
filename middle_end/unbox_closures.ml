@@ -57,6 +57,7 @@ let rewrite_function_decl
     ~stub:function_decl.stub
     ~dbg:function_decl.dbg
     ~inline:function_decl.inline
+    ~is_a_functor:function_decl.is_a_functor
 
 let create_wrapper
     ~(function_decls : Flambda.function_declarations)
@@ -100,6 +101,7 @@ let create_wrapper
     ~stub:true
     ~dbg:Debuginfo.none
     ~inline:Default_inline
+    ~is_a_functor:false
 
 (* It is important to limit the number of arguments added by this pass:
    if arguments end up being passed on the stack, tail call optimization
@@ -249,6 +251,7 @@ let replace_free_vars_by_equal_specialised_args
       ~stub:function_decl.stub
       ~dbg:function_decl.dbg
       ~inline:function_decl.inline
+      ~is_a_functor:function_decl.is_a_functor
 
 let rewrite_function_declaration
     ~free_vars

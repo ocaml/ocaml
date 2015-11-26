@@ -93,7 +93,8 @@ let import_function_declarations_for_pack units pack
         Flambda.create_function_declaration ~params:function_decl.params
           ~body:(import_code_for_pack units pack function_decl.body)
           ~stub:function_decl.stub ~dbg:function_decl.dbg
-          ~inline:function_decl.inline)
+          ~inline:function_decl.inline
+          ~is_a_functor:function_decl.is_a_functor)
       function_decls.funs
   in
   Flambda.update_function_declarations function_decls ~funs

@@ -332,7 +332,8 @@ let map_general ~toplevel f f_named tree =
                     ~body:(aux func_decl.body)
                     ~stub:func_decl.stub
                     ~dbg:func_decl.dbg
-                    ~inline:func_decl.inline)
+                    ~inline:func_decl.inline
+                    ~is_a_functor:func_decl.is_a_functor)
                 function_decls.funs
             in
             Flambda.update_function_declarations function_decls ~funs
@@ -388,7 +389,8 @@ let map_symbols_on_set_of_closures
              ~body
              ~stub:func_decl.stub
              ~dbg:func_decl.dbg
-             ~inline:func_decl.inline)
+             ~inline:func_decl.inline
+             ~is_a_functor:func_decl.is_a_functor)
         function_decls.funs
     in
     Flambda.update_function_declarations function_decls ~funs
@@ -467,7 +469,8 @@ let map_function_bodies (set_of_closures : Flambda.set_of_closures) ~f =
           ~params:function_decl.params
           ~stub:function_decl.stub
           ~dbg:function_decl.dbg
-          ~inline:function_decl.inline)
+          ~inline:function_decl.inline
+          ~is_a_functor:function_decl.is_a_functor)
       set_of_closures.function_decls.funs
   in
   let function_decls =
@@ -488,7 +491,8 @@ let rec map_sets_of_closures_of_program (program : Flambda.program)
             ~params:function_decl.params
             ~stub:function_decl.stub
             ~dbg:function_decl.dbg
-            ~inline:function_decl.inline)
+            ~inline:function_decl.inline
+            ~is_a_functor:function_decl.is_a_functor)
         set_of_closures.function_decls.funs
     in
     let function_decls =
@@ -537,7 +541,8 @@ let rec map_exprs_at_toplevel_of_program (program : Flambda.program)
             ~params:function_decl.params
             ~stub:function_decl.stub
             ~dbg:function_decl.dbg
-            ~inline:function_decl.inline)
+            ~inline:function_decl.inline
+            ~is_a_functor:function_decl.is_a_functor)
         set_of_closures.function_decls.funs
     in
     let function_decls =

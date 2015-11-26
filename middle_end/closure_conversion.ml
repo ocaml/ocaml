@@ -54,6 +54,7 @@ let tupled_function_call_stub original_params tuplified_version
   in
   Flambda.create_function_declaration ~params:[tuple_param]
     ~body ~stub:true ~dbg:Debuginfo.none ~inline:Always_inline
+    ~is_a_functor:false
 
 (** Propagate an [Lev_after] debugging event into an adjacent Flambda node. *)
 let add_debug_info (ev : Lambda.lambda_event) (flam : Flambda.t)
@@ -136,7 +137,7 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
     let set_of_closures =
       let decl =
         Function_decl.create ~let_rec_ident:None ~closure_bound_var ~kind
-          ~params ~body ~inline:attr.inline
+          ~params ~body ~inline:attr.inline ~is_a_functor:attr.is_a_functor
       in
       close_functions t env (Function_decls.create [decl])
     in
@@ -179,7 +180,7 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
             let function_declaration =
               Function_decl.create ~let_rec_ident:(Some let_rec_ident)
                 ~closure_bound_var ~kind ~params ~body
-                ~inline:attr.inline
+                ~inline:attr.inline ~is_a_functor:attr.is_a_functor
             in
             Some function_declaration
           | _ -> None)
@@ -453,6 +454,7 @@ and close_functions t external_env function_declarations : Flambda.named =
     let fun_decl =
       Flambda.create_function_declaration ~params ~body ~stub ~dbg
         ~inline:(Function_decl.inline decl)
+        ~is_a_functor:(Function_decl.is_a_functor decl)
     in
     match Function_decl.kind decl with
     | Curried -> Variable.Map.add closure_bound_var fun_decl map
@@ -504,7 +506,7 @@ and close_let_bound_expression t ?let_rec_ident let_bound_var env
     in
     let decl =
       Function_decl.create ~let_rec_ident ~closure_bound_var ~kind ~params
-        ~body ~inline:attr.inline
+        ~body ~inline:attr.inline ~is_a_functor:attr.is_a_functor
     in
     let set_of_closures_var =
       Variable.rename let_bound_var ~append:"_set_of_closures"

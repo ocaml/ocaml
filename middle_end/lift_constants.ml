@@ -488,7 +488,8 @@ let introduce_free_variables_in_set_of_closures
                ~body
                ~stub:ffun.stub
                ~dbg:ffun.dbg
-               ~inline:ffun.inline)
+               ~inline:ffun.inline
+               ~is_a_functor:ffun.is_a_functor)
           function_decls.funs)
   in
   let free_vars =

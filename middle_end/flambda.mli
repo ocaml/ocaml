@@ -286,6 +286,7 @@ and function_declaration = private {
   (** Debug info for the function declaration. *)
   inline : Lambda.inline_attribute;
   (** Inlining requirements from the source code. *)
+  is_a_functor : bool;
 }
 
 (** Equivalent to the similar type in [Lambda]. *)
@@ -502,6 +503,7 @@ val create_function_declaration
   -> stub:bool
   -> dbg:Debuginfo.t
   -> inline:Lambda.inline_attribute
+  -> is_a_functor:bool
   -> function_declaration
 
 (** Create a set of function declarations given the individual declarations. *)

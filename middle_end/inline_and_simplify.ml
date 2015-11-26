@@ -628,7 +628,7 @@ and simplify_set_of_closures original_env r
     let function_decl =
       Flambda.create_function_declaration ~params:function_decl.params
         ~body ~stub:function_decl.stub ~dbg:function_decl.dbg
-        ~inline:function_decl.inline
+        ~inline:function_decl.inline ~is_a_functor:function_decl.is_a_functor
     in
     let function_decl =
       Unbox_closures.rewrite_function_declaration

@@ -280,6 +280,7 @@ let make_closure_declaration ~id ~body ~params : Flambda.t =
   let function_declaration =
     Flambda.create_function_declaration ~params:(List.map subst params)
       ~body ~stub:false ~dbg:Debuginfo.none ~inline:Default_inline
+      ~is_a_functor:false
   in
   assert (Variable.Set.equal (Variable.Set.map subst free_variables)
     function_declaration.free_variables);

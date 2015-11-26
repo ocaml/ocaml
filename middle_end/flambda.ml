@@ -118,6 +118,7 @@ and function_declaration = {
   stub : bool;
   dbg : Debuginfo.t;
   inline : Lambda.inline_attribute;
+  is_a_functor : bool;
 }
 
 and switch = {
@@ -846,7 +847,7 @@ let free_symbols expr =
     (Is_expr expr);
   !symbols
 
-let create_function_declaration ~params ~body ~stub ~dbg ~inline
+let create_function_declaration ~params ~body ~stub ~dbg ~inline ~is_a_functor
       : function_declaration =
   { params;
     body;
@@ -855,6 +856,7 @@ let create_function_declaration ~params ~body ~stub ~dbg ~inline
     stub;
     dbg;
     inline;
+    is_a_functor;
   }
 
 let create_function_declarations ~set_of_closures_id ~funs ~compilation_unit =

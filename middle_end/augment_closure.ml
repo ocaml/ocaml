@@ -137,6 +137,7 @@ let rewrite_set_of_closures
       ~params:function_decl.params
       ~stub:function_decl.stub
       ~dbg:function_decl.dbg
+      ~is_a_functor:function_decl.is_a_functor
   in
   let funs =
     Variable.Map.map
