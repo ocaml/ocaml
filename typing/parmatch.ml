@@ -1925,8 +1925,8 @@ let check_unused pred tdefs casel =
               (* First look for redundant or partially redundant patterns *)
               let r = every_satisfiables (make_rows pss) (make_row qs) in
               let refute = (c_rhs.exp_desc = Texp_unreachable) in
-              (* Do not warn for unused _ -> _ *)
-              if r = Unused && refute && q.pat_desc = Tpat_any then () else
+              (* Do not warn for unused [pat -> .] *)
+              if r = Unused && refute then () else
               let r =
                 (* Do not refine if there are no other lines *)
                 let skip =

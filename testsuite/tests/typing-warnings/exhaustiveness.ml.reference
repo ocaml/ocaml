@@ -98,18 +98,19 @@ val harder : (zero succ, zero succ, zero succ) plus option -> bool = <fun>
 #         type _ t = Int : int t
 # val f : bool t -> 'a = <fun>
 #         Characters 54-55:
-  let f () = match None with _ -> .;;
+  let f () = match None with _ -> .;; (* error *)
                              ^
 Error: This match case could not be refuted.
        Here is an example of a value that would reach it: _
 # Characters 47-48:
-  let g () = match None with _ -> () | exception _ -> .;;
+  let g () = match None with _ -> () | exception _ -> .;; (* error *)
                                                  ^
 Error: This match case could not be refuted.
        Here is an example of a value that would reach it: _
 # Characters 27-28:
-  let h () = match None with _ -> .  | exception _ -> .;; 
+  let h () = match None with _ -> .  | exception _ -> .;; (* error *)
                              ^
 Error: This match case could not be refuted.
        Here is an example of a value that would reach it: _
+# val f : 'a option -> unit = <fun>
 # 
