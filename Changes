@@ -301,6 +301,8 @@ Bug fixes:
   (report and fix by Patrick Star)
 - PR#7036: Module alias is not taken into account when checking module
   type compatibility (in a class type) (Jacques Garrigue)
+- PR#7038: out of memory condition in caml_io_mutex_lock
+  (Xavier Leroy, report by Marc Lasson)
 - PR#7039: Unix.getsockname returns garbage for unnamed PF_UNIX sockets
   (Xavier Leroy)
 - PR#7042 and GPR#295: CSE optimization confuses the FP literals +0.0 and -0.0
