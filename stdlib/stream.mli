@@ -13,6 +13,8 @@
 
 (** Streams and parsers. *)
 
+[@@@ocaml.deprecated]
+
 type 'a t
 (** The type of streams holding values of type ['a]. *)
 

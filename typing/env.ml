@@ -64,6 +64,19 @@ exception Error of error
 
 let error err = raise (Error err)
 
+let lookup_location = ref None
+
+let lookup_loc loc f =
+  let old = !lookup_location in
+  lookup_location := Some loc;
+  try
+    let r = f () in
+    lookup_location := old;
+    r
+  with exn ->
+    lookup_location := old;
+    raise exn
+
 module EnvLazy : sig
   type ('a,'b) t
 
@@ -366,8 +379,7 @@ let read_pers_struct check modname filename =
       | Rectypes ->
           if not !Clflags.recursive_types then
             error (Need_recursive_types(ps.ps_name, !current_unit))
-      | Deprecated s ->
-          Location.prerr_warning Location.none (Warnings.Deprecated (Printf.sprintf "module %s\n%s" modname s))
+      | Deprecated _ -> ()
     )
     ps.ps_flags;
   if check then check_consistency ps;
@@ -376,18 +388,33 @@ let read_pers_struct check modname filename =
 
 let find_pers_struct check name =
   if name = "*predef*" then raise Not_found;
-  match Hashtbl.find persistent_structures name with
-  | Some ps -> ps
-  | None -> raise Not_found
-  | exception Not_found ->
-      let filename =
-        try
-          find_in_path_uncap !load_path (name ^ ".cmi")
-        with Not_found ->
-          Hashtbl.add persistent_structures name None;
-          raise Not_found
-      in
-      read_pers_struct check name filename
+  let ps =
+    match Hashtbl.find persistent_structures name with
+    | Some ps -> ps
+    | None -> raise Not_found
+    | exception Not_found ->
+        let filename =
+          try
+            find_in_path_uncap !load_path (name ^ ".cmi")
+          with Not_found ->
+            Hashtbl.add persistent_structures name None;
+            raise Not_found
+        in
+        read_pers_struct check name filename
+  in
+  List.iter
+    (function
+      | Rectypes -> ()
+      | Deprecated s ->
+          begin match !lookup_location with
+          | None -> ()
+          | Some loc ->
+              Location.prerr_warning loc
+                (Warnings.Deprecated (Printf.sprintf "module %s\n%s" name s))
+          end
+    )
+    ps.ps_flags;
+  ps
 
 (* Emits a warning if there is no valid cmi for name *)
 let check_pers_struct name =

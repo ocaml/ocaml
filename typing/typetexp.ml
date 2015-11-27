@@ -248,7 +248,8 @@ let find_component lookup make_error env loc lid =
     match lid with
     | Longident.Ldot (Longident.Lident "*predef*", s) ->
         lookup (Longident.Lident s) Env.initial_safe_string
-    | _ -> lookup lid env
+    | _ ->
+      Env.lookup_loc loc (fun () -> lookup lid env)
   with Not_found ->
     narrow_unbound_lid_error env loc lid make_error
   | Env.Recmodule ->
