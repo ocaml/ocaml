@@ -63,15 +63,15 @@ INSTALL_LIBDIR=$(DESTDIR)$(LIBDIR)
 
 
 install::
-	cp $(CAMLRUN)$(EXE) $(INSTALL_BINDIR)/ocamlrun$(EXE)
-	cp libcamlrun.$(A) $(INSTALL_LIBDIR)/libcamlrun.$(A)
-	cd $(INSTALL_LIBDIR); $(RANLIB) libcamlrun.$(A)
-	if test -d $(INSTALL_LIBDIR)/caml; then : ; \
-	  else mkdir $(INSTALL_LIBDIR)/caml; fi
+	cp $(CAMLRUN)$(EXE) "$(INSTALL_BINDIR)/ocamlrun$(EXE)"
+	cp libcamlrun.$(A) "$(INSTALL_LIBDIR)/libcamlrun.$(A)"
+	cd "$(INSTALL_LIBDIR)"; $(RANLIB) libcamlrun.$(A)
+	if test -d "$(INSTALL_LIBDIR)/caml"; then : ; \
+	  else mkdir "$(INSTALL_LIBDIR)/caml"; fi
 	for i in $(PUBLIC_INCLUDES); do \
-	  sed -f ../tools/cleanup-header caml/$$i > $(INSTALL_LIBDIR)/caml/$$i; \
+	  sed -f ../tools/cleanup-header caml/$$i > "$(INSTALL_LIBDIR)/caml/$$i"; \
 	done
-	cp ld.conf $(INSTALL_LIBDIR)/ld.conf
+	cp ld.conf "$(INSTALL_LIBDIR)/ld.conf"
 .PHONY: install
 
 install:: install-$(RUNTIMED)
@@ -84,8 +84,8 @@ install-noruntimed:
 # because it's an executable for the target machine, while we're installing
 # binaries for the host.
 install-runtimed:
-	cp ocamlrund$(EXE) $(INSTALL_BINDIR)/ocamlrund$(EXE)
-	cp libcamlrund.$(A) $(INSTALL_LIBDIR)/libcamlrund.$(A)
+	cp ocamlrund$(EXE) "$(INSTALL_BINDIR)/ocamlrund$(EXE)"
+	cp libcamlrund.$(A) "$(INSTALL_LIBDIR)/libcamlrund.$(A)"
 .PHONY: install-runtimed
 
 ifeq "$(RUNTIMEI)" "true"

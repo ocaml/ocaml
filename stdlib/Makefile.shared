@@ -56,8 +56,8 @@ INSTALL_LIBDIR=$(DESTDIR)$(LIBDIR)
 install::
 	cp stdlib.cma std_exit.cmo *.cmi *.cmt *.cmti *.mli *.ml \
 	  camlheader_ur \
-	  $(INSTALL_LIBDIR)
-	cp target_camlheader $(INSTALL_LIBDIR)/camlheader
+	  "$(INSTALL_LIBDIR)"
+	cp target_camlheader "$(INSTALL_LIBDIR)/camlheader"
 
 ifeq "$(RUNTIMED)" "runtimed"
 install::
@@ -68,7 +68,6 @@ ifeq "$(RUNTIMEI)" "true"
 install::
 	cp target_camlheaderi $(INSTALL_LIBDIR)
 endif
-
 
 stdlib.cma: $(OBJS)
 	$(CAMLC) -a -o stdlib.cma $(OBJS)
