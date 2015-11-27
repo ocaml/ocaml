@@ -304,6 +304,9 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
         ap_args = [arg];
         ap_loc = loc;
         ap_should_be_tailcall = false;
+        (* CR-someday lwhite: it would be nice to be able to give
+           inlined attributes to functions applied with the application
+           operators. *)
         ap_inlined = Default_inline;
       }
     in
