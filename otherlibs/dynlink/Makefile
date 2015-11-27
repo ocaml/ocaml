@@ -81,13 +81,13 @@ extract_crc: dynlink.cma extract_crc.cmo
 INSTALL_LIBDIR=$(DESTDIR)$(LIBDIR)
 
 install:
-	cp dynlink.cmi dynlink.cma dynlink.mli $(INSTALL_LIBDIR)
-	cp extract_crc $(INSTALL_LIBDIR)/extract_crc$(EXE)
+	cp dynlink.cmi dynlink.cma dynlink.mli "$(INSTALL_LIBDIR)"
+	cp extract_crc "$(INSTALL_LIBDIR)/extract_crc$(EXE)"
 
 installopt:
 	if $(NATDYNLINK); then \
-	  cp $(NATOBJS) dynlink.cmxa dynlink.$(A) $(INSTALL_LIBDIR) && \
-	  cd $(INSTALL_LIBDIR) && $(RANLIB) dynlink.$(A); \
+	  cp $(NATOBJS) dynlink.cmxa dynlink.$(A) "$(INSTALL_LIBDIR)" && \
+	  cd "$(INSTALL_LIBDIR)" && $(RANLIB) dynlink.$(A); \
 	fi
 
 partialclean:

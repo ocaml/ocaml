@@ -60,9 +60,9 @@ INSTALL_BINDIR=$(DESTDIR)$(BINDIR)
 INSTALL_LIBDIR=$(DESTDIR)$(LIBDIR)
 
 install::
-	cp ocamldep $(INSTALL_BINDIR)/ocamldep$(EXE)
-	if test -f ocamldep.opt; \
-	  then cp ocamldep.opt $(INSTALL_BINDIR)/ocamldep.opt$(EXE); else :; fi
+	cp ocamldep "$(INSTALL_BINDIR)/ocamldep$(EXE)"
+	if test -f ocamldep.opt; then \
+	  cp ocamldep.opt "$(INSTALL_BINDIR)/ocamldep.opt$(EXE)"; else :; fi
 
 # The profiler
 
@@ -87,13 +87,13 @@ ocamloptp: ocamloptp.cmo
 opt:: profiling.cmx
 
 install::
-	cp ocamlprof $(INSTALL_BINDIR)/ocamlprof$(EXE)
-	cp ocamlcp $(INSTALL_BINDIR)/ocamlcp$(EXE)
-	cp ocamloptp $(INSTALL_BINDIR)/ocamloptp$(EXE)
-	cp profiling.cmi profiling.cmo $(INSTALL_LIBDIR)
+	cp ocamlprof "$(INSTALL_BINDIR)/ocamlprof$(EXE)"
+	cp ocamlcp "$(INSTALL_BINDIR)/ocamlcp$(EXE)"
+	cp ocamloptp "$(INSTALL_BINDIR)/ocamloptp$(EXE)"
+	cp profiling.cmi profiling.cmo "$(INSTALL_LIBDIR)"
 
 installopt::
-	cp profiling.cmx profiling.$(O) $(INSTALL_LIBDIR)
+	cp profiling.cmx profiling.$(O) "$(INSTALL_LIBDIR)"
 
 clean::
 	rm -f ocamlprof ocamlcp ocamloptp
@@ -105,7 +105,7 @@ ocamlmklib: ocamlmklibconfig.cmo ocamlmklib.cmo
 	$(CAMLC) $(LINKFLAGS) -o ocamlmklib ocamlmklibconfig.cmo config.cmo ocamlmklib.cmo
 
 install::
-	cp ocamlmklib $(INSTALL_BINDIR)/ocamlmklib$(EXE)
+	cp ocamlmklib "$(INSTALL_BINDIR)/ocamlmklib$(EXE)"
 
 clean::
 	rm -f ocamlmklib
@@ -137,7 +137,7 @@ lexer299.ml: lexer299.mll
 	$(CAMLLEX) lexer299.mll
 
 #install::
-#	cp ocaml299to3 $(INSTALL_BINDIR)/ocaml299to3$(EXE)
+#	cp ocaml299to3 "$(INSTALL_BINDIR)/ocaml299to3$(EXE)"
 
 clean::
 	rm -f ocaml299to3 lexer299.ml
@@ -153,7 +153,7 @@ lexer301.ml: lexer301.mll
 	$(CAMLLEX) lexer301.mll
 
 #install::
-#	cp scrapelabels $(INSTALL_LIBDIR)
+#	cp scrapelabels "$(INSTALL_LIBDIR)"
 
 clean::
 	rm -f scrapelabels lexer301.ml
@@ -170,7 +170,7 @@ addlabels: addlabels.cmo
 		$(ADDLABELS_IMPORTS) addlabels.cmo
 
 #install::
-#	cp addlabels $(INSTALL_LIBDIR)
+#	cp addlabels "$(INSTALL_LIBDIR)"
 
 clean::
 	rm -f addlabels
@@ -235,7 +235,7 @@ opnames.ml: ../byterun/caml/instruct.h
 	unset LC_ALL || : ; \
 	unset LC_CTYPE || : ; \
 	unset LC_COLLATE LANG || : ; \
-	sed -e '/\/\*/d' \
+	sed -e '/[/][*]/d' \
 	    -e '/^#/d' \
 	    -e 's/enum \(.*\) {/let names_of_\1 = [|/' \
 	    -e 's/.*};$$/ |]/' \
@@ -276,8 +276,8 @@ objinfo: objinfo_helper$(EXE) $(OBJINFO)
 	$(CAMLC) -o objinfo $(OBJINFO)
 
 install::
-	cp objinfo $(INSTALL_BINDIR)/ocamlobjinfo$(EXE)
-	cp objinfo_helper$(EXE) $(INSTALL_LIBDIR)/objinfo_helper$(EXE)
+	cp objinfo "$(INSTALL_BINDIR)/ocamlobjinfo$(EXE)"
+	cp objinfo_helper$(EXE) "$(INSTALL_LIBDIR)/objinfo_helper$(EXE)"
 
 clean::
 	rm -f objinfo objinfo_helper$(EXE)
