@@ -278,8 +278,6 @@ module Result = struct
           | threshold -> threshold
           | exception Not_found -> Clflags.default_inline_threshold
       in
-Printf.printf "for round %d threshold is %d\n%!"
-  round unscaled;
       (* CR-soon pchambart: Add a warning if this is too big
          mshinwell: later *)
       Can_inline_if_no_larger_than (unscaled * 8)
