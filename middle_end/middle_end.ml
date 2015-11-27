@@ -58,6 +58,7 @@ let middle_end ppf ~sourcefile ~prefixname ~backend
   dump_and_check "After closure conversion" flam;
   let rec loop flam =
     pass_number := 0;
+    let round = !round_number in
     incr round_number;
     if !round_number > !Clflags.simplify_rounds then flam
     else
@@ -74,20 +75,20 @@ let middle_end ppf ~sourcefile ~prefixname ~backend
            Remove_unused_closure_vars.remove_unused_closure_variables)
       +-+ ("Inline_and_simplify",
            Inline_and_simplify.run ~never_inline:false ~backend
-             ~prefixname)
+             ~prefixname ~round)
       +-+ ("lift_lets 3", Lift_code.lift_lets)
       +-+ ("Remove_unused_closure_vars 2",
            Remove_unused_closure_vars.remove_unused_closure_variables)
       +-+ ("Inline_and_simplify noinline 1",
            Inline_and_simplify.run ~never_inline:true ~backend
-             ~prefixname)
+             ~prefixname ~round)
       +-+ ("Remove_unused_closure_vars",
            Remove_unused_closure_vars.remove_unused_closure_variables)
       +-+ ("Ref_to_variables",
            Ref_to_variables.eliminate_ref)
       +-+ ("Inline_and_simplify noinline 2",
            Inline_and_simplify.run ~never_inline:true ~backend
-            ~prefixname)
+            ~prefixname ~round)
       +-+ ("Initialize_symbol_to_let_symbol",
            Initialize_symbol_to_let_symbol.run)
       +-+ ("Remove_unused_globals",
