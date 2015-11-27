@@ -60,6 +60,9 @@ Language features:
 - GPR#282: change short-paths penalty heuristic to assign the same cost to
   idents containing double underscores as to idents starting with an underscore
   (Thomas Refis, Leo White)
+- GPR#273: allow to get the extension slot of an extension constructor
+  by writing [%extension_constructor <path>]
+  (Jérémie Dimino)
 
 Compilers:
 - PR#4800: better compilation of tuple assignment (Gabriel Scherer and

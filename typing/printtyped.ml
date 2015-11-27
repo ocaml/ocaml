@@ -373,6 +373,8 @@ and expression i ppf x =
       module_expr i ppf me
   | Texp_unreachable ->
       line i ppf "Texp_unreachable"
+  | Texp_extension_constructor (li, _) ->
+      line i ppf "Texp_extension_constructor %a" fmt_longident li
 
 and value_description i ppf x =
   line i ppf "value_description %a %a\n" fmt_ident x.val_id fmt_location
