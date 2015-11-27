@@ -35,20 +35,13 @@ let pass_dump_linear_if ppf flag message phrase =
   if !flag then fprintf ppf "*** %s@.%a@." message Printlinear.fundecl phrase;
   phrase
 
-let clambda_dump_if ppf
+let raw_clambda_dump_if ppf
       ({ Flambda_to_clambda. expr = ulambda; preallocated_blocks = _;
         structured_constants; exported = _; } as input) =
-  if !dump_clambda then
+  if !dump_rawclambda then
     begin
-      Format.fprintf ppf "@.clambda:@.";
+      Format.fprintf ppf "@.clambda (before Un_anf):@.";
       Printclambda.clambda ppf ulambda;
-      (* List.iter (fun (lbls,cst) -> *)
-      (*     let lbl = match lbls with *)
-      (*       | [] -> assert false *)
-      (*       | (lbl, _) :: _ -> lbl in *)
-      (*     Format.fprintf ppf "%s: %a@." lbl *)
-      (*       Printclambda.structured_constant cst) *)
-      (*   structured_constants *)
       Symbol.Map.iter (fun sym cst ->
           Format.fprintf ppf "%a:@ %a@."
             Symbol.print sym
@@ -194,11 +187,13 @@ let gen_implementation ?toplevel ~sourcefile ~backend ppf flam =
   Timings.(start (Flambda_backend sourcefile));
   prep_flambda_for_export ppf flam ~backend
   ++ Flambda_to_clambda.convert
-  ++ clambda_dump_if ppf
-  (* CR mshinwell: this is ugly *)
+  ++ raw_clambda_dump_if ppf
   ++ (fun { Flambda_to_clambda. expr; preallocated_blocks;
           structured_constants; exported; } ->
-        Un_anf.apply expr, preallocated_blocks, structured_constants, exported)
+        (* "init_code" following the name used in
+           [Cmmgen.compunit_and_constants]. *)
+        Un_anf.apply expr ~what:"init_code", preallocated_blocks,
+          structured_constants, exported)
   ++ set_export_info
   ++ Timings.(stop_id (Flambda_backend sourcefile))
   ++ Timings.(start_id (Cmm sourcefile))

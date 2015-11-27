@@ -2379,7 +2379,7 @@ and transl_letrec env bindings cont =
 (* Translate a function definition *)
 
 let transl_function f =
-  let body = Un_anf.apply f.body in
+  let body = Un_anf.apply f.body ~what:f.label in
   Cfunction {fun_name = f.label;
              fun_args = List.map (fun id -> (id, typ_val)) f.params;
              fun_body = transl empty_env body;

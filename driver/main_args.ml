@@ -511,6 +511,10 @@ let mk_dlambda f =
   "-dlambda", Arg.Unit f, " (undocumented)"
 ;;
 
+let mk_drawclambda f =
+  "-drawclambda", Arg.Unit f, " (undocumented)"
+;;
+
 let mk_dclambda f =
   "-dclambda", Arg.Unit f, " (undocumented)"
 ;;
@@ -728,6 +732,7 @@ module type Optcommon_options = sig
   val _clambda_checks : unit -> unit
   val _dflambda : unit -> unit
   val _dflambda_let : int -> unit
+  val _drawclambda : unit -> unit
   val _dclambda : unit -> unit
   val _dcmm : unit -> unit
   val _dsel : unit -> unit
@@ -1081,6 +1086,7 @@ module Make_opttop_options (F : Opttop_options) = struct
     mk_dparsetree F._dparsetree;
     mk_dtypedtree F._dtypedtree;
     mk_drawlambda F._drawlambda;
+    mk_drawclambda F._drawclambda;
     mk_dclambda F._dclambda;
     mk_dflambda F._dflambda;
     mk_dcmm F._dcmm;

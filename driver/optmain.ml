@@ -187,6 +187,7 @@ module Options = Main_args.Make_optcomp_options (struct
   let _dtypedtree = set dump_typedtree
   let _drawlambda = set dump_rawlambda
   let _dlambda = set dump_lambda
+  let _drawclambda = set dump_rawclambda
   let _dclambda = set dump_clambda
   let _dflambda = set dump_flambda
   let _dflambda_let stamp = dump_flambda_let := Some stamp
