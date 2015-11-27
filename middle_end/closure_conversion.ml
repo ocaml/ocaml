@@ -253,7 +253,7 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
     let is_zero = Variable.create "is_zero" in
     let exn = Variable.create "division_by_zero" in
     let exn_symbol =
-      t.symbol_for_global' (Ident.create_predef_exn "Division_by_zero")
+      t.symbol_for_global' Predef.ident_division_by_zero
     in
     t.imported_symbols <- Symbol.Set.add exn_symbol t.imported_symbols;
     Flambda.create_let zero (Const (Int 0))
