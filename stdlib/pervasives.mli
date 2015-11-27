@@ -1108,7 +1108,7 @@ val ( ^^ ) :
 
 (** {6 Optimisation} *)
 
-val opaque : 'a -> 'a
+external opaque : 'a -> 'a = "%opaque"
 (** Semantically, [opaque v] behaves as the identity function; but for the
     purposes of optimisation passes, such expression is side-effecting and
     yields an unknown result.  This may be used to prevent necessary code

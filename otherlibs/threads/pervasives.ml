@@ -608,7 +608,7 @@ let (^^) (Format (fmt1, str1)) (Format (fmt2, str2)) =
 
 (* Optimisation *)
 
-external opaque : 'a -> 'a = "%identity" "%opaque"
+external opaque : 'a -> 'a = "%opaque"
 
 (* Miscellaneous *)
 
