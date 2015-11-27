@@ -113,4 +113,10 @@ Error: This match case could not be refuted.
 Error: This match case could not be refuted.
        Here is an example of a value that would reach it: _
 # val f : 'a option -> unit = <fun>
+#       Characters 47-77:
+  let f x y = match 1 with 1 when x = y -> 1;;
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Warning 8: this pattern-matching is not exhaustive.
+All clauses in this pattern-matching are guarded.
+val f : 'a -> 'a -> int = <fun>
 # 
