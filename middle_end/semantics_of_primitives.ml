@@ -16,7 +16,7 @@ type coeffects = No_coeffects | Has_coeffects
 
 let for_primitive (prim : Lambda.primitive) =
   match prim with
-  | Pignore -> No_effects, No_coeffects
+  | Pignore | Pidentity -> No_effects, No_coeffects
   | Pmakeblock _
   | Pmakearray _ -> Only_generative_effects, No_coeffects
   | Pduprecord _ ->
@@ -126,7 +126,6 @@ let for_primitive (prim : Lambda.primitive) =
   | Popaque -> Arbitrary_effects, Has_coeffects
   | Ploc _ ->
     Misc.fatal_error "[Ploc] should have been eliminated by [Translcore]"
-  | Pidentity
   | Prevapply _
   | Pdirapply _
   | Psequand
