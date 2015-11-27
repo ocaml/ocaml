@@ -20,6 +20,21 @@ open Parsetree
 open Ast_helper
 open Docstrings
 
+type ('a, 'b) sig_str =
+  | Sig of 'a
+  | Str of 'b
+
+let cons_sig_str m l =
+  match m, l with
+  | Str m, Str l -> Str (m :: l)
+  | Sig m, Sig l -> Sig (m :: l)
+  | Str _, Sig _ | Sig _, Str _ ->
+      raise Syntaxerr.(Error(Mixed_definition_declaration (symbol_rloc())))
+
+let lift_sig_str = function
+  | Str x -> Str [x]
+  | Sig x -> Sig [x]
+
 let mktyp d = Typ.mk ~loc:(symbol_rloc()) d
 let mkpat d = Pat.mk ~loc:(symbol_rloc()) d
 let mkexp d = Exp.mk ~loc:(symbol_rloc()) d
@@ -642,26 +657,11 @@ use_file:
     use_file_body                        { extra_def 1 $1 }
 ;
 use_file_body:
-    use_file_tail                        { $1 }
-  | seq_expr post_item_attributes use_file_tail
-      { (text_def 1) @ Ptop_def[mkstrexp $1 $2] :: $3 }
-;
-use_file_tail:
-    EOF
-      { [] }
-  | SEMISEMI EOF
-      { text_def 1 }
-  | SEMISEMI seq_expr post_item_attributes use_file_tail
-      {  mark_rhs_docs 2 3;
-        (text_def 1) @ (text_def 2) @ Ptop_def[mkstrexp $2 $3] :: $4 }
-  | SEMISEMI structure_item use_file_tail
-      { (text_def 1) @ (text_def 2) @ Ptop_def[$2] :: $3 }
-  | SEMISEMI toplevel_directive use_file_tail
-      {  mark_rhs_docs 2 3;
-        (text_def 1) @ (text_def 2) @ $2 :: $3 }
-  | structure_item use_file_tail
-      { (text_def 1) @ Ptop_def[$1] :: $2 }
-  | toplevel_directive use_file_tail
+  | top_structure EOF
+      { [Ptop_def $1] }
+  | top_structure SEMISEMI use_file_body
+      { Ptop_def $1 :: (text_def 2) @ $3 }
+  | toplevel_directive use_file_body
       { mark_rhs_docs 1 1;
         (text_def 1) @ $1 :: $2 }
 ;
@@ -755,37 +755,53 @@ structure_tail:
   | SEMISEMI structure   { (text_str 1) @ $2 }
   | structure_item structure_tail { (text_str 1) @ $1 :: $2 }
 ;
-structure_item:
-    let_bindings
-      { val_of_let_bindings $1 }
+str_sig_item:
   | primitive_declaration
       { mkstr (Pstr_primitive $1) }
   | value_description
       { mkstr (Pstr_primitive $1) }
   | type_declarations
       { let (nr, l) = $1 in mkstr(Pstr_type (nr, List.rev l)) }
-  | str_type_extension
-      { mkstr(Pstr_typext $1) }
-  | str_exception_declaration
-      { mkstr(Pstr_exception $1) }
-  | module_binding
-      { mkstr(Pstr_module $1) }
-  | rec_module_bindings
-      { mkstr(Pstr_recmodule(List.rev $1)) }
   | module_type_declaration
       { mkstr(Pstr_modtype $1) }
   | open_statement { mkstr(Pstr_open $1) }
-  | class_declarations
-      { mkstr(Pstr_class (List.rev $1)) }
   | class_type_declarations
       { mkstr(Pstr_class_type (List.rev $1)) }
-  | str_include_statement
-      { mkstr(Pstr_include $1) }
   | item_extension post_item_attributes
       { mkstr(Pstr_extension ($1, (add_docs_attrs (symbol_docs ()) $2))) }
   | floating_attribute
       { mark_symbol_docs ();
         mkstr(Pstr_attribute $1) }
+  | type_extension
+      { mkstr(Pstr_typext $1) }
+  | exception_declaration
+      { mkstr(Pstr_exception $1) }
+  | module_binding
+      {
+        match $1 with
+        | Str m -> mkstr (Pstr_module m)
+        | Sig m -> mkstr (Psig_module m)
+      }
+  | rec_module_bindings
+      {
+        match $1 with
+        | Str l -> mkstr(Pstr_recmodule(List.rev l))
+        | Sig l -> mkstr(Psig_recmodule(List.rev l))
+      }
+  | class_declarations
+      {
+        match $1 with
+        | Str l -> mkstr(Pstr_class(List.rev l))
+        | Sig l -> mkstr(Psig_class(List.rev l))
+      }
+  | let_bindings
+      { val_of_let_bindings $1 }
+
+;
+structure_item:
+    str_sig_item { $1 }
+  | str_include_statement
+      { mkstr(Pstr_include $1) }
 ;
 str_include_statement:
     INCLUDE module_expr post_item_attributes
@@ -794,30 +810,52 @@ str_include_statement:
 ;
 module_binding_body:
     EQUAL module_expr
-      { $2 }
+      { Str $2 }
   | COLON module_type EQUAL module_expr
-      { mkmod(Pmod_constraint($4, $2)) }
+      { Str (mkmod(Pmod_constraint($4, $2))) }
+  | COLON module_type
+      { Sig $2 }
   | functor_arg module_binding_body
-      { mkmod(Pmod_functor(fst $1, snd $1, $2)) }
+      {
+        match $2 with
+        | Str m -> Str (mkmod(Pmod_functor(fst $1, snd $1, m)))
+        | Sig mt -> Sig (mkmty(Pmty_functor(fst $1, snd $1, mt)))
+                      (* TODO: reject _ as functor_arg name? *)
+      }
 ;
 module_binding:
     MODULE UIDENT module_binding_body post_item_attributes
-      { Mb.mk (mkrhs $2 2) $3 ~attrs:$4
-              ~loc:(symbol_rloc ()) ~docs:(symbol_docs ()) }
+    { let f (mk : ?loc:_ -> ?attrs:_ -> ?docs:_ -> ?text:_ -> _) m =
+        mk (mkrhs $2 2) m ~attrs:$4 ~loc:(symbol_rloc ())
+          ~text:(symbol_text ()) ~docs:(symbol_docs ())
+      in match $3 with
+      | Str m -> Str (f Mb.mk m)
+      | Sig mt -> Sig (f Md.mk mt)
+    }
 ;
 rec_module_bindings:
-    rec_module_binding                            { [$1] }
-  | rec_module_bindings and_module_binding        { $2 :: $1 }
+    rec_module_binding                     { lift_sig_str $1 }
+  | rec_module_bindings and_module_binding { cons_sig_str $2 $1 }
 ;
 rec_module_binding:
     MODULE REC UIDENT module_binding_body post_item_attributes
-      { Mb.mk (mkrhs $3 3) $4 ~attrs:$5
-              ~loc:(symbol_rloc ()) ~docs:(symbol_docs ()) }
+    { let f (mk : ?loc:_ -> ?attrs:_ -> ?docs:_ -> ?text:_ -> _) m =
+        mk (mkrhs $3 3) m ~attrs:$5 ~loc:(symbol_rloc ())
+          ~text:(symbol_text ()) ~docs:(symbol_docs ())
+      in match $4 with
+      | Str m -> Str (f Mb.mk m)
+      | Sig mt -> Sig (f Md.mk mt)
+    }
 ;
 and_module_binding:
     AND UIDENT module_binding_body post_item_attributes
-      { Mb.mk (mkrhs $2 2) $3 ~attrs:$4 ~loc:(symbol_rloc ())
-               ~text:(symbol_text ()) ~docs:(symbol_docs ()) }
+    { let f (mk : ?loc:_ -> ?attrs:_ -> ?docs:_ -> ?text:_ -> _) m =
+        mk (mkrhs $2 2) m ~attrs:$4 ~loc:(symbol_rloc ())
+          ~text:(symbol_text ()) ~docs:(symbol_docs ())
+      in match $3 with
+      | Str m -> Str (f Mb.mk m)
+      | Sig mt -> Sig (f Md.mk mt)
+    }
 ;
 
 /* Module types */
@@ -859,37 +897,9 @@ signature:
   | signature_item signature { (text_sig 1) @ $1 :: $2 }
 ;
 signature_item:
-    value_description
-      { mksig(Psig_value $1) }
-  | primitive_declaration
-      { mksig(Psig_value $1) }
-  | type_declarations
-      { let (nr, l) = $1 in mksig(Psig_type (nr, List.rev l)) }
-  | sig_type_extension
-      { mksig(Psig_typext $1) }
-  | sig_exception_declaration
-      { mksig(Psig_exception $1) }
-  | module_declaration
-      { mksig(Psig_module $1) }
-  | module_alias
-      { mksig(Psig_module $1) }
-  | rec_module_declarations
-      { mksig(Psig_recmodule (List.rev $1)) }
-  | module_type_declaration
-      { mksig(Psig_modtype $1) }
-  | open_statement
-      { mksig(Psig_open $1) }
+    str_sig_item { $1 }
   | sig_include_statement
       { mksig(Psig_include $1) }
-  | class_descriptions
-      { mksig(Psig_class (List.rev $1)) }
-  | class_type_declarations
-      { mksig(Psig_class_type (List.rev $1)) }
-  | item_extension post_item_attributes
-      { mksig(Psig_extension ($1, (add_docs_attrs (symbol_docs ()) $2))) }
-  | floating_attribute
-      { mark_symbol_docs ();
-        mksig(Psig_attribute $1) }
 ;
 open_statement:
   | OPEN override_flag mod_longident post_item_attributes
@@ -900,39 +910,6 @@ sig_include_statement:
     INCLUDE module_type post_item_attributes %prec below_WITH
       { Incl.mk $2 ~attrs:$3
                 ~loc:(symbol_rloc()) ~docs:(symbol_docs ()) }
-;
-module_declaration_body:
-    COLON module_type
-      { $2 }
-  | LPAREN UIDENT COLON module_type RPAREN module_declaration_body
-      { mkmty(Pmty_functor(mkrhs $2 2, Some $4, $6)) }
-  | LPAREN RPAREN module_declaration_body
-      { mkmty(Pmty_functor(mkrhs "*" 1, None, $3)) }
-;
-module_declaration:
-    MODULE UIDENT module_declaration_body post_item_attributes
-      { Md.mk (mkrhs $2 2) $3 ~attrs:$4
-          ~loc:(symbol_rloc()) ~docs:(symbol_docs ()) }
-;
-module_alias:
-    MODULE UIDENT EQUAL mod_longident post_item_attributes
-      { Md.mk (mkrhs $2 2)
-          (Mty.alias ~loc:(rhs_loc 4) (mkrhs $4 4)) ~attrs:$5
-             ~loc:(symbol_rloc()) ~docs:(symbol_docs ()) }
-;
-rec_module_declarations:
-    rec_module_declaration                          { [$1] }
-  | rec_module_declarations and_module_declaration  { $2 :: $1 }
-;
-rec_module_declaration:
-    MODULE REC UIDENT COLON module_type post_item_attributes
-      { Md.mk (mkrhs $3 3) $5 ~attrs:$6
-              ~loc:(symbol_rloc()) ~docs:(symbol_docs ()) }
-;
-and_module_declaration:
-    AND UIDENT COLON module_type post_item_attributes
-      { Md.mk (mkrhs $2 2) $4 ~attrs:$5 ~loc:(symbol_rloc())
-              ~text:(symbol_text()) ~docs:(symbol_docs()) }
 ;
 module_type_declaration_body:
     /* empty */               { None }
@@ -946,21 +923,32 @@ module_type_declaration:
 /* Class expressions */
 
 class_declarations:
-    class_declaration                           { [$1] }
-  | class_declarations and_class_declaration    { $2 :: $1 }
+    class_declarations and_class_declaration    { cons_sig_str $2 $1 }
+  | class_declaration                           { lift_sig_str $1 }
 ;
 class_declaration:
-    CLASS virtual_flag class_type_parameters LIDENT class_fun_binding
+    CLASS virtual_flag class_type_parameters LIDENT class_declaration_body
     post_item_attributes
-      { Ci.mk (mkrhs $4 4) $5 ~virt:$2 ~params:$3 ~attrs:$6
-              ~loc:(symbol_rloc ()) ~docs:(symbol_docs ()) }
+      { let f c = Ci.mk (mkrhs $4 4) c ~virt:$2 ~params:$3 ~attrs:$6
+          ~loc:(symbol_rloc ()) ~docs:(symbol_docs ())
+        in match $5 with
+        | Str c -> Str (f c)
+        | Sig ct -> Sig (f ct)
+      }
 ;
 and_class_declaration:
-    AND virtual_flag class_type_parameters LIDENT class_fun_binding
+    AND virtual_flag class_type_parameters LIDENT class_declaration_body
     post_item_attributes
-      { Ci.mk (mkrhs $4 4) $5 ~virt:$2 ~params:$3
-         ~attrs:$6 ~loc:(symbol_rloc ())
-         ~text:(symbol_text ()) ~docs:(symbol_docs ()) }
+      { let f c = Ci.mk (mkrhs $4 4) c ~virt:$2 ~params:$3 ~attrs:$6
+          ~loc:(symbol_rloc ()) ~text:(symbol_text ()) ~docs:(symbol_docs ())
+        in match $5 with
+        | Str c -> Str (f c)
+        | Sig ct -> Sig (f ct)
+      }
+;
+class_declaration_body:
+    class_fun_binding { Str $1 }
+  | COLON class_type  { Sig $2 }
 ;
 class_fun_binding:
     EQUAL class_expr
@@ -1164,23 +1152,6 @@ constrain:
 constrain_field:
         core_type EQUAL core_type          { $1, $3 }
 ;
-class_descriptions:
-    class_description                           { [$1] }
-  | class_descriptions and_class_description    { $2 :: $1 }
-;
-class_description:
-    CLASS virtual_flag class_type_parameters LIDENT COLON class_type
-    post_item_attributes
-      { Ci.mk (mkrhs $4 4) $6 ~virt:$2 ~params:$3 ~attrs:$7
-              ~loc:(symbol_rloc ()) ~docs:(symbol_docs ()) }
-;
-and_class_description:
-    AND virtual_flag class_type_parameters LIDENT COLON class_type
-    post_item_attributes
-      { Ci.mk (mkrhs $4 4) $6 ~virt:$2 ~params:$3
-              ~attrs:$7 ~loc:(symbol_rloc ())
-              ~text:(symbol_text ()) ~docs:(symbol_docs ()) }
-;
 class_type_declarations:
     class_type_declaration                              { [$1] }
   | class_type_declarations and_class_type_declaration  { $2 :: $1 }
@@ -1255,7 +1226,11 @@ expr:
   | let_bindings IN seq_expr
       { expr_of_let_bindings $1 $3 }
   | LET MODULE ext_attributes UIDENT module_binding_body IN seq_expr
-      { mkexp_attrs (Pexp_letmodule(mkrhs $4 4, $5, $7)) $3 }
+      {
+        match $5 with
+        | Str m -> mkexp_attrs (Pexp_letmodule(mkrhs $4 4, m, $7)) $3
+        | Sig m -> raise Syntaxerr.(Error (Invalid_module_type (m.pmty_loc)))
+      }
   | LET OPEN override_flag ext_attributes mod_longident IN seq_expr
       { mkexp_attrs (Pexp_open($3, mkrhs $5 5, $7)) $4 }
   | FUNCTION ext_attributes opt_bar match_cases
@@ -1861,19 +1836,16 @@ bar_constructor_declaration:
          ~loc:(symbol_rloc()) ~info:(symbol_info ())
       }
 ;
-str_exception_declaration:
-  | sig_exception_declaration                    { $1 }
-  | EXCEPTION constr_ident EQUAL constr_longident attributes
-    post_item_attributes
-      { Te.rebind (mkrhs $2 2) (mkrhs $4 4) ~attrs:($5 @ $6)
-          ~loc:(symbol_rloc()) ~docs:(symbol_docs ()) }
-;
-sig_exception_declaration:
+exception_declaration:
   | EXCEPTION constr_ident generalized_constructor_arguments attributes
     post_item_attributes
       { let args, res = $3 in
           Te.decl (mkrhs $2 2) ~args ?res ~attrs:($4 @ $5)
             ~loc:(symbol_rloc()) ~docs:(symbol_docs ()) }
+  | EXCEPTION constr_ident EQUAL constr_longident attributes
+    post_item_attributes
+      { Te.rebind (mkrhs $2 2) (mkrhs $4 4) ~attrs:($5 @ $6)
+          ~loc:(symbol_rloc()) ~docs:(symbol_docs ()) }
 ;
 generalized_constructor_arguments:
     /*empty*/                     { (Pcstr_tuple [],None) }
@@ -1915,16 +1887,9 @@ label_declaration_semi:
 
 /* Type Extensions */
 
-str_type_extension:
+type_extension:
   TYPE nonrec_flag optional_type_parameters type_longident
   PLUSEQ private_flag str_extension_constructors post_item_attributes
-      { if $2 <> Recursive then not_expecting 2 "nonrec flag";
-        Te.mk (mkrhs $4 4) (List.rev $7) ~params:$3 ~priv:$6
-          ~attrs:$8 ~docs:(symbol_docs ()) }
-;
-sig_type_extension:
-  TYPE nonrec_flag optional_type_parameters type_longident
-  PLUSEQ private_flag sig_extension_constructors post_item_attributes
       { if $2 <> Recursive then not_expecting 2 "nonrec flag";
         Te.mk (mkrhs $4 4) (List.rev $7) ~params:$3 ~priv:$6
           ~attrs:$8 ~docs:(symbol_docs ()) }
@@ -1937,12 +1902,6 @@ str_extension_constructors:
   | str_extension_constructors bar_extension_constructor_declaration
       { $2 :: $1 }
   | str_extension_constructors bar_extension_constructor_rebind
-      { $2 :: $1 }
-;
-sig_extension_constructors:
-    extension_constructor_declaration                     { [$1] }
-  | bar_extension_constructor_declaration                 { [$1] }
-  | sig_extension_constructors bar_extension_constructor_declaration
       { $2 :: $1 }
 ;
 extension_constructor_declaration:

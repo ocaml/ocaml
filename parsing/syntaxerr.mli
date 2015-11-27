@@ -22,6 +22,8 @@ type error =
   | Variable_in_scope of Location.t * string
   | Other of Location.t
   | Ill_formed_ast of Location.t * string
+  | Mixed_definition_declaration of Location.t
+  | Invalid_module_type of Location.t
 
 exception Error of error
 exception Escape_error

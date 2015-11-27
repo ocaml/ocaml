@@ -885,7 +885,7 @@ class printer  ()= object(self:'self)
         pp f "(module %a)" self#longident_loc li;
     | Pmty_signature (s) ->
         pp f "@[<hv0>@[<hv2>sig@ %a@]@ end@]" (* "@[<hov>sig@ %a@ end@]" *)
-          (self#list self#signature_item  ) s (* FIXME wrong indentation*)
+          (self#list self#structure_item  ) s (* FIXME wrong indentation*)
     | Pmty_functor (_, None, mt2) ->
         pp f "@[<hov2>functor () ->@ %a@]" self#module_type mt2
     | Pmty_functor (s, Some mt1, mt2) ->
@@ -922,89 +922,8 @@ class printer  ()= object(self:'self)
           self#module_expr me
     | Pmty_extension e -> self#extension f e
 
-  method signature f x =  self#list ~sep:"@\n" self#signature_item f x
+  method signature f x = self#structure f x
 
-  method signature_item f x :unit= begin
-    match x.psig_desc with
-    | Psig_type (rf, l) ->
-        self#type_def_list f (rf, l)
-    | Psig_value vd ->
-        let intro = if vd.pval_prim = [] then "val" else "external" in
-          pp f "@[<2>%s@ %a@ :@ %a@]%a" intro
-             protect_ident vd.pval_name.txt
-             self#value_description vd
-             self#item_attributes vd.pval_attributes
-    | Psig_typext te ->
-        self#type_extension f te
-    | Psig_exception ed ->
-        self#exception_declaration f ed
-    | Psig_class l ->
-        let class_description kwd f ({pci_params=ls;pci_name={txt;_};_} as x) =
-          pp f "@[<2>%s %a%a%s@;:@;%a@]%a" kwd
-            self#virtual_flag x.pci_virt
-            self#class_params_def ls txt
-            self#class_type x.pci_expr
-            self#item_attributes x.pci_attributes
-        in begin
-          match l with
-          | [] -> ()
-          | [x] -> class_description "class" f x
-          | x :: xs ->
-              pp f "@[<v>%a@,%a@]"
-                 (class_description "class") x
-                 (self#list ~sep:"@," (class_description "and")) xs
-        end
-    | Psig_module ({pmd_type={pmty_desc=Pmty_alias alias};_} as pmd) ->
-        pp f "@[<hov>module@ %s@ =@ %a@]%a" pmd.pmd_name.txt
-          self#longident_loc alias
-          self#item_attributes pmd.pmd_attributes
-    | Psig_module pmd ->
-        pp f "@[<hov>module@ %s@ :@ %a@]%a"
-          pmd.pmd_name.txt
-          self#module_type pmd.pmd_type
-          self#item_attributes pmd.pmd_attributes
-    | Psig_open od ->
-        pp f "@[<hov2>open%s@ %a@]%a"
-           (override od.popen_override)
-           self#longident_loc od.popen_lid
-           self#item_attributes od.popen_attributes
-    | Psig_include incl ->
-        pp f "@[<hov2>include@ %a@]%a"
-          self#module_type incl.pincl_mod
-          self#item_attributes incl.pincl_attributes
-    | Psig_modtype {pmtd_name=s; pmtd_type=md; pmtd_attributes=attrs} ->
-        pp f "@[<hov2>module@ type@ %s%a@]%a"
-          s.txt
-          (fun f md -> match md with
-          | None -> ()
-          | Some mt ->
-              pp_print_space f () ;
-              pp f "@ =@ %a"  self#module_type mt
-          ) md
-          self#item_attributes attrs
-    | Psig_class_type (l) ->
-        self#class_type_declaration_list f l ;
-    | Psig_recmodule decls ->
-        let rec  string_x_module_type_list f ?(first=true) l =
-          match l with
-          | [] -> () ;
-          | pmd :: tl ->
-              if not first then
-                pp f "@ @[<hov2>and@ %s:@ %a@]%a" pmd.pmd_name.txt
-                  self#module_type pmd.pmd_type
-                  self#item_attributes pmd.pmd_attributes
-              else
-                pp f "@[<hov2>module@ rec@ %s:@ %a@]%a" pmd.pmd_name.txt
-                  self#module_type pmd.pmd_type
-                  self#item_attributes pmd.pmd_attributes;
-              string_x_module_type_list f ~first:false tl
-        in
-          string_x_module_type_list f decls
-    | Psig_attribute a -> self#floating_attribute f a
-    | Psig_extension(e, a) ->
-        self#item_extension f e;
-        self#item_attributes f a
-  end
   method module_expr f x =
     if x.pmod_attributes <> [] then begin
       pp f "((%a)%a)" self#module_expr {x with pmod_attributes=[]}
@@ -1183,7 +1102,8 @@ class printer  ()= object(self:'self)
     | Pstr_class_type (l) ->
         self#class_type_declaration_list f l ;
     | Pstr_primitive vd ->
-        pp f "@[<hov2>external@ %a@ :@ %a@]%a"
+        let intro = if vd.pval_prim = [] then "val" else "external" in
+        pp f "@[<2>%s@ %a@ :@ %a@]%a" intro
           protect_ident vd.pval_name.txt
           self#value_description vd
           self#item_attributes vd.pval_attributes
@@ -1214,6 +1134,51 @@ class printer  ()= object(self:'self)
     | Pstr_extension(e, a) ->
         self#item_extension f e;
         self#item_attributes f a
+    | Psig_class l ->
+        let class_description kwd f ({pci_params=ls;pci_name={txt;_};_} as x) =
+          pp f "@[<2>%s %a%a%s@;:@;%a@]%a" kwd
+            self#virtual_flag x.pci_virt
+            self#class_params_def ls txt
+            self#class_type x.pci_expr
+            self#item_attributes x.pci_attributes
+        in begin
+          match l with
+          | [] -> ()
+          | [x] -> class_description "class" f x
+          | x :: xs ->
+              pp f "@[<v>%a@,%a@]"
+                 (class_description "class") x
+                 (self#list ~sep:"@," (class_description "and")) xs
+        end
+    | Psig_module ({pmd_type={pmty_desc=Pmty_alias alias};_} as pmd) ->
+        pp f "@[<hov>module@ %s@ =@ %a@]%a" pmd.pmd_name.txt
+          self#longident_loc alias
+          self#item_attributes pmd.pmd_attributes
+    | Psig_module pmd ->
+        pp f "@[<hov>module@ %s@ :@ %a@]%a"
+          pmd.pmd_name.txt
+          self#module_type pmd.pmd_type
+          self#item_attributes pmd.pmd_attributes
+    | Psig_include incl ->
+        pp f "@[<hov2>include@ %a@]%a"
+          self#module_type incl.pincl_mod
+          self#item_attributes incl.pincl_attributes
+    | Psig_recmodule decls ->
+        let rec  string_x_module_type_list f ?(first=true) l =
+          match l with
+          | [] -> () ;
+          | pmd :: tl ->
+              if not first then
+                pp f "@ @[<hov2>and@ %s:@ %a@]%a" pmd.pmd_name.txt
+                  self#module_type pmd.pmd_type
+                  self#item_attributes pmd.pmd_attributes
+              else
+                pp f "@[<hov2>module@ rec@ %s:@ %a@]%a" pmd.pmd_name.txt
+                  self#module_type pmd.pmd_type
+                  self#item_attributes pmd.pmd_attributes;
+              string_x_module_type_list f ~first:false tl
+        in
+          string_x_module_type_list f decls
   end
   method type_param f (ct, a) =
     pp f "%s%a" (type_variance a) self#core_type ct

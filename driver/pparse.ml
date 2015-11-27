@@ -99,29 +99,18 @@ let rewrite magic ast ppxs =
     (List.fold_left (apply_rewriter magic) (write_ast magic ast)
        (List.rev ppxs))
 
-let apply_rewriters_str ?(restore = true) ~tool_name ast =
+let apply_rewriters ?(restore = true) ~tool_name magic ast =
   match !Clflags.all_ppx with
   | [] -> ast
   | ppxs ->
       let ast = Ast_mapper.add_ppx_context_str ~tool_name ast in
-      let ast = rewrite Config.ast_impl_magic_number ast ppxs in
+      let ast = rewrite magic ast ppxs in
       Ast_mapper.drop_ppx_context_str ~restore ast
 
-let apply_rewriters_sig ?(restore = true) ~tool_name ast =
-  match !Clflags.all_ppx with
-  | [] -> ast
-  | ppxs ->
-      let ast = Ast_mapper.add_ppx_context_sig ~tool_name ast in
-      let ast = rewrite Config.ast_intf_magic_number ast ppxs in
-      Ast_mapper.drop_ppx_context_sig ~restore ast
-
-let apply_rewriters ?restore ~tool_name magic ast =
-  if magic = Config.ast_impl_magic_number then
-    Obj.magic (apply_rewriters_str ?restore ~tool_name (Obj.magic ast))
-  else if magic = Config.ast_intf_magic_number then
-    Obj.magic (apply_rewriters_sig ?restore ~tool_name (Obj.magic ast))
-  else
-    assert false
+let apply_rewriters_str ?restore ~tool_name ast =
+  apply_rewriters ?restore ~tool_name Config.ast_impl_magic_number ast
+let apply_rewriters_sig ?restore ~tool_name ast =
+  apply_rewriters ?restore ~tool_name Config.ast_intf_magic_number ast
 
 (* Parse a file or get a dumped syntax tree from it *)
 

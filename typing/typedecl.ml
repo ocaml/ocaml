@@ -50,6 +50,7 @@ type error =
   | Val_in_structure
   | Multiple_native_repr_attributes
   | Cannot_unbox_or_untag_type of native_repr_kind
+  | Rebinding_in_signature
 
 open Typedtree
 
@@ -1146,6 +1147,8 @@ let transl_extension_constructor env type_path type_params
             sargs sret_type
         in
           args, ret_type, Text_decl(targs, tret_type)
+    | Pext_rebind lid when Env.is_in_signature env ->
+        raise (Error (lid.loc, Rebinding_in_signature))
     | Pext_rebind lid ->
         let cdescr = Typetexp.find_constructor env sext.pext_loc lid.txt in
         let usage =
@@ -1799,6 +1802,8 @@ let report_error ppf = function
   | Cannot_unbox_or_untag_type Untagged ->
       fprintf ppf "Don't know how to untag this type. Only int \
                    can be untagged"
+  | Rebinding_in_signature ->
+      fprintf ppf "Rebinding is not allowed in signatures"
 
 let () =
   Location.register_error_of_exn

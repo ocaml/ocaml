@@ -639,43 +639,7 @@ and module_type_desc =
 
 and signature = signature_item list
 
-and signature_item =
-    {
-     psig_desc: signature_item_desc;
-     psig_loc: Location.t;
-    }
-
-and signature_item_desc =
-  | Psig_value of value_description
-        (*
-          val x: T
-          external x: T = "s1" ... "sn"
-         *)
-  | Psig_type of rec_flag * type_declaration list
-        (* type t1 = ... and ... and tn = ... *)
-  | Psig_typext of type_extension
-        (* type t1 += ... *)
-  | Psig_exception of extension_constructor
-        (* exception C of T *)
-  | Psig_module of module_declaration
-        (* module X : MT *)
-  | Psig_recmodule of module_declaration list
-        (* module rec X1 : MT1 and ... and Xn : MTn *)
-  | Psig_modtype of module_type_declaration
-        (* module type S = MT
-           module type S *)
-  | Psig_open of open_description
-        (* open X *)
-  | Psig_include of include_description
-        (* include MT *)
-  | Psig_class of class_description list
-        (* class c1 : ... and ... and cn : ... *)
-  | Psig_class_type of class_type_declaration list
-        (* class type ct1 = ... and ... and ctn = ... *)
-  | Psig_attribute of attribute
-        (* [@@@id] *)
-  | Psig_extension of extension * attributes
-        (* [%%id] *)
+and signature_item = structure_item
 
 and module_declaration =
     {
@@ -803,6 +767,18 @@ and structure_item_desc =
         (* [@@@id] *)
   | Pstr_extension of extension * attributes
         (* [%%id] *)
+
+(* TODO:
+   - restrict typext/exception in signatures during type-checking
+*)
+  | Psig_module of module_declaration
+        (* module X : MT *)
+  | Psig_recmodule of module_declaration list
+        (* module rec X1 : MT1 and ... and Xn : MTn *)
+  | Psig_include of include_description
+        (* include MT *)
+  | Psig_class of class_description list
+        (* class c1 : ... and ... and cn : ... *)
 
 and value_binding =
   {

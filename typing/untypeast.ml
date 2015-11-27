@@ -470,29 +470,29 @@ let signature_item sub item =
   let desc =
     match item.sig_desc with
       Tsig_value v ->
-        Psig_value (sub.value_description sub v)
+        Pstr_primitive (sub.value_description sub v)
     | Tsig_type (rec_flag, list) ->
-        Psig_type (rec_flag, List.map (sub.type_declaration sub) list)
+        Pstr_type (rec_flag, List.map (sub.type_declaration sub) list)
     | Tsig_typext tyext ->
-        Psig_typext (sub.type_extension sub tyext)
+        Pstr_typext (sub.type_extension sub tyext)
     | Tsig_exception ext ->
-        Psig_exception (sub.extension_constructor sub ext)
+        Pstr_exception (sub.extension_constructor sub ext)
     | Tsig_module md ->
         Psig_module (sub.module_declaration sub md)
     | Tsig_recmodule list ->
         Psig_recmodule (List.map (sub.module_declaration sub) list)
     | Tsig_modtype mtd ->
-        Psig_modtype (sub.module_type_declaration sub mtd)
+        Pstr_modtype (sub.module_type_declaration sub mtd)
     | Tsig_open od ->
-        Psig_open (sub.open_description sub od)
+        Pstr_open (sub.open_description sub od)
     | Tsig_include incl ->
         Psig_include (sub.include_description sub incl)
     | Tsig_class list ->
         Psig_class (List.map (sub.class_description sub) list)
     | Tsig_class_type list ->
-        Psig_class_type (List.map (sub.class_type_declaration sub) list)
+        Pstr_class_type (List.map (sub.class_type_declaration sub) list)
     | Tsig_attribute x ->
-        Psig_attribute x
+        Pstr_attribute x
   in
   Sig.mk ~loc desc
 

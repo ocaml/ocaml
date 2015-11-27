@@ -21,9 +21,10 @@ exception Error of error
 val preprocess : string -> string
 val remove_preprocessed : string -> unit
 val file :
-  formatter -> tool_name:string -> string -> (Lexing.lexbuf -> 'a) -> string ->
-  'a
-val apply_rewriters: ?restore:bool -> tool_name:string -> string -> 'a -> 'a
+  formatter -> tool_name:string -> string ->
+  (Lexing.lexbuf -> Parsetree.structure) -> string -> Parsetree.structure
+val apply_rewriters:
+  ?restore:bool -> tool_name:string -> string -> Parsetree.structure -> Parsetree.structure
   (** If [restore = true] (the default), cookies set by external
       rewriters will be kept for later calls. *)
 

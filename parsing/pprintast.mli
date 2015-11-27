@@ -94,9 +94,7 @@ class printer :
     method reset_pipe : 'b
 
     method signature :
-      Format.formatter -> Parsetree.signature_item list -> unit
-    method signature_item :
-      Format.formatter -> Parsetree.signature_item -> unit
+      Format.formatter -> Parsetree.structure -> unit
     method simple_expr : Format.formatter -> Parsetree.expression -> unit
     method simple_pattern : Format.formatter -> Parsetree.pattern -> unit
     method string_quot : Format.formatter -> Asttypes.label -> unit

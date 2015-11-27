@@ -20,6 +20,8 @@ type error =
   | Variable_in_scope of Location.t * string
   | Other of Location.t
   | Ill_formed_ast of Location.t * string
+  | Mixed_definition_declaration of Location.t
+  | Invalid_module_type of Location.t
 
 exception Error of error
 exception Escape_error
@@ -54,6 +56,10 @@ let prepare_error = function
       Location.errorf_prefixed ~loc "Syntax error"
   | Ill_formed_ast (loc, s) ->
       Location.errorf_prefixed ~loc "broken invariant in parsetree: %s" s
+  | Mixed_definition_declaration loc ->
+      Location.errorf_prefixed ~loc "definitions and declarations cannot be mixed"
+  | Invalid_module_type loc ->
+      Location.errorf_prefixed ~loc "This expression defines a module type. A module expression was expected."
 
 let () =
   Location.register_error_of_exn
@@ -73,7 +79,10 @@ let location_of_error = function
   | Other l
   | Not_expecting (l, _)
   | Ill_formed_ast (l, _)
-  | Expecting (l, _) -> l
+  | Mixed_definition_declaration l
+  | Expecting (l, _)
+  | Invalid_module_type l
+    -> l
 
 
 let ill_formed_ast loc s =
