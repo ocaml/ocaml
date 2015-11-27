@@ -95,18 +95,29 @@ let rec error_of_extension ext =
   | ({txt; loc}, _) ->
       Location.errorf ~loc "Uninterpreted extension '%s'." txt
 
-let check_deprecated loc attrs s =
-  List.iter
-    (function
-    | ({txt = "ocaml.deprecated"|"deprecated"; _}, p) ->
+let rec deprecated_of_attrs = function
+  | [] -> None
+  | ({txt = "ocaml.deprecated"|"deprecated"; _}, p) :: _ ->
       begin match string_of_payload p with
-      | Some txt ->
-          Location.prerr_warning loc (Warnings.Deprecated (s ^ "\n" ^ txt))
-      | None ->
-          Location.prerr_warning loc (Warnings.Deprecated s)
+      | Some txt ->  Some txt
+      | None -> Some ""
       end
-    | _ ->  ())
-    attrs
+  | _ :: tl -> deprecated_of_attrs tl
+
+let check_deprecated loc attrs s =
+  match deprecated_of_attrs attrs with
+  | None -> ()
+  | Some "" -> Location.prerr_warning loc (Warnings.Deprecated s)
+  | Some s -> Location.prerr_warning loc (Warnings.Deprecated (s ^ "\n" ^ s))
+
+let rec deprecated_of_sig = function
+  | {psig_desc = Psig_attribute a} :: tl ->
+      begin match deprecated_of_attrs [a] with
+      | None -> deprecated_of_sig tl
+      | Some _ as r -> r
+      end
+  | _ -> None
+
 
 let emit_external_warnings =
   (* Note: this is run as a preliminary pass when type-checking an
@@ -280,7 +291,8 @@ let lookup_module ?(load=false) env loc lid =
   let (path, decl) as r =
     find_component (fun lid env -> (Env.lookup_module ~load lid env, ()))
       (fun lid -> Unbound_module lid) env loc lid
-  in path
+  in
+  path
 
 let find_module env loc lid =
   let path = lookup_module ~load:true env loc lid in

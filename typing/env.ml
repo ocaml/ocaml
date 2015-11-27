@@ -362,9 +362,13 @@ let read_pers_struct check modname filename =
   if ps.ps_name <> modname then
     error (Illegal_renaming(modname, ps.ps_name, filename));
   List.iter
-    (function Rectypes ->
-      if not !Clflags.recursive_types then
-        error (Need_recursive_types(ps.ps_name, !current_unit)))
+    (function
+      | Rectypes ->
+          if not !Clflags.recursive_types then
+            error (Need_recursive_types(ps.ps_name, !current_unit))
+      | Deprecated s ->
+          Location.prerr_warning Location.none (Warnings.Deprecated (Printf.sprintf "module %s\n%s" modname s))
+    )
     ps.ps_flags;
   if check then check_consistency ps;
   Hashtbl.add persistent_structures modname (Some ps);
@@ -1700,7 +1704,7 @@ let imports () =
 
 (* Save a signature to a file *)
 
-let save_signature_with_imports sg modname filename imports =
+let save_signature_with_imports ~deprecated sg modname filename imports =
   (*prerr_endline filename;
   List.iter (fun (name, crc) -> prerr_endline name) imports;*)
   Btype.cleanup_abbrev ();
@@ -1708,11 +1712,13 @@ let save_signature_with_imports sg modname filename imports =
   let sg = Subst.signature (Subst.for_saving Subst.identity) sg in
   let oc = open_out_bin filename in
   try
+    let flags = if !Clflags.recursive_types then [Rectypes] else [] in
+    let flags = match deprecated with None -> flags | Some s -> Deprecated s :: flags in
     let cmi = {
       cmi_name = modname;
       cmi_sign = sg;
       cmi_crcs = imports;
-      cmi_flags = if !Clflags.recursive_types then [Rectypes] else [];
+      cmi_flags = flags;
     } in
     let crc = output_cmi filename oc cmi in
     close_out oc;
@@ -1736,8 +1742,8 @@ let save_signature_with_imports sg modname filename imports =
     remove_file filename;
     raise exn
 
-let save_signature sg modname filename =
-  save_signature_with_imports sg modname filename (imports())
+let save_signature ~deprecated sg modname filename =
+  save_signature_with_imports ~deprecated sg modname filename (imports())
 
 (* Folding on environments *)
 

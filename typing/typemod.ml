@@ -1604,7 +1604,9 @@ let type_implementation sourcefile outputprefix modulename initial_env ast =
          case, the inferred signature contains only the last declaration. *)
       if not !Clflags.dont_write_files then begin
         let sg =
-          Env.save_signature simple_sg modulename (outputprefix ^ ".cmi") in
+          Env.save_signature ~deprecated:None
+            simple_sg modulename (outputprefix ^ ".cmi")
+        in
         Cmt_format.save_cmt  (outputprefix ^ ".cmt") modulename
           (Cmt_format.Implementation str)
           (Some sourcefile) initial_env (Some sg);
@@ -1686,8 +1688,10 @@ let package_units initial_env objfiles cmifile modulename =
     (* Write packaged signature *)
     if not !Clflags.dont_write_files then begin
       let sg =
-        Env.save_signature_with_imports sg modulename
-          (prefix ^ ".cmi") imports in
+        Env.save_signature_with_imports ~deprecated:None
+          sg modulename
+          (prefix ^ ".cmi") imports
+      in
       Cmt_format.save_cmt (prefix ^ ".cmt")  modulename
         (Cmt_format.Packed (sg, objfiles)) None initial_env (Some sg)
     end;

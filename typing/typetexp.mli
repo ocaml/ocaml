@@ -110,6 +110,7 @@ val unbound_constructor_error: Env.t -> Longident.t Location.loc -> 'a
 val unbound_label_error: Env.t -> Longident.t Location.loc -> 'a
 
 val check_deprecated: Location.t -> Parsetree.attributes -> string -> unit
+val deprecated_of_sig: Parsetree.signature -> string option
 
 val warning_enter_scope: unit -> unit
 val warning_leave_scope: unit -> unit

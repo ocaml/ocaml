@@ -10,7 +10,9 @@
 (*                                                                     *)
 (***********************************************************************)
 
-type pers_flags = Rectypes
+type pers_flags =
+  | Rectypes
+  | Deprecated of string
 
 type cmi_infos = {
     cmi_name : string;
