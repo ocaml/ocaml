@@ -114,14 +114,14 @@ let mk_init f =
 ;;
 
 let mk_inline f =
-  "-inline", Arg.Int f,
-    Printf.sprintf "<n>  Aggressiveness of inlining (default %d, higher \
+  "-inline", Arg.String f,
+    Printf.sprintf "<n>|<round>=<n>[,...]  Aggressiveness of inlining (default %d, higher \
         numbers mean more aggressive)"
-      (!Clflags.inline_threshold / 8)
+      Clflags.default_inline_threshold
 ;;
 
 let mk_inlining_stats f =
-  "-inlining-stats", Arg.Unit f, " Emit `.<n>.inlining' file(s) (one per \
+  "-inlining-stats", Arg.Unit f, " Emit `.<round>.inlining' file(s) (one per \
       round) showing the inliner's decisions"
 ;;
 
@@ -144,15 +144,15 @@ let mk_o3 f =
 let mk_rounds f =
   "-rounds", Arg.Int f,
     Printf.sprintf "<n>  Repeat tree optimization and inlining phases this \
-        many times (default %d)"
+        many times (default %d).  Rounds are numbered starting from zero."
       !Clflags.simplify_rounds
 ;;
 
 let mk_unroll f =
-  "-unroll", Arg.Int f,
-    Printf.sprintf "<n>  Unroll recursive functions at most this many times \
+  "-unroll", Arg.String f,
+    Printf.sprintf "<n>|<round>=<n>[,...]  Unroll recursive functions at most this many times \
         (default %d)"
-      !Clflags.unroll
+      Clflags.default_unroll
 ;;
 
 let mk_no_functor_heuristics f =
@@ -162,27 +162,27 @@ let mk_no_functor_heuristics f =
 
 let mk_inline_cost arg descr default f =
   Printf.sprintf "-inline-%s-cost" arg,
-  Arg.Int f,
-  Printf.sprintf "<n>  The cost of not removing %s during inlining \
+  Arg.String f,
+  Printf.sprintf "<n>|<round>=<n>[,...]  The cost of not removing %s during inlining \
       (default %d, higher numbers more costly)"
     descr
     default
 ;;
 
 let mk_inline_call_cost =
-  mk_inline_cost "call" "a call" !Clflags.inline_call_cost
+  mk_inline_cost "call" "a call" Clflags.default_inline_call_cost
 let mk_inline_alloc_cost =
-  mk_inline_cost "alloc" "an allocation" !Clflags.inline_alloc_cost
+  mk_inline_cost "alloc" "an allocation" Clflags.default_inline_alloc_cost
 let mk_inline_prim_cost =
-  mk_inline_cost "prim" "a primitive" !Clflags.inline_prim_cost
+  mk_inline_cost "prim" "a primitive" Clflags.default_inline_prim_cost
 let mk_inline_branch_cost =
-  mk_inline_cost "branch" "a conditional" !Clflags.inline_branch_cost
+  mk_inline_cost "branch" "a conditional" Clflags.default_inline_branch_cost
 
 let mk_branch_inline_factor f =
-  "-branch-inline-factor", Arg.Float f,
-    Printf.sprintf "<n>  Estimate the probability of a \
+  "-branch-inline-factor", Arg.String f,
+    Printf.sprintf "<n>|<round>=<n>[,...]  Estimate the probability of a \
         branch being cold as 1/(1+n) (used for inlining) (default %.2f)"
-    !Clflags.branch_inline_factor
+    Clflags.default_branch_inline_factor
 ;;
 
 let mk_intf f =
@@ -224,10 +224,10 @@ let mk_make_runtime_2 f =
 ;;
 
 let mk_max_inlining_depth f =
-  "-max-inlining-depth", Arg.Int f,
-    Printf.sprintf "<n>  Maximum depth of search for inlining opportunities \
+  "-max-inlining-depth", Arg.String f,
+    Printf.sprintf "<n>|<round>=<n>[,...]  Maximum depth of search for inlining opportunities \
         inside inlined functions (default %d)"
-      !Clflags.max_inlining_depth
+      Clflags.default_max_inlining_depth
 ;;
 
 let mk_modern f =
@@ -711,19 +711,19 @@ end;;
 
 module type Optcommon_options = sig
   val _compact : unit -> unit
-  val _inline : int -> unit
+  val _inline : string -> unit
   val _inlining_stats : unit -> unit
   val _dump_pass : string -> unit
-  val _max_inlining_depth : int -> unit
+  val _max_inlining_depth : string -> unit
   val _rounds : int -> unit
-  val _unroll : int -> unit
+  val _unroll : string -> unit
   val _no_functor_heuristics : unit -> unit
-  val _inline_call_cost : int -> unit
-  val _inline_alloc_cost : int -> unit
-  val _inline_prim_cost : int -> unit
-  val _inline_branch_cost : int -> unit
+  val _inline_call_cost : string -> unit
+  val _inline_alloc_cost : string -> unit
+  val _inline_prim_cost : string -> unit
+  val _inline_branch_cost : string -> unit
   val _unbox_closures : unit -> unit
-  val _branch_inline_factor : float -> unit
+  val _branch_inline_factor : string -> unit
   val _no_inline_recursive_functions : unit -> unit
   val _remove_unused_arguments : unit -> unit
   val _o2 : unit -> unit

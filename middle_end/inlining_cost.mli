@@ -77,6 +77,7 @@ module Whether_sufficient_benefit : sig
     -> Flambda.t
     -> Benefit.t
     -> probably_a_functor:bool
+    -> round:int
     -> t
 
   val evaluate : t -> bool

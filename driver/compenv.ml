@@ -215,22 +215,38 @@ let read_one_param ppf position name v =
       | "wwe" ->               Warnings.parse_options false v
 
       (* inlining *)
-      | "inline" -> begin try
-            inline_threshold := 8 * int_of_string v
-          with _ ->
-            Location.print_warning Location.none ppf
-              (Warnings.Bad_env_variable ("OCAMLPARAM",
-                                          "non-integer parameter for \"inline\""))
-        end
+      | "inline" ->
+        inline_threshold :=
+          Int_arg_helper.parse v "Bad syntax in OCAMLPARAM for 'inline'"
 
       | "rounds" -> int_setter ppf "rounds" simplify_rounds v
-      | "unroll" -> int_setter ppf "unroll" unroll v
-      | "inline-call-cost" -> int_setter ppf "inline-call-cost" inline_call_cost v
-      | "inline-alloc-cost" -> int_setter ppf "inline-alloc-cost" inline_alloc_cost v
-      | "inline-prim-cost" -> int_setter ppf "inline-prim-cost" inline_prim_cost v
-      | "inline-branch-cost" -> int_setter ppf "inline-branch-cost" inline_branch_cost v
-      | "branch-inline-factor" -> float_setter ppf "branch-inline-factor" branch_inline_factor v
-      | "max-inlining-depth" -> int_setter ppf "max-inlining-depth" max_inlining_depth v
+      | "unroll" ->
+        unroll :=
+          Int_arg_helper.parse v "Bad syntax in OCAMLPARAM for 'unroll'"
+      | "inline-call-cost" ->
+        inline_call_cost :=
+          Int_arg_helper.parse v
+            "Bad syntax in OCAMLPARAM for 'inline-call-cost'"
+      | "inline-alloc-cost" ->
+        inline_alloc_cost :=
+          Int_arg_helper.parse v
+            "Bad syntax in OCAMLPARAM for 'inline-alloc-cost'"
+      | "inline-prim-cost" ->
+        inline_prim_cost :=
+          Int_arg_helper.parse v
+            "Bad syntax in OCAMLPARAM for 'inline-prim-cost'"
+      | "inline-branch-cost" ->
+        inline_branch_cost :=
+          Int_arg_helper.parse v
+            "Bad syntax in OCAMLPARAM for 'inline-branch-cost'"
+      | "branch-inline-factor" ->
+        branch_inline_factor :=
+          Float_arg_helper.parse v
+            "Bad syntax in OCAMLPARAM for 'branch-inline-factor'"
+      | "max-inlining-depth" ->
+        max_inlining_depth :=
+          Int_arg_helper.parse v
+            "Bad syntax in OCAMLPARAM for 'max-inlining-depth'"
 
       | "functor-heuristics" ->
           if !native_code then

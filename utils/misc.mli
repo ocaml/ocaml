@@ -133,8 +133,9 @@ val replace_substring: before:string -> after:string -> string -> string
            occurences of [before] with [after] in [str] and returns
            the resulting string. *)
 
-val rev_split_words: string -> string list
-        (* [rev_split_words s] splits [s] in blank-separated words, and return
+val rev_split_words: ?separator:char -> string -> string list
+        (* [rev_split_words s] splits [s] in blank-separated words (or
+           [separator]-separated words if specified), and return
            the list of words in reverse order. *)
 
 val get_ref: 'a list ref -> 'a list

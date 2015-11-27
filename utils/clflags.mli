@@ -10,6 +10,24 @@
 (*                                                                     *)
 (***********************************************************************)
 
+(** Optimization parameters represented as ints indexed by round number. *)
+module Int_arg_helper : sig
+  type parsed =
+    | Always of int
+    | Variable of int Ext_types.Int.Map.t
+
+  val parse : string -> help_text:string -> parsed
+end
+
+(** Optimization parameters represented as floats indexed by round number. *)
+module Float_arg_helper : sig
+  type parsed =
+    | Always of float
+    | Variable of float Ext_types.Int.Map.t
+
+  val parse : string -> help_text:string -> parsed
+end
+
 val objfiles : string list ref
 val ccobjs : string list ref
 val dllibs : string list ref
@@ -88,17 +106,23 @@ val dump_linear : bool ref
 val keep_startup_file : bool ref
 val dump_combine : bool ref
 val native_code : bool ref
-val inline_threshold : int ref
-val set_inline_threshold : int -> unit
+val default_inline_threshold : int
+val inline_threshold : Int_arg_helper.parsed ref
 val inlining_stats : bool ref
 val simplify_rounds : int ref
-val unroll : int ref
+val default_unroll : int
+val unroll : Int_arg_helper.parsed ref
 val functor_heuristics : bool ref
-val inline_call_cost : int ref
-val inline_alloc_cost : int ref
-val inline_prim_cost : int ref
-val inline_branch_cost : int ref
-val branch_inline_factor : float ref
+val default_inline_call_cost : int
+val default_inline_alloc_cost : int
+val default_inline_prim_cost : int
+val default_inline_branch_cost : int
+val inline_call_cost : Int_arg_helper.parsed ref
+val inline_alloc_cost : Int_arg_helper.parsed ref
+val inline_prim_cost : Int_arg_helper.parsed ref
+val inline_branch_cost : Int_arg_helper.parsed ref
+val default_branch_inline_factor : float
+val branch_inline_factor : Float_arg_helper.parsed ref
 val dont_write_files : bool ref
 val std_include_flag : string -> string
 val std_include_dir : unit -> string list
@@ -115,7 +139,8 @@ val print_timings : bool ref
 val full_flambda_invariant_check : bool ref
 val unbox_closures : bool ref
 val clambda_checks : bool ref
-val max_inlining_depth : int ref
+val default_max_inlining_depth : int
+val max_inlining_depth : Int_arg_helper.parsed ref
 val inline_recursive_functions : bool ref
 val remove_unused_arguments : bool ref
 

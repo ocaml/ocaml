@@ -16,6 +16,7 @@ module Env = struct
 
   type t = {
     backend : (module Backend_intf.S);
+    round : int;
     approx : (scope * Simple_value_approx.t) Variable.Map.t;
     approx_mutable : Simple_value_approx.t Mutable_variable.Map.t;
     approx_sym : Simple_value_approx.t Symbol.Map.t;
@@ -33,8 +34,18 @@ module Env = struct
     inlining_stats_closure_stack : Inlining_stats.Closure_stack.t;
   }
 
-  let create ~never_inline ~backend =
+  let create ~never_inline ~backend ~round =
+    let possible_unrolls =
+      (* CR-someday mshinwell: Share this code. *)
+      match !Clflags.unroll with
+      | Always possible_unrolls -> possible_unrolls
+      | Variable by_round ->
+        match Ext_types.Int.Map.find round by_round with
+        | possible_unrolls -> possible_unrolls
+        | exception Not_found -> Clflags.default_unroll
+    in
     { backend;
+      round;
       approx = Variable.Map.empty;
       approx_mutable = Mutable_variable.Map.empty;
       approx_sym = Symbol.Map.empty;
@@ -44,13 +55,14 @@ module Env = struct
       inside_simplify = false;
       freshening = Freshening.empty;
       never_inline;
-      possible_unrolls = !Clflags.unroll;
+      possible_unrolls;
       closure_depth = 0;
       inlining_stats_closure_stack =
         Inlining_stats.Closure_stack.create ();
     }
 
   let backend t = t.backend
+  let round t = t.round
 
   let local env =
     { env with
@@ -256,13 +268,25 @@ module Result = struct
       benefit : Inlining_cost.Benefit.t;
     }
 
-  let create () =
+  let create ~round =
+    let inlining_threshold : Inlining_cost.inlining_threshold =
+      let unscaled =
+        match !Clflags.inline_threshold with
+        | Always threshold -> threshold
+        | Variable by_round ->
+          match Int.Map.find round by_round with
+          | threshold -> threshold
+          | exception Not_found -> Clflags.default_inline_threshold
+      in
+Printf.printf "for round %d threshold is %d\n%!"
+  round unscaled;
+      (* CR-soon pchambart: Add a warning if this is too big
+         mshinwell: later *)
+      Can_inline_if_no_larger_than (unscaled * 8)
+    in
     { approx = Simple_value_approx.value_unknown Other;
       used_staticfail = Static_exception.Set.empty;
-      inlining_threshold =
-        (* CR-soon pchambart: Add a warning if this is too big
-           mshinwell: later *)
-        Inlining_cost.Can_inline_if_no_larger_than !Clflags.inline_threshold;
+      inlining_threshold;
       benefit = Inlining_cost.Benefit.zero;
     }
 

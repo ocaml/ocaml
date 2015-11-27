@@ -281,6 +281,15 @@ module IntSet = struct
     if n < 0 then empty else add n (zero_to_n (n-1))
 end
 
+module Float = Identifiable.Make (struct
+    type t = float
+    let compare x y = Pervasives.compare x y
+    let output oc x = Printf.fprintf oc "%f" x
+    let hash f = Hashtbl.hash f
+    let equal (i:float) j = i = j
+    let print = Format.pp_print_float
+  end)
+
 module Pair(A:PrintableHashOrdered)(B:PrintableHashOrdered)
   : PrintableHashOrdered with type t = A.t * B.t =
 struct

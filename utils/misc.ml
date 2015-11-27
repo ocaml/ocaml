@@ -308,18 +308,24 @@ let replace_substring ~before ~after str =
         List.rev (suffix :: acc)
   in String.concat after (search [] 0)
 
-let rev_split_words s =
+let rev_split_words ?separator s =
+  let is_separator c =
+    match separator with
+    | Some separator -> c = separator
+    | None ->
+      match c with
+      | ' ' | '\t' | '\r' | '\n' -> true
+      | _ -> false
+  in
   let rec split1 res i =
     if i >= String.length s then res else begin
-      match s.[i] with
-        ' ' | '\t' | '\r' | '\n' -> split1 res (i+1)
-      | _ -> split2 res i (i+1)
+      if is_separator s.[i] then split1 res (i+1)
+      else split2 res i (i+1)
     end
   and split2 res i j =
     if j >= String.length s then String.sub s i (j-i) :: res else begin
-      match s.[j] with
-        ' ' | '\t' | '\r' | '\n' -> split1 (String.sub s i (j-i) :: res) (j+1)
-      | _ -> split2 res i (j+1)
+      if is_separator s.[j] then split1 (String.sub s i (j-i) :: res) (j+1)
+      else split2 res i (j+1)
     end
   in split1 [] 0
 

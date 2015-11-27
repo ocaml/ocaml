@@ -34,6 +34,7 @@ case $1 in
   | asmcomp/lifted_flambda_utils.* \
   | asmcomp/import_approx.* \
   | asmcomp/build_export_info.* \
+  | utils/clflags/* \
   | middle_end/* \
   | middle_end/base_types/*)
     # Strict compilation options for Flambda passes.

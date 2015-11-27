@@ -62,17 +62,17 @@ module Options = Main_args.Make_optcomp_options (struct
   let _i = option "-i"
   let _I s = option_with_arg "-I" s
   let _impl s = with_impl := true; option_with_arg "-impl" s
-  let _inline n = option_with_int "-inline" n
+  let _inline n = option_with_arg "-inline" n
   let _inlining_stats = option "-inlining-stats"
   let _dump_pass = option_with_arg "-dump-pass"
-  let _max_inlining_depth n = option_with_int "-max-inlining-depth" n
+  let _max_inlining_depth n = option_with_arg "-max-inlining-depth" n
   let _rounds n = option_with_int "-rounds" n
-  let _unroll n = option_with_int "-unroll" n
-  let _inline_call_cost n = option_with_int "-inline-call-cost" n
-  let _inline_alloc_cost n = option_with_int "-inline-alloc-cost" n
-  let _inline_prim_cost n = option_with_int "-inline-prim-cost" n
-  let _inline_branch_cost n = option_with_int "-inline-branch-cost" n
-  let _branch_inline_factor n = option_with_float "-branch-inline-factor" n
+  let _unroll n = option_with_arg "-unroll" n
+  let _inline_call_cost n = option_with_arg "-inline-call-cost" n
+  let _inline_alloc_cost n = option_with_arg "-inline-alloc-cost" n
+  let _inline_prim_cost n = option_with_arg "-inline-prim-cost" n
+  let _inline_branch_cost n = option_with_arg "-inline-branch-cost" n
+  let _branch_inline_factor n = option_with_arg "-branch-inline-factor" n
   let _no_functor_heuristics = option "-no-functor-heuristics"
   let _intf s = with_intf := true; option_with_arg "-intf" s
   let _intf_suffix s = option_with_arg "-intf-suffix" s

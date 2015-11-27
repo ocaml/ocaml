@@ -106,24 +106,40 @@ module Options = Main_args.Make_optcomp_options (struct
   let _i () = print_types := true; compile_only := true
   let _I dir = include_dirs := dir :: !include_dirs
   let _impl = impl
-  let _inline n = set_inline_threshold n
+  let _inline spec =
+    inline_threshold := Int_arg_helper.parse spec
+        ~help_text:"Syntax: -inline <n> | <round>=<n>[,...]"
   let _inlining_stats () = inlining_stats := true
   let _dump_pass pass = set_dumped_pass pass true
   let _rounds n = simplify_rounds := n
-  let _unroll n = unroll := n
+  let _unroll spec =
+    unroll := Int_arg_helper.parse spec
+        ~help_text:"Syntax: -unroll <n> | <round>=<n>[,...]"
   let _no_functor_heuristics () = functor_heuristics := false
-  let _inline_call_cost n = inline_call_cost := n
-  let _inline_alloc_cost n = inline_alloc_cost := n
-  let _inline_prim_cost n = inline_prim_cost := n
-  let _inline_branch_cost n = inline_branch_cost := n
-  let _branch_inline_factor f = branch_inline_factor := f
+  let _inline_call_cost spec =
+    inline_call_cost := Int_arg_helper.parse spec
+        ~help_text:"Syntax: -inline-call-cost <n> | <round>=<n>[,...]"
+  let _inline_alloc_cost spec =
+    inline_alloc_cost := Int_arg_helper.parse spec
+        ~help_text:"Syntax: -inline-alloc-cost <n> | <round>=<n>[,...]"
+  let _inline_prim_cost spec =
+    inline_prim_cost := Int_arg_helper.parse spec
+        ~help_text:"Syntax: -inline-prim-cost <n> | <round>=<n>[,...]"
+  let _inline_branch_cost spec =
+    inline_branch_cost := Int_arg_helper.parse spec
+        ~help_text:"Syntax: -inline-branch-cost <n> | <round>=<n>[,...]"
+  let _branch_inline_factor spec =
+    branch_inline_factor := Float_arg_helper.parse spec
+        ~help_text:"Syntax: -branch-inline-factor <n> | <round>=<n>[,...]"
   let _intf = intf
   let _intf_suffix s = Config.interface_suffix := s
   let _keep_docs = set keep_docs
   let _keep_locs = set keep_locs
   let _labels = clear classic
   let _linkall = set link_everything
-  let _max_inlining_depth n = max_inlining_depth := n
+  let _max_inlining_depth spec =
+    max_inlining_depth := Int_arg_helper.parse spec
+        ~help_text:"Syntax: -max-inlining-depth <n> | <round>=<n>[,...]"
   let _no_alias_deps = set transparent_modules
   let _no_app_funct = clear applicative_functors
   let _no_float_const_prop = clear float_const_prop
@@ -135,16 +151,47 @@ module Options = Main_args.Make_optcomp_options (struct
   let _nostdlib = set no_std_include
   let _o s = output_name := Some s
   let _o2 () =
-    set_inline_threshold 50;
-    simplify_rounds := 3;
-    inline_call_cost := 20;
-    inline_alloc_cost := 3;
-    inline_prim_cost := 3;
-    inline_branch_cost := 3;
-    functor_heuristics := true
+    (* CR mshinwell for mshinwell: fix this once -O3 is done *)
+    failwith "-O2 temporarily disabled"
   let _o3 () =
-    _o2 ();
-    unroll := 1
+    (* CR mshinwell for pchambart: please think about these numbers *)
+    simplify_rounds := 3;
+    inline_threshold :=
+      Int_arg_helper.Variable (Ext_types.Int.Map.of_list [
+        0, default_inline_threshold;
+        1, 25;
+        2, 50;
+      ]);
+    inline_call_cost :=
+      Int_arg_helper.Variable (Ext_types.Int.Map.of_list [
+        0, default_inline_call_cost;
+        1, default_inline_call_cost;
+        2, 20;
+      ]);
+    inline_alloc_cost :=
+      Int_arg_helper.Variable (Ext_types.Int.Map.of_list [
+        0, default_inline_alloc_cost;
+        1, default_inline_alloc_cost;
+        2, 3;
+      ]);
+    inline_prim_cost :=
+      Int_arg_helper.Variable (Ext_types.Int.Map.of_list [
+        0, default_inline_prim_cost;
+        1, default_inline_prim_cost;
+        2, 3;
+      ]);
+    inline_branch_cost :=
+      Int_arg_helper.Variable (Ext_types.Int.Map.of_list [
+        0, default_inline_branch_cost;
+        1, default_inline_branch_cost;
+        2, 3;
+      ]);
+    unroll :=
+      Int_arg_helper.Variable (Ext_types.Int.Map.of_list [
+        0, 0;
+        1, 0;
+        2, 1;
+      ])
   let _open s = open_modules := s :: !open_modules
   let _output_obj = set output_c_object
   let _output_complete_obj s =

@@ -12,6 +12,29 @@
 
 (* Command-line parameters *)
 
+module Int_arg_helper = Arg_helper.Make (struct
+  module Key = struct
+    include Ext_types.Int
+    let of_string = int_of_string
+  end
+
+  module Value = struct
+    include Ext_types.Int
+    let of_string = int_of_string
+  end
+end)
+module Float_arg_helper = Arg_helper.Make (struct
+  module Key = struct
+    include Ext_types.Int
+    let of_string = int_of_string
+  end
+
+  module Value = struct
+    include Ext_types.Float
+    let of_string = float_of_string
+  end
+end)
+
 let objfiles = ref ([] : string list)   (* .cmo and .cma files *)
 and ccobjs = ref ([] : string list)     (* .o, .a, .so and -cclib -lxxx *)
 and dllibs = ref ([] : string list)     (* .so and -dllib -lxxx *)
@@ -94,12 +117,12 @@ let dump_linear = ref false             (* -dlinear *)
 let keep_startup_file = ref false       (* -dstartup *)
 let dump_combine = ref false            (* -dcombine *)
 let native_code = ref false             (* set to true under ocamlopt *)
-let inline_threshold = ref 0
-let set_inline_threshold n = inline_threshold := n * 8
-let () = set_inline_threshold 10
+let default_inline_threshold = 10
+let inline_threshold = ref (Int_arg_helper.Always default_inline_threshold)
 let inlining_stats = ref false
 let simplify_rounds = ref 1
-let unroll = ref 0
+let default_unroll = 0
+let unroll = ref (Int_arg_helper.Always default_unroll)
 let force_slash = ref false             (* for ocamldep *)
 let clambda_checks = ref false          (* -clambda-checks *)
 
@@ -128,18 +151,30 @@ let keep_locs = ref false              (* -keep-locs *)
 let unsafe_string = ref true;;         (* -safe-string / -unsafe-string *)
 
 let functor_heuristics = ref true;;    (* -no-functor-heuristics *)
-let inline_call_cost = ref 5           (* -inline-call-cost *)
-let inline_alloc_cost = ref 10         (* -inline-alloc-cost *)
-let inline_prim_cost = ref 3           (* -inline-prim-cost *)
-let inline_branch_cost = ref 10        (* -inline-branch-cost *)
-let branch_inline_factor = ref 0.6     (* -branch-inline-factor *)
+
+let default_inline_call_cost = 5
+let default_inline_alloc_cost = 10
+let default_inline_prim_cost = 3
+let default_inline_branch_cost = 10
+let default_branch_inline_factor = 0.6
+
+let inline_call_cost = ref (Int_arg_helper.Always default_inline_call_cost)
+let inline_alloc_cost = ref (Int_arg_helper.Always default_inline_alloc_cost)
+let inline_prim_cost = ref (Int_arg_helper.Always default_inline_prim_cost)
+let inline_branch_cost =
+  ref (Int_arg_helper.Always default_inline_branch_cost)
+let branch_inline_factor =
+  ref (Float_arg_helper.Always default_branch_inline_factor)
 
 let print_timings = ref false          (* -timings *)
 
 let unbox_closures = ref false          (* -unbox-closures *)
 let remove_unused_arguments = ref false (* -remove-unused-arguments *)
 let inline_recursive_functions = ref true  (* -no-inline-recursive-functions *)
-let max_inlining_depth = ref 3          (* -max-inlining-depth *)
+
+let default_max_inlining_depth = 3
+let max_inlining_depth =
+  ref (Int_arg_helper.Always default_max_inlining_depth)
 
 let all_passes = ref []
 let dumped_passes_list = ref []

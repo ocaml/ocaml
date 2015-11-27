@@ -27,11 +27,15 @@ module Env : sig
   val create
      : never_inline:bool
     -> backend:(module Backend_intf.S)
+    -> round:int
     -> t
 
   (** Obtain the first-class module that gives information about the
       compiler backend being used for compilation. *)
   val backend : t -> (module Backend_intf.S)
+
+  (** Which simplification round we are currently in. *)
+  val round : t -> int
 
   (** Add the approximation of a variable---that is to say, some knowledge
       about the value(s) the variable may take on at runtime---to the
@@ -183,7 +187,7 @@ module Result : sig
       an Flambda subexpression. *)
   type t
 
-  val create : unit -> t
+  val create : round:int -> t
 
   (** The approximation of the subexpression that has just been
       simplified. *)

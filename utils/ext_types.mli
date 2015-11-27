@@ -143,6 +143,7 @@ module Identifiable : sig
 end
 
 module Int : Identifiable with type t = int
+module Float : Identifiable with type t = float
 
 module IntSet : sig
   (* [zero_to_n n] is the set of numbers {0, ..., n} (inclusive). *)

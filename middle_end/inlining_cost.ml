@@ -215,12 +215,24 @@ module Benefit = struct
 
   let benefit_factor = 1
 
-  let evaluate t =
+  let evaluate t ~round =
+    let cost (flag : Clflags.Int_arg_helper.parsed) ~default =
+      match flag with
+      | Always cost -> cost
+      | Variable by_round ->
+        match Ext_types.Int.Map.find round by_round with
+        | cost -> cost
+        | exception Not_found -> default
+    in
     benefit_factor *
-      (t.remove_call * !Clflags.inline_call_cost
-       + t.remove_alloc * !Clflags.inline_alloc_cost
-       + t.remove_prim * !Clflags.inline_prim_cost
-       + t.remove_branch * !Clflags.inline_branch_cost)
+      (t.remove_call * (cost !Clflags.inline_call_cost
+          ~default:Clflags.default_inline_call_cost)
+       + t.remove_alloc * (cost !Clflags.inline_alloc_cost
+          ~default:Clflags.default_inline_alloc_cost)
+       + t.remove_prim * (cost !Clflags.inline_prim_cost
+          ~default:Clflags.default_inline_prim_cost)
+       + t.remove_branch * (cost !Clflags.inline_branch_cost
+          ~default:Clflags.default_inline_branch_cost))
 
   let (+) t1 t2 = {
     remove_call = t1.remove_call + t2.remove_call;
@@ -232,6 +244,7 @@ end
 
 module Whether_sufficient_benefit = struct
   type t = {
+    round : int;
     benefit : Benefit.t;
     branch_depth : int;
     probably_a_functor : bool;
@@ -240,14 +253,14 @@ module Whether_sufficient_benefit = struct
     evaluated_benefit : int;
   }
 
-  let create ~original ~branch_depth lam benefit ~probably_a_functor =
+  let create ~original ~branch_depth lam benefit ~probably_a_functor ~round =
     match
       lambda_smaller' lam ~than:max_int,
       lambda_smaller' original ~than:max_int
     with
     | Some new_size, Some original_size ->
-      let evaluated_benefit = Benefit.evaluate benefit in
-      { benefit; branch_depth; probably_a_functor; original_size;
+      let evaluated_benefit = Benefit.evaluate benefit ~round in
+      { round; benefit; branch_depth; probably_a_functor; original_size;
         new_size; evaluated_benefit;
       }
     | _, _ ->
@@ -275,9 +288,17 @@ module Whether_sufficient_benefit = struct
          than letting the user directly provide [p], since for every
          positive value of [factor] [p] is in [0, 1]. *)
       let branch_never_taken_estimated_probability =
+        let branch_inline_factor =
+          match !Clflags.branch_inline_factor with
+          | Always branch_inline_factor -> branch_inline_factor
+          | Variable by_round ->
+            match Ext_types.Int.Map.find t.round by_round with
+            | branch_inline_factor -> branch_inline_factor
+            | exception Not_found -> Clflags.default_branch_inline_factor
+        in
         (* CR pchambart to pchambart: change this assert to a warning *)
-        assert(correct_branch_factor !Clflags.branch_inline_factor);
-        1. /. (1. +. !Clflags.branch_inline_factor)
+        assert(correct_branch_factor branch_inline_factor);
+        1. /. (1. +. branch_inline_factor)
       in
       let call_estimated_probability =
         branch_never_taken_estimated_probability ** float t.branch_depth

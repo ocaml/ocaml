@@ -1410,15 +1410,17 @@ let add_predef_exns_to_environment ~env ~backend =
 
 let run ~never_inline ~backend ~prefixname ~round program =
   let r =
+    let r = R.create ~round in
     if never_inline then
-      R.set_inlining_threshold (R.create ()) Inlining_cost.Never_inline
+      R.set_inlining_threshold r Inlining_cost.Never_inline
     else
-      R.create ()
+      r
   in
   let stats = !Clflags.inlining_stats in
   if never_inline then Clflags.inlining_stats := false;
   let initial_env =
-    add_predef_exns_to_environment ~env:(E.create ~never_inline:false ~backend)
+    add_predef_exns_to_environment
+      ~env:(E.create ~never_inline:false ~backend ~round)
       ~backend
   in
   let result, r = simplify_program initial_env r program in

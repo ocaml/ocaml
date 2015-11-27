@@ -44,7 +44,9 @@ let inline_non_recursive env r ~function_decls ~lhs_of_application
       let sufficient_benefit =
         W.create ~original:(fst (no_simplification ())) body
           ~branch_depth:(E.branch_depth env)
-          ~probably_a_functor (R.benefit r_inlined)
+          ~probably_a_functor
+          ~round:(E.round env)
+          (R.benefit r_inlined)
       in
       let keep_inlined_version = W.evaluate sufficient_benefit in
       let decision : Inlining_stats_types.Decision.t =
@@ -95,7 +97,8 @@ let inline_non_recursive env r ~function_decls ~lhs_of_application
     let wsb =
       W.create ~original:(fst (no_simplification ()))
         ~branch_depth:(E.branch_depth env)
-        body ~probably_a_functor (R.benefit r_inlined)
+        body ~probably_a_functor ~round:(E.round env)
+        (R.benefit r_inlined)
     in
     let keep_inlined_version = W.evaluate wsb in
     let decision : Inlining_stats_types.Decision.t =
@@ -148,7 +151,8 @@ let unroll_recursive env r ~max_level ~lhs_of_application
         let wsb =
           W.create body ~original:(fst (no_simplification()))
             ~branch_depth:(E.branch_depth env)
-            ~probably_a_functor:false (R.benefit r_inlined)
+            ~probably_a_functor:false ~round:(E.round env)
+            (R.benefit r_inlined)
         in
         let keep_unrolled_version =
           if W.evaluate wsb then begin
@@ -221,7 +225,9 @@ let inline_recursive env r ~max_level ~lhs_of_application
         let wsb =
           W.create ~original:(fst (no_simplification ()))
             ~branch_depth:(E.branch_depth env)
-            expr ~probably_a_functor:false (R.benefit r_inlined)
+            expr ~probably_a_functor:false
+            ~round:(E.round env)
+            (R.benefit r_inlined)
         in
         let keep_inlined_version = W.evaluate wsb in
         let decision : Inlining_stats_types.Decision.t =
@@ -278,7 +284,14 @@ let for_call_site ~env ~r ~(function_decls : Flambda.function_declarations)
       inline = inline_requested;
     }, R.set_approx r (A.value_unknown Other)
   in
-  let max_level = !Clflags.max_inlining_depth in
+  let max_level =
+    match !Clflags.max_inlining_depth with
+    | Always max_inlining_depth -> max_inlining_depth
+    | Variable by_round ->
+      match Ext_types.Int.Map.find (E.round env) by_round with
+      | max_inlining_depth -> max_inlining_depth
+      | exception Not_found -> Clflags.default_max_inlining_depth
+  in
   let unconditionally_inline =
     match (inline_requested : Lambda.inline_attribute) with
     | Always_inline -> true
