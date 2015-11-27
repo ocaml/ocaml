@@ -310,13 +310,13 @@ case "$ccfamily" in
   clang-*)
     bytecccompopts="-O2 -fno-strict-aliasing -fwrapv $gcc_warnings";;
   gcc-[012]-*)
-    # Some versions known to miscompile OCaml, e,g, 2.7,2.1, some 2.96.
+    # Some versions known to miscompile OCaml, e,g, 2.7.2.1, some 2.96.
     # Plus: C99 support unknown.
     err "This version of GCC is too old.  Please use GCC version 4.2 or above.";;
   gcc-3-*|gcc-4-[01])
     # No -fwrapv option before GCC 3.4.
     # Known problems with -fwrapv fixed in 4.2 only.
-    wrn "This verion of GCC is rather old.  Reducing optimization level."
+    wrn "This version of GCC is rather old.  Reducing optimization level."
     wrn "Consider using GCC version 4.2 or above."
     bytecccompopts="-std=gnu99 -O $gcc_warnings";;
   gcc-*)
