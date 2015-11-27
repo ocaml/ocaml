@@ -308,14 +308,16 @@ let extract_label_names sexp env ty =
 let explicit_arity =
   List.exists
     (function
-      | ({txt="ocaml.explicit_arity"|"explicit_arity"; _}, _) -> true
+      | ({txt="ocaml.explicit_arity"
+                   |"explicit_arity"; _}, _) -> true
       | _ -> false
     )
 
 let warn_on_literal_pattern =
   List.exists
     (function
-      | ({txt="ocaml.warn_on_literal_pattern"|"warn_on_literal_pattern"; _}, _) -> true
+      | ({txt="ocaml.warn_on_literal_pattern"
+                   |"warn_on_literal_pattern"; _}, _) -> true
       | _ -> false
     )
 
@@ -1123,9 +1125,10 @@ let rec type_pat ~constrs ~labels ~no_existentials ~mode ~explode ~env
             replicate_list sp constr.cstr_arity
         | Some sp -> [sp] in
       begin match sargs with
-      | [{ppat_desc = Ppat_constant _} as sp] when warn_on_literal_pattern constr.cstr_attributes ->
-            Location.prerr_warning sp.ppat_loc
-              Warnings.Fragile_literal_pattern
+      | [{ppat_desc = Ppat_constant _} as sp] when
+          warn_on_literal_pattern constr.cstr_attributes
+        -> Location.prerr_warning sp.ppat_loc
+             Warnings.Fragile_literal_pattern
       | _ -> ()
       end;
       if List.length sargs <> constr.cstr_arity then
@@ -2842,8 +2845,9 @@ and type_expect_ ?in_function ?(recarg=Rejected) env sexp ty_expected =
                       exp.exp_extra;
       }
 
-  | Pexp_extension ({ txt = ("ocaml.extension_constructor"|"extension_constructor"); _ },
-                    payload) ->
+  | Pexp_extension
+      ({ txt = ("ocaml.extension_constructor"|"extension_constructor"); _ },
+       payload) ->
       begin match payload with
       | PStr [ { pstr_desc =
                    Pstr_eval ({ pexp_desc = Pexp_construct (lid, None); _ }, _)
