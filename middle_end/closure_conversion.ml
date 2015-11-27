@@ -192,6 +192,9 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
          eliminate the [let rec] construction, instead producing a normal
          [Let] that binds a set of closures containing all of the functions.
       *)
+      (* CR-someday lwhite: This is a very syntactic criteria. Adding an
+         unused value to a set of recursive bindings changes how
+         functions are represented at runtime. *)
       let name =
         String.concat "_and_"
           (List.map (fun (id, _) -> Ident.unique_name id) defs)
