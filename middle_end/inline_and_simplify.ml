@@ -1408,9 +1408,7 @@ let add_predef_exns_to_environment ~env ~backend =
     env
     Predef.all_predef_exns
 
-let num_saved_inlining_stats = ref 0
-
-let run ~never_inline ~backend ~prefixname program =
+let run ~never_inline ~backend ~prefixname ~round program =
   let r =
     if never_inline then
       R.set_inlining_threshold (R.create ()) Inlining_cost.Never_inline
@@ -1436,11 +1434,8 @@ let run ~never_inline ~backend ~prefixname program =
     Format.printf "benefit:@ %a@."
       B.print (R.benefit r);
   if !Clflags.inlining_stats then begin
-    let output_prefix =
-      Printf.sprintf "%s.%d" prefixname !num_saved_inlining_stats
-    in
-    Inlining_stats.save_then_forget_decisions ~output_prefix;
-    incr num_saved_inlining_stats
+    let output_prefix = Printf.sprintf "%s.%d" prefixname round in
+    Inlining_stats.save_then_forget_decisions ~output_prefix
   end;
   Clflags.inlining_stats := stats;
   result
