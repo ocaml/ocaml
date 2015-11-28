@@ -319,6 +319,8 @@ Bug fixes:
   Mark Shinwell)
 - GPR#283: Fix memory leaks in intern.c when OOM is raised
   (Marc Lasson, review by Alain Frisch)
+- GPR#313: Prevent quadratic cases in CSE
+  (Pierre Chambart, review by Xavier Leroy)
 
 Features wishes:
 - PR#4518, GPR#29: change location format for reporting errors in ocamldoc
