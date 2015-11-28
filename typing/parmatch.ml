@@ -113,6 +113,234 @@ and compats ps qs = match ps,qs with
 exception Empty (* Empty pattern *)
 
 (****************************************)
+(* Common prefix                        *)
+(****************************************)
+
+(** PR#7031: A pattern [p] is a prefix of another pattern [q] if [q]
+    can be obtained from [p] by substituting some [_] patterns by more
+    precise patterns. In particular, all values matched by [q] are
+    matched by [p], and the environment bound by the matching of [p]
+    will be a subset of the environment bound by [q] (the same
+    variables capture the same values).
+
+    [common_prefix p1 p2] returns the largest prefix that is common to
+    both [p1] and [p2]. This operation is associative and
+    commutative. It traverses each node of [p1] and of [p2] at most
+    once.
+
+    Note: currently, this function is only used as an auxiliarly step
+    for the [prefix_vars] function below. Some corner cases in the
+    implementation (handling of polymorphic variant row variables, and
+    open/closed record patterns) are unobservable from the
+    [prefix_vars] output alone, so it is possible that they be
+    slightly wrong; they are marked with "GS:" comments. If you want
+    to use [common_prefix] for something else, you should re-check
+    that they do as you intend.
+*)
+let rec common_prefix p1 p2 =
+  let desc = common_prefix_desc p1.pat_desc p2.pat_desc in
+  { p1 with
+    pat_desc = desc;
+    pat_loc = Location.none; pat_extra = [];
+    pat_attributes = [] }
+
+and common_prefix_desc p1 p2 = match p1, p2 with
+  | Tpat_any, _ | _, Tpat_any -> Tpat_any
+
+  | Tpat_or ({ pat_desc = p1; _ }, { pat_desc = p2; _ }, _), p3
+  | p1, Tpat_or ({ pat_desc = p2; _ }, { pat_desc = p3; _ }, _) ->
+      common_prefix_desc p1 (common_prefix_desc p2 p3)
+
+  | Tpat_lazy p, Tpat_lazy q -> Tpat_lazy (common_prefix p q)
+  | Tpat_lazy _, _ | _, Tpat_lazy _ -> Tpat_any
+
+  | (Tpat_var (x1, _) as p), Tpat_var (x2, _)
+  | (Tpat_var (x1, _) as p), Tpat_alias (_, x2, _)
+  | Tpat_alias (_, x1, _), (Tpat_var (x2, _) as p) ->
+      if Ident.same x1 x2 then p else Tpat_any
+
+  | Tpat_alias (q1, x1, s1), Tpat_alias (q2, x2, s2) ->
+      let q = common_prefix q1 q2 in
+      if not (Ident.same x1 x2) then q.pat_desc else Tpat_alias (q, x1, s1)
+
+  | ((Tpat_var _ | Tpat_alias _),
+     (* exhaustively list the remaining constructors once, so that
+        adding a new case breaks exhaustivity here; if the new case
+        binds a toplevel pattern variable, it should be handled above,
+        otherwise it can go in this big catch-all list *)
+     (Tpat_constant _ | Tpat_tuple _ | Tpat_construct _
+     | Tpat_variant _ | Tpat_record _ | Tpat_array _))
+  | _, (Tpat_var _ | Tpat_alias _) -> Tpat_any
+
+  | (Tpat_constant c1 as p), Tpat_constant c2 ->
+      if const_compare c1 c2 <> 0 then p else Tpat_any
+  | Tpat_constant _, _ | _, Tpat_constant _ -> Tpat_any
+
+  | Tpat_tuple ps1, Tpat_tuple ps2 ->
+      Tpat_tuple (List.map2 common_prefix ps1 ps2)
+  | Tpat_tuple _, _ | _, Tpat_tuple _ -> Tpat_any
+
+  | Tpat_construct (id, c1, ps1), Tpat_construct (_, c2,ps2) ->
+      if c1.cstr_tag <> c2.cstr_tag then Tpat_any
+      else Tpat_construct (id, c1, List.map2 common_prefix ps1 ps2)
+  | Tpat_construct _, _ | _, Tpat_construct _ -> Tpat_any
+
+  | Tpat_variant(l1, po1, r1), Tpat_variant(l2, po2, r2) ->
+      (* GS: not sure about the handling of rows here *)
+      let r1, r2 = Btype.row_repr !r1, Btype.row_repr !r2 in
+      if l1 <> l2 || r1 <> r2 then Tpat_any
+      else begin
+        let return po = Tpat_variant (l1, po, ref r1) in
+        match po1, po2 with
+        | Some _, None | None, Some _ -> Tpat_any
+        | None, None -> return None
+        | Some p1, Some p2 -> return (Some (common_prefix p1 p2))
+      end
+  | Tpat_variant _, _ | _, Tpat_variant _ -> Tpat_any
+
+  | Tpat_array ps1, Tpat_array ps2 ->
+      if List.length ps1 <> List.length ps2 then Tpat_any
+      else Tpat_array (List.map2 common_prefix ps1 ps2)
+  | Tpat_array _, _ | _, Tpat_array _ -> Tpat_any
+
+  | Tpat_record (l1, c1),Tpat_record (l2, c2) ->
+      (* Invariant: fields are already sorted by Typecore.type_label_a_list *)
+      let rec combine r l1 l2 = match l1, l2 with
+        | [], [] -> List.rev r, Closed
+        | [], _::_ | _::_, [] -> List.rev r, Open
+        | (id1, lbl1, q1)::rem1, (id2, lbl2, q2)::rem2 ->
+            if lbl1.lbl_pos < lbl2.lbl_pos then
+              combine r rem1 l2
+            else if lbl1.lbl_pos > lbl2.lbl_pos then
+              combine r l1 rem2
+            else (* label on both sides *)
+              combine ((id1, lbl1, common_prefix q1 q2)::r) rem1 rem2 in
+      let fields, c = combine [] l1 l2 in
+      let c =
+        (* GS: not completely sure
+           about the handling of Open|Closed tag here *)
+        match c, c1, c2 with
+        | Closed, Closed, Closed -> Closed
+        | _, _, _ -> Open in
+      Tpat_record (fields, c)
+
+(********************************************)
+(* Ambiguous guarded disjunctions (PR#7031) *)
+(********************************************)
+
+module IdentSet = Set.Make(Ident)
+
+let pattern_vars p = IdentSet.of_list (Typedtree.pat_bound_idents p)
+
+(* [prefix_vars p1 p2] collects the variables bound in the prefix of
+   [p1] and [p2]. In particular, for any value matching both [p1] and
+   [p2], the variable of [prefix_vars p1 p2] will bind the exact same
+   sub-value.
+*)
+let prefix_vars p1 p2 = pattern_vars (common_prefix p1 p2)
+
+(** A pattern p contains an ambiguous disjunction if it is of the form
+    C[(p1 | p2)], where p1 and p2 overlap (there is a value matched
+    by both) and have ambiguous variables. A variable is ambiguous
+    when it binds different parts of the matched value in [p1] and
+    [p2], that is, when it occurs outside their common prefix. *)
+let ambiguous_disjunctive_variables p =
+  let varsets = ref [] in
+  let rec iter_overlapping_disjunctions p = match p.pat_desc with
+    | Tpat_or (p1, p2, _) ->
+        if not (compat p1 p2) then begin
+          (* the two patterns do not overlap; recurse on subpatterns *)
+          iter_overlapping_disjunctions p1;
+          iter_overlapping_disjunctions p2;
+        end else begin
+          (* If those patterns contain overlapping sub-patterns, those
+             sub-patterns will be traversed by the [prefix_vars]
+             computation; their variables will only be in the prefix
+             if their position is non-ambiguous in the sub-patterns,
+             so there is no need to recurse.
+
+             The fact that we do *not* recurse on sub-or-patterns of
+             overlapping disjunctions guarantees that the check
+             traverse each part of the pattern at most once. *)
+          let vars1 = pattern_vars p1 in
+          let vars2 = pattern_vars p2 in
+          let common_vars = prefix_vars p1 p2 in
+          let ambiguous_vars =
+            IdentSet.diff (IdentSet.inter vars1 vars2) common_vars in
+          varsets := (p.pat_loc, ambiguous_vars) :: !varsets;
+        end
+    | other_desc ->
+        iter_pattern_desc iter_overlapping_disjunctions other_desc
+  in
+  iter_overlapping_disjunctions p;
+  !varsets
+
+(* all identifier paths that appear in an expression.
+
+   This could be in a more general place, but for the ambiguous guards
+   seem to be the only user. At the same time, it cannot go in
+   typedtree.mli, as it depends on TypedtreeIter.
+*)
+let all_exp_paths exp =
+  let paths = ref [] in
+  let module Iterator = TypedtreeIter.MakeIterator(struct
+    include TypedtreeIter.DefaultIteratorArgument
+    let enter_expression exp = match exp.exp_desc with
+      | Texp_ident (path, _lid, _descr) ->
+          paths := path :: !paths
+      | _ -> ()
+  end) in
+  Iterator.iter_expression exp;
+  !paths
+
+let all_exp_idents exp =
+  let add_ident set path = IdentSet.add path set in
+  let add_path set path = List.fold_left add_ident set (Path.heads path) in
+  List.fold_left add_path IdentSet.empty (all_exp_paths exp)
+
+(* PR#7031:
+   In general, clauses of the form
+     | (p | q) when test -> rhs
+   are *not* equivalent to
+     | p when test -> rhs
+     | q when test -> rhs
+   If a value matches p but fails the guard, it will
+   not be matched against q, where it could have
+   passed the guard. Consider for example:
+
+     match opt1, opt2 with
+       | (Some n, _ | _, Some n) when n > 0 -> rhs
+
+   The value (Some (-1), Some 2) will *not* match this
+   clause, while the code seems to suggest that all
+   cases with a strictly positive Some value
+   (on either side) are handled.
+
+   We wish to warn in this situation, that is when:
+   - the guarded pattern contains an or-pattern
+   - the two components of the or-pattern do overlap
+   - they match the same variable ('n' in the example)
+     in different positions, and this variable is used
+     in the guard
+*)
+let check_ambiguous_guarded_disjunction pat guard =
+  let ambiguous_varsets = ambiguous_disjunctive_variables pat in
+  let guard_vars = all_exp_idents guard in
+  let check (loc, ambiguous_disjunction_vars) =
+    let ambiguous_variables =
+      IdentSet.inter ambiguous_disjunction_vars guard_vars in
+    if IdentSet.is_empty ambiguous_variables then () else begin
+      let ambig_vars =
+        IdentSet.elements ambiguous_variables
+        |> List.map Ident.name in
+      let warning =
+        Warnings.Ambiguous_guarded_disjunction ambig_vars in
+      if Warnings.is_active warning then
+        Location.prerr_warning loc warning;
+    end in
+  List.iter check ambiguous_varsets
+
+(****************************************)
 (* Utilities for retrieving type paths  *)
 (****************************************)
 
@@ -280,9 +508,6 @@ let simple_match p1 p2 =
   | Tpat_array p1s, Tpat_array p2s -> List.length p1s = List.length p2s
   | _, (Tpat_any | Tpat_var(_)) -> true
   | _, _ -> false
-
-
-
 
 (* extract record fields as a whole *)
 let record_arg p = match p.pat_desc with

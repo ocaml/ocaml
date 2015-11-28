@@ -250,7 +250,6 @@ let all_idents_cases el =
     el;
   Hashtbl.fold (fun x () rest -> x :: rest) idents []
 
-
 (* Typing of constants *)
 
 let type_constant = function
@@ -3729,13 +3728,15 @@ and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
           else ty_res in
 (*        Format.printf "@[%i %i, ty_res' =@ %a@]@." lev (get_current_level())
           Printtyp.raw_type_expr ty_res'; *)
-        let guard =
-          match pc_guard with
-          | None -> None
-          | Some scond ->
-              Some
-                (type_expect ext_env (wrap_unpacks scond unpacks)
-                   Predef.type_bool)
+         let guard =
+           match pc_guard with
+           | None -> None
+           | Some scond ->
+               let scond = wrap_unpacks scond unpacks in
+               let guard = type_expect ext_env scond Predef.type_bool in
+               Parmatch.check_ambiguous_guarded_disjunction
+                 pat guard;
+               Some guard
         in
         let exp = type_expect ?in_function ext_env sexp ty_res' in
         {
