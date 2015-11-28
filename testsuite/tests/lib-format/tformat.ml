@@ -252,6 +252,36 @@ try
   test (sprintf "%.3F" 0.0042 = "0.004");
 *)
 
+  say "\nh\n%!";
+  test (sprintf "%+h" (+0.) = "+0x0p+0");
+  test (sprintf "%+h" (-0.) = "-0x0p+0");
+  test (sprintf "%+h" (+1.) = "+0x1p+0");
+  test (sprintf "%+h" (-1.) = "-0x1p+0");
+  test (sprintf "%+h" (+1024.) = "+0x1p+10");
+  test (sprintf "%+h" (-1024.) = "-0x1p+10");
+  test (sprintf "%h" 0x123.456 = "0x1.23456p+8");
+  test (sprintf "%h" 0x123456789ABCDE. = "0x1.23456789abcdep+52");
+  test (sprintf "%h" epsilon_float = "0x1p-52");
+  test (sprintf "%h" nan = "nan");
+  test (sprintf "%h" infinity = "infinity");
+  test (sprintf "%h" neg_infinity = "-infinity");
+  test (sprintf "%h" (4. *. atan 1.) = "0x1.921fb54442d18p+1");
+
+  say "\nH\n%!";
+  test (sprintf "%+H" (+0.) = "+0X0P+0");
+  test (sprintf "%+H" (-0.) = "-0X0P+0");
+  test (sprintf "%+H" (+1.) = "+0X1P+0");
+  test (sprintf "%+H" (-1.) = "-0X1P+0");
+  test (sprintf "%+H" (+1024.) = "+0X1P+10");
+  test (sprintf "%+H" (-1024.) = "-0X1P+10");
+  test (sprintf "%H" 0X123.456 = "0X1.23456P+8");
+  test (sprintf "%H" 0X123456789ABCDE. = "0X1.23456789ABCDEP+52");
+  test (sprintf "%H" epsilon_float = "0X1P-52");
+  test (sprintf "%H" nan = "NAN");
+  test (sprintf "%H" infinity = "INFINITY");
+  test (sprintf "%H" neg_infinity = "-INFINITY");
+  test (sprintf "%H" (4. *. atan 1.) = "0X1.921FB54442D18P+1");
+
   say "\ne\n%!";
   test (sprintf "%e" (-42.42) =* "-4.242000e+01");
   test (sprintf "%-15e" (-42.42) =* "-4.242000e+01  ");
