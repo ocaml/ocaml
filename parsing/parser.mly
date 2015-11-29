@@ -2215,25 +2215,7 @@ operator:
   | COLONEQUAL                                  { ":=" }
   | PLUSEQ                                      { "+=" }
   | PERCENT                                     { "%" }
-  | index_operator                              { $1 }
 ;
-index_operator:
-    DOT index_operator_core opt_assign_arrow { $2^$3 }
-;
-index_operator_core:
-  | LPAREN RPAREN                               { ".()" }
-  | LBRACKET RBRACKET                           { ".[]" }
-  | LBRACE RBRACE                               { ".{}" }
-  | LBRACE COMMA  RBRACE                        { ".{,}" }
-  | LBRACE COMMA COMMA RBRACE                   { ".{,,}" }
-  | LBRACE COMMA DOTDOT COMMA RBRACE            { ".{,..,}"}
-;
-
-opt_assign_arrow:
-                                                { "" }
-  | LESSMINUS                                   { "<-" }
-;
-
 constr_ident:
     UIDENT                                      { $1 }
 /*  | LBRACKET RBRACKET                           { "[]" } */
