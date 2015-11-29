@@ -171,53 +171,45 @@ let expecting pos nonterm =
 let not_expecting pos nonterm =
     raise Syntaxerr.(Error(Not_expecting(rhs_loc pos, nonterm)))
 
-let bigarray_function order assign =
-  let op =
-    match order with
-      | 1 -> ".{}"
-      | 2 -> ".{,}"
-      | 3 -> ".{,,}"
-      | _ -> ".{,..,}"
-  in
-  let op= if assign then op^"<-" else op in
-  ghloc ( Lident op )
+let bigarray_function str name =
+  ghloc (Ldot(Ldot(Lident "Bigarray", str), name))
 
 let bigarray_untuplify = function
     { pexp_desc = Pexp_tuple explist; pexp_loc = _ } -> explist
   | exp -> [exp]
 
 let bigarray_get arr arg =
-  let get order = bigarray_function order false in
+  let get = if !Clflags.fast then "unsafe_get" else "get" in
   match bigarray_untuplify arg with
     [c1] ->
-      mkexp(Pexp_apply(ghexp(Pexp_ident(get 1)),
+      mkexp(Pexp_apply(ghexp(Pexp_ident(bigarray_function "Array1" get)),
                        [Nolabel, arr; Nolabel, c1]))
   | [c1;c2] ->
-      mkexp(Pexp_apply(ghexp(Pexp_ident(get 2)),
+      mkexp(Pexp_apply(ghexp(Pexp_ident(bigarray_function "Array2" get)),
                        [Nolabel, arr; Nolabel, c1; Nolabel, c2]))
   | [c1;c2;c3] ->
-      mkexp(Pexp_apply(ghexp(Pexp_ident(get 3)),
+      mkexp(Pexp_apply(ghexp(Pexp_ident(bigarray_function "Array3" get)),
                        [Nolabel, arr; Nolabel, c1; Nolabel, c2; Nolabel, c3]))
   | coords ->
-      mkexp(Pexp_apply(ghexp(Pexp_ident(get 0)),
+      mkexp(Pexp_apply(ghexp(Pexp_ident(bigarray_function "Genarray" "get")),
                        [Nolabel, arr; Nolabel, ghexp(Pexp_array coords)]))
 
 let bigarray_set arr arg newval =
-  let set order = bigarray_function order true in
+  let set = if !Clflags.fast then "unsafe_set" else "set" in
   match bigarray_untuplify arg with
     [c1] ->
-      mkexp(Pexp_apply(ghexp(Pexp_ident(set 1)),
+      mkexp(Pexp_apply(ghexp(Pexp_ident(bigarray_function "Array1" set)),
                        [Nolabel, arr; Nolabel, c1; Nolabel, newval]))
   | [c1;c2] ->
-      mkexp(Pexp_apply(ghexp(Pexp_ident(set 2)),
-                       [Nolabel, arr; Nolabel, c1; Nolabel, c2;
-                        Nolabel, newval]))
+      mkexp(Pexp_apply(ghexp(Pexp_ident(bigarray_function "Array2" set)),
+                       [Nolabel, arr; Nolabel, c1;
+                        Nolabel, c2; Nolabel, newval]))
   | [c1;c2;c3] ->
-      mkexp(Pexp_apply(ghexp(Pexp_ident(set 3)),
-                       [Nolabel, arr; Nolabel, c1; Nolabel, c2; Nolabel, c3;
-                        Nolabel, newval]))
+      mkexp(Pexp_apply(ghexp(Pexp_ident(bigarray_function "Array3" set)),
+                       [Nolabel, arr; Nolabel, c1;
+                        Nolabel, c2; Nolabel, c3; Nolabel, newval]))
   | coords ->
-      mkexp(Pexp_apply(ghexp(Pexp_ident(set 0)),
+      mkexp(Pexp_apply(ghexp(Pexp_ident(bigarray_function "Genarray" "set")),
                        [Nolabel, arr;
                         Nolabel, ghexp(Pexp_array coords);
                         Nolabel, newval]))
