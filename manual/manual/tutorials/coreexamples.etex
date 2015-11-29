@@ -61,13 +61,13 @@ usual basic data types: booleans, characters, and immutable character strings.
 "Hello world";;
 \end{caml_example}
 
-Predefined data structures include tuples, arrays, specialized byte
-arrays and lists. General mechanisms for defining your own data
-structures are also provided. They will be covered in more details
-later; for now, we concentrate on lists. Lists are either given in
-extension as a bracketed list of semicolon-separated elements, or built
-from the empty list "[]" (pronounce ``nil'') by adding elements in front
-using the "::" (``cons'') operator.
+Predefined data structures include tuples, arrays, and lists. General
+mechanisms for defining your own data structures are also provided.
+They will be covered in more details later; for now, we concentrate on lists.
+Lists are either given in extension as a bracketed list of
+semicolon-separated elements, or built from the empty list "[]"
+(pronounce ``nil'') by adding elements in front using the "::"
+(``cons'') operator.
 \begin{caml_example}
 let l = ["is"; "a"; "tale"; "told"; "etc."];;
 "Life" :: l;;
