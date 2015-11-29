@@ -315,12 +315,12 @@ class ostring s =
   object
      method get n = String.get s n
      method print = print_string s
-     method copy = new ostring (String.copy s)
+     method escaped = new ostring (String.escaped s)
   end;;
 \end{caml_example}
-However, the method "copy" returns an object of the class "ostring",
+However, the method "escaped" returns an object of the class "ostring",
 and not an object of the current class. Hence, if the class is further
-extended, the method "copy" will only return an object of the parent
+extended, the method "escaped" will only return an object of the parent
 class.
 \begin{caml_example}
 class sub_string s =
@@ -338,11 +338,11 @@ class better_string s =
      val repr = s
      method get n = String.get repr n
      method print = print_string repr
-     method copy = {< repr = String.copy repr >}
-     method sub start len = {< repr = String.sub s  start len >}
+     method escaped = {< repr = String.escaped repr >}
+     method sub start len = {< repr = String.sub s start len >}
   end;;
 \end{caml_example}
-As shown in the inferred type, the methods "copy" and "sub" now return
+As shown in the inferred type, the methods "escaped" and "sub" now return
 objects of the same type as the one of the class.
 
 Another difficulty is the implementation of the method "concat".
@@ -357,7 +357,7 @@ class ostring s =
      method repr = repr
      method get n = String.get repr n
      method print = print_string repr
-     method copy = {< repr = String.copy repr >}
+     method escaped = {< repr = String.escaped repr >}
      method sub start len = {< repr = String.sub s start len >}
      method concat (t : 'mytype) = {< repr = repr ^ t#repr >}
   end;;
