@@ -65,30 +65,43 @@ int caml_gc_subphase;     /* Subphase_{mark_roots,mark_main,mark_final,
 
 /**
    Ephemerons:
-   During mark and clean phase the list caml_ephe_list_head of ephemerons
-   is iterated. The following pointers follows this invariant:
-    caml_ephe_list_head ->* ephe_list_head_todo ->* ephe_prev ->* null
-                         |                       |             |
-                        (1)                     (2)           (3)
+   During mark phase the list caml_ephe_list_head of ephemerons
+   is iterated by different pointers that follow the invariants:
+   caml_ephe_list_head ->* ephes_checked_if_pure ->* ephes_to_check ->* null
+                        |                         |                  |
+                       (1)                       (2)                (3)
+
+    At the start of mark phase, (1) and (2) are empty.
 
     In mark phase:
       - the ephemerons in (1) have a data alive or none
-        (nb: new ephe are added in this part by weak.c)
-      - the ephemerons in (2) have at least a white key if ephe_list_pure is
-        true otherwise they are in an unknown state and must be checked
-        again.
+        (nb: new ephemerons are added in this part by weak.c)
+      - the ephemerons in (2) have at least a white key or are white
+        if ephe_list_pure is true, otherwise they are in an unknown state and
+        must be checked again.
       - the ephemerons in (3) are in an unknown state and must be checked
 
-    In clean phase, ephe_list_head_todo is not used (1) = (2).
-    - the ephemerons in (1) are clean (white keys and datas replaced by none)
-    - the ephemerons in (3) should be cleaned or removed if white
+    At the end of mark phase, (3) is empty and ephe_list_pure is true.
+    The ephemeron in (1) and (2) will be cleaned (white keys and datas
+    replaced by none or the ephemeron is removed from the list if it is white)
+    in clean phase.
+
+    In clean phase:
+    caml_ephe_list_head ->*                           ephes_to_check ->* null
+                         |                                            |
+                        (1)                                          (3)
+
+    In clean phase, (2) is not used, ephes_to_check is initialized at
+    caml_ephe_list_head:
+    - the ephemerons in (1) are clean.
+    - the ephemerons in (3) should be cleaned or removed if white.
 
  */
-static int ephe_list_pure;   /* The list of ephemerons is pure if
-                                since the start of its iteration
-                                no value have been darken. */
-static value *ephe_prev;
-static value *ephe_list_head_todo;
+static int ephe_list_pure;
+/** The ephemerons is pure if since the start of its iteration
+    no value have been darken. */
+static value *ephes_checked_if_pure;
+static value *ephes_to_check;
 
 int caml_major_window = 1;
 double caml_major_ring[Max_major_window] = { 0. };
@@ -176,8 +189,8 @@ static void start_cycle (void)
   caml_gc_subphase = Subphase_mark_roots;
   markhp = NULL;
   ephe_list_pure = 1;
-  ephe_list_head_todo = &caml_ephe_list_head;
-  ephe_prev = &caml_ephe_list_head;
+  ephes_checked_if_pure = &caml_ephe_list_head;
+  ephes_to_check = &caml_ephe_list_head;
 #ifdef DEBUG
   ++ major_gc_counter;
   caml_heap_check ();
@@ -284,7 +297,7 @@ static value* mark_ephe_aux (value *gray_vals_ptr, intnat *work,
   header_t hd;
   mlsize_t size, i;
 
-  v = *ephe_prev;
+  v = *ephes_to_check;
   hd = Hd_val(v);
   Assert(Tag_val (v) == Abstract_tag);
   child = Field(v,1); /* child = data */
@@ -324,7 +337,7 @@ static value* mark_ephe_aux (value *gray_vals_ptr, intnat *work,
       gray_vals_ptr = mark_slice_darken(gray_vals_ptr,v,1,/*in_ephemeron=*/1,
                                         slice_pointers);
     } else { /* not triggered move to the next one */
-      ephe_prev = &Field(v,0);
+      ephes_to_check = &Field(v,0);
       return gray_vals_ptr;
     }
   } else {  /* a simily weak pointer or an already alive data */
@@ -333,17 +346,17 @@ static value* mark_ephe_aux (value *gray_vals_ptr, intnat *work,
 
   /* all keys black or data none or black
      move the ephemerons from (3) to the end of (1) */
-  if ( ephe_list_head_todo == ephe_prev ) {
+  if ( ephes_checked_if_pure == ephes_to_check ) {
     /* corner case and optim */
-    ephe_list_head_todo = &Field(v,0);
-    ephe_prev = ephe_list_head_todo;
+    ephes_checked_if_pure = &Field(v,0);
+    ephes_to_check = ephes_checked_if_pure;
   } else {
     /*  - remove v from the list (3) */
-    *ephe_prev = Field(v,0);
+    *ephes_to_check = Field(v,0);
     /*  - insert it at the end of (1) */
-    Field(v,0) = *ephe_list_head_todo;
-    *ephe_list_head_todo = v;
-    ephe_list_head_todo = &Field(v,0);
+    Field(v,0) = *ephes_checked_if_pure;
+    *ephes_checked_if_pure = v;
+    ephes_checked_if_pure = &Field(v,0);
   }
   return gray_vals_ptr;
 }
@@ -430,13 +443,13 @@ static void mark_slice (intnat work)
       chunk = caml_heap_start;
       markhp = chunk;
       limit = chunk + Chunk_size (chunk);
-    } else if (*ephe_prev != (value) NULL) {
+    } else if (*ephes_to_check != (value) NULL) {
       /* Continue to scan the list of ephe */
       gray_vals_ptr = mark_ephe_aux(gray_vals_ptr,&work,&slice_pointers);
     } else if (!ephe_list_pure){
       /* We must scan again the list because some value have been darken */
       ephe_list_pure = 1;
-      ephe_prev = ephe_list_head_todo;
+      ephes_to_check = ephes_checked_if_pure;
     }else{
       switch (caml_gc_subphase){
       case Subphase_mark_roots: {
@@ -459,7 +472,7 @@ static void mark_slice (intnat work)
             CAMLassert (start == 0);
           }
           /* Complete the marking */
-          ephe_prev = ephe_list_head_todo;
+          ephes_to_check = ephes_checked_if_pure;
           caml_gc_subphase = Subphase_mark_final;
       }
         break;
@@ -467,7 +480,7 @@ static void mark_slice (intnat work)
         if (caml_ephe_list_head != (value) NULL){
           /* Initialise the clean phase. */
           caml_gc_phase = Phase_clean;
-          ephe_prev = &caml_ephe_list_head;
+          ephes_to_check = &caml_ephe_list_head;
           work = 0;
         } else {
           /* Initialise the sweep phase. */
@@ -494,15 +507,15 @@ static void clean_slice (intnat work)
   caml_gc_message (0x40, "Cleaning %ld words\n", work);
   caml_gc_message (0x40, "Subphase = %ld\n", caml_gc_subphase);
   while (work > 0){
-    v = *ephe_prev;
+    v = *ephes_to_check;
     if (v != (value) NULL){
       if (Is_white_val (v)){
         /* The whole array is dead, remove it from the list. */
-        *ephe_prev = Field (v, 0);
+        *ephes_to_check = Field (v, 0);
         work -= 1;
       }else{
         caml_ephe_clean(v);
-        ephe_prev = &Field (v, 0);
+        ephes_to_check = &Field (v, 0);
         work -= Whsize_val (v);
       }
     }else{ /* End of list reached */
