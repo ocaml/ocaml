@@ -25,7 +25,8 @@ external append_prim : 'a array -> 'a array -> 'a array = "caml_array_append"
 external concat : 'a array list -> 'a array = "caml_array_concat"
 external unsafe_blit :
   'a array -> int -> 'a array -> int -> int -> unit = "caml_array_blit"
-external make_float: int -> float array = "caml_make_float_vect"
+external create_float: int -> float array = "caml_make_float_vect"
+let make_float = create_float
 
 let init l f =
   if l = 0 then [||] else
@@ -132,6 +133,20 @@ let fold_right f a x =
     r := f (unsafe_get a i) !r
   done;
   !r
+
+let exists p a =
+  let f = ref false in
+  for i = 0 to length a - 1 do
+    f := !f || p (unsafe_get a i)
+  done;
+  !f
+
+let for_all p a =
+  let f = ref true in
+  for i = 0 to length a - 1 do
+    f := !f && p (unsafe_get a i)
+  done;
+  !f
 
 exception Bottom of int;;
 let sort cmp a =
