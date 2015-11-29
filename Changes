@@ -234,11 +234,14 @@ Standard library:
   * Sys.time (and [@@noalloc])
   * Pervasives.ldexp (and [@@noalloc])
   * Pervasives.compare for float, nativeint, int32, int64.
-  (Bobot François)
+  (François Bobot)
 - GPR#329: Add exists, for_all,  mem and memq functions in Array
   (Bernhard Schommer)
 - GPR#337: Add [Hashtbl.filter_map_inplace] (Alain Frisch)
 - GPR#356: Add [Format.kasprintf] (Jérémie Dimino, Mark Shinwell)
+- GPR#22: Add the Ephemeron module that implements ephemerons and weak
+  hash table (François Bobot, review by Damien Doligez, Daniel Bünzli,
+  Alain Frisch)
 
 Type system:
 - PR#5545: Type annotations on methods cannot control the choice of abbreviation
@@ -448,6 +451,12 @@ Bug fixes:
   Mark Shinwell)
 - GPR#283: Fix memory leaks in intern.c when OOM is raised
   (Marc Lasson, review by Alain Frisch)
+- GPR#22: Fix the cleaning of weak pointers. In very rare cases
+  accessing a value during the cleaning of the weak pointers could
+  result in the value being removed from one weak arrays and kept in
+  another one. That breaks the property that a value is removed from a
+  weak pointer only when it is dead and garbage collected. (François
+  Bobot, review by Damien Doligez)
 - GPR#313: Prevent quadratic cases in CSE
   (Pierre Chambart, review by Xavier Leroy)
 - PR#6795, PR#6996: Make ocamldep report errors passed in
