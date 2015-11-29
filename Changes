@@ -229,6 +229,12 @@ OCamlbuild:
 - PR#6605, GPR#117: use ocamlfind, if available, to discover camlp4 path
   (Vincent Laporte)
 
+Manual:
+- GPR#302: The OCaml reference manual is now included in the manual/
+  subdirectory of the main OCaml source repository. Contributions to
+  the manual are warmly welcome.
+  (François Bobot, review by Florian Angeletti)
+
 Bug fixes:
 - PR#3612: memory leak in bigarray read from file
   (Pierre Chambart, report by Gary Huber)
