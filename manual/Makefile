@@ -1,9 +1,10 @@
-all:
+all: tools
 	cd manual; ${MAKE} all
 #	cd fpcl; ${MAKE} all
 
 clean:
 	cd manual; ${MAKE} clean
+	cd tools; ${MAKE} clean
 #	cd fpcl; ${MAKE} clean
 
 release:
