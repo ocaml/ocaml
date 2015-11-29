@@ -21,11 +21,12 @@
 #include <stdio.h>
 #include "caml/backtrace.h"
 #include "caml/memory.h"
-#include "caml/startup_aux.h"
+#include "caml/callback.h"
 #include "caml/major_gc.h"
 #ifndef NATIVE_CODE
 #include "caml/dynlink.h"
 #endif
+#include "caml/startup_aux.h"
 
 
 /* Initialize the atom table */
@@ -133,6 +134,13 @@ int caml_startup_aux(void)
   return 1;
 }
 
+static void do_at_exit()
+{
+  value *at_exit = caml_named_value("Pervasives.do_at_exit");
+  if (at_exit != NULL)
+    caml_callback_exn(*at_exit, Val_unit);
+}
+
 CAMLexport void caml_shutdown(void)
 {
   if (startup_count <= 0)
@@ -144,6 +152,7 @@ CAMLexport void caml_shutdown(void)
   if (startup_count > 0)
     return;
 
+  do_at_exit();
   caml_finalise_heap();
 #ifndef NATIVE_CODE
   caml_free_shared_libs();
