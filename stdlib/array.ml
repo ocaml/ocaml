@@ -134,6 +134,20 @@ let fold_right f a x =
   done;
   !r
 
+let exists p a =
+  let f = ref false in
+  for i = 0 to length a - 1 do
+    f := !f || p (unsafe_get a i)
+  done;
+  !f
+
+let for_all p a =
+  let f = ref true in
+  for i = 0 to length a - 1 do
+    f := !f && p (unsafe_get a i)
+  done;
+  !f
+
 exception Bottom of int;;
 let sort cmp a =
   let maxson l i =
