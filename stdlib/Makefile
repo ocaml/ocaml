@@ -14,18 +14,18 @@
 include Makefile.shared
 
 allopt:
-	$(MAKE) stdlib.cmxa std_exit.cmx
+	$(MAKE) stdlib.cmxa std_init.cmx std_exit.cmx
 	$(MAKE) allopt-$(PROFILING)
 
 allopt-noprof:
 
-allopt-prof: stdlib.p.cmxa std_exit.p.cmx
-	rm -f std_exit.p.cmi
+allopt-prof: stdlib.p.cmxa std_init.p.cmx std_exit.p.cmx
+	rm -f std_init.p.cmi std_exit.p.cmi
 
 installopt: installopt-default installopt-$(PROFILING)
 
 installopt-default:
-	cp stdlib.cmxa stdlib.a std_exit.o *.cmx $(INSTALL_LIBDIR)
+	cp stdlib.cmxa stdlib.a std_init.o std_exit.o *.cmx $(INSTALL_LIBDIR)
 	cd $(INSTALL_LIBDIR); $(RANLIB) stdlib.a
 
 installopt-noprof:
@@ -33,13 +33,17 @@ installopt-noprof:
 	  ln -s stdlib.cmxa $(INSTALL_LIBDIR)/stdlib.p.cmxa
 	rm -f $(INSTALL_LIBDIR)/stdlib.p.a; \
 	  ln -s stdlib.a $(INSTALL_LIBDIR)/stdlib.p.a
+	rm -f $(INSTALL_LIBDIR)/std_init.p.cmx; \
+	  ln -s std_init.cmx $(INSTALL_LIBDIR)/std_init.p.cmx
+	rm -f $(INSTALL_LIBDIR)/std_init.p.o; \
+	  ln -s std_init.o $(INSTALL_LIBDIR)/std_init.p.o
 	rm -f $(INSTALL_LIBDIR)/std_exit.p.cmx; \
 	  ln -s std_exit.cmx $(INSTALL_LIBDIR)/std_exit.p.cmx
 	rm -f $(INSTALL_LIBDIR)/std_exit.p.o; \
 	  ln -s std_exit.o $(INSTALL_LIBDIR)/std_exit.p.o
 
 installopt-prof:
-	cp stdlib.p.cmxa stdlib.p.a std_exit.p.cmx std_exit.p.o $(INSTALL_LIBDIR)
+	cp stdlib.p.cmxa stdlib.p.a std_init.p.cmx std_init.p.o std_exit.p.cmx std_exit.p.o $(INSTALL_LIBDIR)
 	cd $(INSTALL_LIBDIR); $(RANLIB) stdlib.p.a
 
 stdlib.p.cmxa: $(OBJS:.cmo=.p.cmx)
