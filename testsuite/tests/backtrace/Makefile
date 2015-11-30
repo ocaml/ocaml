@@ -16,7 +16,8 @@ EXECNAME=program$(EXE)
 ABCDFILES=backtrace.ml
 OTHERFILES=backtrace2.ml raw_backtrace.ml \
            backtrace_deprecated.ml backtrace_slots.ml
-OTHERFILESNOINLINING=backtraces_and_finalizers.ml
+OTHERFILESNOINLINING=pr6920_why_at.ml pr6920_why_swallow.ml
+OTHERFILESNOINLINING_NATIVE=backtraces_and_finalizers.ml
 
 default:
 	@$(MAKE) byte
@@ -37,7 +38,7 @@ byte:
 	    && echo " => passed" || echo " => failed"; \
 	  done; \
 	done
-	@for file in $(OTHERFILES); do \
+	@for file in $(OTHERFILES) $(OTHERFILESNOINLINING); do \
 	  rm -f program program.exe; \
 	  $(OCAMLC) -g -o $(EXECNAME) $$file; \
 	  printf " ... testing '$$file' with ocamlc:"; \
@@ -75,7 +76,8 @@ native:
 	  $(DIFF) $$F.reference $$F.native.result >/dev/null \
 	  && echo " => passed" || echo " => failed"; \
 	done;
-	@for file in $(OTHERFILESNOINLINING); do \
+	@for file in $(OTHERFILESNOINLINING) $(OTHERFILESNOINLINING_NATIVE); \
+	do \
 	  rm -f program program.exe; \
 	  $(OCAMLOPT) -inline 0 -g -o $(EXECNAME) $$file; \
 	  printf " ... testing '$$file' with ocamlopt:"; \

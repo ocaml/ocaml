@@ -640,7 +640,8 @@ let primitive_is_ccall = function
   (* Determine if a primitive is a Pccall or will be turned later into
      a C function call that may raise an exception *)
   | Pccall _ | Pstringrefs | Pstringsets | Parrayrefs _ | Parraysets _ |
-    Pbigarrayref _ | Pbigarrayset _ | Pduprecord _ -> true
+    Pbigarrayref _ | Pbigarrayset _ | Pduprecord _ | Pdirapply _ |
+    Prevapply _ -> true
   | _ -> false
 
 (* Assertions *)
