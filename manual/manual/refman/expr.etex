@@ -69,6 +69,11 @@ expr:
   | '(' expr ':>' typexpr ')'
   | '(' expr ':' typexpr ':>' typexpr ')'
   | '{<' [ inst-var-name '=' expr { ';' inst-var-name '=' expr } [';'] ] '>}'
+  | 'assert' expr
+  | 'lazy' expr
+  | 'let' 'module' module-name { '(' module-name ':' module-type ')' }
+    [ ':' module-type ] \\ '=' module-expr 'in' expr
+
 ;
 %BEGIN LATEX
 \end{syntax} \begin{syntax}
@@ -116,8 +121,8 @@ precedence come first. For infix and prefix symbols, we write
 \entree{".   .(   .[   .{" (see section~\ref{s:bigarray-access})}{--}
 \entree{"#"\ldots}{--}
 \entree{function application, constructor application, tag
-        application, "assert" (see~\ref{s:assert}),
-        "lazy" (see~\ref{s:lazy})}{left}
+        application, "assert",
+        "lazy"}{left}
 \entree{"-   -." (prefix)}{--}
 \entree{"**"\ldots"   lsl   lsr   asr"}{right}
 \entree{"*"\ldots"   /"\ldots"   %"\ldots"   mod   land   lor   lxor"}{left}
@@ -833,5 +838,60 @@ For abstract and private types, the variance must be given explicitly
 (see section~\ref{s:type-defs}),
 otherwise the default is nonvariant. This is also the case for
 constrained arguments in type definitions.
+
+
+\subsection{Other}
+
+\subsubsection*{Assertion checking}
+
+
+\ikwd{assert\@\texttt{assert}}
+
+OCaml supports the @"assert"@ construct to check debugging assertions.
+The expression @"assert" expr@ evaluates the expression @expr@ and
+returns @"()"@ if @expr@ evaluates to @"true"@.  If it evaluates to
+@"false"@ the exception
+"Assert_failure" is raised with the source file name and the
+location of @expr@ as arguments.  Assertion
+checking can be turned off with the "-noassert" compiler option.  In
+this case, @expr@ is not evaluated at all.
+
+As a special case, @"assert false"@ is reduced to
+@'raise' '('@"Assert_failure ..."@')'@, which gives it a polymorphic
+type.  This means that it can be used in place of any expression (for
+example as a branch of any pattern-matching).  It also means that
+the @"assert false"@ ``assertions'' cannot be turned off by the
+"-noassert" option.
+%
+\index{Assertfailure\@\verb`Assert_failure`}
+
+\subsubsection*{Lazy expressions}
+\ikwd{lazy\@\texttt{lazy}}
+
+The expression @"lazy" expr@ returns a value \var{v} of type "Lazy.t" that
+encapsulates the computation of @expr@.  The argument @expr@ is not
+evaluated at this point in the program.  Instead, its evaluation will
+be performed the first time the function "Lazy.force" is applied to the value
+\var{v}, returning the actual value of @expr@. Subsequent applications
+of "Lazy.force" to \var{v} do not evaluate @expr@ again. Applications
+of "Lazy.force" may be implicit through pattern matching (see~\ref{s:lazypat}).
+
+\subsubsection*{Local modules}
+\ikwd{let\@\texttt{let}}
+\ikwd{module\@\texttt{module}}
+
+The expression
+@"let" "module" module-name "=" module-expr "in" expr@
+locally binds the module expression @module-expr@ to the identifier
+@module-name@ during the evaluation of the expression @expr@.
+It then returns the value of @expr@.  For example:
+\begin{verbatim}
+        let remove_duplicates comparison_fun string_list =
+          let module StringSet =
+            Set.Make(struct type t = string
+                            let compare = comparison_fun end) in
+          StringSet.elements
+            (List.fold_right StringSet.add string_list StringSet.empty)
+\end{verbatim}
 
 %% \newpage
