@@ -230,6 +230,10 @@ OCamlbuild:
 - PR#6605, GPR#117: use ocamlfind, if available, to discover camlp4 path
   (Vincent Laporte)
 
+OCamldep:
+- GRP#286: add support for module aliases
+  (jacques Garrigue)
+
 Manual:
 - GPR#302: The OCaml reference manual is now included in the manual/
   subdirectory of the main OCaml source repository. Contributions to

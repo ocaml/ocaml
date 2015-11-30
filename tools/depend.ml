@@ -16,24 +16,71 @@ open Longident
 open Parsetree
 
 module StringSet = Set.Make(struct type t = string let compare = compare end)
+module StringMap = Map.Make(String)
+
+(* Module resolution map *)
+(* Node (set of imports for this path, map for submodules) *)
+type map_tree = Node of StringSet.t * bound_map
+and  bound_map = map_tree StringMap.t
+let bound = Node (StringSet.empty, StringMap.empty)
+
+(*let get_free (Node (s, _m)) = s*)
+let get_map (Node (_s, m)) = m
+let make_leaf s = Node (StringSet.singleton s, StringMap.empty)
+let make_node m =  Node (StringSet.empty, m)
+let rec weaken_map s (Node(s0,m0)) =
+  Node (StringSet.union s s0, StringMap.map (weaken_map s) m0)
+let rec collect_free (Node (s, m)) =
+  StringMap.fold (fun _ n -> StringSet.union (collect_free n)) m s
+
+(* Returns the imports required to access the structure at path p *)
+(* Only raises Not_found if the head of p is not in the toplevel map *)
+let rec lookup_free p m =
+  match p with
+    [] -> raise Not_found
+  | s::p ->
+      let Node (f, m') = StringMap.find s m  in
+      try lookup_free p m' with Not_found -> f
+
+(* Returns the node corresponding to the structure at path p *)
+let rec lookup_map lid m =
+  match lid with
+    Lident s    -> StringMap.find s m
+  | Ldot (l, s) -> StringMap.find s (get_map (lookup_map l m))
+  | Lapply _    -> raise Not_found
 
 (* Collect free module identifiers in the a.s.t. *)
 
 let free_structure_names = ref StringSet.empty
 
-let rec add_path bv = function
+let add_names s =
+  free_structure_names := StringSet.union s !free_structure_names
+
+let rec add_path bv ?(p=[]) = function
   | Lident s ->
-      if not (StringSet.mem s bv)
-      then free_structure_names := StringSet.add s !free_structure_names
-  | Ldot(l, _s) -> add_path bv l
+      let free =
+        try lookup_free (s::p) bv with Not_found -> StringSet.singleton s
+      in
+      (*StringSet.iter (fun s -> Printf.eprintf "%s " s) free;
+        prerr_endline "";*)
+      add_names free
+  | Ldot(l, s) -> add_path bv ~p:(s::p) l
   | Lapply(l1, l2) -> add_path bv l1; add_path bv l2
 
-let open_module bv lid = add_path bv lid
+let open_module bv lid =
+  match lookup_map lid bv with
+  | Node (s, m) ->
+      add_names s;
+      StringMap.fold StringMap.add m bv
+  | exception Not_found ->
+      add_path bv lid; bv
 
-let add bv lid =
+let add_parent bv lid =
   match lid.txt with
     Ldot(l, _s) -> add_path bv l
   | _ -> ()
+
+let add = add_parent
 
 let addmodule bv lid = add_path bv lid.txt
 
@@ -122,7 +169,7 @@ let add_class_description bv infos =
 
 let add_class_type_declaration = add_class_description
 
-let pattern_bv = ref StringSet.empty
+let pattern_bv = ref StringMap.empty
 
 let rec add_pattern bv pat =
   match pat.ppat_desc with
@@ -141,7 +188,7 @@ let rec add_pattern bv pat =
   | Ppat_variant(_, op) -> add_opt add_pattern bv op
   | Ppat_type li -> add bv li
   | Ppat_lazy p -> add_pattern bv p
-  | Ppat_unpack id -> pattern_bv := StringSet.add id.txt !pattern_bv
+  | Ppat_unpack id -> pattern_bv := StringMap.add id.txt bound !pattern_bv
   | Ppat_exception p -> add_pattern bv p
   | Ppat_extension _ -> ()
 
@@ -191,7 +238,8 @@ let rec add_expr bv exp =
   | Pexp_setinstvar(_v, e) -> add_expr bv e
   | Pexp_override sel -> List.iter (fun (_s, e) -> add_expr bv e) sel
   | Pexp_letmodule(id, m, e) ->
-      add_module bv m; add_expr (StringSet.add id.txt bv) e
+      let b = add_module_binding bv m in
+      add_expr (StringMap.add id.txt b bv) e
   | Pexp_assert (e) -> add_expr bv e
   | Pexp_lazy (e) -> add_expr bv e
   | Pexp_poly (e, t) -> add_expr bv e; add_opt add_type bv t
@@ -199,13 +247,15 @@ let rec add_expr bv exp =
       let bv = add_pattern bv pat in List.iter (add_class_field bv) fieldl
   | Pexp_newtype (_, e) -> add_expr bv e
   | Pexp_pack m -> add_module bv m
-  | Pexp_open (_ovf, m, e) -> open_module bv m.txt; add_expr bv e
-  | Pexp_extension ({ txt = ("ocaml.extension_constructor"|"extension_constructor"); _ },
+  | Pexp_open (_ovf, m, e) ->
+      let bv = open_module bv m.txt in add_expr bv e
+  | Pexp_extension ({ txt = ("ocaml.extension_constructor"|
+                             "extension_constructor"); _ },
                     PStr [item]) ->
-    begin match item.pstr_desc with
-    | Pstr_eval ({ pexp_desc = Pexp_construct (c, None) }, _) -> add bv c
-    | _ -> ()
-    end
+      begin match item.pstr_desc with
+      | Pstr_eval ({ pexp_desc = Pexp_construct (c, None) }, _) -> add bv c
+      | _ -> ()
+      end
   | Pexp_extension _ -> ()
   | Pexp_unreachable -> ()
 
@@ -230,7 +280,7 @@ and add_modtype bv mty =
   | Pmty_signature s -> add_signature bv s
   | Pmty_functor(id, mty1, mty2) ->
       Misc.may (add_modtype bv) mty1;
-      add_modtype (StringSet.add id.txt bv) mty2
+      add_modtype (StringMap.add id.txt bound bv) mty2
   | Pmty_with(mty, cstrl) ->
       add_modtype bv mty;
       List.iter
@@ -244,45 +294,91 @@ and add_modtype bv mty =
   | Pmty_typeof m -> add_module bv m
   | Pmty_extension _ -> ()
 
-and add_signature bv = function
-    [] -> ()
-  | item :: rem -> add_signature (add_sig_item bv item) rem
+and add_module_alias bv l =
+  try
+    add_parent bv l;
+    lookup_map l.txt bv
+  with Not_found ->
+    match l.txt with
+      Lident s -> make_leaf s
+    | _ -> addmodule bv l; bound (* cannot delay *)
 
-and add_sig_item bv item =
+and add_modtype_binding bv mty =
+  if not !Clflags.transparent_modules then add_modtype bv mty;
+  match mty.pmty_desc with
+    Pmty_alias l ->
+      add_module_alias bv l
+  | Pmty_signature s ->
+      make_node (add_signature_binding bv s)
+  | Pmty_typeof modl ->
+      add_module_binding bv modl
+  | _ ->
+      if !Clflags.transparent_modules then add_modtype bv mty; bound
+
+and add_signature bv sg =
+  ignore (add_signature_binding bv sg)
+
+and add_signature_binding bv sg =
+  snd (List.fold_left add_sig_item (bv, StringMap.empty) sg)
+
+and add_sig_item (bv, m) item =
   match item.psig_desc with
     Psig_value vd ->
-      add_type bv vd.pval_type; bv
+      add_type bv vd.pval_type; (bv, m)
   | Psig_type (_, dcls) ->
-      List.iter (add_type_declaration bv) dcls; bv
+      List.iter (add_type_declaration bv) dcls; (bv, m)
   | Psig_typext te ->
-      add_type_extension bv te; bv
+      add_type_extension bv te; (bv, m)
   | Psig_exception pext ->
-      add_extension_constructor bv pext; bv
+      add_extension_constructor bv pext; (bv, m)
   | Psig_module pmd ->
-      add_modtype bv pmd.pmd_type; StringSet.add pmd.pmd_name.txt bv
+      let m' = add_modtype_binding bv pmd.pmd_type in
+      let add = StringMap.add pmd.pmd_name.txt m' in
+      (add bv, add m)
   | Psig_recmodule decls ->
-      let bv' =
-        List.fold_right StringSet.add
-                        (List.map (fun pmd -> pmd.pmd_name.txt) decls) bv
+      let add =
+        List.fold_right (fun pmd -> StringMap.add pmd.pmd_name.txt bound)
+                        decls
       in
+      let bv' = add bv and m' = add m in
       List.iter (fun pmd -> add_modtype bv' pmd.pmd_type) decls;
-      bv'
+      (bv', m')
   | Psig_modtype x ->
       begin match x.pmtd_type with
         None -> ()
       | Some mty -> add_modtype bv mty
       end;
-      bv
+      (bv, m)
   | Psig_open od ->
-      open_module bv od.popen_lid.txt; bv
+      (open_module bv od.popen_lid.txt, m)
   | Psig_include incl ->
-      add_modtype bv incl.pincl_mod; bv
+      let Node (s, m') = add_modtype_binding bv incl.pincl_mod in
+      add_names s;
+      let add = StringMap.fold StringMap.add m' in
+      (add bv, add m)
   | Psig_class cdl ->
-      List.iter (add_class_description bv) cdl; bv
+      List.iter (add_class_description bv) cdl; (bv, m)
   | Psig_class_type cdtl ->
-      List.iter (add_class_type_declaration bv) cdtl; bv
+      List.iter (add_class_type_declaration bv) cdtl; (bv, m)
   | Psig_attribute _ | Psig_extension _ ->
-      bv
+      (bv, m)
+
+and add_module_binding bv modl =
+  if not !Clflags.transparent_modules then add_module bv modl;
+  match modl.pmod_desc with
+    Pmod_ident l ->
+      begin try
+        add_parent bv l;
+        lookup_map l.txt bv
+      with Not_found ->
+        match l.txt with
+          Lident s -> make_leaf s
+        | _ ->  addmodule bv l; bound
+      end
+  | Pmod_structure s ->
+      make_node (snd (add_structure_binding bv s))
+  | _ ->
+      if !Clflags.transparent_modules then add_module bv modl; bound
 
 and add_module bv modl =
   match modl.pmod_desc with
@@ -290,7 +386,7 @@ and add_module bv modl =
   | Pmod_structure s -> ignore (add_structure bv s)
   | Pmod_functor(id, mty, modl) ->
       Misc.may (add_modtype bv) mty;
-      add_module (StringSet.add id.txt bv) modl
+      add_module (StringMap.add id.txt bound bv) modl
   | Pmod_apply(mod1, mod2) ->
       add_module bv mod1; add_module bv mod2
   | Pmod_constraint(modl, mty) ->
@@ -301,55 +397,71 @@ and add_module bv modl =
       ()
 
 and add_structure bv item_list =
-  List.fold_left add_struct_item bv item_list
+  let (bv, m) = add_structure_binding bv item_list in
+  add_names (collect_free (make_node m));
+  bv
 
-and add_struct_item bv item =
+and add_structure_binding bv item_list =
+  List.fold_left add_struct_item (bv, StringMap.empty) item_list
+
+and add_struct_item (bv, m) item : _ StringMap.t * _ StringMap.t =
   match item.pstr_desc with
     Pstr_eval (e, _attrs) ->
-      add_expr bv e; bv
+      add_expr bv e; (bv, m)
   | Pstr_value(rf, pel) ->
-      let bv = add_bindings rf bv pel in bv
+      let bv = add_bindings rf bv pel in (bv, m)
   | Pstr_primitive vd ->
-      add_type bv vd.pval_type; bv
+      add_type bv vd.pval_type; (bv, m)
   | Pstr_type (_, dcls) ->
-      List.iter (add_type_declaration bv) dcls; bv
+      List.iter (add_type_declaration bv) dcls; (bv, m)
   | Pstr_typext te ->
       add_type_extension bv te;
-      bv
+      (bv, m)
   | Pstr_exception pext ->
-      add_extension_constructor bv pext; bv
+      add_extension_constructor bv pext; (bv, m)
   | Pstr_module x ->
-      add_module bv x.pmb_expr; StringSet.add x.pmb_name.txt bv
+      let b = add_module_binding bv x.pmb_expr in
+      let add = StringMap.add x.pmb_name.txt b in
+      (add bv, add m)
   | Pstr_recmodule bindings ->
-      let bv' =
-        List.fold_right StringSet.add
-          (List.map (fun x -> x.pmb_name.txt) bindings) bv in
+      let add =
+        List.fold_right (fun x -> StringMap.add x.pmb_name.txt bound) bindings
+      in
+      let bv' = add bv and m = add m in
       List.iter
         (fun x -> add_module bv' x.pmb_expr)
         bindings;
-      bv'
+      (bv', m)
   | Pstr_modtype x ->
       begin match x.pmtd_type with
         None -> ()
       | Some mty -> add_modtype bv mty
       end;
-      bv
+      (bv, m)
   | Pstr_open od ->
-      open_module bv od.popen_lid.txt; bv
+      (open_module bv od.popen_lid.txt, m)
   | Pstr_class cdl ->
-      List.iter (add_class_declaration bv) cdl; bv
+      List.iter (add_class_declaration bv) cdl; (bv, m)
   | Pstr_class_type cdtl ->
-      List.iter (add_class_type_declaration bv) cdtl; bv
+      List.iter (add_class_type_declaration bv) cdtl; (bv, m)
   | Pstr_include incl ->
-      add_module bv incl.pincl_mod; bv
+      let Node (s, m') = add_module_binding bv incl.pincl_mod in
+      add_names s;
+      let add = StringMap.fold StringMap.add m' in
+      (add bv, add m)
   | Pstr_attribute _ | Pstr_extension _ ->
-      bv
+      (bv, m)
 
 and add_use_file bv top_phrs =
   ignore (List.fold_left add_top_phrase bv top_phrs)
 
 and add_implementation bv l =
-  ignore (add_structure bv l)
+  if !Clflags.transparent_modules then
+    ignore (add_structure_binding bv l)
+  else ignore (add_structure bv l)
+
+and add_implementation_binding bv l =
+  snd (add_structure_binding bv l)
 
 and add_top_phrase bv = function
   | Ptop_def str -> add_structure bv str
