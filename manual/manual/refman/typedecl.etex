@@ -175,8 +175,10 @@ corresponding parameter.  For instance, the abstract type declaration
 supertype of $\sigma " t"$ if $\tau$ is subtype of $\sigma$.
 
 The variance indicated by the "+" and "-" annotations on parameters
-are required only for abstract types.  For abbreviations, variant
-types or record types, the variance properties of the type constructor
+is enforced only for abstract and private types, or when there are
+type constraints.
+Otherwise, for abbreviations, variant and record types without type
+constraints, the variance properties of the type constructor
 are inferred from its definition, and the variance annotations are
 only checked for conformance with the definition.
 
