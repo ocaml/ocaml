@@ -593,32 +593,17 @@ let duplicate_class_type ty =
    [expand_abbrev] (via [subst]) requires these expansions to be
    preserved. Does it worth duplicating this code ?
 *)
-let rec iter_generalize tyl ty =
+let rec generalize ty =
   let ty = repr ty in
   if (ty.level > !current_level) && (ty.level <> generic_level) then begin
     set_level ty generic_level;
     begin match ty.desc with
       Tconstr (_, _, abbrev) ->
-        iter_abbrev (iter_generalize tyl) !abbrev
+        iter_abbrev generalize !abbrev
     | _ -> ()
     end;
-    iter_type_expr (iter_generalize tyl) ty
-  end else
-    tyl := ty :: !tyl
-
-let iter_generalize tyl ty =
-  simple_abbrevs := Mnil;
-  iter_generalize tyl ty
-
-let generalize ty =
-  iter_generalize (ref []) ty
-
-(* Efficient repeated generalisation of the same type *)
-let iterative_generalization min_level tyl =
-  let tyl' = ref [] in
-  List.iter (iter_generalize tyl') tyl;
-  List.fold_right (fun ty l -> if ty.level <= min_level then l else ty::l)
-    !tyl' []
+    iter_type_expr generalize ty
+  end
 
 (* Generalize the structure and lower the variables *)
 
@@ -3291,18 +3276,22 @@ and eqtype_row rename type_pairs subst env row1 row2 =
       | _ -> raise (Unify []))
     pairs
 
+(* Must empty univar_pairs first *)
+let eqtype_list rename type_pairs subst env tl1 tl2 =
+  univar_pairs := [];
+  let snap = Btype.snapshot () in
+  try eqtype_list rename type_pairs subst env tl1 tl2; backtrack snap
+  with exn -> backtrack snap; raise exn
+
+let eqtype rename type_pairs subst env t1 t2 =
+  eqtype_list rename type_pairs subst env [t1] [t2]
+
 (* Two modes: with or without renaming of variables *)
 let equal env rename tyl1 tyl2 =
   try
-    univar_pairs := [];
     eqtype_list rename (TypePairs.create 11) (ref []) env tyl1 tyl2; true
   with
     Unify _ -> false
-
-(* Must empty univar_pairs first *)
-let eqtype rename type_pairs subst env t1 t2 =
-  univar_pairs := [];
-  eqtype rename type_pairs subst env t1 t2
 
 
                           (*************************)
