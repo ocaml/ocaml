@@ -11,6 +11,7 @@ camlinternalLazy.cmi :
 camlinternalMod.cmi : obj.cmi
 camlinternalOO.cmi : obj.cmi
 char.cmi :
+uchar.cmi :
 complex.cmi :
 digest.cmi :
 filename.cmi :
@@ -81,6 +82,9 @@ camlinternalOO.cmx : sys.cmx string.cmx obj.cmx map.cmx list.cmx char.cmx \
     array.cmx camlinternalOO.cmi
 char.cmo : char.cmi
 char.cmx : char.cmi
+uchar.cmi : format.cmi
+uchar.cmo : printf.cmi format.cmi uchar.cmi
+uchar.cmx : printf.cmi format.cmi uchar.cmi
 complex.cmo : complex.cmi
 complex.cmx : complex.cmi
 digest.cmo : string.cmi char.cmi bytes.cmi digest.cmi
