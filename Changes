@@ -131,6 +131,9 @@ Compilers:
   (Thomas Refis, Leo White)
 - GPR#306: Instrument the compiler to debug performance regressions
   (Pierre Chambart)
+- GPR#319: add warning for missing cmx files, and extend -opaque option to mli
+  files.
+  (Leo White)
 - PR#6920: fix debug informations around uses of %apply or %revapply
   (Jérémie Dimino)
 
