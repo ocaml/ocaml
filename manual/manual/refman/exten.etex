@@ -34,21 +34,6 @@ The library modules "Int32"[\moduleref{Int32}],
 "Int64"[\moduleref{Int64}] and "Nativeint"[\moduleref{Nativeint}]
 provide operations on these integer types.
 
-\section{Streams and stream parsers} \label{s:streams}
-
-(Removed in Objective Caml 3.03)
-
-The syntax for streams and stream parsers is no longer part of the
-OCaml language, but available through a Camlp4 syntax
-extension.  See the Camlp4 reference manual for more information.
-Support for basic operations on streams is still available through the
-"Stream"[\moduleref{Stream}] module of the standard library.
-OCaml programs
-that use the stream parser syntax should be compiled with the
-"-pp camlp4o" option to "ocamlc" and "ocamlopt".  For interactive use,
-run "ocaml" and issue the \verb'#load "dynlink.cma";;' command,
-followed by the \verb'#load "camlp4o.cma";;' command.
-
 \section{Recursive definitions of values} \label{s:letrecvalues}
 
 (Introduced in Objective Caml 1.00)
