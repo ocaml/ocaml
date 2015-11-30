@@ -103,25 +103,6 @@ An expression @@e@@ is said to be {\em immediately linked to} the variable
    is immediately linked to @name@.
 \end{itemize}
 
-\section{Range patterns} \label{s:range-patterns}
-
-(Introduced in Objective Caml 1.00)
-
-\begin{syntax}
-pattern: ...
-         | char-literal '..' char-literal
-\end{syntax}
-
-In patterns, OCaml recognizes the form
-@"'" @c@ "'" ".." "'" @d@ "'"@ as shorthand for the pattern
-\begin{center}
-@"'" @c@ "'" "|" "'" @c@_1 "'" "|" "'" @c@_2 "'" "|" \ldots
-        "|" "'" @c@_n "'" "|" "'" @d@ "'"@
-\end{center}
-where \nth{c}{1}, \nth{c}{2}, \ldots, \nth{c}{n} are the characters
-that occur between \var{c} and \var{d} in the ASCII character set. For
-instance, the pattern "'0'"@'..'@"'9'" matches all characters that are digits.
-
 \section{Assertion checking}\label{s:assert}
 \ikwd{assert\@\texttt{assert}}
 

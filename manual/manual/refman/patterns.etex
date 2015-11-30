@@ -19,6 +19,7 @@ pattern:
   | '[' pattern { ';' pattern } [ ';' ] ']'
   | pattern '::' pattern
   | '[|' pattern { ';' pattern } [ ';' ] '|]'
+  | char-literal '..' char-literal
 \end{syntax}
 
 The table below shows the relative precedences and associativity of
@@ -26,7 +27,7 @@ operators and non-closed pattern constructions. The constructions with
 higher precedences come first.
 \ikwd{as\@\texttt{as}}
 \begin{tableau}{|l|l|}{Operator}{Associativity}
-\entree{".." (see section~\ref{s:range-patterns})}{--}
+\entree{".."}{--}
 \entree{"lazy" (see section~\ref{s:lazy})}{--}
 \entree{Constructor application, Tag application}{right}
 \entree{"::"}{right}
@@ -147,3 +148,14 @@ The pattern @"[|" pattern_1 ";" \ldots ";" pattern_n "|]"@
 matches arrays of length $n$ such that the $i$-th array element
 matches the pattern @pattern_i@, for \fromoneto{i}{n}.
 
+\subsubsection*{Range patterns}
+
+The pattern
+@"'" @c@ "'" ".." "'" @d@ "'"@ is a shorthand for the pattern
+\begin{center}
+@"'" @c@ "'" "|" "'" @c@_1 "'" "|" "'" @c@_2 "'" "|" \ldots
+        "|" "'" @c@_n "'" "|" "'" @d@ "'"@
+\end{center}
+where \nth{c}{1}, \nth{c}{2}, \ldots, \nth{c}{n} are the characters
+that occur between \var{c} and \var{d} in the ASCII character set. For
+instance, the pattern "'0'"@'..'@"'9'" matches all characters that are digits.
