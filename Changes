@@ -294,6 +294,7 @@ Bug fixes:
 - PR#6972, GPR#276: 4.02.3 regression on documentation comments in .cmt files
   (Leo White, report by Olivier Andrieu)
 - PR#6980: Assert failure from polymorphic variants and existentials
+- PR#6981: Ctype.Unify(_) with associated functor arg refering to previous one
 - PR#6982: unexpected type error when packing a module alias
 - PR#6985: `module type of struct include Bar end exposes
            %s#row when Bar contains private row types
