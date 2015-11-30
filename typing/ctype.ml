@@ -605,6 +605,10 @@ let rec generalize ty =
     iter_type_expr generalize ty
   end
 
+let generalize ty =
+  simple_abbrevs := Mnil;
+  generalize ty
+
 (* Generalize the structure and lower the variables *)
 
 let rec generalize_structure var_level ty =
