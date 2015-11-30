@@ -672,4 +672,10 @@ Error: This method has type ([< `Foo of 'b ] as 'a) -> 'b
                      ^^^
 Error: This expression has type M.t but an expression was expected of type 'x
        The type constructor M.t would escape its scope
+#       Characters 37-50:
+  type 'a r = { x: 'b. 'b list as 'a };; (* Should fail? *)
+                       ^^^^^^^^^^^^^
+Error: This type 'b list should be an instance of type 'a
+       The universal variable 'b would escape its scope
+# type 'a r = { x : int list; } constraint 'a = int list
 # 

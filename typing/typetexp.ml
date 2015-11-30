@@ -813,17 +813,19 @@ let globalize_used_variables env fixed =
   let r = ref [] in
   Tbl.iter
     (fun name (ty, loc) ->
-      let v = new_global_var () in
-      let snap = Btype.snapshot () in
-      if try unify env v ty; true with _ -> Btype.backtrack snap; false
-      then try
-        r := (loc, v,  Tbl.find name !type_variables) :: !r
+      try
+        r := (loc, ty, Tbl.find name !type_variables) :: !r
       with Not_found ->
         if fixed && Btype.is_Tvar (repr ty) then
           raise(Error(loc, env, Unbound_type_variable ("'"^name)));
-        let v2 = new_global_var () in
-        r := (loc, v, v2) :: !r;
-        type_variables := Tbl.add name v2 !type_variables)
+        let snap = Btype.snapshot () in
+        try
+          let v = new_global_var () in
+          unify env v ty;
+          let v2 = new_global_var () in
+          r := (loc, v, v2) :: !r;
+          type_variables := Tbl.add name v !type_variables
+        with _ -> Btype.backtrack snap)
     !used_variables;
   used_variables := Tbl.empty;
   fun () ->
