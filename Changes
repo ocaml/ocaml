@@ -120,7 +120,8 @@ Runtime system:
 - PR#6760: closures evaluated in the toplevel can now be marshalled
   (whitequark, review by Jacques-Henri Jourdan)
 - PR#6902, GPR#210: runtime emits a warning when finalizing an I/O channel
-  which is still open (Alain Frisch, review by Damien Doligez)
+  which is still open (Alain Frisch, review by Damien Doligez);
+  this is controlled by OCAMLRUNPARAM=W=1 or with Sys.enable_runtime_warnings.
 - Signal handling: for read-and-clear, use GCC/Clang atomic builtins
   if available.  (Xavier Leroy)
 - PR#6910, GPR#224: marshaling (output_value, input_value, et al)
