@@ -28,7 +28,7 @@ higher precedences come first.
 \ikwd{as\@\texttt{as}}
 \begin{tableau}{|l|l|}{Operator}{Associativity}
 \entree{".."}{--}
-\entree{"lazy" (see section~\ref{s:lazy})}{--}
+\entree{"lazy" (see section~\ref{s:lazypat})}{--}
 \entree{Constructor application, Tag application}{right}
 \entree{"::"}{right}
 \entree{","}{--}

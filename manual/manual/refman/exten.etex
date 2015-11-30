@@ -103,26 +103,8 @@ An expression @@e@@ is said to be {\em immediately linked to} the variable
    is immediately linked to @name@.
 \end{itemize}
 
-\section{Lazy evaluation} \label{s:lazy}
-\ikwd{lazy\@\texttt{lazy}}
+\section{Lazy patterns} \label{s:lazypat}
 
-\subsection{Lazy expressions}
-(Introduced in Objective Caml 1.06)
-
-\begin{syntax}
-expr: ...
-      | 'lazy' expr
-\end{syntax}
-
-The expression @"lazy" expr@ returns a value \var{v} of type "Lazy.t" that
-encapsulates the computation of @expr@.  The argument @expr@ is not
-evaluated at this point in the program.  Instead, its evaluation will
-be performed the first time the function "Lazy.force" is applied to the value
-\var{v}, returning the actual value of @expr@. Subsequent applications
-of "Lazy.force" to \var{v} do not evaluate @expr@ again. Applications
-of "Lazy.force" may be implicit through pattern matching (see below).
-
-\subsection{Lazy patterns}
 (Introduced in Objective Caml 3.11)
 
 \begin{syntax}
