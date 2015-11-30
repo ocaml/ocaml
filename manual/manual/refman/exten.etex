@@ -103,35 +103,6 @@ An expression @@e@@ is said to be {\em immediately linked to} the variable
    is immediately linked to @name@.
 \end{itemize}
 
-\section{Assertion checking}\label{s:assert}
-\ikwd{assert\@\texttt{assert}}
-
-(Introduced in Objective Caml 1.06)
-
-\begin{syntax}
-expr: ...
-      | 'assert' expr
-\end{syntax}
-
-OCaml supports the @"assert"@ construct to check debugging assertions.
-The expression @"assert" expr@ evaluates the expression @expr@ and
-returns @"()"@ if @expr@ evaluates to @"true"@.  If it evaluates to
-@"false"@ the exception
-"Assert_failure" is raised with the source file name and the
-location of @expr@ as arguments.  Assertion
-checking can be turned off with the "-noassert" compiler option.  In
-this case, @expr@ is not evaluated at all.
-
-As a special case, @"assert false"@ is reduced to
-@'raise' '('@"Assert_failure ..."@')'@, which gives it a polymorphic
-type.  This means that it can be used in place of any expression (for
-example as a branch of any pattern-matching).  It also means that
-the @"assert false"@ ``assertions'' cannot be turned off by the
-"-noassert" option.
-%
-\index{Assertfailure\@\verb`Assert_failure`}
-
-
 \section{Lazy evaluation} \label{s:lazy}
 \ikwd{lazy\@\texttt{lazy}}
 
