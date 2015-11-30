@@ -30,6 +30,29 @@ The following command-line options are recognized by "ocamldep".
 
 \begin{options}
 
+\item["-absname"]
+Show absolute filenames in error messages.
+
+\item["-all"]
+Generate dependencies on all required files, rather than assuming
+implicit dependencies.
+
+\item["-allow-approx"]
+Allow falling back on a lexer-based approximation when parsing fails.
+
+\item["-as-map"]
+For the following files, do not include delayed dependencies for
+module aliases.
+This option assumes that they are compiled using options
+"-no-alias-deps -w -49", and that those files or their interface are
+passed with the "-map" option when computing dependencies for other
+files. Note also that for dependencies to be correct in the
+implementation of a map file, its interface should not coerce any of
+the aliases it contains.
+
+\item["-debug-map"]
+Dump the delayed dependency map for each map file.
+
 \item["-I" \var{directory}]
 Add the given directory to the list of directories searched for
 source files. If a source file "foo.ml" mentions an external
@@ -40,6 +63,17 @@ Otherwise, "Bar" is assumed to be a module from the standard library,
 and no dependencies are generated. For programs that span multiple
 directories, it is recommended to pass "ocamldep" the same "-I" options
 that are passed to the compiler.
+
+\item["-impl" \var{file}]
+Process \var{file} as a ".ml" file.
+
+\item["-intf" \var{file}]
+Process \var{file} as a ".mli" file.
+
+\item["-map" \var{file}]
+Read an propagate the delayed dependencies for module aliases in
+\var{file}, so that the following files will depend on the
+exported aliased modules if they use them. See the example below.
 
 \item["-ml-synonym" \var{.ext}]
 Consider the given extension (with leading dot) to be a synonym for .ml.
@@ -68,14 +102,27 @@ dependencies on native compiled files (".cmx") to be generated instead
 of on ".cmo" files.  (This flag makes no difference if all source files
 have explicit ".mli" interface files.)
 
+\item["-one-line"]
+Output one line per file, regardless of the length.
+
+\item["-open" \var{module}]
+Assume that module \var{module} is opened before parsing each of the
+following files.
+
 \item["-pp" \var{command}]
 Cause "ocamldep" to call the given \var{command} as a preprocessor
 for each source file.
+
+\item["-ppx" \var{command}]
+Pipe abstract syntax trees through preprocessor \var{command}.
 
 \item["-slash"]
 Under Windows, use a forward slash (/) as the path separator instead
 of the usual backward slash ($\backslash$).  Under Unix, this option does
 nothing.
+
+\item["-sort"]
+Sort files according to their dependencies.
 
 \item["-version"]
 Print version string and exit.
@@ -142,3 +189,20 @@ depend:
 include .depend
 \end{verbatim}
 
+If you use module aliases to give shorter names to modules, you need
+to change the above definitions. Assuming that your map file is called
+"mylib.mli", here are minimal modifications.
+\begin{verbatim}
+OCAMLFLAGS=$(INCLUDES) -open Mylib
+
+mylib.cmi: mylib.mli
+        $(OCAMLC) $(INCLUDES) -no-alias-deps -w -49 -c $<
+
+depend:
+        $(OCAMLDEP) $(INCLUDES) -map mylib.mli $(PROG1_OBJS:.cmo=.ml) > .depend
+\end{verbatim}
+Note that in this case you should not compute dependencies for
+"mylib.mli" together with the other files, hence the need to pass
+explicitly the list of files to process.
+If "mylib.mli" itself has dependencies, you should compute them using
+"-as-map".
