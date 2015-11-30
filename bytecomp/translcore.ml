@@ -1213,12 +1213,17 @@ and transl_handler e body val_caselist exn_caselist eff_caselist =
         Llet(StrictOpt, cont, Lprim (prim_bvar_create, [Lvar raw_cont]),
           Matching.for_handler (Lvar param) (Lvar raw_cont) eff_cases))
   in
-  let body_fun =
-    let param = Ident.create "param" in
-      Lfunction (Curried, [param], transl_exp body)
+  let (body_fun, arg) =
+    match transl_exp body with
+    | Lapply (fn, [arg], _) ->
+       (fn, arg)
+    | body ->
+       let param = Ident.create "param" in
+       (Lfunction (Curried, [param], body),
+        Lconst(Const_base(Const_int 0)))
   in
     Lprim(Presume, [Lprim(prim_alloc_stack, [val_fun; exn_fun; eff_fun]);
-                    body_fun; Lconst(Const_base(Const_int 0))])
+                    body_fun; arg])
 
 (* Wrapper for class compilation *)
 
