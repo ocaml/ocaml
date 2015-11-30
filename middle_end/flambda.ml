@@ -466,7 +466,7 @@ let rec print_program ppf (program : program) =
     print_program ppf program;
   | End root -> fprintf ppf "End %a" Symbol.print root
 
-let rec variables_usage ?ignore_uses_in_apply ?ignore_uses_in_project_var
+let rec variables_usage ?ignore_uses_as_callee ?ignore_uses_in_project_var
     ~all_used_variables tree =
   match tree with
   | Var var -> Variable.Set.singleton var
@@ -481,25 +481,24 @@ let rec variables_usage ?ignore_uses_in_apply ?ignore_uses_in_project_var
       match flam with
       | Var var -> free_variable var
       | Apply { func; args; kind = _; dbg = _} ->
-        begin match ignore_uses_in_apply with
-        | None ->
-          free_variable func;
-          List.iter free_variable args
+        begin match ignore_uses_as_callee with
+        | None -> free_variable func
         | Some () -> ()
         end;
+        List.iter free_variable args
       | Let { var; free_vars_of_defining_expr; free_vars_of_body;
               defining_expr; body; _ } ->
         bound_variable var;
         if all_used_variables
-           || ignore_uses_in_apply <> None
+           || ignore_uses_as_callee <> None
            || ignore_uses_in_project_var <> None then begin
-          (* In those cases whe can't benefit from the pre-computed free
-             variables sets *)
+          (* In these cases we can't benefit from the pre-computed free
+             variable sets. *)
           free_variables
-            (variables_usage_named ?ignore_uses_in_project_var ?ignore_uses_in_apply
+            (variables_usage_named ?ignore_uses_in_project_var ?ignore_uses_as_callee
                ~all_used_variables defining_expr);
           free_variables
-            (variables_usage ?ignore_uses_in_apply ?ignore_uses_in_project_var
+            (variables_usage ?ignore_uses_as_callee ?ignore_uses_in_project_var
                ~all_used_variables body)
         end
         else begin
@@ -563,7 +562,7 @@ let rec variables_usage ?ignore_uses_in_apply ?ignore_uses_in_project_var
       Variable.Set.diff !free !bound
 
 and variables_usage_named ?ignore_uses_in_project_var
-    ?ignore_uses_in_apply
+    ?ignore_uses_as_callee
     ~all_used_variables named =
   let free = ref Variable.Set.empty in
   let free_variable fv = free := Variable.Set.add fv !free in
@@ -588,20 +587,20 @@ and variables_usage_named ?ignore_uses_in_project_var
     free_variable closure
   | Prim (_, args, _) -> List.iter free_variable args
   | Expr flam ->
-    free := Variable.Set.union (variables_usage ?ignore_uses_in_apply ~all_used_variables flam) !free
+    free := Variable.Set.union (variables_usage ?ignore_uses_as_callee ~all_used_variables flam) !free
   end;
   !free
 
-let free_variables ?ignore_uses_in_apply ?ignore_uses_in_project_var tree =
-  variables_usage ?ignore_uses_in_apply ?ignore_uses_in_project_var
+let free_variables ?ignore_uses_as_callee ?ignore_uses_in_project_var tree =
+  variables_usage ?ignore_uses_as_callee ?ignore_uses_in_project_var
     ~all_used_variables:false tree
 
 let free_variables_named ?ignore_uses_in_project_var named =
   variables_usage_named ?ignore_uses_in_project_var
     ~all_used_variables:false named
 
-let used_variables ?ignore_uses_in_apply ?ignore_uses_in_project_var tree =
-  variables_usage ?ignore_uses_in_apply ?ignore_uses_in_project_var
+let used_variables ?ignore_uses_as_callee ?ignore_uses_in_project_var tree =
+  variables_usage ?ignore_uses_as_callee ?ignore_uses_in_project_var
     ~all_used_variables:true tree
 
 let used_variables_named ?ignore_uses_in_project_var named =

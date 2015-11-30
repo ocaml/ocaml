@@ -121,15 +121,15 @@ let transitive_closure state =
   fp state
 
 (* CR pchambart: to move to Flambda_utils and document *)
-(* Finds variables that represents the functions.
+(* Finds variables that represent the functions.
    In a construction like:
      let f x =
        let g = Symbol f_closure in
        ..
    the variable g is bound to the symbol f_closure which
    is the current closure.
-   The result of [function_variable_alias] will contains
-   the assotiation [g -> f]
+   The result of [function_variable_alias] will contain
+   the association [g -> f]
 *)
 let function_variable_alias
     (function_decls : Flambda.function_declarations)
@@ -165,45 +165,43 @@ let function_variable_alias
   !fun_var_bindings
 
 let invariant_params_in_recursion (decls : Flambda.function_declarations)
-    ~backend =
+      ~backend =
   let function_variable_alias = function_variable_alias ~backend decls in
   let escaping_functions = ref Variable.Set.empty in
   let relation = ref Variable.Pair.Map.empty in
-  let variables_at_position =
+  let param_indexes_by_fun_vars =
     Variable.Map.map (fun (decl : Flambda.function_declaration) ->
         Array.of_list decl.params)
       decls.funs
   in
-  let link
-      ~callee ~callee_arg
-      ~caller ~caller_arg =
+  let link ~callee ~callee_arg ~caller ~caller_arg =
     let kind =
       try Variable.Pair.Map.find (callee, callee_arg) !relation with
-      | Not_found -> Arguments Variable.Pair.Set.empty in
+      | Not_found -> Arguments Variable.Pair.Set.empty
+    in
     match kind with
     | Anything -> ()
     | Arguments set ->
-        relation :=
-          Variable.Pair.Map.add (callee, callee_arg)
-            (Arguments (Variable.Pair.Set.add (caller, caller_arg) set))
-            !relation
+      relation :=
+        Variable.Pair.Map.add (callee, callee_arg)
+          (Arguments (Variable.Pair.Set.add (caller, caller_arg) set))
+          !relation
   in
-  let mark ~callee ~callee_arg =
+  let argument_may_be_anything ~callee ~callee_arg =
     relation := Variable.Pair.Map.add (callee, callee_arg) Anything !relation
   in
   let find_callee_arg ~callee ~callee_pos =
-    match Variable.Map.find callee variables_at_position with
+    match Variable.Map.find callee param_indexes_by_fun_vars with
     | exception Not_found -> None (* not a recursive call *)
     | arr ->
-        if callee_pos < Array.length arr then
-          (* ignore overapplied parameters: they are applied to another
-             function *)
-          Some arr.(callee_pos)
-        else None
+      (* Ignore overapplied parameters: they are applied to a different
+         function. *)
+      if callee_pos < Array.length arr then Some arr.(callee_pos)
+      else None
   in
   (* If the called closure is in the current set of closures, record the
      relation (callee, callee_arg) <- (caller, caller_arg) *)
-  let check_argument ~caller ~callee ~callee_pos caller_arg =
+  let check_argument ~caller ~callee ~callee_pos ~caller_arg =
     match find_callee_arg ~callee ~callee_pos with
     | None -> () (* not a recursive call *)
     | Some callee_arg ->
@@ -211,10 +209,12 @@ let invariant_params_in_recursion (decls : Flambda.function_declarations)
       | exception Not_found ->
         assert false
       | { params } ->
+        (* We only track dataflow for parameters of functions, not
+           arbitrary variables. *)
         if List.mem caller_arg params then
           link ~caller ~caller_arg ~callee ~callee_arg
         else
-          mark ~callee ~callee_arg
+          argument_may_be_anything ~callee ~callee_arg
   in
   let test_escape var =
     let fun_var =
@@ -240,14 +240,14 @@ let invariant_params_in_recursion (decls : Flambda.function_declarations)
       in
       let num_args = List.length args in
       for callee_pos = num_args to (arity ~callee) - 1 do
+        (* If a function is partially applied, consider all missing
+           arguments as "anything". *)
         match find_callee_arg ~callee ~callee_pos with
         | None -> ()
-        | Some callee_arg -> mark ~callee ~callee_arg
-        (* if a function is partially applied, consider all missing
-           arguments as not kept*)
+        | Some callee_arg -> argument_may_be_anything ~callee ~callee_arg
       done;
-      List.iteri (fun callee_pos arg ->
-          check_argument ~caller ~callee ~callee_pos arg)
+      List.iteri (fun callee_pos caller_arg ->
+          check_argument ~caller ~callee ~callee_pos ~caller_arg)
         args
     | _ -> ()
   in
@@ -259,30 +259,27 @@ let invariant_params_in_recursion (decls : Flambda.function_declarations)
         (* CR-soon mshinwell: we should avoid recomputing this, cache in
            [function_declaration].  See also comment on
            [only_via_symbols] in [Flambda_utils]. *)
-        (Flambda.used_variables ~ignore_uses_in_apply:() decl.body))
+        (Flambda.used_variables ~ignore_uses_as_callee:() decl.body))
     decls.funs;
-  let relation =
-    Variable.Map.fold (fun func_var
-          ({ params } : Flambda.function_declaration) relation ->
-        if Variable.Set.mem func_var !escaping_functions
-        then
-          List.fold_left (fun relation param ->
-              Variable.Pair.Map.add (func_var, param) Anything relation)
-            relation params
-        else relation)
-      decls.funs !relation
-  in
-  let result = transitive_closure relation in
+  Variable.Map.iter (fun func_var
+        ({ params } : Flambda.function_declaration) ->
+      if Variable.Set.mem func_var !escaping_functions then begin
+        List.iter (fun param ->
+            argument_may_be_anything ~callee:func_var ~callee_arg:param)
+          params
+      end)
+    decls.funs;
+  let result = transitive_closure !relation in
   let not_unchanging =
     Variable.Pair.Map.fold (fun (func, var) set not_unchanging ->
         match set with
         | Anything -> Variable.Set.add var not_unchanging
         | Arguments set ->
-            if Variable.Pair.Set.exists (fun (func', var') ->
-                Variable.equal func func' && not (Variable.equal var var'))
-                set
-            then Variable.Set.add var not_unchanging
-            else not_unchanging)
+          if Variable.Pair.Set.exists (fun (func', var') ->
+              Variable.equal func func' && not (Variable.equal var var'))
+              set
+          then Variable.Set.add var not_unchanging
+          else not_unchanging)
       result Variable.Set.empty
   in
   let params = Variable.Map.fold (fun _
@@ -301,26 +298,23 @@ let invariant_params_in_recursion (decls : Flambda.function_declarations)
                   let alias_set =
                     match Variable.Map.find caller_args aliases with
                     | exception Not_found ->
-                        Variable.Set.singleton var
+                      Variable.Set.singleton var
                     | alias_set ->
-                        Variable.Set.add var alias_set
+                      Variable.Set.add var alias_set
                   in
                   Variable.Map.add caller_args alias_set aliases
                 else
                   aliases)
               set aliases
-        | Anything | Arguments _ ->
-            aliases)
+        | Anything | Arguments _ -> aliases)
       result Variable.Map.empty
   in
   (* We complete the set of aliases such that there does not miss any
      unchanging param *)
   Variable.Map.of_set (fun var ->
       match Variable.Map.find var aliased_to with
-      | exception Not_found ->
-        Variable.Set.empty
-      | set ->
-        set)
+      | exception Not_found -> Variable.Set.empty
+      | set -> set)
     unchanging
 
 type argument =
@@ -332,14 +326,14 @@ let unused_arguments (decls : Flambda.function_declarations) : Variable.Set.t =
   let used_variable var =
     used_variables := Variable.Set.add var !used_variables
   in
-  let variables_at_position =
+  let param_indexes_by_fun_vars =
     Variable.Map.fold (fun var (decl : Flambda.function_declaration) map ->
         let cid = Closure_id.wrap var in
         Closure_id.Map.add cid (Array.of_list decl.params) map)
       decls.funs Closure_id.Map.empty
   in
   let find_callee_arg ~callee ~callee_pos ~application_expr =
-    match Closure_id.Map.find callee variables_at_position with
+    match Closure_id.Map.find callee param_indexes_by_fun_vars with
     | exception Not_found -> Used (* not a recursive call *)
     | arr ->
       (* Direct calls don't have overapplication *)
@@ -374,7 +368,7 @@ let unused_arguments (decls : Flambda.function_declarations) : Variable.Set.t =
       Flambda_iterators.iter check_expr (fun (_ : Flambda.named) -> ())
         decl.body;
       Variable.Set.iter used_variable
-        (Flambda.free_variables ~ignore_uses_in_apply:() decl.body))
+        (Flambda.free_variables ~ignore_uses_as_callee:() decl.body))
     decls.funs;
   let arguments = Variable.Map.fold (fun _ decl acc ->
       Variable.Set.union acc (Variable.Set.of_list decl.Flambda.params))

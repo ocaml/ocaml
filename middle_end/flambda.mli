@@ -376,12 +376,12 @@ type program =
       eliminated. *)
 
 (** Compute the free variables of a term.  (This is O(1) for [Let]s).
-    If [ignore_uses_in_apply], all free variables inside [Apply] expressions
+    If [ignore_uses_as_callee], all free variables inside [Apply] expressions
     are ignored.  Likewise [ignore_uses_in_project_var] for [Project_var]
     expressions.
 *)
 val free_variables
-   : ?ignore_uses_in_apply:unit
+   : ?ignore_uses_as_callee:unit
   -> ?ignore_uses_in_project_var:unit
   -> t
   -> Variable.Set.t
@@ -395,7 +395,7 @@ val free_variables_named
 (** Compute _all_ variables occuring inside an expression.  (This is O(1)
     for [Let]s). *)
 val used_variables
-   : ?ignore_uses_in_apply:unit
+   : ?ignore_uses_as_callee:unit
   -> ?ignore_uses_in_project_var:unit
   -> t
   -> Variable.Set.t
