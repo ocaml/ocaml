@@ -3508,10 +3508,17 @@ and type_application env funct sargs =
             type_unknown_args args omitted ty_fun0
               (sargs @ more_sargs)
   in
-  match funct.exp_desc, sargs with
+  let is_ignore funct =
+    match funct.exp_desc with
+      Texp_ident (_, _, {val_kind=Val_prim{Primitive.prim_name="%ignore"}}) ->
+        (try ignore (filter_arrow env (instance env funct.exp_type) Nolabel);
+             true
+        with Unify _ -> false)
+    | _ -> false
+  in
+  match sargs with
     (* Special case for ignore: avoid discarding warning *)
-    Texp_ident (_, _, {val_kind=Val_prim{Primitive.prim_name="%ignore"}}),
-    [Nolabel, sarg] ->
+    [Nolabel, sarg] when is_ignore funct ->
       let ty_arg, ty_res =
         filter_arrow env (instance env funct.exp_type) Nolabel
       in
