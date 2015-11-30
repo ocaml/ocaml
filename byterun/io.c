@@ -454,8 +454,7 @@ CAMLexport void caml_finalize_channel(value vchan)
     */
     if (chan->name && caml_runtime_warnings_active())
       fprintf(stderr,
-              "[ocaml] (moreover, it has unflushed data)\n",
-              chan->name
+              "[ocaml] (moreover, it has unflushed data)\n"
               );
   } else {
     unlink_channel(chan);
