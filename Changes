@@ -435,6 +435,8 @@ Features wishes:
   This changes PR#6816 a little bit by reading the literal [123a] as a single token that can
   later be rewritten by a ppx preprocessor.
   (Hugo Heuzard)
+- GPR#308: add experimental support for NetBSD/arm (verified on RaspberryPi)
+  (Rich Neswold)
 
 OCaml 4.02.3 (27 Jul 2015):
 ---------------------------
