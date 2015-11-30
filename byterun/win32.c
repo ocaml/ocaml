@@ -21,6 +21,7 @@
 #include <fcntl.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <winsock2.h>
 #include <ctype.h>
 #include <errno.h>
 #include <string.h>
@@ -38,6 +39,35 @@
 #ifndef S_ISREG
 #define S_ISREG(mode) (((mode) & S_IFMT) == S_IFREG)
 #endif
+
+int caml_read_fd(int fd, int is_socket, void * buf, int n)
+{
+  int retcode;
+  if (! is_socket) {
+    retcode = read(fd, buf, n);
+    /* Large reads from console can fail with ENOMEM.  Reduce requested size
+       and try again. */
+    if (retcode == -1 && errno == ENOMEM && n > 16384) {
+      retcode = read(fd, p, 16384);
+    }
+  } else {
+    retcode = recv((SOCKET) _getosfhandle(fd), buf, n, 0);
+    if (ret == -1) _dosmaperr(WSAGetLastError());
+  }
+  return retcode;
+}
+
+int caml_write_fd(int fd, int is_socket, void * buf, int n)
+{
+  int retcode;
+  if (! is_socket) {
+    retcode = write(fd, buf, n);
+  } else {
+    retcode = send((SOCKET) _getosfhandle(fd), buf, n, 0);
+    if (ret == -1) _dosmaperr(WSAGetLastError());
+  }
+  return retcode;
+}
 
 char * caml_decompose_path(struct ext_table * tbl, char * path)
 {

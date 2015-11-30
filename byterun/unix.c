@@ -21,6 +21,7 @@
 #include <string.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <errno.h>
 #include <fcntl.h>
 #include "caml/config.h"
 #ifdef SUPPORT_DYNAMIC_LINKING
@@ -45,6 +46,34 @@
 #ifndef S_ISREG
 #define S_ISREG(mode) (((mode) & S_IFMT) == S_IFREG)
 #endif
+
+int caml_read_fd(int fd, int is_socket, void * buf, int n)
+{
+  int retcode;
+  do {
+    retcode = read(fd, buf, n);
+  } while (retcode == -1 && errno == EINTR);
+  return retcode;
+}
+
+int caml_write_fd(int fd, int is_socket, void * buf, int n)
+{
+  int retcode;
+ again:
+  retcode = write(fd, buf, n);
+  if (retcode == -1) {
+    if (errno == EINTR) goto again;
+    if ((errno == EAGAIN || errno == EWOULDBLOCK) && n > 1) {
+      /* We couldn't do a partial write here, probably because
+         n <= PIPE_BUF and POSIX says that writes of less than
+         PIPE_BUF characters must be atomic.
+         We first try again with a partial write of 1 character.
+         If that fails too, we'll return an error code. */
+      n = 1; goto again;
+    }
+  }
+  return retcode;
+}
 
 char * caml_decompose_path(struct ext_table * tbl, char * path)
 {
