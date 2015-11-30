@@ -200,6 +200,12 @@ let rec add_expr bv exp =
   | Pexp_newtype (_, e) -> add_expr bv e
   | Pexp_pack m -> add_module bv m
   | Pexp_open (_ovf, m, e) -> open_module bv m.txt; add_expr bv e
+  | Pexp_extension ({ txt = ("ocaml.extension_constructor"|"extension_constructor"); _ },
+                    PStr [item]) ->
+    begin match item.pstr_desc with
+    | Pstr_eval ({ pexp_desc = Pexp_construct (c, None) }, _) -> add bv c
+    | _ -> ()
+    end
   | Pexp_extension _ -> ()
   | Pexp_unreachable -> ()
 

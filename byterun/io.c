@@ -439,9 +439,29 @@ CAMLexport void caml_finalize_channel(value vchan)
             chan->name
             );
 
-  unlink_channel(chan);
-  caml_stat_free(chan->name);
-  caml_stat_free(chan);
+  if (chan->max == NULL && chan->curr != chan->buff){
+    /*
+      This is an unclosed out channel (chan->max == NULL) with a
+      non-empty buffer: keep it around so the OCaml [at_exit] function
+      gets a chance to flush it.  We would want to simply flush the
+      channel now, but (i) flushing can raise exceptions, and (ii) it
+      is potentially a blocking operation.  Both are forbidden in a
+      finalization function.
+
+      Refs:
+      http://caml.inria.fr/mantis/view.php?id=6902
+      https://github.com/ocaml/ocaml/pull/210
+    */
+    if (chan->name && caml_runtime_warnings_active())
+      fprintf(stderr,
+              "[ocaml] (moreover, it has unflushed data)\n",
+              chan->name
+              );
+  } else {
+    unlink_channel(chan);
+    caml_stat_free(chan->name);
+    caml_stat_free(chan);
+  }
 }
 
 static int compare_channel(value vchan1, value vchan2)
