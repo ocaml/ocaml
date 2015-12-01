@@ -142,6 +142,7 @@ and value_set_of_closures = {
   specialised_args : Variable.t Variable.Map.t;
   (* Any freshening that has been applied to [function_decls]. *)
   freshening : Freshening.Project_var.t;
+  closed : bool;
 }
 
 (** Extraction of the description of approximation(s). *)
