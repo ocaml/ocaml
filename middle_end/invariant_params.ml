@@ -78,6 +78,12 @@ type t =
   | Anything
   | Arguments of Variable.Pair.Set.t
 
+let _print ppf = function
+  | Anything -> Format.fprintf ppf "Anything"
+  | Arguments args ->
+      Format.fprintf ppf "Arguments: @[<hv>%a@]"
+        Variable.Pair.Set.print args
+
 let transitive_closure state =
   let union s1 s2 =
     match s1, s2 with
