@@ -17,7 +17,7 @@ CAMLRUN ?= boot/ocamlrun
 CAMLYACC ?= boot/ocamlyacc
 include stdlib/StdlibModules
 
-CAMLC=$(CAMLRUN) boot/ocamlc -g -nostdlib -I boot
+CAMLC=$(CAMLRUN) boot/ocamlc -g -nostdlib -I boot -use-prims byterun/primitives
 CAMLOPT=$(CAMLRUN) ./ocamlopt -g -nostdlib -I stdlib -I otherlibs/dynlink
 COMPFLAGS=-strict-sequence -w +33..39+48+50 -warn-error A -bin-annot \
           -safe-string $(INCLUDES)
