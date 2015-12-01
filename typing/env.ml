@@ -797,7 +797,10 @@ and lookup_module ~load lid env : Path.t =
       with Not_found ->
         if s = !current_unit then raise Not_found;
         if !Clflags.transparent_modules && not load then check_pers_struct s
-        else ignore (find_pers_struct s);
+        else begin
+          let ps = find_pers_struct s in
+          report_deprecated lid ps.ps_comps.deprecated
+        end;
         Pident(Ident.create_persistent s)
       end
   | Ldot(l, s) ->
