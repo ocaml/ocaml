@@ -1603,8 +1603,9 @@ let type_implementation sourcefile outputprefix modulename initial_env ast =
          declarations like "let x = true;; let x = 1;;", because in this
          case, the inferred signature contains only the last declaration. *)
       if not !Clflags.dont_write_files then begin
+        let deprecated = Typetexp.deprecated_of_str ast in
         let sg =
-          Env.save_signature ~deprecated:None
+          Env.save_signature ~deprecated
             simple_sg modulename (outputprefix ^ ".cmi")
         in
         Cmt_format.save_cmt  (outputprefix ^ ".cmt") modulename

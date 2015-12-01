@@ -119,6 +119,15 @@ let rec deprecated_of_sig = function
   | _ -> None
 
 
+let rec deprecated_of_str = function
+  | {pstr_desc = Pstr_attribute a} :: tl ->
+      begin match deprecated_of_attrs [a] with
+      | None -> deprecated_of_str tl
+      | Some _ as r -> r
+      end
+  | _ -> None
+
+
 let emit_external_warnings =
   (* Note: this is run as a preliminary pass when type-checking an
      interface or implementation.  This allows to cover all kinds of
