@@ -378,6 +378,7 @@ let is_definitely_immutable t =
   match t.descr with
   | Value_string { contents = Some _ }
   | Value_block _ | Value_int _ | Value_char _ | Value_constptr _
+  (* CR mshinwell for pchambart: Is this definitely ok for "lazy" blocks? *)
   | Value_set_of_closures _ | Value_float _ | Value_boxed_int _
   | Value_closure _ -> true
   | Value_string { contents = None } | Value_float_array _
@@ -399,6 +400,8 @@ let get_field t ~field_index:i : get_field_result =
          be a useful point to put a [Misc.fatal_errorf]. *)
       Unreachable
     end
+  (* CR mshinwell: This should probably return Unreachable in more cases.
+     I added a couple more. *)
   | Value_bottom
   | Value_int _ | Value_char _ | Value_constptr _ ->
     (* Something seriously wrong is happening: either the user is doing
@@ -408,8 +411,9 @@ let get_field t ~field_index:i : get_field_result =
   | Value_float_array _ ->
     (* Float arrays are mutable. *)
     Ok (value_unknown Other)
-  | Value_string _ | Value_float _ | Value_boxed_int _
+  | Value_string _ | Value_float _ | Value_boxed_int _ ->
     (* The user is doing something unsafe. *)
+    Unreachable
   | Value_set_of_closures _ | Value_closure _
     (* This is used by [CamlinternalMod]. *)
   | Value_symbol _ | Value_extern _ ->

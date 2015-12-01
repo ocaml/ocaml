@@ -87,6 +87,9 @@ and fetch_variable_field
   | Block (_, fields) ->
     begin match List.nth fields field with
     | exception Not_found ->
+      (* CR mshinwell for pchambart: Maybe we need to harden this module so that
+         it doesn't go wrong when compiling dead code?  (In the same way as
+         [Inline_and_simplify])? *)
       Misc.fatal_errorf "No field %i in block %a" field Variable.print var
     | v ->
       fetch_variable definitions v
