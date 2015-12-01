@@ -271,6 +271,7 @@ static int do_read(int fd, int flags, char *p, unsigned int n)
 
   caml_enter_blocking_section();
   retcode = caml_read_fd(fd, flags & CHANNEL_FLAG_FROM_SOCKET, p, n);
+  caml_leave_blocking_section();
   if (retcode == -1) caml_sys_io_error(NO_ARG);
   return retcode;
 }
