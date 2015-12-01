@@ -1683,8 +1683,7 @@ and transl_prim_1 p arg dbg =
                             Debuginfo.none),
                    [untag_int (transl arg)]))
   | Pperform ->
-      (* CR mshinwell: add implementation *)
-      Ctuple []
+      Cop(Cperform, [transl arg])
   | prim ->
       let (_ : string) = Format.flush_str_formatter () in
       Printlambda.primitive Format.str_formatter prim;
@@ -1922,11 +1921,8 @@ and transl_prim_2 p arg1 arg2 dbg =
   | Pbintcomp(bi, cmp) ->
       tag_int (Cop(Ccmpi(transl_comparison cmp),
                      [transl_unbox_int bi arg1; transl_unbox_int bi arg2]))
-  | Phandle
-  | Pcontinue
-  | Pdiscontinue ->
-      (* CR mshinwell: add implementation *)
-      Ctuple []
+  | Pdelegate ->
+      Cop(Cdelegate, [transl arg1; transl arg2])
   | prim ->
       let (_ : string) = Format.flush_str_formatter () in
       Printlambda.primitive Format.str_formatter prim;
@@ -2060,14 +2056,14 @@ and transl_prim_3 p arg1 arg2 arg3 dbg =
                                           (Cconst_int 7)) idx
                       (unaligned_set_64 ba_data idx newval))))))
 
+  | Presume ->
+     Cop(Cresume, [transl arg1; transl arg2; transl arg3])
+
   | _ ->
     fatal_error "Cmmgen.transl_prim_3"
 
 and transl_prim_4 prim arg1 arg2 arg3 arg4 dbg =
   match prim with
-  | Phandle ->
-      (* CR mshinwell: add implementation *)
-      Ctuple []
   | prim ->
       let (_ : string) = Format.flush_str_formatter () in
       Printlambda.primitive Format.str_formatter prim;
