@@ -44,7 +44,7 @@
 *)
 
 [@@@ocaml.deprecated]
-[@@@ocaml.warnings "-3"] (* so that references to Stream are not reported *)
+[@@@ocaml.warning "-3"] (* so that references to Stream are not reported *)
 
 (** The type of tokens. The lexical classes are: [Int] and [Float]
    for integer and floating-point numbers; [String] for
