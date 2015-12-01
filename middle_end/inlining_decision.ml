@@ -37,6 +37,9 @@ let inline_non_recursive env r ~function_decls ~lhs_of_application
     if function_decl.stub then begin
       made_decision (Inlined (Copying_body Stub));
       true
+    end else if function_decl.inline = Lambda.Always_inline then begin
+      made_decision (Inlined (Copying_body Unconditionally));
+      true
     end else if only_use_of_function then begin
       made_decision (Inlined (Copying_body Decl_local_to_application));
       true
