@@ -74,6 +74,7 @@ type t =
   | Duplicated_attribute of string          (* 54 *)
   | Inlining_impossible of string           (* 55 *)
   | Unreachable_case                        (* 56 *)
+  | Ambiguous_guarded_disjunction of string list (* 57 *)
 ;;
 
 (* If you remove a warning, leave a hole in the numbering.  NEVER change
@@ -139,9 +140,10 @@ let number = function
   | Duplicated_attribute _ -> 54
   | Inlining_impossible _ -> 55
   | Unreachable_case -> 56
+  | Ambiguous_guarded_disjunction _ -> 57
 ;;
 
-let last_warning_number = 56
+let last_warning_number = 57
 ;;
 (* Must be the max number returned by the [number] function. *)
 
@@ -426,6 +428,28 @@ let message = function
       Printf.sprintf "the %S attribute is used more than once on this expression" attr_name
   | Inlining_impossible reason ->
       Printf.sprintf "Inlining impossible in this context: %s" reason
+  | Ambiguous_guarded_disjunction vars ->
+      let kind, vars =
+        let vars, last = Misc.split_last (List.sort String.compare vars) in
+        if vars = [] then ("variable", last)
+        else
+          ("variables",
+           Printf.sprintf "%s and %s" (String.concat ", " vars) last) in
+      Printf.sprintf
+        "Ambiguous guarded or-pattern: the guard %s %s\n\
+         may match incompatible parts of several or-patterns.\n\
+         \n\
+         When you write [(p | q) when guard], the pattern is matched,\n\
+         and then the guard tested. If the guard fails, the clause is\n\
+         not selected. In particular, if a value matches both [p] and [q],\n\
+         only [p when guard] is tested.\n\
+         \n\
+         Unfortunately, many code readers wrongly expect this construction\n\
+         to be equivalent to the imaginary [p when guard | q when guard].\n\
+         If a value may match both [p] and [q], and [guard] uses\n\
+         variables bound in different places on both sides, then\n\
+         those two interpretations differ. This ambiguous code is confusing\n\
+         and should be avoided." kind vars
 ;;
 
 let nerrors = ref 0;;
@@ -516,7 +540,8 @@ let descriptions =
    53, "Attribute cannot appear in this context";
    54, "Attribute used more than once on an expression";
    55, "Inlining impossible";
-   56, "Unreachable case in a pattern-matching (based on type information)."
+   56, "Unreachable case in a pattern-matching (based on type information).";
+   57, "Ambiguous guard on a disjunctive pattern.";
   ]
 ;;
 

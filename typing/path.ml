@@ -48,6 +48,14 @@ let rec head = function
   | Pdot(p, s, pos) -> head p
   | Papply(p1, p2) -> assert false
 
+let heads p =
+  let rec heads p acc = match p with
+    | Pident id -> id :: acc
+    | Pdot (p, _s, _pos) -> heads p acc
+    | Papply(p1, p2) ->
+        heads p1 (heads p2 acc)
+  in heads p []
+
 let rec last = function
   | Pident id -> Ident.name id
   | Pdot(_, s, _) -> s

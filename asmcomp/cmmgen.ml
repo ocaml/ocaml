@@ -92,15 +92,18 @@ let rec add_const c n =
   if n = 0 then c
   else match c with
   | Cconst_int x when no_overflow_add x n -> Cconst_int (x + n)
-  | Cop(Caddi, ([Cconst_int x; c] | [c; Cconst_int x]))
-    when no_overflow_add n x ->
-      let d = n + x in
-      if d = 0 then c else Cop(Caddi, [c; Cconst_int d])
+  | Cop(Caddi, [Cconst_int x; c]) when no_overflow_add n x ->
+      add_no_overflow n x c
+  | Cop(Caddi, [c; Cconst_int x]) when no_overflow_add n x ->
+      add_no_overflow n x c
   | Cop(Csubi, [Cconst_int x; c]) when no_overflow_add n x ->
       Cop(Csubi, [Cconst_int (n + x); c])
   | Cop(Csubi, [c; Cconst_int x]) when no_overflow_sub n x ->
       add_const c (n - x)
   | c -> Cop(Caddi, [c; Cconst_int n])
+and add_no_overflow n x c =
+  let d = n + x in
+  if d = 0 then c else Cop(Caddi, [c; Cconst_int d])
 
 let incr_int c = add_const c 1
 let decr_int c = add_const c (-1)
@@ -146,15 +149,19 @@ let rec mul_int c1 c2 =
       c
   | (c, Cconst_int(-1)) | (Cconst_int(-1), c) ->
       sub_int (Cconst_int 0) c
-  | (c, Cconst_int n) | (Cconst_int n, c) when n = 1 lsl Misc.log2 n->
-      lsl_int c (Cconst_int (Misc.log2 n))
+  | (c, Cconst_int n) when is_exact_power n ->
+      mul_exact_power c n
+  | (Cconst_int n, c) when is_exact_power n ->
+      mul_exact_power c n
   | (Cop(Caddi, [c; Cconst_int n]), Cconst_int k) |
     (Cconst_int k, Cop(Caddi, [c; Cconst_int n]))
     when no_overflow_mul n k ->
       add_const (mul_int c (Cconst_int k)) (n * k)
   | (c1, c2) ->
       Cop(Cmuli, [c1; c2])
-
+and is_exact_power n = (n = 1 lsl (Misc.log2 n))
+and mul_exact_power c n =
+  lsl_int c (Cconst_int (Misc.log2 n))
 
 let ignore_low_bit_int = function
     Cop(Caddi, [(Cop(Clsl, [_; Cconst_int n]) as c); Cconst_int 1]) when n > 0

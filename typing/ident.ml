@@ -52,6 +52,8 @@ let same i1 i2 = i1 = i2
        then i1.stamp = i2.stamp
        else i2.stamp = 0 && i1.name = i2.name *)
 
+let compare i1 i2 = Pervasives.compare i1 i2
+
 let binding_time i = i.stamp
 
 let current_time() = !currentstamp

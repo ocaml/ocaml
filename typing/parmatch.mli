@@ -38,6 +38,8 @@ exception Empty
 val lub : pattern -> pattern -> pattern
 val lubs : pattern list -> pattern list -> pattern list
 
+val check_ambiguous_guarded_disjunction : pattern -> expression -> unit
+
 val get_mins : ('a -> 'a -> bool) -> 'a list -> 'a list
 
 (* Those two functions recombine one pattern and its arguments:
