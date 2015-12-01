@@ -392,7 +392,7 @@ let file_dependencies source_file =
 
 let file_dependencies_as kind =
   match kind with
-  | ML -> process_file_as mli_file_dependencies ()
+  | ML -> process_file_as ml_file_dependencies ()
   | MLI -> process_file_as mli_file_dependencies ()
 
 let sort_files_by_dependencies files =

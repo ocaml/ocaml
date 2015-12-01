@@ -123,18 +123,17 @@ module EnvTbl =
     let empty = Ident.empty
     let nothing = fun () -> ()
 
-    let already_defined s tbl =
-      try ignore (Ident.find_name s tbl); true
-      with Not_found -> false
+    let already_defined wrap s tbl x =
+      wrap (try Some (fst (Ident.find_name s tbl), x) with Not_found -> None)
 
-    let add kind slot id x tbl ref_tbl =
+    let add slot wrap id x tbl ref_tbl =
       let slot =
         match slot with
         | None -> nothing
         | Some f ->
           (fun () ->
              let s = Ident.name id in
-             f kind s (already_defined s ref_tbl)
+             f s (already_defined wrap s ref_tbl x)
           )
       in
       Ident.add id (x, slot) tbl
@@ -210,6 +209,33 @@ and functor_components = {
   fcomp_cache: (Path.t, module_components) Hashtbl.t;  (* For memoization *)
   fcomp_subst_cache: (Path.t, module_type) Hashtbl.t
 }
+
+let same_constr = ref (fun _ _ _ -> assert false)
+
+(* Helper to decide whether to report an identifier shadowing
+   by some 'open'. For labels and constructors, we do not report
+   if the two elements are from the same re-exported declaration.
+
+   Later, one could also interpret some attributes on value and
+   type declarations to silence the shadowing warnings. *)
+
+let check_shadowing env = function
+  | `Constructor (Some (c1, c2))
+    when not (!same_constr env c1.cstr_res c2.cstr_res) ->
+      Some "constructor"
+  | `Label (Some (l1, l2))
+    when not (!same_constr env l1.lbl_res l2.lbl_res) ->
+      Some "label"
+  | `Value (Some _) -> Some "value"
+  | `Type (Some _) -> Some "type"
+  | `Module (Some _) | `Component (Some _) -> Some "module"
+  | `Module_type (Some _) -> Some "module type"
+  | `Class (Some _) -> Some "class"
+  | `Class_type (Some _) -> Some "class type"
+  | `Constructor _ | `Label _
+  | `Value None | `Type None | `Module None | `Module_type None
+  | `Class None | `Class_type None | `Component None ->
+      None
 
 let subst_modtype_maker (subst, mty) = Subst.modtype subst mty
 
@@ -1388,7 +1414,8 @@ and store_value ?check slot id path decl env renv =
   check_value_name (Ident.name id) decl.val_loc;
   may (fun f -> check_usage decl.val_loc id f value_declarations) check;
   { env with
-    values = EnvTbl.add "value" slot id (path, decl) env.values renv.values;
+    values = EnvTbl.add slot (fun x -> `Value x) id (path, decl)
+        env.values renv.values;
     summary = Env_value(env.summary, id, decl) }
 
 and store_type ~check slot id path info env renv =
@@ -1424,16 +1451,18 @@ and store_type ~check slot id path info env renv =
     constrs =
       List.fold_right
         (fun (id, descr) constrs ->
-          EnvTbl.add "constructor" slot id descr constrs renv.constrs)
+           EnvTbl.add slot (fun x -> `Constructor x) id descr constrs
+             renv.constrs)
         constructors
         env.constrs;
     labels =
       List.fold_right
         (fun (id, descr) labels ->
-          EnvTbl.add "label" slot id descr labels renv.labels)
+           EnvTbl.add slot (fun x -> `Label x) id descr labels renv.labels)
         labels
         env.labels;
-    types = EnvTbl.add "type" slot id (path, (info, descrs)) env.types
+    types =
+      EnvTbl.add slot (fun x -> `Type x) id (path, (info, descrs)) env.types
                        renv.types;
     summary = Env_type(env.summary, id, info) }
 
@@ -1444,8 +1473,8 @@ and store_type_infos slot id path info env renv =
      keep track of type abbreviations (e.g. type t = float) in the
      computation of label representations. *)
   { env with
-    types = EnvTbl.add "type" slot id (path, (info,([],[]))) env.types
-                       renv.types;
+    types = EnvTbl.add slot (fun x -> `Type x) id (path, (info,([],[])))
+        env.types renv.types;
     summary = Env_type(env.summary, id, info) }
 
 and store_extension ~check slot id path ext env renv =
@@ -1470,35 +1499,37 @@ and store_extension ~check slot id path ext env renv =
     end;
   end;
   { env with
-    constrs = EnvTbl.add "constructor" slot id
+    constrs = EnvTbl.add slot (fun x -> `Constructor x) id
                 (Datarepr.extension_descr path ext)
                 env.constrs renv.constrs;
     summary = Env_extension(env.summary, id, ext) }
 
 and store_module slot id path md env renv =
   { env with
-    modules = EnvTbl.add "module" slot id (path, md) env.modules renv.modules;
+    modules = EnvTbl.add slot (fun x -> `Module x) id (path, md)
+        env.modules renv.modules;
     components =
-      EnvTbl.add "module" slot id
-                 (path, components_of_module env Subst.identity path md.md_type)
-                   env.components renv.components;
+      EnvTbl.add slot (fun x -> `Component x) id
+        (path, components_of_module env Subst.identity path md.md_type)
+        env.components renv.components;
     summary = Env_module(env.summary, id, md) }
 
 and store_modtype slot id path info env renv =
   { env with
-    modtypes = EnvTbl.add "module type" slot id (path, info) env.modtypes
-                          renv.modtypes;
+    modtypes = EnvTbl.add slot (fun x -> `Module_type x) id (path, info)
+        env.modtypes renv.modtypes;
     summary = Env_modtype(env.summary, id, info) }
 
 and store_class slot id path desc env renv =
   { env with
-    classes = EnvTbl.add "class" slot id (path, desc) env.classes renv.classes;
+    classes = EnvTbl.add slot (fun x -> `Class x) id (path, desc)
+        env.classes renv.classes;
     summary = Env_class(env.summary, id, desc) }
 
 and store_cltype slot id path desc env renv =
   { env with
-    cltypes = EnvTbl.add "class type" slot id (path, desc) env.cltypes
-                         renv.cltypes;
+    cltypes = EnvTbl.add slot (fun x -> `Class_type x) id (path, desc)
+        env.cltypes renv.cltypes;
     summary = Env_cltype(env.summary, id, desc) }
 
 (* Compute the components of a functor application in a path. *)
@@ -1656,16 +1687,18 @@ let open_signature ?(loc = Location.none) ?(toplevel = false) ovf root sg env =
           Location.prerr_warning loc (Warnings.Unused_open (Path.name root))
       );
     let shadowed = ref [] in
-    let slot kind s b =
-      if b && not (List.mem (kind, s) !shadowed) then begin
-        shadowed := (kind, s) :: !shadowed;
-        let w =
-          match kind with
-          | "label" | "constructor" ->
-              Warnings.Open_shadow_label_constructor (kind, s)
-          | _ -> Warnings.Open_shadow_identifier (kind, s)
-        in
-        Location.prerr_warning loc w
+    let slot s b =
+      begin match check_shadowing env b with
+      | Some kind when not (List.mem (kind, s) !shadowed) ->
+          shadowed := (kind, s) :: !shadowed;
+          let w =
+            match kind with
+            | "label" | "constructor" ->
+                Warnings.Open_shadow_label_constructor (kind, s)
+            | _ -> Warnings.Open_shadow_identifier (kind, s)
+          in
+          Location.prerr_warning loc w
+      | _ -> ()
       end;
       used := true
     in
