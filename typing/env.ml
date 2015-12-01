@@ -737,6 +737,14 @@ let rec is_functor_arg path env =
 
 exception Recmodule
 
+let report_deprecated lid deprecated =
+  match !lookup_location, deprecated with
+  | Some loc, Some txt ->
+      Location.prerr_warning loc
+        (Warnings.Deprecated (Printf.sprintf "module %s\n%s"
+                                (Longident.last lid) txt))
+  | _ -> ()
+
 let rec lookup_module_descr_aux lid env =
   match lid with
     Lident s ->
@@ -770,26 +778,21 @@ let rec lookup_module_descr_aux lid env =
 
 and lookup_module_descr lid env =
   let (_, comps) as res = lookup_module_descr_aux lid env in
-  begin match !lookup_location, comps.deprecated with
-  | Some loc, Some txt ->
-      Location.prerr_warning loc
-        (Warnings.Deprecated (Printf.sprintf "module %s\n%s"
-                                (Longident.last lid) txt))
-  | _ -> ()
-  end;
+  report_deprecated lid comps.deprecated;
   res
 
 and lookup_module ~load lid env : Path.t =
   match lid with
     Lident s ->
       begin try
-        let (p, {md_type}) as r = EnvTbl.find_name s env.modules in
+        let (p, {md_type; md_attributes}) = EnvTbl.find_name s env.modules in
         begin match md_type with
         | Mty_ident (Path.Pident id) when Ident.name id = "#recmod#" ->
           (* see #5965 *)
           raise Recmodule
         | _ -> ()
         end;
+        report_deprecated lid (deprecated_of_attrs md_attributes);
         p
       with Not_found ->
         if s = !current_unit then raise Not_found;
