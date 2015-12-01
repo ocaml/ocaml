@@ -244,6 +244,8 @@ let inline_recursive env r ~max_level ~lhs_of_application
           no_simplification ()
       | None -> no_simplification ()
     else begin
+      (* CR lwhite: should include details of why it was not attempted
+         in the reason. *)
       made_decision
         (Did_not_try_copying_decl (Tried_unrolling tried_unrolling));
       no_simplification ()
