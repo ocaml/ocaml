@@ -19,7 +19,7 @@ include stdlib/StdlibModules
 
 CAMLC=$(CAMLRUN) boot/ocamlc -g -nostdlib -I boot
 CAMLOPT=$(CAMLRUN) ./ocamlopt -g -nostdlib -I stdlib -I otherlibs/dynlink
-COMPFLAGS=-strict-sequence -w +33..39+48+50 -warn-error A -bin-annot \
+COMPFLAGS=-strict-sequence -w -30-40+33..39+48+50 -warn-error A -bin-annot \
           -safe-string $(INCLUDES)
 LINKFLAGS=
 
@@ -195,5 +195,3 @@ NATTOPOBJS=$(UTILS) $(PARSING) $(TYPING) $(COMP) $(MIDDLE_END) $(ASMCOMP) \
   toplevel/opttopmain.cmo toplevel/opttopstart.cmo
 
 PERVASIVES=$(STDLIB_MODULES) outcometree topdirs toploop
-
-

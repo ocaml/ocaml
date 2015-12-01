@@ -16,6 +16,10 @@ module Function_decls = Closure_conversion_aux.Function_decls
 module Function_decl = Function_decls.Function_decl
 module IdentSet = Lambda.IdentSet
 
+let truncate_if_needed s =
+  if String.length s > 48 then String.sub s 0 48 ^ Digest.to_hex (Digest.string s)
+  else s
+
 let name_expr = Flambda_utils.name_expr
 
 type t = {
@@ -196,6 +200,7 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
         String.concat "_and_"
           (List.map (fun (id, _) -> Ident.unique_name id) defs)
       in
+      let name = truncate_if_needed name in
       let set_of_closures_var = Variable.create name in
       let set_of_closures =
         close_functions t env (Function_decls.create function_declarations)

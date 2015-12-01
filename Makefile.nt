@@ -232,8 +232,8 @@ partialclean::
 
 # The native-code compiler
 
-compilerlibs/ocamloptcomp.cma: $(ASMCOMP)
-	$(CAMLC) -a -o $@ $(ASMCOMP)
+compilerlibs/ocamloptcomp.cma: $(MIDDLE_END) $(ASMCOMP)
+	$(CAMLC) -a -o $@ $(MIDDLE_END) $(ASMCOMP)
 partialclean::
 	rm -f compilerlibs/ocamloptcomp.cma
 
