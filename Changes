@@ -132,6 +132,9 @@ Runtime system:
   compiling the run-time system and C stub code.  (Xavier Leroy)
 - GPR#262: Multiple GC roots per compilation unit (Pierre Chambart, Mark
   Shinwell, review by Damien Doligez)
+- GPR#324: Compiler developpers only: Adding new primitives to the
+  standard runtime doesn't require anymore to run `make bootstrap`
+  (François Bobot)
 
 Standard library:
 - PR#5197, GPR#63: Arg: allow flags such as --flag=arg as well as --flag arg
