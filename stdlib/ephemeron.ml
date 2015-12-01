@@ -338,7 +338,7 @@ let obj_opt : Obj.t option -> 'a option = fun x -> Obj.magic x
 
 
 module K1 = struct
-  type ('k,'d) t = ObjEph.eph
+  type ('k,'d) t = ObjEph.t
 
   let create () : ('k,'d) t = ObjEph.create 1
 
@@ -394,7 +394,7 @@ module K1 = struct
 end
 
 module K2 = struct
-  type ('k1, 'k2, 'd) t = ObjEph.eph
+  type ('k1, 'k2, 'd) t = ObjEph.t
 
   let create () : ('k1,'k2,'d) t = ObjEph.create 1
 
@@ -479,7 +479,7 @@ module K2 = struct
 end
 
 module Kn = struct
-  type ('k,'d) t = ObjEph.eph
+  type ('k,'d) t = ObjEph.t
 
   let create n : ('k,'d) t = ObjEph.create n
   let length (k:('k,'d) t) : int = ObjEph.length k
