@@ -808,6 +808,8 @@ and lookup_module ~load lid env : Path.t =
       begin match get_components descr with
         Structure_comps c ->
           let (data, pos) = Tbl.find s c.comp_modules in
+          let (comps, _) = Tbl.find s c.comp_components in
+          report_deprecated lid comps.deprecated;
           Pdot(p, s, pos)
       | Functor_comps f ->
           raise Not_found
