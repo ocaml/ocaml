@@ -307,7 +307,7 @@ let lookup_module ?(load=false) env loc lid =
 let find_module env loc lid =
   let path = lookup_module ~load:true env loc lid in
   let decl = Env.find_module path env in
-  check_deprecated loc decl.md_attributes (Path.name path);
+  (* No need to check for deprecated here, this is done in Env. *)
   (path, decl)
 
 let find_modtype env loc lid =
