@@ -292,15 +292,14 @@ let for_call_site ~env ~r ~(function_decls : Flambda.function_declarations)
       | max_inlining_depth -> max_inlining_depth
       | exception Not_found -> Clflags.default_max_inlining_depth
   in
-  let unconditionally_inline =
+  let always_inline =
     match (inline_requested : Lambda.inline_attribute) with
     | Always_inline -> true
-    | Never_inline ->
-      (* CR-someday mshinwell: consider whether there could be better
-         behaviour for stubs *)
-      false
-    | Default_inline -> function_decl.stub
+    (* CR-someday mshinwell: consider whether there could be better
+       behaviour for stubs *)
+    | Never_inline | Default_inline -> false
   in
+  let is_a_stub = function_decl.stub in
   let num_params = List.length function_decl.params in
   let only_use_of_function = false in
   let inlining_threshold = R.inlining_threshold r in
@@ -322,10 +321,10 @@ let for_call_site ~env ~r ~(function_decls : Flambda.function_declarations)
     match (inline_requested : Lambda.inline_attribute) with
     | Never_inline -> Never_inline
     | Always_inline | Default_inline ->
-      (* CR mshinwell: should clarify exactly what "unconditionally" means. *)
-      if unconditionally_inline
-         || (only_use_of_function && not (Lazy.force recursive))
-         || probably_a_functor
+      if always_inline
+        || is_a_stub
+        || (only_use_of_function && not (Lazy.force recursive))
+        || probably_a_functor
       then
         inlining_threshold
       else
@@ -360,14 +359,15 @@ let for_call_site ~env ~r ~(function_decls : Flambda.function_declarations)
          inlined). *)
       (* CR mshinwell for pchambart: I don't understand why this was applying
          inline_non_recursive to recursive functions. *)
-      if unconditionally_inline
+      if is_a_stub
+        || (always_inline && not (Lazy.force recursive))
         || (E.inlining_level env <= max_level && not (Lazy.force recursive))
       then
         inline_non_recursive env r ~function_decls ~lhs_of_application
           ~closure_id_being_applied ~function_decl ~made_decision
           ~only_use_of_function ~no_simplification ~probably_a_functor
           ~args ~simplify
-      else if E.inlining_level env > max_level then begin
+      else if (not always_inline) && E.inlining_level env > max_level then begin
         made_decision (Can_inline_but_tried_nothing (Level_exceeded true));
         no_simplification ()
       end else if Lazy.force recursive then
