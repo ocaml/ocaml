@@ -4434,3 +4434,13 @@ let rec collapse_conj env visited ty =
 
 let collapse_conj_params env params =
   List.iter (collapse_conj env []) params
+
+let same_constr env t1 t2 =
+  let t1 = expand_head env t1 in
+  let t2 = expand_head env t2 in
+  match t1.desc, t2.desc with
+  | Tconstr (p1, _, _), Tconstr (p2, _, _) -> Path.same p1 p2
+  | _ -> false
+
+let () =
+  Env.same_constr := same_constr
