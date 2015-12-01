@@ -165,7 +165,7 @@ module Options = Main_args.Make_optcomp_options (struct
     inline_call_cost :=
       Int_arg_helper.Variable (Ext_types.Int.Map.of_list [
         0, default_inline_call_cost;
-        1, default_inline_call_cost;
+        1, 10;
         2, 20;
       ]);
     inline_alloc_cost :=
