@@ -11,6 +11,8 @@
 (*                                                                     *)
 (***********************************************************************)
 
+[@@@ocaml.warning "-3"] (* so that references to Stream are not reported *)
+
 type token =
     Kwd of string
   | Ident of string

@@ -108,7 +108,7 @@ let check_deprecated loc attrs s =
   match deprecated_of_attrs attrs with
   | None -> ()
   | Some "" -> Location.prerr_warning loc (Warnings.Deprecated s)
-  | Some s -> Location.prerr_warning loc (Warnings.Deprecated (s ^ "\n" ^ s))
+  | Some txt -> Location.prerr_warning loc (Warnings.Deprecated (s ^ "\n" ^ txt))
 
 let rec deprecated_of_sig = function
   | {psig_desc = Psig_attribute a} :: tl ->
@@ -1046,3 +1046,6 @@ let () =
       | _ ->
         None
     )
+
+let () =
+  Env.deprecated_of_attrs_forward := deprecated_of_attrs

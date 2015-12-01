@@ -197,6 +197,7 @@ type t = {
 
 and module_components =
   {
+    deprecated: string option;
     comps: (t * Subst.t * Path.t * Types.module_type, module_components_repr) EnvLazy.t;
   }
 
@@ -280,8 +281,9 @@ let diff env1 env2 =
 (* Forward declarations *)
 
 let components_of_module' =
-  ref ((fun env sub path mty -> assert false) :
-          t -> Subst.t -> Path.t -> module_type -> module_components)
+  ref ((fun ~deprecated env sub path mty -> assert false) :
+         deprecated:string option -> t -> Subst.t -> Path.t -> module_type ->
+       module_components)
 let components_of_module_maker' =
   ref ((fun (env, sub, path, mty) -> assert false) :
           t * Subst.t * Path.t * module_type -> module_components_repr)
@@ -296,6 +298,10 @@ let strengthen =
   (* to be filled with Mtype.strengthen *)
   ref ((fun env mty path -> assert false) :
          t -> module_type -> Path.t -> module_type)
+
+let deprecated_of_attrs_forward = ref (fun _ -> assert false)
+    (* to be filled with Typetexp. deprecated_of_attrs *)
+let deprecated_of_attrs attrs = !deprecated_of_attrs_forward attrs
 
 let md md_type =
   {md_type; md_attributes=[]; md_loc=Location.none}
@@ -366,8 +372,12 @@ let read_pers_struct check modname filename =
   let sign = cmi.cmi_sign in
   let crcs = cmi.cmi_crcs in
   let flags = cmi.cmi_flags in
+  let deprecated =
+    List.fold_left (fun acc -> function Deprecated s -> Some s | _ -> acc) None
+      flags
+  in
   let comps =
-      !components_of_module' empty Subst.identity
+      !components_of_module' ~deprecated empty Subst.identity
                              (Pident(Ident.create_persistent name))
                              (Mty_signature sign)
   in
@@ -394,33 +404,18 @@ let read_pers_struct check modname filename =
 
 let find_pers_struct check name =
   if name = "*predef*" then raise Not_found;
-  let ps =
-    match Hashtbl.find persistent_structures name with
-    | Some ps -> ps
-    | None -> raise Not_found
-    | exception Not_found ->
-        let filename =
-          try
-            find_in_path_uncap !load_path (name ^ ".cmi")
-          with Not_found ->
-            Hashtbl.add persistent_structures name None;
-            raise Not_found
-        in
-        read_pers_struct check name filename
-  in
-  List.iter
-    (function
-      | Rectypes -> ()
-      | Deprecated s ->
-          begin match !lookup_location with
-          | None -> ()
-          | Some loc ->
-              Location.prerr_warning loc
-                (Warnings.Deprecated (Printf.sprintf "module %s\n%s" name s))
-          end
-    )
-    ps.ps_flags;
-  ps
+  match Hashtbl.find persistent_structures name with
+  | Some ps -> ps
+  | None -> raise Not_found
+  | exception Not_found ->
+      let filename =
+        try
+          find_in_path_uncap !load_path (name ^ ".cmi")
+        with Not_found ->
+          Hashtbl.add persistent_structures name None;
+          raise Not_found
+      in
+      read_pers_struct check name filename
 
 (* Emits a warning if there is no valid cmi for name *)
 let check_pers_struct name =
@@ -742,7 +737,7 @@ let rec is_functor_arg path env =
 
 exception Recmodule
 
-let rec lookup_module_descr lid env =
+let rec lookup_module_descr_aux lid env =
   match lid with
     Lident s ->
       begin try
@@ -772,6 +767,17 @@ let rec lookup_module_descr lid env =
       | Structure_comps c ->
           raise Not_found
       end
+
+and lookup_module_descr lid env =
+  let (_, comps) as res = lookup_module_descr_aux lid env in
+  begin match !lookup_location, comps.deprecated with
+  | Some loc, Some txt ->
+      Location.prerr_warning loc
+        (Warnings.Deprecated (Printf.sprintf "module %s\n%s"
+                                (Longident.last lid) txt))
+  | _ -> ()
+  end;
+  res
 
 and lookup_module ~load lid env : Path.t =
   match lid with
@@ -1288,8 +1294,9 @@ let add_to_tbl id decl tbl =
     try Tbl.find id tbl with Not_found -> [] in
   Tbl.add id (decl :: decls) tbl
 
-let rec components_of_module env sub path mty =
+let rec components_of_module ~deprecated env sub path mty =
   {
+    deprecated;
     comps = EnvLazy.create (env, sub, path, mty)
   }
 
@@ -1347,7 +1354,8 @@ and components_of_module_maker (env, sub, path, mty) =
             let mty' = EnvLazy.create (sub, mty) in
             c.comp_modules <-
               Tbl.add (Ident.name id) (mty', !pos) c.comp_modules;
-            let comps = components_of_module !env sub path mty in
+            let deprecated = deprecated_of_attrs md.md_attributes in
+            let comps = components_of_module ~deprecated !env sub path mty in
             c.comp_components <-
               Tbl.add (Ident.name id) (comps, !pos) c.comp_components;
             env := store_module None id (Pident id) md !env !env;
@@ -1507,11 +1515,13 @@ and store_extension ~check slot id path ext env renv =
     summary = Env_extension(env.summary, id, ext) }
 
 and store_module slot id path md env renv =
+  let deprecated = deprecated_of_attrs md.md_attributes in
   { env with
     modules = EnvTbl.add "module" slot id (path, md) env.modules renv.modules;
     components =
       EnvTbl.add "module" slot id
-                 (path, components_of_module env Subst.identity path md.md_type)
+                 (path, components_of_module ~deprecated
+                    env Subst.identity path md.md_type)
                    env.components renv.components;
     summary = Env_module(env.summary, id, md) }
 
@@ -1541,7 +1551,8 @@ let components_of_functor_appl f env p1 p2 =
     let p = Papply(p1, p2) in
     let sub = Subst.add_module f.fcomp_param p2 Subst.identity in
     let mty = Subst.modtype sub f.fcomp_res in
-    let comps = components_of_module env Subst.identity p mty in
+    let comps = components_of_module ~deprecated:None (*???*)
+        env Subst.identity p mty in
     Hashtbl.add f.fcomp_cache p2 comps;
     comps
 
@@ -1752,7 +1763,7 @@ let save_signature_with_imports ~deprecated sg modname filename imports =
     (* Enter signature in persistent table so that imported_unit()
        will also return its crc *)
     let comps =
-      components_of_module empty Subst.identity
+      components_of_module ~deprecated empty Subst.identity
         (Pident(Ident.create_persistent modname)) (Mty_signature sg) in
     let ps =
       { ps_name = modname;
