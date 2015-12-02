@@ -1094,7 +1094,7 @@ class printer  ()= object(self:'self)
   method structure_item f x = begin
     match x.pstr_desc with
     | Pstr_eval (e, attrs) ->
-        pp f "@[<hov2>let@ _ =@ %a@]%a"
+        pp f "@[<hov2>;;%a@]%a"
           self#expression e
           self#item_attributes attrs
     | Pstr_type (_, []) -> assert false

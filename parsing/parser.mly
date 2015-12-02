@@ -352,26 +352,18 @@ let addlb lbs lb =
   { lbs with lbs_bindings = lb :: lbs.lbs_bindings }
 
 let val_of_let_bindings lbs =
-  let str =
-    match lbs.lbs_bindings with
-    | [ {lb_pattern = { ppat_desc = Ppat_any; ppat_loc = _ }; _} as lb ] ->
-        let exp = wrap_exp_attrs lb.lb_expression
-                    (None, lbs.lbs_attributes) in
-        mkstr (Pstr_eval (exp, lb.lb_attributes))
-    | bindings ->
-        if lbs.lbs_attributes <> [] then
-          raise Syntaxerr.(Error(Not_expecting(lbs.lbs_loc, "attributes")));
-        let bindings =
-          List.map
-            (fun lb ->
-               Vb.mk ~loc:lb.lb_loc ~attrs:lb.lb_attributes
-                 ~docs:(Lazy.force lb.lb_docs)
-                 ~text:(Lazy.force lb.lb_text)
-                 lb.lb_pattern lb.lb_expression)
-            bindings
-        in
-        mkstr(Pstr_value(lbs.lbs_rec, List.rev bindings))
+  if lbs.lbs_attributes <> [] then
+    raise Syntaxerr.(Error(Not_expecting(lbs.lbs_loc, "attributes")));
+  let bindings =
+    List.map
+      (fun lb ->
+         Vb.mk ~loc:lb.lb_loc ~attrs:lb.lb_attributes
+           ~docs:(Lazy.force lb.lb_docs)
+           ~text:(Lazy.force lb.lb_text)
+           lb.lb_pattern lb.lb_expression)
+      lbs.lbs_bindings
   in
+  let str = mkstr(Pstr_value(lbs.lbs_rec, List.rev bindings)) in
   match lbs.lbs_extension with
   | None -> str
   | Some id -> ghstr (Pstr_extension((id, PStr [str]), []))
