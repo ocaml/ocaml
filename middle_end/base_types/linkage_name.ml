@@ -28,7 +28,7 @@ let to_shortened_string t =
   if not Sys.win32 then t
   else begin
     (* The Microsoft assembler has a 247-character limit on symbol names. *)
-    let max_length = 247 in
+    let max_length = 7 in
     if String.length t <= max_length then t
     else begin
       let suffix = "_long_name" in

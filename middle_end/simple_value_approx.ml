@@ -74,7 +74,6 @@ and value_set_of_closures = {
   invariant_params : Variable.Set.t Variable.Map.t;
   specialised_args : Variable.t Variable.Map.t;
   freshening : Freshening.Project_var.t;
-  closed : bool;
 }
 
 let descr t = t.descr

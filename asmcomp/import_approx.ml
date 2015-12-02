@@ -84,7 +84,6 @@ let rec import_ex ex =
         invariant_params = invariant_params;
         specialised_args = Variable.Map.empty;
         freshening = Freshening.Project_var.empty;
-        closed = Var_within_closure.Map.is_empty bound_vars;
       }
   in
   match Export_info.find_description ex_info ex with
