@@ -901,11 +901,11 @@ signature_item:
   | sig_exception_declaration
       { let (l, ext) = $1 in mksig_ext (Psig_exception l) ext }
   | module_declaration
-      { mksig(Psig_module $1) }
+      { let (body, ext) = $1 in mksig_ext (Psig_module body) ext }
   | module_alias
-      { mksig(Psig_module $1) }
+      { let (body, ext) = $1 in mksig_ext (Psig_module body) ext }
   | rec_module_declarations
-      { mksig(Psig_recmodule (List.rev $1)) }
+      { let (l, ext) = $1 in mksig_ext (Psig_recmodule (List.rev l)) ext }
   | module_type_declaration
       { mksig(Psig_modtype $1) }
   | open_statement
@@ -941,28 +941,34 @@ module_declaration_body:
       { mkmty(Pmty_functor(mkrhs "*" 1, None, $3)) }
 ;
 module_declaration:
-    MODULE UIDENT module_declaration_body post_item_attributes
-      { Md.mk (mkrhs $2 2) $3 ~attrs:$4
-          ~loc:(symbol_rloc()) ~docs:(symbol_docs ()) }
+    MODULE ext_attributes UIDENT module_declaration_body post_item_attributes
+      { let (ext, attrs) = $2 in
+        Md.mk (mkrhs $3 3) $4 ~attrs:(attrs@$5)
+          ~loc:(symbol_rloc()) ~docs:(symbol_docs ())
+      , ext }
 ;
 module_alias:
-    MODULE UIDENT EQUAL mod_longident post_item_attributes
-      { Md.mk (mkrhs $2 2)
-          (Mty.alias ~loc:(rhs_loc 4) (mkrhs $4 4)) ~attrs:$5
-             ~loc:(symbol_rloc()) ~docs:(symbol_docs ()) }
+    MODULE ext_attributes UIDENT EQUAL mod_longident post_item_attributes
+      { let (ext, attrs) = $2 in
+        Md.mk (mkrhs $3 3)
+          (Mty.alias ~loc:(rhs_loc 5) (mkrhs $5 5)) ~attrs:(attrs@$6)
+             ~loc:(symbol_rloc()) ~docs:(symbol_docs ())
+      , ext }
 ;
 rec_module_declarations:
-    rec_module_declaration                          { [$1] }
-  | rec_module_declarations and_module_declaration  { $2 :: $1 }
+    rec_module_declaration                         { let (body, ext) = $1 in ([body], ext) }
+  | rec_module_declarations and_module_declaration { let (l, ext) = $1 in ($2 :: l, ext) }
 ;
 rec_module_declaration:
-    MODULE REC UIDENT COLON module_type post_item_attributes
-      { Md.mk (mkrhs $3 3) $5 ~attrs:$6
-              ~loc:(symbol_rloc()) ~docs:(symbol_docs ()) }
+    MODULE ext_attributes REC UIDENT COLON module_type post_item_attributes
+      { let (ext, attrs) = $2 in
+        Md.mk (mkrhs $4 4) $6 ~attrs:(attrs@$7)
+            ~loc:(symbol_rloc()) ~docs:(symbol_docs ())
+      , ext}
 ;
 and_module_declaration:
-    AND UIDENT COLON module_type post_item_attributes
-      { Md.mk (mkrhs $2 2) $4 ~attrs:$5 ~loc:(symbol_rloc())
+    AND attributes UIDENT COLON module_type post_item_attributes
+      { Md.mk (mkrhs $3 3) $5 ~attrs:($2@$6) ~loc:(symbol_rloc())
               ~text:(symbol_text()) ~docs:(symbol_docs()) }
 ;
 module_type_declaration_body:
