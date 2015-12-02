@@ -113,10 +113,23 @@ CAMLprim value caml_sys_exit(value retcode)
       + (double) (caml_young_end - caml_young_ptr);
     double prowords = caml_stat_promoted_words;
     double majwords = caml_stat_major_words + (double) caml_allocated_words;
-    double allocated_words =
-      minwords + majwords - prowords;
-    caml_gc_message(0x400, "## Total allocated words: %ld\n",
-                    (long)allocated_words);
+    double allocated_words = minwords + majwords - prowords;
+    intnat mincoll = caml_stat_minor_collections;
+    intnat majcoll = caml_stat_major_collections;
+    intnat heap_words = caml_stat_heap_wsz;
+    intnat heap_chunks = caml_stat_heap_chunks;
+    intnat top_heap_words = caml_stat_top_heap_wsz;
+    intnat cpct = caml_stat_compactions;
+    caml_gc_message(0x400, "allocated_words: %ld\n", (long)allocated_words);
+    caml_gc_message(0x400, "minor_words: %ld\n", (long) minwords);
+    caml_gc_message(0x400, "promoted_words: %ld\n", (long) prowords);
+    caml_gc_message(0x400, "major_words: %ld\n", (long) majwords);
+    caml_gc_message(0x400, "minor_collections: %d\n", mincoll);
+    caml_gc_message(0x400, "major_collections: %d\n", majcoll);
+    caml_gc_message(0x400, "heap_words: %d\n", heap_words);
+    caml_gc_message(0x400, "heap_chunks: %d\n", heap_chunks);
+    caml_gc_message(0x400, "top_heap_words: %d\n", top_heap_words);
+    caml_gc_message(0x400, "compactions: %d\n", cpct);
   }
 
 #ifndef NATIVE_CODE
