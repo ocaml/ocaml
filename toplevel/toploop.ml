@@ -469,7 +469,11 @@ exception PPerror
 let loop ppf =
   Location.formatter_for_warnings := ppf;
   fprintf ppf "        OCaml version %s@.@." Config.version;
-  initialize_toplevel_env ();
+  begin
+    try initialize_toplevel_env ()
+    with Env.Error _ | Typetexp.Error _ as exn ->
+      Location.report_exception ppf exn; exit 2
+  end;
   let lb = Lexing.from_function refill_lexbuf in
   Location.init lb "//toplevel//";
   Location.input_name := "//toplevel//";
@@ -503,7 +507,11 @@ let run_script ppf name args =
   Arg.current := 0;
   Compmisc.init_path ~dir:(Filename.dirname name) true;
                    (* Note: would use [Filename.abspath] here, if we had it. *)
-  toplevel_env := Compmisc.initial_env();
+  begin
+    try toplevel_env := Compmisc.initial_env()
+    with Env.Error _ | Typetexp.Error _ as exn ->
+      Location.report_exception ppf exn; exit 2
+  end;
   Sys.interactive := false;
   let explicit_name =
     (* Prevent use_silently from searching in the path. *)

@@ -207,6 +207,8 @@ Toplevel and debugger:
    review by Gabriel Scherer and Jacques-Henri Jourdan)
 - PR#6935, GPR#298: crash in debugger when load_printer is given a directory
   (Junsong Li, review by Gabriel Scherer)
+- PR#6401: use proper error reporting for toplevel's environment
+  initialization (Gabriel Scherer)
 
 Other libraries:
 - PR#4023 and GPR#68: add Unix.sleepf (sleep with sub-second resolution)
