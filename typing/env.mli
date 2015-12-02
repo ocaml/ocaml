@@ -82,18 +82,30 @@ val add_gadt_instance_chain: t -> int -> type_expr -> unit
 
 (* Lookup by long identifiers *)
 
-val lookup_value: Longident.t -> t -> Path.t * value_description
-val lookup_constructor: Longident.t -> t -> constructor_description
+(* ?loc is used to report 'deprecated module' warnings *)
+
+val lookup_value:
+  ?loc:Location.t -> Longident.t -> t -> Path.t * value_description
+val lookup_constructor:
+  ?loc:Location.t -> Longident.t -> t -> constructor_description
 val lookup_all_constructors:
+  ?loc:Location.t ->
   Longident.t -> t -> (constructor_description * (unit -> unit)) list
-val lookup_label: Longident.t -> t -> label_description
+val lookup_label:
+  ?loc:Location.t -> Longident.t -> t -> label_description
 val lookup_all_labels:
+  ?loc:Location.t ->
   Longident.t -> t -> (label_description * (unit -> unit)) list
-val lookup_type: Longident.t -> t -> Path.t * type_declaration
-val lookup_module: load:bool -> Longident.t -> t -> Path.t
-val lookup_modtype: Longident.t -> t -> Path.t * modtype_declaration
-val lookup_class: Longident.t -> t -> Path.t * class_declaration
-val lookup_cltype: Longident.t -> t -> Path.t * class_type_declaration
+val lookup_type:
+  ?loc:Location.t -> Longident.t -> t -> Path.t * type_declaration
+val lookup_module:
+  load:bool -> ?loc:Location.t -> Longident.t -> t -> Path.t
+val lookup_modtype:
+  ?loc:Location.t -> Longident.t -> t -> Path.t * modtype_declaration
+val lookup_class:
+  ?loc:Location.t -> Longident.t -> t -> Path.t * class_declaration
+val lookup_cltype:
+  ?loc:Location.t -> Longident.t -> t -> Path.t * class_type_declaration
 
 exception Recmodule
   (* Raise by lookup_module when the identifier refers
@@ -269,6 +281,3 @@ val fold_cltypes:
 (** Utilities *)
 val scrape_alias: t -> module_type -> module_type
 val check_value_name: string -> Location.t -> unit
-
-
-val lookup_loc: Location.t -> (unit -> 'a) -> 'a

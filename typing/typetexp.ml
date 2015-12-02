@@ -256,9 +256,9 @@ let find_component lookup make_error env loc lid =
   try
     match lid with
     | Longident.Ldot (Longident.Lident "*predef*", s) ->
-        lookup (Longident.Lident s) Env.initial_safe_string
+        lookup ?loc:(Some loc) (Longident.Lident s) Env.initial_safe_string
     | _ ->
-      Env.lookup_loc loc (fun () -> lookup lid env)
+        lookup ?loc:(Some loc) lid env
   with Not_found ->
     narrow_unbound_lid_error env loc lid make_error
   | Env.Recmodule ->
@@ -299,7 +299,7 @@ let find_value env loc lid =
 
 let lookup_module ?(load=false) env loc lid =
   let (path, decl) as r =
-    find_component (fun lid env -> (Env.lookup_module ~load lid env, ()))
+    find_component (fun ?loc lid env -> (Env.lookup_module ~load ?loc lid env, ()))
       (fun lid -> Unbound_module lid) env loc lid
   in
   path
