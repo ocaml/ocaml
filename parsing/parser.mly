@@ -808,7 +808,7 @@ structure_item:
   | class_type_declarations
       { let (l, ext) = $1 in mkstr_ext (Pstr_class_type (List.rev l)) ext }
   | str_include_statement
-      { mkstr(Pstr_include $1) }
+      { let (body, ext) = $1 in mkstr_ext (Pstr_include body) ext }
   | item_extension post_item_attributes
       { mkstr(Pstr_extension ($1, (add_docs_attrs (symbol_docs ()) $2))) }
   | floating_attribute
@@ -816,9 +816,11 @@ structure_item:
         mkstr(Pstr_attribute $1) }
 ;
 str_include_statement:
-    INCLUDE module_expr post_item_attributes
-      { Incl.mk $2 ~attrs:$3
-                ~loc:(symbol_rloc()) ~docs:(symbol_docs ()) }
+    INCLUDE ext_attributes module_expr post_item_attributes
+      { let (ext, attrs) = $2 in
+        Incl.mk $3 ~attrs:(attrs@$4)
+            ~loc:(symbol_rloc()) ~docs:(symbol_docs ())
+      , ext }
 ;
 module_binding_body:
     EQUAL module_expr
@@ -912,7 +914,7 @@ signature_item:
   | open_statement
       { let (body, ext) = $1 in mksig_ext (Psig_open body) ext }
   | sig_include_statement
-      { mksig(Psig_include $1) }
+      { let (body, ext) = $1 in mksig_ext (Psig_include body) ext }
   | class_descriptions
       { let (l, ext) = $1 in mksig_ext (Psig_class (List.rev l)) ext }
   | class_type_declarations
@@ -931,9 +933,11 @@ open_statement:
       , ext}
 ;
 sig_include_statement:
-    INCLUDE module_type post_item_attributes %prec below_WITH
-      { Incl.mk $2 ~attrs:$3
-                ~loc:(symbol_rloc()) ~docs:(symbol_docs ()) }
+    INCLUDE ext_attributes module_type post_item_attributes %prec below_WITH
+      { let (ext, attrs) = $2 in
+        Incl.mk $3 ~attrs:(attrs@$4)
+            ~loc:(symbol_rloc()) ~docs:(symbol_docs ())
+      , ext}
 ;
 module_declaration_body:
     COLON module_type
