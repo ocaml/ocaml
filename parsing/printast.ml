@@ -402,6 +402,7 @@ and attributes i ppf l =
 
 and payload i ppf = function
   | PStr x -> structure i ppf x
+  | PSig x -> signature i ppf x
   | PTyp x -> core_type i ppf x
   | PPat (x, None) -> pattern i ppf x
   | PPat (x, Some g) ->
