@@ -148,6 +148,5 @@ val all_passes : string list ref
 val dumped_pass : string -> bool
 val set_dumped_pass : string -> bool -> unit
 
-type color_setting = Auto | Always | Never
-val parse_color_setting : string -> color_setting option
-val color : color_setting ref
+val parse_color_setting : string -> Misc.Color.setting option
+val color : Misc.Color.setting ref
