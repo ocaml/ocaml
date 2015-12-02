@@ -803,9 +803,9 @@ structure_item:
       { mkstr(Pstr_modtype $1) }
   | open_statement { mkstr(Pstr_open $1) }
   | class_declarations
-      { mkstr(Pstr_class (List.rev $1)) }
+      { let (l, ext) = $1 in mkstr_ext (Pstr_class (List.rev l)) ext }
   | class_type_declarations
-      { mkstr(Pstr_class_type (List.rev $1)) }
+      { let (l, ext) = $1 in mkstr_ext (Pstr_class_type (List.rev l)) ext }
   | str_include_statement
       { mkstr(Pstr_include $1) }
   | item_extension post_item_attributes
@@ -913,9 +913,9 @@ signature_item:
   | sig_include_statement
       { mksig(Psig_include $1) }
   | class_descriptions
-      { mksig(Psig_class (List.rev $1)) }
+      { let (l, ext) = $1 in mksig_ext (Psig_class (List.rev l)) ext }
   | class_type_declarations
-      { mksig(Psig_class_type (List.rev $1)) }
+      { let (l, ext) = $1 in mksig_ext (Psig_class_type (List.rev l)) ext }
   | item_extension post_item_attributes
       { mksig(Psig_extension ($1, (add_docs_attrs (symbol_docs ()) $2))) }
   | floating_attribute
@@ -983,20 +983,22 @@ module_type_declaration:
 /* Class expressions */
 
 class_declarations:
-    class_declaration                           { [$1] }
-  | class_declarations and_class_declaration    { $2 :: $1 }
+    class_declaration                           { let (body, ext) = $1 in ([body], ext) }
+  | class_declarations and_class_declaration    { let (l, ext) = $1 in ($2 :: l, ext) }
 ;
 class_declaration:
-    CLASS virtual_flag class_type_parameters LIDENT class_fun_binding
+    CLASS ext_attributes virtual_flag class_type_parameters LIDENT class_fun_binding
     post_item_attributes
-      { Ci.mk (mkrhs $4 4) $5 ~virt:$2 ~params:$3 ~attrs:$6
-              ~loc:(symbol_rloc ()) ~docs:(symbol_docs ()) }
+      { let (ext, attrs) = $2 in
+        Ci.mk (mkrhs $5 5) $6 ~virt:$3 ~params:$4 ~attrs:(attrs@$7)
+            ~loc:(symbol_rloc ()) ~docs:(symbol_docs ())
+      , ext }
 ;
 and_class_declaration:
-    AND virtual_flag class_type_parameters LIDENT class_fun_binding
+    AND attributes virtual_flag class_type_parameters LIDENT class_fun_binding
     post_item_attributes
-      { Ci.mk (mkrhs $4 4) $5 ~virt:$2 ~params:$3
-         ~attrs:$6 ~loc:(symbol_rloc ())
+      { Ci.mk (mkrhs $5 5) $6 ~virt:$3 ~params:$4
+         ~attrs:($2@$7) ~loc:(symbol_rloc ())
          ~text:(symbol_text ()) ~docs:(symbol_docs ()) }
 ;
 class_fun_binding:
@@ -1202,37 +1204,41 @@ constrain_field:
         core_type EQUAL core_type          { $1, $3 }
 ;
 class_descriptions:
-    class_description                           { [$1] }
-  | class_descriptions and_class_description    { $2 :: $1 }
+    class_description                           { let (body, ext) = $1 in ([body],ext) }
+  | class_descriptions and_class_description    { let (l, ext) = $1 in ($2 :: l, ext) }
 ;
 class_description:
-    CLASS virtual_flag class_type_parameters LIDENT COLON class_type
+    CLASS ext_attributes virtual_flag class_type_parameters LIDENT COLON class_type
     post_item_attributes
-      { Ci.mk (mkrhs $4 4) $6 ~virt:$2 ~params:$3 ~attrs:$7
-              ~loc:(symbol_rloc ()) ~docs:(symbol_docs ()) }
+      { let (ext, attrs) = $2 in
+        Ci.mk (mkrhs $5 5) $7 ~virt:$3 ~params:$4 ~attrs:$8
+            ~loc:(symbol_rloc ()) ~docs:(symbol_docs ())
+      , ext }
 ;
 and_class_description:
-    AND virtual_flag class_type_parameters LIDENT COLON class_type
+    AND attributes virtual_flag class_type_parameters LIDENT COLON class_type
     post_item_attributes
-      { Ci.mk (mkrhs $4 4) $6 ~virt:$2 ~params:$3
-              ~attrs:$7 ~loc:(symbol_rloc ())
+      { Ci.mk (mkrhs $5 5) $7 ~virt:$3 ~params:$4
+              ~attrs:($2@$8) ~loc:(symbol_rloc ())
               ~text:(symbol_text ()) ~docs:(symbol_docs ()) }
 ;
 class_type_declarations:
-    class_type_declaration                              { [$1] }
-  | class_type_declarations and_class_type_declaration  { $2 :: $1 }
+    class_type_declaration                              { let (body, ext) = $1 in ([body],ext) }
+  | class_type_declarations and_class_type_declaration  { let (l, ext) = $1 in ($2 :: l, ext) }
 ;
 class_type_declaration:
-    CLASS TYPE virtual_flag class_type_parameters LIDENT EQUAL
+    CLASS TYPE ext_attributes virtual_flag class_type_parameters LIDENT EQUAL
     class_signature post_item_attributes
-      { Ci.mk (mkrhs $5 5) $7 ~virt:$3 ~params:$4 ~attrs:$8
-              ~loc:(symbol_rloc ()) ~docs:(symbol_docs ()) }
+      { let (ext, attrs) = $3 in
+        Ci.mk (mkrhs $6 6) $8 ~virt:$4 ~params:$5 ~attrs:(attrs@$9)
+            ~loc:(symbol_rloc ()) ~docs:(symbol_docs ())
+      , ext}
 ;
 and_class_type_declaration:
-    AND virtual_flag class_type_parameters LIDENT EQUAL
+    AND attributes virtual_flag class_type_parameters LIDENT EQUAL
     class_signature post_item_attributes
-      { Ci.mk (mkrhs $4 4) $6 ~virt:$2 ~params:$3
-         ~attrs:$7 ~loc:(symbol_rloc ())
+      { Ci.mk (mkrhs $5 5) $7 ~virt:$3 ~params:$4
+         ~attrs:($2@$8) ~loc:(symbol_rloc ())
          ~text:(symbol_text ()) ~docs:(symbol_docs ()) }
 ;
 
