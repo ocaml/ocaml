@@ -801,7 +801,8 @@ structure_item:
       { let (l, ext) = $1 in mkstr_ext (Pstr_recmodule(List.rev l)) ext }
   | module_type_declaration
       { mkstr(Pstr_modtype $1) }
-  | open_statement { mkstr(Pstr_open $1) }
+  | open_statement
+      { let (body, ext) = $1 in mkstr_ext (Pstr_open body) ext }
   | class_declarations
       { let (l, ext) = $1 in mkstr_ext (Pstr_class (List.rev l)) ext }
   | class_type_declarations
@@ -909,7 +910,7 @@ signature_item:
   | module_type_declaration
       { mksig(Psig_modtype $1) }
   | open_statement
-      { mksig(Psig_open $1) }
+      { let (body, ext) = $1 in mksig_ext (Psig_open body) ext }
   | sig_include_statement
       { mksig(Psig_include $1) }
   | class_descriptions
@@ -923,9 +924,11 @@ signature_item:
         mksig(Psig_attribute $1) }
 ;
 open_statement:
-  | OPEN override_flag mod_longident post_item_attributes
-      { Opn.mk (mkrhs $3 3) ~override:$2 ~attrs:$4
-          ~loc:(symbol_rloc()) ~docs:(symbol_docs ()) }
+  | OPEN override_flag ext_attributes mod_longident post_item_attributes
+      { let (ext, attrs) = $3 in
+        Opn.mk (mkrhs $4 4) ~override:$2 ~attrs:(attrs@$5)
+          ~loc:(symbol_rloc()) ~docs:(symbol_docs ())
+      , ext}
 ;
 sig_include_statement:
     INCLUDE module_type post_item_attributes %prec below_WITH
