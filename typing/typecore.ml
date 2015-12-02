@@ -1103,7 +1103,8 @@ let rec type_pat ~constrs ~labels ~no_existentials ~mode ~explode ~env
       if constr.cstr_generalized && constrs <> None && mode = Inside_or
       then raise Need_backtrack;
       Env.mark_constructor Env.Pattern !env (Longident.last lid.txt) constr;
-      Typetexp.check_deprecated loc constr.cstr_attributes constr.cstr_name;
+      Builtin_attributes.check_deprecated loc constr.cstr_attributes
+        constr.cstr_name;
       if no_existentials && constr.cstr_existentials <> [] then
         raise (Error (loc, !env, Unexpected_existential));
       (* if constructor is gadt, we must verify that the expected type has the
@@ -1336,7 +1337,7 @@ let rec type_pat ~constrs ~labels ~no_existentials ~mode ~explode ~env
   | Ppat_exception _ ->
       raise (Error (loc, !env, Exception_pattern_below_toplevel))
   | Ppat_extension ext ->
-      raise (Error_forward (Typetexp.error_of_extension ext))
+      raise (Error_forward (Builtin_attributes.error_of_extension ext))
 
 let type_pat ?(allow_existentials=false) ?constrs ?labels ?(mode=Normal)
     ?(explode=0) ?(lev=get_current_level()) env sp expected_ty =
@@ -1865,10 +1866,10 @@ let rec type_exp ?recarg env sexp =
 
 and type_expect ?in_function ?recarg env sexp ty_expected =
   let previous_saved_types = Cmt_format.get_saved_types () in
-  Typetexp.warning_enter_scope ();
-  Typetexp.warning_attribute sexp.pexp_attributes;
+  Builtin_attributes.warning_enter_scope ();
+  Builtin_attributes.warning_attribute sexp.pexp_attributes;
   let exp = type_expect_ ?in_function ?recarg env sexp ty_expected in
-  Typetexp.warning_leave_scope ();
+  Builtin_attributes.warning_leave_scope ();
   Cmt_format.set_saved_types
     (Cmt_format.Partial_expression exp :: previous_saved_types);
   exp
@@ -2863,7 +2864,7 @@ and type_expect_ ?in_function ?(recarg=Rejected) env sexp ty_expected =
           raise (Error (loc, env, Invalid_extension_constructor_payload))
       end
   | Pexp_extension ext ->
-      raise (Error_forward (Typetexp.error_of_extension ext))
+      raise (Error_forward (Builtin_attributes.error_of_extension ext))
 
   | Pexp_unreachable ->
       re { exp_desc = Texp_unreachable;
@@ -3550,7 +3551,8 @@ and type_construct env loc lid sarg ty_expected attrs =
     wrap_disambiguate "This variant expression is expected to have" ty_expected
       (Constructor.disambiguate lid env opath) constrs in
   Env.mark_constructor Env.Positive env (Longident.last lid.txt) constr;
-  Typetexp.check_deprecated loc constr.cstr_attributes constr.cstr_name;
+  Builtin_attributes.check_deprecated loc constr.cstr_attributes
+    constr.cstr_name;
   let sargs =
     match sarg with
       None -> []
@@ -3925,14 +3927,14 @@ and type_let ?(check = fun s -> Warnings.Unused_var s)
               generalize_structure ty'
             end;
             let exp =
-              Typetexp.with_warning_attribute pvb_attributes (fun () ->
+              Builtin_attributes.with_warning_attribute pvb_attributes (fun () ->
                 type_expect exp_env sexp ty')
             in
             end_def ();
             check_univars env true "definition" exp pat.pat_type vars;
             {exp with exp_type = instance env exp.exp_type}
         | _ ->
-            Typetexp.with_warning_attribute pvb_attributes (fun () ->
+            Builtin_attributes.with_warning_attribute pvb_attributes (fun () ->
               type_expect exp_env sexp pat.pat_type))
       spat_sexp_list pat_slot_list in
   current_slot := None;

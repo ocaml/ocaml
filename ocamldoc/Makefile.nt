@@ -18,7 +18,7 @@ CAMLYACC ?= ../boot/ocamlyacc
 ##########################
 ROOTDIR   = ..
 OCAMLC    = $(CAMLRUN) $(ROOTDIR)/ocamlc -nostdlib -I $(ROOTDIR)/stdlib
-OCAMLOPT  = $(CAMLRUN) $(ROOTDIR)/ocamlopt -nostdlib -I $(ROOTDIR)/stdlib
+OCAMLOPT  = $(CAMLRUN) $(ROOTDIR)/ocamlopt -nostdlib -I $(ROOTDIR)/stdlib -inline 0
 OCAMLDEP  = $(CAMLRUN) $(ROOTDIR)/tools/ocamldep
 OCAMLLEX  = $(CAMLRUN) $(ROOTDIR)/boot/ocamllex
 OCAMLLIB  = $(LIBDIR)

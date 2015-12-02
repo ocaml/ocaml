@@ -312,14 +312,6 @@ let strengthen =
   ref ((fun env mty path -> assert false) :
          t -> module_type -> Path.t -> module_type)
 
-let deprecated_of_attrs_forward = ref (fun _ -> None)
-    (* to be filled with Typetexp.deprecated_of_attrs.
-       Note: ocamldebug link with Env (and use its lookup functions)
-       but not Typetexp.  So we return None instead of failing
-       to avoid breaking the debugger. *)
-
-let deprecated_of_attrs attrs = !deprecated_of_attrs_forward attrs
-
 let md md_type =
   {md_type; md_attributes=[]; md_loc=Location.none}
 
@@ -810,7 +802,8 @@ and lookup_module ~load ?loc lid env : Path.t =
           raise Recmodule
         | _ -> ()
         end;
-        report_deprecated ?loc p (deprecated_of_attrs md_attributes);
+        report_deprecated ?loc p
+          (Builtin_attributes.deprecated_of_attrs md_attributes);
         p
       with Not_found ->
         if s = !current_unit then raise Not_found;
@@ -1382,7 +1375,9 @@ and components_of_module_maker (env, sub, path, mty) =
             let mty' = EnvLazy.create (sub, mty) in
             c.comp_modules <-
               Tbl.add (Ident.name id) (mty', !pos) c.comp_modules;
-            let deprecated = deprecated_of_attrs md.md_attributes in
+            let deprecated =
+              Builtin_attributes.deprecated_of_attrs md.md_attributes
+            in
             let comps = components_of_module ~deprecated !env sub path mty in
             c.comp_components <-
               Tbl.add (Ident.name id) (comps, !pos) c.comp_components;
@@ -1546,7 +1541,7 @@ and store_extension ~check slot id path ext env renv =
     summary = Env_extension(env.summary, id, ext) }
 
 and store_module slot id path md env renv =
-  let deprecated = deprecated_of_attrs md.md_attributes in
+  let deprecated = Builtin_attributes.deprecated_of_attrs md.md_attributes in
   { env with
     modules = EnvTbl.add slot (fun x -> `Module x) id (path, md)
         env.modules renv.modules;

@@ -245,8 +245,6 @@ val check_modtype_inclusion:
 val add_delayed_check_forward: ((unit -> unit) -> unit) ref
 (* Forward declaration to break mutual recursion with Mtype. *)
 val strengthen: (t -> module_type -> Path.t -> module_type) ref
-(* Forward declaration to break mutual recursion with Typetexp. *)
-val deprecated_of_attrs_forward: (Parsetree.attributes -> string option) ref
 (* Forward declaration to break mutual recursion with Ctype. *)
 val same_constr: (t -> type_expr -> type_expr -> bool) ref
 

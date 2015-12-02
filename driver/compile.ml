@@ -42,7 +42,7 @@ let interface ppf sourcefile outputprefix =
   Typecore.force_delayed_checks ();
   Warnings.check_fatal ();
   if not !Clflags.print_types then begin
-    let deprecated = Typetexp.deprecated_of_sig ast in
+    let deprecated = Builtin_attributes.deprecated_of_sig ast in
     let sg = Env.save_signature ~deprecated sg modulename (outputprefix ^ ".cmi") in
     Typemod.save_signature modulename tsg outputprefix sourcefile
       initial_env sg ;
