@@ -1463,7 +1463,11 @@ Some attributes are understood by the type-checker:
   Can be applied to most kind of items in signatures or
   structures.  When the element is later referenced, a warning (3) is
   triggered.  If the payload of the attribute is a string literal,
-  the warning message includes this text.
+  the warning message includes this text.  It is also possible
+  to use this ``ocaml.deprecated'' as a floating attribute
+  on top of an ``.mli'' file (i.e. before any other non-attribute
+  item) or on top of an ``.ml'' file without a corresponding
+  interface; this marks the unit itself as being deprecated.
 \item
   ``ocaml.ppwarning'' or ``ppwarning'', in any context, with
   a string literal payload.  The text is reported as warning (22)
@@ -1478,6 +1482,7 @@ module X = struct
   [@@@warning "+9"]  (* locally enable warning 9 in this structure *)
   ...
 end
+  [@@deprecated "Please is module 'Y' instead."]
 
 let x = begin[@warning "+9] ... end in ....
 

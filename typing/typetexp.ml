@@ -58,129 +58,6 @@ type error =
 exception Error of Location.t * Env.t * error
 exception Error_forward of Location.error
 
-let string_of_cst = function
-  | Const_string(s, _) -> Some s
-  | _ -> None
-
-let string_of_payload = function
-  | PStr[{pstr_desc=Pstr_eval({pexp_desc=Pexp_constant c},_)}] ->
-      string_of_cst c
-  | _ -> None
-
-let rec error_of_extension ext =
-  match ext with
-  | ({txt = ("ocaml.error"|"error") as txt; loc}, p) ->
-    let rec sub_from inner =
-      match inner with
-      | {pstr_desc=Pstr_extension (ext, _)} :: rest ->
-          error_of_extension ext :: sub_from rest
-      | {pstr_loc} :: rest ->
-          (Location.errorf ~loc
-             "Invalid syntax for sub-error of extension '%s'." txt) ::
-            sub_from rest
-      | [] -> []
-    in
-    begin match p with
-    | PStr({pstr_desc=Pstr_eval
-              ({pexp_desc=Pexp_constant(Const_string(msg,_))}, _)}::
-           {pstr_desc=Pstr_eval
-              ({pexp_desc=Pexp_constant(Const_string(if_highlight,_))}, _)}::
-           inner) ->
-        Location.error ~loc ~if_highlight ~sub:(sub_from inner) msg
-    | PStr({pstr_desc=Pstr_eval
-              ({pexp_desc=Pexp_constant(Const_string(msg,_))}, _)}::inner) ->
-        Location.error ~loc ~sub:(sub_from inner) msg
-    | _ -> Location.errorf ~loc "Invalid syntax for extension '%s'." txt
-    end
-  | ({txt; loc}, _) ->
-      Location.errorf ~loc "Uninterpreted extension '%s'." txt
-
-let check_deprecated loc attrs s =
-  List.iter
-    (function
-    | ({txt = "ocaml.deprecated"|"deprecated"; _}, p) ->
-      begin match string_of_payload p with
-      | Some txt ->
-          Location.prerr_warning loc (Warnings.Deprecated (s ^ "\n" ^ txt))
-      | None ->
-          Location.prerr_warning loc (Warnings.Deprecated s)
-      end
-    | _ ->  ())
-    attrs
-
-let emit_external_warnings =
-  (* Note: this is run as a preliminary pass when type-checking an
-     interface or implementation.  This allows to cover all kinds of
-     attributes, but the drawback is that it doesn't take local
-     configuration of warnings (with '@@warning'/'@@warnerror'
-     attributes) into account.  We should rather check for
-     'ppwarning' attributes during the actual type-checking, making
-     sure to cover all contexts (easier and more ugly alternative:
-     duplicate here the logic which control warnings locally). *)
-  let open Ast_mapper in
-  {
-    default_mapper with
-    attribute = (fun _ a ->
-        begin match a with
-        | {txt="ocaml.ppwarning"|"ppwarning"},
-          PStr[{pstr_desc=Pstr_eval({pexp_desc=Pexp_constant
-                                         (Const_string (s, _))},_);
-                pstr_loc}] ->
-            Location.prerr_warning pstr_loc (Warnings.Preprocessor s)
-        | _ -> ()
-        end;
-        a
-      )
-  }
-
-
-let warning_scope = ref []
-
-let warning_enter_scope () =
-  warning_scope := (Warnings.backup ()) :: !warning_scope
-let warning_leave_scope () =
-  match !warning_scope with
-  | [] -> assert false
-  | hd :: tl ->
-      Warnings.restore hd;
-      warning_scope := tl
-
-let warning_attribute attrs =
-  let process loc txt errflag payload =
-    match string_of_payload payload with
-    | Some s ->
-        begin try Warnings.parse_options errflag s
-        with Arg.Bad _ ->
-          Location.prerr_warning loc
-            (Warnings.Attribute_payload
-               (txt, "Ill-formed list of warnings"))
-        end
-    | None ->
-        Location.prerr_warning loc
-          (Warnings.Attribute_payload
-             (txt, "A single string literal is expected"))
-  in
-  List.iter
-    (function
-      | ({txt = ("ocaml.warning"|"warning") as txt; loc}, payload) ->
-          process loc txt false payload
-      | ({txt = ("ocaml.warnerror"|"warnerror") as txt; loc}, payload) ->
-          process loc txt true payload
-      | _ ->
-          ()
-    )
-    attrs
-
-let with_warning_attribute attrs f =
-  try
-    warning_enter_scope ();
-    warning_attribute attrs;
-    let ret = f () in
-    warning_leave_scope ();
-    ret
-  with exn ->
-    warning_leave_scope ();
-    raise exn
 
 type variable_context = int * (string, type_expr) Tbl.t
 
@@ -236,8 +113,9 @@ let find_component lookup make_error env loc lid =
   try
     match lid with
     | Longident.Ldot (Longident.Lident "*predef*", s) ->
-        lookup (Longident.Lident s) Env.initial_safe_string
-    | _ -> lookup lid env
+        lookup ?loc:(Some loc) (Longident.Lident s) Env.initial_safe_string
+    | _ ->
+        lookup ?loc:(Some loc) lid env
   with Not_found ->
     narrow_unbound_lid_error env loc lid make_error
   | Env.Recmodule ->
@@ -248,7 +126,7 @@ let find_type env loc lid =
     find_component Env.lookup_type (fun lid -> Unbound_type_constructor lid)
       env loc lid
   in
-  check_deprecated loc decl.type_attributes (Path.name path);
+  Builtin_attributes.check_deprecated loc decl.type_attributes (Path.name path);
   r
 
 let find_constructor =
@@ -265,7 +143,7 @@ let find_class env loc lid =
   let (path, decl) as r =
     find_component Env.lookup_class (fun lid -> Unbound_class lid) env loc lid
   in
-  check_deprecated loc decl.cty_attributes (Path.name path);
+  Builtin_attributes.check_deprecated loc decl.cty_attributes (Path.name path);
   r
 
 let find_value env loc lid =
@@ -273,19 +151,20 @@ let find_value env loc lid =
   let (path, decl) as r =
     find_component Env.lookup_value (fun lid -> Unbound_value lid) env loc lid
   in
-  check_deprecated loc decl.val_attributes (Path.name path);
+  Builtin_attributes.check_deprecated loc decl.val_attributes (Path.name path);
   r
 
 let lookup_module ?(load=false) env loc lid =
   let (path, decl) as r =
-    find_component (fun lid env -> (Env.lookup_module ~load lid env, ()))
+    find_component (fun ?loc lid env -> (Env.lookup_module ~load ?loc lid env, ()))
       (fun lid -> Unbound_module lid) env loc lid
-  in path
+  in
+  path
 
 let find_module env loc lid =
   let path = lookup_module ~load:true env loc lid in
   let decl = Env.find_module path env in
-  check_deprecated loc decl.md_attributes (Path.name path);
+  (* No need to check for deprecated here, this is done in Env. *)
   (path, decl)
 
 let find_modtype env loc lid =
@@ -293,7 +172,7 @@ let find_modtype env loc lid =
     find_component Env.lookup_modtype (fun lid -> Unbound_modtype lid)
       env loc lid
   in
-  check_deprecated loc decl.mtd_attributes (Path.name path);
+  Builtin_attributes.check_deprecated loc decl.mtd_attributes (Path.name path);
   r
 
 let find_class_type env loc lid =
@@ -301,7 +180,7 @@ let find_class_type env loc lid =
     find_component Env.lookup_cltype (fun lid -> Unbound_cltype lid)
       env loc lid
   in
-  check_deprecated loc decl.clty_attributes (Path.name path);
+  Builtin_attributes.check_deprecated loc decl.clty_attributes (Path.name path);
   r
 
 let unbound_constructor_error env lid =
@@ -764,7 +643,7 @@ let rec transl_type env policy styp =
             pack_txt = p;
            }) ty
   | Ptyp_extension ext ->
-      raise (Error_forward (error_of_extension ext))
+      raise (Error_forward (Builtin_attributes.error_of_extension ext))
 
 and transl_poly_type env policy t =
   transl_type env policy (Ast_helper.Typ.force_poly t)
