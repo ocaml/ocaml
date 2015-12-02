@@ -796,9 +796,9 @@ structure_item:
   | str_exception_declaration
       { let (l, ext) = $1 in mkstr_ext (Pstr_exception l) ext }
   | module_binding
-      { mkstr(Pstr_module $1) }
+      { let (body, ext) = $1 in mkstr_ext (Pstr_module body) ext }
   | rec_module_bindings
-      { mkstr(Pstr_recmodule(List.rev $1)) }
+      { let (l, ext) = $1 in mkstr_ext (Pstr_recmodule(List.rev l)) ext }
   | module_type_declaration
       { mkstr(Pstr_modtype $1) }
   | open_statement { mkstr(Pstr_open $1) }
@@ -828,22 +828,26 @@ module_binding_body:
       { mkmod(Pmod_functor(fst $1, snd $1, $2)) }
 ;
 module_binding:
-    MODULE UIDENT module_binding_body post_item_attributes
-      { Mb.mk (mkrhs $2 2) $3 ~attrs:$4
-              ~loc:(symbol_rloc ()) ~docs:(symbol_docs ()) }
+    MODULE ext_attributes UIDENT module_binding_body post_item_attributes
+      { let (ext, attrs) = $2 in
+        Mb.mk (mkrhs $3 3) $4 ~attrs:(attrs@$5)
+            ~loc:(symbol_rloc ()) ~docs:(symbol_docs ())
+      , ext }
 ;
 rec_module_bindings:
-    rec_module_binding                            { [$1] }
-  | rec_module_bindings and_module_binding        { $2 :: $1 }
+    rec_module_binding                     { let (b, ext) = $1 in ([b], ext) }
+  | rec_module_bindings and_module_binding { let (l, ext) = $1 in ($2 :: l, ext) }
 ;
 rec_module_binding:
-    MODULE REC UIDENT module_binding_body post_item_attributes
-      { Mb.mk (mkrhs $3 3) $4 ~attrs:$5
-              ~loc:(symbol_rloc ()) ~docs:(symbol_docs ()) }
+    MODULE ext_attributes REC UIDENT module_binding_body post_item_attributes
+      { let (ext, attrs) = $2 in
+        Mb.mk (mkrhs $4 4) $5 ~attrs:(attrs@$6)
+            ~loc:(symbol_rloc ()) ~docs:(symbol_docs ())
+      , ext }
 ;
 and_module_binding:
-    AND UIDENT module_binding_body post_item_attributes
-      { Mb.mk (mkrhs $2 2) $3 ~attrs:$4 ~loc:(symbol_rloc ())
+    AND attributes UIDENT module_binding_body post_item_attributes
+      { Mb.mk (mkrhs $3 3) $4 ~attrs:($2@$5) ~loc:(symbol_rloc ())
                ~text:(symbol_text ()) ~docs:(symbol_docs ()) }
 ;
 
