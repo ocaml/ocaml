@@ -26,11 +26,11 @@ build:	depend.mk depend.mk2
 
 # Create links for prefixed versions of the components
 Lib%.ml: %.ml
-	ln -s $< $@
+	cp $< $@
 
 # Dependencies for Makefile.build, compiling and linking lib.cmo
 depend.mk: $(LINKS)
-	ln -s lib_impl.ml lib.ml
+	cp lib_impl.ml lib.ml
 	$(OCAMLDEP) -as-map lib.ml lib.mli > $@
 	$(OCAMLDEP) -map lib.ml -open Lib $(LINKS) >> $@
 
@@ -42,7 +42,7 @@ depend.mk2: $(LINKS)
 
 # Others tests for ocamldep
 depend.mod: $(LINKS)
-	ln -s lib_impl.ml lib.ml
+	cp lib_impl.ml lib.ml
 	$(OCAMLDEP) -as-map -modules lib.ml lib.mli > $@
 	$(OCAMLDEP) -modules -map lib.ml -open Lib $(LINKS) >> $@
 
