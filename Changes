@@ -95,6 +95,8 @@ Compilers:
   (Pierre Chambart, Xavier Leroy)
 - PR#7022, GPR#259: unbox float and boxed ints earlier, avoid second pass
   (Alain Frisch)
+- PR#7064, GPR#316: allowing to mark compilation units and sub-modules as
+  deprecated (Alain Frisch)
 - GPR#263: improve code generation for if-equivalents of (&&) and (||)
   (Pierre Chambart)
 - GPR#271: Fix incorrect mutability flag when records are built using "with"
