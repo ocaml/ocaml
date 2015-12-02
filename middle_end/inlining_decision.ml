@@ -20,7 +20,7 @@ module W = Inlining_cost.Whether_sufficient_benefit
 let inline_non_recursive env r ~function_decls ~lhs_of_application
     ~closure_id_being_applied ~(function_decl : Flambda.function_declaration)
     ~only_use_of_function ~no_simplification ~probably_a_functor
-    ~(args : Variable.t list) ~simplify
+    ~(args : Variable.t list) ~simplify ~always_inline
     ~(made_decision : Inlining_stats_types.Decision.t -> unit) =
   let body, r_inlined =
     (* First we construct the code that would result from copying the body of
@@ -36,6 +36,9 @@ let inline_non_recursive env r ~function_decls ~lhs_of_application
   let keep_inlined_version =
     if function_decl.stub then begin
       made_decision (Inlined (Copying_body Stub));
+      true
+    end else if always_inline then begin
+      made_decision (Inlined (Copying_body Unconditionally));
       true
     end else if only_use_of_function then begin
       made_decision (Inlined (Copying_body Decl_local_to_application));
@@ -292,8 +295,15 @@ let for_call_site ~env ~r ~(function_decls : Flambda.function_declarations)
       | max_inlining_depth -> max_inlining_depth
       | exception Not_found -> Clflags.default_max_inlining_depth
   in
-  let always_inline =
+  let inline_annotation =
+    (* Merge call site annotation and function annotation.
+       The call site annotation takes precedence *)
     match (inline_requested : Lambda.inline_attribute) with
+    | Default_inline -> function_decl.inline
+    | Always_inline | Never_inline -> inline_requested
+  in
+  let always_inline =
+    match (inline_annotation : Lambda.inline_attribute) with
     | Always_inline -> true
     (* CR-someday mshinwell: consider whether there could be better
        behaviour for stubs *)
@@ -318,7 +328,7 @@ let for_call_site ~env ~r ~(function_decls : Flambda.function_declarations)
     lazy (Variable.Set.mem fun_var (Lazy.force recursive_functions))
   in
   let fun_cost : Inlining_cost.inlining_threshold =
-    match (inline_requested : Lambda.inline_attribute) with
+    match (inline_annotation : Lambda.inline_attribute) with
     | Never_inline -> Never_inline
     | Always_inline | Default_inline ->
       if always_inline
@@ -366,7 +376,7 @@ let for_call_site ~env ~r ~(function_decls : Flambda.function_declarations)
         inline_non_recursive env r ~function_decls ~lhs_of_application
           ~closure_id_being_applied ~function_decl ~made_decision
           ~only_use_of_function ~no_simplification ~probably_a_functor
-          ~args ~simplify
+          ~always_inline ~args ~simplify
       else if (not always_inline) && E.inlining_level env > max_level then begin
         made_decision (Can_inline_but_tried_nothing (Level_exceeded true));
         no_simplification ()
