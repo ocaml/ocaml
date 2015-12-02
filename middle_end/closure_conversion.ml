@@ -196,8 +196,16 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
          unused value to a set of recursive bindings changes how
          functions are represented at runtime. *)
       let name =
-        String.concat "_and_"
-          (List.map (fun (id, _) -> Ident.unique_name id) defs)
+        (* The Microsoft assembler has a 247-character limit on symbol
+           names, so we keep them shorter to try not to hit this. *)
+        if Sys.win32 then begin
+          match defs with
+          | (id, _)::_ -> (Ident.unique_name id) ^ "_let_rec"
+          | _ -> "let_rec"
+        end else begin
+          String.concat "_and_"
+            (List.map (fun (id, _) -> Ident.unique_name id) defs)
+        end
       in
       let set_of_closures_var = Variable.create name in
       let set_of_closures =

@@ -2610,7 +2610,7 @@ let compunit_and_constants (ulam, preallocated_blocks, constants) =
   let structured_constants =
     (* TODO: don't mark every symbol as global, only those reachable
        from exported info should *)
-    List.map (fun (s, c) -> [Linkage_name.to_shortened_string (Symbol.label s),true], c)
+    List.map (fun (s, c) -> [Linkage_name.to_string (Symbol.label s),true], c)
       (Symbol.Map.bindings constants)
   in
   let c1' = emit_constants c1 structured_constants in
