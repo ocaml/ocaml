@@ -16,6 +16,7 @@
 #include <caml/memory.h>
 #include <caml/signals.h>
 #include "unixsupport.h"
+#include "u8tou16.h"
 
 #ifdef HAS_UTIME
 
@@ -30,7 +31,7 @@ CAMLprim value unix_utimes(value path, value atime, value mtime)
 {
   CAMLparam3(path, atime, mtime);
   struct utimbuf times, * t;
-  char * p;
+  CRT_STR p;
   int ret;
   caml_unix_check_path(path, "utimes");
   times.actime = Double_val(atime);
@@ -39,11 +40,11 @@ CAMLprim value unix_utimes(value path, value atime, value mtime)
     t = &times;
   else
     t = (struct utimbuf *) NULL;
-  p = caml_strdup(String_val(path));
+  p = Crt_str_val(path);
   caml_enter_blocking_section();
-  ret = utime(p, t);
+  ret = CRT_(utime)(p, t);
   caml_leave_blocking_section();
-  caml_stat_free(p);
+  Crt_str_free(p);
   if (ret == -1) uerror("utimes", path);
   CAMLreturn(Val_unit);
 }

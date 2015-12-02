@@ -216,3 +216,7 @@
 #define HAS_NICE
 
 /* Define HAS_NICE if you have nice(). */
+
+#undef HAS_WINAPI_UTF16
+
+/* Define HAS_WINAPI_UTF16 when compiling on Windows. */

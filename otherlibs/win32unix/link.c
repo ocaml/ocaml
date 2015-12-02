@@ -12,31 +12,26 @@
 /***********************************************************************/
 
 #include <caml/mlvalues.h>
+#include <caml/memory.h>
+#include <errno.h>
+#include <caml/alloc.h>
 #include <caml/fail.h>
 #include "unixsupport.h"
-#include <windows.h>
+#include "u8tou16.h"
 
-typedef
-BOOL (WINAPI *tCreateHardLink)(
-  LPCTSTR lpFileName,
-  LPCTSTR lpExistingFileName,
-  LPSECURITY_ATTRIBUTES lpSecurityAttributes
-);
-
-CAMLprim value unix_link(value path1, value path2)
+CAMLprim value unix_link(value v_path1, value v_path2)
 {
-  HMODULE hModKernel32;
-  tCreateHardLink pCreateHardLink;
-  hModKernel32 = GetModuleHandle("KERNEL32.DLL");
-  pCreateHardLink =
-    (tCreateHardLink) GetProcAddress(hModKernel32, "CreateHardLinkA");
-  if (pCreateHardLink == NULL)
-    invalid_argument("Unix.link not implemented");
-  caml_unix_check_path(path1, "link");
-  caml_unix_check_path(path2, "link");
-  if (! pCreateHardLink(String_val(path2), String_val(path1), NULL)) {
+  caml_unix_check_path(v_path1, "link");
+  caml_unix_check_path(v_path2, "link");
+  CRT_STR path1 = Crt_str_val(v_path1);
+  CRT_STR path2 = Crt_str_val(v_path2);
+  int ret = WINAPI_(CreateHardLink)(path1, path2, NULL);
+  Crt_str_free(path1);
+  Crt_str_free(path2);
+  if (0 != ret)
+  {
     win32_maperr(GetLastError());
-    uerror("link", path2);
+    uerror("link", v_path2);
   }
   return Val_unit;
 }

@@ -53,6 +53,19 @@
 #include "caml/gc_ctrl.h"
 #include "caml/io.h"
 
+#ifndef _WIN32
+extern int errno;
+#endif
+#include "u8tou16.h"
+
+#ifdef HAS_WINAPI_UTF16
+typedef struct _stati64 crt_ty_stat;
+#define crt_stat _wstati64
+#else
+typedef struct stat crt_ty_stat;
+#define crt_stat stat
+#endif
+
 static char * error_message(void)
 {
   return strerror(errno);
@@ -179,24 +192,16 @@ CAMLprim value caml_sys_close(value fd)
 
 CAMLprim value caml_sys_file_exists(value name)
 {
-#ifdef _WIN32
-  struct _stati64 st;
-#else
-  struct stat st;
-#endif
-  char * p;
+  crt_ty_stat st;
+  CRT_STR p;
   int ret;
 
   if (! caml_string_is_c_safe(name)) return Val_false;
-  p = caml_strdup(String_val(name));
+  p = Crt_str_val(name);
   caml_enter_blocking_section();
-#ifdef _WIN32
-  ret = _stati64(p, &st);
-#else
-  ret = stat(p, &st);
-#endif
+  ret = crt_stat(p, &st);
   caml_leave_blocking_section();
-  caml_stat_free(p);
+  Crt_str_free(p);
 
   return Val_bool(ret == 0);
 }
@@ -204,24 +209,16 @@ CAMLprim value caml_sys_file_exists(value name)
 CAMLprim value caml_sys_is_directory(value name)
 {
   CAMLparam1(name);
-#ifdef _WIN32
-  struct _stati64 st;
-#else
-  struct stat st;
-#endif
-  char * p;
+  crt_ty_stat st;
+  CRT_STR p;
   int ret;
 
   caml_sys_check_path(name);
-  p = caml_strdup(String_val(name));
+  p = Crt_str_val(name);
   caml_enter_blocking_section();
-#ifdef _WIN32
-  ret = _stati64(p, &st);
-#else
-  ret = stat(p, &st);
-#endif
+  ret = crt_stat(p, &st);
   caml_leave_blocking_section();
-  caml_stat_free(p);
+  Crt_str_free(p);
 
   if (ret == -1) caml_sys_error(name);
 #ifdef S_ISDIR
@@ -234,32 +231,31 @@ CAMLprim value caml_sys_is_directory(value name)
 CAMLprim value caml_sys_remove(value name)
 {
   CAMLparam1(name);
-  char * p;
+  CRT_STR p;
   int ret;
   caml_sys_check_path(name);
-  p = caml_strdup(String_val(name));
+  p = Crt_str_val(name);
   caml_enter_blocking_section();
-  ret = unlink(p);
+  ret = CRT_(unlink)(p);
   caml_leave_blocking_section();
-  caml_stat_free(p);
+  Crt_str_free(p);
   if (ret != 0) caml_sys_error(name);
   CAMLreturn(Val_unit);
 }
 
 CAMLprim value caml_sys_rename(value oldname, value newname)
 {
-  char * p_old;
-  char * p_new;
+  CRT_STR p_old, p_new;
   int ret;
   caml_sys_check_path(oldname);
   caml_sys_check_path(newname);
-  p_old = caml_strdup(String_val(oldname));
-  p_new = caml_strdup(String_val(newname));
+  p_old = Crt_str_val(oldname);
+  p_new = Crt_str_val(newname);
   caml_enter_blocking_section();
-  ret = rename(p_old, p_new);
+  ret = CRT_(rename)(p_old, p_new);
   caml_leave_blocking_section();
-  caml_stat_free(p_new);
-  caml_stat_free(p_old);
+  Crt_str_free(p_new);
+  Crt_str_free(p_old);
   if (ret != 0)
     caml_sys_error(NO_ARG);
   return Val_unit;
@@ -268,27 +264,30 @@ CAMLprim value caml_sys_rename(value oldname, value newname)
 CAMLprim value caml_sys_chdir(value dirname)
 {
   CAMLparam1(dirname);
-  char * p;
+  CRT_STR p;
   int ret;
   caml_sys_check_path(dirname);
-  p = caml_strdup(String_val(dirname));
+  p = Crt_str_val(dirname);
   caml_enter_blocking_section();
-  ret = chdir(p);
+  ret = CRT_(chdir)(p);
   caml_leave_blocking_section();
-  caml_stat_free(p);
+  Crt_str_free(p);
   if (ret != 0) caml_sys_error(dirname);
   CAMLreturn(Val_unit);
 }
 
 CAMLprim value caml_sys_getcwd(value unit)
 {
-  char buff[4096];
+  CAMLparam0 ();
+  CAMLlocal1 (v);
+  CRT_CHAR buff[4096];
 #ifdef HAS_GETCWD
-  if (getcwd(buff, sizeof(buff)) == 0) caml_sys_error(NO_ARG);
+  if (CRT_(getcwd)(buff, sizeof(buff)/sizeof(CRT_CHAR)) == 0) caml_sys_error(NO_ARG);
 #else
   if (getwd(buff) == 0) caml_sys_error(NO_ARG);
 #endif /* HAS_GETCWD */
-  return caml_copy_string(buff);
+  v = caml_copy_crt_str(buff);
+  CAMLreturn (v);
 }
 
 CAMLprim value caml_sys_getenv(value var)

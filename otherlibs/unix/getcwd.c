@@ -14,6 +14,7 @@
 #include <caml/mlvalues.h>
 #include <caml/alloc.h>
 #include <caml/fail.h>
+#include <caml/memory.h>
 #include "unixsupport.h"
 
 #if !defined (_WIN32) && !macintosh
@@ -29,12 +30,13 @@
 #endif
 
 #ifdef HAS_GETCWD
+#include "u8tou16.h"
 
 CAMLprim value unix_getcwd(value unit)
 {
-  char buff[PATH_MAX];
-  if (getcwd(buff, sizeof(buff)) == 0) uerror("getcwd", Nothing);
-  return copy_string(buff);
+  CRT_CHAR buff[PATH_MAX];
+  if (CRT_(getcwd)(buff, sizeof(buff)/sizeof(CRT_CHAR)) == 0) uerror("getcwd", Nothing);
+  return caml_copy_crt_str(buff);
 }
 
 #else

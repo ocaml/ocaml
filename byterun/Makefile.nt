@@ -16,7 +16,7 @@ include Makefile.common
 CFLAGS=-DOCAML_STDLIB_DIR='"$(LIBDIR)"' $(IFLEXDIR)
 
 DBGO=d.$(O)
-OBJS=$(COMMONOBJS:.o=.$(O)) win32.$(O) main.$(O)
+OBJS=$(COMMONOBJS:.o=.$(O)) win32.$(O) main.$(O) u8tou16.$(O)
 DOBJS=$(OBJS:.$(O)=.$(DBGO)) instrtrace.$(DBGO)
 
 ocamlrun$(EXE): libcamlrun.$(A) prims.$(O)

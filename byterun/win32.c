@@ -34,6 +34,7 @@
 #include "caml/sys.h"
 
 #include <flexdll.h>
+#include "u8tou16.h"
 
 #ifndef S_ISREG
 #define S_ISREG(mode) (((mode) & S_IFMT) == S_IFREG)
@@ -237,10 +238,22 @@ static void expand_pattern(char * pat)
 {
   char * prefix, * p, * name;
   int handle;
+#ifdef HAS_WINAPI_UTF16
+  struct _wfinddata_t ffblk;
+  WCHAR* wname = NULL;
+#else
   struct _finddata_t ffblk;
+#endif
   size_t i;
+  int preflen;
 
+#ifdef HAS_WINAPI_UTF16
+  wname = to_utf16(pat);
+  handle = _wfindfirst(wname, &ffblk);
+  free(wname);
+#else
   handle = _findfirst(pat, &ffblk);
+#endif
   if (handle == -1) {
     store_argument(pat); /* a la Bourne shell */
     return;
@@ -251,9 +264,22 @@ static void expand_pattern(char * pat)
     if (c == '\\' || c == '/' || c == ':') { prefix[i] = 0; break; }
   }
   do {
-    name = caml_strconcat(2, prefix, ffblk.name);
+#ifdef HAS_WINAPI_UTF16
+    char * aname = utf16_to_utf8(ffblk.name);
+#else
+    char * aname = ffblk.name;
+#endif
+    name = caml_strconcat(2, prefix, aname);
+#ifdef HAS_WINAPI_UTF16
+    free(aname);
+#endif
     store_argument(name);
-  } while (_findnext(handle, &ffblk) != -1);
+  }
+#ifdef HAS_WINAPI_UTF16
+  while (_wfindnext(handle, &ffblk) != -1);
+#else
+  while (_findnext(handle, &ffblk) != -1);
+#endif
   _findclose(handle);
   caml_stat_free(prefix);
 }
@@ -280,12 +306,21 @@ int caml_read_directory(char * dirname, struct ext_table * contents)
 {
   size_t dirnamelen;
   char * template;
+#ifdef HAS_WINAPI_UTF16
+  WCHAR * wtemplate;
+#endif
+  char * name;
 #if _MSC_VER <= 1200
   int h;
 #else
   intptr_t h;
 #endif
+#ifdef HAS_WINAPI_UTF16
+  struct _wfinddata_t fileinfo;
+#else
   struct _finddata_t fileinfo;
+#endif
+  char * p;
 
   dirnamelen = strlen(dirname);
   if (dirnamelen > 0 &&
@@ -295,16 +330,40 @@ int caml_read_directory(char * dirname, struct ext_table * contents)
     template = caml_strconcat(2, dirname, "*.*");
   else
     template = caml_strconcat(2, dirname, "\\*.*");
+#ifdef HAS_WINAPI_UTF16
+  wtemplate = to_utf16(template);
+  h = _wfindfirst(wtemplate, &fileinfo);
+  free(wtemplate);
+#else
   h = _findfirst(template, &fileinfo);
+#endif
   if (h == -1) {
     caml_stat_free(template);
     return errno == ENOENT ? 0 : -1;
   }
   do {
-    if (strcmp(fileinfo.name, ".") != 0 && strcmp(fileinfo.name, "..") != 0) {
-      caml_ext_table_add(contents, caml_strdup(fileinfo.name));
+#ifdef HAS_WINAPI_UTF16
+    name = utf16_to_utf8(fileinfo.name);
+    if (NULL == name)
+    {
+       /*printf("debug - very strange findfirst\n");*/
+       continue;
     }
-  } while (_findnext(h, &fileinfo) == 0);
+#else
+    name = caml_strdup(fileinfo.name);
+#endif
+    if (strcmp(name, ".") != 0 && strcmp(name, "..") != 0) {
+      caml_ext_table_add(contents, name);
+    }
+    else {
+      caml_stat_free(name);
+    }
+  }
+#ifdef HAS_WINAPI_UTF16
+  while (_wfindnext(h, &fileinfo) == 0);
+#else
+  while (_findnext(h, &fileinfo) == 0);
+#endif
   _findclose(h);
   caml_stat_free(template);
   return 0;

@@ -15,6 +15,7 @@
 #include <caml/alloc.h>
 #include "unixsupport.h"
 #include <fcntl.h>
+#include "u8tou16.h"
 
 static int open_access_flags[14] = {
   GENERIC_READ, GENERIC_WRITE, GENERIC_READ|GENERIC_WRITE,
@@ -33,11 +34,12 @@ static int open_cloexec_flags[14] = {
   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
 };
 
-CAMLprim value unix_open(value path, value flags, value perm)
+CAMLprim value unix_open(value v_path, value flags, value perm)
 {
   int fileaccess, createflags, fileattrib, filecreate, sharemode, cloexec;
   SECURITY_ATTRIBUTES attr;
   HANDLE h;
+  CRT_STR path = Crt_str_val(v_path);
 
   caml_unix_check_path(path, "open");
   fileaccess = convert_flag_list(flags, open_access_flags);
@@ -66,12 +68,13 @@ CAMLprim value unix_open(value path, value flags, value perm)
   attr.lpSecurityDescriptor = NULL;
   attr.bInheritHandle = cloexec ? FALSE : TRUE;
 
-  h = CreateFile(String_val(path), fileaccess,
-                 sharemode, &attr,
-                 filecreate, fileattrib, NULL);
+  h = WINAPI_(CreateFile)(path, fileaccess,
+			  FILE_SHARE_READ | FILE_SHARE_WRITE, &attr,
+			  filecreate, fileattrib, NULL);
+  Crt_str_free(path);
   if (h == INVALID_HANDLE_VALUE) {
     win32_maperr(GetLastError());
-    uerror("open", path);
+    uerror("open", v_path);
   }
   return win_alloc_handle(h);
 }

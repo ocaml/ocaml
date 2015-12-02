@@ -17,18 +17,19 @@
 #include <caml/memory.h>
 #include <caml/signals.h>
 #include "unixsupport.h"
+#include "u8tou16.h"
 
 CAMLprim value unix_chmod(value path, value perm)
 {
   CAMLparam2(path, perm);
-  char * p;
+  CRT_STR p;
   int ret;
   caml_unix_check_path(path, "chmod");
-  p = caml_strdup(String_val(path));
+  p = Crt_str_val(path);
   caml_enter_blocking_section();
-  ret = chmod(p, Int_val(perm));
+  ret = CRT_(chmod)(p, Int_val(perm));
   caml_leave_blocking_section();
-  caml_stat_free(p);
+  Crt_str_free(p);
   if (ret == -1) uerror("chmod", path);
   CAMLreturn(Val_unit);
 }

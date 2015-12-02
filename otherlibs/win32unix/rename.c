@@ -14,6 +14,7 @@
 #include <stdio.h>
 #include <caml/mlvalues.h>
 #include "unixsupport.h"
+#include "u8tou16.h"
 
 CAMLprim value unix_rename(value path1, value path2)
 {
@@ -22,6 +23,8 @@ CAMLprim value unix_rename(value path1, value path2)
 
   caml_unix_check_path(path1, "rename");
   caml_unix_check_path(path2, "rename");
+  CRT_STR p1 = Crt_str_val(path1);
+  CRT_STR p2 = Crt_str_val(path2);
   if (supports_MoveFileEx < 0) {
     OSVERSIONINFO VersionInfo;
     VersionInfo.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);
@@ -30,12 +33,14 @@ CAMLprim value unix_rename(value path1, value path2)
       && (VersionInfo.dwPlatformId == VER_PLATFORM_WIN32_NT);
   }
   if (supports_MoveFileEx > 0)
-    ok = MoveFileEx(String_val(path1), String_val(path2),
-                    MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH |
-                    MOVEFILE_COPY_ALLOWED);
+    ok = WINAPI_(MoveFileEx)(p1, p2,
+		    MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH |
+		    MOVEFILE_COPY_ALLOWED);
   else
-    ok = MoveFile(String_val(path1), String_val(path2));
-  if (! ok) {
+    ok = WINAPI_(MoveFile)(p1, p2);
+  Crt_str_free(p1);
+  Crt_str_free(p2);
+  if (!ok) {
     win32_maperr(GetLastError());
     uerror("rename", path1);
   }
