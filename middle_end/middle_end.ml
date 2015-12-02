@@ -11,8 +11,6 @@
 (*                                                                        *)
 (**************************************************************************)
 
-let verbose = try ignore (Sys.getenv "FLAMBDA_VERBOSE"); true with _ -> false
-
 let middle_end ppf ~sourcefile ~prefixname ~backend
     ~size
     ~module_ident
@@ -33,7 +31,7 @@ let middle_end ppf ~sourcefile ~prefixname ~backend
   in
   let (+-+) flam (name, pass) =
     incr pass_number;
-    if verbose then begin
+    if !Clflags.dump_flambda_verbose then begin
       Format.fprintf ppf "@.PASS: %s@." name;
       if !Clflags.full_flambda_invariant_check then begin
         Format.fprintf ppf "Before pass %d, round %d:@ %a@." !pass_number

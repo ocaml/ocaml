@@ -96,6 +96,7 @@ and dump_rawclambda = ref false         (* -drawclambda *)
 and dump_clambda = ref false            (* -dclambda *)
 and dump_flambda = ref false            (* -dflambda *)
 and dump_flambda_let = ref (None : int option) (* -dflambda-let=... *)
+and dump_flambda_verbose = ref false    (* -dflambda-verbose *)
 and dump_instr = ref false              (* -dinstr *)
 
 let keep_asm_file = ref false           (* -S *)
@@ -193,11 +194,8 @@ let set_dumped_pass s enabled =
   in
   dumped_passes_list := dumped_passes
 
-(* CR mshinwell: change to [false] before merge, and finish off
-   command line arg support *)
-let full_flambda_invariant_check =
-  try ignore (Sys.getenv "DISABLE_FULL_FLAMBDA_INVARIANT_CHECK"); ref false
-  with _ -> ref true
+(* CR mshinwell: change to [false] before merge *)
+let full_flambda_invariant_check = ref true
 
 let parse_color_setting = function
   | "auto" -> Some Misc.Color.Auto
