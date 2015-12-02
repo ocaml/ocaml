@@ -23,6 +23,15 @@ type value_string = {
   size : int;
 }
 
+type value_float_array_contents =
+  | Contents of float array
+  | Unknown_or_mutable
+
+type value_float_array = {
+  contents : value_float_array_contents;
+  size : int;
+}
+
 type descr =
   | Value_block of Tag.t * approx array
   | Value_mutable_block of Tag.t * int
@@ -30,7 +39,7 @@ type descr =
   | Value_char of char
   | Value_constptr of int
   | Value_float of float
-  | Value_float_array of int
+  | Value_float_array of value_float_array
   | Value_boxed_int : 'a Simple_value_approx.boxed_int * 'a -> descr
   | Value_string of value_string
   | Value_closure of value_closure

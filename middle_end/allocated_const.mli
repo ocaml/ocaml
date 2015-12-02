@@ -20,9 +20,11 @@ type t =
   | Int32 of int32
   | Int64 of int64
   | Nativeint of nativeint
+  (* CR-someday mshinwell: consider using "float array" *)
   | Float_array of float list
+  | Immutable_float_array of float list
   | String of string
-  | Immstring of string
+  | Immutable_string of string
 
 val compare : t -> t -> int
 

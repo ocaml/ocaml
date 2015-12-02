@@ -183,12 +183,13 @@ let simplify_const (const : Flambda.const) =
 let approx_for_allocated_const (const : Allocated_const.t) =
   match const with
   | String s -> A.value_string (String.length s) None
+  | Immutable_string s -> A.value_string (String.length s) (Some s)
   | Int32 i -> A.value_boxed_int Int32 i
   | Int64 i -> A.value_boxed_int Int64 i
   | Nativeint i -> A.value_boxed_int Nativeint i
   | Float f -> A.value_float f
-  | Float_array a -> A.value_float_array (List.length a)
-  | Immstring s -> A.value_string (String.length s) (Some s)
+  | Float_array a -> A.value_mutable_float_array ~size:(List.length a)
+  | Immutable_float_array a -> A.value_immutable_float_array (Array.of_list a)
 
 (* Determine whether a given closure ID corresponds directly to a variable
    (bound to a closure) in the given environment.  This happens when the body

@@ -92,7 +92,13 @@ let rec import_ex ex =
   | Value_char c -> A.value_char c
   | Value_constptr i -> A.value_constptr i
   | Value_float f -> A.value_float f
-  | Value_float_array size -> A.value_float_array size
+  | Value_float_array float_array ->
+    begin match float_array.contents with
+    | Unknown_or_mutable ->
+      A.value_mutable_float_array ~size:float_array.size
+    | Contents contents ->
+      A.value_immutable_float_array contents
+    end
   | Export_info.Value_boxed_int (t, i) -> A.value_boxed_int t i
   | Value_string { size; contents } ->
     let contents =

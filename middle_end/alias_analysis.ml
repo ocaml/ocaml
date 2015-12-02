@@ -14,13 +14,17 @@ type allocation_point =
   | Symbol of Symbol.t
   | Variable of Variable.t
 
+type allocated_const =
+  | Normal of Allocated_const.t
+  | Array of Lambda.array_kind * Asttypes.mutable_flag * Variable.t list
+  | Duplicate_array of Lambda.array_kind * Asttypes.mutable_flag * Variable.t
+
 type constant_defining_value =
-  | Allocated_const of Allocated_const.t
+  | Allocated_const of allocated_const
   | Block of Tag.t * Variable.t list
   | Set_of_closures of Flambda.set_of_closures
   | Project_closure of Flambda.project_closure
-  | Move_within_set_of_closures of
-      Flambda.move_within_set_of_closures
+  | Move_within_set_of_closures of Flambda.move_within_set_of_closures
   | Project_var of Flambda.project_var
   | Field of Variable.t * int
   | Symbol_field of Symbol.t * int
@@ -37,6 +41,29 @@ type definitions =
     symbol : Flambda.constant_defining_value Symbol.Map.t;
     symbol_alias : Variable.t Symbol.Map.t;
   }
+
+let print_constant_defining_value ppf = function
+  | Allocated_const (Normal const) -> Allocated_const.print ppf const
+  | Allocated_const (Array (_, _, vars)) ->
+    Format.fprintf ppf "[| %a |]"
+      (Format.pp_print_list Variable.print) vars
+  | Allocated_const (Duplicate_array (_, _, var)) ->
+    Format.fprintf ppf "dup_array(%a)" Variable.print var
+  | Block (tag, vars) ->
+    Format.fprintf ppf "[|%a: %a|]"
+      Tag.print tag
+      (Format.pp_print_list Variable.print) vars
+  | Set_of_closures set -> Flambda.print_set_of_closures ppf set
+  | Project_closure project -> Flambda.print_project_closure ppf project
+  | Move_within_set_of_closures move ->
+    Flambda.print_move_within_set_of_closures ppf move
+  | Project_var project -> Flambda.print_project_var ppf project
+  | Field (var, field) -> Format.fprintf ppf "%a.(%d)" Variable.print var field
+  | Symbol_field (sym, field) ->
+    Format.fprintf ppf "%a.(%d)" Symbol.print sym field
+  | Const const -> Flambda.print_const ppf const
+  | Symbol symbol -> Symbol.print ppf symbol
+  | Variable var -> Variable.print ppf var
 
 let rec resolve_definition
     (definitions: definitions)

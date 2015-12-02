@@ -25,6 +25,15 @@ type value_string = {
   size : int;
 }
 
+type value_float_array_contents =
+  | Contents of float array
+  | Unknown_or_mutable
+
+type value_float_array = {
+  contents : value_float_array_contents;
+  size : int;
+}
+
 type unknown_because_of =
   | Unresolved_symbol of Symbol.t
   | Other
@@ -121,7 +130,7 @@ and descr = private
   | Value_set_of_closures of value_set_of_closures
   | Value_closure of value_closure
   | Value_string of value_string
-  | Value_float_array of int (* size *)
+  | Value_float_array of value_float_array
   | Value_unknown of unknown_because_of
   | Value_bottom
   | Value_extern of Export_id.t
@@ -161,8 +170,8 @@ val value_unknown : unknown_because_of -> t
 val value_int : int -> t
 val value_char : char -> t
 val value_float : float -> t
-(* CR mshinwell: label mystery arguments *)
-val value_float_array : int -> t
+val value_mutable_float_array : size:int -> t
+val value_immutable_float_array : float array -> t
 val value_string : int -> string option -> t
 val value_boxed_int : 'i boxed_int -> 'i -> t
 val value_constptr : int -> t

@@ -551,6 +551,8 @@ val print_named : Format.formatter -> named -> unit
 
 val print_program : Format.formatter -> program -> unit
 
+val print_const : Format.formatter -> const -> unit
+
 val print_constant_defining_value
    : Format.formatter
   -> constant_defining_value

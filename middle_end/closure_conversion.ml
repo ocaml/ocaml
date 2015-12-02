@@ -87,7 +87,7 @@ let close_const (const : Lambda.structured_constant) : Flambda.named * string =
   | Const_base (Const_nativeint c) ->
     Allocated_const (Nativeint c), "nativeint"
   | Const_pointer c -> Const (Const_pointer c), "pointer"
-  | Const_immstring c -> Allocated_const (Immstring c), "immstring"
+  | Const_immstring c -> Allocated_const (Immutable_string c), "immstring"
   | Const_float_array c ->
     Allocated_const (Float_array (List.map float_of_string c)), "float_array"
   | Const_block _ ->
