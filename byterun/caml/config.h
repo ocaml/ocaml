@@ -112,6 +112,15 @@ typedef uint64_t uintnat;
 #define ARCH_FLOAT_ENDIANNESS 0x01234567
 #endif
 
+
+/* We use static inline functions in some cases instead of duplicating
+   code but the MSVC compiler has a slightly different syntax. */
+
+#ifdef _MSC_VER
+#define inline _inline
+#endif
+
+
 /* We use threaded code interpretation if the compiler provides labels
    as first-class values (GCC 2.x). */
 

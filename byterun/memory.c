@@ -14,6 +14,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "caml/address_class.h"
+#include "caml/config.h"
 #include "caml/fail.h"
 #include "caml/freelist.h"
 #include "caml/gc.h"
@@ -25,10 +26,6 @@
 #include "caml/misc.h"
 #include "caml/mlvalues.h"
 #include "caml/signals.h"
-
-#ifdef _MSC_VER
-#define inline _inline
-#endif
 
 int caml_huge_fallback_count = 0;
 /* Number of times that mmapping big pages fails and we fell back to small

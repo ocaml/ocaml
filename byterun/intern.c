@@ -19,6 +19,7 @@
 #include <stdio.h>
 #include "caml/alloc.h"
 #include "caml/callback.h"
+#include "caml/config.h"
 #include "caml/custom.h"
 #include "caml/fail.h"
 #include "caml/gc.h"
@@ -29,10 +30,6 @@
 #include "caml/mlvalues.h"
 #include "caml/misc.h"
 #include "caml/reverse.h"
-
-#ifdef _MSC_VER
-#define inline _inline
-#endif
 
 static unsigned char * intern_src;
 /* Reading pointer in block holding input data. */
