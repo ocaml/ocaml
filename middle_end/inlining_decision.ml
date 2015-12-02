@@ -184,11 +184,10 @@ let should_duplicate_recursive_function env
       ~args_approxs ~(invariant_params : Variable.Set.t Variable.Map.t) =
   assert (List.length function_decl.params = List.length args_approxs);
   !Clflags.inline_recursive_functions
+    && value_set_of_closures.closed
     && (not (E.inside_set_of_closures_declaration
       function_decls.set_of_closures_id env))
     && (not (Variable.Map.is_empty value_set_of_closures.invariant_params))
-    && Var_within_closure.Map.is_empty
-      value_set_of_closures.bound_vars (* closed *)
     && List.exists2 (fun id approx ->
         A.useful approx && Variable.Map.mem id invariant_params)
       function_decl.params args_approxs
@@ -247,6 +246,8 @@ let inline_recursive env r ~max_level ~lhs_of_application
           no_simplification ()
       | None -> no_simplification ()
     else begin
+      (* CR lwhite: should include details of why it was not attempted
+         in the reason. *)
       made_decision
         (Did_not_try_copying_decl (Tried_unrolling tried_unrolling));
       no_simplification ()

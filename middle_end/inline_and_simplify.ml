@@ -588,15 +588,20 @@ and simplify_set_of_closures original_env r
   let env =
     E.enter_set_of_closures_declaration function_decls.set_of_closures_id env
   in
+  let bound_vars =
+    Variable.Map.fold
+      (fun id (_, desc) map ->
+         Var_within_closure.Map.add (Var_within_closure.wrap id) desc map)
+      free_vars Var_within_closure.Map.empty
+  in
   (* we use the previous closure for evaluating the functions *)
   let internal_value_set_of_closures : A.value_set_of_closures =
     { function_decls = function_decls;
-      bound_vars = Variable.Map.fold (fun id (_, desc) map ->
-          Var_within_closure.Map.add (Var_within_closure.wrap id) desc map)
-          free_vars Var_within_closure.Map.empty;
+      bound_vars;
       invariant_params = Variable.Map.empty;
       specialised_args = specialised_args;
       freshening;
+      closed = Var_within_closure.Map.is_empty bound_vars;
     }
   in
   (* Populate the environment with the approximation of each closure.
@@ -612,9 +617,11 @@ and simplify_set_of_closures original_env r
       )
       function_decls.funs env
   in
+  let all_fun_vars = Variable.Map.keys function_decls.funs in
   let simplify_function fid (function_decl : Flambda.function_declaration)
-        (funs, used_params, r)
-        : Flambda.function_declaration Variable.Map.t * Variable.Set.t * R.t =
+        (funs, used_params, closed, r)
+        : Flambda.function_declaration Variable.Map.t * Variable.Set.t
+          * bool * R.t =
     let closure_env =
       populate_closure_approximations ~function_decl ~free_vars
         ~parameter_approximations ~set_of_closures_env
@@ -638,12 +645,21 @@ and simplify_set_of_closures original_env r
         ~specialised_args
     in
     let used_params' = Flambda.used_params function_decl in
+    let closed =
+      closed
+      && Variable.Set.is_empty
+           (Variable.Set.diff function_decl.Flambda.free_variables
+              (Variable.Set.union
+                 (Variable.Set.of_list function_decl.Flambda.params)
+                 all_fun_vars))
+    in
     Variable.Map.add fid function_decl funs,
-      Variable.Set.union used_params used_params', r
+      Variable.Set.union used_params used_params',
+        closed, r
   in
-  let funs, used_params, r =
+  let funs, used_params, closed, r =
     Variable.Map.fold simplify_function function_decls.funs
-      (Variable.Map.empty, Variable.Set.empty, r)
+      (Variable.Map.empty, Variable.Set.empty, true, r)
   in
   let specialised_args =
     (* Remove any specialised arguments whose parameters are unused. *)
@@ -660,11 +676,13 @@ and simplify_set_of_closures original_env r
   let value_set_of_closures : A.value_set_of_closures =
     { internal_value_set_of_closures with
       function_decls; invariant_params;
+      specialised_args; closed;
     }
   in
+  let free_vars = Variable.Map.map fst free_vars in
   let set_of_closures =
     Flambda.create_set_of_closures ~function_decls
-      ~free_vars:(Variable.Map.map fst free_vars)
+      ~free_vars
       ~specialised_args
   in
   set_of_closures, ret r (A.value_set_of_closures value_set_of_closures)
@@ -1229,6 +1247,7 @@ let constant_defining_value_approx
         invariant_params;
         specialised_args = Variable.Map.empty;
         freshening = Freshening.Project_var.empty;
+        closed = true;
       }
     in
     A.value_set_of_closures value_set_of_closures

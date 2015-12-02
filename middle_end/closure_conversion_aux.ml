@@ -147,6 +147,7 @@ module Function_decls = struct
   let set_diff (from : IdentSet.t) (idents : Ident.t list) =
     List.fold_right IdentSet.remove idents from
 
+  (* CR lwhite: use a different name from above or explain the difference *)
   let all_free_idents t =
     set_diff (set_diff (all_free_idents t) (all_params t)) (let_rec_idents t)
 
