@@ -437,7 +437,9 @@ void caml_compact_heap (void)
   target_wsz = caml_clip_heap_chunk_wsz (target_wsz);
 
 #ifdef HAS_HUGE_PAGES
-  if (caml_use_huge_pages && caml_stat_heap_size <= HUGE_PAGE_SIZE) return;
+  if (caml_use_huge_pages
+      && Bsize_wsize (caml_stat_heap_wsz) <= HUGE_PAGE_SIZE)
+    return;
 #endif
 
   if (target_wsz < caml_stat_heap_wsz / 2){
@@ -489,7 +491,9 @@ void caml_compact_heap_maybe (void)
   if (caml_stat_heap_wsz <= 2 * caml_clip_heap_chunk_wsz (0)) return;
 
 #ifdef HAS_HUGE_PAGES
-  if (caml_use_huge_pages && caml_stat_heap_size <= HUGE_PAGE_SIZE) return;
+  if (caml_use_huge_pages
+      && Bsize_wsize (caml_stat_heap_size) <= HUGE_PAGE_SIZE)
+    return;
 #endif
 
   fw = 3.0 * caml_fl_cur_wsz - 2.0 * caml_fl_wsz_at_phase_change;

@@ -630,11 +630,6 @@ void caml_major_collection_slice (intnat howmuch)
     mark_slice (computed_work);
     CAML_INSTR_TIME (tmr, mark_slice_name[caml_gc_subphase]);
     caml_gc_message (0x02, "!", 0);
-    /*
-    remaining_p = remaining_work / (Wsize_bsize (caml_stat_heap_size) * 250
-                                    / (100 + caml_percent_free)
-                                    + caml_incremental_roots_count);
-    */
   }else{
     Assert (caml_gc_phase == Phase_sweep);
     CAML_INSTR_INT ("major/work/sweep#", computed_work);
