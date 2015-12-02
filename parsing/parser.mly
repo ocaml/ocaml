@@ -790,11 +790,11 @@ structure_item:
   | value_description
       { mkstr (Pstr_primitive $1) }
   | type_declarations
-      { let (nr, l) = $1 in mkstr(Pstr_type (nr, List.rev l)) }
+      { let (nr, l, ext ) = $1 in mkstr_ext (Pstr_type (nr, List.rev l)) ext }
   | str_type_extension
-      { mkstr(Pstr_typext $1) }
+      { let (l, ext) = $1 in mkstr_ext (Pstr_typext l) ext }
   | str_exception_declaration
-      { mkstr(Pstr_exception $1) }
+      { let (l, ext) = $1 in mkstr_ext (Pstr_exception l) ext }
   | module_binding
       { mkstr(Pstr_module $1) }
   | rec_module_bindings
@@ -891,11 +891,11 @@ signature_item:
   | primitive_declaration
       { mksig(Psig_value $1) }
   | type_declarations
-      { let (nr, l) = $1 in mksig(Psig_type (nr, List.rev l)) }
+      { let (nr, l, ext) = $1 in mksig_ext (Psig_type (nr, List.rev l)) ext }
   | sig_type_extension
-      { mksig(Psig_typext $1) }
+      { let (l, ext) = $1 in mksig_ext (Psig_typext l) ext }
   | sig_exception_declaration
-      { mksig(Psig_exception $1) }
+      { let (l, ext) = $1 in mksig_ext (Psig_exception l) ext }
   | module_declaration
       { mksig(Psig_module $1) }
   | module_alias
@@ -1781,28 +1781,29 @@ primitive_declaration:
 
 type_declarations:
     type_declaration
-      { let (nonrec_flag, ty) = $1 in (nonrec_flag, [ty]) }
+      { let (nonrec_flag, ty, ext) = $1 in (nonrec_flag, [ty], ext) }
   | type_declarations and_type_declaration
-      { let (nonrec_flag, tys) = $1 in (nonrec_flag, $2 :: tys) }
+      { let (nonrec_flag, tys, ext) = $1 in (nonrec_flag, $2 :: tys, ext) }
 ;
 
 type_declaration:
-    TYPE nonrec_flag optional_type_parameters LIDENT type_kind constraints
+    TYPE ext_attributes nonrec_flag optional_type_parameters LIDENT type_kind constraints
     post_item_attributes
-      { let (kind, priv, manifest) = $5 in
+      { let (kind, priv, manifest) = $6 in
+        let (ext, attrs) = $2 in
         let ty =
-          Type.mk (mkrhs $4 4) ~params:$3 ~cstrs:(List.rev $6) ~kind
-            ~priv ?manifest ~attrs:$7
+          Type.mk (mkrhs $5 5) ~params:$4 ~cstrs:(List.rev $7) ~kind
+            ~priv ?manifest ~attrs:(attrs@$8)
             ~loc:(symbol_rloc ()) ~docs:(symbol_docs ())
         in
-          ($2, ty) }
+          ($3, ty, ext) }
 ;
 and_type_declaration:
-    AND optional_type_parameters LIDENT type_kind constraints
+    AND attributes optional_type_parameters LIDENT type_kind constraints
     post_item_attributes
-      { let (kind, priv, manifest) = $4 in
-          Type.mk (mkrhs $3 3) ~params:$2 ~cstrs:(List.rev $5)
-            ~kind ~priv ?manifest ~attrs:$6 ~loc:(symbol_rloc ())
+      { let (kind, priv, manifest) = $5 in
+          Type.mk (mkrhs $4 4) ~params:$3 ~cstrs:(List.rev $6)
+            ~kind ~priv ?manifest ~attrs:($2@$7) ~loc:(symbol_rloc ())
             ~text:(symbol_text ()) ~docs:(symbol_docs ()) }
 ;
 constraints:
@@ -1892,17 +1893,21 @@ bar_constructor_declaration:
 ;
 str_exception_declaration:
   | sig_exception_declaration                    { $1 }
-  | EXCEPTION constr_ident EQUAL constr_longident attributes
+  | EXCEPTION ext_attributes constr_ident EQUAL constr_longident attributes
     post_item_attributes
-      { Te.rebind (mkrhs $2 2) (mkrhs $4 4) ~attrs:($5 @ $6)
-          ~loc:(symbol_rloc()) ~docs:(symbol_docs ()) }
+      { let (ext,attrs) = $2 in
+        Te.rebind (mkrhs $3 3) (mkrhs $5 5) ~attrs:($6 @ $7)
+          ~loc:(symbol_rloc()) ~docs:(symbol_docs ())
+        , ext }
 ;
 sig_exception_declaration:
-  | EXCEPTION constr_ident generalized_constructor_arguments attributes
+  | EXCEPTION ext_attributes constr_ident generalized_constructor_arguments attributes
     post_item_attributes
-      { let args, res = $3 in
-          Te.decl (mkrhs $2 2) ~args ?res ~attrs:($4 @ $5)
-            ~loc:(symbol_rloc()) ~docs:(symbol_docs ()) }
+      { let args, res = $4 in
+        let (ext,attrs) = $2 in
+          Te.decl (mkrhs $3 3) ~args ?res ~attrs:($5 @ $6)
+            ~loc:(symbol_rloc()) ~docs:(symbol_docs ())
+        , ext }
 ;
 generalized_constructor_arguments:
     /*empty*/                     { (Pcstr_tuple [],None) }
@@ -1945,18 +1950,22 @@ label_declaration_semi:
 /* Type Extensions */
 
 str_type_extension:
-  TYPE nonrec_flag optional_type_parameters type_longident
+  TYPE ext_attributes nonrec_flag optional_type_parameters type_longident
   PLUSEQ private_flag str_extension_constructors post_item_attributes
-      { if $2 <> Recursive then not_expecting 2 "nonrec flag";
-        Te.mk (mkrhs $4 4) (List.rev $7) ~params:$3 ~priv:$6
-          ~attrs:$8 ~docs:(symbol_docs ()) }
+      { let (ext, attrs) = $2 in
+        if $3 <> Recursive then not_expecting 3 "nonrec flag";
+        Te.mk (mkrhs $5 5) (List.rev $8) ~params:$4 ~priv:$7
+          ~attrs:(attrs@$9) ~docs:(symbol_docs ())
+        , ext }
 ;
 sig_type_extension:
-  TYPE nonrec_flag optional_type_parameters type_longident
+  TYPE ext_attributes nonrec_flag optional_type_parameters type_longident
   PLUSEQ private_flag sig_extension_constructors post_item_attributes
-      { if $2 <> Recursive then not_expecting 2 "nonrec flag";
-        Te.mk (mkrhs $4 4) (List.rev $7) ~params:$3 ~priv:$6
-          ~attrs:$8 ~docs:(symbol_docs ()) }
+      { let (ext, attrs) = $2 in
+        if $3 <> Recursive then not_expecting 2 "nonrec flag";
+        Te.mk (mkrhs $5 5) (List.rev $8) ~params:$4 ~priv:$7
+          ~attrs:$9 ~docs:(symbol_docs ())
+        , ext }
 ;
 str_extension_constructors:
     extension_constructor_declaration                     { [$1] }
