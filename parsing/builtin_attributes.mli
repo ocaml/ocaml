@@ -17,7 +17,8 @@
    ocaml.ppwarning
    ocaml.warning
    ocaml.warnerror
-
+   ocaml.explicit_arity (for camlp4/camlp5)
+   ocaml.warn_on_literal_pattern
 *)
 
 
@@ -34,3 +35,6 @@ val warning_attribute: Parsetree.attributes -> unit
 val with_warning_attribute: Parsetree.attributes -> (unit -> 'a) -> 'a
 
 val emit_external_warnings: Ast_mapper.mapper
+
+val warn_on_literal_pattern: Parsetree.attributes -> bool
+val explicit_arity: Parsetree.attributes -> bool

@@ -305,20 +305,6 @@ let extract_label_names sexp env ty =
   with Not_found ->
     assert false
 
-let explicit_arity =
-  List.exists
-    (function
-      | ({txt="ocaml.explicit_arity"|"explicit_arity"; _}, _) -> true
-      | _ -> false
-    )
-
-let warn_on_literal_pattern =
-  List.exists
-    (function
-      | ({txt="ocaml.warn_on_literal_pattern"|"warn_on_literal_pattern"; _}, _) -> true
-      | _ -> false
-    )
-
 (* Typing of patterns *)
 
 (* unification inside type_pat*)
@@ -1115,7 +1101,8 @@ let rec type_pat ~constrs ~labels ~no_existentials ~mode ~explode ~env
         match sarg with
           None -> []
         | Some {ppat_desc = Ppat_tuple spl} when
-            constr.cstr_arity > 1 || explicit_arity sp.ppat_attributes
+            constr.cstr_arity > 1 ||
+            Builtin_attributes.explicit_arity sp.ppat_attributes
           -> spl
         | Some({ppat_desc = Ppat_any} as sp) when constr.cstr_arity <> 1 ->
             if constr.cstr_arity = 0 then
@@ -1124,9 +1111,11 @@ let rec type_pat ~constrs ~labels ~no_existentials ~mode ~explode ~env
             replicate_list sp constr.cstr_arity
         | Some sp -> [sp] in
       begin match sargs with
-      | [{ppat_desc = Ppat_constant _} as sp] when warn_on_literal_pattern constr.cstr_attributes ->
-            Location.prerr_warning sp.ppat_loc
-              Warnings.Fragile_literal_pattern
+      | [{ppat_desc = Ppat_constant _} as sp]
+        when Builtin_attributes.warn_on_literal_pattern
+            constr.cstr_attributes ->
+          Location.prerr_warning sp.ppat_loc
+            Warnings.Fragile_literal_pattern
       | _ -> ()
       end;
       if List.length sargs <> constr.cstr_arity then
@@ -3557,7 +3546,7 @@ and type_construct env loc lid sarg ty_expected attrs =
     match sarg with
       None -> []
     | Some {pexp_desc = Pexp_tuple sel} when
-        constr.cstr_arity > 1 || explicit_arity attrs
+        constr.cstr_arity > 1 || Builtin_attributes.explicit_arity attrs
       -> sel
     | Some se -> [se] in
   if List.length sargs <> constr.cstr_arity then

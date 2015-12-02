@@ -156,3 +156,18 @@ let with_warning_attribute attrs f =
   with exn ->
     warning_leave_scope ();
     raise exn
+
+
+let warn_on_literal_pattern =
+  List.exists
+    (function
+      | ({txt="ocaml.warn_on_literal_pattern"|"warn_on_literal_pattern"; _}, _) -> true
+      | _ -> false
+    )
+
+let explicit_arity =
+  List.exists
+    (function
+      | ({txt="ocaml.explicit_arity"|"explicit_arity"; _}, _) -> true
+      | _ -> false
+    )
