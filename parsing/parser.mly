@@ -68,6 +68,7 @@ let ghpat d = Pat.mk ~loc:(symbol_gloc ()) d
 let ghtyp d = Typ.mk ~loc:(symbol_gloc ()) d
 let ghloc d = { txt = d; loc = symbol_gloc () }
 let ghstr d = Str.mk ~loc:(symbol_gloc()) d
+let ghsig d = Sig.mk ~loc:(symbol_gloc()) d
 
 let mkinfix arg1 name arg2 =
   mkexp(Pexp_apply(mkoperator name 2, [Nolabel, arg1; Nolabel, arg2]))
@@ -281,6 +282,22 @@ let wrap_exp_attrs body (ext, attrs) =
 
 let mkexp_attrs d attrs =
   wrap_exp_attrs (mkexp d) attrs
+
+let wrap_str_ext body ext =
+  match ext with
+  | None -> body
+  | Some id -> ghstr(Pstr_extension ((id, PStr [body]), []))
+
+let mkstr_ext d ext =
+  wrap_str_ext (mkstr d) ext
+
+let wrap_sig_ext body ext =
+  match ext with
+  | None -> body
+  | Some id -> ghsig(Psig_extension ((id, PSig [body]), []))
+
+let mksig_ext d ext =
+  wrap_sig_ext (mksig d) ext
 
 let text_str pos = Str.text (rhs_text pos)
 let text_sig pos = Sig.text (rhs_text pos)
