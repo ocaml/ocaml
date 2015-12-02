@@ -148,11 +148,12 @@ let test5 () =
     roundtrip 0X123.456 &&
     roundtrip 0X123456789ABCDE. &&
     roundtrip epsilon_float &&
-    (* "nan" parsing fails on Windows? *)
-    (Sys.win32 || roundtrip nan) &&
-    roundtrip infinity &&
-    roundtrip neg_infinity &&
     roundtrip (4. *. atan 1.) &&
+    (Sys.win32 ||
+     (* nan/infinity parsing fails on Windows? *)
+     (roundtrip nan &&
+      roundtrip infinity &&
+      roundtrip neg_infinity)) &&
     true
   end
   &&
@@ -171,11 +172,12 @@ let test5 () =
     roundtrip 0X123.456 &&
     roundtrip 0X123456789ABCDE. &&
     roundtrip epsilon_float &&
-    (* "nan" parsing fails on Windows? *)
-    (Sys.win32 || roundtrip nan) &&
-    roundtrip infinity &&
-    roundtrip neg_infinity &&
     roundtrip (4. *. atan 1.) &&
+    (Sys.win32 ||
+     (* nan/infinity parsing fails on Windows? *)
+     (roundtrip nan &&
+      roundtrip infinity &&
+      roundtrip neg_infinity)) &&
     true
   end
 ;;
