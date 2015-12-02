@@ -82,18 +82,30 @@ val add_gadt_instance_chain: t -> int -> type_expr -> unit
 
 (* Lookup by long identifiers *)
 
-val lookup_value: Longident.t -> t -> Path.t * value_description
-val lookup_constructor: Longident.t -> t -> constructor_description
+(* ?loc is used to report 'deprecated module' warnings *)
+
+val lookup_value:
+  ?loc:Location.t -> Longident.t -> t -> Path.t * value_description
+val lookup_constructor:
+  ?loc:Location.t -> Longident.t -> t -> constructor_description
 val lookup_all_constructors:
+  ?loc:Location.t ->
   Longident.t -> t -> (constructor_description * (unit -> unit)) list
-val lookup_label: Longident.t -> t -> label_description
+val lookup_label:
+  ?loc:Location.t -> Longident.t -> t -> label_description
 val lookup_all_labels:
+  ?loc:Location.t ->
   Longident.t -> t -> (label_description * (unit -> unit)) list
-val lookup_type: Longident.t -> t -> Path.t * type_declaration
-val lookup_module: load:bool -> Longident.t -> t -> Path.t
-val lookup_modtype: Longident.t -> t -> Path.t * modtype_declaration
-val lookup_class: Longident.t -> t -> Path.t * class_declaration
-val lookup_cltype: Longident.t -> t -> Path.t * class_type_declaration
+val lookup_type:
+  ?loc:Location.t -> Longident.t -> t -> Path.t * type_declaration
+val lookup_module:
+  load:bool -> ?loc:Location.t -> Longident.t -> t -> Path.t
+val lookup_modtype:
+  ?loc:Location.t -> Longident.t -> t -> Path.t * modtype_declaration
+val lookup_class:
+  ?loc:Location.t -> Longident.t -> t -> Path.t * class_declaration
+val lookup_cltype:
+  ?loc:Location.t -> Longident.t -> t -> Path.t * class_type_declaration
 
 exception Recmodule
   (* Raise by lookup_module when the identifier refers
@@ -154,11 +166,13 @@ val get_unit_name: unit -> string
 
 val read_signature: string -> string -> signature
         (* Arguments: module name, file name. Results: signature. *)
-val save_signature: signature -> string -> string -> signature
+val save_signature:
+  deprecated:string option -> signature -> string -> string -> signature
         (* Arguments: signature, module name, file name. *)
 val save_signature_with_imports:
-    signature -> string -> string -> (string * Digest.t option) list
-    -> signature
+  deprecated:string option ->
+  signature -> string -> string -> (string * Digest.t option) list
+  -> signature
         (* Arguments: signature, module name, file name,
            imported units with their CRCs. *)
 
@@ -231,6 +245,8 @@ val check_modtype_inclusion:
 val add_delayed_check_forward: ((unit -> unit) -> unit) ref
 (* Forward declaration to break mutual recursion with Mtype. *)
 val strengthen: (t -> module_type -> Path.t -> module_type) ref
+(* Forward declaration to break mutual recursion with Typetexp. *)
+val deprecated_of_attrs_forward: (Parsetree.attributes -> string option) ref
 (* Forward declaration to break mutual recursion with Ctype. *)
 val same_constr: (t -> type_expr -> type_expr -> bool) ref
 

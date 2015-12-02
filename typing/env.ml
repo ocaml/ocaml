@@ -182,7 +182,10 @@ type t = {
 }
 
 and module_components =
-  (t * Subst.t * Path.t * Types.module_type, module_components_repr) EnvLazy.t
+  {
+    deprecated: string option;
+    comps: (t * Subst.t * Path.t * Types.module_type, module_components_repr) EnvLazy.t;
+  }
 
 and module_components_repr =
     Structure_comps of structure_components
@@ -291,8 +294,9 @@ let diff env1 env2 =
 (* Forward declarations *)
 
 let components_of_module' =
-  ref ((fun env sub path mty -> assert false) :
-          t -> Subst.t -> Path.t -> module_type -> module_components)
+  ref ((fun ~deprecated env sub path mty -> assert false) :
+         deprecated:string option -> t -> Subst.t -> Path.t -> module_type ->
+       module_components)
 let components_of_module_maker' =
   ref ((fun (env, sub, path, mty) -> assert false) :
           t * Subst.t * Path.t * module_type -> module_components_repr)
@@ -308,8 +312,20 @@ let strengthen =
   ref ((fun env mty path -> assert false) :
          t -> module_type -> Path.t -> module_type)
 
+let deprecated_of_attrs_forward = ref (fun _ -> None)
+    (* to be filled with Typetexp.deprecated_of_attrs.
+       Note: ocamldebug link with Env (and use its lookup functions)
+       but not Typetexp.  So we return None instead of failing
+       to avoid breaking the debugger. *)
+
+let deprecated_of_attrs attrs = !deprecated_of_attrs_forward attrs
+
 let md md_type =
   {md_type; md_attributes=[]; md_loc=Location.none}
+
+let get_components c =
+  EnvLazy.force !components_of_module_maker' c.comps
+
 
 (* The name of the compilation unit currently compiled.
    "" if outside a compilation unit. *)
@@ -373,8 +389,12 @@ let read_pers_struct check modname filename =
   let sign = cmi.cmi_sign in
   let crcs = cmi.cmi_crcs in
   let flags = cmi.cmi_flags in
+  let deprecated =
+    List.fold_left (fun acc -> function Deprecated s -> Some s | _ -> acc) None
+      flags
+  in
   let comps =
-      !components_of_module' empty Subst.identity
+      !components_of_module' ~deprecated empty Subst.identity
                              (Pident(Ident.create_persistent name))
                              (Mty_signature sign)
   in
@@ -388,9 +408,12 @@ let read_pers_struct check modname filename =
   if ps.ps_name <> modname then
     error (Illegal_renaming(modname, ps.ps_name, filename));
   List.iter
-    (function Rectypes ->
-      if not !Clflags.recursive_types then
-        error (Need_recursive_types(ps.ps_name, !current_unit)))
+    (function
+      | Rectypes ->
+          if not !Clflags.recursive_types then
+            error (Need_recursive_types(ps.ps_name, !current_unit))
+      | Deprecated _ -> ()
+    )
     ps.ps_flags;
   if check then check_consistency ps;
   Hashtbl.add persistent_structures modname (Some ps);
@@ -502,9 +525,7 @@ let rec find_module_descr path env =
         else raise Not_found
       end
   | Pdot(p, s, pos) ->
-      begin match
-        EnvLazy.force !components_of_module_maker' (find_module_descr p env)
-      with
+      begin match get_components (find_module_descr p env) with
         Structure_comps c ->
           let (descr, pos) = Tbl.find s c.comp_components in
           descr
@@ -512,9 +533,7 @@ let rec find_module_descr path env =
          raise Not_found
       end
   | Papply(p1, p2) ->
-      begin match
-        EnvLazy.force !components_of_module_maker' (find_module_descr p1 env)
-      with
+      begin match get_components (find_module_descr p1 env) with
         Functor_comps f ->
           !components_of_functor_appl' f env p1 p2
       | Structure_comps c ->
@@ -527,9 +546,7 @@ let find proj1 proj2 path env =
       let (p, data) = EnvTbl.find_same id (proj1 env)
       in data
   | Pdot(p, s, pos) ->
-      begin match
-        EnvLazy.force !components_of_module_maker' (find_module_descr p env)
-      with
+      begin match get_components (find_module_descr p env) with
         Structure_comps c ->
           let (data, pos) = Tbl.find s (proj2 c) in data
       | Functor_comps f ->
@@ -580,7 +597,7 @@ let find_type_full path env =
         with Not_found -> assert false
       in
       let comps =
-        match EnvLazy.force !components_of_module_maker' comps with
+        match get_components comps with
         | Structure_comps c -> c
         | Functor_comps _ -> assert false
       in
@@ -612,9 +629,7 @@ let find_module ~alias path env =
         else raise Not_found
       end
   | Pdot(p, s, pos) ->
-      begin match
-        EnvLazy.force !components_of_module_maker' (find_module_descr p env)
-      with
+      begin match get_components (find_module_descr p env) with
         Structure_comps c ->
           let (data, pos) = Tbl.find s c.comp_modules in
           md (EnvLazy.force subst_modtype_maker data)
@@ -623,7 +638,7 @@ let find_module ~alias path env =
       end
   | Papply(p1, p2) ->
       let desc1 = find_module_descr p1 env in
-      begin match EnvLazy.force !components_of_module_maker' desc1 with
+      begin match get_components desc1 with
         Functor_comps f ->
           md begin match f.fcomp_res with
           | Mty_alias p as mty-> mty
@@ -739,7 +754,16 @@ let rec is_functor_arg path env =
 
 exception Recmodule
 
-let rec lookup_module_descr lid env =
+let report_deprecated ?loc p deprecated =
+  match loc, deprecated with
+  | Some loc, Some txt ->
+      let txt = if txt = "" then "" else "\n" ^ txt in
+      Location.prerr_warning loc
+        (Warnings.Deprecated (Printf.sprintf "module %s%s"
+                                (Path.name p) txt))
+  | _ -> ()
+
+let rec lookup_module_descr_aux ?loc lid env =
   match lid with
     Lident s ->
       begin try
@@ -750,8 +774,8 @@ let rec lookup_module_descr lid env =
         (Pident(Ident.create_persistent s), ps.ps_comps)
       end
   | Ldot(l, s) ->
-      let (p, descr) = lookup_module_descr l env in
-      begin match EnvLazy.force !components_of_module_maker' descr with
+      let (p, descr) = lookup_module_descr ?loc l env in
+      begin match get_components descr with
         Structure_comps c ->
           let (descr, pos) = Tbl.find s c.comp_components in
           (Pdot(p, s, pos), descr)
@@ -759,10 +783,10 @@ let rec lookup_module_descr lid env =
           raise Not_found
       end
   | Lapply(l1, l2) ->
-      let (p1, desc1) = lookup_module_descr l1 env in
-      let p2 = lookup_module true l2 env in
+      let (p1, desc1) = lookup_module_descr ?loc l1 env in
+      let p2 = lookup_module ~load:true ?loc l2 env in
       let {md_type=mty2} = find_module p2 env in
-      begin match EnvLazy.force !components_of_module_maker' desc1 with
+      begin match get_components desc1 with
         Functor_comps f ->
           Misc.may (!check_modtype_inclusion env mty2 p2) f.fcomp_arg;
           (Papply(p1, p2), !components_of_functor_appl' f env p1 p2)
@@ -770,39 +794,52 @@ let rec lookup_module_descr lid env =
           raise Not_found
       end
 
-and lookup_module ~load lid env : Path.t =
+and lookup_module_descr ?loc lid env =
+  let (p, comps) as res = lookup_module_descr_aux ?loc lid env in
+  report_deprecated ?loc p comps.deprecated;
+  res
+
+and lookup_module ~load ?loc lid env : Path.t =
   match lid with
     Lident s ->
       begin try
-        let (p, {md_type}) as r = EnvTbl.find_name s env.modules in
+        let (p, {md_type; md_attributes}) = EnvTbl.find_name s env.modules in
         begin match md_type with
         | Mty_ident (Path.Pident id) when Ident.name id = "#recmod#" ->
           (* see #5965 *)
           raise Recmodule
         | _ -> ()
         end;
+        report_deprecated ?loc p (deprecated_of_attrs md_attributes);
         p
       with Not_found ->
         if s = !current_unit then raise Not_found;
+        let p = Pident(Ident.create_persistent s) in
         if !Clflags.transparent_modules && not load then check_pers_struct s
-        else ignore (find_pers_struct s);
-        Pident(Ident.create_persistent s)
+        else begin
+          let ps = find_pers_struct s in
+          report_deprecated ?loc p ps.ps_comps.deprecated
+        end;
+        p
       end
   | Ldot(l, s) ->
-      let (p, descr) = lookup_module_descr l env in
-      begin match EnvLazy.force !components_of_module_maker' descr with
+      let (p, descr) = lookup_module_descr ?loc l env in
+      begin match get_components descr with
         Structure_comps c ->
           let (data, pos) = Tbl.find s c.comp_modules in
-          Pdot(p, s, pos)
+          let (comps, _) = Tbl.find s c.comp_components in
+          let p = Pdot(p, s, pos) in
+          report_deprecated ?loc p comps.deprecated;
+          p
       | Functor_comps f ->
           raise Not_found
       end
   | Lapply(l1, l2) ->
-      let (p1, desc1) = lookup_module_descr l1 env in
-      let p2 = lookup_module true l2 env in
+      let (p1, desc1) = lookup_module_descr ?loc l1 env in
+      let p2 = lookup_module ~load:true ?loc l2 env in
       let {md_type=mty2} = find_module p2 env in
       let p = Papply(p1, p2) in
-      begin match EnvLazy.force !components_of_module_maker' desc1 with
+      begin match get_components desc1 with
         Functor_comps f ->
           Misc.may (!check_modtype_inclusion env mty2 p2) f.fcomp_arg;
           p
@@ -810,13 +847,13 @@ and lookup_module ~load lid env : Path.t =
           raise Not_found
       end
 
-let lookup proj1 proj2 lid env =
+let lookup proj1 proj2 ?loc lid env =
   match lid with
     Lident s ->
       EnvTbl.find_name s (proj1 env)
   | Ldot(l, s) ->
-      let (p, desc) = lookup_module_descr l env in
-      begin match EnvLazy.force !components_of_module_maker' desc with
+      let (p, desc) = lookup_module_descr ?loc l env in
+      begin match get_components desc with
         Structure_comps c ->
           let (data, pos) = Tbl.find s (proj2 c) in
           (Pdot(p, s, pos), data)
@@ -826,7 +863,7 @@ let lookup proj1 proj2 lid env =
   | Lapply(l1, l2) ->
       raise Not_found
 
-let lookup_all_simple proj1 proj2 shadow lid env =
+let lookup_all_simple proj1 proj2 shadow ?loc lid env =
   match lid with
     Lident s ->
       let xl = EnvTbl.find_all s (proj1 env) in
@@ -839,8 +876,8 @@ let lookup_all_simple proj1 proj2 shadow lid env =
       in
         do_shadow xl
   | Ldot(l, s) ->
-      let (p, desc) = lookup_module_descr l env in
-      begin match EnvLazy.force !components_of_module_maker' desc with
+      let (p, desc) = lookup_module_descr ?loc l env in
+      begin match get_components desc with
         Structure_comps c ->
           let comps =
             try Tbl.find s (proj2 c) with Not_found -> []
@@ -923,13 +960,13 @@ let set_type_used_callback name td callback =
   in
   Hashtbl.replace type_declarations key (fun () -> callback old)
 
-let lookup_value lid env =
-  let (_, desc) as r = lookup_value lid env in
+let lookup_value ?loc lid env =
+  let (_, desc) as r = lookup_value ?loc lid env in
   mark_value_used env (Longident.last lid) desc;
   r
 
-let lookup_type lid env =
-  let (path, (decl, _)) = lookup_type lid env in
+let lookup_type ?loc lid env =
+  let (path, (decl, _)) = lookup_type ?loc lid env in
   mark_type_used env (Longident.last lid) decl;
   (path, decl)
 
@@ -944,8 +981,8 @@ let ty_path t =
   | {desc=Tconstr(path, _, _)} -> path
   | _ -> assert false
 
-let lookup_constructor lid env =
-  match lookup_all_constructors lid env with
+let lookup_constructor ?loc lid env =
+  match lookup_all_constructors ?loc lid env with
     [] -> raise Not_found
   | (desc, use) :: _ ->
       mark_type_path env (ty_path desc.cstr_res);
@@ -956,9 +993,9 @@ let is_lident = function
     Lident _ -> true
   | _ -> false
 
-let lookup_all_constructors lid env =
+let lookup_all_constructors ?loc lid env =
   try
-    let cstrs = lookup_all_constructors lid env in
+    let cstrs = lookup_all_constructors ?loc lid env in
     let wrap_use desc use () =
       mark_type_path env (ty_path desc.cstr_res);
       use ()
@@ -983,17 +1020,17 @@ let mark_constructor usage env name desc =
       let ty_name = Path.last ty_path in
       mark_constructor_used usage env ty_name ty_decl name
 
-let lookup_label lid env =
-  match lookup_all_labels lid env with
+let lookup_label ?loc lid env =
+  match lookup_all_labels ?loc lid env with
     [] -> raise Not_found
   | (desc, use) :: _ ->
       mark_type_path env (ty_path desc.lbl_res);
       use ();
       desc
 
-let lookup_all_labels lid env =
+let lookup_all_labels ?loc lid env =
   try
-    let lbls = lookup_all_labels lid env in
+    let lbls = lookup_all_labels ?loc lid env in
     let wrap_use desc use () =
       mark_type_path env (ty_path desc.lbl_res);
       use ()
@@ -1002,16 +1039,16 @@ let lookup_all_labels lid env =
   with
     Not_found when is_lident lid -> []
 
-let lookup_class lid env =
-  let (_, desc) as r = lookup_class lid env in
+let lookup_class ?loc lid env =
+  let (_, desc) as r = lookup_class ?loc lid env in
   (* special support for Typeclass.unbound_class *)
-  if Path.name desc.cty_path = "" then ignore (lookup_type lid env)
+  if Path.name desc.cty_path = "" then ignore (lookup_type ?loc lid env)
   else mark_type_path env desc.cty_path;
   r
 
-let lookup_cltype lid env =
-  let (_, desc) as r = lookup_cltype lid env in
-  if Path.name desc.clty_path = "" then ignore (lookup_type lid env)
+let lookup_cltype ?loc lid env =
+  let (_, desc) as r = lookup_cltype ?loc lid env in
+  if Path.name desc.clty_path = "" then ignore (lookup_type ?loc lid env)
   else mark_type_path env desc.clty_path;
   mark_type_path env desc.clty_path;
   r
@@ -1038,12 +1075,12 @@ let iter_env proj1 proj2 f env () =
   let rec iter_components path path' mcomps =
     let cont () =
       let visit =
-        match EnvLazy.get_arg mcomps with
+        match EnvLazy.get_arg mcomps.comps with
         | None -> true
         | Some (env, sub, path, mty) -> scrape_alias_for_visit env mty
       in
       if not visit then () else
-      match EnvLazy.force !components_of_module_maker' mcomps with
+      match get_components mcomps with
         Structure_comps comps ->
           Tbl.iter
             (fun s (d, n) -> f (Pdot (path, s, n)) (Pdot (path', s, n), d))
@@ -1085,7 +1122,7 @@ let used_persistent () =
   !r
 
 let find_all_comps proj s (p,mcomps) =
-  match EnvLazy.force !components_of_module_maker' mcomps with
+  match get_components mcomps with
     Functor_comps _ -> []
   | Structure_comps comps ->
       try let (c,n) = Tbl.find s (proj comps) in [Pdot(p,s,n), c]
@@ -1285,8 +1322,11 @@ let add_to_tbl id decl tbl =
     try Tbl.find id tbl with Not_found -> [] in
   Tbl.add id (decl :: decls) tbl
 
-let rec components_of_module env sub path mty =
-  EnvLazy.create (env, sub, path, mty)
+let rec components_of_module ~deprecated env sub path mty =
+  {
+    deprecated;
+    comps = EnvLazy.create (env, sub, path, mty)
+  }
 
 and components_of_module_maker (env, sub, path, mty) =
   (match scrape_alias env mty with
@@ -1342,7 +1382,8 @@ and components_of_module_maker (env, sub, path, mty) =
             let mty' = EnvLazy.create (sub, mty) in
             c.comp_modules <-
               Tbl.add (Ident.name id) (mty', !pos) c.comp_modules;
-            let comps = components_of_module !env sub path mty in
+            let deprecated = deprecated_of_attrs md.md_attributes in
+            let comps = components_of_module ~deprecated !env sub path mty in
             c.comp_components <-
               Tbl.add (Ident.name id) (comps, !pos) c.comp_components;
             env := store_module None id (Pident id) md !env !env;
@@ -1505,12 +1546,14 @@ and store_extension ~check slot id path ext env renv =
     summary = Env_extension(env.summary, id, ext) }
 
 and store_module slot id path md env renv =
+  let deprecated = deprecated_of_attrs md.md_attributes in
   { env with
     modules = EnvTbl.add slot (fun x -> `Module x) id (path, md)
         env.modules renv.modules;
     components =
       EnvTbl.add slot (fun x -> `Component x) id
-        (path, components_of_module env Subst.identity path md.md_type)
+        (path, components_of_module ~deprecated
+           env Subst.identity path md.md_type)
         env.components renv.components;
     summary = Env_module(env.summary, id, md) }
 
@@ -1541,7 +1584,8 @@ let components_of_functor_appl f env p1 p2 =
     let p = Papply(p1, p2) in
     let sub = Subst.add_module f.fcomp_param p2 Subst.identity in
     let mty = Subst.modtype sub f.fcomp_res in
-    let comps = components_of_module env Subst.identity p mty in
+    let comps = components_of_module ~deprecated:None (*???*)
+        env Subst.identity p mty in
     Hashtbl.add f.fcomp_cache p2 comps;
     comps
 
@@ -1733,7 +1777,7 @@ let imports () =
 
 (* Save a signature to a file *)
 
-let save_signature_with_imports sg modname filename imports =
+let save_signature_with_imports ~deprecated sg modname filename imports =
   (*prerr_endline filename;
   List.iter (fun (name, crc) -> prerr_endline name) imports;*)
   Btype.cleanup_abbrev ();
@@ -1741,18 +1785,20 @@ let save_signature_with_imports sg modname filename imports =
   let sg = Subst.signature (Subst.for_saving Subst.identity) sg in
   let oc = open_out_bin filename in
   try
+    let flags = if !Clflags.recursive_types then [Rectypes] else [] in
+    let flags = match deprecated with None -> flags | Some s -> Deprecated s :: flags in
     let cmi = {
       cmi_name = modname;
       cmi_sign = sg;
       cmi_crcs = imports;
-      cmi_flags = if !Clflags.recursive_types then [Rectypes] else [];
+      cmi_flags = flags;
     } in
     let crc = output_cmi filename oc cmi in
     close_out oc;
     (* Enter signature in persistent table so that imported_unit()
        will also return its crc *)
     let comps =
-      components_of_module empty Subst.identity
+      components_of_module ~deprecated empty Subst.identity
         (Pident(Ident.create_persistent modname)) (Mty_signature sg) in
     let ps =
       { ps_name = modname;
@@ -1769,8 +1815,8 @@ let save_signature_with_imports sg modname filename imports =
     remove_file filename;
     raise exn
 
-let save_signature sg modname filename =
-  save_signature_with_imports sg modname filename (imports())
+let save_signature ~deprecated sg modname filename =
+  save_signature_with_imports ~deprecated sg modname filename (imports())
 
 (* Folding on environments *)
 
@@ -1782,7 +1828,7 @@ let find_all proj1 proj2 f lid env acc =
         (proj1 env) acc
     | Some l ->
       let p, desc = lookup_module_descr l env in
-      begin match EnvLazy.force components_of_module_maker desc with
+      begin match get_components desc with
           Structure_comps c ->
             Tbl.fold
               (fun s (data, pos) acc -> f s (Pdot (p, s, pos)) data acc)
@@ -1799,7 +1845,7 @@ let find_all_simple_list proj1 proj2 f lid env acc =
         (proj1 env) acc
     | Some l ->
       let p, desc = lookup_module_descr l env in
-      begin match EnvLazy.force components_of_module_maker desc with
+      begin match get_components desc with
           Structure_comps c ->
             Tbl.fold
               (fun s comps acc ->
@@ -1832,7 +1878,7 @@ let fold_modules f lid env acc =
         acc
     | Some l ->
       let p, desc = lookup_module_descr l env in
-      begin match EnvLazy.force components_of_module_maker desc with
+      begin match get_components desc with
           Structure_comps c ->
             Tbl.fold
               (fun s (data, pos) acc ->
