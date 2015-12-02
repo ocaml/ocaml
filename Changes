@@ -272,6 +272,7 @@ Bug fixes:
 - PR#6171: Error message confusing when a type escapes its scope.
 - PR#6340: Incorrect handling of \r when processing "Windows" source files
   (Damien Doligez, report by David Allsopp)
+- PR#6342: Incorrect error message when type constraints differ
 * PR#6521: {Bytes,Char,String}.escaped are locale-dependent
   (Damien Doligez, report by Jun Furuse)
 - PR#6526: ocamllex warning: unescaped newline in comment string
