@@ -20,7 +20,7 @@ module W = Inlining_cost.Whether_sufficient_benefit
 let inline_non_recursive env r ~function_decls ~lhs_of_application
     ~closure_id_being_applied ~(function_decl : Flambda.function_declaration)
     ~only_use_of_function ~no_simplification ~probably_a_functor
-    ~(args : Variable.t list) ~simplify ~always_inline
+    ~(args : Variable.t list) ~simplify ~always_inline ~inline_requested
     ~(made_decision : Inlining_stats_types.Decision.t -> unit) =
   let body, r_inlined =
     (* First we construct the code that would result from copying the body of
@@ -31,7 +31,7 @@ let inline_non_recursive env r ~function_decls ~lhs_of_application
     in
     Inlining_transforms.inline_by_copying_function_body ~env ~r
       ~function_decls ~lhs_of_application ~closure_id_being_applied
-      ~function_decl ~args ~simplify
+      ~inline_requested ~function_decl ~args ~simplify
   in
   let keep_inlined_version =
     if function_decl.stub then begin
@@ -95,7 +95,7 @@ let inline_non_recursive env r ~function_decls ~lhs_of_application
       Inlining_transforms.inline_by_copying_function_body ~env
         ~r:(R.reset_benefit r)
         ~function_decls ~lhs_of_application ~closure_id_being_applied
-        ~function_decl ~args ~simplify
+        ~inline_requested ~function_decl ~args ~simplify
     in
     let wsb =
       W.create ~original:(fst (no_simplification ()))
@@ -148,6 +148,7 @@ let unroll_recursive env r ~max_level ~lhs_of_application
         let body, r_inlined =
           Inlining_transforms.inline_by_copying_function_body ~env
             ~r:(R.reset_benefit r) ~function_decls ~lhs_of_application
+            ~inline_requested:Default_inline
             ~closure_id_being_applied ~function_decl ~args ~simplify
         in
         tried_unrolling := true;
@@ -378,7 +379,7 @@ let for_call_site ~env ~r ~(function_decls : Flambda.function_declarations)
         inline_non_recursive env r ~function_decls ~lhs_of_application
           ~closure_id_being_applied ~function_decl ~made_decision
           ~only_use_of_function ~no_simplification ~probably_a_functor
-          ~always_inline ~args ~simplify
+          ~inline_requested ~always_inline ~args ~simplify
       else if (not always_inline) && E.inlining_level env > max_level then begin
         made_decision (Can_inline_but_tried_nothing (Level_exceeded true));
         no_simplification ()
