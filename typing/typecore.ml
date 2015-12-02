@@ -2259,6 +2259,8 @@ and type_expect_ ?in_function ?(recarg=Rejected) env sexp ty_expected =
       unify_exp env record ty_record;
       if label.lbl_mut = Immutable then
         raise(Error(loc, env, Label_not_mutable lid.txt));
+      Builtin_attributes.check_deprecated_mutable lid.loc label.lbl_attributes
+        (Longident.last lid.txt);
       rue {
         exp_desc = Texp_setfield(record, label_loc, label, newval);
         exp_loc = loc; exp_extra = [];

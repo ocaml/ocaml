@@ -65,6 +65,20 @@ let check_deprecated loc attrs s =
   | Some "" -> Location.prerr_warning loc (Warnings.Deprecated s)
   | Some txt -> Location.prerr_warning loc (Warnings.Deprecated (s ^ "\n" ^ txt))
 
+let rec check_deprecated_mutable loc attrs s =
+  match attrs with
+  | [] -> ()
+  | ({txt = "ocaml.deprecated_mutable"|"deprecated_mutable"; _}, p) :: _ ->
+      let txt =
+        match string_of_payload p with
+        | Some txt -> "\n" ^ txt
+        | None -> ""
+      in
+      Location.prerr_warning loc
+        (Warnings.Deprecated (Printf.sprintf "mutating field %s%s"
+           s txt))
+  | _ :: tl -> check_deprecated_mutable loc tl s
+
 let rec deprecated_of_sig = function
   | {psig_desc = Psig_attribute a} :: tl ->
       begin match deprecated_of_attrs [a] with

@@ -1469,6 +1469,12 @@ Some attributes are understood by the type-checker:
   item) or on top of an ``.ml'' file without a corresponding
   interface; this marks the unit itself as being deprecated.
 \item
+  ``ocaml.deprecated_mutable'' or ``deprecated_mutable''.
+  Can be applied to a mutable record label.  If the label is later
+  used to modify the field (with ``expr.l <- expr''), a warning (3)
+  will be triggered.  If the payload of the attribute is a string literal,
+  the warning message includes this text.
+\item
   ``ocaml.ppwarning'' or ``ppwarning'', in any context, with
   a string literal payload.  The text is reported as warning (22)
   by the compiler (currently, the warning location is the location
