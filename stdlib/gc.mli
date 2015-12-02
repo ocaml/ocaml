@@ -115,6 +115,7 @@ type control =
        - [0x080] Calling of finalisation functions.
        - [0x100] Bytecode executable and shared library search at start-up.
        - [0x200] Computation of compaction-triggering condition.
+       - [0x400] Output GC statistics at program exit.
        Default: 0. *)
 
     mutable max_overhead : int;
