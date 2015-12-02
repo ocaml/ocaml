@@ -286,8 +286,12 @@ let strengthen =
   ref ((fun env mty path -> assert false) :
          t -> module_type -> Path.t -> module_type)
 
-let deprecated_of_attrs_forward = ref (fun _ -> assert false)
-    (* to be filled with Typetexp. deprecated_of_attrs *)
+let deprecated_of_attrs_forward = ref (fun _ -> None)
+    (* to be filled with Typetexp.deprecated_of_attrs.
+       Note: ocamldebug link with Env (and use its lookup functions)
+       but not Typetexp.  So we return None instead of failing
+       to avoid breaking the debugger. *)
+
 let deprecated_of_attrs attrs = !deprecated_of_attrs_forward attrs
 
 let md md_type =
