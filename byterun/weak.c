@@ -51,7 +51,7 @@ static void do_set (value ar, mlsize_t offset, value v)
     value old = Field (ar, offset);
     Field (ar, offset) = v;
     if (!(Is_block (old) && Is_young (old))){
-      Add_to_ref_table (caml_weak_ref_table, &Field (ar, offset));
+      add_to_ref_table (&caml_weak_ref_table, &Field (ar, offset));
     }
   }else{
     Field (ar, offset) = v;

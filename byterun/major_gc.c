@@ -224,7 +224,7 @@ static void mark_slice (intnat work)
               }else{
                 Field (v, i) = f;
                 if (Is_block (f) && Is_young (f) && !Is_young (child))
-                  Add_to_ref_table (caml_ref_table, &Field (v, i));
+                  add_to_ref_table (&caml_ref_table, &Field (v, i));
               }
             }else if (Tag_hd(chd) == Infix_tag) {
               child -= Infix_offset_val(child);
@@ -329,7 +329,7 @@ static void mark_slice (intnat work)
                   }else{
                     Field (cur, i) = curfield = f;
                     if (Is_block (f) && Is_young (f))
-                      Add_to_ref_table (caml_weak_ref_table, &Field (cur, i));
+                      add_to_ref_table (&caml_weak_ref_table, &Field (cur, i));
                     goto weak_again;
                   }
                 }

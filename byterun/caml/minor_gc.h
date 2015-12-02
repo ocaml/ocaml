@@ -16,6 +16,7 @@
 
 
 #include "address_class.h"
+#include "config.h"
 
 CAMLextern value *caml_young_start, *caml_young_end;
 CAMLextern value *caml_young_alloc_start, *caml_young_alloc_end;
@@ -36,15 +37,6 @@ struct caml_ref_table {
 CAMLextern struct caml_ref_table caml_ref_table, caml_weak_ref_table,
                                  caml_finalize_table;
 
-#define Add_to_ref_table(tbl, p)                  \
-  do {                                            \
-    if ((tbl).ptr >= (tbl).limit){                \
-      Assert ((tbl).ptr == (tbl).limit);          \
-      caml_realloc_ref_table (&(tbl));            \
-    }                                             \
-    *(tbl).ptr++ = (p);                           \
-  } while(0)
-
 extern void caml_set_minor_heap_size (asize_t); /* size in bytes */
 extern void caml_empty_minor_heap (void);
 CAMLextern void caml_gc_dispatch (void);
@@ -60,5 +52,14 @@ extern void caml_oldify_mopup (void);
       caml_oldify_one (__oldify__v__, (p)); \
     } \
   }while(0)
+
+static inline void add_to_ref_table (struct caml_ref_table *tbl, value *p)
+{
+  if (tbl->ptr >= tbl->limit){
+    CAMLassert (tbl->ptr == tbl->limit);
+    caml_realloc_ref_table (tbl);
+  }
+  *tbl->ptr++ = p;
+}
 
 #endif /* CAML_MINOR_GC_H */
