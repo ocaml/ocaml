@@ -90,8 +90,6 @@ val filter_row_fields:
 
 val generalize: type_expr -> unit
         (* Generalize in-place the given type *)
-val iterative_generalization: int -> type_expr list -> type_expr list
-        (* Efficient repeated generalization of a type *)
 val generalize_expansive: Env.t -> type_expr -> unit
         (* Generalize the covariant part of a type, making
            contravariant branches non-generalizable *)

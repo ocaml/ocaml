@@ -1104,6 +1104,7 @@ let rec type_module ?(alias=false) sttn funct_body anchor env smod =
       let (id, newenv), funct_body =
         match ty_arg with None -> (Ident.create "*", env), false
         | Some mty -> Env.enter_module ~arg:true name.txt mty env, true in
+      Ctype.init_def(Ident.current_time()); (* PR#6981 *)
       let body = type_module sttn funct_body None newenv sbody in
       rm { mod_desc = Tmod_functor(id, name, mty, body);
            mod_type = Mty_functor(id, ty_arg, body.mod_type);

@@ -640,7 +640,8 @@ let primitive_is_ccall = function
   (* Determine if a primitive is a Pccall or will be turned later into
      a C function call that may raise an exception *)
   | Pccall _ | Pstringrefs | Pstringsets | Parrayrefs _ | Parraysets _ |
-    Pbigarrayref _ | Pbigarrayset _ | Pduprecord _ -> true
+    Pbigarrayref _ | Pbigarrayset _ | Pduprecord _ | Pdirapply _ |
+    Prevapply _ -> true
   | _ -> false
 
 (* Assertions *)
@@ -825,6 +826,8 @@ and transl_exp0 e =
             Lprim(Pmakeblock(0, Immutable),
                   transl_path e.exp_env path :: ll)
       end
+  | Texp_extension_constructor (_, path) ->
+      transl_path e.exp_env path
   | Texp_variant(l, arg) ->
       let tag = Btype.hash_variant l in
       begin match arg with

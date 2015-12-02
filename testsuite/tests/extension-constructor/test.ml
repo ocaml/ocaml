@@ -2,26 +2,28 @@
 (*                                                                     *)
 (*                                OCaml                                *)
 (*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
+(*                 Jeremie Dimino, Jane Street Europe                  *)
 (*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
+(*  Copyright 2015 Institut National de Recherche en Informatique et   *)
 (*  en Automatique.  All rights reserved.  This file is distributed    *)
 (*  under the terms of the Q Public License version 1.0.               *)
 (*                                                                     *)
 (***********************************************************************)
 
-(* From C-- to assembly code *)
+type t = ..
 
-val phrase: Cmm.phrase -> unit
-val file: string -> unit
+module M = struct
+  type t += A
+  type t += B of int
+end
 
-val dump_cmm: bool ref
-val dump_selection: bool ref
-val dump_live: bool ref
-val dump_spill: bool ref
-val dump_split: bool ref
-val dump_interf: bool ref
-val dump_prefer: bool ref
-val dump_regalloc: bool ref
-val dump_reload: bool ref
-val dump_linear: bool ref
+type t += C
+type t += D of int * string
+
+let () =
+  assert (Obj.extension_constructor M.A          == [%extension_constructor M.A]);
+  assert (Obj.extension_constructor (M.B 42)     == [%extension_constructor M.B]);
+  assert (Obj.extension_constructor C            == [%extension_constructor C  ]);
+  assert (Obj.extension_constructor (D (42, "")) == [%extension_constructor D  ])
+
+let () = print_endline "OK"

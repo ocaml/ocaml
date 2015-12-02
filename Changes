@@ -60,6 +60,9 @@ Language features:
 - GPR#282: change short-paths penalty heuristic to assign the same cost to
   idents containing double underscores as to idents starting with an underscore
   (Thomas Refis, Leo White)
+- GPR#273: allow to get the extension slot of an extension constructor
+  by writing [%extension_constructor <path>]
+  (Jérémie Dimino)
 
 Compilers:
 - PR#4800: better compilation of tuple assignment (Gabriel Scherer and
@@ -109,6 +112,8 @@ Compilers:
 - GPR#282: relax short-paths safety check in presence of module aliases, take
   penalty into account while building the printing map.
   (Thomas Refis, Leo White)
+- PR#6920: fix debug informations around uses of %apply or %revapply
+  (Jérémie Dimino)
 
 Runtime system:
 - PR#3612: allow allocating custom block with finalizers in the minor heap
@@ -119,7 +124,8 @@ Runtime system:
 - PR#6760: closures evaluated in the toplevel can now be marshalled
   (whitequark, review by Jacques-Henri Jourdan)
 - PR#6902, GPR#210: runtime emits a warning when finalizing an I/O channel
-  which is still open (Alain Frisch, review by Damien Doligez)
+  which is still open (Alain Frisch, review by Damien Doligez);
+  this is controlled by OCAMLRUNPARAM=W=1 or with Sys.enable_runtime_warnings.
 - Signal handling: for read-and-clear, use GCC/Clang atomic builtins
   if available.  (Xavier Leroy)
 - PR#6910, GPR#224: marshaling (output_value, input_value, et al)
@@ -170,8 +176,8 @@ Standard library:
   (report and fix by Jeremy Yallop)
 - GPR#265: new implementation of Queue avoiding Obj.magic
   (Jérémie Dimino)
-- GPR#268: '%h' and '%H' modifiers for printf and scanf to support
-  floating-point numbers in hexadecimal notation
+- GPR#268, GPR#303: '%h' and '%H' modifiers for printf and scanf to
+  support floating-point numbers in hexadecimal notation
   (Xavier Leroy, Benoît Vaugon)
 - GPR#272: Switch classify_float to [@@unboxed] (Alain Frisch)
 - Improve speed of classify_float by not going through fpclassify()
@@ -225,6 +231,18 @@ OCamlbuild:
 - Changed OCamlbuild's license to LGPLv2 with static linking exception.
 - GPR#219: speedup target-already-built builds
   (ygrek)
+- PR#6605, GPR#117: use ocamlfind, if available, to discover camlp4 path
+  (Vincent Laporte)
+
+OCamldep:
+- GRP#286: add support for module aliases
+  (jacques Garrigue)
+
+Manual:
+- GPR#302: The OCaml reference manual is now included in the manual/
+  subdirectory of the main OCaml source repository. Contributions to
+  the manual are warmly welcome.
+  (François Bobot, review by Florian Angeletti)
 
 Bug fixes:
 - PR#3612: memory leak in bigarray read from file
@@ -281,9 +299,12 @@ Bug fixes:
 - PR#6945 and GPR#227: protect Sys and Unix functions against string
     arguments containing the null character '\000'
   (c-cube and Xavier Leroy, report by Daniel Bünzli)
+- PR#6946: Uncaught exception with wrong type for "%ignore"
 - PR#6954: Infinite loop in type checker with module aliases
 - PR#6972, GPR#276: 4.02.3 regression on documentation comments in .cmt files
   (Leo White, report by Olivier Andrieu)
+- PR#6980: Assert failure from polymorphic variants and existentials
+- PR#6981: Ctype.Unify(_) with associated functor arg refering to previous one
 - PR#6982: unexpected type error when packing a module alias
 - PR#6985: `module type of struct include Bar end exposes
            %s#row when Bar contains private row types
@@ -303,10 +324,14 @@ Bug fixes:
   (report and fix by Patrick Star)
 - PR#7036: Module alias is not taken into account when checking module
   type compatibility (in a class type) (Jacques Garrigue)
+- PR#7038: out of memory condition in caml_io_mutex_lock
+  (Xavier Leroy, report by Marc Lasson)
 - PR#7039: Unix.getsockname returns garbage for unnamed PF_UNIX sockets
   (Xavier Leroy)
 - PR#7042 and GPR#295: CSE optimization confuses the FP literals +0.0 and -0.0
   (Xavier Leroy)
+- PR#6762: improve warning 45 in presence of re-exported type definitions
+  (Alain Frisch, report by Olivier Andrieu)
 - GPR#205: Clear caml_backtrace_last_exn before registering as root
   (report and fix by Frederic Bour)
 - GPR#220: minor -dsource error on recursive modules
@@ -323,6 +348,8 @@ Bug fixes:
   Mark Shinwell)
 - GPR#283: Fix memory leaks in intern.c when OOM is raised
   (Marc Lasson, review by Alain Frisch)
+- GPR#313: Prevent quadratic cases in CSE
+  (Pierre Chambart, review by Xavier Leroy)
 
 Features wishes:
 - PR#4518, GPR#29: change location format for reporting errors in ocamldoc

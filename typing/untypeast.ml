@@ -446,6 +446,11 @@ let expression sub exp =
         Pexp_pack (sub.module_expr sub mexpr)
     | Texp_unreachable ->
         Pexp_unreachable
+    | Texp_extension_constructor (lid, _) ->
+        Pexp_extension ({ txt = "ocaml.extension_constructor"; loc },
+                        PStr [ Str.eval ~loc
+                                 (Exp.construct ~loc (map_loc sub lid) None)
+                             ])
   in
   List.fold_right (exp_extra sub) exp.exp_extra
     (Exp.mk ~loc ~attrs desc)

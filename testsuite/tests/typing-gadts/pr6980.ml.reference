@@ -1,0 +1,14 @@
+
+# type 'a t = 'a constraint 'a = [< `Bar | `Foo ]
+# type 'a s = 'a constraint 'a = [< `Bar | `Baz | `Foo > `Bar ]
+#     type 'a first = First : 'b t second -> ([< `Bar | `Foo ] as 'b) t first
+and 'a second = Second : [< `Bar | `Baz | `Foo > `Bar ] s second
+#   type aux = Aux : ([< `Bar | `Foo ] as 'a) t second * ('a -> int) -> aux
+#   val it : [< `Bar | `Foo > `Bar ] = `Bar
+#   Characters 28-30:
+  let g (Aux(Second, f)) = f it;;
+                             ^^
+Error: This expression has type [< `Bar | `Foo > `Bar ]
+       but an expression was expected of type [< `Bar | `Foo ]
+       Types for tag `Bar are incompatible
+# 

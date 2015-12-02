@@ -104,6 +104,12 @@ let test4 () =
 test (test4 ())
 ;;
 
+let same_float x y =
+  let is_nan z = (z <> z) in
+  if is_nan x then is_nan y
+  else Int64.bits_of_float y = Int64.bits_of_float x
+;;
+
 (* e style. *)
 let test5 () =
   bscanf (Scanning.from_string "1e1")
@@ -122,6 +128,58 @@ let test5 () =
     "%g %g %g %g"
     (fun b1 b2 b3 b4 ->
      b1 = 1.0 && b2 = 1.1 && b3 = 0.0 && b4 = 0.13)
+  &&
+(* F style *)
+  bscanf (Scanning.from_string "1.5 1.5e0 15e-1 0x1.8 0X1.8")
+    "%F %F %f %F %F"
+    (fun b1 b2 b3 b4 b5 -> b1 = b2 && b2 = b3 && b3 = b4 && b4 = b5)
+  &&
+(* h style *)
+  begin
+    let roundtrip x =
+      bscanf (Printf.ksprintf Scanning.from_string "%h" x) "%h" (same_float x)
+    in
+    roundtrip (+0.) &&
+    roundtrip (-0.) &&
+    roundtrip (+1.) &&
+    roundtrip (-1.) &&
+    roundtrip (+1024.) &&
+    roundtrip (-1024.) &&
+    roundtrip 0X123.456 &&
+    roundtrip 0X123456789ABCDE. &&
+    roundtrip epsilon_float &&
+    roundtrip (4. *. atan 1.) &&
+    (Sys.win32 ||
+     (* nan/infinity parsing fails on Windows? *)
+     (roundtrip nan &&
+      roundtrip infinity &&
+      roundtrip neg_infinity)) &&
+    true
+  end
+  &&
+
+  (* H style *)
+  begin
+    let roundtrip x =
+      bscanf (Printf.ksprintf Scanning.from_string "%H" x) "%H" (same_float x)
+    in
+    roundtrip (+0.) &&
+    roundtrip (-0.) &&
+    roundtrip (+1.) &&
+    roundtrip (-1.) &&
+    roundtrip (+1024.) &&
+    roundtrip (-1024.) &&
+    roundtrip 0X123.456 &&
+    roundtrip 0X123456789ABCDE. &&
+    roundtrip epsilon_float &&
+    roundtrip (4. *. atan 1.) &&
+    (Sys.win32 ||
+     (* nan/infinity parsing fails on Windows? *)
+     (roundtrip nan &&
+      roundtrip infinity &&
+      roundtrip neg_infinity)) &&
+    true
+  end
 ;;
 
 test (test5 ())

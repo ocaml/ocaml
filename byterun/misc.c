@@ -182,7 +182,7 @@ CAMLexport char * caml_strconcat(int n, ...)
 
 /* Runtime warnings */
 
-uintnat caml_runtime_warnings = 1;
+uintnat caml_runtime_warnings = 0;
 static int caml_runtime_warnings_first = 1;
 
 int caml_runtime_warnings_active(void)

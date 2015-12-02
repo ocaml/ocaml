@@ -57,6 +57,26 @@ The following command-line options are recognized by
 .B \-absname
 Show absolute filenames in error messages.
 .TP
+.B \-all
+Generate dependencies on all required files, rather than assuming
+implicit dependencies.
+.TP
+.B \-allow\-approx
+Allow falling back on a lexer-based approximation when parsing fails.
+.TP
+.B \-as\-map
+For the following files, do not include delayed dependencies for
+module aliases.
+This option assumes that they are compiled using options
+"\-no\-alias\-deps \-w \-49", and that those files or their interface are
+passed with the "\-map" option when computing dependencies for other
+files. Note also that for dependencies to be correct in the
+implementation of a map file, its interface should not coerce any of
+the aliases it contains.
+.TP
+.B \-debug\-map
+Dump the delayed dependency map for each map file.
+.TP
 .BI \-I \ directory
 Add the given directory to the list of directories searched for
 source files. If a source file foo.ml mentions an external
@@ -71,6 +91,22 @@ directories, it is recommended to pass
 the same
 .B \-I
 options that are passed to the compiler.
+.TP
+.BI \-impl \ file
+Process
+.IR file
+as a .ml file.
+.TP
+.BI \-intf \ file
+Process
+.IR file
+as a .mli file.
+.TP
+.BI \-map \ file
+Read an propagate the delayed dependencies for module aliases in
+.IR file ,
+so that the following files will depend on the
+exported aliased modules if they use them.
 .TP
 .BI \-ml\-synonym \ .ext
 Consider the given extension (with leading dot) to be a synonym for .ml.
@@ -120,6 +156,9 @@ Pipe abstract syntax tree through preprocessor
 .TP
 .B \-slash
 Under Unix, this option does nothing.
+.TP
+.B \-sort
+Sort files according to their dependencies.
 .TP
 .B \-version
 Print version string and exit.

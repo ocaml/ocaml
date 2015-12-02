@@ -69,6 +69,8 @@ type error =
   | Exception_pattern_below_toplevel
   | Inlined_record_escape
   | Unrefuted_pattern of pattern
+  | Invalid_extension_constructor_payload
+  | Not_an_extension_constructor
 
 exception Error of Location.t * Env.t * error
 exception Error_forward of Location.error
@@ -2839,6 +2841,27 @@ and type_expect_ ?in_function ?(recarg=Rejected) env sexp ty_expected =
                      sexp.pexp_attributes) ::
                       exp.exp_extra;
       }
+
+  | Pexp_extension ({ txt = ("ocaml.extension_constructor"|"extension_constructor"); _ },
+                    payload) ->
+      begin match payload with
+      | PStr [ { pstr_desc =
+                   Pstr_eval ({ pexp_desc = Pexp_construct (lid, None); _ }, _)
+               } ] ->
+          let path =
+            match (Typetexp.find_constructor env lid.loc lid.txt).cstr_tag with
+            | Cstr_extension (path, _) -> path
+            | _ -> raise (Error (lid.loc, env, Not_an_extension_constructor))
+          in
+          rue {
+            exp_desc = Texp_extension_constructor (lid, path);
+            exp_loc = loc; exp_extra = [];
+            exp_type = instance_def Predef.type_extension_constructor;
+            exp_attributes = sexp.pexp_attributes;
+            exp_env = env }
+      | _ ->
+          raise (Error (loc, env, Invalid_extension_constructor_payload))
+      end
   | Pexp_extension ext ->
       raise (Error_forward (Typetexp.error_of_extension ext))
 
@@ -3485,10 +3508,17 @@ and type_application env funct sargs =
             type_unknown_args args omitted ty_fun0
               (sargs @ more_sargs)
   in
-  match funct.exp_desc, sargs with
+  let is_ignore funct =
+    match funct.exp_desc with
+      Texp_ident (_, _, {val_kind=Val_prim{Primitive.prim_name="%ignore"}}) ->
+        (try ignore (filter_arrow env (instance env funct.exp_type) Nolabel);
+             true
+        with Unify _ -> false)
+    | _ -> false
+  in
+  match sargs with
     (* Special case for ignore: avoid discarding warning *)
-    Texp_ident (_, _, {val_kind=Val_prim{Primitive.prim_name="%ignore"}}),
-    [Nolabel, sarg] ->
+    [Nolabel, sarg] when is_ignore funct ->
       let ty_arg, ty_res =
         filter_arrow env (instance env funct.exp_type) Nolabel
       in
@@ -4213,6 +4243,12 @@ let report_error env ppf = function
         "This match case could not be refuted."
         "Here is an example of a value that would reach it:"
         Parmatch.top_pretty pat
+  | Invalid_extension_constructor_payload ->
+      fprintf ppf
+        "Invalid [%%extension_constructor] payload, a constructor is expected."
+  | Not_an_extension_constructor ->
+      fprintf ppf
+        "This constructor is not an extension constructor."
 
 let report_error env ppf err =
   wrap_printing_env env (fun () -> report_error env ppf err)
