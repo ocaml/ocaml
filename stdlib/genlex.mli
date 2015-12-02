@@ -43,9 +43,6 @@
    ["-pp"] command-line switch of the compilers.
 *)
 
-[@@@ocaml.deprecated]
-[@@@ocaml.warning "-3"] (* so that references to Stream are not reported *)
-
 (** The type of tokens. The lexical classes are: [Int] and [Float]
    for integer and floating-point numbers; [String] for
    string literals, enclosed in double quotes; [Char] for
