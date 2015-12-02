@@ -800,7 +800,7 @@ structure_item:
   | rec_module_bindings
       { let (l, ext) = $1 in mkstr_ext (Pstr_recmodule(List.rev l)) ext }
   | module_type_declaration
-      { mkstr(Pstr_modtype $1) }
+      { let (body, ext) = $1 in mkstr_ext (Pstr_modtype body) ext }
   | open_statement
       { let (body, ext) = $1 in mkstr_ext (Pstr_open body) ext }
   | class_declarations
@@ -908,7 +908,7 @@ signature_item:
   | rec_module_declarations
       { let (l, ext) = $1 in mksig_ext (Psig_recmodule (List.rev l)) ext }
   | module_type_declaration
-      { mksig(Psig_modtype $1) }
+      { let (body, ext) = $1 in mksig_ext (Psig_modtype body) ext }
   | open_statement
       { let (body, ext) = $1 in mksig_ext (Psig_open body) ext }
   | sig_include_statement
@@ -979,9 +979,11 @@ module_type_declaration_body:
   | EQUAL module_type         { Some $2 }
 ;
 module_type_declaration:
-    MODULE TYPE ident module_type_declaration_body post_item_attributes
-      { Mtd.mk (mkrhs $3 3) ?typ:$4 ~attrs:$5
-          ~loc:(symbol_rloc()) ~docs:(symbol_docs ()) }
+    MODULE TYPE ext_attributes ident module_type_declaration_body post_item_attributes
+      { let (ext, attrs) = $3 in
+        Mtd.mk (mkrhs $4 4) ?typ:$5 ~attrs:(attrs@$6)
+          ~loc:(symbol_rloc()) ~docs:(symbol_docs ())
+      , ext }
 ;
 /* Class expressions */
 
