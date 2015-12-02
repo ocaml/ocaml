@@ -277,7 +277,7 @@ let call_gc_sites = ref ([] : gc_call list)
 
 let emit_call_gc gc =
   def_label gc.gc_lbl;
-  I.sub (int gc.gc_size) r15;
+  I.add (int gc.gc_size) r15;
   emit_call "caml_call_gc";
   def_label gc.gc_frame;
   I.jmp (label gc.gc_return_lbl)
