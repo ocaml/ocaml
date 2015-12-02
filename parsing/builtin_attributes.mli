@@ -19,6 +19,7 @@
    ocaml.warnerror
    ocaml.explicit_arity (for camlp4/camlp5)
    ocaml.warn_on_literal_pattern
+   ocaml.deprecated_mutable
 *)
 
 
@@ -26,6 +27,8 @@ val check_deprecated: Location.t -> Parsetree.attributes -> string -> unit
 val deprecated_of_attrs: Parsetree.attributes -> string option
 val deprecated_of_sig: Parsetree.signature -> string option
 val deprecated_of_str: Parsetree.structure -> string option
+
+val check_deprecated_mutable: Location.t -> Parsetree.attributes -> string -> unit
 
 val error_of_extension: Parsetree.extension -> Location.error
 
