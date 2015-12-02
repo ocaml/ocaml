@@ -737,12 +737,13 @@ let rec is_functor_arg path env =
 
 exception Recmodule
 
-let report_deprecated lid deprecated =
+let report_deprecated p deprecated =
   match !lookup_location, deprecated with
   | Some loc, Some txt ->
+      let txt = if txt = "" then "" else "\n" ^ txt in
       Location.prerr_warning loc
-        (Warnings.Deprecated (Printf.sprintf "module %s\n%s"
-                                (Longident.last lid) txt))
+        (Warnings.Deprecated (Printf.sprintf "module %s%s"
+                                (Path.name p) txt))
   | _ -> ()
 
 let rec lookup_module_descr_aux lid env =
@@ -777,8 +778,8 @@ let rec lookup_module_descr_aux lid env =
       end
 
 and lookup_module_descr lid env =
-  let (_, comps) as res = lookup_module_descr_aux lid env in
-  report_deprecated lid comps.deprecated;
+  let (p, comps) as res = lookup_module_descr_aux lid env in
+  report_deprecated p comps.deprecated;
   res
 
 and lookup_module ~load lid env : Path.t =
@@ -792,16 +793,17 @@ and lookup_module ~load lid env : Path.t =
           raise Recmodule
         | _ -> ()
         end;
-        report_deprecated lid (deprecated_of_attrs md_attributes);
+        report_deprecated p (deprecated_of_attrs md_attributes);
         p
       with Not_found ->
         if s = !current_unit then raise Not_found;
+        let p = Pident(Ident.create_persistent s) in
         if !Clflags.transparent_modules && not load then check_pers_struct s
         else begin
           let ps = find_pers_struct s in
-          report_deprecated lid ps.ps_comps.deprecated
+          report_deprecated p ps.ps_comps.deprecated
         end;
-        Pident(Ident.create_persistent s)
+        p
       end
   | Ldot(l, s) ->
       let (p, descr) = lookup_module_descr l env in
@@ -809,8 +811,9 @@ and lookup_module ~load lid env : Path.t =
         Structure_comps c ->
           let (data, pos) = Tbl.find s c.comp_modules in
           let (comps, _) = Tbl.find s c.comp_components in
-          report_deprecated lid comps.deprecated;
-          Pdot(p, s, pos)
+          let p = Pdot(p, s, pos) in
+          report_deprecated p comps.deprecated;
+          p
       | Functor_comps f ->
           raise Not_found
       end
