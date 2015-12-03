@@ -76,6 +76,8 @@ Compilers:
 - PR#6737: fix Typedtree attributes on (fun x -> body) expressions
 - PR#6679: fix pprintast printing of constraints in type declarations
 - PR#6845: -no-check-prims to tell ocamlc not to check primitives in runtime
+* PR#6865: remove special case for parsing "let _ = expr" in structures
+  (Jérémie Dimino, Alain Frisch)
 - PR#6943: native-code generator for POWER/PowerPC 64 bits, both in
   big-endian (ppc64) and little-endian (ppc64le) configuration.
   (Xavier Leroy, with inspiration from RedHat's unofficial ppc64 and ppc64le
@@ -272,6 +274,8 @@ Bug fixes:
 - PR#6171: Error message confusing when a type escapes its scope.
 - PR#6340: Incorrect handling of \r when processing "Windows" source files
   (Damien Doligez, report by David Allsopp)
+- PR#6342: Incorrect error message when type constraints differ
+  (Alain Frisch, report by Philippe Wang)
 * PR#6521: {Bytes,Char,String}.escaped are locale-dependent
   (Damien Doligez, report by Jun Furuse)
 - PR#6526: ocamllex warning: unescaped newline in comment string

@@ -3021,7 +3021,11 @@ let assign_pat opt nraise catch_ids loc pat lam =
 
 let for_let loc param pat body =
   match pat.pat_desc with
-  | Tpat_any | Tpat_var _ ->
+  | Tpat_any ->
+      (* This eliminates a useless variable (and stack slot in bytecode)
+         for "let _ = ...". See #6865. *)
+      Lsequence(param, body)
+  | Tpat_var _ ->
       (* fast path *)
       simple_for_let loc param pat body
   | _ ->

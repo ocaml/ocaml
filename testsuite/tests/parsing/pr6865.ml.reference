@@ -36,10 +36,15 @@
     Pstr_extension "foo"
     [
       structure_item (pr6865.ml[3,41+0]..[3,41+14])
-        Pstr_eval
-        expression (pr6865.ml[3,41+12]..[3,41+14])
-          Pexp_construct "()" (pr6865.ml[3,41+12]..[3,41+14])
-          None
+        Pstr_value Nonrec
+        [
+          <def>
+            pattern (pr6865.ml[3,41+8]..[3,41+9])
+              Ppat_any
+            expression (pr6865.ml[3,41+12]..[3,41+14])
+              Pexp_construct "()" (pr6865.ml[3,41+12]..[3,41+14])
+              None
+        ]
     ]
 ]
 
