@@ -1820,7 +1820,7 @@ let share_actions_tree sw d =
   let sw =
     List.map  (fun (cst,act) -> cst,store.Switch.act_store act) sw in
 
-(* Retrieve all actions, includint potentiel default *)
+(* Retrieve all actions, including potentiel default *)
   let acts = store.Switch.act_get_shared () in
 
 (* Array of actual actions *)
@@ -2071,7 +2071,10 @@ let as_interval_canfail fail low high l =
 
 let as_interval_nofail l =
   let store = StoreExp.mk_store () in
-
+  let rec some_hole = function
+    | []|[_] -> false
+    | (i,_)::((j,_)::_ as rem) ->
+        j > i+1 || some_hole rem in
   let rec i_rec cur_low cur_high cur_act = function
     | [] ->
         [cur_low, cur_high, cur_act]
@@ -2084,7 +2087,16 @@ let as_interval_nofail l =
           i_rec i i act_index rem in
   let inters = match l with
   | (i,act)::rem ->
-      let act_index = store.act_store act in
+      let act_index =
+        (* In case there is some hole and that a switch is emited,
+           action 0 will be used as the action of unreacheable
+           cases (cf. switch.ml, make_switch).
+           Hence, this action will be shared *)
+        if some_hole rem then
+          store.act_store_shared act
+        else
+          store.act_store act in
+      assert (act_index = 0) ;
       i_rec i i act_index rem
   | _ -> assert false in
 
