@@ -111,7 +111,7 @@ let add_static_exception t i =
     i', Active { t with sb_exn; }
 
 let active_add_variable t id =
-  let id' = Variable.freshen id in
+  let id' = Variable.rename id in
   let t = add_sb_var t id id' in
   id', t
 
@@ -213,7 +213,7 @@ module Project_var = struct
     match subst with
     | Inactive -> id, subst, t
     | Active subst ->
-      let id' = Variable.freshen id in
+      let id' = Variable.rename id in
       let subst = add_sb_var subst id id' in
       let off = Var_within_closure.wrap id in
       let off' = Var_within_closure.wrap id' in
@@ -221,7 +221,7 @@ module Project_var = struct
       id', Active subst, { t with vars_within_closure = off_sb; }
 
   let new_subst_fun t id subst =
-    let id' = Variable.freshen id in
+    let id' = Variable.rename id in
     let subst = add_sb_var subst id id' in
     let off = Closure_id.wrap id in
     let off' = Closure_id.wrap id' in
