@@ -866,12 +866,18 @@ let close_toplevel_term lam =
 
 let transl_toplevel_item item =
   match item.str_desc with
-    Tstr_eval (expr, _attrs) ->
+    Tstr_eval (expr, _)
+  | Tstr_value(Nonrecursive,
+               [{vb_pat = {pat_desc=Tpat_any};vb_expr = expr}]) ->
+      (* special compilation for toplevel "let _ = expr", so
+         that Toploop can display the result of the expression.
+         Otherwise, the normal compilation would result
+         in a Lsequence returning unit. *)
       transl_exp expr
   | Tstr_value(rec_flag, pat_expr_list) ->
       let idents = let_bound_idents pat_expr_list in
       transl_let rec_flag pat_expr_list
-                 (make_sequence toploop_setvalue_id idents)
+        (make_sequence toploop_setvalue_id idents)
   | Tstr_typext(tyext) ->
       let idents =
         List.map (fun ext -> ext.ext_id) tyext.tyext_constructors
