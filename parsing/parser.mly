@@ -1348,6 +1348,8 @@ expr:
       { unclosed "object" 1 "end" 4 }
   | expr attribute
       { Exp.attr $1 $2 }
+  | UNDERSCORE
+     { not_expecting 1 "wildcard \"_\"" }
 ;
 simple_expr:
     val_longident
