@@ -3670,9 +3670,8 @@ and type_statement env sexp =
 and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
   (* ty_arg is _fully_ generalized *)
   let patterns = List.map (fun {pc_lhs=p} -> p) caselist in
-  let erase_either =
-    List.exists contains_polymorphic_variant patterns
-    && contains_variant_either ty_arg
+  let contains_polyvars = List.exists contains_polymorphic_variant patterns in
+  let erase_either = contains_polyvars  && contains_variant_either ty_arg
   and has_gadts = List.exists (contains_gadt env) patterns in
 (*  prerr_endline ( if has_gadts then "contains gadt" else "no gadt"); *)
   let ty_arg =
@@ -3789,14 +3788,19 @@ and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
     else
       Partial
   in
-  let ty_arg_check =
-    (* Hack: use for_saving to copy variables too *)
-    Subst.type_expr (Subst.for_saving Subst.identity) ty_arg in
-  add_delayed_check
-    (fun () ->
-      List.iter (fun (pat, (env, _)) -> check_absent_variant env pat)
-        pat_env_list;
-      check_unused ~lev env (instance env ty_arg_check) cases);
+  let unused_check ty_arg () =
+    List.iter (fun (pat, (env, _)) -> check_absent_variant env pat)
+      pat_env_list;
+    check_unused ~lev env (instance env ty_arg) cases
+  in
+  if contains_polyvars then
+    let ty_arg_check =
+      (* Hack: use for_saving to copy variables too *)
+      Subst.type_expr (Subst.for_saving Subst.identity) ty_arg in
+    add_delayed_check (unused_check ty_arg_check)
+  else
+    unused_check ty_arg ();
+  (* Check for unused cases, do not delay because of gadts *)
   if do_init then begin
     end_def ();
     (* Ensure that existential types do not escape *)
