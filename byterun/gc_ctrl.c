@@ -419,6 +419,7 @@ CAMLprim value caml_gc_set(value v)
                      caml_allocation_policy);
   }
 
+  /* This field was added in 4.03.0. */
   if (Wosize_val (v) >= 8){
     int old_window = caml_major_window;
     caml_set_major_window (norm_window (Long_val (Field (v, 7))));

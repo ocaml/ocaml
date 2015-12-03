@@ -59,7 +59,7 @@ static void alloc_to_do (int size)
   }
 }
 
-/* Find white finalisable values, put them in the finalising set, and
+/* Find white finalisable values, move them to the finalising set, and
    darken them.
 */
 void caml_final_update (void)
@@ -95,7 +95,7 @@ void caml_final_update (void)
     young = j;
     to_do_tl->size = k;
     for (i = 0; i < k; i++){
-      /* Note that item may alredy be dark due to multiple entries in
+      /* Note that item may already be dark due to multiple entries in
          the final table. */
       caml_darken (to_do_tl->item[i].val, NULL);
     }
