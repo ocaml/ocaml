@@ -25,7 +25,7 @@ type value_string = {
 }
 
 type value_float_array_contents =
-  | Contents of float array
+  | Contents of float option array
   | Unknown_or_mutable
 
 type value_float_array = {
@@ -652,3 +652,13 @@ let approx_for_bound_var value_set_of_closures var =
       print_value_set_of_closures value_set_of_closures
       Var_within_closure.print var
       (Printexc.raw_backtrace_to_string (Printexc.get_callstack max_int))
+
+let check_approx_for_float t : float option =
+  match t.descr with
+  | Value_float f -> Some f
+  | Value_unresolved _
+  | Value_unknown _ | Value_string _ | Value_float_array _
+  | Value_bottom | Value_block _ | Value_int _ | Value_char _
+  | Value_constptr _ | Value_set_of_closures _ | Value_closure _
+  | Value_extern _ | Value_boxed_int _ | Value_symbol _ ->
+      None
