@@ -52,6 +52,8 @@ CAMLprim value caml_reify_bytecode(value prog, value len)
 
   cf->code_start = (char *) prog;
   cf->code_end = (char *) prog + Long_val(len);
+  cf->data_start = NULL;
+  cf->data_end = NULL;
   cf->digest_computed = 0;
   caml_ext_table_add(&caml_code_fragments_table, cf);
 

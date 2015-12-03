@@ -15,8 +15,10 @@
 #include <string.h>
 #include <stdarg.h>
 #include "caml/config.h"
+#include "caml/intext.h"
 #include "caml/misc.h"
 #include "caml/memory.h"
+#include "caml/md5.h"
 
 caml_timing_hook caml_major_slice_begin_hook = NULL;
 caml_timing_hook caml_major_slice_end_hook = NULL;
@@ -142,6 +144,17 @@ void caml_ext_table_free(struct ext_table * tbl, int free_entries)
   if (free_entries)
     for (i = 0; i < tbl->size; i++) caml_stat_free(tbl->contents[i]);
   caml_stat_free(tbl->contents);
+}
+
+void caml_update_code_fragment_digest(struct code_fragment *cf) {
+  int i;
+  unsigned char code_digest[16];
+  unsigned char data_digest[16];
+  caml_md5_block(code_digest, cf->code_start, cf->code_end - cf->code_start);
+  caml_md5_block(data_digest, cf->data_start, cf->data_end - cf->data_start);
+  for (i = 0 ; i < 16 ; i ++)
+    cf->digest[i] = code_digest[i] ^ data_digest[i];
+  cf->digest_computed = 1;
 }
 
 CAMLexport char * caml_strdup(const char * s)
