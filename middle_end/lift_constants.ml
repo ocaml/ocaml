@@ -319,6 +319,9 @@ let rec translate_definition_and_resolve_alias
            |}
 
            We can't encounter that currently, but I find it a bit scarry.
+
+           mshinwell: Agreed, we are going to ban duplicate-array on
+           mutable arrays.  I will do that later today (Thursday).
         *)
     | Allocated_const (Normal (Immutable_float_array floats)) ->
       let const : Allocated_const.t =
