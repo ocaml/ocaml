@@ -1243,7 +1243,7 @@ and transl_record env all_labels repres lbl_expr_list opt_init_expr =
         match repres with
           Record_regular -> Lprim(Pmakeblock(0, mut), ll)
         | Record_inlined tag -> Lprim(Pmakeblock(tag, mut), ll)
-        | Record_float -> Lprim(Pmakearray (Pfloatarray, Mutable), ll)
+        | Record_float -> Lprim(Pmakearray (Pfloatarray, mut), ll)
         | Record_extension ->
             let path =
               match all_labels.(0).lbl_res.desc with
