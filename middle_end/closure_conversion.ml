@@ -75,7 +75,19 @@ let add_debug_info (ev : Lambda.lambda_event) (flam : Flambda.t)
     end
   | _ -> flam
 
-let close_const (const : Lambda.structured_constant) : Flambda.named * string =
+let rec eliminate_const_block (const : Lambda.structured_constant)
+      : Lambda.lambda =
+  match const with
+  | Const_block (tag, consts) ->
+    Lprim (Pmakeblock (tag, Asttypes.Immutable),
+      List.map eliminate_const_block consts)
+  | Const_base _
+  | Const_pointer _
+  | Const_immstring _
+  | Const_float_array _ -> Lconst const
+
+let rec close_const t env (const : Lambda.structured_constant)
+      : Flambda.named * string =
   match const with
   | Const_base (Const_int c) -> Const (Int c), "int"
   | Const_base (Const_char c) -> Const (Char c), "char"
@@ -91,10 +103,9 @@ let close_const (const : Lambda.structured_constant) : Flambda.named * string =
   | Const_float_array c ->
     Allocated_const (Float_array (List.map float_of_string c)), "float_array"
   | Const_block _ ->
-    Misc.fatal_error "Const_block should have been eliminated before closure \
-        conversion"
+    Expr (close t env (eliminate_const_block const)), "const_block"
 
-let rec close t env (lam : Lambda.lambda) : Flambda.t =
+and close t env (lam : Lambda.lambda) : Flambda.t =
   match lam with
   | Lvar id ->
     begin match Env.find_var_exn env id with
@@ -107,7 +118,7 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
           Ident.print id
     end
   | Lconst cst ->
-    let cst, name = close_const cst in
+    let cst, name = close_const t env cst in
     name_expr cst ~name:("const_" ^ name)
   | Llet ((Strict | Alias | StrictOpt), id, defining_expr, body) ->
     let var = Variable.of_ident id in

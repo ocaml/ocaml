@@ -50,7 +50,6 @@ let middle_end ppf ~sourcefile ~prefixname ~backend
   Timings.(start (Flambda_middle_end sourcefile));
   let flam =
     module_initializer
-    |> Eliminate_const_block.run
     |> Closure_conversion.lambda_to_flambda ~backend ~module_ident ~size
   in
   dump_and_check "After closure conversion" flam;

@@ -1134,7 +1134,6 @@ middle_end/closure_conversion_aux.cmi : middle_end/base_types/variable.cmi \
 middle_end/closure_conversion.cmi : bytecomp/lambda.cmi typing/ident.cmi \
     middle_end/flambda.cmi middle_end/backend_intf.cmi
 middle_end/effect_analysis.cmi : middle_end/flambda.cmi
-middle_end/eliminate_const_block.cmi : bytecomp/lambda.cmi
 middle_end/find_recursive_functions.cmi : middle_end/base_types/variable.cmi \
     middle_end/flambda.cmi middle_end/backend_intf.cmi
 middle_end/flambda_invariants.cmi : middle_end/flambda.cmi
@@ -1192,7 +1191,8 @@ middle_end/inlining_stats.cmi : middle_end/inlining_stats_types.cmi \
 middle_end/inlining_stats_types.cmi : middle_end/inlining_cost.cmi \
     middle_end/base_types/closure_id.cmi
 middle_end/inlining_transforms.cmi : middle_end/base_types/variable.cmi \
-    middle_end/simple_value_approx.cmi middle_end/inlining_decision_intf.cmi \
+    middle_end/simple_value_approx.cmi bytecomp/lambda.cmi \
+    middle_end/inlining_decision_intf.cmi \
     middle_end/inline_and_simplify_aux.cmi middle_end/flambda.cmi \
     bytecomp/debuginfo.cmi middle_end/base_types/closure_id.cmi
 middle_end/invariant_params.cmi : middle_end/base_types/variable.cmi \
@@ -1282,7 +1282,8 @@ middle_end/closure_conversion.cmo : middle_end/base_types/variable.cmi \
     middle_end/base_types/compilation_unit.cmi \
     middle_end/base_types/closure_id.cmi \
     middle_end/closure_conversion_aux.cmi utils/clflags.cmi \
-    middle_end/backend_intf.cmi middle_end/closure_conversion.cmi
+    middle_end/backend_intf.cmi parsing/asttypes.cmi \
+    middle_end/closure_conversion.cmi
 middle_end/closure_conversion.cmx : middle_end/base_types/variable.cmx \
     middle_end/base_types/tag.cmx middle_end/base_types/symbol.cmx \
     middle_end/base_types/static_exception.cmx \
@@ -1295,19 +1296,14 @@ middle_end/closure_conversion.cmx : middle_end/base_types/variable.cmx \
     middle_end/base_types/compilation_unit.cmx \
     middle_end/base_types/closure_id.cmx \
     middle_end/closure_conversion_aux.cmx utils/clflags.cmx \
-    middle_end/backend_intf.cmi middle_end/closure_conversion.cmi
+    middle_end/backend_intf.cmi parsing/asttypes.cmi \
+    middle_end/closure_conversion.cmi
 middle_end/effect_analysis.cmo : middle_end/semantics_of_primitives.cmi \
     utils/misc.cmi bytecomp/lambda.cmi middle_end/flambda.cmi \
     middle_end/effect_analysis.cmi
 middle_end/effect_analysis.cmx : middle_end/semantics_of_primitives.cmx \
     utils/misc.cmx bytecomp/lambda.cmx middle_end/flambda.cmx \
     middle_end/effect_analysis.cmi
-middle_end/eliminate_const_block.cmo : bytecomp/simplif.cmi \
-    bytecomp/lambda.cmi parsing/asttypes.cmi \
-    middle_end/eliminate_const_block.cmi
-middle_end/eliminate_const_block.cmx : bytecomp/simplif.cmx \
-    bytecomp/lambda.cmx parsing/asttypes.cmi \
-    middle_end/eliminate_const_block.cmi
 middle_end/find_recursive_functions.cmo : middle_end/base_types/variable.cmi \
     utils/sort_connected_components.cmi middle_end/flambda_utils.cmi \
     middle_end/flambda.cmi middle_end/find_recursive_functions.cmi
@@ -1514,17 +1510,17 @@ middle_end/inlining_stats_types.cmx : middle_end/inlining_cost.cmx \
     middle_end/base_types/closure_id.cmx middle_end/inlining_stats_types.cmi
 middle_end/inlining_transforms.cmo : middle_end/base_types/variable.cmi \
     middle_end/base_types/var_within_closure.cmi \
-    middle_end/simple_value_approx.cmi utils/misc.cmi \
+    middle_end/simple_value_approx.cmi utils/misc.cmi bytecomp/lambda.cmi \
     middle_end/inlining_cost.cmi middle_end/inline_and_simplify_aux.cmi \
-    middle_end/flambda_utils.cmi middle_end/flambda.cmi \
-    middle_end/base_types/compilation_unit.cmi \
+    middle_end/flambda_utils.cmi middle_end/flambda_iterators.cmi \
+    middle_end/flambda.cmi middle_end/base_types/compilation_unit.cmi \
     middle_end/base_types/closure_id.cmi middle_end/inlining_transforms.cmi
 middle_end/inlining_transforms.cmx : middle_end/base_types/variable.cmx \
     middle_end/base_types/var_within_closure.cmx \
-    middle_end/simple_value_approx.cmx utils/misc.cmx \
+    middle_end/simple_value_approx.cmx utils/misc.cmx bytecomp/lambda.cmx \
     middle_end/inlining_cost.cmx middle_end/inline_and_simplify_aux.cmx \
-    middle_end/flambda_utils.cmx middle_end/flambda.cmx \
-    middle_end/base_types/compilation_unit.cmx \
+    middle_end/flambda_utils.cmx middle_end/flambda_iterators.cmx \
+    middle_end/flambda.cmx middle_end/base_types/compilation_unit.cmx \
     middle_end/base_types/closure_id.cmx middle_end/inlining_transforms.cmi
 middle_end/invariant_params.cmo : middle_end/base_types/variable.cmi \
     middle_end/base_types/symbol.cmi utils/misc.cmi \
@@ -1585,9 +1581,9 @@ middle_end/middle_end.cmo : utils/warnings.cmi utils/timings.cmi \
     middle_end/inline_and_simplify.cmi \
     middle_end/initialize_symbol_to_let_symbol.cmi \
     middle_end/flambda_iterators.cmi middle_end/flambda_invariants.cmi \
-    middle_end/flambda.cmi middle_end/eliminate_const_block.cmi \
-    bytecomp/debuginfo.cmi middle_end/closure_conversion.cmi \
-    utils/clflags.cmi middle_end/middle_end.cmi
+    middle_end/flambda.cmi bytecomp/debuginfo.cmi \
+    middle_end/closure_conversion.cmi utils/clflags.cmi \
+    middle_end/middle_end.cmi
 middle_end/middle_end.cmx : utils/warnings.cmx utils/timings.cmx \
     middle_end/share_constants.cmx middle_end/remove_unused_globals.cmx \
     middle_end/remove_unused_closure_vars.cmx middle_end/ref_to_variables.cmx \
@@ -1597,9 +1593,9 @@ middle_end/middle_end.cmx : utils/warnings.cmx utils/timings.cmx \
     middle_end/inline_and_simplify.cmx \
     middle_end/initialize_symbol_to_let_symbol.cmx \
     middle_end/flambda_iterators.cmx middle_end/flambda_invariants.cmx \
-    middle_end/flambda.cmx middle_end/eliminate_const_block.cmx \
-    bytecomp/debuginfo.cmx middle_end/closure_conversion.cmx \
-    utils/clflags.cmx middle_end/middle_end.cmi
+    middle_end/flambda.cmx bytecomp/debuginfo.cmx \
+    middle_end/closure_conversion.cmx utils/clflags.cmx \
+    middle_end/middle_end.cmi
 middle_end/ref_to_variables.cmo : middle_end/base_types/variable.cmi \
     middle_end/base_types/mutable_variable.cmi utils/misc.cmi \
     middle_end/flambda_iterators.cmi middle_end/flambda.cmi \
@@ -1977,34 +1973,34 @@ toplevel/topdirs.cmx : utils/warnings.cmx typing/typetexp.cmx \
     utils/consistbl.cmx utils/config.cmx bytecomp/cmo_format.cmi \
     utils/clflags.cmx typing/btype.cmx parsing/asttypes.cmi \
     toplevel/topdirs.cmi
-toplevel/toploop.cmo : utils/warnings.cmi typing/types.cmi \
-    typing/typemod.cmi typing/typedtree.cmi typing/typecore.cmi \
-    bytecomp/translmod.cmi bytecomp/symtable.cmi bytecomp/simplif.cmi \
-    typing/printtyped.cmi typing/printtyp.cmi bytecomp/printlambda.cmi \
-    bytecomp/printinstr.cmi parsing/printast.cmi typing/predef.cmi \
-    parsing/pprintast.cmi driver/pparse.cmi typing/path.cmi \
+toplevel/toploop.cmo : utils/warnings.cmi typing/typetexp.cmi \
+    typing/types.cmi typing/typemod.cmi typing/typedtree.cmi \
+    typing/typecore.cmi bytecomp/translmod.cmi bytecomp/symtable.cmi \
+    bytecomp/simplif.cmi typing/printtyped.cmi typing/printtyp.cmi \
+    bytecomp/printlambda.cmi bytecomp/printinstr.cmi parsing/printast.cmi \
+    typing/predef.cmi parsing/pprintast.cmi driver/pparse.cmi typing/path.cmi \
     parsing/parsetree.cmi parsing/parse.cmi typing/outcometree.cmi \
     typing/oprint.cmi utils/misc.cmi bytecomp/meta.cmi parsing/longident.cmi \
     parsing/location.cmi parsing/lexer.cmi typing/includemod.cmi \
     typing/ident.cmi toplevel/genprintval.cmi typing/env.cmi \
     bytecomp/emitcode.cmi bytecomp/dll.cmi utils/consistbl.cmi \
     utils/config.cmi driver/compmisc.cmi utils/clflags.cmi \
-    bytecomp/bytegen.cmi typing/btype.cmi parsing/ast_helper.cmi \
-    toplevel/toploop.cmi
-toplevel/toploop.cmx : utils/warnings.cmx typing/types.cmx \
-    typing/typemod.cmx typing/typedtree.cmx typing/typecore.cmx \
-    bytecomp/translmod.cmx bytecomp/symtable.cmx bytecomp/simplif.cmx \
-    typing/printtyped.cmx typing/printtyp.cmx bytecomp/printlambda.cmx \
-    bytecomp/printinstr.cmx parsing/printast.cmx typing/predef.cmx \
-    parsing/pprintast.cmx driver/pparse.cmx typing/path.cmx \
+    bytecomp/bytegen.cmi typing/btype.cmi parsing/asttypes.cmi \
+    parsing/ast_helper.cmi toplevel/toploop.cmi
+toplevel/toploop.cmx : utils/warnings.cmx typing/typetexp.cmx \
+    typing/types.cmx typing/typemod.cmx typing/typedtree.cmx \
+    typing/typecore.cmx bytecomp/translmod.cmx bytecomp/symtable.cmx \
+    bytecomp/simplif.cmx typing/printtyped.cmx typing/printtyp.cmx \
+    bytecomp/printlambda.cmx bytecomp/printinstr.cmx parsing/printast.cmx \
+    typing/predef.cmx parsing/pprintast.cmx driver/pparse.cmx typing/path.cmx \
     parsing/parsetree.cmi parsing/parse.cmx typing/outcometree.cmi \
     typing/oprint.cmx utils/misc.cmx bytecomp/meta.cmx parsing/longident.cmx \
     parsing/location.cmx parsing/lexer.cmx typing/includemod.cmx \
     typing/ident.cmx toplevel/genprintval.cmx typing/env.cmx \
     bytecomp/emitcode.cmx bytecomp/dll.cmx utils/consistbl.cmx \
     utils/config.cmx driver/compmisc.cmx utils/clflags.cmx \
-    bytecomp/bytegen.cmx typing/btype.cmx parsing/ast_helper.cmx \
-    toplevel/toploop.cmi
+    bytecomp/bytegen.cmx typing/btype.cmx parsing/asttypes.cmi \
+    parsing/ast_helper.cmx toplevel/toploop.cmi
 toplevel/topmain.cmo : utils/warnings.cmi toplevel/toploop.cmi \
     toplevel/topdirs.cmi utils/misc.cmi driver/main_args.cmi \
     parsing/location.cmi utils/config.cmi driver/compenv.cmi \
