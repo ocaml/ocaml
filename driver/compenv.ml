@@ -264,6 +264,8 @@ let read_one_param ppf position name v =
             set "inlining-stats" [ inlining_stats ] v
 
       | "timings" -> set "timings" [ print_timings ] v
+      | "flambda-verbose" ->
+          set "flambda-verbose" [ dump_flambda_verbose ] v
 
       (* color output *)
       | "color" ->
