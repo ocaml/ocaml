@@ -24,10 +24,13 @@
 include Ext_types.Identifiable
 
 val create : ?current_compilation_unit:Compilation_unit.t -> string -> t
-val create_with_same_name_as_ident : Ident.t -> t
+val of_ident : Ident.t -> t
 
-val clambda_name : t -> string
+val unwrap : t -> Ident.t (* For bytecode debugger only *)
+val unique_ident : t -> Ident.t (* For clambdagen only *)
 (* CR-someday pchambart: Should we propagate Variable.t into clambda ??? *)
+
+val freshen : t -> t
 
 val rename
    : ?current_compilation_unit:Compilation_unit.t
@@ -38,6 +41,8 @@ val rename
 val in_compilation_unit : t -> Compilation_unit.t -> bool
 
 val unique_name : t -> string
+
+val output_full : out_channel -> t -> unit
 
 val get_compilation_unit : t -> Compilation_unit.t
 
@@ -52,6 +57,3 @@ type pair = t * t
 module Pair : Ext_types.Identifiable with type t := pair
 
 val compare_lists : t list -> t list -> int
-
-val output_full : out_channel -> t -> unit
-(** Unlike [output], [output_full] includes the compilation unit. *)

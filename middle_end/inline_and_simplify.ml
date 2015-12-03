@@ -746,7 +746,7 @@ and simplify_partial_application env r ~lhs_of_application
   | Default_inline -> ()
   end;
   let freshened_params =
-    List.map (fun id -> Variable.rename id) function_decl.Flambda.params
+    List.map (fun id -> Variable.freshen id) function_decl.Flambda.params
   in
   let applied_args, remaining_args =
     Misc.map2_head (fun arg id' -> id', arg) args freshened_params

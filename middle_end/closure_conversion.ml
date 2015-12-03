@@ -121,13 +121,13 @@ and close t env (lam : Lambda.lambda) : Flambda.t =
     let cst, name = close_const t env cst in
     name_expr cst ~name:("const_" ^ name)
   | Llet ((Strict | Alias | StrictOpt), id, defining_expr, body) ->
-    let var = Variable.create_with_same_name_as_ident id in
+    let var = Variable.of_ident id in
     let defining_expr = close_let_bound_expression t var env defining_expr in
     let body = close t (Env.add_var env id var) body in
     Flambda.create_let var defining_expr body
   | Llet (Variable, id, defining_expr, body) ->
     let mut_var = Mutable_variable.of_ident id in
-    let var = Variable.create_with_same_name_as_ident id in
+    let var = Variable.of_ident id in
     let defining_expr = close_let_bound_expression t var env defining_expr in
     let body = close t (Env.add_mutable_var env id mut_var) body in
     Flambda.create_let var defining_expr (Let_mutable (mut_var, var, body))
@@ -179,7 +179,7 @@ and close t env (lam : Lambda.lambda) : Flambda.t =
   | Lletrec (defs, body) ->
     let env =
       List.fold_right (fun (id,  _) env ->
-          Env.add_var env id (Variable.create_with_same_name_as_ident id))
+          Env.add_var env id (Variable.of_ident id))
         defs env
     in
     let function_declarations =
@@ -187,7 +187,7 @@ and close t env (lam : Lambda.lambda) : Flambda.t =
          will be named after the corresponding identifier in the [let rec]. *)
       List.map (function
           | (let_rec_ident, Lambda.Lfunction { kind; params; body; attr; }) ->
-            let closure_bound_var = Variable.create_with_same_name_as_ident let_rec_ident in
+            let closure_bound_var = Variable.of_ident let_rec_ident in
             let function_declaration =
               Function_decl.create ~let_rec_ident:(Some let_rec_ident)
                 ~closure_bound_var ~kind ~params ~body
@@ -393,11 +393,11 @@ and close t env (lam : Lambda.lambda) : Flambda.t =
   | Lstaticcatch (body, (i, ids), handler) ->
     let st_exn = Static_exception.create () in
     let env = Env.add_static_exception env i st_exn in
-    let vars = List.map (Variable.create_with_same_name_as_ident) ids in
+    let vars = List.map (Variable.of_ident) ids in
     Static_catch (st_exn, vars, close t env body,
       close t (Env.add_vars env ids vars) handler)
   | Ltrywith (body, id, handler) ->
-    let var = Variable.create_with_same_name_as_ident id in
+    let var = Variable.of_ident id in
     Try_with (close t env body, var, close t (Env.add_var env id var) handler)
   | Lifthenelse (cond, ifso, ifnot) ->
     let cond = close t env cond in
@@ -411,7 +411,7 @@ and close t env (lam : Lambda.lambda) : Flambda.t =
     Flambda.create_let var lam1 lam2
   | Lwhile (cond, body) -> While (close t env cond, close t env body)
   | Lfor (id, lo, hi, direction, body) ->
-    let bound_var = Variable.create_with_same_name_as_ident id in
+    let bound_var = Variable.of_ident id in
     let from_value = Variable.create "for_from" in
     let to_value = Variable.create "for_to" in
     let body = close t (Env.add_var env id bound_var) body in
@@ -464,7 +464,7 @@ and close_functions t external_env function_declarations : Flambda.named =
        This induces a renaming on [Function_decl.free_idents]; the results of
        that renaming are stored in [free_variables]. *)
     let closure_env =
-      List.fold_right (fun id env -> Env.add_var env id (Variable.create_with_same_name_as_ident id))
+      List.fold_right (fun id env -> Env.add_var env id (Variable.of_ident id))
         params closure_env_without_parameters
     in
     (* If the function is the wrapper for a function with an optional

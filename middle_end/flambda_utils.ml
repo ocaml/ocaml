@@ -272,7 +272,7 @@ let make_closure_declaration ~id ~body ~params : Flambda.t =
   end;
   let sb =
     Variable.Set.fold
-      (fun id sb -> Variable.Map.add id (Variable.rename id) sb)
+      (fun id sb -> Variable.Map.add id (Variable.freshen id) sb)
       free_variables Variable.Map.empty
   in
   let body = toplevel_substitution sb body in
@@ -492,7 +492,7 @@ let all_function_decls_indexed_by_closure_id program =
 let make_variable_symbol var =
   Symbol.create (Compilation_unit.get_current_exn ())
     (Linkage_name.create
-       (Variable.unique_name (Variable.rename var)))
+       (Variable.unique_name (Variable.freshen var)))
 
 let substitute_read_symbol_field_for_variables substitution expr =
   let bind var fresh_var (expr:Flambda.t) : Flambda.t =
@@ -538,7 +538,7 @@ let substitute_read_symbol_field_for_variables substitution expr =
   in
   let make_var_subst var =
     if Variable.Map.mem var substitution then
-      let fresh = Variable.rename var in
+      let fresh = Variable.freshen var in
       fresh, (fun expr -> bind var fresh expr)
     else
       var, (fun x -> x)
@@ -546,7 +546,7 @@ let substitute_read_symbol_field_for_variables substitution expr =
   let f (expr:Flambda.t) : Flambda.t =
     match expr with
     | Var v when Variable.Map.mem v substitution ->
-      let fresh = Variable.rename v in
+      let fresh = Variable.freshen v in
       bind v fresh (Var fresh)
     | Var _ -> expr
     | Let ({ var = v; defining_expr = named; _ } as let_expr) ->
@@ -559,7 +559,7 @@ let substitute_read_symbol_field_for_variables substitution expr =
         expr
       else
         let bindings =
-          Variable.Map.of_set (fun var -> Variable.rename var) to_substitute
+          Variable.Map.of_set Variable.freshen to_substitute
         in
         let named =
           substitute_named bindings named
@@ -572,7 +572,7 @@ let substitute_read_symbol_field_for_variables substitution expr =
             bind to_substitute fresh expr)
           bindings expr
     | Let_mutable (mut_var, var, body) when Variable.Map.mem var substitution ->
-      let fresh = Variable.rename var in
+      let fresh = Variable.freshen var in
       bind var fresh (Let_mutable (mut_var, fresh, body))
     | Let_mutable (_mut_var, _var, _body) ->
       expr
@@ -591,7 +591,7 @@ let substitute_read_symbol_field_for_variables substitution expr =
         expr
       else begin
         let bindings =
-          Variable.Map.of_set (fun var -> Variable.rename var) to_substitute
+          Variable.Map.of_set Variable.freshen to_substitute
         in
         let defs =
           List.map (fun (var, named) ->
@@ -606,22 +606,22 @@ let substitute_read_symbol_field_for_variables substitution expr =
           bindings expr
       end
     | If_then_else (cond, ifso, ifnot) when Variable.Map.mem cond substitution ->
-      let fresh = Variable.rename cond in
+      let fresh = Variable.freshen cond in
       bind cond fresh (If_then_else (fresh, ifso, ifnot))
     | If_then_else _ ->
       expr
     | Switch (cond, sw) when Variable.Map.mem cond substitution ->
-      let fresh = Variable.rename cond in
+      let fresh = Variable.freshen cond in
       bind cond fresh (Switch (fresh, sw))
     | Switch _ ->
       expr
     | String_switch (cond, sw, def) when Variable.Map.mem cond substitution ->
-      let fresh = Variable.rename cond in
+      let fresh = Variable.freshen cond in
       bind cond fresh (String_switch (fresh, sw, def))
     | String_switch _ ->
       expr
     | Assign { being_assigned; new_value } when Variable.Map.mem new_value substitution ->
-      let fresh = Variable.rename new_value in
+      let fresh = Variable.freshen new_value in
       bind new_value fresh (Assign { being_assigned; new_value = fresh })
     | Assign _ ->
       expr

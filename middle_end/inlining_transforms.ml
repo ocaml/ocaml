@@ -80,7 +80,7 @@ let set_inline_attribute_on_all_apply body inline =
 let copy_of_function's_body_with_freshened_params
       ~(function_decl : Flambda.function_declaration) =
   let params = function_decl.params in
-  let freshened_params = List.map (fun var -> Variable.rename var) params in
+  let freshened_params = List.map Variable.freshen params in
   let subst = Variable.Map.of_list (List.combine params freshened_params) in
   let body = Flambda_utils.toplevel_substitution subst function_decl.body in
   freshened_params, body
