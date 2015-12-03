@@ -230,7 +230,7 @@ module Benefit = struct
 
   let benefit_factor = 1
 
-  let evaluate t ~round =
+  let evaluate t ~round : int =
     let cost (flag : Clflags.Int_arg_helper.parsed) ~default =
       match flag with
       | Always cost -> cost
@@ -257,6 +257,12 @@ module Benefit = struct
     remove_branch = t1.remove_branch + t2.remove_branch;
     requested_inline = t1.requested_inline + t2.requested_inline;
   }
+
+  let max ~round t1 t2 =
+    let c1 = evaluate ~round t1 in
+    let c2 = evaluate ~round t2 in
+    if c1 > c2 then t1 else t2
+
 end
 
 module Whether_sufficient_benefit = struct

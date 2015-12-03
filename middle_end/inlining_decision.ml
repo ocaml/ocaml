@@ -67,7 +67,19 @@ let inline_non_recursive env r ~function_decls ~lhs_of_application
        will keep it, replacing the call site.  We continue by allowing
        further inlining within the inlined copy of the body. *)
     let r =
-      R.map_benefit r (Inlining_cost.Benefit.(+) (R.benefit r_inlined))
+      (* The meaning of requesting inlining is that the user ensure
+         that the function has a benefit of at least its size. It is not
+         added to the benefit exposed by the inlining because the user should
+         have taken that into account before annotating the function. *)
+      let function_benefit =
+        if always_inline then
+          Inlining_cost.Benefit.max ~round:(E.round env)
+            Inlining_cost.Benefit.(requested_inline ~size_of:body zero)
+            (R.benefit r_inlined)
+        else
+          R.benefit r_inlined
+      in
+      R.map_benefit r (Inlining_cost.Benefit.(+) function_benefit)
     in
     (* CR mshinwell for pchambart: This [lift_lets] should have a comment. *)
     let body = Lift_code.lift_lets_expr body in

@@ -53,6 +53,7 @@ module Benefit : sig
 
   val zero : t
   val (+) : t -> t -> t
+  val max : round:int -> t -> t -> t
 
   val remove_call : t -> t
   val remove_alloc : t -> t
