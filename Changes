@@ -6,6 +6,9 @@ OCaml 4.04.0:
 Tools:
 - GPR#452: Make the output of ocamldep is more stable (Alain Frisch)
 
+Standard library:
+- PR#4747, GPR#328: Optimize Hashtbl (Alain Frisch)
+
 Build system:
 - GPR#324: Compiler developpers only: Adding new primitives to the
   standard runtime doesn't require anymore to run `make bootstrap`
