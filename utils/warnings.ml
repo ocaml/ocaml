@@ -440,6 +440,9 @@ let print ppf w =
 
 exception Errors of int;;
 
+let reset_fatal () =
+  nerrors := 0
+
 let check_fatal () =
   if !nerrors > 0 then begin
     let e = Errors !nerrors in
