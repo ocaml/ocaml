@@ -469,6 +469,8 @@ let check_recursive_lambda idlist lam =
         List.for_all (fun (id, arg) -> check idlist' arg) bindings &&
         check_top idlist' body
     | Lprim (Pmakearray (Pgenarray), args) -> false
+    | Lprim (Pmakearray Pfloatarray, args) ->
+        List.for_all (check idlist) args
     | Lsequence (lam1, lam2) -> check idlist lam1 && check_top idlist lam2
     | Levent (lam, _) -> check_top idlist lam
     | lam -> check idlist lam
