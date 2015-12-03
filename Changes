@@ -78,6 +78,7 @@ Compilers:
 - PR#6845: -no-check-prims to tell ocamlc not to check primitives in runtime
 * PR#6865: remove special case for parsing "let _ = expr" in structures
   (Jérémie Dimino, Alain Frisch)
+- PR#6939: Segfault with improper use of let-rec (Alain Frisch)
 - PR#6943: native-code generator for POWER/PowerPC 64 bits, both in
   big-endian (ppc64) and little-endian (ppc64le) configuration.
   (Xavier Leroy, with inspiration from RedHat's unofficial ppc64 and ppc64le

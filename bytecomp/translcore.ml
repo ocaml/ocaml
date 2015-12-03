@@ -486,6 +486,7 @@ let check_recursive_lambda idlist lam =
         check idlist' body
     | Lprim(Pmakeblock(tag, mut), args) ->
         List.for_all (check idlist) args
+    | Lprim (Pmakearray Pfloatarray, _) -> false
     | Lprim(Pmakearray(_), args) ->
         List.for_all (check idlist) args
     | Lsequence (lam1, lam2) -> check idlist lam1 && check idlist lam2
