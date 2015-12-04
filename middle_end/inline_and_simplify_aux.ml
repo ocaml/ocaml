@@ -258,6 +258,16 @@ module Env = struct
   let inlining_stats_closure_stack t = t.inlining_stats_closure_stack
 end
 
+let initial_inlining_threshold ~round : Inlining_cost.inlining_threshold =
+  let unscaled =
+    Clflags.Int_arg_helper.get ~key:round
+      Clflags.default_inline_threshold !Clflags.inline_threshold
+  in
+  (* CR-soon pchambart: Add a warning if this is too big
+     mshinwell: later *)
+  Can_inline_if_no_larger_than (unscaled * 8)
+
+
 module Result = struct
   module Int = Ext_types.Int
 
@@ -269,22 +279,9 @@ module Result = struct
     }
 
   let create ~round =
-    let inlining_threshold : Inlining_cost.inlining_threshold =
-      let unscaled =
-        match !Clflags.inline_threshold with
-        | Always threshold -> threshold
-        | Variable by_round ->
-          match Int.Map.find round by_round with
-          | threshold -> threshold
-          | exception Not_found -> Clflags.default_inline_threshold
-      in
-      (* CR-soon pchambart: Add a warning if this is too big
-         mshinwell: later *)
-      Can_inline_if_no_larger_than (unscaled * 8)
-    in
     { approx = Simple_value_approx.value_unknown Other;
       used_staticfail = Static_exception.Set.empty;
-      inlining_threshold;
+      inlining_threshold = initial_inlining_threshold ~round;
       benefit = Inlining_cost.Benefit.zero;
     }
 
