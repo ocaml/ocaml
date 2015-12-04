@@ -66,122 +66,123 @@ let inline_non_recursive env r ~function_decls ~lhs_of_application
   if known_to_have_no_benefit then begin
     no_simplification ()
   end else begin
-    let body, r_inlined =
-      (* First we construct the code that would result from copying the body of
-         the function, without doing any further inlining upon it, to the call
-         site. *)
-      let r =
-        R.set_inlining_threshold (R.reset_benefit r) Inlining_cost.Never_inline
+  (* CR mshinwell: fix indentation once diff reviewed. *)
+  let body, r_inlined =
+    (* First we construct the code that would result from copying the body of
+       the function, without doing any further inlining upon it, to the call
+       site. *)
+    let r =
+      R.set_inlining_threshold (R.reset_benefit r) Inlining_cost.Never_inline
+    in
+    Inlining_transforms.inline_by_copying_function_body ~env ~r
+      ~function_decls ~lhs_of_application ~closure_id_being_applied
+      ~inline_requested ~function_decl ~args ~simplify
+  in
+  let keep_inlined_version =
+    if function_decl.stub then begin
+      made_decision (Inlined (Copying_body Stub));
+      true
+    end else if always_inline then begin
+      made_decision (Inlined (Copying_body Unconditionally));
+      true
+    end else if only_use_of_function then begin
+      made_decision (Inlined (Copying_body Decl_local_to_application));
+      true
+    end else begin
+      let sufficient_benefit =
+        W.create ~original:(fst (no_simplification ())) body
+          ~branch_depth:(E.branch_depth env)
+          ~probably_a_functor
+          ~round:(E.round env)
+          (R.benefit r_inlined)
       in
-      Inlining_transforms.inline_by_copying_function_body ~env ~r
+      let keep_inlined_version = W.evaluate sufficient_benefit in
+      let decision : Inlining_stats_types.Decision.t =
+        if keep_inlined_version then
+          Inlined (Copying_body (Evaluated sufficient_benefit))
+        else
+          Tried (Copying_body (Evaluated sufficient_benefit))
+      in
+      made_decision decision;
+      keep_inlined_version
+    end
+  in
+  if keep_inlined_version then begin
+    (* Inlining the body of the function was sufficiently beneficial that we
+       will keep it, replacing the call site.  We continue by allowing
+       further inlining within the inlined copy of the body. *)
+    let r =
+      (* The meaning of requesting inlining is that the user ensure
+         that the function has a benefit of at least its size. It is not
+         added to the benefit exposed by the inlining because the user should
+         have taken that into account before annotating the function. *)
+      let function_benefit =
+        if always_inline then
+          Inlining_cost.Benefit.max ~round:(E.round env)
+            Inlining_cost.Benefit.(requested_inline ~size_of:body zero)
+            (R.benefit r_inlined)
+        else
+          R.benefit r_inlined
+      in
+      R.map_benefit r (Inlining_cost.Benefit.(+) function_benefit)
+    in
+    (* CR mshinwell for pchambart: This [lift_lets] should have a comment. *)
+    let body = Lift_code.lift_lets_expr body in
+    let env =
+      E.note_entering_closure env ~closure_id:closure_id_being_applied
+        ~where:Inline_by_copying_function_body
+    in
+    let env =
+      if not function_decl.stub ||
+         (* Stub functions should not prevent other functions
+            from being evaluated for inlining *)
+         E.inlining_level env = 0
+         (* If the function was considered for inlining without considering
+            its sub-functions, and it is not below another inlining choice,
+            then we are certain that this code will be kept. *)
+      then env
+      else E.inlining_level_up env
+    in
+    simplify env r body
+  end else begin
+    (* Inlining the body of the function did not appear sufficiently
+       beneficial; however, it may become so if we inline within the body
+       first.  We try that next. *)
+    let body, r_inlined =
+      Inlining_transforms.inline_by_copying_function_body ~env
+        ~r:(R.reset_benefit r)
         ~function_decls ~lhs_of_application ~closure_id_being_applied
         ~inline_requested ~function_decl ~args ~simplify
     in
-    let keep_inlined_version =
-      if function_decl.stub then begin
-        made_decision (Inlined (Copying_body Stub));
-        true
-      end else if always_inline then begin
-        made_decision (Inlined (Copying_body Unconditionally));
-        true
-      end else if only_use_of_function then begin
-        made_decision (Inlined (Copying_body Decl_local_to_application));
-        true
-      end else begin
-        let sufficient_benefit =
-          W.create ~original:(fst (no_simplification ())) body
-            ~branch_depth:(E.branch_depth env)
-            ~probably_a_functor
-            ~round:(E.round env)
-            (R.benefit r_inlined)
-        in
-        let keep_inlined_version = W.evaluate sufficient_benefit in
-        let decision : Inlining_stats_types.Decision.t =
-          if keep_inlined_version then
-            Inlined (Copying_body (Evaluated sufficient_benefit))
-          else
-            Tried (Copying_body (Evaluated sufficient_benefit))
-        in
-        made_decision decision;
-        keep_inlined_version
-      end
+    let wsb =
+      W.create ~original:(fst (no_simplification ()))
+        ~branch_depth:(E.branch_depth env)
+        body ~probably_a_functor ~round:(E.round env)
+        (R.benefit r_inlined)
     in
+    let keep_inlined_version = W.evaluate wsb in
+    let decision : Inlining_stats_types.Decision.t =
+      if keep_inlined_version then
+        (* CR mshinwell: This "with_subfunctions" name isn't
+           descriptive enough. *)
+        Inlined (Copying_body_with_subfunctions (Evaluated wsb))
+      else
+        Tried (Copying_body_with_subfunctions (Evaluated wsb))
+    in
+    made_decision decision;
     if keep_inlined_version then begin
-      (* Inlining the body of the function was sufficiently beneficial that we
-         will keep it, replacing the call site.  We continue by allowing
-         further inlining within the inlined copy of the body. *)
-      let r =
-        (* The meaning of requesting inlining is that the user ensure
-           that the function has a benefit of at least its size. It is not
-           added to the benefit exposed by the inlining because the user should
-           have taken that into account before annotating the function. *)
-        let function_benefit =
-          if always_inline then
-            Inlining_cost.Benefit.max ~round:(E.round env)
-              Inlining_cost.Benefit.(requested_inline ~size_of:body zero)
-              (R.benefit r_inlined)
-          else
-            R.benefit r_inlined
-        in
-        R.map_benefit r (Inlining_cost.Benefit.(+) function_benefit)
-      in
-      (* CR mshinwell for pchambart: This [lift_lets] should have a comment. *)
-      let body = Lift_code.lift_lets_expr body in
-      let env =
-        E.note_entering_closure env ~closure_id:closure_id_being_applied
-          ~where:Inline_by_copying_function_body
-      in
-      let env =
-        if not function_decl.stub ||
-           (* Stub functions should not prevent other functions
-              from being evaluated for inlining *)
-           E.inlining_level env = 0
-           (* If the function was considered for inlining without considering
-              its sub-functions, and it is not below another inlining choice,
-              then we are certain that this code will be kept. *)
-        then env
-        else E.inlining_level_up env
-      in
-      simplify env r body
-    end else begin
-      (* Inlining the body of the function did not appear sufficiently
-         beneficial; however, it may become so if we inline within the body
-         first.  We try that next. *)
-      let body, r_inlined =
-        Inlining_transforms.inline_by_copying_function_body ~env
-          ~r:(R.reset_benefit r)
-          ~function_decls ~lhs_of_application ~closure_id_being_applied
-          ~inline_requested ~function_decl ~args ~simplify
-      in
-      let wsb =
-        W.create ~original:(fst (no_simplification ()))
-          ~branch_depth:(E.branch_depth env)
-          body ~probably_a_functor ~round:(E.round env)
-          (R.benefit r_inlined)
-      in
-      let keep_inlined_version = W.evaluate wsb in
-      let decision : Inlining_stats_types.Decision.t =
-        if keep_inlined_version then
-          (* CR mshinwell: This "with_subfunctions" name isn't
-             descriptive enough. *)
-          Inlined (Copying_body_with_subfunctions (Evaluated wsb))
-        else
-          Tried (Copying_body_with_subfunctions (Evaluated wsb))
-      in
-      made_decision decision;
-      if keep_inlined_version then begin
-        body, R.map_benefit r_inlined (Inlining_cost.Benefit.(+) (R.benefit r))
-      end
-      else begin
-        (* r_inlined contains an approximation that may be invalid for the
-           untransformed expression: it may reference functions that only
-           exists if the body of the function is in fact inlined.
-           If the function approximation contained an approximation that
-           does not depend on the actual values of its arguments, it
-           could be returned instead of [A.value_unknown]. *)
-        no_simplification ()
-      end
+      body, R.map_benefit r_inlined (Inlining_cost.Benefit.(+) (R.benefit r))
     end
+    else begin
+      (* r_inlined contains an approximation that may be invalid for the
+         untransformed expression: it may reference functions that only
+         exists if the body of the function is in fact inlined.
+         If the function approximation contained an approximation that
+         does not depend on the actual values of its arguments, it
+         could be returned instead of [A.value_unknown]. *)
+      no_simplification ()
+    end
+  end
   end
 
 let unroll_recursive env r ~max_level ~lhs_of_application
