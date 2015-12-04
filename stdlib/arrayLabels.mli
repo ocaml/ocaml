@@ -176,18 +176,18 @@ val exists2 : f:('a -> 'b -> bool) -> 'a array -> 'b array -> bool
    to have different lengths. *)
 
 val mem : 'a -> set:'a array -> bool
-(** [mem a l] is true if and only if [a] is equal
-   to an element of [l]. *)
+(** [mem x a] is true if and only if [x] is equal
+   to an element of [a]. *)
 
 val memq : 'a -> set:'a array -> bool
 (** Same as {!ArrayLabels.mem}, but uses physical equality instead of structural
    equality to compare list elements. *)
 
 val find : f:('a -> bool) -> 'a array -> 'a
-(** [find p l] returns the first element of the array [l]
+(** [find p a] returns the first element of the array [a]
    that satisfies the predicate [p].
    Raise [Not_found] if there is no value that satisfies [p] in the
-   array [l]. *)
+   array [a]. *)
 
 external create_float: int -> float array = "caml_make_float_vect"
 (** [ArrayLabels.create_float n] returns a fresh float array of length [n],

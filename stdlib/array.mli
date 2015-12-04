@@ -181,10 +181,10 @@ val memq : 'a -> 'a array -> bool
    equality to compare array elements. *)
 
 val find : ('a -> bool) -> 'a array -> 'a
-(** [find p l] returns the first element of the array [l]
+(** [find p l] returns the first element of the array [a]
    that satisfies the predicate [p].
    Raise [Not_found] if there is no value that satisfies [p] in the
-   array [l]. *)
+   array [a]. *)
 
 external create_float: int -> float array = "caml_make_float_vect"
 (** [Array.create_float n] returns a fresh float array of length [n],
