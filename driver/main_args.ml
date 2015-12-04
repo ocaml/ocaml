@@ -160,6 +160,11 @@ let mk_no_functor_heuristics f =
         heuristics that force inlining of toplevel function applications"
 ;;
 
+let mk_classic_heuristic f =
+  "-classic-heuristic", Arg.Unit f, " Use an inlining heuristic similar \
+        to old-style one"
+;;
+
 let mk_inline_cost arg descr default f =
   Printf.sprintf "-inline-%s-cost" arg,
   Arg.String f,
@@ -726,6 +731,7 @@ module type Optcommon_options = sig
   val _rounds : int -> unit
   val _unroll : string -> unit
   val _no_functor_heuristics : unit -> unit
+  val _classic_heuristic : unit -> unit
   val _inline_call_cost : string -> unit
   val _inline_alloc_cost : string -> unit
   val _inline_prim_cost : string -> unit
@@ -969,6 +975,7 @@ struct
     mk_no_app_funct F._no_app_funct;
     mk_no_float_const_prop F._no_float_const_prop;
     mk_no_functor_heuristics F._no_functor_heuristics;
+    mk_classic_heuristic F._classic_heuristic;
     mk_noassert F._noassert;
     mk_noautolink_opt F._noautolink;
     mk_nodynlink F._nodynlink;
@@ -1054,6 +1061,7 @@ module Make_opttop_options (F : Opttop_options) = struct
     mk_rounds F._rounds;
     mk_unroll F._unroll;
     mk_no_functor_heuristics F._no_functor_heuristics;
+    mk_classic_heuristic F._classic_heuristic;
     mk_inline_call_cost F._inline_call_cost;
     mk_inline_alloc_cost F._inline_alloc_cost;
     mk_inline_prim_cost F._inline_prim_cost;

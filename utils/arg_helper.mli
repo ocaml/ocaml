@@ -38,4 +38,6 @@ end) : sig
     | Variable of S.Value.t S.Key.Map.t
 
   val parse : string -> help_text:string -> parsed
+
+  val get : key:S.Key.t -> S.Value.t -> parsed -> S.Value.t
 end

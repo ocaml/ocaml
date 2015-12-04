@@ -26,7 +26,7 @@ type value_string = {
 }
 
 type value_float_array_contents =
-  | Contents of float array
+  | Contents of float option array
   | Unknown_or_mutable
 
 type value_float_array = {
@@ -182,7 +182,7 @@ val value_int : int -> t
 val value_char : char -> t
 val value_float : float -> t
 val value_mutable_float_array : size:int -> t
-val value_immutable_float_array : float array -> t
+val value_immutable_float_array : float option array -> t
 val value_string : int -> string option -> t
 val value_boxed_int : 'i boxed_int -> 'i -> t
 val value_constptr : int -> t
@@ -376,3 +376,6 @@ type checked_approx_for_closure_allowing_unresolved =
 val check_approx_for_closure_allowing_unresolved
    : t
   -> checked_approx_for_closure_allowing_unresolved
+
+(** Returns the value if it can be proved to be a constant float *)
+val check_approx_for_float : t -> float option

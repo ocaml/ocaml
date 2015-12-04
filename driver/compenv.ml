@@ -252,6 +252,9 @@ let read_one_param ppf position name v =
           if !native_code then
             set "functor-heuristics" [ functor_heuristics ] v
 
+      | "classic-heuristic" ->
+          set "classic-heuristic" [ classic_heuristic ] v
+
       | "unbox-closures" ->
           set "unbox-closures" [ unbox_closures ] v
       | "remove-unused-arguments" ->

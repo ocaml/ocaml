@@ -17,6 +17,7 @@ module Int_arg_helper : sig
     | Variable of int Ext_types.Int.Map.t
 
   val parse : string -> help_text:string -> parsed
+  val get : key:int -> int -> parsed -> int
 end
 
 (** Optimization parameters represented as floats indexed by round number. *)
@@ -26,6 +27,7 @@ module Float_arg_helper : sig
     | Variable of float Ext_types.Int.Map.t
 
   val parse : string -> help_text:string -> parsed
+  val get : key:int -> float -> parsed -> float
 end
 
 val objfiles : string list ref
@@ -144,6 +146,7 @@ val max_inlining_depth : Int_arg_helper.parsed ref
 val inline_recursive_functions : bool ref
 val remove_unused_arguments : bool ref
 val dump_flambda_verbose : bool ref
+val classic_heuristic : bool ref
 
 val all_passes : string list ref
 val dumped_pass : string -> bool

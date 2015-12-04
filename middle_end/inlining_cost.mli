@@ -20,6 +20,15 @@ type inlining_threshold =
   | Never_inline
   | Can_inline_if_no_larger_than of int
 
+(* Determine whether the given Flambda expression has a sufficiently low space
+   cost so as to fit under the given [inlining_threshold].  The [bonus] is
+   added to the threshold before evaluation. *)
+val can_inline
+    : Flambda.t
+  -> inlining_threshold
+  -> bonus:int
+  -> bool
+
 (* CR mshinwell for pchambart: I think the name of this function might be
    misleading.  It should probably reflect the functionality it provides,
    not the use to which it is put in another module. *)
@@ -28,10 +37,6 @@ type inlining_threshold =
    input [inlining_threshold].  Otherwise, [Can_inline_if_no_larger_than] is
    returned, with the constructor argument being the measured estimated size
    of the expression. *)
-(* [can_inline] has been deleted.  The comment used to say:
-   Determine whether the given Flambda expression has a sufficiently low space
-   cost so as to fit under the given [inlining_threshold].  The [bonus] is
-   added to the threshold before evaluation. *)
 val can_try_inlining
     : Flambda.t
   -> inlining_threshold
@@ -49,11 +54,13 @@ module Benefit : sig
 
   val zero : t
   val (+) : t -> t -> t
+  val max : round:int -> t -> t -> t
 
   val remove_call : t -> t
   val remove_alloc : t -> t
   val remove_prim : t -> t
   val remove_branch : t -> t
+  val requested_inline : t -> size_of:Flambda.t -> t
 
   val remove_code : Flambda.t -> t -> t
   val remove_code_named : Flambda.named -> t -> t

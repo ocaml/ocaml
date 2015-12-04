@@ -229,3 +229,6 @@ module Result : sig
   val set_inlining_threshold : t -> Inlining_cost.inlining_threshold -> t
   val inlining_threshold : t -> Inlining_cost.inlining_threshold
 end
+
+(** Command line argument -inline *)
+val initial_inlining_threshold : round:int -> Inlining_cost.inlining_threshold

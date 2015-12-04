@@ -111,7 +111,19 @@ let inline_non_recursive env r ~function_decls ~lhs_of_application
          will keep it, replacing the call site.  We continue by allowing
          further inlining within the inlined copy of the body. *)
       let r =
-        R.map_benefit r (Inlining_cost.Benefit.(+) (R.benefit r_inlined))
+        (* The meaning of requesting inlining is that the user ensure
+           that the function has a benefit of at least its size. It is not
+           added to the benefit exposed by the inlining because the user should
+           have taken that into account before annotating the function. *)
+        let function_benefit =
+          if always_inline then
+            Inlining_cost.Benefit.max ~round:(E.round env)
+              Inlining_cost.Benefit.(requested_inline ~size_of:body zero)
+              (R.benefit r_inlined)
+          else
+            R.benefit r_inlined
+        in
+        R.map_benefit r (Inlining_cost.Benefit.(+) function_benefit)
       in
       (* CR mshinwell for pchambart: This [lift_lets] should have a comment. *)
       let body = Lift_code.lift_lets_expr body in
@@ -425,7 +437,11 @@ let for_call_site ~env ~r ~(function_decls : Flambda.function_declarations)
          inline_non_recursive to recursive functions. *)
       if is_a_stub
         || (always_inline && not (Lazy.force recursive))
-        || (E.inlining_level env <= max_level && not (Lazy.force recursive))
+        || (E.inlining_level env <= max_level
+            (* The classic heurisic disable completely inlining if the
+               function is not annotated for inline *)
+            && not !Clflags.classic_heuristic
+            && not (Lazy.force recursive))
       then
         let size_from_approximation =
           match

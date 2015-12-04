@@ -116,6 +116,7 @@ module Options = Main_args.Make_optcomp_options (struct
     unroll := Int_arg_helper.parse spec
         ~help_text:"Syntax: -unroll <n> | <round>=<n>[,...]"
   let _no_functor_heuristics () = functor_heuristics := false
+  let _classic_heuristic () = classic_heuristic := true
   let _inline_call_cost spec =
     inline_call_cost := Int_arg_helper.parse spec
         ~help_text:"Syntax: -inline-call-cost <n> | <round>=<n>[,...]"

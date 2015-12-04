@@ -21,7 +21,7 @@ type value_string = {
 }
 
 type value_float_array_contents =
-  | Contents of float array
+  | Contents of float option array
   | Unknown_or_mutable
 
 type value_float_array = {

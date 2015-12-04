@@ -75,4 +75,14 @@ end) = struct
         key_value_pairs
       in
       Variable map
+
+  let get ~key default parsed =
+    match parsed with
+    | Always fixed -> fixed
+    | Variable by_key ->
+        match S.Key.Map.find key by_key with
+        | provided -> provided
+        | exception Not_found ->
+            default
+
 end
