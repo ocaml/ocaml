@@ -39,9 +39,12 @@
 #else
 #include <sys/dir.h>
 #endif
+#include "caml/fail.h"
 #include "caml/memory.h"
 #include "caml/misc.h"
 #include "caml/osdeps.h"
+#include "caml/signals.h"
+#include "caml/sys.h"
 
 #ifndef S_ISREG
 #define S_ISREG(mode) (((mode) & S_IFMT) == S_IFREG)
