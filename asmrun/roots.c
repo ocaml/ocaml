@@ -335,7 +335,7 @@ void caml_oldify_local_roots (void)
   if (caml_scan_roots_hook != NULL) (*caml_scan_roots_hook)(&caml_oldify_one);
 }
 
-static mlsize_t incr_roots_i, incr_roots_j, roots_count;
+static mlsize_t incr_roots_i, incr_roots_j, incr_roots_sz, roots_count;
 static value *incr_roots_glob;
 uintnat caml_incremental_roots_count = 0;
 
@@ -346,10 +346,22 @@ uintnat caml_incremental_roots_count = 0;
 void caml_darken_all_roots_start (void)
 {
   caml_do_roots (caml_darken, 0);
-  incr_roots_i = 0;
-  incr_roots_glob = caml_globals[incr_roots_i];
-  incr_roots_j = 0;
   roots_count = 0;
+  for (incr_roots_i = 0; caml_globals[incr_roots_i] != 0; incr_roots_i++) {
+    for(incr_roots_glob = caml_globals[incr_roots_i]; *incr_roots_glob != 0;
+        incr_roots_glob++) {
+      incr_roots_sz = Wosize_val (*incr_roots_glob);
+      for (incr_roots_j = 0; incr_roots_j < incr_roots_sz; incr_roots_j++){
+        goto setup_done;
+      }
+    }
+  }
+ setup_done:
+  /* At this point, either the loop finished because there are no roots,
+     and we have `caml_globals[incr_roots_i] == 0`, or the loop indices are
+     pointing to the first root.
+  */
+  ;
 }
 
 /* Call [caml_darken] on at most [work] global roots. Return the
@@ -358,30 +370,30 @@ void caml_darken_all_roots_start (void)
  */
 intnat caml_darken_all_roots_slice (intnat work)
 {
-  mlsize_t j = incr_roots_j;
-  mlsize_t sz;
   intnat work_done = 0;
   CAML_INSTR_SETUP (tmr, "");
 
-  if (incr_roots_glob == NULL) goto finished;
-  sz = Wosize_val (*incr_roots_glob);
+  if (caml_globals[incr_roots_i] == 0) goto finished;
   while (work_done < work){
-    while (j >= sz){
+    /* The loop indices are pointing to a root. We darken it, then increment
+       the loop indices. We maintain this invariant, or exit the loop
+       with `caml_globals[incr_roots_i] == 0`. */
+    caml_darken (Field (*incr_roots_glob, incr_roots_j),
+                 &Field (*incr_roots_glob, incr_roots_j));
+    ++ work_done;
+    ++ incr_roots_j;
+    while (incr_roots_j >= incr_roots_sz){
       ++ incr_roots_glob;
       while (*incr_roots_glob == 0){
         ++ incr_roots_i;
+        if (caml_globals[incr_roots_i] == 0) goto finished;
         incr_roots_glob = caml_globals[incr_roots_i];
-        if (incr_roots_glob == 0) goto finished;
       }
-      j = 0;
-      sz = Wosize_val (*incr_roots_glob);
+      incr_roots_sz = Wosize_val (*incr_roots_glob);
+      incr_roots_j = 0;
     }
-    caml_darken (Field (*incr_roots_glob, j), &Field (*incr_roots_glob, j));
-    ++ work_done;
-    ++ j;
   }
  finished:
-  incr_roots_j = j;
   roots_count += work_done;
   if (work_done < work){
     caml_incremental_roots_count = roots_count;
