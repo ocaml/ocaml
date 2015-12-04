@@ -545,7 +545,7 @@ let run_script ppf name args =
   Sys.interactive := false;
   let explicit_name =
     (* Prevent use_silently from searching in the path. *)
-    if Filename.is_implicit name
+    if name <> "" && Filename.is_implicit name
     then Filename.concat Filename.current_dir_name name
     else name
   in
