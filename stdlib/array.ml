@@ -135,18 +135,20 @@ let fold_right f a x =
   !r
 
 let exists p a =
-  let f = ref false in
-  for i = 0 to length a - 1 do
-    f := !f || p (unsafe_get a i)
-  done;
-  !f
+  let n = length a in
+  let rec loop i =
+    if i = n then false
+    else if p (unsafe_get a i) then true
+    else loop (succ i) in
+  loop 0
 
 let for_all p a =
-  let f = ref true in
-  for i = 0 to length a - 1 do
-    f := !f && p (unsafe_get a i)
-  done;
-  !f
+  let n = length a in
+  let rec loop i =
+    if i = n then true
+    else if p (unsafe_get a i) then loop (succ i)
+    else false in
+  loop 0
 
 exception Bottom of int;;
 let sort cmp a =
