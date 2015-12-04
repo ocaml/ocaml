@@ -25,7 +25,7 @@ let closure_symbol ~(backend:(module Backend_intf.S)) closure_id =
 let make_variable_symbol prefix var =
   Symbol.create (Compilation_unit.get_current_exn ())
     (Linkage_name.create
-       (prefix ^ Variable.unique_name (Variable.freshen var)))
+       (prefix ^ Variable.unique_name (Variable.rename var)))
 
 (** Traverse the given expression assigning symbols to [let]- and [let rec]-
     bound constant variables.  At the same time collect the definitions of
@@ -562,7 +562,7 @@ let introduce_free_variables_in_set_of_closures
     in
     match Variable.Tbl.find var_to_block_field_tbl searched_var with
     | def ->
-      let fresh = Variable.freshen var in
+      let fresh = Variable.rename var in
       let named : Flambda.named = match def with
         | Symbol sym -> Symbol sym
         | Const c -> Const c
