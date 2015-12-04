@@ -29,10 +29,10 @@ run:
 	  for kind in byte native; do					\
 	    echo -n " ... testing 'arch-$$arch/$$kind'";		\
 	    rm -f data;                             			\
-	    ./write$$arch.$$kind					\
+	    PATH=../../../boot:$PATH ./write$$arch.$$kind               \
 	      > write$$arch$$kind.out 2> write$$arch$$kind.err		\
 	      || exit 1;						\
-	    ./read$$arch.$$kind						\
+	    PATH=../../../boot:$PATH ./read$$arch.$$kind		\
 	      > read$$arch$$kind.out 2> read$$arch$$kind.err		\
 	      && ( echo " => passed" )					\
 	      || ( echo " => failed" )					\
