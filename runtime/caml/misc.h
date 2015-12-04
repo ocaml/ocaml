@@ -192,6 +192,7 @@ extern int caml_umul_overflow(uintnat a, uintnat b, uintnat * res);
 #define rename_os caml_win32_rename
 #define chdir_os _wchdir
 #define getcwd_os _wgetcwd
+#define mkdir_os _wmkdir
 #define system_os _wsystem
 #define rmdir_os _wrmdir
 #define putenv_os _wputenv
@@ -222,6 +223,7 @@ extern int caml_umul_overflow(uintnat a, uintnat b, uintnat * res);
 #define rename_os rename
 #define chdir_os chdir
 #define getcwd_os getcwd
+#define mkdir_os mkdir
 #define system_os system
 #define rmdir_os rmdir
 #define putenv_os putenv
