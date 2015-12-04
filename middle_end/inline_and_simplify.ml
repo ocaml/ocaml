@@ -633,7 +633,7 @@ and simplify_set_of_closures original_env r
       | Default_inline ->
           if !Clflags.classic_heuristic then
             (* In classic-heuristic mode, the inlining decision is taken at
-               definition site (here). If the function is small enought
+               definition site (here). If the function is small enough
                (below the -inline threshold) it will always be inlined. *)
             let inlining_threshold =
               Inline_and_simplify_aux.initial_inlining_threshold
