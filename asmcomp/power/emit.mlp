@@ -712,24 +712,22 @@ let emit_instr i =
         emit_load_store storeinstr addr i.arg 1 i.arg.(0)
     | Lop(Ialloc n) ->
         if !call_gc_label = 0 then call_gc_label := new_label();
-        `	addi    11, 31, {emit_int(-n)}\n`;
-        `	{emit_string cmplg}	11, 30\n`;
-        `	addi	{emit_reg i.res.(0)}, 11, {emit_int size_addr}\n`;
+        `	addi    31, 31, {emit_int(-n)}\n`;
+        `	{emit_string cmplg}	31, 30\n`;
+        `	addi	{emit_reg i.res.(0)}, 31, {emit_int size_addr}\n`;
         `	bltl	{emit_label !call_gc_label}\n`;
         (* Exactly 4 instructions after the beginning of the alloc sequence *)
-        record_frame i.live Debuginfo.none;
-        `	mr    31, 11\n`
+        record_frame i.live Debuginfo.none
     | Lop(Ispecific(Ialloc_far n)) ->
         if !call_gc_label = 0 then call_gc_label := new_label();
         let lbl = new_label() in
-        `	addi    11, 31, {emit_int(-n)}\n`;
-        `	{emit_string cmplg}	11, 30\n`;
+        `	addi    31, 31, {emit_int(-n)}\n`;
+        `	{emit_string cmplg}	31, 30\n`;
         `	bge	{emit_label lbl}\n`;
         `	bl	{emit_label !call_gc_label}\n`;
         (* Exactly 4 instructions after the beginning of the alloc sequence *)
         record_frame i.live Debuginfo.none;
-        `{emit_label lbl}:	addi	{emit_reg i.res.(0)}, 11, {emit_int size_addr}\n`;
-        `	mr    31, 11\n`
+        `{emit_label lbl}:	addi	{emit_reg i.res.(0)}, 31, {emit_int size_addr}\n`
     | Lop(Iintop Isub) ->               (* subfc has swapped arguments *)
         `	subfc	{emit_reg i.res.(0)}, {emit_reg i.arg.(1)}, {emit_reg i.arg.(0)}\n`
     | Lop(Iintop Imod) ->

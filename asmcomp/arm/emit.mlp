@@ -125,18 +125,13 @@ let record_frame live dbg =
 
 type gc_call =
   { gc_lbl: label;                      (* Entry label *)
-    gc_size : int;                      (* How much to add back to [young_ptr] *)
     gc_return_lbl: label;               (* Where to branch after GC *)
     gc_frame_lbl: label }               (* Label of frame descriptor *)
 
 let call_gc_sites = ref ([] : gc_call list)
 
 let emit_call_gc gc =
-  `{emit_label gc.gc_lbl}:`;
-  ignore (decompose_intconst
-            (Int32.of_int gc.gc_size)
-            (fun i -> `	add	alloc_ptr, alloc_ptr, #{emit_int32 i}\n`));
-  `	{emit_call "caml_call_gc"}\n`;
+  `{emit_label gc.gc_lbl}:	{emit_call "caml_call_gc"}\n`;
   `{emit_label gc.gc_frame_lbl}:	b	{emit_label gc.gc_return_lbl}\n`
 
 (* Record calls to caml_ml_array_bound_error.
@@ -557,7 +552,6 @@ let emit_instr i =
           `	bcc	{emit_label lbl_call_gc}\n`;
           call_gc_sites :=
             { gc_lbl = lbl_call_gc;
-              gc_size = i;
               gc_return_lbl = lbl_redo;
               gc_frame_lbl = lbl_frame } :: !call_gc_sites;
           3 + ninstr

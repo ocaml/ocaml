@@ -437,22 +437,6 @@ void caml_do_roots (scanning_action f, int do_globals)
   /* Finalised values */
   caml_final_do_strong_roots (f);
   CAML_INSTR_TIME (tmr, "major_roots/finalised");
-  /* Objects in the minor heap are roots for the major GC. */
-  {
-    value *hp;
-    asize_t sz, i;
-    for (hp = caml_young_ptr;
-         hp < caml_young_alloc_end;
-         hp += Whsize_wosize (sz)){
-      sz = Wosize_hp (hp);
-      if (Tag_hp (hp) < No_scan_tag){
-        for (i = 0; i < sz; i++){
-          f(Field(Val_hp(hp), i), &Field(Val_hp(hp), i));
-        }
-      }
-    }
-  }
-  CAML_INSTR_TIME (tmr, "major_roots/minor_heap");
   /* Hook */
   if (caml_scan_roots_hook != NULL) (*caml_scan_roots_hook)(f);
   CAML_INSTR_TIME (tmr, "major_roots/hook");

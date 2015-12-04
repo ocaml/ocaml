@@ -380,6 +380,7 @@ CAMLexport void caml_gc_dispatch (void)
     caml_young_trigger = caml_young_alloc_mid;
     caml_young_limit = caml_young_trigger;
     caml_empty_minor_heap ();
+    /* The minor heap is empty, we can start a major collection. */
     if (caml_gc_phase == Phase_idle) caml_major_collection_slice (-1);
     CAML_INSTR_TIME (tmr, "dispatch/minor");
 
@@ -393,6 +394,7 @@ CAMLexport void caml_gc_dispatch (void)
       caml_young_trigger = caml_young_alloc_mid;
       caml_young_limit = caml_young_trigger;
       caml_empty_minor_heap ();
+      /* The minor heap is empty, we can start a major collection. */
       if (caml_gc_phase == Phase_idle) caml_major_collection_slice (-1);
       CAML_INSTR_TIME (tmr, "dispatch/finalizers_minor");
     }

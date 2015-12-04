@@ -131,7 +131,6 @@ caml_alloc1:
         jb      L100
         ret
 L100:
-        add     r15, 16
         mov     rax, [rsp + 0]
         mov     caml_last_return_address, rax
         lea     rax, [rsp + 8]
@@ -149,7 +148,6 @@ caml_alloc2:
         jb      L101
         ret
 L101:
-        add     r15, 24
         mov     rax, [rsp + 0]
         mov     caml_last_return_address, rax
         lea     rax, [rsp + 8]
@@ -167,7 +165,6 @@ caml_alloc3:
         jb      L102
         ret
 L102:
-        add     r15, 32
         mov     rax, [rsp + 0]
         mov     caml_last_return_address, rax
         lea     rax, [rsp + 8]
@@ -185,7 +182,6 @@ caml_allocN:
         jb      L103
         ret
 L103:
-        add     r15, rax
         push    rax                       ; save desired size
         mov     rax, [rsp + 8]
         mov     caml_last_return_address, rax

@@ -52,12 +52,11 @@ caml_allocN:
         retl
         nop
 
-/* Required size in %g2, Alloc_ptr is decremented by required size. */
+/* Required size in %g2 */
 caml_call_gc:
-        add     Alloc_ptr, %g2, Alloc_ptr
     /* Save exception pointer if GC raises */
         Store(Exn_ptr, caml_exception_pointer)
-    /* Save current allocation pointer (the GC needs it) */
+    /* Save current allocation pointer for debugging purposes */
         Store(Alloc_ptr, caml_young_ptr)
     /* Record lowest stack address */
         Store(%sp, caml_bottom_of_stack)

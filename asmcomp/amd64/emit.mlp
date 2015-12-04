@@ -269,7 +269,6 @@ let record_frame live dbg =
 
 type gc_call =
   { gc_lbl: label;                      (* Entry label *)
-    gc_size: int;                       (* How much to add back to [young_ptr]*)
     gc_return_lbl: label;               (* Where to branch after GC *)
     gc_frame: label }                   (* Label of frame descriptor *)
 
@@ -277,7 +276,6 @@ let call_gc_sites = ref ([] : gc_call list)
 
 let emit_call_gc gc =
   def_label gc.gc_lbl;
-  I.add (int gc.gc_size) r15;
   emit_call "caml_call_gc";
   def_label gc.gc_frame;
   I.jmp (label gc.gc_return_lbl)
@@ -582,7 +580,6 @@ let emit_instr fallthrough i =
         I.lea (mem64 NONE 8 R15) (res i 0);
         call_gc_sites :=
           { gc_lbl = lbl_call_gc;
-            gc_size = n;
             gc_return_lbl = lbl_redo;
             gc_frame = lbl_frame } :: !call_gc_sites
       end else begin
