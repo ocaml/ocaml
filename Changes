@@ -139,6 +139,8 @@ Runtime system:
   compiling the run-time system and C stub code.  (Xavier Leroy)
 - GPR#262: Multiple GC roots per compilation unit (Pierre Chambart, Mark
   Shinwell, review by Damien Doligez)
+- GPR#325: Add v=0x400 flag to OCAMLRUNPARAM to display GC stats on exit (Louis
+  Gesbert, review by Alain Frisch)
 
 Standard library:
 - PR#5197, GPR#63: Arg: allow flags such as --flag=arg as well as --flag arg
