@@ -18,10 +18,12 @@ let for_primitive (prim : Lambda.primitive) =
   match prim with
   | Pignore | Pidentity -> No_effects, No_coeffects
   | Pmakeblock _
-  | Pmakearray _ -> Only_generative_effects, No_coeffects
-  | Pduprecord _ ->
-    Only_generative_effects,
-      Has_coeffects  (* Might read a mutable record field. *)
+  | Pmakearray (_, Mutable) -> Only_generative_effects, No_coeffects
+  | Pmakearray (_, Immutable) -> No_effects, No_coeffects
+  | Pduparray (_, Immutable) ->
+    No_effects, Has_coeffects  (* Might read a mutable record field. *)
+  | Pduparray (_, Mutable) | Pduprecord _ ->
+    Only_generative_effects, Has_coeffects
   | Pccall { prim_name =
       ( "caml_format_float" | "caml_format_int" | "caml_int32_format"
       | "caml_nativeint_format" | "caml_int64_format" ) } ->

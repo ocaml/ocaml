@@ -29,21 +29,21 @@ type t = {
 }
 
 (** Generate a wrapper ("stub") function that accepts a tuple argument and
-    calls another function with (curried) arguments extracted in the obvious
+    calls another function with arguments extracted in the obvious
     manner from the tuple. *)
-let tupled_function_call_stub original_params tuplified_version
+let tupled_function_call_stub original_params unboxed_version
       : Flambda.function_declaration =
   let tuple_param =
-    Variable.rename ~append:"tupled_stub_param" tuplified_version
+    Variable.rename ~append:"tupled_stub_param" unboxed_version
   in
   let params = List.map (fun p -> Variable.rename p) original_params in
   let call : Flambda.t =
     Apply ({
-        func = tuplified_version;
+        func = unboxed_version;
         args = params;
         (* CR-someday mshinwell for mshinwell: investigate if there is some
-           redundancy here (func is also tuplified_version) *)
-        kind = Direct (Closure_id.wrap tuplified_version);
+           redundancy here (func is also unboxed_version) *)
+        kind = Direct (Closure_id.wrap unboxed_version);
         dbg = Debuginfo.none;
         inline = Default_inline;
       })
@@ -79,7 +79,19 @@ let add_debug_info (ev : Lambda.lambda_event) (flam : Flambda.t)
     end
   | _ -> flam
 
-let close_const (const : Lambda.structured_constant) : Flambda.named * string =
+let rec eliminate_const_block (const : Lambda.structured_constant)
+      : Lambda.lambda =
+  match const with
+  | Const_block (tag, consts) ->
+    Lprim (Pmakeblock (tag, Asttypes.Immutable),
+      List.map eliminate_const_block consts)
+  | Const_base _
+  | Const_pointer _
+  | Const_immstring _
+  | Const_float_array _ -> Lconst const
+
+let rec close_const t env (const : Lambda.structured_constant)
+      : Flambda.named * string =
   match const with
   | Const_base (Const_int c) -> Const (Int c), "int"
   | Const_base (Const_char c) -> Const (Char c), "char"
@@ -91,14 +103,13 @@ let close_const (const : Lambda.structured_constant) : Flambda.named * string =
   | Const_base (Const_nativeint c) ->
     Allocated_const (Nativeint c), "nativeint"
   | Const_pointer c -> Const (Const_pointer c), "pointer"
-  | Const_immstring c -> Allocated_const (Immstring c), "immstring"
+  | Const_immstring c -> Allocated_const (Immutable_string c), "immstring"
   | Const_float_array c ->
     Allocated_const (Float_array (List.map float_of_string c)), "float_array"
   | Const_block _ ->
-    Misc.fatal_error "Const_block should have been eliminated before closure \
-        conversion"
+    Expr (close t env (eliminate_const_block const)), "const_block"
 
-let rec close t env (lam : Lambda.lambda) : Flambda.t =
+and close t env (lam : Lambda.lambda) : Flambda.t =
   match lam with
   | Lvar id ->
     begin match Env.find_var_exn env id with
@@ -111,16 +122,16 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
           Ident.print id
     end
   | Lconst cst ->
-    let cst, name = close_const cst in
+    let cst, name = close_const t env cst in
     name_expr cst ~name:("const_" ^ name)
   | Llet ((Strict | Alias | StrictOpt), id, defining_expr, body) ->
-    let var = Variable.of_ident id in
+    let var = Variable.create_with_same_name_as_ident id in
     let defining_expr = close_let_bound_expression t var env defining_expr in
     let body = close t (Env.add_var env id var) body in
     Flambda.create_let var defining_expr body
   | Llet (Variable, id, defining_expr, body) ->
     let mut_var = Mutable_variable.of_ident id in
-    let var = Variable.of_ident id in
+    let var = Variable.create_with_same_name_as_ident id in
     let defining_expr = close_let_bound_expression t var env defining_expr in
     let body = close t (Env.add_mutable_var env id mut_var) body in
     Flambda.create_let var defining_expr (Let_mutable (mut_var, var, body))
@@ -172,7 +183,7 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
   | Lletrec (defs, body) ->
     let env =
       List.fold_right (fun (id,  _) env ->
-          Env.add_var env id (Variable.of_ident id))
+          Env.add_var env id (Variable.create_with_same_name_as_ident id))
         defs env
     in
     let function_declarations =
@@ -180,7 +191,7 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
          will be named after the corresponding identifier in the [let rec]. *)
       List.map (function
           | (let_rec_ident, Lambda.Lfunction { kind; params; body; attr; }) ->
-            let closure_bound_var = Variable.of_ident let_rec_ident in
+            let closure_bound_var = Variable.create_with_same_name_as_ident let_rec_ident in
             let function_declaration =
               Function_decl.create ~let_rec_ident:(Some let_rec_ident)
                 ~closure_bound_var ~kind ~params ~body
@@ -196,9 +207,20 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
          eliminate the [let rec] construction, instead producing a normal
          [Let] that binds a set of closures containing all of the functions.
       *)
+      (* CR-someday lwhite: This is a very syntactic criteria. Adding an
+         unused value to a set of recursive bindings changes how
+         functions are represented at runtime. *)
       let name =
-        String.concat "_and_"
-          (List.map (fun (id, _) -> Ident.unique_name id) defs)
+        (* The Microsoft assembler has a 247-character limit on symbol
+           names, so we keep them shorter to try not to hit this. *)
+        if Sys.win32 then begin
+          match defs with
+          | (id, _)::_ -> (Ident.unique_name id) ^ "_let_rec"
+          | _ -> "let_rec"
+        end else begin
+          String.concat "_and_"
+            (List.map (fun (id, _) -> Ident.unique_name id) defs)
+        end
       in
       let name = truncate_if_needed name in
       let set_of_closures_var = Variable.create name in
@@ -255,7 +277,7 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
     let is_zero = Variable.create "is_zero" in
     let exn = Variable.create "division_by_zero" in
     let exn_symbol =
-      t.symbol_for_global' (Ident.create_predef_exn "Division_by_zero")
+      t.symbol_for_global' Predef.ident_division_by_zero
     in
     t.imported_symbols <- Symbol.Set.add exn_symbol t.imported_symbols;
     Flambda.create_let zero (Const (Int 0))
@@ -270,7 +292,10 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
                     ~name:"dummy",
                   (* CR pchambart: find the right event.
                      mshinwell: I briefly looked at this, and couldn't
-                     figure it out. *)
+                     figure it out.
+                     lwhite: I don't think any of the existing events
+                     are suitable. I had to add a new one for a similar
+                     case in the array data types work. *)
                   (* Debuginfo.from_raise event *)
                   name_expr ~name:"result"
                     (Prim (prim, [numerator; denominator],
@@ -303,6 +328,9 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
         ap_args = [arg];
         ap_loc = loc;
         ap_should_be_tailcall = false;
+        (* CR-someday lwhite: it would be nice to be able to give
+           inlined attributes to functions applied with the application
+           operators. *)
         ap_inlined = Default_inline;
       }
     in
@@ -370,11 +398,11 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
   | Lstaticcatch (body, (i, ids), handler) ->
     let st_exn = Static_exception.create () in
     let env = Env.add_static_exception env i st_exn in
-    let vars = List.map (Variable.of_ident) ids in
+    let vars = List.map (Variable.create_with_same_name_as_ident) ids in
     Static_catch (st_exn, vars, close t env body,
       close t (Env.add_vars env ids vars) handler)
   | Ltrywith (body, id, handler) ->
-    let var = Variable.of_ident id in
+    let var = Variable.create_with_same_name_as_ident id in
     Try_with (close t env body, var, close t (Env.add_var env id var) handler)
   | Lifthenelse (cond, ifso, ifnot) ->
     let cond = close t env cond in
@@ -388,7 +416,7 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
     Flambda.create_let var lam1 lam2
   | Lwhile (cond, body) -> While (close t env cond, close t env body)
   | Lfor (id, lo, hi, direction, body) ->
-    let bound_var = Variable.of_ident id in
+    let bound_var = Variable.create_with_same_name_as_ident id in
     let from_value = Variable.create "for_from" in
     let to_value = Variable.create "for_to" in
     let body = close t (Env.add_var env id bound_var) body in
@@ -441,7 +469,7 @@ and close_functions t external_env function_declarations : Flambda.named =
        This induces a renaming on [Function_decl.free_idents]; the results of
        that renaming are stored in [free_variables]. *)
     let closure_env =
-      List.fold_right (fun id env -> Env.add_var env id (Variable.of_ident id))
+      List.fold_right (fun id env -> Env.add_var env id (Variable.create_with_same_name_as_ident id))
         params closure_env_without_parameters
     in
     (* If the function is the wrapper for a function with an optional
@@ -464,11 +492,11 @@ and close_functions t external_env function_declarations : Flambda.named =
     match Function_decl.kind decl with
     | Curried -> Variable.Map.add closure_bound_var fun_decl map
     | Tupled ->
-      let tuplified_version = Variable.rename closure_bound_var in
+      let unboxed_version = Variable.rename closure_bound_var in
       let generic_function_stub =
-        tupled_function_call_stub params tuplified_version
+        tupled_function_call_stub params unboxed_version
       in
-      Variable.Map.add tuplified_version fun_decl
+      Variable.Map.add unboxed_version fun_decl
         (Variable.Map.add closure_bound_var generic_function_stub map)
   in
   let function_decls =

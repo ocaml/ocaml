@@ -14,8 +14,13 @@ type allocation_point =
   | Symbol of Symbol.t
   | Variable of Variable.t
 
+type allocated_const =
+  | Normal of Allocated_const.t
+  | Array of Lambda.array_kind * Asttypes.mutable_flag * Variable.t list
+  | Duplicate_array of Lambda.array_kind * Asttypes.mutable_flag * Variable.t
+
 type constant_defining_value =
-  | Allocated_const of Allocated_const.t
+  | Allocated_const of allocated_const
   | Block of Tag.t * Variable.t list
   | Set_of_closures of Flambda.set_of_closures
   | Project_closure of Flambda.project_closure
@@ -41,3 +46,8 @@ val run
   -> Flambda.constant_defining_value Symbol.Map.t
   -> Variable.t Symbol.Map.t
   -> allocation_point Variable.Map.t
+
+val print_constant_defining_value
+   : Format.formatter
+  -> constant_defining_value
+  -> unit

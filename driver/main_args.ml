@@ -520,11 +520,19 @@ let mk_dclambda f =
 ;;
 
 let mk_dflambda f =
-  "-dflambda", Arg.Unit f, " (undocumented)"
+  "-dflambda", Arg.Unit f, " Print Flambda terms"
+;;
+
+let mk_dflambda_invariants f =
+  "-dflambda-invariants", Arg.Unit f, " Check Flambda invariants around each pass"
 ;;
 
 let mk_dflambda_let f =
-  "-dflambda-let", Arg.Int f, "<stamp>  (undocumented)"
+  "-dflambda-let", Arg.Int f, "<stamp>  Print when the given Flambda [Let] is created"
+;;
+
+let mk_dflambda_verbose f =
+  "-dflambda-verbose", Arg.Unit f, " Print Flambda terms including around each pass"
 ;;
 
 let mk_dinstr f =
@@ -731,7 +739,9 @@ module type Optcommon_options = sig
 
   val _clambda_checks : unit -> unit
   val _dflambda : unit -> unit
+  val _dflambda_invariants : unit -> unit
   val _dflambda_let : int -> unit
+  val _dflambda_verbose : unit -> unit
   val _drawclambda : unit -> unit
   val _dclambda : unit -> unit
   val _dcmm : unit -> unit
@@ -937,8 +947,6 @@ struct
     mk_compact F._compact;
     mk_config F._config;
     mk_dtypes F._annot;
-    mk_dflambda F._dflambda;
-    mk_dflambda_let F._dflambda_let;
     mk_for_pack_opt F._for_pack;
     mk_g_opt F._g;
     mk_i F._i;
@@ -1012,6 +1020,9 @@ struct
     mk_dlambda F._dlambda;
     mk_dclambda F._dclambda;
     mk_dflambda F._dflambda;
+    mk_dflambda_invariants F._dflambda_invariants;
+    mk_dflambda_let F._dflambda_let;
+    mk_dflambda_verbose F._dflambda_verbose;
     mk_dcmm F._dcmm;
     mk_dsel F._dsel;
     mk_dcombine F._dcombine;

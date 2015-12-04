@@ -11,7 +11,7 @@ main.byt: lib.cma main.cmo
 	$(OCAMLC) lib.cma main.cmo -o $@
 
 lib.ml: lib_impl.ml
-	ln -s $< $@
+	cp $< $@
 
 lib.cma: $(OBJECTS)
 	$(OCAMLC) -a -o $@ $(OBJECTS)

@@ -15,7 +15,3 @@ include Ext_types.Identifiable
 
 val create : string -> t
 val to_string : t -> string
-
-(** Produce a possibly-shortened version of the given linkage name that
-    satisfies assembler conventions for the target platform. *)
-val to_shortened_string : t -> string

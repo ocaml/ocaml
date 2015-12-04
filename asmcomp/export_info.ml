@@ -20,6 +20,15 @@ type value_string = {
   size : int;
 }
 
+type value_float_array_contents =
+  | Contents of float option array
+  | Unknown_or_mutable
+
+type value_float_array = {
+  contents : value_float_array_contents;
+  size : int;
+}
+
 type descr =
   | Value_block of Tag.t * approx array
   | Value_mutable_block of Tag.t * int
@@ -27,7 +36,7 @@ type descr =
   | Value_char of char
   | Value_constptr of int
   | Value_float of float
-  | Value_float_array of int
+  | Value_float_array of value_float_array
   | Value_boxed_int : 'a Simple_value_approx.boxed_int * 'a -> descr
   | Value_string of value_string
   | Value_closure of value_closure
@@ -264,8 +273,12 @@ let print_approx ppf (t : t) =
         Format.fprintf ppf "string %i %S" size s
       end
     | Value_float f -> Format.pp_print_float ppf f
-    | Value_float_array size ->
-      Format.fprintf ppf "float_array %i" size
+    | Value_float_array float_array ->
+      Format.fprintf ppf "float_array%s %i"
+        (match float_array.contents with
+          | Unknown_or_mutable -> ""
+          | Contents _ -> "_imm")
+        float_array.size
     | Value_boxed_int (t, i) ->
       let module A = Simple_value_approx in
       match t with

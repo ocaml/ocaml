@@ -179,12 +179,21 @@ let descr_of_allocated_constant (c : Allocated_const.t) : Export_info.descr =
       { size = String.length s; contents = Unknown_or_mutable; }
     in
     Value_string v_string
-  | Immstring s ->
+  | Immutable_string s ->
     let v_string : Export_info.value_string =
       { size = String.length s; contents = Contents s; }
     in
     Value_string v_string
-  | Float_array a -> Value_float_array (List.length a)
+  | Immutable_float_array fs ->
+    Value_float_array {
+      contents = Contents (Array.map (fun x -> Some x) (Array.of_list fs));
+      size = List.length fs;
+    }
+  | Float_array fs ->
+    Value_float_array {
+      contents = Unknown_or_mutable;
+      size = List.length fs;
+    }
 
 let rec approx_of_expr (env : Env.t) (flam : Flambda.t) : Export_info.approx =
   match flam with

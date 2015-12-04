@@ -25,7 +25,7 @@ let closure_symbol ~(backend:(module Backend_intf.S)) closure_id =
 let make_variable_symbol prefix var =
   Symbol.create (Compilation_unit.get_current_exn ())
     (Linkage_name.create
-       (prefix ^ Variable.unique_name (Variable.freshen var)))
+       (prefix ^ Variable.unique_name (Variable.rename var)))
 
 (** Traverse the given expression assigning symbols to [let]- and [let rec]-
     bound constant variables.  At the same time collect the definitions of
@@ -52,7 +52,7 @@ let assign_symbols_and_collect_constant_definitions
       | Const const -> record_definition (AA.Const const)
       | Allocated_const const ->
         assign_symbol ();
-        record_definition (AA.Allocated_const const)
+        record_definition (AA.Allocated_const (Normal const))
       | Read_mutable _ -> () (* CR mshinwell: should be assert false? *)
       | Prim (Pmakeblock (tag, _), fields, _) ->
         assign_symbol ();
@@ -88,6 +88,13 @@ let assign_symbols_and_collect_constant_definitions
       | Prim (Pfield _, _, _) ->
         Misc.fatal_errorf "[Pfield] with the wrong number of arguments"
           Flambda.print_named named
+      | Prim (Pmakearray (Pfloatarray as kind, mutability), args, _) ->
+        assign_symbol ();
+        record_definition (AA.Allocated_const (Array (kind, mutability, args)))
+      | Prim (Pduparray (kind, mutability), [arg], _) ->
+        assign_symbol ();
+        record_definition (AA.Allocated_const (
+          Duplicate_array (kind, mutability, arg)))
       | Prim _ ->
         Misc.fatal_errorf "Primitive not expected to be constant: @.%a@."
           Flambda.print_named named
@@ -158,10 +165,10 @@ let variable_field_definition
   with Not_found ->
     match Variable.Tbl.find var_to_definition_tbl var with
     | Const c -> Const c
-    | _ ->
-      Misc.fatal_errorf "Unexpected pattern for a constant %a"
-        Variable.print var;
-      assert false
+    | const_defining_value ->
+      Misc.fatal_errorf "Unexpected pattern for a constant: %a: %a"
+        Variable.print var
+        Alias_analysis.print_constant_defining_value const_defining_value
     | exception Not_found ->
       Misc.fatal_errorf "No associated symbol for the constant %a"
         Variable.print var
@@ -257,7 +264,7 @@ let find_original_set_of_closure
   in
   loop var
 
-let translate_definition_and_resolve_alias
+let rec translate_definition_and_resolve_alias
     inconstants
     (aliases:Alias_analysis.allocation_point Variable.Map.t)
     (var_to_symbol_tbl:Symbol.t Variable.Tbl.t)
@@ -268,7 +275,109 @@ let translate_definition_and_resolve_alias
   match definition with
   | Block (tag, fields) ->
     Some (Flambda.Block (tag, List.map (resolve_variable aliases var_to_symbol_tbl var_to_definition_tbl) fields))
-  | Allocated_const c -> Some (Flambda.Allocated_const c)
+  | Allocated_const (Normal const) -> Some (Flambda.Allocated_const const)
+  | Allocated_const (Duplicate_array (Pfloatarray, mutability, var)) ->
+    (* CR mshinwell for pchambart: This next section could do with cleanup.
+       What happens is:
+        - Duplicate contains a variable, which is resolved to
+        a float array thing full of variables;
+        - We send that value back through this function again so the
+        individual members of that array are resolved from variables to
+        floats.
+        - Then we can build the Flambda.name term containing the
+        Allocated_const (full of floats).
+       This seems to work, but please check.  We should maybe factor out
+       the code from the Allocated_const (Array (...)) case below so this
+       function doesn't have to be recursive. *)
+    let var =
+      match Variable.Map.find var aliases with
+      | exception Not_found -> var
+      | Symbol _ ->
+        Misc.fatal_errorf
+          "Lift_constants.translate_definition_and_resolve_alias: \
+            Duplicate Pfloatarray %a with Symbol argument: %a"
+          Variable.print var
+          Alias_analysis.print_constant_defining_value definition
+      | Variable var -> var
+    in
+    begin match Variable.Tbl.find var_to_definition_tbl var with
+    | Allocated_const (Normal (Float_array floats))
+        (* CR pchambart: I'm not convinced that this is correct:
+           {|
+           let_symbol a = Allocated_const (Immutable_float_array [|0.|])
+           initialize_symbol b = Duparray(Mutable, a)
+           effect b.(0) <- 1.
+           initialize_symbol c = Duparray(Mutable, b)
+           |}
+
+           This will be converted to
+           {|
+           let_symbol a = Allocated_const (Immutable_float_array [|0.|])
+           let_symbol b = Allocated_const (Float_array [|0.|])
+           effect b.(0) <- 1.
+           let_symbol c = Allocated_const (Float_array [|0.|])
+           |}
+
+           We can't encounter that currently, but I find it a bit scarry.
+
+           mshinwell: Agreed, we are going to ban duplicate-array on
+           mutable arrays.  I will do that later today (Thursday).
+        *)
+    | Allocated_const (Normal (Immutable_float_array floats)) ->
+      let const : Allocated_const.t =
+        match mutability with
+        | Immutable -> Immutable_float_array floats
+        | Mutable -> Float_array floats
+      in
+      Some (Flambda.Allocated_const const)
+    | (Allocated_const (Array (Pfloatarray, _, _))) as definition ->
+      translate_definition_and_resolve_alias inconstants aliases
+        var_to_symbol_tbl var_to_definition_tbl project_closure_map
+        definition
+    | const ->
+      Misc.fatal_errorf
+        "Lift_constants.translate_definition_and_resolve_alias: \
+          Duplicate Pfloatarray %a with wrong argument: %a"
+        Variable.print var
+        Alias_analysis.print_constant_defining_value const
+    end
+  | Allocated_const (Duplicate_array (_, _, _)) ->
+    Misc.fatal_errorf "Lift_constants.translate_definition_and_resolve_alias: \
+        Duplicate_array with non-Pfloatarray kind: %a"
+      Alias_analysis.print_constant_defining_value definition
+  | Allocated_const (Array (Pfloatarray, mutability, vars)) ->
+    let floats =
+      List.map (fun var ->
+          let var =
+            match Variable.Map.find var aliases with
+            | exception Not_found -> var
+            | Symbol _ ->
+              Misc.fatal_errorf
+                "Lift_constants.translate_definition_and_resolve_alias: \
+                  Array Pfloatarray %a with Symbol argument: %a"
+                Variable.print var
+                Alias_analysis.print_constant_defining_value definition
+            | Variable var -> var
+          in
+          match Variable.Tbl.find var_to_definition_tbl var with
+          | Allocated_const (Normal (Float f)) -> f
+          | const_defining_value ->
+            Misc.fatal_errorf "Bad definition for float array member %a: %a"
+              Variable.print var
+              Alias_analysis.print_constant_defining_value
+                const_defining_value)
+        vars
+    in
+    let const : Allocated_const.t =
+      match mutability with
+      | Immutable -> Immutable_float_array floats
+      | Mutable -> Float_array floats
+    in
+    Some (Flambda.Allocated_const const)
+  | Allocated_const (Array (_, _, _)) ->
+    Misc.fatal_errorf "Lift_constants.translate_definition_and_resolve_alias: \
+        Array with non-Pfloatarray kind: %a"
+      Alias_analysis.print_constant_defining_value definition
   | Project_closure { set_of_closures; closure_id } ->
     begin match Variable.Map.find set_of_closures aliases with
     | Symbol s ->
@@ -453,7 +562,7 @@ let introduce_free_variables_in_set_of_closures
     in
     match Variable.Tbl.find var_to_block_field_tbl searched_var with
     | def ->
-      let fresh = Variable.freshen var in
+      let fresh = Variable.rename var in
       let named : Flambda.named = match def with
         | Symbol sym -> Symbol sym
         | Const c -> Const c

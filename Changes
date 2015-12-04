@@ -76,6 +76,8 @@ Compilers:
 - PR#6737: fix Typedtree attributes on (fun x -> body) expressions
 - PR#6679: fix pprintast printing of constraints in type declarations
 - PR#6845: -no-check-prims to tell ocamlc not to check primitives in runtime
+* PR#6865: remove special case for parsing "let _ = expr" in structures
+  (Jérémie Dimino, Alain Frisch)
 - PR#6943: native-code generator for POWER/PowerPC 64 bits, both in
   big-endian (ppc64) and little-endian (ppc64le) configuration.
   (Xavier Leroy, with inspiration from RedHat's unofficial ppc64 and ppc64le
@@ -100,6 +102,8 @@ Compilers:
   (Pierre Chambart, Xavier Leroy)
 - PR#7022, GPR#259: unbox float and boxed ints earlier, avoid second pass
   (Alain Frisch)
+- PR#7064, GPR#316: allowing to mark compilation units and sub-modules as
+  deprecated (Alain Frisch)
 - GPR#263: improve code generation for if-equivalents of (&&) and (||)
   (Pierre Chambart)
 - GPR#271: Fix incorrect mutability flag when records are built using "with"
@@ -207,6 +211,8 @@ Toplevel and debugger:
    review by Gabriel Scherer and Jacques-Henri Jourdan)
 - PR#6935, GPR#298: crash in debugger when load_printer is given a directory
   (Junsong Li, review by Gabriel Scherer)
+- PR#6401: use proper error reporting for toplevel's environment
+  initialization (Gabriel Scherer)
 
 Other libraries:
 - PR#4023 and GPR#68: add Unix.sleepf (sleep with sub-second resolution)
@@ -268,6 +274,8 @@ Bug fixes:
 - PR#6171: Error message confusing when a type escapes its scope.
 - PR#6340: Incorrect handling of \r when processing "Windows" source files
   (Damien Doligez, report by David Allsopp)
+- PR#6342: Incorrect error message when type constraints differ
+  (Alain Frisch, report by Philippe Wang)
 * PR#6521: {Bytes,Char,String}.escaped are locale-dependent
   (Damien Doligez, report by Jun Furuse)
 - PR#6526: ocamllex warning: unescaped newline in comment string

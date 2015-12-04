@@ -19,6 +19,7 @@ module Env = struct
     mutable_variables : Mutable_variable.t Ident.tbl;
     static_exceptions : Static_exception.t Ext_types.Int.Map.t;
     globals : Symbol.t Ext_types.Int.Map.t;
+    at_toplevel : bool;
   }
 
   let empty = {
@@ -26,6 +27,7 @@ module Env = struct
     mutable_variables = Ident.empty;
     static_exceptions = Ext_types.Int.Map.empty;
     globals = Ext_types.Int.Map.empty;
+    at_toplevel = true;
   }
 
   let clear_local_bindings env =
@@ -70,6 +72,9 @@ module Env = struct
       Misc.fatal_error ("Closure_conversion.Env.find_global: global "
         ^ string_of_int pos)
 
+  let at_toplevel t = t.at_toplevel
+
+  let not_at_toplevel t = { t with at_toplevel = false; }
 end
 
 module Function_decls = struct
@@ -142,6 +147,7 @@ module Function_decls = struct
   let set_diff (from : IdentSet.t) (idents : Ident.t list) =
     List.fold_right IdentSet.remove idents from
 
+  (* CR lwhite: use a different name from above or explain the difference *)
   let all_free_idents t =
     set_diff (set_diff (all_free_idents t) (all_params t)) (let_rec_idents t)
 
@@ -155,6 +161,6 @@ module Function_decls = struct
     in
     (* For free variables. *)
     IdentSet.fold (fun id env ->
-        Env.add_var env id (Variable.of_ident id))
+        Env.add_var env id (Variable.create (Ident.name id)))
       (all_free_idents t) closure_env
 end

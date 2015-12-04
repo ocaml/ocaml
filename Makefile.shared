@@ -48,7 +48,8 @@ PARSING=parsing/location.cmo parsing/longident.cmo \
   parsing/syntaxerr.cmo parsing/parser.cmo \
   parsing/lexer.cmo parsing/parse.cmo parsing/printast.cmo \
   parsing/pprintast.cmo \
-  parsing/ast_mapper.cmo parsing/attr_helper.cmo
+  parsing/ast_mapper.cmo parsing/attr_helper.cmo \
+  parsing/builtin_attributes.cmo
 
 TYPING=typing/ident.cmo typing/path.cmo \
   typing/primitive.cmo typing/types.cmo \
@@ -163,7 +164,6 @@ MIDDLE_END=\
   middle_end/lift_constants.cmo \
   middle_end/share_constants.cmo \
   middle_end/simplify_common.cmo \
-  middle_end/eliminate_const_block.cmo \
   middle_end/remove_unused_arguments.cmo \
   middle_end/remove_unused_closure_vars.cmo \
   middle_end/remove_unused_globals.cmo \
@@ -195,3 +195,4 @@ NATTOPOBJS=$(UTILS) $(PARSING) $(TYPING) $(COMP) $(MIDDLE_END) $(ASMCOMP) \
   toplevel/opttopmain.cmo toplevel/opttopstart.cmo
 
 PERVASIVES=$(STDLIB_MODULES) outcometree topdirs toploop
+

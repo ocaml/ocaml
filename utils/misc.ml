@@ -511,6 +511,8 @@ module Color = struct
     | Bold
     | Reset
 
+  type setting = Auto | Always | Never
+
   let ansi_of_color = function
     | Black -> "0"
     | Red -> "1"
@@ -605,9 +607,9 @@ module Color = struct
         Format.set_mark_tags true;
         List.iter set_color_tag_handling formatter_l;
         color_enabled := (match o with
-          | Clflags.Always -> true
-          | Clflags.Auto -> should_enable_color ()
-          | Clflags.Never -> false
+          | Always -> true
+          | Auto -> should_enable_color ()
+          | Never -> false
         )
       );
       ()

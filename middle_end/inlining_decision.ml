@@ -20,7 +20,7 @@ module W = Inlining_cost.Whether_sufficient_benefit
 let inline_non_recursive env r ~function_decls ~lhs_of_application
     ~closure_id_being_applied ~(function_decl : Flambda.function_declaration)
     ~only_use_of_function ~no_simplification ~probably_a_functor
-    ~(args : Variable.t list) ~simplify
+    ~(args : Variable.t list) ~simplify ~always_inline ~inline_requested
     ~(made_decision : Inlining_stats_types.Decision.t -> unit) =
   let body, r_inlined =
     (* First we construct the code that would result from copying the body of
@@ -31,11 +31,14 @@ let inline_non_recursive env r ~function_decls ~lhs_of_application
     in
     Inlining_transforms.inline_by_copying_function_body ~env ~r
       ~function_decls ~lhs_of_application ~closure_id_being_applied
-      ~function_decl ~args ~simplify
+      ~inline_requested ~function_decl ~args ~simplify
   in
   let keep_inlined_version =
     if function_decl.stub then begin
       made_decision (Inlined (Copying_body Stub));
+      true
+    end else if always_inline then begin
+      made_decision (Inlined (Copying_body Unconditionally));
       true
     end else if only_use_of_function then begin
       made_decision (Inlined (Copying_body Decl_local_to_application));
@@ -64,7 +67,19 @@ let inline_non_recursive env r ~function_decls ~lhs_of_application
        will keep it, replacing the call site.  We continue by allowing
        further inlining within the inlined copy of the body. *)
     let r =
-      R.map_benefit r (Inlining_cost.Benefit.(+) (R.benefit r_inlined))
+      (* The meaning of requesting inlining is that the user ensure
+         that the function has a benefit of at least its size. It is not
+         added to the benefit exposed by the inlining because the user should
+         have taken that into account before annotating the function. *)
+      let function_benefit =
+        if always_inline then
+          Inlining_cost.Benefit.max ~round:(E.round env)
+            Inlining_cost.Benefit.(requested_inline ~size_of:body zero)
+            (R.benefit r_inlined)
+        else
+          R.benefit r_inlined
+      in
+      R.map_benefit r (Inlining_cost.Benefit.(+) function_benefit)
     in
     (* CR mshinwell for pchambart: This [lift_lets] should have a comment. *)
     let body = Lift_code.lift_lets_expr body in
@@ -92,7 +107,7 @@ let inline_non_recursive env r ~function_decls ~lhs_of_application
       Inlining_transforms.inline_by_copying_function_body ~env
         ~r:(R.reset_benefit r)
         ~function_decls ~lhs_of_application ~closure_id_being_applied
-        ~function_decl ~args ~simplify
+        ~inline_requested ~function_decl ~args ~simplify
     in
     let wsb =
       W.create ~original:(fst (no_simplification ()))
@@ -145,6 +160,7 @@ let unroll_recursive env r ~max_level ~lhs_of_application
         let body, r_inlined =
           Inlining_transforms.inline_by_copying_function_body ~env
             ~r:(R.reset_benefit r) ~function_decls ~lhs_of_application
+            ~inline_requested:Default_inline
             ~closure_id_being_applied ~function_decl ~args ~simplify
         in
         tried_unrolling := true;
@@ -244,6 +260,8 @@ let inline_recursive env r ~max_level ~lhs_of_application
           no_simplification ()
       | None -> no_simplification ()
     else begin
+      (* CR lwhite: should include details of why it was not attempted
+         in the reason. *)
       made_decision
         (Did_not_try_copying_decl (Tried_unrolling tried_unrolling));
       no_simplification ()
@@ -292,8 +310,15 @@ let for_call_site ~env ~r ~(function_decls : Flambda.function_declarations)
       | max_inlining_depth -> max_inlining_depth
       | exception Not_found -> Clflags.default_max_inlining_depth
   in
-  let always_inline =
+  let inline_annotation =
+    (* Merge call site annotation and function annotation.
+       The call site annotation takes precedence *)
     match (inline_requested : Lambda.inline_attribute) with
+    | Default_inline -> function_decl.inline
+    | Always_inline | Never_inline -> inline_requested
+  in
+  let always_inline =
+    match (inline_annotation : Lambda.inline_attribute) with
     | Always_inline -> true
     (* CR-someday mshinwell: consider whether there could be better
        behaviour for stubs *)
@@ -318,7 +343,7 @@ let for_call_site ~env ~r ~(function_decls : Flambda.function_declarations)
     lazy (Variable.Set.mem fun_var (Lazy.force recursive_functions))
   in
   let fun_cost : Inlining_cost.inlining_threshold =
-    match (inline_requested : Lambda.inline_attribute) with
+    match (inline_annotation : Lambda.inline_attribute) with
     | Never_inline -> Never_inline
     | Always_inline | Default_inline ->
       if always_inline
@@ -366,7 +391,7 @@ let for_call_site ~env ~r ~(function_decls : Flambda.function_declarations)
         inline_non_recursive env r ~function_decls ~lhs_of_application
           ~closure_id_being_applied ~function_decl ~made_decision
           ~only_use_of_function ~no_simplification ~probably_a_functor
-          ~args ~simplify
+          ~inline_requested ~always_inline ~args ~simplify
       else if (not always_inline) && E.inlining_level env > max_level then begin
         made_decision (Can_inline_but_tried_nothing (Level_exceeded true));
         no_simplification ()

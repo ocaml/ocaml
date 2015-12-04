@@ -222,12 +222,12 @@ let make_key_generator () =
 
 let compare x y =
   let c = x.stamp - y.stamp in
-  if c = 0
-  then compare x.name y.name
+  if c <> 0 then c
   else
-    if c = 0
-    then compare x.flags y.flags
-    else c
+    let c = compare x.name y.name in
+    if c <> 0 then c
+    else
+      compare x.flags y.flags
 
 let output oc id = output_string oc (unique_name id)
 let hash i = (Char.code i.name.[0]) lxor i.stamp

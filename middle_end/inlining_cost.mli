@@ -53,11 +53,13 @@ module Benefit : sig
 
   val zero : t
   val (+) : t -> t -> t
+  val max : round:int -> t -> t -> t
 
   val remove_call : t -> t
   val remove_alloc : t -> t
   val remove_prim : t -> t
   val remove_branch : t -> t
+  val requested_inline : t -> size_of:Flambda.t -> t
 
   val remove_code : Flambda.t -> t -> t
   val remove_code_named : Flambda.named -> t -> t

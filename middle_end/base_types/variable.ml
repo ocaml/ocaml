@@ -14,34 +14,44 @@
 module T = struct
   type t = {
     compilation_unit : Compilation_unit.t;
-    ident : Ident.t;
+    name : string;
+    name_stamp : int;
+    (** [name_stamp]s are unique within any given compilation unit. *)
   }
 
-  let compare v1 v2 =
-    let c = Ident.compare v1.ident v2.ident in
-    if c = 0
-    then Compilation_unit.compare v1.compilation_unit v2.compilation_unit
-    else c
-  let output c v = Ident.output c v.ident
-  let hash v = Ident.hash v.ident
-  let equal v1 v2 =
-    Ident.same v1.ident v2.ident &&
-    Compilation_unit.equal v1.compilation_unit v2.compilation_unit
-  let print ppf v =
-    if Compilation_unit.equal v.compilation_unit
+  let compare t1 t2 =
+    let c = t1.name_stamp - t2.name_stamp in
+    if c <> 0 then c
+    else Compilation_unit.compare t1.compilation_unit t2.compilation_unit
+
+  let equal t1 t2 =
+    t1.name_stamp = t2.name_stamp
+      && Compilation_unit.equal t1.compilation_unit t2.compilation_unit
+
+  let output chan t =
+    output_string chan t.name;
+    output_string chan "_";
+    output_string chan (string_of_int t.name_stamp)
+
+  let hash t = Hashtbl.hash t
+
+  let print ppf t =
+    if Compilation_unit.equal t.compilation_unit
         (Compilation_unit.get_current_exn ())
     then begin
-      Format.fprintf ppf "%a"
-        Ident.print v.ident
+      Format.fprintf ppf "%s/%d"
+        t.name t.name_stamp
     end else begin
-      Format.fprintf ppf "%a.%a"
-        Compilation_unit.print v.compilation_unit
-        Ident.print v.ident
+      Format.fprintf ppf "%a.%s/%d"
+        Compilation_unit.print t.compilation_unit
+        t.name t.name_stamp
     end
 end
 
 include T
 include Ext_types.Identifiable.Make (T)
+
+let previous_name_stamp = ref (-1)
 
 let create ?current_compilation_unit name =
   let compilation_unit =
@@ -49,57 +59,48 @@ let create ?current_compilation_unit name =
     | Some compilation_unit -> compilation_unit
     | None -> Compilation_unit.get_current_exn ()
   in
+  let name_stamp =
+    incr previous_name_stamp;
+    !previous_name_stamp
+  in
   { compilation_unit;
-    ident = Ident.create name;
+    name;
+    name_stamp;
   }
 
-let of_ident ident = create (Ident.name ident)
+let create_with_same_name_as_ident ident = create (Ident.name ident)
 
-let unwrap t = t.ident
-
-let unique_ident t =
-  { t.ident with
-    name =
-      Format.asprintf "%a_%s"
-        Compilation_unit.print t.compilation_unit
-        t.ident.name;
-  }
+let clambda_name t =
+  Format.asprintf "%a_%s"
+    Compilation_unit.print t.compilation_unit
+    t.name
 
 let rename ?current_compilation_unit ?append t =
-  let compilation_unit =
+  let current_compilation_unit =
     match current_compilation_unit with
     | Some compilation_unit -> compilation_unit
     | None -> Compilation_unit.get_current_exn ()
   in
-  let ident =
+  let name =
     match append with
-    | None -> Ident.rename t.ident
-    | Some s -> Ident.create (t.ident.Ident.name ^ s)
+    | None -> t.name
+    | Some s -> t.name ^ s
   in
-  { compilation_unit = compilation_unit;
-    ident;
-  }
-
-let freshen t =
-  rename t ~current_compilation_unit:(Compilation_unit.get_current_exn ())
+  create ~current_compilation_unit name
 
 let in_compilation_unit t cu =
   Compilation_unit.equal cu t.compilation_unit
 
 let get_compilation_unit t = t.compilation_unit
 
-let unique_name t = Ident.unique_name t.ident
-
-let output_full c t =
-  Compilation_unit.output c t.compilation_unit;
-  Printf.fprintf c ".";
-  Ident.output c t.ident
+let unique_name t =
+  Printf.sprintf "%s_%d" t.name t.name_stamp
 
 let print_list ppf ts =
   List.iter (fun t -> Format.fprintf ppf "@ %a" print t) ts
 
 let debug_when_stamp_matches t ~stamp ~f =
-  if t.ident.stamp = stamp then f ()
+  if t.name_stamp = stamp then f ()
 
 let print_opt ppf = function
   | None -> Format.fprintf ppf "<no var>"
@@ -109,3 +110,8 @@ type pair = t * t
 module Pair = Ext_types.Identifiable.Make (Ext_types.Pair (T) (T))
 
 let compare_lists l1 l2 = Misc.compare_lists compare l1 l2
+
+let output_full chan t =
+  Compilation_unit.output chan t.compilation_unit;
+  output_string chan ".";
+  output chan t

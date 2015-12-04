@@ -210,6 +210,24 @@ and compare_records env params1 params2 n labels1 labels2 =
 let type_declarations ?(equality = false) env name decl1 id decl2 =
   if decl1.type_arity <> decl2.type_arity then [Arity] else
   if not (private_flags decl1 decl2) then [Privacy] else
+  let err = match (decl1.type_manifest, decl2.type_manifest) with
+      (_, None) ->
+        if Ctype.equal env true decl1.type_params decl2.type_params
+        then [] else [Constraint]
+    | (Some ty1, Some ty2) ->
+        if type_manifest env ty1 decl1.type_params ty2 decl2.type_params
+            decl2.type_private
+        then [] else [Manifest]
+    | (None, Some ty2) ->
+        let ty1 =
+          Btype.newgenty (Tconstr(Pident id, decl2.type_params, ref Mnil))
+        in
+        if Ctype.equal env true decl1.type_params decl2.type_params then
+          if Ctype.equal env false [ty1] [ty2] then []
+          else [Manifest]
+        else [Constraint]
+  in
+  if err <> [] then err else
   let err = match (decl1.type_kind, decl2.type_kind) with
       (_, Type_abstract) -> []
     | (Type_variant cstrs1, Type_variant cstrs2) ->
@@ -234,24 +252,6 @@ let type_declarations ?(equality = false) env name decl1 id decl2 =
         [Record_representation (rep2 = Record_float)]
     | (Type_open, Type_open) -> []
     | (_, _) -> [Kind]
-  in
-  if err <> [] then err else
-  let err = match (decl1.type_manifest, decl2.type_manifest) with
-      (_, None) ->
-        if Ctype.equal env true decl1.type_params decl2.type_params
-        then [] else [Constraint]
-    | (Some ty1, Some ty2) ->
-        if type_manifest env ty1 decl1.type_params ty2 decl2.type_params
-            decl2.type_private
-        then [] else [Manifest]
-    | (None, Some ty2) ->
-        let ty1 =
-          Btype.newgenty (Tconstr(Pident id, decl2.type_params, ref Mnil))
-        in
-        if Ctype.equal env true decl1.type_params decl2.type_params then
-          if Ctype.equal env false [ty1] [ty2] then []
-          else [Manifest]
-        else [Constraint]
   in
   if err <> [] then err else
   let abstr =

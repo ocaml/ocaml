@@ -24,6 +24,15 @@ type value_string = {
   size : int;
 }
 
+type value_float_array_contents =
+  | Contents of float option array
+  | Unknown_or_mutable
+
+type value_float_array = {
+  contents : value_float_array_contents;
+  size : int;
+}
+
 type unknown_because_of =
   | Unresolved_symbol of Symbol.t
   | Other
@@ -44,7 +53,7 @@ and descr =
   | Value_set_of_closures of value_set_of_closures
   | Value_closure of value_closure
   | Value_string of value_string
-  | Value_float_array of int (* size *)
+  | Value_float_array of value_float_array
   | Value_unknown of unknown_because_of
   | Value_bottom
   | Value_extern of Export_id.t
@@ -112,8 +121,13 @@ let rec print_descr ppf = function
           in
           Format.fprintf ppf "string %i %S" size s
     end
-  | Value_float_array size ->
-      Format.fprintf ppf "float_array %i" size
+  | Value_float_array float_array ->
+    begin match float_array.contents with
+    | Unknown_or_mutable ->
+      Format.fprintf ppf "float_array %i" float_array.size
+    | Contents _ ->
+      Format.fprintf ppf "float_array_imm %i" float_array.size
+    end
   | Value_boxed_int (t, i) ->
     match t with
     | Int32 -> Format.fprintf ppf "%li" i
@@ -181,7 +195,11 @@ let value_bottom = approx Value_bottom
 let value_unresolved sym = approx (Value_unresolved sym)
 
 let value_string size contents = approx (Value_string {size; contents })
-let value_float_array size = approx (Value_float_array size)
+let value_mutable_float_array ~size =
+  approx (Value_float_array { contents = Unknown_or_mutable; size; } )
+let value_immutable_float_array contents =
+  let size = Array.length contents in
+  approx (Value_float_array { contents = Contents contents; size; } )
 
 let name_expr_fst (named, thing) ~name =
   (Flambda_utils.name_expr named ~name), thing
@@ -409,7 +427,11 @@ let get_field t ~field_index:i : get_field_result =
        We consider this as unreachable and mark the result accordingly. *)
     Ok value_bottom
   | Value_float_array _ ->
-    (* Float arrays are mutable. *)
+    (* For the moment we return "unknown" even for immutable arrays, since
+       it isn't possible for user code to project from an immutable array. *)
+    (* CR-someday mshinwell: If Leo's array's patch lands, then we can
+       change this, although it's probably not Pfield that is used to
+       do the projection. *)
     Ok (value_unknown Other)
   | Value_string _ | Value_float _ | Value_boxed_int _ ->
     (* The user is doing something unsafe. *)
@@ -630,3 +652,13 @@ let approx_for_bound_var value_set_of_closures var =
       print_value_set_of_closures value_set_of_closures
       Var_within_closure.print var
       (Printexc.raw_backtrace_to_string (Printexc.get_callstack max_int))
+
+let check_approx_for_float t : float option =
+  match t.descr with
+  | Value_float f -> Some f
+  | Value_unresolved _
+  | Value_unknown _ | Value_string _ | Value_float_array _
+  | Value_bottom | Value_block _ | Value_int _ | Value_char _
+  | Value_constptr _ | Value_set_of_closures _ | Value_closure _
+  | Value_extern _ | Value_boxed_int _ | Value_symbol _ ->
+      None

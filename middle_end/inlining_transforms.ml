@@ -66,12 +66,21 @@ let fold_over_projections_of_vars_bound_by_closure ~closure_id_being_applied
       function_decls)
     init
 
+let set_inline_attribute_on_all_apply body inline =
+  Flambda_iterators.map_toplevel (function
+      | Apply apply ->
+          Apply { apply with inline }
+      | expr ->
+          expr)
+    (fun named -> named)
+    body
+
 (** Assign fresh names for a function's parameters and rewrite the body to
     use these new names. *)
 let copy_of_function's_body_with_freshened_params
       ~(function_decl : Flambda.function_declaration) =
   let params = function_decl.params in
-  let freshened_params = List.map Variable.freshen params in
+  let freshened_params = List.map (fun var -> Variable.rename var) params in
   let subst = Variable.Map.of_list (List.combine params freshened_params) in
   let body = Flambda_utils.toplevel_substitution subst function_decl.body in
   freshened_params, body
@@ -85,6 +94,7 @@ let copy_of_function's_body_with_freshened_params
     (= "variables bound by the closure"), and any function identifiers
     introduced by the corresponding set of closures. *)
 let inline_by_copying_function_body ~env ~r ~function_decls ~lhs_of_application
+      ~(inline_requested : Lambda.inline_attribute)
       ~closure_id_being_applied
       ~(function_decl : Flambda.function_declaration) ~args ~simplify =
   assert (E.mem env lhs_of_application);
@@ -98,6 +108,17 @@ let inline_by_copying_function_body ~env ~r ~function_decls ~lhs_of_application
   in
   let freshened_params, body =
     copy_of_function's_body_with_freshened_params ~function_decl
+  in
+  let body =
+    if function_decl.stub && inline_requested <> Lambda.Default_inline then
+      (* When the function inlined function is a stub, the annotation
+         is reported to the function applications inside the stub.
+         This allows to report the annotation to the application the
+         original programmer really intended: the stub is not visible
+         in the source. *)
+      set_inline_attribute_on_all_apply body inline_requested
+    else
+      body
   in
   let bindings_for_params_to_args =
     (* Bind the function's parameters to the arguments from the call site. *)

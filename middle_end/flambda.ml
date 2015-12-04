@@ -334,8 +334,14 @@ and print_function_declaration ppf var (f : function_declaration) =
     else
       ""
   in
-  fprintf ppf "@[<2>(%a%s%s@ =@ fun@[<2>%a@] ->@ @[<2>%a@])@]@ "
-    Variable.print var stub is_a_functor idents f.params lam f.body
+  let inline =
+    match f.inline with
+    | Always_inline -> " *inline*"
+    | Never_inline -> " *never_inline*"
+    | Default_inline -> ""
+  in
+  fprintf ppf "@[<2>(%a%s%s%s@ =@ fun@[<2>%a@] ->@ @[<2>%a@])@]@ "
+    Variable.print var stub is_a_functor inline idents f.params lam f.body
 
 and print_set_of_closures ppf (set_of_closures : set_of_closures) =
   match set_of_closures with

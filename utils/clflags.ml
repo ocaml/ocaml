@@ -96,6 +96,7 @@ and dump_rawclambda = ref false         (* -drawclambda *)
 and dump_clambda = ref false            (* -dclambda *)
 and dump_flambda = ref false            (* -dflambda *)
 and dump_flambda_let = ref (None : int option) (* -dflambda-let=... *)
+and dump_flambda_verbose = ref false    (* -dflambda-verbose *)
 and dump_instr = ref false              (* -dinstr *)
 
 let keep_asm_file = ref false           (* -S *)
@@ -153,9 +154,9 @@ let unsafe_string = ref true;;         (* -safe-string / -unsafe-string *)
 let functor_heuristics = ref true;;    (* -no-functor-heuristics *)
 
 let default_inline_call_cost = 5
-let default_inline_alloc_cost = 10
+let default_inline_alloc_cost = 3
 let default_inline_prim_cost = 3
-let default_inline_branch_cost = 10
+let default_inline_branch_cost = 3
 let default_branch_inline_factor = 0.6
 
 let inline_call_cost = ref (Int_arg_helper.Always default_inline_call_cost)
@@ -193,16 +194,12 @@ let set_dumped_pass s enabled =
   in
   dumped_passes_list := dumped_passes
 
-(* CR mshinwell: change to [false] before merge, and finish off
-   command line arg support *)
-let full_flambda_invariant_check =
-  try ignore (Sys.getenv "DISABLE_FULL_FLAMBDA_INVARIANT_CHECK"); ref false
-  with _ -> ref true
+(* CR mshinwell: change to [false] before merge *)
+let full_flambda_invariant_check = ref true
 
-type color_setting = Auto | Always | Never
 let parse_color_setting = function
-  | "auto" -> Some Auto
-  | "always" -> Some Always
-  | "never" -> Some Never
+  | "auto" -> Some Misc.Color.Auto
+  | "always" -> Some Misc.Color.Always
+  | "never" -> Some Misc.Color.Never
   | _ -> None
-let color = ref Auto ;; (* -color *)
+let color = ref Misc.Color.Auto ;; (* -color *)

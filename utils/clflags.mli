@@ -143,11 +143,11 @@ val default_max_inlining_depth : int
 val max_inlining_depth : Int_arg_helper.parsed ref
 val inline_recursive_functions : bool ref
 val remove_unused_arguments : bool ref
+val dump_flambda_verbose : bool ref
 
 val all_passes : string list ref
 val dumped_pass : string -> bool
 val set_dumped_pass : string -> bool -> unit
 
-type color_setting = Auto | Always | Never
-val parse_color_setting : string -> color_setting option
-val color : color_setting ref
+val parse_color_setting : string -> Misc.Color.setting option
+val color : Misc.Color.setting ref

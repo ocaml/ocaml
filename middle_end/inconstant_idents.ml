@@ -258,7 +258,20 @@ module NotConstants(P:Param) = struct
       when for_clambda && toplevel ->
       List.iter (mark_loop ~toplevel curr) args
 *)
-
+    | Prim (Pmakearray (Pfloatarray, Immutable), args, _) ->
+      mark_vars args curr
+    | Prim (Pmakearray (Pfloatarray, Mutable), args, _) ->
+      if for_clambda && toplevel then mark_vars args curr
+      else mark_curr curr
+    | Prim (Pduparray (Pfloatarray, Immutable), [arg], _) ->
+      mark_var arg curr
+    | Prim (Pduparray (Pfloatarray, Mutable), [arg], _) ->
+      if for_clambda && toplevel then mark_var arg curr
+      else mark_curr curr
+    | Prim (Pduparray _, _, _) ->
+      Misc.fatal_errorf
+        "Unsupported case of Pduparray in Inconstant_idents: %a"
+        Flambda.print_named named
     | Project_closure ({ set_of_closures; closure_id; }) ->
       if Closure_id.in_compilation_unit closure_id compilation_unit then
         mark_var set_of_closures curr

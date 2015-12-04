@@ -12,20 +12,20 @@
 
 BASEDIR=../..
 FLAGS=-w A
-EXECNAME=./program
 
 run-all:
+	@$(OCAMLC) $(FLAGS) -c deprecated_module.mli
 	@for file in *.ml; do \
 	  printf " ... testing '$$file':"; \
 	  F="`basename $$file .ml`"; \
-	  $(OCAMLC) $(FLAGS) -o $(EXECNAME) $$file 2>$$F.result; \
+	  $(OCAMLC) $(FLAGS) -c $$file 2>$$F.result; \
 	  $(DIFF) $$F.reference $$F.result >/dev/null \
 	  && echo " => passed" || echo " => failed"; \
 	done;
 	@for file in *.opt.ml; do \
-	  printf " ... testing '$$file':"; \
+	  printf " ... testing '$$file' with ocamlopt:"; \
 	  F="`basename $$file .ml`"; \
-	  $(OCAMLOPT) $(FLAGS) -o $(EXECNAME) $$file 2>$$F.opt_result; \
+	  $(OCAMLOPT) $(FLAGS) -c $$file 2>$$F.opt_result; \
 	  $(DIFF) $$F.opt_reference $$F.opt_result >/dev/null \
 	  && echo " => passed" || echo " => failed"; \
 	done;
@@ -33,6 +33,6 @@ run-all:
 promote: defaultpromote
 
 clean: defaultclean
-	@rm -f *.result $(EXECNAME)
+	@rm -f *.result
 
 include $(BASEDIR)/makefiles/Makefile.common

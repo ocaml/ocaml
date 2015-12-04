@@ -165,7 +165,7 @@ module Options = Main_args.Make_optcomp_options (struct
     inline_call_cost :=
       Int_arg_helper.Variable (Ext_types.Int.Map.of_list [
         0, default_inline_call_cost;
-        1, default_inline_call_cost;
+        1, 10;
         2, 20;
       ]);
     inline_alloc_cost :=
@@ -238,6 +238,10 @@ module Options = Main_args.Make_optcomp_options (struct
   let _dclambda = set dump_clambda
   let _dflambda = set dump_flambda
   let _dflambda_let stamp = dump_flambda_let := Some stamp
+  let _dflambda_verbose () =
+    set dump_flambda ();
+    set dump_flambda_verbose ()
+  let _dflambda_invariants = set full_flambda_invariant_check
   let _dcmm = set dump_cmm
   let _dsel = set dump_selection
   let _dcombine = set dump_combine

@@ -45,6 +45,17 @@ let primitive (p : Lambda.primitive) (args, approxs) expr dbg ~size_int
         S.const_ptr_expr (Flambda.Expr (Var arg)) 0
       | _ -> S.const_ptr_expr expr 0
     end
+  | Pmakearray (Pfloatarray, Mutable) ->
+      let approx =
+        A.value_mutable_float_array ~size:(List.length args)
+      in
+      expr, approx, C.Benefit.zero
+  | Pmakearray (Pfloatarray, Immutable) ->
+      let approx =
+        A.value_immutable_float_array
+          (Array.of_list (List.map A.check_approx_for_float approxs))
+      in
+      expr, approx, C.Benefit.zero
   | Pintcomp Ceq when phys_equal approxs ->
     S.const_bool_expr expr true
     (* N.B. Having [not (phys_equal approxs)] would not on its own tell us
@@ -181,4 +192,22 @@ let primitive (p : Lambda.primitive) (args, approxs) expr dbg ~size_int
           A.value_unknown Other,
           (* we improved it, but there is no way to account for that: *)
           C.Benefit.zero
+    | [Value_float_array { size; contents }] ->
+        begin match p with
+        | Parraylength _ ->
+            S.const_int_expr expr size
+        | Pfloatfield i ->
+            begin match contents with
+            | A.Contents a when i >= 0 && i < size ->
+                begin match a.(i) with
+                | None ->
+                    expr, A.value_unknown Other, C.Benefit.zero
+                | Some v ->
+                    S.const_float_expr expr v
+                end
+            | Contents _ | Unknown_or_mutable ->
+                expr, A.value_unknown Other, C.Benefit.zero
+            end
+        | _ -> expr, A.value_unknown Other, C.Benefit.zero
+        end
     | _ -> expr, A.value_unknown Other, C.Benefit.zero

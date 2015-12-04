@@ -151,7 +151,7 @@ end = struct
   let ident_for_var_exn t id = Variable.Map.find id t.var
 
   let add_fresh_ident t var =
-    let id = Variable.unique_ident var in
+    let id = Ident.create (Variable.unique_name var) in
     id, { t with var = Variable.Map.add var id t.var }
 
   let ident_for_mutable_var_exn t mut_var =
@@ -200,8 +200,8 @@ let to_clambda_allocated_constant (const : Allocated_const.t)
   | Int32 i -> Uconst_int32 i
   | Int64 i -> Uconst_int64 i
   | Nativeint i -> Uconst_nativeint i
-  | Immstring s | String s -> Uconst_string s
-  | Float_array a -> Uconst_float_array a
+  | Immutable_string s | String s -> Uconst_string s
+  | Immutable_float_array a | Float_array a -> Uconst_float_array a
 
 let to_uconst_symbol env symbol : Clambda.ustructured_constant option =
   match Env.allocated_const_for_symbol env symbol with
@@ -211,7 +211,7 @@ let to_uconst_symbol env symbol : Clambda.ustructured_constant option =
   | Some _ -> None
 
 let to_clambda_symbol' env sym : Clambda.uconstant =
-  let lbl = Linkage_name.to_shortened_string (Symbol.label sym) in
+  let lbl = Linkage_name.to_string (Symbol.label sym) in
   Uconst_ref (lbl, to_uconst_symbol env sym)
 
 let to_clambda_symbol env sym : Clambda.ulambda =
@@ -557,7 +557,7 @@ and to_clambda_closed_set_of_closures t env symbol
     }
   in
   let ufunct = List.map to_clambda_function functions in
-  let closure_lbl = Linkage_name.to_shortened_string (Symbol.label symbol) in
+  let closure_lbl = Linkage_name.to_string (Symbol.label symbol) in
   Uconst_closure (ufunct, closure_lbl, [])
 
 let to_clambda_initialize_symbol t env symbol fields : Clambda.ulambda =
@@ -661,7 +661,7 @@ let convert (program, exported) : result =
   let preallocated_blocks =
     List.map (fun (symbol, tag, fields) ->
         { Clambda.
-          symbol = Linkage_name.to_shortened_string (Symbol.label symbol);
+          symbol = Linkage_name.to_string (Symbol.label symbol);
           tag = Tag.to_int tag;
           size = List.length fields;
         })

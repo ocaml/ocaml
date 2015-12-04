@@ -126,6 +126,15 @@ let lambda_smaller' lam ~than:threshold =
 let lambda_smaller lam ~than =
   lambda_smaller' lam ~than <> None
 
+let lambda_size lam =
+  match lambda_smaller' lam ~than:max_int with
+  | Some size ->
+      size
+  | None ->
+      (* There is no way that an expression of size max_int could fit in
+         memory. *)
+      assert false
+
 type inlining_threshold =
   | Never_inline
   | Can_inline_if_no_larger_than of int
@@ -157,6 +166,8 @@ module Benefit = struct
     remove_prim : int;
     remove_branch : int;
     (* CR-someday pchambart: branch_benefit : t list; *)
+    requested_inline : int;
+    (* Benefit to compensate the size of functions marked for inlining *)
   }
 
   let zero = {
@@ -164,12 +175,16 @@ module Benefit = struct
     remove_alloc = 0;
     remove_prim = 0;
     remove_branch = 0;
+    requested_inline = 0;
   }
 
   let remove_call t = { t with remove_call = t.remove_call + 1; }
   let remove_alloc t = { t with remove_alloc = t.remove_alloc + 1; }
   let remove_prim t = { t with remove_prim = t.remove_prim + 1; }
   let remove_branch t = { t with remove_branch = t.remove_branch + 1; }
+  let requested_inline t ~size_of =
+    let size = lambda_size size_of in
+    { t with requested_inline = t.requested_inline + size; }
 
   let remove_code_helper b (flam : Flambda.t) =
     match flam with
@@ -215,7 +230,7 @@ module Benefit = struct
 
   let benefit_factor = 1
 
-  let evaluate t ~round =
+  let evaluate t ~round : int =
     let cost (flag : Clflags.Int_arg_helper.parsed) ~default =
       match flag with
       | Always cost -> cost
@@ -233,13 +248,21 @@ module Benefit = struct
           ~default:Clflags.default_inline_prim_cost)
        + t.remove_branch * (cost !Clflags.inline_branch_cost
           ~default:Clflags.default_inline_branch_cost))
+    + t.requested_inline
 
   let (+) t1 t2 = {
     remove_call = t1.remove_call + t2.remove_call;
     remove_alloc = t1.remove_alloc + t2.remove_alloc;
     remove_prim = t1.remove_prim + t2.remove_prim;
     remove_branch = t1.remove_branch + t2.remove_branch;
+    requested_inline = t1.requested_inline + t2.requested_inline;
   }
+
+  let max ~round t1 t2 =
+    let c1 = evaluate ~round t1 in
+    let c2 = evaluate ~round t2 in
+    if c1 > c2 then t1 else t2
+
 end
 
 module Whether_sufficient_benefit = struct
@@ -254,19 +277,12 @@ module Whether_sufficient_benefit = struct
   }
 
   let create ~original ~branch_depth lam benefit ~probably_a_functor ~round =
-    match
-      lambda_smaller' lam ~than:max_int,
-      lambda_smaller' original ~than:max_int
-    with
-    | Some new_size, Some original_size ->
-      let evaluated_benefit = Benefit.evaluate benefit ~round in
-      { round; benefit; branch_depth; probably_a_functor; original_size;
-        new_size; evaluated_benefit;
-      }
-    | _, _ ->
-      (* There is no way that an expression of size max_int could fit in
-         memory. *)
-      assert false
+    let evaluated_benefit = Benefit.evaluate benefit ~round in
+    { round; benefit; branch_depth; probably_a_functor;
+      original_size = lambda_size original;
+      new_size = lambda_size lam;
+      evaluated_benefit;
+    }
 
   let correct_branch_factor f =
     f = f (* is not nan *)
@@ -310,13 +326,14 @@ module Whether_sufficient_benefit = struct
 
 
   let to_string t =
-      Printf.sprintf "{benefit={call=%d,alloc=%d,prim=%i,branch=%i},\
+      Printf.sprintf "{benefit={call=%d,alloc=%d,prim=%i,branch=%i,req=%i},\
                       orig_size=%d,new_size=%d,eval_size=%d,eval_benefit=%d,\
                       functor=%b,branch_depth=%d}=%s"
         t.benefit.remove_call
         t.benefit.remove_alloc
         t.benefit.remove_prim
         t.benefit.remove_branch
+        t.benefit.requested_inline
         t.original_size
         t.new_size
         (t.original_size - t.new_size)
