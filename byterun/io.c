@@ -149,27 +149,6 @@ CAMLexport int caml_channel_binary_mode(struct channel *channel)
 
 /* Output */
 
-#ifndef EINTR
-#define EINTR (-1)
-#endif
-#ifndef EAGAIN
-#define EAGAIN (-1)
-#endif
-#ifndef EWOULDBLOCK
-#define EWOULDBLOCK (-1)
-#endif
-
-static int do_write(int fd, int flags, char *p, int n)
-{
-  int retcode;
-  caml_enter_blocking_section();
-  retcode = caml_write_fd(fd, flags & CHANNEL_FLAG_FROM_SOCKET, p, n);
-  caml_leave_blocking_section();
-  if (retcode == -1) caml_sys_io_error(NO_ARG);
-  CAMLassert (retcode > 0);
-  return retcode;
-}
-
 /* Attempt to flush the buffer. This will make room in the buffer for
    at least one character. Returns true if the buffer is empty at the
    end of the flush, or false if some data remains in the buffer.
@@ -182,7 +161,8 @@ CAMLexport int caml_flush_partial(struct channel *channel)
   towrite = channel->curr - channel->buff;
   CAMLassert (towrite >= 0);
   if (towrite > 0) {
-    written = do_write(channel->fd, channel->flags, channel->buff, towrite);
+    written = caml_write_fd(channel->fd, channel->flags,
+			    channel->buff, towrite);
     channel->offset += written;
     if (written < towrite)
       memmove(channel->buff, channel->buff + written, towrite - written);
@@ -226,7 +206,8 @@ CAMLexport int caml_putblock(struct channel *channel, char *p, intnat len)
        fits to buffer and write the buffer */
     memmove(channel->curr, p, free);
     towrite = channel->end - channel->buff;
-    written = do_write(channel->fd, channel->flags, channel->buff, towrite);
+    written = caml_write_fd(channel->fd, channel->flags,
+			    channel->buff, towrite);
     if (written < towrite)
       memmove(channel->buff, channel->buff + written, towrite - written);
     channel->offset += written;
@@ -265,29 +246,18 @@ CAMLexport file_offset caml_pos_out(struct channel *channel)
 
 /* Input */
 
-static int do_read(int fd, int flags, char *p, unsigned int n)
-{
-  int retcode;
-
-  caml_enter_blocking_section();
-  retcode = caml_read_fd(fd, flags & CHANNEL_FLAG_FROM_SOCKET, p, n);
-  caml_leave_blocking_section();
-  if (retcode == -1) caml_sys_io_error(NO_ARG);
-  return retcode;
-}
-
 /* caml_do_read is exported for Cash */
 CAMLexport int caml_do_read(int fd, char *p, unsigned int n)
 {
-  return do_read(fd, 0, p, n);
+  return caml_read_fd(fd, 0, p, n);
 }
 
 CAMLexport unsigned char caml_refill(struct channel *channel)
 {
   int n;
 
-  n = do_read(channel->fd, channel->flags, 
-              channel->buff, channel->end - channel->buff);
+  n = caml_read_fd(channel->fd, channel->flags, 
+		   channel->buff, channel->end - channel->buff);
   if (n == 0) caml_raise_end_of_file();
   channel->offset += n;
   channel->max = channel->buff + n;
@@ -324,8 +294,8 @@ CAMLexport int caml_getblock(struct channel *channel, char *p, intnat len)
     channel->curr += avail;
     return avail;
   } else {
-    nread = do_read(channel->fd, channel->flags, channel->buff,
-                    channel->end - channel->buff);
+    nread = caml_read_fd(channel->fd, channel->flags, channel->buff,
+			 channel->end - channel->buff);
     channel->offset += nread;
     channel->max = channel->buff + nread;
     if (n > nread) n = nread;
@@ -394,8 +364,8 @@ CAMLexport intnat caml_input_scan_line(struct channel *channel)
         return -(channel->max - channel->curr);
       }
       /* Fill the buffer as much as possible */
-      n = do_read(channel->fd, channel->flags, 
-                  channel->max, channel->end - channel->max);
+      n = caml_read_fd(channel->fd, channel->flags, 
+		       channel->max, channel->end - channel->max);
       if (n == 0) {
         /* End-of-file encountered. Return the number of characters in the
            buffer, with negative sign since we haven't encountered
@@ -594,7 +564,7 @@ CAMLprim value caml_ml_set_binary_mode(value vchannel, value mode)
 #if defined(_WIN32)
   /* The implementation of [caml_read_fd] and [caml_write_fd] in win32.c
      doesn't support socket I/O with CRLF conversion. */
-  if (channel->flags & CHANNEL_FLAG_FROM_SOCKET != 0
+  if ((channel->flags & CHANNEL_FLAG_FROM_SOCKET) != 0
       && ! Bool_val(mode)) {
     errno = EINVAL;
     caml_sys_error(NO_ARG);
@@ -762,7 +732,7 @@ CAMLprim value caml_ml_input(value vchannel, value buff, value vstart,
 
   Lock(channel);
   /* We cannot call caml_getblock here because buff may move during
-     caml_do_read */
+     caml_read_fd */
   start = Long_val(vstart);
   len = Long_val(vlength);
   n = len >= INT_MAX ? INT_MAX : (int) len;
@@ -775,7 +745,7 @@ CAMLprim value caml_ml_input(value vchannel, value buff, value vstart,
     channel->curr += avail;
     n = avail;
   } else {
-    nread = do_read(channel->fd, channel->flags, channel->buff,
+    nread = caml_read_fd(channel->fd, channel->flags, channel->buff,
                          channel->end - channel->buff);
     channel->offset += nread;
     channel->max = channel->buff + nread;

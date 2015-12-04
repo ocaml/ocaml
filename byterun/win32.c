@@ -13,7 +13,10 @@
 
 /* Win32-specific stuff */
 
-#include <windows.h>
+#define WIN32_LEAN_AND_MEAN
+#include <wtypes.h>
+#include <winbase.h>
+#include <winsock2.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdarg.h>
@@ -21,13 +24,14 @@
 #include <fcntl.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <winsock2.h>
 #include <ctype.h>
 #include <errno.h>
 #include <string.h>
 #include <signal.h>
+#include "caml/alloc.h"
 #include "caml/address_class.h"
 #include "caml/fail.h"
+#include "caml/io.h"
 #include "caml/memory.h"
 #include "caml/misc.h"
 #include "caml/osdeps.h"
@@ -40,32 +44,65 @@
 #define S_ISREG(mode) (((mode) & S_IFMT) == S_IFREG)
 #endif
 
-int caml_read_fd(int fd, int is_socket, void * buf, int n)
+CAMLnoreturn_start
+static void caml_win32_sys_error (int errnum)
+CAMLnoreturn_end;
+
+static void caml_win32_sys_error(int errnum)
+{
+  char buffer[512];
+  value msg;
+  if (FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+                    NULL,
+                    errnum,
+                    0,
+                    buffer,
+                    sizeof(buffer),
+                    NULL)) {
+    msg = caml_copy_string(buffer);
+  } else {
+    msg = caml_alloc_sprintf("unknown error #%d", errnum);
+  }
+  caml_raise_sys_error(msg);
+}
+
+int caml_read_fd(int fd, int flags, void * buf, int n)
 {
   int retcode;
-  if (! is_socket) {
+  if ((flags & CHANNEL_FLAG_FROM_SOCKET) == 0) {
+    caml_enter_blocking_section();
     retcode = read(fd, buf, n);
     /* Large reads from console can fail with ENOMEM.  Reduce requested size
        and try again. */
     if (retcode == -1 && errno == ENOMEM && n > 16384) {
-      retcode = read(fd, p, 16384);
+      retcode = read(fd, buf, 16384);
     }
+    caml_leave_blocking_section();
+    if (retcode == -1) caml_sys_io_error(NO_ARG);
   } else {
-    retcode = recv((SOCKET) _getosfhandle(fd), buf, n, 0);
-    if (ret == -1) _dosmaperr(WSAGetLastError());
+    caml_enter_blocking_section();
+    retcode = recv((SOCKET) _get_osfhandle(fd), buf, n, 0);
+    caml_leave_blocking_section();
+    if (retcode == -1) caml_win32_sys_error(WSAGetLastError());
   }
   return retcode;
 }
 
-int caml_write_fd(int fd, int is_socket, void * buf, int n)
+int caml_write_fd(int fd, int flags, void * buf, int n)
 {
   int retcode;
-  if (! is_socket) {
+  if ((flags & CHANNEL_FLAG_FROM_SOCKET) == 0) {
+    caml_enter_blocking_section();
     retcode = write(fd, buf, n);
+    caml_leave_blocking_section();
+    if (retcode == -1) caml_sys_io_error(NO_ARG);
   } else {
-    retcode = send((SOCKET) _getosfhandle(fd), buf, n, 0);
-    if (ret == -1) _dosmaperr(WSAGetLastError());
+    caml_enter_blocking_section();
+    retcode = send((SOCKET) _get_osfhandle(fd), buf, n, 0);
+    caml_leave_blocking_section();
+    if (retcode == -1) caml_win32_sys_error(WSAGetLastError());
   }
+  CAMLassert (retcode > 0);
   return retcode;
 }
 
@@ -349,7 +386,7 @@ void caml_signal_thread(void * lpParam)
   char *endptr;
   HANDLE h;
   /* Get an hexa-code raw handle through the environment */
-  h = (HANDLE) strtol(getenv("CAMLSIGPIPE"), &endptr, 16);
+  h = (HANDLE) (uintptr_t) strtol(getenv("CAMLSIGPIPE"), &endptr, 16);
   while (1) {
     DWORD numread;
     BOOL ret;
