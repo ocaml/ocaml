@@ -200,6 +200,9 @@ shared libraries).
 .BR 0x200
 Computation of compaction-triggering condition.
 
+.BR 0x400
+Output GC statistics at program exit, in the same format as Gc.print_stat.
+
 The multiplier is
 .BR k ,
 .BR M ,\ or
