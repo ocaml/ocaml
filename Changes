@@ -199,6 +199,8 @@ Standard library:
   * Pervasives.ldexp (and [@@noalloc])
   * Pervasives.compare for float, nativeint, int32, int64.
   (Bobot François)
+- GPR#329: Add exists, for_all,  mem and memq functions in Array
+  (Bernhard Schommer)
 
 Type system:
 - PR#5545: Type annotations on methods cannot control the choice of abbreviation
