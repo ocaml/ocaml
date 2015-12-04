@@ -124,6 +124,7 @@ module type Optcommon_options = sig
   val _rounds : int -> unit
   val _unroll : string -> unit
   val _no_functor_heuristics : unit -> unit
+  val _classic_heuristic : unit -> unit
   val _inline_call_cost : string -> unit
   val _inline_alloc_cost : string -> unit
   val _inline_prim_cost : string -> unit
