@@ -3806,7 +3806,8 @@ and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
   let unused_check ty_arg () =
     List.iter (fun (pat, (env, _)) -> check_absent_variant env pat)
       pat_env_list;
-    check_unused ~lev env (instance env ty_arg) cases
+    check_unused ~lev env (instance env ty_arg) cases ;
+    Parmatch.check_ambiguous_bindings cases
   in
   if contains_polyvars || do_init then
     let ty_arg_check =

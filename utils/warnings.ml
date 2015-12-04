@@ -74,6 +74,7 @@ type t =
   | Duplicated_attribute of string          (* 54 *)
   | Inlining_impossible of string           (* 55 *)
   | Unreachable_case                        (* 56 *)
+  | Ambiguous_pattern of string list        (* 57 *)
 ;;
 
 (* If you remove a warning, leave a hole in the numbering.  NEVER change
@@ -139,9 +140,10 @@ let number = function
   | Duplicated_attribute _ -> 54
   | Inlining_impossible _ -> 55
   | Unreachable_case -> 56
+  | Ambiguous_pattern _ -> 57
 ;;
 
-let last_warning_number = 56
+let last_warning_number = 57
 ;;
 (* Must be the max number returned by the [number] function. *)
 
@@ -427,6 +429,15 @@ let message = function
       Printf.sprintf "the %S attribute is used more than once on this expression" attr_name
   | Inlining_impossible reason ->
       Printf.sprintf "Inlining impossible in this context: %s" reason
+  | Ambiguous_pattern vars ->
+      let msg =
+        let vars,last = Misc.split_last (List.sort String.compare vars) in
+        match vars with
+        | [] -> "variable " ^ last
+        | _::_ ->
+            "variables" ^
+            String.concat "," vars ^ " and " ^ last in
+      Printf.sprintf "Ambiguous bindings by pattern on %s" msg
 ;;
 
 let nerrors = ref 0;;
@@ -520,7 +531,8 @@ let descriptions =
    53, "Attribute cannot appear in this context";
    54, "Attribute used more than once on an expression";
    55, "Inlining impossible";
-   56, "Unreachable case in a pattern-matching (based on type information)."
+   56, "Unreachable case in a pattern-matching (based on type information).";
+   57, "Ambiguous binding by pattern.";
   ]
 ;;
 

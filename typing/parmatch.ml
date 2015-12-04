@@ -2035,3 +2035,172 @@ let check_partial_param do_check_partial do_check_fragile loc casel =
 let check_partial_gadt pred loc casel =
   check_partial_param (do_check_partial_gadt pred)
     do_check_fragile_gadt loc casel
+
+
+(*************************************)
+(* Ambiguous variable in or-patterns *)
+(*************************************)
+
+module IdSet =
+  Set.Make
+    (struct
+      type t = Ident.t
+      let compare = Pervasives.compare
+    end)
+
+let pattern_vars p = IdSet.of_list (Typedtree.pat_bound_idents p)
+
+(* Row for ambiguous variable search,
+   unseen is the traditional pattern row,
+   seen   is a list of position bindings *)
+
+type amb_row = { unseen : pattern list ; seen : IdSet.t list; }
+
+
+(* Push binding variables now *)
+
+let rec do_push r p ps seen k = match p.pat_desc with
+| Tpat_alias (p,x,_) -> do_push (IdSet.add x r) p ps seen k
+| Tpat_var (x,_) ->
+    (omega,{ unseen = ps; seen=IdSet.add x r::seen; })::k
+| Tpat_or (p1,p2,_) ->
+    do_push r p1 ps seen (do_push r p2 ps seen k)
+| _ ->
+    (p,{ unseen = ps; seen = r::seen; })::k
+
+let rec push_vars = function
+  | [] -> []
+  | { unseen = [] }::_ -> assert false
+  | { unseen = p::ps; seen; }::rem ->
+      do_push IdSet.empty p ps seen (push_vars rem)
+
+let collect_stable = function
+  | [] -> assert false
+  | { seen=xss; _}::rem ->
+      let rec c_rec xss = function
+        | [] -> xss
+        | {seen=yss; _}::rem ->
+            let xss = List.map2 IdSet.inter xss yss in
+            c_rec xss rem in
+      let inters = c_rec xss rem in
+      List.fold_left IdSet.union IdSet.empty inters
+
+
+(*********************************************)
+(* Filtering utilities for our specific rows *)
+(*********************************************)
+
+let filter_all =
+
+  let discr_pat =
+    let rec acc_pat acc = function
+      | ({pat_desc=(Tpat_alias _|Tpat_var _|Tpat_or _) },_)::_ ->
+          assert false (* called after binder extraction *)
+      | ({pat_desc=Tpat_any },_)::rem ->
+          acc_pat acc rem
+      | ({pat_desc=(Tpat_tuple _|Tpat_lazy _)} as p,_)::_ ->
+          normalize_pat p
+      | ({pat_desc=Tpat_record (lbls,closed)} as p,_)::_ ->
+          let lbls = all_record_args lbls in
+          normalize_pat { p with pat_desc=Tpat_record (lbls,closed)}
+      | _ -> acc in
+    acc_pat omega in
+
+  let rec insert p r env = match env with
+  | [] ->
+      let p0 = normalize_pat  p in
+      [p0,[{ r with unseen = simple_match_args p0 p@r.unseen }]]
+  | (q0,rs) as bd::env ->
+      if simple_match q0 p then
+        let r = { r with unseen = simple_match_args q0 p@r.unseen; } in
+        (q0,r::rs)::env
+      else bd::insert p r env in
+
+  let rec filter_rec env = function
+    | [] -> env
+    | ({pat_desc=(Tpat_var _|Tpat_alias _|Tpat_or _)},_)::_ -> assert false
+    | ({pat_desc=Tpat_any},_)::rs -> filter_rec env rs
+    | (p,r)::rs -> filter_rec (insert p r env) rs in
+
+  let rec filter_omega env = function
+    | [] -> env
+    | ({pat_desc=(Tpat_var _|Tpat_alias _|Tpat_or _)},_)::_ -> assert false
+    | ({pat_desc=Tpat_any},r)::rs ->
+        let env =
+          List.map
+            (fun (q0,rs) ->
+              let r =
+                { r with unseen = simple_match_args q0 omega@r.unseen; } in
+              q0,r::rs)
+            env in
+        filter_omega env rs
+    | _::rs -> filter_omega env rs in
+
+  fun rs ->
+    let pat0 = discr_pat rs in
+    filter_omega
+      (filter_rec
+         (match pat0.pat_desc with
+           (Tpat_record(_) | Tpat_tuple(_) | Tpat_lazy(_)) -> [pat0,[]]
+         | _ -> [])
+         rs)
+      rs
+
+(* Compute stable bindings *)
+
+let rec do_stable rs = match rs with
+| [] -> assert false (* No empty matrix *)
+| { unseen=[]; _ }::_ ->
+    collect_stable rs
+| _ ->
+    let rs = push_vars rs in
+    match filter_all rs with
+    | [] ->
+        do_stable (List.map snd rs)
+    | env ->
+        List.fold_left
+          (fun xs (_,rs) -> IdSet.union xs (do_stable rs))
+          IdSet.empty env
+
+let stable p = do_stable [{unseen=[p]; seen=[];}]
+
+
+(* all identifier paths that appear in an expression.
+
+   This could be in a more general place, but for the ambiguous guards
+   seem to be the only user. At the same time, it cannot go in
+   typedtree.mli, as it depends on TypedtreeIter.
+*)
+let all_exp_idents exp =
+  let ids = ref IdSet.empty in
+  let module Iterator = TypedtreeIter.MakeIterator(struct
+    include TypedtreeIter.DefaultIteratorArgument
+    let enter_expression exp = match exp.exp_desc with
+      | Texp_ident (Path.Pident id, _lid, _descr) ->
+         ids := IdSet.add id !ids 
+      | _ -> ()
+  end) in
+  Iterator.iter_expression exp;
+  !ids
+
+let check_ambiguous_bindings =
+  let open Warnings in
+  let warn0 = Ambiguous_pattern [] in  
+  fun cases ->
+    if is_active warn0 then
+      List.iter
+        (fun case -> match case with
+        | { c_guard=None ; _} -> ()
+        | { c_lhs=p; c_guard=Some g; _} ->
+            let all =
+              IdSet.inter (pattern_vars p) (all_exp_idents g) in
+            if not (IdSet.is_empty all) then begin
+              let st = stable p in
+              let ambiguous = IdSet.diff all st in
+              if not (IdSet.is_empty  ambiguous) then begin
+                let pps = IdSet.elements ambiguous |> List.map Ident.name in
+                let warn = Ambiguous_pattern pps in
+                Location.prerr_warning p.pat_loc warn
+              end
+            end)
+        cases
