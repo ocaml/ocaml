@@ -162,6 +162,29 @@ val for_all : ('a -> bool) -> 'a array -> bool
    satisfy the predicate [p]. That is, it returns
    [(p a1) && (p a2) && ... && (p an)]. *)
 
+val for_all2 : ('a -> 'b -> bool) -> 'a array -> 'b array -> bool
+(** Same as {!Array.for_all}, but for a two-argument predicate.
+   Raise [Invalid_argument] if the two arrays are determined
+   to have different lengths. *)
+
+val exists2 : ('a -> 'b -> bool) -> 'a array -> 'b array -> bool
+(** Same as {!Array.exists}, but for a two-argument predicate.
+   Raise [Invalid_argument] if the two arrays are determined
+   to have different lengths. *)
+
+val mem : 'a -> 'a array -> bool
+(** [mem a l] is true if and only if [a] is equal
+   to an element of [l]. *)
+
+val memq : 'a -> 'a array -> bool
+(** Same as {!Array.mem}, but uses physical equality instead of structural
+   equality to compare array elements. *)
+
+val find : ('a -> bool) -> 'a array -> 'a
+(** [find p l] returns the first element of the array [l]
+   that satisfies the predicate [p].
+   Raise [Not_found] if there is no value that satisfies [p] in the
+   array [l]. *)
 
 external create_float: int -> float array = "caml_make_float_vect"
 (** [Array.create_float n] returns a fresh float array of length [n],

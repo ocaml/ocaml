@@ -197,7 +197,8 @@ Standard library:
   * Pervasives.ldexp (and [@@noalloc])
   * Pervasives.compare for float, nativeint, int32, int64.
   (Bobot François)
-- GPR#329: Add exist and for_all function in Array
+- GPR#329: Add exist, for_all, exist2,  for_all2, mem, memq and find
+   function in Array
   (Bernhard Schommer)
 
 Type system:
