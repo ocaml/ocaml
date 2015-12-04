@@ -15,7 +15,7 @@ let fname = "data";;
 let f () = [ 1; 2; 3; 4; 5 ];;
 
 try
-  let ic = open_in fname in
+  let ic = open_in_bin fname in
   let g : unit -> float list = Marshal.from_channel ic in
   close_in ic;
   Printf.printf "%f\n" (List.nth (g ()) 0);
@@ -26,6 +26,6 @@ with
   Printf.printf "Incompatible closure, ok\n";
 ;;
 
-let oc = open_out fname in
+let oc = open_out_bin fname in
 Marshal.to_channel oc f [ Marshal.Closures ];
 close_out oc;;
