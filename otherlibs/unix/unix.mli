@@ -296,6 +296,9 @@ val in_channel_of_descr : file_descr -> in_channel
 (** Create an input channel reading from the given descriptor.
    The channel is initially in binary mode; use
    [set_binary_mode_in ic false] if text mode is desired.
+   Text mode is supported only if the descriptor refers to a file
+   or pipe, but is not supported if it refers to a socket.
+
    Beware that channels are buffered so more characters may have been
    read from the file descriptor than those accessed using channel functions.
    Channels also keep a copy of the current position in the file.
@@ -308,6 +311,9 @@ val out_channel_of_descr : file_descr -> out_channel
 (** Create an output channel writing on the given descriptor.
    The channel is initially in binary mode; use
    [set_binary_mode_out oc false] if text mode is desired.
+   Text mode is supported only if the descriptor refers to a file
+   or pipe, but is not supported if it refers to a socket.
+
    Beware that channels are buffered so you may have to [flush] them
    to ensure that all data has been sent to the file descriptor.
    Channels also keep a copy of the current position in the file.

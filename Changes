@@ -204,6 +204,10 @@ Toplevel and debugger:
   (Junsong Li, review by Gabriel Scherer)
 
 Other libraries:
+* Unix library: channels created by Unix.in_channel_of_descr or
+  Unix.out_channel_of_descr no longer support text mode under Windows.
+  Calling [set_binary_mode_{in,out} chan false] on these channels
+  now causes an error.
 - PR#4023 and GPR#68: add Unix.sleepf (sleep with sub-second resolution)
   (Evgenii Lepikhin and Xavier Leroy)
 * Protect Unix.sleep against interruptions by handled signals.
@@ -240,6 +244,10 @@ Bug fixes:
   (Pierre Chambart, report by Gary Huber)
 * PR#4166, PR#6956: force linking when calling external C primitives
   (Jacques Garrigue, reports by Markus Mottl and Christophe Troestler)
+* PR#4466, PR#5325: under Windows, concurrent read and write operations
+    on the same socket could block unexpectedly.  Fixed by keeping sockets
+    in asynchronous mode rather than creating them in synchronous mode.
+  (Xavier Leroy)
 * PR#4539: change exception string raised when comparing functional values
   (Nicolas Braud-Santoni, report by Eric Cooper)
 - PR#4832: Filling bigarrays may block out runtime
