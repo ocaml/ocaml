@@ -305,7 +305,19 @@ let execute_phrase print_outcome ppf phr =
           match d, dir_arg with
           | Directive_none f, Pdir_none -> f (); true
           | Directive_string f, Pdir_string s -> f s; true
-          | Directive_int f, Pdir_int n -> f n; true
+          | Directive_int f, Pdir_int (n,None) ->
+	     begin match Int_literal_converter.int n with
+	     | n -> f n; true
+	     | exception _ ->
+	       fprintf ppf "Integer literal exceeds the range of \
+			    representable integers for directive `%s'.@."
+		       dir_name;
+	       false
+	     end
+	  | Directive_int f, Pdir_int (n, Some _) ->
+              fprintf ppf "Wrong integer literal for directive `%s'.@."
+                dir_name;
+              false
           | Directive_ident f, Pdir_ident lid -> f lid; true
           | Directive_bool f, Pdir_bool b -> f b; true
           | _ ->

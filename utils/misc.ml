@@ -188,6 +188,18 @@ let no_overflow_mul a b = b <> 0 && (a * b) / b = a
 let no_overflow_lsl a k =
   0 <= k && k < Sys.word_size && min_int asr k <= a && a <= max_int asr k
 
+module Int_literal_converter = struct
+  (* To convert integer literals, allowing max_int + 1 (PR#4210) *)
+  let cvt_int_aux str neg of_string =
+    if String.length str = 0 || str.[0]= '-'
+    then of_string str
+    else neg (of_string ("-" ^ str))
+  let int s = cvt_int_aux s (~-) int_of_string
+  let int32 s = cvt_int_aux s Int32.neg Int32.of_string
+  let int64 s = cvt_int_aux s Int64.neg Int64.of_string
+  let nativeint s = cvt_int_aux s Nativeint.neg Nativeint.of_string
+end
+
 (* String operations *)
 
 let chop_extension_if_any fname =

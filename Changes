@@ -295,6 +295,8 @@ Bug fixes:
 - PR#6744: Univars can escape through polymorphic variants (partial fix)
 - PR#6776: Failure to kill the "tick" thread, segfault when exiting the runtime
 - PR#6752: Extensible variant types and scope escaping
+- PR#6805: Duplicated expression in case of hole in a non-failing switch.
+  (Luc Maranget)
 - PR#6808: the parsing of OCAMLRUNPARAM is too lax
   (Damien Doligez)
 - PR#6874: Inefficient code generated for module function arguments
@@ -382,7 +384,9 @@ Features wishes:
 - PR#6742: remove duplicate virtual_flag information from Tstr_class
 - PR#6719: improve Buffer.add_channel when not enough input is available
   (Simon Cruanes)
-* PR#6816: reject integer and float literals followed by alphanum
+* PR#6816: reject integer and float literals directly followed by an identifier.
+  This was prevously read as two separate tokens.
+  [let abc = 1 in (+) 123abc] was accepted and is now rejected.
   (Hugo Heuzard)
 - PR#6876: improve warning 6 by listing the omitted labels.
   (Eyyüb Sari)
@@ -416,6 +420,12 @@ Features wishes:
   (Florian Angeletti)
 - GPR#252: improve build instructions in MSVC Windows README
   (Philip Daian)
+* GPR#170: Parse arbitrary precision integers.
+  Accept a single [A-Za-z] as modifier for integers (generalizing 'l','L','n') and floats.
+  May cause breakage (ie. ppx preprocessor) because of changes in the parsetree.
+  This changes PR#6816 a little bit by reading the literal [123a] as a single token that can
+  later be rewritten by a ppx preprocessor.
+  (Hugo Heuzard)
 
 OCaml 4.02.3 (27 Jul 2015):
 ---------------------------

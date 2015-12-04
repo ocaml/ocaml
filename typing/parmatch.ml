@@ -1709,7 +1709,7 @@ module Conv = struct
       | Tpat_var _ ->
           mkpat Ppat_any
       | Tpat_constant c ->
-          mkpat (Ppat_constant c)
+          mkpat (Ppat_constant (Untypeast.constant c))
       | Tpat_alias (p,_,_) -> loop p
       | Tpat_tuple lst ->
 	  mkpat (Ppat_tuple (List.map loop lst))
