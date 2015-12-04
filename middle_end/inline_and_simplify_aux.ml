@@ -280,7 +280,8 @@ module Result = struct
       in
       (* CR-soon pchambart: Add a warning if this is too big
          mshinwell: later *)
-      Can_inline_if_no_larger_than (unscaled * 8)
+      Can_inline_if_no_larger_than
+        (unscaled * Inlining_cost.scale_inline_threshold_by)
     in
     { approx = Simple_value_approx.value_unknown Other;
       used_staticfail = Static_exception.Set.empty;

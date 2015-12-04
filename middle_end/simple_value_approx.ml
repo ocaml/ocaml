@@ -71,7 +71,8 @@ and value_closure = {
 and value_set_of_closures = {
   function_decls : Flambda.function_declarations;
   bound_vars : t Var_within_closure.Map.t;
-  invariant_params : Variable.Set.t Variable.Map.t;
+  invariant_params : Variable.Set.t Variable.Map.t lazy_t;
+  size : int option Variable.Map.t lazy_t;
   specialised_args : Variable.t Variable.Map.t;
   freshening : Freshening.Project_var.t;
 }
@@ -82,7 +83,7 @@ let print_value_set_of_closures ppf
       { function_decls = { funs }; invariant_params; _ } =
   Format.fprintf ppf "(set_of_closures:@ %a invariant_params=%a)"
     (fun ppf -> Variable.Map.iter (fun id _ -> Variable.print ppf id)) funs
-    (Variable.Map.print Variable.Set.print) invariant_params
+    (Variable.Map.print Variable.Set.print) (Lazy.force invariant_params)
 
 let rec print_descr ppf = function
   | Value_int i -> Format.pp_print_int ppf i
@@ -179,6 +180,29 @@ let value_closure ?closure_var ?set_of_closures_var ?set_of_closures_symbol
   { descr = Value_closure value_closure;
     var = closure_var;
     symbol = None;
+  }
+
+(* The only thing that changes this number is the setting of command-line
+   parameters. *)
+let max_interesting_size_of_function_body =
+  lazy (Inlining_cost.maximum_interesting_size_of_function_body ())
+
+let create_value_set_of_closures
+      ~(function_decls : Flambda.function_declarations) ~bound_vars
+      ~invariant_params ~specialised_args ~freshening =
+  let size =
+    lazy (
+      Variable.Map.map (fun (function_decl : Flambda.function_declaration) ->
+          let max_size = Lazy.force max_interesting_size_of_function_body in
+          Inlining_cost.lambda_smaller' function_decl.body ~than:max_size)
+        function_decls.funs)
+  in
+  { function_decls;
+    bound_vars;
+    invariant_params;
+    size;
+    specialised_args;
+    freshening;
   }
 
 let value_set_of_closures ?set_of_closures_var value_set_of_closures =
@@ -391,6 +415,8 @@ let useful t =
   | Value_char _ | Value_constptr _ | Value_set_of_closures _
   | Value_float _ | Value_boxed_int _ | Value_closure _ | Value_extern _
   | Value_symbol _ -> true
+
+let all_not_useful ts = List.for_all (fun t -> not (useful t)) ts
 
 let is_definitely_immutable t =
   match t.descr with

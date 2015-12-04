@@ -57,6 +57,8 @@ let prim_size (prim : Lambda.primitive) args =
 
 (* Simple approximation of the space cost of an Flambda expression. *)
 
+let direct_call_size = 4
+
 let lambda_smaller' lam ~than:threshold =
   let size = ref 0 in
   let rec lambda_size (lam : Flambda.t) =
@@ -64,7 +66,9 @@ let lambda_smaller' lam ~than:threshold =
     match lam with
     | Var _ -> ()
     | Apply ({ func = _; args = _; kind = direct }) ->
-      let call_cost = match direct with Indirect -> 6 | Direct _ -> 4 in
+      let call_cost =
+        match direct with Indirect -> 6 | Direct _ -> direct_call_size
+      in
       size := !size + call_cost
     | Assign _ -> incr size
     | Send _ -> size := !size + 8
@@ -123,32 +127,51 @@ let lambda_smaller' lam ~than:threshold =
   with Exit ->
     None
 
-let lambda_smaller lam ~than =
-  lambda_smaller' lam ~than <> None
-
 type inlining_threshold =
   | Never_inline
   | Can_inline_if_no_larger_than of int
 
-let can_try_inlining lam inlining_threshold ~bonus =
+let can_try_inlining_magic_constant = 4
+let rough_max_bonus = 20
+
+let can_try_inlining lam inlining_threshold ~bonus
+      ~size_from_approximation =
   match inlining_threshold with
   | Never_inline -> Never_inline
   | Can_inline_if_no_larger_than inlining_threshold ->
-     (* CR mshinwell for pchambart: eliminate magic constant *)
-     match lambda_smaller'
-             lam
-             ~than:((inlining_threshold + bonus) * 4)
-     with
-     | None -> Never_inline
-     | Some size -> Can_inline_if_no_larger_than (inlining_threshold - size)
+    let size =
+      let than =
+        (inlining_threshold + bonus) * can_try_inlining_magic_constant
+      in
+      (* CR mshinwell: Is the bonus always just going to be tied to the
+         number of parameters?  If so we could put it in the approximation,
+         and wouldn't need this "rough" stuff.  We should rename it in that
+         case too. *)
+      if bonus <= rough_max_bonus then begin
+        (* Assuming that the bonus isn't so large that we would have failed
+           to pre-calculate the size of the function (see
+           [maximum_interesting_size_of_function_body], below), then we can
+           use the cached value to avoid traversing the term. *)
+        match size_from_approximation with
+        | Some size -> if size <= than then Some size else None
+        | None -> lambda_smaller' lam ~than
+      end else begin
+        lambda_smaller' lam ~than
+      end
+    in
+    match size with
+    | None -> Never_inline
+    | Some size -> Can_inline_if_no_larger_than (inlining_threshold - size)
 
-let can_inline lam inlining_threshold ~bonus =
-  match inlining_threshold with
-  | Never_inline -> false
-  | Can_inline_if_no_larger_than inlining_threshold ->
-     lambda_smaller
-       lam
-       ~than:(inlining_threshold + bonus)
+let cost (flag : Clflags.Int_arg_helper.parsed) ~default ~round =
+  match flag with
+  | Always cost -> cost
+  | Variable by_round ->
+    match Ext_types.Int.Map.find round by_round with
+    | cost -> cost
+    | exception Not_found -> default
+
+let benefit_factor = 1
 
 module Benefit = struct
   type t = {
@@ -213,26 +236,16 @@ module Benefit = struct
       b.remove_prim
       b.remove_branch
 
-  let benefit_factor = 1
-
   let evaluate t ~round =
-    let cost (flag : Clflags.Int_arg_helper.parsed) ~default =
-      match flag with
-      | Always cost -> cost
-      | Variable by_round ->
-        match Ext_types.Int.Map.find round by_round with
-        | cost -> cost
-        | exception Not_found -> default
-    in
     benefit_factor *
       (t.remove_call * (cost !Clflags.inline_call_cost
-          ~default:Clflags.default_inline_call_cost)
+          ~default:Clflags.default_inline_call_cost ~round)
        + t.remove_alloc * (cost !Clflags.inline_alloc_cost
-          ~default:Clflags.default_inline_alloc_cost)
+          ~default:Clflags.default_inline_alloc_cost ~round)
        + t.remove_prim * (cost !Clflags.inline_prim_cost
-          ~default:Clflags.default_inline_prim_cost)
+          ~default:Clflags.default_inline_prim_cost ~round)
        + t.remove_branch * (cost !Clflags.inline_branch_cost
-          ~default:Clflags.default_inline_branch_cost))
+          ~default:Clflags.default_inline_branch_cost ~round))
 
   let (+) t1 t2 = {
     remove_call = t1.remove_call + t2.remove_call;
@@ -267,6 +280,13 @@ module Whether_sufficient_benefit = struct
       (* There is no way that an expression of size max_int could fit in
          memory. *)
       assert false
+
+  let create_given_sizes ~original_size ~branch_depth ~new_size ~benefit
+        ~probably_a_functor ~round =
+    let evaluated_benefit = Benefit.evaluate benefit ~round in
+    { round; benefit; branch_depth; probably_a_functor; original_size;
+      new_size; evaluated_benefit;
+    }
 
   let correct_branch_factor f =
     f = f (* is not nan *)
@@ -325,3 +345,64 @@ module Whether_sufficient_benefit = struct
         t.branch_depth
         (if evaluate t then "yes" else "no")
 end
+
+let scale_inline_threshold_by = 8
+
+let maximum_interesting_size_of_function_body () =
+  (* CR-soon mshinwell for mshinwell: hastily-written comment, to review *)
+  (* We may in [Inlining_decision] need to measure the size of functions
+     that are below the inlining threshold.  We also need to measure with
+     regard to benefit (see [Inlining_decision.inline_non_recursive).  The
+     intuition for having a cached size in the second case is as follows.
+     If a function's body exceeds some maximum size and its argument
+     approximations are unknown (meaning that we cannot materially simplify
+     it further), we can infer without examining the function's body that
+     it cannot be inlined.  The aim is to speed up [Inlining_decision].
+
+     The "original size" is [Inlining_cost.direct_call_size].
+     The "new size" is the size of the function's body; call this body_size.
+
+     To be inlined we need:
+       body_size - (evaluated_benefit * call_prob) <= direct_call_size
+     i.e.:
+       body_size <= direct_call_size + evaluated_benefit*call_prob
+     In this case we would be removing a single call:
+       evaluated_benefit = benefit_factor * inline_call_cost
+     (For [inline_call_cost], we use the maximum this might be across any
+     round.)
+     Substituting:
+       body_size <= direct_call_size
+                      + (benefit_factor * inline_call_cost)*call_prob
+     The upper bound for the right-hand side is when call_prob = 1.0,
+     giving:
+       direct_call_size + benefit_factor*inline_call_cost       (**)
+     So we should measure all functions at or below this size, but also
+     record the size discovered, so we can later re-check (without
+     examining the body) when we know [call_prob].
+  *)
+  let max_cost = ref 0 in
+  for round = 0 to !Clflags.simplify_rounds - 1 do
+(*
+    let inline_threshold =
+      (cost !Clflags.inline_threshold
+        ~default:Clflags.default_inline_threshold
+        ~round)
+    in
+    let inline_threshold =
+      (* Following [can_try_inlining], above. *)
+      (* CR-soon mshinwell: try to factor code out *)
+      (inline_threshold*scale_inline_threshold_by + rough_max_bonus)
+        * can_try_inlining_magic_constant
+    in
+*)
+    let max_size =  (* This is for the (**) case above. *)
+      let inline_call_cost =
+        cost !Clflags.inline_call_cost
+          ~default:Clflags.default_inline_call_cost
+          ~round
+      in
+      direct_call_size + benefit_factor*inline_call_cost
+    in
+    max_cost := max !max_cost max_size (* (max inline_threshold max_size) *)
+  done;
+  !max_cost

@@ -21,13 +21,14 @@ let new_var name =
     ~current_compilation_unit:(Compilation_unit.get_current_exn ())
 
 let which_function_parameters_can_we_specialise ~params ~args
-      ~args_approxs ~(invariant_params:Variable.Set.t Variable.Map.t) ~specialised_args =
+      ~args_approxs ~(invariant_params:Variable.Set.t Variable.Map.t lazy_t)
+      ~specialised_args =
   assert (List.length params = List.length args);
   assert (List.length args = List.length args_approxs);
   List.fold_right2 (fun (var, arg) approx
     (worth_specialising_args, spec_args, args, args_decl) ->
       let spec_args =
-        if Variable.Map.mem var invariant_params ||
+        if Variable.Map.mem var (Lazy.force invariant_params) ||
            Variable.Set.mem var specialised_args
         then
           Variable.Map.add var arg spec_args
@@ -36,7 +37,7 @@ let which_function_parameters_can_we_specialise ~params ~args
       in
       let worth_specialising_args =
         if Simple_value_approx.useful approx
-          && Variable.Map.mem var invariant_params
+          && Variable.Map.mem var (Lazy.force invariant_params)
         then
           Variable.Set.add var worth_specialising_args
         else
@@ -160,7 +161,7 @@ let inline_by_copying_function_declaration ~env ~r
     ~(function_decls : Flambda.function_declarations)
     ~lhs_of_application ~closure_id_being_applied
     ~(function_decl : Flambda.function_declaration)
-    ~args ~args_approxs ~(invariant_params:Variable.Set.t Variable.Map.t)
+    ~args ~args_approxs ~(invariant_params:Variable.Set.t Variable.Map.t lazy_t)
     ~(specialised_args:Variable.t Variable.Map.t)
     ~dbg ~simplify =
   let specialised_args_set = Variable.Map.keys specialised_args in
@@ -175,7 +176,7 @@ let inline_by_copying_function_declaration ~env ~r
      marked as specialiased. *)
   let specialisable_args_with_aliases =
     Variable.Map.fold (fun arg outside_var map ->
-        match Variable.Map.find arg invariant_params with
+        match Variable.Map.find arg (Lazy.force invariant_params) with
         | exception Not_found -> map
         | set ->
             Variable.Set.fold (fun alias map ->

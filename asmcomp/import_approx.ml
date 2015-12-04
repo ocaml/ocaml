@@ -79,12 +79,12 @@ let rec import_ex ex =
         Export_id.print ex
         what
     | invariant_params ->
-      { function_decls = import_set_of_closures set_of_closures_id;
-        bound_vars;
-        invariant_params = invariant_params;
-        specialised_args = Variable.Map.empty;
-        freshening = Freshening.Project_var.empty;
-      }
+      A.create_value_set_of_closures
+        ~function_decls:(import_set_of_closures set_of_closures_id)
+        ~bound_vars
+        ~invariant_params:(lazy invariant_params)
+        ~specialised_args:Variable.Map.empty
+        ~freshening:Freshening.Project_var.empty
   in
   match Export_info.find_description ex_info ex with
   | exception Not_found -> A.value_unknown Other
