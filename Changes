@@ -93,6 +93,8 @@ Compilers:
   review by Xavier Leroy)
 - PR#7026, GPR#288: remove write barrier for polymorphic variants without arguments
   (Simon Cruanes)
+- PR#7031: new warning, ambiguous guarded or-patterns (Luc Maranget,
+  Gabriel Scherer, report by Martin Clochard and Claude Marché).
 - PR#7067: Performance regression in the native compiler for long
   nested structures (Alain Frisch, report by Daniel Bünzli, review
   by Jacques Garrigue)

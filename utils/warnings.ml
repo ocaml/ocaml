@@ -431,13 +431,14 @@ let message = function
       Printf.sprintf "Inlining impossible in this context: %s" reason
   | Ambiguous_pattern vars ->
       let msg =
-        let vars,last = Misc.split_last (List.sort String.compare vars) in
+        let vars = List.sort String.compare vars in
         match vars with
-        | [] -> "variable " ^ last
+        | [] -> assert false
+        | [x] -> "variable " ^ x
         | _::_ ->
-            "variables" ^
-            String.concat "," vars ^ " and " ^ last in
-      Printf.sprintf "Ambiguous bindings by pattern on %s" msg
+            "variables " ^ String.concat "," vars in
+      Printf.sprintf
+        "Ambiguous guarded pattern, %s may match different or-pattern arguments" msg
 ;;
 
 let nerrors = ref 0;;
