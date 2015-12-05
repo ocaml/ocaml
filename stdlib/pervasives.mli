@@ -570,6 +570,8 @@ external int_of_string : string -> int = "caml_int_of_string"
    The string is read in decimal (by default) or in hexadecimal (if it
    begins with [0x] or [0X]), octal (if it begins with [0o] or [0O]),
    or binary (if it begins with [0b] or [0B]).
+   The [_] (underscore) character can appear anywhere in the string
+   and is ignored.
    Raise [Failure "int_of_string"] if the given string is not
    a valid representation of an integer, or if the integer represented
    exceeds the range of integers representable in type [int]. *)
@@ -578,9 +580,22 @@ val string_of_float : float -> string
 (** Return the string representation of a floating-point number. *)
 
 external float_of_string : string -> float = "caml_float_of_string"
-(** Convert the given string to a float.  Raise [Failure "float_of_string"]
-   if the given string is not a valid representation of a float. *)
-
+(** Convert the given string to a float.  The string is read in decimal
+   (by default) or in hexadecimal (marked by [0x] or [0X]).
+   The format of decimal floating-point numbers is
+   [ [-] dd.ddd (e|E) [+|-] dd ], where [d] stands for a decimal digit.
+   The format of hexadecimal floating-point numbers is
+   [ [-] 0(x|X) hh.hhh (p|P) [+|-] dd ], where [h] stands for an
+   hexadecimal digit.  
+   In both cases, the integer part, the fractional part, and the
+   exponent part are all optional, but at least one of the three
+   parts must be given.
+   The [_] (underscore) character can appear anywhere in the string
+   and is ignored.
+   Depending on the execution platforms, other representations of
+   floating-point numbers can be accepted, but should not be relied upon.
+   Raise [Failure "float_of_string"] if the given string is not a valid
+   representation of a float. *)
 
 (** {6 Pair operations} *)
 

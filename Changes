@@ -147,6 +147,9 @@ Standard library:
   (Richard Jones)
 - PR#6017, PR#7034, GPR#267: More efficient ifprintf implementation
   (Jeremy Yallop, review by Gabriel Scherer)
+- PR#6296: Some documentation on the floating-point representations
+    recognized by Pervasives.float_of_string
+  (Xavier Leroy)
 - PR#6316: Scanf.scanf failure on %u formats when reading big integers
   (Xavier Leroy, Benoît Vaugon)
 - PR#6390, GPR#36: expose Sys.{int_size,max_wosize} for improved js_of_ocaml
