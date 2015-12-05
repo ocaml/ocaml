@@ -78,18 +78,32 @@ For convenience and readability, underscore characters (@"_"@) are accepted
 float-literal:
           ["-"] ("0"\ldots"9") { "0"\ldots"9"||"_" } ["." { "0"\ldots"9"||"_" }]
           [("e"||"E") ["+"||"-"] ("0"\ldots"9") { "0"\ldots"9"||"_" }]
+        | ["-"] ("0x"||"0X")
+          ("0"\ldots"9"||"A"\ldots"F"||"a"\ldots"f")
+          { "0"\ldots"9"||"A"\ldots"F"||"a"\ldots"f"||"_" }
+          ["." { "0"\ldots"9"||"A"\ldots"F"||"a"\ldots"f"||"_" }
+          [("p"||"P") ["+"||"-"] ("0"\ldots"9") { "0"\ldots"9"||"_" }]
 \end{syntax}
 
-Floating-point decimals consist in an integer part, a decimal part and
+Floating-point decimal literals consist in an integer part, a
+fractional part and
 an exponent part. The integer part is a sequence of one or more
-digits, optionally preceded by a minus sign. The decimal part is a
+digits, optionally preceded by a minus sign. The fractional part is a
 decimal point followed by zero, one or more digits.
 The exponent part is the character @"e"@ or @"E"@ followed by an
-optional @"+"@ or @"-"@ sign, followed by one or more digits.
-The decimal part or the exponent part can be omitted but not both, to
+optional @"+"@ or @"-"@ sign, followed by one or more digits.  It is
+interpreted as a power of 10.
+The fractional part or the exponent part can be omitted but not both, to
 avoid ambiguity with integer literals.
 The interpretation of floating-point literals that fall outside the
 range of representable floating-point values is undefined.
+
+Floating-point hexadecimal literals are denoted with the @"0x"@ or @"0X"@
+prefix.  The syntax is similar to that of floating-point decimal
+literals, with the following differences.
+The integer part and the fractional part use hexadecimal
+digits.  The exponent part starts with the character  @"p"@ or @"P"@.
+It is written in decimal and interpreted as a power of 2.
 
 For convenience and readability, underscore characters (@"_"@) are accepted
 (and ignored) within floating-point literals.
