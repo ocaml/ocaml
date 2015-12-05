@@ -463,7 +463,7 @@ let for_call_site ~env ~r ~(function_decls : Flambda.function_declarations)
       else if (not always_inline) && E.inlining_level env > max_level then begin
         made_decision (Can_inline_but_tried_nothing (Level_exceeded true));
         no_simplification ()
-      end else if Lazy.force recursive then
+      end else if not !Clflags.classic_heuristic && Lazy.force recursive then
         inline_recursive env r ~max_level ~lhs_of_application ~function_decls
           ~closure_id_being_applied ~function_decl ~value_set_of_closures
           ~args ~args_approxs ~dbg ~simplify ~no_simplification ~made_decision
