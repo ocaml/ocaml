@@ -20,9 +20,13 @@ let should_copy (named:Flambda.named) =
   | Symbol _ | Read_symbol_field _ | Const _ -> true
   | _ -> false
 
+type extracted =
+  | Expr of Flambda.t
+  | Block of Tag.t * Variable.t list
+
 type accumulated = {
   copied_lets : (Variable.t * Flambda.named) list;
-  extracted_lets : (Variable.t * Flambda.t) list;
+  extracted_lets : (Variable.t * extracted) list;
   terminator : Flambda.expr;
 }
 
@@ -53,8 +57,22 @@ let rec accumulate ~substitution ~copied_lets ~extracted_lets
     end else begin
       let extracted =
         let renamed = Variable.rename var in
-        Flambda_utils.toplevel_substitution substitution
-          (Flambda.create_let renamed named (Var renamed))
+        match named with
+        | Prim (Pmakeblock(tag, Asttypes.Immutable), args, _dbg) ->
+            let tag = Tag.create_exn tag in
+            let args =
+              List.map (fun v ->
+                  try Variable.Map.find v substitution with
+                    Not_found -> v)
+                args
+            in
+            Block (tag, args)
+        | named ->
+            let expr =
+              Flambda_utils.toplevel_substitution substitution
+                (Flambda.create_let renamed named (Var renamed))
+            in
+            Expr expr
       in
       accumulate body
         ~substitution
@@ -68,7 +86,7 @@ let rec accumulate ~substitution ~copied_lets ~extracted_lets
     }
 
 let rebuild_expr
-      ~(extracted_definitions : Symbol.t Variable.Map.t)
+      ~(extracted_definitions : (Symbol.t * int option) Variable.Map.t)
       ~(copied_definitions : Flambda.named Variable.Map.t)
       ~(substitute : bool)
       (expr : Flambda.t) =
@@ -95,22 +113,42 @@ let rebuild_expr
 let rebuild (used_variables:Variable.Set.t) (accumulated:accumulated) =
   let copied_definitions = Variable.Map.of_list accumulated.copied_lets in
   let extracted_definitions =
-    Variable.Map.mapi (fun var _ -> Flambda_utils.make_variable_symbol var)
+    Variable.Map.mapi (fun var decl ->
+        let symbol = Flambda_utils.make_variable_symbol var in
+        let field =
+          match decl with
+          | Expr _ -> Some 0
+          | Block _ -> None
+        in
+        symbol, field)
       (Variable.Map.of_list accumulated.extracted_lets)
   in
   let extracted =
     List.map (fun (var, decl) ->
-        let expr =
-          rebuild_expr ~extracted_definitions ~copied_definitions
-            ~substitute:true decl
-        in
-        if Variable.Set.mem var used_variables then
-          Initialisation
-            (Variable.Map.find var extracted_definitions,
-             Tag.create_exn 0,
-             [expr])
-        else
-          Effect expr)
+        match decl with
+        | Expr decl ->
+            let expr =
+              rebuild_expr ~extracted_definitions ~copied_definitions
+                ~substitute:true decl
+            in
+            if Variable.Set.mem var used_variables then
+              Initialisation
+                (Variable.Map.find var extracted_definitions,
+                 Tag.create_exn 0,
+                 [expr])
+            else
+              Effect expr
+        | Block (tag, fields) ->
+            let fields =
+              List.map (fun var ->
+                  rebuild_expr ~extracted_definitions ~copied_definitions
+                    ~substitute:true (Var var))
+                fields
+            in
+            Initialisation
+              (Variable.Map.find var extracted_definitions,
+               tag,
+               fields))
       accumulated.extracted_lets
   in
   let terminator =
@@ -135,7 +173,7 @@ let introduce_symbols expr =
 let add_extracted introduced program =
   List.fold_right (fun extracted program ->
       match extracted with
-      | Initialisation (symbol, tag, def) ->
+      | Initialisation ((symbol, _), tag, def) ->
         Flambda.Initialize_symbol (symbol, tag, def, program)
       | Effect effect ->
         Flambda.Effect (effect, program))

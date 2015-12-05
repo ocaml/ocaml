@@ -494,10 +494,16 @@ let make_variable_symbol var =
     (Linkage_name.create
        (Variable.unique_name (Variable.rename var)))
 
-let substitute_read_symbol_field_for_variables substitution expr =
+let substitute_read_symbol_field_for_variables
+    (substitution : (Symbol.t * int option) Variable.Map.t)
+    (expr : Flambda.t) =
   let bind var fresh_var (expr:Flambda.t) : Flambda.t =
-    let symbol = Variable.Map.find var substitution in
-    Flambda.create_let fresh_var (Read_symbol_field (symbol, 0)) expr
+    let symbol, field = Variable.Map.find var substitution in
+    let named : Flambda.named = match field with
+      | None -> Symbol symbol
+      | Some i -> Read_symbol_field (symbol, i)
+    in
+    Flambda.create_let fresh_var named expr
   in
   let substitute_named bindings (named:Flambda.named) : Flambda.named =
     let sb to_substitute =
