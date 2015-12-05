@@ -265,8 +265,8 @@ let initial_inlining_threshold ~round : Inlining_cost.inlining_threshold =
   in
   (* CR-soon pchambart: Add a warning if this is too big
      mshinwell: later *)
-  Can_inline_if_no_larger_than (unscaled * 8)
-
+  Can_inline_if_no_larger_than
+    (unscaled * Inlining_cost.scale_inline_threshold_by)
 
 module Result = struct
   module Int = Ext_types.Int

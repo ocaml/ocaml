@@ -20,8 +20,53 @@ module W = Inlining_cost.Whether_sufficient_benefit
 let inline_non_recursive env r ~function_decls ~lhs_of_application
     ~closure_id_being_applied ~(function_decl : Flambda.function_declaration)
     ~only_use_of_function ~no_simplification ~probably_a_functor
-    ~(args : Variable.t list) ~simplify ~always_inline ~inline_requested
+    ~(args : Variable.t list) ~size_from_approximation ~simplify
+    ~always_inline ~inline_requested
     ~(made_decision : Inlining_stats_types.Decision.t -> unit) =
+  (* When all of the arguments to the function being inlined are unknown, then
+     we cannot materially simplify the function.  As such, we know what the
+     benefit of inlining it would be: just removing the call.  In this case
+     we may be able to prove the function cannot be inlined without traversing
+     its body.
+     Note that if the function is sufficiently small, we still have to call
+     [simplify], because the body needs freshening before substitution.
+  *)
+  let known_to_have_no_benefit =
+    if function_decl.stub then
+      false
+    else if only_use_of_function then
+      false
+    else if A.all_not_useful (E.find_list_exn env args) then
+      match size_from_approximation with
+      | Some body_size ->
+        let wsb =
+          let benefit =
+            Inlining_cost.Benefit.remove_call Inlining_cost.Benefit.zero
+          in
+          W.create_given_sizes ~original_size:Inlining_cost.direct_call_size
+            ~new_size:body_size
+            ~branch_depth:(E.branch_depth env)
+            ~probably_a_functor
+            ~round:(E.round env)
+            ~benefit
+        in
+        not (W.evaluate wsb)
+      | None ->
+        (* The function is definitely too large to inline given that we don't
+           have any approximations for its arguments.  Further, the body
+           should already have been simplified (inside its declaration), so
+           we also expect no gain from the code below that permits inlining
+           inside the body. *)
+        true
+    else begin
+      (* There are useful approximations, so we should simplify. *)
+      false
+    end
+  in
+  if known_to_have_no_benefit then begin
+    no_simplification ()
+  end else begin
+  (* CR mshinwell: fix indentation once diff reviewed. *)
   let body, r_inlined =
     (* First we construct the code that would result from copying the body of
        the function, without doing any further inlining upon it, to the call
@@ -138,6 +183,7 @@ let inline_non_recursive env r ~function_decls ~lhs_of_application
       no_simplification ()
     end
   end
+  end
 
 let unroll_recursive env r ~max_level ~lhs_of_application
       ~(function_decls : Flambda.function_declarations)
@@ -194,23 +240,24 @@ let should_duplicate_recursive_function env
       ~(function_decl : Flambda.function_declaration)
       ~(function_decls : Flambda.function_declarations)
       ~(value_set_of_closures : A.value_set_of_closures)
-      ~args_approxs ~(invariant_params : Variable.Set.t Variable.Map.t) =
+      ~args_approxs =
   assert (List.length function_decl.params = List.length args_approxs);
   !Clflags.inline_recursive_functions
     && (not (E.inside_set_of_closures_declaration
       function_decls.set_of_closures_id env))
-    && (not (Variable.Map.is_empty value_set_of_closures.invariant_params))
+    && (not (Variable.Map.is_empty
+      (Lazy.force value_set_of_closures.invariant_params)))
     && Var_within_closure.Map.is_empty
       value_set_of_closures.bound_vars (* closed *)
     && List.exists2 (fun id approx ->
-        A.useful approx && Variable.Map.mem id invariant_params)
+        A.useful approx
+          && Variable.Map.mem id (Lazy.force value_set_of_closures.invariant_params))
       function_decl.params args_approxs
 
 let inline_recursive env r ~max_level ~lhs_of_application
       ~(function_decls : Flambda.function_declarations)
       ~closure_id_being_applied ~function_decl
       ~(value_set_of_closures : Simple_value_approx.value_set_of_closures)
-      ~(invariant_params : Variable.Set.t Variable.Map.t)
       ~args ~args_approxs ~dbg ~simplify ~no_simplification
       ~(made_decision : Inlining_stats_types.Decision.t -> unit) =
   let tried_unrolling, unrolling_result =
@@ -226,13 +273,14 @@ let inline_recursive env r ~max_level ~lhs_of_application
        declaration at the call site, specialising parameters whose arguments
        we know. *)
     if should_duplicate_recursive_function env ~function_decls
-        ~function_decl ~value_set_of_closures ~args_approxs ~invariant_params
+        ~function_decl ~value_set_of_closures ~args_approxs
     then
       let copied_function_declaration =
         Inlining_transforms.inline_by_copying_function_declaration ~env
           ~r:(R.reset_benefit r) ~lhs_of_application
           ~function_decls ~closure_id_being_applied ~function_decl
-          ~args ~args_approxs ~invariant_params
+          ~args ~args_approxs
+          ~invariant_params:value_set_of_closures.invariant_params
           ~specialised_args:value_set_of_closures.specialised_args ~dbg
           ~simplify
       in
@@ -352,9 +400,14 @@ let for_call_site ~env ~r ~(function_decls : Flambda.function_declarations)
         || probably_a_functor
       then
         inlining_threshold
-      else
+      else begin
         Inlining_cost.can_try_inlining function_decl.body inlining_threshold
           ~bonus:num_params
+          (* CR mshinwell: for the moment, this is None, since the
+             Inlining_cost code isn't checking sizes up to the max inlining
+             threshold---this seems to take too long. *)
+          ~size_from_approximation:None
+      end
   in
   let expr, r =
     if E.never_inline env then
@@ -378,7 +431,6 @@ let for_call_site ~env ~r ~(function_decls : Flambda.function_declarations)
     else
       let remaining_inlining_threshold = fun_cost in
       let r = R.set_inlining_threshold r remaining_inlining_threshold in
-      let invariant_params = value_set_of_closures.invariant_params in
       (* Try inlining if the function is non-recursive and not too far above
          the threshold (or if the function is to be unconditionally
          inlined). *)
@@ -392,18 +444,29 @@ let for_call_site ~env ~r ~(function_decls : Flambda.function_declarations)
             && not !Clflags.classic_heuristic
             && not (Lazy.force recursive))
       then
+        let size_from_approximation =
+          match
+            Variable.Map.find fun_var (Lazy.force value_set_of_closures.size)
+          with
+          | size -> size
+          | exception Not_found ->
+            Misc.fatal_errorf "Approximation does not give a size for the \
+                function having fun_var %a.  value_set_of_closures: %a"
+              Variable.print fun_var
+              A.print_value_set_of_closures value_set_of_closures
+        in
         inline_non_recursive env r ~function_decls ~lhs_of_application
           ~closure_id_being_applied ~function_decl ~made_decision
           ~only_use_of_function ~no_simplification ~probably_a_functor
-          ~inline_requested ~always_inline ~args ~simplify
+          ~inline_requested ~always_inline ~args ~size_from_approximation
+          ~simplify
       else if (not always_inline) && E.inlining_level env > max_level then begin
         made_decision (Can_inline_but_tried_nothing (Level_exceeded true));
         no_simplification ()
       end else if Lazy.force recursive then
         inline_recursive env r ~max_level ~lhs_of_application ~function_decls
           ~closure_id_being_applied ~function_decl ~value_set_of_closures
-          ~invariant_params ~args ~args_approxs ~dbg ~simplify
-          ~no_simplification ~made_decision
+          ~args ~args_approxs ~dbg ~simplify ~no_simplification ~made_decision
       else begin
         made_decision (Can_inline_but_tried_nothing (Level_exceeded false));
         no_simplification ()

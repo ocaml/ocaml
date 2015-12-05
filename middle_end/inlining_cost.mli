@@ -41,6 +41,7 @@ val can_try_inlining
     : Flambda.t
   -> inlining_threshold
   -> bonus:int
+  -> size_from_approximation:int option
   -> inlining_threshold
 
 module Benefit : sig
@@ -82,7 +83,29 @@ module Whether_sufficient_benefit : sig
     -> round:int
     -> t
 
+  val create_given_sizes
+     : original_size:int
+    -> branch_depth: int
+    -> new_size:int
+    -> benefit:Benefit.t
+    -> probably_a_functor:bool
+    -> round:int
+    -> t
+
   val evaluate : t -> bool
 
   val to_string : t -> string
 end
+
+val scale_inline_threshold_by : int
+
+val direct_call_size : int
+
+(** If a function body exceeds this size, we can make a fast decision not
+    to inline it (see [Inlining_decision]). *)
+val maximum_interesting_size_of_function_body : unit -> int
+
+(** Measure the given expression to determine whether its size is at or
+    below the given threshold.  [None] is returned if it is too big; otherwise
+    [Some] is returned with the measured size. *)
+val lambda_smaller' : Flambda.expr -> than:int -> int option

@@ -144,10 +144,13 @@ and value_closure = {
 
 (* CR mshinwell: add support for the approximations of the results, so we
    can do all of the tricky higher-order cases. *)
-and value_set_of_closures = {
+and value_set_of_closures = private {
   function_decls : Flambda.function_declarations;
   bound_vars : t Var_within_closure.Map.t;
-  invariant_params : Variable.Set.t Variable.Map.t;
+  invariant_params : Variable.Set.t Variable.Map.t lazy_t;
+  size : int option Variable.Map.t lazy_t;
+  (** For functions that are very likely to be inlined, the size of the
+      function's body. *)
   specialised_args : Variable.t Variable.Map.t;
   (* Any freshening that has been applied to [function_decls]. *)
   freshening : Freshening.Project_var.t;
@@ -164,6 +167,14 @@ val print_value_set_of_closures
    : Format.formatter
   -> value_set_of_closures
   -> unit
+
+val create_value_set_of_closures
+   : function_decls:Flambda.function_declarations
+  -> bound_vars:t Var_within_closure.Map.t
+  -> invariant_params:Variable.Set.t Variable.Map.t lazy_t
+  -> specialised_args:Variable.t Variable.Map.t
+  -> freshening:Freshening.Project_var.t
+  -> value_set_of_closures
 
 (** Basic construction of approximations. *)
 val value_unknown : unknown_because_of -> t
@@ -243,6 +254,9 @@ val known : t -> bool
 
 (** An approximation is "useful" iff it is neither unknown nor bottom. *)
 val useful : t -> bool
+
+(** Whether all approximations in the given list do *not* satisfy [useful]. *)
+val all_not_useful : t list -> bool
 
 (** A value is certainly immutable if its approximation is known and not bottom.
     It must have been resolved (it cannot be [Value_extern] or
