@@ -18,7 +18,7 @@ try
   let ic = open_in_bin fname in
   let g : unit -> float list = Marshal.from_channel ic in
   close_in ic;
-  Printf.printf "%f\n" (List.nth (g ()) 0);
+  Printf.printf "%4.2f\n" (List.nth (g ()) 0);
 with
 | Sys_error _ ->
   Printf.printf "Do not import %S, ok\n" fname;
