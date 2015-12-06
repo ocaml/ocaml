@@ -28,9 +28,10 @@ Tier 1 (actively used and maintained by the core OCaml team):
 
 Tier 2 (maintained when possible, with help from users):
 
-    AMD64              FreeBSD, OpenBSD
+    AMD64              FreeBSD, OpenBSD, NetBSD
     IA32 (Pentium)     NetBSD, OpenBSD, Solaris 9
     PowerPC            NetBSD
+    ARM                NetBSD
     SPARC              Solaris, Linux, NetBSD
 
 Other operating systems for the processors above have not been tested,
