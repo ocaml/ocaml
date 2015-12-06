@@ -13,6 +13,7 @@ camlinternalOO.cmi : obj.cmi
 char.cmi :
 complex.cmi :
 digest.cmi :
+domain.cmi :
 filename.cmi :
 format.cmi : pervasives.cmi buffer.cmi
 gc.cmi :
@@ -87,8 +88,6 @@ digest.cmo : string.cmi char.cmi bytes.cmi digest.cmi
 digest.cmx : string.cmx char.cmx bytes.cmx digest.cmi
 domain.cmo : domain.cmi
 domain.cmx : domain.cmi
-effects.cmo : effects.cmi
-effects.cmx : effects.cmi
 filename.cmo : sys.cmi string.cmi random.cmi printf.cmi lazy.cmi buffer.cmi \
     filename.cmi
 filename.cmx : sys.cmx string.cmx random.cmx printf.cmx lazy.cmx buffer.cmx \
@@ -217,8 +216,6 @@ digest.cmo : string.cmi char.cmi bytes.cmi digest.cmi
 digest.p.cmx : string.p.cmx char.p.cmx bytes.p.cmx digest.cmi
 domain.cmo : domain.cmi
 domain.p.cmx : domain.cmi
-effects.cmo : effects.cmi
-effects.p.cmx : effects.cmi
 filename.cmo : sys.cmi string.cmi random.cmi printf.cmi lazy.cmi buffer.cmi \
     filename.cmi
 filename.p.cmx : sys.p.cmx string.p.cmx random.p.cmx printf.p.cmx lazy.p.cmx buffer.p.cmx \
