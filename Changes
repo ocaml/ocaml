@@ -234,6 +234,10 @@ Other libraries:
 - PR#6896: serious reimplementation of Big_int.float_of_big_int and
   Ratio.float_of_ratio, ensuring that the result is correctly rounded.
   (Xavier Leroy)
+- PR#6989: in Str library, make sure that all \(...\) groups are binding
+    and can be consulted with Str.matched_group.  There used to be
+    a limitation to 32 binding groups.
+  (Xavier Leroy)
 - PR#7013: spurious wake-up in the Event module
   (Xavier Leroy)
 - PR#7024: in documentation of Str regular expressions, clarify what

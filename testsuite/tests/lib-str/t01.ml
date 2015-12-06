@@ -690,6 +690,21 @@ let automated_test() =
   test_search_forward r n "qerpoiuab\000cdwerltkh"
     [| "\000cd" |];
 
+  (* PR#6989 *)
+  start_test "Many groups";
+  test_search_forward
+    (Str.regexp
+      "\\(\\)\\(\\)\\(\\)\\(\\)\\(\\)\\(\\)\\(\\)\\(\\)\\(\\)\\(\\)\
+       \\(\\)\\(\\)\\(\\)\\(\\)\\(\\)\\(\\)\\(\\)\\(\\)\\(\\)\\(\\)\
+       \\(\\)\\(\\)\\(\\)\\(\\)\\(\\)\\(\\)\\(\\)\\(\\)\\(\\)\\(\\)\
+       \\(\\)\\(x\\)\\(y\\)")
+    33 "xy"
+    [| "xy";
+       ""; ""; ""; ""; ""; ""; ""; ""; ""; "";
+       ""; ""; ""; ""; ""; ""; ""; ""; ""; "";
+       ""; ""; ""; ""; ""; ""; ""; ""; ""; "";
+       ""; "x"; "y" |];
+
   (** Backward searches *)
   start_test "Backward search for /the quick/";
   let r = Str.regexp "the quick" in
