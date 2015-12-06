@@ -231,6 +231,9 @@ Other libraries:
   Before, a handled signal could cause Unix.sleep to return early.
   Now, the sleep is restarted until the given time is elapsed.
   (Xavier Leroy)
+- PR#6289: Unix.utimes uses the current time only if both arguments
+    are exactly 0.0.  Also, use sub-second resolution if available.
+  (Xavier Leroy, report by Christophe Troestler)
 - PR#6896: serious reimplementation of Big_int.float_of_big_int and
   Ratio.float_of_ratio, ensuring that the result is correctly rounded.
   (Xavier Leroy)
