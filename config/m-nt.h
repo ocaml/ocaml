@@ -40,7 +40,7 @@
 #endif
 #define ARCH_INT64_PRINTF_FORMAT "I64"
 
-#if !defined(__MINGW32__) && !defined(inline)
+#if !defined(__MINGW32__) && !defined(__cplusplus) && !defined(inline)
 #define inline __inline
 #endif
 
