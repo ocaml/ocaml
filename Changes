@@ -59,6 +59,8 @@ Language features:
 Compilers:
 - PR#4800: better compilation of tuple assignment (Gabriel Scherer and
   Alain Frisch)
+- PR#6400: better error message for '_' used as an expression
+  (Alain Frisch, report by whitequark)
 - PR#6501: harden the native-code generator against certain uses of "%identity"
   (Xavier Leroy, report by Antoine Miné).
 - PR#6636: add --version option
@@ -79,8 +81,8 @@ Compilers:
   the stack (Marc Lasson, review by Xavier Leroy)
 - PR#7018: fix missing identifier renaming during inlining (Alain Frisch,
   review by Xavier Leroy)
-- PR#6400: better error message for '_' used as an expression
-  (Alain Frisch, report by whitequark)
+- PR#7026, GPR#288: remove write barrier for polymorphic variants without arguments
+  (Simon Cruanes)
 - GPR#17: some cmm optimizations of integer operations with constants
   (Stephen Dolan, review by Pierre Chambart)
 - GPR#109: new unboxing strategy for float and int references (Vladimir Brankov,

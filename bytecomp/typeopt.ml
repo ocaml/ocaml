@@ -49,6 +49,15 @@ let maybe_pointer_type env typ =
            causing some .cmi files to be unavailable.
            Maybe we should emit a warning. *)
       end
+  | Tvariant row ->
+      let row = Btype.row_repr row in
+      (* if all labels are devoid of arguments, not a pointer *)
+      not row.row_closed
+      || List.exists
+          (function
+            | _, (Rpresent (Some _) | Reither (false, _, _, _)) -> true
+            | _ -> false)
+          row.row_fields
   | _ -> true
 
 let maybe_pointer exp = maybe_pointer_type exp.exp_env exp.exp_type
