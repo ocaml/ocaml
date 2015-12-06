@@ -309,6 +309,7 @@ Bug fixes:
 - PR#6744: Univars can escape through polymorphic variants (partial fix)
 - PR#6776: Failure to kill the "tick" thread, segfault when exiting the runtime
 - PR#6752: Extensible variant types and scope escaping
+- PR#6780: Poor error message for wrong -farch and -ffpu options (ocamlopt, ARM)
 - PR#6805: Duplicated expression in case of hole in a non-failing switch.
   (Luc Maranget)
 - PR#6808: the parsing of OCAMLRUNPARAM is too lax

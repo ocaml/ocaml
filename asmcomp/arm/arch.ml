@@ -64,7 +64,7 @@ let farch spec =
            | "armv6"                       -> ARMv6
            | "armv6t2"                     -> ARMv6T2
            | "armv7"                       -> ARMv7
-           | spec -> raise (Arg.Bad spec))
+           | spec -> raise (Arg.Bad ("wrong '-farch' option: " ^ spec))
 
 let ffpu spec =
   fpu := (match spec with
@@ -72,7 +72,7 @@ let ffpu spec =
           | "vfpv2" when abi = EABI_HF     -> VFPv2
           | "vfpv3-d16" when abi = EABI_HF -> VFPv3_D16
           | "vfpv3" when abi = EABI_HF     -> VFPv3
-          | spec -> raise (Arg.Bad spec))
+          | spec -> raise (Arg.Bad ("wrong '-ffpu' option: " ^ spec))
 
 let command_line_options =
   [ "-farch", Arg.String farch,
