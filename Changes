@@ -21,14 +21,6 @@ Language features:
   (Gabriel Scherer)
 - GPR#42: short functor type syntax: "S -> T" for "functor (_ : S) -> T"
   (Leo White)
-* GPR#69: Custom index operators: ( .() ), ( .[] ), ( .{} ) etc.
-  (Florian Angeletti)
-  The syntax "foo.(bar) <- baz" now desugars into "( .()<- ) foo bar baz"; this
-  should allow user to define their own notations by overriding.
-  The bigarray notations ( .{} ), ( .{,} ) etc. are defined in the Bigarray
-  module, which means that the foo.{bar,baz} syntactic sugar is only available
-  when the Bigarray module is opened; this can break existing programs,
-  which should be fixed by opening the Bigarray module.
 - GPR#88: allow field punning in object copying expressions:
     {< x; y; >} is sugar for {< x = x; y = y; >}
   (Jeremy Yallop)

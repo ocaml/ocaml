@@ -414,64 +414,46 @@ class printer  ()= object(self:'self)
         | _ ->  pp f "~%s:%a@;" l self#simple_pattern p )
   method sugar_expr f e =
     if e.pexp_attributes <> [] then false
-      (* should also check attributes underneath *)
     else match e.pexp_desc with
-    | Pexp_apply ({ pexp_desc = Pexp_ident { txt = Lident s; _ }; _ }, args)
+    | Pexp_apply ({ pexp_desc = Pexp_ident { txt = id; _ };
+                    pexp_attributes=[]; _ }, args)
       when List.for_all (fun (lab, _) -> lab = Nolabel) args -> begin
-        let args = List.map snd args in
-        match s, args with
-        | "!", [e] ->
+        match id, List.map snd args with
+        | Lident "!", [e] ->
           pp f "@[<hov>!%a@]" self#simple_expr e;
           true
-        | (".()"|".[]"|".{}"), [a; i] ->
-          let left = String.sub s 0 2 and right = String.sub s 2 1 in
-          pp f "@[%a%s%a%s@]"
-            self#simple_expr a
-            left self#expression i right;
-          true
-        | (".()<-"|".[]<-"|".{}<-"), [a; i; v] ->
-          let left = String.sub s 0 2 and right = String.sub s 2 1 in
-          pp f "@[%a%s%a%s@ <-@;%a@]" (* @;< gives error here *)
-            self#simple_expr a
-            left self#expression i right
-            self#expression v;
-          true
-        | ".{,}", [a; i1; i2] ->
-          pp f "@[%a.{%a,%a}@]"
-            self#simple_expr a
-            self#simple_expr i1
-            self#simple_expr i2;
-          true
-        | ".{,}<-", [a; i1; i2; v] ->
-          pp f "@[%a.{%a,%a}@ <-@ %a@]"
-            self#simple_expr a
-            self#simple_expr i1
-            self#simple_expr i2
-            self#simple_expr v;
-          true
-        | ".{,,}", [a; i1; i2; i3] ->
-          pp f "@[%a.{%a,%a,%a}@]"
-            self#simple_expr a
-            self#simple_expr i1
-            self#simple_expr i2
-            self#simple_expr i3;
-          true
-        | ".{,,}<-", [a; i1; i2; i3; v] ->
-          pp f "@[%a.{%a,%a,%a}@ <-@ %a@]"
-            self#simple_expr a
-            self#simple_expr i1
-            self#simple_expr i2
-            self#simple_expr i3
-            self#simple_expr v;
-          true
-        | ".{,..,}", [a; {pexp_desc = Pexp_array ls; pexp_attributes = []}] ->
-          pp f "@[%a.{%a}@]" self#simple_expr a
-            (self#list ~sep:"," self#simple_expr ) ls;
-          true
-        | ".{,..,}<-", [a; {pexp_desc = Pexp_array ls; pexp_attributes = []}; v] ->
-          pp f "@[%a.{%a}@ <-@ %a@]" self#simple_expr a
-            (self#list ~sep:"," self#simple_expr ) ls self#simple_expr v;
-          true
+        | Ldot (path, ("get"|"set" as func)), a :: other_args -> begin
+            let print left right print_index indexes rem_args =
+              match func, rem_args with
+              | "get", [] ->
+                pp f "@[%a.%s%a%s@]"
+                  self#simple_expr a
+                  left (self#list ~sep:"," print_index) indexes right;
+                true
+              | "set", [v] ->
+                pp f "@[%a.%s%a%s@ <-@;<1 2>%a@]"
+                  self#simple_expr a
+                  left (self#list ~sep:"," print_index) indexes right
+                  self#simple_expr v;
+                true
+              | _ -> false
+            in
+            match path, other_args with
+            | Lident "Array", i :: rest ->
+              print "(" ")" self#expression [i] rest
+            | Lident "String", i :: rest ->
+              print "[" "]" self#expression [i] rest
+            | Ldot (Lident "Bigarray", "Array1"), i1 :: rest ->
+              print "{" "}" self#simple_expr [i1] rest
+            | Ldot (Lident "Bigarray", "Array2"), i1 :: i2 :: rest ->
+              print "{" "}" self#simple_expr [i1; i2] rest
+            | Ldot (Lident "Bigarray", "Array3"), i1 :: i2 :: i3 :: rest ->
+              print "{" "}" self#simple_expr [i1; i2; i3] rest
+            | Ldot (Lident "Bigarray", "Genarray"),
+              {pexp_desc = Pexp_array indexes; pexp_attributes = []} :: rest ->
+              print "{" "}" self#simple_expr indexes rest
+            | _ -> false
+          end
         | _ -> false
       end
     | _ -> false
