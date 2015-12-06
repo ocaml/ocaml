@@ -285,6 +285,9 @@ Bug fixes:
 * PR#6081: ocaml should add script's directory to search path, not current
     directory
   (Thomas Leonard and Damien Doligez)
+- PR#6108, PR#6802: fail cleanly if dynlink.cma or ocamltoplevel.cma
+    are loaded inside the toplevel loop.
+  (Xavier Leroy)
 - PR#6171: Error message confusing when a type escapes its scope.
 - PR#6340: Incorrect handling of \r when processing "Windows" source files
   (Damien Doligez, report by David Allsopp)
