@@ -200,6 +200,7 @@ module Benefit = struct
     remove_prim : int;
     remove_branch : int;
     (* CR-someday pchambart: branch_benefit : t list; *)
+    direct_call_of_indirect : int;
     requested_inline : int;
     (* Benefit to compensate the size of functions marked for inlining *)
   }
@@ -209,6 +210,7 @@ module Benefit = struct
     remove_alloc = 0;
     remove_prim = 0;
     remove_branch = 0;
+    direct_call_of_indirect = 0;
     requested_inline = 0;
   }
 
@@ -216,6 +218,8 @@ module Benefit = struct
   let remove_alloc t = { t with remove_alloc = t.remove_alloc + 1; }
   let remove_prim t = { t with remove_prim = t.remove_prim + 1; }
   let remove_branch t = { t with remove_branch = t.remove_branch + 1; }
+  let direct_call_of_indirect t =
+    { t with direct_call_of_indirect = t.direct_call_of_indirect + 1; }
   let requested_inline t ~size_of =
     let size = lambda_size size_of in
     { t with requested_inline = t.requested_inline + size; }
@@ -256,11 +260,14 @@ module Benefit = struct
 
   let print ppf b =
     Format.fprintf ppf "@[remove_call: %i@ remove_alloc: %i@ \
-                        remove_prim: %i@ remove_branc: %i@]"
+                        remove_prim: %i@ remove_branc: %i@ \
+                        direct: %i@ requested: %i@]"
       b.remove_call
       b.remove_alloc
       b.remove_prim
       b.remove_branch
+      b.direct_call_of_indirect
+      b.requested_inline
 
   let evaluate t ~round : int =
     benefit_factor *
@@ -271,7 +278,9 @@ module Benefit = struct
        + t.remove_prim * (cost !Clflags.inline_prim_cost
           ~default:Clflags.default_inline_prim_cost ~round)
        + t.remove_branch * (cost !Clflags.inline_branch_cost
-          ~default:Clflags.default_inline_branch_cost ~round))
+          ~default:Clflags.default_inline_branch_cost ~round)
+       + t.direct_call_of_indirect * (cost !Clflags.inline_indirect_cost
+          ~default:Clflags.default_inline_indirect_cost ~round))
     + t.requested_inline
 
   let (+) t1 t2 = {
@@ -279,6 +288,8 @@ module Benefit = struct
     remove_alloc = t1.remove_alloc + t2.remove_alloc;
     remove_prim = t1.remove_prim + t2.remove_prim;
     remove_branch = t1.remove_branch + t2.remove_branch;
+    direct_call_of_indirect =
+      t1.direct_call_of_indirect + t2.direct_call_of_indirect;
     requested_inline = t1.requested_inline + t2.requested_inline;
   }
 
@@ -357,13 +368,14 @@ module Whether_sufficient_benefit = struct
 
 
   let to_string t =
-      Printf.sprintf "{benefit={call=%d,alloc=%d,prim=%i,branch=%i,req=%i},\
+      Printf.sprintf "{benefit={call=%d,alloc=%d,prim=%i,branch=%i,indirect=%i,req=%i},\
                       orig_size=%d,new_size=%d,eval_size=%d,eval_benefit=%d,\
                       functor=%b,branch_depth=%d}=%s"
         t.benefit.remove_call
         t.benefit.remove_alloc
         t.benefit.remove_prim
         t.benefit.remove_branch
+        t.benefit.direct_call_of_indirect
         t.benefit.requested_inline
         t.original_size
         t.new_size

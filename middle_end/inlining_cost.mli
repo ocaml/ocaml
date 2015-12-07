@@ -60,6 +60,7 @@ module Benefit : sig
   val remove_alloc : t -> t
   val remove_prim : t -> t
   val remove_branch : t -> t
+  val direct_call_of_indirect : t -> t
   val requested_inline : t -> size_of:Flambda.t -> t
 
   val remove_code : Flambda.t -> t -> t

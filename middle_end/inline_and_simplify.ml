@@ -722,6 +722,11 @@ and simplify_apply env r ~(apply : Flambda.apply) : Flambda.t * R.t =
                 approximation references non-existent closure %a@."
               Closure_id.print closure_id_being_applied
         in
+        let r = match apply.kind with
+          | Indirect ->
+              R.map_benefit r Inlining_cost.Benefit.direct_call_of_indirect
+          | Direct _ -> r
+        in
         let nargs = List.length args in
         let arity = Flambda_utils.function_arity function_decl in
         if nargs = arity then
