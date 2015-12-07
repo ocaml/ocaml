@@ -195,3 +195,4 @@ NATTOPOBJS=$(UTILS) $(PARSING) $(TYPING) $(COMP) $(MIDDLE_END) $(ASMCOMP) \
   toplevel/opttopmain.cmo toplevel/opttopstart.cmo
 
 PERVASIVES=$(STDLIB_MODULES) outcometree topdirs toploop
+
