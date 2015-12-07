@@ -56,8 +56,8 @@ let boxed_integer_name = function
 
 let block_kind = function
   | Pgenblock -> ""
-  | Pfloatblock -> "float"
-  | Pboxedintblock bi -> boxed_integer_name bi
+  | Pfloatblock -> "[float]"
+  | Pboxedintblock bi -> Printf.sprintf "[%s]" (boxed_integer_name bi)
 
 let print_boxed_integer_conversion ppf bi1 bi2 =
   fprintf ppf "%s_of_%s" (boxed_integer_name bi2) (boxed_integer_name bi1)
@@ -117,7 +117,7 @@ let primitive ppf = function
   | Psetglobal id -> fprintf ppf "setglobal %a" Ident.print id
   | Pmakeblock(tag, Immutable, _kind) -> fprintf ppf "makeblock %i" tag
   | Pmakeblock(tag, Mutable, kind) ->
-      fprintf ppf "makemutable[%s] %i" (block_kind kind) tag
+      fprintf ppf "makemutable%s %i" (block_kind kind) tag
   | Pfield n -> fprintf ppf "field %i" n
   | Psetfield(n, ptr, init) ->
       let instr =
