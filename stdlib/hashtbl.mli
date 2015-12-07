@@ -132,7 +132,7 @@ val update: ('a -> 'b -> 'b option) -> ('a, 'b) t -> unit
     returns [None], the binding is discared.  If it returns [Some
     new_val], the binding is update to associare the key to [new_val].
 
-    Other comments for {!Hashtbl.update} apply as well.  *)
+    Other comments for {!Hashtbl.iter} apply as well.  *)
 
 val fold : ('a -> 'b -> 'c -> 'c) -> ('a, 'b) t -> 'c -> 'c
 (** [Hashtbl.fold f tbl init] computes
