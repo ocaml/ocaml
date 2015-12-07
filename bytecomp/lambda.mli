@@ -54,7 +54,7 @@ type primitive =
   | Pgetglobal of Ident.t
   | Psetglobal of Ident.t
   (* Operations on heap blocks *)
-  | Pmakeblock of int * mutable_flag
+  | Pmakeblock of int * mutable_flag * block_kind
   | Pfield of int
   | Psetfield of int * immediate_or_pointer * initialization_or_assignment
   | Pfloatfield of int
@@ -152,6 +152,9 @@ and comparison =
 and array_kind =
     Pgenarray | Paddrarray | Pintarray | Pfloatarray
 
+and block_kind =
+    Pgenblock | Pfloatblock | Pboxedintblock of boxed_integer
+
 and boxed_integer = Primitive.boxed_integer =
     Pnativeint | Pint32 | Pint64
 
@@ -194,7 +197,7 @@ type specialise_attribute =
 
 type function_kind = Curried | Tupled
 
-type let_kind = Strict | Alias | StrictOpt | Variable
+type let_kind = Strict | Alias | StrictOpt | Variable of block_kind
 (* Meaning of kinds for let x = e in e':
     Strict: e may have side-effets; always evaluate e first
       (If e is a simple expression, e.g. a variable or constant,
@@ -203,7 +206,10 @@ type let_kind = Strict | Alias | StrictOpt | Variable
       in e'
     StrictOpt: e does not have side-effects, but depend on the store;
       we can discard e if x does not appear in e'
-    Variable: the variable x is assigned later in e' *)
+    Variable k: the variable x is assigned later in e'.  The kind k
+      allows one to track mutable variables holding an unboxable number
+      (float or boxed integer) so as to tweak the unboxing heuristic.
+ *)
 
 type meth_kind = Self | Public | Cached
 

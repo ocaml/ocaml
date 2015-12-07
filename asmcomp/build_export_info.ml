@@ -251,7 +251,7 @@ and descr_of_named (env : Env.t) (named : Flambda.named)
     Value_id (Env.new_descr env (descr_of_constant const))
   | Allocated_const const ->
     Value_id (Env.new_descr env (descr_of_allocated_constant const))
-  | Prim (Pmakeblock (tag, Immutable), args, _dbg) ->
+  | Prim (Pmakeblock (tag, Immutable, _block_kind), args, _dbg) ->
     let approxs = List.map (Env.find_approx env) args in
     let descr : Export_info.descr =
       Value_block (Tag.create_exn tag, Array.of_list approxs)

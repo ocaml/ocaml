@@ -54,6 +54,11 @@ let boxed_integer_name = function
   | Pint32 -> "int32"
   | Pint64 -> "int64"
 
+let block_kind = function
+  | Pgenblock -> "gen"
+  | Pfloatblock -> "float"
+  | Pboxedintblock bi -> boxed_integer_name bi
+
 let print_boxed_integer_conversion ppf bi1 bi2 =
   fprintf ppf "%s_of_%s" (boxed_integer_name bi2) (boxed_integer_name bi1)
 
@@ -110,8 +115,9 @@ let primitive ppf = function
   | Ploc kind -> fprintf ppf "%s" (string_of_loc_kind kind)
   | Pgetglobal id -> fprintf ppf "global %a" Ident.print id
   | Psetglobal id -> fprintf ppf "setglobal %a" Ident.print id
-  | Pmakeblock(tag, Immutable) -> fprintf ppf "makeblock %i" tag
-  | Pmakeblock(tag, Mutable) -> fprintf ppf "makemutable %i" tag
+  | Pmakeblock(tag, Immutable, _kind) -> fprintf ppf "makeblock %i" tag
+  | Pmakeblock(tag, Mutable, kind) ->
+      fprintf ppf "makemutable[%s] %i" (block_kind kind) tag
   | Pfield n -> fprintf ppf "field %i" n
   | Psetfield(n, ptr, init) ->
       let instr =
@@ -424,7 +430,9 @@ let rec lam ppf = function
         function_attribute attr lam body
   | Llet(str, id, arg, body) ->
       let kind = function
-        Alias -> "a" | Strict -> "" | StrictOpt -> "o" | Variable -> "v" in
+          Alias -> "a" | Strict -> "" | StrictOpt -> "o"
+        | Variable k -> "v_" ^ block_kind k
+      in
       let rec letbody = function
         | Llet(str, id, arg, body) ->
             fprintf ppf "@ @[<2>%a =%s@ %a@]" Ident.print id (kind str) lam arg;

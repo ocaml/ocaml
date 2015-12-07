@@ -113,7 +113,7 @@ let rec eliminate_const_block (const : Lambda.structured_constant)
       : Lambda.lambda =
   match const with
   | Const_block (tag, consts) ->
-    Lprim (Pmakeblock (tag, Asttypes.Immutable),
+    Lprim (Pmakeblock (tag, Asttypes.Immutable, Pgenblock),
       List.map eliminate_const_block consts)
   | Const_base _
   | Const_pointer _
@@ -167,7 +167,8 @@ and close t ?debuginfo env (lam : Lambda.lambda) : Flambda.t =
     in
     let body = close t (Env.add_var env id var) body in
     Flambda.create_let var defining_expr body
-  | Llet (Variable, id, defining_expr, body) ->
+  | Llet (Variable _block_kind, id, defining_expr, body) ->
+    (* TODO: keep _block_kind in flambda *)
     let mut_var = Mutable_variable.of_ident id in
     let var = Variable.create_with_same_name_as_ident id in
     let defining_expr =

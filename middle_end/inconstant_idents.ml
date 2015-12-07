@@ -336,7 +336,7 @@ module Inconstants (P:Param) (Backend:Backend_intf.S) = struct
        makeblock(Mutable) can be a 'constant' if it is allocated at
        toplevel: if this expression is evaluated only once.
     *)
-    | Prim (Lambda.Pmakeblock (_tag, Asttypes.Immutable), args, _dbg) ->
+    | Prim (Lambda.Pmakeblock (_tag, Asttypes.Immutable, _block_kind), args, _dbg) ->
       mark_vars args curr
 (*  (* CR-someday pchambart: If global mutables are allowed: *)
     | Prim(Lambda.Pmakeblock(_tag, Asttypes.Mutable), args, _dbg, _)

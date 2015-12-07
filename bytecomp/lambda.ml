@@ -51,7 +51,7 @@ type primitive =
   | Pgetglobal of Ident.t
   | Psetglobal of Ident.t
   (* Operations on heap blocks *)
-  | Pmakeblock of int * mutable_flag
+  | Pmakeblock of int * mutable_flag * block_kind
   | Pfield of int
   | Psetfield of int * immediate_or_pointer * initialization_or_assignment
   | Pfloatfield of int
@@ -143,6 +143,9 @@ type primitive =
 and comparison =
     Ceq | Cneq | Clt | Cgt | Cle | Cge
 
+and block_kind =
+    Pgenblock | Pfloatblock | Pboxedintblock of boxed_integer
+
 and array_kind =
     Pgenarray | Paddrarray | Pintarray | Pfloatarray
 
@@ -188,7 +191,7 @@ type specialise_attribute =
 
 type function_kind = Curried | Tupled
 
-type let_kind = Strict | Alias | StrictOpt | Variable
+type let_kind = Strict | Alias | StrictOpt | Variable of block_kind
 
 type meth_kind = Self | Public | Cached
 

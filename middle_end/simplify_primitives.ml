@@ -41,7 +41,7 @@ let primitive (p : Lambda.primitive) (args, approxs) expr dbg ~size_int
       ~big_endian : Flambda.named * A.t * Inlining_cost.Benefit.t =
   let fpc = !Clflags.float_const_prop in
   match p with
-  | Pmakeblock(tag, Asttypes.Immutable) ->
+  | Pmakeblock(tag, Asttypes.Immutable, _block_kind) ->
     let tag = Tag.create_exn tag in
     expr, A.value_block tag (Array.of_list approxs), C.Benefit.zero
   | Praise _ ->

@@ -468,14 +468,14 @@ let simplify_lets lam =
   | Llet(_str, v, Lvar w, l2) when optimize ->
       Hashtbl.add subst v (simplif (Lvar w));
       simplif l2
-  | Llet(Strict, v, Lprim(Pmakeblock(0, Mutable), [linit]), lbody)
+  | Llet(Strict, v, Lprim(Pmakeblock(0, Mutable, kind), [linit]), lbody)
     when optimize ->
       let slinit = simplif linit in
       let slbody = simplif lbody in
       begin try
-       mklet (Variable, v, slinit, eliminate_ref v slbody)
+       mklet (Variable kind, v, slinit, eliminate_ref v slbody)
       with Real_reference ->
-        mklet(Strict, v, Lprim(Pmakeblock(0, Mutable), [slinit]), slbody)
+        mklet(Strict, v, Lprim(Pmakeblock(0, Mutable, kind), [slinit]), slbody)
       end
   | Llet(Alias, v, l1, l2) ->
       begin match count_var v with

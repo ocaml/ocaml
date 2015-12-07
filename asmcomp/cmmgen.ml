@@ -695,7 +695,7 @@ let rec expr_size env = function
       begin try Ident.find_same id env with Not_found -> RHS_nonrec end
   | Uclosure(fundecls, clos_vars) ->
       RHS_block (fundecls_size fundecls + List.length clos_vars)
-  | Ulet(id, exp, body) ->
+  | Ulet(id, exp, body, _kind) ->
       expr_size (Ident.add id (expr_size env exp) env) body
   | Uletrec(_bindings, body) ->
       expr_size env body
@@ -1403,7 +1403,7 @@ let rec is_unboxed_number env e =
         | Praise _ -> No_result
         | _ -> No_unboxing
       end
-  | Ulet (_, _, e) | Uletrec (_, e) | Usequence (_, e) ->
+  | Ulet (_, _, e, _) | Uletrec (_, e) | Usequence (_, e) ->
       is_unboxed_number env e
   | Uswitch (_, switch) ->
       let k = Array.fold_left join No_result switch.us_actions_consts in
@@ -1507,8 +1507,8 @@ let rec transl env e =
               (List.map (transl env) args) dbg
         | _ ->
             bind "met" (lookup_tag obj (transl env met)) (call_met obj args))
-  | Ulet(id, exp, body) ->
-      transl_let env id exp body
+  | Ulet(id, exp, body, kind) ->
+      transl_let env id exp body kind
   | Uletrec(bindings, body) ->
       transl_letrec env bindings (transl env body)
 
@@ -1519,7 +1519,7 @@ let rec transl env e =
           Cconst_symbol (Ident.name id)
       | (Pmakeblock _, []) ->
           assert false
-      | (Pmakeblock(tag, _mut), args) ->
+      | (Pmakeblock(tag, _mut, _kind), args) ->
           make_alloc tag (List.map (transl env) args)
       | (Pccall prim, args) ->
           transl_ccall env prim args dbg
@@ -2281,9 +2281,20 @@ and transl_unbox_number env bn arg =
   | Boxed_float -> transl_unbox_float env arg
   | Boxed_integer bi -> transl_unbox_int env bi arg
 
-and transl_let env id exp body =
-  match is_unboxed_number env exp with
-  |  No_unboxing ->
+and transl_let env id exp body kind =
+  let unboxing =
+    (* If [id] is a mutable variable (introduced to eliminate a local
+       reference) and it contains a type of unboxable numbers, then
+       force unboxing.  Otherwise, each assignment to the variable
+       might require some boxing, but such local references are often
+       used in loop and we really want to avoid repeated boxing. *)
+    match kind with
+    | Pfloatblock -> Boxed Boxed_float
+    | Pboxedintblock bi -> Boxed (Boxed_integer bi)
+    | Pgenblock -> is_unboxed_number env exp
+  in
+  match unboxing with
+  | No_unboxing ->
       Clet(id, transl env exp, transl env body)
   | No_result ->
       (* the let-bound expression never returns a value, we can ignore
