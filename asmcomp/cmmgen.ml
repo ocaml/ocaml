@@ -2296,15 +2296,25 @@ and transl_let env str kind id exp body =
   let unboxing =
     (* If [id] is a mutable variable (introduced to eliminate a local
        reference) and it contains a type of unboxable numbers, then
-       force unboxing.  Otherwise, each assignment to the variable
+       force unboxing.  Indeed, if not boxed, each assignment to the variable
        might require some boxing, but such local references are often
-       used in loop and we really want to avoid repeated boxing. *)
+       used in loops and we really want to avoid repeated boxing. *)
     match str, kind with
-    | Variable, Pfloatblock -> Boxed Boxed_float
-    | Variable, Pboxedintblock bi -> Boxed (Boxed_integer bi)
+    | Variable, Pfloatblock ->
+        Boxed Boxed_float
+    | Variable, Pboxedintblock bi ->
+        Boxed (Boxed_integer bi)
     | _, (Pfloatblock | Pboxedintblock _) ->
+        (* It would be safe to always unbox in this case, but
+           we do it only if this indeed allows us to get rid of
+           some allocations in the bound expression. *)
         is_unboxed_number ~strict:false env exp
     | _, Pgenblock ->
+        (* Here we don't know statically that the bound expression
+           evaluates to an unboxable number type.  We need to be stricter
+           and ensure that all possible branches in the expression
+           return a boxed value (of the same kind).  Indeed, with GADTs,
+           different branches could return different types. *)
         is_unboxed_number ~strict:true env exp
   in
   match unboxing with
