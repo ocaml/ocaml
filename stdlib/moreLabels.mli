@@ -34,7 +34,7 @@ module Hashtbl : sig
   val remove : ('a, 'b) t -> 'a -> unit
   val replace : ('a, 'b) t -> key:'a -> data:'b -> unit
   val iter : f:(key:'a -> data:'b -> unit) -> ('a, 'b) t -> unit
-  val update: f:(key:'a -> date:'b -> 'b option) -> ('a, 'b) t -> unit
+  val update: f:(key:'a -> data:'b -> 'b option) -> ('a, 'b) t -> unit
   val fold :
       f:(key:'a -> data:'b -> 'c -> 'c) ->
         ('a, 'b) t -> init:'c -> 'c
