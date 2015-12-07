@@ -483,7 +483,7 @@ let make_catch d k = match d with
 (* Introduce a catch, if worth it, delayed version *)
 let rec as_simple_exit = function
   | Lstaticraise (i,[]) -> Some i
-  | Llet (Alias,_,_,e) -> as_simple_exit e
+  | Llet (Alias,_k,_,_,e) -> as_simple_exit e
   | _ -> None
 
 
@@ -1509,8 +1509,8 @@ let inline_lazy_force_cond arg loc =
   let varg = Lvar idarg in
   let tag = Ident.create "tag" in
   let force_fun = Lazy.force code_force_lazy_block in
-  Llet(Strict, idarg, arg,
-       Llet(Alias, tag, Lprim(Pccall prim_obj_tag, [varg]),
+  Llet(Strict, Pgenblock, idarg, arg,
+       Llet(Alias, Pgenblock, tag, Lprim(Pccall prim_obj_tag, [varg]),
             Lifthenelse(
               (* if (tag == Obj.forward_tag) then varg.(0) else ... *)
               Lprim(Pintcomp Ceq,
@@ -1533,7 +1533,7 @@ let inline_lazy_force_switch arg loc =
   let idarg = Ident.create "lzarg" in
   let varg = Lvar idarg in
   let force_fun = Lazy.force code_force_lazy_block in
-  Llet(Strict, idarg, arg,
+  Llet(Strict, Pgenblock, idarg, arg,
        Lifthenelse(
          Lprim(Pisint, [varg]), varg,
          (Lswitch
@@ -1726,7 +1726,7 @@ let bind_sw arg k = match arg with
 | Lvar _ -> k arg
 | _ ->
     let id = Ident.create "switch" in
-    Llet (Strict,id,arg,k (Lvar id))
+    Llet (Strict,Pgenblock,id,arg,k (Lvar id))
 
 
 (* Sequential equality tests *)
@@ -2330,7 +2330,7 @@ let combine_constructor arg ex_pat cstr partial ctx def
                 nonconsts
                 default
             in
-              Llet(Alias, tag, Lprim(Pfield 0, [arg]), tests)
+              Llet(Alias, Pgenblock,tag, Lprim(Pfield 0, [arg]), tests)
       in
         List.fold_right
           (fun (path, act) rem ->
@@ -2407,7 +2407,7 @@ let call_switcher_variant_constant fail arg int_lambda_list =
 
 let call_switcher_variant_constr fail arg int_lambda_list =
   let v = Ident.create "variant" in
-  Llet(Alias, v, Lprim(Pfield 0, [arg]),
+  Llet(Alias, Pgenblock, v, Lprim(Pfield 0, [arg]),
        call_switcher
          fail (Lvar v) min_int max_int int_lambda_list)
 
@@ -2488,8 +2488,8 @@ let rec event_branch repr lam =
                     lev_kind = ev.lev_kind;
                     lev_repr = repr;
                     lev_env = ev.lev_env})
-  | (Llet(str, id, lam, body), _) ->
-      Llet(str, id, lam, event_branch repr body)
+  | (Llet(str, k, id, lam, body), _) ->
+      Llet(str, k, id, lam, event_branch repr body)
   | Lstaticraise _,_ -> lam
   | (_, Some _) ->
       Printlambda.lambda Format.str_formatter lam ;
@@ -2583,7 +2583,7 @@ let rec approx_present v = function
       List.exists (fun lam -> approx_present v lam) args
   | Lprim (_,args) ->
       List.exists (fun lam -> approx_present v lam) args
-  | Llet (Alias, _, l1, l2) ->
+  | Llet (Alias, _k, _, l1, l2) ->
       approx_present v l1 || approx_present v l2
   | Lvar vv -> Ident.same v vv
   | _ -> true
@@ -2607,11 +2607,11 @@ let rec lower_bind v arg lam = match lam with
 | Lswitch (ls,({sw_consts=[] ; sw_blocks = [i,act]} as sw))
     when not (approx_present v ls) ->
       Lswitch (ls, {sw with sw_blocks = [i,lower_bind v arg act]})
-| Llet (Alias, vv, lv, l) ->
+| Llet (Alias, k, vv, lv, l) ->
     if approx_present v lv then
       bind Alias v arg lam
     else
-      Llet (Alias, vv, lv, lower_bind v arg l)
+      Llet (Alias, k, vv, lv, lower_bind v arg l)
 | _ ->
     bind Alias v arg lam
 
@@ -2976,7 +2976,7 @@ let simple_for_let loc param pat body =
 *)
 
 let rec map_return f = function
-  | Llet (k, id, l1, l2) -> Llet (k, id, l1, map_return f l2)
+  | Llet (str, k, id, l1, l2) -> Llet (str, k, id, l1, map_return f l2)
   | Lletrec (l1, l2) -> Lletrec (l1, map_return f l2)
   | Lifthenelse (lcond, lthen, lelse) ->
       Lifthenelse (lcond, map_return f lthen, map_return f lelse)

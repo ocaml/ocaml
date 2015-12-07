@@ -34,8 +34,8 @@ let rec eliminate_ref id = function
       if IdentSet.mem id (free_variables lam)
       then raise Real_reference
       else lam
-  | Llet(str, v, e1, e2) ->
-      Llet(str, v, eliminate_ref id e1, eliminate_ref id e2)
+  | Llet(str, kind, v, e1, e2) ->
+      Llet(str, kind, v, eliminate_ref id e1, eliminate_ref id e2)
   | Lletrec(idel, e2) ->
       Lletrec(List.map (fun (v, e) -> (v, eliminate_ref id e)) idel,
               eliminate_ref id e2)
@@ -112,7 +112,7 @@ let simplify_exits lam =
   | (Lvar _| Lconst _) -> ()
   | Lapply ap -> count ap.ap_func; List.iter count ap.ap_args
   | Lfunction {body} -> count body
-  | Llet(_str, _v, l1, l2) ->
+  | Llet(_str, _kind, _v, l1, l2) ->
       count l2; count l1
   | Lletrec(bindings, body) ->
       List.iter (fun (_v, l) -> count l) bindings;
@@ -202,7 +202,7 @@ let simplify_exits lam =
                      ap_args = List.map simplif ap.ap_args}
   | Lfunction{kind; params; body = l; attr} ->
      Lfunction{kind; params; body = simplif l; attr}
-  | Llet(kind, v, l1, l2) -> Llet(kind, v, simplif l1, simplif l2)
+  | Llet(str, kind, v, l1, l2) -> Llet(str, kind, v, simplif l1, simplif l2)
   | Lletrec(bindings, body) ->
       Lletrec(List.map (fun (v, l) -> (v, simplif l)) bindings, simplif body)
   | Lprim(p, ll) -> begin
@@ -262,7 +262,7 @@ let simplify_exits lam =
             (fun x y t -> Ident.add x (Lvar y) t)
             xs ys Ident.empty in
         List.fold_right2
-          (fun y l r -> Llet (Alias, y, l, r))
+          (fun y l r -> Llet (Alias, Pgenblock, y, l, r))
           ys ls (Lambda.subst_lambda env handler)
       with
       | Not_found -> Lstaticraise (i,ls)
@@ -302,7 +302,7 @@ let simplify_exits lam =
 *)
 
 let beta_reduce params body args =
-  List.fold_left2 (fun l param arg -> Llet(Strict, param, arg, l))
+  List.fold_left2 (fun l param arg -> Llet(Strict, Pgenblock, param, arg, l))
                   body params args
 
 (* Simplification of lets *)
@@ -366,12 +366,12 @@ let simplify_lets lam =
       count bv l1; List.iter (count bv) ll
   | Lfunction {body} ->
       count Tbl.empty body
-  | Llet(_str, v, Lvar w, l2) when optimize ->
+  | Llet(_str, _k, v, Lvar w, l2) when optimize ->
       (* v will be replaced by w in l2, so each occurrence of v in l2
          increases w's refcount *)
       count (bind_var bv v) l2;
       use_var bv w (count_var v)
-  | Llet(str, v, l1, l2) ->
+  | Llet(str, _kind, v, l1, l2) ->
       count (bind_var bv v) l2;
       (* If v is unused, l1 will be removed, so don't count its variables *)
       if str = Strict || count_var v > 0 then count bv l1
@@ -435,9 +435,9 @@ let simplify_lets lam =
 (* This (small)  optimisation is always legal, it may uncover some
    tail call later on. *)
 
-  let mklet (kind,v,e1,e2) = match e2 with
+  let mklet str kind v e1 e2  = match e2 with
   | Lvar w when optimize && Ident.same v w -> e1
-  | _ -> Llet (kind,v,e1,e2) in
+  | _ -> Llet (str, kind,v,e1,e2) in
 
 
   let rec simplif = function
@@ -465,30 +465,31 @@ let simplify_lets lam =
       | body ->
           Lfunction{kind; params; body; attr}
       end
-  | Llet(_str, v, Lvar w, l2) when optimize ->
+  | Llet(_str, _k, v, Lvar w, l2) when optimize ->
       Hashtbl.add subst v (simplif (Lvar w));
       simplif l2
-  | Llet(Strict, v, Lprim(Pmakeblock(0, Mutable, kind), [linit]), lbody)
+  | Llet(Strict, kind, v,
+         Lprim(Pmakeblock(0, Mutable, kind_ref) as prim, [linit]), lbody)
     when optimize ->
       let slinit = simplif linit in
       let slbody = simplif lbody in
       begin try
-       mklet (Variable kind, v, slinit, eliminate_ref v slbody)
+       mklet Variable kind_ref v slinit (eliminate_ref v slbody)
       with Real_reference ->
-        mklet(Strict, v, Lprim(Pmakeblock(0, Mutable, kind), [slinit]), slbody)
+        mklet Strict kind v (Lprim(prim, [slinit])) slbody
       end
-  | Llet(Alias, v, l1, l2) ->
+  | Llet(Alias, kind, v, l1, l2) ->
       begin match count_var v with
         0 -> simplif l2
       | 1 when optimize -> Hashtbl.add subst v (simplif l1); simplif l2
-      | _ -> Llet(Alias, v, simplif l1, simplif l2)
+      | _ -> Llet(Alias, kind, v, simplif l1, simplif l2)
       end
-  | Llet(StrictOpt, v, l1, l2) ->
+  | Llet(StrictOpt, kind, v, l1, l2) ->
       begin match count_var v with
         0 -> simplif l2
-      | _ -> mklet(Alias, v, simplif l1, simplif l2)
+      | _ -> mklet Alias kind v (simplif l1) (simplif l2)
       end
-  | Llet(kind, v, l1, l2) -> mklet(kind, v, simplif l1, simplif l2)
+  | Llet(str, kind, v, l1, l2) -> mklet str kind v (simplif l1) (simplif l2)
   | Lletrec(bindings, body) ->
       Lletrec(List.map (fun (v, l) -> (v, simplif l)) bindings, simplif body)
   | Lprim(p, ll) -> Lprim(p, List.map simplif ll)
@@ -554,7 +555,7 @@ let rec emit_tail_infos is_tail lambda =
         Stypes.record (Stypes.An_call (ap.ap_loc, call_kind ap.ap_args))
   | Lfunction {body = lam} ->
       emit_tail_infos true lam
-  | Llet (_, _, lam, body) ->
+  | Llet (_str, _k, _, lam, body) ->
       emit_tail_infos false lam;
       emit_tail_infos is_tail body
   | Lletrec (bindings, body) ->
@@ -629,12 +630,12 @@ and list_emit_tail_infos is_tail =
 let split_default_wrapper ?(create_wrapper_body = fun lam -> lam)
       fun_id kind params body attr =
   let rec aux map = function
-    | Llet(Strict, id, (Lifthenelse(Lvar optparam, _, _) as def), rest) when
+    | Llet(Strict, k, id, (Lifthenelse(Lvar optparam, _, _) as def), rest) when
         Ident.name optparam = "*opt*" && List.mem optparam params
           && not (List.mem_assoc optparam map)
       ->
         let wrapper_body, inner = aux ((optparam, id) :: map) rest in
-        Llet(Strict, id, def, wrapper_body), inner
+        Llet(Strict, k, id, def, wrapper_body), inner
     | _ when map = [] -> raise Exit
     | body ->
         (* Check that those *opt* identifiers don't appear in the remaining

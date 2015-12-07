@@ -22,10 +22,10 @@ let block_kind =
   let open Lambda in
   function
   | Pgenblock -> ""
-  | Pfloatblock -> "float"
-  | Pboxedintblock Pnativeint -> "nativeint"
-  | Pboxedintblock Pint32 -> "int32"
-  | Pboxedintblock Pint64 -> "int64"
+  | Pfloatblock -> ":float"
+  | Pboxedintblock Pnativeint -> ":nativeint"
+  | Pboxedintblock Pint32 -> ":int32"
+  | Pboxedintblock Pint64 -> ":int64"
 
 
 let rec structured_constant ppf = function

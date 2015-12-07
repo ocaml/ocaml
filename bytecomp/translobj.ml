@@ -98,7 +98,7 @@ let transl_label_init_general f =
   let expr, size = f () in
   let expr =
     Hashtbl.fold
-      (fun c id expr -> Llet(Alias, id, Lconst c, expr))
+      (fun c id expr -> Llet(Alias, Pgenblock, id, Lconst c, expr))
       consts expr
   in
   (*let expr =
@@ -121,7 +121,7 @@ let transl_label_init_flambda f =
   let expr =
     if !method_count = 0 then expr
     else
-      Llet (Strict, method_cache_id,
+      Llet (Strict, Pgenblock, method_cache_id,
         Lprim (Pccall prim_makearray, [int !method_count; int 0]),
         expr)
   in
@@ -176,7 +176,7 @@ let oo_wrap env req f x =
     let lambda =
       List.fold_left
         (fun lambda id ->
-          Llet(StrictOpt, id,
+          Llet(StrictOpt, Pgenblock, id,
                Lprim(Pmakeblock(0, Mutable, Pgenblock),
                      [lambda_unit; lambda_unit; lambda_unit]),
                lambda))

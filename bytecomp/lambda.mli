@@ -197,7 +197,7 @@ type specialise_attribute =
 
 type function_kind = Curried | Tupled
 
-type let_kind = Strict | Alias | StrictOpt | Variable of block_kind
+type let_kind = Strict | Alias | StrictOpt | Variable
 (* Meaning of kinds for let x = e in e':
     Strict: e may have side-effets; always evaluate e first
       (If e is a simple expression, e.g. a variable or constant,
@@ -206,9 +206,7 @@ type let_kind = Strict | Alias | StrictOpt | Variable of block_kind
       in e'
     StrictOpt: e does not have side-effects, but depend on the store;
       we can discard e if x does not appear in e'
-    Variable k: the variable x is assigned later in e'.  The kind k
-      allows one to track mutable variables holding an unboxable number
-      (float or boxed integer) so as to tweak the unboxing heuristic.
+    Variable: the variable x is assigned later in e'
  *)
 
 type meth_kind = Self | Public | Cached
@@ -226,7 +224,7 @@ type lambda =
   | Lconst of structured_constant
   | Lapply of lambda_apply
   | Lfunction of lfunction
-  | Llet of let_kind * Ident.t * lambda * lambda
+  | Llet of let_kind * block_kind * Ident.t * lambda * lambda
   | Lletrec of (Ident.t * lambda) list * lambda
   | Lprim of primitive * lambda list
   | Lswitch of lambda * lambda_switch

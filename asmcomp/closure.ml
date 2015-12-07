@@ -892,10 +892,10 @@ let rec close fenv cenv = function
       let (uobj, _) = close fenv cenv obj in
       (Usend(kind, umet, uobj, close_list fenv cenv args, Debuginfo.none),
        Value_unknown)
-  | Llet(str, id, lam, body) ->
+  | Llet(str, kind, id, lam, body) ->
       let (ulam, alam) = close_named fenv cenv id lam in
       begin match (str, alam) with
-        (Variable kind, _) ->
+        (Variable, _) ->
           let (ubody, abody) = close fenv cenv body in
           (Ulet(id, ulam, ubody, kind), abody)
       | (_, Value_const _)
@@ -903,7 +903,7 @@ let rec close fenv cenv = function
           close (Tbl.add id alam fenv) cenv body
       | (_, _) ->
           let (ubody, abody) = close (Tbl.add id alam fenv) cenv body in
-          (Ulet(id, ulam, ubody, Pgenblock), abody)
+          (Ulet(id, ulam, ubody, kind), abody)
       end
   | Lletrec(defs, body) ->
       if List.for_all

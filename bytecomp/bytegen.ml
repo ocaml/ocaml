@@ -146,14 +146,14 @@ let rec size_of_lambda = function
   | Lfunction{params} as funct ->
       RHS_function (1 + IdentSet.cardinal(free_variables funct),
                     List.length params)
-  | Llet (Strict, id, Lprim (Pduprecord (kind, size), _), body)
+  | Llet (Strict, _k, id, Lprim (Pduprecord (kind, size), _), body)
     when check_recordwith_updates id body ->
       begin match kind with
       | Record_regular | Record_inlined _ -> RHS_block size
       | Record_float -> RHS_floatblock size
       | Record_extension -> RHS_block (size + 1)
       end
-  | Llet(_str, _id, _arg, body) -> size_of_lambda body
+  | Llet(_str, _k, _id, _arg, body) -> size_of_lambda body
   | Lletrec(_bindings, body) -> size_of_lambda body
   | Lprim(Pmakeblock _, args) -> RHS_block (List.length args)
   | Lprim (Pmakearray ((Paddrarray|Pintarray), _), args) ->
@@ -506,7 +506,7 @@ let rec comp_expr env exp sz cont =
       Stack.push to_compile functions_to_compile;
       comp_args env (List.map (fun n -> Lvar n) fv) sz
         (Kclosure(lbl, List.length fv) :: cont)
-  | Llet(_str, id, arg, body) ->
+  | Llet(_str, _k, id, arg, body) ->
       comp_expr env arg sz
         (Kpush :: comp_expr (add_var id (sz+1) env) body (sz+1)
           (add_pop 1 cont))
