@@ -140,37 +140,25 @@ type inlining_threshold =
   | Never_inline
   | Can_inline_if_no_larger_than of int
 
-let can_try_inlining_magic_constant = 4
-let rough_max_bonus = 20
-
-let can_try_inlining lam inlining_threshold ~bonus
+let can_try_inlining lam inlining_threshold ~number_of_arguments
       ~size_from_approximation =
   match inlining_threshold with
   | Never_inline -> Never_inline
   | Can_inline_if_no_larger_than inlining_threshold ->
+    let bonus =
+      (* removing a call will reduce the size by at least the number
+         of arguments *)
+      number_of_arguments
+    in
     let size =
-      let than =
-        (inlining_threshold + bonus) * can_try_inlining_magic_constant
-      in
-      (* CR mshinwell: Is the bonus always just going to be tied to the
-         number of parameters?  If so we could put it in the approximation,
-         and wouldn't need this "rough" stuff.  We should rename it in that
-         case too. *)
-      if bonus <= rough_max_bonus then begin
-        (* Assuming that the bonus isn't so large that we would have failed
-           to pre-calculate the size of the function (see
-           [maximum_interesting_size_of_function_body], below), then we can
-           use the cached value to avoid traversing the term. *)
-        match size_from_approximation with
-        | Some size -> if size <= than then Some size else None
-        | None -> lambda_smaller' lam ~than
-      end else begin
-        lambda_smaller' lam ~than
-      end
+      let than = inlining_threshold + bonus in
+      match size_from_approximation with
+      | Some size -> if size <= than then Some size else None
+      | None -> lambda_smaller' lam ~than
     in
     match size with
     | None -> Never_inline
-    | Some size -> Can_inline_if_no_larger_than (inlining_threshold - size)
+    | Some size -> Can_inline_if_no_larger_than (inlining_threshold - size + bonus)
 
 let lambda_smaller lam ~than =
   lambda_smaller' lam ~than <> None

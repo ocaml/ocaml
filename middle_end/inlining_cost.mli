@@ -40,7 +40,7 @@ val can_inline
 val can_try_inlining
     : Flambda.t
   -> inlining_threshold
-  -> bonus:int
+  -> number_of_arguments:int
   -> size_from_approximation:int option
   -> inlining_threshold
 

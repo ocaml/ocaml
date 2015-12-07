@@ -402,7 +402,7 @@ let for_call_site ~env ~r ~(function_decls : Flambda.function_declarations)
         inlining_threshold
       else begin
         Inlining_cost.can_try_inlining function_decl.body inlining_threshold
-          ~bonus:num_params
+          ~number_of_arguments:num_params
           (* CR mshinwell: for the moment, this is None, since the
              Inlining_cost code isn't checking sizes up to the max inlining
              threshold---this seems to take too long. *)
