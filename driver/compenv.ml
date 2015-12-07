@@ -218,6 +218,10 @@ let read_one_param ppf position name v =
       | "inline" ->
         inline_threshold :=
           Int_arg_helper.parse v "Bad syntax in OCAMLPARAM for 'inline'"
+      | "inline-toplevel" ->
+        inline_toplevel_threshold :=
+          Some (Int_arg_helper.parse v
+                  "Bad syntax in OCAMLPARAM for 'inline-toplevel'")
 
       | "rounds" -> int_setter ppf "rounds" simplify_rounds v
       | "unroll" ->
@@ -239,6 +243,10 @@ let read_one_param ppf position name v =
         inline_branch_cost :=
           Int_arg_helper.parse v
             "Bad syntax in OCAMLPARAM for 'inline-branch-cost'"
+      | "inline-lifting-benefit" ->
+        inline_lifting_benefit :=
+          Int_arg_helper.parse v
+            "Bad syntax in OCAMLPARAM for 'inline-lifting-benefit'"
       | "branch-inline-factor" ->
         branch_inline_factor :=
           Float_arg_helper.parse v
@@ -247,10 +255,6 @@ let read_one_param ppf position name v =
         max_inlining_depth :=
           Int_arg_helper.parse v
             "Bad syntax in OCAMLPARAM for 'max-inlining-depth'"
-
-      | "functor-heuristics" ->
-          if !native_code then
-            set "functor-heuristics" [ functor_heuristics ] v
 
       | "classic-heuristic" ->
           set "classic-heuristic" [ classic_heuristic ] v

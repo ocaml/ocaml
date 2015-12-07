@@ -1442,9 +1442,9 @@ let add_predef_exns_to_environment ~env ~backend =
 
 let run ~never_inline ~backend ~prefixname ~round program =
   let r =
-    let r = R.create ~round in
+    let r = R.create () in
     if never_inline then
-      R.set_inlining_threshold r Inlining_cost.Never_inline
+      R.set_inlining_threshold r (Some Inlining_cost.Never_inline)
     else
       r
   in

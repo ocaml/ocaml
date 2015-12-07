@@ -292,25 +292,26 @@ module Whether_sufficient_benefit = struct
   type t = {
     round : int;
     benefit : Benefit.t;
+    toplevel : bool;
     branch_depth : int;
-    probably_a_functor : bool;
+    lifting : bool;
     original_size : int;
     new_size : int;
     evaluated_benefit : int;
   }
 
-  let create ~original ~branch_depth lam benefit ~probably_a_functor ~round =
+  let create ~original ~toplevel ~branch_depth lam ~benefit ~lifting ~round =
     let evaluated_benefit = Benefit.evaluate benefit ~round in
-    { round; benefit; branch_depth; probably_a_functor;
+    { round; benefit; toplevel; branch_depth; lifting;
       original_size = lambda_size original;
       new_size = lambda_size lam;
       evaluated_benefit;
     }
 
-  let create_given_sizes ~original_size ~branch_depth ~new_size ~benefit
-        ~probably_a_functor ~round =
+  let create_given_sizes ~original_size ~toplevel ~branch_depth ~new_size
+        ~benefit ~lifting ~round =
     let evaluated_benefit = Benefit.evaluate benefit ~round in
-    { round; benefit; branch_depth; probably_a_functor; original_size;
+    { round; benefit; toplevel; branch_depth; lifting; original_size;
       new_size; evaluated_benefit;
     }
 
@@ -319,46 +320,55 @@ module Whether_sufficient_benefit = struct
     && f >= 0.
 
   let evaluate t =
-    if t.probably_a_functor then
-      true
-    else
-      (* The estimated benefit is the evaluated benefit times an
-         estimation of the probability that the branch does not matter
-         for performances (is cold). The probability is very roughtly
-         estimated by considering that for every branching the
-         sub-expressions has the same [1 / (1 + factor)] probability
-         [p] of being cold. Hence the probability for the current
-         call to be cold is [p ^ number of nested branch].
-
-         The probability is expressed as [1 / (1 + factor)] rather
-         than letting the user directly provide [p], since for every
-         positive value of [factor] [p] is in [0, 1]. *)
-      let branch_never_taken_estimated_probability =
-        let branch_inline_factor =
-          match !Clflags.branch_inline_factor with
-          | Always branch_inline_factor -> branch_inline_factor
-          | Variable by_round ->
-            match Ext_types.Int.Map.find t.round by_round with
-            | branch_inline_factor -> branch_inline_factor
-            | exception Not_found -> Clflags.default_branch_inline_factor
+    let estimated_benefit =
+      if t.toplevel && t.lifting && t.branch_depth = 0 then begin
+        let lifting_benefit =
+          match !Clflags.inline_lifting_benefit with
+            | Always lifting_benefit -> lifting_benefit
+            | Variable by_round ->
+              match Ext_types.Int.Map.find t.round by_round with
+              | lifting_benefit -> lifting_benefit
+              | exception Not_found -> Clflags.default_inline_lifting_benefit
         in
-        (* CR pchambart to pchambart: change this assert to a warning *)
-        assert(correct_branch_factor branch_inline_factor);
-        1. /. (1. +. branch_inline_factor)
-      in
-      let call_estimated_probability =
-        branch_never_taken_estimated_probability ** float t.branch_depth
-      in
-      let estimated_benefit =
-        float t.evaluated_benefit *. call_estimated_probability
-      in
+          float (t.evaluated_benefit + lifting_benefit)
+      end else begin
+        (* The estimated benefit is the evaluated benefit times an
+           estimation of the probability that the branch does not matter
+           for performances (is cold). The probability is very roughtly
+           estimated by considering that for every branching the
+           sub-expressions has the same [1 / (1 + factor)] probability
+           [p] of being cold. Hence the probability for the current
+           call to be cold is [p ^ number of nested branch].
+
+           The probability is expressed as [1 / (1 + factor)] rather
+           than letting the user directly provide [p], since for every
+           positive value of [factor] [p] is in [0, 1]. *)
+        let branch_never_taken_estimated_probability =
+          let branch_inline_factor =
+            match !Clflags.branch_inline_factor with
+            | Always branch_inline_factor -> branch_inline_factor
+            | Variable by_round ->
+              match Ext_types.Int.Map.find t.round by_round with
+              | branch_inline_factor -> branch_inline_factor
+              | exception Not_found -> Clflags.default_branch_inline_factor
+          in
+          (* CR pchambart to pchambart: change this assert to a warning *)
+          assert(correct_branch_factor branch_inline_factor);
+          1. /. (1. +. branch_inline_factor)
+        in
+        let call_estimated_probability =
+          branch_never_taken_estimated_probability ** float t.branch_depth
+        in
+          float t.evaluated_benefit *. call_estimated_probability
+      end
+    in
       float t.new_size -. estimated_benefit <= float t.original_size
 
 
   let to_string t =
       Printf.sprintf "{benefit={call=%d,alloc=%d,prim=%i,branch=%i,indirect=%i,req=%i},\
                       orig_size=%d,new_size=%d,eval_size=%d,eval_benefit=%d,\
-                      functor=%b,branch_depth=%d}=%s"
+                      toplevel=%b,lifting=%b,branch_depth=%d}=%s"
         t.benefit.remove_call
         t.benefit.remove_alloc
         t.benefit.remove_prim
@@ -369,12 +379,15 @@ module Whether_sufficient_benefit = struct
         t.new_size
         (t.original_size - t.new_size)
         t.evaluated_benefit
-        t.probably_a_functor
+        t.toplevel
+        t.lifting
         t.branch_depth
         (if evaluate t then "yes" else "no")
 end
 
 let scale_inline_threshold_by = 8
+
+let default_toplevel_multiplier = 8
 
 let maximum_interesting_size_of_function_body () =
   (* CR-soon mshinwell for mshinwell: hastily-written comment, to review *)

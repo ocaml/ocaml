@@ -268,20 +268,41 @@ let initial_inlining_threshold ~round : Inlining_cost.inlining_threshold =
   Can_inline_if_no_larger_than
     (unscaled * Inlining_cost.scale_inline_threshold_by)
 
+let initial_inlining_toplevel_threshold ~round : Inlining_cost.inlining_threshold =
+  let ordinary_threshold =
+    Clflags.Int_arg_helper.get ~key:round
+      Clflags.default_inline_threshold !Clflags.inline_threshold
+  in
+  let default_toplevel_threshold =
+    ordinary_threshold * Inlining_cost.default_toplevel_multiplier
+  in
+  let unscaled =
+    match !Clflags.inline_toplevel_threshold with
+    | None -> default_toplevel_threshold
+    | Some inline_toplevel_threshold ->
+        Clflags.Int_arg_helper.get ~key:round
+          default_toplevel_threshold inline_toplevel_threshold
+  in
+  (* CR-soon pchambart: Add a warning if this is too big
+     mshinwell: later *)
+  Can_inline_if_no_larger_than
+    (unscaled * Inlining_cost.scale_inline_threshold_by)
+
+
 module Result = struct
   module Int = Ext_types.Int
 
   type t =
     { approx : Simple_value_approx.t;
       used_staticfail : Static_exception.Set.t;
-      inlining_threshold : Inlining_cost.inlining_threshold;
+      inlining_threshold : Inlining_cost.inlining_threshold option;
       benefit : Inlining_cost.Benefit.t;
     }
 
-  let create ~round =
+  let create () =
     { approx = Simple_value_approx.value_unknown Other;
       used_staticfail = Static_exception.Set.empty;
-      inlining_threshold = initial_inlining_threshold ~round;
+      inlining_threshold = None;
       benefit = Inlining_cost.Benefit.zero;
     }
 

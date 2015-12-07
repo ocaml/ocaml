@@ -114,17 +114,19 @@ val inlining_stats : bool ref
 val simplify_rounds : int ref
 val default_unroll : int
 val unroll : Int_arg_helper.parsed ref
-val functor_heuristics : bool ref
+val inline_toplevel_threshold : Int_arg_helper.parsed option ref
 val default_inline_call_cost : int
 val default_inline_alloc_cost : int
 val default_inline_prim_cost : int
 val default_inline_branch_cost : int
 val default_inline_indirect_cost : int
+val default_inline_lifting_benefit : int
 val inline_call_cost : Int_arg_helper.parsed ref
 val inline_alloc_cost : Int_arg_helper.parsed ref
 val inline_prim_cost : Int_arg_helper.parsed ref
 val inline_branch_cost : Int_arg_helper.parsed ref
 val inline_indirect_cost : Int_arg_helper.parsed ref
+val inline_lifting_benefit : Int_arg_helper.parsed ref
 val default_branch_inline_factor : float
 val branch_inline_factor : Float_arg_helper.parsed ref
 val dont_write_files : bool ref

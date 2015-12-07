@@ -151,7 +151,7 @@ let keep_docs = ref false              (* -keep-docs *)
 let keep_locs = ref false              (* -keep-locs *)
 let unsafe_string = ref true;;         (* -safe-string / -unsafe-string *)
 
-let functor_heuristics = ref true;;    (* -no-functor-heuristics *)
+let inline_toplevel_threshold = ref None
 
 let default_inline_call_cost = 5
 let default_inline_alloc_cost = 3
@@ -159,6 +159,7 @@ let default_inline_prim_cost = 3
 let default_inline_branch_cost = 3
 let default_inline_indirect_cost = 2
 let default_branch_inline_factor = 0.6
+let default_inline_lifting_benefit = 100
 
 let inline_call_cost = ref (Int_arg_helper.Always default_inline_call_cost)
 let inline_alloc_cost = ref (Int_arg_helper.Always default_inline_alloc_cost)
@@ -169,6 +170,8 @@ let inline_indirect_cost =
   ref (Int_arg_helper.Always default_inline_indirect_cost)
 let branch_inline_factor =
   ref (Float_arg_helper.Always default_branch_inline_factor)
+let inline_lifting_benefit =
+  ref (Int_arg_helper.Always default_inline_lifting_benefit)
 
 let print_timings = ref false          (* -timings *)
 

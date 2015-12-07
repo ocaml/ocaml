@@ -109,13 +109,16 @@ module Options = Main_args.Make_optcomp_options (struct
   let _inline spec =
     inline_threshold := Int_arg_helper.parse spec
         ~help_text:"Syntax: -inline <n> | <round>=<n>[,...]"
+  let _inline_toplevel spec =
+    inline_toplevel_threshold :=
+      Some (Int_arg_helper.parse spec
+              ~help_text:"Syntax: -inline-toplevel <n> | <round>=<n>[,...]")
   let _inlining_stats () = inlining_stats := true
   let _dump_pass pass = set_dumped_pass pass true
   let _rounds n = simplify_rounds := n
   let _unroll spec =
     unroll := Int_arg_helper.parse spec
         ~help_text:"Syntax: -unroll <n> | <round>=<n>[,...]"
-  let _no_functor_heuristics () = functor_heuristics := false
   let _classic_heuristic () = classic_heuristic := true
   let _inline_call_cost spec =
     inline_call_cost := Int_arg_helper.parse spec
@@ -129,6 +132,9 @@ module Options = Main_args.Make_optcomp_options (struct
   let _inline_branch_cost spec =
     inline_branch_cost := Int_arg_helper.parse spec
         ~help_text:"Syntax: -inline-branch-cost <n> | <round>=<n>[,...]"
+  let _inline_lifting_benefit spec =
+    inline_lifting_benefit := Int_arg_helper.parse spec
+        ~help_text:"Syntax: -inline-lifting-benefit <n> | <round>=<n>[,...]"
   let _branch_inline_factor spec =
     branch_inline_factor := Float_arg_helper.parse spec
         ~help_text:"Syntax: -branch-inline-factor <n> | <round>=<n>[,...]"

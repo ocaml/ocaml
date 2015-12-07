@@ -187,7 +187,7 @@ module Result : sig
       an Flambda subexpression. *)
   type t
 
-  val create : round:int -> t
+  val create : unit -> t
 
   (** The approximation of the subexpression that has just been
       simplified. *)
@@ -226,9 +226,13 @@ module Result : sig
       given result structure to zero. *)
   val reset_benefit : t -> t
 
-  val set_inlining_threshold : t -> Inlining_cost.inlining_threshold -> t
-  val inlining_threshold : t -> Inlining_cost.inlining_threshold
+  val set_inlining_threshold :
+    t -> Inlining_cost.inlining_threshold option -> t
+  val inlining_threshold : t -> Inlining_cost.inlining_threshold option
 end
 
 (** Command line argument -inline *)
 val initial_inlining_threshold : round:int -> Inlining_cost.inlining_threshold
+
+(** Command line argument -inline-toplevel *)
+val initial_inlining_toplevel_threshold : round:int -> Inlining_cost.inlining_threshold
