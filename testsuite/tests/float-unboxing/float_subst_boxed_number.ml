@@ -85,7 +85,24 @@ let unbox_compare_float () =
     x.M.x <- x.M.x +. 1.
   done
 
+
+let unbox_float_refs () =
+  let r = ref nan in
+  for i = 1 to 1000 do r := !r +. float i done
+
+let unbox_let_float () =
+  let r = ref 0. in
+  for i = 1 to 1000 do
+    let y =
+      if i mod 2 = 0 then nan else float i
+    in
+    r := !r +. (y *. 2.)
+  done
+
+
 let () =
   check_noalloc "classify float" unbox_classify_float;
   check_noalloc "compare float" unbox_compare_float;
+  check_noalloc "float refs" unbox_float_refs;
+  check_noalloc "unbox let float" unbox_let_float;
   ()
