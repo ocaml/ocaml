@@ -64,7 +64,7 @@ let occurs_var var u =
     | Ugeneric_apply(funct, args, _) -> occurs funct || List.exists occurs args
     | Uclosure(_fundecls, clos) -> List.exists occurs clos
     | Uoffset(u, _ofs) -> occurs u
-    | Ulet(_id, def, body, _kind) -> occurs def || occurs body
+    | Ulet(_str, _kind, _id, def, body) -> occurs def || occurs body
     | Uletrec(decls, body) ->
         List.exists (fun (_id, u) -> occurs u) decls || occurs body
     | Uprim(_p, args, _) -> List.exists occurs args
@@ -150,7 +150,7 @@ let lambda_smaller lam threshold =
         raise Exit (* inlining would duplicate function definitions *)
     | Uoffset(lam, _ofs) ->
         incr size; lambda_size lam
-    | Ulet(_id, lam, body, _kind) ->
+    | Ulet(_str, _kind, _id, lam, body) ->
         lambda_size lam; lambda_size body
     | Uletrec _ ->
         raise Exit (* usually too large *)
@@ -529,10 +529,10 @@ let rec substitute fpc sb ulam =
            let rec body and use only the substituted term. *)
       Uclosure(defs, List.map (substitute fpc sb) env)
   | Uoffset(u, ofs) -> Uoffset(substitute fpc sb u, ofs)
-  | Ulet(id, u1, u2, kind) ->
+  | Ulet(str, kind, id, u1, u2) ->
       let id' = Ident.rename id in
-      Ulet(id', substitute fpc sb u1,
-           substitute fpc (Tbl.add id (Uvar id') sb) u2, kind)
+      Ulet(str, kind, id', substitute fpc sb u1,
+           substitute fpc (Tbl.add id (Uvar id') sb) u2)
   | Uletrec(bindings, body) ->
       let bindings1 =
         List.map (fun (id, rhs) -> (id, Ident.rename id, rhs)) bindings in
@@ -654,7 +654,7 @@ let rec bind_params_rec fpc subst params args body =
         in
         let body' =
           bind_params_rec fpc (Tbl.add p1 u2 subst) pl al body in
-        if occurs_var p1 body then Ulet(p1', u1, body', Pgenblock)
+        if occurs_var p1 body then Ulet(Strict, Pgenblock, p1', u1, body')
         else if no_effects a1 then body'
         else Usequence(a1, body')
       end
@@ -854,7 +854,7 @@ let rec close fenv cenv = function
               [] -> body
             | (arg1, arg2) :: args ->
               iter args
-                (Ulet (arg1, arg2, body, Pgenblock))
+                (Ulet (Strict, Pgenblock, arg1, arg2, body))
         in
         let internal_args =
           (List.map (fun (arg1, _arg2) -> Lvar arg1) first_args)
@@ -897,13 +897,13 @@ let rec close fenv cenv = function
       begin match (str, alam) with
         (Variable, _) ->
           let (ubody, abody) = close fenv cenv body in
-          (Ulet(id, ulam, ubody, kind), abody)
+          (Ulet(str, kind, id, ulam, ubody), abody)
       | (_, Value_const _)
         when str = Alias || is_pure lam ->
           close (Tbl.add id alam fenv) cenv body
       | (_, _) ->
           let (ubody, abody) = close (Tbl.add id alam fenv) cenv body in
-          (Ulet(id, ulam, ubody, kind), abody)
+          (Ulet(str, kind, id, ulam, ubody), abody)
       end
   | Lletrec(defs, body) ->
       if List.for_all
@@ -923,8 +923,8 @@ let rec close fenv cenv = function
             (fun (id, pos, _approx) sb ->
               Tbl.add id (Uoffset(Uvar clos_ident, pos)) sb)
             infos Tbl.empty in
-        (Ulet(clos_ident, clos, substitute !Clflags.float_const_prop sb ubody,
-             Pgenblock),
+        (Ulet(Strict, Pgenblock,
+              clos_ident, clos, substitute !Clflags.float_const_prop sb ubody),
          approx)
       end else begin
         (* General case: recursive definition of values *)
@@ -1305,7 +1305,7 @@ let collect_exported_structured_constants a =
         List.iter (fun f -> ulam f.body) fl;
         List.iter ulam ul
     | Uoffset(u, _) -> ulam u
-    | Ulet (_, u1, u2, _kind) -> ulam u1; ulam u2
+    | Ulet (_str, _kind, _, u1, u2) -> ulam u1; ulam u2
     | Uletrec (l, u) -> List.iter (fun (_, u) -> ulam u) l; ulam u
     | Uprim (_, ul, _) -> List.iter ulam ul
     | Uswitch (u, sl) ->

@@ -43,7 +43,7 @@ and ulambda =
   | Ugeneric_apply of ulambda * ulambda list * Debuginfo.t
   | Uclosure of ufunction list * ulambda list
   | Uoffset of ulambda * int
-  | Ulet of Ident.t * ulambda * ulambda * block_kind
+  | Ulet of let_kind * block_kind * Ident.t * ulambda * ulambda
   | Uletrec of (Ident.t * ulambda) list * ulambda
   | Uprim of primitive * ulambda list * Debuginfo.t
   | Uswitch of ulambda * ulambda_switch

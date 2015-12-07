@@ -252,13 +252,13 @@ let rec to_clambda t env (flam : Flambda.t) : Clambda.ulambda =
   | Let { var; defining_expr; body; _ } ->
     (* TODO: synthesize proper block_kind *)
     let id, env_body = Env.add_fresh_ident env var in
-    Ulet (id, to_clambda_named t env var defining_expr,
-      to_clambda t env_body body, Pgenblock)
+    Ulet (Strict, Pgenblock, id, to_clambda_named t env var defining_expr,
+      to_clambda t env_body body)
   | Let_mutable (mut_var, var, body) ->
     (* TODO: synthesize proper block_kind *)
     let id, env_body = Env.add_fresh_mutable_ident env mut_var in
     let def = subst_var env var in
-    Ulet (id, def, to_clambda t env_body body, Pgenblock)
+    Ulet (Strict, Pgenblock, id, def, to_clambda t env_body body)
   | Let_rec (defs, body) ->
     let env, defs =
       List.fold_right (fun (var, def) (env, defs) ->

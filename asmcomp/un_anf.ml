@@ -101,7 +101,7 @@ let make_ident_info (clam : Clambda.ulambda) : ident_info =
     | Uoffset (expr, offset) ->
       loop expr;
       ignore_int offset
-    | Ulet (_ident, def, body, _block_kind) ->
+    | Ulet (_let_kind, _block_kind, _ident, def, body) ->
       loop def;
       loop body
     | Uletrec (defs, body) ->
@@ -266,7 +266,7 @@ let let_bound_vars_that_can_be_moved ident_info (clam : Clambda.ulambda) =
       (* [expr] should usually be a variable. *)
       examine_argument_list [expr];
       ignore_int offset
-    | Ulet (ident, def, body, _block_kind) ->
+    | Ulet (_let_kind, _block_kind, ident, def, body) ->
       begin match def with
       | Uconst _ ->
         (* The defining expression is obviously constant, so we don't
@@ -428,13 +428,14 @@ let rec substitute_let_moveable is_let_moveable env (clam : Clambda.ulambda)
   | Uoffset (clam, n) ->
     let clam = substitute_let_moveable is_let_moveable env clam in
     Uoffset (clam, n)
-  | Ulet (id, def, body, block_kind) ->
+  | Ulet (let_kind, block_kind, id, def, body) ->
     let def = substitute_let_moveable is_let_moveable env def in
     if Ident.Set.mem id is_let_moveable then
       let env = Ident.Map.add id def env in
       substitute_let_moveable is_let_moveable env body
     else
-      Ulet (id, def, substitute_let_moveable is_let_moveable env body, block_kind)
+      Ulet (let_kind, block_kind,
+            id, def, substitute_let_moveable is_let_moveable env body)
   | Uletrec (defs, body) ->
     let defs =
       List.map (fun (id, def) ->
@@ -613,9 +614,9 @@ let rec un_anf_and_moveable ident_info env (clam : Clambda.ulambda)
   | Uoffset (clam, n) ->
     let clam, moveable = un_anf_and_moveable ident_info env clam in
     Uoffset (clam, n), moveable
-  | Ulet (id, def, Uvar id', _block_kind) when Ident.same id id' ->
+  | Ulet (_let_kind, _block_kind, id, def, Uvar id') when Ident.same id id' ->
     un_anf_and_moveable ident_info env def
-  | Ulet (id, def, body, block_kind) ->
+  | Ulet (let_kind, block_kind, id, def, body) ->
     let def, def_moveable = un_anf_and_moveable ident_info env def in
     let is_linear = Ident.Set.mem id ident_info.linear in
     let is_used = Ident.Set.mem id ident_info.used in
@@ -645,7 +646,8 @@ let rec un_anf_and_moveable ident_info env (clam : Clambda.ulambda)
         (* Moveable but not used linearly. *)
     | Fixed, _, _ ->
       let body, body_moveable = un_anf_and_moveable ident_info env body in
-      Ulet (id, def, body, block_kind), both_moveable def_moveable body_moveable
+      Ulet (let_kind, block_kind, id, def, body),
+      both_moveable def_moveable body_moveable
     end
   | Uletrec (defs, body) ->
     let defs =
