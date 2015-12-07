@@ -83,6 +83,9 @@ Compilers:
   review by Xavier Leroy)
 - PR#7026, GPR#288: remove write barrier for polymorphic variants without arguments
   (Simon Cruanes)
+- PR#7067: Performance regression in the native compiler for long
+  nested structures (Alain Frisch, report by Daniel Bünzli, review
+  by Jacques Garrigue)
 - GPR#17: some cmm optimizations of integer operations with constants
   (Stephen Dolan, review by Pierre Chambart)
 - GPR#109: new unboxing strategy for float and int references (Vladimir Brankov,

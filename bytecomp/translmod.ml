@@ -582,7 +582,8 @@ let rec more_idents = function
     | Tstr_class cl_list -> more_idents rem
     | Tstr_class_type cl_list -> more_idents rem
     | Tstr_include _ -> more_idents rem
-    | Tstr_module {mb_expr={mod_desc = Tmod_structure str}} ->
+    | Tstr_module {mb_expr={mod_desc = Tmod_structure str}}
+    | Tstr_module{mb_expr={mod_desc = Tmod_constraint ({mod_desc = Tmod_structure str}, _, _, _)}} ->
         all_idents str.str_items @ more_idents rem
     | Tstr_module _ -> more_idents rem
     | Tstr_attribute _ -> more_idents rem
@@ -609,7 +610,8 @@ and all_idents = function
     | Tstr_class_type cl_list -> all_idents rem
     | Tstr_include incl ->
       bound_value_identifiers incl.incl_type @ all_idents rem
-    | Tstr_module {mb_id;mb_expr={mod_desc = Tmod_structure str}} ->
+    | Tstr_module {mb_id;mb_expr={mod_desc = Tmod_structure str}}
+    | Tstr_module{mb_id; mb_expr={mod_desc = Tmod_constraint ({mod_desc = Tmod_structure str}, _, _, _)}} ->
         mb_id :: all_idents str.str_items @ all_idents rem
     | Tstr_module mb -> mb.mb_id :: all_idents rem
     | Tstr_attribute _ -> all_idents rem
@@ -678,6 +680,26 @@ let transl_store_structure glob map prims str =
                    (Lprim(Pmakeblock(0, Immutable),
                           List.map (fun id -> Lvar id)
                                    (defined_idents str.str_items))),
+                   Lsequence(store_ident id,
+                             transl_store rootpath (add_ident true id subst)
+                                          rem)))
+  | Tstr_module{mb_id=id; mb_expr={mod_desc = Tmod_constraint ({mod_desc = Tmod_structure str}, _, _, (Tcoerce_structure (map, _) as _cc))}} ->
+(*    Format.printf "coerc id %s: %a@." (Ident.unique_name id) Includemod.print_coercion cc; *)
+    let lam = transl_store (field_path rootpath id) subst str.str_items in
+      (* Careful: see next case *)
+    let subst = !transl_store_subst in
+    let ids = Array.of_list (defined_idents str.str_items) in
+    let field (pos, cc) =
+      match cc with
+      | Tcoerce_primitive { pc_loc; pc_desc; pc_env; pc_type; } ->
+          transl_primitive pc_loc pc_desc pc_env pc_type None
+      | _ -> apply_coercion Strict cc (Lvar ids.(pos))
+    in
+    Lsequence(lam,
+              Llet(Strict, id,
+                   subst_lambda subst
+                     (Lprim(Pmakeblock(0, Immutable),
+                            List.map field map)),
                    Lsequence(store_ident id,
                              transl_store rootpath (add_ident true id subst)
                                           rem)))
