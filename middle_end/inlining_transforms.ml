@@ -76,16 +76,6 @@ let set_inline_attribute_on_all_apply body inline =
     (fun named -> named)
     body
 
-(** Assign fresh names for a function's parameters and rewrite the body to
-    use these new names. *)
-let copy_of_function's_body_with_freshened_params
-      ~(function_decl : Flambda.function_declaration) =
-  let params = function_decl.params in
-  let freshened_params = List.map (fun var -> Variable.rename var) params in
-  let subst = Variable.Map.of_list (List.combine params freshened_params) in
-  let body = Flambda_utils.toplevel_substitution subst function_decl.body in
-  freshened_params, body
-
 (* CR mshinwell: Add a note somewhere to explain why "bound by the closure"
    does not include the function identifiers for other functions in the same
    set of closures. *)
@@ -98,8 +88,6 @@ let inline_by_copying_function_body ~env ~r ~function_decls ~lhs_of_application
       ~(inline_requested : Lambda.inline_attribute)
       ~closure_id_being_applied
       ~(function_decl : Flambda.function_declaration) ~args ~simplify =
-  assert (E.mem env lhs_of_application);
-  assert (List.for_all (E.mem env) args);
   let r = R.map_benefit r B.remove_call in
   let env =
     (* Don't allow the inlining level to inhibit inlining of stubs (e.g.
@@ -107,9 +95,13 @@ let inline_by_copying_function_body ~env ~r ~function_decls ~lhs_of_application
     if function_decl.stub then env
     else E.inlining_level_up env
   in
-  let freshened_params, body =
-    copy_of_function's_body_with_freshened_params ~function_decl
+  (* Assign fresh names for a function's parameters and update the freshening
+     in the environment such that it will rewrite the body to use these new
+     names. *)
+  let freshened_params, freshening =
+    Freshening.add_variables' (E.freshening env) function_decl.params
   in
+  let env = E.set_freshening env freshening in
   let body =
     if function_decl.stub && inline_requested <> Lambda.Default_inline then
       (* When the function inlined function is a stub, the annotation
@@ -117,9 +109,9 @@ let inline_by_copying_function_body ~env ~r ~function_decls ~lhs_of_application
          This allows to report the annotation to the application the
          original programmer really intended: the stub is not visible
          in the source. *)
-      set_inline_attribute_on_all_apply body inline_requested
+      set_inline_attribute_on_all_apply function_decl.body inline_requested
     else
-      body
+      function_decl.body
   in
   let bindings_for_params_to_args =
     (* Bind the function's parameters to the arguments from the call site. *)
