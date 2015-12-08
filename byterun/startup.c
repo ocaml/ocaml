@@ -270,6 +270,7 @@ CAMLexport void caml_main(char **argv)
 {
   int fd, pos;
   struct exec_trailer trail;
+  struct channel * chan;
   value res;
   char * shared_lib_path, * shared_libs, * req_prims;
   char * exe_name;
@@ -333,10 +334,6 @@ CAMLexport void caml_main(char **argv)
   caml_interprete(NULL, 0);
   /* Initialize the debugger, if needed */
   caml_debugger_init();
-  /* Load the globals */
-  caml_data_size = caml_seek_section(fd, &trail, "DATA");
-  caml_data = read_section(fd, &trail, "DATA");
-  caml_global_data = caml_input_value_from_block(caml_data, caml_data_size);
   /* Load the code */
   caml_code_size = caml_seek_section(fd, &trail, "CODE");
   caml_load_code(fd, caml_code_size);
@@ -350,8 +347,11 @@ CAMLexport void caml_main(char **argv)
   caml_stat_free(shared_lib_path);
   caml_stat_free(shared_libs);
   caml_stat_free(req_prims);
-  /* Close */
-  close(fd);
+  /* Load the globals */
+  caml_seek_section(fd, &trail, "DATA");
+  chan = caml_open_descriptor_in(fd);
+  caml_global_data = caml_input_val(chan);
+  caml_close_channel(chan); /* this also closes fd */
   caml_stat_free(trail.section);
   /* Ensure that the globals are in the major heap. */
   caml_oldify_one (caml_global_data, &caml_global_data);
@@ -421,8 +421,6 @@ CAMLexport void caml_startup_code(
   /* Load the code */
   caml_start_code = code;
   caml_code_size = code_size;
-  caml_data = data;
-  caml_data_size = data_size;
   caml_init_code_fragments();
   caml_init_debug_info();
   if (caml_debugger_in_use) {

@@ -378,8 +378,6 @@ Bug fixes:
   (Marc Lasson, review by Alain Frisch)
 - GPR#313: Prevent quadratic cases in CSE
   (Pierre Chambart, review by Xavier Leroy)
-- GPR#330: Fix weak hash of serialised closures
-  (Benoît Vaugon, review by Alain Frisch)
 
 Features wishes:
 - PR#4518, GPR#29: change location format for reporting errors in ocamldoc

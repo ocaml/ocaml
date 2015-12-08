@@ -21,8 +21,6 @@
 #include "misc.h"
 #include "mlvalues.h"
 
-extern char *caml_data;
-extern asize_t caml_data_size;
 extern code_t caml_start_code;
 extern asize_t caml_code_size;
 extern unsigned char * caml_saved_code;
