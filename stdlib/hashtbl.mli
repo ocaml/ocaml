@@ -129,8 +129,8 @@ val iter : ('a -> 'b -> unit) -> ('a, 'b) t -> unit
 val update: ('a -> 'b -> 'b option) -> ('a, 'b) t -> unit
 (** [Hashtbl.update f tbl] applies [f] to all bindings in table [tbl]
     and update each binding depending on the result of [f].  If [f]
-    returns [None], the binding is discared.  If it returns [Some
-    new_val], the binding is update to associare the key to [new_val].
+    returns [None], the binding is discarded.  If it returns [Some
+    new_val], the binding is update to associate the key to [new_val].
 
     Other comments for {!Hashtbl.iter} apply as well.  *)
 
