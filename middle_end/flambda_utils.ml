@@ -494,16 +494,32 @@ let make_variable_symbol var =
     (Linkage_name.create
        (Variable.unique_name (Variable.rename var)))
 
+let make_variables_symbol vars =
+  let name =
+    String.concat "_and_"
+      (List.map (fun var -> Variable.unique_name (Variable.rename var)) vars)
+  in
+  Symbol.create (Compilation_unit.get_current_exn ()) (Linkage_name.create name)
+
 let substitute_read_symbol_field_for_variables
-    (substitution : (Symbol.t * int option) Variable.Map.t)
+    (substitution : (Symbol.t * int list) Variable.Map.t)
     (expr : Flambda.t) =
   let bind var fresh_var (expr:Flambda.t) : Flambda.t =
-    let symbol, field = Variable.Map.find var substitution in
-    let named : Flambda.named = match field with
-      | None -> Symbol symbol
-      | Some i -> Read_symbol_field (symbol, i)
+    let symbol, path = Variable.Map.find var substitution in
+    let rec make_named (path:int list) : Flambda.named =
+      match path with
+      | [] -> Symbol symbol
+      | [i] -> Read_symbol_field (symbol, i)
+      | h :: t ->
+          let block = Variable.create "symbol_field_block" in
+          let field = Variable.create "get_symbol_field" in
+          Expr (
+            Flambda.create_let block (make_named t)
+              (Flambda.create_let field
+                 (Prim (Pfield h, [block], Debuginfo.none))
+                 (Var field)))
     in
-    Flambda.create_let fresh_var named expr
+    Flambda.create_let fresh_var (make_named path) expr
   in
   let substitute_named bindings (named:Flambda.named) : Flambda.named =
     let sb to_substitute =
