@@ -108,78 +108,79 @@ let eliminate_ref_of_expr flam =
       (fun v _ -> not (Variable.Set.mem v variables_not_used_as_local_reference))
       (variables_containing_ref flam)
   in
-  let convertible_variables =
-    Variable.Map.mapi (fun v size -> Array.init size (fun _ -> rename_var v))
-      convertible_variables
-  in
-  let convertible_variable v = Variable.Map.mem v convertible_variables in
-  let get_variable v field =
-    let arr = try Variable.Map.find v convertible_variables
-      with Not_found -> assert false in
-    if Array.length arr <= field
-    then None (* This case could apply when inlining code containing GADTS *)
-    else Some (arr.(field), Array.length arr)
-  in
-
-  let aux (flam : Flambda.t) : Flambda.t =
-    match flam with
-    | Let { var;
-            defining_expr = Prim(Pmakeblock(0, Asttypes.Mutable), l, _);
-            body }
-      when convertible_variable var ->
-      let _, expr =
-        List.fold_left (fun (field,body) init ->
-            match get_variable var field with
-            | None -> assert false
-            | Some (field_var, _) ->
-              field+1,
-              ((Let_mutable (field_var, init, body)) : Flambda.t))
-          (0,body) l in
-      expr
-    | Let _ | Let_mutable _
-    | Assign _ | Var _ | Apply _
-    | Let_rec _ | Switch _ | String_switch _
-    | Static_raise _ | Static_catch _
-    | Try_with _ | If_then_else _
-    | While _ | For _ | Send _ | Proved_unreachable ->
-      flam
-  and aux_named (named : Flambda.named) : Flambda.named =
-    match named with
-    | Prim(Pfield field, [v], _)
-      when convertible_variable v ->
-      (match get_variable v field with
-       | None -> Expr Proved_unreachable
-       | Some (var,_) -> Read_mutable var)
-    | Prim(Poffsetref delta, [v], dbg)
-      when convertible_variable v ->
-      (match get_variable v 0 with
-       | None -> Expr Proved_unreachable
-       | Some (var,size) ->
-         if size = 1
-         then begin
-           let mut = Variable.create "read_mutable" in
-           let new_value = Variable.create "offseted" in
-           let expr =
-             Flambda.create_let mut (Read_mutable var)
-               (Flambda.create_let new_value (Prim(Poffsetint delta, [mut], dbg))
-                  (Assign { being_assigned = var; new_value }))
-           in
-           Expr expr
-         end
-         else
-           Expr Proved_unreachable)
-    | Prim(Psetfield (field, _, _), [v; new_value], _)
-      when convertible_variable v ->
-      (match get_variable v field with
-       | None -> Expr Proved_unreachable
-       | Some (being_assigned,_) ->
-         Expr (Assign { being_assigned; new_value }))
-    | Prim _ | Symbol _ | Const _ | Allocated_const _ | Read_mutable _
-    | Read_symbol_field _ | Set_of_closures _ | Project_closure _
-    | Move_within_set_of_closures _ | Project_var _ | Expr _ ->
-      named
-  in
-  Flambda_iterators.map aux aux_named flam
+  if Variable.Map.cardinal convertible_variables = 0 then flam
+  else
+    let convertible_variables =
+      Variable.Map.mapi (fun v size -> Array.init size (fun _ -> rename_var v))
+        convertible_variables
+    in
+    let convertible_variable v = Variable.Map.mem v convertible_variables in
+    let get_variable v field =
+      let arr = try Variable.Map.find v convertible_variables
+        with Not_found -> assert false in
+      if Array.length arr <= field
+      then None (* This case could apply when inlining code containing GADTS *)
+      else Some (arr.(field), Array.length arr)
+    in
+    let aux (flam : Flambda.t) : Flambda.t =
+      match flam with
+      | Let { var;
+              defining_expr = Prim(Pmakeblock(0, Asttypes.Mutable), l, _);
+              body }
+        when convertible_variable var ->
+        let _, expr =
+          List.fold_left (fun (field,body) init ->
+              match get_variable var field with
+              | None -> assert false
+              | Some (field_var, _) ->
+                field+1,
+                ((Let_mutable (field_var, init, body)) : Flambda.t))
+            (0,body) l in
+        expr
+      | Let _ | Let_mutable _
+      | Assign _ | Var _ | Apply _
+      | Let_rec _ | Switch _ | String_switch _
+      | Static_raise _ | Static_catch _
+      | Try_with _ | If_then_else _
+      | While _ | For _ | Send _ | Proved_unreachable ->
+        flam
+    and aux_named (named : Flambda.named) : Flambda.named =
+      match named with
+      | Prim(Pfield field, [v], _)
+        when convertible_variable v ->
+        (match get_variable v field with
+         | None -> Expr Proved_unreachable
+         | Some (var,_) -> Read_mutable var)
+      | Prim(Poffsetref delta, [v], dbg)
+        when convertible_variable v ->
+        (match get_variable v 0 with
+         | None -> Expr Proved_unreachable
+         | Some (var,size) ->
+           if size = 1
+           then begin
+             let mut = Variable.create "read_mutable" in
+             let new_value = Variable.create "offseted" in
+             let expr =
+               Flambda.create_let mut (Read_mutable var)
+                 (Flambda.create_let new_value (Prim(Poffsetint delta, [mut], dbg))
+                    (Assign { being_assigned = var; new_value }))
+             in
+             Expr expr
+           end
+           else
+             Expr Proved_unreachable)
+      | Prim(Psetfield (field, _, _), [v; new_value], _)
+        when convertible_variable v ->
+        (match get_variable v field with
+         | None -> Expr Proved_unreachable
+         | Some (being_assigned,_) ->
+           Expr (Assign { being_assigned; new_value }))
+      | Prim _ | Symbol _ | Const _ | Allocated_const _ | Read_mutable _
+      | Read_symbol_field _ | Set_of_closures _ | Project_closure _
+      | Move_within_set_of_closures _ | Project_var _ | Expr _ ->
+        named
+    in
+    Flambda_iterators.map aux aux_named flam
 
 let eliminate_ref (program:Flambda.program) =
   Flambda_iterators.map_exprs_at_toplevel_of_program program

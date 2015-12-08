@@ -477,12 +477,15 @@ let rec map_exprs_at_toplevel_of_program (program : Flambda.program)
     let funs =
       Variable.Map.map (fun (function_decl : Flambda.function_declaration) ->
           let body = f function_decl.body in
-          Flambda.create_function_declaration ~body
-            ~params:function_decl.params
-            ~stub:function_decl.stub
-            ~dbg:function_decl.dbg
-            ~inline:function_decl.inline
-            ~is_a_functor:function_decl.is_a_functor)
+          if body == function_decl.body then
+            function_decl
+          else
+            Flambda.create_function_declaration ~body
+              ~params:function_decl.params
+              ~stub:function_decl.stub
+              ~dbg:function_decl.dbg
+              ~inline:function_decl.inline
+              ~is_a_functor:function_decl.is_a_functor)
         set_of_closures.function_decls.funs
     in
     let function_decls =
