@@ -269,8 +269,8 @@ let read_one_param ppf position name v =
       | "timings" -> set "timings" [ print_timings ] v
       | "flambda-verbose" ->
           set "flambda-verbose" [ dump_flambda_verbose ] v
-      | "full-flambda-invariant-check" ->
-          set "full-flambda-invariant-check" [ full_flambda_invariant_check ] v
+      | "flambda-invariants" ->
+          set "flambda-invariants" [ full_flambda_invariant_check ] v
 
       (* color output *)
       | "color" ->
