@@ -175,29 +175,46 @@ let rewrite_recursive_calls_with_symbols t
   match t with
   | Inactive -> function_declarations
   | Active _ ->
-    let closure_symbols = Variable.Map.fold (fun id _ map ->
-        let cf = Closure_id.wrap id in
-        let sym = make_closure_symbol cf in
-        Symbol.Map.add sym id map)
-        function_declarations.funs Symbol.Map.empty in
-    let funs =
-      Variable.Map.map (fun (ffun : Flambda.function_declaration) ->
-        let body =
-          Flambda_iterators.map_toplevel_named
-            (* CR pchambart: This may be worth deep substituting below the closures, but that
-               means that we need to take care of functions free variables. *)
-            (function
-              | Symbol sym when Symbol.Map.mem sym closure_symbols ->
-                Expr (Var (Symbol.Map.find sym closure_symbols))
-              | e -> e)
-            ffun.body
-        in
-        Flambda.create_function_declaration ~params:ffun.params
-          ~body ~stub:ffun.stub ~dbg:ffun.dbg ~inline:ffun.inline
-          ~is_a_functor:ffun.is_a_functor)
-        function_declarations.funs
+    let all_free_symbols =
+      Flambda_utils.all_free_symbols function_declarations
     in
-    Flambda.update_function_declarations function_declarations ~funs
+    let closure_symbols_used = ref false in
+    let closure_symbols =
+      Variable.Map.fold (fun var _ map ->
+        let closure_id = Closure_id.wrap var in
+        let sym = make_closure_symbol closure_id in
+        if Symbol.Set.mem sym all_free_symbols then begin
+          closure_symbols_used := true;
+          Symbol.Map.add sym var map
+        end else begin
+          map
+        end)
+      function_declarations.funs Symbol.Map.empty
+    in
+    if not !closure_symbols_used then begin
+      (* Don't waste time rewriting the function declaration(s) if there
+         are no occurrences of any of the closure symbols. *)
+      function_declarations
+    end else begin
+      let funs =
+        Variable.Map.map (fun (ffun : Flambda.function_declaration) ->
+          let body =
+            Flambda_iterators.map_toplevel_named
+              (* CR pchambart: This may be worth deep substituting below the closures, but that
+                 means that we need to take care of functions free variables. *)
+              (function
+                | Symbol sym when Symbol.Map.mem sym closure_symbols ->
+                  Expr (Var (Symbol.Map.find sym closure_symbols))
+                | e -> e)
+              ffun.body
+          in
+          Flambda.create_function_declaration ~params:ffun.params
+            ~body ~stub:ffun.stub ~dbg:ffun.dbg ~inline:ffun.inline
+            ~is_a_functor:ffun.is_a_functor)
+          function_declarations.funs
+      in
+      Flambda.update_function_declarations function_declarations ~funs
+    end
 
 module Project_var = struct
   type t =

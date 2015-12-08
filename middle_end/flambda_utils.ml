@@ -742,3 +742,8 @@ let all_functions_parameters (function_decls : Flambda.function_declarations) =
   Variable.Map.fold (fun _ ({ params } : Flambda.function_declaration) set ->
       Variable.Set.union set (Variable.Set.of_list params))
     function_decls.funs Variable.Set.empty
+
+let all_free_symbols (function_decls : Flambda.function_declarations) =
+  Variable.Map.fold (fun _ (function_decl : Flambda.function_declaration) syms ->
+      Symbol.Set.union syms function_decl.free_symbols)
+    function_decls.funs Symbol.Set.empty

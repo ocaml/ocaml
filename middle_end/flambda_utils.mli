@@ -191,3 +191,5 @@ val closures_required_by_entry_point
   -> Variable.Set.t
 
 val all_functions_parameters : Flambda.function_declarations -> Variable.Set.t
+
+val all_free_symbols : Flambda.function_declarations -> Symbol.Set.t
