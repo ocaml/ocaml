@@ -621,14 +621,12 @@ let introduce_free_variables_in_set_of_closures
 let rewrite_project_var
       (var_to_block_field_tbl
         : Flambda.constant_defining_value_block_field Variable.Tbl.t)
-      flam =
-  Flambda_iterators.map_project_var_to_named_opt flam
-    ~f:(fun (project_var : Flambda.project_var) ->
-      let var = Var_within_closure.unwrap project_var.var in
-      match Variable.Tbl.find var_to_block_field_tbl var with
-      | exception Not_found -> None
-      | Symbol sym -> Some ((Symbol sym) : Flambda.named)
-      | Const const -> Some ((Const const) : Flambda.named))
+      (project_var : Flambda.project_var) : Flambda.named =
+  let var = Var_within_closure.unwrap project_var.var in
+  match Variable.Tbl.find var_to_block_field_tbl var with
+  | exception Not_found -> Project_var project_var
+  | Symbol sym -> Symbol sym
+  | Const const -> Const const
 
 let introduce_free_variables_in_sets_of_closures
     (var_to_block_field_tbl:Flambda.constant_defining_value_block_field Variable.Tbl.t)
@@ -848,95 +846,58 @@ let lift_constants program ~backend =
       symbol_definition_map
       translated_definitions
   in
-  let constant_definitions =
-    Symbol.Map.map (fun (const:Flambda.constant_defining_value) ->
-        match const with
-        | Allocated_const _
-        | Block _
-        | Project_closure _ ->
-          const
-        | Set_of_closures set_of_closures ->
-          let set_of_closures =
-            Flambda_iterators.map_function_bodies
-              ~f:(Flambda_iterators.map_sets_of_closures
-                    ~f:(introduce_free_variables_in_set_of_closures
-                          var_to_block_field_tbl))
-              set_of_closures
-          in
-          Flambda.Set_of_closures
-            (introduce_free_variables_in_set_of_closures
-               var_to_block_field_tbl set_of_closures)
-      )
-      constant_definitions
-  in
-  let effect_tbl =
-    Symbol.Tbl.map effect_tbl
-      (fun (effect, dep) ->
-         let effect =
-           Flambda_iterators.map_sets_of_closures
-             ~f:(introduce_free_variables_in_set_of_closures
-                   var_to_block_field_tbl)
-             effect
-         in
-         effect, dep)
-  in
-  let initialize_symbol_tbl =
-    Symbol.Tbl.map initialize_symbol_tbl
-      (fun (tag, fields, dep) ->
-         let fields =
-           List.map
-             (Flambda_iterators.map_sets_of_closures
-                ~f:(introduce_free_variables_in_set_of_closures
-                      var_to_block_field_tbl))
-             fields
-         in
-         tag, fields, dep)
-  in
-  (* If a variable bound by a closure gets replaced by a symbol and
+  (* Upon the [Initialize_symbol]s, the [Effect]s and the constant definitions,
+     do the following:
+     1. Introduce [Let]s to bind variables that are going to be replaced
+     by constants.
+     2. If a variable bound by a closure gets replaced by a symbol and
      thus eliminated from the [free_vars] set of the closure, we need to
      rewrite any subsequent [Project_var] expressions that project that
      variable. *)
-  let constant_definitions =
-    Symbol.Map.map (fun (const:Flambda.constant_defining_value) ->
-        match const with
-        | Allocated_const _
-        | Block _
-        | Project_closure _ ->
-          const
+  let rewrite_expr expr =
+    Flambda_iterators.map_named (function
         | Set_of_closures set_of_closures ->
-          Flambda.Set_of_closures (Flambda_iterators.map_function_bodies
-            ~f:(rewrite_project_var var_to_block_field_tbl)
-            set_of_closures)
-      )
-      constant_definitions
+          Set_of_closures (introduce_free_variables_in_set_of_closures
+              var_to_block_field_tbl set_of_closures)
+        | Project_var project_var ->
+          rewrite_project_var var_to_block_field_tbl project_var
+        | (Symbol _ | Const _ | Allocated_const _ | Project_closure _
+        | Move_within_set_of_closures _ | Prim _ | Expr _
+        | Read_mutable _ | Read_symbol_field _) as named -> named)
+      expr
+  in
+  let constant_definitions =
+    Symbol.Map.map (fun (const : Flambda.constant_defining_value) ->
+        match const with
+        | Allocated_const _ | Block _ | Project_closure _ -> const
+        | Set_of_closures set_of_closures ->
+          let set_of_closures =
+            Flambda_iterators.map_function_bodies set_of_closures
+              ~f:rewrite_expr
+          in
+          Flambda.Set_of_closures
+            (introduce_free_variables_in_set_of_closures
+              var_to_block_field_tbl set_of_closures))
+    constant_definitions
   in
   let effect_tbl =
-    Symbol.Tbl.map effect_tbl
-      (fun (effect, dep) ->
-         let effect = rewrite_project_var var_to_block_field_tbl effect in
-         effect, dep)
+    Symbol.Tbl.map effect_tbl (fun (effect, dep) -> rewrite_expr effect, dep)
   in
   let initialize_symbol_tbl =
-    Symbol.Tbl.map initialize_symbol_tbl
-      (fun (tag, fields, dep) ->
-         let fields =
-           List.map
-             (rewrite_project_var var_to_block_field_tbl)
-             fields
-         in
-         tag, fields, dep)
+    Symbol.Tbl.map initialize_symbol_tbl (fun (tag, fields, dep) ->
+      let fields = List.map rewrite_expr fields in
+      tag, fields, dep)
   in
-  (* End of part to tidy up *)
   let imported_symbols = Flambda_utils.imported_symbols program in
-  let components = program_graph ~backend imported_symbols constant_definitions
-      initialize_symbol_tbl effect_tbl in
+  let components =
+    program_graph ~backend imported_symbols constant_definitions
+      initialize_symbol_tbl effect_tbl
+  in
   let program =
     add_definitions_of_symbols constant_definitions
       initialize_symbol_tbl
       effect_tbl
-      (Flambda.End (Flambda_utils.root_symbol program))
+      (End (Flambda_utils.root_symbol program))
       components
   in
-  let program = Flambda_utils.introduce_needed_import_symbols program in
-  program
-
+  Flambda_utils.introduce_needed_import_symbols program
