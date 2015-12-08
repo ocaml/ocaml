@@ -197,7 +197,7 @@ let set_dumped_pass s enabled =
   dumped_passes_list := dumped_passes
 
 (* CR mshinwell: change to [false] before merge *)
-let full_flambda_invariant_check = ref true
+let full_flambda_invariant_check = ref false
 
 let parse_color_setting = function
   | "auto" -> Some Misc.Color.Auto
