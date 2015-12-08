@@ -248,7 +248,7 @@ module Benefit = struct
 
   let print ppf b =
     Format.fprintf ppf "@[remove_call: %i@ remove_alloc: %i@ \
-                        remove_prim: %i@ remove_branc: %i@ \
+                        remove_prim: %i@ remove_branch: %i@ \
                         direct: %i@ requested: %i@]"
       b.remove_call
       b.remove_alloc
