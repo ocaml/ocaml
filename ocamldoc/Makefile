@@ -362,7 +362,8 @@ depend::
 	$(OCAMLLEX) odoc_lexer.mll
 	$(OCAMLLEX) odoc_ocamlhtml.mll
 	$(OCAMLLEX) odoc_see_lexer.mll
-	$(OCAMLDEP) $(INCLUDES_DEP) *.mll *.mly *.ml *.mli > .depend
+	$(OCAMLDEP) $(INCLUDES_DEP) *.mll *.mly *.ml *.mli \
+		generators/*.ml generators/*.mli > .depend
 
 dummy:
 

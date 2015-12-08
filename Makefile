@@ -27,22 +27,16 @@ defaultentry:
 	@echo "should work.  But see the file INSTALL for more details."
 
 # Recompile the system using the bootstrap compiler
-all:
-	$(MAKE) runtime
-	$(MAKE) coreall
-	$(MAKE) ocaml
-	$(MAKE) otherlibraries $(OCAMLBUILDBYTE) $(WITH_DEBUGGER) \
-	  $(WITH_OCAMLDOC)
+all: $(runtime) ocamlc ocamlyacc ocamllex ocamlyacc ocamltools library \
+	ocaml otherlibraries $(OCAMLBUILDBYTE) $(WITH_DEBUGGER) \
+	$(WITH_OCAMLDOC)
+	if test -n "$(WITH_OCAMLDOC)"; then $(MAKE) manpages; else :; fi
 
 # Compile everything the first time
-world:
-	$(MAKE) coldstart
-	$(MAKE) all
+world: coldstart all
 
 # Compile also native code compiler and libraries, fast
-world.opt:
-	$(MAKE) coldstart
-	$(MAKE) opt.opt
+world.opt: coldstart opt.opt
 
 # Hard bootstrap how-to:
 # (only necessary in some cases, for example if you remove some primitive)
@@ -85,28 +79,31 @@ bootstrap:
 
 LIBFILES=stdlib.cma std_exit.cmo *.cmi camlheader
 
-# Start up the system from the distribution compiler
-coldstart:
+byterun/ocamlrun$(EXE):
 	cd byterun; $(MAKE) all
+
+boot/ocamlrun$(EXE): byterun/ocamlrun$(EXE)
 	cp byterun/ocamlrun$(EXE) boot/ocamlrun$(EXE)
-	cd yacc; $(MAKE) all
+
+yacc/ocamlyacc$(EXE): ocamlyacc
+
+boot/ocamlyacc$(EXE): yacc/ocamlyacc$(EXE)
 	cp yacc/ocamlyacc$(EXE) boot/ocamlyacc$(EXE)
+
+boot/stdlib.cma: boot/ocamlrun$(EXE)
 	cd stdlib; $(MAKE) COMPILER=../boot/ocamlc all
 	cd stdlib; cp $(LIBFILES) ../boot
-	if test -f boot/libcamlrun.a; then :; else \
-	  ln -s ../byterun/libcamlrun.a boot/libcamlrun.a; fi
+
+# Start up the system from the distribution compiler
+coldstart: runtime boot/ocamlyacc$(EXE) boot/stdlib.cma
 	if test -d stdlib/caml; then :; else \
 	  ln -s ../byterun/caml stdlib/caml; fi
 
 # Build the core system: the minimum needed to make depend and bootstrap
-core:
-	$(MAKE) coldstart
-	$(MAKE) coreall
+core: coldstart coreall
 
 # Recompile the core system using the bootstrap compiler
-coreall:
-	$(MAKE) ocamlc
-	$(MAKE) ocamllex ocamlyacc ocamltools library
+coreall: ocamlc ocamllex ocamlyacc ocamltools library
 
 # Save the current bootstrap compiler
 MAXSAVED=boot/Saved/Saved.prev/Saved.prev/Saved.prev/Saved.prev/Saved.prev
@@ -155,10 +152,7 @@ cleanboot:
 	rm -rf boot/Saved/Saved.prev/*
 
 # Compile the native-code compiler
-opt-core:
-	$(MAKE) runtimeopt
-	$(MAKE) ocamlopt
-	$(MAKE) libraryopt
+opt-core: runtimeopt ocamlopt libraryopt
 
 opt:
 	$(MAKE) runtimeopt
@@ -167,18 +161,8 @@ opt:
 	$(MAKE) otherlibrariesopt ocamltoolsopt $(OCAMLBUILDNATIVE)
 
 # Native-code versions of the tools
-opt.opt:
-	$(MAKE) checkstack
-	$(MAKE) runtime
-	$(MAKE) core
-	$(MAKE) ocaml
-	$(MAKE) opt-core
-	$(MAKE) ocamlc.opt
-	$(MAKE) otherlibraries $(WITH_DEBUGGER) $(WITH_OCAMLDOC) \
-	        $(OCAMLBUILDBYTE)
-	$(MAKE) ocamlopt.opt
-	$(MAKE) otherlibrariesopt
-	$(MAKE) ocamllex.opt ocamltoolsopt ocamltoolsopt.opt $(OCAMLDOC_OPT) \
+opt.opt: checkstack runtime core ocaml opt-core ocamlc.opt otherlibraries $(WITH_DEBUGGER) $(WITH_OCAMLDOC) \
+	        $(OCAMLBUILDBYTE) ocamlopt.opt otherlibrariesopt ocamllex.opt ocamltoolsopt ocamltoolsopt.opt $(OCAMLDOC_OPT) \
 	        $(OCAMLBUILDNATIVE)
 
 base.opt:
@@ -424,7 +408,7 @@ beforedepend:: utils/config.ml
 
 # The parser
 
-parsing/parser.mli parsing/parser.ml: parsing/parser.mly
+parsing/parser.mli parsing/parser.ml: parsing/parser.mly boot/ocamlyacc
 	$(CAMLYACC) $(YACCFLAGS) parsing/parser.mly
 
 partialclean::
@@ -434,7 +418,7 @@ beforedepend:: parsing/parser.mli parsing/parser.ml
 
 # The lexer
 
-parsing/lexer.ml: parsing/lexer.mll
+parsing/lexer.ml: parsing/lexer.mll boot/ocamlrun$(EXE)
 	$(CAMLLEX) parsing/lexer.mll
 
 partialclean::
@@ -481,6 +465,10 @@ ocamlopt.opt: compilerlibs/ocamlcommon.cmxa compilerlibs/ocamloptcomp.cmxa \
 partialclean::
 	rm -f ocamlopt.opt
 
+ALLCMOS=$(COMMON) $(BYTECOMP) $(ASMCOMP) $(BYTESTART) $(OPTSTART) \
+	$(TOPLEVEL) $(TOPLEVELSTART)
+$(ALLCMOS) $(ALLCMOS:.cmo=.cmi): boot/ocamlrun$(EXE) boot/stdlib.cma
+
 $(COMMON:.cmo=.cmx) $(BYTECOMP:.cmo=.cmx) $(ASMCOMP:.cmo=.cmx): ocamlopt
 
 # The numeric opcodes
@@ -496,8 +484,7 @@ beforedepend:: bytecomp/opcodes.ml
 
 # The predefined exceptions and primitives
 
-byterun/primitives:
-	cd byterun; $(MAKE) primitives
+byterun/primitives: boot/ocamlrun$(EXE)
 
 bytecomp/runtimedef.ml: byterun/primitives byterun/caml/fail.h
 	(echo 'let builtin_exceptions = [|'; \
@@ -575,7 +562,7 @@ partialclean::
 
 beforedepend:: asmcomp/emit.ml
 
-tools/cvt_emit: tools/cvt_emit.mll
+tools/cvt_emit: tools/cvt_emit.mll boot/stdlib.cma
 	cd tools && $(MAKE) cvt_emit
 
 # The "expunge" utility
@@ -590,8 +577,7 @@ partialclean::
 
 # The runtime system for the bytecode compiler
 
-runtime:
-	cd byterun; $(MAKE) all
+runtime: boot/ocamlrun$(EXE)
 	if test -f stdlib/libcamlrun.a; then :; else \
 	  ln -s ../byterun/libcamlrun.a stdlib/libcamlrun.a; fi
 
@@ -626,7 +612,7 @@ library: ocamlc
 library-cross:
 	cd stdlib; $(MAKE) CAMLRUN=../byterun/ocamlrun all
 
-libraryopt:
+libraryopt: library ocamlopt runtimeopt
 	cd stdlib; $(MAKE) allopt
 
 partialclean::
@@ -637,10 +623,10 @@ alldepend::
 
 # The lexer and parser generators
 
-ocamllex: ocamlyacc ocamlc
+ocamllex: boot/ocamlyacc boot/ocamlrun$(EXE) boot/stdlib.cma
 	cd lex; $(MAKE) all
 
-ocamllex.opt: ocamlopt
+ocamllex.opt: ocamlyacc ocamlopt libraryopt
 	cd lex; $(MAKE) allopt
 
 partialclean::
@@ -676,10 +662,14 @@ alldepend::
 
 # OCamldoc
 
-ocamldoc: ocamlc ocamlyacc ocamllex otherlibraries
-	cd ocamldoc && $(MAKE) all
+ocamldoc: ocamlc ocamlyacc ocamllex library otherlibrary_str otherlibrary_unix otherlibrary_dynlink
+	cd ocamldoc && $(MAKE) exe lib generators
 
-ocamldoc.opt: ocamlc.opt ocamlyacc ocamllex
+manpages: ocamldoc
+	cd ocamldoc && $(MAKE) manpages
+
+ocamldoc.opt: ocamlc.opt ocamlyacc ocamllex ocamldoc \
+	otherlibraryopt_str otherlibraryopt_unix otherlibraryopt_dynlink
 	cd ocamldoc && $(MAKE) opt.opt
 
 # Documentation
@@ -696,15 +686,57 @@ alldepend::
 
 # The extra libraries
 
-otherlibraries: ocamltools
-	for i in $(OTHERLIBRARIES); do \
-	  (cd otherlibs/$$i; $(MAKE) all) || exit $$?; \
-	done
+otherlibrary_unix: library ocamltools
+	cd otherlibs/unix; $(MAKE) all
 
-otherlibrariesopt:
-	for i in $(OTHERLIBRARIES); do \
-	  (cd otherlibs/$$i; $(MAKE) allopt) || exit $$?; \
-	done
+otherlibrary_str: library ocamltools
+	cd otherlibs/str; $(MAKE) all
+
+otherlibrary_num: library ocamltools
+	cd otherlibs/num; $(MAKE) all
+
+otherlibrary_dynlink: library ocamltools
+	cd otherlibs/dynlink; $(MAKE) all
+
+otherlibrary_bigarray: library otherlibrary_unix
+	cd otherlibs/bigarray; $(MAKE) all
+
+otherlibrary_systhreads: library otherlibrary_unix
+	cd otherlibs/systhreads; $(MAKE) all
+
+otherlibrary_threads: library otherlibrary_unix
+	cd otherlibs/threads; $(MAKE) all
+
+otherlibrary_graph: library ocamltools
+	cd otherlibs/graph; $(MAKE) all
+
+otherlibraryopt_unix: libraryopt otherlibrary_unix
+	cd otherlibs/unix; $(MAKE) allopt
+
+otherlibraryopt_str: libraryopt otherlibrary_str
+	cd otherlibs/str; $(MAKE) allopt
+
+otherlibraryopt_num: libraryopt otherlibrary_num
+	cd otherlibs/num; $(MAKE) allopt
+
+otherlibraryopt_dynlink: libraryopt otherlibrary_dynlink
+	cd otherlibs/dynlink; $(MAKE) allopt
+
+otherlibraryopt_bigarray: libraryopt otherlibraryopt_unix otherlibrary_bigarray
+	cd otherlibs/bigarray; $(MAKE) allopt
+
+otherlibraryopt_systhreads: libraryopt otherlibraryopt_unix otherlibrary_systhreads
+	cd otherlibs/systhreads; $(MAKE) allopt
+
+otherlibraryopt_threads: libraryopt otherlibraryopt_unix otherlibrary_threads
+	cd otherlibs/threads; $(MAKE) allopt
+
+otherlibraryopt_graph: libraryopt otherlibrary_graph
+	cd otherlibs/graph; $(MAKE) allopt
+
+otherlibraries: $(addprefix otherlibrary_,$(OTHERLIBRARIES))
+
+otherlibrariesopt: $(addprefix otherlibraryopt_,$(OTHERLIBRARIES))
 
 partialclean::
 	for i in $(OTHERLIBRARIES); do \
