@@ -21,7 +21,7 @@ let inline_non_recursive env r ~function_decls ~lhs_of_application
     ~closure_id_being_applied ~(function_decl : Flambda.function_declaration)
     ~only_use_of_function ~no_simplification ~probably_a_functor
     ~(args : Variable.t list) ~size_from_approximation ~simplify
-    ~always_inline ~inline_requested
+    ~always_inline ~(inline_requested : Lambda.inline_attribute)
     ~(made_decision : Inlining_stats_types.Decision.t -> unit) =
   (* When all of the arguments to the function being inlined are unknown, then
      we cannot materially simplify the function.  As such, we know what the
@@ -33,6 +33,8 @@ let inline_non_recursive env r ~function_decls ~lhs_of_application
   *)
   let known_to_have_no_benefit =
     if function_decl.stub then
+      false
+    else if inline_requested = Lambda.Always_inline then
       false
     else if only_use_of_function then
       false
@@ -458,7 +460,8 @@ let for_call_site ~env ~r ~(function_decls : Flambda.function_declarations)
         inline_non_recursive env r ~function_decls ~lhs_of_application
           ~closure_id_being_applied ~function_decl ~made_decision
           ~only_use_of_function ~no_simplification ~probably_a_functor
-          ~inline_requested ~always_inline ~args ~size_from_approximation
+          ~inline_requested:inline_annotation
+          ~always_inline ~args ~size_from_approximation
           ~simplify
       else if (not always_inline) && E.inlining_level env > max_level then begin
         made_decision (Can_inline_but_tried_nothing (Level_exceeded true));
