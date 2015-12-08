@@ -84,7 +84,7 @@ info: files
 	         -I ../cmds -I ../tutorials -I ../../styles -I ../texstuff \
 	         ../manual.inf -e macros.tex ../manual.tex
 	cat manual.info.header infoman/ocaml.info.body > infoman/ocaml.info
-	cd infoman; rm -f ocaml.info.tmp; gzip -9 ocaml.info*
+	cd infoman; rm -f ocaml.info.tmp ocaml.info.body ; gzip -9 ocaml.info*
 
 text: files
 	cd textman; \
