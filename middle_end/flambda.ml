@@ -946,72 +946,75 @@ let update_function_declarations function_decls ~funs =
 let create_set_of_closures ~function_decls ~free_vars ~specialised_args =
   let function_decls =
     { function_decls with
-      compilation_unit = Compilation_unit.get_current_exn () }
+      compilation_unit = Compilation_unit.get_current_exn ();
+    }
   in
-  let all_fun_vars = Variable.Map.keys function_decls.funs in
-  let expected_free_vars =
-    Variable.Map.fold (fun _fun_var function_decl expected_free_vars ->
-        let free_vars =
-          Variable.Set.diff function_decl.free_variables
-            (Variable.Set.union (Variable.Set.of_list function_decl.params)
-              all_fun_vars)
-        in
-        Variable.Set.union free_vars expected_free_vars)
-      function_decls.funs
-      Variable.Set.empty
-  in
-  let free_vars =
-    (* CR mshinwell for pchambart: Is this ok, or should we cause an error?
-       I tend to think this one is ok, but for specialised_args below, we
-       should be strict. *)
+  if !Clflags.flambda_invariant_checks then begin
+    let all_fun_vars = Variable.Map.keys function_decls.funs in
+    let expected_free_vars =
+      Variable.Map.fold (fun _fun_var function_decl expected_free_vars ->
+          let free_vars =
+            Variable.Set.diff function_decl.free_variables
+              (Variable.Set.union (Variable.Set.of_list function_decl.params)
+                all_fun_vars)
+          in
+          Variable.Set.union free_vars expected_free_vars)
+        function_decls.funs
+        Variable.Set.empty
+    in
+    let free_vars =
+      (* CR mshinwell for pchambart: Is this ok, or should we cause an error?
+         I tend to think this one is ok, but for specialised_args below, we
+         should be strict. *)
 
 
-    (* CR pchambart: We do not seem to be able to maintain the
-       invariant that if a variable is not used inside the closure, it
-       is not used outside either. This would be a nice property for
-       better dead code elimination during inline_and_simplify, but it
-       is not obvious how to ensure that.
+      (* CR pchambart: We do not seem to be able to maintain the
+         invariant that if a variable is not used inside the closure, it
+         is not used outside either. This would be a nice property for
+         better dead code elimination during inline_and_simplify, but it
+         is not obvious how to ensure that.
 
-       This would be true when the function is known never to have
-       been inlined.
+         This would be true when the function is known never to have
+         been inlined.
 
-       Note that something like that may maybe enforcable in
-       inline_and_simplify, but there is no way to do that on other
-       passes. *)
+         Note that something like that may maybe enforcable in
+         inline_and_simplify, but there is no way to do that on other
+         passes. *)
 
-    (* Variable.Map.filter (fun inner_var _outer_var -> *)
-    (*     Variable.Set.mem inner_var expected_free_vars) *)
-    (*   free_vars *)
+      (* Variable.Map.filter (fun inner_var _outer_var -> *)
+      (*     Variable.Set.mem inner_var expected_free_vars) *)
+      (*   free_vars *)
 
-    free_vars
+      free_vars
 
-  in
-  let free_vars_domain = Variable.Map.keys free_vars in
-  if not (Variable.Set.subset expected_free_vars free_vars_domain) then begin
-    Misc.fatal_errorf "create_set_of_closures: [free_vars] mapping of \
-        variables bound by the closure(s) is wrong.  (%a, expected to be a \
-        subset of %a)@ \n%s\nfunction_decls:@ %a"
-      Variable.Set.print expected_free_vars
-      Variable.Set.print free_vars_domain
-      (Printexc.raw_backtrace_to_string (Printexc.get_callstack max_int))
-      print_function_declarations function_decls
-  end;
-  let all_params =
-    Variable.Map.fold (fun _fun_var function_decl all_params ->
-        Variable.Set.union (Variable.Set.of_list function_decl.params)
-          all_params)
-      function_decls.funs
-      Variable.Set.empty
-  in
-  let spec_args_domain = Variable.Map.keys specialised_args in
-  if not (Variable.Set.subset spec_args_domain all_params) then begin
-    Misc.fatal_errorf "create_set_of_closures: [specialised_args] \
-        maps variable(s) that are not parameters of the given function \
-        declarations.  specialised_args domain=%a all_params=%a \n\
-        function_decls:@ %a"
-      Variable.Set.print spec_args_domain
-      Variable.Set.print all_params
-      print_function_declarations function_decls
+    in
+    let free_vars_domain = Variable.Map.keys free_vars in
+    if not (Variable.Set.subset expected_free_vars free_vars_domain) then begin
+      Misc.fatal_errorf "create_set_of_closures: [free_vars] mapping of \
+          variables bound by the closure(s) is wrong.  (%a, expected to be a \
+          subset of %a)@ \n%s\nfunction_decls:@ %a"
+        Variable.Set.print expected_free_vars
+        Variable.Set.print free_vars_domain
+        (Printexc.raw_backtrace_to_string (Printexc.get_callstack max_int))
+        print_function_declarations function_decls
+    end;
+    let all_params =
+      Variable.Map.fold (fun _fun_var function_decl all_params ->
+          Variable.Set.union (Variable.Set.of_list function_decl.params)
+            all_params)
+        function_decls.funs
+        Variable.Set.empty
+    in
+    let spec_args_domain = Variable.Map.keys specialised_args in
+    if not (Variable.Set.subset spec_args_domain all_params) then begin
+      Misc.fatal_errorf "create_set_of_closures: [specialised_args] \
+          maps variable(s) that are not parameters of the given function \
+          declarations.  specialised_args domain=%a all_params=%a \n\
+          function_decls:@ %a"
+        Variable.Set.print spec_args_domain
+        Variable.Set.print all_params
+        print_function_declarations function_decls
+    end
   end;
   { function_decls;
     free_vars;
