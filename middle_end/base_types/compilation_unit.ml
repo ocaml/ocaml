@@ -21,14 +21,18 @@ module T = struct
      To distinguish these we also keep the linkage name, which contains the
      name of the pack. *)
   let compare v1 v2 =
-    let v1_id = Ident.name v1.id in
-    let v2_id = Ident.name v2.id in
-    let c = String.compare v1_id v2_id in
-    if c = 0
-    then Linkage_name.compare v1.linkage_name v2.linkage_name
-    else c
+    if v1 == v2 then 0
+    else
+      let v1_id = Ident.name v1.id in
+      let v2_id = Ident.name v2.id in
+      let c = String.compare v1_id v2_id in
+      if c = 0
+      then Linkage_name.compare v1.linkage_name v2.linkage_name
+      else c
 
-  let equal x y = compare x y = 0
+  let equal x y =
+    if x == y then true
+    else compare x y = 0
 
   let print ppf x = Format.pp_print_string ppf (Ident.name x.id)
   let output oc x = output_string oc (Ident.name x.id)
