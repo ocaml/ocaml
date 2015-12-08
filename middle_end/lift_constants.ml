@@ -453,13 +453,12 @@ let constant_dependencies ~backend:_ (const:Flambda.constant_defining_value) =
   | Project_closure (s, _) ->
     Symbol.Set.singleton s
 
-let expression_symbol_dependencies expr = Flambda.free_symbols expr
-
 let program_graph
     ~backend
     imported_symbols symbol_to_constant
     (initialize_symbol_tbl : (Tag.t * Flambda.t list * Symbol.t option) Symbol.Tbl.t)
     (effect_tbl : (Flambda.t * Symbol.t option) Symbol.Tbl.t) =
+  let expression_symbol_dependencies expr = Flambda.free_symbols expr in
   let graph_with_only_constant_parts =
     Symbol.Map.map (fun const ->
         Symbol.Set.diff (constant_dependencies ~backend const) imported_symbols)
@@ -563,47 +562,43 @@ let introduce_free_variables_in_set_of_closures
   let function_decls : Flambda.function_declarations =
     Flambda.update_function_declarations function_decls
       ~funs:(Variable.Map.mapi
-          (fun _fun_var (ffun : Flambda.function_declaration) ->
+          (fun _fun_var (func_decl : Flambda.function_declaration) ->
              let variables_to_bind =
-               (* Closures from the same set must not be bound *)
-               Variable.Set.diff
-                 ffun.free_variables
+               (* Closures from the same set must not be bound. *)
+               Variable.Set.diff func_decl.free_variables
                  (Variable.Map.keys function_decls.funs)
              in
              let body, subst =
-               Variable.Set.fold
-                 add_definition_and_make_substitution
+               Variable.Set.fold add_definition_and_make_substitution
                  variables_to_bind
-                 (ffun.body, Variable.Map.empty)
+                 (func_decl.body, Variable.Map.empty)
              in
-             let body =
-               Flambda_utils.toplevel_substitution subst body
-             in
-             Flambda.create_function_declaration
-               ~params:ffun.params
-               ~body
-               ~stub:ffun.stub
-               ~dbg:ffun.dbg
-               ~inline:ffun.inline
-               ~is_a_functor:ffun.is_a_functor)
+             if Variable.Map.is_empty subst then
+               func_decl
+             else
+               let body = Flambda_utils.toplevel_substitution subst body in
+               Flambda.create_function_declaration
+                 ~params:func_decl.params
+                 ~body
+                 ~stub:func_decl.stub
+                 ~dbg:func_decl.dbg
+                 ~inline:func_decl.inline
+                 ~is_a_functor:func_decl.is_a_functor)
           function_decls.funs)
   in
   let free_vars =
-    (* Keep only those that are not rewriten to constants *)
-    Variable.Map.filter
-      (fun v _ ->
+    (* Keep only those that are not rewritten to constants. *)
+    Variable.Map.filter (fun v _ ->
         not (Variable.Tbl.mem var_to_block_field_tbl v))
       free_vars
   in
   let specialised_args =
-    (* Keep only those that are not rewriten to constants *)
-    Variable.Map.filter
-      (fun _ v ->
+    (* Keep only those that are not rewritten to constants. *)
+    Variable.Map.filter (fun _ v ->
         not (Variable.Tbl.mem var_to_block_field_tbl v))
       specialised_args
   in
-  Flambda.create_set_of_closures ~function_decls ~free_vars
-    ~specialised_args
+  Flambda.create_set_of_closures ~function_decls ~free_vars ~specialised_args
 
 let rewrite_project_var
       (var_to_block_field_tbl
@@ -766,7 +761,7 @@ let lift_constants program ~backend =
     let initialize_symbol_map =
       Symbol.Tbl.to_map initialize_symbol_to_definition_tbl in
     let sym_map = Flambda_utils.all_lifted_constants_as_map program in
-    let var_to_sym_map = Symbol.Map.empty (* Variable.Tbl.to_map var_to_symbol_tbl *) in
+    let var_to_sym_map = Symbol.Map.empty in
     Alias_analysis.run var_map initialize_symbol_map sym_map var_to_sym_map
   in
   replace_definitions_in_initialize_symbol_and_effects
