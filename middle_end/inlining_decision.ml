@@ -34,7 +34,7 @@ let inline_non_recursive env r ~function_decls ~lhs_of_application
   let known_to_have_no_benefit =
     if function_decl.stub then
       false
-    else if inline_requested = Lambda.Always_inline then
+    else if always_inline then
       false
     else if only_use_of_function then
       false
@@ -460,8 +460,7 @@ let for_call_site ~env ~r ~(function_decls : Flambda.function_declarations)
         inline_non_recursive env r ~function_decls ~lhs_of_application
           ~closure_id_being_applied ~function_decl ~made_decision
           ~only_use_of_function ~no_simplification ~probably_a_functor
-          ~inline_requested:inline_annotation
-          ~always_inline ~args ~size_from_approximation
+          ~inline_requested ~always_inline ~args ~size_from_approximation
           ~simplify
       else if (not always_inline) && E.inlining_level env > max_level then begin
         made_decision (Can_inline_but_tried_nothing (Level_exceeded true));
