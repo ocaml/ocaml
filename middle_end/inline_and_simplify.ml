@@ -1417,11 +1417,6 @@ let rec simplify_program env r (program : Flambda.program)
     Effect (expr, program), r
   | End root -> End root, r
 
-(* CR mshinwell for pchambart: Change to a "-dinlining-benefit" option? *)
-let debug_benefit =
-  try ignore (Sys.getenv "BENEFIT"); true
-  with _ -> false
-
 let add_predef_exns_to_environment ~env ~backend =
   let module Backend = (val backend : Backend_intf.S) in
   List.fold_left (fun env predef_exn ->
@@ -1462,9 +1457,6 @@ let run ~never_inline ~backend ~prefixname ~round program =
       Flambda.print_program result)
   end;
   assert (Static_exception.Set.is_empty (R.used_staticfail r));
-  if debug_benefit then
-    Format.printf "benefit:@ %a@."
-      B.print (R.benefit r);
   if !Clflags.inlining_stats then begin
     let output_prefix = Printf.sprintf "%s.%d" prefixname round in
     Inlining_stats.save_then_forget_decisions ~output_prefix
