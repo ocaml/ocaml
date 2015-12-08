@@ -270,7 +270,7 @@ let read_one_param ppf position name v =
       | "flambda-verbose" ->
           set "flambda-verbose" [ dump_flambda_verbose ] v
       | "flambda-invariants" ->
-          set "flambda-invariants" [ full_flambda_invariant_check ] v
+          set "flambda-invariants" [ flambda_invariant_checks ] v
 
       (* color output *)
       | "color" ->

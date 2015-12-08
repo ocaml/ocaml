@@ -114,11 +114,13 @@ let compile_genfuns ppf f =
 
 let prep_flambda_for_export ppf flam ~backend =
   let check pass flam =
-    try Flambda_invariants.check_exn flam
-    with exn ->
-      Misc.fatal_errorf "Before backend, after pass %s@.%s:@.%a"
-        pass (Printexc.to_string exn)
-        Flambda.print_program flam
+    if !Clflags.flambda_invariant_checks then begin
+      try Flambda_invariants.check_exn flam
+      with exn ->
+        Misc.fatal_errorf "Before backend, after pass %s@.%s:@.%a"
+          pass (Printexc.to_string exn)
+          Flambda.print_program flam
+    end
   in
   if !Clflags.dump_flambda
   then begin

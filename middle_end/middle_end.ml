@@ -18,11 +18,13 @@ let middle_end ppf ~sourcefile ~prefixname ~backend
   let pass_number = ref 0 in
   let round_number = ref 0 in
   let check flam =
-    try Flambda_invariants.check_exn flam
-    with exn ->
-      Misc.fatal_errorf "After Flambda pass %d, round %d:@.%s:@.%a"
-        !pass_number !round_number (Printexc.to_string exn)
-        Flambda.print_program flam
+    if !Clflags.flambda_invariant_checks then begin
+      try Flambda_invariants.check_exn flam
+      with exn ->
+        Misc.fatal_errorf "After Flambda pass %d, round %d:@.%s:@.%a"
+          !pass_number !round_number (Printexc.to_string exn)
+          Flambda.print_program flam
+    end
   in
   let dump_and_check s flam =
     if !Clflags.dump_flambda
@@ -33,7 +35,7 @@ let middle_end ppf ~sourcefile ~prefixname ~backend
     incr pass_number;
     if !Clflags.dump_flambda_verbose then begin
       Format.fprintf ppf "@.PASS: %s@." name;
-      if !Clflags.full_flambda_invariant_check then begin
+      if !Clflags.flambda_invariant_checks then begin
         Format.fprintf ppf "Before pass %d, round %d:@ %a@." !pass_number
           !round_number Flambda.print_program flam;
         Format.eprintf "\n@?"
@@ -43,8 +45,9 @@ let middle_end ppf ~sourcefile ~prefixname ~backend
     Timings.restart timing_pass;
     let flam = pass flam in
     Timings.accumulate timing_pass;
-    if !Clflags.full_flambda_invariant_check then
-      Timings.accumulate_time (Flambda_pass ("check", sourcefile)) check flam;
+    if !Clflags.flambda_invariant_checks then begin
+      Timings.accumulate_time (Flambda_pass ("check", sourcefile)) check flam
+    end;
     flam
   in
   Timings.(start (Flambda_middle_end sourcefile));
