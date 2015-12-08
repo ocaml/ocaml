@@ -362,9 +362,10 @@ let map_expr f tree = map f (fun named -> named) tree
 let map_named f_named tree = map (fun expr -> expr) f_named tree
 let map_named_with_id f_named tree =
   map_general ~toplevel:false (fun expr -> expr) f_named tree
-(* CR mshinwell: rename "toplevel" *)
 let map_toplevel f f_named tree =
   map_general ~toplevel:true f (fun _ n -> f_named n) tree
+let map_toplevel_expr f_expr tree =
+  map_toplevel f_expr (fun named -> named) tree
 let map_toplevel_named f_named tree =
   map_toplevel (fun tree -> tree) f_named tree
 

@@ -68,12 +68,9 @@ let fold_over_projections_of_vars_bound_by_closure ~closure_id_being_applied
     init
 
 let set_inline_attribute_on_all_apply body inline =
-  Flambda_iterators.map_toplevel (function
-      | Apply apply ->
-          Apply { apply with inline }
-      | expr ->
-          expr)
-    (fun named -> named)
+  Flambda_iterators.map_toplevel_expr (function
+      | Apply apply -> Apply { apply with inline }
+      | expr -> expr)
     body
 
 (* CR mshinwell: Add a note somewhere to explain why "bound by the closure"

@@ -162,6 +162,11 @@ val map_toplevel
   -> Flambda.t
   -> Flambda.t
 
+val map_toplevel_expr
+   : (Flambda.t -> Flambda.t)
+  -> Flambda.t
+  -> Flambda.t
+
 val map_toplevel_named
    : (Flambda.named -> Flambda.named)
   -> Flambda.t
