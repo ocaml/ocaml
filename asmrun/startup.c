@@ -88,7 +88,7 @@ static void init_static(void)
   /* Register the code in the table of code fragments */
   cf->code_start = caml_code_area_start;
   cf->code_end = caml_code_area_end;
-  cf->digest_computed = 0;
+  caml_update_code_fragment_digest(cf);
   caml_ext_table_init(&caml_code_fragments_table, 8);
   caml_ext_table_add(&caml_code_fragments_table, cf);
 }
