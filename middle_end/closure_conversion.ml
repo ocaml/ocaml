@@ -53,7 +53,7 @@ let tupled_function_call_stub original_params unboxed_version
       (0, call) params
   in
   Flambda.create_function_declaration ~params:[tuple_param]
-    ~body ~stub:true ~dbg:Debuginfo.none ~inline:Always_inline
+    ~body ~stub:true ~dbg:Debuginfo.none ~inline:Default_inline
     ~is_a_functor:false
 
 (** Propagate an [Lev_after] debugging event into an adjacent Flambda node. *)
