@@ -140,37 +140,25 @@ type inlining_threshold =
   | Never_inline
   | Can_inline_if_no_larger_than of int
 
-let can_try_inlining_magic_constant = 4
-let rough_max_bonus = 20
-
-let can_try_inlining lam inlining_threshold ~bonus
+let can_try_inlining lam inlining_threshold ~number_of_arguments
       ~size_from_approximation =
   match inlining_threshold with
   | Never_inline -> Never_inline
   | Can_inline_if_no_larger_than inlining_threshold ->
+    let bonus =
+      (* removing a call will reduce the size by at least the number
+         of arguments *)
+      number_of_arguments
+    in
     let size =
-      let than =
-        (inlining_threshold + bonus) * can_try_inlining_magic_constant
-      in
-      (* CR mshinwell: Is the bonus always just going to be tied to the
-         number of parameters?  If so we could put it in the approximation,
-         and wouldn't need this "rough" stuff.  We should rename it in that
-         case too. *)
-      if bonus <= rough_max_bonus then begin
-        (* Assuming that the bonus isn't so large that we would have failed
-           to pre-calculate the size of the function (see
-           [maximum_interesting_size_of_function_body], below), then we can
-           use the cached value to avoid traversing the term. *)
-        match size_from_approximation with
-        | Some size -> if size <= than then Some size else None
-        | None -> lambda_smaller' lam ~than
-      end else begin
-        lambda_smaller' lam ~than
-      end
+      let than = inlining_threshold + bonus in
+      match size_from_approximation with
+      | Some size -> if size <= than then Some size else None
+      | None -> lambda_smaller' lam ~than
     in
     match size with
     | None -> Never_inline
-    | Some size -> Can_inline_if_no_larger_than (inlining_threshold - size)
+    | Some size -> Can_inline_if_no_larger_than (inlining_threshold - size + bonus)
 
 let lambda_smaller lam ~than =
   lambda_smaller' lam ~than <> None
@@ -200,6 +188,7 @@ module Benefit = struct
     remove_prim : int;
     remove_branch : int;
     (* CR-someday pchambart: branch_benefit : t list; *)
+    direct_call_of_indirect : int;
     requested_inline : int;
     (* Benefit to compensate the size of functions marked for inlining *)
   }
@@ -209,6 +198,7 @@ module Benefit = struct
     remove_alloc = 0;
     remove_prim = 0;
     remove_branch = 0;
+    direct_call_of_indirect = 0;
     requested_inline = 0;
   }
 
@@ -216,6 +206,8 @@ module Benefit = struct
   let remove_alloc t = { t with remove_alloc = t.remove_alloc + 1; }
   let remove_prim t = { t with remove_prim = t.remove_prim + 1; }
   let remove_branch t = { t with remove_branch = t.remove_branch + 1; }
+  let direct_call_of_indirect t =
+    { t with direct_call_of_indirect = t.direct_call_of_indirect + 1; }
   let requested_inline t ~size_of =
     let size = lambda_size size_of in
     { t with requested_inline = t.requested_inline + size; }
@@ -256,11 +248,14 @@ module Benefit = struct
 
   let print ppf b =
     Format.fprintf ppf "@[remove_call: %i@ remove_alloc: %i@ \
-                        remove_prim: %i@ remove_branc: %i@]"
+                        remove_prim: %i@ remove_branc: %i@ \
+                        direct: %i@ requested: %i@]"
       b.remove_call
       b.remove_alloc
       b.remove_prim
       b.remove_branch
+      b.direct_call_of_indirect
+      b.requested_inline
 
   let evaluate t ~round : int =
     benefit_factor *
@@ -271,7 +266,9 @@ module Benefit = struct
        + t.remove_prim * (cost !Clflags.inline_prim_cost
           ~default:Clflags.default_inline_prim_cost ~round)
        + t.remove_branch * (cost !Clflags.inline_branch_cost
-          ~default:Clflags.default_inline_branch_cost ~round))
+          ~default:Clflags.default_inline_branch_cost ~round)
+       + t.direct_call_of_indirect * (cost !Clflags.inline_indirect_cost
+          ~default:Clflags.default_inline_indirect_cost ~round))
     + t.requested_inline
 
   let (+) t1 t2 = {
@@ -279,6 +276,8 @@ module Benefit = struct
     remove_alloc = t1.remove_alloc + t2.remove_alloc;
     remove_prim = t1.remove_prim + t2.remove_prim;
     remove_branch = t1.remove_branch + t2.remove_branch;
+    direct_call_of_indirect =
+      t1.direct_call_of_indirect + t2.direct_call_of_indirect;
     requested_inline = t1.requested_inline + t2.requested_inline;
   }
 
@@ -357,13 +356,14 @@ module Whether_sufficient_benefit = struct
 
 
   let to_string t =
-      Printf.sprintf "{benefit={call=%d,alloc=%d,prim=%i,branch=%i,req=%i},\
+      Printf.sprintf "{benefit={call=%d,alloc=%d,prim=%i,branch=%i,indirect=%i,req=%i},\
                       orig_size=%d,new_size=%d,eval_size=%d,eval_benefit=%d,\
                       functor=%b,branch_depth=%d}=%s"
         t.benefit.remove_call
         t.benefit.remove_alloc
         t.benefit.remove_prim
         t.benefit.remove_branch
+        t.benefit.direct_call_of_indirect
         t.benefit.requested_inline
         t.original_size
         t.new_size

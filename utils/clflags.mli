@@ -119,10 +119,12 @@ val default_inline_call_cost : int
 val default_inline_alloc_cost : int
 val default_inline_prim_cost : int
 val default_inline_branch_cost : int
+val default_inline_indirect_cost : int
 val inline_call_cost : Int_arg_helper.parsed ref
 val inline_alloc_cost : Int_arg_helper.parsed ref
 val inline_prim_cost : Int_arg_helper.parsed ref
 val inline_branch_cost : Int_arg_helper.parsed ref
+val inline_indirect_cost : Int_arg_helper.parsed ref
 val default_branch_inline_factor : float
 val branch_inline_factor : Float_arg_helper.parsed ref
 val dont_write_files : bool ref
