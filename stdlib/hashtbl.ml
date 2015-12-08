@@ -31,12 +31,25 @@ type ('a, 'b) t =
   { mutable size: int;                        (* number of entries *)
     mutable data: ('a, 'b) bucketlist array;  (* the buckets *)
     mutable seed: int;                        (* for randomization *)
-    initial_size: int;                        (* initial array size *)
+    mutable initial_size: int;                (* initial array size *)
   }
 
 and ('a, 'b) bucketlist =
     Empty
   | Cons of { mutable key: 'a; mutable data: 'b; mutable next: ('a, 'b) bucketlist }
+
+(* The sign of initial_size encodes the fact that a traversal is
+   ongoing or not.
+
+   This disables the efficient in place implementation of resizing.
+*)
+
+let ongoing_traversal h =
+  Obj.size (Obj.repr h) < 4 (* compatibility with old hash tables *)
+  || h.initial_size < 0
+
+let flip_ongoing_traversal h =
+  h.initial_size <- - h.initial_size
 
 (* To pick random seeds if requested *)
 
@@ -75,11 +88,11 @@ let clear h =
 let reset h =
   let len = Array.length h.data in
   if Obj.size (Obj.repr h) < 4 (* compatibility with old hash tables *)
-    || len = h.initial_size then
+    || len = abs h.initial_size then
     clear h
   else begin
     h.size <- 0;
-    h.data <- Array.make h.initial_size Empty
+    h.data <- Array.make (abs h.initial_size) Empty
   end
 
 let copy_bucketlist = function
@@ -110,10 +123,15 @@ let resize indexfun h =
   if nsize < Sys.max_array_length then begin
     let ndata = Array.make nsize Empty in
     let ndata_tail = Array.make nsize Empty in
+    let inplace = not (ongoing_traversal h) in
     h.data <- ndata;          (* so that indexfun sees the new bucket count *)
     let rec insert_bucket = function
       | Empty -> ()
-      | Cons {key; next} as cell ->
+      | Cons {key; data; next} as cell ->
+          let cell =
+            if inplace then cell
+            else Cons {key; data; next = Empty}
+          in
           let nidx = indexfun h key in
           begin match ndata_tail.(nidx) with
           | Empty -> ndata.(nidx) <- cell;
@@ -125,11 +143,12 @@ let resize indexfun h =
     for i = 0 to osize - 1 do
       insert_bucket odata.(i)
     done;
-    for i = 0 to nsize - 1 do
-      match ndata_tail.(i) with
-      | Empty -> ()
-      | Cons tail -> tail.next <- Empty
-    done;
+    if inplace then
+      for i = 0 to nsize - 1 do
+        match ndata_tail.(i) with
+        | Empty -> ()
+        | Cons tail -> tail.next <- Empty
+      done;
   end
 
 let key_index h key =
@@ -223,10 +242,17 @@ let iter f h =
         ()
     | Cons{key; data; next} ->
         f key data; do_bucket next in
-  let d = h.data in
-  for i = 0 to Array.length d - 1 do
-    do_bucket d.(i)
-  done
+  let old_trav = ongoing_traversal h in
+  if not old_trav then flip_ongoing_traversal h;
+  try
+    let d = h.data in
+    for i = 0 to Array.length d - 1 do
+      do_bucket d.(i)
+    done;
+    if not old_trav then flip_ongoing_traversal h;
+  with exn when not old_trav ->
+    flip_ongoing_traversal h;
+    raise exn
 
 let filter_map_inplace f h =
   let rec do_bucket = function
@@ -249,12 +275,19 @@ let fold f h init =
         accu
     | Cons{key; data; next} ->
         do_bucket next (f key data accu) in
-  let d = h.data in
-  let accu = ref init in
-  for i = 0 to Array.length d - 1 do
-    accu := do_bucket d.(i) !accu
-  done;
-  !accu
+  let old_trav = ongoing_traversal h in
+  if not old_trav then flip_ongoing_traversal h;
+  try
+    let d = h.data in
+    let accu = ref init in
+    for i = 0 to Array.length d - 1 do
+      accu := do_bucket d.(i) !accu
+    done;
+    if not old_trav then flip_ongoing_traversal h;
+    !accu
+  with exn when not old_trav ->
+    flip_ongoing_traversal h;
+    raise exn
 
 type statistics = {
   num_bindings: int;
