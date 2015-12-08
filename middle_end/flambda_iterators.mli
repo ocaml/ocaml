@@ -110,21 +110,6 @@ val iter_named_of_program
   -> f:(Flambda.named -> unit)
   -> unit
 
-val iter_symbols_on_named
-   : Flambda.named
-  -> f:(Symbol.t -> unit)
-  -> unit
-
-val iter_symbols
-   : Flambda.t
-  -> f:(Symbol.t -> unit)
-  -> unit
-
-val iter_symbols_on_program
-  : Flambda.program
-  -> f:(Symbol.t -> unit)
-  -> unit
-
 val iter_constant_defining_values_on_program
   : Flambda.program
   -> f:(Flambda.constant_defining_value -> unit)

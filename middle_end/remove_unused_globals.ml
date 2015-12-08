@@ -11,20 +11,12 @@
 (*                                                                        *)
 (**************************************************************************)
 
-let dependency (expr:Flambda.t) =
-  let set = ref Symbol.Set.empty in
-  Flambda_iterators.iter_symbols ~f:(fun s -> set := Symbol.Set.add s !set)
-    expr;
-  !set
+let dependency (expr:Flambda.t) = Flambda.free_symbols expr
 
 (* CR pchambart: copied from lift_constant. Need remerging *)
 let constant_dependencies (const:Flambda.constant_defining_value) =
   let closure_dependencies (set_of_closures:Flambda.set_of_closures) =
-    let set = ref Symbol.Set.empty in
-    Flambda_iterators.iter_symbols_on_named ~f:(fun s ->
-        set := Symbol.Set.add s !set)
-      (Set_of_closures set_of_closures);
-    !set
+    Flambda.free_symbols_named (Set_of_closures set_of_closures)
   in
   match const with
   | Allocated_const _ -> Symbol.Set.empty

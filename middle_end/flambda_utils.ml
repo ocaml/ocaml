@@ -379,12 +379,7 @@ let rec imported_symbols (program:Flambda.program) =
     Symbol.Set.empty
 
 let needed_import_symbols (program:Flambda.program) =
-  let dependencies =
-    let set = ref Symbol.Set.empty in
-    Flambda_iterators.iter_symbols_on_program program
-      ~f:(fun s -> set := Symbol.Set.add s !set);
-    !set
-  in
+  let dependencies = Flambda.free_symbols_program program in
   let defined_symbol =
     Symbol.Set.union
       (Symbol.Set.of_list

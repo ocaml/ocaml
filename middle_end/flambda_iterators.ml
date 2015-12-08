@@ -184,57 +184,6 @@ let iter_on_set_of_closures_of_program (program : Flambda.program) ~f =
   in
   loop program
 
-let iter_symbols_on_named named ~f =
-  iter_named_on_named (function
-      | Symbol sym | Read_symbol_field (sym, _) -> f sym
-      | (Const _ | Allocated_const _ | Read_mutable _ | Set_of_closures _
-      | Project_closure _ | Move_within_set_of_closures _ | Project_var _
-      | Prim _ | Expr _) -> ())
-    named
-
-let iter_symbols named ~f =
-  iter_named (function
-      | Symbol sym | Read_symbol_field (sym, _) -> f sym
-      | (Const _ | Allocated_const _ | Read_mutable _ | Set_of_closures _
-      | Project_closure _ | Move_within_set_of_closures _ | Project_var _
-      | Prim _ | Expr _) -> ())
-    named
-
-let iter_symbols_on_allocated_constant (const:Flambda.constant_defining_value) ~f =
-  match const with
-  | Allocated_const _ -> ()
-  | Block (_, fields) ->
-    List.iter
-      (function
-        | (Symbol s:Flambda.constant_defining_value_block_field) -> f s
-        | Flambda.Const _ -> ())
-      fields
-  | Set_of_closures set_of_closures ->
-    iter_symbols_on_named (Set_of_closures set_of_closures) ~f
-  | Project_closure (s, _) ->
-    f s
-
-let rec iter_symbols_on_program (program:Flambda.program) ~f =
-  match program with
-  | Let_symbol (_, const, program) ->
-    iter_symbols_on_allocated_constant const ~f;
-    iter_symbols_on_program program ~f
-  | Let_rec_symbol (defs, program) ->
-    List.iter (fun (_, const) ->
-        iter_symbols_on_allocated_constant const ~f)
-      defs;
-    iter_symbols_on_program program ~f
-  | Import_symbol (_, program) ->
-    (* CR pchambart: Do we expect to iter on that one ? *)
-    iter_symbols_on_program program ~f
-  | Initialize_symbol (_, _, fields, program) ->
-    List.iter (iter_symbols ~f) fields;
-    iter_symbols_on_program program ~f
-  | Effect (expr, program) ->
-    iter_symbols ~f expr;
-    iter_symbols_on_program program ~f
-  | End _ -> ()
-
 let rec iter_constant_defining_values_on_program
       (program : Flambda.program) ~f =
   match program with

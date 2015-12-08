@@ -847,15 +847,76 @@ let fold_lets_option
   in
   loop t ~acc:init ~rev_lets:[]
 
+let free_symbols_helper symbols (named : named) =
+  match named with
+  | Symbol symbol
+  | Read_symbol_field (symbol, _) -> symbols := Symbol.Set.add symbol !symbols
+  | Set_of_closures set_of_closures ->
+    Variable.Map.iter (fun _ (function_decl : function_declaration) ->
+        symbols := Symbol.Set.union function_decl.free_symbols !symbols)
+      set_of_closures.function_decls.funs
+  | _ -> ()
+
 let free_symbols expr =
   let symbols = ref Symbol.Set.empty in
-  iter_general ~toplevel:false
+  iter_general ~toplevel:true
     (fun (_ : t) -> ())
-    (fun (named : named) ->
-      match named with
-      | Symbol symbol -> symbols := Symbol.Set.add symbol !symbols
-      | _ -> ())
+    (fun (named : named) -> free_symbols_helper symbols named)
     (Is_expr expr);
+  !symbols
+
+let free_symbols_named named =
+  let symbols = ref Symbol.Set.empty in
+  iter_general ~toplevel:true
+    (fun (_ : t) -> ())
+    (fun (named : named) -> free_symbols_helper symbols named)
+    (Is_named named);
+  !symbols
+
+let free_symbols_allocated_constant_helper symbols
+      (const : constant_defining_value) =
+  match const with
+  | Allocated_const _ -> ()
+  | Block (_, fields) ->
+    List.iter
+      (function
+        | (Symbol s : constant_defining_value_block_field) ->
+          symbols := Symbol.Set.add s !symbols
+        | (Const _ : constant_defining_value_block_field) -> ())
+      fields
+  | Set_of_closures set_of_closures ->
+    symbols := Symbol.Set.union !symbols
+      (free_symbols_named (Set_of_closures set_of_closures))
+  | Project_closure (s, _) ->
+    symbols := Symbol.Set.add s !symbols
+
+let free_symbols_program (program : program) =
+  let symbols = ref Symbol.Set.empty in
+  let rec loop (program : program) =
+    match program with
+    | Let_symbol (_, const, program) ->
+      free_symbols_allocated_constant_helper symbols const;
+      loop program
+    | Let_rec_symbol (defs, program) ->
+      List.iter (fun (_, const) ->
+          free_symbols_allocated_constant_helper symbols const)
+        defs;
+      loop program
+    | Import_symbol (_, program) ->
+      (* [Import_symbol] is effectively binding construct, so there's no
+         need to record the symbol. *)
+      loop program
+    | Initialize_symbol (_, _, fields, program) ->
+      List.iter (fun field ->
+          symbols := Symbol.Set.union !symbols (free_symbols field))
+        fields;
+      loop program
+    | Effect (expr, program) ->
+      symbols := Symbol.Set.union !symbols (free_symbols expr);
+      loop program
+    | End symbol -> symbols := Symbol.Set.add symbol !symbols
+  in
+  loop program;
   !symbols
 
 let create_function_declaration ~params ~body ~stub ~dbg ~inline ~is_a_functor

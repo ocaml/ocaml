@@ -406,6 +406,12 @@ val used_variables_named
   -> named
   -> Variable.Set.t
 
+val free_symbols : expr -> Symbol.Set.t
+
+val free_symbols_named : named -> Symbol.Set.t
+
+val free_symbols_program : program -> Symbol.Set.t
+
 (** Used to avoid exceeding the stack limit when handling expressions with
     multiple consecutive nested [Let]-expressions.  This saves rewriting large
     simplification functions in CPS.  This function provides for the

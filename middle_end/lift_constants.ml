@@ -438,13 +438,6 @@ let translate_definitions_and_resolve_alias
 
 (* Resorting of graph including Initialize_symbol *)
 let constant_dependencies ~backend:_ (const:Flambda.constant_defining_value) =
-  let closure_dependencies (set_of_closures:Flambda.set_of_closures) =
-    let set = ref Symbol.Set.empty in
-    Flambda_iterators.iter_symbols_on_named ~f:(fun s ->
-        set := Symbol.Set.add s !set)
-      (Set_of_closures set_of_closures);
-    !set
-  in
   match const with
   | Allocated_const _ -> Symbol.Set.empty
   | Block (_, fields) ->
@@ -456,16 +449,11 @@ let constant_dependencies ~backend:_ (const:Flambda.constant_defining_value) =
     in
     Symbol.Set.of_list symbol_fields
   | Set_of_closures set_of_closures ->
-    closure_dependencies set_of_closures
+    Flambda.free_symbols_named (Set_of_closures set_of_closures)
   | Project_closure (s, _) ->
     Symbol.Set.singleton s
 
-let expression_symbol_dependencies (expr:Flambda.t) =
-  let set = ref Symbol.Set.empty in
-  Flambda_iterators.iter_symbols ~f:(fun s ->
-      set := Symbol.Set.add s !set)
-    expr;
-  !set
+let expression_symbol_dependencies expr = Flambda.free_symbols expr
 
 let program_graph
     ~backend
