@@ -100,93 +100,98 @@ let rewrite_set_of_closures
       block_in_free_vars =
     elts_in_free_vars_and_specialised_args
   in
-  let used_new_vars = ref Variable.Set.empty in
-  let rewrite_function_decl
-      (function_decl:Flambda.function_declaration) =
-    let body =
-      Flambda_iterators.map_toplevel_project_var_to_expr_opt
-        ~f:(fun project_var ->
-          match
-            Closure_field.Map.find
-              (project_var.closure, project_var.var)
-              closures_in_free_vars
-          with
-          | exception Not_found ->
-            None
-          | { new_var } ->
-            used_new_vars := Variable.Set.add
-                new_var !used_new_vars;
-            Some (Flambda.Var new_var))
-        function_decl.body
+  if Closure_field.Map.is_empty closures_in_free_vars
+    && Block_field.Map.is_empty block_in_free_vars
+  then
+    set_of_closures, Variable.Map.empty, Variable.Map.empty
+  else
+    let used_new_vars = ref Variable.Set.empty in
+    let rewrite_function_decl
+        (function_decl:Flambda.function_declaration) =
+      let body =
+        Flambda_iterators.map_toplevel_project_var_to_expr_opt
+          ~f:(fun project_var ->
+            match
+              Closure_field.Map.find
+                (project_var.closure, project_var.var)
+                closures_in_free_vars
+            with
+            | exception Not_found ->
+              None
+            | { new_var } ->
+              used_new_vars := Variable.Set.add
+                  new_var !used_new_vars;
+              Some (Flambda.Var new_var))
+          function_decl.body
+      in
+      let body =
+        Flambda_iterators.map_toplevel_named (function
+            | (Prim (Pfield i, [v], _)) when
+                Block_field.Map.mem (v, i) block_in_free_vars ->
+              let { new_var } = Block_field.Map.find (v, i) block_in_free_vars in
+              used_new_vars := Variable.Set.add
+                  new_var !used_new_vars;
+              Expr (Var new_var)
+            | named ->
+              named)
+          body
+      in
+      Flambda.create_function_declaration
+        ~body
+        ~inline:function_decl.inline
+        ~params:function_decl.params
+        ~stub:function_decl.stub
+        ~dbg:function_decl.dbg
+        ~is_a_functor:function_decl.is_a_functor
     in
-    let body =
-      Flambda_iterators.map_toplevel_named (function
-          | (Prim (Pfield i, [v], _)) when
-              Block_field.Map.mem (v, i) block_in_free_vars ->
-            let { new_var } = Block_field.Map.find (v, i) block_in_free_vars in
-            used_new_vars := Variable.Set.add
-                new_var !used_new_vars;
-            Expr (Var new_var)
-          | named ->
-            named)
-        body
+    let funs =
+      Variable.Map.map
+        rewrite_function_decl
+        set_of_closures.function_decls.funs
     in
-    Flambda.create_function_declaration
-      ~body
-      ~inline:function_decl.inline
-      ~params:function_decl.params
-      ~stub:function_decl.stub
-      ~dbg:function_decl.dbg
-      ~is_a_functor:function_decl.is_a_functor
-  in
-  let funs =
-    Variable.Map.map
-      rewrite_function_decl
-      set_of_closures.function_decls.funs
-  in
-  let function_decls =
-    Flambda.update_function_declarations ~funs
-      set_of_closures.function_decls
-  in
-  let free_vars, add_closures =
-    Closure_field.Map.fold
-      (fun (_var, field) { new_var; closure_id; outside_var } (free_vars, add_closures) ->
-         let intermediate_var =
-           Variable.rename new_var
-         in
-         if Variable.Set.mem new_var !used_new_vars then
-           Variable.Map.add new_var intermediate_var free_vars,
-           Variable.Map.add intermediate_var
-             (Flambda.Project_var { Flambda.closure = outside_var; closure_id; var = field })
-             add_closures
-         else
-           free_vars, add_closures)
-      closures_in_free_vars
-      (set_of_closures.free_vars,
-       Variable.Map.empty)
-  in
-  let free_vars, add_blocks =
-    Block_field.Map.fold
-      (fun (_var, field) { new_var; outside_var } (free_vars, add_blocks) ->
-         let intermediate_var =
-           Variable.rename new_var
-         in
-         if Variable.Set.mem new_var !used_new_vars then
-           Variable.Map.add new_var intermediate_var free_vars,
-           Variable.Map.add intermediate_var
-             (Flambda.Prim (Pfield field, [outside_var], Debuginfo.none))
-             add_blocks
-         else
-           free_vars, add_blocks)
-      block_in_free_vars
-      (free_vars,
-       Variable.Map.empty)
-  in
-  Flambda.create_set_of_closures
-    ~function_decls
-    ~free_vars
-    ~specialised_args:set_of_closures.specialised_args,
-  add_closures, add_blocks
+    let function_decls =
+      Flambda.update_function_declarations ~funs
+        set_of_closures.function_decls
+    in
+    let free_vars, add_closures =
+      Closure_field.Map.fold
+        (fun (_var, field) { new_var; closure_id; outside_var } (free_vars, add_closures) ->
+           let intermediate_var =
+             Variable.rename new_var
+           in
+           if Variable.Set.mem new_var !used_new_vars then
+             Variable.Map.add new_var intermediate_var free_vars,
+             Variable.Map.add intermediate_var
+               (Flambda.Project_var { Flambda.closure = outside_var; closure_id; var = field })
+               add_closures
+           else
+             free_vars, add_closures)
+        closures_in_free_vars
+        (set_of_closures.free_vars,
+         Variable.Map.empty)
+    in
+    let free_vars, add_blocks =
+      Block_field.Map.fold
+        (fun (_var, field) { new_var; outside_var } (free_vars, add_blocks) ->
+           let intermediate_var =
+             Variable.rename new_var
+           in
+           if Variable.Set.mem new_var !used_new_vars then
+             Variable.Map.add new_var intermediate_var free_vars,
+             Variable.Map.add intermediate_var
+               (Flambda.Prim (Pfield field, [outside_var], Debuginfo.none))
+               add_blocks
+           else
+             free_vars, add_blocks)
+        block_in_free_vars
+        (free_vars,
+         Variable.Map.empty)
+    in
+    Flambda.create_set_of_closures
+      ~function_decls
+      ~free_vars
+      ~specialised_args:set_of_closures.specialised_args,
+    add_closures, add_blocks
 
 let run ~env ~(set_of_closures:Flambda.set_of_closures) : Flambda.t option =
   let set_of_closures, add_closures, add_blocks =
