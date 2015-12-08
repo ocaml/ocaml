@@ -55,6 +55,10 @@ module type ExtHashtbl = sig
   module M : PrintableHashOrdered
   include Hashtbl.S with type key = M.t
                      and type 'a t = 'a Hashtbl.Make(M).t
+
+  val to_list : 'a t -> (M.t * 'a) list
+  val of_list : (M.t * 'a) list -> 'a t
+
   val to_map : 'a t -> 'a Map.Make(M).t
   val of_map : 'a Map.Make(M).t -> 'a t
   val memoize : 'a t -> (key -> 'a) -> key -> 'a
@@ -143,6 +147,15 @@ module ExtHashtbl(M:PrintableHashOrdered) : ExtHashtbl with module M := M =
 struct
   include Hashtbl.Make(M)
   module MMap = Map.Make(M)
+
+  let to_list t =
+    fold (fun key datum elts -> (key, datum)::elts) t []
+
+  let of_list elts =
+    let t = create 42 in
+    List.iter (fun (key, datum) -> add t key datum) elts;
+    t
+
   let to_map v = fold MMap.add v MMap.empty
   let of_map m =
     let t = create (MMap.cardinal m) in

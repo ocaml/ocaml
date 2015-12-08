@@ -725,33 +725,30 @@ let replace_definitions_in_initialize_symbol_and_effects
     (var_to_definition_tbl:Alias_analysis.constant_defining_value Variable.Tbl.t)
     (initialize_symbol_tbl:(Tag.t * Flambda.t list * Symbol.t option) Symbol.Tbl.t)
     (effect_tbl:(Flambda.t * Symbol.t option) Symbol.Tbl.t) =
-  let f var (named:Flambda.named) : Flambda.named =
-    if Variable.Set.mem var inconstants.id then
-      named
-    else
-      let resolved =
-        resolve_variable
-          aliases
-          var_to_symbol_tbl
-          var_to_definition_tbl
-          var
-      in
-      match resolved with
-      | Symbol s -> Symbol s
-      | Const c -> Const c
+  let rewrite_expr expr =
+    Flambda_iterators.map_all_immutable_let_and_let_rec_bindings expr
+      ~f:(fun var (named : Flambda.named) : Flambda.named ->
+        if Variable.Set.mem var inconstants.id then
+          named
+        else
+          let resolved =
+            resolve_variable
+              aliases
+              var_to_symbol_tbl
+              var_to_definition_tbl
+              var
+          in
+          match resolved with
+          | Symbol s -> Symbol s
+          | Const c -> Const c)
   in
-  Symbol.Map.iter (fun symbol (tag, fields, previous) ->
-      let fields =
-        List.map (Flambda_iterators.map_all_immutable_let_and_let_rec_bindings ~f) fields
-      in
-      Symbol.Tbl.replace initialize_symbol_tbl symbol (tag,fields,previous))
-    (Symbol.Tbl.to_map initialize_symbol_tbl);
-  Symbol.Map.iter (fun symbol (expr, previous) ->
-      let expr =
-        Flambda_iterators.map_all_immutable_let_and_let_rec_bindings ~f expr
-      in
-      Symbol.Tbl.replace effect_tbl symbol (expr,previous))
-    (Symbol.Tbl.to_map effect_tbl)
+  List.iter (fun (symbol, (tag, fields, previous)) ->
+      let fields = List.map rewrite_expr fields in
+      Symbol.Tbl.replace initialize_symbol_tbl symbol (tag, fields, previous))
+    (Symbol.Tbl.to_list initialize_symbol_tbl);
+  List.iter (fun (symbol, (expr, previous)) ->
+      Symbol.Tbl.replace effect_tbl symbol (rewrite_expr expr, previous))
+    (Symbol.Tbl.to_list effect_tbl)
 
 let project_closure_map symbol_definition_map =
   Symbol.Map.fold (fun sym (const:Flambda.constant_defining_value) acc ->
@@ -800,9 +797,7 @@ let lift_constants program ~backend =
       (var_to_definition_tbl:Alias_analysis.constant_defining_value Variable.Tbl.t)
       (Symbol.Tbl.to_map symbol_definition_tbl)
   in
-  let project_closure_map =
-    project_closure_map symbol_definition_map
-  in
+  let project_closure_map = project_closure_map symbol_definition_map in
   let translated_definitions =
     translate_definitions_and_resolve_alias
       inconstants
@@ -818,8 +813,7 @@ let lift_constants program ~backend =
       (var_to_definition_tbl:Alias_analysis.constant_defining_value Variable.Tbl.t)
   in
   let translated_definitions =
-    introduce_free_variables_in_sets_of_closures
-      var_to_block_field_tbl
+    introduce_free_variables_in_sets_of_closures var_to_block_field_tbl
       translated_definitions
   in
   let constant_definitions =
