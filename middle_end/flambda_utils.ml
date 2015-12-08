@@ -427,7 +427,7 @@ let might_raise_static_exn flam stexn =
 
 let make_closure_map program =
   let map = ref Closure_id.Map.empty in
-  let add_set_of_closures : Flambda.set_of_closures -> unit = fun
+  let add_set_of_closures ~constant:_ : Flambda.set_of_closures -> unit = fun
     { function_decls } ->
     Variable.Map.iter (fun var _ ->
         let closure_id = Closure_id.wrap var in
@@ -463,14 +463,14 @@ let all_lifted_constant_sets_of_closures program =
 let all_sets_of_closures program =
   let list = ref [] in
   Flambda_iterators.iter_on_set_of_closures_of_program program
-    ~f:(fun set_of_closures ->
+    ~f:(fun ~constant:_ set_of_closures ->
         list := set_of_closures :: !list);
   !list
 
 let all_sets_of_closures_map program =
   let r = ref Set_of_closures_id.Map.empty in
   Flambda_iterators.iter_on_set_of_closures_of_program program
-    ~f:(fun set_of_closures ->
+    ~f:(fun ~constant:_ set_of_closures ->
       r := Set_of_closures_id.Map.add
           set_of_closures.function_decls.set_of_closures_id
           set_of_closures !r);

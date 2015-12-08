@@ -441,7 +441,7 @@ let declared_var_within_closure (flam:Flambda.program) =
     bound := Var_within_closure.Set.add var !bound
   in
   Flambda_iterators.iter_on_set_of_closures_of_program
-    ~f:(fun { Flambda. free_vars; _ } ->
+    ~f:(fun ~constant:_ { Flambda. free_vars; _ } ->
       Variable.Map.iter (fun id _ ->
           let var = Var_within_closure.wrap id in
           add_and_check var)
@@ -471,7 +471,7 @@ let declared_closure_ids program =
     bound := Closure_id.Set.add var !bound
   in
   Flambda_iterators.iter_on_set_of_closures_of_program program
-    ~f:(fun { Flambda. function_decls; _; } ->
+    ~f:(fun ~constant:_ { Flambda. function_decls; _; } ->
         Variable.Map.iter (fun id _ ->
             let var = Closure_id.wrap id in
             add_and_check var)
@@ -493,7 +493,7 @@ let declared_set_of_closures_ids program =
     bound := Set_of_closures_id.Set.add var !bound
   in
   Flambda_iterators.iter_on_set_of_closures_of_program program
-    ~f:(fun { Flambda. function_decls; _; } ->
+    ~f:(fun ~constant:_ { Flambda. function_decls; _; } ->
         add_and_check function_decls.set_of_closures_id);
   !bound, !bound_multiple_times
 

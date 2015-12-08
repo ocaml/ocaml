@@ -153,46 +153,36 @@ let rec iter_exprs_at_toplevel_of_program (program : Flambda.program) ~f =
 let iter_named_of_program program ~f =
   iter_exprs_at_toplevel_of_program program ~f:(iter_named f)
 
-let gen_iter_on_set_of_closures_of_program ~only_constant (program : Flambda.program) ~f =
+let iter_on_set_of_closures_of_program (program : Flambda.program) ~f =
   let rec loop (program : Flambda.program) =
     match program with
     | Let_symbol (_, Set_of_closures set_of_closures, program) ->
-      f set_of_closures;
-      if not only_constant then
-        Variable.Map.iter (fun _ (function_decl : Flambda.function_declaration) ->
-            iter_on_sets_of_closures f function_decl.body)
-          set_of_closures.function_decls.funs;
+      f ~constant:true set_of_closures;
+      Variable.Map.iter (fun _ (function_decl : Flambda.function_declaration) ->
+          iter_on_sets_of_closures (f ~constant:false) function_decl.body)
+        set_of_closures.function_decls.funs;
       loop program
     | Let_rec_symbol (defs, program) ->
       List.iter (function
           | (_, Flambda.Set_of_closures set_of_closures) ->
-            f set_of_closures;
-            if not only_constant then
-              Variable.Map.iter (fun _ (function_decl : Flambda.function_declaration) ->
-                  iter_on_sets_of_closures f function_decl.body)
-                set_of_closures.function_decls.funs
+            f ~constant:true set_of_closures;
+            Variable.Map.iter (fun _ (function_decl : Flambda.function_declaration) ->
+                iter_on_sets_of_closures (f ~constant:false) function_decl.body)
+              set_of_closures.function_decls.funs
           | _ -> ()) defs;
       loop program
     | Let_symbol (_, _, program)
     | Import_symbol (_, program) ->
       loop program
     | Initialize_symbol (_, _, fields, program) ->
-      if not only_constant then
-        List.iter (iter_on_sets_of_closures f) fields;
+      List.iter (iter_on_sets_of_closures (f ~constant:false)) fields;
       loop program
     | Effect (expr, program) ->
-      if not only_constant then
-        iter_on_sets_of_closures f expr;
+      iter_on_sets_of_closures (f ~constant:false) expr;
       loop program
     | End _ -> ()
   in
   loop program
-
-let iter_constant_sets_of_closures_of_program program ~f =
-  gen_iter_on_set_of_closures_of_program ~only_constant:true program ~f
-
-let iter_on_set_of_closures_of_program program ~f =
-  gen_iter_on_set_of_closures_of_program ~only_constant:false program ~f
 
 let iter_symbols_on_named named ~f =
   iter_named_on_named (function

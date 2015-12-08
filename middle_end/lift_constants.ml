@@ -142,19 +142,18 @@ let assign_symbols_and_collect_constant_definitions
       set_of_closures.specialised_args
   in
   Flambda_iterators.iter_on_set_of_closures_of_program program
-    ~f:record_set_of_closure_equalities;
-  Flambda_iterators.iter_constant_sets_of_closures_of_program ~f:(fun set_of_closures ->
-      Variable.Map.iter (fun fun_var _ ->
-          let closure_id = Closure_id.wrap fun_var in
-          let closure_symbol = closure_symbol ~backend closure_id in
-          Variable.Tbl.add var_to_definition_tbl fun_var
-            (AA.Symbol closure_symbol);
-          Variable.Tbl.add var_to_symbol_tbl fun_var closure_symbol)
-        set_of_closures.Flambda.function_decls.funs)
-    program;
-  var_to_symbol_tbl,
-  var_to_definition_tbl,
-  initialize_symbol_to_definition_tbl
+    ~f:(fun ~constant set_of_closures ->
+      record_set_of_closure_equalities set_of_closures;
+      if constant then begin
+        Variable.Map.iter (fun fun_var _ ->
+            let closure_id = Closure_id.wrap fun_var in
+            let closure_symbol = closure_symbol ~backend closure_id in
+            Variable.Tbl.add var_to_definition_tbl fun_var
+              (AA.Symbol closure_symbol);
+            Variable.Tbl.add var_to_symbol_tbl fun_var closure_symbol)
+          set_of_closures.Flambda.function_decls.funs
+      end);
+  var_to_symbol_tbl, var_to_definition_tbl, initialize_symbol_to_definition_tbl
 
 let variable_field_definition
     (var_to_symbol_tbl:Symbol.t Variable.Tbl.t)
