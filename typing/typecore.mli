@@ -116,6 +116,8 @@ type error =
   | Unrefuted_pattern of Typedtree.pattern
   | Invalid_extension_constructor_payload
   | Not_an_extension_constructor
+  | Literal_overflow of string
+  | Unknown_literal of string * char
 
 exception Error of Location.t * Env.t * error
 exception Error_forward of Location.error
@@ -140,3 +142,5 @@ val type_package:
 val create_package_type : Location.t -> Env.t ->
   Longident.t * (Longident.t * Parsetree.core_type) list ->
   Path.t * (Longident.t * Typedtree.core_type) list * Types.type_expr
+
+val constant: Parsetree.constant -> (Asttypes.constant, error) result

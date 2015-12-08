@@ -52,6 +52,22 @@ static void init_static(void)
 
   caml_init_atom_table ();
 
+  /* Register the data in the table of code fragments */
+  cf = caml_stat_alloc(sizeof(struct code_fragment));
+  if (caml_data_segments[0].begin != 0) {
+    cf->data_start = caml_data_segments[0].begin;
+    cf->data_end = caml_data_segments[0].end;
+    for (i = 1; caml_data_segments[i].begin != 0; i ++) {
+      if (caml_data_segments[i].begin < cf->data_start)
+        cf->data_start = caml_data_segments[i].begin;
+      if (caml_data_segments[i].end > cf->data_end)
+        cf->data_end = caml_data_segments[i].end;
+    }
+  } else {
+    cf->data_start = NULL;
+    cf->data_end = NULL;
+  }
+
   for (i = 0; caml_data_segments[i].begin != 0; i++) {
     /* PR#5509: we must include the zero word at end of data segment,
        because pointers equal to caml_data_segments[i].end are static data. */
@@ -70,7 +86,6 @@ static void init_static(void)
       caml_code_area_end = caml_code_segments[i].end;
   }
   /* Register the code in the table of code fragments */
-  cf = caml_stat_alloc(sizeof(struct code_fragment));
   cf->code_start = caml_code_area_start;
   cf->code_end = caml_code_area_end;
   cf->digest_computed = 0;

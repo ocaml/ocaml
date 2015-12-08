@@ -798,8 +798,8 @@ val times : unit -> process_times
 val utimes : string -> float -> float -> unit
 (** Set the last access time (second arg) and last modification time
    (third arg) for a file. Times are expressed in seconds from
-   00:00:00 GMT, Jan. 1, 1970.  A time of [0.0] is interpreted as the
-   current time. *)
+   00:00:00 GMT, Jan. 1, 1970.  If both times are [0.0], the access
+   and last modification times are both set to the current time. *)
 
 type interval_timer =
     ITIMER_REAL

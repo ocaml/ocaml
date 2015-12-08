@@ -272,15 +272,6 @@ let rec ( @ ) l1 l2 =
     [] -> l2
   | hd :: tl -> hd :: (tl @ l2)
 
-
-(* Array index operators *)
-external  ( .() ) : 'a array -> int -> 'a = "%array_opt_get"
-external  ( .() <- ) : 'a array -> int -> 'a -> unit = "%array_opt_set"
-
-(* String index operators *)
-external  ( .[] )  : string -> int -> char = "%string_opt_get"
-external  ( .[] <- ) : bytes -> int -> char -> unit = "%string_opt_set"
-
 (* I/O operations *)
 
 type in_channel

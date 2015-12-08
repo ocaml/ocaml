@@ -21,14 +21,6 @@ Language features:
   (Gabriel Scherer)
 - GPR#42: short functor type syntax: "S -> T" for "functor (_ : S) -> T"
   (Leo White)
-* GPR#69: Custom index operators: ( .() ), ( .[] ), ( .{} ) etc.
-  (Florian Angeletti)
-  The syntax "foo.(bar) <- baz" now desugars into "( .()<- ) foo bar baz"; this
-  should allow user to define their own notations by overriding.
-  The bigarray notations ( .{} ), ( .{,} ) etc. are defined in the Bigarray
-  module, which means that the foo.{bar,baz} syntactic sugar is only available
-  when the Bigarray module is opened; this can break existing programs,
-  which should be fixed by opening the Bigarray module.
 - GPR#88: allow field punning in object copying expressions:
     {< x; y; >} is sugar for {< x = x; y = y; >}
   (Jeremy Yallop)
@@ -67,6 +59,8 @@ Language features:
 Compilers:
 - PR#4800: better compilation of tuple assignment (Gabriel Scherer and
   Alain Frisch)
+- PR#6400: better error message for '_' used as an expression
+  (Alain Frisch, report by whitequark)
 - PR#6501: harden the native-code generator against certain uses of "%identity"
   (Xavier Leroy, report by Antoine Miné).
 - PR#6636: add --version option
@@ -78,6 +72,7 @@ Compilers:
 - PR#6845: -no-check-prims to tell ocamlc not to check primitives in runtime
 * PR#6865: remove special case for parsing "let _ = expr" in structures
   (Jérémie Dimino, Alain Frisch)
+- PR#6939: Segfault with improper use of let-rec (Alain Frisch)
 - PR#6943: native-code generator for POWER/PowerPC 64 bits, both in
   big-endian (ppc64) and little-endian (ppc64le) configuration.
   (Xavier Leroy, with inspiration from RedHat's unofficial ppc64 and ppc64le
@@ -86,6 +81,11 @@ Compilers:
   the stack (Marc Lasson, review by Xavier Leroy)
 - PR#7018: fix missing identifier renaming during inlining (Alain Frisch,
   review by Xavier Leroy)
+- PR#7026, GPR#288: remove write barrier for polymorphic variants without arguments
+  (Simon Cruanes)
+- PR#7067: Performance regression in the native compiler for long
+  nested structures (Alain Frisch, report by Daniel Bünzli, review
+  by Jacques Garrigue)
 - GPR#17: some cmm optimizations of integer operations with constants
   (Stephen Dolan, review by Pierre Chambart)
 - GPR#109: new unboxing strategy for float and int references (Vladimir Brankov,
@@ -146,6 +146,9 @@ Standard library:
   (Richard Jones)
 - PR#6017, PR#7034, GPR#267: More efficient ifprintf implementation
   (Jeremy Yallop, review by Gabriel Scherer)
+- PR#6296: Some documentation on the floating-point representations
+    recognized by Pervasives.float_of_string
+  (Xavier Leroy)
 - PR#6316: Scanf.scanf failure on %u formats when reading big integers
   (Xavier Leroy, Benoît Vaugon)
 - PR#6390, GPR#36: expose Sys.{int_size,max_wosize} for improved js_of_ocaml
@@ -198,6 +201,8 @@ Standard library:
   * Pervasives.ldexp (and [@@noalloc])
   * Pervasives.compare for float, nativeint, int32, int64.
   (Bobot François)
+- GPR#329: Add exists, for_all,  mem and memq functions in Array
+  (Bernhard Schommer)
 
 Type system:
 - PR#5545: Type annotations on methods cannot control the choice of abbreviation
@@ -208,6 +213,8 @@ Type system:
 - PR#6593: Functor application in tests/basic-modules fails after commit 15405
 
 Toplevel and debugger:
+- PR#6396: Warnings-as-errors not properly flushed in the toplevel
+  (Alain Frisch)
 - PR#6468: toplevel now supports backtraces if invoked with OCAMLRUNPARAM=b
   (whitequark and Jake Donham,
    review by Gabriel Scherer and Jacques-Henri Jourdan)
@@ -223,8 +230,15 @@ Other libraries:
   Before, a handled signal could cause Unix.sleep to return early.
   Now, the sleep is restarted until the given time is elapsed.
   (Xavier Leroy)
+- PR#6289: Unix.utimes uses the current time only if both arguments
+    are exactly 0.0.  Also, use sub-second resolution if available.
+  (Xavier Leroy, report by Christophe Troestler)
 - PR#6896: serious reimplementation of Big_int.float_of_big_int and
   Ratio.float_of_ratio, ensuring that the result is correctly rounded.
+  (Xavier Leroy)
+- PR#6989: in Str library, make sure that all \(...\) groups are binding
+    and can be consulted with Str.matched_group.  There used to be
+    a limitation to 32 binding groups.
   (Xavier Leroy)
 - PR#7013: spurious wake-up in the Event module
   (Xavier Leroy)
@@ -273,6 +287,9 @@ Bug fixes:
 * PR#6081: ocaml should add script's directory to search path, not current
     directory
   (Thomas Leonard and Damien Doligez)
+- PR#6108, PR#6802: fail cleanly if dynlink.cma or ocamltoplevel.cma
+    are loaded inside the toplevel loop.
+  (Xavier Leroy)
 - PR#6171: Error message confusing when a type escapes its scope.
 - PR#6340: Incorrect handling of \r when processing "Windows" source files
   (Damien Doligez, report by David Allsopp)
@@ -294,6 +311,9 @@ Bug fixes:
 - PR#6744: Univars can escape through polymorphic variants (partial fix)
 - PR#6776: Failure to kill the "tick" thread, segfault when exiting the runtime
 - PR#6752: Extensible variant types and scope escaping
+- PR#6780: Poor error message for wrong -farch and -ffpu options (ocamlopt, ARM)
+- PR#6805: Duplicated expression in case of hole in a non-failing switch.
+  (Luc Maranget)
 - PR#6808: the parsing of OCAMLRUNPARAM is too lax
   (Damien Doligez)
 - PR#6874: Inefficient code generated for module function arguments
@@ -360,6 +380,8 @@ Bug fixes:
   (Marc Lasson, review by Alain Frisch)
 - GPR#313: Prevent quadratic cases in CSE
   (Pierre Chambart, review by Xavier Leroy)
+- GPR#330: Fix weak hash of serialised closures
+  (Benoît Vaugon, review by Alain Frisch)
 
 Features wishes:
 - PR#4518, GPR#29: change location format for reporting errors in ocamldoc
@@ -381,7 +403,9 @@ Features wishes:
 - PR#6742: remove duplicate virtual_flag information from Tstr_class
 - PR#6719: improve Buffer.add_channel when not enough input is available
   (Simon Cruanes)
-* PR#6816: reject integer and float literals followed by alphanum
+* PR#6816: reject integer and float literals directly followed by an identifier.
+  This was prevously read as two separate tokens.
+  [let abc = 1 in (+) 123abc] was accepted and is now rejected.
   (Hugo Heuzard)
 - PR#6876: improve warning 6 by listing the omitted labels.
   (Eyyüb Sari)
@@ -415,6 +439,14 @@ Features wishes:
   (Florian Angeletti)
 - GPR#252: improve build instructions in MSVC Windows README
   (Philip Daian)
+* GPR#170: Parse arbitrary precision integers.
+  Accept a single [A-Za-z] as modifier for integers (generalizing 'l','L','n') and floats.
+  May cause breakage (ie. ppx preprocessor) because of changes in the parsetree.
+  This changes PR#6816 a little bit by reading the literal [123a] as a single token that can
+  later be rewritten by a ppx preprocessor.
+  (Hugo Heuzard)
+- GPR#308: add experimental support for NetBSD/arm (verified on RaspberryPi)
+  (Rich Neswold)
 
 OCaml 4.02.3 (27 Jul 2015):
 ---------------------------

@@ -305,7 +305,19 @@ let execute_phrase print_outcome ppf phr =
           match d, dir_arg with
           | Directive_none f, Pdir_none -> f (); true
           | Directive_string f, Pdir_string s -> f s; true
-          | Directive_int f, Pdir_int n -> f n; true
+          | Directive_int f, Pdir_int (n,None) ->
+	     begin match Int_literal_converter.int n with
+	     | n -> f n; true
+	     | exception _ ->
+	       fprintf ppf "Integer literal exceeds the range of \
+			    representable integers for directive `%s'.@."
+		       dir_name;
+	       false
+	     end
+	  | Directive_int f, Pdir_int (n, Some _) ->
+              fprintf ppf "Wrong integer literal for directive `%s'.@."
+                dir_name;
+              false
           | Directive_ident f, Pdir_ident lid -> f lid; true
           | Directive_bool f, Pdir_bool b -> f b; true
           | _ ->
@@ -314,6 +326,11 @@ let execute_phrase print_outcome ppf phr =
               false
       end
 
+let execute_phrase print_outcome ppf phr =
+  try execute_phrase print_outcome ppf phr
+  with exn ->
+    Warnings.reset_fatal ();
+    raise exn
 
 (* Temporary assignment to a reference *)
 
@@ -358,6 +375,7 @@ let use_file ppf wrap_mod name =
       end
     in
     let lb = Lexing.from_channel ic in
+    Warnings.reset_fatal ();
     Location.init lb filename;
     (* Skip initial #! line if any *)
     Lexer.skip_sharp_bang lb;
@@ -436,6 +454,9 @@ let refill_lexbuf buffer len =
    can call directives from Topdirs. *)
 
 let _ =
+  if !Sys.interactive then (* PR#6108 *)
+    invalid_arg "The ocamltoplevel.cma library from compiler-libs \
+                 cannot be loaded inside the OCaml toplevel";
   Clflags.debug := true;
   Sys.interactive := true;
   let crc_intfs = Symtable.init_toplevel() in
@@ -496,6 +517,7 @@ let loop ppf =
     try
       Lexing.flush_input lb;
       Location.reset();
+      Warnings.reset_fatal ();
       first_line := true;
       let phr = try !parse_toplevel_phrase lb with Exit -> raise PPerror in
       let phr = preprocess_phrase ppf phr  in
@@ -526,7 +548,7 @@ let run_script ppf name args =
   Sys.interactive := false;
   let explicit_name =
     (* Prevent use_silently from searching in the path. *)
-    if Filename.is_implicit name
+    if name <> "" && Filename.is_implicit name
     then Filename.concat Filename.current_dir_name name
     else name
   in

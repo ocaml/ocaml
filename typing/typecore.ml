@@ -71,6 +71,8 @@ type error =
   | Unrefuted_pattern of pattern
   | Invalid_extension_constructor_payload
   | Not_an_extension_constructor
+  | Literal_overflow of string
+  | Unknown_literal of string * char
 
 exception Error of Location.t * Env.t * error
 exception Error_forward of Location.error
@@ -261,6 +263,38 @@ let type_constant = function
   | Const_int32 _ -> instance_def Predef.type_int32
   | Const_int64 _ -> instance_def Predef.type_int64
   | Const_nativeint _ -> instance_def Predef.type_nativeint
+
+let constant : Parsetree.constant -> (Asttypes.constant, error) result = function
+  | PConst_int (i,None) ->
+     begin
+       try Ok (Const_int (Misc.Int_literal_converter.int i))
+       with Failure _ -> Error (Literal_overflow "int")
+     end
+  | PConst_int (i,Some 'l') ->
+     begin
+       try Ok (Const_int32 (Misc.Int_literal_converter.int32 i))
+       with Failure _ -> Error (Literal_overflow "int32")
+     end
+  | PConst_int (i,Some 'L') ->
+     begin
+       try Ok (Const_int64 (Misc.Int_literal_converter.int64 i))
+       with Failure _ -> Error (Literal_overflow "int64")
+     end
+  | PConst_int (i,Some 'n') ->
+     begin
+       try Ok (Const_nativeint (Misc.Int_literal_converter.nativeint i))
+       with Failure _ -> Error (Literal_overflow "nativeint")
+     end
+  | PConst_int (i,Some c) -> Error (Unknown_literal (i, c))
+  | PConst_char c -> Ok (Const_char c)
+  | PConst_string (s,d) -> Ok (Const_string (s,d))
+  | PConst_float (f,None)-> Ok (Const_float f)
+  | PConst_float (f,Some c) -> Error (Unknown_literal (f, c))
+
+let constant_or_raise env loc cst =
+  match constant cst with
+  | Ok c -> c
+  | Error err -> raise (Error (loc, env, err))
 
 (* Specific version of type_option, using newty rather than newgenty *)
 
@@ -1028,6 +1062,7 @@ let rec type_pat ~constrs ~labels ~no_existentials ~mode ~explode ~env
           pat_attributes = sp.ppat_attributes;
           pat_env = !env })
   | Ppat_constant cst ->
+      let cst = constant_or_raise !env loc cst in
       unify_pat_types loc !env (type_constant cst) expected_ty;
       rp k {
         pat_desc = Tpat_constant cst;
@@ -1035,14 +1070,14 @@ let rec type_pat ~constrs ~labels ~no_existentials ~mode ~explode ~env
         pat_type = expected_ty;
         pat_attributes = sp.ppat_attributes;
         pat_env = !env }
-  | Ppat_interval (Const_char c1, Const_char c2) ->
+  | Ppat_interval (PConst_char c1, PConst_char c2) ->
       let open Ast_helper.Pat in
       let gloc = {loc with Location.loc_ghost=true} in
       let rec loop c1 c2 =
-        if c1 = c2 then constant ~loc:gloc (Const_char c1)
+        if c1 = c2 then constant ~loc:gloc (PConst_char c1)
         else
           or_ ~loc:gloc
-            (constant ~loc:gloc (Const_char c1))
+            (constant ~loc:gloc (PConst_char c1))
             (loop (Char.chr(Char.code c1 + 1)) c2)
       in
       let p = if c1 <= c2 then loop c1 c2 else loop c2 c1 in
@@ -1918,7 +1953,8 @@ and type_expect_ ?in_function ?(recarg=Rejected) env sexp ty_expected =
           exp_attributes = sexp.pexp_attributes;
           exp_env = env }
       end
-  | Pexp_constant(Const_string (str, _) as cst) -> (
+  | Pexp_constant(PConst_string (str, _) as cst) -> (
+    let cst = constant_or_raise env loc cst in
     (* Terrible hack for format strings *)
     let ty_exp = expand_head env ty_expected in
     let fmt6_path =
@@ -1945,6 +1981,7 @@ and type_expect_ ?in_function ?(recarg=Rejected) env sexp ty_expected =
         exp_env = env }
   )
   | Pexp_constant cst ->
+      let cst = constant_or_raise env loc cst in
       rue {
         exp_desc = Texp_constant cst;
         exp_loc = loc; exp_extra = [];
@@ -2958,9 +2995,9 @@ and type_format loc str env =
           | _ :: _ :: _ -> Some (mk_exp_loc (Pexp_tuple args)) in
         mk_exp_loc (Pexp_construct (mk_lid_loc lid, arg)) in
       let mk_cst cst = mk_exp_loc (Pexp_constant cst) in
-      let mk_int n = mk_cst (Const_int n)
-      and mk_string str = mk_cst (Const_string (str, None))
-      and mk_char chr = mk_cst (Const_char chr) in
+      let mk_int n = mk_cst (PConst_int (string_of_int n, None))
+      and mk_string str = mk_cst (PConst_string (str, None))
+      and mk_char chr = mk_cst (PConst_char chr) in
       let rec mk_formatting_lit fmting = match fmting with
         | Close_box ->
           mk_constr "Close_box" []
@@ -4242,6 +4279,12 @@ let report_error env ppf = function
   | Not_an_extension_constructor ->
       fprintf ppf
         "This constructor is not an extension constructor."
+  | Literal_overflow ty ->
+      fprintf ppf "Integer literal exceeds the range of representable \
+                   integers of type %s" ty
+  | Unknown_literal (n, m) ->
+      fprintf ppf "Unknown modifier '%c' for literal %s%c" m n m
+
 
 let report_error env ppf err =
   wrap_printing_env env (fun () -> report_error env ppf err)

@@ -19,7 +19,7 @@ BuildAndTest () {
 ------------------------------------------------------------------------
 This test builds the OCaml compiler distribution with your pull request,
 runs its testsuite, and then tries to install some important OCaml softare
-(currently camlp4, opam and oasis) on top of it.
+(currently camlp4) on top of it.
 
 Failing to build the compiler distribution, or testsuite failures are
 critical errors that must be understood and fixed before your pull
@@ -41,13 +41,13 @@ EOF
      ./configure --bindir=$PREFIX/bin --libdir=$PREFIX/lib/ocaml \
        --pkgdir=$PREFIX/lib/ocaml && \
       make && make install)
-    git clone git://github.com/ocaml/opam
-    (cd opam && ./configure --prefix $PREFIX &&\
-      make lib-ext && make && make install)
-    git config --global user.email "some@name.com"
-    git config --global user.name "Some Name"
-    opam init -y -a git://github.com/ocaml/opam-repository
-    opam install -y oasis
+    # git clone git://github.com/ocaml/opam
+    # (cd opam && ./configure --prefix $PREFIX &&\
+    #   make lib-ext && make && make install)
+    # git config --global user.email "some@name.com"
+    # git config --global user.name "Some Name"
+    # opam init -y -a git://github.com/ocaml/opam-repository
+    # opam install -y oasis
     # opam pin add -y utop git://github.com/diml/utop
     ;;
   *)

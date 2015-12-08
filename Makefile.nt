@@ -16,7 +16,7 @@ include Makefile.shared
 
 # For users who don't read the INSTALL file
 defaultentry:
-	@echo "Please refer to the installation instructions in file README.win32."
+	@echo "Please refer to the installation instructions in file README.win32.adoc."
 
 # Recompile the system using the bootstrap compiler
 all: runtime ocamlc ocamllex ocamlyacc ocamltools library ocaml \
@@ -175,8 +175,8 @@ installbyt:
 	if test -n "$(WITH_OCAMLBUILD)"; then (cd ocamlbuild; $(MAKE) install); \
 	   else :; fi
 	cp config/Makefile $(INSTALL_LIBDIR)/Makefile.config
-	cp README $(INSTALL_DISTRIB)/Readme.general.txt
-	cp README.win32 $(INSTALL_DISTRIB)/Readme.windows.txt
+	cp README.adoc $(INSTALL_DISTRIB)/Readme.general.txt
+	cp README.win32.adoc $(INSTALL_DISTRIB)/Readme.windows.txt
 	cp LICENSE $(INSTALL_DISTRIB)/License.txt
 	cp Changes $(INSTALL_DISTRIB)/Changes.txt
 

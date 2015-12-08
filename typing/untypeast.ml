@@ -112,6 +112,15 @@ let fresh_name s env =
 
 (** Mapping functions. *)
 
+let constant = function
+  | Const_char c -> PConst_char c
+  | Const_string (s,d) -> PConst_string (s,d)
+  | Const_int i -> PConst_int (string_of_int i, None)
+  | Const_int32 i -> PConst_int (Int32.to_string i, Some 'l')
+  | Const_int64 i -> PConst_int (Int64.to_string i, Some 'L')
+  | Const_nativeint i -> PConst_int (Nativeint.to_string i, Some 'n')
+  | Const_float f -> PConst_float (f,None)
+
 let attribute sub (s, p) = (map_loc sub s, p)
 let attributes sub l = List.map (sub.attribute sub) l
 
@@ -280,7 +289,7 @@ let pattern sub pat =
 
     | Tpat_alias (pat, _id, name) ->
         Ppat_alias (sub.pat sub pat, name)
-    | Tpat_constant cst -> Ppat_constant cst
+    | Tpat_constant cst -> Ppat_constant (constant cst)
     | Tpat_tuple list ->
         Ppat_tuple (List.map (sub.pat sub) list)
     | Tpat_construct (lid, _, args) ->
@@ -345,7 +354,7 @@ let expression sub exp =
   let desc =
     match exp.exp_desc with
       Texp_ident (_path, lid, _) -> Pexp_ident (map_loc sub lid)
-    | Texp_constant cst -> Pexp_constant cst
+    | Texp_constant cst -> Pexp_constant (constant cst)
     | Texp_let (rec_flag, list, exp) ->
         Pexp_let (rec_flag,
           List.map (sub.value_binding sub) list,

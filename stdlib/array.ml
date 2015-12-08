@@ -134,6 +134,38 @@ let fold_right f a x =
   done;
   !r
 
+let exists p a =
+  let n = length a in
+  let rec loop i =
+    if i = n then false
+    else if p (unsafe_get a i) then true
+    else loop (succ i) in
+  loop 0
+
+let for_all p a =
+  let n = length a in
+  let rec loop i =
+    if i = n then true
+    else if p (unsafe_get a i) then loop (succ i)
+    else false in
+  loop 0
+
+let mem x a =
+  let n = length a in
+  let rec loop i =
+    if i = n then false
+    else if compare (unsafe_get a i) x = 0 then true
+    else loop (succ i) in
+  loop 0
+
+let memq x a =
+  let n = length a in
+  let rec loop i =
+    if i = n then false
+    else if x == (unsafe_get a i) then true
+    else loop (succ i) in
+  loop 0
+
 exception Bottom of int;;
 let sort cmp a =
   let maxson l i =

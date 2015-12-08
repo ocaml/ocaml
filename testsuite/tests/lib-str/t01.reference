@@ -85,6 +85,8 @@ Search for /a$/
   ..
 Null characters in regexps
   ..
+Many groups
+  .
 Backward search for /the quick/
   ....
 Backward search for /a\([0-9]+\)/

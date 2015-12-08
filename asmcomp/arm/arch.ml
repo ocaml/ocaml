@@ -22,7 +22,7 @@ type fpu = Soft | VFPv2 | VFPv3_D16 | VFPv3
 let abi =
   match Config.system with
     "linux_eabi" | "freebsd" -> EABI
-  | "linux_eabihf" -> EABI_HF
+  | "linux_eabihf" | "netbsd" -> EABI_HF
   | _ -> assert false
 
 let string_of_arch = function
@@ -57,22 +57,24 @@ let (arch, fpu, thumb) =
   (ref def_arch, ref def_fpu, ref def_thumb)
 
 let farch spec =
-  arch := (match spec with
+  arch := begin match spec with
              "armv4" when abi <> EABI_HF   -> ARMv4
            | "armv5" when abi <> EABI_HF   -> ARMv5
            | "armv5te" when abi <> EABI_HF -> ARMv5TE
            | "armv6"                       -> ARMv6
            | "armv6t2"                     -> ARMv6T2
            | "armv7"                       -> ARMv7
-           | spec -> raise (Arg.Bad spec))
+           | spec -> raise (Arg.Bad ("wrong '-farch' option: " ^ spec))
+  end
 
 let ffpu spec =
-  fpu := (match spec with
+  fpu := begin match spec with
             "soft" when abi <> EABI_HF     -> Soft
           | "vfpv2" when abi = EABI_HF     -> VFPv2
           | "vfpv3-d16" when abi = EABI_HF -> VFPv3_D16
           | "vfpv3" when abi = EABI_HF     -> VFPv3
-          | spec -> raise (Arg.Bad spec))
+          | spec -> raise (Arg.Bad ("wrong '-ffpu' option: " ^ spec))
+  end
 
 let command_line_options =
   [ "-farch", Arg.String farch,

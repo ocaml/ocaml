@@ -302,30 +302,6 @@ let primitives_table = create_hashtable 57 [
   "%opaque", Popaque;
 ]
 
-let index_primitives_table =
-  let make_ba_ref n =
-    "%caml_ba_opt_ref_"^(string_of_int n),
-    fun () -> Pbigarrayref(!Clflags.fast, n, Pbigarray_unknown,
-                           Pbigarray_unknown_layout)
-  and make_ba_set n =
-    "%caml_ba_opt_set_"^(string_of_int n),
-    fun () -> Pbigarrayset(!Clflags.fast, n, Pbigarray_unknown,
-                           Pbigarray_unknown_layout)
-  in
-  create_hashtable 10 [
-    "%array_opt_get", ( fun () -> if !Clflags.fast then Parrayrefu Pgenarray
-                                  else Parrayrefs Pgenarray );
-    "%array_opt_set", ( fun () -> if !Clflags.fast then Parraysetu Pgenarray
-                                  else Parraysets Pgenarray );
-    "%string_opt_get", ( fun () -> if !Clflags.fast then Pstringrefu
-                                   else Pstringrefs );
-    "%string_opt_set", ( fun () -> if !Clflags.fast then Pstringsetu
-                                   else Pstringsets );
-    make_ba_ref 1; make_ba_set 1;
-    make_ba_ref 2; make_ba_set 2;
-    make_ba_ref 3; make_ba_set 3;
-]
-
 let prim_obj_dup =
   Primitive.simple ~name:"caml_obj_dup" ~arity:1 ~alloc:true
 
@@ -338,9 +314,7 @@ let find_primitive loc prim_name =
     | "%loc_LINE" -> Ploc Loc_LINE
     | "%loc_POS" -> Ploc Loc_POS
     | "%loc_MODULE" -> Ploc Loc_MODULE
-    | name ->
-      try Hashtbl.find index_primitives_table name @@ () with
-        | Not_found -> Hashtbl.find primitives_table name
+    | name -> Hashtbl.find primitives_table name
 
 let specialize_comparison table env ty =
   let (gencomp, intcomp, floatcomp, stringcomp,
@@ -473,6 +447,8 @@ let check_recursive_lambda idlist lam =
         List.for_all (fun (id, arg) -> check idlist' arg) bindings &&
         check_top idlist' body
     | Lprim (Pmakearray (Pgenarray, _), args) -> false
+    | Lprim (Pmakearray (Pfloatarray, _), args) ->
+        List.for_all (check idlist) args
     | Lsequence (lam1, lam2) -> check idlist lam1 && check_top idlist lam2
     | Levent (lam, _) -> check_top idlist lam
     | lam -> check idlist lam
@@ -490,7 +466,8 @@ let check_recursive_lambda idlist lam =
         check idlist' body
     | Lprim(Pmakeblock(tag, mut), args) ->
         List.for_all (check idlist) args
-    | Lprim(Pmakearray _, args) ->
+    | Lprim (Pmakearray (Pfloatarray, _), _) -> false
+    | Lprim (Pmakearray _, args) ->
         List.for_all (check idlist) args
     | Lsequence (lam1, lam2) -> check idlist lam1 && check idlist lam2
     | Levent (lam, _) -> check idlist lam

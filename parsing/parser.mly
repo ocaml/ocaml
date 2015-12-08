@@ -72,34 +72,25 @@ let ghstr d = Str.mk ~loc:(symbol_gloc()) d
 let mkinfix arg1 name arg2 =
   mkexp(Pexp_apply(mkoperator name 2, [Nolabel, arg1; Nolabel, arg2]))
 
-let neg_float_string f =
+let neg_string f =
   if String.length f > 0 && f.[0] = '-'
   then String.sub f 1 (String.length f - 1)
   else "-" ^ f
 
 let mkuminus name arg =
   match name, arg.pexp_desc with
-  | "-", Pexp_constant(Const_int n) ->
-      mkexp(Pexp_constant(Const_int(-n)))
-  | "-", Pexp_constant(Const_int32 n) ->
-      mkexp(Pexp_constant(Const_int32(Int32.neg n)))
-  | "-", Pexp_constant(Const_int64 n) ->
-      mkexp(Pexp_constant(Const_int64(Int64.neg n)))
-  | "-", Pexp_constant(Const_nativeint n) ->
-      mkexp(Pexp_constant(Const_nativeint(Nativeint.neg n)))
-  | ("-" | "-."), Pexp_constant(Const_float f) ->
-      mkexp(Pexp_constant(Const_float(neg_float_string f)))
+  | "-", Pexp_constant(PConst_int (n,m)) ->
+      mkexp(Pexp_constant(PConst_int(neg_string n,m)))
+  | ("-" | "-."), Pexp_constant(PConst_float (f, m)) ->
+      mkexp(Pexp_constant(PConst_float(neg_string f, m)))
   | _ ->
       mkexp(Pexp_apply(mkoperator ("~" ^ name) 1, [Nolabel, arg]))
 
 let mkuplus name arg =
   let desc = arg.pexp_desc in
   match name, desc with
-  | "+", Pexp_constant(Const_int _)
-  | "+", Pexp_constant(Const_int32 _)
-  | "+", Pexp_constant(Const_int64 _)
-  | "+", Pexp_constant(Const_nativeint _)
-  | ("+" | "+."), Pexp_constant(Const_float _) -> mkexp desc
+  | "+", Pexp_constant(PConst_int _)
+  | ("+" | "+."), Pexp_constant(PConst_float _) -> mkexp desc
   | _ ->
       mkexp(Pexp_apply(mkoperator ("~" ^ name) 1, [Nolabel, arg]))
 
@@ -154,9 +145,8 @@ let mkpat_opt_constraint p = function
   | None -> p
   | Some typ -> mkpat (Ppat_constraint(p, typ))
 
-let array_function par assign=
-  let op = if assign then par^"<-" else par in
-  ghloc ( Lident op )
+let array_function str name =
+  ghloc (Ldot(Lident str, (if !Clflags.fast then "unsafe_" ^ name else name)))
 
 let syntax_error () =
   raise Syntaxerr.Escape_error
@@ -171,53 +161,45 @@ let expecting pos nonterm =
 let not_expecting pos nonterm =
     raise Syntaxerr.(Error(Not_expecting(rhs_loc pos, nonterm)))
 
-let bigarray_function order assign =
-  let op =
-    match order with
-      | 1 -> ".{}"
-      | 2 -> ".{,}"
-      | 3 -> ".{,,}"
-      | _ -> ".{,..,}"
-  in
-  let op= if assign then op^"<-" else op in
-  ghloc ( Lident op )
+let bigarray_function str name =
+  ghloc (Ldot(Ldot(Lident "Bigarray", str), name))
 
 let bigarray_untuplify = function
     { pexp_desc = Pexp_tuple explist; pexp_loc = _ } -> explist
   | exp -> [exp]
 
 let bigarray_get arr arg =
-  let get order = bigarray_function order false in
+  let get = if !Clflags.fast then "unsafe_get" else "get" in
   match bigarray_untuplify arg with
     [c1] ->
-      mkexp(Pexp_apply(ghexp(Pexp_ident(get 1)),
+      mkexp(Pexp_apply(ghexp(Pexp_ident(bigarray_function "Array1" get)),
                        [Nolabel, arr; Nolabel, c1]))
   | [c1;c2] ->
-      mkexp(Pexp_apply(ghexp(Pexp_ident(get 2)),
+      mkexp(Pexp_apply(ghexp(Pexp_ident(bigarray_function "Array2" get)),
                        [Nolabel, arr; Nolabel, c1; Nolabel, c2]))
   | [c1;c2;c3] ->
-      mkexp(Pexp_apply(ghexp(Pexp_ident(get 3)),
+      mkexp(Pexp_apply(ghexp(Pexp_ident(bigarray_function "Array3" get)),
                        [Nolabel, arr; Nolabel, c1; Nolabel, c2; Nolabel, c3]))
   | coords ->
-      mkexp(Pexp_apply(ghexp(Pexp_ident(get 0)),
+      mkexp(Pexp_apply(ghexp(Pexp_ident(bigarray_function "Genarray" "get")),
                        [Nolabel, arr; Nolabel, ghexp(Pexp_array coords)]))
 
 let bigarray_set arr arg newval =
-  let set order = bigarray_function order true in
+  let set = if !Clflags.fast then "unsafe_set" else "set" in
   match bigarray_untuplify arg with
     [c1] ->
-      mkexp(Pexp_apply(ghexp(Pexp_ident(set 1)),
+      mkexp(Pexp_apply(ghexp(Pexp_ident(bigarray_function "Array1" set)),
                        [Nolabel, arr; Nolabel, c1; Nolabel, newval]))
   | [c1;c2] ->
-      mkexp(Pexp_apply(ghexp(Pexp_ident(set 2)),
-                       [Nolabel, arr; Nolabel, c1; Nolabel, c2;
-                        Nolabel, newval]))
+      mkexp(Pexp_apply(ghexp(Pexp_ident(bigarray_function "Array2" set)),
+                       [Nolabel, arr; Nolabel, c1;
+                        Nolabel, c2; Nolabel, newval]))
   | [c1;c2;c3] ->
-      mkexp(Pexp_apply(ghexp(Pexp_ident(set 3)),
-                       [Nolabel, arr; Nolabel, c1; Nolabel, c2; Nolabel, c3;
-                        Nolabel, newval]))
+      mkexp(Pexp_apply(ghexp(Pexp_ident(bigarray_function "Array3" set)),
+                       [Nolabel, arr; Nolabel, c1;
+                        Nolabel, c2; Nolabel, c3; Nolabel, newval]))
   | coords ->
-      mkexp(Pexp_apply(ghexp(Pexp_ident(set 0)),
+      mkexp(Pexp_apply(ghexp(Pexp_ident(bigarray_function "Genarray" "set")),
                        [Nolabel, arr;
                         Nolabel, ghexp(Pexp_array coords);
                         Nolabel, newval]))
@@ -430,7 +412,7 @@ let class_of_let_bindings lbs body =
 %token EXCEPTION
 %token EXTERNAL
 %token FALSE
-%token <string> FLOAT
+%token <string * char option> FLOAT
 %token FOR
 %token FUN
 %token FUNCTION
@@ -448,9 +430,7 @@ let class_of_let_bindings lbs body =
 %token <string> INFIXOP4
 %token INHERIT
 %token INITIALIZER
-%token <int> INT
-%token <int32> INT32
-%token <int64> INT64
+%token <string * char option> INT
 %token <string> LABEL
 %token LAZY
 %token LBRACE
@@ -476,7 +456,6 @@ let class_of_let_bindings lbs body =
 %token MINUSGREATER
 %token MODULE
 %token MUTABLE
-%token <nativeint> NATIVEINT
 %token NEW
 %token NONREC
 %token OBJECT
@@ -583,9 +562,9 @@ The precedences must be listed from low to high.
 %nonassoc below_DOT
 %nonassoc DOT
 /* Finally, the first tokens of simple_expr are above everything else. */
-%nonassoc BACKQUOTE BANG BEGIN CHAR FALSE FLOAT INT INT32 INT64
+%nonassoc BACKQUOTE BANG BEGIN CHAR FALSE FLOAT INT
           LBRACE LBRACELESS LBRACKET LBRACKETBAR LIDENT LPAREN
-          NEW NATIVEINT PREFIXOP STRING TRUE UIDENT
+          NEW PREFIXOP STRING TRUE UIDENT
           LBRACKETPERCENT LBRACKETPERCENTPERCENT
 
 
@@ -1329,10 +1308,10 @@ expr:
   | simple_expr DOT label_longident LESSMINUS expr
       { mkexp(Pexp_setfield($1, mkrhs $3 3, $5)) }
   | simple_expr DOT LPAREN seq_expr RPAREN LESSMINUS expr
-      { mkexp(Pexp_apply(ghexp(Pexp_ident(array_function ".()" true)),
+      { mkexp(Pexp_apply(ghexp(Pexp_ident(array_function "Array" "set")),
                          [Nolabel,$1; Nolabel,$4; Nolabel,$7])) }
   | simple_expr DOT LBRACKET seq_expr RBRACKET LESSMINUS expr
-      { mkexp(Pexp_apply(ghexp(Pexp_ident(array_function ".[]" true)),
+      { mkexp(Pexp_apply(ghexp(Pexp_ident(array_function "String" "set")),
                          [Nolabel,$1; Nolabel,$4; Nolabel,$7])) }
   | simple_expr DOT LBRACE expr RBRACE LESSMINUS expr
       { bigarray_set $1 $4 $7 }
@@ -1348,6 +1327,8 @@ expr:
       { unclosed "object" 1 "end" 4 }
   | expr attribute
       { Exp.attr $1 $2 }
+  | UNDERSCORE
+     { not_expecting 1 "wildcard \"_\"" }
 ;
 simple_expr:
     val_longident
@@ -1381,12 +1362,12 @@ simple_expr:
   | mod_longident DOT LPAREN seq_expr error
       { unclosed "(" 3 ")" 5 }
   | simple_expr DOT LPAREN seq_expr RPAREN
-      { mkexp(Pexp_apply(ghexp(Pexp_ident(array_function ".()" false)),
+      { mkexp(Pexp_apply(ghexp(Pexp_ident(array_function "Array" "get")),
                          [Nolabel,$1; Nolabel,$4])) }
   | simple_expr DOT LPAREN seq_expr error
       { unclosed "(" 3 ")" 5 }
   | simple_expr DOT LBRACKET seq_expr RBRACKET
-      { mkexp(Pexp_apply(ghexp(Pexp_ident(array_function ".[]" false)),
+      { mkexp(Pexp_apply(ghexp(Pexp_ident(array_function "String" "get")),
                          [Nolabel,$1; Nolabel,$4])) }
   | simple_expr DOT LBRACKET seq_expr error
       { unclosed "[" 3 "]" 5 }
@@ -2157,26 +2138,17 @@ label:
 /* Constants */
 
 constant:
-    INT                               { Const_int $1 }
-  | CHAR                              { Const_char $1 }
-  | STRING                            { let (s, d) = $1 in Const_string (s, d) }
-  | FLOAT                             { Const_float $1 }
-  | INT32                             { Const_int32 $1 }
-  | INT64                             { Const_int64 $1 }
-  | NATIVEINT                         { Const_nativeint $1 }
+  | INT                               { let (n, m) = $1 in PConst_int (n, m) }
+  | CHAR                              { PConst_char $1 }
+  | STRING                            { let (s, d) = $1 in PConst_string (s, d) }
+  | FLOAT                             { let (f, m) = $1 in PConst_float (f, m) }
 ;
 signed_constant:
     constant                               { $1 }
-  | MINUS INT                              { Const_int(- $2) }
-  | MINUS FLOAT                            { Const_float("-" ^ $2) }
-  | MINUS INT32                            { Const_int32(Int32.neg $2) }
-  | MINUS INT64                            { Const_int64(Int64.neg $2) }
-  | MINUS NATIVEINT                        { Const_nativeint(Nativeint.neg $2) }
-  | PLUS INT                               { Const_int $2 }
-  | PLUS FLOAT                             { Const_float $2 }
-  | PLUS INT32                             { Const_int32 $2 }
-  | PLUS INT64                             { Const_int64 $2 }
-  | PLUS NATIVEINT                         { Const_nativeint $2 }
+  | MINUS INT                              { let (n, m) = $2 in PConst_int("-" ^ n, m) }
+  | MINUS FLOAT                            { let (f, m) = $2 in PConst_float("-" ^ f, m) }
+  | PLUS INT                               { let (n, m) = $2 in PConst_int (n, m) }
+  | PLUS FLOAT                             { let (f, m) = $2 in PConst_float(f, m) }
 ;
 
 /* Identifiers and long identifiers */
@@ -2216,25 +2188,7 @@ operator:
   | COLONEQUAL                                  { ":=" }
   | PLUSEQ                                      { "+=" }
   | PERCENT                                     { "%" }
-  | index_operator                              { $1 }
 ;
-index_operator:
-    DOT index_operator_core opt_assign_arrow { $2^$3 }
-;
-index_operator_core:
-  | LPAREN RPAREN                               { ".()" }
-  | LBRACKET RBRACKET                           { ".[]" }
-  | LBRACE RBRACE                               { ".{}" }
-  | LBRACE COMMA  RBRACE                        { ".{,}" }
-  | LBRACE COMMA COMMA RBRACE                   { ".{,,}" }
-  | LBRACE COMMA DOTDOT COMMA RBRACE            { ".{,..,}"}
-;
-
-opt_assign_arrow:
-                                                { "" }
-  | LESSMINUS                                   { "<-" }
-;
-
 constr_ident:
     UIDENT                                      { $1 }
 /*  | LBRACKET RBRACKET                           { "[]" } */
@@ -2291,7 +2245,7 @@ class_longident:
 toplevel_directive:
     SHARP ident                 { Ptop_dir($2, Pdir_none) }
   | SHARP ident STRING          { Ptop_dir($2, Pdir_string (fst $3)) }
-  | SHARP ident INT             { Ptop_dir($2, Pdir_int $3) }
+  | SHARP ident INT             { let (n, m) = $3 in Ptop_dir($2, Pdir_int (n ,m)) }
   | SHARP ident val_longident   { Ptop_dir($2, Pdir_ident $3) }
   | SHARP ident mod_longident   { Ptop_dir($2, Pdir_ident $3) }
   | SHARP ident FALSE           { Ptop_dir($2, Pdir_bool false) }

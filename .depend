@@ -86,9 +86,9 @@ parsing/builtin_attributes.cmx : utils/warnings.cmx parsing/parsetree.cmi \
     parsing/location.cmx parsing/asttypes.cmi parsing/ast_mapper.cmx \
     parsing/builtin_attributes.cmi
 parsing/docstrings.cmo : utils/warnings.cmi parsing/parsetree.cmi \
-    parsing/location.cmi parsing/asttypes.cmi parsing/docstrings.cmi
+    parsing/location.cmi parsing/docstrings.cmi
 parsing/docstrings.cmx : utils/warnings.cmx parsing/parsetree.cmi \
-    parsing/location.cmx parsing/asttypes.cmi parsing/docstrings.cmi
+    parsing/location.cmx parsing/docstrings.cmi
 parsing/lexer.cmo : utils/warnings.cmi parsing/parser.cmi utils/misc.cmi \
     parsing/location.cmi parsing/docstrings.cmi parsing/lexer.cmi
 parsing/lexer.cmx : utils/warnings.cmx parsing/parser.cmx utils/misc.cmx \
@@ -192,7 +192,8 @@ typing/typetexp.cmi : typing/types.cmi typing/typedtree.cmi typing/path.cmi \
     parsing/parsetree.cmi parsing/longident.cmi parsing/location.cmi \
     typing/env.cmi parsing/asttypes.cmi
 typing/untypeast.cmi : typing/typedtree.cmi typing/path.cmi \
-    parsing/parsetree.cmi parsing/longident.cmi parsing/location.cmi
+    parsing/parsetree.cmi parsing/longident.cmi parsing/location.cmi \
+    parsing/asttypes.cmi
 typing/btype.cmo : typing/types.cmi typing/path.cmi utils/misc.cmi \
     typing/ident.cmi parsing/asttypes.cmi typing/btype.cmi
 typing/btype.cmx : typing/types.cmx typing/path.cmx utils/misc.cmx \
@@ -279,18 +280,18 @@ typing/oprint.cmo : typing/outcometree.cmi parsing/asttypes.cmi \
     typing/oprint.cmi
 typing/oprint.cmx : typing/outcometree.cmi parsing/asttypes.cmi \
     typing/oprint.cmi
-typing/parmatch.cmo : utils/warnings.cmi typing/types.cmi \
-    typing/typedtree.cmi typing/subst.cmi typing/predef.cmi typing/path.cmi \
-    parsing/parsetree.cmi utils/misc.cmi parsing/longident.cmi \
-    parsing/location.cmi typing/ident.cmi typing/env.cmi typing/ctype.cmi \
-    typing/btype.cmi parsing/asttypes.cmi parsing/ast_helper.cmi \
-    typing/parmatch.cmi
-typing/parmatch.cmx : utils/warnings.cmx typing/types.cmx \
-    typing/typedtree.cmx typing/subst.cmx typing/predef.cmx typing/path.cmx \
-    parsing/parsetree.cmi utils/misc.cmx parsing/longident.cmx \
-    parsing/location.cmx typing/ident.cmx typing/env.cmx typing/ctype.cmx \
-    typing/btype.cmx parsing/asttypes.cmi parsing/ast_helper.cmx \
-    typing/parmatch.cmi
+typing/parmatch.cmo : utils/warnings.cmi typing/untypeast.cmi \
+    typing/types.cmi typing/typedtree.cmi typing/subst.cmi typing/predef.cmi \
+    typing/path.cmi parsing/parsetree.cmi utils/misc.cmi \
+    parsing/longident.cmi parsing/location.cmi typing/ident.cmi \
+    typing/env.cmi typing/ctype.cmi typing/btype.cmi parsing/asttypes.cmi \
+    parsing/ast_helper.cmi typing/parmatch.cmi
+typing/parmatch.cmx : utils/warnings.cmx typing/untypeast.cmx \
+    typing/types.cmx typing/typedtree.cmx typing/subst.cmx typing/predef.cmx \
+    typing/path.cmx parsing/parsetree.cmi utils/misc.cmx \
+    parsing/longident.cmx parsing/location.cmx typing/ident.cmx \
+    typing/env.cmx typing/ctype.cmx typing/btype.cmx parsing/asttypes.cmi \
+    parsing/ast_helper.cmx typing/parmatch.cmi
 typing/path.cmo : typing/ident.cmi typing/path.cmi
 typing/path.cmx : typing/ident.cmx typing/path.cmi
 typing/predef.cmo : typing/types.cmi typing/path.cmi parsing/parsetree.cmi \
