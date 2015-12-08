@@ -206,6 +206,7 @@ let can_be_merged = same
 (* CR mshinwell: change "toplevel" name, potentially misleading *)
 (* CR mshinwell: this should use the explicit ignore functions *)
 let toplevel_substitution sb tree =
+  let sb' = sb in
   let sb v = try Variable.Map.find v sb with Not_found -> v in
   let aux (flam : Flambda.t) : Flambda.t =
     match flam with
@@ -262,7 +263,8 @@ let toplevel_substitution sb tree =
     | Prim (prim, args, dbg) ->
       Prim (prim, List.map sb args, dbg)
   in
-  Flambda_iterators.map_toplevel aux aux_named tree
+  if Variable.Map.is_empty sb' then tree
+  else Flambda_iterators.map_toplevel aux aux_named tree
 
 let make_closure_declaration ~id ~body ~params : Flambda.t =
   let free_variables = Flambda.free_variables body in
