@@ -1257,10 +1257,11 @@ to implement dynamic types.
 
 \section{Syntax for Bigarray access}\label{s:bigarray-access}
 
-(Introduced in Objective Caml 3.00, deprecated in 4.03)
+(Introduced in Objective Caml 3.00, deprecated in \ocamlversion)
 
-This extension has been superseded by the customizable index operators extension~\ref{s:index-operators}.
-Some source compatibility problems are documented in~\ref{s:bigarray-indexop-compatibility}.
+This extension has been superseded by the customizable index operators
+extension~\ref{s:index-operators}. Some source compatibility problems that
+can trigger a deprecated warning are documented in~\ref{s:bigarray-indexop-compatibility}.
 
 \section{Attributes}\label{s:attributes}
 
@@ -1768,9 +1769,9 @@ used directly in vanilla Ocaml. However, "-ppx" rewriters and other
 external tools can use this parser leniency to extend the language
 with new extension specific "#"-operators.
 
-\section{Customizable index operators} \label{s:index-operators}
+\section{User-defined index operators} \label{s:index-operators}
 
-( Introduced in OCaml 4.03 )
+( Introduced in OCaml \ocamlversion )
 
 \begin{syntax}
 expr:
@@ -1802,7 +1803,7 @@ well-know syntax
                 & acces                 & assignment                        \\ \hline
 array           & @expr_a".("expr_i")"@ & @expr_a".("expr_i")" "<-" expr_v@ \\
 string or bytes & @expr_s".["expr_i"]"@ & @expr_s".["expr_i"]" "<-" expr_v@ \\
-bigarray & @expr_s".{"expr_i"}"@ & @expr_s".{"expr_i"}" "<-" expr_v@ \\ \hline
+bigarray        & @expr_s".{"expr_i"}"@ & @expr_s".{"expr_i"}" "<-" expr_v@ \\ \hline
 \end{tabular}\end{center}
 
 This extension generalizes this standard syntax by associating these
@@ -1820,11 +1821,11 @@ The concrete syntaxes "array.(index)",\dots, "bigarray.{index}<-value"
 are then redefined as syntactic sugar for these new operators
 %
 \begin{center}\begin{tabular}{lll} \hline
-              & concrete syntax                   & translation                            \\ \hline
-array-like    & @expr_a'.('expr_i')'@             & @'(' '.()' ')' expr_a expr_i@          \\
-              & @expr_a'.('expr_i')' '<-' expr_v@ & @'(' '.()<-' ')' expr_a expr_i expr_v@ \\ \hline
-string-like   & @expr_s'.['expr_i']'@             & @'(' '.[]' ')' expr_s expr_i@          \\
-              & @expr_s'.['expr_i']' '<-' expr_v@ & @'(' '.[]<-' ')' expr_s expr_i expr_v@ \\ \hline
+              & concrete syntax                     & translation                              \\ \hline
+array-like    & @expr_a'.('expr_i')'@               & @'(' '.()' ')' expr_a expr_i@            \\
+              & @expr_a'.('expr_i')' '<-' expr_v@   & @'(' '.()<-' ')' expr_a expr_i expr_v@   \\ \hline
+string-like   & @expr_s'.['expr_i']'@               & @'(' '.[]' ')' expr_s expr_i@            \\
+              & @expr_s'.['expr_i']' '<-' expr_v@   & @'(' '.[]<-' ')' expr_s expr_i expr_v@   \\ \hline
 bigarray-like & @expr_s'.{'expr_i^*'}'@             & @'(' '.{}' ')' expr_s expr_i^*@          \\
               & @expr_s'.{'expr_i^*'}' '<-' expr_v@ & @'(' '.{}<-' ')' expr_s expr_i^* expr_v@ \\ \hline
 \end{tabular}\end{center}
@@ -1909,7 +1910,7 @@ dimension $2$   & @expr_a'.{'i_1,i_2'}'@                     & @'(.{,})'   expr_
                 & @expr_a'.{'i_1,i_2} '<-' expr_v@           & @'(.{,}<-)' expr_a i_1 i_2 expr_v@                       \\ \hline
 dimension $3$   & @expr_a'.{'i_1,i_2,i_3'}'@                 & @'(.{,,})'   expr_a i_1 i_2 i_3@                         \\
                 & @expr_a'.{'i_1,i_2,i_3'}' '<-' expr_v@     & @'(.{,,}<-)' expr_a i_1 i_2 i_3 expr_v@                  \\ \hline
-dimension $n>3$ & @expr_a'.{'i_1,\ldots,i_n'}'@              &   @'(.{,..,})'  expr_a '[|'i_1';'\ldots';'i_n'|]'@       \\
+dimension $n>3$ & @expr_a'.{'i_1,\ldots,i_n'}'@              & @'(.{,..,})'  expr_a '[|'i_1';'\ldots';'i_n'|]'@         \\
                 & @expr_a'.{'i_1,\ldots,i_n'}' '<-' expr_v@  & @'(.{,..,}<-)' expr_a '[|'i_1';'\ldots';'i_n'|]' expr_v@ \\ \hline
 \end{tabular}\end{center}
 %
@@ -1931,7 +1932,8 @@ let x = v.{i} (* vector access *)
 let m = mat.{i,j} (* matrix access *)
 \end{verbatim}
 
-Another example, the "Bigarray"[\moduleref{Bigarray}] library defines these operators as
+Another example, the "Bigarray"[\moduleref{Bigarray}] library defines
+these operators in the "Operators" submodule as
 %
 \begin{tableau}{ll}{operator}{function}
 \entree{ "( .{} )"       } {"Array1.get"}
@@ -1945,18 +1947,25 @@ Another example, the "Bigarray"[\moduleref{Bigarray}] library defines these oper
 \end{tableau}
 %
 With these definitions, it is then possible to use the short syntax
-@bigarray'.{'index'}'@ with bigarray values by opening the "Bigarray"
-module in scope.
+@bigarray'.{'index'}'@ with bigarray values by opening the
+"Bigarray.Operators" submodule in scope. Since the "Operators" submodule
+is included inside the "Bigarray" module, opening the "Bigarray" module
+is another option to bring this operators in scope.
 
 \subsection{Backward compatibility warning for the "Bigarray" library} \label{s:bigarray-indexop-compatibility}
 
 One of the reasons behind the existence of the 6 special
-@"( .{"\ldots"} )"@ operators is to preserve backward compatibility
-with the "Bigarray" library special syntax. However, this extension
-\emph{does break} partially source compatibility with the bigarray
-syntax extension: before Ocaml 4.03, it was possible to use the
-@bigarray'.{'index'}'@ syntax without opening the "Bigarray"
-module. This usage is no longer possible since the @"(.{"\ldots"})"@
-index operators are now defined inside the "Bigarray" module. This
-problem can be fixed by opening the "Bigarray" module (or by bringing
-in scope the index operators defined in the "Bigarray" module).
+@"(" ".{"\ldots"}" ")"@ operators is to preserve backward compatibility
+with the "Bigarray" library special syntax. However, this backward
+compatibility is not perfect. On the one hand, the new extension should
+require to explicitly bring in scope the "Bigarray"
+@"(" ".{"\ldots"}" ")"@ operator before using them. On the other hand,
+with the deprecated bigarray syntax extension, these operators always
+implicitly referred to the "Bigarray" module. In order to bridge the gap
+between these two different behaviors, implicit uses of the
+@"Bigarray.(" ".{"\ldots"}" ")"@ operators are still allowed but emit a
+deprecated warning. This warning can be avoided by explicitly bringing
+in scope the corresponding @"Bigarray.(" ".{"\ldots"}" ")"@ operator;
+for instance by opening the "Bigarray.Operators" module or the
+"Bigarray" module. Note that this warning might turn in a full-fledged
+error in future versions.
