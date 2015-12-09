@@ -11,8 +11,8 @@
 (***********************************************************************)
 
 (* Copy a bytecode executable, removing debugging information 
-   from the copy.
-   Usage: expunge <source file> <dest file>
+   and #! header from the copy.
+   Usage: stripdebug <source file> <dest file>
 *)
 
 open Printf
@@ -26,9 +26,8 @@ let stripdebug infile outfile =
   let oc =
     open_out_gen [Open_wronly; Open_creat; Open_trunc; Open_binary] 0o777
                  outfile in
-  (* Copy the file up to the first section as is *)
-  seek_in ic 0;
-  copy_file_chunk ic oc pos_first_section;
+  (* Skip the #! header, going straight to the first section. *)
+  seek_in ic pos_first_section;
   (* Copy each section except DBUG *)
   Bytesections.init_record oc;
   List.iter
