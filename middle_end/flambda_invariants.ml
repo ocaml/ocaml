@@ -85,7 +85,7 @@ exception Flambda_invariants_failed
 
 (* CR mshinwell: What about checks for shadowed variables and symbols? *)
 
-let variable_and_symbol_invariants flam =
+let variable_and_symbol_invariants (program : Flambda.program) =
   let all_declared_variables = ref Variable.Set.empty in
   let declare_variable var =
     if Variable.Set.mem var !all_declared_variables then
@@ -378,7 +378,7 @@ let variable_and_symbol_invariants flam =
       ignore_closure_id closure_id;
       check_symbol_is_bound env symbol
   in
-  let rec loop_program env (program : Flambda.program) =
+  let rec loop_program_body env (program : Flambda.program_body) =
     match program with
     | Let_rec_symbol (defs, program) ->
       let env =
@@ -389,27 +389,28 @@ let variable_and_symbol_invariants flam =
       List.iter (fun (_, def) ->
           loop_constant_defining_value env def)
         defs;
-      loop_program env program
+      loop_program_body env program
     | Let_symbol (symbol, def, program) ->
       loop_constant_defining_value env def;
       let env = add_binding_occurrence_of_symbol env symbol in
-      loop_program env program
-    | Import_symbol (symbol, program) ->
-      let env = add_binding_occurrence_of_symbol env symbol in
-      loop_program env program
+      loop_program_body env program
     | Initialize_symbol (symbol, _tag, fields, program) ->
       List.iter (loop env) fields;
       let env = add_binding_occurrence_of_symbol env symbol in
-      loop_program env program
+      loop_program_body env program
     | Effect (expr, program) ->
       loop env expr;
-      loop_program env program
+      loop_program_body env program
     | End root ->
       check_symbol_is_bound env root
   in
-  loop_program
-    (Variable.Set.empty, Mutable_variable.Set.empty, Symbol.Set.empty)
-    flam
+  let env =
+    Symbol.Set.fold (fun symbol env ->
+        add_binding_occurrence_of_symbol env symbol)
+      program.imported_symbols
+      (Variable.Set.empty, Mutable_variable.Set.empty, Symbol.Set.empty)
+  in
+  loop_program_body env program.program_body
 
 let primitive_invariants flam ~no_access_to_global_module_identifiers =
   Flambda_iterators.iter_named (function

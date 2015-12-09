@@ -23,7 +23,7 @@ let constant_field (expr:Flambda.t)
   | _ ->
     None
 
-let rec loop (program:Flambda.program) : Flambda.program =
+let rec loop (program : Flambda.program_body) : Flambda.program_body =
   match program with
   | Initialize_symbol (symbol, tag, fields, program) ->
     let constant_fields = List.map constant_field fields in
@@ -37,12 +37,12 @@ let rec loop (program:Flambda.program) : Flambda.program =
     Let_symbol (symbol, const, loop program)
   | Let_rec_symbol (defs, program) ->
     Let_rec_symbol (defs, loop program)
-  | Import_symbol (symbol, program) ->
-    Import_symbol (symbol, loop program)
   | Effect (expr, program) ->
     Effect (expr, loop program)
   | End symbol ->
     End symbol
 
-let run = loop
-
+let run (program : Flambda.program) =
+  { program with
+    program_body = loop program.program_body;
+  }

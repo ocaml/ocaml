@@ -31,8 +31,8 @@ let make_variable_symbol prefix var =
     bound constant variables.  At the same time collect the definitions of
     such variables. *)
 let assign_symbols_and_collect_constant_definitions
-    ~(backend:(module Backend_intf.S))
-    ~program
+    ~(backend : (module Backend_intf.S))
+    ~(program : Flambda.program)
     ~(inconstants : Inconstant_idents.result) =
   let var_to_symbol_tbl = Variable.Tbl.create 42 in
   let var_to_definition_tbl = Variable.Tbl.create 42 in
@@ -117,20 +117,18 @@ let assign_symbols_and_collect_constant_definitions
     ~f:assign_symbol_program
     program;
   let initialize_symbol_to_definition_tbl = Symbol.Tbl.create 42 in
-  let rec collect_initialize_declaration (program:Flambda.program) =
+  let rec collect_initialize_declaration (program : Flambda.program_body) =
     match program with
-    | Let_symbol (_,_,program)
-    | Let_rec_symbol (_,program)
-    | Import_symbol (_,program)
-    | Effect (_,program) ->
-        collect_initialize_declaration program
+    | Let_symbol (_, _, program)
+    | Let_rec_symbol (_, program)
+    | Effect (_, program) -> collect_initialize_declaration program
     | Initialize_symbol (symbol,_tag,fields,program) ->
-        collect_initialize_declaration program;
-        let fields = List.map tail_variable fields in
-        Symbol.Tbl.add initialize_symbol_to_definition_tbl symbol fields
+      collect_initialize_declaration program;
+      let fields = List.map tail_variable fields in
+      Symbol.Tbl.add initialize_symbol_to_definition_tbl symbol fields
     | End _ -> ()
   in
-  collect_initialize_declaration program;
+  collect_initialize_declaration program.program_body;
   let record_set_of_closure_equalities (set_of_closures:Flambda.set_of_closures) =
     Variable.Map.iter (fun arg var ->
         if not (Variable.Set.mem arg inconstants.id) then
@@ -503,7 +501,7 @@ let program_graph
 let add_definition_of_symbol constant_definitions
     (initialize_symbol_tbl : (Tag.t * Flambda.t list * Symbol.t option) Symbol.Tbl.t)
     (effect_tbl:(Flambda.t * Symbol.t option) Symbol.Tbl.t)
-    program component : Flambda.program =
+    (program : Flambda.program_body) component : Flambda.program_body =
   let symbol_declaration sym =
     (* A symbol declared through an Initialize_symbol construct
        cannot be recursive, this is not allowed in the construction.
@@ -532,7 +530,8 @@ let add_definition_of_symbol constant_definitions
 let add_definitions_of_symbols constant_definitions initialize_symbol_tbl
     effect_tbl program components =
   Array.fold_left
-    (add_definition_of_symbol constant_definitions initialize_symbol_tbl effect_tbl)
+    (add_definition_of_symbol constant_definitions initialize_symbol_tbl
+      effect_tbl)
     program components
 
 let introduce_free_variables_in_set_of_closures
@@ -640,7 +639,7 @@ let var_to_block_field
     var_to_definition_tbl;
   var_to_block_field_tbl
 
-let program_symbols ~backend program =
+let program_symbols ~backend (program : Flambda.program) =
   let new_fake_symbol =
     let r = ref 0 in
     fun () ->
@@ -667,37 +666,36 @@ let program_symbols ~backend program =
     | Allocated_const _
     | Block _ -> ()
   in
-  let rec loop (program:Flambda.program) previous_effect =
+  let rec loop (program : Flambda.program_body) previous_effect =
     match program with
-    | Flambda.Let_symbol (symbol,def,program) ->
+    | Flambda.Let_symbol (symbol, def, program) ->
       add_project_closure_definitions symbol def;
       Symbol.Tbl.add symbol_definition_tbl symbol def;
       loop program previous_effect
-    | Flambda.Let_rec_symbol (defs,program) ->
+    | Flambda.Let_rec_symbol (defs, program) ->
       List.iter (fun (symbol, def) ->
           add_project_closure_definitions symbol def;
           Symbol.Tbl.add symbol_definition_tbl symbol def)
         defs;
       loop program previous_effect
-    | Flambda.Import_symbol (_,program) ->
-      loop program previous_effect
-    | Flambda.Initialize_symbol (symbol,tag,fields,program) ->
+    | Flambda.Initialize_symbol (symbol, tag, fields, program) ->
       (* previous_effect is used to keep the order of initialize and effect
          values. Their effects order must be kept ordered.
          it is used as an extra dependency when sorting the symbols. *)
-      (* CR-someday pchambart: if the fields expressions are pure, we could drop
-         this dependency
+      (* CR-someday pchambart: if the fields expressions are pure, we could
+         drop this dependency
          mshinwell: deferred CR *)
-      Symbol.Tbl.add initialize_symbol_tbl symbol (tag,fields,previous_effect);
+      Symbol.Tbl.add initialize_symbol_tbl symbol
+        (tag, fields, previous_effect);
       loop program (Some symbol)
-    | Flambda.Effect (expr,program) ->
+    | Flambda.Effect (expr, program) ->
       (* Used to ensure that effects are correctly ordered *)
       let fake_effect_symbol = new_fake_symbol () in
-      Symbol.Tbl.add effect_tbl fake_effect_symbol (expr,previous_effect);
+      Symbol.Tbl.add effect_tbl fake_effect_symbol (expr, previous_effect);
       loop program (Some fake_effect_symbol)
     | Flambda.End _ -> ()
   in
-  loop program None;
+  loop program.program_body None;
   initialize_symbol_tbl, symbol_definition_tbl, effect_tbl
 
 let replace_definitions_in_initialize_symbol_and_effects
@@ -743,7 +741,7 @@ let project_closure_map symbol_definition_map =
     symbol_definition_map
     Symbol.Map.empty
 
-let lift_constants program ~backend =
+let lift_constants (program : Flambda.program) ~backend =
   (* Format.eprintf "lift_constants input:@ %a\n" Flambda.print_program program; *)
   let inconstants =
     Inconstant_idents.inconstants_on_program program
@@ -869,11 +867,11 @@ let lift_constants program ~backend =
     program_graph ~backend imported_symbols constant_definitions
       initialize_symbol_tbl effect_tbl
   in
-  let program =
+  let program_body =
     add_definitions_of_symbols constant_definitions
       initialize_symbol_tbl
       effect_tbl
       (End (Flambda_utils.root_symbol program))
       components
   in
-  Flambda_utils.introduce_needed_import_symbols program
+  Flambda_utils.introduce_needed_import_symbols { program with program_body; }

@@ -1363,8 +1363,8 @@ let simplify_constant_defining_value
   let r = ret r approx in
   r, constant_defining_value, approx
 
-let rec simplify_program env r (program : Flambda.program)
-  : Flambda.program * R.t =
+let rec simplify_program_body env r (program : Flambda.program_body)
+  : Flambda.program_body * R.t =
   match program with
   | Let_rec_symbol (defs, program) ->
     let env = define_let_rec_symbol_approx env defs in
@@ -1378,7 +1378,7 @@ let rec simplify_program env r (program : Flambda.program)
           (env, r, (symbol, def) :: defs))
         (env, r, []) defs
     in
-    let program, r = simplify_program env r program in
+    let program, r = simplify_program_body env r program in
     Let_rec_symbol (defs, program), r
   | Let_symbol (symbol, constant_defining_value, program) ->
     let r, constant_defining_value, approx =
@@ -1386,22 +1386,8 @@ let rec simplify_program env r (program : Flambda.program)
     in
     let approx = A.augment_with_symbol approx symbol in
     let env = E.add_symbol env symbol approx in
-    let program, r = simplify_program env r program in
+    let program, r = simplify_program_body env r program in
     Let_symbol (symbol, constant_defining_value, program), r
-  | Import_symbol (symbol, program) ->
-    let env, approx =
-      match E.find_symbol_exn env symbol with
-      | exception Not_found ->
-        let module Backend = (val (E.backend env) : Backend_intf.S) in
-        (* CR mshinwell for mshinwell: Is there a reason we cannot use
-           [simplify_named_using_approx_and_env] here? *)
-        let approx = Backend.import_symbol symbol in
-        E.add_symbol env symbol approx, approx
-      | approx -> env, approx
-    in
-    let r = ret r approx in
-    let program, r = simplify_program env r program in
-    Import_symbol (symbol, program), r
   | Initialize_symbol (symbol, tag, fields, program) ->
     let fields, approxs, r = simplify_list env r fields in
     let approx =
@@ -1409,13 +1395,34 @@ let rec simplify_program env r (program : Flambda.program)
     in
     let module Backend = (val (E.backend env) : Backend_intf.S) in
     let env = E.add_symbol env symbol approx in
-    let program, r = simplify_program env r program in
+    let program, r = simplify_program_body env r program in
     Initialize_symbol (symbol, tag, fields, program), r
   | Effect (expr, program) ->
     let expr, r = simplify env r expr in
-    let program, r = simplify_program env r program in
+    let program, r = simplify_program_body env r program in
     Effect (expr, program), r
   | End root -> End root, r
+
+let simplify_program env r (program : Flambda.program) =
+  let env, r =
+    Symbol.Set.fold (fun symbol (env, r) ->
+        let env, approx =
+          match E.find_symbol_exn env symbol with
+          | exception Not_found ->
+            let module Backend = (val (E.backend env) : Backend_intf.S) in
+            (* CR mshinwell for mshinwell: Is there a reason we cannot use
+               [simplify_named_using_approx_and_env] here? *)
+            let approx = Backend.import_symbol symbol in
+            E.add_symbol env symbol approx, approx
+          | approx -> env, approx
+        in
+        env, ret r approx)
+      program.imported_symbols
+      (env, r)
+  in
+  let program_body, r = simplify_program_body env r program.program_body in
+  let program = { program with program_body; } in
+  program, r
 
 let add_predef_exns_to_environment ~env ~backend =
   let module Backend = (val backend : Backend_intf.S) in

@@ -338,10 +338,10 @@ type expr = t
     various values that are assigned to symbols (and in some cases fields of
     such symbols) in the object file.  As such, it is closely related to
     the compilation of toplevel modules. *)
-type program =
-  | Let_symbol of Symbol.t * constant_defining_value * program
+type program_body =
+  | Let_symbol of Symbol.t * constant_defining_value * program_body
   (** Define the given symbol to have the given constant value. *)
-  | Let_rec_symbol of (Symbol.t * constant_defining_value) list * program
+  | Let_rec_symbol of (Symbol.t * constant_defining_value) list * program_body
   (** As for [Let_symbol], but recursive.  This is needed to treat examples
       like this, where a constant set of closures is lifted to toplevel:
 
@@ -360,20 +360,23 @@ type program =
       approximation of the set of closures to be present in order to
       correctly simplify the [Project_closure] construction.  (See
       [Inline_and_simplify.simplify_project_closure] for that part.) *)
-  (* CR-someday mshinwell: remove Import_symbol and use a record *)
-  | Import_symbol of Symbol.t * program
-  | Initialize_symbol of Symbol.t * Tag.t * t list * program
+  | Initialize_symbol of Symbol.t * Tag.t * t list * program_body
   (** Define the given symbol as a constant block of the given size and
       tag; but with a possibly non-constant initializer.  The initializer
       will be executed at most once (from the entry point of the compilation
       unit). *)
-  | Effect of t * program
+  | Effect of t * program_body
   (** Cause the given expression, which may have a side effect, to be
       executed.  The resulting value is discarded.  [Effect] constructions
       are never re-ordered. *)
   | End of Symbol.t
   (** [End] accepts the root symbol: the only symbol that can never be
       eliminated. *)
+
+type program = {
+  imported_symbols : Symbol.Set.t;
+  program_body : program_body;
+}
 
 (** Compute the free variables of a term.  (This is O(1) for [Let]s).
     If [ignore_uses_as_callee], all free variables inside [Apply] expressions

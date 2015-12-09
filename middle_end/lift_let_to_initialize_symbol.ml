@@ -258,11 +258,9 @@ let add_extracted introduced program =
         Flambda.Effect (effect, program))
     introduced program
 
-let rec split_program (program : Flambda.program) : Flambda.program =
+let rec split_program (program : Flambda.program_body) : Flambda.program_body =
   match program with
   | End s -> End s
-  | Import_symbol(s, program) ->
-    Import_symbol(s, split_program program)
   | Let_symbol (s, def, program) ->
     Let_symbol (s, def, split_program program)
   | Let_rec_symbol (defs, program) ->
@@ -284,5 +282,7 @@ let rec split_program (program : Flambda.program) : Flambda.program =
     add_extracted introduced
       (Flambda.Initialize_symbol (symbol, tag, [field], program))
 
-let lift ~backend:_ (f : Flambda.program) =
-  split_program f
+let lift ~backend:_ (program : Flambda.program) =
+  { program with
+    program_body = split_program program.program_body;
+  }

@@ -593,44 +593,45 @@ let accumulate_structured_constants t env symbol
     Symbol.Map.add symbol to_clambda_set_of_closures acc
   | Project_closure _ -> acc
 
-let rec to_clambda_program t env constants (program : Flambda.program) :
-  Clambda.ulambda * Clambda.ustructured_constant Symbol.Map.t =
-  match program with
-  | Let_symbol (symbol, alloc, program) ->
-    (* Useful only for unboxing. Since floats and boxed integers will
-       never be part of a Let_rec_symbol, handling only the Let_symbol
-       is sufficient. *)
-    let env =
-      match alloc with
-      | Allocated_const const -> Env.add_allocated_const env symbol const
-      | _ -> env
-    in
-    let constants =
-      accumulate_structured_constants t env symbol alloc constants
-    in
-    to_clambda_program t env constants program
-  | Let_rec_symbol (defs, program) ->
-    let constants =
-      List.fold_left (fun constants (symbol, alloc) ->
-          accumulate_structured_constants t env symbol alloc constants)
-        constants defs
-    in
-    to_clambda_program t env constants program
-  | Import_symbol (_, program) ->
-    to_clambda_program t env constants program
-  | Initialize_symbol (symbol, _tag, fields, program) ->
-    (* The tag is ignored here: It is used separately to generate the
-       preallocated block. Only the initialisation code is generated
-       here. *)
-    let e1 = to_clambda_initialize_symbol t env symbol fields in
-    let e2, constants = to_clambda_program t env constants program in
-    Usequence (e1, e2), constants
-  | Effect (expr, program) ->
-    let e1 = to_clambda t env expr in
-    let e2, constants = to_clambda_program t env constants program in
-    Usequence (e1, e2), constants
-  | End _ ->
-    Uconst (Uconst_ptr 0), constants
+let to_clambda_program t env constants (program : Flambda.program) =
+  let rec loop env constants (program : Flambda.program_body)
+        : Clambda.ulambda * Clambda.ustructured_constant Symbol.Map.t =
+    match program with
+    | Let_symbol (symbol, alloc, program) ->
+      (* Useful only for unboxing. Since floats and boxed integers will
+         never be part of a Let_rec_symbol, handling only the Let_symbol
+         is sufficient. *)
+      let env =
+        match alloc with
+        | Allocated_const const -> Env.add_allocated_const env symbol const
+        | _ -> env
+      in
+      let constants =
+        accumulate_structured_constants t env symbol alloc constants
+      in
+      loop env constants program
+    | Let_rec_symbol (defs, program) ->
+      let constants =
+        List.fold_left (fun constants (symbol, alloc) ->
+            accumulate_structured_constants t env symbol alloc constants)
+          constants defs
+      in
+      loop env constants program
+    | Initialize_symbol (symbol, _tag, fields, program) ->
+      (* The tag is ignored here: It is used separately to generate the
+         preallocated block. Only the initialisation code is generated
+         here. *)
+      let e1 = to_clambda_initialize_symbol t env symbol fields in
+      let e2, constants = loop env constants program in
+      Usequence (e1, e2), constants
+    | Effect (expr, program) ->
+      let e1 = to_clambda t env expr in
+      let e2, constants = loop env constants program in
+      Usequence (e1, e2), constants
+    | End _ ->
+      Uconst (Uconst_ptr 0), constants
+  in
+  loop env constants program.program_body
 
 type result = {
   expr : Clambda.ulambda;

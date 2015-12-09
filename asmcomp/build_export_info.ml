@@ -431,53 +431,54 @@ let describe_constant_defining_value env export_id symbol
         Closure_id.print closure_id
     end
 
-let rec describe_program (env : Env.Global.t) (program : Flambda.program) =
-  match program with
-  | Let_symbol (symbol, constant_defining_value, program) ->
-    let id, env = Env.Global.new_symbol env symbol in
-    describe_constant_defining_value env id symbol constant_defining_value;
-    describe_program env program
-  | Let_rec_symbol (defs, program) ->
-    let env, defs =
-      List.fold_left (fun (env, defs) (symbol, def) ->
-          let id, env = Env.Global.new_symbol env symbol in
-          env, ((id, symbol, def) :: defs))
-        (env, []) defs
-    in
-    (* [Project_closure]s are separated to be handled last.  They are the
-       only values that need a description for their argument. *)
-    let project_closures, other_constants =
-      List.partition (function
-          | _, _, Flambda.Project_closure _ -> true
-          | _ -> false)
-        defs
-    in
-    List.iter (fun (id, symbol, def) ->
-        describe_constant_defining_value env id symbol def)
-      other_constants;
-    List.iter (fun (id, symbol, def) ->
-        describe_constant_defining_value env id symbol def)
-      project_closures;
-    describe_program env program
-  | Import_symbol (_symbol, program) ->
-    describe_program env program
-  | Initialize_symbol (symbol, tag, fields, program) ->
-    let id =
-      let env =
-        (* Assignments of variables to export IDs are local to each
-           [Initialize_symbol] construction. *)
-        Env.empty_of_global env
+let describe_program (env : Env.Global.t) (program : Flambda.program) =
+  let rec loop env (program : Flambda.program_body) =
+    match program with
+    | Let_symbol (symbol, constant_defining_value, program) ->
+      let id, env = Env.Global.new_symbol env symbol in
+      describe_constant_defining_value env id symbol constant_defining_value;
+      loop env program
+    | Let_rec_symbol (defs, program) ->
+      let env, defs =
+        List.fold_left (fun (env, defs) (symbol, def) ->
+            let id, env = Env.Global.new_symbol env symbol in
+            env, ((id, symbol, def) :: defs))
+          (env, []) defs
       in
-      let field_approxs = List.map (approx_of_expr env) fields in
-      let descr : Export_info.descr =
-        Value_block (tag, Array.of_list field_approxs)
+      (* [Project_closure]s are separated to be handled last.  They are the
+         only values that need a description for their argument. *)
+      let project_closures, other_constants =
+        List.partition (function
+            | _, _, Flambda.Project_closure _ -> true
+            | _ -> false)
+          defs
       in
-      Env.new_descr env descr
-    in
-    let env = Env.Global.add_symbol env symbol id in
-    describe_program env program
-  | Effect (_expr, program) -> describe_program env program
-  | End symbol -> symbol, env
+      List.iter (fun (id, symbol, def) ->
+          describe_constant_defining_value env id symbol def)
+        other_constants;
+      List.iter (fun (id, symbol, def) ->
+          describe_constant_defining_value env id symbol def)
+        project_closures;
+      loop env program
+    | Initialize_symbol (symbol, tag, fields, program) ->
+      let id =
+        let env =
+          (* Assignments of variables to export IDs are local to each
+             [Initialize_symbol] construction. *)
+          Env.empty_of_global env
+        in
+        let field_approxs = List.map (approx_of_expr env) fields in
+        let descr : Export_info.descr =
+          Value_block (tag, Array.of_list field_approxs)
+        in
+        Env.new_descr env descr
+      in
+      let env = Env.Global.add_symbol env symbol id in
+      loop env program
+    | Effect (_expr, program) -> loop env program
+    | End symbol -> symbol, env
+  in
+  loop env program.program_body
 
 let build_export_info ~(backend : (module Backend_intf.S))
       (program : Flambda.program) : Export_info.t =

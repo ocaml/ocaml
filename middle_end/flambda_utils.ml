@@ -338,49 +338,39 @@ let name_expr (named : Flambda.named) ~name : Flambda.t =
   in
   Flambda.create_let var named (Var var)
 
-let rec all_lifted_constants (program : Flambda.program) =
-  match program with
-  | Let_symbol (symbol, decl, program) ->
-    (symbol, decl) ::
-    (all_lifted_constants program)
-  | Let_rec_symbol (decls, program) ->
-    List.fold_left (fun l (symbol, decl) ->
-        (symbol, decl) :: l)
-      (all_lifted_constants program)
-      decls
-  | Initialize_symbol (_, _, _, program)
-  | Effect (_, program)
-  | Import_symbol (_, program) ->
-    all_lifted_constants program
-  | End _ -> []
+let all_lifted_constants (program : Flambda.program) =
+  let rec loop (program : Flambda.program_body) =
+    match program with
+    | Let_symbol (symbol, decl, program) -> (symbol, decl) :: (loop program)
+    | Let_rec_symbol (decls, program) ->
+      List.fold_left (fun l (symbol, decl) -> (symbol, decl) :: l)
+        (loop program)
+        decls
+    | Initialize_symbol (_, _, _, program)
+    | Effect (_, program) -> loop program
+    | End _ -> []
+  in
+  loop program.program_body
 
 let all_lifted_constants_as_map program =
   Symbol.Map.of_list (all_lifted_constants program)
 
-let rec initialize_symbols (program:Flambda.program) =
-  match program with
-  | Initialize_symbol (symbol, tag, fields, program) ->
-    (symbol, tag, fields) :: (initialize_symbols program)
-  | Effect (_, program)
-  | Let_symbol (_, _, program)
-  | Let_rec_symbol (_, program)
-  | Import_symbol (_, program) ->
-    initialize_symbols program
-  | End _ -> []
+let initialize_symbols (program : Flambda.program) =
+  let rec loop (program : Flambda.program_body) =
+    match program with
+    | Initialize_symbol (symbol, tag, fields, program) ->
+      (symbol, tag, fields) :: (loop program)
+    | Effect (_, program)
+    | Let_symbol (_, _, program)
+    | Let_rec_symbol (_, program) -> loop program
+    | End _ -> []
+  in
+  loop program.program_body
 
-let rec imported_symbols (program:Flambda.program) =
-  match program with
-  | Effect (_, program)
-  | Let_symbol (_, _, program)
-  | Let_rec_symbol (_, program)
-  | Initialize_symbol (_, _, _, program) ->
-    imported_symbols program
-  | Import_symbol (symbol, program) ->
-    Symbol.Set.add symbol (imported_symbols program)
-  | End _ ->
-    Symbol.Set.empty
+let imported_symbols (program : Flambda.program) =
+  program.imported_symbols
 
-let needed_import_symbols (program:Flambda.program) =
+let needed_import_symbols (program : Flambda.program) =
   let dependencies = Flambda.free_symbols_program program in
   let defined_symbol =
     Symbol.Set.union
@@ -392,23 +382,21 @@ let needed_import_symbols (program:Flambda.program) =
   Symbol.Set.diff dependencies defined_symbol
 
 let introduce_needed_import_symbols program : Flambda.program =
-  Symbol.Set.fold (fun symbol program ->
-      Flambda.Import_symbol (symbol, program))
-    (Symbol.Set.diff
-       (needed_import_symbols program)
-       (imported_symbols program))
-    program
+  { program with
+    imported_symbols = needed_import_symbols program;
+  }
 
-let rec root_symbol (program:Flambda.program) =
-  match program with
-  | Effect (_, program)
-  | Let_symbol (_, _, program)
-  | Let_rec_symbol (_, program)
-  | Initialize_symbol (_, _, _, program)
-  | Import_symbol (_, program) ->
-    root_symbol program
-  | End root ->
-    root
+let root_symbol (program : Flambda.program) =
+  let rec loop (program : Flambda.program_body) =
+    match program with
+    | Effect (_, program)
+    | Let_symbol (_, _, program)
+    | Let_rec_symbol (_, program)
+    | Initialize_symbol (_, _, _, program) -> loop program
+    | End root ->
+      root
+  in
+  loop program.program_body
 
 let might_raise_static_exn flam stexn =
   try

@@ -149,13 +149,17 @@ and constant_defining_value_block_field =
 
 type expr = t
 
-type program =
-  | Let_symbol of Symbol.t * constant_defining_value * program
-  | Let_rec_symbol of (Symbol.t * constant_defining_value) list * program
-  | Import_symbol of Symbol.t * program
-  | Initialize_symbol of Symbol.t * Tag.t * t list * program
-  | Effect of t * program
+type program_body =
+  | Let_symbol of Symbol.t * constant_defining_value * program_body
+  | Let_rec_symbol of (Symbol.t * constant_defining_value) list * program_body
+  | Initialize_symbol of Symbol.t * Tag.t * t list * program_body
+  | Effect of t * program_body
   | End of Symbol.t
+
+type program = {
+  imported_symbols : Symbol.Set.t;
+  program_body : program_body;
+}
 
 let fprintf = Format.fprintf
 module Int = Ext_types.Int
@@ -425,11 +429,11 @@ let print_constant_defining_value ppf (const : constant_defining_value) =
     fprintf ppf "(Project_closure (%a, %a))" Symbol.print set_of_closures
       Closure_id.print closure_id
 
-let rec print_program ppf (program : program) =
+let rec print_program_body ppf (program : program_body) =
   match program with
   | Let_symbol (symbol, constant_defining_value, body) ->
     (* CR mshinwell: share with above *)
-    let rec letbody (ul : program) =
+    let rec letbody (ul : program_body) =
       match ul with
       | Let_symbol (symbol, constant_defining_value, body) ->
         fprintf ppf "@ @[<2>(%a@ %a)@]" Symbol.print symbol
@@ -442,7 +446,7 @@ let rec print_program ppf (program : program) =
       print_constant_defining_value constant_defining_value;
     let program = letbody body in
     fprintf ppf "@]@.";
-    print_program ppf program
+    print_program_body ppf program
   | Let_rec_symbol (defs, program) ->
     let bindings ppf id_arg_list =
       let spc = ref false in
@@ -456,21 +460,24 @@ let rec print_program ppf (program : program) =
     fprintf ppf
       "@[<2>let_rec_symbol@ (@[<hv 1>%a@])@]@."
       bindings defs;
-    print_program ppf program
-  | Import_symbol (symbol, program) ->
-    fprintf ppf "@[import_symbol@ %a@]@." Symbol.print symbol;
-    print_program ppf program
+    print_program_body ppf program
   | Initialize_symbol (symbol, tag, fields, program) ->
     fprintf ppf "@[<2>initialize_symbol@ @[<hv 1>(@[<2>%a@ %a@ %a@])@]@]@."
       Symbol.print symbol
       Tag.print tag
       (Format.pp_print_list lam) fields;
-    print_program ppf program
+    print_program_body ppf program
   | Effect (expr, program) ->
     fprintf ppf "@[effect @[<hv 1>%a@]@@]@."
       lam expr;
-    print_program ppf program;
+    print_program_body ppf program;
   | End root -> fprintf ppf "End %a" Symbol.print root
+
+let print_program ppf program =
+  Symbol.Set.iter (fun symbol ->
+      fprintf ppf "@[import_symbol@ %a@]@." Symbol.print symbol)
+    program.imported_symbols;
+  print_program_body ppf program.program_body
 
 let rec variables_usage ?ignore_uses_as_callee ?ignore_uses_in_project_var
     ~all_used_variables tree =
@@ -892,7 +899,7 @@ let free_symbols_allocated_constant_helper symbols
 
 let free_symbols_program (program : program) =
   let symbols = ref Symbol.Set.empty in
-  let rec loop (program : program) =
+  let rec loop (program : program_body) =
     match program with
     | Let_symbol (_, const, program) ->
       free_symbols_allocated_constant_helper symbols const;
@@ -901,10 +908,6 @@ let free_symbols_program (program : program) =
       List.iter (fun (_, const) ->
           free_symbols_allocated_constant_helper symbols const)
         defs;
-      loop program
-    | Import_symbol (_, program) ->
-      (* [Import_symbol] is effectively binding construct, so there's no
-         need to record the symbol. *)
       loop program
     | Initialize_symbol (_, _, fields, program) ->
       List.iter (fun field ->
@@ -916,7 +919,8 @@ let free_symbols_program (program : program) =
       loop program
     | End symbol -> symbols := Symbol.Set.add symbol !symbols
   in
-  loop program;
+  (* Note that there is no need to count the [imported_symbols]. *)
+  loop program.program_body;
   !symbols
 
 let create_function_declaration ~params ~body ~stub ~dbg

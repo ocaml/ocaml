@@ -550,7 +550,7 @@ and close_let_bound_expression t ?let_rec_ident let_bound_var env
         ~name:(Variable.unique_name let_bound_var)))
   | lam -> Expr (close t env lam)
 
-let lambda_to_flambda ~backend ~module_ident ~size lam =
+let lambda_to_flambda ~backend ~module_ident ~size lam : Flambda.program =
   let module Backend = (val backend : Backend_intf.S) in
   let compilation_unit = Compilation_unit.get_current_exn () in
   let t =
@@ -583,7 +583,7 @@ let lambda_to_flambda ~backend ~module_ident ~size lam =
               (Prim (Pfield pos, [result_v], Debuginfo.none))
               (Var value_v))))
   in
-  let module_initializer : Flambda.program =
+  let module_initializer : Flambda.program_body =
     Initialize_symbol (
       block_symbol,
       Tag.create_exn 0,
@@ -594,6 +594,6 @@ let lambda_to_flambda ~backend ~module_ident ~size lam =
         Array.to_list fields,
         End module_symbol))
   in
-  Symbol.Set.fold (fun sym expr -> Flambda.Import_symbol (sym, expr))
-    t.imported_symbols
-    module_initializer
+  { imported_symbols = t.imported_symbols;
+    program_body = module_initializer;
+  }

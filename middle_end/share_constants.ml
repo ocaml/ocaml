@@ -60,13 +60,15 @@ let share_definition constant_to_symbol_tbl sharing_symbol_tbl symbol def =
       None
     end
 
-let share_constants (program:Flambda.program) =
+let share_constants (program : Flambda.program) =
   let sharing_symbol_tbl = Symbol.Tbl.create 42 in
   let constant_to_symbol_tbl = Constant_defining_value.Tbl.create 42 in
-  let rec loop (program:Flambda.program) : Flambda.program =
+  let rec loop (program : Flambda.program_body) : Flambda.program_body =
     match program with
     | Let_symbol (symbol,def,program) ->
-      begin match share_definition constant_to_symbol_tbl sharing_symbol_tbl symbol def with
+      begin match
+        share_definition constant_to_symbol_tbl sharing_symbol_tbl symbol def
+      with
       | None ->
         loop program
       | Some def' ->
@@ -80,8 +82,6 @@ let share_constants (program:Flambda.program) =
           defs
       in
       Let_rec_symbol (defs, loop program)
-    | Import_symbol (symbol,program) ->
-      Import_symbol (symbol,loop program)
     | Initialize_symbol (symbol,tag,fields,program) ->
       let fields =
         List.map (fun field ->
@@ -104,5 +104,6 @@ let share_constants (program:Flambda.program) =
       Effect (expr, loop program)
     | End root -> End root
   in
-  let program = loop program in
-  program
+  { program with
+    program_body = loop program.program_body;
+  }

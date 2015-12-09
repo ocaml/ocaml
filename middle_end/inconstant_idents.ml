@@ -337,25 +337,27 @@ module NotConstants(P:Param) = struct
     | Set_of_closures set_of_closure ->
       mark_loop_set_of_closures ~toplevel:true [] set_of_closure
 
-  let rec mark_program (program:Flambda.program) =
-    match program with
-    | End _ -> ()
-    | Initialize_symbol (symbol,_tag,fields,program) ->
-      List.iteri (fun i field ->
-          mark_loop ~toplevel:true [Symbol symbol; Symbol_field (symbol,i)] field)
-        fields;
-      mark_program program
-    | Effect (expr, program) ->
-      mark_loop ~toplevel:true [] expr;
-      mark_program program
-    | Import_symbol (_symbol, program) ->
-      mark_program program
-    | Let_symbol (_, def, program) ->
-      mark_constant_defining_value def;
-      mark_program program
-    | Let_rec_symbol (defs, program) ->
-      List.iter (fun (_, def) -> mark_constant_defining_value def) defs;
-      mark_program program
+  let mark_program (program : Flambda.program) =
+    let rec loop (program : Flambda.program_body) =
+      match program with
+      | End _ -> ()
+      | Initialize_symbol (symbol,_tag,fields,program) ->
+        List.iteri (fun i field ->
+            mark_loop ~toplevel:true
+              [Symbol symbol; Symbol_field (symbol,i)] field)
+          fields;
+        loop program
+      | Effect (expr, program) ->
+        mark_loop ~toplevel:true [] expr;
+        loop program
+      | Let_symbol (_, def, program) ->
+        mark_constant_defining_value def;
+        loop program
+      | Let_rec_symbol (defs, program) ->
+        List.iter (fun (_, def) -> mark_constant_defining_value def) defs;
+        loop program
+    in
+    loop program.program_body
 
   (* There is no information available about the contents of imported
      symbols, so we must consider all their fields as inconstant. *)

@@ -55,26 +55,24 @@ let let_rec_dep defs dep =
   in
   fixpoint dep
 
-let rec loop (program:Flambda.program) : Flambda.program * Symbol.Set.t =
+let rec loop (program : Flambda.program_body)
+      : Flambda.program_body * Symbol.Set.t =
   match program with
-  | Let_symbol (sym,def,program) ->
+  | Let_symbol (sym, def, program) ->
     let program, dep = loop program in
     if Symbol.Set.mem sym dep then
-      Let_symbol (sym,def,program),
+      Let_symbol (sym, def, program),
       Symbol.Set.union dep (constant_dependencies def)
     else
       program, dep
-  | Let_rec_symbol (defs,program) ->
+  | Let_rec_symbol (defs, program) ->
     let program, dep = loop program in
     let dep = let_rec_dep defs dep in
     let defs =
       List.filter (fun (sym, _) -> Symbol.Set.mem sym dep) defs
     in
-    Let_rec_symbol (defs,program), dep
-  | Import_symbol (sym,program) ->
-    let program, dep = loop program in
-    Import_symbol (sym,program), dep
-  | Initialize_symbol (sym,tag,fields,program) ->
+    Let_rec_symbol (defs, program), dep
+  | Initialize_symbol (sym, tag, fields, program) ->
     let program, dep = loop program in
     if Symbol.Set.mem sym dep then
       let dep =
@@ -82,7 +80,7 @@ let rec loop (program:Flambda.program) : Flambda.program * Symbol.Set.t =
           (fun dep field -> Symbol.Set.union dep (dependency field))
           dep fields
       in
-      Initialize_symbol (sym,tag,fields,program), dep
+      Initialize_symbol (sym, tag, fields, program), dep
     else begin
       (* Format.printf "remove initialize %a@." *)
       (*   Symbol.print sym; *)
@@ -93,10 +91,10 @@ let rec loop (program:Flambda.program) : Flambda.program * Symbol.Set.t =
            else
              let new_dep = dependency field in
              let dep = Symbol.Set.union new_dep dep in
-             Flambda.Effect (field,program), dep)
+             Flambda.Effect (field, program), dep)
         (program, dep) fields
     end
-  | Effect (effect,program) ->
+  | Effect (effect, program) ->
     let program, dep = loop program in
     if Effect_analysis.no_effects effect then begin
       (* Format.printf "remove effect@."; *)
@@ -105,10 +103,11 @@ let rec loop (program:Flambda.program) : Flambda.program * Symbol.Set.t =
     else
       let new_dep = dependency effect in
       let dep = Symbol.Set.union new_dep dep in
-      Effect (effect,program), dep
+      Effect (effect, program), dep
   | End symbol ->
     program, Symbol.Set.singleton symbol
 
-let remove_unused_globals program =
-  let (program, _) = loop program in
-  program
+let remove_unused_globals (program : Flambda.program) =
+  { program with
+    program_body = fst (loop program.program_body);
+  }
