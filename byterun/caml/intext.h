@@ -177,17 +177,11 @@ CAMLextern void caml_deserialize_error(char * msg);
 struct code_fragment {
   char * code_start;
   char * code_end;
-  char * data_start;
-  char * data_end;
   unsigned char digest[16];
   char digest_computed;
 };
 
 struct ext_table caml_code_fragments_table;
-
-/* Defined in misc.c */
-
-CAMLextern void caml_update_code_fragment_digest(struct code_fragment *cf);
 
 /* </private> */
 
