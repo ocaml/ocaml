@@ -55,6 +55,9 @@ Language features:
 - GPR#273: allow to get the extension slot of an extension constructor
   by writing [%extension_constructor <path>]
   (Jérémie Dimino)
+- PR#6422, GPR#305: Support "exception" under or-patterns
+  (Thomas Refis, with help and review from Alain Frisch, Luc Maranget, Gabriel
+  Scherer, Leo White and Jeremy Yallop)
 
 Compilers:
 - PR#4800: better compilation of tuple assignment (Gabriel Scherer and

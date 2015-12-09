@@ -512,6 +512,15 @@ let extract_float = function
 
 (* To find reasonable names for let-bound and lambda-bound idents *)
 
+(* I'm a bit sad about this duplication. *)
+let rec name_pattern' default = function
+    [] -> Ident.create default
+  | (p, _) :: rem ->
+      match p.pat_desc with
+        Tpat_var (id, _) -> id
+      | Tpat_alias(p, id, _) -> id
+      | _ -> name_pattern' default rem
+
 let rec name_pattern default = function
     [] -> Ident.create default
   | {c_lhs=p; _} :: rem ->
@@ -572,7 +581,7 @@ let rec push_defaults loc bindings cases partial =
                            val_attributes = [];
                            Types.val_loc = Location.none;
                           })},
-             cases, [], partial) }
+             cases, partial) }
       in
       push_defaults loc bindings
         [{c_lhs={pat with pat_desc = Tpat_var (param, mknoloc name)};
@@ -769,8 +778,8 @@ and transl_exp0 e =
       let e = { e with exp_desc = Texp_apply(funct, oargs) } in
       event_after e (transl_apply ~should_be_tailcall ~inlined
                        (transl_exp funct) oargs e.exp_loc)
-  | Texp_match(arg, pat_expr_list, exn_pat_expr_list, partial) ->
-    transl_match e arg pat_expr_list exn_pat_expr_list partial
+  | Texp_match(arg, pat_expr_list, partial) ->
+    transl_match e arg pat_expr_list partial
   | Texp_try(body, pat_expr_list) ->
       let id = name_pattern "exn" pat_expr_list in
       Ltrywith(transl_exp body, id,
@@ -1232,11 +1241,41 @@ and transl_record env all_labels repres lbl_expr_list opt_init_expr =
     end
   end
 
-and transl_match e arg pat_expr_list exn_pat_expr_list partial =
-  let id = name_pattern "exn" exn_pat_expr_list
-  and cases = transl_cases pat_expr_list
-  and exn_cases = transl_cases exn_pat_expr_list in
+and transl_match e arg pat_expr_list partial =
+  let rewrite_case (val_cases, exn_cases, static_handlers as acc)
+        ({ c_lhs; c_guard; c_rhs } as case) =
+    if c_rhs.exp_desc = Texp_unreachable then acc else
+    let val_pat, exn_pat = split_pattern c_lhs in
+    match val_pat, exn_pat with
+    | None, None -> assert false
+    | Some pv, None ->
+        assert (Typedtree.pat_equiv pv c_lhs);
+        let val_case = transl_case { case with c_lhs = pv } in
+        val_case :: val_cases, exn_cases, static_handlers
+    | None, Some pe ->
+        let exn_case = transl_case { case with c_lhs = pe } in
+        val_cases, exn_case :: exn_cases, static_handlers
+    | Some pv, Some pe ->
+        assert (c_guard = None);
+        let lbl  = next_negative_raise_count () in
+        let static_raise ids =
+          Lstaticraise (lbl, List.map (fun id -> Lvar id) ids)
+        in
+        (* Simplif doesn't like it if binders are not uniq, so we make sure to
+           use different names in the value and the exception branches. *)
+        let ids  = Typedtree.pat_bound_idents pv in
+        let eids = List.map Ident.rename ids in
+        let pe = alpha_pat (List.combine ids eids) pe in
+        (pv, static_raise ids) :: val_cases,
+        (pe, static_raise eids) :: exn_cases,
+        (lbl, ids, transl_exp c_rhs) :: static_handlers
+  in
+  let val_cases, exn_cases, static_handlers =
+    let x, y, z = List.fold_left rewrite_case ([], [], []) pat_expr_list in
+    List.rev x, List.rev y, List.rev z
+  in
   let static_catch body val_ids handler =
+    let id = name_pattern' "exn" exn_cases in
     let static_exception_id = next_negative_raise_count () in
     Lstaticcatch
       (Ltrywith (Lstaticraise (static_exception_id, body), id,
@@ -1246,19 +1285,31 @@ and transl_match e arg pat_expr_list exn_pat_expr_list partial =
   in
   match arg, exn_cases with
   | {exp_desc = Texp_tuple argl}, [] ->
-    Matching.for_multiple_match e.exp_loc (transl_list argl) cases partial
+      assert (static_handlers = []);
+      Matching.for_multiple_match e.exp_loc (transl_list argl) val_cases partial
   | {exp_desc = Texp_tuple argl}, _ :: _ ->
-    let val_ids = List.map (fun _ -> name_pattern "val" []) argl in
-    let lvars = List.map (fun id -> Lvar id) val_ids in
-    static_catch (transl_list argl) val_ids
-      (Matching.for_multiple_match e.exp_loc lvars cases partial)
+      let val_ids = List.map (fun _ -> name_pattern "val" []) argl in
+      let lvars = List.map (fun id -> Lvar id) val_ids in
+      let classic =
+        static_catch (transl_list argl) val_ids
+          (Matching.for_multiple_match e.exp_loc lvars val_cases partial)
+      in
+      List.fold_left (fun body (static_exception_id, val_ids, handler) ->
+        Lstaticcatch (body, (static_exception_id, val_ids), handler)
+      ) classic static_handlers
   | arg, [] ->
-    Matching.for_function e.exp_loc None (transl_exp arg) cases partial
-  | arg, _ :: _ ->
-    let val_id = name_pattern "val" pat_expr_list in
-    static_catch [transl_exp arg] [val_id]
-      (Matching.for_function e.exp_loc None (Lvar val_id) cases partial)
+      assert (static_handlers = []);
+      Matching.for_function e.exp_loc None (transl_exp arg) val_cases partial
 
+  | arg, _ :: _ ->
+      let val_id = name_pattern "val" pat_expr_list in
+      let classic =
+        static_catch [transl_exp arg] [val_id]
+          (Matching.for_function e.exp_loc None (Lvar val_id) val_cases partial)
+      in
+      List.fold_left (fun body (static_exception_id, val_ids, handler) ->
+        Lstaticcatch (body, (static_exception_id, val_ids), handler)
+      ) classic static_handlers
 
 (* Wrapper for class compilation *)
 
