@@ -256,7 +256,7 @@ let parse_options errflag s =
 
 (* If you change these, don't forget to change them in man/ocamlc.m *)
 let defaults_w = "+a-4-6-7-9-27-29-32..39-41..42-44-45-48-50";;
-let defaults_warn_error = "-a";;
+let defaults_warn_error = "-a+31";;
 
 let () = parse_options false defaults_w;;
 let () = parse_options true defaults_warn_error;;
