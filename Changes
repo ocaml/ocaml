@@ -58,6 +58,9 @@ Language features:
 - PR#6422, GPR#305: Support "exception" under or-patterns
   (Thomas Refis, with help and review from Alain Frisch, Luc Maranget, Gabriel
   Scherer, Leo White and Jeremy Yallop)
+- PR#6681 GPR#326: signature items are now accepted as payloads for
+  extension and attributes, using the syntax [%foo: SIG ] or [@foo: SIG ].
+  (Alain Frisch and Gabriel Radanne)
 
 Compilers:
 - PR#4800: better compilation of tuple assignment (Gabriel Scherer and

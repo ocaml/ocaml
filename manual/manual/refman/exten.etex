@@ -1303,8 +1303,9 @@ The last two entries are valid for any $n > 3$.
 Attributes are ``decorations'' of the syntax tree which are mostly
 ignored by the type-checker but can be used by external tools.  An
 attribute is made of an identifier and a payload, which can be a
-structure, a type expression (prefixed with ":") or a pattern
-(prefixed with "?") optionally followed by a "when" clause:
+structure, a type expression (prefixed with ":"), a signature
+(prefixed with ":") or a pattern (prefixed with "?") optionally
+followed by a "when" clause:
 
 
 \begin{syntax}
@@ -1316,6 +1317,7 @@ attr-id:
 attr-payload:
     [ module-items ]
  |  ':' typexpr
+ |  ':' [ specification ]
  |  '?' pattern ['when' expr]
 ;
 \end{syntax}
