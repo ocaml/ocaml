@@ -23,7 +23,7 @@ COMPFLAGS= -strict-sequence -w +27+32..39 -warn-error A -safe-string $(INCLUDES)
 LINKFLAGS=$(INCLUDES)
 
 all: ocamldep ocamlprof ocamlcp ocamloptp ocamlmktop ocamlmklib dumpobj \
-     objinfo read_cmt
+     objinfo read_cmt stripdebug cmpbyt
 
 # scrapelabels addlabels
 
@@ -287,6 +287,30 @@ primreq: $(PRIMREQ)
 
 clean::
 	rm -f primreq
+
+# Copy a bytecode executable, stripping debug info
+
+STRIPDEBUG=../compilerlibs/ocamlcommon.cma \
+           ../compilerlibs/ocamlbytecomp.cma \
+           stripdebug.cmo
+
+stripdebug: $(STRIPDEBUG)
+	$(CAMLC) $(LINKFLAGS) -o stripdebug $(STRIPDEBUG)
+
+clean::
+	rm -f stripdebug
+
+# Compare two bytecode executables
+
+CMPBYT=../compilerlibs/ocamlcommon.cma \
+       ../compilerlibs/ocamlbytecomp.cma \
+       cmpbyt.cmo
+
+cmpbyt: $(CMPBYT)
+	$(CAMLC) $(LINKFLAGS) -o cmpbyt $(CMPBYT)
+
+clean::
+	rm -f cmpbyt
 
 # Common stuff
 
