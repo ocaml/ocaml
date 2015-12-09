@@ -1,0 +1,36 @@
+
+#                     val f : (unit -> 'a) -> unit = <fun>
+#         val f : (unit -> 'a) -> unit = <fun>
+#             Characters 59-70:
+    with exception _ -> ()
+         ^^^^^^^^^^^
+Error: Exception patterns are not allowed in this position.
+#           Characters 33-46:
+    | (exception _) as _pat -> ()
+      ^^^^^^^^^^^^^
+Error: Exception patterns are not allowed in this position.
+#         Characters 37-48:
+    | (_, exception _, _) -> ()
+          ^^^^^^^^^^^
+Error: Exception patterns are not allowed in this position.
+#           Characters 38-51:
+    | lazy (exception _) -> ()
+           ^^^^^^^^^^^^^
+Error: Exception patterns are not allowed in this position.
+#         Characters 46-57:
+    | { contents = exception _ } -> ()
+                   ^^^^^^^^^^^
+Error: Exception patterns are not allowed in this position.
+#         Characters 36-47:
+    | [| exception _ |] -> ()
+         ^^^^^^^^^^^
+Error: Exception patterns are not allowed in this position.
+#         Characters 38-51:
+    | Some (exception _) -> ()
+           ^^^^^^^^^^^^^
+Error: Exception patterns are not allowed in this position.
+#         Characters 22-33:
+    | exception _ -> ()
+      ^^^^^^^^^^^
+Error: Exception patterns are not allowed in this position.
+# 

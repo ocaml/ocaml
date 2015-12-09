@@ -8,4 +8,37 @@ Warning 8: this pattern-matching is not exhaustive.
 Here is an example of a value that is not matched:
 Some true
 val test_match_exhaustiveness : unit -> unit = <fun>
+#           Characters 44-109:
+  ..match None with
+    | Some false -> ()
+    | None | exception _ -> ()
+Warning 8: this pattern-matching is not exhaustive.
+Here is an example of a value that is not matched:
+Some true
+val test_match_exhaustiveness_nest1 : unit -> unit = <fun>
+#           Characters 44-109:
+  ..match None with
+    | Some false | exception _ -> ()
+    | None -> ()
+Warning 8: this pattern-matching is not exhaustive.
+Here is an example of a value that is not matched:
+Some true
+val test_match_exhaustiveness_nest2 : unit -> unit = <fun>
+#             Characters 43-144:
+  ..match None with
+    | exception e -> ()
+    | Some false | exception _ -> ()
+    | None | exception _ -> ()
+Warning 8: this pattern-matching is not exhaustive.
+Here is an example of a value that is not matched:
+Some true
+Characters 108-109:
+    | Some false | exception _ -> ()
+                             ^
+Warning 11: this match case is unused.
+Characters 137-138:
+    | None | exception _ -> ()
+                       ^
+Warning 11: this match case is unused.
+val test_match_exhaustiveness_full : unit -> unit = <fun>
 # 

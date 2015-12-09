@@ -1,0 +1,6 @@
+
+#                 Characters 70-91:
+    | true | exception Exit when r := "hello"; true -> !r
+      ^^^^^^^^^^^^^^^^^^^^^
+Error: Mixing return and exception cases under when-guards is not supported.
+# 
