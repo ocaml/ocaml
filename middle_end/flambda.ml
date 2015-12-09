@@ -919,8 +919,16 @@ let free_symbols_program (program : program) =
   loop program;
   !symbols
 
-let create_function_declaration ~params ~body ~stub ~dbg ~inline ~is_a_functor
+let create_function_declaration ~params ~body ~stub ~dbg
+      ~(inline : Lambda.inline_attribute) ~is_a_functor
       : function_declaration =
+  begin match stub, inline with
+  | true, (Never_inline | Default_inline)
+  | false, (Never_inline | Default_inline | Always_inline) -> ()
+  | true, Always_inline ->
+    Misc.fatal_errorf "Stubs may not be annotated as [Always_inline]: %a"
+      print body
+  end;
   { params;
     body;
     free_variables = free_variables body;
