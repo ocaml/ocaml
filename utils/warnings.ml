@@ -42,7 +42,7 @@ type t =
   | Preprocessor of string                  (* 22 *)
   | Useless_record_with                     (* 23 *)
   | Bad_module_name of string               (* 24 *)
-  | All_clauses_guarded                     (* 25 *)
+  | All_clauses_guarded                     (* 8, used to be 25 *)
   | Unused_var of string                    (* 26 *)
   | Unused_var_strict of string             (* 27 *)
   | Wildcard_arg_to_constant_constr         (* 28 *)
@@ -107,7 +107,7 @@ let number = function
   | Preprocessor _ -> 22
   | Useless_record_with -> 23
   | Bad_module_name _ -> 24
-  | All_clauses_guarded -> 25
+  | All_clauses_guarded -> 8 (* used to be 25 *)
   | Unused_var _ -> 26
   | Unused_var_strict _ -> 27
   | Wildcard_arg_to_constant_constr -> 28
@@ -171,7 +171,7 @@ let letter = function
   | 'u' -> [11; 12]
   | 'v' -> [13]
   | 'w' -> []
-  | 'x' -> [14; 15; 16; 17; 18; 19; 20; 21; 22; 23; 24; 25; 30]
+  | 'x' -> [14; 15; 16; 17; 18; 19; 20; 21; 22; 23; 24; 30]
   | 'y' -> [26]
   | 'z' -> [27]
   | _ -> assert false
@@ -324,7 +324,8 @@ let message = function
   | Bad_module_name (modname) ->
       "bad source file name: \"" ^ modname ^ "\" is not a valid module name."
   | All_clauses_guarded ->
-      "bad style, all clauses in this pattern-matching are guarded."
+      "this pattern-matching is not exhaustive.\n\
+       All clauses in this pattern-matching are guarded."
   | Unused_var v | Unused_var_strict v -> "unused variable " ^ v ^ "."
   | Wildcard_arg_to_constant_constr ->
      "wildcard pattern given as argument to a constant constructor"
@@ -482,8 +483,8 @@ let descriptions =
    23, "Useless record \"with\" clause.";
    24, "Bad module name: the source file name is not a valid OCaml module \
         name.";
-   25, "Pattern-matching with all clauses guarded.  Exhaustiveness cannot be\n\
-   \    checked.";
+   (* 25, "Pattern-matching with all clauses guarded.  Exhaustiveness cannot be\n\
+   \    checked.";  (* Now part of warning 8 *) *)
    26, "Suspicious unused variable: unused variable that is bound\n\
    \    with \"let\" or \"as\", and doesn't start with an underscore (\"_\")\n\
    \    character.";
