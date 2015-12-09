@@ -1653,9 +1653,8 @@ String.length {foo|\"|foo}   (* returns 2 *)
 
 (Introduced in OCaml 4.02)
 
-A new form of exception patterns is allowed, only as a toplevel
-pattern under a "match"..."with" pattern-matching (other occurrences
-are rejected by the type-checker).
+A new form of exception patterns is allowed under a "match"..."with"
+pattern-matching.
 
 \begin{syntax}
 pattern: ...
@@ -1677,6 +1676,10 @@ call.
 
 It is an error if all cases are exception cases in a given pattern
 matching.
+
+These patterns were only allowed at the toplevel of the matching in 4.02. The
+restriction has been relaxed in 4.03 to allow them under or-patterns as well,
+any other occurrence is still rejected by the typechecker.
 
 \section{Extensible variant types}\label{s:extensible-variants}
 
