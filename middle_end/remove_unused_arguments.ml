@@ -124,12 +124,13 @@ let separate_unused_arguments (set_of_closures : Flambda.set_of_closures) =
    benefit, and introduce an useless intermediate call *)
 let candidate_for_spliting_for_unused_arguments
     (fun_decls : Flambda.function_declarations)
-    ~backend:_ =
+    ~backend =
   if not !Clflags.remove_unused_arguments then begin
     false
   end else begin
     let no_recursive_functions =
-      Variable.Set.is_empty (Lazy.force fun_decls.recursive_functions)
+      Variable.Set.is_empty
+        (Find_recursive_functions.in_function_declarations fun_decls ~backend)
     in
     let number_of_non_stub_functions =
       Variable.Map.cardinal

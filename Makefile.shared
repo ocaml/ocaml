@@ -138,11 +138,11 @@ MIDDLE_END=\
   middle_end/base_types/mutable_variable.cmo \
   middle_end/base_types/set_of_closures_id.cmo \
   middle_end/base_types/closure_element.cmo \
-  middle_end/base_types/symbol.cmo \
   middle_end/base_types/closure_id.cmo \
   middle_end/base_types/var_within_closure.cmo \
   middle_end/base_types/static_exception.cmo \
   middle_end/base_types/export_id.cmo \
+  middle_end/base_types/symbol.cmo \
   middle_end/semantics_of_primitives.cmo \
   middle_end/allocated_const.cmo \
   middle_end/flambda.cmo \
@@ -157,6 +157,7 @@ MIDDLE_END=\
   middle_end/closure_conversion.cmo \
   middle_end/initialize_symbol_to_let_symbol.cmo \
   middle_end/lift_let_to_initialize_symbol.cmo \
+  middle_end/find_recursive_functions.cmo \
   middle_end/invariant_params.cmo \
   middle_end/inconstant_idents.cmo \
   middle_end/alias_analysis.cmo \

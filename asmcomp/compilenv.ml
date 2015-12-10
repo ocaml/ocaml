@@ -369,7 +369,15 @@ let new_const_symbol' ?name () =
 let concat_symbol unitname id =
   unitname ^ "__" ^ id
 
-let closure_symbol closure_id = Closure_id.symbol closure_id
+let closure_symbol fv =
+  let compilation_unit = Closure_id.get_compilation_unit fv in
+  let unitname =
+    Linkage_name.to_string (Compilation_unit.get_linkage_name compilation_unit)
+  in
+  let linkage_name =
+    concat_symbol unitname ((Closure_id.unique_name fv) ^ "_closure")
+  in
+  Symbol.unsafe_create compilation_unit (Linkage_name.create linkage_name)
 
 let function_label fv =
   let compilation_unit = Closure_id.get_compilation_unit fv in

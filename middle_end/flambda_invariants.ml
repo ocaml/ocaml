@@ -248,8 +248,7 @@ let variable_and_symbol_invariants (program : Flambda.program) =
   and loop_set_of_closures env
       ({ Flambda.function_decls; free_vars; specialised_args; }
        as set_of_closures) =
-      let { Flambda.set_of_closures_id; funs; compilation_unit;
-          recursive_functions = _; } =
+      let { Flambda.set_of_closures_id; funs; compilation_unit; } =
         function_decls
       in
       ignore_set_of_closures_id set_of_closures_id;
