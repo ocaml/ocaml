@@ -1463,6 +1463,10 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
 
 let type_toplevel_phrase env s =
   Env.reset_required_globals ();
+  begin
+    let map = Builtin_attributes.emit_external_warnings in
+    ignore (map.Ast_mapper.structure map s)
+  end;
   type_structure ~toplevel:true false None env s Location.none
 let type_module_alias = type_module ~alias:true true false None
 let type_module = type_module true false None
