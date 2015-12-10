@@ -107,6 +107,7 @@ and set_of_closures = {
 and function_declarations = {
   set_of_closures_id : Set_of_closures_id.t;
   funs : function_declaration Variable.Map.t;
+  recursive_functions : Variable.Set.t lazy_t;
   compilation_unit : Compilation_unit.t;
 }
 
@@ -943,11 +944,56 @@ let create_function_declaration ~params ~body ~stub ~dbg
     is_a_functor;
   }
 
+let fun_vars_referenced_in_decls (function_decls : function_declarations) =
+  let fun_vars = Variable.Map.keys function_decls.funs in
+  let symbols_to_fun_vars =
+    Variable.Set.fold (fun fun_var symbols_to_fun_vars ->
+        let closure_id = Closure_id.wrap fun_var in
+        let symbol = Closure_id.symbol closure_id in
+        Symbol.Map.add symbol fun_var symbols_to_fun_vars)
+      fun_vars
+      Symbol.Map.empty
+  in
+  Variable.Map.map (fun (func_decl : function_declaration) ->
+      let from_symbols =
+        Symbol.Set.fold (fun symbol fun_vars' ->
+            match Symbol.Map.find symbol symbols_to_fun_vars with
+            | exception Not_found -> fun_vars'
+            | fun_var ->
+              assert (Variable.Set.mem fun_var fun_vars);
+              Variable.Set.add fun_var fun_vars')
+          func_decl.free_symbols
+          Variable.Set.empty
+      in
+      let from_variables =
+        Variable.Set.inter func_decl.free_variables fun_vars
+      in
+      Variable.Set.union from_symbols from_variables)
+    function_decls.funs
+
 let create_function_declarations ~set_of_closures_id ~funs ~compilation_unit =
-  { set_of_closures_id;
-    funs;
-    compilation_unit;
-  }
+  let function_decls =
+    { set_of_closures_id;
+      funs;
+      compilation_unit;
+      recursive_functions = lazy Variable.Set.empty;
+    }
+  in
+  let recursive_functions =
+    lazy (
+      let module VCC = Sort_connected_components.Make (Variable) in
+      let directed_graph =
+        fun_vars_referenced_in_decls function_decls (* ~backend *)
+      in
+      let connected_components =
+        VCC.connected_components_sorted_from_roots_to_leaf directed_graph
+      in
+      Array.fold_left (fun rec_fun -> function
+          | VCC.No_loop _ -> rec_fun
+          | VCC.Has_loop elts -> List.fold_right Variable.Set.add elts rec_fun)
+        Variable.Set.empty connected_components)
+  in
+  { function_decls with recursive_functions; }
 
 let update_function_declarations function_decls ~funs =
   create_function_declarations ~funs

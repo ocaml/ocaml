@@ -687,39 +687,10 @@ module Switch_storer =
       let make_key = make_key
     end)
 
-let fun_vars_referenced_in_decls
-      (function_decls : Flambda.function_declarations) ~backend =
-  let fun_vars = Variable.Map.keys function_decls.funs in
-  let symbols_to_fun_vars =
-    let module Backend = (val backend : Backend_intf.S) in
-    Variable.Set.fold (fun fun_var symbols_to_fun_vars ->
-        let closure_id = Closure_id.wrap fun_var in
-        let symbol = Backend.closure_symbol closure_id in
-        Symbol.Map.add symbol fun_var symbols_to_fun_vars)
-      fun_vars
-      Symbol.Map.empty
-  in
-  Variable.Map.map (fun (func_decl : Flambda.function_declaration) ->
-      let from_symbols =
-        Symbol.Set.fold (fun symbol fun_vars' ->
-            match Symbol.Map.find symbol symbols_to_fun_vars with
-            | exception Not_found -> fun_vars'
-            | fun_var ->
-              assert (Variable.Set.mem fun_var fun_vars);
-              Variable.Set.add fun_var fun_vars')
-          func_decl.free_symbols
-          Variable.Set.empty
-      in
-      let from_variables =
-        Variable.Set.inter func_decl.free_variables fun_vars
-      in
-      Variable.Set.union from_symbols from_variables)
-    function_decls.funs
-
-let closures_required_by_entry_point ~(entry_point : Closure_id.t) ~backend
+let closures_required_by_entry_point ~(entry_point : Closure_id.t) ~backend:_
     (function_decls : Flambda.function_declarations) =
   let dependencies =
-    fun_vars_referenced_in_decls function_decls ~backend
+    Flambda.fun_vars_referenced_in_decls function_decls (* ~backend *)
   in
   let set = ref Variable.Set.empty in
   let queue = Queue.create () in

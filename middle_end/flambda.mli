@@ -260,6 +260,18 @@ and function_declarations = private {
   funs : function_declaration Variable.Map.t;
   (** The function(s) defined by the set of function declarations.  The
       keys of this map are often referred to in the code as "fun_var"s. *)
+  recursive_functions : Variable.Set.t lazy_t;
+  (** Which of the fun_vars (keys of [funs]) are bound to functions that are
+      recursive.  Such functions are those [f] that might call either:
+      - themselves, or
+      - another function that in turn might call [f].
+
+      For example in the following simultaneous definition of [f] [g] and [h],
+      [f] and [g] are recursive functions, but not [h]:
+        [let rec f x = g x
+         and g x = f x
+         and h x = g x]
+  *)
   compilation_unit : Compilation_unit.t;
   (** Which compilation unit the function declarations live within. *)
 }
@@ -541,6 +553,26 @@ val create_set_of_closures
 (** Given a function declaration, find which of its parameters (if any)
     are used in the body. *)
 val used_params : function_declaration -> Variable.Set.t
+
+(** Within a set of function declarations there is a set of function bodies,
+    each of which may (or may not) reference one of the other functions in
+    the same set.  Initially such intra-set references are by [Var]s (known
+    as "fun_var"s) but if the function is lifted by [Lift_constants] then the
+    references will be translated to [Symbol]s.  This means that optimization
+    passes that need to identify whether a given "fun_var" (i.e. a key in the
+    [funs] map in a value of type [function_declarations]) is used in one of
+    the function bodies need to examine the [free_symbols] as well as the
+    [free_variables] members of [function_declarations].  This function makes
+    that process easier by computing all used "fun_var"s in the bodies of
+    the given set of function declarations, including the cases where the
+    references are [Symbol]s.  The returned value is a map from "fun_var"s
+    to the "fun_var"s (if any) used in the body of the function associated
+    with that "fun_var".
+*)
+val fun_vars_referenced_in_decls
+   : function_declarations
+(*  -> backend:(module Backend_intf.S) see CR in the .ml file *)
+  -> Variable.Set.t Variable.Map.t
 
 type maybe_named =
   | Is_expr of t

@@ -399,11 +399,7 @@ let for_call_site ~env ~r ~(function_decls : Flambda.function_declarations)
   let fun_var =
     U.find_declaration_variable closure_id_being_applied function_decls
   in
-  let recursive_functions =
-    lazy
-      (Find_recursive_functions.in_function_declarations function_decls
-         ~backend:(E.backend env))
-  in
+  let recursive_functions = function_decls.recursive_functions in
   let probably_a_functor =
     is_probably_a_functor ~env ~args_approxs ~recursive_functions ~function_decl
   in

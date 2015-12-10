@@ -19,3 +19,6 @@
     (viz. [Project_closure]). *)
 
 include module type of Closure_element
+
+(* CR-soon mshinwell: use this everywhere instead of via [Backend] *)
+val symbol : t -> Symbol.t
