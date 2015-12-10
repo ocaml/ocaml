@@ -93,10 +93,19 @@ val ambiguous__second_orpat :
 #           val not_ambiguous__lazy : ('a list * 'b list) * bool lazy_t -> unit = <fun>
 #   type t = A of int * int option * int option | B
 #         val not_ambiguous__constructor : t -> unit = <fun>
-#       type tt = Z of int | Y of int * int | X of tt * tt
-#             Characters 34-67:
+#       type amoi = Z of int | Y of int * int | X of amoi * amoi
+#             Characters 40-73:
   ..X (Z x,Y (y,0))
   | X (Z y,Y (x,_))
 Warning 57: Ambiguous guarded pattern, variables x,y may match different or-pattern arguments
-val ambiguous : tt -> int = <fun>
+val ambiguous__amoi : amoi -> int = <fun>
+#     module type S = sig val b : bool end
+#           Characters 56-101:
+  ....(module M:S),_,(1,_)
+    | _,(module M:S),(_,1)...................
+Warning 57: Ambiguous guarded pattern, variable M may match different or-pattern arguments
+val ambiguous__module_variable :
+  (module S) * (module S) * (int * int) -> bool -> int = <fun>
+#           val not_ambiguous__module_variable :
+  (module S) * (module S) * (int * int) -> bool -> int = <fun>
 # 

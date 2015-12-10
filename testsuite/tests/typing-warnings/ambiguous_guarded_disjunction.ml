@@ -166,12 +166,27 @@ let not_ambiguous__constructor = function
 ;;
 
 
-type tt = Z of int | Y of int * int  | X of tt * tt
+type amoi = Z of int | Y of int * int  | X of amoi * amoi
 ;;
 
-let ambiguous a = match a with
+let ambiguous__amoi a = match a with
 | X (Z x,Y (y,0))
 | X (Z y,Y (x,_))
  when x+y > 0 -> 0
 | X _|Y _|Z _ -> 1
+;;
+
+module type S = sig val b : bool end
+;;
+
+let ambiguous__module_variable x b =  match x with
+  | (module M:S),_,(1,_)
+  | _,(module M:S),(_,1) when M.b && b -> 1
+  | _ -> 2
+;;
+
+let not_ambiguous__module_variable x b =  match x with
+  | (module M:S),_,(1,_)
+  | _,(module M:S),(_,1) when b -> 1
+  | _ -> 2
 ;;

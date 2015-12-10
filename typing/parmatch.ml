@@ -2165,20 +2165,56 @@ let rec do_stable rs = match rs with
 let stable p = do_stable [{unseen=[p]; seen=[];}]
 
 
-(* all identifier paths that appear in an expression.
+(* All identifier paths that appear in an expression that occurs
+   as a clause right hand side or guard.
 
-   This could be in a more general place, but for the ambiguous guards
-   seem to be the only user. At the same time, it cannot go in
-   typedtree.mli, as it depends on TypedtreeIter.
+  The function is rather complex due to the compilation of
+  unpack patterns by introducing code in rhs expressions
+  and **guards**.
+
+  For pattern (module M:S)  -> e the code is
+  let module M_mod = unpack M .. in e
+
+  Hence M is "free" in e iff M_mod is free in e.
+
+  Not doing so will yield excessive  warning in
+  (module (M:S) } ...) when true -> ....
+  as M is always present in 
+  let module M_mod = unpack M .. in true 
 *)
-let all_exp_idents exp =
+
+let all_rhs_idents exp =
   let ids = ref IdSet.empty in
   let module Iterator = TypedtreeIter.MakeIterator(struct
     include TypedtreeIter.DefaultIteratorArgument
     let enter_expression exp = match exp.exp_desc with
-      | Texp_ident (Path.Pident id, _lid, _descr) ->
-         ids := IdSet.add id !ids 
+      | Texp_ident (path, _lid, _descr) ->
+          List.iter
+            (fun id -> ids := IdSet.add id !ids)
+            (Path.heads path)
       | _ -> ()
+
+(* Very hackish, detect unpack pattern  compilation
+   and perfom "indirect check for them" *)
+    let is_unpack exp =
+      List.exists
+        (fun (attr, _) -> attr.txt = "#modulepat") exp.exp_attributes
+
+    let leave_expression exp =
+      if is_unpack exp then begin match exp.exp_desc with
+      | Texp_letmodule
+          (id_mod,_,
+           {mod_desc=
+            Tmod_unpack ({exp_desc=Texp_ident (Path.Pident id_exp,_,_)},_)},
+           _) ->
+             assert (IdSet.mem id_exp !ids) ;
+             if not (IdSet.mem id_mod !ids) then begin
+               ids := IdSet.remove id_exp !ids
+             end
+      | _ -> assert false
+      end
+
+
   end) in
   Iterator.iter_expression exp;
   !ids
@@ -2193,7 +2229,7 @@ let check_ambiguous_bindings =
         | { c_guard=None ; _} -> ()
         | { c_lhs=p; c_guard=Some g; _} ->
             let all =
-              IdSet.inter (pattern_vars p) (all_exp_idents g) in
+              IdSet.inter (pattern_vars p) (all_rhs_idents g) in
             if not (IdSet.is_empty all) then begin
               let st = stable p in
               let ambiguous = IdSet.diff all st in
