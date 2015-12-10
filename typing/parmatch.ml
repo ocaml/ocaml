@@ -2041,12 +2041,49 @@ let check_partial_gadt pred loc casel =
 (* Ambiguous variable in or-patterns *)
 (*************************************)
 
-module IdSet =
-  Set.Make
-    (struct
-      type t = Ident.t
-      let compare = Pervasives.compare
-    end)
+(* Specification: ambiguous variables in or-patterns.
+
+   The semantics of or-patterns in OCaml is specified with
+   a left-to-right bias: a value [v] matches the pattern [p | q] if it
+   matches [p] or [q], but if it matches both, the environment
+   captured by the match is the environment captured by [p], never the
+   one captured by [q].
+
+   While this property is generally well-understood, one specific case
+   where users expect a different semantics is when a pattern is
+   followed by a when-guard: [| p when g -> e]. Consider for example:
+
+     | ((Const x, _) | (_, Const x)) when is_neutral x -> branch
+
+   The semantics is clear: match the scrutinee against the pattern, if
+   it matches, test the guard, and if the guard passes, take the
+   branch.
+
+   However, consider the input [(Const a, Const b)], where [a] fails
+   the test [is_neutral f], while [b] passes the test [is_neutral
+   b]. With the left-to-right semantics, the clause above is *not*
+   taken by its input: matching [(Const a, Const b)] against the
+   or-pattern succeeds in the left branch, it returns the environment
+   [x -> a], and then the guard [is_neutral a] is tested and fails,
+   the branch is not taken. Most users, however, intuitively expect
+   that any pair that has one side passing the test will take the
+   branch. They assume it is equivalent to the following:
+
+     | (Const x, _) when is_neutral x -> branch
+     | (_, Const x) when is_neutral x -> branch
+
+   while it is not.
+
+   The code below is dedicated to finding these confusing cases: the
+   cases where a guard uses "ambiguous" variables, that are bound to
+   different parts of the scrutinees by different sides of
+   a or-pattern. In other words, it finds the cases where the
+   specified left-to-right semantics is not equivalent to
+   a non-deterministic semantics (any branch can be taken) relatively
+   to a specific guard.
+*)
+
+module IdSet = Set.Make(Ident)
 
 let pattern_vars p = IdSet.of_list (Typedtree.pat_bound_idents p)
 
@@ -2090,61 +2127,83 @@ let collect_stable = function
 (* Filtering utilities for our specific rows *)
 (*********************************************)
 
+(* Take a pattern matrix as a list (rows) of lists (columns) of patterns
+     | p1, p2, .., pn
+     | q1, q2, .., qn
+     | r1, r2, .., rn
+     | ...
+
+   We split this matrix into a list of sub-matrices, one for each head
+   constructor appearing in the leftmost column. For each row whose
+   left column starts with a head constructor, remove this head
+   column, prepend one column for each argument of the constructor,
+   and add the resulting row in the sub-matrix corresponding to this
+   head constructor.
+
+   Rows whose left column is omega (the Any pattern _) may match any
+   head constructor, so they are added to all groups.
+
+   The list of sub-matrices is represented as a list of pair
+     (head constructor, submatrix)
+*)
+
 let filter_all =
+  (* the head constructor (as a pattern with omega arguments) of
+     a pattern *)
+  let discr_head pat =
+    match pat.pat_desc with
+    | Tpat_record (lbls, closed) ->
+        (* a partial record pattern { f1 = p1; f2 = p2; _ }
+           needs to be expanded, otherwise matching against this head
+           would drop the pattern arguments for non-mentioned fields *)
+        let lbls = all_record_args lbls in
+        normalize_pat { pat with pat_desc = Tpat_record (lbls, closed) }
+    | _ -> normalize_pat pat
+  in
 
-  let discr_pat =
-    let rec acc_pat acc = function
-      | ({pat_desc=(Tpat_alias _|Tpat_var _|Tpat_or _) },_)::_ ->
-          assert false (* called after binder extraction *)
-      | ({pat_desc=Tpat_any },_)::rem ->
-          acc_pat acc rem
-      | ({pat_desc=(Tpat_tuple _|Tpat_lazy _)} as p,_)::_ ->
-          normalize_pat p
-      | ({pat_desc=Tpat_record (lbls,closed)} as p,_)::_ ->
-          let lbls = all_record_args lbls in
-          normalize_pat { p with pat_desc=Tpat_record (lbls,closed)}
-      | _ -> acc in
-    acc_pat omega in
-
+  (* insert a row of head [p] and rest [r] into the right group *)
   let rec insert p r env = match env with
   | [] ->
-      let p0 = normalize_pat  p in
-      [p0,[{ r with unseen = simple_match_args p0 p@r.unseen }]]
+      (* if no group matched this row, it has a head constructor that
+         was never seen before; add a new sub-matrix for this head *)
+      let p0 = discr_head p in
+      [p0,[{ r with unseen = simple_match_args p0 p @ r.unseen }]]
   | (q0,rs) as bd::env ->
-      if simple_match q0 p then
+      if simple_match q0 p then begin
         let r = { r with unseen = simple_match_args q0 p@r.unseen; } in
         (q0,r::rs)::env
+      end
       else bd::insert p r env in
+
+  (* insert a row of head omega into all groups *)
+  let insert_omega r env =
+    List.map
+      (fun (q0,rs) ->
+         let r =
+           { r with unseen = simple_match_args q0 omega @ r.unseen; } in
+         (q0,r::rs))
+      env
+  in
 
   let rec filter_rec env = function
     | [] -> env
     | ({pat_desc=(Tpat_var _|Tpat_alias _|Tpat_or _)},_)::_ -> assert false
-    | ({pat_desc=Tpat_any},_)::rs -> filter_rec env rs
+    | ({pat_desc=Tpat_any}, _)::rs -> filter_rec env rs
     | (p,r)::rs -> filter_rec (insert p r env) rs in
 
   let rec filter_omega env = function
     | [] -> env
     | ({pat_desc=(Tpat_var _|Tpat_alias _|Tpat_or _)},_)::_ -> assert false
-    | ({pat_desc=Tpat_any},r)::rs ->
-        let env =
-          List.map
-            (fun (q0,rs) ->
-              let r =
-                { r with unseen = simple_match_args q0 omega@r.unseen; } in
-              q0,r::rs)
-            env in
-        filter_omega env rs
+    | ({pat_desc=Tpat_any},r)::rs -> filter_omega (insert_omega r env) rs
     | _::rs -> filter_omega env rs in
 
   fun rs ->
-    let pat0 = discr_pat rs in
-    filter_omega
-      (filter_rec
-         (match pat0.pat_desc with
-           (Tpat_record(_) | Tpat_tuple(_) | Tpat_lazy(_)) -> [pat0,[]]
-         | _ -> [])
-         rs)
-      rs
+    (* first insert the rows with head constructors,
+       to get the definitive list of groups *)
+    let env = filter_rec [] rs in
+    (* then add the omega rows to all groups *)
+    let env = filter_omega env rs in
+    env
 
 (* Compute stable bindings *)
 
