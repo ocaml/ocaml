@@ -287,6 +287,7 @@ and function_declaration = private {
   inline : Lambda.inline_attribute;
   (** Inlining requirements from the source code. *)
   is_a_functor : bool;
+  (** Whether the function is known definitively to be a functor. *)
 }
 
 (** Equivalent to the similar type in [Lambda]. *)
