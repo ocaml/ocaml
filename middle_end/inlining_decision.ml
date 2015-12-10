@@ -31,6 +31,24 @@ let inline_non_recursive env r ~function_decls ~lhs_of_application
      Note that if the function is sufficiently small, we still have to call
      [simplify], because the body needs freshening before substitution.
   *)
+  (* CR-someday mshinwell: (from GPR#8): pchambart writes:
+
+      We may need to think a bit about that. I can't see a lot of meaningful
+      examples right now, but there are some cases where some optimisation can
+      happen even if we don't know anything about the shape of the arguments.
+
+      For instance
+
+      let f x y = x
+
+      let g x =
+        let y = (x,x) in
+        f x y
+      let f x y =
+        if x = y then ... else ...
+
+      let g x = f x x
+  *)
   let known_to_have_no_benefit =
     if function_decl.stub then
       false
