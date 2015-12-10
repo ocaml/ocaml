@@ -1278,11 +1278,14 @@ let rec type_pat ~constrs ~labels ~no_existentials ~mode ~explode ~env
       begin match
         if mode = Split_or || mode = Splitting_or then raise Need_backtrack;
         let initial_pattern_variables = !pattern_variables in
+        let initial_module_variables = !module_variables in
         let p1 =
           try Some (type_pat ~mode:Inside_or sp1 expected_ty (fun x -> x))
           with Need_backtrack -> None in
         let p1_variables = !pattern_variables in
+        let p1_module_variables = !module_variables in
         pattern_variables := initial_pattern_variables;
+        module_variables := initial_module_variables;
         let p2 =
           try Some (type_pat ~mode:Inside_or sp2 expected_ty (fun x -> x))
           with Need_backtrack -> None in
@@ -1294,6 +1297,7 @@ let rec type_pat ~constrs ~labels ~no_existentials ~mode ~explode ~env
         let alpha_env =
           enter_orpat_variables loc !env p1_variables p2_variables in
         pattern_variables := p1_variables;
+        module_variables := p1_module_variables;
         { pat_desc = Tpat_or(p1, alpha_pat alpha_env p2, None);
           pat_loc = loc; pat_extra=[];
           pat_type = expected_ty;
