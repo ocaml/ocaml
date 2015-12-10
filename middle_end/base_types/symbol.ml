@@ -22,11 +22,15 @@ module T = struct
      there's something about uniqueness in the comment in symbol.mli too. *)
   (** Labels are unique, so comparing them is sufficient.  Ignoring the
       compilation unit may also uncover bugs. *)
-  let compare t1 t2 = Linkage_name.compare t1.label t2.label
+  let compare t1 t2 =
+    if t1 == t2 then 0
+    else Linkage_name.compare t1.label t2.label
 
   let output chan t = Linkage_name.output chan t.label
   let hash t = Hashtbl.hash t.label
-  let equal t1 t2 = t1.label = t2.label
+  let equal t1 t2 =
+    if t1 == t2 then true
+    else t1.label = t2.label
 
   let print ppf t =
     Format.fprintf ppf "%a.%a"

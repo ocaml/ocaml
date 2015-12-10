@@ -17,9 +17,11 @@ module IntPairSet =
   Set.Make(struct
     type t = int * int
     let compare ((a1,b1) : t) (a2,b2) =
-      match compare a1 a2 with
-        | 0 -> compare b1 b2
-        | c -> c
+      if a1 < a2 then (-1)
+      else if a1 > a2 then 1
+      else if b1 < b2 then (-1)
+      else if b1 > b2 then 1
+      else 0
   end)
 
 open Reg
