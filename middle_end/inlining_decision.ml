@@ -459,8 +459,8 @@ let for_call_site ~env ~r ~(function_decls : Flambda.function_declarations)
       if is_a_stub
         || (always_inline && not (Lazy.force recursive))
         || (E.inlining_level env <= max_level
-            (* The classic heurisic disable completely inlining if the
-               function is not annotated for inline *)
+            (* The classic heurisic completely disables inlining if the
+               function is not annotated as to be inlined. *)
             && not !Clflags.classic_heuristic
             && not (Lazy.force recursive))
       then
