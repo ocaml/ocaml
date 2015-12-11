@@ -65,6 +65,9 @@ Language features:
 Compilers:
 - PR#4800: better compilation of tuple assignment (Gabriel Scherer and
   Alain Frisch)
+- PR#5995: keep -for-pack into account to name exceptions; document -for-pack
+  as mandatory for bytecode as well (Alain Frisch, report by Christophe
+  Troestler)
 - PR#6400: better error message for '_' used as an expression
   (Alain Frisch, report by whitequark)
 - PR#6501: harden the native-code generator against certain uses of "%identity"
