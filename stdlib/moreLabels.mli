@@ -126,6 +126,7 @@ module Map : sig
       val find : key -> 'a t -> 'a
       val map : f:('a -> 'b) -> 'a t -> 'b t
       val mapi : f:(key -> 'a -> 'b) -> 'a t -> 'b t
+      val union: f:(key -> 'a -> 'a -> 'a) -> 'a t -> 'a t -> 'a t
   end
   module Make : functor (Ord : OrderedType) -> S with type key = Ord.t
 end
