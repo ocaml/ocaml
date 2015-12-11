@@ -112,10 +112,15 @@ let remove_Wl cclibs =
 let call_linker mode output_name files extra =
   let cmd =
     if mode = Partial then
+      let l_prefix =
+        match Config.ccomp_type with
+        | "msvc" -> "/libpath:"
+        | _ -> "-L"
+      in
       Printf.sprintf "%s%s %s %s %s"
         Config.native_pack_linker
         (Filename.quote output_name)
-        (quote_prefixed "-L" !Config.load_path)
+        (quote_prefixed l_prefix !Config.load_path)
         (quote_files (remove_Wl files))
         extra
     else
