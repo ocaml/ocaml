@@ -401,7 +401,8 @@ external hypot : float -> float -> float = "caml_hypot_float" "caml_hypot"
 (** [hypot x y] returns [sqrt(x *. x + y *. y)], that is, the length
   of the hypotenuse of a right-angled triangle with sides of length
   [x] and [y], or, equivalently, the distance of the point [(x,y)]
-  to origin.
+  to origin.  If one of [x] or [y] is infinite, returns [infinity]
+  even if the other is [nan].
   @since 4.00.0  *)
 
 external cosh : float -> float = "caml_cosh_float" "cosh"
