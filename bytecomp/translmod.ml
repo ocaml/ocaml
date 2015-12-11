@@ -50,9 +50,10 @@ let prim_fresh_oo_id =
 
 let transl_extension_constructor env path ext =
   let name =
-    match path with
-      None -> Ident.name ext.ext_id
-    | Some p -> Path.name p
+    match path, !Clflags.for_package with
+      None, _ -> Ident.name ext.ext_id
+    | Some p, None -> Path.name p
+    | Some p, Some pack -> Printf.sprintf "%s.%s" pack (Path.name p)
   in
   match ext.ext_kind with
     Text_decl(args, ret) ->
