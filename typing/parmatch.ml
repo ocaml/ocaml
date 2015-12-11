@@ -533,7 +533,7 @@ let filter_all pat0 pss =
       filter_rec env ((p::ps)::pss)
   | ({pat_desc = Tpat_or(p1,p2,_)}::ps)::pss ->
       filter_rec env ((p1::ps)::(p2::ps)::pss)
-  | ({pat_desc = (Tpat_any | Tpat_var(_))}::_)::pss ->
+  | ({pat_desc = (Tpat_any | Tpat_var(_) | Tpat_exception(_))}::_)::pss ->
       filter_rec env pss
   | (p::ps)::pss ->
       filter_rec (insert p ps env) pss
