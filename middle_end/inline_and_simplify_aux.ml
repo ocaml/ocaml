@@ -36,13 +36,7 @@ module Env = struct
 
   let create ~never_inline ~backend ~round =
     let possible_unrolls =
-      (* CR-someday mshinwell: Share this code. *)
-      match !Clflags.unroll with
-      | Always possible_unrolls -> possible_unrolls
-      | Variable by_round ->
-        match Ext_types.Int.Map.find round by_round with
-        | possible_unrolls -> possible_unrolls
-        | exception Not_found -> Clflags.default_unroll
+      Clflags.Int_arg_helper.get ~key:round !Clflags.unroll
     in
     { backend;
       round;
@@ -260,8 +254,7 @@ end
 
 let initial_inlining_threshold ~round : Inlining_cost.inlining_threshold =
   let unscaled =
-    Clflags.Int_arg_helper.get ~key:round
-      Clflags.default_inline_threshold !Clflags.inline_threshold
+    Clflags.Int_arg_helper.get ~key:round !Clflags.inline_threshold
   in
   (* CR-soon pchambart: Add a warning if this is too big
      mshinwell: later *)
@@ -270,18 +263,13 @@ let initial_inlining_threshold ~round : Inlining_cost.inlining_threshold =
 
 let initial_inlining_toplevel_threshold ~round : Inlining_cost.inlining_threshold =
   let ordinary_threshold =
-    Clflags.Int_arg_helper.get ~key:round
-      Clflags.default_inline_threshold !Clflags.inline_threshold
+    Clflags.Int_arg_helper.get ~key:round !Clflags.inline_threshold
   in
-  let default_toplevel_threshold =
-    ordinary_threshold * Inlining_cost.default_toplevel_multiplier
+  let toplevel_threshold =
+    Clflags.Int_arg_helper.get ~key:round !Clflags.inline_toplevel_threshold
   in
   let unscaled =
-    match !Clflags.inline_toplevel_threshold with
-    | None -> default_toplevel_threshold
-    | Some inline_toplevel_threshold ->
-        Clflags.Int_arg_helper.get ~key:round
-          default_toplevel_threshold inline_toplevel_threshold
+    ordinary_threshold + toplevel_threshold
   in
   (* CR-soon pchambart: Add a warning if this is too big
      mshinwell: later *)

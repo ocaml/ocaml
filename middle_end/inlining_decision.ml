@@ -367,12 +367,7 @@ let for_call_site ~env ~r ~(function_decls : Flambda.function_declarations)
     }, R.set_approx r (A.value_unknown Other)
   in
   let max_level =
-    match !Clflags.max_inlining_depth with
-    | Always max_inlining_depth -> max_inlining_depth
-    | Variable by_round ->
-      match Ext_types.Int.Map.find (E.round env) by_round with
-      | max_inlining_depth -> max_inlining_depth
-      | exception Not_found -> Clflags.default_max_inlining_depth
+    Clflags.Int_arg_helper.get ~key:(E.round env) !Clflags.max_inlining_depth
   in
   let inline_annotation =
     (* Merge call site annotation and function annotation.

@@ -216,45 +216,46 @@ let read_one_param ppf position name v =
 
       (* inlining *)
       | "inline" ->
-        inline_threshold :=
-          Int_arg_helper.parse v "Bad syntax in OCAMLPARAM for 'inline'"
+        Int_arg_helper.parse v
+          "Bad syntax in OCAMLPARAM for 'inline'"
+          inline_threshold
       | "inline-toplevel" ->
-        inline_toplevel_threshold :=
-          Some (Int_arg_helper.parse v
-                  "Bad syntax in OCAMLPARAM for 'inline-toplevel'")
+        Int_arg_helper.parse v
+          "Bad syntax in OCAMLPARAM for 'inline-toplevel'"
+          inline_toplevel_threshold
 
       | "rounds" -> int_setter ppf "rounds" simplify_rounds v
       | "unroll" ->
-        unroll :=
-          Int_arg_helper.parse v "Bad syntax in OCAMLPARAM for 'unroll'"
+        Int_arg_helper.parse v "Bad syntax in OCAMLPARAM for 'unroll'"
+          unroll
       | "inline-call-cost" ->
-        inline_call_cost :=
-          Int_arg_helper.parse v
-            "Bad syntax in OCAMLPARAM for 'inline-call-cost'"
+        Int_arg_helper.parse v
+          "Bad syntax in OCAMLPARAM for 'inline-call-cost'"
+          inline_call_cost
       | "inline-alloc-cost" ->
-        inline_alloc_cost :=
-          Int_arg_helper.parse v
-            "Bad syntax in OCAMLPARAM for 'inline-alloc-cost'"
+        Int_arg_helper.parse v
+          "Bad syntax in OCAMLPARAM for 'inline-alloc-cost'"
+          inline_alloc_cost
       | "inline-prim-cost" ->
-        inline_prim_cost :=
-          Int_arg_helper.parse v
-            "Bad syntax in OCAMLPARAM for 'inline-prim-cost'"
+        Int_arg_helper.parse v
+          "Bad syntax in OCAMLPARAM for 'inline-prim-cost'"
+          inline_prim_cost
       | "inline-branch-cost" ->
-        inline_branch_cost :=
-          Int_arg_helper.parse v
-            "Bad syntax in OCAMLPARAM for 'inline-branch-cost'"
+        Int_arg_helper.parse v
+          "Bad syntax in OCAMLPARAM for 'inline-branch-cost'"
+          inline_branch_cost
       | "inline-lifting-benefit" ->
-        inline_lifting_benefit :=
-          Int_arg_helper.parse v
-            "Bad syntax in OCAMLPARAM for 'inline-lifting-benefit'"
+        Int_arg_helper.parse v
+          "Bad syntax in OCAMLPARAM for 'inline-lifting-benefit'"
+          inline_lifting_benefit
       | "branch-inline-factor" ->
-        branch_inline_factor :=
-          Float_arg_helper.parse v
-            "Bad syntax in OCAMLPARAM for 'branch-inline-factor'"
+        Float_arg_helper.parse v
+          "Bad syntax in OCAMLPARAM for 'branch-inline-factor'"
+          branch_inline_factor
       | "max-inlining-depth" ->
-        max_inlining_depth :=
-          Int_arg_helper.parse v
-            "Bad syntax in OCAMLPARAM for 'max-inlining-depth'"
+        Int_arg_helper.parse v
+          "Bad syntax in OCAMLPARAM for 'max-inlining-depth'"
+          max_inlining_depth
 
       | "classic-heuristic" ->
           set "classic-heuristic" [ classic_heuristic ] v

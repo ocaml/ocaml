@@ -33,11 +33,14 @@ module Make (S : sig
     val of_string : string -> t
   end
 end) : sig
-  type parsed =
-    | Always of S.Value.t
-    | Variable of S.Value.t S.Key.Map.t
+  type parsed = {
+    default : S.Value.t;
+    override : S.Value.t S.Key.Map.t;
+  }
 
-  val parse : string -> help_text:string -> parsed
+  val default : S.Value.t -> parsed
 
-  val get : key:S.Key.t -> S.Value.t -> parsed -> S.Value.t
+  val parse : string -> help_text:string -> update:parsed ref -> unit
+
+  val get : key:S.Key.t -> parsed -> S.Value.t
 end

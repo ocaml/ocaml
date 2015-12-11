@@ -171,13 +171,8 @@ let can_inline lam inlining_threshold ~bonus =
        lam
        ~than:(inlining_threshold + bonus)
 
-let cost (flag : Clflags.Int_arg_helper.parsed) ~default ~round =
-  match flag with
-  | Always cost -> cost
-  | Variable by_round ->
-    match Ext_types.Int.Map.find round by_round with
-    | cost -> cost
-    | exception Not_found -> default
+let cost (flag : Clflags.Int_arg_helper.parsed) ~round =
+  Clflags.Int_arg_helper.get ~key:round flag
 
 let benefit_factor = 1
 
@@ -259,16 +254,11 @@ module Benefit = struct
 
   let evaluate t ~round : int =
     benefit_factor *
-      (t.remove_call * (cost !Clflags.inline_call_cost
-          ~default:Clflags.default_inline_call_cost ~round)
-       + t.remove_alloc * (cost !Clflags.inline_alloc_cost
-          ~default:Clflags.default_inline_alloc_cost ~round)
-       + t.remove_prim * (cost !Clflags.inline_prim_cost
-          ~default:Clflags.default_inline_prim_cost ~round)
-       + t.remove_branch * (cost !Clflags.inline_branch_cost
-          ~default:Clflags.default_inline_branch_cost ~round)
-       + t.direct_call_of_indirect * (cost !Clflags.inline_indirect_cost
-          ~default:Clflags.default_inline_indirect_cost ~round))
+      (t.remove_call * (cost !Clflags.inline_call_cost ~round)
+       + t.remove_alloc * (cost !Clflags.inline_alloc_cost ~round)
+       + t.remove_prim * (cost !Clflags.inline_prim_cost ~round)
+       + t.remove_branch * (cost !Clflags.inline_branch_cost ~round)
+       + t.direct_call_of_indirect * (cost !Clflags.inline_indirect_cost ~round))
     + t.requested_inline
 
   let (+) t1 t2 = {
@@ -323,12 +313,7 @@ module Whether_sufficient_benefit = struct
     let estimated_benefit =
       if t.toplevel && t.lifting && t.branch_depth = 0 then begin
         let lifting_benefit =
-          match !Clflags.inline_lifting_benefit with
-            | Always lifting_benefit -> lifting_benefit
-            | Variable by_round ->
-              match Ext_types.Int.Map.find t.round by_round with
-              | lifting_benefit -> lifting_benefit
-              | exception Not_found -> Clflags.default_inline_lifting_benefit
+          Clflags.Int_arg_helper.get ~key:t.round !Clflags.inline_lifting_benefit
         in
           float (t.evaluated_benefit + lifting_benefit)
       end else begin
@@ -345,12 +330,7 @@ module Whether_sufficient_benefit = struct
            positive value of [factor] [p] is in [0, 1]. *)
         let branch_never_taken_estimated_probability =
           let branch_inline_factor =
-            match !Clflags.branch_inline_factor with
-            | Always branch_inline_factor -> branch_inline_factor
-            | Variable by_round ->
-              match Ext_types.Int.Map.find t.round by_round with
-              | branch_inline_factor -> branch_inline_factor
-              | exception Not_found -> Clflags.default_branch_inline_factor
+            Clflags.Float_arg_helper.get ~key:t.round !Clflags.branch_inline_factor
           in
           (* CR pchambart to pchambart: change this assert to a warning *)
           assert(correct_branch_factor branch_inline_factor);
@@ -437,11 +417,7 @@ let maximum_interesting_size_of_function_body () =
     in
 *)
     let max_size =  (* This is for the (**) case above. *)
-      let inline_call_cost =
-        cost !Clflags.inline_call_cost
-          ~default:Clflags.default_inline_call_cost
-          ~round
-      in
+      let inline_call_cost = cost !Clflags.inline_call_cost ~round in
       direct_call_size + benefit_factor*inline_call_cost
     in
     max_cost := max !max_cost max_size (* (max inline_threshold max_size) *)
