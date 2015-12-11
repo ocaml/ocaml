@@ -276,6 +276,7 @@ module Result = struct
       used_staticfail : Static_exception.Set.t;
       inlining_threshold : Inlining_cost.inlining_threshold;
       benefit : Inlining_cost.Benefit.t;
+      num_direct_applications : int;
     }
 
   let create ~round =
@@ -283,6 +284,7 @@ module Result = struct
       used_staticfail = Static_exception.Set.empty;
       inlining_threshold = initial_inlining_threshold ~round;
       benefit = Inlining_cost.Benefit.zero;
+      num_direct_applications = 0;
     }
 
   let approx t = t.approx
@@ -310,4 +312,10 @@ module Result = struct
     { t with inlining_threshold }
 
   let inlining_threshold t = t.inlining_threshold
+
+  let seen_direct_application t =
+    { t with num_direct_applications = t.num_direct_applications + 1; }
+
+  let num_direct_applications t =
+    t.num_direct_applications
 end
