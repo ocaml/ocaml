@@ -199,9 +199,13 @@ The "-dllpath" option simply stores \var{dir} in the produced
 executable file, where "ocamlrun" can find it and use it as
 described in section~\ref{s-ocamlrun-dllpath}.
 
-\item["-for-pack" \var{ident}]
-This option is accepted for compatibility with "ocamlopt"; it does
-nothing.
+\item["-for-pack" \var{module-path}]
+Generate an object file (".cmo") that can later be
+included
+as a sub-module (with the given access path) of a compilation unit
+constructed with "-pack".  For instance, "ocamlc -for-pack P -c A.ml"
+will generate "a.cmo" that can later be used with
+"ocamlc -pack -o P.cmo a.cmo".
 
 \item["-g"]
 Add debugging information while compiling and linking. This option is
