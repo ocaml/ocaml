@@ -96,6 +96,10 @@ let inline_non_recursive env r ~function_decls ~lhs_of_application
       ~function_decls ~lhs_of_application ~closure_id_being_applied
       ~inline_requested ~function_decl ~args ~simplify
   in
+  let num_direct_applications_seen =
+    (R.num_direct_applications r_inlined) - (R.num_direct_applications r)
+  in
+  assert (num_direct_applications_seen >= 0);
   let keep_inlined_version =
     if function_decl.stub then begin
       made_decision (Inlined (Copying_body Stub));
@@ -163,10 +167,14 @@ let inline_non_recursive env r ~function_decls ~lhs_of_application
       else E.inlining_level_up env
     in
     simplify env r body
-  end else begin
+  end else if num_direct_applications_seen < 1 then begin
     (* Inlining the body of the function did not appear sufficiently
        beneficial; however, it may become so if we inline within the body
-       first.  We try that next. *)
+       first.  We try that next, unless it is known that there are were
+       no direct applications in the simplified body computed above, meaning
+       no opportunities for inlining. *)
+      no_simplification ()
+  end else begin
     let body, r_inlined =
       Inlining_transforms.inline_by_copying_function_body ~env
         ~r:(R.reset_benefit r)
@@ -364,7 +372,7 @@ let for_call_site ~env ~r ~(function_decls : Flambda.function_declarations)
       kind = Direct closure_id_being_applied;
       dbg;
       inline = inline_requested;
-    }, R.set_approx r (A.value_unknown Other)
+    }, R.set_approx (R.seen_direct_application r) (A.value_unknown Other)
   in
   let max_level =
     Clflags.Int_arg_helper.get ~key:(E.round env) !Clflags.max_inlining_depth

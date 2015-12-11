@@ -229,6 +229,10 @@ module Result : sig
   val set_inlining_threshold :
     t -> Inlining_cost.inlining_threshold option -> t
   val inlining_threshold : t -> Inlining_cost.inlining_threshold option
+
+  val seen_direct_application : t -> t
+  val num_direct_applications : t -> int
+
 end
 
 (** Command line argument -inline *)
