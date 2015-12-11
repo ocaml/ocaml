@@ -183,7 +183,7 @@ let inline_recursive_functions = ref true  (* -no-inline-recursive-functions *)
 
 let classic_heuristic = ref false       (* -classic-heuristic *)
 
-let default_max_inlining_depth = 3
+let default_max_inlining_depth = 1
 let max_inlining_depth =
   ref (Int_arg_helper.default default_max_inlining_depth)
 
@@ -269,7 +269,7 @@ let o2_arguments = {
   inline_indirect_cost = None;
   inline_lifting_benefit = None;
   branch_inline_factor = None;
-  max_inlining_depth = None;
+  max_inlining_depth = Some 2;
   unroll = None;
   inline_threshold = Some 25;
   inline_toplevel_threshold = Some (25 * 8);
@@ -283,7 +283,7 @@ let o3_arguments = {
   inline_indirect_cost = None;
   inline_lifting_benefit = None;
   branch_inline_factor = None;
-  max_inlining_depth = None;
+  max_inlining_depth = Some 3;
   unroll = Some 1;
   inline_threshold = Some 50;
   inline_toplevel_threshold = Some (50 * 8);
