@@ -107,31 +107,36 @@ module Options = Main_args.Make_optcomp_options (struct
   let _I dir = include_dirs := dir :: !include_dirs
   let _impl = impl
   let _inline spec =
-    inline_threshold := Int_arg_helper.parse spec
-        ~help_text:"Syntax: -inline <n> | <round>=<n>[,...]"
+    Int_arg_helper.parse spec ~update:inline_threshold
+      ~help_text:"Syntax: -inline <n> | <round>=<n>[,...]"
+  let _inline_toplevel spec =
+    Int_arg_helper.parse spec ~update:inline_toplevel_threshold
+      ~help_text:"Syntax: -inline-toplevel <n> | <round>=<n>[,...]"
   let _inlining_stats () = inlining_stats := true
   let _dump_pass pass = set_dumped_pass pass true
   let _rounds n = simplify_rounds := n
   let _unroll spec =
-    unroll := Int_arg_helper.parse spec
-        ~help_text:"Syntax: -unroll <n> | <round>=<n>[,...]"
-  let _no_functor_heuristics () = functor_heuristics := false
+    Int_arg_helper.parse spec ~update:unroll
+      ~help_text:"Syntax: -unroll <n> | <round>=<n>[,...]"
   let _classic_heuristic () = classic_heuristic := true
   let _inline_call_cost spec =
-    inline_call_cost := Int_arg_helper.parse spec
-        ~help_text:"Syntax: -inline-call-cost <n> | <round>=<n>[,...]"
+    Int_arg_helper.parse spec ~update:inline_call_cost
+      ~help_text:"Syntax: -inline-call-cost <n> | <round>=<n>[,...]"
   let _inline_alloc_cost spec =
-    inline_alloc_cost := Int_arg_helper.parse spec
-        ~help_text:"Syntax: -inline-alloc-cost <n> | <round>=<n>[,...]"
+    Int_arg_helper.parse spec ~update:inline_alloc_cost
+      ~help_text:"Syntax: -inline-alloc-cost <n> | <round>=<n>[,...]"
   let _inline_prim_cost spec =
-    inline_prim_cost := Int_arg_helper.parse spec
-        ~help_text:"Syntax: -inline-prim-cost <n> | <round>=<n>[,...]"
+    Int_arg_helper.parse spec ~update:inline_prim_cost
+      ~help_text:"Syntax: -inline-prim-cost <n> | <round>=<n>[,...]"
   let _inline_branch_cost spec =
-    inline_branch_cost := Int_arg_helper.parse spec
-        ~help_text:"Syntax: -inline-branch-cost <n> | <round>=<n>[,...]"
+    Int_arg_helper.parse spec ~update:inline_branch_cost
+      ~help_text:"Syntax: -inline-branch-cost <n> | <round>=<n>[,...]"
+  let _inline_lifting_benefit spec =
+    Int_arg_helper.parse spec ~update:inline_lifting_benefit
+      ~help_text:"Syntax: -inline-lifting-benefit <n> | <round>=<n>[,...]"
   let _branch_inline_factor spec =
-    branch_inline_factor := Float_arg_helper.parse spec
-        ~help_text:"Syntax: -branch-inline-factor <n> | <round>=<n>[,...]"
+    Float_arg_helper.parse spec ~update:branch_inline_factor
+      ~help_text:"Syntax: -branch-inline-factor <n> | <round>=<n>[,...]"
   let _intf = intf
   let _intf_suffix s = Config.interface_suffix := s
   let _keep_docs = set keep_docs
@@ -139,8 +144,8 @@ module Options = Main_args.Make_optcomp_options (struct
   let _labels = clear classic
   let _linkall = set link_everything
   let _max_inlining_depth spec =
-    max_inlining_depth := Int_arg_helper.parse spec
-        ~help_text:"Syntax: -max-inlining-depth <n> | <round>=<n>[,...]"
+    Int_arg_helper.parse spec ~update:max_inlining_depth
+      ~help_text:"Syntax: -max-inlining-depth <n> | <round>=<n>[,...]"
   let _no_alias_deps = set transparent_modules
   let _no_app_funct = clear applicative_functors
   let _no_float_const_prop = clear float_const_prop
@@ -152,47 +157,14 @@ module Options = Main_args.Make_optcomp_options (struct
   let _nostdlib = set no_std_include
   let _o s = output_name := Some s
   let _o2 () =
-    (* CR mshinwell for mshinwell: fix this once -O3 is done *)
-    failwith "-O2 temporarily disabled"
+    simplify_rounds := 2;
+    use_inlining_arguments_set ~round:1 o1_arguments;
+    use_inlining_arguments_set ~round:2 o2_arguments
   let _o3 () =
-    (* CR mshinwell for pchambart: please think about these numbers *)
     simplify_rounds := 3;
-    inline_threshold :=
-      Int_arg_helper.Variable (Ext_types.Int.Map.of_list [
-        0, default_inline_threshold;
-        1, 25;
-        2, 50;
-      ]);
-    inline_call_cost :=
-      Int_arg_helper.Variable (Ext_types.Int.Map.of_list [
-        0, default_inline_call_cost;
-        1, 10;
-        2, 20;
-      ]);
-    inline_alloc_cost :=
-      Int_arg_helper.Variable (Ext_types.Int.Map.of_list [
-        0, default_inline_alloc_cost;
-        1, default_inline_alloc_cost;
-        2, 3;
-      ]);
-    inline_prim_cost :=
-      Int_arg_helper.Variable (Ext_types.Int.Map.of_list [
-        0, default_inline_prim_cost;
-        1, default_inline_prim_cost;
-        2, 3;
-      ]);
-    inline_branch_cost :=
-      Int_arg_helper.Variable (Ext_types.Int.Map.of_list [
-        0, default_inline_branch_cost;
-        1, default_inline_branch_cost;
-        2, 3;
-      ]);
-    unroll :=
-      Int_arg_helper.Variable (Ext_types.Int.Map.of_list [
-        0, 0;
-        1, 0;
-        2, 1;
-      ])
+    use_inlining_arguments_set ~round:1 o1_arguments;
+    use_inlining_arguments_set ~round:2 o2_arguments;
+    use_inlining_arguments_set ~round:3 o3_arguments
   let _open s = open_modules := s :: !open_modules
   let _output_obj = set output_c_object
   let _output_complete_obj s =

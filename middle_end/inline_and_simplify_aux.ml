@@ -36,13 +36,7 @@ module Env = struct
 
   let create ~never_inline ~backend ~round =
     let possible_unrolls =
-      (* CR-someday mshinwell: Share this code. *)
-      match !Clflags.unroll with
-      | Always possible_unrolls -> possible_unrolls
-      | Variable by_round ->
-        match Ext_types.Int.Map.find round by_round with
-        | possible_unrolls -> possible_unrolls
-        | exception Not_found -> Clflags.default_unroll
+      Clflags.Int_arg_helper.get ~key:round !Clflags.unroll
     in
     { backend;
       round;
@@ -260,13 +254,28 @@ end
 
 let initial_inlining_threshold ~round : Inlining_cost.inlining_threshold =
   let unscaled =
-    Clflags.Int_arg_helper.get ~key:round
-      Clflags.default_inline_threshold !Clflags.inline_threshold
+    Clflags.Int_arg_helper.get ~key:round !Clflags.inline_threshold
   in
   (* CR-soon pchambart: Add a warning if this is too big
      mshinwell: later *)
   Can_inline_if_no_larger_than
     (unscaled * Inlining_cost.scale_inline_threshold_by)
+
+let initial_inlining_toplevel_threshold ~round : Inlining_cost.inlining_threshold =
+  let ordinary_threshold =
+    Clflags.Int_arg_helper.get ~key:round !Clflags.inline_threshold
+  in
+  let toplevel_threshold =
+    Clflags.Int_arg_helper.get ~key:round !Clflags.inline_toplevel_threshold
+  in
+  let unscaled =
+    ordinary_threshold + toplevel_threshold
+  in
+  (* CR-soon pchambart: Add a warning if this is too big
+     mshinwell: later *)
+  Can_inline_if_no_larger_than
+    (unscaled * Inlining_cost.scale_inline_threshold_by)
+
 
 module Result = struct
   module Int = Ext_types.Int
@@ -274,15 +283,17 @@ module Result = struct
   type t =
     { approx : Simple_value_approx.t;
       used_staticfail : Static_exception.Set.t;
-      inlining_threshold : Inlining_cost.inlining_threshold;
+      inlining_threshold : Inlining_cost.inlining_threshold option;
       benefit : Inlining_cost.Benefit.t;
+      num_direct_applications : int;
     }
 
-  let create ~round =
+  let create () =
     { approx = Simple_value_approx.value_unknown Other;
       used_staticfail = Static_exception.Set.empty;
-      inlining_threshold = initial_inlining_threshold ~round;
+      inlining_threshold = None;
       benefit = Inlining_cost.Benefit.zero;
+      num_direct_applications = 0;
     }
 
   let approx t = t.approx
@@ -310,4 +321,10 @@ module Result = struct
     { t with inlining_threshold }
 
   let inlining_threshold t = t.inlining_threshold
+
+  let seen_direct_application t =
+    { t with num_direct_applications = t.num_direct_applications + 1; }
+
+  let num_direct_applications t =
+    t.num_direct_applications
 end

@@ -115,9 +115,15 @@ let mk_init f =
 
 let mk_inline f =
   "-inline", Arg.String f,
-    Printf.sprintf "<n>|<round>=<n>[,...]  Aggressiveness of inlining (default %d, higher \
-        numbers mean more aggressive)"
+    Printf.sprintf "<n>|<round>=<n>[,...]  Aggressiveness of inlining \
+        (default %d, higher numbers mean more aggressive)"
       Clflags.default_inline_threshold
+;;
+
+let mk_inline_toplevel f =
+  "-inline-toplevel", Arg.String f,
+    Printf.sprintf "<n>|<round>=<n>[,...]  Aggressiveness of inlining at \
+      toplevel (higher numbers mean more aggressive)"
 ;;
 
 let mk_inlining_stats f =
@@ -155,11 +161,6 @@ let mk_unroll f =
       Clflags.default_unroll
 ;;
 
-let mk_no_functor_heuristics f =
-  "-no-functor-heuristics", Arg.Unit f, " Disable functor detection \
-        heuristics that force inlining of toplevel function applications"
-;;
-
 let mk_classic_heuristic f =
   "-classic-heuristic", Arg.Unit f, " Use an inlining heuristic similar \
         to old-style one"
@@ -182,6 +183,14 @@ let mk_inline_prim_cost =
   mk_inline_cost "prim" "a primitive" Clflags.default_inline_prim_cost
 let mk_inline_branch_cost =
   mk_inline_cost "branch" "a conditional" Clflags.default_inline_branch_cost
+
+let mk_inline_lifting_benefit f =
+  "-inline-lifting-benefit",
+  Arg.String f,
+  Printf.sprintf "<n>|<round>=<n>[,...]  The benefit of lifting definitions \
+    to toplevel during inlining (default %d, higher numbers more beneficial)"
+    Clflags.default_inline_lifting_benefit
+;;
 
 let mk_branch_inline_factor f =
   "-branch-inline-factor", Arg.String f,
@@ -725,17 +734,18 @@ end;;
 module type Optcommon_options = sig
   val _compact : unit -> unit
   val _inline : string -> unit
+  val _inline_toplevel : string -> unit
   val _inlining_stats : unit -> unit
   val _dump_pass : string -> unit
   val _max_inlining_depth : string -> unit
   val _rounds : int -> unit
   val _unroll : string -> unit
-  val _no_functor_heuristics : unit -> unit
   val _classic_heuristic : unit -> unit
   val _inline_call_cost : string -> unit
   val _inline_alloc_cost : string -> unit
   val _inline_prim_cost : string -> unit
   val _inline_branch_cost : string -> unit
+  val _inline_lifting_benefit : string -> unit
   val _unbox_closures : unit -> unit
   val _branch_inline_factor : string -> unit
   val _no_inline_recursive_functions : unit -> unit
@@ -959,10 +969,12 @@ struct
     mk_I F._I;
     mk_impl F._impl;
     mk_inline F._inline;
+    mk_inline_toplevel F._inline_toplevel;
     mk_inline_alloc_cost F._inline_alloc_cost;
     mk_inline_branch_cost F._inline_branch_cost;
     mk_inline_call_cost F._inline_call_cost;
     mk_inline_prim_cost F._inline_prim_cost;
+    mk_inline_lifting_benefit F._inline_lifting_benefit;
     mk_inlining_stats F._inlining_stats;
     mk_intf F._intf;
     mk_intf_suffix F._intf_suffix;
@@ -974,7 +986,6 @@ struct
     mk_no_alias_deps F._no_alias_deps;
     mk_no_app_funct F._no_app_funct;
     mk_no_float_const_prop F._no_float_const_prop;
-    mk_no_functor_heuristics F._no_functor_heuristics;
     mk_classic_heuristic F._classic_heuristic;
     mk_noassert F._noassert;
     mk_noautolink_opt F._noautolink;
@@ -1057,15 +1068,16 @@ module Make_opttop_options (F : Opttop_options) = struct
     mk_I F._I;
     mk_init F._init;
     mk_inline F._inline;
+    mk_inline_toplevel F._inline_toplevel;
     mk_inlining_stats F._inlining_stats;
     mk_rounds F._rounds;
     mk_unroll F._unroll;
-    mk_no_functor_heuristics F._no_functor_heuristics;
     mk_classic_heuristic F._classic_heuristic;
     mk_inline_call_cost F._inline_call_cost;
     mk_inline_alloc_cost F._inline_alloc_cost;
     mk_inline_prim_cost F._inline_prim_cost;
     mk_inline_branch_cost F._inline_branch_cost;
+    mk_inline_lifting_benefit F._inline_lifting_benefit;
     mk_branch_inline_factor F._branch_inline_factor;
     mk_labels F._labels;
     mk_no_alias_deps F._no_alias_deps;

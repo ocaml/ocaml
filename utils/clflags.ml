@@ -119,11 +119,11 @@ let keep_startup_file = ref false       (* -dstartup *)
 let dump_combine = ref false            (* -dcombine *)
 let native_code = ref false             (* set to true under ocamlopt *)
 let default_inline_threshold = 10
-let inline_threshold = ref (Int_arg_helper.Always default_inline_threshold)
+let inline_threshold = ref (Int_arg_helper.default default_inline_threshold)
 let inlining_stats = ref false
 let simplify_rounds = ref 1
 let default_unroll = 0
-let unroll = ref (Int_arg_helper.Always default_unroll)
+let unroll = ref (Int_arg_helper.default default_unroll)
 let force_slash = ref false             (* for ocamldep *)
 let clambda_checks = ref false          (* -clambda-checks *)
 
@@ -151,7 +151,9 @@ let keep_docs = ref false              (* -keep-docs *)
 let keep_locs = ref false              (* -keep-locs *)
 let unsafe_string = ref true;;         (* -safe-string / -unsafe-string *)
 
-let functor_heuristics = ref true;;    (* -no-functor-heuristics *)
+let default_inline_toplevel_threshold = 8 * default_inline_threshold
+let inline_toplevel_threshold =
+  ref (Int_arg_helper.default default_inline_toplevel_threshold)
 
 let default_inline_call_cost = 5
 let default_inline_alloc_cost = 3
@@ -159,16 +161,19 @@ let default_inline_prim_cost = 3
 let default_inline_branch_cost = 3
 let default_inline_indirect_cost = 2
 let default_branch_inline_factor = 0.6
+let default_inline_lifting_benefit = 100
 
-let inline_call_cost = ref (Int_arg_helper.Always default_inline_call_cost)
-let inline_alloc_cost = ref (Int_arg_helper.Always default_inline_alloc_cost)
-let inline_prim_cost = ref (Int_arg_helper.Always default_inline_prim_cost)
+let inline_call_cost = ref (Int_arg_helper.default default_inline_call_cost)
+let inline_alloc_cost = ref (Int_arg_helper.default default_inline_alloc_cost)
+let inline_prim_cost = ref (Int_arg_helper.default default_inline_prim_cost)
 let inline_branch_cost =
-  ref (Int_arg_helper.Always default_inline_branch_cost)
+  ref (Int_arg_helper.default default_inline_branch_cost)
 let inline_indirect_cost =
-  ref (Int_arg_helper.Always default_inline_indirect_cost)
+  ref (Int_arg_helper.default default_inline_indirect_cost)
 let branch_inline_factor =
-  ref (Float_arg_helper.Always default_branch_inline_factor)
+  ref (Float_arg_helper.default default_branch_inline_factor)
+let inline_lifting_benefit =
+  ref (Int_arg_helper.default default_inline_lifting_benefit)
 
 let print_timings = ref false          (* -timings *)
 
@@ -178,9 +183,111 @@ let inline_recursive_functions = ref true  (* -no-inline-recursive-functions *)
 
 let classic_heuristic = ref false       (* -classic-heuristic *)
 
-let default_max_inlining_depth = 3
+let default_max_inlining_depth = 1
 let max_inlining_depth =
-  ref (Int_arg_helper.Always default_max_inlining_depth)
+  ref (Int_arg_helper.default default_max_inlining_depth)
+
+type inlining_arguments = {
+  inline_call_cost : int option;
+  inline_alloc_cost : int option;
+  inline_prim_cost : int option;
+  inline_branch_cost : int option;
+  inline_indirect_cost : int option;
+  inline_lifting_benefit : int option;
+  branch_inline_factor : float option;
+  max_inlining_depth : int option;
+  unroll : int option;
+  inline_threshold : int option;
+  inline_toplevel_threshold : int option;
+}
+
+let set_int_arg round (arg:Int_arg_helper.parsed ref) value =
+  let open Int_arg_helper in
+  match value with
+  | None -> ()
+  | Some value ->
+    let parsed =
+      match round with
+      | None -> { !arg with default = value }
+      | Some round ->
+        { !arg with
+          override = Ext_types.Int.Map.add round value !arg.override }
+    in
+    arg := parsed
+
+let set_float_arg round (arg:Float_arg_helper.parsed ref) value =
+  let open Float_arg_helper in
+  match value with
+  | None -> ()
+  | Some value ->
+    let parsed =
+      match round with
+      | None -> { !arg with default = value }
+      | Some round ->
+        { !arg with
+          override = Ext_types.Int.Map.add round value !arg.override }
+    in
+    arg := parsed
+
+let use_inlining_arguments_set ?round (arg:inlining_arguments) =
+  let set_int = set_int_arg round in
+  let set_float = set_float_arg round in
+  set_int inline_call_cost arg.inline_call_cost;
+  set_int inline_alloc_cost arg.inline_alloc_cost;
+  set_int inline_prim_cost arg.inline_prim_cost;
+  set_int inline_branch_cost arg.inline_branch_cost;
+  set_int inline_indirect_cost arg.inline_indirect_cost;
+  set_int inline_lifting_benefit arg.inline_lifting_benefit;
+  set_float branch_inline_factor arg.branch_inline_factor;
+  set_int max_inlining_depth arg.max_inlining_depth;
+  set_int unroll arg.unroll;
+  set_int inline_threshold arg.inline_threshold;
+  set_int inline_toplevel_threshold arg.inline_toplevel_threshold
+
+(* CR mshinwell for pchambart: please think about these numbers *)
+
+(* o1 is the default *)
+let o1_arguments = {
+  inline_call_cost = None;
+  inline_alloc_cost = None;
+  inline_prim_cost = None;
+  inline_branch_cost = None;
+  inline_indirect_cost = None;
+  inline_lifting_benefit = None;
+  branch_inline_factor = None;
+  max_inlining_depth = None;
+  unroll = None;
+  inline_threshold = None;
+  inline_toplevel_threshold = None;
+}
+
+let o2_arguments = {
+  inline_call_cost = Some 10;
+  inline_alloc_cost = None;
+  inline_prim_cost = None;
+  inline_branch_cost = None;
+  inline_indirect_cost = None;
+  inline_lifting_benefit = None;
+  branch_inline_factor = None;
+  max_inlining_depth = Some 2;
+  unroll = None;
+  inline_threshold = Some 25;
+  inline_toplevel_threshold = Some (25 * 8);
+}
+
+let o3_arguments = {
+  inline_call_cost = Some 20;
+  inline_alloc_cost = None;
+  inline_prim_cost = None;
+  inline_branch_cost = None;
+  inline_indirect_cost = None;
+  inline_lifting_benefit = None;
+  branch_inline_factor = None;
+  max_inlining_depth = Some 3;
+  unroll = Some 1;
+  inline_threshold = Some 50;
+  inline_toplevel_threshold = Some (50 * 8);
+}
 
 let all_passes = ref []
 let dumped_passes_list = ref []

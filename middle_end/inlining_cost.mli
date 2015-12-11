@@ -77,19 +77,21 @@ module Whether_sufficient_benefit : sig
 
   val create
      : original:Flambda.t
-    -> branch_depth: int
+    -> toplevel:bool
+    -> branch_depth:int
     -> Flambda.t
-    -> Benefit.t
-    -> probably_a_functor:bool
+    -> benefit:Benefit.t
+    -> lifting:bool
     -> round:int
     -> t
 
   val create_given_sizes
      : original_size:int
+    -> toplevel:bool
     -> branch_depth: int
     -> new_size:int
     -> benefit:Benefit.t
-    -> probably_a_functor:bool
+    -> lifting:bool
     -> round:int
     -> t
 
@@ -99,6 +101,8 @@ module Whether_sufficient_benefit : sig
 end
 
 val scale_inline_threshold_by : int
+
+val default_toplevel_multiplier : int
 
 val direct_call_size : int
 

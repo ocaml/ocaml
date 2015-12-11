@@ -19,7 +19,7 @@ module W = Inlining_cost.Whether_sufficient_benefit
 
 let inline_non_recursive env r ~function_decls ~lhs_of_application
     ~closure_id_being_applied ~(function_decl : Flambda.function_declaration)
-    ~only_use_of_function ~no_simplification ~probably_a_functor
+    ~only_use_of_function ~no_simplification
     ~(args : Variable.t list) ~size_from_approximation ~simplify
     ~always_inline ~(inline_requested : Lambda.inline_attribute)
     ~(made_decision : Inlining_stats_types.Decision.t -> unit) =
@@ -50,11 +50,7 @@ let inline_non_recursive env r ~function_decls ~lhs_of_application
       let g x = f x x
   *)
   let known_to_have_no_benefit =
-    if function_decl.stub then
-      false
-    else if always_inline then
-      false
-    else if only_use_of_function then
+    if function_decl.stub || only_use_of_function || always_inline then
       false
     else if A.all_not_useful (E.find_list_exn env args) then
       match size_from_approximation with
@@ -63,10 +59,12 @@ let inline_non_recursive env r ~function_decls ~lhs_of_application
           let benefit =
             Inlining_cost.Benefit.remove_call Inlining_cost.Benefit.zero
           in
-          W.create_given_sizes ~original_size:Inlining_cost.direct_call_size
+          W.create_given_sizes
+            ~original_size:Inlining_cost.direct_call_size
             ~new_size:body_size
+            ~toplevel:(E.at_toplevel env)
             ~branch_depth:(E.branch_depth env)
-            ~probably_a_functor
+            ~lifting:function_decl.Flambda.is_a_functor
             ~round:(E.round env)
             ~benefit
         in
@@ -92,12 +90,16 @@ let inline_non_recursive env r ~function_decls ~lhs_of_application
        the function, without doing any further inlining upon it, to the call
        site. *)
     let r =
-      R.set_inlining_threshold (R.reset_benefit r) Inlining_cost.Never_inline
+      R.set_inlining_threshold (R.reset_benefit r) (Some Inlining_cost.Never_inline)
     in
     Inlining_transforms.inline_by_copying_function_body ~env ~r
       ~function_decls ~lhs_of_application ~closure_id_being_applied
       ~inline_requested ~function_decl ~args ~simplify
   in
+  let num_direct_applications_seen =
+    (R.num_direct_applications r_inlined) - (R.num_direct_applications r)
+  in
+  assert (num_direct_applications_seen >= 0);
   let keep_inlined_version =
     if function_decl.stub then begin
       made_decision (Inlined (Copying_body Stub));
@@ -111,10 +113,11 @@ let inline_non_recursive env r ~function_decls ~lhs_of_application
     end else begin
       let sufficient_benefit =
         W.create ~original:(fst (no_simplification ())) body
+          ~toplevel:(E.at_toplevel env)
           ~branch_depth:(E.branch_depth env)
-          ~probably_a_functor
+          ~lifting:function_decl.Flambda.is_a_functor
           ~round:(E.round env)
-          (R.benefit r_inlined)
+          ~benefit:(R.benefit r_inlined)
       in
       let keep_inlined_version = W.evaluate sufficient_benefit in
       let decision : Inlining_stats_types.Decision.t =
@@ -164,10 +167,14 @@ let inline_non_recursive env r ~function_decls ~lhs_of_application
       else E.inlining_level_up env
     in
     simplify env r body
-  end else begin
+  end else if num_direct_applications_seen < 1 then begin
     (* Inlining the body of the function did not appear sufficiently
        beneficial; however, it may become so if we inline within the body
-       first.  We try that next. *)
+       first.  We try that next, unless it is known that there are were
+       no direct applications in the simplified body computed above, meaning
+       no opportunities for inlining. *)
+      no_simplification ()
+  end else begin
     let body, r_inlined =
       Inlining_transforms.inline_by_copying_function_body ~env
         ~r:(R.reset_benefit r)
@@ -175,10 +182,12 @@ let inline_non_recursive env r ~function_decls ~lhs_of_application
         ~inline_requested ~function_decl ~args ~simplify
     in
     let wsb =
-      W.create ~original:(fst (no_simplification ()))
+      W.create ~original:(fst (no_simplification ())) body
+        ~toplevel:(E.at_toplevel env)
         ~branch_depth:(E.branch_depth env)
-        body ~probably_a_functor ~round:(E.round env)
-        (R.benefit r_inlined)
+        ~lifting:function_decl.Flambda.is_a_functor
+        ~round:(E.round env)
+        ~benefit:(R.benefit r_inlined)
     in
     let keep_inlined_version = W.evaluate wsb in
     let decision : Inlining_stats_types.Decision.t =
@@ -232,9 +241,11 @@ let unroll_recursive env r ~max_level ~lhs_of_application
         tried_unrolling := true;
         let wsb =
           W.create body ~original:(fst (no_simplification()))
+            ~toplevel:(E.at_toplevel env)
             ~branch_depth:(E.branch_depth env)
-            ~probably_a_functor:false ~round:(E.round env)
-            (R.benefit r_inlined)
+            ~lifting:false
+            ~round:(E.round env)
+            ~benefit:(R.benefit r_inlined)
         in
         let keep_unrolled_version =
           if W.evaluate wsb then begin
@@ -307,11 +318,12 @@ let inline_recursive env r ~max_level ~lhs_of_application
       match copied_function_declaration with
       | Some (expr, r_inlined) ->
         let wsb =
-          W.create ~original:(fst (no_simplification ()))
+          W.create ~original:(fst (no_simplification ())) expr
+            ~toplevel:(E.at_toplevel env)
             ~branch_depth:(E.branch_depth env)
-            expr ~probably_a_functor:false
+            ~lifting:false
             ~round:(E.round env)
-            (R.benefit r_inlined)
+            ~benefit:(R.benefit r_inlined)
         in
         let keep_inlined_version = W.evaluate wsb in
         let decision : Inlining_stats_types.Decision.t =
@@ -334,14 +346,6 @@ let inline_recursive env r ~max_level ~lhs_of_application
         (Did_not_try_copying_decl (Tried_unrolling tried_unrolling));
       no_simplification ()
     end
-
-let is_probably_a_functor ~env ~args_approxs ~recursive_functions
-    ~function_decl =
-  !Clflags.functor_heuristics
-    && E.at_toplevel env
-    && (not (E.is_inside_branch env))
-    && ((List.for_all A.known args_approxs) || function_decl.Flambda.is_a_functor)
-    && Variable.Set.is_empty (Lazy.force recursive_functions)
 
 let for_call_site ~env ~r ~(function_decls : Flambda.function_declarations)
       ~lhs_of_application ~closure_id_being_applied
@@ -368,15 +372,10 @@ let for_call_site ~env ~r ~(function_decls : Flambda.function_declarations)
       kind = Direct closure_id_being_applied;
       dbg;
       inline = inline_requested;
-    }, R.set_approx r (A.value_unknown Other)
+    }, R.set_approx (R.seen_direct_application r) (A.value_unknown Other)
   in
   let max_level =
-    match !Clflags.max_inlining_depth with
-    | Always max_inlining_depth -> max_inlining_depth
-    | Variable by_round ->
-      match Ext_types.Int.Map.find (E.round env) by_round with
-      | max_inlining_depth -> max_inlining_depth
-      | exception Not_found -> Clflags.default_max_inlining_depth
+    Clflags.Int_arg_helper.get ~key:(E.round env) !Clflags.max_inlining_depth
   in
   let inline_annotation =
     (* Merge call site annotation and function annotation.
@@ -395,7 +394,16 @@ let for_call_site ~env ~r ~(function_decls : Flambda.function_declarations)
   let is_a_stub = function_decl.stub in
   let num_params = List.length function_decl.params in
   let only_use_of_function = false in
-  let inlining_threshold = R.inlining_threshold r in
+  let raw_inlining_threshold = R.inlining_threshold r in
+  let inlining_threshold =
+    match raw_inlining_threshold with
+    | None ->
+        if E.at_toplevel env then
+          Inline_and_simplify_aux.initial_inlining_toplevel_threshold ~round:(E.round env)
+        else
+          Inline_and_simplify_aux.initial_inlining_threshold ~round:(E.round env)
+    | Some inlining_threshold -> inlining_threshold
+  in
   let fun_var =
     U.find_declaration_variable closure_id_being_applied function_decls
   in
@@ -403,9 +411,6 @@ let for_call_site ~env ~r ~(function_decls : Flambda.function_declarations)
     lazy
       (Find_recursive_functions.in_function_declarations function_decls
          ~backend:(E.backend env))
-  in
-  let probably_a_functor =
-    is_probably_a_functor ~env ~args_approxs ~recursive_functions ~function_decl
   in
   let recursive =
     lazy (Variable.Set.mem fun_var (Lazy.force recursive_functions))
@@ -417,7 +422,6 @@ let for_call_site ~env ~r ~(function_decls : Flambda.function_declarations)
       if always_inline
         || is_a_stub
         || (only_use_of_function && not (Lazy.force recursive))
-        || probably_a_functor
       then
         inlining_threshold
       else begin
@@ -450,7 +454,7 @@ let for_call_site ~env ~r ~(function_decls : Flambda.function_declarations)
       no_simplification ()
     else
       let remaining_inlining_threshold = fun_cost in
-      let r = R.set_inlining_threshold r remaining_inlining_threshold in
+      let r = R.set_inlining_threshold r (Some remaining_inlining_threshold) in
       (* Try inlining if the function is non-recursive and not too far above
          the threshold (or if the function is to be unconditionally
          inlined). *)
@@ -477,7 +481,7 @@ let for_call_site ~env ~r ~(function_decls : Flambda.function_declarations)
         in
         inline_non_recursive env r ~function_decls ~lhs_of_application
           ~closure_id_being_applied ~function_decl ~made_decision
-          ~only_use_of_function ~no_simplification ~probably_a_functor
+          ~only_use_of_function ~no_simplification
           ~inline_requested ~always_inline ~args ~size_from_approximation
           ~simplify
       else if (not always_inline) && E.inlining_level env > max_level then begin
@@ -493,7 +497,7 @@ let for_call_site ~env ~r ~(function_decls : Flambda.function_declarations)
       end
   in
   if E.inlining_level env = 0
-  then expr, R.set_inlining_threshold r inlining_threshold
+  then expr, R.set_inlining_threshold r raw_inlining_threshold
   else expr, r
 
 (* We do not inline inside stubs, which are always inlined at their call site.
