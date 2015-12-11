@@ -539,7 +539,9 @@ and close_let_bound_expression t ?let_rec_ident let_bound_var env
     let set_of_closures_var =
       Variable.rename let_bound_var ~append:"_set_of_closures"
     in
-    let set_of_closures = close_functions t env [decl] in
+    let set_of_closures =
+      close_functions t env (Function_decls.create [decl])
+    in
     let project_closure : Flambda.project_closure =
       { set_of_closures = set_of_closures_var;
         closure_id = Closure_id.wrap closure_bound_var;

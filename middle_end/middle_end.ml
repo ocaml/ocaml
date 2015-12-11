@@ -52,8 +52,14 @@ let middle_end ppf ~sourcefile ~prefixname ~backend
   in
   Timings.(start (Flambda_middle_end sourcefile));
   let flam =
-    module_initializer
-    |> Closure_conversion.lambda_to_flambda ~backend ~module_ident ~size
+    let pass = Timings.Flambda_pass ("closure_conversion", sourcefile) in
+    Timings.start pass;
+    let flam =
+      module_initializer
+      |> Closure_conversion.lambda_to_flambda ~backend ~module_ident ~size
+    in
+    Timings.stop pass;
+    flam
   in
   dump_and_check "After closure conversion" flam;
   let rec loop flam =

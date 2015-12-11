@@ -74,7 +74,7 @@ module Function_decls : sig
     val free_idents : t -> Lambda.IdentSet.t
   end
 
-  type t = Function_decl.t list
+  type t
 
   val create : Function_decl.t list -> t
   val to_list : t -> Function_decl.t list
