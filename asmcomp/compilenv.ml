@@ -145,7 +145,7 @@ let read_library_info filename =
 
 let get_global_info global_ident = (
   let modname = Ident.name global_ident in
-  if modname = current_unit.ui_name then
+  if modname = "#CURRENT#" then
     Some current_unit
   else begin
     try
