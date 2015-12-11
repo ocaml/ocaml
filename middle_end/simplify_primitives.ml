@@ -194,20 +194,17 @@ let primitive (p : Lambda.primitive) (args, approxs) expr dbg ~size_int
           C.Benefit.zero
     | [Value_float_array { size; contents }] ->
         begin match p with
-        | Parraylength _ ->
-            S.const_int_expr expr size
+        | Parraylength _ -> S.const_int_expr expr size
         | Pfloatfield i ->
-            begin match contents with
-            | A.Contents a when i >= 0 && i < size ->
-                begin match a.(i) with
-                | None ->
-                    expr, A.value_unknown Other, C.Benefit.zero
-                | Some v ->
-                    S.const_float_expr expr v
-                end
-            | Contents _ | Unknown_or_mutable ->
-                expr, A.value_unknown Other, C.Benefit.zero
+          begin match contents with
+          | A.Contents a when i >= 0 && i < size ->
+            begin match a.(i) with
+            | None -> expr, A.value_unknown Other, C.Benefit.zero
+            | Some v -> S.const_float_expr expr v
             end
+          | Contents _ | Unknown_or_mutable ->
+            expr, A.value_unknown Other, C.Benefit.zero
+          end
         | _ -> expr, A.value_unknown Other, C.Benefit.zero
         end
     | _ -> expr, A.value_unknown Other, C.Benefit.zero
