@@ -76,6 +76,9 @@ struct
         | Some r -> add id r map) m empty
   let of_list l =
     List.fold_left (fun map (id,v) -> add id v map) empty l
+
+  (* Kept until Map.union is accepted upstream *)
+  (*
   let disjoint_union ?eq m1 m2 =
     merge (fun id x y -> match x, y with
         | None, None -> None
@@ -89,6 +92,18 @@ struct
               let err = Format.asprintf "ExtMap.disjoint_union %a" M.print id in
               fatal_error err
             else Some v1) m1 m2
+  *)
+
+  let disjoint_union ?eq m1 m2 =
+    union (fun id v1 v2 ->
+        let ok = match eq with
+          | None -> false
+          | Some eq -> eq v1 v2 in
+        if not ok
+        then
+          let err = Format.asprintf "ExtMap.disjoint_union %a" M.print id in
+          fatal_error err
+        else v1) m1 m2
 
   let union_right m1 m2 =
     merge (fun id x y -> match x, y with
