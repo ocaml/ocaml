@@ -63,6 +63,8 @@ Language features:
   (Alain Frisch and Gabriel Radanne)
 
 Compilers:
+- PR#4080, PR#6537, PR#5333: fix stack overflow in the compiler when -pack'ing a module
+  that includes a module of the same name (Alain Frisch)
 - PR#4800: better compilation of tuple assignment (Gabriel Scherer and
   Alain Frisch)
 - PR#5995: keep -for-pack into account to name exceptions; document -for-pack
