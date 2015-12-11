@@ -82,7 +82,8 @@ type primitive =
   (* Array operations *)
   | Pmakearray of array_kind * mutable_flag
   | Pduparray of array_kind * mutable_flag
-  (** For [Pduparray], the arguments give the kind and mutability of the
+  (** For [Pduparray], the argument must be an immutable array.
+      The arguments of [Pduparray] give the kind and mutability of the
       array being *produced* by the duplication. *)
   | Parraylength of array_kind
   | Parrayrefu of array_kind

@@ -298,28 +298,28 @@ let rec translate_definition_and_resolve_alias
       | Variable var -> var
     in
     begin match Variable.Tbl.find var_to_definition_tbl var with
-    | Allocated_const (Normal (Float_array floats))
-        (* CR pchambart: I'm not convinced that this is correct:
-           {|
-           let_symbol a = Allocated_const (Immutable_float_array [|0.|])
-           initialize_symbol b = Duparray(Mutable, a)
-           effect b.(0) <- 1.
-           initialize_symbol c = Duparray(Mutable, b)
-           |}
+    | Allocated_const (Normal (Float_array _)) ->
+      (* This example from pchambart illustrates why we do not allow
+         the duplication of mutable arrays:
 
-           This will be converted to
-           {|
-           let_symbol a = Allocated_const (Immutable_float_array [|0.|])
-           let_symbol b = Allocated_const (Float_array [|0.|])
-           effect b.(0) <- 1.
-           let_symbol c = Allocated_const (Float_array [|0.|])
-           |}
+         {|
+         let_symbol a = Allocated_const (Immutable_float_array [|0.|])
+         initialize_symbol b = Duparray(Mutable, a)
+         effect b.(0) <- 1.
+         initialize_symbol c = Duparray(Mutable, b)
+         |}
 
-           We can't encounter that currently, but I find it a bit scarry.
+         This will be converted to:
+         {|
+         let_symbol a = Allocated_const (Immutable_float_array [|0.|])
+         let_symbol b = Allocated_const (Float_array [|0.|])
+         effect b.(0) <- 1.
+         let_symbol c = Allocated_const (Float_array [|0.|])
+         |}
 
-           mshinwell: Agreed, we are going to ban duplicate-array on
-           mutable arrays.  I will do that later today (Thursday).
-        *)
+         We can't encounter that currently, but it's scary.
+      *)
+      Misc.fatal_error "Pduparray is not allowed on mutable arrays"
     | Allocated_const (Normal (Immutable_float_array floats)) ->
       let const : Allocated_const.t =
         match mutability with
