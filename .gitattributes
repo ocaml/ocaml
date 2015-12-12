@@ -1,6 +1,13 @@
+# Default behaviour, for if core.autocrlf isn't set
+* text=auto
+
+# Binary files
 boot/ocamlc binary
 boot/ocamllex binary
 boot/ocamldep binary
+*.gif
+*.png
+*.tfm
 
 .gitattributes           ocaml-typo=missing-header
 .gitignore               ocaml-typo=missing-header
@@ -31,3 +38,44 @@ ocamlbuild/TODO          ocaml-typo=missing-header
 
 ocamldoc/Changes.txt     ocaml-typo=missing-header
 ocamldoc/ocamldoc.sty    ocaml-typo=missing-header
+
+# Line-ending specifications, for Windows interoperability
+*.sh text eol=lf
+*.sh.in text eol=lf
+*.awk text eol=lf
+
+configure text eol=lf
+config/auto-aux/hasgot text eol=lf
+config/auto-aux/hasgot2 text eol=lf
+config/auto-aux/runtest text eol=lf
+config/auto-aux/searchpath text eol=lf
+config/auto-aux/solaris-ld text eol=lf
+config/auto-aux/tryassemble text eol=lf
+config/auto-aux/trycompile text eol=lf
+config/gnu/config.guess text eol=lf
+config/gnu/config.sub text eol=lf
+ocamldoc/remove_DEBUG text eol=lf
+stdlib/Compflags text eol=lf
+stdlib/sharpbang text eol=lf
+tools/check-typo text eol=lf
+tools/ci-build text eol=lf
+tools/cleanup-header text eol=lf
+tools/gdb-macros text eol=lf
+tools/magic text eol=lf
+tools/make-opcodes text eol=lf
+tools/make-package-macosx text eol=lf
+tools/ocaml-objcopy-macosx text eol=lf
+tools/ocamlmktop.tpl text eol=lf
+tools/ocamlsize text eol=lf
+
+# These two are cat scripts, so may not actually require this
+config/auto-aux/sharpbang text eol=lf
+config/auto-aux/sharpbang2 text eol=lf
+
+# Similarly, these are all Perl scripts, so may not actually require this
+manual/tools/caml-tex text eol=lf
+manual/tools/format-intf text eol=lf
+manual/tools/htmlcut text eol=lf
+manual/tools/htmltbl text eol=lf
+manual/tools/htmlthread text eol=lf
+manual/tools/texexpand text eol=lf
