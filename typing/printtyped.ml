@@ -241,9 +241,6 @@ and pattern i ppf x =
   | Tpat_lazy p ->
       line i ppf "Tpat_lazy\n";
       pattern i ppf p;
-  | Tpat_exception p ->
-      line i ppf "Tpat_exception\n";
-      pattern i ppf p;
 
 and expression_extra i ppf x attrs =
   match x with
@@ -291,10 +288,11 @@ and expression i ppf x =
       line i ppf "Texp_apply\n";
       expression i ppf e;
       list i label_x_expression ppf l;
-  | Texp_match (e, l, partial) ->
+  | Texp_match (e, l1, l2, partial) ->
       line i ppf "Texp_match\n";
       expression i ppf e;
-      list i case ppf l;
+      list i case ppf l1;
+      list i case ppf l2;
   | Texp_try (e, l) ->
       line i ppf "Texp_try\n";
       expression i ppf e;

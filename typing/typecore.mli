@@ -111,8 +111,7 @@ type error =
   | Invalid_interval
   | Invalid_for_loop_index
   | No_value_clauses
-  | Exception_pattern_disallowed
-  | Mixed_return_and_exn_pat_under_guard
+  | Exception_pattern_below_toplevel
   | Inlined_record_escape
   | Unrefuted_pattern of Typedtree.pattern
   | Invalid_extension_constructor_payload
