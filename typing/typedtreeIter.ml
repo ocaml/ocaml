@@ -242,7 +242,6 @@ module MakeIterator(Iter : IteratorArgument) : sig
         | Tpat_array list -> List.iter iter_pattern list
         | Tpat_or (p1, p2, _) -> iter_pattern p1; iter_pattern p2
         | Tpat_lazy p -> iter_pattern p
-        | Tpat_exception p -> iter_pattern p
       end;
       Iter.leave_pattern pat
 
@@ -276,9 +275,10 @@ module MakeIterator(Iter : IteratorArgument) : sig
                   None -> ()
                 | Some exp -> iter_expression exp
             ) list
-        | Texp_match (exp, cases, _) ->
+        | Texp_match (exp, list1, list2, _) ->
             iter_expression exp;
-            iter_cases cases;
+            iter_cases list1;
+            iter_cases list2;
         | Texp_try (exp, list) ->
             iter_expression exp;
             iter_cases list

@@ -192,8 +192,6 @@ let rec pretty_val ppf v =
       fprintf ppf "@[[| %a |]@]" (pretty_vals " ;") vs
   | Tpat_lazy v ->
       fprintf ppf "@[<2>lazy@ %a@]" pretty_arg v
-  | Tpat_exception v ->
-      fprintf ppf "@[<2>exception@ %a@]" pretty_arg v
   | Tpat_alias (v, x,_) ->
       fprintf ppf "@[(%a@ as %a)@]" pretty_val v Ident.print x
   | Tpat_or (v,w,_)    ->
@@ -367,7 +365,6 @@ let rec normalize_pat q = match q.pat_desc with
         q.pat_type q.pat_env
   | Tpat_lazy _ ->
       make_pat (Tpat_lazy omega) q.pat_type q.pat_env
-  | Tpat_exception _
   | Tpat_or _ -> fatal_error "Parmatch.normalize_pat"
 
 (*
@@ -533,7 +530,7 @@ let filter_all pat0 pss =
       filter_rec env ((p::ps)::pss)
   | ({pat_desc = Tpat_or(p1,p2,_)}::ps)::pss ->
       filter_rec env ((p1::ps)::(p2::ps)::pss)
-  | ({pat_desc = (Tpat_any | Tpat_var(_) | Tpat_exception(_))}::_)::pss ->
+  | ({pat_desc = (Tpat_any | Tpat_var(_))}::_)::pss ->
       filter_rec env pss
   | (p::ps)::pss ->
       filter_rec (insert p ps env) pss
@@ -924,8 +921,7 @@ let build_other ext env = match env with
 
 let rec has_instance p = match p.pat_desc with
   | Tpat_variant (l,_,r) when is_absent l r -> false
-  | Tpat_any | Tpat_var _ | Tpat_constant _ | Tpat_variant (_,None,_)
-  | Tpat_exception _-> true
+  | Tpat_any | Tpat_var _ | Tpat_constant _ | Tpat_variant (_,None,_) -> true
   | Tpat_alias (p,_,_) | Tpat_variant (_,Some p,_) -> has_instance p
   | Tpat_or (p1,p2,_) -> has_instance p1 || has_instance p2
   | Tpat_construct (_,_,ps) | Tpat_tuple ps | Tpat_array ps ->
@@ -964,8 +960,6 @@ let rec satisfiable pss qs = match pss with
               satisfiable (filter_extra pss) qs
         end
     | {pat_desc=Tpat_variant (l,_,r)}::_ when is_absent l r -> false
-    | {pat_desc=Tpat_exception _}::qs ->
-        assert false
     | q::qs ->
         let q0 = discr_pat q pss in
         satisfiable (filter_one q0 pss) (simple_match_args q0 q @ qs)
@@ -1007,8 +1001,6 @@ let rec satisfiables pss qs = match pss with
                 wild omega
         end
     | {pat_desc=Tpat_variant (l,_,r)}::_ when is_absent l r -> []
-    | {pat_desc=Tpat_exception _}::qs ->
-        assert false
     | q::qs ->
         let q0 = discr_pat q pss in
         List.map (set_args q0)
@@ -1515,8 +1507,6 @@ let rec le_pat p q =
       le_pats ps qs
   | Tpat_array(ps), Tpat_array(qs) ->
       List.length ps = List.length qs && le_pats ps qs
-  | Tpat_exception _, _
-  | _, Tpat_exception _ -> assert false
 (* In all other cases, enumeration is performed *)
   | _,_  -> not (satisfiable [[p]] [q])
 
@@ -1751,8 +1741,6 @@ module Conv = struct
 	  mkpat (Ppat_array (List.map loop lst))
       | Tpat_lazy p ->
 	  mkpat (Ppat_lazy (loop p))
-      | Tpat_exception p ->
-          mkpat (Ppat_exception (loop p))
     in
     let ps = loop typed in
     (ps, constrs, labels)
@@ -1885,7 +1873,7 @@ let rec collect_paths_from_pat r p = match p.pat_desc with
 | Tpat_variant (_, Some p, _) | Tpat_alias (p,_,_) -> collect_paths_from_pat r p
 | Tpat_or (p1,p2,_) ->
     collect_paths_from_pat (collect_paths_from_pat r p1) p2
-| Tpat_lazy p | Tpat_exception p
+| Tpat_lazy p
     ->
     collect_paths_from_pat r p
 
@@ -1992,11 +1980,6 @@ let irrefutable pat = le_pat pat omega
    Patterns containing (lazy _) subpatterns are active. *)
 
 let rec inactive pat = match pat with
-| Tpat_exception _ ->
-    (* This function is only called from [fluid], which is itself called only by
-       [Translcore.transl_function] where [Tpat_exception] doesn't appear.
-       So we can safely ignore that branch. *)
-    assert false
 | Tpat_lazy _ ->
     false
 | Tpat_any | Tpat_var _ | Tpat_constant _ | Tpat_variant (_, None, _) ->

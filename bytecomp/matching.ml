@@ -548,7 +548,6 @@ let rec exc_inside p = match p.pat_desc with
       -> exc_insides ps
   | Tpat_variant (_, Some q,_)
   | Tpat_alias (q,_,_)
-  | Tpat_exception q
   | Tpat_lazy q
     -> exc_inside q
   | Tpat_record (lps,_) ->
@@ -705,7 +704,6 @@ let rec extract_vars r p = match p.pat_desc with
 | Tpat_array pats ->
     List.fold_left extract_vars r pats
 | Tpat_variant (_,Some p, _) -> extract_vars r p
-| Tpat_exception p
 | Tpat_lazy p -> extract_vars r p
 | Tpat_or (p,_,_) -> extract_vars r p
 | Tpat_constant _|Tpat_any|Tpat_variant (_,None,_) -> r
@@ -2804,8 +2802,7 @@ let find_in_pat pred =
   let rec find_rec p =
     pred p.pat_desc ||
     begin match p.pat_desc with
-    | Tpat_alias (p,_,_) | Tpat_variant (_,Some p,_) | Tpat_lazy p
-    | Tpat_exception p ->
+    | Tpat_alias (p,_,_) | Tpat_variant (_,Some p,_) | Tpat_lazy p ->
         find_rec p
     | Tpat_tuple ps|Tpat_construct (_,_,ps) | Tpat_array ps ->
         List.exists find_rec ps
@@ -2825,7 +2822,6 @@ let is_lazy_pat = function
   | Tpat_alias _ | Tpat_variant _ | Tpat_record _
   | Tpat_tuple _|Tpat_construct _ | Tpat_array _
   | Tpat_or _ | Tpat_constant _ | Tpat_var _ | Tpat_any
-  | Tpat_exception _
       -> false
 
 let is_lazy p = find_in_pat is_lazy_pat p
@@ -2841,7 +2837,7 @@ let have_mutable_field p = match p with
 | Tpat_alias _ | Tpat_variant _ | Tpat_lazy _
 | Tpat_tuple _|Tpat_construct _ | Tpat_array _
 | Tpat_or _
-| Tpat_constant _ | Tpat_var _ | Tpat_any | Tpat_exception _
+| Tpat_constant _ | Tpat_var _ | Tpat_any
   -> false
 
 let is_mutable p = find_in_pat have_mutable_field p

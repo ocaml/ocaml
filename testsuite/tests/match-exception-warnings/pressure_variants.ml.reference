@@ -1,8 +1,0 @@
-
-#           val simple : [< `A ] -> unit = <fun>
-#         val moderatly_less_simple : [< `A ] -> unit = <fun>
-#           val less_simple : [< `A ] -> unit = <fun>
-#               type t = [ `A | `B ]
-val plain_weird : [< t ] -> unit = <fun>
-#           val plain_weird' : [< t ] -> unit = <fun>
-# 
