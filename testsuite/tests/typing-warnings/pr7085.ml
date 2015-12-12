@@ -13,4 +13,11 @@ module Make (M : T) =
      match M.is_t () with
      | None -> 0
      | Some _ -> 0
+   let f () =
+     match M.is_t () with None -> 0
+end;;
+
+module Make2 (M : T) = struct
+  type t = T of unit M.is_t
+  let g : t -> int = function _ -> .
 end;;
