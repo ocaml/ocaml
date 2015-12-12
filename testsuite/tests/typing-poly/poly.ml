@@ -687,3 +687,8 @@ let (n : 'b -> < m : 'a . ([< `Foo of int] as 'b) -> 'a >) = fun x ->
 let f b (x: 'x) =
   let module M = struct type t = A end in
   if b then x else M.A;;
+
+
+(* PR#6745 *)
+type 'a r = { x: 'b. 'b list as 'a };; (* Should fail? *)
+type 'a r = { x: 'b. int list as 'a };; (* ok *)
