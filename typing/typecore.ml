@@ -3848,7 +3848,7 @@ and type_cases ?exception_allowed ?in_function env ty_arg ty_res partial_flag lo
     check_unused ~lev env (instance env ty_arg) val_cases;
     check_unused ~lev env Predef.type_exn exn_cases
   in
-  if contains_polyvars then
+  if contains_polyvars || do_init then
     let ty_arg_check =
       (* Hack: use for_saving to copy variables too *)
       Subst.type_expr (Subst.for_saving Subst.identity) ty_arg in
