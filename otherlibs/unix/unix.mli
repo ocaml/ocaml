@@ -123,7 +123,9 @@ val environment : unit -> string array
 
 val getenv : string -> string
 (** Return the value associated to a variable in the process
-   environment. Raise [Not_found] if the variable is unbound.
+   environment.
+   @raise Not_found if the variable is unbound.
+
    (This function is identical to {!Sys.getenv}.) *)
 
 val putenv : string -> string -> unit
@@ -161,8 +163,8 @@ val execv : string -> string array -> 'a
 (** [execv prog args] execute the program in file [prog], with
    the arguments [args], and the current process environment.
    These [execv*] functions never return: on success, the current
-   program is replaced by the new one;
-   on failure, a {!Unix.Unix_error} exception is raised. *)
+   program is replaced by the new one.
+   @raise Unix.Unix_error on failure. *)
 
 val execve : string -> string array -> string array -> 'a
 (** Same as {!Unix.execv}, except that the third argument provides the
@@ -502,8 +504,9 @@ val umask : int -> int
     On Windows: not implemented. *)
 
 val access : string -> access_permission list -> unit
-(** Check that the process has the given permissions over the named
-   file. Raise [Unix_error] otherwise.
+(** Check that the process has the given permissions over the named file.
+   @raise Unix_error otherwise.
+
    On Windows, execute permission [X_OK], cannot be tested, it just
    tests for read permission instead. *)
 
@@ -962,19 +965,27 @@ val getlogin : unit -> string
 (** Return the login name of the user executing the process. *)
 
 val getpwnam : string -> passwd_entry
-(** Find an entry in [passwd] with the given name, or raise [Not_found].
+(** Find an entry in [passwd] with the given name.
+   @raise Not_found if no such entry exist.
+
    On Windows, always raise [Not_found]. *)
 
 val getgrnam : string -> group_entry
-(** Find an entry in [group] with the given name, or raise [Not_found].
+(** Find an entry in [group] with the given name.
+   @raise Not_found if no such entry exist.
+
    On Windows, always raise [Not_found]. *)
 
 val getpwuid : int -> passwd_entry
-(** Find an entry in [passwd] with the given user id, or raise [Not_found].
+(** Find an entry in [passwd] with the given user id.
+   @raise Not_found if no such entry exist.
+
    On Windows, always raise [Not_found]. *)
 
 val getgrgid : int -> group_entry
-(** Find an entry in [group] with the given group id, or raise [Not_found].
+(** Find an entry in [group] with the given group id.
+   @raise Not_found if no such entry exist.
+
    On Windows, always raise [Not_found]. *)
 
 
@@ -989,8 +1000,8 @@ val inet_addr_of_string : string -> inet_addr
     address to its internal representation.  The argument string
     consists of 4 numbers separated by periods ([XXX.YYY.ZZZ.TTT])
     for IPv4 addresses, and up to 8 numbers separated by colons
-    for IPv6 addresses.  Raise [Failure] when given a string that
-    does not match these formats. *)
+    for IPv6 addresses.
+    @raise Failure when given a string that does not match these formats. *)
 
 val string_of_inet_addr : inet_addr -> string
 (** Return the printable representation of the given Internet address.
@@ -1255,28 +1266,28 @@ val gethostname : unit -> string
 (** Return the name of the local host. *)
 
 val gethostbyname : string -> host_entry
-(** Find an entry in [hosts] with the given name, or raise
-   [Not_found]. *)
+(** Find an entry in [hosts] with the given name.
+    @raise Not_found if no such entry exist. *)
 
 val gethostbyaddr : inet_addr -> host_entry
-(** Find an entry in [hosts] with the given address, or raise
-   [Not_found]. *)
+(** Find an entry in [hosts] with the given address.
+    @raise Not_found if no such entry exist. *)
 
 val getprotobyname : string -> protocol_entry
-(** Find an entry in [protocols] with the given name, or raise
-   [Not_found]. *)
+(** Find an entry in [protocols] with the given name.
+    @raise Not_found if no such entry exist. *)
 
 val getprotobynumber : int -> protocol_entry
-(** Find an entry in [protocols] with the given protocol number,
-   or raise [Not_found]. *)
+(** Find an entry in [protocols] with the given protocol number.
+    @raise Not_found if no such entry exist. *)
 
 val getservbyname : string -> string -> service_entry
-(** Find an entry in [services] with the given name, or raise
-   [Not_found]. *)
+(** Find an entry in [services] with the given name.
+    @raise Not_found if no such entry exist. *)
 
 val getservbyport : int -> string -> service_entry
-(** Find an entry in [services] with the given service number,
-   or raise [Not_found]. *)
+(** Find an entry in [services] with the given service number.
+    @raise Not_found if no such entry exist. *)
 
 type addr_info =
   { ai_family : socket_domain;          (** Socket domain *)
@@ -1336,7 +1347,7 @@ val getnameinfo : sockaddr -> getnameinfo_option list -> name_info
 (** [getnameinfo addr opts] returns the host name and service name
     corresponding to the socket address [addr].  [opts] is a possibly
     empty list of options that governs how these names are obtained.
-    Raise [Not_found] if an error occurs. *)
+    @raise Not_found if an error occurs. *)
 
 
 (** {6 Terminal interface} *)
