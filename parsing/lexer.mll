@@ -212,6 +212,7 @@ let warn_latin1 lexbuf =
     (Warnings.Deprecated "ISO-Latin1 characters in identifiers")
 ;;
 
+let handle_docstrings = ref true
 let comment_list = ref []
 
 let add_comment com =
@@ -377,7 +378,11 @@ rule token = parse
         COMMENT (s, loc) }
   | "(**"
       { let s, loc = with_comment_buffer comment lexbuf in
-        DOCSTRING (Docstrings.docstring s loc) }
+        if !handle_docstrings then
+          DOCSTRING (Docstrings.docstring s loc)
+        else
+          COMMENT ("*" ^ s, loc)
+      }
   | "(**" ('*'+) as stars
       { let s, loc =
           with_comment_buffer
