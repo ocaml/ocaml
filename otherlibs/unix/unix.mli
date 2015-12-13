@@ -1132,76 +1132,84 @@ val sendto_substring :
 
 (** {6 Socket options} *)
 
-
-type socket_bool_option =
-    SO_DEBUG       (** Record debugging information *)
-  | SO_BROADCAST   (** Permit sending of broadcast messages *)
-  | SO_REUSEADDR   (** Allow reuse of local addresses for bind *)
-  | SO_KEEPALIVE   (** Keep connection active *)
-  | SO_DONTROUTE   (** Bypass the standard routing algorithms *)
-  | SO_OOBINLINE   (** Leave out-of-band data in line *)
-  | SO_ACCEPTCONN  (** Report whether socket listening is enabled *)
-  | TCP_NODELAY    (** Control the Nagle algorithm for TCP sockets *)
-  | IPV6_ONLY      (** Forbid binding an IPv6 socket to an IPv4 address *)
 (** The socket options that can be consulted with {!Unix.getsockopt}
-   and modified with {!Unix.setsockopt}.  These options have a boolean
-   ([true]/[false]) value. *)
+   and modified with {!Unix.setsockopt}. *)
+type 't socket_option =
+  | SO_DEBUG      : bool socket_option (** Record debugging information *)
+  | SO_BROADCAST  : bool socket_option (** Permit sending of broadcast
+                                           messages *)
+  | SO_REUSEADDR  : bool socket_option (** Allow reuse of local addresses
+                                           for bind *)
+  | SO_KEEPALIVE  : bool socket_option (** Keep connection active *)
+  | SO_DONTROUTE  : bool socket_option (** Bypass the standard routing
+                                           algorithms *)
+  | SO_OOBINLINE  : bool socket_option (** Leave out-of-band data in line *)
+  | SO_ACCEPTCONN : bool socket_option (** Report whether socket listening
+                                           is enabled *)
+  | TCP_NODELAY   : bool socket_option (** Control the Nagle algorithm for
+                                           TCP sockets *)
+  | IPV6_ONLY     : bool socket_option (** Forbid binding an IPv6 socket to
+                                           an IPv4 address *)
+  | SO_SNDBUF     : int socket_option  (** Size of send buffer *)
+  | SO_RCVBUF     : int socket_option  (** Size of received buffer *)
+  | SO_ERROR      : int socket_option  (** Deprecated.  Use
+                                           {!Unix.getsockopt_error} instead. *)
+  | SO_TYPE       : int socket_option  (** Report the socket type *)
+  | SO_RCVLOWAT   : int socket_option  (** Minimum number of bytes to process
+                                           for input operations*)
+  | SO_SNDLOWAT   : int socket_option  (** Minimum number of bytes to process
+                                           for output operations *)
+  | SO_LINGER     : int option socket_option
+                (** Whether to linger on closed connections that have
+                    data present, and for how long (in seconds).  The
+                    value [None] means ``disabled'' *)
+  | SO_RCVTIMEO   : float socket_option
+                (** Timeout for input operations, in seconds.
+                    The value 0 means infinite timeout. *)
+  | SO_SNDTIMEO   : float socket_option
+                (** Timeout for output operations, in seconds.
+                    The value 0 means infinite timeout. *)
 
-type socket_int_option =
-    SO_SNDBUF      (** Size of send buffer *)
-  | SO_RCVBUF      (** Size of received buffer *)
-  | SO_ERROR       (** Deprecated.  Use {!Unix.getsockopt_error} instead. *)
-  | SO_TYPE        (** Report the socket type *)
-  | SO_RCVLOWAT    (** Minimum number of bytes to process for input operations*)
-  | SO_SNDLOWAT    (** Minimum number of bytes to process for output
-                       operations *)
-(** The socket options that can be consulted with {!Unix.getsockopt_int}
-   and modified with {!Unix.setsockopt_int}.  These options have an
-   integer value. *)
+val getsockopt : file_descr -> 't socket_option -> 't
+(** Return the current status of an option in the given socket. *)
 
-type socket_optint_option =
-  SO_LINGER      (** Whether to linger on closed connections
-                    that have data present, and for how long
-                    (in seconds) *)
-(** The socket options that can be consulted with {!Unix.getsockopt_optint}
-   and modified with {!Unix.setsockopt_optint}.  These options have a
-   value of type [int option], with [None] meaning ``disabled''. *)
+val setsockopt : file_descr -> 't socket_option -> 't -> unit
+(** Set or clear an option in the given socket. *)
 
-type socket_float_option =
-    SO_RCVTIMEO    (** Timeout for input operations *)
-  | SO_SNDTIMEO    (** Timeout for output operations *)
-(** The socket options that can be consulted with {!Unix.getsockopt_float}
-   and modified with {!Unix.setsockopt_float}.  These options have a
-   floating-point value representing a time in seconds.
-   The value 0 means infinite timeout. *)
+type socket_bool_option = bool socket_option
 
-val getsockopt : file_descr -> socket_bool_option -> bool
-(** Return the current status of a boolean-valued option
-   in the given socket. *)
+type socket_int_option = int socket_option
 
-val setsockopt : file_descr -> socket_bool_option -> bool -> unit
-(** Set or clear a boolean-valued option in the given socket. *)
+type socket_optint_option = int option socket_option
+
+type socket_float_option = float socket_option
 
 val getsockopt_int : file_descr -> socket_int_option -> int
+  [@@ocaml.deprecated "Use getsockopt instead"]
 (** Same as {!Unix.getsockopt} for an integer-valued socket option. *)
 
 val setsockopt_int : file_descr -> socket_int_option -> int -> unit
+  [@@ocaml.deprecated "Use setsockopt instead"]
 (** Same as {!Unix.setsockopt} for an integer-valued socket option. *)
 
 val getsockopt_optint : file_descr -> socket_optint_option -> int option
+  [@@ocaml.deprecated "Use getsockopt instead"]
 (** Same as {!Unix.getsockopt} for a socket option whose value is an
    [int option]. *)
 
 val setsockopt_optint :
       file_descr -> socket_optint_option -> int option -> unit
+  [@@ocaml.deprecated "Use setsockopt instead"]
 (** Same as {!Unix.setsockopt} for a socket option whose value is an
    [int option]. *)
 
 val getsockopt_float : file_descr -> socket_float_option -> float
+  [@@ocaml.deprecated "Use getsockopt instead"]
 (** Same as {!Unix.getsockopt} for a socket option whose value is a
    floating-point number. *)
 
 val setsockopt_float : file_descr -> socket_float_option -> float -> unit
+  [@@ocaml.deprecated "Use setsockopt instead"]
 (** Same as {!Unix.setsockopt} for a socket option whose value is a
    floating-point number. *)
 

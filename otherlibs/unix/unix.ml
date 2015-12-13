@@ -572,35 +572,35 @@ let send_substring fd buf ofs len flags =
 let sendto_substring fd buf ofs len flags addr =
   sendto fd (Bytes.unsafe_of_string buf) ofs len flags addr
 
-type socket_bool_option =
-    SO_DEBUG
-  | SO_BROADCAST
-  | SO_REUSEADDR
-  | SO_KEEPALIVE
-  | SO_DONTROUTE
-  | SO_OOBINLINE
-  | SO_ACCEPTCONN
-  | TCP_NODELAY
-  | IPV6_ONLY
+type _ socket_option =
+  | SO_DEBUG      : bool socket_option
+  | SO_BROADCAST  : bool socket_option
+  | SO_REUSEADDR  : bool socket_option
+  | SO_KEEPALIVE  : bool socket_option
+  | SO_DONTROUTE  : bool socket_option
+  | SO_OOBINLINE  : bool socket_option
+  | SO_ACCEPTCONN : bool socket_option
+  | TCP_NODELAY   : bool socket_option
+  | IPV6_ONLY     : bool socket_option
+  | SO_SNDBUF     : int socket_option
+  | SO_RCVBUF     : int socket_option
+  | SO_ERROR      : int socket_option
+  | SO_TYPE       : int socket_option
+  | SO_RCVLOWAT   : int socket_option
+  | SO_SNDLOWAT   : int socket_option
+  | SO_LINGER     : int option socket_option
+  | SO_RCVTIMEO   : float socket_option
+  | SO_SNDTIMEO   : float socket_option
 
-type socket_int_option =
-    SO_SNDBUF
-  | SO_RCVBUF
-  | SO_ERROR
-  | SO_TYPE
-  | SO_RCVLOWAT
-  | SO_SNDLOWAT
-
-type socket_optint_option = SO_LINGER
-
-type socket_float_option =
-    SO_RCVTIMEO
-  | SO_SNDTIMEO
-
+type socket_bool_option = bool socket_option
+type socket_int_option = int socket_option
+type socket_optint_option = int option socket_option
+type socket_float_option = float socket_option
 type socket_error_option = SO_ERROR
 
 module SO: sig
   type ('opt, 'v) t
+  val any : 't socket_option -> ('t socket_option, 't) t
   val bool: (socket_bool_option, bool) t
   val int: (socket_int_option, int) t
   val optint: (socket_optint_option, int option) t
@@ -619,10 +619,31 @@ end = struct
               = "unix_getsockopt"
   external set: ('opt, 'v) t -> file_descr -> 'opt -> 'v -> unit
               = "unix_setsockopt"
+
+  let any : type v. v socket_option -> (v socket_option, v) t =
+    function
+    | SO_DEBUG -> bool
+    | SO_BROADCAST -> bool
+    | SO_REUSEADDR -> bool
+    | SO_KEEPALIVE -> bool
+    | SO_DONTROUTE -> bool
+    | SO_OOBINLINE -> bool
+    | SO_ACCEPTCONN -> bool
+    | TCP_NODELAY -> bool
+    | IPV6_ONLY -> bool
+    | SO_SNDBUF -> int
+    | SO_RCVBUF -> int
+    | SO_ERROR -> int
+    | SO_TYPE -> int
+    | SO_RCVLOWAT -> int
+    | SO_SNDLOWAT -> int
+    | SO_LINGER -> optint
+    | SO_RCVTIMEO -> float
+    | SO_SNDTIMEO -> float
 end
 
-let getsockopt fd opt = SO.get SO.bool fd opt
-let setsockopt fd opt v = SO.set SO.bool fd opt v
+let getsockopt fd opt = SO.get (SO.any opt) fd opt
+let setsockopt fd opt v = SO.set (SO.any opt) fd opt v
 
 let getsockopt_int fd opt = SO.get SO.int fd opt
 let setsockopt_int fd opt v = SO.set SO.int fd opt v
