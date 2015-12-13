@@ -214,14 +214,14 @@ val getpid : unit -> int
 
 val getppid : unit -> int
 (** Return the pid of the parent process.
-   On windows: not implemented (meaningless under Windows). *)
+   On Windows: not implemented (because it is meaningless). *)
 
 val nice : int -> int
 (** Change the process priority. The integer argument is added to the
    ``nice'' value. (Higher values of the ``nice'' value mean
    lower priorities.) Return the new nice value.
 
-   On windows: not implemented. *)
+   On Windows: not implemented. *)
 
 
 (** {6 Basic file input/output} *)
@@ -309,7 +309,7 @@ val in_channel_of_descr : file_descr -> in_channel
    [set_binary_mode_in ic false] if text mode is desired.
    Text mode is supported only if the descriptor refers to a file
    or pipe, but is not supported if it refers to a socket.
-   Under Windows, [set_binary_mode_in] always fails on channels created
+   On Windows, [set_binary_mode_in] always fails on channels created
    with this function.
 
    Beware that channels are buffered so more characters may have been
@@ -326,7 +326,7 @@ val out_channel_of_descr : file_descr -> out_channel
    [set_binary_mode_out oc false] if text mode is desired.
    Text mode is supported only if the descriptor refers to a file
    or pipe, but is not supported if it refers to a socket.
-   Under Windows, [set_binary_mode_out] always fails on channels created
+   On Windows, [set_binary_mode_out] always fails on channels created
    with this function.
 
    Beware that channels are buffered so you may have to [flush] them
@@ -362,13 +362,13 @@ val lseek : file_descr -> int -> seek_command -> int
 val truncate : string -> int -> unit
 (** Truncates the named file to the given size.
 
-  On windows: not implemented. *)
+  On Windows: not implemented. *)
 
 val ftruncate : file_descr -> int -> unit
 (** Truncates the file corresponding to the given descriptor
    to the given size.
 
-  On windows: not implemented. *)
+  On Windows: not implemented. *)
 
 
 (** {6 File status} *)
@@ -624,7 +624,7 @@ val open_process_in : string -> in_channel
    The standard output of the command is redirected to a pipe,
    which can be read via the returned input channel.
    The command is interpreted by the shell [/bin/sh]
-   (or [cmd.exe] under Windows), cf. [system]. *)
+   (or [cmd.exe] on Windows), cf. [system]. *)
 
 val open_process_out : string -> out_channel
 (** Same as {!Unix.open_process_in}, but redirect the standard input of
@@ -747,7 +747,7 @@ val lockf : file_descr -> lock_command -> int -> unit
 
 val kill : int -> int -> unit
 (** [kill pid sig] sends signal number [sig] to the process
-   with id [pid]. Under Windows, only the [Sys.sigkill] signal
+   with id [pid].  On Windows, only the [Sys.sigkill] signal
    is emulated. *)
 
 type sigprocmask_command =
@@ -765,24 +765,24 @@ val sigprocmask : sigprocmask_command -> int list -> int list
    from the set of blocked signals.
    [sigprocmask] returns the set of previously blocked signals.
 
-   On Windows: not implemented (no inter-process signals in Windows). *)
+   On Windows: not implemented (no inter-process signals on Windows). *)
 
 val sigpending : unit -> int list
 (** Return the set of blocked signals that are currently pending.
 
-   On Windows: not implemented (no inter-process signals in Windows). *)
+   On Windows: not implemented (no inter-process signals on Windows). *)
 
 val sigsuspend : int list -> unit
 (** [sigsuspend sigs] atomically sets the blocked signals to [sigs]
    and waits for a non-ignored, non-blocked signal to be delivered.
    On return, the blocked signals are reset to their initial value.
 
-   On Windows: not implemented (no inter-process signals in Windows). *)
+   On Windows: not implemented (no inter-process signals on Windows). *)
 
 val pause : unit -> unit
 (** Wait until a non-ignored, non-blocked signal is delivered.
 
-  On Windows: not implemented (no inter-process signals in Windows). *)
+  On Windows: not implemented (no inter-process signals on Windows). *)
 
 
 (** {6 Time functions} *)
