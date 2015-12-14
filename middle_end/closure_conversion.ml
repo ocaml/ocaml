@@ -187,7 +187,9 @@ and close t env (lam : Lambda.lambda) : Flambda.t =
          will be named after the corresponding identifier in the [let rec]. *)
       List.map (function
           | (let_rec_ident, Lambda.Lfunction { kind; params; body; attr; }) ->
-            let closure_bound_var = Variable.create_with_same_name_as_ident let_rec_ident in
+            let closure_bound_var =
+              Variable.create_with_same_name_as_ident let_rec_ident
+            in
             let function_declaration =
               Function_decl.create ~let_rec_ident:(Some let_rec_ident)
                 ~closure_bound_var ~kind ~params ~body
