@@ -17,3 +17,4 @@
 include Ext_types.Identifiable
 
 val create : ?name:string -> Compilation_unit.t -> t
+val get_compilation_unit : t -> Compilation_unit.t

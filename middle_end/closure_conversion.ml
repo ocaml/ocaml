@@ -501,7 +501,6 @@ and close_functions t external_env function_declarations : Flambda.named =
       ~funs:
         (List.fold_left close_one_function Variable.Map.empty
           (Function_decls.to_list function_declarations))
-      ~compilation_unit:(Compilation_unit.get_current_exn ())
   in
   (* The closed representation of a set of functions is a "set of closures".
      (For avoidance of doubt, the runtime representation of the *whole set* is

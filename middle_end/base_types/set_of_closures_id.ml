@@ -16,3 +16,5 @@ module T = Ext_types.UnitId (Id) (Compilation_unit)
 
 include T
 include Ext_types.Identifiable.Make (T)
+
+let get_compilation_unit = unit

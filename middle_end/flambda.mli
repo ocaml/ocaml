@@ -260,8 +260,6 @@ and function_declarations = private {
   funs : function_declaration Variable.Map.t;
   (** The function(s) defined by the set of function declarations.  The
       keys of this map are often referred to in the code as "fun_var"s. *)
-  compilation_unit : Compilation_unit.t;
-  (** Which compilation unit the function declarations live within. *)
 }
 
 and function_declaration = private {
@@ -520,7 +518,6 @@ val create_function_declaration
 val create_function_declarations
    : set_of_closures_id:Set_of_closures_id.t
   -> funs:function_declaration Variable.Map.t
-  -> compilation_unit:Compilation_unit.t
   -> function_declarations
 
 (** Convenience function to replace the [funs] member of a set of
