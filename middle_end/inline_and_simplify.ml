@@ -46,15 +46,11 @@ let simplify_free_variable_internal env original_var =
      by replacing [var2] in the body with [var1].  Simplification can then
      eliminate the [let].
   *)
-  let var_opt =
-    (* CR mshinwell: consider shuffling this logic around a bit *)
-    A.simplify_var_to_var_using_env (E.find_exn env var)
-      ~is_present_in_env:(fun var -> E.mem env var)
-  in
   let var =
-    match var_opt with
-    | None -> var
-    | Some var -> var
+    let approx = E.find_exn env var in
+    match approx.var with
+    | Some var when E.mem env var -> var
+    | Some _ | None -> var
   in
   (* CR mshinwell: Should we update [r] when we *add* code?
      Aside from that, it looks like maybe we don't need [r] in this function,
