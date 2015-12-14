@@ -1951,7 +1951,7 @@ OCaml compiler has no choice but to box "a.(i)" and "b.(i)" and unbox
 the result of "foo".  This results in the allocation of "3 * len"
 temporary float values.
 
-Now if we annotate the arguments and result with "[@@unboxed]", the
+Now if we annotate the arguments and result with "[\@unboxed]", the
 compiler will be able to avoid all these allocations:
 
 \begin{verbatim}
@@ -1977,7 +1977,7 @@ CAMLprim value foo_byte(value a, value b)
 \end{verbatim}
 
 For convenicence, when all arguments and the result are annotated with
-"[@unboxed]", it is possible to put the attribute only once on the
+"[\@unboxed]", it is possible to put the attribute only once on the
 declaration itself. So we can also write instead:
 
 \begin{verbatim}
@@ -1996,7 +1996,7 @@ what C types should be used in correspondence:
 
 Similarly, it is possible to pass untagged OCaml integers between
 OCaml and C. This is done by annotating the arguments and/or result
-with "[@@untagged]":
+with "[\@untagged]":
 
 \begin{verbatim}
 external f : string -> (int [@untagged]) = "f_byte" "f"
@@ -2005,7 +2005,7 @@ external f : string -> (int [@untagged]) = "f_byte" "f"
 The corresponding C type must be "intnat".
 
 {\bf Note:} do not use the C "int" type in correspondence with "(int
-[@untagged])". This is because they often differ in size.
+[\@untagged])". This is because they often differ in size.
 
 \subsection{Direct C call}
 
@@ -2018,7 +2018,7 @@ For small functions that are called repeatedly, this indirection can
 have a big impact on performances. However this is not needed if we
 know that the C function doesn't allocate and doesn't raise
 exceptions. We can instruct the OCaml compiler of this fact by
-annotating the external declaration with the attribute "[@@noalloc]":
+annotating the external declaration with the attribute "[\@\@noalloc]":
 
 \begin{verbatim}
 external bar : int -> int -> int = "foo" [@@noalloc]
