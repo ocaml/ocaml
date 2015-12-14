@@ -639,23 +639,23 @@ and simplify_set_of_closures original_env r
     let inline : Lambda.inline_attribute =
       match function_decl.inline with
       | Default_inline ->
-          if !Clflags.classic_heuristic && not function_decl.stub then
-            (* In classic-heuristic mode, the inlining decision is taken at
-               definition site (here). If the function is small enough
-               (below the -inline threshold) it will always be inlined. *)
-            let inlining_threshold =
-              Inline_and_simplify_aux.initial_inlining_threshold
-                ~round:(E.round env)
-            in
-            if Inlining_cost.can_inline body inlining_threshold ~bonus:0
-            then
-              Always_inline
-            else
-              Default_inline
+        if !Clflags.classic_heuristic && not function_decl.stub then
+          (* In classic-heuristic mode, the inlining decision is taken at
+             definition site (here). If the function is small enough
+             (below the -inline threshold) it will always be inlined. *)
+          let inlining_threshold =
+            Inline_and_simplify_aux.initial_inlining_threshold
+              ~round:(E.round env)
+          in
+          if Inlining_cost.can_inline body inlining_threshold ~bonus:0
+          then
+            Always_inline
           else
             Default_inline
+        else
+          Default_inline
       | inline ->
-          inline
+        inline
     in
     let function_decl =
       Flambda.create_function_declaration ~params:function_decl.params
