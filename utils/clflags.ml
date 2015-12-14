@@ -151,7 +151,7 @@ let keep_docs = ref false              (* -keep-docs *)
 let keep_locs = ref false              (* -keep-locs *)
 let unsafe_string = ref true;;         (* -safe-string / -unsafe-string *)
 
-let default_inline_toplevel_threshold = 8 * default_inline_threshold
+let default_inline_toplevel_threshold = 16 * default_inline_threshold
 let inline_toplevel_threshold =
   ref (Int_arg_helper.default default_inline_toplevel_threshold)
 
@@ -161,7 +161,7 @@ let default_inline_prim_cost = 3
 let default_inline_branch_cost = 3
 let default_inline_indirect_cost = 2
 let default_branch_inline_factor = 0.6
-let default_inline_lifting_benefit = 100
+let default_inline_lifting_benefit = 1300
 
 let inline_call_cost = ref (Int_arg_helper.default default_inline_call_cost)
 let inline_alloc_cost = ref (Int_arg_helper.default default_inline_alloc_cost)
