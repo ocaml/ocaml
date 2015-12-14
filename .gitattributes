@@ -5,9 +5,9 @@
 boot/ocamlc binary
 boot/ocamllex binary
 boot/ocamldep binary
-*.gif
-*.png
-*.tfm
+*.gif binary
+*.png binary
+*.tfm binary
 
 .gitattributes           ocaml-typo=missing-header
 .gitignore               ocaml-typo=missing-header
