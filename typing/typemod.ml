@@ -800,6 +800,7 @@ and transl_recmodule_modtypes loc env sdecls =
       )
       env ids
   in
+  Ctype.init_def(Ident.current_time()); (* PR#7082 *)
   let init =
     List.map2
       (fun id pmd ->

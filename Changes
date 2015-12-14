@@ -329,8 +329,10 @@ Bug fixes:
   (Damien Doligez)
 - PR#6672: Unused variance specification allowed in with constraint
 - PR#6744: Univars can escape through polymorphic variants (partial fix)
-- PR#6776: Failure to kill the "tick" thread, segfault when exiting the runtime
 - PR#6752: Extensible variant types and scope escaping
+- PR#6762: improve warning 45 in presence of re-exported type definitions
+  (Alain Frisch, report by Olivier Andrieu)
+- PR#6776: Failure to kill the "tick" thread, segfault when exiting the runtime
 - PR#6780: Poor error message for wrong -farch and -ffpu options (ocamlopt, ARM)
 - PR#6805: Duplicated expression in case of hole in a non-failing switch.
   (Luc Maranget)
@@ -382,8 +384,7 @@ Bug fixes:
   (Xavier Leroy)
 - PR#7042 and GPR#295: CSE optimization confuses the FP literals +0.0 and -0.0
   (Xavier Leroy)
-- PR#6762: improve warning 45 in presence of re-exported type definitions
-  (Alain Frisch, report by Olivier Andrieu)
+- PR#7082: Object type in recursive module's `with` annotation
 - GPR#205: Clear caml_backtrace_last_exn before registering as root
   (report and fix by Frederic Bour)
 - GPR#220: minor -dsource error on recursive modules
