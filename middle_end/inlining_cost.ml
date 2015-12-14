@@ -346,6 +346,9 @@ module Whether_sufficient_benefit = struct
 
 
   let to_string t =
+    let lifting_benefit =
+      Clflags.Int_arg_helper.get ~key:t.round !Clflags.inline_lifting_benefit
+    in
       Printf.sprintf "{benefit={call=%d,alloc=%d,prim=%i,branch=%i,indirect=%i,req=%i},\
                       orig_size=%d,new_size=%d,eval_size=%d,eval_benefit=%d,\
                       toplevel=%b,lifting=%b,branch_depth=%d}=%s"
@@ -358,7 +361,7 @@ module Whether_sufficient_benefit = struct
         t.original_size
         t.new_size
         (t.original_size - t.new_size)
-        t.evaluated_benefit
+        (if t.lifting then t.evaluated_benefit + lifting_benefit else t.evaluated_benefit)
         t.toplevel
         t.lifting
         t.branch_depth
