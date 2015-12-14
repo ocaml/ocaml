@@ -944,10 +944,10 @@ and simplify_named env r (tree : Flambda.named) : Flambda.named * R.t =
         expr, ret r approx
       end)
   | Expr expr ->
-    let expr, r = simplify_direct env r expr in
+    let expr, r = simplify env r expr in
     Expr expr, r
 
-and simplify_direct env r (tree : Flambda.t) : Flambda.t * R.t =
+and simplify env r (tree : Flambda.t) : Flambda.t * R.t =
   match tree with
   | Var var ->
     let var = Freshening.apply_variable (E.freshening env) var in
@@ -1023,7 +1023,7 @@ and simplify_direct env r (tree : Flambda.t) : Flambda.t * R.t =
       match body with
       | Let { var; defining_expr = def; body; _ }
           when not (Flambda_utils.might_raise_static_exn def i) ->
-        simplify_direct env r
+        simplify env r
           (Flambda.create_let var def (Static_catch (i, vars, body, handler)))
       | _ ->
         let i, sb = Freshening.add_static_exception (E.freshening env) i in
@@ -1207,16 +1207,6 @@ and simplify_list env r l =
     if t' == t && h' == h
     then l, approxs, r
     else h' :: t', approxs, r
-
-and simplify env r tree =
-  let f, r = simplify_direct env r tree in
-  let module Backend = (val (E.backend env) : Backend_intf.S) in
-  (* CR mshinwell for pchambart: This call to [really_import_approx] is
-     kind of confusing; it seems like some kind of catch-all.  What
-     exactly is happening here?
-     It looks like this might only be needed in the "field" case.
-  *)
-  f, ret r (Backend.really_import_approx (R.approx r))
 
 let constant_defining_value_approx
     env
