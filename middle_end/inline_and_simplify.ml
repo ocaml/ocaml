@@ -980,14 +980,7 @@ and simplify_direct env r (tree : Flambda.t) : Flambda.t * R.t =
         let r = R.map_benefit r (B.remove_code_named defining_expr) in
         r, var, None
       else
-        (* CR mshinwell: check that Pignore is inserted correctly by a later
-           pass.
-           pchambart: Is it still relevant ? Why should we need ignore anymore ? *)
-        (* Generate a fresh name for increasing legibility of the
-           intermediate language (in particular to make it more obvious that
-           the variable is unused). *)
-        let fresh_var = Variable.create "for_side_effect_only" in
-        r, fresh_var, Some defining_expr
+        r, var, Some defining_expr
     in
     Flambda.fold_lets_option tree
       ~init:(env, r)
