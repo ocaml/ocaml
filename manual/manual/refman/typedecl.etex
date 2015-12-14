@@ -27,7 +27,7 @@ type-equation:
 ;
 type-representation:
           '=' ['|'] constr-decl { '|' constr-decl }
-        | '=' '{' field-decl { ';' field-decl } [';'] '}'
+        | '=' record-decl
 ;
 type-params:
           type-param
@@ -40,8 +40,14 @@ variance:
           '+'
         | '-'
 ;
+record-decl:
+         '{' field-decl { ';' field-decl } [';'] '}'
+;
 constr-decl:
-          (constr-name || '()') [ 'of' typexpr { '*' typexpr } ]
+          (constr-name || '()') [ 'of' constr-args ]
+;
+constr-args:
+          typexpr { '*' typexpr }
 ;
 field-decl:
           ['mutable'] field-name ':' poly-typexpr
