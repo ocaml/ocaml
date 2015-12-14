@@ -93,6 +93,8 @@ let middle_end ppf ~sourcefile ~prefixname ~backend
       +-+ ("lift_lets 1", Lift_code.lift_lets)
       +-+ ("Lift_constants", Lift_constants.lift_constants ~backend)
       +-+ ("Share_constants", Share_constants.share_constants)
+      +-+ ("Remove_unused_globals",
+           Remove_unused_globals.remove_unused_globals)
       +-+ ("Lift_let_to_initialize_symbol",
            Lift_let_to_initialize_symbol.lift ~backend)
       +-+ ("lift_lets 2", Lift_code.lift_lets)
@@ -101,23 +103,16 @@ let middle_end ppf ~sourcefile ~prefixname ~backend
       +-+ ("Inline_and_simplify",
            Inline_and_simplify.run ~never_inline:false ~backend
              ~prefixname ~round)
-      +-+ ("lift_lets 3", Lift_code.lift_lets)
       +-+ ("Remove_unused_closure_vars 2",
            Remove_unused_closure_vars.remove_unused_closure_variables)
-      +-+ ("Inline_and_simplify noinline 1",
-           Inline_and_simplify.run ~never_inline:true ~backend
-             ~prefixname ~round)
-      +-+ ("Remove_unused_closure_vars",
-           Remove_unused_closure_vars.remove_unused_closure_variables)
+      +-+ ("lift_lets 3", Lift_code.lift_lets)
       +-+ ("Ref_to_variables",
            Ref_to_variables.eliminate_ref)
-      +-+ ("Inline_and_simplify noinline 2",
+      +-+ ("Inline_and_simplify noinline",
            Inline_and_simplify.run ~never_inline:true ~backend
             ~prefixname ~round)
       +-+ ("Initialize_symbol_to_let_symbol",
            Initialize_symbol_to_let_symbol.run)
-      +-+ ("Remove_unused_globals",
-           Remove_unused_globals.remove_unused_globals)
       |> loop
   in
   let back_end flam =
