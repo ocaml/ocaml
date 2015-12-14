@@ -41,7 +41,6 @@ let ignore_allocated_const (_ : Allocated_const.t) = ()
 let ignore_set_of_closures_id (_ : Set_of_closures_id.t) = ()
 let ignore_closure_id (_ : Closure_id.t) = ()
 let ignore_var_within_closure (_ : Var_within_closure.t) = ()
-let ignore_compilation_unit (_ : Compilation_unit.t) = ()
 let ignore_tag (_ : Tag.t) = ()
 let ignore_inline_attribute (_ : Lambda.inline_attribute) = ()
 
@@ -248,11 +247,8 @@ let variable_and_symbol_invariants (program : Flambda.program) =
   and loop_set_of_closures env
       ({ Flambda.function_decls; free_vars; specialised_args; }
        as set_of_closures) =
-      let { Flambda.set_of_closures_id; funs; compilation_unit; } =
-        function_decls
-      in
+      let { Flambda.set_of_closures_id; funs; } = function_decls in
       ignore_set_of_closures_id set_of_closures_id;
-      ignore_compilation_unit compilation_unit;
       let functions_in_closure = Variable.Map.keys funs in
       let variables_in_closure =
         Variable.Map.fold (fun var var_in_closure variables_in_closure ->
@@ -458,7 +454,11 @@ let no_var_within_closure_is_bound_multiple_times (flam:Flambda.program) =
 let every_declared_closure_is_from_current_compilation_unit flam =
   let current_compilation_unit = Compilation_unit.get_current_exn () in
   Flambda_iterators.iter_on_sets_of_closures (fun
-        { Flambda. function_decls = { compilation_unit; _ }; _ } ->
+        { Flambda. function_decls; _ } ->
+      let compilation_unit =
+        Set_of_closures_id.get_compilation_unit
+          function_decls.set_of_closures_id
+      in
       if not (Compilation_unit.equal compilation_unit current_compilation_unit)
       then raise (Declared_closure_from_another_unit compilation_unit))
     flam

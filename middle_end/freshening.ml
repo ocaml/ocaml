@@ -302,7 +302,6 @@ module Project_var = struct
       let function_decls =
         Flambda.create_function_declarations
           ~set_of_closures_id:(Set_of_closures_id.create current_unit)
-          ~compilation_unit:current_unit
           ~funs
       in
       function_decls, Active subst, t
