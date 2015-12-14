@@ -798,8 +798,8 @@ let lift_constants (program : Flambda.program) ~backend =
   in
   let constant_definitions =
     (* Add previous Let_symbol to the newly discovered ones *)
-    Symbol.Map.union_merge
-      (fun
+    Symbol.Map.union
+      (fun _sym
         (c1:Flambda.constant_defining_value)
         (c2:Flambda.constant_defining_value) ->
         match c1, c2 with
