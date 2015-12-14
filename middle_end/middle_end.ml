@@ -62,6 +62,25 @@ let middle_end ppf ~sourcefile ~prefixname ~backend
     flam
   in
   dump_and_check "After closure conversion" flam;
+  let fast_mode flam =
+    pass_number := 0;
+    let round = 0 in
+    flam
+    +-+ ("lift_lets 1", Lift_code.lift_lets)
+    +-+ ("Lift_constants", Lift_constants.lift_constants ~backend)
+    +-+ ("Share_constants", Share_constants.share_constants)
+    +-+ ("Lift_let_to_initialize_symbol",
+         Lift_let_to_initialize_symbol.lift ~backend)
+    +-+ ("Inline_and_simplify",
+         Inline_and_simplify.run ~never_inline:false ~backend
+           ~prefixname ~round)
+    +-+ ("Ref_to_variables",
+         Ref_to_variables.eliminate_ref)
+    +-+ ("Remove_unused_closure_vars 2",
+         Remove_unused_closure_vars.remove_unused_closure_variables)
+    +-+ ("Initialize_symbol_to_let_symbol",
+         Initialize_symbol_to_let_symbol.run)
+  in
   let rec loop flam =
     pass_number := 0;
     let round = !round_number in
@@ -101,7 +120,19 @@ let middle_end ppf ~sourcefile ~prefixname ~backend
            Remove_unused_globals.remove_unused_globals)
       |> loop
   in
-  let flam = loop flam in
+  let back_end flam =
+    flam
+    +-+ ("Lift_constants", Lift_constants.lift_constants ~backend)
+    +-+ ("Share_constants", Share_constants.share_constants)
+    +-+ ("Remove_unused_globals", Remove_unused_globals.remove_unused_globals)
+  in
+  let flam =
+    if !Clflags.classic_heuristic then
+      fast_mode flam
+    else
+      loop flam
+  in
+  let flam = back_end flam in
   (* Check that there aren't any unused "always inline" attributes. *)
   Flambda_iterators.iter_apply_on_program flam ~f:(fun apply ->
       match apply.inline with

@@ -112,52 +112,6 @@ let compile_genfuns ppf f =
        | _ -> ())
     (Cmmgen.generic_functions true [Compilenv.current_unit_infos ()])
 
-let prep_flambda_for_export ppf flam ~backend =
-  let check pass flam =
-    if !Clflags.flambda_invariant_checks then begin
-      try Flambda_invariants.check_exn flam
-      with exn ->
-        Misc.fatal_errorf "Before backend, after pass %s@.%s:@.%a"
-          pass (Printexc.to_string exn)
-          Flambda.print_program flam
-    end
-  in
-  if !Clflags.dump_flambda
-  then begin
-    Format.fprintf ppf "@.Starting Lift_constants:@ %a@."
-      Flambda.print_program flam
-  end;
-  let program = Lift_constants.lift_constants flam ~backend in
-  if !Clflags.dump_flambda
-  then begin
-    Format.fprintf ppf "@.After Lift_constants (before invariants):@ %a@."
-      Flambda.print_program program
-  end;
-  check "Lift_constants" program;
-  if !Clflags.dump_flambda
-  then begin
-    Format.fprintf ppf "@.After Lift_constants:@ %a@."
-      Flambda.print_program program
-  end;
-  if !Clflags.dump_flambda
-  then begin
-    Format.fprintf ppf "@.Starting Share_constants:@."
-  end;
-  let program = Share_constants.share_constants program in
-  if !Clflags.dump_flambda
-  then begin
-    Format.fprintf ppf "@.After Share_constants (before invariants):@ %a@."
-      Flambda.print_program program
-  end;
-  check "Share_constants" program;
-  if !Clflags.dump_flambda
-  then begin
-    Format.fprintf ppf "@.After Share_constants:@ %a@."
-      Flambda.print_program program
-  end;
-  let export = Build_export_info.build_export_info ~backend program in
-  program, export
-
 let compile_unit ~sourcefile _output_prefix asm_filename keep_asm obj_filename gen =
   let create_asm = keep_asm || not !Emitaux.binary_backend_available in
   Emitaux.create_asm_file := create_asm;
@@ -184,10 +138,11 @@ let set_export_info (ulambda, prealloc, structured_constants, export) =
   Compilenv.set_export_info export;
   (ulambda, prealloc, structured_constants)
 
-let gen_implementation ?toplevel ~sourcefile ~backend ppf flam =
+let gen_implementation ?toplevel ~sourcefile ~backend ppf program =
   Emit.begin_assembly ();
   Timings.(start (Flambda_backend sourcefile));
-  prep_flambda_for_export ppf flam ~backend
+  let export = Build_export_info.build_export_info ~backend program in
+  (program, export)
   ++ Flambda_to_clambda.convert
   ++ raw_clambda_dump_if ppf
   ++ (fun { Flambda_to_clambda. expr; preallocated_blocks;
