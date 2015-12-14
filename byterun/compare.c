@@ -96,7 +96,6 @@ static intnat compare_val(value v1, value v2, int total)
 
   sp = compare_stack;
   while (1) {
-    if (v1 == Val_long(0xdeadbeef) || v2 == Val_long(0xdeadbeef)) abort();
     if (v1 == v2 && total) goto next_item;
     if (Is_long(v1)) {
       if (v1 == v2) goto next_item;

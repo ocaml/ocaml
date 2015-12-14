@@ -15,7 +15,6 @@ module T = struct
   type t = {
     compilation_unit : Compilation_unit.t;
     label : Linkage_name.t;
-    dummy : int;
   }
 
   (* CR mshinwell for pchambart: I tried to rewrite the second sentence of
@@ -35,8 +34,6 @@ module T = struct
       Linkage_name.print t.label
 end
 
-let dummy = 0xdeadbeef
-
 include T
 include Ext_types.Identifiable.Make (T)
 
@@ -48,13 +45,13 @@ let create compilation_unit label =
   let label =
     Linkage_name.create (unit_linkage_name ^ "__" ^ (Linkage_name.to_string label))
   in
-  { compilation_unit; label; dummy; }
+  { compilation_unit; label; }
 
 let unsafe_create compilation_unit label =
-  { compilation_unit; label; dummy; }
+  { compilation_unit; label; }
 
 let import_for_pack ~pack:compilation_unit symbol =
-  { compilation_unit; label = symbol.label; dummy; }
+  { compilation_unit; label = symbol.label; }
 
 let compilation_unit t = t.compilation_unit
 let label t = t.label
