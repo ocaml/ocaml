@@ -33,7 +33,7 @@ Language features:
   * "noalloc" becomes [@@noalloc]
   Deprecate "float" and "noalloc".
   (Jérémie Dimino)
-- GPR#254: @ocaml.arg_on_literal_pattern attribute on constructors to
+- GPR#254: @ocaml.warn_on_literal_pattern attribute on constructors to
   warn when the argument is matches against a constant pattern.  This
   attribute is applied on predefined exception constructors which
   take an purely informational (with no stability guarantee) message.
