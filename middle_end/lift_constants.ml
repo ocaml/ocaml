@@ -38,7 +38,7 @@ let assign_symbols_and_collect_constant_definitions
   let var_to_definition_tbl = Variable.Tbl.create 42 in
   let module AA = Alias_analysis in
   let assign_symbol var (named : Flambda.named) =
-    if not (Variable.Set.mem var inconstants.id) then begin
+    if not (Inconstant_idents.variable var inconstants) then begin
       let assign_symbol () =
         let symbol = make_variable_symbol "" var in
         Variable.Tbl.add var_to_symbol_tbl var symbol
@@ -62,8 +62,8 @@ let assign_symbols_and_collect_constant_definitions
       | Set_of_closures (
           { function_decls = { funs; set_of_closures_id; _ };
             _ } as set) ->
-        assert (not (Set_of_closures_id.Set.mem set_of_closures_id
-                       inconstants.closure));
+        assert (not (Inconstant_idents.closure set_of_closures_id
+                       inconstants));
         assign_symbol ();
         record_definition (AA.Set_of_closures set);
         Variable.Map.iter (fun fun_var _ ->
@@ -131,11 +131,11 @@ let assign_symbols_and_collect_constant_definitions
   collect_initialize_declaration program.program_body;
   let record_set_of_closure_equalities (set_of_closures:Flambda.set_of_closures) =
     Variable.Map.iter (fun arg var ->
-        if not (Variable.Set.mem arg inconstants.id) then
+        if not (Inconstant_idents.variable arg inconstants) then
           Variable.Tbl.add var_to_definition_tbl arg (AA.Variable var))
       set_of_closures.free_vars;
     Variable.Map.iter (fun arg var ->
-        if not (Variable.Set.mem arg inconstants.id) then
+        if not (Inconstant_idents.variable arg inconstants) then
           Variable.Tbl.add var_to_definition_tbl arg (AA.Variable var))
       set_of_closures.specialised_args
   in
@@ -189,7 +189,7 @@ let translate_set_of_closures
     (var_to_definition_tbl:Alias_analysis.constant_defining_value Variable.Tbl.t)
     (set_of_closures:Flambda.set_of_closures) =
   let f var (named:Flambda.named) : Flambda.named =
-    if Variable.Set.mem var inconstants.id then
+    if Inconstant_idents.variable var inconstants then
       named
     else
       let resolved =
@@ -708,7 +708,7 @@ let replace_definitions_in_initialize_symbol_and_effects
   let rewrite_expr expr =
     Flambda_iterators.map_all_immutable_let_and_let_rec_bindings expr
       ~f:(fun var (named : Flambda.named) : Flambda.named ->
-        if Variable.Set.mem var inconstants.id then
+        if Inconstant_idents.variable var inconstants then
           named
         else
           let resolved =
