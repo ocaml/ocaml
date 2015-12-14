@@ -464,7 +464,8 @@ and close_functions t external_env function_declarations : Flambda.named =
        This induces a renaming on [Function_decl.free_idents]; the results of
        that renaming are stored in [free_variables]. *)
     let closure_env =
-      List.fold_right (fun id env -> Env.add_var env id (Variable.create_with_same_name_as_ident id))
+      List.fold_right (fun id env ->
+          Env.add_var env id (Variable.create_with_same_name_as_ident id))
         params closure_env_without_parameters
     in
     (* If the function is the wrapper for a function with an optional
