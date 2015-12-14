@@ -15,6 +15,7 @@ module T = struct
   type t = {
     compilation_unit : Compilation_unit.t;
     label : Linkage_name.t;
+    dummy : int;
   }
 
   (* CR mshinwell for pchambart: I tried to rewrite the second sentence of
@@ -22,21 +23,19 @@ module T = struct
      there's something about uniqueness in the comment in symbol.mli too. *)
   (** Labels are unique, so comparing them is sufficient.  Ignoring the
       compilation unit may also uncover bugs. *)
-  let compare t1 t2 =
-    if t1 == t2 then 0
-    else Linkage_name.compare t1.label t2.label
+  let compare t1 t2 = Linkage_name.compare t1.label t2.label
 
   let output chan t = Linkage_name.output chan t.label
   let hash t = Hashtbl.hash t.label
-  let equal t1 t2 =
-    if t1 == t2 then true
-    else t1.label = t2.label
+  let equal t1 t2 = t1.label = t2.label
 
   let print ppf t =
     Format.fprintf ppf "%a.%a"
       Compilation_unit.print t.compilation_unit
       Linkage_name.print t.label
 end
+
+let dummy = 0xdeadbeef
 
 include T
 include Ext_types.Identifiable.Make (T)
@@ -49,13 +48,13 @@ let create compilation_unit label =
   let label =
     Linkage_name.create (unit_linkage_name ^ "__" ^ (Linkage_name.to_string label))
   in
-  { compilation_unit; label; }
+  { compilation_unit; label; dummy; }
 
 let unsafe_create compilation_unit label =
-  { compilation_unit; label; }
+  { compilation_unit; label; dummy; }
 
 let import_for_pack ~pack:compilation_unit symbol =
-  { compilation_unit; label = symbol.label; }
+  { compilation_unit; label = symbol.label; dummy; }
 
 let compilation_unit t = t.compilation_unit
 let label t = t.label

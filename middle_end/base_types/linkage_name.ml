@@ -12,35 +12,14 @@
 (**************************************************************************)
 
 module T = struct
-  type t = {
-    name : string;
-    hash : int;
-  }
-
-  let compare t1 t2 =
-    if t1 == t2 then 0
-    else
-      let c = t1.hash - t2.hash in
-      if c <> 0 then c
-      else compare t1.name t2.name
-
-  let equal t1 t2 =
-    if t1 == t2 then true
-    else
-      t1.hash = t2.hash
-        && Pervasives.compare t1.name t2.name = 0
-
-  let hash t = t.hash
-  let print ppf t = Format.fprintf ppf "%s" t.name
-  let output chan t = output_string chan t.name
+  include String
+  let hash = Hashtbl.hash
+  let print ppf t = Format.fprintf ppf "%s" t
+  let output chan t = output_string chan t
 end
 
 include T
 include Ext_types.Identifiable.Make (T)
 
-let create t =
-  { name = t;
-    hash = Hashtbl.hash t;
-  }
-
-let to_string t = t.name
+let create t = t
+let to_string t = t
