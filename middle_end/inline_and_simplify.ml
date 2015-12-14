@@ -1098,7 +1098,6 @@ and simplify_direct env r (tree : Flambda.t) : Flambda.t * R.t =
       end)
   | While (cond, body) ->
     let cond, r = simplify env r cond in
-    let env = E.inside_simplify env in
     let body, r = simplify env r body in
     While (cond, body), ret r (A.value_unknown Other)
   | Send { kind; meth; obj; args; dbg; } ->
@@ -1114,11 +1113,9 @@ and simplify_direct env r (tree : Flambda.t) : Flambda.t * R.t =
           Freshening.add_variable (E.freshening env) bound_var
         in
         let env =
-          E.inside_simplify
-            (E.add (E.set_freshening env sb) bound_var
-              (A.value_unknown Other))
+          E.add (E.set_freshening env sb) bound_var
+            (A.value_unknown Other)
         in
-        let env = E.inside_simplify env in
         let body, r = simplify env r body in
         For { bound_var; from_value; to_value; direction; body; },
           ret r (A.value_unknown Other)))

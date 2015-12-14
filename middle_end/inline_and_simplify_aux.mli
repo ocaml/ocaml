@@ -120,7 +120,6 @@ module Env : sig
   val is_inside_branch : t -> bool
   val branch_depth : t -> int
   val inside_branch : t -> t
-  val inside_simplify : t -> t
 
   val increase_closure_depth : t -> t
 
