@@ -298,7 +298,7 @@ module P = struct
 end
 module PathSet = Set.Make (P)
 module PathMap = Map.Make (P)
-module IdentSet = Set.Make (struct type t = Ident.t let compare = compare end)
+module IdentSet = Set.Make (Ident)
 
 let rec get_prefixes = function
     Pident _ -> PathSet.empty

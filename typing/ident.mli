@@ -36,6 +36,9 @@ val hide: t -> t
            When put in a 'a tbl, this identifier can only be looked
            up by name. *)
 
+val compare : t -> t -> int
+(* Compare identifiers by binding location *)
+
 val make_global: t -> unit
 val global: t -> bool
 val is_predef_exn: t -> bool
