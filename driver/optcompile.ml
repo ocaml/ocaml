@@ -65,6 +65,9 @@ let do_transl modulename modul =
   (id, size), lam
 
 let implementation ppf sourcefile outputprefix ~backend =
+  if !Clflags.classic_heuristic then begin
+    Clflags.use_inlining_arguments_set Clflags.classic_arguments
+  end;
   Compmisc.init_path true;
   let modulename = module_of_filename ppf sourcefile outputprefix in
   Env.set_unit_name modulename;

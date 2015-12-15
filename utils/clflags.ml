@@ -261,6 +261,23 @@ let o1_arguments = {
   inline_toplevel_threshold = None;
 }
 
+let classic_arguments = {
+  inline_call_cost = None;
+  inline_alloc_cost = None;
+  inline_prim_cost = None;
+  inline_branch_cost = None;
+  inline_indirect_cost = None;
+  inline_lifting_benefit = None;
+  branch_inline_factor = None;
+  max_inlining_depth = None;
+  unroll = None;
+  (* These are supposed to mimic the size thresholds of the existing
+     compiler.  Unfortunately the actual value that uses is 10/8, which
+     we can't express, but this should be close enough. *)
+  inline_threshold = Some 1;
+  inline_toplevel_threshold = Some 1;
+}
+
 let o2_arguments = {
   inline_call_cost = Some 10;
   inline_alloc_cost = None;

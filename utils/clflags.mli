@@ -46,6 +46,7 @@ type inlining_arguments = {
   inline_toplevel_threshold : int option;
 }
 
+val classic_arguments : inlining_arguments
 val o1_arguments : inlining_arguments
 val o2_arguments : inlining_arguments
 val o3_arguments : inlining_arguments
