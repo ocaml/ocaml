@@ -343,12 +343,20 @@ partialclean::
 	rm -f ocaml
 
 RUNTOP=./byterun/ocamlrun ./ocaml -nostdlib -I stdlib -noinit $(TOPFLAGS)
+NATRUNTOP=./ocamlnat -nostdlib -I stdlib -noinit $(TOPFLAGS)
 
 runtop:
 	$(MAKE) runtime
 	$(MAKE) coreall
 	$(MAKE) ocaml
 	@rlwrap --help 2>/dev/null && rlwrap $(RUNTOP) || $(RUNTOP)
+
+natruntop:
+	$(MAKE) runtime
+	$(MAKE) coreall
+	$(MAKE) opt.opt
+	$(MAKE) ocamlnat
+	@rlwrap --help 2>/dev/null && rlwrap $(NATRUNTOP) || $(NATRUNTOP)
 
 # The native toplevel
 
