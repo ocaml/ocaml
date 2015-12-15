@@ -411,11 +411,11 @@ let map_symbols_on_set_of_closures
         end;
         Flambda.create_function_declaration
           ~params:func_decl.params
-           ~body
-           ~stub:func_decl.stub
-           ~dbg:func_decl.dbg
-           ~inline:func_decl.inline
-           ~is_a_functor:func_decl.is_a_functor)
+          ~body
+          ~stub:func_decl.stub
+          ~dbg:func_decl.dbg
+          ~inline:func_decl.inline
+          ~is_a_functor:func_decl.is_a_functor)
       function_decls.funs
   in
   if not !done_something then
