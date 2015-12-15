@@ -513,10 +513,17 @@ val format_from_string :
 *)
 
 val unescaped : string -> string
-(** Return a copy of the argument with escape sequences, following the
-    lexical conventions of OCaml, replaced by their corresponding
-    special characters. If there is no escape sequence in the
-    argument, still return a copy, contrary to String.escaped.
+(** [unescaped s] return a copy of [s] with escape sequences (according to
+    the lexical conventions of OCaml) replaced by their corresponding special
+    characters.
+    More precisely, [Scanf.unescaped] has the following property:
+    for all string [s], [Scanf.unescaped (String.escaped s) = s].
+
+    Always return a copy of the argument, even if there is no escape sequence
+    in the argument.
+    Raise [Scan_failure] if [s] is not properly escaped since [s] has invalid
+    escape sequences or special characters that are not properly escaped
+    (for instance, [String.unescaped "\""] will fail).
     @since 4.00.0
 *)
 
@@ -526,7 +533,7 @@ val fscanf : Pervasives.in_channel -> ('a, 'b, 'c, 'd) scanner
   [@@ocaml.deprecated "Use Scanning.from_channel then Scanf.bscanf."]
 (** @deprecated [Scanf.fscanf] is error prone and deprecated since 4.03.0.
 
-    This function violates an invariant of the [Scanf] module:
+    This function violates the following invariant of the [Scanf] module:
     To preserve scanning semantics, all scanning functions defined in [Scanf]
     must read from a user defined [Scanning.in_channel] formatted input
     channel.
