@@ -89,6 +89,12 @@ module NotConstants(P:Param) = struct
   let symbol_field_dep_table : dep list Symbol_field.Tbl.t =
     Symbol_field.Tbl.create 100
 
+  (* CR-soon pchambart: We could probably improve that quite a lot by adding
+     (the future annotation) [@unrolled] at the right call sites.  Or more
+     directly mark mark_dep as [@inline] and call it instead of mark_curr in
+     some situations.
+  *)
+
   (* adds 'dep in NC' *)
   let mark_dep =function
     | Var id ->
@@ -429,7 +435,6 @@ module NotConstants(P:Param) = struct
     mark_external_symbol_fields_as_inconstant
       (Flambda_utils.imported_symbols P.program);
     propagate ();
-    stop_timing "Propagate";
     { id = variables;
       closure = closures; }
 
