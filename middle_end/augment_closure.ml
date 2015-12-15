@@ -194,22 +194,24 @@ let rewrite_set_of_closures
     add_closures, add_blocks
 
 let run ~env ~(set_of_closures:Flambda.set_of_closures) : Flambda.t option =
-  let set_of_closures, add_closures, add_blocks =
-    rewrite_set_of_closures
-      ~env ~set_of_closures
-  in
-  if Variable.Map.is_empty add_closures &&
-     Variable.Map.is_empty add_blocks then
-    None
+  if !Clflags.classic_heuristic then None
   else
-    let expr =
-      Variable.Map.fold Flambda.create_let
-        add_closures
-          (Flambda_utils.name_expr (Set_of_closures set_of_closures)
-            ~name:"augment_closure")
+    let set_of_closures, add_closures, add_blocks =
+      rewrite_set_of_closures
+        ~env ~set_of_closures
     in
-    let expr =
-      Variable.Map.fold Flambda.create_let
-        add_blocks expr
-    in
-    Some expr
+    if Variable.Map.is_empty add_closures &&
+       Variable.Map.is_empty add_blocks then
+      None
+    else
+      let expr =
+        Variable.Map.fold Flambda.create_let
+          add_closures
+            (Flambda_utils.name_expr (Set_of_closures set_of_closures)
+              ~name:"augment_closure")
+      in
+      let expr =
+        Variable.Map.fold Flambda.create_let
+          add_blocks expr
+      in
+      Some expr
