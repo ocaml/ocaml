@@ -190,3 +190,13 @@ let not_ambiguous__module_variable x b =  match x with
   | _,(module M:S),(_,1) when b -> 1
   | _ -> 2
 ;;
+
+(* Mixed case *)
+
+type t = A of int * int | B of int * int
+;;
+
+let ambiguous_xy_but_not_ambiguous_z g = function
+  | A (x as z,(0 as y))|A (0 as y as z,x)|B (x,(y as z)) when g x (y+z) -> 1
+  | _ -> 2
+;;

@@ -2216,10 +2216,10 @@ let rec do_stable rs = match rs with
     match filter_all rs with
     | [] ->
         do_stable (List.map snd rs)
-    | env ->
+    | (_,rs)::env ->        
         List.fold_left
-          (fun xs (_,rs) -> IdSet.union xs (do_stable rs))
-          IdSet.empty env
+          (fun xs (_,rs) -> IdSet.inter xs (do_stable rs))
+          (do_stable rs) env
 
 let stable p = do_stable [{unseen=[p]; seen=[];}]
 
@@ -2272,8 +2272,6 @@ let all_rhs_idents exp =
              end
       | _ -> assert false
       end
-
-
   end) in
   Iterator.iter_expression exp;
   !ids
