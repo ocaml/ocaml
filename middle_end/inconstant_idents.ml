@@ -54,8 +54,8 @@ module Symbol_field = struct
 end
 
 type result = {
-  id : Variable.Set.t;
-  closure : Set_of_closures_id.Set.t;
+  id : unit Variable.Tbl.t;
+  closure : unit Set_of_closures_id.Tbl.t;
 }
 
 module type Param = sig
@@ -75,10 +75,11 @@ module NotConstants(P:Param) = struct
     | Symbol_field of Symbol_field.t
 
   (* Sets representing NC *)
-  let variables = ref Variable.Set.empty
-  let closures = ref Set_of_closures_id.Set.empty
-  let symbols = ref Symbol.Set.empty
-  let symbol_fields = ref Symbol_field.Set.empty
+  let variables : unit Variable.Tbl.t = Variable.Tbl.create 42
+  let closures : unit Set_of_closures_id.Tbl.t =
+    Set_of_closures_id.Tbl.create 42
+  let symbols : unit Symbol.Tbl.t = Symbol.Tbl.create 42
+  let symbol_fields : unit Symbol_field.Tbl.t = Symbol_field.Tbl.create 42
 
   (* if the table associates [v1;v2;...;vn] to v, it represents
      v in NC => v1 in NC /\ v2 in NC ... /\ vn in NC *)
@@ -88,43 +89,61 @@ module NotConstants(P:Param) = struct
   let symbol_field_dep_table : dep list Symbol_field.Tbl.t =
     Symbol_field.Tbl.create 100
 
-  (* adds in the tables 'dep in NC => curr in NC' *)
-  let register_implication ~in_nc:dep ~implies_in_nc:curr =
-    List.iter (fun curr ->
-      match dep with
-      | Var id ->
-        let t = try Variable.Tbl.find id_dep_table id
-        with Not_found -> [] in
-        Variable.Tbl.replace id_dep_table id (curr :: t)
-      | Closure cl ->
-        let t = try Set_of_closures_id.Tbl.find fun_dep_table cl
-        with Not_found -> [] in
-        Set_of_closures_id.Tbl.replace fun_dep_table cl (curr :: t)
-      | Symbol symbol ->
-        let t = try Symbol.Tbl.find symbol_dep_table symbol
-        with Not_found -> [] in
-        Symbol.Tbl.replace symbol_dep_table symbol (curr :: t)
-      | Symbol_field field ->
-        let t = try Symbol_field.Tbl.find symbol_field_dep_table field
-          with Not_found -> [] in
-        Symbol_field.Tbl.replace symbol_field_dep_table field (curr :: t))
-      curr
+  (* adds 'dep in NC' *)
+  let mark_dep =function
+    | Var id ->
+      if not (Variable.Tbl.mem variables id)
+      then Variable.Tbl.add variables id ()
+    | Closure cl ->
+      if not (Set_of_closures_id.Tbl.mem closures cl)
+      then Set_of_closures_id.Tbl.add closures cl ()
+    | Symbol i ->
+      if not (Symbol.Tbl.mem symbols i)
+      then Symbol.Tbl.add symbols i ()
+    | Symbol_field i ->
+      if not (Symbol_field.Tbl.mem symbol_fields i)
+      then Symbol_field.Tbl.add symbol_fields i ()
 
   (* adds 'curr in NC' *)
   let mark_curr curr =
-    List.iter (function
+    List.iter mark_dep curr
+
+  (* adds in the tables 'dep in NC => curr in NC' *)
+  let register_implication ~in_nc:dep ~implies_in_nc:curr =
+    List.iter (fun curr_dep ->
+      match dep with
       | Var id ->
-        if not (Variable.Set.mem id !variables)
-        then variables := Variable.Set.add id !variables
+        if Variable.Tbl.mem variables id then
+          mark_dep curr_dep
+        else begin
+          let t = try Variable.Tbl.find id_dep_table id
+          with Not_found -> [] in
+          Variable.Tbl.replace id_dep_table id (curr_dep :: t)
+        end
       | Closure cl ->
-        if not (Set_of_closures_id.Set.mem cl !closures)
-        then closures := Set_of_closures_id.Set.add cl !closures
-      | Symbol i ->
-        if not (Symbol.Set.mem i !symbols)
-        then symbols := Symbol.Set.add i !symbols
-      | Symbol_field i ->
-        if not (Symbol_field.Set.mem i !symbol_fields)
-        then symbol_fields := Symbol_field.Set.add i !symbol_fields)
+        if Set_of_closures_id.Tbl.mem closures cl then
+          mark_dep curr_dep
+        else begin
+          let t = try Set_of_closures_id.Tbl.find fun_dep_table cl
+          with Not_found -> [] in
+          Set_of_closures_id.Tbl.replace fun_dep_table cl (curr_dep :: t)
+        end
+      | Symbol symbol ->
+        if Symbol.Tbl.mem symbols symbol then
+          mark_dep curr_dep
+        else begin
+          let t = try Symbol.Tbl.find symbol_dep_table symbol
+          with Not_found -> [] in
+          Symbol.Tbl.replace symbol_dep_table symbol (curr_dep :: t)
+        end
+      | Symbol_field field ->
+        if Symbol_field.Tbl.mem symbol_fields field then
+          mark_dep curr_dep
+        else begin
+          let t = try Symbol_field.Tbl.find symbol_field_dep_table field
+            with Not_found -> [] in
+          Symbol_field.Tbl.replace symbol_field_dep_table field (curr_dep :: t)
+        end)
       curr
 
   (* First loop: iterates on the tree to mark dependencies.
@@ -372,10 +391,12 @@ module NotConstants(P:Param) = struct
   let propagate () =
     (* Set of variables/closures added to NC but not their dependencies *)
     let q = Queue.create () in
-    Variable.Set.iter (fun v -> Queue.push (Var v) q) !variables;
-    Set_of_closures_id.Set.iter (fun v -> Queue.push (Closure v) q) !closures;
-    Symbol.Set.iter (fun v -> Queue.push (Symbol v) q) !symbols;
-    Symbol_field.Set.iter (fun v -> Queue.push (Symbol_field v) q) !symbol_fields;
+    Variable.Tbl.iter (fun v () -> Queue.push (Var v) q) variables;
+    Set_of_closures_id.Tbl.iter
+      (fun v () -> Queue.push (Closure v) q) closures;
+    Symbol.Tbl.iter (fun v () -> Queue.push (Symbol v) q) symbols;
+    Symbol_field.Tbl.iter
+      (fun v () -> Queue.push (Symbol_field v) q) symbol_fields;
     while not (Queue.is_empty q) do
       let deps = try match Queue.take q with
         | Var e -> Variable.Tbl.find id_dep_table e
@@ -385,20 +406,20 @@ module NotConstants(P:Param) = struct
       with Not_found -> [] in
       List.iter (function
         | Var id as e ->
-          if not (Variable.Set.mem id !variables)
-          then (variables := Variable.Set.add id !variables;
+          if not (Variable.Tbl.mem variables id)
+          then (Variable.Tbl.add variables id ();
             Queue.push e q)
         | Closure cl as e ->
-          if not (Set_of_closures_id.Set.mem cl !closures)
-          then (closures := Set_of_closures_id.Set.add cl !closures;
+          if not (Set_of_closures_id.Tbl.mem closures cl)
+          then (Set_of_closures_id.Tbl.add closures cl ();
             Queue.push e q)
         | Symbol s as e ->
-          if not (Symbol.Set.mem s !symbols)
-          then (symbols := Symbol.Set.add s !symbols;
+          if not (Symbol.Tbl.mem symbols s)
+          then (Symbol.Tbl.add symbols s ();
                 Queue.push e q)
         | Symbol_field s as e ->
-          if not (Symbol_field.Set.mem s !symbol_fields)
-          then (symbol_fields := Symbol_field.Set.add s !symbol_fields;
+          if not (Symbol_field.Tbl.mem symbol_fields s)
+          then (Symbol_field.Tbl.add symbol_fields s ();
             Queue.push e q))
         deps
     done
@@ -408,8 +429,9 @@ module NotConstants(P:Param) = struct
     mark_external_symbol_fields_as_inconstant
       (Flambda_utils.imported_symbols P.program);
     propagate ();
-    { id = !variables;
-      closure = !closures; }
+    stop_timing "Propagate";
+    { id = variables;
+      closure = closures; }
 
 end
 
@@ -437,3 +459,9 @@ let inconstants_on_program ~for_clambda ~compilation_unit (program : Flambda.pro
   (*   Variable.Set.print A.res.id *)
   (*   Set_of_closures_id.Set.print A.res.closure; *)
   A.res
+
+let variable var { id } =
+  Variable.Tbl.mem id var
+
+let closure cl { closure } =
+  Set_of_closures_id.Tbl.mem closure cl
