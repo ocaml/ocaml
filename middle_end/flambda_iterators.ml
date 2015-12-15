@@ -399,25 +399,33 @@ let map_symbols tree ~f =
     tree
 
 let map_symbols_on_set_of_closures
-    { Flambda.function_decls; free_vars; specialised_args }
+    ({ Flambda.function_decls; free_vars; specialised_args } as
+      set_of_closures)
     ~f =
-  let function_decls =
-    let funs =
-      Variable.Map.map (fun (func_decl : Flambda.function_declaration) ->
-          let body = map_symbols func_decl.body ~f in
-          Flambda.create_function_declaration
-            ~params:func_decl.params
-             ~body
-             ~stub:func_decl.stub
-             ~dbg:func_decl.dbg
-             ~inline:func_decl.inline
-             ~is_a_functor:func_decl.is_a_functor)
-        function_decls.funs
-    in
-    Flambda.update_function_declarations function_decls ~funs
+  let done_something = ref false in
+  let funs =
+    Variable.Map.map (fun (func_decl : Flambda.function_declaration) ->
+        let body = map_symbols func_decl.body ~f in
+        if not (body == func_decl.body) then begin
+          done_something := true;
+        end;
+        Flambda.create_function_declaration
+          ~params:func_decl.params
+           ~body
+           ~stub:func_decl.stub
+           ~dbg:func_decl.dbg
+           ~inline:func_decl.inline
+           ~is_a_functor:func_decl.is_a_functor)
+      function_decls.funs
   in
-  Flambda.create_set_of_closures ~function_decls ~free_vars
-    ~specialised_args
+  if not !done_something then
+    set_of_closures
+  else
+    let function_decls =
+      Flambda.update_function_declarations function_decls ~funs
+    in
+    Flambda.create_set_of_closures ~function_decls ~free_vars
+      ~specialised_args
 
 let map_toplevel_sets_of_closures tree ~f =
   map_toplevel_named (function
@@ -516,48 +524,97 @@ let map_sets_of_closures_of_program (program : Flambda.program)
     ~(f : Flambda.set_of_closures -> Flambda.set_of_closures) =
   let rec loop (program : Flambda.program_body) : Flambda.program_body =
     let map_constant_set_of_closures (set_of_closures:Flambda.set_of_closures) =
-      let funs =
-        Variable.Map.map (fun (function_decl : Flambda.function_declaration) ->
-            let body = map_sets_of_closures ~f function_decl.body in
-            Flambda.create_function_declaration ~body
-              ~params:function_decl.params
-              ~stub:function_decl.stub
-              ~dbg:function_decl.dbg
-              ~inline:function_decl.inline
-              ~is_a_functor:function_decl.is_a_functor)
-          set_of_closures.function_decls.funs
-      in
+      let done_something = ref false in
       let function_decls =
-        Flambda.update_function_declarations set_of_closures.function_decls ~funs
+        let funs =
+          Variable.Map.map (fun (function_decl : Flambda.function_declaration) ->
+              let body = map_sets_of_closures ~f function_decl.body in
+              if body == function_decl.body then
+                function_decl
+              else begin
+                done_something := true;
+                Flambda.create_function_declaration ~body
+                  ~params:function_decl.params
+                  ~stub:function_decl.stub
+                  ~dbg:function_decl.dbg
+                  ~inline:function_decl.inline
+                  ~is_a_functor:function_decl.is_a_functor
+              end)
+            set_of_closures.function_decls.funs
+        in
+        if not !done_something then
+          set_of_closures.function_decls
+        else
+          Flambda.update_function_declarations set_of_closures.function_decls
+            ~funs
       in
-      let set_of_closures = f set_of_closures in
-      Flambda.create_set_of_closures ~function_decls
-        ~free_vars:set_of_closures.free_vars
-        ~specialised_args:set_of_closures.specialised_args
+      let new_set_of_closures = f set_of_closures in
+      if new_set_of_closures == set_of_closures then
+        set_of_closures
+      else
+        Flambda.create_set_of_closures ~function_decls
+          ~free_vars:set_of_closures.free_vars
+          ~specialised_args:set_of_closures.specialised_args
     in
     match program with
-    | Let_symbol (symbol, Set_of_closures set_of_closures, program) ->
-      Let_symbol
-        (symbol,
-         Set_of_closures (map_constant_set_of_closures set_of_closures),
-         loop program)
-    | Let_symbol (symbol, const, program) ->
-      Let_symbol (symbol, const, loop program)
-    | Let_rec_symbol (defs, program) ->
+    | Let_symbol (symbol, Set_of_closures set_of_closures, program') ->
+      let new_set_of_closures = map_constant_set_of_closures set_of_closures in
+      let new_program' = loop program' in
+      if new_set_of_closures == set_of_closures
+          && new_program' == program' then
+        program
+      else
+        Let_symbol (symbol, Set_of_closures new_set_of_closures, new_program')
+    | Let_symbol (symbol, const, program') ->
+      let new_program' = loop program' in
+      if new_program' == program' then
+        program
+      else
+        Let_symbol (symbol, const, new_program')
+    | Let_rec_symbol (defs, program') ->
+      let done_something = ref false in
       let defs =
         List.map (function
             | (var, Flambda.Set_of_closures set_of_closures) ->
-              var, Flambda.Set_of_closures (map_constant_set_of_closures set_of_closures)
+              let new_set_of_closures =
+                map_constant_set_of_closures set_of_closures
+              in
+              if not (new_set_of_closures == set_of_closures) then begin
+                done_something := true
+              end;
+              var, Flambda.Set_of_closures new_set_of_closures
             | def -> def)
           defs
       in
-      Let_rec_symbol (defs, loop program)
-    | Initialize_symbol (symbol, tag, fields, program) ->
-      let fields = List.map (map_sets_of_closures ~f) fields in
-      Initialize_symbol (symbol, tag, fields, loop program)
-    | Effect (expr, program) ->
-      Effect (map_sets_of_closures ~f expr, loop program)
-    | End s -> End s
+      let new_program' = loop program' in
+      if new_program' == program' && not !done_something then
+        program
+      else
+        Let_rec_symbol (defs, loop program')
+    | Initialize_symbol (symbol, tag, fields, program') ->
+      let done_something = ref false in
+      let fields =
+        List.map (fun field ->
+            let new_field = map_sets_of_closures field ~f in
+            if not (new_field == field) then begin
+              done_something := true
+            end;
+            new_field)
+          fields
+      in
+      let new_program' = loop program' in
+      if new_program' == program' && not !done_something then
+        program
+      else
+        Initialize_symbol (symbol, tag, fields, new_program')
+    | Effect (expr, program') ->
+      let new_expr = map_sets_of_closures expr ~f in
+      let new_program' = loop program' in
+      if new_expr == expr && new_program' == program' then
+        program
+      else
+        Effect (new_expr, new_program')
+    | End _ -> program
   in
   { program with
     program_body = loop program.program_body;
