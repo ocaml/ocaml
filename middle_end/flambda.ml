@@ -1105,7 +1105,7 @@ module Constant_defining_value = struct
       | Project_closure _, Set_of_closures _ -> 1
 
     let equal t1 t2 =
-      compare t1 t2 = 0
+      t1 == t2 || compare t1 t2 = 0
 
     let hash = Hashtbl.hash
 
