@@ -14,16 +14,24 @@
    Annotate pseudoregs with interference lists and preference lists. *)
 
 module IntPairSet =
-  Set.Make(struct
+  Hashtbl.Make(struct
     type t = int * int
+
+    let equal (a1, b1) (a2, b2) =
+      a1 = a2 && b1 = b2
+
     let compare ((a1,b1) : t) (a2,b2) =
       match compare a1 a2 with
         | 0 -> compare b1 b2
         | c -> c
+
+    let hash = Hashtbl.hash
   end)
 
 open Reg
 open Mach
+
+let mat = IntPairSet.create 42
 
 let build_graph fundecl =
 
@@ -31,7 +39,7 @@ let build_graph fundecl =
      - by adjacency lists for each register
      - by a sparse bit matrix (a set of pairs of register stamps) *)
 
-  let mat = ref IntPairSet.empty in
+  IntPairSet.clear mat;
 
   (* Record an interference between two registers *)
   let add_interf ri rj =
@@ -39,8 +47,8 @@ let build_graph fundecl =
       let i = ri.stamp and j = rj.stamp in
       if i <> j then begin
         let p = if i < j then (i, j) else (j, i) in
-        if not(IntPairSet.mem p !mat) then begin
-          mat := IntPairSet.add p !mat;
+        if not (IntPairSet.mem mat p) then begin
+          IntPairSet.replace mat p ();
           if ri.loc = Unknown then begin
             ri.interf <- rj :: ri.interf;
             if not rj.spill then ri.degree <- ri.degree + 1
@@ -127,7 +135,7 @@ let build_graph fundecl =
       && r1.loc = Unknown
       && Proc.register_class r1 = Proc.register_class r2
       && (let p = if i < j then (i, j) else (j, i) in
-          not (IntPairSet.mem p !mat))
+          not (IntPairSet.mem mat p))
       then r1.prefer <- (r2, weight) :: r1.prefer
     end in
 
