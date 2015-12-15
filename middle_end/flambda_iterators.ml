@@ -217,46 +217,104 @@ let map_general ~toplevel f f_named tree =
         | Static_raise _ -> tree
         | Let _ -> assert false
         | Let_mutable (mut_var, var, body) ->
-          let body = aux body in
-          Let_mutable (mut_var, var, body)
+          let new_body = aux body in
+          if new_body == body then
+            tree
+          else
+            Let_mutable (mut_var, var, new_body)
         | Let_rec (defs, body) ->
-          let defs = List.map (fun (id, lam) -> id, aux_named id lam) defs in
-          let body = aux body in
-          Let_rec (defs, body)
+          let done_something = ref false in
+          let defs =
+            List.map (fun (id, lam) ->
+                id, aux_named_done_something id lam done_something)
+              defs
+          in
+          let body = aux_done_something body done_something in
+          if not !done_something then
+            tree
+          else
+            Let_rec (defs, body)
         | Switch (arg, sw) ->
+          let done_something = ref false in
           let sw =
             { sw with
-              failaction = Misc.may_map aux sw.failaction;
-              consts = List.map (fun (i,v) -> i, aux v) sw.consts;
-              blocks = List.map (fun (i,v) -> i, aux v) sw.blocks;
+              failaction =
+                begin match sw.failaction with
+                | None -> None
+                | Some failaction ->
+                  Some (aux_done_something failaction done_something)
+                end;
+              consts =
+                List.map (fun (i, v) ->
+                    i, aux_done_something v done_something)
+                  sw.consts;
+              blocks =
+                List.map (fun (i, v) ->
+                    i, aux_done_something v done_something)
+                  sw.blocks;
             }
           in
-          Switch (arg, sw)
+          if not !done_something then
+            tree
+          else
+            Switch (arg, sw)
         | String_switch (arg, sw, def) ->
-          let sw = List.map (fun (i,v) -> i, aux v) sw in
-          let def = Misc.may_map aux def in
-          String_switch(arg, sw, def)
+          let done_something = ref false in
+          let sw =
+            List.map (fun (i, v) -> i, aux_done_something v done_something) sw
+          in
+          let def =
+            match def with
+            | None -> None
+            | Some def -> Some (aux_done_something def done_something)
+          in
+          if not !done_something then
+            tree
+          else
+            String_switch(arg, sw, def)
         | Static_catch (i, vars, body, handler) ->
-          let body = aux body in
-          let handler = aux handler in
-          Static_catch (i, vars, body, handler)
+          let new_body = aux body in
+          let new_handler = aux handler in
+          if new_body == body && new_handler == handler then
+            tree
+          else
+            Static_catch (i, vars, new_body, new_handler)
         | Try_with(body, id, handler) ->
-          let body = aux body in
-          let handler = aux handler in
-          Try_with(body, id, handler)
-        | If_then_else(arg, ifso, ifnot) ->
-          let ifso = aux ifso in
-          let ifnot = aux ifnot in
-          If_then_else(arg, ifso, ifnot)
-        | While(cond, body) ->
-          let cond = aux cond in
-          let body = aux body in
-          While(cond, body)
+          let new_body = aux body in
+          let new_handler = aux handler in
+          if new_body == body && new_handler == handler then
+            tree
+          else
+            Try_with (new_body, id, new_handler)
+        | If_then_else (arg, ifso, ifnot) ->
+          let new_ifso = aux ifso in
+          let new_ifnot = aux ifnot in
+          if new_ifso == ifso && new_ifnot == ifnot then
+            tree
+          else
+            If_then_else (arg, new_ifso, new_ifnot)
+        | While (cond, body) ->
+          let new_cond = aux cond in
+          let new_body = aux body in
+          if new_cond == cond && new_body == body then
+            tree
+          else
+            While (new_cond, new_body)
         | For { bound_var; from_value; to_value; direction; body; } ->
-          let body = aux body in
-          For { bound_var; from_value; to_value; direction; body; }
+          let new_body = aux body in
+          if new_body == body then
+            tree
+          else
+            For { bound_var; from_value; to_value; direction;
+              body = new_body; }
       in
       f exp
+  and aux_done_something expr done_something =
+    let new_expr = aux expr in
+    if not (new_expr == expr) then begin
+      done_something := true
+    end;
+    new_expr
   and aux_named (id : Variable.t) (named : Flambda.named) =
     let named : Flambda.named =
       match named with
@@ -265,29 +323,49 @@ let map_general ~toplevel f f_named tree =
       | Prim _ | Read_symbol_field _ -> named
       | Set_of_closures ({ function_decls; free_vars; specialised_args }) ->
         if toplevel then named
-        else
-          let function_decls =
-            let funs =
-              Variable.Map.map (fun (func_decl : Flambda.function_declaration) ->
+        else begin
+          let done_something = ref false in
+          let funs =
+            Variable.Map.map (fun (func_decl : Flambda.function_declaration) ->
+                let new_body = aux func_decl.body in
+                if new_body == func_decl.body then begin
+                  func_decl
+                end else begin
+                  done_something := true;
                   Flambda.create_function_declaration
                     ~params:func_decl.params
-                    ~body:(aux func_decl.body)
+                    ~body:new_body
                     ~stub:func_decl.stub
                     ~dbg:func_decl.dbg
                     ~inline:func_decl.inline
-                    ~is_a_functor:func_decl.is_a_functor)
-                function_decls.funs
+                    ~is_a_functor:func_decl.is_a_functor
+                end)
+              function_decls.funs
+          in
+          if not !done_something then
+            named
+          else
+            let function_decls =
+              Flambda.update_function_declarations function_decls ~funs
             in
-            Flambda.update_function_declarations function_decls ~funs
-          in
-          let set_of_closures =
-            Flambda.create_set_of_closures ~function_decls ~free_vars
-              ~specialised_args
-          in
-          Set_of_closures set_of_closures
-      | Expr expr -> Expr (aux expr)
+            let set_of_closures =
+              Flambda.create_set_of_closures ~function_decls ~free_vars
+                ~specialised_args
+            in
+            Set_of_closures set_of_closures
+        end
+      | Expr expr ->
+        let new_expr = aux expr in
+        if new_expr == expr then named
+        else Expr new_expr
     in
     f_named id named
+  and aux_named_done_something id named done_something =
+    let new_named = aux_named id named in
+    if not (new_named == named) then begin
+      done_something := true
+    end;
+    new_named
   in
   aux tree
 
@@ -406,23 +484,33 @@ let map_project_var_to_named_opt tree ~f =
     tree
 
 let map_function_bodies (set_of_closures : Flambda.set_of_closures) ~f =
+  let done_something = ref false in
   let funs =
     Variable.Map.map (fun (function_decl : Flambda.function_declaration) ->
-        Flambda.create_function_declaration ~body:(f function_decl.body)
-          ~params:function_decl.params
-          ~stub:function_decl.stub
-          ~dbg:function_decl.dbg
-          ~inline:function_decl.inline
-          ~is_a_functor:function_decl.is_a_functor)
+        let new_body = f function_decl.body in
+        if new_body == function_decl.body then
+          function_decl
+        else begin
+          done_something := true;
+          Flambda.create_function_declaration ~body:new_body
+            ~params:function_decl.params
+            ~stub:function_decl.stub
+            ~dbg:function_decl.dbg
+            ~inline:function_decl.inline
+            ~is_a_functor:function_decl.is_a_functor
+        end)
       set_of_closures.function_decls.funs
   in
-  let function_decls =
-    Flambda.update_function_declarations set_of_closures.function_decls ~funs
-  in
-  Flambda.create_set_of_closures
-    ~function_decls
-    ~free_vars:set_of_closures.free_vars
-    ~specialised_args:set_of_closures.specialised_args
+  if not !done_something then
+    set_of_closures
+  else
+    let function_decls =
+      Flambda.update_function_declarations set_of_closures.function_decls ~funs
+    in
+    Flambda.create_set_of_closures
+      ~function_decls
+      ~free_vars:set_of_closures.free_vars
+      ~specialised_args:set_of_closures.specialised_args
 
 let map_sets_of_closures_of_program (program : Flambda.program)
     ~(f : Flambda.set_of_closures -> Flambda.set_of_closures) =

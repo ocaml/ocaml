@@ -645,19 +645,19 @@ let create_let var defining_expr body : t =
 
 let map_defining_expr_of_let let_expr ~f =
   let defining_expr = f let_expr.defining_expr in
-  let free_vars_of_defining_expr =
-    if defining_expr == let_expr.defining_expr then
-      let_expr.free_vars_of_defining_expr
-    else
+  if defining_expr == let_expr.defining_expr then
+    Let let_expr
+  else
+    let free_vars_of_defining_expr =
       free_variables_named defining_expr
-  in
-  Let {
-    var = let_expr.var;
-    defining_expr;
-    body = let_expr.body;
-    free_vars_of_defining_expr;
-    free_vars_of_body = let_expr.free_vars_of_body;
-  }
+    in
+    Let {
+      var = let_expr.var;
+      defining_expr;
+      body = let_expr.body;
+      free_vars_of_defining_expr;
+      free_vars_of_body = let_expr.free_vars_of_body;
+    }
 
 let iter_lets t ~for_defining_expr ~for_last_body ~for_each_let =
   let rec loop (t : t) =
@@ -675,15 +675,35 @@ let map_lets t ~for_defining_expr ~for_last_body ~after_rebuild =
   let rec loop (t : t) ~rev_lets =
     match t with
     | Let { var; defining_expr; body; _ } ->
-      let defining_expr =
+      let new_defining_expr =
         for_defining_expr var defining_expr
       in
-      let rev_lets = (var, defining_expr) :: rev_lets in
+      let original =
+        if new_defining_expr == defining_expr then
+          Some t
+        else
+          None
+      in
+      let rev_lets = (var, new_defining_expr, original) :: rev_lets in
       loop body ~rev_lets
     | t ->
       let last_body = for_last_body t in
-      List.fold_left (fun t (var, defining_expr) ->
-          after_rebuild (create_let var defining_expr t))
+      (* As soon as we see a change, we have to rebuild that [Let] and every
+         outer one. *)
+      let seen_change = ref (not (last_body == t)) in
+      List.fold_left (fun t (var, defining_expr, original) ->
+          let let_expr =
+            match original with
+            | Some original when not !seen_change -> original
+            | Some _ | None ->
+              seen_change := true;
+              create_let var defining_expr t
+          in
+          let new_let = after_rebuild let_expr in
+          if not (new_let == let_expr) then begin
+            seen_change := true
+          end;
+          new_let)
         last_body
         rev_lets
   in
