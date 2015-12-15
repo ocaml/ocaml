@@ -334,6 +334,14 @@ ocaml: compilerlibs/ocamlcommon.cma compilerlibs/ocamlbytecomp.cma \
 partialclean::
 	rm -f ocaml
 
+RUNTOP=./byterun/ocamlrun ./ocaml -nostdlib -I stdlib -noinit $(TOPFLAGS)
+
+runtop:
+	$(MAKE) runtime
+	$(MAKE) coreall
+	$(MAKE) ocaml
+	@rlwrap --help 2>/dev/null && rlwrap $(RUNTOP) || $(RUNTOP)
+
 # The native toplevel
 
 ocamlnat: ocamlopt otherlibs/dynlink/dynlink.cmxa $(NATTOPOBJS:.cmo=.cmx)
