@@ -624,50 +624,94 @@ let map_exprs_at_toplevel_of_program (program : Flambda.program)
     ~(f : Flambda.t -> Flambda.t) =
   let rec loop (program : Flambda.program_body) : Flambda.program_body =
     let map_constant_set_of_closures (set_of_closures:Flambda.set_of_closures) =
+      let done_something = ref false in
       let funs =
         Variable.Map.map (fun (function_decl : Flambda.function_declaration) ->
             let body = f function_decl.body in
             if body == function_decl.body then
               function_decl
-            else
+            else begin
+              done_something := true;
               Flambda.create_function_declaration ~body
                 ~params:function_decl.params
                 ~stub:function_decl.stub
                 ~dbg:function_decl.dbg
                 ~inline:function_decl.inline
-                ~is_a_functor:function_decl.is_a_functor)
+                ~is_a_functor:function_decl.is_a_functor
+            end)
           set_of_closures.function_decls.funs
       in
-      let function_decls =
-        Flambda.update_function_declarations set_of_closures.function_decls ~funs
-      in
-      Flambda.create_set_of_closures ~function_decls
-        ~free_vars:set_of_closures.free_vars
-        ~specialised_args:set_of_closures.specialised_args
+      if not !done_something then
+        set_of_closures
+      else
+        let function_decls =
+          Flambda.update_function_declarations set_of_closures.function_decls
+            ~funs
+        in
+        Flambda.create_set_of_closures ~function_decls
+          ~free_vars:set_of_closures.free_vars
+          ~specialised_args:set_of_closures.specialised_args
     in
+    (* CR-soon mshinwell: code very similar to the above function *)
     match program with
-    | Let_symbol (symbol, Set_of_closures set_of_closures, program) ->
-      Let_symbol
-        (symbol,
-         Set_of_closures (map_constant_set_of_closures set_of_closures),
-         loop program)
-    | Let_symbol (symbol, const, program) ->
-      Let_symbol (symbol, const, loop program)
-    | Let_rec_symbol (defs, program) ->
+    | Let_symbol (symbol, Set_of_closures set_of_closures, program') ->
+      let new_set_of_closures = map_constant_set_of_closures set_of_closures in
+      let new_program' = loop program' in
+      if new_set_of_closures == set_of_closures
+          && new_program' == program' then
+        program
+      else
+        Let_symbol (symbol, Set_of_closures new_set_of_closures, new_program')
+    | Let_symbol (symbol, const, program') ->
+      let new_program' = loop program' in
+      if new_program' == program' then
+        program
+      else
+        Let_symbol (symbol, const, new_program')
+    | Let_rec_symbol (defs, program') ->
+      let done_something = ref false in
       let defs =
         List.map (function
             | (var, Flambda.Set_of_closures set_of_closures) ->
-              var, Flambda.Set_of_closures (map_constant_set_of_closures set_of_closures)
+              let new_set_of_closures =
+                map_constant_set_of_closures set_of_closures
+              in
+              if not (new_set_of_closures == set_of_closures) then begin
+                done_something := true
+              end;
+              var, Flambda.Set_of_closures new_set_of_closures
             | def -> def)
           defs
       in
-      Let_rec_symbol (defs, loop program)
-    | Initialize_symbol (symbol, tag, fields, program) ->
-      let fields = List.map f fields in
-      Initialize_symbol (symbol, tag, fields, loop program)
-    | Effect (expr, program) ->
-      Effect (f expr, loop program)
-    | End s -> End s
+      let new_program' = loop program' in
+      if new_program' == program' && not !done_something then
+        program
+      else
+        Let_rec_symbol (defs, new_program')
+    | Initialize_symbol (symbol, tag, fields, program') ->
+      let done_something = ref false in
+      let fields =
+        List.map (fun field ->
+            let new_field = f field in
+            if not (new_field == field) then begin
+              done_something := true
+            end;
+            new_field)
+          fields
+      in
+      let new_program' = loop program' in
+      if new_program' == program' && not !done_something then
+        program
+      else
+        Initialize_symbol (symbol, tag, fields, new_program')
+    | Effect (expr, program') ->
+      let new_expr = f expr in
+      let new_program' = loop program' in
+      if new_expr == expr && new_program' == program' then
+        program
+      else
+        Effect (new_expr, new_program')
+    | End _ -> program
   in
   { program with
     program_body = loop program.program_body;
