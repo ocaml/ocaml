@@ -84,11 +84,17 @@ let add_inline_attribute expr loc attributes =
    used to ensure that this expression is not misplaced: If it
    appears on any expression, it is an error, otherwise it would
    have been removed by this function *)
-let get_inlined_attribute e =
+let get_and_remove_inlined_attribute e =
   let attribute_value, exp_attributes =
     make_get_inline_attribute is_inlined_attribute e.exp_attributes
   in
   attribute_value, { e with exp_attributes }
+
+let get_and_remove_inlined_attribute_on_module e =
+  let attribute_value, mod_attributes =
+    make_get_inline_attribute is_inlined_attribute e.mod_attributes
+  in
+  attribute_value, { e with mod_attributes }
 
 (* It also remove the attribute from the expression, like
    get_inlined_attribute *)
