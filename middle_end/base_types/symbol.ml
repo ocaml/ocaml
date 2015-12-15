@@ -29,9 +29,9 @@ module T = struct
   let equal t1 t2 = t1.label = t2.label
 
   let print ppf t =
-    Format.fprintf ppf "%a.%a"
-      Compilation_unit.print t.compilation_unit
-      Linkage_name.print t.label
+    Compilation_unit.print ppf t.compilation_unit;
+    Format.pp_print_string ppf ".";
+    Linkage_name.print ppf t.label
 end
 
 include T

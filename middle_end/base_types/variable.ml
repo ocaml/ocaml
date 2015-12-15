@@ -75,9 +75,7 @@ let create ?current_compilation_unit name =
 let create_with_same_name_as_ident ident = create (Ident.name ident)
 
 let clambda_name t =
-  Format.asprintf "%a_%s"
-    Compilation_unit.print t.compilation_unit
-    t.name
+  (Compilation_unit.string_for_printing t.compilation_unit) ^ "_" ^ t.name
 
 let rename ?current_compilation_unit ?append t =
   let current_compilation_unit =
@@ -98,7 +96,7 @@ let in_compilation_unit t cu =
 let get_compilation_unit t = t.compilation_unit
 
 let unique_name t =
-  Printf.sprintf "%s_%d" t.name t.name_stamp
+  t.name ^ "_" ^ (string_of_int t.name_stamp)
 
 let print_list ppf ts =
   List.iter (fun t -> Format.fprintf ppf "@ %a" print t) ts

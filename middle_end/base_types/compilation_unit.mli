@@ -24,3 +24,5 @@ val set_current : t -> unit
 val get_current : unit -> t option
 val get_current_exn : unit -> t
 val get_current_id_exn : unit -> Ident.t
+
+val string_for_printing : t -> string

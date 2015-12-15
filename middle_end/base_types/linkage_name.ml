@@ -14,7 +14,7 @@
 module T = struct
   include String
   let hash = Hashtbl.hash
-  let print ppf t = Format.fprintf ppf "%s" t
+  let print ppf t = Format.pp_print_string ppf t
   let output chan t = output_string chan t
 end
 
