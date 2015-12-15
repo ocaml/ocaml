@@ -536,7 +536,8 @@ let add_definitions_of_symbols constant_definitions initialize_symbol_tbl
 
 let introduce_free_variables_in_set_of_closures
     (var_to_block_field_tbl:Flambda.constant_defining_value_block_field Variable.Tbl.t)
-    { Flambda.function_decls; free_vars; specialised_args } =
+    ({ Flambda.function_decls; free_vars; specialised_args }
+      as set_of_closures) =
   let add_definition_and_make_substitution var (expr, subst) =
     let searched_var =
       match Variable.Map.find var specialised_args with
@@ -558,6 +559,7 @@ let introduce_free_variables_in_set_of_closures
          constant. In either case it does not need to be bound *)
       expr, subst
   in
+  let done_something = ref false in
   let function_decls : Flambda.function_declarations =
     Flambda.update_function_declarations function_decls
       ~funs:(Variable.Map.mapi
@@ -574,7 +576,8 @@ let introduce_free_variables_in_set_of_closures
              in
              if Variable.Map.is_empty subst then
                func_decl
-             else
+             else begin
+               done_something := true;
                let body = Flambda_utils.toplevel_substitution subst body in
                Flambda.create_function_declaration
                  ~params:func_decl.params
@@ -582,30 +585,38 @@ let introduce_free_variables_in_set_of_closures
                  ~stub:func_decl.stub
                  ~dbg:func_decl.dbg
                  ~inline:func_decl.inline
-                 ~is_a_functor:func_decl.is_a_functor)
+                 ~is_a_functor:func_decl.is_a_functor
+             end)
           function_decls.funs)
   in
   let free_vars =
     (* Keep only those that are not rewritten to constants. *)
     Variable.Map.filter (fun v _ ->
-        not (Variable.Tbl.mem var_to_block_field_tbl v))
+        let keep = not (Variable.Tbl.mem var_to_block_field_tbl v) in
+        if not keep then done_something := true;
+        keep)
       free_vars
   in
   let specialised_args =
     (* Keep only those that are not rewritten to constants. *)
     Variable.Map.filter (fun _ v ->
-        not (Variable.Tbl.mem var_to_block_field_tbl v))
+        let keep = not (Variable.Tbl.mem var_to_block_field_tbl v) in
+        if not keep then done_something := true;
+        keep)
       specialised_args
   in
-  Flambda.create_set_of_closures ~function_decls ~free_vars ~specialised_args
+  if not !done_something then
+    set_of_closures
+  else
+    Flambda.create_set_of_closures ~function_decls ~free_vars ~specialised_args
 
 let rewrite_project_var
       (var_to_block_field_tbl
         : Flambda.constant_defining_value_block_field Variable.Tbl.t)
-      (project_var : Flambda.project_var) : Flambda.named =
+      (project_var : Flambda.project_var) ~original : Flambda.named =
   let var = Var_within_closure.unwrap project_var.var in
   match Variable.Tbl.find var_to_block_field_tbl var with
-  | exception Not_found -> Project_var project_var
+  | exception Not_found -> original
   | Symbol sym -> Symbol sym
   | Const const -> Const const
 
@@ -830,11 +841,17 @@ let lift_constants (program : Flambda.program) ~backend =
      variable. *)
   let rewrite_expr expr =
     Flambda_iterators.map_named (function
-        | Set_of_closures set_of_closures ->
-          Set_of_closures (introduce_free_variables_in_set_of_closures
-              var_to_block_field_tbl set_of_closures)
-        | Project_var project_var ->
-          rewrite_project_var var_to_block_field_tbl project_var
+        | (Set_of_closures set_of_closures) as named ->
+          let new_set_of_closures =
+            introduce_free_variables_in_set_of_closures
+              var_to_block_field_tbl set_of_closures
+          in
+          if new_set_of_closures == set_of_closures then
+            named
+          else
+            Set_of_closures new_set_of_closures
+        | (Project_var project_var) as original ->
+          rewrite_project_var var_to_block_field_tbl project_var ~original
         | (Symbol _ | Const _ | Allocated_const _ | Project_closure _
         | Move_within_set_of_closures _ | Prim _ | Expr _
         | Read_mutable _ | Read_symbol_field _) as named -> named)
