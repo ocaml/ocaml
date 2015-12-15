@@ -15,6 +15,11 @@ val check_attribute
   -> string Location.loc * _
   -> unit
 
+val check_attribute_on_module
+   : Typedtree.module_expr
+  -> string Location.loc * _
+  -> unit
+
 val add_inline_attribute
    : Lambda.lambda
   -> Location.t

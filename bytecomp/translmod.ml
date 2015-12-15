@@ -348,6 +348,8 @@ let transl_class_bindings cl_list =
 (* Compile a module expression *)
 
 let rec transl_module cc rootpath mexp =
+  List.iter (Translattribute.check_attribute_on_module mexp)
+    mexp.mod_attributes;
   match mexp.mod_type with
     Mty_alias _ -> apply_coercion Alias cc lambda_unit
   | _ ->

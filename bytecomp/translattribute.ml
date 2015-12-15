@@ -131,3 +131,18 @@ let check_attribute e ({ txt; loc }, _) =
       Location.prerr_warning loc
         (Warnings.Misplaced_attribute txt)
   | _ -> ()
+
+let check_attribute_on_module e ({ txt; loc }, _) =
+  match txt with
+  | "inline" | "ocaml.inline" ->  begin
+      match e.mod_desc with
+      | Tmod_functor _ -> ()
+      | _ ->
+          Location.prerr_warning loc
+            (Warnings.Misplaced_attribute txt)
+    end
+  | "inlined" | "ocaml.inlined" ->
+      (* Removed by the Texp_apply cases *)
+      Location.prerr_warning loc
+        (Warnings.Misplaced_attribute txt)
+  | _ -> ()
