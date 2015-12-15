@@ -129,6 +129,7 @@ module type Optcommon_options = sig
   val _inline_alloc_cost : string -> unit
   val _inline_prim_cost : string -> unit
   val _inline_branch_cost : string -> unit
+  val _inline_indirect_cost : string -> unit
   val _inline_lifting_benefit : string -> unit
   val _unbox_closures : unit -> unit
   val _branch_inline_factor : string -> unit
