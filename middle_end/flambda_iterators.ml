@@ -391,8 +391,18 @@ let map_toplevel_named f_named tree =
 
 let map_symbols tree ~f =
   map_named (function
-      | Symbol sym -> Symbol (f sym)
-      | Read_symbol_field (sym, field) -> Read_symbol_field (f sym, field)
+      | (Symbol sym) as named ->
+        let new_sym = f sym in
+        if new_sym == sym then
+          named
+        else
+          Symbol new_sym
+      | ((Read_symbol_field (sym, field)) as named) ->
+        let new_sym = f sym in
+        if new_sym == sym then
+          named
+        else
+          Read_symbol_field (new_sym, field)
       | (Const _ | Allocated_const _ | Set_of_closures _ | Read_mutable _
       | Project_closure _ | Move_within_set_of_closures _ | Project_var _
       | Prim _ | Expr _) as named -> named)
@@ -429,7 +439,12 @@ let map_symbols_on_set_of_closures
 
 let map_toplevel_sets_of_closures tree ~f =
   map_toplevel_named (function
-      | Set_of_closures set_of_closures -> Set_of_closures (f set_of_closures)
+      | (Set_of_closures set_of_closures) as named ->
+        let new_set_of_closures = f set_of_closures in
+        if new_set_of_closures == set_of_closures then
+          named
+        else
+          Set_of_closures new_set_of_closures
       | (Symbol _ | Const _ | Allocated_const _ | Read_mutable _
       | Read_symbol_field _
       | Project_closure _ | Move_within_set_of_closures _ | Project_var _
@@ -438,14 +453,24 @@ let map_toplevel_sets_of_closures tree ~f =
 
 let map_apply tree ~f =
   map (function
-      | Apply apply -> Apply (f apply)
+      | (Apply apply) as expr ->
+        let new_apply = f apply in
+        if new_apply == apply then
+          expr
+        else
+          Apply new_apply
       | expr -> expr)
     (fun named -> named)
     tree
 
 let map_sets_of_closures tree ~f =
   map_named (function
-      | Set_of_closures set_of_closures -> Set_of_closures (f set_of_closures)
+      | (Set_of_closures set_of_closures) as named ->
+        let new_set_of_closures = f set_of_closures in
+        if new_set_of_closures == set_of_closures then
+          named
+        else
+          Set_of_closures new_set_of_closures
       | (Symbol _ | Const _ | Allocated_const _ | Project_closure _
       | Move_within_set_of_closures _ | Project_var _
       | Prim _ | Expr _ | Read_mutable _
@@ -454,9 +479,9 @@ let map_sets_of_closures tree ~f =
 
 let map_project_var_to_expr_opt tree ~f =
   map_named (function
-      | Project_var project_var ->
+      | (Project_var project_var) as named ->
         begin match f project_var with
-        | None -> Project_var project_var
+        | None -> named
         | Some expr -> Expr expr
         end
       | (Symbol _ | Const _ | Allocated_const _
@@ -467,9 +492,9 @@ let map_project_var_to_expr_opt tree ~f =
 
 let map_toplevel_project_var_to_expr_opt tree ~f =
   map_toplevel_named (function
-      | Project_var project_var ->
+      | (Project_var project_var) as named ->
         begin match f project_var with
-        | None -> Project_var project_var
+        | None -> named
         | Some expr -> Expr expr
         end
       | (Symbol _ | Const _ | Allocated_const _
@@ -480,9 +505,9 @@ let map_toplevel_project_var_to_expr_opt tree ~f =
 
 let map_project_var_to_named_opt tree ~f =
   map_named (function
-      | Project_var project_var ->
+      | (Project_var project_var) as named ->
         begin match f project_var with
-        | None -> Project_var project_var
+        | None -> named
         | Some named -> named
         end
       | (Symbol _ | Const _ | Allocated_const _
