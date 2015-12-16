@@ -511,12 +511,12 @@ polymorphic.
 \ikwd{type\@\texttt{type}}
 \ikwd{fun\@\texttt{fun}}
 
-(Introduced in OCaml 3.12)
+(Introduced in OCaml 3.12, short syntax added in 4.03)
 
 \begin{syntax}
 parameter:
        ...
-     | '(' "type" typeconstr-name ')'
+     | '(' "type" {{typeconstr-name}} ')'
 \end{syntax}
 
 The expression @"fun" '(' "type" typeconstr-name ')' "->" expr@ introduces a
@@ -535,8 +535,16 @@ and even use the alternative syntax for declaring functions:
 \begin{verbatim}
         let f (type t) (foo : t list) = ...
 \end{verbatim}
+If several locally abstract types need to be introduced, it is possible to use
+the syntax
+@"fun" '(' "type" typeconstr-name_1 \ldots typeconstr-name_n ')' "->" expr@
+as syntactic sugar for @"fun" '(' "type" typeconstr-name_1 ')' "->" \ldots "->"
+'(' "type" typeconstr-name_n ')' "->" expr@. For instance,
+\begin{verbatim}
+        let f = fun (type t u v) -> (foo : (t * u * v) list) -> ...
+\end{verbatim}
 
-This construction is useful because the type constructor it introduces
+This construction is useful because the type constructors it introduces
 can be used in places where a type variable is not allowed. For
 instance, one can use it to define an exception in a local module
 within a polymorphic function.
