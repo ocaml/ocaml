@@ -141,7 +141,7 @@ val big_int_of_int64 : int64 -> big_int
 val int32_of_big_int : big_int -> int32
         (** Convert a big integer to a 32-bit integer.
             Raises [Failure] if the big integer is outside the
-            range [[-2{^31}, 2{^31}-1]]. *)
+            range \[-2{^31}, 2{^31}-1\]. *)
 val nativeint_of_big_int : big_int -> nativeint
         (** Convert a big integer to a native integer.
             Raises [Failure] if the big integer is outside the
@@ -149,7 +149,7 @@ val nativeint_of_big_int : big_int -> nativeint
 val int64_of_big_int : big_int -> int64
         (** Convert a big integer to a 64-bit integer.
             Raises [Failure] if the big integer is outside the
-            range [[-2{^63}, 2{^63}-1]]. *)
+            range \[-2{^63}, 2{^63}-1\]. *)
 
 val float_of_big_int : big_int -> float
         (** Returns a floating-point number approximating the
@@ -168,16 +168,16 @@ val xor_big_int : big_int -> big_int -> big_int
             The arguments must be positive or zero. *)
 val shift_left_big_int : big_int -> int -> big_int
         (** [shift_left_big_int b n] returns [b] shifted left by [n] bits.
-            Equivalent to multiplication by [2^n]. *)
+            Equivalent to multiplication by 2^n. *)
 val shift_right_big_int : big_int -> int -> big_int
         (** [shift_right_big_int b n] returns [b] shifted right by [n] bits.
-            Equivalent to division by [2^n] with the result being
+            Equivalent to division by 2^n with the result being
             rounded towards minus infinity. *)
 val shift_right_towards_zero_big_int : big_int -> int -> big_int
         (** [shift_right_towards_zero_big_int b n] returns [b] shifted
             right by [n] bits.  The shift is performed on the absolute
             value of [b], and the result has the same sign as [b].
-            Equivalent to division by [2^n] with the result being
+            Equivalent to division by 2^n with the result being
             rounded towards zero. *)
 val extract_big_int : big_int -> int -> int -> big_int
         (** [extract_big_int bi ofs n] returns a nonnegative number
