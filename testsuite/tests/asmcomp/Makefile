@@ -80,7 +80,7 @@ is_in_static_data.o: is_in_static_data.c
 	@$(OCAMLOPT) -c is_in_static_data.c
 
 one_ml: is_in_static_data.o
-	$(OCAMLOPT) -o $(NAME).exe $(ARGS_$(NAME)) $(NAME).ml && \
+	@$(OCAMLOPT) -o $(NAME).exe $(ARGS_$(NAME)) $(NAME).ml && \
 	./$(NAME).exe && echo " => passed" || echo " => failed"
 
 one:
