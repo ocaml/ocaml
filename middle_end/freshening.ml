@@ -322,3 +322,9 @@ let apply_function_decls_and_free_vars t fv func_decls =
     I.func_decls_subst of_closures t func_decls
   in
   fv, func_decls, t, of_closures
+
+let does_not_freshen t vars =
+  match t with
+  | Inactive -> true
+  | Active subst ->
+    not (List.exists (fun var -> Variable.Map.mem var subst.sb_var) vars)

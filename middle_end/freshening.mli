@@ -128,4 +128,6 @@ val apply_function_decls_and_free_vars
   -> 'a Variable.Map.t * Flambda.function_declarations * t
     * Project_var.t
 
+val does_not_freshen : t -> Variable.t list -> bool
+
 val print : Format.formatter -> t -> unit

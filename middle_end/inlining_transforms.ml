@@ -73,6 +73,29 @@ let set_inline_attribute_on_all_apply body inline =
       | expr -> expr)
     body
 
+(** Assign fresh names for a function's parameters and rewrite the body to
+    use these new names. *)
+let copy_of_function's_body_with_freshened_params env
+      ~(function_decl : Flambda.function_declaration) =
+  let params = function_decl.params in
+  (* We cannot avoid the substitution in the case where we are inlining
+     inside the function itself.  This can happen in two ways: either
+     (a) we are inlining the function itself directly inside its declaration;
+     or (b) we are inlining the function into an already-inlined copy.
+     For (a) we cannot short-cut the substitution by freshening since the
+     original [params] may still be referenced; for (b) we cannot do it
+     either since the freshening may already be renaming the parameters for
+     the first inlining of the function. *)
+  if E.does_not_bind env params
+    && E.does_not_freshen env params
+  then
+    env, params, function_decl.body
+  else
+    let freshened_params = List.map (fun var -> Variable.rename var) params in
+    let subst = Variable.Map.of_list (List.combine params freshened_params) in
+    let body = Flambda_utils.toplevel_substitution subst function_decl.body in
+    env, freshened_params, body
+
 (* CR mshinwell: Add a note somewhere to explain why "bound by the closure"
    does not include the function identifiers for other functions in the same
    set of closures. *)
@@ -85,6 +108,8 @@ let inline_by_copying_function_body ~env ~r ~function_decls ~lhs_of_application
       ~(inline_requested : Lambda.inline_attribute)
       ~closure_id_being_applied
       ~(function_decl : Flambda.function_declaration) ~args ~simplify =
+  assert (E.mem env lhs_of_application);
+  assert (List.for_all (E.mem env) args);
   let r = R.map_benefit r B.remove_call in
   let env =
     (* Don't allow the inlining level to inhibit inlining of stubs (e.g.
@@ -92,13 +117,9 @@ let inline_by_copying_function_body ~env ~r ~function_decls ~lhs_of_application
     if function_decl.stub then env
     else E.inlining_level_up env
   in
-  (* Assign fresh names for a function's parameters and update the freshening
-     in the environment such that it will rewrite the body to use these new
-     names. *)
-  let freshened_params, freshening =
-    Freshening.add_variables' (E.freshening env) function_decl.params
+  let env, freshened_params, body =
+    copy_of_function's_body_with_freshened_params env ~function_decl
   in
-  let env = E.set_freshening env freshening in
   let body =
     if function_decl.stub && inline_requested <> Lambda.Default_inline then
       (* When the function inlined function is a stub, the annotation
@@ -106,9 +127,9 @@ let inline_by_copying_function_body ~env ~r ~function_decls ~lhs_of_application
          This allows to report the annotation to the application the
          original programmer really intended: the stub is not visible
          in the source. *)
-      set_inline_attribute_on_all_apply function_decl.body inline_requested
+      set_inline_attribute_on_all_apply body inline_requested
     else
-      function_decl.body
+      body
   in
   let bindings_for_params_to_args =
     (* Bind the function's parameters to the arguments from the call site. *)

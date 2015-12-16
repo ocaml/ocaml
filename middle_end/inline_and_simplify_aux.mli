@@ -66,6 +66,10 @@ module Env : sig
   (** Like [find_exn], but for a list of variables. *)
   val find_list_exn : t -> Variable.t list -> Simple_value_approx.t list
 
+  val does_not_bind : t -> Variable.t list -> bool
+
+  val does_not_freshen : t -> Variable.t list -> bool
+
   val add_symbol : t -> Symbol.t -> Simple_value_approx.t -> t
   val redefine_symbol : t -> Symbol.t -> Simple_value_approx.t -> t
   val find_symbol_exn : t -> Symbol.t -> Simple_value_approx.t

@@ -130,6 +130,12 @@ module Env = struct
       Backend.import_symbol symbol
     | approx -> approx
 
+  let does_not_bind t vars =
+    not (List.exists (mem t) vars)
+
+  let does_not_freshen t vars =
+    Freshening.does_not_freshen t.freshening vars
+
   let add_symbol t symbol approx =
     match find_symbol_exn t symbol with
     | exception Not_found ->
