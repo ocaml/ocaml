@@ -439,19 +439,17 @@ let trim_signature = function
   | mty -> mty
 
 let dir_help ppf () =
-  pp_open_tbox ppf ();
-  fprintf ppf "Directive            ";
-  pp_set_tab ppf ();
-  fprintf ppf "Argument(s)      ";
-  pp_set_tab ppf ();
-  fprintf ppf "Description@\n@\n";
   let directives =
     List.sort
       (fun (key1,_) (key2,_) -> compare key1 key2)
       (Hashtbl.fold (fun key x res -> (key, x) :: res) directive_table [])
   in
-  List.iter
-    (fun (key, (kind, desc)) ->
+  let hdr = ("Directive","Argument(s)","Description") in
+  let tmap f (x1,x2,x3) = (f x1, f x2, f x3) in
+  let tmap2 f (x1,x2,x3) (y1,y2,y3) = (f x1 y1, f x2 y2, f x3 y3) in
+  let res, (n1,n2,n3) =
+  List.fold_left
+    (fun (res, n_res) (key, (kind, desc)) ->
       let kind_desc =
         match kind with
         | Directive_ident _ -> "<ident>"
@@ -460,16 +458,17 @@ let dir_help ppf () =
         | Directive_bool _ -> "<bool>"
         | Directive_string _ -> "<string>"
       in
-      fprintf ppf "#%s" key;
-      pp_print_tbreak ppf 0 0;
-      fprintf ppf "%s" kind_desc;
-      pp_print_tbreak ppf 0 0;
-      fprintf ppf "%s@\n" desc;
-    )
-    directives;
-  pp_close_tbox ppf ();
+      let r = ("#"^key, kind_desc, desc) in
+      let n_res' = tmap2 (fun n u -> max n (String.length u)) n_res r in
+      (r :: res, n_res'))
+    ([], tmap String.length hdr)
+    directives
+  in
+  let pr (r1,r2,r3) = printf "%-*s | %-*s | %-*s@\n" n1 r1 n2 r2 n3 r3 in
+  pr hdr;
+  printf "%s@\n" (String.make (n1 + n2 + n3 + 6) '-');
+  List.iter pr res;
   fprintf ppf "@."
-[@@warning "-3"] (* Tabulation boxes are deprecated in 4.03+dev *)
 
 let show_prim to_sig ppf lid =
   let env = !Toploop.toplevel_env in
