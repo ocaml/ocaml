@@ -257,7 +257,8 @@ module NotConstants(P:Param) = struct
     | Const _ | Allocated_const _ -> ()
     | Read_mutable _ -> mark_curr curr
     | Symbol symbol ->
-      register_implication ~in_nc:(Symbol symbol) ~implies_in_nc:curr
+      if not for_clambda
+      then register_implication ~in_nc:(Symbol symbol) ~implies_in_nc:curr
     | Read_symbol_field (symbol, index) ->
       register_implication ~in_nc:(Symbol_field (symbol, index)) ~implies_in_nc:curr
     (* globals are symbols: handle like symbols *)
