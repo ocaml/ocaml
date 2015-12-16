@@ -21,7 +21,7 @@ let () =
     try
       if i mod 2 = 0
       then raise (My_exception 123)
-      else failwith "some text"
+      else (failwith [@inlined]) "some text"
     with _ -> ()
   done;
   let x2 = Gc.allocated_bytes () in
