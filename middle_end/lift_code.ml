@@ -49,48 +49,51 @@ and extract acc (expr : Flambda.t Flambda.With_free_variables.t) =
   | _ ->
     acc, expr
 
-let rec lift_lets_expr (expr:Flambda.t) : Flambda.t =
+let rec lift_lets_expr (expr:Flambda.t) ~toplevel : Flambda.t =
   let module W = Flambda.With_free_variables in
   match expr with
   | Let let_expr ->
     let defs, body = extract_lets [] let_expr in
-    let rev_defs = List.rev_map lift_lets_named_with_free_variables defs in
-    let body = lift_lets_expr (W.contents body) in
+    let rev_defs =
+      List.rev_map (lift_lets_named_with_free_variables ~toplevel) defs
+    in
+    let body = lift_lets_expr (W.contents body) ~toplevel in
     rebuild_let (List.rev rev_defs) body
   | e ->
     Flambda_iterators.map_subexpressions
-      lift_lets_expr
-      lift_lets_named
+      (lift_lets_expr ~toplevel)
+      (lift_lets_named ~toplevel)
       e
 
 and lift_lets_named_with_free_variables
-    ((var, named):Variable.t * Flambda.named Flambda.With_free_variables.t) :
-  Variable.t * Flambda.named Flambda.With_free_variables.t =
+    ((var, named):Variable.t * Flambda.named Flambda.With_free_variables.t)
+      ~toplevel : Variable.t * Flambda.named Flambda.With_free_variables.t =
   let module W = Flambda.With_free_variables in
   match W.contents named with
   | Expr e ->
-    var, W.expr (W.of_expr (lift_lets_expr e))
-  | Set_of_closures set ->
+    var, W.expr (W.of_expr (lift_lets_expr e ~toplevel))
+  | Set_of_closures set when not toplevel ->
     var,
     W.of_named
       (Set_of_closures
-         (Flambda_iterators.map_function_bodies ~f:lift_lets_expr set))
+         (Flambda_iterators.map_function_bodies
+            ~f:(lift_lets_expr ~toplevel) set))
   | Symbol _ | Const _ | Allocated_const _ | Read_mutable _
   | Read_symbol_field (_, _) | Project_closure _ | Move_within_set_of_closures _
-  | Project_var _ | Prim _ ->
+  | Project_var _ | Prim _ | Set_of_closures _ ->
     var, named
 
-and lift_lets_named _var (named:Flambda.named) : Flambda.named =
+and lift_lets_named _var (named:Flambda.named) ~toplevel : Flambda.named =
   let module W = Flambda.With_free_variables in
   match named with
   | Expr e ->
-    Expr (lift_lets_expr e)
-  | Set_of_closures set ->
+    Expr (lift_lets_expr e ~toplevel)
+  | Set_of_closures set when not toplevel ->
     Set_of_closures
-      (Flambda_iterators.map_function_bodies ~f:lift_lets_expr set)
+      (Flambda_iterators.map_function_bodies ~f:(lift_lets_expr ~toplevel) set)
   | Symbol _ | Const _ | Allocated_const _ | Read_mutable _
   | Read_symbol_field (_, _) | Project_closure _ | Move_within_set_of_closures _
-  | Project_var _ | Prim _ ->
+  | Project_var _ | Prim _ | Set_of_closures _ ->
     named
 
 module Sort_lets = Sort_connected_components.Make(Variable)
@@ -128,7 +131,8 @@ let lift_let_rec program =
 
 let lift_lets program =
   let program = lift_let_rec program in
-  Flambda_iterators.map_exprs_at_toplevel_of_program program ~f:lift_lets_expr
+  Flambda_iterators.map_exprs_at_toplevel_of_program program
+    ~f:(lift_lets_expr ~toplevel:false)
 
 let lifting_helper exprs ~evaluation_order ~create_body ~name =
   let vars, lets =

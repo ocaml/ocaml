@@ -23,7 +23,7 @@ type lifter = Flambda.program -> Flambda.program
 *)
 val lift_lets : lifter
 
-val lift_lets_expr : Flambda.t -> Flambda.t
+val lift_lets_expr : Flambda.t -> toplevel:bool -> Flambda.t
 
 (* CR mshinwell: Rename to [bind]?  Also see Flambda_utils.bind. *)
 (* [create_body] always receives the variables corresponding to [evaluate]
