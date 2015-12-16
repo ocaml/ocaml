@@ -15,23 +15,23 @@
     or by an inlined version of the function. *)
 let remove_unused_closure_variables program =
   let used_vars_within_closure, used_closure_ids =
-    let used = ref Var_within_closure.Set.empty in
-    let used_fun = ref Closure_id.Set.empty in
+    let used = Var_within_closure.Tbl.create 13 in
+    let used_fun = Closure_id.Tbl.create 13 in
     let aux_named (named : Flambda.named) =
       match named with
       | Project_closure { set_of_closures = _; closure_id } ->
-        used_fun := Closure_id.Set.add closure_id !used_fun
+        Closure_id.Tbl.add used_fun closure_id ()
       | Project_var { closure_id; var } ->
-        used := Var_within_closure.Set.add var !used;
-        used_fun := Closure_id.Set.add closure_id !used_fun
+        Var_within_closure.Tbl.add used var ();
+        Closure_id.Tbl.add used_fun closure_id ()
       | Move_within_set_of_closures { closure = _; start_from; move_to } ->
-        used_fun := Closure_id.Set.add start_from !used_fun;
-        used_fun := Closure_id.Set.add move_to !used_fun
+        Closure_id.Tbl.add used_fun start_from ();
+        Closure_id.Tbl.add used_fun move_to ()
       | Symbol _ | Const _ | Set_of_closures _ | Prim _ | Expr _
       | Allocated_const _ | Read_mutable _ | Read_symbol_field _ -> ()
     in
     Flambda_iterators.iter_named_of_program ~f:aux_named program;
-    !used, !used_fun
+    used, used_fun
   in
   let aux_named _ (named : Flambda.named) : Flambda.named =
     match named with
@@ -45,14 +45,17 @@ let remove_unused_closure_variables program =
       let free_vars =
         Variable.Map.filter (fun id _var ->
             Variable.Set.mem id all_free_vars
-              || Var_within_closure.Set.mem (Var_within_closure.wrap id)
-                used_vars_within_closure)
+            || Var_within_closure.Tbl.mem
+                 used_vars_within_closure
+                 (Var_within_closure.wrap id))
           free_vars
       in
       let funs =
         Variable.Map.filter (fun fun_id _ ->
             Variable.Set.mem fun_id all_free_vars
-              || Closure_id.Set.mem (Closure_id.wrap fun_id) used_closure_ids)
+              || Closure_id.Tbl.mem
+                   used_closure_ids
+                   (Closure_id.wrap fun_id))
           function_decls.funs
       in
       let function_decls =

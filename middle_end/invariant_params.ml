@@ -173,7 +173,7 @@ let function_variable_alias
 let invariant_params_in_recursion (decls : Flambda.function_declarations)
       ~backend =
   let function_variable_alias = function_variable_alias ~backend decls in
-  let escaping_functions = ref Variable.Set.empty in
+  let escaping_functions = Variable.Tbl.create 13 in
   let relation = ref Variable.Pair.Map.empty in
   let param_indexes_by_fun_vars =
     Variable.Map.map (fun (decl : Flambda.function_declaration) ->
@@ -229,7 +229,7 @@ let invariant_params_in_recursion (decls : Flambda.function_declarations)
       | fun_var -> fun_var
     in
     if Variable.Map.mem fun_var decls.funs
-    then escaping_functions := Variable.Set.add fun_var !escaping_functions
+    then Variable.Tbl.add escaping_functions fun_var ()
   in
   let arity ~callee =
     match Variable.Map.find callee decls.funs with
@@ -269,7 +269,7 @@ let invariant_params_in_recursion (decls : Flambda.function_declarations)
     decls.funs;
   Variable.Map.iter (fun func_var
         ({ params } : Flambda.function_declaration) ->
-      if Variable.Set.mem func_var !escaping_functions then begin
+      if Variable.Tbl.mem escaping_functions func_var then begin
         List.iter (fun param ->
             argument_may_be_anything ~callee:func_var ~callee_arg:param)
           params
@@ -328,10 +328,8 @@ type argument =
   | Argument of Variable.t
 
 let unused_arguments (decls : Flambda.function_declarations) : Variable.Set.t =
-  let used_variables = ref Variable.Set.empty in
-  let used_variable var =
-    used_variables := Variable.Set.add var !used_variables
-  in
+  let used_variables = Variable.Tbl.create 42 in
+  let used_variable var = Variable.Tbl.add used_variables var () in
   let param_indexes_by_fun_vars =
     Variable.Map.fold (fun var (decl : Flambda.function_declaration) map ->
         let cid = Closure_id.wrap var in
@@ -376,8 +374,14 @@ let unused_arguments (decls : Flambda.function_declarations) : Variable.Set.t =
       Variable.Set.iter used_variable
         (Flambda.free_variables ~ignore_uses_as_callee:() decl.body))
     decls.funs;
-  let arguments = Variable.Map.fold (fun _ decl acc ->
-      Variable.Set.union acc (Variable.Set.of_list decl.Flambda.params))
+  let arguments =
+    Variable.Map.fold
+      (fun _ decl acc ->
+         List.fold_left
+           (fun acc param ->
+              if Variable.Tbl.mem used_variables param then acc
+              else Variable.Set.add param acc)
+           acc decl.Flambda.params)
       decls.funs Variable.Set.empty
   in
-  Variable.Set.diff arguments !used_variables
+  arguments

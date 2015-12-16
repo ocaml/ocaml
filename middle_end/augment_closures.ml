@@ -105,7 +105,7 @@ let rewrite_set_of_closures
   then
     set_of_closures, Variable.Map.empty, Variable.Map.empty
   else
-    let used_new_vars = ref Variable.Set.empty in
+    let used_new_vars = Variable.Tbl.create 42 in
     let rewrite_function_decl
         (function_decl:Flambda.function_declaration) =
       let body =
@@ -119,8 +119,7 @@ let rewrite_set_of_closures
             | exception Not_found ->
               None
             | { new_var } ->
-              used_new_vars := Variable.Set.add
-                  new_var !used_new_vars;
+              Variable.Tbl.add used_new_vars new_var ();
               Some (Flambda.Var new_var))
           function_decl.body
       in
@@ -129,8 +128,7 @@ let rewrite_set_of_closures
             | (Prim (Pfield i, [v], _)) when
                 Block_field.Map.mem (v, i) block_in_free_vars ->
               let { new_var } = Block_field.Map.find (v, i) block_in_free_vars in
-              used_new_vars := Variable.Set.add
-                  new_var !used_new_vars;
+              Variable.Tbl.add used_new_vars new_var ();
               Expr (Var new_var)
             | named ->
               named)
@@ -159,7 +157,7 @@ let rewrite_set_of_closures
            let intermediate_var =
              Variable.rename new_var
            in
-           if Variable.Set.mem new_var !used_new_vars then
+           if Variable.Tbl.mem used_new_vars new_var then
              Variable.Map.add new_var intermediate_var free_vars,
              Variable.Map.add intermediate_var
                (Flambda.Project_var { Flambda.closure = outside_var; closure_id; var = field })
@@ -176,7 +174,7 @@ let rewrite_set_of_closures
            let intermediate_var =
              Variable.rename new_var
            in
-           if Variable.Set.mem new_var !used_new_vars then
+           if Variable.Tbl.mem used_new_vars new_var then
              Variable.Map.add new_var intermediate_var free_vars,
              Variable.Map.add intermediate_var
                (Flambda.Prim (Pfield field, [outside_var], Debuginfo.none))
