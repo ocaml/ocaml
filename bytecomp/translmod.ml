@@ -638,10 +638,7 @@ let nat_toplevel_name id =
   with Not_found ->
     fatal_error("Translmod.nat_toplevel_name: " ^ Ident.unique_name id)
 
-let transl_store_structure rootpath map prims str =
-  (* Use a special name to refer to the current unit, cf Compilenv.get_global_info.
-     See #6537. *)
-  let glob = Lprim(Pgetglobal (Ident.create_persistent "#CURRENT#"), []) in
+let transl_store_structure glob map prims str =
   let rec transl_store rootpath subst = function
     [] ->
       transl_store_subst := subst;
@@ -755,7 +752,7 @@ let transl_store_structure rootpath map prims str =
     try
       let (pos, cc) = Ident.find_same id map in
       let init_val = apply_coercion Alias cc (Lvar id) in
-      Lprim(Psetfield(pos, false), [glob; init_val])
+      Lprim(Psetfield(pos, false), [Lprim(Pgetglobal glob, []); init_val])
     with Not_found ->
       fatal_error("Translmod.store_ident: " ^ Ident.unique_name id)
 
@@ -767,7 +764,7 @@ let transl_store_structure rootpath map prims str =
       let (pos, cc) = Ident.find_same id map in
       match cc with
         Tcoerce_none ->
-          Ident.add id (Lprim(Pfield pos, [glob])) subst
+          Ident.add id (Lprim(Pfield pos, [Lprim(Pgetglobal glob, [])])) subst
       | _ ->
           if may_coerce then subst else assert false
     with Not_found ->
@@ -778,13 +775,13 @@ let transl_store_structure rootpath map prims str =
 
   and store_primitive (pos, prim) cont =
     Lsequence(Lprim(Psetfield(pos, false),
-                    [glob;
+                    [Lprim(Pgetglobal glob, []);
                      transl_primitive Location.none
                        prim.pc_desc prim.pc_env prim.pc_type None]),
               cont)
 
   in List.fold_right store_primitive prims
-                     (transl_store rootpath !transl_store_subst str)
+                     (transl_store (global_path glob) !transl_store_subst str)
 
 (* Transform a coercion and the list of value identifiers defined by
    a toplevel structure into a table [id -> (pos, coercion)],
@@ -840,8 +837,8 @@ let transl_store_gen module_name ({ str_items = str }, restr) topl =
     | [ { str_desc = Tstr_eval (expr, _attrs) } ] when topl ->
         assert (size = 0);
         subst_lambda !transl_store_subst (transl_exp expr)
-    | str -> transl_store_structure (global_path module_id) map prims str in
-  transl_store_label_init size f str
+    | str -> transl_store_structure module_id map prims str in
+  transl_store_label_init module_id size f str
   (*size, transl_label_init (transl_store_structure module_id map prims str)*)
 
 let transl_store_phrases module_name str =
