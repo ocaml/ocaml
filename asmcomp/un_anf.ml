@@ -263,6 +263,15 @@ let rec un_anf_and_moveable ident_info env (clam : Clambda.ulambda)
     Uoffset (clam, n), moveable
   | Ulet (id, def, Uvar id') when Ident.same id id' ->
     un_anf_and_moveable ident_info env def
+  | Ulet (id, def, Uifthenelse (Uvar id', ifso, ifnot)) when
+      Ident.same id id' && Ident.Set.mem id ident_info.linear ->
+    (* No effect or co-effects occur between the definition and the
+       use, so moving the definition is safe. *)
+    (* CR pchambart: It is possible to do a general version of this.
+       This one is cheap, simple and useful. It is not obvious how to
+       do an efficient general version and if it matter *)
+    un_anf_and_moveable ident_info env
+      (Clambda.Uifthenelse (def, ifso, ifnot))
   | Ulet (id, def, body) ->
     let def, def_moveable = un_anf_and_moveable ident_info env def in
     let is_linear = Ident.Set.mem id ident_info.linear in
