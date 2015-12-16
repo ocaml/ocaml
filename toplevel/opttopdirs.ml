@@ -60,35 +60,36 @@ let _ = Hashtbl.add directive_table "cd" (Directive_string dir_cd)
 let load_file ppf name0 =
   let name =
     try Some (find_in_path !Config.load_path name0)
-    with Not_found -> None in
-  match name with
-    | None -> fprintf ppf "File not found: %s@." name0; false
-    | Some name ->
-  let fn,tmp =
-    if Filename.check_suffix name ".cmx" || Filename.check_suffix name ".cmxa"
-    then
-      let cmxs = Filename.temp_file "caml" ".cmxs" in
-      Asmlink.link_shared ppf [name] cmxs;
-      cmxs,true
-    else
-      name,false in
-
-  let success =
-    (* The Dynlink interface does not allow us to distinguish between
-       a Dynlink.Error exceptions raised in the loaded modules
-       or a genuine error during dynlink... *)
-    try Dynlink.loadfile fn; true
-    with
-      | Dynlink.Error err ->
-          fprintf ppf "Error while loading %s: %s.@."
-            name (Dynlink.error_message err);
-          false
-      | exn ->
-          print_exception_outcome ppf exn;
-          false
+    with Not_found -> None
   in
-  if tmp then (try Sys.remove fn with Sys_error _ -> ());
-  success
+  match name with
+  | None -> fprintf ppf "File not found: %s@." name0; false
+  | Some name ->
+    let fn,tmp =
+      if Filename.check_suffix name ".cmx" || Filename.check_suffix name ".cmxa"
+      then
+        let cmxs = Filename.temp_file "caml" ".cmxs" in
+        Asmlink.link_shared ppf [name] cmxs;
+        cmxs,true
+      else
+        name,false
+    in
+    let success =
+      (* The Dynlink interface does not allow us to distinguish between
+          a Dynlink.Error exceptions raised in the loaded modules
+          or a genuine error during dynlink... *)
+      try Dynlink.loadfile fn; true
+      with
+      | Dynlink.Error err ->
+        fprintf ppf "Error while loading %s: %s.@."
+          name (Dynlink.error_message err);
+        false
+      | exn ->
+        print_exception_outcome ppf exn;
+        false
+    in
+    if tmp then (try Sys.remove fn with Sys_error _ -> ());
+    success
 
 
 let dir_load ppf name = ignore (load_file ppf name)
