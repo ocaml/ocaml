@@ -18,6 +18,7 @@ CAMLYACC ?= ../boot/ocamlyacc
 CAMLC=$(CAMLRUN) ../boot/ocamlc -strict-sequence -nostdlib -I ../boot
 CAMLOPT=$(CAMLRUN) ../ocamlopt -nostdlib -I ../stdlib
 COMPFLAGS=-w +33..39 -warn-error A -bin-annot -safe-string
+OPTCOMPFLAGS=$(COMPFLAGS) -O3
 LINKFLAGS=
 YACCFLAGS=-v
 CAMLLEX=$(CAMLRUN) ../boot/ocamllex
@@ -66,7 +67,7 @@ beforedepend:: lexer.ml
 	$(CAMLC) -c $(COMPFLAGS) $<
 
 .ml.cmx:
-	$(CAMLOPT) -c $(COMPFLAGS) $<
+	$(CAMLOPT) -c $(OPTCOMPFLAGS) $<
 
 depend: beforedepend
 	$(CAMLDEP) *.mli *.ml > .depend

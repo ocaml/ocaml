@@ -19,6 +19,7 @@ CAMLYACC ?= ../../boot/ocamlyacc
 CAMLC=$(CAMLRUN) ../../ocamlc -I ../../stdlib -I ../win32unix
 CAMLOPT=$(CAMLRUN) ../../ocamlopt -I ../../stdlib -I ../win32unix
 COMPFLAGS=-w +33 -warn-error A -g
+OPTCOMPFLAGS=$(COMPFLAGS) -O3
 MKLIB=$(CAMLRUN) ../../tools/ocamlmklib
 CFLAGS=-I../../byterun $(EXTRACFLAGS)
 
@@ -97,7 +98,7 @@ installopt:
 	$(CAMLC) -c -g $(COMPFLAGS) $<
 
 .ml.cmx:
-	$(CAMLOPT) -c $(COMPFLAGS) $<
+	$(CAMLOPT) -c $(OPTCOMPFLAGS) $<
 
 depend:
 

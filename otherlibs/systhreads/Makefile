@@ -22,6 +22,7 @@ CAMLOPT=$(CAMLRUN) $(ROOTDIR)/ocamlopt -nostdlib \
         -I $(ROOTDIR)/stdlib -I $(ROOTDIR)/otherlibs/unix
 MKLIB=$(CAMLRUN) ../../tools/ocamlmklib
 COMPFLAGS=-w +33..39 -warn-error A -g -bin-annot -safe-string
+OPTCOMPFLAGS=$(COMPFLAGS) -O3
 
 BYTECODE_C_OBJS=st_stubs_b.o
 NATIVECODE_C_OBJS=st_stubs_n.o
@@ -106,7 +107,7 @@ installopt:
 	$(CAMLC) -c $(COMPFLAGS) $<
 
 .ml.cmx:
-	$(CAMLOPT) -c $(COMPFLAGS) $<
+	$(CAMLOPT) -c $(OPTCOMPFLAGS) $<
 
 depend: $(GENFILES)
 	-$(CC) -MM -I../../byterun *.c > .depend
