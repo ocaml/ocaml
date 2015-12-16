@@ -348,6 +348,8 @@ let transl_class_bindings cl_list =
 (* Compile a module expression *)
 
 let rec transl_module cc rootpath mexp =
+  List.iter (Translattribute.check_attribute_on_module mexp)
+    mexp.mod_attributes;
   match mexp.mod_type with
     Mty_alias _ -> apply_coercion Alias cc lambda_unit
   | _ ->
@@ -359,17 +361,20 @@ let rec transl_module cc rootpath mexp =
       fst (transl_struct [] cc rootpath str)
   | Tmod_functor( param, _, mty, body) ->
       let bodypath = functor_path rootpath param in
+      let inline_attribute =
+        Translattribute.get_inline_attribute mexp.mod_attributes
+      in
       oo_wrap mexp.mod_env true
         (function
         | Tcoerce_none ->
             Lfunction{kind = Curried; params = [param];
-                      attr = { default_function_attribute with
+                      attr = { inline = inline_attribute;
                                is_a_functor = true };
                       body = transl_module Tcoerce_none bodypath body}
         | Tcoerce_functor(ccarg, ccres) ->
             let param' = Ident.create "funarg" in
             Lfunction{kind = Curried; params = [param'];
-                      attr = { default_function_attribute with
+                      attr = { inline = inline_attribute;
                                is_a_functor = true };
                       body = Llet(Alias, param,
                                   apply_coercion Alias ccarg (Lvar param'),
@@ -378,13 +383,16 @@ let rec transl_module cc rootpath mexp =
             fatal_error "Translmod.transl_module")
         cc
   | Tmod_apply(funct, arg, ccarg) ->
+      let inlined_attribute, funct =
+        Translattribute.get_and_remove_inlined_attribute_on_module funct
+      in
       oo_wrap mexp.mod_env true
         (apply_coercion Strict cc)
         (Lapply{ap_should_be_tailcall=false;
                 ap_loc=mexp.mod_loc;
                 ap_func=transl_module Tcoerce_none None funct;
                 ap_args=[transl_module ccarg None arg];
-                ap_inlined=Default_inline})
+                ap_inlined=inlined_attribute})
   | Tmod_constraint(arg, mty, _, ccarg) ->
       transl_module (compose_coercions cc ccarg) rootpath arg
   | Tmod_unpack(arg, _) ->
@@ -456,8 +464,14 @@ and transl_structure fields cc rootpath = function
   | Tstr_module mb ->
       let id = mb.mb_id in
       let body, size = transl_structure (id :: fields) cc rootpath rem in
+      let module_body =
+        transl_module Tcoerce_none (field_path rootpath id) mb.mb_expr
+      in
+      let module_body =
+        Translattribute.add_inline_attribute module_body mb.mb_loc mb.mb_attributes
+      in
       Llet(pure_module mb.mb_expr, id,
-           transl_module Tcoerce_none (field_path rootpath id) mb.mb_expr,
+           module_body,
            body), size
   | Tstr_recmodule bindings ->
       let ext_fields =

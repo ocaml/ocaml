@@ -37,7 +37,7 @@ module T = struct
     output_string chan "_";
     output_string chan (string_of_int t.name_stamp)
 
-  let hash t = Hashtbl.hash t
+  let hash t = t.name_stamp lxor (Compilation_unit.hash t.compilation_unit)
 
   let print ppf t =
     if Compilation_unit.equal t.compilation_unit

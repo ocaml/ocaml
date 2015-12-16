@@ -73,6 +73,7 @@ module Options = Main_args.Make_optcomp_options (struct
   let _inline_alloc_cost n = option_with_arg "-inline-alloc-cost" n
   let _inline_prim_cost n = option_with_arg "-inline-prim-cost" n
   let _inline_branch_cost n = option_with_arg "-inline-branch-cost" n
+  let _inline_indirect_cost n = option_with_arg "-inline-indirect-cost" n
   let _inline_lifting_benefit n = option_with_arg "-inline-lifting-benefit" n
   let _branch_inline_factor n = option_with_arg "-branch-inline-factor" n
   let _classic_heuristic = option "-classic-heuristic"

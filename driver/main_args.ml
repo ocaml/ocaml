@@ -183,6 +183,8 @@ let mk_inline_prim_cost =
   mk_inline_cost "prim" "a primitive" Clflags.default_inline_prim_cost
 let mk_inline_branch_cost =
   mk_inline_cost "branch" "a conditional" Clflags.default_inline_branch_cost
+let mk_inline_indirect_cost =
+  mk_inline_cost "indirect" "an indirect call" Clflags.default_inline_indirect_cost
 
 let mk_inline_lifting_benefit f =
   "-inline-lifting-benefit",
@@ -745,6 +747,7 @@ module type Optcommon_options = sig
   val _inline_alloc_cost : string -> unit
   val _inline_prim_cost : string -> unit
   val _inline_branch_cost : string -> unit
+  val _inline_indirect_cost : string -> unit
   val _inline_lifting_benefit : string -> unit
   val _unbox_closures : unit -> unit
   val _branch_inline_factor : string -> unit
@@ -974,6 +977,7 @@ struct
     mk_inline_branch_cost F._inline_branch_cost;
     mk_inline_call_cost F._inline_call_cost;
     mk_inline_prim_cost F._inline_prim_cost;
+    mk_inline_indirect_cost F._inline_indirect_cost;
     mk_inline_lifting_benefit F._inline_lifting_benefit;
     mk_inlining_stats F._inlining_stats;
     mk_intf F._intf;
@@ -1077,6 +1081,7 @@ module Make_opttop_options (F : Opttop_options) = struct
     mk_inline_alloc_cost F._inline_alloc_cost;
     mk_inline_prim_cost F._inline_prim_cost;
     mk_inline_branch_cost F._inline_branch_cost;
+    mk_inline_indirect_cost F._inline_indirect_cost;
     mk_inline_lifting_benefit F._inline_lifting_benefit;
     mk_branch_inline_factor F._branch_inline_factor;
     mk_labels F._labels;

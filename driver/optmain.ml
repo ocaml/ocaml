@@ -131,6 +131,9 @@ module Options = Main_args.Make_optcomp_options (struct
   let _inline_branch_cost spec =
     Int_arg_helper.parse spec ~update:inline_branch_cost
       ~help_text:"Syntax: -inline-branch-cost <n> | <round>=<n>[,...]"
+  let _inline_indirect_cost spec =
+    Int_arg_helper.parse spec ~update:inline_indirect_cost
+      ~help_text:"Syntax: -inline-indirect-cost <n> | <round>=<n>[,...]"
   let _inline_lifting_benefit spec =
     Int_arg_helper.parse spec ~update:inline_lifting_benefit
       ~help_text:"Syntax: -inline-lifting-benefit <n> | <round>=<n>[,...]"

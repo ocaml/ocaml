@@ -19,6 +19,7 @@ type ident_info =
   { used : Ident.Set.t;
     linear : Ident.Set.t;
     assigned : Ident.Set.t;
+    closure_environment : Ident.Set.t;
   }
 
 let ignore_uconstant (_ : Clambda.uconstant) = ()
@@ -33,9 +34,20 @@ let ignore_ident_list (_ : Ident.t list) = ()
 let ignore_direction_flag (_ : Asttypes.direction_flag) = ()
 let ignore_meth_kind (_ : Lambda.meth_kind) = ()
 
+let closure_environment_ident (ufunction:Clambda.ufunction) =
+  (* The argument after the arity is the environment *)
+  match List.nth ufunction.params ufunction.arity with
+  | exception Not_found ->
+      (* closed function, no environment *)
+    None
+  | var ->
+    assert(Ident.name var = "env");
+    Some var
+
 let make_ident_info (clam : Clambda.ulambda) : ident_info =
   let t : int Ident.Tbl.t = Ident.Tbl.create 42 in
   let assigned_idents = ref Ident.Set.empty in
+  let environment_idents = ref Ident.Set.empty in
   let rec loop : Clambda.ulambda -> unit = function
     (* No underscores in the pattern match, to reduce the chance of failing
        to traverse some subexpression. *)
@@ -62,7 +74,12 @@ let make_ident_info (clam : Clambda.ulambda) : ident_info =
       ignore_debuginfo dbg
     | Uclosure (functions, captured_variables) ->
       List.iter loop captured_variables;
-      List.iter (fun { Clambda. label; arity; params; body; dbg } ->
+      List.iter (fun ({ Clambda. label; arity; params; body; dbg } as clos) ->
+          (match closure_environment_ident clos with
+           | None -> ()
+           | Some env_var ->
+             environment_idents :=
+               Ident.Set.add env_var !environment_idents);
           ignore_function_label label;
           ignore_int arity;
           ignore_ident_list params;
@@ -158,7 +175,7 @@ let make_ident_info (clam : Clambda.ulambda) : ident_info =
     Ident.Tbl.fold (fun id _n acc -> Ident.Set.add id acc)
       t assigned
   in
-  { used; linear; assigned; }
+  { used; linear; assigned; closure_environment = !environment_idents; }
 
 (* We say that an expression is "moveable" iff it has neither effects nor
    coeffects.  (See semantics_of_primitives.mli.) *)
@@ -173,7 +190,8 @@ let both_moveable a b =
   | Fixed, Fixed -> Fixed
 
 let primitive_moveable (prim : Lambda.primitive)
-      (args : Clambda.ulambda list) =
+    (args : Clambda.ulambda list)
+    (ident_info : ident_info) =
   match prim, args with
   | Pfield _, [Uconst (Uconst_ref (_, _))] ->
     (* CR mshinwell: Actually, maybe this shouldn't be needed; these should
@@ -182,6 +200,10 @@ let primitive_moveable (prim : Lambda.primitive)
        turn Pfield into Read_symbol_field. *)
     (* Allow field access of symbols to be moveable.  (The comment in
        flambda.mli on [Read_symbol_field] may be helpful to the reader.) *)
+    Moveable
+  | Pfield _, [Uvar id] when Ident.Set.mem id ident_info.closure_environment ->
+    (* accesses to the function environment is coeffect free: this block
+       is never mutated *)
     Moveable
   | _ ->
     match Semantics_of_primitives.for_primitive prim with
@@ -241,6 +263,15 @@ let rec un_anf_and_moveable ident_info env (clam : Clambda.ulambda)
     Uoffset (clam, n), moveable
   | Ulet (id, def, Uvar id') when Ident.same id id' ->
     un_anf_and_moveable ident_info env def
+  | Ulet (id, def, Uifthenelse (Uvar id', ifso, ifnot)) when
+      Ident.same id id' && Ident.Set.mem id ident_info.linear ->
+    (* No effect or co-effects occur between the definition and the
+       use, so moving the definition is safe. *)
+    (* CR pchambart: It is possible to do a general version of this.
+       This one is cheap, simple and useful. It is not obvious how to
+       do an efficient general version and if it matter *)
+    un_anf_and_moveable ident_info env
+      (Clambda.Uifthenelse (def, ifso, ifnot))
   | Ulet (id, def, body) ->
     let def, def_moveable = un_anf_and_moveable ident_info env def in
     let is_linear = Ident.Set.mem id ident_info.linear in
@@ -268,7 +299,7 @@ let rec un_anf_and_moveable ident_info env (clam : Clambda.ulambda)
   | Uprim (prim, args, dbg) ->
     let args, args_moveable = un_anf_list_and_moveable ident_info env args in
     let moveable =
-      both_moveable args_moveable (primitive_moveable prim args)
+      both_moveable args_moveable (primitive_moveable prim args ident_info)
     in
     Uprim (prim, args, dbg), moveable
   | Uswitch (cond, sw) ->
