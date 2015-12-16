@@ -46,9 +46,10 @@ let cannot_share (const : Flambda.constant_defining_value) =
   | Allocated_const _ | Set_of_closures _ | Project_closure _ | Block _ ->
     false
 
-let share_definition constant_to_symbol_tbl sharing_symbol_tbl symbol def =
+let share_definition constant_to_symbol_tbl sharing_symbol_tbl
+    symbol def end_symbol =
   let def = update_constant_for_sharing sharing_symbol_tbl def in
-  if cannot_share def then
+  if cannot_share def || Symbol.equal symbol end_symbol then
     Some def
   else
     begin match Constant_defining_value.Tbl.find constant_to_symbol_tbl def with
@@ -60,14 +61,25 @@ let share_definition constant_to_symbol_tbl sharing_symbol_tbl symbol def =
       None
     end
 
+let rec end_symbol (program : Flambda.program_body) =
+  match program with
+  | End symbol -> symbol
+  | Let_symbol (_, _, program)
+  | Let_rec_symbol (_, program)
+  | Initialize_symbol (_, _, _, program)
+  | Effect (_, program) ->
+    end_symbol program
+
 let share_constants (program : Flambda.program) =
+  let end_symbol = end_symbol program.program_body in
   let sharing_symbol_tbl = Symbol.Tbl.create 42 in
   let constant_to_symbol_tbl = Constant_defining_value.Tbl.create 42 in
   let rec loop (program : Flambda.program_body) : Flambda.program_body =
     match program with
     | Let_symbol (symbol,def,program) ->
       begin match
-        share_definition constant_to_symbol_tbl sharing_symbol_tbl symbol def
+        share_definition constant_to_symbol_tbl sharing_symbol_tbl symbol
+          def end_symbol
       with
       | None ->
         loop program
