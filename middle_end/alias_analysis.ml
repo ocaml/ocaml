@@ -36,10 +36,9 @@ type initialize_symbol_field = Variable.t option
 
 type definitions =
   {
-    variable : constant_defining_value Variable.Map.t;
-    initialize_symbol : initialize_symbol_field list Symbol.Map.t;
-    symbol : Flambda.constant_defining_value Symbol.Map.t;
-    symbol_alias : Variable.t Symbol.Map.t;
+    variable : constant_defining_value Variable.Tbl.t;
+    initialize_symbol : initialize_symbol_field list Symbol.Tbl.t;
+    symbol : Flambda.constant_defining_value Symbol.Tbl.t;
   }
 
 let print_constant_defining_value ppf = function
@@ -81,13 +80,7 @@ let rec resolve_definition
     fetch_variable definitions (Var_within_closure.unwrap var)
   | Variable v ->
     fetch_variable definitions v
-  | Symbol sym -> begin
-      match Symbol.Map.find sym definitions.symbol_alias with
-      | exception Not_found ->
-        Symbol sym
-      | v ->
-        fetch_variable definitions v
-    end
+  | Symbol sym -> Symbol sym
   | Field (v, n) ->
     begin match fetch_variable definitions v with
     | Symbol s ->
@@ -101,7 +94,7 @@ let rec resolve_definition
 and fetch_variable
     (definitions: definitions)
     (var: Variable.t) : allocation_point =
-  match Variable.Map.find var definitions.variable with
+  match Variable.Tbl.find definitions.variable var with
   | exception Not_found -> Variable var
   | def ->
     resolve_definition definitions var def
@@ -110,7 +103,7 @@ and fetch_variable_field
     (definitions: definitions)
     (var: Variable.t)
     (field: int) : allocation_point =
-  match Variable.Map.find var definitions.variable with
+  match Variable.Tbl.find definitions.variable var with
   | Block (_, fields) ->
     begin match List.nth fields field with
     | exception Not_found ->
@@ -134,7 +127,7 @@ and fetch_symbol_field
     (definitions: definitions)
     (sym: Symbol.t)
     (field: int) : allocation_point =
-  match Symbol.Map.find sym definitions.symbol with
+  match Symbol.Tbl.find definitions.symbol sym with
   | Block (_, fields) ->
     begin match List.nth fields field with
     | exception Not_found ->
@@ -145,7 +138,7 @@ and fetch_symbol_field
       Symbol sym
     end
   | exception Not_found -> begin
-      match Symbol.Map.find sym definitions.initialize_symbol with
+      match Symbol.Tbl.find definitions.initialize_symbol sym with
       | fields -> begin
           match List.nth fields field with
           | None ->
@@ -159,6 +152,10 @@ and fetch_symbol_field
   | Allocated_const _ | Set_of_closures _ | Project_closure _ ->
     Misc.fatal_errorf "Field access to %a which is not a block" Symbol.print sym
 
-let run variable initialize_symbol symbol symbol_alias =
-  let definitions = { variable; initialize_symbol; symbol; symbol_alias; } in
-  Variable.Map.mapi (resolve_definition definitions) definitions.variable
+let run variable initialize_symbol symbol =
+  let definitions = { variable; initialize_symbol; symbol; } in
+  Variable.Tbl.fold (fun var definition result ->
+      let definition = resolve_definition definitions var definition in
+      Variable.Map.add var definition result)
+    definitions.variable
+    Variable.Map.empty

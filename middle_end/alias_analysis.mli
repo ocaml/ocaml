@@ -41,10 +41,9 @@ type initialize_symbol_field = Variable.t option
     Also see comments for [Lift_constants], whose input feeds this
     pass. *)
 val run
-   : constant_defining_value Variable.Map.t
-  -> initialize_symbol_field list Symbol.Map.t
-  -> Flambda.constant_defining_value Symbol.Map.t
-  -> Variable.t Symbol.Map.t
+   : constant_defining_value Variable.Tbl.t
+  -> initialize_symbol_field list Symbol.Tbl.t
+  -> Flambda.constant_defining_value Symbol.Tbl.t
   -> allocation_point Variable.Map.t
 
 val print_constant_defining_value
