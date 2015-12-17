@@ -14,7 +14,7 @@
 
 type file = string
 
-type build_kind =
+type source_provenance =
   | File of file
   | Pack of string
   | Startup
@@ -30,17 +30,17 @@ type compiler_pass =
   | Clambda of file
   | Cmm of file
   | Compile_phrases of file
-  | Selection of build_kind
-  | Comballoc of build_kind
-  | CSE of build_kind
-  | Liveness of build_kind
-  | Deadcode of build_kind
-  | Spill of build_kind
-  | Split of build_kind
-  | Regalloc of build_kind
-  | Linearize of build_kind
-  | Scheduling of build_kind
-  | Emit of build_kind
+  | Selection of source_provenance
+  | Comballoc of source_provenance
+  | CSE of source_provenance
+  | Liveness of source_provenance
+  | Deadcode of source_provenance
+  | Spill of source_provenance
+  | Split of source_provenance
+  | Regalloc of source_provenance
+  | Linearize of source_provenance
+  | Scheduling of source_provenance
+  | Emit of source_provenance
 
 val reset : unit -> unit
 (** erase all recorded times *)

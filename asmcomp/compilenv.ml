@@ -81,7 +81,7 @@ let symbolname_for_pack pack name =
       Buffer.contents b
 
 
-let reset ?packname ~sourcefile:file name =
+let reset ?packname ~source_provenance:file name =
   Hashtbl.clear global_infos_table;
   let symbol = symbolname_for_pack packname name in
   sourcefile := Some file;

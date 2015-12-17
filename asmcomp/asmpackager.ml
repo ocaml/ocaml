@@ -175,7 +175,7 @@ let package_files ppf initial_env files targetcmx =
   (* Set the name of the current "input" *)
   Location.input_name := targetcmx;
   (* Set the name of the current compunit *)
-  Compilenv.reset ~sourcefile:(Timings.Pack targetname)
+  Compilenv.reset ~source_provenance:(Timings.Pack targetname)
     ?packname:!Clflags.for_package targetname;
   try
     let coercion =

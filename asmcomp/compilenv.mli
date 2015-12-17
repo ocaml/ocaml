@@ -14,7 +14,8 @@
 
 open Cmx_format
 
-val reset: ?packname:string -> sourcefile:Timings.build_kind -> string -> unit
+val reset: ?packname:string -> source_provenance:Timings.source_provenance ->
+        string -> unit
         (* Reset the environment and record the name of the unit being
            compiled (arg).  Optional argument is [-for-pack] prefix. *)
 
@@ -24,7 +25,7 @@ val current_unit_infos: unit -> unit_infos
 val current_unit_name: unit -> string
         (* Return the name of the unit being compiled *)
 
-val current_build: unit -> Timings.build_kind
+val current_build: unit -> Timings.source_provenance
         (* Return the kind of build source being compiled. If it is a
            file compilation it also provides the filename. *)
 
