@@ -20,6 +20,7 @@ type build_kind =
 type part =
   | All
   | Parsing of file
+  | Preprocessing of file
   | Typing of file
   | Transl of file
   | Generate of file
@@ -101,6 +102,7 @@ let kind_name = function
 let part_name = function
   | All -> "all"
   | Parsing file -> Printf.sprintf "parsing(%s)" file
+  | Preprocessing file -> Printf.sprintf "preprocessing(%s)" file
   | Typing file -> Printf.sprintf "typing(%s)" file
   | Transl file -> Printf.sprintf "transl(%s)" file
   | Generate file -> Printf.sprintf "generate(%s)" file

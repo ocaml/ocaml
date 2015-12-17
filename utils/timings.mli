@@ -22,6 +22,7 @@ type build_kind =
 type part =
   | All
   | Parsing of file
+  | Preprocessing of file
   | Typing of file
   | Transl of file
   | Generate of file
