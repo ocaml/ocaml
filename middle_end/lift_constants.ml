@@ -786,6 +786,7 @@ let lift_constants (program : Flambda.program) ~backend =
   let inconstants =
     Inconstant_idents.inconstants_on_program program
       ~for_clambda:true
+      ~backend
       ~compilation_unit:(Compilation_unit.get_current_exn ())
   in
   let initialize_symbol_tbl, symbol_definition_tbl, effect_tbl =

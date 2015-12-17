@@ -64,7 +64,7 @@ module type Param = sig
   val compilation_unit : Compilation_unit.t
 end
 
-module NotConstants(P:Param) = struct
+module NotConstants(P:Param)(Backend:Backend_intf.S) = struct
   let for_clambda = P.for_clambda
   let compilation_unit = P.compilation_unit
 
@@ -259,6 +259,15 @@ module NotConstants(P:Param) = struct
     | Symbol symbol ->
       if not for_clambda
       then register_implication ~in_nc:(Symbol symbol) ~implies_in_nc:curr
+      else begin
+        match (Backend.import_symbol symbol).descr with
+        | Value_unresolved _ ->
+          (* Constant when 'for_clambda' means: can be a symbol (which is
+             obviously the case here) and provides informations *)
+          mark_curr curr
+        | _ ->
+          ()
+      end
     | Read_symbol_field (symbol, index) ->
       register_implication ~in_nc:(Symbol_field (symbol, index)) ~implies_in_nc:curr
     (* globals are symbols: handle like symbols *)
@@ -454,13 +463,15 @@ end
 (*     Set_of_closures_id.Set.print A.res.closure; *)
 (*   A.res *)
 
-let inconstants_on_program ~for_clambda ~compilation_unit (program : Flambda.program) =
+let inconstants_on_program ~for_clambda ~compilation_unit
+    ~backend (program : Flambda.program) =
   let module P = struct
     let program = program
     let for_clambda = for_clambda
     let compilation_unit = compilation_unit
   end in
-  let module A = NotConstants(P) in
+  let module Backend = (val backend:Backend_intf.S) in
+  let module A = NotConstants(P)(Backend) in
   (* Format.eprintf "inconstants returns %a\n%a@ " *)
   (*   Variable.Set.print A.res.id *)
   (*   Set_of_closures_id.Set.print A.res.closure; *)
