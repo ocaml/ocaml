@@ -277,6 +277,7 @@ let rec translate_definition_and_resolve_alias
     (symbol_definition_map : Flambda.constant_defining_value Symbol.Map.t)
     (project_closure_map:Symbol.t Symbol.Map.t)
     (definition:Alias_analysis.constant_defining_value)
+    ~(backend:(module Backend_intf.S))
   : Flambda.constant_defining_value option =
   match definition with
   | Block (tag, fields) ->
@@ -315,11 +316,42 @@ let rec translate_definition_and_resolve_alias
             Alias_analysis.print_constant_defining_value definition
             Flambda.print_constant_defining_value wrong
         | exception Not_found ->
-          Misc.fatal_errorf
-            "Lift_constants.translate_definition_and_resolve_alias: \
-              Duplicate Pfloatarray %a with unknown symbol: %a"
-            Variable.print var
-            Alias_analysis.print_constant_defining_value definition
+          let module Backend = (val backend) in
+          match (Backend.import_symbol sym).descr with
+          | Value_unresolved _ ->
+            Misc.fatal_errorf
+              "Lift_constants.translate_definition_and_resolve_alias: \
+               Duplicate Pfloatarray %a with unknown symbol: %a"
+              Variable.print var
+              Alias_analysis.print_constant_defining_value definition
+          | Value_float_array { contents = Contents float_array } ->
+            let contents =
+              Array.fold_right (fun elt acc ->
+                  match acc, elt with
+                  | None, _ | _, None -> None
+                  | Some acc, Some f ->
+                    Some (f :: acc))
+                float_array (Some [])
+            in
+            begin match contents with
+            | None ->
+              Misc.fatal_errorf
+                "Lift_constants.translate_definition_and_resolve_alias: \
+                 Duplicate Pfloatarray %a with not completely known float \
+                 array from symbol: %a"
+                Variable.print var
+                Alias_analysis.print_constant_defining_value definition
+            | Some l ->
+              Alias_analysis.Allocated_const (Normal (Immutable_float_array l))
+            end
+          | wrong ->
+            Misc.fatal_errorf
+              "Lift_constants.translate_definition_and_resolve_alias: \
+               Duplicate Pfloatarray %a with symbol %a mapping to \
+               wrong value %a"
+              Variable.print var
+              Alias_analysis.print_constant_defining_value definition
+              Simple_value_approx.print_descr wrong
     in
     begin match constant_defining_value with
     | Allocated_const (Normal (Float_array _)) ->
@@ -355,6 +387,7 @@ let rec translate_definition_and_resolve_alias
       translate_definition_and_resolve_alias inconstants aliases
         var_to_symbol_tbl var_to_definition_tbl symbol_definition_map
         project_closure_map definition
+        ~backend
     | const ->
       Misc.fatal_errorf
         "Lift_constants.translate_definition_and_resolve_alias: \
@@ -448,9 +481,10 @@ let translate_definitions_and_resolve_alias
     (var_to_symbol_tbl:Symbol.t Variable.Tbl.t)
     (var_to_definition_tbl:Alias_analysis.constant_defining_value Variable.Tbl.t)
     symbol_definition_map
-    project_closure_map =
+    project_closure_map
+    ~backend =
   Variable.Tbl.fold (fun var def map ->
-      match translate_definition_and_resolve_alias inconstants aliases
+      match translate_definition_and_resolve_alias inconstants aliases ~backend
               var_to_symbol_tbl var_to_definition_tbl symbol_definition_map
               project_closure_map def with
       | None -> map
@@ -825,6 +859,7 @@ let lift_constants (program : Flambda.program) ~backend =
       (var_to_definition_tbl:Alias_analysis.constant_defining_value Variable.Tbl.t)
       symbol_definition_map
       project_closure_map
+      ~backend
   in
   let var_to_block_field_tbl =
     var_to_block_field
