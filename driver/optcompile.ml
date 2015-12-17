@@ -75,6 +75,13 @@ let implementation ppf sourcefile outputprefix ~backend =
   Compilenv.reset ?packname:!Clflags.for_package modulename;
   let cmxfile = outputprefix ^ ".cmx" in
   let objfile = outputprefix ^ ext_obj in
+  let flambda_middle_end ((module_ident, size), lam) =
+    Middle_end.middle_end ppf ~sourcefile ~prefixname:outputprefix
+      ~size
+      ~module_ident
+      ~backend
+    ~module_initializer:lam
+  in
   let comp ast =
     let (typedtree, coercion) =
       ast
@@ -95,13 +102,8 @@ let implementation ppf sourcefile outputprefix ~backend =
       ++ Timings.(start_id (Generate sourcefile))
       +++ Simplif.simplify_lambda
       +++ print_if ppf Clflags.dump_lambda Printlambda.lambda
-      ++ (fun ((module_ident, size), lam) ->
-          Middle_end.middle_end ppf ~sourcefile ~prefixname:outputprefix
-            ~size
-            ~module_ident
-            ~backend
-            ~module_initializer:lam)
-      ++ Asmgen.compile_implementation ~sourcefile outputprefix ~backend ppf;
+      ++ flambda_middle_end
+      ++ Asmgen.compile_implementation ~sourcefile outputprefix ~backend Asmgen.Flambda ppf;
       Compilenv.save_unit_info cmxfile;
       Timings.(stop (Generate sourcefile));
     end;

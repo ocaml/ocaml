@@ -12,12 +12,17 @@
 
 (* From lambda to assembly code *)
 
+type _ backend_kind =
+  | Lambda : Lambda.lambda backend_kind
+  | Flambda : Flambda.program backend_kind
+
 val compile_implementation :
     ?toplevel:(string -> bool) ->
     sourcefile:string ->
     string ->
     backend:(module Backend_intf.S) ->
-    Format.formatter -> Flambda.program -> unit
+    'a backend_kind ->
+    Format.formatter -> 'a -> unit
 val compile_phrase :
     Format.formatter -> Cmm.phrase -> unit
 

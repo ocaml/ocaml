@@ -18,6 +18,10 @@ open Clflags
 open Misc
 open Cmm
 
+type _ backend_kind =
+  | Lambda : Lambda.lambda backend_kind
+  | Flambda : Flambda.program backend_kind
+
 type error = Assembler_error of string
 
 exception Error of error
@@ -138,21 +142,15 @@ let set_export_info (ulambda, prealloc, structured_constants, export) =
   Compilenv.set_export_info export;
   (ulambda, prealloc, structured_constants)
 
-let gen_implementation ?toplevel ~sourcefile ~backend ppf program =
+type clambda_and_constants =
+  Clambda.ulambda *
+  Clambda.preallocated_block list *
+  Clambda.ustructured_constant Symbol.Map.t
+
+let end_gen_implementation ?toplevel ~sourcefile ppf
+    (clambda:clambda_and_constants) =
   Emit.begin_assembly ();
-  Timings.(start (Flambda_backend sourcefile));
-  let export = Build_export_info.build_export_info ~backend program in
-  (program, export)
-  ++ Flambda_to_clambda.convert
-  ++ raw_clambda_dump_if ppf
-  ++ (fun { Flambda_to_clambda. expr; preallocated_blocks;
-          structured_constants; exported; } ->
-        (* "init_code" following the name used in
-           [Cmmgen.compunit_and_constants]. *)
-        Un_anf.apply expr ~what:"init_code", preallocated_blocks,
-          structured_constants, exported)
-  ++ set_export_info
-  ++ Timings.(stop_id (Flambda_backend sourcefile))
+  clambda
   ++ Timings.(start_id (Cmm sourcefile))
   ++ Cmmgen.compunit_and_constants
   ++ Timings.(stop_id (Cmm sourcefile))
@@ -175,8 +173,38 @@ let gen_implementation ?toplevel ~sourcefile ~backend ppf program =
     );
   Emit.end_assembly ()
 
-let compile_implementation ?toplevel ~sourcefile prefixname ~backend ppf
-      flam =
+let flambda_gen_implementation ?toplevel ~sourcefile ~backend ppf
+    (program:Flambda.program) =
+  Timings.(start (Flambda_backend sourcefile));
+  let export = Build_export_info.build_export_info ~backend program in
+  let clambda =
+    (program, export)
+    ++ Flambda_to_clambda.convert
+    ++ raw_clambda_dump_if ppf
+    ++ (fun { Flambda_to_clambda. expr; preallocated_blocks;
+              structured_constants; exported; } ->
+           (* "init_code" following the name used in
+              [Cmmgen.compunit_and_constants]. *)
+         Un_anf.apply expr ~what:"init_code", preallocated_blocks,
+         structured_constants, exported)
+    ++ set_export_info
+    ++ Timings.(stop_id (Flambda_backend sourcefile))
+  in
+  end_gen_implementation ?toplevel ~sourcefile ppf clambda
+
+let lambda_gen_implementation ?toplevel:_ ~sourcefile:_ _ppf (_lambda:Lambda.lambda) =
+  assert false
+
+let gen_implementation (type t) ?toplevel ~sourcefile ~backend
+    (backend_kind: t backend_kind) ppf (code : t) =
+  match backend_kind with
+  | Flambda ->
+      flambda_gen_implementation ?toplevel ~sourcefile ~backend ppf code
+  | Lambda ->
+      lambda_gen_implementation ?toplevel ~sourcefile ppf code
+
+let compile_implementation (type t) ?toplevel ~sourcefile prefixname ~backend
+    (backend_kind: t backend_kind) ppf (code : t) =
   let asmfile =
     if !keep_asm_file || !Emitaux.binary_backend_available
     then prefixname ^ ext_asm
@@ -184,7 +212,7 @@ let compile_implementation ?toplevel ~sourcefile prefixname ~backend ppf
   in
   compile_unit ~sourcefile prefixname asmfile !keep_asm_file (prefixname ^ ext_obj)
     (fun () ->
-       gen_implementation ?toplevel ~sourcefile ~backend ppf flam)
+       gen_implementation ?toplevel ~sourcefile ~backend backend_kind ppf code)
 
 (* Error report *)
 
