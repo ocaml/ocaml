@@ -40,49 +40,119 @@ let apply_on_subexpressions f f_named (flam : Flambda.t) =
     f f1; f f2
   | For { body; _ } -> f body
 
+let rec list_map_sharing f l =
+  match l with
+  | [] -> l
+  | h :: t ->
+    let new_t = list_map_sharing f t in
+    let new_h = f h in
+    if h == new_h && t == new_t then
+      l
+    else
+      new_h :: new_t
+
+let may_map_sharing f v =
+  match v with
+  | None -> v
+  | Some s ->
+    let new_s = f s in
+    if s == new_s then
+      v
+    else
+      Some new_s
+
+let map_snd_sharing f ((a, b) as cpl) =
+  let new_b = f a b in
+  if b == new_b then
+    cpl
+  else
+    (a, new_b)
+
 let map_subexpressions f f_named (tree:Flambda.t) : Flambda.t =
   match tree with
   | Var _ | Apply _ | Assign _ | Send _ | Proved_unreachable
   | Static_raise _ -> tree
   | Let { var; defining_expr; body; _ } ->
-    Flambda.create_let var (f_named var defining_expr) (f body)
+    let new_named = f_named var defining_expr in
+    let new_body = f body in
+    if new_named == defining_expr && new_body == body then
+      tree
+    else
+      Flambda.create_let var new_named new_body
   | Let_rec (defs, body) ->
-    let defs = List.map (fun (id, lam) -> id, f_named id lam) defs in
-    Let_rec (defs, f body)
-  | Let_mutable (mut_var, var, body) ->
-    Let_mutable (mut_var, var, f body)
-  | Switch (arg, sw) ->
-    let sw =
-      { sw with
-        failaction = Misc.may_map f sw.failaction;
-        consts = List.map (fun (i,v) -> i, f v) sw.consts;
-        blocks = List.map (fun (i,v) -> i, f v) sw.blocks;
-      }
+    let new_defs =
+      list_map_sharing (map_snd_sharing f_named) defs
     in
-    Switch (arg, sw)
+    let new_body = f body in
+    if new_defs == defs && new_body == body then
+      tree
+    else
+      Let_rec (new_defs, new_body)
+  | Let_mutable (mut_var, var, body) ->
+    let new_body = f body in
+    if new_body == body then
+      tree
+    else
+      Let_mutable (mut_var, var, new_body)
+  | Switch (arg, sw) ->
+    let aux = map_snd_sharing (fun _ v -> f v) in
+    let new_consts = list_map_sharing aux sw.consts in
+    let new_blocks = list_map_sharing aux sw.blocks in
+    let new_failaction = may_map_sharing f sw.failaction in
+    if sw.failaction == new_failaction &&
+       new_consts == sw.consts &&
+       new_blocks == sw.blocks then
+      tree
+    else
+      let sw =
+        { sw with
+          failaction = new_failaction;
+          consts = new_consts;
+          blocks = new_blocks;
+        }
+      in
+      Switch (arg, sw)
   | String_switch (arg, sw, def) ->
-    let sw = List.map (fun (i,v) -> i, f v) sw in
-    let def = Misc.may_map f def in
-    String_switch(arg, sw, def)
+    let new_sw = list_map_sharing (map_snd_sharing (fun _ v -> f v)) sw in
+    let new_def = may_map_sharing f def in
+    if sw == new_sw && def == new_def then
+      tree
+    else
+      String_switch(arg, new_sw, new_def)
   | Static_catch (i, vars, body, handler) ->
-    let body = f body in
-    let handler = f handler in
-    Static_catch (i, vars, body, handler)
+    let new_body = f body in
+    let new_handler = f handler in
+    if new_body == body && new_handler == handler then
+      tree
+    else
+      Static_catch (i, vars, new_body, new_handler)
   | Try_with(body, id, handler) ->
-    let body = f body in
-    let handler = f handler in
-    Try_with(body, id, handler)
+    let new_body = f body in
+    let new_handler = f handler in
+    if body == new_body && handler == new_handler then
+      tree
+    else
+      Try_with(new_body, id, new_handler)
   | If_then_else(arg, ifso, ifnot) ->
-    let ifso = f ifso in
-    let ifnot = f ifnot in
-    If_then_else(arg, ifso, ifnot)
+    let new_ifso = f ifso in
+    let new_ifnot = f ifnot in
+    if new_ifso == ifso && new_ifnot == ifnot then
+      tree
+    else
+      If_then_else(arg, new_ifso, new_ifnot)
   | While(cond, body) ->
-    let cond = f cond in
-    let body = f body in
-    While(cond, body)
+    let new_cond = f cond in
+    let new_body = f body in
+    if new_cond == cond && new_body == body then
+      tree
+    else
+      While(new_cond, new_body)
   | For { bound_var; from_value; to_value; direction; body; } ->
-    let body = f body in
-    For { bound_var; from_value; to_value; direction; body; }
+    let new_body = f body in
+    if new_body == body then
+      tree
+    else
+      For { bound_var; from_value; to_value; direction; body = new_body; }
 
 let iter_general = Flambda.iter_general
 

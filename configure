@@ -51,6 +51,7 @@ TOOLPREF=""
 with_cfi=true
 with_bisect_byte=false
 with_bisect_opt=false
+flambda=false
 
 # Try to turn internationalization off, can cause config.guess to malfunction!
 unset LANG
@@ -165,6 +166,8 @@ while : ; do
         with_bisect_byte=true;;
     -with-bisect-opt)
         with_bisect_opt=true;;
+    -flambda)
+        flambda=true;;
     *) if echo "$1" | grep -q -e '^--\?[a-zA-Z0-9-]\+='; then
          err "configure expects arguments of the form '-prefix /foo/bar'," \
              "not '-prefix=/foo/bar' (note the '=')."
@@ -1774,6 +1777,7 @@ echo "HOST=$host" >> Makefile
 if [ "$ostype" = Cygwin ]; then
   echo "DIFF=diff -q --strip-trailing-cr" >>Makefile
 fi
+echo "FLAMBDA=$flambda" >> Makefile
 
 if [ "${with_bisect_byte}" = true ] || [ "${with_bisect_opt}" = true ]; then
     echo 'BISECT_DIR=${PREFIX}/lib/bisect_ppx' >> Makefile
@@ -1853,6 +1857,11 @@ else
   inf "        profiling with gprof ..... supported"
   else
   inf "        profiling with gprof ..... not supported"
+  fi
+  if test "$flambda" = "true"; then
+  inf "        using flambda middle-end . yes"
+  else
+  inf "        using flambda middle-end . no"
   fi
 fi
 

@@ -50,6 +50,8 @@ let share_definition constant_to_symbol_tbl sharing_symbol_tbl
     symbol def end_symbol =
   let def = update_constant_for_sharing sharing_symbol_tbl def in
   if cannot_share def || Symbol.equal symbol end_symbol then
+    (* The symbol exported by the unit (end_symbol), cannot be removed
+       from the module. We prevent it from being shared to avoid that. *)
     Some def
   else
     begin match Constant_defining_value.Tbl.find constant_to_symbol_tbl def with
