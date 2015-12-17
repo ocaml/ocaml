@@ -413,6 +413,8 @@ Bug fixes:
 - PR#6795, PR#6996: Make ocamldep report errors passed in
   [%ocaml.error] extension points
   (Jérémie Dimino)
+- GPR#355: make ocamlnat build again
+  (Jérémie Dimino, Thomas Refis)
 
 Features wishes:
 - PR#4518, GPR#29: change location format for reporting errors in ocamldoc
