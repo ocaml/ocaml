@@ -15,37 +15,48 @@
 
 (** Ephemerons and weak hash table
 
-    Ephemerons are defined in a language agnostic way in this paper:
-    B. Hayes, Ephemerons: a New Finalization Mechanism, OOPSLA'9
+    Ephemerons and weak hashtable are useful when one wants to cache
+    or memorize the computation of a function, as long as the
+    arguments and the function are used, without creating memory leaks
+    by continuously keeping old computation results that are not
+    useful anymore because one argument or the function is freed. An
+    implementation using {Hashtbl.t} is not suitable, because all
+    associations would keep in memory the arguments and the result.
 
-    Ephemerons hold some keys and one data. They are all boxed ocaml values and
-    suffer of the same limitation than weak pointers.
+    Ephemerons hold some keys and one or no data. They are all boxed
+    ocaml values. The keys of an ephemerons have the same behavior
+    than weak pointers according to the garbage collector. In fact
+    ocaml weak pointers are implemented as ephemerons without data.
 
-    The keys of an ephemerons have the same behavior than weak
-    pointers according to the garbage collector.
-
-    The keys and data of an ephemeron are said to be full if it points to a
-    value, empty if the value have never been set or was erased by the GC.
+    The keys and data of an ephemeron are said to be full if they
+    point to a value, empty if the value have never been set, have
+    been unset, or was erased by the GC. In the function that access
+    the keys or data these two states are represented by the [option]
+    type.
 
     The data is considered by the garbage collector alive if all the
     full keys are alive and if the ephemeron is alive. When one of the
     keys is not considered alive anymore by the GC, the data is
-    emptied from the ephemeron even if the data is alive for another
-    reason.
+    emptied from the ephemeron. The data could be alive for another
+    reason and in that case the GC will free it, but the ephemerons
+    will not hold the data anymore.
 
     The ephemerons complicate the notion of liveness of values, because
     it is not anymore an equivalence with the reachability from root
-    value by usual pointers (not weak and not ephemerons). The notion
-    of liveness is constructed by the least fixpoint of:
-    A value is alive if:
-     - it is a root value
-     - it is reachable from alive value by usual pointers
-     - it is the data of an ephemeron with all its full keys alive
+    value by usual pointers (not weak and not ephemerons). With ephemerons
+    the notion of liveness is constructed by the least fixpoint of:
+       A value is alive if:
+        - it is a root value
+        - it is reachable from alive value by usual pointers
+        - it is the data of an alive ephemeron with all its full keys alive
 
     Notes:
     - All the types defined in this module cannot be marshaled
     using {!Pervasives.output_value} nor the functions of the
     {!Marshal} module.
+
+    Ephemerons are defined in a language agnostic way in this paper:
+    B. Hayes, Ephemerons: a New Finalization Mechanism, OOPSLA'9
 
 *)
 
