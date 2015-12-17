@@ -48,12 +48,22 @@ let mkdll = "%%MKDLL%%"
 let mkexe = "%%MKEXE%%"
 let mkmaindll = "%%MKMAINDLL%%"
 
+let flambda = %%FLAMBDA%%
+
 let exec_magic_number = "Caml1999X011"
 and cmi_magic_number = "Caml1999I020"
 and cmo_magic_number = "Caml1999O011"
 and cma_magic_number = "Caml1999A012"
-and cmx_magic_number = "Caml1999Y015"
-and cmxa_magic_number = "Caml1999Z014"
+and cmx_magic_number =
+  if flambda then
+    "Caml1999Y016"
+  else
+    "Caml1999Y015"
+and cmxa_magic_number =
+  if flambda then
+    "Caml1999Z015"
+  else
+    "Caml1999Z014"
 and ast_impl_magic_number = "Caml1999M019"
 and ast_intf_magic_number = "Caml1999N018"
 and cmxs_magic_number = "Caml2007D002"
@@ -126,6 +136,7 @@ let print_config oc =
   p_bool "systhread_supported" systhread_supported;
   p "host" host;
   p "target" target;
+  p_bool "flambda" flambda;
 
   (* print the magic number *)
   p "exec_magic_number" exec_magic_number;
