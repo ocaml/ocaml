@@ -274,6 +274,7 @@ let rec translate_definition_and_resolve_alias
     (aliases:Alias_analysis.allocation_point Variable.Map.t)
     (var_to_symbol_tbl:Symbol.t Variable.Tbl.t)
     (var_to_definition_tbl:Alias_analysis.constant_defining_value Variable.Tbl.t)
+    (symbol_definition_map : Flambda.constant_defining_value Symbol.Map.t)
     (project_closure_map:Symbol.t Symbol.Map.t)
     (definition:Alias_analysis.constant_defining_value)
   : Flambda.constant_defining_value option =
@@ -294,18 +295,33 @@ let rec translate_definition_and_resolve_alias
        This seems to work, but please check.  We should maybe factor out
        the code from the Allocated_const (Array (...)) case below so this
        function doesn't have to be recursive. *)
-    let var =
+    let (constant_defining_value : Alias_analysis.constant_defining_value) =
       match Variable.Map.find var aliases with
-      | exception Not_found -> var
-      | Symbol _ ->
-        Misc.fatal_errorf
-          "Lift_constants.translate_definition_and_resolve_alias: \
-            Duplicate Pfloatarray %a with Symbol argument: %a"
-          Variable.print var
-          Alias_analysis.print_constant_defining_value definition
-      | Variable var -> var
+      | exception Not_found ->
+        Variable.Tbl.find var_to_definition_tbl var
+      | Variable var ->
+        Variable.Tbl.find var_to_definition_tbl var
+      | Symbol sym ->
+        match Symbol.Map.find sym symbol_definition_map with
+        | Allocated_const ((Immutable_float_array _) as const) ->
+          Alias_analysis.Allocated_const (Normal const)
+        | (Allocated_const _ | Block _ | Set_of_closures _
+            | Project_closure _) as wrong ->
+          Misc.fatal_errorf
+            "Lift_constants.translate_definition_and_resolve_alias: \
+              Duplicate Pfloatarray %a with symbol %a mapping to \
+              wrong constant defining value %a"
+            Variable.print var
+            Alias_analysis.print_constant_defining_value definition
+            Flambda.print_constant_defining_value wrong
+        | exception Not_found ->
+          Misc.fatal_errorf
+            "Lift_constants.translate_definition_and_resolve_alias: \
+              Duplicate Pfloatarray %a with unknown symbol: %a"
+            Variable.print var
+            Alias_analysis.print_constant_defining_value definition
     in
-    begin match Variable.Tbl.find var_to_definition_tbl var with
+    begin match constant_defining_value with
     | Allocated_const (Normal (Float_array _)) ->
       (* This example from pchambart illustrates why we do not allow
          the duplication of mutable arrays:
@@ -337,8 +353,8 @@ let rec translate_definition_and_resolve_alias
       Some (Flambda.Allocated_const const)
     | (Allocated_const (Array (Pfloatarray, _, _))) as definition ->
       translate_definition_and_resolve_alias inconstants aliases
-        var_to_symbol_tbl var_to_definition_tbl project_closure_map
-        definition
+        var_to_symbol_tbl var_to_definition_tbl symbol_definition_map
+        project_closure_map definition
     | const ->
       Misc.fatal_errorf
         "Lift_constants.translate_definition_and_resolve_alias: \
@@ -431,10 +447,11 @@ let translate_definitions_and_resolve_alias
     (aliases:Alias_analysis.allocation_point Variable.Map.t)
     (var_to_symbol_tbl:Symbol.t Variable.Tbl.t)
     (var_to_definition_tbl:Alias_analysis.constant_defining_value Variable.Tbl.t)
+    symbol_definition_map
     project_closure_map =
   Variable.Tbl.fold (fun var def map ->
       match translate_definition_and_resolve_alias inconstants aliases
-              var_to_symbol_tbl var_to_definition_tbl
+              var_to_symbol_tbl var_to_definition_tbl symbol_definition_map
               project_closure_map def with
       | None -> map
       | Some def ->
@@ -805,6 +822,7 @@ let lift_constants (program : Flambda.program) ~backend =
       (aliases:Alias_analysis.allocation_point Variable.Map.t)
       (var_to_symbol_tbl:Symbol.t Variable.Tbl.t)
       (var_to_definition_tbl:Alias_analysis.constant_defining_value Variable.Tbl.t)
+      symbol_definition_map
       project_closure_map
   in
   let var_to_block_field_tbl =
