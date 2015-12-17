@@ -289,14 +289,12 @@ static void mark_slice (intnat work)
     }else{
       switch (caml_gc_subphase){
       case Subphase_roots: {
-        intnat work_done;
         gray_vals_cur = gray_vals_ptr;
-        work_done = caml_darken_all_roots_slice (work);
+        work = caml_darken_all_roots_slice (work);
         gray_vals_ptr = gray_vals_cur;
-        if (work_done < work){
+        if (work > 0){
           caml_gc_subphase = Subphase_main;
         }
-        work -= work_done;
       }
         break;
       case Subphase_main: {

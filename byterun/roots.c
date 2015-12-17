@@ -69,7 +69,7 @@ uintnat caml_incremental_roots_count = 1;
 
 intnat caml_darken_all_roots_slice (intnat work)
 {
-  return 0;
+  return work;
 }
 
 /* Note, in byte-code there is only one global root, so [do_globals] is
