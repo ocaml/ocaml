@@ -727,7 +727,7 @@ type open_flag =
 
 val open_out : string -> out_channel
 (** Open the named file for writing, and return a new output channel
-   on that file, positionned at the beginning of the file. The
+   on that file, positioned at the beginning of the file. The
    file is truncated to zero length if it already exists. It
    is created if it does not already exists. *)
 
@@ -838,7 +838,7 @@ val set_binary_mode_out : out_channel -> bool -> unit
 
 val open_in : string -> in_channel
 (** Open the named file for reading, and return a new input channel
-   on that file, positionned at the beginning of the file. *)
+   on that file, positioned at the beginning of the file. *)
 
 val open_in_bin : string -> in_channel
 (** Same as {!Pervasives.open_in}, but the file is opened in binary mode,
