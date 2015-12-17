@@ -819,7 +819,6 @@ let lift_constants (program : Flambda.program) ~backend =
   (* Format.eprintf "lift_constants input:@ %a\n" Flambda.print_program program; *)
   let inconstants =
     Inconstant_idents.inconstants_on_program program
-      ~for_clambda:true
       ~backend
       ~compilation_unit:(Compilation_unit.get_current_exn ())
   in

@@ -451,24 +451,8 @@ module NotConstants(P:Param)(Backend:Backend_intf.S) = struct
     in
     loop program.program_body
 
-  let mark_external_symbol_fields_as_inconstant imported_symbols =
-    Symbol_field.Tbl.iter
-      (fun ((symbol, _) as s) state ->
-         match state with
-         | Not_constant -> ()
-         | Implication deps ->
-           if Symbol.Set.mem symbol imported_symbols then begin
-             (* Relying on it being safe to change a key during iteration *)
-             Symbol_field.Tbl.replace symbol_fields s Not_constant;
-             Queue.push deps mark_queue
-           end)
-      symbol_fields;
-    complete_marking ()
-
   let res =
     mark_program program;
-    mark_external_symbol_fields_as_inconstant
-      (Flambda_utils.imported_symbols program);
     { id = variables;
       closure = closures; }
 
