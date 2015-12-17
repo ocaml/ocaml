@@ -282,12 +282,12 @@ let int_literal =
 let float_literal =
   ['0'-'9'] ['0'-'9' '_']*
   ('.' ['0'-'9' '_']* )?
-  (['e' 'E'] ['+' '-']? ['0'-'9'] ['0'-'9' '_']*)?
+  (['e' 'E'] ['+' '-']? ['0'-'9'] ['0'-'9' '_']* )?
 let hex_float_literal =
   '0' ['x' 'X']
-  ['0'-'9' 'A'-'F' 'a'-'f']['0'-'9' 'A'-'F' 'a'-'f' '_']*
-  ('.' ['0'-'9' 'A'-'F' 'a'-'f' '_']*)?
-  (['p' 'P'] ['+' '-']? ['0'-'9'] ['0'-'9' '_']*)?
+  ['0'-'9' 'A'-'F' 'a'-'f'] ['0'-'9' 'A'-'F' 'a'-'f' '_']*
+  ('.' ['0'-'9' 'A'-'F' 'a'-'f' '_']* )?
+  (['p' 'P'] ['+' '-']? ['0'-'9'] ['0'-'9' '_']* )?
 let literal_modifier = ['G'-'Z' 'g'-'z']
 
 rule token = parse
@@ -412,7 +412,7 @@ rule token = parse
   | "&"  { AMPERSAND }
   | "&&" { AMPERAMPER }
   | "`"  { BACKQUOTE }
-  | "\'"  { QUOTE }
+  | "\'" { QUOTE }
   | "("  { LPAREN }
   | ")"  { RPAREN }
   | "*"  { STAR }
@@ -444,10 +444,10 @@ rule token = parse
   | "}"  { RBRACE }
   | ">}" { GREATERRBRACE }
   | "[@" { LBRACKETAT }
-  | "[%" { LBRACKETPERCENT }
-  | "[%%" { LBRACKETPERCENTPERCENT }
-  | "[@@" { LBRACKETATAT }
+  | "[@@"  { LBRACKETATAT }
   | "[@@@" { LBRACKETATATAT }
+  | "[%"   { LBRACKETPERCENT }
+  | "[%%"  { LBRACKETPERCENTPERCENT }
   | "!"  { BANG }
   | "!=" { INFIXOP0 "!=" }
   | "+"  { PLUS }
