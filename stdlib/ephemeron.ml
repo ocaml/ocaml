@@ -36,10 +36,10 @@ module GenHashTable = struct
     type 'a container
     val create: t -> 'a -> 'a container
     val hash: int -> t -> int
-    val equal: t -> 'a container -> equal
+    val equal: 'a container -> t -> equal
     val get_data: 'a container -> 'a option
     val get_key: 'a container -> t option
-    val set_data: 'a container -> 'a -> unit
+    val set_key_data: 'a container -> t -> 'a -> unit
     val check_key: 'a container -> bool
   end) : SeededS with type key = H.t
   = struct
@@ -161,7 +161,7 @@ module GenHashTable = struct
       let rec remove_bucket = function
         | Empty -> Empty
         | Cons(hk, c, next) when hkey = hk ->
-            begin match H.equal key c with
+            begin match H.equal c key with
             | ETrue -> h.size <- h.size - 1; next
             | EFalse -> Cons(hk, c, remove_bucket next)
             | EDead ->
@@ -182,7 +182,7 @@ module GenHashTable = struct
       | Empty ->
           raise Not_found
       | Cons(hk, c, rest) when hkey = hk  ->
-          begin match H.equal key c with
+          begin match H.equal c key with
           | ETrue ->
               begin match H.get_data c with
               | None ->
@@ -208,7 +208,7 @@ module GenHashTable = struct
       let rec find_in_bucket = function
       | Empty -> []
       | Cons(hk, c, rest) when hkey = hk  ->
-          begin match H.equal key c with
+          begin match H.equal c key with
           | ETrue -> begin match H.get_data c with
               | None ->
                   find_in_bucket rest
@@ -228,13 +228,8 @@ module GenHashTable = struct
       let rec replace_bucket = function
         | Empty -> raise Not_found
         | Cons(hk, c, next) when hkey = hk ->
-            begin match H.equal key c with
-            | ETrue -> begin match H.get_data c with
-                | None ->
-                    (** This case is not impossible, cf remove *)
-                    replace_bucket next
-                | Some d -> H.set_data c info
-              end
+            begin match H.equal c key with
+            | ETrue -> H.set_key_data c key info
             | EFalse | EDead -> replace_bucket next
             end
         | Cons(_,_,next) -> replace_bucket next
@@ -255,7 +250,7 @@ module GenHashTable = struct
       | Empty ->
           false
       | Cons(hk, c, rest) when hk = hkey ->
-          begin match H.equal key c with
+          begin match H.equal c key with
           | ETrue -> true
           | EFalse | EDead -> mem_in_bucket rest
           end
@@ -403,7 +398,7 @@ module K1 = struct
         set_key c k;
         c
       let hash = H.hash
-      let equal k c =
+      let equal c k =
         (** {!get_key_copy} is not used because the equality of the user can be
             the physical equality *)
         match get_key c with
@@ -412,7 +407,10 @@ module K1 = struct
             if H.equal k k' then GenHashTable.ETrue else GenHashTable.EFalse
       let get_data = get_data
       let get_key = get_key
-      let set_data = set_data
+      let set_key_data c k d =
+        unset_data c;
+        set_key c k;
+        set_data c d
       let check_key = check_key
     end)
 
@@ -479,7 +477,7 @@ module K2 = struct
         c
       let hash seed (k1,k2) =
         H1.hash seed k1 + H2.hash seed k2 * 65599
-      let equal (k1,k2) c =
+      let equal c (k1,k2) =
         match get_key1 c, get_key2 c with
         | None, _ | _ , None -> GenHashTable.EDead
         | Some k1', Some k2' ->
@@ -490,7 +488,10 @@ module K2 = struct
         match get_key1 c, get_key2 c with
         | None, _ | _ , None -> None
         | Some k1', Some k2' -> Some (k1', k2')
-      let set_data = set_data
+      let set_key_data c (k1,k2) d =
+        unset_data c;
+        set_key1 c k1; set_key2 c k2;
+        set_data c d
       let check_key c = check_key1 c && check_key2 c
     end)
 
@@ -554,7 +555,7 @@ module Kn = struct
           h := H.hash seed k.(i) * 65599 + !h;
         done;
         !h
-      let equal k c =
+      let equal c k =
         let len  = Array.length k in
         let len' = length c in
         if len != len' then GenHashTable.EFalse
@@ -589,7 +590,12 @@ module Kn = struct
               in
               let a = Array.make len k0 in
               fill a (len-1)
-      let set_data = set_data
+      let set_key_data c k d =
+        unset_data c;
+        for i=0 to Array.length k -1 do
+          set_key c i k.(i);
+        done;
+        set_data c d
       let check_key c =
         let rec check c i =
           i < 0 || (check_key c i && check c (i-1)) in

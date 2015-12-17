@@ -286,7 +286,7 @@ module GenHashTable: sig
 
     val hash: int -> t -> int
     (** same as {!Hashtbl.SeededHashedType} *)
-    val equal: t -> 'a container -> equal
+    val equal: 'a container -> t -> equal
     (** equality predicate used to compare a key with the one in a
         container. Can return [EDead] if the keys in the container are
         dead *)
@@ -298,8 +298,8 @@ module GenHashTable: sig
     (** [get_key cont] returns the keys if they are all alive *)
     val get_data: 'a container -> 'a option
     (** [get_data cont] return the data if it is alive *)
-    val set_data: 'a container -> 'a -> unit
-    (** [set_data cont] modify the data *)
+    val set_key_data: 'a container -> t -> 'a -> unit
+    (** [set_key_data cont] modify the key and data *)
     val check_key: 'a container -> bool
     (** [check_key cont] checks if all the keys contained in the data
         are alive *)
