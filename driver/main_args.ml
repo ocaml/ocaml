@@ -116,7 +116,7 @@ let mk_init f =
 let mk_inline f =
   "-inline", Arg.String f,
     Printf.sprintf "<n>|<round>=<n>[,...]  Aggressiveness of inlining \
-        (default %d, higher numbers mean more aggressive)"
+        (default %.02f, higher numbers mean more aggressive)"
       Clflags.default_inline_threshold
 ;;
 

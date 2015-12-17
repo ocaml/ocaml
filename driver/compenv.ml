@@ -216,7 +216,7 @@ let read_one_param ppf position name v =
 
       (* inlining *)
       | "inline" ->
-        Int_arg_helper.parse v
+        Float_arg_helper.parse v
           "Bad syntax in OCAMLPARAM for 'inline'"
           inline_threshold
       | "inline-toplevel" ->

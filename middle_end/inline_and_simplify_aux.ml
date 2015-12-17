@@ -255,28 +255,28 @@ end
 
 let initial_inlining_threshold ~round : Inlining_cost.inlining_threshold =
   let unscaled =
-    Clflags.Int_arg_helper.get ~key:round !Clflags.inline_threshold
+    Clflags.Float_arg_helper.get ~key:round !Clflags.inline_threshold
   in
   (* CR-soon pchambart: Add a warning if this is too big
      mshinwell: later *)
   Can_inline_if_no_larger_than
-    (unscaled * Inlining_cost.scale_inline_threshold_by)
+    (int_of_float
+      (unscaled *. float_of_int Inlining_cost.scale_inline_threshold_by))
 
 let initial_inlining_toplevel_threshold ~round : Inlining_cost.inlining_threshold =
   let ordinary_threshold =
-    Clflags.Int_arg_helper.get ~key:round !Clflags.inline_threshold
+    Clflags.Float_arg_helper.get ~key:round !Clflags.inline_threshold
   in
   let toplevel_threshold =
     Clflags.Int_arg_helper.get ~key:round !Clflags.inline_toplevel_threshold
   in
   let unscaled =
-    ordinary_threshold + toplevel_threshold
+    (int_of_float ordinary_threshold) + toplevel_threshold
   in
   (* CR-soon pchambart: Add a warning if this is too big
      mshinwell: later *)
   Can_inline_if_no_larger_than
     (unscaled * Inlining_cost.scale_inline_threshold_by)
-
 
 module Result = struct
   module Int = Ext_types.Int

@@ -107,7 +107,7 @@ module Options = Main_args.Make_optcomp_options (struct
   let _I dir = include_dirs := dir :: !include_dirs
   let _impl = impl
   let _inline spec =
-    Int_arg_helper.parse spec ~update:inline_threshold
+    Float_arg_helper.parse spec ~update:inline_threshold
       ~help_text:"Syntax: -inline <n> | <round>=<n>[,...]"
   let _inline_toplevel spec =
     Int_arg_helper.parse spec ~update:inline_toplevel_threshold

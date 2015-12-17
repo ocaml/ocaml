@@ -118,8 +118,8 @@ let dump_linear = ref false             (* -dlinear *)
 let keep_startup_file = ref false       (* -dstartup *)
 let dump_combine = ref false            (* -dcombine *)
 let native_code = ref false             (* set to true under ocamlopt *)
-let default_inline_threshold = 10
-let inline_threshold = ref (Int_arg_helper.default default_inline_threshold)
+let default_inline_threshold = 10.
+let inline_threshold = ref (Float_arg_helper.default default_inline_threshold)
 let inlining_stats = ref false
 let simplify_rounds = ref 1
 let default_unroll = 0
@@ -151,7 +151,8 @@ let keep_docs = ref false              (* -keep-docs *)
 let keep_locs = ref false              (* -keep-locs *)
 let unsafe_string = ref true;;         (* -safe-string / -unsafe-string *)
 
-let default_inline_toplevel_threshold = 16 * default_inline_threshold
+let default_inline_toplevel_threshold =
+  int_of_float (16. *. default_inline_threshold)
 let inline_toplevel_threshold =
   ref (Int_arg_helper.default default_inline_toplevel_threshold)
 
@@ -197,7 +198,7 @@ type inlining_arguments = {
   branch_inline_factor : float option;
   max_inlining_depth : int option;
   unroll : int option;
-  inline_threshold : int option;
+  inline_threshold : float option;
   inline_toplevel_threshold : int option;
 }
 
@@ -241,7 +242,7 @@ let use_inlining_arguments_set ?round (arg:inlining_arguments) =
   set_float branch_inline_factor arg.branch_inline_factor;
   set_int max_inlining_depth arg.max_inlining_depth;
   set_int unroll arg.unroll;
-  set_int inline_threshold arg.inline_threshold;
+  set_float inline_threshold arg.inline_threshold;
   set_int inline_toplevel_threshold arg.inline_toplevel_threshold
 
 (* CR mshinwell for pchambart: please think about these numbers *)
@@ -271,10 +272,11 @@ let classic_arguments = {
   branch_inline_factor = None;
   max_inlining_depth = None;
   unroll = None;
-  (* These are supposed to mimic the size thresholds of the existing
-     compiler.  Unfortunately the actual value that uses is 10/8, which
-     we can't express, but this should be close enough. *)
-  inline_threshold = Some 1;
+  (* [inline_threshold] matches the current compiler's default.
+     Note that this particular fraction can be expressed exactly in
+     floating point. *)
+  inline_threshold = Some (10. /. 8.);
+  (* [inline_toplevel_threshold] is not used in classic mode. *)
   inline_toplevel_threshold = Some 1;
 }
 
@@ -288,7 +290,7 @@ let o2_arguments = {
   branch_inline_factor = None;
   max_inlining_depth = Some 2;
   unroll = None;
-  inline_threshold = Some 25;
+  inline_threshold = Some 25.;
   inline_toplevel_threshold = Some (25 * 8);
 }
 
@@ -302,7 +304,7 @@ let o3_arguments = {
   branch_inline_factor = None;
   max_inlining_depth = Some 3;
   unroll = Some 1;
-  inline_threshold = Some 50;
+  inline_threshold = Some 50.;
   inline_toplevel_threshold = Some (50 * 8);
 }
 

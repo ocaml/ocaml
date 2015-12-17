@@ -42,7 +42,7 @@ type inlining_arguments = {
   branch_inline_factor : float option;
   max_inlining_depth : int option;
   unroll : int option;
-  inline_threshold : int option;
+  inline_threshold : float option;
   inline_toplevel_threshold : int option;
 }
 
@@ -133,8 +133,8 @@ val dump_linear : bool ref
 val keep_startup_file : bool ref
 val dump_combine : bool ref
 val native_code : bool ref
-val default_inline_threshold : int
-val inline_threshold : Int_arg_helper.parsed ref
+val default_inline_threshold : float
+val inline_threshold : Float_arg_helper.parsed ref
 val inlining_stats : bool ref
 val simplify_rounds : int ref
 val default_unroll : int
