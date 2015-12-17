@@ -13,12 +13,14 @@
 
 module type SeededS = sig
   include Hashtbl.SeededS
+  val clean: 'a t -> unit
   val stats_alive: 'a t -> Hashtbl.statistics
     (** same as {!stats} but only count the alive bindings *)
 end
 
 module type S = sig
   include Hashtbl.S
+  val clean: 'a t -> unit
   val stats_alive: 'a t -> Hashtbl.statistics
     (** same as {!stats} but only count the alive bindings *)
 end
@@ -91,19 +93,55 @@ module GenHashTable = struct
     let key_index h hkey =
       hkey land (Array.length h.data - 1)
 
-    let resize indexfun h =
+    let clean h =
+      let rec do_bucket = function
+        | Empty ->
+            Empty
+        | Cons(_, c, rest) when not (H.check_key c) ->
+            h.size <- h.size - 1;
+            do_bucket rest
+        | Cons(hkey, c, rest) ->
+            Cons(hkey, c, do_bucket rest)
+      in
+      let d = h.data in
+      for i = 0 to Array.length d - 1 do
+        d.(i) <- do_bucket d.(i)
+      done
+
+    (** resize is the only function to do the actual cleaning of dead keys
+        (remove does it just because it could).
+
+        The goal is to:
+
+        - not resize infinitely when the actual number of alive keys is
+        bounded but keys are continuously added. That would happen if
+        this function always resize.
+        - not call this function after each addition, that would happen if this
+        function don't resize even when only one key is dead.
+
+        So the algorithm:
+        - clean the keys before resizing
+        - if the number of remaining key is less than half the size of the
+        array, don't resize.
+        - if it is more, resize.
+
+        The second problem remains if the table reaches {!Sys.max_array_length}.
+
+    *)
+    let resize h =
       let odata = h.data in
       let osize = Array.length odata in
       let nsize = osize * 2 in
-      if nsize < Sys.max_array_length then begin
+      clean h;
+      if nsize < Sys.max_array_length && h.size >= osize lsr 1 then begin
         let ndata = Array.make nsize Empty in
-        h.data <- ndata;        (* so that indexfun sees the new bucket count *)
+        h.data <- ndata;       (* so that key_index sees the new bucket count *)
         let rec insert_bucket = function
             Empty -> ()
-          | Cons(key, data, rest) ->
+          | Cons(hkey, data, rest) ->
               insert_bucket rest; (* preserve original order of elements *)
-              let nidx = indexfun h key in
-              ndata.(nidx) <- Cons(key, data, ndata.(nidx)) in
+              let nidx = key_index h hkey in
+              ndata.(nidx) <- Cons(hkey, data, ndata.(nidx)) in
         for i = 0 to osize - 1 do
           insert_bucket odata.(i)
         done
@@ -116,7 +154,7 @@ module GenHashTable = struct
       let bucket = Cons(hkey, container, h.data.(i)) in
       h.data.(i) <- bucket;
       h.size <- h.size + 1;
-      if h.size > Array.length h.data lsl 1 then resize key_index h
+      if h.size > Array.length h.data lsl 1 then resize h
 
     let remove h key =
       let hkey = H.hash h.seed key in
@@ -126,12 +164,20 @@ module GenHashTable = struct
             begin match H.equal key c with
             | ETrue -> h.size <- h.size - 1; next
             | EFalse -> Cons(hk, c, remove_bucket next)
-            | EDead -> remove_bucket next (** The key have been reclaimed *)
+            | EDead ->
+                (** The dead key is automatically removed. It is acceptable
+                    for this function since it already remove a binding *)
+                h.size <- h.size - 1;
+                remove_bucket next
             end
         | Cons(hk,c,next) -> Cons(hk, c, remove_bucket next) in
       let i = key_index h hkey in
       h.data.(i) <- remove_bucket h.data.(i)
 
+    (** {!find} don't remove dead keys because it would be surprising for
+        the user that a read-only function mutate the state (eg. concurrent
+        access). Same for {!iter}, {!fold}, {!mem}.
+    *)
     let rec find_rec key hkey = function
       | Empty ->
           raise Not_found
@@ -142,13 +188,11 @@ module GenHashTable = struct
               | None ->
                   (** This case is not impossible because the gc can run between
                       H.equal and H.get_data *)
-                  (** TODO? remove this dead key *)
                   find_rec key hkey rest
               | Some d -> d
               end
           | EFalse -> find_rec key hkey rest
           | EDead ->
-              (** TODO? remove this dead key *)
               find_rec key hkey rest
           end
       | Cons(_, _, rest) ->
@@ -167,13 +211,11 @@ module GenHashTable = struct
           begin match H.equal key c with
           | ETrue -> begin match H.get_data c with
               | None ->
-                  (** TODO? remove this dead key *)
                   find_in_bucket rest
               | Some d -> d::find_in_bucket rest
             end
           | EFalse -> find_in_bucket rest
           | EDead ->
-              (** TODO? remove this dead key *)
               find_in_bucket rest
           end
       | Cons(_, _, rest) ->
@@ -187,17 +229,13 @@ module GenHashTable = struct
         | Empty -> raise Not_found
         | Cons(hk, c, next) when hkey = hk ->
             begin match H.equal key c with
-          | ETrue -> begin match H.get_data c with
-              | None ->
-                  (** Can this case really happend? *)
-                  (** TODO? remove this dead key *)
-                  replace_bucket next
-              | Some d -> H.set_data c info
-            end
-          | EFalse -> replace_bucket next
-          | EDead ->
-              (** TODO? remove this dead key *)
-              replace_bucket next
+            | ETrue -> begin match H.get_data c with
+                | None ->
+                    (** This case is not impossible, cf remove *)
+                    replace_bucket next
+                | Some d -> H.set_data c info
+              end
+            | EFalse | EDead -> replace_bucket next
             end
         | Cons(_,_,next) -> replace_bucket next
       in
@@ -209,7 +247,7 @@ module GenHashTable = struct
         let container = H.create key info in
         h.data.(i) <- Cons(hkey, container, l);
         h.size <- h.size + 1;
-        if h.size > Array.length h.data lsl 1 then resize key_index h
+        if h.size > Array.length h.data lsl 1 then resize h
 
     let mem h key =
       let hkey = H.hash h.seed key in
@@ -219,10 +257,7 @@ module GenHashTable = struct
       | Cons(hk, c, rest) when hk = hkey ->
           begin match H.equal key c with
           | ETrue -> true
-          | EFalse -> mem_in_bucket rest
-          | EDead ->
-              (** TODO? remove this dead key *)
-              mem_in_bucket rest
+          | EFalse | EDead -> mem_in_bucket rest
           end
       | Cons(hk, c, rest) -> mem_in_bucket rest in
       mem_in_bucket h.data.(key_index h hkey)
@@ -233,7 +268,7 @@ module GenHashTable = struct
             ()
         | Cons(_, c, rest) ->
             begin match H.get_key c, H.get_data c with
-            | None, _ | _, None -> (** TODO? remove this dead key? *) ()
+            | None, _ | _, None -> ()
             | Some k, Some d -> f k d
             end; do_bucket rest in
       let d = h.data in
@@ -248,7 +283,7 @@ module GenHashTable = struct
             accu
         | Cons(_, c, rest) ->
             let accu = begin match H.get_key c, H.get_data c with
-              | None, _ | _, None -> (** TODO? remove this dead key? *) accu
+              | None, _ | _, None -> accu
               | Some k, Some d -> f k d accu
             end in
             do_bucket rest accu  in

@@ -51,6 +51,8 @@
 
 module type S = sig
   include Hashtbl.S
+  val clean: 'a t -> unit
+  (** remove all dead bindings. Done automatically during automatic resizing. *)
   val stats_alive: 'a t -> Hashtbl.statistics
   (** same as {!Hashtbl.SeededS.stats} but only count the alive bindings *)
 end
@@ -62,6 +64,8 @@ end
 
 module type SeededS = sig
   include Hashtbl.SeededS
+  val clean: 'a t -> unit
+  (** remove all dead bindings. Done automatically during automatic resizing. *)
   val stats_alive: 'a t -> Hashtbl.statistics
   (** same as {!Hashtbl.SeededS.stats} but only count the alive bindings *)
 end
