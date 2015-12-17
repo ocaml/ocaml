@@ -236,6 +236,8 @@ Toplevel and debugger:
   initialization (Gabriel Scherer)
 - PR#7081: report preprocessor warnings in the toplevel
   (Valentin Gatien-Baron, review by Jérémie Dimino)
+- PR#7098: Loss of ppx context in toplevel after an exception
+  (Alain Frisch, report by whitequark)
 
 Other libraries:
 * Unix library: channels created by Unix.in_channel_of_descr or
