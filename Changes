@@ -406,6 +406,9 @@ Bug fixes:
   (Marc Lasson, review by Alain Frisch)
 - GPR#313: Prevent quadratic cases in CSE
   (Pierre Chambart, review by Xavier Leroy)
+- PR#6795, PR#6996: Make ocamldep report errors passed in
+  [%ocaml.error] extension points
+  (Jérémie Dimino)
 
 Features wishes:
 - PR#4518, GPR#29: change location format for reporting errors in ocamldoc
