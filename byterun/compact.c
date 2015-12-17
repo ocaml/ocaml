@@ -492,7 +492,7 @@ void caml_compact_heap_maybe (void)
 
 #ifdef HAS_HUGE_PAGES
   if (caml_use_huge_pages
-      && Bsize_wsize (caml_stat_heap_size) <= HUGE_PAGE_SIZE)
+      && Bsize_wsize (caml_stat_heap_wsz) <= HUGE_PAGE_SIZE)
     return;
 #endif
 
