@@ -236,6 +236,8 @@ Toplevel and debugger:
   initialization (Gabriel Scherer)
 - PR#7081: report preprocessor warnings in the toplevel
   (Valentin Gatien-Baron, review by Jérémie Dimino)
+- PR#7098: Loss of ppx context in toplevel after an exception
+  (Alain Frisch, report by whitequark)
 
 Other libraries:
 * Unix library: channels created by Unix.in_channel_of_descr or
@@ -387,6 +389,7 @@ Bug fixes:
 - PR#7042 and GPR#295: CSE optimization confuses the FP literals +0.0 and -0.0
   (Xavier Leroy)
 - PR#7082: Object type in recursive module's `with` annotation
+- PR#7096: ocamldoc uses an incorrect subscript/superscript style
 - GPR#205: Clear caml_backtrace_last_exn before registering as root
   (report and fix by Frederic Bour)
 - GPR#220: minor -dsource error on recursive modules
@@ -405,6 +408,9 @@ Bug fixes:
   (Marc Lasson, review by Alain Frisch)
 - GPR#313: Prevent quadratic cases in CSE
   (Pierre Chambart, review by Xavier Leroy)
+- PR#6795, PR#6996: Make ocamldep report errors passed in
+  [%ocaml.error] extension points
+  (Jérémie Dimino)
 
 Features wishes:
 - PR#4518, GPR#29: change location format for reporting errors in ocamldoc

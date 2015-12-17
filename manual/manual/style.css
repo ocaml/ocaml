@@ -4,8 +4,6 @@ a:hover {color : Red; text-decoration : none; background-color: #5FFF88}
 a:active {color : Red; text-decoration : underline; }
 .keyword { font-weight : bold ; color : Red }
 .keywordsign { color : #C04600 }
-.superscript { font-size : 4 }
-.subscript { font-size : 4 }
 .comment { color : Green }
 .constructor { color : Blue }
 .type { color : #5C6585 }

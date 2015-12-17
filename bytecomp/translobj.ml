@@ -106,16 +106,15 @@ let transl_label_init expr =
   reset_labels ();
   expr
 
-let transl_store_label_init size f arg =
-  let glob = Lprim(Pgetglobal (Ident.create_persistent "#CURRENT#"), []) in
-  method_cache := Lprim(Pfield size, [glob]);
+let transl_store_label_init glob size f arg =
+  method_cache := Lprim(Pfield size, [Lprim(Pgetglobal glob, [])]);
   let expr = f arg in
   let (size, expr) =
     if !method_count = 0 then (size, expr) else
     (size+1,
      Lsequence(
      Lprim(Psetfield(size, false),
-           [glob;
+           [Lprim(Pgetglobal glob, []);
             Lprim (Pccall prim_makearray, [int !method_count; int 0])]),
      expr))
   in
