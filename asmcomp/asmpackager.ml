@@ -122,6 +122,18 @@ let make_package_object ppf members targetobj targetname coercion
 
 (* Make the .cmx file for the package *)
 
+let get_export_info ui =
+  assert(Config.flambda);
+  match ui.ui_export_info with
+  | Clambda _ -> assert false
+  | Flambda info -> info
+
+let get_approx ui =
+  assert(not Config.flambda);
+  match ui.ui_export_info with
+  | Flambda _ -> assert false
+  | Clambda info -> info
+
 let build_package_cmx members cmxfile =
   let unit_names =
     List.map (fun m -> m.pm_name) members in
@@ -144,18 +156,34 @@ let build_package_cmx members cmxfile =
          Compilation_unit.Set.add
            (Compilenv.unit_for_global unit_id) set)
       Compilation_unit.Set.empty units in
-  let units = List.map (fun info ->
-      { info with
-        ui_export_info =
-          Export_info_for_pack.import_for_pack ~pack_units
-            ~pack:(Compilenv.current_unit ()) info.ui_export_info })
-      units in
+  let units =
+    if Config.flambda then
+      List.map (fun info ->
+          { info with
+            ui_export_info =
+              Flambda
+                (Export_info_for_pack.import_for_pack ~pack_units
+                   ~pack:(Compilenv.current_unit ())
+                   (get_export_info info)) })
+        units
+    else
+      units
+  in
   let ui = Compilenv.current_unit_infos() in
   let ui_export_info =
-    List.fold_left (fun acc info -> Export_info.merge acc info.ui_export_info)
-      (Export_info_for_pack.import_for_pack ~pack_units
-         ~pack:(Compilenv.current_unit ()) ui.ui_export_info)
-      units in
+    if Config.flambda then
+      let ui_export_info =
+        List.fold_left (fun acc info ->
+            Export_info.merge acc (get_export_info info))
+          (Export_info_for_pack.import_for_pack ~pack_units
+             ~pack:(Compilenv.current_unit ())
+             (get_export_info ui))
+          units
+      in
+      Flambda ui_export_info
+    else
+      Clambda (get_approx ui)
+  in
   Export_info_for_pack.clear_import_state ();
   let pkg_infos =
     { ui_name = ui.ui_name;

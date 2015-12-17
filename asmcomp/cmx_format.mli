@@ -24,6 +24,10 @@
    The .cmx file contains these infos (as an externed record) plus a MD5
    of these infos *)
 
+type export_info =
+  | Clambda of Clambda.value_approximation
+  | Flambda of Export_info.t
+
 type unit_infos =
   { mutable ui_name: string;                    (* Name of unit implemented *)
     mutable ui_symbol: string;            (* Prefix for symbols *)
@@ -34,7 +38,7 @@ type unit_infos =
     mutable ui_curry_fun: int list;             (* Currying functions needed *)
     mutable ui_apply_fun: int list;             (* Apply functions needed *)
     mutable ui_send_fun: int list;              (* Send functions needed *)
-    mutable ui_export_info: Export_info.t;
+    mutable ui_export_info: export_info;
     mutable ui_force_link: bool }               (* Always linked *)
 
 (* Each .a library has a matching .cmxa file that provides the following

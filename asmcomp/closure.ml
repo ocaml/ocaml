@@ -83,6 +83,7 @@ let occurs_var var u =
     | Uassign(id, u) -> id = var || occurs u
     | Usend(_, met, obj, args, _) ->
         occurs met || occurs obj || List.exists occurs args
+    | Uunreachable -> false
   and occurs_array a =
     try
       for i = 0 to Array.length a - 1 do
@@ -157,15 +158,22 @@ let prim_size prim args =
   | Psetglobal id -> 1
   | Pmakeblock(tag, mut) -> 5 + List.length args
   | Pfield f -> 1
-  | Psetfield(f, isptr) -> if isptr then 4 else 1
+  | Psetfield(f, isptr, init) ->
+    begin match init with
+    | Initialization -> 1  (* never causes a write barrier hit *)
+    | Assignment ->
+      match isptr with
+      | Pointer -> 4
+      | Immediate -> 1
+    end
   | Pfloatfield f -> 1
-  | Psetfloatfield f -> 1
+  | Psetfloatfield _ -> 1
   | Pduprecord _ -> 10 + List.length args
   | Pccall p -> (if p.prim_alloc then 10 else 4) + List.length args
   | Praise _ -> 4
   | Pstringlength -> 5
   | Pstringrefs | Pstringsets -> 6
-  | Pmakearray kind -> 5 + List.length args
+  | Pmakearray _ -> 5 + List.length args
   | Parraylength kind -> if kind = Pgenarray then 6 else 2
   | Parrayrefu kind -> if kind = Pgenarray then 12 else 2
   | Parraysetu kind -> if kind = Pgenarray then 16 else 4
@@ -234,6 +242,7 @@ let lambda_smaller lam threshold =
     | Usend(_, met, obj, args, _) ->
         size := !size + 8;
         lambda_size met; lambda_size obj; lambda_list_size args
+    | Uunreachable -> ()
   and lambda_list_size l = List.iter lambda_size l
   and lambda_array_size a = Array.iter lambda_size a in
   try
@@ -257,7 +266,7 @@ let rec is_pure_clambda = function
 
 let make_const c = (Uconst c, Value_const c)
 let make_const_ref c =
-  make_const(Uconst_ref(Compilenv.new_structured_constant ~shared:true c, c))
+  make_const(Uconst_ref(Compilenv.new_structured_constant ~shared:true c, Some c))
 let make_const_int n = make_const (Uconst_int n)
 let make_const_ptr n = make_const (Uconst_ptr n)
 let make_const_bool b = make_const_ptr(if b then 1 else 0)
@@ -319,7 +328,7 @@ let simplif_arith_prim_pure fpc p (args, approxs) dbg =
       | _ -> default
       end
   (* float *)
-  | [Value_const(Uconst_ref(_, Uconst_float n1))] when fpc ->
+  | [Value_const(Uconst_ref(_, Some (Uconst_float n1)))] when fpc ->
       begin match p with
       | Pintoffloat -> make_const_int (int_of_float n1)
       | Pnegfloat -> make_const_float (-. n1)
@@ -327,8 +336,8 @@ let simplif_arith_prim_pure fpc p (args, approxs) dbg =
       | _ -> default
       end
   (* float, float *)
-  | [Value_const(Uconst_ref(_, Uconst_float n1));
-     Value_const(Uconst_ref(_, Uconst_float n2))] when fpc ->
+  | [Value_const(Uconst_ref(_, Some (Uconst_float n1)));
+     Value_const(Uconst_ref(_, Some (Uconst_float n2)))] when fpc ->
       begin match p with
       | Paddfloat -> make_const_float (n1 +. n2)
       | Psubfloat -> make_const_float (n1 -. n2)
@@ -338,7 +347,7 @@ let simplif_arith_prim_pure fpc p (args, approxs) dbg =
       | _ -> default
       end
   (* nativeint *)
-  | [Value_const(Uconst_ref(_, Uconst_nativeint n))] ->
+  | [Value_const(Uconst_ref(_, Some (Uconst_nativeint n)))] ->
       begin match p with
       | Pintofbint Pnativeint -> make_const_int (Nativeint.to_int n)
       | Pcvtbint(Pnativeint, Pint32) -> make_const_int32 (Nativeint.to_int32 n)
@@ -347,8 +356,8 @@ let simplif_arith_prim_pure fpc p (args, approxs) dbg =
       | _ -> default
       end
   (* nativeint, nativeint *)
-  | [Value_const(Uconst_ref(_, Uconst_nativeint n1));
-     Value_const(Uconst_ref(_, Uconst_nativeint n2))] ->
+  | [Value_const(Uconst_ref(_, Some (Uconst_nativeint n1)));
+     Value_const(Uconst_ref(_, Some (Uconst_nativeint n2)))] ->
       begin match p with
       | Paddbint Pnativeint -> make_const_natint (Nativeint.add n1 n2)
       | Psubbint Pnativeint -> make_const_natint (Nativeint.sub n1 n2)
@@ -364,7 +373,7 @@ let simplif_arith_prim_pure fpc p (args, approxs) dbg =
       | _ -> default
       end
   (* nativeint, int *)
-  | [Value_const(Uconst_ref(_, Uconst_nativeint n1));
+  | [Value_const(Uconst_ref(_, Some (Uconst_nativeint n1)));
      Value_const(Uconst_int n2)] ->
       begin match p with
       | Plslbint Pnativeint when 0 <= n2 && n2 < 8 * Arch.size_int ->
@@ -376,7 +385,7 @@ let simplif_arith_prim_pure fpc p (args, approxs) dbg =
       | _ -> default
       end
   (* int32 *)
-  | [Value_const(Uconst_ref(_, Uconst_int32 n))] ->
+  | [Value_const(Uconst_ref(_, Some (Uconst_int32 n)))] ->
       begin match p with
       | Pintofbint Pint32 -> make_const_int (Int32.to_int n)
       | Pcvtbint(Pint32, Pnativeint) -> make_const_natint (Nativeint.of_int32 n)
@@ -385,8 +394,8 @@ let simplif_arith_prim_pure fpc p (args, approxs) dbg =
       | _ -> default
       end
   (* int32, int32 *)
-  | [Value_const(Uconst_ref(_, Uconst_int32 n1));
-     Value_const(Uconst_ref(_, Uconst_int32 n2))] ->
+  | [Value_const(Uconst_ref(_, Some (Uconst_int32 n1)));
+     Value_const(Uconst_ref(_, Some (Uconst_int32 n2)))] ->
       begin match p with
       | Paddbint Pint32 -> make_const_int32 (Int32.add n1 n2)
       | Psubbint Pint32 -> make_const_int32 (Int32.sub n1 n2)
@@ -400,7 +409,7 @@ let simplif_arith_prim_pure fpc p (args, approxs) dbg =
       | _ -> default
       end
   (* int32, int *)
-  | [Value_const(Uconst_ref(_, Uconst_int32 n1));
+  | [Value_const(Uconst_ref(_, Some (Uconst_int32 n1)));
      Value_const(Uconst_int n2)] ->
       begin match p with
       | Plslbint Pint32 when 0 <= n2 && n2 < 32 ->
@@ -412,7 +421,7 @@ let simplif_arith_prim_pure fpc p (args, approxs) dbg =
       | _ -> default
       end
   (* int64 *)
-  | [Value_const(Uconst_ref(_, Uconst_int64 n))] ->
+  | [Value_const(Uconst_ref(_, Some (Uconst_int64 n)))] ->
       begin match p with
       | Pintofbint Pint64 -> make_const_int (Int64.to_int n)
       | Pcvtbint(Pint64, Pint32) -> make_const_int32 (Int64.to_int32 n)
@@ -421,8 +430,8 @@ let simplif_arith_prim_pure fpc p (args, approxs) dbg =
       | _ -> default
       end
   (* int64, int64 *)
-  | [Value_const(Uconst_ref(_, Uconst_int64 n1));
-     Value_const(Uconst_ref(_, Uconst_int64 n2))] ->
+  | [Value_const(Uconst_ref(_, Some (Uconst_int64 n1)));
+     Value_const(Uconst_ref(_, Some (Uconst_int64 n2)))] ->
       begin match p with
       | Paddbint Pint64 -> make_const_int64 (Int64.add n1 n2)
       | Psubbint Pint64 -> make_const_int64 (Int64.sub n1 n2)
@@ -436,7 +445,7 @@ let simplif_arith_prim_pure fpc p (args, approxs) dbg =
       | _ -> default
       end
   (* int64, int *)
-  | [Value_const(Uconst_ref(_, Uconst_int64 n1));
+  | [Value_const(Uconst_ref(_, Some (Uconst_int64 n1)));
      Value_const(Uconst_int n2)] ->
       begin match p with
       | Plslbint Pint64 when 0 <= n2 && n2 < 64 ->
@@ -454,7 +463,8 @@ let simplif_arith_prim_pure fpc p (args, approxs) dbg =
 
 let field_approx n = function
   | Value_tuple a when n < Array.length a -> a.(n)
-  | Value_const (Uconst_ref(_, Uconst_block(_, l))) when n < List.length l ->
+  | Value_const (Uconst_ref(_, Some (Uconst_block(_, l))))
+    when n < List.length l ->
       Value_const (List.nth l n)
   | _ -> Value_unknown
 
@@ -471,19 +481,19 @@ let simplif_prim_pure fpc p (args, approxs) dbg =
         let name =
           Compilenv.new_structured_constant cst ~shared:true
         in
-        make_const (Uconst_ref (name, cst))
+        make_const (Uconst_ref (name, Some cst))
       with Exit ->
         (Uprim(p, args, dbg), Value_tuple (Array.of_list approxs))
       end
   (* Field access *)
-  | Pfield n, _, [ Value_const(Uconst_ref(_, Uconst_block(_, l))) ]
+  | Pfield n, _, [ Value_const(Uconst_ref(_, Some (Uconst_block(_, l)))) ]
     when n < List.length l ->
       make_const (List.nth l n)
   | Pfield n, [ Uprim(Pmakeblock _, ul, _) ], [approx]
     when n < List.length ul ->
       (List.nth ul n, field_approx n approx)
   (* Strings *)
-  | Pstringlength, _, [ Value_const(Uconst_ref(_, Uconst_string s)) ] ->
+  | Pstringlength, _, [ Value_const(Uconst_ref(_, Some (Uconst_string s))) ] ->
       make_const_int (String.length s)
   (* Identity *)
   | Pidentity, [arg1], [app1] ->
@@ -601,7 +611,7 @@ let rec substitute fpc sb ulam =
            in this substitute function.
         *)
         match sarg with
-        | Uconst (Uconst_ref (_,  Uconst_block (tag, _))) ->
+        | Uconst (Uconst_ref (_,  Some (Uconst_block (tag, _)))) ->
             find_action sw.us_index_blocks sw.us_actions_blocks tag
         | Uconst (Uconst_ptr tag) ->
             find_action sw.us_index_consts sw.us_actions_consts tag
@@ -664,6 +674,8 @@ let rec substitute fpc sb ulam =
   | Usend(k, u1, u2, ul, dbg) ->
       Usend(k, substitute fpc sb u1, substitute fpc sb u2,
             List.map (substitute fpc sb) ul, dbg)
+  | Uunreachable ->
+      Uunreachable
 
 (* Perform an inline expansion *)
 
@@ -837,7 +849,7 @@ let rec close fenv cenv = function
         let name =
           Compilenv.new_structured_constant cst ~shared
         in
-        Uconst_ref (name, cst)
+        Uconst_ref (name, Some cst)
       in
       let rec transl = function
         | Const_base(Const_int n) -> Uconst_int n
@@ -987,11 +999,12 @@ let rec close fenv cenv = function
       let (ulam, approx) = close fenv cenv lam in
       check_constant_result lam (Uprim(Pfield n, [ulam], Debuginfo.none))
                             (field_approx n approx)
-  | Lprim(Psetfield(n, _), [Lprim(Pgetglobal id, []); lam]) ->
+  | Lprim(Psetfield(n, _, init), [Lprim(Pgetglobal id, []); lam]) ->
       let (ulam, approx) = close fenv cenv lam in
       if approx <> Value_unknown then
         (!global_approx).(n) <- approx;
-      (Uprim(Psetfield(n, false), [getglobal id; ulam], Debuginfo.none),
+      (Uprim(Psetfield(n, Pointer, Initialization),
+             [getglobal id; ulam], Debuginfo.none),
        Value_unknown)
   | Lprim(Praise k, [Levent(arg, ev)]) ->
       let (ulam, approx) = close fenv cenv arg in
@@ -1202,7 +1215,11 @@ and close_functions fenv cenv fun_defs =
     in
     let threshold =
       match inline_attribute with
-      | Default_inline -> !Clflags.inline_threshold + n
+      | Default_inline ->
+          let inline_threshold =
+            Clflags.Int_arg_helper.get ~key:0 !Clflags.inline_threshold
+          in
+          inline_threshold + n
       | Always_inline -> max_int
       | Never_inline -> min_int
     in
@@ -1312,15 +1329,17 @@ let collect_exported_structured_constants a =
     | Value_const c -> const c
     | Value_unknown | Value_global_field _ -> ()
   and const = function
-    | Uconst_ref (s, c) ->
+    | Uconst_ref (s, (Some c)) ->
         Compilenv.add_exported_constant s;
         structured_constant c
+    | Uconst_ref (s, None) -> assert false (* Cannot be generated *)
     | Uconst_int _ | Uconst_ptr _ -> ()
-  and structured_constant = function
+  and structured_constant : Clambda.ustructured_constant -> _ = function
     | Uconst_block (_, ul) -> List.iter const ul
     | Uconst_float _ | Uconst_int32 _
     | Uconst_int64 _ | Uconst_nativeint _
     | Uconst_float_array _ | Uconst_string _ -> ()
+    | Uconst_closure _ -> assert false (* Cannot be generated *)
   and ulam = function
     | Uvar _ -> ()
     | Uconst c -> const c
@@ -1350,6 +1369,7 @@ let collect_exported_structured_constants a =
     | Ufor (_, u1, u2, _, u3) -> ulam u1; ulam u2; ulam u3
     | Uassign (_, u) -> ulam u
     | Usend (_, u1, u2, ul, _) -> ulam u1; ulam u2; List.iter ulam ul
+    | Uunreachable -> ()
   in
   approx a
 

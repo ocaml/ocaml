@@ -66,6 +66,12 @@ let exported_constants = Hashtbl.create 17
 let current_unit_id = ref (Ident.create_persistent "___UNINITIALIZED___")
 let merged_environment = ref Export_info.empty
 
+let default_ui_export_info =
+  if Config.flambda then
+    Cmx_format.Flambda Export_info.empty
+  else
+    Cmx_format.Clambda Value_unknown
+
 let current_unit =
   { ui_name = "";
     ui_symbol = "";
@@ -76,7 +82,7 @@ let current_unit =
     ui_apply_fun = [];
     ui_send_fun = [];
     ui_force_link = false;
-    ui_export_info = Export_info.empty }
+    ui_export_info = default_ui_export_info }
 
 let symbolname_for_pack pack name =
   match pack with
@@ -119,7 +125,7 @@ let reset ?packname name =
   current_unit.ui_force_link <- false;
   Hashtbl.clear exported_constants;
   structured_constants := structured_constants_empty;
-  current_unit.ui_export_info <- Export_info.empty;
+  current_unit.ui_export_info <- default_ui_export_info;
   merged_environment := Export_info.empty;
   Hashtbl.clear export_infos_table;
   let compilation_unit =
@@ -202,6 +208,29 @@ let get_global_info global_ident = (
 let cache_unit_info ui =
   Hashtbl.add global_infos_table ui.ui_name (Some ui)
 
+(* Return the approximation of a global identifier *)
+
+let get_clambda_approx ui =
+  assert(not Config.flambda);
+  match ui.ui_export_info with
+  | Flambda _ -> assert false
+  | Clambda approx -> approx
+
+let toplevel_approx :
+  (string, Clambda.value_approximation) Hashtbl.t = Hashtbl.create 16
+
+let record_global_approx_toplevel () =
+  Hashtbl.add toplevel_approx current_unit.ui_name
+    (get_clambda_approx current_unit)
+
+let global_approx id =
+  if Ident.is_predef_exn id then Clambda.Value_unknown
+  else try Hashtbl.find toplevel_approx (Ident.name id)
+  with Not_found ->
+    match get_global_info id with
+      | None -> Clambda.Value_unknown
+      | Some ui -> get_clambda_approx ui
+
 (* Return the symbol used to refer to a global identifier *)
 
 let symbol_for_global id =
@@ -212,6 +241,12 @@ let symbol_for_global id =
     | None -> make_symbol ~unitname:(Ident.name id) None
     | Some ui -> make_symbol ~unitname:ui.ui_symbol None
   end
+
+(* Register the approximation of the module being compiled *)
+
+let set_global_approx approx =
+  assert(not Config.flambda);
+  current_unit.ui_export_info <- Clambda approx
 
 let unit_for_global id =
   let sym_label = Linkage_name.create (symbol_for_global id) in
@@ -235,8 +270,15 @@ let symbol_for_global' id =
 
 (* Exporting and importing cross module information *)
 
+let get_flambda_export_info ui =
+  assert(Config.flambda);
+  match ui.ui_export_info with
+  | Clambda _ -> assert false
+  | Flambda ei -> ei
+
 let set_export_info export_info =
-  current_unit.ui_export_info <- export_info
+  assert(Config.flambda);
+  current_unit.ui_export_info <- Flambda export_info
 
 let approx_for_global comp_unit =
   let id = Compilation_unit.get_persistent_ident comp_unit in
@@ -251,7 +293,7 @@ let approx_for_global comp_unit =
   | Not_found ->
     let exported = match get_global_info id with
       | None -> Export_info.empty
-      | Some ui -> ui.ui_export_info in
+      | Some ui -> get_flambda_export_info ui in
     Hashtbl.add export_infos_table modname exported;
     merged_environment := Export_info.merge !merged_environment exported;
     exported
@@ -312,6 +354,12 @@ let new_const_symbol ?name () =
     | Some name -> name ^ "_" ^ string_of_int !const_label
   in
   make_symbol (Some name)
+
+let snapshot () = !structured_constants
+let backtrack s = structured_constants := s
+
+let add_exported_constant s =
+  Hashtbl.replace exported_constants s ()
 
 let canonical_symbol lbl =
   try StringMap.find lbl (!structured_constants).strcst_original
