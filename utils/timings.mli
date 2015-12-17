@@ -19,7 +19,7 @@ type build_kind =
   | Pack of string
   | Startup
 
-type part =
+type compiler_pass =
   | All
   | Parsing of file
   | Preprocessing of file
@@ -45,14 +45,14 @@ type part =
 val reset : unit -> unit
 (** erase all recorded times *)
 
-val get : part -> float option
-(** returns the runtime in seconds of a completed part *)
+val get : compiler_pass -> float option
+(** returns the runtime in seconds of a completed pass *)
 
-val time : part -> ('a -> 'b) -> 'a -> 'b
-(** [time part f arg] Record the runtime of [f arg] *)
+val time : compiler_pass -> ('a -> 'b) -> 'a -> 'b
+(** [time pass f arg] Record the runtime of [f arg] *)
 
-val accumulate_time : part -> ('a -> 'b) -> 'a -> 'b
-(** Like time for parts that can run multiple times *)
+val accumulate_time : compiler_pass -> ('a -> 'b) -> 'a -> 'b
+(** Like time for passes that can run multiple times *)
 
 val print : Format.formatter -> unit
 (** Prints all recorded timings to the formatter. *)

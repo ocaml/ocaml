@@ -17,7 +17,7 @@ type build_kind =
   | Pack of string
   | Startup
 
-type part =
+type compiler_pass =
   | All
   | Parsing of file
   | Preprocessing of file
@@ -40,56 +40,56 @@ type part =
   | Scheduling of build_kind
   | Emit of build_kind
 
-let timings : (part, float * float option) Hashtbl.t = Hashtbl.create 20
+let timings : (compiler_pass, float * float option) Hashtbl.t = Hashtbl.create 20
 let reset () = Hashtbl.clear timings
 
-let start part =
+let start pass =
   (* Cannot assert it is not here: a source file can be compiled
      multiple times on the same command line *)
-  (* assert(not (Hashtbl.mem timings part)); *)
+  (* assert(not (Hashtbl.mem timings pass)); *)
   let time = Sys.time () in
-  Hashtbl.add timings part (time, None)
+  Hashtbl.add timings pass (time, None)
 
-let stop part =
-  assert(Hashtbl.mem timings part);
+let stop pass =
+  assert(Hashtbl.mem timings pass);
   let time = Sys.time () in
-  let (start, stop) = Hashtbl.find timings part in
+  let (start, stop) = Hashtbl.find timings pass in
   assert(stop = None);
-  Hashtbl.replace timings part (start, Some (time -. start))
+  Hashtbl.replace timings pass (start, Some (time -. start))
 
-let time part f x =
-  start part;
+let time pass f x =
+  start pass;
   let r = f x in
-  stop part;
+  stop pass;
   r
 
-let restart part =
+let restart pass =
   let previous_duration =
-    match Hashtbl.find timings part with
+    match Hashtbl.find timings pass with
     | exception Not_found -> 0.
     | (_, Some duration) -> duration
     | _, None -> assert false
   in
   let time = Sys.time () in
-  Hashtbl.replace timings part (time, Some previous_duration)
+  Hashtbl.replace timings pass (time, Some previous_duration)
 
-let accumulate part =
+let accumulate pass =
   let time = Sys.time () in
-  match Hashtbl.find timings part with
+  match Hashtbl.find timings pass with
   | exception Not_found -> assert false
   | _, None -> assert false
   | (start, Some duration) ->
     let duration = duration +. (time -. start) in
-    Hashtbl.replace timings part (start, Some duration)
+    Hashtbl.replace timings pass (start, Some duration)
 
-let accumulate_time part f x =
-  restart part;
+let accumulate_time pass f x =
+  restart pass;
   let r = f x in
-  accumulate part;
+  accumulate pass;
   r
 
-let get part =
-  match Hashtbl.find timings part with
+let get pass =
+  match Hashtbl.find timings pass with
   | _start, Some duration -> Some duration
   | _, None -> None
   | exception Not_found -> None
@@ -99,7 +99,7 @@ let kind_name = function
   | Pack p -> Printf.sprintf "pack(%s)" p
   | Startup -> "startup"
 
-let part_name = function
+let pass_name = function
   | All -> "all"
   | Parsing file -> Printf.sprintf "parsing(%s)" file
   | Preprocessing file -> Printf.sprintf "preprocessing(%s)" file
@@ -123,17 +123,17 @@ let part_name = function
   | Emit k -> Printf.sprintf "emit(%s)" (kind_name k)
 
 let timings_list () =
-  let l = Hashtbl.fold (fun part times l -> (part, times) :: l) timings [] in
+  let l = Hashtbl.fold (fun pass times l -> (pass, times) :: l) timings [] in
   List.sort (fun (_, (start1, _)) (_, (start2, _)) -> compare start1 start2) l
 
 let print ppf =
   let current_time = Sys.time () in
-  List.iter (fun (part, (start, stop)) ->
+  List.iter (fun (pass, (start, stop)) ->
       match stop with
       | Some duration ->
-        Format.fprintf ppf "%s: %.03fs@." (part_name part) duration
+        Format.fprintf ppf "%s: %.03fs@." (pass_name pass) duration
       | None ->
-        Format.fprintf ppf "%s: running since %.03fs@." (part_name part)
+        Format.fprintf ppf "%s: running since %.03fs@." (pass_name pass)
           (current_time -. start))
     (timings_list ())
 
