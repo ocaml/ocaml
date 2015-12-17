@@ -429,7 +429,7 @@ end
 module K2 = struct
   type ('k1, 'k2, 'd) t = ObjEph.t
 
-  let create () : ('k1,'k2,'d) t = ObjEph.create 1
+  let create () : ('k1,'k2,'d) t = ObjEph.create 2
 
   let get_key1 (t:('k1,'k2,'d) t) : 'k1 option = obj_opt (ObjEph.get_key t 0)
   let get_key1_copy (t:('k1,'k2,'d) t) : 'k1 option =
