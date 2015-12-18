@@ -36,13 +36,13 @@ let ignore_meth_kind (_ : Lambda.meth_kind) = ()
 
 let closure_environment_ident (ufunction:Clambda.ufunction) =
   (* The argument after the arity is the environment *)
-  match List.nth ufunction.params ufunction.arity with
-  | exception Not_found ->
-      (* closed function, no environment *)
+  if List.length ufunction.params = ufunction.arity + 1 then
+    let env_var = List.nth ufunction.params ufunction.arity in
+    assert(Ident.name env_var = "env");
+    Some env_var
+  else
+    (* closed function, no environment *)
     None
-  | var ->
-    assert(Ident.name var = "env");
-    Some var
 
 let make_ident_info (clam : Clambda.ulambda) : ident_info =
   let t : int Ident.Tbl.t = Ident.Tbl.create 42 in
