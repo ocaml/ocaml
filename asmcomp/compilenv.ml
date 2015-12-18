@@ -46,7 +46,6 @@ type structured_constants =
   {
     strcst_shared: string CstMap.t;
     strcst_original: string StringMap.t;
-    strcst_alias: string list StringMap.t;
     strcst_all: (string * Clambda.ustructured_constant) list;
   }
 
@@ -54,7 +53,6 @@ let structured_constants_empty  =
   {
     strcst_shared = CstMap.empty;
     strcst_original = StringMap.empty;
-    strcst_alias = StringMap.empty;
     strcst_all = [];
   }
 
@@ -366,7 +364,7 @@ let canonical_symbol lbl =
   with Not_found -> lbl
 
 let new_structured_constant cst ~shared =
-  let {strcst_shared; strcst_original; strcst_alias; strcst_all} = !structured_constants in
+  let {strcst_shared; strcst_original; strcst_all} = !structured_constants in
   if shared then
     try
       let l = CstMap.find cst strcst_shared in
@@ -378,7 +376,6 @@ let new_structured_constant cst ~shared =
           strcst_shared = CstMap.add cst lbl strcst_shared;
           strcst_original;
           strcst_all = (lbl, cst) :: strcst_all;
-          strcst_alias;
         };
       lbl
   else
@@ -388,7 +385,6 @@ let new_structured_constant cst ~shared =
         strcst_shared;
         strcst_original;
         strcst_all = (lbl, cst) :: strcst_all;
-        strcst_alias;
       };
     lbl
 let clear_structured_constants () =
@@ -398,17 +394,8 @@ let structured_constants () =
   let structured_constants = !structured_constants in
   List.map
     (fun (lbl, cst) ->
-       let symbols =
-         let aliases =
-           lbl ::
-           try StringMap.find lbl structured_constants.strcst_alias
-           with Not_found -> [] in
-         List.map
-           (fun lbl -> lbl, Hashtbl.mem exported_constants lbl)
-           aliases
-       in
-       (symbols, cst)
-    ) structured_constants.strcst_all
+       lbl, Hashtbl.mem exported_constants lbl, cst)
+    structured_constants.strcst_all
 
 let new_const_symbol' ?name () =
   Symbol.unsafe_create (current_unit ())

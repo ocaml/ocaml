@@ -64,9 +64,9 @@ let raw_clambda_dump_if ppf (ulambda, _, structured_constants) =
     begin
       Format.fprintf ppf "@.clambda (before Un_anf):@.";
       Printclambda.clambda ppf ulambda;
-      List.iter (fun (names, cst) ->
+      List.iter (fun ((symbol, _), cst) ->
           Format.fprintf ppf "%a:@ %a@."
-            (Format.pp_print_list Symbol.print) (List.map fst names)
+            Symbol.print symbol
             Printclambda.structured_constant cst)
         structured_constants
     end;
@@ -162,7 +162,7 @@ let set_export_info (ulambda, prealloc, structured_constants, export) =
 type clambda_and_constants =
   Clambda.ulambda *
   Clambda.preallocated_block list *
-  ((Symbol.t * bool (* exported *)) list *
+  ((Symbol.t * bool (* exported *)) *
    Clambda.ustructured_constant) list
 
 let end_gen_implementation ?toplevel ~sourcefile ppf
@@ -209,7 +209,7 @@ let flambda_gen_implementation ?toplevel ~sourcefile ~backend ppf
     ++ Timings.(stop_id (Flambda_backend sourcefile))
   in
   let constants =
-    List.map (fun (symbol, const) -> [symbol, true], const)
+    List.map (fun (symbol, const) -> (symbol, true), const)
       (Symbol.Map.bindings constants)
   in
   end_gen_implementation ?toplevel ~sourcefile ppf
@@ -226,15 +226,14 @@ let lambda_gen_implementation ?toplevel ~sourcefile ppf
     }
   in
   let compilation_unit = Compilenv.current_unit () in
-  let make_symbol (name, exported) =
-    Symbol.unsafe_create compilation_unit
-      (Linkage_name.create name),
-    exported
-  in
   let constants =
     let constants = Compilenv.structured_constants () in
     Compilenv.clear_structured_constants ();
-    List.map (fun (aliases, const) -> List.map make_symbol aliases, const)
+    List.map (fun (name, exported, const) ->
+        (Symbol.unsafe_create compilation_unit
+           (Linkage_name.create name),
+         exported),
+        const)
       constants
   in
   let clambda_and_constants =

@@ -97,7 +97,7 @@ val new_structured_constant:
 val canonical_symbol: string -> string
 
 val structured_constants:
-  unit -> ((string * bool) list * Clambda.ustructured_constant) list
+  unit -> (string * bool * Clambda.ustructured_constant) list
 val clear_structured_constants: unit -> unit
 val add_exported_constant: string -> unit
 
