@@ -2624,9 +2624,11 @@ let compunit_and_constants (ulam, preallocated_blocks, constants) =
                        fun_body = init_code; fun_fast = false;
                        fun_dbg  = Debuginfo.none }] in
   let structured_constants =
-    (* TODO: don't mark every symbol as global, only those reachable
-       from exported info should *)
-    List.map (fun (s, c) -> [Linkage_name.to_string (Symbol.label s),true], c)
+    List.map (fun (s, (c, exported, aliases)) ->
+        let names = (s, exported) :: aliases in
+        List.map (fun (s, exported) ->
+            (Linkage_name.to_string (Symbol.label s),exported))
+          names, c)
       (Symbol.Map.bindings constants)
   in
   let c1' = emit_constants c1 structured_constants in

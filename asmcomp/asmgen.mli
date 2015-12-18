@@ -12,8 +12,12 @@
 
 (* From lambda to assembly code *)
 
+type lambda_program =
+  { code : Lambda.lambda;
+    main_module_block_size : int; }
+
 type _ backend_kind =
-  | Lambda : Lambda.lambda backend_kind
+  | Lambda : lambda_program backend_kind
   | Flambda : Flambda.program backend_kind
 
 val compile_implementation :

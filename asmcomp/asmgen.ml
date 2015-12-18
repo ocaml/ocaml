@@ -18,8 +18,12 @@ open Clflags
 open Misc
 open Cmm
 
+type lambda_program =
+  { code : Lambda.lambda;
+    main_module_block_size : int; }
+
 type _ backend_kind =
-  | Lambda : Lambda.lambda backend_kind
+  | Lambda : lambda_program backend_kind
   | Flambda : Flambda.program backend_kind
 
 type error = Assembler_error of string
@@ -145,7 +149,8 @@ let set_export_info (ulambda, prealloc, structured_constants, export) =
 type clambda_and_constants =
   Clambda.ulambda *
   Clambda.preallocated_block list *
-  Clambda.ustructured_constant Symbol.Map.t
+  (Clambda.ustructured_constant * bool (* exported *)
+   * (Symbol.t * bool) list) Symbol.Map.t
 
 let end_gen_implementation ?toplevel ~sourcefile ppf
     (clambda:clambda_and_constants) =
@@ -177,7 +182,7 @@ let flambda_gen_implementation ?toplevel ~sourcefile ~backend ppf
     (program:Flambda.program) =
   Timings.(start (Flambda_backend sourcefile));
   let export = Build_export_info.build_export_info ~backend program in
-  let clambda =
+  let (clambda, preallocated, constants) =
     (program, export)
     ++ Flambda_to_clambda.convert
     ++ raw_clambda_dump_if ppf
@@ -190,10 +195,41 @@ let flambda_gen_implementation ?toplevel ~sourcefile ~backend ppf
     ++ set_export_info
     ++ Timings.(stop_id (Flambda_backend sourcefile))
   in
-  end_gen_implementation ?toplevel ~sourcefile ppf clambda
+  let constants =
+    Symbol.Map.map (fun const -> (const, true, [])) constants
+  in
+  end_gen_implementation ?toplevel ~sourcefile ppf
+    (clambda, preallocated, constants)
 
-let lambda_gen_implementation ?toplevel:_ ~sourcefile:_ _ppf (_lambda:Lambda.lambda) =
-  assert false
+let lambda_gen_implementation ?toplevel ~sourcefile ppf
+    (lambda:lambda_program) =
+  let clambda = Closure.intro lambda.main_module_block_size lambda.code in
+  let preallocated_block =
+    Clambda.{
+      symbol = Linkage_name.to_string (Compilenv.current_unit_linkage_name ());
+      tag = 0;
+      size = lambda.main_module_block_size;
+    }
+  in
+  let compilation_unit = Compilenv.current_unit () in
+  let make_symbol (name, exported) =
+    Symbol.unsafe_create compilation_unit
+      (Linkage_name.create name),
+    exported
+  in
+  let constants =
+    List.fold_left (fun map (aliases, const) ->
+        let aliases = List.map make_symbol aliases in
+        match aliases with
+        | [] -> assert false
+        | (sym, exported) :: aliases ->
+            Symbol.Map.add sym (const, exported, aliases) map)
+      Symbol.Map.empty (Compilenv.structured_constants ())
+  in
+  let clambda_and_constants =
+    clambda, [preallocated_block], constants
+  in
+  end_gen_implementation ?toplevel ~sourcefile ppf clambda_and_constants
 
 let gen_implementation (type t) ?toplevel ~sourcefile ~backend
     (backend_kind: t backend_kind) ppf (code : t) =
