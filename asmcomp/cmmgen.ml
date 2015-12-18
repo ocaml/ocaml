@@ -1445,7 +1445,7 @@ let rec transl env e =
               if pos = 0
               then alloc_closure_header block_size
               else alloc_infix_header pos in
-            if f.arity <= 1 then
+            if f.arity = 1 || f.arity = 0 then
               header ::
               Cconst_symbol f.label ::
               int_const f.arity ::
@@ -2538,11 +2538,11 @@ let emit_constant_closure symb fundecls clos_vars cont =
         [] ->
           List.fold_right emit_constant clos_vars cont
       | f2 :: rem ->
-          if f2.arity = 1 then
+          if f2.arity = 1 || f2.arity = 0 then
             Cint(infix_header pos) ::
             cdefine_symbol (closure_symbol f2) @
             Csymbol_address f2.label ::
-            Cint 3n ::
+            Cint(Nativeint.of_int (f2.arity lsl 1 + 1)) ::
             emit_others (pos + 3) rem
           else
             Cint(infix_header pos) ::
@@ -2555,9 +2555,9 @@ let emit_constant_closure symb fundecls clos_vars cont =
                                  + List.length clos_vars)) ::
       cdefine_symbol symb @
       cdefine_symbol (closure_symbol f1) @
-      if f1.arity = 1 then
+      if f1.arity = 1 || f1.arity = 0 then
         Csymbol_address f1.label ::
-        Cint 3n ::
+        Cint(Nativeint.of_int (f1.arity lsl 1 + 1)) ::
         emit_others 3 remainder
       else
         Csymbol_address(curry_function f1.arity) ::
