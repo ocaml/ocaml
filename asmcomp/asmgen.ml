@@ -43,7 +43,7 @@ let pass_dump_linear_if ppf flag message phrase =
   if !flag then fprintf ppf "*** %s@.%a@." message Printlinear.fundecl phrase;
   phrase
 
-let raw_clambda_dump_if ppf
+let flambda_raw_clambda_dump_if ppf
       ({ Flambda_to_clambda. expr = ulambda; preallocated_blocks = _;
         structured_constants; exported = _; } as input) =
   if !dump_rawclambda then
@@ -58,6 +58,19 @@ let raw_clambda_dump_if ppf
     end;
   if !dump_cmm then Format.fprintf ppf "@.cmm:@.";
   input
+
+let raw_clambda_dump_if ppf (ulambda, _, structured_constants) =
+  if !dump_rawclambda then
+    begin
+      Format.fprintf ppf "@.clambda (before Un_anf):@.";
+      Printclambda.clambda ppf ulambda;
+      Symbol.Map.iter (fun sym (cst, _, _) ->
+          Format.fprintf ppf "%a:@ %a@."
+            Symbol.print sym
+            Printclambda.structured_constant cst)
+        structured_constants
+    end;
+  if !dump_cmm then Format.fprintf ppf "@.cmm:@."
 
 let rec regalloc ppf round fd =
   if round > 50 then
@@ -185,7 +198,7 @@ let flambda_gen_implementation ?toplevel ~sourcefile ~backend ppf
   let (clambda, preallocated, constants) =
     (program, export)
     ++ Flambda_to_clambda.convert
-    ++ raw_clambda_dump_if ppf
+    ++ flambda_raw_clambda_dump_if ppf
     ++ (fun { Flambda_to_clambda. expr; preallocated_blocks;
               structured_constants; exported; } ->
            (* "init_code" following the name used in
@@ -229,6 +242,7 @@ let lambda_gen_implementation ?toplevel ~sourcefile ppf
   let clambda_and_constants =
     clambda, [preallocated_block], constants
   in
+  raw_clambda_dump_if ppf clambda_and_constants;
   end_gen_implementation ?toplevel ~sourcefile ppf clambda_and_constants
 
 let gen_implementation (type t) ?toplevel ~sourcefile ~backend
