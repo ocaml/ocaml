@@ -263,7 +263,10 @@ let read_one_param ppf position name v =
 
       | "classic-heuristic" ->
           set "classic-heuristic" [ classic_heuristic ] v
-
+      | "O2" ->
+          set "O2" [ o2 ] v
+      | "O3" ->
+          set "O3" [ o3 ] v
       | "unbox-closures" ->
           set "unbox-closures" [ unbox_closures ] v
       | "remove-unused-arguments" ->
