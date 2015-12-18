@@ -2948,20 +2948,9 @@ let rec intermediate_curry_functions arity num =
   end
 
 let curry_function arity =
-  if arity = 0
-  then
-    let clos = Ident.create "clos" in
-    [Cfunction {
-      fun_name = "caml_curry0";
-      fun_args = [clos, typ_val];
-      fun_body =
-        Cop(Capply(typ_val, Debuginfo.none),
-            get_field (Cvar clos) 2 ::
-            [Cvar clos]);
-      fun_fast = true;
-      fun_dbg  = Debuginfo.none;
-    }]
-  else if arity > 0
+  assert(arity <> 0);
+  (* Functions with arity = 0 does not have a curry_function *)
+  if arity > 0
   then intermediate_curry_functions arity 0
   else [tuplify_function (-arity)]
 
