@@ -2926,7 +2926,6 @@ let rec intermediate_curry_functions arity num =
   end
 
 let curry_function arity =
-  assert (arity >= 0);
   if arity = 0
   then
     let clos = Ident.create "clos" in
