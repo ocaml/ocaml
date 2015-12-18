@@ -231,13 +231,15 @@ let lambda_gen_implementation ?toplevel ~sourcefile ppf
     exported
   in
   let constants =
+    let constants = Compilenv.structured_constants () in
+    Compilenv.clear_structured_constants ();
     List.fold_left (fun map (aliases, const) ->
         let aliases = List.map make_symbol aliases in
         match aliases with
         | [] -> assert false
         | (sym, exported) :: aliases ->
             Symbol.Map.add sym (const, exported, aliases) map)
-      Symbol.Map.empty (Compilenv.structured_constants ())
+      Symbol.Map.empty constants
   in
   let clambda_and_constants =
     clambda, [preallocated_block], constants
