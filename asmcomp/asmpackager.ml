@@ -99,17 +99,21 @@ let make_package_object ppf members targetobj targetname coercion
   in
   let sourcefile = "pack" in
   let prefixname = chop_extension_if_any objtemp in
-  let flam =
-    Middle_end.middle_end ppf
-      ~sourcefile
-      ~prefixname
-      ~backend
-      ~size
-      ~module_ident
-      ~module_initializer:lam
-  in
-  Asmgen.compile_implementation ~sourcefile
-    prefixname ~backend Asmgen.Flambda ppf flam;
+  if Config.flambda then begin
+    let flam =
+      Middle_end.middle_end ppf
+        ~sourcefile
+        ~prefixname
+        ~backend
+        ~size
+        ~module_ident
+        ~module_initializer:lam
+    in
+    Asmgen.compile_implementation ~sourcefile
+      prefixname ~backend Asmgen.Flambda ppf flam;
+  end else begin
+    failwith "TODO"
+  end;
   let objfiles =
     List.map
       (fun m -> chop_extension_if_any m.pm_file ^ Config.ext_obj)
