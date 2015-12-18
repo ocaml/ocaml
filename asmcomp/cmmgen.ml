@@ -1817,8 +1817,8 @@ and transl_prim_1 env p arg dbg =
       tag_int (Cop(Cextcall("caml_bswap16_direct", typ_int, false,
                             Debuginfo.none),
                    [untag_int (transl env arg)]))
-  | _ ->
-      fatal_error "Cmmgen.transl_prim_1"
+  | prim ->
+      fatal_errorf "Cmmgen.transl_prim_1: %a" Printlambda.primitive prim
 
 and transl_prim_2 env p arg1 arg2 dbg =
   match p with
