@@ -51,14 +51,33 @@ module Make_map (T : Thing) = struct
     List.fold_left (fun map (id, v) -> add id v map) empty l
 
   let disjoint_union ?eq m1 m2 =
+    merge (fun id x y -> match x, y with
+        | None, None -> None
+        | None, Some v | Some v, None -> Some v
+        | Some v1, Some v2 ->
+            let ok = match eq with
+              | None -> false
+              | Some eq -> eq v1 v2 in
+            if not ok
+            then
+              let err = Format.asprintf "Map.disjoint_union %a" T.print id in
+              Misc.fatal_error err
+            else Some v1) m1 m2
+
+  (* CR mshinwell: This version is the one that should be used, but it needs
+     [Map.union] in the stdlib.
+  let disjoint_union ?eq m1 m2 =
     union (fun id v1 v2 ->
         let ok = match eq with
           | None -> false
           | Some eq -> eq v1 v2
         in
-        if not ok then Misc.fatal_errorf "Map.disjoint_union %a" T.print id
+        if not ok then
+          let err = Format.asprintf "Map.disjoint_union %a" T.print id in
+          Misc.fatal_error err
         else v1)
       m1 m2
+  *)
 
   let union_right m1 m2 =
     merge (fun id x y -> match x, y with
