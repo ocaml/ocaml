@@ -518,6 +518,8 @@ Language features:
   (Alain Frisch, request by Gabriel Radanne)
 * PR#6016: add a "nonrec" keyword for type declarations
   (Jérémie Dimino)
+* PR#6612, GPR#152: change the precedence of attributes in type declarations
+  (Jérémie Dimino)
 
 Compilers:
 - PR#6600: make -short-paths faster by building the printing map
