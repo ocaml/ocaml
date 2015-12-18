@@ -203,7 +203,7 @@ let merge (t1 : t) (t2 : t) : t =
   }
 
 let find_value eid map =
-  let unit_map = Compilation_unit.Map.find (Export_id.unit eid) map in
+  let unit_map = Compilation_unit.Map.find (Export_id.get_compilation_unit eid) map in
   Export_id.Map.find eid unit_map
 
 let find_description (t : t) eid =
@@ -211,7 +211,7 @@ let find_description (t : t) eid =
 
 let nest_eid_map map =
   let add_map eid v map =
-    let unit = Export_id.unit eid in
+    let unit = Export_id.get_compilation_unit eid in
     let m =
       try Compilation_unit.Map.find unit map
       with Not_found -> Export_id.Map.empty

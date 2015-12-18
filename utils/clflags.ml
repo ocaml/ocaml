@@ -14,23 +14,23 @@
 
 module Int_arg_helper = Arg_helper.Make (struct
   module Key = struct
-    include Ext_types.Int
+    include Numbers.Int
     let of_string = int_of_string
   end
 
   module Value = struct
-    include Ext_types.Int
+    include Numbers.Int
     let of_string = int_of_string
   end
 end)
 module Float_arg_helper = Arg_helper.Make (struct
   module Key = struct
-    include Ext_types.Int
+    include Numbers.Int
     let of_string = int_of_string
   end
 
   module Value = struct
-    include Ext_types.Float
+    include Numbers.Float
     let of_string = float_of_string
   end
 end)
@@ -214,7 +214,7 @@ let set_int_arg round (arg:Int_arg_helper.parsed ref) value =
       | None -> { !arg with default = value }
       | Some round ->
         { !arg with
-          override = Ext_types.Int.Map.add round value !arg.override }
+          override = Numbers.Int.Map.add round value !arg.override }
     in
     arg := parsed
 
@@ -228,7 +228,7 @@ let set_float_arg round (arg:Float_arg_helper.parsed ref) value =
       | None -> { !arg with default = value }
       | Some round ->
         { !arg with
-          override = Ext_types.Int.Map.add round value !arg.override }
+          override = Numbers.Int.Map.add round value !arg.override }
     in
     arg := parsed
 

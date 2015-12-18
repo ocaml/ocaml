@@ -11,10 +11,12 @@
 (*                                                                        *)
 (**************************************************************************)
 
-module Id : Ext_types.Id = Ext_types.Id (struct end)
-module T = Ext_types.UnitId (Id) (Compilation_unit)
+module Id : Id_types.Id = Id_types.Id (struct end)
+module Unit_id = Id_types.UnitId (Id) (Compilation_unit)
 
-include T
-include Ext_types.Identifiable.Make (T)
+type t = Unit_id.t
 
-let get_compilation_unit = unit
+include Identifiable.Make (Unit_id)
+
+let create = Unit_id.create
+let get_compilation_unit = Unit_id.unit

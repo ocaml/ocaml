@@ -36,7 +36,7 @@ opt.opt: ocamldep.opt read_cmt.opt
 
 CAMLDEP_OBJ=depend.cmo ocamldep.cmo
 CAMLDEP_IMPORTS=config.cmo timings.cmo misc.cmo \
-  ext_types.cmo arg_helper.cmo clflags.cmo terminfo.cmo \
+  identifiable.cmo numbers.cmo arg_helper.cmo clflags.cmo terminfo.cmo \
   warnings.cmo location.cmo longident.cmo docstrings.cmo \
   syntaxerr.cmo ast_helper.cmo parser.cmo lexer.cmo parse.cmo \
   ccomp.cmo ast_mapper.cmo pparse.cmo compenv.cmo
@@ -66,7 +66,7 @@ install::
 # The profiler
 
 CSLPROF=ocamlprof.cmo
-CSLPROF_IMPORTS=misc.cmo config.cmo ext_types.cmo arg_helper.cmo clflags.cmo terminfo.cmo \
+CSLPROF_IMPORTS=misc.cmo config.cmo identifiable.cmo numbers.cmo arg_helper.cmo clflags.cmo terminfo.cmo \
   warnings.cmo location.cmo longident.cmo docstrings.cmo \
   syntaxerr.cmo ast_helper.cmo parser.cmo lexer.cmo parse.cmo
 
@@ -74,10 +74,10 @@ ocamlprof: $(CSLPROF) profiling.cmo
 	$(CAMLC) $(LINKFLAGS) -o ocamlprof ${BISECT_CMA} $(CSLPROF_IMPORTS) $(CSLPROF)
 
 ocamlcp: ocamlcp.cmo
-	$(CAMLC) $(LINKFLAGS) -o ocamlcp ${BISECT_CMA} warnings.cmo misc.cmo config.cmo ext_types.cmo arg_helper.cmo clflags.cmo main_args.cmo ocamlcp.cmo
+	$(CAMLC) $(LINKFLAGS) -o ocamlcp ${BISECT_CMA} warnings.cmo misc.cmo config.cmo identifiable.cmo numbers.cmo arg_helper.cmo clflags.cmo main_args.cmo ocamlcp.cmo
 
 ocamloptp: ocamloptp.cmo
-	$(CAMLC) $(LINKFLAGS) -o ocamloptp ${BISECT_CMA} warnings.cmo misc.cmo config.cmo ext_types.cmo arg_helper.cmo clflags.cmo main_args.cmo \
+	$(CAMLC) $(LINKFLAGS) -o ocamloptp ${BISECT_CMA} warnings.cmo misc.cmo config.cmo identifiable.cmo numbers.cmo arg_helper.cmo clflags.cmo main_args.cmo \
 	         ocamloptp.cmo
 
 opt:: profiling.cmx
@@ -159,7 +159,7 @@ clean::
 
 # Insert labels following an interface file (upgrade 3.02 to 3.03)
 
-ADDLABELS_IMPORTS=misc.cmo config.cmo ext_types.cmo arg_helper.cmo clflags.cmo terminfo.cmo \
+ADDLABELS_IMPORTS=misc.cmo config.cmo identifiable.cmo numbers.cmo arg_helper.cmo clflags.cmo terminfo.cmo \
   warnings.cmo location.cmo longident.cmo docstrings.cmo \
   syntaxerr.cmo ast_helper.cmo parser.cmo lexer.cmo parse.cmo
 
@@ -223,7 +223,7 @@ DUMPOBJ=opnames.cmo dumpobj.cmo
 dumpobj: $(DUMPOBJ)
 	$(CAMLC) $(LINKFLAGS) -o dumpobj \
 	         ${BISECT_CMA} \
-	         misc.cmo tbl.cmo config.cmo ext_types.cmo ident.cmo \
+	         misc.cmo tbl.cmo config.cmo identifiable.cmo numbers.cmo ident.cmo \
 	         opcodes.cmo bytesections.cmo $(DUMPOBJ)
 
 clean::

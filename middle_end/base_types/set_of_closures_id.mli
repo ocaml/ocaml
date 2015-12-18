@@ -14,7 +14,7 @@
 (** An identifier, unique across the whole program, that identifies a set
     of a closures (viz. [Set_of_closures]). *)
 
-include Ext_types.Identifiable
+include Identifiable.S
 
 val create : ?name:string -> Compilation_unit.t -> t
 val get_compilation_unit : t -> Compilation_unit.t

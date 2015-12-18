@@ -21,7 +21,7 @@
     The label must be globally unique: two compilation units linked in the
     same program must not share labels. *)
 
-include Ext_types.Identifiable
+include Identifiable.S
 
 val create : Compilation_unit.t -> Linkage_name.t -> t
 (* Create the symbol without prefixing with the compilation unit.

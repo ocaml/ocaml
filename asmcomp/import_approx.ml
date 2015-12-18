@@ -64,7 +64,7 @@ let import_set_of_closures =
   Set_of_closures_id.Tbl.memoize Compilenv.imported_sets_of_closures_table aux
 
 let rec import_ex ex =
-  ignore (Compilenv.approx_for_global (Export_id.unit ex));
+  ignore (Compilenv.approx_for_global (Export_id.get_compilation_unit ex));
   let ex_info = Compilenv.approx_env () in
   let import_value_set_of_closures ~set_of_closures_id ~bound_vars
         ~(ex_info : Export_info.t) ~what : A.value_set_of_closures =

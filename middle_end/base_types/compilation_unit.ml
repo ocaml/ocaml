@@ -11,12 +11,16 @@
 (*                                                                        *)
 (**************************************************************************)
 
-module T = struct
-  type t = {
-    id : Ident.t;
-    linkage_name : Linkage_name.t;
-    hash : int;
-  }
+type t = {
+  id : Ident.t;
+  linkage_name : Linkage_name.t;
+  hash : int;
+}
+
+let string_for_printing t = Ident.name t.id
+
+include Identifiable.Make (struct
+  type nonrec t = t
 
   (* Multiple units can have the same [id] if they come from different packs.
      To distinguish these we also keep the linkage name, which contains the
@@ -39,17 +43,13 @@ module T = struct
     if x == y then true
     else compare x y = 0
 
-  let string_for_printing t = Ident.name t.id
   let print ppf t = Format.pp_print_string ppf (string_for_printing t)
 
   let output oc x = output_string oc (Ident.name x.id)
   let hash x = x.hash
-end
+end)
 
-include T
-include Ext_types.Identifiable.Make (T)
-
-let create (id:Ident.t) linkage_name =
+let create (id : Ident.t) linkage_name =
   if not (Ident.persistent id) then begin
     Misc.fatal_error "Compilation_unit.create with non-persistent Ident.t"
   end;

@@ -47,10 +47,10 @@
    - the second propagates the implications
 *)
 
-module Int = Ext_types.Int
+module Int = Numbers.Int
 module Symbol_field = struct
-  include Ext_types.Identifiable.Make(Ext_types.Pair(Symbol)(Int))
-  include M
+  type t = Symbol.t * Int.t
+  include Identifiable.Make (Identifiable.Pair (Symbol) (Int))
 end
 
 type result = {

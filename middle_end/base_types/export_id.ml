@@ -15,10 +15,13 @@
    exactly what is meant by an "export ID" (in terms independent of the
    asmcomp/ code). *)
 
-module T = struct
-  module Inner_id = Ext_types.Id (struct end)
-  include Ext_types.UnitId (Inner_id) (Compilation_unit)
-end
+module Id : Id_types.Id = Id_types.Id (struct end)
+module Unit_id = Id_types.UnitId (Id) (Compilation_unit)
 
-include T
-include Ext_types.Identifiable.Make (T)
+type t = Unit_id.t
+
+include Identifiable.Make (Unit_id)
+
+let create = Unit_id.create
+let get_compilation_unit = Unit_id.unit
+let name = Unit_id.name

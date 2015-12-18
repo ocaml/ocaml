@@ -11,13 +11,15 @@
 (*                                                                        *)
 (**************************************************************************)
 
-module T = struct
-  type t = {
-    compilation_unit : Compilation_unit.t;
-    name : string;
-    name_stamp : int;
-    (** [name_stamp]s are unique within any given compilation unit. *)
-  }
+type t = {
+  compilation_unit : Compilation_unit.t;
+  name : string;
+  name_stamp : int;
+  (** [name_stamp]s are unique within any given compilation unit. *)
+}
+
+include Identifiable.Make (struct
+  type nonrec t = t
 
   let compare t1 t2 =
     if t1 == t2 then 0
@@ -50,10 +52,7 @@ module T = struct
         Compilation_unit.print t.compilation_unit
         t.name t.name_stamp
     end
-end
-
-include T
-include Ext_types.Identifiable.Make (T)
+end)
 
 let previous_name_stamp = ref (-1)
 
@@ -109,7 +108,7 @@ let print_opt ppf = function
   | Some t -> print ppf t
 
 type pair = t * t
-module Pair = Ext_types.Identifiable.Make (Ext_types.Pair (T) (T))
+module Pair = Identifiable.Make (Identifiable.Pair (T) (T))
 
 let compare_lists l1 l2 = Misc.compare_lists compare l1 l2
 

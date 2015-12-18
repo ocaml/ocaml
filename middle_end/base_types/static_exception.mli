@@ -14,7 +14,7 @@
 (** An identifier that is used to label static exceptions.  Its
     uniqueness properties are unspecified. *)
 
-include Ext_types.Identifiable
+include Identifiable.S
 
 val create : unit -> t
 

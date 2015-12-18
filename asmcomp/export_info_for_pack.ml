@@ -18,7 +18,7 @@ let rename_id_state = Export_id.Tbl.create 100
 let import_eid_for_pack units pack id =
   try Export_id.Tbl.find rename_id_state id
   with Not_found ->
-    let unit_id = Export_id.unit id in
+    let unit_id = Export_id.get_compilation_unit id in
     let id' =
       if Compilation_unit.Set.mem unit_id units
       then Export_id.create ?name:(Export_id.name id) pack

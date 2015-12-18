@@ -21,7 +21,7 @@
     importing cmx files.
 *)
 
-include Ext_types.Identifiable
+include Identifiable.S
 
 val create : ?current_compilation_unit:Compilation_unit.t -> string -> t
 val create_with_same_name_as_ident : Ident.t -> t
@@ -49,7 +49,7 @@ val print_opt : Format.formatter -> t option -> unit
 val debug_when_stamp_matches : t -> stamp:int -> f:(unit -> unit) -> unit
 
 type pair = t * t
-module Pair : Ext_types.Identifiable with type t := pair
+module Pair : Identifiable.S with type t := pair
 
 val compare_lists : t list -> t list -> int
 

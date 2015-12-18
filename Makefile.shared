@@ -37,7 +37,8 @@ INCLUDES=-I utils -I parsing -I typing -I bytecomp -I middle_end \
          -I middle_end/base_types -I asmcomp -I driver -I toplevel
 
 UTILS=utils/config.cmo utils/timings.cmo utils/misc.cmo \
-  utils/ext_types.cmo utils/arg_helper.cmo utils/clflags.cmo \
+  utils/identifiable.cmo utils/numbers.cmo \
+  utils/arg_helper.cmo utils/clflags.cmo \
   utils/tbl.cmo \
   utils/terminfo.cmo utils/ccomp.cmo utils/warnings.cmo \
   utils/consistbl.cmo \
@@ -137,6 +138,7 @@ MIDDLE_END=\
   middle_end/base_types/compilation_unit.cmo \
   middle_end/base_types/variable.cmo \
   middle_end/base_types/mutable_variable.cmo \
+  middle_end/base_types/id_types.cmo \
   middle_end/base_types/set_of_closures_id.cmo \
   middle_end/base_types/closure_element.cmo \
   middle_end/base_types/closure_id.cmo \

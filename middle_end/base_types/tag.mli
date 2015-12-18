@@ -13,7 +13,7 @@
 
 (** Tags on runtime boxed values. *)
 
-include Ext_types.Identifiable
+include Identifiable.S
 
 val create_exn : int -> t
 val to_int : t -> int

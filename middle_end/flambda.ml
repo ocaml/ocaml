@@ -121,9 +121,9 @@ and function_declaration = {
 }
 
 and switch = {
-  numconsts : Ext_types.Int.Set.t;
+  numconsts : Numbers.Int.Set.t;
   consts : (int * t) list;
-  numblocks : Ext_types.Int.Set.t;
+  numblocks : Numbers.Int.Set.t;
   blocks : (int * t) list;
   failaction : t option;
 }
@@ -161,7 +161,7 @@ type program = {
 }
 
 let fprintf = Format.fprintf
-module Int = Ext_types.Int
+module Int = Numbers.Int
 
 (** CR-someday lwhite: use better name than this *)
 let rec lam ppf (flam : t) =
@@ -1070,8 +1070,10 @@ let compare_constant_defining_value_block_field
   | Const _, Symbol _ -> 1
 
 module Constant_defining_value = struct
-  module T = struct
-    type t = constant_defining_value
+  type t = constant_defining_value
+
+  include Identifiable.Make (struct
+    type nonrec t = t
 
     let compare (t1 : t) (t2 : t) =
       match t1, t2 with
@@ -1113,10 +1115,5 @@ module Constant_defining_value = struct
 
     let output o v =
       output_string o (Format.asprintf "%a" print v)
-
-  end
-
-  include T
-  module Identifiable = Ext_types.Identifiable.Make(T)
-  include Identifiable
+  end)
 end

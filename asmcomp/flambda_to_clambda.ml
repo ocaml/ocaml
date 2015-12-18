@@ -401,8 +401,8 @@ and to_clambda_named t env var (named : Flambda.named) : Clambda.ulambda =
 
 and to_clambda_switch t env cases num_keys default =
   let num_keys =
-    if Ext_types.Int.Set.cardinal num_keys = 0 then 0
-    else Ext_types.Int.Set.max_elt num_keys + 1
+    if Numbers.Int.Set.cardinal num_keys = 0 then 0
+    else Numbers.Int.Set.max_elt num_keys + 1
   in
   let index = Array.make num_keys 0 in
   let store = Flambda_utils.Switch_storer.mk_store () in

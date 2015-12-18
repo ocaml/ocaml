@@ -1,6 +1,5 @@
-open Ext_types
-
-module SCC = Sort_connected_components.Make(Int)
+module Int = Numbers.Int
+module SCC = Sort_connected_components.Make (Int)
 
 let graph_1 =
   [1, [2;3;4];

@@ -290,9 +290,9 @@ and function_declaration = private {
 
 (** Equivalent to the similar type in [Lambda]. *)
 and switch = {
-  numconsts : Ext_types.Int.Set.t; (** Integer cases *)
+  numconsts : Numbers.Int.Set.t; (** Integer cases *)
   consts : (int * t) list; (** Integer cases *)
-  numblocks : Ext_types.Int.Set.t; (** Number of tag block cases *)
+  numblocks : Numbers.Int.Set.t; (** Number of tag block cases *)
   blocks : (int * t) list; (** Tag block cases *)
   failaction : t option; (** Action to take if none matched *)
 }
@@ -329,7 +329,7 @@ and constant_defining_value_block_field =
   | Const of const
 
 module Constant_defining_value :
-  Ext_types.Identifiable with type t = constant_defining_value
+  Identifiable.S with type t = constant_defining_value
 
 type expr = t
 

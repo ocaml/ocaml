@@ -28,10 +28,10 @@ type block_in_free_vars =
   }
 
 module Closure_field =
-  Ext_types.Identifiable.Make (Ext_types.Pair (Variable) (Var_within_closure))
+  Identifiable.Make (Identifiable.Pair (Variable) (Var_within_closure))
 
 module Block_field =
-  Ext_types.Identifiable.Make (Ext_types.Pair (Variable) (Ext_types.Int))
+  Identifiable.Make (Identifiable.Pair (Variable) (Numbers.Int))
 
 let freshened_var env v =
   Freshening.apply_variable (E.freshening env) v

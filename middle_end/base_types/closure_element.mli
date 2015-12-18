@@ -11,8 +11,7 @@
 (*                                                                        *)
 (**************************************************************************)
 
-
-include Ext_types.Identifiable
+include Identifiable.S
 
 val wrap : Variable.t -> t
 val unwrap : t -> Variable.t

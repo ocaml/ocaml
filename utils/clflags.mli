@@ -14,7 +14,7 @@
 module Int_arg_helper : sig
   type parsed = {
     default : int;
-    override : int Ext_types.Int.Map.t;
+    override : int Numbers.Int.Map.t;
   }
 
   val parse : string -> help_text:string -> update:parsed ref -> unit
@@ -25,7 +25,7 @@ end
 module Float_arg_helper : sig
   type parsed = {
     default : float;
-    override : float Ext_types.Int.Map.t;
+    override : float Numbers.Int.Map.t;
   }
 
   val parse : string -> help_text:string -> update:parsed ref -> unit

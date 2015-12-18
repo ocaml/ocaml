@@ -11,7 +11,7 @@
 (*                                                                        *)
 (**************************************************************************)
 
-include Ext_types.Identifiable
+include Identifiable.S
 
 val create : string -> t
 val to_string : t -> string

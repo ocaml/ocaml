@@ -17,16 +17,16 @@ module Env = struct
   type t = {
     variables : Variable.t Ident.tbl;
     mutable_variables : Mutable_variable.t Ident.tbl;
-    static_exceptions : Static_exception.t Ext_types.Int.Map.t;
-    globals : Symbol.t Ext_types.Int.Map.t;
+    static_exceptions : Static_exception.t Numbers.Int.Map.t;
+    globals : Symbol.t Numbers.Int.Map.t;
     at_toplevel : bool;
   }
 
   let empty = {
     variables = Ident.empty;
     mutable_variables = Ident.empty;
-    static_exceptions = Ext_types.Int.Map.empty;
-    globals = Ext_types.Int.Map.empty;
+    static_exceptions = Numbers.Int.Map.empty;
+    globals = Numbers.Int.Map.empty;
     at_toplevel = true;
   }
 
@@ -55,19 +55,19 @@ module Env = struct
   let add_static_exception t st_exn fresh_st_exn =
     { t with
       static_exceptions =
-        Ext_types.Int.Map.add st_exn fresh_st_exn t.static_exceptions }
+        Numbers.Int.Map.add st_exn fresh_st_exn t.static_exceptions }
 
   let find_static_exception t st_exn =
-    try Ext_types.Int.Map.find st_exn t.static_exceptions
+    try Numbers.Int.Map.find st_exn t.static_exceptions
     with Not_found ->
       Misc.fatal_error ("Closure_conversion.Env.find_static_exception: exn "
         ^ string_of_int st_exn)
 
   let add_global t pos symbol =
-    { t with globals = Ext_types.Int.Map.add pos symbol t.globals }
+    { t with globals = Numbers.Int.Map.add pos symbol t.globals }
 
   let find_global t pos =
-    try Ext_types.Int.Map.find pos t.globals
+    try Numbers.Int.Map.find pos t.globals
     with Not_found ->
       Misc.fatal_error ("Closure_conversion.Env.find_global: global "
         ^ string_of_int pos)

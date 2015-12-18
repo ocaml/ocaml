@@ -31,7 +31,7 @@ OPTCOMPFLAGS=$(COMPFLAGS) -O3
 OBJS=dynlinkaux.cmo dynlink.cmo
 
 COMPILEROBJS=\
-  ../../utils/misc.cmo ../../utils/config.cmo ../../utils/ext_types.cmo \
+  ../../utils/misc.cmo ../../utils/config.cmo ../../utils/identifiable.cmo numbers.cmo \
   ../../utils/arg_helper.cmo ../../utils/clflags.cmo \
   ../../utils/tbl.cmo ../../utils/consistbl.cmo \
   ../../utils/terminfo.cmo ../../utils/warnings.cmo \

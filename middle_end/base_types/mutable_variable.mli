@@ -11,7 +11,7 @@
 (*                                                                        *)
 (**************************************************************************)
 
-include Ext_types.Identifiable
+include Identifiable.S
 
 val create : ?current_compilation_unit:Compilation_unit.t -> string -> t
 val of_ident : Ident.t -> t

@@ -10,31 +10,33 @@
 (*   under the terms of the Q Public License version 1.0.                 *)
 (*                                                                        *)
 (**************************************************************************)
+type t = {
+  compilation_unit : Compilation_unit.t;
+  ident : Ident.t;
+}
 
-module T = struct
-  type t = {
-    compilation_unit : Compilation_unit.t;
-    ident : Ident.t;
-  }
+include Identifiable.Make (struct
+  type nonrec t = t
 
   let compare v1 v2 =
     let c = Ident.compare v1.ident v2.ident in
     if c = 0
     then Compilation_unit.compare v1.compilation_unit v2.compilation_unit
     else c
+
   let output c v = Ident.output c v.ident
+
   let hash v = Ident.hash v.ident
+
   let equal v1 v2 =
     Ident.same v1.ident v2.ident &&
     Compilation_unit.equal v1.compilation_unit v2.compilation_unit
+
   let print ppf v =
     Format.fprintf ppf "%a.%a"
       Compilation_unit.print v.compilation_unit
       Ident.print v.ident
-end
-
-include T
-include Ext_types.Identifiable.Make (T)
+end)
 
 let create ?current_compilation_unit name =
   let compilation_unit =

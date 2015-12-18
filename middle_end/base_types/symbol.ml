@@ -11,12 +11,14 @@
 (*                                                                        *)
 (**************************************************************************)
 
-module T = struct
-  type t = {
-    compilation_unit : Compilation_unit.t;
-    label : Linkage_name.t;
-    hash : int;
-  }
+type t = {
+  compilation_unit : Compilation_unit.t;
+  label : Linkage_name.t;
+  hash : int;
+}
+
+include Identifiable.Make (struct
+  type nonrec t = t
 
   (* CR mshinwell for pchambart: I tried to rewrite the second sentence of
      this comment, but it still isn't great.  Can you try again?  Note that
@@ -42,10 +44,7 @@ module T = struct
     Compilation_unit.print ppf t.compilation_unit;
     Format.pp_print_string ppf ".";
     Linkage_name.print ppf t.label
-end
-
-include T
-include Ext_types.Identifiable.Make (T)
+end)
 
 let create compilation_unit label =
   let unit_linkage_name =

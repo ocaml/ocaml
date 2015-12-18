@@ -11,7 +11,7 @@
 (*                                                                        *)
 (**************************************************************************)
 
-include Ext_types.Identifiable
+include Identifiable.S
 
 (* The [Ident.t] must be persistent.  This function raises an exception
    if that is not the case. *)

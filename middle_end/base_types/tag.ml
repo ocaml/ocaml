@@ -12,7 +12,8 @@
 (**************************************************************************)
 
 type t = int
-include Ext_types.Identifiable.Make (Ext_types.Int)
+
+include Identifiable.Make (Numbers.Int)
 
 let create_exn tag =
   if tag < 0 || tag > 255 then

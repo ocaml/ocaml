@@ -11,15 +11,14 @@
 (*                                                                        *)
 (**************************************************************************)
 
-module T = struct
+type t = string
+
+include Identifiable.Make (struct
   include String
   let hash = Hashtbl.hash
   let print ppf t = Format.pp_print_string ppf t
   let output chan t = output_string chan t
-end
-
-include T
-include Ext_types.Identifiable.Make (T)
+end)
 
 let create t = t
 let to_string t = t

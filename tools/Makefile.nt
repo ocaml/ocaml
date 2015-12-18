@@ -16,7 +16,7 @@ include Makefile.shared
 
 OCAMLMKTOP=ocamlmktop.cmo
 OCAMLMKTOP_IMPORTS=\
-  misc.cmo ext_types.cmo arg_helper.cmo \
+  misc.cmo identifiable.cmo numbers.cmo arg_helper.cmo \
   config.cmo clflags.cmo ccomp.cmo
 
 ocamlmktop: $(OCAMLMKTOP)
