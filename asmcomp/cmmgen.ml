@@ -659,7 +659,18 @@ let make_checkbound dbg = function
 let fundecls_size fundecls =
   let sz = ref (-1) in
   List.iter
-    (fun f -> sz := !sz + 1 + (if f.arity <= 1 then 2 else 3))
+    (fun f ->
+       let indirect_call_code_pointer_size =
+         match f.arity with
+         | 0 | 1 -> 0
+           (* arity 1 does not need an indirect call handler.
+              arity 0 cannot be indirect called *)
+         | _ -> 1
+           (* For other arities there is an indirect call handler.
+              if arity >= 2 it is caml_curry...
+              if arity < 0 it is caml_tuplify... *)
+       in
+       sz := !sz + 1 + 2 + indirect_call_code_pointer_size)
     fundecls;
   !sz
 
@@ -2926,7 +2937,6 @@ let rec intermediate_curry_functions arity num =
   end
 
 let curry_function arity =
-  assert (arity >= 0);
   if arity = 0
   then
     let clos = Ident.create "clos" in

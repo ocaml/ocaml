@@ -117,6 +117,7 @@ let implementation ppf sourcefile outputprefix ~backend =
         Timings.(stop (Generate sourcefile));
       end
       else begin
+        Clflags.use_inlining_arguments_set Clflags.classic_arguments;
         (typedtree, coercion)
         ++ Timings.(start_id (Transl sourcefile))
         ++ Translmod.transl_store_implementation modulename

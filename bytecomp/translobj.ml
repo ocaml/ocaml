@@ -91,7 +91,7 @@ let prim_makearray =
   Primitive.simple ~name:"caml_make_vect" ~arity:2 ~alloc:true
 
 (* Also use it for required globals *)
-let transl_label_init_bytecode f =
+let transl_label_init_general f =
   let expr, size = f () in
   let expr =
     Hashtbl.fold
@@ -107,7 +107,23 @@ let transl_label_init_bytecode f =
   reset_labels ();
   expr, size
 
-let transl_label_init_native f =
+let transl_store_label_init glob size f arg =
+  assert(not Config.flambda);
+  method_cache := Lprim(Pfield size, [Lprim(Pgetglobal glob, [])]);
+  let expr = f arg in
+  let (size, expr) =
+    if !method_count = 0 then (size, expr) else
+    (size+1,
+     Lsequence(
+     Lprim(Psetfield(size, Pointer, Initialization),
+           [Lprim(Pgetglobal glob, []);
+            Lprim (Pccall prim_makearray, [int !method_count; int 0])]),
+     expr))
+  in
+  let lam, size = transl_label_init_general (fun () -> (expr, size)) in
+  size, lam
+
+let transl_label_init_flambda f =
   let method_cache_id = Ident.create "method_cache" in
   method_cache := Lvar method_cache_id;
   let expr, size = f () in
@@ -118,16 +134,14 @@ let transl_label_init_native f =
         Lprim (Pccall prim_makearray, [int !method_count; int 0]),
         expr)
   in
-  transl_label_init_bytecode (fun () -> expr, size)
+  transl_label_init_general (fun () -> expr, size)
 
 let transl_label_init f =
-  if !Clflags.native_code then
-    transl_label_init_native f
+  if !Clflags.native_code && Config.flambda then begin
+    transl_label_init_flambda f
+  end
   else
-    transl_label_init_bytecode f
-
-let transl_store_label_init _ident size f arg =
-  size, f arg
+    transl_label_init_general f
 
 (* Share classes *)
 
