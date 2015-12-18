@@ -382,9 +382,12 @@ and un_anf_array ident_info env clams : Clambda.ulambda array =
   Array.map (un_anf ident_info env) clams
 
 let apply clam ~what =
-  let ident_info = make_ident_info clam in
-  let clam = un_anf ident_info Ident.Map.empty clam in
-  if !Clflags.dump_clambda then begin
-    Format.eprintf "@.un-anf (%s):@ %a@." what Printclambda.clambda clam
-  end;
-  clam
+  if Config.flambda then
+    let ident_info = make_ident_info clam in
+    let clam = un_anf ident_info Ident.Map.empty clam in
+    if !Clflags.dump_clambda then begin
+      Format.eprintf "@.un-anf (%s):@ %a@." what Printclambda.clambda clam
+    end;
+    clam
+  else
+    clam
