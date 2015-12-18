@@ -273,6 +273,13 @@ installoptopt:
 	   $(BYTESTART:.cmo=.cmx) $(BYTESTART:.cmo=.o) \
 	   $(OPTSTART:.cmo=.cmx) $(OPTSTART:.cmo=.o) \
 	   $(INSTALL_COMPLIBDIR)
+	if test -f ocamlnat ; then \
+	  cp ocamlnat $(INSTALL_BINDIR)/ocamlnat$(EXE); \
+	  cp toplevel/opttopdirs.cmi $(INSTALL_LIBDIR); \
+	  cp compilerlibs/ocamlopttoplevel.cmxa compilerlibs/ocamlopttoplevel.a \
+	   $(OPTTOPLEVELSTART:.cmo=.cmx) $(OPTTOPLEVELSTART:.cmo=.o) \
+	   $(INSTALL_COMPLIBDIR); \
+	  else :; fi
 	cd $(INSTALL_COMPLIBDIR) && $(RANLIB) ocamlcommon.a ocamlbytecomp.a \
 	   ocamloptcomp.a
 
@@ -336,6 +343,7 @@ partialclean::
 	rm -f ocaml
 
 RUNTOP=./byterun/ocamlrun ./ocaml -nostdlib -I stdlib -noinit $(TOPFLAGS)
+NATRUNTOP=./ocamlnat -nostdlib -I stdlib -noinit $(TOPFLAGS)
 
 runtop:
 	$(MAKE) runtime
@@ -343,11 +351,29 @@ runtop:
 	$(MAKE) ocaml
 	@rlwrap --help 2>/dev/null && rlwrap $(RUNTOP) || $(RUNTOP)
 
+natruntop:
+	$(MAKE) runtime
+	$(MAKE) coreall
+	$(MAKE) opt.opt
+	$(MAKE) ocamlnat
+	@rlwrap --help 2>/dev/null && rlwrap $(NATRUNTOP) || $(NATRUNTOP)
+
 # The native toplevel
 
-ocamlnat: ocamlopt otherlibs/dynlink/dynlink.cmxa $(NATTOPOBJS:.cmo=.cmx)
-	$(CAMLOPT) $(LINKFLAGS) otherlibs/dynlink/dynlink.cmxa -o ocamlnat \
-	           $(NATTOPOBJS:.cmo=.cmx) -linkall
+compilerlibs/ocamlopttoplevel.cmxa: $(OPTTOPLEVEL:.cmo=.cmx)
+	$(CAMLOPT) -a -o $@ $(OPTTOPLEVEL:.cmo=.cmx)
+partialclean::
+	rm -f compilerlibs/ocamlopttoplevel.cmxa
+
+ocamlnat: compilerlibs/ocamlcommon.cmxa compilerlibs/ocamloptcomp.cmxa \
+    otherlibs/dynlink/dynlink.cmxa compilerlibs/ocamlopttoplevel.cmxa $(OPTTOPLEVELSTART:.cmo=.cmx)
+	$(CAMLOPT) $(LINKFLAGS) -linkall -o ocamlnat \
+	    otherlibs/dynlink/dynlink.cmxa compilerlibs/ocamlcommon.cmxa \
+	    compilerlibs/ocamloptcomp.cmxa compilerlibs/ocamlopttoplevel.cmxa \
+	    $(OPTTOPLEVELSTART:.cmo=.cmx)
+
+partialclean::
+	rm -f ocamlnat
 
 toplevel/opttoploop.cmx: otherlibs/dynlink/dynlink.cmxa
 
