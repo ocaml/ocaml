@@ -691,6 +691,7 @@ and transl_exp0 e =
             transl_function e.exp_loc !Clflags.native_code repr partial pl)
       in
       let attr = {
+        default_function_attribute with
         inline = Translattribute.get_inline_attribute e.exp_attributes;
       }
       in
@@ -708,7 +709,7 @@ and transl_exp0 e =
             Translattribute.get_tailcall_attribute funct
           in
           let inlined, funct =
-            Translattribute.get_inlined_attribute funct
+            Translattribute.get_and_remove_inlined_attribute funct
           in
           let e = { e with exp_desc = Texp_apply(funct, oargs) } in
           event_after e (transl_apply ~should_be_tailcall ~inlined
@@ -764,7 +765,7 @@ and transl_exp0 e =
         Translattribute.get_tailcall_attribute funct
       in
       let inlined, funct =
-        Translattribute.get_inlined_attribute funct
+        Translattribute.get_and_remove_inlined_attribute funct
       in
       let e = { e with exp_desc = Texp_apply(funct, oargs) } in
       event_after e (transl_apply ~should_be_tailcall ~inlined

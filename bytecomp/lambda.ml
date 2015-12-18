@@ -176,6 +176,7 @@ type shared_code = (int * int) list
 
 type function_attribute = {
   inline : inline_attribute;
+  is_a_functor: bool;
 }
 
 type lambda =
@@ -237,6 +238,7 @@ let lambda_unit = Lconst const_unit
 
 let default_function_attribute = {
   inline = Default_inline;
+  is_a_functor = false;
 }
 
 (* Build sharing keys *)
