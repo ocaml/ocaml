@@ -20,9 +20,12 @@ type ident_info =
     linear : Ident.Set.t;
     assigned : Ident.Set.t;
     closure_environment : Ident.Set.t;
+    let_bound_vars_that_can_be_moved : Ident.Set.t;
   }
 
 let ignore_uconstant (_ : Clambda.uconstant) = ()
+let ignore_ulambda (_ : Clambda.ulambda) = ()
+let ignore_ulambda_list (_ : Clambda.ulambda list) = ()
 let ignore_function_label (_ : Clambda.function_label) = ()
 let ignore_debuginfo (_ : Debuginfo.t) = ()
 let ignore_int (_ : int) = ()
@@ -33,6 +36,10 @@ let ignore_int_array (_ : int array) = ()
 let ignore_ident_list (_ : Ident.t list) = ()
 let ignore_direction_flag (_ : Asttypes.direction_flag) = ()
 let ignore_meth_kind (_ : Lambda.meth_kind) = ()
+
+(* CR-soon mshinwell: check we aren't traversing function bodies more than
+   once (need to analyse exactly what the calls are from Cmmgen into this
+   module). *)
 
 let closure_environment_ident (ufunction:Clambda.ufunction) =
   (* The argument after the arity is the environment *)
@@ -90,7 +97,7 @@ let make_ident_info (clam : Clambda.ulambda) : ident_info =
       loop expr;
       ignore_int offset
     | Ulet (ident, def, body) ->
-      ignore_ident ident;
+      ignore ident;
       loop def;
       loop body
     | Uletrec (defs, body) ->
@@ -175,7 +182,204 @@ let make_ident_info (clam : Clambda.ulambda) : ident_info =
     Ident.Tbl.fold (fun id _n acc -> Ident.Set.add id acc)
       t assigned
   in
-  { used; linear; assigned; closure_environment = !environment_idents; }
+  { used; linear; assigned; closure_environment = !environment_idents;
+    let_bound_vars_that_can_be_moved = Ident.Set.empty;
+  }
+
+(* When sequences of [let]-bindings match the evaluation order in a subsequent
+   primitive or function application whose arguments are linearly-used
+   non-assigned variables bound by such lets (possibly interspersed with other
+   variables that are known to be constant), and it is known that there were no
+   intervening side-effects during the evaluation of the [let]-bindings,
+   permit substitution of the variables for their defining expressions. *)
+let let_bound_vars_that_can_be_moved ident_info (clam : Clambda.ulambda) =
+  let obviously_constant = ref Ident.Set.empty in
+  let can_move = ref Ident.Set.empty in
+  let let_stack = ref [] in
+  let examine_argument_list args =
+    let rec loop let_bound_vars (args : Clambda.ulambda list) =
+      match let_bound_vars, args with
+      | _, [] ->
+        (* We've matched all arguments and will not substitute (in the
+           current application being considered) any of the remaining
+           [let_bound_vars].  As such they may stay on the stack. *)
+        let_bound_vars
+      | [], _ ->
+        (* There are no more [let]-bindings to consider, so the stack
+           is left empty. *)
+        []
+      | let_bound_vars, (Uvar arg)::args
+          when Ident.Set.mem arg !obviously_constant ->
+        loop let_bound_vars args
+      | let_bound_var::let_bound_vars, (Uvar arg)::args
+          when Ident.same let_bound_var arg
+            && not (Ident.Set.mem arg ident_info.assigned) ->
+        can_move := Ident.Set.add arg !can_move;
+        loop let_bound_vars args
+      | _::_, _::_ ->
+        (* The [let] sequence has ceased to match the evaluation order
+           or we have encountered some complicated argument.  In this case
+           we empty the stack to ensure that we do not end up moving an
+           outer [let] across a side effect. *)
+        []
+    in
+    (* Start at the most recent let binding and the leftmost argument
+       (the last argument to be evaluated). *)
+    let_stack := loop !let_stack args
+  in
+  let rec loop : Clambda.ulambda -> unit = function
+    | Uvar ident ->
+      if Ident.Set.mem ident ident_info.assigned then begin
+        let_stack := []
+      end
+    | Uconst const ->
+      ignore_uconstant const
+    | Udirect_apply (label, args, dbg) ->
+      ignore_function_label label;
+      examine_argument_list args;
+      (* We don't currently traverse [args]; they should all be variables
+         anyway.  If this is added in the future, take care to traverse [args]
+         following the evaluation order. *)
+      ignore_debuginfo dbg
+    | Ugeneric_apply (func, args, dbg) ->
+      examine_argument_list (args @ [func]);
+      ignore_debuginfo dbg
+    | Uclosure (functions, captured_variables) ->
+      ignore_ulambda_list captured_variables;
+      (* Start a new let stack for speed. *)
+      List.iter (fun { Clambda. label; arity; params; body; dbg; } ->
+          ignore_function_label label;
+          ignore_int arity;
+          ignore_ident_list params;
+          let_stack := [];
+          loop body;
+          let_stack := [];
+          ignore_debuginfo dbg)
+        functions
+    | Uoffset (expr, offset) ->
+      (* [expr] should usually be a variable. *)
+      examine_argument_list [expr];
+      ignore_int offset
+    | Ulet (ident, def, body) ->
+      begin match def with
+      | Uconst _ ->
+        (* The defining expression is obviously constant, so we don't
+           have to put this [let] on the stack, and we don't have to
+           traverse the defining expression either. *)
+        obviously_constant := Ident.Set.add ident !obviously_constant;
+        loop body
+      | _ ->
+        loop def;
+        if Ident.Set.mem ident ident_info.linear then begin
+          let_stack := ident::!let_stack
+        end else begin
+          (* If we encounter a non-linear [let]-binding then we must clear
+             the let stack, since we cannot now move any previous binding
+             across the non-linear one. *)
+          let_stack := []
+        end;
+        loop body
+      end
+    | Uletrec (defs, body) ->
+      (* Evaluation order for [defs] is not defined, and this case
+         probably isn't important for [Cmmgen] anyway. *)
+      let_stack := [];
+      List.iter (fun (ident, def) ->
+          ignore_ident ident;
+          loop def;
+          let_stack := [])
+        defs;
+      loop body
+    | Uprim (prim, args, dbg) ->
+      ignore_primitive prim;
+      examine_argument_list args;
+      ignore_debuginfo dbg
+    | Uswitch (cond, { us_index_consts; us_actions_consts;
+          us_index_blocks; us_actions_blocks }) ->
+      examine_argument_list [cond];
+      ignore_int_array us_index_consts;
+      Array.iter (fun action ->
+          let_stack := [];
+          loop action)
+        us_actions_consts;
+      ignore_int_array us_index_blocks;
+      Array.iter (fun action ->
+          let_stack := [];
+          loop action)
+        us_actions_blocks;
+      let_stack := []
+    | Ustringswitch (cond, branches, default) ->
+      examine_argument_list [cond];
+      List.iter (fun (str, branch) ->
+          ignore_string str;
+          let_stack := [];
+          loop branch)
+        branches;
+      let_stack := [];
+      Misc.may loop default;
+      let_stack := []
+    | Ustaticfail (static_exn, args) ->
+      ignore_int static_exn;
+      ignore_ulambda_list args;
+      let_stack := []
+    | Ucatch (static_exn, idents, body, handler) ->
+      ignore_int static_exn;
+      ignore_ident_list idents;
+      let_stack := [];
+      loop body;
+      let_stack := [];
+      loop handler;
+      let_stack := []
+    | Utrywith (body, ident, handler) ->
+      let_stack := [];
+      loop body;
+      let_stack := [];
+      ignore_ident ident;
+      loop handler;
+      let_stack := []
+    | Uifthenelse (cond, ifso, ifnot) ->
+      examine_argument_list [cond];
+      let_stack := [];
+      loop ifso;
+      let_stack := [];
+      loop ifnot;
+      let_stack := []
+    | Usequence (e1, e2) ->
+      loop e1;
+      let_stack := [];
+      loop e2;
+      let_stack := []
+    | Uwhile (cond, body) ->
+      let_stack := [];
+      loop cond;
+      let_stack := [];
+      loop body;
+      let_stack := []
+    | Ufor (ident, low, high, direction_flag, body) ->
+      ignore_ident ident;
+      (* CR mshinwell: think about evaluation order of low vs. high *)
+      ignore_ulambda low;
+      ignore_ulambda high;
+      ignore_direction_flag direction_flag;
+      let_stack := [];
+      loop body;
+      let_stack := []
+    | Uassign (ident, expr) ->
+      ignore_ident ident;
+      ignore_ulambda expr;
+      let_stack := []
+    | Usend (meth_kind, e1, e2, args, dbg) ->
+      ignore_meth_kind meth_kind;
+      ignore_ulambda e1;
+      ignore_ulambda e2;
+      ignore_ulambda_list args;
+      let_stack := [];
+      ignore_debuginfo dbg
+    | Uunreachable ->
+      let_stack := []
+  in
+  loop clam;
+  !can_move
 
 (* We say that an expression is "moveable" iff it has neither effects nor
    coeffects.  (See semantics_of_primitives.mli.) *)
@@ -263,17 +467,24 @@ let rec un_anf_and_moveable ident_info env (clam : Clambda.ulambda)
     Uoffset (clam, n), moveable
   | Ulet (id, def, Uvar id') when Ident.same id id' ->
     un_anf_and_moveable ident_info env def
-  | Ulet (id, def, Uifthenelse (Uvar id', ifso, ifnot)) when
-      Ident.same id id' && Ident.Set.mem id ident_info.linear ->
-    (* No effect or co-effects occur between the definition and the
-       use, so moving the definition is safe. *)
-    (* CR pchambart: It is possible to do a general version of this.
-       This one is cheap, simple and useful. It is not obvious how to
-       do an efficient general version and if it matter *)
-    un_anf_and_moveable ident_info env
-      (Clambda.Uifthenelse (def, ifso, ifnot))
   | Ulet (id, def, body) ->
-    let def, def_moveable = un_anf_and_moveable ident_info env def in
+    let def, def_moveable =
+      let def, def_moveable = un_anf_and_moveable ident_info env def in
+      let def_moveable =
+        match def_moveable with
+        | Moveable -> Moveable
+        | Fixed ->
+          if Ident.Set.mem id ident_info.let_bound_vars_that_can_be_moved
+          then begin
+            assert (Ident.Set.mem id ident_info.linear);
+            assert (Ident.Set.mem id ident_info.used);
+            Moveable
+          end else begin
+            Fixed
+          end
+      in
+      def, def_moveable
+    in
     let is_linear = Ident.Set.mem id ident_info.linear in
     let is_used = Ident.Set.mem id ident_info.used in
     begin match def_moveable, is_linear, is_used with
@@ -383,6 +594,13 @@ and un_anf_array ident_info env clams : Clambda.ulambda array =
 
 let apply clam ~what =
   let ident_info = make_ident_info clam in
+  let let_bound_vars_that_can_be_moved =
+    let_bound_vars_that_can_be_moved ident_info clam
+  in
+  let ident_info =
+    { ident_info with let_bound_vars_that_can_be_moved;
+    }
+  in
   let clam = un_anf ident_info Ident.Map.empty clam in
   if !Clflags.dump_clambda then begin
     Format.eprintf "@.un-anf (%s):@ %a@." what Printclambda.clambda clam
