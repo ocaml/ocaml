@@ -159,16 +159,11 @@ module Options = Main_args.Make_optcomp_options (struct
   let _nolabels = set classic
   let _nostdlib = set no_std_include
   let _o s = output_name := Some s
-  (* CR mshinwell: should stop e.g. -O2 -classic-heuristic *)
-  let _o2 () =
-    simplify_rounds := 2;
-    use_inlining_arguments_set ~round:1 o1_arguments;
-    use_inlining_arguments_set ~round:2 o2_arguments
-  let _o3 () =
-    simplify_rounds := 3;
-    use_inlining_arguments_set ~round:1 o1_arguments;
-    use_inlining_arguments_set ~round:2 o2_arguments;
-    use_inlining_arguments_set ~round:3 o3_arguments
+  (* CR mshinwell: should stop e.g. -O2 -classic-heuristic
+     lgesbert: could be done in main() below, like for -pack and -c, but that
+     would prevent overriding using OCAMLPARAM. *)
+  let _o2 = set o2
+  let _o3 = set o3
   let _open s = open_modules := s :: !open_modules
   let _output_obj = set output_c_object
   let _output_complete_obj s =

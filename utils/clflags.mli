@@ -133,6 +133,8 @@ val dump_linear : bool ref
 val keep_startup_file : bool ref
 val dump_combine : bool ref
 val native_code : bool ref
+val o2 : bool ref
+val o3 : bool ref
 val default_inline_threshold : float
 val inline_threshold : Float_arg_helper.parsed ref
 val inlining_stats : bool ref
