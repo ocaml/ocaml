@@ -60,7 +60,8 @@ Language features:
   (Alain Frisch and Gabriel Radanne)
 
 Compilers:
-- PR#4080, PR#6537, PR#5333: fix stack overflow in the compiler when -pack'ing a module
+- PR#4080, PR#6537, PR#5333: fix stack overflow in the compiler when -pack'ing
+  a module
   that includes a module of the same name (Alain Frisch)
 - PR#4800: better compilation of tuple assignment (Gabriel Scherer and
   Alain Frisch)
@@ -91,7 +92,8 @@ Compilers:
   the stack (Marc Lasson, review by Xavier Leroy)
 - PR#7018: fix missing identifier renaming during inlining (Alain Frisch,
   review by Xavier Leroy)
-- PR#7026, GPR#288: remove write barrier for polymorphic variants without arguments
+- PR#7026, GPR#288: remove write barrier for polymorphic variants without
+  arguments
   (Simon Cruanes)
 - PR#7031: new warning, ambiguous guarded or-patterns (Luc Maranget,
   Gabriel Scherer, report by Martin Clochard and Claude Marché).
@@ -473,10 +475,11 @@ Features wishes:
 - GPR#252: improve build instructions in MSVC Windows README
   (Philip Daian)
 * GPR#170: Parse arbitrary precision integers.
-  Accept a single [A-Za-z] as modifier for integers (generalizing 'l','L','n') and floats.
+  Accept a single [A-Za-z] as modifier for integers (generalizing 'l','L','n')
+  and floats.
   May cause breakage (ie. ppx preprocessor) because of changes in the parsetree.
-  This changes PR#6816 a little bit by reading the literal [123a] as a single token that can
-  later be rewritten by a ppx preprocessor.
+  This changes PR#6816 a little bit by reading the literal [123a] as a single
+  token that can later be rewritten by a ppx preprocessor.
   (Hugo Heuzard)
 - GPR#308: add experimental support for NetBSD/arm (verified on RaspberryPi)
   (Rich Neswold)
