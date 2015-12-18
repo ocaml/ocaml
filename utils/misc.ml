@@ -122,11 +122,15 @@ let find_in_path_uncap path name =
       else try_dir rem
   in try_dir path
 
+(* A special version of [Sys.remove] that does not raise an exception
+   but instead returns [true] iff the removal succeeded.
+   This is important so as not to destroy backtraces in the event of
+   a compiler failure. *)
+external caml_sys_remove_no_exn : string -> bool
+  = "caml_sys_remove_no_exn"
+
 let remove_file filename =
-  try
-    Sys.remove filename
-  with Sys_error msg ->
-    ()
+  ignore ((caml_sys_remove_no_exn filename) : bool)
 
 (* Expand a -I option: if it starts with +, make it relative to the standard
    library directory *)
