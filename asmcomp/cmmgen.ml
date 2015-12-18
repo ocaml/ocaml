@@ -2520,7 +2520,12 @@ and emit_boxed_int64_constant n cont =
 (* Emit constant closures *)
 
 let emit_constant_closure ((_, global_symb) as symb) fundecls clos_vars cont =
-  let closure_symbol f = f.label ^ "_closure", global_symb in
+  let closure_symbol f =
+    if Config.flambda then
+      cdefine_symbol (f.label ^ "_closure", global_symb)
+    else
+      []
+  in
   match fundecls with
     [] ->
       (* This should probably not happen: dead code has normally been
@@ -2536,13 +2541,13 @@ let emit_constant_closure ((_, global_symb) as symb) fundecls clos_vars cont =
       | f2 :: rem ->
           if f2.arity = 1 || f2.arity = 0 then
             Cint(infix_header pos) ::
-            cdefine_symbol (closure_symbol f2) @
+            (closure_symbol f2) @
             Csymbol_address f2.label ::
             Cint(Nativeint.of_int (f2.arity lsl 1 + 1)) ::
             emit_others (pos + 3) rem
           else
             Cint(infix_header pos) ::
-            cdefine_symbol (closure_symbol f2) @
+            (closure_symbol f2) @
             Csymbol_address(curry_function f2.arity) ::
             Cint(Nativeint.of_int (f2.arity lsl 1 + 1)) ::
             Csymbol_address f2.label ::
@@ -2550,7 +2555,7 @@ let emit_constant_closure ((_, global_symb) as symb) fundecls clos_vars cont =
       Cint(black_closure_header (fundecls_size fundecls
                                  + List.length clos_vars)) ::
       cdefine_symbol symb @
-      cdefine_symbol (closure_symbol f1) @
+      (closure_symbol f1) @
       if f1.arity = 1 || f1.arity = 0 then
         Csymbol_address f1.label ::
         Cint(Nativeint.of_int (f1.arity lsl 1 + 1)) ::
