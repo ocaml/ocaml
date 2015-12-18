@@ -59,6 +59,14 @@ val symbol_for_global: Ident.t -> string
         (* Return the asm symbol that refers to the given global identifier *)
 val symbol_for_global': Ident.t -> Symbol.t
 
+
+val global_approx: Ident.t -> Clambda.value_approximation
+        (* Return the approximation for the given global identifier *)
+val set_global_approx: Clambda.value_approximation -> unit
+        (* Record the approximation of the unit being compiled *)
+val record_global_approx_toplevel: unit -> unit
+        (* Record the current approximation for the current toplevel phrase *)
+
 val set_export_info: Export_info.t -> unit
         (* Record the informations of the unit being compiled *)
 val approx_env: unit -> Export_info.t
@@ -91,6 +99,11 @@ val canonical_symbol: string -> string
 val structured_constants:
   unit -> ((string * bool) list * Clambda.ustructured_constant) list
 val clear_structured_constants: unit -> unit
+val add_exported_constant: string -> unit
+
+type structured_constants
+val snapshot: unit -> structured_constants
+val backtrack: structured_constants -> unit
 
 val read_unit_info: string -> unit_infos * Digest.t
         (* Read infos and MD5 from a [.cmx] file. *)

@@ -15,7 +15,8 @@
 val compunit_and_constants:
     Clambda.ulambda
       * Clambda.preallocated_block list
-      * Clambda.ustructured_constant Symbol.Map.t
+      * (Clambda.ustructured_constant * bool (* exported *)
+         * (Symbol.t * bool) list) Symbol.Map.t
   -> Cmm.phrase list
 
 val apply_function: int -> Cmm.phrase

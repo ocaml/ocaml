@@ -776,7 +776,7 @@ let simplify_default_wrapper lam =
   map f lam
 
 let simplify_default_wrapper lam =
-  let optimize = !Clflags.native_code in
+  let optimize = !Clflags.native_code && Config.flambda in
   if optimize
   then simplify_default_wrapper lam
   else lam

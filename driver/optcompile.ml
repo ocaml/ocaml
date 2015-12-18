@@ -60,14 +60,11 @@ let (+++) (x, y) f = (x, f y)
 
 let do_transl modulename modul =
   let id, (lam, size) =
-    Translmod.transl_implementation_native modulename modul
+    Translmod.transl_implementation_flambda modulename modul
   in
   (id, size), lam
 
 let implementation ppf sourcefile outputprefix ~backend =
-  if !Clflags.classic_heuristic then begin
-    Clflags.use_inlining_arguments_set Clflags.classic_arguments
-  end;
   Compmisc.init_path true;
   let modulename = module_of_filename ppf sourcefile outputprefix in
   Env.set_unit_name modulename;
@@ -87,23 +84,52 @@ let implementation ppf sourcefile outputprefix ~backend =
           Printtyped.implementation_with_coercion
     in
     if not !Clflags.print_types then begin
-      (typedtree, coercion)
-      ++ Timings.(start_id (Transl sourcefile))
-      ++ do_transl modulename
-      ++ Timings.(stop_id (Transl sourcefile))
-      +++ print_if ppf Clflags.dump_rawlambda Printlambda.lambda
-      ++ Timings.(start_id (Generate sourcefile))
-      +++ Simplif.simplify_lambda
-      +++ print_if ppf Clflags.dump_lambda Printlambda.lambda
-      ++ (fun ((module_ident, size), lam) ->
-          Middle_end.middle_end ppf ~sourcefile ~prefixname:outputprefix
-            ~size
-            ~module_ident
-            ~backend
-            ~module_initializer:lam)
-      ++ Asmgen.compile_implementation ~sourcefile outputprefix ~backend ppf;
+      if !Clflags.o3 then begin
+        Clflags.simplify_rounds := 3;
+        Clflags.use_inlining_arguments_set ~round:1 Clflags.o1_arguments;
+        Clflags.use_inlining_arguments_set ~round:2 Clflags.o2_arguments;
+        Clflags.use_inlining_arguments_set ~round:3 Clflags.o3_arguments
+      end
+      else if !Clflags.o2 then begin
+        Clflags.simplify_rounds := 2;
+        Clflags.use_inlining_arguments_set ~round:1 Clflags.o1_arguments;
+        Clflags.use_inlining_arguments_set ~round:2 Clflags.o2_arguments
+      end
+      else if !Clflags.classic_heuristic then begin
+        Clflags.use_inlining_arguments_set Clflags.classic_arguments
+      end;
+      if Config.flambda then begin
+        (typedtree, coercion)
+        ++ Timings.(start_id (Transl sourcefile))
+        ++ do_transl modulename
+        ++ Timings.(stop_id (Transl sourcefile))
+        +++ print_if ppf Clflags.dump_rawlambda Printlambda.lambda
+        ++ Timings.(start_id (Generate sourcefile))
+        +++ Simplif.simplify_lambda
+        +++ print_if ppf Clflags.dump_lambda Printlambda.lambda
+        ++ (fun ((module_ident, size), lam) ->
+            Middle_end.middle_end ppf ~sourcefile ~prefixname:outputprefix
+              ~size
+              ~module_ident
+              ~backend
+              ~module_initializer:lam)
+        ++ Asmgen.compile_implementation ~sourcefile outputprefix ~backend Asmgen.Flambda ppf;
+        Timings.(stop (Generate sourcefile));
+      end
+      else begin
+        (typedtree, coercion)
+        ++ Timings.(start_id (Transl sourcefile))
+        ++ Translmod.transl_store_implementation modulename
+        ++ Timings.(stop_id (Transl sourcefile))
+        +++ print_if ppf Clflags.dump_rawlambda Printlambda.lambda
+        ++ Timings.(start_id (Generate sourcefile))
+        +++ Simplif.simplify_lambda
+        +++ print_if ppf Clflags.dump_lambda Printlambda.lambda
+        ++ (fun (main_module_block_size, code) -> Asmgen.{ code; main_module_block_size })
+        ++ Asmgen.compile_implementation ~sourcefile outputprefix ~backend Asmgen.Lambda ppf;
+        Timings.(stop (Generate sourcefile));
+      end;
       Compilenv.save_unit_info cmxfile;
-      Timings.(stop (Generate sourcefile));
     end;
     Warnings.check_fatal ();
     Stypes.dump (Some (outputprefix ^ ".annot"))
