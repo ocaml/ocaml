@@ -64,9 +64,9 @@ let raw_clambda_dump_if ppf (ulambda, _, structured_constants) =
     begin
       Format.fprintf ppf "@.clambda (before Un_anf):@.";
       Printclambda.clambda ppf ulambda;
-      Symbol.Map.iter (fun sym (cst, _, _) ->
+      List.iter (fun (names, cst) ->
           Format.fprintf ppf "%a:@ %a@."
-            Symbol.print sym
+            (Format.pp_print_list Symbol.print) (List.map fst names)
             Printclambda.structured_constant cst)
         structured_constants
     end;
@@ -162,8 +162,8 @@ let set_export_info (ulambda, prealloc, structured_constants, export) =
 type clambda_and_constants =
   Clambda.ulambda *
   Clambda.preallocated_block list *
-  (Clambda.ustructured_constant * bool (* exported *)
-   * (Symbol.t * bool) list) Symbol.Map.t
+  ((Symbol.t * bool (* exported *)) list *
+   Clambda.ustructured_constant) list
 
 let end_gen_implementation ?toplevel ~sourcefile ppf
     (clambda:clambda_and_constants) =
@@ -209,7 +209,8 @@ let flambda_gen_implementation ?toplevel ~sourcefile ~backend ppf
     ++ Timings.(stop_id (Flambda_backend sourcefile))
   in
   let constants =
-    Symbol.Map.map (fun const -> (const, true, [])) constants
+    List.map (fun (symbol, const) -> [symbol, true], const)
+      (Symbol.Map.bindings constants)
   in
   end_gen_implementation ?toplevel ~sourcefile ppf
     (clambda, preallocated, constants)
@@ -233,13 +234,8 @@ let lambda_gen_implementation ?toplevel ~sourcefile ppf
   let constants =
     let constants = Compilenv.structured_constants () in
     Compilenv.clear_structured_constants ();
-    List.fold_left (fun map (aliases, const) ->
-        let aliases = List.map make_symbol aliases in
-        match aliases with
-        | [] -> assert false
-        | (sym, exported) :: aliases ->
-            Symbol.Map.add sym (const, exported, aliases) map)
-      Symbol.Map.empty constants
+    List.map (fun (aliases, const) -> List.map make_symbol aliases, const)
+      constants
   in
   let clambda_and_constants =
     clambda, [preallocated_block], constants
