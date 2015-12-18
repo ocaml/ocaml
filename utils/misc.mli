@@ -38,9 +38,30 @@ val split_last: 'a list -> 'a list * 'a
 val samelist: ('a -> 'a -> bool) -> 'a list -> 'a list -> bool
         (* Like [List.for_all2] but returns [false] if the two
            lists have different length. *)
-
+val sameoption: ('a -> 'a -> bool) -> 'a option -> 'a option -> bool
+val map2_head: ('a -> 'b -> 'c) -> 'a list -> 'b list -> ('c list * 'b list)
+        (* [let (r1,r2) = map2_head f l1 l2]
+           If [l1] is of length n and [l2 = h2 @ t2] with h2 of length n
+           and t2 of length k, r1 is [List.map2 f l1 h1] and r2 is t2 *)
+val some_if_all_elements_are_some: 'a option list -> 'a list option
+val split_at: int -> 'a list -> 'a list * 'a list
+        (* [split_at n l] returns the couple [before, after]
+           where [before] are the [n] first elements of [l] and [after]
+           are the remaining ones.
+           If [l] has less than [n] elements, raises Invalid_argument *)
+val uniq_sort : ('a -> 'a -> int) -> 'a list -> 'a list
+        (* Sorts and remove duplicated elements according to the
+           comparison function *)
+val filter_map : ('a -> 'b option) -> 'a list -> 'b list
+        (* [filter_map f l] is the list [List.map f l] with only the
+           elements matching [Some _] *)
+val compare_lists : ('a -> 'a -> int) -> 'a list -> 'a list -> int
+        (* compare_lists is the lexicographic order supported by the
+           provided order *)
 val may: ('a -> unit) -> 'a option -> unit
 val may_map: ('a -> 'b) -> 'a option -> 'b option
+val may_fold: ('a -> 'b -> 'b) -> 'a option -> 'b -> 'b
+val may_default: ('a -> 'b) -> 'a option -> 'b -> 'b
 
 val find_in_path: string list -> string -> string
         (* Search a file in a list of directories. *)
@@ -118,8 +139,9 @@ val replace_substring: before:string -> after:string -> string -> string
            occurences of [before] with [after] in [str] and returns
            the resulting string. *)
 
-val rev_split_words: string -> string list
-        (* [rev_split_words s] splits [s] in blank-separated words, and return
+val rev_split_words: ?separator:char -> string -> string list
+        (* [rev_split_words s] splits [s] in blank-separated words (or
+           [separator]-separated words if specified), and return
            the list of words in reverse order. *)
 
 val get_ref: 'a list ref -> 'a list
