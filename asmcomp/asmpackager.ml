@@ -93,13 +93,13 @@ let make_package_object ppf members targetobj targetname coercion
         | PM_impl _ -> Some(Ident.create_persistent m.pm_name))
       members in
   let module_ident = Ident.create_persistent targetname in
-  let size, lam =
-    Translmod.transl_package_flambda
-      components module_ident coercion
-  in
   let sourcefile = "pack" in
   let prefixname = chop_extension_if_any objtemp in
   if Config.flambda then begin
+    let size, lam =
+      Translmod.transl_package_flambda
+        components module_ident coercion
+    in
     let flam =
       Middle_end.middle_end ppf
         ~sourcefile
@@ -112,7 +112,12 @@ let make_package_object ppf members targetobj targetname coercion
     Asmgen.compile_implementation ~sourcefile
       prefixname ~backend Asmgen.Flambda ppf flam;
   end else begin
-    failwith "TODO"
+    let main_module_block_size, code =
+      Translmod.transl_store_package
+        components (Ident.create_persistent targetname) coercion in
+    Asmgen.compile_implementation ~sourcefile
+      prefixname ~backend Asmgen.Lambda ppf
+      Asmgen.{ code; main_module_block_size; }
   end;
   let objfiles =
     List.map
