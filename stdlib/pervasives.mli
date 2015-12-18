@@ -1101,10 +1101,11 @@ val ( ^^ ) :
 (** {6 Optimisation} *)
 
 external opaque : 'a -> 'a = "%opaque"
-(** Semantically, [opaque v] behaves as the identity function; but for the
-    purposes of optimisation passes, such expression is side-effecting and
-    yields an unknown result.  This may be used to prevent necessary code
-    in applications such as benchmarks from being optimised away. *)
+(** Semantically, [opaque v] behaves as the identity function; but when
+    used with Flambda mode, for the purposes of optimisation passes such
+    expression is side-effecting and yields an unknown result.  This may
+    be used to prevent necessary code in applications such as benchmarks from
+    being optimised away. *)
 
 (** {6 Program termination} *)
 
