@@ -988,11 +988,11 @@ let rec close fenv cenv = function
       let (ulam, approx) = close fenv cenv lam in
       check_constant_result lam (Uprim(Pfield n, [ulam], Debuginfo.none))
                             (field_approx n approx)
-  | Lprim(Psetfield(n, _, init), [Lprim(Pgetglobal id, []); lam]) ->
+  | Lprim(Psetfield(n, is_ptr, init), [Lprim(Pgetglobal id, []); lam]) ->
       let (ulam, approx) = close fenv cenv lam in
       if approx <> Value_unknown then
         (!global_approx).(n) <- approx;
-      (Uprim(Psetfield(n, Pointer, init), [getglobal id; ulam], Debuginfo.none),
+      (Uprim(Psetfield(n, is_ptr, init), [getglobal id; ulam], Debuginfo.none),
        Value_unknown)
   | Lprim(Praise k, [Levent(arg, ev)]) ->
       let (ulam, approx) = close fenv cenv arg in
