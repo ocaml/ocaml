@@ -559,7 +559,7 @@ let wrap_globals body =
 
 (* Compile an implementation *)
 
-let transl_implementation_native module_name (str, cc) =
+let transl_implementation_flambda module_name (str, cc) =
   reset_labels ();
   primitive_declarations := [];
   Hashtbl.clear used_primitives;
@@ -572,7 +572,7 @@ let transl_implementation_native module_name (str, cc) =
 
 let transl_implementation module_name (str, cc) =
   let module_id, (module_initializer, _size) =
-    transl_implementation_native module_name (str, cc)
+    transl_implementation_flambda module_name (str, cc)
   in
   Lprim (Psetglobal module_id, [module_initializer])
 
@@ -1006,7 +1006,7 @@ let get_component = function
     None -> Lconst const_unit
   | Some id -> Lprim(Pgetglobal id, [])
 
-let transl_package_native component_names target_name coercion =
+let transl_package_flambda component_names target_name coercion =
   let size =
     match coercion with
     | Tcoerce_none -> List.length component_names

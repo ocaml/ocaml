@@ -60,7 +60,7 @@ let (+++) (x, y) f = (x, f y)
 
 let do_transl modulename modul =
   let id, (lam, size) =
-    Translmod.transl_implementation_native modulename modul
+    Translmod.transl_implementation_flambda modulename modul
   in
   (id, size), lam
 

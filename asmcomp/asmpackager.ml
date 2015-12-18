@@ -94,7 +94,7 @@ let make_package_object ppf members targetobj targetname coercion
       members in
   let module_ident = Ident.create_persistent targetname in
   let size, lam =
-    Translmod.transl_package_native
+    Translmod.transl_package_flambda
       components module_ident coercion
   in
   let sourcefile = "pack" in
