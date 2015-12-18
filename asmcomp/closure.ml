@@ -157,9 +157,10 @@ let prim_size prim args =
   | Psetglobal id -> 1
   | Pmakeblock(tag, mut) -> 5 + List.length args
   | Pfield f -> 1
-  | Psetfield(f, isptr) -> if isptr then 4 else 1
+  | Psetfield(f, Pointer, _) -> 4
+  | Psetfield(f, Immediate, _) -> 1
   | Pfloatfield f -> 1
-  | Psetfloatfield f -> 1
+  | Psetfloatfield (f, _) -> 1
   | Pduprecord _ -> 10 + List.length args
   | Pccall p -> (if p.prim_alloc then 10 else 4) + List.length args
   | Praise _ -> 4
@@ -987,11 +988,11 @@ let rec close fenv cenv = function
       let (ulam, approx) = close fenv cenv lam in
       check_constant_result lam (Uprim(Pfield n, [ulam], Debuginfo.none))
                             (field_approx n approx)
-  | Lprim(Psetfield(n, _), [Lprim(Pgetglobal id, []); lam]) ->
+  | Lprim(Psetfield(n, _, init), [Lprim(Pgetglobal id, []); lam]) ->
       let (ulam, approx) = close fenv cenv lam in
       if approx <> Value_unknown then
         (!global_approx).(n) <- approx;
-      (Uprim(Psetfield(n, false), [getglobal id; ulam], Debuginfo.none),
+      (Uprim(Psetfield(n, Pointer, init), [getglobal id; ulam], Debuginfo.none),
        Value_unknown)
   | Lprim(Praise k, [Levent(arg, ev)]) ->
       let (ulam, approx) = close fenv cenv arg in

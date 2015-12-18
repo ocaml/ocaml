@@ -489,8 +489,8 @@ let field_address ptr n =
 let get_field ptr n =
   Cop(Cload Word_val, [field_address ptr n])
 
-let set_field ptr n newval =
-  Cop(Cstore Word_val, [field_address ptr n; newval])
+let set_field ptr n newval init =
+  Cop(Cstore (Word_val, init), [field_address ptr n; newval])
 
 let header ptr =
   Cop(Cload Word_int, [Cop(Cadda, [ptr; Cconst_int(-size_int)])])
@@ -573,9 +573,11 @@ let addr_array_set arr ofs newval =
   Cop(Cextcall("caml_modify", typ_void, false, Debuginfo.none),
       [array_indexing log2_size_addr arr ofs; newval])
 let int_array_set arr ofs newval =
-  Cop(Cstore Word_int, [array_indexing log2_size_addr arr ofs; newval])
+  Cop(Cstore (Word_int, Assignment),
+    [array_indexing log2_size_addr arr ofs; newval])
 let float_array_set arr ofs newval =
-  Cop(Cstore Double_u, [array_indexing log2_size_float arr ofs; newval])
+  Cop(Cstore (Double_u, Assignment),
+    [array_indexing log2_size_float arr ofs; newval])
 
 (* String length *)
 
@@ -946,11 +948,11 @@ let bigarray_set unsafe elt_kind layout b args newval dbg =
         bind "addr" (bigarray_indexing unsafe elt_kind layout b args dbg)
           (fun addr ->
           Csequence(
-            Cop(Cstore kind, [addr; complex_re newv]),
-            Cop(Cstore kind,
+            Cop(Cstore (kind, Assignment), [addr; complex_re newv]),
+            Cop(Cstore (kind, Assignment),
                 [Cop(Cadda, [addr; Cconst_int sz]); complex_im newv]))))
     | _ ->
-        Cop(Cstore (bigarray_word_kind elt_kind),
+        Cop(Cstore (bigarray_word_kind elt_kind, Assignment),
             [bigarray_indexing unsafe elt_kind layout b args dbg; newval]))
 
 let unaligned_load_16 ptr idx =
@@ -965,14 +967,14 @@ let unaligned_load_16 ptr idx =
 
 let unaligned_set_16 ptr idx newval =
   if Arch.allow_unaligned_access
-  then Cop(Cstore Sixteen_unsigned, [add_int ptr idx; newval])
+  then Cop(Cstore (Sixteen_unsigned, Assignment), [add_int ptr idx; newval])
   else
     let v1 = Cop(Cand, [Cop(Clsr, [newval; Cconst_int 8]); Cconst_int 0xFF]) in
     let v2 = Cop(Cand, [newval; Cconst_int 0xFF]) in
     let b1, b2 = if Arch.big_endian then v1, v2 else v2, v1 in
     Csequence(
-        Cop(Cstore Byte_unsigned, [add_int ptr idx; b1]),
-        Cop(Cstore Byte_unsigned,
+        Cop(Cstore (Byte_unsigned, Assignment), [add_int ptr idx; b1]),
+        Cop(Cstore (Byte_unsigned, Assignment),
             [add_int (add_int ptr idx) (Cconst_int 1); b2]))
 
 let unaligned_load_32 ptr idx =
@@ -996,7 +998,7 @@ let unaligned_load_32 ptr idx =
 
 let unaligned_set_32 ptr idx newval =
   if Arch.allow_unaligned_access
-  then Cop(Cstore Thirtytwo_unsigned, [add_int ptr idx; newval])
+  then Cop(Cstore (Thirtytwo_unsigned, Assignment), [add_int ptr idx; newval])
   else
     let v1 =
       Cop(Cand, [Cop(Clsr, [newval; Cconst_int 24]); Cconst_int 0xFF]) in
@@ -1011,13 +1013,13 @@ let unaligned_set_32 ptr idx newval =
       else v4, v3, v2, v1 in
     Csequence(
         Csequence(
-            Cop(Cstore Byte_unsigned, [add_int ptr idx; b1]),
-            Cop(Cstore Byte_unsigned,
+            Cop(Cstore (Byte_unsigned, Assignment), [add_int ptr idx; b1]),
+            Cop(Cstore (Byte_unsigned, Assignment),
                 [add_int (add_int ptr idx) (Cconst_int 1); b2])),
         Csequence(
-            Cop(Cstore Byte_unsigned,
+            Cop(Cstore (Byte_unsigned, Assignment),
                 [add_int (add_int ptr idx) (Cconst_int 2); b3]),
-            Cop(Cstore Byte_unsigned,
+            Cop(Cstore (Byte_unsigned, Assignment),
                 [add_int (add_int ptr idx) (Cconst_int 3); b4])))
 
 let unaligned_load_64 ptr idx =
@@ -1059,7 +1061,7 @@ let unaligned_load_64 ptr idx =
 let unaligned_set_64 ptr idx newval =
   assert(size_int = 8);
   if Arch.allow_unaligned_access
-  then Cop(Cstore Word_int, [add_int ptr idx; newval])
+  then Cop(Cstore (Word_int, Assignment), [add_int ptr idx; newval])
   else
     let v1 =
       Cop(Cand, [Cop(Clsr, [newval; Cconst_int (8*7)]); Cconst_int 0xFF]) in
@@ -1082,24 +1084,24 @@ let unaligned_set_64 ptr idx newval =
     Csequence(
         Csequence(
             Csequence(
-                Cop(Cstore Byte_unsigned, [add_int ptr idx; b1]),
-                Cop(Cstore Byte_unsigned,
+                Cop(Cstore (Byte_unsigned, Assignment), [add_int ptr idx; b1]),
+                Cop(Cstore (Byte_unsigned, Assignment),
                     [add_int (add_int ptr idx) (Cconst_int 1); b2])),
             Csequence(
-                Cop(Cstore Byte_unsigned,
+                Cop(Cstore (Byte_unsigned, Assignment),
                     [add_int (add_int ptr idx) (Cconst_int 2); b3]),
-                Cop(Cstore Byte_unsigned,
+                Cop(Cstore (Byte_unsigned, Assignment),
                     [add_int (add_int ptr idx) (Cconst_int 3); b4]))),
         Csequence(
             Csequence(
-                Cop(Cstore Byte_unsigned,
+                Cop(Cstore (Byte_unsigned, Assignment),
                     [add_int (add_int ptr idx) (Cconst_int 4); b5]),
-                Cop(Cstore Byte_unsigned,
+                Cop(Cstore (Byte_unsigned, Assignment),
                     [add_int (add_int ptr idx) (Cconst_int 5); b6])),
             Csequence(
-                Cop(Cstore Byte_unsigned,
+                Cop(Cstore (Byte_unsigned, Assignment),
                     [add_int (add_int ptr idx) (Cconst_int 6); b7]),
-                Cop(Cstore Byte_unsigned,
+                Cop(Cstore (Byte_unsigned, Assignment),
                     [add_int (add_int ptr idx) (Cconst_int 7); b8]))))
 
 let max_or_zero a =
@@ -1721,7 +1723,7 @@ and transl_prim_1 env p arg dbg =
   | Poffsetref n ->
       return_unit
         (bind "ref" (transl env arg) (fun arg ->
-          Cop(Cstore Word_int,
+          Cop(Cstore (Word_int, Assignment),
               [arg; add_const (Cop(Cload Word_int, [arg])) (n lsl 1)])))
   (* Floating-point operations *)
   | Pfloatofint ->
@@ -1786,16 +1788,19 @@ and transl_prim_1 env p arg dbg =
 and transl_prim_2 env p arg1 arg2 dbg =
   match p with
   (* Heap operations *)
-    Psetfield(n, ptr) ->
-      if ptr then
+    Psetfield(n, ptr, init) ->
+      begin match init, ptr with
+      | Assignment, Pointer ->
         return_unit(Cop(Cextcall("caml_modify", typ_void, false,Debuginfo.none),
                         [field_address (transl env arg1) n; transl env arg2]))
-      else
-        return_unit(set_field (transl env arg1) n (transl env arg2))
-  | Psetfloatfield n ->
+      | Assignment, Immediate
+      | Initialization, (Immediate | Pointer) ->
+        return_unit(set_field (transl env arg1) n (transl env arg2) init)
+      end
+  | Psetfloatfield (n, init) ->
       let ptr = transl env arg1 in
       return_unit(
-        Cop(Cstore Double_u,
+        Cop(Cstore (Double_u, init),
             [if n = 0 then ptr
                        else Cop(Cadda, [ptr; Cconst_int(n * size_float)]);
                    transl_unbox_float env arg2]))
@@ -2056,7 +2061,7 @@ and transl_prim_3 env p arg1 arg2 arg3 dbg =
   match p with
   (* String operations *)
     Pstringsetu ->
-      return_unit(Cop(Cstore Byte_unsigned,
+      return_unit(Cop(Cstore (Byte_unsigned, Assignment),
                       [add_int (transl env arg1) (untag_int(transl env arg2));
                         untag_int(transl env arg3)]))
   | Pstringsets ->
@@ -2065,7 +2070,7 @@ and transl_prim_3 env p arg1 arg2 arg3 dbg =
           bind "index" (untag_int (transl env arg2)) (fun idx ->
             Csequence(
               make_checkbound dbg [string_length str; idx],
-              Cop(Cstore Byte_unsigned,
+              Cop(Cstore (Byte_unsigned, Assignment),
                   [add_int str idx; untag_int(transl env arg3)])))))
 
   (* Array operations *)
@@ -2600,7 +2605,7 @@ let cache_public_method meths tag cache =
   Clet (
   tagged, Cop(Cadda, [lsl_const (Cvar li) log2_size_addr;
                       Cconst_int(1 - 3 * size_addr)]),
-  Csequence(Cop (Cstore Word_int, [cache; Cvar tagged]),
+  Csequence(Cop (Cstore (Word_int, Assignment), [cache; Cvar tagged]),
             Cvar tagged)))))
 
 (* Generate an application function:
@@ -2858,7 +2863,7 @@ let generic_functions shared units =
 
 let entry_point namelist =
   let incr_global_inited =
-    Cop(Cstore Word_int,
+    Cop(Cstore (Word_int, Assignment),
         [Cconst_symbol "caml_globals_inited";
          Cop(Caddi, [Cop(Cload Word_int, [Cconst_symbol "caml_globals_inited"]);
                      Cconst_int 1])]) in
