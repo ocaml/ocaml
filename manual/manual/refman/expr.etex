@@ -39,8 +39,10 @@ expr:
   | expr '::' expr
   | '[' expr { ';' expr } [';'] ']'
   | '[|' expr { ';' expr } [';'] '|]'
-  | '{' field '=' expr { ';' field '=' expr } [';'] '}'
-  | '{' expr 'with' field '=' expr { ';' field '=' expr } [';'] '}'
+  | '{' field [':' typexpr] '=' expr%
+    { ';' field [':' typexpr] '=' expr } [';'] '}'
+  | '{' expr 'with' field [':' typexpr] '=' expr%
+    { ';' field [':' typexpr] '=' expr } [';'] '}'
   | expr {{ argument }}
   | prefix-symbol expr
   | '-' expr
@@ -534,7 +536,10 @@ The fields @field_1@ to @field_n@ must all belong to the same record
 type; each field of this record type must appear exactly
 once in the record expression, though they can appear in any
 order. The order in which @expr_1@ to @expr_n@ are evaluated is not
-specified.
+specified. Optional type constraints can be added after each field
+@'{' field_1 ':' typexpr_1 '=' expr_1 ';'%
+ \ldots ';' field_n ':' typexpr_n '=' expr_n '}'@
+to force the type of @field_k@ to be compatible with @typexpr_k@.
 
 The expression
 @"{" expr "with" field_1 "=" expr_1 ";" \ldots ";" field_n "=" expr_n "}"@
@@ -542,7 +547,11 @@ builds a fresh record with fields @field_1 \ldots field_n@ equal to
 @expr_1 \ldots expr_n@, and all other fields having the same value as
 in the record @expr@.  In other terms, it returns a shallow copy of
 the record @expr@, except for the fields @field_1 \ldots field_n@,
-which are initialized to @expr_1 \ldots expr_n@.
+which are initialized to @expr_1 \ldots expr_n@. As previously, it is
+possible to add an optional type constraint on each field being updated
+with
+@"{" expr "with" field_1 ':' typexpr_1 "=" expr_1 ";" %
+ \ldots ";" field_n ':' typexpr_n "=" expr_n "}"@.
 
 The expression @expr_1 '.' field@ evaluates @expr_1@ to a record
 value, and returns the value associated to @field@ in this record
