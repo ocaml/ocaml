@@ -60,7 +60,7 @@ expr:
   | expr ';' expr
   | 'match' expr 'with' pattern-matching
   | 'function' pattern-matching
-  | 'fun' {{ parameter }} '->' expr
+  | 'fun' {{ parameter }} [ ':' typexpr ] '->' expr
   | 'try' expr 'with' pattern-matching
   | 'let' ['rec'] let-binding { 'and' let-binding } 'in' expr
   | 'new' class-path
@@ -254,6 +254,17 @@ The other form of function definition is introduced by the keyword "fun":
 This expression is equivalent to:
 \begin{center}
 @"fun" parameter_1 "->" \ldots "fun" parameter_n "->" expr@
+\end{center}
+
+An optional type constraint @typexpr@ can be added before "->" to enforce
+the type of the result to be compatible with the constraint @typexpr@:
+\begin{center}
+@"fun" parameter_1 \ldots parameter_n ":" typexpr "->" expr@
+\end{center}
+is equivalent to
+\begin{center}
+  @"fun" parameter_1 "->" \ldots "fun" parameter_n "->" %
+  (expr ":" typexpr )@
 \end{center}
 
 The parameter patterns @"~"lab@ and @"~("lab [":" typ]")"@
