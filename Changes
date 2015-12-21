@@ -487,6 +487,8 @@ Features wishes:
   (Hugo Heuzard)
 - GPR#308: add experimental support for NetBSD/arm (verified on RaspberryPi)
   (Rich Neswold)
+- GPR#335: Type error messages specify if a type is abstract
+  because no corresponding cmi could be found. (Hugo Heuzard)
 - GPR#365: prevent printing just a single type variable on one side
   of a type error clash. (Hugo Heuzard)
 
