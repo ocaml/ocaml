@@ -266,6 +266,15 @@ is equivalent to
   @"fun" parameter_1 "->" \ldots "fun" parameter_n "->" %
   (expr ":" typexpr )@
 \end{center}
+Beware of the small syntactic difference between a type constraint on
+the last parameter
+\begin{center}
+  @"fun" parameter_1 \ldots (parameter_n":"typexpr)"->" expr @
+\end{center}
+and one on the result
+\begin{center}
+  @"fun" parameter_1 \ldots parameter_n":" typexpr "->" expr @
+\end{center}
 
 The parameter patterns @"~"lab@ and @"~("lab [":" typ]")"@
 are shorthands for respectively @"~"lab":"lab@ and
