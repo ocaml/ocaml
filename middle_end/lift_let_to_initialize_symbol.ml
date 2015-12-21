@@ -17,7 +17,12 @@ type ('a, 'b) kind =
 
 let should_copy (named:Flambda.named) =
   match named with
-  | Symbol _ | Read_symbol_field _ | Const _ -> true
+  | Symbol _ | Read_symbol_field _ | Const _
+  (* Don't lift [caml_fresh_oo_id] otherwise symbols will be generated
+     only for the integer identifiers and registered as GC roots.  The
+     morally correct solution would be to know that the value was always
+     immediate and not to register the root, but we cannot do that yet. *)
+  | Prim (Pccall { prim_name = "caml_fresh_oo_id"; _ }, _, _) -> true
   | _ -> false
 
 type extracted =
