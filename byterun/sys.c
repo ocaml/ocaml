@@ -244,6 +244,20 @@ CAMLprim value caml_sys_is_directory(value name)
 #endif
 }
 
+CAMLprim value caml_sys_remove_no_exn(value name)
+{
+  CAMLparam1(name);
+  char * p;
+  int ret;
+  caml_sys_check_path(name);
+  p = caml_strdup(String_val(name));
+  caml_enter_blocking_section();
+  ret = unlink(p);
+  caml_leave_blocking_section();
+  caml_stat_free(p);
+  CAMLreturn((ret != 0) ? Val_false : Val_true);
+}
+
 CAMLprim value caml_sys_remove(value name)
 {
   CAMLparam1(name);
