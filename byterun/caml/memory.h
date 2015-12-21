@@ -44,14 +44,31 @@ CAMLextern value caml_check_urgent_gc (value);
 CAMLextern void * caml_stat_alloc (asize_t);              /* Size in bytes. */
 CAMLextern void caml_stat_free (void *);
 CAMLextern void * caml_stat_resize (void *, asize_t);     /* Size in bytes. */
-char *caml_alloc_for_heap (asize_t request);   /* Size in bytes. */
-void caml_free_for_heap (char *mem);
-int caml_add_to_heap (char *mem);
-color_t caml_allocation_color (void *hp);
+CAMLextern int caml_init_alloc_for_heap (void);
+CAMLextern char *caml_alloc_for_heap (asize_t request);   /* Size in bytes. */
+CAMLextern void caml_free_for_heap (char *mem);
+CAMLextern int caml_add_to_heap (char *mem);
+CAMLextern color_t caml_allocation_color (void *hp);
+
+CAMLextern int caml_huge_fallback_count;
 
 /* void caml_shrink_heap (char *);        Only used in compact.c */
 
 /* <private> */
+
+extern uintnat caml_use_huge_pages;
+
+#ifdef HAS_HUGE_PAGES
+#include <sys/mman.h>
+#define Heap_page_size HUGE_PAGE_SIZE
+#define Round_mmap_size(x)                                      \
+    (((x) + (Heap_page_size - 1)) & ~ (Heap_page_size - 1))
+#endif
+
+
+int caml_page_table_add(int kind, void * start, void * end);
+int caml_page_table_remove(int kind, void * start, void * end);
+int caml_page_table_initialize(mlsize_t bytesize);
 
 #ifdef DEBUG
 #define DEBUG_clear(result, wosize) do{ \
@@ -68,10 +85,11 @@ color_t caml_allocation_color (void *hp);
                                           CAMLassert ((tag_t) (tag) < 256); \
                                  CAMLassert ((wosize) <= Max_young_wosize); \
   caml_young_ptr -= Whsize_wosize (wosize);                                 \
-  if (caml_young_ptr < caml_young_start){                                   \
+  if (caml_young_ptr < caml_young_trigger){                                 \
     caml_young_ptr += Whsize_wosize (wosize);                               \
+    CAML_INSTR_INT ("force_minor/alloc_small@", 1);                         \
     Setup_for_gc;                                                           \
-    caml_minor_collection ();                                               \
+    caml_gc_dispatch ();                                                    \
     Restore_after_gc;                                                       \
     caml_young_ptr -= Whsize_wosize (wosize);                               \
   }                                                                         \

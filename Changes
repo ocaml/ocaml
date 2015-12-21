@@ -152,6 +152,8 @@ Runtime system:
   Shinwell, review by Damien Doligez)
 - GPR#325: Add v=0x400 flag to OCAMLRUNPARAM to display GC stats on exit (Louis
   Gesbert, review by Alain Frisch)
+- GPR#297: Several changes to improve the worst-case GC pause time.
+  (Damien Doligez, with help from Leo White and Francois Bobot)
 
 Standard library:
 - PR#5197, GPR#63: Arg: allow flags such as --flag=arg as well as --flag arg
