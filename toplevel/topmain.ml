@@ -96,6 +96,7 @@ module Options = Main_args.Make_bytetop_options (struct
   let _dsource = set dump_source
   let _drawlambda = set dump_rawlambda
   let _dlambda = set dump_lambda
+  let _dtimings = set print_timings
   let _dinstr = set dump_instr
 
   let anonymous s = file_argument s
