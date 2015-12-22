@@ -487,6 +487,8 @@ Features wishes:
   (Hugo Heuzard)
 - GPR#308: add experimental support for NetBSD/arm (verified on RaspberryPi)
   (Rich Neswold)
+- GPR#365: prevent printing just a single type variable on one side
+  of a type error clash. (Hugo Heuzard)
 
 OCaml 4.02.3 (27 Jul 2015):
 ---------------------------
