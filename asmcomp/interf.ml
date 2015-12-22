@@ -56,6 +56,7 @@ let build_graph fundecl =
      When we compile the next function, [interference] will have been
      incremented, which means we automatically treat interferences from the
      previous function(s) as non-interferences for the current function.
+     (This trick saves us from clearing the matrix between each function.)
      If sufficiently many functions are compiled such that the counter
      might wrap around, the array is re-allocated. *)
 
