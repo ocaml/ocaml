@@ -60,8 +60,10 @@ Language features:
   (Alain Frisch and Gabriel Radanne)
 
 Compilers:
-- PR#4080, PR#6537, PR#5333: fix stack overflow in the compiler when -pack'ing a module
+- PR#4080, PR#6537, PR#5333: fix stack overflow in the compiler when -pack'ing
+  a module
   that includes a module of the same name (Alain Frisch)
+- PR#4231, PR#5461: (interim solution) warning 31 is now fatal by default
 - PR#4800: better compilation of tuple assignment (Gabriel Scherer and
   Alain Frisch)
 - PR#5995: keep -for-pack into account to name exceptions; document -for-pack
@@ -91,7 +93,8 @@ Compilers:
   the stack (Marc Lasson, review by Xavier Leroy)
 - PR#7018: fix missing identifier renaming during inlining (Alain Frisch,
   review by Xavier Leroy)
-- PR#7026, GPR#288: remove write barrier for polymorphic variants without arguments
+- PR#7026, GPR#288: remove write barrier for polymorphic variants without
+  arguments
   (Simon Cruanes)
 - PR#7031: new warning, ambiguous guarded or-patterns (Luc Maranget,
   Gabriel Scherer, report by Martin Clochard and Claude Marché).
@@ -150,6 +153,8 @@ Runtime system:
   Shinwell, review by Damien Doligez)
 - GPR#325: Add v=0x400 flag to OCAMLRUNPARAM to display GC stats on exit (Louis
   Gesbert, review by Alain Frisch)
+- GPR#297: Several changes to improve the worst-case GC pause time.
+  (Damien Doligez, with help from Leo White and Francois Bobot)
 
 Standard library:
 - PR#5197, GPR#63: Arg: allow flags such as --flag=arg as well as --flag arg
@@ -238,6 +243,8 @@ Toplevel and debugger:
   (Valentin Gatien-Baron, review by Jérémie Dimino)
 - PR#7098: Loss of ppx context in toplevel after an exception
   (Alain Frisch, report by whitequark)
+- PR#7101: The toplevel does not close in_channel for libraries specified on its command line
+  (Alain Frisch)
 
 Other libraries:
 * Unix library: channels created by Unix.in_channel_of_descr or
@@ -388,6 +395,8 @@ Bug fixes:
   (Xavier Leroy)
 - PR#7042 and GPR#295: CSE optimization confuses the FP literals +0.0 and -0.0
   (Xavier Leroy)
+- PR#7075: Fix repetitions in ocamldoc generated documentation
+  (Florian Angeletti)
 - PR#7082: Object type in recursive module's `with` annotation
 - PR#7096: ocamldoc uses an incorrect subscript/superscript style
 - GPR#205: Clear caml_backtrace_last_exn before registering as root
@@ -411,6 +420,8 @@ Bug fixes:
 - PR#6795, PR#6996: Make ocamldep report errors passed in
   [%ocaml.error] extension points
   (Jérémie Dimino)
+- GPR#355: make ocamlnat build again
+  (Jérémie Dimino, Thomas Refis)
 
 Features wishes:
 - PR#4518, GPR#29: change location format for reporting errors in ocamldoc
@@ -469,13 +480,16 @@ Features wishes:
 - GPR#252: improve build instructions in MSVC Windows README
   (Philip Daian)
 * GPR#170: Parse arbitrary precision integers.
-  Accept a single [A-Za-z] as modifier for integers (generalizing 'l','L','n') and floats.
+  Accept a single [A-Za-z] as modifier for integers (generalizing 'l','L','n')
+  and floats.
   May cause breakage (ie. ppx preprocessor) because of changes in the parsetree.
-  This changes PR#6816 a little bit by reading the literal [123a] as a single token that can
-  later be rewritten by a ppx preprocessor.
+  This changes PR#6816 a little bit by reading the literal [123a] as a single
+  token that can later be rewritten by a ppx preprocessor.
   (Hugo Heuzard)
 - GPR#308: add experimental support for NetBSD/arm (verified on RaspberryPi)
   (Rich Neswold)
+- GPR#365: prevent printing just a single type variable on one side
+  of a type error clash. (Hugo Heuzard)
 
 OCaml 4.02.3 (27 Jul 2015):
 ---------------------------
@@ -510,6 +524,8 @@ Language features:
   but can be used e.g. by ppx rewriters.
   (Alain Frisch, request by Gabriel Radanne)
 * PR#6016: add a "nonrec" keyword for type declarations
+  (Jérémie Dimino)
+* PR#6612, GPR#152: change the precedence of attributes in type declarations
   (Jérémie Dimino)
 
 Compilers:

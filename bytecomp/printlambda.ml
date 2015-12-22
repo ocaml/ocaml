@@ -246,7 +246,9 @@ let primitive ppf = function
   | Pbbswap(bi) -> print_boxed_integer "bswap" ppf bi
   | Pint_as_pointer -> fprintf ppf "int_as_pointer"
 
-let function_attribute ppf { inline } =
+let function_attribute ppf { inline; is_a_functor } =
+  if is_a_functor then
+    fprintf ppf "is_a_functor@ ";
   match inline with
   | Default_inline -> ()
   | Always_inline -> fprintf ppf "always_inline@ "

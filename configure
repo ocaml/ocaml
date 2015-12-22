@@ -40,6 +40,7 @@ dl_defs=''
 verbose=no
 with_curses=yes
 debugruntime=noruntimed
+with_instrumented_runtime=false
 with_sharedlibs=yes
 partialld="ld -r"
 with_debugger=ocamldebugger
@@ -144,6 +145,8 @@ while : ; do
         verbose=yes;;
     -with-debug-runtime|--with-debug-runtime)
         debugruntime=runtimed;;
+    -with-instrumented-runtime|--with-instrumented-runtime)
+        with_instrumented_runtime=true;;
     -no-debugger|--no-debugger)
         with_debugger="";;
     -no-ocamldoc|--no-ocamldoc)
@@ -1687,6 +1690,16 @@ if $no_naked_pointers; then
   echo "#define NO_NAKED_POINTERS" >> m.h
 fi
 
+# Check for mmap support for huge pages and contiguous heap
+if sh ./runtest mmap-huge.c; then
+    has_huge_pages=true
+    echo "#define HAS_HUGE_PAGES" >>s.h
+    echo "#define HUGE_PAGE_SIZE (4 * 1024 * 1024)" >>s.h
+    inf "mmap supports huge pages"
+else
+    has_huge_pages=false
+fi
+
 # Finish generated files
 
 cclibs="$cclibs $mathlib"
@@ -1755,6 +1768,7 @@ if $shared_libraries_supported; then
 else
   echo "SHARED=noshared" >>Makefile
 fi
+echo "RUNTIMEI=${with_instrumented_runtime}" >>Makefile
 echo "WITH_DEBUGGER=${with_debugger}" >>Makefile
 echo "WITH_OCAMLDOC=${with_ocamldoc}" >>Makefile
 echo "WITH_OCAMLBUILD=${with_ocamlbuild}" >>Makefile
@@ -1843,6 +1857,10 @@ fi
 
 if test "$debugruntime" = "runtimed"; then
   inf "Debug runtime will be compiled and installed"
+fi
+
+if $with_instrumented_runtime; then
+  inf "Instrumented runtime will be compiled and installed"
 fi
 
 inf "Additional libraries supported:"

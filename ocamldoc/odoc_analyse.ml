@@ -59,6 +59,13 @@ let (++) x f = f x
 
 let tool_name = "ocamldoc"
 
+(** Deactivate the generation of docstrings in the lexer *)
+let no_docstring f x =
+  Lexer.handle_docstrings := false;
+  let result = f x in
+  Lexer.handle_docstrings := true;
+  result
+
 let process_implementation_file ppf sourcefile =
   init_path ();
   let prefixname = Filename.chop_extension sourcefile in
@@ -69,7 +76,7 @@ let process_implementation_file ppf sourcefile =
   try
     let parsetree =
       Pparse.file ~tool_name Format.err_formatter inputfile
-        Parse.implementation ast_impl_magic_number
+        (no_docstring Parse.implementation) ast_impl_magic_number
     in
     let typedtree =
       Typemod.type_implementation
@@ -100,7 +107,7 @@ let process_interface_file ppf sourcefile =
   let inputfile = preprocess sourcefile in
   let ast =
     Pparse.file ~tool_name Format.err_formatter inputfile
-      Parse.interface ast_intf_magic_number
+      (no_docstring Parse.interface) ast_intf_magic_number
   in
   let sg = Typemod.type_interface (initial_env()) ast in
   Warnings.check_fatal ();

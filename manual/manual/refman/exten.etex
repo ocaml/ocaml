@@ -417,9 +417,9 @@ expr:
 
 When the body of a local open expression is delimited by @'[' ']'@,  @'[|' '|]'@,  @'{' '}'@, or @'{<' '>}'@, the parentheses can be omitted.  For example, @module-path'.['expr']'@ is equivalent to @module-path'.(['expr'])'@, and @module-path'.[|' expr '|]'@ is equivalent to @module-path'.([|' expr '|])'@.
 
-\section{Record notations}
+\section{Record and object notations}
 
-(Introduced in OCaml 3.12)
+(Introduced in OCaml 3.12, object copy notation added in Ocaml 4.03)
 
 \begin{syntax}
 pattern:
@@ -430,13 +430,14 @@ expr:
      ...
   | '{' field ['=' expr] { ';' field ['=' expr] } [';'] '}'
   | '{' expr 'with' field ['=' expr] { ';' field ['=' expr] } [';'] '}'
+  | '{' '<' expr 'with' field ['=' expr] { ';' field ['=' expr] } [';'] '>' '}'
+
 \end{syntax}
 
-In a record pattern or a record construction expression, a single
-identifier @id@ stands for @id '=' id@, and a qualified identifier
+In a record pattern, a record construction expression or an object copy expression,
+a single identifier @id@ stands for @id '=' id@, and a qualified identifier
 @module-path '.' id@ stands for @module-path '.' id '=' id@.
-For example, assuming
-the record type
+For example, assuming the record type
 \begin{verbatim}
           type point = { x: float; y: float }
 \end{verbatim}
@@ -445,6 +446,15 @@ has been declared, the following expressions are equivalent:
           let x = 1 and y = 2 in { x = x; y = y }
           let x = 1 and y = 2 in { x; y }
           let x = 1 and y = 2 in { x = x; y }
+\end{verbatim}
+On the object side, all following methods are equivalent:
+\begin{verbatim}
+          object
+            val x=0. val y=0. val z=0.
+            method f_0 x y = {< x; y >}
+            method f_1 x y = {< x = x; y >}
+            method f_2 x y = {< x=x ; y = y >}
+          end
 \end{verbatim}
 Likewise, the following functions are equivalent:
 \begin{verbatim}
@@ -511,12 +521,12 @@ polymorphic.
 \ikwd{type\@\texttt{type}}
 \ikwd{fun\@\texttt{fun}}
 
-(Introduced in OCaml 3.12)
+(Introduced in OCaml 3.12, short syntax added in 4.03)
 
 \begin{syntax}
 parameter:
        ...
-     | '(' "type" typeconstr-name ')'
+     | '(' "type" {{typeconstr-name}} ')'
 \end{syntax}
 
 The expression @"fun" '(' "type" typeconstr-name ')' "->" expr@ introduces a
@@ -535,8 +545,16 @@ and even use the alternative syntax for declaring functions:
 \begin{verbatim}
         let f (type t) (foo : t list) = ...
 \end{verbatim}
+If several locally abstract types need to be introduced, it is possible to use
+the syntax
+@"fun" '(' "type" typeconstr-name_1 \ldots typeconstr-name_n ')' "->" expr@
+as syntactic sugar for @"fun" '(' "type" typeconstr-name_1 ')' "->" \ldots "->"
+'(' "type" typeconstr-name_n ')' "->" expr@. For instance,
+\begin{verbatim}
+        let f = fun (type t u v) -> (foo : (t * u * v) list) -> ...
+\end{verbatim}
 
-This construction is useful because the type constructor it introduces
+This construction is useful because the type constructors it introduces
 can be used in places where a type variable is not allowed. For
 instance, one can use it to define an exception in a local module
 within a polymorphic function.

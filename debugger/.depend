@@ -16,8 +16,8 @@ int64ops.cmi :
 lexer.cmi : parser.cmi
 loadprinter.cmi : ../parsing/longident.cmi dynlink.cmi
 parameters.cmi :
-parser_aux.cmi : primitives.cmi ../parsing/longident.cmi
 parser.cmi : parser_aux.cmi ../parsing/longident.cmi
+parser_aux.cmi : primitives.cmi ../parsing/longident.cmi
 pattern_matching.cmi : ../typing/typedtree.cmi parser_aux.cmi debugcom.cmi
 pos.cmi : ../bytecomp/instruct.cmi
 primitives.cmi : $(UNIXDIR)/unix.cmi

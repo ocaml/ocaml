@@ -1290,7 +1290,9 @@ let same_path t t' =
       false
 
 let type_expansion t ppf t' =
-  if same_path t t' then type_expr ppf t else
+  if same_path t t'
+  then begin add_delayed (proxy t); type_expr ppf t end
+  else
   let t' = if proxy t == proxy t' then unalias t' else t' in
   fprintf ppf "@[<2>%a@ =@ %a@]" type_expr t type_expr t'
 
