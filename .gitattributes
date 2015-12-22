@@ -44,6 +44,11 @@ ocamldoc/ocamldoc.sty    ocaml-typo=missing-header
 *.sh.in text eol=lf
 *.awk text eol=lf
 
+# Test suite command fragments
+*.checker text eol=lf
+*.precheck text eol=lf
+*.runner text eol=lf
+
 configure text eol=lf
 config/auto-aux/hasgot text eol=lf
 config/auto-aux/hasgot2 text eol=lf
