@@ -382,14 +382,19 @@ let let_bound_vars_that_can_be_moved ident_info (clam : Clambda.ulambda) =
   !can_move
 
 (* We say that an expression is "moveable" iff it has neither effects nor
-   coeffects.  (See semantics_of_primitives.mli.) *)
-
-type moveable = Fixed | Moveable
+   coeffects.  (See semantics_of_primitives.mli.)
+*)
+type moveable = Fixed | Moveable | Moveable_not_into_loops
 
 let both_moveable a b =
   match a, b with
   | Moveable, Moveable -> Moveable
+  | Moveable_not_into_loops, Moveable
+  | Moveable, Moveable_not_into_loops
+  | Moveable_not_into_loops, Moveable_not_into_loops -> Moveable_not_into_loops
   | Moveable, Fixed
+  | Moveable_not_into_loops, Fixed
+  | Fixed, Moveable_not_into_loops
   | Fixed, Moveable
   | Fixed, Fixed -> Fixed
 
@@ -418,6 +423,16 @@ let primitive_moveable (prim : Lambda.primitive)
     | Arbitrary_effects, No_coeffects
     | Arbitrary_effects, Has_coeffects -> Fixed
 
+(** Called when we are entering a loop or body of a function (which may be
+    called multiple times).  The environment is rewritten such that
+    identifiers previously moveable, but not into loops, are now fixed. *)
+let going_into_loop env =
+  Ident.Map.map (fun ((moveable : moveable), def) ->
+      match moveable with
+      | Moveable -> Moveable, def
+      | Moveable_not_into_loops | Fixed -> Fixed, def)
+    env
+
 (** Eliminate, through substitution, [let]-bindings of linear variables with
     moveable defining expressions. *)
 let rec un_anf_and_moveable ident_info env (clam : Clambda.ulambda)
@@ -425,9 +440,7 @@ let rec un_anf_and_moveable ident_info env (clam : Clambda.ulambda)
   match clam with
   | Uvar id ->
     begin match Ident.Map.find id env with
-    (* [clam] is necessarily pure since an expression must be pure to be in the
-       environment *)
-    | e -> e, Moveable
+    | def_moveable, def -> def, def_moveable
     | exception Not_found ->
       let moveable =
         if Ident.Set.mem id ident_info.assigned then
@@ -450,18 +463,16 @@ let rec un_anf_and_moveable ident_info env (clam : Clambda.ulambda)
   | Uclosure (functions, variables_bound_by_the_closure) ->
     let functions =
       List.map (fun (ufunction : Clambda.ufunction) ->
-          { ufunction with body = un_anf ident_info env ufunction.body })
+          { ufunction with
+            body = un_anf ident_info (going_into_loop env) ufunction.body;
+          })
         functions
     in
     let variables_bound_by_the_closure, _moveable =
       un_anf_list_and_moveable ident_info env variables_bound_by_the_closure
     in
-    (* CR-soon mshinwell: We need to refine the way this module works so
-       that we don't do things such as pushing closure creations in loops.
-       The current "linear" notion doesn't seem quite right.  For the moment
-       let's just stop moving closures at all.  This shouldn't interfere
-       with Cmmgen. *)
-    Uclosure (functions, variables_bound_by_the_closure), Fixed
+    Uclosure (functions, variables_bound_by_the_closure),
+      Moveable_not_into_loops
   | Uoffset (clam, n) ->
     let clam, moveable = un_anf_and_moveable ident_info env clam in
     Uoffset (clam, n), moveable
@@ -473,6 +484,7 @@ let rec un_anf_and_moveable ident_info env (clam : Clambda.ulambda)
       let def_moveable =
         match def_moveable with
         | Moveable -> Moveable
+        | Moveable_not_into_loops -> Moveable_not_into_loops
         | Fixed ->
           if Ident.Set.mem id ident_info.let_bound_vars_that_can_be_moved
           then begin
@@ -488,15 +500,16 @@ let rec un_anf_and_moveable ident_info env (clam : Clambda.ulambda)
     let is_linear = Ident.Set.mem id ident_info.linear in
     let is_used = Ident.Set.mem id ident_info.used in
     begin match def_moveable, is_linear, is_used with
-    | Moveable, _, false ->
+    | (Moveable | Moveable_not_into_loops), _, false ->
       (* A moveable expression that is never used may be eliminated. *)
       un_anf_and_moveable ident_info env body
-    | Moveable, true, true ->
+    | (Moveable | Moveable_not_into_loops), true, true ->
       (* A moveable expression bound to a linear [Ident.t] may replace the
          single occurrence of the identifier. *)
-      let env = Ident.Map.add id def env in
+      let env = Ident.Map.add id (def_moveable, def) env in
       un_anf_and_moveable ident_info env body
-    | Moveable, false, true  (* Moveable but not used linearly. *)
+    | (Moveable | Moveable_not_into_loops), false, true
+        (* Moveable but not used linearly. *)
     | Fixed, _, _ ->
       let body, body_moveable = un_anf_and_moveable ident_info env body in
       Ulet (id, def, body), both_moveable def_moveable body_moveable
@@ -556,12 +569,12 @@ let rec un_anf_and_moveable ident_info env (clam : Clambda.ulambda)
     Usequence (e1, e2), Fixed
   | Uwhile (cond, body) ->
     let cond = un_anf ident_info env cond in
-    let body = un_anf ident_info env body in
+    let body = un_anf ident_info (going_into_loop env) body in
     Uwhile (cond, body), Fixed
   | Ufor (id, low, high, direction, body) ->
     let low = un_anf ident_info env low in
     let high = un_anf ident_info env high in
-    let body = un_anf ident_info env body in
+    let body = un_anf ident_info (going_into_loop env) body in
     Ufor (id, low, high, direction, body), Fixed
   | Uassign (id, expr) ->
     let expr = un_anf ident_info env expr in
