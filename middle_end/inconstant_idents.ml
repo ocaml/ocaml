@@ -260,13 +260,21 @@ module NotConstants(P:Param)(Backend:Backend_intf.S) = struct
       if not for_clambda
       then register_implication ~in_nc:(Symbol symbol) ~implies_in_nc:curr
       else begin
-        match (Backend.import_symbol symbol).descr with
-        | Value_unresolved _ ->
-          (* Constant when 'for_clambda' means: can be a symbol (which is
-             obviously the case here) and provides informations *)
-          mark_curr curr
-        | _ ->
+        let current_unit = Compilation_unit.get_current_exn () in
+        if Compilation_unit.equal current_unit (Symbol.compilation_unit symbol)
+        then
           ()
+        else
+          match (Backend.import_symbol symbol).descr with
+          | Value_unresolved _ ->
+            (* Constant when 'for_clambda' means: can be a symbol (which is
+               obviously the case here) with a known approximation.  If this
+               condition is not satisfied we mark as inconstant to reflect
+               the fact that the symbol's contents are unknown and thus
+               prevent attempts to examine it.  (This is a bit of a hack.) *)
+            mark_curr curr
+          | _ ->
+            ()
       end
     | Read_symbol_field (symbol, index) ->
       register_implication ~in_nc:(Symbol_field (symbol, index)) ~implies_in_nc:curr
