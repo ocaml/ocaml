@@ -19,7 +19,7 @@ module W = Inlining_cost.Whether_sufficient_benefit
 
 let inline_non_recursive env r ~function_decls ~lhs_of_application
     ~closure_id_being_applied ~(function_decl : Flambda.function_declaration)
-    ~only_use_of_function ~no_simplification
+    ~value_set_of_closures ~only_use_of_function ~no_simplification
     ~(args : Variable.t list) ~size_from_approximation ~simplify
     ~always_inline ~(inline_requested : Lambda.inline_attribute)
     ~(made_decision : Inlining_stats_types.Decision.t -> unit) =
@@ -49,17 +49,35 @@ let inline_non_recursive env r ~function_decls ~lhs_of_application
 
       let g x = f x x
   *)
+  let toplevel = E.at_toplevel env in
+  let branch_depth = E.branch_depth env in
   let known_to_have_no_benefit =
-    if function_decl.stub || only_use_of_function || always_inline then
+    if function_decl.stub || only_use_of_function || always_inline
+         || (toplevel && branch_depth = 0) then
       false
     else if A.all_not_useful (E.find_list_exn env args) then
       match size_from_approximation with
       | Some body_size ->
         let wsb =
+          let benefit = Inlining_cost.Benefit.zero in
+          let benefit = Inlining_cost.Benefit.remove_call benefit in
           let benefit =
-            Inlining_cost.Benefit.remove_call Inlining_cost.Benefit.zero
+            Variable.Set.fold
+              (fun v acc ->
+                 try
+                   let t =
+                     Var_within_closure.Map.find (Var_within_closure.wrap v)
+                       value_set_of_closures.A.bound_vars
+                   in
+                   match t.A.var with
+                   | Some v ->
+                     if (E.mem env v) then Inlining_cost.Benefit.remove_prim acc
+                     else acc
+                   | None -> acc
+                 with Not_found -> acc)
+              function_decl.free_variables benefit
           in
-          W.create_given_sizes
+          W.create_estimate
             ~original_size:Inlining_cost.direct_call_size
             ~new_size:body_size
             ~toplevel:(E.at_toplevel env)
@@ -68,13 +86,17 @@ let inline_non_recursive env r ~function_decls ~lhs_of_application
             ~round:(E.round env)
             ~benefit
         in
-        not (W.evaluate wsb)
+        if (not (W.evaluate wsb)) then begin
+          made_decision (Tried (Copying_body (Evaluated wsb)));
+          true
+        end else false
       | None ->
         (* The function is definitely too large to inline given that we don't
            have any approximations for its arguments.  Further, the body
            should already have been simplified (inside its declaration), so
            we also expect no gain from the code below that permits inlining
            inside the body. *)
+        made_decision (Tried (Copying_body Evaluated_unspecialized));
         true
     else begin
       (* There are useful approximations, so we should simplify. *)
@@ -481,8 +503,8 @@ let for_call_site ~env ~r ~(function_decls : Flambda.function_declarations)
               A.print_value_set_of_closures value_set_of_closures
         in
         inline_non_recursive env r ~function_decls ~lhs_of_application
-          ~closure_id_being_applied ~function_decl ~made_decision
-          ~only_use_of_function ~no_simplification
+          ~closure_id_being_applied ~function_decl ~value_set_of_closures
+          ~made_decision ~only_use_of_function ~no_simplification
           ~inline_requested ~always_inline ~args ~size_from_approximation
           ~simplify
       else if (not always_inline) && E.inlining_level env > max_level then begin

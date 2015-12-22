@@ -14,12 +14,14 @@ module Copying_body = struct
     | Unconditionally
     | Decl_local_to_application
     | Evaluated of Wsb.t
+    | Evaluated_unspecialized
     | Stub
 
   let to_string = function
     | Unconditionally -> "unconditionally"
     | Decl_local_to_application -> "decl local to application expression"
     | Evaluated wsb -> Wsb.to_string wsb
+    | Evaluated_unspecialized -> "too large without specialized arguments"
     | Stub -> "stub"
 end
 

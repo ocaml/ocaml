@@ -182,18 +182,23 @@ let value_closure ?closure_var ?set_of_closures_var ?set_of_closures_symbol
     symbol = None;
   }
 
-(* The only thing that changes this number is the setting of command-line
-   parameters. *)
-let max_interesting_size_of_function_body =
-  lazy (Inlining_cost.maximum_interesting_size_of_function_body ())
-
 let create_value_set_of_closures
       ~(function_decls : Flambda.function_declarations) ~bound_vars
       ~invariant_params ~specialised_args ~freshening =
   let size =
     lazy (
+      let functions = Variable.Map.keys function_decls.funs in
       Variable.Map.map (fun (function_decl : Flambda.function_declaration) ->
-          let max_size = Lazy.force max_interesting_size_of_function_body in
+          let params = Variable.Set.of_list function_decl.params in
+          let free_vars =
+            Variable.Set.diff
+              (Variable.Set.diff function_decl.free_variables params)
+              functions
+          in
+          let num_free_vars = Variable.Set.cardinal free_vars in
+          let max_size =
+            Inlining_cost.maximum_interesting_size_of_function_body num_free_vars
+          in
           Inlining_cost.lambda_smaller' function_decl.body ~than:max_size)
         function_decls.funs)
   in

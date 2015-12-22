@@ -85,7 +85,7 @@ module Whether_sufficient_benefit : sig
     -> round:int
     -> t
 
-  val create_given_sizes
+  val create_estimate
      : original_size:int
     -> toplevel:bool
     -> branch_depth: int
@@ -108,7 +108,7 @@ val direct_call_size : int
 
 (** If a function body exceeds this size, we can make a fast decision not
     to inline it (see [Inlining_decision]). *)
-val maximum_interesting_size_of_function_body : unit -> int
+val maximum_interesting_size_of_function_body : int -> int
 
 (** Measure the given expression to determine whether its size is at or
     below the given threshold.  [None] is returned if it is too big; otherwise

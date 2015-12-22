@@ -58,6 +58,7 @@ let prim_size (prim : Lambda.primitive) args =
 (* Simple approximation of the space cost of an Flambda expression. *)
 
 let direct_call_size = 4
+let project_size = 1
 
 let lambda_smaller' lam ~than:threshold =
   let size = ref 0 in
@@ -114,7 +115,9 @@ let lambda_smaller' lam ~than:threshold =
       Variable.Map.iter (fun _ (ffun : Flambda.function_declaration) ->
           lambda_size ffun.body)
         ffuns.funs
-    | Project_closure _ | Project_var _ | Move_within_set_of_closures _ ->
+    | Project_closure _ | Project_var _ ->
+      size := !size + project_size
+    | Move_within_set_of_closures _ ->
       incr size
     | Prim (prim, args, _) ->
       size := !size + prim_size prim args
@@ -288,6 +291,7 @@ module Whether_sufficient_benefit = struct
     original_size : int;
     new_size : int;
     evaluated_benefit : int;
+    estimate : bool;
   }
 
   let create ~original ~toplevel ~branch_depth lam ~benefit ~lifting ~round =
@@ -296,13 +300,14 @@ module Whether_sufficient_benefit = struct
       original_size = lambda_size original;
       new_size = lambda_size lam;
       evaluated_benefit;
+      estimate = false;
     }
 
-  let create_given_sizes ~original_size ~toplevel ~branch_depth ~new_size
+  let create_estimate ~original_size ~toplevel ~branch_depth ~new_size
         ~benefit ~lifting ~round =
     let evaluated_benefit = Benefit.evaluate benefit ~round in
     { round; benefit; toplevel; branch_depth; lifting; original_size;
-      new_size; evaluated_benefit;
+      new_size; evaluated_benefit; estimate = true;
     }
 
   let correct_branch_factor f =
@@ -346,24 +351,32 @@ module Whether_sufficient_benefit = struct
 
 
   let to_string t =
-    let lifting_benefit =
-      Clflags.Int_arg_helper.get ~key:t.round !Clflags.inline_lifting_benefit
+    let lifting = t.toplevel && t.lifting && t.branch_depth = 0 in
+    let evaluated_benefit =
+      if lifting then
+        let lifting_benefit =
+          Clflags.Int_arg_helper.get ~key:t.round !Clflags.inline_lifting_benefit
+        in
+        t.evaluated_benefit + lifting_benefit
+      else t.evaluated_benefit
     in
-      Printf.sprintf "{benefit={call=%d,alloc=%d,prim=%i,branch=%i,indirect=%i,req=%i},\
-                      orig_size=%d,new_size=%d,eval_size=%d,eval_benefit=%d,\
-                      toplevel=%b,lifting=%b,branch_depth=%d}=%s"
+    let estimate = if t.estimate then "<" else "=" in
+      Printf.sprintf "{benefit%s{call=%d,alloc=%d,prim=%i,branch=%i,indirect=%i,req=%i,\
+                      lifting=%b}, orig_size=%d,new_size=%d,eval_size=%d,eval_benefit%s%d,\
+                      branch_depth=%d}=%s"
+        estimate
         t.benefit.remove_call
         t.benefit.remove_alloc
         t.benefit.remove_prim
         t.benefit.remove_branch
         t.benefit.direct_call_of_indirect
         t.benefit.requested_inline
+        lifting
         t.original_size
         t.new_size
         (t.original_size - t.new_size)
-        (if t.lifting then t.evaluated_benefit + lifting_benefit else t.evaluated_benefit)
-        t.toplevel
-        t.lifting
+        estimate
+        evaluated_benefit
         t.branch_depth
         (if evaluate t then "yes" else "no")
 end
@@ -372,7 +385,6 @@ let scale_inline_threshold_by = 8
 
 let default_toplevel_multiplier = 8
 
-let maximum_interesting_size_of_function_body () =
   (* CR-soon mshinwell for mshinwell: hastily-written comment, to review *)
   (* We may in [Inlining_decision] need to measure the size of functions
      that are below the inlining threshold.  We also need to measure with
@@ -383,46 +395,102 @@ let maximum_interesting_size_of_function_body () =
      it further), we can infer without examining the function's body that
      it cannot be inlined.  The aim is to speed up [Inlining_decision].
 
-     The "original size" is [Inlining_cost.direct_call_size].
-     The "new size" is the size of the function's body; call this body_size.
+     The "original size" is [Inlining_cost.direct_call_size].  The "new size" is
+     the size of the function's body plus [Inlining_cost.project_size] for each
+     free variable and mutually recursive function accessed through the closure.
 
      To be inlined we need:
-       body_size - (evaluated_benefit * call_prob) <= direct_call_size
+
+       body_size
+       + (closure_accesses * project_size)            <=   direct_call_size
+       - (evaluated_benefit * call_prob)
+
      i.e.:
-       body_size <= direct_call_size + evaluated_benefit*call_prob
-     In this case we would be removing a single call:
-       evaluated_benefit = benefit_factor * inline_call_cost
-     (For [inline_call_cost], we use the maximum this might be across any
-     round.)
-     Substituting:
+
        body_size <= direct_call_size
-                      + (benefit_factor * inline_call_cost)*call_prob
+                    + (evaluated_benefit * call_prob)
+                    - (closure_accesses * project_size)
+
+     In this case we would be removing a single call and a projection for each
+     free variable that can be accessed directly (i.e. not via the closure
+     or the internal variable).
+
+       evaluated_benefit =
+         benefit_factor
+         * (inline_call_cost
+         + ((free_variables - indirect_accesses) * inline_prim_cost))
+
+     (For [inline_call_cost] and [inline_prim_cost], we use the maximum these
+     might be across any round.)
+
+     Substituting:
+
+       body_size <= direct_call_size
+                      + (benefit_factor
+                          * (inline_call_cost
+                             + ((free_variables - indirect_accesses)
+                                * inline_prim_cost)))
+                        * call_prob
+                      - (closure_accesses * project_size)
+
+     Rearranging:
+
+       body_size <= direct_call_size
+                      + (inline_call_cost * benefit_factor * call_prob)
+                      + (free_variables * inline_prim_cost
+                           * benefit_factor * call_prob)
+                      - (indirect_accesses * inline_prim_cost
+                           * benefit_factor * call_prob)
+                      - (closure_accesses * project_size)
+
      The upper bound for the right-hand side is when call_prob = 1.0,
-     giving:
-       direct_call_size + benefit_factor*inline_call_cost       (**)
-     So we should measure all functions at or below this size, but also
-     record the size discovered, so we can later re-check (without
-     examining the body) when we know [call_prob].
+     indirect_accesses = 0 and closure_accesses = 0, giving:
+
+       direct_call_size
+         + (inline_call_cost * benefit_factor)
+         + (free_variables * inline_prim_cost * benefit_factor)
+
+     So we should measure all functions at or below this size, but also record
+     the size discovered, so we can later re-check (without examining the body)
+     when we know [call_prob], [indirect_accesses] and [closure_accesses].
+
+     This number is split into parts dependent and independent of the
+     number of free variables:
+
+       base = direct_call_size + (inline_call_cost * benefit_factor)
+
+       multiplier = inline_prim_cost * benefit_factor
+
+       body_size <= base + free_variables * multiplier
+
   *)
-  let max_cost = ref 0 in
-  for round = 0 to !Clflags.simplify_rounds - 1 do
-(*
-    let inline_threshold =
-      (cost !Clflags.inline_threshold
-        ~default:Clflags.default_inline_threshold
-        ~round)
-    in
-    let inline_threshold =
-      (* Following [can_try_inlining], above. *)
-      (* CR-soon mshinwell: try to factor code out *)
-      (inline_threshold*scale_inline_threshold_by + rough_max_bonus)
-        * can_try_inlining_magic_constant
-    in
-*)
-    let max_size =  (* This is for the (**) case above. *)
-      let inline_call_cost = cost !Clflags.inline_call_cost ~round in
-      direct_call_size + benefit_factor*inline_call_cost
-    in
-    max_cost := max !max_cost max_size (* (max inline_threshold max_size) *)
-  done;
-  !max_cost
+let maximum_interesting_size_of_function_body_base =
+  lazy begin
+    let max_cost = ref 0 in
+    for round = 0 to !Clflags.simplify_rounds - 1 do
+      let max_size =
+        let inline_call_cost = cost !Clflags.inline_call_cost ~round in
+        direct_call_size + (inline_call_cost * benefit_factor)
+      in
+      max_cost := max !max_cost max_size
+    done;
+    !max_cost
+  end
+
+let maximum_interesting_size_of_function_body_multiplier =
+  lazy begin
+    let max_cost = ref 0 in
+    for round = 0 to !Clflags.simplify_rounds - 1 do
+      let max_size =
+        let inline_prim_cost = cost !Clflags.inline_prim_cost ~round in
+        inline_prim_cost * benefit_factor
+      in
+      max_cost := max !max_cost max_size
+    done;
+    !max_cost
+  end
+
+let maximum_interesting_size_of_function_body num_free_variables =
+  let base = Lazy.force maximum_interesting_size_of_function_body_base in
+  let multiplier = Lazy.force maximum_interesting_size_of_function_body_multiplier in
+  base + (num_free_variables * multiplier)

@@ -12,6 +12,7 @@ module Copying_body : sig
     | Unconditionally
     | Decl_local_to_application
     | Evaluated of Inlining_cost.Whether_sufficient_benefit.t
+    | Evaluated_unspecialized
     | Stub
 
   val to_string : t -> string
