@@ -690,3 +690,6 @@ TOCENTRY(caml_young_limit)
 TOCENTRY(caml_young_ptr)
 
 #endif
+
+/* Mark stack as non-executable */
+        .section .note.GNU-stack,"",%progbits
