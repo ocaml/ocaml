@@ -55,9 +55,9 @@ promote:
 
 .PHONY: clean
 clean: defaultclean
-	@rm -f *.cmi *.cmx *.o a.out
+	@rm -f *.cmi *.cmx *.$(O) a.out camlprog.exe
 	@rm -f intf/*.cmi
-	@rm -f fst/*.cmi fst/*.cmx fst/*.o fst/*.mli
-	@rm -f snd/*.cmi snd/*.cmx snd/*.o snd/*.mli
+	@rm -f fst/*.cmi fst/*.cmx fst/*.$(O) fst/*.mli
+	@rm -f snd/*.cmi snd/*.cmx snd/*.$(O) snd/*.mli
 
 include $(BASEDIR)/makefiles/Makefile.common

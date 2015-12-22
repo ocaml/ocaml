@@ -65,6 +65,6 @@ promote: defaultpromote
 
 .PHONY: clean
 clean: defaultclean
-	@rm -f main static custom custom.exe *.result marshal.data
+	@rm -f main static custom custom.exe *.result marshal.data dllplug*.dll
 
 include $(BASEDIR)/makefiles/Makefile.common
