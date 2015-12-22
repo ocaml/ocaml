@@ -110,6 +110,7 @@ let primitive ppf = function
   | Pmakeblock(tag, Immutable) -> fprintf ppf "makeblock %i" tag
   | Pmakeblock(tag, Mutable) -> fprintf ppf "makemutable %i" tag
   | Pfield n -> fprintf ppf "field %i" n
+  | Pimmutable_field n -> fprintf ppf "imm_field %i" n
   | Psetfield(n, ptr) ->
       let instr = if ptr then "setfield_ptr " else "setfield_imm " in
       fprintf ppf "%s%i" instr n

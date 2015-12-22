@@ -54,7 +54,8 @@ let operation = function
   | Capply(ty, d) -> "app" ^ Debuginfo.to_string d
   | Cextcall(lbl, ty, alloc, d) ->
       Printf.sprintf "extcall \"%s\"%s" lbl (Debuginfo.to_string d)
-  | Cload c -> Printf.sprintf "load %s" (chunk c)
+  | Cload (c, Asttypes.Mutable) -> Printf.sprintf "load %s" (chunk c)
+  | Cload (c, Asttypes.Immutable) -> Printf.sprintf "load_imm %s" (chunk c)
   | Calloc -> "alloc"
   | Cstore c -> Printf.sprintf "store %s" (chunk c)
   | Caddi -> "+"

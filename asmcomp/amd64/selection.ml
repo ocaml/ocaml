@@ -187,7 +187,7 @@ method! select_operation op args =
       self#select_floatarith false Idivf Ifloatdiv args
   | Cextcall("sqrt", _, false, _) ->
      begin match args with
-       [Cop(Cload (Double|Double_u as chunk), [loc])] ->
+       [Cop(Cload (Double|Double_u as chunk, _), [loc])] ->
          let (addr, arg) = self#select_addressing chunk loc in
          (Ispecific(Ifloatsqrtf addr), [arg])
      | [arg] ->
@@ -221,11 +221,11 @@ method! select_operation op args =
 
 method select_floatarith commutative regular_op mem_op args =
   match args with
-    [arg1; Cop(Cload (Double|Double_u as chunk), [loc2])] ->
+    [arg1; Cop(Cload (Double|Double_u as chunk, _), [loc2])] ->
       let (addr, arg2) = self#select_addressing chunk loc2 in
       (Ispecific(Ifloatarithmem(mem_op, addr)),
                  [arg1; arg2])
-  | [Cop(Cload (Double|Double_u as chunk), [loc1]); arg2] when commutative ->
+  | [Cop(Cload (Double|Double_u as chunk, _), [loc1]); arg2] when commutative ->
       let (addr, arg1) = self#select_addressing chunk loc1 in
       (Ispecific(Ifloatarithmem(mem_op, addr)),
                  [arg2; arg1])

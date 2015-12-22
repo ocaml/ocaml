@@ -22,7 +22,7 @@ type valnum = int
 type op_class =
   | Op_pure           (* pure arithmetic, produce one or several result *)
   | Op_checkbound     (* checkbound-style: no result, can raise an exn *)
-  | Op_load           (* memory load *)
+  | Op_load of Asttypes.mutable_flag (* memory load *)
   | Op_store of bool  (* memory store, false = init, true = assign *)
   | Op_other   (* anything else that does not allocate nor store in memory *)
 
@@ -38,29 +38,38 @@ module Equations = struct
 
   type 'a t =
     { load_equations : 'a Rhs_map.t;
+      immutable_load_equations : 'a Rhs_map.t;
       other_equations : 'a Rhs_map.t }
 
   let empty =
     { load_equations = Rhs_map.empty;
+      immutable_load_equations = Rhs_map.empty;
       other_equations = Rhs_map.empty }
 
   let add op_class op v m =
     match op_class with
-    | Op_load ->
+    | Op_load Asttypes.Mutable ->
       { m with load_equations = Rhs_map.add op v m.load_equations }
+    | Op_load Asttypes.Immutable ->
+      { m with immutable_load_equations
+          = Rhs_map.add op v m.immutable_load_equations }
     | _ ->
       { m with other_equations = Rhs_map.add op v m.other_equations }
 
   let find op_class op m =
     match op_class with
-    | Op_load ->
+    | Op_load Asttypes.Mutable ->
       Rhs_map.find op m.load_equations
+    | Op_load Asttypes.Immutable ->
+      Rhs_map.find op m.immutable_load_equations
     | _ ->
       Rhs_map.find op m.other_equations
 
-  let remove_loads m =
+  let remove_non_immutable_loads m =
     { load_equations = Rhs_map.empty;
-      other_equations = m.other_equations }
+      immutable_load_equations = m.immutable_load_equations;
+      other_equations = m.other_equations;
+    }
 end
 
 type numbering =
@@ -188,7 +197,7 @@ let set_unknown_regs n rs =
 (* Keep only the equations satisfying the given predicate. *)
 
 let remove_load_numbering n =
-  { n with num_eqs = Equations.remove_loads n.num_eqs }
+  { n with num_eqs = Equations.remove_non_immutable_loads n.num_eqs }
 
 (* Forget everything we know about registers of type [Addr]. *)
 
@@ -223,7 +232,7 @@ method class_of_operation op =
   | Icall_ind | Icall_imm _ | Itailcall_ind | Itailcall_imm _
   | Iextcall _ -> assert false                 (* treated specially *)
   | Istackoffset _ -> Op_other
-  | Iload(_,_) -> Op_load
+  | Iload(_,_, mutability) -> Op_load mutability
   | Istore(_,_,asg) -> Op_store asg
   | Ialloc _ -> assert false                   (* treated specially *)
   | Iintop(Icheckbound) -> Op_checkbound
@@ -271,8 +280,10 @@ method private cse n i =
            since the callee does not preserve these registers.
          That doesn't leave much usable information: checkbounds
          could be kept, but won't be usable for CSE as one of their
-         arguments is always a memory load.  For simplicity, we
-         just forget everything. *)
+         arguments is always a memory load.  Immutable loads could be kept,
+         but would have to be spilled anyway, so we might as well reload
+         directly from their block.  For simplicity, we just forget
+         everything. *)
       {i with next = self#cse empty_numbering i.next}
   | Iop (Ialloc _) ->
       (* For allocations, we must avoid extending the live range of a
@@ -284,13 +295,13 @@ method private cse n i =
          Moreover, allocation can trigger the asynchronous execution
          of arbitrary Caml code (finalizer, signal handler, context
          switch), which can contain non-initializing stores.
-         Hence, all equations over loads must be removed. *)
+         Hence, all equations over non-immutable loads must be removed. *)
        let n1 = kill_addr_regs (self#kill_loads n) in
        let n2 = set_unknown_regs n1 i.res in
        {i with next = self#cse n2 i.next}
   | Iop op ->
       begin match self#class_of_operation op with
-      | (Op_pure | Op_checkbound | Op_load) as op_class ->
+      | (Op_pure | Op_checkbound | Op_load _) as op_class ->
           let (n1, varg) = valnum_regs n i.arg in
           let n2 = set_unknown_regs n1 (Proc.destroyed_at_oper i.desc) in
           begin match find_equation op_class n1 (op, varg) with
@@ -328,7 +339,7 @@ method private cse n i =
          {i with next = self#cse n2 i.next}
       | Op_store true ->
           (* A non-initializing store can invalidate
-             anything we know about prior loads. *)
+             anything we know about prior non-immutable loads. *)
          let n1 = set_unknown_regs n (Proc.destroyed_at_oper i.desc) in
          let n2 = set_unknown_regs n1 i.res in
          let n3 = self#kill_loads n2 in

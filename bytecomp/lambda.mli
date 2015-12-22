@@ -42,6 +42,7 @@ type primitive =
   (* Operations on heap blocks *)
   | Pmakeblock of int * mutable_flag
   | Pfield of int
+  | Pimmutable_field of int
   | Psetfield of int * bool
   | Pfloatfield of int
   | Psetfloatfield of int

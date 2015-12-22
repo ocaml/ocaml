@@ -25,7 +25,7 @@ type environment = (Ident.t, Reg.t array) Tbl.t
 let oper_result_type = function
     Capply(ty, _) -> ty
   | Cextcall(s, ty, alloc, _) -> ty
-  | Cload c ->
+  | Cload (c, _mutability) ->
       begin match c with
       | Word_val -> typ_val
       | Single | Double | Double_u -> typ_float
@@ -251,9 +251,9 @@ method select_operation op args =
     (Capply(ty, dbg), Cconst_symbol s :: rem) -> (Icall_imm s, rem)
   | (Capply(ty, dbg), _) -> (Icall_ind, args)
   | (Cextcall(s, ty, alloc, dbg), _) -> (Iextcall(s, alloc), args)
-  | (Cload chunk, [arg]) ->
+  | (Cload (chunk, mutability), [arg]) ->
       let (addr, eloc) = self#select_addressing chunk arg in
-      (Iload(chunk, addr), [eloc])
+      (Iload(chunk, addr, mutability), [eloc])
   | (Cstore chunk, [arg1; arg2]) ->
       let (addr, eloc) = self#select_addressing chunk arg1 in
       if chunk = Word_int || chunk = Word_val then begin

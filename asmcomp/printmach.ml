@@ -120,8 +120,11 @@ let operation op arg ppf res =
       (if alloc then "" else " (noalloc)")
   | Istackoffset n ->
       fprintf ppf "offset stack %i" n
-  | Iload(chunk, addr) ->
+  | Iload(chunk, addr, Asttypes.Mutable) ->
       fprintf ppf "%s[%a]"
+       (Printcmm.chunk chunk) (Arch.print_addressing reg addr) arg
+  | Iload(chunk, addr, Asttypes.Immutable) ->
+      fprintf ppf "%s(imm)[%a]"
        (Printcmm.chunk chunk) (Arch.print_addressing reg addr) arg
   | Istore(chunk, addr, is_assign) ->
       fprintf ppf "%s[%a] := %a %s"

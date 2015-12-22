@@ -526,7 +526,7 @@ let emit_instr fallthrough i =
       if n <> 0
       then cfi_adjust_cfa_offset n;
       stack_offset := !stack_offset + n
-  | Lop(Iload(chunk, addr)) ->
+  | Lop(Iload(chunk, addr, _mutability)) ->
       let dest = res i 0 in
       begin match chunk with
       | Word_int | Word_val ->

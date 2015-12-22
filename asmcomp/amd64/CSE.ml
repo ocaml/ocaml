@@ -27,7 +27,7 @@ method! class_of_operation op =
     | Ilea _ -> Op_pure
     | Istore_int(_, _, is_asg) | Istore_symbol(_, _, is_asg) -> Op_store is_asg
     | Ioffset_loc(_, _) -> Op_store true
-    | Ifloatarithmem _ | Ifloatsqrtf _ -> Op_load
+    | Ifloatarithmem _ | Ifloatsqrtf _ -> Op_load Asttypes.Mutable
     | Ibswap _ | Isqrtf -> super#class_of_operation op
     end
   | _ -> super#class_of_operation op
