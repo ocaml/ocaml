@@ -858,7 +858,7 @@ and simplify_named env r (tree : Flambda.named) : Flambda.named * R.t =
     end
   | Set_of_closures set_of_closures ->
     begin
-      match Augment_closure.run ~env ~set_of_closures with
+      match Augment_closures.run ~env ~set_of_closures with
       | Some expr ->
         simplify_named env r (Flambda.Expr expr)
       | None ->
