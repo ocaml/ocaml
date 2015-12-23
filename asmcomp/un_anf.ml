@@ -423,15 +423,16 @@ let primitive_moveable (prim : Lambda.primitive)
     | Arbitrary_effects, No_coeffects
     | Arbitrary_effects, Has_coeffects -> Fixed
 
+type moveable_for_env = Moveable | Moveable_not_into_loops
+
 (** Called when we are entering a loop or body of a function (which may be
     called multiple times).  The environment is rewritten such that
     identifiers previously moveable, but not into loops, are now fixed. *)
 let going_into_loop env =
-  Ident.Map.map (fun ((moveable : moveable), def) ->
-      match moveable with
-      | Moveable -> Moveable, def
-      | Moveable_not_into_loops | Fixed -> Fixed, def)
-    env
+  Ident.Map.filter_map env ~f:(fun _var ((moveable : moveable_for_env), def) ->
+    match moveable with
+    | Moveable -> Some (Moveable, def)
+    | Moveable_not_into_loops -> None)
 
 (** Eliminate, through substitution, [let]-bindings of linear variables with
     moveable defining expressions. *)
@@ -440,9 +441,10 @@ let rec un_anf_and_moveable ident_info env (clam : Clambda.ulambda)
   match clam with
   | Uvar id ->
     begin match Ident.Map.find id env with
-    | def_moveable, def -> def, def_moveable
+    | Moveable, def -> def, Moveable
+    | Moveable_not_into_loops, def -> def, Moveable_not_into_loops
     | exception Not_found ->
-      let moveable =
+      let moveable : moveable =
         if Ident.Set.mem id ident_info.assigned then
           Fixed
         else
@@ -481,7 +483,7 @@ let rec un_anf_and_moveable ident_info env (clam : Clambda.ulambda)
   | Ulet (id, def, body) ->
     let def, def_moveable =
       let def, def_moveable = un_anf_and_moveable ident_info env def in
-      let def_moveable =
+      let def_moveable : moveable =
         match def_moveable with
         | Moveable -> Moveable
         | Moveable_not_into_loops -> Moveable_not_into_loops
@@ -503,11 +505,24 @@ let rec un_anf_and_moveable ident_info env (clam : Clambda.ulambda)
     | (Moveable | Moveable_not_into_loops), _, false ->
       (* A moveable expression that is never used may be eliminated. *)
       un_anf_and_moveable ident_info env body
-    | (Moveable | Moveable_not_into_loops), true, true ->
+    | Moveable, true, true ->
       (* A moveable expression bound to a linear [Ident.t] may replace the
          single occurrence of the identifier. *)
-      let env = Ident.Map.add id (def_moveable, def) env in
+      let env =
+        let def_moveable : moveable_for_env =
+          match def_moveable with
+          | Moveable -> Moveable
+          | Moveable_not_into_loops -> Moveable_not_into_loops
+          | Fixed -> assert false
+        in
+        Ident.Map.add id (def_moveable, def) env
+      in
       un_anf_and_moveable ident_info env body
+    | Moveable_not_into_loops, true, true
+        (* We can't delete the [let] binding in this case because we don't
+           know whether the variable was substituted for its definition
+           (in the case of its linear use not being inside a loop) or not.
+           We could extend the code to cope with this case. *)
     | (Moveable | Moveable_not_into_loops), false, true
         (* Moveable but not used linearly. *)
     | Fixed, _, _ ->
@@ -568,8 +583,9 @@ let rec un_anf_and_moveable ident_info env (clam : Clambda.ulambda)
     let e2 = un_anf ident_info env e2 in
     Usequence (e1, e2), Fixed
   | Uwhile (cond, body) ->
+    let env = going_into_loop env in
     let cond = un_anf ident_info env cond in
-    let body = un_anf ident_info (going_into_loop env) body in
+    let body = un_anf ident_info env body in
     Uwhile (cond, body), Fixed
   | Ufor (id, low, high, direction, body) ->
     let low = un_anf ident_info env low in
@@ -596,7 +612,7 @@ and un_anf_list_and_moveable ident_info env clams
   List.fold_right (fun clam (l, acc_moveable) ->
       let clam, moveable = un_anf_and_moveable ident_info env clam in
       clam :: l, both_moveable moveable acc_moveable)
-    clams ([], Moveable)
+    clams ([], (Moveable : moveable))
 
 and un_anf_list ident_info env clams : Clambda.ulambda list =
   let clams, _moveable = un_anf_list_and_moveable ident_info env clams in
