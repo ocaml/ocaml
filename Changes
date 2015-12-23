@@ -63,6 +63,7 @@ Compilers:
 - PR#4080, PR#6537, PR#5333: fix stack overflow in the compiler when -pack'ing
   a module
   that includes a module of the same name (Alain Frisch)
+- PR#4231, PR#5461: (interim solution) warning 31 is now fatal by default
 - PR#4800: better compilation of tuple assignment (Gabriel Scherer and
   Alain Frisch)
 - PR#5995: keep -for-pack into account to name exceptions; document -for-pack
@@ -128,6 +129,8 @@ Compilers:
 - GPR#282: relax short-paths safety check in presence of module aliases, take
   penalty into account while building the printing map.
   (Thomas Refis, Leo White)
+- GPR#306: Instrument the compiler to debug performance regressions
+  (Pierre Chambart)
 - PR#6920: fix debug informations around uses of %apply or %revapply
   (Jérémie Dimino)
 
@@ -152,6 +155,8 @@ Runtime system:
   Shinwell, review by Damien Doligez)
 - GPR#325: Add v=0x400 flag to OCAMLRUNPARAM to display GC stats on exit (Louis
   Gesbert, review by Alain Frisch)
+- GPR#297: Several changes to improve the worst-case GC pause time.
+  (Damien Doligez, with help from Leo White and Francois Bobot)
 
 Standard library:
 - PR#5197, GPR#63: Arg: allow flags such as --flag=arg as well as --flag arg
@@ -485,6 +490,8 @@ Features wishes:
   (Hugo Heuzard)
 - GPR#308: add experimental support for NetBSD/arm (verified on RaspberryPi)
   (Rich Neswold)
+- GPR#365: prevent printing just a single type variable on one side
+  of a type error clash. (Hugo Heuzard)
 
 OCaml 4.02.3 (27 Jul 2015):
 ---------------------------

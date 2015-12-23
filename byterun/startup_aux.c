@@ -42,6 +42,7 @@ uintnat caml_init_minor_heap_wsz = Minor_heap_def;
 uintnat caml_init_heap_chunk_sz = Heap_chunk_def;
 uintnat caml_init_heap_wsz = Init_heap_def;
 uintnat caml_init_max_stack_wsz = Max_stack_def;
+uintnat caml_init_major_window = Major_window_def;
 extern int caml_parser_trace;
 uintnat caml_trace_level = 0;
 
@@ -73,6 +74,7 @@ void caml_parse_ocamlrunparam(void)
       case 'a': scanmult (opt, &p); caml_set_allocation_policy (p); break;
       case 'b': scanmult (opt, &p); caml_record_backtrace(Val_bool (p)); break;
       case 'h': scanmult (opt, &caml_init_heap_wsz); break;
+      case 'H': scanmult (opt, &caml_use_huge_pages); break;
       case 'i': scanmult (opt, &caml_init_heap_chunk_sz); break;
       case 'l': scanmult (opt, &caml_init_max_stack_wsz); break;
       case 'o': scanmult (opt, &caml_init_percent_free); break;
@@ -82,6 +84,7 @@ void caml_parse_ocamlrunparam(void)
       case 's': scanmult (opt, &caml_init_minor_heap_wsz); break;
       case 't': scanmult (opt, &caml_trace_level); break;
       case 'v': scanmult (opt, &caml_verb_gc); break;
+      case 'w': scanmult (opt, &caml_init_major_window); break;
       case 'W': scanmult (opt, &caml_runtime_warnings); break;
       }
       while (*opt != '\0'){
