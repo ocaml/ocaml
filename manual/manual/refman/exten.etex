@@ -1540,13 +1540,14 @@ Some attributes are understood by the type-checker:
   need to communicate warnings to the user.  This could also be used
   to mark explicitly some code location for further inspection.
 \end{itemize}
-
+Spelling mistakes on these built-in attributes might be detected by turning on
+the warning 59.
 \begin{verbatim}
 module X = struct
   [@@@warning "+9"]  (* locally enable warning 9 in this structure *)
   ...
 end
-  [@@deprecated "Please is module 'Y' instead."]
+  [@@deprecated "Please use module 'Y' instead."]
 
 let x = begin[@warning "+9] ... end in ....
 
