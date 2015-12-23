@@ -28,7 +28,27 @@ val of_tag_list : Tags.elt list -> Command.spec
    has a real need for deprecation, drop us a note on the bugtracker. *)
 val flag : ?deprecated:bool -> Tags.elt list -> Command.spec -> unit
 
-val pflag : Tags.elt list -> string -> (string -> Command.spec) -> unit
+(* The ?doc_param parameter provides an example parameter that will be
+   used to generate documentation for this deprecated flag: we invoke
+   the parametrized rule with this parameter, and give the
+   documentation for the resulting spec.
+
+   If no parameter is provided, we will not invoke the parametrized
+   commands (which may in general perform arbitrary side-effects, or
+   at least fail to parse a dummy parameter), but just list its
+   activation tags in the documentation -- so users will still be
+   aware of its existence.
+
+   As for the ?deprecated flag above, this is not exported to the
+   plugin interface for now. *)
+val pflag : Tags.elt list -> string ->
+            ?doc_param:string -> (string -> Command.spec) -> unit
+
+val flag_and_dep : Tags.elt list -> Command.spec -> unit
+
+val pflag_and_dep : Tags.elt list -> Tags.elt ->
+  ?doc_param:string -> (string -> Command.spec) -> unit
+
 val add : 'a -> 'a list -> 'a list
 val remove : 'a -> 'a list -> 'a list
 

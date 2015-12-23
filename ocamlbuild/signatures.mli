@@ -674,7 +674,9 @@ let target_list env build =
 rule "ocaml dependencies ml"
   ~prod:"%.ml.depends"
   ~dep:"%.ml"
-  (ocamldep_ml_command)
+  ~doc:"call ocamldep to compute a syntactic over-approximation \\
+        of the dependencies of the corresponding implementation file"
+  ocamldep_ml_command
 ]}
 
       The rule that builds a list of targets from a [%.itarget] file is
