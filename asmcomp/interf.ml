@@ -31,6 +31,7 @@ let mat = IntPairSet.create 42
 let max_for_fast_mode = 4000  (* 8Mb memory used *)
 let previous_interference = ref 0
 let fast_mat = Bytes.make (max_for_fast_mode * (max_for_fast_mode - 1) / 2) '\000'
+let max_index = ref (-1)
 
 let build_graph fundecl =
 
@@ -61,8 +62,9 @@ let build_graph fundecl =
      might wrap around, the array is re-allocated. *)
 
   if !previous_interference = 0xff then begin
-    Bytes.fill fast_mat 0 (Bytes.length fast_mat) '\000';
-    previous_interference := 1
+    Bytes.fill fast_mat 0 (!max_index + 1) '\000';
+    previous_interference := 1;
+    max_index := (-1);
   end else
     incr previous_interference;
 
@@ -81,6 +83,7 @@ let build_graph fundecl =
           let i, j = if i < j then i, j else j, i in
           if j < max_for_fast_mode then
             let index = (j * (j - 1)) lsr 1 + i in
+            if !max_index < index then max_index := index;
             let b = Bytes.unsafe_get fast_mat index < interference in
             if b then Bytes.unsafe_set fast_mat index interference;
             b
