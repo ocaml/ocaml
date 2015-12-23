@@ -75,11 +75,11 @@ ocamlprof: $(CSLPROF) profiling.cmo
 	$(CAMLC) $(LINKFLAGS) -o ocamlprof $(CSLPROF_IMPORTS) $(CSLPROF)
 
 ocamlcp: ocamlcp.cmo
-	$(CAMLC) $(LINKFLAGS) -o ocamlcp warnings.cmo misc.cmo config.cmo \
+	$(CAMLC) $(LINKFLAGS) -o ocamlcp misc.cmo warnings.cmo config.cmo \
                  identifiable.cmo numbers.cmo arg_helper.cmo clflags.cmo main_args.cmo ocamlcp.cmo
 
 ocamloptp: ocamloptp.cmo
-	$(CAMLC) $(LINKFLAGS) -o ocamloptp warnings.cmo misc.cmo config.cmo \
+	$(CAMLC) $(LINKFLAGS) -o ocamloptp misc.cmo warnings.cmo config.cmo \
                  identifiable.cmo numbers.cmo arg_helper.cmo clflags.cmo main_args.cmo \
 	         ocamloptp.cmo
 

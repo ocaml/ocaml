@@ -454,7 +454,14 @@ let message = function
 let nerrors = ref 0;;
 
 let print ppf w =
-  let msg = message w in
+  (* Reduce \r\n in any warning messages to \n:
+       - Prevents any \r characters being printed on Unix when processing
+         Windows sources
+       - Prevents \r\r\n being generated on Windows, which affects the testsuite
+     Although applied to all messages, the principal culprit at the time of
+     writing was the Deprecated constructor.
+   *)
+  let msg = Misc.normalise_eol (message w) in
   let num = number w in
   Format.fprintf ppf "%d: %s" num msg;
   Format.pp_print_flush ppf ();
