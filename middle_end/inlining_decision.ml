@@ -19,7 +19,7 @@ module W = Inlining_cost.Whether_sufficient_benefit
 
 let inline_non_recursive env r ~function_decls ~lhs_of_application
     ~closure_id_being_applied ~(function_decl : Flambda.function_declaration)
-    ~value_set_of_closures ~only_use_of_function ~no_simplification
+    ~value_set_of_closures ~only_use_of_function ~original
     ~(args : Variable.t list) ~size_from_approximation ~simplify
     ~always_inline ~(inline_requested : Lambda.inline_attribute)
     ~(made_decision : Inlining_stats_types.Decision.t -> unit) =
@@ -104,7 +104,7 @@ let inline_non_recursive env r ~function_decls ~lhs_of_application
     end
   in
   if known_to_have_no_benefit then begin
-    no_simplification ()
+    None
   end else begin
   (* CR mshinwell: fix indentation once diff reviewed. *)
   let body, r_inlined =
@@ -134,7 +134,7 @@ let inline_non_recursive env r ~function_decls ~lhs_of_application
       true
     end else begin
       let sufficient_benefit =
-        W.create ~original:(fst (no_simplification ())) body
+        W.create ~original body
           ~toplevel:(E.at_toplevel env)
           ~branch_depth:(E.branch_depth env)
           ~lifting:function_decl.Flambda.is_a_functor
@@ -189,14 +189,14 @@ let inline_non_recursive env r ~function_decls ~lhs_of_application
       then env
       else E.inlining_level_up env
     in
-    simplify env r body
+    Some (simplify env r body)
   end else if num_direct_applications_seen < 1 then begin
     (* Inlining the body of the function did not appear sufficiently
        beneficial; however, it may become so if we inline within the body
        first.  We try that next, unless it is known that there are were
        no direct applications in the simplified body computed above, meaning
        no opportunities for inlining. *)
-      no_simplification ()
+      None
   end else begin
     let body, r_inlined =
       Inlining_transforms.inline_by_copying_function_body ~env
@@ -205,7 +205,7 @@ let inline_non_recursive env r ~function_decls ~lhs_of_application
         ~inline_requested ~function_decl ~args ~simplify
     in
     let wsb =
-      W.create ~original:(fst (no_simplification ())) body
+      W.create ~original body
         ~toplevel:(E.at_toplevel env)
         ~branch_depth:(E.branch_depth env)
         ~lifting:function_decl.Flambda.is_a_functor
@@ -223,7 +223,7 @@ let inline_non_recursive env r ~function_decls ~lhs_of_application
     in
     made_decision decision;
     if keep_inlined_version then begin
-      body, R.map_benefit r_inlined (Inlining_cost.Benefit.(+) (R.benefit r))
+      Some (body, R.map_benefit r_inlined (Inlining_cost.Benefit.(+) (R.benefit r)))
     end
     else begin
       (* r_inlined contains an approximation that may be invalid for the
@@ -232,7 +232,7 @@ let inline_non_recursive env r ~function_decls ~lhs_of_application
          If the function approximation contained an approximation that
          does not depend on the actual values of its arguments, it
          could be returned instead of [A.value_unknown]. *)
-      no_simplification ()
+      None
     end
   end
   end
@@ -240,7 +240,7 @@ let inline_non_recursive env r ~function_decls ~lhs_of_application
 let unroll_recursive env r ~max_level ~lhs_of_application
       ~(function_decls : Flambda.function_declarations)
       ~closure_id_being_applied ~function_decl ~args ~simplify
-      ~no_simplification
+      ~original
       ~(made_decision : Inlining_stats_types.Decision.t -> unit) =
   let tried_unrolling = ref false in
   let result =
@@ -263,7 +263,7 @@ let unroll_recursive env r ~max_level ~lhs_of_application
         in
         tried_unrolling := true;
         let wsb =
-          W.create body ~original:(fst (no_simplification()))
+          W.create body ~original
             ~toplevel:(E.at_toplevel env)
             ~branch_depth:(E.branch_depth env)
             ~lifting:false
@@ -281,9 +281,10 @@ let unroll_recursive env r ~max_level ~lhs_of_application
           end
         in
         if keep_unrolled_version then
-          Some (body,
-            R.map_benefit r_inlined
-              (Inlining_cost.Benefit.(+) (R.benefit r)))
+          let r =
+            R.map_benefit r_inlined (Inlining_cost.Benefit.(+) (R.benefit r))
+          in
+          Some (body, r)
         else None
       end
     else None
@@ -312,16 +313,16 @@ let inline_recursive env r ~max_level ~lhs_of_application
       ~(function_decls : Flambda.function_declarations)
       ~closure_id_being_applied ~function_decl
       ~(value_set_of_closures : Simple_value_approx.value_set_of_closures)
-      ~args ~args_approxs ~dbg ~simplify ~no_simplification
+      ~args ~args_approxs ~dbg ~simplify ~original
       ~(made_decision : Inlining_stats_types.Decision.t -> unit) =
   let tried_unrolling, unrolling_result =
     (* First try unrolling the recursive call, if we're allowed to. *)
     unroll_recursive env r ~max_level ~lhs_of_application ~function_decls
       ~closure_id_being_applied ~function_decl ~args ~simplify
-      ~no_simplification ~made_decision
+      ~original ~made_decision
   in
   match unrolling_result with
-  | Some unrolling_result -> unrolling_result
+  | Some _ -> unrolling_result
   | None ->
     (* If unrolling failed, consider duplicating the whole function
        declaration at the call site, specialising parameters whose arguments
@@ -341,7 +342,7 @@ let inline_recursive env r ~max_level ~lhs_of_application
       match copied_function_declaration with
       | Some (expr, r_inlined) ->
         let wsb =
-          W.create ~original:(fst (no_simplification ())) expr
+          W.create ~original expr
             ~toplevel:(E.at_toplevel env)
             ~branch_depth:(E.branch_depth env)
             ~lifting:false
@@ -357,17 +358,19 @@ let inline_recursive env r ~max_level ~lhs_of_application
         in
         made_decision decision;
         if keep_inlined_version then
-          expr, R.map_benefit r_inlined
-            (Inlining_cost.Benefit.(+) (R.benefit r))
+          let r =
+            R.map_benefit r_inlined (Inlining_cost.Benefit.(+) (R.benefit r))
+          in
+          Some (expr, r)
         else
-          no_simplification ()
-      | None -> no_simplification ()
+          None
+      | None -> None
     else begin
       (* CR lwhite: should include details of why it was not attempted
          in the reason. *)
       made_decision
         (Did_not_try_copying_decl (Tried_unrolling tried_unrolling));
-      no_simplification ()
+      None
     end
 
 let for_call_site ~env ~r ~(function_decls : Flambda.function_declarations)
@@ -386,17 +389,16 @@ let for_call_site ~env ~r ~(function_decls : Flambda.function_declarations)
     in
     Inlining_stats.record_decision ~closure_stack ~debuginfo:dbg
   in
-  let no_simplification () : Flambda.t * R.t =
-    (* N.B. This function should not have any side effects; it may be called
-       speculatively, and the result discarded. *)
-    Apply {
+  let original =
+    Flambda.Apply {
       func = lhs_of_application;
       args;
       kind = Direct closure_id_being_applied;
       dbg;
       inline = inline_requested;
-    }, R.set_approx (R.seen_direct_application r) (A.value_unknown Other)
+    }
   in
+  let original_r = R.set_approx (R.seen_direct_application r) (A.value_unknown Other) in
   let max_level =
     Clflags.Int_arg_helper.get ~key:(E.round env) !Clflags.max_inlining_depth
   in
@@ -418,13 +420,15 @@ let for_call_site ~env ~r ~(function_decls : Flambda.function_declarations)
   let num_params = List.length function_decl.params in
   let only_use_of_function = false in
   let raw_inlining_threshold = R.inlining_threshold r in
+  let max_inlining_threshold =
+    if E.at_toplevel env then
+      Inline_and_simplify_aux.initial_inlining_toplevel_threshold ~round:(E.round env)
+    else
+      Inline_and_simplify_aux.initial_inlining_threshold ~round:(E.round env)
+  in
   let inlining_threshold =
     match raw_inlining_threshold with
-    | None ->
-        if E.at_toplevel env then
-          Inline_and_simplify_aux.initial_inlining_toplevel_threshold ~round:(E.round env)
-        else
-          Inline_and_simplify_aux.initial_inlining_threshold ~round:(E.round env)
+    | None -> max_inlining_threshold
     | Some inlining_threshold -> inlining_threshold
   in
   let fun_var =
@@ -456,12 +460,12 @@ let for_call_site ~env ~r ~(function_decls : Flambda.function_declarations)
           ~size_from_approximation:None
       end
   in
-  let expr, r =
+  let simpl =
     if E.never_inline env then
       (* This case only occurs when examining the body of a stub function
          but not in the context of inlining said function.  As such, there
          is nothing to do here (and no decision to report). *)
-      no_simplification ()
+      None
     else if fun_cost = Inlining_cost.Never_inline && not function_decl.stub then
       (* CR pchambart: should we also accept unconditionnal inline ?
          It is some kind of user defined stub, but if we restrict to stub
@@ -474,7 +478,7 @@ let for_call_site ~env ~r ~(function_decls : Flambda.function_declarations)
           Function_obviously_too_large threshold
       in
       made_decision reason;
-      no_simplification ()
+      None
     else
       let remaining_inlining_threshold = fun_cost in
       let r = R.set_inlining_threshold r (Some remaining_inlining_threshold) in
@@ -503,24 +507,28 @@ let for_call_site ~env ~r ~(function_decls : Flambda.function_declarations)
         in
         inline_non_recursive env r ~function_decls ~lhs_of_application
           ~closure_id_being_applied ~function_decl ~value_set_of_closures
-          ~made_decision ~only_use_of_function ~no_simplification
+          ~made_decision ~only_use_of_function ~original
           ~inline_requested ~always_inline ~args ~size_from_approximation
           ~simplify
       else if E.inlining_level env >= max_level then begin
         made_decision (Can_inline_but_tried_nothing (Level_exceeded true));
-        no_simplification ()
+        None
       end else if not !Clflags.classic_heuristic && Lazy.force recursive then
         inline_recursive env r ~max_level ~lhs_of_application ~function_decls
           ~closure_id_being_applied ~function_decl ~value_set_of_closures
-          ~args ~args_approxs ~dbg ~simplify ~no_simplification ~made_decision
+          ~args ~args_approxs ~dbg ~simplify ~original ~made_decision
       else begin
         made_decision (Can_inline_but_tried_nothing (Level_exceeded false));
-        no_simplification ()
+        None
       end
   in
-  if E.inlining_level env = 0
-  then expr, R.set_inlining_threshold r raw_inlining_threshold
-  else expr, r
+  match simpl with
+  | None -> original, original_r
+  | Some (expr, r) ->
+    if E.inlining_level env = 0
+    then expr, R.set_inlining_threshold r raw_inlining_threshold
+    else expr, r
+
 
 (* We do not inline inside stubs, which are always inlined at their call site.
    Inlining inside the declaration of a stub could result in more code than
