@@ -101,6 +101,7 @@ stdlib/sharpbang text eol=lf
 tools/check-typo text eol=lf
 tools/ci-build text eol=lf
 tools/cleanup-header text eol=lf
+tools/msvs-promote-path text eol=lf
 tools/gdb-macros text eol=lf
 tools/magic text eol=lf
 tools/make-opcodes text eol=lf
