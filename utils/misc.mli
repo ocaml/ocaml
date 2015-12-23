@@ -13,6 +13,7 @@
 (* Miscellaneous useful types and functions *)
 
 val fatal_error: string -> 'a
+val fatal_errorf: ('a, Format.formatter, unit, 'b) format4 -> 'a
 exception Fatal_error
 
 val try_finally : (unit -> 'a) -> (unit -> unit) -> 'a;;
