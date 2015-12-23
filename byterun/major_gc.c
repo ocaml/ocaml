@@ -34,6 +34,12 @@
 #undef NATIVE_CODE_AND_NO_NAKED_POINTERS
 #endif
 
+#ifdef _MSC_VER
+static inline double fmin(double a, double b) {
+  return (a < b) ? a : b;
+}
+#endif
+
 uintnat caml_percent_free;
 uintnat caml_major_heap_increment;
 CAMLexport char *caml_heap_start;
