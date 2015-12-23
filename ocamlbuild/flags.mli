@@ -43,6 +43,12 @@ val flag : ?deprecated:bool -> Tags.elt list -> Command.spec -> unit
    plugin interface for now. *)
 val pflag : Tags.elt list -> string ->
             ?doc_param:string -> (string -> Command.spec) -> unit
+
+val flag_and_dep : Tags.elt list -> Command.spec -> unit
+
+val pflag_and_dep : Tags.elt list -> Tags.elt ->
+  ?doc_param:string -> (string -> Command.spec) -> unit
+
 val add : 'a -> 'a list -> 'a list
 val remove : 'a -> 'a list -> 'a list
 

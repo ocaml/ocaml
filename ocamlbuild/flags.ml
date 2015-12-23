@@ -46,12 +46,24 @@ let flag ?(deprecated=false) tags flags =
   let tags = Tags.of_list tags in
   add_decl { tags; flags; deprecated }
 
-let pflags_doc = ref []
+type pflag_doc = Tags.elt list * Tags.elt * string option * (string -> Command.spec)
+let pflags_doc = ref ([] : pflag_doc list)
 
 let pflag tags ptag ?doc_param flags =
   pflags_doc := (tags, ptag, doc_param, flags) :: !pflags_doc;
   Param_tags.declare ptag
     (fun param -> flag (Param_tags.make ptag param :: tags) (flags param))
+
+let flag_and_dep tags cmd_spec =
+  flag tags cmd_spec;
+  let ps = Command.fold_pathnames (fun p ps -> p :: ps) (Cmd cmd_spec) [] in
+  Command.dep tags ps
+
+let pflag_and_dep tags ptag ?doc_param cmd_spec =
+  pflags_doc := (tags, ptag, doc_param, cmd_spec) :: !pflags_doc;
+  Param_tags.declare ptag
+    (fun param ->
+       flag_and_dep (Param_tags.make ptag param :: tags) (cmd_spec param))
 
 let add x xs = x :: xs
 let remove me = List.filter (fun x -> me <> x)
@@ -74,19 +86,18 @@ let pretty_print_pflag (tags, ptag, doc_param, flags) =
   let tags = Tags.of_list (apply ptag doc_param :: tags) in
   let sflag =
     try Command.string_of_command_spec (flags doc_param)
-    with _ -> "<fun>" in
+    with exn ->
+      Printf.sprintf "<documentation error: %s>"
+        (Printexc.to_string exn) in
   pretty_print header tags sflag
 
 let show_documentation () =
   List.iter pretty_print_pflag !pflags_doc;
-  List.iter
-    (fun decl -> if not decl.deprecated then pretty_print_flag decl)
-    !all_decls;
-  List.iter
-    (fun decl -> if decl.deprecated then pretty_print_flag decl)
-    !all_decls;
-  let pp fmt = Log.raw_dprintf (-1) fmt in
-  pp "@."
+  let not_deprecated, deprecated =
+    List.partition (fun d -> d.deprecated) !all_decls in
+  List.iter pretty_print_flag not_deprecated;
+  List.iter pretty_print_flag deprecated;
+  Log.raw_dprintf (-1) "@."
 
 let used_tags = ref Tags.empty
 

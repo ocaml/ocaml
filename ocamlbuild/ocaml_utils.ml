@@ -25,23 +25,14 @@ open Command;;
 
 module S = Set.Make(String)
 
-let flag_and_dep tags cmd_spec =
-  flag tags cmd_spec;
-  let ps = Command.fold_pathnames (fun p ps -> p :: ps) (Cmd cmd_spec) [] in
-  dep tags ps
-
 let stdlib_dir = lazy begin
   let ocamlc_where = !Options.build_dir / (Pathname.mk "ocamlc.where") in
   let () = Command.execute ~quiet:true (Cmd(S[!Options.ocamlc; A"-where"; Sh">"; P ocamlc_where])) in
   String.chomp (read_file ocamlc_where)
 end
 
-(* TODO: this should register the parametrized flag for documentation,
-   just as Flags.pflag *)
-let pflag_and_dep tags ptag cmd_spec =
-  Param_tags.declare ptag
-    (fun param ->
-       flag_and_dep (Param_tags.make ptag param :: tags) (cmd_spec param))
+let flag_and_dep = Flags.flag_and_dep
+let pflag_and_dep = Flags.pflag_and_dep ?doc_param:None
 
 let module_name_of_filename f = String.capitalize_ascii (Pathname.remove_extensions f)
 let module_name_of_pathname x =
