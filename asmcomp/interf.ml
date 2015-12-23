@@ -60,19 +60,16 @@ let build_graph fundecl =
      If sufficiently many functions are compiled such that the counter
      might wrap around, the array is re-allocated. *)
 
-  let fast = (Reg.num_registers () <= max_for_fast_mode) in
-
-  if fast then begin
-    if !previous_interference = 0xff then begin
-      Bytes.fill fast_mat 0 (Bytes.length fast_mat) '\000';
-      previous_interference := 1
-    end else begin
-      incr previous_interference
-    end
+  if !previous_interference = 0xff then begin
+    Bytes.fill fast_mat 0 (Bytes.length fast_mat) '\000';
+    previous_interference := 1
   end else
-    IntPairSet.clear mat;
+    incr previous_interference;
 
   let interference = Char.chr !previous_interference in
+
+  if Reg.num_registers () > max_for_fast_mode then
+    IntPairSet.clear mat;
 
   (* Record an interference between two registers *)
   let add_interf ri rj =
@@ -81,7 +78,7 @@ let build_graph fundecl =
       let is_new =
         i <> j
         &&
-        begin if fast then
+        begin if i < max_for_fast_mode && j < max_for_fast_mode then
             let index = if j < i then (i * (i - 1)) lsr 1 + j else (j * (j - 1)) lsr 1 + i in
             let b = Bytes.unsafe_get fast_mat index < interference in
             if b then Bytes.unsafe_set fast_mat index interference;
@@ -179,7 +176,7 @@ let build_graph fundecl =
       && r1.loc = Unknown
       && Proc.register_class r1 = Proc.register_class r2
       && (
-          if fast then
+          if i < max_for_fast_mode && j < max_for_fast_mode then
             let index = if j < i then (i * (i - 1)) lsr 1 + j else (j * (j - 1)) lsr 1 + i in
             Bytes.unsafe_get fast_mat index < interference
           else not (IntPairSet.mem mat (if i < j then (i, j) else (j, i))))
