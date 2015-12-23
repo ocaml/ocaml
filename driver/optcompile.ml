@@ -87,14 +87,14 @@ let implementation ppf sourcefile outputprefix ~backend =
       if Config.flambda then begin
         if !Clflags.o3 then begin
           Clflags.simplify_rounds := 3;
-          Clflags.use_inlining_arguments_set ~round:1 Clflags.o1_arguments;
-          Clflags.use_inlining_arguments_set ~round:2 Clflags.o2_arguments;
-          Clflags.use_inlining_arguments_set ~round:3 Clflags.o3_arguments
+          Clflags.use_inlining_arguments_set ~round:0 Clflags.o2_arguments;
+          Clflags.use_inlining_arguments_set ~round:1 Clflags.o3_arguments;
+          Clflags.use_inlining_arguments_set ~round:2 Clflags.o3_arguments
         end
         else if !Clflags.o2 then begin
           Clflags.simplify_rounds := 2;
-          Clflags.use_inlining_arguments_set ~round:1 Clflags.o1_arguments;
-          Clflags.use_inlining_arguments_set ~round:2 Clflags.o2_arguments
+          Clflags.use_inlining_arguments_set ~round:0 Clflags.o1_arguments;
+          Clflags.use_inlining_arguments_set ~round:1 Clflags.o2_arguments
         end
         else if !Clflags.classic_heuristic then begin
           Clflags.use_inlining_arguments_set Clflags.classic_arguments
