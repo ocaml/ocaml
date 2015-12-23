@@ -547,7 +547,7 @@ let descriptions =
    55, "Inlining impossible";
    56, "Assignment on non-mutable value";
    57, "Missing symbol information (is a .cmx file missing?)";
-   58, "Unreachable case in a pattern-matching (based on type information)."
+   58, "Unreachable case in a pattern-matching (based on type information).";
    59, "Ambiguous binding by pattern.";
   ]
 ;;

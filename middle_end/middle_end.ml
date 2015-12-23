@@ -42,105 +42,101 @@ let middle_end ppf ~sourcefile ~prefixname ~backend
       end;
     end;
     let timing_pass = (Timings.Flambda_pass (name, sourcefile)) in
-    Timings.restart timing_pass;
-    let flam = pass flam in
-    Timings.accumulate timing_pass;
+    let flam = Timings.accumulate_time timing_pass pass flam in
     if !Clflags.flambda_invariant_checks then begin
       Timings.accumulate_time (Flambda_pass ("check", sourcefile)) check flam
     end;
     flam
   in
-  Timings.(start (Flambda_middle_end sourcefile));
-  let flam =
-    let pass = Timings.Flambda_pass ("closure_conversion", sourcefile) in
-    Timings.start pass;
+  Timings.accumulate_time (Flambda_pass ("middle_end", sourcefile)) (fun () ->
     let flam =
-      module_initializer
-      |> Closure_conversion.lambda_to_flambda ~backend ~module_ident ~size
+      let timing_pass =
+        Timings.Flambda_pass ("closure_conversion", sourcefile)
+      in
+      Timings.accumulate_time timing_pass (fun () ->
+          module_initializer
+          |> Closure_conversion.lambda_to_flambda ~backend ~module_ident ~size)
+        ()
     in
-    Timings.stop pass;
-    flam
-  in
-  dump_and_check "After closure conversion" flam;
-  let fast_mode flam =
-    pass_number := 0;
-    let round = 0 in
-    flam
-    +-+ ("lift_lets 1", Lift_code.lift_lets)
-    +-+ ("Lift_constants", Lift_constants.lift_constants ~backend)
-    +-+ ("Share_constants", Share_constants.share_constants)
-    +-+ ("Lift_let_to_initialize_symbol",
-         Lift_let_to_initialize_symbol.lift ~backend)
-    +-+ ("Inline_and_simplify",
-         Inline_and_simplify.run ~never_inline:false ~backend
-           ~prefixname ~round)
-    +-+ ("Ref_to_variables",
-         Ref_to_variables.eliminate_ref)
-    +-+ ("Remove_unused_closure_vars 2",
-         Remove_unused_closure_vars.remove_unused_closure_variables)
-    +-+ ("Initialize_symbol_to_let_symbol",
-         Initialize_symbol_to_let_symbol.run)
-  in
-  let rec loop flam =
-    pass_number := 0;
-    let round = !round_number in
-    incr round_number;
-    if !round_number > !Clflags.simplify_rounds then flam
-    else
+    dump_and_check "After closure conversion" flam;
+    let fast_mode flam =
+      pass_number := 0;
+      let round = 0 in
       flam
-      (* Beware: [Lift_constants] must be run before any pass that might
-         duplicate strings. *)
       +-+ ("lift_lets 1", Lift_code.lift_lets)
       +-+ ("Lift_constants", Lift_constants.lift_constants ~backend)
       +-+ ("Share_constants", Share_constants.share_constants)
-      +-+ ("Remove_unused_globals",
-           Remove_unused_globals.remove_unused_globals)
       +-+ ("Lift_let_to_initialize_symbol",
            Lift_let_to_initialize_symbol.lift ~backend)
-      +-+ ("lift_lets 2", Lift_code.lift_lets)
-      +-+ ("Remove_unused_closure_vars 1",
-           Remove_unused_closure_vars.remove_unused_closure_variables)
       +-+ ("Inline_and_simplify",
            Inline_and_simplify.run ~never_inline:false ~backend
              ~prefixname ~round)
-      +-+ ("Remove_unused_closure_vars 2",
-           Remove_unused_closure_vars.remove_unused_closure_variables)
-      +-+ ("lift_lets 3", Lift_code.lift_lets)
       +-+ ("Ref_to_variables",
            Ref_to_variables.eliminate_ref)
-      +-+ ("Inline_and_simplify noinline",
-           Inline_and_simplify.run ~never_inline:true ~backend
-            ~prefixname ~round)
+      +-+ ("Remove_unused_closure_vars 2",
+           Remove_unused_closure_vars.remove_unused_closure_variables)
       +-+ ("Initialize_symbol_to_let_symbol",
            Initialize_symbol_to_let_symbol.run)
-      |> loop
-  in
-  let back_end flam =
-    flam
-    +-+ ("Lift_constants", Lift_constants.lift_constants ~backend)
-    +-+ ("Share_constants", Share_constants.share_constants)
-    +-+ ("Remove_unused_globals", Remove_unused_globals.remove_unused_globals)
-  in
-  let flam =
-    if !Clflags.classic_heuristic then
-      fast_mode flam
-    else
-      loop flam
-  in
-  let flam = back_end flam in
-  (* Check that there aren't any unused "always inline" attributes. *)
-  Flambda_iterators.iter_apply_on_program flam ~f:(fun apply ->
-      match apply.inline with
-      | Default_inline | Never_inline -> ()
-      | Always_inline ->
-        (* CR-someday mshinwell: consider a different error message if
-           this triggers as a result of the propagation of a user's
-           attribute into the second part of an over application
-           (inline_and_simplify.ml line 710). *)
-        Location.prerr_warning (Debuginfo.to_location apply.dbg)
-          (Warnings.Inlining_impossible "[@inlined] attribute was not \
-            used on this function application (the optimizer did not \
-            know what function was being applied)"));
-  dump_and_check "End of middle end" flam;
-  Timings.(stop (Flambda_middle_end sourcefile));
-  flam
+    in
+    let rec loop flam =
+      pass_number := 0;
+      let round = !round_number in
+      incr round_number;
+      if !round_number > !Clflags.simplify_rounds then flam
+      else
+        flam
+        (* Beware: [Lift_constants] must be run before any pass that might
+           duplicate strings. *)
+        +-+ ("lift_lets 1", Lift_code.lift_lets)
+        +-+ ("Lift_constants", Lift_constants.lift_constants ~backend)
+        +-+ ("Share_constants", Share_constants.share_constants)
+        +-+ ("Remove_unused_globals",
+             Remove_unused_globals.remove_unused_globals)
+        +-+ ("Lift_let_to_initialize_symbol",
+             Lift_let_to_initialize_symbol.lift ~backend)
+        +-+ ("lift_lets 2", Lift_code.lift_lets)
+        +-+ ("Remove_unused_closure_vars 1",
+             Remove_unused_closure_vars.remove_unused_closure_variables)
+        +-+ ("Inline_and_simplify",
+             Inline_and_simplify.run ~never_inline:false ~backend
+               ~prefixname ~round)
+        +-+ ("Remove_unused_closure_vars 2",
+             Remove_unused_closure_vars.remove_unused_closure_variables)
+        +-+ ("lift_lets 3", Lift_code.lift_lets)
+        +-+ ("Ref_to_variables",
+             Ref_to_variables.eliminate_ref)
+        +-+ ("Inline_and_simplify noinline",
+             Inline_and_simplify.run ~never_inline:true ~backend
+              ~prefixname ~round)
+        +-+ ("Initialize_symbol_to_let_symbol",
+             Initialize_symbol_to_let_symbol.run)
+        |> loop
+    in
+    let back_end flam =
+      flam
+      +-+ ("Lift_constants", Lift_constants.lift_constants ~backend)
+      +-+ ("Share_constants", Share_constants.share_constants)
+      +-+ ("Remove_unused_globals", Remove_unused_globals.remove_unused_globals)
+    in
+    let flam =
+      if !Clflags.classic_heuristic then
+        fast_mode flam
+      else
+        loop flam
+    in
+    let flam = back_end flam in
+    (* Check that there aren't any unused "always inline" attributes. *)
+    Flambda_iterators.iter_apply_on_program flam ~f:(fun apply ->
+        match apply.inline with
+        | Default_inline | Never_inline -> ()
+        | Always_inline ->
+          (* CR-someday mshinwell: consider a different error message if
+             this triggers as a result of the propagation of a user's
+             attribute into the second part of an over application
+             (inline_and_simplify.ml line 710). *)
+          Location.prerr_warning (Debuginfo.to_location apply.dbg)
+            (Warnings.Inlining_impossible "[@inlined] attribute was not \
+              used on this function application (the optimizer did not \
+              know what function was being applied)"));
+    dump_and_check "End of middle end" flam;
+    flam) ();

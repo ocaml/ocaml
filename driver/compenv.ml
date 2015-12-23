@@ -358,8 +358,6 @@ let read_one_param ppf position name v =
       | "can-discard" ->
         can_discard := v ::!can_discard
 
-      | "timings" -> set "timings" [ print_timings ] v
-
       | _ ->
         if not (List.mem name !can_discard) then begin
           can_discard := name :: !can_discard;

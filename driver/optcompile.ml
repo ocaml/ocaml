@@ -100,22 +100,21 @@ let implementation ppf sourcefile outputprefix ~backend =
       end;
       if Config.flambda then begin
         (typedtree, coercion)
-        ++ Timings.(start_id (Transl sourcefile))
-        ++ do_transl modulename
-        ++ Timings.(stop_id (Transl sourcefile))
+        ++ Timings.(time (Timings.Transl sourcefile) do_transl modulename)
         +++ print_if ppf Clflags.dump_rawlambda Printlambda.lambda
-        ++ Timings.(start_id (Generate sourcefile))
-        +++ Simplif.simplify_lambda
-        +++ print_if ppf Clflags.dump_lambda Printlambda.lambda
-        ++ (fun ((module_ident, size), lam) ->
-            Middle_end.middle_end ppf ~sourcefile ~prefixname:outputprefix
-              ~size
-              ~module_ident
-              ~backend
-              ~module_initializer:lam)
-        ++ Asmgen.compile_implementation ~sourcefile outputprefix ~backend Asmgen.Flambda ppf;
-        Compilenv.save_unit_info cmxfile;
-        Timings.(stop (Generate sourcefile));
+        ++ Timings.time (Timings.Generate sourcefile) (fun lambda ->
+          lambda
+          +++ Simplif.simplify_lambda
+          +++ print_if ppf Clflags.dump_lambda Printlambda.lambda
+          ++ (fun ((module_ident, size), lam) ->
+              Middle_end.middle_end ppf ~sourcefile ~prefixname:outputprefix
+                ~size
+                ~module_ident
+                ~backend
+                ~module_initializer:lam)
+          ++ Asmgen.compile_implementation ~sourcefile outputprefix ~backend
+            Asmgen.Flambda ppf;
+          Compilenv.save_unit_info cmxfile)
       end
       else begin
         Clflags.use_inlining_arguments_set Clflags.classic_arguments;

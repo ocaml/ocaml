@@ -149,7 +149,6 @@ module Options = Main_args.Make_bytecomp_options (struct
 end)
 
 let main () =
-  Timings.start Timings.All;
   try
     readenv ppf Before_args;
     Arg.parse Options.list anonymous usage;

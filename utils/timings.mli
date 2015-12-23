@@ -41,6 +41,7 @@ type compiler_pass =
   | Linearize of source_provenance
   | Scheduling of source_provenance
   | Emit of source_provenance
+  | Flambda_pass of string * file
 
 val reset : unit -> unit
 (** erase all recorded times *)

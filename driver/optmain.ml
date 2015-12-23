@@ -235,7 +235,6 @@ module Options = Main_args.Make_optcomp_options (struct
 end);;
 
 let main () =
-  Timings.start Timings.All;
   native_code := true;
   let ppf = Format.err_formatter in
   try

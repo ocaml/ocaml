@@ -153,7 +153,6 @@ let compile_unit ~sourcefile _output_prefix asm_filename keep_asm obj_filename g
     in
     if assemble_result <> 0
     then raise(Error(Assembler_error asm_filename));
-    Timings.(stop (Assemble sourcefile));
     if create_asm && not keep_asm then remove_file asm_filename
   with exn ->
     remove_file obj_filename;
@@ -169,22 +168,20 @@ type clambda_and_constants =
   ((Symbol.t * bool (* exported *)) *
    Clambda.ustructured_constant) list
 
-let gen_implementation ?toplevel ~sourcefile ppf
+let end_gen_implementation ?toplevel ~sourcefile ppf
     (clambda:clambda_and_constants) =
   Emit.begin_assembly ();
   clambda
-  ++ Timings.(time (Cmm sourcefile)) (Cmmgen.compunit size)
+  ++ Timings.(time (Cmm sourcefile)) Cmmgen.compunit_and_constants
   ++ Timings.(time (Compile_phrases sourcefile))
        (List.iter (compile_phrase ppf))
   ++ (fun () -> ());
   (match toplevel with None -> () | Some f -> compile_genfuns ppf f);
-
   (* We add explicit references to external primitive symbols.  This
      is to ensure that the object files that define these symbols,
      when part of a C library, won't be discarded by the linker.
      This is important if a module that uses such a symbol is later
      dynlinked. *)
-
   compile_phrase ppf
     (Cmmgen.reference_symbols
        (List.filter (fun s -> s <> "" && s.[0] <> '%')
@@ -194,20 +191,19 @@ let gen_implementation ?toplevel ~sourcefile ppf
 
 let flambda_gen_implementation ?toplevel ~sourcefile ~backend ppf
     (program:Flambda.program) =
-  Timings.(start (Flambda_backend sourcefile));
   let export = Build_export_info.build_export_info ~backend program in
   let (clambda, preallocated, constants) =
-    (program, export)
-    ++ Flambda_to_clambda.convert
-    ++ flambda_raw_clambda_dump_if ppf
-    ++ (fun { Flambda_to_clambda. expr; preallocated_blocks;
-              structured_constants; exported; } ->
-           (* "init_code" following the name used in
-              [Cmmgen.compunit_and_constants]. *)
-         Un_anf.apply expr ~what:"init_code", preallocated_blocks,
-         structured_constants, exported)
-    ++ set_export_info
-    ++ Timings.(stop_id (Flambda_backend sourcefile))
+    Timings.time (Flambda_pass ("backend", sourcefile)) (fun () ->
+      (program, export)
+      ++ Flambda_to_clambda.convert
+      ++ flambda_raw_clambda_dump_if ppf
+      ++ (fun { Flambda_to_clambda. expr; preallocated_blocks;
+                structured_constants; exported; } ->
+             (* "init_code" following the name used in
+                [Cmmgen.compunit_and_constants]. *)
+           Un_anf.apply expr ~what:"init_code", preallocated_blocks,
+           structured_constants, exported)
+      ++ set_export_info) ()
   in
   let constants =
     List.map (fun (symbol, const) -> (symbol, true), const)
