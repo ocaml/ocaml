@@ -16,6 +16,7 @@ module E = Inline_and_simplify_aux.Env
 module R = Inline_and_simplify_aux.Result
 module U = Flambda_utils
 module W = Inlining_cost.Whether_sufficient_benefit
+module T = Inlining_cost.Threshold
 
 let inline_non_recursive env r ~function_decls ~lhs_of_application
     ~closure_id_being_applied ~(function_decl : Flambda.function_declaration)
@@ -112,7 +113,7 @@ let inline_non_recursive env r ~function_decls ~lhs_of_application
        the function, without doing any further inlining upon it, to the call
        site. *)
     let r =
-      R.set_inlining_threshold (R.reset_benefit r) (Some Inlining_cost.Never_inline)
+      R.set_inlining_threshold (R.reset_benefit r) (Some T.Never_inline)
     in
     Inlining_transforms.inline_by_copying_function_body ~env ~r
       ~function_decls ~lhs_of_application ~closure_id_being_applied
@@ -426,10 +427,16 @@ let for_call_site ~env ~r ~(function_decls : Flambda.function_declarations)
     else
       Inline_and_simplify_aux.initial_inlining_threshold ~round:(E.round env)
   in
-  let inlining_threshold =
+  let unthrottled_inlining_threshold =
     match raw_inlining_threshold with
     | None -> max_inlining_threshold
     | Some inlining_threshold -> inlining_threshold
+  in
+  let inlining_threshold =
+    T.min unthrottled_inlining_threshold max_inlining_threshold
+  in
+  let inlining_threshold_diff =
+    T.sub unthrottled_inlining_threshold inlining_threshold
   in
   let fun_var =
     U.find_declaration_variable closure_id_being_applied function_decls
@@ -442,7 +449,7 @@ let for_call_site ~env ~r ~(function_decls : Flambda.function_declarations)
   let recursive =
     lazy (Variable.Set.mem fun_var (Lazy.force recursive_functions))
   in
-  let fun_cost : Inlining_cost.inlining_threshold =
+  let fun_cost : Inlining_cost.Threshold.t =
     match (inline_annotation : Lambda.inline_attribute) with
     | Never_inline -> Never_inline
     | Always_inline | Default_inline ->
@@ -466,7 +473,7 @@ let for_call_site ~env ~r ~(function_decls : Flambda.function_declarations)
          but not in the context of inlining said function.  As such, there
          is nothing to do here (and no decision to report). *)
       None
-    else if fun_cost = Inlining_cost.Never_inline && not function_decl.stub then
+    else if fun_cost = T.Never_inline && not function_decl.stub then
       (* CR pchambart: should we also accept unconditionnal inline ?
          It is some kind of user defined stub, but if we restrict to stub
          we are certain that no abusive use of [@@inline] can blow things up *)
@@ -527,7 +534,7 @@ let for_call_site ~env ~r ~(function_decls : Flambda.function_declarations)
   | Some (expr, r) ->
     if E.inlining_level env = 0
     then expr, R.set_inlining_threshold r raw_inlining_threshold
-    else expr, r
+    else expr, R.add_inlining_threshold r inlining_threshold_diff
 
 
 (* We do not inline inside stubs, which are always inlined at their call site.

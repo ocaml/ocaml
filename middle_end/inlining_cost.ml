@@ -139,15 +139,41 @@ let lambda_size lam =
          memory. *)
       assert false
 
-type inlining_threshold =
-  | Never_inline
-  | Can_inline_if_no_larger_than of int
+module Threshold = struct
+
+  type t =
+    | Never_inline
+    | Can_inline_if_no_larger_than of int
+
+  let add t1 t2 =
+    match t1, t2 with
+    | Never_inline, t -> t
+    | t, Never_inline -> t
+    | Can_inline_if_no_larger_than i1, Can_inline_if_no_larger_than i2 ->
+        Can_inline_if_no_larger_than (i1 + i2)
+
+  let sub t1 t2 =
+    match t1, t2 with
+    | Never_inline, _ -> Never_inline
+    | t, Never_inline -> t
+    | Can_inline_if_no_larger_than i1, Can_inline_if_no_larger_than i2 ->
+        if i1 > i2 then Can_inline_if_no_larger_than (i1 - i2)
+        else Never_inline
+
+  let min t1 t2 =
+    match t1, t2 with
+    | Never_inline, _ -> Never_inline
+    | _, Never_inline -> Never_inline
+    | Can_inline_if_no_larger_than i1, Can_inline_if_no_larger_than i2 ->
+      Can_inline_if_no_larger_than (min i1 i2)
+
+end
 
 let can_try_inlining lam inlining_threshold ~number_of_arguments
       ~size_from_approximation =
   match inlining_threshold with
-  | Never_inline -> Never_inline
-  | Can_inline_if_no_larger_than inlining_threshold ->
+  | Threshold.Never_inline -> Threshold.Never_inline
+  | Threshold.Can_inline_if_no_larger_than inlining_threshold ->
     let bonus =
       (* removing a call will reduce the size by at least the number
          of arguments *)
@@ -160,16 +186,18 @@ let can_try_inlining lam inlining_threshold ~number_of_arguments
       | None -> lambda_smaller' lam ~than
     in
     match size with
-    | None -> Never_inline
-    | Some size -> Can_inline_if_no_larger_than (inlining_threshold - size + bonus)
+    | None -> Threshold.Never_inline
+    | Some size ->
+      Threshold.Can_inline_if_no_larger_than
+        (inlining_threshold - size + bonus)
 
 let lambda_smaller lam ~than =
   lambda_smaller' lam ~than <> None
 
 let can_inline lam inlining_threshold ~bonus =
   match inlining_threshold with
-  | Never_inline -> false
-  | Can_inline_if_no_larger_than inlining_threshold ->
+  | Threshold.Never_inline -> false
+  | Threshold.Can_inline_if_no_larger_than inlining_threshold ->
      lambda_smaller
        lam
        ~than:(inlining_threshold + bonus)

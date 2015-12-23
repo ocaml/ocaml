@@ -258,7 +258,7 @@ module Env = struct
   let inlining_stats_closure_stack t = t.inlining_stats_closure_stack
 end
 
-let initial_inlining_threshold ~round : Inlining_cost.inlining_threshold =
+let initial_inlining_threshold ~round : Inlining_cost.Threshold.t =
   let unscaled =
     Clflags.Float_arg_helper.get ~key:round !Clflags.inline_threshold
   in
@@ -268,7 +268,7 @@ let initial_inlining_threshold ~round : Inlining_cost.inlining_threshold =
     (int_of_float
       (unscaled *. float_of_int Inlining_cost.scale_inline_threshold_by))
 
-let initial_inlining_toplevel_threshold ~round : Inlining_cost.inlining_threshold =
+let initial_inlining_toplevel_threshold ~round : Inlining_cost.Threshold.t =
   let ordinary_threshold =
     Clflags.Float_arg_helper.get ~key:round !Clflags.inline_threshold
   in
@@ -289,7 +289,7 @@ module Result = struct
   type t =
     { approx : Simple_value_approx.t;
       used_staticfail : Static_exception.Set.t;
-      inlining_threshold : Inlining_cost.inlining_threshold option;
+      inlining_threshold : Inlining_cost.Threshold.t option;
       benefit : Inlining_cost.Benefit.t;
       num_direct_applications : int;
     }
@@ -325,6 +325,20 @@ module Result = struct
 
   let set_inlining_threshold t inlining_threshold =
     { t with inlining_threshold }
+
+  let add_inlining_threshold t j =
+    match t.inlining_threshold with
+    | None -> t
+    | Some i ->
+      let inlining_threshold = Some (Inlining_cost.Threshold.add i j) in
+      { t with inlining_threshold }
+
+  let sub_inlining_threshold t j =
+    match t.inlining_threshold with
+    | None -> t
+    | Some i ->
+      let inlining_threshold = Some (Inlining_cost.Threshold.sub i j) in
+      { t with inlining_threshold }
 
   let inlining_threshold t = t.inlining_threshold
 

@@ -230,8 +230,12 @@ module Result : sig
   val reset_benefit : t -> t
 
   val set_inlining_threshold :
-    t -> Inlining_cost.inlining_threshold option -> t
-  val inlining_threshold : t -> Inlining_cost.inlining_threshold option
+    t -> Inlining_cost.Threshold.t option -> t
+  val add_inlining_threshold :
+    t -> Inlining_cost.Threshold.t -> t
+  val sub_inlining_threshold :
+    t -> Inlining_cost.Threshold.t -> t
+  val inlining_threshold : t -> Inlining_cost.Threshold.t option
 
   val seen_direct_application : t -> t
   val num_direct_applications : t -> int
@@ -239,7 +243,8 @@ module Result : sig
 end
 
 (** Command line argument -inline *)
-val initial_inlining_threshold : round:int -> Inlining_cost.inlining_threshold
+val initial_inlining_threshold : round:int -> Inlining_cost.Threshold.t
 
 (** Command line argument -inline-toplevel *)
-val initial_inlining_toplevel_threshold : round:int -> Inlining_cost.inlining_threshold
+val initial_inlining_toplevel_threshold
+  : round:int -> Inlining_cost.Threshold.t

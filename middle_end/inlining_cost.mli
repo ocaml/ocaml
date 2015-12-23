@@ -14,18 +14,26 @@
 (** Measurement of the cost (including cost in space) of Flambda terms
     in the context of inlining. *)
 
-(* The maximum size, in some abstract measure of space cost, that an
-   Flambda expression may be in order to be inlined. *)
-type inlining_threshold =
-  | Never_inline
-  | Can_inline_if_no_larger_than of int
+module Threshold : sig
+
+  (** The maximum size, in some abstract measure of space cost, that an
+     Flambda expression may be in order to be inlined. *)
+  type t =
+    | Never_inline
+    | Can_inline_if_no_larger_than of int
+
+  val add : t -> t -> t
+  val sub : t -> t -> t
+  val min : t -> t -> t
+
+end
 
 (* Determine whether the given Flambda expression has a sufficiently low space
    cost so as to fit under the given [inlining_threshold].  The [bonus] is
    added to the threshold before evaluation. *)
 val can_inline
     : Flambda.t
-  -> inlining_threshold
+  -> Threshold.t
   -> bonus:int
   -> bool
 
@@ -39,10 +47,10 @@ val can_inline
    of the expression. *)
 val can_try_inlining
     : Flambda.t
-  -> inlining_threshold
+  -> Threshold.t
   -> number_of_arguments:int
   -> size_from_approximation:int option
-  -> inlining_threshold
+  -> Threshold.t
 
 module Benefit : sig
   (* A model of the benefit we gain by removing a particular combination
