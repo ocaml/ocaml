@@ -28,9 +28,9 @@ open Mach
 
 let mat = IntPairSet.create 42
 
-let max_for_fast_mode = 4000  (* 16Mb memory used *)
+let max_for_fast_mode = 4000  (* 8Mb memory used *)
 let previous_interference = ref 0
-let fast_mat = Bytes.make (max_for_fast_mode * max_for_fast_mode) '\000'
+let fast_mat = Bytes.make (max_for_fast_mode * (max_for_fast_mode - 1) / 2) '\000'
 
 let build_graph fundecl =
 
@@ -38,16 +38,25 @@ let build_graph fundecl =
      - by adjacency lists for each register
      - by a sparse bit matrix (a set of pairs of register stamps).
 
-     The sparse bit matrix is represented by a string unless the number of
-     registers involved in the function is very large.  In the fast "string"
-     case, when we call [add_interf] below the situation will be as follows:
-     an interference (i, j) is registered in the fast matrix iff the
-     character (i*max_for_fast_mode + j) of [fast_mat] has a code equal
-     to [interference].  All strictly lower codes indicate a non-interference.
-     When we compile the next function, [interference] will have been
-     incremented, which means we automatically treat interferences from the
-     previous function(s) as non-interferences for the current function.
-     (This trick saves us from clearing the matrix between each function.)
+     The sparse bit matrix is represented by a string unless the
+     number of registers involved in the function is very large.  The
+     index in the string for a pair of register (i, j) assuming j < i
+     is given by:
+
+         index(i, j) = i * (i - 1) / 2 + j
+
+     (This takes into account the fact that only half of the square
+     matrix is needed).
+
+     In the fast "string" case, when we call [add_interf] below the
+     situation will be as follows: an interference (i, j) is
+     registered in the fast matrix iff the character index(i,j) of
+     [fast_mat] has a code equal to [interference].  All strictly
+     lower codes indicate a non-interference.  When we compile the
+     next function, [interference] will have been incremented, which
+     means we automatically treat interferences from the previous
+     function(s) as non-interferences for the current function.  (This
+     trick saves us from clearing the matrix between each function.)
      If sufficiently many functions are compiled such that the counter
      might wrap around, the array is re-allocated. *)
 
@@ -74,7 +83,7 @@ let build_graph fundecl =
         && (ri.loc = Unknown || rj.loc = Unknown)
         &&
         begin if fast then
-            let index = i*max_for_fast_mode + j in
+            let index = if j < i then (i * (i - 1)) lsr 1 + j else (j * (j - 1)) lsr 1 + i in
             let b = Char.code (Bytes.unsafe_get fast_mat index) < interference in
             if b then Bytes.unsafe_set fast_mat index (Char.chr interference);
             b
@@ -172,8 +181,8 @@ let build_graph fundecl =
       && Proc.register_class r1 = Proc.register_class r2
       && (
           if fast then
-            Char.code (Bytes.unsafe_get fast_mat (i*max_for_fast_mode + j))
-              < interference
+            let index = if j < i then (i * (i - 1)) lsr 1 + j else (j * (j - 1)) lsr 1 + i in
+            Char.code (Bytes.unsafe_get fast_mat index) < interference
           else not (IntPairSet.mem mat (if i < j then (i, j) else (j, i))))
       then r1.prefer <- (r2, weight) :: r1.prefer
     end in
