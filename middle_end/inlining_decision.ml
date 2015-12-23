@@ -179,7 +179,7 @@ let inline_non_recursive env r ~function_decls ~lhs_of_application
         ~where:Inline_by_copying_function_body
     in
     let env =
-      if not function_decl.stub ||
+      if function_decl.stub ||
          (* Stub functions should not prevent other functions
             from being evaluated for inlining *)
          E.inlining_level env = 0
@@ -484,11 +484,10 @@ let for_call_site ~env ~r ~(function_decls : Flambda.function_declarations)
       (* CR mshinwell for pchambart: I don't understand why this was applying
          inline_non_recursive to recursive functions. *)
       if is_a_stub
-        || (always_inline && not (Lazy.force recursive))
-        || (E.inlining_level env <= max_level
+        || (E.inlining_level env < max_level
             (* The classic heuristic completely disables inlining if the
                function is not annotated as to be inlined. *)
-            && not !Clflags.classic_heuristic
+            && (always_inline || not !Clflags.classic_heuristic)
             && not (Lazy.force recursive))
       then
         let size_from_approximation =
@@ -507,7 +506,7 @@ let for_call_site ~env ~r ~(function_decls : Flambda.function_declarations)
           ~made_decision ~only_use_of_function ~no_simplification
           ~inline_requested ~always_inline ~args ~size_from_approximation
           ~simplify
-      else if (not always_inline) && E.inlining_level env > max_level then begin
+      else if E.inlining_level env >= max_level then begin
         made_decision (Can_inline_but_tried_nothing (Level_exceeded true));
         no_simplification ()
       end else if not !Clflags.classic_heuristic && Lazy.force recursive then

@@ -63,6 +63,11 @@ module Env = struct
     }
 
   let inlining_level_up env =
+    let max_level =
+      Clflags.Int_arg_helper.get ~key:(env.round) !Clflags.max_inlining_depth
+    in
+    if (env.inlining_level + 1) > max_level then
+      Misc.fatal_error "Inlining level increased above maximum";
     { env with inlining_level = env.inlining_level + 1 }
 
   let print ppf t =
