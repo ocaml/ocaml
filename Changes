@@ -222,6 +222,7 @@ Standard library:
   (Bobot François)
 - GPR#329: Add exists, for_all,  mem and memq functions in Array
   (Bernhard Schommer)
+- GPR#356: Add [Format.kasprintf] (Jérémie Dimino, Mark Shinwell)
 
 Type system:
 - PR#5545: Type annotations on methods cannot control the choice of abbreviation
