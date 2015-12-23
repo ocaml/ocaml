@@ -62,16 +62,18 @@ parsing/ast_mapper.cmx : parsing/parsetree.cmi utils/misc.cmx \
     parsing/longident.cmx parsing/location.cmx utils/config.cmx \
     utils/clflags.cmx parsing/asttypes.cmi parsing/ast_helper.cmx \
     parsing/ast_mapper.cmi
-parsing/attr_helper.cmo : parsing/parsetree.cmi parsing/location.cmi \
-    parsing/asttypes.cmi parsing/attr_helper.cmi
-parsing/attr_helper.cmx : parsing/parsetree.cmi parsing/location.cmx \
-    parsing/asttypes.cmi parsing/attr_helper.cmi
+parsing/attr_helper.cmo : utils/warnings.cmi parsing/parsetree.cmi \
+    utils/misc.cmi parsing/location.cmi parsing/asttypes.cmi \
+    parsing/attr_helper.cmi
+parsing/attr_helper.cmx : utils/warnings.cmx parsing/parsetree.cmi \
+    utils/misc.cmx parsing/location.cmx parsing/asttypes.cmi \
+    parsing/attr_helper.cmi
 parsing/builtin_attributes.cmo : utils/warnings.cmi parsing/parsetree.cmi \
-    parsing/location.cmi parsing/asttypes.cmi parsing/ast_mapper.cmi \
-    parsing/builtin_attributes.cmi
+    parsing/location.cmi parsing/attr_helper.cmi parsing/asttypes.cmi \
+    parsing/ast_mapper.cmi parsing/builtin_attributes.cmi
 parsing/builtin_attributes.cmx : utils/warnings.cmx parsing/parsetree.cmi \
-    parsing/location.cmx parsing/asttypes.cmi parsing/ast_mapper.cmx \
-    parsing/builtin_attributes.cmi
+    parsing/location.cmx parsing/attr_helper.cmx parsing/asttypes.cmi \
+    parsing/ast_mapper.cmx parsing/builtin_attributes.cmi
 parsing/docstrings.cmo : utils/warnings.cmi parsing/parsetree.cmi \
     parsing/location.cmi parsing/docstrings.cmi
 parsing/docstrings.cmx : utils/warnings.cmx parsing/parsetree.cmi \
@@ -600,10 +602,10 @@ bytecomp/symtable.cmx : utils/tbl.cmx bytecomp/runtimedef.cmx \
     parsing/asttypes.cmi bytecomp/symtable.cmi
 bytecomp/translattribute.cmo : utils/warnings.cmi typing/typedtree.cmi \
     parsing/parsetree.cmi parsing/longident.cmi parsing/location.cmi \
-    bytecomp/lambda.cmi bytecomp/translattribute.cmi
+    bytecomp/lambda.cmi parsing/attr_helper.cmi bytecomp/translattribute.cmi
 bytecomp/translattribute.cmx : utils/warnings.cmx typing/typedtree.cmx \
     parsing/parsetree.cmi parsing/longident.cmx parsing/location.cmx \
-    bytecomp/lambda.cmx bytecomp/translattribute.cmi
+    bytecomp/lambda.cmx parsing/attr_helper.cmx bytecomp/translattribute.cmi
 bytecomp/translclass.cmo : typing/types.cmi bytecomp/typeopt.cmi \
     typing/typedtree.cmi bytecomp/translobj.cmi bytecomp/translcore.cmi \
     typing/path.cmi bytecomp/matching.cmi parsing/location.cmi \

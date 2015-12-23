@@ -1,0 +1,30 @@
+File "w59.ml", line 7, characters 4-14:
+Warning 59: possibly misspelled attribute 'warnerrror' in place of 'warnerror'
+File "w59.ml", line 9, characters 31-55:
+Warning 59: possibly misspelled attribute 'warn_on_litteral_pattern' in place of 'warn_on_literal_pattern'
+File "w59.ml", line 13, characters 12-18:
+Warning 59: possibly misspelled attribute 'warnig' in place of 'warning'
+File "w59.ml", line 17, characters 31-40:
+Warning 59: possibly misspelled attribute 'deprecate' in place of 'deprecated'
+File "w59.ml", line 19, characters 44-61:
+Warning 59: possibly misspelled attribute 'deprecate_mutable' in place of 'deprecated_mutable'
+File "w59.ml", line 23, characters 20-27:
+Warning 59: possibly misspelled attribute 'untaged' in place of 'untagged'
+File "w59.ml", line 23, characters 42-48:
+Warning 59: possibly misspelled attribute 'unboxd' in place of 'unboxed'
+File "w59.ml", line 23, characters 60-68:
+Warning 59: possibly misspelled attribute 'no_alloc' in place of 'noalloc'
+File "w59.ml", line 17, characters 31-40:
+Warning 59: possibly misspelled attribute 'deprecate' in place of 'deprecated'
+File "w59.ml", line 14, characters 22-29:
+Warning 59: possibly misspelled attribute 'tailcal' in place of 'tailcall'
+File "w59.ml", line 3, characters 14-20:
+Warning 59: possibly misspelled attribute 'inlind' in place of 'inlined'
+File "w59.ml", line 2, characters 34-40:
+Warning 59: possibly misspelled attribute 'inlind' in place of 'inlined'
+File "w59.ml", line 2, characters 25-30:
+Warning 59: possibly misspelled attribute 'inlne' in place of 'inline'
+File "w59.ml", line 2, characters 34-40:
+Warning 59: possibly misspelled attribute 'inlind' in place of 'inline'
+File "w59.ml", line 1, characters 16-21:
+Warning 59: possibly misspelled attribute 'inlne' in place of 'inline'

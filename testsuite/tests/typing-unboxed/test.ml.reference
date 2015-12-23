@@ -153,7 +153,6 @@ Error: Don't know how to untag this type. Only int can be untagged
 Error: Don't know how to unbox this type. Only float, int32, int64 and nativeint can be unboxed
 #   *     external i : int -> float = "i"
 # external j : int -> float * float = "j"
-# external k : int -> float = "k"
 #       Characters 58-119:
   external l : float -> float = "l" "l_nat" "float" [@@unboxed];;
   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

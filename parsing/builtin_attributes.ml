@@ -13,6 +13,17 @@
 open Asttypes
 open Parsetree
 
+let warning_names = Attr_helper.std_namespace "warning"
+let ppwarning_names = Attr_helper.std_namespace "ppwarning"
+
+let deprecated = Attr_helper.create "deprecated"
+let deprecated_mutable = Attr_helper.create "deprecated_mutable"
+let warning = Attr_helper.{ names= warning_names; context= ppwarning_names}
+let ppwarning = Attr_helper.{names= ppwarning_names; context= warning_names}
+let warnerror = Attr_helper.create "warnerror"
+let warn_on_literal_pattern = Attr_helper.create "warn_on_literal_pattern"
+let explicit_arity = Attr_helper.create "explicit_arity"
+
 let string_of_cst = function
   | PConst_string(s, _) -> Some s
   | _ -> None
@@ -52,7 +63,7 @@ let rec error_of_extension ext =
 
 let rec deprecated_of_attrs = function
   | [] -> None
-  | ({txt = "ocaml.deprecated"|"deprecated"; _}, p) :: _ ->
+  | ( _ , p) as attr :: _ when Attr_helper.is_attribute deprecated attr ->
       begin match string_of_payload p with
       | Some txt ->  Some txt
       | None -> Some ""
@@ -68,7 +79,7 @@ let check_deprecated loc attrs s =
 let rec check_deprecated_mutable loc attrs s =
   match attrs with
   | [] -> ()
-  | ({txt = "ocaml.deprecated_mutable"|"deprecated_mutable"; _}, p) :: _ ->
+  | (_, p) as attr :: _ when Attr_helper.is_attribute deprecated_mutable attr ->
       let txt =
         match string_of_payload p with
         | Some txt -> "\n" ^ txt
@@ -111,10 +122,10 @@ let emit_external_warnings =
     default_mapper with
     attribute = (fun _ a ->
         begin match a with
-        | {txt="ocaml.ppwarning"|"ppwarning"},
-          PStr[{pstr_desc=Pstr_eval({pexp_desc=Pexp_constant
-                                         (PConst_string (s, _))},_);
-                pstr_loc}] ->
+        | _ , PStr[{pstr_desc=Pstr_eval({pexp_desc=Pexp_constant
+                                             (PConst_string (s, _))},_);
+                    pstr_loc}] as attr
+          when Attr_helper.is_attribute ppwarning attr ->
             Location.prerr_warning pstr_loc (Warnings.Preprocessor s)
         | _ -> ()
         end;
@@ -151,9 +162,9 @@ let warning_attribute attrs =
   in
   List.iter
     (function
-      | ({txt = ("ocaml.warning"|"warning") as txt; loc}, payload) ->
+      | ({txt;loc}, payload) as attr when Attr_helper.is_attribute warning attr ->
           process loc txt false payload
-      | ({txt = ("ocaml.warnerror"|"warnerror") as txt; loc}, payload) ->
+      | ({txt;loc}, payload) as attr when Attr_helper.is_attribute warnerror attr ->
           process loc txt true payload
       | _ ->
           ()
@@ -173,15 +184,7 @@ let with_warning_attribute attrs f =
 
 
 let warn_on_literal_pattern =
-  List.exists
-    (function
-      | ({txt="ocaml.warn_on_literal_pattern"|"warn_on_literal_pattern"; _}, _) -> true
-      | _ -> false
-    )
+  List.exists (Attr_helper.is_attribute warn_on_literal_pattern)
 
 let explicit_arity =
-  List.exists
-    (function
-      | ({txt="ocaml.explicit_arity"|"explicit_arity"; _}, _) -> true
-      | _ -> false
-    )
+  List.exists (Attr_helper.is_attribute explicit_arity)

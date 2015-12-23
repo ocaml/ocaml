@@ -76,6 +76,7 @@ type t =
   | Unreachable_case                        (* 56 *)
   | Ambiguous_pattern of string list        (* 57 *)
   | No_cmx_file of string                   (* 58 *)
+  | Misspelled_attribute of string * string (* 59 *)
 ;;
 
 (* If you remove a warning, leave a hole in the numbering.  NEVER change
@@ -143,9 +144,10 @@ let number = function
   | Unreachable_case -> 56
   | Ambiguous_pattern _ -> 57
   | No_cmx_file _ -> 58
+  | Misspelled_attribute _ -> 59
 ;;
 
-let last_warning_number = 58
+let last_warning_number = 59
 ;;
 (* Must be the max number returned by the [number] function. *)
 
@@ -445,6 +447,9 @@ let message = function
       Printf.sprintf
         "no cmx file was found in path for module %s, \
          and its interface was not compiled with -opaque" name
+  | Misspelled_attribute (misspelled, correct) ->
+      Printf.sprintf
+      "possibly misspelled attribute '%s' in place of '%s'" misspelled correct
 ;;
 
 let nerrors = ref 0;;
@@ -541,6 +546,7 @@ let descriptions =
    56, "Unreachable case in a pattern-matching (based on type information).";
    57, "Ambiguous binding by pattern.";
    58, "Missing cmx file";
+   59, "Possibly misspelled built-in attribute"
   ]
 ;;
 
