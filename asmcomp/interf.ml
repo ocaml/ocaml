@@ -80,7 +80,6 @@ let build_graph fundecl =
       let i = ri.stamp and j = rj.stamp in
       let is_new =
         i <> j
-        && (ri.loc = Unknown || rj.loc = Unknown)
         &&
         begin if fast then
             let index = if j < i then (i * (i - 1)) lsr 1 + j else (j * (j - 1)) lsr 1 + i in
