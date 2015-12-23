@@ -23,7 +23,7 @@ COMPFLAGS= -strict-sequence -w +27+32..39 -warn-error A-51 -safe-string $(INCLUD
 LINKFLAGS=$(INCLUDES)
 
 all: ocamldep ocamlprof ocamlcp ocamloptp ocamlmktop ocamlmklib dumpobj \
-     objinfo read_cmt
+     objinfo read_cmt stripdebug cmpbyt
 
 # scrapelabels addlabels
 
@@ -35,11 +35,12 @@ opt.opt: ocamldep.opt read_cmt.opt
 # The dependency generator
 
 CAMLDEP_OBJ=depend.cmo ocamldep.cmo
+
 CAMLDEP_IMPORTS=config.cmo timings.cmo misc.cmo \
   identifiable.cmo numbers.cmo arg_helper.cmo clflags.cmo terminfo.cmo \
   warnings.cmo location.cmo longident.cmo docstrings.cmo \
   syntaxerr.cmo ast_helper.cmo parser.cmo lexer.cmo parse.cmo \
-  ccomp.cmo ast_mapper.cmo pparse.cmo compenv.cmo
+  ccomp.cmo ast_mapper.cmo pparse.cmo compenv.cmo builtin_attributes.cmo
 
 ocamldep: depend.cmi $(CAMLDEP_OBJ)
 	$(CAMLC) $(LINKFLAGS) -compat-32 -o ocamldep ${BISECT_CMA} $(CAMLDEP_IMPORTS) $(CAMLDEP_OBJ)
@@ -289,6 +290,35 @@ primreq: $(PRIMREQ)
 
 clean::
 	rm -f primreq
+
+# Copy a bytecode executable, stripping debug info
+
+STRIPDEBUG=../compilerlibs/ocamlcommon.cma \
+           ../compilerlibs/ocamlbytecomp.cma \
+           stripdebug.cmo
+
+stripdebug: $(STRIPDEBUG)
+	$(CAMLC) $(LINKFLAGS) -o stripdebug $(STRIPDEBUG)
+
+clean::
+	rm -f stripdebug
+
+# Compare two bytecode executables
+
+CMPBYT=../compilerlibs/ocamlcommon.cma \
+       ../compilerlibs/ocamlbytecomp.cma \
+       cmpbyt.cmo
+
+cmpbyt: $(CMPBYT)
+	$(CAMLC) $(LINKFLAGS) -o cmpbyt $(CMPBYT)
+
+clean::
+	rm -f cmpbyt
+
+ifeq "$(RUNTIMEI)" "true"
+install::
+	cp ocaml-instr-graph ocaml-instr-report $(INSTALL_BINDIR)/
+endif
 
 # Common stuff
 

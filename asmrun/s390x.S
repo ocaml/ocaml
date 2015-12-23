@@ -351,3 +351,6 @@ caml_system__frametable:
         .short  -1              /* negative size count => use callback link */
         .short  0               /* no roots here */
 	.align	8
+
+/* Mark stack as non-executable */
+        .section .note.GNU-stack,"",%progbits

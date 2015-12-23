@@ -1019,6 +1019,7 @@ class printer  ()= object(self:'self)
           self#item_attributes attrs
     | PStr x -> self#structure f x
     | PTyp x -> pp f ":"; self#core_type f x
+    | PSig x -> pp f ":"; self#signature f x
     | PPat (x, None) -> pp f "?"; self#pattern f x
     | PPat (x, Some e) ->
       pp f "?"; self#pattern f x;

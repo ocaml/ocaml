@@ -152,6 +152,7 @@ let runtime_variant = ref "";;      (* -runtime-variant *)
 let keep_docs = ref false              (* -keep-docs *)
 let keep_locs = ref false              (* -keep-locs *)
 let unsafe_string = ref true;;         (* -safe-string / -unsafe-string *)
+let print_timings = ref false          (* -dtimings *)
 
 let default_inline_toplevel_threshold =
   int_of_float (16. *. default_inline_threshold)

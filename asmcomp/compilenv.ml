@@ -34,6 +34,8 @@ let imported_sets_of_closures_table =
   (Set_of_closures_id.Tbl.create 10
    : Flambda.function_declarations Set_of_closures_id.Tbl.t)
 
+let sourcefile = ref None
+
 module CstMap =
   Map.Make(struct
     type t = Clambda.ustructured_constant
@@ -107,11 +109,12 @@ let make_symbol ?(unitname = current_unit.ui_symbol) idopt =
 let current_unit_linkage_name () =
   Linkage_name.create (make_symbol ~unitname:current_unit.ui_symbol None)
 
-let reset ?packname name =
+let reset ?packname ~source_provenance:file name =
   Hashtbl.clear global_infos_table;
   Set_of_closures_id.Tbl.clear imported_sets_of_closures_table;
   let symbol = symbolname_for_pack packname name in
   current_unit_id := unit_id_from_name name;
+  sourcefile := Some file;
   current_unit.ui_name <- name;
   current_unit.ui_symbol <- symbol;
   current_unit.ui_defines <- [symbol];
@@ -140,6 +143,17 @@ let current_unit_name () =
   current_unit.ui_name
 
 let current_unit_id () = !current_unit_id
+
+let current_build () =
+  match !sourcefile with
+  | None -> assert false
+  | Some v -> v
+
+let make_symbol ?(unitname = current_unit.ui_symbol) idopt =
+  let prefix = "caml" ^ unitname in
+  match idopt with
+  | None -> prefix
+  | Some id -> prefix ^ "__" ^ id
 
 let symbol_in_current_unit name =
   let prefix = "caml" ^ current_unit.ui_symbol in

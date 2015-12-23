@@ -198,8 +198,8 @@
 
 /stdlib/camlheader
 /stdlib/target_camlheader
-/stdlib/camlheaderd
-/stdlib/target_camlheaderd
+/stdlib/camlheader[di]
+/stdlib/target_camlheader[di]
 /stdlib/camlheader_ur
 /stdlib/labelled-*
 /stdlib/caml
@@ -283,6 +283,8 @@
 /tools/objinfo_helper
 /tools/read_cmt
 /tools/read_cmt.opt
+/tools/cmpbyt
+/tools/stripdebug
 
 /utils/config.ml
 

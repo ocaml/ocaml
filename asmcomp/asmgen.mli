@@ -27,6 +27,7 @@ val compile_implementation :
     backend:(module Backend_intf.S) ->
     'a backend_kind ->
     Format.formatter -> 'a -> unit
+
 val compile_phrase :
     Format.formatter -> Cmm.phrase -> unit
 

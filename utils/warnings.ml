@@ -42,7 +42,7 @@ type t =
   | Preprocessor of string                  (* 22 *)
   | Useless_record_with                     (* 23 *)
   | Bad_module_name of string               (* 24 *)
-  | All_clauses_guarded                     (* 25 *)
+  | All_clauses_guarded                     (* 8, used to be 25 *)
   | Unused_var of string                    (* 26 *)
   | Unused_var_strict of string             (* 27 *)
   | Wildcard_arg_to_constant_constr         (* 28 *)
@@ -76,6 +76,7 @@ type t =
   | Assignment_on_non_mutable_value         (* 56 *)
   | Missing_symbol_information of string * string (* 57 *)
   | Unreachable_case                        (* 58 *)
+  | Ambiguous_pattern of string list        (* 59 *)
 ;;
 
 (* If you remove a warning, leave a hole in the numbering.  NEVER change
@@ -109,7 +110,7 @@ let number = function
   | Preprocessor _ -> 22
   | Useless_record_with -> 23
   | Bad_module_name _ -> 24
-  | All_clauses_guarded -> 25
+  | All_clauses_guarded -> 8 (* used to be 25 *)
   | Unused_var _ -> 26
   | Unused_var_strict _ -> 27
   | Wildcard_arg_to_constant_constr -> 28
@@ -143,8 +144,10 @@ let number = function
   | Assignment_on_non_mutable_value -> 56
   | Missing_symbol_information _ -> 57
   | Unreachable_case -> 58
+  | Ambiguous_pattern _ -> 59
+;;
 
-let last_warning_number = 58
+let last_warning_number = 59
 ;;
 
 (* Must be the max number returned by the [number] function. *)
@@ -175,7 +178,7 @@ let letter = function
   | 'u' -> [11; 12]
   | 'v' -> [13]
   | 'w' -> []
-  | 'x' -> [14; 15; 16; 17; 18; 19; 20; 21; 22; 23; 24; 25; 30]
+  | 'x' -> [14; 15; 16; 17; 18; 19; 20; 21; 22; 23; 24; 30]
   | 'y' -> [26]
   | 'z' -> [27]
   | _ -> assert false
@@ -260,7 +263,7 @@ let parse_options errflag s =
 
 (* If you change these, don't forget to change them in man/ocamlc.m *)
 let defaults_w = "+a-4-6-7-9-27-29-32..39-41..42-44-45-48-50";;
-let defaults_warn_error = "-a";;
+let defaults_warn_error = "-a+31";;
 
 let () = parse_options false defaults_w;;
 let () = parse_options true defaults_warn_error;;
@@ -328,7 +331,8 @@ let message = function
   | Bad_module_name (modname) ->
       "bad source file name: \"" ^ modname ^ "\" is not a valid module name."
   | All_clauses_guarded ->
-      "bad style, all clauses in this pattern-matching are guarded."
+      "this pattern-matching is not exhaustive.\n\
+       All clauses in this pattern-matching are guarded."
   | Unused_var v | Unused_var_strict v -> "unused variable " ^ v ^ "."
   | Wildcard_arg_to_constant_constr ->
      "wildcard pattern given as argument to a constant constructor"
@@ -438,6 +442,16 @@ let message = function
         "No information found for the symbol %s, potentially inhibiting optimisation.\n\
          A .cmx or .cmxa file is probably missing.  Check the -I arguments given to the compiler."
         symbol
+  | Ambiguous_pattern vars ->
+      let msg =
+        let vars = List.sort String.compare vars in
+        match vars with
+        | [] -> assert false
+        | [x] -> "variable " ^ x
+        | _::_ ->
+            "variables " ^ String.concat "," vars in
+      Printf.sprintf
+        "Ambiguous guarded pattern, %s may match different or-pattern arguments" msg
 ;;
 
 let nerrors = ref 0;;
@@ -494,8 +508,8 @@ let descriptions =
    23, "Useless record \"with\" clause.";
    24, "Bad module name: the source file name is not a valid OCaml module \
         name.";
-   25, "Pattern-matching with all clauses guarded.  Exhaustiveness cannot be\n\
-   \    checked.";
+   (* 25, "Pattern-matching with all clauses guarded.  Exhaustiveness cannot be\n\
+   \    checked.";  (* Now part of warning 8 *) *)
    26, "Suspicious unused variable: unused variable that is bound\n\
    \    with \"let\" or \"as\", and doesn't start with an underscore (\"_\")\n\
    \    character.";
@@ -534,6 +548,7 @@ let descriptions =
    56, "Assignment on non-mutable value";
    57, "Missing symbol information (is a .cmx file missing?)";
    58, "Unreachable case in a pattern-matching (based on type information)."
+   59, "Ambiguous binding by pattern.";
   ]
 ;;
 

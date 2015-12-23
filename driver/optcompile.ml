@@ -69,7 +69,8 @@ let implementation ppf sourcefile outputprefix ~backend =
   let modulename = module_of_filename ppf sourcefile outputprefix in
   Env.set_unit_name modulename;
   let env = Compmisc.initial_env() in
-  Compilenv.reset ?packname:!Clflags.for_package modulename;
+  Compilenv.reset ~source_provenance:(Timings.File sourcefile)
+    ?packname:!Clflags.for_package modulename;
   let cmxfile = outputprefix ^ ".cmx" in
   let objfile = outputprefix ^ ext_obj in
   let comp ast =
@@ -77,9 +78,8 @@ let implementation ppf sourcefile outputprefix ~backend =
       ast
       ++ print_if ppf Clflags.dump_parsetree Printast.implementation
       ++ print_if ppf Clflags.dump_source Pprintast.structure
-      ++ Timings.(start_id (Typing sourcefile))
-      ++ Typemod.type_implementation sourcefile outputprefix modulename env
-      ++ Timings.(stop_id (Typing sourcefile))
+      ++ Timings.(time (Typing sourcefile))
+          (Typemod.type_implementation sourcefile outputprefix modulename env)
       ++ print_if ppf Clflags.dump_typedtree
           Printtyped.implementation_with_coercion
     in
@@ -114,23 +114,23 @@ let implementation ppf sourcefile outputprefix ~backend =
               ~backend
               ~module_initializer:lam)
         ++ Asmgen.compile_implementation ~sourcefile outputprefix ~backend Asmgen.Flambda ppf;
+        Compilenv.save_unit_info cmxfile;
         Timings.(stop (Generate sourcefile));
       end
       else begin
         Clflags.use_inlining_arguments_set Clflags.classic_arguments;
         (typedtree, coercion)
-        ++ Timings.(start_id (Transl sourcefile))
-        ++ Translmod.transl_store_implementation modulename
-        ++ Timings.(stop_id (Transl sourcefile))
+        ++ Timings.(time (Transl sourcefile))
+            (Translmod.transl_store_implementation modulename)
         +++ print_if ppf Clflags.dump_rawlambda Printlambda.lambda
-        ++ Timings.(start_id (Generate sourcefile))
-        +++ Simplif.simplify_lambda
-        +++ print_if ppf Clflags.dump_lambda Printlambda.lambda
-        ++ (fun (main_module_block_size, code) -> Asmgen.{ code; main_module_block_size })
-        ++ Asmgen.compile_implementation ~sourcefile outputprefix ~backend Asmgen.Lambda ppf;
-        Timings.(stop (Generate sourcefile));
-      end;
-      Compilenv.save_unit_info cmxfile;
+        ++ Timings.(time (Generate sourcefile))
+            (fun (size, lambda) ->
+              (size, Simplif.simplify_lambda lambda)
+              +++ print_if ppf Clflags.dump_lambda Printlambda.lambda
+              ++ (fun (main_module_block_size, code) -> Asmgen.{ code; main_module_block_size })
+              ++ Asmgen.compile_implementation ~sourcefile outputprefix ~backend Asmgen.Lambda ppf;
+              Compilenv.save_unit_info cmxfile)
+      end
     end;
     Warnings.check_fatal ();
     Stypes.dump (Some (outputprefix ^ ".annot"))

@@ -724,6 +724,7 @@ let data l =
 
 let begin_assembly() =
   reset_debug_info();
+  `	.file	\"\"\n`;  (* PR#7037 *)
   (* Emit the beginning of the segments *)
   let lbl_begin = Compilenv.make_symbol (Some "data_begin") in
   emit_string data_space;
@@ -764,4 +765,7 @@ let end_assembly() =
                            `	.long	({emit_label lbl} - .) + {emit_int32 ofs}\n`);
       efa_def_label = (fun l -> `{emit_label l}:\n`);
       efa_string = (fun s -> emit_bytes_directive "	.byte	" (s ^ "\000"))
-     }
+     };
+   (* Mark stack as non-executable *)
+   `	.section .note.GNU-stack,\"\",%progbits\n`
+

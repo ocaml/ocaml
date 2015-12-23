@@ -2035,3 +2035,265 @@ let check_partial_param do_check_partial do_check_fragile loc casel =
 let check_partial_gadt pred loc casel =
   check_partial_param (do_check_partial_gadt pred)
     do_check_fragile_gadt loc casel
+
+
+(*************************************)
+(* Ambiguous variable in or-patterns *)
+(*************************************)
+
+(* Specification: ambiguous variables in or-patterns.
+
+   The semantics of or-patterns in OCaml is specified with
+   a left-to-right bias: a value [v] matches the pattern [p | q] if it
+   matches [p] or [q], but if it matches both, the environment
+   captured by the match is the environment captured by [p], never the
+   one captured by [q].
+
+   While this property is generally well-understood, one specific case
+   where users expect a different semantics is when a pattern is
+   followed by a when-guard: [| p when g -> e]. Consider for example:
+
+     | ((Const x, _) | (_, Const x)) when is_neutral x -> branch
+
+   The semantics is clear: match the scrutinee against the pattern, if
+   it matches, test the guard, and if the guard passes, take the
+   branch.
+
+   However, consider the input [(Const a, Const b)], where [a] fails
+   the test [is_neutral f], while [b] passes the test [is_neutral
+   b]. With the left-to-right semantics, the clause above is *not*
+   taken by its input: matching [(Const a, Const b)] against the
+   or-pattern succeeds in the left branch, it returns the environment
+   [x -> a], and then the guard [is_neutral a] is tested and fails,
+   the branch is not taken. Most users, however, intuitively expect
+   that any pair that has one side passing the test will take the
+   branch. They assume it is equivalent to the following:
+
+     | (Const x, _) when is_neutral x -> branch
+     | (_, Const x) when is_neutral x -> branch
+
+   while it is not.
+
+   The code below is dedicated to finding these confusing cases: the
+   cases where a guard uses "ambiguous" variables, that are bound to
+   different parts of the scrutinees by different sides of
+   a or-pattern. In other words, it finds the cases where the
+   specified left-to-right semantics is not equivalent to
+   a non-deterministic semantics (any branch can be taken) relatively
+   to a specific guard.
+*)
+
+module IdSet = Set.Make(Ident)
+
+let pattern_vars p = IdSet.of_list (Typedtree.pat_bound_idents p)
+
+(* Row for ambiguous variable search,
+   unseen is the traditional pattern row,
+   seen   is a list of position bindings *)
+
+type amb_row = { unseen : pattern list ; seen : IdSet.t list; }
+
+
+(* Push binding variables now *)
+
+let rec do_push r p ps seen k = match p.pat_desc with
+| Tpat_alias (p,x,_) -> do_push (IdSet.add x r) p ps seen k
+| Tpat_var (x,_) ->
+    (omega,{ unseen = ps; seen=IdSet.add x r::seen; })::k
+| Tpat_or (p1,p2,_) ->
+    do_push r p1 ps seen (do_push r p2 ps seen k)
+| _ ->
+    (p,{ unseen = ps; seen = r::seen; })::k
+
+let rec push_vars = function
+  | [] -> []
+  | { unseen = [] }::_ -> assert false
+  | { unseen = p::ps; seen; }::rem ->
+      do_push IdSet.empty p ps seen (push_vars rem)
+
+let collect_stable = function
+  | [] -> assert false
+  | { seen=xss; _}::rem ->
+      let rec c_rec xss = function
+        | [] -> xss
+        | {seen=yss; _}::rem ->
+            let xss = List.map2 IdSet.inter xss yss in
+            c_rec xss rem in
+      let inters = c_rec xss rem in
+      List.fold_left IdSet.union IdSet.empty inters
+
+
+(*********************************************)
+(* Filtering utilities for our specific rows *)
+(*********************************************)
+
+(* Take a pattern matrix as a list (rows) of lists (columns) of patterns
+     | p1, p2, .., pn
+     | q1, q2, .., qn
+     | r1, r2, .., rn
+     | ...
+
+   We split this matrix into a list of sub-matrices, one for each head
+   constructor appearing in the leftmost column. For each row whose
+   left column starts with a head constructor, remove this head
+   column, prepend one column for each argument of the constructor,
+   and add the resulting row in the sub-matrix corresponding to this
+   head constructor.
+
+   Rows whose left column is omega (the Any pattern _) may match any
+   head constructor, so they are added to all groups.
+
+   The list of sub-matrices is represented as a list of pair
+     (head constructor, submatrix)
+*)
+
+let filter_all =
+  (* the head constructor (as a pattern with omega arguments) of
+     a pattern *)
+  let discr_head pat =
+    match pat.pat_desc with
+    | Tpat_record (lbls, closed) ->
+        (* a partial record pattern { f1 = p1; f2 = p2; _ }
+           needs to be expanded, otherwise matching against this head
+           would drop the pattern arguments for non-mentioned fields *)
+        let lbls = all_record_args lbls in
+        normalize_pat { pat with pat_desc = Tpat_record (lbls, closed) }
+    | _ -> normalize_pat pat
+  in
+
+  (* insert a row of head [p] and rest [r] into the right group *)
+  let rec insert p r env = match env with
+  | [] ->
+      (* if no group matched this row, it has a head constructor that
+         was never seen before; add a new sub-matrix for this head *)
+      let p0 = discr_head p in
+      [p0,[{ r with unseen = simple_match_args p0 p @ r.unseen }]]
+  | (q0,rs) as bd::env ->
+      if simple_match q0 p then begin
+        let r = { r with unseen = simple_match_args q0 p@r.unseen; } in
+        (q0,r::rs)::env
+      end
+      else bd::insert p r env in
+
+  (* insert a row of head omega into all groups *)
+  let insert_omega r env =
+    List.map
+      (fun (q0,rs) ->
+         let r =
+           { r with unseen = simple_match_args q0 omega @ r.unseen; } in
+         (q0,r::rs))
+      env
+  in
+
+  let rec filter_rec env = function
+    | [] -> env
+    | ({pat_desc=(Tpat_var _|Tpat_alias _|Tpat_or _)},_)::_ -> assert false
+    | ({pat_desc=Tpat_any}, _)::rs -> filter_rec env rs
+    | (p,r)::rs -> filter_rec (insert p r env) rs in
+
+  let rec filter_omega env = function
+    | [] -> env
+    | ({pat_desc=(Tpat_var _|Tpat_alias _|Tpat_or _)},_)::_ -> assert false
+    | ({pat_desc=Tpat_any},r)::rs -> filter_omega (insert_omega r env) rs
+    | _::rs -> filter_omega env rs in
+
+  fun rs ->
+    (* first insert the rows with head constructors,
+       to get the definitive list of groups *)
+    let env = filter_rec [] rs in
+    (* then add the omega rows to all groups *)
+    let env = filter_omega env rs in
+    env
+
+(* Compute stable bindings *)
+
+let rec do_stable rs = match rs with
+| [] -> assert false (* No empty matrix *)
+| { unseen=[]; _ }::_ ->
+    collect_stable rs
+| _ ->
+    let rs = push_vars rs in
+    match filter_all rs with
+    | [] ->
+        do_stable (List.map snd rs)
+    | (_,rs)::env ->        
+        List.fold_left
+          (fun xs (_,rs) -> IdSet.inter xs (do_stable rs))
+          (do_stable rs) env
+
+let stable p = do_stable [{unseen=[p]; seen=[];}]
+
+
+(* All identifier paths that appear in an expression that occurs
+   as a clause right hand side or guard.
+
+  The function is rather complex due to the compilation of
+  unpack patterns by introducing code in rhs expressions
+  and **guards**.
+
+  For pattern (module M:S)  -> e the code is
+  let module M_mod = unpack M .. in e
+
+  Hence M is "free" in e iff M_mod is free in e.
+
+  Not doing so will yield excessive  warning in
+  (module (M:S) } ...) when true -> ....
+  as M is always present in 
+  let module M_mod = unpack M .. in true 
+*)
+
+let all_rhs_idents exp =
+  let ids = ref IdSet.empty in
+  let module Iterator = TypedtreeIter.MakeIterator(struct
+    include TypedtreeIter.DefaultIteratorArgument
+    let enter_expression exp = match exp.exp_desc with
+      | Texp_ident (path, _lid, _descr) ->
+          List.iter
+            (fun id -> ids := IdSet.add id !ids)
+            (Path.heads path)
+      | _ -> ()
+
+(* Very hackish, detect unpack pattern  compilation
+   and perfom "indirect check for them" *)
+    let is_unpack exp =
+      List.exists
+        (fun (attr, _) -> attr.txt = "#modulepat") exp.exp_attributes
+
+    let leave_expression exp =
+      if is_unpack exp then begin match exp.exp_desc with
+      | Texp_letmodule
+          (id_mod,_,
+           {mod_desc=
+            Tmod_unpack ({exp_desc=Texp_ident (Path.Pident id_exp,_,_)},_)},
+           _) ->
+             assert (IdSet.mem id_exp !ids) ;
+             if not (IdSet.mem id_mod !ids) then begin
+               ids := IdSet.remove id_exp !ids
+             end
+      | _ -> assert false
+      end
+  end) in
+  Iterator.iter_expression exp;
+  !ids
+
+let check_ambiguous_bindings =
+  let open Warnings in
+  let warn0 = Ambiguous_pattern [] in  
+  fun cases ->
+    if is_active warn0 then
+      List.iter
+        (fun case -> match case with
+        | { c_guard=None ; _} -> ()
+        | { c_lhs=p; c_guard=Some g; _} ->
+            let all =
+              IdSet.inter (pattern_vars p) (all_rhs_idents g) in
+            if not (IdSet.is_empty all) then begin
+              let st = stable p in
+              let ambiguous = IdSet.diff all st in
+              if not (IdSet.is_empty  ambiguous) then begin
+                let pps = IdSet.elements ambiguous |> List.map Ident.name in
+                let warn = Ambiguous_pattern pps in
+                Location.prerr_warning p.pat_loc warn
+              end
+            end)
+        cases

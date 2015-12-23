@@ -14,57 +14,45 @@
 
 type file = string
 
-type part =
+type source_provenance =
+  | File of file
+  | Pack of string
+  | Startup
+
+type compiler_pass =
   | All
   | Parsing of file
+  | Preprocessing of file
   | Typing of file
   | Transl of file
   | Generate of file
   | Assemble of file
-  | Flambda_middle_end of file
-  | Flambda_pass of string * file
-  | Flambda_backend of file
+  | Clambda of file
   | Cmm of file
   | Compile_phrases of file
-  | Regalloc
+  | Selection of source_provenance
+  | Comballoc of source_provenance
+  | CSE of source_provenance
+  | Liveness of source_provenance
+  | Deadcode of source_provenance
+  | Spill of source_provenance
+  | Split of source_provenance
+  | Regalloc of source_provenance
+  | Linearize of source_provenance
+  | Scheduling of source_provenance
+  | Emit of source_provenance
 
 val reset : unit -> unit
 (** erase all recorded times *)
 
-val get : part -> float option
-(** returns the runtime in seconds of a completed part *)
+val get : compiler_pass -> float option
+(** returns the runtime in seconds of a completed pass *)
 
-val start : part -> unit
-(** Mark the beginning of a section *)
+val time : compiler_pass -> ('a -> 'b) -> 'a -> 'b
+(** [time pass f arg] Record the runtime of [f arg] *)
 
-val start_id : part -> 'a -> 'a
-(** Behave like [start] but is the identity on the second argument.
-    Usefull for introducing timings in patterns like
-    [ function1
-      ++ start_id some_part
-      ++ function2
-      ++ stop_id some_part
-      ...]
-*)
-
-val stop : part -> unit
-(** Mark the end of a section. It is an error to call stop without
-    having called start earlier *)
-
-val stop_id : part -> 'a -> 'a
-(** Behave like [stop] but is the identity in the second argument *)
-
-val time : part -> ('a -> 'b) -> 'a -> 'b
-(** [time part f arg] Record the runtime of [f arg] *)
-
-val restart : part -> unit
-(** Start a timer for a part that can run multiple times *)
-
-val accumulate : part -> unit
-(** Stop and accumulate a timer started with restart *)
-
-val accumulate_time : part -> ('a -> 'b) -> 'a -> 'b
-(** Like time for parts that can run multiple times *)
+val accumulate_time : compiler_pass -> ('a -> 'b) -> 'a -> 'b
+(** Like time for passes that can run multiple times *)
 
 val print : Format.formatter -> unit
 (** Prints all recorded timings to the formatter. *)

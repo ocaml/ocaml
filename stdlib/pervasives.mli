@@ -401,7 +401,8 @@ external hypot : float -> float -> float = "caml_hypot_float" "caml_hypot"
 (** [hypot x y] returns [sqrt(x *. x + y *. y)], that is, the length
   of the hypotenuse of a right-angled triangle with sides of length
   [x] and [y], or, equivalently, the distance of the point [(x,y)]
-  to origin.
+  to origin.  If one of [x] or [y] is infinite, returns [infinity]
+  even if the other is [nan].
   @since 4.00.0  *)
 
 external cosh : float -> float = "caml_cosh_float" "cosh"
@@ -567,9 +568,9 @@ val string_of_int : int -> string
 
 external int_of_string : string -> int = "caml_int_of_string"
 (** Convert the given string to an integer.
-   The string is read in decimal (by default) or in hexadecimal (if it
-   begins with [0x] or [0X]), octal (if it begins with [0o] or [0O]),
-   or binary (if it begins with [0b] or [0B]).
+   The string is read in decimal (by default), in hexadecimal (if it
+   begins with [0x] or [0X]), in octal (if it begins with [0o] or [0O]),
+   or in binary (if it begins with [0b] or [0B]).
    The [_] (underscore) character can appear anywhere in the string
    and is ignored.
    Raise [Failure "int_of_string"] if the given string is not
@@ -586,10 +587,9 @@ external float_of_string : string -> float = "caml_float_of_string"
    [ [-] dd.ddd (e|E) [+|-] dd ], where [d] stands for a decimal digit.
    The format of hexadecimal floating-point numbers is
    [ [-] 0(x|X) hh.hhh (p|P) [+|-] dd ], where [h] stands for an
-   hexadecimal digit.  
-   In both cases, the integer part, the fractional part, and the
-   exponent part are all optional, but at least one of the three
-   parts must be given.
+   hexadecimal digit and [d] for a decimal digit.
+   In both cases, at least one of the integer and fractional parts must be
+   given; the exponent part is optional.
    The [_] (underscore) character can appear anywhere in the string
    and is ignored.
    Depending on the execution platforms, other representations of
@@ -726,7 +726,7 @@ type open_flag =
 
 val open_out : string -> out_channel
 (** Open the named file for writing, and return a new output channel
-   on that file, positionned at the beginning of the file. The
+   on that file, positioned at the beginning of the file. The
    file is truncated to zero length if it already exists. It
    is created if it does not already exists. *)
 
@@ -837,7 +837,7 @@ val set_binary_mode_out : out_channel -> bool -> unit
 
 val open_in : string -> in_channel
 (** Open the named file for reading, and return a new input channel
-   on that file, positionned at the beginning of the file. *)
+   on that file, positioned at the beginning of the file. *)
 
 val open_in_bin : string -> in_channel
 (** Same as {!Pervasives.open_in}, but the file is opened in binary mode,
@@ -1088,9 +1088,9 @@ external format_of_string :
 *)
 
 val ( ^^ ) :
-      ('a, 'b, 'c, 'd, 'e, 'f) format6 ->
-      ('f, 'b, 'c, 'e, 'g, 'h) format6 ->
-      ('a, 'b, 'c, 'd, 'g, 'h) format6
+  ('a, 'b, 'c, 'd, 'e, 'f) format6 ->
+  ('f, 'b, 'c, 'e, 'g, 'h) format6 ->
+  ('a, 'b, 'c, 'd, 'g, 'h) format6
 (** [f1 ^^ f2] catenates format strings [f1] and [f2]. The result is a
   format string that behaves as the concatenation of format strings [f1] and
   [f2]: in case of formatted output, it accepts arguments from [f1], then

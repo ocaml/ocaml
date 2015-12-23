@@ -439,8 +439,8 @@ and transl_structure fields cc rootpath = function
   | item :: rem ->
       match item.str_desc with
       | Tstr_eval (expr, _) ->
-        let body, size = transl_structure fields cc rootpath rem in
-        Lsequence(transl_exp expr, body), size
+          let body, size = transl_structure fields cc rootpath rem in
+          Lsequence(transl_exp expr, body), size
       | Tstr_value(rec_flag, pat_expr_list) ->
           let ext_fields = rev_let_bound_idents pat_expr_list @ fields in
           let body, size = transl_structure ext_fields cc rootpath rem in
@@ -711,7 +711,11 @@ let transl_store_structure glob map prims str =
             let lam = transl_extension_constructor item.str_env path ext in
             Lsequence(Llet(Strict, id, subst_lambda subst lam, store_ident id),
                       transl_store rootpath (add_ident false id subst) rem)
-        | Tstr_module{mb_id=id; mb_expr={mod_desc = Tmod_structure str}} ->
+        | Tstr_module{mb_id=id;
+                      mb_expr={mod_desc = Tmod_structure str} as mexp;
+                      mb_attributes} ->
+            List.iter (Translattribute.check_attribute_on_module mexp)
+              mb_attributes;
             let lam = transl_store (field_path rootpath id) subst str.str_items in
             (* Careful: see next case *)
             let subst = !transl_store_subst in
@@ -724,8 +728,17 @@ let transl_store_structure glob map prims str =
                            Lsequence(store_ident id,
                                      transl_store rootpath (add_ident true id subst)
                                        rem)))
-        | Tstr_module{mb_id=id; mb_expr={mod_desc = Tmod_constraint ({mod_desc = Tmod_structure str}, _, _, (Tcoerce_structure (map, _) as _cc))}} ->
+        | Tstr_module{
+            mb_id=id;
+            mb_expr= {
+              mod_desc = Tmod_constraint (
+                  {mod_desc = Tmod_structure str} as mexp, _, _,
+                  (Tcoerce_structure (map, _) as _cc))};
+            mb_attributes
+          } ->
             (*    Format.printf "coerc id %s: %a@." (Ident.unique_name id) Includemod.print_coercion cc; *)
+            List.iter (Translattribute.check_attribute_on_module mexp)
+              mb_attributes;
             let lam = transl_store (field_path rootpath id) subst str.str_items in
             (* Careful: see next case *)
             let subst = !transl_store_subst in
@@ -744,8 +757,12 @@ let transl_store_structure glob map prims str =
                            Lsequence(store_ident id,
                                      transl_store rootpath (add_ident true id subst)
                                        rem)))
-        | Tstr_module{mb_id=id; mb_expr=modl} ->
-            let lam = transl_module Tcoerce_none (field_path rootpath id) modl in
+        | Tstr_module{mb_id=id; mb_expr=modl; mb_loc; mb_attributes} ->
+            let lam =
+              Translattribute.add_inline_attribute
+                (transl_module Tcoerce_none (field_path rootpath id) modl)
+                mb_loc mb_attributes
+            in
             (* Careful: the module value stored in the global may be different
                from the local module value, in case a coercion is applied.
                If so, keep using the local module value (id) in the remainder of

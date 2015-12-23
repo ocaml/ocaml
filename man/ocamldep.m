@@ -143,6 +143,15 @@ causes dependencies on native compiled files (.cmx) to be generated instead
 of on .cmo files.  (This flag makes no difference if all source files
 have explicit .mli interface files.)
 .TP
+.B \-one-line
+Output one line per file, regardless of the length.
+.TP
+.BI \-open \ module
+Assume that module
+.IR module
+is opened before parsing each of the
+following files.
+.TP
 .BI \-pp \ command
 Cause
 .BR ocamldep (1)

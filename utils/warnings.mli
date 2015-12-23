@@ -71,6 +71,7 @@ type t =
   | Assignment_on_non_mutable_value         (* 56 *)
   | Missing_symbol_information of string * string (* 57 *)
   | Unreachable_case                        (* 58 *)
+  | Ambiguous_pattern of string list        (* 59 *)
 ;;
 
 val parse_options : bool -> string -> unit;;

@@ -261,6 +261,7 @@ let rec lexical_approximation lexbuf =
 
 let read_and_approximate inputfile =
   error_occurred := false;
+  Depend.free_structure_names := Depend.StringSet.empty;
   let ic = open_in_bin inputfile in
   try
     seek_in ic 0;

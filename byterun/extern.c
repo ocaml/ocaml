@@ -17,6 +17,7 @@
 
 #include <string.h>
 #include "caml/alloc.h"
+#include "caml/config.h"
 #include "caml/custom.h"
 #include "caml/fail.h"
 #include "caml/gc.h"
@@ -27,10 +28,6 @@
 #include "caml/misc.h"
 #include "caml/mlvalues.h"
 #include "caml/reverse.h"
-
-#ifdef _MSC_VER
-#define inline _inline
-#endif
 
 static uintnat obj_counter;  /* Number of objects emitted so far */
 static uintnat size_32;  /* Size in words of 32-bit block for struct. */

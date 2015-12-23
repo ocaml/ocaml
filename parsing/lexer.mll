@@ -212,6 +212,7 @@ let warn_latin1 lexbuf =
     (Warnings.Deprecated "ISO-Latin1 characters in identifiers")
 ;;
 
+let handle_docstrings = ref true
 let comment_list = ref []
 
 let add_comment com =
@@ -282,12 +283,12 @@ let int_literal =
 let float_literal =
   ['0'-'9'] ['0'-'9' '_']*
   ('.' ['0'-'9' '_']* )?
-  (['e' 'E'] ['+' '-']? ['0'-'9'] ['0'-'9' '_']*)?
+  (['e' 'E'] ['+' '-']? ['0'-'9'] ['0'-'9' '_']* )?
 let hex_float_literal =
   '0' ['x' 'X']
-  ['0'-'9' 'A'-'F' 'a'-'f']['0'-'9' 'A'-'F' 'a'-'f' '_']*
-  ('.' ['0'-'9' 'A'-'F' 'a'-'f' '_']*)?
-  (['p' 'P'] ['+' '-']? ['0'-'9'] ['0'-'9' '_']*)?
+  ['0'-'9' 'A'-'F' 'a'-'f'] ['0'-'9' 'A'-'F' 'a'-'f' '_']*
+  ('.' ['0'-'9' 'A'-'F' 'a'-'f' '_']* )?
+  (['p' 'P'] ['+' '-']? ['0'-'9'] ['0'-'9' '_']* )?
 let literal_modifier = ['G'-'Z' 'g'-'z']
 
 rule token = parse
@@ -377,7 +378,11 @@ rule token = parse
         COMMENT (s, loc) }
   | "(**"
       { let s, loc = with_comment_buffer comment lexbuf in
-        DOCSTRING (Docstrings.docstring s loc) }
+        if !handle_docstrings then
+          DOCSTRING (Docstrings.docstring s loc)
+        else
+          COMMENT ("*" ^ s, loc)
+      }
   | "(**" ('*'+) as stars
       { let s, loc =
           with_comment_buffer
@@ -412,7 +417,7 @@ rule token = parse
   | "&"  { AMPERSAND }
   | "&&" { AMPERAMPER }
   | "`"  { BACKQUOTE }
-  | "\'"  { QUOTE }
+  | "\'" { QUOTE }
   | "("  { LPAREN }
   | ")"  { RPAREN }
   | "*"  { STAR }
@@ -444,10 +449,10 @@ rule token = parse
   | "}"  { RBRACE }
   | ">}" { GREATERRBRACE }
   | "[@" { LBRACKETAT }
-  | "[%" { LBRACKETPERCENT }
-  | "[%%" { LBRACKETPERCENTPERCENT }
-  | "[@@" { LBRACKETATAT }
+  | "[@@"  { LBRACKETATAT }
   | "[@@@" { LBRACKETATATAT }
+  | "[%"   { LBRACKETPERCENT }
+  | "[%%"  { LBRACKETPERCENTPERCENT }
   | "!"  { BANG }
   | "!=" { INFIXOP0 "!=" }
   | "+"  { PLUS }

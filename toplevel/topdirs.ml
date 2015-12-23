@@ -122,7 +122,6 @@ let rec load_file recursive ppf name =
         raise exn
 
 and really_load_file recursive ppf name filename ic =
-  let ic = open_in_bin filename in
   let buffer = really_input_string ic (String.length Config.cmo_magic_number) in
   try
     if buffer = Config.cmo_magic_number then begin

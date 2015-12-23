@@ -892,6 +892,7 @@ let data l =
 
 let begin_assembly() =
   reset_debug_info();
+  `	.file	\"\"\n`;  (* PR#7037 *)
   `	.syntax	unified\n`;
   begin match !arch with
   | ARMv4   -> `	.arch	armv4t\n`

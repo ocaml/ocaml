@@ -18,6 +18,7 @@
 #include "caml/memory.h"
 #include "caml/misc.h"
 #include "caml/mlvalues.h"
+#include "caml/signals.h"
 
 /* returns number of elements (either fields or floats) */
 CAMLexport mlsize_t caml_array_length(value array)
@@ -181,12 +182,16 @@ CAMLprim value caml_make_vect(value len, value init)
     }
   } else {
     if (size > Max_wosize) caml_invalid_argument("Array.make");
-    if (size < Max_young_wosize) {
+    if (size <= Max_young_wosize) {
       res = caml_alloc_small(size, 0);
       for (i = 0; i < size; i++) Field(res, i) = init;
     }
     else if (Is_block(init) && Is_young(init)) {
-      caml_minor_collection();
+      /* We don't want to create so many major-to-minor references,
+         so [init] is moved to the major heap by doing a minor GC. */
+      CAML_INSTR_INT ("force_minor/make_vect@", 1);
+      caml_request_minor_gc ();
+      caml_gc_dispatch ();
       res = caml_alloc_shr(size, 0);
       for (i = 0; i < size; i++) Field(res, i) = init;
       res = caml_check_urgent_gc (res);
@@ -324,7 +329,7 @@ static value caml_array_gather(intnat num_arrays,
     /* Array of values, too big. */
     caml_invalid_argument("Array.concat");
   }
-  else if (size < Max_young_wosize) {
+  else if (size <= Max_young_wosize) {
     /* Array of values, small enough to fit in young generation.
        We can use memcpy directly. */
     res = caml_alloc_small(size, 0);
@@ -339,7 +344,6 @@ static value caml_array_gather(intnat num_arrays,
     /* Array of values, must be allocated in old generation and filled
        using caml_initialize. */
     res = caml_alloc_shr(size, 0);
-    pos = 0;
     for (i = 0, pos = 0; i < num_arrays; i++) {
       for (src = &Field(arrays[i], offsets[i]), count = lengths[i];
            count > 0;

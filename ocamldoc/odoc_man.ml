@@ -864,14 +864,13 @@ class man =
     (** Generate the man page for the given class.*)
     method generate_for_class cl =
       Odoc_info.reset_type_names () ;
-      let date = Unix.time () in
       let file = self#file_name cl.cl_name in
       try
         let chanout = self#open_out file in
         let b = new_buf () in
         bs b (".TH \""^cl.cl_name^"\" ");
         bs b !man_section ;
-        bs b (" "^(Odoc_misc.string_of_date ~hour: false date)^" ");
+        bs b (" source: "^Odoc_misc.current_date^" ");
         bs b "OCamldoc ";
         bs b ("\""^(match !Global.title with Some t -> t | None -> "")^"\"\n");
 
@@ -923,14 +922,13 @@ class man =
     (** Generate the man page for the given class type.*)
     method generate_for_class_type ct =
       Odoc_info.reset_type_names () ;
-      let date = Unix.time () in
       let file = self#file_name ct.clt_name in
       try
         let chanout = self#open_out file in
         let b = new_buf () in
         bs b (".TH \""^ct.clt_name^"\" ");
         bs b !man_section ;
-        bs b (" "^(Odoc_misc.string_of_date ~hour: false date)^" ");
+        bs b (" source: "^Odoc_misc.current_date^" ");
         bs b "OCamldoc ";
         bs b ("\""^(match !Global.title with Some t -> t | None -> "")^"\"\n");
 
@@ -1016,14 +1014,13 @@ class man =
     (** Generate the man file for the given module type.
        @raise Failure if an error occurs.*)
     method generate_for_module_type mt =
-      let date = Unix.time () in
       let file = self#file_name mt.mt_name in
       try
         let chanout = self#open_out file in
         let b = new_buf () in
         bs b (".TH \""^mt.mt_name^"\" ");
         bs b !man_section ;
-        bs b (" "^(Odoc_misc.string_of_date ~hour: false date)^" ");
+        bs b (" source: "^Odoc_misc.current_date^" ");
         bs b "OCamldoc ";
         bs b ("\""^(match !Global.title with Some t -> t | None -> "")^"\"\n");
 
@@ -1099,14 +1096,13 @@ class man =
     (** Generate the man file for the given module.
        @raise Failure if an error occurs.*)
     method generate_for_module m =
-      let date = Unix.time () in
       let file = self#file_name m.m_name in
       try
         let chanout = self#open_out file in
         let b = new_buf () in
         bs b (".TH \""^m.m_name^"\" ");
         bs b !man_section ;
-        bs b (" "^(Odoc_misc.string_of_date ~hour: false date)^" ");
+        bs b (" source: "^Odoc_misc.current_date^" ");
         bs b "OCamldoc ";
         bs b ("\""^(match !Global.title with Some t -> t | None -> "")^"\"\n");
 
@@ -1206,14 +1202,13 @@ class man =
           | Res_const (_,f) -> f.vc_name
          )
      in
-     let date = Unix.time () in
       let file = self#file_name name in
       try
         let chanout = self#open_out file in
         let b = new_buf () in
         bs b (".TH \""^name^"\" ");
         bs b !man_section ;
-        bs b (" "^(Odoc_misc.string_of_date ~hour: false date)^" ");
+        bs b (" source: "^Odoc_misc.current_date^" ");
         bs b "OCamldoc ";
         bs b ("\""^(match !Global.title with Some t -> t | None -> "")^"\"\n");
         bs b ".SH NAME\n";

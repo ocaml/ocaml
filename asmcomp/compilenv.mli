@@ -20,7 +20,8 @@ open Cmx_format
 val imported_sets_of_closures_table
   : Flambda.function_declarations Set_of_closures_id.Tbl.t
 
-val reset: ?packname:string -> string -> unit
+val reset: ?packname:string -> source_provenance:Timings.source_provenance ->
+        string -> unit
         (* Reset the environment and record the name of the unit being
            compiled (arg).  Optional argument is [-for-pack] prefix. *)
 
@@ -39,6 +40,10 @@ val current_unit_id: unit -> Ident.t
 val current_unit: unit -> Compilation_unit.t
 
 val current_unit_symbol: unit -> Symbol.t
+
+val current_build: unit -> Timings.source_provenance
+        (* Return the kind of build source being compiled. If it is a
+           file compilation it also provides the filename. *)
 
 val make_symbol: ?unitname:string -> string option -> string
         (* [make_symbol ~unitname:u None] returns the asm symbol that

@@ -199,11 +199,11 @@ let main () =
       Bytelink.link ppf (get_objfiles ()) target;
       Warnings.check_fatal ();
     end;
-    Timings.stop Timings.All;
-    if !Clflags.print_timings then Timings.print Format.std_formatter;
-    exit 0
   with x ->
     Location.report_exception ppf x;
     exit 2
 
-let _ = main ()
+let _ =
+  Timings.(time All) main ();
+  if !Clflags.print_timings then Timings.print Format.std_formatter;
+  exit 0

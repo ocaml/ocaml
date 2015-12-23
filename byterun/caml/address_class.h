@@ -16,6 +16,7 @@
 #ifndef CAML_ADDRESS_CLASS_H
 #define CAML_ADDRESS_CLASS_H
 
+#include "config.h"
 #include "misc.h"
 #include "mlvalues.h"
 
