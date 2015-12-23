@@ -127,7 +127,7 @@ module Make (Id : Identifiable.S) = struct
     | Has_loop of Id.t list
     | No_loop of Id.t
 
-  (* ensure that the dependency graph does not have external dependencies *)
+  (* Ensure that the dependency graph does not have external dependencies. *)
   let check dependencies =
     Id.Map.iter (fun id set ->
         Id.Set.iter (fun v ->
@@ -184,10 +184,10 @@ module Make (Id : Identifiable.S) = struct
           (if List.mem node integer_graph.(node)
            then Has_loop [numbering.forth.(node)]
            else No_loop numbering.forth.(node)),
-          component_edges.(component)
+            component_edges.(component)
         | _::_ ->
           (Has_loop (List.map (fun node -> numbering.forth.(node)) nodes)),
-          component_edges.(component))
+            component_edges.(component))
       sorted_connected_components
 
   let connected_components_sorted_from_roots_to_leaf graph =
