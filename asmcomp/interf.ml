@@ -77,14 +77,15 @@ let build_graph fundecl =
       let i = ri.stamp and j = rj.stamp in
       let is_new =
         i <> j
-        &&
-        begin if i < max_for_fast_mode && j < max_for_fast_mode then
-            let index = if j < i then (i * (i - 1)) lsr 1 + j else (j * (j - 1)) lsr 1 + i in
+        && begin
+          let i, j = if i < j then i, j else j, i in
+          if j < max_for_fast_mode then
+            let index = (j * (j - 1)) lsr 1 + i in
             let b = Bytes.unsafe_get fast_mat index < interference in
             if b then Bytes.unsafe_set fast_mat index interference;
             b
           else
-            let p = if i < j then (i, j) else (j, i) in
+            let p = (i, j) in
             let b = not (IntPairSet.mem mat p) in
             if b then IntPairSet.add mat p ();
             b
@@ -175,11 +176,14 @@ let build_graph fundecl =
       if i <> j
       && r1.loc = Unknown
       && Proc.register_class r1 = Proc.register_class r2
-      && (
-          if i < max_for_fast_mode && j < max_for_fast_mode then
-            let index = if j < i then (i * (i - 1)) lsr 1 + j else (j * (j - 1)) lsr 1 + i in
-            Bytes.unsafe_get fast_mat index < interference
-          else not (IntPairSet.mem mat (if i < j then (i, j) else (j, i))))
+      && begin
+        let i, j = if i < j then i, j else j, i in
+        if j < max_for_fast_mode then
+          let index = (j * (j - 1)) lsr 1 + i in
+          Bytes.unsafe_get fast_mat index < interference
+        else not (IntPairSet.mem mat (i, j))
+      end
+
       then r1.prefer <- (r2, weight) :: r1.prefer
     end in
 
