@@ -74,48 +74,44 @@ let implementation ppf sourcefile outputprefix =
     let modulename = module_of_filename ppf sourcefile outputprefix in
     Env.set_unit_name modulename;
     let env = Compmisc.initial_env() in
-    try
-      let (typedtree, coercion) =
-        Pparse.parse_implementation ~tool_name sourcefile
-        ++ print_if ppf Clflags.dump_parsetree Printast.implementation
-        ++ print_if ppf Clflags.dump_source Pprintast.structure
-        ++ Profile.(record typing)
+    Misc.try_finally (fun () ->
+        let (typedtree, coercion) =
+          Pparse.parse_implementation ~tool_name sourcefile
+          ++ print_if ppf Clflags.dump_parsetree Printast.implementation
+          ++ print_if ppf Clflags.dump_source Pprintast.structure
+          ++ Profile.(record typing)
             (Typemod.type_implementation sourcefile outputprefix modulename env)
-        ++ print_if ppf Clflags.dump_typedtree
-          Printtyped.implementation_with_coercion
-     in
-      if !Clflags.print_types then begin
-        Warnings.check_fatal ();
-        Stypes.dump (Some (outputprefix ^ ".annot"))
-      end else begin
-        let bytecode, required_globals =
-          (typedtree, coercion)
-          ++ Profile.(record transl)
-              (Translmod.transl_implementation modulename)
-          ++ Profile.(record ~accumulate:true generate)
-              (fun { Lambda.code = lambda; required_globals } ->
-                print_if ppf Clflags.dump_rawlambda Printlambda.lambda lambda
-                ++ Simplif.simplify_lambda sourcefile
-                ++ print_if ppf Clflags.dump_lambda Printlambda.lambda
-                ++ Bytegen.compile_implementation modulename
-                ++ print_if ppf Clflags.dump_instr Printinstr.instrlist
-                ++ fun bytecode -> bytecode, required_globals)
+          ++ print_if ppf Clflags.dump_typedtree
+            Printtyped.implementation_with_coercion
         in
-        let objfile = outputprefix ^ ".cmo" in
-        let oc = open_out_bin objfile in
-        try
-          bytecode
-          ++ Profile.(record ~accumulate:true generate)
-              (Emitcode.to_file oc modulename objfile ~required_globals);
+        if !Clflags.print_types then begin
           Warnings.check_fatal ();
-          close_out oc;
           Stypes.dump (Some (outputprefix ^ ".annot"))
-        with x ->
-          close_out oc;
-          remove_file objfile;
-          raise x
-      end
-    with x ->
-      Stypes.dump (Some (outputprefix ^ ".annot"));
-      raise x
-  )
+        end else begin
+          let bytecode, required_globals =
+            (typedtree, coercion)
+            ++ Profile.(record transl)
+              (Translmod.transl_implementation modulename)
+            ++ Profile.(record ~accumulate:true generate)
+              (fun { Lambda.code = lambda; required_globals } ->
+                 print_if ppf Clflags.dump_rawlambda Printlambda.lambda lambda
+                 ++ Simplif.simplify_lambda sourcefile
+                 ++ print_if ppf Clflags.dump_lambda Printlambda.lambda
+                 ++ Bytegen.compile_implementation modulename
+                 ++ print_if ppf Clflags.dump_instr Printinstr.instrlist
+                 ++ fun bytecode -> bytecode, required_globals)
+          in
+          let objfile = outputprefix ^ ".cmo" in
+          let oc = open_out_bin objfile in
+          Misc.try_finally (fun () ->
+              bytecode
+              ++ Profile.(record ~accumulate:true generate)
+                (Emitcode.to_file oc modulename objfile ~required_globals);
+              Warnings.check_fatal ()
+            )
+            ~always:(fun () -> close_out oc)
+            ~exceptionally:(fun () -> remove_file objfile)
+        end
+      )
+      ~always:(fun () -> Stypes.dump (Some (outputprefix ^ ".annot")))
+    )

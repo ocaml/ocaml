@@ -29,8 +29,8 @@ let default_loc = ref Location.none
 let with_default_loc l f =
   let old = !default_loc in
   default_loc := l;
-  try let r = f () in default_loc := old; r
-  with exn -> default_loc := old; raise exn
+  Misc.try_finally f
+    ~always:(fun () -> default_loc := old)
 
 module Const = struct
   let integer ?suffix i = Pconst_integer (i, suffix)

@@ -550,8 +550,8 @@ and transl_case_try {c_lhs; c_guard; c_rhs} =
   iter_exn_names Translprim.add_exception_ident c_lhs;
   Misc.try_finally
     (fun () -> c_lhs, transl_guard c_guard c_rhs)
-    (fun () ->
-       iter_exn_names Translprim.remove_exception_ident c_lhs)
+    ~always:(fun () ->
+        iter_exn_names Translprim.remove_exception_ident c_lhs)
 
 and transl_cases_try cases =
   let cases =
@@ -838,7 +838,7 @@ and transl_match e arg pat_expr_list partial =
         let rhs =
           Misc.try_finally
             (fun () -> event_before c_rhs (transl_exp c_rhs))
-            (fun () -> iter_exn_names Translprim.remove_exception_ident pe)
+            ~always:(fun () -> iter_exn_names Translprim.remove_exception_ident pe)
         in
         (pv, static_raise vids) :: val_cases,
         (pe, static_raise ids) :: exn_cases,

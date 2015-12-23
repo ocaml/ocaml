@@ -2058,74 +2058,74 @@ let () =
 
 let type_implementation sourcefile outputprefix modulename initial_env ast =
   Cmt_format.clear ();
-  try
-  Typecore.reset_delayed_checks ();
-  Env.reset_required_globals ();
-  if !Clflags.print_types then (* #7656 *)
-    Warnings.parse_options false "-32-34-37-38-60";
-  let (str, sg, to_remove_from_sg, finalenv) =
-    type_structure initial_env ast (Location.in_file sourcefile) in
-  let simple_sg = simplify_signature finalenv to_remove_from_sg sg in
-  if !Clflags.print_types then begin
-    Typecore.force_delayed_checks ();
-    Printtyp.wrap_printing_env ~error:false initial_env
-      (fun () -> fprintf std_formatter "%a@."
-          (Printtyp.printed_signature sourcefile) simple_sg
-      );
-    (str, Tcoerce_none)   (* result is ignored by Compile.implementation *)
-  end else begin
-    let sourceintf =
-      Filename.remove_extension sourcefile ^ !Config.interface_suffix in
-    if Sys.file_exists sourceintf then begin
-      let intf_file =
-        try
-          find_in_path_uncap !Config.load_path (modulename ^ ".cmi")
-        with Not_found ->
-          raise(Error(Location.in_file sourcefile, Env.empty,
-                      Interface_not_compiled sourceintf)) in
-      let dclsig = Env.read_signature modulename intf_file in
-      let coercion =
-        Includemod.compunit initial_env ~mark:Includemod.Mark_positive
-          sourcefile sg intf_file dclsig
-      in
-      Typecore.force_delayed_checks ();
-      (* It is important to run these checks after the inclusion test above,
-         so that value declarations which are not used internally but exported
-         are not reported as being unused. *)
-      Cmt_format.save_cmt (outputprefix ^ ".cmt") modulename
-        (Cmt_format.Implementation str) (Some sourcefile) initial_env None;
-      (str, coercion)
-    end else begin
-      let coercion =
-        Includemod.compunit initial_env ~mark:Includemod.Mark_positive
-          sourcefile sg "(inferred signature)" simple_sg
-      in
-      check_nongen_schemes finalenv simple_sg;
-      normalize_signature finalenv simple_sg;
-      Typecore.force_delayed_checks ();
-      (* See comment above. Here the target signature contains all
-         the value being exported. We can still capture unused
-         declarations like "let x = true;; let x = 1;;", because in this
-         case, the inferred signature contains only the last declaration. *)
-      if not !Clflags.dont_write_files then begin
-        let deprecated = Builtin_attributes.deprecated_of_str ast in
-        let cmi =
-          Env.save_signature ~deprecated
-            simple_sg modulename (outputprefix ^ ".cmi")
-        in
+  Misc.try_finally (fun () ->
+      Typecore.reset_delayed_checks ();
+      Env.reset_required_globals ();
+      if !Clflags.print_types then (* #7656 *)
+        Warnings.parse_options false "-32-34-37-38-60";
+      let (str, sg, to_remove_from_sg, finalenv) =
+        type_structure initial_env ast (Location.in_file sourcefile) in
+      let simple_sg = simplify_signature finalenv to_remove_from_sg sg in
+      if !Clflags.print_types then begin
+        Typecore.force_delayed_checks ();
+        Printtyp.wrap_printing_env ~error:false initial_env
+          (fun () -> fprintf std_formatter "%a@."
+              (Printtyp.printed_signature sourcefile) simple_sg
+          );
+        (str, Tcoerce_none)   (* result is ignored by Compile.implementation *)
+      end else begin
+        let sourceintf =
+          Filename.remove_extension sourcefile ^ !Config.interface_suffix in
+        if Sys.file_exists sourceintf then begin
+          let intf_file =
+            try
+              find_in_path_uncap !Config.load_path (modulename ^ ".cmi")
+            with Not_found ->
+              raise(Error(Location.in_file sourcefile, Env.empty,
+                          Interface_not_compiled sourceintf)) in
+          let dclsig = Env.read_signature modulename intf_file in
+          let coercion =
+            Includemod.compunit initial_env ~mark:Includemod.Mark_positive
+              sourcefile sg intf_file dclsig
+          in
+          Typecore.force_delayed_checks ();
+          (* It is important to run these checks after the inclusion test above,
+             so that value declarations which are not used internally but exported
+             are not reported as being unused. *)
+          Cmt_format.save_cmt (outputprefix ^ ".cmt") modulename
+            (Cmt_format.Implementation str) (Some sourcefile) initial_env None;
+          (str, coercion)
+        end else begin
+          let coercion =
+            Includemod.compunit initial_env ~mark:Includemod.Mark_positive
+              sourcefile sg "(inferred signature)" simple_sg
+          in
+          check_nongen_schemes finalenv simple_sg;
+          normalize_signature finalenv simple_sg;
+          Typecore.force_delayed_checks ();
+          (* See comment above. Here the target signature contains all
+             the value being exported. We can still capture unused
+             declarations like "let x = true;; let x = 1;;", because in this
+             case, the inferred signature contains only the last declaration. *)
+          if not !Clflags.dont_write_files then begin
+            let deprecated = Builtin_attributes.deprecated_of_str ast in
+            let cmi =
+              Env.save_signature ~deprecated
+                simple_sg modulename (outputprefix ^ ".cmi")
+            in
+            Cmt_format.save_cmt  (outputprefix ^ ".cmt") modulename
+              (Cmt_format.Implementation str)
+              (Some sourcefile) initial_env (Some cmi);
+          end;
+          (str, coercion)
+        end
+      end
+    )
+    ~exceptionally:(fun () ->
         Cmt_format.save_cmt  (outputprefix ^ ".cmt") modulename
-          (Cmt_format.Implementation str)
-          (Some sourcefile) initial_env (Some cmi);
-      end;
-      (str, coercion)
-    end
-    end
-  with e ->
-    Cmt_format.save_cmt  (outputprefix ^ ".cmt") modulename
-      (Cmt_format.Partial_implementation
-         (Array.of_list (Cmt_format.get_saved_types ())))
-      (Some sourcefile) initial_env None;
-    raise e
+          (Cmt_format.Partial_implementation
+             (Array.of_list (Cmt_format.get_saved_types ())))
+          (Some sourcefile) initial_env None)
 
 let type_implementation sourcefile outputprefix modulename initial_env ast =
   ImplementationHooks.apply_hooks { Misc.sourcefile }

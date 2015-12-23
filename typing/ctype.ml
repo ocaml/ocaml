@@ -205,20 +205,17 @@ let set_mode_pattern ~generate ~injective f =
   let old_unification_mode = !umode
   and old_gen = !generate_equations
   and old_inj = !assume_injective in
-  try
-    umode := Pattern;
-    generate_equations := generate;
-    assume_injective := injective;
-    let ret = f () in
-    umode := old_unification_mode;
-    generate_equations := old_gen;
-    assume_injective := old_inj;
-    ret
-  with e ->
-    umode := old_unification_mode;
-    generate_equations := old_gen;
-    assume_injective := old_inj;
-    raise e
+  Misc.try_finally (fun () ->
+      umode := Pattern;
+      generate_equations := generate;
+      assume_injective := injective;
+      f ()
+    )
+    ~always:(fun () ->
+        umode := old_unification_mode;
+        generate_equations := old_gen;
+        assume_injective := old_inj
+      )
 
 (*** Checks for type definitions ***)
 
@@ -1764,10 +1761,10 @@ let occur_univar env ty =
           end
       | _ -> iter_type_expr (occur_rec bound) ty
   in
-  try
-    occur_rec TypeSet.empty ty; unmark_type ty
-  with exn ->
-    unmark_type ty; raise exn
+  Misc.try_finally (fun () ->
+      occur_rec TypeSet.empty ty
+    )
+    ~always:(fun () -> unmark_type ty)
 
 (* Grouping univars by families according to their binders *)
 let add_univars =
@@ -1832,8 +1829,8 @@ let enter_poly env univar_pairs t1 tl1 t2 tl2 f =
   let cl1 = List.map (fun t -> t, ref None) tl1
   and cl2 = List.map (fun t -> t, ref None) tl2 in
   univar_pairs := (cl1,cl2) :: (cl2,cl1) :: old_univars;
-  try let res = f t1 t2 in univar_pairs := old_univars; res
-  with exn -> univar_pairs := old_univars; raise exn
+  Misc.try_finally (fun () -> f t1 t2)
+    ~always:(fun () -> univar_pairs := old_univars)
 
 let univar_pairs = ref []
 
@@ -3421,8 +3418,10 @@ and eqtype_row rename type_pairs subst env row1 row2 =
 let eqtype_list rename type_pairs subst env tl1 tl2 =
   univar_pairs := [];
   let snap = Btype.snapshot () in
-  try eqtype_list rename type_pairs subst env tl1 tl2; backtrack snap
-  with exn -> backtrack snap; raise exn
+  Misc.try_finally (fun () ->
+      eqtype_list rename type_pairs subst env tl1 tl2
+    )
+    ~always:(fun () -> backtrack snap)
 
 let eqtype rename type_pairs subst env t1 t2 =
   eqtype_list rename type_pairs subst env [t1] [t2]
