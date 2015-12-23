@@ -64,7 +64,7 @@ let build_graph fundecl =
 
   if fast then begin
     if !previous_interference = 0xff then begin
-      Bytes.fill fast_mat 0 (Bytes.length fast_mat) (Char.chr 0);
+      Bytes.fill fast_mat 0 (Bytes.length fast_mat) '\000';
       previous_interference := 1
     end else begin
       incr previous_interference
@@ -72,7 +72,7 @@ let build_graph fundecl =
   end else
     IntPairSet.clear mat;
 
-  let interference = !previous_interference in
+  let interference = Char.chr !previous_interference in
 
   (* Record an interference between two registers *)
   let add_interf ri rj =
@@ -83,8 +83,8 @@ let build_graph fundecl =
         &&
         begin if fast then
             let index = if j < i then (i * (i - 1)) lsr 1 + j else (j * (j - 1)) lsr 1 + i in
-            let b = Char.code (Bytes.unsafe_get fast_mat index) < interference in
-            if b then Bytes.unsafe_set fast_mat index (Char.chr interference);
+            let b = Bytes.unsafe_get fast_mat index < interference in
+            if b then Bytes.unsafe_set fast_mat index interference;
             b
           else
             let p = if i < j then (i, j) else (j, i) in
@@ -181,7 +181,7 @@ let build_graph fundecl =
       && (
           if fast then
             let index = if j < i then (i * (i - 1)) lsr 1 + j else (j * (j - 1)) lsr 1 + i in
-            Char.code (Bytes.unsafe_get fast_mat index) < interference
+            Bytes.unsafe_get fast_mat index < interference
           else not (IntPairSet.mem mat (if i < j then (i, j) else (j, i))))
       then r1.prefer <- (r2, weight) :: r1.prefer
     end in
