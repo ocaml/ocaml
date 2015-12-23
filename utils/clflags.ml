@@ -154,8 +154,9 @@ let keep_locs = ref false              (* -keep-locs *)
 let unsafe_string = ref true;;         (* -safe-string / -unsafe-string *)
 let print_timings = ref false          (* -dtimings *)
 
+let inline_toplevel_multiplier = 16
 let default_inline_toplevel_threshold =
-  int_of_float (16. *. default_inline_threshold)
+  int_of_float ((float inline_toplevel_multiplier) *. default_inline_threshold)
 let inline_toplevel_threshold =
   ref (Int_arg_helper.default default_inline_toplevel_threshold)
 
@@ -164,7 +165,7 @@ let default_inline_alloc_cost = 3
 let default_inline_prim_cost = 3
 let default_inline_branch_cost = 3
 let default_inline_indirect_cost = 2
-let default_branch_inline_factor = 0.6
+let default_branch_inline_factor = 0.1
 let default_inline_lifting_benefit = 1300
 
 let inline_call_cost = ref (Int_arg_helper.default default_inline_call_cost)
@@ -284,31 +285,31 @@ let classic_arguments = {
 }
 
 let o2_arguments = {
-  inline_call_cost = Some 10;
-  inline_alloc_cost = None;
-  inline_prim_cost = None;
-  inline_branch_cost = None;
-  inline_indirect_cost = None;
+  inline_call_cost = Some (2 * default_inline_call_cost);
+  inline_alloc_cost = Some (2 * default_inline_alloc_cost);
+  inline_prim_cost = Some (2 * default_inline_prim_cost);
+  inline_branch_cost = Some (2 * default_inline_branch_cost);
+  inline_indirect_cost = Some (2 * default_inline_indirect_cost);
   inline_lifting_benefit = None;
   branch_inline_factor = None;
   max_inlining_depth = Some 2;
   unroll = None;
   inline_threshold = Some 25.;
-  inline_toplevel_threshold = Some (25 * 8);
+  inline_toplevel_threshold = Some (25 * inline_toplevel_multiplier);
 }
 
 let o3_arguments = {
-  inline_call_cost = Some 20;
-  inline_alloc_cost = None;
-  inline_prim_cost = None;
-  inline_branch_cost = None;
-  inline_indirect_cost = None;
+  inline_call_cost = Some (3 * default_inline_call_cost);
+  inline_alloc_cost = Some (3 * default_inline_alloc_cost);
+  inline_prim_cost = Some (3 * default_inline_prim_cost);
+  inline_branch_cost = Some (3 * default_inline_branch_cost);
+  inline_indirect_cost = Some (3 * default_inline_indirect_cost);
   inline_lifting_benefit = None;
-  branch_inline_factor = None;
+  branch_inline_factor = Some 0.;
   max_inlining_depth = Some 3;
   unroll = Some 1;
   inline_threshold = Some 50.;
-  inline_toplevel_threshold = Some (50 * 8);
+  inline_toplevel_threshold = Some (50 * inline_toplevel_multiplier);
 }
 
 let all_passes = ref []
