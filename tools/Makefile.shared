@@ -43,10 +43,10 @@ CAMLDEP_IMPORTS=config.cmo timings.cmo misc.cmo \
   ccomp.cmo ast_mapper.cmo pparse.cmo compenv.cmo builtin_attributes.cmo
 
 ocamldep: depend.cmi $(CAMLDEP_OBJ)
-	$(CAMLC) $(LINKFLAGS) -compat-32 -o ocamldep ${BISECT_CMA} $(CAMLDEP_IMPORTS) $(CAMLDEP_OBJ)
+	$(CAMLC) $(LINKFLAGS) -compat-32 -o ocamldep $(CAMLDEP_IMPORTS) $(CAMLDEP_OBJ)
 
 ocamldep.opt: depend.cmi $(CAMLDEP_OBJ:.cmo=.cmx)
-	$(CAMLOPT) $(LINKFLAGS) -o ocamldep.opt ${BISECT_CMXA} $(CAMLDEP_IMPORTS:.cmo=.cmx) \
+	$(CAMLOPT) $(LINKFLAGS) -o ocamldep.opt $(CAMLDEP_IMPORTS:.cmo=.cmx) \
 	           $(CAMLDEP_OBJ:.cmo=.cmx)
 
 # ocamldep is precious: sometimes we are stuck in the middle of a
@@ -72,13 +72,13 @@ CSLPROF_IMPORTS=misc.cmo config.cmo identifiable.cmo numbers.cmo arg_helper.cmo 
   syntaxerr.cmo ast_helper.cmo parser.cmo lexer.cmo parse.cmo
 
 ocamlprof: $(CSLPROF) profiling.cmo
-	$(CAMLC) $(LINKFLAGS) -o ocamlprof ${BISECT_CMA} $(CSLPROF_IMPORTS) $(CSLPROF)
+	$(CAMLC) $(LINKFLAGS) -o ocamlprof $(CSLPROF_IMPORTS) $(CSLPROF)
 
 ocamlcp: ocamlcp.cmo
-	$(CAMLC) $(LINKFLAGS) -o ocamlcp ${BISECT_CMA} warnings.cmo misc.cmo config.cmo identifiable.cmo numbers.cmo arg_helper.cmo clflags.cmo main_args.cmo ocamlcp.cmo
+	$(CAMLC) $(LINKFLAGS) -o ocamlcp warnings.cmo misc.cmo config.cmo identifiable.cmo numbers.cmo arg_helper.cmo clflags.cmo main_args.cmo ocamlcp.cmo
 
 ocamloptp: ocamloptp.cmo
-	$(CAMLC) $(LINKFLAGS) -o ocamloptp ${BISECT_CMA} warnings.cmo misc.cmo config.cmo identifiable.cmo numbers.cmo arg_helper.cmo clflags.cmo main_args.cmo \
+	$(CAMLC) $(LINKFLAGS) -o ocamloptp warnings.cmo misc.cmo config.cmo identifiable.cmo numbers.cmo arg_helper.cmo clflags.cmo main_args.cmo \
 	         ocamloptp.cmo
 
 opt:: profiling.cmx
@@ -207,10 +207,10 @@ READ_CMT_OPT1 = $(READ_CMT:.cmo=.cmx)
 READ_CMT_OPT = $(READ_CMT_OPT1:.cma=.cmxa)
 
 read_cmt: $(READ_CMT)
-	$(CAMLC) $(LINKFLAGS) -o read_cmt ${BISECT_CMA} $(READ_CMT)
+	$(CAMLC) $(LINKFLAGS) -o read_cmt $(READ_CMT)
 
 read_cmt.opt: $(READ_CMT_OPT)
-	$(CAMLOPT) $(LINKFLAGS) -o read_cmt.opt ${BISECT_CMXA} $(READ_CMT_OPT)
+	$(CAMLOPT) $(LINKFLAGS) -o read_cmt.opt $(READ_CMT_OPT)
 
 clean::
 	rm -f read_cmt read_cmt.opt
@@ -223,7 +223,7 @@ DUMPOBJ=opnames.cmo dumpobj.cmo
 
 dumpobj: $(DUMPOBJ)
 	$(CAMLC) $(LINKFLAGS) -o dumpobj \
-	         ${BISECT_CMA} \
+	         \
 	         misc.cmo tbl.cmo config.cmo identifiable.cmo numbers.cmo ident.cmo \
 	         opcodes.cmo bytesections.cmo $(DUMPOBJ)
 
@@ -272,7 +272,7 @@ OBJINFO=../compilerlibs/ocamlcommon.cma \
         objinfo.cmo
 
 objinfo: objinfo_helper$(EXE) $(OBJINFO)
-	$(CAMLC) -o objinfo ${BISECT_CMA} $(OBJINFO)
+	$(CAMLC) -o objinfo $(OBJINFO)
 
 install::
 	cp objinfo $(INSTALL_BINDIR)/ocamlobjinfo$(EXE)

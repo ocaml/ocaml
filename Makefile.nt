@@ -625,13 +625,13 @@ clean::
 .SUFFIXES: .ml .mli .cmo .cmi .cmx
 
 .ml.cmo:
-	$(CAMLC) $(COMPFLAGS) `./Compflags $@` ${PPX_BISECT} -c $<
+	$(CAMLC) $(COMPFLAGS) `./Compflags $@` -c $<
 
 .mli.cmi:
 	$(CAMLC) $(COMPFLAGS) `./Compflags $@` -c $<
 
 .ml.cmx:
-	$(CAMLOPT) $(COMPFLAGS) `./Compflags $@` ${PPX_BISECT_OPT} -c $<
+	$(CAMLOPT) $(COMPFLAGS) `./Compflags $@` -c $<
 
 partialclean::
 	rm -f utils/*.cm* utils/*.$(O) utils/*.$(S)
