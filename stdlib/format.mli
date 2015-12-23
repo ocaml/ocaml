@@ -710,6 +710,12 @@ val ksprintf : (string -> 'a) -> ('b, unit, string, 'a) format4 -> 'b
 (** Same as [sprintf] above, but instead of returning the string,
    passes it to the first argument. *)
 
+val kasprintf : (string -> 'a) -> ('b, formatter, unit, 'a) format4 -> 'b
+(** Same as [asprintf] above, but instead of returning the string,
+  passes it to the first argument.
+  @since 4.03
+*)
+
 (** {6 Deprecated} *)
 
 val bprintf : Buffer.t -> ('a, formatter, unit) format -> 'a
