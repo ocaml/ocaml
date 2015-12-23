@@ -133,7 +133,7 @@ module Make (Id : Identifiable.S) = struct
         Id.Set.iter (fun v ->
             if not (Id.Map.mem v dependencies)
             then
-              Misc.fatal_errorf "Sort_connected_components.check: the graph \
+              Misc.fatal_errorf "Strongly_connected_components.check: the graph \
                   has external dependencies (%a -> %a)"
                Id.print id Id.print v)
           set)
@@ -164,7 +164,7 @@ module Make (Id : Identifiable.S) = struct
               try Id.Map.find dest back
               with Not_found ->
                 Misc.fatal_errorf
-                  "Sort_connected_components: missing dependency %a"
+                  "Strongly_connected_components: missing dependency %a"
                   Id.print dest
             in
             v :: acc)
