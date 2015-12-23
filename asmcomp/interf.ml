@@ -17,13 +17,8 @@ module IntPairSet =
   Hashtbl.Make(struct
     type t = int * int
 
-    let equal (a1, b1) (a2, b2) =
+    let equal ((a1, b1) : t) (a2, b2) =
       a1 = a2 && b1 = b2
-
-    let compare ((a1,b1) : t) (a2,b2) =
-      match compare a1 a2 with
-        | 0 -> compare b1 b2
-        | c -> c
 
     let hash = Hashtbl.hash
   end)
@@ -34,12 +29,8 @@ open Mach
 let mat = IntPairSet.create 42
 
 let max_for_fast_mode = 4000  (* 16Mb memory used *)
-let initial_non_interference = Char.chr 0
-let previous_interference = ref initial_non_interference
-let make_fast_mat () =
-  Bytes.make (max_for_fast_mode * max_for_fast_mode)
-    initial_non_interference
-let fast_mat = ref (make_fast_mat ())
+let previous_interference = ref 0
+let fast_mat = Bytes.make (max_for_fast_mode * max_for_fast_mode) '\000'
 
 let build_graph fundecl =
 
@@ -51,7 +42,7 @@ let build_graph fundecl =
      registers involved in the function is very large.  In the fast "string"
      case, when we call [add_interf] below the situation will be as follows:
      an interference (i, j) is registered in the fast matrix iff the
-     character (i*max_for_fast_mode + j) of [!fast_mat] has a code equal
+     character (i*max_for_fast_mode + j) of [fast_mat] has a code equal
      to [interference].  All strictly lower codes indicate a non-interference.
      When we compile the next function, [interference] will have been
      incremented, which means we automatically treat interferences from the
@@ -60,47 +51,48 @@ let build_graph fundecl =
      If sufficiently many functions are compiled such that the counter
      might wrap around, the array is re-allocated. *)
 
-  let interference =
-    let previous = Char.code !previous_interference in
-    if previous < 0xff then begin
-      previous_interference := Char.chr (previous + 1);
-      previous + 1
-    end else begin
-      fast_mat := make_fast_mat ();
-      previous_interference :=
-        Char.chr (Char.code initial_non_interference + 1);
-      Char.code initial_non_interference + 1
-    end
-  in
   let fast = (Reg.num_registers () <= max_for_fast_mode) in
-  if not fast then begin
-    IntPairSet.clear mat
-  end;
+
+  if fast then begin
+    if !previous_interference = 0xff then begin
+      Bytes.fill fast_mat 0 (Bytes.length fast_mat) (Char.chr 0);
+      previous_interference := 1
+    end else begin
+      incr previous_interference
+    end
+  end else
+    IntPairSet.clear mat;
+
+  let interference = !previous_interference in
 
   (* Record an interference between two registers *)
   let add_interf ri rj =
     if Proc.register_class ri = Proc.register_class rj then begin
       let i = ri.stamp and j = rj.stamp in
-      if i <> j then begin
-        let p = if i < j then (i, j) else (j, i) in
-        let index = i*max_for_fast_mode + j in
-        let is_not_mem =
-          if fast then
-            Char.code (Bytes.unsafe_get !fast_mat index) < interference
-          else not (IntPairSet.mem mat p)
-        in
-        if is_not_mem then begin
-          if fast then
-            Bytes.unsafe_set !fast_mat index (Char.chr interference)
-          else IntPairSet.replace mat p ();
-          if ri.loc = Unknown then begin
-            ri.interf <- rj :: ri.interf;
-            if not rj.spill then ri.degree <- ri.degree + 1
-          end;
-          if rj.loc = Unknown then begin
-            rj.interf <- ri :: rj.interf;
-            if not ri.spill then rj.degree <- rj.degree + 1
-          end
+      let is_new =
+        i <> j
+        && (ri.loc = Unknown || rj.loc = Unknown)
+        &&
+        begin if fast then
+            let index = i*max_for_fast_mode + j in
+            let b = Char.code (Bytes.unsafe_get fast_mat index) < interference in
+            if b then Bytes.unsafe_set fast_mat index (Char.chr interference);
+            b
+          else
+            let p = if i < j then (i, j) else (j, i) in
+            let b = not (IntPairSet.mem mat p) in
+            if b then IntPairSet.add mat p ();
+            b
+        end
+      in
+      if is_new then begin
+        if ri.loc = Unknown then begin
+          ri.interf <- rj :: ri.interf;
+          if not rj.spill then ri.degree <- ri.degree + 1
+        end;
+        if rj.loc = Unknown then begin
+          rj.interf <- ri :: rj.interf;
+          if not ri.spill then rj.degree <- rj.degree + 1
         end
       end
     end in
@@ -178,11 +170,11 @@ let build_graph fundecl =
       if i <> j
       && r1.loc = Unknown
       && Proc.register_class r1 = Proc.register_class r2
-      && (let p = if i < j then (i, j) else (j, i) in
+      && (
           if fast then
-            Char.code (Bytes.unsafe_get !fast_mat (i*max_for_fast_mode + j))
+            Char.code (Bytes.unsafe_get fast_mat (i*max_for_fast_mode + j))
               < interference
-          else not (IntPairSet.mem mat p))
+          else not (IntPairSet.mem mat (if i < j then (i, j) else (j, i))))
       then r1.prefer <- (r2, weight) :: r1.prefer
     end in
 
