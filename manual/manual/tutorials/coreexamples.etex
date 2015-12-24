@@ -430,8 +430,8 @@ let rec deriv exp dv =
 deriv (Quot(Const 1.0, Var "x")) "x";;
 \end{caml_example}
 
-\section{Pretty-printing and parsing}
-\pdfsection{Pretty-printing and parsing}
+\section{Pretty-printing}
+\pdfsection{Pretty-printing}
 
 As shown in the examples above, the internal representation (also
 called {\em abstract syntax\/}) of expressions quickly becomes hard to
