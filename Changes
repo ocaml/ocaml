@@ -125,6 +125,9 @@ OCaml 4.04.0:
   array of floats
   (Thomas Braibant)
 
+- GPR#378: Add [Printexc.raise_with_backtrace] raise an exception using
+  an explicit backtrace
+  (François Bobot, review by Gabriel Scherer, Xavier Leroy, Damien Doligez)
 
 ### Manual and documentation:
 
