@@ -470,11 +470,11 @@ let rec un_anf_and_moveable ident_info env (clam : Clambda.ulambda)
           })
         functions
     in
-    let variables_bound_by_the_closure, _moveable =
+    let variables_bound_by_the_closure, moveable =
       un_anf_list_and_moveable ident_info env variables_bound_by_the_closure
     in
     Uclosure (functions, variables_bound_by_the_closure),
-      Moveable_not_into_loops
+      both_moveable moveable Moveable_not_into_loops
   | Uoffset (clam, n) ->
     let clam, moveable = un_anf_and_moveable ident_info env clam in
     Uoffset (clam, n), moveable
