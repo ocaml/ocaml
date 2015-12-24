@@ -214,6 +214,8 @@ let let_bound_vars_that_can_be_moved ident_info (clam : Clambda.ulambda) =
       | let_bound_var::let_bound_vars, (Uvar arg)::args
           when Ident.same let_bound_var arg
             && not (Ident.Set.mem arg ident_info.assigned) ->
+        assert (Ident.Set.mem arg ident_info.used);
+        assert (Ident.Set.mem arg ident_info.linear);
         can_move := Ident.Set.add arg !can_move;
         loop let_bound_vars args
       | _::_, _::_ ->
@@ -381,6 +383,126 @@ let let_bound_vars_that_can_be_moved ident_info (clam : Clambda.ulambda) =
   loop clam;
   !can_move
 
+(* Substitution of an expression for a let-moveable variable can cause the
+   surrounding expression to become fixed.  To avoid confusion, do the
+   let-moveable substitutions first. *)
+let rec substitute_let_moveable is_let_moveable env (clam : Clambda.ulambda)
+      : Clambda.ulambda =
+  match clam with
+  | Uvar id ->
+    if not (Ident.Set.mem id is_let_moveable) then
+      clam
+    else
+      begin match Ident.Map.find id env with
+      | clam -> clam
+      | exception Not_found ->
+        Misc.fatal_errorf "substitute_let_moveable: Unbound identifier %a"
+          Ident.print id
+      end
+  | Uconst _ -> clam
+  | Udirect_apply (label, args, dbg) ->
+    let args = substitute_let_moveable_list is_let_moveable env args in
+    Udirect_apply (label, args, dbg)
+  | Ugeneric_apply (func, args, dbg) ->
+    let func = substitute_let_moveable is_let_moveable env func in
+    let args = substitute_let_moveable_list is_let_moveable env args in
+    Ugeneric_apply (func, args, dbg)
+  | Uclosure (functions, variables_bound_by_the_closure) ->
+    let functions =
+      List.map (fun (ufunction : Clambda.ufunction) ->
+          { ufunction with
+            body = substitute_let_moveable is_let_moveable env ufunction.body;
+          })
+        functions
+    in
+    let variables_bound_by_the_closure =
+      substitute_let_moveable_list is_let_moveable env variables_bound_by_the_closure
+    in
+    Uclosure (functions, variables_bound_by_the_closure)
+  | Uoffset (clam, n) ->
+    let clam = substitute_let_moveable is_let_moveable env clam in
+    Uoffset (clam, n)
+  | Ulet (id, def, body) ->
+    let def = substitute_let_moveable is_let_moveable env def in
+    if Ident.Set.mem id is_let_moveable then
+      let env = Ident.Map.add id def env in
+      substitute_let_moveable is_let_moveable env body
+    else
+      Ulet (id, def, substitute_let_moveable is_let_moveable env body)
+  | Uletrec (defs, body) ->
+    let defs =
+      List.map (fun (id, def) ->
+          id, substitute_let_moveable is_let_moveable env def)
+        defs
+    in
+    let body = substitute_let_moveable is_let_moveable env body in
+    Uletrec (defs, body)
+  | Uprim (prim, args, dbg) ->
+    let args = substitute_let_moveable_list is_let_moveable env args in
+    Uprim (prim, args, dbg)
+  | Uswitch (cond, sw) ->
+    let cond = substitute_let_moveable is_let_moveable env cond in
+    let sw =
+      { sw with
+        us_actions_consts = substitute_let_moveable_array is_let_moveable env sw.us_actions_consts;
+        us_actions_blocks = substitute_let_moveable_array is_let_moveable env sw.us_actions_blocks;
+      }
+    in
+    Uswitch (cond, sw)
+  | Ustringswitch (cond, branches, default) ->
+    let cond = substitute_let_moveable is_let_moveable env cond in
+    let branches =
+      List.map (fun (s, branch) -> s, substitute_let_moveable is_let_moveable env branch)
+        branches
+    in
+    let default = Misc.may_map (substitute_let_moveable is_let_moveable env) default in
+    Ustringswitch (cond, branches, default)
+  | Ustaticfail (n, args) ->
+    let args = substitute_let_moveable_list is_let_moveable env args in
+    Ustaticfail (n, args)
+  | Ucatch (n, ids, body, handler) ->
+    let body = substitute_let_moveable is_let_moveable env body in
+    let handler = substitute_let_moveable is_let_moveable env handler in
+    Ucatch (n, ids, body, handler)
+  | Utrywith (body, id, handler) ->
+    let body = substitute_let_moveable is_let_moveable env body in
+    let handler = substitute_let_moveable is_let_moveable env handler in
+    Utrywith (body, id, handler)
+  | Uifthenelse (cond, ifso, ifnot) ->
+    let cond = substitute_let_moveable is_let_moveable env cond in
+    let ifso = substitute_let_moveable is_let_moveable env ifso in
+    let ifnot = substitute_let_moveable is_let_moveable env ifnot in
+    Uifthenelse (cond, ifso, ifnot)
+  | Usequence (e1, e2) ->
+    let e1 = substitute_let_moveable is_let_moveable env e1 in
+    let e2 = substitute_let_moveable is_let_moveable env e2 in
+    Usequence (e1, e2)
+  | Uwhile (cond, body) ->
+    let cond = substitute_let_moveable is_let_moveable env cond in
+    let body = substitute_let_moveable is_let_moveable env body in
+    Uwhile (cond, body)
+  | Ufor (id, low, high, direction, body) ->
+    let low = substitute_let_moveable is_let_moveable env low in
+    let high = substitute_let_moveable is_let_moveable env high in
+    let body = substitute_let_moveable is_let_moveable env body in
+    Ufor (id, low, high, direction, body)
+  | Uassign (id, expr) ->
+    let expr = substitute_let_moveable is_let_moveable env expr in
+    Uassign (id, expr)
+  | Usend (kind, e1, e2, args, dbg) ->
+    let e1 = substitute_let_moveable is_let_moveable env e1 in
+    let e2 = substitute_let_moveable is_let_moveable env e2 in
+    let args = substitute_let_moveable_list is_let_moveable env args in
+    Usend (kind, e1, e2, args, dbg)
+  | Uunreachable ->
+    Uunreachable
+
+and substitute_let_moveable_list is_let_moveable env clams =
+  List.map (substitute_let_moveable is_let_moveable env) clams
+
+and substitute_let_moveable_array is_let_moveable env clams =
+  Array.map (substitute_let_moveable is_let_moveable env) clams
+
 (* We say that an expression is "moveable" iff it has neither effects nor
    coeffects.  (See semantics_of_primitives.mli.)
 *)
@@ -481,24 +603,7 @@ let rec un_anf_and_moveable ident_info env (clam : Clambda.ulambda)
   | Ulet (id, def, Uvar id') when Ident.same id id' ->
     un_anf_and_moveable ident_info env def
   | Ulet (id, def, body) ->
-    let def, def_moveable =
-      let def, def_moveable = un_anf_and_moveable ident_info env def in
-      let def_moveable : moveable =
-        match def_moveable with
-        | Moveable -> Moveable
-        | Moveable_not_into_loops -> Moveable_not_into_loops
-        | Fixed ->
-          if Ident.Set.mem id ident_info.let_bound_vars_that_can_be_moved
-          then begin
-            assert (Ident.Set.mem id ident_info.linear);
-            assert (Ident.Set.mem id ident_info.used);
-            Moveable
-          end else begin
-            Fixed
-          end
-      in
-      def, def_moveable
-    in
+    let def, def_moveable = un_anf_and_moveable ident_info env def in
     let is_linear = Ident.Set.mem id ident_info.linear in
     let is_used = Ident.Set.mem id ident_info.used in
     begin match def_moveable, is_linear, is_used with
@@ -628,10 +733,11 @@ let apply clam ~what =
     let let_bound_vars_that_can_be_moved =
       let_bound_vars_that_can_be_moved ident_info clam
     in
-    let ident_info =
-      { ident_info with let_bound_vars_that_can_be_moved;
-      }
+    let clam =
+      substitute_let_moveable let_bound_vars_that_can_be_moved
+        Ident.Map.empty clam
     in
+    let ident_info = make_ident_info clam in
     let clam = un_anf ident_info Ident.Map.empty clam in
     if !Clflags.dump_clambda then begin
       Format.eprintf "@.un-anf (%s):@ %a@." what Printclambda.clambda clam
