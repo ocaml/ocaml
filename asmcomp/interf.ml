@@ -31,6 +31,7 @@ let mat = IntPairSet.create 42
 let max_for_fast_mode = 4000  (* 8Mb memory used *)
 let previous_interference = ref 0
 let fast_mat = Bytes.make (max_for_fast_mode * (max_for_fast_mode - 1) / 2) '\000'
+let max_index = ref (-1)
 
 let build_graph fundecl =
 
@@ -60,19 +61,17 @@ let build_graph fundecl =
      If sufficiently many functions are compiled such that the counter
      might wrap around, the array is re-allocated. *)
 
-  let fast = (Reg.num_registers () <= max_for_fast_mode) in
-
-  if fast then begin
-    if !previous_interference = 0xff then begin
-      Bytes.fill fast_mat 0 (Bytes.length fast_mat) (Char.chr 0);
-      previous_interference := 1
-    end else begin
-      incr previous_interference
-    end
+  if !previous_interference = 0xff then begin
+    Bytes.fill fast_mat 0 (!max_index + 1) '\000';
+    previous_interference := 1;
+    max_index := (-1);
   end else
-    IntPairSet.clear mat;
+    incr previous_interference;
 
-  let interference = !previous_interference in
+  let interference = Char.chr !previous_interference in
+
+  if Reg.num_registers () > max_for_fast_mode then
+    IntPairSet.clear mat;
 
   (* Record an interference between two registers *)
   let add_interf ri rj =
@@ -80,14 +79,16 @@ let build_graph fundecl =
       let i = ri.stamp and j = rj.stamp in
       let is_new =
         i <> j
-        &&
-        begin if fast then
-            let index = if j < i then (i * (i - 1)) lsr 1 + j else (j * (j - 1)) lsr 1 + i in
-            let b = Char.code (Bytes.unsafe_get fast_mat index) < interference in
-            if b then Bytes.unsafe_set fast_mat index (Char.chr interference);
+        && begin
+          let i, j = if i < j then i, j else j, i in
+          if j < max_for_fast_mode then
+            let index = (j * (j - 1)) lsr 1 + i in
+            if !max_index < index then max_index := index;
+            let b = Bytes.unsafe_get fast_mat index < interference in
+            if b then Bytes.unsafe_set fast_mat index interference;
             b
           else
-            let p = if i < j then (i, j) else (j, i) in
+            let p = (i, j) in
             let b = not (IntPairSet.mem mat p) in
             if b then IntPairSet.add mat p ();
             b
@@ -178,11 +179,14 @@ let build_graph fundecl =
       if i <> j
       && r1.loc = Unknown
       && Proc.register_class r1 = Proc.register_class r2
-      && (
-          if fast then
-            let index = if j < i then (i * (i - 1)) lsr 1 + j else (j * (j - 1)) lsr 1 + i in
-            Char.code (Bytes.unsafe_get fast_mat index) < interference
-          else not (IntPairSet.mem mat (if i < j then (i, j) else (j, i))))
+      && begin
+        let i, j = if i < j then i, j else j, i in
+        if j < max_for_fast_mode then
+          let index = (j * (j - 1)) lsr 1 + i in
+          Bytes.unsafe_get fast_mat index < interference
+        else not (IntPairSet.mem mat (i, j))
+      end
+
       then r1.prefer <- (r2, weight) :: r1.prefer
     end in
 
