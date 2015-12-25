@@ -29,6 +29,11 @@ type directive_fun =
    | Directive_ident of (Longident.t -> unit)
    | Directive_bool of (bool -> unit)
 
+type directive_info = {
+  section: string;
+  doc: string;
+}
+
 (* The table of toplevel value bindings and its accessors *)
 
 module StringMap = Map.Make(String)
@@ -226,12 +231,12 @@ let print_exception_outcome ppf exn =
 
 let directive_table = (Hashtbl.create 23 : (string, directive_fun) Hashtbl.t)
 
-let directive_doc_table =
-  (Hashtbl.create 23 : (string, string) Hashtbl.t)
+let directive_info_table =
+  (Hashtbl.create 23 : (string, directive_info) Hashtbl.t)
 
-let add_directive name dir_fun ~doc =
+let add_directive name dir_fun dir_info =
   Hashtbl.add directive_table name dir_fun;
-  Hashtbl.add directive_doc_table name doc
+  Hashtbl.add directive_info_table name dir_info
 
 (* Execute a toplevel phrase *)
 

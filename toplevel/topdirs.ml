@@ -23,12 +23,44 @@ open Toploop
 (* The standard output formatter *)
 let std_out = std_formatter
 
+(* Directive sections (used in #help) *)
+let section_general = "General"
+let section_run = "Loading code"
+let section_env = "Environment queries"
+
+let section_print = "Pretty-printing"
+let section_trace = "Tracing"
+let section_options = "Compiler options"
+
+let section_undocumented = "Undocumented"
+
+(* we will print the sections in the first list,
+   then all user-defined sections,
+   then the sections in the second list,
+   then all undocumented directives *)
+let order_of_sections =
+  ([
+    section_general;
+    section_run;
+    section_env;
+  ], [
+    section_print;
+    section_trace;
+    section_options;
+
+    section_undocumented;
+  ])
+
+
 (* To quit *)
 
 let dir_quit () = exit 0
 
 let _ = add_directive "quit" (Directive_none dir_quit)
-    "Exit the toplevel."
+    {
+      section = section_general;
+      doc = "Exit the toplevel.";
+    }
 
 (* To add a directory to the load path *)
 
@@ -38,7 +70,10 @@ let dir_directory s =
   Dll.add_path [d]
 
 let _ = add_directive "directory" (Directive_string dir_directory)
-    ~doc:"Add the given directory to search path for source and compiled files."
+    {
+      section = section_run;
+      doc = "Add the given directory to search path for source and compiled files.";
+    }
 
 (* To remove a directory from the load path *)
 let dir_remove_directory s =
@@ -47,13 +82,19 @@ let dir_remove_directory s =
   Dll.remove_path [d]
 
 let _ = add_directive "remove_directory" (Directive_string dir_remove_directory)
-    ~doc:"Remove the given directory from the search path."
+    {
+      section = section_run;
+      doc = "Remove the given directory from the search path.";
+    }
 (* To change the current directory *)
 
 let dir_cd s = Sys.chdir s
 
 let _ = add_directive "cd" (Directive_string dir_cd)
-    ~doc:"Change the current working directory."
+    {
+      section = section_run;
+      doc = "Change the current working directory.";
+    }
 (* Load in-core a .cmo file *)
 
 exception Load_failed
@@ -173,13 +214,19 @@ and really_load_file recursive ppf name filename ic =
 let dir_load ppf name = ignore (load_file false ppf name)
 
 let _ = add_directive "load" (Directive_string (dir_load std_out))
-    ~doc:"Load in memory a bytecode object, produced by ocamlc."
+    {
+      section = section_run;
+      doc = "Load in memory a bytecode object, produced by ocamlc.";
+    }
 
 let dir_load_rec ppf name = ignore (load_file true ppf name)
 
 let _ = add_directive "load_rec"
     (Directive_string (dir_load_rec std_out))
-    ~doc:"As #load, but loads dependencies recursively."
+    {
+      section = section_run;
+      doc = "As #load, but loads dependencies recursively.";
+    }
 
 let load_file = load_file false
 
@@ -189,10 +236,17 @@ let dir_use ppf name = ignore(Toploop.use_file ppf name)
 let dir_mod_use ppf name = ignore(Toploop.mod_use_file ppf name)
 
 let _ = add_directive "use" (Directive_string (dir_use std_out))
-    ~doc:"Read, compile and execute source phrases from the given file."
+    {
+      section = section_run;
+      doc = "Read, compile and execute source phrases from the given file.";
+    }
 
 let _ = add_directive "mod_use" (Directive_string (dir_mod_use std_out))
-    ~doc:"Usage is identical to #use but #mod_use wraps the contents in a module."
+    {
+      section = section_run;
+      doc = "Usage is identical to #use but #mod_use \
+             wraps the contents in a module.";
+    }
 
 
 (* Install, remove a printer *)
@@ -330,11 +384,17 @@ let dir_remove_printer ppf lid =
 
 let _ = add_directive "install_printer"
     (Directive_ident (dir_install_printer std_out))
-    ~doc:"Registers a printer for values of a certain type."
+    {
+      section = section_print;
+      doc = "Registers a printer for values of a certain type.";
+    }
 
 let _ = add_directive "remove_printer"
     (Directive_ident (dir_remove_printer std_out))
-    ~doc:"Remove the named function from the table of toplevel printers."
+    {
+      section = section_print;
+      doc = "Remove the named function from the table of toplevel printers.";
+    }
 
 (* The trace *)
 
@@ -457,8 +517,10 @@ let reg_show_prim name to_sig doc =
   add_directive
     name
     (Directive_ident (show_prim to_sig std_out))
-    ~doc
-
+    {
+      section = section_env;
+      doc;
+    }
 
 let () =
   reg_show_prim "show_val"
@@ -542,78 +604,157 @@ let show env loc id lid =
 
 let () =
   add_directive "show" (Directive_ident (show_prim show std_out))
-    ~doc:"Print the signatures of components \
-          from any of the above categories."
+    {
+      section = section_env;
+      doc = "Print the signatures of components \
+             from any of the above categories.";
+    }
 
 let _ = add_directive "trace"
     (Directive_ident (dir_trace std_out))
-    ~doc:"All calls to the function \
-          named function-name will be traced."
+    {
+      section = section_trace;
+      doc = "All calls to the function \
+          named function-name will be traced.";
+    }
 
 let _ = add_directive "untrace"
     (Directive_ident (dir_untrace std_out))
-    ~doc:"Stop tracing the given function."
+    {
+      section = section_trace;
+      doc = "Stop tracing the given function.";
+    }
 
 let _ = add_directive "untrace_all"
     (Directive_none (dir_untrace_all std_out))
-    ~doc:"Stop tracing all functions traced so far."
+    {
+      section = section_trace;
+      doc = "Stop tracing all functions traced so far.";
+    }
 
 (* Control the printing of values *)
 
 let _ = add_directive "print_depth"
     (Directive_int(fun n -> max_printer_depth := n))
-    ~doc:"Limit the printing of values to a maximal depth of n."
+    {
+      section = section_print;
+      doc = "Limit the printing of values to a maximal depth of n.";
+    }
 
 let _ = add_directive "print_length"
     (Directive_int(fun n -> max_printer_steps := n))
-    ~doc:"Limit the number of value nodes printed to at most n."
+    {
+      section = section_print;
+      doc = "Limit the number of value nodes printed to at most n.";
+    }
 
 (* Set various compiler flags *)
 
 let _ = add_directive "labels"
     (Directive_bool(fun b -> Clflags.classic := not b))
-    ~doc:"Choose whether to ignore labels in function types."
+    {
+      section = section_options;
+      doc = "Choose whether to ignore labels in function types.";
+    }
 
 let _ = add_directive "principal"
     (Directive_bool(fun b -> Clflags.principal := b))
-    ~doc:"Make sure that all types are derived in a principal way."
+    {
+      section = section_options;
+      doc = "Make sure that all types are derived in a principal way.";
+    }
 
 let _ = add_directive "rectypes"
     (Directive_none(fun () -> Clflags.recursive_types := true))
-    ~doc:"Allow arbitrary recursive types during type-checking."
+    {
+      section = section_options;
+      doc = "Allow arbitrary recursive types during type-checking.";
+    }
 
 let _ = add_directive "ppx"
     (Directive_string(fun s -> Clflags.all_ppx := s :: !Clflags.all_ppx))
-    ~doc:"After parsing, pipe the abstract \
-          syntax tree through the preprocessor command."
+    {
+      section = section_options;
+      doc = "After parsing, pipe the abstract \
+          syntax tree through the preprocessor command.";
+    }
 
 let _ = add_directive "warnings"
     (Directive_string (parse_warnings std_out false))
-    ~doc:"Enable or disable warnings according to the argument."
+    {
+      section = section_options;
+      doc = "Enable or disable warnings according to the argument.";
+    }
 
 let _ = add_directive "warn_error"
     (Directive_string (parse_warnings std_out true))
-    ~doc:"Treat as errors the warnings enabled by the argument."
+    {
+      section = section_options;
+      doc = "Treat as errors the warnings enabled by the argument.";
+    }
 
-let print_directive ppf name directive =
-  let doc = match Hashtbl.find directive_doc_table name with
-    | doc -> doc
-    | exception Not_found -> "(undocumented)"
+(* #help directive *)
+
+let directive_sections () =
+  let sections = Hashtbl.create 10 in
+  let add_dir name dir =
+    let section, doc =
+      match Hashtbl.find directive_info_table name with
+      | { section; doc } -> section, Some doc
+      | exception Not_found -> "Undocumented", None
+    in
+    Hashtbl.replace sections section
+      ((name, dir, doc)
+       :: (try Hashtbl.find sections section with Not_found -> []))
   in
+  Hashtbl.iter add_dir directive_table;
+  let take_section section =
+    if not (Hashtbl.mem sections section) then (section, [])
+    else begin
+      let section_dirs =
+        Hashtbl.find sections section
+        |> List.sort (fun (n1, _, _) (n2, _, _) -> String.compare n1 n2) in
+      Hashtbl.remove sections section;
+      (section, section_dirs)
+    end
+  in
+  let before, after = order_of_sections in
+  let sections_before = List.map take_section before in
+  let sections_after = List.map take_section after in
+  let sections_user =
+    Hashtbl.fold (fun section _ acc -> section::acc) sections []
+    |> List.sort String.compare
+    |> List.map take_section in
+  sections_before @ sections_user @ sections_after
+
+let print_directive ppf (name, directive, doc) =
   let param = match directive with
     | Directive_none _ -> ""
     | Directive_string _ -> " <str>"
     | Directive_int _ -> " <int>"
     | Directive_bool _ -> " <bool>"
     | Directive_ident _ -> " <ident>" in
-  Format.printf "@[<hov 2>#%s@\n%a@]@." (name ^ param)
-    Format.pp_print_text doc
+  match doc with
+  | None -> printf "#%s%s@." name param
+  | Some doc ->
+      printf "@[<hov 2>#%s%s@\n%a@]@."
+        name param
+        Format.pp_print_text doc
+
+let print_section ppf (section, directives) =
+  if directives <> [] then begin
+    fprintf ppf "%30s%s@." "" section;
+    List.iter (print_directive ppf) directives;
+    fprintf ppf "@.";
+  end
 
 let print_directives ppf () =
-  fprintf ppf "Available toplevel directives:@\n";
-  Hashtbl.iter (print_directive ppf) directive_table
+  List.iter (print_section ppf) (directive_sections ())
 
 let _ = add_directive "help"
     (Directive_none (print_directives std_out))
-    ~doc:"Prints a list of all available directives, with \
-          corresponding argument type if appropriate."
+    {
+      section = section_general;
+      doc = "Prints a list of all available directives, with \
+          corresponding argument type if appropriate.";
+    }
