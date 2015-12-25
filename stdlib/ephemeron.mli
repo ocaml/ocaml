@@ -279,14 +279,13 @@ module Kn : sig
 end
 
 module GenHashTable: sig
-  (** Define hash table on generic containers. *)
-
-  (** It can be used in conjunction of {!Obj.Ephemeron}
-      for building weak hash table for specific type of keys *)
+  (** Define hash table on generic containers which have a notion of
+      "death" and aliveness. If a binding is dead the hash table can
+      automatically remove it. *)
 
   type equal =
   | ETrue | EFalse
-  | EDead (** the garbage collector reclaimed the data *)
+  | EDead (** the container is dead *)
 
   module MakeSeeded(H:
   sig
