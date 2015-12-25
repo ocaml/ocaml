@@ -40,8 +40,11 @@ type directive_fun =
    | Directive_ident of (Longident.t -> unit)
    | Directive_bool of (bool -> unit)
 
-val directive_table : (string, directive_fun) Hashtbl.t
-        (* Table of known directives, with their execution function *)
+val directive_table : (string, directive_fun * string) Hashtbl.t
+        (* Table of known directives, with their execution function and
+           description *)
+val add_directive : string -> string -> directive_fun -> unit
+        (* Add a directive to the table with a short description *)
 val toplevel_env : Env.t ref
         (* Typing environment for the toplevel *)
 val initialize_toplevel_env : unit -> unit

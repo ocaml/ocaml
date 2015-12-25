@@ -224,7 +224,15 @@ let print_exception_outcome ppf exn =
 (* The table of toplevel directives.
    Filled by functions from module topdirs. *)
 
-let directive_table = (Hashtbl.create 13 : (string, directive_fun) Hashtbl.t)
+let directive_table =
+  (Hashtbl.create 13 : (string, directive_fun * string) Hashtbl.t)
+
+let add_directive dir_name dir_descr dir_arg =
+  Hashtbl.add directive_table dir_name (dir_arg, dir_descr)
+
+let find_directive dir_name =
+  let (f, _) = Hashtbl.find directive_table dir_name in
+  f
 
 (* Execute a toplevel phrase *)
 
@@ -294,7 +302,7 @@ let execute_phrase print_outcome ppf phr =
       end
   | Ptop_dir(dir_name, dir_arg) ->
       let d =
-        try Some (Hashtbl.find directive_table dir_name)
+        try Some (find_directive dir_name)
         with Not_found -> None
       in
       begin match d with

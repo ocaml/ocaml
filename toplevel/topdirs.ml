@@ -27,7 +27,9 @@ let std_out = std_formatter
 
 let dir_quit () = exit 0
 
-let _ = Hashtbl.add directive_table "quit" (Directive_none dir_quit)
+let _ =
+  add_directive "quit" "Exit the toplevel loop and terminate the ocaml command."
+  (Directive_none dir_quit)
 
 (* To add a directory to the load path *)
 
@@ -36,7 +38,9 @@ let dir_directory s =
   Config.load_path := d :: !Config.load_path;
   Dll.add_path [d]
 
-let _ = Hashtbl.add directive_table "directory" (Directive_string dir_directory)
+let _ = add_directive "directory"
+  "Add <string> to search path for source and compiled files."
+  (Directive_string dir_directory)
 
 (* To remove a directory from the load path *)
 let dir_remove_directory s =
@@ -45,14 +49,16 @@ let dir_remove_directory s =
   Dll.remove_path [d]
 
 let _ =
-  Hashtbl.add directive_table "remove_directory"
+  add_directive "remove_directory"
+    "Remove <string> from the search path for source and compiled files."
     (Directive_string dir_remove_directory)
 
 (* To change the current directory *)
 
 let dir_cd s = Sys.chdir s
 
-let _ = Hashtbl.add directive_table "cd" (Directive_string dir_cd)
+let _ = add_directive "cd" "Change the current working directory"
+  (Directive_string dir_cd)
 
 (* Load in-core a .cmo file *)
 
@@ -172,12 +178,14 @@ and really_load_file recursive ppf name filename ic =
 
 let dir_load ppf name = ignore (load_file false ppf name)
 
-let _ = Hashtbl.add directive_table "load" (Directive_string (dir_load std_out))
+let _ = add_directive "load" "Load an object (.cmo) or a library (.cma) file"
+  (Directive_string (dir_load std_out))
 
 let dir_load_rec ppf name = ignore (load_file true ppf name)
 
-let _ = Hashtbl.add directive_table "load_rec"
-                    (Directive_string (dir_load_rec std_out))
+let _ =
+  add_directive "load_rec" "Like #load but recursively load missing modules"
+  (Directive_string (dir_load_rec std_out))
 
 let load_file = load_file false
 
@@ -186,9 +194,14 @@ let load_file = load_file false
 let dir_use ppf name = ignore(Toploop.use_file ppf name)
 let dir_mod_use ppf name = ignore(Toploop.mod_use_file ppf name)
 
-let _ = Hashtbl.add directive_table "use" (Directive_string (dir_use std_out))
-let _ = Hashtbl.add directive_table "mod_use"
-                    (Directive_string (dir_mod_use std_out))
+let _ =
+  add_directive "use" "Read and execute source phrases from file <string>"
+  (Directive_string (dir_use std_out))
+
+let _ =
+  add_directive "mod_use"
+    "Like #use, but wraps code in a module named after <string>"
+    (Directive_string (dir_mod_use std_out))
 
 (* Install, remove a printer *)
 
@@ -323,10 +336,13 @@ let dir_remove_printer ppf lid =
     end
   with Exit -> ()
 
-let _ = Hashtbl.add directive_table "install_printer"
-             (Directive_ident (dir_install_printer std_out))
-let _ = Hashtbl.add directive_table "remove_printer"
-             (Directive_ident (dir_remove_printer std_out))
+let _ =
+  add_directive "install_printer"
+    "Register function <ident> as a printer for its argument type"
+    (Directive_ident (dir_install_printer std_out))
+
+let _ = add_directive "remove_printer" "Unregisters a printer"
+    (Directive_ident (dir_remove_printer std_out))
 
 (* The trace *)
 
@@ -421,6 +437,38 @@ let trim_signature = function
            sg)
   | mty -> mty
 
+let dir_help ppf () =
+  let directives =
+    List.sort
+      (fun (key1,_) (key2,_) -> compare key1 key2)
+      (Hashtbl.fold (fun key x res -> (key, x) :: res) directive_table [])
+  in
+  let hdr = ("Directive","Argument(s)","Description") in
+  let tmap f (x1,x2,x3) = (f x1, f x2, f x3) in
+  let tmap2 f (x1,x2,x3) (y1,y2,y3) = (f x1 y1, f x2 y2, f x3 y3) in
+  let res, (n1,n2,n3) =
+  List.fold_left
+    (fun (res, n_res) (key, (kind, desc)) ->
+      let kind_desc =
+        match kind with
+        | Directive_ident _ -> "<ident>"
+        | Directive_none _ -> " "
+        | Directive_int _ -> "<int>"
+        | Directive_bool _ -> "<bool>"
+        | Directive_string _ -> "<string>"
+      in
+      let r = ("#"^key, kind_desc, desc) in
+      let n_res' = tmap2 (fun n u -> max n (String.length u)) n_res r in
+      (r :: res, n_res'))
+    ([], tmap String.length hdr)
+    directives
+  in
+  let pr (r1,r2,r3) = printf "%-*s | %-*s | %-*s@\n" n1 r1 n2 r2 n3 r3 in
+  pr hdr;
+  printf "%s@\n" (String.make (n1 + n2 + n3 + 6) '-');
+  List.iter pr res;
+  fprintf ppf "@."
+
 let show_prim to_sig ppf lid =
   let env = !Toploop.toplevel_env in
   let loc = Location.none in
@@ -444,26 +492,30 @@ let show_prim to_sig ppf lid =
 
 let all_show_funs = ref []
 
-let reg_show_prim name to_sig =
+let reg_show_prim name ~help to_sig =
   all_show_funs := to_sig :: !all_show_funs;
-  Hashtbl.add directive_table name (Directive_ident (show_prim to_sig std_out))
+  add_directive "show"
+    (Printf.sprintf
+      "Describe the %s with this name if it exists in the environment."
+      help)
+    (Directive_ident (show_prim to_sig std_out))
 
 let () =
-  reg_show_prim "show_val"
+  reg_show_prim "show_val" ~help:"value"
     (fun env loc id lid ->
        let path, desc = Typetexp.find_value env loc lid in
        [ Sig_value (id, desc) ]
     )
 
 let () =
-  reg_show_prim "show_type"
+  reg_show_prim "show_type" ~help:"type"
     (fun env loc id lid ->
        let path, desc = Typetexp.find_type env loc lid in
        [ Sig_type (id, desc, Trec_not) ]
     )
 
 let () =
-  reg_show_prim "show_exception"
+  reg_show_prim "show_exception" ~help:"exception"
     (fun env loc id lid ->
        let desc = Typetexp.find_constructor env loc lid in
        if not (Ctype.equal env true [desc.cstr_res] [Predef.type_exn]) then
@@ -485,7 +537,7 @@ let () =
     )
 
 let () =
-  reg_show_prim "show_module"
+  reg_show_prim "show_module" ~help:"module"
     (fun env loc id lid ->
        let path, md = Typetexp.find_module env loc lid in
        [ Sig_module (id, {md with md_type = trim_signature md.md_type},
@@ -493,21 +545,21 @@ let () =
     )
 
 let () =
-  reg_show_prim "show_module_type"
+  reg_show_prim "show_module_type" ~help:"module type"
     (fun env loc id lid ->
        let path, desc = Typetexp.find_modtype env loc lid in
        [ Sig_modtype (id, desc) ]
     )
 
 let () =
-  reg_show_prim "show_class"
+  reg_show_prim "show_class" ~help:"class"
     (fun env loc id lid ->
        let path, desc = Typetexp.find_class env loc lid in
        [ Sig_class (id, desc, Trec_not) ]
     )
 
 let () =
-  reg_show_prim "show_class_type"
+  reg_show_prim "show_class_type" ~help:"class type"
     (fun env loc id lid ->
        let path, desc = Typetexp.find_class_type env loc lid in
        [ Sig_class_type (id, desc, Trec_not) ]
@@ -523,39 +575,47 @@ let show env loc id lid =
   if sg = [] then raise Not_found else sg
 
 let () =
-  Hashtbl.add directive_table "show" (Directive_ident (show_prim show std_out))
+  add_directive "show"
+    "Describe this name if it exists in the environment;\
+     see also #show_val, #show_type, #show_module etc."
+    (Directive_ident (show_prim show std_out))
 
 let _ =
-  Hashtbl.add directive_table "trace" (Directive_ident (dir_trace std_out));
-  Hashtbl.add directive_table "untrace" (Directive_ident (dir_untrace std_out));
-  Hashtbl.add directive_table
-    "untrace_all" (Directive_none (dir_untrace_all std_out));
+  add_directive "trace" "Trace calls to function <ident>"
+    (Directive_ident (dir_trace std_out));
+  add_directive "untrace" "Stop tracing function <ident>"
+    (Directive_ident (dir_untrace std_out));
+  add_directive "untrace_all" "Stop all function traces"
+    (Directive_none (dir_untrace_all std_out));
 
 (* Control the printing of values *)
 
-  Hashtbl.add directive_table "print_depth"
-             (Directive_int(fun n -> max_printer_depth := n));
-  Hashtbl.add directive_table "print_length"
-             (Directive_int(fun n -> max_printer_steps := n));
+  add_directive "print_depth" "Limit the depth of printed values to <int>"
+    (Directive_int(fun n -> max_printer_depth := n));
+  add_directive "print_length" "Limit the number of values printed to <int>"
+    (Directive_int(fun n -> max_printer_steps := n));
 
 (* Set various compiler flags *)
 
-  Hashtbl.add directive_table "labels"
+  add_directive "labels" "Ignore labels in function types (if true)"
              (Directive_bool(fun b -> Clflags.classic := not b));
 
-  Hashtbl.add directive_table "principal"
+  add_directive "principal" "Ensure that inferred types are principal (if true)"
              (Directive_bool(fun b -> Clflags.principal := b));
 
-  Hashtbl.add directive_table "rectypes"
+  add_directive "rectypes" "Allow arbitrary recursive types"
              (Directive_none(fun () -> Clflags.recursive_types := true));
 
-  Hashtbl.add directive_table "ppx"
+  add_directive "ppx" "Pass input phrases through a ppx preprocessor"
     (Directive_string(fun s -> Clflags.all_ppx := s :: !Clflags.all_ppx));
 
-  Hashtbl.add directive_table "warnings"
+  add_directive "warnings" "Apply the warning filter <string>"
              (Directive_string (parse_warnings std_out false));
 
-  Hashtbl.add directive_table "warn_error"
+  add_directive "warn_error" "Swap listed items between warning and error"
              (Directive_string (parse_warnings std_out true));
+
+  add_directive "help" "This help screen"
+     (Directive_none (dir_help std_out));
 
   ()
