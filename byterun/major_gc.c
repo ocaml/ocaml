@@ -292,16 +292,16 @@ static inline value* mark_slice_darken(value *gray_vals_ptr, value v, int i,
 static value* mark_ephe_aux (value *gray_vals_ptr, intnat *work,
                              int *slice_pointers)
 {
-  value v, child;
+  value v, data, key;
   header_t hd;
   mlsize_t size, i;
 
   v = *ephes_to_check;
   hd = Hd_val(v);
   Assert(Tag_val (v) == Abstract_tag);
-  child = Field(v,1); /* child = data */
-  if ( child != caml_ephe_none &&
-       Is_block (child) && Is_in_heap (child) && Is_white_val (child)){
+  data = Field(v,1);
+  if ( data != caml_ephe_none &&
+       Is_block (data) && Is_in_heap (data) && Is_white_val (data)){
 
     int alive_data = 1;
 
@@ -311,23 +311,25 @@ static value* mark_ephe_aux (value *gray_vals_ptr, intnat *work,
     /* The liveness of the keys not caml_ephe_none is the other condition */
     size = Wosize_hd (hd);
     for (i = 2; alive_data && i < size; i++){
-      child = Field (v, i); /* child = one key */
+      key = Field (v, i);
     ephemeron_again:
-      if (Tag_val (child) == Forward_tag){
-        value f = Forward_val (child);
-        if (Is_long (f) ||
-            (Is_block (f) &&
-             (!Is_in_value_area(f) || Tag_val (f) == Forward_tag
-              || Tag_val (f) == Lazy_tag || Tag_val (f) == Double_tag))){
-          /* Do not short-circuit the pointer. */
-        }else{
-          Field (v, i) = child = f;
-          goto ephemeron_again;
+      if (key != caml_ephe_none &&
+          Is_block (key) && Is_in_heap (key)){
+        if (Tag_val (key) == Forward_tag){
+          value f = Forward_val (key);
+          if (Is_long (f) ||
+              (Is_block (f) &&
+               (!Is_in_value_area(f) || Tag_val (f) == Forward_tag
+                || Tag_val (f) == Lazy_tag || Tag_val (f) == Double_tag))){
+            /* Do not short-circuit the pointer. */
+          }else{
+            Field (v, i) = key = f;
+            goto ephemeron_again;
+          }
         }
-      }
-      if (child != caml_ephe_none &&
-          Is_block (child) && Is_in_heap (child) && Is_white_val (child)){
-        alive_data = 0;
+        if (Is_white_val (key)){
+          alive_data = 0;
+        }
       }
     }
     *work -= Whsize_wosize(i);
