@@ -311,7 +311,12 @@ let execute_phrase print_outcome ppf phr =
       in
       begin match d with
       | None ->
-          fprintf ppf "Unknown directive `%s'.@." dir_name;
+          fprintf ppf "Unknown directive `%s'." dir_name;
+          let directives =
+            Hashtbl.fold (fun dir _ acc -> dir::acc) directive_table [] in
+          Misc.did_you_mean ppf
+            (fun () -> Misc.spellcheck directives dir_name);
+          fprintf ppf "@.";
           false
       | Some d ->
           match d, dir_arg with
