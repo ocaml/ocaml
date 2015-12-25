@@ -60,8 +60,7 @@ extern char *caml_fl_merge;  /* Defined in freelist.c. */
 
 static char *markhp, *chunk, *limit;
 
-int caml_gc_subphase;     /* Subphase_{mark_roots,mark_main,mark_final,
-                                       clean_ephe,unlink_ephe} */
+int caml_gc_subphase;     /* Subphase_{mark_roots,mark_main,mark_final} */
 
 /**
    Ephemerons:
@@ -483,7 +482,8 @@ static void mark_slice (intnat work)
           ephes_to_check = &caml_ephe_list_head;
           work = 0;
         } else {
-          /* Initialise the sweep phase. */
+          /* Initialise the sweep phase,
+           shortcut the unneeded clean phase. */
           init_sweep_phase();
           work = 0;
         }
@@ -500,12 +500,12 @@ static void mark_slice (intnat work)
   INSTR (CAML_INSTR_INT ("major/mark/slice/pointers#", slice_pointers);)
 }
 
+/* Clean ephemerons */
 static void clean_slice (intnat work)
 {
   value v;
 
   caml_gc_message (0x40, "Cleaning %ld words\n", work);
-  caml_gc_message (0x40, "Subphase = %ld\n", caml_gc_subphase);
   while (work > 0){
     v = *ephes_to_check;
     if (v != (value) NULL){
