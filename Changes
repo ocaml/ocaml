@@ -33,6 +33,14 @@ Next version (4.05.0):
   and "0 mod <expr>" in the case when <expr> was a non-constant
   evaluating to zero (Mark Shinwell)
 
+- GPR#375: An alternative Linear Scan register allocator for ocamlopt,
+  activated with the -linscan command-line flag. This allocator represents
+  a trade-off between worse generated code performance for higher
+  compilation speed (especially interesting in some cases graph coloring
+  is necessarily quadratic).
+  (Marcell Fischbach and Benedikt Meurer, adapted by Nicolas Ojeda Bar,
+   review by Nicolas Ojeda Bar and Alain Frisch)
+
 ### Runtime system:
 
 - PR#7423, GPR#946: expose new exception-raising functions

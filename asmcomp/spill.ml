@@ -151,8 +151,9 @@ let rec reload i before =
   | Iop op ->
       let new_before =
         (* Quick check to see if the register pressure is below the maximum *)
-        if Reg.Set.cardinal i.live + Array.length i.res <=
-           Proc.safe_register_pressure op
+        if !Clflags.use_linscan ||
+           (Reg.Set.cardinal i.live + Array.length i.res <=
+            Proc.safe_register_pressure op)
         then before
         else add_superpressure_regs op i.live i.res before in
       let after =
