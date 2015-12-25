@@ -233,6 +233,8 @@ Type system:
 - PR#6593: Functor application in tests/basic-modules fails after commit 15405
 
 Toplevel and debugger:
+- PR#6113: Add descriptions to directives, and display them via #help
+  (Nick Giannarakis, Berke Durak, Francis Southern and Gabriel Scherer)
 - PR#6396: Warnings-as-errors not properly flushed in the toplevel
   (Alain Frisch)
 - PR#6468: toplevel now supports backtraces if invoked with OCAMLRUNPARAM=b

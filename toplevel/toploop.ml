@@ -221,10 +221,17 @@ let print_exception_outcome ppf exn =
           print_string b;
           backtrace := None
 
-(* The table of toplevel directives.
-   Filled by functions from module topdirs. *)
 
-let directive_table = (Hashtbl.create 13 : (string, directive_fun) Hashtbl.t)
+(* Inserting new toplevel directives *)
+
+let directive_table = (Hashtbl.create 23 : (string, directive_fun) Hashtbl.t)
+
+let directive_doc_table =
+  (Hashtbl.create 23 : (string, string) Hashtbl.t)
+
+let add_directive name dir_fun ~doc =
+  Hashtbl.add directive_table name dir_fun;
+  Hashtbl.add directive_doc_table name doc
 
 (* Execute a toplevel phrase *)
 
