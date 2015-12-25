@@ -241,7 +241,7 @@ Standard library:
 - GPR#356: Add [Format.kasprintf] (Jérémie Dimino, Mark Shinwell)
 - GPR#22: Add the Ephemeron module that implements ephemerons and weak
   hash table (François Bobot, review by Damien Doligez, Daniel Bünzli,
-  Alain Frisch)
+  Alain Frisch, Pierre Chambart)
 
 Type system:
 - PR#5545: Type annotations on methods cannot control the choice of abbreviation
