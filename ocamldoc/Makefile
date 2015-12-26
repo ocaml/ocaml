@@ -172,7 +172,11 @@ exe: $(OCAMLDOC)
 lib: $(OCAMLDOC_LIBCMA) $(OCAMLDOC_LIBCMI) $(ODOC_TEST)
 generators: $(GENERATORS_CMOS)
 
-opt.opt: exeopt libopt generatorsopt
+opt.opt:
+	$(MAKE) exeopt
+	$(MAKE) libopt
+	$(MAKE) generatorsopt
+
 exeopt: $(OCAMLDOC_OPT)
 libopt: $(OCAMLDOC_LIBCMXA) $(OCAMLDOC_LIBCMI)
 generatorsopt: $(GENERATORS_CMXS)
