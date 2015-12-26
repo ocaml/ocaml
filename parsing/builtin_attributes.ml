@@ -18,8 +18,8 @@ let ppwarning_names = Attr_helper.std_namespace "ppwarning"
 
 let deprecated = Attr_helper.create "deprecated"
 let deprecated_mutable = Attr_helper.create "deprecated_mutable"
-let warning = Attr_helper.{ names= warning_names; context= ppwarning_names}
-let ppwarning = Attr_helper.{names= ppwarning_names; context= warning_names}
+let warning = Attr_helper.{ names=warning_names; neighbouring_names=ppwarning_names}
+let ppwarning = Attr_helper.{names=ppwarning_names; neighbouring_names=warning_names}
 let warnerror = Attr_helper.create "warnerror"
 let warn_on_literal_pattern = Attr_helper.create "warn_on_literal_pattern"
 let explicit_arity = Attr_helper.create "explicit_arity"

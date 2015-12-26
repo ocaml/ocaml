@@ -19,23 +19,41 @@ type error =
   | Multiple_attributes of string
   | No_payload_expected of string
 
-type identifier = { names: string list; context: string list }
+val attribute_max_distance: int ref
 
-val std_namespace: string -> string list
-val create: ?context:string list -> string -> identifier
+type identifier = { names: string list; neighbouring_names: string list }
+(** The identifier type represents the information needed to recognize
+   a given attribute even in presence of spelling mistakes
+   - The field [names] lists all possible names for the attribute
+   - The field [neighbouring_names] enumerates similar names that might appear;
+    potentially mispelled, in the same context as the attribute and should not
+    be misidentified as the attribute.
 
-(** The [identifier] argument of the following functions is a
-    list of alternative names for the attribute we are looking for and a list of
-    possible other related names that could appear in this context. For instance:
+    For instance, for an attribute [foo] that might appear in the same
+    context than an [fooo] attribute, the identifier could be
 
     {[
-      { names=["foo"; "ocaml.foo"]; context=[ "fooo"; "ocaml.fooo"] }
+      { names=["foo"; "ocaml.foo"]; neighbouring_names=[ "fooo"; "ocaml.fooo"] }
     ]}
 
-    During attribute identification, a warning is emitted if the nearest
-    name in the union of names and context is in the list of possible
-    names and is at a distance inferior to [attribute_max_distance] *)
-val attribute_max_distance: int ref
+    A name which does not belong to the [names] list is considered to be a
+    misspelled version of the identifier if:
+     - the minimal distance [d] between the name and the list of attributes name
+    is less than [!attribute_max_distance]
+    - no name in the [neighbouring_names] list is at a distance strictly inferior
+    to [d].
+
+*)
+
+(** [std_namespace] creates standard aliases [[ short_name; "ocaml." ^ short_name]]
+    for a given short name *)
+val std_namespace: string -> string list
+
+(** Create a standard identifier from a short name *)
+val create: ?neighbouring_names:string list -> string -> identifier
+
+(** In the three following functions, a warning is emitted if a misspelled
+    version of the identifier is detected *)
 val is_attribute: ?warn:bool -> identifier -> attribute -> bool
 val get_no_payload_attribute:
   ?warn:bool -> identifier -> attributes -> string loc option

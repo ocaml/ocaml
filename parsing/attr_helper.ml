@@ -19,10 +19,11 @@ type error =
 
 exception Error of Location.t * error
 
-type identifier = { names: string list; context: string list}
+type identifier = { names: string list; neighbouring_names: string list}
 
 let std_namespace name = [ name; "ocaml." ^ name]
-let create ?(context=[]) name = {names = std_namespace name; context}
+let create ?(neighbouring_names=[]) name =
+  {names = std_namespace name; neighbouring_names }
 
 let attribute_max_distance = ref 2
 
@@ -43,22 +44,22 @@ let is_warning_active () =
   let open Warnings in
   is_active ( Misspelled_attribute ("","") )
 
-let is_attribute ?(warn=true) {names;context} ({txt;loc}, _ )  =
+let is_attribute ?(warn=true) {names;neighbouring_names} ({txt;loc}, _ )  =
   if not warn || not (is_warning_active ())then
     List.mem txt names
   else
     let nearest_name = set_projector names txt
-    and nearest_context = set_projector context txt in
+    and nearest_neighborhood = set_projector neighbouring_names txt in
     let warn name =
             Location.prerr_warning loc
               (Warnings.Misspelled_attribute (txt,name)) in
-    match nearest_name, nearest_context with
+    match nearest_name, nearest_neighborhood with
     | Some (0, _), _ -> true
     | _ , Some(0, _) -> false
     | Some (dx,x) , Some (dy,y) ->
         if dx <= dy then
           warn x;
-             false
+        false
     | Some (dx,x), None -> warn x; false
     | _ -> false
 
