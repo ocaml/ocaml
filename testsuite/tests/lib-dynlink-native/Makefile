@@ -18,6 +18,11 @@ COMPFLAGS=-I $(OTOPDIR)/otherlibs/$(UNIXLIBVAR)unix \
 LD_PATH = $(TOPDIR)/otherlibs/$(UNIXLIBVAR)unix:$(TOPDIR)/otherlibs/systhreads\
 :$(TOPDIR)/otherlibs/dynlink
 
+# some tests are run from the "sub/" subdirectory,
+# and resolving $(OCAMLOPT) from there fail when the test is run locally
+SUBOCAMLOPT=../$(OCAMLRUN) ../$(OTOPDIR)/ocamlopt \
+  -nostdlib -I ../$(OTOPDIR)/stdlib $(COMPFLAGS)
+
 .PHONY: default
 default:
 	@if ! $(SUPPORTS_SHARED_LIBRARIES); then \
@@ -59,7 +64,7 @@ main_ext$(EXE): api.cmx main.cmx factorial.$(O)
 sub/plugin3.cmx: sub/api.cmi sub/api.cmx sub/plugin3.ml
 	@cd sub; \
 	mv api.cmx api.cmx.bak; \
-	$(OCAMLOPT) -c plugin3.ml; \
+	$(SUBOCAMLOPT) -c plugin3.ml; \
 	mv api.cmx.bak api.cmx
 
 plugin2.cmx: api.cmx plugin.cmi plugin.cmx
@@ -68,13 +73,16 @@ plugin2.cmx: api.cmx plugin.cmi plugin.cmx
 	@mv plugin.cmx.bak plugin.cmx
 
 sub/api.so: sub/api.cmi sub/api.ml
-	@cd sub; $(OCAMLOPT) -c $(SHARED) api.ml
+	@cd sub; $(SUBOCAMLOPT) -c $(SHARED) api.ml
 
 sub/api.cmi: sub/api.mli
-	@cd sub; $(OCAMLOPT) -c api.mli
+	cd sub; $(SUBOCAMLOPT) -opaque -c api.mli
 
 sub/api.cmx: sub/api.cmi sub/api.ml
-	@cd sub; $(OCAMLOPT) -c api.ml
+	@cd sub; $(SUBOCAMLOPT) -c api.ml
+
+plugin.cmi:
+	$(OCAMLOPT) -c -opaque plugin.mli
 
 plugin.cmx: api.cmx plugin.cmi
 sub/plugin.cmx: api.cmx
