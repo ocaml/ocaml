@@ -160,15 +160,21 @@ let get_global_info global_ident = (
       Hashtbl.find global_infos_table modname
     with Not_found ->
       let (infos, crc) =
-        try
-          let filename =
-            find_in_path_uncap !load_path (modname ^ ".cmx") in
-          let (ui, crc) = read_unit_info filename in
-          if ui.ui_name <> modname then
-            raise(Error(Illegal_renaming(modname, ui.ui_name, filename)));
-          (Some ui, Some crc)
-        with Not_found ->
-          (None, None) in
+        if Env.is_imported_opaque modname then (None, None)
+        else begin
+          try
+            let filename =
+              find_in_path_uncap !load_path (modname ^ ".cmx") in
+            let (ui, crc) = read_unit_info filename in
+            if ui.ui_name <> modname then
+              raise(Error(Illegal_renaming(modname, ui.ui_name, filename)));
+            (Some ui, Some crc)
+          with Not_found ->
+            let warn = Warnings.No_cmx_file modname in
+              Location.prerr_warning Location.none warn;
+              (None, None)
+          end
+      in
       current_unit.ui_imports_cmx <-
         (modname, crc) :: current_unit.ui_imports_cmx;
       Hashtbl.add global_infos_table modname infos;

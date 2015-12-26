@@ -164,6 +164,12 @@ let record_value_dependency vd1 vd2 =
 let save_cmt filename modname binary_annots sourcefile initial_env sg =
   if !Clflags.binary_annotations && not !Clflags.print_types then begin
     let imports = Env.imports () in
+    let flags =
+      List.concat [
+        if !Clflags.recursive_types then [Cmi_format.Rectypes] else [];
+        if !Clflags.opaque then [Cmi_format.Opaque] else [];
+        ]
+    in
     let oc = open_out_bin filename in
     let this_crc =
       match sg with
@@ -172,8 +178,7 @@ let save_cmt filename modname binary_annots sourcefile initial_env sg =
           let cmi = {
             cmi_name = modname;
             cmi_sign = sg;
-            cmi_flags =
-            if !Clflags.recursive_types then [Cmi_format.Rectypes] else [];
+            cmi_flags = flags;
             cmi_crcs = imports;
           } in
           Some (output_cmi filename oc cmi)
