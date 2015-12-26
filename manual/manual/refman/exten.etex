@@ -1624,8 +1624,8 @@ class-field:
 
 An infix form is available for extension nodes as expressions, when
 the payload is a single expression.  This form applies to all
-expressions starting with one or two keywords: the percent sign and then
-and extension identifier follow immediately the initial keyword(s).
+expressions starting with one or two keywords: the first keyword
+followed by the percent sign and then an extension identifier.
 
 Examples:
 
