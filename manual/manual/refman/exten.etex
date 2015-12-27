@@ -1511,7 +1511,7 @@ Some attributes are understood by the type-checker:
  in which case its scope is limited to that expression.
  Note that it is not well-defined which scope is used for a specific
  warning.  This is implementation dependant and can change between versions.
- For instance, warnings triggerd by the ``ppwarning'' attribute (see below)
+ For instance, warnings triggered by the ``ppwarning'' attribute (see below)
  are issued using the global warning configuration.
 \item
  ``ocaml.warnerror'' or ``warnerror'', with a string literal payload.
@@ -1539,6 +1539,28 @@ Some attributes are understood by the type-checker:
   of the string payload).  This is mostly useful for preprocessors which
   need to communicate warnings to the user.  This could also be used
   to mark explicitly some code location for further inspection.
+\item
+  ``ocaml.warn_on_literal_pattern'' or ``warn_on_literal_pattern'' annotate
+  constructors in type definition. The warning 53 is then emitted when this
+  constructor is pattern matched with a constant literal as argument.
+\item
+  ``ocaml.tailcall'' or ``tailcall'' can be applied to function
+  application in order to indicate that the call should be
+  tailcall optimized. If it it not the case, the warning 51 is emitted.
+\item
+  ``ocaml.inline'' or ``inline'' take either ``never'', ``always''
+  or nothing as payload on a function or functor definition. No payload
+  is equivalent to ``always''. This payload controls when applications of
+  the annotated functions should be inlined.
+\item
+  ``ocaml.inlined'' or ``inlined'' can be applied to any function or functor
+  application to check that the call is inlined by the compiler. If the call
+  is not inlined, the warning 55 is emitted.
+\item
+  ``ocaml.noalloc'', ``ocaml.unboxed''and ``ocaml.untagged'' or
+  ``noalloc'', ``unboxed'' and ``untagged'' can be used on external
+  definitions to obtain finer control over the C-to-OCaml interface. See
+  \ref{s:C-cheaper-call} for more details.
 \end{itemize}
 
 \begin{verbatim}
@@ -1546,16 +1568,31 @@ module X = struct
   [@@@warning "+9"]  (* locally enable warning 9 in this structure *)
   ...
 end
-  [@@deprecated "Please is module 'Y' instead."]
+  [@@deprecated "Please use module 'Y' instead."]
 
 let x = begin[@warning "+9] ... end in ....
 
 type t = A | B
   [@@deprecated "Please use type 's' instead.]
 
-
 let f x =
   assert (x >= 0) [@ppwarning "TODO: remove this later"];
+
+let rec no_op = function
+  | [] -> []
+  | _ :: q -> (no_op[@tailcall]) q;;
+
+let f x = x [@@inline]
+
+let () = (f[@inlined]) ()
+
+type fragile =
+  | Int of int [@warn_on_literal_pattern]
+  | String of string [@warn_on_literal_pattern]
+
+let f = function
+| Int 0 | String "constant" -> () (* trigger warning *)
+| _ -> ()
   ....
 
 \end{verbatim}
