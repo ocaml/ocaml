@@ -45,24 +45,22 @@ let is_warning_active () =
   is_active ( Misspelled_attribute ("","") )
 
 let is_attribute ?(warn=true) {names;neighbouring_names} ({txt;loc}, _ )  =
-  if not warn || not (is_warning_active ())then
-    List.mem txt names
-  else
-    let nearest_name = set_projector names txt
-    and nearest_neighborhood = set_projector neighbouring_names txt in
-    let warn name =
-            Location.prerr_warning loc
-              (Warnings.Misspelled_attribute (txt,name)) in
-    match nearest_name, nearest_neighborhood with
-    | Some (0, _), _ -> true
-    | _ , Some(0, _) -> false
-    | Some (dx,x) , Some (dy,y) ->
-        if dx <= dy then
-          warn x;
-        false
-    | Some (dx,x), None -> warn x; false
-    | _ -> false
-
+  let result = List.mem txt names in
+  let () = (* misspelling check *)
+    if not result && warn && is_warning_active () then
+      let nearest_name = set_projector names txt
+      and nearest_neighborhood = set_projector neighbouring_names txt in
+      let warn name =
+        Location.prerr_warning loc
+          (Warnings.Misspelled_attribute (txt,name)) in
+      match nearest_name, nearest_neighborhood with
+      | Some (0,_), _ -> ()
+      | Some (dx,x) , Some (dy,y) ->
+          if dx <= dy then
+            warn x
+      | Some (dx,x), None -> warn x
+      | _ -> () in
+  result
 
 let get_no_payload_attribute ?(warn=true) identifier attrs =
   match List.filter (is_attribute ~warn identifier) attrs with
