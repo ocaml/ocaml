@@ -1541,21 +1541,27 @@ Some attributes are understood by the type-checker:
   to mark explicitly some code location for further inspection.
 \item
   ``ocaml.warn_on_literal_pattern'' or ``warn_on_literal_pattern'' annotate
-  constructors in type definition. The warning 53 is then emitted when this
-  constructor is pattern matched with a constant literal as argument.
+  constructors in type definition. A warning (52) is then emitted when this
+  constructor is pattern matched with a constant literal as argument. This
+  attribute denotes constructors whose argument is purely informative and
+  may change in the future. Therefore, pattern matching on this argument
+  with a constant literal is unreliable. For instance, all built-in exception
+  constructors are marked as ``warn_on_literal_pattern''.
+  Note that this warning (52) is only triggered for single argument
+  constructor.
 \item
   ``ocaml.tailcall'' or ``tailcall'' can be applied to function
   application in order to check that the call is tailcall optimized.
-  If it it not the case, a warning 51 is emitted.
+  If it it not the case, a warning (51) is emitted.
 \item
   ``ocaml.inline'' or ``inline'' take either ``never'', ``always''
-  or nothing as payload on a function or functor definition. No payload
-  is equivalent to ``always''. This payload controls when applications of
-  the annotated functions should be inlined.
+  or nothing as payload on a function or functor definition. If no payload
+  is provided, the default value is ``always''. This payload controls when
+  applications of the annotated functions should be inlined.
 \item
   ``ocaml.inlined'' or ``inlined'' can be applied to any function or functor
   application to check that the call is inlined by the compiler. If the call
-  is not inlined, the warning 55 is emitted.
+  is not inlined, a warning (55) is emitted.
 \item
   ``ocaml.noalloc'', ``ocaml.unboxed''and ``ocaml.untagged'' or
   ``noalloc'', ``unboxed'' and ``untagged'' can be used on external
@@ -1591,7 +1597,7 @@ type fragile =
   | String of string [@warn_on_literal_pattern]
 
 let f = function
-| Int 0 | String "constant" -> () (* trigger warning *)
+| Int 0 | String "constant" -> () (* trigger warning 52 *)
 | _ -> ()
   ....
 
