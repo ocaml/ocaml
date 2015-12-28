@@ -1511,7 +1511,7 @@ Some attributes are understood by the type-checker:
  in which case its scope is limited to that expression.
  Note that it is not well-defined which scope is used for a specific
  warning.  This is implementation dependant and can change between versions.
- For instance, warnings triggerd by the ``ppwarning'' attribute (see below)
+ For instance, warnings triggered by the ``ppwarning'' attribute (see below)
  are issued using the global warning configuration.
 \item
  ``ocaml.warnerror'' or ``warnerror'', with a string literal payload.
@@ -1539,6 +1539,34 @@ Some attributes are understood by the type-checker:
   of the string payload).  This is mostly useful for preprocessors which
   need to communicate warnings to the user.  This could also be used
   to mark explicitly some code location for further inspection.
+\item
+  ``ocaml.warn_on_literal_pattern'' or ``warn_on_literal_pattern'' annotate
+  constructors in type definition. A warning (52) is then emitted when this
+  constructor is pattern matched with a constant literal as argument. This
+  attribute denotes constructors whose argument is purely informative and
+  may change in the future. Therefore, pattern matching on this argument
+  with a constant literal is unreliable. For instance, all built-in exception
+  constructors are marked as ``warn_on_literal_pattern''.
+  Note that, due to an implementation limitation, this warning (52) is only
+  triggered for single argument constructor.
+\item
+  ``ocaml.tailcall'' or ``tailcall'' can be applied to function
+  application in order to check that the call is tailcall optimized.
+  If it it not the case, a warning (51) is emitted.
+\item
+  ``ocaml.inline'' or ``inline'' take either ``never'', ``always''
+  or nothing as payload on a function or functor definition. If no payload
+  is provided, the default value is ``always''. This payload controls when
+  applications of the annotated functions should be inlined.
+\item
+  ``ocaml.inlined'' or ``inlined'' can be applied to any function or functor
+  application to check that the call is inlined by the compiler. If the call
+  is not inlined, a warning (55) is emitted.
+\item
+  ``ocaml.noalloc'', ``ocaml.unboxed''and ``ocaml.untagged'' or
+  ``noalloc'', ``unboxed'' and ``untagged'' can be used on external
+  definitions to obtain finer control over the C-to-OCaml interface. See
+  \ref{s:C-cheaper-call} for more details.
 \end{itemize}
 
 \begin{verbatim}
@@ -1546,16 +1574,31 @@ module X = struct
   [@@@warning "+9"]  (* locally enable warning 9 in this structure *)
   ...
 end
-  [@@deprecated "Please is module 'Y' instead."]
+  [@@deprecated "Please use module 'Y' instead."]
 
 let x = begin[@warning "+9] ... end in ....
 
 type t = A | B
   [@@deprecated "Please use type 's' instead.]
 
-
 let f x =
   assert (x >= 0) [@ppwarning "TODO: remove this later"];
+
+let rec no_op = function
+  | [] -> ()
+  | _ :: q -> (no_op[@tailcall]) q;;
+
+let f x = x [@@inline]
+
+let () = (f[@inlined]) ()
+
+type fragile =
+  | Int of int [@warn_on_literal_pattern]
+  | String of string [@warn_on_literal_pattern]
+
+let f = function
+| Int 0 | String "constant" -> () (* trigger warning 52 *)
+| _ -> ()
   ....
 
 \end{verbatim}
@@ -1639,6 +1682,27 @@ the attributes are considered to apply to the payload:
 
 \begin{verbatim}
 let%foo[@bar] x = 2 in x + 1 === [%foo (let x = 2 in x + 1) [@bar]]
+\end{verbatim}
+
+\subsection{Built-in extension nodes}
+
+(Introduced in OCaml 4.03)
+
+Some extension nodes are understood by the compiler itself:
+\begin{itemize}
+  \item
+    ``ocaml.extension_constructor'' or ``extension_constructor''
+    take as payload a constructor from an extensible variant type
+    (see \ref{s:extensible-variants}) and return its extension
+    constructor slot.
+\end{itemize}
+
+\begin{verbatim}
+type t = ..
+type t += X of int | Y of string
+let x = [%extension_constructor X]
+let y = [%extension_constructor Y]
+let () = assert (x <> y)
 \end{verbatim}
 
 \section{Quoted strings}\label{s:quoted-strings}
@@ -1810,8 +1874,17 @@ types).
 As a side-effect of this generativity, one is allowed to unpack
 first-class modules in the body of generative functors.
 
-\section{Extension operators} \label{s:ext-ops}
-(Introduced in Ocaml 4.02.2)
+\section{Extension-only syntax}
+(Introduced in OCaml 4.02.2, extended in 4.03)
+
+Some syntactic constructions are accepted during parsing and rejected
+during type checking. These syntactic constructions can therefore not
+be used directly in vanilla OCaml. However, "-ppx" rewriters and other
+external tools can exploit this parser leniency to extend the language
+with these new syntactic constructions by rewriting them to
+vanilla constructions.
+\subsection{Extension operators} \label{s:ext-ops}
+(Introduced in OCaml 4.02.2)
 \begin{syntax}
 infix-symbol:
           ...
@@ -1820,11 +1893,37 @@ infix-symbol:
 \end{syntax}
 
 Operator names starting with a "#" character and containing more than
-one "#" character in their name are accepted during parsing and
-rejected during type-checking. These operators can therefore not be
-used directly in vanilla Ocaml. However, "-ppx" rewriters and other
-external tools can use this parser leniency to extend the language
-with new extension specific "#"-operators.
+one "#" character are reserved for extensions.
+
+\subsection{Extension literals}
+(Introduced in OCaml 4.03)
+\begin{syntax}
+float-literal:
+       ...
+     | ["-"] ("0"\ldots"9") { "0"\ldots"9"||"_" } ["." { "0"\ldots"9"||"_" }]
+       [("e"||"E") ["+"||"-"] ("0"\ldots"9") { "0"\ldots"9"||"_" }]
+       ["g"\ldots"z"||"G"\ldots"Z"]
+     | ["-"] ("0x"||"0X")
+       ("0"\ldots"9"||"A"\ldots"F"||"a"\ldots"f")
+       { "0"\ldots"9"||"A"\ldots"F"||"a"\ldots"f"||"_" }\\
+       ["." { "0"\ldots"9"||"A"\ldots"F"||"a"\ldots"f"||"_" }
+       [("p"||"P") ["+"||"-"] ("0"\ldots"9") { "0"\ldots"9"||"_" }]
+       ["g"\ldots"z"||"G"\ldots"Z"]
+;
+int-literal:
+           ...
+        | ["-"] ("0"\ldots"9") { "0"\ldots"9" || "_" }["g"\ldots"z"||"G"\ldots"Z"]
+        | ["-"] ("0x"||"0X") ("0"\ldots"9"||"A"\ldots"F"||"a"\ldots"f")
+          { "0"\ldots"9"||"A"\ldots"F"||"a"\ldots"f"||"_" }
+          ["g"\ldots"z"||"G"\ldots"Z"]
+        | ["-"] ("0o"||"0O") ("0"\ldots"7") { "0"\ldots"7"||"_" }
+          ["g"\ldots"z"||"G"\ldots"Z"]
+        | ["-"] ("0b"||"0B") ("0"\ldots"1") { "0"\ldots"1"||"_" }
+          ["g"\ldots"z"||"G"\ldots"Z"]
+;
+\end{syntax}
+Int and float literals followed by an one-letter identifier in the
+range @["g".."z"||"G".."Z"]@ are extension-only literals.
 
 \section{Inline records}
 (Introduced in OCaml 4.03)
