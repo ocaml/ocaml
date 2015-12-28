@@ -300,6 +300,10 @@ Manual:
   subdirectory of the main OCaml source repository. Contributions to
   the manual are warmly welcome.
   (François Bobot, review by Florian Angeletti)
+- MPR#6676: ongoing simplification of the "Language Extensions" section
+  (Alain Frisch, John Whitington)
+- MPR#7092, GPR#379: Add missing documentation for new 4.03 features
+  (Florian Angeletti)
 
 Bug fixes:
 - PR#3612: memory leak in bigarray read from file
