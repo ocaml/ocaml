@@ -1579,7 +1579,7 @@ let f x =
   assert (x >= 0) [@ppwarning "TODO: remove this later"];
 
 let rec no_op = function
-  | [] -> []
+  | [] -> ()
   | _ :: q -> (no_op[@tailcall]) q;;
 
 let f x = x [@@inline]
@@ -1696,7 +1696,7 @@ type t = ..
 type t += X of int | Y of string
 let x = [%extension_constructor X]
 let y = [%extension_constructor Y]
-assert (x <> y)
+let () = assert (x <> y)
 \end{verbatim}
 
 \section{Quoted strings}\label{s:quoted-strings}
