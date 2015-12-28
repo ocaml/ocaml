@@ -127,6 +127,9 @@
 /lex/ocamllex.opt
 /lex/parser.output
 
+/manual/manual/cmds/warnings-help.etex
+/manual/manual/warnings-help.etex
+
 /ocamlbuild/ocamlbuild_config.ml
 /ocamlbuild/lexers.ml
 /ocamlbuild/glob_lexer.ml
