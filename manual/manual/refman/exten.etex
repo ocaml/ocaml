@@ -1545,8 +1545,8 @@ Some attributes are understood by the type-checker:
   constructor is pattern matched with a constant literal as argument.
 \item
   ``ocaml.tailcall'' or ``tailcall'' can be applied to function
-  application in order to indicate that the call should be
-  tailcall optimized. If it it not the case, the warning 51 is emitted.
+  application in order to check that the call is tailcall optimized.
+  If it it not the case, a warning 51 is emitted.
 \item
   ``ocaml.inline'' or ``inline'' take either ``never'', ``always''
   or nothing as payload on a function or functor definition. No payload
