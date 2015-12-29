@@ -304,6 +304,8 @@ Manual:
   (Alain Frisch, John Whitington)
 - MPR#7092, GPR#379: Add missing documentation for new 4.03 features
   (Florian Angeletti)
+- MPR#7109, GPR#380: Fix bigarray documentation layout
+  (Florian Angeletti, Leo White)
 
 Bug fixes:
 - PR#3612: memory leak in bigarray read from file
