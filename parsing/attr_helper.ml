@@ -19,37 +19,37 @@ type error =
 
 exception Error of Location.t * error
 
-type identifier = { names: string list; neighbouring_names: string list}
+type identifier =
+  { names: string list; neighbouring_names: string list; max_distance:int }
 
 let std_namespace name = [ name; "ocaml." ^ name]
-let create ?(neighbouring_names=[]) name =
-  {names = std_namespace name; neighbouring_names }
+let create ?(neighbouring_names=[]) ?(max_distance=2) name =
+  {names = std_namespace name; neighbouring_names; max_distance }
 
 let attribute_max_distance = ref 2
 
-let distance txt_1 txt_2 =
-  Misc.edit_distance txt_1 txt_2 !attribute_max_distance
-
-let min_distance txt x name_y =
-  let dy = distance txt name_y in
+let min_distance cutoff_distance txt x name_y =
+  let dy = Misc.edit_distance txt name_y cutoff_distance in
   match x, dy  with
   |  _ , None -> x
   | Some (dx, _), Some dy when dx <= dy -> x
   | _, Some dy -> Some ( dy, name_y)
 
-let set_projector set txt =
-  List.fold_left (min_distance txt) None set
+let set_projector cutoff_distance set txt =
+  List.fold_left (min_distance cutoff_distance txt) None set
 
 let is_warning_active () =
   let open Warnings in
   is_active ( Misspelled_attribute ("","") )
 
-let is_attribute ?(warn=true) {names;neighbouring_names} ({txt;loc}, _ )  =
+let is_attribute ?(warn=true) {names;neighbouring_names;max_distance}
+    ({txt;loc}, _ )  =
   let result = List.mem txt names in
   let () = (* misspelling check *)
     if not result && warn && is_warning_active () then
-      let nearest_name = set_projector names txt
-      and nearest_neighborhood = set_projector neighbouring_names txt in
+      let nearest_name = set_projector max_distance names txt
+      and nearest_neighborhood =
+        set_projector max_distance neighbouring_names txt in
       let warn name =
         Location.prerr_warning loc
           (Warnings.Misspelled_attribute (txt,name)) in
