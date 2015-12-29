@@ -274,6 +274,21 @@ void caml_oldify_one (value v, value *p)
   }
 }
 
+/* Test if the ephemeron is alive, everything outside minor heap is alive */
+static inline int ephe_check_alive_data(struct caml_ephe_ref_elt *re){
+  mlsize_t i;
+  value child;
+  for (i = 2; i < Wosize_val(re->ephe); i++){
+    child = Field (re->ephe, i);
+    if(child != caml_ephe_none
+       && Is_block (child) && Is_young (child)
+       && Hd_val (child) != 0){ /* Value not copied to major heap */
+      return 0;
+    }
+  }
+  return 1;
+}
+
 /* Finish the work that was put off by [caml_oldify_one].
    Note that [caml_oldify_one] itself is called by oldify_mopup, so we
    have to be careful to remove the first entry from the list before
@@ -283,6 +298,7 @@ void caml_oldify_mopup (void)
   value v, new_v, f;
   mlsize_t i;
   struct caml_ephe_ref_elt *re;
+  int redo = 0;
 
   while (oldify_todo_list != 0){
     v = oldify_todo_list;                /* Get the head. */
@@ -310,30 +326,21 @@ void caml_oldify_mopup (void)
        re < caml_ephe_ref_table.ptr; re++){
     /* look only at ephemeron with data in the minor heap */
     if (re->offset == 1){
-      value *data = &Field(re->ephe,re->offset);
-      if (Is_block (*data) && Is_young (*data)){
+      value *data = &Field(re->ephe,1);
+      if (*data != caml_ephe_none && Is_block (*data) && Is_young (*data)){
         if (Hd_val (*data) == 0){ /* Value copied to major heap */
           *data = Field (*data, 0);
         } else {
-          /* Test if the ephemeron is alive */
-          int alive_data = 1;
-          value child;
-          for (i = 2; alive_data && i < Wosize_val(re->ephe); i++){
-            child = Field (re->ephe, i);
-            if(child != caml_ephe_none
-               && Is_block (child) && Is_young (child)
-               && Hd_val (child) != 0){ /* Value not copied to major heap */
-              alive_data = 0;
-            }
+          if (ephe_check_alive_data(re)){
+            caml_oldify_one(*data,data);
+            redo = 1; /* oldify_todo_list can still be 0 */
           }
-          if (alive_data) caml_oldify_one(*data,data);
         }
       }
     }
   }
 
-  if (oldify_todo_list != 0) caml_oldify_mopup ();
-
+  if (redo) caml_oldify_mopup ();
 }
 
 /* Make sure the minor heap is empty by performing a minor collection
@@ -363,10 +370,11 @@ void caml_empty_minor_heap (void)
     for (re = caml_ephe_ref_table.base;
          re < caml_ephe_ref_table.ptr; re++){
       value *key = &Field(re->ephe,re->offset);
-      if (Is_block (*key) && Is_young (*key)){
+      if (*key != caml_ephe_none && Is_block (*key) && Is_young (*key)){
         if (Hd_val (*key) == 0){ /* Value copied to major heap */
           *key = Field (*key, 0);
         }else{ /* Value not copied so it's dead */
+          Assert(!ephe_check_alive_data(re));
           *key = caml_ephe_none;
           Field(re->ephe,1) = caml_ephe_none;
         }

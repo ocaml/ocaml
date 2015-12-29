@@ -61,7 +61,14 @@
 *)
 
 module type S = sig
+  (** Propose the same interface than usual hash table. However since
+      the bindings are weak, [mem h k] is true doesn't mean that a
+      just following [find h k] will not raise the exception
+      [Not_found] since the garbage collector can run between the two.
+  *)
+
   include Hashtbl.S
+
   val clean: 'a t -> unit
   (** remove all dead bindings. Done automatically during automatic resizing. *)
   val stats_alive: 'a t -> Hashtbl.statistics
