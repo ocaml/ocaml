@@ -20,12 +20,12 @@ let inlined_names = Attr_helper.std_namespace "inlined"
 
 let inline = Attr_helper.{
     names=inline_names;
-    neighbouring_names=inlined_names;
+    neighbouring_names= "online" :: inlined_names;
     max_distance=1
   }
 let inlined = Attr_helper.{
     names=inlined_names;
-    neighbouring_names=inline_names;
+    neighbouring_names= "online" :: inline_names;
     max_distance=2
   }
 let tailcall = Attr_helper.create "tailcall"

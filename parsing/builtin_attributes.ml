@@ -20,7 +20,7 @@ let deprecated = Attr_helper.create "deprecated"
 let deprecated_mutable = Attr_helper.create "deprecated_mutable"
 let warning = Attr_helper.{
     names=warning_names;
-    neighbouring_names=ppwarning_names;
+    neighbouring_names= "warding" :: ppwarning_names;
     max_distance=1
   }
 let ppwarning = Attr_helper.{

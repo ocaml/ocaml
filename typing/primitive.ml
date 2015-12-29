@@ -91,7 +91,9 @@ let parse_declaration valdecl ~native_repr_args ~native_repr_res =
         fatal_error "Primitive.parse_declaration"
   in
   let noalloc_attribute =
-    Attr_helper.has_no_payload_attribute (Attr_helper.create "noalloc")
+    Attr_helper.has_no_payload_attribute
+      (Attr_helper.create ~max_distance:1 "noalloc")
+      (* 10x more possible false positives at max_distance=2 *)
       valdecl.pval_attributes
   in
   if old_style_float &&
