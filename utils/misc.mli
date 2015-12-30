@@ -25,8 +25,6 @@ val for_all2: ('a -> 'b -> bool) -> 'a list -> 'b list -> bool
         (* Same as [List.for_all] but for a binary predicate.
            In addition, this [for_all2] never fails: given two lists
            with different lengths, it returns false. *)
-val filter_map: ('a -> 'b option) -> 'a list -> 'b list
-        (* Same as [List.map] but removes [None] from the output *)
 val replicate_list: 'a -> int -> 'a list
         (* [replicate_list elem n] is the list with [n] elements
            all identical to [elem]. *)
@@ -35,33 +33,59 @@ val list_remove: 'a -> 'a list -> 'a list
            element equal to [x] removed. *)
 val split_last: 'a list -> 'a list * 'a
         (* Return the last element and the other elements of the given list. *)
-val samelist: ('a -> 'a -> bool) -> 'a list -> 'a list -> bool
-        (* Like [List.for_all2] but returns [false] if the two
-           lists have different length. *)
-val sameoption: ('a -> 'a -> bool) -> 'a option -> 'a option -> bool
-val map2_head: ('a -> 'b -> 'c) -> 'a list -> 'b list -> ('c list * 'b list)
-        (* [let (r1,r2) = map2_head f l1 l2]
-           If [l1] is of length n and [l2 = h2 @ t2] with h2 of length n
-           and t2 of length k, r1 is [List.map2 f l1 h1] and r2 is t2 *)
-val some_if_all_elements_are_some: 'a option list -> 'a list option
-val split_at: int -> 'a list -> 'a list * 'a list
-        (* [split_at n l] returns the couple [before, after]
-           where [before] are the [n] first elements of [l] and [after]
-           are the remaining ones.
-           If [l] has less than [n] elements, raises Invalid_argument *)
-val uniq_sort : ('a -> 'a -> int) -> 'a list -> 'a list
-        (* Sorts and remove duplicated elements according to the
-           comparison function *)
-val filter_map : ('a -> 'b option) -> 'a list -> 'b list
-        (* [filter_map f l] is the list [List.map f l] with only the
-           elements matching [Some _] *)
-val compare_lists : ('a -> 'a -> int) -> 'a list -> 'a list -> int
-        (* compare_lists is the lexicographic order supported by the
-           provided order *)
 val may: ('a -> unit) -> 'a option -> unit
 val may_map: ('a -> 'b) -> 'a option -> 'b option
-val may_fold: ('a -> 'b -> 'b) -> 'a option -> 'b -> 'b
-val may_default: ('a -> 'b) -> 'a option -> 'b -> 'b
+
+module Stdlib : sig
+  module List : sig
+    type 'a t = 'a list
+
+    val compare : ('a -> 'a -> int) -> 'a t -> 'a t -> int
+    (** The lexicographic order supported by the provided order.
+        There is no constraint on the relative lengths of the lists. *)
+
+    val equal : ('a -> 'a -> bool) -> 'a t -> 'a t -> bool
+    (** Returns [true] iff the given lists have the same length and content
+        with respect to the given equality function. *)
+
+    val filter_map : ('a -> 'b option) -> 'a t -> 'b t
+    (** [filter_map f l] is the list [List.map f l] with only the
+        elements matching [Some _]. *)
+
+    val some_if_all_elements_are_some : 'a option t -> 'a t option
+    (** If all elements of the given list are [Some _] then [Some xs]
+        is returned with the [xs] being the contents of those [Some]s, with
+        order preserved.  Otherwise returns [None]. *)
+
+    val map2_prefix : ('a -> 'b -> 'c) -> 'a t -> 'b t -> ('c t * 'b t)
+    (** [let r1, r2 = map2_prefix f l1 l2]
+        If [l1] is of length n and [l2 = h2 @ t2] with h2 of length n,
+        r1 is [List.map2 f l1 h1] and r2 is t2. *)
+
+    val split_at: int -> 'a t -> 'a t * 'a t
+    (** [split_at n l] returns the pair [before, after] where [before] is
+        the [n] first elements of [l] and [after] the remaining ones.
+        If [l] has less than [n] elements, raises Invalid_argument. *)
+  end
+
+  module Option : sig
+    type 'a t = 'a option
+
+    val equal : ('a -> 'a -> bool) -> 'a t -> 'a t -> bool
+
+    val iter : ('a -> unit) -> 'a t -> unit
+    val map : ('a -> 'b) -> 'a t -> 'b t
+    val fold : ('a -> 'b -> 'b) -> 'a t -> 'b -> 'b
+    val value_default : ('a -> 'b) -> default:'b -> 'a t -> 'b
+  end
+
+  module String : sig
+    type t = string
+
+    val split : t -> on:char -> t list
+    (** Splits the given string at every occurrence of the given character. *)
+  end
+end
 
 val find_in_path: string list -> string -> string
         (* Search a file in a list of directories. *)
@@ -139,9 +163,8 @@ val replace_substring: before:string -> after:string -> string -> string
            occurences of [before] with [after] in [str] and returns
            the resulting string. *)
 
-val rev_split_words: ?separator:char -> string -> string list
-        (* [rev_split_words s] splits [s] in blank-separated words (or
-           [separator]-separated words if specified), and return
+val rev_split_words: string -> string list
+        (* [rev_split_words s] splits [s] in blank-separated words, and returns
            the list of words in reverse order. *)
 
 val get_ref: 'a list ref -> 'a list
