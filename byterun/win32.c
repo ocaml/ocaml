@@ -577,7 +577,7 @@ int caml_win32_random_seed (intnat data[16])
 }
 
 
-#ifdef _MSC_VER
+#if defined(_MSC_VER) && __STDC_SECURE_LIB__ >= 200411L
 
 static void invalid_parameter_handler(const wchar_t* expression,
    const wchar_t* function,

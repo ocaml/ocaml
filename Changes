@@ -190,6 +190,9 @@ Runtime system:
   Gesbert, review by Alain Frisch)
 - GPR#297: Several changes to improve the worst-case GC pause time.
   (Damien Doligez, with help from Leo White and Francois Bobot)
+- GPR#384: Fix compilation using old Microsoft C Compilers not supporting secure
+  CRT functions (SDK Visual Studio 2005 compiler and earlier)
+  (David Allsopp)
 
 Standard library:
 - PR#1460, GPR#230: Array.map2, Array.iter2
