@@ -1619,6 +1619,39 @@ by calling "Printexc.record_backtrace true" in the initialization of
 one of the OCaml modules.  This can also be achieved from the C side
 by calling "caml_record_backtrace(Val_int(1));" in the OCaml-C glue code.
 
+\paragraph{Unloading the runtime.}
+
+In case the shared library produced with "-output-obj" is to be loaded and
+unloaded repeatedly by a single process, care must be taken to unload the
+OCaml runtime explicitly, in order to avoid various system resource leaks.
+
+Since 4.05, "caml_shutdown" function can be used to shut the runtime down
+gracefully, which equals the following:
+\begin{itemize}
+\item Running the functions that were registered with "Pervasives.at_exit".
+\item Triggering finalization of allocated custom blocks (see
+section~\ref{s:custom}). For example, "Pervasives.in_channel" and
+"Pervasives.out_channel" are represented by custom blocks that enclose file
+descriptors, which are to be released.
+\item Unloading the dependent shared libraries that were loaded by the runtime,
+including "dynlink" plugins.
+\item Freeing the memory blocks that were allocated by the runtime with
+"malloc". Inside C primitives, it is advised to use "caml_stat_*" functions
+from "memory.h" for managing static (that is, non-moving) blocks of heap
+memory, as all the blocks allocated with these functions are automatically
+freed by "caml_shutdown".
+\end{itemize}
+
+As a shared library may have several clients simultaneously, it is made for
+convenience that "caml_startup" may be called several times, given that each
+such call is paired with a corresponding call to "caml_shutdown". The runtime
+will be unloaded once there are no outstanding calls to "caml_startup".
+
+Once a runtime is unloaded, it cannot be started up again without reloading the
+shared library and reinitializing its static data. Therefore, at the moment, the
+facility is only useful for building reloadable shared libraries.
+
+
 \section{Advanced example with callbacks}
 \pdfsection{Advanced example with callbacks}
 
