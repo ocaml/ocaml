@@ -10,7 +10,7 @@
 #                                                                       #
 #########################################################################
 
-BASEDIR=../..
+BASEDIR=$(shell pwd)/../..
 
 COMPFLAGS=-I $(OTOPDIR)/otherlibs/$(UNIXLIBVAR)unix \
 	  -I $(OTOPDIR)/otherlibs/systhreads \
@@ -71,10 +71,13 @@ sub/api.so: sub/api.cmi sub/api.ml
 	@cd sub; $(OCAMLOPT) -c $(SHARED) api.ml
 
 sub/api.cmi: sub/api.mli
-	@cd sub; $(OCAMLOPT) -c api.mli
+	@cd sub; $(OCAMLOPT) -c -opaque api.mli
 
 sub/api.cmx: sub/api.cmi sub/api.ml
 	@cd sub; $(OCAMLOPT) -c api.ml
+
+plugin.cmi: plugin.mli
+	$(OCAMLOPT) -c -opaque plugin.mli
 
 plugin.cmx: api.cmx plugin.cmi
 sub/plugin.cmx: api.cmx

@@ -385,7 +385,7 @@ let did_you_mean ppf get_choices =
   | [] -> ()
   | choices ->
      let rest, last = split_last choices in
-     Format.fprintf ppf "@\nHint: Did you mean %s%s%s?"
+     Format.fprintf ppf "@\nHint: Did you mean %s%s%s?@?"
        (String.concat ", " rest)
        (if rest = [] then "" else " or ")
        last
