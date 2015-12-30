@@ -74,7 +74,8 @@ module type Param = sig
   val compilation_unit : Compilation_unit.t
 end
 
-module NotConstants(P:Param)(Backend:Backend_intf.S) = struct
+(* CR-soon mshinwell: consider removing functor *)
+module Inconstants (P:Param) (Backend:Backend_intf.S) = struct
   let program = P.program
   let compilation_unit = P.compilation_unit
   let imported_symbols = Flambda_utils.imported_symbols program
@@ -235,74 +236,60 @@ module NotConstants(P:Param)(Backend:Backend_intf.S) = struct
           mark_var var curr)
         defs;
       mark_loop ~toplevel curr body
-
     | Var var -> mark_var var curr
-
     (* Not constant cases: we mark directly 'curr in NC' and mark
        bound variables as in NC also *)
-
     | Assign _ ->
       mark_curr curr
-
     | Try_with (f1,id,f2) ->
       mark_curr [Var id];
       mark_curr curr;
       mark_loop ~toplevel [] f1;
       mark_loop ~toplevel [] f2
-
     | Static_catch (_,ids,f1,f2) ->
       List.iter (fun id -> mark_curr [Var id]) ids;
       mark_curr curr;
       mark_loop ~toplevel [] f1;
       mark_loop ~toplevel [] f2
-      (* If recursive staticcatch is introduced: this becomes
-         ~toplevel:false *)
-
+      (* CR-someday pchambart: If recursive staticcatch is introduced:
+         this becomes ~toplevel:false *)
     | For { bound_var; from_value; to_value; direction = _; body; } ->
       mark_curr [Var bound_var];
       mark_var from_value curr;
       mark_var to_value curr;
       mark_curr curr;
       mark_loop ~toplevel:false [] body
-
     | While (f1,body) ->
       mark_curr curr;
       mark_loop ~toplevel [] f1;
       mark_loop ~toplevel:false [] body
-
     | If_then_else (f1,f2,f3) ->
       mark_curr curr;
       mark_curr [Var f1];
       mark_loop ~toplevel [] f2;
       mark_loop ~toplevel [] f3
-
     | Static_raise (_,l) ->
       mark_curr curr;
       List.iter (fun v -> mark_var v curr) l
-
     | Apply ({func; args; _ }) ->
       mark_curr curr;
       mark_var func curr;
       mark_vars args curr;
-
     | Switch (arg,sw) ->
       mark_curr curr;
       mark_var arg curr;
       List.iter (fun (_,l) -> mark_loop ~toplevel [] l) sw.consts;
       List.iter (fun (_,l) -> mark_loop ~toplevel [] l) sw.blocks;
       Misc.may (fun l -> mark_loop ~toplevel [] l) sw.failaction
-
     | String_switch (arg,sw,def) ->
       mark_curr curr;
       mark_var arg curr;
       List.iter (fun (_,l) -> mark_loop ~toplevel [] l) sw;
       Misc.may (fun l -> mark_loop ~toplevel [] l) def
-
     | Send { kind = _; meth; obj; args; dbg = _; } ->
       mark_var meth curr;
       mark_var obj curr;
       List.iter (fun arg -> mark_var arg curr) args
-
     | Proved_unreachable ->
       mark_curr curr
 
@@ -331,9 +318,8 @@ module NotConstants(P:Param)(Backend:Backend_intf.S) = struct
       end
     | Read_symbol_field (symbol, index) ->
       register_implication ~in_nc:(Symbol_field (symbol, index)) ~implies_in_nc:curr
-    (* globals are symbols: handle like symbols *)
-    | Prim(Lambda.Pgetglobal _id, [], _) -> ()
-
+    (* Globals are symbols: handle like symbols *)
+    | Prim (Lambda.Pgetglobal _id, [], _) -> ()
     (* Constant constructors: those expressions are constant if all their parameters are:
        - makeblock is compiled to a constant block
        - offset is compiled to a pointer inside a constant closure.
@@ -342,10 +328,9 @@ module NotConstants(P:Param)(Backend:Backend_intf.S) = struct
        makeblock(Mutable) can be a 'constant' if it is allocated at toplevel: if this
        expression is evaluated only once.
     *)
-    | Prim(Lambda.Pmakeblock(_tag, Asttypes.Immutable), args, _dbg) ->
+    | Prim (Lambda.Pmakeblock (_tag, Asttypes.Immutable), args, _dbg) ->
       mark_vars args curr
-
-(*  (* If global mutables are allowed: *)
+(*  (* CR-someday pchambart: If global mutables are allowed: *)
     | Prim(Lambda.Pmakeblock(_tag, Asttypes.Mutable), args, _dbg, _)
       when toplevel ->
       List.iter (mark_loop ~toplevel curr) args
@@ -374,7 +359,7 @@ module NotConstants(P:Param)(Backend:Backend_intf.S) = struct
       mark_var closure curr
     | Project_var ({ closure; closure_id = _; var = _ }) ->
       mark_var closure curr
-    | Prim(Lambda.Pfield _, [f1], _) ->
+    | Prim (Lambda.Pfield _, [f1], _) ->
       mark_curr curr;
       mark_var f1 curr
     | Prim (_, args, _) ->
@@ -454,10 +439,9 @@ module NotConstants(P:Param)(Backend:Backend_intf.S) = struct
   let res =
     mark_program program;
     { id = variables;
-      closure = closures; }
-
+      closure = closures;
+    }
 end
-
 
 let inconstants_on_program ~compilation_unit ~backend
     (program : Flambda.program) =
@@ -465,21 +449,17 @@ let inconstants_on_program ~compilation_unit ~backend
     let program = program
     let compilation_unit = compilation_unit
   end in
-  let module Backend = (val backend:Backend_intf.S) in
-  let module A = NotConstants(P)(Backend) in
-  (* Format.eprintf "inconstants returns %a\n%a@ " *)
-  (*   Variable.Set.print A.res.id *)
-  (*   Set_of_closures_id.Set.print A.res.closure; *)
-  A.res
+  let module Backend = (val backend : Backend_intf.S) in
+  let module I = Inconstants (P) (Backend) in
+  I.res
 
-let variable var { id } =
+let variable var { id; _ } =
   match Variable.Tbl.find id var with
   | Not_constant -> true
   | Implication _ -> false
   | exception Not_found -> false
 
-
-let closure cl { closure } =
+let closure cl { closure; _ } =
   match Set_of_closures_id.Tbl.find closure cl with
   | Not_constant -> true
   | Implication _ -> false

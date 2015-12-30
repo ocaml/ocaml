@@ -43,9 +43,10 @@ let rec accumulate ~substitution ~copied_lets ~extracted_lets
      lifted again. *)
   | Let_rec (defs,
              Let { var; body = Var var';
-                   defining_expr = Prim (Pmakeblock _, fields, _); }) when
-      Variable.equal var var' &&
-      List.for_all (fun field ->
+                   defining_expr = Prim (Pmakeblock _, fields, _); })
+    when
+      Variable.equal var var'
+      && List.for_all (fun field ->
           List.exists (fun (def_var, _) -> Variable.equal def_var field) defs)
       fields ->
     { copied_lets; extracted_lets;
@@ -78,8 +79,8 @@ let rec accumulate ~substitution ~copied_lets ~extracted_lets
         let tag = Tag.create_exn tag in
         let args =
           List.map (fun v ->
-              try Variable.Map.find v substitution with
-                Not_found -> v)
+              try Variable.Map.find v substitution
+              with Not_found -> v)
             args
         in
         Block (var, tag, args)

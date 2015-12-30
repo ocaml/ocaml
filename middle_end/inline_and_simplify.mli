@@ -3,7 +3,7 @@
 (*                                OCaml                                   *)
 (*                                                                        *)
 (*                       Pierre Chambart, OCamlPro                        *)
-(*                  Mark Shinwell, Jane Street Europe                     *)
+(*           Mark Shinwell and Leo White, Jane Street Europe              *)
 (*                                                                        *)
 (*   Copyright 2015 Institut National de Recherche en Informatique et     *)
 (*   en Automatique.  All rights reserved.  This file is distributed      *)
@@ -11,20 +11,12 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(** The primary purpose of this module is to perform inlining of both
-    non-recursive and recursive functions.  The inlining is directed by
-    decisions made in the [Inlining_decision] module.  Readers
-    interested in the strategy, rather than the technicalities, are
-    advised to start reading at that module instead of this one.
+(** Simplification of Flambda programs combined with function inlining:
+    for the most part a beta-reduction pass.
 
-    Along the way, some other optimizations and analyses are performed:
-    - direct calls are identified
-    - explicit closures are built for partial direct applications
-    - unused static catch handlers are eliminated
-    - some constants are propagated
-    - some dead code is eliminated.
+    Readers interested in the inlining strategy should read the
+    [Inlining_decision] module first.
 *)
-(* CR mshinwell: update comment *)
 val run
    : never_inline:bool
   -> backend:(module Backend_intf.S)
