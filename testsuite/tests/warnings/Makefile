@@ -15,7 +15,7 @@ FLAGS=-w A
 
 run-all:
 	@$(OCAMLC) $(FLAGS) -c deprecated_module.mli
-	@$(OCAMLOPT) $(FLAGS) -c module_without_cmx.mli
+	@$(OCAMLC) $(FLAGS) -c module_without_cmx.mli
 	@for file in *.ml; do \
 	  printf " ... testing '$$file':"; \
 	  F="`basename $$file .ml`"; \
@@ -23,13 +23,13 @@ run-all:
 	  $(DIFF) $$F.reference $$F.result >/dev/null \
 	  && echo " => passed" || echo " => failed"; \
 	done;
-	@for file in *.opt.ml; do \
+	@if $(BYTECODE_ONLY); then :; else for file in *.opt.ml; do \
 	  printf " ... testing '$$file' with ocamlopt:"; \
 	  F="`basename $$file .ml`"; \
 	  $(OCAMLOPT) $(FLAGS) -c $$file 2>$$F.opt_result; \
 	  $(DIFF) $$F.opt_reference $$F.opt_result >/dev/null \
 	  && echo " => passed" || echo " => failed"; \
-	done;
+	done fi;
 
 promote: defaultpromote
 
