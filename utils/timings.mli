@@ -27,10 +27,10 @@ type compiler_pass =
   | Typing of file
   | Transl of file
   | Generate of file
-  | Assemble of file
-  | Clambda of file
-  | Cmm of file
-  | Compile_phrases of file
+  | Assemble of source_provenance
+  | Clambda of source_provenance
+  | Cmm of source_provenance
+  | Compile_phrases of source_provenance
   | Selection of source_provenance
   | Comballoc of source_provenance
   | CSE of source_provenance
