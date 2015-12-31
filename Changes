@@ -332,6 +332,9 @@ Other libraries:
   (Xavier Leroy)
 - PR#7024: in documentation of Str regular expressions, clarify what
     "end of line" means for "^" and "$" regexps.
+- GPR#384: Fix compilation of Unix with older Microsoft C Compilers (pre-release
+  Visual Studio 2005 and ealier)
+  (David Allsopp)
 
 OCamldep:
 - GPR#286: add support for module aliases
