@@ -206,7 +206,11 @@ let symbol_for_global id =
   if Ident.is_predef_exn id then
     "caml_exn_" ^ Ident.name id
   else begin
-    match get_global_info id with
+    let unitname = Ident.name id in
+    match
+      try ignore (Hashtbl.find toplevel_approx unitname); None
+      with Not_found -> get_global_info id
+    with
     | None -> make_symbol ~unitname:(Ident.name id) None
     | Some ui -> make_symbol ~unitname:ui.ui_symbol None
   end
