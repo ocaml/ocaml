@@ -18,6 +18,7 @@ type source_provenance =
   | File of file
   | Pack of string
   | Startup
+  | Toplevel
 
 type compiler_pass =
   | All

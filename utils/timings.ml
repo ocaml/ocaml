@@ -16,6 +16,7 @@ type source_provenance =
   | File of file
   | Pack of string
   | Startup
+  | Toplevel
 
 type compiler_pass =
   | All
@@ -98,6 +99,7 @@ let kind_name = function
   | File f -> Printf.sprintf "sourcefile(%s)" f
   | Pack p -> Printf.sprintf "pack(%s)" p
   | Startup -> "startup"
+  | Toplevel  -> "toplevel"
 
 let pass_name = function
   | All -> "all"
