@@ -44,6 +44,9 @@ CAMLprim value win_inchannel_of_filedescr(value handle)
   CAMLlocal1(vchan);
   struct channel * chan;
 
+#if defined(_MSC_VER) && _MSC_VER < 1400
+  fflush(stdin);
+#endif
   chan = caml_open_descriptor_in(win_CRT_fd_of_filedescr(handle));
   if (Descr_kind_val(handle) == KIND_SOCKET)
     chan->flags |= CHANNEL_FLAG_FROM_SOCKET;
