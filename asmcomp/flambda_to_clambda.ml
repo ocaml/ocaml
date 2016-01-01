@@ -278,7 +278,7 @@ let rec to_clambda t env (flam : Flambda.t) : Clambda.ulambda =
     in
     (* Check that the [failaction] may be duplicated.  If this is not the
        case, share it through a static raise / static catch. *)
-    (* CR pchambart for pchambart: This is overly simplified. We should verify
+    (* CR-someday pchambart for pchambart: This is overly simplified. We should verify
        that this does not generates too bad code. If it the case, handle some
        let cases.
     *)
@@ -338,10 +338,7 @@ let rec to_clambda t env (flam : Flambda.t) : Clambda.ulambda =
   | Send { kind; meth; obj; args; dbg } ->
     Usend (kind, subst_var env meth, subst_var env obj,
       subst_vars env args, dbg)
-  | Proved_unreachable ->
-    (* CR pchambart: shouldn't be executable, maybe build something else e.g.
-       Uprim(Praise, [Uconst (Uconst_pointer 0, None)], Debuginfo.none) *)
-    Uunreachable
+  | Proved_unreachable -> Uunreachable
 
 and to_clambda_named t env var (named : Flambda.named) : Clambda.ulambda =
   match named with
@@ -432,12 +429,10 @@ and to_clambda_direct_apply t func args direct_func dbg env : Clambda.ulambda =
   in
   Udirect_apply (label, uargs, dbg)
 
-(* CR mshinwell for mshinwell: improve comment *)
-(* Make the substitutions for variables bound by the closure:
-   the variables bound are the functions inside the closure and
-   the free variables of the functions.
+(* Describe how to build a runtime closure block that corresponds to the
+   given Flambda set of closures.
 
-   For instance the closure for a code like
+   For instance the closure for the following set of closures:
 
      let rec fun_a x =
        if x <= 0 then 0 else fun_b (x-1) v1
@@ -451,13 +446,12 @@ and to_clambda_direct_apply t func args direct_func dbg env : Clambda.ulambda =
        2; fun_b; v1; v2 ]
 
    fun_a and fun_b will take an additional parameter 'env' to
-   access their closure.  It will be shifted such that in the body
-   of a function the env parameter points to its code
-   pointer. i.e. in fun_b it will be shifted by 3 words.
+   access their closure.  It will be arranged such that in the body
+   of each function the env parameter points to its own code
+   pointer.  For example, in fun_b it will be shifted by 3 words.
 
-   Hence accessing to v1 in the body of fun_a is accessing to the
-   6th field of 'env' and in the body of fun_b it is the 1st
-   field.
+   Hence accessing v1 in the body of fun_a is accessing the
+   6th field of 'env' and in the body of fun_b the 1st field.
 *)
 and to_clambda_set_of_closures t env
       (({ function_decls; free_vars } : Flambda.set_of_closures)
