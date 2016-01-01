@@ -24,7 +24,7 @@ type flambda_kind =
    We also avoid explicit record field access during the checking functions,
    preferring instead to use exhaustive record matches.
 *)
-(* CR pchambart: for sum types, we should probably add an exhaustive
+(* CR-someday pchambart: for sum types, we should probably add an exhaustive
    pattern in ignores functions to be reminded if a type change *)
 let already_added_bound_variable_to_env (_ : Variable.t) = ()
 let will_traverse_named_expression_later (_ : Flambda.named) = ()
@@ -81,11 +81,11 @@ exception Unbound_vars_within_closures of Var_within_closure.Set.t
 
 exception Flambda_invariants_failed
 
-(* CR mshinwell: We should make "direct applications should not have
+(* CR-someday mshinwell: We should make "direct applications should not have
    overapplication" be an invariant throughout.  At the moment I think this is
    only true after [Inline_and_simplify] has split overapplications. *)
 
-(* CR mshinwell: What about checks for shadowed variables and symbols? *)
+(* CR-someday mshinwell: What about checks for shadowed variables and symbols? *)
 
 let variable_and_symbol_invariants (program : Flambda.program) =
   let all_declared_variables = ref Variable.Set.empty in
@@ -227,7 +227,7 @@ let variable_and_symbol_invariants (program : Flambda.program) =
       check_mutable_variable_is_bound env mut_var
     | Read_symbol_field (symbol, index) ->
       check_symbol_is_bound env symbol;
-      assert (index >= 0)  (* CR mshinwell: add proper error *)
+      assert (index >= 0)  (* CR-someday mshinwell: add proper error *)
     | Set_of_closures set_of_closures ->
       loop_set_of_closures env set_of_closures
     | Project_closure { set_of_closures; closure_id; } ->
@@ -322,11 +322,14 @@ let variable_and_symbol_invariants (program : Flambda.program) =
             all_params, Variable.Set.union free_variables all_free_vars)
           funs (Variable.Set.empty, Variable.Set.empty)
       in
-      (* CR pchambart: This is not a property that we can certainly ensure.
+      (* CR-soon pchambart: This is not a property that we can certainly
+         ensure.
          If the function get inlined, it is possible for the inlined version
          to still use that variable. To be able to ensure that, we need to
          also ensure that the inlined version will certainly be transformed
-         in a same way that can drop the dependency. *)
+         in a same way that can drop the dependency.
+         mshinwell: This should get some thought after the first release to
+         decide for sure what to do. *)
       (* Check that the free variables rewriting map in the set of closures
          does not contain variables in its domain that are not actually free
          variables of any of the function bodies. *)
@@ -707,8 +710,8 @@ let check_exn ?(kind=Normal) ?(cmxfile=false) (flam:Flambda.program) =
       Format.eprintf ">> Static exception caught in multiple places: %a"
         Static_exception.print static_exn
     | Access_to_global_module_identifier prim ->
-      (* CR mshinwell: backend-specific checks should move to another module,
-         in the asmcomp/ directory. *)
+      (* CR-someday mshinwell: backend-specific checks should move to another
+         module, in the asmcomp/ directory. *)
       Format.eprintf ">> Forbidden access to a global module identifier (not \
           allowed in Flambda that will be exported to a .cmx file): %a"
         Printlambda.primitive prim
