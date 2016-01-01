@@ -14,7 +14,7 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(* CR mshinwell: we need to document whether these iterators follow any
+(* CR-soon mshinwell: we need to document whether these iterators follow any
    particular order. *)
 
 (** Apply the given functions to the immediate subexpressions of the given
@@ -33,8 +33,8 @@ val map_subexpressions
   -> Flambda.t
   -> Flambda.t
 
-(* CR-someday lwhite: add comment to clarify that these recurse unlike the
-ones above *)
+(* CR-soon lwhite: add comment to clarify that these recurse unlike the
+   ones above *)
 val iter
    : (Flambda.t -> unit)
   -> (Flambda.named -> unit)
