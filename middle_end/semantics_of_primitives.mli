@@ -14,23 +14,33 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(* CR mshinwell: comment is out of date *)
 (** Description of the semantics of primitives, to be used for optimization
     purposes.
 
     "No effects" means that the primitive does not change the observable state
     of the world.  For example, it must not write to any mutable storage,
     call arbitrary external functions or change control flow (e.g. by raising
-    an exception).
+    an exception).  Note that allocation is not "No effects" (see below).
  
-    It is assumed in the compiler that expressions with no effects, whose
-    results are not used, may be eliminated.
+    It is assumed in the compiler that applications of primitives with no
+    effects, whose results are not used, may be eliminated.  It is further
+    assumed that applications of primitives with no effects may be
+    duplicated (and thus possibly executed more than once).
  
     (Exceptions arising from allocation points, for example "out of memory" or
     exceptions propagated from finalizers or signal handlers, are treated as
-    "effects out of the ether".  The corresponding expressions are deemed to
-    have no effects.  The same goes for floating point operations that may
+    "effects out of the ether" and thus ignored for our determination here
+    of effectfulness.  The same goes for floating point operations that may
     cause hardware traps on some platforms.)
+
+    "Only generative effects" means that a primitive does not change the
+    observable state of the world save for possibly affecting the state of
+    the garbage collector by performing an allocation.  Applications of
+    primitives that only have generative effects and whose results are unused
+    may be eliminated by the compiler.  However, unlike "No effects"
+    primitives, such applications will never be eligible for duplication.
+
+    "Arbitrary effects" covers all other primitives.
  
     "No coeffects" means that the primitive does not observe the effects (in
     the sense described above) of other expressions.  For example, it must not

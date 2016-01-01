@@ -288,12 +288,13 @@ and close t env (lam : Lambda.lambda) : Flambda.t =
                   name_expr (Prim (Praise Raise_regular, [exn],
                       Debuginfo.none))
                     ~name:"dummy",
-                  (* CR pchambart: find the right event.
+                  (* CR-someday pchambart: find the right event.
                      mshinwell: I briefly looked at this, and couldn't
                      figure it out.
                      lwhite: I don't think any of the existing events
                      are suitable. I had to add a new one for a similar
-                     case in the array data types work. *)
+                     case in the array data types work.
+                     mshinwell: deferred CR *)
                   (* Debuginfo.from_raise event *)
                   name_expr ~name:"result"
                     (Prim (prim, [numerator; denominator],
