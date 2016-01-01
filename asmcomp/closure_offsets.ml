@@ -48,11 +48,14 @@ let add_closure_offsets
     Variable.Map.fold assign_function_offset
       function_decls.funs (function_offsets, -1)
   in
-  (* CR mshinwell: I'm not sure if this comment is still accurate *)
-  (* Adds the mapping of free variables to their offset. It is not
-     used inside the body of the function: it is directly
-     substituted here. But if the function is inlined, it is
-     possible that the closure is accessed from outside its body. *)
+  (* Adds the mapping of free variables to their offset.  Recall that
+     projections of [Var_within_closure]s are only currently used when
+     compiling accesses to the closure of a function from outside that
+     function (in particular, as a result of inlining).  Accesses to
+     a function's own closure are compiled directly via normal [Var]
+     accesses. *)
+  (* CR-someday mshinwell: As discussed with lwhite, maybe this isn't
+     ideal, and the self accesses should be explicitly marked too. *)
   let assign_free_variable_offset var _ (map, pos) =
     let var_within_closure = Var_within_closure.wrap var in
     if Var_within_closure.Map.mem var_within_closure map then begin
