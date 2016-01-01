@@ -25,11 +25,8 @@ val really_import : Simple_value_approx.descr -> Simple_value_approx.descr
 (** Maps the description of the given approximation through [really_import]. *)
 val really_import_approx : Simple_value_approx.t -> Simple_value_approx.t
 
-(** Read and convert the approximation of a given identifier from the
+(** Read and convert the approximation of a given symbol from the
     relevant .cmx file.  Unlike the "really_" functions, this does not
     continue to load .cmx files until the approximation is fully
     resolved. *)
-val import_global : Ident.t -> Simple_value_approx.t
-
-(** Like [import_global], but for symbols. *)
 val import_symbol : Symbol.t -> Simple_value_approx.t

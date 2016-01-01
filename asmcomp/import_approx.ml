@@ -167,9 +167,5 @@ and really_import_ex ex =
 and really_import_symbol sym =
   really_import (import_symbol sym).descr
 
-let import_global id =
-  let unit = Compilenv.unit_for_global id in
-  import_approx (Ident.Map.find id (Compilenv.approx_for_global unit).globals)
-
 let really_import_approx (approx : Simple_value_approx.t) =
   A.replace_description approx (really_import approx.descr)
