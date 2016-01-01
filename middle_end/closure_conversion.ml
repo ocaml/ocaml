@@ -139,9 +139,7 @@ and close t env (lam : Lambda.lambda) : Flambda.t =
         Format.asprintf "anon-fn[%a]" Location.print_compact lev_loc
       | _ -> "anon-fn"
     in
-    let closure_bound_var =
-      Variable.create name
-    in
+    let closure_bound_var = Variable.create name in
     (* CR-soon mshinwell: some of this is now very similar to the let rec case
        below *)
     let set_of_closures_var = Variable.create ("set_of_closures_" ^ name) in
@@ -531,9 +529,7 @@ and close_let_bound_expression t ?let_rec_ident let_bound_var env
   | Lfunction { kind; params; body; attr; } ->
     (* Ensure that [let] and [let rec]-bound functions have appropriate
        names. *)
-    let closure_bound_var =
-      Variable.rename let_bound_var ~append:"_closure"
-    in
+    let closure_bound_var = Variable.rename let_bound_var in
     let decl =
       Function_decl.create ~let_rec_ident ~closure_bound_var ~kind ~params
         ~body ~inline:attr.inline ~is_a_functor:attr.is_a_functor
