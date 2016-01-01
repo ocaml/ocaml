@@ -14,6 +14,9 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(* CR mshinwell: bad source file name *)
-
-val remove_unused_globals : Flambda.program -> Flambda.program
+(* Remove unused [Flambda.program] constructs from the given program.
+   - Symbols (whose defining expressions have no effects) are eliminated
+     if unused.
+   - [Effect] constructs that turn out to have no effects are eliminated.
+*)
+val remove_unused_program_constructs : Flambda.program -> Flambda.program

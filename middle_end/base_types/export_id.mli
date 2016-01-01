@@ -14,6 +14,11 @@
 (*                                                                        *)
 (**************************************************************************)
 
+(* Keys representing value descriptions that may be written into
+   intermediate files and loaded by a dependent compilation unit.
+   These keys are used to ensure maximal sharing of value descriptions,
+   which may be substantial. *)
+
 include Identifiable.S
 
 val create : ?name:string -> Compilation_unit.t -> t

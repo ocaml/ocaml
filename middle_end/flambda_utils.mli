@@ -52,8 +52,7 @@ val can_be_merged : Flambda.t -> Flambda.t -> bool
 
 val description_of_toplevel_node : Flambda.t -> string
 
-(** Sharing key *)
-(* CR mshinwell for pchambart: this needs a proper comment as discussed *)
+(** Sharing key, used for coalescing switch cases. *)
 type sharing_key
 val make_key : Flambda.t -> sharing_key option
 
@@ -62,10 +61,9 @@ val make_key : Flambda.t -> sharing_key option
    [params] will become the parameters of the function; the closure will be
    identified by [id].  [params] must only reference variables that are
    free variables of [body]. *)
-(* CR mshinwell: consider improving name and names of arguments
-
-     lwhite: the params restriction seems odd, perhaps give a reason
-             in the comment. *)
+(* CR-soon mshinwell: consider improving name and names of arguments
+   lwhite: the params restriction seems odd, perhaps give a reason
+   in the comment. *)
 val make_closure_declaration
    : id:Variable.t
   -> body:Flambda.t

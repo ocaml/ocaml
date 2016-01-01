@@ -14,10 +14,6 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(* CR mshinwell for pchambart: We should add a comment here describing
-   exactly what is meant by an "export ID" (in terms independent of the
-   asmcomp/ code). *)
-
 module Id : Id_types.Id = Id_types.Id (struct end)
 module Unit_id = Id_types.UnitId (Id) (Compilation_unit)
 
