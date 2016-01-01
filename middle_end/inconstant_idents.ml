@@ -202,7 +202,7 @@ module Inconstants (P:Param) (Backend:Backend_intf.S) = struct
       | exception Not_found ->
         (* There is no information available about the contents of imported
            symbols, so we must consider all their fields as inconstant. *)
-        (* CR pchambart: recover that from the cmx informations *)
+        (* CR-someday pchambart: recover that from the cmx information *)
         if Symbol.Set.mem symbol imported_symbols then begin
           Symbol_field.Tbl.add symbol_fields field Not_constant;
           mark_deps curr;

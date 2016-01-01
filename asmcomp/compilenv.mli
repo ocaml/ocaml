@@ -16,7 +16,10 @@
 
 open Cmx_format
 
-(* CR mshinwell: this is a bit ugly *)
+(* CR-soon mshinwell: this is a bit ugly
+   mshinwell: deferred CR, this has been addressed in the export info
+   improvement feature.
+*)
 val imported_sets_of_closures_table
   : Flambda.function_declarations Set_of_closures_id.Tbl.t
 

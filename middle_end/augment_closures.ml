@@ -64,12 +64,14 @@ let closures_in_variables ~env map acc =
           let closure_acc, block_acc = acc in
           let block_acc = ref block_acc in
           Array.iteri (fun i approx ->
-              (* CR pchambart: should we restrict only to cases
+              (* CR-soon pchambart: should we restrict only to cases
                  when the field is aliased to a variable outside
                  of the closure (i.e. when we can certainly remove
                  the allocation of the block) ?
                  Note that this may prevent cases with imbricated
-                 closures from benefiting from this transformations. *)
+                 closures from benefiting from this transformations.
+                 mshinwell: What word was "imbricated" supposed to be?
+              *)
               match approx.A.var with
               | Some v when E.mem env v ->
                 let new_var =

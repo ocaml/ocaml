@@ -299,7 +299,6 @@ val simplify_named_using_env
 (** If the given approximation identifies another variable and
     [is_present_in_env] deems it to be in scope, return that variable (wrapped
     in a [Some]), otherwise return [None]. *)
-(* CR mshinwell: remove the option type *)
 val simplify_var_to_var_using_env
    : t
   -> is_present_in_env:(Variable.t -> bool)

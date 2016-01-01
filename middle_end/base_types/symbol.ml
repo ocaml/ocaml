@@ -23,12 +23,9 @@ type t = {
 include Identifiable.Make (struct
   type nonrec t = t
 
-  (* CR mshinwell for pchambart: I tried to rewrite the second sentence of
-     this comment, but it still isn't great.  Can you try again?  Note that
-     there's something about uniqueness in the comment in symbol.mli too. *)
-  (** Labels are unique, so comparing them is sufficient.  Ignoring the
-      compilation unit may also uncover bugs. *)
   let compare t1 t2 =
+    (* Linkage names are unique across a whole project, so just comparing
+       those is sufficient. *)
     if t1 == t2 then 0
     else
       let c = compare t1.hash t2.hash in

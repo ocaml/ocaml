@@ -40,7 +40,7 @@ val can_inline
   -> bonus:int
   -> bool
 
-(* CR mshinwell for pchambart: I think the name of this function might be
+(* CR-soon mshinwell for pchambart: I think the name of this function might be
    misleading.  It should probably reflect the functionality it provides,
    not the use to which it is put in another module. *)
 (* As for [can_inline], but returns the decision as an inlining threshold.

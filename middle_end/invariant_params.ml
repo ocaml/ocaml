@@ -132,7 +132,8 @@ let transitive_closure state =
 (* CR-soon pchambart: to move to Flambda_utils and document
    mshinwell: I think this calculation is basically the same as
    [Flambda_utils.fun_vars_referenced_in_decls], so we should try
-   to share code.  However let's defer until after 4.03.
+   to share code.  However let's defer until after 4.03.  (And note CR
+   below.)
 *)
 (* Finds variables that represent the functions.
    In a construction like:
@@ -161,9 +162,9 @@ let function_variable_alias
   Variable.Map.iter (fun _ ( function_decl : Flambda.function_declaration ) ->
       Flambda_iterators.iter_all_toplevel_immutable_let_and_let_rec_bindings
         ~f:(fun var named ->
-           (* CR mshinwell: consider having the body passed to this function
-              and using fv calculation instead of used_variables.  Need to
-              be careful of "let rec" *)
+           (* CR-soon mshinwell: consider having the body passed to this
+              function and using fv calculation instead of used_variables.
+              Need to be careful of "let rec" *)
            match named with
            | Symbol sym ->
              begin match Symbol.Map.find sym symbols_to_fun_vars with

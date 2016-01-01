@@ -433,7 +433,6 @@ let print_constant_defining_value ppf (const : constant_defining_value) =
 let rec print_program_body ppf (program : program_body) =
   match program with
   | Let_symbol (symbol, constant_defining_value, body) ->
-    (* CR mshinwell: share with above *)
     let rec letbody (ul : program_body) =
       match ul with
       | Let_symbol (symbol, constant_defining_value, body) ->
@@ -988,32 +987,21 @@ let create_set_of_closures ~function_decls ~free_vars ~specialised_args =
         function_decls.funs
         Variable.Set.empty
     in
-    let free_vars =
-      (* CR mshinwell for pchambart: Is this ok, or should we cause an error?
-         I tend to think this one is ok, but for specialised_args below, we
-         should be strict. *)
+    (* CR-soon pchambart: We do not seem to be able to maintain the
+       invariant that if a variable is not used inside the closure, it
+       is not used outside either. This would be a nice property for
+       better dead code elimination during inline_and_simplify, but it
+       is not obvious how to ensure that.
 
+       This would be true when the function is known never to have
+       been inlined.
 
-      (* CR pchambart: We do not seem to be able to maintain the
-         invariant that if a variable is not used inside the closure, it
-         is not used outside either. This would be a nice property for
-         better dead code elimination during inline_and_simplify, but it
-         is not obvious how to ensure that.
+       Note that something like that may maybe enforcable in
+       inline_and_simplify, but there is no way to do that on other
+       passes.
 
-         This would be true when the function is known never to have
-         been inlined.
-
-         Note that something like that may maybe enforcable in
-         inline_and_simplify, but there is no way to do that on other
-         passes. *)
-
-      (* Variable.Map.filter (fun inner_var _outer_var -> *)
-      (*     Variable.Set.mem inner_var expected_free_vars) *)
-      (*   free_vars *)
-
-      free_vars
-
-    in
+       mshinwell: see CR in Flambda_invariants about this too
+    *)
     let free_vars_domain = Variable.Map.keys free_vars in
     if not (Variable.Set.subset expected_free_vars free_vars_domain) then begin
       Misc.fatal_errorf "create_set_of_closures: [free_vars] mapping of \
