@@ -206,8 +206,7 @@ and sameswitch (fs1 : Flambda.switch) (fs2 : Flambda.switch) =
 
 let can_be_merged = same
 
-(* CR mshinwell: change "toplevel" name, potentially misleading *)
-(* CR mshinwell: this should use the explicit ignore functions *)
+(* CR-soon mshinwell: this should use the explicit ignore functions *)
 let toplevel_substitution sb tree =
   let sb' = sb in
   let sb v = try Variable.Map.find v sb with Not_found -> v in

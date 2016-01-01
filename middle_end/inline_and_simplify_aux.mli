@@ -109,7 +109,7 @@ module Env : sig
 
   (** Note that the inliner is descending into a function body from the given
       set of closures.  A set of such descents is maintained. *)
-  (* CR mshinwell: consider changing name to remove "declaration".  Also,
+  (* CR-someday mshinwell: consider changing name to remove "declaration".  Also,
      isn't this the inlining stack?  Maybe we can use that instead. *)
   val enter_set_of_closures_declaration : Set_of_closures_id.t -> t -> t
 
@@ -152,7 +152,6 @@ module Env : sig
 
   (** Whether the given environment is currently being used to rewrite the
       body of an unrolled recursive function. *)
-  (* CR mshinwell: clarify comment *)
   val inside_unrolled_function : t -> t
 
   (** If collecting inlining statistics, record that the inliner is about to
@@ -206,11 +205,10 @@ module Result : sig
 
   (** All static exceptions for which [use_staticfail] has been called on
       the given result structure. *)
-  val used_staticfail : t -> Static_exception.Set.t
+  val used_static_exceptions : t -> Static_exception.Set.t
 
   (** Mark that the given static exception has been used. *)
-  (* CR mshinwell: consider rename to [use_static_exception] *)
-  val use_staticfail : t -> Static_exception.t -> t
+  val use_static_exception : t -> Static_exception.t -> t
 
   (** Mark that we are moving up out of the scope of a static-catch block
       that catches the given static exception identifier.  This has the effect

@@ -1025,7 +1025,7 @@ and simplify env r (tree : Flambda.t) : Flambda.t * R.t =
   | Static_raise (i, args) ->
     let i = Freshening.apply_static_exception (E.freshening env) i in
     simplify_free_variables env args ~f:(fun _env args _args_approxs ->
-      let r = R.use_staticfail r i in
+      let r = R.use_static_exception r i in
       Static_raise (i, args), ret r A.value_bottom)
   | Static_catch (i, vars, body, handler) ->
     begin
@@ -1038,7 +1038,9 @@ and simplify env r (tree : Flambda.t) : Flambda.t * R.t =
         let i, sb = Freshening.add_static_exception (E.freshening env) i in
         let env = E.set_freshening env sb in
         let body, r = simplify env r body in
-        if not (Static_exception.Set.mem i (R.used_staticfail r)) then
+        (* CR-soon mshinwell: for robustness, R.used_static_exceptions should
+           maybe be removed. *)
+        if not (Static_exception.Set.mem i (R.used_static_exceptions r)) then
           (* If the static exception is not used, we can drop the declaration *)
           body, r
         else begin
@@ -1451,13 +1453,13 @@ let run ~never_inline ~backend ~prefixname ~round program =
   in
   let result, r = simplify_program initial_env r program in
   let result = Flambda_utils.introduce_needed_import_symbols result in
-  if not (Static_exception.Set.is_empty (R.used_staticfail r))
+  if not (Static_exception.Set.is_empty (R.used_static_exceptions r))
   then begin
     Misc.fatal_error (Format.asprintf "remaining static exceptions: %a@.%a@."
-      Static_exception.Set.print (R.used_staticfail r)
+      Static_exception.Set.print (R.used_static_exceptions r)
       Flambda.print_program result)
   end;
-  assert (Static_exception.Set.is_empty (R.used_staticfail r));
+  assert (Static_exception.Set.is_empty (R.used_static_exceptions r));
   if !Clflags.inlining_stats then begin
     let output_prefix = Printf.sprintf "%s.%d" prefixname round in
     Inlining_stats.save_then_forget_decisions ~output_prefix
