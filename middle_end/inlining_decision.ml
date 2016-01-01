@@ -498,7 +498,7 @@ let for_call_site ~env ~r ~(function_decls : Flambda.function_declarations)
         || (E.inlining_level env < max_level
             (* The classic heuristic completely disables inlining if the
                function is not annotated as to be inlined. *)
-            && (always_inline || not !Clflags.classic_heuristic)
+            && (always_inline || not !Clflags.classic_inlining)
             && not (Lazy.force recursive))
       then
         let size_from_approximation =
@@ -520,7 +520,7 @@ let for_call_site ~env ~r ~(function_decls : Flambda.function_declarations)
       else if E.inlining_level env >= max_level then begin
         made_decision (Can_inline_but_tried_nothing (Level_exceeded true));
         None
-      end else if not !Clflags.classic_heuristic && Lazy.force recursive then
+      end else if not !Clflags.classic_inlining && Lazy.force recursive then
         inline_recursive env r ~max_level ~lhs_of_application ~function_decls
           ~closure_id_being_applied ~function_decl ~value_set_of_closures
           ~args ~args_approxs ~dbg ~simplify ~original ~made_decision

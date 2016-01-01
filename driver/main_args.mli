@@ -124,7 +124,7 @@ module type Optcommon_options = sig
   val _max_inlining_depth : string -> unit
   val _rounds : int -> unit
   val _unroll : string -> unit
-  val _classic_heuristic : unit -> unit
+  val _classic_inlining : unit -> unit
   val _inline_call_cost : string -> unit
   val _inline_alloc_cost : string -> unit
   val _inline_prim_cost : string -> unit

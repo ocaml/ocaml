@@ -118,7 +118,7 @@ module Options = Main_args.Make_optcomp_options (struct
   let _unroll spec =
     Int_arg_helper.parse spec ~update:unroll
       ~help_text:"Syntax: -unroll <n> | <round>=<n>[,...]"
-  let _classic_heuristic () = classic_heuristic := true
+  let _classic_inlining () = classic_inlining := true
   let _inline_call_cost spec =
     Int_arg_helper.parse spec ~update:inline_call_cost
       ~help_text:"Syntax: -inline-call-cost <n> | <round>=<n>[,...]"
@@ -159,7 +159,7 @@ module Options = Main_args.Make_optcomp_options (struct
   let _nolabels = set classic
   let _nostdlib = set no_std_include
   let _o s = output_name := Some s
-  (* CR mshinwell: should stop e.g. -O2 -classic-heuristic
+  (* CR mshinwell: should stop e.g. -O2 -classic-inlining
      lgesbert: could be done in main() below, like for -pack and -c, but that
      would prevent overriding using OCAMLPARAM. *)
   let _o2 = set o2

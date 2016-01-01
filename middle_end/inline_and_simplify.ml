@@ -635,8 +635,8 @@ and simplify_set_of_closures original_env r
     let inline : Lambda.inline_attribute =
       match function_decl.inline with
       | Default_inline ->
-        if !Clflags.classic_heuristic && not function_decl.stub then
-          (* In classic-heuristic mode, the inlining decision is taken at
+        if !Clflags.classic_inlining && not function_decl.stub then
+          (* In classic-inlining mode, the inlining decision is taken at
              definition site (here). If the function is small enough
              (below the -inline threshold) it will always be inlined. *)
           let inlining_threshold =

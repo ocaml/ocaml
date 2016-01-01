@@ -76,7 +76,7 @@ module Options = Main_args.Make_optcomp_options (struct
   let _inline_indirect_cost n = option_with_arg "-inline-indirect-cost" n
   let _inline_lifting_benefit n = option_with_arg "-inline-lifting-benefit" n
   let _branch_inline_factor n = option_with_arg "-branch-inline-factor" n
-  let _classic_heuristic = option "-classic-heuristic"
+  let _classic_inlining = option "-classic-inlining"
   let _intf s = with_intf := true; option_with_arg "-intf" s
   let _intf_suffix s = option_with_arg "-intf-suffix" s
   let _keep_docs = option "-keep-docs"

@@ -96,7 +96,7 @@ let implementation ppf sourcefile outputprefix ~backend =
           Clflags.use_inlining_arguments_set ~round:0 Clflags.o1_arguments;
           Clflags.use_inlining_arguments_set ~round:1 Clflags.o2_arguments
         end
-        else if !Clflags.classic_heuristic then begin
+        else if !Clflags.classic_inlining then begin
           Clflags.use_inlining_arguments_set Clflags.classic_arguments
         end;
         (typedtree, coercion)

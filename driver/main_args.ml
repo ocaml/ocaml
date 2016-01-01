@@ -161,9 +161,9 @@ let mk_unroll f =
       Clflags.default_unroll
 ;;
 
-let mk_classic_heuristic f =
-  "-classic-heuristic", Arg.Unit f, " Use an inlining heuristic similar \
-        to old-style one"
+let mk_classic_inlining f =
+  "-classic-inlining", Arg.Unit f, " Make inlining decisions at function definition time \
+        rather than at the call site (replicates previous behaviour of the compiler)"
 ;;
 
 let mk_inline_cost arg descr default f =
@@ -742,7 +742,7 @@ module type Optcommon_options = sig
   val _max_inlining_depth : string -> unit
   val _rounds : int -> unit
   val _unroll : string -> unit
-  val _classic_heuristic : unit -> unit
+  val _classic_inlining : unit -> unit
   val _inline_call_cost : string -> unit
   val _inline_alloc_cost : string -> unit
   val _inline_prim_cost : string -> unit
@@ -962,6 +962,7 @@ struct
     mk_cclib F._cclib;
     mk_ccopt F._ccopt;
     mk_clambda_checks F._clambda_checks;
+    mk_classic_inlining F._classic_inlining;
     mk_color F._color;
     mk_compact F._compact;
     mk_config F._config;
@@ -990,7 +991,6 @@ struct
     mk_no_alias_deps F._no_alias_deps;
     mk_no_app_funct F._no_app_funct;
     mk_no_float_const_prop F._no_float_const_prop;
-    mk_classic_heuristic F._classic_heuristic;
     mk_noassert F._noassert;
     mk_noautolink_opt F._noautolink;
     mk_nodynlink F._nodynlink;
@@ -1077,7 +1077,7 @@ module Make_opttop_options (F : Opttop_options) = struct
     mk_inlining_stats F._inlining_stats;
     mk_rounds F._rounds;
     mk_unroll F._unroll;
-    mk_classic_heuristic F._classic_heuristic;
+    mk_classic_inlining F._classic_inlining;
     mk_inline_call_cost F._inline_call_cost;
     mk_inline_alloc_cost F._inline_alloc_cost;
     mk_inline_prim_cost F._inline_prim_cost;

@@ -186,7 +186,7 @@ let unbox_closures = ref false          (* -unbox-closures *)
 let remove_unused_arguments = ref false (* -remove-unused-arguments *)
 let inline_recursive_functions = ref true  (* -no-inline-recursive-functions *)
 
-let classic_heuristic = ref false       (* -classic-heuristic *)
+let classic_inlining = ref false       (* -classic-inlining *)
 
 let default_max_inlining_depth = 1
 let max_inlining_depth =

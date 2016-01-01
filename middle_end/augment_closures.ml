@@ -192,7 +192,7 @@ let rewrite_set_of_closures
     add_closures, add_blocks
 
 let run ~env ~(set_of_closures:Flambda.set_of_closures) : Flambda.t option =
-  if !Clflags.classic_heuristic then None
+  if !Clflags.classic_inlining then None
   else
     let set_of_closures, add_closures, add_blocks =
       rewrite_set_of_closures

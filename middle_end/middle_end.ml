@@ -133,7 +133,7 @@ let middle_end ppf ~sourcefile ~prefixname ~backend
       +-+ ("Remove_unused_globals", Remove_unused_globals.remove_unused_globals)
     in
     let flam =
-      if !Clflags.classic_heuristic then
+      if !Clflags.classic_inlining then
         fast_mode flam
       else
         loop flam

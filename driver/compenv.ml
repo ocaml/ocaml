@@ -261,8 +261,8 @@ let read_one_param ppf position name v =
           "Bad syntax in OCAMLPARAM for 'max-inlining-depth'"
           max_inlining_depth
 
-      | "classic-heuristic" ->
-          set "classic-heuristic" [ classic_heuristic ] v
+      | "classic-inlining" ->
+          set "classic-inlining" [ classic_inlining ] v
       | "O2" ->
           set "O2" [ o2 ] v
       | "O3" ->
