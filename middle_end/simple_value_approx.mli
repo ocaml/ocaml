@@ -145,7 +145,7 @@ and value_closure = {
   closure_id : Closure_id.t;
 }
 
-(* CR mshinwell: add support for the approximations of the results, so we
+(* CR-soon mshinwell: add support for the approximations of the results, so we
    can do all of the tricky higher-order cases. *)
 and value_set_of_closures = private {
   function_decls : Flambda.function_declarations;
@@ -248,7 +248,7 @@ val replace_description : t -> descr -> t
 
 val equal_boxed_int : 'a boxed_int -> 'a -> 'b boxed_int -> 'b -> bool
 
-(* CR mshinwell for pchambart: Add comment describing semantics.  (Maybe
+(* CR-soon mshinwell for pchambart: Add comment describing semantics.  (Maybe
    we should move the comment from the .ml file into here.) *)
 val meet : t -> t -> t
 
@@ -264,7 +264,6 @@ val all_not_useful : t list -> bool
 (** A value is certainly immutable if its approximation is known and not bottom.
     It must have been resolved (it cannot be [Value_extern] or
     [Value_symbol]).  (See comment above for further explanation.) *)
-(* CR mshinwell: rename to [is_definitely_immutable] *)
 val is_definitely_immutable : t -> bool
 
 type simplification_summary =

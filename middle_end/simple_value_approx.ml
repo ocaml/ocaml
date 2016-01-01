@@ -22,7 +22,7 @@ type 'a boxed_int =
   | Nativeint : nativeint boxed_int
 
 type value_string = {
-  (* CR mshinwell: use variant *)
+  (* CR-soon mshinwell: use variant *)
   contents : string option; (* None if unknown or mutable *)
   size : int;
 }
@@ -60,9 +60,6 @@ and descr =
   | Value_unknown of unknown_because_of
   | Value_bottom
   | Value_extern of Export_id.t
-  (* CR mshinwell: Why does Value_symbol need to be here?
-     Related to not forcing resolution of everything all at once.
-     Why does Value_unresolved need an argument? We have [symbol] *)
   | Value_symbol of Symbol.t
   | Value_unresolved of Symbol.t (* No description was found for this symbol *)
 
@@ -346,7 +343,7 @@ let simplify_named t (named : Flambda.named) : simplification_result_named =
   else
     named, Nothing_done, t
 
-(* CR mshinwell: bad name.  This function and its call site in
+(* CR-soon mshinwell: bad name.  This function and its call site in
    [Inline_and_simplify] is also messy. *)
 let simplify_var t : (Flambda.named * t) option =
   match t.descr with
@@ -636,7 +633,6 @@ let check_approx_for_closure_allowing_unresolved t
       : checked_approx_for_closure_allowing_unresolved =
   match t.descr with
   | Value_closure value_closure ->
-    (* CR mshinwell: not exactly sure yet what to allow here *)
     begin match value_closure.set_of_closures.descr with
     | Value_set_of_closures value_set_of_closures ->
       let symbol = match value_closure.set_of_closures.symbol with

@@ -329,7 +329,6 @@ let set_dumped_pass s enabled =
   in
   dumped_passes_list := dumped_passes
 
-(* CR mshinwell: change to [false] before merge *)
 let flambda_invariant_checks = ref false
 
 let parse_color_setting = function
