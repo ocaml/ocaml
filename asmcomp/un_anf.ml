@@ -362,7 +362,8 @@ let let_bound_vars_that_can_be_moved ident_info (clam : Clambda.ulambda) =
       let_stack := []
     | Ufor (ident, low, high, direction_flag, body) ->
       ignore_ident ident;
-      (* CR mshinwell: think about evaluation order of low vs. high *)
+      (* Cmmgen generates code that evaluates low before high,
+         but we don't do anything here at the moment anyway. *)
       ignore_ulambda low;
       ignore_ulambda high;
       ignore_direction_flag direction_flag;

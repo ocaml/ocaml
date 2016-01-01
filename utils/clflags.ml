@@ -249,8 +249,6 @@ let use_inlining_arguments_set ?round (arg:inlining_arguments) =
   set_float inline_threshold arg.inline_threshold;
   set_int inline_toplevel_threshold arg.inline_toplevel_threshold
 
-(* CR mshinwell for pchambart: please think about these numbers *)
-
 (* o1 is the default *)
 let o1_arguments = {
   inline_call_cost = None;
