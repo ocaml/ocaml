@@ -86,7 +86,7 @@ val rewrite_recursive_calls_with_symbols
   -> make_closure_symbol:(Closure_id.t -> Symbol.t)
   -> Flambda.function_declarations
 
-(* CR mshinwell for mshinwell: maybe inaccurate module name, it freshens
+(* CR-soon mshinwell for mshinwell: maybe inaccurate module name, it freshens
    closure IDs as well.  Check use points though *)
 module Project_var : sig
   (** A table used for freshening of identifiers in [Project_closure] and
@@ -123,7 +123,7 @@ module Project_var : sig
     -> Var_within_closure.t
 end
 
-(* CR mshinwell for mshinwell: add comment *)
+(* CR-soon mshinwell for mshinwell: add comment *)
 val apply_function_decls_and_free_vars
    : t
   -> 'a Variable.Map.t

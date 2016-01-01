@@ -994,7 +994,7 @@ and simplify env r (tree : Flambda.t) : Flambda.t * R.t =
       ~for_last_body
       ~filter_defining_expr
   | Let_mutable (mut_var, var, body) ->
-    (* CR mshinwell: add the dead let elimination, as above. *)
+    (* CR-someday mshinwell: add the dead let elimination, as above. *)
     simplify_free_variable env var ~f:(fun env var _var_approx ->
       let mut_var, sb =
         Freshening.add_mutable_variable (E.freshening env) mut_var

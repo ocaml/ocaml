@@ -687,9 +687,6 @@ let stubify body =
   in
   Lprim(Pccall stub_prim, [body])
 
-(* CR mshinwell: check all this is really new.  It should probably move
-   into middle_end/ *)
-
 (* Split a function with default parameters into a wrapper and an
    inner function.  The wrapper fills in missing optional parameters
    with their default value and tail-calls the inner function.  The
@@ -739,7 +736,6 @@ let split_default_wrapper fun_id kind params body attr =
         (wrapper_body, (inner_id, inner_fun))
   in
   try
-    (* CR mshinwell: ensure wrapper function gets inlined *)
     let wrapper_body, inner = aux [] body in
     [(fun_id, Lfunction{kind; params; body = stubify wrapper_body; attr}); inner]
   with Exit ->

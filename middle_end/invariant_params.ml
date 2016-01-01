@@ -14,9 +14,9 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(* CR pchambart to pchambart: in fact partial application doesn't work because
-   there are no 'known' partial application left: they are converted to
-   applications new partial function declaration.
+(* CR-someday pchambart to pchambart: in fact partial application doesn't
+   work because there are no 'known' partial application left: they are
+   converted to applications new partial function declaration.
    That can be improved (and many other cases) by keeping track of aliases in
    closure of functions. *)
 
@@ -129,7 +129,11 @@ let transitive_closure state =
   in
   fp state
 
-(* CR pchambart: to move to Flambda_utils and document *)
+(* CR-soon pchambart: to move to Flambda_utils and document
+   mshinwell: I think this calculation is basically the same as
+   [Flambda_utils.fun_vars_referenced_in_decls], so we should try
+   to share code.  However let's defer until after 4.03.
+*)
 (* Finds variables that represent the functions.
    In a construction like:
      let f x =

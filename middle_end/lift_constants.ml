@@ -287,7 +287,7 @@ let rec translate_definition_and_resolve_alias
     Some (Flambda.Block (tag, List.map (resolve_variable aliases var_to_symbol_tbl var_to_definition_tbl) fields))
   | Allocated_const (Normal const) -> Some (Flambda.Allocated_const const)
   | Allocated_const (Duplicate_array (Pfloatarray, mutability, var)) ->
-    (* CR mshinwell for pchambart: This next section could do with cleanup.
+    (* CR-someday mshinwell: This next section could do with cleanup.
        What happens is:
         - Duplicate contains a variable, which is resolved to
         a float array thing full of variables;
@@ -296,9 +296,8 @@ let rec translate_definition_and_resolve_alias
         floats.
         - Then we can build the Flambda.name term containing the
         Allocated_const (full of floats).
-       This seems to work, but please check.  We should maybe factor out
-       the code from the Allocated_const (Array (...)) case below so this
-       function doesn't have to be recursive. *)
+       We should maybe factor out the code from the Allocated_const (Array (...))
+       case below so this function doesn't have to be recursive. *)
     let (constant_defining_value : Alias_analysis.constant_defining_value) =
       match Variable.Map.find var aliases with
       | exception Not_found ->

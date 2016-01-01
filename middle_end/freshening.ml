@@ -203,8 +203,9 @@ let rewrite_recursive_calls_with_symbols t
         Variable.Map.map (fun (ffun : Flambda.function_declaration) ->
           let body =
             Flambda_iterators.map_toplevel_named
-              (* CR pchambart: This may be worth deep substituting below the closures, but that
-                 means that we need to take care of functions free variables. *)
+              (* CR-someday pchambart: This may be worth deep substituting
+                 below the closures, but that means that we need to take care
+                 of functions' free variables. *)
               (function
                 | Symbol sym when Symbol.Map.mem sym closure_symbols ->
                   Expr (Var (Symbol.Map.find sym closure_symbols))
