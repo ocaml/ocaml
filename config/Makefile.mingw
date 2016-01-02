@@ -111,13 +111,19 @@ CPP=$(BYTECC) -E
 ### Flexlink
 FLEXLINK_CMD=flexlink
 FLEXDLL_CHAIN=mingw
-FLEXLINK=$(FLEXLINK_CMD) -chain $(FLEXDLL_CHAIN) -stack 16777216 -link -static-libgcc
+# FLEXLINK_FLAGS must be safe to insert in an OCaml string
+#   (see ocamlmklibconfig.ml in tools/Makefile.nt)
+FLEXLINK_FLAGS=-chain $(FLEXDLL_CHAIN) -stack 16777216 -link -static-libgcc
+FLEXLINK=$(FLEXLINK_CMD) $(FLEXLINK_FLAGS)
 FLEXDIR:=$(shell $(FLEXLINK) -where 2>/dev/null)
 ifeq ($(FLEXDIR),)
 IFLEXDIR=
 else
 IFLEXDIR=-I"$(FLEXDIR)"
 endif
+# MKDLL, MKEXE and MKMAINDLL must ultimately be equivalent to
+#   $(FLEXLINK_CMD) $(FLEXLINK_FLAGS) [-exe|-maindll]
+# or OCAML_FLEXLINK overriding will not work (see utils/config.mlp)
 MKDLL=$(FLEXLINK)
 MKEXE=$(FLEXLINK) -exe
 MKMAINDLL=$(FLEXLINK) -maindll

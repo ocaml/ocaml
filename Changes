@@ -138,6 +138,8 @@ Compilers:
   (Leo White)
 - PR#6920: fix debug informations around uses of %apply or %revapply
   (Jérémie Dimino)
+- GPR#388: OCAML_FLEXLINK environment variable allows overriding flexlink
+  command (David Allsopp)
 
 Runtime system:
 - PR#3612: allow allocating custom block with finalizers in the minor heap
