@@ -108,7 +108,7 @@ FLEXLINK_FLAGS=-merge-manifest -stack 16777216
 FLEXLINK=$(FLEXLINK_CMD) $(FLEXLINK_FLAGS)
 FLEXDIR:=$(shell $(FLEXLINK) -where 2>/dev/null)
 ifeq ($(FLEXDIR),)
-IFLEXDIR=
+IFLEXDIR=-I"../flexdll"
 else
 IFLEXDIR=-I"$(FLEXDIR)"
 endif

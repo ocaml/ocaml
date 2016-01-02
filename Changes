@@ -522,6 +522,10 @@ Features wishes:
 - GPR#383: configure: define _ALL_SOURCE for build on AIX7.1
   (tkob)
 
+Build system:
+- GPR#388: FlexDLL added as a Git submodule and bootstrappable with the compiler
+  (David Allsopp)
+
 OCaml 4.02.3 (27 Jul 2015):
 ---------------------------
 

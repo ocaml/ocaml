@@ -56,11 +56,12 @@ endif
 
 OCAML=$(OCAMLRUN) $(OTOPDIR)/ocaml $(OCFLAGS) \
       -init $(OTOPDIR)/testsuite/lib/empty
-OCAMLC=$(OCAMLRUN) $(OTOPDIR)/ocamlc $(CUSTOM) $(OCFLAGS)
-OCAMLOPT=$(OCAMLRUN) $(OTOPDIR)/ocamlopt $(OCFLAGS)
+FLEXLINK_PREFIX=$(if $(FLEXLINK),$(if $(wildcard $(TOPDIR)/flexdll/Makefile),OCAML_FLEXLINK="$(WINTOPDIR)/boot/ocamlrun $(WINTOPDIR)/flexdll/flexlink.exe" ))
+OCAMLC=$(FLEXLINK_PREFIX)$(OCAMLRUN) $(OTOPDIR)/ocamlc $(CUSTOM) $(OCFLAGS)
+OCAMLOPT=$(FLEXLINK_PREFIX)$(OCAMLRUN) $(OTOPDIR)/ocamlopt $(OCFLAGS)
 OCAMLDOC=$(OCAMLRUN) $(OTOPDIR)/ocamldoc/ocamldoc
 OCAMLLEX=$(OCAMLRUN) $(OTOPDIR)/lex/ocamllex
-OCAMLMKLIB=$(OCAMLRUN) $(OTOPDIR)/tools/ocamlmklib \
+OCAMLMKLIB=$(FLEXLINK_PREFIX)$(OCAMLRUN) $(OTOPDIR)/tools/ocamlmklib \
 		       -ocamlc "$(OTOPDIR)/boot/ocamlrun$(EXE) \
 		                $(OTOPDIR)/ocamlc $(OCFLAGS)" \
 		       -ocamlopt "$(OTOPDIR)/boot/ocamlrun$(EXE) \

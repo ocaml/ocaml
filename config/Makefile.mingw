@@ -117,7 +117,7 @@ FLEXLINK_FLAGS=-chain $(FLEXDLL_CHAIN) -stack 16777216 -link -static-libgcc
 FLEXLINK=$(FLEXLINK_CMD) $(FLEXLINK_FLAGS)
 FLEXDIR:=$(shell $(FLEXLINK) -where 2>/dev/null)
 ifeq ($(FLEXDIR),)
-IFLEXDIR=
+IFLEXDIR=-I"../flexdll"
 else
 IFLEXDIR=-I"$(FLEXDIR)"
 endif

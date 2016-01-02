@@ -18,6 +18,10 @@ include Makefile.shared
 defaultentry:
 	@echo "Please refer to the installation instructions in file README.win32.adoc."
 
+FLEXDLL_SUBMODULE_PRESENT:=$(wildcard flexdll/Makefile)
+BOOT_FLEXLINK_CMD=$(if $(FLEXDLL_SUBMODULE_PRESENT),FLEXLINK_CMD="../boot/ocamlrun ../flexdll/flexlink.exe")
+CAMLOPT:=$(if $(FLEXDLL_SUBMODULE_PRESENT),OCAML_FLEXLINK="boot/ocamlrun flexdll/flexlink.exe") $(CAMLOPT)
+
 # FlexDLL sources missing error messages
 # Different git mechanism displayed depending on whether this source tree came
 # from a git clone or a source tarball.
@@ -39,38 +43,22 @@ flexdll-repo: flexdll-common-err
 	@echo
 	@false
 
-# Bootstrapping FlexDLL - leaves a bytecode image of flexlink in flexdll/
+# Bootstrapping FlexDLL - leaves a bytecode image of flexlink.exe in flexdll/
 flexdll: flexdll/Makefile
 	cd byterun ; $(MAKEREC) BOOTSTRAPPING_FLEXLINK=yes ocamlrun$(EXE)
 	cp byterun/ocamlrun.exe boot/ocamlrun.exe
 	cd stdlib ; $(MAKEREC) COMPILER=../boot/ocamlc stdlib.cma std_exit.cmo
 	cd stdlib ; cp stdlib.cma std_exit.cmo *.cmi ../boot
 	cd flexdll ; $(MAKECMD) MSVC_DETECT=0 TOOLCHAIN=$(TOOLCHAIN) TOOLPREF=$(TOOLPREF) CHAINS=$(FLEXDLL_CHAIN) NATDYNLINK=false OCAMLOPT="../boot/ocamlrun ../boot/ocamlc -I ../boot" flexlink.exe support
-# The executable header will not have been available - flexlink.exe is just the bytecode image
-	cd flexdll ; mv flexlink.exe flexlink
-	cd stdlib ; $(MAKEREC) FLEXLINK_CMD="../boot/ocamlrun ../flexdll/flexlink" camlheader
-
-install-flexdll:
-	mkdir -p $(INSTALL_BINDIR)
-# Assemble flexlink.exe
-	cat stdlib/camlheader flexdll/flexlink > flexdll/flexlink.exe ; chmod +x flexdll/flexlink.exe ; rm flexdll/flexlink
-# The $(if ...) installs the correct .manifest file for MSVC and MSVC64
-# (GNU make doesn't have ifeq as a function, hence slightly convoluted use of filter-out)
-	cp flexdll/flexlink.exe flexdll/flexdll_*.$(O) flexdll/flexdll.h $(if $(filter-out mingw,$(TOOLCHAIN)),flexdll/default$(filter-out _i386,_$(ARCH)).manifest) $(INSTALL_BINDIR)/
-# This is the flexlink-free version of ocamlrun, it won't be used during
-# compilation and will be overwritten when the finished OCaml is installed
-	cp boot/ocamlrun.exe $(INSTALL_BINDIR)/
-# Tidy-up the OCaml build tree ready for the next stage
 	cd byterun ; $(MAKEREC) clean
 	$(MAKEREC) partialclean
 
-# If Makefile.nt was used to bootstrap FlexDLL, then opt.opt will build a native
-# flexlink which install will put in $(INSTALL_BINDIR), overwriting the bytecode
-# version placed there by install-flexdll
-FLEXLINK_OPT=$(if $(or $(filter flexdll,$(MAKECMDGOALS)),$(wildcard flexdll/flexlink.exe)),flexlink_opt)
-
-flexlink_opt:
-	cd flexdll ; rm flexlink.exe ; $(MAKECMD) MSVC_DETECT=0 TOOLCHAIN=$(TOOLCHAIN) TOOLPREF=$(TOOLPREF) OCAMLOPT="../ocamlopt.opt -I ../stdlib" flexlink.exe
+flexlink.opt:
+	cd flexdll ; \
+	mv flexlink.exe flexlink ; \
+	$(MAKECMD) OCAML_FLEXLINK="../boot/ocamlrun ./flexlink" MSVC_DETECT=0 TOOLCHAIN=$(TOOLCHAIN) TOOLPREF=$(TOOLPREF) OCAMLOPT="../ocamlopt.opt -I ../stdlib" flexlink.exe ; \
+	mv flexlink.exe flexlink.opt ; \
+	mv flexlink flexlink.exe
 
 # Recompile the system using the bootstrap compiler
 all: runtime ocamlc ocamllex ocamlyacc ocamltools library ocaml \
@@ -114,11 +102,11 @@ LIBFILES=stdlib.cma std_exit.cmo *.cmi camlheader
 
 # Start up the system from the distribution compiler
 coldstart:
-	cd byterun ; $(MAKEREC) all
+	cd byterun ; $(MAKEREC) $(BOOT_FLEXLINK_CMD) all
 	cp byterun/ocamlrun.exe boot/ocamlrun.exe
-	cd yacc ; $(MAKEREC) all
+	cd yacc ; $(MAKEREC) $(BOOT_FLEXLINK_CMD) all
 	cp yacc/ocamlyacc.exe boot/ocamlyacc.exe
-	cd stdlib ; $(MAKEREC) COMPILER=../boot/ocamlc all
+	cd stdlib ; $(MAKEREC) $(BOOT_FLEXLINK_CMD) COMPILER=../boot/ocamlc all
 	cd stdlib ; cp $(LIBFILES) ../boot
 
 # Build the core system: the minimum needed to make depend and bootstrap
@@ -180,8 +168,10 @@ opt:
 	$(MAKEREC) otherlibrariesopt ocamltoolsopt
 
 # Native-code versions of the tools
+# If the submodule is initialised, then opt.opt will build a native flexlink
 opt.opt: core opt-core ocamlc.opt all ocamlopt.opt ocamllex.opt \
-         ocamltoolsopt ocamltoolsopt.opt otherlibrariesopt $(OCAMLBUILDNATIVE) $(OCAMLDOC_OPT) $(FLEXLINK_OPT)
+         ocamltoolsopt ocamltoolsopt.opt otherlibrariesopt $(OCAMLBUILDNATIVE) \
+         $(OCAMLDOC_OPT) $(if $(wildcard flexdll/Makefile),flexlink.opt)
 
 # Complete build using fast compilers
 world.opt: coldstart opt.opt
@@ -231,11 +221,19 @@ installbyt:
 	   else :; fi
 	if test -n "$(WITH_OCAMLBUILD)"; then (cd ocamlbuild; $(MAKE) install); \
 	   else :; fi
+	if test -n "$(FLEXDLL_SUBMODULE_PRESENT)"; then $(MAKEREC) install-flexdll; \
+	   else :; fi
 	cp config/Makefile $(INSTALL_LIBDIR)/Makefile.config
 	cp README.adoc $(INSTALL_DISTRIB)/Readme.general.txt
 	cp README.win32.adoc $(INSTALL_DISTRIB)/Readme.windows.txt
 	cp LICENSE $(INSTALL_DISTRIB)/License.txt
 	cp Changes $(INSTALL_DISTRIB)/Changes.txt
+
+install-flexdll:
+# The $(if ...) installs the correct .manifest file for MSVC and MSVC64
+# (GNU make doesn't have ifeq as a function, hence slightly convoluted use of filter-out)
+	cp flexdll/flexlink.exe $(if $(filter-out mingw,$(TOOLCHAIN)),flexdll/default$(filter-out _i386,_$(ARCH)).manifest) $(INSTALL_BINDIR)/
+	cp flexdll/flexdll_*.$(O) $(INSTALL_LIBDIR)
 
 # Installation of the native-code compiler
 installopt:
@@ -252,7 +250,7 @@ installopt:
 	done
 	if test -f ocamlopt.opt ; then $(MAKEREC) installoptopt; fi
 	cd tools; $(MAKEREC) installopt
-	if test -f ocamlopt.opt -a -f flexdll/flexlink.exe ; then cp flexdll/flexlink.exe $(INSTALL_BINDIR)/ ; fi
+	if test -f ocamlopt.opt -a -f flexdll/flexlink.opt ; then cp -f flexdll/flexlink.opt $(INSTALL_BINDIR)/flexlink.exe ; fi
 
 installoptopt:
 	cp ocamlc.opt $(INSTALL_BINDIR)/ocamlc.opt$(EXE)
@@ -546,7 +544,7 @@ partialclean::
 runtime: makeruntime stdlib/libcamlrun.$(A)
 
 makeruntime:
-	cd byterun ; $(MAKEREC) all
+	cd byterun ; $(MAKEREC) $(BOOT_FLEXLINK_CMD) all
 stdlib/libcamlrun.$(A): byterun/libcamlrun.$(A)
 	cp byterun/libcamlrun.$(A) stdlib/libcamlrun.$(A)
 clean::
@@ -572,11 +570,11 @@ alldepend::
 # The library
 
 library:
-	cd stdlib ; $(MAKEREC) all
+	cd stdlib ; $(MAKEREC) $(BOOT_FLEXLINK_CMD) all
 library-cross:
-	cd stdlib ; $(MAKEREC) CAMLRUN=../byterun/ocamlrun all
+	cd stdlib ; $(MAKEREC) $(BOOT_FLEXLINK_CMD) CAMLRUN=../byterun/ocamlrun all
 libraryopt:
-	cd stdlib ; $(MAKEREC) allopt
+	cd stdlib ; $(MAKEREC) $(BOOT_FLEXLINK_CMD) allopt
 partialclean::
 	cd stdlib ; $(MAKEREC) clean
 alldepend::
@@ -594,7 +592,7 @@ alldepend::
 	cd lex ; $(MAKEREC) depend
 
 ocamlyacc:
-	cd yacc ; $(MAKEREC) all
+	cd yacc ; $(MAKEREC) $(BOOT_FLEXLINK_CMD) all
 clean::
 	cd yacc ; $(MAKEREC) clean
 
@@ -665,7 +663,7 @@ ocamlbuild.byte: ocamlc otherlibraries
 	cd ocamlbuild && $(MAKE) all
 
 ocamlbuild.native: ocamlopt otherlibrariesopt
-	cd ocamlbuild && $(MAKE) allopt
+	cd ocamlbuild && $(if $(FLEXDLL_SUBMODULE_PRESENT),OCAML_FLEXLINK="../boot/ocamlrun ../flexdll/flexlink.exe") $(MAKE) allopt
 
 partialclean::
 	cd ocamlbuild && $(MAKE) clean
@@ -728,6 +726,6 @@ distclean:
 .PHONY: ocamltoolsopt.opt ocamlyacc opt-core opt opt.opt otherlibraries
 .PHONY: otherlibrariesopt promote promote-cross
 .PHONY: restore runtime runtimeopt makeruntimeopt world world.opt
-.PHONY: flexdll flexlink_opt flexdll-common-err flexdll-repo
+.PHONY: flexdll flexlink.opt flexdll-common-err flexdll-repo
 
 include .depend

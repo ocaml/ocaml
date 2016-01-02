@@ -109,7 +109,7 @@ install::
 clean::
 	rm -f ocamlmklib
 
-ocamlmklibconfig.ml:: ../config/Makefile
+ocamlmklibconfig.ml:: ../config/Makefile Makefile
 	(echo 'let bindir = "$(BINDIR)"'; \
          echo 'let ext_lib = "$(EXT_LIB)"'; \
          echo 'let ext_dll = "$(EXT_DLL)"'; \
