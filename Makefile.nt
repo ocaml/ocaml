@@ -18,11 +18,22 @@ include Makefile.shared
 defaultentry:
 	@echo "Please refer to the installation instructions in file README.win32.adoc."
 
-# FlexDLL sources missing error message
-flexdll/Makefile:
-	@echo In order to bootstrap FlexDLL, you need to place the sources in flexdll.
+# FlexDLL sources missing error messages
+# Different git mechanism displayed depending on whether this source tree came
+# from a git clone or a source tarball.
+
+# Displayed in all cases
+flexdll-common-err:
+	@echo In order to bootstrap FlexDLL, you need to place the sources in flexdll
 	@echo This can either be done by downloading a source tarball from
 	@echo \  http://alain.frisch.fr/flexdll.html
+
+flexdll/Makefile: $(if $(wildcard flexdll/Makefile),,$(if $(wildcard .git),flexdll-common-err,flexdll-repo))
+	@echo or by checking out the flexdll submodule with
+	@echo \  git submodule update --init
+	@false
+
+flexdll-repo: flexdll-common-err
 	@echo or by cloning the git repository
 	@echo \  git clone https://github.com/alainfrisch/flexdll.git
 	@echo
@@ -716,6 +727,6 @@ distclean:
 .PHONY: ocamltoolsopt.opt ocamlyacc opt-core opt opt.opt otherlibraries
 .PHONY: otherlibrariesopt promote promote-cross
 .PHONY: restore runtime runtimeopt makeruntimeopt world world.opt
-.PHONY: flexdll flexlink_opt
+.PHONY: flexdll flexlink_opt flexdll-common-err flexdll-repo
 
 include .depend
