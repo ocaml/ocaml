@@ -28,7 +28,7 @@ flexdll/Makefile:
 	@echo
 	@false
 
-# Bootstrapping FlexDLL - leaves a bytecode flexlink in flexdll/
+# Bootstrapping FlexDLL - leaves a bytecode image of flexlink in flexdll/
 flexdll: flexdll/Makefile
 	cd byterun ; $(MAKEREC) BOOTSTRAPPING_FLEXLINK=yes ocamlrun$(EXE)
 	cp byterun/ocamlrun.exe boot/ocamlrun.exe
@@ -38,11 +38,28 @@ flexdll: flexdll/Makefile
 # The executable header will not have been available - flexlink.exe is just the bytecode image
 	cd flexdll ; mv flexlink.exe flexlink
 	cd stdlib ; $(MAKEREC) FLEXLINK_CMD="../boot/ocamlrun ../flexdll/flexlink" camlheader
+
+install-flexdll:
+	mkdir -p $(INSTALL_BINDIR)
 # Assemble flexlink.exe
 	cat stdlib/camlheader flexdll/flexlink > flexdll/flexlink.exe ; chmod +x flexdll/flexlink.exe ; rm flexdll/flexlink
+# The $(if ...) installs the correct .manifest file for MSVC and MSVC64
+# (GNU make doesn't have ifeq as a function, hence slightly convoluted use of filter-out)
+	cp flexdll/flexlink.exe flexdll/flexdll_*.$(O) flexdll/flexdll.h $(if $(filter-out mingw,$(TOOLCHAIN)),flexdll/default$(filter-out _i386,_$(ARCH)).manifest) $(INSTALL_BINDIR)/
+# This is the flexlink-free version of ocamlrun, it won't be used during
+# compilation and will be overwritten when the finished OCaml is installed
+	cp boot/ocamlrun.exe $(INSTALL_BINDIR)/
 # Tidy-up the OCaml build tree ready for the next stage
 	cd byterun ; $(MAKEREC) clean
 	$(MAKEREC) partialclean
+
+# If Makefile.nt was used to bootstrap FlexDLL, then opt.opt will build a native
+# flexlink which install will put in $(INSTALL_BINDIR), overwriting the bytecode
+# version placed there by install-flexdll
+FLEXLINK_OPT=$(if $(or $(filter flexdll,$(MAKECMDGOALS)),$(wildcard flexdll/flexlink.exe)),flexlink_opt)
+
+flexlink_opt:
+	cd flexdll ; rm flexlink.exe ; $(MAKECMD) MSVC_DETECT=0 TOOLCHAIN=$(TOOLCHAIN) TOOLPREF=$(TOOLPREF) OCAMLOPT="../ocamlopt.opt -I ../stdlib" flexlink.exe
 
 # Recompile the system using the bootstrap compiler
 all: runtime ocamlc ocamllex ocamlyacc ocamltools library ocaml \
@@ -153,7 +170,7 @@ opt:
 
 # Native-code versions of the tools
 opt.opt: core opt-core ocamlc.opt all ocamlopt.opt ocamllex.opt \
-         ocamltoolsopt ocamltoolsopt.opt otherlibrariesopt $(OCAMLBUILDNATIVE) $(OCAMLDOC_OPT)
+         ocamltoolsopt ocamltoolsopt.opt otherlibrariesopt $(OCAMLBUILDNATIVE) $(OCAMLDOC_OPT) $(FLEXLINK_OPT)
 
 # Complete build using fast compilers
 world.opt: coldstart opt.opt
@@ -224,6 +241,7 @@ installopt:
 	done
 	if test -f ocamlopt.opt ; then $(MAKEREC) installoptopt; fi
 	cd tools; $(MAKEREC) installopt
+	if test -f ocamlopt.opt -a -f flexdll/flexlink.exe ; then cp flexdll/flexlink.exe $(INSTALL_BINDIR)/ ; fi
 
 installoptopt:
 	cp ocamlc.opt $(INSTALL_BINDIR)/ocamlc.opt$(EXE)
@@ -698,6 +716,6 @@ distclean:
 .PHONY: ocamltoolsopt.opt ocamlyacc opt-core opt opt.opt otherlibraries
 .PHONY: otherlibrariesopt promote promote-cross
 .PHONY: restore runtime runtimeopt makeruntimeopt world world.opt
-.PHONY: flexdll
+.PHONY: flexdll flexlink_opt
 
 include .depend
