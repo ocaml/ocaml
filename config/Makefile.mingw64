@@ -109,12 +109,21 @@ NATIVECCLIBS=-lws2_32
 CPP=$(BYTECC) -E
 
 ### Flexlink
-FLEXLINK=flexlink -chain mingw64 -stack 33554432
-FLEXDIR:=$(shell $(FLEXLINK) -where)
+FLEXLINK_CMD=flexlink
+FLEXDLL_CHAIN=mingw64
+FLEXLINK=$(FLEXLINK_CMD) -chain $(FLEXDLL_CHAIN) -stack 33554432
+FLEXDIR:=$(shell $(FLEXLINK) -where 2>/dev/null)
+ifeq ($(FLEXDIR),)
+IFLEXDIR=
+else
 IFLEXDIR=-I"$(FLEXDIR)"
+endif
 MKDLL=$(FLEXLINK)
 MKEXE=$(FLEXLINK) -exe
 MKMAINDLL=$(FLEXLINK) -maindll
+
+### Native command to build ocamlrun.exe without flexlink
+MKEXE_BOOT=$(BYTECC) -o $(1) $(2)
 
 ### How to build a static library
 MKLIB=rm -f $(1); $(TOOLPREF)ar rc $(1) $(2); $(RANLIB) $(1)

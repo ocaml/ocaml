@@ -18,6 +18,32 @@ include Makefile.shared
 defaultentry:
 	@echo "Please refer to the installation instructions in file README.win32.adoc."
 
+# FlexDLL sources missing error message
+flexdll/Makefile:
+	@echo In order to bootstrap FlexDLL, you need to place the sources in flexdll.
+	@echo This can either be done by downloading a source tarball from
+	@echo \  http://alain.frisch.fr/flexdll.html
+	@echo or by cloning the git repository
+	@echo \  git clone https://github.com/alainfrisch/flexdll.git
+	@echo
+	@false
+
+# Bootstrapping FlexDLL - leaves a bytecode flexlink in flexdll/
+flexdll: flexdll/Makefile
+	cd byterun ; $(MAKEREC) BOOTSTRAPPING_FLEXLINK=yes ocamlrun$(EXE)
+	cp byterun/ocamlrun.exe boot/ocamlrun.exe
+	cd stdlib ; $(MAKEREC) COMPILER=../boot/ocamlc stdlib.cma std_exit.cmo
+	cd stdlib ; cp stdlib.cma std_exit.cmo *.cmi ../boot
+	cd flexdll ; $(MAKECMD) MSVC_DETECT=0 TOOLCHAIN=$(TOOLCHAIN) TOOLPREF=$(TOOLPREF) CHAINS=$(FLEXDLL_CHAIN) NATDYNLINK=false OCAMLOPT="../boot/ocamlrun ../boot/ocamlc -I ../boot" flexlink.exe support
+# The executable header will not have been available - flexlink.exe is just the bytecode image
+	cd flexdll ; mv flexlink.exe flexlink
+	cd stdlib ; $(MAKEREC) FLEXLINK_CMD="../boot/ocamlrun ../flexdll/flexlink" camlheader
+# Assemble flexlink.exe
+	cat stdlib/camlheader flexdll/flexlink > flexdll/flexlink.exe ; chmod +x flexdll/flexlink.exe ; rm flexdll/flexlink
+# Tidy-up the OCaml build tree ready for the next stage
+	cd byterun ; $(MAKEREC) clean
+	$(MAKEREC) partialclean
+
 # Recompile the system using the bootstrap compiler
 all: runtime ocamlc ocamllex ocamlyacc ocamltools library ocaml \
   otherlibraries $(OCAMLBUILDBYTE) $(WITH_DEBUGGER) \
@@ -672,5 +698,6 @@ distclean:
 .PHONY: ocamltoolsopt.opt ocamlyacc opt-core opt opt.opt otherlibraries
 .PHONY: otherlibrariesopt promote promote-cross
 .PHONY: restore runtime runtimeopt makeruntimeopt world world.opt
+.PHONY: flexdll
 
 include .depend

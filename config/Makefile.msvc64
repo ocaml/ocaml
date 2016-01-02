@@ -104,12 +104,22 @@ NATIVECCLIBS=advapi32.lib ws2_32.lib $(EXTRALIBS)
 CPP=cl -nologo -EP
 
 ### Flexlink
-FLEXLINK=flexlink -x64 -merge-manifest -stack 33554432
-FLEXDIR:=$(shell $(FLEXLINK) -where)
+FLEXLINK_CMD=flexlink
+FLEXDLL_CHAIN=msvc64
+FLEXLINK=$(FLEXLINK_CMD) -x64 -merge-manifest -stack 33554432
+FLEXDIR:=$(shell $(FLEXLINK) -where 2>/dev/null)
+ifeq ($(FLEXDIR),)
+IFLEXDIR=
+else
 IFLEXDIR=-I"$(FLEXDIR)"
+endif
 MKDLL=$(FLEXLINK)
 MKEXE=$(FLEXLINK) -exe
 MKMAINDLL=$(FLEXLINK) -maindll
+
+### Native command to build ocamlrun.exe without flexlink
+MERGEMANIFESTEXE=test ! -f $(1).manifest || mt -nologo -outputresource:$(1) -manifest $(1).manifest && rm -f $(1).manifest
+MKEXE_BOOT=$(BYTECC) /Fe$(1) $(2) /link /subsystem:console && ($(MERGEMANIFESTEXE))
 
 ### How to build a static library
 MKLIB=link -lib -nologo -machine:AMD64 /out:$(1) $(2)
