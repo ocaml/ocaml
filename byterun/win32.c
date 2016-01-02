@@ -38,7 +38,10 @@
 #include "caml/signals.h"
 #include "caml/sys.h"
 
+#include "caml/config.h"
+#ifdef SUPPORT_DYNAMIC_LINKING
 #include <flexdll.h>
+#endif
 
 #ifndef S_ISREG
 #define S_ISREG(mode) (((mode) & S_IFMT) == S_IFREG)
@@ -189,6 +192,8 @@ char * caml_search_dll_in_path(struct ext_table * path, char * name)
   return res;
 }
 
+#ifdef SUPPORT_DYNAMIC_LINKING
+
 void * caml_dlopen(char * libname, int for_execution, int global)
 {
   void *handle;
@@ -221,6 +226,34 @@ char * caml_dlerror(void)
 {
   return flexdll_dlerror();
 }
+
+#else
+
+void * caml_dlopen(char * libname, int for_execution, int global)
+{
+  return NULL;
+}
+
+void caml_dlclose(void * handle)
+{
+}
+
+void * caml_dlsym(void * handle, char * name)
+{
+  return NULL;
+}
+
+void * caml_globalsym(char * name)
+{
+  return NULL;
+}
+
+char * caml_dlerror(void)
+{
+  return "dynamic loading not supported on this platform";
+}
+
+#endif
 
 /* Proper emulation of signal(), including ctrl-C and ctrl-break */
 
