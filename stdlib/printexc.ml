@@ -95,10 +95,11 @@ type backtrace_slot =
                     * int    (* line number *)
                     * int    (* start char *)
                     * int    (* end char *)
+                    * bool   (* is_inline *)
   | Unknown_location of bool (*is_raise*)
 
 (* to avoid warning *)
-let _ = [Known_location (false, "", 0, 0, 0); Unknown_location false]
+let _ = [Known_location (false, "", 0, 0, 0, false); Unknown_location false]
 
 external convert_raw_backtrace_slot:
   raw_backtrace_slot -> backtrace_slot = "caml_convert_raw_backtrace_slot"
@@ -118,9 +119,11 @@ let format_backtrace_slot pos slot =
   | Unknown_location true -> (* compiler-inserted re-raise, skipped *) None
   | Unknown_location false ->
       Some (sprintf "%s unknown location" (info false))
-  | Known_location(is_raise, filename, lineno, startchar, endchar) ->
-      Some (sprintf "%s file \"%s\", line %d, characters %d-%d"
-              (info is_raise) filename lineno startchar endchar)
+  | Known_location(is_raise, filename, lineno, startchar, endchar, is_inline) ->
+      Some (sprintf "%s file \"%s\"%s, line %d, characters %d-%d"
+              (info is_raise) filename
+              (if is_inline then " (inlined)" else "")
+              lineno startchar endchar)
 
 let print_exception_backtrace outchan backtrace =
   match backtrace with
@@ -158,8 +161,12 @@ let raw_backtrace_to_string raw_backtrace =
   backtrace_to_string (convert_raw_backtrace raw_backtrace)
 
 let backtrace_slot_is_raise = function
-  | Known_location(is_raise, _, _, _, _) -> is_raise
+  | Known_location(is_raise, _, _, _, _, _) -> is_raise
   | Unknown_location(is_raise) -> is_raise
+
+let backtrace_slot_is_inline = function
+  | Known_location(_, _, _, _, _, is_inline) -> is_inline
+  | Unknown_location _ -> false
 
 type location = {
   filename : string;
@@ -171,7 +178,7 @@ type location = {
 let backtrace_slot_location = function
   | Unknown_location _ -> None
   | Known_location(_is_raise, filename, line_number,
-                   start_char, end_char) ->
+                   start_char, end_char, _is_inline) ->
     Some {
       filename;
       line_number;
@@ -203,6 +210,7 @@ module Slot = struct
   type t = backtrace_slot
   let format = format_backtrace_slot
   let is_raise = backtrace_slot_is_raise
+  let is_inline = backtrace_slot_is_inline
   let location = backtrace_slot_location
 end
 
