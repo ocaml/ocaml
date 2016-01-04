@@ -29,6 +29,7 @@ module type S =
     val remove: key -> 'a t -> 'a t
     val merge:
           (key -> 'a option -> 'b option -> 'c option) -> 'a t -> 'b t -> 'c t
+    val union: (key -> 'a -> 'a -> 'a option) -> 'a t -> 'a t -> 'a t
     val compare: ('a -> 'a -> int) -> 'a t -> 'a t -> int
     val equal: ('a -> 'a -> bool) -> 'a t -> 'a t -> bool
     val iter: (key -> 'a -> unit) -> 'a t -> unit
@@ -268,6 +269,23 @@ module Make(Ord: OrderedType) = struct
           concat_or_join (merge f l1 l2) v2 (f v2 d1 (Some d2)) (merge f r1 r2)
       | _ ->
           assert false
+
+    let rec union f s1 s2 =
+      match (s1, s2) with
+      | (Empty, s) | (s, Empty) -> s
+      | (Node (l1, v1, d1, r1, h1), Node (l2, v2, d2, r2, h2)) ->
+          if h1 >= h2 then
+            let (l2, d2, r2) = split v1 s2 in
+            let l = union f l1 l2 and r = union f r1 r2 in
+            match d2 with
+            | None -> join l v1 d1 r
+            | Some d2 -> concat_or_join l v1 (f v1 d1 d2) r
+          else
+            let (l1, d1, r1) = split v2 s1 in
+            let l = union f l1 l2 and r = union f r1 r2 in
+            match d1 with
+            | None -> join l v2 d2 r
+            | Some d1 -> concat_or_join l v2 (f v2 d1 d2) r
 
     let rec filter p = function
         Empty -> Empty
