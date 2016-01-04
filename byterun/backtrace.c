@@ -64,7 +64,7 @@ CAMLprim value caml_backtrace_status(value vunit)
 
    note that the test for compiler-inserted raises is slightly redundant:
      (!li->loc_valid && li->loc_is_raise)
-   caml_extract_location_info above guarantees that when li->loc_valid is
+   caml_debuginfo_location guarantees that when li->loc_valid is
    0, then li->loc_is_raise is always 1, so the latter test is
    useless. We kept it to keep code identical to the byterun/
    implementation. */
@@ -115,7 +115,8 @@ CAMLexport void caml_print_exception_backtrace(void)
   }
 
   for (i = 0; i < caml_backtrace_pos; i++) {
-    caml_extract_location_info(caml_backtrace_buffer[i], &li);
+    caml_debuginfo_location(
+        caml_debuginfo_extract(caml_backtrace_buffer[i]), &li);
     print_location(&li, i);
   }
 }
@@ -152,8 +153,7 @@ CAMLprim value caml_get_exception_raw_backtrace(value unit)
 
     res = caml_alloc(saved_caml_backtrace_pos, 0);
     for (i = 0; i < saved_caml_backtrace_pos; i++) {
-      Field(res, i) =
-        caml_val_raw_backtrace_slot(saved_caml_backtrace_buffer[i]);
+      Field(res, i) = Val_backtrace_slot(saved_caml_backtrace_buffer[i]);
     }
   }
 
@@ -161,16 +161,17 @@ CAMLprim value caml_get_exception_raw_backtrace(value unit)
 }
 
 /* Convert the raw backtrace to a data structure usable from OCaml */
-CAMLprim value caml_convert_raw_backtrace_slot(value backtrace_slot)
+CAMLprim value caml_convert_raw_backtrace_slot(value slot)
 {
-  CAMLparam1(backtrace_slot);
+  CAMLparam1(slot);
   CAMLlocal2(p, fname);
   struct caml_loc_info li;
 
   if (!caml_debug_info_available())
     caml_failwith("No debug information available");
 
-  caml_extract_location_info(caml_raw_backtrace_slot_val(backtrace_slot), &li);
+  debuginfo dbg = caml_debuginfo_extract(Backtrace_slot_val(slot));
+  caml_debuginfo_location(dbg, &li);
 
   if (li.loc_valid) {
     fname = caml_copy_string(li.loc_filename);
