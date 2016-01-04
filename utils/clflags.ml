@@ -297,11 +297,11 @@ let o2_arguments = {
 }
 
 let o3_arguments = {
-  inline_call_cost = Some (20 * default_inline_call_cost);
-  inline_alloc_cost = Some (20 * default_inline_alloc_cost);
-  inline_prim_cost = Some (20 * default_inline_prim_cost);
-  inline_branch_cost = Some (20 * default_inline_branch_cost);
-  inline_indirect_cost = Some (20 * default_inline_indirect_cost);
+  inline_call_cost = Some (3 * default_inline_call_cost);
+  inline_alloc_cost = Some (3 * default_inline_alloc_cost);
+  inline_prim_cost = Some (3 * default_inline_prim_cost);
+  inline_branch_cost = Some (3 * default_inline_branch_cost);
+  inline_indirect_cost = Some (3 * default_inline_indirect_cost);
   inline_lifting_benefit = None;
   branch_inline_factor = Some 0.;
   max_inlining_depth = Some 3;
