@@ -77,6 +77,7 @@ type t =
   | Missing_symbol_information of string * string (* 57 *)
   | Unreachable_case                        (* 58 *)
   | Ambiguous_pattern of string list        (* 59 *)
+  | No_cmx_file of string                   (* 60 *)
 ;;
 
 (* If you remove a warning, leave a hole in the numbering.  NEVER change
@@ -145,9 +146,10 @@ let number = function
   | Missing_symbol_information _ -> 57
   | Unreachable_case -> 58
   | Ambiguous_pattern _ -> 59
+  | No_cmx_file _ -> 60
 ;;
 
-let last_warning_number = 59
+let last_warning_number = 60
 ;;
 
 (* Must be the max number returned by the [number] function. *)
@@ -452,6 +454,10 @@ let message = function
             "variables " ^ String.concat "," vars in
       Printf.sprintf
         "Ambiguous guarded pattern, %s may match different or-pattern arguments" msg
+  | No_cmx_file name ->
+      Printf.sprintf
+        "no cmx file was found in path for module %s, \
+         and its interface was not compiled with -opaque" name
 ;;
 
 let nerrors = ref 0;;
@@ -549,6 +555,7 @@ let descriptions =
    57, "Missing symbol information (is a .cmx file missing?)";
    58, "Unreachable case in a pattern-matching (based on type information).";
    59, "Ambiguous binding by pattern.";
+   60, "Missing cmx file";
   ]
 ;;
 

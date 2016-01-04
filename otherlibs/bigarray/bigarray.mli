@@ -83,7 +83,7 @@ type ('a, 'b) kind =
   | Nativeint : (nativeint, nativeint_elt) kind
   | Complex32 : (Complex.t, complex32_elt) kind
   | Complex64 : (Complex.t, complex64_elt) kind
-  | Char : (char, int8_unsigned_elt) kind
+  | Char : (char, int8_unsigned_elt) kind (**)
 (** To each element kind is associated an OCaml type, which is
    the type of OCaml values that can be stored in the big array
    or read back from it.  This type is not necessarily the same
@@ -170,10 +170,10 @@ val char : (char, int8_unsigned_elt) kind
 
 (** {6 Array layouts} *)
 
-type c_layout = C_layout_typ
+type c_layout = C_layout_typ (**)
 (** See {!Bigarray.fortran_layout}.*)
 
-type fortran_layout = Fortran_layout_typ
+type fortran_layout = Fortran_layout_typ (**)
 (** To facilitate interoperability with existing C and Fortran code,
    this library supports two different memory layouts for big arrays,
    one compatible with the C conventions,

@@ -17,12 +17,7 @@ exception Fatal_error
 let fatal_error msg =
   prerr_string ">> Fatal error: "; prerr_endline msg; raise Fatal_error
 
-let fatal_errorf fmt =
-  let (_ : string) = Format.flush_str_formatter () in
-  Format.kfprintf (fun ppf ->
-      fatal_error (Format.flush_str_formatter ()))
-    Format.str_formatter
-    fmt
+let fatal_errorf _fmt = assert false (* Format.kasprintf fatal_error fmt *)
 
 (* Exceptions *)
 
@@ -474,7 +469,7 @@ let did_you_mean ppf get_choices =
   | [] -> ()
   | choices ->
      let rest, last = split_last choices in
-     Format.fprintf ppf "@\nHint: Did you mean %s%s%s?"
+     Format.fprintf ppf "@\nHint: Did you mean %s%s%s?@?"
        (String.concat ", " rest)
        (if rest = [] then "" else " or ")
        last

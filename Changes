@@ -133,6 +133,9 @@ Compilers:
   (Thomas Refis, Leo White)
 - GPR#306: Instrument the compiler to debug performance regressions
   (Pierre Chambart)
+- GPR#319: add warning for missing cmx files, and extend -opaque option to mli
+  files.
+  (Leo White)
 - PR#6920: fix debug informations around uses of %apply or %revapply
   (Jérémie Dimino)
 
@@ -224,6 +227,7 @@ Standard library:
   (Bobot François)
 - GPR#329: Add exists, for_all,  mem and memq functions in Array
   (Bernhard Schommer)
+- GPR#356: Add [Format.kasprintf] (Jérémie Dimino, Mark Shinwell)
 
 Type system:
 - PR#5545: Type annotations on methods cannot control the choice of abbreviation
@@ -234,6 +238,8 @@ Type system:
 - PR#6593: Functor application in tests/basic-modules fails after commit 15405
 
 Toplevel and debugger:
+- PR#6113: Add descriptions to directives, and display them via #help
+  (Nick Giannarakis, Berke Durak, Francis Southern and Gabriel Scherer)
 - PR#6396: Warnings-as-errors not properly flushed in the toplevel
   (Alain Frisch)
 - PR#6468: toplevel now supports backtraces if invoked with OCAMLRUNPARAM=b
@@ -296,6 +302,12 @@ Manual:
   subdirectory of the main OCaml source repository. Contributions to
   the manual are warmly welcome.
   (François Bobot, review by Florian Angeletti)
+- MPR#6676: ongoing simplification of the "Language Extensions" section
+  (Alain Frisch, John Whitington)
+- MPR#7092, GPR#379: Add missing documentation for new 4.03 features
+  (Florian Angeletti)
+- MPR#7109, GPR#380: Fix bigarray documentation layout
+  (Florian Angeletti, Leo White)
 
 Bug fixes:
 - PR#3612: memory leak in bigarray read from file
@@ -402,6 +414,8 @@ Bug fixes:
 - PR#7075: Fix repetitions in ocamldoc generated documentation
   (Florian Angeletti)
 - PR#7082: Object type in recursive module's `with` annotation
+- PR#7108: ocamldoc, have -html preserve custom/extended html generators
+  (Armaël Guéneau)
 - PR#7096: ocamldoc uses an incorrect subscript/superscript style
 - GPR#205: Clear caml_backtrace_last_exn before registering as root
   (report and fix by Frederic Bour)

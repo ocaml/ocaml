@@ -22,7 +22,7 @@ type _ backend_kind =
 
 val compile_implementation :
     ?toplevel:(string -> bool) ->
-    sourcefile:string ->
+    source_provenance:Timings.source_provenance ->
     string ->
     backend:(module Backend_intf.S) ->
     'a backend_kind ->
@@ -37,7 +37,7 @@ val report_error: Format.formatter -> error -> unit
 
 
 val compile_unit:
-  sourcefile:string ->
+  source_provenance:Timings.source_provenance ->
   string(*prefixname*) ->
   string(*asm file*) -> bool(*keep asm*) ->
   string(*obj file*) -> (unit -> unit) -> unit

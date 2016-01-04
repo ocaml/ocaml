@@ -65,12 +65,12 @@ let do_transl modulename modul =
   (id, size), lam
 
 let implementation ppf sourcefile outputprefix ~backend =
+  let source_provenance = Timings.File sourcefile in
   Compmisc.init_path true;
   let modulename = module_of_filename ppf sourcefile outputprefix in
   Env.set_unit_name modulename;
   let env = Compmisc.initial_env() in
-  Compilenv.reset ~source_provenance:(Timings.File sourcefile)
-    ?packname:!Clflags.for_package modulename;
+  Compilenv.reset ~source_provenance ?packname:!Clflags.for_package modulename;
   let cmxfile = outputprefix ^ ".cmx" in
   let objfile = outputprefix ^ ext_obj in
   let comp ast =
@@ -107,13 +107,14 @@ let implementation ppf sourcefile outputprefix ~backend =
           +++ Simplif.simplify_lambda
           +++ print_if ppf Clflags.dump_lambda Printlambda.lambda
           ++ (fun ((module_ident, size), lam) ->
-              Middle_end.middle_end ppf ~sourcefile ~prefixname:outputprefix
+              Middle_end.middle_end ppf ~source_provenance
+                ~prefixname:outputprefix
                 ~size
                 ~module_ident
                 ~backend
                 ~module_initializer:lam)
-          ++ Asmgen.compile_implementation ~sourcefile outputprefix ~backend
-            Asmgen.Flambda ppf;
+          ++ Asmgen.compile_implementation ~source_provenance outputprefix
+            ~backend Asmgen.Flambda ppf;
           Compilenv.save_unit_info cmxfile)
       end
       else begin
@@ -126,8 +127,10 @@ let implementation ppf sourcefile outputprefix ~backend =
             (fun (size, lambda) ->
               (size, Simplif.simplify_lambda lambda)
               +++ print_if ppf Clflags.dump_lambda Printlambda.lambda
-              ++ (fun (main_module_block_size, code) -> Asmgen.{ code; main_module_block_size })
-              ++ Asmgen.compile_implementation ~sourcefile outputprefix ~backend Asmgen.Lambda ppf;
+              ++ (fun (main_module_block_size, code) ->
+                Asmgen.{ code; main_module_block_size })
+              ++ Asmgen.compile_implementation ~source_provenance outputprefix
+                ~backend Asmgen.Lambda ppf;
               Compilenv.save_unit_info cmxfile)
       end
     end;

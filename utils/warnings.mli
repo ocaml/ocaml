@@ -72,6 +72,7 @@ type t =
   | Missing_symbol_information of string * string (* 57 *)
   | Unreachable_case                        (* 58 *)
   | Ambiguous_pattern of string list        (* 59 *)
+  | No_cmx_file of string                   (* 60 *)
 ;;
 
 val parse_options : bool -> string -> unit;;

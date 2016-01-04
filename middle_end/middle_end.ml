@@ -28,7 +28,7 @@ let _dump_function_sizes flam ~backend =
           | None -> assert false)
         set_of_closures.function_decls.funs)
 
-let middle_end ppf ~sourcefile ~prefixname ~backend
+let middle_end ppf ~source_provenance ~prefixname ~backend
     ~size
     ~module_ident
     ~module_initializer =
@@ -58,17 +58,17 @@ let middle_end ppf ~sourcefile ~prefixname ~backend
         Format.eprintf "\n@?"
       end;
     end;
-    let timing_pass = (Timings.Flambda_pass (name, sourcefile)) in
+    let timing_pass = (Timings.Flambda_pass (name, source_provenance)) in
     let flam = Timings.accumulate_time timing_pass pass flam in
     if !Clflags.flambda_invariant_checks then begin
-      Timings.accumulate_time (Flambda_pass ("check", sourcefile)) check flam
+      Timings.accumulate_time (Flambda_pass ("check", source_provenance)) check flam
     end;
     flam
   in
-  Timings.accumulate_time (Flambda_pass ("middle_end", sourcefile)) (fun () ->
+  Timings.accumulate_time (Flambda_pass ("middle_end", source_provenance)) (fun () ->
     let flam =
       let timing_pass =
-        Timings.Flambda_pass ("closure_conversion", sourcefile)
+        Timings.Flambda_pass ("closure_conversion", source_provenance)
       in
       Timings.accumulate_time timing_pass (fun () ->
           module_initializer

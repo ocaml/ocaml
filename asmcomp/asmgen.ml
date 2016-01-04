@@ -134,7 +134,8 @@ let compile_genfuns ppf f =
        | _ -> ())
     (Cmmgen.generic_functions true [Compilenv.current_unit_infos ()])
 
-let compile_unit ~sourcefile _output_prefix asm_filename keep_asm obj_filename gen =
+let compile_unit ~source_provenance _output_prefix asm_filename keep_asm
+      obj_filename gen =
   let create_asm = keep_asm || not !Emitaux.binary_backend_available in
   Emitaux.create_asm_file := create_asm;
   try
@@ -148,7 +149,7 @@ let compile_unit ~sourcefile _output_prefix asm_filename keep_asm obj_filename g
       raise exn
     end;
     let assemble_result =
-      Timings.(time (Assemble sourcefile))
+      Timings.(time (Assemble source_provenance))
         (Proc.assemble_file asm_filename) obj_filename
     in
     if assemble_result <> 0
@@ -168,12 +169,12 @@ type clambda_and_constants =
   ((Symbol.t * bool (* exported *)) *
    Clambda.ustructured_constant) list
 
-let end_gen_implementation ?toplevel ~sourcefile ppf
+let end_gen_implementation ?toplevel ~source_provenance ppf
     (clambda:clambda_and_constants) =
   Emit.begin_assembly ();
   clambda
-  ++ Timings.(time (Cmm sourcefile)) Cmmgen.compunit_and_constants
-  ++ Timings.(time (Compile_phrases sourcefile))
+  ++ Timings.(time (Cmm source_provenance)) Cmmgen.compunit_and_constants
+  ++ Timings.(time (Compile_phrases source_provenance))
        (List.iter (compile_phrase ppf))
   ++ (fun () -> ());
   (match toplevel with None -> () | Some f -> compile_genfuns ppf f);
@@ -189,11 +190,11 @@ let end_gen_implementation ?toplevel ~sourcefile ppf
     );
   Emit.end_assembly ()
 
-let flambda_gen_implementation ?toplevel ~sourcefile ~backend ppf
+let flambda_gen_implementation ?toplevel ~source_provenance ~backend ppf
     (program:Flambda.program) =
   let export = Build_export_info.build_export_info ~backend program in
   let (clambda, preallocated, constants) =
-    Timings.time (Flambda_pass ("backend", sourcefile)) (fun () ->
+    Timings.time (Flambda_pass ("backend", source_provenance)) (fun () ->
       (program, export)
       ++ Flambda_to_clambda.convert
       ++ flambda_raw_clambda_dump_if ppf
@@ -209,10 +210,10 @@ let flambda_gen_implementation ?toplevel ~sourcefile ~backend ppf
     List.map (fun (symbol, const) -> (symbol, true), const)
       (Symbol.Map.bindings constants)
   in
-  end_gen_implementation ?toplevel ~sourcefile ppf
+  end_gen_implementation ?toplevel ~source_provenance ppf
     (clambda, preallocated, constants)
 
-let lambda_gen_implementation ?toplevel ~sourcefile ppf
+let lambda_gen_implementation ?toplevel ~source_provenance ppf
     (lambda:lambda_program) =
   let clambda = Closure.intro lambda.main_module_block_size lambda.code in
   let preallocated_block =
@@ -237,26 +238,27 @@ let lambda_gen_implementation ?toplevel ~sourcefile ppf
     clambda, [preallocated_block], constants
   in
   raw_clambda_dump_if ppf clambda_and_constants;
-  end_gen_implementation ?toplevel ~sourcefile ppf clambda_and_constants
+  end_gen_implementation ?toplevel ~source_provenance ppf clambda_and_constants
 
-let gen_implementation (type t) ?toplevel ~sourcefile ~backend
+let gen_implementation (type t) ?toplevel ~source_provenance ~backend
     (backend_kind: t backend_kind) ppf (code : t) =
   match backend_kind with
   | Flambda ->
-      flambda_gen_implementation ?toplevel ~sourcefile ~backend ppf code
+    flambda_gen_implementation ?toplevel ~source_provenance ~backend ppf code
   | Lambda ->
-      lambda_gen_implementation ?toplevel ~sourcefile ppf code
+    lambda_gen_implementation ?toplevel ~source_provenance ppf code
 
-let compile_implementation (type t) ?toplevel ~sourcefile prefixname ~backend
-    (backend_kind: t backend_kind) ppf (code : t) =
+let compile_implementation (type t) ?toplevel ~source_provenance prefixname
+    ~backend (backend_kind: t backend_kind) ppf (code : t) =
   let asmfile =
     if !keep_asm_file || !Emitaux.binary_backend_available
     then prefixname ^ ext_asm
     else Filename.temp_file "camlasm" ext_asm
   in
-  compile_unit ~sourcefile prefixname asmfile !keep_asm_file (prefixname ^ ext_obj)
-    (fun () ->
-       gen_implementation ?toplevel ~sourcefile ~backend backend_kind ppf code)
+  compile_unit ~source_provenance prefixname asmfile !keep_asm_file
+      (prefixname ^ ext_obj) (fun () ->
+        gen_implementation ?toplevel ~source_provenance ~backend backend_kind
+          ppf code)
 
 (* Error report *)
 

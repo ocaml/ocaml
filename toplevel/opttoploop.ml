@@ -212,8 +212,9 @@ let load_lambda ppf ~module_ident lam size =
   in
   let fn = Filename.chop_extension dll in
   if not Config.flambda then
-    Asmgen.compile_implementation ~sourcefile:"" ~backend ~toplevel:need_symbol
-      fn Asmgen.Lambda ppf (Asmgen.{ code=lam ; main_module_block_size=size })
+    Asmgen.compile_implementation ~source_provenance:Timings.Toplevel ~backend
+      ~toplevel:need_symbol fn Asmgen.Lambda ppf
+      (Asmgen.{ code=lam ; main_module_block_size=size })
   else (
     let flam =
       Middle_end.middle_end ppf
@@ -274,9 +275,7 @@ let execute_phrase print_outcome ppf phr =
       let oldenv = !toplevel_env in
       incr phrase_seqid;
       phrase_name := Printf.sprintf "TOP%i" !phrase_seqid;
-      (* CR trefis for mshinwell: is the source_provenance correct here? Does it
-         matter? *)
-      Compilenv.reset ~source_provenance:Timings.Startup
+      Compilenv.reset ~source_provenance:Timings.Toplevel
         ?packname:None !phrase_name;
       Typecore.reset_delayed_checks ();
       let sstr, rewritten =
