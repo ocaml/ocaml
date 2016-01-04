@@ -449,6 +449,7 @@ void caml_extract_location_info(backtrace_slot slot,
     return;
   }
   li->loc_valid = 1;
+  li->loc_is_inlined = 0;
   li->loc_filename = event->ev_filename;
   li->loc_lnum = event->ev_lnum;
   li->loc_startchr = event->ev_startchr;

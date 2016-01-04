@@ -36,6 +36,7 @@ struct caml_loc_info {
   int loc_lnum;
   int loc_startchr;
   int loc_endchr;
+  int loc_is_inlined;
 };
 
 /* Check availability of debug information before extracting a trace.

@@ -71,6 +71,7 @@ CAMLprim value caml_backtrace_status(value vunit)
 static void print_location(struct caml_loc_info * li, int index)
 {
   char * info;
+  char * inlined;
 
   /* Ignore compiler-inserted raise */
   if (!li->loc_valid && li->loc_is_raise) return;
@@ -87,11 +88,16 @@ static void print_location(struct caml_loc_info * li, int index)
     else
       info = "Called from";
   }
-  if (! li->loc_valid) {
-    fprintf(stderr, "%s unknown location\n", info);
+  if (li->loc_is_inlined) {
+    inlined = " (inlined)";
   } else {
-    fprintf (stderr, "%s file \"%s\", line %d, characters %d-%d\n",
-             info, li->loc_filename, li->loc_lnum,
+    inlined = "";
+  }
+  if (! li->loc_valid) {
+    fprintf(stderr, "%s unknown location%s\n", info, inlined);
+  } else {
+    fprintf (stderr, "%s file \"%s\"%s, line %d, characters %d-%d\n",
+             info, li->loc_filename, inlined, li->loc_lnum,
              li->loc_startchr, li->loc_endchr);
   }
 }
@@ -168,12 +174,13 @@ CAMLprim value caml_convert_raw_backtrace_slot(value backtrace_slot)
 
   if (li.loc_valid) {
     fname = caml_copy_string(li.loc_filename);
-    p = caml_alloc_small(5, 0);
+    p = caml_alloc_small(6, 0);
     Field(p, 0) = Val_bool(li.loc_is_raise);
     Field(p, 1) = fname;
     Field(p, 2) = Val_int(li.loc_lnum);
     Field(p, 3) = Val_int(li.loc_startchr);
     Field(p, 4) = Val_int(li.loc_endchr);
+    Field(p, 5) = Val_bool(li.loc_is_inlined);
   } else {
     p = caml_alloc_small(1, 1);
     Field(p, 0) = Val_bool(li.loc_is_raise);

@@ -189,6 +189,7 @@ void caml_extract_location_info(backtrace_slot slot,
   if ((d->frame_size & 1) == 0) {
     li->loc_valid = 0;
     li->loc_is_raise = 1;
+    li->loc_is_inlined = 0;
     return;
   }
   /* Recover debugging info */
@@ -196,19 +197,22 @@ void caml_extract_location_info(backtrace_slot slot,
              sizeof(char *) + sizeof(short) + sizeof(short) +
              sizeof(short) * d->num_live + sizeof(frame_descr *) - 1)
             & -sizeof(frame_descr *);
+  infoptr = *(uintnat*)infoptr;
   info1 = ((uint32_t *)infoptr)[0];
   info2 = ((uint32_t *)infoptr)[1];
   /* Format of the two info words:
        llllllllllllllllllll aaaaaaaa bbbbbbbbbb nnnnnnnnnnnnnnnnnnnnnnnn kk
                           44       36         26                       2  0
                        (32+12)    (32+4)
-     k ( 2 bits): 0 if it's a call, 1 if it's a raise
+     k ( 2 bits): 0 if it's a call
+                  1 if it's a raise
      n (24 bits): offset (in 4-byte words) of file name relative to infoptr
      l (20 bits): line number
      a ( 8 bits): beginning of character range
      b (10 bits): end of character range */
   li->loc_valid = 1;
-  li->loc_is_raise = (info1 & 3) != 0;
+  li->loc_is_raise = (info1 & 3) == 1;
+  li->loc_is_inlined = 0;
   li->loc_filename = (char *) infoptr + (info1 & 0x3FFFFFC);
   li->loc_lnum = info2 >> 12;
   li->loc_startchr = (info2 >> 4) & 0xFF;
