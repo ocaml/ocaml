@@ -71,6 +71,7 @@ type t =
   | Unreachable_case                        (* 56 *)
   | Ambiguous_pattern of string list        (* 57 *)
   | No_cmx_file of string                   (* 58 *)
+  | Misspelled_attribute of string * string (* 59 *)
 ;;
 
 val parse_options : bool -> string -> unit;;

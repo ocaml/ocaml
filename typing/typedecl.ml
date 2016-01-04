@@ -1364,10 +1364,17 @@ type native_repr_attribute =
   | Native_repr_attr_absent
   | Native_repr_attr_present of native_repr_kind
 
+let unboxed = Attr_helper.create "unboxed"
+    ~neighbouring_names:["boxed";"unmixed";"unbound";"unfixed"]
+
+let untagged = Attr_helper.create "untagged"
+    ~neighbouring_names:["tagged"]
+
+
 let get_native_repr_attribute attrs ~global_repr =
   match
-    Attr_helper.get_no_payload_attribute ["unboxed"; "ocaml.unboxed"]  attrs,
-    Attr_helper.get_no_payload_attribute ["untagged"; "ocaml.untagged"] attrs,
+    Attr_helper.get_no_payload_attribute unboxed attrs,
+    Attr_helper.get_no_payload_attribute untagged attrs,
     global_repr
   with
   | None, None, None -> Native_repr_attr_absent

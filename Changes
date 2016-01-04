@@ -468,7 +468,7 @@ Features wishes:
   (Eyyüb Sari)
 - PR#6924: tiny optim to avoid some spilling of floats in x87
   (Alain Frisch)
-- GPR#111: `(f [@taillcall]) x y` warns if `f x y` is not a tail-call
+- GPR#111: `(f [@tailcall]) x y` warns if `f x y` is not a tail-call
   (Simon Cruanes)
 - GPR#118: ocamldep -allow-approx: fallback to a lexer-based approximation
   (Frédéric Bour)
@@ -507,6 +507,8 @@ Features wishes:
   (Rich Neswold)
 - GPR#365: prevent printing just a single type variable on one side
   of a type error clash. (Hugo Heuzard)
+- GPR#372: add a warning for possibly mispelled builtin attribute
+  (Florian Angeletti)
 
 OCaml 4.02.3 (27 Jul 2015):
 ---------------------------

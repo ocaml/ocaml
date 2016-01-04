@@ -14,13 +14,25 @@ open Typedtree
 open Lambda
 open Location
 
-let is_inline_attribute = function
-  | {txt=("inline"|"ocaml.inline")}, _ -> true
-  | _ -> false
 
-let is_inlined_attribute = function
-  | {txt=("inlined"|"ocaml.inlined")}, _ -> true
-  | _ -> false
+let inline_names = Attr_helper.std_namespace "inline"
+let inlined_names = Attr_helper.std_namespace "inlined"
+
+let inline = Attr_helper.{
+    names=inline_names;
+    neighbouring_names= "online" :: inlined_names;
+    max_distance=1
+  }
+let inlined = Attr_helper.{
+    names=inlined_names;
+    neighbouring_names= "online" :: inline_names;
+    max_distance=2
+  }
+let tailcall = Attr_helper.create "tailcall"
+
+let is_inline_attribute = Attr_helper.is_attribute inline
+let is_inlined_attribute = Attr_helper.is_attribute inlined
+let is_tailcall_attribute = Attr_helper.is_attribute tailcall
 
 (* the 'inline' and 'inlined' attributes can be used as
    [@inline], [@inline never] or [@inline always].
@@ -99,10 +111,6 @@ let get_and_remove_inlined_attribute_on_module e =
 (* It also remove the attribute from the expression, like
    get_inlined_attribute *)
 let get_tailcall_attribute e =
-  let is_tailcall_attribute = function
-    | {txt=("tailcall"|"ocaml.tailcall")}, _ -> true
-    | _ -> false
-  in
   let tailcalls, exp_attributes =
     List.partition is_tailcall_attribute e.exp_attributes
   in
@@ -116,33 +124,29 @@ let get_tailcall_attribute e =
       end;
       true, { e with exp_attributes }
 
-let check_attribute e ({ txt; loc }, _) =
-  match txt with
-  | "inline" | "ocaml.inline" ->  begin
+let check_attribute e  ( ({loc;txt}, _ ) as attr ) =
+  let is = Attr_helper.is_attribute ~warn:false in
+  if is inline attr then
       match e.exp_desc with
       | Texp_function _ -> ()
       | _ ->
           Location.prerr_warning loc
             (Warnings.Misplaced_attribute txt)
-    end
-  | "inlined" | "ocaml.inlined"
-  | "tailcall" | "ocaml.tailcall" ->
+  else if is inlined attr || is tailcall attr then
       (* Removed by the Texp_apply cases *)
       Location.prerr_warning loc
         (Warnings.Misplaced_attribute txt)
-  | _ -> ()
 
-let check_attribute_on_module e ({ txt; loc }, _) =
-  match txt with
-  | "inline" | "ocaml.inline" ->  begin
+let check_attribute_on_module e ( ({loc;txt}, _ ) as attr ) =
+  if Attr_helper.is_attribute inline attr then
+    begin
       match e.mod_desc with
       | Tmod_functor _ -> ()
       | _ ->
           Location.prerr_warning loc
             (Warnings.Misplaced_attribute txt)
     end
-  | "inlined" | "ocaml.inlined" ->
+  else if Attr_helper.is_attribute inlined attr then
       (* Removed by the Texp_apply cases *)
       Location.prerr_warning loc
         (Warnings.Misplaced_attribute txt)
-  | _ -> ()

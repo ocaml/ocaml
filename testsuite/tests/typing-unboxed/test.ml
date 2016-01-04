@@ -115,7 +115,6 @@ external h : (int [@unboxed]) -> float = "h";;
 
 external i : int -> float [@unboxed] = "i";;
 external j : int -> (float [@unboxed]) * float = "j";;
-external k : int -> (float [@unboxd]) = "k";;
 
 (* Bad: old style annotations + new style attributes *)
 

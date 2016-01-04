@@ -1568,7 +1568,8 @@ Some attributes are understood by the type-checker:
   definitions to obtain finer control over the C-to-OCaml interface. See
   \ref{s:C-cheaper-call} for more details.
 \end{itemize}
-
+Spelling mistakes on these built-in attributes might be detected by turning on
+the warning 59.
 \begin{verbatim}
 module X = struct
   [@@@warning "+9"]  (* locally enable warning 9 in this structure *)
