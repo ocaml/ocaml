@@ -175,6 +175,7 @@ Standard library:
   (for conformance with ISO C99)  (Xavier Leroy)
 - PR#6390, GPR#36: expose Sys.{int_size,max_wosize} for improved js_of_ocaml
   portability (Hugo Heuzard)
+- PR#6449: Add Map.union (Alain Frisch)
 * PR#6494: Add equal function in modules
   Bytes, Char, Digest, Int32, Int64, Nativeint, and String
   (Romain Calascibetta)
