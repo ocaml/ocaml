@@ -725,7 +725,7 @@ let transl_structured_constant cst =
 (* Translate constant closures *)
 
 let constant_closures =
-  ref ([] : (string * ufunction list) list)
+  ref ([] : (string * ufunction list * uconstant list) list)
 
 (* Boxed integers *)
 
@@ -1407,7 +1407,7 @@ let rec transl env e =
       transl_constant sc
   | Uclosure(fundecls, []) ->
       let lbl = Compilenv.new_const_symbol() in
-      constant_closures := (lbl, fundecls) :: !constant_closures;
+      constant_closures := (lbl, fundecls, []) :: !constant_closures;
       List.iter (fun f -> Queue.add f functions) fundecls;
       Cconst_symbol lbl
   | Uclosure(fundecls, clos_vars) ->
@@ -2435,6 +2435,10 @@ let rec emit_structured_constant symb cst cont =
   | Uconst_float_array fields ->
       emit_block (floatarray_header (List.length fields)) symb
         (Misc.map_end (fun f -> Cdouble f) fields cont)
+  | Uconst_closure(fundecls, lbl, fv) ->
+      constant_closures := (lbl, fundecls, fv) :: !constant_closures;
+      List.iter (fun f -> Queue.add f functions) fundecls;
+      cont
 
 and emit_constant cst cont =
   match cst with
@@ -2472,12 +2476,13 @@ and emit_boxed_int64_constant n cont =
 
 (* Emit constant closures *)
 
-let emit_constant_closure symb fundecls cont =
+let emit_constant_closure symb fundecls clos_vars cont =
   match fundecls with
     [] -> assert false
   | f1 :: remainder ->
       let rec emit_others pos = function
-        [] -> cont
+          [] ->
+            List.fold_right emit_constant clos_vars cont
       | f2 :: rem ->
           if f2.arity = 1 then
             Cint(infix_header pos) ::
@@ -2490,7 +2495,8 @@ let emit_constant_closure symb fundecls cont =
             Cint(Nativeint.of_int (f2.arity lsl 1 + 1)) ::
             Csymbol_address f2.label ::
             emit_others (pos + 4) rem in
-      Cint(black_closure_header (fundecls_size fundecls)) ::
+      Cint(black_closure_header (fundecls_size fundecls
+                                 + List.length clos_vars)) ::
       Cdefine_symbol symb ::
       if f1.arity = 1 then
         Csymbol_address f1.label ::
@@ -2515,8 +2521,8 @@ let emit_all_constants cont =
          c:= Cdata(cst):: !c)
     (Compilenv.structured_constants());
   List.iter
-    (fun (symb, fundecls) ->
-        c := Cdata(emit_constant_closure symb fundecls []) :: !c)
+    (fun (symb, fundecls, clos_vars) ->
+        c := Cdata(emit_constant_closure symb fundecls clos_vars []) :: !c)
     !constant_closures;
   constant_closures := [];
   !c

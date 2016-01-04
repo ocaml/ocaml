@@ -26,13 +26,14 @@ type ustructured_constant =
   | Uconst_block of int * uconstant list
   | Uconst_float_array of float list
   | Uconst_string of string
+  | Uconst_closure of ufunction list * string * uconstant list
 
 and uconstant =
   | Uconst_ref of string * ustructured_constant option
   | Uconst_int of int
   | Uconst_ptr of int
 
-type ulambda =
+and ulambda =
     Uvar of Ident.t
   | Uconst of uconstant
   | Udirect_apply of function_label * ulambda list * Debuginfo.t
