@@ -165,17 +165,16 @@ CAMLprim value caml_get_exception_raw_backtrace(value unit)
   CAMLreturn(res);
 }
 
+#define Val_debuginfo(bslot) (Val_long((uintnat)(bslot)>>1))
+#define Debuginfo_val(vslot) ((debuginfo)(Long_val(vslot) << 1))
+
 /* Convert the raw backtrace to a data structure usable from OCaml */
-CAMLprim value caml_convert_raw_backtrace_slot(value slot)
+static value caml_convert_debuginfo(debuginfo dbg)
 {
-  CAMLparam1(slot);
+  CAMLparam0();
   CAMLlocal2(p, fname);
   struct caml_loc_info li;
 
-  if (!caml_debug_info_available())
-    caml_failwith("No debug information available");
-
-  debuginfo dbg = caml_debuginfo_extract(Backtrace_slot_val(slot));
   caml_debuginfo_location(dbg, &li);
 
   if (li.loc_valid) {
@@ -195,6 +194,65 @@ CAMLprim value caml_convert_raw_backtrace_slot(value slot)
   CAMLreturn(p);
 }
 
+CAMLprim value caml_convert_raw_backtrace_slot(value slot)
+{
+  if (!caml_debug_info_available())
+    caml_failwith("No debug information available");
+
+  return (caml_convert_debuginfo(Debuginfo_val(slot)));
+}
+
+/* Convert the raw backtrace to a data structure usable from OCaml */
+CAMLprim value caml_convert_raw_backtrace(value bt)
+{
+  CAMLparam1(bt);
+  CAMLlocal1(array);
+
+  if (!caml_debug_info_available())
+    caml_failwith("No debug information available");
+
+  intnat i, index;
+  for (i = 0, index = 0; i < Wosize_val(bt); ++i)
+  {
+    debuginfo dbg;
+    for (dbg = caml_debuginfo_extract(Backtrace_slot_val(Field(bt, i)));
+         dbg != NULL;
+         dbg = caml_debuginfo_next(dbg))
+      index++;
+  }
+
+  array = caml_alloc(index, 0);
+
+  for (i = 0, index = 0; i < Wosize_val(bt); ++i)
+  {
+    debuginfo dbg;
+    for (dbg = caml_debuginfo_extract(Backtrace_slot_val(Field(bt, i)));
+         dbg != NULL;
+         dbg = caml_debuginfo_next(dbg))
+    {
+      Store_field(array, index, caml_convert_debuginfo(dbg));
+      index++;
+    }
+  }
+
+  CAMLreturn(array);
+}
+
+CAMLprim value caml_raw_backtrace_length(value bt)
+{
+  return Val_int(Wosize_val(bt));
+}
+
+CAMLprim value caml_raw_backtrace_slot(value bt, value index)
+{
+  uintnat i = Long_val(index);
+  if (i >= Wosize_val(bt))
+    caml_invalid_argument("Printexc.get_raw_backtrace_slot: "
+                          "index out of bounds");
+  debuginfo dbg = caml_debuginfo_extract(Backtrace_slot_val(Field(bt, i)));
+  return Val_debuginfo(dbg);
+}
+
 /* the function below is deprecated: we previously returned directly
    the OCaml-usable representation, instead of the raw backtrace as an
    abstract type, but this has a large performance overhead if you
@@ -210,13 +268,15 @@ CAMLprim value caml_get_exception_backtrace(value unit)
   intnat i;
 
   if (!caml_debug_info_available()) {
-      res = Val_int(0); /* None */
+    res = Val_int(0); /* None */
   } else {
     backtrace = caml_get_exception_raw_backtrace(Val_unit);
 
     arr = caml_alloc(Wosize_val(backtrace), 0);
     for (i = 0; i < Wosize_val(backtrace); i++) {
-      Store_field(arr, i, caml_convert_raw_backtrace_slot(Field(backtrace, i)));
+      backtrace_slot slot = Backtrace_slot_val(Field(backtrace, i));
+      debuginfo dbg = caml_debuginfo_extract(slot);
+      Store_field(arr, i, caml_convert_debuginfo(dbg));
     }
 
     res = caml_alloc_small(1, 0); Field(res, 0) = arr; /* Some */

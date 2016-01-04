@@ -84,7 +84,7 @@ let catch fct arg =
     exit 2
 
 type raw_backtrace_slot
-type raw_backtrace = raw_backtrace_slot array
+type raw_backtrace
 
 external get_raw_backtrace:
   unit -> raw_backtrace = "caml_get_exception_raw_backtrace"
@@ -104,8 +104,11 @@ let _ = [Known_location (false, "", 0, 0, 0, false); Unknown_location false]
 external convert_raw_backtrace_slot:
   raw_backtrace_slot -> backtrace_slot = "caml_convert_raw_backtrace_slot"
 
-let convert_raw_backtrace rbckt =
-  try Some (Array.map convert_raw_backtrace_slot rbckt)
+external convert_raw_backtrace:
+  raw_backtrace -> backtrace_slot array = "caml_convert_raw_backtrace"
+
+let convert_raw_backtrace bt =
+  try Some (convert_raw_backtrace bt)
   with Failure _ -> None
 
 let format_backtrace_slot pos slot =
@@ -214,8 +217,11 @@ module Slot = struct
   let location = backtrace_slot_location
 end
 
-let raw_backtrace_length bckt = Array.length bckt
-let get_raw_backtrace_slot bckt i = Array.get bckt i
+external raw_backtrace_length :
+  raw_backtrace -> int = "caml_raw_backtrace_length" [@@noalloc]
+
+external get_raw_backtrace_slot :
+  raw_backtrace -> int -> raw_backtrace_slot = "caml_raw_backtrace_slot"
 
 (* confusingly named:
    returns the *string* corresponding to the global current backtrace *)
