@@ -412,6 +412,8 @@ Bug fixes:
 - PR#7075: Fix repetitions in ocamldoc generated documentation
   (Florian Angeletti)
 - PR#7082: Object type in recursive module's `with` annotation
+- PR#7108: ocamldoc, have -html preserve custom/extended html generators
+  (Armaël Guéneau)
 - PR#7096: ocamldoc uses an incorrect subscript/superscript style
 - GPR#205: Clear caml_backtrace_last_exn before registering as root
   (report and fix by Frederic Bour)

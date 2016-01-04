@@ -48,6 +48,7 @@ with_ocamldoc=ocamldoc
 with_ocamlbuild=ocamlbuild
 with_frame_pointers=false
 no_naked_pointers=false
+native_compiler=true
 TOOLPREF=""
 with_cfi=true
 
@@ -159,6 +160,8 @@ while : ; do
         no_naked_pointers=true;;
     -no-cfi|--no-cfi)
         with_cfi=false;;
+    -no-native-compiler)
+        native_compiler=false;;
     *) if echo "$1" | grep -q -e '^--\?[a-zA-Z0-9-]\+='; then
          err "configure expects arguments of the form '-prefix /foo/bar'," \
              "not '-prefix=/foo/bar' (note the '=')."
@@ -860,6 +863,12 @@ esac
 
 case "$arch64,$arch,$model" in
   true,sparc,*|true,power,ppc|false,amd64,*)
+      arch=none; model=default; system=unknown;;
+esac
+
+case "$native_compiler" in
+    true) ;;
+    false)
       arch=none; model=default; system=unknown;;
 esac
 
