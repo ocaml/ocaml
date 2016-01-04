@@ -133,7 +133,23 @@ let emit_frames a =
     with Not_found ->
       let lbl = Linearize.new_label () in
       Hashtbl.add filenames name lbl;
-      lbl in
+      lbl
+  in
+  let debuginfos = Hashtbl.create 7 in
+  let rec label_debuginfos key =
+    try fst (Hashtbl.find debuginfos key)
+    with Not_found ->
+      let lbl = Linearize.new_label () in
+      let next = match key with
+        | _d, (d' :: ds') -> Some (label_debuginfos (d',ds'))
+        | _d, [] -> None
+      in
+      Hashtbl.add debuginfos key (lbl, next);
+      lbl
+  in
+  let emit_debuginfo_label d =
+    a.efa_label (label_debuginfos (Debuginfo.unroll_inline_chain d))
+  in
   let emit_frame fd =
     a.efa_label fd.fd_lbl;
     a.efa_16 (if Debuginfo.is_none fd.fd_debuginfo
@@ -142,28 +158,45 @@ let emit_frames a =
     a.efa_16 (List.length fd.fd_live_offset);
     List.iter a.efa_16 fd.fd_live_offset;
     a.efa_align Arch.size_addr;
-    if not (Debuginfo.is_none fd.fd_debuginfo) then begin
-      let d = fd.fd_debuginfo in
-      let line = min 0xFFFFF d.dinfo_line
-      and char_start = min 0xFF d.dinfo_char_start
-      and char_end = min 0x3FF d.dinfo_char_end
-      and kind = match d.dinfo_kind with Dinfo_call -> 0 | Dinfo_raise -> 1 in
-      let info =
-        Int64.add (Int64.shift_left (Int64.of_int line) 44) (
-        Int64.add (Int64.shift_left (Int64.of_int char_start) 36) (
-        Int64.add (Int64.shift_left (Int64.of_int char_end) 26)
-                  (Int64.of_int kind))) in
-      a.efa_label_rel
-        (label_filename d.dinfo_file)
-        (Int64.to_int32 info);
-      a.efa_32 (Int64.to_int32 (Int64.shift_right info 32))
-    end in
+    if not (Debuginfo.is_none fd.fd_debuginfo) then
+      emit_debuginfo_label fd.fd_debuginfo
+  in
   let emit_filename name lbl =
     a.efa_def_label lbl;
     a.efa_string name;
-    a.efa_align Arch.size_addr in
+    a.efa_align Arch.size_addr
+  in
+  let pack_info d =
+    let line = min 0xFFFFF d.dinfo_line
+    and char_start = min 0xFF d.dinfo_char_start
+    and char_end = min 0x3FF d.dinfo_char_end
+    and kind = match d.dinfo_kind with
+      | Dinfo_call  -> 0
+      | Dinfo_raise -> 1
+      | Dinfo_inline _ ->
+          assert false (* Should disappear after unrolling inline chain *)
+    in
+    Int64.(add (shift_left (of_int line) 44)
+             (add (shift_left (of_int char_start) 36)
+                (add (shift_left (of_int char_end) 26)
+                   (of_int kind))))
+  in
+  let emit_debuginfo (d,_) (lbl,next) =
+    a.efa_align Arch.size_addr;
+    a.efa_def_label lbl;
+    let info = pack_info d in
+    a.efa_label_rel
+      (label_filename d.dinfo_file)
+      (Int64.to_int32 info);
+    a.efa_32 (Int64.to_int32 (Int64.shift_right info 32));
+    begin match next with
+    | Some next -> a.efa_label next
+    | None -> a.efa_word 0
+    end
+  in
   a.efa_word (List.length !frame_descriptors);
   List.iter emit_frame !frame_descriptors;
+  Hashtbl.iter emit_debuginfo debuginfos;
   Hashtbl.iter emit_filename filenames;
   frame_descriptors := []
 
@@ -224,6 +257,7 @@ let reset_debug_info () =
 (* We only diplay .file if the file has not been seen before. We
    display .loc for every instruction. *)
 let emit_debug_info_gen dbg file_emitter loc_emitter =
+  let dbg, _ = Debuginfo.unroll_inline_chain dbg in
   if is_cfi_enabled () &&
     (!Clflags.debug || Config.with_frame_pointers)
      && dbg.Debuginfo.dinfo_line > 0 (* PR#6243 *)
