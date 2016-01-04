@@ -1,5 +1,481 @@
 Cherry-picked from OCaml 4.03.0:
 -------------
+(Changes that can break existing programs are marked with a "*")
+
+Language features:
+- PR#5528: inline records for constructor arguments (Alain Frisch)
+- PR#6220, PR#6403, PR#6437, PR#6801:
+  Improved redundancy and exhaustiveness checks for GADTs.
+  Namely, the redundancy checker now checks whether the uncovered pattern
+  of the pattern is actually inhabited, exploding at most one wild card.
+  This is also done for exhaustiveness when there is only one case.
+  Additionnally, one can now write unreachable cases, of the form,
+  "pat -> .", which are treated by the redundancy check. (Jacques Garrigue)
+- PR#6374: allow "_ t" as a short-hand for "(_, _, ..) t" for n-ary type
+  constructors (Alain Frisch)
+- PR#6714: allow [@@ocaml.warning] on most structure and signature items:
+  values, modules, module types
+  (whitequark)
+- GPR#26: support for "(type a b)" as syntactic sugar for "(type a) (type b)"
+  (Gabriel Scherer)
+- GPR#42: short functor type syntax: "S -> T" for "functor (_ : S) -> T"
+  (Leo White)
+- GPR#88: allow field punning in object copying expressions:
+    {< x; y; >} is sugar for {< x = x; y = y; >}
+  (Jeremy Yallop)
+- GPR#167: allow to annotate externals' arguments and result types so
+  they can be unboxed or untagged. Supports untagging int and unboxing
+  int32, int64, nativeint and float.
+  (Jérémie Dimino, Mark Shinwell)
+- GPR240: replace special annotations on externals by attributes:
+  * "float" is generalized to [@@unboxed]
+  * "noalloc" becomes [@@noalloc]
+  Deprecate "float" and "noalloc".
+  (Jérémie Dimino)
+- GPR#254: @ocaml.warn_on_literal_pattern attribute on constructors to
+  warn when the argument is matches against a constant pattern.  This
+  attribute is applied on predefined exception constructors which
+  take an purely informational (with no stability guarantee) message.
+  (Alain Frisch)
+- GPR#268: hexadecimal notation for floating-point literals
+  In OCaml source code, FP literals can be written using the hexadecimal
+  notation 0x<mantissa in hex>p<exponent> from ISO C99.
+  (Xavier Leroy)
+- GPR#173: [@inline] and [@inlined] attributes (for function declarations
+  and call sites respectively) to control inlining
+  (Pierre Chambart, Mark Shinwell)
+- PR#6806: Syntax shortcut for putting a type annotation on a record field
+  (Valentin Gatien-Baron, review by Jérémie Dimino)
+- PR#6806: Allow type annotations before the "->" in "fun <args> -> <expr>"
+  (Valentin Gatien-Baron, review by Jérémie Dimino)
+- GPR#282: change short-paths penalty heuristic to assign the same cost to
+  idents containing double underscores as to idents starting with an underscore
+  (Thomas Refis, Leo White)
+- GPR#273: allow to get the extension slot of an extension constructor
+  by writing [%extension_constructor <path>]
+  (Jérémie Dimino)
+- PR#6681 GPR#326: signature items are now accepted as payloads for
+  extension and attributes, using the syntax [%foo: SIG ] or [@foo: SIG ].
+  (Alain Frisch and Gabriel Radanne)
+
+Compilers:
+- PR#4080, PR#6537, PR#5333: fix stack overflow in the compiler when -pack'ing
+  a module
+  that includes a module of the same name (Alain Frisch)
+- PR#4231, PR#5461: (interim solution) warning 31 is now fatal by default
+- PR#4800: better compilation of tuple assignment (Gabriel Scherer and
+  Alain Frisch)
+- PR#5995: keep -for-pack into account to name exceptions; document -for-pack
+  as mandatory for bytecode as well (Alain Frisch, report by Christophe
+  Troestler)
+- PR#6400: better error message for '_' used as an expression
+  (Alain Frisch, report by whitequark)
+- PR#6501: harden the native-code generator against certain uses of "%identity"
+  (Xavier Leroy, report by Antoine Miné).
+- PR#6636: add --version option
+  (whitequark)
+- improve type-specialization of unapplied primitives
+  (Frédéric Bour, review by Gabriel Scherer)
+- PR#6737: fix Typedtree attributes on (fun x -> body) expressions
+- PR#6679: fix pprintast printing of constraints in type declarations
+- PR#6845: -no-check-prims to tell ocamlc not to check primitives in runtime
+* PR#6865: remove special case for parsing "let _ = expr" in structures
+  (Jérémie Dimino, Alain Frisch)
+* PR#6438: Pattern guard disables exhaustiveness check
+  (Alain Frisch)
+- PR#6939: Segfault with improper use of let-rec (Alain Frisch)
+- PR#6943: native-code generator for POWER/PowerPC 64 bits, both in
+  big-endian (ppc64) and little-endian (ppc64le) configuration.
+  (Xavier Leroy, with inspiration from RedHat's unofficial ppc64 and ppc64le
+   ports)
+- PR#6979: better code generation in x86-32 backend for copying floats to
+  the stack (Marc Lasson, review by Xavier Leroy)
+- PR#7018: fix missing identifier renaming during inlining (Alain Frisch,
+  review by Xavier Leroy)
+- PR#7026, GPR#288: remove write barrier for polymorphic variants without
+  arguments
+  (Simon Cruanes)
+- PR#7031: new warning, ambiguous guarded or-patterns (Luc Maranget,
+  Gabriel Scherer, report by Martin Clochard and Claude Marché).
+- PR#7067: Performance regression in the native compiler for long
+  nested structures (Alain Frisch, report by Daniel Bünzli, review
+  by Jacques Garrigue)
+- GPR#17: some cmm optimizations of integer operations with constants
+  (Stephen Dolan, review by Pierre Chambart)
+- GPR#109: new unboxing strategy for float and int references (Vladimir Brankov,
+  review by Alain Frisch)
+- GPR#107: Prevent more unnecessary float boxing, especially in `if` and `match`
+  (Vladimir Brankov, review by Alain Frisch)
+- GPR#115: More precise typing of values at the C-- and Mach level,.
+  (Xavier Leroy, review by Pierre Chambart)
+- GPR#207: Colors in compiler messages (warnings, errors)
+  (Simon Cruanes, review by Gabriel Scherer)
+- GPR#258: more precise information on PowerPC instruction sizes
+  (Pierre Chambart, Xavier Leroy)
+- PR#7022, GPR#259: unbox float and boxed ints earlier, avoid second pass
+  (Alain Frisch)
+- PR#7064, GPR#316: allowing to mark compilation units and sub-modules as
+  deprecated (Alain Frisch)
+- GPR#263: improve code generation for if-equivalents of (&&) and (||)
+  (Pierre Chambart)
+- GPR#271: Fix incorrect mutability flag when records are built using "with"
+  (Mark Shinwell)
+- GPR#270: Make [transl_exception_constructor] generate [Immutable] blocks
+  (Mark Shinwell)
+- GPR#275: native-code generator for IBM z System running Linux.
+  In memoriam Gene Amdahl, 1922-2015.
+  (Bill O'Farrell, Tristan Amini, Xavier Leroy)
+- GPR#282: relax short-paths safety check in presence of module aliases, take
+  penalty into account while building the printing map.
+  (Thomas Refis, Leo White)
+- GPR#306: Instrument the compiler to debug performance regressions
+  (Pierre Chambart)
+- GPR#319: add warning for missing cmx files, and extend -opaque option to mli
+  files.
+  (Leo White)
+- PR#6920: fix debug informations around uses of %apply or %revapply
+  (Jérémie Dimino)
+
+Runtime system:
+- PR#3612: allow allocating custom block with finalizers in the minor heap
+  (Pierre Chambart)
+- PR#6517: use ISO C99 types {,u}int{32,64}_t in preference to our homegrown
+  types {,u}int{32,64}.
+  (Xavier Leroy)
+- PR#6760: closures evaluated in the toplevel can now be marshalled
+  (whitequark, review by Jacques-Henri Jourdan)
+- PR#6902, GPR#210: runtime emits a warning when finalizing an I/O channel
+  which is still open (Alain Frisch, review by Damien Doligez);
+  this is controlled by OCAMLRUNPARAM=W=1 or with Sys.enable_runtime_warnings.
+- Signal handling: for read-and-clear, use GCC/Clang atomic builtins
+  if available.  (Xavier Leroy)
+- PR#6910, GPR#224: marshaling (output_value, input_value, et al)
+  now support marshaled data bigger than 4 Gb.  (Xavier Leroy)
+- GPR#226: select higher levels of optimization for GCC and Clang when
+  compiling the run-time system and C stub code.  (Xavier Leroy)
+- GPR#262: Multiple GC roots per compilation unit (Pierre Chambart, Mark
+  Shinwell, review by Damien Doligez)
+- GPR#325: Add v=0x400 flag to OCAMLRUNPARAM to display GC stats on exit (Louis
+  Gesbert, review by Alain Frisch)
+- GPR#297: Several changes to improve the worst-case GC pause time.
+  (Damien Doligez, with help from Leo White and Francois Bobot)
+
+Standard library:
+- PR#5197, GPR#63: Arg: allow flags such as --flag=arg as well as --flag arg
+  (Richard Jones)
+- PR#6017, PR#7034, GPR#267: More efficient ifprintf implementation
+  (Jeremy Yallop, review by Gabriel Scherer)
+- PR#6296: Some documentation on the floating-point representations
+    recognized by Pervasives.float_of_string
+  (Xavier Leroy)
+- PR#6316: Scanf.scanf failure on %u formats when reading big integers
+  (Xavier Leroy, Benoît Vaugon)
+- PR#6321: guarantee that "hypot infinity nan = infinity"
+  (for conformance with ISO C99)  (Xavier Leroy)
+- PR#6390, GPR#36: expose Sys.{int_size,max_wosize} for improved js_of_ocaml
+  portability (Hugo Heuzard)
+- PR#6449: Add Map.union (Alain Frisch)
+* PR#6494: Add equal function in modules
+  Bytes, Char, Digest, Int32, Int64, Nativeint, and String
+  (Romain Calascibetta)
+* PR#6524, GPR#79: Filename: Optional ?perms argument to open_temp_file
+  (Daniel Bünzli, review by Jacques-Pascal Deplaix)
+- PR#6577: improve performance of %L, %l, %n, %S, %C format specifiers
+  (Alain Frisch)
+- PR#6585: fix memory leak in win32unix/createprocess.c
+- PR#6649, GPR#222: accept (int_of_string "+3")
+  (Christopher McAlpine)
+- PR#6645, GPR#174: Guarantee that Set.add, Set.remove, Set.filter
+  return the original set if no change is required (Alain Frisch,
+  Mohamed Iguernlala)
+- GPR#175: Guarantee that Map.add, Map.remove, Map.filter
+  return the original map if no change is required.
+  (Mohamed Iguernlala)
+- PR#6694, PR#6695: deprecate functions using ISO-8859-1 character set
+  in Char, Bytes, String and provide alternatives using US-ASCII.
+  (whitequark)
+- GPR#164: more efficient (branchless) implementation of Pervasives.compare
+  specialized at type 'float'.
+  (Vladimir Brankov)
+- GPR#201: generalize types of Printf.{ifprintf,ikfprintf}
+  (Maxence Guesdon)
+- GPR#216: add the missing POSIX.1-2001 signals in Sys
+  (Guillaume Bury)
+- GPR#239: remove type-unsafe code from Stream
+  (Pierre Chambart, review by Gabriel Scherer and Jeremy Yallop)
+- GPR#250: Check for negative start element in Array.sub
+  (report and fix by Jeremy Yallop)
+- GPR#265: new implementation of Queue avoiding Obj.magic
+  (Jérémie Dimino)
+- GPR#268, GPR#303: '%h' and '%H' modifiers for printf and scanf to
+  support floating-point numbers in hexadecimal notation
+  (Xavier Leroy, Benoît Vaugon)
+- GPR#272: Switch classify_float to [@@unboxed] (Alain Frisch)
+- Improve speed of classify_float by not going through fpclassify()
+  (Alain Frisch, Xavier Leroy)
+- GPR#277: Switch the following externals to [@@unboxed]:
+  * {Nativeint,Int32,Int64}.{of,to}_float
+  * Int{32,64}.float_of_bits
+  * Int{32,64}.bits_of_float
+  (Jérémie Dimino)
+- GPR#281: Switch the following externals to [@@unboxed]:
+  * Sys.time (and [@@noalloc])
+  * Pervasives.ldexp (and [@@noalloc])
+  * Pervasives.compare for float, nativeint, int32, int64.
+  (Bobot François)
+- GPR#329: Add exists, for_all,  mem and memq functions in Array
+  (Bernhard Schommer)
+- GPR#356: Add [Format.kasprintf] (Jérémie Dimino, Mark Shinwell)
+
+Type system:
+- PR#5545: Type annotations on methods cannot control the choice of abbreviation
+* PR#6465: allow incremental weakening of module aliases (Jacques Garrigue).
+  This is done by adding equations to submodules when expanding aliases.
+  In theory this may be incompatible is some corner cases defining a module
+  type through inference, but no breakage known on published code.
+- PR#6593: Functor application in tests/basic-modules fails after commit 15405
+
+Toplevel and debugger:
+- PR#6113: Add descriptions to directives, and display them via #help
+  (Nick Giannarakis, Berke Durak, Francis Southern and Gabriel Scherer)
+- PR#6396: Warnings-as-errors not properly flushed in the toplevel
+  (Alain Frisch)
+- PR#6468: toplevel now supports backtraces if invoked with OCAMLRUNPARAM=b
+  (whitequark and Jake Donham,
+   review by Gabriel Scherer and Jacques-Henri Jourdan)
+- PR#6935, GPR#298: crash in debugger when load_printer is given a directory
+  (Junsong Li, review by Gabriel Scherer)
+- PR#6401: use proper error reporting for toplevel's environment
+  initialization (Gabriel Scherer)
+- PR#7081: report preprocessor warnings in the toplevel
+  (Valentin Gatien-Baron, review by Jérémie Dimino)
+- PR#7098: Loss of ppx context in toplevel after an exception
+  (Alain Frisch, report by whitequark)
+- PR#7101: The toplevel does not close in_channel for libraries specified on its command line
+  (Alain Frisch)
+
+Other libraries:
+* Unix library: channels created by Unix.in_channel_of_descr or
+  Unix.out_channel_of_descr no longer support text mode under Windows.
+  Calling [set_binary_mode_{in,out} chan false] on these channels
+  now causes an error.
+- PR#4023 and GPR#68: add Unix.sleepf (sleep with sub-second resolution)
+  (Evgenii Lepikhin and Xavier Leroy)
+* Protect Unix.sleep against interruptions by handled signals.
+  Before, a handled signal could cause Unix.sleep to return early.
+  Now, the sleep is restarted until the given time is elapsed.
+  (Xavier Leroy)
+- PR#6289: Unix.utimes uses the current time only if both arguments
+    are exactly 0.0.  Also, use sub-second resolution if available.
+  (Xavier Leroy, report by Christophe Troestler)
+- PR#6896: serious reimplementation of Big_int.float_of_big_int and
+  Ratio.float_of_ratio, ensuring that the result is correctly rounded.
+  (Xavier Leroy)
+- PR#6989: in Str library, make sure that all \(...\) groups are binding
+    and can be consulted with Str.matched_group.  There used to be
+    a limitation to 32 binding groups.
+  (Xavier Leroy)
+- PR#7013: spurious wake-up in the Event module
+  (Xavier Leroy)
+- PR#7024: in documentation of Str regular expressions, clarify what
+    "end of line" means for "^" and "$" regexps.
+
+OCamlbuild:
+- PR#6794, PR#6809: pass package-specific include flags when building C files
+  (Jérémie Dimino, request by whitequark)
+- GPR#208: add "asm" tag to ocamlbuild to enable flag -S
+  (ygrek)
+- Changed OCamlbuild's license to LGPLv2 with static linking exception.
+- GPR#219: speedup target-already-built builds
+  (ygrek)
+- PR#6605, GPR#117: use ocamlfind, if available, to discover camlp4 path
+  (Vincent Laporte)
+
+OCamldep:
+- GRP#286: add support for module aliases
+  (jacques Garrigue)
+
+Manual:
+- GPR#302: The OCaml reference manual is now included in the manual/
+  subdirectory of the main OCaml source repository. Contributions to
+  the manual are warmly welcome.
+  (François Bobot, review by Florian Angeletti)
+- MPR#6676: ongoing simplification of the "Language Extensions" section
+  (Alain Frisch, John Whitington)
+- MPR#7092, GPR#379: Add missing documentation for new 4.03 features
+  (Florian Angeletti)
+- MPR#7109, GPR#380: Fix bigarray documentation layout
+  (Florian Angeletti, Leo White)
+
+Bug fixes:
+- PR#3612: memory leak in bigarray read from file
+  (Pierre Chambart, report by Gary Huber)
+* PR#4166, PR#6956: force linking when calling external C primitives
+  (Jacques Garrigue, reports by Markus Mottl and Christophe Troestler)
+* PR#4466, PR#5325: under Windows, concurrent read and write operations
+    on the same socket could block unexpectedly.  Fixed by keeping sockets
+    in asynchronous mode rather than creating them in synchronous mode.
+  (Xavier Leroy)
+* PR#4539: change exception string raised when comparing functional values
+  (Nicolas Braud-Santoni, report by Eric Cooper)
+- PR#4832: Filling bigarrays may block out runtime
+  (Markus Mottl)
+- PR#5663: program rejected due to nongeneralizable type variable that
+    appears nowhere
+  (Jacques Garrigue, report by Stephen Weeks)
+- PR#5780: Strange type variable names in error messages (GADTs)
+    (only made the names more informative)
+  (Jacques Garrigue, report by Sebastien Furic)
+- PR#5887: move the byterun/*.h headers to byterun/caml/*.h to avoid header
+    name clashes
+  (Jérôme Vouillon and Adrien Nader and whitequark)
+* PR#6081: ocaml should add script's directory to search path, not current
+    directory
+  (Thomas Leonard and Damien Doligez)
+- PR#6108, PR#6802: fail cleanly if dynlink.cma or ocamltoplevel.cma
+    are loaded inside the toplevel loop.
+  (Xavier Leroy)
+- PR#6171: Error message confusing when a type escapes its scope.
+- PR#6340: Incorrect handling of \r when processing "Windows" source files
+  (Damien Doligez, report by David Allsopp)
+- PR#6342: Incorrect error message when type constraints differ
+  (Alain Frisch, report by Philippe Wang)
+* PR#6521: {Bytes,Char,String}.escaped are locale-dependent
+  (Damien Doligez, report by Jun Furuse)
+- PR#6526: ocamllex warning: unescaped newline in comment string
+  (Damien Doligez, report by user 'dhekir')
+- PR#6341: ocamldoc -colorize-code adds spurious <br> tags to <pre> blocks
+- PR#6560: Wrong failure message for {Int32,Int64,NativeInt}.of_string
+  (Maxime Dénès and Gabriel Scherer)
+- PR#6648: show_module should indicate its elision
+- PR#6650: Cty_constr not handled correctly by Subst
+- PR#6651: Failing component lookup
+* PR#6664: Crash when finalising lazy values of the wrong type.
+  (Damien Doligez)
+- PR#6672: Unused variance specification allowed in with constraint
+- PR#6744: Univars can escape through polymorphic variants (partial fix)
+- PR#6752: Extensible variant types and scope escaping
+- PR#6762: improve warning 45 in presence of re-exported type definitions
+  (Alain Frisch, report by Olivier Andrieu)
+- PR#6776: Failure to kill the "tick" thread, segfault when exiting the runtime
+- PR#6780: Poor error message for wrong -farch and -ffpu options (ocamlopt, ARM)
+- PR#6805: Duplicated expression in case of hole in a non-failing switch.
+  (Luc Maranget)
+- PR#6808: the parsing of OCAMLRUNPARAM is too lax
+  (Damien Doligez)
+- PR#6874: Inefficient code generated for module function arguments
+- PR#6897: Bad error message for some pattern matching on extensible variants
+- PR#6899: Optional parameters and non generalizable type variables
+  (Thomas Refis and Leo White)
+- PR#6907: Stack overflow printing error in class declaration
+- PR#6931: Incorrect error message
+- PR#6938: fix regression on "%047.27{l,L,n}{d,i,x,X,o,u}"
+  (Benoît Vaugon, report by Arduino Cascella)
+- PR#6944: let module X = Path in … is not typed as a module alias
+  (Jacques Garrigue, report by def)
+- PR#6945 and GPR#227: protect Sys and Unix functions against string
+    arguments containing the null character '\000'
+  (c-cube and Xavier Leroy, report by Daniel Bünzli)
+- PR#6946: Uncaught exception with wrong type for "%ignore"
+- PR#6954: Infinite loop in type checker with module aliases
+- PR#6972, GPR#276: 4.02.3 regression on documentation comments in .cmt files
+  (Leo White, report by Olivier Andrieu)
+- PR#6980: Assert failure from polymorphic variants and existentials
+- PR#6981: Ctype.Unify(_) with associated functor arg refering to previous one
+- PR#6982: unexpected type error when packing a module alias
+- PR#6985: `module type of struct include Bar end exposes
+           %s#row when Bar contains private row types
+- PR#6992: Segfault from bug in GADT/module typing
+- PR#6993: Segfault from recursive modules violating exhaustiveness assumptions
+- PR#6998: Typer fails reading unnecessary cmis with -no-alias-deps and -w -49
+  (Leo White, report by Valentin Gatien-Baron)
+- PR#7003: String.sub causes segmentation fault
+  (Damien Doligez, report by Radek Micek)
+- PR#7008: Fatal error in ocamlc with empty compilation unit name
+  (Damien Doligez, report by Cesar Kunz)
+- PR#7012: Variable name forgotten when it starts with a capital letter
+  (Jacques Garrigue, Gabriel Scherer,
+   report by Thomas Leonard and Florian Angeletti)
+- PR#7016: Stack overflow in GADT typing
+- PR#7030: libasmrun_shared.so fails to build on SPARC Solaris
+  (report and fix by Patrick Star)
+- PR#7036: Module alias is not taken into account when checking module
+  type compatibility (in a class type) (Jacques Garrigue)
+- PR#7037: more reproducible builds, don't put temp file names into objects
+  (Xavier Leroy)
+- PR#7038: out of memory condition in caml_io_mutex_lock
+  (Xavier Leroy, report by Marc Lasson)
+- PR#7039: Unix.getsockname returns garbage for unnamed PF_UNIX sockets
+  (Xavier Leroy)
+- PR#7042 and GPR#295: CSE optimization confuses the FP literals +0.0 and -0.0
+  (Xavier Leroy)
+- PR#7075: Fix repetitions in ocamldoc generated documentation
+  (Florian Angeletti)
+- PR#7082: Object type in recursive module's `with` annotation
+- PR#7108: ocamldoc, have -html preserve custom/extended html generators
+  (Armaël Guéneau)
+- PR#7096: ocamldoc uses an incorrect subscript/superscript style
+- GPR#205: Clear caml_backtrace_last_exn before registering as root
+  (report and fix by Frederic Bour)
+- GPR#220: minor -dsource error on recursive modules
+  (Hongbo Zhang)
+- GPR#228: fix a dangling internal pointer in (bytecode )debug_info
+  (Gabriel Scherer and Mark Shinwell and Xavier Leroy)
+- GPR#233: Make CamlinternalMod.init_mod robust to optimization
+  (Pierre Chambart, Mark Shinwell)
+- GPR#249: fix a few hardcoded ar commands
+  (Daniel Bünzli)
+- GPR#251: fix cross-compilation with ocamldoc enabled
+  (whitequark)
+- GPR#280: Fix stdlib dependencies for .p.cmx (Pierre Chambart,
+  Mark Shinwell)
+- GPR#283: Fix memory leaks in intern.c when OOM is raised
+  (Marc Lasson, review by Alain Frisch)
+- GPR#313: Prevent quadratic cases in CSE
+  (Pierre Chambart, review by Xavier Leroy)
+- PR#6795, PR#6996: Make ocamldep report errors passed in
+  [%ocaml.error] extension points
+  (Jérémie Dimino)
+- GPR#355: make ocamlnat build again
+  (Jérémie Dimino, Thomas Refis)
+
+Features wishes:
+- PR#4518, GPR#29: change location format for reporting errors in ocamldoc
+  (Sergei Lebedev)
+- PR#4714: List.cons
+- PR#5418 (comments) : generate dependencies with $(CC) instead of gcc
+- PR#6167: OCAMLPARAM support for disabling PIC generation ("pic=0")
+  (Gabor Pali)
+- PR#6367: introduce Asttypes.arg_label to encode labelled arguments
+- PR#6452, GPR#140: add internal suport for custom printing formats
+  (Jérémie Dimino)
+- PR#6611: remove the option wrapper on optional arguments in the syntax tree
+- PR#6635: support M.[], M.(), M.{< >} and M.[| |]
+  (Jeremy Yallop, review by Gabriel Radanne)
+- PR#6691: install .cmt[i] files for stdlib and compiler-libs
+  (David Sheets, request by Gabriel Radanne)
+- PR#6722: compatibility with x32 architecture (x86-64 in ILP32 mode).
+  ocamlopt is not supported, but bytecode compiles cleanly.
+- PR#6742: remove duplicate virtual_flag information from Tstr_class
+- PR#6719: improve Buffer.add_channel when not enough input is available
+  (Simon Cruanes)
+* PR#6816: reject integer and float literals directly followed by an identifier.
+  This was prevously read as two separate tokens.
+  [let abc = 1 in (+) 123abc] was accepted and is now rejected.
+  (Hugo Heuzard)
+- PR#6876: improve warning 6 by listing the omitted labels.
+  (Eyyüb Sari)
+- PR#6924: tiny optim to avoid some spilling of floats in x87
+  (Alain Frisch)
+- GPR#111: `(f [@taillcall]) x y` warns if `f x y` is not a tail-call
+  (Simon Cruanes)
+- GPR#118: ocamldep -allow-approx: fallback to a lexer-based approximation
+  (Frédéric Bour)
+- GPR#137: add untypeast.ml (in open recursion style) to compiler-libs
+  (Gabriel Radanne)
+- GPR#142: add a CAMLdrop macro for undoing CAMLparam*/CAMLlocal*
+- GPR#145: speeedup bigarray access by optimizing Cmmgen.bigarray_indexing
+  (Vladimir Brankov, review by Gabriel Scherer)
 - GPR#147: [type 'a result = Ok of 'a | Error of 'b] in Pervasives
   (Yaron Minsky)
 
