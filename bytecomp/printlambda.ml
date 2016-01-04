@@ -246,7 +246,7 @@ let primitive ppf = function
   | Pbbswap(bi) -> print_boxed_integer "bswap" ppf bi
   | Pint_as_pointer -> fprintf ppf "int_as_pointer"
 
-let string_of_primitive = function
+let name_of_primitive = function
   | Pidentity -> "Pidentity"
   | Pignore -> "Pignore"
   | Prevapply _ -> "Prevapply"

@@ -17,4 +17,4 @@ open Format
 val structured_constant: formatter -> structured_constant -> unit
 val lambda: formatter -> lambda -> unit
 val primitive: formatter -> primitive -> unit
-val string_of_primitive : primitive -> string
+val name_of_primitive : primitive -> string
