@@ -35,6 +35,10 @@ extern "C" {
 #endif
 
 
+typedef void* caml_stat_block;
+typedef char* caml_stat_string;
+
+
 CAMLextern value caml_alloc_shr (mlsize_t wosize, tag_t);
 #ifdef WITH_PROFINFO
 CAMLextern value caml_alloc_shr_with_profinfo (mlsize_t, tag_t, intnat);
@@ -69,29 +73,26 @@ CAMLextern int caml_huge_fallback_count;
 
    asize_t = size in bytes.
 */
-CAMLextern void caml_stat_create_pool (void);
-CAMLextern void caml_stat_destroy_pool (void);
+CAMLextern void caml_stat_create_pool(void);
+CAMLextern void caml_stat_destroy_pool(void);
 
 /* These functions throw an OCaml exception in case of errors. */
-CAMLextern void * caml_stat_alloc (asize_t);
-CAMLextern void caml_stat_free (void *);
-CAMLextern void * caml_stat_resize (void *, asize_t);
-CAMLextern void * caml_stat_alloc_aligned (asize_t bsize,
-                                           int module,
-                                           void **block);
-CAMLextern char * caml_stat_strdup(const char *s);
-CAMLextern char * caml_stat_strconcat(int n, ...); /* n args of char* */
+CAMLextern caml_stat_block caml_stat_alloc(asize_t);
+CAMLextern void caml_stat_free(caml_stat_block);
+CAMLextern caml_stat_block caml_stat_resize(caml_stat_block, asize_t);
+CAMLextern void* caml_stat_alloc_aligned(asize_t, int modulo, caml_stat_block*);
+CAMLextern caml_stat_string caml_stat_strdup(const char *s);
+CAMLextern caml_stat_string caml_stat_strconcat(int n, ...); /* n args of char* */
 
 
 /* These functions do not throw an OCaml exception in case of errors
    (direct substitutions for malloc, calloc, realloc). */
-CAMLextern void * caml_stat_alloc_noexc (asize_t);
-CAMLextern void * caml_stat_alloc_aligned_noexc (asize_t bsize,
-                                                 int module,
-                                                 void **block);
-CAMLextern void * caml_stat_calloc_noexc (asize_t, asize_t);
-CAMLextern void * caml_stat_resize_noexc (void *, asize_t);
-CAMLextern char * caml_stat_strdup_noexc(const char *s);
+CAMLextern caml_stat_block caml_stat_alloc_noexc(asize_t);
+CAMLextern void* caml_stat_alloc_aligned_noexc(asize_t, int modulo,
+                                               caml_stat_block*);
+CAMLextern caml_stat_block caml_stat_calloc_noexc(asize_t, asize_t);
+CAMLextern caml_stat_block caml_stat_resize_noexc(caml_stat_block, asize_t);
+CAMLextern caml_stat_string caml_stat_strdup_noexc(const char *s);
 
 /* void caml_shrink_heap (char *);        Only used in compact.c */
 

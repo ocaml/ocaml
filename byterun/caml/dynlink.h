@@ -25,7 +25,8 @@
 /* Build the table of primitives, given a search path, a list
    of shared libraries, and a list of primitive names
    (all three 0-separated in char arrays).
-   Abort the runtime system on error. */
+   Abort the runtime system on error.
+   Calling this frees caml_shared_libs_path (not touching its contents). */
 extern void caml_build_primitive_table(char * lib_path,
                                        char * libs,
                                        char * req_prims);

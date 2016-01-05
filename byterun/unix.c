@@ -111,7 +111,7 @@ int caml_write_fd(int fd, int flags, void * buf, int n)
   return retcode;
 }
 
-char * caml_decompose_path(struct ext_table * tbl, char * path)
+caml_stat_string caml_decompose_path(struct ext_table * tbl, char * path)
 {
   char * p, * q;
   size_t n;
@@ -130,7 +130,7 @@ char * caml_decompose_path(struct ext_table * tbl, char * path)
   return p;
 }
 
-char * caml_search_in_path(struct ext_table * path, char * name)
+caml_stat_string caml_search_in_path(struct ext_table * path, char * name)
 {
   char * p, * dir, * fullname;
   int i;
@@ -166,7 +166,7 @@ static int cygwin_file_exists(char * name)
   return 1;
 }
 
-static char * cygwin_search_exe_in_path(struct ext_table * path, char * name)
+static caml_stat_string cygwin_search_exe_in_path(struct ext_table * path, char * name)
 {
   char * p, * dir, * fullname;
   int i;
@@ -194,11 +194,11 @@ static char * cygwin_search_exe_in_path(struct ext_table * path, char * name)
 
 #endif
 
-char * caml_search_exe_in_path(char * name)
+caml_stat_string caml_search_exe_in_path(char * name)
 {
   struct ext_table path;
   char * tofree;
-  char * res;
+  caml_stat_string res;
 
   caml_ext_table_init(&path, 8);
   tofree = caml_decompose_path(&path, getenv("PATH"));
@@ -212,10 +212,10 @@ char * caml_search_exe_in_path(char * name)
   return res;
 }
 
-char * caml_search_dll_in_path(struct ext_table * path, char * name)
+caml_stat_string caml_search_dll_in_path(struct ext_table * path, char * name)
 {
-  char * dllname;
-  char * res;
+  caml_stat_string dllname;
+  caml_stat_string res;
 
   dllname = caml_stat_strconcat(2, name, ".so");
   res = caml_search_in_path(path, dllname);

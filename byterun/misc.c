@@ -89,7 +89,7 @@ void caml_ext_table_init(struct ext_table * tbl, int init_capa)
   tbl->contents = caml_stat_alloc(sizeof(void *) * init_capa);
 }
 
-int caml_ext_table_add(struct ext_table * tbl, void * data)
+int caml_ext_table_add(struct ext_table * tbl, caml_stat_block data)
 {
   int res;
   if (tbl->size >= tbl->capacity) {
@@ -103,7 +103,7 @@ int caml_ext_table_add(struct ext_table * tbl, void * data)
   return res;
 }
 
-void caml_ext_table_remove(struct ext_table * tbl, void * data)
+void caml_ext_table_remove(struct ext_table * tbl, caml_stat_block data)
 {
   int i;
   for (i = 0; i < tbl->size; i++) {

@@ -127,7 +127,7 @@ int caml_write_fd(int fd, int flags, void * buf, int n)
   return retcode;
 }
 
-char * caml_decompose_path(struct ext_table * tbl, char * path)
+caml_stat_string caml_decompose_path(struct ext_table * tbl, char * path)
 {
   char * p, * q;
   int n;
@@ -146,7 +146,7 @@ char * caml_decompose_path(struct ext_table * tbl, char * path)
   return p;
 }
 
-char * caml_search_in_path(struct ext_table * path, char * name)
+caml_stat_string caml_search_in_path(struct ext_table * path, char * name)
 {
   char * p, * dir, * fullname;
   int i;
@@ -170,7 +170,7 @@ char * caml_search_in_path(struct ext_table * path, char * name)
   return caml_stat_strdup(name);
 }
 
-CAMLexport char * caml_search_exe_in_path(char * name)
+CAMLexport caml_stat_string caml_search_exe_in_path(char * name)
 {
   char * fullname, * filepart;
   size_t fullnamelen;
@@ -199,10 +199,10 @@ CAMLexport char * caml_search_exe_in_path(char * name)
   }
 }
 
-char * caml_search_dll_in_path(struct ext_table * path, char * name)
+caml_stat_string caml_search_dll_in_path(struct ext_table * path, char * name)
 {
-  char * dllname;
-  char * res;
+  caml_stat_string dllname;
+  caml_stat_string res;
 
   dllname = caml_stat_strconcat(2, name, ".dll");
   res = caml_search_in_path(path, dllname);
