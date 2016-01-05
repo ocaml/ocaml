@@ -511,6 +511,8 @@ Features wishes:
   (Rich Neswold)
 - GPR#365: prevent printing just a single type variable on one side
   of a type error clash. (Hugo Heuzard)
+- GPR#383: configure: define _ALL_SOURCE for build on AIX7.1
+  (tkob)
 
 OCaml 4.02.3 (27 Jul 2015):
 ---------------------------
