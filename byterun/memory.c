@@ -279,8 +279,8 @@ char *caml_alloc_for_heap (asize_t request)
     void *block;
 
     request = ((request + Page_size - 1) >> Page_log) << Page_log;
-    mem = caml_aligned_malloc (request + sizeof (heap_chunk_head),
-                               sizeof (heap_chunk_head), &block);
+    mem = caml_stat_alloc_aligned_noexc (request + sizeof (heap_chunk_head),
+                                         sizeof (heap_chunk_head), &block);
     if (mem == NULL) return NULL;
     mem += sizeof (heap_chunk_head);
     Chunk_size (mem) = request;
@@ -770,8 +770,48 @@ CAMLexport void caml_stat_destroy_pool(void)
   }
 }
 
+/* [sz] and [modulo] are numbers of bytes */
+CAMLexport void* caml_stat_alloc_aligned_noexc(asize_t sz,
+                                               int modulo,
+                                               void **block)
+{
+  char *raw_mem;
+  uintnat aligned_mem;
+  CAMLassert (modulo < Page_size);
+  raw_mem = (char *) caml_stat_alloc_noexc(sz + Page_size);
+  if (raw_mem == NULL) return NULL;
+  *block = raw_mem;
+  raw_mem += modulo;                /* Address to be aligned */
+  aligned_mem = (((uintnat) raw_mem / Page_size + 1) * Page_size);
+#ifdef DEBUG
+  {
+    uintnat *p;
+    uintnat *p0 = (void *) *block;
+    uintnat *p1 = (void *) (aligned_mem - modulo);
+    uintnat *p2 = (void *) (aligned_mem - modulo + sz);
+    uintnat *p3 = (void *) ((char *) *block + sz + Page_size);
+    for (p = p0; p < p1; p++) *p = Debug_filler_align;
+    for (p = p1; p < p2; p++) *p = Debug_uninit_align;
+    for (p = p2; p < p3; p++) *p = Debug_filler_align;
+  }
+#endif
+  return (char *) (aligned_mem - modulo);
+}
+
+/* [sz] and [modulo] are numbers of bytes */
+CAMLexport void* caml_stat_alloc_aligned(asize_t sz,
+                                         int modulo,
+                                         void **block)
+{
+  void *result = caml_stat_alloc_aligned_noexc(sz, modulo, block);
+  /* malloc() may return NULL if size is 0 */
+  if ((result == NULL) && (sz != 0))
+    caml_raise_out_of_memory();
+  return result;
+}
+
 /* [sz] is a number of bytes */
-CAMLexport void *caml_stat_alloc_noexc(asize_t sz)
+CAMLexport void* caml_stat_alloc_noexc(asize_t sz)
 {
   struct pool_block *pb = malloc(sz + SIZEOF_POOL_BLOCK);
   if (pb == NULL) return NULL;
@@ -812,7 +852,7 @@ CAMLexport void caml_stat_free(void *ptr)
 }
 
 /* [sz] is a number of bytes */
-CAMLexport void * caml_stat_resize_noexc(void *ptr, asize_t sz)
+CAMLexport void* caml_stat_resize_noexc(void *ptr, asize_t sz)
 {
   struct pool_block *pb = get_pool_block(ptr);
   struct pool_block *pb_new = realloc(pb, sz + SIZEOF_POOL_BLOCK);

@@ -299,7 +299,8 @@ int caml_runtime_warnings_active(void);
 
 /* Memory routines */
 
-char *caml_aligned_malloc (asize_t bsize, int, void **);
+/* A deprecated alias */
+#define caml_aligned_malloc caml_stat_alloc_aligned_noexc
 
 #ifdef DEBUG
 #ifdef ARCH_SIXTYFOUR
@@ -317,8 +318,8 @@ char *caml_aligned_malloc (asize_t bsize, int, void **);
   04 -> fields deallocated by [caml_obj_truncate]
   10 -> uninitialised fields of minor objects
   11 -> uninitialised fields of major objects
-  15 -> uninitialised words of [caml_aligned_malloc] blocks
-  85 -> filler bytes of [caml_aligned_malloc]
+  15 -> uninitialised words of [caml_stat_alloc_aligned] blocks
+  85 -> filler bytes of [caml_stat_alloc_aligned]
   99 -> the magic prefix of a memory block allocated by [caml_stat_alloc]
 
   special case (byte by byte):

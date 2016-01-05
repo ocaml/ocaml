@@ -76,10 +76,16 @@ CAMLextern void caml_stat_destroy_pool (void);
 CAMLextern void * caml_stat_alloc (asize_t);
 CAMLextern void caml_stat_free (void *);
 CAMLextern void * caml_stat_resize (void *, asize_t);
+CAMLextern void * caml_stat_alloc_aligned (asize_t bsize,
+                                           int module,
+                                           void **block);
 
 /* These functions do not throw an OCaml exception in case of errors
    (direct substitutions for malloc, calloc, realloc). */
 CAMLextern void * caml_stat_alloc_noexc (asize_t);
+CAMLextern void * caml_stat_alloc_aligned_noexc (asize_t bsize,
+                                                 int module,
+                                                 void **block);
 CAMLextern void * caml_stat_calloc_noexc (asize_t, asize_t);
 CAMLextern void * caml_stat_resize_noexc (void *, asize_t);
 
