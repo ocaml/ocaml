@@ -101,6 +101,8 @@ Compilers:
 - PR#7067: Performance regression in the native compiler for long
   nested structures (Alain Frisch, report by Daniel Bünzli, review
   by Jacques Garrigue)
+- PR#7097:  Strange syntax error message around illegal packaged module signature
+  constraints (Alain Frisch, report by Jun Furuse)
 - GPR#17: some cmm optimizations of integer operations with constants
   (Stephen Dolan, review by Pierre Chambart)
 - GPR#109: new unboxing strategy for float and int references (Vladimir Brankov,
