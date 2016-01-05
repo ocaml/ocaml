@@ -119,18 +119,13 @@ CAMLextern void caml_fatal_error_arg2 (char *fmt1, char *arg1,
                                        char *fmt2, char *arg2)
 CAMLnoreturn_end;
 
-/* Safe string operations */
-
-CAMLextern char * caml_strdup(const char * s);
-CAMLextern char * caml_strconcat(int n, ...); /* n args of const char * type */
-
 /* Detection of available C built-in functions, the Clang way. */
 
 #ifdef __has_builtin
 #define Caml_has_builtin(x) __has_builtin(x)
 #else
 #define Caml_has_builtin(x) 0
-#endif  
+#endif
 
 /* Integer arithmetic with overflow detection.
    The functions return 0 if no overflow, 1 if overflow.
@@ -149,7 +144,7 @@ static inline int caml_uadd_overflow(uintnat a, uintnat b, uintnat * res)
   return c < a;
 #endif
 }
-  
+
 static inline int caml_usub_overflow(uintnat a, uintnat b, uintnat * res)
 {
 #if __GNUC__ >= 5 || Caml_has_builtin(__builtin_sub_overflow)
@@ -160,7 +155,7 @@ static inline int caml_usub_overflow(uintnat a, uintnat b, uintnat * res)
   return a < b;
 #endif
 }
-  
+
 #if __GNUC__ >= 5 || Caml_has_builtin(__builtin_mul_overflow)
 static inline int caml_umul_overflow(uintnat a, uintnat b, uintnat * res)
 {
@@ -168,7 +163,7 @@ static inline int caml_umul_overflow(uintnat a, uintnat b, uintnat * res)
 }
 #else
 extern int caml_umul_overflow(uintnat a, uintnat b, uintnat * res);
-#endif  
+#endif
 
 /* Use macros for some system calls being called from OCaml itself.
   These calls can be either traced for security reasons, or changed to
@@ -297,10 +292,10 @@ void caml_gc_message (int, char *, uintnat);
 extern uintnat caml_runtime_warnings;
 int caml_runtime_warnings_active(void);
 
-/* Memory routines */
-
-/* A deprecated alias */
+/* Deprecated aliases */
 #define caml_aligned_malloc caml_stat_alloc_aligned_noexc
+#define caml_strdup caml_stat_strdup
+#define caml_strconcat caml_stat_strconcat
 
 #ifdef DEBUG
 #ifdef ARCH_SIXTYFOUR

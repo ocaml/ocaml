@@ -79,6 +79,9 @@ CAMLextern void * caml_stat_resize (void *, asize_t);
 CAMLextern void * caml_stat_alloc_aligned (asize_t bsize,
                                            int module,
                                            void **block);
+CAMLextern char * caml_stat_strdup(const char *s);
+CAMLextern char * caml_stat_strconcat(int n, ...); /* n args of char* */
+
 
 /* These functions do not throw an OCaml exception in case of errors
    (direct substitutions for malloc, calloc, realloc). */
@@ -88,6 +91,7 @@ CAMLextern void * caml_stat_alloc_aligned_noexc (asize_t bsize,
                                                  void **block);
 CAMLextern void * caml_stat_calloc_noexc (asize_t, asize_t);
 CAMLextern void * caml_stat_resize_noexc (void *, asize_t);
+CAMLextern char * caml_stat_strdup_noexc(const char *s);
 
 /* void caml_shrink_heap (char *);        Only used in compact.c */
 

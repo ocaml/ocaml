@@ -84,7 +84,7 @@ static char * parse_ld_conf(void)
   stdlib = getenv("OCAMLLIB");
   if (stdlib == NULL) stdlib = getenv("CAMLLIB");
   if (stdlib == NULL) stdlib = OCAML_STDLIB_DIR;
-  ldconfname = caml_strconcat(3, stdlib, "/", LD_CONF_NAME);
+  ldconfname = caml_stat_strconcat(3, stdlib, "/", LD_CONF_NAME);
   if (stat(ldconfname, &st) == -1) {
     caml_stat_free(ldconfname);
     return NULL;
@@ -171,7 +171,7 @@ void caml_build_primitive_table(char * lib_path,
           caml_fatal_error_arg("Fatal error: unknown C primitive `%s'\n", p);
     caml_ext_table_add(&caml_prim_table, (void *) prim);
 #ifdef DEBUG
-    caml_ext_table_add(&caml_prim_name_table, caml_strdup(p));
+    caml_ext_table_add(&caml_prim_name_table, caml_stat_strdup(p));
 #endif
   }
   /* Clean up */
@@ -194,7 +194,7 @@ void caml_build_primitive_table_builtin(void)
     caml_ext_table_add(&caml_prim_table, (void *) caml_builtin_cprim[i]);
 #ifdef DEBUG
     caml_ext_table_add(&caml_prim_name_table,
-                       caml_strdup(caml_names_of_builtin_cprim[i]));
+                       caml_stat_strdup(caml_names_of_builtin_cprim[i]));
 #endif
   }
 }
@@ -219,7 +219,7 @@ CAMLprim value caml_dynlink_open_lib(value mode, value filename)
 
   caml_gc_message(0x100, "Opening shared library %s\n",
                   (uintnat) String_val(filename));
-  p = caml_strdup(String_val(filename));
+  p = caml_stat_strdup(String_val(filename));
   caml_enter_blocking_section();
   handle = caml_dlopen(p, Int_val(mode), 1);
   caml_leave_blocking_section();

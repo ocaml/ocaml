@@ -421,7 +421,7 @@ CAMLexport value caml_startup_code_exn(
 #endif
   cds_file = getenv("CAML_DEBUG_FILE");
   if (cds_file != NULL) {
-    caml_cds_file = caml_strdup(cds_file);
+    caml_cds_file = caml_stat_strdup(cds_file);
   }
   caml_parse_ocamlrunparam();
   exe_name = caml_executable_name();

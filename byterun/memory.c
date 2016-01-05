@@ -884,3 +884,51 @@ CAMLexport void* caml_stat_calloc_noexc(asize_t num, asize_t sz)
     memset(result, 0, sz);
   return result;
 }
+
+CAMLexport char* caml_stat_strdup_noexc(const char *s)
+{
+  size_t slen = strlen(s);
+  char *result = caml_stat_alloc_noexc(slen + 1);
+  if (result == NULL)
+    return NULL;
+  memcpy(result, s, slen + 1);
+  return result;
+}
+
+CAMLexport char* caml_stat_strdup(const char *s)
+{
+  void *result = caml_stat_strdup_noexc(s);
+  if (result == NULL)
+    caml_raise_out_of_memory();
+  return result;
+}
+
+CAMLexport char* caml_stat_strconcat(int n, ...)
+{
+  va_list args;
+  char *result, *p;
+  size_t len = 0;
+  int i;
+
+  va_start(args, n);
+  for (i = 0; i < n; i++) {
+    const char *s = va_arg(args, const char*);
+    len += strlen(s);
+  }
+  va_end(args);
+
+  result = caml_stat_alloc(len + 1);
+
+  va_start(args, n);
+  p = result;
+  for (i = 0; i < n; i++) {
+    const char *s = va_arg(args, const char*);
+    size_t l = strlen(s);
+    memcpy(p, s, l);
+    p += l;
+  }
+  va_end(args);
+
+  *p = 0;
+  return result;
+}

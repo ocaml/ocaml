@@ -174,7 +174,7 @@ CAMLprim value caml_sys_open(value path, value vflags, value vperm)
   char * p;
 
   caml_sys_check_path(path);
-  p = caml_strdup(String_val(path));
+  p = caml_stat_strdup(String_val(path));
   flags = caml_convert_flag_list(vflags, sys_open_flags);
   perm = Int_val(vperm);
   /* open on a named FIFO can block (PR#1533) */
@@ -211,7 +211,7 @@ CAMLprim value caml_sys_file_exists(value name)
   int ret;
 
   if (! caml_string_is_c_safe(name)) return Val_false;
-  p = caml_strdup(String_val(name));
+  p = caml_stat_strdup(String_val(name));
   caml_enter_blocking_section();
 #ifdef _WIN32
   ret = _stati64(p, &st);
@@ -236,7 +236,7 @@ CAMLprim value caml_sys_is_directory(value name)
   int ret;
 
   caml_sys_check_path(name);
-  p = caml_strdup(String_val(name));
+  p = caml_stat_strdup(String_val(name));
   caml_enter_blocking_section();
 #ifdef _WIN32
   ret = _stati64(p, &st);
@@ -260,7 +260,7 @@ CAMLprim value caml_sys_remove(value name)
   char * p;
   int ret;
   caml_sys_check_path(name);
-  p = caml_strdup(String_val(name));
+  p = caml_stat_strdup(String_val(name));
   caml_enter_blocking_section();
   ret = CAML_SYS_UNLINK(p);
   caml_leave_blocking_section();
@@ -276,8 +276,8 @@ CAMLprim value caml_sys_rename(value oldname, value newname)
   int ret;
   caml_sys_check_path(oldname);
   caml_sys_check_path(newname);
-  p_old = caml_strdup(String_val(oldname));
-  p_new = caml_strdup(String_val(newname));
+  p_old = caml_stat_strdup(String_val(oldname));
+  p_new = caml_stat_strdup(String_val(newname));
   caml_enter_blocking_section();
   ret = CAML_SYS_RENAME(p_old, p_new);
   caml_leave_blocking_section();
@@ -294,7 +294,7 @@ CAMLprim value caml_sys_chdir(value dirname)
   char * p;
   int ret;
   caml_sys_check_path(dirname);
-  p = caml_strdup(String_val(dirname));
+  p = caml_stat_strdup(String_val(dirname));
   caml_enter_blocking_section();
   ret = CAML_SYS_CHDIR(p);
   caml_leave_blocking_section();
@@ -369,7 +369,7 @@ CAMLprim value caml_sys_system_command(value command)
     errno = EINVAL;
     caml_sys_error(command);
   }
-  buf = caml_strdup(String_val(command));
+  buf = caml_stat_strdup(String_val(command));
   caml_enter_blocking_section ();
   status = CAML_SYS_SYSTEM(buf);
   caml_leave_blocking_section ();
@@ -557,7 +557,7 @@ CAMLprim value caml_sys_read_directory(value path)
 
   caml_sys_check_path(path);
   caml_ext_table_init(&tbl, 50);
-  p = caml_strdup(String_val(path));
+  p = caml_stat_strdup(String_val(path));
   caml_enter_blocking_section();
   ret = CAML_SYS_READ_DIRECTORY(p, &tbl);
   caml_leave_blocking_section();

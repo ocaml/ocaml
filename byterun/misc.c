@@ -17,7 +17,6 @@
 
 #include <stdio.h>
 #include <string.h>
-#include <stdarg.h>
 #include "caml/config.h"
 #include "caml/misc.h"
 #include "caml/memory.h"
@@ -130,42 +129,6 @@ void caml_ext_table_free(struct ext_table * tbl, int free_entries)
 {
   caml_ext_table_clear(tbl, free_entries);
   caml_stat_free(tbl->contents);
-}
-
-CAMLexport char * caml_strdup(const char * s)
-{
-  size_t slen = strlen(s);
-  char * res = caml_stat_alloc(slen + 1);
-  memcpy(res, s, slen + 1);
-  return res;
-}
-
-CAMLexport char * caml_strconcat(int n, ...)
-{
-  va_list args;
-  char * res, * p;
-  size_t len;
-  int i;
-
-  len = 0;
-  va_start(args, n);
-  for (i = 0; i < n; i++) {
-    const char * s = va_arg(args, const char *);
-    len += strlen(s);
-  }
-  va_end(args);
-  res = caml_stat_alloc(len + 1);
-  va_start(args, n);
-  p = res;
-  for (i = 0; i < n; i++) {
-    const char * s = va_arg(args, const char *);
-    size_t l = strlen(s);
-    memcpy(p, s, l);
-    p += l;
-  }
-  va_end(args);
-  *p = 0;
-  return res;
 }
 
 /* Integer arithmetic with overflow detection */
