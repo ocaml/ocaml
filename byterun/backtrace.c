@@ -253,6 +253,27 @@ CAMLprim value caml_raw_backtrace_slot(value bt, value index)
   return Val_debuginfo(dbg);
 }
 
+CAMLprim value caml_raw_backtrace_next_slot(value slot)
+{
+  debuginfo dbg;
+
+  CAMLparam1(slot);
+  CAMLlocal1(v);
+
+  dbg = Debuginfo_val(slot);
+  dbg = caml_debuginfo_next(dbg);
+
+  if (dbg == NULL)
+    v = Val_int(0); /* None */
+  else
+  {
+    v = caml_alloc(1, 0);
+    Field(v, 0) = Val_debuginfo(dbg);
+  }
+
+  CAMLreturn(v);
+}
+
 /* the function below is deprecated: we previously returned directly
    the OCaml-usable representation, instead of the raw backtrace as an
    abstract type, but this has a large performance overhead if you

@@ -223,6 +223,9 @@ external raw_backtrace_length :
 external get_raw_backtrace_slot :
   raw_backtrace -> int -> raw_backtrace_slot = "caml_raw_backtrace_slot"
 
+external get_raw_backtrace_next_slot :
+  raw_backtrace_slot -> raw_backtrace_slot option = "caml_raw_backtrace_next_slot"
+
 (* confusingly named:
    returns the *string* corresponding to the global current backtrace *)
 let get_backtrace () =
