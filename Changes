@@ -416,6 +416,8 @@ Bug fixes:
 - PR#7108: ocamldoc, have -html preserve custom/extended html generators
   (Armaël Guéneau)
 - PR#7096: ocamldoc uses an incorrect subscript/superscript style
+- PR#7115: shadowing in a branch of a GADT match breaks unused variable
+  warning (Alain Frisch, report by Valentin Gatien-Baron)
 - GPR#205: Clear caml_backtrace_last_exn before registering as root
   (report and fix by Frederic Bour)
 - GPR#220: minor -dsource error on recursive modules
