@@ -798,7 +798,12 @@ and simplify_partial_application env r ~lhs_of_application
         inline = Default_inline;
       }
     in
-    Flambda_utils.make_closure_declaration ~id:(Variable.create "partial_fun")
+    let closure_variable =
+      Variable.rename
+        ~append:"_partial_fun"
+        (Closure_id.unwrap closure_id_being_applied)
+    in
+    Flambda_utils.make_closure_declaration ~id:closure_variable
       ~body
       ~params:remaining_args
   in
