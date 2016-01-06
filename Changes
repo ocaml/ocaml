@@ -183,6 +183,8 @@ Standard library:
   (Romain Calascibetta)
 * PR#6524, GPR#79: Filename: Optional ?perms argument to open_temp_file
   (Daniel Bünzli, review by Jacques-Pascal Deplaix)
+* PR#6525, GPR#80: Add Uchar module to the standard library
+  (Daniel Bünzli, review by Yoriyuki Yamagata and Damien Doligez)
 - PR#6577: improve performance of %L, %l, %n, %S, %C format specifiers
   (Alain Frisch)
 - PR#6585: fix memory leak in win32unix/createprocess.c
