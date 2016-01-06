@@ -632,7 +632,7 @@ and simplify_set_of_closures original_env r
       E.enter_closure closure_env ~closure_id:(Closure_id.wrap fid)
         ~inline_inside:
           (Inlining_decision.should_inline_inside_declaration function_decl)
-        ~where:Transform_set_of_closures_expression
+        ~debuginfo:function_decl.dbg
         ~f:(fun body_env -> simplify body_env r function_decl.body)
     in
     let inline : Lambda.inline_attribute =

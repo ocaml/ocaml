@@ -244,21 +244,44 @@ module Env = struct
 
   (* CR-soon mshinwell: this is a bit contorted (see use in
      inlining_decision.ml) *)
-  let note_entering_closure t ~closure_id ~where =
+  let note_entering_closure t ~closure_id ~debuginfo =
     { t with
       inlining_stats_closure_stack =
         Inlining_stats.Closure_stack.note_entering_closure
-          t.inlining_stats_closure_stack ~closure_id ~where;
+          t.inlining_stats_closure_stack ~closure_id ~debuginfo;
     }
 
-  let enter_closure t ~closure_id ~inline_inside ~where ~f =
+  let note_entering_call t ~closure_id ~debuginfo =
+    { t with
+      inlining_stats_closure_stack =
+        Inlining_stats.Closure_stack.note_entering_call
+          t.inlining_stats_closure_stack ~closure_id ~debuginfo;
+    }
+
+  let note_entering_inlined t =
+    { t with
+      inlining_stats_closure_stack =
+        Inlining_stats.Closure_stack.note_entering_inlined
+          t.inlining_stats_closure_stack;
+    }
+
+  let note_entering_specialised t ~closure_ids =
+    { t with
+      inlining_stats_closure_stack =
+        Inlining_stats.Closure_stack.note_entering_specialised
+          t.inlining_stats_closure_stack ~closure_ids;
+    }
+
+  let enter_closure t ~closure_id ~inline_inside ~debuginfo ~f =
     let t =
       if inline_inside then t
       else set_never_inline t
     in
-    f (note_entering_closure t ~closure_id ~where)
+    f (note_entering_closure t ~closure_id ~debuginfo)
 
-  let inlining_stats_closure_stack t = t.inlining_stats_closure_stack
+  let record_decision t decision =
+    Inlining_stats.record_decision decision
+      ~closure_stack:t.inlining_stats_closure_stack
 end
 
 let initial_inlining_threshold ~round : Inlining_cost.Threshold.t =

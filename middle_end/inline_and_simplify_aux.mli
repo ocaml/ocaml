@@ -161,8 +161,28 @@ module Env : sig
   val note_entering_closure
      : t
     -> closure_id:Closure_id.t
-    -> where:Inlining_stats_types.where_entering_closure
+    -> debuginfo:Debuginfo.t
     -> t
+
+   (** If collecting inlining statistics, record that the inliner is about to
+       descend into a call to [closure_id].  This information enables us to
+       produce a stack of closures that form a kind of context around an
+       inlining decision point. *)
+  val note_entering_call
+     : t
+    -> closure_id:Closure_id.t
+    -> debuginfo:Debuginfo.t
+    -> t
+
+   (** If collecting inlining statistics, record that the inliner is about to
+       descend into an inlined function call.  This requires that the inliner
+       has already entered the call with [note_entering_call]. *)
+  val note_entering_inlined : t -> t
+
+   (** If collecting inlining statistics, record that the inliner is about to
+       descend into a specialised function definition.  This requires that the
+       inliner has already entered the call with [note_entering_call]. *)
+  val note_entering_specialised : t -> closure_ids:Closure_id.Set.t -> t
 
   (** Update a given environment to record that the inliner is about to
       descend into [closure_id] and pass the resulting environment to [f].
@@ -172,15 +192,17 @@ module Env : sig
      : t
     -> closure_id:Closure_id.t
     -> inline_inside:bool
-    -> where:Inlining_stats_types.where_entering_closure
+    -> debuginfo:Debuginfo.t
     -> f:(t -> 'a)
     -> 'a
 
-  (** Return the closure stack, used for the generation of inlining statistics,
-      stored inside the given environment. *)
-  val inlining_stats_closure_stack
+   (** If collecting inlining statistics, record an inlining decision for the
+       call at the top of the closure stack stored inside the given
+       environment. *)
+  val record_decision
      : t
-    -> Inlining_stats.Closure_stack.t
+    -> Inlining_stats_types.Decision.t
+    -> unit
 
   (** Print a human-readable version of the given environment. *)
   val print : Format.formatter -> t -> unit

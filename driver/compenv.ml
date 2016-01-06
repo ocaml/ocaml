@@ -274,9 +274,9 @@ let read_one_param ppf position name v =
       | "no-inline-recursive-functions" ->
           clear "no-inline-recursive-functions" [ inline_recursive_functions ] v
 
-      | "inlining-stats" ->
+      | "inlining-report" ->
           if !native_code then
-            set "inlining-stats" [ inlining_stats ] v
+            set "inlining-report" [ inlining_stats ] v
 
       | "timings" -> set "timings" [ print_timings ] v
       | "flambda-verbose" ->

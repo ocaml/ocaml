@@ -127,7 +127,7 @@ let mk_inline_toplevel f =
 ;;
 
 let mk_inlining_stats f =
-  "-inlining-stats", Arg.Unit f, " Emit `.<round>.inlining' file(s) (one per \
+  "-inlining-report", Arg.Unit f, " Emit `.<round>.inlining' file(s) (one per \
       round) showing the inliner's decisions"
 ;;
 
