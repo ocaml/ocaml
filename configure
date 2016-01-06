@@ -52,6 +52,7 @@ native_compiler=true
 TOOLPREF=""
 with_cfi=true
 flambda=false
+max_testsuite_dir_retries=0
 
 # Try to turn internationalization off, can cause config.guess to malfunction!
 unset LANG
@@ -1810,6 +1811,7 @@ if [ "$ostype" = Cygwin ]; then
   echo "DIFF=diff -q --strip-trailing-cr" >>Makefile
 fi
 echo "FLAMBDA=$flambda" >> Makefile
+echo "MAX_TESTSUITE_DIR_RETRIES=$max_testsuite_dir_retries" >> Makefile
 
 
 rm -f tst hasgot.c
