@@ -164,10 +164,7 @@ let inline_by_copying_function_body ~env ~r ~function_decls ~lhs_of_application
       function_decls.Flambda.funs
       bindings_for_vars_bound_by_closure_and_params_to_args
   in
-  let env =
-    E.note_entering_closure env ~closure_id:closure_id_being_applied
-      ~where:Inline_by_copying_function_body
-  in
+  let env = E.note_entering_inlined env in
   simplify (E.activate_freshening env) r expr
 
 let inline_by_copying_function_declaration ~env ~r
@@ -326,7 +323,6 @@ let inline_by_copying_function_declaration ~env ~r
           List.map Closure_id.wrap
             (Variable.Set.elements (Variable.Map.keys function_decls.funs)))
       in
-      E.note_entering_closure env ~closure_id:closure_id_being_applied
-        ~where:(Inline_by_copying_function_declaration closure_ids)
+      E.note_entering_specialised env ~closure_ids
     in
     Some (simplify (E.activate_freshening env) r expr)
