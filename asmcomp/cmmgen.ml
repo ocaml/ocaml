@@ -2403,7 +2403,7 @@ let rec transl_all_functions already_translated cont =
         (transl_function f :: cont)
     end
   with Queue.Empty ->
-    cont
+    cont, already_translated
 
 (* Emit structured constants *)
 
@@ -2525,7 +2525,20 @@ let emit_all_constants cont =
         c := Cdata(emit_constant_closure symb fundecls clos_vars []) :: !c)
     !constant_closures;
   constant_closures := [];
+  Compilenv.clear_structured_constants ();
   !c
+
+let transl_all_functions_and_emit_all_constants cont =
+  let rec aux already_translated cont =
+    if Compilenv.structured_constants () = [] &&
+       Queue.is_empty functions
+    then cont
+    else
+      let cont, set = transl_all_functions already_translated cont in
+      let cont = emit_all_constants cont in
+      aux already_translated cont
+  in
+  aux StringSet.empty cont
 
 (* Build the table of GC roots for toplevel modules *)
 
@@ -2546,9 +2559,8 @@ let compunit size ulam =
                        fun_args = [];
                        fun_body = init_code; fun_fast = false;
                        fun_dbg  = Debuginfo.none }] in
-  let c2 = transl_all_functions StringSet.empty c1 in
-  let c3 = emit_all_constants c2 in
-  let c4 = emit_module_roots_table ~symbols:[glob] c3 in
+  let c2 = transl_all_functions_and_emit_all_constants c1 in
+  let c3 = emit_module_roots_table ~symbols:[glob] c2 in
   let space =
     (* These words will be registered as roots and as such must contain
        valid values, in case we are in no-naked-pointers mode.  Likewise
@@ -2560,7 +2572,7 @@ let compunit size ulam =
   in
   Cdata ([Cint(black_block_header 0 size);
          Cglobal_symbol glob;
-         Cdefine_symbol glob] @ space) :: c4
+         Cdefine_symbol glob] @ space) :: c3
 
 (*
 CAMLprim value caml_cache_public_method (value meths, value tag, value *cache)
