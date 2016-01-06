@@ -651,7 +651,18 @@ let make_checkbound dbg = function
 let fundecls_size fundecls =
   let sz = ref (-1) in
   List.iter
-    (fun f -> sz := !sz + 1 + (if f.arity = 1 then 2 else 3))
+    (fun f ->
+       let indirect_call_code_pointer_size =
+         match f.arity with
+         | 0 | 1 -> 0
+           (* arity 1 does not need an indirect call handler.
+              arity 0 cannot be indirect called *)
+         | _ -> 1
+           (* For other arities there is an indirect call handler.
+              if arity >= 2 it is caml_curry...
+              if arity < 0 it is caml_tuplify... *)
+       in
+       sz := !sz + 1 + 2 + indirect_call_code_pointer_size)
     fundecls;
   !sz
 
@@ -1422,10 +1433,10 @@ let rec transl env e =
               if pos = 0
               then alloc_closure_header block_size
               else alloc_infix_header pos in
-            if f.arity = 1 then
+            if f.arity = 1 || f.arity = 0 then
               header ::
               Cconst_symbol f.label ::
-              int_const 1 ::
+              int_const f.arity ::
               transl_fundecls (pos + 3) rem
             else
               header ::
@@ -2486,10 +2497,10 @@ let emit_constant_closure symb fundecls clos_vars cont =
           [] ->
             List.fold_right emit_constant clos_vars cont
       | f2 :: rem ->
-          if f2.arity = 1 then
+          if f2.arity = 1 || f2.arity = 0 then
             Cint(infix_header pos) ::
             Csymbol_address f2.label ::
-            Cint 3n ::
+            Cint(Nativeint.of_int (f2.arity lsl 1 + 1)) ::
             emit_others (pos + 3) rem
           else
             Cint(infix_header pos) ::
@@ -2500,9 +2511,9 @@ let emit_constant_closure symb fundecls clos_vars cont =
       Cint(black_closure_header (fundecls_size fundecls
                                  + List.length clos_vars)) ::
       Cdefine_symbol symb ::
-      if f1.arity = 1 then
+      if f1.arity = 1 || f1.arity = 0 then
         Csymbol_address f1.label ::
-        Cint 3n ::
+        Cint(Nativeint.of_int (f1.arity lsl 1 + 1)) ::
         emit_others 3 remainder
       else
         Csymbol_address(curry_function f1.arity) ::
@@ -2848,7 +2859,9 @@ let rec intermediate_curry_functions arity num =
   end
 
 let curry_function arity =
-  if arity >= 0
+  assert(arity <> 0);
+  (* Functions with arity = 0 does not have a curry_function *)
+  if arity > 0
   then intermediate_curry_functions arity 0
   else [tuplify_function (-arity)]
 
