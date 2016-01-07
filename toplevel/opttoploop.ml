@@ -189,7 +189,6 @@ module Backend = struct
   let closure_symbol = Compilenv.closure_symbol
 
   let really_import_approx = Import_approx.really_import_approx
-  let import_global = Import_approx.import_global
   let import_symbol = Import_approx.import_symbol
 
   let size_int = Arch.size_int
@@ -218,11 +217,11 @@ let load_lambda ppf ~module_ident lam size =
   else (
     let flam =
       Middle_end.middle_end ppf
-        ~sourcefile:"" ~prefixname:"" ~backend ~size ~module_ident
-        ~module_initializer:lam
+        ~source_provenance:Timings.Toplevel ~prefixname:"" ~backend ~size
+        ~module_ident ~module_initializer:lam
     in
-    Asmgen.compile_implementation ~sourcefile:"" ~backend ~toplevel:need_symbol
-      fn Asmgen.Flambda ppf flam;
+    Asmgen.compile_implementation ~source_provenance:Timings.Toplevel
+      ~backend ~toplevel:need_symbol fn Asmgen.Flambda ppf flam;
   );
   Asmlink.call_linker_shared [fn ^ ext_obj] dll;
   Sys.remove (fn ^ ext_obj);

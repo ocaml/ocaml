@@ -84,7 +84,7 @@ module Options = Main_args.Make_opttop_options (struct
   let _unroll spec =
     Int_arg_helper.parse spec ~update:unroll
       ~help_text:"Syntax: -unroll <n> | <round>=<n>[,...]"
-  let _classic_heuristic () = classic_heuristic := true
+  let _classic_inlining () = classic_inlining := true
   let _inline_call_cost spec =
     Int_arg_helper.parse spec ~update:inline_call_cost
       ~help_text:"Syntax: -inline-call-cost <n> | <round>=<n>[,...]"
