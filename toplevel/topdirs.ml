@@ -401,6 +401,52 @@ let _ = add_directive "remove_printer"
       doc = "Remove the named function from the table of toplevel printers.";
     }
 
+(* PPX-related stuff *)
+
+(* Installing mapper specified by indent if it exists and type is appropriate *)
+let install_ppx_mapper ppf (lid: Longident.t) =
+  try
+    let (path, desc) = Env.lookup_value lid !toplevel_env in
+    let open Path in
+    let rec is_good_type t =
+      match t.desc with
+      | Tlink l -> is_good_type l
+      | Tconstr (Pdot (Pident {Ident.name="Ast_mapper";_}, "mapper", _), [], _) -> true
+      | _ -> false
+    in
+    if is_good_type desc.val_type
+    then
+      let mapper = eval_path !toplevel_env path in
+      Pparse.add_in_process_ppx (Obj.obj mapper)
+    else
+      fprintf ppf "Type of the value should be 'Ast_mapper.mapper'. Nothing added.\n%!"
+  with
+    Not_found -> fprintf ppf "Identifier is unbound in the current environment.\n%!"
+
+let _ = add_directive "ppx"
+    (Directive_string(fun path -> Pparse.add_external_ppx ~path))
+    {
+      section = section_options;
+      doc = "After parsing, pipe the abstract \
+          syntax tree through the preprocessor command.";
+    }
+
+let _ = add_directive "plugin_ppx"
+    (Directive_ident(install_ppx_mapper std_out))
+    {
+      section = section_options;
+      doc = "After parsing, pipe the abstract \
+          syntax tree to specified PPX mappers.";
+    }
+
+let _ = add_directive "ppxs_clear"
+    (Directive_none Pparse.clear_ppx)
+    {
+      section = section_options;
+      doc = "Forget all added PPX preprocessor \
+             (external and in-process)";
+    }
+
 (* The trace *)
 
 external current_environment: unit -> Obj.t = "caml_get_current_environment"
@@ -684,14 +730,6 @@ let _ = add_directive "rectypes"
     {
       section = section_options;
       doc = "Allow arbitrary recursive types during type-checking.";
-    }
-
-let _ = add_directive "ppx"
-    (Directive_string(fun s -> Clflags.all_ppx := s :: !Clflags.all_ppx))
-    {
-      section = section_options;
-      doc = "After parsing, pipe the abstract \
-          syntax tree through the preprocessor command.";
     }
 
 let _ = add_directive "warnings"
