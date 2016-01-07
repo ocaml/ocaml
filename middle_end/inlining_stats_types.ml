@@ -214,7 +214,7 @@ module Decision = struct
     | Nonrecursive i ->
       Inlined.summary ppf i
     | Recursive (u, s) ->
-      Format.fprintf ppf "@[<v>%a@,%a@]"
+      Format.fprintf ppf "@[<v>@[%a@]@;@;@[%a@]@]"
         Unrolled.summary u Specialised.summary s
 
   let calculation ~depth ppf = function
