@@ -58,10 +58,11 @@ let compile_file ~output_name name =
             if !Clflags.native_code
             then Config.native_c_compiler
             else Config.bytecomp_c_compiler)
-       (match output_name with
-          | Some n -> " -o " ^ Filename.quote n
-          | None -> "")
-       (if !Clflags.debug then "-g" else "")
+       (match output_name, Config.ccomp_type with
+          | Some n, "msvc" -> " /Fo" ^ Filename.quote n
+          | Some n, _ -> " -o " ^ Filename.quote n
+          | None, _ -> "")
+       (if !Clflags.debug && Config.ccomp_type <> "msvc" then "-g" else "")
        (String.concat " " (List.rev !Clflags.all_ccopts))
        (quote_prefixed "-I" (List.rev !Clflags.include_dirs))
        (Clflags.std_include_flag "-I")
