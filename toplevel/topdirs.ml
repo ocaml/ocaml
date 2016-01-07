@@ -711,6 +711,27 @@ let _ = add_directive "print_length"
 
 (* Set various compiler flags *)
 
+let _ = add_directive "dump_parsetree"
+    (Directive_bool(fun b -> Clflags.dump_parsetree := b))
+    {
+      section = section_options;
+      doc = "Choose whether to dump parsed tree.";
+    }
+
+let _ = add_directive "dump_typedtree"
+    (Directive_bool(fun b -> Clflags.dump_typedtree := b))
+    {
+      section = section_options;
+      doc = "Choose whether to dump typed tree.";
+    }
+
+let _ = add_directive "dump_source"
+    (Directive_bool(fun b -> Clflags.dump_source := b))
+    {
+      section = section_options;
+      doc = "Choose whether to dump source after preprocessing.";
+    }
+
 let _ = add_directive "labels"
     (Directive_bool(fun b -> Clflags.classic := not b))
     {
