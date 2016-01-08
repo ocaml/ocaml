@@ -256,8 +256,10 @@ Toplevel and debugger:
   (Valentin Gatien-Baron, review by Jérémie Dimino)
 - PR#7098: Loss of ppx context in toplevel after an exception
   (Alain Frisch, report by whitequark)
-- PR#7101: The toplevel does not close in_channel for libraries specified on its command line
-  (Alain Frisch)
+- PR#7101: The toplevel does not close in_channel for libraries specified on
+  its command line (Alain Frisch)
+- PR#7119: ocaml doesn't respect [@@@warning] (Alain Frisch, report by
+  Gabriel Radanne)
 
 Other libraries:
 * Unix library: channels created by Unix.in_channel_of_descr or
