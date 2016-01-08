@@ -85,7 +85,7 @@ let doc_loc = {txt = "ocaml.doc"; loc = Location.none}
 let docs_attr ds =
   let open Parsetree in
   let exp =
-    { pexp_desc = Pexp_constant (PConst_string(ds.ds_body, None));
+    { pexp_desc = Pexp_constant (Pconst_string(ds.ds_body, None));
       pexp_loc = ds.ds_loc;
       pexp_attributes = []; }
   in
@@ -134,7 +134,7 @@ let text_loc = {txt = "ocaml.text"; loc = Location.none}
 let text_attr ds =
   let open Parsetree in
   let exp =
-    { pexp_desc = Pexp_constant (PConst_string(ds.ds_body, None));
+    { pexp_desc = Pexp_constant (Pconst_string(ds.ds_body, None));
       pexp_loc = ds.ds_loc;
       pexp_attributes = []; }
   in
