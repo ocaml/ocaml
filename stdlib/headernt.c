@@ -22,6 +22,10 @@
 #pragma comment(linker , "/entry:headerentry")
 #pragma comment(linker , "/subsystem:console")
 #pragma comment(lib , "kernel32")
+#ifdef _UCRT
+#pragma comment(lib , "ucrt.lib")
+#pragma comment(lib , "vcruntime.lib")
+#endif
 #endif
 
 char * default_runtime_name = RUNTIME_NAME;

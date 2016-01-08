@@ -610,6 +610,7 @@ int caml_executable_name(char * name, int name_len)
 
 /* snprintf emulation */
 
+#if defined(_WIN32) && !defined(_UCRT)
 int caml_snprintf(char * buf, size_t size, const char * format, ...)
 {
   int len;
@@ -634,3 +635,4 @@ int caml_snprintf(char * buf, size_t size, const char * format, ...)
   va_end(args);
   return len;
 }
+#endif

@@ -447,6 +447,8 @@ Bug fixes:
   (Jérémie Dimino)
 - GPR#355: make ocamlnat build again
   (Jérémie Dimino, Thomas Refis)
+- GPR#405: fix compilation under Visual Studio 2015
+  (David Allsopp)
 
 Features wishes:
 - PR#4518, GPR#29: change location format for reporting errors in ocamldoc
