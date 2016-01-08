@@ -1324,8 +1324,13 @@ let transl_value_decl env loc valdecl =
         val_attributes = valdecl.pval_attributes }
   | decl ->
       let arity = Ctype.arity ty in
-      let prim = Primitive.parse_declaration arity decl in
-      if arity = 0 && prim.prim_name.[0] <> '%' then
+      let prim = Primitive.parse_declaration  arity decl in
+      if arity = 0 && not (List.exists (function
+          | ({Location.txt;_},_) -> 
+              String.length txt > 3 && 
+              txt.[0] = 'b' &&
+              txt.[1] = 's' &&
+              txt.[2] = '.') valdecl.pval_attributes ) && prim.prim_name.[0] <> '%' then
         raise(Error(valdecl.pval_type.ptyp_loc, Null_arity_external));
       if !Clflags.native_code
       && prim.prim_arity > 5

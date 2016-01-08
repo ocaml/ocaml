@@ -28,8 +28,40 @@ type loc_kind =
   | Loc_LOC
   | Loc_POS
 
+
+
+type tag_info = 
+  | Blk_constructor of string * int (* Number of non-const constructors*)
+  | Blk_tuple
+  | Blk_array
+  | Blk_variant of string 
+  | Blk_record of string array
+  | Blk_module of string list option
+  | Blk_na
+
+val default_tag_info : tag_info
+
+type field_dbg_info = 
+  | Fld_na
+  | Fld_record of string
+  | Fld_module of string 
+
+type set_field_dbg_info = 
+  | Fld_set_na
+  | Fld_record_set of string 
+
+type pointer_info = 
+  | Pt_constructor of string
+  | Pt_variant of string 
+  | Pt_module_alias
+  | Pt_na 
+
+val default_pointer_info : pointer_info
+
 type primitive =
-    Pidentity
+  | Pidentity
+  | Pbytes_to_string
+  | Pbytes_of_string
   | Pignore
   | Prevapply of Location.t
   | Pdirapply of Location.t
@@ -38,11 +70,12 @@ type primitive =
   | Pgetglobal of Ident.t
   | Psetglobal of Ident.t
   (* Operations on heap blocks *)
-  | Pmakeblock of int * mutable_flag
-  | Pfield of int
-  | Psetfield of int * bool
-  | Pfloatfield of int
-  | Psetfloatfield of int
+  | Pmakeblock of int * tag_info * mutable_flag
+  | Pfield of int * field_dbg_info
+  | Psetfield of int * bool * set_field_dbg_info
+  (* could have field info at least for record *)
+  | Pfloatfield of int * field_dbg_info
+  | Psetfloatfield of int * set_field_dbg_info
   | Pduprecord of Types.record_representation * int
   (* Force lazy values *)
   | Plazyforce
@@ -65,7 +98,17 @@ type primitive =
   | Paddfloat | Psubfloat | Pmulfloat | Pdivfloat
   | Pfloatcomp of comparison
   (* String operations *)
-  | Pstringlength | Pstringrefu | Pstringsetu | Pstringrefs | Pstringsets
+  | Pstringlength 
+  | Pstringrefu 
+  | Pstringsetu
+  | Pstringrefs
+  | Pstringsets
+
+  | Pbyteslength
+  | Pbytesrefu
+  | Pbytessetu 
+  | Pbytesrefs
+  | Pbytessets
   (* Array operations *)
   | Pmakearray of array_kind
   | Parraylength of array_kind
@@ -154,8 +197,8 @@ and raise_kind =
 
 type structured_constant =
     Const_base of constant
-  | Const_pointer of int
-  | Const_block of int * structured_constant list
+  | Const_pointer of int * pointer_info
+  | Const_block of int * tag_info * structured_constant list
   | Const_float_array of string list
   | Const_immstring of string
 
@@ -171,10 +214,12 @@ type let_kind = Strict | Alias | StrictOpt | Variable
     StrictOpt: e does not have side-effects, but depend on the store;
       we can discard e if x does not appear in e'
     Variable: the variable x is assigned later in e' *)
+type public_info = string option  (* label name *)
 
-type meth_kind = Self | Public | Cached
+type meth_kind = Self | Public of public_info | Cached
 
 type shared_code = (int * int) list     (* stack size -> code label *)
+
 
 type lambda =
     Lvar of Ident.t

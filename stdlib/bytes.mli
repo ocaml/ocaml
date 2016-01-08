@@ -40,15 +40,15 @@
    @since 4.02.0
  *)
 
-external length : bytes -> int = "%string_length"
+external length : bytes -> int = "%bytes_length"
 (** Return the length (number of bytes) of the argument. *)
 
-external get : bytes -> int -> char = "%string_safe_get"
+external get : bytes -> int -> char = "%bytes_safe_get"
 (** [get s n] returns the byte at index [n] in argument [s].
 
     Raise [Invalid_argument] if [n] not a valid index in [s]. *)
 
-external set : bytes -> int -> char -> unit = "%string_safe_set"
+external set : bytes -> int -> char -> unit = "%bytes_safe_set"
 (** [set s n c] modifies [s] in place, replacing the byte at index [n]
     with [c].
 
@@ -389,10 +389,10 @@ let s = Bytes.of_string "hello"
 
 (* The following is for system use only. Do not call directly. *)
 
-external unsafe_get : bytes -> int -> char = "%string_unsafe_get"
-external unsafe_set : bytes -> int -> char -> unit = "%string_unsafe_set"
+external unsafe_get : bytes -> int -> char = "%bytes_unsafe_get"
+external unsafe_set : bytes -> int -> char -> unit = "%bytes_unsafe_set"
 external unsafe_blit :
   bytes -> int -> bytes -> int -> int -> unit
-  = "caml_blit_string" "noalloc"
+  = "caml_blit_bytes" "noalloc"
 external unsafe_fill :
   bytes -> int -> int -> char -> unit = "caml_fill_string" "noalloc"

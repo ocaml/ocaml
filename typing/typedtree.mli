@@ -243,7 +243,7 @@ and module_coercion =
   | Tcoerce_structure of (int * module_coercion) list *
                          (Ident.t * int * module_coercion) list
   | Tcoerce_functor of module_coercion * module_coercion
-  | Tcoerce_primitive of Primitive.description
+  | Tcoerce_primitive of Ident.t * Primitive.description
   | Tcoerce_alias of Path.t * module_coercion
 
 and module_type =

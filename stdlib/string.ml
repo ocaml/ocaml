@@ -15,10 +15,10 @@
 
 external length : string -> int = "%string_length"
 external get : string -> int -> char = "%string_safe_get"
-external set : bytes -> int -> char -> unit = "%string_safe_set"
+external set : bytes -> int -> char -> unit = "%bytes_safe_set"
 external create : int -> bytes = "caml_create_string"
 external unsafe_get : string -> int -> char = "%string_unsafe_get"
-external unsafe_set : bytes -> int -> char -> unit = "%string_unsafe_set"
+external unsafe_set : bytes -> int -> char -> unit = "%bytes_unsafe_set"
 external unsafe_blit : string -> int ->  bytes -> int -> int -> unit
                      = "caml_blit_string" "noalloc"
 external unsafe_fill : bytes -> int -> int -> char -> unit
@@ -73,7 +73,7 @@ let mapi f s =
    copy, but String.mli spells out some cases where we are not allowed
    to make a copy. *)
 
-external is_printable: char -> bool = "caml_is_printable"
+
 
 let is_space = function
   | ' ' | '\012' | '\n' | '\r' | '\t' -> true
@@ -90,7 +90,7 @@ let escaped s =
     if i >= length s then false else
       match unsafe_get s i with
       | '"' | '\\' | '\n' | '\t' | '\r' | '\b' -> true
-      | c when is_printable c -> needs_escape (i+1)
+      | ' ' .. '~' -> needs_escape (i + 1)
       | _ -> true
   in
   if needs_escape 0 then

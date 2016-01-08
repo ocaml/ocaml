@@ -19,12 +19,13 @@ external unsafe_chr: int -> char = "%identity"
 let chr n =
   if n < 0 || n > 255 then invalid_arg "Char.chr" else unsafe_chr n
 
-external is_printable: char -> bool = "caml_is_printable"
 
-external string_create: int -> string = "caml_create_string"
-external string_unsafe_get : string -> int -> char = "%string_unsafe_get"
-external string_unsafe_set : string -> int -> char -> unit
-                           = "%string_unsafe_set"
+
+external bytes_create: int -> bytes = "caml_create_string"
+external bytes_unsafe_set : bytes -> int -> char -> unit
+                           = "%bytes_unsafe_set"
+external unsafe_to_string : bytes -> string = "%bytes_to_string"
+
 
 let escaped = function
   | '\'' -> "\\'"
@@ -33,20 +34,19 @@ let escaped = function
   | '\t' -> "\\t"
   | '\r' -> "\\r"
   | '\b' -> "\\b"
-  | c ->
-    if is_printable c then begin
-      let s = string_create 1 in
-      string_unsafe_set s 0 c;
-      s
-    end else begin
+  | (' ' .. '~' as c) -> 
+      let s = bytes_create 1 in
+      bytes_unsafe_set s 0 c;
+      unsafe_to_string s
+  | c -> 
       let n = code c in
-      let s = string_create 4 in
-      string_unsafe_set s 0 '\\';
-      string_unsafe_set s 1 (unsafe_chr (48 + n / 100));
-      string_unsafe_set s 2 (unsafe_chr (48 + (n / 10) mod 10));
-      string_unsafe_set s 3 (unsafe_chr (48 + n mod 10));
-      s
-    end
+      let s = bytes_create 4 in
+      bytes_unsafe_set s 0 '\\';
+      bytes_unsafe_set s 1 (unsafe_chr (48 + n / 100));
+      bytes_unsafe_set s 2 (unsafe_chr (48 + (n / 10) mod 10));      
+      bytes_unsafe_set s 3 (unsafe_chr (48 + n mod 10));
+      unsafe_to_string s 
+
 
 let lowercase c =
   if (c >= 'A' && c <= 'Z')

@@ -31,7 +31,7 @@ let consts : (structured_constant, Ident.t) Hashtbl.t = Hashtbl.create 17
 
 let share c =
   match c with
-    Const_block (n, l) when l <> [] ->
+    Const_block (n, _,  l) when l <> [] ->
       begin try
         Lvar (Hashtbl.find consts c)
       with Not_found ->
@@ -91,7 +91,7 @@ let int n = Lconst (Const_base (Const_int n))
 
 let prim_makearray =
   { prim_name = "caml_make_vect"; prim_arity = 2; prim_alloc = true;
-    prim_native_name = ""; prim_native_float = false }
+    prim_native_name = ""; prim_native_float = false}
 
 (* Also use it for required globals *)
 let transl_label_init expr =
@@ -110,13 +110,13 @@ let transl_label_init expr =
   expr
 
 let transl_store_label_init glob size f arg =
-  method_cache := Lprim(Pfield size, [Lprim(Pgetglobal glob, [])]);
+  method_cache := Lprim(Pfield (size, Fld_na), [Lprim(Pgetglobal glob, [])]);
   let expr = f arg in
   let (size, expr) =
     if !method_count = 0 then (size, expr) else
     (size+1,
      Lsequence(
-     Lprim(Psetfield(size, false),
+     Lprim(Psetfield(size, false, Fld_set_na),
            [Lprim(Pgetglobal glob, []);
             Lprim (Pccall prim_makearray, [int !method_count; int 0])]),
      expr))
@@ -150,7 +150,7 @@ let oo_wrap env req f x =
       List.fold_left
         (fun lambda id ->
           Llet(StrictOpt, id,
-               Lprim(Pmakeblock(0, Mutable),
+               Lprim(Pmakeblock(0, Lambda.default_tag_info, Mutable),
                      [lambda_unit; lambda_unit; lambda_unit]),
                lambda))
         lambda !classes

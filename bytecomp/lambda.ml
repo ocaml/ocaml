@@ -28,8 +28,30 @@ type loc_kind =
   | Loc_LOC
   | Loc_POS
 
+type tag_info = 
+  | Blk_constructor of string * int (* Number of non-const constructors*)
+  | Blk_tuple
+  | Blk_array
+  | Blk_variant of string 
+  | Blk_record of string array (* when its empty means we dont get such information *)
+  | Blk_module of string list option
+  | Blk_na
+
+let default_tag_info : tag_info = Blk_na
+
+type field_dbg_info = 
+  | Fld_na
+  | Fld_record of string
+  | Fld_module of string 
+
+type set_field_dbg_info = 
+  | Fld_set_na
+  | Fld_record_set of string 
+
 type primitive =
-    Pidentity
+  | Pidentity
+  | Pbytes_to_string
+  | Pbytes_of_string
   | Pignore
   | Prevapply of Location.t
   | Pdirapply of Location.t
@@ -38,16 +60,16 @@ type primitive =
   | Pgetglobal of Ident.t
   | Psetglobal of Ident.t
   (* Operations on heap blocks *)
-  | Pmakeblock of int * mutable_flag
-  | Pfield of int
-  | Psetfield of int * bool
-  | Pfloatfield of int
-  | Psetfloatfield of int
+  | Pmakeblock of int * tag_info * mutable_flag
+  | Pfield of int * field_dbg_info
+  | Psetfield of int * bool * set_field_dbg_info
+  | Pfloatfield of int * field_dbg_info
+  | Psetfloatfield of int * set_field_dbg_info
   | Pduprecord of Types.record_representation * int
   (* Force lazy values *)
   | Plazyforce
   (* External call *)
-  | Pccall of Primitive.description
+  | Pccall of  Primitive.description
   (* Exceptions *)
   | Praise of raise_kind
   (* Boolean operations *)
@@ -65,7 +87,17 @@ type primitive =
   | Paddfloat | Psubfloat | Pmulfloat | Pdivfloat
   | Pfloatcomp of comparison
   (* String operations *)
-  | Pstringlength | Pstringrefu | Pstringsetu | Pstringrefs | Pstringsets
+  | Pstringlength 
+  | Pstringrefu 
+  | Pstringsetu
+  | Pstringrefs
+  | Pstringsets
+
+  | Pbyteslength
+  | Pbytesrefu
+  | Pbytessetu 
+  | Pbytesrefs
+  | Pbytessets
   (* Array operations *)
   | Pmakearray of array_kind
   | Parraylength of array_kind
@@ -152,10 +184,18 @@ and raise_kind =
   | Raise_reraise
   | Raise_notrace
 
+type pointer_info = 
+  | Pt_constructor of string
+  | Pt_variant of string 
+  | Pt_module_alias
+  | Pt_na
+
+let default_pointer_info = Pt_na
+
 type structured_constant =
     Const_base of constant
-  | Const_pointer of int
-  | Const_block of int * structured_constant list
+  | Const_pointer of int * pointer_info
+  | Const_block of int * tag_info * structured_constant list
   | Const_float_array of string list
   | Const_immstring of string
 
@@ -163,7 +203,11 @@ type function_kind = Curried | Tupled
 
 type let_kind = Strict | Alias | StrictOpt | Variable
 
-type meth_kind = Self | Public | Cached
+type public_info = string option  (* label name *)
+
+type meth_kind = Self | Public of public_info | Cached
+
+
 
 type shared_code = (int * int) list
 
@@ -207,7 +251,7 @@ and lambda_event_kind =
   | Lev_after of Types.type_expr
   | Lev_function
 
-let const_unit = Const_pointer 0
+let const_unit = Const_pointer (0, default_pointer_info)
 
 let lambda_unit = Lconst const_unit
 
@@ -239,7 +283,7 @@ let make_key e =
         raise Not_simple
     | Lconst _ -> e
     | Lapply (e,es,loc) ->
-        Lapply (tr_rec env e,tr_recs env es,Location.none)
+        Lapply (tr_rec env e,tr_recs env es, Location.none)
     | Llet (Alias,x,ex,e) -> (* Ignore aliases -> substitute *)
         let ex = tr_rec env ex in
         tr_rec (Ident.add x ex env) e
@@ -439,7 +483,7 @@ let rec transl_normal_path = function
     Pident id ->
       if Ident.global id then Lprim(Pgetglobal id, []) else Lvar id
   | Pdot(p, s, pos) ->
-      Lprim(Pfield pos, [transl_normal_path p])
+      Lprim(Pfield (pos, Fld_module s ), [transl_normal_path p])
   | Papply(p1, p2) ->
       fatal_error "Lambda.transl_path"
 
@@ -530,7 +574,7 @@ let lam_of_loc kind loc =
       loc_start.Lexing.pos_cnum + cnum in
   match kind with
   | Loc_POS ->
-    Lconst (Const_block (0, [
+    Lconst (Const_block (0, Blk_tuple, [
           Const_immstring file;
           Const_base (Const_int lnum);
           Const_base (Const_int cnum);

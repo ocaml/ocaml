@@ -270,6 +270,14 @@ CAMLprim value caml_blit_string(value s1, value ofs1, value s2, value ofs2,
   return Val_unit;
 }
 
+CAMLprim value caml_blit_bytes(value s1, value ofs1, value s2, value ofs2,
+                                value n)
+{
+  memmove(&Byte(s2, Long_val(ofs2)), &Byte(s1, Long_val(ofs1)), Int_val(n));
+  return Val_unit;
+}
+
+
 CAMLprim value caml_fill_string(value s, value offset, value len, value init)
 {
   memset(&Byte(s, Long_val(offset)), Int_val(init), Long_val(len));

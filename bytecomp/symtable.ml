@@ -142,7 +142,7 @@ let init () =
         try List.assoc name Predef.builtin_values
         with Not_found -> fatal_error "Symtable.init" in
       let c = slot_for_setglobal id in
-      let cst = Const_block(Obj.object_tag,
+      let cst = Const_block(Obj.object_tag, Lambda.default_tag_info,
                             [Const_base(Const_string (name, None));
                              Const_base(Const_int (-i-1))
                             ])
@@ -213,9 +213,9 @@ let rec transl_const = function
   | Const_base(Const_int32 i) -> Obj.repr i
   | Const_base(Const_int64 i) -> Obj.repr i
   | Const_base(Const_nativeint i) -> Obj.repr i
-  | Const_pointer i -> Obj.repr i
+  | Const_pointer (i,_) -> Obj.repr i
   | Const_immstring s -> Obj.repr s
-  | Const_block(tag, fields) ->
+  | Const_block(tag, _, fields) ->
       let block = Obj.new_block tag (List.length fields) in
       let pos = ref 0 in
       List.iter

@@ -1593,7 +1593,7 @@ let () =
 
 (* Typecheck an implementation file *)
 
-let type_implementation sourcefile outputprefix modulename initial_env ast =
+let type_implementation_more sourcefile outputprefix modulename initial_env ast =
   Cmt_format.clear ();
   try
   Typecore.reset_delayed_checks ();
@@ -1609,7 +1609,7 @@ let type_implementation sourcefile outputprefix modulename initial_env ast =
   if !Clflags.print_types then begin
     Printtyp.wrap_printing_env initial_env
       (fun () -> fprintf std_formatter "%a@." Printtyp.signature simple_sg);
-    (str, Tcoerce_none)   (* result is ignored by Compile.implementation *)
+    (str, Tcoerce_none,finalenv, simple_sg)   (* result is ignored by Compile.implementation *)
   end else begin
     let sourceintf =
       Misc.chop_extension_if_any sourcefile ^ !Config.interface_suffix in
@@ -1629,7 +1629,8 @@ let type_implementation sourcefile outputprefix modulename initial_env ast =
          are not reported as being unused. *)
       Cmt_format.save_cmt (outputprefix ^ ".cmt") modulename
         (Cmt_format.Implementation str) (Some sourcefile) initial_env None;
-      (str, coercion)
+      (str, coercion, finalenv, dclsig)
+        (* identifier is useless might read from serialized cmi files*)
     end else begin
       check_nongen_schemes finalenv str.str_items;
       normalize_signature finalenv simple_sg;
@@ -1648,7 +1649,7 @@ let type_implementation sourcefile outputprefix modulename initial_env ast =
           (Cmt_format.Implementation str)
           (Some sourcefile) initial_env (Some sg);
       end;
-      (str, coercion)
+      (str, coercion,finalenv, simple_sg)
     end
     end
   with e ->
@@ -1657,7 +1658,10 @@ let type_implementation sourcefile outputprefix modulename initial_env ast =
          (Array.of_list (Cmt_format.get_saved_types ())))
       (Some sourcefile) initial_env None;
     raise e
-
+let type_implementation sourcefile outputprefix modulename initial_env ast =
+  let (a,b,_,_) = 
+    type_implementation_more sourcefile outputprefix modulename initial_env ast in 
+  a,b
 
 let save_signature modname tsg outputprefix source_file initial_env cmi =
   Cmt_format.save_cmt  (outputprefix ^ ".cmti") modname

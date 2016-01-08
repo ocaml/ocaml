@@ -13,20 +13,20 @@
 
 (* Byte sequence operations *)
 
-external length : bytes -> int = "%string_length"
+external length : bytes -> int = "%bytes_length"
 external string_length : string -> int = "%string_length"
-external get : bytes -> int -> char = "%string_safe_get"
-external set : bytes -> int -> char -> unit = "%string_safe_set"
+external get : bytes -> int -> char = "%bytes_safe_get"
+external set : bytes -> int -> char -> unit = "%bytes_safe_set"
 external create : int -> bytes = "caml_create_string"
-external unsafe_get : bytes -> int -> char = "%string_unsafe_get"
-external unsafe_set : bytes -> int -> char -> unit = "%string_unsafe_set"
+external unsafe_get : bytes -> int -> char = "%bytes_unsafe_get"
+external unsafe_set : bytes -> int -> char -> unit = "%bytes_unsafe_set"
 external unsafe_fill : bytes -> int -> int -> char -> unit
                      = "caml_fill_string" "noalloc"
-external unsafe_to_string : bytes -> string = "%identity"
-external unsafe_of_string : string -> bytes = "%identity"
+external unsafe_to_string : bytes -> string = "%bytes_to_string"
+external unsafe_of_string : string -> bytes = "%bytes_of_string"
 
 external unsafe_blit : bytes -> int -> bytes -> int -> int -> unit
-                     = "caml_blit_string" "noalloc"
+                     = "caml_blit_bytes" "noalloc"
 external unsafe_blit_string : string -> int -> bytes -> int -> int -> unit
                      = "caml_blit_string" "noalloc"
 
@@ -122,7 +122,7 @@ let cat s1 s2 =
   r
 ;;
 
-external is_printable: char -> bool = "caml_is_printable"
+
 external char_code: char -> int = "%identity"
 external char_chr: int -> char = "%identity"
 
@@ -151,7 +151,8 @@ let escaped s =
     n := !n +
       (match unsafe_get s i with
        | '"' | '\\' | '\n' | '\t' | '\r' | '\b' -> 2
-       | c -> if is_printable c then 1 else 4)
+       | ' ' .. '~' -> 1
+       | _ ->  4)
   done;
   if !n = length s then copy s else begin
     let s' = create !n in
@@ -168,10 +169,8 @@ let escaped s =
           unsafe_set s' !n '\\'; incr n; unsafe_set s' !n 'r'
       | '\b' ->
           unsafe_set s' !n '\\'; incr n; unsafe_set s' !n 'b'
+      | (' ' .. '~') as c -> unsafe_set s' !n c
       | c ->
-          if is_printable c then
-            unsafe_set s' !n c
-          else begin
             let a = char_code c in
             unsafe_set s' !n '\\';
             incr n;
@@ -180,7 +179,7 @@ let escaped s =
             unsafe_set s' !n (char_chr (48 + (a / 10) mod 10));
             incr n;
             unsafe_set s' !n (char_chr (48 + a mod 10))
-          end
+
       end;
       incr n
     done;

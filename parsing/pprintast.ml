@@ -1202,7 +1202,7 @@ class printer  ()= object(self:'self)
     | Pstr_recmodule decls -> (* 3.07 *)
         let aux f = function
           | ({pmb_expr={pmod_desc=Pmod_constraint (expr, typ)}} as pmb) ->
-              pp f "@[<hov2>and@ %s:%a@ =@ %a@]%a" pmb.pmb_name.txt
+              pp f "@[<hov2>@ and@ %s:%a@ =@ %a@]%a" pmb.pmb_name.txt
               self#module_type typ
               self#module_expr expr
               self#item_attributes pmb.pmb_attributes
@@ -1337,10 +1337,10 @@ class printer  ()= object(self:'self)
     match x.pext_kind with
     | Pext_decl(l, None) ->
         pp f "%s%a%a" x.pext_name.txt
-          self#attributes x.pext_attributes
           (fun f -> function
                  | [] -> ()
                  | l -> pp f "@;of@;%a" (self#list self#core_type1 ~sep:"*@;") l) l
+          self#attributes x.pext_attributes
     | Pext_decl(l, Some r) ->
         pp f "%s%a:@;%a" x.pext_name.txt
           self#attributes x.pext_attributes

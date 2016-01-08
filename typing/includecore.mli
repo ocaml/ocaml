@@ -32,7 +32,7 @@ type type_mismatch =
   | Record_representation of bool
 
 val value_descriptions:
-    Env.t -> value_description -> value_description -> module_coercion
+    Env.t -> Ident.t -> value_description -> value_description -> module_coercion
 val type_declarations:
     ?equality:bool ->
       Env.t -> string ->

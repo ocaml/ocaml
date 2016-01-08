@@ -42,7 +42,7 @@ OTHEROBJS=\
   ../typing/ctype.cmo ../typing/printtyp.cmo ../typing/mtype.cmo \
   ../typing/envaux.cmo \
   ../bytecomp/runtimedef.cmo ../bytecomp/bytesections.cmo \
-  ../bytecomp/dll.cmo ../bytecomp/meta.cmo ../bytecomp/symtable.cmo \
+  ../bytecomp/dll.cmo ../bytecomp/meta.cmo ../bytecomp/lambda.cmo ../bytecomp/symtable.cmo \
   ../bytecomp/opcodes.cmo \
   ../toplevel/genprintval.cmo
 

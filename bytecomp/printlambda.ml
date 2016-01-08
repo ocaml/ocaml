@@ -9,7 +9,7 @@
 (*  under the terms of the Q Public License version 1.0.               *)
 (*                                                                     *)
 (***********************************************************************)
-
+[@@@ocaml.warning "-40"]
 open Format
 open Asttypes
 open Primitive
@@ -26,10 +26,10 @@ let rec struct_const ppf = function
   | Const_base(Const_int32 n) -> fprintf ppf "%lil" n
   | Const_base(Const_int64 n) -> fprintf ppf "%LiL" n
   | Const_base(Const_nativeint n) -> fprintf ppf "%nin" n
-  | Const_pointer n -> fprintf ppf "%ia" n
-  | Const_block(tag, []) ->
+  | Const_pointer (n,_) -> fprintf ppf "%ia" n
+  | Const_block(tag,_, []) ->
       fprintf ppf "[%i]" tag
-  | Const_block(tag, sc1::scl) ->
+  | Const_block(tag,_, sc1::scl) ->
       let sconsts ppf scl =
         List.iter (fun sc -> fprintf ppf "@ %a" struct_const sc) scl in
       fprintf ppf "@[<1>[%i:@ @[%a%a@]]@]" tag struct_const sc1 sconsts scl
@@ -96,20 +96,22 @@ let string_of_loc_kind = function
 
 let primitive ppf = function
   | Pidentity -> fprintf ppf "id"
+  | Pbytes_to_string -> fprintf ppf "bytes_to_string"
+  | Pbytes_of_string -> fprintf ppf "bytes_of_string"
   | Pignore -> fprintf ppf "ignore"
   | Prevapply _ -> fprintf ppf "revapply"
   | Pdirapply _ -> fprintf ppf "dirapply"
   | Ploc kind -> fprintf ppf "%s" (string_of_loc_kind kind)
   | Pgetglobal id -> fprintf ppf "global %a" Ident.print id
   | Psetglobal id -> fprintf ppf "setglobal %a" Ident.print id
-  | Pmakeblock(tag, Immutable) -> fprintf ppf "makeblock %i" tag
-  | Pmakeblock(tag, Mutable) -> fprintf ppf "makemutable %i" tag
-  | Pfield n -> fprintf ppf "field %i" n
-  | Psetfield(n, ptr) ->
+  | Pmakeblock(tag, _, Immutable) -> fprintf ppf "makeblock %i" tag
+  | Pmakeblock(tag, _, Mutable) -> fprintf ppf "makemutable %i" tag
+  | Pfield (n,_) -> fprintf ppf "field %i" n
+  | Psetfield(n, ptr, _) ->
       let instr = if ptr then "setfield_ptr " else "setfield_imm " in
       fprintf ppf "%s%i" instr n
-  | Pfloatfield n -> fprintf ppf "floatfield %i" n
-  | Psetfloatfield n -> fprintf ppf "setfloatfield %i" n
+  | Pfloatfield (n,_) -> fprintf ppf "floatfield %i" n
+  | Psetfloatfield (n,_) -> fprintf ppf "setfloatfield %i" n
   | Pduprecord (rep, size) -> fprintf ppf "duprecord %a %i" record_rep rep size
   | Plazyforce -> fprintf ppf "force"
   | Pccall p -> fprintf ppf "%s" p.prim_name
@@ -156,6 +158,12 @@ let primitive ppf = function
   | Pstringsetu -> fprintf ppf "string.unsafe_set"
   | Pstringrefs -> fprintf ppf "string.get"
   | Pstringsets -> fprintf ppf "string.set"
+  | Pbyteslength -> fprintf ppf "bytes.length"
+  | Pbytesrefu -> fprintf ppf "bytes.unsafe_get"
+  | Pbytessetu -> fprintf ppf "bytes.unsafe_set"
+  | Pbytesrefs -> fprintf ppf "bytes.get"
+  | Pbytessets -> fprintf ppf "bytes.set"
+
   | Parraylength _ -> fprintf ppf "array.length"
   | Pmakearray _ -> fprintf ppf "makearray "
   | Parrayrefu _ -> fprintf ppf "array.unsafe_get"
@@ -239,7 +247,90 @@ let primitive ppf = function
   | Pbbswap(bi) -> print_boxed_integer "bswap" ppf bi
   | Pint_as_pointer -> fprintf ppf "int_as_pointer"
 
-let rec lam ppf = function
+type print_kind = 
+  | Alias 
+  | Strict 
+  | StrictOpt 
+  | Variable 
+  | Recursive 
+
+let kind = function
+  | Alias -> "a"
+  | Strict -> ""
+  | StrictOpt -> "o"
+  | Variable -> "v" 
+  | Recursive -> "r"
+
+let to_print_kind (k : Lambda.let_kind) : print_kind = 
+  match k with 
+  | Alias -> Alias 
+  | Strict -> Strict
+  | StrictOpt -> StrictOpt
+  | Variable -> Variable
+  
+let rec aux (acc : (print_kind * Ident.t * lambda ) list) lam = 
+  match lam with 
+  | Llet (str3, id3, arg3, body3) ->
+      aux ((to_print_kind str3,id3, arg3)::acc) body3
+  | Lletrec (bind_args, body) ->
+      aux 
+        (List.map (fun (id,l) -> (Recursive,id,l)) bind_args 
+         @ acc) body
+  | e ->  (acc , e) 
+
+type left_var = 
+    {
+     kind : print_kind ;
+     id : Ident.t
+   }
+
+type left = 
+  | Id of left_var
+  | Nop
+
+
+
+
+let  flatten lam : (print_kind * Ident.t * lambda ) list * lambda = 
+  match lam with 
+  | Llet(str,id, arg, body) ->
+      aux [to_print_kind str, id, arg] body
+  | Lletrec(bind_args, body) ->
+      aux 
+        (List.map (fun (id,l) -> (Recursive, id,l)) bind_args) 
+        body
+  | _ -> assert false
+
+        
+let get_string ((id : Ident.t), (pos : int)) (env : Env.t) : string = 
+  match  Env.find_module (Pident id) env with 
+  | {md_type = Mty_signature signature  ; _ } -> 
+      (* Env.prefix_idents, could be cached  *)
+      let serializable_sigs = 
+        List.filter (fun x ->
+            match x with 
+            | Sig_typext _ 
+            | Sig_module _
+            | Sig_class _ -> true
+            | Sig_value(_, {val_kind = Val_prim _}) -> false
+            | Sig_value _ -> true
+            | _ -> false
+                    ) signature  in
+      (begin match List.nth  serializable_sigs  pos  with 
+      | Sig_value (i,_) 
+      | Sig_module (i,_,_) -> i 
+      | Sig_typext (i,_,_) -> i 
+      | Sig_modtype(i,_) -> i 
+      | Sig_class (i,_,_) -> i 
+      | Sig_class_type(i,_,_) -> i 
+      | Sig_type(i,_,_) -> i 
+      end).name
+  | _ -> assert false
+
+
+
+let lambda use_env env ppf v  =
+  let rec lam ppf = function
   | Lvar id ->
       Ident.print ppf id
   | Lconst cst ->
@@ -263,28 +354,24 @@ let rec lam ppf = function
               params;
             fprintf ppf ")" in
       fprintf ppf "@[<2>(function%a@ %a)@]" pr_params params lam body
-  | Llet(str, id, arg, body) ->
-      let kind = function
-        Alias -> "a" | Strict -> "" | StrictOpt -> "o" | Variable -> "v" in
-      let rec letbody = function
-        | Llet(str, id, arg, body) ->
-            fprintf ppf "@ @[<2>%a =%s@ %a@]" Ident.print id (kind str) lam arg;
-            letbody body
-        | expr -> expr in
-      fprintf ppf "@[<2>(let@ @[<hv 1>(@[<2>%a =%s@ %a@]"
-        Ident.print id (kind str) lam arg;
-      let expr = letbody body in
-      fprintf ppf ")@]@ %a)@]" lam expr
-  | Lletrec(id_arg_list, body) ->
+  | Llet _ | Lletrec _ as x ->
+      let args, body =   flatten x  in
       let bindings ppf id_arg_list =
         let spc = ref false in
         List.iter
-          (fun (id, l) ->
+          (fun (k, id, l) ->
             if !spc then fprintf ppf "@ " else spc := true;
-            fprintf ppf "@[<2>%a@ %a@]" Ident.print id lam l)
+            fprintf ppf "@[<2>%a =%s@ %a@]" Ident.print id (kind k) lam l)
           id_arg_list in
       fprintf ppf
-        "@[<2>(letrec@ (@[<hv 1>%a@])@ %a)@]" bindings id_arg_list lam body
+        "@[<2>(let@ (@[<hv 1>%a@]" bindings (List.rev args);
+      fprintf ppf ")@ %a)@]"  lam body
+  | Lprim(Pfield (n,_), [ Lprim(Pgetglobal id,[])]) when use_env ->
+      fprintf ppf "%s.%s/%d" id.name (get_string (id,n) env) n
+
+  | Lprim(Psetfield (n,_,_), [ Lprim(Pgetglobal id,[]) ;  e ]) when use_env  ->
+      fprintf ppf "@[<2>(%s.%s/%d <- %a)@]" id.name (get_string (id,n) env) n
+        lam e
   | Lprim(prim, largs) ->
       let lams ppf largs =
         List.iter (fun l -> fprintf ppf "@ %a" lam l) largs in
@@ -365,19 +452,20 @@ let rec lam ppf = function
       let kind =
         if k = Self then "self" else if k = Cached then "cache" else "" in
       fprintf ppf "@[<2>(send%s@ %a@ %a%a)@]" kind lam obj lam met args largs
-  | Levent(expr, ev) ->
-      let kind =
-       match ev.lev_kind with
-       | Lev_before -> "before"
-       | Lev_after _  -> "after"
-       | Lev_function -> "funct-body" in
-      fprintf ppf "@[<2>(%s %s(%i)%s:%i-%i@ %a)@]" kind
-              ev.lev_loc.Location.loc_start.Lexing.pos_fname
-              ev.lev_loc.Location.loc_start.Lexing.pos_lnum
-              (if ev.lev_loc.Location.loc_ghost then "<ghost>" else "")
-              ev.lev_loc.Location.loc_start.Lexing.pos_cnum
-              ev.lev_loc.Location.loc_end.Lexing.pos_cnum
-              lam expr
+  | Levent(expr, _ev) ->
+      lam ppf expr
+      (* let kind = *)
+      (*  match ev.lev_kind with *)
+      (*  | Lev_before -> "before" *)
+      (*  | Lev_after _  -> "after" *)
+      (*  | Lev_function -> "funct-body" in *)
+      (* fprintf ppf "@[<2>(%s %s(%i)%s:%i-%i@ %a)@]" kind *)
+      (*         ev.lev_loc.Location.loc_start.Lexing.pos_fname *)
+      (*         ev.lev_loc.Location.loc_start.Lexing.pos_lnum *)
+      (*         (if ev.lev_loc.Location.loc_ghost then "<ghost>" else "") *)
+      (*         ev.lev_loc.Location.loc_start.Lexing.pos_cnum *)
+      (*         ev.lev_loc.Location.loc_end.Lexing.pos_cnum *)
+      (*         lam expr *)
   | Lifused(id, expr) ->
       fprintf ppf "@[<2>(ifused@ %a@ %a)@]" Ident.print id lam expr
 
@@ -386,7 +474,71 @@ and sequence ppf = function
       fprintf ppf "%a@ %a" sequence l1 sequence l2
   | l ->
       lam ppf l
+  in 
+  lam ppf v
 
 let structured_constant = struct_const
 
-let lambda = lam
+let env_lambda = lambda true 
+let lambda = lambda false Env.empty
+
+let rec flatten_seq acc lam =
+  match lam with 
+  | Lsequence(l1,l2) -> 
+      flatten_seq (flatten_seq acc l1) l2
+  | x -> x :: acc 
+
+exception Not_a_module
+
+let rec flat (acc : (left * lambda) list ) (lam : lambda) = 
+  match lam with 
+  | Llet (str,id,arg,body) ->
+      flat ( (Id {kind = to_print_kind str;  id}, arg) :: acc) body 
+  | Lletrec (bind_args, body) ->
+      flat ( List.map (fun (id, arg ) -> (Id {kind = Recursive;  id}, arg)) bind_args @ acc) body 
+  | Lsequence (l,r) -> 
+      flat (flat acc l) r
+  | x -> (Nop, x) :: acc 
+
+let lambda_as_module env  ppf lam = 
+  try
+  match lam with
+  | Lprim(Psetglobal(id), [biglambda])  (* might be wrong in toplevel *) ->
+      
+      begin match flat [] biglambda  with 
+      | (Nop, Lprim (Pmakeblock (_, _, _), toplevels)) :: rest ->
+          (* let spc = ref false in *)
+          List.iter
+            (fun (left, l) ->
+              match left with 
+              | Id { kind = k; id } ->
+                  fprintf ppf "@[<2>%a =%s@ %a@]@." Ident.print id (kind k) (env_lambda env) l
+              | Nop -> 
+
+                  fprintf ppf "@[<2>%a@]@."   (env_lambda env) l
+            )
+
+            @@ List.rev rest
+          
+          
+      | _ -> raise Not_a_module
+      end
+  | _ -> raise Not_a_module
+  with _ -> 
+    env_lambda env ppf lam;
+    fprintf ppf "; lambda-failure"
+let seriaize env (filename : string) (lam : Lambda.lambda) : unit =
+  let ou = open_out filename  in
+  let old = Format.get_margin () in
+  let () = Format.set_margin 10000 in
+  let fmt = Format.formatter_of_out_channel ou in
+  begin
+    (* lambda_as_module env fmt lambda; *)
+    lambda fmt lam;
+    Format.pp_print_flush fmt ();
+    close_out ou;
+    Format.set_margin old
+  end
+
+let serialize_raw_js = ref(fun _ _ _ _ -> ())    
+let serialize_js = ref (fun _ _ _ -> ())

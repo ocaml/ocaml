@@ -39,7 +39,7 @@ let rec split_list n l =
 let rec build_closure_env env_param pos = function
     [] -> Tbl.empty
   | id :: rem ->
-      Tbl.add id (Uprim(Pfield pos, [Uvar env_param], Debuginfo.none))
+      Tbl.add id (Uprim(Pfield (pos, Fld_na), [Uvar env_param], Debuginfo.none))
               (build_closure_env env_param (pos+1) rem)
 
 (* Auxiliary for accessing globals.  We change the name of the global
@@ -144,19 +144,19 @@ let split_default_wrapper fun_id kind params body =
 
 let prim_size prim args =
   match prim with
-    Pidentity -> 0
+  | (Pidentity | Pbytes_to_string | Pbytes_of_string ) -> 0
   | Pgetglobal id -> 1
   | Psetglobal id -> 1
-  | Pmakeblock(tag, mut) -> 5 + List.length args
-  | Pfield f -> 1
-  | Psetfield(f, isptr) -> if isptr then 4 else 1
-  | Pfloatfield f -> 1
-  | Psetfloatfield f -> 1
+  | Pmakeblock(tag, _, mut) -> 5 + List.length args
+  | Pfield _ -> 1
+  | Psetfield(f, isptr,_) -> if isptr then 4 else 1
+  | Pfloatfield _ -> 1
+  | Psetfloatfield _ -> 1
   | Pduprecord _ -> 10 + List.length args
   | Pccall p -> (if p.prim_alloc then 10 else 4) + List.length args
   | Praise _ -> 4
-  | Pstringlength -> 5
-  | Pstringrefs | Pstringsets -> 6
+  | Pstringlength | Pbyteslength -> 5
+  | Pstringrefs | Pstringsets | Pbytesrefs | Pbytessets -> 6
   | Pmakearray kind -> 5 + List.length args
   | Parraylength kind -> if kind = Pgenarray then 6 else 2
   | Parrayrefu kind -> if kind = Pgenarray then 12 else 2
@@ -241,6 +241,7 @@ let rec is_pure_clambda = function
   | Uconst _ -> true
   | Uprim((Psetglobal _ | Psetfield _ | Psetfloatfield _ | Pduprecord _ |
            Pccall _ | Praise _ | Poffsetref _ | Pstringsetu | Pstringsets |
+           Pbytessetu | Pbytessets |
            Parraysetu _ | Parraysets _ | Pbigarrayset _), _, _) -> false
   | Uprim(p, args, _) -> List.for_all is_pure_clambda args
   | _ -> false
@@ -453,7 +454,7 @@ let field_approx n = function
 let simplif_prim_pure fpc p (args, approxs) dbg =
   match p, args, approxs with
   (* Block construction *)
-  | Pmakeblock(tag, Immutable), _, _ ->
+  | Pmakeblock(tag, _, Immutable), _, _ ->
       let field = function
         | Value_const c -> c
         | _ -> raise Exit
@@ -468,17 +469,17 @@ let simplif_prim_pure fpc p (args, approxs) dbg =
         (Uprim(p, args, dbg), Value_tuple (Array.of_list approxs))
       end
   (* Field access *)
-  | Pfield n, _, [ Value_const(Uconst_ref(_, Uconst_block(_, l))) ]
+  | Pfield (n,_), _, [ Value_const(Uconst_ref(_, Uconst_block(_, l))) ]
     when n < List.length l ->
       make_const (List.nth l n)
-  | Pfield n, [ Uprim(Pmakeblock _, ul, _) ], [approx]
+  | Pfield (n,_), [ Uprim(Pmakeblock _, ul, _) ], [approx]
     when n < List.length ul ->
       (List.nth ul n, field_approx n approx)
   (* Strings *)
-  | Pstringlength, _, [ Value_const(Uconst_ref(_, Uconst_string s)) ] ->
+  | (Pstringlength | Pbyteslength), _, [ Value_const(Uconst_ref(_, Uconst_string s)) ] ->
       make_const_int (String.length s)
   (* Identity *)
-  | Pidentity, [arg1], [app1] ->
+  | (Pidentity | Pbytes_of_string | Pbytes_to_string ), [arg1], [app1] ->
       (arg1, app1)
   (* Kind test *)
   | Pisint, _, [a1] ->
@@ -508,7 +509,7 @@ let simplif_prim fpc p (args, approxs as args_approxs) dbg =
     (* XXX : always return the same approxs as simplif_prim_pure? *)
     let approx =
       match p with
-      | Pmakeblock(_, Immutable) ->
+      | Pmakeblock(_, _, Immutable) ->
           Value_tuple (Array.of_list approxs)
       | _ ->
           Value_unknown
@@ -640,8 +641,8 @@ let rec bind_params_rec fpc subst params args body =
         let p1' = Ident.rename p1 in
         let u1, u2 =
           match Ident.name p1, a1 with
-          | "*opt*", Uprim(Pmakeblock(0, Immutable), [a], dbg) ->
-              a, Uprim(Pmakeblock(0, Immutable), [Uvar p1'], dbg)
+          | "*opt*", Uprim(Pmakeblock(0, tag_info, Immutable), [a], dbg) ->
+              a, Uprim(Pmakeblock(0, tag_info, Immutable), [Uvar p1'], dbg)
           | _ ->
               a1, Uvar p1'
         in
@@ -666,6 +667,7 @@ let rec is_pure = function
   | Lconst cst -> true
   | Lprim((Psetglobal _ | Psetfield _ | Psetfloatfield _ | Pduprecord _ |
            Pccall _ | Praise _ | Poffsetref _ | Pstringsetu | Pstringsets |
+           Pbytessetu | Pbytessets |
            Parraysetu _ | Parraysets _ | Pbigarrayset _), _) -> false
   | Lprim(p, args) -> List.for_all is_pure args
   | Levent(lam, ev) -> is_pure lam
@@ -713,7 +715,7 @@ let check_constant_result lam ulam approx =
           let glb =
             Uprim(Pgetglobal (Ident.create_persistent id), [], Debuginfo.none)
           in
-          Uprim(Pfield i, [glb], Debuginfo.none), approx
+          Uprim(Pfield (i, Fld_na), [glb], Debuginfo.none), approx
       end
   | _ -> (ulam, approx)
 
@@ -791,8 +793,8 @@ let rec close fenv cenv = function
       let rec transl = function
         | Const_base(Const_int n) -> Uconst_int n
         | Const_base(Const_char c) -> Uconst_int (Char.code c)
-        | Const_pointer n -> Uconst_ptr n
-        | Const_block (tag, fields) ->
+        | Const_pointer (n,_) -> Uconst_ptr n
+        | Const_block (tag, _, fields) ->
             str (Uconst_block (tag, List.map transl fields))
         | Const_float_array sl ->
             (* constant float arrays are really immutable *)
@@ -818,7 +820,7 @@ let rec close fenv cenv = function
       let nargs = List.length args in
       begin match (close fenv cenv funct, close_list fenv cenv args) with
         ((ufunct, Value_closure(fundesc, approx_res)),
-         [Uprim(Pmakeblock(_, _), uargs, _)])
+         [Uprim(Pmakeblock(_,_,  _), uargs, _)])
         when List.length uargs = - fundesc.fun_arity ->
           let app = direct_apply fundesc funct ufunct uargs in
           (app, strengthen_approx app approx_res)
@@ -918,15 +920,15 @@ let rec close fenv cenv = function
       check_constant_result lam
                             (getglobal id)
                             (Compilenv.global_approx id)
-  | Lprim(Pfield n, [lam]) ->
+  | Lprim((Pfield (n, _) as field), [lam]) ->
       let (ulam, approx) = close fenv cenv lam in
-      check_constant_result lam (Uprim(Pfield n, [ulam], Debuginfo.none))
+      check_constant_result lam (Uprim(field, [ulam], Debuginfo.none))
                             (field_approx n approx)
-  | Lprim(Psetfield(n, _), [Lprim(Pgetglobal id, []); lam]) ->
+  | Lprim(Psetfield(n, _,dbg_info), [Lprim(Pgetglobal id, []); lam]) ->
       let (ulam, approx) = close fenv cenv lam in
       if approx <> Value_unknown then
         (!global_approx).(n) <- approx;
-      (Uprim(Psetfield(n, false), [getglobal id; ulam], Debuginfo.none),
+      (Uprim(Psetfield(n, false, dbg_info), [getglobal id; ulam], Debuginfo.none),
        Value_unknown)
   | Lprim(Praise k, [Levent(arg, ev)]) ->
       let (ulam, approx) = close fenv cenv arg in

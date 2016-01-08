@@ -460,3 +460,8 @@ CAMLprim value caml_sys_read_directory(value path)
   caml_ext_table_free(&tbl, 1);
   CAMLreturn(result);
 }
+
+CAMLprim value caml_is_js(value _)
+{
+  return Val_false;
+}

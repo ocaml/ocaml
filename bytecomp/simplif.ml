@@ -35,9 +35,9 @@ let rec eliminate_ref id = function
   | Lletrec(idel, e2) ->
       Lletrec(List.map (fun (v, e) -> (v, eliminate_ref id e)) idel,
               eliminate_ref id e2)
-  | Lprim(Pfield 0, [Lvar v]) when Ident.same v id ->
+  | Lprim(Pfield (0, _), [Lvar v]) when Ident.same v id ->
       Lvar id
-  | Lprim(Psetfield(0, _), [Lvar v; e]) when Ident.same v id ->
+  | Lprim(Psetfield(0, _, _), [Lvar v; e]) when Ident.same v id ->
       Lassign(id, eliminate_ref id e)
   | Lprim(Poffsetref delta, [Lvar v]) when Ident.same v id ->
       Lassign(id, Lprim(Poffsetint delta, [Lvar id]))
@@ -441,14 +441,14 @@ let simplify_lets lam =
   | Llet(str, v, Lvar w, l2) when optimize ->
       Hashtbl.add subst v (simplif (Lvar w));
       simplif l2
-  | Llet(Strict, v, Lprim(Pmakeblock(0, Mutable), [linit]), lbody)
+  | Llet(Strict, v, Lprim(Pmakeblock(0, tag_info, Mutable), [linit]), lbody)
     when optimize ->
       let slinit = simplif linit in
       let slbody = simplif lbody in
       begin try
        mklet (Variable, v, slinit, eliminate_ref v slbody)
       with Real_reference ->
-        mklet(Strict, v, Lprim(Pmakeblock(0, Mutable), [slinit]), slbody)
+        mklet(Strict, v, Lprim(Pmakeblock(0, tag_info, Mutable), [slinit]), slbody)
       end
   | Llet(Alias, v, l1, l2) ->
       begin match count_var v with
@@ -527,7 +527,7 @@ let rec emit_tail_infos is_tail lambda =
   | Lletrec (bindings, body) ->
       List.iter (fun (_, lam) -> emit_tail_infos false lam) bindings;
       emit_tail_infos is_tail body
-  | Lprim (Pidentity, [arg]) ->
+  | Lprim ((Pidentity | Pbytes_to_string | Pbytes_of_string ), [arg]) ->
       emit_tail_infos is_tail arg
   | Lprim (Psequand, [arg1; arg2])
   | Lprim (Psequor, [arg1; arg2]) ->
