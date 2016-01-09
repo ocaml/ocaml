@@ -425,6 +425,7 @@ LBL(caml_allocN):
         addq    $8, %rsp; CFI_ADJUST (-8)  /* drop desired size */
         ret
 LBL(103):
+        CFI_ADJUST(8)
         RECORD_STACK_FRAME(8)
 #ifdef WITH_FRAME_POINTERS
         /* Do we need 16-byte alignment here ? */
@@ -486,7 +487,6 @@ LBL(caml_start_program):
         lea     LBL(108)(%rip), %r13
         pushq   %r13; CFI_ADJUST(8)
         pushq   %r14; CFI_ADJUST(8)
-        CFI_ADJUST(16)
         movq    %rsp, %r14
     /* Call the OCaml code */
         call    *%r12
@@ -494,7 +494,6 @@ LBL(107):
     /* Pop the exception handler */
         popq    %r14; CFI_ADJUST(-8)
         popq    %r12; CFI_ADJUST(-8)   /* dummy register */
-        CFI_ADJUST(-16)
 LBL(109):
     /* Update alloc ptr and exception ptr */
         STORE_VAR(%r15,caml_young_ptr)
