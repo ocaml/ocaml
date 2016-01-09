@@ -67,10 +67,14 @@
 #define CFI_STARTPROC .cfi_startproc
 #define CFI_ENDPROC .cfi_endproc
 #define CFI_ADJUST(n) .cfi_adjust_cfa_offset n
+#define CFI_OFFSET(r, n) .cfi_offset r, n
+#define CFI_SAME_VALUE(r) .cfi_same_value r
 #else
 #define CFI_STARTPROC
 #define CFI_ENDPROC
 #define CFI_ADJUST(n)
+#define CFI_OFFSET(r, n)
+#define CFI_SAME_VALUE(r)
 #endif
 
 #ifdef WITH_FRAME_POINTERS
@@ -185,7 +189,7 @@
 
 #define PUSH_CALLEE_SAVE_REGS \
         pushq   %rbx; CFI_ADJUST (8); \
-        pushq   %rbp; CFI_ADJUST (8); \
+        pushq   %rbp; CFI_ADJUST (8); CFI_OFFSET(rbp, -24); /* Allows debugger to walk the stack */ \
         pushq   %rsi; CFI_ADJUST (8); \
         pushq   %rdi; CFI_ADJUST (8); \
         pushq   %r12; CFI_ADJUST (8); \
@@ -222,7 +226,7 @@
         popq    %r12; CFI_ADJUST(-8); \
         popq    %rdi; CFI_ADJUST(-8); \
         popq    %rsi; CFI_ADJUST(-8); \
-        popq    %rbp; CFI_ADJUST(-8); \
+        popq    %rbp; CFI_ADJUST(-8); CFI_SAME_VALUE(rbp); \
         popq    %rbx; CFI_ADJUST(-8)
 
 #else
@@ -231,7 +235,7 @@
 
 #define PUSH_CALLEE_SAVE_REGS \
         pushq   %rbx; CFI_ADJUST(8); \
-        pushq   %rbp; CFI_ADJUST(8); \
+        pushq   %rbp; CFI_ADJUST(8); CFI_OFFSET(rbp, -24); \
         pushq   %r12; CFI_ADJUST(8); \
         pushq   %r13; CFI_ADJUST(8); \
         pushq   %r14; CFI_ADJUST(8); \
@@ -244,7 +248,7 @@
         popq    %r14; CFI_ADJUST(-8); \
         popq    %r13; CFI_ADJUST(-8); \
         popq    %r12; CFI_ADJUST(-8); \
-        popq    %rbp; CFI_ADJUST(-8); \
+        popq    %rbp; CFI_ADJUST(-8); CFI_SAME_VALUE(rbp); \
         popq    %rbx; CFI_ADJUST(-8);
 
 #endif
