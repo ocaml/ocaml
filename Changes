@@ -191,7 +191,8 @@ Runtime system:
 - GPR#297: Several changes to improve the worst-case GC pause time.
   (Damien Doligez, with help from Leo White and Francois Bobot)
 - GPR#384: Fix compilation using old Microsoft C Compilers not supporting secure
-  CRT functions (SDK Visual Studio 2005 compiler and earlier)
+  CRT functions (SDK Visual Studio 2005 compiler and earlier) and standard
+  64-bit integer literals (Visual Studio .NET 2002 and earlier)
   (David Allsopp)
 
 Standard library:
