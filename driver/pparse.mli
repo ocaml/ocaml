@@ -28,6 +28,10 @@ type 'a ast_kind =
 | Structure : Parsetree.structure ast_kind
 | Signature : Parsetree.signature ast_kind
 
+val clear_ppx : unit -> unit
+val add_external_ppx : path:string -> unit
+val add_in_process_ppx : Ast_mapper.mapper -> unit
+
 val read_ast : 'a ast_kind -> string -> 'a
 val write_ast : 'a ast_kind -> string -> 'a -> unit
 

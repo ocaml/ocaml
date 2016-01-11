@@ -1952,9 +1952,9 @@ middle_end/base_types/variable.cmi : utils/identifiable.cmi typing/ident.cmi \
     middle_end/base_types/compilation_unit.cmi
 driver/compdynlink.cmi :
 driver/compenv.cmo : utils/warnings.cmi utils/misc.cmi parsing/location.cmi \
-    utils/config.cmi utils/clflags.cmi driver/compenv.cmi
+    utils/config.cmi utils/clflags.cmi driver/compenv.cmi driver/pparse.cmi
 driver/compenv.cmx : utils/warnings.cmx utils/misc.cmx parsing/location.cmx \
-    utils/config.cmx utils/clflags.cmx driver/compenv.cmi
+    utils/config.cmx utils/clflags.cmx driver/compenv.cmi driver/pparse.cmi
 driver/compenv.cmi :
 driver/compile.cmo : utils/warnings.cmi typing/typemod.cmi \
     typing/typedtree.cmi typing/typecore.cmi bytecomp/translmod.cmi \

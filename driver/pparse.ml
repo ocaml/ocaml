@@ -112,23 +112,42 @@ let rewrite kind ppxs ast =
   let fn = List.fold_left (apply_rewriter kind) fn (List.rev ppxs) in
   read_ast kind fn
 
+type rewriter_kind =
+  | External of string
+  | InProcess of Ast_mapper.mapper
+
+let installed_ppxs = ref []
+
+let clear_ppx () = installed_ppxs := []
+let add_external_ppx ~path =
+  installed_ppxs := (External path) :: !installed_ppxs
+
+let add_in_process_ppx mapper =
+  installed_ppxs := (InProcess mapper) :: !installed_ppxs
+
 let apply_rewriters_str ?(restore = true) ~tool_name ast =
-  match !Clflags.all_ppx with
-  | [] -> ast
-  | ppxs ->
-      ast
-      |> Ast_mapper.add_ppx_context_str ~tool_name
-      |> rewrite Structure ppxs
-      |> Ast_mapper.drop_ppx_context_str ~restore
+  List.fold_right (fun ppx ast ->
+    match ppx with
+    | External path ->
+       ast
+       |> Ast_mapper.add_ppx_context_str ~tool_name
+       |> rewrite Structure [path]
+       |> Ast_mapper.drop_ppx_context_str ~restore
+    | InProcess mapper ->
+        Ast_mapper.(mapper.structure mapper ast)
+  ) !installed_ppxs ast
 
 let apply_rewriters_sig ?(restore = true) ~tool_name ast =
-  match !Clflags.all_ppx with
-  | [] -> ast
-  | ppxs ->
-      ast
-      |> Ast_mapper.add_ppx_context_sig ~tool_name
-      |> rewrite Signature ppxs
-      |> Ast_mapper.drop_ppx_context_sig ~restore
+  List.fold_right (fun ppx ast ->
+    match ppx with
+    | External path ->
+       ast
+       |> Ast_mapper.add_ppx_context_sig ~tool_name
+       |> rewrite Signature [path]
+       |> Ast_mapper.drop_ppx_context_sig ~restore
+    | InProcess mapper ->
+        Ast_mapper.(mapper.signature mapper ast)
+  ) !installed_ppxs ast
 
 let apply_rewriters ?restore ~tool_name
     (type a) (kind : a ast_kind) (ast : a) : a =

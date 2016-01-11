@@ -525,7 +525,9 @@ let readenv ppf position =
   apply_config_file ppf position;
   read_OCAMLPARAM ppf position;
   all_ccopts := !last_ccopts @ !first_ccopts;
-  all_ppx := !last_ppx @ !first_ppx
+  all_ppx := !last_ppx @ !first_ppx;
+  Pparse.clear_ppx();
+  List.iter (fun path -> Pparse.add_external_ppx ~path) !all_ppx
 
 let get_objfiles ~with_ocamlparam =
   if with_ocamlparam then
