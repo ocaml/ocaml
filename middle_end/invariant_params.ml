@@ -400,7 +400,8 @@ let unused_arguments (decls : Flambda.function_declarations) : Variable.Set.t =
       Flambda_iterators.iter check_expr (fun (_ : Flambda.named) -> ())
         decl.body;
       let free_vars =
-        Flambda.free_variables ~ignore_uses_as_callee:() decl.body
+        Flambda.free_variables ~ignore_uses_as_callee:()
+          ~ignore_uses_as_argument:() decl.body
       in
       Format.printf "Used: %a@." Variable.Set.print free_vars;
       Variable.Set.iter used_variable free_vars)
