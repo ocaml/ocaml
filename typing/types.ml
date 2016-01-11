@@ -300,15 +300,11 @@ and constructor_tag =
   | Cstr_extension of Path.t * bool     (* Extension constructor
                                            true if a constant false if a block*)
 
-let compare_tag t1 t2 = match (t1, t2) with
-  | Cstr_constant i1, Cstr_constant i2 -> i2 - i1
-  | Cstr_block i1, Cstr_block i2 -> i2 - i1
-  | Cstr_extension (path1, b1), Cstr_extension (path2, b2) -> (match compare path1 path2 with
-    | 0 -> compare b1 b2
-    | c -> c)
-  | Cstr_constant _, _ -> 1
-  | Cstr_block _, _ -> 1
-  | _ -> -1
+let equal_tag t1 t2 = match (t1, t2) with
+  | Cstr_constant i1, Cstr_constant i2 -> i2 = i1
+  | Cstr_block i1, Cstr_block i2 -> i2 = i1
+  | Cstr_extension (path1, b1), Cstr_extension (path2, b2) -> path1 = path2 && b1 = b2
+  | _ -> false
 
 type label_description =
   { lbl_name: string;                   (* Short name *)

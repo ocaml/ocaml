@@ -447,7 +447,7 @@ and constructor_tag =
   | Cstr_extension of Path.t * bool     (* Extension constructor
                                            true if a constant false if a block*)
 
-val compare_tag :  constructor_tag -> constructor_tag -> int
+val equal_tag :  constructor_tag -> constructor_tag -> bool
 
 type label_description =
   { lbl_name: string;                   (* Short name *)
