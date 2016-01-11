@@ -34,3 +34,6 @@
 #define HAS_IPV6
 #define HAS_NICE
 #define SUPPORT_DYNAMIC_LINKING
+#if defined(_MSC_VER) && _MSC_VER < 1300
+#define LACKS_SANE_NAN
+#endif
