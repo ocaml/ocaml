@@ -49,6 +49,12 @@
 #define S_ISREG(mode) (((mode) & S_IFMT) == S_IFREG)
 #endif
 
+/* Very old Microsoft headers don't include intptr_t */
+#if defined(_MSC_VER) && !defined(_UINTPTR_T_DEFINED)
+typedef unsigned int uintptr_t;
+#define _UINTPTR_T_DEFINED
+#endif
+
 CAMLnoreturn_start
 static void caml_win32_sys_error (int errnum)
 CAMLnoreturn_end;
