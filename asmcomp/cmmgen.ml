@@ -1318,10 +1318,13 @@ let rec is_unboxed_number env e =
       | Some (_, bn) -> Boxed bn
       end
 
-  | Uconst(Uconst_ref(_, Uconst_float _)) -> Boxed Boxed_float
-  | Uconst(Uconst_ref(_, Uconst_int32 _)) -> Boxed (Boxed_integer Pint32)
-  | Uconst(Uconst_ref(_, Uconst_int64 _)) -> Boxed (Boxed_integer Pint64)
-  | Uconst(Uconst_ref(_, Uconst_nativeint _)) ->
+  | Uconst(Uconst_ref(_, Some (Uconst_float _))) ->
+      Boxed Boxed_float
+  | Uconst(Uconst_ref(_, Some (Uconst_int32 _))) ->
+      Boxed (Boxed_integer Pint32)
+  | Uconst(Uconst_ref(_, Some (Uconst_int64 _))) ->
+      Boxed (Boxed_integer Pint64)
+  | Uconst(Uconst_ref(_, Some (Uconst_nativeint _))) ->
       Boxed (Boxed_integer Pnativeint)
   | Uprim(p, _, _) ->
       begin match simplif_primitive p with
@@ -1642,6 +1645,8 @@ let rec transl env e =
       | Some (unboxed_id, bn) ->
           return_unit(Cassign(unboxed_id, transl_unbox_number env bn exp))
       end
+  | Uunreachable ->
+      Cop(Cload Word_int, [Cconst_int 0])
 
 and transl_ccall env prim args dbg =
   let transl_arg native_repr arg =
@@ -2190,15 +2195,15 @@ and transl_prim_3 env p arg1 arg2 arg3 dbg =
     fatal_error "Cmmgen.transl_prim_3"
 
 and transl_unbox_float env = function
-    Uconst(Uconst_ref(_, Uconst_float f)) -> Cconst_float f
+    Uconst(Uconst_ref(_, Some (Uconst_float f))) -> Cconst_float f
   | exp -> unbox_float(transl env exp)
 
 and transl_unbox_int env bi = function
-    Uconst(Uconst_ref(_, Uconst_int32 n)) ->
+    Uconst(Uconst_ref(_, Some (Uconst_int32 n))) ->
       Cconst_natint (Nativeint.of_int32 n)
-  | Uconst(Uconst_ref(_, Uconst_nativeint n)) ->
+  | Uconst(Uconst_ref(_, Some (Uconst_nativeint n))) ->
       Cconst_natint n
-  | Uconst(Uconst_ref(_, Uconst_int64 n)) ->
+  | Uconst(Uconst_ref(_, Some (Uconst_int64 n))) ->
       if size_int = 8 then
         Cconst_natint (Int64.to_nativeint n)
       else
@@ -2940,7 +2945,7 @@ let predef_exception i name =
         emit_structured_constant symname
           (Uconst_block(Obj.object_tag,
                        [
-                         Uconst_ref(label, cst);
+                         Uconst_ref(label, Some cst);
                          Uconst_int (-i-1);
                        ])) cont)
 

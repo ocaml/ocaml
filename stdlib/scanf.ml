@@ -399,19 +399,19 @@ module Scanning : SCANNING = struct
   ;;
 
   (*
-     Obsolete: a memo from_channel version for [Scanning.in_channel]
-     buffer allocation from [Pervasives.in_channel].
+     Obsolete: a memo [from_channel] version to build a [Scanning.in_channel]
+     scanning buffer out of a [Pervasives.in_channel].
      This function was used to try to preserve the scanning
      semantics for the (now obsolete) function [fscanf].
-     Given that all scanner must read from a Scanning.in_channel scanning
-     buffer, fscanf must read from one and more precisely, given [ic], all
-     successive calls [fscanf ic] must read from the same scanning buffer.
-     This forces this library to allocated scanning buffers that were
+     Given that all scanner must read from a [Scanning.in_channel] scanning
+     buffer, [fscanf] must read from one!
+     More precisely, given [ic], all successive calls [fscanf ic] must read
+     from the same scanning buffer.
+     This obliged this library to allocated scanning buffers that were
      not properly garbbage collectable, hence leading to memory leaks.
      If you need to read from a [Pervasives.in_channel] input channel
      [ic], simply define a [Scanning.in_channel] formatted input channel as in
-     [let ib = Scanning.from_channel ic],
-     then use [Scanf.bscanf ib] as usual.
+     [let ib = Scanning.from_channel ic], then use [Scanf.bscanf ib] as usual.
   *)
   let memo_from_ic =
     let memo = ref [] in
@@ -424,6 +424,7 @@ module Scanning : SCANNING = struct
        ib)
   ;;
 
+  (* Obsolete: see {!memo_from_ic} above. *)
   let memo_from_channel = memo_from_ic scan_raise_at_end;;
 
 end
@@ -532,18 +533,37 @@ let token_bool ib =
   | s -> bad_input (Printf.sprintf "invalid boolean '%s'" s)
 ;;
 
+(* The type of integer conversions. *)
+type integer_conversion =
+  | B_conversion (* Unsigned binary conversion *)
+  | D_conversion (* Signed decimal conversion *)
+  | I_conversion (* Signed integer conversion *)
+  | O_conversion (* Unsigned octal conversion *)
+  | U_conversion (* Unsigned decimal conversion *)
+  | X_conversion (* Unsigned hexadecimal conversion *)
+;;
+
+let integer_conversion_of_char = function
+  | 'b' -> B_conversion
+  | 'd' -> D_conversion
+  | 'i' -> I_conversion
+  | 'o' -> O_conversion
+  | 'u' -> U_conversion
+  | 'x' | 'X' -> X_conversion
+  | _ -> assert false
+;;
+
 (* Extract an integer literal token.
    Since the functions Pervasives.*int*_of_string do not accept a leading +,
    we skip it if necessary. *)
 let token_int_literal conv ib =
   let tok =
     match conv with
-    | 'd' | 'i' -> Scanning.token ib
-    | 'u' -> "0u" ^ Scanning.token ib
-    | 'o' -> "0o" ^ Scanning.token ib
-    | 'x' | 'X' -> "0x" ^ Scanning.token ib
-    | 'b' -> "0b" ^ Scanning.token ib
-    | _ -> assert false in
+    | D_conversion | I_conversion -> Scanning.token ib
+    | U_conversion -> "0u" ^ Scanning.token ib
+    | O_conversion -> "0o" ^ Scanning.token ib
+    | X_conversion -> "0x" ^ Scanning.token ib
+    | B_conversion -> "0b" ^ Scanning.token ib in
   let l = String.length tok in
   if l = 0 || tok.[0] <> '+' then tok else String.sub tok 1 (l - 1)
 ;;
@@ -588,55 +608,57 @@ let token_int64 conv ib = int64_of_string (token_int_literal conv ib);;
    available before calling one of the digit scanning functions). *)
 
 (* The decimal case is treated especially for optimization purposes. *)
-let rec scan_decimal_digits width ib =
+let rec scan_decimal_digit_star width ib =
   if width = 0 then width else
   let c = Scanning.peek_char ib in
   if Scanning.eof ib then width else
   match c with
   | '0' .. '9' as c ->
     let width = Scanning.store_char width ib c in
-    scan_decimal_digits width ib
+    scan_decimal_digit_star width ib
   | '_' ->
     let width = Scanning.ignore_char width ib in
-    scan_decimal_digits width ib
+    scan_decimal_digit_star width ib
   | _ -> width
 ;;
 
-let scan_decimal_digits_plus width ib =
+let scan_decimal_digit_plus width ib =
   if width = 0 then bad_token_length "decimal digits" else
   let c = Scanning.checked_peek_char ib in
   match c with
   | '0' .. '9' ->
     let width = Scanning.store_char width ib c in
-    scan_decimal_digits width ib
+    scan_decimal_digit_star width ib
   | c ->
     bad_input (Printf.sprintf "character %C is not a decimal digit" c)
 ;;
 
-let scan_digits_plus basis digitp width ib =
-  (* To scan numbers from other bases, we use a predicate argument to
-     scan_digits. *)
-  let rec scan_digits width =
+(* To scan numbers from other bases, we use a predicate argument to
+   scan digits. *)
+let scan_digit_star digitp width ib =
+  let rec scan_digits width ib =
     if width = 0 then width else
     let c = Scanning.peek_char ib in
     if Scanning.eof ib then width else
     match c with
     | c when digitp c ->
       let width = Scanning.store_char width ib c in
-      scan_digits width
+      scan_digits width ib
     | '_' ->
       let width = Scanning.ignore_char width ib in
-      scan_digits width
+      scan_digits width ib
     | _ -> width in
+  scan_digits width ib
+;;
 
+let scan_digit_plus basis digitp width ib =
   (* Ensure we have got enough width left,
      and read at list one digit. *)
   if width = 0 then bad_token_length "digits" else
   let c = Scanning.checked_peek_char ib in
-
   if digitp c then
     let width = Scanning.store_char width ib c in
-    scan_digits width
+    scan_digit_star digitp width ib
   else
     bad_input (Printf.sprintf "character %C is not a valid %s digit" c basis)
 ;;
@@ -646,24 +668,24 @@ let is_binary_digit = function
   | _ -> false
 ;;
 
-let scan_binary_int = scan_digits_plus "binary" is_binary_digit;;
+let scan_binary_int = scan_digit_plus "binary" is_binary_digit;;
 
 let is_octal_digit = function
   | '0' .. '7' -> true
   | _ -> false
 ;;
 
-let scan_octal_int = scan_digits_plus "octal" is_octal_digit;;
+let scan_octal_int = scan_digit_plus "octal" is_octal_digit;;
 
 let is_hexa_digit = function
   | '0' .. '9' | 'a' .. 'f' | 'A' .. 'F' -> true
   | _ -> false
 ;;
 
-let scan_hexadecimal_int = scan_digits_plus "hexadecimal" is_hexa_digit;;
+let scan_hexadecimal_int = scan_digit_plus "hexadecimal" is_hexa_digit;;
 
 (* Scan a decimal integer. *)
-let scan_unsigned_decimal_int = scan_decimal_digits_plus;;
+let scan_unsigned_decimal_int = scan_decimal_digit_plus;;
 
 let scan_sign width ib =
   let c = Scanning.checked_peek_char ib in
@@ -693,7 +715,7 @@ let scan_unsigned_int width ib =
     | 'x' | 'X' -> scan_hexadecimal_int (Scanning.store_char width ib c) ib
     | 'o' -> scan_octal_int (Scanning.store_char width ib c) ib
     | 'b' -> scan_binary_int (Scanning.store_char width ib c) ib
-    | _ -> scan_decimal_digits width ib end
+    | _ -> scan_decimal_digit_star width ib end
   | _ -> scan_unsigned_decimal_int width ib
 ;;
 
@@ -702,32 +724,31 @@ let scan_optionally_signed_int width ib =
   scan_unsigned_int width ib
 ;;
 
-let scan_int_conv conv width ib =
+let scan_int_conversion conv width ib =
   match conv with
-  | 'b' -> scan_binary_int width ib
-  | 'd' -> scan_optionally_signed_decimal_int width ib
-  | 'i' -> scan_optionally_signed_int width ib
-  | 'o' -> scan_octal_int width ib
-  | 'u' -> scan_unsigned_decimal_int width ib
-  | 'x' | 'X' -> scan_hexadecimal_int width ib
-  | _ -> assert false
+  | B_conversion -> scan_binary_int width ib
+  | D_conversion -> scan_optionally_signed_decimal_int width ib
+  | I_conversion -> scan_optionally_signed_int width ib
+  | O_conversion -> scan_octal_int width ib
+  | U_conversion -> scan_unsigned_decimal_int width ib
+  | X_conversion -> scan_hexadecimal_int width ib
 ;;
 
 (* Scanning floating point numbers. *)
 
 (* Fractional part is optional and can be reduced to 0 digits. *)
-let scan_frac_part width ib =
+let scan_fractional_part width ib =
   if width = 0 then width else
   let c = Scanning.peek_char ib in
   if Scanning.eof ib then width else
   match c with
   | '0' .. '9' as c ->
-    scan_decimal_digits (Scanning.store_char width ib c) ib
+    scan_decimal_digit_star (Scanning.store_char width ib c) ib
   | _ -> width
 ;;
 
 (* Exp part is optional and can be reduced to 0 digits. *)
-let scan_exp_part width ib =
+let scan_exponent_part width ib =
   if width = 0 then width else
   let c = Scanning.peek_char ib in
   if Scanning.eof ib then width else
@@ -741,14 +762,14 @@ let scan_exp_part width ib =
    OCaml lexical convention since the integer part can be empty):
    an optional sign, followed by a possibly empty sequence of decimal
    digits (e.g. -.1). *)
-let scan_int_part width ib =
+let scan_integer_part width ib =
   let width = scan_sign width ib in
-  scan_decimal_digits width ib
+  scan_decimal_digit_star width ib
 ;;
 
 (*
    For the time being we have (as found in scanf.mli):
-   The field width is composed of an optional integer literal
+   the field width is composed of an optional integer literal
    indicating the maximal width of the token to read.
    Unfortunately, the type-checker let the user write an optional precision,
    since this is valid for printf format strings.
@@ -777,9 +798,8 @@ let scan_int_part width ib =
    - on all other conversions, the width and precision specify the [max, min]
    range for the width of the token read.
 *)
-
 let scan_float width precision ib =
-  let width = scan_int_part width ib in
+  let width = scan_integer_part width ib in
   if width = 0 then width, precision else
   let c = Scanning.peek_char ib in
   if Scanning.eof ib then width, precision else
@@ -787,10 +807,10 @@ let scan_float width precision ib =
   | '.' ->
     let width = Scanning.store_char width ib c in
     let precision = min width precision in
-    let width = width - (precision - scan_frac_part precision ib) in
-    scan_exp_part width ib, precision
+    let width = width - (precision - scan_fractional_part precision ib) in
+    scan_exponent_part width ib, precision
   | _ ->
-    scan_exp_part width ib, precision
+    scan_exponent_part width ib, precision
 ;;
 
 let check_case_insensitive_string width ib error str =
@@ -856,7 +876,7 @@ let scan_hex_float width precision ib =
 
 let scan_caml_float_rest width precision ib =
   if width = 0 || Scanning.end_of_input ib then bad_float ();
-  let width = scan_decimal_digits width ib in
+  let width = scan_decimal_digit_star width ib in
   if width = 0 || Scanning.end_of_input ib then bad_float ();
   let c = Scanning.peek_char ib in
   match c with
@@ -867,15 +887,15 @@ let scan_caml_float_rest width precision ib =
     let precision = min width precision in
     (* After scanning the fractional part with [precision] provisional width,
        [width_precision] is left. *)
-    let width_precision = scan_frac_part precision ib in
+    let width_precision = scan_fractional_part precision ib in
     (* Hence, scanning the fractional part took exactly
        [precision - width_precision] chars. *)
     let frac_width = precision - width_precision in
     (* And new provisional width is [width - width_precision. *)
     let width = width - frac_width in
-    scan_exp_part width ib
+    scan_exponent_part width ib
   | 'e' | 'E' ->
-    scan_exp_part width ib
+    scan_exponent_part width ib
   | _ -> bad_float ()
 ;;
 
@@ -920,6 +940,10 @@ let scan_caml_float width precision ib =
     let width = Scanning.store_char width ib c in
     if width = 0 || Scanning.end_of_input ib then bad_float ();
     scan_caml_float_rest width precision ib
+(* Special case of nan and infinity:
+  | 'i' -> 
+  | 'n' ->
+*)
   | _ -> bad_float ()
 ;;
 
@@ -1307,20 +1331,20 @@ fun ib fmt readers -> match fmt with
     let scan width _ ib = scan_caml_string width ib in
     pad_prec_scanf ib rest readers pad No_precision scan token_string
   | Int (iconv, pad, prec, rest) ->
-    let c = char_of_iconv iconv in
-    let scan width _ ib = scan_int_conv c width ib in
+    let c = integer_conversion_of_char (char_of_iconv iconv) in
+    let scan width _ ib = scan_int_conversion c width ib in
     pad_prec_scanf ib rest readers pad prec scan (token_int c)
   | Int32 (iconv, pad, prec, rest) ->
-    let c = char_of_iconv iconv in
-    let scan width _ ib = scan_int_conv c width ib in
+    let c = integer_conversion_of_char (char_of_iconv iconv) in
+    let scan width _ ib = scan_int_conversion c width ib in
     pad_prec_scanf ib rest readers pad prec scan (token_int32 c)
   | Nativeint (iconv, pad, prec, rest) ->
-    let c = char_of_iconv iconv in
-    let scan width _ ib = scan_int_conv c width ib in
+    let c = integer_conversion_of_char (char_of_iconv iconv) in
+    let scan width _ ib = scan_int_conversion c width ib in
     pad_prec_scanf ib rest readers pad prec scan (token_nativeint c)
   | Int64 (iconv, pad, prec, rest) ->
-    let c = char_of_iconv iconv in
-    let scan width _ ib = scan_int_conv c width ib in
+    let c = integer_conversion_of_char (char_of_iconv iconv) in
+    let scan width _ ib = scan_int_conversion c width ib in
     pad_prec_scanf ib rest readers pad prec scan (token_int64 c)
   | Float (Float_F, pad, prec, rest) ->
     pad_prec_scanf ib rest readers pad prec scan_caml_float token_float

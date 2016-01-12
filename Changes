@@ -101,6 +101,8 @@ Compilers:
 - PR#7067: Performance regression in the native compiler for long
   nested structures (Alain Frisch, report by Daniel Bünzli, review
   by Jacques Garrigue)
+- PR#7097:  Strange syntax error message around illegal packaged module signature
+  constraints (Alain Frisch, report by Jun Furuse)
 - GPR#17: some cmm optimizations of integer operations with constants
   (Stephen Dolan, review by Pierre Chambart)
 - GPR#109: new unboxing strategy for float and int references (Vladimir Brankov,
@@ -131,6 +133,9 @@ Compilers:
   (Thomas Refis, Leo White)
 - GPR#306: Instrument the compiler to debug performance regressions
   (Pierre Chambart)
+- GPR#319: add warning for missing cmx files, and extend -opaque option to mli
+  files.
+  (Leo White)
 - PR#6920: fix debug informations around uses of %apply or %revapply
   (Jérémie Dimino)
 
@@ -172,11 +177,14 @@ Standard library:
   (for conformance with ISO C99)  (Xavier Leroy)
 - PR#6390, GPR#36: expose Sys.{int_size,max_wosize} for improved js_of_ocaml
   portability (Hugo Heuzard)
+- PR#6449: Add Map.union (Alain Frisch)
 * PR#6494: Add equal function in modules
   Bytes, Char, Digest, Int32, Int64, Nativeint, and String
   (Romain Calascibetta)
 * PR#6524, GPR#79: Filename: Optional ?perms argument to open_temp_file
   (Daniel Bünzli, review by Jacques-Pascal Deplaix)
+* PR#6525, GPR#80: Add Uchar module to the standard library
+  (Daniel Bünzli, review by Yoriyuki Yamagata and Damien Doligez)
 - PR#6577: improve performance of %L, %l, %n, %S, %C format specifiers
   (Alain Frisch)
 - PR#6585: fix memory leak in win32unix/createprocess.c
@@ -233,6 +241,8 @@ Type system:
 - PR#6593: Functor application in tests/basic-modules fails after commit 15405
 
 Toplevel and debugger:
+- PR#6113: Add descriptions to directives, and display them via #help
+  (Nick Giannarakis, Berke Durak, Francis Southern and Gabriel Scherer)
 - PR#6396: Warnings-as-errors not properly flushed in the toplevel
   (Alain Frisch)
 - PR#6468: toplevel now supports backtraces if invoked with OCAMLRUNPARAM=b
@@ -246,8 +256,10 @@ Toplevel and debugger:
   (Valentin Gatien-Baron, review by Jérémie Dimino)
 - PR#7098: Loss of ppx context in toplevel after an exception
   (Alain Frisch, report by whitequark)
-- PR#7101: The toplevel does not close in_channel for libraries specified on its command line
-  (Alain Frisch)
+- PR#7101: The toplevel does not close in_channel for libraries specified on
+  its command line (Alain Frisch)
+- PR#7119: ocaml doesn't respect [@@@warning] (Alain Frisch, report by
+  Gabriel Radanne)
 
 Other libraries:
 * Unix library: channels created by Unix.in_channel_of_descr or
@@ -295,6 +307,12 @@ Manual:
   subdirectory of the main OCaml source repository. Contributions to
   the manual are warmly welcome.
   (François Bobot, review by Florian Angeletti)
+- MPR#6676: ongoing simplification of the "Language Extensions" section
+  (Alain Frisch, John Whitington)
+- MPR#7092, GPR#379: Add missing documentation for new 4.03 features
+  (Florian Angeletti)
+- MPR#7109, GPR#380: Fix bigarray documentation layout
+  (Florian Angeletti, Leo White)
 
 Bug fixes:
 - PR#3612: memory leak in bigarray read from file
@@ -401,7 +419,11 @@ Bug fixes:
 - PR#7075: Fix repetitions in ocamldoc generated documentation
   (Florian Angeletti)
 - PR#7082: Object type in recursive module's `with` annotation
+- PR#7108: ocamldoc, have -html preserve custom/extended html generators
+  (Armaël Guéneau)
 - PR#7096: ocamldoc uses an incorrect subscript/superscript style
+- PR#7115: shadowing in a branch of a GADT match breaks unused variable
+  warning (Alain Frisch, report by Valentin Gatien-Baron)
 - GPR#205: Clear caml_backtrace_last_exn before registering as root
   (report and fix by Frederic Bour)
 - GPR#220: minor -dsource error on recursive modules
@@ -425,6 +447,8 @@ Bug fixes:
   (Jérémie Dimino)
 - GPR#355: make ocamlnat build again
   (Jérémie Dimino, Thomas Refis)
+- GPR#405: fix compilation under Visual Studio 2015
+  (David Allsopp)
 
 Features wishes:
 - PR#4518, GPR#29: change location format for reporting errors in ocamldoc
@@ -493,6 +517,8 @@ Features wishes:
   (Rich Neswold)
 - GPR#365: prevent printing just a single type variable on one side
   of a type error clash. (Hugo Heuzard)
+- GPR#383: configure: define _ALL_SOURCE for build on AIX7.1
+  (tkob)
 
 OCaml 4.02.3 (27 Jul 2015):
 ---------------------------

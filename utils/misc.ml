@@ -44,13 +44,6 @@ let rec for_all2 pred l1 l2 =
   | (hd1::tl1, hd2::tl2) -> pred hd1 hd2 && for_all2 pred tl1 tl2
   | (_, _) -> false
 
-let rec filter_map f = function
-    [] -> []
-  | a :: l ->
-      match f a with
-        None -> filter_map f l
-      | Some b -> b :: filter_map f l
-
 let rec replicate_list elem n =
   if n <= 0 then [] else elem :: replicate_list elem (n-1)
 
@@ -66,21 +59,118 @@ let rec split_last = function
       let (lst, last) = split_last tl in
       (hd :: lst, last)
 
-let rec samelist pred l1 l2 =
-  match (l1, l2) with
-  | ([], []) -> true
-  | (hd1 :: tl1, hd2 :: tl2) -> pred hd1 hd2 && samelist pred tl1 tl2
-  | (_, _) -> false
+module Stdlib = struct
+  module List = struct
+    type 'a t = 'a list
 
-(* Options *)
+    let rec compare cmp l1 l2 =
+      match l1, l2 with
+      | [], [] -> 0
+      | [], _::_ -> -1
+      | _::_, [] -> 1
+      | h1::t1, h2::t2 ->
+        let c = cmp h1 h2 in
+        if c <> 0 then c
+        else compare cmp t1 t2
 
-let may f = function
-    Some x -> f x
-  | None -> ()
+    let rec equal eq l1 l2 =
+      match l1, l2 with
+      | ([], []) -> true
+      | (hd1 :: tl1, hd2 :: tl2) -> eq hd1 hd2 && equal eq tl1 tl2
+      | (_, _) -> false
 
-let may_map f = function
-    Some x -> Some (f x)
-  | None -> None
+    let filter_map f l =
+      let rec aux acc l =
+        match l with
+        | [] -> List.rev acc
+        | h :: t ->
+          match f h with
+          | None -> aux acc t
+          | Some v -> aux (v :: acc) t
+      in
+      aux [] l
+
+    let map2_prefix f l1 l2 =
+      let rec aux acc l1 l2 =
+        match l1, l2 with
+        | [], _ -> (List.rev acc, l2)
+        | h::t, [] -> raise (Invalid_argument "map2_prefix")
+        | h1::t1, h2::t2 ->
+          let h = f h1 h2 in
+          aux (h :: acc) t1 t2
+      in
+      aux [] l1 l2
+
+    let some_if_all_elements_are_some l =
+      let rec aux acc l =
+        match l with
+        | [] -> Some (List.rev acc)
+        | None :: _ -> None
+        | Some h :: t -> aux (h :: acc) t
+      in
+      aux [] l
+
+    let split_at n l =
+      let rec aux n acc l =
+        if n = 0
+        then List.rev acc, l
+        else
+          match l with
+          | [] -> raise (Invalid_argument "split_at")
+          | t::q -> aux (n-1) (t::acc) q
+      in
+      aux n [] l
+  end
+
+  module Option = struct
+    type 'a t = 'a option
+
+    let equal eq o1 o2 =
+      match o1, o2 with
+      | None, None -> true
+      | Some e1, Some e2 -> eq e1 e2
+      | _, _ -> false
+
+    let iter f = function
+      | Some x -> f x
+      | None -> ()
+
+    let map f = function
+      | Some x -> Some (f x)
+      | None -> None
+
+    let fold f a b =
+      match a with
+      | None -> b
+      | Some a -> f a b
+
+    let value_default f ~default a =
+      match a with
+      | None -> default
+      | Some a -> f a
+  end
+
+  module String = struct
+    type t = string
+
+    let split s ~on =
+      let is_separator c = (c = on) in
+      let rec split1 res i =
+        if i >= String.length s then res else begin
+          if is_separator s.[i] then split1 res (i+1)
+          else split2 res i (i+1)
+        end
+      and split2 res i j =
+        if j >= String.length s then String.sub s i (j-i) :: res else begin
+          if is_separator s.[j] then split1 (String.sub s i (j-i) :: res) (j+1)
+          else split2 res i (j+1)
+        end
+      in split1 [] 0
+  end
+end
+
+let may = Stdlib.Option.iter
+let may_map = Stdlib.Option.map
 
 (* File functions *)
 
@@ -385,7 +475,7 @@ let did_you_mean ppf get_choices =
   | [] -> ()
   | choices ->
      let rest, last = split_last choices in
-     Format.fprintf ppf "@\nHint: Did you mean %s%s%s?"
+     Format.fprintf ppf "@\nHint: Did you mean %s%s%s?@?"
        (String.concat ", " rest)
        (if rest = [] then "" else " or ")
        last
@@ -517,6 +607,8 @@ module Color = struct
     && term <> ""
     && isatty stderr
 
+  type setting = Auto | Always | Never
+
   let setup =
     let first = ref true in (* initialize only once *)
     let formatter_l =
@@ -528,9 +620,9 @@ module Color = struct
         Format.set_mark_tags true;
         List.iter set_color_tag_handling formatter_l;
         color_enabled := (match o with
-          | Clflags.Always -> true
-          | Clflags.Auto -> should_enable_color ()
-          | Clflags.Never -> false
+          | Always -> true
+          | Auto -> should_enable_color ()
+          | Never -> false
         )
       );
       ()

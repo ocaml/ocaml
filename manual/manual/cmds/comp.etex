@@ -206,6 +206,9 @@ as a sub-module (with the given access path) of a compilation unit
 constructed with "-pack".  For instance, "ocamlc -for-pack P -c A.ml"
 will generate "a.cmo" that can later be used with
 "ocamlc -pack -o P.cmo a.cmo".
+Note: you can still pack a module that was compiled without
+"-for-pack"
+but in this case exceptions will be printed with the wrong names.
 
 \item["-g"]
 Add debugging information while compiling and linking. This option is
