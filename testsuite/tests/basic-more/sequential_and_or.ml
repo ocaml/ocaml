@@ -4,7 +4,11 @@
 (*                                                                     *)
 (*                      Pierre Chambart, OCamlPro                      *)
 (*                                                                     *)
+<<<<<<< HEAD
 (*  Copyright 2015 Institut National de Recherche en Informatique et   *)
+=======
+(*  Copyright 2016 Institut National de Recherche en Informatique et   *)
+>>>>>>> ocaml/trunk
 (*  en Automatique.  All rights reserved.  This file is distributed    *)
 (*  under the terms of the Q Public License version 1.0.               *)
 (*                                                                     *)

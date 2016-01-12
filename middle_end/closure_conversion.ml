@@ -363,7 +363,7 @@ and close t env (lam : Lambda.lambda) : Flambda.t =
        by the simplification pass to increase the likelihood of eliminating
        the allocation, since some field accesses can be tracked back to known
        field values. ,*)
-    let name = Printlambda.string_of_primitive p in
+    let name = Printlambda.name_of_primitive p in
     Lift_code.lifting_helper (close_list t env args)
       ~evaluation_order:`Right_to_left
       ~name:(name ^ "_arg")
