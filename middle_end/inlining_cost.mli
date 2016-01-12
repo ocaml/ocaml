@@ -109,6 +109,8 @@ module Whether_sufficient_benefit : sig
   val evaluate : t -> bool
 
   val to_string : t -> string
+
+  val print_description : subfunctions:bool -> Format.formatter -> t -> unit
 end
 
 val scale_inline_threshold_by : int

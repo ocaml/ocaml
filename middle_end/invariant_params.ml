@@ -331,11 +331,15 @@ let invariant_params_in_recursion (decls : Flambda.function_declarations)
       | set -> set)
     unchanging
 
+let pass_name = "unused-arguments"
+let () = Clflags.all_passes := pass_name :: !Clflags.all_passes
+
 type argument =
   | Used
   | Argument of Variable.t
 
 let unused_arguments (decls : Flambda.function_declarations) : Variable.Set.t =
+  let dump = Clflags.dumped_pass pass_name in
   let used_variables = Variable.Tbl.create 42 in
   let used_variable var = Variable.Tbl.add used_variables var () in
   let param_indexes_by_fun_vars =
@@ -363,15 +367,31 @@ let unused_arguments (decls : Flambda.function_declarations) : Variable.Set.t =
     match expr with
     | Apply { func; args; kind = Direct callee } ->
       used_variable func;
+      if dump then Format.printf "Used as direct function: %a@." Variable.print func;
       List.iteri (fun callee_pos arg ->
           match
             find_callee_arg ~callee ~callee_pos ~application_expr:expr
           with
-          | Used -> used_variable arg
+          | Used ->
+            if dump then Format.printf "Used as argument: %a@." Variable.print arg;
+            used_variable arg
           | Argument param ->
-            if not (Variable.equal arg param) then used_variable arg)
+            if not (Variable.equal arg param) then
+              let () =
+                if dump then Format.printf "Used as recursive arguments: %a \
+                                            (not equal to %a)@."
+                    Variable.print arg
+                    Variable.print param
+              in
+              used_variable arg)
         args
     | Apply { func; args; kind = Indirect; _ } ->
+      if dump then begin
+        Format.printf "Used as indirect function: %a@." Variable.print func;
+        List.iter (fun arg ->
+            Format.printf "Used as indirect function argument: %a@." Variable.print arg)
+        args;
+      end;
       used_variable func;
       List.iter used_variable args
     | _ -> ()
@@ -379,8 +399,12 @@ let unused_arguments (decls : Flambda.function_declarations) : Variable.Set.t =
   Variable.Map.iter (fun _caller (decl : Flambda.function_declaration) ->
       Flambda_iterators.iter check_expr (fun (_ : Flambda.named) -> ())
         decl.body;
-      Variable.Set.iter used_variable
-        (Flambda.free_variables ~ignore_uses_as_callee:() decl.body))
+      let free_vars =
+        Flambda.free_variables ~ignore_uses_as_callee:()
+          ~ignore_uses_as_argument:() decl.body
+      in
+      Format.printf "Used: %a@." Variable.Set.print free_vars;
+      Variable.Set.iter used_variable free_vars)
     decls.funs;
   let arguments =
     Variable.Map.fold
@@ -392,4 +416,5 @@ let unused_arguments (decls : Flambda.function_declarations) : Variable.Set.t =
            acc decl.Flambda.params)
       decls.funs Variable.Set.empty
   in
+  if dump then Format.printf "Unused arguments: %a@." Variable.Set.print arguments;
   arguments

@@ -14,6 +14,9 @@
 (*                                                                        *)
 (**************************************************************************)
 
+let pass_name = "remove-unused-arguments"
+let () = Clflags.all_passes := pass_name :: !Clflags.all_passes
+
 let rename_var var =
   Variable.rename var
     ~current_compilation_unit:(Compilation_unit.get_current_exn ())
@@ -144,12 +147,24 @@ let candidate_for_spliting_for_unused_arguments
   end
 
 let separate_unused_arguments_in_set_of_closures set_of_closures ~backend =
+  let dump = Clflags.dumped_pass pass_name in
   if candidate_for_spliting_for_unused_arguments
       set_of_closures.Flambda.function_decls
       ~backend
-  then match separate_unused_arguments set_of_closures with
-    | None -> set_of_closures
-    | Some set_of_closures -> set_of_closures
+  then
+    match separate_unused_arguments set_of_closures with
+    | None ->
+      if dump then
+        Format.eprintf "No change for Remove_unused_arguments:@ %a@.@."
+          Flambda.print_set_of_closures set_of_closures;
+      set_of_closures
+    | Some result ->
+      if dump then
+        Format.eprintf "Before Remove_unused_arguments:@ %a@.@.\
+                        After Remove_unused_arguments:@ %a@.@."
+          Flambda.print_set_of_closures set_of_closures
+          Flambda.print_set_of_closures result;
+      result
   else set_of_closures
 
 let separate_unused_arguments_in_closures_expr tree ~backend =

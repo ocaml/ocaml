@@ -310,6 +310,55 @@ module Benefit = struct
     let c2 = evaluate ~round t2 in
     if c1 > c2 then t1 else t2
 
+  (* Print out a benefit as a table *)
+
+  let benefit_table =
+    [ "Calls", (fun b -> b.remove_call);
+      "Allocs", (fun b -> b.remove_alloc);
+      "Prims", (fun b -> b.remove_prim);
+      "Branches", (fun b -> b.remove_branch);
+      "Indirect calls", (fun b -> b.direct_call_of_indirect);
+    ]
+
+  let benefits_table =
+    lazy begin
+      List.map
+        (fun (header, accessor) -> (header, accessor, String.length header))
+        benefit_table
+    end
+
+  let table_line =
+    lazy begin
+      let benefits_table = Lazy.force benefits_table in
+      let dashes =
+        List.map (fun (_, _, n) -> String.make n '-') benefits_table
+      in
+      "|-" ^ String.concat "-+-" dashes ^ "-|"
+    end
+
+  let table_headers =
+    lazy begin
+      let benefits_table = Lazy.force benefits_table in
+      let headers = List.map (fun (head, _, _) -> head) benefits_table in
+      "| " ^ String.concat " | " headers ^ " |"
+    end
+
+  let print_table_values ppf b =
+    let rec loop ppf = function
+      | [] -> Format.fprintf ppf "|"
+      | (_, accessor, width) :: rest ->
+        Format.fprintf ppf "| %*d %a" width (accessor b) loop rest
+    in
+    loop ppf (Lazy.force benefits_table)
+
+  let print_table ppf b =
+    let table_line = Lazy.force table_line in
+    let table_headers = Lazy.force table_headers in
+    Format.fprintf ppf
+      "@[<v>@[<h>%s@]@;@[<h>%s@]@;@[<h>%s@]@;@[<h>%a@]@;@[<h>%s@]@]"
+      table_line table_headers table_line
+      print_table_values b
+      table_line
 end
 
 module Whether_sufficient_benefit = struct
@@ -345,40 +394,39 @@ module Whether_sufficient_benefit = struct
     f = f (* is not nan *)
     && f >= 0.
 
-  let evaluate t =
-    let estimated_benefit =
-      if t.toplevel && t.lifting && t.branch_depth = 0 then begin
-        let lifting_benefit =
-          Clflags.Int_arg_helper.get ~key:t.round !Clflags.inline_lifting_benefit
+  let estimated_benefit t =
+    if t.toplevel && t.lifting && t.branch_depth = 0 then begin
+      let lifting_benefit =
+        Clflags.Int_arg_helper.get ~key:t.round !Clflags.inline_lifting_benefit
+      in
+        float (t.evaluated_benefit + lifting_benefit)
+    end else begin
+      (* The estimated benefit is the evaluated benefit times an
+         estimation of the probability that the branch does not matter
+         for performances (is cold). The probability is very roughtly
+         estimated by considering that for every branching the
+         sub-expressions has the same [1 / (1 + factor)] probability
+         [p] of being cold. Hence the probability for the current
+         call to be cold is [p ^ number of nested branch].
+        The probability is expressed as [1 / (1 + factor)] rather
+         than letting the user directly provide [p], since for every
+         positive value of [factor] [p] is in [0, 1]. *)
+      let branch_never_taken_estimated_probability =
+        let branch_inline_factor =
+          Clflags.Float_arg_helper.get ~key:t.round !Clflags.branch_inline_factor
         in
-          float (t.evaluated_benefit + lifting_benefit)
-      end else begin
-        (* The estimated benefit is the evaluated benefit times an
-           estimation of the probability that the branch does not matter
-           for performances (is cold). The probability is very roughtly
-           estimated by considering that for every branching the
-           sub-expressions has the same [1 / (1 + factor)] probability
-           [p] of being cold. Hence the probability for the current
-           call to be cold is [p ^ number of nested branch].
+        (* CR pchambart to pchambart: change this assert to a warning *)
+        assert(correct_branch_factor branch_inline_factor);
+        1. /. (1. +. branch_inline_factor)
+      in
+      let call_estimated_probability =
+        branch_never_taken_estimated_probability ** float t.branch_depth
+      in
+        float t.evaluated_benefit *. call_estimated_probability
+    end
 
-           The probability is expressed as [1 / (1 + factor)] rather
-           than letting the user directly provide [p], since for every
-           positive value of [factor] [p] is in [0, 1]. *)
-        let branch_never_taken_estimated_probability =
-          let branch_inline_factor =
-            Clflags.Float_arg_helper.get ~key:t.round !Clflags.branch_inline_factor
-          in
-          (* CR pchambart to pchambart: change this assert to a warning *)
-          assert(correct_branch_factor branch_inline_factor);
-          1. /. (1. +. branch_inline_factor)
-        in
-        let call_estimated_probability =
-          branch_never_taken_estimated_probability ** float t.branch_depth
-        in
-          float t.evaluated_benefit *. call_estimated_probability
-      end
-    in
-      float t.new_size -. estimated_benefit <= float t.original_size
+  let evaluate t =
+    float t.new_size -. estimated_benefit t <= float t.original_size
 
 
   let to_string t =
@@ -410,6 +458,72 @@ module Whether_sufficient_benefit = struct
         evaluated_benefit
         t.branch_depth
         (if evaluate t then "yes" else "no")
+
+  let print_description ~subfunctions ppf t =
+    let pr_intro ppf =
+      let estimate = if t.estimate then " at most" else "" in
+      Format.pp_print_text ppf
+        "Specialisation of the function body";
+      if subfunctions then
+        Format.pp_print_text ppf
+          ", including speculative inlining of other functions,";
+      Format.pp_print_text ppf " removed";
+      Format.pp_print_text ppf estimate;
+      Format.pp_print_text ppf " the following operations:"
+    in
+    let lifting = t.toplevel && t.lifting && t.branch_depth = 0 in
+    let requested = t.benefit.requested_inline in
+    let pr_requested ppf =
+      if requested > 0 then begin
+        Format.pp_open_box ppf 0;
+        Format.pp_print_text ppf
+            "and inlined user-annotated functions worth ";
+        Format.fprintf ppf "%d." requested;
+        Format.pp_close_box ppf ();
+        Format.pp_print_cut ppf ();
+        Format.pp_print_cut ppf ()
+      end
+    in
+    let pr_lifting ppf =
+      if lifting then begin
+        Format.pp_open_box ppf 0;
+        Format.pp_print_text ppf
+          "Inlining the function would also \
+           lift some definitions to toplevel.";
+        Format.pp_close_box ppf ();
+        Format.pp_print_cut ppf ();
+        Format.pp_print_cut ppf ()
+      end
+    in
+    let total_benefit =
+      if lifting then
+        let lifting_benefit =
+          Clflags.Int_arg_helper.get ~key:t.round !Clflags.inline_lifting_benefit
+        in
+         t.evaluated_benefit + lifting_benefit
+      else t.evaluated_benefit
+    in
+    let expected_benefit = estimated_benefit t in
+    let size_change = t.new_size - t.original_size in
+    let result = if evaluate t then "less" else "greater" in
+    let pr_conclusion ppf =
+      Format.pp_print_text ppf "This gives a total benefit of ";
+      Format.pp_print_int ppf total_benefit;
+      Format.pp_print_text ppf ".  At a branch depth of ";
+      Format.pp_print_int ppf t.branch_depth;
+      Format.pp_print_text ppf " this produces an expected benefit of ";
+      Format.fprintf ppf "%.1f" expected_benefit;
+      Format.pp_print_text ppf ".  The new code has size ";
+      Format.pp_print_int ppf t.new_size;
+      Format.pp_print_text ppf ", giving a change in code size of ";
+      Format.pp_print_int ppf size_change;
+      Format.pp_print_text ppf ".  The change in code size is ";
+      Format.pp_print_text ppf result;
+      Format.pp_print_text ppf " than the expected benefit."
+    in
+    Format.fprintf ppf "%t@,@[<v>@[<v 2>@;%a@]@;@;%t%t@]%t"
+      pr_intro Benefit.print_table t.benefit pr_requested pr_lifting pr_conclusion
+
 end
 
 let scale_inline_threshold_by = 8
