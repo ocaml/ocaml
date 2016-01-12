@@ -27,7 +27,7 @@ OTHEROBJS=\
 
 OBJS=parsecmmaux.cmo parsecmm.cmo lexcmm.cmo
 
-ADD_COMPFLAGS=$(INCLUDES) -g
+ADD_COMPFLAGS=$(INCLUDES) -w -40 -g
 
 default:
 	@if $(BYTECODE_ONLY) || [ -z "$(ASPP)" ]; then : ; else \
