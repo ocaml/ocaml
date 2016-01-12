@@ -43,11 +43,16 @@ type initialize_symbol_field = Variable.t option
     been assigned to symbols.  The return value gives the assignment
     of the defining values of constants to variables.
     Also see comments for [Lift_constants], whose input feeds this
-    pass. *)
+    pass.
+
+    Variables found to be ill-typed accesses to other constants, for
+    example arising from dead code, will be pointed at [the_dead_constant].
+*)
 val run
    : constant_defining_value Variable.Tbl.t
   -> initialize_symbol_field list Symbol.Tbl.t
   -> Flambda.constant_defining_value Symbol.Tbl.t
+  -> the_dead_constant:Symbol.t
   -> allocation_point Variable.Map.t
 
 val print_constant_defining_value
