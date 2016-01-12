@@ -78,7 +78,8 @@ and strengthen_sig env sg p pos =
           {md with md_type = Mty_alias (Pdot(p, Ident.name id, pos))}
       in
       Sig_module(id, str, rs)
-      :: strengthen_sig (Env.add_module_declaration id md env) rem p (pos+1)
+      :: strengthen_sig
+        (Env.add_module_declaration ~check:false id md env) rem p (pos+1)
       (* Need to add the module in case it defines manifest module types *)
   | Sig_modtype(id, decl) :: rem ->
       let newdecl =
@@ -218,7 +219,8 @@ and type_paths_sig env p pos sg =
       Pdot(p, Ident.name id, nopos) :: type_paths_sig env p pos rem
   | Sig_module(id, md, _) :: rem ->
       type_paths env (Pdot(p, Ident.name id, pos)) md.md_type @
-      type_paths_sig (Env.add_module_declaration id md env) p (pos+1) rem
+      type_paths_sig (Env.add_module_declaration ~check:false id md env)
+        p (pos+1) rem
   | Sig_modtype(id, decl) :: rem ->
       type_paths_sig (Env.add_modtype id decl env) p pos rem
   | (Sig_typext _ | Sig_class _) :: rem ->
@@ -243,7 +245,8 @@ and no_code_needed_sig env sg =
       end
   | Sig_module(id, md, _) :: rem ->
       no_code_needed env md.md_type &&
-      no_code_needed_sig (Env.add_module_declaration id md env) rem
+      no_code_needed_sig
+        (Env.add_module_declaration ~check:false id md env) rem
   | (Sig_type _ | Sig_modtype _ | Sig_class_type _) :: rem ->
       no_code_needed_sig env rem
   | (Sig_typext _ | Sig_class _) :: _ ->
