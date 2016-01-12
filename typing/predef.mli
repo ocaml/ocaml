@@ -48,7 +48,6 @@ val path_int64: Path.t
 val path_lazy_t: Path.t
 val path_extension_constructor: Path.t
 
-val ident_division_by_zero: Ident.t
 val path_match_failure: Path.t
 val path_assert_failure : Path.t
 val path_undefined_recursive_module : Path.t
@@ -67,5 +66,9 @@ val build_initial_env:
 val builtin_values: (string * Ident.t) list
 val builtin_idents: (string * Ident.t) list
 
-(** All predefined exceptions *)
+(** All predefined exceptions, exposed as [Ident.t] for flambda (for
+    building value approximations).
+    The [Ident.t] for division by zero is also exported explicitly
+    so flambda can generate code to raise it. *)
+val ident_division_by_zero: Ident.t
 val all_predef_exns : Ident.t list
