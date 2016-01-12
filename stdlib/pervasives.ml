@@ -502,6 +502,10 @@ let ( ^^ ) (Format (fmt1, str1)) (Format (fmt2, str2)) =
   Format (CamlinternalFormatBasics.concat_fmt fmt1 fmt2,
           str1 ^ "%," ^ str2)
 
+(* Optimisation *)
+
+external opaque : 'a -> 'a = "%opaque"
+
 (* Miscellaneous *)
 
 external sys_exit : int -> 'a = "caml_sys_exit"

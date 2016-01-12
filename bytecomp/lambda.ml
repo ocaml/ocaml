@@ -133,6 +133,8 @@ type primitive =
   | Pbbswap of boxed_integer
   (* Integer to external pointer *)
   | Pint_as_pointer
+  (* Inhibition of optimisation *)
+  | Popaque
 
 and comparison =
     Ceq | Cneq | Clt | Cgt | Cle | Cge
