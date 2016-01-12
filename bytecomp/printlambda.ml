@@ -412,6 +412,7 @@ let name_of_primitive = function
   | Pstringsets -> "Pstringsets"
   | Parraylength _ -> "Parraylength"
   | Pmakearray _ -> "Pmakearray"
+  | Pduparray _ -> "Pduparray"
   | Parrayrefu _ -> "Parrayrefu"
   | Parraysetu _ -> "Parraysetu"
   | Parrayrefs _ -> "Parrayrefs"
@@ -454,6 +455,7 @@ let name_of_primitive = function
   | Pbswap16 -> "Pbswap16"
   | Pbbswap _ -> "Pbbswap"
   | Pint_as_pointer -> "Pint_as_pointer"
+  | Popaque -> "Popaque"
 
 let function_attribute ppf { inline; is_a_functor } =
   if is_a_functor then

@@ -200,7 +200,9 @@ and close t env (lam : Lambda.lambda) : Flambda.t =
           | _ -> None)
         defs
     in
-    begin match Misc.some_if_all_elements_are_some function_declarations with
+    begin match
+      Misc.Stdlib.List.some_if_all_elements_are_some function_declarations
+    with
     | Some function_declarations ->
       (* When all the bindings are (syntactically) functions, we can
          eliminate the [let rec] construction, instead producing a normal

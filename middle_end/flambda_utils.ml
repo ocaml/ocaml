@@ -75,7 +75,7 @@ let rec same (l1 : Flambda.t) (l2 : Flambda.t) =
   | Apply a1 , Apply a2  ->
     a1.kind = a2.kind
       && Variable.equal a1.func a2.func
-      && Misc.samelist Variable.equal a1.args a2.args
+      && Misc.Stdlib.List.equal Variable.equal a1.args a2.args
   | Apply _, _ | _, Apply _ -> false
   | Let { var = var1; defining_expr = defining_expr1; body = body1; _ },
       Let { var = var2; defining_expr = defining_expr2; body = body2; _ } ->
@@ -88,22 +88,25 @@ let rec same (l1 : Flambda.t) (l2 : Flambda.t) =
       && same b1 b2
   | Let_mutable _, _ | _, Let_mutable _ -> false
   | Let_rec (bl1, a1), Let_rec (bl2, a2) ->
-    Misc.samelist samebinding bl1 bl2 && same a1 a2
+    Misc.Stdlib.List.equal samebinding bl1 bl2 && same a1 a2
   | Let_rec _, _ | _, Let_rec _ -> false
   | Switch (a1, s1), Switch (a2, s2) ->
     Variable.equal a1 a2 && sameswitch s1 s2
   | Switch _, _ | _, Switch _ -> false
   | String_switch (a1, s1, d1), String_switch (a2, s2, d2) ->
-    Variable.equal a1 a2 &&
-      Misc.samelist (fun (s1, e1) (s2, e2) -> s1 = s2 && same e1 e2) s1 s2 &&
-      Misc.sameoption same d1 d2
+    Variable.equal a1 a2
+      && Misc.Stdlib.List.equal
+        (fun (s1, e1) (s2, e2) -> s1 = s2 && same e1 e2) s1 s2
+      && Misc.Stdlib.Option.equal same d1 d2
   | String_switch _, _ | _, String_switch _ -> false
   | Static_raise (e1, a1), Static_raise (e2, a2) ->
-    Static_exception.equal e1 e2 && Misc.samelist Variable.equal a1 a2
+    Static_exception.equal e1 e2 && Misc.Stdlib.List.equal Variable.equal a1 a2
   | Static_raise _, _ | _, Static_raise _ -> false
   | Static_catch (s1, v1, a1, b1), Static_catch (s2, v2, a2, b2) ->
-    Static_exception.equal s1 s2 && Misc.samelist Variable.equal v1 v2 &&
-      same a1 a2 && same b1 b2
+    Static_exception.equal s1 s2
+      && Misc.Stdlib.List.equal Variable.equal v1 v2
+      && same a1 a2
+      && same b1 b2
   | Static_catch _, _ | _, Static_catch _ -> false
   | Try_with (a1, v1, b1), Try_with (a2, v2, b2) ->
     same a1 a2 && Variable.equal v1 v2 && same b1 b2
@@ -134,7 +137,7 @@ let rec same (l1 : Flambda.t) (l2 : Flambda.t) =
     kind1 = kind2
       && Variable.equal meth1 meth2
       && Variable.equal obj1 obj2
-      && Misc.samelist Variable.equal args1 args2
+      && Misc.Stdlib.List.equal Variable.equal args1 args2
   | Send _, _ | _, Send _ -> false
   | Proved_unreachable, Proved_unreachable -> true
 
@@ -166,13 +169,13 @@ and same_named (named1 : Flambda.named) (named2 : Flambda.named) =
   | Move_within_set_of_closures _, _ | _, Move_within_set_of_closures _ ->
     false
   | Prim (p1, al1, _), Prim (p2, al2, _) ->
-    p1 = p2 && Misc.samelist Variable.equal al1 al2
+    p1 = p2 && Misc.Stdlib.List.equal Variable.equal al1 al2
   | Prim _, _ | _, Prim _ -> false
   | Expr e1, Expr e2 -> same e1 e2
 
 and sameclosure (c1 : Flambda.function_declaration)
       (c2 : Flambda.function_declaration) =
-  Misc.samelist Variable.equal c1.params c2.params
+  Misc.Stdlib.List.equal Variable.equal c1.params c2.params
     && same c1.body c2.body
 
 and same_set_of_closures (c1 : Flambda.set_of_closures)
@@ -200,9 +203,9 @@ and sameswitch (fs1 : Flambda.switch) (fs2 : Flambda.switch) =
   let samecase (n1, a1) (n2, a2) = n1 = n2 && same a1 a2 in
   fs1.numconsts = fs2.numconsts
     && fs1.numblocks = fs2.numblocks
-    && Misc.samelist samecase fs1.consts fs2.consts
-    && Misc.samelist samecase fs1.blocks fs2.blocks
-    && Misc.sameoption same fs1.failaction fs2.failaction
+    && Misc.Stdlib.List.equal samecase fs1.consts fs2.consts
+    && Misc.Stdlib.List.equal samecase fs1.blocks fs2.blocks
+    && Misc.Stdlib.Option.equal same fs1.failaction fs2.failaction
 
 let can_be_merged = same
 

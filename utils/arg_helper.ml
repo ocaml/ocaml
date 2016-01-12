@@ -39,7 +39,7 @@ end) = struct
     | _index -> false
 
   let parse str ~help_text ~update =
-    let values = Misc.rev_split_words str ~separator:',' in
+    let values = Misc.Stdlib.String.split str ~on:',' in
     let parsed =
       List.fold_left (fun acc value ->
           match String.index value '=' with

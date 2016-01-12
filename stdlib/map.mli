@@ -220,10 +220,6 @@ module type S =
     (** Same as {!Map.S.map}, but the function receives as arguments both the
        key and the associated value for each binding of the map. *)
 
-    val union: (key -> 'a -> 'a -> 'a) -> 'a t -> 'a t -> 'a t
-    (** [union f m1 m2] computes a map whose keys is the union of keys
-        of [m1] and of [m2].  When the same binding is defined in both
-        arguments, the function is used to combine them. *)
 
   end
 (** Output signature of the functor {!Map.Make}. *)

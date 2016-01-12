@@ -4,7 +4,7 @@ utils/clflags.cmi : utils/numbers.cmi utils/misc.cmi
 utils/config.cmi :
 utils/consistbl.cmi :
 utils/identifiable.cmi :
-utils/misc.cmi : utils/clflags.cmi
+utils/misc.cmi :
 utils/numbers.cmi : utils/identifiable.cmi
 utils/sort_connected_components.cmi : utils/identifiable.cmi
 utils/tbl.cmi :
@@ -27,8 +27,8 @@ utils/consistbl.cmo : utils/consistbl.cmi
 utils/consistbl.cmx : utils/consistbl.cmi
 utils/identifiable.cmo : utils/misc.cmi utils/identifiable.cmi
 utils/identifiable.cmx : utils/misc.cmx utils/identifiable.cmi
-utils/misc.cmo : utils/clflags.cmi utils/misc.cmi
-utils/misc.cmx : utils/clflags.cmx utils/misc.cmi
+utils/misc.cmo : utils/misc.cmi
+utils/misc.cmx : utils/misc.cmi
 utils/numbers.cmo : utils/identifiable.cmi utils/numbers.cmi
 utils/numbers.cmx : utils/identifiable.cmx utils/numbers.cmi
 utils/sort_connected_components.cmo : utils/numbers.cmi utils/misc.cmi \
