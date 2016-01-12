@@ -39,27 +39,43 @@ let remove_unused_closure_variables program =
   let aux_named _ (named : Flambda.named) : Flambda.named =
     match named with
     | Set_of_closures ({ function_decls; free_vars; _ } as set_of_closures) ->
-      let all_free_vars =
-        Variable.Map.fold (fun _ { Flambda. free_variables } acc ->
-            Variable.Set.union free_variables acc)
-          function_decls.funs
-          Variable.Set.empty
+      let rec add_needed needed_funs remaining_funs free_vars_of_kept_funs =
+        let new_needed_funs, remaining_funs =
+          (* Keep a function if it is used either by the rest of the code,
+             (in used_closure_ids), or by any other kept function
+             (in free_vars_of_kept_funs) *)
+          Variable.Map.partition (fun fun_id _ ->
+              Variable.Set.mem fun_id free_vars_of_kept_funs
+              || Closure_id.Tbl.mem used_closure_ids
+                (Closure_id.wrap fun_id))
+            remaining_funs
+        in
+        if Variable.Map.is_empty new_needed_funs then
+          (* If no new function is needed, we reached fixpoint *)
+          needed_funs, free_vars_of_kept_funs
+        else begin
+          let needed_funs =
+            Variable.Map.disjoint_union needed_funs new_needed_funs
+          in
+          let free_vars_of_kept_funs =
+            Variable.Map.fold (fun _ { Flambda. free_variables } acc ->
+                Variable.Set.union free_variables acc)
+              new_needed_funs
+              free_vars_of_kept_funs
+          in
+          add_needed needed_funs remaining_funs free_vars_of_kept_funs
+        end
+      in
+      let funs, free_vars_of_kept_funs =
+        add_needed Variable.Map.empty function_decls.funs Variable.Set.empty
       in
       let free_vars =
         Variable.Map.filter (fun id _var ->
-            Variable.Set.mem id all_free_vars
+            Variable.Set.mem id free_vars_of_kept_funs
             || Var_within_closure.Tbl.mem
                  used_vars_within_closure
                  (Var_within_closure.wrap id))
           free_vars
-      in
-      let funs =
-        Variable.Map.filter (fun fun_id _ ->
-            Variable.Set.mem fun_id all_free_vars
-              || Closure_id.Tbl.mem
-                   used_closure_ids
-                   (Closure_id.wrap fun_id))
-          function_decls.funs
       in
       let function_decls =
         Flambda.update_function_declarations function_decls ~funs
