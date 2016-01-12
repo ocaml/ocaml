@@ -108,14 +108,13 @@ let transl_label_init_general f =
   expr, size
 
 let transl_store_label_init glob size f arg =
-  assert(not Config.flambda);
   method_cache := Lprim(Pfield size, [Lprim(Pgetglobal glob, [])]);
   let expr = f arg in
   let (size, expr) =
     if !method_count = 0 then (size, expr) else
     (size+1,
      Lsequence(
-     Lprim(Psetfield(size, Pointer, Initialization),
+     Lprim(Psetfield(size, false),
            [Lprim(Pgetglobal glob, []);
             Lprim (Pccall prim_makearray, [int !method_count; int 0])]),
      expr))
@@ -123,25 +122,8 @@ let transl_store_label_init glob size f arg =
   let lam, size = transl_label_init_general (fun () -> (expr, size)) in
   size, lam
 
-let transl_label_init_flambda f =
-  let method_cache_id = Ident.create "method_cache" in
-  method_cache := Lvar method_cache_id;
-  let expr, size = f () in
-  let expr =
-    if !method_count = 0 then expr
-    else
-      Llet (Strict, method_cache_id,
-        Lprim (Pccall prim_makearray, [int !method_count; int 0]),
-        expr)
-  in
-  transl_label_init_general (fun () -> expr, size)
-
 let transl_label_init f =
-  if !Clflags.native_code && Config.flambda then begin
-    transl_label_init_flambda f
-  end
-  else
-    transl_label_init_general f
+  transl_label_init_general f
 
 (* Share classes *)
 

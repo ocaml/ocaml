@@ -26,13 +26,12 @@ OCAMLOPT  = $(CAMLRUN) $(ROOTDIR)/ocamlopt -nostdlib -I $(ROOTDIR)/stdlib
 INCLUDES=-I ../../utils -I ../../typing -I ../../bytecomp -I ../../asmcomp
 COMPFLAGS=-w +33..39 -warn-error A -bin-annot -g -safe-string \
           -I ../../stdlib $(INCLUDES)
-OPTCOMPFLAGS=$(COMPFLAGS) -O3
 
 OBJS=dynlinkaux.cmo dynlink.cmo
 
 COMPILEROBJS=\
-  ../../utils/misc.cmo ../../utils/config.cmo ../../utils/identifiable.cmo \
-  ../../utils/numbers.cmo ../../utils/arg_helper.cmo ../../utils/clflags.cmo \
+  ../../utils/misc.cmo ../../utils/config.cmo ../../utils/clflags.cmo \
+  ../../utils/identifiable.cmo ../../utils/numbers.cmo \
   ../../utils/tbl.cmo ../../utils/consistbl.cmo \
   ../../utils/terminfo.cmo ../../utils/warnings.cmo \
   ../../parsing/asttypes.cmi \
@@ -75,7 +74,7 @@ dynlink.cmx: dynlink.cmi natdynlink.ml
 	rm -f dynlink.mlopt
 
 extract_crc: dynlink.cma extract_crc.cmo
-	$(OCAMLC) $(COMPFLAGS) -o extract_crc dynlink.cma extract_crc.cmo
+	$(OCAMLC) -o extract_crc dynlink.cma extract_crc.cmo
 
 INSTALL_LIBDIR=$(DESTDIR)$(LIBDIR)
 
@@ -94,7 +93,6 @@ partialclean:
 
 clean: partialclean
 	rm -f *.$(A) *.$(O) *.so *.dll dynlink.mlopt
-	rm -f *.out
 
 .SUFFIXES: .ml .mli .cmo .cmi .cmx
 
@@ -105,7 +103,7 @@ clean: partialclean
 	$(OCAMLC) -c $(COMPFLAGS) $<
 
 .ml.cmx:
-	$(OCAMLOPT) -c $(OPTCOMPFLAGS) $<
+	$(OCAMLOPT) -c $(COMPFLAGS) $<
 
 depend:
 

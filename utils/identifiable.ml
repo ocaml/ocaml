@@ -3,11 +3,14 @@
 (*                                OCaml                                   *)
 (*                                                                        *)
 (*                       Pierre Chambart, OCamlPro                        *)
-(*                  Mark Shinwell, Jane Street Europe                     *)
+(*           Mark Shinwell and Leo White, Jane Street Europe              *)
 (*                                                                        *)
-(*   Copyright 2015 Institut National de Recherche en Informatique et     *)
-(*   en Automatique.  All rights reserved.  This file is distributed      *)
-(*   under the terms of the Q Public License version 1.0.                 *)
+(*   Copyright 2013--2016 OCamlPro SAS                                    *)
+(*   Copyright 2014--2016 Jane Street Group LLC                           *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file ../LICENSE.       *)
 (*                                                                        *)
 (**************************************************************************)
 
@@ -56,8 +59,10 @@ module Make_map (T : Thing) = struct
           | None -> false
           | Some eq -> eq v1 v2
         in
-        if not ok then Misc.fatal_errorf "Map.disjoint_union %a" T.print id
-        else v1)
+        if not ok then
+          let err = Format.asprintf "Map.disjoint_union %a" T.print id in
+          Misc.fatal_error err
+        else Some v1)
       m1 m2
 
   let union_right m1 m2 =
