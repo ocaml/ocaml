@@ -687,9 +687,9 @@ let rec expr_size env = function
       expr_size env body
   | Uprim(Pmakeblock(tag, mut), args, _) ->
       RHS_block (List.length args)
-  | Uprim(Pmakearray(Paddrarray | Pintarray), args, _) ->
+  | Uprim(Pmakearray((Paddrarray | Pintarray), _), args, _) ->
       RHS_block (List.length args)
-  | Uprim(Pmakearray(Pfloatarray), args, _) ->
+  | Uprim(Pmakearray(Pfloatarray, _), args, _) ->
       RHS_floatblock (List.length args)
   | Uprim (Pduprecord ((Record_regular | Record_inlined _), sz), _, _) ->
       RHS_block sz
@@ -1502,19 +1502,17 @@ let rec transl env e =
           make_alloc tag (List.map (transl env) args)
       | (Pccall prim, args) ->
           transl_ccall env prim args dbg
-      | (Pmakearray kind, []) ->
+      | (Pduparray (Pfloatarray as kind, _),
+            [Uprim (Pmakearray (Pfloatarray, _), args, _dbg)]) ->
+          transl_make_array env kind args
+      | (Pduparray _, [arg]) ->
+          let prim_obj_dup =
+            Primitive.simple ~name:"caml_obj_dup" ~arity:1 ~alloc:true
+          in
+          transl_ccall env prim_obj_dup [arg] dbg
+      | (Pmakearray (kind, _), []) ->
           transl_structured_constant (Uconst_block(0, []))
-      | (Pmakearray kind, args) ->
-          begin match kind with
-            Pgenarray ->
-              Cop(Cextcall("caml_make_array", typ_val, true, Debuginfo.none),
-                  [make_alloc 0 (List.map (transl env) args)])
-          | Paddrarray | Pintarray ->
-              make_alloc 0 (List.map (transl env) args)
-          | Pfloatarray ->
-              make_float_alloc Obj.double_array_tag
-                              (List.map (transl_unbox_float env) args)
-          end
+      | (Pmakearray (kind, _), args) -> transl_make_array env kind args
       | (Pbigarrayref(unsafe, num_dims, elt_kind, layout), arg1 :: argl) ->
           let elt =
             bigarray_get unsafe elt_kind layout
@@ -1663,6 +1661,17 @@ let rec transl env e =
       end
   | Uunreachable ->
       Cop(Cload Word_int, [Cconst_int 0])
+
+and transl_make_array env kind args =
+  match kind with
+  | Pgenarray ->
+      Cop(Cextcall("caml_make_array", typ_val, true, Debuginfo.none),
+          [make_alloc 0 (List.map (transl env) args)])
+  | Paddrarray | Pintarray ->
+      make_alloc 0 (List.map (transl env) args)
+  | Pfloatarray ->
+      make_float_alloc Obj.double_array_tag
+                      (List.map (transl_unbox_float env) args)
 
 and transl_ccall env prim args dbg =
   let transl_arg native_repr arg =

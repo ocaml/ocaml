@@ -30,6 +30,8 @@ type error =
 
 exception Error of Location.t * error
 
+let use_dup_for_constant_arrays_bigger_than = 4
+
 (* Forward declaration -- to be filled in by Translmod.transl_module *)
 let transl_module =
   ref((fun cc rootpath modl -> assert false) :
@@ -443,8 +445,8 @@ let check_recursive_lambda idlist lam =
         let idlist' = add_letrec bindings idlist in
         List.for_all (fun (id, arg) -> check idlist' arg) bindings &&
         check_top idlist' body
-    | Lprim (Pmakearray (Pgenarray), args) -> false
-    | Lprim (Pmakearray Pfloatarray, args) ->
+    | Lprim (Pmakearray (Pgenarray, _), args) -> false
+    | Lprim (Pmakearray (Pfloatarray, _), args) ->
         List.for_all (check idlist) args
     | Lsequence (lam1, lam2) -> check idlist lam1 && check_top idlist lam2
     | Levent (lam, _) -> check_top idlist lam
@@ -463,8 +465,8 @@ let check_recursive_lambda idlist lam =
         check idlist' body
     | Lprim(Pmakeblock(tag, mut), args) ->
         List.for_all (check idlist) args
-    | Lprim (Pmakearray Pfloatarray, _) -> false
-    | Lprim(Pmakearray(_), args) ->
+    | Lprim (Pmakearray (Pfloatarray, _), _) -> false
+    | Lprim (Pmakearray _, args) ->
         List.for_all (check idlist) args
     | Lsequence (lam1, lam2) -> check idlist lam1 && check idlist lam2
     | Levent (lam, _) -> check idlist lam
@@ -848,20 +850,35 @@ and transl_exp0 e =
       let kind = array_kind e in
       let ll = transl_list expr_list in
       begin try
+        (* For native code the decision as to which compilation strategy to
+           use is made later.  This enables the Flambda passes to lift certain
+           kinds of array definitions to symbols. *)
         (* Deactivate constant optimization if array is small enough *)
-        if List.length ll <= 4 then raise Not_constant;
-        let cl = List.map extract_constant ll in
-        let master =
-          match kind with
-          | Paddrarray | Pintarray ->
-              Lconst(Const_block(0, cl))
-          | Pfloatarray ->
-              Lconst(Const_float_array(List.map extract_float cl))
-          | Pgenarray ->
-              raise Not_constant in             (* can this really happen? *)
-        Lprim(Pccall prim_obj_dup, [master])
+        if List.length ll <= use_dup_for_constant_arrays_bigger_than
+        then begin
+          raise Not_constant
+        end;
+        (* We cannot currently lift [Pintarray] arrays safely in Flambda
+           because [caml_modify] might be called upon them (e.g. from
+           code operating on polymorphic arrays, or functions such as
+           [caml_array_blit]. *)
+        if !Clflags.native_code && kind = Pfloatarray then
+          let imm_array = Lprim (Pmakearray (kind, Immutable), ll) in
+          Lprim (Pduparray (kind, Mutable), [imm_array])
+        else begin
+          let cl = List.map extract_constant ll in
+          let master =
+            match kind with
+            | Paddrarray | Pintarray ->
+                Lconst(Const_block(0, cl))
+            | Pfloatarray ->
+                Lconst(Const_float_array(List.map extract_float cl))
+            | Pgenarray ->
+                raise Not_constant in             (* can this really happen? *)
+          Lprim(Pccall prim_obj_dup, [master])
+        end
       with Not_constant ->
-        Lprim(Pmakearray kind, ll)
+        Lprim(Pmakearray (kind, Mutable), ll)
       end
   | Texp_ifthenelse(cond, ifso, Some ifnot) ->
       Lifthenelse(transl_exp cond,
@@ -1195,14 +1212,17 @@ and transl_record env all_labels repres lbl_expr_list opt_init_expr =
         | Record_regular -> Lconst(Const_block(0, cl))
         | Record_inlined tag -> Lconst(Const_block(tag, cl))
         | Record_float ->
-            Lconst(Const_float_array(List.map extract_float cl))
+            if !Clflags.native_code then
+              Lprim (Pmakearray (Pfloatarray, Immutable), ll)
+            else
+              Lconst(Const_float_array(List.map extract_float cl))
         | Record_extension ->
             raise Not_constant
       with Not_constant ->
         match repres with
           Record_regular -> Lprim(Pmakeblock(0, mut), ll)
         | Record_inlined tag -> Lprim(Pmakeblock(tag, mut), ll)
-        | Record_float -> Lprim(Pmakearray Pfloatarray, ll)
+        | Record_float -> Lprim(Pmakearray (Pfloatarray, mut), ll)
         | Record_extension ->
             let path =
               match all_labels.(0).lbl_res.desc with
