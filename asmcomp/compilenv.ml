@@ -289,6 +289,9 @@ let new_structured_constant cst ~shared =
 let add_exported_constant s =
   Hashtbl.replace exported_constants s ()
 
+let clear_structured_constants () =
+  structured_constants := structured_constants_empty
+
 let structured_constants () =
   List.map
     (fun (lbl, cst) ->

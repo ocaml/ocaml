@@ -1327,6 +1327,7 @@ let collect_exported_structured_constants a =
     | Uconst_float _ | Uconst_int32 _
     | Uconst_int64 _ | Uconst_nativeint _
     | Uconst_float_array _ | Uconst_string _ -> ()
+    | Uconst_closure _ -> assert false (* Cannot be generated *)
   and ulam = function
     | Uvar _ -> ()
     | Uconst c -> const c

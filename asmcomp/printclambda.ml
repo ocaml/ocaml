@@ -31,6 +31,18 @@ let rec structured_constant ppf = function
       List.iter (fun f -> fprintf ppf ",%F" f) fl;
       fprintf ppf ")"
   | Uconst_string s -> fprintf ppf "%S" s
+  | Uconst_closure(clos, sym, fv) ->
+      let idents ppf =
+        List.iter (fprintf ppf "@ %a" Ident.print)in
+      let one_fun ppf f =
+        fprintf ppf "(fun@ %s@ %d@ @[<2>%a@]@ @[<2>%a@])"
+          f.label f.arity idents f.params lam f.body in
+      let funs ppf =
+        List.iter (fprintf ppf "@ %a" one_fun) in
+      let sconsts ppf scl =
+        List.iter (fun sc -> fprintf ppf "@ %a" uconstant sc) scl in
+      fprintf ppf "@[<2>(const_closure%a %s@ %a)@]" funs clos sym sconsts fv
+
 
 and uconstant ppf = function
   | Uconst_ref (s, Some c) ->
@@ -39,7 +51,7 @@ and uconstant ppf = function
   | Uconst_int i -> fprintf ppf "%i" i
   | Uconst_ptr i -> fprintf ppf "%ia" i
 
-let rec lam ppf = function
+and lam ppf = function
   | Uvar id ->
       Ident.print ppf id
   | Uconst c -> uconstant ppf c
