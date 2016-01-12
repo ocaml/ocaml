@@ -92,3 +92,5 @@ module Function_decls : sig
      It also contains the globals bindings of the provided environment. *)
   val closure_env_without_parameters : Env.t -> t -> Env.t
 end
+
+val stub_hack_prim_name : string

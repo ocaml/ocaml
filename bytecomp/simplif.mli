@@ -21,6 +21,15 @@ val simplify_lambda: lambda -> lambda
 
 val map: (lambda -> lambda) -> lambda -> lambda
 
+val split_default_wrapper
+   : ?create_wrapper_body:(lambda -> lambda)
+  -> Ident.t
+  -> function_kind
+  -> Ident.t list
+  -> lambda
+  -> function_attribute
+  -> (Ident.t * lambda) list
+
 (* To be filled by asmcomp/selectgen.ml *)
 val is_tail_native_heuristic: (int -> bool) ref
                           (* # arguments -> can tailcall *)
