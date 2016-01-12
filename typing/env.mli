@@ -107,6 +107,10 @@ val lookup_class:
 val lookup_cltype:
   ?loc:Location.t -> Longident.t -> t -> Path.t * class_type_declaration
 
+val update_value:
+  string -> (value_description -> value_description) -> t -> t
+  (* Used only in Typecore.duplicate_ident_types. *)
+
 exception Recmodule
   (* Raise by lookup_module when the identifier refers
      to one of the modules of a recursive definition

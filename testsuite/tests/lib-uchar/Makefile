@@ -11,8 +11,5 @@
 #########################################################################
 
 BASEDIR=../..
-MODULES=float_record float_array
-MAIN_MODULE=tfloat_record
-
-include $(BASEDIR)/makefiles/Makefile.one
+include $(BASEDIR)/makefiles/Makefile.several
 include $(BASEDIR)/makefiles/Makefile.common

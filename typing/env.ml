@@ -922,6 +922,19 @@ and lookup_class =
 and lookup_cltype =
   lookup (fun env -> env.cltypes) (fun sc -> sc.comp_cltypes)
 
+let update_value s f env =
+  try
+    let ((p, vd), slot) = Ident.find_name s env.values in
+    match p with
+    | Pident id ->
+        let vd2 = f vd in
+        {env with values = Ident.add id ((p, vd2), slot) env.values;
+                  summary = Env_value(env.summary, id, vd2)}
+    | _ ->
+        env
+  with Not_found ->
+    env
+
 let mark_value_used env name vd =
   if not (is_implicit_coercion env) then
     try Hashtbl.find value_declarations (name, vd.val_loc) ()
