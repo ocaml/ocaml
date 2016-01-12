@@ -26,8 +26,6 @@ val for_all2: ('a -> 'b -> bool) -> 'a list -> 'b list -> bool
         (* Same as [List.for_all] but for a binary predicate.
            In addition, this [for_all2] never fails: given two lists
            with different lengths, it returns false. *)
-val filter_map: ('a -> 'b option) -> 'a list -> 'b list
-        (* Same as [List.map] but removes [None] from the output *)
 val replicate_list: 'a -> int -> 'a list
         (* [replicate_list elem n] is the list with [n] elements
            all identical to [elem]. *)
@@ -36,12 +34,62 @@ val list_remove: 'a -> 'a list -> 'a list
            element equal to [x] removed. *)
 val split_last: 'a list -> 'a list * 'a
         (* Return the last element and the other elements of the given list. *)
-val samelist: ('a -> 'a -> bool) -> 'a list -> 'a list -> bool
-        (* Like [List.for_all2] but returns [false] if the two
-           lists have different length. *)
-
 val may: ('a -> unit) -> 'a option -> unit
 val may_map: ('a -> 'b) -> 'a option -> 'b option
+
+module Stdlib : sig
+  module List : sig
+    type 'a t = 'a list
+
+    val compare : ('a -> 'a -> int) -> 'a t -> 'a t -> int
+    (** The lexicographic order supported by the provided order.
+        There is no constraint on the relative lengths of the lists. *)
+
+    val equal : ('a -> 'a -> bool) -> 'a t -> 'a t -> bool
+    (** Returns [true] iff the given lists have the same length and content
+        with respect to the given equality function. *)
+
+    val filter_map : ('a -> 'b option) -> 'a t -> 'b t
+    (** [filter_map f l] applies [f] to every element of [l], filters
+        out the [None] elements and returns the list of the arguments of
+        the [Some] elements. *)
+
+    val some_if_all_elements_are_some : 'a option t -> 'a t option
+    (** If all elements of the given list are [Some _] then [Some xs]
+        is returned with the [xs] being the contents of those [Some]s, with
+        order preserved.  Otherwise return [None]. *)
+
+    val map2_prefix : ('a -> 'b -> 'c) -> 'a t -> 'b t -> ('c t * 'b t)
+    (** [let r1, r2 = map2_prefix f l1 l2]
+        If [l1] is of length n and [l2 = h2 @ t2] with h2 of length n,
+        r1 is [List.map2 f l1 h1] and r2 is t2. *)
+
+    val split_at : int -> 'a t -> 'a t * 'a t
+    (** [split_at n l] returns the pair [before, after] where [before] is
+        the [n] first elements of [l] and [after] the remaining ones.
+        If [l] has less than [n] elements, raises Invalid_argument. *)
+  end
+
+  module Option : sig
+    type 'a t = 'a option
+
+    val equal : ('a -> 'a -> bool) -> 'a t -> 'a t -> bool
+
+    val iter : ('a -> unit) -> 'a t -> unit
+    val map : ('a -> 'b) -> 'a t -> 'b t
+    val fold : ('a -> 'b -> 'b) -> 'a t -> 'b -> 'b
+    val value_default : ('a -> 'b) -> default:'b -> 'a t -> 'b
+  end
+
+  module String : sig
+    type t = string
+
+    val split : t -> on:char -> t list
+    (** Splits the given string at every occurrence of the given separator.
+        Does not return empty substrings when the separator is repeated or
+        present at the start or end of the string. *)
+  end
+end
 
 val find_in_path: string list -> string -> string
         (* Search a file in a list of directories. *)
@@ -120,7 +168,7 @@ val replace_substring: before:string -> after:string -> string -> string
            the resulting string. *)
 
 val rev_split_words: string -> string list
-        (* [rev_split_words s] splits [s] in blank-separated words, and return
+        (* [rev_split_words s] splits [s] in blank-separated words, and returns
            the list of words in reverse order. *)
 
 val get_ref: 'a list ref -> 'a list
@@ -237,7 +285,9 @@ module Color : sig
   val get_styles: unit -> styles
   val set_styles: styles -> unit
 
-  val setup : Clflags.color_setting -> unit
+  type setting = Auto | Always | Never
+
+  val setup : setting -> unit
   (* [setup opt] will enable or disable color handling on standard formatters
      according to the value of color setting [opt].
      Only the first call to this function has an effect. *)

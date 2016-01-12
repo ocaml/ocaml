@@ -725,7 +725,7 @@ let transl_structured_constant cst =
 (* Translate constant closures *)
 
 let constant_closures =
-  ref ([] : (string * ufunction list) list)
+  ref ([] : (string * ufunction list * uconstant list) list)
 
 (* Boxed integers *)
 
@@ -1318,10 +1318,13 @@ let rec is_unboxed_number env e =
       | Some (_, bn) -> Boxed bn
       end
 
-  | Uconst(Uconst_ref(_, Uconst_float _)) -> Boxed Boxed_float
-  | Uconst(Uconst_ref(_, Uconst_int32 _)) -> Boxed (Boxed_integer Pint32)
-  | Uconst(Uconst_ref(_, Uconst_int64 _)) -> Boxed (Boxed_integer Pint64)
-  | Uconst(Uconst_ref(_, Uconst_nativeint _)) ->
+  | Uconst(Uconst_ref(_, Some (Uconst_float _))) ->
+      Boxed Boxed_float
+  | Uconst(Uconst_ref(_, Some (Uconst_int32 _))) ->
+      Boxed (Boxed_integer Pint32)
+  | Uconst(Uconst_ref(_, Some (Uconst_int64 _))) ->
+      Boxed (Boxed_integer Pint64)
+  | Uconst(Uconst_ref(_, Some (Uconst_nativeint _))) ->
       Boxed (Boxed_integer Pnativeint)
   | Uprim(p, _, _) ->
       begin match simplif_primitive p with
@@ -1404,7 +1407,7 @@ let rec transl env e =
       transl_constant sc
   | Uclosure(fundecls, []) ->
       let lbl = Compilenv.new_const_symbol() in
-      constant_closures := (lbl, fundecls) :: !constant_closures;
+      constant_closures := (lbl, fundecls, []) :: !constant_closures;
       List.iter (fun f -> Queue.add f functions) fundecls;
       Cconst_symbol lbl
   | Uclosure(fundecls, clos_vars) ->
@@ -1642,6 +1645,8 @@ let rec transl env e =
       | Some (unboxed_id, bn) ->
           return_unit(Cassign(unboxed_id, transl_unbox_number env bn exp))
       end
+  | Uunreachable ->
+      Cop(Cload Word_int, [Cconst_int 0])
 
 and transl_ccall env prim args dbg =
   let transl_arg native_repr arg =
@@ -2190,15 +2195,15 @@ and transl_prim_3 env p arg1 arg2 arg3 dbg =
     fatal_error "Cmmgen.transl_prim_3"
 
 and transl_unbox_float env = function
-    Uconst(Uconst_ref(_, Uconst_float f)) -> Cconst_float f
+    Uconst(Uconst_ref(_, Some (Uconst_float f))) -> Cconst_float f
   | exp -> unbox_float(transl env exp)
 
 and transl_unbox_int env bi = function
-    Uconst(Uconst_ref(_, Uconst_int32 n)) ->
+    Uconst(Uconst_ref(_, Some (Uconst_int32 n))) ->
       Cconst_natint (Nativeint.of_int32 n)
-  | Uconst(Uconst_ref(_, Uconst_nativeint n)) ->
+  | Uconst(Uconst_ref(_, Some (Uconst_nativeint n))) ->
       Cconst_natint n
-  | Uconst(Uconst_ref(_, Uconst_int64 n)) ->
+  | Uconst(Uconst_ref(_, Some (Uconst_int64 n))) ->
       if size_int = 8 then
         Cconst_natint (Int64.to_nativeint n)
       else
@@ -2400,7 +2405,7 @@ let rec transl_all_functions already_translated cont =
         (transl_function f :: cont)
     end
   with Queue.Empty ->
-    cont
+    cont, already_translated
 
 (* Emit structured constants *)
 
@@ -2432,6 +2437,10 @@ let rec emit_structured_constant symb cst cont =
   | Uconst_float_array fields ->
       emit_block (floatarray_header (List.length fields)) symb
         (Misc.map_end (fun f -> Cdouble f) fields cont)
+  | Uconst_closure(fundecls, lbl, fv) ->
+      constant_closures := (lbl, fundecls, fv) :: !constant_closures;
+      List.iter (fun f -> Queue.add f functions) fundecls;
+      cont
 
 and emit_constant cst cont =
   match cst with
@@ -2469,12 +2478,13 @@ and emit_boxed_int64_constant n cont =
 
 (* Emit constant closures *)
 
-let emit_constant_closure symb fundecls cont =
+let emit_constant_closure symb fundecls clos_vars cont =
   match fundecls with
     [] -> assert false
   | f1 :: remainder ->
       let rec emit_others pos = function
-        [] -> cont
+          [] ->
+            List.fold_right emit_constant clos_vars cont
       | f2 :: rem ->
           if f2.arity = 1 then
             Cint(infix_header pos) ::
@@ -2487,7 +2497,8 @@ let emit_constant_closure symb fundecls cont =
             Cint(Nativeint.of_int (f2.arity lsl 1 + 1)) ::
             Csymbol_address f2.label ::
             emit_others (pos + 4) rem in
-      Cint(black_closure_header (fundecls_size fundecls)) ::
+      Cint(black_closure_header (fundecls_size fundecls
+                                 + List.length clos_vars)) ::
       Cdefine_symbol symb ::
       if f1.arity = 1 then
         Csymbol_address f1.label ::
@@ -2512,11 +2523,24 @@ let emit_all_constants cont =
          c:= Cdata(cst):: !c)
     (Compilenv.structured_constants());
   List.iter
-    (fun (symb, fundecls) ->
-        c := Cdata(emit_constant_closure symb fundecls []) :: !c)
+    (fun (symb, fundecls, clos_vars) ->
+        c := Cdata(emit_constant_closure symb fundecls clos_vars []) :: !c)
     !constant_closures;
   constant_closures := [];
+  Compilenv.clear_structured_constants ();
   !c
+
+let transl_all_functions_and_emit_all_constants cont =
+  let rec aux already_translated cont =
+    if Compilenv.structured_constants () = [] &&
+       Queue.is_empty functions
+    then cont
+    else
+      let cont, set = transl_all_functions already_translated cont in
+      let cont = emit_all_constants cont in
+      aux already_translated cont
+  in
+  aux StringSet.empty cont
 
 (* Build the table of GC roots for toplevel modules *)
 
@@ -2537,9 +2561,8 @@ let compunit size ulam =
                        fun_args = [];
                        fun_body = init_code; fun_fast = false;
                        fun_dbg  = Debuginfo.none }] in
-  let c2 = transl_all_functions StringSet.empty c1 in
-  let c3 = emit_all_constants c2 in
-  let c4 = emit_module_roots_table ~symbols:[glob] c3 in
+  let c2 = transl_all_functions_and_emit_all_constants c1 in
+  let c3 = emit_module_roots_table ~symbols:[glob] c2 in
   let space =
     (* These words will be registered as roots and as such must contain
        valid values, in case we are in no-naked-pointers mode.  Likewise
@@ -2551,7 +2574,7 @@ let compunit size ulam =
   in
   Cdata ([Cint(black_block_header 0 size);
          Cglobal_symbol glob;
-         Cdefine_symbol glob] @ space) :: c4
+         Cdefine_symbol glob] @ space) :: c3
 
 (*
 CAMLprim value caml_cache_public_method (value meths, value tag, value *cache)
@@ -2940,7 +2963,7 @@ let predef_exception i name =
         emit_structured_constant symname
           (Uconst_block(Obj.object_tag,
                        [
-                         Uconst_ref(label, cst);
+                         Uconst_ref(label, Some cst);
                          Uconst_int (-i-1);
                        ])) cont)
 

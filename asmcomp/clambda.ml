@@ -26,13 +26,14 @@ type ustructured_constant =
   | Uconst_block of int * uconstant list
   | Uconst_float_array of float list
   | Uconst_string of string
+  | Uconst_closure of ufunction list * string * uconstant list
 
 and uconstant =
-  | Uconst_ref of string * ustructured_constant
+  | Uconst_ref of string * ustructured_constant option
   | Uconst_int of int
   | Uconst_ptr of int
 
-type ulambda =
+and ulambda =
     Uvar of Ident.t
   | Uconst of uconstant
   | Udirect_apply of function_label * ulambda list * Debuginfo.t
@@ -53,6 +54,7 @@ type ulambda =
   | Ufor of Ident.t * ulambda * ulambda * direction_flag * ulambda
   | Uassign of Ident.t * ulambda
   | Usend of meth_kind * ulambda * ulambda * ulambda list * Debuginfo.t
+  | Uunreachable
 
 and ufunction = {
   label  : function_label;
@@ -133,6 +135,7 @@ let rank_structured_constant = function
   | Uconst_block _ -> 4
   | Uconst_float_array _ -> 5
   | Uconst_string _ -> 6
+  | Uconst_closure _ -> 7
 
 let compare_structured_constants c1 c2 =
   match c1, c2 with
@@ -146,5 +149,8 @@ let compare_structured_constants c1 c2 =
   | Uconst_float_array l1, Uconst_float_array l2 ->
       compare_float_lists l1 l2
   | Uconst_string s1, Uconst_string s2 -> String.compare s1 s2
-  | _, _ -> rank_structured_constant c1 - rank_structured_constant c2
-                (* no overflow possible here *)
+  | Uconst_closure (_,lbl1,_), Uconst_closure (_,lbl2,_) ->
+      String.compare lbl1 lbl2
+  | _, _ ->
+    (* no overflow possible here *)
+    rank_structured_constant c1 - rank_structured_constant c2
