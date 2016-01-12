@@ -607,6 +607,8 @@ module Color = struct
     && term <> ""
     && isatty stderr
 
+  type setting = Auto | Always | Never
+
   let setup =
     let first = ref true in (* initialize only once *)
     let formatter_l =
@@ -618,9 +620,9 @@ module Color = struct
         Format.set_mark_tags true;
         List.iter set_color_tag_handling formatter_l;
         color_enabled := (match o with
-          | Clflags.Always -> true
-          | Clflags.Auto -> should_enable_color ()
-          | Clflags.Never -> false
+          | Always -> true
+          | Auto -> should_enable_color ()
+          | Never -> false
         )
       );
       ()
