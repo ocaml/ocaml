@@ -49,20 +49,21 @@ module Stdlib : sig
         with respect to the given equality function. *)
 
     val filter_map : ('a -> 'b option) -> 'a t -> 'b t
-    (** [filter_map f l] is the list [List.map f l] with only the
-        elements matching [Some _]. *)
+    (** [filter_map f l] applies [f] to every element of [l], filters
+        out the [None] elements and returns the list of the arguments of
+        the [Some] elements. *)
 
     val some_if_all_elements_are_some : 'a option t -> 'a t option
     (** If all elements of the given list are [Some _] then [Some xs]
         is returned with the [xs] being the contents of those [Some]s, with
-        order preserved.  Otherwise returns [None]. *)
+        order preserved.  Otherwise return [None]. *)
 
     val map2_prefix : ('a -> 'b -> 'c) -> 'a t -> 'b t -> ('c t * 'b t)
     (** [let r1, r2 = map2_prefix f l1 l2]
         If [l1] is of length n and [l2 = h2 @ t2] with h2 of length n,
         r1 is [List.map2 f l1 h1] and r2 is t2. *)
 
-    val split_at: int -> 'a t -> 'a t * 'a t
+    val split_at : int -> 'a t -> 'a t * 'a t
     (** [split_at n l] returns the pair [before, after] where [before] is
         the [n] first elements of [l] and [after] the remaining ones.
         If [l] has less than [n] elements, raises Invalid_argument. *)
@@ -83,7 +84,9 @@ module Stdlib : sig
     type t = string
 
     val split : t -> on:char -> t list
-    (** Splits the given string at every occurrence of the given character. *)
+    (** Splits the given string at every occurrence of the given separator.
+        Does not return empty substrings when the separator is repeated or
+        present at the start or end of the string. *)
   end
 end
 
