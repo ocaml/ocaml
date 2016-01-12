@@ -100,7 +100,7 @@ let compile_genfuns ppf f =
        | _ -> ())
     (Cmmgen.generic_functions true [Compilenv.current_unit_infos ()])
 
-let compile_unit ~sourcefile asm_filename keep_asm obj_filename gen =
+let compile_unit ~source_provenance asm_filename keep_asm obj_filename gen =
   let create_asm = keep_asm || not !Emitaux.binary_backend_available in
   Emitaux.create_asm_file := create_asm;
   try
@@ -114,7 +114,7 @@ let compile_unit ~sourcefile asm_filename keep_asm obj_filename gen =
       raise exn
     end;
     let assemble_result =
-      Timings.(time (Assemble sourcefile))
+      Timings.(time (Assemble source_provenance))
         (Proc.assemble_file asm_filename) obj_filename
     in
     if assemble_result <> 0
@@ -124,12 +124,12 @@ let compile_unit ~sourcefile asm_filename keep_asm obj_filename gen =
     remove_file obj_filename;
     raise exn
 
-let gen_implementation ?toplevel ~sourcefile ppf (size, lam) =
+let gen_implementation ?toplevel ~source_provenance ppf (size, lam) =
   Emit.begin_assembly ();
-  Timings.(time (Clambda sourcefile)) (Closure.intro size) lam
+  Timings.(time (Clambda source_provenance)) (Closure.intro size) lam
   ++ clambda_dump_if ppf
-  ++ Timings.(time (Cmm sourcefile)) (Cmmgen.compunit size)
-  ++ Timings.(time (Compile_phrases sourcefile))
+  ++ Timings.(time (Cmm source_provenance)) (Cmmgen.compunit size)
+  ++ Timings.(time (Compile_phrases source_provenance))
        (List.iter (compile_phrase ppf))
   ++ (fun () -> ());
   (match toplevel with None -> () | Some f -> compile_genfuns ppf f);
@@ -147,14 +147,14 @@ let gen_implementation ?toplevel ~sourcefile ppf (size, lam) =
     );
   Emit.end_assembly ()
 
-let compile_implementation ?toplevel ~sourcefile prefixname ppf (size, lam) =
+let compile_implementation ?toplevel ~source_provenance prefixname ppf (size, lam) =
   let asmfile =
     if !keep_asm_file || !Emitaux.binary_backend_available
     then prefixname ^ ext_asm
     else Filename.temp_file "camlasm" ext_asm
   in
-  compile_unit sourcefile asmfile !keep_asm_file (prefixname ^ ext_obj)
-    (fun () -> gen_implementation ?toplevel ~sourcefile ppf (size, lam))
+  compile_unit ~source_provenance asmfile !keep_asm_file (prefixname ^ ext_obj)
+    (fun () -> gen_implementation ?toplevel ~source_provenance ppf (size, lam))
 
 (* Error report *)
 

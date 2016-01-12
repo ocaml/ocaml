@@ -31,6 +31,7 @@ OBJS=dynlinkaux.cmo dynlink.cmo
 
 COMPILEROBJS=\
   ../../utils/misc.cmo ../../utils/config.cmo ../../utils/clflags.cmo \
+  ../../utils/identifiable.cmo ../../utils/numbers.cmo \
   ../../utils/tbl.cmo ../../utils/consistbl.cmo \
   ../../utils/terminfo.cmo ../../utils/warnings.cmo \
   ../../parsing/asttypes.cmi \

@@ -11,7 +11,7 @@
 #########################################################################
 
 BASEDIR=../..
-MODULES=testing misc
+MODULES=testing misc identifiable numbers strongly_connected_components test_strongly_connected_components
 INCLUDES= -I $(OTOPDIR)/utils
 ADD_COMPFLAGS=$(INCLUDES)
 CMO_FILES+="misc.cmo"
