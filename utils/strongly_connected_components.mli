@@ -3,15 +3,18 @@
 (*                                OCaml                                   *)
 (*                                                                        *)
 (*                       Pierre Chambart, OCamlPro                        *)
-(*                  Mark Shinwell, Jane Street Europe                     *)
+(*           Mark Shinwell and Leo White, Jane Street Europe              *)
 (*                                                                        *)
-(*   Copyright 2015 Institut National de Recherche en Informatique et     *)
-(*   en Automatique.  All rights reserved.  This file is distributed      *)
-(*   under the terms of the Q Public License version 1.0.                 *)
+(*   Copyright 2013--2016 OCamlPro SAS                                    *)
+(*   Copyright 2014--2016 Jane Street Group LLC                           *)
 (*                                                                        *)
-(***********************************************************************)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Library General Public License version 2.1, with the         *)
+(*   special exception on linking described in the file ../LICENSE.       *)
+(*                                                                        *)
+(**************************************************************************)
 
-(** The sorting of connected components of a directed graph. *)
+(** Kosaraju's algorithm for strongly connected components. *)
 
 module type S = sig
   module Id : Identifiable.S
