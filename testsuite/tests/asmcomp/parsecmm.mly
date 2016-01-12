@@ -210,11 +210,11 @@ expr:
   | LPAREN FLOATAREF expr expr RPAREN
       { Cop(Cload Double_u, [access_array $3 $4 Arch.size_float]) }
   | LPAREN ADDRASET expr expr expr RPAREN
-      { Cop(Cstore Word_val, [access_array $3 $4 Arch.size_addr; $5]) }
+      { Cop(Cstore (Word_val, Assignment), [access_array $3 $4 Arch.size_addr; $5]) }
   | LPAREN INTASET expr expr expr RPAREN
-      { Cop(Cstore Word_int, [access_array $3 $4 Arch.size_int; $5]) }
+      { Cop(Cstore (Word_int, Assignment), [access_array $3 $4 Arch.size_int; $5]) }
   | LPAREN FLOATASET expr expr expr RPAREN
-      { Cop(Cstore Double_u, [access_array $3 $4 Arch.size_float; $5]) }
+      { Cop(Cstore (Double_u, Assignment), [access_array $3 $4 Arch.size_float; $5]) }
 ;
 exprlist:
     exprlist expr               { $2 :: $1 }
@@ -254,7 +254,7 @@ unaryop:
   | ABSF                        { Cabsf }
 ;
 binaryop:
-    STORE chunk                 { Cstore $2 }
+    STORE chunk                 { Cstore ($2, Assignment) }
   | ADDI                        { Caddi }
   | SUBI                        { Csubi }
   | MULI                        { Cmuli }
