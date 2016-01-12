@@ -77,31 +77,36 @@ module Stdlib = struct
       | (hd1 :: tl1, hd2 :: tl2) -> eq hd1 hd2 && equal eq tl1 tl2
       | (_, _) -> false
 
-    let rec filter_map f l =
-      match l with
-      | [] -> []
-      | h :: t ->
-        match f h with
-        | None -> filter_map f t
-        | Some v -> v :: filter_map f t
+    let filter_map f l =
+      let rec aux acc l =
+        match l with
+        | [] -> List.rev acc
+        | h :: t ->
+          match f h with
+          | None -> aux acc t
+          | Some v -> aux (v :: acc) t
+      in
+      aux [] l
 
-    let rec map2_prefix f l1 l2 =
-      match l1, l2 with
-      | [], _ -> [], l2
-      | h::t, [] -> raise (Invalid_argument "map2_prefix")
-      | h1::t1, h2::t2 ->
-        let h = f h1 h2 in
-        let t, rem = map2_prefix f t1 t2 in
-        h :: t, rem
+    let map2_prefix f l1 l2 =
+      let rec aux acc l1 l2 =
+        match l1, l2 with
+        | [], _ -> (List.rev acc, l2)
+        | h::t, [] -> raise (Invalid_argument "map2_prefix")
+        | h1::t1, h2::t2 ->
+          let h = f h1 h2 in
+          aux (h :: acc) t1 t2
+      in
+      aux [] l1 l2
 
-    let rec some_if_all_elements_are_some = function
-      | [] -> Some []
-      | h::t ->
-        match some_if_all_elements_are_some t with
-        | None -> None
-        | Some t' -> match h with
-          | None -> None
-          | Some h' -> Some (h' :: t')
+    let some_if_all_elements_are_some l =
+      let rec aux acc l =
+        match l with
+        | [] -> Some (List.rev acc)
+        | None :: _ -> None
+        | Some h :: t -> aux (h :: acc) t
+      in
+      aux [] l
 
     let split_at n l =
       let rec aux n acc l =
@@ -110,8 +115,8 @@ module Stdlib = struct
         else
           match l with
           | [] -> raise (Invalid_argument "split_at")
-          | t::q ->
-              aux (n-1) (t::acc) q in
+          | t::q -> aux (n-1) (t::acc) q
+      in
       aux n [] l
   end
 
