@@ -534,6 +534,65 @@ let subst_lambda s lam =
     | Some e -> Some (subst e)
   in subst lam
 
+let rec map f lam =
+  let lam =
+    match lam with
+    | Lvar v -> lam
+    | Lconst cst -> lam
+    | Lapply { ap_func; ap_args; ap_loc; ap_should_be_tailcall;
+          ap_inlined; } ->
+        Lapply {
+          ap_func = map f ap_func;
+          ap_args = List.map (map f) ap_args;
+          ap_loc;
+          ap_should_be_tailcall;
+          ap_inlined;
+        }
+    | Lfunction { kind; params; body; attr; } ->
+        Lfunction { kind; params; body = map f body; attr; }
+    | Llet (str, v, e1, e2) ->
+        Llet (str, v, map f e1, map f e2)
+    | Lletrec (idel, e2) ->
+        Lletrec (List.map (fun (v, e) -> (v, map f e)) idel, map f e2)
+    | Lprim (p, el) ->
+        Lprim (p, List.map (map f) el)
+    | Lswitch (e, sw) ->
+        Lswitch (map f e,
+          { sw_numconsts = sw.sw_numconsts;
+            sw_consts = List.map (fun (n, e) -> (n, map f e)) sw.sw_consts;
+            sw_numblocks = sw.sw_numblocks;
+            sw_blocks = List.map (fun (n, e) -> (n, map f e)) sw.sw_blocks;
+            sw_failaction = Misc.may_map (map f) sw.sw_failaction;
+          })
+    | Lstringswitch (e, sw, default) ->
+        Lstringswitch (
+          map f e,
+          List.map (fun (s, e) -> (s, map f e)) sw,
+          Misc.may_map (map f) default)
+    | Lstaticraise (i, args) ->
+        Lstaticraise (i, List.map (map f) args)
+    | Lstaticcatch (body, id, handler) ->
+        Lstaticcatch (map f body, id, map f handler)
+    | Ltrywith (e1, v, e2) ->
+        Ltrywith (map f e1, v, map f e2)
+    | Lifthenelse (e1, e2, e3) ->
+        Lifthenelse (map f e1, map f e2, map f e3)
+    | Lsequence (e1, e2) ->
+        Lsequence (map f e1, map f e2)
+    | Lwhile (e1, e2) ->
+        Lwhile (map f e1, map f e2)
+    | Lfor (v, e1, e2, dir, e3) ->
+        Lfor (v, map f e1, map f e2, dir, map f e3)
+    | Lassign (v, e) ->
+        Lassign (v, map f e)
+    | Lsend (k, m, o, el, loc) ->
+        Lsend (k, map f m, map f o, List.map (map f) el, loc)
+    | Levent (l, ev) ->
+        Levent (map f l, ev)
+    | Lifused (v, e) ->
+        Lifused (v, map f e)
+  in
+  f lam
 
 (* To let-bind expressions to variables *)
 
