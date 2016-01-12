@@ -33,8 +33,9 @@ let rec structured_constant ppf = function
   | Uconst_string s -> fprintf ppf "%S" s
 
 and uconstant ppf = function
-  | Uconst_ref (s, c) ->
+  | Uconst_ref (s, Some c) ->
       fprintf ppf "%S=%a" s structured_constant c
+  | Uconst_ref (s, None) -> fprintf ppf "%S"s
   | Uconst_int i -> fprintf ppf "%i" i
   | Uconst_ptr i -> fprintf ppf "%ia" i
 
