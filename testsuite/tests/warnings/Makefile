@@ -15,6 +15,7 @@ FLAGS=-w A
 
 run-all:
 	@$(OCAMLC) $(FLAGS) -c deprecated_module.mli
+	@$(OCAMLOPT) $(FLAGS) -c module_without_cmx.mli
 	@for file in *.ml; do \
 	  printf " ... testing '$$file':"; \
 	  F="`basename $$file .ml`"; \
@@ -33,6 +34,6 @@ run-all:
 promote: defaultpromote
 
 clean: defaultclean
-	@rm -f *.result
+	@rm -f *.result *.opt_result
 
 include $(BASEDIR)/makefiles/Makefile.common

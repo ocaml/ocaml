@@ -515,7 +515,7 @@ in the order they are introduced.
 Reference cells can be implemented as objects.
 The naive definition fails to typecheck:
 \begin{caml_example}
-class ref x_init =
+class oref x_init =
   object
     val mutable x = x_init
     method get = x
@@ -528,7 +528,7 @@ either the class should be parametric, or the method type should be
 constrained to a monomorphic type.  A monomorphic instance of the class could
 be defined by:
 \begin{caml_example}
-class ref (x_init:int) =
+class oref (x_init:int) =
   object
     val mutable x = x_init
     method get = x
@@ -538,7 +538,7 @@ class ref (x_init:int) =
 Note that since immediate objects do not define a class type, they have
 no such restriction.
 \begin{caml_example}
-let new_ref x_init =
+let new_oref x_init =
   object
     val mutable x = x_init
     method get = x
@@ -550,19 +550,19 @@ list the type parameters in its declaration. Class type parameters are
 listed between "[" and "]". The type parameters must also be
 bound somewhere in the class body by a type constraint.
 \begin{caml_example}
-class ['a] ref x_init =
+class ['a] oref x_init =
   object
     val mutable x = (x_init : 'a)
     method get = x
     method set y = x <- y
   end;;
-let r = new ref 1 in r#set 2; (r#get);;
+let r = new oref 1 in r#set 2; (r#get);;
 \end{caml_example}
 The type parameter in the declaration may actually be constrained in the
 body of the class definition. In the class type, the actual value of
 the type parameter is displayed in the "constraint" clause.
 \begin{caml_example}
-class ['a] ref_succ (x_init:'a) =
+class ['a] oref_succ (x_init:'a) =
   object
     val mutable x = x_init + 1
     method get = x
@@ -1060,7 +1060,7 @@ class backup =
 The above definition will only backup one level.
 The backup facility can be added to any class by using multiple inheritance.
 \begin{caml_example}
-class ['a] backup_ref x = object inherit ['a] ref x inherit backup end;;
+class ['a] backup_ref x = object inherit ['a] oref x inherit backup end;;
 let rec get p n = if n = 0 then p # get else get (p # restore) (n-1);;
 let p = new backup_ref 0  in
 p # save; p # set 1; p # save; p # set 2;
@@ -1078,7 +1078,7 @@ class backup =
   end;;
 \end{caml_example}
 \begin{caml_example}
-class ['a] backup_ref x = object inherit ['a] ref x inherit backup end;;
+class ['a] backup_ref x = object inherit ['a] oref x inherit backup end;;
 let p = new backup_ref 0  in
 p # save; p # set 1; p # save; p # set 2;
 [get p 0; get p 1; get p 2; get p 3; get p 4];;

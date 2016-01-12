@@ -107,14 +107,17 @@ void caml_main(char **argv)
   caml_install_invalid_parameter_handler();
 #endif
   caml_init_custom_operations();
-#ifdef DEBUG
-  caml_verb_gc = 63;
-#endif
   caml_top_of_stack = &tos;
+#ifdef DEBUG
+  caml_verb_gc = 0x3F;
+#endif
   caml_parse_ocamlrunparam();
+#ifdef DEBUG
+  caml_gc_message (-1, "### OCaml runtime: debug mode ###\n", 0);
+#endif
   caml_init_gc (caml_init_minor_heap_wsz, caml_init_heap_wsz,
                 caml_init_heap_chunk_sz, caml_init_percent_free,
-                caml_init_max_percent_free);
+                caml_init_max_percent_free, caml_init_major_window);
   init_static();
   caml_init_signals();
   caml_init_backtrace();

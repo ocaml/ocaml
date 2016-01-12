@@ -35,7 +35,7 @@ opt.opt: ocamldep.opt read_cmt.opt
 # The dependency generator
 
 CAMLDEP_OBJ=depend.cmo ocamldep.cmo
-CAMLDEP_IMPORTS=misc.cmo config.cmo identifiable.cmo numbers.cmo \
+CAMLDEP_IMPORTS=timings.cmo misc.cmo config.cmo identifiable.cmo numbers.cmo \
   clflags.cmo terminfo.cmo \
   warnings.cmo location.cmo longident.cmo docstrings.cmo \
   syntaxerr.cmo ast_helper.cmo parser.cmo lexer.cmo parse.cmo \
@@ -314,6 +314,11 @@ cmpbyt: $(CMPBYT)
 
 clean::
 	rm -f cmpbyt
+
+ifeq "$(RUNTIMEI)" "true"
+install::
+	cp ocaml-instr-graph ocaml-instr-report $(INSTALL_BINDIR)/
+endif
 
 # Common stuff
 

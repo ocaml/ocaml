@@ -31,3 +31,4 @@
 #define HAS_BROKEN_PRINTF
 #define HAS_IPV6
 #define HAS_NICE
+#define SUPPORT_DYNAMIC_LINKING

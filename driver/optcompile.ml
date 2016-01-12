@@ -59,11 +59,12 @@ let (++) x f = f x
 let (+++) (x, y) f = (x, f y)
 
 let implementation ppf sourcefile outputprefix =
+  let source_provenance = Timings.File sourcefile in
   Compmisc.init_path true;
   let modulename = module_of_filename ppf sourcefile outputprefix in
   Env.set_unit_name modulename;
   let env = Compmisc.initial_env() in
-  Compilenv.reset ?packname:!Clflags.for_package modulename;
+  Compilenv.reset ~source_provenance ?packname:!Clflags.for_package modulename;
   let cmxfile = outputprefix ^ ".cmx" in
   let objfile = outputprefix ^ ext_obj in
   let comp ast =
@@ -71,18 +72,22 @@ let implementation ppf sourcefile outputprefix =
       ast
       ++ print_if ppf Clflags.dump_parsetree Printast.implementation
       ++ print_if ppf Clflags.dump_source Pprintast.structure
-      ++ Typemod.type_implementation sourcefile outputprefix modulename env
+      ++ Timings.(time (Typing sourcefile))
+          (Typemod.type_implementation sourcefile outputprefix modulename env)
       ++ print_if ppf Clflags.dump_typedtree
         Printtyped.implementation_with_coercion
     in
     if not !Clflags.print_types then begin
       (typedtree, coercion)
-      ++ Translmod.transl_store_implementation modulename
+      ++ Timings.(time (Transl sourcefile))
+          (Translmod.transl_store_implementation modulename)
       +++ print_if ppf Clflags.dump_rawlambda Printlambda.lambda
-      +++ Simplif.simplify_lambda
-      +++ print_if ppf Clflags.dump_lambda Printlambda.lambda
-      ++ Asmgen.compile_implementation outputprefix ppf;
-      Compilenv.save_unit_info cmxfile;
+      ++ Timings.(time (Generate sourcefile))
+          (fun (size, lambda) ->
+            (size, Simplif.simplify_lambda lambda)
+            +++ print_if ppf Clflags.dump_lambda Printlambda.lambda
+            ++ Asmgen.compile_implementation ~source_provenance outputprefix ppf;
+            Compilenv.save_unit_info cmxfile)
     end;
     Warnings.check_fatal ();
     Stypes.dump (Some (outputprefix ^ ".annot"))

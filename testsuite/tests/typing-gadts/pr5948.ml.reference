@@ -13,7 +13,8 @@ val intB : [< `TagB ] -> int = <fun>
                          ^^^^
 Error: This expression has type ([< `TagA of 'b ] as 'a) -> 'b
        but an expression was expected of type a -> int
-       Type 'a is not compatible with type a = [< `TagA of int | `TagB ] 
+       Type [< `TagA of 'b ] as 'a is not compatible with type
+         a = [< `TagA of int | `TagB ] 
        The first variant type does not allow tag(s) `TagB
 #     Characters 10-18:
   let _ =  example6 (WrapPoly AandBTags) `TagB (* This causes a seg fault *)

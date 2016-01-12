@@ -459,7 +459,7 @@ class printer  ()= object(self:'self)
     | _ -> false
   method expression f x =
     if x.pexp_attributes <> [] then begin
-      pp f "((%a)%a)" self#expression {x with pexp_attributes=[]}
+      pp f "((%a)@,%a)" self#expression {x with pexp_attributes=[]}
         self#attributes x.pexp_attributes
     end
     else match x.pexp_desc with
@@ -1059,7 +1059,7 @@ class printer  ()= object(self:'self)
   (* [in] is not printed *)
   method bindings f (rf,l) =
     let binding kwd rf f x =
-      pp f "@[<2>%s %a%a@]%a" kwd self#rec_flag rf
+      pp f "@[<2>%s %a%a@]@ %a" kwd self#rec_flag rf
          self#binding x self#item_attributes x.pvb_attributes
     in
     begin match l with
