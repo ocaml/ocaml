@@ -126,7 +126,7 @@ let primitives_table = create_hashtable 57 [
   "%ignore", Pignore;
   "%field0", Pfield 0;
   "%field1", Pfield 1;
-  "%setfield0", Psetfield(0, true);
+  "%setfield0", Psetfield(0, Pointer, Assignment);
   "%makeblock", Pmakeblock(0, Immutable);
   "%makemutable", Pmakeblock(0, Mutable);
   "%raise", Praise Raise_regular;
@@ -319,7 +319,7 @@ let specialize_comparison table env ty =
   match () with
   | () when is_base_type env ty Predef.path_int
          || is_base_type env ty Predef.path_char
-         || not (maybe_pointer_type env ty)           -> intcomp
+         || (maybe_pointer_type env ty = Immediate)   -> intcomp
   | () when is_base_type env ty Predef.path_float     -> floatcomp
   | () when is_base_type env ty Predef.path_string    -> stringcomp
   | () when is_base_type env ty Predef.path_nativeint -> nativeintcomp
@@ -351,7 +351,8 @@ let specialize_primitive loc p env ty ~has_constant_constructor =
         | Some (p2, _) -> [p1;p2]
     in
     match (p, params) with
-      (Psetfield(n, _), [p1; p2]) -> Psetfield(n, maybe_pointer_type env p2)
+      (Psetfield(n, _, init), [p1; p2]) ->
+        Psetfield(n, maybe_pointer_type env p2, init)
     | (Parraylength Pgenarray, [p])   -> Parraylength(array_type_kind env p)
     | (Parrayrefu Pgenarray, p1 :: _) -> Parrayrefu(array_type_kind env p1)
     | (Parraysetu Pgenarray, p1 :: _) -> Parraysetu(array_type_kind env p1)
@@ -836,9 +837,11 @@ and transl_exp0 e =
       let access =
         match lbl.lbl_repres with
           Record_regular
-        | Record_inlined _ -> Psetfield(lbl.lbl_pos, maybe_pointer newval)
-        | Record_float -> Psetfloatfield lbl.lbl_pos
-        | Record_extension -> Psetfield (lbl.lbl_pos + 1, maybe_pointer newval)
+        | Record_inlined _ ->
+          Psetfield(lbl.lbl_pos, maybe_pointer newval, Assignment)
+        | Record_float -> Psetfloatfield (lbl.lbl_pos, Assignment)
+        | Record_extension ->
+          Psetfield (lbl.lbl_pos + 1, maybe_pointer newval, Assignment)
       in
       Lprim(access, [transl_exp arg; transl_exp newval])
   | Texp_array expr_list ->
@@ -1147,8 +1150,12 @@ and transl_let rec_flag pat_expr_list body =
       Lletrec(List.map2 transl_case pat_expr_list idlist, body)
 
 and transl_setinstvar self var expr =
-  Lprim(Parraysetu (if maybe_pointer expr then Paddrarray else Pintarray),
-                    [self; transl_normal_path var; transl_exp expr])
+  let prim =
+    match maybe_pointer expr with
+    | Pointer -> Paddrarray
+    | Immediate -> Pintarray
+  in
+  Lprim(Parraysetu prim, [self; transl_normal_path var; transl_exp expr])
 
 and transl_record env all_labels repres lbl_expr_list opt_init_expr =
   let size = Array.length all_labels in
@@ -1219,9 +1226,11 @@ and transl_record env all_labels repres lbl_expr_list opt_init_expr =
       let upd =
         match lbl.lbl_repres with
           Record_regular
-        | Record_inlined _ -> Psetfield(lbl.lbl_pos, maybe_pointer expr)
-        | Record_float -> Psetfloatfield lbl.lbl_pos
-        | Record_extension -> Psetfield(lbl.lbl_pos + 1, maybe_pointer expr)
+        | Record_inlined _ ->
+          Psetfield(lbl.lbl_pos, maybe_pointer expr, Assignment)
+        | Record_float -> Psetfloatfield (lbl.lbl_pos, Assignment)
+        | Record_extension ->
+          Psetfield(lbl.lbl_pos + 1, maybe_pointer expr, Assignment)
       in
       Lsequence(Lprim(upd, [Lvar copy_id; transl_exp expr]), cont) in
     begin match opt_init_expr with

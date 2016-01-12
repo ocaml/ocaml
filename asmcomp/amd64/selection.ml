@@ -196,7 +196,7 @@ method! select_operation op args =
          assert false
      end
   (* Recognize store instructions *)
-  | Cstore (Word_int|Word_val as chunk) ->
+  | Cstore ((Word_int|Word_val as chunk), _init) ->
       begin match args with
         [loc; Cop(Caddi, [Cop(Cload _, [loc']); Cconst_int n])]
         when loc = loc' && self#is_immediate n ->
