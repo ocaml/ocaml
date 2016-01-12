@@ -30,6 +30,9 @@ val same: t -> t -> bool
            non-persistent and have been created by the same call to
            [new], or if they are both persistent and have the same
            name. *)
+val compare: t -> t -> int
+        (* [compare x y] is 0 if [same x y] is true. *)
+val hash: t -> int
 val hide: t -> t
         (* Return an identifier with same name as the given identifier,
            but stamp different from any stamp returned by new.
@@ -49,6 +52,7 @@ val set_current_time: int -> unit
 val reinit: unit -> unit
 
 val print: Format.formatter -> t -> unit
+val output : out_channel -> t -> unit
 
 type 'a tbl
         (* Association tables from identifiers to type 'a. *)
@@ -66,3 +70,5 @@ val iter: (t -> 'a -> unit) -> 'a tbl -> unit
 (* Idents for sharing keys *)
 
 val make_key_generator : unit -> (t -> t)
+
+include Identifiable.S with type t := t
