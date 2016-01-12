@@ -200,7 +200,9 @@ and close t env (lam : Lambda.lambda) : Flambda.t =
           | _ -> None)
         defs
     in
-    begin match Misc.some_if_all_elements_are_some function_declarations with
+    begin match
+      Misc.Stdlib.List.some_if_all_elements_are_some function_declarations
+    with
     | Some function_declarations ->
       (* When all the bindings are (syntactically) functions, we can
          eliminate the [let rec] construction, instead producing a normal
@@ -363,7 +365,7 @@ and close t env (lam : Lambda.lambda) : Flambda.t =
        by the simplification pass to increase the likelihood of eliminating
        the allocation, since some field accesses can be tracked back to known
        field values. ,*)
-    let name = Printlambda.string_of_primitive p in
+    let name = Printlambda.name_of_primitive p in
     Lift_code.lifting_helper (close_list t env args)
       ~evaluation_order:`Right_to_left
       ~name:(name ^ "_arg")

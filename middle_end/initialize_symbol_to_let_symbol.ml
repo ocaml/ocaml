@@ -31,7 +31,9 @@ let rec loop (program : Flambda.program_body) : Flambda.program_body =
   match program with
   | Initialize_symbol (symbol, tag, fields, program) ->
     let constant_fields = List.map constant_field fields in
-    begin match Misc.some_if_all_elements_are_some constant_fields with
+    begin
+      match Misc.Stdlib.List.some_if_all_elements_are_some constant_fields
+    with
     | None ->
       Initialize_symbol (symbol, tag, fields, loop program)
     | Some fields ->

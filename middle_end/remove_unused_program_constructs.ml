@@ -25,7 +25,7 @@ let constant_dependencies (const:Flambda.constant_defining_value) =
   | Allocated_const _ -> Symbol.Set.empty
   | Block (_, fields) ->
     let symbol_fields =
-      Misc.filter_map (function
+      Misc.Stdlib.List.filter_map (function
           | (Symbol s : Flambda.constant_defining_value_block_field) ->
             Some s
           | Flambda.Const _ -> None)

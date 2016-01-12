@@ -113,7 +113,8 @@ let print_opt ppf = function
 type pair = t * t
 module Pair = Identifiable.Make (Identifiable.Pair (T) (T))
 
-let compare_lists l1 l2 = Misc.compare_lists compare l1 l2
+let compare_lists l1 l2 =
+  Misc.Stdlib.List.compare compare l1 l2
 
 let output_full chan t =
   Compilation_unit.output chan t.compilation_unit;

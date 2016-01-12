@@ -500,7 +500,8 @@ let constant_dependencies ~backend:_ (const:Flambda.constant_defining_value) =
   match const with
   | Allocated_const _ -> Symbol.Set.empty
   | Block (_, fields) ->
-    let symbol_fields = Misc.filter_map
+    let symbol_fields =
+      Misc.Stdlib.List.filter_map
         (function
           | (Symbol s:Flambda.constant_defining_value_block_field) -> Some s
           | Flambda.Const _ -> None)
@@ -904,7 +905,7 @@ let lift_constants (program : Flambda.program) ~backend =
           Project_closure (s2, closure_id2) when
             Symbol.equal s1 s2 &&
             Closure_id.equal closure_id1 closure_id2 ->
-          c1
+          Some c1
         | Project_closure (s1, closure_id1),
           Project_closure (s2, closure_id2) ->
           Format.eprintf "not equal project closure@. s %a %a@. cid %a %a@."

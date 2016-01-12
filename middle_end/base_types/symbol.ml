@@ -72,4 +72,5 @@ let print_opt ppf = function
   | None -> Format.fprintf ppf "<no symbol>"
   | Some t -> print ppf t
 
-let compare_lists l1 l2 = Misc.compare_lists compare l1 l2
+let compare_lists l1 l2 =
+  Misc.Stdlib.List.compare compare l1 l2

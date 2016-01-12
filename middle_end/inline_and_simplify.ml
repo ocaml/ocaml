@@ -786,7 +786,8 @@ and simplify_partial_application env r ~lhs_of_application
     List.map (fun id -> Variable.rename id) function_decl.Flambda.params
   in
   let applied_args, remaining_args =
-    Misc.map2_head (fun arg id' -> id', arg) args freshened_params
+    Misc.Stdlib.List.map2_prefix (fun arg id' -> id', arg)
+      args freshened_params
   in
   let wrapper_accepting_remaining_args =
     let body : Flambda.t =
@@ -821,8 +822,12 @@ and simplify_over_application env r ~args ~args_approxs ~function_decls
   let arity = Flambda_utils.function_arity function_decl in
   assert (arity < List.length args);
   assert (List.length args = List.length args_approxs);
-  let full_app_args, remaining_args = Misc.split_at arity args in
-  let full_app_approxs, _ = Misc.split_at arity args_approxs in
+  let full_app_args, remaining_args =
+    Misc.Stdlib.List.split_at arity args
+  in
+  let full_app_approxs, _ =
+    Misc.Stdlib.List.split_at arity args_approxs
+  in
   let expr, r =
     simplify_full_application env r ~function_decls ~lhs_of_application
       ~closure_id_being_applied ~function_decl ~value_set_of_closures
