@@ -62,7 +62,7 @@ module Make_map (T : Thing) = struct
         if not ok then
           let err = Format.asprintf "Map.disjoint_union %a" T.print id in
           Misc.fatal_error err
-        else v1)
+        else Some v1)
       m1 m2
 
   let union_right m1 m2 =
