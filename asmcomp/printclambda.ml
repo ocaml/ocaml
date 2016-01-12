@@ -158,6 +158,8 @@ let rec lam ppf = function
         else if k = Lambda.Cached then "cache"
         else "" in
       fprintf ppf "@[<2>(send%s@ %a@ %a%a)@]" kind lam obj lam met args largs
+  | Uunreachable ->
+      fprintf ppf "unreachable"
 
 and sequence ppf ulam = match ulam with
   | Usequence(l1, l2) ->

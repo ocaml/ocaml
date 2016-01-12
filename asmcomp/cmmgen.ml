@@ -1645,6 +1645,8 @@ let rec transl env e =
       | Some (unboxed_id, bn) ->
           return_unit(Cassign(unboxed_id, transl_unbox_number env bn exp))
       end
+  | Uunreachable ->
+      Cop(Cload Word_int, [Cconst_int 0])
 
 and transl_ccall env prim args dbg =
   let transl_arg native_repr arg =
