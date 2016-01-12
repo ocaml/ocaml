@@ -154,6 +154,7 @@ let keep_locs = ref false              (* -keep-locs *)
 let unsafe_string = ref true;;         (* -safe-string / -unsafe-string *)
 let print_timings = ref false          (* -dtimings *)
 
+<<<<<<< HEAD
 let inline_toplevel_multiplier = 16
 let default_inline_toplevel_threshold =
   int_of_float ((float inline_toplevel_multiplier) *. default_inline_threshold)

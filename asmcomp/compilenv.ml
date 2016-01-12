@@ -414,6 +414,9 @@ let new_structured_constant cst ~shared =
 let clear_structured_constants () =
   structured_constants := structured_constants_empty
 
+let clear_structured_constants () =
+  structured_constants := structured_constants_empty
+
 let structured_constants () =
   let structured_constants = !structured_constants in
   List.map
