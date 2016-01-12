@@ -125,6 +125,8 @@ let middle_end ppf ~source_provenance ~prefixname ~backend
         +-+ ("Inline_and_simplify noinline",
              Inline_and_simplify.run ~never_inline:true ~backend
               ~prefixname ~round)
+        +-+ ("Remove_unused_closure_vars 3",
+             Remove_unused_closure_vars.remove_unused_closure_variables)
         +-+ ("Initialize_symbol_to_let_symbol",
              Initialize_symbol_to_let_symbol.run)
         |> loop
