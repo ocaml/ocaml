@@ -80,6 +80,8 @@ module Env = struct
   let not_at_toplevel t = { t with at_toplevel = false; }
 end
 
+let stub_hack_prim_name = "*stub*"
+
 module Function_decls = struct
   module Function_decl = struct
     type t = {
@@ -119,10 +121,10 @@ module Function_decls = struct
     let inline t = t.inline
     let is_a_functor t = t.is_a_functor
 
-    (* CR-someday mshinwell: eliminate "*stub*" *)
     let primitive_wrapper t =
       match t.body with
-      | Lprim (Pccall { Primitive.prim_name = "*stub*" }, [body]) -> Some body
+      | Lprim (Pccall { Primitive. prim_name; }, [body])
+        when prim_name = stub_hack_prim_name -> Some body
       | _ -> None
   end
 

@@ -27,6 +27,51 @@ type t = {
   mutable imported_symbols : Symbol.Set.t;
 }
 
+let add_default_argument_wrappers lam =
+  (* CR-someday mshinwell: Temporary hack to mark default argument wrappers
+     as stubs.  Other possibilities:
+     1. Change Lambda.inline_attribute to add another ("stub") case;
+     2. Add a "stub" field to the Lfunction record. *)
+  let stubify body : Lambda.lambda =
+    let stub_prim =
+      Primitive.simple ~name:Closure_conversion_aux.stub_hack_prim_name
+        ~arity:1 ~alloc:false
+    in
+    Lprim (Pccall stub_prim, [body])
+  in
+  let defs_are_all_functions (defs : (_ * Lambda.lambda) list) =
+    List.for_all (function (_, Lambda.Lfunction _) -> true | _ -> false) defs
+  in
+  let f (lam : Lambda.lambda) : Lambda.lambda =
+    match lam with
+    | Llet (( Strict | Alias | StrictOpt), id,
+        Lfunction {kind; params; body = fbody; attr}, body) ->
+      begin match
+        Simplif.split_default_wrapper id kind params fbody attr
+          ~create_wrapper_body:stubify
+      with
+      | [fun_id, def] -> Llet (Alias, fun_id, def, body)
+      | [fun_id, def; inner_fun_id, def_inner] ->
+        Llet (Alias, inner_fun_id, def_inner, Llet (Alias, fun_id, def, body))
+      | _ -> assert false
+      end
+    | Lletrec (defs, body) as lam ->
+      if defs_are_all_functions defs then
+        let defs =
+          List.flatten
+            (List.map
+               (function
+                 | (id, Lambda.Lfunction {kind; params; body; attr}) ->
+                   Simplif.split_default_wrapper id kind params body attr
+                 | _ -> assert false)
+               defs)
+        in
+        Lletrec (defs, body)
+      else lam
+    | lam -> lam
+  in
+  Lambda.map f lam
+
 (** Generate a wrapper ("stub") function that accepts a tuple argument and
     calls another function with arguments extracted in the obvious
     manner from the tuple. *)
@@ -557,6 +602,7 @@ and close_let_bound_expression t ?let_rec_ident let_bound_var env
   | lam -> Expr (close t env lam)
 
 let lambda_to_flambda ~backend ~module_ident ~size lam : Flambda.program =
+  let lam = add_default_argument_wrappers lam in
   let module Backend = (val backend : Backend_intf.S) in
   let compilation_unit = Compilation_unit.get_current_exn () in
   let t =

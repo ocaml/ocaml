@@ -16,7 +16,7 @@
 
 let in_function_declarations (function_decls : Flambda.function_declarations)
       ~backend =
-  let module VCC = Sort_connected_components.Make (Variable) in
+  let module VCC = Strongly_connected_components.Make (Variable) in
   let directed_graph =
     Flambda_utils.fun_vars_referenced_in_decls function_decls ~backend
   in

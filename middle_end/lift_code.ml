@@ -99,7 +99,7 @@ and lift_lets_named _var (named:Flambda.named) ~toplevel : Flambda.named =
   | Project_var _ | Prim _ | Set_of_closures _ ->
     named
 
-module Sort_lets = Sort_connected_components.Make(Variable)
+module Sort_lets = Strongly_connected_components.Make (Variable)
 
 let rebuild_let_rec (defs:(Variable.t * Flambda.named) list) body =
   let map = Variable.Map.of_list defs in
