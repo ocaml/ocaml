@@ -758,11 +758,7 @@ let transl_structured_constant cst =
 (* Translate constant closures *)
 
 let constant_closures =
-<<<<<<< HEAD
   ref ([] : ((string * bool) * ufunction list * uconstant list) list)
-=======
-  ref ([] : (string * ufunction list * uconstant list) list)
->>>>>>> ocaml/trunk
 
 (* Boxed integers *)
 
@@ -1444,11 +1440,7 @@ let rec transl env e =
       transl_constant sc
   | Uclosure(fundecls, []) ->
       let lbl = Compilenv.new_const_symbol() in
-<<<<<<< HEAD
       constant_closures := ((lbl, false), fundecls, []) :: !constant_closures;
-=======
-      constant_closures := (lbl, fundecls, []) :: !constant_closures;
->>>>>>> ocaml/trunk
       List.iter (fun f -> Queue.add f functions) fundecls;
       Cconst_symbol lbl
   | Uclosure(fundecls, clos_vars) ->
@@ -1686,7 +1678,6 @@ let rec transl env e =
       end
   | Uunreachable ->
       Cop(Cload Word_int, [Cconst_int 0])
-<<<<<<< HEAD
 
 and transl_make_array env kind args =
   match kind with
@@ -1698,8 +1689,6 @@ and transl_make_array env kind args =
   | Pfloatarray ->
       make_float_alloc Obj.double_array_tag
                       (List.map (transl_unbox_float env) args)
-=======
->>>>>>> ocaml/trunk
 
 and transl_ccall env prim args dbg =
   let transl_arg native_repr arg =
@@ -2500,11 +2489,7 @@ let rec emit_structured_constant (symb : (string * bool)) cst cont =
       emit_block (floatarray_header (List.length fields)) symb
         (Misc.map_end (fun f -> Cdouble f) fields cont)
   | Uconst_closure(fundecls, lbl, fv) ->
-<<<<<<< HEAD
       constant_closures := ((lbl, true), fundecls, fv) :: !constant_closures;
-=======
-      constant_closures := (lbl, fundecls, fv) :: !constant_closures;
->>>>>>> ocaml/trunk
       List.iter (fun f -> Queue.add f functions) fundecls;
       cont
 
@@ -2544,7 +2529,6 @@ and emit_boxed_int64_constant n cont =
 
 (* Emit constant closures *)
 
-<<<<<<< HEAD
 let emit_constant_closure ((_, global_symb) as symb) fundecls clos_vars cont =
   let closure_symbol f =
     if Config.flambda then
@@ -2552,9 +2536,6 @@ let emit_constant_closure ((_, global_symb) as symb) fundecls clos_vars cont =
     else
       []
   in
-=======
-let emit_constant_closure symb fundecls clos_vars cont =
->>>>>>> ocaml/trunk
   match fundecls with
     [] ->
       (* This should probably not happen: dead code has normally been
@@ -2565,13 +2546,8 @@ let emit_constant_closure symb fundecls clos_vars cont =
         List.fold_right emit_constant clos_vars cont
   | f1 :: remainder ->
       let rec emit_others pos = function
-<<<<<<< HEAD
-        [] ->
-          List.fold_right emit_constant clos_vars cont
-=======
           [] ->
             List.fold_right emit_constant clos_vars cont
->>>>>>> ocaml/trunk
       | f2 :: rem ->
           if f2.arity = 1 || f2.arity = 0 then
             Cint(infix_header pos) ::
@@ -2588,14 +2564,9 @@ let emit_constant_closure symb fundecls clos_vars cont =
             emit_others (pos + 4) rem in
       Cint(black_closure_header (fundecls_size fundecls
                                  + List.length clos_vars)) ::
-<<<<<<< HEAD
       cdefine_symbol symb @
       (closure_symbol f1) @
       if f1.arity = 1 || f1.arity = 0 then
-=======
-      Cdefine_symbol symb ::
-      if f1.arity = 1 then
->>>>>>> ocaml/trunk
         Csymbol_address f1.label ::
         Cint(Nativeint.of_int (f1.arity lsl 1 + 1)) ::
         emit_others 3 remainder
@@ -2616,16 +2587,18 @@ let emit_constants cont constants =
     constants;
   List.iter
     (fun (symb, fundecls, clos_vars) ->
-<<<<<<< HEAD
-       c := Cdata (emit_constant_closure symb
-          fundecls clos_vars []) :: !c)
-=======
         c := Cdata(emit_constant_closure symb fundecls clos_vars []) :: !c)
->>>>>>> ocaml/trunk
     !constant_closures;
   constant_closures := [];
-  Compilenv.clear_structured_constants ();
   !c
+
+let emit_all_constants cont =
+  let constants =
+    List.map (fun (symb, global, const) -> (symb, global), const)
+      (Compilenv.structured_constants ())
+  in
+  Compilenv.clear_structured_constants ();
+  emit_constants cont constants
 
 let transl_all_functions_and_emit_all_constants cont =
   let rec aux already_translated cont =
@@ -2649,15 +2622,6 @@ let emit_module_roots_table ~symbols cont =
         [Cint 0n])
   :: cont
 
-let emit_all_constants cont =
-  let constants =
-    List.map (fun (symb, global, const) -> (symb, global), const)
-      (Compilenv.structured_constants ())
-  in
-  Compilenv.clear_structured_constants ();
-  emit_constants cont constants
-
-<<<<<<< HEAD
 (* Build the NULL terminated array of gc roots *)
 
 let emit_gc_roots_table ~symbols cont =
@@ -2672,17 +2636,6 @@ let emit_gc_roots_table ~symbols cont =
    constructs) *)
 
 let preallocate_block { Clambda.symbol; tag; size } =
-=======
-let compunit size ulam =
-  let glob = Compilenv.make_symbol None in
-  let init_code = transl empty_env ulam in
-  let c1 = [Cfunction {fun_name = Compilenv.make_symbol (Some "entry");
-                       fun_args = [];
-                       fun_body = init_code; fun_fast = false;
-                       fun_dbg  = Debuginfo.none }] in
-  let c2 = transl_all_functions_and_emit_all_constants c1 in
-  let c3 = emit_module_roots_table ~symbols:[glob] c2 in
->>>>>>> ocaml/trunk
   let space =
     (* These words will be registered as roots and as such must contain
        valid values, in case we are in no-naked-pointers mode.  Likewise
@@ -2692,7 +2645,6 @@ let compunit size ulam =
       (Array.init size (fun _index ->
         Cint (Nativeint.of_int 1 (* Val_unit *))))
   in
-<<<<<<< HEAD
   (* TODO: don't mark every symbol as global, only those reachable
      from exported info should *)
   Cdata ([Cint(black_block_header tag size);
@@ -2713,20 +2665,11 @@ let compunit_and_constants (ulam, preallocated_blocks, constants) =
       constants
   in
   let c1' = emit_constants c1 structured_constants in
-  let rec aux set c1 =
-    if Compilenv.structured_constants () = [] &&
-       Queue.is_empty functions
-    then c1
-    else
-      let c2, set = transl_all_functions set c1 in
-      let c3 = emit_all_constants c2 in
-      aux set c3
-  in
   let preallocate_block_symbols =
     List.map (fun { Clambda.symbol } -> symbol)
       preallocated_blocks
   in
-  let c3 = aux StringSet.empty c1' in
+  let c3 = transl_all_functions_and_emit_all_constants c1' in
   let c4 =
     emit_gc_roots_table ~symbols:preallocate_block_symbols c3
   in
@@ -2734,11 +2677,6 @@ let compunit_and_constants (ulam, preallocated_blocks, constants) =
     List.map preallocate_block preallocated_blocks
   in
   blocks @ c4
-=======
-  Cdata ([Cint(black_block_header 0 size);
-         Cglobal_symbol glob;
-         Cdefine_symbol glob] @ space) :: c3
->>>>>>> ocaml/trunk
 
 (*
 CAMLprim value caml_cache_public_method (value meths, value tag, value *cache)
