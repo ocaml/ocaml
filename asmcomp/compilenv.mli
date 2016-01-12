@@ -14,7 +14,8 @@
 
 open Cmx_format
 
-val reset: ?packname:string -> string -> unit
+val reset: ?packname:string -> source_provenance:Timings.source_provenance ->
+        string -> unit
         (* Reset the environment and record the name of the unit being
            compiled (arg).  Optional argument is [-for-pack] prefix. *)
 
@@ -23,6 +24,10 @@ val current_unit_infos: unit -> unit_infos
 
 val current_unit_name: unit -> string
         (* Return the name of the unit being compiled *)
+
+val current_build: unit -> Timings.source_provenance
+        (* Return the kind of build source being compiled. If it is a
+           file compilation it also provides the filename. *)
 
 val make_symbol: ?unitname:string -> string option -> string
         (* [make_symbol ~unitname:u None] returns the asm symbol that
@@ -61,6 +66,7 @@ val new_structured_constant:
   string
 val structured_constants:
   unit -> (string * bool * Clambda.ustructured_constant) list
+val clear_structured_constants: unit -> unit
 val add_exported_constant: string -> unit
 
 type structured_constants

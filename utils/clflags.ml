@@ -117,11 +117,11 @@ let runtime_variant = ref "";;      (* -runtime-variant *)
 let keep_docs = ref false              (* -keep-docs *)
 let keep_locs = ref false              (* -keep-locs *)
 let unsafe_string = ref true;;         (* -safe-string / -unsafe-string *)
+let print_timings = ref false          (* -dtimings *)
 
-type color_setting = Auto | Always | Never
 let parse_color_setting = function
-  | "auto" -> Some Auto
-  | "always" -> Some Always
-  | "never" -> Some Never
+  | "auto" -> Some Misc.Color.Auto
+  | "always" -> Some Misc.Color.Always
+  | "never" -> Some Misc.Color.Never
   | _ -> None
-let color = ref Auto ;; (* -color *)
+let color = ref Misc.Color.Auto ;; (* -color *)

@@ -196,6 +196,7 @@ type shared_code = (int * int) list     (* stack size -> code label *)
 
 type function_attribute = {
   inline : inline_attribute;
+  is_a_functor: bool;
 }
 
 type lambda =

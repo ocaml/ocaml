@@ -144,6 +144,7 @@ module Options = Main_args.Make_bytecomp_options (struct
   let _drawlambda = set dump_rawlambda
   let _dlambda = set dump_lambda
   let _dinstr = set dump_instr
+  let _dtimings = set print_timings
   let anonymous = anonymous
 end)
 
@@ -197,9 +198,11 @@ let main () =
       Bytelink.link ppf (get_objfiles ()) target;
       Warnings.check_fatal ();
     end;
-    exit 0
   with x ->
     Location.report_exception ppf x;
     exit 2
 
-let _ = main ()
+let _ =
+  Timings.(time All) main ();
+  if !Clflags.print_timings then Timings.print Format.std_formatter;
+  exit 0

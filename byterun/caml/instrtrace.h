@@ -20,7 +20,6 @@
 #include "mlvalues.h"
 #include "misc.h"
 
-extern int caml_trace_flag;
 extern intnat caml_icount;
 void caml_stop_here (void);
 void caml_disasm_instr (code_t pc);

@@ -31,8 +31,16 @@ extern intnat
 
 uintnat caml_normalize_heap_increment (uintnat);
 
-void caml_init_gc (uintnat, uintnat, uintnat,
-                   uintnat, uintnat);
+/*
+  minor_size: cf. minor_heap_size in gc.mli
+  major_size: Size in words of the initial major heap
+  major_incr: cf. major_heap_increment in gc.mli
+  percent_fr: cf. space_overhead in gc.mli
+  percent_m : cf. max_overhead in gc.mli
+  window    : cf. window_size in gc.mli
+*/
+void caml_init_gc (uintnat minor_size, uintnat major_size, uintnat major_incr,
+                   uintnat percent_fr, uintnat percent_m, uintnat window);
 
 
 #ifdef DEBUG

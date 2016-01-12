@@ -217,7 +217,8 @@ CAMLextern value caml_hash_variant(char const * tag);
 #define Byte_u(x, i) (((unsigned char *) (x)) [i]) /* Also an l-value. */
 
 /* Abstract things.  Their contents is not traced by the GC; therefore they
-   must not contain any [value].
+   must not contain any [value]. Must have odd number so that headers with
+   this tag cannot be mistaken for pointers (see caml_obj_truncate).
 */
 #define Abstract_tag 251
 
@@ -303,7 +304,5 @@ CAMLextern value caml_set_oo_id(value obj);
 #ifdef __cplusplus
 }
 #endif
-
-extern intnat caml_stat_top_heap_wsz;
 
 #endif /* CAML_MLVALUES_H */

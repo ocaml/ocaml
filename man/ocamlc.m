@@ -314,7 +314,7 @@ executable file, where
 can find it and use it.
 .TP
 .BI \-for\-pack \ module\-path
-Generate an object file (.cmx and .o files) that can later be included
+Generate an object file (.cmo file) that can later be included
 as a sub-module (with the given access path) of a compilation unit
 constructed with
 .BR \-pack .
@@ -322,6 +322,9 @@ For instance,
 .B ocamlc\ \-for\-pack\ P\ \-c\ A.ml
 will generate a.cmo that can later be used with
 .BR "ocamlc -pack -o P.cmo a.cmo" .
+Note: you can still pack a module that was compiled without
+.B \-for\-pack
+but in this case exceptions will be printed with the wrong names.
 .TP
 .B \-g
 Add debugging information while compiling and linking. This option is
