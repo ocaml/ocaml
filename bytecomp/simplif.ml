@@ -673,7 +673,6 @@ let simplify_lambda lam =
   let res =
     simplify_exits lam
     |> simplify_lets
-    |> simplify_default_wrapper
   in
   if !Clflags.annotations || Warnings.is_active Warnings.Expect_tailcall
     then emit_tail_infos true res;

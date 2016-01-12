@@ -19,8 +19,6 @@ open Lambda
 
 val simplify_lambda: lambda -> lambda
 
-val map: (lambda -> lambda) -> lambda -> lambda
-
 val split_default_wrapper
    : ?create_wrapper_body:(lambda -> lambda)
   -> Ident.t

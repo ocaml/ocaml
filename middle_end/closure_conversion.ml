@@ -32,7 +32,7 @@ let add_default_argument_wrappers lam =
      as stubs.  Other possibilities:
      1. Change Lambda.inline_attribute to add another ("stub") case;
      2. Add a "stub" field to the Lfunction record. *)
-  let stubify body =
+  let stubify body : Lambda.lambda =
     let stub_prim =
       Primitive.simple ~name:Closure_conversion_aux.stub_hack_prim_name
         ~arity:1 ~alloc:false
@@ -47,8 +47,8 @@ let add_default_argument_wrappers lam =
     | Llet (( Strict | Alias | StrictOpt), id,
         Lfunction {kind; params; body = fbody; attr}, body) ->
       begin match
-        Simplif.split_default_wrapper ?create_wrapper_body:stubify id kind
-          params fbody attr
+        Simplif.split_default_wrapper id kind params fbody attr
+          ~create_wrapper_body:stubify
       with
       | [fun_id, def] -> Llet (Alias, fun_id, def, body)
       | [fun_id, def; inner_fun_id, def_inner] ->
@@ -61,8 +61,8 @@ let add_default_argument_wrappers lam =
           List.flatten
             (List.map
                (function
-                 | (id, Lfunction {kind; params; body; attr}) ->
-                   split_default_wrapper id kind params body attr
+                 | (id, Lambda.Lfunction {kind; params; body; attr}) ->
+                   Simplif.split_default_wrapper id kind params body attr
                  | _ -> assert false)
                defs)
         in
