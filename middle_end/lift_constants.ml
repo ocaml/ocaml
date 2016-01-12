@@ -552,7 +552,7 @@ let program_graph
       )
       effect_tbl graph_with_initialisation
   in
-  let module Symbol_SCC = Sort_connected_components.Make (Symbol) in
+  let module Symbol_SCC = Strongly_connected_components.Make (Symbol) in
   let components =
     Symbol_SCC.connected_components_sorted_from_roots_to_leaf
       graph
@@ -572,7 +572,7 @@ let add_definition_of_symbol constant_definitions
     assert(not (Symbol.Tbl.mem initialize_symbol_tbl sym));
     (sym, Symbol.Map.find sym constant_definitions)
   in
-  let module Symbol_SCC = Sort_connected_components.Make (Symbol) in
+  let module Symbol_SCC = Strongly_connected_components.Make (Symbol) in
   match component with
   | Symbol_SCC.Has_loop l ->
     let l = List.map symbol_declaration l in

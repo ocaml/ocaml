@@ -3,11 +3,14 @@
 (*                                OCaml                                   *)
 (*                                                                        *)
 (*                       Pierre Chambart, OCamlPro                        *)
-(*                  Mark Shinwell, Jane Street Europe                     *)
+(*           Mark Shinwell and Leo White, Jane Street Europe              *)
 (*                                                                        *)
-(*   Copyright 2015 Institut National de Recherche en Informatique et     *)
-(*   en Automatique.  All rights reserved.  This file is distributed      *)
-(*   under the terms of the Q Public License version 1.0.                 *)
+(*   Copyright 2013--2016 OCamlPro SAS                                    *)
+(*   Copyright 2014--2016 Jane Street Group LLC                           *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file ../LICENSE.       *)
 (*                                                                        *)
 (**************************************************************************)
 
@@ -127,22 +130,22 @@ module Make (Id : Identifiable.S) = struct
     | Has_loop of Id.t list
     | No_loop of Id.t
 
-  (* ensure that the dependency graph does not have external dependencies *)
+  (* Ensure that the dependency graph does not have external dependencies. *)
   let check dependencies =
     Id.Map.iter (fun id set ->
         Id.Set.iter (fun v ->
             if not (Id.Map.mem v dependencies)
             then
-              Misc.fatal_errorf "Sort_connected_components.check: the graph \
-                  has external dependencies (%a -> %a)"
+              Misc.fatal_errorf "Strongly_connected_components.check: the \
+                  graph has external dependencies (%a -> %a)"
                Id.print id Id.print v)
           set)
       dependencies
 
-  type numbering =
-    { back : int Id.Map.t;
-      forth : Id.t array;
-    }
+  type numbering = {
+    back : int Id.Map.t;
+    forth : Id.t array;
+  }
 
   let number graph =
     let size = Id.Map.cardinal graph in
@@ -164,7 +167,7 @@ module Make (Id : Identifiable.S) = struct
               try Id.Map.find dest back
               with Not_found ->
                 Misc.fatal_errorf
-                  "Sort_connected_components: missing dependency %a"
+                  "Strongly_connected_components: missing dependency %a"
                   Id.print dest
             in
             v :: acc)
@@ -174,8 +177,9 @@ module Make (Id : Identifiable.S) = struct
 
   let component_graph graph =
     let numbering, integer_graph = number graph in
-    let { Kosaraju.sorted_connected_components;
-          component_edges } = Kosaraju.component_graph integer_graph
+    let { Kosaraju. sorted_connected_components;
+          component_edges } =
+      Kosaraju.component_graph integer_graph
     in
     Array.mapi (fun component nodes ->
         match nodes with
@@ -184,10 +188,10 @@ module Make (Id : Identifiable.S) = struct
           (if List.mem node integer_graph.(node)
            then Has_loop [numbering.forth.(node)]
            else No_loop numbering.forth.(node)),
-          component_edges.(component)
+            component_edges.(component)
         | _::_ ->
           (Has_loop (List.map (fun node -> numbering.forth.(node)) nodes)),
-          component_edges.(component))
+            component_edges.(component))
       sorted_connected_components
 
   let connected_components_sorted_from_roots_to_leaf graph =
