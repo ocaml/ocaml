@@ -304,7 +304,7 @@ let equal_tag t1 t2 = match (t1, t2) with
   | Cstr_constant i1, Cstr_constant i2 -> i2 = i1
   | Cstr_block i1, Cstr_block i2 -> i2 = i1
   | Cstr_extension (path1, b1), Cstr_extension (path2, b2) -> path1 = path2 && b1 = b2
-  | _ -> false
+  | (Cstr_constant _|Cstr_block _|Cstr_extension _), _ -> false
 
 type label_description =
   { lbl_name: string;                   (* Short name *)
