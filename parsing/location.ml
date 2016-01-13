@@ -285,6 +285,17 @@ let print_error_prefix ppf () =
   ()
 ;;
 
+let print_compact ppf loc =
+  if loc.loc_start.pos_fname = "//toplevel//"
+  && highlight_locations ppf [loc] then ()
+  else begin
+    let (file, line, startchar) = get_pos_info loc.loc_start in
+    let endchar = loc.loc_end.pos_cnum - loc.loc_start.pos_cnum + startchar in
+    fprintf ppf "%a:%i" print_filename file line;
+    if startchar >= 0 then fprintf ppf ",%i--%i" startchar endchar
+  end
+;;
+
 let print_error ppf loc =
   print ppf loc;
   print_error_prefix ppf ()
