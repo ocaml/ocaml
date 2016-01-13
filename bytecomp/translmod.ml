@@ -524,6 +524,8 @@ and pure_module m =
 let _ =
   Translcore.transl_module := transl_module
 
+(* Introduce dependencies on modules referenced only by "external". *)
+
 let scan_used_globals lam =
   let globals = ref IdentSet.empty in
   let rec scan lam =
