@@ -741,7 +741,7 @@ let transl_structured_constant cst =
 (* Translate constant closures *)
 
 let constant_closures =
-  ref ([] : (string * ufunction list * uconstant list) list)
+  ref ([] : ((string * bool) * ufunction list * uconstant list) list)
 
 (* Boxed integers *)
 
@@ -1423,7 +1423,7 @@ let rec transl env e =
       transl_constant sc
   | Uclosure(fundecls, []) ->
       let lbl = Compilenv.new_const_symbol() in
-      constant_closures := (lbl, fundecls, []) :: !constant_closures;
+      constant_closures := ((lbl, false), fundecls, []) :: !constant_closures;
       List.iter (fun f -> Queue.add f functions) fundecls;
       Cconst_symbol lbl
   | Uclosure(fundecls, clos_vars) ->
@@ -2426,6 +2426,11 @@ let rec transl_all_functions already_translated cont =
   with Queue.Empty ->
     cont, already_translated
 
+let cdefine_symbol (symb, global) =
+  if global
+  then [Cglobal_symbol symb; Cdefine_symbol symb]
+  else [Cdefine_symbol symb]
+
 (* Emit structured constants *)
 
 let rec emit_structured_constant symb cst cont =
@@ -2433,7 +2438,7 @@ let rec emit_structured_constant symb cst cont =
     (* Headers for structured constants must be marked black in case we
        are in no-naked-pointers mode.  See [caml_darken]. *)
     let black_header = Nativeint.logor white_header caml_black in
-    Cint black_header :: Cdefine_symbol symb :: cont
+    Cint black_header :: cdefine_symbol symb @ cont
   in
   match cst with
   | Uconst_float s->
@@ -2457,7 +2462,8 @@ let rec emit_structured_constant symb cst cont =
       emit_block (floatarray_header (List.length fields)) symb
         (Misc.map_end (fun f -> Cdouble f) fields cont)
   | Uconst_closure(fundecls, lbl, fv) ->
-      constant_closures := (lbl, fundecls, fv) :: !constant_closures;
+      assert(lbl = fst symb);
+      constant_closures := (symb, fundecls, fv) :: !constant_closures;
       List.iter (fun f -> Queue.add f functions) fundecls;
       cont
 
@@ -2518,7 +2524,7 @@ let emit_constant_closure symb fundecls clos_vars cont =
             emit_others (pos + 4) rem in
       Cint(black_closure_header (fundecls_size fundecls
                                  + List.length clos_vars)) ::
-      Cdefine_symbol symb ::
+      cdefine_symbol symb @
       if f1.arity = 1 || f1.arity = 0 then
         Csymbol_address f1.label ::
         cint_const f1.arity ::
@@ -2535,10 +2541,7 @@ let emit_constants cont (constants:Clambda.preallocated_constant list) =
   let c = ref cont in
   List.iter
     (fun { symbol = lbl; exported = global; definition = cst } ->
-       let cst = emit_structured_constant lbl cst [] in
-       let cst = if global then
-         Cglobal_symbol lbl :: cst
-       else cst in
+       let cst = emit_structured_constant (lbl, global) cst [] in
          c:= Cdata(cst):: !c)
     constants;
   List.iter
@@ -2961,8 +2964,7 @@ let reference_symbols namelist =
   Cdata(List.map mksym namelist)
 
 let global_data name v =
-  Cdata(Cglobal_symbol name ::
-          emit_structured_constant name
+  Cdata(emit_structured_constant (name, true)
           (Uconst_string (Marshal.to_string v [])) [])
 
 let globals_map v = global_data "caml_globals_map" v
@@ -3002,9 +3004,8 @@ let predef_exception i name =
   let symname = "caml_exn_" ^ name in
   let cst = Uconst_string name in
   let label = Compilenv.new_const_symbol () in
-  let cont = emit_structured_constant label cst [] in
-  Cdata(Cglobal_symbol symname ::
-        emit_structured_constant symname
+  let cont = emit_structured_constant (label, false) cst [] in
+  Cdata(emit_structured_constant (symname, true)
           (Uconst_block(Obj.object_tag,
                        [
                          Uconst_ref(label, Some cst);
