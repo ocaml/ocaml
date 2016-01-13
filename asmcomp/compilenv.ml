@@ -294,9 +294,13 @@ let clear_structured_constants () =
 
 let structured_constants () =
   List.map
-    (fun (lbl, cst) ->
-       (lbl, Hashtbl.mem exported_constants lbl, cst)
-    ) (!structured_constants).strcst_all
+    (fun (symbol, definition) ->
+       Clambda.{
+         symbol;
+         exported = Hashtbl.mem exported_constants symbol;
+         definition;
+       })
+    (!structured_constants).strcst_all
 
 (* Error report *)
 

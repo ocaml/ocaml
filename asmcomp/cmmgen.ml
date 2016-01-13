@@ -2531,23 +2531,27 @@ let emit_constant_closure symb fundecls clos_vars cont =
 
 (* Emit all structured constants *)
 
-let emit_all_constants cont =
+let emit_constants cont (constants:Clambda.preallocated_constant list) =
   let c = ref cont in
   List.iter
-    (fun (lbl, global, cst) ->
+    (fun { symbol = lbl; exported = global; definition = cst } ->
        let cst = emit_structured_constant lbl cst [] in
        let cst = if global then
          Cglobal_symbol lbl :: cst
        else cst in
          c:= Cdata(cst):: !c)
-    (Compilenv.structured_constants());
+    constants;
   List.iter
     (fun (symb, fundecls, clos_vars) ->
         c := Cdata(emit_constant_closure symb fundecls clos_vars []) :: !c)
     !constant_closures;
   constant_closures := [];
-  Compilenv.clear_structured_constants ();
   !c
+
+let emit_all_constants cont =
+  let constants = Compilenv.structured_constants () in
+  Compilenv.clear_structured_constants ();
+  emit_constants cont constants
 
 let transl_all_functions_and_emit_all_constants cont =
   let rec aux already_translated cont =
@@ -2571,17 +2575,10 @@ let emit_module_roots_table ~symbols cont =
         [Cint 0n])
   :: cont
 
-(* Translate a compilation unit *)
+(* Build preallocated blocks (used for Flambda [Initialize_symbol]
+   constructs, and Clambda global module) *)
 
-let compunit size ulam =
-  let glob = Compilenv.make_symbol None in
-  let init_code = transl empty_env ulam in
-  let c1 = [Cfunction {fun_name = Compilenv.make_symbol (Some "entry");
-                       fun_args = [];
-                       fun_body = init_code; fun_fast = false;
-                       fun_dbg  = Debuginfo.none }] in
-  let c2 = transl_all_functions_and_emit_all_constants c1 in
-  let c3 = emit_module_roots_table ~symbols:[glob] c2 in
+let preallocate_block cont { Clambda.symbol; exported; tag; size } =
   let space =
     (* These words will be registered as roots and as such must contain
        valid values, in case we are in no-naked-pointers mode.  Likewise
@@ -2591,9 +2588,35 @@ let compunit size ulam =
       (Array.init size (fun _index ->
         Cint (Nativeint.of_int 1 (* Val_unit *))))
   in
-  Cdata ([Cint(black_block_header 0 size);
-         Cglobal_symbol glob;
-         Cdefine_symbol glob] @ space) :: c3
+  let data =
+    Cint(black_block_header tag size) ::
+    if exported then
+      Cglobal_symbol symbol ::
+      Cdefine_symbol symbol :: space
+    else
+      Cdefine_symbol symbol :: space
+  in
+  Cdata data :: cont
+
+let emit_preallocated_blocks preallocated_blocks cont =
+  let symbols =
+    List.map (fun ({ Clambda.symbol }:Clambda.preallocated_block) -> symbol)
+      preallocated_blocks
+  in
+  let c1 = emit_module_roots_table ~symbols cont in
+  List.fold_left preallocate_block c1 preallocated_blocks
+
+(* Translate a compilation unit *)
+
+let compunit (ulam, preallocated_blocks, constants) =
+  let init_code = transl empty_env ulam in
+  let c1 = [Cfunction {fun_name = Compilenv.make_symbol (Some "entry");
+                       fun_args = [];
+                       fun_body = init_code; fun_fast = false;
+                       fun_dbg  = Debuginfo.none }] in
+  let c2 = emit_constants c1 constants in
+  let c3 = transl_all_functions_and_emit_all_constants c2 in
+  emit_preallocated_blocks preallocated_blocks c3
 
 (*
 CAMLprim value caml_cache_public_method (value meths, value tag, value *cache)

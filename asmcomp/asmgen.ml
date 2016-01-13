@@ -125,10 +125,19 @@ let compile_unit ~source_provenance asm_filename keep_asm obj_filename gen =
     raise exn
 
 let gen_implementation ?toplevel ~source_provenance ppf (size, lam) =
+  let main_module_block =
+    Clambda.{
+      symbol = Compilenv.make_symbol None;
+      exported = true;
+      tag = 0;
+      size;
+    }
+  in
   Emit.begin_assembly ();
   Timings.(time (Clambda source_provenance)) (Closure.intro size) lam
   ++ clambda_dump_if ppf
-  ++ Timings.(time (Cmm source_provenance)) (Cmmgen.compunit size)
+  ++ Timings.(time (Cmm source_provenance))
+       (fun clam -> Cmmgen.compunit (clam, [main_module_block], []))
   ++ Timings.(time (Compile_phrases source_provenance))
        (List.iter (compile_phrase ppf))
   ++ (fun () -> ());
