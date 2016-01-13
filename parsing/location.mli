@@ -77,6 +77,7 @@ val mknoloc : 'a -> 'a loc
 val mkloc : 'a -> t -> 'a loc
 
 val print: formatter -> t -> unit
+val print_compact: formatter -> t -> unit
 val print_filename: formatter -> string -> unit
 
 val absolute_path: string -> string
