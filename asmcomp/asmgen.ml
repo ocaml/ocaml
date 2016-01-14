@@ -126,8 +126,8 @@ let compile_unit ~source_provenance asm_filename keep_asm obj_filename gen =
 
 let gen_implementation ?toplevel ~source_provenance ppf (size, lam) =
   let main_module_block =
-    Clambda.{
-      symbol = Compilenv.make_symbol None;
+    {
+      Clambda.symbol = Compilenv.make_symbol None;
       exported = true;
       tag = 0;
       size;

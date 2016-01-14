@@ -295,8 +295,8 @@ let clear_structured_constants () =
 let structured_constants () =
   List.map
     (fun (symbol, definition) ->
-       Clambda.{
-         symbol;
+       {
+         Clambda.symbol;
          exported = Hashtbl.mem exported_constants symbol;
          definition;
        })
