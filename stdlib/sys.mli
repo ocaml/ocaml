@@ -295,5 +295,5 @@ external opaque_identity : 'a -> 'a = "%opaque"
       for _round = 1 to 100_000 do
         ignore (Sys.opaque_identity (my_pure_computation ()))
       done
-    }]
+    ]}
 *)
