@@ -1675,10 +1675,10 @@ module X = struct
 end
   [@@deprecated "Please use module 'Y' instead."]
 
-let x = begin[@warning "+9] ... end in ....
+let x = begin[@warning "+9"] ... end in ....
 
 type t = A | B
-  [@@deprecated "Please use type 's' instead.]
+  [@@deprecated "Please use type 's' instead."]
 
 let f x =
   assert (x >= 0) [@ppwarning "TODO: remove this later"];
