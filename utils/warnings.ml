@@ -76,7 +76,7 @@ type t =
   | Unreachable_case                        (* 56 *)
   | Ambiguous_pattern of string list        (* 57 *)
   | No_cmx_file of string                   (* 58 *)
-  | Assignment_on_non_mutable_value         (* 59 *)
+  | Assignment_to_non_mutable_value         (* 59 *)
 ;;
 
 (* If you remove a warning, leave a hole in the numbering.  NEVER change
@@ -144,7 +144,7 @@ let number = function
   | Unreachable_case -> 56
   | Ambiguous_pattern _ -> 57
   | No_cmx_file _ -> 58
-  | Assignment_on_non_mutable_value -> 59
+  | Assignment_to_non_mutable_value -> 59
 ;;
 
 let last_warning_number = 59
@@ -434,7 +434,7 @@ let message = function
       Printf.sprintf "the %S attribute is used more than once on this expression" attr_name
   | Inlining_impossible reason ->
       Printf.sprintf "Inlining impossible in this context: %s" reason
-  | Assignment_on_non_mutable_value -> "Assignment to non-mutable value"
+  | Assignment_to_non_mutable_value -> "Assignment to non-mutable value"
   | Ambiguous_pattern vars ->
       let msg =
         let vars = List.sort String.compare vars in
