@@ -545,7 +545,7 @@ let descriptions =
    56, "Unreachable case in a pattern-matching (based on type information).";
    57, "Ambiguous binding by pattern.";
    58, "Missing cmx file";
-   59, "Assignment on non-mutable value";
+   59, "Assignment to non-mutable value";
   ]
 ;;
 
