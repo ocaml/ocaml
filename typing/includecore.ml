@@ -27,8 +27,8 @@ let value_descriptions env vd1 vd2 =
         (Val_prim p1, Val_prim p2) ->
           if p1 = p2 then Tcoerce_none else raise Dont_match
       | (Val_prim p, _) ->
-          let pc = {pc_desc = p; pc_type = vd2.val_type;
-                  pc_env = env; pc_loc = vd1.val_loc; } in
+          let pc = {pc_desc = p; pc_type = vd2.Types.val_type;
+                  pc_env = env; pc_loc = vd1.Types.val_loc; } in
           Tcoerce_primitive pc
       | (_, Val_prim p) -> raise Dont_match
       | (_, _) -> Tcoerce_none
@@ -195,8 +195,8 @@ and compare_variants env params1 params2 n cstrs1 cstrs2 =
 and compare_records env params1 params2 n labels1 labels2 =
   match labels1, labels2 with
     [], []           -> []
-  | [], l::_ -> [Field_missing (true, l.ld_id)]
-  | l::_, [] -> [Field_missing (false, l.ld_id)]
+  | [], l::_ -> [Field_missing (true, l.Types.ld_id)]
+  | l::_, [] -> [Field_missing (false, l.Types.ld_id)]
   | {Types.ld_id=lab1; ld_mutable=mut1; ld_type=arg1}::rem1,
     {Types.ld_id=lab2; ld_mutable=mut2; ld_type=arg2}::rem2 ->
       if Ident.name lab1 <> Ident.name lab2
