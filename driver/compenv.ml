@@ -205,13 +205,10 @@ let read_OCAMLPARAM ppf position =
       | "wwe" ->               Warnings.parse_options false v
 
       (* inlining *)
-      | "inline" -> begin try
-          inline_threshold := 8 * int_of_string v
-        with _ ->
-          Location.print_warning Location.none ppf
-            (Warnings.Bad_env_variable ("OCAMLPARAM",
-                                        "non-integer parameter for \"inline\""))
-        end
+      | "inline" ->
+        Float_arg_helper.parse v
+          "Bad syntax in OCAMLPARAM for 'inline'"
+          inline_threshold
 
       (* color output *)
       | "color" ->

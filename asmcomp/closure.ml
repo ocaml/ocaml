@@ -1160,7 +1160,12 @@ and close_functions fenv cenv fun_defs =
     in
     let threshold =
       match inline_attribute with
-      | Default_inline -> !Clflags.inline_threshold + n
+      | Default_inline ->
+          let inline_threshold =
+            Clflags.Float_arg_helper.get ~key:0 !Clflags.inline_threshold
+          in
+          let magic_scale_constant = 8. in
+          int_of_float (inline_threshold *. magic_scale_constant) + n
       | Always_inline -> max_int
       | Never_inline -> min_int
     in

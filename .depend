@@ -1,5 +1,6 @@
+utils/arg_helper.cmi :
 utils/ccomp.cmi :
-utils/clflags.cmi : utils/misc.cmi
+utils/clflags.cmi : utils/numbers.cmi utils/misc.cmi
 utils/config.cmi :
 utils/consistbl.cmi :
 utils/identifiable.cmi :
@@ -10,12 +11,16 @@ utils/tbl.cmi :
 utils/terminfo.cmi :
 utils/timings.cmi :
 utils/warnings.cmi :
+utils/arg_helper.cmo : utils/misc.cmi utils/arg_helper.cmi
+utils/arg_helper.cmx : utils/misc.cmx utils/arg_helper.cmi
 utils/ccomp.cmo : utils/misc.cmi utils/config.cmi utils/clflags.cmi \
     utils/ccomp.cmi
 utils/ccomp.cmx : utils/misc.cmx utils/config.cmx utils/clflags.cmx \
     utils/ccomp.cmi
-utils/clflags.cmo : utils/misc.cmi utils/config.cmi utils/clflags.cmi
-utils/clflags.cmx : utils/misc.cmx utils/config.cmx utils/clflags.cmi
+utils/clflags.cmo : utils/numbers.cmi utils/misc.cmi utils/config.cmi \
+    utils/arg_helper.cmi utils/clflags.cmi
+utils/clflags.cmx : utils/numbers.cmx utils/misc.cmx utils/config.cmx \
+    utils/arg_helper.cmx utils/clflags.cmi
 utils/config.cmo : utils/config.cmi
 utils/config.cmx : utils/config.cmi
 utils/consistbl.cmo : utils/consistbl.cmi
