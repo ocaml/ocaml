@@ -22,7 +22,7 @@ external obj : t -> 'a = "%identity"
 external magic : 'a -> 'b = "%identity"
 external is_int : t -> bool = "%obj_is_int"
 let is_block a = is_int a |> not
-[@@ocaml.inline]
+  [@@ocaml.inline]
 external tag : t -> int = "caml_obj_tag"
 external set_tag : t -> int -> unit = "caml_obj_set_tag"
 external size : t -> int = "%obj_size"

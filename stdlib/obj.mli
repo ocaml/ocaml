@@ -24,8 +24,7 @@ external repr : 'a -> t = "%identity"
 external obj : t -> 'a = "%identity"
 external magic : 'a -> 'b = "%identity"
 val is_block : t -> bool
-[@@ocaml.inline]
-
+  [@@ocaml.inline]
 external is_int : t -> bool = "%obj_is_int"
 external tag : t -> int = "caml_obj_tag"
 external size : t -> int = "%obj_size"
