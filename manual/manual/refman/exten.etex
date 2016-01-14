@@ -556,6 +556,7 @@ as syntactic sugar for @"fun" '(' "type" typeconstr-name_1 ')' "->" \ldots "->"
 "fun" '(' "type" typeconstr-name_n ')' "->" expr@. For instance,
 \begin{verbatim}
         let f = fun (type t u v) -> fun (foo : (t * u * v) list) -> ...
+        let f' (type t u v) (foo : (t * u * v) list) = ...
 \end{verbatim}
 
 This construction is useful because the type constructors it introduces
