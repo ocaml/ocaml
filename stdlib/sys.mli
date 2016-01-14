@@ -280,3 +280,20 @@ val enable_runtime_warnings: bool -> unit
 
 val runtime_warnings_enabled: unit -> bool
 (** Return whether runtime warnings are currently enabled. *)
+
+(** {6 Optimization} *)
+
+external opaque_identity : 'a -> 'a = "%opaque"
+(** For the purposes of optimization, [opaque_identity] behaves like an
+    unknown (and thus possibly side-effecting) function.
+
+    At runtime, [opaque_identity] disappears altogether.
+
+    A typical use of this function is to prevent pure computations from being
+    optimized away in benchmarking loops.  For example:
+    {[
+      for _round = 1 to 100_000 do
+        ignore (Sys.opaque_identity (my_pure_computation ()))
+      done
+    ]}
+*)
