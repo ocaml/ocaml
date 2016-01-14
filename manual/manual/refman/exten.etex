@@ -1,6 +1,10 @@
 \chapter{Language extensions} \label{c:extensions}
 \pdfchapter{Language extensions}
 %HEVEA\cutname{extn.html}
+%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Specific macros:
+\newcommand{\tq}{\textquotesingle}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 This chapter describes language extensions and convenience features
 that are implemented in OCaml, but not described in the
@@ -512,9 +516,9 @@ actually be unified with "int".
 The other application is to ensure that some definition is sufficiently
 polymorphic.
 \caml
-\?let id : \textquotesingle\-a. \textquotesingle\-a -> \textquotesingle\-a = \<fun x -> x+1\> ;;
+\?let id : \tq\-a. \tq\-a -> \tq\-a = \<fun x -> x+1\> ;;
 \:Error: This definition has type int -> int which is less general than
-\:         \textquotesingle\-a. \textquotesingle\-a -> \textquotesingle\-a
+\:         \tq\-a. \tq\-a -> \tq\-a
 \endcaml
 
 \section{Locally abstract types}
@@ -1315,6 +1319,58 @@ to implement dynamic types.
           | None -> None
           | Some Eq -> Some x
 \end{verbatim}
+\paragraph{Existential type names in error messages}
+
+(Updated in OCaml 4.03.0)
+
+The typing of pattern matching in presence of GADT can generate many
+existential types. When necessary, error messages refer to these
+existential types using compiler-generated names. Currently, the
+compiler generates these names according to the following nomenclature:
+\begin{itemize}
+\item First, types whose name starts with a "$" are existentials.
+\item "$Constr_'a" denotes an existential type introduced for the type
+variable "'a" of the GADT constructor "Constr":
+\caml
+\?   type any = Any : \tq\-name -> any
+\?   let escape (Any x) = \<x\>;;
+\: Error: This expression has type $Any_\tq\-name
+\:        but an expression was expected of type \tq\-a
+\:        The type constructor $Any_\tq\-name would escape its scope
+\endcaml
+\item "$Constr" denotes an existential type introduced for an anonymous
+type variable in the GADT constructor "Constr":
+\caml
+\? type any = Any : _ -> any
+\? let escape (Any x) = \<x\>;;
+\: Error: This expression has type $Any but an expression was expected of type
+\:        \tq\-a
+\:        The type constructor $Any would escape its scope
+\endcaml
+\item "$'a" if the existential variable was unified with the type
+variable "'a" during typing:
+\caml
+\? type (\tq\-arg,\tq\-result,\tq\-aux) fn =
+\?  | Fun: (\tq\-a ->\tq\-b) -> (\tq\-a,\tq\-b,unit) fn
+\?  | Mem1: (\tq\-a ->\tq\-b) * \tq\-a * \tq\-b -> (\tq\-a, \tq\-b, \tq\-a * \tq\-b) fn
+
+\? let apply: (\tq\-arg,\tq\-result, _ ) fn -> \tq\-arg -> \tq\-result = fun f x ->
+\?  match f with
+\?  | Fun f -> f x
+\?  | \<Mem1 (f,y,fy)\> -> if x = y then fy else f x;;
+
+\: Error: This pattern matches values of type
+\:         ($\tq\-arg, $\tq\-result, $\tq\-arg * $\tq\-result) fn
+\:        but a pattern was expected which matches values of type
+\:         ($\tq\-arg, $\tq\-result, unit) fn
+\:        Type $\tq\-arg * $\tq\-result is not compatible with type unit
+\endcaml
+\item "$n" (n a number) is an internally generated existential
+which could not be named using one of the previous schemes.
+\end{itemize}
+
+As shown by the last item, the current behavior is imperfect
+and may be improved in future versions.
 
 \section{Syntax for Bigarray access}\label{s:bigarray-access}
 
