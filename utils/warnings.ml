@@ -434,7 +434,6 @@ let message = function
       Printf.sprintf "the %S attribute is used more than once on this expression" attr_name
   | Inlining_impossible reason ->
       Printf.sprintf "Inlining impossible in this context: %s" reason
-  | Assignment_to_non_mutable_value -> "Assignment to non-mutable value"
   | Ambiguous_pattern vars ->
       let msg =
         let vars = List.sort String.compare vars in
@@ -449,6 +448,7 @@ let message = function
       Printf.sprintf
         "no cmx file was found in path for module %s, \
          and its interface was not compiled with -opaque" name
+  | Assignment_to_non_mutable_value -> "Assignment to non-mutable value"
 ;;
 
 let nerrors = ref 0;;
