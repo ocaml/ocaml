@@ -447,9 +447,9 @@ For example, assuming the record type
 \end{verbatim}
 has been declared, the following expressions are equivalent:
 \begin{verbatim}
-          let x = 1 and y = 2 in { x = x; y = y }
-          let x = 1 and y = 2 in { x; y }
-          let x = 1 and y = 2 in { x = x; y }
+          let x = 1. and y = 2. in { x = x; y = y },
+          let x = 1. and y = 2. in { x; y },
+          let x = 1. and y = 2. in { x = x; y }
 \end{verbatim}
 On the object side, all following methods are equivalent:
 \begin{verbatim}
@@ -462,8 +462,8 @@ On the object side, all following methods are equivalent:
 \end{verbatim}
 Likewise, the following functions are equivalent:
 \begin{verbatim}
-          fun {x = x; y = y} -> x + y
-          fun {x; y} -> x + y
+          fun {x = x; y = y} -> x +. y
+          fun {x; y} -> x +. y
 \end{verbatim}
 
 Optionally, a record pattern can be terminated by @';' '_'@ to convey the
@@ -474,11 +474,11 @@ the compiler will warn when a record pattern fails to list all fields of
 the corresponding record type and is not terminated by @';' '_'@.
 Continuing the "point" example above,
 \begin{verbatim}
-          fun {x} -> x + 1
+          fun {x} -> x +. 1.
 \end{verbatim}
 \noindent will warn if warning 9 is on, while
 \begin{verbatim}
-          fun {x; _} -> x + 1
+          fun {x; _} -> x +. 1.
 \end{verbatim}
 \noindent will not warn.  This warning can help spot program points where
 record patterns may need to be modified after new fields are added to a
