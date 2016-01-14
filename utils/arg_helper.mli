@@ -33,7 +33,7 @@ module Make (S : sig
   module Value : sig
     type t
 
-    (** The textual representation of a value must not contain '=' or ','. *)
+    (** The textual representation of a value must not contain ','. *)
     val of_string : string -> t
   end
 end) : sig
@@ -45,6 +45,12 @@ end) : sig
   val default : S.Value.t -> parsed
 
   val parse : string -> help_text:string -> update:parsed ref -> unit
+
+  type parse_result =
+    | Ok
+    | Parse_failed of exn
+
+  val parse_no_error : string -> update:parsed ref -> parse_result
 
   val get : key:S.Key.t -> parsed -> S.Value.t
 end

@@ -42,7 +42,9 @@ end) = struct
     | exception Not_found -> true
     | _index -> false
 
-  let parse str ~help_text ~update =
+  exception Parse_failure of exn
+
+  let parse_exn str ~update =
     let values = Misc.Stdlib.String.split str ~on:',' in
     let parsed =
       List.fold_left (fun acc value ->
@@ -50,36 +52,48 @@ end) = struct
           | exception Not_found ->
             begin match S.Value.of_string value with
             | value -> { acc with default = value }
-            | exception exn ->
-              fatal (Printf.sprintf "%s: %s" (Printexc.to_string exn) help_text)
+            | exception exn -> raise (Parse_failure exn)
             end
           | equals ->
             let key_value_pair = value in
             let length = String.length key_value_pair in
-            if equals <= 0 || equals >= length - 1 then begin
-              fatal help_text
+            assert (equals >= 0 && equals < length);
+            if equals = 0 then begin
+              raise (Parse_failure (
+                Failure "Missing key in argument specification"))
             end;
             let key =
               let key = String.sub key_value_pair 0 equals in
               try S.Key.of_string key
-              with exn ->
-                fatal (Printf.sprintf "%s: %s"
-                         (Printexc.to_string exn) help_text)
+              with exn -> raise (Parse_failure exn)
             in
             let value =
               let value =
                 String.sub key_value_pair (equals + 1) (length - equals - 1)
               in
               try S.Value.of_string value
-              with exn ->
-                fatal (Printf.sprintf "%s: %s"
-                         (Printexc.to_string exn) help_text)
+              with exn -> raise (Parse_failure exn)
             in
             { acc with override = S.Key.Map.add key value acc.override })
         !update
         values
     in
     update := parsed
+
+  let parse str ~help_text ~update =
+    match parse_exn str ~update with
+    | () -> ()
+    | exception (Parse_failure exn) ->
+      fatal (Printf.sprintf "%s: %s" (Printexc.to_string exn) help_text)
+
+  type parse_result =
+    | Ok
+    | Parse_failed of exn
+
+  let parse_no_error str ~update =
+    match parse_exn str ~update with
+    | () -> Ok
+    | exception (Parse_failure exn) -> Parse_failed exn
 
   let get ~key parsed =
     match S.Key.Map.find key parsed.override with

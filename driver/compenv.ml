@@ -206,9 +206,17 @@ let read_OCAMLPARAM ppf position =
 
       (* inlining *)
       | "inline" ->
-        Float_arg_helper.parse v
-          "Bad syntax in OCAMLPARAM for 'inline'"
-          inline_threshold
+          let module F = Float_arg_helper in
+          begin match F.parse_no_error v inline_threshold with
+          | F.Ok -> ()
+          | F.Parse_failed exn ->
+              let error =
+                Printf.sprintf "bad syntax for \"inline\": %s"
+                  (Printexc.to_string exn)
+              in
+              Location.print_warning Location.none ppf
+                (Warnings.Bad_env_variable ("OCAMLPARAM", error))
+          end
 
       (* color output *)
       | "color" ->
