@@ -1802,8 +1802,11 @@ type t = ..
 type t += X of int | Y of string
 let x = [%extension_constructor X]
 let y = [%extension_constructor Y]
-let () = assert (x <> y)
 \end{verbatim}
+\caml
+\? x <> y;;
+\:- : bool = true
+\endcaml
 
 \section{Quoted strings}\label{s:quoted-strings}
 
