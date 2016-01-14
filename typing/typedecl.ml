@@ -1691,13 +1691,13 @@ let report_error ppf = function
       begin match decl.type_kind, decl.type_manifest with
       | Type_variant tl, _ ->
           explain_unbound_gen ppf ty tl (fun c ->
-              let tl = tys_of_constr_args c.cd_args in
+              let tl = tys_of_constr_args c.Types.cd_args in
               Btype.newgenty (Ttuple tl)
             )
             "case" (fun ppf c ->
                 fprintf ppf
                   "%s of %a" (Ident.name c.Types.cd_id)
-                  Printtyp.constructor_arguments c.cd_args)
+                  Printtyp.constructor_arguments c.Types.cd_args)
       | Type_record (tl, _), _ ->
           explain_unbound ppf ty tl (fun l -> l.Types.ld_type)
             "field" (fun l -> Ident.name l.Types.ld_id ^ ": ")
