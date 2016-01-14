@@ -93,9 +93,10 @@ let module_of_filename ppf inputfile outputprefix =
   name
 ;;
 
+type filename = string
 
 type readenv_position =
-  Before_args | Before_compile | Before_link
+  Before_args | Before_compile of filename | Before_link
 
 (* Syntax of OCAMLPARAM: (name=VALUE,)* _ (,name=VALUE)*
    where VALUE should not contain ',' *)
@@ -142,20 +143,9 @@ let setter ppf f name options s =
    because they are not understood by some versions of OCaml. *)
 let can_discard = ref []
 
-let read_OCAMLPARAM ppf position =
-  try
-    let s = Sys.getenv "OCAMLPARAM" in
-    let (before, after) =
-      try
-        parse_args s
-      with SyntaxError s ->
-         Location.print_warning Location.none ppf
-           (Warnings.Bad_env_variable ("OCAMLPARAM", s));
-         [],[]
-    in
-    let set name options s =  setter ppf (fun b -> b) name options s in
-    let clear name options s = setter ppf (fun b -> not b) name options s in
-    List.iter (fun (name, v) ->
+let read_one_param ppf position name v =
+  let set name options s =  setter ppf (fun b -> b) name options s in
+  let clear name options s = setter ppf (fun b -> not b) name options s in
       match name with
       | "g" -> set "g" [ Clflags.debug ] v
       | "p" -> set "p" [ Clflags.gprofile ] v
@@ -235,14 +225,14 @@ let read_OCAMLPARAM ppf position =
       | "I" -> begin
           match position with
           | Before_args -> first_include_dirs := v :: !first_include_dirs
-          | Before_link | Before_compile ->
+          | Before_link | Before_compile _ ->
             last_include_dirs := v :: !last_include_dirs
         end
 
       | "cclib" ->
         begin
           match position with
-          | Before_compile -> ()
+          | Before_compile _ -> ()
           | Before_link | Before_args ->
             ccobjs := Misc.rev_split_words v @ !ccobjs
         end
@@ -250,7 +240,7 @@ let read_OCAMLPARAM ppf position =
       | "ccopts" ->
         begin
           match position with
-          | Before_link | Before_compile ->
+          | Before_link | Before_compile _ ->
             last_ccopts := v :: !last_ccopts
           | Before_args ->
             first_ccopts := v :: !first_ccopts
@@ -259,7 +249,7 @@ let read_OCAMLPARAM ppf position =
       | "ppx" ->
         begin
           match position with
-          | Before_link | Before_compile ->
+          | Before_link | Before_compile _ ->
             last_ppx := v :: !last_ppx
           | Before_args ->
             first_ppx := v :: !first_ppx
@@ -270,7 +260,7 @@ let read_OCAMLPARAM ppf position =
         if not !native_code then
         begin
           match position with
-          | Before_link | Before_compile ->
+          | Before_link | Before_compile _ ->
             last_objfiles := v ::! last_objfiles
           | Before_args ->
             first_objfiles := v :: !first_objfiles
@@ -280,7 +270,7 @@ let read_OCAMLPARAM ppf position =
         if !native_code then
         begin
           match position with
-          | Before_link | Before_compile ->
+          | Before_link | Before_compile _ ->
             last_objfiles := v ::! last_objfiles
           | Before_args ->
             first_objfiles := v :: !first_objfiles
@@ -302,16 +292,115 @@ let read_OCAMLPARAM ppf position =
             "Warning: discarding value of variable %S in OCAMLPARAM\n%!"
             name
         end
-    ) (match position with
-        Before_args -> before
-      | Before_compile | Before_link -> after)
+
+let read_OCAMLPARAM ppf position =
+  try
+    let s = Sys.getenv "OCAMLPARAM" in
+    let (before, after) =
+      try
+        parse_args s
+      with SyntaxError s ->
+         Location.print_warning Location.none ppf
+           (Warnings.Bad_env_variable ("OCAMLPARAM", s));
+         [],[]
+    in
+    List.iter (fun (name, v) -> read_one_param ppf position name v)
+      (match position with
+         Before_args -> before
+       | Before_compile _ | Before_link -> after)
   with Not_found -> ()
+
+(* OCAMLPARAM passed as file *)
+
+type pattern =
+  | Filename of string
+  | Any
+
+type file_option = {
+  pattern : pattern;
+  name : string;
+  value : string;
+}
+
+let scan_line ic =
+  Scanf.bscanf ic "%[0-9a-zA-Z_.*] : %[a-zA-Z_-] = %s "
+    (fun pattern name value ->
+       let pattern =
+         match pattern with
+         | "*" -> Any
+         | _ -> Filename pattern
+       in
+       { pattern; name; value })
+
+let load_config ppf filename =
+  match open_in_bin filename with
+  | exception e ->
+      Location.print_error ppf (Location.in_file filename);
+      Format.fprintf ppf "Cannot open file %s@." (Printexc.to_string e);
+      raise Exit
+  | ic ->
+      let sic = Scanf.Scanning.from_channel ic in
+      let rec read line_number line_start acc =
+        match scan_line sic with
+        | exception End_of_file ->
+            close_in ic;
+            acc
+        | exception Scanf.Scan_failure error ->
+            let position = Lexing.{
+                pos_fname = filename;
+                pos_lnum = line_number;
+                pos_bol = line_start;
+                pos_cnum = pos_in ic;
+              }
+            in
+            let loc = Location.{
+                loc_start = position;
+                loc_end = position;
+                loc_ghost = false;
+              }
+            in
+            Location.print_error ppf loc;
+            Format.fprintf ppf "Configuration file error %s@." error;
+            close_in ic;
+            raise Exit
+        | line ->
+            read (line_number + 1) (pos_in ic) (line :: acc)
+      in
+      let lines = read 0 0 [] in
+      lines
+
+let matching_filename filename { pattern } =
+  match pattern with
+  | Any -> true
+  | Filename pattern ->
+    let filename = String.lowercase_ascii filename in
+    let pattern = String.lowercase_ascii pattern in
+    filename = pattern
+
+let apply_config_file ppf position =
+  let config_file = Filename.concat Config.standard_library "compiler_configuration" in
+  let config =
+    if Sys.file_exists config_file then
+      load_config ppf config_file
+    else
+      []
+  in
+  let config =
+    match position with
+    | Before_compile filename ->
+      List.filter (matching_filename filename) config
+    | Before_args | Before_link ->
+      List.filter (fun { pattern } -> pattern = Any) config
+  in
+  List.iter (fun { name; value } -> read_one_param ppf position name value)
+    config
 
 let readenv ppf position =
   last_include_dirs := [];
   last_ccopts := [];
   last_ppx := [];
   last_objfiles := [];
+  apply_config_file ppf position;
   read_OCAMLPARAM ppf position;
   all_ccopts := !last_ccopts @ !first_ccopts;
   all_ppx := !last_ppx @ !first_ppx
