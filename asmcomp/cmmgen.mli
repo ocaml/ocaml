@@ -12,7 +12,11 @@
 
 (* Translation from closed lambda to C-- *)
 
-val compunit: int -> Clambda.ulambda -> Cmm.phrase list
+val compunit:
+    Clambda.ulambda
+    * Clambda.preallocated_block list
+    * Clambda.preallocated_constant list
+  -> Cmm.phrase list
 
 val apply_function: int -> Cmm.phrase
 val send_function: int -> Cmm.phrase

@@ -20,7 +20,8 @@ open Lambda
 val simplify_lambda: lambda -> lambda
 
 val split_default_wrapper
-   : Ident.t
+   : ?create_wrapper_body:(lambda -> lambda)
+  -> Ident.t
   -> function_kind
   -> Ident.t list
   -> lambda

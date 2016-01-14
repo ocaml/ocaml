@@ -40,6 +40,7 @@ type compiler_pass =
   | Linearize of source_provenance
   | Scheduling of source_provenance
   | Emit of source_provenance
+  | Flambda_pass of string * source_provenance
 
 let timings : (compiler_pass, float * float option) Hashtbl.t = Hashtbl.create 20
 let reset () = Hashtbl.clear timings
@@ -123,6 +124,8 @@ let pass_name = function
   | Linearize k -> Printf.sprintf "linearize(%s)" (kind_name k)
   | Scheduling k -> Printf.sprintf "scheduling(%s)" (kind_name k)
   | Emit k -> Printf.sprintf "emit(%s)" (kind_name k)
+  | Flambda_pass (pass, file) ->
+    Printf.sprintf "flambda(%s)(%s)" pass (kind_name file)
 
 let timings_list () =
   let l = Hashtbl.fold (fun pass times l -> (pass, times) :: l) timings [] in

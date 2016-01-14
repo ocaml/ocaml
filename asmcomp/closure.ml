@@ -104,8 +104,14 @@ let prim_size prim args =
   | Psetglobal id -> 1
   | Pmakeblock(tag, mut) -> 5 + List.length args
   | Pfield f -> 1
-  | Psetfield(f, Pointer, _) -> 4
-  | Psetfield(f, Immediate, _) -> 1
+  | Psetfield(f, isptr, init) ->
+    begin match init with
+    | Initialization -> 1  (* never causes a write barrier hit *)
+    | Assignment ->
+      match isptr with
+      | Pointer -> 4
+      | Immediate -> 1
+    end
   | Pfloatfield f -> 1
   | Psetfloatfield (f, _) -> 1
   | Pduprecord _ -> 10 + List.length args

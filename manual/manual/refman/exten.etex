@@ -1,6 +1,10 @@
 \chapter{Language extensions} \label{c:extensions}
 \pdfchapter{Language extensions}
 %HEVEA\cutname{extn.html}
+%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Specific macros:
+\newcommand{\tq}{\textquotesingle}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 This chapter describes language extensions and convenience features
 that are implemented in OCaml, but not described in the
@@ -512,9 +516,9 @@ actually be unified with "int".
 The other application is to ensure that some definition is sufficiently
 polymorphic.
 \caml
-\?let id : \textquotesingle\-a. \textquotesingle\-a -> \textquotesingle\-a = \<fun x -> x+1\> ;;
+\?let id : \tq\-a. \tq\-a -> \tq\-a = \<fun x -> x+1\> ;;
 \:Error: This definition has type int -> int which is less general than
-\:         \textquotesingle\-a. \textquotesingle\-a -> \textquotesingle\-a
+\:         \tq\-a. \tq\-a -> \tq\-a
 \endcaml
 
 \section{Locally abstract types}
@@ -1211,6 +1215,49 @@ exhaustive (the "Add" case cannot happen).
           | App(_,_) -> 0
 \end{verbatim}
 
+
+\paragraph{Refutation cases and redundancy} (Introduced in 4.03)
+
+Usually, the exhaustiveness check only tries to check whether the
+cases omitted from the pattern matching are typable or not.
+However, you can force it to try harder by adding {\em refutation cases}:
+\begin{syntax}
+matching-case:
+     pattern ['when' expr] '->' expr
+   | pattern '->' '.'
+\end{syntax}
+In presence of a refutation case, the exhaustiveness check will first
+compute the intersection of the pattern with the complement of the
+cases preceding it. It then checks whether the resulting patterns can
+really match any concrete values by trying to type-check them.
+Wild cards in the generated patterns are handled in a special way: if
+their type is a variant type with only GADT constructors, then the
+pattern is split into the different constructors, in order to check whether
+any of them is possible (this splitting is not done for arguments of these
+constructors, to avoid non-termination.) We also split tuples and
+variant types with only one case, since they may contain GADTs inside.
+For instance, the following code is deemed exhaustive:
+
+\begin{verbatim}
+        type _ t =
+          | Int : int t
+          | Bool : bool t
+
+        let deep : (char t * int) option -> char = function
+          | None -> 'c'
+          | _ -> .
+\end{verbatim}
+
+Namely, the inferred remaining case is "Some _", which is split into
+"Some (Int, _)" and "Some (Bool, _)", which are both untypable.
+Note that the refutation case could be omitted here, because it is
+automatically added when there is only one case in the pattern
+matching.
+
+Another addition is that the redundancy check is now aware of GADTs: a
+case will be detected as redundant if it could be replaced by a
+refutation case using the same pattern.
+
 \paragraph{Advanced examples}
 The "term" type we have defined above is an {\em indexed} type, where
 a type parameter reflects a property of the value contents.
@@ -1272,6 +1319,58 @@ to implement dynamic types.
           | None -> None
           | Some Eq -> Some x
 \end{verbatim}
+\paragraph{Existential type names in error messages}
+
+(Updated in OCaml 4.03.0)
+
+The typing of pattern matching in presence of GADT can generate many
+existential types. When necessary, error messages refer to these
+existential types using compiler-generated names. Currently, the
+compiler generates these names according to the following nomenclature:
+\begin{itemize}
+\item First, types whose name starts with a "$" are existentials.
+\item "$Constr_'a" denotes an existential type introduced for the type
+variable "'a" of the GADT constructor "Constr":
+\caml
+\?   type any = Any : \tq\-name -> any
+\?   let escape (Any x) = \<x\>;;
+\: Error: This expression has type $Any_\tq\-name
+\:        but an expression was expected of type \tq\-a
+\:        The type constructor $Any_\tq\-name would escape its scope
+\endcaml
+\item "$Constr" denotes an existential type introduced for an anonymous
+type variable in the GADT constructor "Constr":
+\caml
+\? type any = Any : _ -> any
+\? let escape (Any x) = \<x\>;;
+\: Error: This expression has type $Any but an expression was expected of type
+\:        \tq\-a
+\:        The type constructor $Any would escape its scope
+\endcaml
+\item "$'a" if the existential variable was unified with the type
+variable "'a" during typing:
+\caml
+\? type (\tq\-arg,\tq\-result,\tq\-aux) fn =
+\?  | Fun: (\tq\-a ->\tq\-b) -> (\tq\-a,\tq\-b,unit) fn
+\?  | Mem1: (\tq\-a ->\tq\-b) * \tq\-a * \tq\-b -> (\tq\-a, \tq\-b, \tq\-a * \tq\-b) fn
+
+\? let apply: (\tq\-arg,\tq\-result, _ ) fn -> \tq\-arg -> \tq\-result = fun f x ->
+\?  match f with
+\?  | Fun f -> f x
+\?  | \<Mem1 (f,y,fy)\> -> if x = y then fy else f x;;
+
+\: Error: This pattern matches values of type
+\:         ($\tq\-arg, $\tq\-result, $\tq\-arg * $\tq\-result) fn
+\:        but a pattern was expected which matches values of type
+\:         ($\tq\-arg, $\tq\-result, unit) fn
+\:        Type $\tq\-arg * $\tq\-result is not compatible with type unit
+\endcaml
+\item "$n" (n a number) is an internally generated existential
+which could not be named using one of the previous schemes.
+\end{itemize}
+
+As shown by the last item, the current behavior is imperfect
+and may be improved in future versions.
 
 \section{Syntax for Bigarray access}\label{s:bigarray-access}
 
