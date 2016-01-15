@@ -274,7 +274,7 @@ let make_key e =
         try Ident.find_same id env
         with Not_found -> e
       end
-    | Lconst  (Const_base (Const_string _)|Const_float_array _) ->
+    | Lconst  (Const_base (Const_string _)) ->
         (* Mutable constants are not shared *)
         raise Not_simple
     | Lconst _ -> e
