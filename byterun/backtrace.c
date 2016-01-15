@@ -107,6 +107,7 @@ CAMLexport void caml_print_exception_backtrace(void)
 {
   int i;
   struct caml_loc_info li;
+  debuginfo dbg;
 
   if (!caml_debug_info_available()) {
     fprintf(stderr, "(Cannot print stack backtrace: "
@@ -115,9 +116,13 @@ CAMLexport void caml_print_exception_backtrace(void)
   }
 
   for (i = 0; i < caml_backtrace_pos; i++) {
-    caml_debuginfo_location(
-        caml_debuginfo_extract(caml_backtrace_buffer[i]), &li);
-    print_location(&li, i);
+    for (dbg = caml_debuginfo_extract(caml_backtrace_buffer[i]);
+         dbg != NULL;
+         dbg = caml_debuginfo_next(dbg))
+    {
+      caml_debuginfo_location(dbg, &li);
+      print_location(&li, i);
+    }
   }
 }
 
