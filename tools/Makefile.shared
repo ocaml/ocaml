@@ -36,7 +36,7 @@ opt.opt: ocamldep.opt read_cmt.opt
 
 CAMLDEP_OBJ=depend.cmo ocamldep.cmo
 CAMLDEP_IMPORTS=timings.cmo misc.cmo config.cmo identifiable.cmo numbers.cmo \
-  clflags.cmo terminfo.cmo \
+  arg_helper.cmo clflags.cmo terminfo.cmo \
   warnings.cmo location.cmo longident.cmo docstrings.cmo \
   syntaxerr.cmo ast_helper.cmo parser.cmo lexer.cmo parse.cmo \
   ccomp.cmo ast_mapper.cmo pparse.cmo compenv.cmo builtin_attributes.cmo
@@ -67,7 +67,7 @@ install::
 
 CSLPROF=ocamlprof.cmo
 CSLPROF_IMPORTS=misc.cmo config.cmo identifiable.cmo numbers.cmo \
-  clflags.cmo terminfo.cmo \
+  arg_helper.cmo clflags.cmo terminfo.cmo \
   warnings.cmo location.cmo longident.cmo docstrings.cmo \
   syntaxerr.cmo ast_helper.cmo parser.cmo lexer.cmo parse.cmo
 
@@ -75,10 +75,12 @@ ocamlprof: $(CSLPROF) profiling.cmo
 	$(CAMLC) $(LINKFLAGS) -o ocamlprof $(CSLPROF_IMPORTS) $(CSLPROF)
 
 ocamlcp: ocamlcp.cmo
-	$(CAMLC) $(LINKFLAGS) -o ocamlcp warnings.cmo main_args.cmo ocamlcp.cmo
+	$(CAMLC) $(LINKFLAGS) -o ocamlcp warnings.cmo misc.cmo config.cmo \
+                 identifiable.cmo numbers.cmo arg_helper.cmo clflags.cmo main_args.cmo ocamlcp.cmo
 
 ocamloptp: ocamloptp.cmo
-	$(CAMLC) $(LINKFLAGS) -o ocamloptp warnings.cmo main_args.cmo \
+	$(CAMLC) $(LINKFLAGS) -o ocamloptp warnings.cmo misc.cmo config.cmo \
+                 identifiable.cmo numbers.cmo arg_helper.cmo clflags.cmo main_args.cmo \
 	         ocamloptp.cmo
 
 opt:: profiling.cmx
@@ -160,7 +162,7 @@ clean::
 
 # Insert labels following an interface file (upgrade 3.02 to 3.03)
 
-ADDLABELS_IMPORTS=misc.cmo config.cmo clflags.cmo \
+ADDLABELS_IMPORTS=misc.cmo config.cmo arg_helper.cmo clflags.cmo \
   identifiable.cmo numbers.cmo terminfo.cmo \
   warnings.cmo location.cmo longident.cmo docstrings.cmo \
   syntaxerr.cmo ast_helper.cmo parser.cmo lexer.cmo parse.cmo

@@ -86,7 +86,9 @@ module Options = Main_args.Make_optcomp_options (struct
   let _i () = print_types := true; compile_only := true
   let _I dir = include_dirs := dir :: !include_dirs
   let _impl = impl
-  let _inline n = inline_threshold := n * 8
+  let _inline spec =
+    Float_arg_helper.parse spec ~update:inline_threshold
+      ~help_text:"Syntax: -inline <n>"
   let _intf = intf
   let _intf_suffix s = Config.interface_suffix := s
   let _keep_docs = set keep_docs
