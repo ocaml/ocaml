@@ -132,9 +132,9 @@ class printer  ()= object(self:'self)
     ?last:space_formatter -> (Format.formatter -> 'a -> unit) ->
     Format.formatter -> 'a list -> unit
         = fun  ?sep ?first  ?last fu f xs ->
-          let first = match first with Some x -> x |None -> ""
-          and last = match last with Some x -> x |None -> ""
-          and sep = match sep with Some x -> x |None -> "@ " in
+          let first = match first with Some x -> x |None -> ("" : _ format6)
+          and last = match last with Some x -> x |None -> ("" : _ format6)
+          and sep = match sep with Some x -> x |None -> ("@ " : _ format6) in
           let aux f = function
             | [] -> ()
             | [x] -> fu f x
@@ -149,14 +149,14 @@ class printer  ()= object(self:'self)
   method option : 'a. ?first:space_formatter -> ?last:space_formatter ->
     (Format.formatter -> 'a -> unit) -> Format.formatter -> 'a option -> unit =
       fun  ?first  ?last fu f a ->
-        let first = match first with Some x -> x | None -> ""
-        and last = match last with Some x -> x | None -> "" in
+        let first = match first with Some x -> x | None -> ("" : _ format6)
+        and last = match last with Some x -> x | None -> ("" : _ format6) in
         match a with
         | None -> ()
         | Some x -> pp f first; fu f x; pp f last;
   method paren: 'a . ?first:space_formatter -> ?last:space_formatter ->
     bool -> (Format.formatter -> 'a -> unit) -> Format.formatter -> 'a -> unit =
-    fun  ?(first="") ?(last="") b fu f x ->
+    fun  ?(first=("" : _ format6)) ?(last=("" : _ format6)) b fu f x ->
       if b then (pp f "("; pp f first; fu f x; pp f last; pp f ")")
       else fu f x
 

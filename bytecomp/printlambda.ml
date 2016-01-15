@@ -260,6 +260,7 @@ let primitive ppf = function
   | Pbswap16 -> fprintf ppf "bswap16"
   | Pbbswap(bi) -> print_boxed_integer "bswap" ppf bi
   | Pint_as_pointer -> fprintf ppf "int_as_pointer"
+  | Popaque -> fprintf ppf "opaque"
 
 let name_of_primitive = function
   | Pidentity -> "Pidentity"
@@ -354,6 +355,7 @@ let name_of_primitive = function
   | Pbswap16 -> "Pbswap16"
   | Pbbswap _ -> "Pbbswap"
   | Pint_as_pointer -> "Pint_as_pointer"
+  | Popaque -> "Popaque"
 
 let function_attribute ppf { inline; is_a_functor } =
   if is_a_functor then

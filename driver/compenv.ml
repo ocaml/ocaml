@@ -186,6 +186,7 @@ let read_OCAMLPARAM ppf position =
       | "nodynlink" -> clear "nodynlink" [ dlcode ] v
       | "short-paths" -> clear "short-paths" [ real_paths ] v
       | "trans-mod" -> set "trans-mod" [ transparent_modules ] v
+      | "opaque" -> set "opaque" [ opaque ] v
 
       | "pp" -> preprocessor := Some v
       | "runtime-variant" -> runtime_variant := v

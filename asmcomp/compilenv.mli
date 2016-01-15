@@ -65,7 +65,7 @@ val new_structured_constant:
   shared:bool -> (* can be shared with another structually equal constant *)
   string
 val structured_constants:
-  unit -> (string * bool * Clambda.ustructured_constant) list
+  unit -> Clambda.preallocated_constant list
 val clear_structured_constants: unit -> unit
 val add_exported_constant: string -> unit
 

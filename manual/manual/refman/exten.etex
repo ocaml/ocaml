@@ -447,9 +447,9 @@ For example, assuming the record type
 \end{verbatim}
 has been declared, the following expressions are equivalent:
 \begin{verbatim}
-          let x = 1 and y = 2 in { x = x; y = y }
-          let x = 1 and y = 2 in { x; y }
-          let x = 1 and y = 2 in { x = x; y }
+          let x = 1. and y = 2. in { x = x; y = y },
+          let x = 1. and y = 2. in { x; y },
+          let x = 1. and y = 2. in { x = x; y }
 \end{verbatim}
 On the object side, all following methods are equivalent:
 \begin{verbatim}
@@ -462,8 +462,8 @@ On the object side, all following methods are equivalent:
 \end{verbatim}
 Likewise, the following functions are equivalent:
 \begin{verbatim}
-          fun {x = x; y = y} -> x + y
-          fun {x; y} -> x + y
+          fun {x = x; y = y} -> x +. y
+          fun {x; y} -> x +. y
 \end{verbatim}
 
 Optionally, a record pattern can be terminated by @';' '_'@ to convey the
@@ -474,11 +474,11 @@ the compiler will warn when a record pattern fails to list all fields of
 the corresponding record type and is not terminated by @';' '_'@.
 Continuing the "point" example above,
 \begin{verbatim}
-          fun {x} -> x + 1
+          fun {x} -> x +. 1.
 \end{verbatim}
 \noindent will warn if warning 9 is on, while
 \begin{verbatim}
-          fun {x; _} -> x + 1
+          fun {x; _} -> x +. 1.
 \end{verbatim}
 \noindent will not warn.  This warning can help spot program points where
 record patterns may need to be modified after new fields are added to a
@@ -553,9 +553,10 @@ If several locally abstract types need to be introduced, it is possible to use
 the syntax
 @"fun" '(' "type" typeconstr-name_1 \ldots typeconstr-name_n ')' "->" expr@
 as syntactic sugar for @"fun" '(' "type" typeconstr-name_1 ')' "->" \ldots "->"
-'(' "type" typeconstr-name_n ')' "->" expr@. For instance,
+"fun" '(' "type" typeconstr-name_n ')' "->" expr@. For instance,
 \begin{verbatim}
-        let f = fun (type t u v) -> (foo : (t * u * v) list) -> ...
+        let f = fun (type t u v) -> fun (foo : (t * u * v) list) -> ...
+        let f' (type t u v) (foo : (t * u * v) list) = ...
 \end{verbatim}
 
 This construction is useful because the type constructors it introduces
@@ -1675,10 +1676,10 @@ module X = struct
 end
   [@@deprecated "Please use module 'Y' instead."]
 
-let x = begin[@warning "+9] ... end in ....
+let x = begin[@warning "+9"] ... end in ....
 
 type t = A | B
-  [@@deprecated "Please use type 's' instead.]
+  [@@deprecated "Please use type 's' instead."]
 
 let f x =
   assert (x >= 0) [@ppwarning "TODO: remove this later"];
@@ -1801,8 +1802,11 @@ type t = ..
 type t += X of int | Y of string
 let x = [%extension_constructor X]
 let y = [%extension_constructor Y]
-let () = assert (x <> y)
 \end{verbatim}
+\caml
+\? x <> y;;
+\:- : bool = true
+\endcaml
 
 \section{Quoted strings}\label{s:quoted-strings}
 

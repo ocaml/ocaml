@@ -24,14 +24,26 @@ external magic : 'a -> 'b = "%identity"
 external is_block : t -> bool = "caml_obj_is_block"
 external is_int : t -> bool = "%obj_is_int"
 external tag : t -> int = "caml_obj_tag"
-external set_tag : t -> int -> unit = "caml_obj_set_tag"
 external size : t -> int = "%obj_size"
 external field : t -> int -> t = "%obj_field"
 
 (** When using flambda:
+
     [set_field] MUST NOT be called on immutable blocks.  (Blocks allocated
-    in C stubs, or with [new_block] below, are always considered mutable.) *)
+    in C stubs, or with [new_block] below, are always considered mutable.)
+
+    The same goes for [set_double_field] and [set_tag].  However, for
+    [set_tag], in the case of immutable blocks where the middle-end optimizers
+    never see code that discriminates on their tag (for example records), the
+    operation should be safe.  Such uses are nonetheless discouraged.
+
+    For experts only:
+    [set_field] et al can be made safe by first wrapping the block in
+    [Sys.opaque_identity], so any information about its contents will not
+    be propagated.
+*)
 external set_field : t -> int -> t -> unit = "%obj_set_field"
+external set_tag : t -> int -> unit = "caml_obj_set_tag"
 
 val double_field : t -> int -> float  (* @since 3.11.2 *)
 val set_double_field : t -> int -> float -> unit  (* @since 3.11.2 *)
