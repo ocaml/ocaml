@@ -2571,9 +2571,9 @@ let transl_all_functions_and_emit_all_constants cont =
   in
   aux StringSet.empty cont
 
-(* Build the table of GC roots for toplevel modules *)
+(* Build the NULL terminated array of gc roots *)
 
-let emit_module_roots_table ~symbols cont =
+let emit_gc_roots_table ~symbols cont =
   let table_symbol = Compilenv.make_symbol (Some "gc_roots") in
   Cdata(Cglobal_symbol table_symbol ::
         Cdefine_symbol table_symbol ::
@@ -2609,7 +2609,7 @@ let emit_preallocated_blocks preallocated_blocks cont =
     List.map (fun ({ Clambda.symbol }:Clambda.preallocated_block) -> symbol)
       preallocated_blocks
   in
-  let c1 = emit_module_roots_table ~symbols cont in
+  let c1 = emit_gc_roots_table ~symbols cont in
   List.fold_left preallocate_block c1 preallocated_blocks
 
 (* Translate a compilation unit *)
