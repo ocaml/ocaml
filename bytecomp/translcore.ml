@@ -865,10 +865,10 @@ and transl_exp0 e =
                code operating on polymorphic arrays, or functions such as
                [caml_array_blit].
                To avoid having different Lambda code for bytecode/Closure vs.
-               flambda, we always generate [Pduparray] here, and deal with it in
+               Flambda, we always generate [Pduparray] here, and deal with it in
                [Bytegen] (or in the case of Closure, in [Cmmgen], which already
                has to handle [Pduparray Pmakearray Pfloatarray] in the case where
-               the array turned out to be inconstant.
+               the array turned out to be inconstant).
                When not [Pfloatarray], the exception propagates to the handler
                below. *)
             let imm_array = Lprim (Pmakearray (kind, Immutable), ll) in

@@ -1507,7 +1507,12 @@ let rec transl env e =
              1. When using Closure, all the time.
              2. When using Flambda, if a float array longer than
              [Translcore.use_dup_for_constant_arrays_bigger_than] turns out
-             to be non-constant. *)
+             to be non-constant.
+             If for some reason Flambda fails to lift a constant array we
+             could in theory also end up here.
+             Note that [kind] above is unconstrained, but with the current
+             state of [Translcore], we will in fact only get here with
+             [Pfloatarray]s. *)
           assert (kind = kind');
           transl_make_array env kind args
       | (Pduparray _, [arg]) ->
