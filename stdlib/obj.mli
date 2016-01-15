@@ -38,7 +38,7 @@ external field : t -> int -> t = "%obj_field"
     operation should be safe.  Such uses are nonetheless discouraged.
 
     For experts only:
-    [set_field] can be made safe by first wrapping the block in
+    [set_field] et al can be made safe by first wrapping the block in
     [Sys.opaque_identity], so any information about its contents will not
     be propagated.
 *)
