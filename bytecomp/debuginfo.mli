@@ -37,5 +37,6 @@ val from_raise: Lambda.lambda_event -> t
 
 val to_location: t -> Location.t
 
+val concat: t -> t -> t
 val inline: Location.t -> t -> t
 val unroll_inline_chain : t -> t * t list

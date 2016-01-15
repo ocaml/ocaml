@@ -41,6 +41,7 @@ module Env = struct
     actively_unrolling : int Set_of_closures_origin.Map.t;
     closure_depth : int;
     inlining_stats_closure_stack : Inlining_stats.Closure_stack.t;
+    inlined_debuginfo : Debuginfo.t;
   }
 
   let create ~never_inline ~backend ~round =
@@ -63,6 +64,7 @@ module Env = struct
       closure_depth = 0;
       inlining_stats_closure_stack =
         Inlining_stats.Closure_stack.create ();
+      inlined_debuginfo = Debuginfo.none;
     }
 
   let backend t = t.backend
@@ -73,6 +75,7 @@ module Env = struct
       approx = Variable.Map.empty;
       projections = Projection.Map.empty;
       freshening = Freshening.empty_preserving_activation_state env.freshening;
+      inlined_debuginfo = Debuginfo.none;
     }
 
   let inlining_level_up env =
@@ -395,6 +398,12 @@ module Env = struct
   let record_decision t decision =
     Inlining_stats.record_decision decision
       ~closure_stack:t.inlining_stats_closure_stack
+
+  let inline_debuginfo t ~dbg =
+    { t with inlined_debuginfo = Debuginfo.concat dbg t.inlined_debuginfo }
+
+  let add_inlined_debuginfo t ~dbg =
+    Debuginfo.concat t.inlined_debuginfo dbg
 end
 
 let initial_inlining_threshold ~round : Inlining_cost.Threshold.t =
