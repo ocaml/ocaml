@@ -1803,8 +1803,8 @@ and transl_prim_1 env p arg dbg =
       tag_int (Cop(Cextcall("caml_bswap16_direct", typ_int, false,
                             Debuginfo.none),
                    [untag_int (transl env arg)]))
-  | _ ->
-      fatal_error "Cmmgen.transl_prim_1"
+  | prim ->
+      fatal_errorf "Cmmgen.transl_prim_1: %a" Printlambda.primitive prim
 
 and transl_prim_2 env p arg1 arg2 dbg =
   match p with
@@ -2075,8 +2075,8 @@ and transl_prim_2 env p arg1 arg2 dbg =
       tag_int (Cop(Ccmpi(transl_comparison cmp),
                      [transl_unbox_int env bi arg1;
                       transl_unbox_int env bi arg2]))
-  | _ ->
-      fatal_error "Cmmgen.transl_prim_2"
+  | prim ->
+      fatal_errorf "Cmmgen.transl_prim_2: %a" Printlambda.primitive prim
 
 and transl_prim_3 env p arg1 arg2 arg3 dbg =
   match p with
@@ -2212,8 +2212,8 @@ and transl_prim_3 env p arg1 arg2 arg3 dbg =
                                           (Cconst_int 7)) idx
                       (unaligned_set_64 ba_data idx newval))))))
 
-  | _ ->
-    fatal_error "Cmmgen.transl_prim_3"
+  | prim ->
+      fatal_errorf "Cmmgen.transl_prim_3: %a" Printlambda.primitive prim
 
 and transl_unbox_float env = function
     Uconst(Uconst_ref(_, Some (Uconst_float f))) -> Cconst_float f
