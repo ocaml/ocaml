@@ -858,24 +858,32 @@ and transl_exp0 e =
         then begin
           raise Not_constant
         end;
-        (* We cannot currently lift [Pintarray] arrays safely in Flambda
-           because [caml_modify] might be called upon them (e.g. from
-           code operating on polymorphic arrays, or functions such as
-           [caml_array_blit]. *)
-        if !Clflags.native_code && kind = Pfloatarray then
-          let imm_array = Lprim (Pmakearray (kind, Immutable), ll) in
-          Lprim (Pduparray (kind, Mutable), [imm_array])
-        else begin
-          let cl = List.map extract_constant ll in
-          let master =
-            match kind with
-            | Paddrarray | Pintarray ->
-                Lconst(Const_block(0, cl))
-            | Pfloatarray ->
-                Lconst(Const_float_array(List.map extract_float cl))
-            | Pgenarray ->
-                raise Not_constant in             (* can this really happen? *)
-          Lprim(Pccall prim_obj_dup, [master])
+        begin match List.map extract_constant ll with
+        | exception Not_constant when kind = Pfloatarray ->
+            (* We cannot currently lift [Pintarray] arrays safely in Flambda
+               because [caml_modify] might be called upon them (e.g. from
+               code operating on polymorphic arrays, or functions such as
+               [caml_array_blit].
+               To avoid having different Lambda code for bytecode/Closure vs.
+               flambda, we always generate [Pduparray] here, and deal with it in
+               [Bytegen] (or in the case of Closure, in [Cmmgen], which already
+               has to handle [Pduparray Pmakearray Pfloatarray] in the case where
+               the array turned out to be inconstant.
+               When not [Pfloatarray], the exception propagates to the handler
+               below. *)
+            let imm_array = Lprim (Pmakearray (kind, Immutable), ll) in
+            Lprim (Pduparray (kind, Mutable), [imm_array])
+        | cl ->
+            let imm_array =
+              match kind with
+              | Paddrarray | Pintarray ->
+                  Lconst(Const_block(0, cl))
+              | Pfloatarray ->
+                  Lconst(Const_float_array(List.map extract_float cl))
+              | Pgenarray ->
+                  raise Not_constant                (* can this really happen? *)
+            in
+            Lprim (Pduparray (kind, Mutable), [imm_array])
         end
       with Not_constant ->
         Lprim(Pmakearray (kind, Mutable), ll)

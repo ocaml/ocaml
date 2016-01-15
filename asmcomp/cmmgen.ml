@@ -1502,8 +1502,13 @@ let rec transl env e =
           make_alloc tag (List.map (transl env) args)
       | (Pccall prim, args) ->
           transl_ccall env prim args dbg
-      | (Pduparray (Pfloatarray as kind, _),
-            [Uprim (Pmakearray (Pfloatarray, _), args, _dbg)]) ->
+      | (Pduparray (kind, _), [Uprim (Pmakearray (kind', _), args, _dbg)]) ->
+          (* We arrive here in two cases:
+             1. When using Closure, all the time.
+             2. When using Flambda, if a float array longer than
+             [Translcore.use_dup_for_constant_arrays_bigger_than] turns out
+             to be non-constant. *)
+          assert (kind = kind');
           transl_make_array env kind args
       | (Pduparray _, [arg]) ->
           let prim_obj_dup =
