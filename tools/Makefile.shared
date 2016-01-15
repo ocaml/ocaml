@@ -101,7 +101,7 @@ clean::
 # To help building mixed-mode libraries (OCaml + C)
 
 ocamlmklib: ocamlmklibconfig.cmo ocamlmklib.cmo
-	$(CAMLC) $(LINKFLAGS) -o ocamlmklib ocamlmklibconfig.cmo ocamlmklib.cmo
+	$(CAMLC) $(LINKFLAGS) -o ocamlmklib ocamlmklibconfig.cmo config.cmo ocamlmklib.cmo
 
 install::
 	cp ocamlmklib $(INSTALL_BINDIR)/ocamlmklib$(EXE)
@@ -109,12 +109,9 @@ install::
 clean::
 	rm -f ocamlmklib
 
-ocamlmklibconfig.ml:: ../config/Makefile Makefile
+ocamlmklibconfig.ml: ../config/Makefile Makefile
 	(echo 'let bindir = "$(BINDIR)"'; \
-         echo 'let ext_lib = "$(EXT_LIB)"'; \
-         echo 'let ext_dll = "$(EXT_DLL)"'; \
          echo 'let supports_shared_libraries = $(SUPPORTS_SHARED_LIBRARIES)';\
-         echo 'let mkdll = "$(MKDLL)"'; \
          echo 'let byteccrpath = "$(BYTECCRPATH)"'; \
          echo 'let nativeccrpath = "$(NATIVECCRPATH)"'; \
          echo 'let mksharedlibrpath = "$(MKSHAREDLIBRPATH)"'; \

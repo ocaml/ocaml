@@ -22,17 +22,6 @@ OCAMLMKTOP_IMPORTS=misc.cmo identifiable.cmo numbers.cmo config.cmo clflags.cmo 
 ocamlmktop: $(OCAMLMKTOP)
 	$(CAMLC) $(LINKFLAGS) -o ocamlmktop $(OCAMLMKTOP_IMPORTS) $(OCAMLMKTOP)
 
-ocamlmklibconfig.ml:: ../config/Makefile Makefile
-	echo "let mkdll = try \
-                let flexlink = \
-                  let flexlink = Sys.getenv \"OCAML_FLEXLINK\" in \
-                  let f i = \
-                    let c = flexlink.[i] in \
-                    if c = '/' then '\\\\' else c in \
-                  (String.init (String.length flexlink) f) ^ \" $(FLEXLINK_FLAGS)\" in \
-                Printf.sprintf \"%s %s\" flexlink \"$(FLEXLINK_FLAGS)\" \
-              with Not_found -> mkdll">> $@
-
 install::
 	cp ocamlmktop $(INSTALL_BINDIR)/ocamlmktop$(EXE)
 

@@ -244,9 +244,9 @@ let build_libs () =
     if !dynlink then begin
       let retcode = command
           (Printf.sprintf "%s %s -o %s %s %s %s %s %s"
-             mkdll
+             Config.mkdll
              (if !debug then "-g" else "")
-             (prepostfix "dll" !output_c ext_dll)
+             (prepostfix "dll" !output_c Config.ext_dll)
              (String.concat " " !c_objs)
              (String.concat " " !c_opts)
              (String.concat " " !ld_opts)
@@ -256,9 +256,9 @@ let build_libs () =
       in
       if retcode <> 0 then if !failsafe then dynlink := false else exit 2
     end;
-    safe_remove (prepostfix "lib" !output_c ext_lib);
+    safe_remove (prepostfix "lib" !output_c Config.ext_lib);
     scommand
-      (mklib (prepostfix "lib" !output_c ext_lib)
+      (mklib (prepostfix "lib" !output_c Config.ext_lib)
              (String.concat " " !c_objs) "");
   end;
   if !bytecode_objs <> [] then
