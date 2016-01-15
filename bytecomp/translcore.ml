@@ -1212,10 +1212,7 @@ and transl_record env all_labels repres lbl_expr_list opt_init_expr =
         | Record_regular -> Lconst(Const_block(0, cl))
         | Record_inlined tag -> Lconst(Const_block(tag, cl))
         | Record_float ->
-            if !Clflags.native_code then
-              Lprim (Pmakearray (Pfloatarray, Immutable), ll)
-            else
-              Lconst(Const_float_array(List.map extract_float cl))
+            Lconst(Const_float_array(List.map extract_float cl))
         | Record_extension ->
             raise Not_constant
       with Not_constant ->
