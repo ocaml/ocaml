@@ -566,7 +566,7 @@ let transl_implementation_flambda module_name (str, cc) =
   Hashtbl.clear used_primitives;
   let module_id = Ident.create_persistent module_name in
   let body, size =
-    transl_label_init
+    Translobj.transl_label_init
       (fun () -> transl_struct [] cc (global_path module_id) str)
   in
   module_id, (wrap_globals body, size)
