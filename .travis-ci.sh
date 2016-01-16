@@ -29,7 +29,7 @@ control.
 ------------------------------------------------------------------------
 EOF
     mkdir -p $PREFIX
-    ./configure --prefix $PREFIX
+    ./configure --prefix $PREFIX -with-debug-runtime -with-instrumented-runtime
     export PATH=$PREFIX/bin:$PATH
     make world.opt
     make install
