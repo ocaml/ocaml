@@ -66,8 +66,7 @@ one_ml:
 	./$(NAME).exe && echo " => passed" || echo " => failed"
 
 one:
-	@set -o pipefail ; \
-	$(call CC,$(NAME).out $(ARGS_$(NAME)) $(NAME).$(O) $(ARCH).$(O)) \
+	@$(call CC,$(NAME).out $(ARGS_$(NAME)) $(NAME).$(O) $(ARCH).$(O)) \
 	&& echo " => passed" || echo " => failed"
 
 clean: defaultclean
@@ -78,7 +77,7 @@ clean: defaultclean
 include $(BASEDIR)/makefiles/Makefile.common
 
 ifeq ($(CCOMPTYPE),msvc)
-CC=$(NATIVECC) $(CFLAGS) /Fe$(1) | tail -n +2
+CC=set -o pipefail ; $(NATIVECC) $(CFLAGS) /Fe$(1) | tail -n +2
 CFLAGS=$(NATIVECCCOMPOPTS)
 else
 CC=$(NATIVECC) $(CFLAGS) -o $(1)
