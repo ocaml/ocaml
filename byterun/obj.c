@@ -44,7 +44,7 @@ CAMLprim value caml_static_resize(value blk, value new_size)
   return (value) caml_stat_resize((char *) blk, (asize_t) Long_val(new_size));
 }
 
-// unused since GPR#427
+/* unused since GPR#427 */
 CAMLprim value caml_obj_is_block(value arg)
 {
   return Val_bool(Is_block(arg));

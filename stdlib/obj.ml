@@ -21,8 +21,8 @@ external repr : 'a -> t = "%identity"
 external obj : t -> 'a = "%identity"
 external magic : 'a -> 'b = "%identity"
 external is_int : t -> bool = "%obj_is_int"
-let is_block a = is_int a |> not
-  [@@ocaml.inline]
+let is_block a = not (is_int a)
+  [@@inline always]
 external tag : t -> int = "caml_obj_tag"
 external set_tag : t -> int -> unit = "caml_obj_set_tag"
 external size : t -> int = "%obj_size"
@@ -32,7 +32,9 @@ external set_field : t -> int -> t -> unit = "%obj_set_field"
 external array_get: 'a array -> int -> 'a = "%array_safe_get"
 external array_set: 'a array -> int -> 'a -> unit = "%array_safe_set"
 let double_field x i = array_get (obj x : float array) i
+  [@@inline always]
 let set_double_field x i v = array_set (obj x : float array) i v
+  [@@inline always]
 external new_block : int -> int -> t = "caml_obj_block"
 external dup : t -> t = "caml_obj_dup"
 external truncate : t -> int -> unit = "caml_obj_truncate"
@@ -79,9 +81,11 @@ let extension_constructor x =
     if (tag name) = string_tag then (obj slot : extension_constructor)
     else invalid_arg "Obj.extension_constructor"
 
+[@@inline always]
 let extension_name (slot : extension_constructor) =
   (obj (field (repr slot) 0) : string)
 
+[@@inline always]
 let extension_id (slot : extension_constructor) =
   (obj (field (repr slot) 1) : int)
 
