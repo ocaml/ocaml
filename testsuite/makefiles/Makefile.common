@@ -43,7 +43,17 @@ SET_LD_PATH=CAML_LD_LIBRARY_PATH="$(LD_PATH)"
 
 include $(TOPDIR)/config/Makefile
 
-OCAMLRUN=$(TOPDIR)/boot/ocamlrun$(EXE)
+ifneq ($(USE_RUNTIME),)
+#Check USE_RUNTIME value
+ifeq ($(findstring $(USE_RUNTIME),d i),)
+$(error If set, USE_RUNTIME must be equal to "d" (debug runtime) or "i" (instrumented runtime))
+endif
+
+RUNTIME_VARIANT=-I $(OTOPDIR)/asmrun -I $(OTOPDIR)/byterun -runtime-variant $(USE_RUNTIME)
+export OCAMLRUNPARAM?=v=0
+endif
+
+OCAMLRUN=$(TOPDIR)/byterun/ocamlrun$(USE_RUNTIME)$(EXE)
 
 OCFLAGS=-nostdlib -I $(OTOPDIR)/stdlib $(COMPFLAGS)
 OCOPTFLAGS=
@@ -57,15 +67,15 @@ endif
 OCAML=$(OCAMLRUN) $(OTOPDIR)/ocaml $(OCFLAGS) \
       -init $(OTOPDIR)/testsuite/lib/empty
 FLEXLINK_PREFIX=$(if $(FLEXLINK),$(if $(wildcard $(TOPDIR)/flexdll/Makefile),OCAML_FLEXLINK="$(WINTOPDIR)/boot/ocamlrun $(WINTOPDIR)/flexdll/flexlink.exe" ))
-OCAMLC=$(FLEXLINK_PREFIX)$(OCAMLRUN) $(OTOPDIR)/ocamlc $(CUSTOM) $(OCFLAGS)
-OCAMLOPT=$(FLEXLINK_PREFIX)$(OCAMLRUN) $(OTOPDIR)/ocamlopt $(OCFLAGS)
+OCAMLC=$(FLEXLINK_PREFIX)$(OCAMLRUN) $(OTOPDIR)/ocamlc $(CUSTOM) $(OCFLAGS) $(RUNTIME_VARIANT)
+OCAMLOPT=$(FLEXLINK_PREFIX)$(OCAMLRUN) $(OTOPDIR)/ocamlopt $(OCFLAGS) $(RUNTIME_VARIANT)
 OCAMLDOC=$(OCAMLRUN) $(OTOPDIR)/ocamldoc/ocamldoc
 OCAMLLEX=$(OCAMLRUN) $(OTOPDIR)/lex/ocamllex
 OCAMLMKLIB=$(FLEXLINK_PREFIX)$(OCAMLRUN) $(OTOPDIR)/tools/ocamlmklib \
-		       -ocamlc "$(OTOPDIR)/boot/ocamlrun$(EXE) \
-		                $(OTOPDIR)/ocamlc $(OCFLAGS)" \
-		       -ocamlopt "$(OTOPDIR)/boot/ocamlrun$(EXE) \
-		                  $(OTOPDIR)/ocamlopt $(OCFLAGS)"
+		       -ocamlc "$(OTOPDIR)/byterun/ocamlrun$(USE_RUNTIME)$(EXE) \
+		                $(OTOPDIR)/ocamlc $(OCFLAGS) $(RUNTIME_VARIANT)" \
+		       -ocamlopt "$(OTOPDIR)/byterun/ocamlrun$(USE_RUNTIME)$(EXE) \
+		                  $(OTOPDIR)/ocamlopt $(OCFLAGS) $(RUNTIME_VARIANT)"
 OCAMLYACC=$(TOPDIR)/yacc/ocamlyacc$(EXE)
 OCAMLBUILD=$(TOPDIR)/_build/ocamlbuild/ocamlbuild.native
 DUMPOBJ=$(OCAMLRUN) $(OTOPDIR)/tools/dumpobj
