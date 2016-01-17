@@ -117,18 +117,26 @@ END {
     }else{
         if (!retries){
             for (key in RESULTS){
-                switch (RESULTS[key]) {
-                case "p":
+                r = RESULTS[key];
+                if (r == "p"){
                     ++ passed;
-                    break
-                case "f":
+                }else if (r == "f"){
                     ++ failed;
                     fail[failidx++] = key;
-                    break
-                case "e":
+                }else if (r == "e"){
                     ++ unexped;
                     unexp[unexpidx++] = key;
-                    break
+                }else if (r == "s"){
+                    ++ skipped;
+                    curdir = DIRS[key];
+                    if (curdir in SKIPPED){
+                        if (SKIPPED[curdir]){
+                            SKIPPED[curdir] = 0;
+                            skips[skipidx++] = curdir;
+                        }
+                    }else{
+                        skips[skipidx++] = key;
+                    }
                 }
             }
             printf("\n");
