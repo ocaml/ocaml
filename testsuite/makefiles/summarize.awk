@@ -25,6 +25,7 @@ function clear() {
 function record_pass() {
     check();
     RESULTS[key] = "p";
+    delete SKIPPED[curdir];
     clear();
 }
 
@@ -38,16 +39,18 @@ function record_skip() {
 # but then fails in a re-run triggered by a different test, ignore it.
 function record_fail() {
     check();
-    if (!(key in RESULTS)){
+    if (!(key in RESULTS) || RESULTS[key] == "s"){
         RESULTS[key] = "f";
     }
+    delete SKIPPED[curdir];
     clear();
 }
 
 function record_unexp() {
-    if (!(key in RESULTS)){
+    if (!(key in RESULTS) || RESULTS[key] == "s"){
         RESULTS[key] = "e";
     }
+    delete SKIPPED[curdir];
     clear();
 }
 
@@ -55,6 +58,7 @@ function record_unexp() {
     if (in_test) record_unexp();
     match($0, /Running tests from '[^']*'/);
     curdir = substr($0, RSTART+20, RLENGTH - 21);
+    SKIPPED[curdir] = 1;
     key = curdir;
     DIRS[key] = key;
     curfile = "";
@@ -74,7 +78,7 @@ function record_unexp() {
     in_test = 1;
 }
 
-/^ ... testing with / {
+/^ ... testing (with|[^'])/ {
     if (in_test) record_unexp();
     key = curdir;
     DIRS[key] = curdir;
@@ -106,9 +110,6 @@ function record_unexp() {
         ++ reran;
     }
 }
-
-# Not displaying "skipped" for the moment, as most of the skipped tests
-# print nothing at all and are not counted.
 
 END {
     if (errored){
@@ -142,8 +143,10 @@ END {
             printf("\n");
             printf("Summary:\n");
             printf("  %3d test(s) passed\n", passed);
+            printf("  %3d test(s) skipped\n", skipped);
             printf("  %3d test(s) failed\n", failed);
             printf("  %3d unexpected error(s)\n", unexped);
+            printf("  %3d tests considered%s\n", length(RESULTS), (length(RESULTS) != passed + skipped + failed + unexped ? " (totals don't add up??)": ""));
             if (reran != 0){
                 printf("  %3d test dir re-run(s)\n", reran);
             }
@@ -154,6 +157,10 @@ END {
             if (unexped != 0){
                 printf("\nList of unexpected errors:\n");
                 for (i=0; i < unexped; i++) printf("    %s\n", unexp[i]);
+            }
+            if (skipped != 0){
+                printf("\nList of skipped tests:\n");
+                for (i=0; i < skipidx; i++) printf("    %s\n", skips[i]);
             }
             printf("\n");
             if (failed || unexped){

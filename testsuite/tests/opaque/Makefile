@@ -14,9 +14,16 @@ BASEDIR=../..
 
 .PHONY: default
 default:
-	@if $(BYTECODE_ONLY); then : ; else \
+	@if $(BYTECODE_ONLY); then $(MAKE) skip ; else \
 	  $(MAKE) compile; \
 	fi
+
+.PHONY: skip
+skip:
+	@echo " ... testing 'test' with ordinary compilation => skipped"
+	@echo " ... testing 'test' with change to opaque interface => skipped"
+	@echo " ... testing 'test' with change to opaque implementation => skipped"
+	@echo " ... testing 'test' with change to non-opaque implementation => skipped"
 
 .PHONY: compile
 compile:

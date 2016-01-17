@@ -52,7 +52,7 @@ run:
 	    echo " => unexpected error"; \
 	  fi; \
 	  fn=`basename $$f bytecode`native; \
-	  if $(BYTECODE_ONLY) || [ ! -f "$${fn}$(EXE)" ] ; then : ; else \
+	  if $(BYTECODE_ONLY) || [ ! -f "$${fn}$(EXE)" ] ; then echo " ... testing '$$fn': => skipped" ; else \
 	    printf " ... testing '$$fn':"; \
 	    if [ $$ul -eq 1 ] ; then \
 	      ./$${fn}$(EXE) >$$fn.result 2>&1 || true; \
