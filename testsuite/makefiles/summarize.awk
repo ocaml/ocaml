@@ -142,13 +142,13 @@ END {
             }
             printf("\n");
             printf("Summary:\n");
-            printf("  %3d test(s) passed\n", passed);
-            printf("  %3d test(s) skipped\n", skipped);
-            printf("  %3d test(s) failed\n", failed);
-            printf("  %3d unexpected error(s)\n", unexped);
+            printf("  %3d test%s passed\n", passed, (passed == 1 ? "" : "s"));
+            printf("  %3d test%s skipped\n", skipped, (skipped == 1 ? "" : "s"));
+            printf("  %3d test%s failed\n", failed, (failed == 1 ? "" : "s"));
+            printf("  %3d unexpected error%s\n", unexped, (unexped == 1 ? "" : "s"));
             printf("  %3d tests considered%s\n", length(RESULTS), (length(RESULTS) != passed + skipped + failed + unexped ? " (totals don't add up??)": ""));
             if (reran != 0){
-                printf("  %3d test dir re-run(s)\n", reran);
+                printf("  %3d test dir re-run%s\n", reran, (reran == 1 ? "" : "s"));
             }
             if (failed != 0){
                 printf("\nList of failed tests:\n");
@@ -164,7 +164,7 @@ END {
             }
             printf("\n");
             if (failed || unexped){
-                printf("#### Some tests failed. Exiting with error status.\n\n");
+                printf("#### Something failed. Exiting with error status.\n\n");
                 exit 4;
             }
         }else{
