@@ -32,6 +32,7 @@ function record_pass() {
 function record_skip() {
     check();
     RESULTS[key] = "s";
+    if (curdir in SKIPPED) SKIPPED[curdir] = 1;
     clear();
 }
 
@@ -58,7 +59,8 @@ function record_unexp() {
     if (in_test) record_unexp();
     match($0, /Running tests from '[^']*'/);
     curdir = substr($0, RSTART+20, RLENGTH - 21);
-    SKIPPED[curdir] = 1;
+    # Use SKIPPED[curdir] as a sentintel to detect no output
+    SKIPPED[curdir] = 0;
     key = curdir;
     DIRS[key] = key;
     curfile = "";
@@ -117,6 +119,13 @@ END {
         exit (3);
     }else{
         if (!retries){
+            for (key in SKIPPED){
+                if (!SKIPPED[key]){
+                    ++ empty;
+                    blanks[emptyidx++] = key;
+                    delete SKIPPED[key];
+                }
+            }
             for (key in RESULTS){
                 r = RESULTS[key];
                 if (r == "p"){
@@ -161,6 +170,10 @@ END {
             if (skipped != 0){
                 printf("\nList of skipped tests:\n");
                 for (i=0; i < skipidx; i++) printf("    %s\n", skips[i]);
+            }
+            if (empty != 0){
+                printf("\nList of directories returning no results:\n");
+                for (i=0; i < empty; i++) printf("    %s\n", blanks[i]);
             }
             printf("\n");
             if (failed || unexped){
