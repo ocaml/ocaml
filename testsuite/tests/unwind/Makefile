@@ -3,7 +3,7 @@ default:
 
 native_macosx_tests:
 	@printf " ... testing stack unwinding:"; \
-        $(MAKE) clean; $(MAKE) unwind_test && \
+        $(MAKE) clean ; $(MAKE) unwind_test && \
 	./unwind_test >/dev/null 2>&1 && echo " => passed" || echo " => failed"
 
 unwind_test:
@@ -14,6 +14,6 @@ unwind_test:
 	@ocamlopt -cclib -Wl,-keep_dwarf_unwind -o unwind_test mylib.cmx driver.cmx stack_walker.o
 
 clean:
-	@rm *.cm* *.o unwind_test > /dev/null 2>&1
+	@rm -f *.cm* *.o unwind_test
 
 include $(BASEDIR)/makefiles/Makefile.common
