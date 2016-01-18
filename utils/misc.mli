@@ -297,8 +297,6 @@ module Color : sig
 end
 
 val normalise_eol : string -> string
-(** [normalise_eol s] returns a fresh copy of [s] with any '\r' character which
-   appears before a '\n' character removed. Intended for pre-processing text
-   which will subsequently be printed on a channel which performs EOL
-   transformations (i.e. Windows) but leaves any instances of '\r' which are
-   intended for genuine carriage return. *)
+(** [normalise_eol s] returns a fresh copy of [s] with any '\r' characters
+   removed. Intended for pre-processing text which will subsequently be printed
+   on a channel which performs EOL transformations (i.e. Windows) *)

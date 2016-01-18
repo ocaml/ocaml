@@ -629,42 +629,9 @@ module Color = struct
       ()
 end
 
-(*
- * Reduce \r\n to \n. Ignore \r which is not followed by \n
- *)
 let normalise_eol s =
-  let l' = String.length s in
-  (*
-   * Compute length of final string by identifying \r which is followed by \n
-   *)
-  let l =
-    let rec g b n i =
-      if i < 0 then
-        n
-      else
-        let c = s.[i] in
-        if c = '\r' && b then
-          g false n (pred i)
-        else
-          g (c = '\n') (succ n) (pred i)
-    in
-      g false 0 (pred l') in
-  (*
-   * Number of \r characters which will be squashed
-   *)
-  let count = l' - l in
-  (*
-   * Present offset for copying from [s] to the result
-   *)
-  let offset = ref 0 in
-  let f i =
-    let ofs = !offset in
-    (*
-     * ofs < count => there are still \r to squash; therefore i + ofs is not
-     * the last character of [s].
-     *)
-    if ofs < count && s.[i + ofs] = '\r' && s.[i + ofs + 1] = '\n' then
-      incr offset;
-    s.[i + !offset]
-  in
-    String.init l f
+  let b = Buffer.create 80 in
+    for i = 0 to String.length s - 1 do
+      if s.[i] <> '\r' then Buffer.add_char b s.[i]
+    done;
+    Buffer.contents b
