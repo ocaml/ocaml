@@ -427,7 +427,6 @@ let safe_mod_bi =
 
 let test_bool = function
     Cop(Caddi, [Cop(Clsl, [c; Cconst_int 1]); Cconst_int 1]) -> c
-  | Cop(Clsl, [c; Cconst_int 1]) -> c
   | c -> Cop(Ccmpi Cne, [c; Cconst_int 1])
 
 (* Float *)
