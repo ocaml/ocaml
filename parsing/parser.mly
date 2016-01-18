@@ -79,18 +79,18 @@ let neg_string f =
 
 let mkuminus name arg =
   match name, arg.pexp_desc with
-  | "-", Pexp_constant(PConst_int (n,m)) ->
-      mkexp(Pexp_constant(PConst_int(neg_string n,m)))
-  | ("-" | "-."), Pexp_constant(PConst_float (f, m)) ->
-      mkexp(Pexp_constant(PConst_float(neg_string f, m)))
+  | "-", Pexp_constant(Pconst_integer (n,m)) ->
+      mkexp(Pexp_constant(Pconst_integer(neg_string n,m)))
+  | ("-" | "-."), Pexp_constant(Pconst_float (f, m)) ->
+      mkexp(Pexp_constant(Pconst_float(neg_string f, m)))
   | _ ->
       mkexp(Pexp_apply(mkoperator ("~" ^ name) 1, [Nolabel, arg]))
 
 let mkuplus name arg =
   let desc = arg.pexp_desc in
   match name, desc with
-  | "+", Pexp_constant(PConst_int _)
-  | ("+" | "+."), Pexp_constant(PConst_float _) -> mkexp desc
+  | "+", Pexp_constant(Pconst_integer _)
+  | ("+" | "+."), Pexp_constant(Pconst_float _) -> mkexp desc
   | _ ->
       mkexp(Pexp_apply(mkoperator ("~" ^ name) 1, [Nolabel, arg]))
 
@@ -2169,17 +2169,17 @@ label:
 /* Constants */
 
 constant:
-  | INT                               { let (n, m) = $1 in PConst_int (n, m) }
-  | CHAR                              { PConst_char $1 }
-  | STRING                            { let (s, d) = $1 in PConst_string (s, d) }
-  | FLOAT                             { let (f, m) = $1 in PConst_float (f, m) }
+  | INT                               { let (n, m) = $1 in Pconst_integer (n, m) }
+  | CHAR                              { Pconst_char $1 }
+  | STRING                            { let (s, d) = $1 in Pconst_string (s, d) }
+  | FLOAT                             { let (f, m) = $1 in Pconst_float (f, m) }
 ;
 signed_constant:
     constant                               { $1 }
-  | MINUS INT                              { let (n, m) = $2 in PConst_int("-" ^ n, m) }
-  | MINUS FLOAT                            { let (f, m) = $2 in PConst_float("-" ^ f, m) }
-  | PLUS INT                               { let (n, m) = $2 in PConst_int (n, m) }
-  | PLUS FLOAT                             { let (f, m) = $2 in PConst_float(f, m) }
+  | MINUS INT                              { let (n, m) = $2 in Pconst_integer("-" ^ n, m) }
+  | MINUS FLOAT                            { let (f, m) = $2 in Pconst_float("-" ^ f, m) }
+  | PLUS INT                               { let (n, m) = $2 in Pconst_integer (n, m) }
+  | PLUS FLOAT                             { let (f, m) = $2 in Pconst_float(f, m) }
 ;
 
 /* Identifiers and long identifiers */

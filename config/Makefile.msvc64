@@ -76,6 +76,7 @@ RUNTIMED=noruntimed
 ASM_CFI_SUPPORTED=false
 UNIXLIB=win32unix
 GRAPHLIB=win32graph
+FLAMBDA=false
 
 ########## Configuration for the bytecode compiler
 

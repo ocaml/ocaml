@@ -113,13 +113,13 @@ let fresh_name s env =
 (** Mapping functions. *)
 
 let constant = function
-  | Const_char c -> PConst_char c
-  | Const_string (s,d) -> PConst_string (s,d)
-  | Const_int i -> PConst_int (string_of_int i, None)
-  | Const_int32 i -> PConst_int (Int32.to_string i, Some 'l')
-  | Const_int64 i -> PConst_int (Int64.to_string i, Some 'L')
-  | Const_nativeint i -> PConst_int (Nativeint.to_string i, Some 'n')
-  | Const_float f -> PConst_float (f,None)
+  | Const_char c -> Pconst_char c
+  | Const_string (s,d) -> Pconst_string (s,d)
+  | Const_int i -> Pconst_integer (string_of_int i, None)
+  | Const_int32 i -> Pconst_integer (Int32.to_string i, Some 'l')
+  | Const_int64 i -> Pconst_integer (Int64.to_string i, Some 'L')
+  | Const_nativeint i -> Pconst_integer (Nativeint.to_string i, Some 'n')
+  | Const_float f -> Pconst_float (f,None)
 
 let attribute sub (s, p) = (map_loc sub s, p)
 let attributes sub l = List.map (sub.attribute sub) l
