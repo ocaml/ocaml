@@ -36,7 +36,7 @@ check:
 .PHONY: run-all
 run-all:
 	@for file in $(C_FILES); do \
-	  $(CC) $(C_INCLUDES) -c $$file.c; \
+	  $(OCAMLC) -c $(C_INCLUDES) -c $$file.c; \
 	done;
 	@for file in $(F_FILES); do \
 	  $(FORTRAN_COMPILER) -c $$file.f; \
