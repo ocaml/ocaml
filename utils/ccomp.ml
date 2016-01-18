@@ -52,7 +52,7 @@ let display_msvc_output file name =
   let c = open_in file in
   try
     let first = input_line c in
-    if first <> name then
+    if first <> Filename.basename name then
       print_string first;
     while true do
       print_string (input_line c)
