@@ -84,6 +84,8 @@ Compilers:
   (Jérémie Dimino, Alain Frisch)
 * PR#6438: Pattern guard disables exhaustiveness check
   (Alain Frisch)
+- PR#6920: fix debug informations around uses of %apply or %revapply
+  (Jérémie Dimino)
 - PR#6939: Segfault with improper use of let-rec (Alain Frisch)
 - PR#6943: native-code generator for POWER/PowerPC 64 bits, both in
   big-endian (ppc64) and little-endian (ppc64le) configuration.
@@ -136,8 +138,8 @@ Compilers:
 - GPR#319: add warning for missing cmx files, and extend -opaque option to mli
   files.
   (Leo White)
-- PR#6920: fix debug informations around uses of %apply or %revapply
-  (Jérémie Dimino)
+- GPR#388: OCAML_FLEXLINK environment variable allows overriding flexlink
+  command (David Allsopp)
 - GPR#407: don't display the name of compiled .c files when calling the
   Microsoft C Compiler (same as the assembler).
   (David Allsopp)
@@ -524,6 +526,10 @@ Features wishes:
   of a type error clash. (Hugo Heuzard)
 - GPR#383: configure: define _ALL_SOURCE for build on AIX7.1
   (tkob)
+
+Build system:
+- GPR#388: FlexDLL added as a Git submodule and bootstrappable with the compiler
+  (David Allsopp)
 
 OCaml 4.02.3 (27 Jul 2015):
 ---------------------------

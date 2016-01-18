@@ -519,6 +519,14 @@ Display a short usage summary and exit.
 %
 \end{options}
 
+\noindent
+On native Windows, the following environment variable is also consulted:
+
+\begin{options}
+\item["OCAML_FLEXLINK"]  Alternative executable to use instead of the
+configured value. Primarily used for bootstrapping.
+\end{options}
+
 \section{Modules and the file system}
 
 This short section is intended to clarify the relationship between the

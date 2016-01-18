@@ -19,6 +19,9 @@
 /* <private> */
 #include "../../config/m.h"
 #include "../../config/s.h"
+#ifdef BOOTSTRAPPING_FLEXLINK
+#undef SUPPORT_DYNAMIC_LINKING
+#endif
 /* </private> */
 
 #ifndef CAML_NAME_SPACE

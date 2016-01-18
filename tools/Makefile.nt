@@ -12,6 +12,8 @@
 
 include Makefile.shared
 
+CAMLOPT:=$(if $(wildcard ../flexdll/Makefile),OCAML_FLEXLINK="../boot/ocamlrun ../flexdll/flexlink.exe") $(CAMLOPT)
+
 # To make custom toplevels
 
 OCAMLMKTOP=ocamlmktop.cmo
