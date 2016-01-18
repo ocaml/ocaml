@@ -138,6 +138,8 @@ Compilers:
   (Leo White)
 - PR#6920: fix debug informations around uses of %apply or %revapply
   (Jérémie Dimino)
+- GPR#431: permit constant float arrays to be eligible for pattern match
+  branch merging (Pierre Chambart)
 
 Runtime system:
 - PR#3612: allow allocating custom block with finalizers in the minor heap
