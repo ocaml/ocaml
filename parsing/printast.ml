@@ -55,12 +55,12 @@ let fmt_char_option f = function
 
 let fmt_constant f x =
   match x with
-  | PConst_int (i,m) -> fprintf f "PConst_int (%s,%a)" i fmt_char_option m;
-  | PConst_char (c) -> fprintf f "PConst_char %02x" (Char.code c);
-  | PConst_string (s, None) -> fprintf f "PConst_string(%S,None)" s;
-  | PConst_string (s, Some delim) ->
+  | Pconst_integer (i,m) -> fprintf f "PConst_int (%s,%a)" i fmt_char_option m;
+  | Pconst_char (c) -> fprintf f "PConst_char %02x" (Char.code c);
+  | Pconst_string (s, None) -> fprintf f "PConst_string(%S,None)" s;
+  | Pconst_string (s, Some delim) ->
       fprintf f "PConst_string (%S,Some %S)" s delim;
-  | PConst_float (s,m) -> fprintf f "PConst_float (%s,%a)" s fmt_char_option m;
+  | Pconst_float (s,m) -> fprintf f "PConst_float (%s,%a)" s fmt_char_option m;
 ;;
 
 let fmt_mutable_flag f x =

@@ -168,13 +168,13 @@ class printer  ()= object(self:'self)
         pp f "%a(%a)" self#longident y self#longident s
   method longident_loc f x = pp f "%a" self#longident x.txt
   method constant f  = function
-    | PConst_char i -> pp f "%C"  i
-    | PConst_string (i, None) -> pp f "%S" i
-    | PConst_string (i, Some delim) -> pp f "{%s|%s|%s}" delim i delim
-    | PConst_int (i,None) -> self#paren (i.[0]='-') (fun f -> pp f "%s") f i
-    | PConst_int (i,Some m) -> self#paren (i.[0]='-') (fun f (i,m) -> pp f "%s%c" i m) f (i,m)
-    | PConst_float (i,None) -> self#paren (i.[0]='-') (fun f -> pp f "%s") f i
-    | PConst_float (i, Some m) -> self#paren (i.[0]='-') (fun f (i,m) -> pp f "%s%c" i m) f (i,m)
+    | Pconst_char i -> pp f "%C"  i
+    | Pconst_string (i, None) -> pp f "%S" i
+    | Pconst_string (i, Some delim) -> pp f "{%s|%s|%s}" delim i delim
+    | Pconst_integer (i,None) -> self#paren (i.[0]='-') (fun f -> pp f "%s") f i
+    | Pconst_integer (i,Some m) -> self#paren (i.[0]='-') (fun f (i,m) -> pp f "%s%c" i m) f (i,m)
+    | Pconst_float (i,None) -> self#paren (i.[0]='-') (fun f -> pp f "%s") f i
+    | Pconst_float (i, Some m) -> self#paren (i.[0]='-') (fun f (i,m) -> pp f "%s%c" i m) f (i,m)
 
   (* trailing space*)
   method mutable_flag f   = function
