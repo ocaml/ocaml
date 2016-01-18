@@ -1,5 +1,5 @@
 default:
-	@if $(BYTECODE_ONLY); then : ; elif [[ $(SYSTEM) = macosx ]]; then $(MAKE) native_macosx_tests; fi
+	@if $(BYTECODE_ONLY); then : ; elif [ $(SYSTEM) = macosx ]; then $(MAKE) native_macosx_tests; fi
 
 native_macosx_tests:
 	@printf " ... testing stack unwinding:"; \
