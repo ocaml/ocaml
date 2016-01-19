@@ -116,12 +116,9 @@ let empty_info = None
 let info_attr = docs_attr
 
 let add_info_attrs info attrs =
-  let attrs =
-    match info with
-    | None -> attrs
-    | Some ds -> attrs @ [info_attr ds]
-  in
-  attrs
+  match info with
+  | None -> attrs
+  | Some ds -> attrs @ [info_attr ds]
 
 (* Docstrings not attached to a specifc item *)
 

@@ -97,8 +97,7 @@ end  = struct
     match !x with Thunk a -> Some a | _ -> None
 
   let create x =
-    let x = ref (Thunk x) in
-    x
+    ref (Thunk x)
 
 end
 
