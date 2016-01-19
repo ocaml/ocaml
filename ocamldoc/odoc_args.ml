@@ -399,10 +399,9 @@ let add_option o =
 let parse () =
   if modified_options () then append_last_doc "\n";
   let options = !options @ !help_options in
-  let _ = Arg.parse (Arg.align ~limit:13 options)
+  Arg.parse (Arg.align ~limit:13 options)
       anonymous
-      (M.usage^M.options_are)
-  in
+      (M.usage^M.options_are);
   (* we sort the hidden modules by name, to be sure that for example,
      A.B is before A, so we will match against A.B before A in
      Odoc_name.hide_modules.*)

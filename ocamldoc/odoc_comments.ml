@@ -41,7 +41,7 @@ module Info_retriever =
 
     let retrieve_info fun_lex file (s : string) =
       try
-        let _ = Odoc_comments_global.init () in
+        Odoc_comments_global.init ();
         Odoc_lexer.comments_level := 0;
         let lexbuf = Lexing.from_string s in
         match Odoc_parser.main fun_lex lexbuf with
@@ -49,15 +49,14 @@ module Info_retriever =
             (0, None)
         | Some (desc, remain_opt) ->
             let mem_nb_chars = !Odoc_comments_global.nb_chars in
-            let _ =
-              match remain_opt with
+            begin match remain_opt with
                 None ->
                   ()
               | Some s ->
                   (*DEBUG*)print_string ("remain: "^s); print_newline();
                   let lexbuf2 = Lexing.from_string s in
                   Odoc_parser.info_part2 Odoc_lexer.elements lexbuf2
-            in
+            end;
             (mem_nb_chars,
              Some
                {
@@ -138,7 +137,7 @@ module Info_retriever =
       retrieve_info Odoc_lexer.main file s
 
     let retrieve_info_simple file (s : string) =
-      let _ = Odoc_comments_global.init () in
+      Odoc_comments_global.init ();
       Odoc_lexer.comments_level := 0;
       let lexbuf = Lexing.from_string s in
       match Odoc_parser.main Odoc_lexer.simple lexbuf with

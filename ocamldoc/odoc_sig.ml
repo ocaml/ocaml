@@ -136,8 +136,7 @@ module Analyser =
        prepare_file must have been called to fill the file global variable.*)
     let get_string_of_file the_start the_end =
       try
-        let s = String.sub !file the_start (the_end-the_start) in
-        s
+        String.sub !file the_start (the_end-the_start)
       with
         Invalid_argument _ ->
           ""
@@ -501,14 +500,11 @@ module Analyser =
                 Parsetree.Pcty_constr (longident, _) ->
                   (*of Longident.t * core_type list*)
                   let name = Name.from_longident longident.txt in
-                  let ic =
-                    {
-                      ic_name = Odoc_env.full_class_or_class_type_name env name ;
-                      ic_class = None ;
-                      ic_text = text_opt ;
-                    }
-                  in
-                  ic
+                  {
+                    ic_name = Odoc_env.full_class_or_class_type_name env name ;
+                    ic_class = None ;
+                    ic_text = text_opt ;
+                  }
 
               | Parsetree.Pcty_signature _
               | Parsetree.Pcty_arrow _ ->
@@ -1459,15 +1455,12 @@ module Analyser =
         (Parsetree.Pcty_constr (_, _) (*of Longident.t * core_type list *),
          Types.Cty_constr (p, typ_list, _) (*of Path.t * type_expr list * class_type*)) ->
           print_DEBUG "Cty_constr _";
-           let k =
-             Class_type
-               {
-                 cta_name = Odoc_env.full_class_or_class_type_name env (Name.from_path p) ;
-                 cta_class = None ;
-                 cta_type_parameters = List.map (Odoc_env.subst_type env) typ_list
-               }
-           in
-           k
+          Class_type
+            {
+              cta_name = Odoc_env.full_class_or_class_type_name env (Name.from_path p) ;
+              cta_class = None ;
+              cta_type_parameters = List.map (Odoc_env.subst_type env) typ_list
+            }
 
         | (Parsetree.Pcty_signature {
               Parsetree.pcsig_fields = class_type_field_list;

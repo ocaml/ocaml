@@ -438,7 +438,7 @@ let analyse_files ?(init=[]) files =
      print_string Odoc_messages.cross_referencing;
      print_newline ()
     );
-  let _ = Odoc_cross.associate modules_list in
+  Odoc_cross.associate modules_list;
 
   if !Odoc_global.verbose then
     (

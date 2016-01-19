@@ -199,22 +199,19 @@ let kernel_deps_of_modules modules =
 *)
 let deps_of_types ?(kernel=false) types =
   let deps_pre = List.map (fun t -> (t, type_deps t)) types in
-  let deps =
-    if kernel then
-      (
-       let graph = List.map
-           (fun (t, names) -> Dep.make_node t.Type.ty_name names)
-           deps_pre
-       in
-       let k = Dep.kernel graph in
-       List.map
-         (fun t ->
+  if kernel then
+    (
+      let graph = List.map
+          (fun (t, names) -> Dep.make_node t.Type.ty_name names)
+          deps_pre
+      in
+      let k = Dep.kernel graph in
+      List.map
+        (fun t ->
            let node = Dep.get_node k t.Type.ty_name in
            (t, Dep.set_to_list node.Dep.near)
-         )
-         types
-      )
-    else
-      deps_pre
-  in
-  deps
+        )
+        types
+    )
+  else
+    deps_pre
