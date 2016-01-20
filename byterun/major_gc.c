@@ -444,6 +444,13 @@ static void mark_slice (intnat work)
       chunk = caml_heap_start;
       markhp = chunk;
       limit = chunk + Chunk_size (chunk);
+    } else if (caml_gc_subphase == Subphase_mark_roots) {
+      gray_vals_cur = gray_vals_ptr;
+      work = caml_darken_all_roots_slice (work);
+      gray_vals_ptr = gray_vals_cur;
+      if (work > 0){
+        caml_gc_subphase = Subphase_mark_main;
+      }
     } else if (*ephes_to_check != (value) NULL) {
       /* Continue to scan the list of ephe */
       gray_vals_ptr = mark_ephe_aux(gray_vals_ptr,&work,&slice_pointers);
@@ -453,15 +460,6 @@ static void mark_slice (intnat work)
       ephes_to_check = ephes_checked_if_pure;
     }else{
       switch (caml_gc_subphase){
-      case Subphase_mark_roots: {
-        gray_vals_cur = gray_vals_ptr;
-        work = caml_darken_all_roots_slice (work);
-        gray_vals_ptr = gray_vals_cur;
-        if (work > 0){
-          caml_gc_subphase = Subphase_mark_main;
-        }
-      }
-        break;
       case Subphase_mark_main: {
           /* Subphase_mark_main is done.
              Mark finalised values. */
