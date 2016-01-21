@@ -378,7 +378,9 @@ let matching_filename filename { pattern } =
     filename = pattern
 
 let apply_config_file ppf position =
-  let config_file = Filename.concat Config.standard_library "compiler_configuration" in
+  let config_file =
+    Filename.concat Config.standard_library "ocaml_compiler_internal_params"
+  in
   let config =
     if Sys.file_exists config_file then
       load_config ppf config_file
