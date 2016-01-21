@@ -1866,12 +1866,33 @@ let duplicate_ident_types loc caselist env =
      to keep the same internal 'slot' to track unused opens. *)
   List.fold_left (fun env s -> Env.update_value s upd env) env idents
 
+
+(* Getting proper location of already typed expressions.
+
+   Used to avoid confusing locations on type error messages in presence of
+   type constraints.
+   For example:
+
+       (* Before patch *)
+       # let x : string = (5 : int);;
+                           ^
+       (* After patch *)
+       # let x : string = (5 : int);;
+                          ^^^^^^^^^
+*)
+let proper_exp_loc exp =
+  let rec aux = function
+    | [] -> exp.exp_loc
+    | ((Texp_constraint _ | Texp_coerce _), loc, _) :: _ -> loc
+    | _ :: rest -> aux rest
+  in
+  aux exp.exp_extra
+
 (* Typing of expressions *)
 
 let unify_exp env exp expected_ty =
-  (* Format.eprintf "@[%a@ %a@]@." Printtyp.raw_type_expr exp.exp_type
-    Printtyp.raw_type_expr expected_ty; *)
-    unify_exp_types exp.exp_loc env exp.exp_type expected_ty
+  let loc = proper_exp_loc exp in
+  unify_exp_types loc env exp.exp_type expected_ty
 
 let rec type_exp ?recarg env sexp =
   (* We now delegate everything to type_expect *)
