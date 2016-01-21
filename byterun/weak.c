@@ -27,16 +27,6 @@ value caml_ephe_list_head = 0;
 static value ephe_dummy = 0;
 value caml_ephe_none = (value) &ephe_dummy;
 
-/** The first field 0:  weak list;
-       second field 1:  data;
-       others       2..:  keys;
-
-    A weak pointer is an ephemeron with the data at caml_ephe_none
- */
-
-#define CAML_EPHE_LINK_OFFSET 0
-#define CAML_EPHE_DATA_OFFSET 1
-
 #if defined (NATIVE_CODE) && defined (NO_NAKED_POINTERS)
 /** The minor heap is considered alive.
     Outside minor and major heap, x must be black.

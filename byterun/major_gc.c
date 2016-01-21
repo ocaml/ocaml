@@ -299,7 +299,7 @@ static value* mark_ephe_aux (value *gray_vals_ptr, intnat *work,
   v = *ephes_to_check;
   hd = Hd_val(v);
   Assert(Tag_val (v) == Abstract_tag);
-  data = Field(v,1);
+  data = Field(v,CAML_EPHE_DATA_OFFSET);
   if ( data != caml_ephe_none &&
        Is_block (data) && Is_in_heap (data) && Is_white_val (data)){
 
@@ -310,7 +310,7 @@ static value* mark_ephe_aux (value *gray_vals_ptr, intnat *work,
 
     /* The liveness of the keys not caml_ephe_none is the other condition */
     size = Wosize_hd (hd);
-    for (i = 2; alive_data && i < size; i++){
+    for (i = CAML_EPHE_FIRST_KEY; alive_data && i < size; i++){
       key = Field (v, i);
     ephemeron_again:
       if (key != caml_ephe_none &&
@@ -335,10 +335,12 @@ static value* mark_ephe_aux (value *gray_vals_ptr, intnat *work,
     *work -= Whsize_wosize(i);
 
     if (alive_data){
-      gray_vals_ptr = mark_slice_darken(gray_vals_ptr,v,1,/*in_ephemeron=*/1,
+      gray_vals_ptr = mark_slice_darken(gray_vals_ptr,v,
+                                        CAML_EPHE_DATA_OFFSET,
+                                        /*in_ephemeron=*/1,
                                         slice_pointers);
     } else { /* not triggered move to the next one */
-      ephes_to_check = &Field(v,0);
+      ephes_to_check = &Field(v,CAML_EPHE_LINK_OFFSET);
       return gray_vals_ptr;
     }
   } else {  /* a simily weak pointer or an already alive data */
@@ -349,15 +351,15 @@ static value* mark_ephe_aux (value *gray_vals_ptr, intnat *work,
      move the ephemerons from (3) to the end of (1) */
   if ( ephes_checked_if_pure == ephes_to_check ) {
     /* corner case and optim */
-    ephes_checked_if_pure = &Field(v,0);
+    ephes_checked_if_pure = &Field(v,CAML_EPHE_LINK_OFFSET);
     ephes_to_check = ephes_checked_if_pure;
   } else {
     /*  - remove v from the list (3) */
-    *ephes_to_check = Field(v,0);
+    *ephes_to_check = Field(v,CAML_EPHE_LINK_OFFSET);
     /*  - insert it at the end of (1) */
-    Field(v,0) = *ephes_checked_if_pure;
+    Field(v,CAML_EPHE_LINK_OFFSET) = *ephes_checked_if_pure;
     *ephes_checked_if_pure = v;
-    ephes_checked_if_pure = &Field(v,0);
+    ephes_checked_if_pure = &Field(v,CAML_EPHE_LINK_OFFSET);
   }
   return gray_vals_ptr;
 }
@@ -511,11 +513,11 @@ static void clean_slice (intnat work)
     if (v != (value) NULL){
       if (Is_white_val (v)){
         /* The whole array is dead, remove it from the list. */
-        *ephes_to_check = Field (v, 0);
+        *ephes_to_check = Field (v, CAML_EPHE_LINK_OFFSET);
         work -= 1;
       }else{
         caml_ephe_clean(v);
-        ephes_to_check = &Field (v, 0);
+        ephes_to_check = &Field (v, CAML_EPHE_LINK_OFFSET);
         work -= Whsize_val (v);
       }
     }else{ /* End of list reached */

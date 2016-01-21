@@ -21,6 +21,19 @@
 extern value caml_ephe_list_head;
 extern value caml_ephe_none;
 
+
+/** The first field 0:  weak list;
+       second field 1:  data;
+       others       2..:  keys;
+
+    A weak pointer is an ephemeron with the data at caml_ephe_none
+ */
+
+#define CAML_EPHE_LINK_OFFSET 0
+#define CAML_EPHE_DATA_OFFSET 1
+#define CAML_EPHE_FIRST_KEY 2
+
+
 /* In the header, in order to let major_gc.c
    and weak.c see the body of the function */
 static inline void caml_ephe_clean (value v){
