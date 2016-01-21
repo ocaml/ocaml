@@ -14,6 +14,8 @@
 (*                                                                        *)
 (**************************************************************************)
 
+[@@@ocaml.warning "+a-4-9-30-40-41-42"]
+
 let rename_id_state = Export_id.Tbl.create 100
 
 (* Rename export identifiers' compilation units to denote that they now

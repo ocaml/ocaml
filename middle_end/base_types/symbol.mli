@@ -14,6 +14,8 @@
 (*                                                                        *)
 (**************************************************************************)
 
+[@@@ocaml.warning "+a-4-9-30-40-41-42"]
+
 (** A symbol identifies a constant provided by either:
     - another compilation unit; or
     - a top-level module.

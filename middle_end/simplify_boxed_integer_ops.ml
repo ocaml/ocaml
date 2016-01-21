@@ -14,6 +14,8 @@
 (*                                                                        *)
 (**************************************************************************)
 
+[@@@ocaml.warning "+a-4-9-30-40-41-42"]
+
 module S = Simplify_common
 
 (* Simplification of operations on boxed integers (nativeint, Int32, Int64). *)

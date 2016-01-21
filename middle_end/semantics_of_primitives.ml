@@ -14,6 +14,8 @@
 (*                                                                        *)
 (**************************************************************************)
 
+[@@@ocaml.warning "+a-4-9-30-40-41-42"]
+
 type effects = No_effects | Only_generative_effects | Arbitrary_effects
 type coeffects = No_coeffects | Has_coeffects
 

@@ -14,6 +14,8 @@
 (*                                                                        *)
 (**************************************************************************)
 
+[@@@ocaml.warning "+a-4-9-30-40-41-42"]
+
 (** Environments and auxiliary structures used during closure conversion. *)
 
 (** Used to remember which [Variable.t] values correspond to which

@@ -14,6 +14,8 @@
 (*                                                                        *)
 (**************************************************************************)
 
+[@@@ocaml.warning "+a-4-9-30-40-41-42"]
+
 (** Source code transformations used during inlining. *)
 
 (** Inline a function by substituting its body (which may be subject to

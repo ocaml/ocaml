@@ -14,6 +14,8 @@
 (*                                                                        *)
 (**************************************************************************)
 
+[@@@ocaml.warning "+a-4-9-30-40-41-42"]
+
 (** An identifier that is used to label static exceptions.  Its
     uniqueness properties are unspecified. *)
 

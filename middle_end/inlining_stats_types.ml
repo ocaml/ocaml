@@ -14,6 +14,8 @@
 (*                                                                        *)
 (**************************************************************************)
 
+[@@@ocaml.warning "+a-4-9-30-40-41-42"]
+
 module Wsb = Inlining_cost.Whether_sufficient_benefit
 
 let print_stars ppf n =

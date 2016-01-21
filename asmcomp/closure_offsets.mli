@@ -14,6 +14,8 @@
 (*                                                                        *)
 (**************************************************************************)
 
+[@@@ocaml.warning "+a-4-9-30-40-41-42"]
+
 (** Assign numerical offsets, within closure blocks, for code pointers and
     environment entries. *)
 

@@ -14,6 +14,8 @@
 (*                                                                        *)
 (**************************************************************************)
 
+[@@@ocaml.warning "+a-4-9-30-40-41-42"]
+
 (** Intermediate language used for tree-based analysis and optimization. *)
 
 (** Whether the callee in a function application is known at compile time. *)

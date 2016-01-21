@@ -14,6 +14,8 @@
 (*                                                                        *)
 (**************************************************************************)
 
+[@@@ocaml.warning "+a-4-9-30-40-41-42"]
+
 (** Freshening of various identifiers. *)
 
 (** A table used for freshening variables and static exception identifiers. *)

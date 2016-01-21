@@ -14,6 +14,8 @@
 (*                                                                        *)
 (**************************************************************************)
 
+[@@@ocaml.warning "+a-4-9-30-40-41-42"]
+
 let in_function_declarations (function_decls : Flambda.function_declarations)
       ~backend =
   let module VCC = Strongly_connected_components.Make (Variable) in

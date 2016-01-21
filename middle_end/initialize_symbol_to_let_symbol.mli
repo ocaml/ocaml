@@ -14,6 +14,8 @@
 (*                                                                        *)
 (**************************************************************************)
 
+[@@@ocaml.warning "+a-4-9-30-40-41-42"]
+
 (** Transform Initialize_symbol with only constant fields to
     let_symbol construction. *)
 val run : Flambda.program -> Flambda.program

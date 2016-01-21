@@ -14,6 +14,8 @@
 (*                                                                        *)
 (**************************************************************************)
 
+[@@@ocaml.warning "+a-4-30-40-41-42"]
+
 (* We say that an [Ident.t] is "linear" iff:
    (a) it is used exactly once;
    (b) it is never assigned to (using [Uassign]).

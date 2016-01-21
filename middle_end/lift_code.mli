@@ -14,6 +14,8 @@
 (*                                                                        *)
 (**************************************************************************)
 
+[@@@ocaml.warning "+a-4-9-30-40-41-42"]
+
 type lifter = Flambda.program -> Flambda.program
 
 (** Lift [let] bindings to attempt to increase the length of scopes, as an

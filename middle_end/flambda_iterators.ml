@@ -14,6 +14,8 @@
 (*                                                                        *)
 (**************************************************************************)
 
+[@@@ocaml.warning "+a-4-9-30-40-41-42"]
+
 let apply_on_subexpressions f f_named (flam : Flambda.t) =
   match flam with
   | Var _ | Apply _ | Assign _ | Send _ | Proved_unreachable
