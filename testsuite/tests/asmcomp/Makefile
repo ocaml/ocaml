@@ -44,7 +44,8 @@ parsecmm.mli parsecmm.ml: parsecmm.mly
 lexcmm.ml: lexcmm.mll
 	@$(OCAMLLEX) -q lexcmm.mll
 
-MLCASES=optargs staticalloc bind_tuples
+MLCASES=optargs staticalloc bind_tuples is_static
+ARGS_is_static=is_in_static_data.o
 
 CASES=fib tak quicksort quicksort2 soli \
       arith checkbound tagged-fib tagged-integr tagged-quicksort tagged-tak
@@ -63,11 +64,15 @@ ARGS_tagged-tak=-DUNIT_INT -DFUN=takmain main.c
 
 one_ml:
 	@$(OCAMLOPT) -o $(NAME).exe $(NAME).ml && \
-	./$(NAME).exe && echo " => passed" || echo " => failed"
+	./$(NAME).exe `$(OCAMLOPT) -config` \
+	&& echo " => passed" || echo " => failed"
 
 one:
 	@$(call CC,$(NAME).out $(ARGS_$(NAME)) $(NAME).$(O) $(ARCH).$(O)) \
 	&& echo " => passed" || echo " => failed"
+
+is_in_static_data.o: is_in_static_data.c
+	@$(OCAMLOPT) -c is_in_static_data.c
 
 clean: defaultclean
 	@rm -f ./codegen *.out *.$(O) *.exe
