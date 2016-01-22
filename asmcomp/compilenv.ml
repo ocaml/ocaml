@@ -27,6 +27,10 @@ exception Error of error
 let global_infos_table =
   (Hashtbl.create 17 : (string, unit_infos option) Hashtbl.t)
 
+let imported_sets_of_closures_table =
+  (Set_of_closures_id.Tbl.create 10
+   : Flambda.function_declarations Set_of_closures_id.Tbl.t)
+
 let sourcefile = ref None
 
 module CstMap =
@@ -80,9 +84,21 @@ let symbolname_for_pack pack name =
       Buffer.add_string b name;
       Buffer.contents b
 
+let concat_symbol unitname id =
+  unitname ^ "__" ^ id
+
+let make_symbol ?(unitname = current_unit.ui_symbol) idopt =
+  let prefix = "caml" ^ unitname in
+  match idopt with
+  | None -> prefix
+  | Some id -> concat_symbol prefix id
+
+let current_unit_linkage_name () =
+  Linkage_name.create (make_symbol ~unitname:current_unit.ui_symbol None)
 
 let reset ?packname ~source_provenance:file name =
   Hashtbl.clear global_infos_table;
+  Set_of_closures_id.Tbl.clear imported_sets_of_closures_table;
   let symbol = symbolname_for_pack packname name in
   sourcefile := Some file;
   current_unit.ui_name <- name;
@@ -95,7 +111,13 @@ let reset ?packname ~source_provenance:file name =
   current_unit.ui_send_fun <- [];
   current_unit.ui_force_link <- false;
   Hashtbl.clear exported_constants;
-  structured_constants := structured_constants_empty
+  structured_constants := structured_constants_empty;
+  let compilation_unit =
+    Compilation_unit.create
+      (Ident.create_persistent name)
+      (current_unit_linkage_name ())
+  in
+  Compilation_unit.set_current compilation_unit
 
 let current_unit_infos () =
   current_unit
@@ -217,8 +239,32 @@ let symbol_for_global id =
 
 (* Register the approximation of the module being compiled *)
 
+let unit_for_global id =
+  let sym_label = Linkage_name.create (symbol_for_global id) in
+  Compilation_unit.create id sym_label
+
+let predefined_exception_compilation_unit =
+  Compilation_unit.create (Ident.create_persistent "__dummy__")
+    (Linkage_name.create "__dummy__")
+
+let is_predefined_exception sym =
+  Compilation_unit.equal
+    predefined_exception_compilation_unit
+    (Symbol.compilation_unit sym)
+
+let symbol_for_global' id =
+  let sym_label = Linkage_name.create (symbol_for_global id) in
+  if Ident.is_predef_exn id then
+    Symbol.unsafe_create predefined_exception_compilation_unit sym_label
+  else
+    Symbol.unsafe_create (unit_for_global id) sym_label
+
 let set_global_approx approx =
   current_unit.ui_approx <- approx
+
+let approx_for_global _ = assert false
+
+let approx_env _ = assert false
 
 (* Record that a currying function or application function is needed *)
 
@@ -249,7 +295,16 @@ let save_unit_info filename =
   current_unit.ui_imports_cmi <- Env.imports();
   write_unit_info current_unit filename
 
+let current_unit_linkage_name () =
+  Linkage_name.create (make_symbol ~unitname:current_unit.ui_symbol None)
 
+let current_unit () =
+  match Compilation_unit.get_current () with
+  | Some current_unit -> current_unit
+  | None -> Misc.fatal_error "Compilenv.current_unit"
+
+let current_unit_symbol () =
+  Symbol.unsafe_create (current_unit ()) (current_unit_linkage_name ())
 
 let const_label = ref 0
 
@@ -301,6 +356,24 @@ let structured_constants () =
          definition;
        })
     (!structured_constants).strcst_all
+
+let closure_symbol fv =
+  let compilation_unit = Closure_id.get_compilation_unit fv in
+  let unitname =
+    Linkage_name.to_string (Compilation_unit.get_linkage_name compilation_unit)
+  in
+  let linkage_name =
+    concat_symbol unitname ((Closure_id.unique_name fv) ^ "_closure")
+  in
+  Symbol.unsafe_create compilation_unit (Linkage_name.create linkage_name)
+
+let function_label fv =
+  let compilation_unit = Closure_id.get_compilation_unit fv in
+  let unitname =
+    Linkage_name.to_string
+      (Compilation_unit.get_linkage_name compilation_unit)
+  in
+  (concat_symbol unitname (Closure_id.unique_name fv))
 
 (* Error report *)
 
