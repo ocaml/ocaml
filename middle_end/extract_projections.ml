@@ -44,16 +44,14 @@ type extracted =
 let freshened_var env v =
   Freshening.apply_variable (E.freshening env) v
 
-let collect_projections ~env ~which_variables ~collected =
-  Variable.Map.fold (fun inside_var outside_var
-        (var_within_closure_acc, closure_acc, block_acc) ->
+let collect_projections ~env ~which_variables
+      ~(collected : extracted Projection.Var_and_projectee.Map.t) =
+  Variable.Map.fold (fun inside_var outside_var collected ->
       let approx = E.find_exn env (freshened_var env outside_var) in
       match A.check_approx_for_closure approx with
-      | Ok (value_closure, _approx_var, _approx_symbol,
-            value_set_of_closures) ->
+      | Ok (value_closure, _approx_var, _approx_sym, value_set_of_closures) ->
         let var_within_closure_acc =
-          Var_within_closure.Map.fold
-            (fun bound_var _ acc ->
+          Var_within_closure.Map.fold (fun bound_var _ collected ->
               let new_var =
                 Variable.create (Var_within_closure.unique_name bound_var)
               in
@@ -61,7 +59,7 @@ let collect_projections ~env ~which_variables ~collected =
                 { new_var; closure_id = value_closure.closure_id; outside_var;
                 }
                 acc)
-            value_set_of_closures.bound_vars var_within_closure_acc
+            value_set_of_closures.bound_vars collected
         in
         let closure_acc =
           Variable.Map.fold (fun fun_var _ acc ->
@@ -85,7 +83,7 @@ let collect_projections ~env ~which_variables ~collected =
         | Wrong ->
           acc  (* Ignore variables that aren't closures or blocks. *)
         | Ok (_tag, fields) ->
-          let block_acc = ref block_acc in
+          let collected = ref collected in
           Array.iteri (fun i approx ->
               (* CR-soon pchambart: should we restrict only to cases
                  when the field is aliased to a variable outside

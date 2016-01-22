@@ -24,5 +24,14 @@ type projection =
 
 include Identifiable.S with type t = projection
 
-module With_variable : Identifiable.S
-  with type t := Variable.t * projection
+(** A description of only what is being projected, not where it is
+    being projected from. *)
+module Projectee : sig
+  type projection =
+    | Project_var of Var_within_closure.t
+    | Closure of Closure_id.t
+    | Field of int
+end
+
+module Var_and_projectee : Identifiable.S
+  with type t := Variable.t * Projectee.t
