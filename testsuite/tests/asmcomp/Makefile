@@ -76,6 +76,13 @@ clean: defaultclean
 
 include $(BASEDIR)/makefiles/Makefile.common
 
+ifeq "$(CCOMPTYPE)-$(ARCH)" "msvc-amd64"
+# these tests are not ported to MSVC64 yet
+SKIP=true
+else
+SKIP=false
+endif
+
 ifeq ($(CCOMPTYPE),msvc)
 CC=set -o pipefail ; $(NATIVECC) $(CFLAGS) /Fe$(1) | tail -n +2
 CFLAGS=$(NATIVECCCOMPOPTS)
