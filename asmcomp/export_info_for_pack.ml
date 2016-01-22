@@ -117,7 +117,6 @@ let import_eidmap_for_pack units pack f map =
 let import_for_pack ~pack_units ~pack (exp : Export_info.t) =
   let import_sym = import_symbol_for_pack pack_units pack in
   let import_descr = import_descr_for_pack pack_units pack in
-  let import_approx = import_approx_for_pack pack_units pack in
   let import_eid = import_eid_for_pack pack_units pack in
   let import_eidmap f map = import_eidmap_for_pack pack_units pack f map in
   let sets_of_closures =
@@ -125,15 +124,8 @@ let import_for_pack ~pack_units ~pack (exp : Export_info.t) =
       (import_function_declarations_for_pack pack_units pack)
       exp.sets_of_closures
   in
-  (* The only reachable global identifier of a pack is the pack itself. *)
-  let globals =
-    Ident.Map.filter (fun unit _ ->
-        Ident.same (Compilation_unit.get_persistent_ident pack) unit)
-      exp.globals
-  in
   Export_info.create ~sets_of_closures
     ~closures:(Flambda_utils.make_closure_map' sets_of_closures)
-    ~globals:(Ident.Map.map import_approx globals)
     ~offset_fun:exp.offset_fun
     ~offset_fv:exp.offset_fv
     ~values:(import_eidmap import_descr exp.values)

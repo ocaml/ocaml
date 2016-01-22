@@ -135,7 +135,6 @@ type t = {
   sets_of_closures : Flambda.function_declarations Set_of_closures_id.Map.t;
   closures : Flambda.function_declarations Closure_id.Map.t;
   values : descr Export_id.Map.t Compilation_unit.Map.t;
-  globals : approx Ident.Map.t;
   symbol_id : Export_id.t Symbol.Map.t;
   offset_fun : int Closure_id.Map.t;
   offset_fv : int Var_within_closure.Map.t;
@@ -147,7 +146,6 @@ let empty : t = {
   sets_of_closures = Set_of_closures_id.Map.empty;
   closures = Closure_id.Map.empty;
   values = Compilation_unit.Map.empty;
-  globals = Ident.Map.empty;
   symbol_id = Symbol.Map.empty;
   offset_fun = Closure_id.Map.empty;
   offset_fv = Var_within_closure.Map.empty;
@@ -155,13 +153,12 @@ let empty : t = {
   invariant_params = Set_of_closures_id.Map.empty;
 }
 
-let create ~sets_of_closures ~closures ~values ~globals ~symbol_id
+let create ~sets_of_closures ~closures ~values ~symbol_id
       ~offset_fun ~offset_fv ~constant_sets_of_closures
       ~invariant_params =
   { sets_of_closures;
     closures;
     values;
-    globals;
     symbol_id;
     offset_fun;
     offset_fv;
@@ -188,7 +185,6 @@ let merge (t1 : t) (t2 : t) : t =
   in
   let int_eq (i : int) j = i = j in
   { values = eidmap_disjoint_union ~eq:equal_descr t1.values t2.values;
-    globals = Ident.Map.disjoint_union t1.globals t2.globals;
     sets_of_closures =
       Set_of_closures_id.Map.disjoint_union t1.sets_of_closures
         t2.sets_of_closures;
@@ -316,9 +312,6 @@ let print_approx ppf (t : t) =
           print_approx approx)
       bound_vars
   in
-  let print_approxs id approx =
-    fprintf ppf "%a -> %a;@ " Ident.print id print_approx approx
-  in
   let rec print_recorded_symbols () =
     if not (Queue.is_empty symbols_to_print) then begin
       let sym = Queue.pop symbols_to_print in
@@ -333,7 +326,6 @@ let print_approx ppf (t : t) =
     end
   in
   fprintf ppf "@[<hov 2>Globals:@ ";
-  Ident.Map.iter print_approxs t.globals;
   fprintf ppf "@]@ @[<hov 2>Symbols:@ ";
   print_recorded_symbols ();
   fprintf ppf "@]"

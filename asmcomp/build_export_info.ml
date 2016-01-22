@@ -496,12 +496,6 @@ let build_export_info ~(backend : (module Backend_intf.S))
     let _global_symbol, env =
       describe_program (Env.Global.create_empty ()) program
     in
-    let globals =
-      let root_approx : Export_info.approx =
-        Value_symbol (Compilenv.current_unit_symbol ())
-      in
-      Ident.Map.singleton (Compilenv.current_unit_id ()) root_approx
-    in
     let sets_of_closures =
       Flambda_utils.all_function_decls_indexed_by_set_of_closures_id program
     in
@@ -542,7 +536,7 @@ let build_export_info ~(backend : (module Backend_intf.S))
     let values =
       Export_info.nest_eid_map unnested_values
     in
-    Export_info.create ~values ~globals
+    Export_info.create ~values
       ~symbol_id:(Env.Global.symbol_to_export_id_map env)
       ~offset_fun:Closure_id.Map.empty
       ~offset_fv:Var_within_closure.Map.empty
