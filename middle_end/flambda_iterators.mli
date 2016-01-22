@@ -195,15 +195,9 @@ val map_project_var_to_expr_opt
   -> f:(Flambda.project_var -> Flambda.t option)
   -> Flambda.t
 
-type projection =
-  | Project_var of Flambda.project_var
-  | Project_closure of Flambda.project_closure
-  | Move_within_set_of_closures of Flambda.move_within_set_of_closures
-  | Field of int * Variable.t
-
 val map_toplevel_projections_to_expr_opt
    : Flambda.t
-  -> f:(projection -> Flambda.t option)
+  -> f:(Projection.t -> Flambda.t option)
   -> Flambda.t
 
 val map_project_var_to_named_opt

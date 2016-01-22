@@ -37,15 +37,6 @@ type block_in_free_vars = {
   outside_var : Variable.t;
 }
 
-module Var_within_closure_field =
-  Identifiable.Make (Identifiable.Pair (Variable) (Var_within_closure))
-
-module Closure_field =
-  Identifiable.Make (Identifiable.Pair (Variable) (Closure_id))
-
-module Block_field =
-  Identifiable.Make (Identifiable.Pair (Variable) (Numbers.Int))
-
 let freshened_var env v =
   Freshening.apply_variable (E.freshening env) v
 
