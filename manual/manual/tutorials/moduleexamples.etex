@@ -227,7 +227,7 @@ module NoCaseString =
   struct
     type t = string
     let compare s1 s2 =
-      OrderedString.compare (String.lowercase s1) (String.lowercase s2)
+      OrderedString.compare (String.lowercase_ascii s1) (String.lowercase_ascii s2)
   end;;
 module NoCaseStringSet = AbstractSet(NoCaseString);;
 NoCaseStringSet.add "FOO" AbstractStringSet.empty;;

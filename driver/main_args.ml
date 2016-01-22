@@ -110,7 +110,7 @@ let mk_init f =
 ;;
 
 let mk_inline f =
-  "-inline", Arg.Int f, "<n>  Set aggressiveness of inlining to <n>"
+  "-inline", Arg.String f, "<n>  Set aggressiveness of inlining to <n>"
 ;;
 
 let mk_intf f =
@@ -294,6 +294,10 @@ let mk_strict_sequence f =
 let mk_thread f =
   "-thread", Arg.Unit f,
   " Generate code that supports the system threads library"
+;;
+
+let mk_dtimings f =
+  "-dtimings", Arg.Unit f, " Print timings"
 ;;
 
 let mk_unsafe f =
@@ -567,6 +571,7 @@ module type Compiler_options = sig
   val _color : string -> unit
 
   val _nopervasives : unit -> unit
+  val _dtimings : unit -> unit
 end
 ;;
 
@@ -600,7 +605,7 @@ end;;
 
 module type Optcommon_options = sig
   val _compact : unit -> unit
-  val _inline : int -> unit
+  val _inline : string -> unit
 
   val _dclambda : unit -> unit
   val _dcmm : unit -> unit
@@ -742,6 +747,7 @@ struct
     mk_drawlambda F._drawlambda;
     mk_dlambda F._dlambda;
     mk_dinstr F._dinstr;
+    mk_dtimings F._dtimings;
   ]
 end;;
 
@@ -875,6 +881,7 @@ struct
     mk_dscheduling F._dscheduling;
     mk_dlinear F._dlinear;
     mk_dstartup F._dstartup;
+    mk_dtimings F._dtimings;
     mk_opaque F._opaque;
   ]
 end;;

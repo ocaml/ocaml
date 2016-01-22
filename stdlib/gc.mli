@@ -141,6 +141,12 @@ type control =
         first-fit policy, which can be slower in some cases but
         can be better for programs with fragmentation problems.
         Default: 0. @since 3.11.0 *)
+
+    window_size : int;
+    (** The size of the window used by the major GC for smoothing
+        out variations in its workload. This is an integer between
+        1 and 50.
+        Default: 1. @since 4.03.0 *)
 }
 (** The GC parameters are given as a [control] record.  Note that
     these parameters can also be initialised by setting the
@@ -173,9 +179,13 @@ external minor : unit -> unit = "caml_gc_minor"
 (** Trigger a minor collection. *)
 
 external major_slice : int -> int = "caml_gc_major_slice";;
-(** Do a minor collection and a slice of major collection.  The argument
-    is the size of the slice, 0 to use the automatically-computed
-    slice size.  In all cases, the result is the computed slice size. *)
+(** [major_slice n]
+    Do a minor collection and a slice of major collection. [n] is the
+    size of the slice: the GC will do enough work to free (on average)
+    [n] words of memory. If [n] = 0, the GC will try to do enough work
+    to ensure that the next slice has no work to do.
+    Return an approximation of the work that the next slice will have
+    to do. *)
 
 external major : unit -> unit = "caml_gc_major"
 (** Do a minor collection and finish the current major collection cycle. *)
@@ -197,6 +207,25 @@ val allocated_bytes : unit -> float
 (** Return the total number of bytes allocated since the program was
    started.  It is returned as a [float] to avoid overflow problems
    with [int] on 32-bit machines. *)
+
+external get_minor_free : unit -> int = "caml_get_minor_free" [@@noalloc]
+(** Return the current size of the free space inside the minor heap. *)
+
+external get_bucket : int -> int = "caml_get_major_bucket" [@@noalloc]
+(** [get_bucket n] returns the current size of the [n]-th future bucket
+    of the GC smoothing system. The unit is one millionth of a full GC.
+    Raise [Invalid_argument] if [n] is negative, return 0 if n is larger
+    than the smoothing window. *)
+
+external get_credit : unit -> int = "caml_get_major_credit" [@@noalloc]
+(** [get_credit ()] returns the current size of the "work done in advance"
+    counter of the GC smoothing system. The unit is one millionth of a
+    full GC. *)
+
+external huge_fallback_count : unit -> int = "caml_gc_huge_fallback_count"
+(** Return the number of times we tried to map huge pages and had to fall
+    back to small pages. This is always 0 if [OCAMLRUNPARAM] contains [H=1].
+    @since 4.03.0 *)
 
 val finalise : ('a -> unit) -> 'a -> unit
 (** [finalise f v] registers [f] as a finalisation function for [v].

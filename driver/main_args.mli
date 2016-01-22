@@ -83,6 +83,7 @@ module type Compiler_options =  sig
   val _color : string -> unit
 
   val _nopervasives : unit -> unit
+  val _dtimings : unit -> unit
 end
 ;;
 
@@ -116,7 +117,7 @@ end;;
 
 module type Optcommon_options = sig
   val _compact : unit -> unit
-  val _inline : int -> unit
+  val _inline : string -> unit
 
   val _dclambda : unit -> unit
   val _dcmm : unit -> unit

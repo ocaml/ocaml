@@ -56,7 +56,13 @@ let operation = function
       Printf.sprintf "extcall \"%s\"%s" lbl (Debuginfo.to_string d)
   | Cload c -> Printf.sprintf "load %s" (chunk c)
   | Calloc -> "alloc"
-  | Cstore c -> Printf.sprintf "store %s" (chunk c)
+  | Cstore (c, init) ->
+    let init =
+      match init with
+      | Lambda.Initialization -> "(init)"
+      | Lambda.Assignment -> ""
+    in
+    Printf.sprintf "store %s%s" (chunk c) init
   | Caddi -> "+"
   | Csubi -> "-"
   | Cmuli -> "*"

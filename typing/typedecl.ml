@@ -50,6 +50,7 @@ type error =
   | Val_in_structure
   | Multiple_native_repr_attributes
   | Cannot_unbox_or_untag_type of native_repr_kind
+  | Deep_unbox_or_untag_attribute of native_repr_kind
 
 open Typedtree
 
@@ -1393,9 +1394,29 @@ let native_repr_of_type env kind ty =
   | _ ->
     None
 
+(* Raises an error when [core_type] contains an [@unboxed] or [@untagged]
+   attribute in a strict sub-term. *)
+let error_if_has_deep_native_repr_attributes core_type =
+  let open Ast_mapper in
+  let this_mapper =
+    { default_mapper with typ = fun mapper core_type ->
+      begin
+        match
+          get_native_repr_attribute core_type.ptyp_attributes ~global_repr:None
+        with
+        | Native_repr_attr_present kind ->
+           raise (Error (core_type.ptyp_loc, Deep_unbox_or_untag_attribute kind))
+        | Native_repr_attr_absent -> ()
+      end;
+      default_mapper.typ mapper core_type }
+  in
+  ignore (default_mapper.typ this_mapper core_type : Parsetree.core_type)
+
 let make_native_repr env core_type ty ~global_repr =
+  error_if_has_deep_native_repr_attributes core_type;
   match get_native_repr_attribute core_type.ptyp_attributes ~global_repr with
-  | Native_repr_attr_absent -> Same_as_ocaml_repr
+  | Native_repr_attr_absent ->
+    Same_as_ocaml_repr
   | Native_repr_attr_present kind ->
     begin match native_repr_of_type env kind ty with
     | None ->
@@ -1404,14 +1425,18 @@ let make_native_repr env core_type ty ~global_repr =
     end
 
 let rec parse_native_repr_attributes env core_type ty ~global_repr =
-  match core_type.ptyp_desc, (Ctype.repr ty).desc with
-  | Ptyp_arrow (_, ct1, ct2), Tarrow (_, t1, t2, _) ->
+  match core_type.ptyp_desc, (Ctype.repr ty).desc,
+    get_native_repr_attribute core_type.ptyp_attributes ~global_repr:None
+  with
+  | Ptyp_arrow _, Tarrow _, Native_repr_attr_present kind  ->
+    raise (Error (core_type.ptyp_loc, Cannot_unbox_or_untag_type kind))
+  | Ptyp_arrow (_, ct1, ct2), Tarrow (_, t1, t2, _), _ ->
     let repr_arg = make_native_repr env ct1 t1 ~global_repr in
     let repr_args, repr_res =
       parse_native_repr_attributes env ct2 t2 ~global_repr
     in
     (repr_arg :: repr_args, repr_res)
-  | Ptyp_arrow _, _ | _, Tarrow _ -> assert false
+  | Ptyp_arrow _, _, _ | _, Tarrow _, _ -> assert false
   | _ -> ([], make_native_repr env core_type ty ~global_repr)
 
 (* Translate a value declaration *)
@@ -1691,13 +1716,13 @@ let report_error ppf = function
       begin match decl.type_kind, decl.type_manifest with
       | Type_variant tl, _ ->
           explain_unbound_gen ppf ty tl (fun c ->
-              let tl = tys_of_constr_args c.cd_args in
+              let tl = tys_of_constr_args c.Types.cd_args in
               Btype.newgenty (Ttuple tl)
             )
             "case" (fun ppf c ->
                 fprintf ppf
                   "%s of %a" (Ident.name c.Types.cd_id)
-                  Printtyp.constructor_arguments c.cd_args)
+                  Printtyp.constructor_arguments c.Types.cd_args)
       | Type_record (tl, _), _ ->
           explain_unbound ppf ty tl (fun l -> l.Types.ld_type)
             "field" (fun l -> Ident.name l.Types.ld_id ^ ": ")
@@ -1799,6 +1824,11 @@ let report_error ppf = function
   | Cannot_unbox_or_untag_type Untagged ->
       fprintf ppf "Don't know how to untag this type. Only int \
                    can be untagged"
+  | Deep_unbox_or_untag_attribute kind ->
+      fprintf ppf
+        "The attribute '%s' should be attached to a direct argument or \
+         result of the primitive, it should not occur deeply into its type"
+        (match kind with Unboxed -> "@unboxed" | Untagged -> "@untagged")
 
 let () =
   Location.register_error_of_exn

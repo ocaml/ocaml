@@ -553,3 +553,6 @@ caml_system__frametable:
         .align  3
         .type   caml_system__frametable, %object
         .size   caml_system__frametable, .-caml_system__frametable
+
+/* Mark stack as non-executable */
+        .section .note.GNU-stack,"",%progbits

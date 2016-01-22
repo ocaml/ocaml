@@ -67,9 +67,10 @@ extern char caml_system__code_begin, caml_system__code_end;
 
 void caml_garbage_collection(void)
 {
-  caml_young_limit = caml_young_start;
-  if (caml_young_ptr < caml_young_start || caml_force_major_slice) {
-    caml_minor_collection();
+  caml_young_limit = caml_young_trigger;
+  if (caml_requested_major_slice || caml_requested_minor_gc ||
+      caml_young_ptr - caml_young_trigger < Max_young_whsize){
+    caml_gc_dispatch ();
   }
   caml_process_pending_signals();
 }

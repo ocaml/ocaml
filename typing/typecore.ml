@@ -265,31 +265,31 @@ let type_constant = function
   | Const_nativeint _ -> instance_def Predef.type_nativeint
 
 let constant : Parsetree.constant -> (Asttypes.constant, error) result = function
-  | PConst_int (i,None) ->
+  | Pconst_integer (i,None) ->
      begin
        try Ok (Const_int (Misc.Int_literal_converter.int i))
        with Failure _ -> Error (Literal_overflow "int")
      end
-  | PConst_int (i,Some 'l') ->
+  | Pconst_integer (i,Some 'l') ->
      begin
        try Ok (Const_int32 (Misc.Int_literal_converter.int32 i))
        with Failure _ -> Error (Literal_overflow "int32")
      end
-  | PConst_int (i,Some 'L') ->
+  | Pconst_integer (i,Some 'L') ->
      begin
        try Ok (Const_int64 (Misc.Int_literal_converter.int64 i))
        with Failure _ -> Error (Literal_overflow "int64")
      end
-  | PConst_int (i,Some 'n') ->
+  | Pconst_integer (i,Some 'n') ->
      begin
        try Ok (Const_nativeint (Misc.Int_literal_converter.nativeint i))
        with Failure _ -> Error (Literal_overflow "nativeint")
      end
-  | PConst_int (i,Some c) -> Error (Unknown_literal (i, c))
-  | PConst_char c -> Ok (Const_char c)
-  | PConst_string (s,d) -> Ok (Const_string (s,d))
-  | PConst_float (f,None)-> Ok (Const_float f)
-  | PConst_float (f,Some c) -> Error (Unknown_literal (f, c))
+  | Pconst_integer (i,Some c) -> Error (Unknown_literal (i, c))
+  | Pconst_char c -> Ok (Const_char c)
+  | Pconst_string (s,d) -> Ok (Const_string (s,d))
+  | Pconst_float (f,None)-> Ok (Const_float f)
+  | Pconst_float (f,Some c) -> Error (Unknown_literal (f, c))
 
 let constant_or_raise env loc cst =
   match constant cst with
@@ -1070,14 +1070,14 @@ let rec type_pat ~constrs ~labels ~no_existentials ~mode ~explode ~env
         pat_type = expected_ty;
         pat_attributes = sp.ppat_attributes;
         pat_env = !env }
-  | Ppat_interval (PConst_char c1, PConst_char c2) ->
+  | Ppat_interval (Pconst_char c1, Pconst_char c2) ->
       let open Ast_helper.Pat in
       let gloc = {loc with Location.loc_ghost=true} in
       let rec loop c1 c2 =
-        if c1 = c2 then constant ~loc:gloc (PConst_char c1)
+        if c1 = c2 then constant ~loc:gloc (Pconst_char c1)
         else
           or_ ~loc:gloc
-            (constant ~loc:gloc (PConst_char c1))
+            (constant ~loc:gloc (Pconst_char c1))
             (loop (Char.chr(Char.code c1 + 1)) c2)
       in
       let p = if c1 <= c2 then loop c1 c2 else loop c2 c1 in
@@ -1278,11 +1278,14 @@ let rec type_pat ~constrs ~labels ~no_existentials ~mode ~explode ~env
       begin match
         if mode = Split_or || mode = Splitting_or then raise Need_backtrack;
         let initial_pattern_variables = !pattern_variables in
+        let initial_module_variables = !module_variables in
         let p1 =
           try Some (type_pat ~mode:Inside_or sp1 expected_ty (fun x -> x))
           with Need_backtrack -> None in
         let p1_variables = !pattern_variables in
+        let p1_module_variables = !module_variables in
         pattern_variables := initial_pattern_variables;
+        module_variables := initial_module_variables;
         let p2 =
           try Some (type_pat ~mode:Inside_or sp2 expected_ty (fun x -> x))
           with Need_backtrack -> None in
@@ -1294,6 +1297,7 @@ let rec type_pat ~constrs ~labels ~no_existentials ~mode ~explode ~env
         let alpha_env =
           enter_orpat_variables loc !env p1_variables p2_variables in
         pattern_variables := p1_variables;
+        module_variables := p1_module_variables;
         { pat_desc = Tpat_or(p1, alpha_pat alpha_env p2, None);
           pat_loc = loc; pat_extra=[];
           pat_type = expected_ty;
@@ -1857,19 +1861,10 @@ let duplicate_ident_types loc caselist env =
   let caselist =
     List.filter (fun {pc_lhs} -> contains_gadt env pc_lhs) caselist in
   let idents = all_idents_cases caselist in
-  List.fold_left
-    (fun env s ->
-      try
-        (* XXX This will mark the value as being used;
-           I don't think this is what we want *)
-        let (path, desc) = Env.lookup_value (Longident.Lident s) env in
-        match path with
-          Path.Pident id ->
-            let desc = {desc with val_type = correct_levels desc.val_type} in
-            Env.add_value id desc env
-        | _ -> env
-      with Not_found -> env)
-    env idents
+  let upd desc = {desc with val_type = correct_levels desc.val_type} in
+  (* Be careful not the mark the original value as being used, and
+     to keep the same internal 'slot' to track unused opens. *)
+  List.fold_left (fun env s -> Env.update_value s upd env) env idents
 
 (* Typing of expressions *)
 
@@ -1953,7 +1948,7 @@ and type_expect_ ?in_function ?(recarg=Rejected) env sexp ty_expected =
           exp_attributes = sexp.pexp_attributes;
           exp_env = env }
       end
-  | Pexp_constant(PConst_string (str, _) as cst) -> (
+  | Pexp_constant(Pconst_string (str, _) as cst) -> (
     let cst = constant_or_raise env loc cst in
     (* Terrible hack for format strings *)
     let ty_exp = expand_head env ty_expected in
@@ -2995,9 +2990,9 @@ and type_format loc str env =
           | _ :: _ :: _ -> Some (mk_exp_loc (Pexp_tuple args)) in
         mk_exp_loc (Pexp_construct (mk_lid_loc lid, arg)) in
       let mk_cst cst = mk_exp_loc (Pexp_constant cst) in
-      let mk_int n = mk_cst (PConst_int (string_of_int n, None))
-      and mk_string str = mk_cst (PConst_string (str, None))
-      and mk_char chr = mk_cst (PConst_char chr) in
+      let mk_int n = mk_cst (Pconst_integer (string_of_int n, None))
+      and mk_string str = mk_cst (Pconst_string (str, None))
+      and mk_char chr = mk_cst (Pconst_char chr) in
       let rec mk_formatting_lit fmting = match fmting with
         | Close_box ->
           mk_constr "Close_box" []
@@ -3670,9 +3665,8 @@ and type_statement env sexp =
 and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
   (* ty_arg is _fully_ generalized *)
   let patterns = List.map (fun {pc_lhs=p} -> p) caselist in
-  let erase_either =
-    List.exists contains_polymorphic_variant patterns
-    && contains_variant_either ty_arg
+  let contains_polyvars = List.exists contains_polymorphic_variant patterns in
+  let erase_either = contains_polyvars && contains_variant_either ty_arg
   and has_gadts = List.exists (contains_gadt env) patterns in
 (*  prerr_endline ( if has_gadts then "contains gadt" else "no gadt"); *)
   let ty_arg =
@@ -3696,7 +3690,18 @@ and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
   in
 (*  if has_gadts then
     Format.printf "lev = %d@.%a@." lev Printtyp.raw_type_expr ty_res; *)
-  begin_def (); (* propagation of the argument *)
+  (* Do we need to propagate polymorphism *)
+  let propagate =
+    !Clflags.principal || do_init || (repr ty_arg).level = generic_level ||
+    let rec is_var spat =
+      match spat.ppat_desc with
+        Ppat_any | Ppat_var _ -> true
+      | Ppat_alias (spat, _) -> is_var spat
+      | _ -> false in
+    match caselist with
+      [{pc_lhs}] when is_var pc_lhs -> false
+    | _ -> true in
+  if propagate then begin_def (); (* propagation of the argument *)
   let ty_arg' = newvar () in
   let pattern_force = ref [] in
 (*  Format.printf "@[%i %i@ %a@]@." lev (get_current_level())
@@ -3740,11 +3745,15 @@ and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
   (* `Contaminating' unifications start here *)
   List.iter (fun f -> f()) !pattern_force;
   (* Post-processing and generalization *)
-  List.iter (iter_pattern (fun {pat_type=t} -> unify_var env t (newvar())))
-    patl;
-  List.iter (fun pat -> unify_pat env pat (instance env ty_arg)) patl;
-  end_def ();
-  List.iter (iter_pattern (fun {pat_type=t} -> generalize t)) patl;
+  let unify_pats ty = List.iter (fun pat -> unify_pat env pat ty) patl in
+  if propagate then begin
+    List.iter
+      (iter_pattern (fun {pat_type=t} -> unify_var env t (newvar()))) patl;
+    unify_pats (instance env ty_arg);
+    end_def ();
+    List.iter (iter_pattern (fun {pat_type=t} -> generalize t)) patl;
+  end
+  else if erase_either then unify_pats (instance env ty_arg);
   (* type bodies *)
   let in_function = if List.length caselist = 1 then in_function else None in
   let cases =
@@ -3789,14 +3798,20 @@ and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
     else
       Partial
   in
-  let ty_arg_check =
-    (* Hack: use for_saving to copy variables too *)
-    Subst.type_expr (Subst.for_saving Subst.identity) ty_arg in
-  add_delayed_check
-    (fun () ->
-      List.iter (fun (pat, (env, _)) -> check_absent_variant env pat)
-        pat_env_list;
-      check_unused ~lev env (instance env ty_arg_check) cases);
+  let unused_check ty_arg () =
+    List.iter (fun (pat, (env, _)) -> check_absent_variant env pat)
+      pat_env_list;
+    check_unused ~lev env (instance env ty_arg) cases ;
+    Parmatch.check_ambiguous_bindings cases
+  in
+  if contains_polyvars || do_init then
+    let ty_arg_check =
+      (* Hack: use for_saving to copy variables too *)
+      Subst.type_expr (Subst.for_saving Subst.identity) ty_arg in
+    add_delayed_check (unused_check ty_arg_check)
+  else
+    unused_check ty_arg ();
+  (* Check for unused cases, do not delay because of gadts *)
   if do_init then begin
     end_def ();
     (* Ensure that existential types do not escape *)

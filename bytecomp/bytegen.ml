@@ -153,10 +153,11 @@ let rec size_of_lambda = function
   | Llet(str, id, arg, body) -> size_of_lambda body
   | Lletrec(bindings, body) -> size_of_lambda body
   | Lprim(Pmakeblock(tag, mut), args) -> RHS_block (List.length args)
-  | Lprim (Pmakearray (Paddrarray|Pintarray), args) ->
+  | Lprim (Pmakearray ((Paddrarray|Pintarray), _), args) ->
       RHS_block (List.length args)
-  | Lprim (Pmakearray Pfloatarray, args) -> RHS_floatblock (List.length args)
-  | Lprim (Pmakearray Pgenarray, args) -> assert false
+  | Lprim (Pmakearray (Pfloatarray, _), args) ->
+      RHS_floatblock (List.length args)
+  | Lprim (Pmakearray (Pgenarray, _), args) -> assert false
   | Lprim (Pduprecord ((Record_regular | Record_inlined _), size), args) ->
       RHS_block size
   | Lprim (Pduprecord (Record_extension, size), args) ->
@@ -308,9 +309,9 @@ let comp_primitive p args =
   | Pintcomp cmp -> Kintcomp cmp
   | Pmakeblock(tag, mut) -> Kmakeblock(List.length args, tag)
   | Pfield n -> Kgetfield n
-  | Psetfield(n, ptr) -> Ksetfield n
+  | Psetfield(n, ptr, _init) -> Ksetfield n
   | Pfloatfield n -> Kgetfloatfield n
-  | Psetfloatfield n -> Ksetfloatfield n
+  | Psetfloatfield (n, _init) -> Ksetfloatfield n
   | Pduprecord _ -> Kccall("caml_obj_dup", 1)
   | Pccall p -> Kccall(p.prim_name, p.prim_arity)
   | Pnegint -> Knegint
@@ -571,7 +572,7 @@ let rec comp_expr env exp sz cont =
         in
         comp_init env sz decl_size
       end
-  | Lprim(Pidentity, [arg]) ->
+  | Lprim((Pidentity | Popaque), [arg]) ->
       comp_expr env arg sz cont
   | Lprim(Pignore, [arg]) ->
       comp_expr env arg sz (add_const_unit cont)
@@ -632,7 +633,7 @@ let rec comp_expr env exp sz cont =
         (Kpush::
          Kconst (Const_base (Const_int n))::
          Kaddint::cont)
-  | Lprim(Pmakearray kind, args) ->
+  | Lprim(Pmakearray (kind, _), args) ->
       begin match kind with
         Pintarray | Paddrarray ->
           comp_args env args sz (Kmakeblock(List.length args, 0) :: cont)
@@ -645,6 +646,16 @@ let rec comp_expr env exp sz cont =
                  (Kmakeblock(List.length args, 0) ::
                   Kccall("caml_make_array", 1) :: cont)
       end
+  | Lprim (Pduparray (kind, mutability), [Lprim (Pmakearray (kind', _), args)]) ->
+      assert (kind = kind');
+      comp_expr env (Lprim (Pmakearray (kind, mutability), args)) sz cont
+  | Lprim (Pduparray _, [arg]) ->
+      let prim_obj_dup =
+        Primitive.simple ~name:"caml_obj_dup" ~arity:1 ~alloc:true
+      in
+      comp_expr env (Lprim (Pccall prim_obj_dup, [arg])) sz cont
+  | Lprim (Pduparray _, _) ->
+      Misc.fatal_error "Bytegen.comp_expr: Pduparray takes exactly one arg"
 (* Integer first for enabling futher optimization (cf. emitcode.ml)  *)
   | Lprim (Pintcomp c, [arg ; (Lconst _ as k)]) ->
       let p = Pintcomp (commute_comparison c)

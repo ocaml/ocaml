@@ -34,31 +34,34 @@ let has_base_type exp base_ty_path =
   is_base_type exp.exp_env exp.exp_type base_ty_path
 
 let maybe_pointer_type env typ =
-  match scrape env typ with
-  | Tconstr(p, args, abbrev) ->
-      not (Path.same p Predef.path_int) &&
-      not (Path.same p Predef.path_char) &&
-      begin try
-        match Env.find_type p env with
-        | {type_kind = Type_variant []} -> true (* type exn *)
-        | {type_kind = Type_variant cstrs} ->
-            List.exists (fun c -> c.Types.cd_args <> Cstr_tuple []) cstrs
-        | _ -> true
-      with Not_found -> true
-        (* This can happen due to e.g. missing -I options,
-           causing some .cmi files to be unavailable.
-           Maybe we should emit a warning. *)
-      end
-  | Tvariant row ->
-      let row = Btype.row_repr row in
-      (* if all labels are devoid of arguments, not a pointer *)
-      not row.row_closed
-      || List.exists
-          (function
-            | _, (Rpresent (Some _) | Reither (false, _, _, _)) -> true
-            | _ -> false)
-          row.row_fields
-  | _ -> true
+  let maybe_pointer =
+    match scrape env typ with
+    | Tconstr(p, args, abbrev) ->
+        not (Path.same p Predef.path_int) &&
+        not (Path.same p Predef.path_char) &&
+        begin try
+          match Env.find_type p env with
+          | {type_kind = Type_variant []} -> true (* type exn *)
+          | {type_kind = Type_variant cstrs} ->
+              List.exists (fun c -> c.Types.cd_args <> Types.Cstr_tuple []) cstrs
+          | _ -> true
+        with Not_found -> true
+          (* This can happen due to e.g. missing -I options,
+             causing some .cmi files to be unavailable.
+             Maybe we should emit a warning. *)
+        end
+    | Tvariant row ->
+        let row = Btype.row_repr row in
+        (* if all labels are devoid of arguments, not a pointer *)
+        not row.row_closed
+        || List.exists
+            (function
+              | _, (Rpresent (Some _) | Reither (false, _, _, _)) -> true
+              | _ -> false)
+            row.row_fields
+    | _ -> true
+  in
+  if maybe_pointer then Pointer else Immediate
 
 let maybe_pointer exp = maybe_pointer_type exp.exp_env exp.exp_type
 
@@ -83,7 +86,7 @@ let array_element_kind env ty =
             {type_kind = Type_abstract} ->
               Pgenarray
           | {type_kind = Type_variant cstrs}
-            when List.for_all (fun c -> c.Types.cd_args = Cstr_tuple [])
+            when List.for_all (fun c -> c.Types.cd_args = Types.Cstr_tuple [])
                 cstrs ->
               Pintarray
           | {type_kind = _} ->

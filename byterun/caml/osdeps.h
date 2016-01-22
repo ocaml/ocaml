@@ -18,6 +18,22 @@
 
 #include "misc.h"
 
+/* Read at most [n] bytes from file descriptor [fd] into buffer [buf].
+   [flags] indicates whether [fd] is a socket
+   (bit [CHANNEL_FLAG_FROM_SOCKET] is set in this case, see [io.h]).
+   (This distinction matters for Win32, but not for Unix.)
+   Return number of bytes read.
+   In case of error, raises [Sys_error] or [Sys_blocked_io]. */
+extern int caml_read_fd(int fd, int flags, void * buf, int n);
+
+/* Write at most [n] bytes from buffer [buf] onto file descriptor [fd].
+   [flags] indicates whether [fd] is a socket
+   (bit [CHANNEL_FLAG_FROM_SOCKET] is set in this case, see [io.h]).
+   (This distinction matters for Win32, but not for Unix.)
+   Return number of bytes written.
+   In case of error, raises [Sys_error] or [Sys_blocked_io]. */
+extern int caml_write_fd(int fd, int flags, void * buf, int n);
+
 /* Decompose the given path into a list of directories, and add them
    to the given table.  Return the block to be freed later. */
 extern char * caml_decompose_path(struct ext_table * tbl, char * path);

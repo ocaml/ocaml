@@ -40,6 +40,7 @@ dl_defs=''
 verbose=no
 with_curses=yes
 debugruntime=noruntimed
+with_instrumented_runtime=false
 with_sharedlibs=yes
 partialld="ld -r"
 with_debugger=ocamldebugger
@@ -47,8 +48,10 @@ with_ocamldoc=ocamldoc
 with_ocamlbuild=ocamlbuild
 with_frame_pointers=false
 no_naked_pointers=false
+native_compiler=true
 TOOLPREF=""
 with_cfi=true
+flambda=false
 
 # Try to turn internationalization off, can cause config.guess to malfunction!
 unset LANG
@@ -144,6 +147,8 @@ while : ; do
         verbose=yes;;
     -with-debug-runtime|--with-debug-runtime)
         debugruntime=runtimed;;
+    -with-instrumented-runtime|--with-instrumented-runtime)
+        with_instrumented_runtime=true;;
     -no-debugger|--no-debugger)
         with_debugger="";;
     -no-ocamldoc|--no-ocamldoc)
@@ -156,6 +161,10 @@ while : ; do
         no_naked_pointers=true;;
     -no-cfi|--no-cfi)
         with_cfi=false;;
+    -no-native-compiler)
+        native_compiler=false;;
+    -flambda)
+        flambda=true;;
     *) if echo "$1" | grep -q -e '^--\?[a-zA-Z0-9-]\+='; then
          err "configure expects arguments of the form '-prefix /foo/bar'," \
              "not '-prefix=/foo/bar' (note the '=')."
@@ -372,7 +381,7 @@ case "$bytecc,$target" in
     bytecccompopts="$bytecccompopts -DUMK";;
   *,powerpc-*-aix*)
     # Avoid name-space pollution by requiring Unix98-conformant includes
-    bytecccompopts="$bytecccompopts -D_XOPEN_SOURCE=500";;
+    bytecccompopts="$bytecccompopts -D_XOPEN_SOURCE=500 -D_ALL_SOURCE";;
   *,*-*-cygwin*)
     case $target in
       i686-*) flavor=cygwin;;
@@ -857,6 +866,12 @@ esac
 
 case "$arch64,$arch,$model" in
   true,sparc,*|true,power,ppc|false,amd64,*)
+      arch=none; model=default; system=unknown;;
+esac
+
+case "$native_compiler" in
+    true) ;;
+    false)
       arch=none; model=default; system=unknown;;
 esac
 
@@ -1687,6 +1702,16 @@ if $no_naked_pointers; then
   echo "#define NO_NAKED_POINTERS" >> m.h
 fi
 
+# Check for mmap support for huge pages and contiguous heap
+if sh ./runtest mmap-huge.c; then
+    has_huge_pages=true
+    echo "#define HAS_HUGE_PAGES" >>s.h
+    echo "#define HUGE_PAGE_SIZE (4 * 1024 * 1024)" >>s.h
+    inf "mmap supports huge pages"
+else
+    has_huge_pages=false
+fi
+
 # Finish generated files
 
 cclibs="$cclibs $mathlib"
@@ -1755,6 +1780,7 @@ if $shared_libraries_supported; then
 else
   echo "SHARED=noshared" >>Makefile
 fi
+echo "RUNTIMEI=${with_instrumented_runtime}" >>Makefile
 echo "WITH_DEBUGGER=${with_debugger}" >>Makefile
 echo "WITH_OCAMLDOC=${with_ocamldoc}" >>Makefile
 echo "WITH_OCAMLBUILD=${with_ocamlbuild}" >>Makefile
@@ -1765,6 +1791,7 @@ echo "HOST=$host" >> Makefile
 if [ "$ostype" = Cygwin ]; then
   echo "DIFF=diff -q --strip-trailing-cr" >>Makefile
 fi
+echo "FLAMBDA=$flambda" >> Makefile
 
 
 rm -f tst hasgot.c
@@ -1833,6 +1860,11 @@ else
   else
   inf "        profiling with gprof ..... not supported"
   fi
+  if test "$flambda" = "true"; then
+  inf "        using flambda middle-end . yes"
+  else
+  inf "        using flambda middle-end . no"
+  fi
 fi
 
 if test "$with_debugger" = "ocamldebugger"; then
@@ -1843,6 +1875,10 @@ fi
 
 if test "$debugruntime" = "runtimed"; then
   inf "Debug runtime will be compiled and installed"
+fi
+
+if $with_instrumented_runtime; then
+  inf "Instrumented runtime will be compiled and installed"
 fi
 
 inf "Additional libraries supported:"

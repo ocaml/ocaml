@@ -19,8 +19,8 @@ include stdlib/StdlibModules
 
 CAMLC=$(CAMLRUN) boot/ocamlc -g -nostdlib -I boot
 CAMLOPT=$(CAMLRUN) ./ocamlopt -g -nostdlib -I stdlib -I otherlibs/dynlink
-COMPFLAGS=-strict-sequence -w +33..39+48+50 -warn-error A -bin-annot \
-          -safe-string $(INCLUDES)
+COMPFLAGS=-strict-sequence -principal -w +33..39+48+50 -warn-error A -bin-annot \
+          -safe-string -strict-formats $(INCLUDES)
 LINKFLAGS=
 
 YACCFLAGS=-v
@@ -36,10 +36,12 @@ OCAMLDOC_OPT=$(WITH_OCAMLDOC:=.opt)
 INCLUDES=-I utils -I parsing -I typing -I bytecomp -I asmcomp -I driver \
 	 -I toplevel
 
-UTILS=utils/config.cmo utils/clflags.cmo \
-  utils/misc.cmo utils/tbl.cmo \
+UTILS=utils/config.cmo utils/misc.cmo \
+  utils/identifiable.cmo utils/numbers.cmo utils/arg_helper.cmo \
+  utils/clflags.cmo utils/tbl.cmo utils/timings.cmo \
   utils/terminfo.cmo utils/ccomp.cmo utils/warnings.cmo \
-  utils/consistbl.cmo
+  utils/consistbl.cmo \
+  utils/strongly_connected_components.cmo
 
 PARSING=parsing/location.cmo parsing/longident.cmo \
   parsing/docstrings.cmo parsing/ast_helper.cmo \
@@ -71,6 +73,7 @@ COMP=bytecomp/lambda.cmo bytecomp/printlambda.cmo \
   bytecomp/translcore.cmo \
   bytecomp/translclass.cmo bytecomp/translmod.cmo \
   bytecomp/simplif.cmo bytecomp/runtimedef.cmo \
+  bytecomp/debuginfo.cmo \
   driver/pparse.cmo driver/main_args.cmo \
   driver/compenv.cmo driver/compmisc.cmo
 
@@ -98,7 +101,7 @@ endif
 
 ASMCOMP=\
   $(ARCH_SPECIFIC_ASMCOMP) \
-  asmcomp/arch.cmo asmcomp/debuginfo.cmo \
+  asmcomp/arch.cmo \
   asmcomp/cmm.cmo asmcomp/printcmm.cmo \
   asmcomp/reg.cmo asmcomp/mach.cmo asmcomp/proc.cmo \
   asmcomp/clambda.cmo asmcomp/printclambda.cmo asmcomp/compilenv.cmo \
@@ -122,14 +125,14 @@ ASMCOMP=\
 TOPLEVEL=toplevel/genprintval.cmo toplevel/toploop.cmo \
   toplevel/trace.cmo toplevel/topdirs.cmo toplevel/topmain.cmo
 
+OPTTOPLEVEL=toplevel/genprintval.cmo toplevel/opttoploop.cmo \
+  toplevel/opttopdirs.cmo toplevel/opttopmain.cmo
 BYTESTART=driver/main.cmo
 
 OPTSTART=driver/optmain.cmo
 
 TOPLEVELSTART=toplevel/topstart.cmo
 
-NATTOPOBJS=$(UTILS) $(PARSING) $(TYPING) $(COMP) $(ASMCOMP) \
-  toplevel/genprintval.cmo toplevel/opttoploop.cmo toplevel/opttopdirs.cmo \
-  toplevel/opttopmain.cmo toplevel/opttopstart.cmo
+OPTTOPLEVELSTART=toplevel/opttopstart.cmo
 
 PERVASIVES=$(STDLIB_MODULES) outcometree topdirs toploop

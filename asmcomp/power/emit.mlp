@@ -1132,6 +1132,7 @@ let data l =
 
 let begin_assembly() =
   reset_debug_info();
+  `	.file	\"\"\n`;  (* PR#7037 *)
   begin match abi with
   | ELF64v2 -> `	.abiversion 2\n`
   | _ -> ()

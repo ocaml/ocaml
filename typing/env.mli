@@ -107,6 +107,10 @@ val lookup_class:
 val lookup_cltype:
   ?loc:Location.t -> Longident.t -> t -> Path.t * class_type_declaration
 
+val update_value:
+  string -> (value_description -> value_description) -> t -> t
+  (* Used only in Typecore.duplicate_ident_types. *)
+
 exception Recmodule
   (* Raise by lookup_module when the identifier refers
      to one of the modules of a recursive definition
@@ -183,6 +187,9 @@ val crc_of_unit: string -> Digest.t
 (* Return the set of compilation units imported, with their CRC *)
 
 val imports: unit -> (string * Digest.t option) list
+
+(* [is_imported_opaque md] returns true if [md] is an opaque imported module  *)
+val is_imported_opaque: string -> bool
 
 (* Direct access to the table of imported compilation units with their CRC *)
 

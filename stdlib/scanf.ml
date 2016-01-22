@@ -128,6 +128,9 @@ module type SCANNING = sig
 
   val close_in : in_channel -> unit;;
 
+  val memo_from_channel : Pervasives.in_channel -> in_channel;;
+  (* Obsolete. *)
+
 end
 ;;
 
@@ -293,12 +296,13 @@ module Scanning : SCANNING = struct
      needed; additionally, the input buffer is the only source of character of
      a scanner. The [scanbuf] input buffers are defined in module {!Scanning}.
 
-     Now we understand that it is extremely important that related successive
-     calls to scanners indeed read from the same input buffer. In effect, if a
-     scanner [scan1] is reading from [ib1] and stores an unused lookahead
-     character [c1] into its input buffer [ib1], then another scanner [scan2]
-     not reading from the same buffer [ib1] will miss the character [c1],
-     seemingly vanished in the air from the point of view of [scan2].
+     Now we understand that it is extremely important that related and
+     successive calls to scanners indeed read from the same input buffer.
+     In effect, if a scanner [scan1] is reading from [ib1] and stores an
+     unused lookahead character [c1] into its input buffer [ib1], then
+     another scanner [scan2] not reading from the same buffer [ib1] will miss
+     the character [c1], seemingly vanished in the air from the point of view
+     of [scan2].
 
      This mechanism works perfectly to read from strings, from files, and from
      functions, since in those cases, allocating two buffers reading from the
@@ -313,22 +317,7 @@ module Scanning : SCANNING = struct
      character in its input buffer. In conclusion, you should never mix direct
      low level reading and high level scanning from the same input channel.
 
-     This phenomenon of reading mess is even worse when one defines more than
-     one scanning buffer reading from the same input channel [ic].
-     Unfortunately, we have no simple way to get rid of this problem
-     (unless the basic input channel API is modified to offer a 'consider this
-     char as unread' procedure to keep back the unused lookahead character as
-     available in the input channel for further reading).
-
-     To prevent some of the confusion the scanning buffer allocation function
-     is a memo function that never allocates two different scanning buffers for
-     the same input channel. This way, the user can naively perform successive
-     call to [fscanf] below, without allocating a new scanning buffer at each
-     invocation and hence preserving the expected semantics.
-
-     As mentioned above, a more ambitious fix could be to change the input
-     channel API to allow arbitrary mixing of direct and formatted reading from
-     input channels. *)
+  *)
 
   (* Perform bufferized input to improve efficiency. *)
   let file_buffer_size = ref 1024;;
@@ -359,19 +348,21 @@ module Scanning : SCANNING = struct
   ;;
 
   let from_ic_close_at_end = from_ic scan_close_at_end;;
+  let from_ic_raise_at_end = from_ic scan_raise_at_end;;
 
   (* The scanning buffer reading from [Pervasives.stdin].
      One could try to define [stdib] as a scanning buffer reading a character
      at a time (no bufferization at all), but unfortunately the top-level
      interaction would be wrong. This is due to some kind of
      'race condition' when reading from [Pervasives.stdin],
-     since the interactive compiler and [scanf] will simultaneously read the
-     material they need from [Pervasives.stdin]; then, confusion will result
-     from what should be read by the top-level and what should be read
-     by [scanf].
-     This is even more complicated by the one character lookahead that [scanf]
-     is sometimes obliged to maintain: the lookahead character will be
-     available for the next ([scanf]) entry, seemingly coming from nowhere.
+     since the interactive compiler and [Scanf.scanf] will simultaneously
+     read the material they need from [Pervasives.stdin]; then, confusion
+     will result from what should be read by the top-level and what should be
+     read by [Scanf.scanf].
+     This is even more complicated by the one character lookahead that
+     [Scanf.scanf] is sometimes obliged to maintain: the lookahead character
+     will be available for the next [Scanf.scanf] entry, seemingly coming from
+     nowhere.
      Also no [End_of_file] is raised when reading from stdin: if not enough
      characters have been read, we simply ask to read more. *)
   let stdin =
@@ -395,47 +386,46 @@ module Scanning : SCANNING = struct
   let from_file = open_in;;
   let from_file_bin = open_in_bin;;
 
-  module Ib :
-    Hashtbl.HashedType
-    with type t = in_channel =
-  struct
-    type t = in_channel;;
-    let equal ib1 ib2 = ib1.ic_input_name = ib2.ic_input_name;;
-    let hash ib = Hashtbl.hash ib;;
-  end
+  let from_channel ic =
+    from_ic_raise_at_end (From_channel ic) ic
   ;;
-
-  module Memo = Weak.Make (Ib);;
-
-  let memo_table = Memo.create 17;;
-
-  let memo_from_ic scan_close_ic ic =
-    let ic_name = From_channel ic in
-    let ib_option =
-      Memo.fold
-        (fun ib opt ->
-         match opt with
-         | None -> if ib.ic_input_name = ic_name then Some ib else opt
-         | opt -> opt)
-        memo_table None in
-    match ib_option with
-    | None ->
-      let ib = from_ic scan_close_ic ic_name ic in
-      Memo.add memo_table ib;
-      ib
-    | Some ib -> ib
-  ;;
-
-  let from_channel = memo_from_ic scan_raise_at_end;;
 
   let close_in ib =
     match ib.ic_input_name with
     | From_channel ic ->
-      Memo.remove memo_table ib;
       Pervasives.close_in ic
     | From_file (_fname, ic) -> Pervasives.close_in ic
-    | From_string | From_function -> ()
+    | From_function | From_string -> ()
   ;;
+
+  (*
+     Obsolete: a memo [from_channel] version to build a [Scanning.in_channel]
+     scanning buffer out of a [Pervasives.in_channel].
+     This function was used to try to preserve the scanning
+     semantics for the (now obsolete) function [fscanf].
+     Given that all scanner must read from a [Scanning.in_channel] scanning
+     buffer, [fscanf] must read from one!
+     More precisely, given [ic], all successive calls [fscanf ic] must read
+     from the same scanning buffer.
+     This obliged this library to allocated scanning buffers that were
+     not properly garbbage collectable, hence leading to memory leaks.
+     If you need to read from a [Pervasives.in_channel] input channel
+     [ic], simply define a [Scanning.in_channel] formatted input channel as in
+     [let ib = Scanning.from_channel ic], then use [Scanf.bscanf ib] as usual.
+  *)
+  let memo_from_ic =
+    let memo = ref [] in
+    (fun scan_close_ic ic ->
+     try List.assq ic !memo with
+     | Not_found ->
+       let ib =
+         from_ic scan_close_ic (From_channel ic) ic in
+       memo := (ic, ib) :: !memo;
+       ib)
+  ;;
+
+  (* Obsolete: see {!memo_from_ic} above. *)
+  let memo_from_channel = memo_from_ic scan_raise_at_end;;
 
 end
 ;;
@@ -500,13 +490,13 @@ let rec skip_whites ib =
 (* Checking that [c] is indeed in the input, then skips it.
    In this case, the character [c] has been explicitly specified in the
    format as being mandatory in the input; hence we should fail with
-   End_of_file in case of end_of_input. (Remember that Scan_failure is raised
-   only when (we can prove by evidence) that the input does not match the
-   format string given. We must thus differentiate End_of_file as an error
-   due to lack of input, and Scan_failure which is due to provably wrong
-   input. I am not sure this is worth the burden: it is complex and somehow
-   subliminal; should be clearer to fail with Scan_failure "Not enough input
-   to complete scanning"!)
+   [End_of_file] in case of end_of_input.
+   (Remember that [Scan_failure] is raised only when (we can prove by
+   evidence) that the input does not match the format string given. We must
+   thus differentiate [End_of_file] as an error due to lack of input, and
+   [Scan_failure] which is due to provably wrong input. I am not sure this is
+   worth the burden: it is complex and somehow subliminal; should be clearer
+   to fail with Scan_failure "Not enough input to complete scanning"!)
 
    That's why, waiting for a better solution, we use checked_peek_char here.
    We are also careful to treat "\r\n" in the input as an end of line marker:
@@ -543,18 +533,37 @@ let token_bool ib =
   | s -> bad_input (Printf.sprintf "invalid boolean '%s'" s)
 ;;
 
+(* The type of integer conversions. *)
+type integer_conversion =
+  | B_conversion (* Unsigned binary conversion *)
+  | D_conversion (* Signed decimal conversion *)
+  | I_conversion (* Signed integer conversion *)
+  | O_conversion (* Unsigned octal conversion *)
+  | U_conversion (* Unsigned decimal conversion *)
+  | X_conversion (* Unsigned hexadecimal conversion *)
+;;
+
+let integer_conversion_of_char = function
+  | 'b' -> B_conversion
+  | 'd' -> D_conversion
+  | 'i' -> I_conversion
+  | 'o' -> O_conversion
+  | 'u' -> U_conversion
+  | 'x' | 'X' -> X_conversion
+  | _ -> assert false
+;;
+
 (* Extract an integer literal token.
    Since the functions Pervasives.*int*_of_string do not accept a leading +,
    we skip it if necessary. *)
 let token_int_literal conv ib =
   let tok =
     match conv with
-    | 'd' | 'i' -> Scanning.token ib
-    | 'u' -> "0u" ^ Scanning.token ib
-    | 'o' -> "0o" ^ Scanning.token ib
-    | 'x' | 'X' -> "0x" ^ Scanning.token ib
-    | 'b' -> "0b" ^ Scanning.token ib
-    | _ -> assert false in
+    | D_conversion | I_conversion -> Scanning.token ib
+    | U_conversion -> "0u" ^ Scanning.token ib
+    | O_conversion -> "0o" ^ Scanning.token ib
+    | X_conversion -> "0x" ^ Scanning.token ib
+    | B_conversion -> "0b" ^ Scanning.token ib in
   let l = String.length tok in
   if l = 0 || tok.[0] <> '+' then tok else String.sub tok 1 (l - 1)
 ;;
@@ -599,55 +608,57 @@ let token_int64 conv ib = int64_of_string (token_int_literal conv ib);;
    available before calling one of the digit scanning functions). *)
 
 (* The decimal case is treated especially for optimization purposes. *)
-let rec scan_decimal_digits width ib =
+let rec scan_decimal_digit_star width ib =
   if width = 0 then width else
   let c = Scanning.peek_char ib in
   if Scanning.eof ib then width else
   match c with
   | '0' .. '9' as c ->
     let width = Scanning.store_char width ib c in
-    scan_decimal_digits width ib
+    scan_decimal_digit_star width ib
   | '_' ->
     let width = Scanning.ignore_char width ib in
-    scan_decimal_digits width ib
+    scan_decimal_digit_star width ib
   | _ -> width
 ;;
 
-let scan_decimal_digits_plus width ib =
+let scan_decimal_digit_plus width ib =
   if width = 0 then bad_token_length "decimal digits" else
   let c = Scanning.checked_peek_char ib in
   match c with
   | '0' .. '9' ->
     let width = Scanning.store_char width ib c in
-    scan_decimal_digits width ib
+    scan_decimal_digit_star width ib
   | c ->
     bad_input (Printf.sprintf "character %C is not a decimal digit" c)
 ;;
 
-let scan_digits_plus basis digitp width ib =
-  (* To scan numbers from other bases, we use a predicate argument to
-     scan_digits. *)
-  let rec scan_digits width =
+(* To scan numbers from other bases, we use a predicate argument to
+   scan digits. *)
+let scan_digit_star digitp width ib =
+  let rec scan_digits width ib =
     if width = 0 then width else
     let c = Scanning.peek_char ib in
     if Scanning.eof ib then width else
     match c with
     | c when digitp c ->
       let width = Scanning.store_char width ib c in
-      scan_digits width
+      scan_digits width ib
     | '_' ->
       let width = Scanning.ignore_char width ib in
-      scan_digits width
+      scan_digits width ib
     | _ -> width in
+  scan_digits width ib
+;;
 
+let scan_digit_plus basis digitp width ib =
   (* Ensure we have got enough width left,
      and read at list one digit. *)
   if width = 0 then bad_token_length "digits" else
   let c = Scanning.checked_peek_char ib in
-
   if digitp c then
     let width = Scanning.store_char width ib c in
-    scan_digits width
+    scan_digit_star digitp width ib
   else
     bad_input (Printf.sprintf "character %C is not a valid %s digit" c basis)
 ;;
@@ -657,24 +668,24 @@ let is_binary_digit = function
   | _ -> false
 ;;
 
-let scan_binary_int = scan_digits_plus "binary" is_binary_digit;;
+let scan_binary_int = scan_digit_plus "binary" is_binary_digit;;
 
 let is_octal_digit = function
   | '0' .. '7' -> true
   | _ -> false
 ;;
 
-let scan_octal_int = scan_digits_plus "octal" is_octal_digit;;
+let scan_octal_int = scan_digit_plus "octal" is_octal_digit;;
 
 let is_hexa_digit = function
   | '0' .. '9' | 'a' .. 'f' | 'A' .. 'F' -> true
   | _ -> false
 ;;
 
-let scan_hexadecimal_int = scan_digits_plus "hexadecimal" is_hexa_digit;;
+let scan_hexadecimal_int = scan_digit_plus "hexadecimal" is_hexa_digit;;
 
 (* Scan a decimal integer. *)
-let scan_unsigned_decimal_int = scan_decimal_digits_plus;;
+let scan_unsigned_decimal_int = scan_decimal_digit_plus;;
 
 let scan_sign width ib =
   let c = Scanning.checked_peek_char ib in
@@ -704,7 +715,7 @@ let scan_unsigned_int width ib =
     | 'x' | 'X' -> scan_hexadecimal_int (Scanning.store_char width ib c) ib
     | 'o' -> scan_octal_int (Scanning.store_char width ib c) ib
     | 'b' -> scan_binary_int (Scanning.store_char width ib c) ib
-    | _ -> scan_decimal_digits width ib end
+    | _ -> scan_decimal_digit_star width ib end
   | _ -> scan_unsigned_decimal_int width ib
 ;;
 
@@ -713,32 +724,31 @@ let scan_optionally_signed_int width ib =
   scan_unsigned_int width ib
 ;;
 
-let scan_int_conv conv width ib =
+let scan_int_conversion conv width ib =
   match conv with
-  | 'b' -> scan_binary_int width ib
-  | 'd' -> scan_optionally_signed_decimal_int width ib
-  | 'i' -> scan_optionally_signed_int width ib
-  | 'o' -> scan_octal_int width ib
-  | 'u' -> scan_unsigned_decimal_int width ib
-  | 'x' | 'X' -> scan_hexadecimal_int width ib
-  | _ -> assert false
+  | B_conversion -> scan_binary_int width ib
+  | D_conversion -> scan_optionally_signed_decimal_int width ib
+  | I_conversion -> scan_optionally_signed_int width ib
+  | O_conversion -> scan_octal_int width ib
+  | U_conversion -> scan_unsigned_decimal_int width ib
+  | X_conversion -> scan_hexadecimal_int width ib
 ;;
 
 (* Scanning floating point numbers. *)
 
 (* Fractional part is optional and can be reduced to 0 digits. *)
-let scan_frac_part width ib =
+let scan_fractional_part width ib =
   if width = 0 then width else
   let c = Scanning.peek_char ib in
   if Scanning.eof ib then width else
   match c with
   | '0' .. '9' as c ->
-    scan_decimal_digits (Scanning.store_char width ib c) ib
+    scan_decimal_digit_star (Scanning.store_char width ib c) ib
   | _ -> width
 ;;
 
 (* Exp part is optional and can be reduced to 0 digits. *)
-let scan_exp_part width ib =
+let scan_exponent_part width ib =
   if width = 0 then width else
   let c = Scanning.peek_char ib in
   if Scanning.eof ib then width else
@@ -752,14 +762,14 @@ let scan_exp_part width ib =
    OCaml lexical convention since the integer part can be empty):
    an optional sign, followed by a possibly empty sequence of decimal
    digits (e.g. -.1). *)
-let scan_int_part width ib =
+let scan_integer_part width ib =
   let width = scan_sign width ib in
-  scan_decimal_digits width ib
+  scan_decimal_digit_star width ib
 ;;
 
 (*
    For the time being we have (as found in scanf.mli):
-   The field width is composed of an optional integer literal
+   the field width is composed of an optional integer literal
    indicating the maximal width of the token to read.
    Unfortunately, the type-checker let the user write an optional precision,
    since this is valid for printf format strings.
@@ -785,12 +795,11 @@ let scan_int_part width ib =
    [int32], [int64], and [native_int] correspondent), the [precision]
    indicates the required minimum width of the token read,
 
-   - on all other conversions, the width and precision are meaningless and
-   ignored (FIXME: lead to a runtime error ? type checking error ?).
+   - on all other conversions, the width and precision specify the [max, min]
+   range for the width of the token read.
 *)
-
 let scan_float width precision ib =
-  let width = scan_int_part width ib in
+  let width = scan_integer_part width ib in
   if width = 0 then width, precision else
   let c = Scanning.peek_char ib in
   if Scanning.eof ib then width, precision else
@@ -798,15 +807,17 @@ let scan_float width precision ib =
   | '.' ->
     let width = Scanning.store_char width ib c in
     let precision = min width precision in
-    let width = width - (precision - scan_frac_part precision ib) in
-    scan_exp_part width ib, precision
+    let width = width - (precision - scan_fractional_part precision ib) in
+    scan_exponent_part width ib, precision
   | _ ->
-    scan_exp_part width ib, precision
+    scan_exponent_part width ib, precision
 ;;
 
 let check_case_insensitive_string width ib error str =
-  let lowercase c = match c with
-    | 'A' .. 'Z' -> char_of_int (int_of_char c - int_of_char 'A' + int_of_char 'a')
+  let lowercase c =
+    match c with
+    | 'A' .. 'Z' ->
+      char_of_int (int_of_char c - int_of_char 'A' + int_of_char 'a')
     | _ -> c in
   let len = String.length str in
   let width = ref width in
@@ -865,25 +876,26 @@ let scan_hex_float width precision ib =
 
 let scan_caml_float_rest width precision ib =
   if width = 0 || Scanning.end_of_input ib then bad_float ();
-  let width = scan_decimal_digits width ib in
+  let width = scan_decimal_digit_star width ib in
   if width = 0 || Scanning.end_of_input ib then bad_float ();
-  match Scanning.peek_char ib with
-  | '.' as c ->
+  let c = Scanning.peek_char ib in
+  match c with
+  | '.' ->
     let width = Scanning.store_char width ib c in
     (* The effective width available for scanning the fractional part is
        the minimum of declared precision and width left. *)
     let precision = min width precision in
     (* After scanning the fractional part with [precision] provisional width,
        [width_precision] is left. *)
-    let width_precision = scan_frac_part precision ib in
+    let width_precision = scan_fractional_part precision ib in
     (* Hence, scanning the fractional part took exactly
        [precision - width_precision] chars. *)
     let frac_width = precision - width_precision in
     (* And new provisional width is [width - width_precision. *)
     let width = width - frac_width in
-    scan_exp_part width ib
+    scan_exponent_part width ib
   | 'e' | 'E' ->
-    scan_exp_part width ib
+    scan_exponent_part width ib
   | _ -> bad_float ()
 ;;
 
@@ -928,6 +940,10 @@ let scan_caml_float width precision ib =
     let width = Scanning.store_char width ib c in
     if width = 0 || Scanning.end_of_input ib then bad_float ();
     scan_caml_float_rest width precision ib
+(* Special case of nan and infinity:
+  | 'i' -> 
+  | 'n' ->
+*)
   | _ -> bad_float ()
 ;;
 
@@ -948,8 +964,7 @@ let scan_string stp width ib =
       | None ->
         match c with
         | ' ' | '\t' | '\n' | '\r' -> width
-        | _ -> loop (Scanning.store_char width ib c)
-  in
+        | _ -> loop (Scanning.store_char width ib c) in
   loop width
 ;;
 
@@ -1117,43 +1132,50 @@ let scan_bool ib =
       bad_input
         (Printf.sprintf "the character %C cannot start a boolean" c) in
   scan_string None m ib
+;;
 
 (* Scan a string containing elements in char_set and terminated by scan_indic
    if provided. *)
 let scan_chars_in_char_set char_set scan_indic width ib =
   let rec scan_chars i stp =
     let c = Scanning.peek_char ib in
-    if i > 0 && not (Scanning.eof ib) && is_in_char_set char_set c &&
-      int_of_char c <> stp then
+    if i > 0 && not (Scanning.eof ib) &&
+       is_in_char_set char_set c &&
+       int_of_char c <> stp then
       let _ = Scanning.store_char max_int ib c in
-      scan_chars (i - 1) stp;
-  in
+      scan_chars (i - 1) stp in
   match scan_indic with
   | None -> scan_chars width (-1);
   | Some c ->
     scan_chars width (int_of_char c);
     if not (Scanning.eof ib) then
       let ci = Scanning.peek_char ib in
-      if c = ci then Scanning.invalidate_current_char ib
+      if c = ci
+      then Scanning.invalidate_current_char ib
       else character_mismatch c ci
+;;
 
 (* The global error report function for [Scanf]. *)
 let scanf_bad_input ib = function
   | Scan_failure s | Failure s ->
     let i = Scanning.char_count ib in
-    bad_input (Printf.sprintf "scanf: bad input at char number %i: %S" i s)
+    bad_input (Printf.sprintf "scanf: bad input at char number %i: %s" i s)
   | x -> raise x
+;;
 
 (* Get the content of a counter from an input buffer. *)
-let get_counter ib counter = match counter with
+let get_counter ib counter =
+  match counter with
   | Line_counter -> Scanning.line_count ib
   | Char_counter -> Scanning.char_count ib
   | Token_counter -> Scanning.token_count ib
+;;
 
 (* Compute the width of a padding option (see "%42{" and "%123("). *)
 let width_of_pad_opt pad_opt = match pad_opt with
   | None -> max_int
   | Some width -> width
+;;
 
 let stopper_of_formatting_lit fmting =
   if fmting = Escaped_percent then '%', "" else
@@ -1161,6 +1183,7 @@ let stopper_of_formatting_lit fmting =
     let stp = str.[1] in
     let sub_str = String.sub str 2 (String.length str - 2) in
     stp, sub_str
+;;
 
 (******************************************************************************)
                            (* Readers managment *)
@@ -1308,20 +1331,20 @@ fun ib fmt readers -> match fmt with
     let scan width _ ib = scan_caml_string width ib in
     pad_prec_scanf ib rest readers pad No_precision scan token_string
   | Int (iconv, pad, prec, rest) ->
-    let c = char_of_iconv iconv in
-    let scan width _ ib = scan_int_conv c width ib in
+    let c = integer_conversion_of_char (char_of_iconv iconv) in
+    let scan width _ ib = scan_int_conversion c width ib in
     pad_prec_scanf ib rest readers pad prec scan (token_int c)
   | Int32 (iconv, pad, prec, rest) ->
-    let c = char_of_iconv iconv in
-    let scan width _ ib = scan_int_conv c width ib in
+    let c = integer_conversion_of_char (char_of_iconv iconv) in
+    let scan width _ ib = scan_int_conversion c width ib in
     pad_prec_scanf ib rest readers pad prec scan (token_int32 c)
   | Nativeint (iconv, pad, prec, rest) ->
-    let c = char_of_iconv iconv in
-    let scan width _ ib = scan_int_conv c width ib in
+    let c = integer_conversion_of_char (char_of_iconv iconv) in
+    let scan width _ ib = scan_int_conversion c width ib in
     pad_prec_scanf ib rest readers pad prec scan (token_nativeint c)
   | Int64 (iconv, pad, prec, rest) ->
-    let c = char_of_iconv iconv in
-    let scan width _ ib = scan_int_conv c width ib in
+    let c = integer_conversion_of_char (char_of_iconv iconv) in
+    let scan width _ ib = scan_int_conversion c width ib in
     pad_prec_scanf ib rest readers pad prec scan (token_int64 c)
   | Float (Float_F, pad, prec, rest) ->
     pad_prec_scanf ib rest readers pad prec scan_caml_float token_float
@@ -1488,33 +1511,36 @@ let kscanf ib ef (Format (fmt, str)) =
   in
   take_format_readers k fmt
 
-let kbscanf = kscanf
+(***)
+
+let kbscanf = kscanf;;
+let bscanf ib fmt = kbscanf ib scanf_bad_input fmt;;
+
+let ksscanf s ef fmt = kbscanf (Scanning.from_string s) ef fmt;;
+let sscanf s fmt = kbscanf (Scanning.from_string s) scanf_bad_input fmt;;
+
+let scanf fmt = kscanf Scanning.stdib scanf_bad_input fmt;;
 
 (***)
 
-let ksscanf s ef fmt = kbscanf (Scanning.from_string s) ef fmt
-let kfscanf ic ef fmt = kbscanf (Scanning.from_channel ic) ef fmt
-let bscanf ib fmt = kscanf ib scanf_bad_input fmt
-let fscanf ic fmt = kscanf (Scanning.from_channel ic) scanf_bad_input fmt
-let sscanf s fmt = kscanf (Scanning.from_string s) scanf_bad_input fmt
-let scanf fmt = kscanf Scanning.stdib scanf_bad_input fmt
-
-(***)
-
-let bscanf_format : Scanning.in_channel -> ('a, 'b, 'c, 'd, 'e, 'f) format6 ->
+(* Scanning format strings. *)
+let bscanf_format :
+  Scanning.in_channel -> ('a, 'b, 'c, 'd, 'e, 'f) format6 ->
   (('a, 'b, 'c, 'd, 'e, 'f) format6 -> 'g) -> 'g =
   fun ib format f ->
     let _ = scan_caml_string max_int ib in
     let str = token_string ib in
     let fmt' =
       try format_of_string_format str format
-      with Failure msg -> bad_input msg
-    in
+      with Failure msg -> bad_input msg in
     f fmt'
+;;
 
-let sscanf_format : string -> ('a, 'b, 'c, 'd, 'e, 'f) format6 ->
+let sscanf_format :
+  string -> ('a, 'b, 'c, 'd, 'e, 'f) format6 ->
   (('a, 'b, 'c, 'd, 'e, 'f) format6 -> 'g) -> 'g =
   fun s format f -> bscanf_format (Scanning.from_string s) format f
+;;
 
 let string_to_String s =
   let l = String.length s in
@@ -1536,3 +1562,7 @@ let format_from_string s fmt =
 let unescaped s =
   sscanf ("\"" ^ s ^ "\"") "%S%!" (fun x -> x)
 ;;
+
+(* Deprecated *)
+let kfscanf ic ef fmt = kbscanf (Scanning.memo_from_channel ic) ef fmt;;
+let fscanf ic fmt = kscanf (Scanning.memo_from_channel ic) scanf_bad_input fmt;;

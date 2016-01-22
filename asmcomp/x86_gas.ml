@@ -295,6 +295,7 @@ let print_line b = function
 
 let generate_asm oc lines =
   let b = Buffer.create 10000 in
+  output_string oc "\t.file \"\"\n"; (* PR#7037 *)
   List.iter
     (fun i ->
        Buffer.clear b;

@@ -800,6 +800,7 @@ and transl_recmodule_modtypes loc env sdecls =
       )
       env ids
   in
+  Ctype.init_def(Ident.current_time()); (* PR#7082 *)
   let init =
     List.map2
       (fun id pmd ->
@@ -1453,16 +1454,20 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
     (* moved to genannot *)
     List.iter (function {pstr_loc = l} -> Stypes.record_phrase l) sstr;
   let previous_saved_types = Cmt_format.get_saved_types () in
-  Builtin_attributes.warning_enter_scope ();
+  if not toplevel then Builtin_attributes.warning_enter_scope ();
   let (items, sg, final_env) = type_struct env sstr in
   let str = { str_items = items; str_type = sg; str_final_env = final_env } in
-  Builtin_attributes.warning_leave_scope ();
+  if not toplevel then Builtin_attributes.warning_leave_scope ();
   Cmt_format.set_saved_types
     (Cmt_format.Partial_structure str :: previous_saved_types);
   str, sg, final_env
 
 let type_toplevel_phrase env s =
   Env.reset_required_globals ();
+  begin
+    let map = Builtin_attributes.emit_external_warnings in
+    ignore (map.Ast_mapper.structure map s)
+  end;
   type_structure ~toplevel:true false None env s Location.none
 let type_module_alias = type_module ~alias:true true false None
 let type_module = type_module true false None

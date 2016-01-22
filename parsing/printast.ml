@@ -41,11 +41,11 @@ let rec fmt_longident_aux f x =
 
 let fmt_longident f x = fprintf f "\"%a\"" fmt_longident_aux x;;
 
-let fmt_longident_loc f x =
+let fmt_longident_loc f (x : Longident.t loc) =
   fprintf f "\"%a\" %a" fmt_longident_aux x.txt fmt_location x.loc;
 ;;
 
-let fmt_string_loc f x =
+let fmt_string_loc f (x : string loc) =
   fprintf f "\"%s\" %a" x.txt fmt_location x.loc;
 ;;
 
@@ -55,12 +55,12 @@ let fmt_char_option f = function
 
 let fmt_constant f x =
   match x with
-  | PConst_int (i,m) -> fprintf f "PConst_int (%s,%a)" i fmt_char_option m;
-  | PConst_char (c) -> fprintf f "PConst_char %02x" (Char.code c);
-  | PConst_string (s, None) -> fprintf f "PConst_string(%S,None)" s;
-  | PConst_string (s, Some delim) ->
+  | Pconst_integer (i,m) -> fprintf f "PConst_int (%s,%a)" i fmt_char_option m;
+  | Pconst_char (c) -> fprintf f "PConst_char %02x" (Char.code c);
+  | Pconst_string (s, None) -> fprintf f "PConst_string(%S,None)" s;
+  | Pconst_string (s, Some delim) ->
       fprintf f "PConst_string (%S,Some %S)" s delim;
-  | PConst_float (s,m) -> fprintf f "PConst_float (%s,%a)" s fmt_char_option m;
+  | Pconst_float (s,m) -> fprintf f "PConst_float (%s,%a)" s fmt_char_option m;
 ;;
 
 let fmt_mutable_flag f x =
@@ -402,6 +402,7 @@ and attributes i ppf l =
 
 and payload i ppf = function
   | PStr x -> structure i ppf x
+  | PSig x -> signature i ppf x
   | PTyp x -> core_type i ppf x
   | PPat (x, None) -> pattern i ppf x
   | PPat (x, Some g) ->

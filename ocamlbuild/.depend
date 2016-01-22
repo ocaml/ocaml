@@ -8,9 +8,9 @@ exit_codes.cmi :
 fda.cmi : slurp.cmi
 findlib.cmi : signatures.cmi command.cmi
 flags.cmi : tags.cmi command.cmi
+glob.cmi : signatures.cmi glob_ast.cmi bool.cmi
 glob_ast.cmi : bool.cmi
 glob_lexer.cmi : glob_ast.cmi
-glob.cmi : signatures.cmi glob_ast.cmi bool.cmi
 hooks.cmi :
 hygiene.cmi : slurp.cmi
 lexers.cmi : loc.cmi glob.cmi
@@ -20,17 +20,17 @@ main.cmi :
 my_std.cmi : signatures.cmi
 my_unix.cmi :
 ocaml_arch.cmi : signatures.cmi command.cmi
-ocamlbuild_executor.cmi :
-ocamlbuildlight.cmi :
-ocamlbuild.cmi :
-ocamlbuild_plugin.cmi :
-ocamlbuild_unix_plugin.cmi :
-ocamlbuild_where.cmi :
 ocaml_compiler.cmi : tags.cmi rule.cmi pathname.cmi command.cmi
 ocaml_dependencies.cmi : pathname.cmi
 ocaml_specific.cmi :
 ocaml_tools.cmi : tags.cmi rule.cmi pathname.cmi command.cmi
 ocaml_utils.cmi : tags.cmi pathname.cmi command.cmi
+ocamlbuild.cmi :
+ocamlbuild_executor.cmi :
+ocamlbuild_plugin.cmi :
+ocamlbuild_unix_plugin.cmi :
+ocamlbuild_where.cmi :
+ocamlbuildlight.cmi :
 options.cmi : slurp.cmi signatures.cmi command.cmi
 param_tags.cmi : tags.cmi loc.cmi
 pathname.cmi : signatures.cmi
@@ -75,12 +75,12 @@ findlib.cmx : my_unix.cmx my_std.cmx lexers.cmx const.cmx command.cmx \
     findlib.cmi
 flags.cmo : tags.cmi param_tags.cmi log.cmi command.cmi bool.cmi flags.cmi
 flags.cmx : tags.cmx param_tags.cmx log.cmx command.cmx bool.cmx flags.cmi
+glob.cmo : my_std.cmi glob_lexer.cmi glob_ast.cmi bool.cmi glob.cmi
+glob.cmx : my_std.cmx glob_lexer.cmx glob_ast.cmx bool.cmx glob.cmi
 glob_ast.cmo : bool.cmi glob_ast.cmi
 glob_ast.cmx : bool.cmx glob_ast.cmi
 glob_lexer.cmo : glob_ast.cmi bool.cmi glob_lexer.cmi
 glob_lexer.cmx : glob_ast.cmx bool.cmx glob_lexer.cmi
-glob.cmo : my_std.cmi glob_lexer.cmi glob_ast.cmi bool.cmi glob.cmi
-glob.cmx : my_std.cmx glob_lexer.cmx glob_ast.cmx bool.cmx glob.cmi
 hooks.cmo : hooks.cmi
 hooks.cmx : hooks.cmi
 hygiene.cmo : slurp.cmi shell.cmi pathname.cmi options.cmi my_std.cmi \
@@ -111,22 +111,6 @@ my_unix.cmo : my_std.cmi my_unix.cmi
 my_unix.cmx : my_std.cmx my_unix.cmi
 ocaml_arch.cmo : pathname.cmi my_std.cmi command.cmi ocaml_arch.cmi
 ocaml_arch.cmx : pathname.cmx my_std.cmx command.cmx ocaml_arch.cmi
-ocamlbuild_config.cmo :
-ocamlbuild_config.cmx :
-ocamlbuild_executor.cmo : ocamlbuild_executor.cmi
-ocamlbuild_executor.cmx : ocamlbuild_executor.cmi
-ocamlbuildlight.cmo : ocamlbuildlight.cmi
-ocamlbuildlight.cmx : ocamlbuildlight.cmi
-ocamlbuild.cmo : ocamlbuild_unix_plugin.cmi ocamlbuild.cmi
-ocamlbuild.cmx : ocamlbuild_unix_plugin.cmx ocamlbuild.cmi
-ocamlbuild_plugin.cmo : ocamlbuild_plugin.cmi
-ocamlbuild_plugin.cmx : ocamlbuild_plugin.cmi
-ocamlbuild_unix_plugin.cmo : ocamlbuild_executor.cmi my_unix.cmi my_std.cmi \
-    exit_codes.cmi ocamlbuild_unix_plugin.cmi
-ocamlbuild_unix_plugin.cmx : ocamlbuild_executor.cmx my_unix.cmx my_std.cmx \
-    exit_codes.cmx ocamlbuild_unix_plugin.cmi
-ocamlbuild_where.cmo : ocamlbuild_config.cmo ocamlbuild_where.cmi
-ocamlbuild_where.cmx : ocamlbuild_config.cmx ocamlbuild_where.cmi
 ocaml_compiler.cmo : tools.cmi tags.cmi rule.cmi resource.cmi pathname.cmi \
     options.cmi ocaml_utils.cmi ocaml_dependencies.cmi ocaml_arch.cmi \
     my_std.cmi log.cmi command.cmi ocaml_compiler.cmi
@@ -157,6 +141,22 @@ ocaml_utils.cmo : tools.cmi tags.cmi pathname.cmi param_tags.cmi options.cmi \
 ocaml_utils.cmx : tools.cmx tags.cmx pathname.cmx param_tags.cmx options.cmx \
     my_std.cmx log.cmx lexers.cmx flags.cmx const.cmx command.cmx \
     ocaml_utils.cmi
+ocamlbuild.cmo : ocamlbuild_unix_plugin.cmi ocamlbuild.cmi
+ocamlbuild.cmx : ocamlbuild_unix_plugin.cmx ocamlbuild.cmi
+ocamlbuild_config.cmo :
+ocamlbuild_config.cmx :
+ocamlbuild_executor.cmo : ocamlbuild_executor.cmi
+ocamlbuild_executor.cmx : ocamlbuild_executor.cmi
+ocamlbuild_plugin.cmo : ocamlbuild_plugin.cmi
+ocamlbuild_plugin.cmx : ocamlbuild_plugin.cmi
+ocamlbuild_unix_plugin.cmo : ocamlbuild_executor.cmi my_unix.cmi my_std.cmi \
+    exit_codes.cmi ocamlbuild_unix_plugin.cmi
+ocamlbuild_unix_plugin.cmx : ocamlbuild_executor.cmx my_unix.cmx my_std.cmx \
+    exit_codes.cmx ocamlbuild_unix_plugin.cmi
+ocamlbuild_where.cmo : ocamlbuild_config.cmo ocamlbuild_where.cmi
+ocamlbuild_where.cmx : ocamlbuild_config.cmx ocamlbuild_where.cmi
+ocamlbuildlight.cmo : ocamlbuildlight.cmi
+ocamlbuildlight.cmx : ocamlbuildlight.cmi
 options.cmo : shell.cmi ocamlbuild_where.cmi ocamlbuild_config.cmo \
     my_std.cmi log.cmi lexers.cmi const.cmo command.cmi options.cmi
 options.cmx : shell.cmx ocamlbuild_where.cmx ocamlbuild_config.cmx \

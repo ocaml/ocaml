@@ -132,9 +132,9 @@ class printer  ()= object(self:'self)
     ?last:space_formatter -> (Format.formatter -> 'a -> unit) ->
     Format.formatter -> 'a list -> unit
         = fun  ?sep ?first  ?last fu f xs ->
-          let first = match first with Some x -> x |None -> ""
-          and last = match last with Some x -> x |None -> ""
-          and sep = match sep with Some x -> x |None -> "@ " in
+          let first = match first with Some x -> x |None -> ("" : _ format6)
+          and last = match last with Some x -> x |None -> ("" : _ format6)
+          and sep = match sep with Some x -> x |None -> ("@ " : _ format6) in
           let aux f = function
             | [] -> ()
             | [x] -> fu f x
@@ -149,14 +149,14 @@ class printer  ()= object(self:'self)
   method option : 'a. ?first:space_formatter -> ?last:space_formatter ->
     (Format.formatter -> 'a -> unit) -> Format.formatter -> 'a option -> unit =
       fun  ?first  ?last fu f a ->
-        let first = match first with Some x -> x | None -> ""
-        and last = match last with Some x -> x | None -> "" in
+        let first = match first with Some x -> x | None -> ("" : _ format6)
+        and last = match last with Some x -> x | None -> ("" : _ format6) in
         match a with
         | None -> ()
         | Some x -> pp f first; fu f x; pp f last;
   method paren: 'a . ?first:space_formatter -> ?last:space_formatter ->
     bool -> (Format.formatter -> 'a -> unit) -> Format.formatter -> 'a -> unit =
-    fun  ?(first="") ?(last="") b fu f x ->
+    fun  ?(first=("" : _ format6)) ?(last=("" : _ format6)) b fu f x ->
       if b then (pp f "("; pp f first; fu f x; pp f last; pp f ")")
       else fu f x
 
@@ -168,13 +168,13 @@ class printer  ()= object(self:'self)
         pp f "%a(%a)" self#longident y self#longident s
   method longident_loc f x = pp f "%a" self#longident x.txt
   method constant f  = function
-    | PConst_char i -> pp f "%C"  i
-    | PConst_string (i, None) -> pp f "%S" i
-    | PConst_string (i, Some delim) -> pp f "{%s|%s|%s}" delim i delim
-    | PConst_int (i,None) -> self#paren (i.[0]='-') (fun f -> pp f "%s") f i
-    | PConst_int (i,Some m) -> self#paren (i.[0]='-') (fun f (i,m) -> pp f "%s%c" i m) f (i,m)
-    | PConst_float (i,None) -> self#paren (i.[0]='-') (fun f -> pp f "%s") f i
-    | PConst_float (i, Some m) -> self#paren (i.[0]='-') (fun f (i,m) -> pp f "%s%c" i m) f (i,m)
+    | Pconst_char i -> pp f "%C"  i
+    | Pconst_string (i, None) -> pp f "%S" i
+    | Pconst_string (i, Some delim) -> pp f "{%s|%s|%s}" delim i delim
+    | Pconst_integer (i,None) -> self#paren (i.[0]='-') (fun f -> pp f "%s") f i
+    | Pconst_integer (i,Some m) -> self#paren (i.[0]='-') (fun f (i,m) -> pp f "%s%c" i m) f (i,m)
+    | Pconst_float (i,None) -> self#paren (i.[0]='-') (fun f -> pp f "%s") f i
+    | Pconst_float (i, Some m) -> self#paren (i.[0]='-') (fun f (i,m) -> pp f "%s%c" i m) f (i,m)
 
   (* trailing space*)
   method mutable_flag f   = function
@@ -459,7 +459,7 @@ class printer  ()= object(self:'self)
     | _ -> false
   method expression f x =
     if x.pexp_attributes <> [] then begin
-      pp f "((%a)%a)" self#expression {x with pexp_attributes=[]}
+      pp f "((%a)@,%a)" self#expression {x with pexp_attributes=[]}
         self#attributes x.pexp_attributes
     end
     else match x.pexp_desc with
@@ -1019,6 +1019,7 @@ class printer  ()= object(self:'self)
           self#item_attributes attrs
     | PStr x -> self#structure f x
     | PTyp x -> pp f ":"; self#core_type f x
+    | PSig x -> pp f ":"; self#signature f x
     | PPat (x, None) -> pp f "?"; self#pattern f x
     | PPat (x, Some e) ->
       pp f "?"; self#pattern f x;
@@ -1058,7 +1059,7 @@ class printer  ()= object(self:'self)
   (* [in] is not printed *)
   method bindings f (rf,l) =
     let binding kwd rf f x =
-      pp f "@[<2>%s %a%a@]%a" kwd self#rec_flag rf
+      pp f "@[<2>%s %a%a@]@ %a" kwd self#rec_flag rf
          self#binding x self#item_attributes x.pvb_attributes
     in
     begin match l with

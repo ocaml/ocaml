@@ -190,12 +190,11 @@ rule main = parse
       if !verb_mode || !target_mode || !code_pre_mode ||
         (!open_brackets >= 1) then
         Char (Lexing.lexeme lexbuf)
-      else
-        let _ =
-          if !ele_ref_mode then
-            ele_ref_mode := false
-        in
+      else begin
+        if !ele_ref_mode then
+          ele_ref_mode := false;
         END
+      end
     }
 | begin_title
     {

@@ -96,13 +96,10 @@ class virtual info =
 
     (** Return [text] value for the given "see also" reference. *)
     method text_of_see (see_ref, t)  =
-      let t_ref =
-        match see_ref with
-          Odoc_info.See_url s -> [ Odoc_info.Link (s, t) ]
-        | Odoc_info.See_file s -> (Odoc_info.Code s) :: (Odoc_info.Raw " ") :: t
-        | Odoc_info.See_doc s -> (Odoc_info.Italic [Odoc_info.Raw s]) :: (Odoc_info.Raw " ") :: t
-      in
-      t_ref
+      match see_ref with
+        Odoc_info.See_url s -> [ Odoc_info.Link (s, t) ]
+      | Odoc_info.See_file s -> (Odoc_info.Code s) :: (Odoc_info.Raw " ") :: t
+      | Odoc_info.See_doc s -> (Odoc_info.Italic [Odoc_info.Raw s]) :: (Odoc_info.Raw " ") :: t
 
     (** Return [text] value for the given list of "see also" references.*)
     method text_of_sees l =
@@ -192,12 +189,10 @@ class virtual to_text =
         let rel = Name.get_relative m_name match_s in
         Odoc_info.apply_if_equal Odoc_info.use_hidden_modules match_s rel
       in
-      let s2 = Str.global_substitute
-          (Str.regexp "\\([A-Z]\\([a-zA-Z_'0-9]\\)*\\.\\)+\\([a-z][a-zA-Z_'0-9]*\\)")
-          f
-          s
-      in
-      s2
+      Str.global_substitute
+        (Str.regexp "\\([A-Z]\\([a-zA-Z_'0-9]\\)*\\.\\)+\\([a-z][a-zA-Z_'0-9]*\\)")
+        f
+        s
 
     (** Take a string and return the string where fully qualified idents
        have been replaced by idents relative to the given module name.
@@ -208,12 +203,10 @@ class virtual to_text =
         let rel = Name.get_relative m_name match_s in
         Odoc_info.apply_if_equal Odoc_info.use_hidden_modules match_s rel
       in
-      let s2 = Str.global_substitute
-          (Str.regexp "\\([A-Z]\\([a-zA-Z_'0-9]\\)*\\.\\)+\\([A-Z][a-zA-Z_'0-9]*\\)")
-          f
-          s
-      in
-      s2
+      Str.global_substitute
+        (Str.regexp "\\([A-Z]\\([a-zA-Z_'0-9]\\)*\\.\\)+\\([A-Z][a-zA-Z_'0-9]*\\)")
+        f
+        s
 
     (** Get a string for a [Types.class_type] where all idents are relative. *)
     method normal_class_type m_name t =
@@ -248,14 +241,12 @@ class virtual to_text =
 
     (** @return [text] value to represent a [Types.type_expr].*)
     method text_of_type_expr module_name t =
-      let t = List.flatten
-          (List.map
-             (fun s -> [Code s ; Newline ])
-             (Str.split (Str.regexp "\n")
-                (self#normal_type module_name t))
-          )
-      in
-      t
+      List.flatten
+        (List.map
+           (fun s -> [Code s ; Newline ])
+           (Str.split (Str.regexp "\n")
+              (self#normal_type module_name t))
+        )
 
     (** Return [text] value for a given short [Types.type_expr].*)
     method text_of_short_type_expr module_name t =
@@ -273,15 +264,13 @@ class virtual to_text =
 
     (** @return [text] value to represent parameters of a class (with arraows).*)
     method text_of_class_params module_name c =
-      let t = Odoc_info.text_concat
-          [Newline]
-          (List.map
-             (fun s -> [Code s])
-             (Str.split (Str.regexp "\n")
-                (self#normal_class_params module_name c))
-          )
-      in
-      t
+      Odoc_info.text_concat
+        [Newline]
+        (List.map
+           (fun s -> [Code s])
+           (Str.split (Str.regexp "\n")
+              (self#normal_class_params module_name c))
+        )
 
     (** @return [text] value to represent a [Types.module_type]. *)
     method text_of_module_type t =

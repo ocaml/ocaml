@@ -23,11 +23,44 @@ open Toploop
 (* The standard output formatter *)
 let std_out = std_formatter
 
+(* Directive sections (used in #help) *)
+let section_general = "General"
+let section_run = "Loading code"
+let section_env = "Environment queries"
+
+let section_print = "Pretty-printing"
+let section_trace = "Tracing"
+let section_options = "Compiler options"
+
+let section_undocumented = "Undocumented"
+
+(* we will print the sections in the first list,
+   then all user-defined sections,
+   then the sections in the second list,
+   then all undocumented directives *)
+let order_of_sections =
+  ([
+    section_general;
+    section_run;
+    section_env;
+  ], [
+    section_print;
+    section_trace;
+    section_options;
+
+    section_undocumented;
+  ])
+
+
 (* To quit *)
 
 let dir_quit () = exit 0
 
-let _ = Hashtbl.add directive_table "quit" (Directive_none dir_quit)
+let _ = add_directive "quit" (Directive_none dir_quit)
+    {
+      section = section_general;
+      doc = "Exit the toplevel.";
+    }
 
 (* To add a directory to the load path *)
 
@@ -36,7 +69,11 @@ let dir_directory s =
   Config.load_path := d :: !Config.load_path;
   Dll.add_path [d]
 
-let _ = Hashtbl.add directive_table "directory" (Directive_string dir_directory)
+let _ = add_directive "directory" (Directive_string dir_directory)
+    {
+      section = section_run;
+      doc = "Add the given directory to search path for source and compiled files.";
+    }
 
 (* To remove a directory from the load path *)
 let dir_remove_directory s =
@@ -44,16 +81,20 @@ let dir_remove_directory s =
   Config.load_path := List.filter (fun d' -> d' <> d) !Config.load_path;
   Dll.remove_path [d]
 
-let _ =
-  Hashtbl.add directive_table "remove_directory"
-    (Directive_string dir_remove_directory)
-
+let _ = add_directive "remove_directory" (Directive_string dir_remove_directory)
+    {
+      section = section_run;
+      doc = "Remove the given directory from the search path.";
+    }
 (* To change the current directory *)
 
 let dir_cd s = Sys.chdir s
 
-let _ = Hashtbl.add directive_table "cd" (Directive_string dir_cd)
-
+let _ = add_directive "cd" (Directive_string dir_cd)
+    {
+      section = section_run;
+      doc = "Change the current working directory.";
+    }
 (* Load in-core a .cmo file *)
 
 exception Load_failed
@@ -122,7 +163,6 @@ let rec load_file recursive ppf name =
         raise exn
 
 and really_load_file recursive ppf name filename ic =
-  let ic = open_in_bin filename in
   let buffer = really_input_string ic (String.length Config.cmo_magic_number) in
   try
     if buffer = Config.cmo_magic_number then begin
@@ -173,12 +213,20 @@ and really_load_file recursive ppf name filename ic =
 
 let dir_load ppf name = ignore (load_file false ppf name)
 
-let _ = Hashtbl.add directive_table "load" (Directive_string (dir_load std_out))
+let _ = add_directive "load" (Directive_string (dir_load std_out))
+    {
+      section = section_run;
+      doc = "Load in memory a bytecode object, produced by ocamlc.";
+    }
 
 let dir_load_rec ppf name = ignore (load_file true ppf name)
 
-let _ = Hashtbl.add directive_table "load_rec"
-                    (Directive_string (dir_load_rec std_out))
+let _ = add_directive "load_rec"
+    (Directive_string (dir_load_rec std_out))
+    {
+      section = section_run;
+      doc = "As #load, but loads dependencies recursively.";
+    }
 
 let load_file = load_file false
 
@@ -187,9 +235,19 @@ let load_file = load_file false
 let dir_use ppf name = ignore(Toploop.use_file ppf name)
 let dir_mod_use ppf name = ignore(Toploop.mod_use_file ppf name)
 
-let _ = Hashtbl.add directive_table "use" (Directive_string (dir_use std_out))
-let _ = Hashtbl.add directive_table "mod_use"
-                    (Directive_string (dir_mod_use std_out))
+let _ = add_directive "use" (Directive_string (dir_use std_out))
+    {
+      section = section_run;
+      doc = "Read, compile and execute source phrases from the given file.";
+    }
+
+let _ = add_directive "mod_use" (Directive_string (dir_mod_use std_out))
+    {
+      section = section_run;
+      doc = "Usage is identical to #use but #mod_use \
+             wraps the contents in a module.";
+    }
+
 
 (* Install, remove a printer *)
 
@@ -324,10 +382,19 @@ let dir_remove_printer ppf lid =
     end
   with Exit -> ()
 
-let _ = Hashtbl.add directive_table "install_printer"
-             (Directive_ident (dir_install_printer std_out))
-let _ = Hashtbl.add directive_table "remove_printer"
-             (Directive_ident (dir_remove_printer std_out))
+let _ = add_directive "install_printer"
+    (Directive_ident (dir_install_printer std_out))
+    {
+      section = section_print;
+      doc = "Registers a printer for values of a certain type.";
+    }
+
+let _ = add_directive "remove_printer"
+    (Directive_ident (dir_remove_printer std_out))
+    {
+      section = section_print;
+      doc = "Remove the named function from the table of toplevel printers.";
+    }
 
 (* The trace *)
 
@@ -445,9 +512,15 @@ let show_prim to_sig ppf lid =
 
 let all_show_funs = ref []
 
-let reg_show_prim name to_sig =
+let reg_show_prim name to_sig doc =
   all_show_funs := to_sig :: !all_show_funs;
-  Hashtbl.add directive_table name (Directive_ident (show_prim to_sig std_out))
+  add_directive
+    name
+    (Directive_ident (show_prim to_sig std_out))
+    {
+      section = section_env;
+      doc;
+    }
 
 let () =
   reg_show_prim "show_val"
@@ -455,6 +528,7 @@ let () =
        let path, desc = Typetexp.find_value env loc lid in
        [ Sig_value (id, desc) ]
     )
+    "Print the signature of the corresponding value."
 
 let () =
   reg_show_prim "show_type"
@@ -462,6 +536,7 @@ let () =
        let path, desc = Typetexp.find_type env loc lid in
        [ Sig_type (id, desc, Trec_not) ]
     )
+    "Print the signature of the corresponding type constructor."
 
 let () =
   reg_show_prim "show_exception"
@@ -484,6 +559,7 @@ let () =
        in
          [Sig_typext (id, ext, Text_exception)]
     )
+    "Print the signature of the corresponding exception."
 
 let () =
   reg_show_prim "show_module"
@@ -492,6 +568,7 @@ let () =
        [ Sig_module (id, {md with md_type = trim_signature md.md_type},
                      Trec_not) ]
     )
+    "Print the signature of the corresponding module."
 
 let () =
   reg_show_prim "show_module_type"
@@ -499,6 +576,7 @@ let () =
        let path, desc = Typetexp.find_modtype env loc lid in
        [ Sig_modtype (id, desc) ]
     )
+    "Print the signature of the corresponding module type."
 
 let () =
   reg_show_prim "show_class"
@@ -506,6 +584,7 @@ let () =
        let path, desc = Typetexp.find_class env loc lid in
        [ Sig_class (id, desc, Trec_not) ]
     )
+    "Print the signature of the corresponding class."
 
 let () =
   reg_show_prim "show_class_type"
@@ -513,7 +592,7 @@ let () =
        let path, desc = Typetexp.find_class_type env loc lid in
        [ Sig_class_type (id, desc, Trec_not) ]
     )
-
+    "Print the signature of the corresponding class type."
 
 let show env loc id lid =
   let sg =
@@ -524,39 +603,158 @@ let show env loc id lid =
   if sg = [] then raise Not_found else sg
 
 let () =
-  Hashtbl.add directive_table "show" (Directive_ident (show_prim show std_out))
+  add_directive "show" (Directive_ident (show_prim show std_out))
+    {
+      section = section_env;
+      doc = "Print the signatures of components \
+             from any of the above categories.";
+    }
 
-let _ =
-  Hashtbl.add directive_table "trace" (Directive_ident (dir_trace std_out));
-  Hashtbl.add directive_table "untrace" (Directive_ident (dir_untrace std_out));
-  Hashtbl.add directive_table
-    "untrace_all" (Directive_none (dir_untrace_all std_out));
+let _ = add_directive "trace"
+    (Directive_ident (dir_trace std_out))
+    {
+      section = section_trace;
+      doc = "All calls to the function \
+          named function-name will be traced.";
+    }
+
+let _ = add_directive "untrace"
+    (Directive_ident (dir_untrace std_out))
+    {
+      section = section_trace;
+      doc = "Stop tracing the given function.";
+    }
+
+let _ = add_directive "untrace_all"
+    (Directive_none (dir_untrace_all std_out))
+    {
+      section = section_trace;
+      doc = "Stop tracing all functions traced so far.";
+    }
 
 (* Control the printing of values *)
 
-  Hashtbl.add directive_table "print_depth"
-             (Directive_int(fun n -> max_printer_depth := n));
-  Hashtbl.add directive_table "print_length"
-             (Directive_int(fun n -> max_printer_steps := n));
+let _ = add_directive "print_depth"
+    (Directive_int(fun n -> max_printer_depth := n))
+    {
+      section = section_print;
+      doc = "Limit the printing of values to a maximal depth of n.";
+    }
+
+let _ = add_directive "print_length"
+    (Directive_int(fun n -> max_printer_steps := n))
+    {
+      section = section_print;
+      doc = "Limit the number of value nodes printed to at most n.";
+    }
 
 (* Set various compiler flags *)
 
-  Hashtbl.add directive_table "labels"
-             (Directive_bool(fun b -> Clflags.classic := not b));
+let _ = add_directive "labels"
+    (Directive_bool(fun b -> Clflags.classic := not b))
+    {
+      section = section_options;
+      doc = "Choose whether to ignore labels in function types.";
+    }
 
-  Hashtbl.add directive_table "principal"
-             (Directive_bool(fun b -> Clflags.principal := b));
+let _ = add_directive "principal"
+    (Directive_bool(fun b -> Clflags.principal := b))
+    {
+      section = section_options;
+      doc = "Make sure that all types are derived in a principal way.";
+    }
 
-  Hashtbl.add directive_table "rectypes"
-             (Directive_none(fun () -> Clflags.recursive_types := true));
+let _ = add_directive "rectypes"
+    (Directive_none(fun () -> Clflags.recursive_types := true))
+    {
+      section = section_options;
+      doc = "Allow arbitrary recursive types during type-checking.";
+    }
 
-  Hashtbl.add directive_table "ppx"
-    (Directive_string(fun s -> Clflags.all_ppx := s :: !Clflags.all_ppx));
+let _ = add_directive "ppx"
+    (Directive_string(fun s -> Clflags.all_ppx := s :: !Clflags.all_ppx))
+    {
+      section = section_options;
+      doc = "After parsing, pipe the abstract \
+          syntax tree through the preprocessor command.";
+    }
 
-  Hashtbl.add directive_table "warnings"
-             (Directive_string (parse_warnings std_out false));
+let _ = add_directive "warnings"
+    (Directive_string (parse_warnings std_out false))
+    {
+      section = section_options;
+      doc = "Enable or disable warnings according to the argument.";
+    }
 
-  Hashtbl.add directive_table "warn_error"
-             (Directive_string (parse_warnings std_out true));
+let _ = add_directive "warn_error"
+    (Directive_string (parse_warnings std_out true))
+    {
+      section = section_options;
+      doc = "Treat as errors the warnings enabled by the argument.";
+    }
 
-  ()
+(* #help directive *)
+
+let directive_sections () =
+  let sections = Hashtbl.create 10 in
+  let add_dir name dir =
+    let section, doc =
+      match Hashtbl.find directive_info_table name with
+      | { section; doc } -> section, Some doc
+      | exception Not_found -> "Undocumented", None
+    in
+    Hashtbl.replace sections section
+      ((name, dir, doc)
+       :: (try Hashtbl.find sections section with Not_found -> []))
+  in
+  Hashtbl.iter add_dir directive_table;
+  let take_section section =
+    if not (Hashtbl.mem sections section) then (section, [])
+    else begin
+      let section_dirs =
+        Hashtbl.find sections section
+        |> List.sort (fun (n1, _, _) (n2, _, _) -> String.compare n1 n2) in
+      Hashtbl.remove sections section;
+      (section, section_dirs)
+    end
+  in
+  let before, after = order_of_sections in
+  let sections_before = List.map take_section before in
+  let sections_after = List.map take_section after in
+  let sections_user =
+    Hashtbl.fold (fun section _ acc -> section::acc) sections []
+    |> List.sort String.compare
+    |> List.map take_section in
+  sections_before @ sections_user @ sections_after
+
+let print_directive ppf (name, directive, doc) =
+  let param = match directive with
+    | Directive_none _ -> ""
+    | Directive_string _ -> " <str>"
+    | Directive_int _ -> " <int>"
+    | Directive_bool _ -> " <bool>"
+    | Directive_ident _ -> " <ident>" in
+  match doc with
+  | None -> printf "#%s%s@." name param
+  | Some doc ->
+      printf "@[<hov 2>#%s%s@\n%a@]@."
+        name param
+        Format.pp_print_text doc
+
+let print_section ppf (section, directives) =
+  if directives <> [] then begin
+    fprintf ppf "%30s%s@." "" section;
+    List.iter (print_directive ppf) directives;
+    fprintf ppf "@.";
+  end
+
+let print_directives ppf () =
+  List.iter (print_section ppf) (directive_sections ())
+
+let _ = add_directive "help"
+    (Directive_none (print_directives std_out))
+    {
+      section = section_general;
+      doc = "Prints a list of all available directives, with \
+          corresponding argument type if appropriate.";
+    }

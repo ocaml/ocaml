@@ -1290,7 +1290,9 @@ let same_path t t' =
       false
 
 let type_expansion t ppf t' =
-  if same_path t t' then type_expr ppf t else
+  if same_path t t'
+  then begin add_delayed (proxy t); type_expr ppf t end
+  else
   let t' = if proxy t == proxy t' then unalias t' else t' in
   fprintf ppf "@[<2>%a@ =@ %a@]" type_expr t type_expr t'
 
@@ -1397,7 +1399,9 @@ let explanation unif t3 t4 ppf =
         fprintf ppf "@,@[<hov>This instance of %a is ambiguous:@ %s@]"
           type_expr t'
           "it would escape the scope of its equation"
-  | Tfield (lab, _, _, _), _
+  | Tfield (lab, _, _, _), _ when lab = dummy_method ->
+      fprintf ppf
+        "@,Self type cannot be unified with a closed object type"
   | _, Tfield (lab, _, _, _) when lab = dummy_method ->
       fprintf ppf
         "@,Self type cannot be unified with a closed object type"

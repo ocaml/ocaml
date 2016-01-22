@@ -172,7 +172,11 @@ exe: $(OCAMLDOC)
 lib: $(OCAMLDOC_LIBCMA) $(OCAMLDOC_LIBCMI) $(ODOC_TEST)
 generators: $(GENERATORS_CMOS)
 
-opt.opt: exeopt libopt generatorsopt
+opt.opt:
+	$(MAKE) exeopt
+	$(MAKE) libopt
+	$(MAKE) generatorsopt
+
 exeopt: $(OCAMLDOC_OPT)
 libopt: $(OCAMLDOC_LIBCMXA) $(OCAMLDOC_LIBCMI)
 generatorsopt: $(GENERATORS_CMXS)
@@ -265,7 +269,7 @@ installopt_really:
 	if test -d $(INSTALL_BINDIR); then : ; else $(MKDIR) $(INSTALL_BINDIR); fi
 	if test -d $(INSTALL_LIBDIR); then : ; else $(MKDIR) $(INSTALL_LIBDIR); fi
 	$(CP) $(OCAMLDOC_OPT) $(INSTALL_BINDIR)/$(OCAMLDOC_OPT)$(EXE)
-	$(CP) ocamldoc.hva $(OCAMLDOC_LIBA) $(OCAMLDOC_LIBCMXA) $(INSTALL_LIBDIR)
+	$(CP) ocamldoc.hva *.cmx $(OCAMLDOC_LIBA) $(OCAMLDOC_LIBCMXA) $(INSTALL_LIBDIR)
 	$(CP) $(INSTALL_MLIS) $(INSTALL_CMIS) $(INSTALL_LIBDIR)
 
 # Testing :

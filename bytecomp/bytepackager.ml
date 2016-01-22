@@ -265,8 +265,7 @@ let package_files ppf initial_env files targetfile =
     try
       let coercion =
         Typemod.package_units initial_env files targetcmi targetname in
-      let ret = package_object_files ppf files targetfile targetname coercion in
-      ret
+      package_object_files ppf files targetfile targetname coercion
     with x ->
       remove_file targetfile; raise x
 

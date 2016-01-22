@@ -155,11 +155,8 @@ let find_value env loc lid =
   r
 
 let lookup_module ?(load=false) env loc lid =
-  let (path, decl) as r =
-    find_component (fun ?loc lid env -> (Env.lookup_module ~load ?loc lid env, ()))
-      (fun lid -> Unbound_module lid) env loc lid
-  in
-  path
+  find_component (fun ?loc lid env -> (Env.lookup_module ~load ?loc lid env))
+    (fun lid -> Unbound_module lid) env loc lid
 
 let find_module env loc lid =
   let path = lookup_module ~load:true env loc lid in

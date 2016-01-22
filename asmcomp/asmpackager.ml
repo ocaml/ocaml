@@ -91,7 +91,7 @@ let make_package_object ppf members targetobj targetname coercion =
         | PM_intf -> None
         | PM_impl _ -> Some(Ident.create_persistent m.pm_name))
       members in
-  Asmgen.compile_implementation
+  Asmgen.compile_implementation ~source_provenance:(Timings.Pack targetname)
     (chop_extension_if_any objtemp) ppf
     (Translmod.transl_store_package
        components (Ident.create_persistent targetname) coercion);
@@ -175,7 +175,8 @@ let package_files ppf initial_env files targetcmx =
   (* Set the name of the current "input" *)
   Location.input_name := targetcmx;
   (* Set the name of the current compunit *)
-  Compilenv.reset ?packname:!Clflags.for_package targetname;
+  Compilenv.reset ~source_provenance:(Timings.Pack targetname)
+    ?packname:!Clflags.for_package targetname;
   try
     let coercion =
       Typemod.package_units initial_env files targetcmi targetname in

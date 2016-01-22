@@ -79,18 +79,18 @@ let neg_string f =
 
 let mkuminus name arg =
   match name, arg.pexp_desc with
-  | "-", Pexp_constant(PConst_int (n,m)) ->
-      mkexp(Pexp_constant(PConst_int(neg_string n,m)))
-  | ("-" | "-."), Pexp_constant(PConst_float (f, m)) ->
-      mkexp(Pexp_constant(PConst_float(neg_string f, m)))
+  | "-", Pexp_constant(Pconst_integer (n,m)) ->
+      mkexp(Pexp_constant(Pconst_integer(neg_string n,m)))
+  | ("-" | "-."), Pexp_constant(Pconst_float (f, m)) ->
+      mkexp(Pexp_constant(Pconst_float(neg_string f, m)))
   | _ ->
       mkexp(Pexp_apply(mkoperator ("~" ^ name) 1, [Nolabel, arg]))
 
 let mkuplus name arg =
   let desc = arg.pexp_desc in
   match name, desc with
-  | "+", Pexp_constant(PConst_int _)
-  | ("+" | "+."), Pexp_constant(PConst_float _) -> mkexp desc
+  | "+", Pexp_constant(Pconst_integer _)
+  | ("+" | "+."), Pexp_constant(Pconst_float _) -> mkexp desc
   | _ ->
       mkexp(Pexp_apply(mkoperator ("~" ^ name) 1, [Nolabel, arg]))
 
@@ -376,6 +376,45 @@ let class_of_let_bindings lbs body =
     if lbs.lbs_attributes <> [] then
       raise Syntaxerr.(Error(Not_expecting(lbs.lbs_loc, "attributes")));
     mkclass(Pcl_let (lbs.lbs_rec, List.rev bindings, body))
+
+
+(* Alternatively, we could keep the generic module type in the Parsetree
+   and extract the package type during type-checking. In that case,
+   the assertions below should be turned into explicit checks. *)
+let package_type_of_module_type pmty =
+  let err loc s =
+    raise (Syntaxerr.Error (Syntaxerr.Invalid_package_type (loc, s)))
+  in
+  let map_cstr = function
+    | Pwith_type (lid, ptyp) ->
+        let loc = ptyp.ptype_loc in
+        if ptyp.ptype_params <> [] then
+          err loc "parametrized types are not supported";
+        if ptyp.ptype_cstrs <> [] then
+          err loc "constrained types are not supported";
+        if ptyp.ptype_private <> Public then
+          err loc "private types are not supported";
+
+        (* restrictions below are checked by the 'with_constraint' rule *)
+        assert (ptyp.ptype_kind = Ptype_abstract);
+        assert (ptyp.ptype_attributes = []);
+        let ty =
+          match ptyp.ptype_manifest with
+          | Some ty -> ty
+          | None -> assert false
+        in
+        (lid, ty)
+    | _ ->
+        err pmty.pmty_loc "only 'with type t =' constraints are supported"
+  in
+  match pmty with
+  | {pmty_desc = Pmty_ident lid} -> (lid, [])
+  | {pmty_desc = Pmty_with({pmty_desc = Pmty_ident lid}, cstrs)} ->
+      (lid, List.map map_cstr cstrs)
+  | _ ->
+      err pmty.pmty_loc
+        "only module type identifier and 'with type' constraints are supported"
+
 
 %}
 
@@ -2074,15 +2113,7 @@ simple_core_type2:
       { mktyp (Ptyp_extension $1) }
 ;
 package_type:
-    mty_longident { (mkrhs $1 1, []) }
-  | mty_longident WITH package_type_cstrs { (mkrhs $1 1, $3) }
-;
-package_type_cstr:
-    TYPE label_longident EQUAL core_type { (mkrhs $2 2, $4) }
-;
-package_type_cstrs:
-    package_type_cstr { [$1] }
-  | package_type_cstr AND package_type_cstrs { $1::$3 }
+    module_type { package_type_of_module_type $1 }
 ;
 row_field_list:
     row_field                                   { [$1] }
@@ -2138,17 +2169,17 @@ label:
 /* Constants */
 
 constant:
-  | INT                               { let (n, m) = $1 in PConst_int (n, m) }
-  | CHAR                              { PConst_char $1 }
-  | STRING                            { let (s, d) = $1 in PConst_string (s, d) }
-  | FLOAT                             { let (f, m) = $1 in PConst_float (f, m) }
+  | INT                               { let (n, m) = $1 in Pconst_integer (n, m) }
+  | CHAR                              { Pconst_char $1 }
+  | STRING                            { let (s, d) = $1 in Pconst_string (s, d) }
+  | FLOAT                             { let (f, m) = $1 in Pconst_float (f, m) }
 ;
 signed_constant:
     constant                               { $1 }
-  | MINUS INT                              { let (n, m) = $2 in PConst_int("-" ^ n, m) }
-  | MINUS FLOAT                            { let (f, m) = $2 in PConst_float("-" ^ f, m) }
-  | PLUS INT                               { let (n, m) = $2 in PConst_int (n, m) }
-  | PLUS FLOAT                             { let (f, m) = $2 in PConst_float(f, m) }
+  | MINUS INT                              { let (n, m) = $2 in Pconst_integer("-" ^ n, m) }
+  | MINUS FLOAT                            { let (f, m) = $2 in Pconst_float("-" ^ f, m) }
+  | PLUS INT                               { let (n, m) = $2 in Pconst_integer (n, m) }
+  | PLUS FLOAT                             { let (f, m) = $2 in Pconst_float(f, m) }
 ;
 
 /* Identifiers and long identifiers */
@@ -2400,6 +2431,7 @@ item_extension:
 ;
 payload:
     structure { PStr $1 }
+  | COLON signature { PSig $2 }
   | COLON core_type { PTyp $2 }
   | QUESTION pattern { PPat ($2, None) }
   | QUESTION pattern WHEN seq_expr { PPat ($2, Some $4) }

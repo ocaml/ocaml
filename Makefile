@@ -124,10 +124,10 @@ backup:
 # Promote the newly compiled system to the rank of cross compiler
 # (Runs on the old runtime, produces code for the new runtime)
 promote-cross:
-	cp ocamlc boot/ocamlc
-	cp lex/ocamllex boot/ocamllex
+	$(CAMLRUN) tools/stripdebug ocamlc boot/ocamlc
+	$(CAMLRUN) tools/stripdebug lex/ocamllex boot/ocamllex
 	cp yacc/ocamlyacc$(EXE) boot/ocamlyacc$(EXE)
-	cp tools/ocamldep boot/ocamldep
+	$(CAMLRUN) tools/stripdebug tools/ocamldep boot/ocamldep
 	cd stdlib; cp $(LIBFILES) ../boot
 
 # Promote the newly compiled system to the rank of bootstrap compiler
@@ -143,8 +143,9 @@ restore:
 
 # Check if fixpoint reached
 compare:
-	@if cmp boot/ocamlc ocamlc && cmp boot/ocamllex lex/ocamllex \
-	    && cmp boot/ocamldep tools/ocamldep; \
+	@if $(CAMLRUN) tools/cmpbyt boot/ocamlc ocamlc \
+         && $(CAMLRUN) tools/cmpbyt boot/ocamllex lex/ocamllex \
+         && $(CAMLRUN) tools/cmpbyt boot/ocamldep tools/ocamldep; \
 	then echo "Fixpoint reached, bootstrap succeeded."; \
 	else echo "Fixpoint not reached, try one more bootstrapping cycle."; \
 	fi
@@ -266,12 +267,21 @@ installoptopt:
 	cp ocamlc.opt $(INSTALL_BINDIR)/ocamlc.opt$(EXE)
 	cp ocamlopt.opt $(INSTALL_BINDIR)/ocamlopt.opt$(EXE)
 	cp lex/ocamllex.opt $(INSTALL_BINDIR)/ocamllex.opt$(EXE)
+	cp utils/*.cmx parsing/*.cmx typing/*.cmx bytecomp/*.cmx \
+           driver/*.cmx asmcomp/*.cmx $(INSTALL_COMPLIBDIR)
 	cp compilerlibs/ocamlcommon.cmxa compilerlibs/ocamlcommon.a \
 	   compilerlibs/ocamlbytecomp.cmxa compilerlibs/ocamlbytecomp.a \
 	   compilerlibs/ocamloptcomp.cmxa compilerlibs/ocamloptcomp.a \
 	   $(BYTESTART:.cmo=.cmx) $(BYTESTART:.cmo=.o) \
 	   $(OPTSTART:.cmo=.cmx) $(OPTSTART:.cmo=.o) \
 	   $(INSTALL_COMPLIBDIR)
+	if test -f ocamlnat ; then \
+	  cp ocamlnat $(INSTALL_BINDIR)/ocamlnat$(EXE); \
+	  cp toplevel/opttopdirs.cmi $(INSTALL_LIBDIR); \
+	  cp compilerlibs/ocamlopttoplevel.cmxa compilerlibs/ocamlopttoplevel.a \
+	   $(OPTTOPLEVELSTART:.cmo=.cmx) $(OPTTOPLEVELSTART:.cmo=.o) \
+	   $(INSTALL_COMPLIBDIR); \
+	  else :; fi
 	cd $(INSTALL_COMPLIBDIR) && $(RANLIB) ocamlcommon.a ocamlbytecomp.a \
 	   ocamloptcomp.a
 
@@ -334,11 +344,38 @@ ocaml: compilerlibs/ocamlcommon.cma compilerlibs/ocamlbytecomp.cma \
 partialclean::
 	rm -f ocaml
 
+RUNTOP=./byterun/ocamlrun ./ocaml -nostdlib -I stdlib -noinit $(TOPFLAGS)
+NATRUNTOP=./ocamlnat -nostdlib -I stdlib -noinit $(TOPFLAGS)
+
+runtop:
+	$(MAKE) runtime
+	$(MAKE) coreall
+	$(MAKE) ocaml
+	@rlwrap --help 2>/dev/null && rlwrap $(RUNTOP) || $(RUNTOP)
+
+natruntop:
+	$(MAKE) runtime
+	$(MAKE) coreall
+	$(MAKE) opt.opt
+	$(MAKE) ocamlnat
+	@rlwrap --help 2>/dev/null && rlwrap $(NATRUNTOP) || $(NATRUNTOP)
+
 # The native toplevel
 
-ocamlnat: ocamlopt otherlibs/dynlink/dynlink.cmxa $(NATTOPOBJS:.cmo=.cmx)
-	$(CAMLOPT) $(LINKFLAGS) otherlibs/dynlink/dynlink.cmxa -o ocamlnat \
-	           $(NATTOPOBJS:.cmo=.cmx) -linkall
+compilerlibs/ocamlopttoplevel.cmxa: $(OPTTOPLEVEL:.cmo=.cmx)
+	$(CAMLOPT) -a -o $@ $(OPTTOPLEVEL:.cmo=.cmx)
+partialclean::
+	rm -f compilerlibs/ocamlopttoplevel.cmxa
+
+ocamlnat: compilerlibs/ocamlcommon.cmxa compilerlibs/ocamloptcomp.cmxa \
+    otherlibs/dynlink/dynlink.cmxa compilerlibs/ocamlopttoplevel.cmxa $(OPTTOPLEVELSTART:.cmo=.cmx)
+	$(CAMLOPT) $(LINKFLAGS) -linkall -o ocamlnat \
+	    otherlibs/dynlink/dynlink.cmxa compilerlibs/ocamlcommon.cmxa \
+	    compilerlibs/ocamloptcomp.cmxa compilerlibs/ocamlopttoplevel.cmxa \
+	    $(OPTTOPLEVELSTART:.cmo=.cmx)
+
+partialclean::
+	rm -f ocamlnat
 
 toplevel/opttoploop.cmx: otherlibs/dynlink/dynlink.cmxa
 
@@ -377,6 +414,7 @@ utils/config.ml: utils/config.mlp config/Makefile
 	    -e 's|%%MKMAINDLL%%|$(MKMAINDLL)|' \
 	    -e 's|%%HOST%%|$(HOST)|' \
 	    -e 's|%%TARGET%%|$(TARGET)|' \
+	    -e 's|%%FLAMBDA%%|$(FLAMBDA)|' \
 	    utils/config.mlp > utils/config.ml
 
 partialclean::

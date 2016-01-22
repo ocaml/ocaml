@@ -86,7 +86,9 @@ module Options = Main_args.Make_optcomp_options (struct
   let _i () = print_types := true; compile_only := true
   let _I dir = include_dirs := dir :: !include_dirs
   let _impl = impl
-  let _inline n = inline_threshold := n * 8
+  let _inline spec =
+    Float_arg_helper.parse spec ~update:inline_threshold
+      ~help_text:"Syntax: -inline <n>"
   let _intf = intf
   let _intf_suffix s = Config.interface_suffix := s
   let _keep_docs = set keep_docs
@@ -104,8 +106,8 @@ module Options = Main_args.Make_optcomp_options (struct
   let _o s = output_name := Some s
   let _open s = open_modules := s :: !open_modules
   let _output_obj = set output_c_object
-  let _output_complete_obj s =
-    set output_c_object s; set output_complete_object s
+  let _output_complete_obj () =
+    set output_c_object (); set output_complete_object ()
   let _p = set gprofile
   let _pack = set make_package
   let _pp s = preprocessor := Some s
@@ -157,6 +159,7 @@ module Options = Main_args.Make_optcomp_options (struct
   let _dscheduling = set dump_scheduling
   let _dlinear = set dump_linear
   let _dstartup = set keep_startup_file
+  let _dtimings = set print_timings
   let _opaque = set opaque
 
   let anonymous = anonymous
@@ -216,9 +219,11 @@ let main () =
       Asmlink.link ppf (get_objfiles ()) target;
       Warnings.check_fatal ();
     end;
-    exit 0
   with x ->
       Location.report_exception ppf x;
       exit 2
 
-let _ = main ()
+let _ =
+  Timings.(time All) main ();
+  if !Clflags.print_timings then Timings.print Format.std_formatter;
+  exit 0

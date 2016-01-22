@@ -67,7 +67,7 @@ void caml_record_signal(int signal_number)
 #ifndef NATIVE_CODE
   caml_something_to_do = 1;
 #else
-  caml_young_limit = caml_young_end;
+  caml_young_limit = caml_young_alloc_end;
 #endif
 }
 
@@ -157,19 +157,31 @@ void caml_execute_signal(int signal_number, int in_signal_handler)
 
 /* Arrange for a garbage collection to be performed as soon as possible */
 
-int volatile caml_force_major_slice = 0;
+int volatile caml_requested_major_slice = 0;
+int volatile caml_requested_minor_gc = 0;
 
-void caml_urge_major_slice (void)
+void caml_request_major_slice (void)
 {
-  caml_force_major_slice = 1;
+  caml_requested_major_slice = 1;
 #ifndef NATIVE_CODE
   caml_something_to_do = 1;
 #else
-  caml_young_limit = caml_young_end;
+  caml_young_limit = caml_young_alloc_end;
   /* This is only moderately effective on ports that cache [caml_young_limit]
      in a register, since [caml_modify] is called directly, not through
      [caml_c_call], so it may take a while before the register is reloaded
      from [caml_young_limit]. */
+#endif
+}
+
+void caml_request_minor_gc (void)
+{
+  caml_requested_minor_gc = 1;
+#ifndef NATIVE_CODE
+  caml_something_to_do = 1;
+#else
+  caml_young_limit = caml_young_alloc_end;
+  /* Same remark as above in [caml_request_major_slice]. */
 #endif
 }
 

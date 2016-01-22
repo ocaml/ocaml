@@ -33,7 +33,7 @@
 # The rule names are the ones shown above in parentheses.
 
 # Built-in exceptions:
-# - Any binary file (i.e. with git attribute "binary")
+# - Any file git identifies as binary
 #   is automatically exempt from all the rules.
 # - Any file whose name matches one of the following patterns is
 #   automatically exempt from all rules
@@ -127,9 +127,20 @@ IGNORE_DIRS="
     if $is_svn || $is_cmd_line; then :; else continue; fi
     svnrules=''
     if $is_svn; then
-      case `git check-attr binary "$f"` in
-        *'binary: set') continue;;
-      esac
+      # Below is a git plumbing command to detect whether git regards a
+      # particular file as binary. This takes into account .gitattributes, but
+      # also works if the file has been automatically detected as binary by git.
+      # EMPTY is the hash of the empty tree (which is specially known to git -
+      # it is automatically included in every repository) as a way to get
+      # `diff-tree` to print the whole tree state; its `--numstat` output then
+      # prints a summary where two dashes in the first two columns indicates a
+      # binary file.
+      #   (See https://git-scm.com/docs/git-diff-tree#_other_diff_formats and
+      #    the documentation for the --numstat option. Commands designated as
+      #    "plumbing" commands in git have stable output intended for parsing)
+      EMPTY=`git hash-object -t tree /dev/null`
+      git diff-tree --numstat $EMPTY HEAD -- "$f" | grep -q "^-[[:blank:]]-" \
+        && continue
       svnrules=`git check-attr ocaml-typo "$f" | sed -e 's/.*: //'`
       case $svnrules in unspecified) svnrules= ;; esac
     fi

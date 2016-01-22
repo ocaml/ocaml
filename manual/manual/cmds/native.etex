@@ -505,6 +505,14 @@ Display a short usage summary and exit.
 %
 \end{options}
 
+\noindent
+On native Windows, the following environment variable is also consulted:
+
+\begin{options}
+\item["OCAML_FLEXLINK"]  Alternative executable to use instead of the
+configured value. Primarily used for bootstrapping.
+\end{options}
+
 \paragraph{Options for the IA32 architecture}
 The IA32 code generator (Intel Pentium, AMD Athlon) supports the
 following additional option:

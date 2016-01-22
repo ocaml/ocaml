@@ -127,6 +127,9 @@
 /lex/ocamllex.opt
 /lex/parser.output
 
+/manual/manual/cmds/warnings-help.etex
+/manual/manual/warnings-help.etex
+
 /ocamlbuild/ocamlbuild_config.ml
 /ocamlbuild/lexers.ml
 /ocamlbuild/glob_lexer.ml
@@ -197,8 +200,8 @@
 
 /stdlib/camlheader
 /stdlib/target_camlheader
-/stdlib/camlheaderd
-/stdlib/target_camlheaderd
+/stdlib/camlheader[di]
+/stdlib/target_camlheader[di]
 /stdlib/camlheader_ur
 /stdlib/labelled-*
 /stdlib/caml
@@ -254,6 +257,7 @@
 /testsuite/tests/unboxed-primitive-args/stubs.c
 
 /testsuite/tests/warnings/w55.opt.opt_result
+/testsuite/tests/warnings/w58.opt.opt_result
 
 /tools/ocamldep
 /tools/ocamldep.opt
@@ -282,6 +286,8 @@
 /tools/objinfo_helper
 /tools/read_cmt
 /tools/read_cmt.opt
+/tools/cmpbyt
+/tools/stripdebug
 
 /utils/config.ml
 

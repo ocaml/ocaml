@@ -198,8 +198,7 @@ let string_buffer = Buffer.create 32
 let reset_string_buffer () = Buffer.reset string_buffer
 let store_string_char = Buffer.add_char string_buffer
 let get_stored_string () =
-  let s = Buffer.contents string_buffer in
-  s
+  Buffer.contents string_buffer
 
 (** To translate escape sequences *)
 
@@ -517,7 +516,7 @@ let html_of_code b ?(with_pre=true) code =
      try
        print ~esc: false start ;
        let lexbuf = Lexing.from_string code in
-       let _ = token lexbuf  in
+       token lexbuf;
        print ~esc: false ending ;
        Format.pp_print_flush !fmt () ;
        Buffer.contents buf

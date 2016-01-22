@@ -38,6 +38,7 @@ type control = {
   mutable max_overhead : int;
   mutable stack_limit : int;
   mutable allocation_policy : int;
+  window_size : int;
 };;
 
 external stat : unit -> stat = "caml_gc_stat";;
@@ -50,26 +51,35 @@ external major_slice : int -> int = "caml_gc_major_slice";;
 external major : unit -> unit = "caml_gc_major";;
 external full_major : unit -> unit = "caml_gc_full_major";;
 external compact : unit -> unit = "caml_gc_compaction";;
+external get_minor_free : unit -> int = "caml_get_minor_free" [@@noalloc]
+external get_bucket : int -> int = "caml_get_major_bucket" [@@noalloc]
+external get_credit : unit -> int = "caml_get_major_credit" [@@noalloc]
+external huge_fallback_count : unit -> int = "caml_gc_huge_fallback_count"
 
 open Printf;;
 
 let print_stat c =
   let st = stat () in
-  fprintf c "minor_words: %.0f\n" st.minor_words;
-  fprintf c "promoted_words: %.0f\n" st.promoted_words;
-  fprintf c "major_words: %.0f\n" st.major_words;
   fprintf c "minor_collections: %d\n" st.minor_collections;
   fprintf c "major_collections: %d\n" st.major_collections;
-  fprintf c "heap_words: %d\n" st.heap_words;
-  fprintf c "heap_chunks: %d\n" st.heap_chunks;
-  fprintf c "top_heap_words: %d\n" st.top_heap_words;
-  fprintf c "live_words: %d\n" st.live_words;
+  fprintf c "compactions:       %d\n" st.compactions;
+  fprintf c "\n";
+  let l1 = String.length (sprintf "%.0f" st.minor_words) in
+  fprintf c "minor_words:    %*.0f\n" l1 st.minor_words;
+  fprintf c "promoted_words: %*.0f\n" l1 st.promoted_words;
+  fprintf c "major_words:    %*.0f\n" l1 st.major_words;
+  fprintf c "\n";
+  let l2 = String.length (sprintf "%d" st.top_heap_words) in
+  fprintf c "top_heap_words: %*d\n" l2 st.top_heap_words;
+  fprintf c "heap_words:     %*d\n" l2 st.heap_words;
+  fprintf c "live_words:     %*d\n" l2 st.live_words;
+  fprintf c "free_words:     %*d\n" l2 st.free_words;
+  fprintf c "largest_free:   %*d\n" l2 st.largest_free;
+  fprintf c "fragments:      %*d\n" l2 st.fragments;
+  fprintf c "\n";
   fprintf c "live_blocks: %d\n" st.live_blocks;
-  fprintf c "free_words: %d\n" st.free_words;
   fprintf c "free_blocks: %d\n" st.free_blocks;
-  fprintf c "largest_free: %d\n" st.largest_free;
-  fprintf c "fragments: %d\n" st.fragments;
-  fprintf c "compactions: %d\n" st.compactions;
+  fprintf c "heap_chunks: %d\n" st.heap_chunks;
 ;;
 
 let allocated_bytes () =

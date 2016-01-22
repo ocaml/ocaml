@@ -15,7 +15,7 @@
 foreach $f (@ARGV) {
     open(FILE, $f) || die("Cannot open $f");
     seek(FILE, -16, 2);
-    $num_sections = do read_int();
+    $num_sections = &read_int();
     read(FILE, $magic, 12);
     seek(FILE, -16 - 8 * $num_sections, 2);
     @secname = ();
@@ -24,13 +24,13 @@ foreach $f (@ARGV) {
     for ($i = 0; $i < $num_sections; $i++) {
         read(FILE, $sec, 4);
         $secname[$i] = $sec;
-        $seclength[$i] = do read_int();
+        $seclength[$i] = &read_int();
         $length{$sec} = $seclength[$i];
     }
     print $f, ":\n" if ($#ARGV > 0);
     $path =
         $length{'RNTM'} > 0 ?
-            do read_section('RNTM') :
+            &read_section('RNTM') :
             "(default runtime)\n";
     printf ("\tcode: %-7d data: %-7d symbols: %-7d debug: %-7d\n",
             $length{'CODE'}, $length{'DATA'},

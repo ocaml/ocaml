@@ -15,19 +15,28 @@ val check_attribute
   -> string Location.loc * _
   -> unit
 
+val check_attribute_on_module
+   : Typedtree.module_expr
+  -> string Location.loc * _
+  -> unit
+
 val add_inline_attribute
    : Lambda.lambda
   -> Location.t
-  -> Parsetree.attribute list
+  -> Parsetree.attributes
   -> Lambda.lambda
 
 val get_inline_attribute
-   : (string Location.loc * Parsetree.payload) list
+   : Parsetree.attributes
   -> Lambda.inline_attribute
 
-val get_inlined_attribute
+val get_and_remove_inlined_attribute
    : Typedtree.expression
   -> Lambda.inline_attribute * Typedtree.expression
+
+val get_and_remove_inlined_attribute_on_module
+   : Typedtree.module_expr
+  -> Lambda.inline_attribute * Typedtree.module_expr
 
 val get_tailcall_attribute
    : Typedtree.expression

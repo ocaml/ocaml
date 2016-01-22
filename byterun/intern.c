@@ -19,19 +19,17 @@
 #include <stdio.h>
 #include "caml/alloc.h"
 #include "caml/callback.h"
+#include "caml/config.h"
 #include "caml/custom.h"
 #include "caml/fail.h"
 #include "caml/gc.h"
 #include "caml/intext.h"
 #include "caml/io.h"
+#include "caml/md5.h"
 #include "caml/memory.h"
 #include "caml/mlvalues.h"
 #include "caml/misc.h"
 #include "caml/reverse.h"
-
-#ifdef _MSC_VER
-#define inline _inline
-#endif
 
 static unsigned char * intern_src;
 /* Reading pointer in block holding input data. */
@@ -617,8 +615,7 @@ static void intern_add_to_heap(mlsize_t whsize)
   /* Add new heap chunk to heap if needed */
   if (intern_extra_block != NULL) {
     /* If heap chunk not filled totally, build free block at end */
-    asize_t request =
-      ((Bsize_wsize(whsize) + Page_size - 1) >> Page_log) << Page_log;
+    asize_t request = Chunk_size (intern_extra_block);
     header_t * end_extra_block =
       (header_t *) intern_extra_block + Wsize_bsize(request);
     Assert(intern_block == 0);
@@ -854,7 +851,10 @@ static char * intern_resolve_code_pointer(unsigned char digest[16],
   int i;
   for (i = caml_code_fragments_table.size - 1; i >= 0; i--) {
     struct code_fragment * cf = caml_code_fragments_table.contents[i];
-    if (! cf->digest_computed) caml_update_code_fragment_digest(cf);
+    if (! cf->digest_computed) {
+      caml_md5_block(cf->digest, cf->code_start, cf->code_end - cf->code_start);
+      cf->digest_computed = 1;
+    }
     if (memcmp(digest, cf->digest, 16) == 0) {
       if (cf->code_start + offset < cf->code_end)
         return cf->code_start + offset;
