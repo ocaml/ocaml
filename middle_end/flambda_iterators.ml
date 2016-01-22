@@ -563,16 +563,39 @@ let map_project_var_to_expr_opt tree ~f =
           as named -> named)
     tree
 
-let map_toplevel_project_var_to_expr_opt tree ~f =
+type projection =
+  | Project_var of Flambda.project_var
+  | Project_closure of Flambda.project_closure
+  | Move_within_set_of_closures of Flambda.move_within_set_of_closures
+  | Field of int * Variable.t
+
+let map_toplevel_projections_to_expr_opt tree
+      ~(f : projection -> Flambda.t option) =
   map_toplevel_named (function
       | (Project_var project_var) as named ->
-        begin match f project_var with
+        begin match f (Project_var project_var) with
         | None -> named
         | Some expr -> Expr expr
         end
-      | (Symbol _ | Const _ | Allocated_const _
-      | Set_of_closures _ | Project_closure _ | Move_within_set_of_closures _
-      | Prim _ | Expr _ | Read_mutable _ | Read_symbol_field _)
+      | (Project_closure project_closure) as named ->
+        begin match f (Project_closure project_closure) with
+        | None -> named
+        | Some expr -> Expr expr
+        end
+      | (Move_within_set_of_closures move_within_set_of_closures) as named ->
+        begin match
+          f (Move_within_set_of_closures move_within_set_of_closures)
+        with
+        | None -> named
+        | Some expr -> Expr expr
+        end
+      | (Prim (Pfield i, [v], _dbg)) as named ->
+        begin match f (Field (i, v)) with
+        | None -> named
+        | Some expr -> Expr expr
+        end
+      | (Symbol _ | Const _ | Allocated_const _ | Set_of_closures _ | Prim _
+        | Expr _ | Read_mutable _ | Read_symbol_field _)
           as named -> named)
     tree
 

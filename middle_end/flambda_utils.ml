@@ -755,3 +755,11 @@ let all_free_symbols (function_decls : Flambda.function_declarations) =
   Variable.Map.fold (fun _ (function_decl : Flambda.function_declaration) syms ->
       Symbol.Set.union syms function_decl.free_symbols)
     function_decls.funs Symbol.Set.empty
+
+let contains_stub (fun_decls : Flambda.function_declarations) =
+  let number_of_stub_functions =
+    Variable.Map.cardinal
+      (Variable.Map.filter (fun _ { Flambda.stub } -> stub)
+         fun_decls.funs)
+  in
+  number_of_stub_functions > 0

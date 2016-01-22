@@ -252,6 +252,12 @@ let simplify_project_closure env r ~(project_closure : Flambda.project_closure)
     match reference_recursive_function_directly env closure_id with
     | Some (flam, approx) -> flam, ret r approx
     | None ->
+      let set_of_closures_var =
+        match set_of_closures_var with
+        | Some set_of_closures_var' when E.mem env set_of_closures_var' ->
+          set_of_closures_var
+        | Some _ | None -> None
+      in
       let approx =
         A.value_closure ?set_of_closures_var value_set_of_closures
           closure_id
