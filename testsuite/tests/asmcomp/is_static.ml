@@ -1,5 +1,5 @@
 external is_in_static_data : 'a -> bool = "caml_is_in_static_data"
-let flambda = List.exists ((=) "flambda: true") (Array.to_list Sys.argv)
+let flambda = bool_of_string Sys.argv.(1)
 let is_in_static_data_flambda x =
   not flambda || is_in_static_data x
 
