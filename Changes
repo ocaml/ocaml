@@ -237,6 +237,7 @@ Standard library:
   (Bobot François)
 - GPR#329: Add exists, for_all,  mem and memq functions in Array
   (Bernhard Schommer)
+- GPR#337: Add [Hashtbl.filter_map_inplace] (Alain Frisch)
 - GPR#356: Add [Format.kasprintf] (Jérémie Dimino, Mark Shinwell)
 
 Type system:
