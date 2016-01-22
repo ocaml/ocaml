@@ -882,6 +882,9 @@ and simplify_named env r (tree : Flambda.named) : Flambda.named * R.t =
       simplify_named_using_approx_and_env env r tree approx
     end
   | Set_of_closures set_of_closures ->
+    let set_of_closures =
+      Remove_free_vars_equal_to_args.run set_of_closures
+    in
     begin match Unbox_free_vars_of_closures.run ~env ~set_of_closures with
     | Some (expr, _benefit) -> simplify env r expr
     | None ->
