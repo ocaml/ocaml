@@ -44,40 +44,45 @@ type extracted =
 let freshened_var env v =
   Freshening.apply_variable (E.freshening env) v
 
+module VAP = Projection.Var_and_projectee
+
 let collect_projections ~env ~which_variables
-      ~(collected : extracted Projection.Var_and_projectee.Map.t) =
+      ~(collected : extracted VAP.Map.t) =
   Variable.Map.fold (fun inside_var outside_var collected ->
       let approx = E.find_exn env (freshened_var env outside_var) in
       match A.check_approx_for_closure approx with
       | Ok (value_closure, _approx_var, _approx_sym, value_set_of_closures) ->
-        let var_within_closure_acc =
+        let collected =
           Var_within_closure.Map.fold (fun bound_var _ collected ->
               let new_var =
                 Variable.create (Var_within_closure.unique_name bound_var)
               in
-              Var_within_closure_field.Map.add (inside_var, bound_var)
-                { new_var; closure_id = value_closure.closure_id; outside_var;
+              let extracted : extracted_var_within_closure =
+                { new_var;
+                  closure_id = value_closure.closure_id;
+                  outside_var;
                 }
-                acc)
+              in
+              VAP.Map.add (inside_var, Project_var bound_var)
+                (Var_within_closure extracted) collected)
             value_set_of_closures.bound_vars collected
         in
-        let closure_acc =
-          Variable.Map.fold (fun fun_var _ acc ->
-              let new_var = Variable.rename fun_var in
-              let start_from = value_closure.closure_id in
-              let move_to = Closure_id.wrap fun_var in
-              (* For the moment represent all projections of closures as
-                 moves from the original closure ID. *)
-              (* CR-someday mshinwell: consider using the set-of-closures-var
-                 ("_approx_var" above) instead.  See handling in
-                 inline_and_simplify.ml, e.g. simplify_project_var: need
-                 to check the variable is in scope. *)
-              Closure_field.Map.add (inside_var, move_to)
-                ({ new_var; start_from; outside_var; } : closures_in_free_vars)
-                acc)
-            value_set_of_closures.function_decls.funs closure_acc
-        in
-        var_within_closure_acc, closure_acc, block_acc
+        Variable.Map.fold (fun fun_var _ collected ->
+            let new_var = Variable.rename fun_var in
+            let start_from = value_closure.closure_id in
+            let move_to = Closure_id.wrap fun_var in
+            (* For the moment represent all projections of closures as
+               moves from the original closure ID.  [Inline_and_simplify]
+               can deal with this if simplification is possible. *)
+            let extracted : extracted_closure =
+              { new_var;
+                start_from;
+                outside_var;
+              }
+            in
+            VAP.Map.add (inside_var, Closure move_to)
+              (Closure extracted) collected)
+          value_set_of_closures.function_decls.funs closure_acc
       | Wrong ->
         match A.check_approx_for_block approx with
         | Wrong ->
