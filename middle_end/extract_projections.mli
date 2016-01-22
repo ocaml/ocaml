@@ -19,14 +19,9 @@
     closures or blocks.  Replace uses of projections from such variables
     with new variables and build a mapping from the new variables to the
     projection expressions.  The benefit of removing the projections is
-    also returned. *)
+    also returned.
 
-type precondition =
-     var:Variable.t
-  -> set_of_closures:Flambda.set_of_closures
-  -> bool
-
-(** The returned definitions of extracted projection expressions are
+    The returned definitions of extracted projection expressions are
     collated together in a list.  Each member of the list corresponds to
     all discovered projections from one particular variable.
     Note that the [Flambda.expr] values here are not rewritten in any
@@ -36,8 +31,11 @@ type precondition =
 *)
 type projection_defns = Flambda.expr Variable.Map.t list
 
+(** [which_variables] maps inner variables to outer variables in the
+    manner of [free_vars] and [specialised_args] in
+    [Flambda.set_of_closures]. *)
 val from_function_decl
-   : precondition:precondition
+   : which_variables:Variable.t Variable.Map.t
   -> env:Inline_and_simplify_aux.Env.t
   -> function_decl:Flambda.function_declaration
   -> (Flambda.function_declaration * projection_defns

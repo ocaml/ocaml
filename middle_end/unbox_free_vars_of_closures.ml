@@ -17,10 +17,6 @@
 let pass_name = "unbox-free-vars-of-closures"
 let () = Pass_manager.register ~pass_name
 
-let precondition_for_extracting_projection ~var
-      ~(set_of_closures : Flambda.set_of_closures) =
-  Variable.Map.mem var set_of_closures.function_decls.free_vars
-
 let run ~env ~set_of_closures =
   if !Clflags.classic_inlining then
     None
@@ -30,7 +26,7 @@ let run ~env ~set_of_closures =
             (funs, extracted_bindings) ->
           let extracted =
             Extract_projections.from_function_decl ~env ~function_decl
-              ~precondition:precondition_for_extracting_projection
+              ~which_variables:set_of_closures.function_decls.free_vars
               ~set_of_closures
           in
           let function_decl =

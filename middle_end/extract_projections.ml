@@ -40,6 +40,8 @@ type block_in_free_vars = {
 let freshened_var env v =
   Freshening.apply_variable (E.freshening env) v
 
+let collect_projections ~env ~
+
 let closures_in_variables ~env map acc
       : var_within_closures_in_free_vars Var_within_closure_field.Map.t
           * closures_in_free_vars Closure_field.Map.t

@@ -24,7 +24,5 @@ type projection =
 
 include Identifiable.S with type t = projection
 
-val benefit : t -> Inlining_cost.Benefit.t
-
 module With_variable : Identifiable.S
   with type t := Variable.t * projection
