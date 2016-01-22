@@ -17,185 +17,218 @@
 module A = Simple_value_approx
 module E = Inline_and_simplify_aux.Env
 
-let pass_name = "unbox-closures"
-let () = Clflags.all_passes := pass_name :: !Clflags.all_passes
+type new_specialised_arg = {
+  definition : Flambda.expr;
+}
 
-let rewrite_function_decl
-    ~closure_id
-    ~(function_decls : Flambda.function_declarations)
-    ~(function_decl : Flambda.function_declaration)
-    ~(free_vars : Variable.t Variable.Map.t)
-    ~additional_specialised_args =
-  let params_for_vars_bound_by_closure =
-    Variable.Map.of_set
-      (fun var -> Variable.rename var ~append:T.variable_suffix)
-      (Flambda_utils.variables_bound_by_the_closure closure_id function_decls)
-  in
-  let closure_element_params =
-    List.map snd (Variable.Map.bindings params_for_vars_bound_by_closure)
-  in
-  let all_params = function_decl.params @ closure_element_params in
-  let body_using_params_not_closures =
-    Flambda_utils.toplevel_substitution
-      params_for_vars_bound_by_closure
-      function_decl.body
-  in
-  let additional_specialised_args =
-    Variable.Map.fold
-      (fun var_bound_by_closure new_param
-        additional_specialised_args ->
-        let specialised_to =
-          Variable.Map.find var_bound_by_closure free_vars
+type add_all_or_none_of_these_specialised_args =
+  new_specialised_arg Variable.Map.t
+
+type what_to_specialise = {
+  new_function_body : Flambda.expr;
+  new_specialised_args : add_all_or_none_of_these_specialised_args list;
+}
+
+module type S = sig
+  val pass_name : string
+
+  val precondition : set_of_closures:Flambda.set_of_closures -> bool
+
+  val what_to_specialise
+     : names_of_params_to_use_in_definitions:Variable.t Variable.Map.t
+    -> closure_id:Closure_id.t
+    -> function_decl:Flambda.function_declaration
+    -> set_of_closures:Flambda.set_of_closures
+    -> what_to_specialise option
+end
+
+module Make (T : S) = struct
+  let create_wrapper ~fun_var ~(set_of_closures : Flambda.set_of_closures)
+      ~(function_decl : Flambda.function_declaration) ~new_function_body
+      ~new_args ~additional_specialised_args =
+    let additional_specialised_args, new_bindings =
+      (* For each new specialised argument of the main function
+         chosen by [T], create a new variable to hold the definition
+         of such argument, which will lie outside of the set of
+         closures.  If the definition is itself just an existing
+         variable, we could use that directly, but in fact we do not
+         (because it means we don't have to worry if more than one new
+         specialised arg has the same outer variable).  Add this
+         information to the [additional_specialised_args] map that will
+         form the specialised args information for the new set of closures.
+
+         Also construct a map giving new [let]-bindings that must be
+         added outside of the set of closures, to bind the new outer
+         variables. *)
+      Variable.Map.fold (fun new_inner_var defn
+            (additional_specialised_args, new_bindings) ->
+          if Variable.Map.mem additional_specialised_args new_inner_var then
+            Misc.fatal_errorf "Augment_specialised_args: inner name chosen \
+                for a new specialised arg (%a) clashes with an existing \
+                specialised arg: %a"
+              Variable.print new_inner_var
+              Flambda.print_set_of_closures set_of_closures
+          else
+            let new_outer_var =
+              Variable.rename new_inner_var ~append:T.variable_suffix
+            in
+            let additional_specialised_args =
+              Variable.Map.add new_inner_var new_outer_var
+                additional_specialised_args
+            in
+            let new_bindings =
+              assert (not (Variable.Map.mem new_outer_var new_bindings));
+              Variable.Map.add new_outer_var defn new_bindings
+            in
+            additional_specialised_args, new_bindings)
+        new_args
+        (additional_specialised_args, new_bindings)
+    in
+    let new_outer_vars = Variable.Map.keys new_bindings in
+    let new_fun_var = Variable.rename fun_var ~append:T.variable_suffix in
+    let wrapper_body : Flambda.t =
+      Apply {
+        func = new_fun_var;
+        (* The new outer variables of the new specialised args become free
+           variables of the wrapper. *)
+        args = wrapper_params @ new_outer_vars;
+        kind = Direct (Closure_id.wrap new_fun_var);
+        dbg = Debuginfo.none;
+        inline = Default_inline;
+      }
+    in
+    let new_function_decl =
+      Flambda.create_function_declaration
+        ~params:wrapper_params
+        ~body:wrapper_body
+        ~stub:true
+        ~dbg:Debuginfo.none
+        ~inline:Default_inline
+        ~is_a_functor:false
+    in
+    new_fun_var, new_function_decl, additional_specialised_args, new_bindings
+
+  let rewrite_function_decl ~backend ~fun_var ~set_of_closures
+      ~(function_decl : Flambda.function_declaration)
+      ~funs ~additional_specialised_args ~new_bindings =
+    let done_nothing () =
+      let funs = Variable.Map.add fun_var function_decl funs in
+      funs, additional_specialised_args, new_bindings
+    in
+    if function_decl.stub then
+      done_nothing ()
+    else
+      let closure_id = Closure_id.wrap fun_var in
+      let what_to_specialise =
+        T.what_to_specialise ~closure_id ~function_decl ~set_of_closures
+      in
+      match what_to_specialise with
+      | None -> done_nothing ()
+      | Some what_to_specialise ->
+        let new_specialised_args =
+          let module Backend = (val backend : Backend_intf.S) in
+          let max_args = Backend.max_sensible_number_of_args in
+          List.fold_left (fun add_all_or_none (num_params, new_spec_args) ->
+              (* - It is important to limit the number of arguments added:
+                 if arguments end up being passed on the stack, tail call
+                 optimization will be disabled (see asmcomp/selectgen.ml).
+                 - For each group of new specialised args provided by [T],
+                 either all or none of them will be added.  (This is to
+                 avoid the situation where we add extra arguments but yet
+                 fail to eliminate an original one.) *)
+              let num_new_args = Variable.Map.cardinal add_all_or_none in
+              let num_params = num_params + num_new_args in
+              if num_params > max_args then
+                new_spec_args
+              else
+                try
+                  let new_spec_args =
+                    Variable.Map.disjoint_union new_spec_args add_all_or_none
+                  in
+                  num_params, new_spec_args
+                with _exn ->
+                  Misc.fatal_errorf "Augment_specialised_args: groups of \
+                      new specialised args overlap: %a"
+                    (Format.pp_print_list (Variable.Map.print Variable.print))
+                    what_to_specialise.new_specialised_args)
+            what_to_specialise.new_specialised_args
+            (List.length function_decl.params, Variable.Map.empty)
         in
-        Variable.Map.add new_param specialised_to additional_specialised_args)
-      params_for_vars_bound_by_closure
-      additional_specialised_args
-  in
-  additional_specialised_args,
-  Flambda.create_function_declaration
-    ~params:all_params
-    ~body:body_using_params_not_closures
-    ~stub:function_decl.stub
-    ~dbg:function_decl.dbg
-    ~inline:function_decl.inline
-    ~is_a_functor:function_decl.is_a_functor
+        if Variable.Map.cardinal new_specialised_args < 1 then
+          done_nothing ()
+        else
+          (* [new_specialised_args] now maps from the names chosen by [T]
+             for the new specialised args to their definitions. *)
+          let new_fun_var, wrapper, additional_specialised_args, new_bindings =
+            create_wrapper ~fun_var ~set_of_closures ~function_decl
+              ~new_args ~additional_specialised_args ~new_bindings
+          in
+          let all_params =
+            (* The extra parameters on the main function are named
+               according to the decisions made by [T].  Note that the
+               ordering used here must match [create_wrapper], above. *)
+            Variable.Set.elements (Variable.Map.keys new_specialised_args)
+          in
+          let rewritten_function_decl =
+            Flambda.create_function_declaration
+              ~params:all_params
+              ~body:what_to_specialise.new_function_body
+              ~stub:function_decl.stub
+              ~dbg:function_decl.dbg
+              ~inline:function_decl.inline
+              ~is_a_functor:function_decl.is_a_functor
+          in
+          let funs =
+            Variable.Map.add new_fun_var rewritten_function_decl
+              (Variable.Map.add fun_var wrapper funs)
+          in
+          funs, additional_specialised_args, new_bindings
 
-let create_wrapper
-    ~(function_decls : Flambda.function_declarations)
-    ~(function_decl : Flambda.function_declaration)
-    ~fun_var
-    ~specialised_args
-    ~additional_specialised_args =
-  let closure_id = Closure_id.wrap fun_var in
-  let new_fun_var = Variable.rename fun_var ~append:T.variable_suffix in
-  let wrapper_params =
-    List.map (fun param -> Variable.rename param ~append:"_wrapper_param")
-      function_decl.params
-  in
-  let additional_specialised_args =
-    List.fold_left2 (fun additional_specialised_args wrapper_param param ->
-        match Variable.Map.find param specialised_args with
-        | exception Not_found ->
-          additional_specialised_args
-        | outside_var ->
-          Variable.Map.add wrapper_param outside_var
-            additional_specialised_args)
-      additional_specialised_args wrapper_params function_decl.params
-  in
-  let extra_args =
-    Variable.Set.elements
-      (Flambda_utils.variables_bound_by_the_closure closure_id function_decls)
-  in
-  let wrapper_body : Flambda.t =
-    Apply {
-      func = new_fun_var;
-      args = wrapper_params @ extra_args;
-      kind = Direct (Closure_id.wrap new_fun_var);
-      dbg = Debuginfo.none;
-      inline = Default_inline;
-    }
-  in
-  additional_specialised_args,
-  new_fun_var,
-  Flambda.create_function_declaration
-    ~params:wrapper_params
-    ~body:wrapper_body
-    ~stub:true
-    ~dbg:Debuginfo.none
-    ~inline:Default_inline
-    ~is_a_functor:false
+  let rewrite_set_of_closures ~backend
+        ~(set_of_closures : Flambda.set_of_closures) =
+    if not (T.precondition set_of_closures) then
+      None
+    else
+      let funs, additional_specialised_args, new_bindings =
+        Variable.Map.mapi
+          (fun fun_var function_decl
+               (funs, additional_specialised_args, new_bindings) ->
+             rewrite_function_decl ~backend ~set_of_closures ~fun_var
+               ~function_decl ~funs ~additional_specialised_args
+               ~new_bindings)
+          (set_of_closures.function_decls.funs,
+            Variable.Map.empty,
+            Variable.Map.empty)
+      in
+      let function_decls =
+        Flambda.update_function_declarations function_decls ~funs
+      in
+      let set_of_closures =
+        Flambda.create_set_of_closures
+          ~function_decls
+          ~free_vars:set_of_closures.free_vars
+          ~specialised_args
+      in
+      let expr =
+        Variable.Map.fold (fun outside_var spec_arg_defn expr ->
+            Flambda.create_let outside_var spec_arg_defn expr)
+          bindings
+          (Flambda.Set_of_closures set_of_closures)
+      in
+      Some expr
+end
 
-let add_wrapper
-    ~backend
-    ~fun_var
-    ~(function_decls : Flambda.function_declarations)
-    ~(function_decl : Flambda.function_declaration)
-    ~(free_vars : Variable.t Variable.Map.t)
-    ~specialised_args
-    ~funs
-    ~additional_specialised_args =
-  let closure_id = Closure_id.wrap fun_var in
-  let bound_by_closure =
-    Flambda_utils.variables_bound_by_the_closure closure_id function_decls
-  in
-  if Variable.Set.is_empty bound_by_closure
-    || function_decl.stub
-    || too_many_arguments ~backend ~function_decl ~bound_by_closure
-  then
-    let funs = Variable.Map.add fun_var function_decl funs in
-    funs, additional_specialised_args
-  else
-    let additional_specialised_args, rewritten_function_decl =
-      rewrite_function_decl ~closure_id ~free_vars ~function_decls ~function_decl
-        ~additional_specialised_args
-    in
-    let additional_specialised_args, new_fun_var, wrapper =
-      create_wrapper ~fun_var ~function_decls ~function_decl
-        ~additional_specialised_args ~specialised_args
-    in
-    let funs =
-      Variable.Map.add new_fun_var rewritten_function_decl
-        (Variable.Map.add fun_var wrapper funs)
-    in
-    funs, additional_specialised_args
+module Make_pass (T : sig
+  include S
+  val pass_name : string
+end) = struct
+  let () = Clflags.all_passes := pass_name :: !Clflags.all_passes
 
-(* It is important to limit the number of arguments added: if arguments
-   end up being passed on the stack, tail call optimization will be
-   disabled (see asmcomp/selectgen.ml). *)
-let would_add_too_many_arguments ~(set_of_closures : Flambda.set_of_closures)
-      ~additional_specialised_args =
-  let module Backend = (val backend : Backend_intf.S) in
-  let max_arguments = Backend.max_sensible_number_of_arguments in
-  let num_new_arguments = Variable.Map.cardinal additional_specialised_args in
-  Variable.Map.fold (fun fun_var function_decl too_many_arguments ->
-      if too_many_arguments then true
-      else
-        let num_existing_arguments = List.length function_decl.params in
-        let num_arguments = num_existing_arguments + num_new_arguments in
-        num_arguments > max_arguments)
-    set_of_closures.function_decls.funs
-    false
+  module ASA = Make (T)
 
-let rewrite_set_of_closures ~backend
-      ~(set_of_closures : Flambda.set_of_closures)
-      ~additional_specialised_args =
-  if would_add_too_many_arguments ~set_of_closures ~additional_specialised_args
-  then
-    None
-  else
-    let specialised_args =
-      try
-        Variable.Map.disjoint_union set_of_closures.specialised_args
-          additional_specialised_args
-          ~eq:Variable.equal
-      with _exn ->
-        Misc.fatal_errorf "Augment_specialised_args: some/all of the \
-            additional specialised args (%a) were already specialised args \
-            of the set of closures %a"
-          (Format.pp_print_list Variable.print) additional_specialised_args
-          Flambda.print_set_of_closures set_of_closures
-    in
-    let funs =
-      Variable.Map.mapi
-        (fun fun_var function_decl (funs, additional_specialised_args) ->
-           add_wrapper ~backend ~function_decls ~fun_var ~free_vars
-             ~specialised_args:set_of_closures.specialised_args
-             ~function_decl ~funs ~additional_specialised_args)
-        set_of_closures.function_decls.funs
-    in
-    let function_decls =
-      Flambda.update_function_declarations function_decls ~funs
-    in
-    let set_of_closures =
-      Flambda.create_set_of_closures
-        ~function_decls
-        ~free_vars:set_of_closures.free_vars
-        ~specialised_args
-    in
-    Some set_of_closures
-
-let rewrite_set_of_closures ~backend ~set_of_closures =
-  Pass_manager.with_dump ~pass_name ~input:set_of_closures
-    ~print_input:Flambda.print_set_of_closures
-    ~print_output:Flambda.print_set_of_closures
-    ~f:(fun () -> rewrite_set_of_closures ~backend ~set_of_closures)
+  let rewrite_set_of_closures ~backend ~set_of_closures =
+    Pass_manager.with_dump ~pass_name ~input:set_of_closures
+      ~print_input:Flambda.print_set_of_closures
+      ~print_output:Flambda.print
+      ~f:(fun () -> ASA.rewrite_set_of_closures ~backend ~set_of_closures)
+end

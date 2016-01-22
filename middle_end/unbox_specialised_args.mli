@@ -13,3 +13,13 @@
 (*   special exception on linking described in the file ../LICENSE.       *)
 (*                                                                        *)
 (**************************************************************************)
+
+(** When approximations of specialised arguments indicate that they are
+    closures or blocks, add more specialised arguments corresponding to
+    the projections from such blocks, such that the original specialised
+    arguments may later be eliminated. *)
+
+val run
+   : env:Inline_and_simplify_aux.Env.t
+  -> set_of_closures:Flambda.set_of_closures
+  -> Flambda.set_of_closures option
