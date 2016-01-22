@@ -120,7 +120,19 @@ val iter : ('a -> 'b -> unit) -> ('a, 'b) t -> unit
    in which the bindings are enumerated is reproducible between
    successive runs of the program, and even between minor versions
    of OCaml.  For randomized hash tables, the order of enumeration
-   is entirely random. *)
+   is entirely random.
+
+   The behavior is not defined if the hash table is modified
+   by [f] during the iteration.
+*)
+
+val update: ('a -> 'b -> 'b option) -> ('a, 'b) t -> unit
+(** [Hashtbl.update f tbl] applies [f] to all bindings in table [tbl]
+    and update each binding depending on the result of [f].  If [f]
+    returns [None], the binding is discarded.  If it returns [Some
+    new_val], the binding is update to associate the key to [new_val].
+
+    Other comments for {!Hashtbl.iter} apply as well.  *)
 
 val fold : ('a -> 'b -> 'c -> 'c) -> ('a, 'b) t -> 'c -> 'c
 (** [Hashtbl.fold f tbl init] computes
@@ -138,7 +150,11 @@ val fold : ('a -> 'b -> 'c -> 'c) -> ('a, 'b) t -> 'c -> 'c
    in which the bindings are enumerated is reproducible between
    successive runs of the program, and even between minor versions
    of OCaml.  For randomized hash tables, the order of enumeration
-   is entirely random. *)
+   is entirely random.
+
+   The behavior is not defined if the hash table is modified
+   by [f] during the iteration.
+*)
 
 val length : ('a, 'b) t -> int
 (** [Hashtbl.length tbl] returns the number of bindings in [tbl].
@@ -253,6 +269,7 @@ module type S =
     val replace : 'a t -> key -> 'a -> unit
     val mem : 'a t -> key -> bool
     val iter : (key -> 'a -> unit) -> 'a t -> unit
+    val update: (key -> 'a -> 'a option) -> 'a t -> unit
     val fold : (key -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
     val length : 'a t -> int
     val stats: 'a t -> statistics
@@ -302,6 +319,7 @@ module type SeededS =
     val replace : 'a t -> key -> 'a -> unit
     val mem : 'a t -> key -> bool
     val iter : (key -> 'a -> unit) -> 'a t -> unit
+    val update: (key -> 'a -> 'a option) -> 'a t -> unit
     val fold : (key -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
     val length : 'a t -> int
     val stats: 'a t -> statistics
