@@ -662,6 +662,7 @@ let convert (program, exported) : result =
     List.map (fun (symbol, tag, fields) ->
         { Clambda.
           symbol = Linkage_name.to_string (Symbol.label symbol);
+          exported = true;
           tag = Tag.to_int tag;
           size = List.length fields;
         })
