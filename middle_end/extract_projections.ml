@@ -17,35 +17,34 @@
 module A = Simple_value_approx
 module E = Inline_and_simplify_aux.Env
 
-(* CR-soon mshinwell: Refactor this module to use something like
-   [Flambda_iterators.projection] throughout. *)
-
-type var_within_closures_in_free_vars = {
+type extracted_var_within_closure = {
   new_var : Variable.t;
   closure_id : Closure_id.t;
   outside_var : Variable.t;
 }
 
-type closures_in_free_vars = {
+type extracted_closure = {
   new_var : Variable.t;
   start_from : Closure_id.t;
   outside_var : Variable.t;
 }
 
-type block_in_free_vars = {
+type extracted_field = {
   new_var : Variable.t;
   outside_var : Variable.t;
 }
 
+type extracted =
+  | Var_within_closure of extracted_var_within_closure
+  (* [Closure] comes from [Project_closure] or [Move_within_set_of_closures]
+     expressions. *)
+  | Closure of extracted_closure
+  | Field of extracted_field
+
 let freshened_var env v =
   Freshening.apply_variable (E.freshening env) v
 
-let collect_projections ~env ~
-
-let closures_in_variables ~env map acc
-      : var_within_closures_in_free_vars Var_within_closure_field.Map.t
-          * closures_in_free_vars Closure_field.Map.t
-          * block_in_free_vars Block_field.Map.t =
+let collect_projections ~env ~which_variables ~collected =
   Variable.Map.fold (fun inside_var outside_var
         (var_within_closure_acc, closure_acc, block_acc) ->
       let approx = E.find_exn env (freshened_var env outside_var) in
@@ -84,7 +83,7 @@ let closures_in_variables ~env map acc
       | Wrong ->
         match A.check_approx_for_block approx with
         | Wrong ->
-          acc  (* Ignore free_vars that aren't closures or blocks. *)
+          acc  (* Ignore variables that aren't closures or blocks. *)
         | Ok (_tag, fields) ->
           let block_acc = ref block_acc in
           Array.iteri (fun i approx ->
