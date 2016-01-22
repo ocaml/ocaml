@@ -50,6 +50,7 @@ let collect_projections ~env ~which_variables
       ~(collected : extracted VAP.Map.t) =
   Variable.Map.fold (fun inside_var outside_var collected ->
       let approx = E.find_exn env (freshened_var env outside_var) in
+      (* First determine if the variable is bound to a closure. *)
       match A.check_approx_for_closure approx with
       | Ok (value_closure, _approx_var, _approx_sym, value_set_of_closures) ->
         let collected =
@@ -83,36 +84,44 @@ let collect_projections ~env ~which_variables
             VAP.Map.add (inside_var, Closure move_to)
               (Closure extracted) collected)
           value_set_of_closures.function_decls.funs closure_acc
-      | Wrong ->
+      | Wrong ->  (* The variable is not bound to a closure. *)
         match A.check_approx_for_block approx with
-        | Wrong ->
-          acc  (* Ignore variables that aren't closures or blocks. *)
+        | Wrong -> acc  (* Ignore if not bound to a closure or block. *)
         | Ok (_tag, fields) ->
-          let collected = ref collected in
-          Array.iteri (fun i approx ->
-              (* CR-soon pchambart: should we restrict only to cases
-                 when the field is aliased to a variable outside
-                 of the closure (i.e. when we can certainly remove
-                 the allocation of the block) ?
-                 Note that this may prevent cases with imbricated
-                 closures from benefiting from this transformations.
-                 mshinwell: What word was "imbricated" supposed to be?
-              *)
-              match approx.A.var with
-              | Some v when E.mem env v ->
-                let new_var =
-                  Variable.create
-                    (Variable.unique_name inside_var ^ "_field_"
-                      ^ string_of_int i)
+          let (_field_index : int), collected =
+            Array.fold_left (fun (field_index, collected) approx ->
+                (* CR-soon pchambart: should we restrict only to cases
+                   when the field is aliased to a variable outside
+                   of the closure (i.e. when we can certainly remove
+                   the allocation of the block) ?
+                   Note that this may prevent cases with imbricated
+                   closures from benefiting from this transformations.
+                   mshinwell: What word was "imbricated" supposed to be?
+                *)
+                let collected =
+                  match approx.A.var with
+                  | Some var when E.mem env var ->
+                    let new_var =
+                      Variable.create
+                        (Variable.unique_name inside_var ^ "_field_"
+                          ^ string_of_int field_index)
+                    in
+                    let extracted : extracted_field =
+                      { new_var;
+                        outside_var;
+                      }
+                    in
+                    VAP.Map.add (inside_var, Field field_index)
+                      (Field extracted) collected
+                  | None | Some _ -> collected
                 in
-                block_acc := Block_field.Map.add (inside_var, i)
-                  { new_var; outside_var } !block_acc
-              | Some _ -> ()
-              | _ -> ())
-            fields;
-          var_within_closure_acc, closure_acc, !block_acc)
-    map
-    acc
+                field_index + 1, collected)
+              fields
+              (0, collected)
+          in
+          collected)
+    which_variables
+    collected
 
 let rewrite_set_of_closures
     ~env
