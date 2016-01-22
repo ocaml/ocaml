@@ -183,11 +183,32 @@ let from_function_decl ~which_variables ~env
     in
     let benefit = !benefit in
     let additional_free_vars, new_bindings =
-      VAP.Map.fold (fun (_var, projectee : Projection.Projectee.t)
+      VAP.Map.fold (fun (projecting_from, projectee : Projection.Projectee.t)
             extracted (free_vars, new_bindings) ->
+          let record ~new_var ~intermediate_var ~defining_expr =
+            let free_vars =
+              Variable.Map.add new_var intermediate_var free_vars
+            in
+            let new_bindings =
+              (* Quotient [new_bindings] by equivalence of [projecting_from]
+                 to get the nice grouping behaviour supported by
+                 [Augment_specialised_args]. *)
+              let map_for_projecting_from =
+                match Variable.Map.find projecting_from new_bindings with
+                | exception Not_found -> Variable.Map.empty
+                | map -> map
+              in
+              Variable.Map.add projecting_from
+                (Variable.Map.add intermediate_var defining_expr
+                  map_for_projecting_from)
+                new_bindings
+            in
+            free_vars, new_bindings
+          in
           match projectee, extracted with
           | Project_var var_within_closure,
             Var_within_closure { new_var; closure_id; outside_var; } ->
+            (* CR-soon mshinwell: improve "intermediate_var" naming. *)
             let intermediate_var = Variable.rename new_var in
             if Variable.Tbl.mem used_new_vars new_var then
               let defining_expr : Flambda.named =
@@ -197,8 +218,7 @@ let from_function_decl ~which_variables ~env
                   var = var_within_closure;
                 }
               in
-              Variable.Map.add new_var intermediate_var free_vars,
-                Variable.Map.add intermediate_var defining_expr new_bindings
+              record ~new_var ~intermediate_var ~defining_expr
             else
               free_vars, new_bindings
           | Closure move_to,
@@ -212,28 +232,24 @@ let from_function_decl ~which_variables ~env
                   move_to;
                 }
               in
-              Variable.Map.add new_var intermediate_var free_vars,
-                Variable.Map.add intermediate_var defining_expr new_bindings
+              record ~new_var ~intermediate_var ~defining_expr
             else
               free_vars, new_bindings
           | Field field_index,
             Field { new_var; outside_var; } ->
-             let intermediate_var = Variable.rename new_var in
-             if Variable.Tbl.mem used_new_vars new_var then
-               let defining_expr : Flambda.named =
-                 Flambda.Prim (Pfield field, [outside_var], Debuginfo.none)
-               in
-               Variable.Map.add new_var intermediate_var free_vars,
-                 Variable.Map.add intermediate_var defining_expr new_bindings
-             else
-               free_vars, add_blocks
+            let intermediate_var = Variable.rename new_var in
+            if Variable.Tbl.mem used_new_vars new_var then
+              let defining_expr : Flambda.named =
+                Flambda.Prim (Pfield field, [outside_var], Debuginfo.none)
+              in
+              record ~new_var ~intermediate_var ~defining_expr
+            else
+              free_vars, add_blocks
           | _ -> assert false)
         collected
         (Variable.Map.empty, Variable.Map.empty)
     in
-    let projection_defns =
-
-    in
+    let projection_defns = Variable.Map.data new_bindings in
     { projection_defns;
       new_function_body;
       additional_free_vars;
