@@ -21,7 +21,7 @@ let run ~env ~set_of_closures =
   if !Clflags.classic_inlining then
     None
   else
-    let funs, extracted_bindings =
+    let funs, extracted_bindings, additional_free_vars, _total_benefit =
       Variable.Map.fold (fun fun_var function_decl
             (funs, extracted_bindings) ->
           let extracted =
@@ -53,10 +53,18 @@ let run ~env ~set_of_closures =
     let function_decls =
       Flambda.update_function_declarations function_decls ~funs
     in
+    let free_vars =
+      try
+        Variable.Map.disjoint_union additional_free_vars
+          set_of_closures.free_vars
+          ~eq:Variable.equal
+      with exn ->
+        ...
+    in
     let set_of_closures =
       Flambda.create_set_of_closures
         ~function_decls
-        ~free_vars:set_of_closures.free_vars
+        ~free_vars
         ~specialised_args:set_of_closures.specialised_args
     in
     let expr =

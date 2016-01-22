@@ -17,6 +17,15 @@
 module A = Simple_value_approx
 module E = Inline_and_simplify_aux.Env
 
+type projection_defns = Flambda.expr Variable.Map.t list
+
+type result = {
+  projection_defns : projection_defns;
+  new_function_body : Flambda.expr;
+  additional_free_vars : Variable.t Variable.Map.t;
+  benefit : Inlining_cost.Benefit.t;
+}
+
 type extracted_var_within_closure = {
   new_var : Variable.t;
   closure_id : Closure_id.t;
@@ -44,10 +53,10 @@ type extracted =
 let freshened_var env v =
   Freshening.apply_variable (E.freshening env) v
 
+module B = Inlining_cost.Benefit
 module VAP = Projection.Var_and_projectee
 
-let collect_projections ~env ~which_variables
-      ~(collected : extracted VAP.Map.t) =
+let collect_projections ~env ~which_variables =
   Variable.Map.fold (fun inside_var outside_var collected ->
       let approx = E.find_exn env (freshened_var env outside_var) in
       (* First determine if the variable is bound to a closure. *)
@@ -121,151 +130,112 @@ let collect_projections ~env ~which_variables
           in
           collected)
     which_variables
-    collected
+    VAP.Map.empty
 
-let rewrite_set_of_closures
-    ~env
-    ~(set_of_closures:Flambda.set_of_closures) =
-  let elts_in_free_vars =
-    closures_in_variables ~env
-      set_of_closures.free_vars
-      (Var_within_closure_field.Map.empty, Closure_field.Map.empty,
-        Block_field.Map.empty)
-  in
-  let elts_in_free_vars_and_specialised_args =
-    closures_in_variables ~env
-      set_of_closures.specialised_args
-      elts_in_free_vars
-  in
-  let var_within_closures_in_free_vars,
-      closures_in_free_vars,
-      block_in_free_vars =
-    elts_in_free_vars_and_specialised_args
-  in
-  if Var_within_closure_field.Map.is_empty var_within_closures_in_free_vars
-    && Closure_field.Map.is_empty closures_in_free_vars
-    && Block_field.Map.is_empty block_in_free_vars
-  then
-    set_of_closures, Variable.Map.empty, Variable.Map.empty
+let from_function_decl ~which_variables ~env
+      ~(function_decl : Flambda.function_declaration) : result =
+  let collected = collect_projections ~env ~which_variables in
+  if VAP.Map.cardinal collected = 0 then
+    None
   else
     let used_new_vars = Variable.Tbl.create 42 in
-    let rewrite_function_decl (function_decl : Flambda.function_declaration) =
-      let body =
-        Flambda_iterators.map_toplevel_projections_to_expr_opt
-          ~f:(fun (projection : Flambda_iterators.projection) ->
-            match projection with
-            | Project_var { closure; var; closure_id = _; } ->
-              begin match
-                Var_within_closure_field.Map.find (closure, var)
-                  var_within_closures_in_free_vars
-              with
-              | exception Not_found -> None
-              | { new_var; _ } ->
-                Variable.Tbl.add used_new_vars new_var ();
-                Some (Flambda.Var new_var)
-              end
-            | Project_closure _project_closure ->
-              (* CR-soon mshinwell: implement this *)
-              None
-            | Move_within_set_of_closures
-                { closure; move_to; start_from = _; } ->
-              begin match
-                Closure_field.Map.find (closure, move_to) closures_in_free_vars
-              with
-              | exception Not_found -> None
-              | { new_var; _ } ->
-                Variable.Tbl.add used_new_vars new_var ();
-                Some (Flambda.Var new_var)
-              end
-            | Field (i, v) ->
-              if not (Block_field.Map.mem (v, i) block_in_free_vars) then
-                None
-              else
-                let { new_var; _ } =
-                  Block_field.Map.find (v, i) block_in_free_vars
-                in
-                Variable.Tbl.add used_new_vars new_var ();
-                Some (Flambda.Var new_var))
-          function_decl.body
-      in
-      Flambda.create_function_declaration
-        ~body
-        ~inline:function_decl.inline
-        ~params:function_decl.params
-        ~stub:function_decl.stub
-        ~dbg:function_decl.dbg
-        ~is_a_functor:function_decl.is_a_functor
+    let benefit = ref B.zero in
+    let new_function_body =
+      Flambda_iterators.map_toplevel_projections_to_expr_opt
+        ~f:(fun (projection : Projection.t) ->
+          let this_benefit = B.of_projection projection in
+          match projection with
+          | Project_var { closure; var; closure_id = _; } ->
+            begin match
+              VAP.Map.find (closure, Var_within_closure var) collected
+            with
+            | exception Not_found -> None
+            | { new_var; _ } ->
+              benefit := B.(+) !benefit this_benefit;
+              Variable.Tbl.add used_new_vars new_var ();
+              Some (Flambda.Var new_var)
+            end
+          | Project_closure _project_closure ->
+            (* CR-soon mshinwell: implement this *)
+            None
+          | Move_within_set_of_closures
+              { closure; move_to; start_from = _; } ->
+            begin match
+              VAP.Map.find (closure, Closure move_to) collected
+            with
+            | exception Not_found -> None
+            | { new_var; _ } ->
+              benefit := B.(+) !benefit this_benefit;
+              Variable.Tbl.add used_new_vars new_var ();
+              Some (Flambda.Var new_var)
+            end
+          | Field (field_index, var) ->
+            begin match
+              VAP.Map.find (var, Field field_index) collected
+            with
+            | exception Not_found -> None
+            | { new_var; _ } ->
+              benefit := B.(+) !benefit this_benefit;
+              Variable.Tbl.add used_new_vars new_var ();
+              Some (Flambda.Var new_var)
+            end)
+        function_decl.body
     in
-    let funs =
-      Variable.Map.map
-        rewrite_function_decl
-        set_of_closures.function_decls.funs
+    let benefit = !benefit in
+    let additional_free_vars, new_bindings =
+      VAP.Map.fold (fun (_var, projectee : Projection.Projectee.t)
+            extracted (free_vars, new_bindings) ->
+          match projectee, extracted with
+          | Project_var var_within_closure,
+            Var_within_closure { new_var; closure_id; outside_var; } ->
+            let intermediate_var = Variable.rename new_var in
+            if Variable.Tbl.mem used_new_vars new_var then
+              let defining_expr : Flambda.named =
+                Project_var {
+                  closure = outside_var;
+                  closure_id;
+                  var = var_within_closure;
+                }
+              in
+              Variable.Map.add new_var intermediate_var free_vars,
+                Variable.Map.add intermediate_var defining_expr new_bindings
+            else
+              free_vars, new_bindings
+          | Closure move_to,
+            Closure { new_var; start_from; outside_var; }->
+            let intermediate_var = Variable.rename new_var in
+            if Variable.Tbl.mem used_new_vars new_var then
+              let defining_expr : Flambda.named =
+                Move_within_set_of_closures {
+                  closure = outside_var;
+                  start_from;
+                  move_to;
+                }
+              in
+              Variable.Map.add new_var intermediate_var free_vars,
+                Variable.Map.add intermediate_var defining_expr new_bindings
+            else
+              free_vars, new_bindings
+          | Field field_index,
+            Field { new_var; outside_var; } ->
+             let intermediate_var = Variable.rename new_var in
+             if Variable.Tbl.mem used_new_vars new_var then
+               let defining_expr : Flambda.named =
+                 Flambda.Prim (Pfield field, [outside_var], Debuginfo.none)
+               in
+               Variable.Map.add new_var intermediate_var free_vars,
+                 Variable.Map.add intermediate_var defining_expr new_bindings
+             else
+               free_vars, add_blocks
+          | _ -> assert false)
+        collected
+        (Variable.Map.empty, Variable.Map.empty)
     in
-    let function_decls =
-      Flambda.update_function_declarations ~funs
-        set_of_closures.function_decls
+    let projection_defns =
+
     in
-    let free_vars, add_closures =
-      Var_within_closure_field.Map.fold
-        (fun (_var, field) { new_var; closure_id; outside_var; }
-              (free_vars, add_closures) ->
-          let intermediate_var = Variable.rename new_var in
-          if Variable.Tbl.mem used_new_vars new_var then
-            let defining_expr : Flambda.named =
-              Project_var {
-                closure = outside_var;
-                closure_id;
-                var = field;
-              }
-            in
-            Variable.Map.add new_var intermediate_var free_vars,
-              Variable.Map.add intermediate_var defining_expr add_closures
-          else
-            free_vars, add_closures)
-        var_within_closures_in_free_vars
-        (set_of_closures.free_vars,
-         Variable.Map.empty)
-    in
-    let free_vars, add_closures =
-      Closure_field.Map.fold
-        (fun (_var, move_to)
-              ({ new_var; start_from; outside_var; } : closures_in_free_vars)
-              (free_vars, add_closures) ->
-          let intermediate_var = Variable.rename new_var in
-          if Variable.Tbl.mem used_new_vars new_var then
-            let defining_expr : Flambda.named =
-              Move_within_set_of_closures {
-                closure = outside_var;
-                start_from;
-                move_to;
-              }
-            in
-            Variable.Map.add new_var intermediate_var free_vars,
-              Variable.Map.add intermediate_var defining_expr add_closures
-          else
-            free_vars, add_closures)
-        closures_in_free_vars
-        (free_vars, add_closures)
-    in
-    let free_vars, add_blocks =
-      Block_field.Map.fold
-        (fun (_var, field) { new_var; outside_var } (free_vars, add_blocks) ->
-           let intermediate_var =
-             Variable.rename new_var
-           in
-           if Variable.Tbl.mem used_new_vars new_var then
-             Variable.Map.add new_var intermediate_var free_vars,
-             Variable.Map.add intermediate_var
-               (Flambda.Prim (Pfield field, [outside_var], Debuginfo.none))
-               add_blocks
-           else
-             free_vars, add_blocks)
-        block_in_free_vars
-        (free_vars,
-         Variable.Map.empty)
-    in
-    Flambda.create_set_of_closures
-      ~function_decls
-      ~free_vars
-      ~specialised_args:set_of_closures.specialised_args,
-    add_closures, add_blocks
+    { projection_defns;
+      new_function_body;
+      additional_free_vars;
+      benefit;
+    }

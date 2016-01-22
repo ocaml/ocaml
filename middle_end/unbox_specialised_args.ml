@@ -32,7 +32,8 @@ module Transform = struct
     in
     match extracted with
     | None -> None
-    | Some (new_function_body, extracted_projections, total_benefit) ->
+    | Some (new_function_body, extracted_projections,
+        additional_free_vars, total_benefit) ->
       let new_specialised_args =
         (* The extracted projections still reference the inner specialised
            args.  They need to be rewritten to reference the outer ones,
@@ -42,6 +43,7 @@ module Transform = struct
       in
       let what_to_specialise : ASA.what_to_specialise = {
         new_function_body;
+        additional_free_vars;
         new_specialised_args;
         total_benefit;
       }

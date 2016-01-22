@@ -31,6 +31,13 @@
 *)
 type projection_defns = Flambda.expr Variable.Map.t list
 
+type result = {
+  projection_defns : projection_defns;
+  new_function_body : Flambda.expr;
+  additional_free_vars : Variable.t Variable.Map.t;
+  benefit : Inlining_cost.Benefit.t;
+}
+
 (** [which_variables] maps inner variables to outer variables in the
     manner of [free_vars] and [specialised_args] in
     [Flambda.set_of_closures]. *)
@@ -38,5 +45,4 @@ val from_function_decl
    : which_variables:Variable.t Variable.Map.t
   -> env:Inline_and_simplify_aux.Env.t
   -> function_decl:Flambda.function_declaration
-  -> (Flambda.function_declaration * projection_defns
-        * Inlining_cost.Benefit.t) option
+  -> result
