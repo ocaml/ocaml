@@ -143,6 +143,8 @@ module Make (T : S) = struct
                  fail to eliminate an original one.) *)
               let num_new_args = Variable.Map.cardinal add_all_or_none in
               let num_params = num_params + num_new_args in
+              (* CR mshinwell: consider sorting the groups in some way,
+                 maybe by decreasing total benefit. *)
               if num_params > max_args then
                 new_spec_args
               else
