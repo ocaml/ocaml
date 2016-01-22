@@ -16,10 +16,11 @@
 
 (** When approximations of specialised arguments indicate that they are
     closures or blocks, add more specialised arguments corresponding to
-    the projections from such blocks, such that the original specialised
-    arguments may later be eliminated. *)
+    the projections from such blocks (with definitions of such projections
+    lifted out), such that the original specialised arguments may later be
+    eliminated.  The total benefit of the lifted projections is returned. *)
 
 val run
    : env:Inline_and_simplify_aux.Env.t
   -> set_of_closures:Flambda.set_of_closures
-  -> Flambda.set_of_closures option
+  -> (Flambda.expr * Inlining_cost.Benefit.t) option

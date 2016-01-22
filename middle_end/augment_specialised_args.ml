@@ -23,6 +23,7 @@ type add_all_or_none_of_these_specialised_args =
 type what_to_specialise = {
   new_function_body : Flambda.expr;
   new_specialised_args : add_all_or_none_of_these_specialised_args list;
+  total_benefit : Inlining_cost.Benefit.t;
 }
 
 module type S = sig
@@ -114,7 +115,7 @@ module Make (T : S) = struct
       ~funs ~specialised_args ~new_bindings =
     let done_nothing () =
       let funs = Variable.Map.add fun_var function_decl funs in
-      funs, specialised_args, new_bindings
+      funs, specialised_args, new_bindings, Inlining_cost.Benefit.zero
     in
     if function_decl.stub then
       done_nothing ()
@@ -186,23 +187,31 @@ module Make (T : S) = struct
             Variable.Map.add new_fun_var rewritten_function_decl
               (Variable.Map.add fun_var wrapper funs)
           in
-          funs, specialised_args, new_bindings
+          funs, specialised_args, new_bindings,
+            what_to_specialise.total_benefit
 
   let rewrite_set_of_closures ~backend
         ~(set_of_closures : Flambda.set_of_closures) =
     if not (T.precondition set_of_closures) then
       None
     else
-      let funs, specialised_args, new_bindings =
+      let funs, specialised_args, new_bindings, total_benefit =
         Variable.Map.mapi
           (fun fun_var function_decl
-               (funs, specialised_args, new_bindings) ->
-             rewrite_function_decl ~backend ~set_of_closures ~fun_var
-               ~function_decl ~funs ~specialised_args
-               ~new_bindings)
+               (funs, specialised_args, new_bindings, total_benefit) ->
+            let funs, specialised_args, new_bindings, benefit =
+              rewrite_function_decl ~backend ~set_of_closures ~fun_var
+                ~function_decl ~funs ~specialised_args
+                ~new_bindings
+            in
+            let total_benefit =
+              Inlining_cost.Benefit.(+) benefit total_benefit
+            in
+            funs, specialised_args, new_bindings, total_benefit)
           (set_of_closures.function_decls.funs,
             Variable.Map.empty,
-            Variable.Map.empty)
+            Variable.Map.empty,
+            Inlining_cost.Benefit.zero)
       in
       let function_decls =
         Flambda.update_function_declarations function_decls ~funs
@@ -222,7 +231,7 @@ module Make (T : S) = struct
           (Flambda_utils.name_expr (Set_of_closures set_of_closures)
             ~name:T.pass_name)
       in
-      Some expr
+      Some (expr, total_benefit)
 end
 
 module Make_pass (T : S) = struct

@@ -18,7 +18,8 @@
     specialised args, for example) whose approximation says they are
     closures or blocks.  Replace uses of projections from such variables
     with new variables and build a mapping from the new variables to the
-    projection expressions. *)
+    projection expressions.  The benefit of removing the projections is
+    also returned. *)
 
 type precondition =
      var:Variable.t
@@ -39,4 +40,5 @@ val from_function_decl
    : precondition:precondition
   -> env:Inline_and_simplify_aux.Env.t
   -> function_decl:Flambda.function_declaration
-  -> (Flambda.function_declaration * projection_defns) option
+  -> (Flambda.function_declaration * projection_defns
+        * Inlining_cost.Benefit.t) option

@@ -33,6 +33,7 @@ type add_all_or_none_of_these_specialised_args =
 type what_to_specialise = {
   new_function_body : Flambda.expr;
   new_specialised_args : add_all_or_none_of_these_specialised_args list;
+  total_benefit : Inlining_cost.Benefit.t;
 }
 
 module type S = sig
@@ -54,7 +55,7 @@ module type Result = sig
      : backend:(module Backend_intf.S)
     -> env:Inline_and_simplify_aux.Env.t
     -> set_of_closures:Flambda.set_of_closures
-    -> Flambda.expr option
+    -> (Flambda.expr * Inlining_cost.Benefit.t) option
 end
 
 module Make (T : S) : Result
