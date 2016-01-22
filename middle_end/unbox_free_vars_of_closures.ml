@@ -58,8 +58,11 @@ let run ~env ~set_of_closures =
         Variable.Map.disjoint_union additional_free_vars
           set_of_closures.free_vars
           ~eq:Variable.equal
-      with exn ->
-        ...
+      with _exn ->
+        Misc.fatal_errorf "Unbox_free_vars_of_closures: non-disjoint \
+            [free_vars] sets: %a vs. %a"
+          Variable.Set.print additional_free_vars
+          Variable.Set.print set_of_closures.free_vars
     in
     let set_of_closures =
       Flambda.create_set_of_closures

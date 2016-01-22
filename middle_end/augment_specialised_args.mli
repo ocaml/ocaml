@@ -59,8 +59,3 @@ module type Result = sig
 end
 
 module Make (T : S) : Result
-
-module Make_pass (T : sig
-  include S
-  val pass_name : string
-end) : Result

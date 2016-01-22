@@ -51,4 +51,4 @@ module Transform = struct
       Some what_to_specialise
 end
 
-include ASA.Make_pass (Transform)
+include ASA.Make (Transform)

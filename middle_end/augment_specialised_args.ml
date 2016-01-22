@@ -41,6 +41,8 @@ module type S = sig
 end
 
 module Make (T : S) = struct
+  let () = Clflags.all_passes := pass_name :: !Clflags.all_passes
+
   let create_wrapper ~fun_var ~(set_of_closures : Flambda.set_of_closures)
       ~(function_decl : Flambda.function_declaration) ~new_function_body
       ~new_args ~specialised_args =
@@ -112,10 +114,11 @@ module Make (T : S) = struct
 
   let rewrite_function_decl ~env ~backend ~fun_var ~set_of_closures
       ~(function_decl : Flambda.function_declaration)
-      ~funs ~specialised_args ~new_bindings =
+      ~funs ~specialised_args ~free_vars ~new_bindings =
     let done_nothing () =
       let funs = Variable.Map.add fun_var function_decl funs in
-      funs, specialised_args, new_bindings, Inlining_cost.Benefit.zero
+      funs, specialised_args, new_bindings,
+        free_vars, Inlining_cost.Benefit.zero
     in
     if function_decl.stub then
       done_nothing ()
@@ -187,19 +190,32 @@ module Make (T : S) = struct
             Variable.Map.add new_fun_var rewritten_function_decl
               (Variable.Map.add fun_var wrapper funs)
           in
-          funs, specialised_args, new_bindings,
+          let free_vars =
+            try
+              Variable.Map.disjoint_union
+                what_to_specialise.additional_free_vars
+                free_vars
+                ~eq:Variable.equal
+            with _exn ->
+              Misc.fatal_errorf "Augment_specialised_args: non-disjoint \
+                  [free_vars] sets: %a vs. %a"
+                Variable.Set.print what_to_specialise.free_vars
+                Variable.Set.print free_vars
+          in
+          funs, specialised_args, free_vars, new_bindings,
             what_to_specialise.total_benefit
 
-  let rewrite_set_of_closures ~backend
+  let rewrite_set_of_closures_core ~backend
         ~(set_of_closures : Flambda.set_of_closures) =
     if not (T.precondition set_of_closures) then
       None
     else
-      let funs, specialised_args, new_bindings, total_benefit =
+      let funs, specialised_args, free_vars, new_bindings, total_benefit =
         Variable.Map.mapi
           (fun fun_var function_decl
-               (funs, specialised_args, new_bindings, total_benefit) ->
-            let funs, specialised_args, new_bindings, benefit =
+               (funs, specialised_args, free_vars, new_bindings,
+                total_benefit) ->
+            let funs, specialised_args, free_vars, new_bindings, benefit =
               rewrite_function_decl ~backend ~set_of_closures ~fun_var
                 ~function_decl ~funs ~specialised_args
                 ~new_bindings
@@ -207,9 +223,10 @@ module Make (T : S) = struct
             let total_benefit =
               Inlining_cost.Benefit.(+) benefit total_benefit
             in
-            funs, specialised_args, new_bindings, total_benefit)
+            funs, specialised_args, free_vars, new_bindings, total_benefit)
           (set_of_closures.function_decls.funs,
             Variable.Map.empty,
+            set_of_closures.free_vars,
             Variable.Map.empty,
             Inlining_cost.Benefit.zero)
       in
@@ -221,7 +238,7 @@ module Make (T : S) = struct
       let set_of_closures =
         Flambda.create_set_of_closures
           ~function_decls
-          ~free_vars:set_of_closures.free_vars
+          ~free_vars
           ~specialised_args
       in
       let expr =
@@ -232,16 +249,11 @@ module Make (T : S) = struct
             ~name:T.pass_name)
       in
       Some (expr, total_benefit)
-end
-
-module Make_pass (T : S) = struct
-  let () = Clflags.all_passes := pass_name :: !Clflags.all_passes
-
-  module ASA = Make (T)
 
   let rewrite_set_of_closures ~env ~backend ~set_of_closures =
     Pass_manager.with_dump ~pass_name ~input:set_of_closures
       ~print_input:Flambda.print_set_of_closures
       ~print_output:Flambda.print
-      ~f:(fun () -> ASA.rewrite_set_of_closures ~env ~backend ~set_of_closures)
+      ~f:(fun () ->
+        rewrite_set_of_closures_core ~env ~backend ~set_of_closures)
 end
