@@ -14,17 +14,10 @@
 (*                                                                        *)
 (**************************************************************************)
 
-val introduce_specialised_args_for_free_vars
+(** Turn free variables of closures into specialised arguments.
+    The aim is to cause the closure to become closed. *)
+
+val run
    : backend:(module Backend_intf.S)
+  -> set_of_closures:Flambda.set_of_closures
   -> Flambda.set_of_closures
-  -> Flambda.set_of_closures
-
-val replace_free_vars_by_equal_specialised_args
-   : Flambda.set_of_closures
-  -> Flambda.set_of_closures
-
-val rewrite_function_declaration
-   : free_vars:Variable.Map.key Variable.Map.t
-  -> function_decl:Flambda.function_declaration
-  -> specialised_args:Variable.Map.key Variable.Map.t
-  -> Flambda.function_declaration

@@ -882,24 +882,24 @@ and simplify_named env r (tree : Flambda.named) : Flambda.named * R.t =
       simplify_named_using_approx_and_env env r tree approx
     end
   | Set_of_closures set_of_closures ->
-    begin
-      match Augment_closures.run ~env ~set_of_closures with
-      | Some expr ->
-        simplify_named env r (Flambda.Expr expr)
+    begin match Unbox_free_vars_of_closures.run ~env ~set_of_closures with
+    | Some (expr, _benefit) -> simplify env r expr
+    | None ->
+      begin match Unbox_specialised_args.run ~env ~set_of_closures with
+      | Some (expr, _benefit) -> simplify env r expr
       | None ->
         let set_of_closures =
           if E.never_inline env then
             set_of_closures
           else
+            let backend = E.backend env in
             let set_of_closures =
-              Remove_unused_arguments.separate_unused_arguments_in_set_of_closures
-                set_of_closures
-                ~backend:(E.backend env)
+              Remove_unused_arguments.
+                  separate_unused_arguments_in_set_of_closures
+                set_of_closures ~backend
             in
             if !Clflags.unbox_closures then
-              Unbox_closures.introduce_specialised_args_for_free_vars
-                set_of_closures
-                ~backend:(E.backend env)
+              Unbox_closures.run ~set_of_closures ~backend
             else
               set_of_closures
         in
@@ -907,6 +907,7 @@ and simplify_named env r (tree : Flambda.named) : Flambda.named * R.t =
           simplify_set_of_closures env r set_of_closures
         in
         Set_of_closures set_of_closures, r
+      end
     end
   | Project_closure project_closure ->
     simplify_project_closure env r ~project_closure
