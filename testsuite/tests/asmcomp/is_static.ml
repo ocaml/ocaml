@@ -27,11 +27,11 @@ let () = (g [@inlined always]) 2
 
 (* Toplevel immutable blocks should be static *)
 let block3 = (Sys.opaque_identity 1, Sys.opaque_identity 2)
-let () = assert(is_in_static_data block3)
+let () = assert(is_in_static_data_flambda block3)
 
 (* Not being bound shouldn't prevent it *)
 let () =
-  assert(is_in_static_data (Sys.opaque_identity 1, Sys.opaque_identity 2))
+  assert(is_in_static_data_flambda (Sys.opaque_identity 1, Sys.opaque_identity 2))
 
 (* Only with rounds >= 2 currently !
 (* Also after inlining *)
