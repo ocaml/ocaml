@@ -14,43 +14,42 @@
 (*                                                                        *)
 (**************************************************************************)
 
-let pass_name = "unbox-specialised-args"
-let () = Pass_manager.register ~pass_name
-
 module Transform = struct
+  let pass_name = "unbox-specialised-args"
+  let variable_suffix = "unbox_spec_args"
+
   let precondition ~(set_of_closures : Flambda.set_of_closures) =
     !Clflags.unbox_specialised_args
       && not (Variable.Map.is_empty set_of_closures.specialised_args)
 
-  let what_to_specialise ~names_of_params_to_use_in_definitions:_
-        ~closure_id ~function_decl
+  let precondition_for_extracting_projection ~var
+        ~(set_of_closures : Flambda.set_of_closures) =
+    Variable.Map.mem var set_of_closures.function_decls.specialised_args
+
+  let what_to_specialise ~env ~closure_id ~function_decl
         ~(set_of_closures : Flambda.set_of_closures) =
         : ASA.what_to_specialise option =
-
+    let extracted =
+      Extract_projections.from_function_decl ~env ~function_decl
+        ~precondition:precondition_for_extracting_projection
+        ~set_of_closures
+    in
+    match extracted with
+    | None -> None
+    | Some (new_function_body, extracted_projections) ->
+      let new_specialised_args =
+        (* The extracted projections still reference the inner specialised
+           args.  They need to be rewritten to reference the outer ones,
+           since we are about to lift them. *)
+        Flambda_utils.toplevel_substitution set_of_closures.specialised_args
+          extracted_projections
+      in
+      let what_to_specialise : ASA.what_to_specialise = {
+        new_function_body;
+        new_specialised_args;
+      }
+      in
+      Some what_to_specialise
 end
 
-let precondition ~var ~(set_of_closures : Flambda.set_of_closures) =
-  Variable.Map.mem var set_of_closures.function_decls.specialised_args
-
-let run ~env ~set_of_closures =
-  let set_of_closures, lifted_bindings =
-    Extract_projections.from_set_of_closures ~env ~precondition
-      ~set_of_closures
-  in
-  if Variable.Map.is_empty lifted_bindings then
-    None
-  else
-
-
-    let expr =
-      Variable.Map.fold Flambda.create_let lifted_bindings
-        (Flambda_utils.name_expr (Set_of_closures set_of_closures)
-          ~name:"unbox_free_vars_of_closures")
-    in
-    Some expr
-
-let run ~env ~set_of_closures =
-  Pass_manager.with_dump ~pass_name ~input:set_of_closures
-    ~print_input:Flambda.print_set_of_closures
-    ~print_output:Flambda.print
-    ~f:(fun () -> run ~env ~set_of_closures)
+include ASA.Make_pass (Transform)

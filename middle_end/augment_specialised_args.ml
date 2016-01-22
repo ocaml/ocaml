@@ -17,12 +17,8 @@
 module A = Simple_value_approx
 module E = Inline_and_simplify_aux.Env
 
-type new_specialised_arg = {
-  definition : Flambda.expr;
-}
-
 type add_all_or_none_of_these_specialised_args =
-  new_specialised_arg Variable.Map.t
+  Flambda.expr Variable.Map.t
 
 type what_to_specialise = {
   new_function_body : Flambda.expr;
@@ -31,11 +27,12 @@ type what_to_specialise = {
 
 module type S = sig
   val pass_name : string
+  val variable_suffix : string
 
   val precondition : set_of_closures:Flambda.set_of_closures -> bool
 
   val what_to_specialise
-     : names_of_params_to_use_in_definitions:Variable.t Variable.Map.t
+     : env:Inline_and_simplify_aux.Env.t
     -> closure_id:Closure_id.t
     -> function_decl:Flambda.function_declaration
     -> set_of_closures:Flambda.set_of_closures
@@ -45,8 +42,8 @@ end
 module Make (T : S) = struct
   let create_wrapper ~fun_var ~(set_of_closures : Flambda.set_of_closures)
       ~(function_decl : Flambda.function_declaration) ~new_function_body
-      ~new_args ~additional_specialised_args =
-    let additional_specialised_args, new_bindings =
+      ~new_args ~specialised_args =
+    let specialised_args, new_bindings =
       (* For each new specialised argument of the main function
          chosen by [T], create a new variable to hold the definition
          of such argument, which will lie outside of the set of
@@ -54,15 +51,15 @@ module Make (T : S) = struct
          variable, we could use that directly, but in fact we do not
          (because it means we don't have to worry if more than one new
          specialised arg has the same outer variable).  Add this
-         information to the [additional_specialised_args] map that will
+         information to the [specialised_args] map that will
          form the specialised args information for the new set of closures.
 
          Also construct a map giving new [let]-bindings that must be
          added outside of the set of closures, to bind the new outer
          variables. *)
       Variable.Map.fold (fun new_inner_var defn
-            (additional_specialised_args, new_bindings) ->
-          if Variable.Map.mem additional_specialised_args new_inner_var then
+            (specialised_args, new_bindings) ->
+          if Variable.Map.mem specialised_args new_inner_var then
             Misc.fatal_errorf "Augment_specialised_args: inner name chosen \
                 for a new specialised arg (%a) clashes with an existing \
                 specialised arg: %a"
@@ -72,20 +69,24 @@ module Make (T : S) = struct
             let new_outer_var =
               Variable.rename new_inner_var ~append:T.variable_suffix
             in
-            let additional_specialised_args =
+            let specialised_args =
               Variable.Map.add new_inner_var new_outer_var
-                additional_specialised_args
+                specialised_args
             in
             let new_bindings =
               assert (not (Variable.Map.mem new_outer_var new_bindings));
               Variable.Map.add new_outer_var defn new_bindings
             in
-            additional_specialised_args, new_bindings)
+            specialised_args, new_bindings)
         new_args
-        (additional_specialised_args, new_bindings)
+        (specialised_args, new_bindings)
     in
     let new_outer_vars = Variable.Map.keys new_bindings in
     let new_fun_var = Variable.rename fun_var ~append:T.variable_suffix in
+    let wrapper_params =
+      List.map (fun var -> Variable.rename var ~append:T.variable_suffix)
+        function_decl.params
+    in
     let wrapper_body : Flambda.t =
       Apply {
         func = new_fun_var;
@@ -106,21 +107,21 @@ module Make (T : S) = struct
         ~inline:Default_inline
         ~is_a_functor:false
     in
-    new_fun_var, new_function_decl, additional_specialised_args, new_bindings
+    new_fun_var, new_function_decl, specialised_args, new_bindings
 
-  let rewrite_function_decl ~backend ~fun_var ~set_of_closures
+  let rewrite_function_decl ~env ~backend ~fun_var ~set_of_closures
       ~(function_decl : Flambda.function_declaration)
-      ~funs ~additional_specialised_args ~new_bindings =
+      ~funs ~specialised_args ~new_bindings =
     let done_nothing () =
       let funs = Variable.Map.add fun_var function_decl funs in
-      funs, additional_specialised_args, new_bindings
+      funs, specialised_args, new_bindings
     in
     if function_decl.stub then
       done_nothing ()
     else
       let closure_id = Closure_id.wrap fun_var in
       let what_to_specialise =
-        T.what_to_specialise ~closure_id ~function_decl ~set_of_closures
+        T.what_to_specialise ~env ~closure_id ~function_decl ~set_of_closures
       in
       match what_to_specialise with
       | None -> done_nothing ()
@@ -159,15 +160,18 @@ module Make (T : S) = struct
         else
           (* [new_specialised_args] now maps from the names chosen by [T]
              for the new specialised args to their definitions. *)
-          let new_fun_var, wrapper, additional_specialised_args, new_bindings =
+          let new_fun_var, wrapper, specialised_args, new_bindings =
             create_wrapper ~fun_var ~set_of_closures ~function_decl
-              ~new_args ~additional_specialised_args ~new_bindings
+              ~new_args ~specialised_args ~new_bindings
           in
           let all_params =
-            (* The extra parameters on the main function are named
-               according to the decisions made by [T].  Note that the
-               ordering used here must match [create_wrapper], above. *)
-            Variable.Set.elements (Variable.Map.keys new_specialised_args)
+            let new_params =
+              (* The extra parameters on the main function are named
+                 according to the decisions made by [T].  Note that the
+                 ordering used here must match [create_wrapper], above. *)
+              Variable.Set.elements (Variable.Map.keys new_specialised_args)
+            in
+            function_decl.params @ new_params
           in
           let rewritten_function_decl =
             Flambda.create_function_declaration
@@ -182,19 +186,19 @@ module Make (T : S) = struct
             Variable.Map.add new_fun_var rewritten_function_decl
               (Variable.Map.add fun_var wrapper funs)
           in
-          funs, additional_specialised_args, new_bindings
+          funs, specialised_args, new_bindings
 
   let rewrite_set_of_closures ~backend
         ~(set_of_closures : Flambda.set_of_closures) =
     if not (T.precondition set_of_closures) then
       None
     else
-      let funs, additional_specialised_args, new_bindings =
+      let funs, specialised_args, new_bindings =
         Variable.Map.mapi
           (fun fun_var function_decl
-               (funs, additional_specialised_args, new_bindings) ->
+               (funs, specialised_args, new_bindings) ->
              rewrite_function_decl ~backend ~set_of_closures ~fun_var
-               ~function_decl ~funs ~additional_specialised_args
+               ~function_decl ~funs ~specialised_args
                ~new_bindings)
           (set_of_closures.function_decls.funs,
             Variable.Map.empty,
@@ -203,6 +207,8 @@ module Make (T : S) = struct
       let function_decls =
         Flambda.update_function_declarations function_decls ~funs
       in
+      assert (Variable.Map.cardinal specialised_args
+        >= Variable.Map.cardinal set_of_closures.specialised_args);
       let set_of_closures =
         Flambda.create_set_of_closures
           ~function_decls
@@ -213,22 +219,20 @@ module Make (T : S) = struct
         Variable.Map.fold (fun outside_var spec_arg_defn expr ->
             Flambda.create_let outside_var spec_arg_defn expr)
           bindings
-          (Flambda.Set_of_closures set_of_closures)
+          (Flambda_utils.name_expr (Set_of_closures set_of_closures)
+            ~name:T.pass_name)
       in
       Some expr
 end
 
-module Make_pass (T : sig
-  include S
-  val pass_name : string
-end) = struct
+module Make_pass (T : S) = struct
   let () = Clflags.all_passes := pass_name :: !Clflags.all_passes
 
   module ASA = Make (T)
 
-  let rewrite_set_of_closures ~backend ~set_of_closures =
+  let rewrite_set_of_closures ~env ~backend ~set_of_closures =
     Pass_manager.with_dump ~pass_name ~input:set_of_closures
       ~print_input:Flambda.print_set_of_closures
       ~print_output:Flambda.print
-      ~f:(fun () -> ASA.rewrite_set_of_closures ~backend ~set_of_closures)
+      ~f:(fun () -> ASA.rewrite_set_of_closures ~env ~backend ~set_of_closures)
 end

@@ -16,22 +16,19 @@
 
 (** Helper module for adding specialised arguments to sets of closures. *)
 
-type new_specialised_arg = {
-  definition : Flambda.expr;
-  (** [definition], if referencing specialised args of the function,
-      must use the "outer variables" in the range of the specialised
-      argument map in the set of closures rather than the current parameters
-      of the function (which are the "inner variables", the domain of that
-      map).
-      There is no support yet for these [definition]s being dependent on
-      each other in any way. *)
-}
-
 (** This maps from new names (chosen by the client of this module) used
     inside the rewritten function body and which will form the augmented
-    specialised argument list on the main function. *)
+    specialised argument list on the main function.
+    The domain of the map is definitions of the new specialised args.
+    Such definitions, if referencing specialised args of the function,
+    must use the "outer variables" in the range of the specialised
+    argument map in the set of closures rather than the current parameters
+    of the function (which are the "inner variables", the domain of that
+    map).
+    There is no support yet for these [definition]s being dependent on
+    each other in any way. *)
 type add_all_or_none_of_these_specialised_args =
-  new_specialised_arg Variable.Map.t
+  Flambda.expr Variable.Map.t
 
 type what_to_specialise = {
   new_function_body : Flambda.expr;
@@ -39,12 +36,14 @@ type what_to_specialise = {
 }
 
 module type S = sig
+  val pass_name : string
   val variable_suffix : string
 
   val precondition : set_of_closures:Flambda.set_of_closures -> bool
 
   val what_to_specialise
-     : closure_id:Closure_id.t
+     : env:Inline_and_simplify_aux.Env.t
+    -> closure_id:Closure_id.t
     -> function_decl:Flambda.function_declaration
     -> set_of_closures:Flambda.set_of_closures
     -> what_to_specialise option
@@ -53,6 +52,7 @@ end
 module type Result = sig
   val rewrite_set_of_closures
      : backend:(module Backend_intf.S)
+    -> env:Inline_and_simplify_aux.Env.t
     -> set_of_closures:Flambda.set_of_closures
     -> Flambda.expr option
 end

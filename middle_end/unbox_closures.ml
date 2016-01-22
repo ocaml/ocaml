@@ -18,6 +18,7 @@ module ASA = Augment_specialised_args
 
 module Transform = struct
   let pass_name = "unbox-closures"
+  let variable_suffix = "_unbox_closures"
 
   let precondition ~(set_of_closures : Flambda.set_of_closures) =
     !Clflags.unbox_closures
@@ -25,8 +26,7 @@ module Transform = struct
       && (Variable.Map.is_empty set_of_closures.specialised_args
         || Flambda_utils.contains_stub set_of_closures.function_decls)
 
-  let what_to_specialise ~names_of_params_to_use_in_definitions:_
-        ~closure_id ~function_decl
+  let what_to_specialise ~closure_id ~function_decl
         ~(set_of_closures : Flambda.set_of_closures) =
         : ASA.what_to_specialise option =
     let free_vars =
@@ -38,7 +38,7 @@ module Transform = struct
     else
       let new_parameters =
         Variable.Map.of_set
-          (fun var -> Variable.rename ~append:"_unboxed_bound" var)
+          (fun var -> Variable.rename var ~append:variable_suffix)
           free_vars
       in
       let new_function_body =
@@ -50,9 +50,6 @@ module Transform = struct
         let new_specialised_args =
           Variable.Map.fold (fun free_var new_parameter new_specialised_args ->
               let new_specialised_arg : ASA.new_specialised_arg =
-                (* Since [free_var] isn't going to be a parameter of the
-                   new wrapper, [names_of_params_to_use_in_definitions] is
-                   irrelevant. *)
                 { definition = Flambda.Var free_var;
                 }
               in
