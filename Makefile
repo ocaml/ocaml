@@ -29,8 +29,7 @@ defaultentry:
 # Recompile the system using the bootstrap compiler
 all: $(runtime) ocamlc ocamlyacc ocamllex ocamlyacc ocamltools library \
 	ocaml otherlibraries $(OCAMLBUILDBYTE) $(WITH_DEBUGGER) \
-	$(WITH_OCAMLDOC)
-	if test -n "$(WITH_OCAMLDOC)"; then $(MAKE) manpages; else :; fi
+	$(WITH_OCAMLDOC) manpages
 
 # Compile everything the first time
 world: coldstart all
@@ -665,8 +664,8 @@ alldepend::
 ocamldoc: ocamlc ocamlyacc ocamllex library otherlibrary_str otherlibrary_unix otherlibrary_dynlink
 	cd ocamldoc && $(MAKE) exe lib generators
 
-manpages: ocamldoc
-	cd ocamldoc && $(MAKE) manpages
+manpages: $(WITH_OCAMLDOC)
+	if test -n "$(WITH_OCAMLDOC)"; then cd ocamldoc && $(MAKE) manpages; else :; fi
 
 ocamldoc.opt: ocamlc.opt ocamlyacc ocamllex ocamldoc \
 	otherlibraryopt_str otherlibraryopt_unix otherlibraryopt_dynlink
