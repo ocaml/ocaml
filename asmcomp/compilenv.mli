@@ -14,6 +14,9 @@
 
 open Cmx_format
 
+val imported_sets_of_closures_table
+  : Flambda.function_declarations Set_of_closures_id.Tbl.t
+
 val reset: ?packname:string -> source_provenance:Timings.source_provenance ->
         string -> unit
         (* Reset the environment and record the name of the unit being
@@ -29,6 +32,10 @@ val current_build: unit -> Timings.source_provenance
         (* Return the kind of build source being compiled. If it is a
            file compilation it also provides the filename. *)
 
+val current_unit: unit -> Compilation_unit.t
+
+val current_unit_symbol: unit -> Symbol.t
+
 val make_symbol: ?unitname:string -> string option -> string
         (* [make_symbol ~unitname:u None] returns the asm symbol that
            corresponds to the compilation unit [u] (default: the current unit).
@@ -40,8 +47,11 @@ val symbol_in_current_unit: string -> bool
         (* Return true if the given asm symbol belongs to the
            current compilation unit, false otherwise. *)
 
+val is_predefined_exception: Symbol.t -> bool
+
 val symbol_for_global: Ident.t -> string
         (* Return the asm symbol that refers to the given global identifier *)
+val symbol_for_global': Ident.t -> Symbol.t
 
 val global_approx: Ident.t -> Clambda.value_approximation
         (* Return the approximation for the given global identifier *)
@@ -50,6 +60,10 @@ val set_global_approx: Clambda.value_approximation -> unit
 val record_global_approx_toplevel: unit -> unit
         (* Record the current approximation for the current toplevel phrase *)
 
+val approx_env: unit -> Export_info.t
+        (* Returns all the information loaded from extenal compilation units *)
+val approx_for_global: Compilation_unit.t -> Export_info.t
+        (* Loads the exported information declaring the compilation_unit *)
 
 val need_curry_fun: int -> unit
 val need_apply_fun: int -> unit
@@ -58,6 +72,11 @@ val need_send_fun: int -> unit
            message sending) function with the given arity *)
 
 val new_const_symbol : unit -> string
+val closure_symbol : Closure_id.t -> Symbol.t
+        (* Symbol of a function if the function is
+           closed (statically allocated) *)
+val function_label : Closure_id.t -> string
+        (* linkage name of the code of a function *)
 val new_const_label : unit -> int
 
 val new_structured_constant:

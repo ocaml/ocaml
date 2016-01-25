@@ -14,6 +14,8 @@
 (*                                                                        *)
 (**************************************************************************)
 
+[@@@ocaml.warning "+a-4-9-30-40-41-42"]
+
 (* CR mshinwell: Add the new inlining heuristic documentation here. *)
 
 (** Try to inline a full application of a known function, guided by various

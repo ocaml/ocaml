@@ -14,6 +14,8 @@
 (*                                                                        *)
 (**************************************************************************)
 
+[@@@ocaml.warning "+a-4-9-30-40-41-42"]
+
 (* Simple approximation of the space cost of a primitive. *)
 
 let prim_size (prim : Lambda.primitive) args =

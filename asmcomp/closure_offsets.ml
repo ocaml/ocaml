@@ -14,6 +14,8 @@
 (*                                                                        *)
 (**************************************************************************)
 
+[@@@ocaml.warning "+a-4-9-30-40-41-42"]
+
 type result = {
   function_offsets : int Closure_id.Map.t;
   free_variable_offsets : int Var_within_closure.Map.t;

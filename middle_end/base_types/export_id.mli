@@ -14,6 +14,8 @@
 (*                                                                        *)
 (**************************************************************************)
 
+[@@@ocaml.warning "+a-4-9-30-40-41-42"]
+
 (* Keys representing value descriptions that may be written into
    intermediate files and loaded by a dependent compilation unit.
    These keys are used to ensure maximal sharing of value descriptions,

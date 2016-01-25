@@ -14,6 +14,8 @@
 (*                                                                        *)
 (**************************************************************************)
 
+[@@@ocaml.warning "+a-4-9-30-40-41-42"]
+
 (** [Variable.t] is the equivalent of a non-persistent [Ident.t] in
     the [Flambda] tree.  It wraps an [Ident.t] together with its source
     [compilation_unit].  As such, it is unique within a whole program,

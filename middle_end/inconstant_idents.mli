@@ -14,6 +14,8 @@
 (*                                                                        *)
 (**************************************************************************)
 
+[@@@ocaml.warning "+a-4-9-30-40-41-42"]
+
 type result
 
 (** [inconstants_on_program] finds those variables and set-of-closures identifiers that

@@ -14,6 +14,8 @@
 (*                                                                        *)
 (**************************************************************************)
 
+[@@@ocaml.warning "+a-4-9-30-40-41-42"]
+
 (* CR-someday mshinwell: name of this source file could now be improved *)
 
 type 'a by_copying_function_body =

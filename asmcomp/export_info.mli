@@ -14,6 +14,8 @@
 (*                                                                        *)
 (**************************************************************************)
 
+[@@@ocaml.warning "+a-4-9-30-40-41-42"]
+
 (** Exported information (that is to say, information written into a .cmx
     file) about a compilation unit. *)
 
@@ -80,9 +82,6 @@ type t = private {
   (** Code of exported functions indexed by closure IDs. *)
   values : descr Export_id.Map.t Compilation_unit.Map.t;
   (** Structure of exported values. *)
-  globals : approx Ident.Map.t;
-  (** Global variables provided by the unit: usually only the top-level
-      module identifier, but packs may contain more than one. *)
   symbol_id : Export_id.t Symbol.Map.t;
   (** Associates symbols and values. *)
   offset_fun : int Closure_id.Map.t;
@@ -104,7 +103,6 @@ val create
    : sets_of_closures:Flambda.function_declarations Set_of_closures_id.Map.t
   -> closures:Flambda.function_declarations Closure_id.Map.t
   -> values:descr Export_id.Map.t Compilation_unit.Map.t
-  -> globals:approx Ident.Map.t
   -> symbol_id:Export_id.t Symbol.Map.t
   -> offset_fun:int Closure_id.Map.t
   -> offset_fv:int Var_within_closure.Map.t

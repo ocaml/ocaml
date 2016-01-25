@@ -14,6 +14,8 @@
 (*                                                                        *)
 (**************************************************************************)
 
+[@@@ocaml.warning "+a-4-9-30-40-41-42"]
+
 let rec tail_variable : Flambda.t -> Variable.t option = function
   | Var v -> Some v
   | Let_rec (_, e)

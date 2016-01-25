@@ -14,6 +14,8 @@
 (*                                                                        *)
 (**************************************************************************)
 
+[@@@ocaml.warning "+a-4-9-30-40-41-42"]
+
 module A = Simple_value_approx
 module B = Inlining_cost.Benefit
 module E = Inline_and_simplify_aux.Env
@@ -940,7 +942,7 @@ and simplify_named env r (tree : Flambda.named) : Flambda.named * R.t =
           _block::_, block_approx::_ ->
         if A.is_definitely_immutable block_approx then begin
           Location.prerr_warning (Debuginfo.to_location dbg)
-            Warnings.Assignment_on_non_mutable_value
+            Warnings.Assignment_to_non_mutable_value
         end;
         tree, ret r (A.value_unknown Other)
       | (Psetfield _ | Parraysetu _ | Parraysets _), _, _ ->
