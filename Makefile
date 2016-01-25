@@ -469,7 +469,7 @@ ALLCMOS=$(COMMON) $(BYTECOMP) $(ASMCOMP) $(BYTESTART) $(OPTSTART) \
 	$(TOPLEVEL) $(TOPLEVELSTART)
 $(ALLCMOS) $(ALLCMOS:.cmo=.cmi): boot/ocamlrun$(EXE) boot/stdlib.cma
 
-$(COMMON:.cmo=.cmx) $(BYTECOMP:.cmo=.cmx) $(ASMCOMP:.cmo=.cmx): ocamlopt
+$(COMMON:.cmo=.cmx) $(BYTECOMP:.cmo=.cmx) $(ASMCOMP:.cmo=.cmx): ocamlopt libraryopt
 
 # The numeric opcodes
 
@@ -647,7 +647,7 @@ ocamltools: ocamlc ocamlyacc ocamllex asmcomp/cmx_format.cmi \
             asmcomp/printclambda.cmo
 	cd tools; $(MAKE) all
 
-ocamltoolsopt: ocamlopt
+ocamltoolsopt: ocamlopt libraryopt
 	cd tools; $(MAKE) opt
 
 ocamltoolsopt.opt: ocamlc.opt ocamlyacc ocamllex asmcomp/cmx_format.cmi \
@@ -765,7 +765,7 @@ alldepend::
 ocamlbuild.byte: ocamlc otherlibraries
 	cd ocamlbuild && $(MAKE) all
 
-ocamlbuild.native: ocamlopt otherlibrariesopt
+ocamlbuild.native: ocamlopt libraryopt otherlibrariesopt
 	cd ocamlbuild && $(MAKE) allopt
 
 partialclean::
