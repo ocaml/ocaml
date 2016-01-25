@@ -23,6 +23,10 @@
     implementation using {Hashtbl.t} is not suitable, because all
     associations would keep in memory the arguments and the result.
 
+    Ephemerons can also be used for "adding" a field to an arbitrary
+    boxed ocaml value: you can attach an information to a value
+    created by an external library without memory leaks.
+
     Ephemerons hold some keys and one or no data. They are all boxed
     ocaml values. The keys of an ephemerons have the same behavior
     than weak pointers according to the garbage collector. In fact
@@ -65,6 +69,9 @@ module type S = sig
       the bindings are weak, [mem h k] is true doesn't mean that a
       just following [find h k] will not raise the exception
       [Not_found] since the garbage collector can run between the two.
+
+      Secondly during an iteration the table shouldn't be modified use
+      instead {!filter_map_inplace} for that purpose.
   *)
 
   include Hashtbl.S
