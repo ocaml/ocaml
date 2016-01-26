@@ -72,8 +72,13 @@ val make_closure_declaration
 
 val toplevel_substitution
    : Variable.t Variable.Map.t
-  -> Flambda.t
-  -> Flambda.t
+  -> Flambda.expr
+  -> Flambda.expr
+
+val toplevel_substitution_named
+   : Variable.t Variable.Map.t
+  -> Flambda.named
+  -> Flambda.named
 
 (** [bind [var1, expr1; ...; varN, exprN] body] binds using
     [Immutable] [Let] expressions the given [(var, expr)] pairs around the

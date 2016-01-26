@@ -168,7 +168,7 @@ let from_function_decl ~which_variables ~env
             | Closure { new_inner_var; _ } ->
               benefit := B.(+) !benefit this_benefit;
               Variable.Tbl.add used_new_inner_vars new_inner_var ();
-              Some (Flambda.Var new_inner_var)
+             Some (Flambda.Var new_inner_var)
             | _ -> assert false
             end
           | Field (field_index, var) ->

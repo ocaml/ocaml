@@ -14,6 +14,14 @@
 (*                                                                        *)
 (**************************************************************************)
 
+let name_expr (named : Flambda.named) ~name : Flambda.t =
+  let var =
+    Variable.create
+      ~current_compilation_unit:(Compilation_unit.get_current_exn ())
+      name
+  in
+  Flambda.create_let var named (Var var)
+
 let find_declaration cf ({ funs } : Flambda.function_declarations) =
   Variable.Map.find (Closure_id.unwrap cf) funs
 
@@ -271,6 +279,14 @@ let toplevel_substitution sb tree =
   if Variable.Map.is_empty sb' then tree
   else Flambda_iterators.map_toplevel aux aux_named tree
 
+(* CR-someday mshinwell: Fix [Flambda_iterators] so this can be implemented
+   properly. *)
+let toplevel_substitution_named sb named =
+  let expr = name_expr named ~name:"toplevel_substitution_named" in
+  match toplevel_substitution sb expr with
+  | Let let_expr -> let_expr.defining_expr
+  | _ -> assert false
+
 let make_closure_declaration ~id ~body ~params : Flambda.t =
   let free_variables = Flambda.free_variables body in
   let param_set = Variable.Set.of_list params in
@@ -333,14 +349,6 @@ let bind ~bindings ~body =
   List.fold_left (fun expr (var, var_def) ->
       Flambda.create_let var var_def expr)
     body bindings
-
-let name_expr (named : Flambda.named) ~name : Flambda.t =
-  let var =
-    Variable.create
-      ~current_compilation_unit:(Compilation_unit.get_current_exn ())
-      name
-  in
-  Flambda.create_let var named (Var var)
 
 let all_lifted_constants (program : Flambda.program) =
   let rec loop (program : Flambda.program_body) =

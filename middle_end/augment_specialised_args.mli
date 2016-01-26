@@ -21,7 +21,7 @@
     reference existing specialised arguments then they must do so using
     the corresponding "outer vars", not the "inner vars". *)
 type add_all_or_none_of_these_specialised_args =
-  Flambda.expr Variable.Map.t
+  Flambda.named Variable.Map.t
 
 type what_to_specialise = {
   new_function_body : Flambda.expr;
@@ -46,12 +46,10 @@ module type S = sig
     -> what_to_specialise option
 end
 
-module type Result = sig
+module Make (T : S) : sig
   val rewrite_set_of_closures
      : backend:(module Backend_intf.S)
     -> env:Inline_and_simplify_aux.Env.t
     -> set_of_closures:Flambda.set_of_closures
     -> (Flambda.expr * Inlining_cost.Benefit.t) option
 end
-
-module Make (T : S) : Result
