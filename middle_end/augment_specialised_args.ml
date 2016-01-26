@@ -173,8 +173,7 @@ module Make (T : S) = struct
     new_fun_var, new_function_decl, specialised_args, new_bindings
 
   let rewrite_function_decl ~env ~backend ~fun_var ~set_of_closures
-      ~(function_decl : Flambda.function_declaration)
-      ~funs ~specialised_args ~free_vars ~new_bindings =
+      ~(function_decl : Flambda.function_declaration) =
     let done_nothing () =
       let funs = Variable.Map.add fun_var function_decl funs in
       funs, specialised_args, new_bindings,
@@ -202,10 +201,11 @@ module Make (T : S) = struct
                  avoid the situation where we add extra arguments but yet
                  fail to eliminate an original one.) *)
               let num_new_args =
-                (* The "-1" is to compensate for the fact that we expect,
-                   on average, the existing specialised argument to have
-                   been eliminated. *)
-                Variable.Map.cardinal add_all_or_none - 1
+                (* CR mshinwell: For [Unbox_specialised_args] this doesn't
+                   take into account the fact that we expect to delete the
+                   specialised argument(s) being unboxed (although we might
+                   not be able to, so this is currently conservative). *)
+                Variable.Map.cardinal add_all_or_none
               in
               let num_params = num_params + num_new_args in
               (* CR mshinwell: consider sorting the groups in some way,
@@ -256,11 +256,10 @@ module Make (T : S) = struct
               ~inline:function_decl.inline
               ~is_a_functor:function_decl.is_a_functor
           in
-          let funs =
-            Variable.Map.add new_fun_var rewritten_function_decl
-              (Variable.Map.add fun_var wrapper funs)
-          in
-          funs, specialised_args, free_vars, new_bindings,
+          new_fun_var, rewritten_function_decl, wrapper,
+            new_specialised_args_indexed_by_new_outer_vars,
+            new_inner_to_new_outer_vars,
+            what_to_specialise.removed_free_vars,
             what_to_specialise.total_benefit
 
   let rewrite_set_of_closures_core ~backend
@@ -268,23 +267,47 @@ module Make (T : S) = struct
     if not (T.precondition set_of_closures) then
       None
     else
-      let funs, specialised_args, free_vars, new_bindings, total_benefit =
+      let funs, new_specialised_args_indexed_by_new_outer_vars,
+          new_inner_to_new_outer_vars, removed_free_vars, total_benefit =
         Variable.Map.mapi
           (fun fun_var function_decl
-               (funs, specialised_args, free_vars, new_bindings,
-                total_benefit) ->
-            let funs, specialised_args, free_vars, new_bindings, benefit =
+                (funs, new_specialised_args_indexed_by_new_outer_vars,
+                 new_inner_to_new_outer_vars, removed_free_vars,
+                 total_benefit) ->
+            let new_fun_var, rewritten_function_decl, wrapper,
+                new_specialised_args_indexed_by_new_outer_vars',
+                new_inner_to_new_outer_vars', removed_free_vars',
+                benefit =
               rewrite_function_decl ~backend ~set_of_closures ~fun_var
                 ~function_decl ~funs ~specialised_args
                 ~new_bindings
             in
+            let funs =
+              assert (not (Variable.Map.mem new_fun_var funs));
+              Variable.Map.add new_fun_var rewritten_function_decl
+                (Variable.Map.add fun_var wrapper funs)
+            in
+            let new_specialised_args_indexed_by_new_outer_vars =
+              Variable.Map.disjoint_union
+                new_specialised_args_indexed_by_new_outer_vars
+                new_specialised_args_indexed_by_new_outer_vars'
+            in
+            let new_inner_to_new_outer_vars =
+              Variable.Map.disjoint_union new_inner_to_new_outer_vars
+                new_inner_to_new_outer_vars'
+            in
+            let removed_free_vars =
+              Variable.Map.disjoint_union removed_free_vars removed_free_vars'
+            in
             let total_benefit =
               Inlining_cost.Benefit.(+) benefit total_benefit
             in
-            funs, specialised_args, free_vars, new_bindings, total_benefit)
+            funs, new_specialised_args_indexed_by_new_outer_vars,
+              new_inner_to_new_outer_vars, removed_free_vars,
+              total_benefit)
           (set_of_closures.function_decls.funs,
             Variable.Map.empty,
-            set_of_closures.free_vars,
+            set_of_closures.specialised_args,
             Variable.Map.empty,
             Inlining_cost.Benefit.zero)
       in
@@ -293,6 +316,11 @@ module Make (T : S) = struct
       in
       assert (Variable.Map.cardinal specialised_args
         >= Variable.Map.cardinal set_of_closures.specialised_args);
+      let free_vars =
+        Variable.Set.filter (fun inner_var _outer_var ->
+            not (Variable.Set.mem inner_var removed_free_vars))
+          set_of_closures.free_vars
+      in
       let set_of_closures =
         Flambda.create_set_of_closures
           ~function_decls

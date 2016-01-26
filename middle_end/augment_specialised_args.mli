@@ -25,6 +25,7 @@ type add_all_or_none_of_these_specialised_args =
 
 type what_to_specialise = {
   new_function_body : Flambda.expr;
+  removed_free_vars : Variable.Set.t;
   new_specialised_args_indexed_by_new_outer_vars
     : add_all_or_none_of_these_specialised_args list;
   new_inner_to_new_outer_vars : Variable.t Variable.Map.t;

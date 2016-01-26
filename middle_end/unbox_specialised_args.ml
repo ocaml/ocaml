@@ -35,6 +35,7 @@ module Transform = struct
     | Some result ->
       let what_to_specialise : ASA.what_to_specialise = {
         new_function_body = extracted.new_function_body;
+        removed_free_vars = Variable.Set.empty;
         new_specialised_args_indexed_by_new_outer_vars =
           extracted.projection_defns_indexed_by_new_outer_vars;
         new_inner_to_new_outer_vars = extracted.new_inner_to_new_outer_vars;
