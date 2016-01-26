@@ -20,7 +20,8 @@
     lifted out), such that the original specialised arguments may later be
     eliminated.  The total benefit of the lifted projections is returned. *)
 
-val run
-   : env:Inline_and_simplify_aux.Env.t
+val rewrite_set_of_closures
+   : backend:(module Backend_intf.S)
+  -> env:Inline_and_simplify_aux.Env.t
   -> set_of_closures:Flambda.set_of_closures
   -> (Flambda.expr * Inlining_cost.Benefit.t) option

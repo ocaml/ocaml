@@ -14,33 +14,33 @@
 (*                                                                        *)
 (**************************************************************************)
 
+module ASA = Augment_specialised_args
+
 module Transform = struct
   let pass_name = "unbox-specialised-args"
   let variable_suffix = "unbox_spec_args"
-
-  module ASA = Augment_specialised_args
 
   let precondition ~(set_of_closures : Flambda.set_of_closures) =
     (* !Clflags.unbox_specialised_args *) true
       && not (Variable.Map.is_empty set_of_closures.specialised_args)
 
-  let what_to_specialise ~env ~closure_id ~function_decl
+  let what_to_specialise ~env ~closure_id:_ ~function_decl
         ~(set_of_closures : Flambda.set_of_closures)
         : ASA.what_to_specialise option =
     let extracted =
       Extract_projections.from_function_decl ~env ~function_decl
-        ~which_variables:set_of_closures.function_decls.specialised_args
+        ~which_variables:set_of_closures.specialised_args
     in
     match extracted with
     | None -> None
-    | Some result ->
+    | Some extracted ->
       let what_to_specialise : ASA.what_to_specialise = {
         new_function_body = extracted.new_function_body;
         removed_free_vars = Variable.Set.empty;
         new_specialised_args_indexed_by_new_outer_vars =
-          extracted.projection_defns_indexed_by_new_outer_vars;
+          extracted.projection_defns_indexed_by_outer_vars;
         new_inner_to_new_outer_vars = extracted.new_inner_to_new_outer_vars;
-        total_benefit = extracted.total_benefit;
+        total_benefit = extracted.benefit;
       }
       in
       Some what_to_specialise

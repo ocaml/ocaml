@@ -880,35 +880,51 @@ and simplify_named env r (tree : Flambda.named) : Flambda.named * R.t =
       Remove_free_vars_equal_to_args.run ~set_of_closures
     in
     begin match Unbox_free_vars_of_closures.run ~env ~set_of_closures with
-    | Some expr ->
+    | Some (expr, benefit) ->
       let expr, r = simplify env (R.map_benefit r (B.(+) benefit)) expr in
       Expr expr, r
     | None ->
+      let backend = E.backend env in
       (* CR mshinwell: should maybe add one allocation for the stub *)
-      begin match Unbox_specialised_args.run ~env ~set_of_closures with
+      begin match
+        Unbox_specialised_args.rewrite_set_of_closures ~backend ~env
+          ~set_of_closures
+      with
       | Some (expr, benefit) ->
         let expr, r = simplify env (R.map_benefit r (B.(+) benefit)) expr in
         Expr expr, r
       | None ->
-        let set_of_closures =
-          if E.never_inline env then
-            set_of_closures
+        if E.never_inline env then
+          let set_of_closures, r =
+            simplify_set_of_closures env r set_of_closures
+          in
+          Set_of_closures set_of_closures, r
+        else
+          let set_of_closures =
+            Remove_unused_arguments.
+                separate_unused_arguments_in_set_of_closures
+              set_of_closures ~backend
+          in
+          if !Clflags.unbox_closures then
+            match
+              Unbox_closures.rewrite_set_of_closures ~backend ~env
+                ~set_of_closures
+            with
+            | Some (expr, benefit) ->
+              let expr, r =
+                simplify env (R.map_benefit r (B.(+) benefit)) expr
+              in
+              Expr expr, r
+            | None ->
+              let set_of_closures, r =
+                simplify_set_of_closures env r set_of_closures
+              in
+              Set_of_closures set_of_closures, r
           else
-            let backend = E.backend env in
-            let set_of_closures =
-              Remove_unused_arguments.
-                  separate_unused_arguments_in_set_of_closures
-                set_of_closures ~backend
+            let set_of_closures, r =
+              simplify_set_of_closures env r set_of_closures
             in
-            if !Clflags.unbox_closures then
-              Unbox_closures.run ~set_of_closures ~backend
-            else
-              set_of_closures
-        in
-        let set_of_closures, r =
-          simplify_set_of_closures env r set_of_closures
-        in
-        Set_of_closures set_of_closures, r
+            Set_of_closures set_of_closures, r
       end
     end
   | Project_closure project_closure ->

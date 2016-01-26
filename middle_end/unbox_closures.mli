@@ -17,7 +17,8 @@
 (** Turn free variables of closures into specialised arguments.
     The aim is to cause the closure to become closed. *)
 
-val run
+val rewrite_set_of_closures
    : backend:(module Backend_intf.S)
+  -> env:Inline_and_simplify_aux.Env.t
   -> set_of_closures:Flambda.set_of_closures
-  -> Flambda.set_of_closures
+  -> (Flambda.expr * Inlining_cost.Benefit.t) option

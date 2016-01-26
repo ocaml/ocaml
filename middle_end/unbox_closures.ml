@@ -26,7 +26,8 @@ module Transform = struct
       && (Variable.Map.is_empty set_of_closures.specialised_args
         || Flambda_utils.contains_stub set_of_closures.function_decls)
 
-  let what_to_specialise ~closure_id ~function_decl
+  let what_to_specialise ~env:_ ~closure_id
+        ~(function_decl : Flambda.function_declaration)
         ~(set_of_closures : Flambda.set_of_closures)
         : ASA.what_to_specialise option =
     let free_vars =
@@ -34,9 +35,9 @@ module Transform = struct
         Flambda_utils.variables_bound_by_the_closure closure_id
           set_of_closures.function_decls
       in
-      Variable.Map.filter set_of_closures
-        ~f:(fun inner_free_var _outer_free_var ->
+      Variable.Map.filter (fun inner_free_var _outer_free_var ->
           Variable.Set.mem inner_free_var bound_by_this_closure)
+        set_of_closures.free_vars
     in
     if Variable.Map.cardinal free_vars < 1 then
       None
@@ -49,7 +50,7 @@ module Transform = struct
          this map is directly the "new inner to new outer vars" map. *)
       let new_inner_to_new_outer_vars =
         Variable.Map.map (fun outer_var ->
-            Variable.rename ~append:variable_suffix)
+            Variable.rename outer_var ~append:variable_suffix)
           free_vars
       in
       (* There is no substitution to make inside the function body since
@@ -65,7 +66,7 @@ module Transform = struct
               | exception Not_found -> assert false
               | new_outer_var -> new_outer_var
             in
-            let defining_expr : Flambda.expr = Var outer_free_var in
+            let defining_expr : Flambda.named = Expr (Var outer_free_var) in
             Variable.Map.add new_outer_var defining_expr
               new_specialised_args_indexed_by_new_outer_vars)
           free_vars
@@ -79,9 +80,10 @@ module Transform = struct
         new_specialised_args_indexed_by_new_outer_vars =
           [new_specialised_args_indexed_by_new_outer_vars];
         new_inner_to_new_outer_vars;
+        total_benefit = Inlining_cost.Benefit.zero;
       }
       in
       Some what_to_specialise
 end
 
-include ASA.Make_pass (Transform)
+include ASA.Make (Transform)
