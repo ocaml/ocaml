@@ -27,20 +27,20 @@ type result = {
 }
 
 type extracted_var_within_closure = {
-  new_var : Variable.t;
+  new_inner_var : Variable.t;
   closure_id : Closure_id.t;
-  outside_var : Variable.t;
+  outer_var : Variable.t;
 }
 
 type extracted_closure = {
-  new_var : Variable.t;
+  new_inner_var : Variable.t;
   start_from : Closure_id.t;
-  outside_var : Variable.t;
+  outer_var : Variable.t;
 }
 
 type extracted_field = {
-  new_var : Variable.t;
-  outside_var : Variable.t;
+  new_inner_var : Variable.t;
+  outer_var : Variable.t;
 }
 
 type extracted =
@@ -57,20 +57,20 @@ module B = Inlining_cost.Benefit
 module VAP = Projection.Var_and_projectee
 
 let collect_projections ~env ~which_variables =
-  Variable.Map.fold (fun inside_var outside_var collected ->
-      let approx = E.find_exn env (freshened_var env outside_var) in
+  Variable.Map.fold (fun inside_var outer_var collected ->
+      let approx = E.find_exn env (freshened_var env outer_var) in
       (* First determine if the variable is bound to a closure. *)
       match A.check_approx_for_closure approx with
       | Ok (value_closure, _approx_var, _approx_sym, value_set_of_closures) ->
         let collected =
           Var_within_closure.Map.fold (fun bound_var _ collected ->
-              let new_var =
+              let new_inner_var =
                 Variable.create (Var_within_closure.unique_name bound_var)
               in
               let extracted : extracted_var_within_closure =
-                { new_var;
+                { new_inner_var;
                   closure_id = value_closure.closure_id;
-                  outside_var;
+                  outer_var;
                 }
               in
               VAP.Map.add (inside_var, Project_var bound_var)
@@ -78,16 +78,16 @@ let collect_projections ~env ~which_variables =
             value_set_of_closures.bound_vars collected
         in
         Variable.Map.fold (fun fun_var _ collected ->
-            let new_var = Variable.rename fun_var in
+            let new_inner_var = Variable.rename fun_var in
             let start_from = value_closure.closure_id in
             let move_to = Closure_id.wrap fun_var in
             (* For the moment represent all projections of closures as
                moves from the original closure ID.  [Inline_and_simplify]
                can deal with this if simplification is possible. *)
             let extracted : extracted_closure =
-              { new_var;
+              { new_inner_var;
                 start_from;
-                outside_var;
+                outer_var;
               }
             in
             VAP.Map.add (inside_var, Closure move_to)
@@ -110,14 +110,14 @@ let collect_projections ~env ~which_variables =
                 let collected =
                   match approx.A.var with
                   | Some var when E.mem env var ->
-                    let new_var =
+                    let new_inner_var =
                       Variable.create
                         (Variable.unique_name inside_var ^ "_field_"
                           ^ string_of_int field_index)
                     in
                     let extracted : extracted_field =
-                      { new_var;
-                        outside_var;
+                      { new_inner_var;
+                        outer_var;
                       }
                     in
                     VAP.Map.add (inside_var, Field field_index)
@@ -138,7 +138,7 @@ let from_function_decl ~which_variables ~env
   if VAP.Map.cardinal collected = 0 then
     None
   else
-    let used_new_vars = Variable.Tbl.create 42 in
+    let used_new_inner_vars = Variable.Tbl.create 42 in
     let benefit = ref B.zero in
     let new_function_body =
       Flambda_iterators.map_toplevel_projections_to_expr_opt
@@ -150,10 +150,10 @@ let from_function_decl ~which_variables ~env
               VAP.Map.find (closure, Var_within_closure var) collected
             with
             | exception Not_found -> None
-            | { new_var; _ } ->
+            | { new_inner_var; _ } ->
               benefit := B.(+) !benefit this_benefit;
-              Variable.Tbl.add used_new_vars new_var ();
-              Some (Flambda.Var new_var)
+              Variable.Tbl.add used_new_inner_vars new_inner_var ();
+              Some (Flambda.Var new_inner_var)
             end
           | Project_closure _project_closure ->
             (* CR-soon mshinwell: implement this *)
@@ -164,30 +164,31 @@ let from_function_decl ~which_variables ~env
               VAP.Map.find (closure, Closure move_to) collected
             with
             | exception Not_found -> None
-            | { new_var; _ } ->
+            | { new_inner_var; _ } ->
               benefit := B.(+) !benefit this_benefit;
-              Variable.Tbl.add used_new_vars new_var ();
-              Some (Flambda.Var new_var)
+              Variable.Tbl.add used_new_inner_vars new_inner_var ();
+              Some (Flambda.Var new_inner_var)
             end
           | Field (field_index, var) ->
             begin match
               VAP.Map.find (var, Field field_index) collected
             with
             | exception Not_found -> None
-            | { new_var; _ } ->
+            | { new_inner_var; _ } ->
               benefit := B.(+) !benefit this_benefit;
-              Variable.Tbl.add used_new_vars new_var ();
-              Some (Flambda.Var new_var)
+              Variable.Tbl.add used_new_inner_vars new_inner_var ();
+              Some (Flambda.Var new_inner_var)
             end)
         function_decl.body
     in
     let benefit = !benefit in
-    let additional_free_vars, new_bindings =
+    let new_inner_to_new_outer_vars, new_bindings =
       VAP.Map.fold (fun (projecting_from, projectee : Projection.Projectee.t)
-            extracted (free_vars, new_bindings) ->
-          let record ~new_var ~intermediate_var ~defining_expr =
+            extracted (new_inner_to_new_outer_vars, new_bindings) ->
+          let record ~new_inner_var ~new_outer_var ~defining_expr =
             let free_vars =
-              Variable.Map.add new_var intermediate_var free_vars
+              Variable.Map.add new_inner_var new_outer_var
+                new_inner_to_new_outer_vars
             in
             let new_bindings =
               (* Quotient [new_bindings] by equivalence of [projecting_from]
@@ -199,7 +200,7 @@ let from_function_decl ~which_variables ~env
                 | map -> map
               in
               Variable.Map.add projecting_from
-                (Variable.Map.add intermediate_var defining_expr
+                (Variable.Map.add new_outer_var defining_expr
                   map_for_projecting_from)
                 new_bindings
             in
@@ -207,42 +208,41 @@ let from_function_decl ~which_variables ~env
           in
           match projectee, extracted with
           | Project_var var_within_closure,
-            Var_within_closure { new_var; closure_id; outside_var; } ->
-            (* CR-soon mshinwell: improve "intermediate_var" naming. *)
-            let intermediate_var = Variable.rename new_var in
-            if Variable.Tbl.mem used_new_vars new_var then
+              Var_within_closure { new_inner_var; closure_id; outer_var; } ->
+            let new_outer_var = Variable.rename new_inner_var in
+            if Variable.Tbl.mem used_new_inner_vars new_inner_var then
               let defining_expr : Flambda.named =
                 Project_var {
-                  closure = outside_var;
+                  closure = outer_var;
                   closure_id;
                   var = var_within_closure;
                 }
               in
-              record ~new_var ~intermediate_var ~defining_expr
+              record ~new_inner_var ~new_outer_var ~defining_expr
             else
               free_vars, new_bindings
           | Closure move_to,
-            Closure { new_var; start_from; outside_var; }->
-            let intermediate_var = Variable.rename new_var in
-            if Variable.Tbl.mem used_new_vars new_var then
+              Closure { new_inner_var; start_from; outer_var; }->
+            let new_outer_var = Variable.rename new_inner_var in
+            if Variable.Tbl.mem used_new_inner_vars new_inner_var then
               let defining_expr : Flambda.named =
                 Move_within_set_of_closures {
-                  closure = outside_var;
+                  closure = outer_var;
                   start_from;
                   move_to;
                 }
               in
-              record ~new_var ~intermediate_var ~defining_expr
+              record ~new_inner_var ~new_outer_var ~defining_expr
             else
               free_vars, new_bindings
           | Field field_index,
-            Field { new_var; outside_var; } ->
-            let intermediate_var = Variable.rename new_var in
-            if Variable.Tbl.mem used_new_vars new_var then
+              Field { new_inner_var; outer_var; } ->
+            let new_outer_var = Variable.rename new_inner_var in
+            if Variable.Tbl.mem used_new_inner_vars new_inner_var then
               let defining_expr : Flambda.named =
-                Flambda.Prim (Pfield field, [outside_var], Debuginfo.none)
+                Flambda.Prim (Pfield field, [outer_var], Debuginfo.none)
               in
-              record ~new_var ~intermediate_var ~defining_expr
+              record ~new_inner_var ~new_outer_var ~defining_expr
             else
               free_vars, add_blocks
           | _ -> assert false)
@@ -252,6 +252,6 @@ let from_function_decl ~which_variables ~env
     let projection_defns = Variable.Map.data new_bindings in
     { projection_defns;
       new_function_body;
-      additional_free_vars;
+      new_inner_to_new_outer_vars;
       benefit;
     }

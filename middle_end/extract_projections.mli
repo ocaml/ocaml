@@ -17,24 +17,21 @@
 (** Identify variables used in function bodies (free variables or
     specialised args, for example) whose approximation says they are
     closures or blocks.  Replace uses of projections from such variables
-    with new variables and build a mapping from the new variables to the
-    projection expressions.  The benefit of removing the projections is
-    also returned.
+    with new "inner" variables, each associated with a new "outer" variable,
+    and build a mapping from the new outer variables to the projection
+    expressions (rewritten to use the new outer variables).  The benefit
+    of removing the projections is also returned.
 
     The returned definitions of extracted projection expressions are
     collated together in a list.  Each member of the list corresponds to
     all discovered projections from one particular variable.
-    Note that the [Flambda.expr] values here are not rewritten in any
-    way: they still reference the variables they did when they were in
-    the function body.  Users of this pass may need to perform a
-    substitution (see [Unbox_specialised_args] for example).
 *)
 type projection_defns = Flambda.expr Variable.Map.t list
 
 type result = {
   projection_defns : projection_defns;
   new_function_body : Flambda.expr;
-  additional_free_vars : Variable.t Variable.Map.t;
+  new_inner_to_new_outer_vars : Variable.t Variable.Map.t;
   benefit : Inlining_cost.Benefit.t;
 }
 
