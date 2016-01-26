@@ -26,7 +26,7 @@
     collated together in a list.  Each member of the list corresponds to
     all discovered projections from one particular variable.
 *)
-type projection_defns = Flambda.expr Variable.Map.t list
+type projection_defns = Flambda.named Variable.Map.t list
 
 type result = {
   projection_defns_indexed_by_outer_vars : projection_defns;
@@ -42,4 +42,4 @@ val from_function_decl
    : which_variables:Variable.t Variable.Map.t
   -> env:Inline_and_simplify_aux.Env.t
   -> function_decl:Flambda.function_declaration
-  -> result
+  -> result option

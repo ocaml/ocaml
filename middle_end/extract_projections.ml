@@ -17,12 +17,12 @@
 module A = Simple_value_approx
 module E = Inline_and_simplify_aux.Env
 
-type projection_defns = Flambda.expr Variable.Map.t list
+type projection_defns = Flambda.named Variable.Map.t list
 
 type result = {
-  projection_defns : projection_defns;
+  projection_defns_indexed_by_outer_vars : projection_defns;
   new_function_body : Flambda.expr;
-  additional_free_vars : Variable.t Variable.Map.t;
+  new_inner_to_new_outer_vars : Variable.t Variable.Map.t;
   benefit : Inlining_cost.Benefit.t;
 }
 
@@ -92,10 +92,10 @@ let collect_projections ~env ~which_variables =
             in
             VAP.Map.add (inside_var, Closure move_to)
               (Closure extracted) collected)
-          value_set_of_closures.function_decls.funs closure_acc
+          value_set_of_closures.function_decls.funs collected
       | Wrong ->  (* The variable is not bound to a closure. *)
         match A.check_approx_for_block approx with
-        | Wrong -> acc  (* Ignore if not bound to a closure or block. *)
+        | Wrong -> collected  (* Ignore if not bound to a closure or block. *)
         | Ok (_tag, fields) ->
           let (_field_index : int), collected =
             Array.fold_left (fun (field_index, collected) approx ->
@@ -125,15 +125,15 @@ let collect_projections ~env ~which_variables =
                   | None | Some _ -> collected
                 in
                 field_index + 1, collected)
-              fields
               (0, collected)
+              fields
           in
           collected)
     which_variables
     VAP.Map.empty
 
 let from_function_decl ~which_variables ~env
-      ~(function_decl : Flambda.function_declaration) : result =
+      ~(function_decl : Flambda.function_declaration) : result option =
   let collected = collect_projections ~env ~which_variables in
   if VAP.Map.cardinal collected = 0 then
     None
@@ -147,13 +147,14 @@ let from_function_decl ~which_variables ~env
           match projection with
           | Project_var { closure; var; closure_id = _; } ->
             begin match
-              VAP.Map.find (closure, Var_within_closure var) collected
+              VAP.Map.find (closure, Project_var var) collected
             with
             | exception Not_found -> None
-            | { new_inner_var; _ } ->
+            | Var_within_closure { new_inner_var; _ } ->
               benefit := B.(+) !benefit this_benefit;
               Variable.Tbl.add used_new_inner_vars new_inner_var ();
               Some (Flambda.Var new_inner_var)
+            | _ -> assert false
             end
           | Project_closure _project_closure ->
             (* CR-soon mshinwell: implement this *)
@@ -164,29 +165,31 @@ let from_function_decl ~which_variables ~env
               VAP.Map.find (closure, Closure move_to) collected
             with
             | exception Not_found -> None
-            | { new_inner_var; _ } ->
+            | Closure { new_inner_var; _ } ->
               benefit := B.(+) !benefit this_benefit;
               Variable.Tbl.add used_new_inner_vars new_inner_var ();
               Some (Flambda.Var new_inner_var)
+            | _ -> assert false
             end
           | Field (field_index, var) ->
             begin match
               VAP.Map.find (var, Field field_index) collected
             with
             | exception Not_found -> None
-            | { new_inner_var; _ } ->
+            | Field { new_inner_var; _ } ->
               benefit := B.(+) !benefit this_benefit;
               Variable.Tbl.add used_new_inner_vars new_inner_var ();
               Some (Flambda.Var new_inner_var)
+            | _ -> assert false
             end)
         function_decl.body
     in
     let benefit = !benefit in
     let new_inner_to_new_outer_vars, new_bindings =
-      VAP.Map.fold (fun (projecting_from, projectee : Projection.Projectee.t)
+      VAP.Map.fold (fun (projecting_from, (projectee : Projection.Projectee.t))
             extracted (new_inner_to_new_outer_vars, new_bindings) ->
           let record ~new_inner_var ~new_outer_var ~defining_expr =
-            let free_vars =
+            let new_inner_to_new_outer_vars =
               Variable.Map.add new_inner_var new_outer_var
                 new_inner_to_new_outer_vars
             in
@@ -204,7 +207,7 @@ let from_function_decl ~which_variables ~env
                   map_for_projecting_from)
                 new_bindings
             in
-            free_vars, new_bindings
+            new_inner_to_new_outer_vars, new_bindings
           in
           match projectee, extracted with
           | Project_var var_within_closure,
@@ -220,7 +223,7 @@ let from_function_decl ~which_variables ~env
               in
               record ~new_inner_var ~new_outer_var ~defining_expr
             else
-              free_vars, new_bindings
+              new_inner_to_new_outer_vars, new_bindings
           | Closure move_to,
               Closure { new_inner_var; start_from; outer_var; }->
             let new_outer_var = Variable.rename new_inner_var in
@@ -234,24 +237,27 @@ let from_function_decl ~which_variables ~env
               in
               record ~new_inner_var ~new_outer_var ~defining_expr
             else
-              free_vars, new_bindings
+              new_inner_to_new_outer_vars, new_bindings
           | Field field_index,
               Field { new_inner_var; outer_var; } ->
             let new_outer_var = Variable.rename new_inner_var in
             if Variable.Tbl.mem used_new_inner_vars new_inner_var then
               let defining_expr : Flambda.named =
-                Flambda.Prim (Pfield field, [outer_var], Debuginfo.none)
+                Flambda.Prim (Pfield field_index, [outer_var], Debuginfo.none)
               in
               record ~new_inner_var ~new_outer_var ~defining_expr
             else
-              free_vars, add_blocks
+              new_inner_to_new_outer_vars, new_bindings
           | _ -> assert false)
         collected
         (Variable.Map.empty, Variable.Map.empty)
     in
     let projection_defns = Variable.Map.data new_bindings in
-    { projection_defns_indexed_by_new_outer_vars = projection_defns;
-      new_function_body;
-      new_inner_to_new_outer_vars;
-      benefit;
-    }
+    let result =
+      { projection_defns_indexed_by_outer_vars = projection_defns;
+        new_function_body;
+        new_inner_to_new_outer_vars;
+        benefit;
+      }
+    in
+    Some result

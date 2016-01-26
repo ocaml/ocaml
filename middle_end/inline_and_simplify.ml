@@ -881,12 +881,14 @@ and simplify_named env r (tree : Flambda.named) : Flambda.named * R.t =
     in
     begin match Unbox_free_vars_of_closures.run ~env ~set_of_closures with
     | Some (expr, benefit) ->
-      simplify env r expr, R.map_benefit r (B.(+) benefit)
+      let expr, r = simplify env (R.map_benefit r (B.(+) benefit)) expr in
+      Expr expr, r
     | None ->
       (* CR mshinwell: should maybe add one allocation for the stub *)
       begin match Unbox_specialised_args.run ~env ~set_of_closures with
       | Some (expr, benefit) ->
-        simplify env r expr, R.map_benefit r (B.(+) benefit)
+        let expr, r = simplify env (R.map_benefit r (B.(+) benefit)) expr in
+        Expr expr, r
       | None ->
         let set_of_closures =
           if E.never_inline env then

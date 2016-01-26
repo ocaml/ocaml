@@ -31,36 +31,42 @@ let run ~env ~set_of_closures =
     let funs, projection_defns, additional_free_vars, _total_benefit =
       Variable.Map.fold (fun fun_var function_decl
             (funs, projection_defns, additional_free_vars) ->
-          let extracted =
-            Extract_projections.from_function_decl ~env ~function_decl
-              ~which_variables:set_of_closures.function_decls.free_vars
-              ~set_of_closures
-          in
-          let function_decl =
-            match extracted with
-            | None -> function_decl
-            | Some result ->
-              Flambda.create_function_declaration ~params:function_decl.params
-                ~body:result.new_function_body
-                ~stub:function_decl.stub
-                ~dbg:function_decl.dbg
-                ~inline:function_decl.inline
-                ~is_a_functor:function_decl.is_a_functor
-          in
-          let funs = Variable.Map.add fun_var function_decl funs in
-          let projection_defns = projection_defns @ result.projection_defns in
-          let additional_free_vars =
-            try
-              Variable.Map.disjoint_union additional_free_vars
-                result.new_inner_to_new_outer_vars
-                ~eq:Variable.equal
-            with _exn ->
-              Misc.fatal_errorf "Unbox_free_vars_of_closures: non-disjoint \
-                  [free_vars] sets: %a vs. %a"
-                Variable.Set.print additional_free_vars
-                Variable.Set.print set_of_closures.free_vars
-          in
-          funs, projection_defns, additional_free_vars)
+          if function_decl.stub then
+            funs, projection_defns, additional_free_vars
+          else
+            let extracted =
+              Extract_projections.from_function_decl ~env ~function_decl
+                ~which_variables:set_of_closures.function_decls.free_vars
+                ~set_of_closures
+            in
+            let function_decl =
+              match extracted with
+              | None -> function_decl
+              | Some result ->
+                Flambda.create_function_declaration
+                  ~params:function_decl.params
+                  ~body:result.new_function_body
+                  ~stub:function_decl.stub
+                  ~dbg:function_decl.dbg
+                  ~inline:function_decl.inline
+                  ~is_a_functor:function_decl.is_a_functor
+            in
+            let funs = Variable.Map.add fun_var function_decl funs in
+            let projection_defns =
+              projection_defns @ result.projection_defns
+            in
+            let additional_free_vars =
+              try
+                Variable.Map.disjoint_union additional_free_vars
+                  result.new_inner_to_new_outer_vars
+                  ~eq:Variable.equal
+              with _exn ->
+                Misc.fatal_errorf "Unbox_free_vars_of_closures: non-disjoint \
+                    [free_vars] sets: %a vs. %a"
+                  Variable.Set.print additional_free_vars
+                  Variable.Set.print set_of_closures.free_vars
+            in
+            funs, projection_defns, additional_free_vars)
         set_of_closures.function_decls.funs
         (Variable.Map.empty, [], set_of_closures.free_vars)
     in
