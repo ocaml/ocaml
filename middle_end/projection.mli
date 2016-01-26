@@ -16,21 +16,21 @@
 
 (** Representation of projections from closures and blocks. *)
 
-type projection =
+type t =
   | Project_var of Flambda.project_var
   | Project_closure of Flambda.project_closure
   | Move_within_set_of_closures of Flambda.move_within_set_of_closures
   | Field of int * Variable.t
 
-include Identifiable.S with type t = projection
-
 (** A description of only what is being projected, not where it is
     being projected from. *)
 module Projectee : sig
-  type projection =
+  type t =
     | Project_var of Var_within_closure.t
     | Closure of Closure_id.t
     | Field of int
+
+  include Identifiable.S with type t := t
 end
 
 module Var_and_projectee : Identifiable.S

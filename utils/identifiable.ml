@@ -191,6 +191,7 @@ module type S = sig
     val rename : key t -> key -> key
     val map_keys : (key -> key) -> 'a t -> 'a t
     val keys : 'a t -> Make_set (T).t
+    val data : 'a t -> 'a list
     val of_set : (key -> 'a) -> Make_set (T).t -> 'a t
     val transpose_keys_and_data : key t -> key t
     val print :

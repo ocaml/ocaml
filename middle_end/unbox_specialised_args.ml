@@ -23,7 +23,7 @@ module Transform = struct
       && not (Variable.Map.is_empty set_of_closures.specialised_args)
 
   let what_to_specialise ~env ~closure_id ~function_decl
-        ~(set_of_closures : Flambda.set_of_closures) =
+        ~(set_of_closures : Flambda.set_of_closures)
         : ASA.what_to_specialise option =
     let extracted =
       Extract_projections.from_function_decl ~env ~function_decl
