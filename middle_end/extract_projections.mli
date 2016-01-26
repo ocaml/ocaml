@@ -29,7 +29,7 @@
 type projection_defns = Flambda.expr Variable.Map.t list
 
 type result = {
-  projection_defns : projection_defns;
+  projection_defns_indexed_by_outer_vars : projection_defns;
   new_function_body : Flambda.expr;
   new_inner_to_new_outer_vars : Variable.t Variable.Map.t;
   benefit : Inlining_cost.Benefit.t;

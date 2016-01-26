@@ -16,23 +16,18 @@
 
 (** Helper module for adding specialised arguments to sets of closures. *)
 
-(** This maps from new names (chosen by the client of this module) used
-    inside the rewritten function body and which will form the augmented
-    specialised argument list on the main function.
-    The domain of the map is definitions of the new specialised args.
-    Such definitions, if referencing specialised args of the function,
-    must use the "outer variables" in the range of the specialised
-    argument map in the set of closures rather than the current parameters
-    of the function (which are the "inner variables", the domain of that
-    map).
-    There is no support yet for these [definition]s being dependent on
-    each other in any way. *)
+(** This maps from the new "outer vars" to the expressions to which the
+    new specialised arguments are being specialised.  If these expressions
+    reference existing specialised arguments then they must do so using
+    the corresponding "outer vars", not the "inner vars". *)
 type add_all_or_none_of_these_specialised_args =
   Flambda.expr Variable.Map.t
 
 type what_to_specialise = {
   new_function_body : Flambda.expr;
-  new_specialised_args : add_all_or_none_of_these_specialised_args list;
+  new_specialised_args_indexed_by_new_outer_vars
+    : add_all_or_none_of_these_specialised_args list;
+  new_inner_to_new_outer_vars : Variable.t Variable.Map.t;
   total_benefit : Inlining_cost.Benefit.t;
 }
 

@@ -250,7 +250,7 @@ let from_function_decl ~which_variables ~env
         (Variable.Map.empty, Variable.Map.empty)
     in
     let projection_defns = Variable.Map.data new_bindings in
-    { projection_defns;
+    { projection_defns_indexed_by_new_outer_vars = projection_defns;
       new_function_body;
       new_inner_to_new_outer_vars;
       benefit;

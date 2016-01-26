@@ -41,7 +41,7 @@ module type S = sig
 end
 
 module Make (T : S) = struct
-  let () = Clflags.all_passes := pass_name :: !Clflags.all_passes
+  let () = Pass_manager.register ~pass_name
 
   let create_wrapper ~fun_var ~(set_of_closures : Flambda.set_of_closures)
       ~(function_decl : Flambda.function_declaration) ~new_function_body
@@ -86,20 +86,118 @@ module Make (T : S) = struct
     in
     let new_outer_vars = Variable.Map.keys new_bindings in
     let new_fun_var = Variable.rename fun_var ~append:T.variable_suffix in
+    (* To avoid increasing the free variables of the wrapper, for
+       general cleanliness, we restate the definitions of the
+       newly-specialised arguments in the wrapper itself in terms of the
+       original specialised arguments.  The variables bound to these
+       definitions are called the "specialised args bound in the wrapper".
+       Note that the domain of [params_renaming] is a (non-strict) superset
+       of the "inner vars" of the original specialised args. *)
+    let params_renaming =
+      Variable.Map.of_list
+        (List.map (fun param ->
+            let new_param = Variable.rename param ~append:T.variable_suffix in
+            param, new_param)
+          function_decl.params)
+    in
     let wrapper_params =
-      List.map (fun var -> Variable.rename var ~append:T.variable_suffix)
+      List.map (fun param -> Variable.Map.find param params_renaming)
         function_decl.params
     in
+    (*  1. Renaming of existing specialised arguments: these form the
+        parameters of the wrapper.
+
+        Existing specialised    set_of_closures.        Existing outer
+        arguments of the        -------------------->   specialised arguments
+        main function             spec_args             of the main function
+
+                                                                |
+                                                 existing_outer |
+                 +                               _vars_to_      |
+                                                 wrapper_params |
+                                                 _renaming      v
+
+        Other parameters of     -------------------->   Parameters of the
+        the main function          params_renaming      wrapper, some of
+                                                        which will be
+                                                        specialised args
+    *)
+    let existing_outer_vars_to_wrapper_params_renaming =
+      (* Bottom right to top left in diagram 1 above. *)
+      let existing_specialised_args_inverse =
+        Variable.Map.transpose_keys_and_data set_of_closures.specialised_args
+      in
+      Variable.Map.mapi (fun existing_outer_var existing_inner_var ->
+          match Variable.Map.find existing_inner_var params_renaming with
+          | exception Not_found -> assert false
+          | wrapper_param -> wrapper_param)
+        existing_specialised_args_inverse
+    in
+    (*  2. Renaming of newly-introduced specialised arguments: the fresh
+        variables are used for the [let]-bindings in the wrapper.
+
+        Specialised args
+        bound in the wrapper
+
+                ^
+                |
+                |
+                |
+
+        New specialised args                            New specialised
+        inner (which are all    -------------------->   args outer
+        parameters of the       new_inner_to_new
+        main function)            _outer_vars
+
+    *)
+    let new_outer_vars_to_spec_args_bound_in_the_wrapper_renaming =
+      (* Bottom right to top left in diagram 2 above. *)
+      Variable.Map.fold (fun new_inner_var new_outer_var renaming ->
+          let inner_var_of_wrapper =
+            Variable.rename new_inner_var ~append:T.variable_suffix
+          in
+          assert (not (Variable.Map.mem new_outer_var renaming));
+          Variable.Map.add new_outer_var inner_var_of_wrapper renaming)
+        new_inner_to_new_outer_vars
+        Variable.Map.empty
+    in
+    let spec_args_bound_in_the_wrapper =
+      (* N.B.: in the order matching the new specialised argument parameters
+         to the main function. *)
+      Variable.Map.data
+        new_outer_vars_to_spec_args_bound_in_the_wrapper_renaming
+    in
     let wrapper_body : Flambda.t =
-      Apply {
-        func = new_fun_var;
-        (* The new outer variables of the new specialised args become free
-           variables of the wrapper. *)
-        args = wrapper_params @ new_outer_vars;
-        kind = Direct (Closure_id.wrap new_fun_var);
-        dbg = Debuginfo.none;
-        inline = Default_inline;
-      }
+      let apply =
+        Apply {
+          func = new_fun_var;
+          args = wrapper_params @ spec_args_bound_in_the_wrapper;
+          kind = Direct (Closure_id.wrap new_fun_var);
+          dbg = Debuginfo.none;
+          inline = Default_inline;
+        }
+      in
+      Variable.Map.fold (fun new_outer_var
+            defining_expr_using_existing_outer_vars wrapper_body ->
+          (* The defining expression is currently in terms of the
+             existing outer vars (the variables to which the existing
+             specialised args were specialised); we must rewrite it to use
+             the parameters of the wrapper. *)
+          let defining_expr =
+            Flambda_utils.toplevel_substitution
+              existing_outer_vars_to_wrapper_params_renaming
+              defining_expr_using_existing_outer_vars
+          in
+          match
+            Variable.Map.find new_outer_var
+              new_outer_vars_to_spec_args_bound_in_the_wrapper_renaming
+          with
+          | exception Not_found -> assert false
+          | new_inner_var_of_wrapper ->
+            Flambda.create_let new_inner_var_of_wrapper defining_expr
+              wrapper_body)
+      new_specialised_args_indexed_by_new_outer_vars
+      apply
     in
     let new_function_decl =
       Flambda.create_function_declaration
