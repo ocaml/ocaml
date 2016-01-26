@@ -243,6 +243,10 @@ and lambda_event_kind =
   | Lev_after of Types.type_expr
   | Lev_function
 
+type program =
+  { code : lambda;
+    main_module_block_size : int; }
+
 let const_unit = Const_pointer 0
 
 let lambda_unit = Lconst const_unit

@@ -115,6 +115,8 @@ Compilers:
   (Vladimir Brankov, review by Alain Frisch)
 - GPR#115: More precise typing of values at the C-- and Mach level,.
   (Xavier Leroy, review by Pierre Chambart)
+- GPR#132: Flambda: new intermediate language and "middle-end" optimizers
+  (Pierre Chambart, Mark Shinwell, Leo White)
 - GPR#207: Colors in compiler messages (warnings, errors)
   (Simon Cruanes, review by Gabriel Scherer)
 - GPR#258: more precise information on PowerPC instruction sizes

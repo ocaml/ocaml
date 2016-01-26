@@ -351,9 +351,8 @@ module Inconstants (P:Param) (Backend:Backend_intf.S) = struct
       if toplevel then mark_var arg curr
       else mark_curr curr
     | Prim (Pduparray _, _, _) ->
-      Misc.fatal_errorf
-        "Unsupported case of Pduparray in Inconstant_idents: %a"
-        Flambda.print_named named
+      (* See Lift_constants *)
+      mark_curr curr
     | Project_closure ({ set_of_closures; closure_id; }) ->
       if Closure_id.in_compilation_unit closure_id compilation_unit then
         mark_var set_of_closures curr

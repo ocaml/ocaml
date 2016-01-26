@@ -566,13 +566,13 @@ let transl_implementation_flambda module_name (str, cc) =
   Hashtbl.clear used_primitives;
   let module_id = Ident.create_persistent module_name in
   let body, size =
-    transl_label_init
+    Translobj.transl_label_init
       (fun () -> transl_struct [] cc (global_path module_id) str)
   in
-  module_id, (wrap_globals body, size)
+  (module_id, size), wrap_globals body
 
 let transl_implementation module_name (str, cc) =
-  let module_id, (module_initializer, _size) =
+  let (module_id, _size), module_initializer =
     transl_implementation_flambda module_name (str, cc)
   in
   Lprim (Psetglobal module_id, [module_initializer])
@@ -907,7 +907,8 @@ let transl_store_implementation module_name (str, restr) =
   transl_store_subst := Ident.empty;
   let (i, r) = transl_store_gen module_name (str, restr) false in
   transl_store_subst := s;
-  (i, wrap_globals r)
+  { Lambda.main_module_block_size = i;
+    code = wrap_globals r; }
 
 (* Compile a toplevel phrase *)
 
@@ -1023,6 +1024,19 @@ let transl_toplevel_definition str =
 let get_component = function
     None -> Lconst const_unit
   | Some id -> Lprim(Pgetglobal id, [])
+
+let transl_package_flambda component_names target_name coercion =
+  let size =
+    match coercion with
+    | Tcoerce_none -> List.length component_names
+    | Tcoerce_structure (l, _) -> List.length l
+    | Tcoerce_functor _
+    | Tcoerce_primitive _
+    | Tcoerce_alias _ -> assert false
+  in
+  size,
+  apply_coercion Strict coercion
+    (Lprim(Pmakeblock(0, Immutable), List.map get_component component_names))
 
 let transl_package component_names target_name coercion =
   let components =

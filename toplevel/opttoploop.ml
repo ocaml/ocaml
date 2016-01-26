@@ -61,9 +61,35 @@ type directive_fun =
 
 (* Return the value referred to by a path *)
 
+let remembered = ref Ident.empty
+
+let rec remember phrase_name i = function
+  | [] -> ()
+  | Sig_value  (id, _) :: rest
+  | Sig_module (id, _, _) :: rest
+  | Sig_typext (id, _, _) :: rest
+  | Sig_class  (id, _, _) :: rest ->
+      remembered := Ident.add id (phrase_name, i) !remembered;
+      remember phrase_name (succ i) rest
+  | _ :: rest -> remember phrase_name i rest
+
 let toplevel_value id =
-  let (glb,pos) = Translmod.nat_toplevel_name id in
-  (Obj.magic (global_symbol glb)).(pos)
+  try Ident.find_same id !remembered
+  with _ -> Misc.fatal_error @@ "Unknown ident: " ^ Ident.unique_name id
+
+let close_phrase lam =
+  let open Lambda in
+  IdentSet.fold (fun id l ->
+    let glb, pos = toplevel_value id in
+    let glob = Lprim (Pfield pos, [Lprim (Pgetglobal glb, [])]) in
+    Llet(Strict, id, glob, l)
+  ) (free_variables lam) lam
+
+let toplevel_value id =
+  let glob, pos =
+    if Config.flambda then toplevel_value id else Translmod.nat_toplevel_name id
+  in
+  (Obj.magic (global_symbol glob)).(pos)
 
 let rec eval_path = function
   | Pident id ->
@@ -155,7 +181,26 @@ let toplevel_startup_hook = ref (fun () -> ())
 let phrase_seqid = ref 0
 let phrase_name = ref "TOP"
 
-let load_lambda ppf (size, lam) =
+(* CR trefis for mshinwell: copy/pasted from Optmain. Should it be shared or? *)
+module Backend = struct
+  (* See backend_intf.mli. *)
+
+  let symbol_for_global' = Compilenv.symbol_for_global'
+  let closure_symbol = Compilenv.closure_symbol
+
+  let really_import_approx = Import_approx.really_import_approx
+  let import_symbol = Import_approx.import_symbol
+
+  let size_int = Arch.size_int
+  let big_endian = Arch.big_endian
+
+  (* CR mshinwell: this needs tying through to [Proc], although it may
+     necessitate the introduction of a new field in that module. *)
+  let max_sensible_number_of_arguments = 9
+end
+let backend = (module Backend : Backend_intf.S)
+
+let load_lambda ppf ~module_ident lam size =
   if !Clflags.dump_rawlambda then fprintf ppf "%a@." Printlambda.lambda lam;
   let slam = Simplif.simplify_lambda lam in
   if !Clflags.dump_lambda then fprintf ppf "%a@." Printlambda.lambda slam;
@@ -165,8 +210,16 @@ let load_lambda ppf (size, lam) =
     else Filename.temp_file ("caml" ^ !phrase_name) ext_dll
   in
   let fn = Filename.chop_extension dll in
-  Asmgen.compile_implementation ~source_provenance:Timings.Toplevel
-    ~toplevel:need_symbol fn ppf (size, slam);
+  if not Config.flambda then
+    Asmgen.compile_implementation_clambda ~source_provenance:Timings.Toplevel
+      ~toplevel:need_symbol fn ppf
+      { Lambda.code=lam ; main_module_block_size=size }
+  else
+    Asmgen.compile_implementation_flambda ~source_provenance:Timings.Toplevel
+      ~backend ~toplevel:need_symbol fn ppf
+      (Middle_end.middle_end ppf
+         ~source_provenance:Timings.Toplevel ~prefixname:"" ~backend ~size
+         ~module_ident ~module_initializer:lam);
   Asmlink.call_linker_shared [fn ^ ext_obj] dll;
   Sys.remove (fn ^ ext_obj);
 
@@ -221,29 +274,68 @@ let execute_phrase print_outcome ppf phr =
       Compilenv.reset ~source_provenance:Timings.Toplevel
         ?packname:None !phrase_name;
       Typecore.reset_delayed_checks ();
+      let sstr, rewritten =
+        match sstr with
+        | [ { pstr_desc = Pstr_eval (e, attrs) ; pstr_loc = loc } ]
+        | [ { pstr_desc = Pstr_value (Asttypes.Nonrecursive,
+                                      [{ pvb_expr = e
+                                       ; pvb_pat = { ppat_desc = Ppat_any ; _ }
+                                       ; pvb_attributes = attrs
+                                       ; _ }])
+            ; pstr_loc = loc }
+          ] ->
+            let pat = Ast_helper.Pat.var (Location.mknoloc "_$") in
+            let vb = Ast_helper.Vb.mk ~loc ~attrs pat e in
+            [ Ast_helper.Str.value ~loc Asttypes.Nonrecursive [vb] ], true
+        | _ -> sstr, false
+      in
       let (str, sg, newenv) = Typemod.type_toplevel_phrase oldenv sstr in
       if !Clflags.dump_typedtree then Printtyped.implementation ppf str;
       let sg' = Typemod.simplify_signature sg in
+      (* Why is this done? *)
       ignore (Includemod.signatures oldenv sg sg');
       Typecore.force_delayed_checks ();
-      let res = Translmod.transl_store_phrases !phrase_name str in
+      let module_ident, res, size =
+        if Config.flambda then
+          let ((module_ident, size), res) =
+            Translmod.transl_implementation_flambda !phrase_name
+              (str, Tcoerce_none)
+          in
+          remember module_ident 0 sg';
+          module_ident, close_phrase res, size
+        else
+          let size, res = Translmod.transl_store_phrases !phrase_name str in
+          Ident.create_persistent !phrase_name, res, size
+      in
       Warnings.check_fatal ();
       begin try
         toplevel_env := newenv;
-        let res = load_lambda ppf res in
+        let res = load_lambda ppf ~module_ident res size in
         let out_phr =
           match res with
           | Result v ->
-              Compilenv.record_global_approx_toplevel ();
+              if Config.flambda then
+                (* CR-someday trefis: *)
+                ()
+              else
+                Compilenv.record_global_approx_toplevel ();
               if print_outcome then
                 Printtyp.wrap_printing_env oldenv (fun () ->
                 match str.str_items with
-                | [ {str_desc = Tstr_eval (exp, _attrs)} ] ->
-                    let outv = outval_of_value newenv v exp.exp_type in
-                    let ty = Printtyp.tree_of_type_scheme exp.exp_type in
-                    Ophr_eval (outv, ty)
                 | [] -> Ophr_signature []
-                | _ -> Ophr_signature (pr_item newenv sg'))
+                | _ ->
+                    if rewritten then
+                      match sg' with
+                      | [ Sig_value (id, vd) ] ->
+                          let outv =
+                            outval_of_value newenv (toplevel_value id)
+                              vd.val_type
+                          in
+                          let ty = Printtyp.tree_of_type_scheme vd.val_type in
+                          Ophr_eval (outv, ty)
+                      | _ -> assert false
+                    else
+                      Ophr_signature (pr_item newenv sg'))
               else Ophr_signature []
           | Exception exn ->
               toplevel_env := oldenv;

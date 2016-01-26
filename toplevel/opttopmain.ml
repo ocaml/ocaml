@@ -68,7 +68,65 @@ module Options = Main_args.Make_opttop_options (struct
     include_dirs := dir :: !include_dirs
   let _init s = init_file := Some s
   let _noinit = set noinit
-  let _inline n = inline_threshold := n * 8
+  let _clambda_checks () = clambda_checks := true
+  let _inline spec =
+    Float_arg_helper.parse spec ~update:inline_threshold
+      ~help_text:"Syntax: -inline <n> | <round>=<n>[,...]"
+  let _inline_indirect_cost spec =
+    Int_arg_helper.parse spec ~update:inline_indirect_cost
+      ~help_text:"Syntax: -inline-indirect-cost <n> | <round>=<n>[,...]"
+  let _inline_toplevel spec =
+    Int_arg_helper.parse spec ~update:inline_toplevel_threshold
+      ~help_text:"Syntax: -inline-toplevel <n> | <round>=<n>[,...]"
+  let _inlining_stats () = inlining_stats := true
+  let _dump_pass pass = set_dumped_pass pass true
+  let _rounds n = simplify_rounds := n
+  let _unroll spec =
+    Int_arg_helper.parse spec ~update:unroll
+      ~help_text:"Syntax: -unroll <n> | <round>=<n>[,...]"
+  let _classic_inlining () = classic_inlining := true
+  let _inline_call_cost spec =
+    Int_arg_helper.parse spec ~update:inline_call_cost
+      ~help_text:"Syntax: -inline-call-cost <n> | <round>=<n>[,...]"
+  let _inline_alloc_cost spec =
+    Int_arg_helper.parse spec ~update:inline_alloc_cost
+      ~help_text:"Syntax: -inline-alloc-cost <n> | <round>=<n>[,...]"
+  let _inline_prim_cost spec =
+    Int_arg_helper.parse spec ~update:inline_prim_cost
+      ~help_text:"Syntax: -inline-prim-cost <n> | <round>=<n>[,...]"
+  let _inline_branch_cost spec =
+    Int_arg_helper.parse spec ~update:inline_branch_cost
+      ~help_text:"Syntax: -inline-branch-cost <n> | <round>=<n>[,...]"
+  let _inline_lifting_benefit spec =
+    Int_arg_helper.parse spec ~update:inline_lifting_benefit
+      ~help_text:"Syntax: -inline-lifting-benefit <n> | <round>=<n>[,...]"
+  let _branch_inline_factor spec =
+    Float_arg_helper.parse spec ~update:branch_inline_factor
+      ~help_text:"Syntax: -branch-inline-factor <n> | <round>=<n>[,...]"
+  let _max_inlining_depth spec =
+    Int_arg_helper.parse spec ~update:max_inlining_depth
+      ~help_text:"Syntax: -max-inlining-depth <n> | <round>=<n>[,...]"
+  let _o s = output_name := Some s
+  let _o2 () =
+    simplify_rounds := 2;
+    use_inlining_arguments_set ~round:1 o1_arguments;
+    use_inlining_arguments_set ~round:2 o2_arguments
+  let _o3 () =
+    simplify_rounds := 3;
+    use_inlining_arguments_set ~round:1 o1_arguments;
+    use_inlining_arguments_set ~round:2 o2_arguments;
+    use_inlining_arguments_set ~round:3 o3_arguments
+  let _no_inline_recursive_functions = clear inline_recursive_functions
+  let _remove_unused_arguments = set remove_unused_arguments
+  let _unbox_closures = set unbox_closures
+  let _drawclambda = set dump_rawclambda
+  let _dclambda = set dump_clambda
+  let _dflambda = set dump_flambda
+  let _dflambda_let stamp = dump_flambda_let := Some stamp
+  let _dflambda_verbose () =
+    set dump_flambda ();
+    set dump_flambda_verbose ()
+  let _dflambda_invariants = set flambda_invariant_checks
   let _labels = clear classic
   let _no_alias_deps = set transparent_modules
   let _no_app_funct = clear applicative_functors
@@ -98,6 +156,7 @@ module Options = Main_args.Make_opttop_options (struct
   let _dtypedtree = set dump_typedtree
   let _drawlambda = set dump_rawlambda
   let _dlambda = set dump_lambda
+  let _drawclambda = set dump_rawclambda
   let _dclambda = set dump_clambda
   let _dcmm = set dump_cmm
   let _dsel = set dump_selection
@@ -121,6 +180,7 @@ module Options = Main_args.Make_opttop_options (struct
 end);;
 
 let main () =
+  native_code := true;
   Arg.parse Options.list file_argument usage;
   if not (prepare Format.err_formatter) then exit 2;
   Opttoploop.loop Format.std_formatter

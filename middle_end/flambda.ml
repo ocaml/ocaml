@@ -516,9 +516,7 @@ let rec variables_usage ?ignore_uses_as_callee ?ignore_uses_as_argument
           free_variables
             (variables_usage_named ?ignore_uses_in_project_var ?ignore_uses_as_callee
                 ?ignore_uses_as_argument ~all_used_variables defining_expr);
-          free_variables
-            (variables_usage ?ignore_uses_as_callee ?ignore_uses_as_argument
-               ?ignore_uses_in_project_var ~all_used_variables body)
+          aux body
         end
         else begin
           free_variables free_vars_of_defining_expr;

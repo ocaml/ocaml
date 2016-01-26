@@ -108,6 +108,7 @@ module Options = Main_args.Make_bytecomp_options (struct
   let _dtypedtree = option "-dtypedtree"
   let _drawlambda = option "-drawlambda"
   let _dlambda = option "-dlambda"
+  let _dflambda = option "-dflambda"
   let _dinstr = option "-dinstr"
   let _dtimings = option "-dtimings"
   let anonymous = process_file

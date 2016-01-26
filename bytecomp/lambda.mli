@@ -259,6 +259,12 @@ and lambda_event_kind =
   | Lev_after of Types.type_expr
   | Lev_function
 
+type program =
+  { code : lambda;
+    main_module_block_size : int; }
+(* Lambda code for the Closure middle-end. The main module block size
+   is required for preallocating the block *)
+
 (* Sharing key *)
 val make_key: lambda -> lambda option
 
