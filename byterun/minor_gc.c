@@ -326,7 +326,6 @@ void caml_empty_minor_heap (void)
       }
     }
     CAML_INSTR_TIME (tmr, "minor/update_weak");
-    CAMLassert (caml_young_ptr >= caml_young_alloc_start);
     caml_stat_minor_words += caml_young_alloc_end - caml_young_ptr;
     caml_gc_clock += (double) (caml_young_alloc_end - caml_young_ptr)
                      / caml_minor_heap_wsz;
