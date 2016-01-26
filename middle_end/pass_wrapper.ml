@@ -18,7 +18,7 @@ let register ~pass_name =
   Clflags.all_passes := pass_name :: !Clflags.all_passes
 
 let with_dump ~pass_name ~f ~input ~print_input ~print_output =
-  let dump = List.mem pass_name !Clflags.dumped_passes_list in
+  let dump = Clflags.dumped_pass pass_name in
   if dump then begin
     Format.eprintf "Before %s:@ %a@.@." pass_name print_input input
   end;

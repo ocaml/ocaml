@@ -33,5 +33,7 @@ module Projectee : sig
   include Identifiable.S with type t := t
 end
 
+type var_and_projectee = Variable.t * Projectee.t
+
 module Var_and_projectee : Identifiable.S
-  with type t := Variable.t * Projectee.t
+  with type t := var_and_projectee

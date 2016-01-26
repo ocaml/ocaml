@@ -53,6 +53,25 @@ module Projectee = struct
   end)
 end
 
+type var_and_projectee = Variable.t * Projectee.t
+
 module Var_and_projectee = struct
   type t = Variable.t * Projectee.t
+
+  include Identifiable.Make (struct
+    type nonrec t = t
+
+    let compare (var1, proj1) (var2, proj2) =
+      let c = Variable.compare var1 var2 in
+      if c <> 0 then c
+      else Projectee.compare proj1 proj2
+
+    let equal (var1, proj1) (var2, proj2) =
+      Variable.equal var1 var2 && Projectee.equal proj1 proj2
+
+    let hash = Hashtbl.hash
+
+    let print _ _ = failwith "Projectee.print: not yet implemented"
+    let output _ _ = failwith "Projectee.output: not yet implemented"
+  end)
 end

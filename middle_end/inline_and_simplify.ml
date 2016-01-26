@@ -667,12 +667,6 @@ and simplify_set_of_closures original_env r
         ~body ~stub:function_decl.stub ~dbg:function_decl.dbg
         ~inline ~is_a_functor:function_decl.is_a_functor
     in
-    let function_decl =
-      Unbox_closures.rewrite_function_declaration
-        ~free_vars:(Variable.Map.map fst free_vars)
-        ~function_decl
-        ~specialised_args
-    in
     let used_params' = Flambda.used_params function_decl in
     Variable.Map.add fid function_decl funs,
       Variable.Set.union used_params used_params', r
@@ -883,13 +877,16 @@ and simplify_named env r (tree : Flambda.named) : Flambda.named * R.t =
     end
   | Set_of_closures set_of_closures ->
     let set_of_closures =
-      Remove_free_vars_equal_to_args.run set_of_closures
+      Remove_free_vars_equal_to_args.run ~set_of_closures
     in
     begin match Unbox_free_vars_of_closures.run ~env ~set_of_closures with
-    | Some (expr, _benefit) -> simplify env r expr
+    | Some (expr, benefit) ->
+      simplify env r expr, R.map_benefit r (B.(+) benefit)
     | None ->
+      (* CR mshinwell: should maybe add one allocation for the stub *)
       begin match Unbox_specialised_args.run ~env ~set_of_closures with
-      | Some (expr, _benefit) -> simplify env r expr
+      | Some (expr, benefit) ->
+        simplify env r expr, R.map_benefit r (B.(+) benefit)
       | None ->
         let set_of_closures =
           if E.never_inline env then

@@ -15,7 +15,7 @@
 (**************************************************************************)
 
 let pass_name = "unbox-free-vars-of-closures"
-let () = Pass_manager.register ~pass_name
+let () = Pass_wrapper.register ~pass_name
 
 type result = {
   projection_defns : projection_defns;
@@ -79,7 +79,7 @@ let run ~env ~set_of_closures =
     Some expr
 
 let run ~env ~set_of_closures =
-  Pass_manager.with_dump ~pass_name ~input:set_of_closures
+  Pass_wrapper.with_dump ~pass_name ~input:set_of_closures
     ~print_input:Flambda.print_set_of_closures
     ~print_output:Flambda.print
     ~f:(fun () -> run ~env ~set_of_closures)

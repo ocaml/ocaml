@@ -563,14 +563,8 @@ let map_project_var_to_expr_opt tree ~f =
           as named -> named)
     tree
 
-type projection =
-  | Project_var of Flambda.project_var
-  | Project_closure of Flambda.project_closure
-  | Move_within_set_of_closures of Flambda.move_within_set_of_closures
-  | Field of int * Variable.t
-
 let map_toplevel_projections_to_expr_opt tree
-      ~(f : projection -> Flambda.t option) =
+      ~(f : Projection.t -> Flambda.t option) =
   map_toplevel_named (function
       | (Project_var project_var) as named ->
         begin match f (Project_var project_var) with

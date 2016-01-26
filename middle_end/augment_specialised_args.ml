@@ -41,7 +41,7 @@ module type S = sig
 end
 
 module Make (T : S) = struct
-  let () = Pass_manager.register ~pass_name
+  let () = Pass_wrapper.register ~pass_name
 
   let create_wrapper ~fun_var ~(set_of_closures : Flambda.set_of_closures)
       ~(function_decl : Flambda.function_declaration) ~new_function_body
@@ -267,8 +267,8 @@ module Make (T : S) = struct
     if not (T.precondition set_of_closures) then
       None
     else
-      let funs, new_specialised_args_indexed_by_new_outer_vars,
-          new_inner_to_new_outer_vars, removed_free_vars, total_benefit =
+      let funs, new_specialised_arg_defns_indexed_by_new_outer_vars,
+          specialised_args, removed_free_vars, total_benefit =
         Variable.Map.mapi
           (fun fun_var function_decl
                 (funs, new_specialised_args_indexed_by_new_outer_vars,
@@ -330,14 +330,14 @@ module Make (T : S) = struct
       let expr =
         Variable.Map.fold (fun new_outer_var spec_arg_defn expr ->
             Flambda.create_let new_outer_var spec_arg_defn expr)
-          bindings
+          new_specialised_arg_defns_indexed_by_new_outer_vars
           (Flambda_utils.name_expr (Set_of_closures set_of_closures)
             ~name:T.pass_name)
       in
       Some (expr, total_benefit)
 
   let rewrite_set_of_closures ~env ~backend ~set_of_closures =
-    Pass_manager.with_dump ~pass_name ~input:set_of_closures
+    Pass_wrapper.with_dump ~pass_name ~input:set_of_closures
       ~print_input:Flambda.print_set_of_closures
       ~print_output:Flambda.print
       ~f:(fun () ->
