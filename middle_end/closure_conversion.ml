@@ -65,6 +65,7 @@ let add_default_argument_wrappers lam =
                (function
                  | (id, Lambda.Lfunction {kind; params; body; attr}) ->
                    Simplif.split_default_wrapper id kind params body attr
+                     ~create_wrapper_body:stubify
                  | _ -> assert false)
                defs)
         in
