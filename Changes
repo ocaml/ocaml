@@ -459,6 +459,8 @@ Bug fixes:
   (Jérémie Dimino, Thomas Refis)
 - GPR#405: fix compilation under Visual Studio 2015
   (David Allsopp)
+- GPR#441: better type error location in presence of type constraints
+  (Thomas Refis, report by Arseniy Alekseyev)
 
 Features wishes:
 - PR#4518, GPR#29: change location format for reporting errors in ocamldoc
