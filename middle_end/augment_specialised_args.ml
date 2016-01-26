@@ -88,11 +88,10 @@ module Make (T : S) = struct
                                                         specialised args
     *)
     let existing_outer_vars_to_wrapper_params_renaming =
-      (* Bottom right to top left in diagram 1 above. *)
       let existing_specialised_args_inverse =
         Variable.Map.transpose_keys_and_data set_of_closures.specialised_args
       in
-      Variable.Map.mapi (fun existing_outer_var existing_inner_var ->
+      Variable.Map.map (fun existing_inner_var ->
           match Variable.Map.find existing_inner_var params_renaming with
           | exception Not_found -> assert false
           | wrapper_param -> wrapper_param)
@@ -343,10 +342,10 @@ module Make (T : S) = struct
       in
       Some (expr, total_benefit)
 
-  let rewrite_set_of_closures ~env ~backend ~set_of_closures =
+  let rewrite_set_of_closures ~backend ~env ~set_of_closures =
     Pass_wrapper.with_dump ~pass_name:T.pass_name ~input:set_of_closures
       ~print_input:Flambda.print_set_of_closures
       ~print_output:(fun ppf (expr, _benefit) -> Flambda.print ppf expr)
       ~f:(fun () ->
-        rewrite_set_of_closures_core ~env ~backend ~set_of_closures)
+        rewrite_set_of_closures_core ~backend ~env ~set_of_closures)
 end

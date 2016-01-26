@@ -30,7 +30,6 @@ module Transform = struct
     let extracted =
       Extract_projections.from_function_decl ~env ~function_decl
         ~which_variables:set_of_closures.function_decls.specialised_args
-        ~set_of_closures
     in
     match extracted with
     | None -> None
