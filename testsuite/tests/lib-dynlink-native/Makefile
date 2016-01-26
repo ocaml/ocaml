@@ -77,7 +77,7 @@ sub/api.cmx: sub/api.cmi sub/api.ml
 	@cd sub; $(OCAMLOPT) -c api.ml
 
 plugin.cmi: plugin.mli
-	$(OCAMLOPT) -c -opaque plugin.mli
+	@$(OCAMLOPT) -c -opaque plugin.mli
 
 plugin.cmx: api.cmx plugin.cmi
 sub/plugin.cmx: api.cmx
@@ -114,6 +114,8 @@ factorial.$(O): factorial.c
 .PHONY: promote
 promote:
 	@cp result reference
+
+.PRECIOUS: %.cmx
 
 .PHONY: clean
 clean: defaultclean

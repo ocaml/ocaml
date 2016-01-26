@@ -17,6 +17,7 @@
 .DS_Store
 *.out
 *.out.dSYM
+*.swp
 
 # local to root directory
 
@@ -133,6 +134,8 @@
 /ocamlbuild/ocamlbuild_config.ml
 /ocamlbuild/lexers.ml
 /ocamlbuild/glob_lexer.ml
+/ocamlbuild/ocamlbuild.native
+/ocamlbuild/ocamlbuild.byte
 
 /ocamldoc/ocamldoc
 /ocamldoc/ocamldoc.opt
@@ -238,6 +241,8 @@
 
 /testsuite/tests/lib-threads/*.byt
 
+/testsuite/tests/opaque/*/*.mli
+
 /testsuite/tests/runtime-errors/*.bytecode
 
 /testsuite/tests/tool-debugger/**/compiler-libs
@@ -245,9 +250,19 @@
 /testsuite/tests/tool-debugger/no_debug_event/out
 /testsuite/tests/tool-debugger/no_debug_event/c
 
+/testsuite/tests/tool-ocamldep-modalias/*.byt*
+/testsuite/tests/tool-ocamldep-modalias/*.opt*
+/testsuite/tests/tool-ocamldep-modalias/depend.mk
+/testsuite/tests/tool-ocamldep-modalias/depend.mk2
+/testsuite/tests/tool-ocamldep-modalias/depend.mod
+/testsuite/tests/tool-ocamldep-modalias/depend.mod2
+/testsuite/tests/tool-ocamldep-modalias/depend.mod3
+
 /testsuite/tests/tool-ocamldoc/*.html
 /testsuite/tests/tool-ocamldoc/*.sty
 /testsuite/tests/tool-ocamldoc/*.css
+
+/testsuite/tests/tool-ocamldoc-2/ocamldoc.sty
 
 /testsuite/tests/tool-lexyacc/scanner.ml
 /testsuite/tests/tool-lexyacc/grammar.mli

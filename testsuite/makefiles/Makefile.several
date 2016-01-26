@@ -43,7 +43,7 @@ run-all:
 	done;
 	@for file in *.ml; do \
 	  if [ -f `basename $$file ml`precheck ]; then \
-	    CANKILL=$(CANKILL) sh `basename $$file ml`precheck || continue; \
+	    TOOLCHAIN=$(TOOLCHAIN) sh `basename $$file ml`precheck || continue; \
 	  fi; \
 	  printf " ... testing '$$file':"; \
 	  $(MAKE) run-file DESC=ocamlc COMP='$(OCAMLC)' \

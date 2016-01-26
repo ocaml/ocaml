@@ -14,8 +14,8 @@ BASEDIR=../..
 
 .PHONY: default
 default:
-	$(MAKE) compile
-	$(MAKE) run
+	@$(MAKE) compile
+	@$(MAKE) run
 
 .PHONY: compile
 compile:

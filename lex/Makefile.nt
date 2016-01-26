@@ -45,7 +45,7 @@ parser.ml parser.mli: parser.mly
 	$(CAMLYACC) $(YACCFLAGS) parser.mly
 
 clean::
-	rm -f parser.ml parser.mli
+	rm -f parser.ml parser.mli parser.output
 
 beforedepend:: parser.ml parser.mli
 
