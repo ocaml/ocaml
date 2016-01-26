@@ -190,3 +190,4 @@ CTOPDIR=$(TOPDIR)
 CYGPATH=cygpath -m
 DIFF=diff -q --strip-trailing-cr
 SET_LD_PATH=PATH="$(PATH):$(LD_PATH)"
+MAX_TESTSUITE_DIR_RETRIES=1

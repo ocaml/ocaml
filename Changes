@@ -531,6 +531,8 @@ Features wishes:
   of a type error clash. (Hugo Heuzard)
 - GPR#383: configure: define _ALL_SOURCE for build on AIX7.1
   (tkob)
+- GPR#401: automatically retry failed test directories in the testsuite
+  (David Allsopp)
 
 Build system:
 - GPR#388: FlexDLL added as a Git submodule and bootstrappable with the compiler

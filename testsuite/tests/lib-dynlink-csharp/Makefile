@@ -16,15 +16,8 @@ CSC=csc
 COMPFLAGS=-I $(OTOPDIR)/otherlibs/bigarray
 LD_PATH=$(TOPDIR)/otherlibs/bigarray
 
-.PHONY: default
 default:
-	@if ! $(SUPPORTS_SHARED_LIBRARIES); then \
-	  echo 'skipped (shared libraries not available)'; \
-	elif $(BYTECODE_ONLY); then \
-	  echo 'skipped (native compiler not available)' ; \
-	else \
-	  $(SET_LD_PATH) $(MAKE) all; \
-	fi
+	@$(SET_LD_PATH) $(MAKE) all
 
 .PHONY: all
 all: prepare bytecode bytecode-dll native native-dll
@@ -37,7 +30,7 @@ prepare:
 .PHONY: bytecode
 bytecode:
 	@printf " ... testing 'bytecode':"
-	@if [ ! `which $(CSC) >/dev/null 2>&1` ]; then \
+	@if ! $(SUPPORTS_SHARED_LIBRARIES) || [ ! `which $(CSC) >/dev/null 2>&1` ]; then \
 	  echo " => skipped"; \
 	else \
 	  $(OCAMLC) -output-obj -o main.dll dynlink.cma main.ml entry.c; \
@@ -50,7 +43,7 @@ bytecode:
 .PHONY: bytecode-dll
 bytecode-dll:
 	@printf " ... testing 'bytecode-dll':"
-	@if [ ! `which $(CSC) > /dev/null 2>&1` ]; then \
+	@if ! $(SUPPORTS_SHARED_LIBRARIES) || [ ! `which $(CSC) > /dev/null 2>&1` ]; then \
 	  echo " => skipped"; \
 	else \
 	  $(OCAMLC) -output-obj -o main_obj.$(O) dynlink.cma entry.c main.ml; \
@@ -65,7 +58,7 @@ bytecode-dll:
 .PHONY: native
 native:
 	@printf " ... testing 'native':"
-	@if [ ! `which $(CSC) > /dev/null 2>&1` ]; then \
+	@if ! $(SUPPORTS_SHARED_LIBRARIES) || $(BYTECODE_ONLY) || [ ! `which $(CSC) > /dev/null 2>&1` ]; then \
 	  echo " => skipped"; \
 	else \
 	  $(OCAMLOPT) -output-obj -o main.dll dynlink.cmxa entry.c main.ml; \
@@ -78,7 +71,7 @@ native:
 .PHONY: native-dll
 native-dll:
 	@printf " ... testing 'native-dll':"
-	@if [ ! `which $(CSC) > /dev/null 2>&1` ]; then \
+	@if ! $(SUPPORTS_SHARED_LIBRARIES) || $(BYTECODE_ONLY) || [ ! `which $(CSC) > /dev/null 2>&1` ]; then \
 	  echo " => skipped"; \
 	else \
 	  $(OCAMLOPT) -output-obj -o main_obj.$(O) dynlink.cmxa entry.c \

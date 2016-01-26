@@ -21,7 +21,7 @@ OTHERFILESNOINLINING_NATIVE=backtraces_and_finalizers.ml
 
 default:
 	@$(MAKE) byte
-	@if $(BYTECODE_ONLY); then : ; else $(MAKE) native; fi
+	@if $(BYTECODE_ONLY); then $(MAKE) skip ; else $(MAKE) native; fi
 
 .PHONY: byte
 byte:
@@ -48,6 +48,17 @@ byte:
 	       >$$F.byte.result 2>&1; \
 	  $(DIFF) $$F.reference $$F.byte.result >/dev/null \
 	  && echo " => passed" || echo " => failed"; \
+	done
+
+.PHONY: skip
+skip:
+	@for file in $(ABCDFILES); do \
+	  for arg in a b c d ''; do \
+	    echo " ... testing '$$file' with ocamlopt and argument '$$arg': => skipped"; \
+	  done; \
+	done
+	@for file in $(OTHERFILES) $(OTHERFILESNOINLINING) $(OTHERFILESNOINLINING_NATIVE); do \
+	  echo " ... testing '$$file' with ocamlopt: => skipped"; \
 	done
 
 .PHONY: native

@@ -27,7 +27,7 @@ OBJS=parsecmmaux.cmo parsecmm.cmo lexcmm.cmo
 ADD_COMPFLAGS=$(INCLUDES) -w -40 -g
 
 default:
-	@if $(BYTECODE_ONLY) ; then : ; else \
+	@if $(BYTECODE_ONLY) || $(SKIP) ; then $(MAKE) skips ; else \
 	  $(MAKE) all; \
 	fi
 
@@ -60,6 +60,11 @@ ARGS_tagged-fib=-DINT_INT -DFUN=fib main.c
 ARGS_tagged-integr=-DINT_FLOAT -DFUN=test main.c
 ARGS_tagged-quicksort=-DSORT -DFUN=quicksort main.c
 ARGS_tagged-tak=-DUNIT_INT -DFUN=takmain main.c
+
+skips:
+	@for c in $(CASES) $(MLCASES); do \
+	  echo " ... testing '$$c': => skipped"; \
+	done
 
 one_ml:
 	@$(OCAMLOPT) -o $(NAME).exe $(NAME).ml && \
