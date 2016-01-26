@@ -32,20 +32,13 @@ module Transform = struct
     in
     match extracted with
     | None -> None
-    | Some (new_function_body, extracted_projections,
-        additional_free_vars, total_benefit) ->
-      let new_specialised_args =
-        (* The extracted projections still reference the inner specialised
-           args.  They need to be rewritten to reference the outer ones,
-           since we are about to lift them. *)
-        Flambda_utils.toplevel_substitution set_of_closures.specialised_args
-          extracted_projections
-      in
+    | Some result ->
       let what_to_specialise : ASA.what_to_specialise = {
-        new_function_body;
-        additional_free_vars;
-        new_specialised_args;
-        total_benefit;
+        new_function_body = extracted.new_function_body;
+        new_specialised_args_indexed_by_new_outer_vars =
+          extracted.projection_defns_indexed_by_new_outer_vars;
+        new_inner_to_new_outer_vars = extracted.new_inner_to_new_outer_vars;
+        total_benefit = extracted.total_benefit;
       }
       in
       Some what_to_specialise

@@ -45,46 +45,8 @@ module Make (T : S) = struct
 
   let create_wrapper ~fun_var ~(set_of_closures : Flambda.set_of_closures)
       ~(function_decl : Flambda.function_declaration) ~new_function_body
-      ~new_args ~specialised_args =
-    let specialised_args, new_bindings =
-      (* For each new specialised argument of the main function
-         chosen by [T], create a new variable to hold the definition
-         of such argument, which will lie outside of the set of
-         closures.  If the definition is itself just an existing
-         variable, we could use that directly, but in fact we do not
-         (because it means we don't have to worry if more than one new
-         specialised arg has the same outer variable).  Add this
-         information to the [specialised_args] map that will
-         form the specialised args information for the new set of closures.
-
-         Also construct a map giving new [let]-bindings that must be
-         added outside of the set of closures, to bind the new outer
-         variables. *)
-      Variable.Map.fold (fun new_inner_var defn
-            (specialised_args, new_bindings) ->
-          if Variable.Map.mem specialised_args new_inner_var then
-            Misc.fatal_errorf "Augment_specialised_args: inner name chosen \
-                for a new specialised arg (%a) clashes with an existing \
-                specialised arg: %a"
-              Variable.print new_inner_var
-              Flambda.print_set_of_closures set_of_closures
-          else
-            let new_outer_var =
-              Variable.rename new_inner_var ~append:T.variable_suffix
-            in
-            let specialised_args =
-              Variable.Map.add new_inner_var new_outer_var
-                specialised_args
-            in
-            let new_bindings =
-              assert (not (Variable.Map.mem new_outer_var new_bindings));
-              Variable.Map.add new_outer_var defn new_bindings
-            in
-            specialised_args, new_bindings)
-        new_args
-        (specialised_args, new_bindings)
-    in
-    let new_outer_vars = Variable.Map.keys new_bindings in
+      ~new_args ~new_specialised_args_indexed_by_new_outer_vars
+      ~new_inner_to_new_outer_vars =
     let new_fun_var = Variable.rename fun_var ~append:T.variable_suffix in
     (* To avoid increasing the free variables of the wrapper, for
        general cleanliness, we restate the definitions of the
@@ -228,7 +190,7 @@ module Make (T : S) = struct
       match what_to_specialise with
       | None -> done_nothing ()
       | Some what_to_specialise ->
-        let new_specialised_args =
+        let new_specialised_args_indexed_by_new_outer_vars =
           let module Backend = (val backend : Backend_intf.S) in
           let max_args = Backend.max_sensible_number_of_args in
           List.fold_left (fun add_all_or_none (num_params, new_spec_args) ->
@@ -239,7 +201,12 @@ module Make (T : S) = struct
                  either all or none of them will be added.  (This is to
                  avoid the situation where we add extra arguments but yet
                  fail to eliminate an original one.) *)
-              let num_new_args = Variable.Map.cardinal add_all_or_none in
+              let num_new_args =
+                (* The "-1" is to compensate for the fact that we expect,
+                   on average, the existing specialised argument to have
+                   been eliminated. *)
+                Variable.Map.cardinal add_all_or_none - 1
+              in
               let num_params = num_params + num_new_args in
               (* CR mshinwell: consider sorting the groups in some way,
                  maybe by decreasing total benefit. *)
@@ -256,24 +223,27 @@ module Make (T : S) = struct
                       new specialised args overlap: %a"
                     (Format.pp_print_list (Variable.Map.print Variable.print))
                     what_to_specialise.new_specialised_args)
-            what_to_specialise.new_specialised_args
+            what_to_specialise.new_specialised_args_indexed_by_new_outer_vars
             (List.length function_decl.params, Variable.Map.empty)
         in
         if Variable.Map.cardinal new_specialised_args < 1 then
           done_nothing ()
         else
-          (* [new_specialised_args] now maps from the names chosen by [T]
-             for the new specialised args to their definitions. *)
+          let new_inner_to_new_outer_vars =
+            what_to_specialise.new_inner_to_new_outer_vars
+          in
           let new_fun_var, wrapper, specialised_args, new_bindings =
             create_wrapper ~fun_var ~set_of_closures ~function_decl
-              ~new_args ~specialised_args ~new_bindings
+              ~new_args ~new_specialised_args_indexed_by_new_outer_vars
+              ~new_inner_to_new_outer_vars ~new_bindings
           in
           let all_params =
             let new_params =
               (* The extra parameters on the main function are named
                  according to the decisions made by [T].  Note that the
                  ordering used here must match [create_wrapper], above. *)
-              Variable.Set.elements (Variable.Map.keys new_specialised_args)
+              Variable.Set.elements (Variable.Map.keys
+                new_specialised_args_indexed_by_new_outer_vars)
             in
             function_decl.params @ new_params
           in
@@ -289,18 +259,6 @@ module Make (T : S) = struct
           let funs =
             Variable.Map.add new_fun_var rewritten_function_decl
               (Variable.Map.add fun_var wrapper funs)
-          in
-          let free_vars =
-            try
-              Variable.Map.disjoint_union
-                what_to_specialise.additional_free_vars
-                free_vars
-                ~eq:Variable.equal
-            with _exn ->
-              Misc.fatal_errorf "Augment_specialised_args: non-disjoint \
-                  [free_vars] sets: %a vs. %a"
-                Variable.Set.print what_to_specialise.free_vars
-                Variable.Set.print free_vars
           in
           funs, specialised_args, free_vars, new_bindings,
             what_to_specialise.total_benefit
@@ -342,8 +300,8 @@ module Make (T : S) = struct
           ~specialised_args
       in
       let expr =
-        Variable.Map.fold (fun outside_var spec_arg_defn expr ->
-            Flambda.create_let outside_var spec_arg_defn expr)
+        Variable.Map.fold (fun new_outer_var spec_arg_defn expr ->
+            Flambda.create_let new_outer_var spec_arg_defn expr)
           bindings
           (Flambda_utils.name_expr (Set_of_closures set_of_closures)
             ~name:T.pass_name)
