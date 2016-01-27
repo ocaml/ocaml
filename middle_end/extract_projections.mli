@@ -32,7 +32,6 @@ type result = {
   projection_defns_indexed_by_outer_vars : projection_defns;
   new_function_body : Flambda.expr;
   new_inner_to_new_outer_vars : Flambda.specialised_to Variable.Map.t;
-  benefit : Inlining_cost.Benefit.t;
 }
 
 (** [which_variables] maps inner variables to outer variables in the
