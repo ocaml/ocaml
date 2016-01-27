@@ -1,0 +1,42 @@
+
+# # # # # # # # # # # # # # # # # # # #                                 val mapper1 : Ast_mapper.mapper =
+  {Ast_mapper.attribute = <fun>; attributes = <fun>; case = <fun>;
+   cases = <fun>; class_declaration = <fun>; class_description = <fun>;
+   class_expr = <fun>; class_field = <fun>; class_signature = <fun>;
+   class_structure = <fun>; class_type = <fun>;
+   class_type_declaration = <fun>; class_type_field = <fun>;
+   constructor_declaration = <fun>; expr = <fun>; extension = <fun>;
+   extension_constructor = <fun>; include_declaration = <fun>;
+   include_description = <fun>; label_declaration = <fun>; location = <fun>;
+   module_binding = <fun>; module_declaration = <fun>; module_expr = <fun>;
+   module_type = <fun>; module_type_declaration = <fun>;
+   open_description = <fun>; pat = <fun>; payload = <fun>; signature = <fun>;
+   signature_item = <fun>; structure = <fun>; structure_item = <fun>;
+   typ = <fun>; type_declaration = <fun>; type_extension = <fun>;
+   type_kind = <fun>; value_binding = <fun>; value_description = <fun>;
+   with_constraint = <fun>}
+#                                     val mapper2 : Ast_mapper.mapper =
+  {Ast_mapper.attribute = <fun>; attributes = <fun>; case = <fun>;
+   cases = <fun>; class_declaration = <fun>; class_description = <fun>;
+   class_expr = <fun>; class_field = <fun>; class_signature = <fun>;
+   class_structure = <fun>; class_type = <fun>;
+   class_type_declaration = <fun>; class_type_field = <fun>;
+   constructor_declaration = <fun>; expr = <fun>; extension = <fun>;
+   extension_constructor = <fun>; include_declaration = <fun>;
+   include_description = <fun>; label_declaration = <fun>; location = <fun>;
+   module_binding = <fun>; module_declaration = <fun>; module_expr = <fun>;
+   module_type = <fun>; module_type_declaration = <fun>;
+   open_description = <fun>; pat = <fun>; payload = <fun>; signature = <fun>;
+   signature_item = <fun>; structure = <fun>; structure_item = <fun>;
+   typ = <fun>; type_declaration = <fun>; type_extension = <fun>;
+   type_kind = <fun>; value_binding = <fun>; value_description = <fun>;
+   with_constraint = <fun>}
+#   # # got a structure
+got an expr
+print_char 'a'
+got an expr
+'a'
+got an expr
+print_char
+A- : unit = ()
+# 
