@@ -194,17 +194,6 @@ Format.eprintf "EP.from_f_d: %a (which variables %a)\n%!"
             extracted (new_inner_to_new_outer_vars, new_bindings) ->
           let record ~new_inner_var ~new_outer_var ~defining_expr =
             let specialised_to : Flambda.specialised_to =
-              (* [projecting_from] is the inner variable; we need to find the
-                 equivalent outer variable. *)
-              let projecting_from =
-                match Variable.Map.find projecting_from which_variables with
-                | exception Not_found ->
-                  Misc.fatal_errorf "Extract_projections: [projecting_from] \
-                      variable %a not in [which_variables]"
-                    Variable.print projecting_from
-                | (projecting_from : Flambda.specialised_to) ->
-                  projecting_from.var
-              in
               { var = new_outer_var;
                 projectee = Some (projecting_from, projectee);
               }

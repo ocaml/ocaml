@@ -71,7 +71,11 @@ module Var_and_projectee = struct
 
     let hash = Hashtbl.hash
 
-    let print _ _ = failwith "Projectee.print: not yet implemented"
+    let print ppf (var, projectee) =
+      Format.fprintf ppf "(%a,%a)"
+        Variable.print var
+        print projectee
+
     let output _ _ = failwith "Projectee.output: not yet implemented"
   end)
 end

@@ -317,6 +317,12 @@ module Project_var = struct
   let apply_var_within_closure t var_in_closure =
     try Var_within_closure.Map.find var_in_closure t.vars_within_closure
     with Not_found -> var_in_closure
+
+  let apply_projectee t (projectee : Projectee.t) : Projectee.t =
+    match projectee with
+    | Project_var var -> Project_var (apply_var_within_closure t var)
+    | Closure closure_id -> Closure (apply_closure_id t closure_id)
+    | Field _ -> projectee
 end
 
 let apply_function_decls_and_free_vars t fv func_decls =

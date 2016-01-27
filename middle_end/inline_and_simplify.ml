@@ -627,6 +627,21 @@ and simplify_set_of_closures original_env r
     Variable.Map.map_keys (Freshening.apply_variable (E.freshening env))
       specialised_args
   in
+  let specialised_args =
+    Variable.Map.map (fun (spec_to : Flambda.specialised_to) ->
+        let projectee =
+          match spec_to.projectee with
+          | None -> None
+          | Some (from, projectee) ->
+            let from = Freshening.apply_variable (E.freshening env) from in
+            let projectee =
+              Freshening.Project_var.apply_projectee freshening projectee
+            in
+            Some (from, projectee)
+        in
+        { spec_to with projectee; })
+      specialised_args
+  in
   let parameter_approximations =
     (* Approximations of parameters that are known to always hold the same
        argument throughout the body of the function. *)
@@ -637,16 +652,6 @@ and simplify_set_of_closures original_env r
   in
   let env =
     E.enter_set_of_closures_declaration function_decls.set_of_closures_id env
-  in
-  (* Add definitions of known projections to the environment. *)
-  let env =
-    Variable.Map.fold (fun inner_var (spec_arg : Flambda.specialised_to) env ->
-        match spec_arg.projectee with
-        | None -> env
-        | Some (from, projectee) ->
-          E.add_projection env ~from ~projectee ~projection:inner_var)
-      specialised_args
-      env
   in
   (* we use the previous closure for evaluating the functions *)
   let internal_value_set_of_closures =
@@ -678,6 +683,22 @@ and simplify_set_of_closures original_env r
     let closure_env =
       populate_closure_approximations ~function_decl ~free_vars
         ~parameter_approximations ~set_of_closures_env
+    in
+    (* Add definitions of known projections to the environment. *)
+    let closure_env =
+      Variable.Map.fold (fun inner_var (spec_arg : Flambda.specialised_to)
+                env ->
+          match spec_arg.projectee with
+          | None -> env
+          | Some (from, projectee) ->
+Format.eprintf "Adding projection from %a to %a\n%!"
+  Variable.print from Projectee.print projectee;
+            if Variable.Set.mem from function_decl.free_variables then
+              E.add_projection env ~from ~projectee ~projection:inner_var
+            else
+              env)
+        specialised_args
+        closure_env
     in
     let body, r =
       E.enter_closure closure_env ~closure_id:(Closure_id.wrap fid)
@@ -932,45 +953,41 @@ and simplify_named env r (tree : Flambda.named) : Flambda.named * R.t =
     | None ->
 *)
       let backend = E.backend env in
-      (* CR mshinwell: should maybe add one allocation for the stub *)
-      begin match
-        Unbox_specialised_args.rewrite_set_of_closures ~backend ~env
-          ~set_of_closures
-      with
-      | Some expr ->
-        let expr, r = simplify env r expr in
-        Expr expr, r
-      | None ->
-        if E.never_inline env then
-          let set_of_closures, r =
-            simplify_set_of_closures env r set_of_closures
-          in
-          Set_of_closures set_of_closures, r
-        else
-          let set_of_closures =
-            Remove_unused_arguments.
-                separate_unused_arguments_in_set_of_closures
-              set_of_closures ~backend
-          in
-          if !Clflags.unbox_closures then
-            match
-              Unbox_closures.rewrite_set_of_closures ~backend ~env
-                ~set_of_closures
-            with
-            | Some expr ->
-              let expr, r = simplify env r expr in
-              Expr expr, r
-            | None ->
-              let set_of_closures, r =
-                simplify_set_of_closures env r set_of_closures
-              in
-              Set_of_closures set_of_closures, r
-          else
-            let set_of_closures, r =
-              simplify_set_of_closures env r set_of_closures
+      let set_of_closures, r =
+        simplify_set_of_closures env r set_of_closures
+      in
+      if E.never_inline env then
+        Set_of_closures set_of_closures, r
+      else
+        (* CR mshinwell: should maybe add one allocation for the stub *)
+        begin match
+          Unbox_specialised_args.rewrite_set_of_closures ~backend ~env
+            ~set_of_closures
+        with
+        | Some expr ->
+          let expr, r = simplify (E.set_never_inline env) r expr in
+          Format.eprintf "After Unbox_specialised_args + simplify:\n@ %a\n%!"
+            Flambda.print expr;
+          Expr expr, r
+        | None ->
+            let set_of_closures =
+              Remove_unused_arguments.
+                  separate_unused_arguments_in_set_of_closures
+                set_of_closures ~backend
             in
-            Set_of_closures set_of_closures, r
-(*      end*)
+            if !Clflags.unbox_closures then
+              match
+                Unbox_closures.rewrite_set_of_closures ~backend ~env
+                  ~set_of_closures
+              with
+              | Some expr ->
+                let expr, r = simplify env r expr in
+                Expr expr, r
+              | None ->
+                Set_of_closures set_of_closures, r
+            else
+              Set_of_closures set_of_closures, r
+  (*      end*)
     end
   | Project_closure project_closure ->
     simplify_project_closure env r ~project_closure
@@ -991,6 +1008,10 @@ and simplify_named env r (tree : Flambda.named) : Flambda.named * R.t =
             let r = R.map_benefit r (B.remove_projectee projectee) in
             Expr (Var var), ret r var_approx)
         | None ->
+(*
+Format.eprintf "find_projection of %a field %d failed.  Env %a\n%!"
+  Variable.print arg field_index E.print env;
+*)
           begin match A.get_field arg_approx ~field_index with
           | Unreachable -> (Flambda.Expr Proved_unreachable, r)
           | Ok approx ->

@@ -125,6 +125,8 @@ module Project_var : sig
      : t
     -> Var_within_closure.t
     -> Var_within_closure.t
+
+  val apply_projectee : t -> Projectee.t -> Projectee.t
 end
 
 (* CR-soon mshinwell for mshinwell: add comment *)

@@ -77,9 +77,11 @@ module Env = struct
     { env with inlining_level = env.inlining_level + 1 }
 
   let print ppf t =
-    Format.fprintf ppf "Environment maps: %a@.Freshening: %a@."
-        Variable.Set.print (Variable.Map.keys t.approx)
-        Freshening.print t.freshening
+    Format.fprintf ppf
+      "Environment maps: %a@.Projections: %a@.Freshening: %a@."
+      Variable.Set.print (Variable.Map.keys t.approx)
+      (Projectee.Var_and_projectee.Map.print Variable.print) t.projections
+      Freshening.print t.freshening
 
   let mem t var = Variable.Map.mem var t.approx
 
