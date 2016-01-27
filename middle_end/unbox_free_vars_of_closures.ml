@@ -21,12 +21,14 @@ let run ~env ~(set_of_closures : Flambda.set_of_closures) =
   if !Clflags.classic_inlining then
     None
   else
-    let funs, projection_defns, free_vars, total_benefit =
+    let funs, projection_defns, free_vars, total_benefit, done_something =
       Variable.Map.fold (fun fun_var
             (function_decl : Flambda.function_declaration)
-            (funs, projection_defns, additional_free_vars, total_benefit) ->
+            (funs, projection_defns, additional_free_vars, total_benefit,
+             done_something) ->
           if function_decl.stub then
-            funs, projection_defns, additional_free_vars, total_benefit
+            funs, projection_defns, additional_free_vars, total_benefit,
+              done_something
           else
             let extracted =
               Extract_projections.from_function_decl ~env ~function_decl
@@ -34,7 +36,8 @@ let run ~env ~(set_of_closures : Flambda.set_of_closures) =
             in
             match extracted with
             | None ->
-              funs, projection_defns, additional_free_vars, total_benefit
+              funs, projection_defns, additional_free_vars, total_benefit,
+                done_something
             | Some extracted ->
               let function_decl =
                 Flambda.create_function_declaration
@@ -45,6 +48,8 @@ let run ~env ~(set_of_closures : Flambda.set_of_closures) =
                   ~inline:function_decl.inline
                   ~is_a_functor:function_decl.is_a_functor
               in
+Format.eprintf "UFV: new function decl %a\n%!"
+  Flambda.print_function_declaration (fun_var, function_decl);
               let funs = Variable.Map.add fun_var function_decl funs in
               let projection_defns =
                 projection_defns
@@ -65,27 +70,31 @@ let run ~env ~(set_of_closures : Flambda.set_of_closures) =
               let total_benefit =
                 Inlining_cost.Benefit.(+) total_benefit extracted.benefit
               in
-              funs, projection_defns, additional_free_vars, total_benefit)
+              funs, projection_defns, additional_free_vars, total_benefit,
+                true)
         set_of_closures.function_decls.funs
         (Variable.Map.empty, [], set_of_closures.free_vars,
-          Inlining_cost.Benefit.zero)
+          Inlining_cost.Benefit.zero, false)
     in
-    let function_decls =
-      Flambda.update_function_declarations set_of_closures.function_decls
-        ~funs
-    in
-    let set_of_closures =
-      Flambda.create_set_of_closures ~function_decls ~free_vars
-        ~specialised_args:set_of_closures.specialised_args
-    in
-    let expr =
-      List.fold_left (fun expr projection_defns ->
-          Variable.Map.fold Flambda.create_let projection_defns expr)
-        (Flambda_utils.name_expr (Set_of_closures set_of_closures)
-          ~name:"unbox_free_vars_of_closures")
-        projection_defns
-    in
-    Some (expr, total_benefit)
+    if not done_something then
+      None
+    else
+      let function_decls =
+        Flambda.update_function_declarations set_of_closures.function_decls
+          ~funs
+      in
+      let set_of_closures =
+        Flambda.create_set_of_closures ~function_decls ~free_vars
+          ~specialised_args:set_of_closures.specialised_args
+      in
+      let expr =
+        List.fold_left (fun expr projection_defns ->
+            Variable.Map.fold Flambda.create_let projection_defns expr)
+          (Flambda_utils.name_expr (Set_of_closures set_of_closures)
+            ~name:"unbox_free_vars_of_closures")
+          projection_defns
+      in
+      Some (expr, total_benefit)
 
 let run ~env ~set_of_closures =
   Pass_wrapper.with_dump ~pass_name ~input:set_of_closures

@@ -172,10 +172,12 @@ module Make (T : S) = struct
         ~inline:Default_inline
         ~is_a_functor:false
     in
-    new_fun_var, new_function_decl
+    new_fun_var, new_function_decl, params_renaming
 
   let rewrite_function_decl ~env ~backend ~fun_var ~set_of_closures
       ~(function_decl : Flambda.function_declaration) =
+Format.eprintf "ASA.rewrite_function_decl %a\n%!"
+  Flambda.print_function_declaration (fun_var, function_decl);
     if function_decl.stub then
       None
     else
@@ -229,18 +231,15 @@ module Make (T : S) = struct
           let new_inner_to_new_outer_vars =
             what_to_specialise.new_inner_to_new_outer_vars
           in
-          let new_fun_var, wrapper =
+          let new_fun_var, wrapper, params_renaming =
             create_wrapper ~fun_var ~set_of_closures ~function_decl
               ~new_specialised_args_indexed_by_new_outer_vars
               ~new_inner_to_new_outer_vars
           in
           let all_params =
             let new_params =
-              (* The extra parameters on the main function are named
-                 according to the decisions made by [T].  Note that the
-                 ordering used here must match [create_wrapper], above. *)
               Variable.Set.elements (Variable.Map.keys
-                new_specialised_args_indexed_by_new_outer_vars)
+                new_inner_to_new_outer_vars)
             in
             function_decl.params @ new_params
           in
@@ -258,20 +257,24 @@ module Make (T : S) = struct
               new_specialised_args_indexed_by_new_outer_vars,
               new_inner_to_new_outer_vars,
               what_to_specialise.removed_free_vars,
-              what_to_specialise.total_benefit)
+              what_to_specialise.total_benefit,
+              params_renaming)
 
   let rewrite_set_of_closures_core ~backend ~env
         ~(set_of_closures : Flambda.set_of_closures) =
+Format.eprintf "Augment_specialised_args (%s)@ \nstarting with %a\n%!"
+  T.pass_name Flambda.print_set_of_closures set_of_closures;
     if not (T.precondition ~set_of_closures) then
       None
     else
       let funs, new_specialised_arg_defns_indexed_by_new_outer_vars,
-          specialised_args, removed_free_vars, total_benefit =
+          specialised_args, removed_free_vars, total_benefit,
+          done_something =
         Variable.Map.fold
           (fun fun_var function_decl
                 (funs, new_specialised_args_indexed_by_new_outer_vars,
                  new_inner_to_new_outer_vars, removed_free_vars,
-                 total_benefit) ->
+                 total_benefit, done_something) ->
             match
               rewrite_function_decl ~backend ~env ~set_of_closures ~fun_var
                 ~function_decl
@@ -280,12 +283,12 @@ module Make (T : S) = struct
               let funs = Variable.Map.add fun_var function_decl funs in
               funs, new_specialised_args_indexed_by_new_outer_vars,
                 new_inner_to_new_outer_vars, removed_free_vars,
-                total_benefit
+                total_benefit, done_something
             | Some (
                 new_fun_var, rewritten_function_decl, wrapper,
                 new_specialised_args_indexed_by_new_outer_vars',
                 new_inner_to_new_outer_vars', removed_free_vars',
-                benefit) ->
+                benefit, params_renaming) ->
               let funs =
                 assert (not (Variable.Map.mem new_fun_var funs));
                 Variable.Map.add new_fun_var rewritten_function_decl
@@ -297,8 +300,32 @@ module Make (T : S) = struct
                   new_specialised_args_indexed_by_new_outer_vars'
               in
               let new_inner_to_new_outer_vars =
-                Variable.Map.disjoint_union new_inner_to_new_outer_vars
-                  new_inner_to_new_outer_vars'
+                (* This will form the augmentation to the existing
+                   specialised_args of the set of closures.  We must include
+                   not only the new arguments requested by [T] but also
+                   the parameters of the wrapper corresponding to the
+                   existing specialised args (irrespective of whether any
+                   particular specialised arg is being augmented or not). *)
+                let for_new_arguments =
+                  Variable.Map.disjoint_union new_inner_to_new_outer_vars
+                    new_inner_to_new_outer_vars'
+                in
+                let for_existing_arguments =
+                  Variable.Map.fold (fun inner_var outer_var for_existing ->
+                      match Variable.Map.find inner_var params_renaming with
+                      | exception Not_found ->
+                        (* Not a parameter of this [function_decl]. *)
+                        for_existing
+                      | wrapper_param ->
+                        assert (not (Variable.Map.mem wrapper_param
+                            for_existing));
+                        Variable.Map.add wrapper_param outer_var
+                          for_existing)
+                    set_of_closures.specialised_args
+                    Variable.Map.empty
+                in
+                Variable.Map.disjoint_union for_new_arguments
+                  for_existing_arguments
               in
               let removed_free_vars =
                 Variable.Set.union removed_free_vars removed_free_vars'
@@ -308,39 +335,45 @@ module Make (T : S) = struct
               in
               funs, new_specialised_args_indexed_by_new_outer_vars,
                 new_inner_to_new_outer_vars, removed_free_vars,
-                total_benefit)
+                total_benefit, true)
           set_of_closures.function_decls.funs
           (Variable.Map.empty,
             Variable.Map.empty,
             set_of_closures.specialised_args,
             Variable.Set.empty,
-            Inlining_cost.Benefit.zero)
+            Inlining_cost.Benefit.zero,
+            false)
       in
-      let function_decls =
-        Flambda.update_function_declarations set_of_closures.function_decls
-          ~funs
-      in
-      assert (Variable.Map.cardinal specialised_args
-        >= Variable.Map.cardinal set_of_closures.specialised_args);
-      let free_vars =
-        Variable.Map.filter (fun inner_var _outer_var ->
-            not (Variable.Set.mem inner_var removed_free_vars))
-          set_of_closures.free_vars
-      in
-      let set_of_closures =
-        Flambda.create_set_of_closures
-          ~function_decls
-          ~free_vars
-          ~specialised_args
-      in
-      let expr =
-        Variable.Map.fold (fun new_outer_var spec_arg_defn expr ->
-            Flambda.create_let new_outer_var spec_arg_defn expr)
-          new_specialised_arg_defns_indexed_by_new_outer_vars
-          (Flambda_utils.name_expr (Set_of_closures set_of_closures)
-            ~name:T.pass_name)
-      in
-      Some (expr, total_benefit)
+      if not done_something then
+        None
+      else
+        let function_decls =
+          Flambda.update_function_declarations set_of_closures.function_decls
+            ~funs
+        in
+        assert (Variable.Map.cardinal specialised_args
+          >= Variable.Map.cardinal set_of_closures.specialised_args);
+        let free_vars =
+          Variable.Map.filter (fun inner_var _outer_var ->
+              not (Variable.Set.mem inner_var removed_free_vars))
+            set_of_closures.free_vars
+        in
+        let set_of_closures =
+          Flambda.create_set_of_closures
+            ~function_decls
+            ~free_vars
+            ~specialised_args
+        in
+        let expr =
+          Variable.Map.fold (fun new_outer_var spec_arg_defn expr ->
+              Flambda.create_let new_outer_var spec_arg_defn expr)
+            new_specialised_arg_defns_indexed_by_new_outer_vars
+            (Flambda_utils.name_expr (Set_of_closures set_of_closures)
+              ~name:T.pass_name)
+        in
+Format.eprintf "Augment_specialised_args (%s)@ \nresult %a\n%!"
+  T.pass_name Flambda.print expr;
+        Some (expr, total_benefit)
 
   let rewrite_set_of_closures ~backend ~env ~set_of_closures =
     Pass_wrapper.with_dump ~pass_name:T.pass_name ~input:set_of_closures

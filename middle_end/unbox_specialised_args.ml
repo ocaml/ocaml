@@ -18,7 +18,7 @@ module ASA = Augment_specialised_args
 
 module Transform = struct
   let pass_name = "unbox-specialised-args"
-  let variable_suffix = "unbox_spec_args"
+  let variable_suffix = "_unbox_spec_args"
 
   let precondition ~(set_of_closures : Flambda.set_of_closures) =
     (* !Clflags.unbox_specialised_args *) true

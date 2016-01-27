@@ -54,12 +54,14 @@ let freshened_var env v =
   Freshening.apply_variable (E.freshening env) v
 
 module B = Inlining_cost.Benefit
-module VAP = Projection.Var_and_projectee
+module VAP = Projectee.Var_and_projectee
 
 let collect_projections ~env ~which_variables =
   Variable.Map.fold (fun inside_var outer_var collected ->
       let approx = E.find_exn env (freshened_var env outer_var) in
       (* First determine if the variable is bound to a closure. *)
+Format.eprintf "collect_projections examining outer var %a\n"
+  Variable.print outer_var;
       match A.check_approx_for_closure approx with
       | Ok (value_closure, _approx_var, _approx_sym, value_set_of_closures) ->
         let collected =
@@ -97,6 +99,7 @@ let collect_projections ~env ~which_variables =
         match A.check_approx_for_block approx with
         | Wrong -> collected  (* Ignore if not bound to a closure or block. *)
         | Ok (_tag, fields) ->
+Format.eprintf "outer var is a block\n%!";
           let (_field_index : int), collected =
             Array.fold_left (fun (field_index, collected) approx ->
                 (* CR-soon pchambart: should we restrict only to cases
@@ -134,10 +137,16 @@ let collect_projections ~env ~which_variables =
 
 let from_function_decl ~which_variables ~env
       ~(function_decl : Flambda.function_declaration) : result option =
+Format.eprintf "EP.from_f_d: %a (which variables %a)\n%!"
+  Flambda.print_function_declaration (Variable.create "EP", function_decl)
+  (Variable.Map.print Variable.print) which_variables;
   let collected = collect_projections ~env ~which_variables in
   if VAP.Map.cardinal collected = 0 then
     None
   else
+    (* Note that the [collect_projections] pass above doesn't actually look
+       to see if a given variable was used in the body.  We keep track of
+       that here in [used_new_inner_vars]. *)
     let used_new_inner_vars = Variable.Tbl.create 42 in
     let benefit = ref B.zero in
     let new_function_body =
@@ -186,7 +195,7 @@ let from_function_decl ~which_variables ~env
     in
     let benefit = !benefit in
     let new_inner_to_new_outer_vars, new_bindings =
-      VAP.Map.fold (fun (projecting_from, (projectee : Projection.Projectee.t))
+      VAP.Map.fold (fun (projecting_from, (projectee : Projectee.t))
             extracted (new_inner_to_new_outer_vars, new_bindings) ->
           let record ~new_inner_var ~new_outer_var ~defining_expr =
             let new_inner_to_new_outer_vars =
@@ -252,12 +261,19 @@ let from_function_decl ~which_variables ~env
         collected
         (Variable.Map.empty, Variable.Map.empty)
     in
-    let projection_defns = Variable.Map.data new_bindings in
-    let result =
-      { projection_defns_indexed_by_outer_vars = projection_defns;
-        new_function_body;
-        new_inner_to_new_outer_vars;
-        benefit;
-      }
-    in
-    Some result
+    if Variable.Map.cardinal new_bindings < 1 then
+      None
+    else
+      let projection_defns = Variable.Map.data new_bindings in
+  Format.eprintf "Extract_projections: definitions %a new inner -> new outer %a new body %a\n%!"
+    (Format.pp_print_list (Variable.Map.print Flambda.print_named)) projection_defns
+    (Variable.Map.print Variable.print) new_inner_to_new_outer_vars
+    Flambda.print new_function_body;
+      let result =
+        { projection_defns_indexed_by_outer_vars = projection_defns;
+          new_function_body;
+          new_inner_to_new_outer_vars;
+          benefit;
+        }
+      in
+      Some result

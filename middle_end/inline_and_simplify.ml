@@ -876,6 +876,7 @@ and simplify_named env r (tree : Flambda.named) : Flambda.named * R.t =
       simplify_named_using_approx_and_env env r tree approx
     end
   | Set_of_closures set_of_closures ->
+(*
     let set_of_closures =
       Remove_free_vars_equal_to_args.run ~set_of_closures
     in
@@ -884,6 +885,7 @@ and simplify_named env r (tree : Flambda.named) : Flambda.named * R.t =
       let expr, r = simplify env (R.map_benefit r (B.(+) benefit)) expr in
       Expr expr, r
     | None ->
+*)
       let backend = E.backend env in
       (* CR mshinwell: should maybe add one allocation for the stub *)
       begin match
@@ -925,7 +927,7 @@ and simplify_named env r (tree : Flambda.named) : Flambda.named * R.t =
               simplify_set_of_closures env r set_of_closures
             in
             Set_of_closures set_of_closures, r
-      end
+(*      end*)
     end
   | Project_closure project_closure ->
     simplify_project_closure env r ~project_closure

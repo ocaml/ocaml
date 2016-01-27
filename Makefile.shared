@@ -148,6 +148,7 @@ MIDDLE_END=\
   middle_end/pass_wrapper.cmo \
   middle_end/semantics_of_primitives.cmo \
   middle_end/allocated_const.cmo \
+  middle_end/projectee.cmo \
   middle_end/flambda.cmo \
   middle_end/projection.cmo \
   middle_end/flambda_iterators.cmo \
