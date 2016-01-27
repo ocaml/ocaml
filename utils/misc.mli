@@ -295,3 +295,8 @@ module Color : sig
   val set_color_tag_handling : Format.formatter -> unit
   (* adds functions to support color tags to the given formatter. *)
 end
+
+val normalise_eol : string -> string
+(** [normalise_eol s] returns a fresh copy of [s] with any '\r' characters
+   removed. Intended for pre-processing text which will subsequently be printed
+   on a channel which performs EOL transformations (i.e. Windows) *)

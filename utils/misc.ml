@@ -628,3 +628,10 @@ module Color = struct
       );
       ()
 end
+
+let normalise_eol s =
+  let b = Buffer.create 80 in
+    for i = 0 to String.length s - 1 do
+      if s.[i] <> '\r' then Buffer.add_char b s.[i]
+    done;
+    Buffer.contents b
