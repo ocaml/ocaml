@@ -77,11 +77,12 @@ static inline void add_to_ref_table (struct caml_ref_table *tbl, value *p)
 static inline void add_to_ephe_ref_table (struct caml_ephe_ref_table *tbl,
                                           value ar, mlsize_t offset)
 {
+  struct caml_ephe_ref_elt *ephe_ref;
   if (tbl->ptr >= tbl->limit){
     CAMLassert (tbl->ptr == tbl->limit);
     caml_realloc_ephe_ref_table (tbl);
   }
-  struct caml_ephe_ref_elt *ephe_ref = tbl->ptr++;
+  ephe_ref = tbl->ptr++;
   ephe_ref->ephe = ar;
   ephe_ref->offset = offset;
 }
