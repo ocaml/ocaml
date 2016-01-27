@@ -1394,9 +1394,9 @@ let native_repr_of_type env kind ty =
 (* Raises an error when [core_type] contains an [@unboxed] or [@untagged]
    attribute in a strict sub-term. *)
 let error_if_has_deep_native_repr_attributes core_type =
-  let open Ast_mapper in
-  let this_mapper =
-    { default_mapper with typ = fun mapper core_type ->
+  let open Ast_iterator in
+  let this_iterator =
+    { default_iterator with typ = fun iterator core_type ->
       begin
         match
           get_native_repr_attribute core_type.ptyp_attributes ~global_repr:None
@@ -1405,9 +1405,9 @@ let error_if_has_deep_native_repr_attributes core_type =
            raise (Error (core_type.ptyp_loc, Deep_unbox_or_untag_attribute kind))
         | Native_repr_attr_absent -> ()
       end;
-      default_mapper.typ mapper core_type }
+      default_iterator.typ iterator core_type }
   in
-  ignore (default_mapper.typ this_mapper core_type : Parsetree.core_type)
+  default_iterator.typ this_iterator core_type
 
 let make_native_repr env core_type ty ~global_repr =
   error_if_has_deep_native_repr_attributes core_type;

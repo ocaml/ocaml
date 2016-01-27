@@ -106,19 +106,17 @@ let emit_external_warnings =
      'ppwarning' attributes during the actual type-checking, making
      sure to cover all contexts (easier and more ugly alternative:
      duplicate here the logic which control warnings locally). *)
-  let open Ast_mapper in
+  let open Ast_iterator in
   {
-    default_mapper with
+    default_iterator with
     attribute = (fun _ a ->
-        begin match a with
+        match a with
         | {txt="ocaml.ppwarning"|"ppwarning"},
           PStr[{pstr_desc=Pstr_eval({pexp_desc=Pexp_constant
                                          (Pconst_string (s, _))},_);
                 pstr_loc}] ->
             Location.prerr_warning pstr_loc (Warnings.Preprocessor s)
         | _ -> ()
-        end;
-        a
       )
   }
 

@@ -14,7 +14,7 @@
 
 open Asttypes
 open Parsetree
-open Ast_mapper
+open Ast_iterator
 
 let err = Syntaxerr.ill_formed_ast
 
@@ -34,41 +34,39 @@ let simple_longident id =
   in
   if not (is_simple id.txt) then complex_id id.loc
 
-let mapper =
-  let super = Ast_mapper.default_mapper in
+let iterator =
+  let super = Ast_iterator.default_iterator in
   let type_declaration self td =
-    let td = super.type_declaration self td in
+    super.type_declaration self td;
     let loc = td.ptype_loc in
     match td.ptype_kind with
     | Ptype_record [] -> empty_record loc
     | Ptype_variant [] -> empty_variant loc
-    | _ -> td
+    | _ -> ()
   in
   let typ self ty =
-    let ty = super.typ self ty in
+    super.typ self ty;
     let loc = ty.ptyp_loc in
     match ty.ptyp_desc with
     | Ptyp_tuple ([] | [_]) -> invalid_tuple loc
-    | Ptyp_class (id, _) -> simple_longident id; ty
+    | Ptyp_class (id, _) -> simple_longident id
     | Ptyp_package (_, cstrs) ->
-      List.iter (fun (id, _) -> simple_longident id) cstrs;
-      ty
-    | _ -> ty
+      List.iter (fun (id, _) -> simple_longident id) cstrs
+    | _ -> ()
   in
   let pat self pat =
-    let pat = super.pat self pat in
+    super.pat self pat;
     let loc = pat.ppat_loc in
     match pat.ppat_desc with
     | Ppat_tuple ([] | [_]) -> invalid_tuple loc
     | Ppat_record ([], _) -> empty_record loc
-    | Ppat_construct (id, _) -> simple_longident id; pat
+    | Ppat_construct (id, _) -> simple_longident id
     | Ppat_record (fields, _) ->
-      List.iter (fun (id, _) -> simple_longident id) fields;
-      pat
-    | _ -> pat
+      List.iter (fun (id, _) -> simple_longident id) fields
+    | _ -> ()
   in
   let expr self exp =
-    let exp = super.expr self exp in
+    super.expr self exp;
     let loc = exp.pexp_loc in
     match exp.pexp_desc with
     | Pexp_tuple ([] | [_]) -> invalid_tuple loc
@@ -80,64 +78,62 @@ let mapper =
     | Pexp_field (_, id)
     | Pexp_setfield (_, id, _)
     | Pexp_new id
-    | Pexp_open (_, id, _) -> simple_longident id; exp
+    | Pexp_open (_, id, _) -> simple_longident id
     | Pexp_record (fields, _) ->
-      List.iter (fun (id, _) -> simple_longident id) fields;
-      exp
-    | _ -> exp
+      List.iter (fun (id, _) -> simple_longident id) fields
+    | _ -> ()
   in
   let extension_constructor self ec =
-    let ec = super.extension_constructor self ec in
+    super.extension_constructor self ec;
     match ec.pext_kind with
-    | Pext_rebind id -> simple_longident id; ec
-    | _ -> ec
+    | Pext_rebind id -> simple_longident id
+    | _ -> ()
   in
   let class_expr self ce =
-    let ce = super.class_expr self ce in
+    super.class_expr self ce;
     let loc = ce.pcl_loc in
     match ce.pcl_desc with
     | Pcl_apply (_, []) -> no_args loc
-    | Pcl_constr (id, _) -> simple_longident id; ce
-    | _ -> ce
+    | Pcl_constr (id, _) -> simple_longident id
+    | _ -> ()
   in
   let module_type self mty =
-    let mty = super.module_type self mty in
+    super.module_type self mty;
     match mty.pmty_desc with
-    | Pmty_alias id -> simple_longident id; mty
-    | _ -> mty
+    | Pmty_alias id -> simple_longident id
+    | _ -> ()
   in
   let open_description self opn =
-    let opn = super.open_description self opn in
-    simple_longident opn.popen_lid;
-    opn
+    super.open_description self opn;
+    simple_longident opn.popen_lid
   in
   let with_constraint self wc =
-    let wc = super.with_constraint self wc in
+    super.with_constraint self wc;
     match wc with
     | Pwith_type (id, _)
-    | Pwith_module (id, _) -> simple_longident id; wc
-    | _ -> wc
+    | Pwith_module (id, _) -> simple_longident id
+    | _ -> ()
   in
   let module_expr self me =
-    let me = super.module_expr self me in
+    super.module_expr self me;
     match me.pmod_desc with
-    | Pmod_ident id -> simple_longident id; me
-    | _ -> me
+    | Pmod_ident id -> simple_longident id
+    | _ -> ()
   in
   let structure_item self st =
-    let st = super.structure_item self st in
+    super.structure_item self st;
     let loc = st.pstr_loc in
     match st.pstr_desc with
     | Pstr_type (_, []) -> empty_type loc
     | Pstr_value (_, []) -> empty_let loc
-    | _ -> st
+    | _ -> ()
   in
   let signature_item self sg =
-    let sg = super.signature_item self sg in
+    super.signature_item self sg;
     let loc = sg.psig_loc in
     match sg.psig_desc with
     | Psig_type (_, []) -> empty_type loc
-    | _ -> sg
+    | _ -> ()
   in
   { super with
     type_declaration
@@ -154,5 +150,5 @@ let mapper =
   ; signature_item
   }
 
-let structure st = ignore (mapper.structure mapper st : structure)
-let signature sg = ignore (mapper.signature mapper sg : signature)
+let structure st = iterator.structure iterator st
+let signature sg = iterator.signature iterator sg
