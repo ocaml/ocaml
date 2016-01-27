@@ -363,7 +363,6 @@ let variable_and_symbol_invariants (program : Flambda.program) =
           match specialised_to.projectee with
           | None -> ()
           | Some (projection, _projectee) ->
-            check_variable_is_bound env projection;
             if not (Variable.Map.mem projection specialised_args) then begin
               raise (Projectee_must_be_a_specialised_arg projection)
             end)

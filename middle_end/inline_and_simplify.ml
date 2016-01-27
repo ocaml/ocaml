@@ -965,9 +965,11 @@ and simplify_named env r (tree : Flambda.named) : Flambda.named * R.t =
             ~set_of_closures
         with
         | Some expr ->
+(*
           let expr, r = simplify (E.set_never_inline env) r expr in
           Format.eprintf "After Unbox_specialised_args + simplify:\n@ %a\n%!"
             Flambda.print expr;
+*)
           Expr expr, r
         | None ->
             let set_of_closures =
