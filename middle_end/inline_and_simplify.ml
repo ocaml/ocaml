@@ -942,7 +942,7 @@ and simplify_named env r (tree : Flambda.named) : Flambda.named * R.t =
       simplify_named_using_approx_and_env env r tree approx
     end
   | Set_of_closures set_of_closures ->
-(*
+(* N.B. Remove_free_vars_equal_to_args is needed for Unbox_closures
     let set_of_closures =
       Remove_free_vars_equal_to_args.run ~set_of_closures
     in
@@ -965,7 +965,7 @@ and simplify_named env r (tree : Flambda.named) : Flambda.named * R.t =
             ~set_of_closures
         with
         | Some expr ->
-(*
+(* This causes the loop/7 approximation not freshened error
           let expr, r = simplify (E.set_never_inline env) r expr in
           Format.eprintf "After Unbox_specialised_args + simplify:\n@ %a\n%!"
             Flambda.print expr;
