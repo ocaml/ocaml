@@ -585,7 +585,7 @@ module Array2 :
   (** Return the layout of the given big array. *)
 
   val size_in_bytes : ('a, 'b, 'c) t -> int
-  (** [[size_in_bytes a] is the number of elements in [a]
+  (** [size_in_bytes a] is the number of elements in [a]
     multiplied by [a]'s {!kind_size_in_bytes}. *)
 
   external get: ('a, 'b, 'c) t -> int -> int -> 'a = "%caml_ba_ref_2"
