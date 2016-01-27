@@ -980,9 +980,7 @@ and class_expr cl_num val_env met_env scl =
           cl_attributes = scl.pcl_attributes;
          }
   | Pcl_apply (scl', sargs) ->
-      if sargs = [] then
-        Syntaxerr.ill_formed_ast scl.pcl_loc
-          "Function application with no argument.";
+      assert (sargs <> []);
       if !Clflags.principal then Ctype.begin_def ();
       let cl = class_expr cl_num val_env met_env scl' in
       if !Clflags.principal then begin

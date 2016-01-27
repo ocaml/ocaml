@@ -147,6 +147,8 @@ Compilers:
   (David Allsopp)
 - GPR#431: permit constant float arrays to be eligible for pattern match
   branch merging (Pierre Chambart)
+- GPR#392: put all parsetree invariants in a new module Ast_invariants
+  (Jérémie Dimino)
 
 Runtime system:
 - PR#3612: allow allocating custom block with finalizers in the minor heap
@@ -473,6 +475,8 @@ Bug fixes:
   (David Allsopp)
 - GPR#441: better type error location in presence of type constraints
   (Thomas Refis, report by Arseniy Alekseyev)
+- PR#7111: reject empty let bindings instead of printing incorrect syntax
+  (Jérémie Dimino)
 
 Features wishes:
 - PR#4518, GPR#29: change location format for reporting errors in ocamldoc

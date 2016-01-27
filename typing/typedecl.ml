@@ -153,8 +153,7 @@ let make_params env params =
     List.map make_param params
 
 let transl_labels loc env closed lbls =
-  if lbls = [] then
-    Syntaxerr.ill_formed_ast loc "Records cannot be empty.";
+  assert (lbls <> []);
   let all_labels = ref StringSet.empty in
   List.iter
     (fun {pld_name = {txt=name; loc}} ->
@@ -238,9 +237,7 @@ let transl_declaration env sdecl id =
     match sdecl.ptype_kind with
         Ptype_abstract -> Ttype_abstract, Type_abstract
       | Ptype_variant scstrs ->
-        if scstrs = [] then
-          Syntaxerr.ill_formed_ast sdecl.ptype_loc
-            "Variant types cannot be empty.";
+        assert (scstrs <> []);
         let all_constrs = ref StringSet.empty in
         List.iter
           (fun {pcd_name = {txt = name}} ->
