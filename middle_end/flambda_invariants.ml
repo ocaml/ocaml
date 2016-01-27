@@ -61,6 +61,7 @@ exception Vars_in_function_body_not_bound_by_closure_or_params of
   Variable.Set.t * Flambda.set_of_closures * Variable.t
 exception Function_decls_have_overlapping_parameters of Variable.Set.t
 exception Specialised_arg_that_is_not_a_parameter of Variable.t
+exception Projectee_must_be_a_specialised_arg of Variable.t
 exception Free_variables_set_is_lying of
   Variable.t * Variable.Set.t * Variable.Set.t * Flambda.function_declaration
 exception Set_of_closures_free_vars_map_has_wrong_range of Variable.Set.t
@@ -351,11 +352,21 @@ let variable_and_symbol_invariants (program : Flambda.program) =
       (* Check that every "specialised arg" is a parameter of one of the
          functions being declared, and that the variable to which the
          parameter is being specialised is bound. *)
-      Variable.Map.iter (fun being_specialised specialised_to ->
+      (* CR mshinwell: also check [projectee]---must always be another
+         specialised arg in the same set of closures *)
+      Variable.Map.iter (fun being_specialised
+                (specialised_to : Flambda.specialised_to) ->
           if not (Variable.Set.mem being_specialised all_params) then begin
             raise (Specialised_arg_that_is_not_a_parameter being_specialised)
           end;
-          check_variable_is_bound env specialised_to)
+          check_variable_is_bound env specialised_to.var;
+          match specialised_to.projectee with
+          | None -> ()
+          | Some (projection, _projectee) ->
+            check_variable_is_bound env projection;
+            if not (Variable.Map.mem projection specialised_args) then begin
+              raise (Projectee_must_be_a_specialised_arg projection)
+            end)
         specialised_args
   in
   let loop_constant_defining_value env (const : Flambda.constant_defining_value) =
@@ -664,6 +675,11 @@ let check_exn ?(kind=Normal) ?(cmxfile=false) (flam:Flambda.program) =
       Format.eprintf ">> Variable in [specialised_args] that is not a \
           parameter of any of the function(s) in the corresponding \
           declaration(s): %a"
+        Variable.print var
+    | Projectee_must_be_a_specialised_arg var ->
+      Format.eprintf ">> Projection variable %a in [specialised_args] that is \
+          not a (inner) specialised argument variable of the set of \
+          closures"
         Variable.print var
     | Free_variables_set_is_lying (var, claimed, calculated, function_decl) ->
       Format.eprintf ">> Function declaration whose [free_variables] set (%a) \

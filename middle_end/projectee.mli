@@ -26,4 +26,4 @@ include Identifiable.S with type t := t
 type var_and_projectee = Variable.t * t
 
 module Var_and_projectee : Identifiable.S
-  with type t := var_and_projectee
+  with type t = var_and_projectee

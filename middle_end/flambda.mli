@@ -86,6 +86,15 @@ type project_var = {
   var : Var_within_closure.t;
 }
 
+(** See [specialised_args], below. *)
+(* CR mshinwell: move to separate module and make [Identifiable] *)
+type specialised_to = {
+  var : Variable.t;
+  (** [projectee], if set, must be another specialised argument in the same
+      set of closures. *)
+  projectee : Projectee.Var_and_projectee.t option;
+}
+
 (** Flambda terms are partitioned in a pseudo-ANF manner; many terms are
     required to be [let]-bound.  This in particular ensures there is always
     a variable name for an expression that may be lifted out (for example
@@ -210,7 +219,7 @@ and set_of_closures = private {
       variables in scope at the definition point of the [set_of_closures].
       The domain of this map is sometimes known as the "variables bound by
       the closure". *)
-  specialised_args : Variable.t Variable.Map.t;
+  specialised_args : specialised_to Variable.Map.t;
   (** Parameters known to always alias some variable in the scope of the set
       of closures declaration.  These are the only parameters that may,
       during [Inline_and_simplify], have non-unknown approximations.
@@ -536,7 +545,7 @@ val update_function_declarations
 val create_set_of_closures
    : function_decls:function_declarations
   -> free_vars:Variable.t Variable.Map.t
-  -> specialised_args:Variable.t Variable.Map.t
+  -> specialised_args:specialised_to Variable.Map.t
   -> set_of_closures
 
 (** Given a function declaration, find which of its parameters (if any)
@@ -598,3 +607,13 @@ val print_set_of_closures
    : Format.formatter
   -> set_of_closures
   -> unit
+
+val print_specialised_to
+   : Format.formatter
+  -> specialised_to
+  -> unit
+
+val equal_specialised_to
+   : specialised_to
+  -> specialised_to
+  -> bool

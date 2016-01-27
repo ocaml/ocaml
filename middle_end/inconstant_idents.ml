@@ -387,9 +387,9 @@ module Inconstants (P:Param) (Backend:Backend_intf.S) = struct
     (* If a function in the set of closures is specialised, do not consider
        it constant. *)
     (* CR mshinwell for pchambart: This needs more explanation. *)
-    Variable.Map.iter (fun _ id ->
+    Variable.Map.iter (fun _ (spec_arg : Flambda.specialised_to) ->
           register_implication
-            ~in_nc:(Var id)
+            ~in_nc:(Var spec_arg.var)
             ~implies_in_nc:[Closure function_decls.set_of_closures_id])
         specialised_args;
     (* adds 'function_decls in NC => curr in NC' *)

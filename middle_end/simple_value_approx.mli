@@ -154,7 +154,7 @@ and value_set_of_closures = private {
   size : int option Variable.Map.t lazy_t;
   (** For functions that are very likely to be inlined, the size of the
       function's body. *)
-  specialised_args : Variable.t Variable.Map.t;
+  specialised_args : Flambda.specialised_to Variable.Map.t;
   (* Any freshening that has been applied to [function_decls]. *)
   freshening : Freshening.Project_var.t;
 }
@@ -175,7 +175,7 @@ val create_value_set_of_closures
    : function_decls:Flambda.function_declarations
   -> bound_vars:t Var_within_closure.Map.t
   -> invariant_params:Variable.Set.t Variable.Map.t lazy_t
-  -> specialised_args:Variable.t Variable.Map.t
+  -> specialised_args:Flambda.specialised_to Variable.Map.t
   -> freshening:Freshening.Project_var.t
   -> value_set_of_closures
 

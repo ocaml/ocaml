@@ -41,7 +41,15 @@ include Identifiable.Make (struct
 
   let hash = Hashtbl.hash
 
-  let print _ _ = failwith "Projection.print: not yet implemented"
+  let print ppf t =
+    match t with
+    | Project_var var ->
+      Format.fprintf ppf "Project_var %a" Var_within_closure.print var
+    | Closure closure_id ->
+      Format.fprintf ppf "Closure %a" Closure_id.print closure_id
+    | Field index ->
+      Format.fprintf ppf "Field %d" index
+
   let output _ _ = failwith "Projection.output: not yet implemented"
 end)
 

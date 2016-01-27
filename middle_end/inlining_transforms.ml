@@ -172,7 +172,7 @@ let inline_by_copying_function_declaration ~env ~r
     ~lhs_of_application ~closure_id_being_applied
     ~(function_decl : Flambda.function_declaration)
     ~args ~args_approxs ~(invariant_params:Variable.Set.t Variable.Map.t lazy_t)
-    ~(specialised_args:Variable.t Variable.Map.t)
+    ~(specialised_args : Flambda.specialised_to Variable.Map.t)
     ~dbg ~simplify =
   let specialised_args_set = Variable.Map.keys specialised_args in
   let worth_specialising_args, specialisable_args, args, args_decl =
@@ -189,9 +189,9 @@ let inline_by_copying_function_declaration ~env ~r
         match Variable.Map.find arg (Lazy.force invariant_params) with
         | exception Not_found -> map
         | set ->
-            Variable.Set.fold (fun alias map ->
-                Variable.Map.add alias outside_var map)
-              set map)
+          Variable.Set.fold (fun alias map ->
+              Variable.Map.add alias outside_var map)
+            set map)
       specialisable_args specialisable_args
   in
   (* The other closures from the same set of closures may have
@@ -217,8 +217,12 @@ let inline_by_copying_function_declaration ~env ~r
           (* Newly specialised argument: no other function argument
              may need renaming for that one *)
           map
-        | original_outside_var ->
-          Variable.Map.add original_outside_var outside_var map)
+        | original_spec_to ->
+          let original_outside_var = original_spec_to.var in
+          let spec_to =
+            { original_spec_to with var = outside_var; }
+          in
+          Variable.Map.add original_outside_var spec_to map)
       specialisable_args_with_aliases Variable.Map.empty
   in
   if Variable.Set.subset worth_specialising_args specialised_args_set
@@ -267,15 +271,24 @@ let inline_by_copying_function_declaration ~env ~r
       Variable.Map.merge (fun param v1 v2 ->
           match v1, v2 with
           | None, None -> None
-          | Some v, _ -> Some v
-          | None, Some v ->
+          | Some var, _ ->
+            (* New specialised argument being introduced. *)
+            let spec_to : Flambda.specialised_to =
+              { var;
+                projectee = None;
+              }
+            in
+            Some spec_to
+          | None, Some (spec_to : Flambda.specialised_to) ->
+            (* Renaming an existing specialised argument. *)
             if Variable.Set.mem param all_functions_parameters then
-              match Variable.Map.find v specialisable_renaming with
+              match Variable.Map.find spec_to.var specialisable_renaming with
               | exception Not_found ->
                 Misc.fatal_errorf
                   "Missing renaming for specialised argument of a function \
                     being duplicated but not directly applied: %a -> %a"
-                  Variable.print param Variable.print v
+                  Variable.print param
+                  Flambda.print_specialised_to spec_to
               | argument_from_the_current_application ->
                 Some argument_from_the_current_application
             else

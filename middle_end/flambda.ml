@@ -61,6 +61,11 @@ type project_var = {
   var : Var_within_closure.t;
 }
 
+type specialised_to = {
+  var : Variable.t;
+  projectee : Projectee.Var_and_projectee.t option;
+}
+
 type t =
   | Var of Variable.t
   | Let of let_expr
@@ -103,7 +108,7 @@ and let_expr = {
 and set_of_closures = {
   function_decls : function_declarations;
   free_vars : Variable.t Variable.Map.t;
-  specialised_args : Variable.t Variable.Map.t;
+  specialised_args : specialised_to Variable.Map.t;
 }
 
 and function_declarations = {
@@ -164,6 +169,15 @@ type program = {
 
 let fprintf = Format.fprintf
 module Int = Numbers.Int
+
+let print_specialised_to ppf (spec_to : specialised_to) =
+  match spec_to.projectee with
+  | None -> fprintf ppf "%a" Variable.print spec_to.var
+  | Some (projection, projectee) ->
+    fprintf ppf "%a(= %a from %a)"
+      Variable.print spec_to.var
+      Projectee.print projectee
+      Variable.print projection
 
 (** CR-someday lwhite: use better name than this *)
 let rec lam ppf (flam : t) =
@@ -361,8 +375,9 @@ and print_set_of_closures ppf (set_of_closures : set_of_closures) =
       if not (Variable.Map.is_empty spec_args)
       then begin
         fprintf ppf "@ ";
-        Variable.Map.iter (fun id id' -> fprintf ppf "@ %a := %a"
-                        Variable.print id Variable.print id')
+        Variable.Map.iter (fun id (spec_to : specialised_to) ->
+            fprintf ppf "@ %a := %a"
+              Variable.print id print_specialised_to spec_to)
           spec_args
       end
     in
@@ -590,7 +605,12 @@ and variables_usage_named ?ignore_uses_in_project_var
        outside of the closure. *)
     Variable.Map.iter (fun _ renamed_to -> free_variable renamed_to)
       free_vars;
-    Variable.Map.iter (fun _ var -> free_variable var) specialised_args
+    Variable.Map.iter (fun _ (spec_to : specialised_to) ->
+        (* We don't need to do anything with [spec_to.projectee.var], if
+           it is present, since it would only be another specialised arg
+           in the same set of closures. *)
+        free_variable spec_to.var)
+      specialised_args
   | Project_closure { set_of_closures; closure_id = _ } ->
     free_variable set_of_closures
   | Project_var { closure; closure_id = _; var = _ } ->
@@ -1113,3 +1133,15 @@ module Constant_defining_value = struct
       output_string o (Format.asprintf "%a" print v)
   end)
 end
+
+let equal_specialised_to (spec_to1 : specialised_to)
+      (spec_to2 : specialised_to) =
+  Variable.equal spec_to1.var spec_to2.var
+    && begin
+      match spec_to1.projectee, spec_to2.projectee with
+      | None, None -> true
+      | Some _, None | None, Some _ -> false
+      | Some (var1, proj1), Some (var2, proj2) ->
+        Variable.equal var1 var2
+          && Projectee.equal proj1 proj2
+    end

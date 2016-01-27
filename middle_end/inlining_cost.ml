@@ -275,15 +275,8 @@ module Benefit = struct
       (remove_code_helper_named b) lam;
     !b
 
-  let of_projection (proj : Projection.t) =
-    let named : Flambda.named =
-      match proj with
-      | Project_var pv -> Project_var pv
-      | Project_closure pc -> Project_closure pc
-      | Move_within_set_of_closures move -> Move_within_set_of_closures move
-      | Field (index, var) -> Prim (Pfield index, [var], Debuginfo.none)
-    in
-    remove_code_named named zero
+  let remove_projectee (_proj : Projectee.t) b =
+    remove_prim b
 
   let print ppf b =
     Format.fprintf ppf "@[remove_call: %i@ remove_alloc: %i@ \

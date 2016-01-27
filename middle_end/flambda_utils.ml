@@ -190,7 +190,7 @@ and same_set_of_closures (c1 : Flambda.set_of_closures)
       (c2 : Flambda.set_of_closures) =
   Variable.Map.equal sameclosure c1.function_decls.funs c2.function_decls.funs
     && Variable.Map.equal Variable.equal c1.free_vars c2.free_vars
-    && Variable.Map.equal Variable.equal c1.specialised_args
+    && Variable.Map.equal Flambda.equal_specialised_to c1.specialised_args
         c2.specialised_args
 
 and same_project_closure (s1 : Flambda.project_closure)
@@ -255,7 +255,9 @@ let toplevel_substitution sb tree =
           ~function_decls:set_of_closures.function_decls
           ~free_vars:(Variable.Map.map sb set_of_closures.free_vars)
           ~specialised_args:
-            (Variable.Map.map sb set_of_closures.specialised_args)
+            (Variable.Map.map (fun (spec_to : Flambda.specialised_to) ->
+                { spec_to with var = sb spec_to.var; })
+              set_of_closures.specialised_args)
       in
       Set_of_closures set_of_closures
     | Project_closure project_closure ->
@@ -537,7 +539,9 @@ let substitute_read_symbol_field_for_variables
           ~function_decls:set_of_closures.function_decls
           ~free_vars:(Variable.Map.map sb set_of_closures.free_vars)
           ~specialised_args:
-            (Variable.Map.map sb set_of_closures.specialised_args)
+            (Variable.Map.map (fun (spec_to : Flambda.specialised_to) ->
+                { spec_to with var = sb spec_to.var; })
+              set_of_closures.specialised_args)
       in
       Set_of_closures set_of_closures
     | Project_closure project_closure ->
