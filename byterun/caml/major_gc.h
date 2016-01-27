@@ -38,13 +38,23 @@ extern uintnat caml_dependent_size, caml_dependent_allocated;
 extern uintnat caml_fl_wsz_at_phase_change;
 
 #define Phase_mark 0
-#define Phase_sweep 1
-#define Phase_idle 2
-#define Subphase_roots 10
-#define Subphase_main 11
-#define Subphase_weak1 12
-#define Subphase_weak2 13
-#define Subphase_final 14
+#define Phase_clean 1
+#define Phase_sweep 2
+#define Phase_idle 3
+
+/* Subphase of mark */
+#define Subphase_mark_roots 10
+/* Subphase_mark_roots: At the end of this subphase all the global
+   roots are marked. */
+#define Subphase_mark_main 11
+/* Subphase_mark_main: At the end of this subphase all the value alive at
+   the start of this subphase and created during it are marked. */
+#define Subphase_mark_final 12
+/* Subphase_mark_final: At the start of this subphase register which
+   value with an ocaml finalizer are not marked, the associated
+   finalizer will be run later. So we mark now these value as alive,
+   since they must be available for their finalizer.
+  */
 
 CAMLextern char *caml_heap_start;
 extern uintnat total_heap_size;

@@ -47,6 +47,7 @@ let randomized_default =
 let randomized = ref randomized_default
 
 let randomize () = randomized := true
+let is_randomized () = !randomized
 
 let prng = lazy (Random.State.make_self_init())
 
