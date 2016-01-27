@@ -52,7 +52,7 @@ parsing/asttypes.cmi : parsing/location.cmi
 parsing/attr_helper.cmi : parsing/parsetree.cmi parsing/location.cmi \
     parsing/asttypes.cmi
 parsing/builtin_attributes.cmi : parsing/parsetree.cmi parsing/location.cmi \
-    parsing/ast_mapper.cmi
+    parsing/ast_iterator.cmi
 parsing/docstrings.cmi : parsing/parsetree.cmi parsing/location.cmi
 parsing/lexer.cmi : parsing/parser.cmi parsing/location.cmi
 parsing/location.cmi : utils/warnings.cmi
@@ -95,10 +95,10 @@ parsing/attr_helper.cmo : parsing/parsetree.cmi parsing/location.cmi \
 parsing/attr_helper.cmx : parsing/parsetree.cmi parsing/location.cmx \
     parsing/asttypes.cmi parsing/attr_helper.cmi
 parsing/builtin_attributes.cmo : utils/warnings.cmi parsing/parsetree.cmi \
-    parsing/location.cmi parsing/asttypes.cmi parsing/ast_mapper.cmi \
+    parsing/location.cmi parsing/asttypes.cmi parsing/ast_iterator.cmi \
     parsing/builtin_attributes.cmi
 parsing/builtin_attributes.cmx : utils/warnings.cmx parsing/parsetree.cmi \
-    parsing/location.cmx parsing/asttypes.cmi parsing/ast_mapper.cmx \
+    parsing/location.cmx parsing/asttypes.cmi parsing/ast_iterator.cmx \
     parsing/builtin_attributes.cmi
 parsing/docstrings.cmo : utils/warnings.cmi parsing/parsetree.cmi \
     parsing/location.cmi parsing/docstrings.cmi
@@ -396,7 +396,7 @@ typing/typedecl.cmo : utils/warnings.cmi typing/typetexp.cmi \
     parsing/longident.cmi parsing/location.cmi typing/includecore.cmi \
     typing/ident.cmi typing/env.cmi typing/ctype.cmi utils/config.cmi \
     utils/clflags.cmi typing/btype.cmi parsing/attr_helper.cmi \
-    parsing/asttypes.cmi parsing/ast_mapper.cmi parsing/ast_helper.cmi \
+    parsing/asttypes.cmi parsing/ast_iterator.cmi parsing/ast_helper.cmi \
     typing/typedecl.cmi
 typing/typedecl.cmx : utils/warnings.cmx typing/typetexp.cmx \
     typing/types.cmx typing/typedtree.cmx typing/subst.cmx \
@@ -405,7 +405,7 @@ typing/typedecl.cmx : utils/warnings.cmx typing/typetexp.cmx \
     parsing/longident.cmx parsing/location.cmx typing/includecore.cmx \
     typing/ident.cmx typing/env.cmx typing/ctype.cmx utils/config.cmx \
     utils/clflags.cmx typing/btype.cmx parsing/attr_helper.cmx \
-    parsing/asttypes.cmi parsing/ast_mapper.cmx parsing/ast_helper.cmx \
+    parsing/asttypes.cmi parsing/ast_iterator.cmx parsing/ast_helper.cmx \
     typing/typedecl.cmi
 typing/typedtree.cmo : typing/types.cmi typing/primitive.cmi typing/path.cmi \
     parsing/parsetree.cmi utils/misc.cmi parsing/longident.cmi \
@@ -431,7 +431,7 @@ typing/typemod.cmo : utils/warnings.cmi typing/typetexp.cmi typing/types.cmi \
     parsing/location.cmi typing/includemod.cmi typing/ident.cmi \
     typing/env.cmi typing/ctype.cmi utils/config.cmi typing/cmt_format.cmi \
     utils/clflags.cmi parsing/builtin_attributes.cmi typing/btype.cmi \
-    parsing/asttypes.cmi parsing/ast_mapper.cmi typing/annot.cmi \
+    parsing/asttypes.cmi parsing/ast_iterator.cmi typing/annot.cmi \
     typing/typemod.cmi
 typing/typemod.cmx : utils/warnings.cmx typing/typetexp.cmx typing/types.cmx \
     typing/typedtree.cmx typing/typedecl.cmx typing/typecore.cmx \
@@ -441,7 +441,7 @@ typing/typemod.cmx : utils/warnings.cmx typing/typetexp.cmx typing/types.cmx \
     parsing/location.cmx typing/includemod.cmx typing/ident.cmx \
     typing/env.cmx typing/ctype.cmx utils/config.cmx typing/cmt_format.cmx \
     utils/clflags.cmx parsing/builtin_attributes.cmx typing/btype.cmx \
-    parsing/asttypes.cmi parsing/ast_mapper.cmx typing/annot.cmi \
+    parsing/asttypes.cmi parsing/ast_iterator.cmx typing/annot.cmi \
     typing/typemod.cmi
 typing/types.cmo : typing/primitive.cmi typing/path.cmi \
     parsing/parsetree.cmi parsing/longident.cmi parsing/location.cmi \
