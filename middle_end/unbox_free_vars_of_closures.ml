@@ -21,14 +21,12 @@ let run ~env ~(set_of_closures : Flambda.set_of_closures) =
   if !Clflags.classic_inlining then
     None
   else
-    let funs, projection_defns, free_vars, total_benefit, done_something =
+    let funs, projection_defns, free_vars, done_something =
       Variable.Map.fold (fun fun_var
             (function_decl : Flambda.function_declaration)
-            (funs, projection_defns, additional_free_vars, total_benefit,
-             done_something) ->
+            (funs, projection_defns, additional_free_vars, done_something) ->
           if function_decl.stub then
-            funs, projection_defns, additional_free_vars, total_benefit,
-              done_something
+            funs, projection_defns, additional_free_vars, done_something
           else
             let extracted =
               Extract_projections.from_function_decl ~env ~function_decl
@@ -36,8 +34,7 @@ let run ~env ~(set_of_closures : Flambda.set_of_closures) =
             in
             match extracted with
             | None ->
-              funs, projection_defns, additional_free_vars, total_benefit,
-                done_something
+              funs, projection_defns, additional_free_vars, done_something
             | Some extracted ->
               let function_decl =
                 Flambda.create_function_declaration
@@ -55,10 +52,17 @@ Format.eprintf "UFV: new function decl %a\n%!"
                 projection_defns
                   @ extracted.projection_defns_indexed_by_outer_vars
               in
+              (* CR mshinwell: Do the specialised_to thing for free_vars
+                 as well. *)
+              let new_inner_to_new_outer_vars =
+                Variable.Map.map (fun (spec_to : Flambda.specialised_to) ->
+                    spec_to.var)
+                  extracted.new_inner_to_new_outer_vars
+              in
               let additional_free_vars =
                 try
                   Variable.Map.disjoint_union additional_free_vars
-                    extracted.new_inner_to_new_outer_vars
+                    new_inner_to_new_outer_vars
                     ~eq:Variable.equal
                 with _exn ->
                   Misc.fatal_errorf "Unbox_free_vars_of_closures: non-disjoint \
@@ -67,14 +71,9 @@ Format.eprintf "UFV: new function decl %a\n%!"
                     (Variable.Map.print Variable.print)
                       set_of_closures.free_vars
               in
-              let total_benefit =
-                Inlining_cost.Benefit.(+) total_benefit extracted.benefit
-              in
-              funs, projection_defns, additional_free_vars, total_benefit,
-                true)
+              funs, projection_defns, additional_free_vars, true)
         set_of_closures.function_decls.funs
-        (Variable.Map.empty, [], set_of_closures.free_vars,
-          Inlining_cost.Benefit.zero, false)
+        (Variable.Map.empty, [], set_of_closures.free_vars, false)
     in
     if not done_something then
       None
@@ -94,10 +93,10 @@ Format.eprintf "UFV: new function decl %a\n%!"
             ~name:"unbox_free_vars_of_closures")
           projection_defns
       in
-      Some (expr, total_benefit)
+      Some expr
 
 let run ~env ~set_of_closures =
   Pass_wrapper.with_dump ~pass_name ~input:set_of_closures
     ~print_input:Flambda.print_set_of_closures
-    ~print_output:(fun ppf (expr, _benefit) -> Flambda.print ppf expr)
+    ~print_output:Flambda.print
     ~f:(fun () -> run ~env ~set_of_closures)

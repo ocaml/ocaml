@@ -158,9 +158,7 @@ Format.eprintf "EP.from_f_d: %a (which variables %a)\n%!"
             | exception Not_found -> None
             | Var_within_closure { new_inner_var; _ } ->
               Variable.Tbl.add used_new_inner_vars new_inner_var ();
-              (* CR mshinwell: consider leaving the replacement by the [Var]
-                 to Inline_and_simplify *)
-              Some (Flambda.Var new_inner_var)
+              None
             | _ -> assert false
             end
           | Project_closure _project_closure ->
@@ -174,7 +172,7 @@ Format.eprintf "EP.from_f_d: %a (which variables %a)\n%!"
             | exception Not_found -> None
             | Closure { new_inner_var; _ } ->
               Variable.Tbl.add used_new_inner_vars new_inner_var ();
-             Some (Flambda.Var new_inner_var)
+              None
             | _ -> assert false
             end
           | Field (field_index, var) ->
@@ -184,7 +182,7 @@ Format.eprintf "EP.from_f_d: %a (which variables %a)\n%!"
             | exception Not_found -> None
             | Field { new_inner_var; _ } ->
               Variable.Tbl.add used_new_inner_vars new_inner_var ();
-              Some (Flambda.Var new_inner_var)
+              None
             | _ -> assert false
             end)
         function_decl.body

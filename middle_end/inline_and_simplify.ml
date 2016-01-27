@@ -937,8 +937,8 @@ and simplify_named env r (tree : Flambda.named) : Flambda.named * R.t =
         Unbox_specialised_args.rewrite_set_of_closures ~backend ~env
           ~set_of_closures
       with
-      | Some (expr, benefit) ->
-        let expr, r = simplify env (R.map_benefit r (B.(+) benefit)) expr in
+      | Some expr ->
+        let expr, r = simplify env r expr in
         Expr expr, r
       | None ->
         if E.never_inline env then
@@ -957,10 +957,8 @@ and simplify_named env r (tree : Flambda.named) : Flambda.named * R.t =
               Unbox_closures.rewrite_set_of_closures ~backend ~env
                 ~set_of_closures
             with
-            | Some (expr, benefit) ->
-              let expr, r =
-                simplify env (R.map_benefit r (B.(+) benefit)) expr
-              in
+            | Some expr ->
+              let expr, r = simplify env r expr in
               Expr expr, r
             | None ->
               let set_of_closures, r =

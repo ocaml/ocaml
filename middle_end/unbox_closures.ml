@@ -50,7 +50,13 @@ module Transform = struct
          this map is directly the "new inner to new outer vars" map. *)
       let new_inner_to_new_outer_vars =
         Variable.Map.map (fun outer_var ->
-            Variable.rename outer_var ~append:variable_suffix)
+            let spec_to : Flambda.specialised_to =
+              let var = Variable.rename outer_var ~append:variable_suffix in
+              { var;
+                projectee = None;
+              }
+            in
+            spec_to)
           free_vars
       in
       (* There is no substitution to make inside the function body since
@@ -64,7 +70,7 @@ module Transform = struct
                 Variable.Map.find inner_free_var new_inner_to_new_outer_vars
               with
               | exception Not_found -> assert false
-              | new_outer_var -> new_outer_var
+              | (spec_to : Flambda.specialised_to) -> spec_to.var
             in
             let defining_expr : Flambda.named = Expr (Var outer_free_var) in
             Variable.Map.add new_outer_var defining_expr
@@ -80,7 +86,6 @@ module Transform = struct
         new_specialised_args_indexed_by_new_outer_vars =
           [new_specialised_args_indexed_by_new_outer_vars];
         new_inner_to_new_outer_vars;
-        total_benefit = Inlining_cost.Benefit.zero;
       }
       in
       Some what_to_specialise

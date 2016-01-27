@@ -28,8 +28,7 @@ type what_to_specialise = {
   removed_free_vars : Variable.Set.t;
   new_specialised_args_indexed_by_new_outer_vars
     : add_all_or_none_of_these_specialised_args list;
-  new_inner_to_new_outer_vars : Variable.t Variable.Map.t;
-  total_benefit : Inlining_cost.Benefit.t;
+  new_inner_to_new_outer_vars : Flambda.specialised_to Variable.Map.t;
 }
 
 module type S = sig
@@ -51,5 +50,5 @@ module Make (T : S) : sig
      : backend:(module Backend_intf.S)
     -> env:Inline_and_simplify_aux.Env.t
     -> set_of_closures:Flambda.set_of_closures
-    -> (Flambda.expr * Inlining_cost.Benefit.t) option
+    -> Flambda.expr option
 end
