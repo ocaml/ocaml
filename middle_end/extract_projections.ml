@@ -56,7 +56,9 @@ module B = Inlining_cost.Benefit
 module VAP = Projectee.Var_and_projectee
 
 let collect_projections ~env ~which_variables =
-  Variable.Map.fold (fun inside_var outer_var collected ->
+  Variable.Map.fold (fun inside_var (spec_to : Flambda.specialised_to)
+            collected ->
+      let outer_var = spec_to.var in
       let approx = E.find_exn env (freshened_var env outer_var) in
       (* First determine if the variable is bound to a closure. *)
 Format.eprintf "collect_projections examining outer var %a\n"
@@ -138,7 +140,7 @@ let from_function_decl ~which_variables ~env
       ~(function_decl : Flambda.function_declaration) : result option =
 Format.eprintf "EP.from_f_d: %a (which variables %a)\n%!"
   Flambda.print_function_declaration (Variable.create "EP", function_decl)
-  (Variable.Map.print Variable.print) which_variables;
+  (Variable.Map.print Flambda.print_specialised_to) which_variables;
   let collected = collect_projections ~env ~which_variables in
   if VAP.Map.cardinal collected = 0 then
     None
@@ -200,7 +202,8 @@ Format.eprintf "EP.from_f_d: %a (which variables %a)\n%!"
                   Misc.fatal_errorf "Extract_projections: [projecting_from] \
                       variable %a not in [which_variables]"
                     Variable.print projecting_from
-                | projecting_from -> projecting_from
+                | (projecting_from : Flambda.specialised_to) ->
+                  projecting_from.var
               in
               { var = new_outer_var;
                 projectee = Some (projecting_from, projectee);

@@ -40,7 +40,6 @@ module Transform = struct
         new_specialised_args_indexed_by_new_outer_vars =
           extracted.projection_defns_indexed_by_outer_vars;
         new_inner_to_new_outer_vars = extracted.new_inner_to_new_outer_vars;
-        total_benefit = extracted.benefit;
       }
       in
       Some what_to_specialise

@@ -38,7 +38,7 @@ type result = {
     manner of [free_vars] and [specialised_args] in
     [Flambda.set_of_closures]. *)
 val from_function_decl
-   : which_variables:Variable.t Variable.Map.t
+   : which_variables:Flambda.specialised_to Variable.Map.t
   -> env:Inline_and_simplify_aux.Env.t
   -> function_decl:Flambda.function_declaration
   -> result option

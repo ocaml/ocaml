@@ -29,8 +29,18 @@ let run ~env ~(set_of_closures : Flambda.set_of_closures) =
             funs, projection_defns, additional_free_vars, done_something
           else
             let extracted =
+              let which_variables =
+                Variable.Map.map (fun outer_var ->
+                    let spec_to : Flambda.specialised_to =
+                      { var = outer_var;
+                        projectee = None;
+                      }
+                    in
+                    spec_to)
+                  set_of_closures.free_vars
+              in
               Extract_projections.from_function_decl ~env ~function_decl
-                ~which_variables:set_of_closures.free_vars
+                ~which_variables
             in
             match extracted with
             | None ->
