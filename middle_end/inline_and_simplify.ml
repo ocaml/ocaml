@@ -994,7 +994,7 @@ and simplify_named env r (tree : Flambda.named) : Flambda.named * R.t =
                 ~set_of_closures
             with
             | Some expr ->
-              let expr, r = simplify env r expr in
+(*              let expr, r = simplify env r expr in*)
               Expr expr, r
             | None ->
               Set_of_closures set_of_closures, r

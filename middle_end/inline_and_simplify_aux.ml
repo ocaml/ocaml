@@ -147,9 +147,11 @@ module Env = struct
     if not (mem t from) then
       Misc.fatal_errorf "Env.add_projection: projectee %a not in environment"
         Variable.print from
+(*
     else if not (mem t projection) then
       Misc.fatal_errorf "Env.add_projection: projection %a not in environment"
         Variable.print projection
+*)
     else
       { t with
         projections =
