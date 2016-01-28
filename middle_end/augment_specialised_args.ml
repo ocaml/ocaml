@@ -86,6 +86,9 @@ module Make (T : S) = struct
                                                         which will be
                                                         specialised args
     *)
+    (* CR mshinwell: update comment to reflect the fact that we need to
+       also apply the inverse free_vars mapping, since we're pushing
+       expressions down into the function body. *)
     let existing_outer_vars_to_wrapper_params_renaming =
       let existing_specialised_args_inverse =
         let specialised_args =
@@ -95,11 +98,17 @@ module Make (T : S) = struct
         in
         Variable.Map.transpose_keys_and_data specialised_args
       in
-      Variable.Map.map (fun existing_inner_var ->
-          match Variable.Map.find existing_inner_var params_renaming with
-          | exception Not_found -> assert false
-          | wrapper_param -> wrapper_param)
-        existing_specialised_args_inverse
+      let existing_free_vars_inverse =
+        Variable.Map.transpose_keys_and_data set_of_closures.free_vars
+      in
+      let for_spec_args =
+        Variable.Map.map (fun existing_inner_var ->
+            match Variable.Map.find existing_inner_var params_renaming with
+            | exception Not_found -> assert false
+            | wrapper_param -> wrapper_param)
+          existing_specialised_args_inverse
+      in
+      Variable.Map.disjoint_union for_spec_args existing_free_vars_inverse
     in
     (*  2. Renaming of newly-introduced specialised arguments: the fresh
         variables are used for the [let]-bindings in the wrapper.
@@ -258,6 +267,8 @@ Format.eprintf "ASA.rewrite_function_decl %a\n%!"
               ~inline:function_decl.inline
               ~is_a_functor:function_decl.is_a_functor
           in
+Format.eprintf "ASA (%s) rewritten_function_decl %a\n%!"
+  T.pass_name Flambda.print_function_declaration (new_fun_var, rewritten_function_decl);
           Some (
             new_fun_var, rewritten_function_decl, wrapper,
               new_specialised_args_indexed_by_new_outer_vars,
@@ -273,7 +284,7 @@ Format.eprintf "Augment_specialised_args (%s)@ \nstarting with %a\n%!"
       None
     else
       let funs, new_specialised_arg_defns_indexed_by_new_outer_vars,
-          specialised_args, removed_free_vars, done_something =
+          specialised_args, _removed_free_vars, done_something =
         Variable.Map.fold
           (fun fun_var function_decl
                 (funs, new_specialised_args_indexed_by_new_outer_vars,
@@ -349,13 +360,28 @@ Format.eprintf "Augment_specialised_args (%s)@ \nstarting with %a\n%!"
           Flambda.update_function_declarations set_of_closures.function_decls
             ~funs
         in
+        let all_free_variables =
+          Variable.Map.fold (fun fun_var function_decl all_free_variables ->
+Format.eprintf "DECL %a\n%!" Flambda.print_function_declaration (fun_var, function_decl);
+              let free_variables =
+                Flambda_utils.variables_bound_by_the_closure
+                  (Closure_id.wrap fun_var)
+                  function_decls
+              in
+              Variable.Set.union free_variables all_free_variables)
+            function_decls.funs
+            Variable.Set.empty
+        in
         assert (Variable.Map.cardinal specialised_args
           >= Variable.Map.cardinal set_of_closures.specialised_args);
         let free_vars =
           Variable.Map.filter (fun inner_var _outer_var ->
-              not (Variable.Set.mem inner_var removed_free_vars))
+              Variable.Set.mem inner_var all_free_variables)
             set_of_closures.free_vars
         in
+Format.eprintf "all_free_variables { %a } free_vars %a\n%!"
+  Variable.Set.print all_free_variables
+  (Variable.Map.print Variable.print) free_vars;
         let set_of_closures =
           Flambda.create_set_of_closures
             ~function_decls

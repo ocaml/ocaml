@@ -969,14 +969,12 @@ and simplify_named env r (tree : Flambda.named) : Flambda.named * R.t =
             ~set_of_closures
         with
         | Some expr ->
-          let env = E.set_never_inline env in
-          let expr, r = simplify env r expr in
+          let _env = E.set_never_inline env in
+(*          let expr, r = simplify env r expr in*)
           Format.eprintf "After Unbox_specialised_args + simplify:\n@ %a\nApprox is %a\n%!"
             Flambda.print expr A.print (R.approx r);
           Expr expr, r
         | None ->
-          Set_of_closures set_of_closures, r
-(*
           let set_of_closures =
             Remove_unused_arguments.
                 separate_unused_arguments_in_set_of_closures
@@ -994,7 +992,6 @@ and simplify_named env r (tree : Flambda.named) : Flambda.named * R.t =
               Set_of_closures set_of_closures, r
           else
             Set_of_closures set_of_closures, r
-*)
   (*      end*)
     end
   | Project_closure project_closure ->
