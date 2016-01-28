@@ -178,7 +178,7 @@ let function_variable_alias
     function_decls.funs;
   !fun_var_bindings
 
-let invariant_params_in_recursion (decls : Flambda.function_declarations)
+let invariant_params_relation (decls : Flambda.function_declarations)
       ~backend =
   let function_variable_alias = function_variable_alias ~backend decls in
   let escaping_functions = Variable.Tbl.create 13 in
@@ -283,7 +283,11 @@ let invariant_params_in_recursion (decls : Flambda.function_declarations)
           params
       end)
     decls.funs;
-  let result = transitive_closure !relation in
+  transitive_closure !relation
+
+let invariant_params_in_recursion (decls : Flambda.function_declarations)
+      ~backend =
+  let relation = invariant_params_relation decls ~backend in
   let not_unchanging =
     Variable.Pair.Map.fold (fun (func, var) set not_unchanging ->
         match set with
@@ -294,7 +298,7 @@ let invariant_params_in_recursion (decls : Flambda.function_declarations)
               set
           then Variable.Set.add var not_unchanging
           else not_unchanging)
-      result Variable.Set.empty
+      relation Variable.Set.empty
   in
   let params = Variable.Map.fold (fun _
         ({ params } : Flambda.function_declaration) set ->
@@ -321,7 +325,7 @@ let invariant_params_in_recursion (decls : Flambda.function_declarations)
                   aliases)
               set aliases
         | Anything | Arguments _ -> aliases)
-      result Variable.Map.empty
+      relation Variable.Map.empty
   in
   (* We complete the set of aliases such that there does not miss any
      unchanging param *)
@@ -330,6 +334,14 @@ let invariant_params_in_recursion (decls : Flambda.function_declarations)
       | exception Not_found -> Variable.Set.empty
       | set -> set)
     unchanging
+
+let invariant_param_sources decls ~backend =
+  let relation = invariant_params_relation decls ~backend in
+  Variable.Pair.Map.fold (fun (_, var) set relation ->
+      match set with
+      | Anything -> relation
+      | Arguments set -> Variable.Map.add var set relation)
+    relation Variable.Map.empty
 
 let pass_name = "unused-arguments"
 let () = Clflags.all_passes := pass_name :: !Clflags.all_passes
