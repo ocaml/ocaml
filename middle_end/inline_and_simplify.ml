@@ -222,10 +222,14 @@ let reference_recursive_function_directly env closure_id =
    individual closure from it. *)
 let simplify_project_closure env r ~(project_closure : Flambda.project_closure)
       : Flambda.named * R.t =
+Format.eprintf "simplify_project_closure %a\n"
+  Flambda.print_project_closure project_closure;
   let set_of_closures =
     Freshening.apply_variable (E.freshening env)
       project_closure.set_of_closures
   in
+Format.eprintf "simplify_project_closure set_of_closures=%a\n"
+  Variable.print set_of_closures;
   let set_of_closures_approx = E.find_exn env set_of_closures in
   match A.check_approx_for_set_of_closures set_of_closures_approx with
   | Wrong ->
@@ -965,30 +969,32 @@ and simplify_named env r (tree : Flambda.named) : Flambda.named * R.t =
             ~set_of_closures
         with
         | Some expr ->
-(* This causes the loop/7 approximation not freshened error
-          let expr, r = simplify (E.set_never_inline env) r expr in
-          Format.eprintf "After Unbox_specialised_args + simplify:\n@ %a\n%!"
-            Flambda.print expr;
-*)
+          let env = E.set_never_inline env in
+          let expr, r = simplify env r expr in
+          Format.eprintf "After Unbox_specialised_args + simplify:\n@ %a\nApprox is %a\n%!"
+            Flambda.print expr A.print (R.approx r);
           Expr expr, r
         | None ->
-            let set_of_closures =
-              Remove_unused_arguments.
-                  separate_unused_arguments_in_set_of_closures
-                set_of_closures ~backend
-            in
-            if !Clflags.unbox_closures then
-              match
-                Unbox_closures.rewrite_set_of_closures ~backend ~env
-                  ~set_of_closures
-              with
-              | Some expr ->
-                let expr, r = simplify env r expr in
-                Expr expr, r
-              | None ->
-                Set_of_closures set_of_closures, r
-            else
+          Set_of_closures set_of_closures, r
+(*
+          let set_of_closures =
+            Remove_unused_arguments.
+                separate_unused_arguments_in_set_of_closures
+              set_of_closures ~backend
+          in
+          if !Clflags.unbox_closures then
+            match
+              Unbox_closures.rewrite_set_of_closures ~backend ~env
+                ~set_of_closures
+            with
+            | Some expr ->
+              let expr, r = simplify env r expr in
+              Expr expr, r
+            | None ->
               Set_of_closures set_of_closures, r
+          else
+            Set_of_closures set_of_closures, r
+*)
   (*      end*)
     end
   | Project_closure project_closure ->

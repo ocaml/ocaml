@@ -338,4 +338,6 @@ let inline_by_copying_function_declaration ~env ~r
       in
       E.note_entering_specialised env ~closure_ids
     in
+Format.eprintf "Inlining_transforms about to simplify: %a\n%!"
+  Flambda.print expr;
     Some (simplify (E.activate_freshening env) r expr)
