@@ -26,7 +26,8 @@ let for_primitive (prim : Lambda.primitive) =
   | Pmakearray (_, Mutable) -> Only_generative_effects, No_coeffects
   | Pmakearray (_, Immutable) -> No_effects, No_coeffects
   | Pduparray (_, Immutable) ->
-    No_effects, Has_coeffects  (* Might read a mutable record field. *)
+    No_effects, No_coeffects  (* Pduparray (_, Immutable) is allowed only on
+                                 immutable arrays. *)
   | Pduparray (_, Mutable) | Pduprecord _ ->
     Only_generative_effects, Has_coeffects
   | Pccall { prim_name =

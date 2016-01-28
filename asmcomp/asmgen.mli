@@ -12,10 +12,19 @@
 
 (* From lambda to assembly code *)
 
-val compile_implementation :
+val compile_implementation_flambda :
     ?toplevel:(string -> bool) ->
     source_provenance:Timings.source_provenance ->
-    string -> Format.formatter -> int * Lambda.lambda -> unit
+    string ->
+    backend:(module Backend_intf.S) ->
+    Format.formatter -> Flambda.program -> unit
+
+val compile_implementation_clambda :
+    ?toplevel:(string -> bool) ->
+    source_provenance:Timings.source_provenance ->
+    string ->
+    Format.formatter -> Lambda.program -> unit
+
 val compile_phrase :
     Format.formatter -> Cmm.phrase -> unit
 
@@ -26,5 +35,6 @@ val report_error: Format.formatter -> error -> unit
 
 val compile_unit:
   source_provenance:Timings.source_provenance ->
+  string(*prefixname*) ->
   string(*asm file*) -> bool(*keep asm*) ->
   string(*obj file*) -> (unit -> unit) -> unit

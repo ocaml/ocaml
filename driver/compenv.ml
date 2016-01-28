@@ -139,6 +139,22 @@ let setter ppf f name options s =
       (Warnings.Bad_env_variable ("OCAMLPARAM",
                                   Printf.sprintf "bad value for %s" name))
 
+let int_setter ppf name option s =
+  try
+    option := int_of_string s
+  with _ ->
+    Location.print_warning Location.none ppf
+      (Warnings.Bad_env_variable
+         ("OCAMLPARAM", Printf.sprintf "non-integer parameter for \"%s\"" name))
+
+let float_setter ppf name option s =
+  try
+    option := float_of_string s
+  with _ ->
+    Location.print_warning Location.none ppf
+      (Warnings.Bad_env_variable
+         ("OCAMLPARAM", Printf.sprintf "non-float parameter for \"%s\"" name))
+
 (* 'can-discard=' specifies which arguments can be discarded without warning
    because they are not understood by some versions of OCaml. *)
 let can_discard = ref []
@@ -182,6 +198,8 @@ let read_one_param ppf position name v =
   | "runtime-variant" -> runtime_variant := v
   | "cc" -> c_compiler := Some v
 
+  | "clambda-checks" -> set "clambda-checks" [ clambda_checks ] v
+
   (* assembly sources *)
   |  "s" ->
     set "s" [ Clflags.keep_asm_file ; Clflags.keep_startup_file ] v
@@ -208,6 +226,70 @@ let read_one_param ppf position name v =
           Location.print_warning Location.none ppf
             (Warnings.Bad_env_variable ("OCAMLPARAM", error))
       end
+
+  | "inline-toplevel" ->
+    Int_arg_helper.parse v
+      "Bad syntax in OCAMLPARAM for 'inline-toplevel'"
+      inline_toplevel_threshold
+
+  | "rounds" -> int_setter ppf "rounds" simplify_rounds v
+  | "unroll" ->
+    Int_arg_helper.parse v "Bad syntax in OCAMLPARAM for 'unroll'"
+      unroll
+  | "inline-call-cost" ->
+    Int_arg_helper.parse v
+      "Bad syntax in OCAMLPARAM for 'inline-call-cost'"
+      inline_call_cost
+  | "inline-alloc-cost" ->
+    Int_arg_helper.parse v
+      "Bad syntax in OCAMLPARAM for 'inline-alloc-cost'"
+      inline_alloc_cost
+  | "inline-prim-cost" ->
+    Int_arg_helper.parse v
+      "Bad syntax in OCAMLPARAM for 'inline-prim-cost'"
+      inline_prim_cost
+  | "inline-branch-cost" ->
+    Int_arg_helper.parse v
+      "Bad syntax in OCAMLPARAM for 'inline-branch-cost'"
+      inline_branch_cost
+  | "inline-indirect-cost" ->
+    Int_arg_helper.parse v
+      "Bad syntax in OCAMLPARAM for 'inline-indirect-cost'"
+      inline_indirect_cost
+  | "inline-lifting-benefit" ->
+    Int_arg_helper.parse v
+      "Bad syntax in OCAMLPARAM for 'inline-lifting-benefit'"
+      inline_lifting_benefit
+  | "branch-inline-factor" ->
+    Float_arg_helper.parse v
+      "Bad syntax in OCAMLPARAM for 'branch-inline-factor'"
+      branch_inline_factor
+  | "max-inlining-depth" ->
+    Int_arg_helper.parse v
+      "Bad syntax in OCAMLPARAM for 'max-inlining-depth'"
+      max_inlining_depth
+
+  | "classic-inlining" ->
+      set "classic-inlining" [ classic_inlining ] v
+  | "O2" ->
+      set "O2" [ o2 ] v
+  | "O3" ->
+      set "O3" [ o3 ] v
+  | "unbox-closures" ->
+      set "unbox-closures" [ unbox_closures ] v
+  | "remove-unused-arguments" ->
+      set "remove-unused-arguments" [ remove_unused_arguments ] v
+  | "no-inline-recursive-functions" ->
+      clear "no-inline-recursive-functions" [ inline_recursive_functions ] v
+
+  | "inlining-report" ->
+      if !native_code then
+        set "inlining-report" [ inlining_stats ] v
+
+  | "flambda-verbose" ->
+      set "flambda-verbose" [ dump_flambda_verbose ] v
+  | "flambda-invariants" ->
+      set "flambda-invariants" [ flambda_invariant_checks ] v
 
   (* color output *)
   | "color" ->

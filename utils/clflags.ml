@@ -120,7 +120,7 @@ let dump_combine = ref false            (* -dcombine *)
 let native_code = ref false             (* set to true under ocamlopt *)
 let o2 = ref false                      (* -O2 *)
 let o3 = ref false                      (* -O3 *)
-let default_inline_threshold = 10. /. 8.
+let default_inline_threshold = if Config.flambda then 10. else 10. /. 8.
 let inline_threshold = ref (Float_arg_helper.default default_inline_threshold)
 let inlining_stats = ref false
 let simplify_rounds = ref 1
@@ -152,7 +152,6 @@ let runtime_variant = ref "";;      (* -runtime-variant *)
 let keep_docs = ref false              (* -keep-docs *)
 let keep_locs = ref false              (* -keep-locs *)
 let unsafe_string = ref true;;         (* -safe-string / -unsafe-string *)
-let print_timings = ref false          (* -dtimings *)
 
 let inline_toplevel_multiplier = 16
 let default_inline_toplevel_threshold =

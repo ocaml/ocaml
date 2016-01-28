@@ -696,6 +696,10 @@ let rec expr_size env = function
       RHS_block (sz + 1)
   | Uprim (Pduprecord (Record_float, sz), _, _) ->
       RHS_floatblock sz
+  | Uprim (Pccall { prim_name; _ }, closure::_, _)
+        when prim_name = "caml_check_value_is_closure" ->
+      (* Used for "-clambda-checks". *)
+      expr_size env closure
   | Usequence(exp, exp') ->
       expr_size env exp'
   | _ -> RHS_nonrec
@@ -2419,9 +2423,15 @@ and transl_letrec env bindings cont =
 (* Translate a function definition *)
 
 let transl_function f =
+  let body =
+    if Config.flambda then
+      Un_anf.apply f.body ~what:f.label
+    else
+      f.body
+  in
   Cfunction {fun_name = f.label;
              fun_args = List.map (fun id -> (id, typ_val)) f.params;
-             fun_body = transl empty_env f.body;
+             fun_body = transl empty_env body;
              fun_fast = !Clflags.optimize_for_speed;
              fun_dbg  = f.dbg; }
 
@@ -2523,9 +2533,21 @@ and emit_boxed_int64_constant n cont =
 
 (* Emit constant closures *)
 
-let emit_constant_closure symb fundecls clos_vars cont =
+let emit_constant_closure ((_, global_symb) as symb) fundecls clos_vars cont =
+  let closure_symbol f =
+    if Config.flambda then
+      cdefine_symbol (f.label ^ "_closure", global_symb)
+    else
+      []
+  in
   match fundecls with
-    [] -> assert false
+    [] ->
+      (* This should probably not happen: dead code has normally been
+         eliminated and a closure cannot be accessed without going through
+         a [Project_closure], which depends on the function. *)
+      assert (clos_vars = []);
+      cdefine_symbol symb @
+        List.fold_right emit_constant clos_vars cont
   | f1 :: remainder ->
       let rec emit_others pos = function
           [] ->
@@ -2533,11 +2555,13 @@ let emit_constant_closure symb fundecls clos_vars cont =
       | f2 :: rem ->
           if f2.arity = 1 || f2.arity = 0 then
             Cint(infix_header pos) ::
+            (closure_symbol f2) @
             Csymbol_address f2.label ::
             cint_const f2.arity ::
             emit_others (pos + 3) rem
           else
             Cint(infix_header pos) ::
+            (closure_symbol f2) @
             Csymbol_address(curry_function f2.arity) ::
             cint_const f2.arity ::
             Csymbol_address f2.label ::
@@ -2545,6 +2569,7 @@ let emit_constant_closure symb fundecls clos_vars cont =
       Cint(black_closure_header (fundecls_size fundecls
                                  + List.length clos_vars)) ::
       cdefine_symbol symb @
+      (closure_symbol f1) @
       if f1.arity = 1 || f1.arity = 0 then
         Csymbol_address f1.label ::
         cint_const f1.arity ::
