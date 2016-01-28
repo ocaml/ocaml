@@ -32,6 +32,7 @@ EOF
     ./configure --prefix $PREFIX -with-debug-runtime -with-instrumented-runtime
     export PATH=$PREFIX/bin:$PATH
     make world.opt
+    make ocamlnat
     make install
     (cd testsuite && make all)
     (cd testsuite && make USE_RUNTIME="d" all)
