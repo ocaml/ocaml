@@ -35,13 +35,20 @@ module type S = sig
   val pass_name : string
   val variable_suffix : string
 
-  val precondition : set_of_closures:Flambda.set_of_closures -> bool
+  type user_data
+
+  val precondition
+     : backend:(module Backend_intf.S)
+    -> env:Inline_and_simplify_aux.Env.t
+    -> set_of_closures:Flambda.set_of_closures
+    -> user_data option
 
   val what_to_specialise
      : env:Inline_and_simplify_aux.Env.t
     -> closure_id:Closure_id.t
     -> function_decl:Flambda.function_declaration
     -> set_of_closures:Flambda.set_of_closures
+    -> user_data:user_data
     -> what_to_specialise option
 end
 

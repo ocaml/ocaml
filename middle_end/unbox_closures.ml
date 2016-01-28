@@ -20,15 +20,22 @@ module Transform = struct
   let pass_name = "unbox-closures"
   let variable_suffix = "_unbox_closures"
 
-  let precondition ~(set_of_closures : Flambda.set_of_closures) =
-    !Clflags.unbox_closures
-      && not (Variable.Map.is_empty set_of_closures.free_vars)
-      && (Variable.Map.is_empty set_of_closures.specialised_args
-        || Flambda_utils.contains_stub set_of_closures.function_decls)
+  type user_data = unit
+
+  let precondition ~backend:_ ~env:_
+        ~(set_of_closures : Flambda.set_of_closures) =
+    let is_ok =
+      !Clflags.unbox_closures
+        && not (Variable.Map.is_empty set_of_closures.free_vars)
+        && (Variable.Map.is_empty set_of_closures.specialised_args
+          || Flambda_utils.contains_stub set_of_closures.function_decls)
+    in
+    if not is_ok then None else Some ()
 
   let what_to_specialise ~env:_ ~closure_id
         ~(function_decl : Flambda.function_declaration)
         ~(set_of_closures : Flambda.set_of_closures)
+        ~user_data:_
         : ASA.what_to_specialise option =
     let free_vars =
       let bound_by_this_closure =

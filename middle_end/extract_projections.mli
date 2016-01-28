@@ -14,23 +14,27 @@
 (*                                                                        *)
 (**************************************************************************)
 
+(* CR mshinwell: comment out of date *)
 (** Identify variables used in function bodies (free variables or
     specialised args, for example) whose approximation says they are
-    closures or blocks.  Replace uses of projections from such variables
-    with new "inner" variables, each associated with a new "outer" variable,
-    and build a mapping from the new outer variables to the projection
-    expressions (rewritten to use the new outer variables).  The benefit
-    of removing the projections is also returned.
+    closures or blocks.  Arrange (by annotations in [specialised_args]) for
+    uses of projections from such variables to be replaced (by
+    [Inline_and_simplify]) with new "inner" variables, each associated with
+    a new "outer" variable, and build a mapping from the new outer variables
+    to the projection expressions (rewritten to use the new outer variables).
 
     The returned definitions of extracted projection expressions are
     collated together in a list.  Each member of the list corresponds to
     all discovered projections from one particular variable.
 *)
-type projection_defns = Flambda.named Variable.Map.t list
+(* First level: the original (inner spec arg) variable being projected from
+   Second level: new outer var
+   Result: projection defining expr in terms of original outer vars *)
+type projection_defns = Flambda.named Variable.Map.t Variable.Map.t
 
 type result = {
+  (* CR mshinwell: this is a misnomer now *)
   projection_defns_indexed_by_outer_vars : projection_defns;
-  new_function_body : Flambda.expr;
   new_inner_to_new_outer_vars : Flambda.specialised_to Variable.Map.t;
 }
 

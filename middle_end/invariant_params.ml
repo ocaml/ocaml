@@ -81,6 +81,8 @@ type t =
   | Anything
   | Arguments of Variable.Pair.Set.t
 
+type invariant_param_sources = Variable.Pair.Set.t Variable.Map.t
+
 let _print ppf = function
   | Anything -> Format.fprintf ppf "Anything"
   | Arguments args ->

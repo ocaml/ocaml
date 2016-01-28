@@ -49,7 +49,7 @@ let run ~env ~(set_of_closures : Flambda.set_of_closures) =
               let function_decl =
                 Flambda.create_function_declaration
                   ~params:function_decl.params
-                  ~body:extracted.new_function_body
+                  ~body:function_decl.body
                   ~stub:function_decl.stub
                   ~dbg:function_decl.dbg
                   ~inline:function_decl.inline
@@ -59,10 +59,10 @@ Format.eprintf "UFV: new function decl %a\n%!"
   Flambda.print_function_declaration (fun_var, function_decl);
               let funs = Variable.Map.add fun_var function_decl funs in
               let projection_defns =
-                projection_defns
-                  @ extracted.projection_defns_indexed_by_outer_vars
+                Variable.Map.disjoint_union projection_defns
+                  extracted.projection_defns_indexed_by_outer_vars
               in
-              (* CR mshinwell: Do the specialised_to thing for free_vars
+              (* CR-soon mshinwell: Do the specialised_to thing for free_vars
                  as well. *)
               let new_inner_to_new_outer_vars =
                 Variable.Map.map (fun (spec_to : Flambda.specialised_to) ->
@@ -83,7 +83,8 @@ Format.eprintf "UFV: new function decl %a\n%!"
               in
               funs, projection_defns, additional_free_vars, true)
         set_of_closures.function_decls.funs
-        (Variable.Map.empty, [], set_of_closures.free_vars, false)
+        (Variable.Map.empty, Variable.Map.empty,
+          set_of_closures.free_vars, false)
     in
     if not done_something then
       None
@@ -97,11 +98,11 @@ Format.eprintf "UFV: new function decl %a\n%!"
           ~specialised_args:set_of_closures.specialised_args
       in
       let expr =
-        List.fold_left (fun expr projection_defns ->
+        Variable.Map.fold (fun _projected_from projection_defns expr ->
             Variable.Map.fold Flambda.create_let projection_defns expr)
+          projection_defns
           (Flambda_utils.name_expr (Set_of_closures set_of_closures)
             ~name:"unbox_free_vars_of_closures")
-          projection_defns
       in
       Some expr
 

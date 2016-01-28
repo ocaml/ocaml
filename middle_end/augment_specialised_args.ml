@@ -32,13 +32,20 @@ module type S = sig
   val pass_name : string
   val variable_suffix : string
 
-  val precondition : set_of_closures:Flambda.set_of_closures -> bool
+  type user_data
+
+  val precondition
+     : backend:(module Backend_intf.S)
+    -> env:Inline_and_simplify_aux.Env.t
+    -> set_of_closures:Flambda.set_of_closures
+    -> user_data option
 
   val what_to_specialise
      : env:Inline_and_simplify_aux.Env.t
     -> closure_id:Closure_id.t
     -> function_decl:Flambda.function_declaration
     -> set_of_closures:Flambda.set_of_closures
+    -> user_data:user_data
     -> what_to_specialise option
 end
 
@@ -190,7 +197,7 @@ module Make (T : S) = struct
     new_fun_var, new_function_decl, params_renaming
 
   let rewrite_function_decl ~env ~backend ~fun_var ~set_of_closures
-      ~(function_decl : Flambda.function_declaration) =
+      ~(function_decl : Flambda.function_declaration) ~user_data =
 Format.eprintf "ASA.rewrite_function_decl %a\n%!"
   Flambda.print_function_declaration (fun_var, function_decl);
     if function_decl.stub then
@@ -199,6 +206,7 @@ Format.eprintf "ASA.rewrite_function_decl %a\n%!"
       let closure_id = Closure_id.wrap fun_var in
       let what_to_specialise =
         T.what_to_specialise ~env ~closure_id ~function_decl ~set_of_closures
+          ~user_data
       in
       match what_to_specialise with
       | None -> None
@@ -280,9 +288,9 @@ Format.eprintf "ASA (%s) rewritten_function_decl %a\n%!"
         ~(set_of_closures : Flambda.set_of_closures) =
 Format.eprintf "Augment_specialised_args (%s)@ \nstarting with %a\n%!"
   T.pass_name Flambda.print_set_of_closures set_of_closures;
-    if not (T.precondition ~set_of_closures) then
-      None
-    else
+    match T.precondition ~backend ~env ~set_of_closures with
+    | None -> None
+    | Some user_data ->
       let funs, new_specialised_arg_defns_indexed_by_new_outer_vars,
           specialised_args, _removed_free_vars, done_something =
         Variable.Map.fold
@@ -292,7 +300,7 @@ Format.eprintf "Augment_specialised_args (%s)@ \nstarting with %a\n%!"
                  done_something) ->
             match
               rewrite_function_decl ~backend ~env ~set_of_closures ~fun_var
-                ~function_decl
+                ~function_decl ~user_data
             with
             | None ->
               let funs = Variable.Map.add fun_var function_decl funs in

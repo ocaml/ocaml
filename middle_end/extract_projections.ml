@@ -17,11 +17,10 @@
 module A = Simple_value_approx
 module E = Inline_and_simplify_aux.Env
 
-type projection_defns = Flambda.named Variable.Map.t list
+type projection_defns = Flambda.named Variable.Map.t Variable.Map.t
 
 type result = {
   projection_defns_indexed_by_outer_vars : projection_defns;
-  new_function_body : Flambda.expr;
   new_inner_to_new_outer_vars : Flambda.specialised_to Variable.Map.t;
 }
 
@@ -264,14 +263,13 @@ Format.eprintf "EP.from_f_d: %a (which variables %a)\n%!"
     if Variable.Map.cardinal new_bindings < 1 then
       None
     else
-      let projection_defns = Variable.Map.data new_bindings in
+      let projection_defns = new_bindings in
   Format.eprintf "Extract_projections: definitions %a new inner -> new outer %a new body %a\n%!"
-    (Format.pp_print_list (Variable.Map.print Flambda.print_named)) projection_defns
+    (Variable.Map.print (Variable.Map.print Flambda.print_named)) projection_defns
     (Variable.Map.print Flambda.print_specialised_to) new_inner_to_new_outer_vars
     Flambda.print new_function_body;
       let result =
         { projection_defns_indexed_by_outer_vars = projection_defns;
-          new_function_body;
           new_inner_to_new_outer_vars;
         }
       in
