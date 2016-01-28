@@ -22,7 +22,8 @@ let rewrite_one_function_decl ~(function_decl : Flambda.function_declaration)
         | exception Not_found ->
           (* param is not specialised *)
           subst
-        | outside_var ->
+        | (spec_to : Flambda.specialised_to) ->
+          let outside_var = spec_to.var in
           match Variable.Map.find outside_var back_free_vars with
           | exception Not_found ->
             (* No free variables equal to the param *)
@@ -65,7 +66,7 @@ let run ~(set_of_closures : Flambda.set_of_closures) =
     Variable.Map.map
       (fun function_decl ->
          rewrite_one_function_decl ~function_decl ~back_free_vars
-           ~specialised_args:set_of_closures.free_vars)
+           ~specialised_args:set_of_closures.specialised_args)
       set_of_closures.function_decls.funs
   in
   let function_decls =
