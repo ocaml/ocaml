@@ -490,9 +490,11 @@ $(COMMON:.cmo=.cmx) $(BYTECOMP:.cmo=.cmx) $(MIDDLE_END:.cmo=.cmx) $(ASMCOMP:.cmo
 
 # The numeric opcodes
 
-bytecomp/opcodes.ml: byterun/caml/instruct.h
-	sed -n -e '/^enum/p' -e 's/,//g' -e '/^  /p' byterun/caml/instruct.h | \
-	awk -f tools/make-opcodes > bytecomp/opcodes.ml
+bytecomp/opcodes.ml: byterun/caml/instruct.h tools/make_opcodes
+	$(CAMLRUN) tools/make_opcodes -opcodes < $< > $@
+
+tools/make_opcodes: tools/make_opcodes.mll
+	cd tools && $(MAKE) make_opcodes
 
 partialclean::
 	rm -f bytecomp/opcodes.ml
