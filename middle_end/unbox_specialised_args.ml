@@ -22,16 +22,9 @@ module Transform = struct
 
   type user_data = Extract_projections.result Variable.Map.t
 
-  let collect_projections ~backend ~env
-        ~(set_of_closures : Flambda.set_of_closures) : user_data =
-    let projections_by_function =
-      Variable.Map.filter_map set_of_closures.function_decls.funs
-        ~f:(fun _fun_var (function_decl : Flambda.function_declaration) ->
-            if function_decl.stub then None
-            else
-              Extract_projections.from_function_decl ~env ~function_decl
-                ~which_variables:set_of_closures.specialised_args)
-    in
+  let collect_projections_core ~backend
+        ~(set_of_closures : Flambda.set_of_closures)
+        ~projections_by_function : user_data =
     (* CR-soon mshinwell: consider caching the Invariant_params *relation*
        as well as the "_in_recursion" map *)
     let invariant_params_flow =
@@ -40,8 +33,8 @@ module Transform = struct
     in
     (* If for function [f] we would extract a projection expression [e]
        from some specialised argument [x] of [f], and we know from
-       [Invariant_params] that [x] flows to the specialised argument [y]
-       of another function [g], then add [e] with [y] substituted for [x]
+       [Invariant_params] that a specialised argument [y] of another function
+       [g] flows to [x], then add [e] with [y] substituted for [x]
        throughout as a newly-specialised argument for [g].  This should help
        reduce the number of simplification rounds required for
        mutually-recursive functions.  (If you don't like "fold", stop here.) *)
@@ -194,6 +187,23 @@ Format.eprintf "Rewriting defining_expr %a ---> %a\n%!"
           result)
       projections_by_function
       projections_by_function
+
+  let collect_projections ~backend ~env
+        ~(set_of_closures : Flambda.set_of_closures) : user_data =
+    let projections_by_function =
+      Variable.Map.filter_map set_of_closures.function_decls.funs
+        ~f:(fun _fun_var (function_decl : Flambda.function_declaration) ->
+            if function_decl.stub then None
+            else
+              Extract_projections.from_function_decl ~env ~function_decl
+                ~which_variables:set_of_closures.specialised_args)
+    in
+    (* Avoid [Invariant_params] when we can. *)
+    if Variable.Map.cardinal projections_by_function < 1 then
+      Variable.Map.empty
+    else
+      collect_projections_core ~backend ~set_of_closures
+        ~projections_by_function
 
   let precondition ~backend ~env ~(set_of_closures : Flambda.set_of_closures) =
     let is_ok =
