@@ -2,7 +2,7 @@ default:
 	@if $(BYTECODE_ONLY); then : ; elif [ $(SYSTEM) = macosx ]; then $(MAKE) native_macosx_tests; fi
 
 native_macosx_tests:
-	@printf " ... testing stack unwinding:"; \
+	@printf " ... testing 'unwind_test':"; \
         $(MAKE) clean ; $(MAKE) unwind_test && \
 	./unwind_test >/dev/null 2>&1 && echo " => passed" || echo " => failed"
 
