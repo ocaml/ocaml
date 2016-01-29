@@ -24,6 +24,7 @@ function clear() {
 
 function record_pass() {
     check();
+    if (!(key in RESULTS)) ++nresults;
     RESULTS[key] = "p";
     delete SKIPPED[curdir];
     clear();
@@ -31,6 +32,7 @@ function record_pass() {
 
 function record_skip() {
     check();
+    if (!(key in RESULTS)) ++nresults;
     RESULTS[key] = "s";
     if (curdir in SKIPPED) SKIPPED[curdir] = 1;
     clear();
@@ -41,6 +43,7 @@ function record_skip() {
 function record_fail() {
     check();
     if (!(key in RESULTS) || RESULTS[key] == "s"){
+        if (!(key in RESULTS)) ++nresults;
         RESULTS[key] = "f";
     }
     delete SKIPPED[curdir];
@@ -49,6 +52,7 @@ function record_fail() {
 
 function record_unexp() {
     if (!(key in RESULTS) || RESULTS[key] == "s"){
+        if (!(key in RESULTS)) ++nresults;
         RESULTS[key] = "e";
     }
     delete SKIPPED[curdir];
@@ -151,13 +155,18 @@ END {
             }
             printf("\n");
             printf("Summary:\n");
-            printf("  %3d test%s passed\n", passed, (passed == 1 ? "" : "s"));
-            printf("  %3d test%s skipped\n", skipped, (skipped == 1 ? "" : "s"));
-            printf("  %3d test%s failed\n", failed, (failed == 1 ? "" : "s"));
-            printf("  %3d unexpected error%s\n", unexped, (unexped == 1 ? "" : "s"));
-            printf("  %3d tests considered%s\n", length(RESULTS), (length(RESULTS) != passed + skipped + failed + unexped ? " (totals don't add up??)": ""));
+            printf("  %3d tests passed\n", passed);
+            printf("  %3d tests skipped\n", skipped);
+            printf("  %3d tests failed\n", failed);
+            printf("  %3d unexpected errors\n", unexped);
+            printf("  %3d tests considered", nresults);
+            if (nresults == passed + skipped + failed + unexped){
+                printf ("\n");
+            }else{
+                printf (" (totals don't add up??)");
+            }
             if (reran != 0){
-                printf("  %3d test dir re-run%s\n", reran, (reran == 1 ? "" : "s"));
+                printf("  %3d test dir re-runs\n", reran);
             }
             if (failed != 0){
                 printf("\nList of failed tests:\n");
