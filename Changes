@@ -244,6 +244,8 @@ Standard library:
   * Pervasives.ldexp (and [@@noalloc])
   * Pervasives.compare for float, nativeint, int32, int64.
   (François Bobot)
+- PR#3622, GPR#195: add function Stack.fold
+  (Simon Cruanes)
 - GPR#329: Add exists, for_all,  mem and memq functions in Array
   (Bernhard Schommer)
 - GPR#337: Add [Hashtbl.filter_map_inplace] (Alain Frisch)
