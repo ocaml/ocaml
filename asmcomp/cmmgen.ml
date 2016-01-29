@@ -432,7 +432,7 @@ let safe_mod_bi =
 
 (* Bool *)
 
-let rec test_bool = function
+let test_bool = function
     Cop(Caddi, [Cop(Clsl, [c; Cconst_int 1]); Cconst_int 1]) -> c
   | Cop(Clsl, [c; Cconst_int 1]) -> c
   | Cconst_int n ->
@@ -440,10 +440,6 @@ let rec test_bool = function
       Cconst_int 0
     else
       Cconst_int 1
-  | Clet(id, exp, body) ->
-    Clet(id, exp, test_bool body)
-  | Cifthenelse(cond, ifso, ifnot) ->
-    Cifthenelse(cond, test_bool ifso, test_bool ifnot)
   | c -> Cop(Ccmpi Cne, [c; Cconst_int 1])
 
 (* Float *)
