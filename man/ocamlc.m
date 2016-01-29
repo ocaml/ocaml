@@ -855,6 +855,9 @@ mutually recursive types.
 50
 \ \ Unexpected documentation comment.
 
+59
+\ \ Assignment on non-mutable value.
+
 The letters stand for the following sets of warnings.  Any letter not
 mentioned here corresponds to the empty set.
 

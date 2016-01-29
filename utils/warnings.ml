@@ -76,6 +76,7 @@ type t =
   | Unreachable_case                        (* 56 *)
   | Ambiguous_pattern of string list        (* 57 *)
   | No_cmx_file of string                   (* 58 *)
+  | Assignment_to_non_mutable_value         (* 59 *)
 ;;
 
 (* If you remove a warning, leave a hole in the numbering.  NEVER change
@@ -143,10 +144,12 @@ let number = function
   | Unreachable_case -> 56
   | Ambiguous_pattern _ -> 57
   | No_cmx_file _ -> 58
+  | Assignment_to_non_mutable_value -> 59
 ;;
 
-let last_warning_number = 58
+let last_warning_number = 59
 ;;
+
 (* Must be the max number returned by the [number] function. *)
 
 let letter = function
@@ -268,7 +271,14 @@ let () = parse_options true defaults_warn_error;;
 let message = function
   | Comment_start -> "this is the start of a comment."
   | Comment_not_end -> "this is not the end of a comment."
-  | Deprecated s -> "deprecated: " ^ s
+  | Deprecated s ->
+      (* Reduce \r\n to \n:
+           - Prevents any \r characters being printed on Unix when processing
+             Windows sources
+           - Prevents \r\r\n being generated on Windows, which affects the
+             testsuite
+       *)
+       "deprecated: " ^ Misc.normalise_eol s
   | Fragile_match "" ->
       "this pattern-matching is fragile."
   | Fragile_match s ->
@@ -445,6 +455,7 @@ let message = function
       Printf.sprintf
         "no cmx file was found in path for module %s, \
          and its interface was not compiled with -opaque" name
+  | Assignment_to_non_mutable_value -> "Assignment to non-mutable value"
 ;;
 
 let nerrors = ref 0;;
@@ -541,6 +552,7 @@ let descriptions =
    56, "Unreachable case in a pattern-matching (based on type information).";
    57, "Ambiguous binding by pattern.";
    58, "Missing cmx file";
+   59, "Assignment to non-mutable value";
   ]
 ;;
 

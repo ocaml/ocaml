@@ -14,6 +14,8 @@
 (*                                                                        *)
 (**************************************************************************)
 
+[@@@ocaml.warning "+a-4-9-30-40-41-42"]
+
 (** Simplification of Flambda programs combined with function inlining:
     for the most part a beta-reduction pass.
 

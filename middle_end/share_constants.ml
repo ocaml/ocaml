@@ -14,6 +14,8 @@
 (*                                                                        *)
 (**************************************************************************)
 
+[@@@ocaml.warning "+a-4-9-30-40-41-42"]
+
 module Constant_defining_value = Flambda.Constant_defining_value
 
 let update_constant_for_sharing sharing_symbol_tbl const : Flambda.constant_defining_value =

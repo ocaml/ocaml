@@ -43,6 +43,10 @@ let mk_ccopt f =
   "<opt>  Pass option <opt> to the C compiler and linker"
 ;;
 
+let mk_clambda_checks f =
+  "-clambda-checks", Arg.Unit f, " Instrument clambda code with closure and field access checks (for debugging the compiler)"
+;;
+
 let mk_compact f =
   "-compact", Arg.Unit f, " Optimize code size rather than speed"
 ;;
@@ -110,7 +114,91 @@ let mk_init f =
 ;;
 
 let mk_inline f =
-  "-inline", Arg.Int f, "<n>  Set aggressiveness of inlining to <n>"
+  "-inline", Arg.String f,
+    Printf.sprintf "<n>|<round>=<n>[,...]  Aggressiveness of inlining \
+        (default %.02f, higher numbers mean more aggressive)"
+      Clflags.default_inline_threshold
+;;
+
+let mk_inline_toplevel f =
+  "-inline-toplevel", Arg.String f,
+    Printf.sprintf "<n>|<round>=<n>[,...]  Aggressiveness of inlining at \
+      toplevel (higher numbers mean more aggressive)"
+;;
+
+let mk_inlining_stats f =
+  "-inlining-report", Arg.Unit f, " Emit `.<round>.inlining' file(s) (one per \
+      round) showing the inliner's decisions"
+;;
+
+let mk_dump_pass f =
+  "-dump-pass", Arg.String f,
+  Format.asprintf " Record transformations performed by these passes: %a"
+    (Format.pp_print_list Format.pp_print_string)
+    !Clflags.all_passes
+;;
+
+let mk_o2 f =
+  "-O2", Arg.Unit f, " Apply increased optimization for speed"
+;;
+
+let mk_o3 f =
+  "-O3", Arg.Unit f, " Apply aggressive optimization for speed (may \
+    significantly increase code size and compilation time)"
+;;
+
+let mk_rounds f =
+  "-rounds", Arg.Int f,
+    Printf.sprintf "<n>  Repeat tree optimization and inlining phases this \
+        many times (default %d).  Rounds are numbered starting from zero."
+      !Clflags.simplify_rounds
+;;
+
+let mk_unroll f =
+  "-unroll", Arg.String f,
+    Printf.sprintf "<n>|<round>=<n>[,...]  Unroll recursive functions at most this many times \
+        (default %d)"
+      Clflags.default_unroll
+;;
+
+let mk_classic_inlining f =
+  "-classic-inlining", Arg.Unit f, " Make inlining decisions at function definition time \
+        rather than at the call site (replicates previous behaviour of the compiler)"
+;;
+
+let mk_inline_cost arg descr default f =
+  Printf.sprintf "-inline-%s-cost" arg,
+  Arg.String f,
+  Printf.sprintf "<n>|<round>=<n>[,...]  The cost of not removing %s during inlining \
+      (default %d, higher numbers more costly)"
+    descr
+    default
+;;
+
+let mk_inline_call_cost =
+  mk_inline_cost "call" "a call" Clflags.default_inline_call_cost
+let mk_inline_alloc_cost =
+  mk_inline_cost "alloc" "an allocation" Clflags.default_inline_alloc_cost
+let mk_inline_prim_cost =
+  mk_inline_cost "prim" "a primitive" Clflags.default_inline_prim_cost
+let mk_inline_branch_cost =
+  mk_inline_cost "branch" "a conditional" Clflags.default_inline_branch_cost
+let mk_inline_indirect_cost =
+  mk_inline_cost "indirect" "an indirect call" Clflags.default_inline_indirect_cost
+
+let mk_inline_lifting_benefit f =
+  "-inline-lifting-benefit",
+  Arg.String f,
+  Printf.sprintf "<n>|<round>=<n>[,...]  The benefit of lifting definitions \
+    to toplevel during inlining (default %d, higher numbers more beneficial)"
+    Clflags.default_inline_lifting_benefit
+;;
+
+let mk_branch_inline_factor f =
+  "-branch-inline-factor", Arg.String f,
+    Printf.sprintf "<n>|<round>=<n>[,...]  Estimate the probability of a \
+        branch being cold as 1/(1+n) (used for inlining) (default %.2f)"
+    Clflags.default_branch_inline_factor
 ;;
 
 let mk_intf f =
@@ -149,6 +237,13 @@ let mk_make_runtime f =
 
 let mk_make_runtime_2 f =
   "-make_runtime", Arg.Unit f, " (deprecated) same as -make-runtime"
+;;
+
+let mk_max_inlining_depth f =
+  "-max-inlining-depth", Arg.String f,
+    Printf.sprintf "<n>|<round>=<n>[,...]  Maximum depth of search for inlining opportunities \
+        inside inlined functions (default %d)"
+      Clflags.default_max_inlining_depth
 ;;
 
 let mk_modern f =
@@ -195,6 +290,11 @@ let mk_nodynlink f =
 let mk_noinit f =
   "-noinit", Arg.Unit f,
   " Do not load any init file"
+
+let mk_no_inline_recursive_functions f =
+  "-no-inline-recursive-functions", Arg.Unit f,
+  " Do not duplicate and specialise declarations of recursive functions"
+;;
 
 let mk_nolabels f =
   "-nolabels", Arg.Unit f, " Ignore non-optional labels in types"
@@ -261,6 +361,11 @@ let mk_rectypes f =
   "-rectypes", Arg.Unit f, " Allow arbitrary recursive types"
 ;;
 
+let mk_remove_unused_arguments f =
+  "-remove-unused-arguments", Arg.Unit f,
+  " Remove unused function arguments (experimental)"
+;;
+
 let mk_runtime_variant f =
   "-runtime-variant", Arg.String f,
   "<str>  Use the <str> variant of the run-time system"
@@ -298,6 +403,11 @@ let mk_thread f =
 
 let mk_dtimings f =
   "-dtimings", Arg.Unit f, " Print timings"
+;;
+
+let mk_unbox_closures f =
+  "-unbox-closures", Arg.Unit f,
+  " Unbox closures into function arguments (experimental)"
 ;;
 
 let mk_unsafe f =
@@ -417,8 +527,28 @@ let mk_dlambda f =
   "-dlambda", Arg.Unit f, " (undocumented)"
 ;;
 
+let mk_drawclambda f =
+  "-drawclambda", Arg.Unit f, " (undocumented)"
+;;
+
 let mk_dclambda f =
   "-dclambda", Arg.Unit f, " (undocumented)"
+;;
+
+let mk_dflambda f =
+  "-dflambda", Arg.Unit f, " Print Flambda terms"
+;;
+
+let mk_dflambda_invariants f =
+  "-dflambda-invariants", Arg.Unit f, " Check Flambda invariants around each pass"
+;;
+
+let mk_dflambda_let f =
+  "-dflambda-let", Arg.Int f, "<stamp>  Print when the given Flambda [Let] is created"
+;;
+
+let mk_dflambda_verbose f =
+  "-dflambda-verbose", Arg.Unit f, " Print Flambda terms including around each pass"
 ;;
 
 let mk_dinstr f =
@@ -605,8 +735,33 @@ end;;
 
 module type Optcommon_options = sig
   val _compact : unit -> unit
-  val _inline : int -> unit
+  val _inline : string -> unit
+  val _inline_toplevel : string -> unit
+  val _inlining_stats : unit -> unit
+  val _dump_pass : string -> unit
+  val _max_inlining_depth : string -> unit
+  val _rounds : int -> unit
+  val _unroll : string -> unit
+  val _classic_inlining : unit -> unit
+  val _inline_call_cost : string -> unit
+  val _inline_alloc_cost : string -> unit
+  val _inline_prim_cost : string -> unit
+  val _inline_branch_cost : string -> unit
+  val _inline_indirect_cost : string -> unit
+  val _inline_lifting_benefit : string -> unit
+  val _unbox_closures : unit -> unit
+  val _branch_inline_factor : string -> unit
+  val _no_inline_recursive_functions : unit -> unit
+  val _remove_unused_arguments : unit -> unit
+  val _o2 : unit -> unit
+  val _o3 : unit -> unit
 
+  val _clambda_checks : unit -> unit
+  val _dflambda : unit -> unit
+  val _dflambda_invariants : unit -> unit
+  val _dflambda_let : int -> unit
+  val _dflambda_verbose : unit -> unit
+  val _drawclambda : unit -> unit
   val _dclambda : unit -> unit
   val _dcmm : unit -> unit
   val _dsel : unit -> unit
@@ -801,10 +956,13 @@ struct
     mk_absname F._absname;
     mk_annot F._annot;
     mk_binannot F._binannot;
+    mk_branch_inline_factor F._branch_inline_factor;
     mk_c F._c;
     mk_cc F._cc;
     mk_cclib F._cclib;
     mk_ccopt F._ccopt;
+    mk_clambda_checks F._clambda_checks;
+    mk_classic_inlining F._classic_inlining;
     mk_color F._color;
     mk_compact F._compact;
     mk_config F._config;
@@ -815,21 +973,33 @@ struct
     mk_I F._I;
     mk_impl F._impl;
     mk_inline F._inline;
+    mk_inline_toplevel F._inline_toplevel;
+    mk_inline_alloc_cost F._inline_alloc_cost;
+    mk_inline_branch_cost F._inline_branch_cost;
+    mk_inline_call_cost F._inline_call_cost;
+    mk_inline_prim_cost F._inline_prim_cost;
+    mk_inline_indirect_cost F._inline_indirect_cost;
+    mk_inline_lifting_benefit F._inline_lifting_benefit;
+    mk_inlining_stats F._inlining_stats;
     mk_intf F._intf;
     mk_intf_suffix F._intf_suffix;
     mk_keep_docs F._keep_docs;
     mk_keep_locs F._keep_locs;
     mk_labels F._labels;
     mk_linkall F._linkall;
+    mk_max_inlining_depth F._max_inlining_depth;
     mk_no_alias_deps F._no_alias_deps;
     mk_no_app_funct F._no_app_funct;
     mk_no_float_const_prop F._no_float_const_prop;
     mk_noassert F._noassert;
     mk_noautolink_opt F._noautolink;
     mk_nodynlink F._nodynlink;
+    mk_no_inline_recursive_functions F._no_inline_recursive_functions;
     mk_nolabels F._nolabels;
     mk_nostdlib F._nostdlib;
     mk_o F._o;
+    mk_o2 F._o2;
+    mk_o3 F._o3;
     mk_open F._open;
     mk_output_obj F._output_obj;
     mk_output_complete_obj F._output_complete_obj;
@@ -839,6 +1009,8 @@ struct
     mk_ppx F._ppx;
     mk_principal F._principal;
     mk_rectypes F._rectypes;
+    mk_remove_unused_arguments F._remove_unused_arguments;
+    mk_rounds F._rounds;
     mk_runtime_variant F._runtime_variant;
     mk_S F._S;
     mk_safe_string F._safe_string;
@@ -847,6 +1019,8 @@ struct
     mk_strict_sequence F._strict_sequence;
     mk_strict_formats F._strict_formats;
     mk_thread F._thread;
+    mk_unbox_closures F._unbox_closures;
+    mk_unroll F._unroll;
     mk_unsafe F._unsafe;
     mk_unsafe_string F._unsafe_string;
     mk_v F._v;
@@ -866,7 +1040,12 @@ struct
     mk_dtypedtree F._dtypedtree;
     mk_drawlambda F._drawlambda;
     mk_dlambda F._dlambda;
+    mk_drawclambda F._drawclambda;
     mk_dclambda F._dclambda;
+    mk_dflambda F._dflambda;
+    mk_dflambda_invariants F._dflambda_invariants;
+    mk_dflambda_let F._dflambda_let;
+    mk_dflambda_verbose F._dflambda_verbose;
     mk_dcmm F._dcmm;
     mk_dsel F._dsel;
     mk_dcombine F._dcombine;
@@ -882,6 +1061,7 @@ struct
     mk_dlinear F._dlinear;
     mk_dstartup F._dstartup;
     mk_dtimings F._dtimings;
+    mk_dump_pass F._dump_pass;
     mk_opaque F._opaque;
   ]
 end;;
@@ -893,25 +1073,42 @@ module Make_opttop_options (F : Opttop_options) = struct
     mk_I F._I;
     mk_init F._init;
     mk_inline F._inline;
+    mk_inline_toplevel F._inline_toplevel;
+    mk_inlining_stats F._inlining_stats;
+    mk_rounds F._rounds;
+    mk_unroll F._unroll;
+    mk_classic_inlining F._classic_inlining;
+    mk_inline_call_cost F._inline_call_cost;
+    mk_inline_alloc_cost F._inline_alloc_cost;
+    mk_inline_prim_cost F._inline_prim_cost;
+    mk_inline_branch_cost F._inline_branch_cost;
+    mk_inline_indirect_cost F._inline_indirect_cost;
+    mk_inline_lifting_benefit F._inline_lifting_benefit;
+    mk_branch_inline_factor F._branch_inline_factor;
     mk_labels F._labels;
     mk_no_alias_deps F._no_alias_deps;
     mk_no_app_funct F._no_app_funct;
     mk_noassert F._noassert;
     mk_noinit F._noinit;
+    mk_no_inline_recursive_functions F._no_inline_recursive_functions;
     mk_nolabels F._nolabels;
     mk_noprompt F._noprompt;
     mk_nopromptcont F._nopromptcont;
     mk_nostdlib F._nostdlib;
+    mk_o2 F._o2;
+    mk_o3 F._o3;
     mk_open F._open;
     mk_ppx F._ppx;
     mk_principal F._principal;
     mk_rectypes F._rectypes;
+    mk_remove_unused_arguments F._remove_unused_arguments;
     mk_S F._S;
     mk_safe_string F._safe_string;
     mk_short_paths F._short_paths;
     mk_stdin F._stdin;
     mk_strict_sequence F._strict_sequence;
     mk_strict_formats F._strict_formats;
+    mk_unbox_closures F._unbox_closures;
     mk_unsafe F._unsafe;
     mk_unsafe_string F._unsafe_string;
     mk_version F._version;
@@ -926,7 +1123,9 @@ module Make_opttop_options (F : Opttop_options) = struct
     mk_dparsetree F._dparsetree;
     mk_dtypedtree F._dtypedtree;
     mk_drawlambda F._drawlambda;
+    mk_drawclambda F._drawclambda;
     mk_dclambda F._dclambda;
+    mk_dflambda F._dflambda;
     mk_dcmm F._dcmm;
     mk_dsel F._dsel;
     mk_dcombine F._dcombine;
@@ -941,6 +1140,7 @@ module Make_opttop_options (F : Opttop_options) = struct
     mk_dscheduling F._dscheduling;
     mk_dlinear F._dlinear;
     mk_dstartup F._dstartup;
+    mk_dump_pass F._dump_pass;
   ]
 end;;
 

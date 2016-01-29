@@ -14,6 +14,8 @@
 (*                                                                        *)
 (**************************************************************************)
 
+[@@@ocaml.warning "+a-4-9-30-40-41-42"]
+
 let find_declaration cf ({ funs } : Flambda.function_declarations) =
   Variable.Map.find (Closure_id.unwrap cf) funs
 

@@ -14,6 +14,8 @@
 (*                                                                        *)
 (**************************************************************************)
 
+[@@@ocaml.warning "+a-4-9-30-40-41-42"]
+
 let rec tail_variable : Flambda.t -> Variable.t option = function
   | Var v -> Some v
   | Let_rec (_, e)
@@ -272,7 +274,7 @@ let find_original_set_of_closure
   in
   loop var
 
-let rec translate_definition_and_resolve_alias
+let translate_definition_and_resolve_alias
     inconstants
     (aliases:Alias_analysis.allocation_point Variable.Map.t)
     (var_to_symbol_tbl:Symbol.t Variable.Tbl.t)
@@ -282,6 +284,41 @@ let rec translate_definition_and_resolve_alias
     (definition:Alias_analysis.constant_defining_value)
     ~(backend:(module Backend_intf.S))
   : Flambda.constant_defining_value option =
+  let resolve_float_array_involving_variables
+        ~(mutability : Asttypes.mutable_flag) ~vars =
+    (* Resolve an [Allocated_const] of the form:
+        [Array (Pfloatarray, _, _)]
+       (which references its contents via variables; it does not contain
+        manifest floats). *)
+    let floats =
+      List.map (fun var ->
+          let var =
+            match Variable.Map.find var aliases with
+            | exception Not_found -> var
+            | Symbol _ ->
+              Misc.fatal_errorf
+                "Lift_constants.translate_definition_and_resolve_alias: \
+                  Array Pfloatarray %a with Symbol argument: %a"
+                Variable.print var
+                Alias_analysis.print_constant_defining_value definition
+            | Variable var -> var
+          in
+          match Variable.Tbl.find var_to_definition_tbl var with
+          | Allocated_const (Normal (Float f)) -> f
+          | const_defining_value ->
+            Misc.fatal_errorf "Bad definition for float array member %a: %a"
+              Variable.print var
+              Alias_analysis.print_constant_defining_value
+                const_defining_value)
+        vars
+    in
+    let const : Allocated_const.t =
+      match mutability with
+      | Immutable -> Immutable_float_array floats
+      | Mutable -> Float_array floats
+    in
+    Some (Flambda.Allocated_const const)
+  in
   match definition with
   | Block (tag, fields) ->
     Some (Flambda.Block (tag, List.map (resolve_variable aliases var_to_symbol_tbl var_to_definition_tbl) fields))
@@ -347,10 +384,13 @@ let rec translate_definition_and_resolve_alias
               Alias_analysis.Allocated_const (Normal (Immutable_float_array l))
             end
           | wrong ->
+            (* CR-someday mshinwell: we might hit this if we ever duplicate
+               a mutable array across compilation units (e.g. "snapshotting"
+               an array).  We do not currently generate such code. *)
             Misc.fatal_errorf
               "Lift_constants.translate_definition_and_resolve_alias: \
-               Duplicate Pfloatarray %a with symbol %a mapping to \
-               wrong value %a"
+               Duplicate Pfloatarray %a with symbol %a that does not \
+               have an export description of an immutable array"
               Variable.print var
               Alias_analysis.print_constant_defining_value definition
               Simple_value_approx.print_descr wrong
@@ -385,11 +425,10 @@ let rec translate_definition_and_resolve_alias
         | Mutable -> Float_array floats
       in
       Some (Flambda.Allocated_const const)
-    | (Allocated_const (Array (Pfloatarray, _, _))) as definition ->
-      translate_definition_and_resolve_alias inconstants aliases
-        var_to_symbol_tbl var_to_definition_tbl symbol_definition_map
-        project_closure_map definition
-        ~backend
+    | Allocated_const (Array (Pfloatarray, _, vars)) ->
+      (* Important: [mutability] is from the [Duplicate_array]
+         construction above. *)
+      resolve_float_array_involving_variables ~mutability ~vars
     | const ->
       Misc.fatal_errorf
         "Lift_constants.translate_definition_and_resolve_alias: \
@@ -402,34 +441,7 @@ let rec translate_definition_and_resolve_alias
         Duplicate_array with non-Pfloatarray kind: %a"
       Alias_analysis.print_constant_defining_value definition
   | Allocated_const (Array (Pfloatarray, mutability, vars)) ->
-    let floats =
-      List.map (fun var ->
-          let var =
-            match Variable.Map.find var aliases with
-            | exception Not_found -> var
-            | Symbol _ ->
-              Misc.fatal_errorf
-                "Lift_constants.translate_definition_and_resolve_alias: \
-                  Array Pfloatarray %a with Symbol argument: %a"
-                Variable.print var
-                Alias_analysis.print_constant_defining_value definition
-            | Variable var -> var
-          in
-          match Variable.Tbl.find var_to_definition_tbl var with
-          | Allocated_const (Normal (Float f)) -> f
-          | const_defining_value ->
-            Misc.fatal_errorf "Bad definition for float array member %a: %a"
-              Variable.print var
-              Alias_analysis.print_constant_defining_value
-                const_defining_value)
-        vars
-    in
-    let const : Allocated_const.t =
-      match mutability with
-      | Immutable -> Immutable_float_array floats
-      | Mutable -> Float_array floats
-    in
-    Some (Flambda.Allocated_const const)
+    resolve_float_array_involving_variables ~mutability ~vars
   | Allocated_const (Array (_, _, _)) ->
     Misc.fatal_errorf "Lift_constants.translate_definition_and_resolve_alias: \
         Array with non-Pfloatarray kind: %a"

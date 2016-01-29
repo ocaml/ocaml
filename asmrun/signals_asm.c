@@ -67,7 +67,6 @@ extern char caml_system__code_begin, caml_system__code_end;
 
 void caml_garbage_collection(void)
 {
-  CAMLassert (caml_young_ptr >= caml_young_alloc_start);
   caml_young_limit = caml_young_trigger;
   if (caml_requested_major_slice || caml_requested_minor_gc ||
       caml_young_ptr - caml_young_trigger < Max_young_whsize){

@@ -10,6 +10,63 @@
 (*                                                                     *)
 (***********************************************************************)
 
+(** Optimization parameters represented as ints indexed by round number. *)
+module Int_arg_helper : sig
+  type parsed = {
+    default : int;
+    override : int Numbers.Int.Map.t;
+  }
+
+  val parse : string -> help_text:string -> update:parsed ref -> unit
+
+  type parse_result =
+    | Ok
+    | Parse_failed of exn
+  val parse_no_error : string -> update:parsed ref -> parse_result
+
+  val get : key:int -> parsed -> int
+end
+
+(** Optimization parameters represented as floats indexed by round number. *)
+module Float_arg_helper : sig
+  type parsed = {
+    default : float;
+    override : float Numbers.Int.Map.t;
+  }
+
+  val parse : string -> help_text:string -> update:parsed ref -> unit
+
+  type parse_result =
+    | Ok
+    | Parse_failed of exn
+  val parse_no_error : string -> update:parsed ref -> parse_result
+
+  val get : key:int -> parsed -> float
+end
+
+type inlining_arguments = {
+  inline_call_cost : int option;
+  inline_alloc_cost : int option;
+  inline_prim_cost : int option;
+  inline_branch_cost : int option;
+  inline_indirect_cost : int option;
+  inline_lifting_benefit : int option;
+  branch_inline_factor : float option;
+  max_inlining_depth : int option;
+  unroll : int option;
+  inline_threshold : float option;
+  inline_toplevel_threshold : int option;
+}
+
+val classic_arguments : inlining_arguments
+val o1_arguments : inlining_arguments
+val o2_arguments : inlining_arguments
+val o3_arguments : inlining_arguments
+
+(** Set all the inlining arguments for a round.
+    The default is set if no round is provided. *)
+val use_inlining_arguments_set : ?round:int -> inlining_arguments -> unit
+
 val objfiles : string list ref
 val ccobjs : string list ref
 val dllibs : string list ref
@@ -66,7 +123,10 @@ val dump_parsetree : bool ref
 val dump_typedtree : bool ref
 val dump_rawlambda : bool ref
 val dump_lambda : bool ref
+val dump_rawclambda : bool ref
 val dump_clambda : bool ref
+val dump_flambda : bool ref
+val dump_flambda_let : int option ref
 val dump_instr : bool ref
 val keep_asm_file : bool ref
 val optimize_for_speed : bool ref
@@ -85,7 +145,30 @@ val dump_linear : bool ref
 val keep_startup_file : bool ref
 val dump_combine : bool ref
 val native_code : bool ref
-val inline_threshold : int ref
+val o2 : bool ref
+val o3 : bool ref
+val default_inline_threshold : float
+val inline_threshold : Float_arg_helper.parsed ref
+val inlining_stats : bool ref
+val simplify_rounds : int ref
+val default_unroll : int
+val unroll : Int_arg_helper.parsed ref
+val default_inline_toplevel_threshold : int
+val inline_toplevel_threshold : Int_arg_helper.parsed ref
+val default_inline_call_cost : int
+val default_inline_alloc_cost : int
+val default_inline_prim_cost : int
+val default_inline_branch_cost : int
+val default_inline_indirect_cost : int
+val default_inline_lifting_benefit : int
+val inline_call_cost : Int_arg_helper.parsed ref
+val inline_alloc_cost : Int_arg_helper.parsed ref
+val inline_prim_cost : Int_arg_helper.parsed ref
+val inline_branch_cost : Int_arg_helper.parsed ref
+val inline_indirect_cost : Int_arg_helper.parsed ref
+val inline_lifting_benefit : Int_arg_helper.parsed ref
+val default_branch_inline_factor : float
+val branch_inline_factor : Float_arg_helper.parsed ref
 val dont_write_files : bool ref
 val std_include_flag : string -> string
 val std_include_dir : unit -> string list
@@ -99,6 +182,19 @@ val keep_locs : bool ref
 val unsafe_string : bool ref
 val opaque : bool ref
 val print_timings : bool ref
+val flambda_invariant_checks : bool ref
+val unbox_closures : bool ref
+val clambda_checks : bool ref
+val default_max_inlining_depth : int
+val max_inlining_depth : Int_arg_helper.parsed ref
+val inline_recursive_functions : bool ref
+val remove_unused_arguments : bool ref
+val dump_flambda_verbose : bool ref
+val classic_inlining : bool ref
+
+val all_passes : string list ref
+val dumped_pass : string -> bool
+val set_dumped_pass : string -> bool -> unit
 
 val parse_color_setting : string -> Misc.Color.setting option
 val color : Misc.Color.setting ref

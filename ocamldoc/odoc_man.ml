@@ -355,12 +355,10 @@ class man =
           match_s
           (Name.get_relative m_name match_s)
       in
-      let s2 = Str.global_substitute
-          (Str.regexp "\\([A-Z]\\([a-zA-Z_'0-9]\\)*\\.\\)+\\([a-z][a-zA-Z_'0-9]*\\)")
-          f
-          s
-      in
-      s2
+      Str.global_substitute
+        (Str.regexp "\\([A-Z]\\([a-zA-Z_'0-9]\\)*\\.\\)+\\([a-z][a-zA-Z_'0-9]*\\)")
+        f
+        s
 
     (** Print groff string to display a [Types.type_expr].*)
     method man_of_type_expr b m_name t =

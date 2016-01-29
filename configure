@@ -51,6 +51,8 @@ no_naked_pointers=false
 native_compiler=true
 TOOLPREF=""
 with_cfi=true
+flambda=false
+max_testsuite_dir_retries=0
 
 # Try to turn internationalization off, can cause config.guess to malfunction!
 unset LANG
@@ -162,6 +164,8 @@ while : ; do
         with_cfi=false;;
     -no-native-compiler)
         native_compiler=false;;
+    -flambda)
+        flambda=true;;
     *) if echo "$1" | grep -q -e '^--\?[a-zA-Z0-9-]\+='; then
          err "configure expects arguments of the form '-prefix /foo/bar'," \
              "not '-prefix=/foo/bar' (note the '=')."
@@ -1058,6 +1062,23 @@ if test "$with_curses" = "yes"; then
   done
 fi
 
+# For instrumented runtime
+# (clock_gettime needs -lrt for glibc before 2.17)
+if $with_instrumented_runtime; then
+  with_instrumented_runtime=false #enabled it only if found
+  for libs in "" "-lrt"; do
+    if sh ./hasgot $libs clock_gettime; then
+      inf "clock_gettime functions found (with libraries '$libs')"
+      instrumented_runtime_libs="${libs}"
+      with_instrumented_runtime=true;
+      break
+    fi
+  done
+  if ! $with_instrumented_runtime; then
+      err "clock_gettime functions not found. Instrumented runtime can't be built."
+  fi
+fi
+
 # Configuration for the libraries
 
 case "$system" in
@@ -1716,7 +1737,8 @@ cclibs="$cclibs $mathlib"
 echo "BYTECC=$bytecc" >> Makefile
 echo "BYTECCCOMPOPTS=$bytecccompopts" >> Makefile
 echo "BYTECCLINKOPTS=$bytecclinkopts" >> Makefile
-echo "BYTECCLIBS=$cclibs $dllib $curseslibs $pthread_link" >> Makefile
+echo "BYTECCLIBS=$cclibs $dllib $curseslibs $pthread_link \
+                 $instrumented_runtime_libs" >> Makefile
 echo "BYTECCRPATH=$byteccrpath" >> Makefile
 echo "EXE=$exe" >> Makefile
 echo "SUPPORTS_SHARED_LIBRARIES=$shared_libraries_supported" >> Makefile
@@ -1788,6 +1810,8 @@ echo "HOST=$host" >> Makefile
 if [ "$ostype" = Cygwin ]; then
   echo "DIFF=diff -q --strip-trailing-cr" >>Makefile
 fi
+echo "FLAMBDA=$flambda" >> Makefile
+echo "MAX_TESTSUITE_DIR_RETRIES=$max_testsuite_dir_retries" >> Makefile
 
 
 rm -f tst hasgot.c
@@ -1855,6 +1879,11 @@ else
   inf "        profiling with gprof ..... supported"
   else
   inf "        profiling with gprof ..... not supported"
+  fi
+  if test "$flambda" = "true"; then
+  inf "        using flambda middle-end . yes"
+  else
+  inf "        using flambda middle-end . no"
   fi
 fi
 

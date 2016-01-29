@@ -157,8 +157,7 @@ module Search =
               []
               (Odoc_class.class_comments c)
           in
-          let l = res_att @ res_met @ res_sec in
-          l
+          res_att @ res_met @ res_sec
         else
           []
       in
@@ -189,8 +188,7 @@ module Search =
               []
               (Odoc_class.class_type_comments ct)
           in
-          let l = res_att @ res_met @ res_sec in
-          l
+          res_att @ res_met @ res_sec
         else
           []
       in
@@ -252,10 +250,8 @@ module Search =
               []
               (Odoc_module.module_type_comments mt)
           in
-          let l = res_val @ res_typ @ res_ext @ res_exc @ res_mod @
+          res_val @ res_typ @ res_ext @ res_exc @ res_mod @
             res_modtyp @ res_cl @ res_cltyp @ res_sec
-          in
-          l
         else
           []
       in
@@ -317,10 +313,8 @@ module Search =
               []
               (Odoc_module.module_comments m)
           in
-          let l = res_val @ res_typ @ res_ext @ res_exc @ res_mod @
+          res_val @ res_typ @ res_ext @ res_exc @ res_mod @
             res_modtyp @ res_cl @ res_cltyp @ res_sec
-          in
-          l
         else
           []
       in

@@ -14,6 +14,8 @@
 (*                                                                        *)
 (**************************************************************************)
 
+[@@@ocaml.warning "+a-4-9-30-40-41-42"]
+
 type tbl = {
   sb_var : Variable.t Variable.Map.t;
   sb_mutable_var : Mutable_variable.t Mutable_variable.Map.t;

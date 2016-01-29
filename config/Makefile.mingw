@@ -86,6 +86,7 @@ RUNTIMED=noruntimed
 ASM_CFI_SUPPORTED=false
 UNIXLIB=win32unix
 GRAPHLIB=win32graph
+FLAMBDA=false
 
 ########## Configuration for the bytecode compiler
 
@@ -109,12 +110,27 @@ NATIVECCLIBS=-lws2_32
 CPP=$(BYTECC) -E
 
 ### Flexlink
-FLEXLINK=flexlink -chain mingw -stack 16777216 -link -static-libgcc
-FLEXDIR:=$(shell $(FLEXLINK) -where)
+FLEXLINK_CMD=flexlink
+FLEXDLL_CHAIN=mingw
+# FLEXLINK_FLAGS must be safe to insert in an OCaml string
+#   (see ocamlmklibconfig.ml in tools/Makefile.nt)
+FLEXLINK_FLAGS=-chain $(FLEXDLL_CHAIN) -stack 16777216 -link -static-libgcc
+FLEXLINK=$(FLEXLINK_CMD) $(FLEXLINK_FLAGS)
+FLEXDIR:=$(shell $(FLEXLINK) -where 2>/dev/null)
+ifeq ($(FLEXDIR),)
+IFLEXDIR=-I"../flexdll"
+else
 IFLEXDIR=-I"$(FLEXDIR)"
+endif
+# MKDLL, MKEXE and MKMAINDLL must ultimately be equivalent to
+#   $(FLEXLINK_CMD) $(FLEXLINK_FLAGS) [-exe|-maindll]
+# or OCAML_FLEXLINK overriding will not work (see utils/config.mlp)
 MKDLL=$(FLEXLINK)
 MKEXE=$(FLEXLINK) -exe
 MKMAINDLL=$(FLEXLINK) -maindll
+
+### Native command to build ocamlrun.exe without flexlink
+MKEXE_BOOT=$(BYTECC) -o $(1) $(2)
 
 ### How to build a static library
 MKLIB=rm -f $(1); $(TOOLPREF)ar rc $(1) $(2); $(RANLIB) $(1)
@@ -173,5 +189,5 @@ OTOPDIR=$(WINTOPDIR)
 CTOPDIR=$(TOPDIR)
 CYGPATH=cygpath -m
 DIFF=diff -q --strip-trailing-cr
-CANKILL=false
 SET_LD_PATH=PATH="$(PATH):$(LD_PATH)"
+MAX_TESTSUITE_DIR_RETRIES=1

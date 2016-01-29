@@ -31,3 +31,6 @@ graphics.cmo: graphics.cmi
 graphics.cmx: graphics.cmi
 draw.$(O): libgraph.h
 open.$(O): libgraph.h
+
+clean:: partialclean
+	rm -f graphics.ml graphics.mli

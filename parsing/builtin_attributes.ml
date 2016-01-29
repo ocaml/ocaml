@@ -14,7 +14,7 @@ open Asttypes
 open Parsetree
 
 let string_of_cst = function
-  | PConst_string(s, _) -> Some s
+  | Pconst_string(s, _) -> Some s
   | _ -> None
 
 let string_of_payload = function
@@ -37,13 +37,13 @@ let rec error_of_extension ext =
     in
     begin match p with
     | PStr({pstr_desc=Pstr_eval
-              ({pexp_desc=Pexp_constant(PConst_string(msg,_))}, _)}::
+              ({pexp_desc=Pexp_constant(Pconst_string(msg,_))}, _)}::
            {pstr_desc=Pstr_eval
-              ({pexp_desc=Pexp_constant(PConst_string(if_highlight,_))}, _)}::
+              ({pexp_desc=Pexp_constant(Pconst_string(if_highlight,_))}, _)}::
            inner) ->
         Location.error ~loc ~if_highlight ~sub:(sub_from inner) msg
     | PStr({pstr_desc=Pstr_eval
-              ({pexp_desc=Pexp_constant(PConst_string(msg,_))}, _)}::inner) ->
+              ({pexp_desc=Pexp_constant(Pconst_string(msg,_))}, _)}::inner) ->
         Location.error ~loc ~sub:(sub_from inner) msg
     | _ -> Location.errorf ~loc "Invalid syntax for extension '%s'." txt
     end
@@ -106,19 +106,17 @@ let emit_external_warnings =
      'ppwarning' attributes during the actual type-checking, making
      sure to cover all contexts (easier and more ugly alternative:
      duplicate here the logic which control warnings locally). *)
-  let open Ast_mapper in
+  let open Ast_iterator in
   {
-    default_mapper with
+    default_iterator with
     attribute = (fun _ a ->
-        begin match a with
+        match a with
         | {txt="ocaml.ppwarning"|"ppwarning"},
           PStr[{pstr_desc=Pstr_eval({pexp_desc=Pexp_constant
-                                         (PConst_string (s, _))},_);
+                                         (Pconst_string (s, _))},_);
                 pstr_loc}] ->
             Location.prerr_warning pstr_loc (Warnings.Preprocessor s)
         | _ -> ()
-        end;
-        a
       )
   }
 

@@ -27,25 +27,35 @@ ADD_OPTFLAGS+=$(FORTRAN_LIB)
 
 C_INCLUDES+=-I $(CTOPDIR)/byterun -I$(CTOPDIR)/otherlibs/bigarray
 
+SKIP=false
+
 .PHONY: check
 check:
 	@if [ -n "$(FORTRAN_COMPILER)" -o -z "$(F_FILES)" ]; then \
 	  $(SET_LD_PATH) $(MAKE) run-all; \
+	else \
+	  $(MAKE) C_FILES= F_FILES= SKIP=true run-all; \
 	fi
 
 .PHONY: run-all
 run-all:
 	@for file in $(C_FILES); do \
-	  $(CC) $(C_INCLUDES) -c $$file.c; \
+	  $(OCAMLC) -c $(C_INCLUDES) -c $$file.c; \
 	done;
 	@for file in $(F_FILES); do \
 	  $(FORTRAN_COMPILER) -c $$file.f; \
 	done;
 	@for file in *.ml; do \
-	  if [ -f `basename $$file ml`precheck ]; then \
-	    CANKILL=$(CANKILL) sh `basename $$file ml`precheck || continue; \
-	  fi; \
 	  printf " ... testing '$$file':"; \
+	  if $(SKIP) ; then \
+	    echo " => skipped"; continue; \
+	  fi; \
+	  if [ -f `basename $$file ml`precheck ]; then \
+	    if ! TOOLCHAIN=$(TOOLCHAIN) sh `basename $$file ml`precheck ; then \
+	      echo " => skipped"; \
+	      continue; \
+	    fi; \
+	  fi; \
 	  $(MAKE) run-file DESC=ocamlc COMP='$(OCAMLC)' \
 	          RUNTIME='$(MYRUNTIME)' \
 	          COMPFLAGS='-w a $(ADD_COMPFLAGS) $(ADD_CFLAGS) $(O_FILES) \

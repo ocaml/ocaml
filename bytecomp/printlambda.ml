@@ -177,7 +177,10 @@ let primitive ppf = function
   | Pstringrefs -> fprintf ppf "string.get"
   | Pstringsets -> fprintf ppf "string.set"
   | Parraylength k -> fprintf ppf "array.length[%s]" (array_kind k)
-  | Pmakearray k -> fprintf ppf "makearray[%s]" (array_kind k)
+  | Pmakearray (k, Mutable) -> fprintf ppf "makearray[%s]" (array_kind k)
+  | Pmakearray (k, Immutable) -> fprintf ppf "makearray_imm[%s]" (array_kind k)
+  | Pduparray (k, Mutable) -> fprintf ppf "duparray[%s]" (array_kind k)
+  | Pduparray (k, Immutable) -> fprintf ppf "duparray_imm[%s]" (array_kind k)
   | Parrayrefu k -> fprintf ppf "array.unsafe_get[%s]" (array_kind k)
   | Parraysetu k -> fprintf ppf "array.unsafe_set[%s]" (array_kind k)
   | Parrayrefs k -> fprintf ppf "array.get[%s]" (array_kind k)
@@ -313,6 +316,7 @@ let name_of_primitive = function
   | Pstringsets -> "Pstringsets"
   | Parraylength _ -> "Parraylength"
   | Pmakearray _ -> "Pmakearray"
+  | Pduparray _ -> "Pduparray"
   | Parrayrefu _ -> "Parrayrefu"
   | Parraysetu _ -> "Parraysetu"
   | Parrayrefs _ -> "Parrayrefs"
@@ -528,3 +532,5 @@ and sequence ppf = function
 let structured_constant = struct_const
 
 let lambda = lam
+
+let program ppf { code } = lambda ppf code

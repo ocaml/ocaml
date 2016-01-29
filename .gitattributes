@@ -44,6 +44,11 @@ ocamldoc/ocamldoc.sty    ocaml-typo=missing-header
 *.sh.in text eol=lf
 *.awk text eol=lf
 
+# Test suite command fragments
+*.checker text eol=lf
+*.precheck text eol=lf
+*.runner text eol=lf
+
 configure text eol=lf
 config/auto-aux/hasgot text eol=lf
 config/auto-aux/hasgot2 text eol=lf
@@ -79,3 +84,7 @@ manual/tools/htmlcut text eol=lf
 manual/tools/htmltbl text eol=lf
 manual/tools/htmlthread text eol=lf
 manual/tools/texexpand text eol=lf
+
+# Checking out the parsetree test files with \r\n endings causes all the
+# locations to change, so use \n endings only, even on Windows
+testsuite/tests/parsing/*.ml text eol=lf

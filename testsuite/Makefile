@@ -21,42 +21,31 @@ include ../config/Makefile
 default:
 	@echo "Available targets:"
 	@echo "  all             launch all tests"
+	@echo "  all-foo         launch all tests beginning with foo"
 	@echo "  list FILE=f     launch the tests listed in f (one per line)"
 	@echo "  one DIR=p       launch the tests located in path p"
 	@echo "  promote DIR=p   promote the reference files for the tests in p"
 	@echo "  lib             build library modules"
 	@echo "  clean           delete generated files"
 	@echo "  report          print the report for the last execution"
+	@echo
+	@echo "all* and list can automatically re-run failed test directories if"
+	@echo "MAX_TESTSUITE_DIR_RETRIES permits (default value = $(MAX_TESTSUITE_DIR_RETRIES))"
 
 .PHONY: all
 all: lib
 	@for dir in tests/*; do \
 	  $(MAKE) $(NO_PRINT) exec-one DIR=$$dir; \
 	done 2>&1 | tee _log
+	@$(MAKE) $(NO_PRINT) retries
 	@$(MAKE) report
 
-all-basic: lib
-	@for dir in tests/basic*; do \
+.PHONY: all-%
+all-%: lib
+	@for dir in tests/$**; do \
 	  $(MAKE) $(NO_PRINT) exec-one DIR=$$dir; \
 	done 2>&1 | tee _log
-	@$(MAKE) report
-
-all-lib: lib
-	@for dir in tests/lib-*; do \
-	  $(MAKE) $(NO_PRINT) exec-one DIR=$$dir; \
-	done 2>&1 | tee _log
-	@$(MAKE) report
-
-all-typing: lib
-	@for dir in tests/typing-*; do \
-	  $(MAKE) $(NO_PRINT) exec-one DIR=$$dir; \
-	done 2>&1 | tee _log
-	@$(MAKE) report
-
-all-tool: lib
-	@for dir in tests/tool-*; do \
-	  $(MAKE) $(NO_PRINT) exec-one DIR=$$dir; \
-	done 2>&1 | tee _log
+	@$(MAKE) $(NO_PRINT) retries
 	@$(MAKE) report
 
 .PHONY: list
@@ -68,6 +57,7 @@ list: lib
 	@while read LINE; do \
 	  $(MAKE) $(NO_PRINT) exec-one DIR=$$LINE; \
 	done <$(FILE) 2>&1 | tee _log
+	@$(MAKE) $(NO_PRINT) retries
 	@$(MAKE) report
 
 .PHONY: one
@@ -94,6 +84,18 @@ exec-one:
 	  echo "Running tests from '$$DIR' ..."; \
 	  cd $(DIR) && \
 	  $(MAKE) TERM=dumb BASEDIR=$(BASEDIR) || echo '=> unexpected error'; \
+	fi
+
+.PHONY: clean-one
+clean-one:
+	@if [ ! -f $(DIR)/Makefile ]; then \
+	  for dir in $(DIR)/*; do \
+	    if [ -d $$dir ]; then \
+	      $(MAKE) clean-one DIR=$$dir; \
+	    fi; \
+	  done; \
+	else \
+	  cd $(DIR) && $(MAKE) TERM=dumb BASEDIR=$(BASEDIR) clean; \
 	fi
 
 .PHONY: promote
@@ -123,6 +125,21 @@ clean:
 report:
 	@if [ ! -f _log ]; then echo "No '_log' file."; exit 1; fi
 	@awk -f makefiles/summarize.awk <_log
+
+retry-list:
+	@while read LINE; do \
+	  if [ -n "$$LINE" ] ; then \
+	    echo re-ran $$LINE>>_log; \
+	    $(MAKE) $(NO_PRINT) clean-one DIR=$$LINE; \
+	    $(MAKE) $(NO_PRINT) exec-one DIR=$$LINE 2>&1 | tee -a _log ; \
+	  fi \
+	done <_retries;
+	@$(MAKE) $(NO_PRINT) retries
+
+retries:
+	@awk -v retries=1 -v max_retries=$(MAX_TESTSUITE_DIR_RETRIES) -f makefiles/summarize.awk <_log >_retries
+	@test `cat _retries | wc -l` -eq 0 || $(MAKE) $(NO_PRINT) retry-list
+	@rm -f _retries
 
 .PHONY: empty
 empty:

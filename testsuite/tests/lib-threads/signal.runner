@@ -13,4 +13,4 @@
 $RUNTIME ./program >signal.result &
 pid=$!
 sleep 2
-kill -INT $pid
+test -e ./sigint.exe && ./sigint $pid || kill -INT $pid

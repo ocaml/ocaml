@@ -20,7 +20,7 @@ include stdlib/StdlibModules
 CAMLC=$(CAMLRUN) boot/ocamlc -g -nostdlib -I boot
 CAMLOPT=$(CAMLRUN) ./ocamlopt -g -nostdlib -I stdlib -I otherlibs/dynlink
 COMPFLAGS=-strict-sequence -principal -w +33..39+48+50 -warn-error A -bin-annot \
-          -safe-string $(INCLUDES)
+          -safe-string -strict-formats $(INCLUDES)
 LINKFLAGS=
 
 YACCFLAGS=-v
@@ -33,13 +33,12 @@ OCAMLBUILDNATIVE=$(WITH_OCAMLBUILD:=.native)
 
 OCAMLDOC_OPT=$(WITH_OCAMLDOC:=.opt)
 
-INCLUDES=-I utils -I parsing -I typing -I bytecomp -I asmcomp -I driver \
-	 -I toplevel
+INCLUDES=-I utils -I parsing -I typing -I bytecomp -I middle_end \
+        -I middle_end/base_types -I asmcomp -I driver -I toplevel
 
-UTILS=utils/config.cmo utils/clflags.cmo \
-  utils/misc.cmo \
-  utils/identifiable.cmo utils/numbers.cmo \
-  utils/tbl.cmo utils/timings.cmo \
+UTILS=utils/config.cmo utils/misc.cmo \
+  utils/identifiable.cmo utils/numbers.cmo utils/arg_helper.cmo \
+  utils/clflags.cmo utils/tbl.cmo utils/timings.cmo \
   utils/terminfo.cmo utils/ccomp.cmo utils/warnings.cmo \
   utils/consistbl.cmo \
   utils/strongly_connected_components.cmo
@@ -49,8 +48,8 @@ PARSING=parsing/location.cmo parsing/longident.cmo \
   parsing/syntaxerr.cmo parsing/parser.cmo \
   parsing/lexer.cmo parsing/parse.cmo parsing/printast.cmo \
   parsing/pprintast.cmo \
-  parsing/ast_mapper.cmo parsing/attr_helper.cmo \
-  parsing/builtin_attributes.cmo
+  parsing/ast_mapper.cmo parsing/ast_iterator.cmo parsing/attr_helper.cmo \
+  parsing/builtin_attributes.cmo parsing/ast_invariants.cmo
 
 TYPING=typing/ident.cmo typing/path.cmo \
   typing/primitive.cmo typing/types.cmo \
@@ -105,8 +104,17 @@ ASMCOMP=\
   asmcomp/arch.cmo \
   asmcomp/cmm.cmo asmcomp/printcmm.cmo \
   asmcomp/reg.cmo asmcomp/mach.cmo asmcomp/proc.cmo \
-  asmcomp/clambda.cmo asmcomp/printclambda.cmo asmcomp/compilenv.cmo \
-  asmcomp/closure.cmo asmcomp/strmatch.cmo asmcomp/cmmgen.cmo \
+  asmcomp/clambda.cmo asmcomp/printclambda.cmo \
+  asmcomp/export_info.cmo \
+  asmcomp/export_info_for_pack.cmo \
+  asmcomp/compilenv.cmo \
+  asmcomp/closure.cmo \
+  asmcomp/build_export_info.cmo \
+  asmcomp/closure_offsets.cmo \
+  asmcomp/flambda_to_clambda.cmo \
+  asmcomp/import_approx.cmo \
+  asmcomp/un_anf.cmo \
+  asmcomp/strmatch.cmo asmcomp/cmmgen.cmo \
   asmcomp/printmach.cmo asmcomp/selectgen.cmo asmcomp/selection.cmo \
   asmcomp/comballoc.cmo \
   asmcomp/CSEgen.cmo asmcomp/CSE.cmo \
@@ -122,6 +130,58 @@ ASMCOMP=\
   asmcomp/emitaux.cmo asmcomp/emit.cmo asmcomp/asmgen.cmo \
   asmcomp/asmlink.cmo asmcomp/asmlibrarian.cmo asmcomp/asmpackager.cmo \
   driver/opterrors.cmo driver/optcompile.cmo
+
+MIDDLE_END=\
+  middle_end/base_types/tag.cmo \
+  middle_end/base_types/linkage_name.cmo \
+  middle_end/base_types/compilation_unit.cmo \
+  middle_end/base_types/variable.cmo \
+  middle_end/base_types/mutable_variable.cmo \
+  middle_end/base_types/id_types.cmo \
+  middle_end/base_types/set_of_closures_id.cmo \
+  middle_end/base_types/closure_element.cmo \
+  middle_end/base_types/closure_id.cmo \
+  middle_end/base_types/var_within_closure.cmo \
+  middle_end/base_types/static_exception.cmo \
+  middle_end/base_types/export_id.cmo \
+  middle_end/base_types/symbol.cmo \
+  middle_end/semantics_of_primitives.cmo \
+  middle_end/allocated_const.cmo \
+  middle_end/flambda.cmo \
+  middle_end/flambda_iterators.cmo \
+  middle_end/flambda_utils.cmo \
+  middle_end/inlining_cost.cmo \
+  middle_end/effect_analysis.cmo \
+  middle_end/freshening.cmo \
+  middle_end/simple_value_approx.cmo \
+  middle_end/lift_code.cmo \
+  middle_end/closure_conversion_aux.cmo \
+  middle_end/closure_conversion.cmo \
+  middle_end/initialize_symbol_to_let_symbol.cmo \
+  middle_end/lift_let_to_initialize_symbol.cmo \
+  middle_end/find_recursive_functions.cmo \
+  middle_end/invariant_params.cmo \
+  middle_end/inconstant_idents.cmo \
+  middle_end/alias_analysis.cmo \
+  middle_end/lift_constants.cmo \
+  middle_end/share_constants.cmo \
+  middle_end/simplify_common.cmo \
+  middle_end/remove_unused_arguments.cmo \
+  middle_end/remove_unused_closure_vars.cmo \
+  middle_end/remove_unused_program_constructs.cmo \
+  middle_end/simplify_boxed_integer_ops.cmo \
+  middle_end/simplify_primitives.cmo \
+  middle_end/inlining_stats_types.cmo \
+  middle_end/inlining_stats.cmo \
+  middle_end/inline_and_simplify_aux.cmo \
+  middle_end/augment_closures.cmo \
+  middle_end/unbox_closures.cmo \
+  middle_end/inlining_transforms.cmo \
+  middle_end/inlining_decision.cmo \
+  middle_end/inline_and_simplify.cmo \
+  middle_end/ref_to_variables.cmo \
+  middle_end/flambda_invariants.cmo \
+  middle_end/middle_end.cmo
 
 TOPLEVEL=toplevel/genprintval.cmo toplevel/toploop.cmo \
   toplevel/trace.cmo toplevel/topdirs.cmo toplevel/topmain.cmo

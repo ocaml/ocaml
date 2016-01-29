@@ -375,8 +375,7 @@ let ok_inter = ref false
 let rec opt_count top cases =
   let key = make_key cases in
   try
-    let r = Hashtbl.find t key in
-    r
+    Hashtbl.find t key
   with
   | Not_found ->
       let r =
@@ -813,8 +812,7 @@ let do_zyva (low,high) arg cases actions =
 *)
   let n_clusters,k = comp_clusters s in
   let clusters = make_clusters s n_clusters k in
-  let r = c_test {arg=arg ; off=0} clusters in
-  r
+  c_test {arg=arg ; off=0} clusters
 
 let abstract_shared actions =
   let handlers = ref (fun x -> x) in

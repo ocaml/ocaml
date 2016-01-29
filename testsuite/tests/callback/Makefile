@@ -21,11 +21,18 @@ default:
 	@case " $(OTHERLIBRARIES) " in \
 	  *' unix '*) $(SET_LD_PATH) $(MAKE) run-byte; \
 	              $(SET_LD_PATH) $(MAKE) run-opt;; \
+	  *) $(MAKE) skip;; \
 	esac
 
 .PHONY: common
 common:
 	@$(CC) -c callbackprim.c
+
+.PHONY: skip
+skip:
+	@for c in bytecode native; do \
+	  echo " ... testing '$$c': => skipped" ; \
+	done
 
 .PHONY: run-byte
 run-byte: common

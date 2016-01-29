@@ -80,7 +80,11 @@ type primitive =
   (* String operations *)
   | Pstringlength | Pstringrefu | Pstringsetu | Pstringrefs | Pstringsets
   (* Array operations *)
-  | Pmakearray of array_kind
+  | Pmakearray of array_kind * mutable_flag
+  | Pduparray of array_kind * mutable_flag
+  (** For [Pduparray], the argument must be an immutable array.
+      The arguments of [Pduparray] give the kind and mutability of the
+      array being *produced* by the duplication. *)
   | Parraylength of array_kind
   | Parrayrefu of array_kind
   | Parraysetu of array_kind
@@ -254,6 +258,12 @@ and lambda_event_kind =
     Lev_before
   | Lev_after of Types.type_expr
   | Lev_function
+
+type program =
+  { code : lambda;
+    main_module_block_size : int; }
+(* Lambda code for the Closure middle-end. The main module block size
+   is required for preallocating the block *)
 
 (* Sharing key *)
 val make_key: lambda -> lambda option

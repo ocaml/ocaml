@@ -14,6 +14,8 @@
 (*                                                                        *)
 (**************************************************************************)
 
+[@@@ocaml.warning "+a-4-9-30-40-41-42"]
+
 module Env = Closure_conversion_aux.Env
 module Function_decls = Closure_conversion_aux.Function_decls
 module Function_decl = Function_decls.Function_decl
@@ -149,7 +151,8 @@ let rec close_const t env (const : Lambda.structured_constant)
   | Const_pointer c -> Const (Const_pointer c), "pointer"
   | Const_immstring c -> Allocated_const (Immutable_string c), "immstring"
   | Const_float_array c ->
-    Allocated_const (Float_array (List.map float_of_string c)), "float_array"
+    Allocated_const (Immutable_float_array (List.map float_of_string c)),
+      "float_array"
   | Const_block _ ->
     Expr (close t env (eliminate_const_block const)), "const_block"
 

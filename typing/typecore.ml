@@ -265,31 +265,31 @@ let type_constant = function
   | Const_nativeint _ -> instance_def Predef.type_nativeint
 
 let constant : Parsetree.constant -> (Asttypes.constant, error) result = function
-  | PConst_int (i,None) ->
+  | Pconst_integer (i,None) ->
      begin
        try Ok (Const_int (Misc.Int_literal_converter.int i))
        with Failure _ -> Error (Literal_overflow "int")
      end
-  | PConst_int (i,Some 'l') ->
+  | Pconst_integer (i,Some 'l') ->
      begin
        try Ok (Const_int32 (Misc.Int_literal_converter.int32 i))
        with Failure _ -> Error (Literal_overflow "int32")
      end
-  | PConst_int (i,Some 'L') ->
+  | Pconst_integer (i,Some 'L') ->
      begin
        try Ok (Const_int64 (Misc.Int_literal_converter.int64 i))
        with Failure _ -> Error (Literal_overflow "int64")
      end
-  | PConst_int (i,Some 'n') ->
+  | Pconst_integer (i,Some 'n') ->
      begin
        try Ok (Const_nativeint (Misc.Int_literal_converter.nativeint i))
        with Failure _ -> Error (Literal_overflow "nativeint")
      end
-  | PConst_int (i,Some c) -> Error (Unknown_literal (i, c))
-  | PConst_char c -> Ok (Const_char c)
-  | PConst_string (s,d) -> Ok (Const_string (s,d))
-  | PConst_float (f,None)-> Ok (Const_float f)
-  | PConst_float (f,Some c) -> Error (Unknown_literal (f, c))
+  | Pconst_integer (i,Some c) -> Error (Unknown_literal (i, c))
+  | Pconst_char c -> Ok (Const_char c)
+  | Pconst_string (s,d) -> Ok (Const_string (s,d))
+  | Pconst_float (f,None)-> Ok (Const_float f)
+  | Pconst_float (f,Some c) -> Error (Unknown_literal (f, c))
 
 let constant_or_raise env loc cst =
   match constant cst with
@@ -1070,14 +1070,14 @@ let rec type_pat ~constrs ~labels ~no_existentials ~mode ~explode ~env
         pat_type = expected_ty;
         pat_attributes = sp.ppat_attributes;
         pat_env = !env }
-  | Ppat_interval (PConst_char c1, PConst_char c2) ->
+  | Ppat_interval (Pconst_char c1, Pconst_char c2) ->
       let open Ast_helper.Pat in
       let gloc = {loc with Location.loc_ghost=true} in
       let rec loop c1 c2 =
-        if c1 = c2 then constant ~loc:gloc (PConst_char c1)
+        if c1 = c2 then constant ~loc:gloc (Pconst_char c1)
         else
           or_ ~loc:gloc
-            (constant ~loc:gloc (PConst_char c1))
+            (constant ~loc:gloc (Pconst_char c1))
             (loop (Char.chr(Char.code c1 + 1)) c2)
       in
       let p = if c1 <= c2 then loop c1 c2 else loop c2 c1 in
@@ -1087,8 +1087,7 @@ let rec type_pat ~constrs ~labels ~no_existentials ~mode ~explode ~env
   | Ppat_interval _ ->
       raise (Error (loc, !env, Invalid_interval))
   | Ppat_tuple spl ->
-      if List.length spl < 2 then
-        Syntaxerr.ill_formed_ast loc "Tuples must have at least 2 components.";
+      assert (List.length spl >= 2);
       let spl_ann = List.map (fun p -> (p,newvar ())) spl in
       let ty = newty (Ttuple(List.map snd spl_ann)) in
       unify_pat_types loc !env ty expected_ty;
@@ -1210,8 +1209,7 @@ let rec type_pat ~constrs ~labels ~no_existentials ~mode ~explode ~env
         | _            -> k None
       end
   | Ppat_record(lid_sp_list, closed) ->
-      if lid_sp_list = [] then
-        Syntaxerr.ill_formed_ast loc "Records cannot be empty.";
+      assert (lid_sp_list <> []);
       let opath, record_ty =
         try
           let (p0, p,_) = extract_concrete_record !env expected_ty in
@@ -1866,12 +1864,33 @@ let duplicate_ident_types loc caselist env =
      to keep the same internal 'slot' to track unused opens. *)
   List.fold_left (fun env s -> Env.update_value s upd env) env idents
 
+
+(* Getting proper location of already typed expressions.
+
+   Used to avoid confusing locations on type error messages in presence of
+   type constraints.
+   For example:
+
+       (* Before patch *)
+       # let x : string = (5 : int);;
+                           ^
+       (* After patch *)
+       # let x : string = (5 : int);;
+                          ^^^^^^^^^
+*)
+let proper_exp_loc exp =
+  let rec aux = function
+    | [] -> exp.exp_loc
+    | ((Texp_constraint _ | Texp_coerce _), loc, _) :: _ -> loc
+    | _ :: rest -> aux rest
+  in
+  aux exp.exp_extra
+
 (* Typing of expressions *)
 
 let unify_exp env exp expected_ty =
-  (* Format.eprintf "@[%a@ %a@]@." Printtyp.raw_type_expr exp.exp_type
-    Printtyp.raw_type_expr expected_ty; *)
-    unify_exp_types exp.exp_loc env exp.exp_type expected_ty
+  let loc = proper_exp_loc exp in
+  unify_exp_types loc env exp.exp_type expected_ty
 
 let rec type_exp ?recarg env sexp =
   (* We now delegate everything to type_expect *)
@@ -1948,7 +1967,7 @@ and type_expect_ ?in_function ?(recarg=Rejected) env sexp ty_expected =
           exp_attributes = sexp.pexp_attributes;
           exp_env = env }
       end
-  | Pexp_constant(PConst_string (str, _) as cst) -> (
+  | Pexp_constant(Pconst_string (str, _) as cst) -> (
     let cst = constant_or_raise env loc cst in
     (* Terrible hack for format strings *)
     let ty_exp = expand_head env ty_expected in
@@ -2044,8 +2063,7 @@ and type_expect_ ?in_function ?(recarg=Rejected) env sexp ty_expected =
       type_function ?in_function
         loc sexp.pexp_attributes env ty_expected Nolabel caselist
   | Pexp_apply(sfunct, sargs) ->
-      if sargs = [] then
-        Syntaxerr.ill_formed_ast loc "Function application with no argument.";
+      assert (sargs <> []);
       begin_def (); (* one more level for non-returning functions *)
       if !Clflags.principal then begin_def ();
       let funct = type_exp env sfunct in
@@ -2115,8 +2133,7 @@ and type_expect_ ?in_function ?(recarg=Rejected) env sexp ty_expected =
         exp_attributes = sexp.pexp_attributes;
         exp_env = env }
   | Pexp_tuple sexpl ->
-      if List.length sexpl < 2 then
-        Syntaxerr.ill_formed_ast loc "Tuples must have at least 2 components.";
+      assert (List.length sexpl >= 2);
       let subtypes = List.map (fun _ -> newgenvar ()) sexpl in
       let to_unify = newgenty (Ttuple subtypes) in
       unify_exp_types loc env to_unify ty_expected;
@@ -2167,8 +2184,7 @@ and type_expect_ ?in_function ?(recarg=Rejected) env sexp ty_expected =
           exp_env = env }
       end
   | Pexp_record(lid_sexp_list, opt_sexp) ->
-      if lid_sexp_list = [] then
-        Syntaxerr.ill_formed_ast loc "Records cannot be empty.";
+      assert (lid_sexp_list <> []);
       let opt_exp =
         match opt_sexp with
           None -> None
@@ -2990,9 +3006,9 @@ and type_format loc str env =
           | _ :: _ :: _ -> Some (mk_exp_loc (Pexp_tuple args)) in
         mk_exp_loc (Pexp_construct (mk_lid_loc lid, arg)) in
       let mk_cst cst = mk_exp_loc (Pexp_constant cst) in
-      let mk_int n = mk_cst (PConst_int (string_of_int n, None))
-      and mk_string str = mk_cst (PConst_string (str, None))
-      and mk_char chr = mk_cst (PConst_char chr) in
+      let mk_int n = mk_cst (Pconst_integer (string_of_int n, None))
+      and mk_string str = mk_cst (Pconst_string (str, None))
+      and mk_char chr = mk_cst (Pconst_char chr) in
       let rec mk_formatting_lit fmting = match fmting with
         | Close_box ->
           mk_constr "Close_box" []

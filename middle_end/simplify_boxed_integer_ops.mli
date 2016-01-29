@@ -14,6 +14,8 @@
 (*                                                                        *)
 (**************************************************************************)
 
+[@@@ocaml.warning "+a-4-9-30-40-41-42"]
+
 (* Simplification of operations on boxed integers (nativeint, Int32, Int64). *)
 
 module Simplify_boxed_nativeint : Simplify_boxed_integer_ops_intf.S

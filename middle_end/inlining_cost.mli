@@ -14,6 +14,8 @@
 (*                                                                        *)
 (**************************************************************************)
 
+[@@@ocaml.warning "+a-4-9-30-40-41-42"]
+
 (** Measurement of the cost (including cost in space) of Flambda terms
     in the context of inlining. *)
 

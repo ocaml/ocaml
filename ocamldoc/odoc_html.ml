@@ -168,8 +168,7 @@ module Naming =
 
     (** Return the complete filename for the code of the given value. *)
     let file_code_value_complete_target v =
-      let f = code_prefix^mark_value^(subst_infix_symbols v.val_name)^".html" in
-      f
+      code_prefix^mark_value^(subst_infix_symbols v.val_name)^".html"
 
     (** Return the link target for the given attribute. *)
     let attribute_target a = target mark_attribute (Name.simple a.att_value.val_name)
@@ -179,8 +178,7 @@ module Naming =
 
     (** Return the complete filename for the code of the given attribute. *)
     let file_code_attribute_complete_target a =
-      let f = code_prefix^mark_attribute^a.att_value.val_name^".html" in
-      f
+      code_prefix^mark_attribute^a.att_value.val_name^".html"
 
     (** Return the link target for the given method. *)
     let method_target m = target mark_method (Name.simple m.met_value.val_name)
@@ -190,8 +188,7 @@ module Naming =
 
     (** Return the complete filename for the code of the given method. *)
     let file_code_method_complete_target m =
-      let f = code_prefix^mark_method^m.met_value.val_name^".html" in
-      f
+      code_prefix^mark_method^m.met_value.val_name^".html"
 
     (** Return the link target for the given label section. *)
     let label_target l = target "" l
@@ -202,20 +199,17 @@ module Naming =
     (** Return the complete filename for the code of the type of the
        given module or module type name. *)
     let file_type_module_complete_target name =
-      let f = type_prefix^name^".html" in
-      f
+      type_prefix^name^".html"
 
     (** Return the complete filename for the code of the
        given module name. *)
     let file_code_module_complete_target name =
-      let f = code_prefix^name^".html" in
-      f
+      code_prefix^name^".html"
 
     (** Return the complete filename for the code of the type of the
        given class or class type name. *)
     let file_type_class_complete_target name =
-      let f = type_prefix^name^".html" in
-      f
+      type_prefix^name^".html"
   end
 
 module StringSet = Set.Make (struct
@@ -259,8 +253,7 @@ class virtual text =
     method label_of_text t=
       let t2 = Odoc_info.first_sentence_of_text t in
       let s = Odoc_info.string_of_text t2 in
-      let s2 = self#keep_alpha_num s in
-      s2
+      self#keep_alpha_num s
 
     (** Create a label for the associated title.
        Return the label specified by the user or a label created
@@ -1176,12 +1169,10 @@ class html =
           else
             s_final
       in
-      let s2 = Str.global_substitute
-          (Str.regexp "\\([A-Z]\\([a-zA-Z_'0-9]\\)*\\.\\)+\\([a-z][a-zA-Z_'0-9]*\\)")
-          f
-          s
-      in
-      s2
+      Str.global_substitute
+        (Str.regexp "\\([A-Z]\\([a-zA-Z_'0-9]\\)*\\.\\)+\\([a-z][a-zA-Z_'0-9]*\\)")
+        f
+        s
 
     (** Take a string and return the string where fully qualified module idents
        have been replaced by links to the module referenced by the ident.*)
@@ -1200,12 +1191,10 @@ class html =
         else
           s_final
       in
-      let s2 = Str.global_substitute
-          (Str.regexp "\\([A-Z]\\([a-zA-Z_'0-9]\\)*\\)\\(\\.[A-Z][a-zA-Z_'0-9]*\\)*")
-          f
-          s
-      in
-      s2
+      Str.global_substitute
+        (Str.regexp "\\([A-Z]\\([a-zA-Z_'0-9]\\)*\\)\\(\\.[A-Z][a-zA-Z_'0-9]*\\)*")
+        f
+        s
 
     (** Print html code to display a [Types.type_expr]. *)
     method html_of_type_expr b m_name t =

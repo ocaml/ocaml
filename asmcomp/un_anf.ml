@@ -14,6 +14,8 @@
 (*                                                                        *)
 (**************************************************************************)
 
+[@@@ocaml.warning "+a-4-30-40-41-42"]
+
 (* We say that an [Ident.t] is "linear" iff:
    (a) it is used exactly once;
    (b) it is never assigned to (using [Uassign]).
@@ -731,20 +733,17 @@ and un_anf_array ident_info env clams : Clambda.ulambda array =
   Array.map (un_anf ident_info env) clams
 
 let apply clam ~what =
-  if not Config.flambda then clam
-  else begin
-    let ident_info = make_ident_info clam in
-    let let_bound_vars_that_can_be_moved =
-      let_bound_vars_that_can_be_moved ident_info clam
-    in
-    let clam =
-      substitute_let_moveable let_bound_vars_that_can_be_moved
-        Ident.Map.empty clam
-    in
-    let ident_info = make_ident_info clam in
-    let clam = un_anf ident_info Ident.Map.empty clam in
-    if !Clflags.dump_clambda then begin
-      Format.eprintf "@.un-anf (%s):@ %a@." what Printclambda.clambda clam
-    end;
-    clam
-  end
+  let ident_info = make_ident_info clam in
+  let let_bound_vars_that_can_be_moved =
+    let_bound_vars_that_can_be_moved ident_info clam
+  in
+  let clam =
+    substitute_let_moveable let_bound_vars_that_can_be_moved
+      Ident.Map.empty clam
+  in
+  let ident_info = make_ident_info clam in
+  let clam = un_anf ident_info Ident.Map.empty clam in
+  if !Clflags.dump_clambda then begin
+    Format.eprintf "@.un-anf (%s):@ %a@." what Printclambda.clambda clam
+  end;
+  clam

@@ -33,7 +33,7 @@ LIB=../../stdlib
 
 LIB_OBJS=$(LIB)/camlinternalFormatBasics.cmo pervasives.cmo		\
   $(LIB)/array.cmo $(LIB)/list.cmo $(LIB)/char.cmo $(LIB)/bytes.cmo	\
-  $(LIB)/string.cmo $(LIB)/sys.cmo $(LIB)/sort.cmo marshal.cmo	        \
+  $(LIB)/string.cmo $(LIB)/sys.cmo $(LIB)/sort.cmo marshal.cmo		\
   $(LIB)/obj.cmo $(LIB)/int32.cmo $(LIB)/int64.cmo			\
   $(LIB)/nativeint.cmo $(LIB)/lexing.cmo $(LIB)/parsing.cmo		\
   $(LIB)/set.cmo $(LIB)/map.cmo $(LIB)/stack.cmo $(LIB)/queue.cmo	\
@@ -43,9 +43,10 @@ LIB_OBJS=$(LIB)/camlinternalFormatBasics.cmo pervasives.cmo		\
   $(LIB)/random.cmo $(LIB)/hashtbl.cmo $(LIB)/format.cmo		\
   $(LIB)/scanf.cmo $(LIB)/callback.cmo $(LIB)/camlinternalOO.cmo	\
   $(LIB)/oo.cmo $(LIB)/camlinternalMod.cmo $(LIB)/genlex.cmo		\
-  $(LIB)/weak.cmo $(LIB)/filename.cmo $(LIB)/complex.cmo		\
-  $(LIB)/arrayLabels.cmo $(LIB)/listLabels.cmo $(LIB)/bytesLabels.cmo	\
-  $(LIB)/stringLabels.cmo $(LIB)/moreLabels.cmo $(LIB)/stdLabels.cmo
+  $(LIB)/weak.cmo $(LIB)/ephemeron.cmo $(LIB)/filename.cmo		\
+  $(LIB)/complex.cmo $(LIB)/arrayLabels.cmo $(LIB)/listLabels.cmo	\
+  $(LIB)/bytesLabels.cmo $(LIB)/stringLabels.cmo			\
+  $(LIB)/moreLabels.cmo $(LIB)/stdLabels.cmo
 
 UNIXLIB=../unix
 

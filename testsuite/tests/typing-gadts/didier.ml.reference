@@ -1,0 +1,34 @@
+
+#               Characters 94-122:
+  ..match tag with
+    | Bool -> x
+Warning 8: this pattern-matching is not exhaustive.
+Here is an example of a value that is not matched:
+Int
+type 'a ty = Int : int ty | Bool : bool ty
+val fbool : 'a -> 'a ty -> 'a = <fun>
+#             Characters 132-163:
+  ..match tag with
+    | Int -> x > 0
+Warning 8: this pattern-matching is not exhaustive.
+Here is an example of a value that is not matched:
+Bool
+val fint : 'a -> 'a ty -> bool = <fun>
+#   *                           *     Characters 376-381:
+    | Int -> x > 0
+             ^^^^^
+Error: This expression has type bool but an expression was expected of type
+         t = int
+# Characters 45-47:
+  let idb1 = (fun id -> let _ = id true in id) id;;
+                                               ^^
+Error: Unbound value id
+# Characters 26-28:
+  let idb2 : bool -> bool = id;;
+                            ^^
+Error: Unbound value id
+# val idb3 : bool -> bool = <fun>
+#                     
+Characters 184-184:
+  Error: Syntax error
+# 

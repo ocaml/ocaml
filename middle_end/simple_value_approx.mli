@@ -14,6 +14,8 @@
 (*                                                                        *)
 (**************************************************************************)
 
+[@@@ocaml.warning "+a-4-9-30-40-41-42"]
+
 (** Simple approximations to the runtime results of computations.
     This pass is designed for speed rather than accuracy; the performance
     is important since it is used heavily during inlining. *)

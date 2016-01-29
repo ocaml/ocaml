@@ -119,7 +119,7 @@ let prim_size prim args =
   | Praise _ -> 4
   | Pstringlength -> 5
   | Pstringrefs | Pstringsets -> 6
-  | Pmakearray kind -> 5 + List.length args
+  | Pmakearray _ -> 5 + List.length args
   | Parraylength kind -> if kind = Pgenarray then 6 else 2
   | Parrayrefu kind -> if kind = Pgenarray then 12 else 2
   | Parraysetu kind -> if kind = Pgenarray then 16 else 4
@@ -1160,7 +1160,12 @@ and close_functions fenv cenv fun_defs =
     in
     let threshold =
       match inline_attribute with
-      | Default_inline -> !Clflags.inline_threshold + n
+      | Default_inline ->
+          let inline_threshold =
+            Clflags.Float_arg_helper.get ~key:0 !Clflags.inline_threshold
+          in
+          let magic_scale_constant = 8. in
+          int_of_float (inline_threshold *. magic_scale_constant) + n
       | Always_inline -> max_int
       | Never_inline -> min_int
     in

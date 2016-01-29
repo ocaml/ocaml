@@ -229,6 +229,7 @@ module Options = Main_args.Make_ocamldoc_options(struct
   let _dtypedtree = set Clflags.dump_typedtree
   let _drawlambda = set Clflags.dump_rawlambda
   let _dlambda = set Clflags.dump_lambda
+  let _dflambda = set Clflags.dump_flambda
   let _dinstr = set Clflags.dump_instr
   let anonymous = anonymous
 end)
@@ -399,10 +400,9 @@ let add_option o =
 let parse () =
   if modified_options () then append_last_doc "\n";
   let options = !options @ !help_options in
-  let _ = Arg.parse (Arg.align ~limit:13 options)
+  Arg.parse (Arg.align ~limit:13 options)
       anonymous
-      (M.usage^M.options_are)
-  in
+      (M.usage^M.options_are);
   (* we sort the hidden modules by name, to be sure that for example,
      A.B is before A, so we will match against A.B before A in
      Odoc_name.hide_modules.*)

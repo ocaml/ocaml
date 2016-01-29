@@ -15,6 +15,7 @@ LIBRARIES=unix bigarray
 MODULES=common
 MAIN_MODULE=main
 C_FILES=test_common stubs
+C_INCLUDES=-I $(OTOPDIR)/otherlibs/bigarray
 ADD_COMPFLAGS=-I $(OTOPDIR)/otherlibs/bigarray \
 	      -I $(OTOPDIR)/otherlibs/$(UNIXLIB)
 

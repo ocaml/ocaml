@@ -14,6 +14,8 @@
 (*                                                                        *)
 (**************************************************************************)
 
+[@@@ocaml.warning "+a-4-9-30-40-41-42"]
+
 (** Constants that are always allocated (possibly statically).  Blocks
     are not included here since they are always encoded using
     [Prim (Pmakeblock, ...)]. *)

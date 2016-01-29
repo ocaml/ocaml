@@ -14,6 +14,8 @@
 (*                                                                        *)
 (**************************************************************************)
 
+[@@@ocaml.warning "+a-4-9-30-40-41-42"]
+
 (** "Recursive functions" are those functions [f] that might call either:
     - themselves, or
     - another function that in turn might call [f].

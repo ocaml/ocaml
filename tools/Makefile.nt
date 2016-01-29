@@ -12,10 +12,12 @@
 
 include Makefile.shared
 
+CAMLOPT:=$(if $(wildcard ../flexdll/Makefile),OCAML_FLEXLINK="../boot/ocamlrun ../flexdll/flexlink.exe") $(CAMLOPT)
+
 # To make custom toplevels
 
 OCAMLMKTOP=ocamlmktop.cmo
-OCAMLMKTOP_IMPORTS=misc.cmo identifiable.cmo numbers.cmo config.cmo clflags.cmo ccomp.cmo
+OCAMLMKTOP_IMPORTS=misc.cmo identifiable.cmo numbers.cmo config.cmo arg_helper.cmo clflags.cmo ccomp.cmo
 
 ocamlmktop: $(OCAMLMKTOP)
 	$(CAMLC) $(LINKFLAGS) -o ocamlmktop $(OCAMLMKTOP_IMPORTS) $(OCAMLMKTOP)
@@ -24,4 +26,4 @@ install::
 	cp ocamlmktop $(INSTALL_BINDIR)/ocamlmktop$(EXE)
 
 clean::
-	rm -f ocamlmktop$(EXE)
+	rm -f ocamlmktop objinfo_helper$(EXE).manifest

@@ -30,8 +30,10 @@ val implicit_modules : string list ref
 (* return the list of objfiles, after OCAMLPARAM and List.rev *)
 val get_objfiles : unit -> string list
 
+type filename = string
+
 type readenv_position =
-  Before_args | Before_compile | Before_link
+  Before_args | Before_compile of filename | Before_link
 
 val readenv : Format.formatter -> readenv_position -> unit
 

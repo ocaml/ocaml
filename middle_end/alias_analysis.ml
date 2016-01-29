@@ -14,6 +14,8 @@
 (*                                                                        *)
 (**************************************************************************)
 
+[@@@ocaml.warning "+a-4-9-30-40-41-42"]
+
 type allocation_point =
   | Symbol of Symbol.t
   | Variable of Variable.t
