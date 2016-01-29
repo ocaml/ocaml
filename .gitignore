@@ -216,6 +216,8 @@
 /testsuite/**/program
 /testsuite/**/_log
 
+/testsuite/_retries
+
 /testsuite/tests/asmcomp/codegen
 /testsuite/tests/asmcomp/parsecmm.ml
 /testsuite/tests/asmcomp/parsecmm.mli
