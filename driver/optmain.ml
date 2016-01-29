@@ -26,9 +26,9 @@ module Backend = struct
   let size_int = Arch.size_int
   let big_endian = Arch.big_endian
 
-  (* CR mshinwell: this needs tying through to [Proc], although it may
-     necessitate the introduction of a new field in that module. *)
-  let max_sensible_number_of_arguments = 9
+  let max_sensible_number_of_arguments =
+    (* The "-1" is to allow for a potential closure environment parameter. *)
+    Proc.max_arguments_without_passing_on_stack - 1
 end
 let backend = (module Backend : Backend_intf.S)
 

@@ -174,6 +174,8 @@ let ensure_single_regs res =
       | _ -> failwith "Proc.ensure_single_regs")
     res
 
+let max_arguments_without_passing_on_stack = 8
+
 let loc_arguments arg =
   let (loc, ofs) =
     calling_conventions 0 7 100 112 outgoing 0 false (single_regs arg)

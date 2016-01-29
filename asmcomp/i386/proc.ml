@@ -139,6 +139,10 @@ let incoming ofs = Incoming ofs
 let outgoing ofs = Outgoing ofs
 let not_supported ofs = fatal_error "Proc.loc_results: cannot call"
 
+(* For the moment, be conservative: any float argument ends up on the
+   stack. *)
+let max_arguments_without_passing_on_stack = 0
+
 let loc_arguments arg =
   calling_conventions 0 5 100 99 outgoing arg
 let loc_parameters arg =

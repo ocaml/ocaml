@@ -76,6 +76,8 @@ let masm =
      Linux's dynamic loader also destroys r10.
 *)
 
+let max_arguments_without_passing_on_stack = 10
+
 let int_reg_name =
   match Config.ccomp_type with
   | "msvc" ->

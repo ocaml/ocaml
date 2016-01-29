@@ -37,6 +37,11 @@ val loc_external_arguments: Reg.t array array -> Reg.t array array * int
 val loc_external_results: Reg.t array -> Reg.t array
 val loc_exn_bucket: Reg.t
 
+(* The maximum number of arguments of an OCaml to OCaml function call for
+   which it is guaranteed there will be no arguments passed on the stack.
+   (Above this limit, tail call optimization may be disabled.) *)
+val max_arguments_without_passing_on_stack : int
+
 (* Maximal register pressures for pre-spilling *)
 val safe_register_pressure: Mach.operation -> int
 val max_register_pressure: Mach.operation -> int array
