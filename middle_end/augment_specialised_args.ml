@@ -99,9 +99,20 @@ module Make (T : S) = struct
     let existing_outer_vars_to_wrapper_params_renaming =
       let existing_specialised_args_inverse =
         let specialised_args =
-          Variable.Map.map (fun (spec_to : Flambda.specialised_to) ->
-              spec_to.var)
-            set_of_closures.specialised_args
+          (* There might be more than one specialised arg coming from
+             the same existing outer variable, but that doesn't matter.
+             What does matter is that this situation might occur across
+             functions (one arg in one function and one arg in another
+             both specialised to the same thing), and we must choose the
+             correct arg in that case. *)
+          (* CR-soon mshinwell: Maybe this nonsense could be improved if
+             [Extract_projections] didn't rewrite the definitions to use
+             the outer variables? *)
+          Variable.Map.filter_map set_of_closures.specialised_args
+            ~f:(fun inner_var (spec_to : Flambda.specialised_to) ->
+              match Variable.Map.find inner_var params_renaming with
+              | exception Not_found -> None
+              | _ -> Some spec_to.var)
         in
         Variable.Map.transpose_keys_and_data specialised_args
       in
@@ -109,11 +120,20 @@ module Make (T : S) = struct
         Variable.Map.transpose_keys_and_data set_of_closures.free_vars
       in
       let for_spec_args =
-        Variable.Map.map (fun existing_inner_var ->
+        Variable.Map.filter_map existing_specialised_args_inverse
+          ~f:(fun _existing_outer_var existing_inner_var ->
             match Variable.Map.find existing_inner_var params_renaming with
-            | exception Not_found -> assert false
-            | wrapper_param -> wrapper_param)
-          existing_specialised_args_inverse
+            | exception Not_found ->
+              (* This specialised argument is not an argument of the
+                 current function. *)
+Format.eprintf "Existing inner spec arg %a not a parameter of %a\n%!"
+  Variable.print existing_inner_var Variable.print fun_var;
+              None
+            | wrapper_param ->
+Format.eprintf "Existing outer spec arg %a (inner spec arg %a) maps to wrapper param %a\n%!"
+  Variable.print _existing_outer_var
+  Variable.print existing_inner_var Variable.print wrapper_param;
+              Some wrapper_param)
       in
       Variable.Map.disjoint_union for_spec_args existing_free_vars_inverse
     in

@@ -253,6 +253,7 @@ Format.eprintf "EP.from_f_d: %a (which variables %a)\n%!"
               let defining_expr : Flambda.named =
                 Flambda.Prim (Pfield field_index, [outer_var], Debuginfo.none)
               in
+Format.eprintf "Recording defining expr %a\n%!" Flambda.print_named defining_expr;
               record ~new_inner_var ~new_outer_var ~defining_expr
             else
               new_inner_to_new_outer_vars, new_bindings
