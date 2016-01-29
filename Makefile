@@ -488,19 +488,6 @@ partialclean::
 
 $(COMMON:.cmo=.cmx) $(BYTECOMP:.cmo=.cmx) $(MIDDLE_END:.cmo=.cmx) $(ASMCOMP:.cmo=.cmx): ocamlopt
 
-# The numeric opcodes
-
-bytecomp/opcodes.ml: byterun/caml/instruct.h tools/make_opcodes
-	$(CAMLRUN) tools/make_opcodes -opcodes < $< > $@
-
-tools/make_opcodes: tools/make_opcodes.mll
-	cd tools && $(MAKE) make_opcodes
-
-partialclean::
-	rm -f bytecomp/opcodes.ml
-
-beforedepend:: bytecomp/opcodes.ml
-
 # The predefined exceptions and primitives
 
 byterun/primitives:
