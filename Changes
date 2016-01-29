@@ -322,7 +322,7 @@ OCamlbuild:
   (Vincent Laporte)
 
 OCamldep:
-- GRP#286: add support for module aliases
+- GPR#286: add support for module aliases
   (jacques Garrigue)
 
 Manual:
