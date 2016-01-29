@@ -231,6 +231,12 @@ dumpobj: $(DUMPOBJ)
 clean::
 	rm -f dumpobj
 
+make_opcodes.ml: make_opcodes.mll
+	$(CAMLLEX) make_opcodes.mll
+
+make_opcodes: make_opcodes.ml
+	$(CAMLC) make_opcodes.ml -o $@
+
 opnames.ml: ../byterun/caml/instruct.h
 	unset LC_ALL || : ; \
 	unset LC_CTYPE || : ; \
