@@ -117,6 +117,9 @@ let middle_end ppf ~source_provenance ~prefixname ~backend
         +-+ ("Inline_and_simplify",
              Inline_and_simplify.run ~never_inline:false ~backend
                ~prefixname ~round)
+        +-+ ("Inline_and_simplify noinline", (* XXX temporary hack *)
+             Inline_and_simplify.run ~never_inline:true ~backend
+              ~prefixname ~round)
         +-+ ("Remove_unused_closure_vars 2",
              Remove_unused_closure_vars.remove_unused_closure_variables)
         +-+ ("lift_lets 3", Lift_code.lift_lets)

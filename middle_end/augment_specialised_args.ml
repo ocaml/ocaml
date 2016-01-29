@@ -337,7 +337,12 @@ Format.eprintf "Augment_specialised_args (%s)@ \nstarting with %a\n%!"
                   (Variable.Map.add fun_var wrapper funs)
               in
               let new_specialised_args_indexed_by_new_outer_vars =
-                Variable.Map.disjoint_union
+                Variable.Map.union (fun _var _def1 def2 ->
+                    (* CR mshinwell: This should ensure [def1] and [def2]
+                       are the same.  Even better, change the interface
+                       to this module so we can express that we don't need
+                       to add a lifted definition since it's already there. *)
+                    Some def2)
                   new_specialised_args_indexed_by_new_outer_vars
                   new_specialised_args_indexed_by_new_outer_vars'
               in

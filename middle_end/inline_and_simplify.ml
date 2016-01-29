@@ -741,13 +741,15 @@ Format.eprintf "Adding projection from %a to %a\n%!"
     Variable.Map.add fid function_decl funs,
       Variable.Set.union used_params used_params', r
   in
-  let funs, used_params, r =
+  let funs, _used_params, r =
     Variable.Map.fold simplify_function function_decls.funs
       (Variable.Map.empty, Variable.Set.empty, r)
   in
   let specialised_args =
+(*
     (* Remove any specialised arguments whose parameters are unused. *)
     Variable.Map.filter (fun id _ -> Variable.Set.mem id used_params)
+*)
       specialised_args
   in
   let function_decls =
