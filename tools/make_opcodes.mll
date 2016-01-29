@@ -2,7 +2,7 @@
 (*                                                                     *)
 (*                                OCaml                                *)
 (*                                                                     *)
-(*                        Nicolas Ojeda Bar, LexiFi                    *)
+(*                      Nicolas Ojeda Bar, LexiFi                      *)
 (*                                                                     *)
 (*  Copyright 1996 Institut National de Recherche en Informatique et   *)
 (*  en Automatique.  All rights reserved.  This file is distributed    *)
@@ -14,15 +14,15 @@ let opcode = ['A'-'Z''0'-'9''_']+
 let space = [' ''\n''\t']*
 
 rule find_enum = parse
-| "enum" [^'{']* '{'        { opnames lexbuf }
-| _                         { find_enum lexbuf}
+| "enum" [^'{']* '{'             { opnames lexbuf }
+| _                              { find_enum lexbuf }
 
 and opnames = parse
-| space (opcode as op)  ',' { op :: opnames lexbuf }
-| space opcode space '}'    { [] }
+| space (opcode as op) space ',' { op :: opnames lexbuf }
+| space opcode space '}'         { [] }
 
 {
-  let print_names = ref false
+  let print_opnames = ref false
   let print_opcodes = ref false
 
   open Printf
@@ -30,17 +30,17 @@ and opnames = parse
   let () =
     let spec =
       [
-        "-names", Arg.Set print_names, "Print names";
-        "-opcodes", Arg.Set print_opcodes, "Print opcodes";
+        "-opnames", Arg.Set print_opnames, " Dump opcode names";
+        "-opcodes", Arg.Set print_opcodes, " Dump opcode numbers";
       ]
     in
-    Arg.parse spec ignore "make_opcodes";
+    Arg.parse (Arg.align spec) ignore "Extract opcode info from instruct.h";
     let lexbuf = Lexing.from_channel stdin in
     let opnames = find_enum lexbuf in
-    if !print_names then begin
+    if !print_opnames then begin
       printf "let names_of_instructions = [|\n";
       List.iter (fun s -> printf "  %S;\n" s) opnames;
-      printf "\n|]\n"
+      printf "|]\n"
     end;
     if !print_opcodes then begin
       let rec loop i = function
