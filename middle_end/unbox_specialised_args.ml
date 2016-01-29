@@ -27,8 +27,10 @@ module Transform = struct
     let projections_by_function =
       Variable.Map.filter_map set_of_closures.function_decls.funs
         ~f:(fun _fun_var (function_decl : Flambda.function_declaration) ->
-            Extract_projections.from_function_decl ~env ~function_decl
-              ~which_variables:set_of_closures.specialised_args)
+            if function_decl.stub then None
+            else
+              Extract_projections.from_function_decl ~env ~function_decl
+                ~which_variables:set_of_closures.specialised_args)
     in
     (* CR-soon mshinwell: consider caching the Invariant_params *relation*
        as well as the "_in_recursion" map *)
@@ -207,15 +209,15 @@ Format.eprintf "Rewriting defining_expr %a ---> %a\n%!"
         : ASA.what_to_specialise option =
     let fun_var = Closure_id.unwrap closure_id in
     match Variable.Map.find fun_var projections_by_function with
-    | exception Not_found ->
-Format.eprintf "*** No projections for fun_var %a\n%!" Variable.print fun_var;
-None
+    | exception Not_found -> None
     | (extracted : Extract_projections.result) ->
+(*
 Format.eprintf "*** Projections for fun_var %a: %a %a\n%!" Variable.print fun_var
   (Variable.Map.print (Variable.Map.print Flambda.print_named))
     extracted.projection_defns_indexed_by_outer_vars
   (Variable.Map.print Flambda.print_specialised_to)
     extracted.new_inner_to_new_outer_vars;
+*)
       let what_to_specialise : ASA.what_to_specialise = {
         (* All of the rewrites in the body will be taken care of by
            [Inline_and_simplify] upon detection of projection expressions
