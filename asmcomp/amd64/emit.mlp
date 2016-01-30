@@ -162,7 +162,7 @@ let load_symbol_addr s arg =
 
 let emit_label lbl =
   match system with
-  | S_win64 -> "L" ^ string_of_int lbl
+  | S_macosx | S_win64 -> "L" ^ string_of_int lbl
   | _ -> ".L" ^ string_of_int lbl
 
 let emit_data_label lbl =
@@ -737,9 +737,8 @@ let emit_instr fallthrough i =
       I.jmp (reg tmp1);
 
       begin match system with
-      | S_macosx -> D.section ["__TEXT";"__const"] None []
       | S_mingw64 | S_cygwin -> D.section [".rdata"] (Some "dr") []
-      | S_win64 -> () (* with MASM, use the text segment *)
+      | S_macosx | S_win64 -> () (* with LLVM/OS X and MASM, use the text segment *)
       | _ -> D.section [".rodata"] None []
       end;
       D.align 4;
