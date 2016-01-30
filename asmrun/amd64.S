@@ -426,7 +426,7 @@ LBL(caml_allocN):
         addq    $8, %rsp; CFI_ADJUST (-8)  /* drop desired size */
         ret
 LBL(103):
-        addq    %rax, %r15
+        addq    (%rsp), %r15
         RECORD_STACK_FRAME(8)
 #ifdef WITH_FRAME_POINTERS
         /* Do we need 16-byte alignment here ? */
