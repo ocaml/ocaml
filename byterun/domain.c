@@ -179,7 +179,6 @@ static void create_domain(uintnat initial_minor_heap_size, int is_main) {
     /* FIXME */
 #else
     d->state.current_stack = &caml_current_stack;
-    d->state.parent_stack = &caml_parent_stack;
 #endif
     d->state.state = caml_domain_state;
     d->state.mark_stack = &caml_mark_stack;

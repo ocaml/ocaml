@@ -55,14 +55,14 @@ external perform : 'a eff -> 'a = "%perform"
 
     @raise Invalid_argument if the continuation has already been
     resumed. *)
-external continue: ('a, 'b) continuation -> 'a -> 'b = "%continue"
+val continue: ('a, 'b) continuation -> 'a -> 'b
 
 (** [discontinue k e] resumes the continuation [k] by raising the
     exception [e] in [k].
 
     @raise Invalid_argument if the continuation has already been
     resumed. *)
-external discontinue: ('a, 'b) continuation -> exn -> 'b = "%discontinue"
+val discontinue: ('a, 'b) continuation -> exn -> 'b
 
 (** [delegate e k] is semantically equivalent to:
 
