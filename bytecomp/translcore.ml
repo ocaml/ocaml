@@ -208,10 +208,8 @@ let primitives_table = create_hashtable 57 [
   "%obj_set_field", Parraysetu Pgenarray;
   "%obj_is_int", Pisint;
   "%lazy_force", Plazyforce;
-  "%handle", Phandle;
   "%perform", Pperform;
-  "%continue", Pcontinue;
-  "%discontinue", Pdiscontinue;
+  "%resume", Presume;
   "%nativeint_of_int", Pbintofint Pnativeint;
   "%nativeint_to_int", Pintofbint Pnativeint;
   "%nativeint_neg", Pnegbint Pnativeint;
@@ -1179,6 +1177,13 @@ and transl_match e arg pat_expr_list exn_pat_expr_list partial =
     static_catch [transl_exp arg] [val_id]
       (Matching.for_function e.exp_loc None (Lvar val_id) cases partial)
 
+and prim_bvar_create =
+  Pccall { prim_name = "caml_bvar_create"; prim_arity = 1; prim_alloc = true;
+           prim_native_name = ""; prim_native_float = false }
+
+and prim_alloc_stack =
+  Pccall { prim_name = "caml_alloc_stack"; prim_arity = 3; prim_alloc = true;
+           prim_native_name = ""; prim_native_float = false }
 
 and transl_handler e body val_caselist exn_caselist eff_caselist =
   let val_fun =
@@ -1201,16 +1206,24 @@ and transl_handler e body val_caselist exn_caselist eff_caselist =
   in
   let eff_fun =
     let param = name_pattern "eff" eff_caselist in
+    let raw_cont = Ident.create "cont" in
     let cont = Ident.create "k" in
     let eff_cases = transl_cases ~cont eff_caselist in
-      Lfunction(Curried, [param; cont],
-        Matching.for_handler (Lvar param) (Lvar cont) eff_cases)
+      Lfunction(Curried, [param; raw_cont],
+        Llet(StrictOpt, cont, Lprim (prim_bvar_create, [Lvar raw_cont]),
+          Matching.for_handler (Lvar param) (Lvar raw_cont) eff_cases))
   in
-  let body_fun =
-    let param = Ident.create "param" in
-      Lfunction (Curried, [param], transl_exp body)
+  let (body_fun, arg) =
+    match transl_exp body with
+    | Lapply (fn, [arg], _) ->
+       (fn, arg)
+    | body ->
+       let param = Ident.create "param" in
+       (Lfunction (Curried, [param], body),
+        Lconst(Const_base(Const_int 0)))
   in
-    Lprim(Phandle, [body_fun; val_fun; exn_fun; eff_fun])
+    Lprim(Presume, [Lprim(prim_alloc_stack, [val_fun; exn_fun; eff_fun]);
+                    body_fun; arg])
 
 (* Wrapper for class compilation *)
 

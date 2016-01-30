@@ -16,8 +16,6 @@ external global_data : unit -> Obj.t array = "caml_get_global_data"
 external realloc_global_data : int -> unit = "caml_realloc_global"
 external static_alloc : int -> bytes = "caml_static_alloc"
 external static_free : bytes -> unit = "caml_static_free"
-external static_release_bytecode : bytes -> int -> unit
-                                 = "caml_static_release_bytecode"
 external static_resize : bytes -> int -> bytes = "caml_static_resize"
 type closure = unit -> Obj.t
 external reify_bytecode : bytes -> int -> closure = "caml_reify_bytecode"
