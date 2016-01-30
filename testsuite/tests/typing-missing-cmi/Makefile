@@ -5,7 +5,7 @@ default: subdir/m.ml a.ml b.ml main.ml
 	@$(OCAMLC) -c subdir/m.ml;
 	@$(OCAMLC) -c -I subdir a.ml;
 	@$(OCAMLC) -c -I subdir b.ml;
-	@$(OCAMLC) -c main.ml > main.ml.result 2>&1;
+	@$(OCAMLC) -c main.ml > main.ml.result 2>&1 || :
 	@$(DIFF) main.ml.result main.ml.reference >/dev/null \
 	&& echo " => passed" || echo " => failed"
 
