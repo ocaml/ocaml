@@ -140,9 +140,9 @@ let assign_symbols_and_collect_constant_definitions
   in
   collect_let_and_initialize_symbols program.program_body;
   let record_set_of_closure_equalities (set_of_closures:Flambda.set_of_closures) =
-    Variable.Map.iter (fun arg var ->
+    Variable.Map.iter (fun arg (var : Flambda.specialised_to) ->
         if not (Inconstant_idents.variable arg inconstants) then
-          Variable.Tbl.add var_to_definition_tbl arg (AA.Variable var))
+          Variable.Tbl.add var_to_definition_tbl arg (AA.Variable var.var))
       set_of_closures.free_vars;
     Variable.Map.iter (fun arg (spec_to : Flambda.specialised_to) ->
         if not (Inconstant_idents.variable arg inconstants) then

@@ -317,7 +317,9 @@ and descr_of_named (env : Env.t) (named : Flambda.named)
 and describe_set_of_closures env (set : Flambda.set_of_closures)
       : Export_info.value_set_of_closures =
   let bound_vars_approx =
-    Variable.Map.map (Env.find_approx env) set.free_vars
+    Variable.Map.map (fun (external_var : Flambda.specialised_to) ->
+        Env.find_approx env external_var.var)
+      set.free_vars
   in
   let specialised_args_approx =
     Variable.Map.map (fun (spec_to : Flambda.specialised_to) ->

@@ -29,18 +29,8 @@ let run ~env ~(set_of_closures : Flambda.set_of_closures) =
             funs, projection_defns, additional_free_vars, done_something
           else
             let extracted =
-              let which_variables =
-                Variable.Map.map (fun outer_var ->
-                    let spec_to : Flambda.specialised_to =
-                      { var = outer_var;
-                        projectee = None;
-                      }
-                    in
-                    spec_to)
-                  set_of_closures.free_vars
-              in
               Extract_projections.from_function_decl ~env ~function_decl
-                ~which_variables
+                ~which_variables:set_of_closures.free_vars
             in
             match extracted with
             | None ->
@@ -64,23 +54,20 @@ let run ~env ~(set_of_closures : Flambda.set_of_closures) =
                   projection_defns
                   extracted.projection_defns_indexed_by_outer_vars
               in
-              (* CR-soon mshinwell: Do the specialised_to thing for free_vars
-                 as well. *)
               let new_inner_to_new_outer_vars =
-                Variable.Map.map (fun (spec_to : Flambda.specialised_to) ->
-                    spec_to.var)
-                  extracted.new_inner_to_new_outer_vars
+                extracted.new_inner_to_new_outer_vars
               in
               let additional_free_vars =
                 try
                   Variable.Map.disjoint_union additional_free_vars
                     new_inner_to_new_outer_vars
-                    ~eq:Variable.equal
+                    ~eq:Flambda.equal_specialised_to
                 with _exn ->
                   Misc.fatal_errorf "Unbox_free_vars_of_closures: non-disjoint \
                       [free_vars] sets: %a vs. %a"
-                    (Variable.Map.print Variable.print) additional_free_vars
-                    (Variable.Map.print Variable.print)
+                    (Variable.Map.print Flambda.print_specialised_to)
+                      additional_free_vars
+                    (Variable.Map.print Flambda.print_specialised_to)
                       set_of_closures.free_vars
               in
               funs, projection_defns, additional_free_vars, true)

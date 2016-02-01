@@ -247,9 +247,13 @@ let inline_by_copying_function_declaration ~env ~r
       fold_over_projections_of_vars_bound_by_closure ~closure_id_being_applied
         ~lhs_of_application ~function_decls ~init:(Variable.Map.empty, [])
         ~f:(fun ~acc:(map, for_lets) ~var:internal_var ~expr ->
-          let from_closure = new_var "from_closure" in
+          let from_closure : Flambda.specialised_to =
+            { var = new_var "from_closure";
+              projectee = None;
+            }
+          in
           Variable.Map.add internal_var from_closure map,
-            (from_closure, expr)::for_lets)
+            (from_closure.var, expr)::for_lets)
     in
     let required_functions =
       Flambda_utils.closures_required_by_entry_point ~backend:(E.backend env)

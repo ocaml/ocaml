@@ -255,12 +255,13 @@ let variable_and_symbol_invariants (program : Flambda.program) =
       ignore_set_of_closures_id set_of_closures_id;
       let functions_in_closure = Variable.Map.keys funs in
       let variables_in_closure =
-        Variable.Map.fold (fun var var_in_closure variables_in_closure ->
+        Variable.Map.fold (fun var (var_in_closure : Flambda.specialised_to)
+                  variables_in_closure ->
             (* [var] may occur in the body, but will effectively be renamed
                to [var_in_closure], so the latter is what we check to make
                sure it's bound. *)
             ignore_variable var;
-            check_variable_is_bound env var_in_closure;
+            check_variable_is_bound env var_in_closure.var;
             Variable.Set.add var variables_in_closure)
           free_vars Variable.Set.empty
       in

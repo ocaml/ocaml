@@ -117,7 +117,14 @@ module Make (T : S) = struct
         Variable.Map.transpose_keys_and_data specialised_args
       in
       let existing_free_vars_inverse =
-        Variable.Map.transpose_keys_and_data set_of_closures.free_vars
+        let free_vars =
+          Variable.Map.filter_map set_of_closures.free_vars
+            ~f:(fun inner_var (spec_to : Flambda.specialised_to) ->
+              match Variable.Map.find inner_var params_renaming with
+              | exception Not_found -> None
+              | _ -> Some spec_to.var)
+        in
+        Variable.Map.transpose_keys_and_data free_vars
       in
       let for_spec_args =
         Variable.Map.filter_map existing_specialised_args_inverse

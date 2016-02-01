@@ -32,7 +32,10 @@ let find_declaration_variable cf ({ funs } : Flambda.function_declarations) =
   else var
 
 let find_free_variable cv ({ free_vars } : Flambda.set_of_closures) =
-  Variable.Map.find (Var_within_closure.unwrap cv) free_vars
+  let var : Flambda.specialised_to =
+    Variable.Map.find (Var_within_closure.unwrap cv) free_vars
+  in
+  var.var
 
 let function_arity (f : Flambda.function_declaration) = List.length f.params
 
@@ -189,7 +192,8 @@ and sameclosure (c1 : Flambda.function_declaration)
 and same_set_of_closures (c1 : Flambda.set_of_closures)
       (c2 : Flambda.set_of_closures) =
   Variable.Map.equal sameclosure c1.function_decls.funs c2.function_decls.funs
-    && Variable.Map.equal Variable.equal c1.free_vars c2.free_vars
+    && Variable.Map.equal Flambda.equal_specialised_to
+        c1.free_vars c2.free_vars
     && Variable.Map.equal Flambda.equal_specialised_to c1.specialised_args
         c2.specialised_args
 
@@ -253,7 +257,10 @@ let toplevel_substitution sb tree =
       let set_of_closures =
         Flambda.create_set_of_closures
           ~function_decls:set_of_closures.function_decls
-          ~free_vars:(Variable.Map.map sb set_of_closures.free_vars)
+          ~free_vars:
+            (Variable.Map.map (fun (spec_to : Flambda.specialised_to) ->
+                { spec_to with var = sb spec_to.var; })
+              set_of_closures.free_vars)
           ~specialised_args:
             (Variable.Map.map (fun (spec_to : Flambda.specialised_to) ->
                 { spec_to with var = sb spec_to.var; })
@@ -314,8 +321,14 @@ let make_closure_declaration ~id ~body ~params : Flambda.t =
     function_declaration.free_variables);
   let free_vars =
     Variable.Map.fold (fun id id' fv' ->
-        Variable.Map.add id' id fv')
-      (Variable.Map.filter (fun id _ -> not (Variable.Set.mem id param_set))
+        let spec_to : Flambda.specialised_to =
+          { var = id;
+            projectee = None;
+          }
+        in
+        Variable.Map.add id' spec_to fv')
+      (Variable.Map.filter
+        (fun id _ -> not (Variable.Set.mem id param_set))
         sb)
       Variable.Map.empty
   in
@@ -537,7 +550,10 @@ let substitute_read_symbol_field_for_variables
       let set_of_closures =
         Flambda.create_set_of_closures
           ~function_decls:set_of_closures.function_decls
-          ~free_vars:(Variable.Map.map sb set_of_closures.free_vars)
+          ~free_vars:
+            (Variable.Map.map (fun (spec_to : Flambda.specialised_to) ->
+                { spec_to with var = sb spec_to.var; })
+              set_of_closures.free_vars)
           ~specialised_args:
             (Variable.Map.map (fun (spec_to : Flambda.specialised_to) ->
                 { spec_to with var = sb spec_to.var; })

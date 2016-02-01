@@ -107,7 +107,7 @@ and let_expr = {
 
 and set_of_closures = {
   function_decls : function_declarations;
-  free_vars : Variable.t Variable.Map.t;
+  free_vars : specialised_to Variable.Map.t;
   specialised_args : specialised_to Variable.Map.t;
 }
 
@@ -369,8 +369,10 @@ and print_set_of_closures ppf (set_of_closures : set_of_closures) =
       Variable.Map.iter (print_function_declaration ppf)
     in
     let vars ppf =
-      Variable.Map.iter (fun id v -> fprintf ppf "@ %a -rename-> %a"
-                      Variable.print id Variable.print v) in
+      Variable.Map.iter (fun id v ->
+          fprintf ppf "@ %a -rename-> %a"
+            Variable.print id print_specialised_to v)
+    in
     let spec ppf spec_args =
       if not (Variable.Map.is_empty spec_args)
       then begin
@@ -385,7 +387,8 @@ and print_set_of_closures ppf (set_of_closures : set_of_closures) =
         @[<2>specialised_args={%a})@]@]"
       Set_of_closures_id.print function_decls.set_of_closures_id
       funs function_decls.funs
-      vars free_vars spec specialised_args
+      vars free_vars
+      spec specialised_args
 
 and print_project_closure ppf (project_closure : project_closure) =
   fprintf ppf "@[<2>(project_closure@ %a@ from@ %a)@]"
@@ -603,7 +606,11 @@ and variables_usage_named ?ignore_uses_in_project_var
     (* Sets of closures are, well, closed---except for the specialised
        argument list, which may identify variables currently in scope
        outside of the closure. *)
-    Variable.Map.iter (fun _ renamed_to -> free_variable renamed_to)
+    Variable.Map.iter (fun _ (renamed_to : specialised_to) ->
+        (* We don't need to do anything with [renamed_to.projectee.var], if
+           it is present, since it would only be another free variable
+           in the same set of closures. *)
+        free_variable renamed_to.var)
       free_vars;
     Variable.Map.iter (fun _ (spec_to : specialised_to) ->
         (* We don't need to do anything with [spec_to.projectee.var], if

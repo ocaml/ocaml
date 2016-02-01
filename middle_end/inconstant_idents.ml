@@ -396,8 +396,8 @@ module Inconstants (P:Param) (Backend:Backend_intf.S) = struct
     register_implication ~in_nc:(Closure function_decls.set_of_closures_id)
       ~implies_in_nc:curr;
     (* a closure is constant if its free variables are constants. *)
-    Variable.Map.iter (fun inner_id var ->
-        register_implication ~in_nc:(Var var)
+    Variable.Map.iter (fun inner_id (var : Flambda.specialised_to) ->
+        register_implication ~in_nc:(Var var.var)
           ~implies_in_nc:[Var inner_id; Closure function_decls.set_of_closures_id])
       free_vars;
     Variable.Map.iter (fun fun_id (ffunc : Flambda.function_declaration) ->

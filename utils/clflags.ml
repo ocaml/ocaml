@@ -317,15 +317,16 @@ let dumped_pass s =
   List.mem s !dumped_passes_list
 
 let set_dumped_pass s enabled =
-  assert(List.mem s !all_passes);
-  let passes_without_s = List.filter ((<>) s) !dumped_passes_list in
-  let dumped_passes =
-    if enabled then
-      s :: passes_without_s
-    else
-      passes_without_s
-  in
-  dumped_passes_list := dumped_passes
+  if (List.mem s !all_passes) then begin
+    let passes_without_s = List.filter ((<>) s) !dumped_passes_list in
+    let dumped_passes =
+      if enabled then
+        s :: passes_without_s
+      else
+        passes_without_s
+    in
+    dumped_passes_list := dumped_passes
+  end
 
 let flambda_invariant_checks = ref false
 

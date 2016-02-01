@@ -577,10 +577,10 @@ and simplify_set_of_closures original_env r
   in
   let env = E.increase_closure_depth original_env in
   let free_vars =
-    Variable.Map.map (fun external_var ->
-        let external_var =
+    Variable.Map.map (fun (external_var : Flambda.specialised_to) ->
+        let var =
           let var =
-            Freshening.apply_variable (E.freshening env) external_var
+            Freshening.apply_variable (E.freshening env) external_var.var
           in
           match
             A.simplify_var_to_var_using_env (E.find_exn env var)
@@ -589,7 +589,15 @@ and simplify_set_of_closures original_env r
           | None -> var
           | Some var -> var
         in
-        external_var, E.find_exn env external_var)
+        let projectee =
+          match external_var.projectee with
+          | None -> None
+          | Some (from, projectee) ->
+            let from = Freshening.apply_variable (E.freshening env) from in
+            Some (from, projectee)
+        in
+        let approx = E.find_exn env var in
+        ({ var; projectee; } : Flambda.specialised_to), approx)
       set_of_closures.free_vars
   in
   let specialised_args =

@@ -71,7 +71,7 @@ module Transform = struct
           Variable.Map.empty
       in
       let new_inner_to_new_outer_vars =
-        Variable.Map.fold (fun inner_var outer_var
+        Variable.Map.fold (fun inner_var (outer_var : Flambda.specialised_to)
                   new_inner_to_new_outer_vars ->
             let new_inner_var =
               match
@@ -82,7 +82,9 @@ module Transform = struct
               | new_inner_var -> new_inner_var
             in
             let spec_to : Flambda.specialised_to =
-              let var = Variable.rename outer_var ~append:variable_suffix in
+              let var =
+                Variable.rename outer_var.var ~append:variable_suffix
+              in
               { var;
                 projectee = None;
               }
@@ -97,7 +99,8 @@ module Transform = struct
           function_decl.body
       in
       let new_specialised_args_indexed_by_new_outer_vars =
-        Variable.Map.fold (fun inner_free_var outer_free_var
+        Variable.Map.fold (fun inner_free_var
+              (outer_free_var : Flambda.specialised_to)
               new_specialised_args_indexed_by_new_outer_vars ->
             let new_inner_var =
               match
@@ -114,7 +117,9 @@ module Transform = struct
               | exception Not_found -> assert false
               | (spec_to : Flambda.specialised_to) -> spec_to.var
             in
-            let defining_expr : Flambda.named = Expr (Var outer_free_var) in
+            let defining_expr : Flambda.named =
+              Expr (Var outer_free_var.var)
+            in
             Variable.Map.add new_outer_var defining_expr
               new_specialised_args_indexed_by_new_outer_vars)
           free_vars

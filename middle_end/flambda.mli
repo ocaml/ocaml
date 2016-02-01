@@ -214,7 +214,7 @@ and set_of_closures = private {
         Variable.Map.map (Env.find_approx env) set.free_vars
       in
      in [Build_export_info]. *)
-  free_vars : Variable.t Variable.Map.t;
+  free_vars : specialised_to Variable.Map.t;
   (** Mapping from all variables free in the body of the [function_decls] to
       variables in scope at the definition point of the [set_of_closures].
       The domain of this map is sometimes known as the "variables bound by
@@ -544,7 +544,7 @@ val update_function_declarations
     and [specialised_args] are reasonable. *)
 val create_set_of_closures
    : function_decls:function_declarations
-  -> free_vars:Variable.t Variable.Map.t
+  -> free_vars:specialised_to Variable.Map.t
   -> specialised_args:specialised_to Variable.Map.t
   -> set_of_closures
 
