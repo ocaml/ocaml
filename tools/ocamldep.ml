@@ -593,5 +593,5 @@ let _ =
     ] file_dependencies usage;
   Compenv.readenv ppf Before_link;
   if !sort_files then sort_files_by_dependencies !files
-  else List.iter print_file_dependencies !files;
+  else List.iter print_file_dependencies (List.sort compare !files);
   exit (if !error_occurred then 2 else 0)
