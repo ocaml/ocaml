@@ -86,11 +86,15 @@ type project_var = {
   var : Var_within_closure.t;
 }
 
-(** See [specialised_args], below. *)
-(* CR mshinwell: move to separate module and make [Identifiable] *)
+(** See [free_vars] and [specialised_args], below. *)
+(* CR mshinwell: move to separate module and make [Identifiable].  (Or maybe
+   nearly Identifiable; having a special map that enforces invariants might
+   be good.) *)
 type specialised_to = {
   var : Variable.t;
-  (** [projectee], if set, must be another specialised argument in the same
+  (** [projectee], if set, must be another free variable or specialised
+      argument (depending on whether this record type is involved in
+      [free_vars] or [specialised_args] respectively) in the same
       set of closures. *)
   projectee : Projectee.Var_and_projectee.t option;
 }
