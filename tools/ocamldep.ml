@@ -309,6 +309,44 @@ let read_parse_and_extract parse_function extract_function def magic
     else (read_and_approximate source_file, def)
   end
 
+let print_ml_dependencies source_file extracted_deps =
+  if !raw_dependencies then begin
+    print_raw_dependencies source_file extracted_deps
+  end else begin
+    let basename = Filename.chop_extension source_file in
+    let byte_targets = [ basename ^ ".cmo" ] in
+    let native_targets =
+      if !all_dependencies
+      then [ basename ^ ".cmx"; basename ^ ".o" ]
+      else [ basename ^ ".cmx" ] in
+    let init_deps = if !all_dependencies then [source_file] else [] in
+    let cmi_name = basename ^ ".cmi" in
+    let init_deps, extra_targets =
+      if List.exists (fun ext -> Sys.file_exists (basename ^ ext))
+          !mli_synonyms
+      then (cmi_name :: init_deps, cmi_name :: init_deps), []
+      else (init_deps, init_deps),
+           (if !all_dependencies then [cmi_name] else [])
+    in
+    let (byt_deps, native_deps) =
+      Depend.StringSet.fold (find_dependency ML)
+        extracted_deps init_deps in
+    if not !native_only then
+      print_dependencies (byte_targets @ extra_targets) byt_deps;
+    print_dependencies (native_targets @ extra_targets) native_deps;
+  end
+
+let print_mli_dependencies source_file extracted_deps =
+  if !raw_dependencies then begin
+    print_raw_dependencies source_file extracted_deps
+  end else begin
+    let basename = Filename.chop_extension source_file in
+    let (byt_deps, _opt_deps) =
+      Depend.StringSet.fold (find_dependency MLI)
+        extracted_deps ([], []) in
+    print_dependencies [basename ^ ".cmi"] byt_deps
+  end
+
 let ml_file_dependencies source_file =
   let parse_use_file_as_impl lexbuf =
     let f x =
@@ -325,31 +363,7 @@ let ml_file_dependencies source_file =
   if !sort_files then
     files := (source_file, ML, extracted_deps) :: !files
   else
-    if !raw_dependencies then begin
-      print_raw_dependencies source_file extracted_deps
-    end else begin
-      let basename = Filename.chop_extension source_file in
-      let byte_targets = [ basename ^ ".cmo" ] in
-      let native_targets =
-        if !all_dependencies
-        then [ basename ^ ".cmx"; basename ^ ".o" ]
-        else [ basename ^ ".cmx" ] in
-      let init_deps = if !all_dependencies then [source_file] else [] in
-      let cmi_name = basename ^ ".cmi" in
-      let init_deps, extra_targets =
-        if List.exists (fun ext -> Sys.file_exists (basename ^ ext))
-                       !mli_synonyms
-        then (cmi_name :: init_deps, cmi_name :: init_deps), []
-        else (init_deps, init_deps),
-             (if !all_dependencies then [cmi_name] else [])
-      in
-      let (byt_deps, native_deps) =
-        Depend.StringSet.fold (find_dependency ML)
-          extracted_deps init_deps in
-      if not !native_only then
-        print_dependencies (byte_targets @ extra_targets) byt_deps;
-      print_dependencies (native_targets @ extra_targets) native_deps;
-    end
+    print_ml_dependencies source_file extracted_deps
 
 let mli_file_dependencies source_file =
   let (extracted_deps, ()) =
@@ -359,15 +373,7 @@ let mli_file_dependencies source_file =
   if !sort_files then
     files := (source_file, MLI, extracted_deps) :: !files
   else
-    if !raw_dependencies then begin
-      print_raw_dependencies source_file extracted_deps
-    end else begin
-      let basename = Filename.chop_extension source_file in
-      let (byt_deps, _opt_deps) =
-        Depend.StringSet.fold (find_dependency MLI)
-          extracted_deps ([], []) in
-      print_dependencies [basename ^ ".cmi"] byt_deps
-    end
+    print_mli_dependencies source_file extracted_deps
 
 let process_file_as process_fun def source_file =
   Compenv.readenv ppf (Before_compile source_file);
