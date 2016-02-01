@@ -34,6 +34,7 @@ let run ~env ~(set_of_closures : Flambda.set_of_closures) =
             in
             match extracted with
             | None ->
+              let funs = Variable.Map.add fun_var function_decl funs in
               funs, projection_defns, additional_free_vars, done_something
             | Some extracted ->
               let function_decl =
@@ -47,15 +48,10 @@ let run ~env ~(set_of_closures : Flambda.set_of_closures) =
               in
               let funs = Variable.Map.add fun_var function_decl funs in
               let projection_defns =
-                Variable.Map.union (fun _var _def1 def2 ->
-                    (* CR mshinwell: This should ensure [def1] and [def2]
-                       are the same. *)
-                    Some def2)
+                Variable.Map.union (fun _var defns1 defns2 ->
+                    Some (Variable.Map.disjoint_union defns1 defns2))
                   projection_defns
                   extracted.projection_defns_indexed_by_outer_vars
-              in
-              let new_inner_to_new_outer_vars =
-                extracted.new_inner_to_new_outer_vars
               in
               let additional_free_vars =
                 try

@@ -355,6 +355,7 @@ let variable_and_symbol_invariants (program : Flambda.program) =
          parameter is being specialised is bound. *)
       (* CR mshinwell: also check [projectee]---must always be another
          specialised arg in the same set of closures *)
+      (* CR mshinwell: do this for [free_vars] too *)
       Variable.Map.iter (fun being_specialised
                 (specialised_to : Flambda.specialised_to) ->
           if not (Variable.Set.mem being_specialised all_params) then begin

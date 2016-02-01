@@ -25,7 +25,7 @@ let with_dump ~pass_name ~f ~input ~print_input ~print_output =
   let result = f () in
   match result with
   | None ->
-    if dump then Format.eprintf "%s: no-op.\n%!" pass_name;
+    if dump then Format.eprintf "%s: no-op.\n\n%!" pass_name;
     None
   | Some result ->
     if dump then begin
