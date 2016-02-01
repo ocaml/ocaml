@@ -52,16 +52,34 @@ let check_file kind fn =
     with exn ->
       Location.report_exception Format.std_formatter exn
 
+type file_kind =
+  | Regular_file
+  | Directory
+  | Other
+
+let kind fn =
+  match Unix.lstat fn with
+  | exception _ -> Other
+  | { Unix.st_kind = Unix.S_DIR } -> Directory
+  | { Unix.st_kind = Unix.S_REG } -> Regular_file
+  | { Unix.st_kind = _          } -> Other
+
 let rec walk dir =
   Array.iter
     (fun fn ->
-       let fn = Filename.concat dir fn in
-       if Sys.is_directory fn then
-         walk fn
-       else if Filename.check_suffix fn ".mli" then
-         check_file Interf fn
-       else if Filename.check_suffix fn ".ml" then
-         check_file Implem fn)
+       if fn = "" || fn.[0] = '.' then
+         ()
+       else begin
+         let fn = Filename.concat dir fn in
+         match kind fn with
+         | Other -> ()
+         | Directory -> walk fn
+         | Regular_file ->
+           if Filename.check_suffix fn ".mli" then
+             check_file Interf fn
+           else if Filename.check_suffix fn ".ml" then
+             check_file Implem fn
+       end)
     (Sys.readdir dir)
 
 let () = walk root
