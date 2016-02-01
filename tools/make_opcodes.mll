@@ -10,16 +10,16 @@
 (*                                                                     *)
 (***********************************************************************)
 
-let opcode = ['A'-'Z''0'-'9''_']+
+let ident = ['a'-'z''A'-'Z''_']['a'-'z''A'-'Z''0'-'9''_']*
 let space = [' ''\n''\t']*
 
 rule find_enum = parse
-| "enum" [^'{']* '{'             { opnames lexbuf }
-| _                              { find_enum lexbuf }
+| "enum" space (ident as id) space '{' { id, opnames lexbuf }
+| _                                    { find_enum lexbuf }
 
 and opnames = parse
-| space (opcode as op) space ',' { op :: opnames lexbuf }
-| space opcode space '}'         { [] }
+| space (ident as op) space ','        { op :: opnames lexbuf }
+| space ident space '}'                { [] }
 
 {
   let print_opnames = ref false
@@ -36,9 +36,9 @@ and opnames = parse
     in
     Arg.parse (Arg.align spec) ignore "Extract opcode info from instruct.h";
     let lexbuf = Lexing.from_channel stdin in
-    let opnames = find_enum lexbuf in
+    let id, opnames = find_enum lexbuf in
     if !print_opnames then begin
-      printf "let names_of_instructions = [|\n";
+      printf "let names_of_%s = [|\n" id;
       List.iter (fun s -> printf "  %S;\n" s) opnames;
       printf "|]\n"
     end;
