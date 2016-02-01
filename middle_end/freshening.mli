@@ -112,6 +112,9 @@ module Project_var : sig
   (* The freshening that does nothing. *)
   val empty : t
 
+  (** Composition of two freshenings. *)
+  val compose : earlier:t -> later:t -> t
+
   (** Freshen a closure ID based on the given renaming.  The same ID is
       returned if the renaming does not affect it.
       If dealing with approximations, you probably want to use
@@ -127,6 +130,8 @@ module Project_var : sig
     -> Var_within_closure.t
 
   val apply_projectee : t -> Projectee.t -> Projectee.t
+
+  val print : Format.formatter -> t -> unit
 end
 
 (* CR-soon mshinwell for mshinwell: add comment *)

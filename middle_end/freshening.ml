@@ -230,6 +230,31 @@ module Project_var = struct
       closure_id = Closure_id.Map.empty;
     }
 
+  let print ppf t =
+    Format.fprintf ppf "{ vars_within_closure %a, closure_id %a }"
+      (Var_within_closure.Map.print Var_within_closure.print)
+      t.vars_within_closure
+      (Closure_id.Map.print Closure_id.print)
+      t.closure_id
+
+  let compose ~earlier ~later : t =
+    let vars_within_closure =
+      Var_within_closure.Map.filter_map earlier.vars_within_closure
+        ~f:(fun _ var ->
+          match Var_within_closure.Map.find var later.vars_within_closure with
+          | exception Not_found -> None
+          | var -> Some var)
+    in
+    let closure_id =
+      Closure_id.Map.filter_map earlier.closure_id ~f:(fun _ closure_id ->
+        match Closure_id.Map.find closure_id later.closure_id with
+        | exception Not_found -> None
+        | closure_id -> Some closure_id)
+    in
+    { vars_within_closure;
+      closure_id;
+    }
+
   let new_subst_fv t id subst =
     match subst with
     | Inactive -> id, subst, t

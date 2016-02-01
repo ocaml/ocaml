@@ -222,15 +222,15 @@ let reference_recursive_function_directly env closure_id =
    individual closure from it. *)
 let simplify_project_closure env r ~(project_closure : Flambda.project_closure)
       : Flambda.named * R.t =
-Format.eprintf "simplify_project_closure %a\n"
-  Flambda.print_project_closure project_closure;
+Format.eprintf "simplify_project_closure %a\n@ Env %a\n"
+  Flambda.print_project_closure project_closure E.print env;
   let set_of_closures =
     Freshening.apply_variable (E.freshening env)
       project_closure.set_of_closures
   in
-Format.eprintf "simplify_project_closure set_of_closures=%a\n"
-  Variable.print set_of_closures;
   let set_of_closures_approx = E.find_exn env set_of_closures in
+Format.eprintf "simplify_project_closure set_of_closures=%a@ \nApprox %a\n"
+  Variable.print set_of_closures A.print set_of_closures_approx;
   match A.check_approx_for_set_of_closures set_of_closures_approx with
   | Wrong ->
     Misc.fatal_errorf "Wrong approximation when projecting closure: %a"
@@ -570,7 +570,7 @@ let rec simplify_project_var env r ~(project_var : Flambda.project_var)
 *)
 and simplify_set_of_closures original_env r
       (set_of_closures : Flambda.set_of_closures)
-      : Flambda.set_of_closures * R.t =
+      : Flambda.set_of_closures * R.t * Freshening.Project_var.t =
   let function_decls =
     let module Backend = (val (E.backend original_env) : Backend_intf.S) in
     (* CR mshinwell: Does this affect
@@ -623,6 +623,8 @@ and simplify_set_of_closures original_env r
   (* [E.local] helps us to catch bugs whereby variables escape their scope. *)
   let env = E.local env in
   let free_vars, function_decls, sb, freshening =
+Format.eprintf "Creating Project_var freshening based on env: %a\n%!"
+  E.print env;
     Freshening.apply_function_decls_and_free_vars (E.freshening env) free_vars
       function_decls
   in
@@ -771,7 +773,8 @@ Format.eprintf "Adding projection from %a to %a\n%!"
       ~free_vars:(Variable.Map.map fst free_vars)
       ~specialised_args
   in
-  set_of_closures, ret r (A.value_set_of_closures value_set_of_closures)
+  let r = ret r (A.value_set_of_closures value_set_of_closures) in
+  set_of_closures, r, value_set_of_closures.freshening
 
 and simplify_apply env r ~(apply : Flambda.apply) : Flambda.t * R.t =
   let {
@@ -948,41 +951,57 @@ and simplify_named env r (tree : Flambda.named) : Flambda.named * R.t =
       simplify_named_using_approx_and_env env r tree approx
     end
   | Set_of_closures set_of_closures ->
-(*
-    begin match Unbox_free_vars_of_closures.run ~env ~set_of_closures with
-    | Some (expr, benefit) ->
-      let expr, r = simplify env (R.map_benefit r (B.(+) benefit)) expr in
-      Expr expr, r
-    | None ->
-*)
-      let backend = E.backend env in
-      let set_of_closures, r =
-        simplify_set_of_closures env r set_of_closures
+    let backend = E.backend env in
+    let set_of_closures, r, first_freshening =
+      simplify_set_of_closures env r set_of_closures
+    in
+    let simplify env r expr ~pass_name : Flambda.named * R.t =
+      (* If simplifying a set of closures more than once during any given round
+         of simplification, the [Freshening.Project_var] substitutions arising
+         from each call to [simplify_set_of_closures] must be composed.
+         Note that this function only composes with [first_freshening] owing
+         to the structure of the code below. *)
+      let expr, r = simplify (E.set_never_inline env) r expr in
+      let approx = R.approx r in
+      let value_set_of_closures =
+        match A.strict_check_approx_for_set_of_closures approx with
+        | Wrong ->
+          Misc.fatal_errorf "Unexpected approximation returned from \
+              simplification of [%s] result: %a"
+            pass_name A.print approx
+        | Ok (_var, value_set_of_closures) ->
+          let freshening =
+            Freshening.Project_var.compose ~earlier:first_freshening
+              ~later:value_set_of_closures.freshening
+          in
+          A.update_freshening_of_value_set_of_closures value_set_of_closures
+            ~freshening
       in
-      if E.never_inline env then
-        Set_of_closures set_of_closures, r
-      else
+      Expr expr, (ret r (A.value_set_of_closures value_set_of_closures))
+    in
+    if E.never_inline env then
+      Set_of_closures set_of_closures, r
+    else begin
+      match Unbox_free_vars_of_closures.run ~env ~set_of_closures with
+      | Some expr ->
+        simplify env r expr ~pass_name:"Unbox_free_vars_of_closures"
+      | None ->
         (* CR mshinwell: should maybe add one allocation for the stub *)
-        begin match
+        match
           Unbox_specialised_args.rewrite_set_of_closures ~backend ~env
             ~set_of_closures
         with
         | Some expr ->
-          let _env = E.set_never_inline env in
-(*          let expr, r = simplify env r expr in  *)  (* this causes an error *)
-          Format.eprintf "After Unbox_specialised_args + simplify:\n@ %a\nApprox is %a\n%!"
-            Flambda.print expr A.print (R.approx r);
-Format.eprintf "Before Expr return %s\n%!"
-  (Printexc.raw_backtrace_to_string (Printexc.get_callstack 42));
-(* XXX temporary benefit hack *)
-          Expr expr, R.map_benefit r B.direct_call_of_indirect
+          simplify env r expr ~pass_name:"Unbox_free_vars_of_closures"
         | None ->
           let set_of_closures =
             Remove_unused_arguments.
                 separate_unused_arguments_in_set_of_closures
               set_of_closures ~backend
           in
-          if !Clflags.unbox_closures then
+          if not !Clflags.unbox_closures then
+            Set_of_closures set_of_closures, r
+          else
             let set_of_closures =
               (* This ensures that inlined copies of the stubs generated by
                  [Unbox_closures] are rewritten so that, instead of
@@ -995,14 +1014,8 @@ Format.eprintf "Before Expr return %s\n%!"
               Unbox_closures.rewrite_set_of_closures ~backend ~env
                 ~set_of_closures
             with
-            | Some expr ->
-(*              let expr, r = simplify env r expr in*)
-              Expr expr, r
-            | None ->
-              Set_of_closures set_of_closures, r
-          else
-            Set_of_closures set_of_closures, r
-  (*      end*)
+            | Some expr -> simplify env r expr ~pass_name:"Unbox_closures"
+            | None -> Set_of_closures set_of_closures, r
     end
   | Project_closure project_closure ->
     simplify_project_closure env r ~project_closure
@@ -1451,11 +1464,11 @@ let simplify_constant_defining_value
                            closed: %a"
           Flambda.print_set_of_closures set_of_closures
       end;
-      let set_of_closures, r =
+      let set_of_closures, r, _freshening =
         simplify_set_of_closures env r set_of_closures
       in
       r, ((Set_of_closures set_of_closures) : Flambda.constant_defining_value),
-      R.approx r
+        R.approx r
     | Project_closure (set_of_closures_symbol, closure_id) ->
       (* No simplifications are necessary here. *)
       let set_of_closures_approx =

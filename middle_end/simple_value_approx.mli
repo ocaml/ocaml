@@ -179,6 +179,11 @@ val create_value_set_of_closures
   -> freshening:Freshening.Project_var.t
   -> value_set_of_closures
 
+val update_freshening_of_value_set_of_closures
+   : value_set_of_closures
+  -> freshening:Freshening.Project_var.t
+  -> value_set_of_closures
+
 (** Basic construction of approximations. *)
 val value_unknown : unknown_because_of -> t
 val value_int : int -> t
@@ -339,6 +344,14 @@ val freshen_and_check_closure_id
    : value_set_of_closures
   -> Closure_id.t
   -> Closure_id.t
+
+type strict_checked_approx_for_set_of_closures =
+  | Wrong
+  | Ok of Variable.t option * value_set_of_closures
+
+val strict_check_approx_for_set_of_closures
+   : t
+  -> strict_checked_approx_for_set_of_closures
 
 type checked_approx_for_set_of_closures =
   | Wrong
