@@ -91,9 +91,27 @@ let remove_unused_closure_variables program =
             Variable.Set.mem arg all_remaining_arguments)
           set_of_closures.specialised_args
       in
+      (* Ensure that projection information is suitably erased from
+         free_vars and specialised_args if we have deleted the variable being
+         projected from. *)
+      (* CR-soon mshinwell: Share half of this code with
+         [Remove_unused_arguments]. *)
+      let clean_projections ~which_variables =
+        Variable.Map.map (fun (spec_to : Flambda.specialised_to) ->
+            match spec_to.projectee with
+            | None -> spec_to
+            | Some (from, _projectee) ->
+              if Variable.Map.mem from which_variables then
+                spec_to
+              else
+                ({ spec_to with projectee = None; } : Flambda.specialised_to))
+          which_variables
+      in
       let set_of_closures =
-        Flambda.create_set_of_closures ~function_decls ~free_vars
-          ~specialised_args
+        Flambda.create_set_of_closures ~function_decls
+          ~free_vars:(clean_projections ~which_variables:free_vars)
+          ~specialised_args:
+            (clean_projections ~which_variables:specialised_args)
       in
       Set_of_closures set_of_closures
     | e -> e
