@@ -11,7 +11,7 @@ default: subdir/m.ml a.ml b.ml main.ml
 
 .PHONY: clean
 clean:
-	rm -f subdir/m.cm[io] *.cm[io] main.ml.result
+	@rm -f subdir/m.cm[io] *.cm[io] main.ml.result
 
 BASEDIR=../..
 include $(BASEDIR)/makefiles/Makefile.common
