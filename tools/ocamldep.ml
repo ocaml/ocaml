@@ -361,16 +361,14 @@ let ml_file_dependencies source_file =
     read_parse_and_extract parse_use_file_as_impl Depend.add_implementation ()
                            Config.ast_impl_magic_number source_file
   in
-  let r = (source_file, ML, extracted_deps) in
-  files := r :: !files
+  files := (source_file, ML, extracted_deps) :: !files
 
 let mli_file_dependencies source_file =
   let (extracted_deps, ()) =
     read_parse_and_extract Parse.interface Depend.add_signature ()
                            Config.ast_intf_magic_number source_file
   in
-  let r = (source_file, MLI, extracted_deps) in
-  files := r :: !files
+  files := (source_file, MLI, extracted_deps) :: !files
 
 let process_file_as process_fun def source_file =
   Compenv.readenv ppf (Before_compile source_file);
