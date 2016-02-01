@@ -339,7 +339,7 @@ let print_mli_dependencies source_file extracted_deps =
       extracted_deps ([], []) in
   print_dependencies [basename ^ ".cmi"] byt_deps
 
-let print_dependencies (source_file, kind, extracted_deps) =
+let print_file_dependencies (source_file, kind, extracted_deps) =
   if !raw_dependencies then begin
     print_raw_dependencies source_file extracted_deps
   end else
@@ -362,8 +362,7 @@ let ml_file_dependencies source_file =
                            Config.ast_impl_magic_number source_file
   in
   let r = (source_file, ML, extracted_deps) in
-  if !sort_files then files := r :: !files
-  else print_dependencies r
+  files := r :: !files
 
 let mli_file_dependencies source_file =
   let (extracted_deps, ()) =
@@ -371,8 +370,7 @@ let mli_file_dependencies source_file =
                            Config.ast_intf_magic_number source_file
   in
   let r = (source_file, MLI, extracted_deps) in
-  if !sort_files then files := r :: !files
-  else print_dependencies r
+  files := r :: !files
 
 let process_file_as process_fun def source_file =
   Compenv.readenv ppf (Before_compile source_file);
@@ -594,5 +592,6 @@ let _ =
          " Print version number and exit";
     ] file_dependencies usage;
   Compenv.readenv ppf Before_link;
-  if !sort_files then sort_files_by_dependencies !files;
+  if !sort_files then sort_files_by_dependencies !files
+  else List.iter print_file_dependencies !files;
   exit (if !error_occurred then 2 else 0)
