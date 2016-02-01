@@ -14,30 +14,26 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(* CR mshinwell: comment out of date *)
 (** Identify variables used in function bodies (free variables or
-    specialised args, for example) whose approximation says they are
-    closures or blocks.  Arrange (by annotations in [specialised_args]) for
-    uses of projections from such variables to be replaced (by
-    [Inline_and_simplify]) with new "inner" variables, each associated with
-    a new "outer" variable, and build a mapping from the new outer variables
-    to the projection expressions (rewritten to use the new outer variables).
-
-    The returned definitions of extracted projection expressions are
-    collated together in a list.  Each member of the list corresponds to
-    all discovered projections from one particular variable.
+    specialised args, for example, according to [which_variables] below)
+    whose approximation says they are closures or blocks.  Assign "new inner"
+    and "new outer" variables with the "new outer" variables carrying the
+    relevant information about the projection (cf. [Flambda.specialised_to]).
+    Return a map structured as follows:
+    - at the top level, indexed by the existing "inner var" being projected
+      from;
+    - at the second level, indexed by the existing "outer var" being
+      projected from, the defining expressions of the projections.  The
+      defining expressions are in terms of the existing outer vars.
+    The top level of the map is present for the special logic in
+    [Augment_specialised_args], a client of this module, which deals with
+    adding specialised arguments in groups.  See that module for more details.
 *)
-(* First level: the original (inner spec arg) variable being projected from
-   Second level: new outer var
-   Result: projection defining expr in terms of original outer vars *)
 type projection_defns = Flambda.named Variable.Map.t Variable.Map.t
 
 type result = {
-  (* CR mshinwell: this is a misnomer now.
-     Now, the maps are:
-        - first, a map from the variables being projected from;
-        - second, a map from the "new outer vars" to the defining expressions
-          of the projections. *)
+  (* CR mshinwell: this is a misnomer now.  It is indexed by the
+     variables being projected from, then the (existing) outer vars. *)
   projection_defns_indexed_by_outer_vars : projection_defns;
   new_inner_to_new_outer_vars : Flambda.specialised_to Variable.Map.t;
 }
