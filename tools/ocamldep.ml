@@ -323,7 +323,7 @@ let ml_file_dependencies source_file =
                            Config.ast_impl_magic_number source_file
   in
   if !sort_files then
-    files := (source_file, ML, !Depend.free_structure_names) :: !files
+    files := (source_file, ML, extracted_deps) :: !files
   else
     if !raw_dependencies then begin
       print_raw_dependencies source_file extracted_deps
