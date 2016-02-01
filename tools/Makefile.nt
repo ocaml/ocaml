@@ -23,7 +23,7 @@ ocamlmktop: $(OCAMLMKTOP)
 	$(CAMLC) $(LINKFLAGS) -o ocamlmktop $(OCAMLMKTOP_IMPORTS) $(OCAMLMKTOP)
 
 install::
-	cp ocamlmktop $(INSTALL_BINDIR)/ocamlmktop$(EXE)
+	cp ocamlmktop "$(INSTALL_BINDIR)/ocamlmktop$(EXE)"
 
 clean::
 	rm -f ocamlmktop objinfo_helper$(EXE).manifest
