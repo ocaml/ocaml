@@ -202,7 +202,7 @@ caml_trace_value_file (value v, code_t prog, int proglen, FILE * f)
       l = caml_string_length (v);
       fprintf (f, "=string[s%dL%d]'", s, l);
       for (i = 0; i < ((l>0x1f)?0x1f:l) ; i++) {
-        if (isprint (Byte (v, i)))
+        if (isprint ((int) Byte (v, i)))
           putc (Byte (v, i), f);
         else
           putc ('?', f);
