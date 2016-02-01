@@ -53,10 +53,11 @@ let run ~env ~(set_of_closures : Flambda.set_of_closures) =
                   projection_defns
                   extracted.projection_defns_indexed_by_outer_vars
               in
+              (* CR mshinwell: should dedup projection_defns *)
               let additional_free_vars =
                 try
                   Variable.Map.disjoint_union additional_free_vars
-                    new_inner_to_new_outer_vars
+                    extracted.new_inner_to_new_outer_vars
                     ~eq:Flambda.equal_specialised_to
                 with _exn ->
                   Misc.fatal_errorf "Unbox_free_vars_of_closures: non-disjoint \
