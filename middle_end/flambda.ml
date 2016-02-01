@@ -1039,10 +1039,9 @@ let create_set_of_closures ~function_decls ~free_vars ~specialised_args =
     if not (Variable.Set.subset expected_free_vars free_vars_domain) then begin
       Misc.fatal_errorf "create_set_of_closures: [free_vars] mapping of \
           variables bound by the closure(s) is wrong.  (%a, expected to be a \
-          subset of %a)@ \n%s\nfunction_decls:@ %a"
+          subset of %a)@ \nfunction_decls:@ %a"
         Variable.Set.print expected_free_vars
         Variable.Set.print free_vars_domain
-        (Printexc.raw_backtrace_to_string (Printexc.get_callstack max_int))
         print_function_declarations function_decls
     end;
     let all_params =
