@@ -222,15 +222,11 @@ let reference_recursive_function_directly env closure_id =
    individual closure from it. *)
 let simplify_project_closure env r ~(project_closure : Flambda.project_closure)
       : Flambda.named * R.t =
-Format.eprintf "simplify_project_closure %a\n@ Env %a\n"
-  Flambda.print_project_closure project_closure E.print env;
   let set_of_closures =
     Freshening.apply_variable (E.freshening env)
       project_closure.set_of_closures
   in
   let set_of_closures_approx = E.find_exn env set_of_closures in
-Format.eprintf "simplify_project_closure set_of_closures=%a@ \nApprox %a\n"
-  Variable.print set_of_closures A.print set_of_closures_approx;
   match A.check_approx_for_set_of_closures set_of_closures_approx with
   | Wrong ->
     Misc.fatal_errorf "Wrong approximation when projecting closure: %a"
@@ -623,8 +619,6 @@ and simplify_set_of_closures original_env r
   (* [E.local] helps us to catch bugs whereby variables escape their scope. *)
   let env = E.local env in
   let free_vars, function_decls, sb, freshening =
-Format.eprintf "Creating Project_var freshening based on env: %a\n%!"
-  E.print env;
     Freshening.apply_function_decls_and_free_vars (E.freshening env) free_vars
       function_decls
   in
@@ -697,8 +691,6 @@ Format.eprintf "Creating Project_var freshening based on env: %a\n%!"
           match spec_arg.projectee with
           | None -> env
           | Some (from, projectee) ->
-Format.eprintf "Adding projection from %a to %a\n%!"
-  Variable.print from Projectee.print projectee;
             if Variable.Set.mem from function_decl.free_variables then
               E.add_projection env ~from ~projectee ~projection:inner_var
             else
@@ -1036,10 +1028,6 @@ and simplify_named env r (tree : Flambda.named) : Flambda.named * R.t =
             let r = R.map_benefit r (B.remove_projectee projectee) in
             Expr (Var var), ret r var_approx)
         | None ->
-(*
-Format.eprintf "find_projection of %a field %d failed.  Env %a\n%!"
-  Variable.print arg field_index E.print env;
-*)
           begin match A.get_field arg_approx ~field_index with
           | Unreachable -> (Flambda.Expr Proved_unreachable, r)
           | Ok approx ->

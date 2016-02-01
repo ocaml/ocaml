@@ -127,22 +127,10 @@ module Transform = struct
                       Variable.Map.fold (fun outer_var defining_expr
                                 projection_defns_indexed_by_outer_vars ->
                           let new_outer_var = outer_var in  (* see above *)
-(*
-                            match
-                              Variable.Map.find outer_var
-                                new_outer_vars_freshening
-                            with
-                            | exception Not_found -> assert false
-                            | new_outer_var -> new_outer_var
-                          in
-*)
-let defining_expr' = defining_expr in
                           let defining_expr =
                             Flambda_utils.toplevel_substitution_named
                               fun_var_substitution defining_expr
                           in
-Format.eprintf "Rewriting defining_expr %a ---> %a\n%!"
-  Flambda.print_named defining_expr' Flambda.print_named defining_expr;
                           Variable.Map.add new_outer_var defining_expr
                             projection_defns_indexed_by_outer_vars)
                         projection_defns_indexed_by_outer_vars
@@ -221,13 +209,6 @@ Format.eprintf "Rewriting defining_expr %a ---> %a\n%!"
     match Variable.Map.find fun_var projections_by_function with
     | exception Not_found -> None
     | (extracted : Extract_projections.result) ->
-(*
-Format.eprintf "*** Projections for fun_var %a: %a %a\n%!" Variable.print fun_var
-  (Variable.Map.print (Variable.Map.print Flambda.print_named))
-    extracted.projection_defns_indexed_by_outer_vars
-  (Variable.Map.print Flambda.print_specialised_to)
-    extracted.new_inner_to_new_outer_vars;
-*)
       let what_to_specialise : ASA.what_to_specialise = {
         (* All of the rewrites in the body will be taken care of by
            [Inline_and_simplify] upon detection of projection expressions

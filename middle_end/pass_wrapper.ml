@@ -29,6 +29,6 @@ let with_dump ~pass_name ~f ~input ~print_input ~print_output =
     None
   | Some result ->
     if dump then begin
-      Format.eprintf "After%s:@ %a@.@." pass_name print_output result
+      Format.eprintf "After %s:@ %a@.@." pass_name print_output result
     end;
     Some result

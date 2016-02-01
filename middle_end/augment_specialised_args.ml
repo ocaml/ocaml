@@ -126,14 +126,8 @@ module Make (T : S) = struct
             | exception Not_found ->
               (* This specialised argument is not an argument of the
                  current function. *)
-Format.eprintf "Existing inner spec arg %a not a parameter of %a\n%!"
-  Variable.print existing_inner_var Variable.print fun_var;
               None
-            | wrapper_param ->
-Format.eprintf "Existing outer spec arg %a (inner spec arg %a) maps to wrapper param %a\n%!"
-  Variable.print _existing_outer_var
-  Variable.print existing_inner_var Variable.print wrapper_param;
-              Some wrapper_param)
+            | wrapper_param -> Some wrapper_param)
       in
       Variable.Map.disjoint_union for_spec_args existing_free_vars_inverse
     in
@@ -218,8 +212,6 @@ Format.eprintf "Existing outer spec arg %a (inner spec arg %a) maps to wrapper p
 
   let rewrite_function_decl ~env ~backend ~fun_var ~set_of_closures
       ~(function_decl : Flambda.function_declaration) ~user_data =
-Format.eprintf "ASA.rewrite_function_decl %a\n%!"
-  Flambda.print_function_declaration (fun_var, function_decl);
     if function_decl.stub then
       None
     else
@@ -295,8 +287,6 @@ Format.eprintf "ASA.rewrite_function_decl %a\n%!"
               ~inline:function_decl.inline
               ~is_a_functor:function_decl.is_a_functor
           in
-Format.eprintf "ASA (%s) rewritten_function_decl %a\n%!"
-  T.pass_name Flambda.print_function_declaration (new_fun_var, rewritten_function_decl);
           Some (
             new_fun_var, rewritten_function_decl, wrapper,
               new_specialised_args_indexed_by_new_outer_vars,
@@ -306,8 +296,6 @@ Format.eprintf "ASA (%s) rewritten_function_decl %a\n%!"
 
   let rewrite_set_of_closures_core ~backend ~env
         ~(set_of_closures : Flambda.set_of_closures) =
-Format.eprintf "Augment_specialised_args (%s)@ \nstarting with %a\n%!"
-  T.pass_name Flambda.print_set_of_closures set_of_closures;
     match T.precondition ~backend ~env ~set_of_closures with
     | None -> None
     | Some user_data ->
@@ -394,8 +382,7 @@ Format.eprintf "Augment_specialised_args (%s)@ \nstarting with %a\n%!"
             ~funs
         in
         let all_free_variables =
-          Variable.Map.fold (fun fun_var function_decl all_free_variables ->
-Format.eprintf "DECL %a\n%!" Flambda.print_function_declaration (fun_var, function_decl);
+          Variable.Map.fold (fun fun_var _function_decl all_free_variables ->
               let free_variables =
                 Flambda_utils.variables_bound_by_the_closure
                   (Closure_id.wrap fun_var)
@@ -412,9 +399,6 @@ Format.eprintf "DECL %a\n%!" Flambda.print_function_declaration (fun_var, functi
               Variable.Set.mem inner_var all_free_variables)
             set_of_closures.free_vars
         in
-Format.eprintf "all_free_variables { %a } free_vars %a\n%!"
-  Variable.Set.print all_free_variables
-  (Variable.Map.print Variable.print) free_vars;
         let set_of_closures =
           Flambda.create_set_of_closures
             ~function_decls
@@ -428,8 +412,6 @@ Format.eprintf "all_free_variables { %a } free_vars %a\n%!"
             (Flambda_utils.name_expr (Set_of_closures set_of_closures)
               ~name:T.pass_name)
         in
-Format.eprintf "Augment_specialised_args (%s)@ \nresult %a\n%!"
-  T.pass_name Flambda.print expr;
         Some expr
 
   let rewrite_set_of_closures ~backend ~env ~set_of_closures =

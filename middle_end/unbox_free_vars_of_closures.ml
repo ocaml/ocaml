@@ -55,11 +55,13 @@ let run ~env ~(set_of_closures : Flambda.set_of_closures) =
                   ~inline:function_decl.inline
                   ~is_a_functor:function_decl.is_a_functor
               in
-Format.eprintf "UFV: new function decl %a\n%!"
-  Flambda.print_function_declaration (fun_var, function_decl);
               let funs = Variable.Map.add fun_var function_decl funs in
               let projection_defns =
-                Variable.Map.disjoint_union projection_defns
+                Variable.Map.union (fun _var _def1 def2 ->
+                    (* CR mshinwell: This should ensure [def1] and [def2]
+                       are the same. *)
+                    Some def2)
+                  projection_defns
                   extracted.projection_defns_indexed_by_outer_vars
               in
               (* CR-soon mshinwell: Do the specialised_to thing for free_vars

@@ -197,7 +197,7 @@ module Env = struct
       really_import_approx_with_scope t
         (Variable.Map.find id t.approx)
     with Not_found ->
-      Misc.fatal_errorf "Inlining_env.find_with_scope_exn: Unbound variable \
+      Misc.fatal_errorf "Env.find_with_scope_exn: Unbound variable \
           %a@.%s@. Environment: %a@."
         Variable.print id
         (Printexc.raw_backtrace_to_string (Printexc.get_callstack max_int))
