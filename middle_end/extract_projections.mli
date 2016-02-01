@@ -33,7 +33,11 @@
 type projection_defns = Flambda.named Variable.Map.t Variable.Map.t
 
 type result = {
-  (* CR mshinwell: this is a misnomer now *)
+  (* CR mshinwell: this is a misnomer now.
+     Now, the maps are:
+        - first, a map from the variables being projected from;
+        - second, a map from the "new outer vars" to the defining expressions
+          of the projections. *)
   projection_defns_indexed_by_outer_vars : projection_defns;
   new_inner_to_new_outer_vars : Flambda.specialised_to Variable.Map.t;
 }
