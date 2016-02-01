@@ -127,7 +127,9 @@ module Transform = struct
       in
       let what_to_specialise : ASA.what_to_specialise = {
         new_function_body;
-        removed_free_vars = Variable.Map.keys free_vars;
+        (* There are no removed free variables yet because they may
+           still be used in the wrapper. *)
+        removed_free_vars = Variable.Set.empty;
         (* One free variable maps to one specialised argument; there is no
            grouping, hence the singleton list. *)
         new_specialised_args_indexed_by_new_outer_vars =
