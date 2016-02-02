@@ -74,9 +74,9 @@ let make_stub unused var (fun_decl : Flambda.function_declaration)
   in
   function_decl, renamed, additional_specialised_args
 
-let separate_unused_arguments (set_of_closures : Flambda.set_of_closures) =
+let separate_unused_arguments ~backend (set_of_closures : Flambda.set_of_closures) =
   let function_decls = set_of_closures.function_decls in
-  let unused = Invariant_params.unused_arguments function_decls in
+  let unused = Invariant_params.unused_arguments ~backend function_decls in
   let non_stub_arguments =
     Variable.Map.fold (fun _ (decl : Flambda.function_declaration) acc ->
         if decl.stub then
@@ -155,7 +155,7 @@ let separate_unused_arguments_in_set_of_closures set_of_closures ~backend =
       set_of_closures.Flambda.function_decls
       ~backend
   then
-    match separate_unused_arguments set_of_closures with
+    match separate_unused_arguments ~backend set_of_closures with
     | None ->
       if dump then
         Format.eprintf "No change for Remove_unused_arguments:@ %a@.@."
@@ -177,7 +177,7 @@ let separate_unused_arguments_in_closures_expr tree ~backend =
       if candidate_for_spliting_for_unused_arguments
           set_of_closures.function_decls ~backend
       then begin
-        match separate_unused_arguments set_of_closures with
+        match separate_unused_arguments ~backend set_of_closures with
         | None -> named
         | Some set_of_closures -> Set_of_closures set_of_closures
       end else begin
