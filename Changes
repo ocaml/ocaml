@@ -285,6 +285,8 @@ Toplevel and debugger:
   its command line (Alain Frisch)
 - PR#7119: ocaml doesn't respect [@@@warning] (Alain Frisch, report by
   Gabriel Radanne)
+- PR#7127, GPR#454: Toplevel truncates long strings and prints
+  bytes. (Junsong Li, review by Gabriel Scherer)
 
 Other libraries:
 * Unix library: channels created by Unix.in_channel_of_descr or
