@@ -157,6 +157,8 @@ Compilers:
   branch merging (Pierre Chambart)
 - GPR#392: put all parsetree invariants in a new module Ast_invariants
   (Jérémie Dimino)
+- GPR#455: provide more debugging information to Js_of_ocaml
+  (Jérôme Vouillon)
 
 Runtime system:
 - PR#3612: allow allocating custom block with finalizers in the minor heap
