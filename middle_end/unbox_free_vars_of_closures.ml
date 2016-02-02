@@ -54,11 +54,52 @@ let run ~env ~(set_of_closures : Flambda.set_of_closures) =
                   projection_defns
                   extracted.projection_defns_indexed_by_outer_vars
               in
-              (* CR mshinwell: should dedup projection_defns *)
+              (* CR mshinwell: share code with
+                 Unbox_specialised_args to deal with the deduping *)
+              let filter_outer_vars = ref Variable.Set.empty in
+              let new_inner_to_new_outer_vars =
+                Variable.Map.filter (fun _var
+                          (spec_to : Flambda.specialised_to) ->
+                    let already_present =
+                      Variable.Map.exists (fun _var
+                                (spec_to' : Flambda.specialised_to) ->
+                          match spec_to.projectee, spec_to'.projectee with
+                          | Some (_, projectee), Some (_, projectee') ->
+                            let equal = Projectee.equal projectee projectee' in
+                            if equal then begin
+                              filter_outer_vars :=
+                                Variable.Set.add spec_to.var
+                                  !filter_outer_vars;
+                              true
+                            end else begin
+                              false
+                            end
+                          | Some _, None
+                          | None, Some _
+                          | None, None -> false)
+                        set_of_closures.free_vars
+                    in
+                    not already_present)
+                  extracted.new_inner_to_new_outer_vars
+              in
+              let projection_defns =
+                Variable.Map.filter_map
+                  projection_defns
+                  ~f:(fun _projecting_from indexed_by_outer_vars ->
+                    let indexed_by_outer_vars =
+                      Variable.Map.filter (fun outer_var _defn ->
+                          not (Variable.Set.mem outer_var !filter_outer_vars))
+                        indexed_by_outer_vars
+                    in
+                    if Variable.Map.cardinal indexed_by_outer_vars < 1 then
+                      None
+                    else
+                      Some indexed_by_outer_vars)
+              in
               let additional_free_vars =
                 try
                   Variable.Map.disjoint_union additional_free_vars
-                    extracted.new_inner_to_new_outer_vars
+                    new_inner_to_new_outer_vars
                     ~eq:Flambda.equal_specialised_to
                 with _exn ->
                   Misc.fatal_errorf "Unbox_free_vars_of_closures: non-disjoint \

@@ -46,3 +46,5 @@ val from_function_decl
   -> env:Inline_and_simplify_aux.Env.t
   -> function_decl:Flambda.function_declaration
   -> result option
+
+val print_result : Format.formatter -> result -> unit

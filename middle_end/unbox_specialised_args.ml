@@ -188,6 +188,61 @@ module Transform = struct
               Extract_projections.from_function_decl ~env ~function_decl
                 ~which_variables:set_of_closures.specialised_args)
     in
+(*
+Format.eprintf "USA collected projections %a\n%!"
+  (Variable.Map.print Extract_projections.print_result) projections_by_function;
+*)
+    (* Remove any projections that we already have specialised args for. *)
+    let projections_by_function : Extract_projections.result Variable.Map.t =
+      Variable.Map.map (fun (result : Extract_projections.result)
+                : Extract_projections.result ->
+          let filter_outer_vars = ref Variable.Set.empty in
+          let new_inner_to_new_outer_vars =
+            Variable.Map.filter (fun _var (spec_to : Flambda.specialised_to) ->
+                let already_present =
+                  Variable.Map.exists (fun _var
+                            (spec_to' : Flambda.specialised_to) ->
+                      match spec_to.projectee, spec_to'.projectee with
+                      | Some (_, projectee), Some (_, projectee') ->
+                        let equal = Projectee.equal projectee projectee' in
+                        if equal then begin
+                          filter_outer_vars :=
+                            Variable.Set.add spec_to.var !filter_outer_vars;
+                          true
+                        end else begin
+                          false
+                        end
+                      | Some _, None
+                      | None, Some _
+                      | None, None -> false)
+                    set_of_closures.specialised_args
+                in
+                not already_present)
+              result.new_inner_to_new_outer_vars
+          in
+          let projection_defns =
+            Variable.Map.filter_map
+              result.projection_defns_indexed_by_outer_vars
+              ~f:(fun _projecting_from indexed_by_outer_vars ->
+                let indexed_by_outer_vars =
+                  Variable.Map.filter (fun outer_var _defn ->
+                      not (Variable.Set.mem outer_var !filter_outer_vars))
+                    indexed_by_outer_vars
+                in
+                if Variable.Map.cardinal indexed_by_outer_vars < 1 then
+                  None
+                else
+                  Some indexed_by_outer_vars)
+          in
+          { projection_defns_indexed_by_outer_vars = projection_defns;
+            new_inner_to_new_outer_vars;
+          })
+        projections_by_function
+    in
+(*
+Format.eprintf "USA after filtering projections %a\n%!"
+  (Variable.Map.print Extract_projections.print_result) projections_by_function;
+*)
     (* Avoid [Invariant_params] when we can. *)
     if Variable.Map.cardinal projections_by_function < 1 then
       Variable.Map.empty

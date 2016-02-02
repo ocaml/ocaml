@@ -69,10 +69,6 @@ let create ?current_compilation_unit name =
     incr previous_name_stamp;
     !previous_name_stamp
   in
-if name_stamp = 5302 then begin
-  Format.eprintf "5302 created at %s\n%!"
-    (Printexc.raw_backtrace_to_string (Printexc.get_callstack 400));
-end;
   { compilation_unit;
     name;
     name_stamp;

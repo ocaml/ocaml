@@ -144,20 +144,23 @@ let from_function_decl ~which_variables ~env
     let used_new_inner_vars = Variable.Tbl.create 42 in
     (* CR mshinwell: use "iter" *)
     let _new_function_body =
-      (* [collected] is used here as a mutable table to avoid generating
-         duplicate bindings to the same projectee. *)
-      let collected = VAP.Tbl.of_map collected in
+      let projectees_seen = Projectee.Tbl.create 42 in
       Flambda_iterators.map_toplevel_projections_to_expr_opt
         ~f:(fun (projection : Projection.t) ->
           match projection with
           | Project_var { closure; var; closure_id = _; } ->
-            let vap : VAP.t = closure, Project_var var in
-            begin match VAP.Tbl.find collected vap with
+            let projectee : Projectee.t = Project_var var in
+            let vap : VAP.t = closure, projectee in
+            begin match VAP.Map.find vap collected with
             | exception Not_found -> None
             | Var_within_closure { new_inner_var; _ } ->
-              VAP.Tbl.remove collected vap;
-              Variable.Tbl.add used_new_inner_vars new_inner_var ();
-              None
+              if Projectee.Tbl.mem projectees_seen projectee then
+                None
+              else begin
+                Projectee.Tbl.add projectees_seen projectee ();
+                Variable.Tbl.add used_new_inner_vars new_inner_var ();
+                None
+              end
             | _ -> assert false
             end
           | Project_closure _project_closure ->
@@ -165,23 +168,33 @@ let from_function_decl ~which_variables ~env
             None
           | Move_within_set_of_closures
               { closure; move_to; start_from = _; } ->
-            let vap : VAP.t = closure, Closure move_to in
-            begin match VAP.Tbl.find collected vap with
+            let projectee : Projectee.t = Closure move_to in
+            let vap : VAP.t = closure, projectee in
+            begin match VAP.Map.find vap collected with
             | exception Not_found -> None
             | Closure { new_inner_var; _ } ->
-              VAP.Tbl.remove collected vap;
-              Variable.Tbl.add used_new_inner_vars new_inner_var ();
-              None
+              if Projectee.Tbl.mem projectees_seen projectee then
+                None
+              else begin
+                Projectee.Tbl.add projectees_seen projectee ();
+                Variable.Tbl.add used_new_inner_vars new_inner_var ();
+                None
+              end
             | _ -> assert false
             end
           | Field (field_index, var) ->
-            let vap : VAP.t = var, Field field_index in
-            begin match VAP.Tbl.find collected vap with
+            let projectee : Projectee.t = Field field_index in
+            let vap : VAP.t = var, projectee in
+            begin match VAP.Map.find vap collected with
             | exception Not_found -> None
             | Field { new_inner_var; _ } ->
-              VAP.Tbl.remove collected vap;
-              Variable.Tbl.add used_new_inner_vars new_inner_var ();
-              None
+              if Projectee.Tbl.mem projectees_seen projectee then
+                None
+              else begin
+                Projectee.Tbl.add projectees_seen projectee ();
+                Variable.Tbl.add used_new_inner_vars new_inner_var ();
+                None
+              end
             | _ -> assert false
             end)
         function_decl.body
@@ -268,3 +281,10 @@ let from_function_decl ~which_variables ~env
         }
       in
       Some result
+
+let print_result ppf result =
+  Format.fprintf ppf "{ projection_defns=%a new_inner_to_new_outer_vars=%a }"
+    (Variable.Map.print (Variable.Map.print Flambda.print_named))
+    result.projection_defns_indexed_by_outer_vars
+    (Variable.Map.print Flambda.print_specialised_to)
+    result.new_inner_to_new_outer_vars
