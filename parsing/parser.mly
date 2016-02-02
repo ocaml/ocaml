@@ -27,7 +27,7 @@ let mkmty d = Mty.mk ~loc:(symbol_rloc()) d
 let mksig d = Sig.mk ~loc:(symbol_rloc()) d
 let mkmod ?attrs d = Mod.mk ~loc:(symbol_rloc()) ?attrs d
 let mkstr d = Str.mk ~loc:(symbol_rloc()) d
-let mkclass d = Cl.mk ~loc:(symbol_rloc()) d
+let mkclass ?attrs d = Cl.mk ~loc:(symbol_rloc()) ?attrs d
 let mkcty d = Cty.mk ~loc:(symbol_rloc()) d
 let mkctf ?attrs ?docs d =
   Ctf.mk ~loc:(symbol_rloc()) ?attrs ?docs d
@@ -302,6 +302,9 @@ let wrap_pat_attrs pat (ext, attrs) =
 
 let mkpat_attrs d attrs =
   wrap_pat_attrs (mkpat d) attrs
+
+let wrap_class_attrs body attrs =
+  {body with pcl_attributes = attrs @ body.pcl_attributes}
 
 let wrap_str_ext body ext =
   match ext with
@@ -1046,8 +1049,8 @@ class_fun_def:
 class_expr:
     class_simple_expr
       { $1 }
-  | FUN class_fun_def
-      { $2 }
+  | FUN attributes class_fun_def
+      { wrap_class_attrs $3 $2 }
   | class_simple_expr simple_labeled_expr_list
       { mkclass(Pcl_apply($1, List.rev $2)) }
   | let_bindings IN class_expr
@@ -1062,9 +1065,9 @@ class_simple_expr:
       { mkclass(Pcl_constr(mkloc $4 (rhs_loc 4), List.rev $2)) }
   | class_longident
       { mkclass(Pcl_constr(mkrhs $1 1, [])) }
-  | OBJECT class_structure END
-      { mkclass(Pcl_structure $2) }
-  | OBJECT class_structure error
+  | OBJECT attributes class_structure END
+      { mkclass ~attrs:$2 (Pcl_structure $3) }
+  | OBJECT attributes class_structure error
       { unclosed "object" 1 "end" 3 }
   | LPAREN class_expr COLON class_type RPAREN
       { mkclass(Pcl_constraint($2, $4)) }
@@ -1094,16 +1097,17 @@ class_fields:
       { $2 :: (text_cstr 2) @ $1 }
 ;
 class_field:
-  | INHERIT override_flag class_expr parent_binder post_item_attributes
-      { mkcf (Pcf_inherit ($2, $3, $4)) ~attrs:$5 ~docs:(symbol_docs ()) }
-  | VAL value post_item_attributes
-      { mkcf (Pcf_val $2) ~attrs:$3 ~docs:(symbol_docs ()) }
+  | INHERIT override_flag attributes class_expr parent_binder post_item_attributes
+      { mkcf (Pcf_inherit ($2, $4, $5)) ~attrs:($3@$6) ~docs:(symbol_docs ()) }
+  | VAL attributes value post_item_attributes
+      { mkcf (Pcf_val $3) ~attrs:($2@$4) ~docs:(symbol_docs ()) }
   | METHOD method_ post_item_attributes
-      { mkcf (Pcf_method $2) ~attrs:$3 ~docs:(symbol_docs ()) }
-  | CONSTRAINT constrain_field post_item_attributes
-      { mkcf (Pcf_constraint $2) ~attrs:$3 ~docs:(symbol_docs ()) }
-  | INITIALIZER seq_expr post_item_attributes
-      { mkcf (Pcf_initializer $2) ~attrs:$3 ~docs:(symbol_docs ()) }
+      { let meth, attrs = $2 in
+        mkcf (Pcf_method meth) ~attrs:(attrs@$3) ~docs:(symbol_docs ()) }
+  | CONSTRAINT attributes constrain_field post_item_attributes
+      { mkcf (Pcf_constraint $3) ~attrs:($2@$4) ~docs:(symbol_docs ()) }
+  | INITIALIZER attributes seq_expr post_item_attributes
+      { mkcf (Pcf_initializer $3) ~attrs:($2@$4) ~docs:(symbol_docs ()) }
   | item_extension post_item_attributes
       { mkcf (Pcf_extension $1) ~attrs:$2 ~docs:(symbol_docs ()) }
   | floating_attribute
@@ -1133,23 +1137,23 @@ value:
 ;
 method_:
 /* TODO: factorize those rules... */
-    override_flag PRIVATE VIRTUAL label COLON poly_type
+    override_flag PRIVATE VIRTUAL attributes label COLON poly_type
       { if $1 = Override then syntax_error ();
-        mkloc $4 (rhs_loc 4), Private, Cfk_virtual $6 }
-  | override_flag VIRTUAL private_flag label COLON poly_type
+        (mkloc $5 (rhs_loc 5), Private, Cfk_virtual $7), $4 }
+  | override_flag VIRTUAL private_flag attributes label COLON poly_type
       { if $1 = Override then syntax_error ();
-        mkloc $4 (rhs_loc 4), $3, Cfk_virtual $6 }
-  | override_flag private_flag label strict_binding
-      { mkloc $3 (rhs_loc 3), $2,
-        Cfk_concrete ($1, ghexp(Pexp_poly ($4, None))) }
-  | override_flag private_flag label COLON poly_type EQUAL seq_expr
-      { mkloc $3 (rhs_loc 3), $2,
-        Cfk_concrete ($1, ghexp(Pexp_poly($7, Some $5))) }
-  | override_flag private_flag label COLON TYPE lident_list
+        (mkloc $5 (rhs_loc 5), $3, Cfk_virtual $7), $4 }
+  | override_flag private_flag attributes label strict_binding
+      { (mkloc $4 (rhs_loc 4), $2,
+        Cfk_concrete ($1, ghexp(Pexp_poly ($5, None)))), $3 }
+  | override_flag private_flag attributes label COLON poly_type EQUAL seq_expr
+      { (mkloc $4 (rhs_loc 4), $2,
+        Cfk_concrete ($1, ghexp(Pexp_poly($8, Some $6)))), $3 }
+  | override_flag private_flag attributes label COLON TYPE lident_list
     DOT core_type EQUAL seq_expr
-      { let exp, poly = wrap_type_annotation $6 $8 $10 in
-        mkloc $3 (rhs_loc 3), $2,
-        Cfk_concrete ($1, ghexp(Pexp_poly(exp, Some poly))) }
+      { let exp, poly = wrap_type_annotation $7 $9 $11 in
+        (mkloc $4 (rhs_loc 4), $2,
+        Cfk_concrete ($1, ghexp(Pexp_poly(exp, Some poly)))), $3 }
 ;
 
 /* Class types */
