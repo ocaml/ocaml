@@ -26,6 +26,7 @@ let run ~env ~(set_of_closures : Flambda.set_of_closures) =
             (function_decl : Flambda.function_declaration)
             (funs, projection_defns, additional_free_vars, done_something) ->
           if function_decl.stub then
+            let funs = Variable.Map.add fun_var function_decl funs in
             funs, projection_defns, additional_free_vars, done_something
           else
             let extracted =
@@ -75,22 +76,34 @@ let run ~env ~(set_of_closures : Flambda.set_of_closures) =
     if not done_something then
       None
     else
-      let function_decls =
-        Flambda.update_function_declarations set_of_closures.function_decls
-          ~funs
+      (* CR-someday mshinwell: could consider doing the grouping thing
+         similar to Augment_specialised_args *)
+      let num_free_vars_before =
+        Variable.Map.cardinal set_of_closures.free_vars
       in
-      let set_of_closures =
-        Flambda.create_set_of_closures ~function_decls ~free_vars
-          ~specialised_args:set_of_closures.specialised_args
+      let num_free_vars_after =
+        Variable.Map.cardinal free_vars
       in
-      let expr =
-        Variable.Map.fold (fun _projected_from projection_defns expr ->
-            Variable.Map.fold Flambda.create_let projection_defns expr)
-          projection_defns
-          (Flambda_utils.name_expr (Set_of_closures set_of_closures)
-            ~name:"unbox_free_vars_of_closures")
-      in
-      Some expr
+      (* Don't let the closure grow too large. *)
+      if num_free_vars_after > 2 * num_free_vars_before then
+        None
+      else
+        let function_decls =
+          Flambda.update_function_declarations set_of_closures.function_decls
+            ~funs
+        in
+        let set_of_closures =
+          Flambda.create_set_of_closures ~function_decls ~free_vars
+            ~specialised_args:set_of_closures.specialised_args
+        in
+        let expr =
+          Variable.Map.fold (fun _projected_from projection_defns expr ->
+              Variable.Map.fold Flambda.create_let projection_defns expr)
+            projection_defns
+            (Flambda_utils.name_expr (Set_of_closures set_of_closures)
+              ~name:"unbox_free_vars_of_closures")
+        in
+        Some expr
 
 let run ~env ~set_of_closures =
   Pass_wrapper.with_dump ~pass_name ~input:set_of_closures

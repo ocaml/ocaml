@@ -144,15 +144,18 @@ let from_function_decl ~which_variables ~env
     let used_new_inner_vars = Variable.Tbl.create 42 in
     (* CR mshinwell: use "iter" *)
     let _new_function_body =
+      (* [collected] is used here as a mutable table to avoid generating
+         duplicate bindings to the same projectee. *)
+      let collected = VAP.Tbl.of_map collected in
       Flambda_iterators.map_toplevel_projections_to_expr_opt
         ~f:(fun (projection : Projection.t) ->
           match projection with
           | Project_var { closure; var; closure_id = _; } ->
-            begin match
-              VAP.Map.find (closure, Project_var var) collected
-            with
+            let vap : VAP.t = closure, Project_var var in
+            begin match VAP.Tbl.find collected vap with
             | exception Not_found -> None
             | Var_within_closure { new_inner_var; _ } ->
+              VAP.Tbl.remove collected vap;
               Variable.Tbl.add used_new_inner_vars new_inner_var ();
               None
             | _ -> assert false
@@ -162,21 +165,21 @@ let from_function_decl ~which_variables ~env
             None
           | Move_within_set_of_closures
               { closure; move_to; start_from = _; } ->
-            begin match
-              VAP.Map.find (closure, Closure move_to) collected
-            with
+            let vap : VAP.t = closure, Closure move_to in
+            begin match VAP.Tbl.find collected vap with
             | exception Not_found -> None
             | Closure { new_inner_var; _ } ->
+              VAP.Tbl.remove collected vap;
               Variable.Tbl.add used_new_inner_vars new_inner_var ();
               None
             | _ -> assert false
             end
           | Field (field_index, var) ->
-            begin match
-              VAP.Map.find (var, Field field_index) collected
-            with
+            let vap : VAP.t = var, Field field_index in
+            begin match VAP.Tbl.find collected vap with
             | exception Not_found -> None
             | Field { new_inner_var; _ } ->
+              VAP.Tbl.remove collected vap;
               Variable.Tbl.add used_new_inner_vars new_inner_var ();
               None
             | _ -> assert false
@@ -215,8 +218,8 @@ let from_function_decl ~which_variables ~env
           match projectee, extracted with
           | Project_var var_within_closure,
               Var_within_closure { new_inner_var; closure_id; outer_var; } ->
-            let new_outer_var = Variable.rename new_inner_var in
             if Variable.Tbl.mem used_new_inner_vars new_inner_var then
+              let new_outer_var = Variable.rename new_inner_var in
               let defining_expr : Flambda.named =
                 Project_var {
                   closure = outer_var;
@@ -229,8 +232,8 @@ let from_function_decl ~which_variables ~env
               new_inner_to_new_outer_vars, new_bindings
           | Closure move_to,
               Closure { new_inner_var; start_from; outer_var; }->
-            let new_outer_var = Variable.rename new_inner_var in
             if Variable.Tbl.mem used_new_inner_vars new_inner_var then
+              let new_outer_var = Variable.rename new_inner_var in
               let defining_expr : Flambda.named =
                 Move_within_set_of_closures {
                   closure = outer_var;
@@ -243,8 +246,8 @@ let from_function_decl ~which_variables ~env
               new_inner_to_new_outer_vars, new_bindings
           | Field field_index,
               Field { new_inner_var; outer_var; } ->
-            let new_outer_var = Variable.rename new_inner_var in
             if Variable.Tbl.mem used_new_inner_vars new_inner_var then
+              let new_outer_var = Variable.rename new_inner_var in
               let defining_expr : Flambda.named =
                 Flambda.Prim (Pfield field_index, [outer_var], Debuginfo.none)
               in

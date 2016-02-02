@@ -630,6 +630,9 @@ and simplify_set_of_closures original_env r
     Freshening.apply_function_decls_and_free_vars (E.freshening env) free_vars
       function_decls
   in
+(*
+Format.eprintf "freshening %a\n%!" Freshening.Project_var.print freshening;
+*)
   let env = E.set_freshening env sb in
   let specialised_args =
     Variable.Map.map_keys (Freshening.apply_variable (E.freshening env))
@@ -961,6 +964,7 @@ and simplify_named env r (tree : Flambda.named) : Flambda.named * R.t =
          from each call to [simplify_set_of_closures] must be composed.
          Note that this function only composes with [first_freshening] owing
          to the structure of the code below. *)
+     (* let env = E.set_freshening env Freshening.empty in *)
       let expr, r = simplify (E.set_never_inline env) r expr in
       let approx = R.approx r in
       let value_set_of_closures =
@@ -984,6 +988,7 @@ and simplify_named env r (tree : Flambda.named) : Flambda.named * R.t =
     else begin
       match Unbox_free_vars_of_closures.run ~env ~set_of_closures with
       | Some expr ->
+Format.eprintf "UFV recursing\n%!";
         simplify env r expr ~pass_name:"Unbox_free_vars_of_closures"
       | None ->
         (* CR mshinwell: should maybe add one allocation for the stub *)
@@ -992,7 +997,8 @@ and simplify_named env r (tree : Flambda.named) : Flambda.named * R.t =
             ~set_of_closures
         with
         | Some expr ->
-          simplify env r expr ~pass_name:"Unbox_free_vars_of_closures"
+Format.eprintf "USA recursing\n%!";
+          simplify env r expr ~pass_name:"Unbox_specialised_args"
         | None ->
           let set_of_closures =
             Remove_unused_arguments.

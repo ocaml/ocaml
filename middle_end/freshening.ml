@@ -237,24 +237,6 @@ module Project_var = struct
       (Closure_id.Map.print Closure_id.print)
       t.closure_id
 
-  let compose ~earlier ~later : t =
-    let vars_within_closure =
-      Var_within_closure.Map.filter_map earlier.vars_within_closure
-        ~f:(fun _ var ->
-          match Var_within_closure.Map.find var later.vars_within_closure with
-          | exception Not_found -> None
-          | var -> Some var)
-    in
-    let closure_id =
-      Closure_id.Map.filter_map earlier.closure_id ~f:(fun _ closure_id ->
-        match Closure_id.Map.find closure_id later.closure_id with
-        | exception Not_found -> None
-        | closure_id -> Some closure_id)
-    in
-    { vars_within_closure;
-      closure_id;
-    }
-
   let new_subst_fv t id subst =
     match subst with
     | Inactive -> id, subst, t
@@ -348,6 +330,43 @@ module Project_var = struct
     | Project_var var -> Project_var (apply_var_within_closure t var)
     | Closure closure_id -> Closure (apply_closure_id t closure_id)
     | Field _ -> projectee
+
+  module Compose (T : Identifiable.S) = struct
+    let compose ~earlier ~later =
+      if (T.Map.equal T.equal) earlier later
+        || T.Map.cardinal later = 0
+      then
+        earlier
+      else
+        T.Map.mapi (fun src_var var ->
+            if T.Map.mem src_var later then begin
+              Misc.fatal_errorf "Freshening.Project_var.compose: domains \
+                  of substitutions must be disjoint.  earlier=%a later=%a"
+                (T.Map.print T.print) earlier
+                (T.Map.print T.print) later
+            end;
+            match T.Map.find var later with
+            | exception Not_found ->
+              Misc.fatal_errorf "Freshening.Project_var.compose: later \
+                  substitution does not freshen everything in earlier \
+                  substitution.  earlier=%a later=%a"
+                (T.Map.print T.print) earlier
+                (T.Map.print T.print) later
+            | var -> var)
+          earlier
+  end
+
+  module V = Compose (Var_within_closure)
+  module C = Compose (Closure_id)
+
+  let compose ~earlier ~later : t =
+    { vars_within_closure =
+        V.compose ~earlier:earlier.vars_within_closure
+          ~later:later.vars_within_closure;
+      closure_id =
+        C.compose ~earlier:earlier.closure_id
+          ~later:later.closure_id;
+    }
 end
 
 let apply_function_decls_and_free_vars t fv func_decls =
