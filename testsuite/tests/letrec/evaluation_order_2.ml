@@ -11,15 +11,16 @@
 (***********************************************************************)
 
 (* A variant of evaluation_order_1.ml where the side-effects
-   are inside the blocks. Note that this changes the evaluation
-   order, as y is considered recursive.
+   are inside the blocks.
+   Effect are not named to allow different evaluation orders (flambda
+   and clambda differ on this point).
 *)
 type tree = Tree of tree list
 
 let test =
-  let rec x = (Tree [(print_endline "x"; y); z])
-  and y = Tree (print_endline "y"; [])
-  and z = Tree (print_endline "z"; [x])
+  let rec x = (Tree [(print_endline "effect"; y); z])
+  and y = Tree (print_endline "effect"; [])
+  and z = Tree (print_endline "effect"; [x])
   in
   match (x, y, z) with
     | (Tree [y1; z1], Tree[], Tree[x1]) ->
