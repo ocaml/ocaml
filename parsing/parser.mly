@@ -293,6 +293,16 @@ let wrap_typ_attrs typ (ext, attrs) =
 let mktyp_attrs d attrs =
   wrap_typ_attrs (mktyp d) attrs
 
+let wrap_pat_attrs pat (ext, attrs) =
+  (* todo: keep exact location for the entire attribute *)
+  let pat = {pat with ppat_attributes = attrs @ pat.ppat_attributes} in
+  match ext with
+  | None -> pat
+  | Some id -> ghpat(Ppat_extension (id, PPat (pat, None)))
+
+let mkpat_attrs d attrs =
+  wrap_pat_attrs (mkpat d) attrs
+
 let wrap_str_ext body ext =
   match ext with
   | None -> body
@@ -1702,10 +1712,10 @@ pattern:
       { mkpat(Ppat_or($1, $3)) }
   | pattern BAR error
       { expecting 3 "pattern" }
-  | LAZY simple_pattern
-      { mkpat(Ppat_lazy $2) }
-  | EXCEPTION pattern %prec prec_constr_appl
-      { mkpat(Ppat_exception $2) }
+  | LAZY ext_attributes simple_pattern
+      { mkpat_attrs (Ppat_lazy $3) $2}
+  | EXCEPTION ext_attributes pattern %prec prec_constr_appl
+      { mkpat_attrs (Ppat_exception $3) $2}
   | pattern attribute
       { Pat.attr $1 $2 }
 ;
@@ -1751,13 +1761,15 @@ simple_pattern_not_ident:
       { unclosed "(" 1 ")" 5 }
   | LPAREN pattern COLON error
       { expecting 4 "type" }
-  | LPAREN MODULE UIDENT RPAREN
-      { mkpat(Ppat_unpack (mkrhs $3 3)) }
-  | LPAREN MODULE UIDENT COLON package_type RPAREN
-      { mkpat(Ppat_constraint(mkpat(Ppat_unpack (mkrhs $3 3)),
-                              ghtyp(Ptyp_package $5))) }
-  | LPAREN MODULE UIDENT COLON package_type error
-      { unclosed "(" 1 ")" 6 }
+  | LPAREN MODULE ext_attributes UIDENT RPAREN
+      { mkpat_attrs (Ppat_unpack (mkrhs $4 4)) $3 }
+  | LPAREN MODULE ext_attributes UIDENT COLON package_type RPAREN
+      { mkpat_attrs
+          (Ppat_constraint(mkpat(Ppat_unpack (mkrhs $4 4)),
+                           ghtyp(Ptyp_package $6)))
+          $3 }
+  | LPAREN MODULE ext_attributes UIDENT COLON package_type error
+      { unclosed "(" 1 ")" 7 }
   | extension
       { mkpat(Ppat_extension $1) }
 ;
