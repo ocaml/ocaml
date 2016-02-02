@@ -312,17 +312,6 @@ Other libraries:
 - PR#7024: in documentation of Str regular expressions, clarify what
     "end of line" means for "^" and "$" regexps.
 
-OCamlbuild:
-- PR#6794, PR#6809: pass package-specific include flags when building C files
-  (Jérémie Dimino, request by whitequark)
-- GPR#208: add "asm" tag to ocamlbuild to enable flag -S
-  (ygrek)
-- Changed OCamlbuild's license to LGPLv2 with static linking exception.
-- GPR#219: speedup target-already-built builds
-  (ygrek)
-- PR#6605, GPR#117: use ocamlfind, if available, to discover camlp4 path
-  (Vincent Laporte)
-
 OCamldep:
 - GPR#286: add support for module aliases
   (jacques Garrigue)

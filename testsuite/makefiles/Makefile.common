@@ -74,7 +74,6 @@ OCAMLMKLIB=$(FLEXLINK_PREFIX)$(OCAMLRUN) $(OTOPDIR)/tools/ocamlmklib \
 		       -ocamlopt "$(OTOPDIR)/byterun/ocamlrun$(USE_RUNTIME)$(EXE) \
 		                  $(OTOPDIR)/ocamlopt $(OCFLAGS) $(RUNTIME_VARIANT)"
 OCAMLYACC=$(TOPDIR)/yacc/ocamlyacc$(EXE)
-OCAMLBUILD=$(TOPDIR)/_build/ocamlbuild/ocamlbuild.native
 DUMPOBJ=$(OCAMLRUN) $(OTOPDIR)/tools/dumpobj
 OBJINFO=$(OCAMLRUN) $(OTOPDIR)/tools/objinfo
 BYTECODE_ONLY=[ "$(ARCH)" = "none" -o "$(ASM)" = "none" ]
