@@ -1416,7 +1416,8 @@ The last two entries are valid for any $n > 3$.
 
 \section{Attributes}\label{s:attributes}
 
-(Introduced in OCaml 4.02)
+(Introduced in OCaml 4.02,
+infix notations for constructs other than expressions added in 4.03)
 
 Attributes are ``decorations'' of the syntax tree which are mostly
 ignored by the type-checker but can be used by external tools.  An
@@ -1584,17 +1585,24 @@ cannot be attached to these floating attributes in @class-field-spec@
 and @class-field@.)
 
 
-It is also possible to specify attributes on expressions using an
-infix syntax.  This applies to all expressions starting with one or
-two keywords: "assert", "begin", "for", "fun", "function", "if",
-"lazy", "let", "let module", "let open", "match", "new", "object",
-"try", "while".  Those expressions supports adding one or several
-attributes just after those initial keyword(s).  For instance:
+It is also possible to specify attributes using an infix syntax. For instance:
 
 \begin{verbatim}
-let [@foo][@bar x] x = 2 in x + 1 === (let x = 2 in x + 1)[@foo][@bar x]
-begin[@foo] ... end               === (begin ... end)[@foo]
+let[@foo] x = 2 in x + 1          === (let x = 2 [@@foo] in x + 1)
+begin[@foo][@bar x] ... end       === (begin ... end)[@foo][@@bar x]
+module[@foo] M = ...              === module M = ... [@@foo]
+type[@foo] t = T                  === type t = T [@@foo]
+method[@foo] m = ...              === method m = ... [@@foo]
 \end{verbatim}
+
+For "let", the attributes are applied to each bindings:
+
+\begin{verbatim}
+let[@foo] x = 2 and y = 3 in x + y === (let x = 2 [@@foo] and y = 3 in x + y)
+let[@foo] x = 2
+and[@bar] y = 3 in x + y           === (let x = 2 [@@foo] and y = 3 [@bar] in x + y)
+\end{verbatim}
+
 
 \subsection{Built-in attributes}
 
