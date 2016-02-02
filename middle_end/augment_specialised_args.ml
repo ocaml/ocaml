@@ -230,7 +230,9 @@ module Make (T : S) = struct
       | Some what_to_specialise ->
         let (_ : int), new_specialised_args_indexed_by_new_outer_vars =
           let module Backend = (val backend : Backend_intf.S) in
-          let max_args = Backend.max_sensible_number_of_arguments in
+          (* XXX temporary hack.  We need to filter the inner/outer var
+             list as well. *)
+          let max_args = Backend.max_sensible_number_of_arguments * 100 in
           List.fold_left (fun (num_params, new_spec_args) add_all_or_none ->
               (* - It is important to limit the number of arguments added:
                  if arguments end up being passed on the stack, tail call

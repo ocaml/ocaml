@@ -48,8 +48,7 @@ module Transform = struct
             assert (Variable.Map.mem projected_from
               set_of_closures.specialised_args);
             match Variable.Map.find projected_from invariant_params_flow with
-            | exception Not_found ->
-              Variable.Map.add fun_var extracted result
+            | exception Not_found -> result
               (* CR mshinwell: re-enable when Invariant_params won't do this
                  any more
               Misc.fatal_errorf "No invariant params flow for variable %a \
