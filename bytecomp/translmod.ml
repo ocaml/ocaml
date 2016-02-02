@@ -405,37 +405,38 @@ and transl_struct fields cc rootpath str =
 and transl_structure fields cc rootpath final_env = function
     [] ->
       let body, size =
-      match cc with
-        Tcoerce_none ->
-          Lprim(Pmakeblock(0, Immutable),
-                List.map (fun id -> Lvar id) (List.rev fields)),
-            List.length fields
-      | Tcoerce_structure(pos_cc_list, id_pos_list) ->
-              (* Do not ignore id_pos_list ! *)
-          (*Format.eprintf "%a@.@[" Includemod.print_coercion cc;
-          List.iter (fun l -> Format.eprintf "%a@ " Ident.print l)
-            fields;
-          Format.eprintf "@]@.";*)
-          let v = Array.of_list (List.rev fields) in
-          let get_field pos = Lvar v.(pos)
-          and ids = List.fold_right IdentSet.add fields IdentSet.empty in
-          let lam =
-            (Lprim(Pmakeblock(0, Immutable),
-                List.map
-                  (fun (pos, cc) ->
-                    match cc with
-                      Tcoerce_primitive p ->
-                        transl_primitive p.pc_loc
-                          p.pc_desc p.pc_env p.pc_type None
-                    | _ -> apply_coercion Strict cc (get_field pos))
-                  pos_cc_list))
-          and id_pos_list =
-            List.filter (fun (id,_,_) -> not (IdentSet.mem id ids)) id_pos_list
-          in
-          wrap_id_pos_list id_pos_list get_field lam,
-            List.length pos_cc_list
-      | _ ->
-          fatal_error "Translmod.transl_structure"
+        match cc with
+          Tcoerce_none ->
+            Lprim(Pmakeblock(0, Immutable),
+                  List.map (fun id -> Lvar id) (List.rev fields)),
+              List.length fields
+        | Tcoerce_structure(pos_cc_list, id_pos_list) ->
+                (* Do not ignore id_pos_list ! *)
+            (*Format.eprintf "%a@.@[" Includemod.print_coercion cc;
+            List.iter (fun l -> Format.eprintf "%a@ " Ident.print l)
+              fields;
+            Format.eprintf "@]@.";*)
+            let v = Array.of_list (List.rev fields) in
+            let get_field pos = Lvar v.(pos)
+            and ids = List.fold_right IdentSet.add fields IdentSet.empty in
+            let lam =
+              (Lprim(Pmakeblock(0, Immutable),
+                  List.map
+                    (fun (pos, cc) ->
+                      match cc with
+                        Tcoerce_primitive p ->
+                          transl_primitive p.pc_loc
+                            p.pc_desc p.pc_env p.pc_type None
+                      | _ -> apply_coercion Strict cc (get_field pos))
+                    pos_cc_list))
+            and id_pos_list =
+              List.filter (fun (id,_,_) -> not (IdentSet.mem id ids))
+                id_pos_list
+            in
+            wrap_id_pos_list id_pos_list get_field lam,
+              List.length pos_cc_list
+        | _ ->
+            fatal_error "Translmod.transl_structure"
       in
       (* This debugging event provides information regarding the structure
          items. It is ignored by the OCaml debugger but is used by
