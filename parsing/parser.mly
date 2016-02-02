@@ -25,7 +25,7 @@ let mkpat d = Pat.mk ~loc:(symbol_rloc()) d
 let mkexp d = Exp.mk ~loc:(symbol_rloc()) d
 let mkmty d = Mty.mk ~loc:(symbol_rloc()) d
 let mksig d = Sig.mk ~loc:(symbol_rloc()) d
-let mkmod d = Mod.mk ~loc:(symbol_rloc()) d
+let mkmod ?attrs d = Mod.mk ~loc:(symbol_rloc()) ?attrs d
 let mkstr d = Str.mk ~loc:(symbol_rloc()) d
 let mkclass d = Cl.mk ~loc:(symbol_rloc()) d
 let mkcty d = Cty.mk ~loc:(symbol_rloc()) d
@@ -282,6 +282,16 @@ let wrap_exp_attrs body (ext, attrs) =
 
 let mkexp_attrs d attrs =
   wrap_exp_attrs (mkexp d) attrs
+
+let wrap_typ_attrs typ (ext, attrs) =
+  (* todo: keep exact location for the entire attribute *)
+  let typ = {typ with ptyp_attributes = attrs @ typ.ptyp_attributes} in
+  match ext with
+  | None -> typ
+  | Some id -> ghtyp(Ptyp_extension (id, PTyp typ))
+
+let mktyp_attrs d attrs =
+  wrap_typ_attrs (mktyp d) attrs
 
 let wrap_str_ext body ext =
   match ext with
@@ -739,24 +749,27 @@ module_expr:
       { $2 }
   | LPAREN module_expr error
       { unclosed "(" 1 ")" 3 }
-  | LPAREN VAL expr RPAREN
-      { mkmod(Pmod_unpack $3) }
-  | LPAREN VAL expr COLON package_type RPAREN
-      { mkmod(Pmod_unpack(
-              ghexp(Pexp_constraint($3, ghtyp(Ptyp_package $5))))) }
-  | LPAREN VAL expr COLON package_type COLONGREATER package_type RPAREN
-      { mkmod(Pmod_unpack(
-              ghexp(Pexp_coerce($3, Some(ghtyp(Ptyp_package $5)),
-                                    ghtyp(Ptyp_package $7))))) }
-  | LPAREN VAL expr COLONGREATER package_type RPAREN
-      { mkmod(Pmod_unpack(
-              ghexp(Pexp_coerce($3, None, ghtyp(Ptyp_package $5))))) }
-  | LPAREN VAL expr COLON error
+  | LPAREN VAL attributes expr RPAREN
+      { mkmod ~attrs:$3 (Pmod_unpack $4)}
+  | LPAREN VAL attributes expr COLON package_type RPAREN
+      { mkmod ~attrs:$3
+          (Pmod_unpack(
+               ghexp(Pexp_constraint($4, ghtyp(Ptyp_package $6))))) }
+  | LPAREN VAL attributes expr COLON package_type COLONGREATER package_type RPAREN
+      { mkmod ~attrs:$3
+          (Pmod_unpack(
+               ghexp(Pexp_coerce($4, Some(ghtyp(Ptyp_package $6)),
+                                 ghtyp(Ptyp_package $8))))) }
+  | LPAREN VAL attributes expr COLONGREATER package_type RPAREN
+      { mkmod ~attrs:$3
+          (Pmod_unpack(
+               ghexp(Pexp_coerce($4, None, ghtyp(Ptyp_package $6))))) }
+  | LPAREN VAL attributes expr COLON error
+      { unclosed "(" 1 ")" 6 }
+  | LPAREN VAL attributes expr COLONGREATER error
+      { unclosed "(" 1 ")" 6 }
+  | LPAREN VAL attributes expr error
       { unclosed "(" 1 ")" 5 }
-  | LPAREN VAL expr COLONGREATER error
-      { unclosed "(" 1 ")" 5 }
-  | LPAREN VAL expr error
-      { unclosed "(" 1 ")" 4 }
   | module_expr attribute
       { Mod.attr $1 $2 }
   | extension
@@ -1504,18 +1517,20 @@ simple_expr:
       { mkexp(Pexp_send($1, $3)) }
   | simple_expr SHARPOP simple_expr
       { mkinfix $1 $2 $3 }
-  | LPAREN MODULE module_expr RPAREN
-      { mkexp (Pexp_pack $3) }
-  | LPAREN MODULE module_expr COLON package_type RPAREN
-      { mkexp (Pexp_constraint (ghexp (Pexp_pack $3),
-                                ghtyp (Ptyp_package $5))) }
-  | LPAREN MODULE module_expr COLON error
-      { unclosed "(" 1 ")" 5 }
-  | mod_longident DOT LPAREN MODULE module_expr COLON package_type RPAREN
+  | LPAREN MODULE ext_attributes module_expr RPAREN
+      { mkexp_attrs (Pexp_pack $4) $3 }
+  | LPAREN MODULE ext_attributes module_expr COLON package_type RPAREN
+      { mkexp_attrs (Pexp_constraint (ghexp (Pexp_pack $4),
+                                      ghtyp (Ptyp_package $6)))
+                    $3 }
+  | LPAREN MODULE ext_attributes module_expr COLON error
+      { unclosed "(" 1 ")" 6 }
+  | mod_longident DOT LPAREN MODULE ext_attributes module_expr COLON package_type RPAREN
       { mkexp(Pexp_open(Fresh, mkrhs $1 1,
-        mkexp (Pexp_constraint (ghexp (Pexp_pack $5),
-                                ghtyp (Ptyp_package $7))))) }
-  | mod_longident DOT LPAREN MODULE module_expr COLON error
+        mkexp_attrs (Pexp_constraint (ghexp (Pexp_pack $6),
+                                ghtyp (Ptyp_package $8)))
+                    $5 )) }
+  | mod_longident DOT LPAREN MODULE ext_attributes module_expr COLON error
       { unclosed "(" 3 ")" 7 }
   | extension
       { mkexp (Pexp_extension $1) }
@@ -2155,8 +2170,8 @@ simple_core_type2:
       { mktyp(Ptyp_variant(List.rev $3, Closed, Some [])) }
   | LBRACKETLESS opt_bar row_field_list GREATER name_tag_list RBRACKET
       { mktyp(Ptyp_variant(List.rev $3, Closed, Some (List.rev $5))) }
-  | LPAREN MODULE package_type RPAREN
-      { mktyp(Ptyp_package $3) }
+  | LPAREN MODULE ext_attributes package_type RPAREN
+      { mktyp_attrs (Ptyp_package $4) $3 }
   | extension
       { mktyp (Ptyp_extension $1) }
 ;
