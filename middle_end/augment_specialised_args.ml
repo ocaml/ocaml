@@ -197,10 +197,7 @@ module Make (T : S) = struct
             Variable.Map.find new_outer_var
               new_outer_vars_to_spec_args_bound_in_the_wrapper_renaming
           with
-          | exception Not_found ->
-            (* The projection should be ignored. *)
-            (* CR-soon mshinwell: This is a bit nasty *)
-            wrapper_body
+          | exception Not_found -> assert false
           | new_inner_var_of_wrapper ->
             Flambda.create_let new_inner_var_of_wrapper defining_expr
               wrapper_body)
