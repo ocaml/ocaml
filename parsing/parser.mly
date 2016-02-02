@@ -23,7 +23,7 @@ open Docstrings
 let mktyp d = Typ.mk ~loc:(symbol_rloc()) d
 let mkpat d = Pat.mk ~loc:(symbol_rloc()) d
 let mkexp d = Exp.mk ~loc:(symbol_rloc()) d
-let mkmty d = Mty.mk ~loc:(symbol_rloc()) d
+let mkmty ?attrs d = Mty.mk ~loc:(symbol_rloc()) ?attrs d
 let mksig d = Sig.mk ~loc:(symbol_rloc()) d
 let mkmod ?attrs d = Mod.mk ~loc:(symbol_rloc()) ?attrs d
 let mkstr d = Str.mk ~loc:(symbol_rloc()) d
@@ -305,6 +305,10 @@ let mkpat_attrs d attrs =
 
 let wrap_class_attrs body attrs =
   {body with pcl_attributes = attrs @ body.pcl_attributes}
+let wrap_mod_attrs body attrs =
+  {body with pmod_attributes = attrs @ body.pmod_attributes}
+let wrap_mty_attrs body attrs =
+  {body with pmty_attributes = attrs @ body.pmty_attributes}
 
 let wrap_str_ext body ext =
   match ext with
@@ -741,13 +745,16 @@ functor_args:
 module_expr:
     mod_longident
       { mkmod(Pmod_ident (mkrhs $1 1)) }
-  | STRUCT structure END
-      { mkmod(Pmod_structure(extra_str 2 $2)) }
-  | STRUCT structure error
+  | STRUCT attributes structure END
+      { mkmod ~attrs:$2 (Pmod_structure(extra_str 3 $3)) }
+  | STRUCT attributes structure error
       { unclosed "struct" 1 "end" 3 }
-  | FUNCTOR functor_args MINUSGREATER module_expr
-      { List.fold_left (fun acc (n, t) -> mkmod(Pmod_functor(n, t, acc)))
-                       $4 $2 }
+  | FUNCTOR attributes functor_args MINUSGREATER module_expr
+      { let modexp =
+          List.fold_left
+            (fun acc (n, t) -> mkmod(Pmod_functor(n, t, acc)))
+            $5 $3
+        in wrap_mod_attrs modexp $2 }
   | module_expr LPAREN module_expr RPAREN
       { mkmod(Pmod_apply($1, $3)) }
   | module_expr LPAREN RPAREN
@@ -877,23 +884,24 @@ and_module_binding:
 module_type:
     mty_longident
       { mkmty(Pmty_ident (mkrhs $1 1)) }
-  | SIG signature END
-      { mkmty(Pmty_signature (extra_sig 2 $2)) }
-  | SIG signature error
-      { unclosed "sig" 1 "end" 3 }
-  | FUNCTOR functor_args MINUSGREATER module_type
+  | SIG attributes signature END
+      { mkmty ~attrs:$2 (Pmty_signature (extra_sig 3 $3)) }
+  | SIG attributes signature error
+      { unclosed "sig" 1 "end" 4 }
+  | FUNCTOR attributes functor_args MINUSGREATER module_type
       %prec below_WITH
-      { List.fold_left
-          (fun acc (n, t) ->
-           mkmty(Pmty_functor(n, t, acc)))
-        $4 $2 }
+      { let mty =
+          List.fold_left
+            (fun acc (n, t) -> mkmty(Pmty_functor(n, t, acc)))
+            $5 $3
+        in wrap_mty_attrs mty $2 }
   | module_type MINUSGREATER module_type
       %prec below_WITH
       { mkmty(Pmty_functor(mknoloc "_", Some $1, $3)) }
   | module_type WITH with_constraints
       { mkmty(Pmty_with($1, List.rev $3)) }
-  | MODULE TYPE OF module_expr %prec below_LBRACKETAT
-      { mkmty(Pmty_typeof $4) }
+  | MODULE TYPE OF attributes module_expr %prec below_LBRACKETAT
+      { mkmty ~attrs:$4 (Pmty_typeof $5) }
 /*  | LPAREN MODULE mod_longident RPAREN
       { mkmty (Pmty_alias (mkrhs $3 3)) } */
   | LPAREN module_type RPAREN
