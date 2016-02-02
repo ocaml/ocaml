@@ -1706,7 +1706,8 @@ let f = function
 
 \section{Extension nodes}\label{s:extension-nodes}
 
-(Introduced in OCaml 4.02)
+(Introduced in OCaml 4.02,
+infix notations for constructs other than expressions added in 4.03)
 
 Extension nodes are generic placeholders in the syntax tree. They are
 rejected by the type-checker and are intended to be ``expanded'' by external
@@ -1765,23 +1766,24 @@ class-field:
 ;
 \end{syntax}
 
-An infix form is available for extension nodes as expressions, when
-the payload is a single expression.  This form applies to all
-expressions starting with one or two keywords: the first keyword
-followed by the percent sign and then an extension identifier.
+An infix form is available for extension nodes when
+the payload is of the same kind
+(expression with expression, pattern with pattern ...).
 
 Examples:
 
 \begin{verbatim}
 let%foo x = 2 in x + 1     === [%foo let x = 2 in x + 1]
 begin%foo ... end          === [%foo begin ... end]
+module%foo M = ..          === [%%foo module M = ... ]
+val%foo x : t              === [%%foo: val x : t]
 \end{verbatim}
 
 When this form is used together with the infix syntax for attributes,
 the attributes are considered to apply to the payload:
 
 \begin{verbatim}
-let%foo[@bar] x = 2 in x + 1 === [%foo (let x = 2 in x + 1) [@bar]]
+fun%foo[@bar] x -> x + 1 === [%foo (fun x -> x + 1)[@foo ] ];
 \end{verbatim}
 
 \subsection{Built-in extension nodes}
