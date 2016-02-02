@@ -134,9 +134,6 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
       ( Pident(Ident.create "print_char"),
         Simple (Predef.type_char,
                 (fun x -> Oval_char (O.obj x : char))) );
-      ( Pident(Ident.create "print_string"),
-        Simple (Predef.type_string,
-                (fun x -> Oval_string (O.obj x : string))) );
       ( Pident(Ident.create "print_int32"),
         Simple (Predef.type_int32,
                 (fun x -> Oval_int32 (O.obj x : int32))) );
@@ -298,6 +295,21 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
                     Oval_array (List.rev (tree_of_items [] 0))
               else
                 Oval_array []
+          | Tconstr(path, [], _)
+            when Path.same path Predef.path_string ->
+             let str : string = O.obj obj in
+             if String.length str <= !printer_steps then
+               Oval_string str
+             else (* Truncate and replace the rest of string with
+                     the string form of Oval_ellipsis (see oprint.ml). *)
+               Oval_string ((String.sub str 0 !printer_steps) ^ "...")
+          | Tconstr (path, [], _)
+            when Path.same path Predef.path_bytes ->
+             let bytes : bytes = (O.obj obj : bytes) in
+             if Bytes.length bytes <= !printer_steps then
+               Oval_string (Bytes.to_string bytes)
+             else
+               Oval_string ((Bytes.sub_string bytes 0 !printer_steps) ^ "...")
           | Tconstr (path, [ty_arg], _)
             when Path.same path Predef.path_lazy_t ->
              let obj_tag = O.tag obj in
