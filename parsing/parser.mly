@@ -329,7 +329,6 @@ type let_bindings =
   { lbs_bindings: let_binding list;
     lbs_rec: rec_flag;
     lbs_extension: string Asttypes.loc option;
-    lbs_attributes: attributes;
     lbs_loc: Location.t }
 
 let mklb (p, e) attrs =
@@ -340,19 +339,16 @@ let mklb (p, e) attrs =
     lb_text = symbol_text_lazy ();
     lb_loc = symbol_rloc (); }
 
-let mklbs (ext, attrs) rf lb =
+let mklbs ext rf lb =
   { lbs_bindings = [lb];
     lbs_rec = rf;
     lbs_extension = ext ;
-    lbs_attributes = attrs;
     lbs_loc = symbol_rloc (); }
 
 let addlb lbs lb =
   { lbs with lbs_bindings = lb :: lbs.lbs_bindings }
 
 let val_of_let_bindings lbs =
-  if lbs.lbs_attributes <> [] then
-    raise Syntaxerr.(Error(Not_expecting(lbs.lbs_loc, "attributes")));
   let bindings =
     List.map
       (fun lb ->
@@ -371,27 +367,23 @@ let expr_of_let_bindings lbs body =
   let bindings =
     List.map
       (fun lb ->
-         if lb.lb_attributes <> [] then
-           raise Syntaxerr.(Error(Not_expecting(lb.lb_loc, "item attribute")));
-         Vb.mk ~loc:lb.lb_loc lb.lb_pattern lb.lb_expression)
+         Vb.mk ~loc:lb.lb_loc ~attrs:lb.lb_attributes
+           lb.lb_pattern lb.lb_expression)
       lbs.lbs_bindings
   in
     mkexp_attrs (Pexp_let(lbs.lbs_rec, List.rev bindings, body))
-      (lbs.lbs_extension, lbs.lbs_attributes)
+      (lbs.lbs_extension, [])
 
 let class_of_let_bindings lbs body =
   let bindings =
     List.map
       (fun lb ->
-         if lb.lb_attributes <> [] then
-           raise Syntaxerr.(Error(Not_expecting(lb.lb_loc, "item attribute")));
-         Vb.mk ~loc:lb.lb_loc lb.lb_pattern lb.lb_expression)
+         Vb.mk ~loc:lb.lb_loc ~attrs:lb.lb_attributes
+           lb.lb_pattern lb.lb_expression)
       lbs.lbs_bindings
   in
     if lbs.lbs_extension <> None then
       raise Syntaxerr.(Error(Not_expecting(lbs.lbs_loc, "extension")));
-    if lbs.lbs_attributes <> [] then
-      raise Syntaxerr.(Error(Not_expecting(lbs.lbs_loc, "attributes")));
     mkclass(Pcl_let (lbs.lbs_rec, List.rev bindings, body))
 
 
@@ -1578,11 +1570,12 @@ let_bindings:
 ;
 let_binding:
     LET ext_attributes rec_flag let_binding_body post_item_attributes
-      { mklbs $2 $3 (mklb $4 $5) }
+      { let (ext, attr) = $2 in
+        mklbs ext $3 (mklb $4 (attr@$5)) }
 ;
 and_let_binding:
-    AND let_binding_body post_item_attributes
-      { mklb $2 $3 }
+    AND attributes let_binding_body post_item_attributes
+      { mklb $3 ($2@$4) }
 ;
 fun_binding:
     strict_binding
