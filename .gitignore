@@ -225,6 +225,7 @@
 
 /testsuite/**/*.result
 /testsuite/**/*.opt_result
+/testsuite/**/*.corrected
 /testsuite/**/*.byte
 /testsuite/**/*.native
 /testsuite/**/program
