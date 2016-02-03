@@ -74,7 +74,8 @@ let make_stub unused var (fun_decl : Flambda.function_declaration)
   in
   function_decl, renamed, additional_specialised_args
 
-let separate_unused_arguments ~backend (set_of_closures : Flambda.set_of_closures) =
+let separate_unused_arguments ~only_specialised
+      ~backend ~(set_of_closures : Flambda.set_of_closures) =
   let function_decls = set_of_closures.function_decls in
   let unused = Invariant_params.unused_arguments ~backend function_decls in
   let non_stub_arguments =
@@ -86,6 +87,11 @@ let separate_unused_arguments ~backend (set_of_closures : Flambda.set_of_closure
       function_decls.funs Variable.Set.empty
   in
   let unused = Variable.Set.inter non_stub_arguments unused in
+  let specialised_args = Variable.Map.keys set_of_closures.specialised_args in
+  let unused =
+    if only_specialised then Variable.Set.inter specialised_args unused
+    else unused
+  in
   if Variable.Set.is_empty unused
   then None
   else begin
@@ -130,12 +136,14 @@ let separate_unused_arguments ~backend (set_of_closures : Flambda.set_of_closure
 
 (* Spliting is not always beneficial. For instance when a function
    is only indirectly called, suppressing unused arguments does not
-   benefit, and introduce an useless intermediate call *)
-let candidate_for_spliting_for_unused_arguments
+   benefit, and introduce an useless intermediate call. Specialised
+   args should always be beneficial since they should not be used in
+   indirect calls. *)
+let should_split_only_specialised_args
     (fun_decls : Flambda.function_declarations)
     ~backend =
   if not !Clflags.remove_unused_arguments then begin
-    false
+    true
   end else begin
     let no_recursive_functions =
       Variable.Set.is_empty
@@ -146,16 +154,19 @@ let candidate_for_spliting_for_unused_arguments
         (Variable.Map.filter (fun _ { Flambda.stub } -> not stub)
            fun_decls.funs)
     in
-    (not no_recursive_functions) || (number_of_non_stub_functions > 1)
+    (* CR lwhite: this criteria could use some justification. *)
+    (no_recursive_functions) && (number_of_non_stub_functions <= 1)
   end
 
 let separate_unused_arguments_in_set_of_closures set_of_closures ~backend =
   let dump = Clflags.dumped_pass pass_name in
-  if candidate_for_spliting_for_unused_arguments
-      set_of_closures.Flambda.function_decls
-      ~backend
-  then
-    match separate_unused_arguments ~backend set_of_closures with
+  let only_specialised =
+    should_split_only_specialised_args
+       set_of_closures.Flambda.function_decls
+       ~backend
+  in
+    match separate_unused_arguments
+            ~only_specialised ~backend ~set_of_closures with
     | None ->
       if dump then
         Format.eprintf "No change for Remove_unused_arguments:@ %a@.@."
@@ -168,20 +179,20 @@ let separate_unused_arguments_in_set_of_closures set_of_closures ~backend =
           Flambda.print_set_of_closures set_of_closures
           Flambda.print_set_of_closures result;
       result
-  else set_of_closures
 
 let separate_unused_arguments_in_closures_expr tree ~backend =
   let aux_named (named : Flambda.named) : Flambda.named =
     match named with
-    | Set_of_closures set_of_closures ->
-      if candidate_for_spliting_for_unused_arguments
-          set_of_closures.function_decls ~backend
-      then begin
-        match separate_unused_arguments ~backend set_of_closures with
+    | Set_of_closures set_of_closures -> begin
+        let only_specialised =
+          should_split_only_specialised_args
+            set_of_closures.function_decls
+            ~backend
+        in
+        match separate_unused_arguments
+                ~only_specialised ~backend ~set_of_closures with
         | None -> named
         | Some set_of_closures -> Set_of_closures set_of_closures
-      end else begin
-        named
       end
     | e -> e
   in
