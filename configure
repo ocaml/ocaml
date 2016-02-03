@@ -653,7 +653,7 @@ esac
 shared_libraries_supported=false
 dl_needs_underscore=false
 sharedcccompopts=''
-mksharedlib=''
+mksharedlib='shared-libs-not-available'
 byteccrpath=''
 mksharedlibrpath=''
 natdynlinkopts=""
