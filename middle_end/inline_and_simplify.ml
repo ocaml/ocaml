@@ -636,6 +636,8 @@ and simplify_set_of_closures original_env r
       specialised_args
   in
   let specialised_args =
+    (* The equivalent code for [free_vars] is in
+       [Freshening.apply_function_decls_and_free_vars]. *)
     Variable.Map.map (fun (spec_to : Flambda.specialised_to) ->
         let projectee =
           match spec_to.projectee with
@@ -704,6 +706,19 @@ and simplify_set_of_closures original_env r
             else
               env)
         specialised_args
+        closure_env
+    in
+    let closure_env =
+      Variable.Map.fold (fun inner_var ((free_var : Flambda.specialised_to), _)
+                env ->
+          match free_var.projectee with
+          | None -> env
+          | Some (from, projectee) ->
+            if Variable.Set.mem from function_decl.free_variables then
+              E.add_projection env ~from ~projectee ~projection:inner_var
+            else
+              env)
+        free_vars
         closure_env
     in
     let body, r =

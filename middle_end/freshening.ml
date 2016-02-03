@@ -261,11 +261,13 @@ module Project_var = struct
       * The new environment with added substitution
       * a fresh ffunction_subst with only the substitution of free variables
    *)
-  let subst_free_vars fv subst =
+  let subst_free_vars fv subst
+      : (Flambda.specialised_to * _) Variable.Map.t * _ * _ =
     Variable.Map.fold (fun id lam (fv, subst, t) ->
         let id, subst, t = new_subst_fv t id subst in
         Variable.Map.add id lam fv, subst, t)
-      fv (Variable.Map.empty, subst, empty)
+      fv
+      (Variable.Map.empty, subst, empty)
 
   (** Returns :
       * The function_declaration with renamed function identifiers
@@ -376,6 +378,28 @@ let apply_function_decls_and_free_vars t fv func_decls =
   let fv, t, of_closures = I.subst_free_vars fv t in
   let func_decls, t, of_closures =
     I.func_decls_subst of_closures t func_decls
+  in
+  let fv =
+    (* The rewriting applied to the domain of the free variables map
+       together with the rewriting applied to [Closure_id]s and
+       [Var_within_closure]s must be applied to the projection relation. *)
+    Variable.Map.map (fun ((spec_to : Flambda.specialised_to), data) ->
+        match spec_to.projectee with
+        | None -> spec_to, data
+        | Some (projection, projectee) ->
+          match apply_variable t projection with
+          | projection ->
+            let projectee =
+              Project_var.apply_projectee of_closures projectee
+            in
+            let projectee = Some (projection, projectee) in
+            ({ spec_to with projectee; } : Flambda.specialised_to), data
+          | exception Not_found ->
+            Misc.fatal_errorf "Freshening.apply_function_decls_and_free_vars: \
+                projection variable %a not present in the free variable \
+                freshening map"
+              Variable.print projection)
+      fv
   in
   fv, func_decls, t, of_closures
 

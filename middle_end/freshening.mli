@@ -137,9 +137,11 @@ end
 (* CR-soon mshinwell for mshinwell: add comment *)
 val apply_function_decls_and_free_vars
    : t
-  -> 'a Variable.Map.t
+  -> (Flambda.specialised_to * 'a) Variable.Map.t
   -> Flambda.function_declarations
-  -> 'a Variable.Map.t * Flambda.function_declarations * t
+  -> (Flambda.specialised_to * 'a) Variable.Map.t
+    * Flambda.function_declarations
+    * t
     * Project_var.t
 
 val does_not_freshen : t -> Variable.t list -> bool
