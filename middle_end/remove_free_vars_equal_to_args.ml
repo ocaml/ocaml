@@ -51,7 +51,7 @@ let rewrite_one_function_decl ~(function_decl : Flambda.function_declaration)
       ~inline:function_decl.inline
       ~is_a_functor:function_decl.is_a_functor
 
-let run ~(set_of_closures : Flambda.set_of_closures) =
+let rewrite_one_set_of_closures (set_of_closures : Flambda.set_of_closures) =
   let back_free_vars =
     Variable.Map.fold (fun var (outside_var : Flambda.specialised_to) map ->
         let set =
@@ -77,3 +77,7 @@ let run ~(set_of_closures : Flambda.set_of_closures) =
     ~function_decls
     ~free_vars:set_of_closures.free_vars
     ~specialised_args:set_of_closures.specialised_args
+
+let run expr =
+  Flambda_iterators.map_sets_of_closures expr
+    ~f:rewrite_one_set_of_closures

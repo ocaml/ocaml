@@ -107,6 +107,8 @@ module Transform = struct
                 Variable.rename outer_var.var ~append:variable_suffix
               in
               { var;
+                (* CR-someday mshinwell: consider preserving the projection
+                   relation, moving it to specialised_args *)
                 projectee = None;
               }
             in
