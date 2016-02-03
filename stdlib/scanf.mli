@@ -527,9 +527,9 @@ val unescaped : string -> string
 
     Always return a copy of the argument, even if there is no escape sequence
     in the argument.
-    Raise [Scan_failure] if [s] is not properly escaped since [s] has invalid
-    escape sequences or special characters that are not properly escaped
-    (for instance, [String.unescaped "\""] will fail).
+    Raise [Scan_failure] if [s] is not properly escaped (i.e. [s] has invalid
+    escape sequences or special characters that are not properly escaped).
+    For instance, [String.unescaped "\""] will fail.
     @since 4.00.0
 *)
 
