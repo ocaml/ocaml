@@ -53,6 +53,7 @@ let make_stub unused var (fun_decl : Flambda.function_declaration)
         match Variable.Map.find original_arg specialised_args with
         | exception Not_found -> additional_specialised_args
         | outer_var ->
+          (* CR-soon mshinwell: share with Augment_specialised_args *)
           let outer_var : Flambda.specialised_to =
             match outer_var.Flambda.projectee with
             | None -> outer_var
