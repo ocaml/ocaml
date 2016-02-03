@@ -791,3 +791,14 @@ let contains_stub (fun_decls : Flambda.function_declarations) =
          fun_decls.funs)
   in
   number_of_stub_functions > 0
+
+let clean_projections ~which_variables =
+  Variable.Map.map (fun (spec_to : Flambda.specialised_to) ->
+      match spec_to.projectee with
+      | None -> spec_to
+      | Some (from, _projectee) ->
+        if Variable.Map.mem from which_variables then
+          spec_to
+        else
+          ({ spec_to with projectee = None; } : Flambda.specialised_to))
+    which_variables

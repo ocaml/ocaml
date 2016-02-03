@@ -202,3 +202,10 @@ val all_functions_parameters : Flambda.function_declarations -> Variable.Set.t
 val all_free_symbols : Flambda.function_declarations -> Symbol.Set.t
 
 val contains_stub : Flambda.function_declarations -> bool
+
+(* Ensure that projection information is suitably erased from
+   free_vars and specialised_args if we have deleted the variable being
+   projected from. *)
+val clean_projections
+   : which_variables : Flambda.specialised_to Variable.Map.t
+  -> Flambda.specialised_to Variable.Map.t

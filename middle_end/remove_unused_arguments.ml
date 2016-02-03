@@ -116,15 +116,7 @@ let separate_unused_arguments (set_of_closures : Flambda.set_of_closures) =
            set_of_closures.specialised_args)
     in
     let specialised_args =
-      Variable.Map.map (fun (spec_to : Flambda.specialised_to) ->
-          match spec_to.projectee with
-          | None -> spec_to
-          | Some (from, _projectee) ->
-            if Variable.Map.mem from specialised_args then
-              spec_to
-            else
-              ({ spec_to with projectee = None; } : Flambda.specialised_to))
-        specialised_args
+      Flambda_utils.clean_projections ~which_variables:specialised_args
     in
     let function_decls =
       Flambda.update_function_declarations function_decls ~funs

@@ -670,6 +670,9 @@ let introduce_free_variables_in_set_of_closures
         keep)
       free_vars
   in
+  let free_vars =
+    Flambda_utils.clean_projections ~which_variables:free_vars
+  in
   let specialised_args =
     (* Keep only those that are not rewritten to constants. *)
     Variable.Map.filter (fun _ (spec_to : Flambda.specialised_to) ->
@@ -677,6 +680,9 @@ let introduce_free_variables_in_set_of_closures
         if not keep then done_something := true;
         keep)
       specialised_args
+  in
+  let specialised_args =
+    Flambda_utils.clean_projections ~which_variables:specialised_args
   in
   if not !done_something then
     set_of_closures
