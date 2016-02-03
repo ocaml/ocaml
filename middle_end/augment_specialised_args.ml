@@ -134,7 +134,11 @@ module Make (T : S) = struct
               None
             | wrapper_param -> Some wrapper_param)
       in
-      Variable.Map.disjoint_union for_spec_args existing_free_vars_inverse
+      (* In case a free variable and a specialised arg have the same
+         outer variable, we give the specialised arg priority, since this
+         map is going to be used to rewrite terms to wrapper params. *)
+      Variable.Map.union (fun _outer_var spec_arg _free_var -> Some spec_arg)
+        for_spec_args existing_free_vars_inverse
     in
     (*  2. Renaming of newly-introduced specialised arguments: the fresh
         variables are used for the [let]-bindings in the wrapper.

@@ -42,9 +42,30 @@ module Transform = struct
         Flambda_utils.variables_bound_by_the_closure closure_id
           set_of_closures.function_decls
       in
-      Variable.Map.filter (fun inner_free_var _outer_free_var ->
-          Variable.Set.mem inner_free_var bound_by_this_closure)
-        set_of_closures.free_vars
+      let free_vars =
+        Variable.Map.filter (fun inner_free_var _outer_free_var ->
+            Variable.Set.mem inner_free_var bound_by_this_closure)
+          set_of_closures.free_vars
+      in
+      (* [Augment_specialised_args] cannot cope with duplicate definitions
+         at the moment. *)
+      Variable.Map.fold (fun inner_free_var
+                (outer_free_var : Flambda.specialised_to) free_vars ->
+          let already_there ~which_variables =
+            Variable.Map.exists (fun _var
+                      (outer_free_var' : Flambda.specialised_to) ->
+                Variable.equal outer_free_var.var outer_free_var'.var)
+              which_variables
+          in
+          if (not (already_there ~which_variables:free_vars))
+            && (not (already_there
+              ~which_variables:set_of_closures.specialised_args))
+          then
+            Variable.Map.add inner_free_var outer_free_var free_vars
+          else
+            free_vars)
+        free_vars
+        Variable.Map.empty
     in
     if function_decl.stub || Variable.Map.cardinal free_vars < 1 then
       None
@@ -93,11 +114,13 @@ module Transform = struct
           free_vars
           Variable.Map.empty
       in
-      let new_function_body =
+      let new_function_body = function_decl.body in
+(* This will be done by Remove_free_vars_equal_to_args
         Flambda_utils.toplevel_substitution
           existing_inner_free_vars_to_new_inner_vars
           function_decl.body
       in
+*)
       let new_specialised_args_indexed_by_new_outer_vars =
         Variable.Map.fold (fun inner_free_var
               (outer_free_var : Flambda.specialised_to)

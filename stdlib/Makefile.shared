@@ -20,7 +20,7 @@ COMPILER=../ocamlc
 CAMLC=$(CAMLRUN) $(COMPILER)
 COMPFLAGS=-strict-sequence -w +33..39 -g -warn-error A-53 -bin-annot -nostdlib \
           -safe-string
-OPTCOMPFLAGS=$(COMPFLAGS) -O3
+OPTCOMPFLAGS=$(COMPFLAGS) -O3 -unbox-closures
 OPTCOMPILER=../ocamlopt
 CAMLOPT=$(CAMLRUN) $(OPTCOMPILER)
 CAMLDEP=$(CAMLRUN) ../tools/ocamldep
