@@ -387,18 +387,11 @@ let apply_function_decls_and_free_vars t fv func_decls =
         match spec_to.projectee with
         | None -> spec_to, data
         | Some (projection, projectee) ->
-          match apply_variable t projection with
-          | projection ->
-            let projectee =
-              Project_var.apply_projectee of_closures projectee
-            in
-            let projectee = Some (projection, projectee) in
-            ({ spec_to with projectee; } : Flambda.specialised_to), data
-          | exception Not_found ->
-            Misc.fatal_errorf "Freshening.apply_function_decls_and_free_vars: \
-                projection variable %a not present in the free variable \
-                freshening map"
-              Variable.print projection)
+          let projectee =
+            Project_var.apply_projectee of_closures projectee
+          in
+          let projectee = Some (projection, projectee) in
+          ({ spec_to with projectee; } : Flambda.specialised_to), data)
       fv
   in
   fv, func_decls, t, of_closures

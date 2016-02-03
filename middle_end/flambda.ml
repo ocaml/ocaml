@@ -603,20 +603,27 @@ and variables_usage_named ?ignore_uses_in_project_var
   | Symbol _ | Const _ | Allocated_const _ | Read_mutable _
   | Read_symbol_field _ -> ()
   | Set_of_closures { free_vars; specialised_args; _ } ->
-    (* Sets of closures are, well, closed---except for the specialised
-       argument list, which may identify variables currently in scope
-       outside of the closure. *)
+    (* Sets of closures are, well, closed---except for the free variable and
+       specialised argument lists, which may identify variables currently in
+       scope outside of the closure. *)
     Variable.Map.iter (fun _ (renamed_to : specialised_to) ->
         (* We don't need to do anything with [renamed_to.projectee.var], if
            it is present, since it would only be another free variable
-           in the same set of closures. *)
-        free_variable renamed_to.var)
+           in the same set of closures.  However we do treat any variable
+           being projected from as free, so its binding is not deleted. *)
+        free_variable renamed_to.var;
+        match renamed_to.projectee with
+        | Some (var, _projectee) -> free_variable var
+        | None -> ())
       free_vars;
     Variable.Map.iter (fun _ (spec_to : specialised_to) ->
         (* We don't need to do anything with [spec_to.projectee.var], if
            it is present, since it would only be another specialised arg
            in the same set of closures. *)
-        free_variable spec_to.var)
+        free_variable spec_to.var;
+        match spec_to.projectee with
+        | Some (var, _projectee) -> free_variable var
+        | None -> ())
       specialised_args
   | Project_closure { set_of_closures; closure_id = _ } ->
     free_variable set_of_closures
