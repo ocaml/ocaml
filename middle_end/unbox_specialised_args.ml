@@ -58,10 +58,11 @@ module Transform = struct
                  inner vars. *)
               Variable.Pair.Set.fold (fun (target_fun_var, target_arg)
                     (result : user_data) ->
-                  if Variable.equal target_fun_var fun_var then
+                  if Variable.equal target_fun_var fun_var
+                    || not (Variable.Map.mem target_arg specialised_args)
+                  then
                     result
                   else begin
-                    assert (Variable.Map.mem target_arg specialised_args);
                     let new_outer_vars_freshening =
                       List.fold_left (fun freshening
                                 (spec_to : Flambda.specialised_to) ->

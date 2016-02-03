@@ -394,28 +394,12 @@ module Make (T : S) = struct
           Flambda.update_function_declarations set_of_closures.function_decls
             ~funs
         in
-        let all_free_variables =
-          Variable.Map.fold (fun fun_var _function_decl all_free_variables ->
-              let free_variables =
-                Flambda_utils.variables_bound_by_the_closure
-                  (Closure_id.wrap fun_var)
-                  function_decls
-              in
-              Variable.Set.union free_variables all_free_variables)
-            function_decls.funs
-            Variable.Set.empty
-        in
         assert (Variable.Map.cardinal specialised_args
           >= Variable.Map.cardinal set_of_closures.specialised_args);
-        let free_vars =
-          Variable.Map.filter (fun inner_var _outer_var ->
-              Variable.Set.mem inner_var all_free_variables)
-            set_of_closures.free_vars
-        in
         let set_of_closures =
           Flambda.create_set_of_closures
             ~function_decls
-            ~free_vars
+            ~free_vars:set_of_closures.free_vars
             ~specialised_args
         in
         let expr =
