@@ -74,7 +74,7 @@ module Transform = struct
                         (Variable.Map.data
                           extracted.new_inner_to_new_outer_vars)
                     in
-                    let _freshen_outer_var outer_var =
+                    let freshen_outer_var outer_var =
                       match
                         Variable.Map.find outer_var new_outer_vars_freshening
                       with
@@ -98,10 +98,7 @@ module Transform = struct
                                 Variable.print outer_var
                             | Some (_var, projectee) -> projectee
                           in
-                          (* There's no need to make a new outer var; that
-                             would just cause a duplicate definition. *)
-                       (* let new_outer_var = freshen_outer_var outer_var in *)
-                          let new_outer_var = outer_var in
+                          let new_outer_var = freshen_outer_var outer_var in
                           let new_spec_to : Flambda.specialised_to =
                             { var = new_outer_var;
                               projectee = Some (target_arg, projectee);
@@ -123,7 +120,7 @@ module Transform = struct
                       in
                       Variable.Map.fold (fun outer_var defining_expr
                                 projection_defns_indexed_by_outer_vars ->
-                          let new_outer_var = outer_var in  (* see above *)
+                          let new_outer_var = freshen_outer_var outer_var in
                           let defining_expr =
                             Flambda_utils.toplevel_substitution_named
                               fun_var_substitution defining_expr
