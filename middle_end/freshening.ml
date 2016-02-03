@@ -346,12 +346,14 @@ module Project_var = struct
                 (T.Map.print T.print) later
             end;
             match T.Map.find var later with
-            | exception Not_found ->
+            | exception Not_found -> var
+(*
               Misc.fatal_errorf "Freshening.Project_var.compose: later \
                   substitution does not freshen everything in earlier \
                   substitution.  earlier=%a later=%a"
                 (T.Map.print T.print) earlier
                 (T.Map.print T.print) later
+*)
             | var -> var)
           earlier
   end
