@@ -45,18 +45,21 @@ let check o =
      printf " ok\n";
 ;;
 
-Weak.set !smuggle 0 (Some (String.make size ' '));;
+let f () =
+  Weak.set !smuggle 0 (Some (String.make size ' '));
 
-(* Check the data just to make sure. *)
-check (Weak.get !smuggle 0);;
+  (* Check the data just to make sure. *)
+  check (Weak.get !smuggle 0);
 
-(* Get a dangling pointer in W. *)
-Gc.full_major ();;
+  (* Get a dangling pointer in W. *)
+  Gc.full_major ();
 
-(* Fill the heap with other stuff. *)
-let rec fill n accu = if n = 0 then accu else fill (n-1) (123 :: accu);;
-let r = fill ((Gc.stat ()).Gc.heap_words / 3) [];;
-Gc.minor ();;
+  (* Fill the heap with other stuff. *)
+  let rec fill n accu = if n = 0 then accu else fill (n-1) (123 :: accu) in
+  let _r : int list = fill ((Gc.stat ()).Gc.heap_words / 3) [] in
+  Gc.minor ();
 
-(* Now follow the dangling pointer and exhibit the problem. *)
-check (Weak.get !smuggle 0);;
+  (* Now follow the dangling pointer and exhibit the problem. *)
+  check (Weak.get !smuggle 0)
+
+let () = (f [@inlined never]) ()

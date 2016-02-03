@@ -32,6 +32,15 @@ run-all:
 	    && echo " => passed" || echo " => failed"; \
 	  fi \
 	done;
+	@for file in *.opt_backend.ml; do \
+	  printf " ... testing '$$file' with ocamlopt:"; \
+	  if $(BYTECODE_ONLY); then echo " => skipped"; else \
+	    F="`basename $$file .ml`"; \
+	    $(OCAMLOPT) $(FLAGS) -c $$file 2>$$F.$(BACKEND).opt_result; \
+	    $(DIFF) $$F.$(BACKEND).opt_reference $$F.$(BACKEND).opt_result >/dev/null \
+	    && echo " => passed" || echo " => failed"; \
+	  fi \
+	done;
 
 promote: defaultpromote
 
@@ -39,3 +48,9 @@ clean: defaultclean
 	@rm -f *.result *.opt_result
 
 include $(BASEDIR)/makefiles/Makefile.common
+
+ifeq "$(FLAMBDA)" "true"
+BACKEND=flambda
+else
+BACKEND=clambda
+endif

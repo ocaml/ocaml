@@ -29,7 +29,8 @@ control.
 ------------------------------------------------------------------------
 EOF
     mkdir -p $PREFIX
-    ./configure --prefix $PREFIX -with-debug-runtime -with-instrumented-runtime
+    ./configure --prefix $PREFIX -with-debug-runtime \
+      -with-instrumented-runtime $CONFIG_ARG
     export PATH=$PREFIX/bin:$PATH
     make world.opt
     make ocamlnat

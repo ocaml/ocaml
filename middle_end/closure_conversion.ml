@@ -65,6 +65,7 @@ let add_default_argument_wrappers lam =
                (function
                  | (id, Lambda.Lfunction {kind; params; body; attr}) ->
                    Simplif.split_default_wrapper id kind params body attr
+                     ~create_wrapper_body:stubify
                  | _ -> assert false)
                defs)
         in
@@ -106,25 +107,6 @@ let tupled_function_call_stub original_params unboxed_version
     ~body ~stub:true ~dbg:Debuginfo.none ~inline:Default_inline
     ~is_a_functor:false
 
-(** Propagate an [Lev_after] debugging event into an adjacent Flambda node. *)
-let add_debug_info (ev : Lambda.lambda_event) (flam : Flambda.t)
-      : Flambda.t =
-  match ev.lev_kind with
-  | Lev_after _ ->
-    begin match flam with
-    | Apply ap ->
-      Apply { ap with dbg = Debuginfo.from_call ev; }
-    | Let let_expr ->
-      Flambda.map_defining_expr_of_let let_expr ~f:(function
-        | Prim (p, args, _dinfo) ->
-          Prim (p, args, Debuginfo.from_call ev)
-        | defining_expr -> defining_expr)
-    | Send { kind; meth; obj; args; dbg = _; } ->
-      Send { kind; meth; obj; args; dbg = Debuginfo.from_call ev; }
-    | _ -> flam
-    end
-  | _ -> flam
-
 let rec eliminate_const_block (const : Lambda.structured_constant)
       : Lambda.lambda =
   match const with
@@ -135,6 +117,11 @@ let rec eliminate_const_block (const : Lambda.structured_constant)
   | Const_pointer _
   | Const_immstring _
   | Const_float_array _ -> Lconst const
+
+let default_debuginfo ?(inner_debuginfo = Debuginfo.none) env_debuginfo =
+  match env_debuginfo with
+  | None -> inner_debuginfo
+  | Some debuginfo -> debuginfo
 
 let rec close_const t env (const : Lambda.structured_constant)
       : Flambda.named * string =
@@ -156,7 +143,7 @@ let rec close_const t env (const : Lambda.structured_constant)
   | Const_block _ ->
     Expr (close t env (eliminate_const_block const)), "const_block"
 
-and close t env (lam : Lambda.lambda) : Flambda.t =
+and close t ?debuginfo env (lam : Lambda.lambda) : Flambda.t =
   match lam with
   | Lvar id ->
     begin match Env.find_var_exn env id with
@@ -173,13 +160,17 @@ and close t env (lam : Lambda.lambda) : Flambda.t =
     name_expr cst ~name:("const_" ^ name)
   | Llet ((Strict | Alias | StrictOpt), id, defining_expr, body) ->
     let var = Variable.create_with_same_name_as_ident id in
-    let defining_expr = close_let_bound_expression t var env defining_expr in
+    let defining_expr =
+      close_let_bound_expression t var env defining_expr
+    in
     let body = close t (Env.add_var env id var) body in
     Flambda.create_let var defining_expr body
   | Llet (Variable, id, defining_expr, body) ->
     let mut_var = Mutable_variable.of_ident id in
     let var = Variable.create_with_same_name_as_ident id in
-    let defining_expr = close_let_bound_expression t var env defining_expr in
+    let defining_expr =
+      close_let_bound_expression t var env defining_expr
+    in
     let body = close t (Env.add_mutable_var env id mut_var) body in
     Flambda.create_let var defining_expr (Let_mutable (mut_var, var, body))
   | Lfunction { kind; params; body; attr; } ->
@@ -222,7 +213,10 @@ and close t env (lam : Lambda.lambda) : Flambda.t =
               func = func_var;
               args;
               kind = Indirect;
-              dbg = Debuginfo.from_location Dinfo_call ap_loc;
+              dbg =
+                default_debuginfo
+                  ~inner_debuginfo:(Debuginfo.from_location Dinfo_call ap_loc)
+                  debuginfo;
               inline = ap_inlined;
             })))
   | Lletrec (defs, body) ->
@@ -336,7 +330,7 @@ and close t env (lam : Lambda.lambda) : Flambda.t =
               (Prim (Pintcomp Ceq, [zero; denominator], Debuginfo.none))
                 (If_then_else (is_zero,
                   name_expr (Prim (Praise Raise_regular, [exn],
-                      Debuginfo.none))
+                      default_debuginfo debuginfo))
                     ~name:"dummy",
                   (* CR-someday pchambart: find the right event.
                      mshinwell: I briefly looked at this, and couldn't
@@ -383,12 +377,14 @@ and close t env (lam : Lambda.lambda) : Flambda.t =
         ap_inlined = Default_inline;
       }
     in
-    close t env (Lambda.Lapply apply)
+    close t env ?debuginfo (Lambda.Lapply apply)
   | Lprim (Praise kind, [Levent (arg, event)]) ->
     let arg_var = Variable.create "raise_arg" in
     Flambda.create_let arg_var (Expr (close t env arg))
       (name_expr
-        (Prim (Praise kind, [arg_var], Debuginfo.from_raise event))
+        (Prim (Praise kind, [arg_var],
+               default_debuginfo ~inner_debuginfo:(Debuginfo.from_raise event)
+                 debuginfo))
         ~name:"raise")
   | Lprim (Pfield _, [Lprim (Pgetglobal id, [])])
       when Ident.same id t.current_unit_id ->
@@ -418,7 +414,7 @@ and close t env (lam : Lambda.lambda) : Flambda.t =
       ~evaluation_order:`Right_to_left
       ~name:(name ^ "_arg")
       ~create_body:(fun args ->
-        name_expr (Prim (p, args, Debuginfo.none)) ~name)
+        name_expr (Prim (p, args, default_debuginfo debuginfo)) ~name)
   | Lswitch (arg, sw) ->
     let scrutinee = Variable.create "switch" in
     let aux (i, lam) = i, close t env lam in
@@ -484,7 +480,13 @@ and close t env (lam : Lambda.lambda) : Flambda.t =
     let new_value_var = Variable.create "new_value" in
     Flambda.create_let new_value_var (Expr (close t env new_value))
       (Assign { being_assigned; new_value = new_value_var; })
-  | Levent (lam, ev) -> add_debug_info ev (close t env lam)
+  | Levent (lam, ev) -> begin
+      match ev.lev_kind with
+      | Lev_after _ ->
+          close t env ~debuginfo:(Debuginfo.from_call ev) lam
+      | _ ->
+          close t env lam
+    end
   | Lifused _ ->
     (* [Lifused] is used to mark that this expression should be alive only if
        an identifier is.  Every use should have been removed by

@@ -211,6 +211,7 @@
 /stdlib/sys.ml
 
 /testsuite/**/*.result
+/testsuite/**/*.opt_result
 /testsuite/**/*.byte
 /testsuite/**/*.native
 /testsuite/**/program
