@@ -47,13 +47,30 @@ let make_stub unused var (fun_decl : Flambda.function_declaration)
   let used_args' =
     List.filter (fun (var, _) -> not (Variable.Set.mem var unused)) args'
   in
+  let args_renaming = Variable.Map.of_list args' in
   let additional_specialised_args =
     List.fold_left (fun additional_specialised_args (original_arg,arg) ->
         match Variable.Map.find original_arg specialised_args with
         | exception Not_found -> additional_specialised_args
-        | outside_var ->
-          Variable.Map.add arg outside_var additional_specialised_args)
-      additional_specialised_args used_args'
+        | outer_var ->
+          let outer_var : Flambda.specialised_to =
+            match outer_var.Flambda.projectee with
+            | None -> outer_var
+            | Some (projection, projectee) ->
+              let projection =
+                match Variable.Map.find projection args_renaming with
+                | exception Not_found ->
+                  (* Must always be a parameter of this
+                     [function_decl]. *)
+                  assert false
+                | wrapper_arg -> wrapper_arg
+              in
+              { outer_var with
+                projectee = Some (projection, projectee);
+              }
+          in
+          Variable.Map.add arg outer_var additional_specialised_args)
+      additional_specialised_args args'
   in
   let args = List.map (fun (_, var) -> var) used_args' in
   let kind = Flambda.Direct (Closure_id.wrap renamed) in
