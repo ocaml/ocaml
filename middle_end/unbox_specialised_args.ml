@@ -49,11 +49,6 @@ module Transform = struct
               set_of_closures.specialised_args);
             match Variable.Map.find projected_from invariant_params_flow with
             | exception Not_found -> result
-              (* CR mshinwell: re-enable when Invariant_params won't do this
-                 any more
-              Misc.fatal_errorf "No invariant params flow for variable %a \
-                  despite it being a specialised arg"
-                Variable.print projected_from *)
             | flow ->
               (* For each [target_arg] equal to [projected_from] in
                  another function known as [target_fun_var], add all of
