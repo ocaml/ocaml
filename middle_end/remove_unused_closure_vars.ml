@@ -110,8 +110,7 @@ let remove_unused_closure_variables program =
       let set_of_closures =
         Flambda.create_set_of_closures ~function_decls
           ~free_vars:(clean_projections ~which_variables:free_vars)
-          ~specialised_args:
-            (clean_projections ~which_variables:specialised_args)
+          ~specialised_args
       in
       Set_of_closures set_of_closures
     | e -> e
