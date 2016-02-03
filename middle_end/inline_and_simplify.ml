@@ -983,40 +983,41 @@ and simplify_named env r (tree : Flambda.named) : Flambda.named * R.t =
     if E.never_inline env then
       Set_of_closures set_of_closures, r
     else begin
-      match Unbox_free_vars_of_closures.run ~env ~set_of_closures with
+      (* Do [Unbox_closures] first to try to decide which things are
+         free variables and which things are specialised arguments before
+         unboxing them. *)
+      match
+        Unbox_closures.rewrite_set_of_closures ~backend ~env
+          ~set_of_closures
+      with
       | Some expr ->
-        simplify env r expr ~pass_name:"Unbox_free_vars_of_closures"
+        let expr =
+          (* This does the actual substitutions of free variables
+             for specialised args introduced by [Unbox_closures].
+             (Needed both immediately after the pass, and after inlining
+             any of the stubs introduced by [Unbox_closures] too). *)
+          Remove_free_vars_equal_to_args.run expr
+        in
+        simplify env r expr ~pass_name:"Unbox_closures"
       | None ->
-        (* CR mshinwell: should maybe add one allocation for the stub *)
-        match
-          Unbox_specialised_args.rewrite_set_of_closures ~backend ~env
-            ~set_of_closures
-        with
+        match Unbox_free_vars_of_closures.run ~env ~set_of_closures with
         | Some expr ->
-          simplify env r expr ~pass_name:"Unbox_specialised_args"
+          simplify env r expr ~pass_name:"Unbox_free_vars_of_closures"
         | None ->
-          let set_of_closures =
-            Remove_unused_arguments.
-                separate_unused_arguments_in_set_of_closures
-              set_of_closures ~backend
-          in
-          if not !Clflags.unbox_closures then
+          (* CR mshinwell: should maybe add one allocation for the stub *)
+          match
+            Unbox_specialised_args.rewrite_set_of_closures ~backend ~env
+              ~set_of_closures
+          with
+          | Some expr ->
+            simplify env r expr ~pass_name:"Unbox_specialised_args"
+          | None ->
+            let set_of_closures =
+              Remove_unused_arguments.
+                  separate_unused_arguments_in_set_of_closures
+                set_of_closures ~backend
+            in
             Set_of_closures set_of_closures, r
-          else
-            match
-              Unbox_closures.rewrite_set_of_closures ~backend ~env
-                ~set_of_closures
-            with
-            | Some expr ->
-              let expr =
-                (* This does the actual substitutions of free variables
-                   for specialised args introduced by [Unbox_closures].
-                   (Needed both immediately after the pass, and after inlining
-                   any of the stubs introduced by [Unbox_closures] too). *)
-                Remove_free_vars_equal_to_args.run expr
-              in
-              simplify env r expr ~pass_name:"Unbox_closures"
-            | None -> Set_of_closures set_of_closures, r
     end
   | Project_closure project_closure ->
     simplify_project_closure env r ~project_closure
