@@ -147,6 +147,11 @@ module Env = struct
     if not (mem t from) then
       Misc.fatal_errorf "Env.add_projection: projectee %a not in environment"
         Variable.print from
+(*
+    else if not (mem t projection) then
+      Misc.fatal_errorf "Env.add_projection: projection %a not in environment"
+        Variable.print projection
+*)
     else
       { t with
         projections =
@@ -158,9 +163,7 @@ module Env = struct
     let key = from, projectee in
     match Projectee.Var_and_projectee.Map.find key t.projections with
     | exception Not_found -> None
-    | var ->
-      if mem t var then Some var
-      else None
+    | var -> Some var
 
   let does_not_bind t vars =
     not (List.exists (mem t) vars)

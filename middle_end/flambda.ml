@@ -609,21 +609,14 @@ and variables_usage_named ?ignore_uses_in_project_var
     Variable.Map.iter (fun _ (renamed_to : specialised_to) ->
         (* We don't need to do anything with [renamed_to.projectee.var], if
            it is present, since it would only be another free variable
-           in the same set of closures.  However we do treat any variable
-           being projected from as free, so its binding is not deleted. *)
-        free_variable renamed_to.var;
-        match renamed_to.projectee with
-        | Some (var, _projectee) -> free_variable var
-        | None -> ())
+           in the same set of closures. *)
+        free_variable renamed_to.var)
       free_vars;
     Variable.Map.iter (fun _ (spec_to : specialised_to) ->
         (* We don't need to do anything with [spec_to.projectee.var], if
            it is present, since it would only be another specialised arg
            in the same set of closures. *)
-        free_variable spec_to.var;
-        match spec_to.projectee with
-        | Some (var, _projectee) -> free_variable var
-        | None -> ())
+        free_variable spec_to.var)
       specialised_args
   | Project_closure { set_of_closures; closure_id = _ } ->
     free_variable set_of_closures
