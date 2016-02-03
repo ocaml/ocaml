@@ -550,6 +550,9 @@ Features wishes:
   (tkob)
 - GPR#401: automatically retry failed test directories in the testsuite
   (David Allsopp)
+- GPR#451: an optional 'parallel' target in testsuite/Makefile using the
+  GNU parallel tool to run tests in parallel.
+  (Gabriel Scherer)
 
 Build system:
 - GPR#388: FlexDLL added as a Git submodule and bootstrappable with the compiler
