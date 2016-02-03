@@ -230,9 +230,7 @@ module Make (T : S) = struct
       | Some what_to_specialise ->
         let (_ : int), new_specialised_args_indexed_by_new_outer_vars =
           let module Backend = (val backend : Backend_intf.S) in
-          (* XXX temporary hack.  We need to filter the inner/outer var
-             list as well. *)
-          let max_args = Backend.max_sensible_number_of_arguments * 100 in
+          let max_args = Backend.max_sensible_number_of_arguments in
           List.fold_left (fun (num_params, new_spec_args) add_all_or_none ->
               (* - It is important to limit the number of arguments added:
                  if arguments end up being passed on the stack, tail call
@@ -271,7 +269,11 @@ module Make (T : S) = struct
           None
         else
           let new_inner_to_new_outer_vars =
-            what_to_specialise.new_inner_to_new_outer_vars
+            Variable.Map.filter (fun _new_inner_var
+                      (new_outer_var : Flambda.specialised_to) ->
+                Variable.Map.mem new_outer_var.var
+                  new_specialised_args_indexed_by_new_outer_vars)
+              what_to_specialise.new_inner_to_new_outer_vars
           in
           let new_fun_var, wrapper, params_renaming =
             create_wrapper ~fun_var ~set_of_closures ~function_decl

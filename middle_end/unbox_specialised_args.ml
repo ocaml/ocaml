@@ -188,8 +188,10 @@ module Transform = struct
               Extract_projections.from_function_decl ~env ~function_decl
                 ~which_variables:set_of_closures.specialised_args)
     in
+(*
 Format.eprintf "USA collected projections %a\n%!"
   (Variable.Map.print Extract_projections.print_result) projections_by_function;
+*)
     (* Remove any projections that we already have specialised args for. *)
     let projections_by_function : Extract_projections.result Variable.Map.t =
       Variable.Map.map (fun (result : Extract_projections.result)
@@ -237,8 +239,10 @@ Format.eprintf "USA collected projections %a\n%!"
           })
         projections_by_function
     in
+(*
 Format.eprintf "USA after filtering projections %a\n%!"
   (Variable.Map.print Extract_projections.print_result) projections_by_function;
+*)
     (* Avoid [Invariant_params] when we can. *)
     if Variable.Map.cardinal projections_by_function < 1 then
       Variable.Map.empty
