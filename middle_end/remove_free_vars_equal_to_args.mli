@@ -17,4 +17,4 @@
 (** Replace free variables in closures known to be equal to specialised
     arguments of such closures with those specialised arguments. *)
 
-val run : Flambda.expr -> Flambda.expr
+val run : Flambda.set_of_closures -> Flambda.set_of_closures option

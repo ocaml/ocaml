@@ -998,21 +998,22 @@ and simplify_named env r (tree : Flambda.named) : Flambda.named * R.t =
     if E.never_inline env then
       Set_of_closures set_of_closures, r
     else begin
-      (* Do [Unbox_closures] first to try to decide which things are
+      (* This does the actual substitutions of free variables
+         for specialised args introduced by [Unbox_closures].
+         (Apart from simplifying the [Unbox_closures] output, this also
+         prevents applying [Unbox_closures] over and over.) *)
+      let set_of_closures =
+        match Remove_free_vars_equal_to_args.run set_of_closures with
+        | None -> set_of_closures
+        | Some set_of_closures -> set_of_closures
+      in
+      (* Do [Unbox_closures] next to try to decide which things are
          free variables and which things are specialised arguments before
          unboxing them. *)
       match
-        Unbox_closures.rewrite_set_of_closures ~backend ~env
-          ~set_of_closures
+        Unbox_closures.rewrite_set_of_closures ~backend ~env ~set_of_closures
       with
       | Some expr ->
-        let expr =
-          (* This does the actual substitutions of free variables
-             for specialised args introduced by [Unbox_closures].
-             (Needed both immediately after the pass, and after inlining
-             any of the stubs introduced by [Unbox_closures] too). *)
-          Remove_free_vars_equal_to_args.run expr
-        in
         simplify env r expr ~pass_name:"Unbox_closures"
       | None ->
         match Unbox_free_vars_of_closures.run ~env ~set_of_closures with

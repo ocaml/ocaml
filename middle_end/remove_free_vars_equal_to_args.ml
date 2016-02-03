@@ -14,6 +14,9 @@
 (*                                                                        *)
 (**************************************************************************)
 
+let pass_name = "remove-free-vars-equal-to-args"
+let () = Pass_wrapper.register ~pass_name
+
 let rewrite_one_function_decl ~(function_decl : Flambda.function_declaration)
       ~back_free_vars ~specialised_args =
   let params_for_equal_free_vars =
@@ -62,22 +65,36 @@ let rewrite_one_set_of_closures (set_of_closures : Flambda.set_of_closures) =
         Variable.Map.add outside_var.var set map)
       set_of_closures.free_vars Variable.Map.empty
   in
+  let done_something = ref false in
   let funs =
-    Variable.Map.map
-      (fun function_decl ->
-         rewrite_one_function_decl ~function_decl ~back_free_vars
-           ~specialised_args:set_of_closures.specialised_args)
+    Variable.Map.map (fun function_decl ->
+        let new_function_decl =
+          rewrite_one_function_decl ~function_decl ~back_free_vars
+            ~specialised_args:set_of_closures.specialised_args
+        in
+        if not (new_function_decl == function_decl) then begin
+          done_something := true
+        end;
+        new_function_decl)
       set_of_closures.function_decls.funs
   in
-  let function_decls =
-    Flambda.update_function_declarations
-      set_of_closures.function_decls ~funs
-  in
-  Flambda.create_set_of_closures
-    ~function_decls
-    ~free_vars:set_of_closures.free_vars
-    ~specialised_args:set_of_closures.specialised_args
+  if not !done_something then
+    None
+  else
+    let function_decls =
+      Flambda.update_function_declarations
+        set_of_closures.function_decls ~funs
+    in
+    let set_of_closures =
+      Flambda.create_set_of_closures
+        ~function_decls
+        ~free_vars:set_of_closures.free_vars
+        ~specialised_args:set_of_closures.specialised_args
+    in
+    Some set_of_closures
 
-let run expr =
-  Flambda_iterators.map_sets_of_closures expr
-    ~f:rewrite_one_set_of_closures
+let run set_of_closures =
+  Pass_wrapper.with_dump ~pass_name ~input:set_of_closures
+    ~print_input:Flambda.print_set_of_closures
+    ~print_output:Flambda.print_set_of_closures
+    ~f:(fun () -> rewrite_one_set_of_closures set_of_closures)
