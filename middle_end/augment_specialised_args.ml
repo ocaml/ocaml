@@ -64,6 +64,7 @@ module Make (T : S) = struct
        definitions are called the "specialised args bound in the wrapper".
        Note that the domain of [params_renaming] is a (non-strict) superset
        of the "inner vars" of the original specialised args. *)
+    let params = Variable.Set.of_list function_decl.params in
     let params_renaming =
       Variable.Map.of_list
         (List.map (fun param ->
@@ -110,9 +111,8 @@ module Make (T : S) = struct
              the outer variables? *)
           Variable.Map.filter_map set_of_closures.specialised_args
             ~f:(fun inner_var (spec_to : Flambda.specialised_to) ->
-              match Variable.Map.find inner_var params_renaming with
-              | exception Not_found -> None
-              | _ -> Some spec_to.var)
+              if Variable.Set.mem inner_var params then Some spec_to.var
+              else None)
         in
         Variable.Map.transpose_keys_and_data specialised_args
       in
@@ -307,11 +307,45 @@ module Make (T : S) = struct
               what_to_specialise.removed_free_vars,
               params_renaming)
 
+  let check_invariants ~(set_of_closures : Flambda.set_of_closures)
+        ~original_set_of_closures =
+    if !Clflags.flambda_invariant_checks then begin
+      Variable.Map.iter (fun fun_var
+                (function_decl : Flambda.function_declaration) ->
+          let params = Variable.Set.of_list function_decl.params in
+          Variable.Map.iter (fun inner_var
+                      (outer_var : Flambda.specialised_to) ->
+                if Variable.Set.mem inner_var params then begin
+                  assert (not (Variable.Set.mem outer_var.var
+                    function_decl.free_variables));
+                  match outer_var.projectee with
+                  | None -> ()
+                  | Some (projection, _projectee) ->
+                    if not (Variable.Set.mem projection params) then begin
+                      Misc.fatal_errorf "Augment_specialised_args (%s): \
+                          specialised argument (%a -> %a) references a \
+                          projection variable that is not a specialised \
+                          argument of the function %a. @ The set of closures \
+                          before the transformation was:@  %a. @ The set of \
+                          closures after the transformation was:@ %a."
+                        T.pass_name
+                        Variable.print inner_var
+                        Flambda.print_specialised_to outer_var
+                        Variable.print fun_var
+                        Flambda.print_set_of_closures original_set_of_closures
+                        Flambda.print_set_of_closures set_of_closures
+                    end
+                end)
+            set_of_closures.specialised_args)
+        set_of_closures.function_decls.funs
+    end
+
   let rewrite_set_of_closures_core ~backend ~env
         ~(set_of_closures : Flambda.set_of_closures) =
     match T.precondition ~backend ~env ~set_of_closures with
     | None -> None
     | Some user_data ->
+      let original_set_of_closures = set_of_closures in
       let funs, new_specialised_arg_defns_indexed_by_new_outer_vars,
           specialised_args, _removed_free_vars, done_something =
         Variable.Map.fold
@@ -359,7 +393,9 @@ module Make (T : S) = struct
                     new_inner_to_new_outer_vars'
                 in
                 let for_existing_arguments =
-                  Variable.Map.fold (fun inner_var outer_var for_existing ->
+                  Variable.Map.fold (fun inner_var
+                            (outer_var : Flambda.specialised_to)
+                            for_existing ->
                       match Variable.Map.find inner_var params_renaming with
                       | exception Not_found ->
                         (* Not a parameter of this [function_decl]. *)
@@ -367,6 +403,27 @@ module Make (T : S) = struct
                       | wrapper_param ->
                         assert (not (Variable.Map.mem wrapper_param
                             for_existing));
+                        (* Any projection associated with the outer variable
+                           must be rewritten in terms of the specialised
+                           arguments of this function. *)
+                        let outer_var : Flambda.specialised_to =
+                          match outer_var.projectee with
+                          | None -> outer_var
+                          | Some (projection, projectee) ->
+                            let projection =
+                              match
+                                Variable.Map.find projection params_renaming
+                              with
+                              | exception Not_found ->
+                                (* Must always be a parameter of this
+                                   [function_decl]. *)
+                                assert false
+                              | wrapper_param -> wrapper_param
+                            in
+                            { outer_var with
+                              projectee = Some (projection, projectee);
+                            }
+                        in
                         Variable.Map.add wrapper_param outer_var
                           for_existing)
                     set_of_closures.specialised_args
@@ -402,6 +459,7 @@ module Make (T : S) = struct
             ~free_vars:set_of_closures.free_vars
             ~specialised_args
         in
+        check_invariants ~set_of_closures ~original_set_of_closures;
         let expr =
           Variable.Map.fold (fun new_outer_var spec_arg_defn expr ->
               Flambda.create_let new_outer_var spec_arg_defn expr)

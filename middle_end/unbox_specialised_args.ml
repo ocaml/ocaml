@@ -181,16 +181,33 @@ module Transform = struct
               Extract_projections.from_function_decl ~env ~function_decl
                 ~which_variables:set_of_closures.specialised_args)
     in
-    (* Remove any projections that we already have specialised args for. *)
-    let projections_by_function : Extract_projections.result Variable.Map.t =
-      Variable.Map.map (fun (result : Extract_projections.result)
-                : Extract_projections.result ->
-          let filter_outer_vars = ref Variable.Set.empty in
-          let new_inner_to_new_outer_vars =
-            Variable.Map.filter (fun _var (spec_to : Flambda.specialised_to) ->
-                let already_present =
-                  Variable.Map.exists (fun _var
-                            (spec_to' : Flambda.specialised_to) ->
+    let projections_by_function =
+      collect_projections_core ~backend ~set_of_closures
+        ~projections_by_function
+    in
+    (* For each function, remove any projections that we already have
+       specialised args for in that function. *)
+    Variable.Map.mapi (fun fun_var (result : Extract_projections.result)
+              : Extract_projections.result ->
+        let params_of_this_function =
+          match
+            Variable.Map.find fun_var set_of_closures.function_decls.funs
+          with
+          | exception Not_found -> assert false
+          | (function_decl : Flambda.function_declaration) ->
+            Variable.Set.of_list function_decl.params
+        in
+        let filter_outer_vars = ref Variable.Set.empty in
+        let new_inner_to_new_outer_vars =
+          Variable.Map.filter (fun _var (spec_to : Flambda.specialised_to) ->
+              let already_present =
+                Variable.Map.exists (fun inner_var
+                          (spec_to' : Flambda.specialised_to) ->
+                    if not (Variable.Set.mem inner_var
+                        params_of_this_function)
+                    then
+                      false
+                    else
                       match spec_to.projectee, spec_to'.projectee with
                       | Some (_, projectee), Some (_, projectee') ->
                         let equal = Projectee.equal projectee projectee' in
@@ -204,36 +221,29 @@ module Transform = struct
                       | Some _, None
                       | None, Some _
                       | None, None -> false)
-                    set_of_closures.specialised_args
-                in
-                not already_present)
-              result.new_inner_to_new_outer_vars
-          in
-          let projection_defns =
-            Variable.Map.filter_map
-              result.projection_defns_indexed_by_outer_vars
-              ~f:(fun _projecting_from indexed_by_outer_vars ->
-                let indexed_by_outer_vars =
-                  Variable.Map.filter (fun outer_var _defn ->
-                      not (Variable.Set.mem outer_var !filter_outer_vars))
-                    indexed_by_outer_vars
-                in
-                if Variable.Map.cardinal indexed_by_outer_vars < 1 then
-                  None
-                else
-                  Some indexed_by_outer_vars)
-          in
-          { projection_defns_indexed_by_outer_vars = projection_defns;
-            new_inner_to_new_outer_vars;
-          })
-        projections_by_function
-    in
-    (* Avoid [Invariant_params] when we can. *)
-    if Variable.Map.cardinal projections_by_function < 1 then
-      Variable.Map.empty
-    else
-      collect_projections_core ~backend ~set_of_closures
-        ~projections_by_function
+                  set_of_closures.specialised_args
+              in
+              not already_present)
+            result.new_inner_to_new_outer_vars
+        in
+        let projection_defns =
+          Variable.Map.filter_map
+            result.projection_defns_indexed_by_outer_vars
+            ~f:(fun _projecting_from indexed_by_outer_vars ->
+              let indexed_by_outer_vars =
+                Variable.Map.filter (fun outer_var _defn ->
+                    not (Variable.Set.mem outer_var !filter_outer_vars))
+                  indexed_by_outer_vars
+              in
+              if Variable.Map.cardinal indexed_by_outer_vars < 1 then
+                None
+              else
+                Some indexed_by_outer_vars)
+        in
+        { projection_defns_indexed_by_outer_vars = projection_defns;
+          new_inner_to_new_outer_vars;
+        })
+      projections_by_function
 
   let precondition ~backend ~env ~(set_of_closures : Flambda.set_of_closures) =
     let is_ok =
