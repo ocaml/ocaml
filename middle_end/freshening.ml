@@ -387,6 +387,7 @@ let apply_function_decls_and_free_vars t fv func_decls =
         match spec_to.projectee with
         | None -> spec_to, data
         | Some (projection, projectee) ->
+          let projection = apply_variable t projection in
           let projectee =
             Project_var.apply_projectee of_closures projectee
           in
