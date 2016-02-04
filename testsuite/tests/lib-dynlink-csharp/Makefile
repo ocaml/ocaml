@@ -24,7 +24,7 @@ all: prepare bytecode bytecode-dll native native-dll
 
 .PHONY: prepare
 prepare:
-	@if $(SUPPORTS_SHARED_LIBRARIES); then
+	@if $(SUPPORTS_SHARED_LIBRARIES); then \
 	   $(OCAMLC) -c plugin.ml && \
 	   $(OCAMLOPT) -o plugin.cmxs -shared plugin.ml; \
 	 fi
