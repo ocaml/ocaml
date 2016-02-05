@@ -60,6 +60,10 @@ Language features:
 - PR#6681 GPR#326: signature items are now accepted as payloads for
   extension and attributes, using the syntax [%foo: SIG ] or [@foo: SIG ].
   (Alain Frisch and Gabriel Radanne)
+* GPR#342: Allow shortcuts for extension and attributes on all keywords.
+  The attribute in "let[@foo] .. in .." is now attached to the value binding,
+  not to the expression.
+  (Gabriel Radanne)
 * GPR#234: allow "[]" as a user-defined constructor. Demand parenthesis
   around "::" when using "::" as user-defined constructor.
   (Runhang Li, review by Damien Doligez)
