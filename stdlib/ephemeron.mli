@@ -293,7 +293,7 @@ module Kn : sig
 end
 
 module GenHashTable: sig
-  (** Define an hash table on generic containers which have a notion of
+  (** Define a hash table on generic containers which have a notion of
       "death" and aliveness. If a binding is dead the hash table can
       automatically remove it. *)
 
