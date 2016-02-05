@@ -443,6 +443,8 @@ Bug fixes:
 - PR#7096: ocamldoc uses an incorrect subscript/superscript style
 - PR#7115: shadowing in a branch of a GADT match breaks unused variable
   warning (Alain Frisch, report by Valentin Gatien-Baron)
+- PR#7135: only warn about ground coercions in -principal mode
+  (Jacques Garrigue, report by Jeremy Yallop)
 - GPR#205: Clear caml_backtrace_last_exn before registering as root
   (report and fix by Frederic Bour)
 - GPR#220: minor -dsource error on recursive modules

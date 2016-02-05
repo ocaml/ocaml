@@ -2411,8 +2411,8 @@ and type_expect_ ?in_function ?(recarg=Rejected) env sexp ty_expected =
           (Texp_constraint cty, loc, sexp.pexp_attributes) :: arg.exp_extra;
       }
   | Pexp_coerce(sarg, sty, sty') ->
-      let separate = true (* always separate, 1% slowdown for lablgtk *)
-        (* !Clflags.principal || Env.has_local_constraints env *) in
+      (* Could be always true, only 1% slowdown for lablgtk *)
+      let separate = !Clflags.principal || Env.has_local_constraints env in
       let (arg, ty',cty,cty') =
         match sty with
         | None ->
@@ -2450,7 +2450,7 @@ and type_expect_ ?in_function ?(recarg=Rejected) env sexp ty_expected =
                 else begin try
                   let force' = subtype env arg.exp_type ty' in
                   force (); force' ();
-                  if not gen then
+                  if not gen && !Clflags.principal then
                     Location.prerr_warning loc
                       (Warnings.Not_principal "this ground coercion");
                 with Subtype (tr1, tr2) ->
