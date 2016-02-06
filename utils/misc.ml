@@ -25,7 +25,6 @@ let try_finally work cleanup =
   let result = (try work () with e -> cleanup (); raise e) in
   cleanup ();
   result
-;;
 
 (* List functions *)
 
@@ -406,7 +405,7 @@ let edit_distance a b cutoff =
   let la, lb = String.length a, String.length b in
   let cutoff =
     (* using max_int for cutoff would cause overflows in (i + cutoff + 1);
-       we bring it back to the (max la lb) worstcase *)
+       we bring it back to the (max la lb) worst case *)
     min (max la lb) cutoff in
   if abs (la - lb) > cutoff then None
   else begin
@@ -517,7 +516,6 @@ module Color = struct
     | Magenta
     | Cyan
     | White
-  ;;
 
   type style =
     | FG of color (* foreground *)
@@ -575,7 +573,7 @@ module Color = struct
 
   let color_enabled = ref true
 
-  (* either prints the tag of [s] or delegate to [or_else] *)
+  (* either prints the tag of [s] or delegates to [or_else] *)
   let mark_open_tag ~or_else s =
     try
       let style = style_of_tag s in

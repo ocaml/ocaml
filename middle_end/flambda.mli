@@ -400,7 +400,7 @@ val free_variables_named
   -> named
   -> Variable.Set.t
 
-(** Compute _all_ variables occuring inside an expression. *)
+(** Compute _all_ variables occurring inside an expression. *)
 val used_variables
    : ?ignore_uses_as_callee:unit
   -> ?ignore_uses_as_argument:unit

@@ -16,7 +16,7 @@
 
 [@@@ocaml.warning "+a-4-9-30-40-41-42"]
 
-(* Remove unused [Flambda.program] constructs from the given program.
+(** Remove unused [Flambda.program] constructs from the given program.
    - Symbols (whose defining expressions have no effects) are eliminated
      if unused.
    - [Effect] constructs that turn out to have no effects are eliminated.

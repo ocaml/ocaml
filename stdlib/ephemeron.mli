@@ -328,7 +328,7 @@ module GenHashTable: sig
     (** [check_key cont] checks if all the keys contained in the data
         are alive *)
   end) : SeededS with type key = H.t
-  (** Functor building an implementation of an hash table that use the container
+  (** Functor building an implementation of a hash table that use the container
       for keeping the information given *)
 
 end
