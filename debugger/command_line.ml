@@ -777,7 +777,11 @@ let instr_list ppf lexbuf =
       | Not_found ->
           ("", -1, -1)
     in
-      let mdle = convert_module (module_of_longident mo) in
+      let mdle =
+        match mo with
+        | None -> curr_mod
+        | _ -> convert_module (module_of_longident mo)
+      in
       let pos = Lexing.dummy_pos in
       let buffer =
         try get_buffer pos mdle with

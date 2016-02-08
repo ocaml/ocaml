@@ -392,6 +392,8 @@ Bug fixes:
 - PR#6808: the parsing of OCAMLRUNPARAM is too lax
   (Damien Doligez)
 - PR#6874: Inefficient code generated for module function arguments
+- PR#6888: The list command of ocamldebug uses the wrong file
+  (Damien Doligez, report by Pierre-Marie Pédrot)
 - PR#6897: Bad error message for some pattern matching on extensible variants
 - PR#6899: Optional parameters and non generalizable type variables
   (Thomas Refis and Leo White)
