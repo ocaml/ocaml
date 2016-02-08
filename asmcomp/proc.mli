@@ -39,8 +39,11 @@ val loc_exn_bucket: Reg.t
 
 (* The maximum number of arguments of an OCaml to OCaml function call for
    which it is guaranteed there will be no arguments passed on the stack.
-   (Above this limit, tail call optimization may be disabled.) *)
-val max_arguments_without_passing_on_stack : int
+   (Above this limit, tail call optimization may be disabled.)
+   N.B. The values for this parameter in the backends currently assume
+   that no unboxed floats are passed using the OCaml calling conventions.
+*)
+val max_arguments_for_tailcalls : int
 
 (* Maximal register pressures for pre-spilling *)
 val safe_register_pressure: Mach.operation -> int

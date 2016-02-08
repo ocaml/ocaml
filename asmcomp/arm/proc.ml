@@ -180,7 +180,7 @@ let not_supported ofs = fatal_error "Proc.loc_results: cannot call"
      remaining args on stack.
    Return values in r0...r7 or d0...d15. *)
 
-let max_arguments_without_passing_on_stack = 8
+let max_arguments_for_tailcalls = 8
 
 let single_regs arg = Array.map (fun arg -> [| arg |]) arg
 let ensure_single_regs res =

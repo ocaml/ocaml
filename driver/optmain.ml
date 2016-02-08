@@ -28,7 +28,7 @@ module Backend = struct
 
   let max_sensible_number_of_arguments =
     (* The "-1" is to allow for a potential closure environment parameter. *)
-    Proc.max_arguments_without_passing_on_stack - 1
+    Proc.max_arguments_for_tailcalls - 1
 end
 let backend = (module Backend : Backend_intf.S)
 
