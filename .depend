@@ -1907,14 +1907,14 @@ driver/optcompile.cmx : utils/warnings.cmx typing/typemod.cmx \
     parsing/builtin_attributes.cmx asmcomp/asmgen.cmx driver/optcompile.cmi
 driver/opterrors.cmo : parsing/location.cmi driver/opterrors.cmi
 driver/opterrors.cmx : parsing/location.cmx driver/opterrors.cmi
-driver/optmain.cmo : utils/warnings.cmi utils/timings.cmi \
+driver/optmain.cmo : utils/warnings.cmi utils/timings.cmi asmcomp/proc.cmi \
     asmcomp/printmach.cmi driver/optcompile.cmi utils/misc.cmi \
     driver/main_args.cmi parsing/location.cmi asmcomp/import_approx.cmi \
     utils/config.cmi driver/compmisc.cmi asmcomp/compilenv.cmi \
     driver/compenv.cmi utils/clflags.cmi middle_end/backend_intf.cmi \
     asmcomp/asmpackager.cmi asmcomp/asmlink.cmi asmcomp/asmlibrarian.cmi \
     asmcomp/arch.cmo driver/optmain.cmi
-driver/optmain.cmx : utils/warnings.cmx utils/timings.cmx \
+driver/optmain.cmx : utils/warnings.cmx utils/timings.cmx asmcomp/proc.cmx \
     asmcomp/printmach.cmx driver/optcompile.cmx utils/misc.cmx \
     driver/main_args.cmx parsing/location.cmx asmcomp/import_approx.cmx \
     utils/config.cmx driver/compmisc.cmx asmcomp/compilenv.cmx \
