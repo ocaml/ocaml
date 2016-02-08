@@ -31,6 +31,10 @@ Working version
 
 ### Tools:
 
+- #463: objinfo: better errors on object files coming
+  from a different (older or newer), incompatible compiler version.
+  (Gabriel Scherer, review by Gabriel Radanne and Damien Doligez)
+
 ### Manual and documentation:
 
 ### Compiler user-interface and warnings:
