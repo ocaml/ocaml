@@ -139,6 +139,9 @@ let incoming ofs = Incoming ofs
 let outgoing ofs = Outgoing ofs
 let not_supported ofs = fatal_error "Proc.loc_results: cannot call"
 
+(* Six arguments in integer registers plus eight in global memory. *)
+let max_arguments_for_tailcalls = 14
+
 let loc_arguments arg =
   calling_conventions 0 5 100 99 outgoing arg
 let loc_parameters arg =

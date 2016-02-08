@@ -140,6 +140,8 @@ let not_supported ofs = fatal_error "Proc.loc_results: cannot call"
      remaining args on stack.
    Return values in r0...r15 or d0...d15. *)
 
+let max_arguments_for_tailcalls = 16
+
 let loc_arguments arg =
   calling_conventions 0 15 100 115 outgoing arg
 let loc_parameters arg =
