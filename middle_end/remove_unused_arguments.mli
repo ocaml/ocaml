@@ -36,4 +36,4 @@ val separate_unused_arguments_in_closures
 val separate_unused_arguments_in_set_of_closures
    : Flambda.set_of_closures
   -> backend:(module Backend_intf.S)
-  -> Flambda.set_of_closures
+  -> Flambda.set_of_closures option

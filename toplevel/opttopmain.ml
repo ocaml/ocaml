@@ -116,7 +116,6 @@ module Options = Main_args.Make_opttop_options (struct
     use_inlining_arguments_set ~round:1 o1_arguments;
     use_inlining_arguments_set ~round:2 o2_arguments;
     use_inlining_arguments_set ~round:3 o3_arguments
-  let _no_inline_recursive_functions = clear inline_recursive_functions
   let _remove_unused_arguments = set remove_unused_arguments
   let _unbox_closures = set unbox_closures
   let _drawclambda = set dump_rawclambda

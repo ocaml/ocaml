@@ -184,10 +184,11 @@ val opaque : bool ref
 val print_timings : bool ref
 val flambda_invariant_checks : bool ref
 val unbox_closures : bool ref
+val unbox_free_vars_of_closures : bool ref
+val unbox_specialised_args : bool ref
 val clambda_checks : bool ref
 val default_max_inlining_depth : int
 val max_inlining_depth : Int_arg_helper.parsed ref
-val inline_recursive_functions : bool ref
 val remove_unused_arguments : bool ref
 val dump_flambda_verbose : bool ref
 val classic_inlining : bool ref

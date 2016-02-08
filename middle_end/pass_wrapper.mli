@@ -14,10 +14,12 @@
 (*                                                                        *)
 (**************************************************************************)
 
-[@@@ocaml.warning "+a-4-9-30-40-41-42"]
+val register : pass_name:string -> unit
 
-val run :
-  env:Inline_and_simplify_aux.Env.t ->
-  set_of_closures:Flambda.set_of_closures ->
-  Flambda.t option
-
+val with_dump
+   : pass_name:string
+  -> f:(unit -> 'b option)
+  -> input:'a
+  -> print_input:(Format.formatter -> 'a -> unit)
+  -> print_output:(Format.formatter -> 'b -> unit)
+  -> 'b option

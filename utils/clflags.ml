@@ -162,8 +162,8 @@ let inline_toplevel_threshold =
 let default_inline_call_cost = 5
 let default_inline_alloc_cost = 3
 let default_inline_prim_cost = 3
-let default_inline_branch_cost = 3
-let default_inline_indirect_cost = 2
+let default_inline_branch_cost = 5
+let default_inline_indirect_cost = 4
 let default_branch_inline_factor = 0.1
 let default_inline_lifting_benefit = 1300
 
@@ -181,9 +181,10 @@ let inline_lifting_benefit =
 
 let print_timings = ref false          (* -timings *)
 
+let unbox_specialised_args = ref true
+let unbox_free_vars_of_closures = ref true
 let unbox_closures = ref false          (* -unbox-closures *)
 let remove_unused_arguments = ref false (* -remove-unused-arguments *)
-let inline_recursive_functions = ref true  (* -no-inline-recursive-functions *)
 
 let classic_inlining = ref false       (* -classic-inlining *)
 
@@ -316,15 +317,16 @@ let dumped_pass s =
   List.mem s !dumped_passes_list
 
 let set_dumped_pass s enabled =
-  assert(List.mem s !all_passes);
-  let passes_without_s = List.filter ((<>) s) !dumped_passes_list in
-  let dumped_passes =
-    if enabled then
-      s :: passes_without_s
-    else
-      passes_without_s
-  in
-  dumped_passes_list := dumped_passes
+  if (List.mem s !all_passes) then begin
+    let passes_without_s = List.filter ((<>) s) !dumped_passes_list in
+    let dumped_passes =
+      if enabled then
+        s :: passes_without_s
+      else
+        passes_without_s
+    in
+    dumped_passes_list := dumped_passes
+  end
 
 let flambda_invariant_checks = ref false
 

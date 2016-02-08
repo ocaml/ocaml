@@ -85,6 +85,20 @@ module Env : sig
      the backend if not available in the environment. *)
   val find_or_load_symbol : t -> Symbol.t -> Simple_value_approx.t
 
+  (** Note that the given [bound_to] holds the given [projection]. *)
+  val add_projection
+     : t
+    -> projection:Projection.t
+    -> bound_to:Variable.t
+    -> t
+
+  (** Determine if the environment knows about a variable that is bound
+      to the given [projection]. *)
+  val find_projection
+     : t
+    -> projection:Projection.t
+    -> Variable.t option
+
   (** Whether the environment has an approximation for the given variable. *)
   val mem : t -> Variable.t -> bool
 
@@ -113,13 +127,13 @@ module Env : sig
       set of closures.  A set of such descents is maintained. *)
   (* CR-someday mshinwell: consider changing name to remove "declaration".  Also,
      isn't this the inlining stack?  Maybe we can use that instead. *)
-  val enter_set_of_closures_declaration : Set_of_closures_id.t -> t -> t
+  val enter_set_of_closures_declaration : Set_of_closures_origin.t -> t -> t
 
   (** Determine whether the inliner is currently inside a function body from
       the given set of closures.  This is used to detect whether a given
       function call refers to a function which exists somewhere on the current
       inlining stack. *)
-  val inside_set_of_closures_declaration : Set_of_closures_id.t -> t -> bool
+  val inside_set_of_closures_declaration : Set_of_closures_origin.t -> t -> bool
 
   (** Not inside a closure declaration.
       Toplevel code is the one evaluated when the compilation unit is
@@ -137,6 +151,20 @@ module Env : sig
       of the callee(s). *)
   val set_never_inline : t -> t
 
+  (** Equivalent to [set_never_inline] but only applies to code inside
+      a set of closures. *)
+  val set_never_inline_inside_closures : t -> t
+
+  (** Unset the restriction from [set_never_inline_inside_closures] *)
+  val unset_never_inline_inside_closures : t -> t
+
+  (** Equivalent to [set_never_inline] but does not apply to code inside
+      a set of closures. *)
+  val set_never_inline_outside_closures : t -> t
+
+  (** Unset the restriction from [set_never_inline_outside_closures] *)
+  val unset_never_inline_outside_closures : t -> t
+
   (** Return whether [set_never_inline] is currently in effect on the given
       environment. *)
   val never_inline : t -> bool
@@ -150,11 +178,11 @@ module Env : sig
 
   (** Whether it is permissible to unroll a call to a recursive function
       in the given environment. *)
-  val unrolling_allowed : t -> bool
+  val unrolling_allowed : t -> Set_of_closures_origin.t -> bool
 
   (** Whether the given environment is currently being used to rewrite the
       body of an unrolled recursive function. *)
-  val inside_unrolled_function : t -> t
+  val inside_unrolled_function : t -> Set_of_closures_origin.t -> t
 
   (** If collecting inlining statistics, record that the inliner is about to
       descend into [closure_id].  This information enables us to produce a
@@ -249,6 +277,10 @@ module Result : sig
     : t
     -> (Inlining_cost.Benefit.t -> Inlining_cost.Benefit.t)
     -> t
+
+  (** Add some benefit to the inlining benefit stored within the
+      given result structure. *)
+  val add_benefit : t -> Inlining_cost.Benefit.t -> t
 
   (** Set the benefit of inlining the subexpression corresponding to the
       given result structure to zero. *)

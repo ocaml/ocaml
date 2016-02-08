@@ -91,7 +91,9 @@ let implementation ppf sourcefile outputprefix ~backend =
           Clflags.use_inlining_arguments_set ~round:1 Clflags.o2_arguments
         end
         else if !Clflags.classic_inlining then begin
-          Clflags.use_inlining_arguments_set Clflags.classic_arguments
+          Clflags.use_inlining_arguments_set Clflags.classic_arguments;
+          Clflags.unbox_free_vars_of_closures := false;
+          Clflags.unbox_specialised_args := false
         end;
         (typedtree, coercion)
         ++ Timings.(time (Timings.Transl sourcefile)

@@ -14,12 +14,13 @@
 (*                                                                        *)
 (**************************************************************************)
 
-[@@@ocaml.warning "+a-4-9-30-40-41-42"]
+(** When approximations of free variables of closures indicate that they
+    are closures or blocks, rewrite projections from such blocks to new
+    variables (which become free in the closures), with the defining
+    expressions of the projections lifted out of the corresponding sets
+    of closures. *)
 
-(** Turn free variables of closures into specialised arguments.
-    The aim is to cause the closure to become closed. *)
-
-val rewrite_set_of_closures
+val run
    : env:Inline_and_simplify_aux.Env.t
   -> set_of_closures:Flambda.set_of_closures
   -> (Flambda.expr * Inlining_cost.Benefit.t) option

@@ -142,13 +142,14 @@ let assign_symbols_and_collect_constant_definitions
   in
   collect_let_and_initialize_symbols program.program_body;
   let record_set_of_closure_equalities (set_of_closures:Flambda.set_of_closures) =
-    Variable.Map.iter (fun arg var ->
+    Variable.Map.iter (fun arg (var : Flambda.specialised_to) ->
         if not (Inconstant_idents.variable arg inconstants) then
-          Variable.Tbl.add var_to_definition_tbl arg (AA.Variable var))
+          Variable.Tbl.add var_to_definition_tbl arg (AA.Variable var.var))
       set_of_closures.free_vars;
-    Variable.Map.iter (fun arg var ->
+    Variable.Map.iter (fun arg (spec_to : Flambda.specialised_to) ->
         if not (Inconstant_idents.variable arg inconstants) then
-          Variable.Tbl.add var_to_definition_tbl arg (AA.Variable var))
+          Variable.Tbl.add var_to_definition_tbl arg
+            (AA.Variable spec_to.var))
       set_of_closures.specialised_args
   in
   Flambda_iterators.iter_on_set_of_closures_of_program program
@@ -618,7 +619,7 @@ let introduce_free_variables_in_set_of_closures
       | exception Not_found -> var
       | external_var ->
         (* specialised arguments bound to constant can be rewritten *)
-        external_var
+        external_var.var
     in
     match Variable.Tbl.find var_to_block_field_tbl searched_var with
     | def ->
@@ -671,13 +672,19 @@ let introduce_free_variables_in_set_of_closures
         keep)
       free_vars
   in
+  let free_vars =
+    Flambda_utils.clean_projections ~which_variables:free_vars
+  in
   let specialised_args =
     (* Keep only those that are not rewritten to constants. *)
-    Variable.Map.filter (fun _ v ->
-        let keep = not (Variable.Tbl.mem var_to_block_field_tbl v) in
+    Variable.Map.filter (fun _ (spec_to : Flambda.specialised_to) ->
+        let keep = not (Variable.Tbl.mem var_to_block_field_tbl spec_to.var) in
         if not keep then done_something := true;
         keep)
       specialised_args
+  in
+  let specialised_args =
+    Flambda_utils.clean_projections ~which_variables:specialised_args
   in
   if not !done_something then
     set_of_closures

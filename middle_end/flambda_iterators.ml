@@ -565,19 +565,6 @@ let map_project_var_to_expr_opt tree ~f =
           as named -> named)
     tree
 
-let map_toplevel_project_var_to_expr_opt tree ~f =
-  map_toplevel_named (function
-      | (Project_var project_var) as named ->
-        begin match f project_var with
-        | None -> named
-        | Some expr -> Expr expr
-        end
-      | (Symbol _ | Const _ | Allocated_const _
-      | Set_of_closures _ | Project_closure _ | Move_within_set_of_closures _
-      | Prim _ | Expr _ | Read_mutable _ | Read_symbol_field _)
-          as named -> named)
-    tree
-
 let map_project_var_to_named_opt tree ~f =
   map_named (function
       | (Project_var project_var) as named ->
@@ -825,3 +812,10 @@ let map_named_of_program (program : Flambda.program)
 let map_all_immutable_let_and_let_rec_bindings (expr : Flambda.t)
       ~(f : Variable.t -> Flambda.named -> Flambda.named) : Flambda.t =
   map_named_with_id f expr
+
+let fold_function_decls_ignoring_stubs
+      (set_of_closures : Flambda.set_of_closures) ~init ~f =
+  Variable.Map.fold (fun fun_var function_decl acc ->
+      f ~fun_var ~function_decl acc)
+    set_of_closures.function_decls.funs
+    init

@@ -197,11 +197,6 @@ val map_project_var_to_expr_opt
   -> f:(Flambda.project_var -> Flambda.t option)
   -> Flambda.t
 
-val map_toplevel_project_var_to_expr_opt
-   : Flambda.t
-  -> f:(Flambda.project_var -> Flambda.t option)
-  -> Flambda.t
-
 val map_project_var_to_named_opt
    : Flambda.t
   -> f:(Flambda.project_var -> Flambda.named option)
@@ -221,3 +216,12 @@ val map_all_immutable_let_and_let_rec_bindings
    : Flambda.t
   -> f:(Variable.t -> Flambda.named -> Flambda.named)
   -> Flambda.t
+
+val fold_function_decls_ignoring_stubs
+   : Flambda.set_of_closures
+  -> init:'a
+  -> f:(fun_var:Variable.t
+    -> function_decl:Flambda.function_declaration
+    -> 'a
+    -> 'a)
+  -> 'a

@@ -156,7 +156,7 @@ and value_set_of_closures = private {
   size : int option Variable.Map.t lazy_t;
   (** For functions that are very likely to be inlined, the size of the
       function's body. *)
-  specialised_args : Variable.t Variable.Map.t;
+  specialised_args : Flambda.specialised_to Variable.Map.t;
   (* Any freshening that has been applied to [function_decls]. *)
   freshening : Freshening.Project_var.t;
 }
@@ -177,7 +177,12 @@ val create_value_set_of_closures
    : function_decls:Flambda.function_declarations
   -> bound_vars:t Var_within_closure.Map.t
   -> invariant_params:Variable.Set.t Variable.Map.t lazy_t
-  -> specialised_args:Variable.t Variable.Map.t
+  -> specialised_args:Flambda.specialised_to Variable.Map.t
+  -> freshening:Freshening.Project_var.t
+  -> value_set_of_closures
+
+val update_freshening_of_value_set_of_closures
+   : value_set_of_closures
   -> freshening:Freshening.Project_var.t
   -> value_set_of_closures
 
@@ -342,6 +347,14 @@ val freshen_and_check_closure_id
   -> Closure_id.t
   -> Closure_id.t
 
+type strict_checked_approx_for_set_of_closures =
+  | Wrong
+  | Ok of Variable.t option * value_set_of_closures
+
+val strict_check_approx_for_set_of_closures
+   : t
+  -> strict_checked_approx_for_set_of_closures
+
 type checked_approx_for_set_of_closures =
   | Wrong
   | Unresolved of Symbol.t
@@ -364,6 +377,8 @@ type checked_approx_for_closure =
 (** Try to prove that a value with the given approximation may be used as a
     closure.  Values coming from external compilation units with unresolved
     approximations are not permitted. *)
+(* CR-someday mshinwell: naming is inconsistent: this is as "strict"
+   as "strict_check_approx_for_set_of_closures" *)
 val check_approx_for_closure : t -> checked_approx_for_closure
 
 type checked_approx_for_closure_allowing_unresolved =

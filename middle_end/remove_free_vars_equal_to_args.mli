@@ -14,12 +14,7 @@
 (*                                                                        *)
 (**************************************************************************)
 
-[@@@ocaml.warning "+a-4-9-30-40-41-42"]
+(** Replace free variables in closures known to be equal to specialised
+    arguments of such closures with those specialised arguments. *)
 
-(** Turn free variables of closures into specialised arguments.
-    The aim is to cause the closure to become closed. *)
-
-val rewrite_set_of_closures
-   : env:Inline_and_simplify_aux.Env.t
-  -> set_of_closures:Flambda.set_of_closures
-  -> (Flambda.expr * Inlining_cost.Benefit.t) option
+val run : Flambda.set_of_closures -> Flambda.set_of_closures option

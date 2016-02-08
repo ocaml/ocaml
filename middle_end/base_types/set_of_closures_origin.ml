@@ -9,17 +9,13 @@
 (*   Copyright 2014--2016 Jane Street Group LLC                           *)
 (*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
-(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   the GNU Library General Public License version 2.1, with the         *)
 (*   special exception on linking described in the file ../LICENSE.       *)
 (*                                                                        *)
 (**************************************************************************)
 
 [@@@ocaml.warning "+a-4-9-30-40-41-42"]
 
-(** Turn free variables of closures into specialised arguments.
-    The aim is to cause the closure to become closed. *)
+include Set_of_closures_id
 
-val rewrite_set_of_closures
-   : env:Inline_and_simplify_aux.Env.t
-  -> set_of_closures:Flambda.set_of_closures
-  -> (Flambda.expr * Inlining_cost.Benefit.t) option
+let create t = t

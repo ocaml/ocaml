@@ -44,8 +44,14 @@ val invariant_params_in_recursion
   -> backend:(module Backend_intf.S)
   -> Variable.Set.t Variable.Map.t
 
+val invariant_param_sources
+   : Flambda.function_declarations
+  -> backend:(module Backend_intf.S)
+  -> Variable.Pair.Set.t Variable.Map.t
+
 (* CR-soon mshinwell: think about whether this function should
    be in this file.  Should it be called "unused_parameters"? *)
 val unused_arguments
    : Flambda.function_declarations
+  -> backend:(module Backend_intf.S)
   -> Variable.Set.t

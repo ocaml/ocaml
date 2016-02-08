@@ -16,6 +16,14 @@
 
 [@@@ocaml.warning "+a-4-9-30-40-41-42"]
 
+let name_expr (named : Flambda.named) ~name : Flambda.t =
+  let var =
+    Variable.create
+      ~current_compilation_unit:(Compilation_unit.get_current_exn ())
+      name
+  in
+  Flambda.create_let var named (Var var)
+
 let find_declaration cf ({ funs } : Flambda.function_declarations) =
   Variable.Map.find (Closure_id.unwrap cf) funs
 
@@ -26,7 +34,10 @@ let find_declaration_variable cf ({ funs } : Flambda.function_declarations) =
   else var
 
 let find_free_variable cv ({ free_vars } : Flambda.set_of_closures) =
-  Variable.Map.find (Var_within_closure.unwrap cv) free_vars
+  let var : Flambda.specialised_to =
+    Variable.Map.find (Var_within_closure.unwrap cv) free_vars
+  in
+  var.var
 
 let function_arity (f : Flambda.function_declaration) = List.length f.params
 
@@ -183,8 +194,9 @@ and sameclosure (c1 : Flambda.function_declaration)
 and same_set_of_closures (c1 : Flambda.set_of_closures)
       (c2 : Flambda.set_of_closures) =
   Variable.Map.equal sameclosure c1.function_decls.funs c2.function_decls.funs
-    && Variable.Map.equal Variable.equal c1.free_vars c2.free_vars
-    && Variable.Map.equal Variable.equal c1.specialised_args
+    && Variable.Map.equal Flambda.equal_specialised_to
+        c1.free_vars c2.free_vars
+    && Variable.Map.equal Flambda.equal_specialised_to c1.specialised_args
         c2.specialised_args
 
 and same_project_closure (s1 : Flambda.project_closure)
@@ -247,9 +259,14 @@ let toplevel_substitution sb tree =
       let set_of_closures =
         Flambda.create_set_of_closures
           ~function_decls:set_of_closures.function_decls
-          ~free_vars:(Variable.Map.map sb set_of_closures.free_vars)
+          ~free_vars:
+            (Variable.Map.map (fun (spec_to : Flambda.specialised_to) ->
+                { spec_to with var = sb spec_to.var; })
+              set_of_closures.free_vars)
           ~specialised_args:
-            (Variable.Map.map sb set_of_closures.specialised_args)
+            (Variable.Map.map (fun (spec_to : Flambda.specialised_to) ->
+                { spec_to with var = sb spec_to.var; })
+              set_of_closures.specialised_args)
       in
       Set_of_closures set_of_closures
     | Project_closure project_closure ->
@@ -272,6 +289,14 @@ let toplevel_substitution sb tree =
   in
   if Variable.Map.is_empty sb' then tree
   else Flambda_iterators.map_toplevel aux aux_named tree
+
+(* CR-someday mshinwell: Fix [Flambda_iterators] so this can be implemented
+   properly. *)
+let toplevel_substitution_named sb named =
+  let expr = name_expr named ~name:"toplevel_substitution_named" in
+  match toplevel_substitution sb expr with
+  | Let let_expr -> let_expr.defining_expr
+  | _ -> assert false
 
 let make_closure_declaration ~id ~body ~params : Flambda.t =
   let free_variables = Flambda.free_variables body in
@@ -298,8 +323,14 @@ let make_closure_declaration ~id ~body ~params : Flambda.t =
     function_declaration.free_variables);
   let free_vars =
     Variable.Map.fold (fun id id' fv' ->
-        Variable.Map.add id' id fv')
-      (Variable.Map.filter (fun id _ -> not (Variable.Set.mem id param_set))
+        let spec_to : Flambda.specialised_to =
+          { var = id;
+            projection = None;
+          }
+        in
+        Variable.Map.add id' spec_to fv')
+      (Variable.Map.filter
+        (fun id _ -> not (Variable.Set.mem id param_set))
         sb)
       Variable.Map.empty
   in
@@ -311,7 +342,6 @@ let make_closure_declaration ~id ~body ~params : Flambda.t =
   let set_of_closures =
     let function_decls =
       Flambda.create_function_declarations
-        ~set_of_closures_id:(Set_of_closures_id.create compilation_unit)
         ~funs:(Variable.Map.singleton id function_declaration)
     in
     Flambda.create_set_of_closures ~function_decls ~free_vars
@@ -335,14 +365,6 @@ let bind ~bindings ~body =
   List.fold_left (fun expr (var, var_def) ->
       Flambda.create_let var var_def expr)
     body bindings
-
-let name_expr (named : Flambda.named) ~name : Flambda.t =
-  let var =
-    Variable.create
-      ~current_compilation_unit:(Compilation_unit.get_current_exn ())
-      name
-  in
-  Flambda.create_let var named (Var var)
 
 let all_lifted_constants (program : Flambda.program) =
   let rec loop (program : Flambda.program_body) =
@@ -529,9 +551,14 @@ let substitute_read_symbol_field_for_variables
       let set_of_closures =
         Flambda.create_set_of_closures
           ~function_decls:set_of_closures.function_decls
-          ~free_vars:(Variable.Map.map sb set_of_closures.free_vars)
+          ~free_vars:
+            (Variable.Map.map (fun (spec_to : Flambda.specialised_to) ->
+                { spec_to with var = sb spec_to.var; })
+              set_of_closures.free_vars)
           ~specialised_args:
-            (Variable.Map.map sb set_of_closures.specialised_args)
+            (Variable.Map.map (fun (spec_to : Flambda.specialised_to) ->
+                { spec_to with var = sb spec_to.var; })
+              set_of_closures.specialised_args)
       in
       Set_of_closures set_of_closures
     | Project_closure project_closure ->
@@ -757,3 +784,31 @@ let all_free_symbols (function_decls : Flambda.function_declarations) =
   Variable.Map.fold (fun _ (function_decl : Flambda.function_declaration) syms ->
       Symbol.Set.union syms function_decl.free_symbols)
     function_decls.funs Symbol.Set.empty
+
+let contains_stub (fun_decls : Flambda.function_declarations) =
+  let number_of_stub_functions =
+    Variable.Map.cardinal
+      (Variable.Map.filter (fun _ { Flambda.stub } -> stub)
+         fun_decls.funs)
+  in
+  number_of_stub_functions > 0
+
+let clean_projections ~which_variables =
+  Variable.Map.map (fun (spec_to : Flambda.specialised_to) ->
+      match spec_to.projection with
+      | None -> spec_to
+      | Some projection ->
+        let from = Projection.projecting_from projection in
+        if Variable.Map.mem from which_variables then
+          spec_to
+        else
+          ({ spec_to with projection = None; } : Flambda.specialised_to))
+    which_variables
+
+let projection_to_named (projection : Projection.t) : Flambda.named =
+  match projection with
+  | Project_var project_var -> Project_var project_var
+  | Project_closure project_closure -> Project_closure project_closure
+  | Move_within_set_of_closures move -> Move_within_set_of_closures move
+  | Field (field_index, var) ->
+    Prim (Pfield field_index, [var], Debuginfo.none)

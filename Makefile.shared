@@ -139,14 +139,17 @@ MIDDLE_END=\
   middle_end/base_types/mutable_variable.cmo \
   middle_end/base_types/id_types.cmo \
   middle_end/base_types/set_of_closures_id.cmo \
+  middle_end/base_types/set_of_closures_origin.cmo \
   middle_end/base_types/closure_element.cmo \
   middle_end/base_types/closure_id.cmo \
   middle_end/base_types/var_within_closure.cmo \
   middle_end/base_types/static_exception.cmo \
   middle_end/base_types/export_id.cmo \
   middle_end/base_types/symbol.cmo \
+  middle_end/pass_wrapper.cmo \
   middle_end/semantics_of_primitives.cmo \
   middle_end/allocated_const.cmo \
+  middle_end/projection.cmo \
   middle_end/flambda.cmo \
   middle_end/flambda_iterators.cmo \
   middle_end/flambda_utils.cmo \
@@ -174,7 +177,11 @@ MIDDLE_END=\
   middle_end/inlining_stats_types.cmo \
   middle_end/inlining_stats.cmo \
   middle_end/inline_and_simplify_aux.cmo \
-  middle_end/augment_closures.cmo \
+  middle_end/remove_free_vars_equal_to_args.cmo \
+  middle_end/extract_projections.cmo \
+  middle_end/augment_specialised_args.cmo \
+  middle_end/unbox_free_vars_of_closures.cmo \
+  middle_end/unbox_specialised_args.cmo \
   middle_end/unbox_closures.cmo \
   middle_end/inlining_transforms.cmo \
   middle_end/inlining_decision.cmo \

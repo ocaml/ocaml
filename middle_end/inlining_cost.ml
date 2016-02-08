@@ -277,6 +277,11 @@ module Benefit = struct
       (remove_code_helper_named b) lam;
     !b
 
+  let remove_projection (_proj : Projection.t) b =
+    (* They are all primitives for the moment.  The [Projection.t] argument
+       is here for future expansion. *)
+    remove_prim b
+
   let print ppf b =
     Format.fprintf ppf "@[remove_call: %i@ remove_alloc: %i@ \
                         remove_prim: %i@ remove_branch: %i@ \
@@ -307,10 +312,29 @@ module Benefit = struct
     requested_inline = t1.requested_inline + t2.requested_inline;
   }
 
+  let (-) t1 t2 = {
+    remove_call = t1.remove_call - t2.remove_call;
+    remove_alloc = t1.remove_alloc - t2.remove_alloc;
+    remove_prim = t1.remove_prim - t2.remove_prim;
+    remove_branch = t1.remove_branch - t2.remove_branch;
+    direct_call_of_indirect =
+      t1.direct_call_of_indirect - t2.direct_call_of_indirect;
+    requested_inline = t1.requested_inline - t2.requested_inline;
+  }
+
   let max ~round t1 t2 =
     let c1 = evaluate ~round t1 in
     let c2 = evaluate ~round t2 in
     if c1 > c2 then t1 else t2
+
+  let add_code lam b =
+    b - (remove_code lam zero)
+
+  let add_code_named lam b =
+    b - (remove_code_named lam zero)
+
+  let add_projection proj b =
+    b - (remove_projection proj zero)
 
   (* Print out a benefit as a table *)
 

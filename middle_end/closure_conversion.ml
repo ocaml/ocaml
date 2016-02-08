@@ -553,8 +553,6 @@ and close_functions t external_env function_declarations : Flambda.named =
   in
   let function_decls =
     Flambda.create_function_declarations
-      ~set_of_closures_id:
-        (Set_of_closures_id.create (Compilation_unit.get_current_exn ()))
       ~funs:
         (List.fold_left close_one_function Variable.Map.empty
           (Function_decls.to_list function_declarations))
@@ -568,7 +566,11 @@ and close_functions t external_env function_declarations : Flambda.named =
           let internal_var =
             Env.find_var closure_env_without_parameters var
           in
-          let external_var = Env.find_var external_env var in
+          let external_var : Flambda.specialised_to =
+            { var = Env.find_var external_env var;
+              projection = None;
+            }
+          in
           Variable.Map.add internal_var external_var map)
         all_free_idents Variable.Map.empty
     in

@@ -16,10 +16,21 @@
 
 [@@@ocaml.warning "+a-4-9-30-40-41-42"]
 
-(** Turn free variables of closures into specialised arguments.
-    The aim is to cause the closure to become closed. *)
+let register ~pass_name =
+  Clflags.all_passes := pass_name :: !Clflags.all_passes
 
-val rewrite_set_of_closures
-   : env:Inline_and_simplify_aux.Env.t
-  -> set_of_closures:Flambda.set_of_closures
-  -> (Flambda.expr * Inlining_cost.Benefit.t) option
+let with_dump ~pass_name ~f ~input ~print_input ~print_output =
+  let dump = Clflags.dumped_pass pass_name in
+  if dump then begin
+    Format.eprintf "Before %s:@ %a@.@." pass_name print_input input
+  end;
+  let result = f () in
+  match result with
+  | None ->
+    if dump then Format.eprintf "%s: no-op.\n\n%!" pass_name;
+    None
+  | Some result ->
+    if dump then begin
+      Format.eprintf "After %s:@ %a@.@." pass_name print_output result
+    end;
+    Some result

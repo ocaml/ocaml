@@ -99,6 +99,8 @@ module Make_map (T : Thing) = struct
 
   let keys map = fold (fun k _ set -> T_set.add k set) map T_set.empty
 
+  let data t = List.map snd (bindings t)
+
   let of_set f set = T_set.fold (fun e map -> add e (f e) map) set empty
 
   let transpose_keys_and_data map = fold (fun k v m -> add v k m) map empty
@@ -189,6 +191,7 @@ module type S = sig
     val rename : key t -> key -> key
     val map_keys : (key -> key) -> 'a t -> 'a t
     val keys : 'a t -> Make_set (T).t
+    val data : 'a t -> 'a list
     val of_set : (key -> 'a) -> Make_set (T).t -> 'a t
     val transpose_keys_and_data : key t -> key t
     val print :

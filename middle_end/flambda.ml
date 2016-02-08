@@ -46,21 +46,13 @@ type send = {
   dbg : Debuginfo.t;
 }
 
-type project_closure = {
-  set_of_closures : Variable.t;
-  closure_id : Closure_id.t;
-}
+type project_closure = Projection.project_closure
+type move_within_set_of_closures = Projection.move_within_set_of_closures
+type project_var = Projection.project_var
 
-type move_within_set_of_closures = {
-  closure : Variable.t;
-  start_from : Closure_id.t;
-  move_to : Closure_id.t;
-}
-
-type project_var = {
-  closure : Variable.t;
-  closure_id : Closure_id.t;
-  var : Var_within_closure.t;
+type specialised_to = {
+  var : Variable.t;
+  projection : Projection.t option;
 }
 
 type t =
@@ -104,12 +96,13 @@ and let_expr = {
 
 and set_of_closures = {
   function_decls : function_declarations;
-  free_vars : Variable.t Variable.Map.t;
-  specialised_args : Variable.t Variable.Map.t;
+  free_vars : specialised_to Variable.Map.t;
+  specialised_args : specialised_to Variable.Map.t;
 }
 
 and function_declarations = {
   set_of_closures_id : Set_of_closures_id.t;
+  set_of_closures_origin : Set_of_closures_origin.t;
   funs : function_declaration Variable.Map.t;
 }
 
@@ -166,6 +159,20 @@ type program = {
 
 let fprintf = Format.fprintf
 module Int = Numbers.Int
+
+let print_specialised_to ppf (spec_to : specialised_to) =
+  match spec_to.projection with
+  | None -> fprintf ppf "%a" Variable.print spec_to.var
+  | Some projection ->
+    fprintf ppf "%a(= %a)"
+      Variable.print spec_to.var
+      Projection.print projection
+
+(* CR-soon mshinwell: delete uses of old names *)
+let print_project_var = Projection.print_project_var
+let print_move_within_set_of_closures =
+  Projection.print_move_within_set_of_closures
+let print_project_closure = Projection.print_project_closure
 
 (** CR-someday lwhite: use better name than this *)
 let rec lam ppf (flam : t) =
@@ -357,14 +364,17 @@ and print_set_of_closures ppf (set_of_closures : set_of_closures) =
       Variable.Map.iter (print_function_declaration ppf)
     in
     let vars ppf =
-      Variable.Map.iter (fun id v -> fprintf ppf "@ %a -rename-> %a"
-                      Variable.print id Variable.print v) in
+      Variable.Map.iter (fun id v ->
+          fprintf ppf "@ %a -rename-> %a"
+            Variable.print id print_specialised_to v)
+    in
     let spec ppf spec_args =
       if not (Variable.Map.is_empty spec_args)
       then begin
         fprintf ppf "@ ";
-        Variable.Map.iter (fun id id' -> fprintf ppf "@ %a := %a"
-                        Variable.print id Variable.print id')
+        Variable.Map.iter (fun id (spec_to : specialised_to) ->
+            fprintf ppf "@ %a := %a"
+              Variable.print id print_specialised_to spec_to)
           spec_args
       end
     in
@@ -372,25 +382,8 @@ and print_set_of_closures ppf (set_of_closures : set_of_closures) =
         @[<2>specialised_args={%a})@]@]"
       Set_of_closures_id.print function_decls.set_of_closures_id
       funs function_decls.funs
-      vars free_vars spec specialised_args
-
-and print_project_closure ppf (project_closure : project_closure) =
-  fprintf ppf "@[<2>(project_closure@ %a@ from@ %a)@]"
-    Closure_id.print project_closure.closure_id
-    Variable.print project_closure.set_of_closures
-
-and print_move_within_set_of_closures ppf
-      (move_within_set_of_closures : move_within_set_of_closures) =
-  fprintf ppf "@[<2>(move_within_set_of_closures@ %a <-- %a@ (closure = %a))@]"
-    Closure_id.print move_within_set_of_closures.move_to
-    Closure_id.print move_within_set_of_closures.start_from
-    Variable.print move_within_set_of_closures.closure
-
-and print_project_var ppf (project_var : project_var) =
-  fprintf ppf "@[<2>(project_var@ %a@ from %a=%a)@]"
-    Var_within_closure.print project_var.var
-    Closure_id.print project_var.closure_id
-    Variable.print project_var.closure
+      vars free_vars
+      spec specialised_args
 
 and print_const ppf (c : const) =
   match c with
@@ -587,12 +580,21 @@ and variables_usage_named ?ignore_uses_in_project_var
   | Symbol _ | Const _ | Allocated_const _ | Read_mutable _
   | Read_symbol_field _ -> ()
   | Set_of_closures { free_vars; specialised_args; _ } ->
-    (* Sets of closures are, well, closed---except for the specialised
-       argument list, which may identify variables currently in scope
-       outside of the closure. *)
-    Variable.Map.iter (fun _ renamed_to -> free_variable renamed_to)
+    (* Sets of closures are, well, closed---except for the free variable and
+       specialised argument lists, which may identify variables currently in
+       scope outside of the closure. *)
+    Variable.Map.iter (fun _ (renamed_to : specialised_to) ->
+        (* We don't need to do anything with [renamed_to.projectee.var], if
+           it is present, since it would only be another free variable
+           in the same set of closures. *)
+        free_variable renamed_to.var)
       free_vars;
-    Variable.Map.iter (fun _ var -> free_variable var) specialised_args
+    Variable.Map.iter (fun _ (spec_to : specialised_to) ->
+        (* We don't need to do anything with [spec_to.projectee.var], if
+           it is present, since it would only be another specialised arg
+           in the same set of closures. *)
+        free_variable spec_to.var)
+      specialised_args
   | Project_closure { set_of_closures; closure_id = _ } ->
     free_variable set_of_closures
   | Project_var { closure; closure_id = _; var = _ } ->
@@ -971,15 +973,25 @@ let create_function_declaration ~params ~body ~stub ~dbg
     is_a_functor;
   }
 
-let create_function_declarations ~set_of_closures_id ~funs =
+let create_function_declarations ~funs =
+  let compilation_unit = Compilation_unit.get_current_exn () in
+  let set_of_closures_id = Set_of_closures_id.create compilation_unit in
+  let set_of_closures_origin =
+    Set_of_closures_origin.create set_of_closures_id
+  in
   { set_of_closures_id;
+    set_of_closures_origin;
     funs;
   }
 
-let update_function_declarations _function_decls ~funs =
-  create_function_declarations ~funs
-    ~set_of_closures_id:
-      (Set_of_closures_id.create (Compilation_unit.get_current_exn ()))
+let update_function_declarations function_decls ~funs =
+  let compilation_unit = Compilation_unit.get_current_exn () in
+  let set_of_closures_id = Set_of_closures_id.create compilation_unit in
+  let set_of_closures_origin = function_decls.set_of_closures_origin in
+  { set_of_closures_id;
+    set_of_closures_origin;
+    funs;
+  }
 
 let create_set_of_closures ~function_decls ~free_vars ~specialised_args =
   if !Clflags.flambda_invariant_checks then begin
@@ -1013,11 +1025,10 @@ let create_set_of_closures ~function_decls ~free_vars ~specialised_args =
     let free_vars_domain = Variable.Map.keys free_vars in
     if not (Variable.Set.subset expected_free_vars free_vars_domain) then begin
       Misc.fatal_errorf "create_set_of_closures: [free_vars] mapping of \
-          variables bound by the closure(s) is wrong.  (%a, expected to be a \
-          subset of %a)@ \n%s\nfunction_decls:@ %a"
+          variables bound by the closure(s) is wrong.  (Must map at least \
+          %a but only maps %a.)@ \nfunction_decls:@ %a"
         Variable.Set.print expected_free_vars
         Variable.Set.print free_vars_domain
-        (Printexc.raw_backtrace_to_string (Printexc.get_callstack max_int))
         print_function_declarations function_decls
     end;
     let all_params =
@@ -1115,3 +1126,18 @@ module Constant_defining_value = struct
       output_string o (Format.asprintf "%a" print v)
   end)
 end
+
+let equal_specialised_to (spec_to1 : specialised_to)
+      (spec_to2 : specialised_to) =
+  Variable.equal spec_to1.var spec_to2.var
+    && begin
+      match spec_to1.projection, spec_to2.projection with
+      | None, None -> true
+      | Some _, None | None, Some _ -> false
+      | Some proj1, Some proj2 -> Projection.equal proj1 proj2
+    end
+
+let compare_project_var = Projection.compare_project_var
+let compare_project_closure = Projection.compare_project_closure
+let compare_move_within_set_of_closures =
+  Projection.compare_move_within_set_of_closures

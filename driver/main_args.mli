@@ -133,8 +133,9 @@ module type Optcommon_options = sig
   val _inline_lifting_benefit : string -> unit
   val _unbox_closures : unit -> unit
   val _branch_inline_factor : string -> unit
-  val _no_inline_recursive_functions : unit -> unit
   val _remove_unused_arguments : unit -> unit
+  val _no_unbox_free_vars_of_closures : unit -> unit
+  val _no_unbox_specialised_args : unit -> unit
   val _o2 : unit -> unit
   val _o3 : unit -> unit
 

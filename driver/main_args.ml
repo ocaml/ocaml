@@ -291,11 +291,6 @@ let mk_noinit f =
   "-noinit", Arg.Unit f,
   " Do not load any init file"
 
-let mk_no_inline_recursive_functions f =
-  "-no-inline-recursive-functions", Arg.Unit f,
-  " Do not duplicate and specialise declarations of recursive functions"
-;;
-
 let mk_nolabels f =
   "-nolabels", Arg.Unit f, " Ignore non-optional labels in types"
 ;;
@@ -312,6 +307,16 @@ let mk_nopromptcont f =
 let mk_nostdlib f =
   "-nostdlib", Arg.Unit f,
   " Do not add default directory to the list of include directories"
+;;
+
+let mk_no_unbox_free_vars_of_closures f =
+  "-no-unbox-free-vars-of-closures", Arg.Unit f,
+  " Do not unbox variables that will appear inside function closures"
+;;
+
+let mk_no_unbox_specialised_args f =
+  "-no-unbox-specialised-args", Arg.Unit f,
+  " Do not unbox arguments to which functions have been specialised"
 ;;
 
 let mk_o f =
@@ -363,7 +368,7 @@ let mk_rectypes f =
 
 let mk_remove_unused_arguments f =
   "-remove-unused-arguments", Arg.Unit f,
-  " Remove unused function arguments (experimental)"
+  " Remove unused function arguments"
 ;;
 
 let mk_runtime_variant f =
@@ -407,7 +412,7 @@ let mk_dtimings f =
 
 let mk_unbox_closures f =
   "-unbox-closures", Arg.Unit f,
-  " Unbox closures into function arguments (experimental)"
+  " Pass free variables via specialised arguments rather than closures"
 ;;
 
 let mk_unsafe f =
@@ -751,8 +756,9 @@ module type Optcommon_options = sig
   val _inline_lifting_benefit : string -> unit
   val _unbox_closures : unit -> unit
   val _branch_inline_factor : string -> unit
-  val _no_inline_recursive_functions : unit -> unit
   val _remove_unused_arguments : unit -> unit
+  val _no_unbox_free_vars_of_closures : unit -> unit
+  val _no_unbox_specialised_args : unit -> unit
   val _o2 : unit -> unit
   val _o3 : unit -> unit
 
@@ -994,9 +1000,10 @@ struct
     mk_noassert F._noassert;
     mk_noautolink_opt F._noautolink;
     mk_nodynlink F._nodynlink;
-    mk_no_inline_recursive_functions F._no_inline_recursive_functions;
     mk_nolabels F._nolabels;
     mk_nostdlib F._nostdlib;
+    mk_no_unbox_free_vars_of_closures F._no_unbox_free_vars_of_closures;
+    mk_no_unbox_specialised_args F._no_unbox_specialised_args;
     mk_o F._o;
     mk_o2 F._o2;
     mk_o3 F._o3;
@@ -1090,11 +1097,12 @@ module Make_opttop_options (F : Opttop_options) = struct
     mk_no_app_funct F._no_app_funct;
     mk_noassert F._noassert;
     mk_noinit F._noinit;
-    mk_no_inline_recursive_functions F._no_inline_recursive_functions;
     mk_nolabels F._nolabels;
     mk_noprompt F._noprompt;
     mk_nopromptcont F._nopromptcont;
     mk_nostdlib F._nostdlib;
+    mk_no_unbox_free_vars_of_closures F._no_unbox_free_vars_of_closures;
+    mk_no_unbox_specialised_args F._no_unbox_specialised_args;
     mk_o2 F._o2;
     mk_o3 F._o3;
     mk_open F._open;

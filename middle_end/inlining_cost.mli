@@ -78,6 +78,11 @@ module Benefit : sig
 
   val remove_code : Flambda.t -> t -> t
   val remove_code_named : Flambda.named -> t -> t
+  val remove_projection : Projection.t -> t -> t
+
+  val add_code : Flambda.t -> t -> t
+  val add_code_named : Flambda.named -> t -> t
+  val add_projection : Projection.t -> t -> t
 
   val print : Format.formatter -> t -> unit
 end

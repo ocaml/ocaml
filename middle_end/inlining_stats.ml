@@ -129,39 +129,19 @@ module Inlining_report = struct
       inlined = None;
       specialised = None; }
 
+  (* Prevented or unchanged decisions may be overridden by a later look at the same
+     call. Other decisions may also be "overridden" because calls are not uniquely
+     identified. *)
   let add_call_decision call (decision : Inlining_stats_types.Decision.t) =
     match call.decision, decision with
     | None, _ -> { call with decision = Some decision }
     | Some _, Prevented _ -> call
     | Some (Prevented _), _ -> { call with decision = Some decision }
-    | Some (Nonrecursive n1), Nonrecursive n2 -> begin
-        match n1, n2 with
-        | Not_inlined _, _ -> { call with decision = Some decision }
-        | _, _ -> call
-      end
-    | Some (Recursive (u1, s1)), Recursive (u2, s2) ->
-        let u =
-          match u1, u2 with
-          | _, Unrolling_not_tried -> u1
-          | Unrolling_not_tried, _ -> u2
-          | _, Not_unrolled _ -> u1
-          | Not_unrolled _, _ -> u2
-          | _, _ -> u1
-        in
-        let s =
-          match s1, s2 with
-          | _, Specialising_not_tried -> s1
-          | Specialising_not_tried, _ -> s2
-          | _, Not_specialised _ -> s1
-          | Not_specialised _, _ -> s2
-          | _, _ -> s1
-        in
-        let decision : Inlining_stats_types.Decision.t = Recursive (u, s) in
-        { call with decision = Some decision }
-    | Some (Recursive _), Nonrecursive _ ->
-      Misc.fatal_errorf "add_call_decision: decision kind mismatch"
-    | Some (Nonrecursive _), Recursive _ ->
-      Misc.fatal_errorf "add_call_decision: decision kind mismatch"
+    | Some (Specialised _), _ -> call
+    | Some _, Specialised _ -> { call with decision = Some decision }
+    | Some (Inlined _), _ -> call
+    | Some _, Inlined _ -> { call with decision = Some decision }
+    | Some Unchanged _, Unchanged _ -> call
 
   let add_decision t (stack, decision) =
     let rec loop t : Closure_stack.t -> _ = function
@@ -248,20 +228,16 @@ module Inlining_report = struct
              Format.pp_print_newline ppf ();
              Inlining_stats_types.Decision.calculation ~depth:(depth + 1) ppf decision;
              begin
-               match decision with
-               | Prevented _ -> ()
-               | Nonrecursive _ -> begin
-                   match c.inlined with
-                   | None -> ()
-                   | Some inlined ->
-                     print ppf ~depth:(depth + 1) inlined
-                 end
-               | Recursive _ -> begin
-                   match c.specialised with
-                   | None -> ()
-                   | Some specialised ->
-                     print ppf ~depth:(depth + 1) specialised
-                 end
+               match c.specialised with
+               | None -> ()
+               | Some specialised ->
+                 print ppf ~depth:(depth + 1) specialised
+             end;
+             begin
+               match c.inlined with
+               | None -> ()
+               | Some inlined ->
+                 print ppf ~depth:(depth + 1) inlined
              end;
              if depth = 0 then Format.pp_print_newline ppf ())
       t

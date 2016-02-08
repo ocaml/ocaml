@@ -44,6 +44,7 @@ let ignore_primitive ( _ : Lambda.primitive) = ()
 let ignore_const (_ : Flambda.const) = ()
 let ignore_allocated_const (_ : Allocated_const.t) = ()
 let ignore_set_of_closures_id (_ : Set_of_closures_id.t) = ()
+let ignore_set_of_closures_origin (_ : Set_of_closures_origin.t) = ()
 let ignore_closure_id (_ : Closure_id.t) = ()
 let ignore_var_within_closure (_ : Var_within_closure.t) = ()
 let ignore_tag (_ : Tag.t) = ()
@@ -63,6 +64,8 @@ exception Vars_in_function_body_not_bound_by_closure_or_params of
   Variable.Set.t * Flambda.set_of_closures * Variable.t
 exception Function_decls_have_overlapping_parameters of Variable.Set.t
 exception Specialised_arg_that_is_not_a_parameter of Variable.t
+exception Projection_must_be_a_free_var of Projection.t
+exception Projection_must_be_a_specialised_arg of Projection.t
 exception Free_variables_set_is_lying of
   Variable.t * Variable.Set.t * Variable.Set.t * Flambda.function_declaration
 exception Set_of_closures_free_vars_map_has_wrong_range of Variable.Set.t
@@ -80,6 +83,7 @@ exception Closure_id_is_bound_multiple_times of Closure_id.t
 exception Set_of_closures_id_is_bound_multiple_times of Set_of_closures_id.t
 exception Unbound_closure_ids of Closure_id.Set.t
 exception Unbound_vars_within_closures of Var_within_closure.Set.t
+exception Move_to_a_closure_not_in_the_free_variables of Variable.t * Variable.Set.t
 
 exception Flambda_invariants_failed
 
@@ -252,16 +256,20 @@ let variable_and_symbol_invariants (program : Flambda.program) =
   and loop_set_of_closures env
       ({ Flambda.function_decls; free_vars; specialised_args; }
        as set_of_closures) =
-      let { Flambda.set_of_closures_id; funs; } = function_decls in
+      let { Flambda.set_of_closures_id; set_of_closures_origin; funs; } =
+        function_decls
+      in
       ignore_set_of_closures_id set_of_closures_id;
+      ignore_set_of_closures_origin set_of_closures_origin;
       let functions_in_closure = Variable.Map.keys funs in
       let variables_in_closure =
-        Variable.Map.fold (fun var var_in_closure variables_in_closure ->
+        Variable.Map.fold (fun var (var_in_closure : Flambda.specialised_to)
+                  variables_in_closure ->
             (* [var] may occur in the body, but will effectively be renamed
                to [var_in_closure], so the latter is what we check to make
                sure it's bound. *)
             ignore_variable var;
-            check_variable_is_bound env var_in_closure;
+            check_variable_is_bound env var_in_closure.var;
             Variable.Set.add var variables_in_closure)
           free_vars Variable.Set.empty
       in
@@ -353,11 +361,34 @@ let variable_and_symbol_invariants (program : Flambda.program) =
       (* Check that every "specialised arg" is a parameter of one of the
          functions being declared, and that the variable to which the
          parameter is being specialised is bound. *)
-      Variable.Map.iter (fun being_specialised specialised_to ->
+      (* CR mshinwell: also check [projectee]---must always be another
+         specialised arg in the same set of closures *)
+      Variable.Map.iter (fun _inner_var
+                (specialised_to : Flambda.specialised_to) ->
+          check_variable_is_bound env specialised_to.var;
+          match specialised_to.projection with
+          | None -> ()
+          | Some projection ->
+            let projecting_from = Projection.projecting_from projection in
+            if not (Variable.Map.mem projecting_from free_vars)
+            then begin
+              raise (Projection_must_be_a_free_var projection)
+            end)
+        free_vars;
+      Variable.Map.iter (fun being_specialised
+                (specialised_to : Flambda.specialised_to) ->
           if not (Variable.Set.mem being_specialised all_params) then begin
             raise (Specialised_arg_that_is_not_a_parameter being_specialised)
           end;
-          check_variable_is_bound env specialised_to)
+          check_variable_is_bound env specialised_to.var;
+          match specialised_to.projection with
+          | None -> ()
+          | Some projection ->
+            let projecting_from = Projection.projecting_from projection in
+            if not (Variable.Map.mem projecting_from specialised_args)
+            then begin
+              raise (Projection_must_be_a_specialised_arg projection)
+            end)
         specialised_args
   in
   let loop_constant_defining_value env (const : Flambda.constant_defining_value) =
@@ -606,6 +637,35 @@ let every_static_exception_is_caught_at_a_single_position flam =
   in
   Flambda_iterators.iter f (fun (_ : Flambda.named) -> ()) flam
 
+let every_move_within_set_of_closures_is_to_a_function_in_the_free_vars program =
+  let moves = ref Closure_id.Map.empty in
+  Flambda_iterators.iter_named_of_program program
+    ~f:(function
+        | Move_within_set_of_closures { start_from; move_to; _ } ->
+            let moved_to =
+              try Closure_id.Map.find start_from !moves with
+              | Not_found -> Closure_id.Set.empty
+            in
+            moves :=
+              Closure_id.Map.add start_from
+                (Closure_id.Set.add move_to moved_to)
+                !moves
+        | _ -> ());
+  Flambda_iterators.iter_on_set_of_closures_of_program program
+    ~f:(fun ~constant:_ { Flambda.function_decls = { funs; _ }; _ } ->
+        Variable.Map.iter (fun fun_var { Flambda.free_variables; _ } ->
+            match Closure_id.Map.find (Closure_id.wrap fun_var) !moves with
+            | exception Not_found -> ()
+            | moved_to ->
+                let missing_dependencies =
+                  Variable.Set.diff (Closure_id.unwrap_set moved_to)
+                    free_variables
+                in
+                if not (Variable.Set.is_empty missing_dependencies) then
+                  raise (Move_to_a_closure_not_in_the_free_variables
+                           (fun_var, missing_dependencies)))
+          funs)
+
 let check_exn ?(kind=Normal) ?(cmxfile=false) (flam:Flambda.program) =
   ignore kind;
   try
@@ -615,6 +675,7 @@ let check_exn ?(kind=Normal) ?(cmxfile=false) (flam:Flambda.program) =
     every_used_function_from_current_compilation_unit_is_declared flam;
     no_var_within_closure_is_bound_multiple_times flam;
     every_used_var_within_closure_from_current_compilation_unit_is_declared flam;
+    every_move_within_set_of_closures_is_to_a_function_in_the_free_vars flam;
     Flambda_iterators.iter_exprs_at_toplevel_of_program flam ~f:(fun flam ->
       primitive_invariants flam ~no_access_to_global_module_identifiers:cmxfile;
       every_static_exception_is_caught flam;
@@ -667,6 +728,15 @@ let check_exn ?(kind=Normal) ?(cmxfile=false) (flam:Flambda.program) =
           parameter of any of the function(s) in the corresponding \
           declaration(s): %a"
         Variable.print var
+    | Projection_must_be_a_free_var var ->
+      Format.eprintf ">> Projection %a in [free_vars] from a variable that is \
+          not a (inner) free variable of the set of closures"
+        Projection.print var
+    | Projection_must_be_a_specialised_arg var ->
+      Format.eprintf ">> Projection %a in [specialised_args] from a variable \
+          that is not a (inner) specialised argument variable of the set of \
+          closures"
+        Projection.print var
     | Free_variables_set_is_lying (var, claimed, calculated, function_decl) ->
       Format.eprintf ">> Function declaration whose [free_variables] set (%a) \
           is not a superset of the result of [Flambda.free_variables] \
@@ -726,6 +796,11 @@ let check_exn ?(kind=Normal) ?(cmxfile=false) (flam:Flambda.program) =
     | Prevapply_should_be_expanded ->
       Format.eprintf ">> The Prevapply primitive should never occur in an \
         Flambda expression (see closure_conversion.ml); use Apply instead"
+    | Move_to_a_closure_not_in_the_free_variables (start_from, move_to) ->
+      Format.eprintf ">> A Move_within_set_of_closures from the closure %a \
+        to closures that are not parts of its free variables: %a"
+          Variable.print start_from
+          Variable.Set.print move_to
     | exn -> raise exn
     end;
     Format.eprintf "\n@?";
