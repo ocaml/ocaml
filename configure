@@ -446,23 +446,19 @@ export cc cclibs verbose
 
 # Check C compiler.
 
-cc="$bytecc $bytecccompopts $bytecclinkopts" sh ./runtest ansi.c
-case $? in
-  0) inf "The C compiler is ISO C99 compliant." ;;
-  1) wrn "The C compiler is ANSI / ISO C90 compliant, but not ISO C99" \
-         "compliant.";;
-  2) err "The C compiler $cc is not ISO C compliant.\n" \
-         "You need an ISO C99 compiler to build OCaml.";;
-  *)
-     if $cross_compiler; then
-       wrn "Unable to compile the test program.\n" \
-           "This failure is expected for cross-compilation:\n" \
-           "we will assume the C compiler is ISO C99-compliant."
-     else
-       err "Unable to compile the test program.\n" \
-           "Make sure the C compiler $cc is properly installed."
-     fi;;
-esac
+cc="$bytecc $bytecccompopts $bytecclinkopts" ret=`sh ./preprocesstest ansi.c`
+if test "$?" -eq 0; then
+  case $ret in
+    0) inf "The C compiler is ISO C99 compliant." ;;
+    1) wrn "The C compiler is ANSI / ISO C90 compliant, but not ISO C99" \
+           "compliant.";;
+    *) err "The C compiler $cc is not ISO C compliant.\n" \
+           "You need an ISO C99 compiler to build OCaml.";;
+  esac
+else
+  err "Unable to compile the test program.\n" \
+      "Make sure the C compiler $cc is properly installed."
+fi
 
 # For cross-compilation, we need a host-based ocamlrun and ocamlyacc,
 # and the user must specify the target BINDIR
@@ -508,7 +504,7 @@ fi # cross-compiler
 # a 64-bit integer type
 
 inf "Checking the sizes of integers and pointers..."
-ret=`sh ./runtest sizes.c`
+ret=`sh ./preprocesstest sizes.c`
 # $1 = sizeof(int)
 # $2 = sizeof(long)
 # $3 = sizeof(pointers)
@@ -565,8 +561,13 @@ echo "#define SIZEOF_LONGLONG $5" >> m.h
 
 # Determine endianness
 
-sh ./runtest endian.c
-case $? in
+if $cross_compiler; then
+  ret=`sh ./preprocesstest endian2.c`
+else
+  sh ./runtest endian.c
+  ret=$?
+fi
+case "$ret" in
   0) inf "This is a big-endian architecture."
      echo "#define ARCH_BIG_ENDIAN" >> m.h;;
   1) inf "This is a little-endian architecture."
@@ -576,7 +577,7 @@ case $? in
   *) case $target in
        *-*-mingw*) inf "This is a little-endian architecture."
                    echo "#undef ARCH_BIG_ENDIAN" >> m.h;;
-       *) wrn "Something went wrong during endianness determination.\n" \
+       *) err "Something went wrong during endianness determination.\n" \
               "You will have to figure out endianness yourself\n" \
               "(option ARCH_BIG_ENDIAN in m.h).";;
      esac;;
