@@ -137,7 +137,7 @@ static int convert_time(FILETIME* time, __time64_t* result, __time64_t def)
   return 1;
 }
 
-static int do_stat(int do_lstat, int use_64, char* path, mlsize_t l, __int64* st_ino, struct _stat64* res)
+static int do_stat(int do_lstat, int use_64, char* path, mlsize_t l, HANDLE fstat, __int64* st_ino, struct _stat64* res)
 {
   BY_HANDLE_FILE_INFORMATION info;
   int i;
@@ -147,15 +147,20 @@ static int do_stat(int do_lstat, int use_64, char* path, mlsize_t l, __int64* st
   unsigned short mode;
   int is_symlink = 0;
 
-  caml_enter_blocking_section();
-  h = CreateFile(path,
-                 FILE_READ_ATTRIBUTES,
-                 FILE_SHARE_DELETE | FILE_SHARE_READ | FILE_SHARE_WRITE,
-                 NULL,
-                 OPEN_EXISTING,
-                 FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OPEN_REPARSE_POINT,
-                 NULL);
-  caml_leave_blocking_section();
+  if (!path) {
+    h = fstat;
+  }
+  else {
+    caml_enter_blocking_section();
+    h = CreateFile(path,
+                   FILE_READ_ATTRIBUTES,
+                   FILE_SHARE_DELETE | FILE_SHARE_READ | FILE_SHARE_WRITE,
+                   NULL,
+                   OPEN_EXISTING,
+                   FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OPEN_REPARSE_POINT,
+                   NULL);
+    caml_leave_blocking_section();
+  }
   if (h == INVALID_HANDLE_VALUE) {
     errno = ENOENT;
     return 0;
@@ -165,12 +170,16 @@ static int do_stat(int do_lstat, int use_64, char* path, mlsize_t l, __int64* st
     if (!GetFileInformationByHandle(h, &info)) {
       win32_maperr(GetLastError());
       caml_leave_blocking_section();
-      CloseHandle(h);
+      if (path) CloseHandle(h);
       return 0;
     }
     caml_leave_blocking_section();
 
-    if (info.dwFileAttributes & FILE_ATTRIBUTE_REPARSE_POINT) {
+    /*
+     * It shouldn't be possible to call this via fstat and have a reparse point
+     * open, but the test on path guarantees this.
+     */
+    if (info.dwFileAttributes & FILE_ATTRIBUTE_REPARSE_POINT && path) {
       /*
        * Only symbolic links should be processed specially. The call to
        * DeviceIoControl solves two problems at the same time:
@@ -220,7 +229,7 @@ static int do_stat(int do_lstat, int use_64, char* path, mlsize_t l, __int64* st
       }
     }
 
-    CloseHandle(h);
+    if (path) CloseHandle(h);
 
     if (!is_symlink) {
       /*
@@ -265,10 +274,15 @@ static int do_stat(int do_lstat, int use_64, char* path, mlsize_t l, __int64* st
     mode = (info.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY ? _S_IFDIR | _S_IEXEC : _S_IFREG);
   }
   mode |= (info.dwFileAttributes & FILE_ATTRIBUTE_READONLY ? _S_IREAD : _S_IREAD | _S_IWRITE);
-  if ((ptr = strrchr(path, '.')) && (!_stricmp(ptr, ".exe") ||
-                                     !_stricmp(ptr, ".cmd") ||
-                                     !_stricmp(ptr, ".bat") ||
-                                     !_stricmp(ptr, ".com"))) {
+  /*
+   * The simulation of the execute bit is ignored for fstat. It could be
+   * emulated using GetFinalPathNameByHandle, but the pre-Vista emulation is a
+   * bit too much effort for a simulated value, so it's simply ignored!
+   */
+  if (path && (ptr = strrchr(path, '.')) && (!_stricmp(ptr, ".exe") ||
+                                             !_stricmp(ptr, ".cmd") ||
+                                             !_stricmp(ptr, ".bat") ||
+                                             !_stricmp(ptr, ".com"))) {
     mode |= _S_IEXEC;
   }
   mode |= (mode & 0700) >> 3;
@@ -286,7 +300,7 @@ CAMLprim value unix_stat(value path)
   __int64 st_ino;
 
   caml_unix_check_path(path, "stat");
-  if (!do_stat(0, 0, String_val(path), caml_string_length(path), &st_ino, &buf)) {
+  if (!do_stat(0, 0, String_val(path), caml_string_length(path), NULL, &st_ino, &buf)) {
     uerror("stat", path);
   }
   return stat_aux(0, st_ino, &buf);
@@ -298,7 +312,7 @@ CAMLprim value unix_stat_64(value path)
   __int64 st_ino;
 
   caml_unix_check_path(path, "stat");
-  if (!do_stat(0, 1, String_val(path), caml_string_length(path), &st_ino, &buf)) {
+  if (!do_stat(0, 1, String_val(path), caml_string_length(path), NULL, &st_ino, &buf)) {
     uerror("stat", path);
   }
   return stat_aux(1, st_ino, &buf);
@@ -308,7 +322,7 @@ CAMLprim value unix_lstat(value path)
 {
   struct _stat64 buf;
   __int64 st_ino;
-  if (!do_stat(1, 0, String_val(path), caml_string_length(path), &st_ino, &buf)) {
+  if (!do_stat(1, 0, String_val(path), caml_string_length(path), NULL, &st_ino, &buf)) {
     uerror("lstat", path);
   }
   return stat_aux(0, st_ino, &buf);
@@ -318,7 +332,7 @@ CAMLprim value unix_lstat_64(value path)
 {
   struct _stat64 buf;
   __int64 st_ino;
-  if (!do_stat(1, 1, String_val(path), caml_string_length(path), &st_ino, &buf)) {
+  if (!do_stat(1, 1, String_val(path), caml_string_length(path), NULL, &st_ino, &buf)) {
     uerror("lstat", path);
   }
   return stat_aux(1, st_ino, &buf);
@@ -328,22 +342,20 @@ CAMLprim value unix_fstat(value handle)
 {
   int ret;
   struct _stat64 buf;
-
-  ret = _fstat64(win_CRT_fd_of_filedescr(handle), &buf);
-  if (ret == -1) uerror("fstat", Nothing);
-  if (buf.st_size > Max_long) {
-    win32_maperr(ERROR_ARITHMETIC_OVERFLOW);
+  __int64 st_ino;
+  if (!do_stat(0, 0, NULL, 0, Handle_val(handle), &st_ino, &buf)) {
     uerror("fstat", Nothing);
   }
-  return stat_aux(0, 0, &buf);
+  return stat_aux(0, st_ino, &buf);
 }
 
 CAMLprim value unix_fstat_64(value handle)
 {
   int ret;
   struct _stat64 buf;
-
-  ret = _fstat64(win_CRT_fd_of_filedescr(handle), &buf);
-  if (ret == -1) uerror("fstat", Nothing);
-  return stat_aux(1, 0, &buf);
+  __int64 st_ino;
+  if (!do_stat(0, 1, NULL, 0, Handle_val(handle), &st_ino, &buf)) {
+    uerror("fstat", Nothing);
+  }
+  return stat_aux(1, st_ino, &buf);
 }

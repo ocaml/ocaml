@@ -305,6 +305,10 @@ Other libraries:
   Before, a handled signal could cause Unix.sleep to return early.
   Now, the sleep is restarted until the given time is elapsed.
   (Xavier Leroy)
+* PR#6120: implement Unix.symlink and Unix.readlink on Windows. Unix.symlink has
+  a new optional argument to_dir (ignored on non-native Windows platforms). stat
+  functions reimplemented to avoid buggy Microsoft CRT implementations (native
+  Windows only)
 - PR#6263: add kind_size_in_bytes and size_in_bytes functions
   to Bigarray module.
   (Runhang Li, review by Mark Shinwell)
