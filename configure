@@ -45,7 +45,6 @@ with_sharedlibs=yes
 partialld="ld -r"
 with_debugger=ocamldebugger
 with_ocamldoc=ocamldoc
-with_ocamlbuild=ocamlbuild
 with_frame_pointers=false
 no_naked_pointers=false
 native_compiler=true
@@ -155,7 +154,7 @@ while : ; do
     -no-ocamldoc|--no-ocamldoc)
         with_ocamldoc="";;
     -no-ocamlbuild|--no-ocamlbuild)
-        with_ocamlbuild="";;
+        ;; # ignored for backward compatibility
     -with-frame-pointers|--with-frame-pointers)
         with_frame_pointers=true;;
     -no-naked-pointers|--no-naked-pointers)
@@ -654,7 +653,7 @@ esac
 shared_libraries_supported=false
 dl_needs_underscore=false
 sharedcccompopts=''
-mksharedlib=''
+mksharedlib='shared-libs-not-available'
 byteccrpath=''
 mksharedlibrpath=''
 natdynlinkopts=""
@@ -1802,7 +1801,6 @@ fi
 echo "RUNTIMEI=${with_instrumented_runtime}" >>Makefile
 echo "WITH_DEBUGGER=${with_debugger}" >>Makefile
 echo "WITH_OCAMLDOC=${with_ocamldoc}" >>Makefile
-echo "WITH_OCAMLBUILD=${with_ocamlbuild}" >>Makefile
 echo "ASM_CFI_SUPPORTED=$asm_cfi_supported" >> Makefile
 echo "WITH_FRAME_POINTERS=$with_frame_pointers" >> Makefile
 echo "TARGET=$target" >> Makefile

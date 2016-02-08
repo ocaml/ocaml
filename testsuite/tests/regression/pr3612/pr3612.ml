@@ -23,10 +23,11 @@ let test s =
     ignore (Marshal.from_string s 0)
   done
 
-let () =
+let f () =
   init ();
   let s = Marshal.to_string (test_alloc ()) [] in
   test s;
   Gc.full_major ();
   print_int (get_counter ());
   print_newline ()
+let () = (f [@inline never]) ()

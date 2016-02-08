@@ -60,9 +60,16 @@ Language features:
 - PR#6681 GPR#326: signature items are now accepted as payloads for
   extension and attributes, using the syntax [%foo: SIG ] or [@foo: SIG ].
   (Alain Frisch and Gabriel Radanne)
+* GPR#342: Allow shortcuts for extension and attributes on all keywords.
+  The attribute in "let[@foo] .. in .." is now attached to the value binding,
+  not to the expression.
+  (Gabriel Radanne)
 * GPR#234: allow "[]" as a user-defined constructor. Demand parenthesis
   around "::" when using "::" as user-defined constructor.
   (Runhang Li, review by Damien Doligez)
+- GPR#188: accept [@@immediate] attribute on type declarations to mark types
+  that are represented at runtime by an integer
+  (Will Crichton, reviewed by Leo White)
 
 Compilers:
 - PR#4080, PR#6537, PR#5333: fix stack overflow in the compiler when -pack'ing
@@ -244,6 +251,8 @@ Standard library:
   * Pervasives.ldexp (and [@@noalloc])
   * Pervasives.compare for float, nativeint, int32, int64.
   (François Bobot)
+- PR#3622, GPR#195: add function Stack.fold
+  (Simon Cruanes)
 - GPR#329: Add exists, for_all,  mem and memq functions in Array
   (Bernhard Schommer)
 - GPR#337: Add [Hashtbl.filter_map_inplace] (Alain Frisch)
@@ -309,17 +318,6 @@ Other libraries:
   (Xavier Leroy)
 - PR#7024: in documentation of Str regular expressions, clarify what
     "end of line" means for "^" and "$" regexps.
-
-OCamlbuild:
-- PR#6794, PR#6809: pass package-specific include flags when building C files
-  (Jérémie Dimino, request by whitequark)
-- GPR#208: add "asm" tag to ocamlbuild to enable flag -S
-  (ygrek)
-- Changed OCamlbuild's license to LGPLv2 with static linking exception.
-- GPR#219: speedup target-already-built builds
-  (ygrek)
-- PR#6605, GPR#117: use ocamlfind, if available, to discover camlp4 path
-  (Vincent Laporte)
 
 OCamldep:
 - GPR#286: add support for module aliases
@@ -410,6 +408,8 @@ Bug fixes:
 - PR#6954: Infinite loop in type checker with module aliases
 - PR#6972, GPR#276: 4.02.3 regression on documentation comments in .cmt files
   (Leo White, report by Olivier Andrieu)
+- PR#6977: String literals in comments interpret escape sequences
+  (Damien Doligez, report by Daniel Bünzli and David Sheets)
 - PR#6980: Assert failure from polymorphic variants and existentials
 - PR#6981: Ctype.Unify(_) with associated functor arg refering to previous one
 - PR#6982: unexpected type error when packing a module alias
@@ -447,6 +447,8 @@ Bug fixes:
 - PR#7096: ocamldoc uses an incorrect subscript/superscript style
 - PR#7115: shadowing in a branch of a GADT match breaks unused variable
   warning (Alain Frisch, report by Valentin Gatien-Baron)
+- PR#7135: only warn about ground coercions in -principal mode
+  (Jacques Garrigue, report by Jeremy Yallop)
 - GPR#205: Clear caml_backtrace_last_exn before registering as root
   (report and fix by Frederic Bour)
 - GPR#220: minor -dsource error on recursive modules
@@ -556,6 +558,9 @@ Features wishes:
   (tkob)
 - GPR#401: automatically retry failed test directories in the testsuite
   (David Allsopp)
+- GPR#451: an optional 'parallel' target in testsuite/Makefile using the
+  GNU parallel tool to run tests in parallel.
+  (Gabriel Scherer)
 
 Build system:
 - GPR#388: FlexDLL added as a Git submodule and bootstrappable with the compiler

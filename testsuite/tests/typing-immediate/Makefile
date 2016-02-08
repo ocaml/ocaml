@@ -2,19 +2,14 @@
 #                                                                       #
 #                                 OCaml                                 #
 #                                                                       #
-#           Damien Doligez, projet Gallium, INRIA Rocquencourt          #
+#                 Xavier Clerc, SED, INRIA Rocquencourt                 #
 #                                                                       #
-#   Copyright 2013 Institut National de Recherche en Informatique et    #
+#   Copyright 2010 Institut National de Recherche en Informatique et    #
 #   en Automatique.  All rights reserved.  This file is distributed     #
 #   under the terms of the Q Public License version 1.0.                #
 #                                                                       #
 #########################################################################
 
-case `grep '^SYSTEM=' ../../../config/Makefile` in
-  SYSTEM=bsd_elf) exit 3;;
-esac
-
-case `sed -n -e '/OTHERLIBRARIES=/s// /p' ../../../config/Makefile` in
-  *' unix'*) exit 0;;
-  *) exit 3;;
-esac
+BASEDIR=../..
+include $(BASEDIR)/makefiles/Makefile.toplevel
+include $(BASEDIR)/makefiles/Makefile.common

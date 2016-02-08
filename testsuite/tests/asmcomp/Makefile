@@ -45,7 +45,7 @@ lexcmm.ml: lexcmm.mll
 	@$(OCAMLLEX) -q lexcmm.mll
 
 MLCASES=optargs staticalloc bind_tuples is_static
-ARGS_is_static=is_in_static_data.c
+ARGS_is_static=-I $(OTOPDIR)/byterun is_in_static_data.c
 
 CASES=fib tak quicksort quicksort2 soli \
       arith checkbound tagged-fib tagged-integr tagged-quicksort tagged-tak

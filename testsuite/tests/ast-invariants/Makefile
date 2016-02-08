@@ -13,8 +13,9 @@
 #########################################################################
 
 BASEDIR=../..
-COMPFLAGS=-I $(OTOPDIR)/parsing -I $(OTOPDIR)/utils
-LIBRARIES=../../../compilerlibs/ocamlcommon
+COMPFLAGS=-I $(OTOPDIR)/parsing -I $(OTOPDIR)/utils \
+          -I $(OTOPDIR)/otherlibs/$(UNIXLIBVAR)unix
+LIBRARIES=../../../compilerlibs/ocamlcommon unix
 MODULES=
 MAIN_MODULE=test
 

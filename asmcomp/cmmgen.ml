@@ -221,6 +221,13 @@ let untag_int = function
   | Cop(Cor, [c; Cconst_int 1]) -> Cop(Casr, [c; Cconst_int 1])
   | c -> Cop(Casr, [c; Cconst_int 1])
 
+let if_then_else (cond, ifso, ifnot) =
+  match cond with
+  | Cconst_int 0 -> ifnot
+  | Cconst_int 1 -> ifso
+  | _ ->
+    Cifthenelse(cond, ifso, ifnot)
+
 (* Turning integer divisions into multiply-high then shift.
    The [division_parameters] function is used in module Emit for
    those target platforms that support this optimization. *)
@@ -1625,14 +1632,14 @@ let rec transl env e =
         num_true
         (make_catch2
            (fun shared_false ->
-             Cifthenelse
+             if_then_else
                (test_bool (transl env cond),
                 exit_if_true env condso num_true shared_false,
                 exit_if_true env condnot num_true shared_false))
            (transl env ifnot))
         (transl env ifso)
   | Uifthenelse(cond, ifso, ifnot) ->
-      Cifthenelse(test_bool(transl env cond), transl env ifso, transl env ifnot)
+      if_then_else(test_bool(transl env cond), transl env ifso, transl env ifnot)
   | Usequence(exp1, exp2) ->
       Csequence(remove_unit(transl env exp1), transl env exp2)
   | Uwhile(cond, body) ->
@@ -1850,12 +1857,12 @@ and transl_prim_2 env p arg1 arg2 dbg =
 
   (* Boolean operations *)
   | Psequand ->
-      Cifthenelse(test_bool(transl env arg1), transl env arg2, Cconst_int 1)
+      if_then_else(test_bool(transl env arg1), transl env arg2, Cconst_int 1)
       (* let id = Ident.create "res1" in
       Clet(id, transl env arg1,
            Cifthenelse(test_bool(Cvar id), transl env arg2, Cvar id)) *)
   | Psequor ->
-      Cifthenelse(test_bool(transl env arg1), Cconst_int 3, transl env arg2)
+      if_then_else(test_bool(transl env arg1), Cconst_int 3, transl env arg2)
 
   (* Integer operations *)
   | Paddint ->
@@ -2313,13 +2320,13 @@ and exit_if_true env cond nfail otherwise =
   | Uifthenelse (cond, ifso, ifnot) ->
       make_catch2
         (fun shared ->
-          Cifthenelse
+          if_then_else
             (test_bool (transl env cond),
              exit_if_true env ifso nfail shared,
              exit_if_true env ifnot nfail shared))
         otherwise
   | _ ->
-      Cifthenelse(test_bool(transl env cond), Cexit (nfail, []), otherwise)
+      if_then_else(test_bool(transl env cond), Cexit (nfail, []), otherwise)
 
 and exit_if_false env cond otherwise nfail =
   match cond with
@@ -2345,13 +2352,13 @@ and exit_if_false env cond otherwise nfail =
   | Uifthenelse (cond, ifso, ifnot) ->
       make_catch2
         (fun shared ->
-          Cifthenelse
+          if_then_else
             (test_bool (transl env cond),
              exit_if_false env ifso shared nfail,
              exit_if_false env ifnot shared nfail))
         otherwise
   | _ ->
-      Cifthenelse(test_bool(transl env cond), otherwise, Cexit (nfail, []))
+      if_then_else(test_bool(transl env cond), otherwise, Cexit (nfail, []))
 
 and transl_switch env arg index cases = match Array.length cases with
 | 0 -> fatal_error "Cmmgen.transl_switch"

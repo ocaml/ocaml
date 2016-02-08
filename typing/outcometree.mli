@@ -102,6 +102,7 @@ and out_type_decl =
     otype_params: (string * (bool * bool)) list;
     otype_type: out_type;
     otype_private: Asttypes.private_flag;
+    otype_immediate: bool;
     otype_cstrs: (out_type * out_type) list }
 and out_extension_constructor =
   { oext_name: string;

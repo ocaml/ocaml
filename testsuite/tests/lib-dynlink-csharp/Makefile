@@ -24,13 +24,16 @@ all: prepare bytecode bytecode-dll native native-dll
 
 .PHONY: prepare
 prepare:
-	@$(OCAMLC) -c plugin.ml
-	@$(OCAMLOPT) -o plugin.cmxs -shared plugin.ml
+	@if $(SUPPORTS_SHARED_LIBRARIES); then \
+	   $(OCAMLC) -c plugin.ml && \
+	   $(OCAMLOPT) -o plugin.cmxs -shared plugin.ml; \
+	 fi
 
 .PHONY: bytecode
 bytecode:
 	@printf " ... testing 'bytecode':"
-	@if ! $(SUPPORTS_SHARED_LIBRARIES) || [ ! `which $(CSC) >/dev/null 2>&1` ]; then \
+	@if ! $(SUPPORTS_SHARED_LIBRARIES) || ! which $(CSC) >/dev/null 2>&1; \
+	then \
 	  echo " => skipped"; \
 	else \
 	  $(OCAMLC) -output-obj -o main.dll dynlink.cma main.ml entry.c; \
@@ -43,7 +46,8 @@ bytecode:
 .PHONY: bytecode-dll
 bytecode-dll:
 	@printf " ... testing 'bytecode-dll':"
-	@if ! $(SUPPORTS_SHARED_LIBRARIES) || [ ! `which $(CSC) > /dev/null 2>&1` ]; then \
+	@if ! $(SUPPORTS_SHARED_LIBRARIES) || ! which $(CSC) > /dev/null 2>&1; \
+	then \
 	  echo " => skipped"; \
 	else \
 	  $(OCAMLC) -output-obj -o main_obj.$(O) dynlink.cma entry.c main.ml; \
@@ -58,7 +62,8 @@ bytecode-dll:
 .PHONY: native
 native:
 	@printf " ... testing 'native':"
-	@if ! $(SUPPORTS_SHARED_LIBRARIES) || $(BYTECODE_ONLY) || [ ! `which $(CSC) > /dev/null 2>&1` ]; then \
+	@if ! $(SUPPORTS_SHARED_LIBRARIES) || $(BYTECODE_ONLY) \
+	    || ! which $(CSC) > /dev/null 2>&1; then \
 	  echo " => skipped"; \
 	else \
 	  $(OCAMLOPT) -output-obj -o main.dll dynlink.cmxa entry.c main.ml; \
@@ -71,7 +76,8 @@ native:
 .PHONY: native-dll
 native-dll:
 	@printf " ... testing 'native-dll':"
-	@if ! $(SUPPORTS_SHARED_LIBRARIES) || $(BYTECODE_ONLY) || [ ! `which $(CSC) > /dev/null 2>&1` ]; then \
+	@if ! $(SUPPORTS_SHARED_LIBRARIES) || $(BYTECODE_ONLY) \
+	    || ! which $(CSC) > /dev/null 2>&1; then \
 	  echo " => skipped"; \
 	else \
 	  $(OCAMLOPT) -output-obj -o main_obj.$(O) dynlink.cmxa entry.c \
