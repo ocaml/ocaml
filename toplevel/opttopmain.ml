@@ -106,6 +106,8 @@ module Options = Main_args.Make_opttop_options (struct
   let _max_inlining_depth spec =
     Int_arg_helper.parse spec ~update:max_inlining_depth
       ~help_text:"Syntax: -max-inlining-depth <n> | <round>=<n>[,...]"
+  let _no_unbox_free_vars_of_closures = clear unbox_free_vars_of_closures
+  let _no_unbox_specialised_args = clear unbox_specialised_args
   let _o s = output_name := Some s
   let _o2 () =
     simplify_rounds := 2;
