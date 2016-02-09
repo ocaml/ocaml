@@ -235,6 +235,10 @@ OCaml 4.04.0:
   guarantees about immutability of strings
   (Alain Frisch, review by Hezekiah M. Carty)
 
+* GPR#465: configure system automatically applies patches found in patches/ and
+  includes a list of applied patches as a string list in Config.patches
+  (displayed as patches: in the output of ocamlc -config)
+  (David Allsopp)
 
 ### Bug fixes:
 

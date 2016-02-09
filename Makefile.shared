@@ -341,3 +341,7 @@ partialclean::
 	rm -f ocamlnat$(EXE)
 
 toplevel/opttoploop.cmx: otherlibs/dynlink/dynlink.cmxa
+
+# Do not be tempted to make this PATCHES:=, it should be evaluated on demand!
+PATCHES=$(shell find patches -regex "patches/[a-z0-9+\#/-]+\.patched" \
+                             -printf ' "%f";' | sed -e "s/\.patched//g" | sort)

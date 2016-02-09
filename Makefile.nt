@@ -48,7 +48,7 @@ flexdll/Makefile:
 	@false
 
 # Bootstrapping FlexDLL - leaves a bytecode image of flexlink.exe in flexdll/
-flexdll: flexdll/Makefile
+flexdll: flexdll/Makefile patches
 	cd byterun && $(MAKEREC) BOOTSTRAPPING_FLEXLINK=yes ocamlrun$(EXE)
 	cp byterun/ocamlrun.exe boot/ocamlrun.exe
 	cd stdlib && $(MAKEREC) COMPILER=../boot/ocamlc stdlib.cma std_exit.cmo
@@ -71,8 +71,18 @@ flexlink.opt:
 	mv flexlink flexlink.exe
 
 # Recompile the system using the bootstrap compiler
-all: runtime ocamlc ocamllex ocamlyacc ocamltools library ocaml \
+all: patches runtime ocamlc ocamllex ocamlyacc ocamltools library ocaml \
   otherlibraries $(WITH_DEBUGGER) $(WITH_OCAMLDOC)
+
+# Ensure any patches in patches/ have been applied
+patches:
+# The curious use of grep is because Cygwin -regex doesn't work on NTFS
+	@for i in `find patches -regex "patches/[a-z0-9+#/-]+\.patch" -printf "%f\n" | grep -x "[a-z0-9+#/-]\+\.patch" | sed -e "s/\.patch$$//" | sort` ; do \
+	  if [ ! -e patches/$$i.patched ] ; then \
+	    echo "** Applying patches/$$i.patch" ; \
+	    patch -p1 $(PATCH_FLAGS) -Ni patches/$$i.patch && touch patches/$$i.patched && touch patches/$$i.reverse ; \
+	  fi ; \
+	done
 
 # The compilation of ocaml will fail if the runtime has changed.
 # Never mind, just do make bootstrap to reach fixpoint again.
@@ -186,7 +196,7 @@ opt.opt: core opt-core ocamlc.opt all ocamlopt.opt ocamllex.opt \
          $(if $(wildcard flexdll/Makefile),flexlink.opt)
 
 # Complete build using fast compilers
-world.opt: coldstart opt.opt
+world.opt: patches coldstart opt.opt
 
 # Installation
 
@@ -407,6 +417,7 @@ utils/config.ml: utils/config.mlp config/Makefile
 	    -e 's|%%TARGET%%|$(TARGET)|' \
 	    -e 's|%%FLAMBDA%%|$(FLAMBDA)|' \
 	    -e 's|%%SAFE_STRING%%|$(SAFE_STRING)|' \
+	    -e 's|%%PATCHES%%|$(PATCHES)|' \
 	    -e 's|%%FLEXLINK_FLAGS%%|$(FLEXLINK_FLAGS)|' \
 	    utils/config.mlp > utils/config.ml
 
@@ -735,6 +746,11 @@ distclean:
 	rm -f tools/*.bak
 	rm -f ocaml ocamlc
 	rm -f testsuite/_log
+	for i in `find patches -name *.reverse -printf "%f\n" | sed -e "s/\.reverse$$//" | sort -r` ; do \
+	  echo "** Reversing patches/$$i.patch" ; \
+	  patch -p1 -R $(PATCH_FLAGS) -i patches/$$i.patch ; \
+	  rm -f patches/$$i.patched patches/$$i.reverse ; \
+	done
 
 .PHONY: all backup bootstrap checkstack clean
 .PHONY: partialclean beforedepend alldepend cleanboot coldstart
@@ -747,5 +763,6 @@ distclean:
 .PHONY: otherlibrariesopt promote promote-cross
 .PHONY: restore runtime runtimeopt makeruntimeopt world world.opt
 .PHONY: flexdll flexlink.opt flexdll-common-err flexdll-repo
+.PHONY: patches
 
 include .depend

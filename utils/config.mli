@@ -134,6 +134,9 @@ val host : string
 val target : string
         (* Whether the compiler is a cross-compiler *)
 
+val patches : string list
+        (* List of patches applied to the compiler *)
+
 val print_config : out_channel -> unit;;
 
 val flambda : bool

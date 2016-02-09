@@ -129,12 +129,15 @@ let default_executable_name =
   | "Win32" | "Cygwin" -> "camlprog.exe"
   | _ -> "camlprog"
 
+let patches = [%%PATCHES%% ]
+
 let systhread_supported = %%SYSTHREAD_SUPPORT%%;;
 
 let print_config oc =
   let p name valu = Printf.fprintf oc "%s: %s\n" name valu in
   let p_bool name valu = Printf.fprintf oc "%s: %B\n" name valu in
   p "version" version;
+  p "patches" (String.concat " " patches);
   p "standard_library_default" standard_library_default;
   p "standard_library" standard_library;
   p "standard_runtime" standard_runtime;

@@ -422,6 +422,7 @@ utils/config.ml: utils/config.mlp config/Makefile
 	    -e 's|%%TARGET%%|$(TARGET)|' \
 	    -e 's|%%FLAMBDA%%|$(FLAMBDA)|' \
 	    -e 's|%%SAFE_STRING%%|$(SAFE_STRING)|' \
+	    -e 's|%%PATCHES%%|$(PATCHES)|' \
 	    utils/config.mlp > utils/config.ml
 
 partialclean::
@@ -749,6 +750,11 @@ distclean:
 	rm -f tools/*.bak
 	rm -f ocaml ocamlc
 	rm -f testsuite/_log
+	for i in `find patches -name *.reverse -printf "%f\n" | sed -e "s/\.reverse$$//" | sort -r` ; do \
+	  echo "** Reversing patches/$$i.patch" ; \
+	  patch -p1 -R $(PATCH_FLAGS) -i patches/$$i.patch ; \
+	  rm -f patches/$$i.patched patches/$$i.reverse ; \
+	done
 
 .PHONY: all backup bootstrap checkstack clean
 .PHONY: partialclean beforedepend alldepend cleanboot coldstart
