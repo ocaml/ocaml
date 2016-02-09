@@ -70,15 +70,22 @@ let process_file ppf name =
 
 let usage = "Usage: ocamlopt <options> <files>\nOptions are:"
 
+(* Error messages to standard error formatter *)
 let ppf = Format.err_formatter
 
-(* Error messages to standard error formatter *)
+let process_thunks = ref []
+let schedule fn =
+  process_thunks := fn :: !process_thunks
+
 let anonymous filename =
-  readenv ppf (Before_compile filename); process_file ppf filename;;
+  schedule (fun () ->
+    readenv ppf (Before_compile filename); process_file ppf filename)
 let impl filename =
-  readenv ppf (Before_compile filename); process_implementation_file ppf filename;;
+  schedule (fun () ->
+    readenv ppf (Before_compile filename); process_implementation_file ppf filename)
 let intf filename =
-  readenv ppf (Before_compile filename); process_interface_file ppf filename;;
+  schedule (fun () ->
+    readenv ppf (Before_compile filename); process_interface_file ppf filename)
 
 let show_config () =
   Config.print_config stdout;
@@ -240,6 +247,7 @@ let main () =
   try
     readenv ppf Before_args;
     Arg.parse (Arch.command_line_options @ Options.list) anonymous usage;
+    List.iter (fun f -> f ()) (List.rev !process_thunks);
     readenv ppf Before_link;
     if
       List.length (List.filter (fun x -> !x)
