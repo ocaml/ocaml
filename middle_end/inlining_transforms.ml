@@ -180,7 +180,8 @@ let inline_by_copying_function_declaration ~env ~r
     ~(inline_requested : Lambda.inline_attribute)
     ~closure_id_being_applied
     ~(function_decl : Flambda.function_declaration)
-    ~args ~args_approxs ~(invariant_params:Variable.Set.t Variable.Map.t lazy_t)
+    ~args ~args_approxs
+    ~(invariant_params:Variable.Set.t Variable.Map.t lazy_t)
     ~(specialised_args : Flambda.specialised_to Variable.Map.t)
     ~dbg ~simplify =
   let specialised_args_set = Variable.Map.keys specialised_args in

@@ -44,6 +44,8 @@ let inline env r ~lhs_of_application
   let try_inlining =
     if only_use_of_function || always_inline then
       Try_it
+    else if not (E.inlining_allowed env closure_id_being_applied) then
+      Don't_try_it S.Not_inlined.Unrolling_depth_exceeded
     else if not (E.unrolling_allowed env function_decls.set_of_closures_origin)
          && (Lazy.force recursive) then
       Don't_try_it S.Not_inlined.Unrolling_depth_exceeded
@@ -161,6 +163,7 @@ let inline env r ~lhs_of_application
            recursive to avoid having to check whether or not it is recursive *)
         E.inside_unrolled_function env function_decls.set_of_closures_origin
       in
+      let env = E.inside_inlined_function env closure_id_being_applied in
       let env =
         if E.inlining_level env = 0
            (* If the function was considered for inlining without considering

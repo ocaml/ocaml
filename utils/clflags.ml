@@ -94,6 +94,7 @@ and dump_rawlambda = ref false          (* -drawlambda *)
 and dump_lambda = ref false             (* -dlambda *)
 and dump_rawclambda = ref false         (* -drawclambda *)
 and dump_clambda = ref false            (* -dclambda *)
+and dump_rawflambda = ref false            (* -drawflambda *)
 and dump_flambda = ref false            (* -dflambda *)
 and dump_flambda_let = ref (None : int option) (* -dflambda-let=... *)
 and dump_flambda_verbose = ref false    (* -dflambda-verbose *)
@@ -328,7 +329,7 @@ let set_dumped_pass s enabled =
     dumped_passes_list := dumped_passes
   end
 
-let flambda_invariant_checks = ref false
+let flambda_invariant_checks = ref true
 
 let parse_color_setting = function
   | "auto" -> Some Misc.Color.Auto

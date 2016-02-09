@@ -122,12 +122,13 @@ module Options = Main_args.Make_opttop_options (struct
   let _unbox_closures = set unbox_closures
   let _drawclambda = set dump_rawclambda
   let _dclambda = set dump_clambda
+  let _drawflambda = set dump_rawflambda
   let _dflambda = set dump_flambda
   let _dflambda_let stamp = dump_flambda_let := Some stamp
   let _dflambda_verbose () =
     set dump_flambda ();
     set dump_flambda_verbose ()
-  let _dflambda_invariants = set flambda_invariant_checks
+  let _dflambda_no_invariants = clear flambda_invariant_checks
   let _labels = clear classic
   let _no_alias_deps = set transparent_modules
   let _no_app_funct = clear applicative_functors

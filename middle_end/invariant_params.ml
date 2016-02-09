@@ -67,7 +67,8 @@ let transitive_closure state =
   let union s1 s2 =
     match s1, s2 with
     | Top, _ | _, Top -> Top
-    | Implication s1, Implication s2 -> Implication (Variable.Pair.Set.union s1 s2)
+    | Implication s1, Implication s2 ->
+      Implication (Variable.Pair.Set.union s1 s2)
   in
   let equal s1 s2 =
     match s1, s2 with
@@ -407,5 +408,7 @@ let unused_arguments (decls : Flambda.function_declarations) ~backend =
            acc decl.Flambda.params)
       decls.funs Variable.Set.empty
   in
-  if dump then Format.printf "Unused arguments: %a@." Variable.Set.print arguments;
+  if dump then begin
+    Format.printf "Unused arguments: %a@." Variable.Set.print arguments
+  end;
   arguments

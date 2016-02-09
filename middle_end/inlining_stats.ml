@@ -16,9 +16,6 @@
 
 [@@@ocaml.warning "+a-4-9-30-40-41-42"]
 
-let _vim_trailer = "vim:fdm=expr:filetype=plain:\
-  foldexpr=getline(v\\:lnum)=~'^\\\\s*$'&&getline(v\\:lnum+1)=~'\\\\S'?'<1'\\:1"
-
 module Closure_stack = struct
   type t = node list
 
@@ -39,8 +36,8 @@ module Closure_stack = struct
       | (Call _) :: _ ->
         Misc.fatal_errorf "note_entering_closure: unexpected Call node"
 
-  (* CR-someday lwhite: since calls do not have a unique id it is possible some calls
-     will end up sharing nodes. *)
+  (* CR-someday lwhite: since calls do not have a unique id it is possible
+     some calls will end up sharing nodes. *)
   let note_entering_call t ~closure_id ~debuginfo =
     if not !Clflags.inlining_stats then t
     else
@@ -129,9 +126,9 @@ module Inlining_report = struct
       inlined = None;
       specialised = None; }
 
-  (* Prevented or unchanged decisions may be overridden by a later look at the same
-     call. Other decisions may also be "overridden" because calls are not uniquely
-     identified. *)
+  (* Prevented or unchanged decisions may be overridden by a later look at the
+     same call. Other decisions may also be "overridden" because calls are not
+     uniquely identified. *)
   let add_call_decision call (decision : Inlining_stats_types.Decision.t) =
     match call.decision, decision with
     | None, _ -> { call with decision = Some decision }
@@ -202,44 +199,44 @@ module Inlining_report = struct
     Format.fprintf ppf "%s" s
 
   let rec print ~depth ppf t =
-    Place_map.iter
-      (fun (dbg, cl, _) v ->
-         match v with
-         | Closure t ->
-           Format.fprintf ppf "@[<h>%a Definition of %a%s@]@."
+    Place_map.iter (fun (dbg, cl, _) v ->
+       match v with
+       | Closure t ->
+         Format.fprintf ppf "@[<h>%a Definition of %a%s@]@."
+           print_stars (depth + 1)
+           Closure_id.print cl
+           (Debuginfo.to_string dbg);
+         print ppf ~depth:(depth + 1) t;
+         if depth = 0 then Format.pp_print_newline ppf ()
+       | Call c ->
+         match c.decision with
+         | None ->
+           Misc.fatal_error "Inlining_report.print: missing call decision"
+         | Some decision ->
+           Format.pp_open_vbox ppf (depth + 2);
+           Format.fprintf ppf "@[<h>%a Application of %a%s@]@;@;@[%a@]"
              print_stars (depth + 1)
              Closure_id.print cl
-             (Debuginfo.to_string dbg);
-           print ppf ~depth:(depth + 1) t;
-           if depth = 0 then Format.pp_print_newline ppf ()
-         | Call c ->
-           match c.decision with
-           | None ->
-             Misc.fatal_error "Inlining_report.print: missing call decision"
-           | Some decision ->
-             Format.pp_open_vbox ppf (depth + 2);
-             Format.fprintf ppf "@[<h>%a Application of %a%s@]@;@;@[%a@]"
-               print_stars (depth + 1)
-               Closure_id.print cl
-               (Debuginfo.to_string dbg)
-               Inlining_stats_types.Decision.summary decision;
-             Format.pp_close_box ppf ();
-             Format.pp_print_newline ppf ();
-             Format.pp_print_newline ppf ();
-             Inlining_stats_types.Decision.calculation ~depth:(depth + 1) ppf decision;
-             begin
-               match c.specialised with
-               | None -> ()
-               | Some specialised ->
-                 print ppf ~depth:(depth + 1) specialised
-             end;
-             begin
-               match c.inlined with
-               | None -> ()
-               | Some inlined ->
-                 print ppf ~depth:(depth + 1) inlined
-             end;
-             if depth = 0 then Format.pp_print_newline ppf ())
+             (Debuginfo.to_string dbg)
+             Inlining_stats_types.Decision.summary decision;
+           Format.pp_close_box ppf ();
+           Format.pp_print_newline ppf ();
+           Format.pp_print_newline ppf ();
+           Inlining_stats_types.Decision.calculation ~depth:(depth + 1)
+             ppf decision;
+           begin
+             match c.specialised with
+             | None -> ()
+             | Some specialised ->
+               print ppf ~depth:(depth + 1) specialised
+           end;
+           begin
+             match c.inlined with
+             | None -> ()
+             | Some inlined ->
+               print ppf ~depth:(depth + 1) inlined
+           end;
+           if depth = 0 then Format.pp_print_newline ppf ())
       t
 
   let print ppf t = print ~depth:0 ppf t
@@ -251,7 +248,6 @@ let really_save_then_forget_decisions ~output_prefix =
   let out_channel = open_out (output_prefix ^ ".inlining.org") in
   let ppf = Format.formatter_of_out_channel out_channel in
   Inlining_report.print ppf report;
-  (*Format.fprintf ppf "@.# %s@." vim_trailer;*)
   close_out out_channel;
   log := []
 

@@ -143,7 +143,8 @@ module Not_specialised = struct
   let summary ppf = function
     | Classic_mode ->
       Format.pp_print_text ppf
-        "This function was prevented from specialising by `-classic-heuristic'."
+        "This function was prevented from specialising by \
+          `-classic-heuristic'."
     | Not_recursive ->
       Format.pp_print_text ppf
         "This function was not specialised because it is not recursive."
@@ -153,15 +154,16 @@ module Not_specialised = struct
     | No_invariant_parameters ->
       Format.pp_print_text ppf
         "This function was not specialised because \
-         it has no invariant parameters."
+          it has no invariant parameters."
     | No_useful_approximations ->
       Format.pp_print_text ppf
         "This function was not specialised because \
-         there was no useful information about any of its invariant parameters."
+          there was no useful information about any of its invariant \
+          parameters."
     | Not_beneficial _ ->
       Format.pp_print_text ppf
         "This function was not specialised because \
-         the expected benefit did not outweigh the change in code size."
+          the expected benefit did not outweigh the change in code size."
 
   let calculation ~depth ppf = function
     | Classic_mode

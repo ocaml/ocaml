@@ -637,7 +637,7 @@ let every_static_exception_is_caught_at_a_single_position flam =
   in
   Flambda_iterators.iter f (fun (_ : Flambda.named) -> ()) flam
 
-let every_move_within_set_of_closures_is_to_a_function_in_the_free_vars program =
+let _every_move_within_set_of_closures_is_to_a_function_in_the_free_vars program =
   let moves = ref Closure_id.Map.empty in
   Flambda_iterators.iter_named_of_program program
     ~f:(function
@@ -675,7 +675,10 @@ let check_exn ?(kind=Normal) ?(cmxfile=false) (flam:Flambda.program) =
     every_used_function_from_current_compilation_unit_is_declared flam;
     no_var_within_closure_is_bound_multiple_times flam;
     every_used_var_within_closure_from_current_compilation_unit_is_declared flam;
-    every_move_within_set_of_closures_is_to_a_function_in_the_free_vars flam;
+    (* CR pchambart: This invariant is not maintained. It should be either relaxed
+       or reformulated. Currently, it is safe to disable it as the potential related
+       errors would result in fatal errors, not in miscompilations *)
+    (* every_move_within_set_of_closures_is_to_a_function_in_the_free_vars flam; *)
     Flambda_iterators.iter_exprs_at_toplevel_of_program flam ~f:(fun flam ->
       primitive_invariants flam ~no_access_to_global_module_identifiers:cmxfile;
       every_static_exception_is_caught flam;

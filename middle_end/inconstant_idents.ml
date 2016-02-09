@@ -358,11 +358,24 @@ module Inconstants (P:Param) (Backend:Backend_intf.S) = struct
         mark_var set_of_closures curr
       else
         mark_curr curr
-    | Move_within_set_of_closures
-        ({ closure; start_from = _; move_to = _ }) ->
-      mark_var closure curr
-    | Project_var ({ closure; closure_id = _; var = _ }) ->
-      mark_var closure curr
+    | Move_within_set_of_closures ({ closure; start_from; move_to; }) ->
+      (* CR-someday mshinwell: We should be able to deem these projections
+         (same for the cases below) as constant when from another
+         compilation unit, but there isn't code to handle this yet.  (Note
+         that for Project_var we cannot yet generate a projection from a
+         closure in another compilation unit, since we only lift closed
+         closures.) *)
+      if Closure_id.in_compilation_unit start_from compilation_unit then begin
+        assert (Closure_id.in_compilation_unit move_to compilation_unit);
+        mark_var closure curr
+      end else begin
+        mark_curr curr
+      end
+    | Project_var ({ closure; closure_id; var = _ }) ->
+      if Closure_id.in_compilation_unit closure_id compilation_unit then
+        mark_var closure curr
+      else
+        mark_curr curr
     | Prim (Lambda.Pfield _, [f1], _) ->
       mark_curr curr;
       mark_var f1 curr

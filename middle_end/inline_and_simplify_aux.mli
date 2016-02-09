@@ -184,6 +184,14 @@ module Env : sig
       body of an unrolled recursive function. *)
   val inside_unrolled_function : t -> Set_of_closures_origin.t -> t
 
+  (** Whether it is permissible to inline a call to a function in the given
+      environment. *)
+  val inlining_allowed : t -> Closure_id.t -> bool
+
+  (** Whether the given environment is currently being used to rewrite the
+      body of an inlined function. *)
+  val inside_inlined_function : t -> Closure_id.t -> t
+
   (** If collecting inlining statistics, record that the inliner is about to
       descend into [closure_id].  This information enables us to produce a
       stack of closures that form a kind of context around an inlining

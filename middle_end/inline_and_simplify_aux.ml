@@ -37,6 +37,7 @@ module Env = struct
     never_inline_inside_closures : bool;
     never_inline_outside_closures : bool;
     unroll_counts : int Set_of_closures_origin.Map.t;
+    inlining_counts : int Closure_id.Map.t;
     closure_depth : int;
     inlining_stats_closure_stack : Inlining_stats.Closure_stack.t;
   }
@@ -56,6 +57,7 @@ module Env = struct
       never_inline_inside_closures = false;
       never_inline_outside_closures = false;
       unroll_counts = Set_of_closures_origin.Map.empty;
+      inlining_counts = Closure_id.Map.empty;
       closure_depth = 0;
       inlining_stats_closure_stack =
         Inlining_stats.Closure_stack.create ();
@@ -290,6 +292,27 @@ module Env = struct
       Set_of_closures_origin.Map.add origin (unroll_count - 1) t.unroll_counts
     in
     { t with unroll_counts }
+
+  let inlining_allowed t id =
+    let inlining_count =
+      try
+        Closure_id.Map.find id t.inlining_counts
+      with Not_found ->
+        max 1 (Clflags.Int_arg_helper.get ~key:t.round !Clflags.unroll)
+    in
+    inlining_count > 0
+
+  let inside_inlined_function t id =
+    let inlining_count =
+      try
+        Closure_id.Map.find id t.inlining_counts
+      with Not_found ->
+        max 1 (Clflags.Int_arg_helper.get ~key:t.round !Clflags.unroll)
+    in
+    let inlining_counts =
+      Closure_id.Map.add id (inlining_count - 1) t.inlining_counts
+    in
+    { t with inlining_counts }
 
   let inlining_level t = t.inlining_level
   let freshening t = t.freshening
