@@ -1,0 +1,124 @@
+diff a/Makefile.nt b/Makefile.nt
+--- a/Makefile.nt
++++ b/Makefile.nt
+@@ -110,8 +110,20 @@ all: runtime ocamlc ocamllex ocamlyacc ocamltools library ocaml \
+ # The compilation of ocaml will fail if the runtime has changed.
+ # Never mind, just do make bootstrap to reach fixpoint again.
+ 
++# Ensure any patches in patches/ have been applied
++PATCHES=$(shell find patches -regex "patches/[a-z0-9+\#/-]+\.patched" -printf ' "%f";' | sed -e "s/\.patched//g" | sort)
++.PHONY: patches
++patches:
++# The curious use of grep is because Cygwin -regex doesn't work on NTFS
++	@for i in `find patches -regex "patches/[a-z0-9+#/-]+\.patch" -printf "%f\n" | grep -x "[a-z0-9+#/-]\+\.patch" | sed -e "s/\.patch$$//" | sort` ; do \
++	  if [ ! -e patches/$$i.patched ] ; then \
++	    echo "** Applying patches/$$i.patch" ; \
++	    patch -p1 $(PATCH_FLAGS) -Ni patches/$$i.patch && touch patches/$$i.patched && touch patches/$$i.reverse ; \
++	  fi ; \
++	done
++
+ # Compile everything the first time
+-world: coldstart all
++world: patches coldstart all
+ 
+ # Complete bootstrapping cycle
+ bootstrap:
+@@ -323,6 +335,7 @@ utils/config.ml: utils/config.mlp config/Makefile
+             -e "s|%%ARCH%%|$(ARCH)|" \
+             -e "s|%%MODEL%%|$(MODEL)|" \
+             -e "s|%%SYSTEM%%|$(SYSTEM)|" \
++	    -e 's|%%PATCHES%%|$(PATCHES)|' \
+             -e "s|%%EXT_OBJ%%|.$(O)|" \
+             -e "s|%%EXT_ASM%%|.$(S)|" \
+             -e "s|%%EXT_LIB%%|.$(A)|" \
+diff a/configure b/configure
+--- a/configure
++++ b/configure
+@@ -28,6 +28,7 @@ asppoption=''
+ cclibs=''
+ curseslibs=''
+ mathlib='-lm'
++patch_flags=
+ dllib=''
+ x11_include_dir=''
+ x11_lib_dir=''
+@@ -1726,6 +1727,7 @@ EOF
+ echo "ARCH=$arch" >> Makefile
+ echo "MODEL=$model" >> Makefile
+ echo "SYSTEM=$system" >> Makefile
++echo "PATCH_FLAGS=$patch_flags" >> Makefile
+ echo "NATIVECC=$nativecc" >> Makefile
+ echo "NATIVECCCOMPOPTS=$nativecccompopts" >> Makefile
+ echo "NATIVECCPROFOPTS=$nativeccprofopts" >> Makefile
+@@ -1783,6 +1785,16 @@ rm -f tst hasgot.c
+ rm -f ../m.h ../s.h ../Makefile
+ mv m.h s.h Makefile ..
+ 
++# Apply any patches
++pwd
++cd ../..
++for i in `find patches -regex "patches/[a-z0-9+#/-]+\.patch" -printf "%f\n" | sed -e "s/\.patch$//" | sort` ; do
++  if [ ! -e patches/$i.patched ] ; then
++    echo "** Applying patches/$i.patch"
++    patch -p1 $patch_flags -Ni patches/$i.patch && touch patches/$i.patched && touch patches/$i.reverse
++  fi
++done
++
+ # Print a summary
+ 
+ inf
+diff a/patches/gpr#465.patch b/patches/gpr#465.patch
+--- /dev/null
++++ b/patches/gpr#465.patch
+@@ -0,0 +1,51 @@
++diff a/Makefile b/Makefile
++--- a/Makefile
+++++ b/Makefile
++@@ -445,6 +445,7 @@ otherlibs/dynlink/dynlink.cmxa: otherlibs/dynlink/natdynlink.ml
++ 
++ # The configuration file
++ 
+++PATCHES=$(shell find patches -regex "patches/[a-z0-9+\#/-]+\.patched" -printf ' "%f";' | sed -e "s/\.patched//g" | sort)
++ utils/config.ml: utils/config.mlp config/Makefile
++ 	@rm -f utils/config.ml
++ 	sed -e 's|%%LIBDIR%%|$(LIBDIR)|' \
++@@ -461,6 +462,7 @@ utils/config.ml: utils/config.mlp config/Makefile
++             -e 's|%%ARCH%%|$(ARCH)|' \
++             -e 's|%%MODEL%%|$(MODEL)|' \
++             -e 's|%%SYSTEM%%|$(SYSTEM)|' \
+++            -e 's|%%PATCHES%%|$(PATCHES)|' \
++             -e 's|%%EXT_OBJ%%|.o|' \
++             -e 's|%%EXT_ASM%%|.s|' \
++             -e 's|%%EXT_LIB%%|.a|' \
++diff a/utils/config.mli b/utils/config.mli
++--- a/utils/config.mli
+++++ b/utils/config.mli
++@@ -15,6 +15,9 @@
++ val version: string
++         (* The current version number of the system *)
++ 
+++val patches : string list
+++        (* List of patches applied to the compiler *)
+++
++ val standard_library: string
++         (* The directory containing the standard libraries *)
++ val standard_runtime: string
++diff a/utils/config.mlp b/utils/config.mlp
++--- a/utils/config.mlp
+++++ b/utils/config.mlp
++@@ -94,12 +94,15 @@ let default_executable_name =
++   | "Win32" | "Cygwin" -> "camlprog.exe"
++   | _ -> "camlprog"
++ 
+++let patches = [%%PATCHES%% ]
+++
++ let systhread_supported = %%SYSTHREAD_SUPPORT%%;;
++ 
++ let print_config oc =
++   let p name valu = Printf.fprintf oc "%s: %s\n" name valu in
++   let p_bool name valu = Printf.fprintf oc "%s: %B\n" name valu in
++   p "version" version;
+++  p "patches" (String.concat " " patches);
++   p "standard_library_default" standard_library_default;
++   p "standard_library" standard_library;
++   p "standard_runtime" standard_runtime;
