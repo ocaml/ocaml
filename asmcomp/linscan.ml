@@ -132,15 +132,18 @@ let allocate_free_register i =
 let allocate_blocked_register i =
   let cl = Proc.register_class i.reg in
   let ci = active.(cl) in
-  begin match ci.ci_active with
-    ilast :: il when ilast.iend > i.iend ->
+  match ci.ci_active with
+  | ilast :: il when
+      ilast.iend > i.iend &&
       (* Last interval in active is the last interval, so spill it. *)
-      begin match ilast.reg.loc with
-        Reg _ as loc ->
-          (* Use register from last interval for current interval *)
-          i.reg.loc <- loc
-      | _ -> ()
-      end;
+      let chk r = r.reg.loc = ilast.reg.loc && Interval.overlap r i in
+      (* But only if its physical register is admissible for the current
+         interval. *)
+      not (List.exists chk ci.ci_fixed || List.exists chk ci.ci_inactive)
+    ->
+      begin match ilast.reg.loc with Reg _ -> () | _ -> assert false end;
+      (* Use register from last interval for current interval *)
+      i.reg.loc <- ilast.reg.loc;
       (* Remove the last interval from active and insert the current *)
       ci.ci_active <- insert_interval_sorted i il;
       (* Now get a new stack slot for the spilled register *)
@@ -150,7 +153,6 @@ let allocate_blocked_register i =
          or there are no registers at all in the register class (i.e.
          floating point class on i386). *)
       allocate_stack_slot i
-  end
 
 let walk_interval i =
   let pos = i.ibegin land (lnot 0x01) in
