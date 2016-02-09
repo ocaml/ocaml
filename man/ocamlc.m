@@ -41,7 +41,7 @@ The
 .BR ocamlc (1)
 command has a command-line interface similar to the one of
 most C compilers. It accepts several types of arguments and processes them
-sequentially:
+sequentially, after all options have been processed:
 
 Arguments ending in .mli are taken to be source files for
 compilation unit interfaces. Interfaces specify the names exported by
