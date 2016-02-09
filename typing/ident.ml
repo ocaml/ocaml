@@ -41,6 +41,8 @@ let rename i =
 
 let name i = i.name
 
+let with_name i name = {i with name}
+
 let unique_name i = i.name ^ "_" ^ string_of_int i.stamp
 
 let unique_toplevel_name i = i.name ^ "/" ^ string_of_int i.stamp
@@ -74,6 +76,9 @@ let hide i =
 
 let make_global i =
   i.flags <- i.flags lor global_flag
+
+let reset_flag i =
+  i.flags <- 0
 
 let global i =
   (i.flags land global_flag) <> 0

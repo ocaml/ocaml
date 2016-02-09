@@ -57,12 +57,11 @@ let create ?current_compilation_unit name =
 let of_ident ident = create (Ident.name ident)
 
 let unique_ident t =
-  { t.ident with
-    name =
-      Format.asprintf "%a_%s"
-        Compilation_unit.print t.compilation_unit
-        t.ident.name;
-  }
+  Ident.with_name t.ident (
+    Format.asprintf "%a_%s"
+      Compilation_unit.print t.compilation_unit
+      (Ident.name t.ident)
+  )
 
 let rename ?current_compilation_unit ?append t =
   let compilation_unit =
@@ -73,7 +72,7 @@ let rename ?current_compilation_unit ?append t =
   let ident =
     match append with
     | None -> Ident.rename t.ident
-    | Some s -> Ident.create (t.ident.Ident.name ^ s)
+    | Some s -> Ident.create (Ident.name t.ident ^ s)
   in
   { compilation_unit = compilation_unit;
     ident;
