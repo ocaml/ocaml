@@ -24,7 +24,7 @@ system "ocaml".
 
 The "ocamlopt" command has a command-line interface very close to that
 of "ocamlc". It accepts the same types of arguments, and processes them
-sequentially:
+sequentially, after all options have been processed:
 
 \begin{itemize}
 \item
