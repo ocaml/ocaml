@@ -184,6 +184,7 @@ let inline_by_copying_function_declaration ~env ~r
     ~(invariant_params:Variable.Set.t Variable.Map.t lazy_t)
     ~(specialised_args : Flambda.specialised_to Variable.Map.t)
     ~dbg ~simplify =
+  let original_function_decls = function_decls in
   let specialised_args_set = Variable.Map.keys specialised_args in
   let worth_specialising_args, specialisable_args, args, args_decl =
     which_function_parameters_can_we_specialise
@@ -296,9 +297,26 @@ let inline_by_copying_function_declaration ~env ~r
               | exception Not_found ->
                 Misc.fatal_errorf
                   "Missing renaming for specialised argument of a function \
-                    being duplicated but not directly applied: %a -> %a"
+                    being duplicated but not directly applied: %a -> %a.@ \
+                    Closure ID being applied = %a.@ \
+                    required_functions = %a.@ \
+                    specialisable_renaming = %a@ \
+                    specialisable_args_with_aliases = %a@ \
+                    Original function declarations = %a@ \
+                    Filtered function declarations = %a@ \
+                    Original specialised args = %a"
                   Variable.print param
                   Flambda.print_specialised_to spec_to
+                  Closure_id.print closure_id_being_applied
+                  Variable.Set.print required_functions
+                  (Variable.Map.print Flambda.print_specialised_to)
+                    specialisable_renaming
+                  (Variable.Map.print Variable.print)
+                    specialisable_args_with_aliases
+                  Flambda.print_function_declarations original_function_decls
+                  Flambda.print_function_declarations function_decls
+                  (Variable.Map.print Flambda.print_specialised_to)
+                    specialised_args
               | argument_from_the_current_application ->
                 Some argument_from_the_current_application
             else

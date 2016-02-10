@@ -399,8 +399,7 @@ module Inconstants (P:Param) (Backend:Backend_intf.S) = struct
   and mark_loop_set_of_closures ~toplevel:_ curr
         { Flambda. function_decls; free_vars; specialised_args } =
     (* If a function in the set of closures is specialised, do not consider
-       it constant. *)
-    (* CR mshinwell for pchambart: This needs more explanation. *)
+       it constant, unless all specialised args are also constant. *)
     Variable.Map.iter (fun _ (spec_arg : Flambda.specialised_to) ->
           register_implication
             ~in_nc:(Var spec_arg.var)
@@ -418,8 +417,14 @@ module Inconstants (P:Param) (Backend:Backend_intf.S) = struct
         (* for each function f in a closure c 'c in NC => f' *)
         register_implication ~in_nc:(Closure function_decls.set_of_closures_id)
           ~implies_in_nc:[Var fun_id];
-        (* function parameters are in NC *)
-        List.iter (fun id -> mark_curr [Var id]) ffunc.params;
+        (* function parameters are in NC unless specialised *)
+        List.iter (fun param ->
+            match Variable.Map.find param specialised_args with
+            | exception Not_found -> mark_curr [Var param]
+            | outer_var ->
+              register_implication ~in_nc:(Var outer_var.var)
+                ~implies_in_nc:[Var param])
+          ffunc.params;
         mark_loop ~toplevel:false [] ffunc.body)
       function_decls.funs
 
