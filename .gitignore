@@ -306,6 +306,8 @@
 /tools/read_cmt.opt
 /tools/cmpbyt
 /tools/stripdebug
+/tools/make_opcodes
+/tools/make_opcodes.ml
 
 /utils/config.ml
 
