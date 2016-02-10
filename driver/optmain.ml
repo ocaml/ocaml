@@ -116,12 +116,12 @@ module Options = Main_args.Make_optcomp_options (struct
   let _inline_toplevel spec =
     Int_arg_helper.parse spec ~update:inline_toplevel_threshold
       ~help_text:"Syntax: -inline-toplevel <n> | <round>=<n>[,...]"
-  let _inlining_stats () = inlining_stats := true
+  let _inlining_report () = inlining_report := true
   let _dump_pass pass = set_dumped_pass pass true
-  let _rounds n = simplify_rounds := n
-  let _unroll spec =
-    Int_arg_helper.parse spec ~update:unroll
-      ~help_text:"Syntax: -unroll <n> | <round>=<n>[,...]"
+  let _rounds n = simplify_rounds := Some n
+  let _inline_max_unroll spec =
+    Int_arg_helper.parse spec ~update:inline_max_unroll
+      ~help_text:"Syntax: -inline-max-unroll <n> | <round>=<n>[,...]"
   let _classic_inlining () = classic_inlining := true
   let _inline_call_cost spec =
     Int_arg_helper.parse spec ~update:inline_call_cost
@@ -141,18 +141,18 @@ module Options = Main_args.Make_optcomp_options (struct
   let _inline_lifting_benefit spec =
     Int_arg_helper.parse spec ~update:inline_lifting_benefit
       ~help_text:"Syntax: -inline-lifting-benefit <n> | <round>=<n>[,...]"
-  let _branch_inline_factor spec =
-    Float_arg_helper.parse spec ~update:branch_inline_factor
-      ~help_text:"Syntax: -branch-inline-factor <n> | <round>=<n>[,...]"
+  let _inline_branch_factor spec =
+    Float_arg_helper.parse spec ~update:inline_branch_factor
+      ~help_text:"Syntax: -inline-branch-factor <n> | <round>=<n>[,...]"
   let _intf = intf
   let _intf_suffix s = Config.interface_suffix := s
   let _keep_docs = set keep_docs
   let _keep_locs = set keep_locs
   let _labels = clear classic
   let _linkall = set link_everything
-  let _max_inlining_depth spec =
-    Int_arg_helper.parse spec ~update:max_inlining_depth
-      ~help_text:"Syntax: -max-inlining-depth <n> | <round>=<n>[,...]"
+  let _inline_max_depth spec =
+    Int_arg_helper.parse spec ~update:inline_max_depth
+      ~help_text:"Syntax: -inline-max-depth <n> | <round>=<n>[,...]"
   let _no_alias_deps = set transparent_modules
   let _no_app_funct = clear applicative_functors
   let _no_float_const_prop = clear float_const_prop
@@ -167,8 +167,15 @@ module Options = Main_args.Make_optcomp_options (struct
   (* CR mshinwell: should stop e.g. -O2 -classic-inlining
      lgesbert: could be done in main() below, like for -pack and -c, but that
      would prevent overriding using OCAMLPARAM. *)
-  let _o2 = set o2
-  let _o3 = set o3
+  let _o2 () =
+    default_simplify_rounds := 2;
+    use_inlining_arguments_set o2_arguments;
+    use_inlining_arguments_set ~round:0 o1_arguments
+  let _o3 () =
+    default_simplify_rounds := 3;
+    use_inlining_arguments_set o3_arguments;
+    use_inlining_arguments_set ~round:1 o2_arguments;
+    use_inlining_arguments_set ~round:0 o1_arguments
   let _open s = open_modules := s :: !open_modules
   let _output_obj = set output_c_object
   let _output_complete_obj () =

@@ -542,7 +542,7 @@ let for_call_site ~env ~r ~(function_decls : Flambda.function_declarations)
         ~closure_id:closure_id_being_applied ~debuginfo:dbg
     in
     let max_level =
-      Clflags.Int_arg_helper.get ~key:(E.round env) !Clflags.max_inlining_depth
+      Clflags.Int_arg_helper.get ~key:(E.round env) !Clflags.inline_max_depth
     in
     let raw_inlining_threshold = R.inlining_threshold r in
     let max_inlining_threshold =

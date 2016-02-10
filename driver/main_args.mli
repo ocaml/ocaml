@@ -120,11 +120,11 @@ module type Optcommon_options = sig
   val _compact : unit -> unit
   val _inline : string -> unit
   val _inline_toplevel : string -> unit
-  val _inlining_stats : unit -> unit
+  val _inlining_report : unit -> unit
   val _dump_pass : string -> unit
-  val _max_inlining_depth : string -> unit
+  val _inline_max_depth : string -> unit
   val _rounds : int -> unit
-  val _unroll : string -> unit
+  val _inline_max_unroll : string -> unit
   val _classic_inlining : unit -> unit
   val _inline_call_cost : string -> unit
   val _inline_alloc_cost : string -> unit
@@ -133,7 +133,7 @@ module type Optcommon_options = sig
   val _inline_indirect_cost : string -> unit
   val _inline_lifting_benefit : string -> unit
   val _unbox_closures : unit -> unit
-  val _branch_inline_factor : string -> unit
+  val _inline_branch_factor : string -> unit
   val _remove_unused_arguments : unit -> unit
   val _no_unbox_free_vars_of_closures : unit -> unit
   val _no_unbox_specialised_args : unit -> unit

@@ -31,11 +31,32 @@ module Make (S : sig
   end
 end) = struct
   type parsed = {
-    default : S.Value.t;
-    override : S.Value.t S.Key.Map.t;
+    base_default : S.Value.t;
+    base_override : S.Value.t S.Key.Map.t;
+    user_default : S.Value.t option;
+    user_override : S.Value.t S.Key.Map.t;
   }
 
-  let default v = { default = v; override = S.Key.Map.empty }
+  let default v =
+    { base_default = v;
+      base_override = S.Key.Map.empty;
+      user_default = None;
+      user_override = S.Key.Map.empty; }
+
+  let set_base_default value t =
+    { t with base_default = value }
+
+  let add_base_override key value t =
+    { t with base_override = S.Key.Map.add key value t.base_override }
+
+  let reset_base_overrides t =
+    { t with base_override = S.Key.Map.empty }
+
+  let set_user_default value t =
+    { t with user_default = Some value }
+
+  let add_user_override key value t =
+    { t with user_override = S.Key.Map.add key value t.user_override }
 
   let no_equals value =
     match String.index value '=' with
@@ -51,7 +72,7 @@ end) = struct
           match String.index value '=' with
           | exception Not_found ->
             begin match S.Value.of_string value with
-            | value -> { acc with default = value }
+            | value -> set_user_default value acc
             | exception exn -> raise (Parse_failure exn)
             end
           | equals ->
@@ -74,7 +95,7 @@ end) = struct
               try S.Value.of_string value
               with exn -> raise (Parse_failure exn)
             in
-            { acc with override = S.Key.Map.add key value acc.override })
+            add_user_override key value acc)
         !update
         values
     in
@@ -96,8 +117,14 @@ end) = struct
     | exception (Parse_failure exn) -> Parse_failed exn
 
   let get ~key parsed =
-    match S.Key.Map.find key parsed.override with
-    | provided -> provided
+    match S.Key.Map.find key parsed.user_override with
+    | value -> value
     | exception Not_found ->
-      parsed.default
+      match parsed.user_default with
+      | Some value -> value
+      | None ->
+        match S.Key.Map.find key parsed.base_override with
+        | value -> value
+        | exception Not_found -> parsed.base_default
+
 end

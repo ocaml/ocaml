@@ -1613,8 +1613,8 @@ let add_predef_exns_to_environment ~env ~backend =
 
 let run ~never_inline ~backend ~prefixname ~round program =
   let r = R.create () in
-  let stats = !Clflags.inlining_stats in
-  if never_inline then Clflags.inlining_stats := false;
+  let report = !Clflags.inlining_report in
+  if never_inline then Clflags.inlining_report := false;
   let initial_env =
     add_predef_exns_to_environment
       ~env:(E.create ~never_inline ~backend ~round)
@@ -1629,9 +1629,9 @@ let run ~never_inline ~backend ~prefixname ~round program =
       Flambda.print_program result)
   end;
   assert (Static_exception.Set.is_empty (R.used_static_exceptions r));
-  if !Clflags.inlining_stats then begin
+  if !Clflags.inlining_report then begin
     let output_prefix = Printf.sprintf "%s.%d" prefixname round in
     Inlining_stats.save_then_forget_decisions ~output_prefix
   end;
-  Clflags.inlining_stats := stats;
+  Clflags.inlining_report := report;
   result

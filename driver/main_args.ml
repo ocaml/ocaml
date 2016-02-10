@@ -127,15 +127,18 @@ let mk_inline_toplevel f =
       toplevel (higher numbers mean more aggressive)"
 ;;
 
-let mk_inlining_stats f =
+let mk_inlining_report f =
   "-inlining-report", Arg.Unit f, " Emit `.<round>.inlining' file(s) (one per \
       round) showing the inliner's decisions"
 ;;
 
 let mk_dump_pass f =
   "-dump-pass", Arg.String f,
-  Format.asprintf " Record transformations performed by these passes: %a"
-    (Format.pp_print_list Format.pp_print_string)
+  Format.asprintf
+    " @[<4>Record transformations performed by these passes:@ @[%a@]@]"
+    (Format.pp_print_list
+       ~pp_sep:Format.pp_print_space
+       Format.pp_print_string)
     !Clflags.all_passes
 ;;
 
@@ -152,20 +155,20 @@ let mk_rounds f =
   "-rounds", Arg.Int f,
     Printf.sprintf "<n>  Repeat tree optimization and inlining phases this \
         many times (default %d).  Rounds are numbered starting from zero."
-      !Clflags.simplify_rounds
+      !Clflags.default_simplify_rounds
 ;;
 
-let mk_unroll f =
-  "-unroll", Arg.String f,
+let mk_inline_max_unroll f =
+  "-inline-max-unroll", Arg.String f,
     Printf.sprintf "<n>|<round>=<n>[,...]  Unroll recursive functions at most \
-        this many times (default %d)"
-      Clflags.default_unroll
+      this many times (default %d)"
+      Clflags.default_inline_max_unroll
 ;;
 
 let mk_classic_inlining f =
-  "-classic-inlining", Arg.Unit f, " Make inlining decisions at function \
-        definition time rather than at the call site (replicates previous \
-        behaviour of the compiler)"
+  "-Oclassic", Arg.Unit f, " Make inlining decisions at function definition \
+     time rather than at the call site (replicates previous behaviour of the \
+     compiler)"
 ;;
 
 let mk_inline_cost arg descr default f =
@@ -197,11 +200,11 @@ let mk_inline_lifting_benefit f =
     Clflags.default_inline_lifting_benefit
 ;;
 
-let mk_branch_inline_factor f =
-  "-branch-inline-factor", Arg.String f,
+let mk_inline_branch_factor f =
+  "-inline-branch-factor", Arg.String f,
     Printf.sprintf "<n>|<round>=<n>[,...]  Estimate the probability of a \
         branch being cold as 1/(1+n) (used for inlining) (default %.2f)"
-    Clflags.default_branch_inline_factor
+    Clflags.default_inline_branch_factor
 ;;
 
 let mk_intf f =
@@ -242,11 +245,11 @@ let mk_make_runtime_2 f =
   "-make_runtime", Arg.Unit f, " (deprecated) same as -make-runtime"
 ;;
 
-let mk_max_inlining_depth f =
-  "-max-inlining-depth", Arg.String f,
-    Printf.sprintf "<n>|<round>=<n>[,...]  Maximum depth of search for
-        inlining opportunities inside inlined functions (default %d)"
-      Clflags.default_max_inlining_depth
+let mk_inline_max_depth f =
+  "-inline-max-depth", Arg.String f,
+    Printf.sprintf "<n>|<round>=<n>[,...]  Maximum depth of search for \
+      inlining opportunities inside inlined functions (default %d)"
+      Clflags.default_inline_max_depth
 ;;
 
 let mk_modern f =
@@ -548,7 +551,7 @@ let mk_dflambda f =
 ;;
 
 let mk_drawflambda f =
-  "-dflambda", Arg.Unit f, " Print Flambda terms after closure conversion"
+  "-drawflambda", Arg.Unit f, " Print Flambda terms after closure conversion"
 ;;
 
 let mk_dflambda_no_invariants f =
@@ -753,11 +756,11 @@ module type Optcommon_options = sig
   val _compact : unit -> unit
   val _inline : string -> unit
   val _inline_toplevel : string -> unit
-  val _inlining_stats : unit -> unit
+  val _inlining_report : unit -> unit
   val _dump_pass : string -> unit
-  val _max_inlining_depth : string -> unit
+  val _inline_max_depth : string -> unit
   val _rounds : int -> unit
-  val _unroll : string -> unit
+  val _inline_max_unroll : string -> unit
   val _classic_inlining : unit -> unit
   val _inline_call_cost : string -> unit
   val _inline_alloc_cost : string -> unit
@@ -766,7 +769,7 @@ module type Optcommon_options = sig
   val _inline_indirect_cost : string -> unit
   val _inline_lifting_benefit : string -> unit
   val _unbox_closures : unit -> unit
-  val _branch_inline_factor : string -> unit
+  val _inline_branch_factor : string -> unit
   val _remove_unused_arguments : unit -> unit
   val _no_unbox_free_vars_of_closures : unit -> unit
   val _no_unbox_specialised_args : unit -> unit
@@ -974,7 +977,7 @@ struct
     mk_absname F._absname;
     mk_annot F._annot;
     mk_binannot F._binannot;
-    mk_branch_inline_factor F._branch_inline_factor;
+    mk_inline_branch_factor F._inline_branch_factor;
     mk_c F._c;
     mk_cc F._cc;
     mk_cclib F._cclib;
@@ -998,14 +1001,14 @@ struct
     mk_inline_prim_cost F._inline_prim_cost;
     mk_inline_indirect_cost F._inline_indirect_cost;
     mk_inline_lifting_benefit F._inline_lifting_benefit;
-    mk_inlining_stats F._inlining_stats;
+    mk_inlining_report F._inlining_report;
     mk_intf F._intf;
     mk_intf_suffix F._intf_suffix;
     mk_keep_docs F._keep_docs;
     mk_keep_locs F._keep_locs;
     mk_labels F._labels;
     mk_linkall F._linkall;
-    mk_max_inlining_depth F._max_inlining_depth;
+    mk_inline_max_depth F._inline_max_depth;
     mk_no_alias_deps F._no_alias_deps;
     mk_no_app_funct F._no_app_funct;
     mk_no_float_const_prop F._no_float_const_prop;
@@ -1040,7 +1043,7 @@ struct
     mk_strict_formats F._strict_formats;
     mk_thread F._thread;
     mk_unbox_closures F._unbox_closures;
-    mk_unroll F._unroll;
+    mk_inline_max_unroll F._inline_max_unroll;
     mk_unsafe F._unsafe;
     mk_unsafe_string F._unsafe_string;
     mk_v F._v;
@@ -1094,9 +1097,9 @@ module Make_opttop_options (F : Opttop_options) = struct
     mk_init F._init;
     mk_inline F._inline;
     mk_inline_toplevel F._inline_toplevel;
-    mk_inlining_stats F._inlining_stats;
+    mk_inlining_report F._inlining_report;
     mk_rounds F._rounds;
-    mk_unroll F._unroll;
+    mk_inline_max_unroll F._inline_max_unroll;
     mk_classic_inlining F._classic_inlining;
     mk_inline_call_cost F._inline_call_cost;
     mk_inline_alloc_cost F._inline_alloc_cost;
@@ -1104,7 +1107,7 @@ module Make_opttop_options (F : Opttop_options) = struct
     mk_inline_branch_cost F._inline_branch_cost;
     mk_inline_indirect_cost F._inline_indirect_cost;
     mk_inline_lifting_benefit F._inline_lifting_benefit;
-    mk_branch_inline_factor F._branch_inline_factor;
+    mk_inline_branch_factor F._inline_branch_factor;
     mk_labels F._labels;
     mk_no_alias_deps F._no_alias_deps;
     mk_no_app_funct F._no_app_funct;

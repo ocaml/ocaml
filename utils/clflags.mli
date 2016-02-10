@@ -12,10 +12,7 @@
 
 (** Optimization parameters represented as ints indexed by round number. *)
 module Int_arg_helper : sig
-  type parsed = {
-    default : int;
-    override : int Numbers.Int.Map.t;
-  }
+  type parsed
 
   val parse : string -> help_text:string -> update:parsed ref -> unit
 
@@ -29,10 +26,7 @@ end
 
 (** Optimization parameters represented as floats indexed by round number. *)
 module Float_arg_helper : sig
-  type parsed = {
-    default : float;
-    override : float Numbers.Int.Map.t;
-  }
+  type parsed
 
   val parse : string -> help_text:string -> update:parsed ref -> unit
 
@@ -51,9 +45,9 @@ type inlining_arguments = {
   inline_branch_cost : int option;
   inline_indirect_cost : int option;
   inline_lifting_benefit : int option;
-  branch_inline_factor : float option;
-  max_inlining_depth : int option;
-  unroll : int option;
+  inline_branch_factor : float option;
+  inline_max_depth : int option;
+  inline_max_unroll : int option;
   inline_threshold : float option;
   inline_toplevel_threshold : int option;
 }
@@ -146,14 +140,14 @@ val dump_linear : bool ref
 val keep_startup_file : bool ref
 val dump_combine : bool ref
 val native_code : bool ref
-val o2 : bool ref
-val o3 : bool ref
 val default_inline_threshold : float
 val inline_threshold : Float_arg_helper.parsed ref
-val inlining_stats : bool ref
-val simplify_rounds : int ref
-val default_unroll : int
-val unroll : Int_arg_helper.parsed ref
+val inlining_report : bool ref
+val simplify_rounds : int option ref
+val default_simplify_rounds : int ref
+val rounds : unit -> int
+val default_inline_max_unroll : int
+val inline_max_unroll : Int_arg_helper.parsed ref
 val default_inline_toplevel_threshold : int
 val inline_toplevel_threshold : Int_arg_helper.parsed ref
 val default_inline_call_cost : int
@@ -168,8 +162,8 @@ val inline_prim_cost : Int_arg_helper.parsed ref
 val inline_branch_cost : Int_arg_helper.parsed ref
 val inline_indirect_cost : Int_arg_helper.parsed ref
 val inline_lifting_benefit : Int_arg_helper.parsed ref
-val default_branch_inline_factor : float
-val branch_inline_factor : Float_arg_helper.parsed ref
+val default_inline_branch_factor : float
+val inline_branch_factor : Float_arg_helper.parsed ref
 val dont_write_files : bool ref
 val std_include_flag : string -> string
 val std_include_dir : unit -> string list
@@ -188,8 +182,8 @@ val unbox_closures : bool ref
 val unbox_free_vars_of_closures : bool ref
 val unbox_specialised_args : bool ref
 val clambda_checks : bool ref
-val default_max_inlining_depth : int
-val max_inlining_depth : Int_arg_helper.parsed ref
+val default_inline_max_depth : int
+val inline_max_depth : Int_arg_helper.parsed ref
 val remove_unused_arguments : bool ref
 val dump_flambda_verbose : bool ref
 val classic_inlining : bool ref

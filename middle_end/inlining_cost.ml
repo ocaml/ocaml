@@ -439,20 +439,20 @@ module Whether_sufficient_benefit = struct
          than letting the user directly provide [p], since for every
          positive value of [factor] [p] is in [0, 1]. *)
       let branch_never_taken_estimated_probability =
-        let branch_inline_factor =
+        let inline_branch_factor =
           let factor =
             Clflags.Float_arg_helper.get ~key:t.round
-              !Clflags.branch_inline_factor
+              !Clflags.inline_branch_factor
           in
           if not (factor = factor) (* nan *) then
-            Clflags.default_branch_inline_factor
+            Clflags.default_inline_branch_factor
           else if factor < 0. then
             0.
           else
             factor
         in
-        assert (correct_branch_factor branch_inline_factor);
-        1. /. (1. +. branch_inline_factor)
+        assert (correct_branch_factor inline_branch_factor);
+        1. /. (1. +. inline_branch_factor)
       in
       let call_estimated_probability =
         branch_never_taken_estimated_probability ** float t.branch_depth
@@ -650,7 +650,7 @@ let default_toplevel_multiplier = 8
 let maximum_interesting_size_of_function_body_base =
   lazy begin
     let max_cost = ref 0 in
-    for round = 0 to !Clflags.simplify_rounds - 1 do
+    for round = 0 to (Clflags.rounds ()) - 1 do
       let max_size =
         let inline_call_cost = cost !Clflags.inline_call_cost ~round in
         direct_call_size + (inline_call_cost * benefit_factor)
@@ -663,7 +663,7 @@ let maximum_interesting_size_of_function_body_base =
 let maximum_interesting_size_of_function_body_multiplier =
   lazy begin
     let max_cost = ref 0 in
-    for round = 0 to !Clflags.simplify_rounds - 1 do
+    for round = 0 to (Clflags.rounds ()) - 1 do
       let max_size =
         let inline_prim_cost = cost !Clflags.inline_prim_cost ~round in
         inline_prim_cost * benefit_factor

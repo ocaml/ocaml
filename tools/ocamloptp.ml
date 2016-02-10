@@ -64,19 +64,19 @@ module Options = Main_args.Make_optcomp_options (struct
   let _impl s = with_impl := true; option_with_arg "-impl" s
   let _inline s = option_with_arg "-inline" s
   let _inline_toplevel n = option_with_arg "-inline-toplevel" n
-  let _inlining_stats = option "-inlining-report"
+  let _inlining_report = option "-inlining-report"
   let _dump_pass = option_with_arg "-dump-pass"
-  let _max_inlining_depth n = option_with_arg "-max-inlining-depth" n
+  let _inline_max_depth n = option_with_arg "-inline-max-depth" n
   let _rounds n = option_with_int "-rounds" n
-  let _unroll n = option_with_arg "-unroll" n
+  let _inline_max_unroll n = option_with_arg "-unroll" n
   let _inline_call_cost n = option_with_arg "-inline-call-cost" n
   let _inline_alloc_cost n = option_with_arg "-inline-alloc-cost" n
   let _inline_prim_cost n = option_with_arg "-inline-prim-cost" n
   let _inline_branch_cost n = option_with_arg "-inline-branch-cost" n
   let _inline_indirect_cost n = option_with_arg "-inline-indirect-cost" n
   let _inline_lifting_benefit n = option_with_arg "-inline-lifting-benefit" n
-  let _branch_inline_factor n = option_with_arg "-branch-inline-factor" n
-  let _classic_inlining = option "-classic-inlining"
+  let _inline_branch_factor n = option_with_arg "-inline-branch-factor" n
+  let _classic_inlining = option "-Oclassic"
   let _intf s = with_intf := true; option_with_arg "-intf" s
   let _intf_suffix s = option_with_arg "-intf-suffix" s
   let _keep_docs = option "-keep-docs"

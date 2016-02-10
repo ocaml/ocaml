@@ -102,7 +102,7 @@ let middle_end ppf ~source_provenance ~prefixname ~backend
       pass_number := 0;
       let round = !round_number in
       incr round_number;
-      if !round_number > !Clflags.simplify_rounds then flam
+      if !round_number > (Clflags.rounds ()) then flam
       else
         flam
         (* Beware: [Lift_constants] must be run before any pass that might

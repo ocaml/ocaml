@@ -77,7 +77,7 @@ module Env = struct
 
   let inlining_level_up env =
     let max_level =
-      Clflags.Int_arg_helper.get ~key:(env.round) !Clflags.max_inlining_depth
+      Clflags.Int_arg_helper.get ~key:(env.round) !Clflags.inline_max_depth
     in
     if (env.inlining_level + 1) > max_level then
       Misc.fatal_error "Inlining level increased above maximum";
@@ -302,7 +302,8 @@ module Env = struct
       try
         Set_of_closures_origin.Map.find origin t.unroll_counts
       with Not_found ->
-        Clflags.Int_arg_helper.get ~key:t.round !Clflags.unroll
+        Clflags.Int_arg_helper.get
+          ~key:t.round !Clflags.inline_max_unroll
     in
     unroll_count > 0
 
@@ -311,10 +312,12 @@ module Env = struct
       try
         Set_of_closures_origin.Map.find origin t.unroll_counts
       with Not_found ->
-        Clflags.Int_arg_helper.get ~key:t.round !Clflags.unroll
+        Clflags.Int_arg_helper.get
+          ~key:t.round !Clflags.inline_max_unroll
     in
     let unroll_counts =
-      Set_of_closures_origin.Map.add origin (unroll_count - 1) t.unroll_counts
+      Set_of_closures_origin.Map.add
+        origin (unroll_count - 1) t.unroll_counts
     in
     { t with unroll_counts }
 
@@ -323,7 +326,8 @@ module Env = struct
       try
         Closure_id.Map.find id t.inlining_counts
       with Not_found ->
-        max 1 (Clflags.Int_arg_helper.get ~key:t.round !Clflags.unroll)
+        max 1 (Clflags.Int_arg_helper.get
+                 ~key:t.round !Clflags.inline_max_unroll)
     in
     inlining_count > 0
 
@@ -332,7 +336,8 @@ module Env = struct
       try
         Closure_id.Map.find id t.inlining_counts
       with Not_found ->
-        max 1 (Clflags.Int_arg_helper.get ~key:t.round !Clflags.unroll)
+        max 1 (Clflags.Int_arg_helper.get
+                 ~key:t.round !Clflags.inline_max_unroll)
     in
     let inlining_counts =
       Closure_id.Map.add id (inlining_count - 1) t.inlining_counts

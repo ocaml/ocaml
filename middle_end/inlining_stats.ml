@@ -28,7 +28,7 @@ module Closure_stack = struct
   let create () = []
 
   let note_entering_closure t ~closure_id ~debuginfo =
-    if not !Clflags.inlining_stats then t
+    if not !Clflags.inlining_report then t
     else
       match t with
       | [] | (Closure _ | Inlined | Specialised _)  :: _->
@@ -39,7 +39,7 @@ module Closure_stack = struct
   (* CR-someday lwhite: since calls do not have a unique id it is possible
      some calls will end up sharing nodes. *)
   let note_entering_call t ~closure_id ~debuginfo =
-    if not !Clflags.inlining_stats then t
+    if not !Clflags.inlining_report then t
     else
       match t with
       | [] | (Closure _ | Inlined | Specialised _) :: _ ->
@@ -48,7 +48,7 @@ module Closure_stack = struct
         Misc.fatal_errorf "note_entering_call: unexpected Call node"
 
   let note_entering_inlined t =
-    if not !Clflags.inlining_stats then t
+    if not !Clflags.inlining_report then t
     else
       match t with
       | [] | (Closure _ | Inlined | Specialised _) :: _->
@@ -56,7 +56,7 @@ module Closure_stack = struct
       | (Call _) :: _ -> Inlined :: t
 
   let note_entering_specialised t ~closure_ids =
-    if not !Clflags.inlining_stats then t
+    if not !Clflags.inlining_report then t
     else
       match t with
       | [] | (Closure _ | Inlined | Specialised _) :: _ ->
@@ -70,7 +70,7 @@ let log
   = ref []
 
 let record_decision decision ~closure_stack =
-  if !Clflags.inlining_stats then begin
+  if !Clflags.inlining_report then begin
     match closure_stack with
     | []
     | Closure_stack.Closure _ :: _
@@ -252,6 +252,6 @@ let really_save_then_forget_decisions ~output_prefix =
   log := []
 
 let save_then_forget_decisions ~output_prefix =
-  if !Clflags.inlining_stats then begin
+  if !Clflags.inlining_report then begin
     really_save_then_forget_decisions ~output_prefix
   end
