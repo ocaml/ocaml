@@ -514,7 +514,9 @@ let rec lam ppf = function
        match ev.lev_kind with
        | Lev_before -> "before"
        | Lev_after _  -> "after"
-       | Lev_function -> "funct-body" in
+       | Lev_function -> "funct-body"
+       | Lev_pseudo -> "pseudo"
+      in
       fprintf ppf "@[<2>(%s %s(%i)%s:%i-%i@ %a)@]" kind
               ev.lev_loc.Location.loc_start.Lexing.pos_fname
               ev.lev_loc.Location.loc_start.Lexing.pos_lnum

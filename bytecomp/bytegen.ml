@@ -831,6 +831,10 @@ let rec comp_expr env exp sz cont =
           let c = comp_expr env lam sz cont in
           let ev = event Event_pseudo Event_function in
           add_event ev c
+      | Lev_pseudo ->
+          let c = comp_expr env lam sz cont in
+          let ev = event Event_pseudo Event_other in
+          add_event ev c
       | Lev_after _ when is_tailcall cont -> (* don't destroy tail call opt *)
           comp_expr env lam sz cont
       | Lev_after ty ->

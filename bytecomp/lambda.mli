@@ -266,6 +266,7 @@ and lambda_event_kind =
     Lev_before
   | Lev_after of Types.type_expr
   | Lev_function
+  | Lev_pseudo
 
 type program =
   { code : lambda;
