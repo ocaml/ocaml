@@ -42,7 +42,9 @@ type compiler_pass =
   | Emit of source_provenance
   | Flambda_pass of string * source_provenance
 
-let timings : (compiler_pass, float * float option) Hashtbl.t = Hashtbl.create 20
+let timings : (compiler_pass, float * float option) Hashtbl.t =
+  Hashtbl.create 20
+
 let reset () = Hashtbl.clear timings
 
 let start pass =
@@ -141,4 +143,3 @@ let print ppf =
         Format.fprintf ppf "%s: running since %.03fs@." (pass_name pass)
           (current_time -. start))
     (timings_list ())
-

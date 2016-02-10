@@ -323,16 +323,18 @@ module Inconstants (P:Param) (Backend:Backend_intf.S) = struct
             ()
       end
     | Read_symbol_field (symbol, index) ->
-      register_implication ~in_nc:(Symbol_field (symbol, index)) ~implies_in_nc:curr
+      register_implication ~in_nc:(Symbol_field (symbol, index))
+        ~implies_in_nc:curr
     (* Globals are symbols: handle like symbols *)
     | Prim (Lambda.Pgetglobal _id, [], _) -> ()
-    (* Constant constructors: those expressions are constant if all their parameters are:
+    (* Constant constructors: those expressions are constant if all their
+       parameters are:
        - makeblock is compiled to a constant block
        - offset is compiled to a pointer inside a constant closure.
          See Cmmgen for the details
 
-       makeblock(Mutable) can be a 'constant' if it is allocated at toplevel: if this
-       expression is evaluated only once.
+       makeblock(Mutable) can be a 'constant' if it is allocated at
+       toplevel: if this expression is evaluated only once.
     *)
     | Prim (Lambda.Pmakeblock (_tag, Asttypes.Immutable), args, _dbg) ->
       mark_vars args curr
@@ -412,7 +414,10 @@ module Inconstants (P:Param) (Backend:Backend_intf.S) = struct
     (* a closure is constant if its free variables are constants. *)
     Variable.Map.iter (fun inner_id (var : Flambda.specialised_to) ->
         register_implication ~in_nc:(Var var.var)
-          ~implies_in_nc:[Var inner_id; Closure function_decls.set_of_closures_id])
+          ~implies_in_nc:[
+            Var inner_id;
+            Closure function_decls.set_of_closures_id
+          ])
       free_vars;
     Variable.Map.iter (fun fun_id (ffunc : Flambda.function_declaration) ->
         (* for each function f in a closure c 'c in NC => f' *)

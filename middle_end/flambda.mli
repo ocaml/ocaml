@@ -267,9 +267,10 @@ and function_declarations = private {
       of the set of closures associated with this set of function
       declarations. *)
   set_of_closures_origin : Set_of_closures_origin.t;
-  (** An identifier of the original set of closures on which this set of function
-      declarations is based. Used to prevent different specialisations of the
-      same functions from being inlined/specialised within each other. *)
+  (** An identifier of the original set of closures on which this set of
+      function declarations is based.  Used to prevent different
+      specialisations of the same functions from being inlined/specialised
+      within each other. *)
   funs : function_declaration Variable.Map.t;
   (** The function(s) defined by the set of function declarations.  The
       keys of this map are often referred to in the code as "fun_var"s. *)

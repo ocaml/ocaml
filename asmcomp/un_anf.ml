@@ -422,7 +422,8 @@ let rec substitute_let_moveable is_let_moveable env (clam : Clambda.ulambda)
         functions
     in
     let variables_bound_by_the_closure =
-      substitute_let_moveable_list is_let_moveable env variables_bound_by_the_closure
+      substitute_let_moveable_list is_let_moveable env
+        variables_bound_by_the_closure
     in
     Uclosure (functions, variables_bound_by_the_closure)
   | Uoffset (clam, n) ->
@@ -450,18 +451,25 @@ let rec substitute_let_moveable is_let_moveable env (clam : Clambda.ulambda)
     let cond = substitute_let_moveable is_let_moveable env cond in
     let sw =
       { sw with
-        us_actions_consts = substitute_let_moveable_array is_let_moveable env sw.us_actions_consts;
-        us_actions_blocks = substitute_let_moveable_array is_let_moveable env sw.us_actions_blocks;
+        us_actions_consts =
+          substitute_let_moveable_array is_let_moveable env
+            sw.us_actions_consts;
+        us_actions_blocks =
+          substitute_let_moveable_array is_let_moveable env
+            sw.us_actions_blocks;
       }
     in
     Uswitch (cond, sw)
   | Ustringswitch (cond, branches, default) ->
     let cond = substitute_let_moveable is_let_moveable env cond in
     let branches =
-      List.map (fun (s, branch) -> s, substitute_let_moveable is_let_moveable env branch)
+      List.map (fun (s, branch) ->
+          s, substitute_let_moveable is_let_moveable env branch)
         branches
     in
-    let default = Misc.may_map (substitute_let_moveable is_let_moveable env) default in
+    let default =
+      Misc.may_map (substitute_let_moveable is_let_moveable env) default
+    in
     Ustringswitch (cond, branches, default)
   | Ustaticfail (n, args) ->
     let args = substitute_let_moveable_list is_let_moveable env args in

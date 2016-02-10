@@ -21,43 +21,43 @@
 (** Inline a function by substituting its body (which may be subject to
     further transformation) at a call site.  The function's declaration is
     not copied.
- 
+
     This transformation is used when:
     - inlining a call to a non-recursive function;
     - inlining a call, within a recursive or mutually-recursive function, to
       the same or another function being defined simultaneously ("unrolling").
       The maximum depth of unrolling is bounded (see [E.unrolling_allowed]).
- 
+
     In both cases, the body of the function is copied, within a sequence of
     [let]s that bind the function parameters, the variables "bound by the
     closure" (see flambda.mli), and any function identifiers introduced by the
     set of closures.  These stages are delimited below by comments.
- 
+
     As an example, suppose we are inlining the following function:
- 
+
      let f x = x + y
      ...
      let p = f, f in
      (fst p) 42
- 
+
     The call site [ (fst p) 42] will be transformed to:
- 
+
       let clos_id = fst p in  (* must eventually yield a closure *)
       let y = <access to [y] in [clos_id]> in
       let x' = 42 in
       let x = x' in
       x + y
- 
+
     When unrolling a recursive function we rename the arguments to the
     recursive call in order to avoid clashes with existing bindings.  For
     example, suppose we are inlining the following call to [f], which lies
     within its own declaration:
- 
+
       let rec f x y =
         f (fst x) (y + snd x)
- 
+
     This will be transformed to:
- 
+
       let rec f x y =
         let clos_id = f in (* not used this time, since [f] has no free vars *)
         let x' = fst x in

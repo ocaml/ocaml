@@ -44,7 +44,8 @@ let mk_ccopt f =
 ;;
 
 let mk_clambda_checks f =
-  "-clambda-checks", Arg.Unit f, " Instrument clambda code with closure and field access checks (for debugging the compiler)"
+  "-clambda-checks", Arg.Unit f, " Instrument clambda code with closure and \
+    field access checks (for debugging the compiler)"
 ;;
 
 let mk_compact f =
@@ -156,21 +157,22 @@ let mk_rounds f =
 
 let mk_unroll f =
   "-unroll", Arg.String f,
-    Printf.sprintf "<n>|<round>=<n>[,...]  Unroll recursive functions at most this many times \
-        (default %d)"
+    Printf.sprintf "<n>|<round>=<n>[,...]  Unroll recursive functions at most \
+        this many times (default %d)"
       Clflags.default_unroll
 ;;
 
 let mk_classic_inlining f =
-  "-classic-inlining", Arg.Unit f, " Make inlining decisions at function definition time \
-        rather than at the call site (replicates previous behaviour of the compiler)"
+  "-classic-inlining", Arg.Unit f, " Make inlining decisions at function \
+        definition time rather than at the call site (replicates previous \
+        behaviour of the compiler)"
 ;;
 
 let mk_inline_cost arg descr default f =
   Printf.sprintf "-inline-%s-cost" arg,
   Arg.String f,
-  Printf.sprintf "<n>|<round>=<n>[,...]  The cost of not removing %s during inlining \
-      (default %d, higher numbers more costly)"
+  Printf.sprintf "<n>|<round>=<n>[,...]  The cost of not removing %s during \
+      inlining (default %d, higher numbers more costly)"
     descr
     default
 ;;
@@ -184,7 +186,8 @@ let mk_inline_prim_cost =
 let mk_inline_branch_cost =
   mk_inline_cost "branch" "a conditional" Clflags.default_inline_branch_cost
 let mk_inline_indirect_cost =
-  mk_inline_cost "indirect" "an indirect call" Clflags.default_inline_indirect_cost
+  mk_inline_cost "indirect" "an indirect call"
+    Clflags.default_inline_indirect_cost
 
 let mk_inline_lifting_benefit f =
   "-inline-lifting-benefit",
@@ -241,8 +244,8 @@ let mk_make_runtime_2 f =
 
 let mk_max_inlining_depth f =
   "-max-inlining-depth", Arg.String f,
-    Printf.sprintf "<n>|<round>=<n>[,...]  Maximum depth of search for inlining opportunities \
-        inside inlined functions (default %d)"
+    Printf.sprintf "<n>|<round>=<n>[,...]  Maximum depth of search for
+        inlining opportunities inside inlined functions (default %d)"
       Clflags.default_max_inlining_depth
 ;;
 
@@ -549,15 +552,18 @@ let mk_drawflambda f =
 ;;
 
 let mk_dflambda_no_invariants f =
-  "-dflambda-no-invariants", Arg.Unit f, " Do not Check Flambda invariants around each pass"
+  "-dflambda-no-invariants", Arg.Unit f, " Do not Check Flambda invariants \
+      around each pass"
 ;;
 
 let mk_dflambda_let f =
-  "-dflambda-let", Arg.Int f, "<stamp>  Print when the given Flambda [Let] is created"
+  "-dflambda-let", Arg.Int f, "<stamp>  Print when the given Flambda [Let] \
+      is created"
 ;;
 
 let mk_dflambda_verbose f =
-  "-dflambda-verbose", Arg.Unit f, " Print Flambda terms including around each pass"
+  "-dflambda-verbose", Arg.Unit f, " Print Flambda terms including around \
+      each pass"
 ;;
 
 let mk_dinstr f =

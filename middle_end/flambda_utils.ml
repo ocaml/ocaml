@@ -664,7 +664,8 @@ let substitute_read_symbol_field_for_variables
             bind to_substitute fresh expr)
           bindings expr
       end
-    | If_then_else (cond, ifso, ifnot) when Variable.Map.mem cond substitution ->
+    | If_then_else (cond, ifso, ifnot)
+        when Variable.Map.mem cond substitution ->
       let fresh = Variable.rename cond in
       bind cond fresh (If_then_else (fresh, ifso, ifnot))
     | If_then_else _ ->
@@ -679,7 +680,8 @@ let substitute_read_symbol_field_for_variables
       bind cond fresh (String_switch (fresh, sw, def))
     | String_switch _ ->
       expr
-    | Assign { being_assigned; new_value } when Variable.Map.mem new_value substitution ->
+    | Assign { being_assigned; new_value }
+        when Variable.Map.mem new_value substitution ->
       let fresh = Variable.rename new_value in
       bind new_value fresh (Assign { being_assigned; new_value = fresh })
     | Assign _ ->
@@ -797,7 +799,8 @@ let all_functions_parameters (function_decls : Flambda.function_declarations) =
     function_decls.funs Variable.Set.empty
 
 let all_free_symbols (function_decls : Flambda.function_declarations) =
-  Variable.Map.fold (fun _ (function_decl : Flambda.function_declaration) syms ->
+  Variable.Map.fold (fun _ (function_decl : Flambda.function_declaration)
+          syms ->
       Symbol.Set.union syms function_decl.free_symbols)
     function_decls.funs Symbol.Set.empty
 

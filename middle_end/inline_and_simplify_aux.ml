@@ -143,8 +143,8 @@ module Env = struct
           (Compilation_unit.get_current_exn ())
           (Symbol.compilation_unit symbol)
       then
-        Misc.fatal_errorf "Symbol %a from the current compilation unit is unbound. \
-                           Maybe there is a missing [Let_symbol] or similar?"
+        Misc.fatal_errorf "Symbol %a from the current compilation unit is \
+            unbound.  Maybe there is a missing [Let_symbol] or similar?"
           Symbol.print symbol;
       let module Backend = (val (t.backend) : Backend_intf.S) in
       Backend.import_symbol symbol

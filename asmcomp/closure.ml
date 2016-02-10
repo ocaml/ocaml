@@ -212,7 +212,8 @@ let rec is_pure_clambda = function
 
 let make_const c = (Uconst c, Value_const c)
 let make_const_ref c =
-  make_const(Uconst_ref(Compilenv.new_structured_constant ~shared:true c, Some c))
+  make_const(Uconst_ref(Compilenv.new_structured_constant ~shared:true c,
+    Some c))
 let make_const_int n = make_const (Uconst_int n)
 let make_const_ptr n = make_const (Uconst_ptr n)
 let make_const_bool b = make_const_ptr(if b then 1 else 0)
@@ -686,7 +687,8 @@ let direct_apply fundesc funct ufunct uargs ~loc ~attribute =
   let app =
     match fundesc.fun_inline, attribute with
     | _, Never_inline | None, _ ->
-        warning_if_forced_inline ~loc ~attribute "Function information unavailable";
+        warning_if_forced_inline ~loc ~attribute
+          "Function information unavailable";
         Udirect_apply(fundesc.fun_label, app_args, Debuginfo.none)
     | Some(params, body), _  ->
         bind_params fundesc.fun_float_const_prop params app_args body
@@ -823,7 +825,8 @@ let rec close fenv cenv = function
 
     (* We convert [f a] to [let a' = a in fun b c -> f a' b c]
        when fun_arity > nargs *)
-  | Lapply{ap_func = funct; ap_args = args; ap_loc = loc; ap_inlined = attribute} ->
+  | Lapply{ap_func = funct; ap_args = args; ap_loc = loc;
+        ap_inlined = attribute} ->
       let nargs = List.length args in
       begin match (close fenv cenv funct, close_list fenv cenv args) with
         ((ufunct, Value_closure(fundesc, approx_res)),

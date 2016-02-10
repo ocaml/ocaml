@@ -534,8 +534,8 @@ let rec simplify_project_var env r ~(project_var : Flambda.project_var)
    * parameters
 
    The rewriting occurs in a clean environment without any of the variables
-   defined outside reachable.  This helps increase robustness against accidental,
-   potentially unsound simplification of variable accesses by
+   defined outside reachable.  This helps increase robustness against
+   accidental, potentially unsound simplification of variable accesses by
    [simplify_using_approx_and_env].
 
    The rewriting occurs in an environment filled with:
@@ -668,7 +668,8 @@ and simplify_set_of_closures original_env r
         specialised_args)
   in
   let env =
-    E.enter_set_of_closures_declaration function_decls.set_of_closures_origin env
+    E.enter_set_of_closures_declaration
+      function_decls.set_of_closures_origin env
   in
   (* we use the previous closure for evaluating the functions *)
   let internal_value_set_of_closures =
@@ -796,10 +797,11 @@ and simplify_apply env r ~(apply : Flambda.apply) : Flambda.t * R.t =
   simplify_free_variable env lhs_of_application
     ~f:(fun env lhs_of_application lhs_of_application_approx ->
       simplify_free_variables env args ~f:(fun env args args_approxs ->
-        (* By using the approximation of the left-hand side of the application,
-           attempt to determine which function is being applied (even if the
-           application is currently [Indirect]).  If successful---in which case we
-           then have a direct application---consider inlining. *)
+        (* By using the approximation of the left-hand side of the
+           application, attempt to determine which function is being applied
+           (even if the application is currently [Indirect]).  If
+           successful---in which case we then have a direct
+           application---consider inlining. *)
         match A.check_approx_for_closure lhs_of_application_approx with
         | Ok (value_closure, _set_of_closures_var,
               _set_of_closures_symbol, value_set_of_closures) ->
@@ -830,7 +832,8 @@ and simplify_apply env r ~(apply : Flambda.apply) : Flambda.t * R.t =
           else if nargs > arity then
             simplify_over_application env r ~args ~args_approxs ~function_decls
               ~lhs_of_application ~closure_id_being_applied ~function_decl
-              ~value_set_of_closures ~dbg ~inline_requested ~specialise_requested
+              ~value_set_of_closures ~dbg ~inline_requested
+              ~specialise_requested
           else if nargs > 0 && nargs < arity then
             simplify_partial_application env r ~lhs_of_application
               ~closure_id_being_applied ~function_decl ~args ~dbg

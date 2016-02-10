@@ -282,9 +282,9 @@ let rec to_clambda t env (flam : Flambda.t) : Clambda.ulambda =
     in
     (* Check that the [failaction] may be duplicated.  If this is not the
        case, share it through a static raise / static catch. *)
-    (* CR-someday pchambart for pchambart: This is overly simplified. We should verify
-       that this does not generates too bad code. If it the case, handle some
-       let cases.
+    (* CR-someday pchambart for pchambart: This is overly simplified.
+       We should verify that this does not generates too bad code.
+       If it the case, handle some let cases.
     *)
     begin match sw.failaction with
     | None -> aux ()

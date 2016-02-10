@@ -110,13 +110,15 @@ let eliminate_ref_of_expr flam =
   in
   let convertible_variables =
     Variable.Map.filter
-      (fun v _ -> not (Variable.Set.mem v variables_not_used_as_local_reference))
+      (fun v _ ->
+        not (Variable.Set.mem v variables_not_used_as_local_reference))
       (variables_containing_ref flam)
   in
   if Variable.Map.cardinal convertible_variables = 0 then flam
   else
     let convertible_variables =
-      Variable.Map.mapi (fun v size -> Array.init size (fun _ -> rename_var v))
+      Variable.Map.mapi (fun v size ->
+          Array.init size (fun _ -> rename_var v))
         convertible_variables
     in
     let convertible_variable v = Variable.Map.mem v convertible_variables in
@@ -167,7 +169,8 @@ let eliminate_ref_of_expr flam =
              let new_value = Variable.create "offseted" in
              let expr =
                Flambda.create_let mut (Read_mutable var)
-                 (Flambda.create_let new_value (Prim(Poffsetint delta, [mut], dbg))
+                 (Flambda.create_let new_value
+                    (Prim(Poffsetint delta, [mut], dbg))
                     (Assign { being_assigned = var; new_value }))
              in
              Expr expr

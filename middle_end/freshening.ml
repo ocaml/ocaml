@@ -87,14 +87,24 @@ let rec add_sb_var sb id id' =
   { sb with back_var }
 
 let rec add_sb_mutable_var sb id id' =
-  let sb = { sb with sb_mutable_var = Mutable_variable.Map.add id id' sb.sb_mutable_var } in
   let sb =
-    try let pre_vars = Mutable_variable.Map.find id sb.back_mutable_var in
-      List.fold_left (fun sb pre_id -> add_sb_mutable_var sb pre_id id') sb pre_vars
+    { sb with
+      sb_mutable_var = Mutable_variable.Map.add id id' sb.sb_mutable_var;
+    }
+  in
+  let sb =
+    try
+      let pre_vars = Mutable_variable.Map.find id sb.back_mutable_var in
+      List.fold_left (fun sb pre_id -> add_sb_mutable_var sb pre_id id')
+        sb pre_vars
     with Not_found -> sb in
   let back_mutable_var =
-    let l = try Mutable_variable.Map.find id' sb.back_mutable_var with Not_found -> [] in
-    Mutable_variable.Map.add id' (id :: l) sb.back_mutable_var in
+    let l =
+      try Mutable_variable.Map.find id' sb.back_mutable_var
+      with Not_found -> []
+    in
+    Mutable_variable.Map.add id' (id :: l) sb.back_mutable_var
+  in
   { sb with back_mutable_var }
 
 let apply_static_exception t i =
@@ -303,7 +313,7 @@ module Project_var = struct
         Variable.Map.fold (fun orig_id _func_decl (subst, t) ->
             let _id, subst, t = new_subst_fun t orig_id subst in
             subst, t)
-          func_decls.funs 
+          func_decls.funs
           (subst, t)
       in
       let funs, subst =
@@ -315,7 +325,9 @@ module Project_var = struct
           func_decls.funs
           (Variable.Map.empty, subst)
       in
-      let function_decls = Flambda.update_function_declarations func_decls ~funs in
+      let function_decls =
+        Flambda.update_function_declarations func_decls ~funs
+      in
       function_decls, Active subst, t
 
   let apply_closure_id t closure_id =

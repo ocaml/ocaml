@@ -438,7 +438,9 @@ let message = function
   | Misplaced_attribute attr_name ->
       Printf.sprintf "the %S attribute cannot appear in this context" attr_name
   | Duplicated_attribute attr_name ->
-      Printf.sprintf "the %S attribute is used more than once on this expression" attr_name
+      Printf.sprintf "the %S attribute is used more than once on this \
+          expression"
+        attr_name
   | Inlining_impossible reason ->
       Printf.sprintf "Inlining impossible in this context: %s" reason
   | Ambiguous_pattern vars ->
@@ -450,7 +452,9 @@ let message = function
         | _::_ ->
             "variables " ^ String.concat "," vars in
       Printf.sprintf
-        "Ambiguous guarded pattern, %s may match different or-pattern arguments" msg
+        "Ambiguous guarded pattern, %s may match different or-pattern \
+          arguments"
+        msg
   | No_cmx_file name ->
       Printf.sprintf
         "no cmx file was found in path for module %s, \
@@ -495,7 +499,8 @@ let descriptions =
     7, "Method overridden.";
     8, "Partial match: missing cases in pattern-matching.";
     9, "Missing fields in a record pattern.";
-   10, "Expression on the left-hand side of a sequence that doesn't have type\n\
+   10, "Expression on the left-hand side of a sequence that doesn't have \
+      type\n\
    \    \"unit\" (and that is not a function, see warning number 5).";
    11, "Redundant case in a pattern matching (unused match case).";
    12, "Redundant sub-pattern in a pattern-matching.";
@@ -512,7 +517,8 @@ let descriptions =
    23, "Useless record \"with\" clause.";
    24, "Bad module name: the source file name is not a valid OCaml module \
         name.";
-   (* 25, "Pattern-matching with all clauses guarded.  Exhaustiveness cannot be\n\
+   (* 25, "Pattern-matching with all clauses guarded.  Exhaustiveness cannot \
+      be\n\
    \    checked.";  (* Now part of warning 8 *) *)
    26, "Suspicious unused variable: unused variable that is bound\n\
    \    with \"let\" or \"as\", and doesn't start with an underscore (\"_\")\n\

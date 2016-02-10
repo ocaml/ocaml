@@ -18,8 +18,6 @@
 
 (* CR-soon mshinwell: This module should be removed. *)
 
-
-
 (** Generic identifier type *)
 module type BaseId =
 sig
@@ -56,4 +54,3 @@ module UnitId :
   functor (Id : Id) ->
   functor (Compilation_unit : Identifiable.Thing) ->
     UnitId with module Compilation_unit := Compilation_unit
-

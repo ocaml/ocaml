@@ -518,7 +518,8 @@ module Make (T : S) = struct
         ~specialise:Default_specialise
         ~is_a_functor:false
     in
-    new_fun_var, new_function_decl, rewritten_existing_specialised_args, benefit
+    new_fun_var, new_function_decl, rewritten_existing_specialised_args,
+      benefit
 
   let rewrite_function_decl (t : P.t)
       ~(for_one_function : P.for_one_function) ~benefit =
@@ -596,11 +597,12 @@ module Make (T : S) = struct
       Flambda_utils.name_expr (Set_of_closures set_of_closures)
         ~name:("set_of_closures" ^ T.variable_suffix)
     in
-    Variable.Map.fold (fun new_outer_var (projection : Projection.t) (expr, benefit) ->
+    Variable.Map.fold (fun new_outer_var (projection : Projection.t)
+          (expr, benefit) ->
         let named = Flambda_utils.projection_to_named projection in
         let benefit = B.add_projection projection benefit in
         let expr = Flambda.create_let new_outer_var named expr in
-        (expr, benefit))
+        expr, benefit)
       new_lifted_defns_indexed_by_new_outer_vars
       (body, benefit)
 

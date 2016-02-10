@@ -125,8 +125,8 @@ module Env : sig
 
   (** Note that the inliner is descending into a function body from the given
       set of closures.  A set of such descents is maintained. *)
-  (* CR-someday mshinwell: consider changing name to remove "declaration".  Also,
-     isn't this the inlining stack?  Maybe we can use that instead. *)
+  (* CR-someday mshinwell: consider changing name to remove "declaration".
+     Also, isn't this the inlining stack?  Maybe we can use that instead. *)
   val enter_set_of_closures_declaration : Set_of_closures_origin.t -> t -> t
 
   (** Determine whether the inliner is currently inside a function body from

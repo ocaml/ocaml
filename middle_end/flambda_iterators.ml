@@ -170,7 +170,8 @@ let iter_named_on_named f_named named =
   iter_general ~toplevel:false (fun (_ : Flambda.t) -> ()) f_named
     (Is_named named)
 
-let iter_toplevel f f_named t = iter_general ~toplevel:true f f_named (Is_expr t)
+let iter_toplevel f f_named t =
+  iter_general ~toplevel:true f f_named (Is_expr t)
 let iter_named_toplevel f f_named named =
   iter_general ~toplevel:true f f_named (Is_named named)
 
@@ -453,7 +454,8 @@ let iter_apply_on_program program ~f =
       (fun _ -> ())
       expr)
 
-let map f f_named tree = map_general ~toplevel:false f (fun _ n -> f_named n) tree
+let map f f_named tree =
+  map_general ~toplevel:false f (fun _ n -> f_named n) tree
 let map_expr f tree = map f (fun named -> named) tree
 let map_named f_named tree = map (fun expr -> expr) f_named tree
 let map_named_with_id f_named tree =
@@ -617,7 +619,8 @@ let map_sets_of_closures_of_program (program : Flambda.program)
       let done_something = ref false in
       let function_decls =
         let funs =
-          Variable.Map.map (fun (function_decl : Flambda.function_declaration) ->
+          Variable.Map.map (fun
+                  (function_decl : Flambda.function_declaration) ->
               let body = map_sets_of_closures ~f function_decl.body in
               if body == function_decl.body then
                 function_decl

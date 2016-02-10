@@ -431,7 +431,8 @@ let print_constant_defining_value ppf (const : constant_defining_value) =
     fprintf ppf "(Block (tag %d, %a))" (Tag.to_int tag)
       print_fields fields
   | Set_of_closures set_of_closures ->
-    fprintf ppf "@[<2>(Set_of_closures (@ %a))@]" print_set_of_closures set_of_closures
+    fprintf ppf "@[<2>(Set_of_closures (@ %a))@]" print_set_of_closures
+      set_of_closures
   | Project_closure (set_of_closures, closure_id) ->
     fprintf ppf "(Project_closure (%a, %a))" Symbol.print set_of_closures
       Closure_id.print closure_id
@@ -514,15 +515,16 @@ let rec variables_usage ?ignore_uses_as_callee ?ignore_uses_as_argument
         if all_used_variables
            || ignore_uses_as_callee <> None
            || ignore_uses_as_argument <> None
-           || ignore_uses_in_project_var <> None then begin
+           || ignore_uses_in_project_var <> None
+        then begin
           (* In these cases we can't benefit from the pre-computed free
              variable sets. *)
           free_variables
-            (variables_usage_named ?ignore_uses_in_project_var ?ignore_uses_as_callee
-                ?ignore_uses_as_argument ~all_used_variables defining_expr);
+            (variables_usage_named ?ignore_uses_in_project_var
+                ?ignore_uses_as_callee ?ignore_uses_as_argument
+                ~all_used_variables defining_expr);
           aux body
-        end
-        else begin
+        end else begin
           free_variables free_vars_of_defining_expr;
           free_variables free_vars_of_body
         end

@@ -45,7 +45,8 @@ let ranlib = "%%RANLIBCMD%%"
 let ar = "%%ARCMD%%"
 let cc_profile = "%%CC_PROFILE%%"
 let mkdll, mkexe, mkmaindll =
-  (* @@DRA Cygwin - but only if shared libraries are enabled, which we should be able to detect? *)
+  (* @@DRA Cygwin - but only if shared libraries are enabled, which we
+     should be able to detect? *)
   if Sys.os_type = "Win32" then
     try
       let flexlink =

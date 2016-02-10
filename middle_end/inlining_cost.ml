@@ -299,7 +299,8 @@ module Benefit = struct
        + t.remove_alloc * (cost !Clflags.inline_alloc_cost ~round)
        + t.remove_prim * (cost !Clflags.inline_prim_cost ~round)
        + t.remove_branch * (cost !Clflags.inline_branch_cost ~round)
-       + t.direct_call_of_indirect * (cost !Clflags.inline_indirect_cost ~round))
+       + (t.direct_call_of_indirect
+         * (cost !Clflags.inline_indirect_cost ~round)))
     + t.requested_inline
 
   let (+) t1 t2 = {
@@ -467,15 +468,18 @@ module Whether_sufficient_benefit = struct
     let evaluated_benefit =
       if lifting then
         let lifting_benefit =
-          Clflags.Int_arg_helper.get ~key:t.round !Clflags.inline_lifting_benefit
+          Clflags.Int_arg_helper.get ~key:t.round
+            !Clflags.inline_lifting_benefit
         in
         t.evaluated_benefit + lifting_benefit
       else t.evaluated_benefit
     in
     let estimate = if t.estimate then "<" else "=" in
-      Printf.sprintf "{benefit%s{call=%d,alloc=%d,prim=%i,branch=%i,indirect=%i,req=%i,\
-                      lifting=%b}, orig_size=%d,new_size=%d,eval_size=%d,eval_benefit%s%d,\
-                      branch_depth=%d}=%s"
+      Printf.sprintf "{benefit%s{call=%d,alloc=%d,prim=%i,branch=%i,\
+          indirect=%i,req=%i,\
+          lifting=%b}, orig_size=%d,new_size=%d,eval_size=%d,\
+          eval_benefit%s%d,\
+          branch_depth=%d}=%s"
         estimate
         t.benefit.remove_call
         t.benefit.remove_alloc
@@ -531,7 +535,8 @@ module Whether_sufficient_benefit = struct
     let total_benefit =
       if lifting then
         let lifting_benefit =
-          Clflags.Int_arg_helper.get ~key:t.round !Clflags.inline_lifting_benefit
+          Clflags.Int_arg_helper.get ~key:t.round
+            !Clflags.inline_lifting_benefit
         in
          t.evaluated_benefit + lifting_benefit
       else t.evaluated_benefit
@@ -555,8 +560,8 @@ module Whether_sufficient_benefit = struct
       Format.pp_print_text ppf " than the expected benefit."
     in
     Format.fprintf ppf "%t@,@[<v>@[<v 2>@;%a@]@;@;%t%t@]%t"
-      pr_intro Benefit.print_table t.benefit pr_requested pr_lifting pr_conclusion
-
+      pr_intro Benefit.print_table t.benefit pr_requested pr_lifting
+      pr_conclusion
 end
 
 let scale_inline_threshold_by = 8
@@ -670,5 +675,7 @@ let maximum_interesting_size_of_function_body_multiplier =
 
 let maximum_interesting_size_of_function_body num_free_variables =
   let base = Lazy.force maximum_interesting_size_of_function_body_base in
-  let multiplier = Lazy.force maximum_interesting_size_of_function_body_multiplier in
+  let multiplier =
+    Lazy.force maximum_interesting_size_of_function_body_multiplier
+  in
   base + (num_free_variables * multiplier)

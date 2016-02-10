@@ -364,4 +364,3 @@ let inline_by_copying_function_declaration ~env ~r
     in
     let env = E.activate_freshening (E.set_never_inline env) in
     Some (simplify env r expr)
-

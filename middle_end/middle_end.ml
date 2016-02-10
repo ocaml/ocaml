@@ -56,18 +56,21 @@ let middle_end ppf ~source_provenance ~prefixname ~backend
     let timing_pass = (Timings.Flambda_pass (name, source_provenance)) in
     let flam = Timings.accumulate_time timing_pass pass flam in
     if !Clflags.flambda_invariant_checks then begin
-      Timings.accumulate_time (Flambda_pass ("check", source_provenance)) check flam
+      Timings.accumulate_time (Flambda_pass ("check", source_provenance))
+        check flam
     end;
     flam
   in
-  Timings.accumulate_time (Flambda_pass ("middle_end", source_provenance)) (fun () ->
+  Timings.accumulate_time
+    (Flambda_pass ("middle_end", source_provenance)) (fun () ->
     let flam =
       let timing_pass =
         Timings.Flambda_pass ("closure_conversion", source_provenance)
       in
       Timings.accumulate_time timing_pass (fun () ->
           module_initializer
-          |> Closure_conversion.lambda_to_flambda ~backend ~module_ident ~size)
+          |> Closure_conversion.lambda_to_flambda ~backend ~module_ident
+                ~size)
         ()
     in
     if !Clflags.dump_rawflambda

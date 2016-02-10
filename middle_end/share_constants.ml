@@ -18,7 +18,8 @@
 
 module Constant_defining_value = Flambda.Constant_defining_value
 
-let update_constant_for_sharing sharing_symbol_tbl const : Flambda.constant_defining_value =
+let update_constant_for_sharing sharing_symbol_tbl const
+      : Flambda.constant_defining_value =
   let substitute_symbol sym =
     match Symbol.Tbl.find sharing_symbol_tbl sym with
     | exception Not_found -> sym

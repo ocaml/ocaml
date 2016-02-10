@@ -140,8 +140,9 @@ let separate_unused_arguments ~only_specialised
     in
     let specialised_args =
       Variable.Map.disjoint_union additional_specialised_args
-        (Variable.Map.filter (fun param _ -> not (Variable.Set.mem param unused))
-           set_of_closures.specialised_args)
+        (Variable.Map.filter (fun param _ ->
+            not (Variable.Set.mem param unused))
+          set_of_closures.specialised_args)
     in
     let specialised_args =
       Flambda_utils.clean_projections ~which_variables:specialised_args

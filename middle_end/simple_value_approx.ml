@@ -200,7 +200,8 @@ let create_value_set_of_closures
           in
           let num_free_vars = Variable.Set.cardinal free_vars in
           let max_size =
-            Inlining_cost.maximum_interesting_size_of_function_body num_free_vars
+            Inlining_cost.maximum_interesting_size_of_function_body
+              num_free_vars
           in
           Inlining_cost.lambda_smaller' function_decl.body ~than:max_size)
         function_decls.funs)
@@ -686,8 +687,10 @@ type checked_approx_for_closure =
 
 let check_approx_for_closure t : checked_approx_for_closure =
   match check_approx_for_closure_allowing_unresolved t with
-  | Ok (value_closure, set_of_closures_var, set_of_closures_symbol, value_set_of_closures) ->
-    Ok (value_closure, set_of_closures_var, set_of_closures_symbol, value_set_of_closures)
+  | Ok (value_closure, set_of_closures_var, set_of_closures_symbol,
+      value_set_of_closures) ->
+    Ok (value_closure, set_of_closures_var, set_of_closures_symbol,
+      value_set_of_closures)
   | Wrong | Unknown | Unresolved _ | Unknown_because_of_unresolved_symbol _ ->
     Wrong
 

@@ -58,7 +58,8 @@ type clambda_and_constants =
   Clambda.preallocated_block list *
   Clambda.preallocated_constant list
 
-let raw_clambda_dump_if ppf ((ulambda, _, structured_constants):clambda_and_constants) =
+let raw_clambda_dump_if ppf
+      ((ulambda, _, structured_constants):clambda_and_constants) =
   if !dump_rawclambda then
     begin
       Format.fprintf ppf "@.clambda (before Un_anf):@.";

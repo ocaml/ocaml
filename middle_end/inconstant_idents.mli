@@ -18,8 +18,8 @@
 
 type result
 
-(** [inconstants_on_program] finds those variables and set-of-closures identifiers that
-    cannot be compiled to constants by [Flambda_to_clambda].
+(** [inconstants_on_program] finds those variables and set-of-closures
+    identifiers that cannot be compiled to constants by [Flambda_to_clambda].
 *)
 val inconstants_on_program
    : compilation_unit:Compilation_unit.t

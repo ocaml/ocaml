@@ -432,9 +432,10 @@ let specialise env r ~lhs_of_application
           let closure_env =
             let env =
               if E.inlining_level env = 0
-               (* If the function was considered for specialising without considering
-                  its sub-functions, and it is not below another inlining choice,
-                  then we are certain that this code will be kept. *)
+               (* If the function was considered for specialising without
+                  considering its sub-functions, and it is not below another
+                  inlining choice, then we are certain that this code will
+                  be kept. *)
               then env
               else E.inlining_level_up env
             in
@@ -447,7 +448,7 @@ let specialise env r ~lhs_of_application
             if always_specialise then S.Specialised.Annotation
             else S.Specialised.Without_subfunctions wsb
           in
-          Changed(res, decision)
+          Changed (res, decision)
         end else begin
           let closure_env =
             let env = E.inlining_level_up env in
@@ -470,11 +471,13 @@ let specialise env r ~lhs_of_application
              let application_env = E.set_never_inline_inside_closures env in
              let res = simplify application_env r expr in
              let decision =
-               S.Specialised.With_subfunctions(wsb, wsb_with_subfunctions)
+               S.Specialised.With_subfunctions (wsb, wsb_with_subfunctions)
              in
-             Changed(res, decision)
+             Changed (res, decision)
           end else begin
-            let decision = S.Not_specialised.Not_beneficial(wsb, wsb_with_subfunctions) in
+            let decision =
+              S.Not_specialised.Not_beneficial (wsb, wsb_with_subfunctions)
+            in
             Original decision
           end
         end
@@ -487,13 +490,14 @@ let for_call_site ~env ~r ~(function_decls : Flambda.function_declarations)
       ~lhs_of_application ~closure_id_being_applied
       ~(function_decl : Flambda.function_declaration)
       ~(value_set_of_closures : Simple_value_approx.value_set_of_closures)
-      ~args ~args_approxs ~dbg ~simplify ~inline_requested ~specialise_requested =
+      ~args ~args_approxs ~dbg ~simplify ~inline_requested
+      ~specialise_requested =
   if List.length args <> List.length args_approxs then begin
     Misc.fatal_error "Inlining_decision.for_call_site: inconsistent lengths \
         of [args] and [args_approxs]"
   end;
-  (* Remove unroll attributes from functions we are already actively unrolling,
-     otherwise they'll be unrolled again next round. *)
+  (* Remove unroll attributes from functions we are already actively
+     unrolling, otherwise they'll be unrolled again next round. *)
   let inline_requested : Lambda.inline_attribute =
     match (inline_requested : Lambda.inline_attribute) with
     | Unroll _ -> begin
@@ -576,11 +580,12 @@ let for_call_site ~env ~r ~(function_decls : Flambda.function_declarations)
         in
         let fun_cost =
           lazy
-            (Inlining_cost.can_try_inlining function_decl.body inlining_threshold
+            (Inlining_cost.can_try_inlining function_decl.body
+                inlining_threshold
                 ~number_of_arguments:(List.length function_decl.params)
-                (* CR-someday mshinwell: for the moment, this is None, since the
-                   Inlining_cost code isn't checking sizes up to the max inlining
-                   threshold---this seems to take too long. *)
+                (* CR-someday mshinwell: for the moment, this is None, since
+                   the Inlining_cost code isn't checking sizes up to the max
+                   inlining threshold---this seems to take too long. *)
                 ~size_from_approximation:None)
         in
         let fun_var =
@@ -589,8 +594,9 @@ let for_call_site ~env ~r ~(function_decls : Flambda.function_declarations)
         let recursive =
           lazy
             (Variable.Set.mem fun_var
-               ((Find_recursive_functions.in_function_declarations function_decls
-                   ~backend:(E.backend env))))
+               ((Find_recursive_functions.in_function_declarations
+                  function_decls
+                  ~backend:(E.backend env))))
         in
         let specialise_result =
           specialise env r ~lhs_of_application ~function_decls ~recursive

@@ -89,7 +89,7 @@ let emit_fpr r = emit_string "%f"; emit_int r
 
 (* Special registers *)
 
-let reg_f15 = phys_reg 115  
+let reg_f15 = phys_reg 115
 
 (* Output a stack reference *)
 
@@ -109,7 +109,7 @@ let emit_load_store instr addressing_mode addr n arg =
   | Iindexed2 ofs ->
       `	{emit_string instr}	{emit_reg arg}, {emit_int ofs}({emit_reg addr.(n)},{emit_reg addr.(n+1)})\n`
 
-(* Adjust the stack pointer down by N.  
+(* Adjust the stack pointer down by N.
    Choose the shortest instruction possible for the value of N. *)
 
 let emit_stack_adjust n =
@@ -232,7 +232,7 @@ let branch_for_comparison = function
 let name_for_int_comparison = function
     Isigned cmp -> ("cgr", branch_for_comparison cmp)
   | Iunsigned cmp -> ("clgr", branch_for_comparison cmp)
-  
+
 let name_for_int_comparison_imm = function
     Isigned cmp -> ("cgfi", branch_for_comparison cmp)
   | Iunsigned cmp -> ("clgfi", branch_for_comparison cmp)
@@ -355,7 +355,7 @@ let emit_instr i =
           else
             `	brcl	15, {emit_symbol s}\n`
         end
-              
+
      | Lop(Iextcall(s, alloc)) ->
         if alloc then begin
           if !pic_code then begin
@@ -485,9 +485,9 @@ let emit_instr i =
         `	lghi	{emit_reg i.res.(0)}, 0\n`;
         `{emit_label lbl}:\n`
     | Lop(Iintop_imm(Icheckbound, n)) ->
-       let lbl = bound_error_label i.dbg in 
+       let lbl = bound_error_label i.dbg in
        if n >= 0 then begin
-        `	clgfi	{emit_reg i.arg.(0)}, {emit_int n}\n`;  
+        `	clgfi	{emit_reg i.arg.(0)}, {emit_int n}\n`;
         `	brcl	12, {emit_label lbl}\n`  (* branch if unsigned le *)
        end else begin
         `	brcl	15, {emit_label lbl}\n`  (* branch always *)
@@ -768,4 +768,3 @@ let end_assembly() =
      };
    (* Mark stack as non-executable *)
    `	.section .note.GNU-stack,\"\",%progbits\n`
-

@@ -93,7 +93,7 @@ let cint_const n =
 
 let add_no_overflow n x c =
   let d = n + x in
-  if d = 0 then c else Cop(Caddi, [c; Cconst_int d])  
+  if d = 0 then c else Cop(Caddi, [c; Cconst_int d])
 
 let rec add_const c n =
   if n = 0 then c
@@ -1435,7 +1435,8 @@ let rec transl env e =
       transl_constant sc
   | Uclosure(fundecls, []) ->
       let lbl = Compilenv.new_const_symbol() in
-      constant_closures := ((lbl, Not_global), fundecls, []) :: !constant_closures;
+      constant_closures :=
+        ((lbl, Not_global), fundecls, []) :: !constant_closures;
       List.iter (fun f -> Queue.add f functions) fundecls;
       Cconst_symbol lbl
   | Uclosure(fundecls, clos_vars) ->
@@ -1639,7 +1640,8 @@ let rec transl env e =
            (transl env ifnot))
         (transl env ifso)
   | Uifthenelse(cond, ifso, ifnot) ->
-      if_then_else(test_bool(transl env cond), transl env ifso, transl env ifnot)
+      if_then_else(test_bool(transl env cond), transl env ifso,
+        transl env ifnot)
   | Usequence(exp1, exp2) ->
       Csequence(remove_unit(transl env exp1), transl env exp2)
   | Uwhile(cond, body) ->
@@ -1884,9 +1886,11 @@ and transl_prim_2 env p arg1 arg2 dbg =
          | c1, c2 -> incr_int (mul_int (decr_int c1) (untag_int c2))
      end
   | Pdivint ->
-      tag_int(div_int (untag_int(transl env arg1)) (untag_int(transl env arg2)) dbg)
+      tag_int(div_int (untag_int(transl env arg1))
+        (untag_int(transl env arg2)) dbg)
   | Pmodint ->
-      tag_int(mod_int (untag_int(transl env arg1)) (untag_int(transl env arg2)) dbg)
+      tag_int(mod_int (untag_int(transl env arg1))
+        (untag_int(transl env arg2)) dbg)
   | Pandint ->
       Cop(Cand, [transl env arg1; transl env arg2])
   | Porint ->
