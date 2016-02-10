@@ -161,6 +161,8 @@ Compilers:
   branch merging (Pierre Chambart)
 - GPR#392: put all parsetree invariants in a new module Ast_invariants
   (Jérémie Dimino)
+- PR#6475: interpret all command-line options before compiling any files
+  (whitequark)
 
 Runtime system:
 - PR#3612: allow allocating custom block with finalizers in the minor heap
