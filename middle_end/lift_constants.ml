@@ -680,6 +680,7 @@ let introduce_free_variables_in_set_of_closures
                  ~stub:func_decl.stub
                  ~dbg:func_decl.dbg
                  ~inline:func_decl.inline
+                 ~specialise:func_decl.specialise
                  ~is_a_functor:func_decl.is_a_functor
              end)
           function_decls.funs)

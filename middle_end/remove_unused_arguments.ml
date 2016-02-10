@@ -38,7 +38,7 @@ let remove_params unused (fun_decl: Flambda.function_declaration) =
   in
   Flambda.create_function_declaration ~params:used_params ~body
     ~stub:fun_decl.stub ~dbg:fun_decl.dbg ~inline:fun_decl.inline
-    ~is_a_functor:fun_decl.is_a_functor
+    ~specialise:fun_decl.specialise ~is_a_functor:fun_decl.is_a_functor
 
 let make_stub unused var (fun_decl : Flambda.function_declaration)
     ~specialised_args ~additional_specialised_args =
@@ -86,12 +86,13 @@ let make_stub unused var (fun_decl : Flambda.function_declaration)
       kind;
       dbg;
       inline = Default_inline;
+      specialise = Default_specialise;
     }
   in
   let function_decl =
     Flambda.create_function_declaration ~params:(List.map snd args') ~body
       ~stub:true ~dbg:fun_decl.dbg ~inline:fun_decl.inline
-      ~is_a_functor:fun_decl.is_a_functor
+      ~specialise:fun_decl.specialise ~is_a_functor:fun_decl.is_a_functor
   in
   function_decl, renamed, additional_specialised_args
 

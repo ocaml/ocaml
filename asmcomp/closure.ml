@@ -862,7 +862,8 @@ let rec close fenv cenv = function
                              ap_loc=loc;
                              ap_func=funct;
                              ap_args=internal_args;
-                             ap_inlined=Default_inline};
+                             ap_inlined=Default_inline;
+                             ap_specialised=Default_specialise};
                attr = default_function_attribute})
         in
         let new_fun = iter first_args new_fun in
@@ -936,7 +937,8 @@ let rec close fenv cenv = function
                               ap_loc=loc;
                               ap_func=funct;
                               ap_args=[arg];
-                              ap_inlined=Default_inline})
+                              ap_inlined=Default_inline;
+                              ap_specialised=Default_specialise})
   | Lprim(Pgetglobal id, []) as lam ->
       check_constant_result lam
                             (getglobal id)
@@ -1168,6 +1170,7 @@ and close_functions fenv cenv fun_defs =
           int_of_float (inline_threshold *. magic_scale_constant) + n
       | Always_inline -> max_int
       | Never_inline -> min_int
+      | Unroll _ -> assert false
     in
     if lambda_smaller ubody threshold
     then fundesc.fun_inline <- Some(fun_params, ubody);

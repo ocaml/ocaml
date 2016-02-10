@@ -59,6 +59,7 @@ module Function_decls : sig
       -> params:Ident.t list
       -> body:Lambda.lambda
       -> inline:Lambda.inline_attribute
+      -> specialise:Lambda.specialise_attribute
       -> is_a_functor:bool
       -> t
 
@@ -68,6 +69,7 @@ module Function_decls : sig
     val params : t -> Ident.t list
     val body : t -> Lambda.lambda
     val inline : t -> Lambda.inline_attribute
+    val specialise : t -> Lambda.specialise_attribute
     val is_a_functor : t -> bool
 
     (* [primitive_wrapper t] is [None] iff [t] is not a wrapper for a function

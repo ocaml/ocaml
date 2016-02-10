@@ -38,6 +38,7 @@ module Env = struct
     never_inline_outside_closures : bool;
     unroll_counts : int Set_of_closures_origin.Map.t;
     inlining_counts : int Closure_id.Map.t;
+    actively_unrolling : int Set_of_closures_origin.Map.t;
     closure_depth : int;
     inlining_stats_closure_stack : Inlining_stats.Closure_stack.t;
   }
@@ -58,6 +59,7 @@ module Env = struct
       never_inline_outside_closures = false;
       unroll_counts = Set_of_closures_origin.Map.empty;
       inlining_counts = Closure_id.Map.empty;
+      actively_unrolling = Set_of_closures_origin.Map.empty;
       closure_depth = 0;
       inlining_stats_closure_stack =
         Inlining_stats.Closure_stack.create ();
@@ -271,6 +273,29 @@ module Env = struct
     if t.never_inline_outside_closures then
       { t with never_inline_outside_closures = false }
     else t
+
+  let actively_unrolling t origin =
+    match Set_of_closures_origin.Map.find origin t.actively_unrolling with
+    | count -> Some count
+    | exception Not_found -> None
+
+  let start_actively_unrolling t origin i =
+    let actively_unrolling =
+      Set_of_closures_origin.Map.add origin i t.actively_unrolling
+    in
+    { t with actively_unrolling }
+
+  let continue_actively_unrolling t origin =
+    let unrolling =
+      try
+        Set_of_closures_origin.Map.find origin t.actively_unrolling
+      with Not_found ->
+        Misc.fatal_error "Unexpected actively unrolled function";
+    in
+    let actively_unrolling =
+      Set_of_closures_origin.Map.add origin (unrolling - 1) t.actively_unrolling
+    in
+    { t with actively_unrolling }
 
   let unrolling_allowed t origin =
     let unroll_count =

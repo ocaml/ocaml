@@ -47,6 +47,7 @@ let import_set_of_closures =
           Flambda.create_function_declaration ~params:function_decl.params
             ~body ~stub:function_decl.stub ~dbg:function_decl.dbg
             ~inline:function_decl.inline
+            ~specialise:function_decl.specialise
             ~is_a_functor:function_decl.is_a_functor)
         clos.funs
     in

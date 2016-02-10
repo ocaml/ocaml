@@ -70,6 +70,7 @@ val inline_by_copying_function_body
   -> function_decls:Flambda.function_declarations
   -> lhs_of_application:Variable.t
   -> inline_requested:Lambda.inline_attribute
+  -> specialise_requested:Lambda.specialise_attribute
   -> closure_id_being_applied:Closure_id.t
   -> function_decl:Flambda.function_declaration
   -> args:Variable.t list

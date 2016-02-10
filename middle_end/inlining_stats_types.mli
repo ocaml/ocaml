@@ -20,7 +20,7 @@
 
 module Inlined : sig
   type t =
-    | Unconditionally
+    | Annotation
     | Decl_local_to_application
     | Without_subfunctions of
         Inlining_cost.Whether_sufficient_benefit.t
@@ -31,8 +31,12 @@ end
 
 module Not_inlined : sig
   type t =
+    | Classic_mode
+    | Function_obviously_too_large of int
+    | Annotation
     | Unspecialised
     | Unrolling_depth_exceeded
+    | Self_call
     | Without_subfunctions of
         Inlining_cost.Whether_sufficient_benefit.t
     | With_subfunctions of
@@ -42,6 +46,7 @@ end
 
 module Specialised : sig
   type t =
+    | Annotation
     | Without_subfunctions of
         Inlining_cost.Whether_sufficient_benefit.t
     | With_subfunctions of
@@ -52,10 +57,13 @@ end
 module Not_specialised : sig
   type t =
     | Classic_mode
+    | Function_obviously_too_large of int
+    | Annotation
     | Not_recursive
     | Not_closed
     | No_invariant_parameters
     | No_useful_approximations
+    | Self_call
     | Not_beneficial of
         Inlining_cost.Whether_sufficient_benefit.t
         * Inlining_cost.Whether_sufficient_benefit.t
@@ -63,11 +71,8 @@ end
 
 module Prevented : sig
   type t =
-    | Function_obviously_too_large of int
     | Function_prevented_from_inlining
     | Level_exceeded
-    | Classic_heuristic
-    | Self_call
 end
 
 module Decision : sig

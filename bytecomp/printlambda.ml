@@ -368,6 +368,7 @@ let function_attribute ppf { inline; is_a_functor } =
   | Default_inline -> ()
   | Always_inline -> fprintf ppf "always_inline@ "
   | Never_inline -> fprintf ppf "never_inline@ "
+  | Unroll i -> fprintf ppf "unroll(%i)@ " i
 
 let apply_tailcall_attribute ppf tailcall =
   if tailcall then
@@ -377,6 +378,7 @@ let apply_inlined_attribute ppf = function
   | Default_inline -> ()
   | Always_inline -> fprintf ppf " always_inline"
   | Never_inline -> fprintf ppf " never_inline"
+  | Unroll i -> fprintf ppf " never_inline(%i)" i
 
 let rec lam ppf = function
   | Lvar id ->

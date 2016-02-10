@@ -20,48 +20,123 @@ let is_inline_attribute = function
 
 let is_inlined_attribute = function
   | {txt=("inlined"|"ocaml.inlined")}, _ -> true
+  | {txt=("unrolled"|"ocaml.unrolled")}, _ when Config.flambda -> true
   | _ -> false
 
-(* the 'inline' and 'inlined' attributes can be used as
-   [@inline], [@inline never] or [@inline always].
-   [@inline] is equivalent to [@inline always] *)
+let is_specialise_attribute = function
+  | {txt=("specialise"|"ocaml.specialise")}, _ when Config.flambda -> true
+  | _ -> false
 
-let make_get_inline_attribute is_attribute attributes =
-  let warning txt = Warnings.Attribute_payload
-      (txt, "It must be either empty, 'always' or 'never'")
+let is_specialised_attribute = function
+  | {txt=("specialised"|"ocaml.specialised")}, _ when Config.flambda -> true
+  | _ -> false
+
+let find_attribute p attributes =
+  let inline_attribute, other_attributes =
+    List.partition p attributes
   in
-  let inline_attribute, exp_attributes =
-    List.partition is_attribute attributes
-  in
-  let attribute_value =
+  let attr =
     match inline_attribute with
-    | [] -> Default_inline
-    | [({txt;loc}, payload)] -> begin
-        let open Parsetree in
-        match payload with
-        | PStr [] -> Always_inline
-        | PStr [{pstr_desc = Pstr_eval ({pexp_desc},[])}] -> begin
-            match pexp_desc with
-            | Pexp_ident { txt = Longident.Lident "never" } ->
-                Never_inline
-            | Pexp_ident { txt = Longident.Lident "always" } ->
-                Always_inline
-            | _ ->
+    | [] -> None
+    | [attr] -> Some attr
+    | _ :: ({txt;loc}, _) :: _ ->
+      Location.prerr_warning loc (Warnings.Duplicated_attribute txt);
+      None
+  in
+  attr, other_attributes
+
+let is_unrolled = function
+  | {txt="unrolled"|"ocaml.unrolled"} -> true
+  | {txt="inline"|"ocaml.inline"|"inlined"|"ocaml.inlined"} -> false
+  | _ -> assert false
+
+let parse_inline_attribute attr =
+  match attr with
+  | None -> Default_inline
+  | Some ({txt;loc} as id, payload) ->
+    let open Parsetree in
+    if is_unrolled id then begin
+      (* the 'unrolled' attributes muse be used as [@unrolled n]. *)
+      let warning txt = Warnings.Attribute_payload
+          (txt, "It must be an integer literal")
+      in
+      match payload with
+      | PStr [{pstr_desc = Pstr_eval ({pexp_desc},[])}] -> begin
+          match pexp_desc with
+          | Pexp_constant (Pconst_integer(s, None)) -> begin
+              try
+                Unroll (Misc.Int_literal_converter.int s)
+              with Failure _ ->
                 Location.prerr_warning loc (warning txt);
                 Default_inline
-          end
-        | _ ->
+            end
+          | _ ->
             Location.prerr_warning loc (warning txt);
             Default_inline
-      end
-    | _ :: ({txt;loc}, _) :: _ ->
-        Location.prerr_warning loc (Warnings.Duplicated_attribute txt);
+        end
+      | _ ->
+        Location.prerr_warning loc (warning txt);
         Default_inline
-  in
-  attribute_value, exp_attributes
+    end else begin
+      (* the 'inline' and 'inlined' attributes can be used as
+         [@inline], [@inline never] or [@inline always].
+         [@inline] is equivalent to [@inline always] *)
+      let warning txt =
+        Warnings.Attribute_payload
+          (txt, "It must be either empty, 'always' or 'never'")
+      in
+      match payload with
+      | PStr [] -> Always_inline
+      | PStr [{pstr_desc = Pstr_eval ({pexp_desc},[])}] -> begin
+          match pexp_desc with
+          | Pexp_ident { txt = Longident.Lident "never" } ->
+            Never_inline
+          | Pexp_ident { txt = Longident.Lident "always" } ->
+            Always_inline
+          | _ ->
+            Location.prerr_warning loc (warning txt);
+            Default_inline
+        end
+      | _ ->
+        Location.prerr_warning loc (warning txt);
+        Default_inline
+    end
+
+let parse_specialise_attribute attr =
+  match attr with
+  | None -> Default_specialise
+  | Some ({txt; loc}, payload) ->
+    let open Parsetree in
+    let warning txt =
+      Warnings.Attribute_payload
+      (txt, "It must be either empty, 'always' or 'never'")
+    in
+    match payload with
+    | PStr [] -> Always_specialise
+    | PStr [{pstr_desc = Pstr_eval ({pexp_desc},[])}] -> begin
+        (* the 'specialise' and 'specialised' attributes can be used as
+           [@specialise], [@specialise never] or [@specialise always].
+           [@specialise] is equivalent to [@specialise always] *)
+        match pexp_desc with
+        | Pexp_ident { txt = Longident.Lident "never" } ->
+          Never_specialise
+        | Pexp_ident { txt = Longident.Lident "always" } ->
+          Always_specialise
+        | _ ->
+          Location.prerr_warning loc (warning txt);
+          Default_specialise
+      end
+    | _ ->
+      Location.prerr_warning loc (warning txt);
+      Default_specialise
 
 let get_inline_attribute l =
-  fst (make_get_inline_attribute is_inline_attribute l)
+  let attr, _ = find_attribute is_inline_attribute l in
+  parse_inline_attribute attr
+
+let get_specialise_attribute l =
+  let attr, _ = find_attribute is_specialise_attribute l in
+  parse_specialise_attribute attr
 
 let add_inline_attribute expr loc attributes =
   match expr, get_inline_attribute attributes with
@@ -69,32 +144,59 @@ let add_inline_attribute expr loc attributes =
   | Lfunction({ attr } as funct), inline_attribute ->
       begin match attr.inline with
       | Default_inline -> ()
-      | Always_inline | Never_inline ->
+      | Always_inline | Never_inline | Unroll _ ->
           Location.prerr_warning loc
             (Warnings.Duplicated_attribute "inline")
       end;
-      Lfunction { funct with attr = { attr with inline = inline_attribute } }
-  | expr, (Always_inline | Never_inline) ->
+      let attr = { attr with inline = inline_attribute } in
+      Lfunction { funct with attr = attr }
+  | expr, (Always_inline | Never_inline | Unroll _) ->
       Location.prerr_warning loc
         (Warnings.Misplaced_attribute "inline");
       expr
 
-(* Get the [@inlined] attibute payload (or default if not present).
+let add_specialise_attribute expr loc attributes =
+  match expr, get_specialise_attribute attributes with
+  | expr, Default_specialise -> expr
+  | Lfunction({ attr } as funct), specialise_attribute ->
+      begin match attr.specialise with
+      | Default_specialise -> ()
+      | Always_specialise | Never_specialise ->
+          Location.prerr_warning loc
+            (Warnings.Duplicated_attribute "specialise")
+      end;
+      let attr = { attr with specialise = specialise_attribute } in
+      Lfunction { funct with attr }
+  | expr, (Always_specialise | Never_specialise) ->
+      Location.prerr_warning loc
+        (Warnings.Misplaced_attribute "specialise");
+      expr
+
+(* Get the [@inlined] attribute payload (or default if not present).
    It also returns the expression without this attribute. This is
-   used to ensure that this expression is not misplaced: If it
+   used to ensure that this attribute is not misplaced: If it
    appears on any expression, it is an error, otherwise it would
    have been removed by this function *)
 let get_and_remove_inlined_attribute e =
-  let attribute_value, exp_attributes =
-    make_get_inline_attribute is_inlined_attribute e.exp_attributes
+  let attr, exp_attributes =
+    find_attribute is_inlined_attribute e.exp_attributes
   in
-  attribute_value, { e with exp_attributes }
+  let inlined = parse_inline_attribute attr in
+  inlined, { e with exp_attributes }
 
 let get_and_remove_inlined_attribute_on_module e =
-  let attribute_value, mod_attributes =
-    make_get_inline_attribute is_inlined_attribute e.mod_attributes
+  let attr, mod_attributes =
+    find_attribute is_inlined_attribute e.mod_attributes
   in
-  attribute_value, { e with mod_attributes }
+  let inlined = parse_inline_attribute attr in
+  inlined, { e with mod_attributes }
+
+let get_and_remove_specialised_attribute e =
+  let attr, exp_attributes =
+    find_attribute is_specialised_attribute e.exp_attributes
+  in
+  let specialised = parse_specialise_attribute attr in
+  specialised, { e with exp_attributes }
 
 (* It also remove the attribute from the expression, like
    get_inlined_attribute *)
@@ -118,7 +220,8 @@ let get_tailcall_attribute e =
 
 let check_attribute e ({ txt; loc }, _) =
   match txt with
-  | "inline" | "ocaml.inline" ->  begin
+  | "inline" | "ocaml.inline"
+  | "specialise" | "ocaml.specialise" -> begin
       match e.exp_desc with
       | Texp_function _ -> ()
       | _ ->
@@ -126,6 +229,7 @@ let check_attribute e ({ txt; loc }, _) =
             (Warnings.Misplaced_attribute txt)
     end
   | "inlined" | "ocaml.inlined"
+  | "specialised" | "ocaml.specialised"
   | "tailcall" | "ocaml.tailcall" ->
       (* Removed by the Texp_apply cases *)
       Location.prerr_warning loc

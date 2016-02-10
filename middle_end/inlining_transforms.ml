@@ -72,9 +72,9 @@ let fold_over_projections_of_vars_bound_by_closure ~closure_id_being_applied
       function_decls)
     init
 
-let set_inline_attribute_on_all_apply body inline =
+let set_inline_attribute_on_all_apply body inline specialise =
   Flambda_iterators.map_toplevel_expr (function
-      | Apply apply -> Apply { apply with inline }
+      | Apply apply -> Apply { apply with inline; specialise }
       | expr -> expr)
     body
 
@@ -113,6 +113,7 @@ let inline_by_copying_function_body ~env ~r
       ~(function_decls : Flambda.function_declarations)
       ~lhs_of_application
       ~(inline_requested : Lambda.inline_attribute)
+      ~(specialise_requested : Lambda.specialise_attribute)
       ~closure_id_being_applied
       ~(function_decl : Flambda.function_declaration) ~args ~simplify =
   assert (E.mem env lhs_of_application);
@@ -125,13 +126,16 @@ let inline_by_copying_function_body ~env ~r
     copy_of_function's_body_with_freshened_params env ~function_decl
   in
   let body =
-    if function_decl.stub && inline_requested <> Lambda.Default_inline then
+    if function_decl.stub &&
+       ((inline_requested <> Lambda.Default_inline)
+        || (specialise_requested <> Lambda.Default_specialise)) then
       (* When the function inlined function is a stub, the annotation
          is reported to the function applications inside the stub.
          This allows to report the annotation to the application the
          original programmer really intended: the stub is not visible
          in the source. *)
-      set_inline_attribute_on_all_apply body inline_requested
+      set_inline_attribute_on_all_apply body
+        inline_requested specialise_requested
     else
       body
   in
@@ -349,6 +353,7 @@ let inline_by_copying_function_declaration ~env ~r
               kind = Direct closure_id_being_applied;
               dbg;
               inline = inline_requested;
+              specialise = Default_specialise;
             }))
       in
       Flambda_utils.bind ~bindings:free_vars_for_lets ~body

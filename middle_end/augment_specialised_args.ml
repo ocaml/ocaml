@@ -450,6 +450,7 @@ module Make (T : S) = struct
           kind = Direct (Closure_id.wrap new_fun_var);
           dbg = Debuginfo.none;
           inline = Default_inline;
+          specialise = Default_specialise;
         }
       in
       Variable.Map.fold (fun new_inner_var definition (wrapper_body, benefit) ->
@@ -514,6 +515,7 @@ module Make (T : S) = struct
         ~stub:true
         ~dbg:Debuginfo.none
         ~inline:Default_inline
+        ~specialise:Default_specialise
         ~is_a_functor:false
     in
     new_fun_var, new_function_decl, rewritten_existing_specialised_args, benefit
@@ -578,6 +580,7 @@ module Make (T : S) = struct
           ~stub:function_decl.stub
           ~dbg:function_decl.dbg
           ~inline:function_decl.inline
+          ~specialise:function_decl.specialise
           ~is_a_functor:function_decl.is_a_functor
       in
       let funs =

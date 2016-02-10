@@ -755,7 +755,8 @@ and simplify_set_of_closures original_env r
     let function_decl =
       Flambda.create_function_declaration ~params:function_decl.params
         ~body ~stub:function_decl.stub ~dbg:function_decl.dbg
-        ~inline ~is_a_functor:function_decl.is_a_functor
+        ~inline ~specialise:function_decl.specialise
+        ~is_a_functor:function_decl.is_a_functor
     in
     let used_params' = Flambda.used_params function_decl in
     Variable.Map.add fid function_decl funs,
@@ -790,7 +791,7 @@ and simplify_set_of_closures original_env r
 and simplify_apply env r ~(apply : Flambda.apply) : Flambda.t * R.t =
   let {
     Flambda. func = lhs_of_application; args; kind = _; dbg;
-    inline = inline_requested;
+    inline = inline_requested; specialise = specialise_requested;
   } = apply in
   simplify_free_variable env lhs_of_application
     ~f:(fun env lhs_of_application lhs_of_application_approx ->
@@ -825,34 +826,35 @@ and simplify_apply env r ~(apply : Flambda.apply) : Flambda.t * R.t =
           if nargs = arity then
             simplify_full_application env r ~function_decls ~lhs_of_application
               ~closure_id_being_applied ~function_decl ~value_set_of_closures
-              ~args ~args_approxs ~dbg ~inline_requested
+              ~args ~args_approxs ~dbg ~inline_requested ~specialise_requested
           else if nargs > arity then
             simplify_over_application env r ~args ~args_approxs ~function_decls
               ~lhs_of_application ~closure_id_being_applied ~function_decl
-              ~value_set_of_closures ~dbg ~inline_requested
+              ~value_set_of_closures ~dbg ~inline_requested ~specialise_requested
           else if nargs > 0 && nargs < arity then
             simplify_partial_application env r ~lhs_of_application
               ~closure_id_being_applied ~function_decl ~args ~dbg
-              ~inline_requested
+              ~inline_requested ~specialise_requested
           else
             Misc.fatal_errorf "Function with arity %d when simplifying \
                 application expression: %a"
               arity Flambda.print (Flambda.Apply apply)
         | Wrong ->  (* Insufficient approximation information to simplify. *)
           Apply ({ func = lhs_of_application; args; kind = Indirect; dbg;
-              inline = inline_requested; }),
+              inline = inline_requested; specialise = specialise_requested; }),
             ret r (A.value_unknown Other)))
 
 and simplify_full_application env r ~function_decls ~lhs_of_application
       ~closure_id_being_applied ~function_decl ~value_set_of_closures ~args
-      ~args_approxs ~dbg ~inline_requested =
+      ~args_approxs ~dbg ~inline_requested ~specialise_requested =
   Inlining_decision.for_call_site ~env ~r ~function_decls
     ~lhs_of_application ~closure_id_being_applied ~function_decl
     ~value_set_of_closures ~args ~args_approxs ~dbg ~simplify
-    ~inline_requested
+    ~inline_requested ~specialise_requested
 
 and simplify_partial_application env r ~lhs_of_application
-      ~closure_id_being_applied ~function_decl ~args ~dbg ~inline_requested =
+      ~closure_id_being_applied ~function_decl ~args ~dbg
+      ~inline_requested ~specialise_requested =
   let arity = Flambda_utils.function_arity function_decl in
   assert (arity > List.length args);
   (* For simplicity, we disallow [@inline] attributes on partial
@@ -866,7 +868,18 @@ and simplify_partial_application env r ~lhs_of_application
     Location.prerr_warning (Debuginfo.to_location dbg)
       (Warnings.Inlining_impossible "[@inlined] attributes may not be used \
         on partial applications")
+  | Unroll _ ->
+    Location.prerr_warning (Debuginfo.to_location dbg)
+      (Warnings.Inlining_impossible "[@unroll] attributes may not be used \
+        on partial applications")
   | Default_inline -> ()
+  end;
+  begin match (specialise_requested : Lambda.specialise_attribute) with
+  | Always_specialise | Never_specialise ->
+    Location.prerr_warning (Debuginfo.to_location dbg)
+      (Warnings.Inlining_impossible "[@specialised] attributes may not be used \
+        on partial applications")
+  | Default_specialise -> ()
   end;
   let freshened_params =
     List.map (fun id -> Variable.rename id) function_decl.Flambda.params
@@ -883,6 +896,7 @@ and simplify_partial_application env r ~lhs_of_application
         kind = Direct closure_id_being_applied;
         dbg;
         inline = Default_inline;
+        specialise = Default_specialise;
       }
     in
     let closure_variable =
@@ -904,7 +918,7 @@ and simplify_partial_application env r ~lhs_of_application
 
 and simplify_over_application env r ~args ~args_approxs ~function_decls
       ~lhs_of_application ~closure_id_being_applied ~function_decl
-      ~value_set_of_closures ~dbg ~inline_requested =
+      ~value_set_of_closures ~dbg ~inline_requested ~specialise_requested =
   let arity = Flambda_utils.function_arity function_decl in
   assert (arity < List.length args);
   assert (List.length args = List.length args_approxs);
@@ -918,13 +932,13 @@ and simplify_over_application env r ~args ~args_approxs ~function_decls
     simplify_full_application env r ~function_decls ~lhs_of_application
       ~closure_id_being_applied ~function_decl ~value_set_of_closures
       ~args:full_app_args ~args_approxs:full_app_approxs ~dbg
-      ~inline_requested
+      ~inline_requested ~specialise_requested
   in
   let func_var = Variable.create "full_apply" in
   let expr : Flambda.t =
     Flambda.create_let func_var (Expr expr)
       (Apply { func = func_var; args = remaining_args; kind = Indirect; dbg;
-        inline = inline_requested; })
+        inline = inline_requested; specialise = specialise_requested; })
   in
   let expr = Lift_code.lift_lets_expr expr ~toplevel:true in
   expr, ret r (A.value_unknown Other)

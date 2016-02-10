@@ -582,7 +582,8 @@ let rec comp_expr env exp sz cont =
                        ap_loc=loc;
                        ap_func=func;
                        ap_args=[arg];
-                       ap_inlined=Default_inline} in
+                       ap_inlined=Default_inline;
+                       ap_specialised=Default_specialise} in
       comp_expr env exp sz cont
   | Lprim(Pnot, [arg]) ->
       let newcont =

@@ -31,6 +31,7 @@ type apply = {
   kind : call_kind;
   dbg : Debuginfo.t;
   inline : Lambda.inline_attribute;
+  specialise : Lambda.specialise_attribute;
 }
 
 type assign = {
@@ -114,6 +115,7 @@ and function_declaration = {
   stub : bool;
   dbg : Debuginfo.t;
   inline : Lambda.inline_attribute;
+  specialise : Lambda.specialise_attribute;
   is_a_functor : bool;
 }
 
@@ -189,6 +191,7 @@ let rec lam ppf (flam : t) =
       match inline with
       | Always_inline -> fprintf ppf "<always>"
       | Never_inline -> fprintf ppf "<never>"
+      | Unroll i -> fprintf ppf "<unroll %i>" i
       | Default_inline -> ()
     in
     fprintf ppf "@[<2>(apply%a%a@ %a%a)@]" direct () inline ()
@@ -352,10 +355,18 @@ and print_function_declaration ppf var (f : function_declaration) =
     match f.inline with
     | Always_inline -> " *inline*"
     | Never_inline -> " *never_inline*"
+    | Unroll _ -> " *unroll*"
     | Default_inline -> ""
   in
-  fprintf ppf "@[<2>(%a%s%s%s@ =@ fun@[<2>%a@] ->@ @[<2>%a@])@]@ "
-    Variable.print var stub is_a_functor inline idents f.params lam f.body
+  let specialise =
+    match f.specialise with
+    | Always_specialise -> " *specialise*"
+    | Never_specialise -> " *never_specialise*"
+    | Default_specialise -> ""
+  in
+  fprintf ppf "@[<2>(%a%s%s%s%s@ =@ fun@[<2>%a@] ->@ @[<2>%a@])@]@ "
+    Variable.print var stub is_a_functor inline specialise
+    idents f.params lam f.body
 
 and print_set_of_closures ppf (set_of_closures : set_of_closures) =
   match set_of_closures with
@@ -954,13 +965,23 @@ let free_symbols_program (program : program) =
   !symbols
 
 let create_function_declaration ~params ~body ~stub ~dbg
-      ~(inline : Lambda.inline_attribute) ~is_a_functor
+      ~(inline : Lambda.inline_attribute)
+      ~(specialise : Lambda.specialise_attribute) ~is_a_functor
       : function_declaration =
   begin match stub, inline with
   | true, (Never_inline | Default_inline)
-  | false, (Never_inline | Default_inline | Always_inline) -> ()
-  | true, Always_inline ->
-    Misc.fatal_errorf "Stubs may not be annotated as [Always_inline]: %a"
+  | false, (Never_inline | Default_inline | Always_inline | Unroll _) -> ()
+  | true, (Always_inline | Unroll _) ->
+    Misc.fatal_errorf
+      "Stubs may not be annotated as [Always_inline] or [Unroll]: %a"
+      print body
+  end;
+  begin match stub, specialise with
+  | true, (Never_specialise | Default_specialise)
+  | false, (Never_specialise | Default_specialise | Always_specialise) -> ()
+  | true, Always_specialise ->
+    Misc.fatal_errorf
+      "Stubs may not be annotated as [Always_specialise]: %a"
       print body
   end;
   { params;
@@ -970,6 +991,7 @@ let create_function_declaration ~params ~body ~stub ~dbg
     stub;
     dbg;
     inline;
+    specialise;
     is_a_functor;
   }
 

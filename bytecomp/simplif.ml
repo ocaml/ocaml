@@ -213,7 +213,8 @@ let simplify_exits lam =
                                          ap_loc=loc;
                                          ap_func=f;
                                          ap_args=[x];
-                                         ap_inlined=Default_inline}
+                                         ap_inlined=Default_inline;
+                                         ap_specialised=Default_specialise}
 
         (* Simplify %apply, for n-ary functions with n > 1 *)
       | Pdirapply loc, [Lapply ap; x]
@@ -223,7 +224,8 @@ let simplify_exits lam =
                                          ap_loc=loc;
                                          ap_func=f;
                                          ap_args=[x];
-                                         ap_inlined=Default_inline}
+                                         ap_inlined=Default_inline;
+                                         ap_specialised=Default_specialise}
 
       | _ -> Lprim(p, ll)
      end
@@ -644,6 +646,7 @@ let split_default_wrapper ?(create_wrapper_body = fun lam -> lam)
             ap_loc = Location.none;
             ap_should_be_tailcall = false;
             ap_inlined = Default_inline;
+            ap_specialised = Default_specialise;
           }
         in
         let inner_params = List.map map_param params in

@@ -43,7 +43,8 @@ let mkappl (func, args) =
           ap_loc=Location.none;
           ap_func=func;
           ap_args=args;
-          ap_inlined=Default_inline};;
+          ap_inlined=Default_inline;
+          ap_specialised=Default_specialise};;
 
 let lsequence l1 l2 =
   if l2 = lambda_unit then l1 else Lsequence(l1, l2)
@@ -456,7 +457,8 @@ let transl_class_rebind ids cl vf =
               ap_loc=Location.none;
               ap_func=Lvar obj_init;
               ap_args=[Lvar self];
-              ap_inlined=Default_inline}
+              ap_inlined=Default_inline;
+              ap_specialised=Default_specialise}
     in
     let path, obj_init' = transl_class_rebind_0 self obj_init0 cl vf in
     if not (Translcore.check_recursive_lambda ids obj_init') then

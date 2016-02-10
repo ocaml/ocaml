@@ -176,6 +176,15 @@ module Env : sig
       Unconditionally inlined does not take this into account. *)
   val inlining_level_up : t -> t
 
+  (** Whether we are actively unrolling a given function. *)
+  val actively_unrolling : t -> Set_of_closures_origin.t -> int option
+
+  (** Start actively unrolling a given function [n] times. *)
+  val start_actively_unrolling : t -> Set_of_closures_origin.t -> int -> t
+
+  (** Unroll a function currently actively being unrolled. *)
+  val continue_actively_unrolling : t -> Set_of_closures_origin.t -> t
+
   (** Whether it is permissible to unroll a call to a recursive function
       in the given environment. *)
   val unrolling_allowed : t -> Set_of_closures_origin.t -> bool

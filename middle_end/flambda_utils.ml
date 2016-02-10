@@ -229,24 +229,40 @@ let toplevel_substitution sb tree =
   let sb v = try Variable.Map.find v sb with Not_found -> v in
   let aux (flam : Flambda.t) : Flambda.t =
     match flam with
-    | Var var -> Var (sb var)
+    | Var var ->
+      let var = sb var in
+      Var var
     | Let_mutable (mut_var, var, body) ->
-      Let_mutable (mut_var, sb var, body)
+      let var = sb var in
+      Let_mutable (mut_var, var, body)
     | Assign { being_assigned; new_value; } ->
-      Assign { being_assigned; new_value = sb new_value; }
-    | Apply { func; args; kind; dbg; inline; } ->
-      Apply { func = sb func; args = List.map sb args; kind; dbg; inline; }
-    | If_then_else (cond, e1, e2) -> If_then_else (sb cond, e1, e2)
-    | Switch (cond, sw) -> Switch (sb cond, sw)
+      let new_value = sb new_value in
+      Assign { being_assigned; new_value; }
+    | Apply { func; args; kind; dbg; inline; specialise; } ->
+      let func = sb func in
+      let args = List.map sb args in
+      Apply { func; args; kind; dbg; inline; specialise; }
+    | If_then_else (cond, e1, e2) ->
+      let cond = sb cond in
+      If_then_else (cond, e1, e2)
+    | Switch (cond, sw) ->
+      let cond = sb cond in
+      Switch (cond, sw)
     | String_switch (cond, branches, def) ->
-      String_switch (sb cond, branches, def)
+      let cond = sb cond in
+      String_switch (cond, branches, def)
     | Send { kind; meth; obj; args; dbg } ->
-      Send { kind; meth = sb meth; obj = sb obj; args = List.map sb args; dbg }
+      let meth = sb meth in
+      let obj = sb obj in
+      let args = List.map sb args in
+      Send { kind; meth; obj; args; dbg }
     | For { bound_var; from_value; to_value; direction; body } ->
-      For { bound_var; from_value = sb from_value; to_value = sb to_value;
-            direction; body }
+      let from_value = sb from_value in
+      let to_value = sb to_value in
+      For { bound_var; from_value; to_value; direction; body }
     | Static_raise (static_exn, args) ->
-      Static_raise (static_exn, List.map sb args)
+      let args = List.map sb args in
+      Static_raise (static_exn, args)
     | Static_catch _ | Try_with _ | While _
     | Let _ | Let_rec _ | Proved_unreachable -> flam
   in
@@ -317,7 +333,7 @@ let make_closure_declaration ~id ~body ~params : Flambda.t =
   let function_declaration =
     Flambda.create_function_declaration ~params:(List.map subst params)
       ~body ~stub:false ~dbg:Debuginfo.none ~inline:Default_inline
-      ~is_a_functor:false
+      ~specialise:Default_specialise ~is_a_functor:false
   in
   assert (Variable.Set.equal (Variable.Set.map subst free_variables)
     function_declaration.free_variables);
@@ -680,14 +696,14 @@ let substitute_read_symbol_field_for_variables
       bind_from_value @@
       bind_to_value @@
       Flambda.For { bound_var; from_value; to_value; direction; body }
-    | Apply { func; args; kind; dbg; inline } ->
+    | Apply { func; args; kind; dbg; inline; specialise } ->
       let func, bind_func = make_var_subst func in
       let args, bind_args =
         List.split (List.map make_var_subst args)
       in
       bind_func @@
       List.fold_right (fun f expr -> f expr) bind_args @@
-      Flambda.Apply { func; args; kind; dbg; inline }
+      Flambda.Apply { func; args; kind; dbg; inline; specialise }
     | Send { kind; meth; obj; args; dbg } ->
       let meth, bind_meth = make_var_subst meth in
       let obj, bind_obj = make_var_subst obj in

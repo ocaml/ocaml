@@ -181,7 +181,13 @@ type structured_constant =
 type inline_attribute =
   | Always_inline (* [@inline] or [@inline always] *)
   | Never_inline (* [@inline never] *)
+  | Unroll of int (* [@unroll x] *)
   | Default_inline (* no [@inline] attribute *)
+
+type specialise_attribute =
+  | Always_specialise (* [@specialise] or [@specialise always] *)
+  | Never_specialise (* [@specialise never] *)
+  | Default_specialise (* no [@specialise] attribute *)
 
 type function_kind = Curried | Tupled
 
@@ -202,6 +208,7 @@ type shared_code = (int * int) list     (* stack size -> code label *)
 
 type function_attribute = {
   inline : inline_attribute;
+  specialise : specialise_attribute;
   is_a_functor: bool;
 }
 
@@ -240,7 +247,8 @@ and lambda_apply =
     ap_args : lambda list;
     ap_loc : Location.t;
     ap_should_be_tailcall : bool;       (* true if [@tailcall] was specified *)
-    ap_inlined : inline_attribute }     (* specified with the [@inline] attribute *)
+    ap_inlined : inline_attribute; (* specified with the [@inlined] attribute *)
+    ap_specialised : specialise_attribute; }
 
 and lambda_switch =
   { sw_numconsts: int;                  (* Number of integer cases *)

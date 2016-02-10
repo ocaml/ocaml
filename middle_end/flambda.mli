@@ -45,6 +45,9 @@ type apply = {
   inline : Lambda.inline_attribute;
   (** Instructions from the source code as to whether the callee should
       be inlined. *)
+  specialise : Lambda.specialise_attribute;
+  (** Instructions from the source code as to whether the callee should
+      be specialised. *)
 }
 
 (** The update of a mutable variable.  Mutable variables are distinct from
@@ -291,6 +294,8 @@ and function_declaration = private {
   (** Debug info for the function declaration. *)
   inline : Lambda.inline_attribute;
   (** Inlining requirements from the source code. *)
+  specialise : Lambda.specialise_attribute;
+  (** Specialising requirements from the source code. *)
   is_a_functor : bool;
   (** Whether the function is known definitively to be a functor. *)
 }
@@ -519,6 +524,7 @@ val create_function_declaration
   -> stub:bool
   -> dbg:Debuginfo.t
   -> inline:Lambda.inline_attribute
+  -> specialise:Lambda.specialise_attribute
   -> is_a_functor:bool
   -> function_declaration
 

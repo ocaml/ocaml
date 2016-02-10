@@ -99,7 +99,8 @@ let rec apply_coercion strict restr arg =
                                    ap_loc=Location.none;
                                    ap_func=Lvar id;
                                    ap_args=[apply_coercion Alias cc_arg (Lvar param)];
-                                   ap_inlined=Default_inline})})
+                                   ap_inlined=Default_inline;
+                                   ap_specialised=Default_specialise})})
   | Tcoerce_primitive { pc_loc; pc_desc; pc_env; pc_type; } ->
       transl_primitive pc_loc pc_desc pc_env pc_type None
   | Tcoerce_alias (path, cc) ->
@@ -288,7 +289,8 @@ let eval_rec_bindings bindings cont =
                   ap_loc=Location.none;
                   ap_func=mod_prim "init_mod";
                   ap_args=[loc; shape];
-                  ap_inlined=Default_inline},
+                  ap_inlined=Default_inline;
+                  ap_specialised=Default_specialise},
            bind_inits rem)
   and bind_strict = function
     [] ->
@@ -307,7 +309,8 @@ let eval_rec_bindings bindings cont =
                        ap_loc=Location.none;
                        ap_func=mod_prim "update_mod";
                        ap_args=[shape; Lvar id; rhs];
-                       ap_inlined=Default_inline},
+                       ap_inlined=Default_inline;
+                       ap_specialised=Default_specialise},
                 patch_forwards rem)
   in
     bind_inits bindings
@@ -370,12 +373,14 @@ let rec transl_module cc rootpath mexp =
               | Tcoerce_none ->
                   Lfunction{kind = Curried; params = [param];
                             attr = { inline = inline_attribute;
+                                     specialise = Default_specialise;
                                      is_a_functor = true };
                             body = transl_module Tcoerce_none bodypath body}
               | Tcoerce_functor(ccarg, ccres) ->
                   let param' = Ident.create "funarg" in
                   Lfunction{kind = Curried; params = [param'];
                             attr = { inline = inline_attribute;
+                                     specialise = Default_specialise;
                                      is_a_functor = true };
                             body = Llet(Alias, param,
                                         apply_coercion Alias ccarg (Lvar param'),
@@ -393,7 +398,8 @@ let rec transl_module cc rootpath mexp =
                     ap_loc=mexp.mod_loc;
                     ap_func=transl_module Tcoerce_none None funct;
                     ap_args=[transl_module ccarg None arg];
-                    ap_inlined=inlined_attribute})
+                    ap_inlined=inlined_attribute;
+                    ap_specialised=Default_specialise})
       | Tmod_constraint(arg, mty, _, ccarg) ->
           transl_module (compose_coercions cc ccarg) rootpath arg
       | Tmod_unpack(arg, _) ->
@@ -931,14 +937,16 @@ let toploop_getvalue id =
          ap_loc=Location.none;
          ap_func=Lprim(Pfield toploop_getvalue_pos, [Lprim(Pgetglobal toploop_ident, [])]);
          ap_args=[Lconst(Const_base(Const_string (toplevel_name id, None)))];
-         ap_inlined=Default_inline}
+         ap_inlined=Default_inline;
+         ap_specialised=Default_specialise}
 
 let toploop_setvalue id lam =
   Lapply{ap_should_be_tailcall=false;
          ap_loc=Location.none;
          ap_func=Lprim(Pfield toploop_setvalue_pos, [Lprim(Pgetglobal toploop_ident, [])]);
          ap_args=[Lconst(Const_base(Const_string (toplevel_name id, None))); lam];
-         ap_inlined=Default_inline}
+         ap_inlined=Default_inline;
+         ap_specialised=Default_specialise}
 
 let toploop_setvalue_id id = toploop_setvalue id (Lvar id)
 
