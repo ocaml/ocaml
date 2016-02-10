@@ -101,9 +101,10 @@ let copy_of_function's_body_with_freshened_params env
     let body = Flambda_utils.toplevel_substitution subst function_decl.body in
     freshened_params, body
 
-(* CR mshinwell: Add a note somewhere to explain why "bound by the closure"
+(* CR-soon mshinwell: Add a note somewhere to explain why "bound by the closure"
    does not include the function identifiers for other functions in the same
-   set of closures. *)
+   set of closures.
+   mshinwell: The terminology may be used inconsistently. *)
 
 (** Inline a function by copying its body into a context where it becomes
     closed.  That is to say, we bind the free variables of the body
@@ -150,8 +151,6 @@ let inline_by_copying_function_body ~env ~r
       ~lhs_of_application ~function_decls ~init:bindings_for_params_to_args
       ~f:(fun ~acc:body ~var ~expr -> Flambda.create_let var expr body)
   in
-  (* CR mshinwell: How does this not add a variable that points to the
-     function being applied itself?  Presumably it shouldn't do that. *)
   (* Add bindings for variables corresponding to the functions introduced by
      the whole set of closures.  Each such variable will be bound to a closure;
      each such closure is in turn produced by moving from the closure being

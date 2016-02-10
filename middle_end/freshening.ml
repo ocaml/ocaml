@@ -286,11 +286,8 @@ module Project_var = struct
       let subst_func_decl _fun_id (func_decl : Flambda.function_declaration)
             subst =
         let params, subst = active_add_variables' subst func_decl.params in
-        (* It is not a problem to share the substitution of parameter
-           names between function: There should be no clash *)
-        (* CR mshinwell: could this violate one of the new invariants in
-           Flambda_invariants (about all parameters being distinct within one
-           set of function declarations)? *)
+        (* Since all parameters are distinct, even between functions, we can
+           just use a single substitution. *)
         let body =
           Flambda_utils.toplevel_substitution subst.sb_var func_decl.body
         in
@@ -306,14 +303,18 @@ module Project_var = struct
         Variable.Map.fold (fun orig_id _func_decl (subst, t) ->
             let _id, subst, t = new_subst_fun t orig_id subst in
             subst, t)
-          func_decls.funs (subst,t) in
+          func_decls.funs 
+          (subst, t)
+      in
       let funs, subst =
         Variable.Map.fold (fun orig_id func_decl (funs, subst) ->
             let func_decl, subst = subst_func_decl orig_id func_decl subst in
             let id = active_find_var_exn subst orig_id in
             let funs = Variable.Map.add id func_decl funs in
             funs, subst)
-          func_decls.funs (Variable.Map.empty, subst) in
+          func_decls.funs
+          (Variable.Map.empty, subst)
+      in
       let function_decls = Flambda.update_function_declarations func_decls ~funs in
       function_decls, Active subst, t
 

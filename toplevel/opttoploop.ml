@@ -181,7 +181,9 @@ let toplevel_startup_hook = ref (fun () -> ())
 let phrase_seqid = ref 0
 let phrase_name = ref "TOP"
 
-(* CR trefis for mshinwell: copy/pasted from Optmain. Should it be shared or? *)
+(* CR-soon trefis for mshinwell: copy/pasted from Optmain. Should it be shared
+   or?
+   mshinwell: It should be shared, but after 4.03. *)
 module Backend = struct
   (* See backend_intf.mli. *)
 
@@ -194,9 +196,9 @@ module Backend = struct
   let size_int = Arch.size_int
   let big_endian = Arch.big_endian
 
-  (* CR mshinwell: this needs tying through to [Proc], although it may
-     necessitate the introduction of a new field in that module. *)
-  let max_sensible_number_of_arguments = 9
+  let max_sensible_number_of_arguments =
+    (* The "-1" is to allow for a potential closure environment parameter. *)
+    Proc.max_arguments_for_tailcalls - 1
 end
 let backend = (module Backend : Backend_intf.S)
 

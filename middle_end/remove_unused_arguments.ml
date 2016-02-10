@@ -156,9 +156,9 @@ let separate_unused_arguments ~only_specialised
     Some set_of_closures
   end
 
-(* Spliting is not always beneficial. For instance when a function
+(* Splitting is not always beneficial.  For instance when a function
    is only indirectly called, suppressing unused arguments does not
-   benefit, and introduce an useless intermediate call. Specialised
+   benefit, and introduce an useless intermediate call.  Specialised
    args should always be beneficial since they should not be used in
    indirect calls. *)
 let should_split_only_specialised_args
@@ -176,8 +176,10 @@ let should_split_only_specialised_args
         (Variable.Map.filter (fun _ { Flambda.stub } -> not stub)
            fun_decls.funs)
     in
-    (* CR lwhite: this criteria could use some justification. *)
-    (no_recursive_functions) && (number_of_non_stub_functions <= 1)
+    (* CR-soon lwhite: this criteria could use some justification.
+       mshinwell: pchambart cannot remember how these criteria arose,
+       but we're going to leave this as-is for 4.03. *)
+    no_recursive_functions && (number_of_non_stub_functions <= 1)
   end
 
 let separate_unused_arguments_in_set_of_closures set_of_closures ~backend =

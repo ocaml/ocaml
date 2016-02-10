@@ -21,8 +21,8 @@ module A = Simple_value_approx
 let import_set_of_closures =
   let import_function_declarations (clos : Flambda.function_declarations)
         : Flambda.function_declarations =
-    (* CR mshinwell for pchambart: Do we still need to do this rewriting?
-       I'm wondering if maybe we don't have to any more. *)
+    (* CR-soon mshinwell for pchambart: Do we still need to do this
+       rewriting?  I'm wondering if maybe we don't have to any more. *)
     let sym_to_fun_var_map (clos : Flambda.function_declarations) =
       Variable.Map.fold (fun fun_var _ acc ->
            let closure_id = Closure_id.wrap fun_var in

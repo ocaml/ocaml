@@ -283,9 +283,9 @@ and descr_of_named (env : Env.t) (named : Flambda.named)
       in
       Value_id (Env.new_descr env descr)
     | _ ->
-      (* CR pchambart: This should be [assert false], but currently there are a
-         few cases where this is less precise than inline_and_simplify.
-         mshinwell: Can you elaborate? *)
+      (* It would be nice if this were [assert false], but owing to the fact
+         that this pass may propagate less information than for example
+         [Inline_and_simplify], we might end up here. *)
       Value_unknown
     end
   | Move_within_set_of_closures { closure; start_from; move_to; } ->
@@ -494,9 +494,11 @@ let build_export_info ~(backend : (module Backend_intf.S))
   if !Clflags.opaque then
     Export_info.empty
   else
-    (* CR pchambart: Should probably use that instead of the ident of
+    (* CR-soon pchambart: Should probably use that instead of the ident of
        the module as global identifier.
-       mshinwell: Is "that" the variable "_global_symbol"? *)
+       mshinwell: Is "that" the variable "_global_symbol"?
+       Yes it is.  We are just assuming that the symbol produced from
+       the identifier of the module is the right one. *)
     let _global_symbol, env =
       describe_program (Env.Global.create_empty ()) program
     in

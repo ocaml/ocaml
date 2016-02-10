@@ -89,7 +89,7 @@ type t = private {
   offset_fv : int Var_within_closure.Map.t;
   (** Positions of value pointers in their closures. *)
   constant_sets_of_closures : Set_of_closures_id.Set.t;
-  (* CR mshinwell for pchambart: Add comment *)
+  (* CR-soon mshinwell for pchambart: Add comment *)
   invariant_params : Variable.Set.t Variable.Map.t Set_of_closures_id.Map.t;
   (* Function parameters known to be invariant (see [Invariant_params])
      indexed by set of closures ID. *)

@@ -253,13 +253,15 @@ let rec to_clambda t env (flam : Flambda.t) : Clambda.ulambda =
     in
     Uletrec (defs, to_clambda t env body)
   | Apply { func; args; kind = Direct direct_func; dbg = dbg } ->
+    (* The closure _parameter_ of the function is added by cmmgen.
+       At the call site, for a direct call, the closure argument must be
+       explicitly added (by [to_clambda_direct_apply]); there is no special
+       handling of such in the direct call primitive.
+       For an indirect call, we do not need to do anything here; Cmmgen will
+       do the equivalent of the previous paragraph when it generates a direct
+       call to [caml_apply]. *)
     to_clambda_direct_apply t func args direct_func dbg env
   | Apply { func; args; kind = Indirect; dbg = dbg } ->
-    (* CR mshinwell for mshinwell: improve this comment *)
-    (* The closure parameter of the function is added by cmmgen, but
-       it already appears in the list of parameters of the clambda
-       function for generic calls. Notice that for direct calls it is
-       added here. *)
     let callee = subst_var env func in
     Ugeneric_apply (check_closure callee (Flambda.Expr (Var func)),
       subst_vars env args, dbg)
@@ -365,10 +367,10 @@ and to_clambda_named t env var (named : Flambda.named) : Clambda.ulambda =
   | Set_of_closures set_of_closures ->
     to_clambda_set_of_closures t env set_of_closures
   | Project_closure { set_of_closures; closure_id } ->
-    (* CR mshinwell for pchambart: I don't understand how this comment
-       relates to this code.  Can you explain? *)
-    (* compilation of let rec in cmmgen assumes
-       that a closure is not offseted (Cmmgen.expr_size) *)
+    (* Note that we must use [build_uoffset] to ensure that we do not generate
+       a [Uoffset] construction in the event that the offset is zero, otherwise
+       we might break pattern matches in Cmmgen (in particular for the
+       compilation of "let rec"). *)
     check_closure (
       build_uoffset
         (check_closure (subst_var env set_of_closures)
@@ -423,10 +425,9 @@ and to_clambda_direct_apply t func args direct_func dbg env : Clambda.ulambda =
   let label = Compilenv.function_label direct_func in
   let uargs =
     let uargs = subst_vars env args in
-    (* CR mshinwell: improve comment.  Should we check [func] too? *)
-    (* If the function is closed, the function expression is always a
-       variable, so it is ok to drop it. Note that it means that
-       some Let can be dead. The un-anf pass should get rid of it *)
+    (* Remove the closure argument if the closure is closed.  (Note that the
+       closure argument is always a variable, so we can be sure we are not
+       dropping any side effects.) *)
     if closed then uargs else uargs @ [subst_var env func]
   in
   Udirect_apply (label, uargs, dbg)

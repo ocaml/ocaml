@@ -62,6 +62,8 @@ let prim_size (prim : Lambda.primitive) args =
 
 (* Simple approximation of the space cost of an Flambda expression. *)
 
+(* CR-soon mshinwell: Investigate revised size numbers. *)
+
 let direct_call_size = 4
 let project_size = 1
 
@@ -113,7 +115,6 @@ let lambda_smaller' lam ~than:threshold =
     if !size > threshold then raise Exit;
     match named with
     | Symbol _ | Read_mutable _ -> ()
-    (* CR mshinwell: are these cases correct? *)
     | Const _ | Allocated_const _ -> incr size
     | Read_symbol_field _ -> incr size
     | Set_of_closures ({ function_decls = ffuns }) ->
@@ -257,12 +258,11 @@ module Benefit = struct
     | Set_of_closures _
     | Prim ((Pmakearray _ | Pmakeblock _ | Pduprecord _), _, _) ->
       b := remove_alloc !b
-      (* CR pchambart: should we consider that boxed integer and float
+      (* CR-soon pchambart: should we consider that boxed integer and float
          operations are allocations ? *)
-      (* CR mshinwell for pchambart: check closure & const cases carefully *)
     | Prim _ | Project_closure _ | Project_var _
-    | Move_within_set_of_closures _ -> b := remove_prim !b
-    | Read_symbol_field _ -> () (* CR mshinwell: might be wrong *)
+    | Move_within_set_of_closures _
+    | Read_symbol_field _ -> b := remove_prim !b
     | Symbol _ | Read_mutable _ | Allocated_const _ | Const _ | Expr _ -> ()
 
   let remove_code lam b =
@@ -439,10 +439,18 @@ module Whether_sufficient_benefit = struct
          positive value of [factor] [p] is in [0, 1]. *)
       let branch_never_taken_estimated_probability =
         let branch_inline_factor =
-          Clflags.Float_arg_helper.get ~key:t.round !Clflags.branch_inline_factor
+          let factor =
+            Clflags.Float_arg_helper.get ~key:t.round
+              !Clflags.branch_inline_factor
+          in
+          if not (factor = factor) (* nan *) then
+            Clflags.default_branch_inline_factor
+          else if factor < 0. then
+            0.
+          else
+            factor
         in
-        (* CR pchambart to pchambart: change this assert to a warning *)
-        assert(correct_branch_factor branch_inline_factor);
+        assert (correct_branch_factor branch_inline_factor);
         1. /. (1. +. branch_inline_factor)
       in
       let call_estimated_probability =
@@ -453,7 +461,6 @@ module Whether_sufficient_benefit = struct
 
   let evaluate t =
     float t.new_size -. estimated_benefit t <= float t.original_size
-
 
   let to_string t =
     let lifting = t.toplevel && t.lifting && t.branch_depth = 0 in

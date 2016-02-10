@@ -578,7 +578,7 @@ let for_call_site ~env ~r ~(function_decls : Flambda.function_declarations)
           lazy
             (Inlining_cost.can_try_inlining function_decl.body inlining_threshold
                 ~number_of_arguments:(List.length function_decl.params)
-                (* CR mshinwell: for the moment, this is None, since the
+                (* CR-someday mshinwell: for the moment, this is None, since the
                    Inlining_cost code isn't checking sizes up to the max inlining
                    threshold---this seems to take too long. *)
                 ~size_from_approximation:None)

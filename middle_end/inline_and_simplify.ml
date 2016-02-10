@@ -31,8 +31,8 @@ module R = Inline_and_simplify_aux.Result
     to always hold a particular constant.
 *)
 
-(* CR mshinwell: make sure "simplify_var_to_var_using_approx" is always
-   used where necessary *)
+(* CR mshinwell: make sure "simplify_free_variable" (and not
+   "simplify_var_to_var_using_approx") is always used where necessary. *)
 
 let ret = R.set_approx
 
@@ -60,7 +60,7 @@ let simplify_free_variable_internal env original_var =
     | Some var when E.mem env var -> var
     | Some _ | None -> var
   in
-  (* CR mshinwell: Should we update [r] when we *add* code?
+  (* CR-soon mshinwell: Should we update [r] when we *add* code?
      Aside from that, it looks like maybe we don't need [r] in this function,
      because the approximation within it wouldn't be used by any of the
      call sites. *)
@@ -150,8 +150,9 @@ let simplify_using_approx_and_env env r original_lam approx =
   let r =
     let r = ret r approx in
     match summary with
-    (* CR mshinwell: Why is [r] not updated with the cost of adding the
-       new code? *)
+    (* CR-soon mshinwell: Why is [r] not updated with the cost of adding the
+       new code?
+       mshinwell: similar to CR above *)
     | Replaced_term -> R.map_benefit r (B.remove_code original_lam)
     | Nothing_done -> r
   in
@@ -264,7 +265,6 @@ let simplify_project_closure env r ~(project_closure : Flambda.project_closure)
         | Some set_of_closures_var ->
           let projection : Projection.t =
             Project_closure {
-              (* CR mshinwell: does [set_of_closures_var] need freshening? *)
               set_of_closures = set_of_closures_var;
               closure_id;
             }
@@ -334,8 +334,8 @@ let simplify_move_within_set_of_closures env r
     | Ok (_value_closure, set_of_closures_var, set_of_closures_symbol,
           value_set_of_closures) ->
       let freshen =
-        (* CR mshinwell: potentially misleading name---not freshening with new
-           names, but with previously fresh names *)
+        (* CR-soon mshinwell: potentially misleading name---not freshening with
+           new names, but with previously fresh names *)
         A.freshen_and_check_closure_id value_set_of_closures
       in
       let move_to = freshen move_within_set_of_closures.move_to in
@@ -366,8 +366,6 @@ let simplify_move_within_set_of_closures env r
               (* A variable bound to the set of closures is in scope,
                  meaning we can rewrite the [Move_within_set_of_closures] to a
                  [Project_closure]. *)
-              (* CR mshinwell: does [set_of_closures_var] need freshening?
-                 before the [E.mem] test above? *)
               let project_closure : Flambda.project_closure =
                 { set_of_closures = set_of_closures_var;
                   closure_id = move_to;
@@ -594,8 +592,10 @@ and simplify_set_of_closures original_env r
       : Flambda.set_of_closures * R.t * Freshening.Project_var.t =
   let function_decls =
     let module Backend = (val (E.backend original_env) : Backend_intf.S) in
-    (* CR mshinwell: Does this affect
-       [reference_recursive_function_directly]? *)
+    (* CR-soon mshinwell: Does this affect
+       [reference_recursive_function_directly]?
+       mshinwell: This should be thought about as part of the wider issue of
+       references to functions via symbols or variables. *)
     Freshening.rewrite_recursive_calls_with_symbols (E.freshening original_env)
       set_of_closures.function_decls
       ~make_closure_symbol:Backend.closure_symbol
@@ -956,8 +956,6 @@ and simplify_named env r (tree : Flambda.named) : Flambda.named * R.t =
        transformation (by simplify_named_using_approx_and_env).
        When this comes from another compilation unit, we must load it. *)
     let approx = E.find_or_load_symbol env sym in
-    (* CR mshinwell for mshinwell: Check this is the correct simplification
-       function to use *)
     simplify_named_using_approx r tree approx
   | Const cst -> tree, ret r (simplify_const cst)
   | Allocated_const cst -> tree, ret r (approx_for_allocated_const cst)
@@ -970,7 +968,7 @@ and simplify_named env r (tree : Flambda.named) : Flambda.named * R.t =
   | Read_symbol_field (symbol, field_index) ->
     let approx = E.find_or_load_symbol env symbol in
     begin match A.get_field approx ~field_index with
-    (* CR mshinwell: Think about [Unreachable] vs. [Value_bottom]. *)
+    (* CR-someday mshinwell: Think about [Unreachable] vs. [Value_bottom]. *)
     | Unreachable -> (Flambda.Expr Proved_unreachable), r
     | Ok approx ->
       let approx = A.augment_with_symbol_field approx symbol field_index in
@@ -1035,7 +1033,7 @@ and simplify_named env r (tree : Flambda.named) : Flambda.named * R.t =
           let r = R.add_benefit r benefit in
           simplify env r expr ~pass_name:"Unbox_free_vars_of_closures"
         | None ->
-          (* CR mshinwell: should maybe add one allocation for the stub *)
+          (* CR-soon mshinwell: should maybe add one allocation for the stub *)
           match
             Unbox_specialised_args.rewrite_set_of_closures ~env
               ~set_of_closures
@@ -1580,8 +1578,8 @@ let simplify_program env r (program : Flambda.program) =
           match E.find_symbol_exn env symbol with
           | exception Not_found ->
             let module Backend = (val (E.backend env) : Backend_intf.S) in
-            (* CR mshinwell for mshinwell: Is there a reason we cannot use
-               [simplify_named_using_approx_and_env] here? *)
+            (* CR-someday mshinwell for mshinwell: Is there a reason we cannot
+               use [simplify_named_using_approx_and_env] here? *)
             let approx = Backend.import_symbol symbol in
             E.add_symbol env symbol approx, approx
           | approx -> env, approx

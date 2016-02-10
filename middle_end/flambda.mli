@@ -72,9 +72,9 @@ type move_within_set_of_closures = Projection.move_within_set_of_closures
 type project_var = Projection.project_var
 
 (** See [free_vars] and [specialised_args], below. *)
-(* CR mshinwell: move to separate module and make [Identifiable].  (Or maybe
-   nearly Identifiable; having a special map that enforces invariants might
-   be good.) *)
+(* CR-someday mshinwell: move to separate module and make [Identifiable].
+  (Or maybe nearly Identifiable; having a special map that enforces invariants
+  might be good.) *)
 type specialised_to = {
   var : Variable.t;
   (** The [projecting_from] value (see projection.mli) of any [projection]
@@ -214,6 +214,8 @@ and set_of_closures = private {
       The domain of this map is sometimes known as the "variables bound by
       the closure". *)
   specialised_args : specialised_to Variable.Map.t;
+  (* CR mshinwell: Rewrite specialised_args documentation, being sure to
+     note the new "semantic" meaning. *)
   (** Parameters known to always alias some variable in the scope of the set
       of closures declaration.  These are the only parameters that may,
       during [Inline_and_simplify], have non-unknown approximations.
@@ -251,11 +253,12 @@ and set_of_closures = private {
            map succ l]
       with map having [f] -> [succ] in its [specialised_args] field.
 
-      Note that it is usually not correct to erase this information if the
-      argument is used.
+      Specialised argument information for arguments that are used must
+      never be erased.  This ensures that specialised arguments whose
+      approximations describe closures maintain those approximations, which
+      is essential to transport the closure freshening information to the
+      point of use (e.g. a [Project_var] from such an argument).
   *)
-  (* CR mshinwell for pchambart: expand upon the last sentence of the previous
-     comment *)
 }
 
 and function_declarations = private {

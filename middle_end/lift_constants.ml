@@ -16,6 +16,7 @@
 
 [@@@ocaml.warning "+a-4-9-30-40-41-42"]
 
+(* CR-someday mshinwell: move to Flambda_utils *)
 let rec tail_variable : Flambda.t -> Variable.t option = function
   | Var v -> Some v
   | Let_rec (_, e)
@@ -58,7 +59,10 @@ let assign_symbols_and_collect_constant_definitions
       | Allocated_const const ->
         assign_symbol ();
         record_definition (AA.Allocated_const (Normal const))
-      | Read_mutable _ -> () (* CR mshinwell: should be assert false? *)
+      | Read_mutable _ ->
+        (* [Inconstant_idents] always marks these expressions as
+           inconstant, so we should never get here. *)
+        assert false
       | Prim (Pmakeblock (tag, _), fields, _) ->
         assign_symbol ();
         record_definition (AA.Block (Tag.create_exn tag, fields))
@@ -108,9 +112,7 @@ let assign_symbols_and_collect_constant_definitions
         record_definition (AA.Project_var project_var)
       | Expr e ->
         match tail_variable e with
-        (* CR mshinwell for pchambart: What should happen here?
-           Move [tail_variable] to [Flambda_utils] once decided *)
-        | None -> () (* Fail ? *)
+        | None -> assert false  (* See [Inconstant_idents]. *)
         | Some v -> record_definition (AA.Variable v)
     end
   in

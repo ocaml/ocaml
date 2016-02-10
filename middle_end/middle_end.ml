@@ -167,6 +167,6 @@ let middle_end ppf ~source_provenance ~prefixname ~backend
       Format.fprintf ppf "End of middle end:@ %a@."
         Flambda.print_program flam;
     check flam;
-    (* CR mshinwell: add -d... option for this *)
+    (* CR-someday mshinwell: add -d... option for this *)
     (* dump_function_sizes flam ~backend; *)
     flam) ();
