@@ -187,6 +187,8 @@ Runtime system:
   (Damien Doligez, with help from Leo White and Francois Bobot)
 
 Standard library:
+- PR#1460, GPR#230: Array.map2, Array.iter2
+  (John Christopher McAlpine)
 - PR#5197, GPR#63: Arg: allow flags such as --flag=arg as well as --flag arg
   (Richard Jones)
 - PR#6017, PR#7034, GPR#267: More efficient ifprintf implementation
