@@ -141,5 +141,4 @@ let implementation ppf sourcefile outputprefix ~backend =
     raise x
 
 let c_file name =
-  let output_name = !Clflags.output_name in
-  if Ccomp.compile_file ~output_name name <> 0 then exit 2
+  if Ccomp.compile_file name <> 0 then exit 2

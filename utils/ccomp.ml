@@ -75,17 +75,13 @@ let compile_file ~output_name name =
   let exit =
     command
       (Printf.sprintf
-         "%s%s -c %s %s %s %s %s%s"
+         "%s -c %s %s %s %s %s%s"
          (match !Clflags.c_compiler with
           | Some cc -> cc
           | None ->
               if !Clflags.native_code
               then Config.native_c_compiler
               else Config.bytecomp_c_compiler)
-         (match output_name, Config.ccomp_type with
-            | Some n, "msvc" -> " /Fo" ^ Filename.quote n
-            | Some n, _ -> " -o " ^ Filename.quote n
-            | None, _ -> "")
          (if !Clflags.debug && Config.ccomp_type <> "msvc" then "-g" else "")
          (String.concat " " (List.rev !Clflags.all_ccopts))
          (quote_prefixed "-I" (List.rev !Clflags.include_dirs))
