@@ -61,7 +61,7 @@ let display_msvc_output file name =
     close_in c;
     Sys.remove file
 
-let compile_file ~output_name name =
+let compile_file name =
   let (pipe, file) =
     if Config.ccomp_type = "msvc" && not !Clflags.verbose then
       try
