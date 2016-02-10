@@ -117,9 +117,14 @@ let print_cmx_infos (ui, crc) =
   | Clambda approx ->
     printf "Approximation:\n";
     Format.fprintf Format.std_formatter "  %a@." Printclambda.approx approx
-  | Flambda _ -> ()
-  (* CR mshinwell: This should print the flambda export info.
-     Unfortunately this needs some surgery in the Makefiles. *)
+  | Flambda export ->
+    printf "Flambda export information:\n";
+    let cu =
+      Compilation_unit.create (Ident.create_persistent ui.ui_name)
+        (Linkage_name.create "__dummy__")
+    in
+    Compilation_unit.set_current cu;
+    Format.printf " %a\n" Export_info.print_all export
   end;
   let pr_funs _ fns =
     List.iter (fun arity -> printf " %d" arity) fns in

@@ -309,6 +309,14 @@ ocamlc: compilerlibs/ocamlcommon.cma compilerlibs/ocamlbytecomp.cma $(BYTESTART)
 	$(CAMLC) $(LINKFLAGS) -compat-32 -o ocamlc \
 	   compilerlibs/ocamlcommon.cma compilerlibs/ocamlbytecomp.cma $(BYTESTART)
 
+# The middle end (whose .cma library is currently only used for linking
+# the "objinfo" program, since we cannot depend on the whole native code
+# compiler for "make world" and the list of dependencies for
+# asmcomp/export_info.cmo is long).
+
+compilerlibs/ocamlmiddleend.cma: $(MIDDLE_END)
+	$(CAMLC) -a -o $@ $(MIDDLE_END)
+
 # The native-code compiler
 
 compilerlibs/ocamloptcomp.cma: $(MIDDLE_END) $(ASMCOMP)
@@ -656,7 +664,8 @@ clean::
 # Tools
 
 ocamltools: ocamlc ocamlyacc ocamllex asmcomp/cmx_format.cmi \
-            asmcomp/printclambda.cmo
+            asmcomp/printclambda.cmo compilerlibs/ocamlmiddleend.cma \
+            asmcomp/export_info.cmo
 	cd tools; $(MAKE) all
 
 ocamltoolsopt: ocamlopt
