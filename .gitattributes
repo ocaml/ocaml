@@ -39,6 +39,10 @@ ocamlbuild/TODO          ocaml-typo=missing-header
 ocamldoc/Changes.txt     ocaml-typo=missing-header
 ocamldoc/ocamldoc.sty    ocaml-typo=missing-header
 
+otherlibs/win32unix/readlink.c    ocaml-typo=long-line
+otherlibs/win32unix/stat.c        ocaml-typo=long-line
+otherlibs/win32unix/symlink.c     ocaml-typo=long-line
+
 # Line-ending specifications, for Windows interoperability
 *.sh text eol=lf
 *.sh.in text eol=lf

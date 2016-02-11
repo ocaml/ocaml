@@ -251,7 +251,7 @@ type stats =
     st_ctime : float }
 
 external stat : string -> stats = "unix_stat"
-let lstat = stat
+external lstat : string -> stats = "unix_lstat"
 external fstat : file_descr -> stats = "unix_fstat"
 let isatty fd =
   match (fstat fd).st_kind with S_CHR -> true | _ -> false
@@ -287,7 +287,7 @@ module LargeFile =
         st_ctime : float;
       }
     external stat : string -> stats = "unix_stat_64"
-    let lstat = stat
+    external lstat : string -> stats = "unix_lstat_64"
     external fstat : file_descr -> stats = "unix_fstat_64"
   end
 
@@ -373,8 +373,23 @@ let mkfifo name perm = invalid_arg "Unix.mkfifo not implemented"
 
 (* Symbolic links *)
 
-let readlink path = invalid_arg "Unix.readlink not implemented"
-let symlink path1 path2 = invalid_arg "Unix.symlink not implemented"
+external readlink : string -> string = "unix_readlink"
+external symlink_stub : bool -> string -> string -> unit = "unix_symlink"
+
+let symlink ?to_dir source dest =
+  let to_dir =
+    match to_dir with
+      Some to_dir ->
+        to_dir
+    | None ->
+        try
+          LargeFile.((stat source).st_kind = S_DIR)
+        with _ ->
+          false
+  in
+    symlink_stub to_dir source dest
+
+external has_symlink : unit -> bool = "unix_has_symlink"
 
 (* Locking *)
 
