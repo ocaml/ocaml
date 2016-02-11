@@ -24,6 +24,7 @@ val middle_end
   -> prefixname:string
   -> backend:(module Backend_intf.S)
   -> size:int
+  -> filename:string
   -> module_ident:Ident.t
   -> module_initializer:Lambda.lambda
   -> Flambda.program

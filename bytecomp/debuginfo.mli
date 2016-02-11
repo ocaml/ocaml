@@ -27,6 +27,7 @@ val is_none: t -> bool
 val to_string: t -> string
 
 val from_location: kind -> Location.t -> t
+val from_filename: kind -> string -> t
 
 val from_call: Lambda.lambda_event -> t
 val from_raise: Lambda.lambda_event -> t

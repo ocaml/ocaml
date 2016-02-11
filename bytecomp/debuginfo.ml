@@ -41,6 +41,14 @@ let to_string d =
   else Printf.sprintf "{%s:%d,%d-%d}"
            d.dinfo_file d.dinfo_line d.dinfo_char_start d.dinfo_char_end
 
+let from_filename kind filename = {
+  dinfo_kind = kind;
+  dinfo_file = filename;
+  dinfo_line = 0;
+  dinfo_char_start = 0;
+  dinfo_char_end = 0
+}
+
 let from_location kind loc =
   if loc == Location.none then none else
   { dinfo_kind = kind;

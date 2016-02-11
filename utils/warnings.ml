@@ -459,7 +459,10 @@ let message = function
       Printf.sprintf
         "no cmx file was found in path for module %s, \
          and its interface was not compiled with -opaque" name
-  | Assignment_to_non_mutable_value -> "Assignment to non-mutable value"
+  | Assignment_to_non_mutable_value ->
+      "A potential assignment to a non-mutable value was detected \n\
+        in this source file.  Such assignments may generate incorrect code \n\
+        when using Flambda.  (Consider using [Sys.opaque_identity].)"
 ;;
 
 let nerrors = ref 0;;

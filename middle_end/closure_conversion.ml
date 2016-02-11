@@ -26,6 +26,7 @@ let name_expr = Flambda_utils.name_expr
 type t = {
   current_unit_id : Ident.t;
   symbol_for_global' : (Ident.t -> Symbol.t);
+  filename : string;
   mutable imported_symbols : Symbol.Set.t;
 }
 
@@ -419,7 +420,11 @@ and close t ?debuginfo env (lam : Lambda.lambda) : Flambda.t =
       ~evaluation_order:`Right_to_left
       ~name:(name ^ "_arg")
       ~create_body:(fun args ->
-        name_expr (Prim (p, args, default_debuginfo debuginfo)) ~name)
+        let inner_debuginfo =
+          Debuginfo.from_filename Debuginfo.Dinfo_call t.filename
+        in
+        name_expr (Prim (p, args, default_debuginfo debuginfo ~inner_debuginfo))
+          ~name)
   | Lswitch (arg, sw) ->
     let scrutinee = Variable.create "switch" in
     let aux (i, lam) = i, close t env lam in
@@ -615,14 +620,15 @@ and close_let_bound_expression t ?let_rec_ident let_bound_var env
         ~name:(Variable.unique_name let_bound_var)))
   | lam -> Expr (close t env lam)
 
-let lambda_to_flambda ~backend ~module_ident ~size lam : Flambda.program =
+let lambda_to_flambda ~backend ~module_ident ~size ~filename lam
+      : Flambda.program =
   let lam = add_default_argument_wrappers lam in
   let module Backend = (val backend : Backend_intf.S) in
   let compilation_unit = Compilation_unit.get_current_exn () in
   let t =
-    { current_unit_id =
-        Compilation_unit.get_persistent_ident compilation_unit;
+    { current_unit_id = Compilation_unit.get_persistent_ident compilation_unit;
       symbol_for_global' = Backend.symbol_for_global';
+      filename;
       imported_symbols = Symbol.Set.empty;
     }
   in

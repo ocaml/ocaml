@@ -109,6 +109,7 @@ let implementation ppf sourcefile outputprefix ~backend =
               Middle_end.middle_end ppf ~source_provenance
                 ~prefixname:outputprefix
                 ~size
+                ~filename:sourcefile
                 ~module_ident
                 ~backend
                 ~module_initializer:lam)

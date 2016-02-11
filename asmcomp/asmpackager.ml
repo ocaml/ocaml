@@ -106,6 +106,7 @@ let make_package_object ppf members targetobj targetname coercion
         ~prefixname
         ~backend
         ~size
+        ~filename:targetname
         ~module_ident
         ~module_initializer:lam
     in
