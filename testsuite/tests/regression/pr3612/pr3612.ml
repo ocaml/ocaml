@@ -30,4 +30,4 @@ let f () =
   Gc.full_major ();
   print_int (get_counter ());
   print_newline ()
-let () = (f [@inline never]) ()
+let () = (f [@inlined never]) ()
