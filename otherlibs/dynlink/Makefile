@@ -110,7 +110,7 @@ clean: partialclean
 	$(OCAMLC) -c $(COMPFLAGS) $<
 
 .ml.cmx:
-	$(CAMLOPT) -c $(COMPFLAGS) $(OPTCOMPFLAGS) $<
+	$(OCAMLOPT) -c $(COMPFLAGS) $(OPTCOMPFLAGS) $<
 
 depend:
 
