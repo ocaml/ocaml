@@ -20,6 +20,11 @@ COMPILER=../ocamlc
 CAMLC=$(CAMLRUN) $(COMPILER)
 COMPFLAGS=-strict-sequence -w +32+33..39 -g -warn-error A -bin-annot -nostdlib \
           -safe-string
+ifeq "$(FLAMBDA)" "true"
+OPTCOMPFLAGS=-O3
+else
+OPTCOMPFLAGS=
+endif
 OPTCOMPILER=../ocamlopt
 CAMLOPT=$(CAMLRUN) $(OPTCOMPILER)
 CAMLDEP=$(CAMLRUN) ../tools/ocamldep
@@ -93,10 +98,10 @@ clean::
 	$(CAMLC) $(COMPFLAGS) `./Compflags $@` -c $<
 
 .ml.cmx:
-	$(CAMLOPT) $(COMPFLAGS) `./Compflags $@` -c $<
+	$(CAMLOPT) $(COMPFLAGS) $(OPTCOMPFLAGS) `./Compflags $@` -c $<
 
 .ml.p.cmx:
-	$(CAMLOPT) $(COMPFLAGS) `./Compflags $@` -p -c -o $*.p.cmx $<
+	$(CAMLOPT) $(COMPFLAGS) $(OPTCOMPFLAGS) `./Compflags $@` -p -c -o $*.p.cmx $<
 
 # Dependencies on the compiler
 $(OBJS) std_exit.cmo: $(COMPILER)

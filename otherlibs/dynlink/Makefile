@@ -26,6 +26,11 @@ OCAMLOPT  = $(CAMLRUN) $(ROOTDIR)/ocamlopt -nostdlib -I $(ROOTDIR)/stdlib
 INCLUDES=-I ../../utils -I ../../typing -I ../../bytecomp -I ../../asmcomp
 COMPFLAGS=-w +33..39 -warn-error A -bin-annot -g -safe-string \
           -I ../../stdlib $(INCLUDES)
+ifeq "$(FLAMBDA)" "true"
+OPTCOMPFLAGS=-O3
+else
+OPTCOMPFLAGS=
+endif
 
 OBJS=dynlinkaux.cmo dynlink.cmo
 
@@ -105,7 +110,7 @@ clean: partialclean
 	$(OCAMLC) -c $(COMPFLAGS) $<
 
 .ml.cmx:
-	$(OCAMLOPT) -c $(COMPFLAGS) $<
+	$(CAMLOPT) -c $(COMPFLAGS) $(OPTCOMPFLAGS) $<
 
 depend:
 

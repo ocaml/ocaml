@@ -21,6 +21,11 @@ CAMLYACC ?= $(ROOTDIR)/boot/ocamlyacc
 # Compilation options
 CC=$(BYTECC)
 COMPFLAGS=-w +33..39 -warn-error A -bin-annot -g -safe-string $(EXTRACAMLFLAGS)
+ifeq "$(FLAMBDA)" "true"
+OPTCOMPFLAGS=-O3
+else
+OPTCOMPFLAGS=
+endif
 MKLIB=$(CAMLRUN) $(ROOTDIR)/tools/ocamlmklib
 
 # Variables to be defined by individual libraries:
@@ -90,7 +95,7 @@ clean:: partialclean
 	$(CAMLC) -c $(COMPFLAGS) $<
 
 .ml.cmx:
-	$(CAMLOPT) -c $(COMPFLAGS) $<
+	$(CAMLOPT) -c $(COMPFLAGS) $(OPTCOMPFLAGS) $<
 
 .c.$(O):
 	$(BYTECC) $(BYTECCCOMPOPTS) $(CFLAGS) -c $<
