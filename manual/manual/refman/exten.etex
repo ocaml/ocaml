@@ -1675,6 +1675,12 @@ Some attributes are understood by the type-checker:
   ``noalloc'', ``unboxed'' and ``untagged'' can be used on external
   definitions to obtain finer control over the C-to-OCaml interface. See
   \ref{s:C-cheaper-call} for more details.
+\item
+  ``ocaml.immediate'' or ``immediate'' applied on an abstract type mark the type as
+  having a non-pointer implementation (e.g. ``int'', ``bool'', ``char'' or
+  enumerated types). Mutation of these immediate types does not activate the
+  garbage collector's write barrier, which can significantly boost performance in
+  programs relying heavily on mutable state.
 \end{itemize}
 
 \begin{verbatim}
@@ -1707,6 +1713,14 @@ type fragile =
 let f = function
 | Int 0 | String "constant" -> () (* trigger warning 52 *)
 | _ -> ()
+
+module Immediate: sig
+  type t [@@immediate]
+  val x: t ref
+end = struct
+  type t = A | B
+  let x = ref 0
+end
   ....
 
 \end{verbatim}
