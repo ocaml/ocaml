@@ -221,7 +221,7 @@ let load_lambda ppf ~module_ident lam size =
       ~backend ~toplevel:need_symbol fn ppf
       (Middle_end.middle_end ppf
          ~source_provenance:Timings.Toplevel ~prefixname:"" ~backend ~size
-         ~module_ident ~module_initializer:lam);
+         ~module_ident ~module_initializer:lam ~filename:"toplevel");
   Asmlink.call_linker_shared [fn ^ ext_obj] dll;
   Sys.remove (fn ^ ext_obj);
 
