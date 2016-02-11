@@ -107,6 +107,7 @@ module Options = Main_args.Make_bytecomp_options (struct
   let _noautolink = set no_auto_link
   let _nostdlib = set no_std_include
   let _o s = output_name := Some s
+  let _opaque = set opaque
   let _open s = open_modules := s :: !open_modules
   let _output_obj () = output_c_object := true; custom_runtime := true
   let _output_complete_obj () =
