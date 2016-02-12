@@ -482,6 +482,7 @@ that are currently defined are ignored. The warnings are as follows.
 \begin{options}
 \input{warnings-help.tex}
 \end{options}
+Some warnings are described in more detail in section~\ref{s:comp-warnings}.
 
 The default setting is "-w +a-4-6-7-9-27-29-32..39-41..42-44-45".
 It is displayed by "ocamlc -help".
@@ -733,3 +734,49 @@ command line, and possibly the "-custom" option.
 
 \end{options}
 
+\section{Warning reference} \label{s:comp-warnings}
+
+This section describes and explains in detail some warnings:
+
+\begin{options}
+\item[Warning 57: ambiguous variables in or-patterns]
+  The semantics of or-patterns in OCaml is specified with
+  a left-to-right bias: a value \var{v} matches the pattern \var{p} "|" \var{q}
+  if it matches \var{p} or \var{q}, but if it matches both,
+  the environment captured by the match is the environment captured by
+  \var{p}, never the one captured by \var{q}.
+
+  While this property is generally intuitive, there is at least one specific
+  case where a different semantics might be expected.
+  Consider a pattern followed by a when-guard:
+  "|"~\var{p}~"when"~\var{g}~"->"~\var{e}, for example:
+\begin{verbatim}
+     | ((Const x, _) | (_, Const x)) when is_neutral x -> branch
+\end{verbatim}
+  The semantics is clear:
+  match the scrutinee against the pattern, if it matches, test the guard,
+  and if the guard passes, take the branch.
+  In particular, consider the input "(Const"~\var{a}", Const"~\var{b}")", where
+  \var{a} fails the test "is_neutral"~\var{a}, while \var{b} passes the test
+  "is_neutral"~\var{b}.  With the left-to-right semantics, the clause above is
+  {\em not} taken by its input: matching "(Const"~\var{a}", Const"~\var{b}")"
+  against the or-pattern succeeds in the left branch, it returns the
+  environment \var{x}~"->"~\var{a}, and then the guard
+  "is_neutral"~\var{a} is tested and fails, the branch is not taken.
+
+  However, another semantics may be considered more natural here:
+  any pair that has one side passing the test will take the branch. With this
+  semantics the previous code fragment would be equivalent to
+\begin{verbatim}
+     | (Const x, _) when is_neutral x -> branch
+     | (_, Const x) when is_neutral x -> branch
+\end{verbatim}
+  This is {\em not} the semantics adopted by OCaml.
+
+ The warning 57 is dedicated to warning about these confusing cases  where the
+ specified left-to-right semantics is not equivalent to a non-deterministic
+ semantics (any branch can be taken) relatively to a specific guard.
+ More precisely, it warns when guard uses ``ambiguous'' variables, that are bound
+ to different parts of the scrutinees by different sides of a or-pattern.
+
+\end{options}
