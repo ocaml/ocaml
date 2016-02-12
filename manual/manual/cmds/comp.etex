@@ -757,7 +757,7 @@ This section describes and explains in detail some warnings:
   match the scrutinee against the pattern, if it matches, test the guard,
   and if the guard passes, take the branch.
   In particular, consider the input "(Const"~\var{a}", Const"~\var{b}")", where
-  \var{a} fails the test "is_neutral"~\var{f}, while \var{b} passes the test
+  \var{a} fails the test "is_neutral"~\var{a}, while \var{b} passes the test
   "is_neutral"~\var{b}.  With the left-to-right semantics, the clause above is
   {\em not} taken by its input: matching "(Const"~\var{a}", Const"~\var{b}")"
   against the or-pattern succeeds in the left branch, it returns the
