@@ -453,7 +453,7 @@ let message = function
             "variables " ^ String.concat "," vars in
       Printf.sprintf
         "Ambiguous guarded pattern, %s may match different or-pattern \
-          arguments"
+          arguments (see manual section 8.5)"
         msg
   | No_cmx_file name ->
       Printf.sprintf
