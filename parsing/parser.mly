@@ -347,6 +347,10 @@ let extra_csig pos items = extra_text Ctf.text pos items
 let extra_def pos items =
   extra_text (fun txt -> [Ptop_def (Str.text txt)]) pos items
 
+let extra_rhs_core_type ct ~pos =
+  let docs = rhs_info pos in
+  { ct with ptyp_attributes = add_info_attrs docs ct.ptyp_attributes }
+
 type let_binding =
   { lb_pattern: pattern;
     lb_expression: expression;
@@ -2157,13 +2161,18 @@ core_type2:
     simple_core_type_or_tuple
       { $1 }
   | QUESTION LIDENT COLON core_type2 MINUSGREATER core_type2
-      { mktyp(Ptyp_arrow(Optional $2 , $4, $6)) }
+      { let param = extra_rhs_core_type $4 ~pos:4 in
+        mktyp (Ptyp_arrow(Optional $2 , param, $6)) }
   | OPTLABEL core_type2 MINUSGREATER core_type2
-      { mktyp(Ptyp_arrow(Optional $1 , $2, $4)) }
+      { let param = extra_rhs_core_type $2 ~pos:2 in
+        mktyp(Ptyp_arrow(Optional $1 , param, $4))
+      }
   | LIDENT COLON core_type2 MINUSGREATER core_type2
-      { mktyp(Ptyp_arrow(Labelled $1, $3, $5)) }
+      { let param = extra_rhs_core_type $3 ~pos:3 in
+        mktyp(Ptyp_arrow(Labelled $1, param, $5)) }
   | core_type2 MINUSGREATER core_type2
-      { mktyp(Ptyp_arrow(Nolabel, $1, $3)) }
+      { let param = extra_rhs_core_type $1 ~pos:1 in
+        mktyp(Ptyp_arrow(Nolabel, param, $3)) }
 ;
 
 simple_core_type:
