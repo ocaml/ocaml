@@ -290,3 +290,15 @@ contribution.
 This ability to re-license allows INRIA to provide members of the
 [Caml Consortium](http://caml.inria.fr/consortium/) with a license on
 the Caml code base that is more permissive than the public license.
+
+### How to sign the CLA
+
+If your contribution is large enough, you should sign the CLA. If you
+are contributing on your own behalf, you should sign [the individual
+CLA](http://caml.inria.fr/pub/docs/CLA-individual.doc). For corporate
+contributions, if your employer has not already done so, they should
+sign [the corporate
+CLA](http://caml.inria.fr/pub/docs/CLA-corporate.doc). Review the CLA,
+sign it, and send it -- scanned PDF by email, or postail mail -- to
+Xavier Leroy ([contact
+info](http://gallium.inria.fr/%7Exleroy/contact.html)).
