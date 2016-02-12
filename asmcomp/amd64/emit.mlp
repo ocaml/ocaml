@@ -840,6 +840,13 @@ let fundecl fundecl =
   emit_all true fundecl.fun_body;
   List.iter emit_call_gc !call_gc_sites;
   emit_call_bound_errors ();
+  if frame_required() then begin
+    let n = frame_size() - 8 - (if fp then 8 else 0) in
+    if n <> 0
+    then begin
+      cfi_adjust_cfa_offset (-n);
+    end;
+  end;
   cfi_endproc ();
   begin match system with
   | S_gnu | S_linux ->
