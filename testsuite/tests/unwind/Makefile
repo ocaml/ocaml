@@ -15,7 +15,8 @@ unwind_test:
 	@$(OCAMLOPT) -c driver.ml
 	@$(OCAMLOPT) -c mylib.ml
 	@$(OCAMLOPT) -c stack_walker.c
-	@$(OCAMLOPT) -cclib -Wl,-keep_dwarf_unwind -o unwind_test mylib.cmx driver.cmx stack_walker.o
+	@$(OCAMLOPT) -cclib -Wl,-keep_dwarf_unwind -o unwind_test mylib.cmx \
+	             driver.cmx stack_walker.o
 
 clean:
 	@rm -f *.cm* *.o unwind_test

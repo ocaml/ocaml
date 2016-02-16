@@ -312,4 +312,3 @@ void caml_unix_check_path(value path, char * cmdname)
 {
   if (! caml_string_is_c_safe(path)) unix_error(ENOENT, cmdname, path);
 }
-

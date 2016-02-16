@@ -15,9 +15,11 @@
 
 include ../Makefile
 
-export OCAML_FLEXLINK:=$(if $(wildcard $(ROOTDIR)/flexdll/Makefile),$(ROOTDIR)/boot/ocamlrun $(ROOTDIR)/flexdll/flexlink.exe)
-
-# The Unix version now works fine under Windows
+ifeq "$(wildcard $(ROOTDIR)/flexdll/Makefile" ""
+export OCAML_FLEXLINK:=
+else
+export OCAML_FLEXLINK:=$(ROOTDIR)/boot/ocamlrun $(ROOTDIR)/flexdll/flexlink.exe
+endif
 
 # Note .. is the current directory (this makefile is included from
 # a subdirectory)

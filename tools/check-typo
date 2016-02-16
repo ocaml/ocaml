@@ -38,6 +38,7 @@
 # - Any file whose name matches one of the following patterns is
 #   automatically exempt from all rules
 #     *.reference
+#     *.opt_reference
 #     */reference
 #     */.depend*
 # - Any file whose name begins with "Makefile" is automatically exempt
@@ -149,7 +150,7 @@ IGNORE_DIRS="
     case "$f" in
       Makefile*|*/Makefile*) rules="tab,$rules";;
       *.mlpack|*.mllib|*.mltop|*.odocl|*.itarget|*.clib) add_hd;;
-      *.reference|*/reference|*/.depend*) continue;;
+      *.reference|*.opt_reference|*/reference|*/.depend*) continue;;
     esac
     case "$f" in
       ocamldoc/*|*/ocamldoc/*) rules="long-line,$rules";;
@@ -230,11 +231,15 @@ IGNORE_DIRS="
           if (!empty_file && match(prev_line, /^$/)){
             err("white-at-eof", "empty line(s) at EOF");
           }
-          if (NR >= 10 && !(header_ocaml && header_copyright)){
-            NR = 1;
-            RSTART = 1;
-            RLENGTH = 0;
-            err("missing-header", "missing copyright header");
+          if (!(header_ocaml && header_copyright)){
+            if (NR >= 10){
+              NR = 1;
+              RSTART = 1;
+              RLENGTH = 0;
+              err("missing-header", "missing copyright header");
+            }else{
+              counts["missing-header"] = 1;
+            }
           }
           split(svnrules, r, "[, ]");
           for (i in r){

@@ -525,7 +525,8 @@ let subst_lambda s lam =
       begin try Ident.find_same id s with Not_found -> l end
   | Lconst sc as l -> l
   | Lapply ap ->
-      Lapply{ap with ap_func = subst ap.ap_func; ap_args = List.map subst ap.ap_args}
+      Lapply{ap with ap_func = subst ap.ap_func;
+                     ap_args = List.map subst ap.ap_args}
   | Lfunction{kind; params; body; attr} ->
       Lfunction{kind; params; body = subst body; attr}
   | Llet(str, id, arg, body) -> Llet(str, id, subst arg, subst body)

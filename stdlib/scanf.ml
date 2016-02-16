@@ -941,7 +941,7 @@ let scan_caml_float width precision ib =
     if width = 0 || Scanning.end_of_input ib then bad_float ();
     scan_caml_float_rest width precision ib
 (* Special case of nan and infinity:
-  | 'i' -> 
+  | 'i' ->
   | 'n' ->
 *)
   | _ -> bad_float ()

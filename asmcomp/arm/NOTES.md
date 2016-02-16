@@ -18,4 +18,3 @@ Debian architecture names: `armel` and `armhf`.
   _ARM Architecture Reference Manual, ARMv8_, restricted to the AArch32 subset.
 * Application binary interface:
   _Procedure Call Standard for the ARM Architecture_
-

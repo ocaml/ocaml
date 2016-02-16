@@ -183,7 +183,8 @@ type t = {
 and module_components =
   {
     deprecated: string option;
-    comps: (t * Subst.t * Path.t * Types.module_type, module_components_repr) EnvLazy.t;
+    comps: (t * Subst.t * Path.t * Types.module_type, module_components_repr)
+           EnvLazy.t;
   }
 
 and module_components_repr =

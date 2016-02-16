@@ -14,10 +14,12 @@
 
 # Use this script on OCAML_INSTR_FILE files
 
+default_curves=major,minor,coll,dispatch
+
 usage () {
     echo 'usage: ocaml-instr-graph file [options]'
     echo '  options:'
-    echo '  -d names   plot the data for names (default major,minor,coll,dispatch)'
+    echo "  -d names   plot the data for names (default: $default_curves)"
     echo '  -t title   set the graph title'
     echo '  -m n       clip the values to n (default 1G)'
     echo '  -rt n      set the range for times to 0..n'
@@ -52,7 +54,7 @@ while [[ $# > 0 ]]; do
 done
 
 if [[ "$curves" = , ]]; then
-    curves=,major,minor,coll,dispatch,
+    curves=,$default_curves,
 fi
 
 if ! $titleset; then
@@ -81,7 +83,7 @@ awk -v curves="$curves" -v clip=$max -v tmpfile="$tmpfile" -v from=$from \
   }
   BEGIN {starttime = 9e18;}
   $1 != "@@" { next; }
-  $2 < starttime { starttime = $2 } 
+  $2 < starttime { starttime = $2 }
   { output($4); }
 ' $datafile
 
@@ -98,7 +100,9 @@ awk -v curves="$curves" -v clip=$max -v tmpfile="$tmpfile" -v from=$from \
       f=$tmpfile-${curve//\//:}
       if [ -f $f ]; then
           case $f in
-              *#) printf "\"%s\" using 1:2 axes x1y2 title '%s', " "$f" "$curve";;
+              *#) printf "\"%s\" using 1:2 axes x1y2 title '%s', " "$f" \
+                         "$curve"
+                  ;;
               *)  printf "\"%s\" using 1:2 title '%s', " "$f" "$curve";;
           esac
       fi

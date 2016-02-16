@@ -73,7 +73,8 @@ let dir_directory s =
 let _ = add_directive "directory" (Directive_string dir_directory)
     {
       section = section_run;
-      doc = "Add the given directory to search path for source and compiled files.";
+      doc = "Add the given directory to search path for source and compiled \
+             files.";
     }
 
 (* To remove a directory from the load path *)

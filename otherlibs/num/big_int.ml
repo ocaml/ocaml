@@ -438,9 +438,12 @@ let sys_big_int_of_string_base s ofs len sgn =
   if len < 2 then sys_big_int_of_string_aux s ofs len sgn 10
   else
     match (s.[ofs], s.[ofs+1]) with
-    | ('0', 'x') | ('0', 'X') -> sys_big_int_of_string_aux s (ofs+2) (len-2) sgn 16
-    | ('0', 'o') | ('0', 'O') -> sys_big_int_of_string_aux s (ofs+2) (len-2) sgn 8
-    | ('0', 'b') | ('0', 'B') -> sys_big_int_of_string_aux s (ofs+2) (len-2) sgn 2
+    | ('0', 'x') | ('0', 'X') ->
+        sys_big_int_of_string_aux s (ofs+2) (len-2) sgn 16
+    | ('0', 'o') | ('0', 'O') ->
+        sys_big_int_of_string_aux s (ofs+2) (len-2) sgn 8
+    | ('0', 'b') | ('0', 'B') ->
+        sys_big_int_of_string_aux s (ofs+2) (len-2) sgn 2
     | _ -> sys_big_int_of_string_aux s ofs len sgn 10
 ;;
 
@@ -722,7 +725,7 @@ let two_power_m1_big_int n =
     let idx = n / length_of_digit in
     let size_res = idx + 1 in
     let res = make_nat size_res in
-    set_digit_nat_native res idx 
+    set_digit_nat_native res idx
                          (Nativeint.shift_left 1n (n mod length_of_digit));
     ignore (decr_nat res 0 size_res 0);
     { sign = 1; abs_value = res }
@@ -733,7 +736,8 @@ let two_power_m1_big_int n =
 let shift_right_big_int bi n =
   if n < 0 then invalid_arg "shift_right_big_int"
   else if bi.sign >= 0 then shift_right_towards_zero_big_int bi n
-  else shift_right_towards_zero_big_int (sub_big_int bi (two_power_m1_big_int n)) n
+  else
+    shift_right_towards_zero_big_int (sub_big_int bi (two_power_m1_big_int n)) n
 
 (* Extract N bits starting at ofs.
    Treats bi in two's complement.
@@ -845,7 +849,7 @@ let xor_big_int a b =
 (* Consider a real number [r] such that
    - the integral part of [r] is the bigint [x]
    - 2^54 <= |x| < 2^63
-   - the fractional part of [r] is 0 if [exact = true], 
+   - the fractional part of [r] is 0 if [exact = true],
      nonzero if [exact = false].
    Then, the following function returns [r] correctly rounded to
    the nearest double-precision floating-point number.
@@ -875,4 +879,3 @@ let float_of_big_int x =
     (* Round to float and apply exponent *)
     ldexp (round_big_int_to_float top exact) n
   end
-

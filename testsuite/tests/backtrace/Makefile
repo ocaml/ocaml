@@ -54,10 +54,12 @@ byte:
 skip:
 	@for file in $(ABCDFILES); do \
 	  for arg in a b c d ''; do \
-	    echo " ... testing '$$file' with ocamlopt and argument '$$arg': => skipped"; \
+	    echo " ... testing '$$file' with ocamlopt and argument '$$arg': \
+	=> skipped"; \
 	  done; \
 	done
-	@for file in $(OTHERFILES) $(OTHERFILESNOINLINING) $(OTHERFILESNOINLINING_NATIVE); do \
+	@for file in $(OTHERFILES) $(OTHERFILESNOINLINING) \
+	             $(OTHERFILESNOINLINING_NATIVE); do \
 	  echo " ... testing '$$file' with ocamlopt: => skipped"; \
 	done
 

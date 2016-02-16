@@ -116,7 +116,8 @@ let () =
 (* test generation *)
 
 (*
-let values = ["true"; "false"; "true_effect ()"; "false_effect ()"; "unknown_true"; "unknown_false"]
+let values = ["true"; "false"; "true_effect ()"; "false_effect ()";
+              "unknown_true"; "unknown_false"]
 let ops = ["||"; "&&"]
 let count = ref 0
 let f op v1 v2 =

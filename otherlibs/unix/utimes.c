@@ -34,7 +34,7 @@ CAMLprim value unix_utimes(value path, value atime, value mtime)
   mt = Double_val(mtime);
   if (at == 0.0 && mt == 0.0) {
     t = (struct timeval *) NULL;
-  } else {    
+  } else {
     tv[0].tv_sec = at;
     tv[0].tv_usec = (at - tv[0].tv_sec) * 1000000;
     tv[1].tv_sec = mt;
@@ -71,7 +71,7 @@ CAMLprim value unix_utimes(value path, value atime, value mtime)
   mt = Double_val(mtime);
   if (at == 0.0 && mt == 0.0) {
     t = (struct utimbuf *) NULL;
-  } else {    
+  } else {
     times.actime = at;
     times.modtime = mt;
     t = &times;
@@ -91,4 +91,3 @@ CAMLprim value unix_utimes(value path, value atime, value mtime)
 { invalid_argument("utimes not implemented"); }
 
 #endif
-

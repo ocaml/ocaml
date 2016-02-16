@@ -119,7 +119,10 @@ let rec nget_data n s =
 ;;
 
 let npeek_data n s =
-  let (al, d, len) = nget_data n s in s.count <- (s.count - len); s.data <- d; al
+  let (al, d, len) = nget_data n s in
+  s.count <- (s.count - len);
+  s.data <- d;
+  al
 ;;
 
 let npeek n = function

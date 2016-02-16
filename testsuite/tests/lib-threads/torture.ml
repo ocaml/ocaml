@@ -54,4 +54,3 @@ let _ =
   finished := true;
   List.iter Thread.join [t1; t2; t3; t4; t5];
   print_string "passed\n"
-

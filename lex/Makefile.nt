@@ -17,7 +17,12 @@ CAMLRUN ?= ../boot/ocamlrun
 CAMLYACC ?= ../boot/ocamlyacc
 
 CAMLC=$(CAMLRUN) ../boot/ocamlc -I ../boot
-CAMLOPT=$(if $(wildcard ../flexdll/Makefile),OCAML_FLEXLINK="../boot/ocamlrun ../flexdll/flexlink.exe") $(CAMLRUN) ../ocamlopt -I ../stdlib
+ifeq "$(wildcard ../flexdll/Makefile)" ""
+  FLEXLINK_ENV=
+else
+  FLEXLINK_ENV=OCAML_FLEXLINK="../boot/ocamlrun ../flexdll/flexlink.exe"
+endif
+CAMLOPT=$(FLEXLINK_ENV) $(CAMLRUN) ../ocamlopt -I ../stdlib
 COMPFLAGS=-warn-error A
 LINKFLAGS=
 YACCFLAGS=-v

@@ -1452,7 +1452,8 @@ let warn_on_missing_def env ppf t =
         ignore(Env.find_type p env : Types.type_declaration)
       with Not_found ->
         fprintf ppf
-          "@,@[%a is abstract because no corresponding cmi file was found in path.@]" path p
+          "@,@[%a is abstract because no corresponding cmi file was found \
+           in path.@]" path p
     end
   | _ -> ()
 

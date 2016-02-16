@@ -1437,7 +1437,8 @@ let error_if_has_deep_native_repr_attributes core_type =
           get_native_repr_attribute core_type.ptyp_attributes ~global_repr:None
         with
         | Native_repr_attr_present kind ->
-           raise (Error (core_type.ptyp_loc, Deep_unbox_or_untag_attribute kind))
+           raise (Error (core_type.ptyp_loc,
+                         Deep_unbox_or_untag_attribute kind))
         | Native_repr_attr_absent -> ()
       end;
       default_iterator.typ iterator core_type }

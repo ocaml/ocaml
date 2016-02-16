@@ -5,15 +5,15 @@
 #define CAML_NEGF_MASK caml_negf_mask
 #define CAML_ABSF_MASK caml_absf_mask
 
-	.section ".text"
-	
-	.globl	CALL_GEN_CODE
-	.type	CALL_GEN_CODE, @function
-	.align	ALIGN
+        .section ".text"
+
+        .globl  CALL_GEN_CODE
+        .type   CALL_GEN_CODE, @function
+        .align  ALIGN
 CALL_GEN_CODE:
-	/* Stack space */
-	lay	%r15, -144(%r15)
-	/* Save registers */
+        /* Stack space */
+        lay     %r15, -144(%r15)
+        /* Save registers */
         stmg    %r6,%r14, 0(%r15)
         std     %f8, 72(%r15)
         std     %f9, 80(%r15)
@@ -23,14 +23,14 @@ CALL_GEN_CODE:
         std     %f13, 112(%r15)
         std     %f14, 120(%r15)
         std     %f15, 128(%r15)
-	/* Shuffle args */
-	lgr	%r1, %r2
-	lgr	%r2, %r3
-	lgr	%r3, %r4
-	lgr	%r4, %r5
-	/* Function call */
-	basr	%r14, %r1
-	/* Restore registers */
+        /* Shuffle args */
+        lgr     %r1, %r2
+        lgr     %r2, %r3
+        lgr     %r3, %r4
+        lgr     %r4, %r5
+        /* Function call */
+        basr    %r14, %r1
+        /* Restore registers */
         lmg    %r6,%r14, 0(%r15)
         ld     %f8, 72(%r15)
         ld     %f9, 80(%r15)
@@ -40,23 +40,23 @@ CALL_GEN_CODE:
         ld     %f13, 112(%r15)
         ld     %f14, 120(%r15)
         ld     %f15, 128(%r15)
-	/* Return */
-	lay	%r15, 144(%r15)
-	br	%r14
+        /* Return */
+        lay     %r15, 144(%r15)
+        br      %r14
 
-	.globl	CAML_C_CALL
-	.type	CAML_C_CALL, @function
-	.align	ALIGN
+        .globl  CAML_C_CALL
+        .type   CAML_C_CALL, @function
+        .align  ALIGN
 CAML_C_CALL:
-        br	%r7
-	
-	.section ".rodata"
+        br      %r7
 
-	.global	CAML_NEGF_MASK
-	.align	ALIGN
+        .section ".rodata"
+
+        .global CAML_NEGF_MASK
+        .align  ALIGN
 CAML_NEGF_MASK:
-	.quad	0x8000000000000000, 0
-	.global  CAML_ABSF_MASK
+        .quad   0x8000000000000000, 0
+        .global  CAML_ABSF_MASK
         .align  ALIGN
 CAML_ABSF_MASK:
         .quad   0x7FFFFFFFFFFFFFFF, 0

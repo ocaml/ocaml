@@ -647,7 +647,7 @@ let rec comp_expr env exp sz cont =
                  (Kmakeblock(List.length args, 0) ::
                   Kccall("caml_make_array", 1) :: cont)
       end
-  | Lprim (Pduparray (kind, mutability), [Lprim (Pmakearray (kind', _), args)]) ->
+  | Lprim (Pduparray (kind, mutability), [Lprim (Pmakearray (kind',_),args)]) ->
       assert (kind = kind');
       comp_expr env (Lprim (Pmakearray (kind, mutability), args)) sz cont
   | Lprim (Pduparray _, [arg]) ->

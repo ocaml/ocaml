@@ -27,7 +27,11 @@ endif
 MKLIB=$(CAMLRUN) ../../tools/ocamlmklib
 CFLAGS=-I../../byterun $(EXTRACFLAGS)
 
-export OCAML_FLEXLINK:=$(if $(wildcard ../../flexdll/Makefile),../../boot/ocamlrun ../../flexdll/flexlink.exe)
+ifeq "$(wildcard ../../flexdll/Makefile)" ""
+  export OCAML_FLEXLINK:=
+else
+  export OCAML_FLEXLINK:=../../boot/ocamlrun ../../flexdll/flexlink.exe
+endif
 
 CAMLOBJS=thread.cmo mutex.cmo condition.cmo event.cmo threadUnix.cmo
 CMIFILES=$(CAMLOBJS:.cmo=.cmi)

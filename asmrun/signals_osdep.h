@@ -283,7 +283,7 @@
   #define CONTEXT_YOUNG_LIMIT (context->regs->gpr[30])
   #define CONTEXT_YOUNG_PTR (context->regs->gpr[31])
   #define CONTEXT_SP (context->regs->gpr[1])
-  
+
 /****************** s390x, ELF (Linux) */
 #elif defined(TARGET_s390x) && defined(SYS_elf)
 

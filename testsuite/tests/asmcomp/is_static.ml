@@ -18,7 +18,7 @@ let f () =
 let () = (f [@inlined never]) ()
 
 (* Closed functions should be static *)
-let closed_function x = x + 1 (* + is a primitive, it cannot be in the closure *)
+let closed_function x = x + 1 (* + is a primitive, it cannot be in the closure*)
 let () = assert(is_in_static_data closed_function)
 
 (* And functions using closed functions *)

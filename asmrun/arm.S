@@ -93,7 +93,9 @@ alloc_limit     .req    r11
 
 /* Support for profiling with gprof */
 
-#if defined(PROFILING) && (defined(SYS_linux_eabihf) || defined(SYS_linux_eabi) || defined(SYS_netbsd))
+#if defined(PROFILING) && (defined(SYS_linux_eabihf) \
+        || defined(SYS_linux_eabi) \
+        || defined(SYS_netbsd))
 #define PROFILE \
         push    {lr}; CFI_ADJUST(4); \
         bl      __gnu_mcount_nc; CFI_ADJUST(-4)

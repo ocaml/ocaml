@@ -5,8 +5,9 @@
 #include <caml/mlvalues.h>
 #include <libunwind.h>
 
-value ml_func_with_10_params_native(value x1, value x2, value x3, value x4, value x5,
-                                    value x6, value x7, value x8, value x9, value x10) {
+value ml_func_with_10_params_native(value x1, value x2, value x3, value x4,
+                                    value x5, value x6, value x7, value x8,
+                                    value x9, value x10) {
     return Val_unit;
 }
 
@@ -30,7 +31,8 @@ void perform_stack_walk() {
         {
             char procname[256];
             unw_word_t ip_offset; // IP - start_of_proc
-            int result = unw_get_proc_name(&cursor, procname, sizeof(procname), &ip_offset);
+            int result = unw_get_proc_name(&cursor, procname, sizeof(procname),
+                                           &ip_offset);
             if (result != 0) error();
             if (strcmp(procname, "main") == 0)
                 reached_main = 1;

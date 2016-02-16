@@ -555,4 +555,3 @@ val kfscanf :
     ('a, 'b, 'c, 'd) scanner
   [@@ocaml.deprecated "Use Scanning.from_channel then Scanf.kscanf."]
 (** @deprecated [Scanf.kfscanf] is error prone and deprecated since 4.03.0. *)
-

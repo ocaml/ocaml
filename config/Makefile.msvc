@@ -121,12 +121,16 @@ MKEXE=$(FLEXLINK) -exe
 MKMAINDLL=$(FLEXLINK) -maindll
 
 ### Native command to build ocamlrun.exe without flexlink
-MERGEMANIFESTEXE=test ! -f $(1).manifest || mt -nologo -outputresource:$(1) -manifest $(1).manifest && rm -f $(1).manifest
-MKEXE_BOOT=$(BYTECC) /Fe$(1) $(2) /link /subsystem:console && ($(MERGEMANIFESTEXE))
+MERGEMANIFESTEXE=test ! -f $(1).manifest \
+	         || mt -nologo -outputresource:$(1) -manifest $(1).manifest \
+	            && rm -f $(1).manifest
+MKEXE_BOOT=$(BYTECC) /Fe$(1) $(2) /link /subsystem:console \
+	   && ($(MERGEMANIFESTEXE))
 
 ### How to build a static library
 MKLIB=link -lib -nologo -out:$(1) $(2)
-#ml let mklib out files opts = Printf.sprintf "link -lib -nologo -out:%s %s %s" out opts files;;
+#ml let mklib out files opts =
+#ml   Printf.sprintf "link -lib -nologo -out:%s %s %s" out opts files;;
 MKSHAREDLIBRPATH=
 
 ### Canonicalize the name of a system library

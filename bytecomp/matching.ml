@@ -2980,7 +2980,8 @@ let rec map_return f = function
   | Lsequence (l1, l2) -> Lsequence (l1, map_return f l2)
   | Levent (l, ev) -> Levent (map_return f l, ev)
   | Ltrywith (l1, id, l2) -> Ltrywith (map_return f l1, id, map_return f l2)
-  | Lstaticcatch (l1, b, l2) -> Lstaticcatch (map_return f l1, b, map_return f l2)
+  | Lstaticcatch (l1, b, l2) ->
+      Lstaticcatch (map_return f l1, b, map_return f l2)
   | Lstaticraise _ | Lprim(Praise _, _) as l -> l
   | l -> f l
 

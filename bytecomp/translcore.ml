@@ -874,11 +874,12 @@ and transl_exp0 e =
                because [caml_modify] might be called upon them (e.g. from
                code operating on polymorphic arrays, or functions such as
                [caml_array_blit].
-               To avoid having different Lambda code for bytecode/Closure vs.
-               Flambda, we always generate [Pduparray] here, and deal with it in
-               [Bytegen] (or in the case of Closure, in [Cmmgen], which already
-               has to handle [Pduparray Pmakearray Pfloatarray] in the case where
-               the array turned out to be inconstant).
+               To avoid having different Lambda code for
+               bytecode/Closure vs.  Flambda, we always generate
+               [Pduparray] here, and deal with it in [Bytegen] (or in
+               the case of Closure, in [Cmmgen], which already has to
+               handle [Pduparray Pmakearray Pfloatarray] in the case
+               where the array turned out to be inconstant).
                When not [Pfloatarray], the exception propagates to the handler
                below. *)
             let imm_array = Lprim (Pmakearray (kind, Immutable), ll) in
@@ -891,7 +892,7 @@ and transl_exp0 e =
               | Pfloatarray ->
                   Lconst(Const_float_array(List.map extract_float cl))
               | Pgenarray ->
-                  raise Not_constant                (* can this really happen? *)
+                  raise Not_constant    (* can this really happen? *)
             in
             Lprim (Pduparray (kind, Mutable), [imm_array])
         end
@@ -1122,7 +1123,10 @@ and transl_apply ?(should_be_tailcall=false) ?(inlined = Default_inline)
     | [] ->
         lapply lam (List.rev_map fst args)
   in
-  (build_apply lam [] (List.map (fun (l, x) -> may_map transl_exp x, Btype.is_optional l) sargs) : Lambda.lambda)
+  (build_apply lam [] (List.map (fun (l, x) ->
+                                   may_map transl_exp x, Btype.is_optional l)
+                                sargs)
+     : Lambda.lambda)
 
 and transl_function loc untuplify_fn repr partial cases =
   match cases with

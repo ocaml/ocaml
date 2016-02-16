@@ -82,4 +82,3 @@ let _ =
     exit 2
   end;
   if cmpbyt Sys.argv.(1) Sys.argv.(2) then exit 0 else exit 2
-

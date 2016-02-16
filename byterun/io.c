@@ -162,7 +162,7 @@ CAMLexport int caml_flush_partial(struct channel *channel)
   CAMLassert (towrite >= 0);
   if (towrite > 0) {
     written = caml_write_fd(channel->fd, channel->flags,
-			    channel->buff, towrite);
+                            channel->buff, towrite);
     channel->offset += written;
     if (written < towrite)
       memmove(channel->buff, channel->buff + written, towrite - written);
@@ -207,7 +207,7 @@ CAMLexport int caml_putblock(struct channel *channel, char *p, intnat len)
     memmove(channel->curr, p, free);
     towrite = channel->end - channel->buff;
     written = caml_write_fd(channel->fd, channel->flags,
-			    channel->buff, towrite);
+                            channel->buff, towrite);
     if (written < towrite)
       memmove(channel->buff, channel->buff + written, towrite - written);
     channel->offset += written;
@@ -256,8 +256,8 @@ CAMLexport unsigned char caml_refill(struct channel *channel)
 {
   int n;
 
-  n = caml_read_fd(channel->fd, channel->flags, 
-		   channel->buff, channel->end - channel->buff);
+  n = caml_read_fd(channel->fd, channel->flags,
+                   channel->buff, channel->end - channel->buff);
   if (n == 0) caml_raise_end_of_file();
   channel->offset += n;
   channel->max = channel->buff + n;
@@ -295,7 +295,7 @@ CAMLexport int caml_getblock(struct channel *channel, char *p, intnat len)
     return avail;
   } else {
     nread = caml_read_fd(channel->fd, channel->flags, channel->buff,
-			 channel->end - channel->buff);
+                         channel->end - channel->buff);
     channel->offset += nread;
     channel->max = channel->buff + nread;
     if (n > nread) n = nread;
@@ -364,8 +364,8 @@ CAMLexport intnat caml_input_scan_line(struct channel *channel)
         return -(channel->max - channel->curr);
       }
       /* Fill the buffer as much as possible */
-      n = caml_read_fd(channel->fd, channel->flags, 
-		       channel->max, channel->end - channel->max);
+      n = caml_read_fd(channel->fd, channel->flags,
+                       channel->max, channel->end - channel->max);
       if (n == 0) {
         /* End-of-file encountered. Return the number of characters in the
            buffer, with negative sign since we haven't encountered

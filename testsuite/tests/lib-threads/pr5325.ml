@@ -67,4 +67,3 @@ let _ =
   Thread.delay 0.5;
   writer client "Client data\n";
   Thread.join rd
-    

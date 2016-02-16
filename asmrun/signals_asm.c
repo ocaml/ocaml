@@ -145,7 +145,9 @@ int caml_set_signal_action(int signo, int action)
 
 /* Machine- and OS-dependent handling of bound check trap */
 
-#if defined(TARGET_power) || defined(TARGET_s390x) || (defined(TARGET_sparc) && defined(SYS_solaris))
+#if defined(TARGET_power) \
+  || defined(TARGET_s390x) \
+  || (defined(TARGET_sparc) && defined(SYS_solaris))
 DECLARE_SIGNAL_HANDLER(trap_handler)
 {
 #if defined(SYS_solaris)

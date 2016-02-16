@@ -189,7 +189,8 @@
 
 #define PUSH_CALLEE_SAVE_REGS \
         pushq   %rbx; CFI_ADJUST (8); CFI_OFFSET(rbx, -16); \
-        pushq   %rbp; CFI_ADJUST (8); CFI_OFFSET(rbp, -24); /* Allows debugger to walk the stack */ \
+        pushq   %rbp; CFI_ADJUST (8); CFI_OFFSET(rbp, -24); \
+                      /* Allows debugger to walk the stack */ \
         pushq   %rsi; CFI_ADJUST (8); CFI_OFFSET(rsi, -32); \
         pushq   %rdi; CFI_ADJUST (8); CFI_OFFSET(rdi, -40); \
         pushq   %r12; CFI_ADJUST (8); CFI_OFFSET(r12, -48); \

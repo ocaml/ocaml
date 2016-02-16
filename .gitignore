@@ -274,6 +274,8 @@
 /testsuite/tests/unboxed-primitive-args/main.ml
 /testsuite/tests/unboxed-primitive-args/stubs.c
 
+/testsuite/tests/unwind/unwind_test
+
 /testsuite/tests/warnings/w55.opt.opt_result
 /testsuite/tests/warnings/w58.opt.opt_result
 

@@ -10,7 +10,7 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* Copy a bytecode executable, removing debugging information 
+(* Copy a bytecode executable, removing debugging information
    and #! header from the copy.
    Usage: stripdebug <source file> <dest file>
 *)
@@ -52,6 +52,3 @@ let _ =
     eprintf "Usage: stripdebug <source file> <destination file>\n";
     exit 2
   end
-
-
-

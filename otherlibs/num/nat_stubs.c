@@ -11,8 +11,6 @@
 /*                                                                     */
 /***********************************************************************/
 
-/* $Id$ */
-
 #include "caml/alloc.h"
 #include "caml/config.h"
 #include "caml/custom.h"
@@ -123,7 +121,8 @@ CAMLprim value is_digit_zero(value nat, value ofs)
 CAMLprim value is_digit_normalized(value nat, value ofs)
 {
   return
-    Val_bool(Digit_val(nat, Long_val(ofs)) & ((bngdigit)1 << (BNG_BITS_PER_DIGIT-1)));
+    Val_bool(Digit_val(nat, Long_val(ofs))
+             & ((bngdigit)1 << (BNG_BITS_PER_DIGIT-1)));
 }
 
 CAMLprim value is_digit_odd(value nat, value ofs)

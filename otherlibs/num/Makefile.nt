@@ -11,8 +11,6 @@
 #                                                                       #
 #########################################################################
 
-# $Id$
-
 # Makefile for the "num" (exact rational arithmetic) library
 
 LIBNAME=nums

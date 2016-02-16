@@ -15,4 +15,3 @@ let f : type env a. (env, a) typ -> (env, a) typ -> int = fun ta tb ->
    | _ -> .   (* error *)
 ;;
 (* let x = f Tint (Tvar Zero) ;; *)
-

@@ -49,6 +49,3 @@ let _ =
   ignore (Thread.create client (addr, "Client #1\n"));
   Thread.delay 0.5;
   client (addr, "Client #2\n")
-
-
-  

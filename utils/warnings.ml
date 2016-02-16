@@ -442,7 +442,7 @@ let message = function
           expression"
         attr_name
   | Inlining_impossible reason ->
-      Printf.sprintf "Inlining impossible in this context: %s" reason
+      Printf.sprintf "Cannot inline: %s" reason
   | Ambiguous_pattern vars ->
       let msg =
         let vars = List.sort String.compare vars in

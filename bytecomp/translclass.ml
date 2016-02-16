@@ -29,7 +29,9 @@ let lfunction params body =
   | Lfunction {kind = Curried; params = params'; body = body'; attr} ->
       Lfunction {kind = Curried; params = params @ params'; body = body'; attr}
   |  _ ->
-      Lfunction {kind = Curried; params; body; attr = default_function_attribute}
+      Lfunction {kind = Curried; params;
+                 body;
+                 attr = default_function_attribute}
 
 let lapply ap =
   match ap.ap_func with
@@ -601,7 +603,8 @@ open M
     obj_init: creation function (unit -> obj)
     class_init: inheritance function (table -> env_init)
       (one by source code)
-    env_init: parameterisation by the local environment (env -> params -> obj_init)
+    env_init: parameterisation by the local environment
+      (env -> params -> obj_init)
       (one for each combination of inherited class_init )
     env: environnement local
    If ids=0 (immediate object), then only env_init is conserved.

@@ -39,7 +39,8 @@ CAMLDEP_IMPORTS=timings.cmo misc.cmo config.cmo identifiable.cmo numbers.cmo \
   arg_helper.cmo clflags.cmo terminfo.cmo \
   warnings.cmo location.cmo longident.cmo docstrings.cmo \
   syntaxerr.cmo ast_helper.cmo parser.cmo lexer.cmo parse.cmo \
-  ccomp.cmo ast_mapper.cmo ast_iterator.cmo ast_invariants.cmo pparse.cmo compenv.cmo \
+  ccomp.cmo ast_mapper.cmo ast_iterator.cmo ast_invariants.cmo pparse.cmo \
+  compenv.cmo \
   builtin_attributes.cmo
 
 ocamldep: depend.cmi $(CAMLDEP_OBJ)
@@ -77,11 +78,13 @@ ocamlprof: $(CSLPROF) profiling.cmo
 
 ocamlcp: ocamlcp.cmo
 	$(CAMLC) $(LINKFLAGS) -o ocamlcp misc.cmo warnings.cmo config.cmo \
-                 identifiable.cmo numbers.cmo arg_helper.cmo clflags.cmo main_args.cmo ocamlcp.cmo
+                 identifiable.cmo numbers.cmo arg_helper.cmo clflags.cmo \
+	         main_args.cmo ocamlcp.cmo
 
 ocamloptp: ocamloptp.cmo
 	$(CAMLC) $(LINKFLAGS) -o ocamloptp misc.cmo warnings.cmo config.cmo \
-                 identifiable.cmo numbers.cmo arg_helper.cmo clflags.cmo main_args.cmo \
+                 identifiable.cmo numbers.cmo arg_helper.cmo clflags.cmo \
+	         main_args.cmo \
 	         ocamloptp.cmo
 
 opt:: profiling.cmx
@@ -102,7 +105,8 @@ clean::
 # To help building mixed-mode libraries (OCaml + C)
 
 ocamlmklib: ocamlmklibconfig.cmo ocamlmklib.cmo
-	$(CAMLC) $(LINKFLAGS) -o ocamlmklib ocamlmklibconfig.cmo config.cmo ocamlmklib.cmo
+	$(CAMLC) $(LINKFLAGS) -o ocamlmklib ocamlmklibconfig.cmo config.cmo \
+	         ocamlmklib.cmo
 
 install::
 	cp ocamlmklib "$(INSTALL_BINDIR)/ocamlmklib$(EXE)"

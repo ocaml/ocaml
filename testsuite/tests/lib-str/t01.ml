@@ -389,11 +389,11 @@ let automated_test() =
   test_search_forward r n "ething"
     [||];
 
-  start_test "Search for /^ÿ/";
-  let r = Str.regexp "^ÿ" in
+  start_test "Search for /^\255/";
+  let r = Str.regexp "^\255" in
   let n = 0 in
-  test_search_forward r n "ÿ"
-    [|"ÿ"|];
+  test_search_forward r n "\255"
+    [|"\255"|];
 
   start_test "Search for /^[0-9]+$/";
   let r = Str.regexp "^[0-9]+$" in

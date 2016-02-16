@@ -11,8 +11,6 @@
 /*                                                                     */
 /***********************************************************************/
 
-/* $Id$ */
-
 /* Code specific to the PowerPC architecture. */
 
 #define BngAdd2(res,carryout,arg1,arg2)                                     \

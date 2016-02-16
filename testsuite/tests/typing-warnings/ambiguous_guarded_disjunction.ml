@@ -108,7 +108,8 @@ let ambiguous__in_depth = function
 let not_ambiguous__several_orpats = function
   | `A ((`B (x, Some _, _) | `B (x, _, Some _)),
         (`C (y, Some _, _) | `C (y, _, Some _)),
-        (`D1 (_, z, Some _, _) | `D2 (_, z, _, Some _))) when x < y && x < z -> ()
+        (`D1 (_, z, Some _, _) | `D2 (_, z, _, Some _))) when x < y && x < z ->
+      ()
   | _ -> ()
 ;;
 

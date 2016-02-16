@@ -20,8 +20,3 @@ Debian architecture name: `i386`
    Intel386 Architecture Processor Supplement_
 * MacOS X application binary interface:
   _OS X ABI Function Call Guide: IA-32 Function Calling Conventions_
-
-
-
-
-

@@ -722,8 +722,8 @@ let undo_compress (changes, old) =
   | Change _ ->
       let log = rev_compress_log [] changes in
       List.iter
-	(fun r -> match !r with
-	  Change (Ccompress (ty, desc, d), next) when ty.desc == d ->
-	    ty.desc <- desc; r := !next
-	| _ -> ())
-	log
+        (fun r -> match !r with
+          Change (Ccompress (ty, desc, d), next) when ty.desc == d ->
+            ty.desc <- desc; r := !next
+        | _ -> ())
+        log

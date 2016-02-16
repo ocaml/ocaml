@@ -98,7 +98,8 @@ let rec apply_coercion strict restr arg =
                            (Lapply{ap_should_be_tailcall=false;
                                    ap_loc=Location.none;
                                    ap_func=Lvar id;
-                                   ap_args=[apply_coercion Alias cc_arg (Lvar param)];
+                                   ap_args=[apply_coercion Alias cc_arg
+                                                           (Lvar param)];
                                    ap_inlined=Default_inline;
                                    ap_specialised=Default_specialise})})
   | Tcoerce_primitive { pc_loc; pc_desc; pc_env; pc_type; } ->
@@ -383,7 +384,8 @@ let rec transl_module cc rootpath mexp =
                                      specialise = Default_specialise;
                                      is_a_functor = true };
                             body = Llet(Alias, param,
-                                        apply_coercion Alias ccarg (Lvar param'),
+                                        apply_coercion Alias ccarg
+                                                       (Lvar param'),
                                         transl_module ccres bodypath body)}
               | _ ->
                   fatal_error "Translmod.transl_module")
@@ -493,7 +495,8 @@ and transl_structure fields cc rootpath final_env = function
             transl_module Tcoerce_none (field_path rootpath id) mb.mb_expr
           in
           let module_body =
-            Translattribute.add_inline_attribute module_body mb.mb_loc mb.mb_attributes
+            Translattribute.add_inline_attribute module_body mb.mb_loc
+                                                 mb.mb_attributes
           in
           Llet(pure_module mb.mb_expr, id,
                module_body,
@@ -527,7 +530,9 @@ and transl_structure fields cc rootpath final_env = function
               [] ->
                 transl_structure newfields cc rootpath final_env rem
             | id :: ids ->
-                let body, size = rebind_idents (pos + 1) (id :: newfields) ids in
+                let body, size =
+                  rebind_idents (pos + 1) (id :: newfields) ids
+                in
                 Llet(Alias, id, Lprim(Pfield pos, [Lvar mid]), body), size
           in
           let body, size = rebind_idents 0 fields ids in
@@ -650,7 +655,9 @@ let rec more_idents = function
     | Tstr_class_type cl_list -> more_idents rem
     | Tstr_include _ -> more_idents rem
     | Tstr_module {mb_expr={mod_desc = Tmod_structure str}}
-    | Tstr_module{mb_expr={mod_desc = Tmod_constraint ({mod_desc = Tmod_structure str}, _, _, _)}} ->
+    | Tstr_module{mb_expr={mod_desc =
+                             Tmod_constraint ({mod_desc = Tmod_structure str},
+                                              _, _, _)}} ->
         all_idents str.str_items @ more_idents rem
     | Tstr_module _ -> more_idents rem
     | Tstr_attribute _ -> more_idents rem
@@ -678,7 +685,10 @@ and all_idents = function
     | Tstr_include incl ->
       bound_value_identifiers incl.incl_type @ all_idents rem
     | Tstr_module {mb_id;mb_expr={mod_desc = Tmod_structure str}}
-    | Tstr_module{mb_id; mb_expr={mod_desc = Tmod_constraint ({mod_desc = Tmod_structure str}, _, _, _)}} ->
+    | Tstr_module{mb_id;
+                  mb_expr={mod_desc =
+                             Tmod_constraint ({mod_desc = Tmod_structure str},
+                                              _, _, _)}} ->
         mb_id :: all_idents str.str_items @ all_idents rem
     | Tstr_module mb -> mb.mb_id :: all_idents rem
     | Tstr_attribute _ -> all_idents rem
@@ -725,9 +735,12 @@ let transl_store_structure glob map prims str =
         | Tstr_type(_, decls) ->
             transl_store rootpath subst rem
         | Tstr_typext(tyext) ->
-            let ids = List.map (fun ext -> ext.ext_id) tyext.tyext_constructors in
+            let ids =
+              List.map (fun ext -> ext.ext_id) tyext.tyext_constructors
+            in
             let lam =
-              transl_type_extension item.str_env rootpath tyext (store_idents ids)
+              transl_type_extension item.str_env rootpath tyext
+                                    (store_idents ids)
             in
             Lsequence(subst_lambda subst lam,
                       transl_store rootpath (add_idents false ids subst) rem)
@@ -742,7 +755,9 @@ let transl_store_structure glob map prims str =
                       mb_attributes} ->
             List.iter (Translattribute.check_attribute_on_module mexp)
               mb_attributes;
-            let lam = transl_store (field_path rootpath id) subst str.str_items in
+            let lam =
+              transl_store (field_path rootpath id) subst str.str_items
+            in
             (* Careful: see next case *)
             let subst = !transl_store_subst in
             Lsequence(lam,
@@ -752,8 +767,9 @@ let transl_store_structure glob map prims str =
                                     List.map (fun id -> Lvar id)
                                       (defined_idents str.str_items))),
                            Lsequence(store_ident id,
-                                     transl_store rootpath (add_ident true id subst)
-                                       rem)))
+                                     transl_store rootpath
+                                                  (add_ident true id subst)
+                                                  rem)))
         | Tstr_module{
             mb_id=id;
             mb_expr= {
@@ -762,10 +778,13 @@ let transl_store_structure glob map prims str =
                   (Tcoerce_structure (map, _) as _cc))};
             mb_attributes
           } ->
-            (*    Format.printf "coerc id %s: %a@." (Ident.unique_name id) Includemod.print_coercion cc; *)
+            (*    Format.printf "coerc id %s: %a@." (Ident.unique_name id)
+                                Includemod.print_coercion cc; *)
             List.iter (Translattribute.check_attribute_on_module mexp)
               mb_attributes;
-            let lam = transl_store (field_path rootpath id) subst str.str_items in
+            let lam =
+              transl_store (field_path rootpath id) subst str.str_items
+            in
             (* Careful: see next case *)
             let subst = !transl_store_subst in
             let ids = Array.of_list (defined_idents str.str_items) in
@@ -781,8 +800,9 @@ let transl_store_structure glob map prims str =
                              (Lprim(Pmakeblock(0, Immutable),
                                     List.map field map)),
                            Lsequence(store_ident id,
-                                     transl_store rootpath (add_ident true id subst)
-                                       rem)))
+                                     transl_store rootpath
+                                                  (add_ident true id subst)
+                                                  rem)))
         | Tstr_module{mb_id=id; mb_expr=modl; mb_loc; mb_attributes} ->
             let lam =
               Translattribute.add_inline_attribute
@@ -955,7 +975,8 @@ let toplevel_name id =
 let toploop_getvalue id =
   Lapply{ap_should_be_tailcall=false;
          ap_loc=Location.none;
-         ap_func=Lprim(Pfield toploop_getvalue_pos, [Lprim(Pgetglobal toploop_ident, [])]);
+         ap_func=Lprim(Pfield toploop_getvalue_pos,
+                       [Lprim(Pgetglobal toploop_ident, [])]);
          ap_args=[Lconst(Const_base(Const_string (toplevel_name id, None)))];
          ap_inlined=Default_inline;
          ap_specialised=Default_specialise}
@@ -963,8 +984,10 @@ let toploop_getvalue id =
 let toploop_setvalue id lam =
   Lapply{ap_should_be_tailcall=false;
          ap_loc=Location.none;
-         ap_func=Lprim(Pfield toploop_setvalue_pos, [Lprim(Pgetglobal toploop_ident, [])]);
-         ap_args=[Lconst(Const_base(Const_string (toplevel_name id, None))); lam];
+         ap_func=Lprim(Pfield toploop_setvalue_pos,
+                       [Lprim(Pgetglobal toploop_ident, [])]);
+         ap_args=[Lconst(Const_base(Const_string (toplevel_name id, None)));
+                  lam];
          ap_inlined=Default_inline;
          ap_specialised=Default_specialise}
 

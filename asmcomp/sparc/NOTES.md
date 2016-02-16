@@ -15,7 +15,3 @@ Status of this port: nearly abandoned
 * ELF application binary interface:
   _System V Application Binary Interface,
    SPARC Processor Supplement_
-
-
-
-

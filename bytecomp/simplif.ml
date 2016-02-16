@@ -355,7 +355,8 @@ let simplify_lets lam =
   | Lapply{ap_func = Lfunction{kind = Curried; params; body}; ap_args = args}
     when optimize && List.length params = List.length args ->
       count bv (beta_reduce params body args)
-  | Lapply{ap_func = Lfunction{kind = Tupled; params; body}; ap_args = [Lprim(Pmakeblock _, args)]}
+  | Lapply{ap_func = Lfunction{kind = Tupled; params; body};
+           ap_args = [Lprim(Pmakeblock _, args)]}
     when optimize && List.length params = List.length args ->
       count bv (beta_reduce params body args)
   | Lapply{ap_func = l1; ap_args = ll} ->
@@ -447,10 +448,12 @@ let simplify_lets lam =
   | Lapply{ap_func = Lfunction{kind = Curried; params; body}; ap_args = args}
     when optimize && List.length params = List.length args ->
       simplif (beta_reduce params body args)
-  | Lapply{ap_func = Lfunction{kind = Tupled; params; body}; ap_args = [Lprim(Pmakeblock _, args)]}
+  | Lapply{ap_func = Lfunction{kind = Tupled; params; body};
+           ap_args = [Lprim(Pmakeblock _, args)]}
     when optimize && List.length params = List.length args ->
       simplif (beta_reduce params body args)
-  | Lapply ap -> Lapply {ap with ap_func = simplif ap.ap_func; ap_args = List.map simplif ap.ap_args}
+  | Lapply ap -> Lapply {ap with ap_func = simplif ap.ap_func;
+                                 ap_args = List.map simplif ap.ap_args}
   | Lfunction{kind; params; body = l; attr} ->
       begin match simplif l with
         Lfunction{kind=Curried; params=params'; body; attr}

@@ -19,8 +19,8 @@ include stdlib/StdlibModules
 
 CAMLC=$(CAMLRUN) boot/ocamlc -g -nostdlib -I boot
 CAMLOPT=$(CAMLRUN) ./ocamlopt -g -nostdlib -I stdlib -I otherlibs/dynlink
-COMPFLAGS=-strict-sequence -principal -w +33..39+48+50 -warn-error A -bin-annot \
-          -safe-string -strict-formats $(INCLUDES)
+COMPFLAGS=-strict-sequence -principal -w +33..39+48+50 -warn-error A \
+          -bin-annot -safe-string -strict-formats $(INCLUDES)
 LINKFLAGS=
 
 YACCFLAGS=-v
@@ -234,4 +234,3 @@ partialclean::
 
 alldepend::
 	cd tools; $(MAKEREC) depend
-

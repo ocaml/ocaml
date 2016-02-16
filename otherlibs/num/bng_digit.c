@@ -11,8 +11,6 @@
 /*                                                                     */
 /***********************************************************************/
 
-/* $Id$ */
-
 /**** Generic operations on digits ****/
 
 /* These macros can be defined in the machine-specific include file.

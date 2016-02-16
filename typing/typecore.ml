@@ -264,7 +264,8 @@ let type_constant = function
   | Const_int64 _ -> instance_def Predef.type_int64
   | Const_nativeint _ -> instance_def Predef.type_nativeint
 
-let constant : Parsetree.constant -> (Asttypes.constant, error) result = function
+let constant : Parsetree.constant -> (Asttypes.constant, error) result =
+  function
   | Pconst_integer (i,None) ->
      begin
        try Ok (Const_int (Misc.Int_literal_converter.int i))
@@ -993,7 +994,7 @@ let rec type_pat ~constrs ~labels ~no_existentials ~mode ~explode ~env
       in
       if explode > 0 then
         let (sp, constrs, labels) = Parmatch.ppat_of_type !env expected_ty in
-	if sp.ppat_desc = Parsetree.Ppat_any then k' Tpat_any else
+        if sp.ppat_desc = Parsetree.Ppat_any then k' Tpat_any else
         if mode = Inside_or then raise Need_backtrack else
         let explode =
           match sp.ppat_desc with
@@ -2883,7 +2884,8 @@ and type_expect_ ?in_function ?(recarg=Rejected) env sexp ty_expected =
                       exp.exp_extra;
       }
 
-  | Pexp_extension ({ txt = ("ocaml.extension_constructor"|"extension_constructor"); _ },
+  | Pexp_extension ({ txt = ("ocaml.extension_constructor"
+                             |"extension_constructor"); _ },
                     payload) ->
       begin match payload with
       | PStr [ { pstr_desc =
@@ -3987,8 +3989,8 @@ and type_let ?(check = fun s -> Warnings.Unused_var s)
               generalize_structure ty'
             end;
             let exp =
-              Builtin_attributes.with_warning_attribute pvb_attributes (fun () ->
-                type_expect exp_env sexp ty')
+              Builtin_attributes.with_warning_attribute pvb_attributes
+                  (fun () -> type_expect exp_env sexp ty')
             in
             end_def ();
             check_univars env true "definition" exp pat.pat_type vars;

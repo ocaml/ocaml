@@ -87,9 +87,10 @@ and type_desc =
       There are also special cases for so-called "class-types", cf. [Typeclass]
       and [Ctype.set_object_name]:
 
-        [Tobject (Tfield(_,_,…(Tfield(_,_,rv)…), Some(`A.#ct`, [rv;t1;…;tn])]
-             ==> [(t1, …, tn) #A.ct]
-        [Tobject (_, Some(`A.#ct`, [Tnil;t1;…;tn])] ==> [(t1, …, tn) A.ct]
+        [Tobject (Tfield(_,_,...(Tfield(_,_,rv)...),
+                         Some(`A.#ct`, [rv;t1;...;tn])]
+             ==> [(t1, ..., tn) #A.ct]
+        [Tobject (_, Some(`A.#ct`, [Tnil;t1;...;tn])] ==> [(t1, ..., tn) A.ct]
 
       where [rv] is the hidden row variable.
   *)

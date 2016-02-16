@@ -11,8 +11,6 @@
 /*                                                                     */
 /***********************************************************************/
 
-/* $Id$ */
-
 /* Code specific to the Intel IA32 (x86) architecture. */
 
 #define BngAdd2(res,carryout,arg1,arg2)                                     \
