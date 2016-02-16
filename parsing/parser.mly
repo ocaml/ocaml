@@ -2239,9 +2239,9 @@ row_field:
 ;
 tag_field:
     name_tag OF opt_ampersand amper_type_list attributes
-      { Rtag ($1, $5, $3, List.rev $4) }
+      { Rtag ($1, add_info_attrs (symbol_info ()) $5, $3, List.rev $4) }
   | name_tag attributes
-      { Rtag ($1, $2, true, []) }
+      { Rtag ($1, add_info_attrs (symbol_info ()) $2, true, []) }
 ;
 opt_ampersand:
     AMPERSAND                                   { true }
@@ -2269,13 +2269,26 @@ core_type_list:
   | core_type_list STAR simple_core_type        { $3 :: $1 }
 ;
 meth_list:
-    field SEMI meth_list                     { let (f, c) = $3 in ($1 :: f, c) }
-  | field opt_semi                              { [$1], Closed }
+    field_semi meth_list                     { let (f, c) = $2 in ($1 :: f, c) }
+  | field_semi                                  { [$1], Closed }
+  | field                                       { [$1], Closed }
   | DOTDOT                                      { [], Open }
 ;
 field:
-    label COLON poly_type_no_attr attributes    { ($1, $4, $3) }
+  label COLON poly_type_no_attr attributes
+    { ($1, add_info_attrs (symbol_info ()) $4, $3) }
 ;
+
+field_semi:
+  label COLON poly_type_no_attr attributes SEMI attributes
+    { let info =
+        match rhs_info 4 with
+        | Some _ as info_before_semi -> info_before_semi
+        | None -> symbol_info ()
+      in
+      ($1, add_info_attrs info ($4 @ $6), $3) }
+;
+
 label:
     LIDENT                                      { $1 }
 ;
