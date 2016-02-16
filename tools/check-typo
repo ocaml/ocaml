@@ -230,16 +230,19 @@ IGNORE_DIRS="
           if (!empty_file && match(prev_line, /^$/)){
             err("white-at-eof", "empty line(s) at EOF");
           }
-          NR = 1;
-          RSTART = 1;
-          RLENGTH = 0;
-          if (!(header_ocaml && header_copyright)){
+          if (NR >= 10 && !(header_ocaml && header_copyright)){
+            NR = 1;
+            RSTART = 1;
+            RLENGTH = 0;
             err("missing-header", "missing copyright header");
           }
           split(svnrules, r, "[, ]");
           for (i in r){
             name = r[i];
             if (name != "" && !counts[name]){
+              NR = 1;
+              RSTART = 1;
+              RLENGTH = 0;
               err("unused-prop", sprintf("unused [%s] in ocaml-typo", name));
             }
           }
