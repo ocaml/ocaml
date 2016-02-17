@@ -168,7 +168,7 @@ The following modes are supported:
 \begin{description}
   \item["auto"] use heuristics to enable colors only if the output supports them (an ANSI-compatible tty terminal);
   \item["always"] enable colors unconditionally;
-  \item["never"] disable colors output.
+  \item["never"] disable color output.
 \end{description}
 The default setting is 'auto', and the current heuristic
 checks that the "TERM" environment variable exists and is

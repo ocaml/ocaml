@@ -270,7 +270,7 @@ use heuristics to enable colors only if the output supports them (an ANSI-compat
 enable colors unconditionally;
 
 .B never
-disable colors output.
+disable color output.
 
 The default setting is
 .B auto,
