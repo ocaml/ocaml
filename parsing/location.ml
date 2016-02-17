@@ -361,12 +361,6 @@ let errorf ?(loc = none) ?(sub = []) ?(if_highlight = "") fmt =
     (fun msg -> {loc; msg; sub; if_highlight})
     fmt
 
-let errorf_prefixed ?(loc=none) ?(sub=[]) ?(if_highlight="") fmt =
-  pp_ksprintf
-    ~before:(fun ppf -> fprintf ppf "%a " print_error_prefix ())
-    (fun msg -> {loc; msg; sub; if_highlight})
-    fmt
-
 let error ?(loc = none) ?(sub = []) ?(if_highlight = "") msg =
   {loc; msg; sub; if_highlight}
 
@@ -398,8 +392,7 @@ let rec default_error_reporter ppf ({loc; msg; sub; if_highlight} as err) =
   if highlighted then
     Format.pp_print_string ppf if_highlight
   else begin
-    print ppf loc;
-    Format.pp_print_string ppf msg;
+    fprintf ppf "%a%a %s" print loc print_error_prefix () msg;
     List.iter (Format.fprintf ppf "@\n@[<2>%a@]" default_error_reporter) sub
   end
 
@@ -410,7 +403,7 @@ let report_error ppf err =
 ;;
 
 let error_of_printer loc print x =
-  errorf_prefixed ~loc "%a@?" print x
+  errorf ~loc "%a@?" print x
 
 let error_of_printer_file print x =
   error_of_printer (in_file !input_name) print x
@@ -419,11 +412,11 @@ let () =
   register_error_of_exn
     (function
       | Sys_error msg ->
-          Some (errorf_prefixed ~loc:(in_file !input_name)
+          Some (errorf ~loc:(in_file !input_name)
                 "I/O error: %s" msg)
       | Warnings.Errors n ->
           Some
-            (errorf_prefixed ~loc:(in_file !input_name)
+            (errorf ~loc:(in_file !input_name)
              "Some fatal warnings were triggered (%d occurrences)" n)
       | _ ->
           None
@@ -435,7 +428,7 @@ external reraise : exn -> 'a = "%reraise"
 let rec report_exception_rec n ppf exn =
   try match error_of_exn exn with
   | Some err ->
-      fprintf ppf "@[%a %a@]@." print_error_prefix () report_error err
+      fprintf ppf "@[%a@]@." report_error err
   | None -> reraise exn
   with exn when n > 0 ->
     report_exception_rec (n-1) ppf exn
