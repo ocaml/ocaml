@@ -139,7 +139,7 @@ module Compiler_messages = struct
 
   let rec error_reporter ppf ({loc; msg; sub; if_highlight=_} : Location.error) =
     print_loc ppf loc;
-    Format.pp_print_string ppf msg;
+    Format.fprintf ppf "%a %s" Location.print_error_prefix () msg;
     List.iter sub ~f:(fun err ->
       Format.fprintf ppf "@\n@[<2>%a@]" error_reporter err)
 

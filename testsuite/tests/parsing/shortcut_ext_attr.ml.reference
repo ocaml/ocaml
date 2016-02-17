@@ -959,4 +959,4 @@
 ]
 
 File "shortcut_ext_attr.ml", line 4, characters 6-9:
-Uninterpreted extension 'foo'.
+Error: Uninterpreted extension 'foo'.
