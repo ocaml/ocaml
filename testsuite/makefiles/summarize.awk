@@ -63,7 +63,7 @@ function record_unexp() {
     if (in_test) record_unexp();
     match($0, /Running tests from '[^']*'/);
     curdir = substr($0, RSTART+20, RLENGTH - 21);
-    # Use SKIPPED[curdir] as a sentintel to detect no output
+    # Use SKIPPED[curdir] as a sentinel to detect no output
     SKIPPED[curdir] = 0;
     key = curdir;
     DIRS[key] = key;
@@ -79,6 +79,9 @@ function record_unexp() {
     if (in_test) record_unexp();
     match($0, /... testing '[^']*'/);
     curfile = substr($0, RSTART+13, RLENGTH-14);
+    if (match($0, /... testing '[^']*' with [^:=]*/)){
+        curfile = substr($0, RSTART+12, RLENGTH-12);
+    }
     key = sprintf ("%s/%s", curdir, curfile);
     DIRS[key] = curdir;
     in_test = 1;
