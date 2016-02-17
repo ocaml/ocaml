@@ -204,15 +204,25 @@ IGNORE_DIRS="
           err("very-long-line", "line is over 132 characters");
         }
 
-        3 <= NR && NR <= 5 \
-        && (/  OCaml  / || / ocamlbuild / || / OCamldoc /) {
-          header_ocaml = NR;
-        }
+        # Header-recognition automaton. Read this from bottom to top.
 
-        header_ocaml && header_ocaml + 4 <= NR && NR <= header_ocaml + 6 \
-        && / Copyright / {
-          header_copyright = 1;
-        }
+        state == "close" && $0 ~ /\*{74}/ { state = "OK"; }
+        state == "close" { state = "error"; }
+        state == "blurb" && $0 ~ /\* {72}\*/ { state = "close"; }
+        state == "blurb1" && $0 ~ /\*   All rights reserved. / \
+                                                 { state = "blurb"; }
+        state == "blurb1" { state = "error"; }
+        state == "copyright" && $0 ~ /\* {72}\*/ { state = "blurb1"; }
+        state == "copyright" && $0 !~ /\*   Copyright [0-9]{4}/ \
+                             && $0 !~ /\*     / { state = "error"; }
+        state == "authors" && $0 ~ /\* {72}\*/ { state = "copyright"; }
+        state == "blank2" && $0 ~ /\* {72}\*/ { state = "authors"; }
+        state == "blank2" { state = "error"; }
+        state == "title" && $0 ~ /\* {32}OCaml {33}\*/ { state = "blank2"; }
+        state == "title" { state = "error"; }
+        state == "blank1" && $0 ~ /\* {72}\*/ { state = "title"; }
+        state == "blank1" { state = "error"; }
+        state == "" && NR < 4 && $0 ~ /\*{74}/ { state = "blank1"; }
 
         {
           prev_line = last_line;
@@ -231,7 +241,7 @@ IGNORE_DIRS="
           if (!empty_file && match(prev_line, /^$/)){
             err("white-at-eof", "empty line(s) at EOF");
           }
-          if (!(header_ocaml && header_copyright)){
+          if (state != "OK"){
             if (NR >= 10){
               NR = 1;
               RSTART = 1;
