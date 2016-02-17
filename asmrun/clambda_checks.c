@@ -59,13 +59,13 @@ value caml_check_field_access(value v, value pos, value v_descr)
   value orig_v = v;
   if (v == (value) 0) {
     fprintf(stderr, "Access to field %lld of NULL: %s\n",
-      (unsigned long long) Long_val(pos), descr);
+      (ARCH_UINT64_TYPE) Long_val(pos), descr);
     abort();
   }
   if (!Is_block(v)) {
     fprintf(stderr,
       "Access to field %lld of non-boxed value %p is illegal: %s\n",
-      (unsigned long long) Long_val(pos), (void*) v, descr);
+      (ARCH_UINT64_TYPE) Long_val(pos), (void*) v, descr);
     abort();
   }
   if (Tag_val(v) == Infix_tag) {
@@ -77,8 +77,8 @@ value caml_check_field_access(value v, value pos, value v_descr)
   if (Long_val(pos) >= Wosize_val(v)) {
     fprintf(stderr,
       "Access to field %lld of value %p of size %lld is illegal: %s\n",
-      (unsigned long long) Long_val(pos), (void*) v,
-      (unsigned long long) Wosize_val(v),
+      (ARCH_UINT64_TYPE) Long_val(pos), (void*) v,
+      (ARCH_UINT64_TYPE) Wosize_val(v),
       descr);
     abort();
   }
