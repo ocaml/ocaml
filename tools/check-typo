@@ -1,16 +1,19 @@
 #!/bin/sh
 
-#########################################################################
-#                                                                       #
-#                                 OCaml                                 #
-#                                                                       #
-#           Damien Doligez, projet Gallium, INRIA Rocquencourt          #
-#                                                                       #
-#   Copyright 2012 Institut National de Recherche en Informatique et    #
-#   en Automatique.  All rights reserved.  This file is distributed     #
-#   under the terms of the Q Public License version 1.0.                #
-#                                                                       #
-#########################################################################
+#**************************************************************************
+#*                                                                        *
+#*                                 OCaml                                  *
+#*                                                                        *
+#*           Damien Doligez, projet Gallium, INRIA Rocquencourt           *
+#*                                                                        *
+#*   Copyright 2012 Institut National de Recherche en Informatique et     *
+#*     en Automatique.                                                    *
+#*                                                                        *
+#*   All rights reserved.  This file is distributed under the terms of    *
+#*   the GNU Lesser General Public License version 2.1, with the          *
+#*   special exception on linking described in the file LICENSE.          *
+#*                                                                        *
+#**************************************************************************
 
 # check-typo - Check typographic conventions on OCaml sources.
 
@@ -218,7 +221,7 @@ IGNORE_DIRS="
         state == "authors" && $0 ~ /\* {72}\*/ { state = "copyright"; }
         state == "blank2" && $0 ~ /\* {72}\*/ { state = "authors"; }
         state == "blank2" { state = "error"; }
-        state == "title" && $0 ~ /\* {32}OCaml {33}\*/ { state = "blank2"; }
+        state == "title" && $0 ~ /\* {33}OCaml {34}\*/ { state = "blank2"; }
         state == "title" { state = "error"; }
         state == "blank1" && $0 ~ /\* {72}\*/ { state = "title"; }
         state == "blank1" { state = "error"; }

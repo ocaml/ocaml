@@ -1,15 +1,16 @@
-/***********************************************************************/
-/*                                                                     */
-/*                                OCaml                                */
-/*                                                                     */
-/*               David Allsopp, MetaStack Solutions Ltd.               */
-/*                                                                     */
-/*  Copyright 2015 MetaStack Solutions Ltd.  All rights reserved.      */
-/*  This file is distributed under the terms of the GNU Library        */
-/*  General Public License, with the special exception on linking      */
-/*  described in file ../../LICENSE.                                   */
-/*                                                                     */
-/***********************************************************************/
+/**************************************************************************/
+/*                                                                        */
+/*                                 OCaml                                  */
+/*                                                                        */
+/*                David Allsopp, MetaStack Solutions Ltd.                 */
+/*                                                                        */
+/*   Copyright 2015 MetaStack Solutions Ltd.                              */
+/*                                                                        */
+/*   All rights reserved.  This file is distributed under the terms of    */
+/*   the GNU Lesser General Public License version 2.1, with the          */
+/*   special exception on linking described in the file LICENSE.          */
+/*                                                                        */
+/**************************************************************************/
 
 #include <errno.h>
 #include <caml/mlvalues.h>

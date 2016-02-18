@@ -1,3 +1,18 @@
+#**************************************************************************
+#*                                                                        *
+#*                                 OCaml                                  *
+#*                                                                        *
+#*                 Damien Doligez, projet Gallium, INRIA                  *
+#*                                                                        *
+#*   Copyright 2015 Institut National de Recherche en Informatique et     *
+#*     en Automatique.                                                    *
+#*                                                                        *
+#*   All rights reserved.  This file is distributed under the terms of    *
+#*   the GNU Lesser General Public License version 2.1, with the          *
+#*   special exception on linking described in the file LICENSE.          *
+#*                                                                        *
+#**************************************************************************
+
 # Default behaviour, for if core.autocrlf isn't set
 * text=auto
 
@@ -14,8 +29,6 @@ boot/ocamldep binary
 README*                  ocaml-typo=missing-header
 *.adoc                   ocaml-typo=missing-header,long-line,unused-prop
 
-/.gitattributes           ocaml-typo=missing-header
-/.gitignore               ocaml-typo=missing-header
 /.merlin                  ocaml-typo=missing-header
 /Changes                  ocaml-typo=non-ascii,missing-header
 /INSTALL                  ocaml-typo=missing-header
@@ -52,10 +65,11 @@ otherlibs/win32unix/symlink.c     ocaml-typo=long-line
 
 stdlib/sharpbang    ocaml-typo=white-at-eol,missing-lf
 
-# FIXME remove headers in testsuite and remove unused-prop in next line:
-testsuite/**        ocaml-typo=missing-header,unused-prop
+# FIXME remove headers in testsuite/tests and remove unused-prop in next line:
+testsuite/tests/**                        ocaml-typo=missing-header,unused-prop
 testsuite/tests/lib-bigarray-2/bigarrf.f  ocaml-typo=missing-header,tab
 testsuite/tests/misc-unsafe/almabench.ml  ocaml-typo=missing-header,long-line
+testsuite/typing                          ocaml-typo=missing-header
 
 tools/magic         ocaml-typo=missing-header
 
