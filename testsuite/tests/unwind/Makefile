@@ -1,6 +1,8 @@
+# The -keep_dwarf_unwind option of ld was introduced in ld version 224.1.
+# (The last released version where it is not supported is version 136.)
 default:
 	@printf " ... testing 'unwind_test':"
-	@if [ $(SYSTEM) = macosx ] && ! $(BYTECODE_ONLY); then \
+	@if [ $(SYSTEM) = macosx ] && ! $(BYTECODE_ONLY) && [[ `ld -v 2>&1` =~ ld64-([0-9]*) ]] && [[ 224 -le $${BASH_REMATCH[1]} ]]; then \
 	  $(MAKE) native_macosx_tests; \
 	else \
 	  echo " => skipped"; \
