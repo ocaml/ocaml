@@ -283,6 +283,7 @@ let toplevel_substitution sb tree =
             (Variable.Map.map (fun (spec_to : Flambda.specialised_to) ->
                 { spec_to with var = sb spec_to.var; })
               set_of_closures.specialised_args)
+          ~direct_call_surrogates:set_of_closures.direct_call_surrogates
       in
       Set_of_closures set_of_closures
     | Project_closure project_closure ->
@@ -362,6 +363,7 @@ let make_closure_declaration ~id ~body ~params : Flambda.t =
     in
     Flambda.create_set_of_closures ~function_decls ~free_vars
       ~specialised_args:Variable.Map.empty
+      ~direct_call_surrogates:Variable.Map.empty
   in
   let project_closure : Flambda.named =
     Project_closure {
@@ -575,6 +577,7 @@ let substitute_read_symbol_field_for_variables
             (Variable.Map.map (fun (spec_to : Flambda.specialised_to) ->
                 { spec_to with var = sb spec_to.var; })
               set_of_closures.specialised_args)
+          ~direct_call_surrogates:set_of_closures.direct_call_surrogates
       in
       Set_of_closures set_of_closures
     | Project_closure project_closure ->

@@ -667,6 +667,21 @@ and simplify_set_of_closures original_env r
           E.find_exn environment_before_cleaning spec_to.var)
         specialised_args)
   in
+  let direct_call_surrogates =
+    Variable.Map.fold (fun existing surrogate surrogates ->
+        let existing =
+          Freshening.Project_var.apply_closure_id freshening
+            (Closure_id.wrap existing)
+        in
+        let surrogate =
+          Freshening.Project_var.apply_closure_id freshening
+            (Closure_id.wrap surrogate)
+        in
+        assert (not (Closure_id.Map.mem existing surrogates));
+        Closure_id.Map.add existing surrogate surrogates)
+      set_of_closures.direct_call_surrogates
+      Closure_id.Map.empty
+  in
   let env =
     E.enter_set_of_closures_declaration
       function_decls.set_of_closures_origin env
@@ -680,7 +695,7 @@ and simplify_set_of_closures original_env r
     in
     A.create_value_set_of_closures ~function_decls ~bound_vars
       ~invariant_params:(lazy Variable.Map.empty) ~specialised_args
-      ~freshening
+      ~freshening ~direct_call_surrogates
   in
   (* Populate the environment with the approximation of each closure.
      This part of the environment is shared between all of the closures in
@@ -780,11 +795,21 @@ and simplify_set_of_closures original_env r
       ~invariant_params
       ~specialised_args:internal_value_set_of_closures.specialised_args
       ~freshening:internal_value_set_of_closures.freshening
+      ~direct_call_surrogates:
+        internal_value_set_of_closures.direct_call_surrogates
+  in
+  let direct_call_surrogates =
+    Closure_id.Map.fold (fun existing surrogate surrogates ->
+        Variable.Map.add (Closure_id.unwrap existing)
+          (Closure_id.unwrap surrogate) surrogates)
+      internal_value_set_of_closures.direct_call_surrogates
+      Variable.Map.empty
   in
   let set_of_closures =
     Flambda.create_set_of_closures ~function_decls
       ~free_vars:(Variable.Map.map fst free_vars)
       ~specialised_args
+      ~direct_call_surrogates
   in
   let r = ret r (A.value_set_of_closures value_set_of_closures) in
   set_of_closures, r, value_set_of_closures.freshening
@@ -803,9 +828,48 @@ and simplify_apply env r ~(apply : Flambda.apply) : Flambda.t * R.t =
            successful---in which case we then have a direct
            application---consider inlining. *)
         match A.check_approx_for_closure lhs_of_application_approx with
-        | Ok (value_closure, _set_of_closures_var,
-              _set_of_closures_symbol, value_set_of_closures) ->
-          let closure_id_being_applied = value_closure.closure_id in
+        | Ok (value_closure, set_of_closures_var,
+              set_of_closures_symbol, value_set_of_closures) ->
+          let lhs_of_application, closure_id_being_applied,
+                value_set_of_closures, env, wrap =
+            let closure_id_being_applied = value_closure.closure_id in
+            (* If the call site is a direct call to a function that has a
+               "direct call surrogate" (see inline_and_simplify_aux.mli),
+               repoint the call to the surrogate. *)
+            let surrogates = value_set_of_closures.direct_call_surrogates in
+            match Closure_id.Map.find closure_id_being_applied surrogates with
+            | exception Not_found ->
+              lhs_of_application, closure_id_being_applied,
+                value_set_of_closures, env, (fun expr -> expr)
+            | surrogate ->
+              let rec find_transitively surrogate =
+                match Closure_id.Map.find surrogate surrogates with
+                | exception Not_found -> surrogate
+                | surrogate -> find_transitively surrogate
+              in
+              let surrogate = find_transitively surrogate in
+              let surrogate_var =
+                Variable.rename lhs_of_application ~append:"_surrogate"
+              in
+              let move_to_surrogate : Projection.move_within_set_of_closures =
+                { closure = lhs_of_application;
+                  start_from = closure_id_being_applied;
+                  move_to = surrogate;
+                }
+              in
+              let approx_for_surrogate  =
+                A.value_closure ~closure_var:surrogate_var
+                  ?set_of_closures_var ?set_of_closures_symbol
+                  value_set_of_closures surrogate
+              in
+              let env = E.add env surrogate_var approx_for_surrogate in
+              let wrap expr =
+                Flambda.create_let surrogate_var
+                  (Move_within_set_of_closures move_to_surrogate)
+                  expr
+              in
+              surrogate_var, surrogate, value_set_of_closures, env, wrap
+          in
           let function_decls = value_set_of_closures.function_decls in
           let function_decl =
             try
@@ -825,23 +889,27 @@ and simplify_apply env r ~(apply : Flambda.apply) : Flambda.t * R.t =
           in
           let nargs = List.length args in
           let arity = Flambda_utils.function_arity function_decl in
-          if nargs = arity then
-            simplify_full_application env r ~function_decls ~lhs_of_application
-              ~closure_id_being_applied ~function_decl ~value_set_of_closures
-              ~args ~args_approxs ~dbg ~inline_requested ~specialise_requested
-          else if nargs > arity then
-            simplify_over_application env r ~args ~args_approxs ~function_decls
-              ~lhs_of_application ~closure_id_being_applied ~function_decl
-              ~value_set_of_closures ~dbg ~inline_requested
-              ~specialise_requested
-          else if nargs > 0 && nargs < arity then
-            simplify_partial_application env r ~lhs_of_application
-              ~closure_id_being_applied ~function_decl ~args ~dbg
-              ~inline_requested ~specialise_requested
-          else
-            Misc.fatal_errorf "Function with arity %d when simplifying \
-                application expression: %a"
-              arity Flambda.print (Flambda.Apply apply)
+          let result, r =
+            if nargs = arity then
+              simplify_full_application env r ~function_decls
+                ~lhs_of_application ~closure_id_being_applied ~function_decl
+                ~value_set_of_closures ~args ~args_approxs ~dbg
+                ~inline_requested ~specialise_requested
+            else if nargs > arity then
+              simplify_over_application env r ~args ~args_approxs
+                ~function_decls ~lhs_of_application ~closure_id_being_applied
+                ~function_decl ~value_set_of_closures ~dbg ~inline_requested
+                ~specialise_requested
+            else if nargs > 0 && nargs < arity then
+              simplify_partial_application env r ~lhs_of_application
+                ~closure_id_being_applied ~function_decl ~args ~dbg
+                ~inline_requested ~specialise_requested
+            else
+              Misc.fatal_errorf "Function with arity %d when simplifying \
+                  application expression: %a"
+                arity Flambda.print (Flambda.Apply apply)
+          in
+          wrap result, r
         | Wrong ->  (* Insufficient approximation information to simplify. *)
           Apply ({ func = lhs_of_application; args; kind = Indirect; dbg;
               inline = inline_requested; specialise = specialise_requested; }),
@@ -1027,37 +1095,37 @@ and simplify_named env r (tree : Flambda.named) : Flambda.named * R.t =
     match
       Unbox_closures.rewrite_set_of_closures ~env ~set_of_closures
     with
+    | Some (expr, benefit) ->
+      let r = R.add_benefit r benefit in
+      simplify env r expr ~pass_name:"Unbox_closures"
+    | None ->
+      match Unbox_free_vars_of_closures.run ~env ~set_of_closures with
       | Some (expr, benefit) ->
         let r = R.add_benefit r benefit in
-        simplify env r expr ~pass_name:"Unbox_closures"
+        simplify env r expr ~pass_name:"Unbox_free_vars_of_closures"
       | None ->
-        match Unbox_free_vars_of_closures.run ~env ~set_of_closures with
+        (* CR-soon mshinwell: should maybe add one allocation for the stub *)
+        match
+          Unbox_specialised_args.rewrite_set_of_closures ~env
+            ~set_of_closures
+        with
         | Some (expr, benefit) ->
           let r = R.add_benefit r benefit in
-          simplify env r expr ~pass_name:"Unbox_free_vars_of_closures"
+          simplify env r expr ~pass_name:"Unbox_specialised_args"
         | None ->
-          (* CR-soon mshinwell: should maybe add one allocation for the stub *)
           match
-            Unbox_specialised_args.rewrite_set_of_closures ~env
-              ~set_of_closures
+            Remove_unused_arguments.
+                separate_unused_arguments_in_set_of_closures
+              set_of_closures ~backend
           with
-          | Some (expr, benefit) ->
-            let r = R.add_benefit r benefit in
-            simplify env r expr ~pass_name:"Unbox_specialised_args"
+          | Some set_of_closures ->
+            let expr =
+              Flambda_utils.name_expr (Set_of_closures set_of_closures)
+                ~name:"remove_unused_arguments"
+            in
+            simplify env r expr ~pass_name:"Remove_unused_arguments"
           | None ->
-            match
-              Remove_unused_arguments.
-                  separate_unused_arguments_in_set_of_closures
-                set_of_closures ~backend
-            with
-            | Some set_of_closures ->
-              let expr =
-                Flambda_utils.name_expr (Set_of_closures set_of_closures)
-                  ~name:"remove_unused_arguments"
-              in
-              simplify env r expr ~pass_name:"Remove_unused_arguments"
-            | None ->
-              Set_of_closures set_of_closures, r
+            Set_of_closures set_of_closures, r
     end
   | Project_closure project_closure ->
     simplify_project_closure env r ~project_closure
@@ -1430,6 +1498,7 @@ let constant_defining_value_approx
         ~invariant_params
         ~specialised_args:Variable.Map.empty
         ~freshening:Freshening.Project_var.empty
+        ~direct_call_surrogates:Closure_id.Map.empty
     in
     A.value_set_of_closures value_set_of_closures
   | Project_closure (set_of_closures_symbol, closure_id) -> begin

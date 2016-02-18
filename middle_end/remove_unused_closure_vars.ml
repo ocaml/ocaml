@@ -96,9 +96,20 @@ let remove_unused_closure_variables program =
       let free_vars =
         Flambda_utils.clean_projections ~which_variables:free_vars
       in
+      let direct_call_surrogates =
+        (* Remove direct call surrogates where either the existing function
+           or the surrogate has been eliminated. *)
+        Variable.Map.fold (fun existing surrogate surrogates ->
+            if not (Variable.Map.mem existing funs)
+              || not (Variable.Map.mem surrogate funs)
+            then surrogates
+            else Variable.Map.add existing surrogate surrogates)
+          set_of_closures.direct_call_surrogates
+          Variable.Map.empty
+      in
       let set_of_closures =
         Flambda.create_set_of_closures ~function_decls
-          ~free_vars ~specialised_args
+          ~free_vars ~specialised_args ~direct_call_surrogates
       in
       Set_of_closures set_of_closures
     | e -> e

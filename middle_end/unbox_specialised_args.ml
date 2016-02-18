@@ -28,7 +28,9 @@ module Transform = struct
       && not (Variable.Map.is_empty set_of_closures.specialised_args)
 
   let what_to_specialise ~env ~(set_of_closures : Flambda.set_of_closures) =
-    let what_to_specialise = W.create ~set_of_closures in
+    let what_to_specialise =
+      W.create ~set_of_closures ~make_direct_call_surrogates:false
+    in
     if not (precondition ~env ~set_of_closures) then
       what_to_specialise
     else

@@ -27,6 +27,7 @@ module What_to_specialise : sig
 
   val create
      : set_of_closures:Flambda.set_of_closures
+    -> make_direct_call_surrogates:bool
     -> t
 
   val new_specialised_arg

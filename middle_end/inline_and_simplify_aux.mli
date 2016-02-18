@@ -313,7 +313,6 @@ module Result : sig
 
   val seen_direct_application : t -> t
   val num_direct_applications : t -> int
-
 end
 
 (** Command line argument -inline *)

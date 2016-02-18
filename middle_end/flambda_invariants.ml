@@ -258,8 +258,9 @@ let variable_and_symbol_invariants (program : Flambda.program) =
     | Expr expr ->
       loop env expr
   and loop_set_of_closures env
-      ({ Flambda.function_decls; free_vars; specialised_args; }
-       as set_of_closures) =
+      ({ Flambda.function_decls; free_vars; specialised_args;
+          direct_call_surrogates = _; } as set_of_closures) =
+      (* CR-soon mshinwell: check [direct_call_surrogates] *)
       let { Flambda.set_of_closures_id; set_of_closures_origin; funs; } =
         function_decls
       in

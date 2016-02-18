@@ -158,6 +158,7 @@ let run ~env ~(set_of_closures : Flambda.set_of_closures) =
             ~function_decls:set_of_closures.function_decls
             ~free_vars
             ~specialised_args:set_of_closures.specialised_args
+            ~direct_call_surrogates:set_of_closures.direct_call_surrogates
         in
         let expr, benefit =
           add_lifted_projections_around_set_of_closures ~set_of_closures

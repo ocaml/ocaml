@@ -93,6 +93,7 @@ let rewrite_one_set_of_closures (set_of_closures : Flambda.set_of_closures) =
         ~function_decls
         ~free_vars:set_of_closures.free_vars
         ~specialised_args:set_of_closures.specialised_args
+        ~direct_call_surrogates:set_of_closures.direct_call_surrogates
     in
     Some set_of_closures
 

@@ -23,13 +23,16 @@ module Transform = struct
   let pass_name = "unbox-closures"
   let variable_suffix = ""
 
-  let precondition ~(set_of_closures : Flambda.set_of_closures) =
+  let precondition ~env ~(set_of_closures : Flambda.set_of_closures) =
     !Clflags.unbox_closures
+      && not (Inline_and_simplify_aux.Env.at_toplevel env)
       && not (Variable.Map.is_empty set_of_closures.free_vars)
 
-  let what_to_specialise ~env:_ ~(set_of_closures : Flambda.set_of_closures) =
-    let what_to_specialise = W.create ~set_of_closures in
-    if not (precondition ~set_of_closures) then
+  let what_to_specialise ~env ~(set_of_closures : Flambda.set_of_closures) =
+    let what_to_specialise =
+      W.create ~set_of_closures ~make_direct_call_surrogates:true
+    in
+    if not (precondition ~env ~set_of_closures) then
       what_to_specialise
     else
       Flambda_iterators.fold_function_decls_ignoring_stubs set_of_closures
