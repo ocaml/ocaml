@@ -21,7 +21,7 @@
 # 1. architecture: bsd, macos, linux, cygwin, mingw, mingw64, msvc, msvc64
 # 2. directory in which to build (trunk, 4.02, etc)
 #    for windows, this is relative to $HOME/jenkins-workspace
-#    for bsd, macos, linux, this is "." or an absolute directory
+#    for bsd, macos, linux, this is ignored and the build is always in .
 # 3. options:
 #    -conf configure-option
 #    -patch1 file-name       apply patch with -p1
@@ -80,13 +80,13 @@ set -ex
 # default values
 make=make
 instdir="$HOME/ocaml-tmp-install"
-workdir="$branch"
 docheckout=false
 nt=
 
 case "$arch" in
   bsd)
     make=gmake
+    workdir=.
   ;;
   macos)
     workdir=.
