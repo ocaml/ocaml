@@ -49,8 +49,15 @@ module type S = sig
 end
 
 module Make (T : S) : sig
+  (** [duplicate_function] should be [Inline_and_simplify.duplicate_function]. *)
   val rewrite_set_of_closures
      : env:Inline_and_simplify_aux.Env.t
+    -> duplicate_function:(
+         env:Inline_and_simplify_aux.Env.t
+      -> set_of_closures:Flambda.set_of_closures
+      -> fun_var:Variable.t
+      -> Flambda.function_declaration
+        * Flambda.specialised_to Variable.Map.t)
     -> set_of_closures:Flambda.set_of_closures
     -> (Flambda.expr * Inlining_cost.Benefit.t) option
 end

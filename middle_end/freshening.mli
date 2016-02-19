@@ -139,6 +139,7 @@ val apply_function_decls_and_free_vars
    : t
   -> (Flambda.specialised_to * 'a) Variable.Map.t
   -> Flambda.function_declarations
+  -> only_freshen_parameters:bool
   -> (Flambda.specialised_to * 'a) Variable.Map.t
     * Flambda.function_declarations
     * t
