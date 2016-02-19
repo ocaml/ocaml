@@ -578,7 +578,7 @@ and simplify_set_of_closures original_env r
       ~make_closure_symbol:Backend.closure_symbol
   in
   let env = E.increase_closure_depth original_env in
-  let free_vars, specialised_args, parameter_approximations,
+  let free_vars, specialised_args, function_decls, parameter_approximations,
       internal_value_set_of_closures, set_of_closures_env =
     Inline_and_simplify_aux.prepare_to_simplify_set_of_closures ~env
       ~set_of_closures ~function_decls ~only_for_function_decl:None
@@ -1324,11 +1324,19 @@ and duplicate_function ~env ~(set_of_closures : Flambda.set_of_closures)
         Variable.print fun_var
     | function_decl -> function_decl
   in
-  let free_vars, specialised_args, parameter_approximations,
+  let env = E.activate_freshening (E.set_never_inline env) in
+  let free_vars, specialised_args, function_decls, parameter_approximations,
       _internal_value_set_of_closures, set_of_closures_env =
     Inline_and_simplify_aux.prepare_to_simplify_set_of_closures ~env
       ~set_of_closures ~function_decls:set_of_closures.function_decls
       ~freshen:false ~only_for_function_decl:(Some function_decl)
+  in
+  let function_decl =
+    match Variable.Map.find fun_var function_decls.funs with
+    | exception Not_found ->
+      Misc.fatal_errorf "duplicate_function: cannot find function %a (2)"
+        Variable.print fun_var
+    | function_decl -> function_decl
   in
   let closure_env =
     Inline_and_simplify_aux.prepare_to_simplify_closure ~function_decl
@@ -1341,9 +1349,6 @@ and duplicate_function ~env ~(set_of_closures : Flambda.set_of_closures)
       ~inline_inside:false
       ~debuginfo:function_decl.dbg
       ~f:(fun body_env ->
-        let body_env =
-          E.activate_freshening (E.set_never_inline body_env)
-        in
         simplify body_env (R.create ()) function_decl.body)
   in
   let function_decl =

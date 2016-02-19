@@ -17,4 +17,8 @@
 [@@@ocaml.warning "+a-4-9-30-40-41-42"]
 
 (** Eliminate variables bound by closures that are not required. *)
-val remove_unused_closure_variables : Flambda.program -> Flambda.program
+(* CR mshinwell: update comment, it removes functions too *)
+val remove_unused_closure_variables
+   : remove_direct_call_surrogates:bool
+  -> Flambda.program
+  -> Flambda.program

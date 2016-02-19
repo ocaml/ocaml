@@ -594,10 +594,6 @@ module Make (T : S) = struct
         in
         function_decl.params @ new_params
       in
-      let specialised_args =
-        Variable.Map.disjoint_union rewritten_existing_specialised_args
-          specialised_args
-      in
       let rewritten_function_decl =
         Flambda.create_function_declaration
           ~params:all_params

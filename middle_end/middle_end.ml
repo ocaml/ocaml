@@ -94,7 +94,8 @@ let middle_end ppf ~source_provenance ~prefixname ~backend
       +-+ ("Ref_to_variables",
            Ref_to_variables.eliminate_ref)
       +-+ ("Remove_unused_closure_vars 2",
-           Remove_unused_closure_vars.remove_unused_closure_variables)
+           Remove_unused_closure_vars.remove_unused_closure_variables
+             ~remove_direct_call_surrogates:false)
       +-+ ("Initialize_symbol_to_let_symbol",
            Initialize_symbol_to_let_symbol.run)
     in
@@ -116,12 +117,14 @@ let middle_end ppf ~source_provenance ~prefixname ~backend
              Lift_let_to_initialize_symbol.lift ~backend)
         +-+ ("lift_lets 2", Lift_code.lift_lets)
         +-+ ("Remove_unused_closure_vars 1",
-             Remove_unused_closure_vars.remove_unused_closure_variables)
+             Remove_unused_closure_vars.remove_unused_closure_variables
+              ~remove_direct_call_surrogates:false)
         +-+ ("Inline_and_simplify",
              Inline_and_simplify.run ~never_inline:false ~backend
                ~prefixname ~round)
         +-+ ("Remove_unused_closure_vars 2",
-             Remove_unused_closure_vars.remove_unused_closure_variables)
+             Remove_unused_closure_vars.remove_unused_closure_variables
+              ~remove_direct_call_surrogates:false)
         +-+ ("lift_lets 3", Lift_code.lift_lets)
         +-+ ("Ref_to_variables",
              Ref_to_variables.eliminate_ref)
@@ -129,13 +132,17 @@ let middle_end ppf ~source_provenance ~prefixname ~backend
              Inline_and_simplify.run ~never_inline:true ~backend
               ~prefixname ~round)
         +-+ ("Remove_unused_closure_vars 3",
-             Remove_unused_closure_vars.remove_unused_closure_variables)
+             Remove_unused_closure_vars.remove_unused_closure_variables
+              ~remove_direct_call_surrogates:false)
         +-+ ("Initialize_symbol_to_let_symbol",
              Initialize_symbol_to_let_symbol.run)
         |> loop
     in
     let back_end flam =
       flam
+      +-+ ("Remove_unused_closure_vars",
+           Remove_unused_closure_vars.remove_unused_closure_variables
+             ~remove_direct_call_surrogates:true)
       +-+ ("Lift_constants", Lift_constants.lift_constants ~backend)
       +-+ ("Share_constants", Share_constants.share_constants)
       +-+ ("Remove_unused_program_constructs",

@@ -553,7 +553,7 @@ let prepare_to_simplify_set_of_closures ~env
   let env = E.local env in
   let free_vars, function_decls, sb, freshening =
     Freshening.apply_function_decls_and_free_vars (E.freshening env) free_vars
-      function_decls ~only_freshen_parameters:freshen
+      function_decls ~only_freshen_parameters:(not freshen)
   in
   let env = E.set_freshening env sb in
   let free_vars =
@@ -621,7 +621,7 @@ let prepare_to_simplify_set_of_closures ~env
       )
       function_decls.funs env
   in
-  free_vars, specialised_args, parameter_approximations,
+  free_vars, specialised_args, function_decls, parameter_approximations,
     internal_value_set_of_closures, set_of_closures_env
 
 (* This adds only the minimal set of approximations to the closures.
@@ -636,15 +636,18 @@ let populate_closure_approximations
   let env =
     Variable.Map.fold (fun id (_, desc) env ->
         E.add_outer_scope env id desc)
-      free_vars set_of_closures_env in
-
+      free_vars set_of_closures_env
+  in
   (* Add known approximations of function parameters *)
   let env =
     List.fold_left (fun env id ->
-       let approx = try Variable.Map.find id parameter_approximations
-                    with Not_found -> (A.value_unknown Other) in
-       E.add env id approx)
-      env function_decl.params in
+        let approx =
+          try Variable.Map.find id parameter_approximations
+          with Not_found -> (A.value_unknown Other)
+        in
+        E.add env id approx)
+      env function_decl.params
+  in
   env
 
 let prepare_to_simplify_closure ~(function_decl : Flambda.function_declaration)

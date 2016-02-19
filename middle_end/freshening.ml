@@ -276,9 +276,14 @@ module Project_var = struct
   let subst_free_vars fv subst ~only_freshen_parameters
       : (Flambda.specialised_to * _) Variable.Map.t * _ * _ =
     Variable.Map.fold (fun id lam (fv, subst, t) ->
-        let id, subst, t = new_subst_fv t id subst in
+        let id, subst, t =
+          if only_freshen_parameters then
+            id, subst, t
+          else
+            new_subst_fv t id subst
+        in
         Variable.Map.add id lam fv, subst, t)
-      (if only_freshen_parameters then Variable.Map.empty else fv)
+      fv
       (Variable.Map.empty, subst, empty)
 
   (** Returns :
