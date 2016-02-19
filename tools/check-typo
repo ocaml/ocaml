@@ -168,6 +168,7 @@ IGNORE_DIRS="
               && counts[name] <= 10){
             printf ("%s:%d.%d:", file, NR, RSTART + RLENGTH);
             printf (" [%s] %s\n", name, msg);
+            got_errors = 1;
             if (counts[name] == 10){
               printf ("WARNING: too many [%s] in this file.", name);
               printf ("  Others will not be reported.\n");
@@ -175,8 +176,32 @@ IGNORE_DIRS="
           }
         }
 
+        function more_columns(str, limit,       c){
+          c = 0;
+          for (i = 1; i <= length(str); i++){
+            if (substr(str, i, 1) == "\t"){
+              c = int((c + 8) / 8) * 8;
+            }else{
+              ++ c;
+            }
+          }
+          return c > limit;
+        }
+
+        BEGIN { state = "(first line)"; }
+
         match($0, /\t/) {
           err("tab", "TAB character(s)");
+          if (more_columns($0, 80)){
+            RSTART=81;
+            RLENGTH = 0;
+            err("long-line", "line is over 80 columns");
+          }
+          if (more_columns($0, 132)){
+            RSTART=133;
+            RLENGTH = 0;
+            err("very-long-line", "line is over 132 columns");
+          }
         }
 
         match($0, /[\200-\377]/) {
@@ -195,37 +220,39 @@ IGNORE_DIRS="
           err("svn-keyword", "SVN keyword marker");
         }
 
-        length($0) > 80 {
+        $0 !~ /\t/ && length($0) > 80 {
           RSTART = 81;
           RLENGTH = 0;
-          err("long-line", "line is over 80 characters");
+          err("long-line", "line is over 80 columns");
         }
 
-        length($0) > 132 {
+        $0 !~ /\t/ && length($0) > 132 {
           RSTART = 133;
           RLENGTH = 0;
-          err("very-long-line", "line is over 132 characters");
+          err("very-long-line", "line is over 132 columns");
         }
 
         # Header-recognition automaton. Read this from bottom to top.
 
         state == "close" && $0 ~ /\*{74}/ { state = "OK"; }
-        state == "close" { state = "error"; }
+        state == "close" { state = "(last line)"; }
         state == "blurb" && $0 ~ /\* {72}\*/ { state = "close"; }
-        state == "blurb1" && $0 ~ /\*   All rights reserved. / \
+        state == "blurb1" && $0 ~ /\*   All rights reserved. .{47} \*/ \
                                                  { state = "blurb"; }
-        state == "blurb1" { state = "error"; }
+        state == "blurb1" { state = "(blurb line 1)"; }
         state == "copyright" && $0 ~ /\* {72}\*/ { state = "blurb1"; }
-        state == "copyright" && $0 !~ /\*   Copyright [0-9]{4}/ \
-                             && $0 !~ /\*     / { state = "error"; }
+        state == "copyright" && $0 !~ /\*   Copyright [0-9]{4}.{54} \*/ \
+                             && $0 !~ /\*     .{66} \*/ \
+                      { state = "(copyright lines)"; }
         state == "authors" && $0 ~ /\* {72}\*/ { state = "copyright"; }
+        state == "authors" && $0 !~ /\* .{70} \*/ { state = "(authors)"; }
         state == "blank2" && $0 ~ /\* {72}\*/ { state = "authors"; }
-        state == "blank2" { state = "error"; }
+        state == "blank2" { state = "(blank line 2)"; }
         state == "title" && $0 ~ /\* {33}OCaml {34}\*/ { state = "blank2"; }
-        state == "title" { state = "error"; }
+        state == "title" { state = "(title line)"; }
         state == "blank1" && $0 ~ /\* {72}\*/ { state = "title"; }
-        state == "blank1" { state = "error"; }
-        state == "" && NR < 4 && $0 ~ /\*{74}/ { state = "blank1"; }
+        state == "blank1" { state = "(blank line 1)"; }
+        state == "(first line)" && NR < 4 && $0 ~ /\*{74}/ { state = "blank1"; }
 
         {
           prev_line = last_line;
@@ -249,7 +276,7 @@ IGNORE_DIRS="
               NR = 1;
               RSTART = 1;
               RLENGTH = 0;
-              err("missing-header", "missing copyright header");
+              err("missing-header", sprintf("bad copyright header %s", state));
             }else{
               counts["missing-header"] = 1;
             }
@@ -264,6 +291,7 @@ IGNORE_DIRS="
               err("unused-prop", sprintf("unused [%s] in ocaml-typo", name));
             }
           }
+          exit got_errors;
         }
       '
   done

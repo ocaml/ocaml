@@ -37,8 +37,9 @@ C_INCLUDES+=-I $(CTOPDIR)/byterun
 .PHONY: default
 default:
 	@$(MAKE) compile
-	@$(NATIVECODE_ONLY) && $(BYTECODE_ONLY) && echo " ... testing => skipped" || \
-	$(SET_LD_PATH) $(MAKE) run
+	@$(NATIVECODE_ONLY) && $(BYTECODE_ONLY) \
+	 && echo " ... testing => skipped" \
+	 || (SET_LD_PATH) $(MAKE) run
 
 .PHONY: compile
 compile: $(ML_FILES)
@@ -68,7 +69,8 @@ run:
 	   printf " ocamlc"; \
            $(MYRUNTIME) ./program.byte$(EXE) $(EXEC_ARGS) \
                         >$(MAIN_MODULE).result \
-	   && $(DIFF) $(MAIN_MODULE).reference $(MAIN_MODULE).result >/dev/null; \
+	   && $(DIFF) $(MAIN_MODULE).reference $(MAIN_MODULE).result \
+	      >/dev/null; \
          fi \
 	&& if $(BYTECODE_ONLY); then : ; else \
 	     printf " ocamlopt"; \

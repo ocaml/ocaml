@@ -108,7 +108,9 @@ INSTALL_LIBDIR=$(DESTDIR)$(LIBDIR)
 INSTALL_STUBLIBDIR=$(DESTDIR)$(STUBLIBDIR)
 
 install:
-	if test -f dllvmthreads.so; then cp dllvmthreads.so $(INSTALL_STUBLIBDIR)/.; fi
+	if test -f dllvmthreads.so; then \
+	  cp dllvmthreads.so $(INSTALL_STUBLIBDIR)/.; \
+	fi
 	mkdir -p $(INSTALL_LIBDIR)/vmthreads
 	cp libvmthreads.a $(INSTALL_LIBDIR)/vmthreads/libvmthreads.a
 	cd $(INSTALL_LIBDIR)/vmthreads; $(RANLIB) libvmthreads.a
