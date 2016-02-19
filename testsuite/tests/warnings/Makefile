@@ -40,7 +40,8 @@ run-all:
 	  if $(BYTECODE_ONLY); then echo " => skipped"; else \
 	    F="`basename $$file .ml`"; \
 	    $(OCAMLOPT) $(FLAGS) -c $$file 2>$$F.$(BACKEND).opt_result; \
-	    $(DIFF) $$F.$(BACKEND).opt_reference $$F.$(BACKEND).opt_result >/dev/null \
+	    $(DIFF) $$F.$(BACKEND).opt_reference $$F.$(BACKEND).opt_result \
+	            >/dev/null \
 	    && echo " => passed" || echo " => failed"; \
 	  fi \
 	done;

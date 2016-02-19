@@ -82,17 +82,17 @@ all-%: lib
 .PHONY: parallel-%
 parallel-%: lib
 	@echo | parallel >/dev/null 2>/dev/null \
-	  || (echo "Unable to run the GNU parallel tool;";\
-	      echo "You should install it before using the parallel* targets.";\
-	      exit 1)
+	 || (echo "Unable to run the GNU parallel tool;";\
+	     echo "You should install it before using the parallel* targets.";\
+	     exit 1)
 	@echo | parallel --gnu --no-notice >/dev/null 2>/dev/null \
-	  || (echo "Your 'parallel' tool seems incompatible with GNU parallel;";\
-	      echo "This target requires GNU parallel.";\
-	      exit 1)
+	 || (echo "Your 'parallel' tool seems incompatible with GNU parallel.";\
+	     echo "This target requires GNU parallel.";\
+	     exit 1)
 	@for dir in tests/$**; do echo $$dir; done \
-	| parallel --gnu --no-notice --keep-order \
-	    "$(MAKE) $(NO_PRINT) exec-one DIR={} 2>&1" \
-	| tee _log
+	 | parallel --gnu --no-notice --keep-order \
+	     "$(MAKE) $(NO_PRINT) exec-one DIR={} 2>&1" \
+	 | tee _log
 	@$(MAKE) $(NO_PRINT) retries
 	@$(MAKE) report
 

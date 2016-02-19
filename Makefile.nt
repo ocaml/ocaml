@@ -225,12 +225,15 @@ installbyt:
 	for i in $(OTHERLIBRARIES); do \
 	  $(MAKEREC) -C otherlibs/$$i install || exit $$?; \
 	done
-	if test -n "$(WITH_OCAMLDOC)"; then (cd ocamldoc; $(MAKEREC) install); \
-	  else :; fi
-	if test -n "$(WITH_DEBUGGER)"; then (cd debugger; $(MAKEREC) install); \
-	   else :; fi
-	if test -n "$(FLEXDLL_SUBMODULE_PRESENT)"; then $(MAKEREC) install-flexdll; \
-	   else :; fi
+	if test -n "$(WITH_OCAMLDOC)"; then \
+	  (cd ocamldoc; $(MAKEREC) install); \
+	fi
+	if test -n "$(WITH_DEBUGGER)"; then \
+	  (cd debugger; $(MAKEREC) install); \
+	fi
+	if test -n "$(FLEXDLL_SUBMODULE_PRESENT)"; then \
+	  $(MAKEREC) install-flexdll; \
+	fi
 	cp config/Makefile "$(INSTALL_LIBDIR)/Makefile.config"
 	cp README.adoc "$(INSTALL_DISTRIB)/Readme.general.txt"
 	cp README.win32.adoc "$(INSTALL_DISTRIB)/Readme.windows.txt"
@@ -307,7 +310,8 @@ partialclean::
 	rm -f compilerlibs/ocamlbytecomp.cma
 
 ocamlc: compilerlibs/ocamlcommon.cma compilerlibs/ocamlbytecomp.cma $(BYTESTART)
-	$(CAMLC) $(LINKFLAGS) -compat-32 -o ocamlc compilerlibs/ocamlcommon.cma \
+	$(CAMLC) $(LINKFLAGS) -compat-32 -o ocamlc \
+	         compilerlibs/ocamlcommon.cma \
 	         compilerlibs/ocamlbytecomp.cma $(BYTESTART)
 
 partialclean::
@@ -480,11 +484,11 @@ byterun/primitives:
 
 bytecomp/runtimedef.ml: byterun/primitives byterun/caml/fail.h
 	(echo 'let builtin_exceptions = [|'; \
-	 sed -n -e 's|.*/\* \("[A-Za-z_]*"\) \*/$$|  \1;|p' byterun/caml/fail.h | \
-	 sed -e '$$s/;$$//'; \
+	 sed -n -e 's|.*/\* \("[A-Za-z_]*"\) \*/$$|  \1;|p' \
+	     byterun/caml/fail.h; \
 	 echo '|]'; \
 	 echo 'let builtin_primitives = [|'; \
-	 sed -e 's/.*/  "&";/' -e '$$s/;$$//' byterun/primitives; \
+	 sed -e 's/.*/  "&";/' byterun/primitives; \
 	 echo '|]') > bytecomp/runtimedef.ml
 
 partialclean::
@@ -596,15 +600,16 @@ alldepend::
 # The library
 
 library:
-	cd stdlib ; $(MAKEREC) $(BOOT_FLEXLINK_CMD) all
+	cd stdlib && $(MAKEREC) $(BOOT_FLEXLINK_CMD) all
 library-cross:
-	cd stdlib ; $(MAKEREC) $(BOOT_FLEXLINK_CMD) CAMLRUN=../byterun/ocamlrun all
+	cd stdlib \
+	&& $(MAKEREC) $(BOOT_FLEXLINK_CMD) CAMLRUN=../byterun/ocamlrun all
 libraryopt:
-	cd stdlib ; $(MAKEREC) $(BOOT_FLEXLINK_CMD) allopt
+	cd stdlib && $(MAKEREC) $(BOOT_FLEXLINK_CMD) allopt
 partialclean::
-	cd stdlib ; $(MAKEREC) clean
+	cd stdlib && $(MAKEREC) clean
 alldepend::
-	cd stdlib ; $(MAKEREC) depend
+	cd stdlib && $(MAKEREC) depend
 
 # The lexer and parser generators
 

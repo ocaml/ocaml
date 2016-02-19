@@ -72,7 +72,7 @@ native:
 	  rm -f program program.exe; \
 	  $(OCAMLOPT) -g -o $(EXECNAME) $$file; \
 	  for arg in a b c d ''; do \
-	    printf " ... testing '$$file' with ocamlopt and argument '$$arg':"; \
+	    printf " ... testing '$$file' with ocamlopt and argument '$$arg':";\
 	    F="`basename $$file .ml`"; \
 	    (OCAMLRUNPARAM=$$OCAMLRUNPARAM,b=1 \
               ./$(EXECNAME) $$arg || true) \

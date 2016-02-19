@@ -71,7 +71,8 @@ install::
 	if test -d "$(INSTALL_LIBDIR)/caml"; then : ; \
 	  else mkdir "$(INSTALL_LIBDIR)/caml"; fi
 	for i in $(PUBLIC_INCLUDES); do \
-	  sed -f ../tools/cleanup-header caml/$$i > "$(INSTALL_LIBDIR)/caml/$$i"; \
+	  sed -f ../tools/cleanup-header caml/$$i \
+	      > "$(INSTALL_LIBDIR)/caml/$$i"; \
 	done
 	cp ld.conf "$(INSTALL_LIBDIR)/ld.conf"
 .PHONY: install

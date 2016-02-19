@@ -55,7 +55,7 @@ camlheaderi target_camlheaderi: \
 	if $(SHARPBANGSCRIPTS); then \
 	  for suff in '' d i; do \
 	    echo '#!$(BINDIR)/ocamlrun'$$suff > camlheader$$suff && \
-	    echo '#!$(TARGET_BINDIR)/ocamlrun'$$suff > target_camlheader$$suff; \
+	    echo '#!$(TARGET_BINDIR)/ocamlrun'$$suff >target_camlheader$$suff; \
 	  done && \
 	  echo '#!' | tr -d '\012' > camlheader_ur; \
 	else \

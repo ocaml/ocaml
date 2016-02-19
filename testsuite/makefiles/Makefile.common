@@ -85,10 +85,10 @@ OCAMLOPT=$(FLEXLINK_PREFIX)$(OCAMLRUN) $(OTOPDIR)/ocamlopt $(OCFLAGS) \
 OCAMLDOC=$(OCAMLRUN) $(OTOPDIR)/ocamldoc/ocamldoc
 OCAMLLEX=$(OCAMLRUN) $(OTOPDIR)/lex/ocamllex
 OCAMLMKLIB=$(FLEXLINK_PREFIX)$(OCAMLRUN) $(OTOPDIR)/tools/ocamlmklib \
-		       -ocamlc "$(OTOPDIR)/byterun/ocamlrun$(USE_RUNTIME)$(EXE) \
-		                $(OTOPDIR)/ocamlc $(OCFLAGS) $(RUNTIME_VARIANT)" \
-		       -ocamlopt "$(OTOPDIR)/byterun/ocamlrun$(USE_RUNTIME)$(EXE) \
-		                  $(OTOPDIR)/ocamlopt $(OCFLAGS) $(RUNTIME_VARIANT)"
+           -ocamlc "$(OTOPDIR)/byterun/ocamlrun$(USE_RUNTIME)$(EXE) \
+                    $(OTOPDIR)/ocamlc $(OCFLAGS) $(RUNTIME_VARIANT)" \
+           -ocamlopt "$(OTOPDIR)/byterun/ocamlrun$(USE_RUNTIME)$(EXE) \
+                      $(OTOPDIR)/ocamlopt $(OCFLAGS) $(RUNTIME_VARIANT)"
 OCAMLYACC=$(TOPDIR)/yacc/ocamlyacc$(EXE)
 DUMPOBJ=$(OCAMLRUN) $(OTOPDIR)/tools/dumpobj
 OBJINFO=$(OCAMLRUN) $(OTOPDIR)/tools/objinfo

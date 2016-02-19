@@ -21,7 +21,8 @@ CAMLC=$(CAMLRUN) ../boot/ocamlc -nostdlib -I ../boot
 CAMLOPT=$(CAMLRUN) ../ocamlopt -nostdlib -I ../stdlib
 CAMLLEX=$(CAMLRUN) ../boot/ocamllex
 INCLUDES=-I ../utils -I ../parsing -I ../typing -I ../bytecomp -I ../asmcomp \
-	 -I ../middle_end -I ../middle_end/base_types -I ../driver -I ../toplevel
+         -I ../middle_end -I ../middle_end/base_types -I ../driver \
+         -I ../toplevel
 COMPFLAGS= -strict-sequence -w +27+32..39 -warn-error A -safe-string $(INCLUDES)
 LINKFLAGS=$(INCLUDES)
 
@@ -47,7 +48,8 @@ CAMLDEP_IMPORTS=timings.cmo misc.cmo config.cmo identifiable.cmo numbers.cmo \
   builtin_attributes.cmo
 
 ocamldep: depend.cmi $(CAMLDEP_OBJ)
-	$(CAMLC) $(LINKFLAGS) -compat-32 -o ocamldep $(CAMLDEP_IMPORTS) $(CAMLDEP_OBJ)
+	$(CAMLC) $(LINKFLAGS) -compat-32 -o ocamldep $(CAMLDEP_IMPORTS) \
+	         $(CAMLDEP_OBJ)
 
 ocamldep.opt: depend.cmi $(CAMLDEP_OBJ:.cmo=.cmx)
 	$(CAMLOPT) $(LINKFLAGS) -o ocamldep.opt $(CAMLDEP_IMPORTS:.cmo=.cmx) \
