@@ -17,7 +17,7 @@
 
 include ../Makefile
 
-ifeq "$(wildcard $(ROOTDIR)/flexdll/Makefile" ""
+ifeq "$(wildcard $(ROOTDIR)/flexdll/Makefile)" ""
 export OCAML_FLEXLINK:=
 else
 export OCAML_FLEXLINK:=$(ROOTDIR)/boot/ocamlrun $(ROOTDIR)/flexdll/flexlink.exe
