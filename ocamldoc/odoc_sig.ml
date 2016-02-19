@@ -798,7 +798,7 @@ module Analyser =
 (* DEBUG *)           print_DEBUG ("constructor/field "^name^": "^comm)
 (* DEBUG *)         in
 (* DEBUG *)         List.iter f_DEBUG name_comment_list;
-(* DEBUG *)       end
+(* DEBUG *)       end;
                   (* get the information for the type in the signature *)
                   let sig_type_decl =
                     try Signature_search.search_type table name.txt
