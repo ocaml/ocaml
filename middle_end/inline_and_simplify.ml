@@ -830,6 +830,7 @@ and simplify_partial_application env r ~lhs_of_application
     Flambda_utils.make_closure_declaration ~id:closure_variable
       ~body
       ~params:remaining_args
+      ~stub:true
   in
   let with_known_args =
     Flambda_utils.bind
