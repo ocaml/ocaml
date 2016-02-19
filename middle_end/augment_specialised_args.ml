@@ -581,17 +581,14 @@ module Make (T : S) = struct
           rewritten_existing_specialised_args_for_stub
           new_specialised_args
       in
-      let surrogate, existing_params_renaming, renamed_existing_params =
+      let existing_params_renaming, renamed_existing_params =
         (* If making a direct call surrogate, the existing function in the
            set of closures will remain in that set together with the new
            stub and the rewritten existing function.  As such, we have to
            rename the parameters of the rewritten existing function (and
            duplicate any associated existing specialised args and relevant
            free_vars mappings). *)
-        if not t.make_direct_call_surrogates then
-          new_fun_var, Variable.Map.empty, function_decl.params
-        else
-          rename_function_and_parameters ~fun_var ~function_decl
+        rename_parameters ~function_decl
       in
       let all_params =
         let existing_params =
@@ -639,9 +636,8 @@ module Make (T : S) = struct
         Variable.Map.disjoint_union rewritten_existing_specialised_args
           specialised_args
       in
-      let body, free_vars =
-        if not t.make_direct_call_surrogates then
-          function_decl.body, Variable.Map.empty
+      let body =
+        if not t.make_direct_call_surrogates then function_decl.body
         else
           let freshening =
             let for_all_free_variables =
@@ -654,34 +650,7 @@ module Make (T : S) = struct
             Variable.Map.union (fun _param fresh _ -> Some fresh)
               existing_params_renaming for_all_free_variables
           in
-          let body =
-            Flambda_utils.toplevel_substitution freshening function_decl.body
-          in
-          let free_vars =
-            Variable.Map.fold (fun inner_var (spec_to : Flambda.specialised_to)
-                      result ->
-                match Variable.Map.find inner_var freshening with
-                | exception Not_found ->
-                  (* Not a free variable of this function. *)
-                  result
-                | inner_var ->
-                  let projection =
-                    match spec_to.projection with
-                    | None -> None
-                    | Some projection ->
-                      Some (Projection.map_projecting_from projection
-                        ~f:(fun var -> Variable.Map.find var freshening))
-                  in
-                  let spec_to : Flambda.specialised_to =
-                    { var = spec_to.var;
-                      projection;
-                    }
-                  in
-                  Variable.Map.add inner_var spec_to result)
-              set_of_closures.free_vars
-              Variable.Map.empty
-          in
-          body, free_vars
+          Flambda_utils.toplevel_substitution freshening function_decl.body
       in
       let rewritten_function_decl =
         Flambda.create_function_declaration
@@ -695,6 +664,7 @@ module Make (T : S) = struct
       in
       let funs, direct_call_surrogates =
         if t.make_direct_call_surrogates then
+          let surrogate = Variable.rename fun_var ~append:"_surrogate" in
           let funs =
             (* In this case, the original function declaration remains
                untouched.  Direct calls to it will be replaced by calls to
@@ -715,6 +685,7 @@ module Make (T : S) = struct
           in
           funs, Variable.Map.empty
       in
+      let free_vars = Variable.Map.empty in
       Some (funs, free_vars, specialised_args, direct_call_surrogates, benefit)
 
   let add_lifted_projections_around_set_of_closures
