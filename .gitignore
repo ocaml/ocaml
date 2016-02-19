@@ -117,8 +117,6 @@
 /byterun/*.d.c
 /byterun/*.pic.c
 
-/compilerlibs
-
 /config/m.h
 /config/s.h
 /config/Makefile
