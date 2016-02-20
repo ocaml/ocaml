@@ -26,6 +26,7 @@ val transl_apply: ?should_be_tailcall:bool
                   -> ?specialised:specialise_attribute
                   -> lambda -> (arg_label * expression option) list
                   -> Location.t -> lambda
+val transl_letrec: value_binding list -> lambda -> lambda
 val transl_let: rec_flag -> value_binding list -> lambda -> lambda
 val transl_primitive: Location.t -> Primitive.description -> Env.t
                       -> Types.type_expr -> Path.t option -> lambda
