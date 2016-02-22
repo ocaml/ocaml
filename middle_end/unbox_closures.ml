@@ -31,16 +31,13 @@ module Transform = struct
 
   let benefit_outweighs_code_size ~env
         ~(set_of_closures : Flambda.set_of_closures) =
-    (* Somewhat approximate assumptions made:
-       1. We will cause all closures in the set to become closed, in the end.
-       2. All functions in the set have more than one argument and stay
-          that way after the transformation. *)
     let round = E.round env in
     let num_closure_vars = Variable.Map.cardinal set_of_closures.free_vars in
     let module B = Inlining_cost.Benefit in
     let saved_by_not_building_closure =
-      B.remove_prims (B.remove_alloc B.zero)
-        (3 + num_closure_vars)  (* "3" = code pointers & arity *)
+      (* For the moment assume that we're going to cause all functions in the
+         set to become closed. *)
+      B.remove_prims (B.remove_alloc B.zero) num_closure_vars
     in
     let expr : Flambda.expr =
       Flambda_utils.name_expr (Set_of_closures set_of_closures)

@@ -70,6 +70,8 @@ module Benefit : sig
   val max : round:int -> t -> t -> t
 
   val remove_call : t -> t
+  (* CR-soon mshinwell: [remove_alloc] should take the size of the block
+     (to account for removal of initializing writes). *)
   val remove_alloc : t -> t
   val remove_prim : t -> t
   val remove_prims : t -> int -> t
