@@ -119,7 +119,7 @@ module Options = Main_args.Make_opttop_options (struct
     use_inlining_arguments_set ~round:1 o2_arguments;
     use_inlining_arguments_set ~round:0 o1_arguments
   let _remove_unused_arguments = set remove_unused_arguments
-  let _unbox_closures = set unbox_closures
+  let _unbox_closures s = unbox_closures := Some s
   let _drawclambda = set dump_rawclambda
   let _dclambda = set dump_clambda
   let _drawflambda = set dump_rawflambda
