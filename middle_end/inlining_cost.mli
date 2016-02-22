@@ -72,6 +72,7 @@ module Benefit : sig
   val remove_call : t -> t
   val remove_alloc : t -> t
   val remove_prim : t -> t
+  val remove_prims : t -> int -> t
   val remove_branch : t -> t
   val direct_call_of_indirect : t -> t
   val requested_inline : t -> size_of:Flambda.t -> t
@@ -134,3 +135,5 @@ val maximum_interesting_size_of_function_body : int -> int
     below the given threshold.  [None] is returned if it is too big; otherwise
     [Some] is returned with the measured size. *)
 val lambda_smaller' : Flambda.expr -> than:int -> int option
+
+val lambda_size : Flambda.expr -> int
