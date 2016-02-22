@@ -166,7 +166,7 @@ let inline_toplevel_multiplier = 16
 let default_inline_toplevel_threshold =
   int_of_float ((float inline_toplevel_multiplier) *. default_inline_threshold)
 let default_inline_call_cost = 5
-let default_inline_alloc_cost = 3
+let default_inline_alloc_cost = 7
 let default_inline_prim_cost = 3
 let default_inline_branch_cost = 5
 let default_inline_indirect_cost = 4
