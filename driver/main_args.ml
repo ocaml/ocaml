@@ -417,7 +417,7 @@ let mk_dtimings f =
 ;;
 
 let mk_unbox_closures f =
-  "-unbox-closures", Arg.Unit f,
+  "-unbox-closures", Arg.String f,
   " Pass free variables via specialised arguments rather than closures"
 ;;
 
@@ -768,7 +768,7 @@ module type Optcommon_options = sig
   val _inline_branch_cost : string -> unit
   val _inline_indirect_cost : string -> unit
   val _inline_lifting_benefit : string -> unit
-  val _unbox_closures : unit -> unit
+  val _unbox_closures : string -> unit
   val _inline_branch_factor : string -> unit
   val _remove_unused_arguments : unit -> unit
   val _no_unbox_free_vars_of_closures : unit -> unit

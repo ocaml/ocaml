@@ -25,7 +25,7 @@ module Transform = struct
   let variable_suffix = ""
 
   let precondition ~env ~(set_of_closures : Flambda.set_of_closures) =
-    !Clflags.unbox_closures
+    !Clflags.unbox_closures <> None
       && not (E.at_toplevel env)
       && not (Variable.Map.is_empty set_of_closures.free_vars)
 
@@ -44,11 +44,21 @@ module Transform = struct
         ~name:"temporary"
     in
     let module W = Inlining_cost.Whether_sufficient_benefit in
+    let new_size =
+      match !Clflags.unbox_closures with
+      | None -> assert false
+      | Some "nodcs_none" -> 0
+      | Some "nodcs_smallthresh"
+      | Some "dcs_smallthresh" -> Inlining_cost.lambda_size expr
+      | Some "nodcs_bigthresh"
+      | Some "dcs_bigthresh" -> (Inlining_cost.lambda_size expr) / 15
+      | Some _ -> failwith "Bad setting for -unbox-closures"
+    in
     let wsb =
       W.create_estimate ~original_size:0
         ~toplevel:false
         ~branch_depth:0
-        ~new_size:(Inlining_cost.lambda_size expr)
+        ~new_size:(new_size + 1)
         ~benefit:saved_by_not_building_closure
         ~lifting:false
         ~round
@@ -56,8 +66,18 @@ module Transform = struct
     W.evaluate wsb
 
   let what_to_specialise ~env ~(set_of_closures : Flambda.set_of_closures) =
+    let make_direct_call_surrogates =
+      match !Clflags.unbox_closures with
+      | None -> false
+      | Some "nodcs_none"
+      | Some "nodcs_smallthresh"
+      | Some "nodcs_bigthresh" -> false
+      | Some "dcs_smallthresh"
+      | Some "dcs_bigthresh" -> true
+      | Some _ -> failwith "Bad setting for -unbox-closures"
+    in
     let what_to_specialise =
-      W.create ~set_of_closures ~make_direct_call_surrogates:true
+      W.create ~set_of_closures ~make_direct_call_surrogates
     in
     if not (precondition ~env ~set_of_closures)
       || not (benefit_outweighs_code_size ~env ~set_of_closures)
