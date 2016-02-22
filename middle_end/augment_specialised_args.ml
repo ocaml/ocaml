@@ -61,13 +61,13 @@ module What_to_specialise = struct
     (* [definitions] is indexed by (fun_var, group) *)
     definitions : Definition.t list Variable.Pair.Map.t;
     set_of_closures : Flambda.set_of_closures;
-    make_direct_call_surrogates : bool;
+    make_direct_call_surrogates_for : Variable.Set.t;
   }
 
-  let create ~set_of_closures ~make_direct_call_surrogates =
+  let create ~set_of_closures =
     { definitions = Variable.Pair.Map.empty;
       set_of_closures;
-      make_direct_call_surrogates;
+      make_direct_call_surrogates_for = Variable.Set.empty;
     }
 
   let new_specialised_arg t ~fun_var ~group ~definition =
@@ -82,6 +82,18 @@ module What_to_specialise = struct
         t.definitions
     in
     { t with definitions; }
+
+  let make_direct_call_surrogate_for t ~fun_var =
+    match Variable.Map.find fun_var t.set_of_closures.function_decls.funs with
+    | exception Not_found ->
+      Misc.fatal_errorf "use_direct_call_surrogate_for: %a is not a fun_var \
+          from the given set of closures"
+        Variable.print fun_var
+    | _ ->
+      { t with
+        make_direct_call_surrogates_for =
+          Variable.Set.add fun_var t.make_direct_call_surrogates_for;
+      }
 end
 
 module W = What_to_specialise
@@ -100,6 +112,7 @@ module Processed_what_to_specialise = struct
   type for_one_function = {
     fun_var : Variable.t;
     function_decl : Flambda.function_declaration;
+    make_direct_call_surrogates : bool;
     new_definitions_indexed_by_new_inner_vars : Definition.t Variable.Map.t;
     all_new_definitions : Definition.Set.t;
     new_inner_to_new_outer_vars : Variable.t Variable.Map.t;
@@ -118,7 +131,7 @@ module Processed_what_to_specialise = struct
     new_lifted_defns_indexed_by_new_outer_vars : Projection.t Variable.Map.t;
     new_outer_vars_indexed_by_new_lifted_defns : Variable.t Projection.Map.t;
     functions : for_one_function Variable.Map.t;
-    make_direct_call_surrogates : bool;
+    make_direct_call_surrogates_for : Variable.Set.t;
   }
 
   let lift_projection t ~(projection : Projection.t) =
@@ -240,8 +253,12 @@ module Processed_what_to_specialise = struct
                 Variable.Set.mem inner_var params)
               t.set_of_closures.specialised_args
           in
+          let make_direct_call_surrogates =
+            Variable.Set.mem fun_var t.make_direct_call_surrogates_for
+          in
           { fun_var;
             function_decl;
+            make_direct_call_surrogates;
             new_definitions_indexed_by_new_inner_vars = Variable.Map.empty;
             all_new_definitions = Definition.Set.empty;
             new_inner_to_new_outer_vars = Variable.Map.empty;
@@ -299,8 +316,8 @@ module Processed_what_to_specialise = struct
         new_lifted_defns_indexed_by_new_outer_vars = Variable.Map.empty;
         new_outer_vars_indexed_by_new_lifted_defns = Projection.Map.empty;
         functions = Variable.Map.empty;
-        make_direct_call_surrogates =
-          what_to_specialise.make_direct_call_surrogates;
+        make_direct_call_surrogates_for =
+          what_to_specialise.make_direct_call_surrogates_for;
       }
     in
     (* It is important to limit the number of arguments added: if arguments
@@ -576,7 +593,7 @@ module Make (T : S) = struct
           new_specialised_args
       in
       let specialised_args, existing_function_decl =
-        if not t.make_direct_call_surrogates then
+        if not for_one_function.make_direct_call_surrogates then
           specialised_args, None
         else
           let function_decl, new_specialised_args =
@@ -605,7 +622,7 @@ module Make (T : S) = struct
           ~is_a_functor:function_decl.is_a_functor
       in
       let funs, direct_call_surrogates =
-        if t.make_direct_call_surrogates then
+        if for_one_function.make_direct_call_surrogates then
           let surrogate = Variable.rename fun_var ~append:"_surrogate" in
           let funs =
             (* In this case, the original function declaration remains

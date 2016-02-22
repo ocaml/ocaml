@@ -27,7 +27,6 @@ module What_to_specialise : sig
 
   val create
      : set_of_closures:Flambda.set_of_closures
-    -> make_direct_call_surrogates:bool
     -> t
 
   val new_specialised_arg
@@ -36,6 +35,8 @@ module What_to_specialise : sig
     -> group:Variable.t
     -> definition:Definition.t  (* [projecting_from] "existing inner vars" *)
     -> t
+
+  val make_direct_call_surrogate_for : t -> fun_var:Variable.t -> t
 end
 
 module type S = sig
@@ -49,7 +50,8 @@ module type S = sig
 end
 
 module Make (T : S) : sig
-  (** [duplicate_function] should be [Inline_and_simplify.duplicate_function]. *)
+  (** [duplicate_function] should be
+      [Inline_and_simplify.duplicate_function]. *)
   val rewrite_set_of_closures
      : env:Inline_and_simplify_aux.Env.t
     -> duplicate_function:(
