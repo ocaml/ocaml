@@ -56,7 +56,6 @@ module Transform = struct
         ~lifting:true
         ~round
     in
-    Printf.eprintf "Unbox_closures: %s\n%!" (W.to_string wsb);
     W.evaluate wsb
 
   let what_to_specialise ~env ~(set_of_closures : Flambda.set_of_closures) =
