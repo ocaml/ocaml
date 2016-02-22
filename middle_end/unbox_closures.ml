@@ -50,7 +50,7 @@ module Transform = struct
         ~branch_depth:0
         ~new_size:(Inlining_cost.lambda_size expr)
         ~benefit:saved_by_not_building_closure
-        ~lifting:true
+        ~lifting:false
         ~round
     in
     W.evaluate wsb
