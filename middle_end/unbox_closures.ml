@@ -46,7 +46,7 @@ module Transform = struct
         ~init:what_to_specialise
         ~f:(fun ~fun_var ~(function_decl : Flambda.function_declaration)
               what_to_specialise ->
-          let new_size = Inlining_cost.lambda_size function_decl.body in
+          let body_size = Inlining_cost.lambda_size function_decl.body in
           (* If the function is small enough, make a direct call surrogate
              for it, so that indirect calls are not penalised by having to
              bounce through the stub.  (Making such a surrogate involves
@@ -57,7 +57,7 @@ module Transform = struct
               W.create_estimate ~original_size:0
                 ~toplevel:false
                 ~branch_depth:0
-                ~new_size:((new_size / !Clflags.unbox_closures_factor) + 1)
+                ~new_size:((body_size / !Clflags.unbox_closures_factor) + 1)
                 ~benefit:saved_by_not_building_closure
                 ~lifting:false
                 ~round
