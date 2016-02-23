@@ -61,11 +61,13 @@ module What_to_specialise = struct
     (* [definitions] is indexed by (fun_var, group) *)
     definitions : Definition.t list Variable.Pair.Map.t;
     set_of_closures : Flambda.set_of_closures;
+    make_direct_call_surrogates_for : Variable.Set.t;
   }
 
   let create ~set_of_closures =
     { definitions = Variable.Pair.Map.empty;
       set_of_closures;
+      make_direct_call_surrogates_for = Variable.Set.empty;
     }
 
   let new_specialised_arg t ~fun_var ~group ~definition =
@@ -80,6 +82,18 @@ module What_to_specialise = struct
         t.definitions
     in
     { t with definitions; }
+
+  let make_direct_call_surrogate_for t ~fun_var =
+    match Variable.Map.find fun_var t.set_of_closures.function_decls.funs with
+    | exception Not_found ->
+      Misc.fatal_errorf "use_direct_call_surrogate_for: %a is not a fun_var \
+          from the given set of closures"
+        Variable.print fun_var
+    | _ ->
+      { t with
+        make_direct_call_surrogates_for =
+          Variable.Set.add fun_var t.make_direct_call_surrogates_for;
+      }
 end
 
 module W = What_to_specialise
@@ -98,6 +112,7 @@ module Processed_what_to_specialise = struct
   type for_one_function = {
     fun_var : Variable.t;
     function_decl : Flambda.function_declaration;
+    make_direct_call_surrogates : bool;
     new_definitions_indexed_by_new_inner_vars : Definition.t Variable.Map.t;
     all_new_definitions : Definition.Set.t;
     new_inner_to_new_outer_vars : Variable.t Variable.Map.t;
@@ -116,6 +131,7 @@ module Processed_what_to_specialise = struct
     new_lifted_defns_indexed_by_new_outer_vars : Projection.t Variable.Map.t;
     new_outer_vars_indexed_by_new_lifted_defns : Variable.t Projection.Map.t;
     functions : for_one_function Variable.Map.t;
+    make_direct_call_surrogates_for : Variable.Set.t;
   }
 
   let lift_projection t ~(projection : Projection.t) =
@@ -237,8 +253,12 @@ module Processed_what_to_specialise = struct
                 Variable.Set.mem inner_var params)
               t.set_of_closures.specialised_args
           in
+          let make_direct_call_surrogates =
+            Variable.Set.mem fun_var t.make_direct_call_surrogates_for
+          in
           { fun_var;
             function_decl;
+            make_direct_call_surrogates;
             new_definitions_indexed_by_new_inner_vars = Variable.Map.empty;
             all_new_definitions = Definition.Set.empty;
             new_inner_to_new_outer_vars = Variable.Map.empty;
@@ -296,6 +316,8 @@ module Processed_what_to_specialise = struct
         new_lifted_defns_indexed_by_new_outer_vars = Variable.Map.empty;
         new_outer_vars_indexed_by_new_lifted_defns = Projection.Map.empty;
         functions = Variable.Map.empty;
+        make_direct_call_surrogates_for =
+          what_to_specialise.make_direct_call_surrogates_for;
       }
     in
     (* It is important to limit the number of arguments added: if arguments
@@ -521,7 +543,7 @@ module Make (T : S) = struct
     new_fun_var, new_function_decl, rewritten_existing_specialised_args,
       benefit
 
-  let rewrite_function_decl (t : P.t)
+  let rewrite_function_decl (t : P.t) ~env ~duplicate_function
       ~(for_one_function : P.for_one_function) ~benefit =
     let set_of_closures = t.set_of_closures in
     let fun_var = for_one_function.fun_var in
@@ -530,7 +552,10 @@ module Make (T : S) = struct
       Variable.Map.cardinal for_one_function.
         new_definitions_indexed_by_new_inner_vars
     in
-    if function_decl.stub || num_definitions < 1 then
+    if function_decl.stub
+      || num_definitions < 1
+      || Variable.Map.mem fun_var set_of_closures.direct_call_surrogates
+    then
       None
     else
       let new_fun_var, wrapper, rewritten_existing_specialised_args, benefit =
@@ -567,6 +592,18 @@ module Make (T : S) = struct
         Variable.Map.disjoint_union rewritten_existing_specialised_args
           new_specialised_args
       in
+      let specialised_args, existing_function_decl =
+        if not for_one_function.make_direct_call_surrogates then
+          specialised_args, None
+        else
+          let function_decl, new_specialised_args =
+            duplicate_function ~env ~set_of_closures ~fun_var
+          in
+          let specialised_args =
+            Variable.Map.disjoint_union specialised_args new_specialised_args
+          in
+          specialised_args, Some function_decl
+      in
       let all_params =
         let new_params =
           Variable.Set.elements (Variable.Map.keys
@@ -584,11 +621,38 @@ module Make (T : S) = struct
           ~specialise:function_decl.specialise
           ~is_a_functor:function_decl.is_a_functor
       in
-      let funs =
-        Variable.Map.add new_fun_var rewritten_function_decl
-          (Variable.Map.add fun_var wrapper Variable.Map.empty)
+      let funs, direct_call_surrogates =
+        if for_one_function.make_direct_call_surrogates then
+          let surrogate = Variable.rename fun_var ~append:"_surrogate" in
+          let funs =
+            (* In this case, the original function declaration remains
+               untouched up to alpha-equivalence.  Direct calls to it
+               (including inside the rewritten original function) will be
+               replaced by calls to the surrogate (i.e. the wrapper) which
+               will then be inlined. *)
+            let existing_function_decl =
+              match existing_function_decl with
+              | Some decl -> decl
+              | None -> assert false
+            in
+            Variable.Map.add new_fun_var rewritten_function_decl
+              (Variable.Map.add surrogate wrapper
+                (Variable.Map.add fun_var existing_function_decl
+                  Variable.Map.empty))
+          in
+          let direct_call_surrogates =
+            Variable.Map.add fun_var surrogate Variable.Map.empty
+          in
+          funs, direct_call_surrogates
+        else
+          let funs =
+            Variable.Map.add new_fun_var rewritten_function_decl
+              (Variable.Map.add fun_var wrapper Variable.Map.empty)
+          in
+          funs, Variable.Map.empty
       in
-      Some (funs, specialised_args, benefit)
+      let free_vars = Variable.Map.empty in
+      Some (funs, free_vars, specialised_args, direct_call_surrogates, benefit)
 
   let add_lifted_projections_around_set_of_closures
         ~(set_of_closures : Flambda.set_of_closures) ~benefit
@@ -606,38 +670,53 @@ module Make (T : S) = struct
       new_lifted_defns_indexed_by_new_outer_vars
       (body, benefit)
 
-  let rewrite_set_of_closures_core ~env ~benefit
+  let rewrite_set_of_closures_core ~env ~duplicate_function ~benefit
         ~(set_of_closures : Flambda.set_of_closures) =
     let what_to_specialise =
       P.create ~env ~variable_suffix:T.variable_suffix
         ~what_to_specialise:(T.what_to_specialise ~env ~set_of_closures)
     in
     let original_set_of_closures = set_of_closures in
-    let funs, specialised_args, done_something, benefit =
+    let funs, free_vars, specialised_args, direct_call_surrogates,
+        done_something, benefit =
       Variable.Map.fold (fun fun_var function_decl
-                (funs, specialised_args, done_something, benefit) ->
+                (funs, free_vars, specialised_args, direct_call_surrogates,
+                  done_something, benefit) ->
           match Variable.Map.find fun_var what_to_specialise.functions with
           | exception Not_found ->
             let funs = Variable.Map.add fun_var function_decl funs in
-            funs, specialised_args, done_something, benefit
+            funs, free_vars, specialised_args, direct_call_surrogates,
+              done_something, benefit
           | (for_one_function : P.for_one_function) ->
             assert (Variable.equal fun_var for_one_function.fun_var);
             match
-              rewrite_function_decl what_to_specialise
-                ~for_one_function ~benefit
+              rewrite_function_decl what_to_specialise ~env
+                ~duplicate_function ~for_one_function ~benefit
             with
             | None ->
               let function_decl = for_one_function.function_decl in
               let funs = Variable.Map.add fun_var function_decl funs in
-              funs, specialised_args, done_something, benefit
-            | Some (funs', specialised_args', benefit) ->
+              funs, free_vars, specialised_args, direct_call_surrogates,
+                done_something, benefit
+            | Some (funs', free_vars', specialised_args', direct_call_surrogates',
+                benefit) ->
               let funs = Variable.Map.disjoint_union funs funs' in
+              let direct_call_surrogates =
+                Variable.Map.disjoint_union direct_call_surrogates
+                  direct_call_surrogates'
+              in
+              let free_vars =
+                Variable.Map.disjoint_union free_vars free_vars'
+              in
               let specialised_args =
                 Variable.Map.disjoint_union specialised_args specialised_args'
               in
-              funs, specialised_args, true, benefit)
+              funs, free_vars, specialised_args, direct_call_surrogates, true,
+                benefit)
         set_of_closures.function_decls.funs
-        (Variable.Map.empty, set_of_closures.specialised_args, false, benefit)
+        (Variable.Map.empty, set_of_closures.free_vars,
+          set_of_closures.specialised_args,
+          set_of_closures.direct_call_surrogates, false, benefit)
     in
     if not done_something then
       None
@@ -651,8 +730,9 @@ module Make (T : S) = struct
       let set_of_closures =
         Flambda.create_set_of_closures
           ~function_decls
-          ~free_vars:set_of_closures.free_vars
+          ~free_vars
           ~specialised_args
+          ~direct_call_surrogates
       in
       if !Clflags.flambda_invariant_checks then begin
         check_invariants ~set_of_closures ~original_set_of_closures
@@ -665,10 +745,11 @@ module Make (T : S) = struct
       in
       Some (expr, benefit)
 
-  let rewrite_set_of_closures ~env ~set_of_closures =
+  let rewrite_set_of_closures ~env ~duplicate_function ~set_of_closures =
     Pass_wrapper.with_dump ~pass_name:T.pass_name ~input:set_of_closures
       ~print_input:Flambda.print_set_of_closures
       ~print_output:(fun ppf (expr, _) -> Flambda.print ppf expr)
-      ~f:(fun () -> rewrite_set_of_closures_core
-                      ~env ~benefit:B.zero ~set_of_closures)
+      ~f:(fun () ->
+        rewrite_set_of_closures_core ~env ~duplicate_function
+          ~benefit:B.zero ~set_of_closures)
 end

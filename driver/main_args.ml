@@ -424,6 +424,12 @@ let mk_unbox_closures f =
   " Pass free variables via specialised arguments rather than closures"
 ;;
 
+let mk_unbox_closures_factor f =
+  "-unbox-closures-factor", Arg.Int f,
+  "<n > 0>  Scale the size threshold above which unbox-closures will \
+    slow down indirect calls rather than duplicating a function"
+;;
+
 let mk_unsafe f =
   "-unsafe", Arg.Unit f,
   " Do not compile bounds checking on array and string access"

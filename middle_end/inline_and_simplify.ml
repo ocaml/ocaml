@@ -171,29 +171,6 @@ let simplify_named_using_approx_and_env env r original_named approx =
   in
   named, r
 
-(* This adds only the minimal set of approximations to the closures.
-   It is not strictly necessary to have this restriction, but it helps
-   to catch potential substitution bugs. *)
-let populate_closure_approximations
-      ~(function_decl : Flambda.function_declaration)
-      ~(free_vars : (_ * A.t) Variable.Map.t)
-      ~(parameter_approximations : A.t Variable.Map.t)
-      ~set_of_closures_env =
-  (* Add approximations of free variables *)
-  let env =
-    Variable.Map.fold (fun id (_, desc) env ->
-        E.add_outer_scope env id desc)
-      free_vars set_of_closures_env in
-
-  (* Add known approximations of function parameters *)
-  let env =
-    List.fold_left (fun env id ->
-       let approx = try Variable.Map.find id parameter_approximations
-                    with Not_found -> (A.value_unknown Other) in
-       E.add env id approx)
-      env function_decl.params in
-  env
-
 let simplify_const (const : Flambda.const) =
   match const with
   | Int i -> A.value_int i
@@ -601,132 +578,22 @@ and simplify_set_of_closures original_env r
       ~make_closure_symbol:Backend.closure_symbol
   in
   let env = E.increase_closure_depth original_env in
-  let free_vars =
-    Variable.Map.map (fun (external_var : Flambda.specialised_to) ->
-        let var =
-          let var =
-            Freshening.apply_variable (E.freshening env) external_var.var
-          in
-          match
-            A.simplify_var_to_var_using_env (E.find_exn env var)
-              ~is_present_in_env:(fun var -> E.mem env var)
-          with
-          | None -> var
-          | Some var -> var
-        in
-        let approx = E.find_exn env var in
-        (* The projections are freshened below in one step, once we know
-           the closure freshening substitution. *)
-        let projection = external_var.projection in
-        ({ var; projection; } : Flambda.specialised_to), approx)
-      set_of_closures.free_vars
+  let free_vars, specialised_args, function_decls, parameter_approximations,
+      internal_value_set_of_closures, set_of_closures_env =
+    Inline_and_simplify_aux.prepare_to_simplify_set_of_closures ~env
+      ~set_of_closures ~function_decls ~only_for_function_decl:None
+      ~freshen:true
   in
-  let specialised_args =
-    Variable.Map.map (fun (spec_to : Flambda.specialised_to) ->
-        let external_var = spec_to.var in
-        let var = Freshening.apply_variable (E.freshening env) external_var in
-        let var =
-          match
-            A.simplify_var_to_var_using_env (E.find_exn env var)
-              ~is_present_in_env:(fun var -> E.mem env var)
-          with
-          | None -> var
-          | Some var -> var
-        in
-        let projection = spec_to.projection in
-        ({ var; projection; } : Flambda.specialised_to))
-      set_of_closures.specialised_args
-  in
-  let environment_before_cleaning = env in
-  (* [E.local] helps us to catch bugs whereby variables escape their scope. *)
-  let env = E.local env in
-  let free_vars, function_decls, sb, freshening =
-    Freshening.apply_function_decls_and_free_vars (E.freshening env) free_vars
-      function_decls
-  in
-  let env = E.set_freshening env sb in
-  let free_vars =
-    Freshening.freshen_projection_relation' free_vars
-      ~freshening:(E.freshening env)
-      ~closure_freshening:freshening
-  in
-  let specialised_args =
-    let specialised_args =
-      Variable.Map.map_keys (Freshening.apply_variable (E.freshening env))
-        specialised_args
-    in
-    Freshening.freshen_projection_relation specialised_args
-      ~freshening:(E.freshening env)
-      ~closure_freshening:freshening
-  in
-  let parameter_approximations =
-    (* Approximations of parameters that are known to always hold the same
-       argument throughout the body of the function. *)
-    Variable.Map.map_keys (Freshening.apply_variable (E.freshening env))
-      (Variable.Map.mapi (fun _id' (spec_to : Flambda.specialised_to) ->
-          E.find_exn environment_before_cleaning spec_to.var)
-        specialised_args)
-  in
-  let env =
-    E.enter_set_of_closures_declaration
-      function_decls.set_of_closures_origin env
-  in
-  (* we use the previous closure for evaluating the functions *)
-  let internal_value_set_of_closures =
-    let bound_vars =
-      Variable.Map.fold (fun id (_, desc) map ->
-          Var_within_closure.Map.add (Var_within_closure.wrap id) desc map)
-        free_vars Var_within_closure.Map.empty
-    in
-    A.create_value_set_of_closures ~function_decls ~bound_vars
-      ~invariant_params:(lazy Variable.Map.empty) ~specialised_args
-      ~freshening
-  in
-  (* Populate the environment with the approximation of each closure.
-     This part of the environment is shared between all of the closures in
-     the set of closures. *)
-  let set_of_closures_env =
-    Variable.Map.fold (fun closure _ env ->
-        let approx =
-          A.value_closure ~closure_var:closure internal_value_set_of_closures
-            (Closure_id.wrap closure)
-        in
-        E.add env closure approx
-      )
-      function_decls.funs env
-  in
-  let simplify_function fid (function_decl : Flambda.function_declaration)
+  let simplify_function fun_var (function_decl : Flambda.function_declaration)
         (funs, used_params, r)
         : Flambda.function_declaration Variable.Map.t * Variable.Set.t * R.t =
     let closure_env =
-      populate_closure_approximations ~function_decl ~free_vars
-        ~parameter_approximations ~set_of_closures_env
-    in
-    (* Add definitions of known projections to the environment. *)
-    let add_projections ~closure_env ~which_variables ~map =
-      Variable.Map.fold (fun inner_var spec_arg env ->
-          let (spec_arg : Flambda.specialised_to) = map spec_arg in
-          match spec_arg.projection with
-          | None -> env
-          | Some projection ->
-            let from = Projection.projecting_from projection in
-            if Variable.Set.mem from function_decl.free_variables then
-              E.add_projection env ~projection ~bound_to:inner_var
-            else
-              env)
-        which_variables
-        closure_env
-    in
-    let closure_env =
-      add_projections ~closure_env ~which_variables:specialised_args
-        ~map:(fun spec_to -> spec_to)
-    in
-    let closure_env =
-      add_projections ~closure_env ~which_variables:free_vars
-        ~map:(fun (spec_to, _approx) -> spec_to)
+      Inline_and_simplify_aux.prepare_to_simplify_closure ~function_decl
+        ~free_vars ~specialised_args ~parameter_approximations
+        ~set_of_closures_env
     in
     let body, r =
-      E.enter_closure closure_env ~closure_id:(Closure_id.wrap fid)
+      E.enter_closure closure_env ~closure_id:(Closure_id.wrap fun_var)
         ~inline_inside:
           (Inlining_decision.should_inline_inside_declaration function_decl)
         ~debuginfo:function_decl.dbg
@@ -760,7 +627,7 @@ and simplify_set_of_closures original_env r
         ~is_a_functor:function_decl.is_a_functor
     in
     let used_params' = Flambda.used_params function_decl in
-    Variable.Map.add fid function_decl funs,
+    Variable.Map.add fun_var function_decl funs,
       Variable.Set.union used_params used_params', r
   in
   let funs, _used_params, r =
@@ -780,11 +647,21 @@ and simplify_set_of_closures original_env r
       ~invariant_params
       ~specialised_args:internal_value_set_of_closures.specialised_args
       ~freshening:internal_value_set_of_closures.freshening
+      ~direct_call_surrogates:
+        internal_value_set_of_closures.direct_call_surrogates
+  in
+  let direct_call_surrogates =
+    Closure_id.Map.fold (fun existing surrogate surrogates ->
+        Variable.Map.add (Closure_id.unwrap existing)
+          (Closure_id.unwrap surrogate) surrogates)
+      internal_value_set_of_closures.direct_call_surrogates
+      Variable.Map.empty
   in
   let set_of_closures =
     Flambda.create_set_of_closures ~function_decls
       ~free_vars:(Variable.Map.map fst free_vars)
       ~specialised_args
+      ~direct_call_surrogates
   in
   let r = ret r (A.value_set_of_closures value_set_of_closures) in
   set_of_closures, r, value_set_of_closures.freshening
@@ -803,9 +680,48 @@ and simplify_apply env r ~(apply : Flambda.apply) : Flambda.t * R.t =
            successful---in which case we then have a direct
            application---consider inlining. *)
         match A.check_approx_for_closure lhs_of_application_approx with
-        | Ok (value_closure, _set_of_closures_var,
-              _set_of_closures_symbol, value_set_of_closures) ->
-          let closure_id_being_applied = value_closure.closure_id in
+        | Ok (value_closure, set_of_closures_var,
+              set_of_closures_symbol, value_set_of_closures) ->
+          let lhs_of_application, closure_id_being_applied,
+                value_set_of_closures, env, wrap =
+            let closure_id_being_applied = value_closure.closure_id in
+            (* If the call site is a direct call to a function that has a
+               "direct call surrogate" (see inline_and_simplify_aux.mli),
+               repoint the call to the surrogate. *)
+            let surrogates = value_set_of_closures.direct_call_surrogates in
+            match Closure_id.Map.find closure_id_being_applied surrogates with
+            | exception Not_found ->
+              lhs_of_application, closure_id_being_applied,
+                value_set_of_closures, env, (fun expr -> expr)
+            | surrogate ->
+              let rec find_transitively surrogate =
+                match Closure_id.Map.find surrogate surrogates with
+                | exception Not_found -> surrogate
+                | surrogate -> find_transitively surrogate
+              in
+              let surrogate = find_transitively surrogate in
+              let surrogate_var =
+                Variable.rename lhs_of_application ~append:"_surrogate"
+              in
+              let move_to_surrogate : Projection.move_within_set_of_closures =
+                { closure = lhs_of_application;
+                  start_from = closure_id_being_applied;
+                  move_to = surrogate;
+                }
+              in
+              let approx_for_surrogate  =
+                A.value_closure ~closure_var:surrogate_var
+                  ?set_of_closures_var ?set_of_closures_symbol
+                  value_set_of_closures surrogate
+              in
+              let env = E.add env surrogate_var approx_for_surrogate in
+              let wrap expr =
+                Flambda.create_let surrogate_var
+                  (Move_within_set_of_closures move_to_surrogate)
+                  expr
+              in
+              surrogate_var, surrogate, value_set_of_closures, env, wrap
+          in
           let function_decls = value_set_of_closures.function_decls in
           let function_decl =
             try
@@ -825,23 +741,27 @@ and simplify_apply env r ~(apply : Flambda.apply) : Flambda.t * R.t =
           in
           let nargs = List.length args in
           let arity = Flambda_utils.function_arity function_decl in
-          if nargs = arity then
-            simplify_full_application env r ~function_decls ~lhs_of_application
-              ~closure_id_being_applied ~function_decl ~value_set_of_closures
-              ~args ~args_approxs ~dbg ~inline_requested ~specialise_requested
-          else if nargs > arity then
-            simplify_over_application env r ~args ~args_approxs ~function_decls
-              ~lhs_of_application ~closure_id_being_applied ~function_decl
-              ~value_set_of_closures ~dbg ~inline_requested
-              ~specialise_requested
-          else if nargs > 0 && nargs < arity then
-            simplify_partial_application env r ~lhs_of_application
-              ~closure_id_being_applied ~function_decl ~args ~dbg
-              ~inline_requested ~specialise_requested
-          else
-            Misc.fatal_errorf "Function with arity %d when simplifying \
-                application expression: %a"
-              arity Flambda.print (Flambda.Apply apply)
+          let result, r =
+            if nargs = arity then
+              simplify_full_application env r ~function_decls
+                ~lhs_of_application ~closure_id_being_applied ~function_decl
+                ~value_set_of_closures ~args ~args_approxs ~dbg
+                ~inline_requested ~specialise_requested
+            else if nargs > arity then
+              simplify_over_application env r ~args ~args_approxs
+                ~function_decls ~lhs_of_application ~closure_id_being_applied
+                ~function_decl ~value_set_of_closures ~dbg ~inline_requested
+                ~specialise_requested
+            else if nargs > 0 && nargs < arity then
+              simplify_partial_application env r ~lhs_of_application
+                ~closure_id_being_applied ~function_decl ~args ~dbg
+                ~inline_requested ~specialise_requested
+            else
+              Misc.fatal_errorf "Function with arity %d when simplifying \
+                  application expression: %a"
+                arity Flambda.print (Flambda.Apply apply)
+          in
+          wrap result, r
         | Wrong ->  (* Insufficient approximation information to simplify. *)
           Apply ({ func = lhs_of_application; args; kind = Indirect; dbg;
               inline = inline_requested; specialise = specialise_requested; }),
@@ -910,6 +830,7 @@ and simplify_partial_application env r ~lhs_of_application
     Flambda_utils.make_closure_declaration ~id:closure_variable
       ~body
       ~params:remaining_args
+      ~stub:true
   in
   let with_known_args =
     Flambda_utils.bind
@@ -1025,39 +946,40 @@ and simplify_named env r (tree : Flambda.named) : Flambda.named * R.t =
        free variables and which things are specialised arguments before
        unboxing them. *)
     match
-      Unbox_closures.rewrite_set_of_closures ~env ~set_of_closures
+      Unbox_closures.rewrite_set_of_closures ~env
+        ~duplicate_function ~set_of_closures
     with
+    | Some (expr, benefit) ->
+      let r = R.add_benefit r benefit in
+      simplify env r expr ~pass_name:"Unbox_closures"
+    | None ->
+      match Unbox_free_vars_of_closures.run ~env ~set_of_closures with
       | Some (expr, benefit) ->
         let r = R.add_benefit r benefit in
-        simplify env r expr ~pass_name:"Unbox_closures"
+        simplify env r expr ~pass_name:"Unbox_free_vars_of_closures"
       | None ->
-        match Unbox_free_vars_of_closures.run ~env ~set_of_closures with
+        (* CR-soon mshinwell: should maybe add one allocation for the stub *)
+        match
+          Unbox_specialised_args.rewrite_set_of_closures ~env
+            ~duplicate_function ~set_of_closures
+        with
         | Some (expr, benefit) ->
           let r = R.add_benefit r benefit in
-          simplify env r expr ~pass_name:"Unbox_free_vars_of_closures"
+          simplify env r expr ~pass_name:"Unbox_specialised_args"
         | None ->
-          (* CR-soon mshinwell: should maybe add one allocation for the stub *)
           match
-            Unbox_specialised_args.rewrite_set_of_closures ~env
-              ~set_of_closures
+            Remove_unused_arguments.
+                separate_unused_arguments_in_set_of_closures
+              set_of_closures ~backend
           with
-          | Some (expr, benefit) ->
-            let r = R.add_benefit r benefit in
-            simplify env r expr ~pass_name:"Unbox_specialised_args"
+          | Some set_of_closures ->
+            let expr =
+              Flambda_utils.name_expr (Set_of_closures set_of_closures)
+                ~name:"remove_unused_arguments"
+            in
+            simplify env r expr ~pass_name:"Remove_unused_arguments"
           | None ->
-            match
-              Remove_unused_arguments.
-                  separate_unused_arguments_in_set_of_closures
-                set_of_closures ~backend
-            with
-            | Some set_of_closures ->
-              let expr =
-                Flambda_utils.name_expr (Set_of_closures set_of_closures)
-                  ~name:"remove_unused_arguments"
-              in
-              simplify env r expr ~pass_name:"Remove_unused_arguments"
-            | None ->
-              Set_of_closures set_of_closures, r
+            Set_of_closures set_of_closures, r
     end
   | Project_closure project_closure ->
     simplify_project_closure env r ~project_closure
@@ -1394,6 +1316,50 @@ and simplify_list env r l =
     then l, approxs, r
     else h' :: t', approxs, r
 
+and duplicate_function ~env ~(set_of_closures : Flambda.set_of_closures)
+      ~fun_var =
+  let function_decl =
+    match Variable.Map.find fun_var set_of_closures.function_decls.funs with
+    | exception Not_found ->
+      Misc.fatal_errorf "duplicate_function: cannot find function %a"
+        Variable.print fun_var
+    | function_decl -> function_decl
+  in
+  let env = E.activate_freshening (E.set_never_inline env) in
+  let free_vars, specialised_args, function_decls, parameter_approximations,
+      _internal_value_set_of_closures, set_of_closures_env =
+    Inline_and_simplify_aux.prepare_to_simplify_set_of_closures ~env
+      ~set_of_closures ~function_decls:set_of_closures.function_decls
+      ~freshen:false ~only_for_function_decl:(Some function_decl)
+  in
+  let function_decl =
+    match Variable.Map.find fun_var function_decls.funs with
+    | exception Not_found ->
+      Misc.fatal_errorf "duplicate_function: cannot find function %a (2)"
+        Variable.print fun_var
+    | function_decl -> function_decl
+  in
+  let closure_env =
+    Inline_and_simplify_aux.prepare_to_simplify_closure ~function_decl
+      ~free_vars ~specialised_args ~parameter_approximations
+      ~set_of_closures_env
+  in
+  let body, _r =
+    E.enter_closure closure_env
+      ~closure_id:(Closure_id.wrap fun_var)
+      ~inline_inside:false
+      ~debuginfo:function_decl.dbg
+      ~f:(fun body_env ->
+        simplify body_env (R.create ()) function_decl.body)
+  in
+  let function_decl =
+    Flambda.create_function_declaration ~params:function_decl.params
+      ~body ~stub:function_decl.stub ~dbg:function_decl.dbg
+      ~inline:function_decl.inline ~specialise:function_decl.specialise
+      ~is_a_functor:function_decl.is_a_functor
+  in
+  function_decl, specialised_args
+
 let constant_defining_value_approx
     env
     (constant_defining_value:Flambda.constant_defining_value) =
@@ -1430,6 +1396,7 @@ let constant_defining_value_approx
         ~invariant_params
         ~specialised_args:Variable.Map.empty
         ~freshening:Freshening.Project_var.empty
+        ~direct_call_surrogates:Closure_id.Map.empty
     in
     A.value_set_of_closures value_set_of_closures
   | Project_closure (set_of_closures_symbol, closure_id) -> begin

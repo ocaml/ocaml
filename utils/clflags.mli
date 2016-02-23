@@ -182,6 +182,7 @@ val opaque : bool ref
 val print_timings : bool ref
 val flambda_invariant_checks : bool ref
 val unbox_closures : bool ref
+val unbox_closures_factor : int ref
 val unbox_free_vars_of_closures : bool ref
 val unbox_specialised_args : bool ref
 val clambda_checks : bool ref

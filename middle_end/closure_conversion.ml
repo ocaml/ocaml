@@ -587,6 +587,7 @@ and close_functions t external_env function_declarations : Flambda.named =
     in
     Flambda.create_set_of_closures ~function_decls ~free_vars
       ~specialised_args:Variable.Map.empty
+      ~direct_call_surrogates:Variable.Map.empty
   in
   Set_of_closures set_of_closures
 

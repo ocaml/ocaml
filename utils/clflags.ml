@@ -169,7 +169,7 @@ let inline_toplevel_multiplier = 16
 let default_inline_toplevel_threshold =
   int_of_float ((float inline_toplevel_multiplier) *. default_inline_threshold)
 let default_inline_call_cost = 5
-let default_inline_alloc_cost = 3
+let default_inline_alloc_cost = 7
 let default_inline_prim_cost = 3
 let default_inline_branch_cost = 5
 let default_inline_indirect_cost = 4
@@ -201,6 +201,7 @@ let inline_max_depth =
 let unbox_specialised_args = ref true   (* -no-unbox-specialised-args *)
 let unbox_free_vars_of_closures = ref true
 let unbox_closures = ref false          (* -unbox-closures *)
+let unbox_closures_factor = ref 1       (* -unbox-closures-factor *)
 let remove_unused_arguments = ref false (* -remove-unused-arguments *)
 
 type inlining_arguments = {

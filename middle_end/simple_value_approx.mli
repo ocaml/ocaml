@@ -159,6 +159,7 @@ and value_set_of_closures = private {
   specialised_args : Flambda.specialised_to Variable.Map.t;
   (* Any freshening that has been applied to [function_decls]. *)
   freshening : Freshening.Project_var.t;
+  direct_call_surrogates : Closure_id.t Closure_id.Map.t;
 }
 
 (** Extraction of the description of approximation(s). *)
@@ -179,6 +180,7 @@ val create_value_set_of_closures
   -> invariant_params:Variable.Set.t Variable.Map.t lazy_t
   -> specialised_args:Flambda.specialised_to Variable.Map.t
   -> freshening:Freshening.Project_var.t
+  -> direct_call_surrogates:Closure_id.t Closure_id.Map.t
   -> value_set_of_closures
 
 val update_freshening_of_value_set_of_closures
