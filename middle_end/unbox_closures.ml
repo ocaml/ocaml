@@ -25,7 +25,7 @@ module Transform = struct
   let variable_suffix = ""
 
   let precondition ~env ~(set_of_closures : Flambda.set_of_closures) =
-    !Clflags.unbox_closures <> None
+    !Clflags.unbox_closures
       && not (E.at_toplevel env)
       && not (Variable.Map.is_empty set_of_closures.free_vars)
 
@@ -46,44 +46,26 @@ module Transform = struct
         ~init:what_to_specialise
         ~f:(fun ~fun_var ~(function_decl : Flambda.function_declaration)
               what_to_specialise ->
-          let body_size = Inlining_cost.lambda_size function_decl.body in
-          let new_size =
-            match !Clflags.unbox_closures with
-            | None -> assert false
-            | Some "nodcs_none" -> 0
-            | Some "nodcs_smallthresh"
-            | Some "dcs_smallthresh"
-            | Some "maybedcs_smallthresh" -> body_size
-            | Some "nodcs_bigthresh"
-            | Some "dcs_bigthresh" -> body_size / 15
-            | Some _ -> failwith "Bad setting for -unbox-closures"
-          in
-          let has_benefit =
+          let new_size = Inlining_cost.lambda_size function_decl.body in
+          (* If the function is small enough, make a direct call surrogate
+             for it, so that indirect calls are not penalised by having to
+             bounce through the stub.  (Making such a surrogate involves
+             duplicating the function.) *)
+          let small_enough_to_duplicate =
             let module W = Inlining_cost.Whether_sufficient_benefit in
             let wsb =
               W.create_estimate ~original_size:0
                 ~toplevel:false
                 ~branch_depth:0
-                ~new_size:(new_size + 1)
+                ~new_size:((new_size / !Clflags.unbox_closures_factor) + 1)
                 ~benefit:saved_by_not_building_closure
                 ~lifting:false
                 ~round
             in
             W.evaluate wsb
           in
-          let make_surrogate =
-            match !Clflags.unbox_closures with
-            | None -> assert false
-            | Some "nodcs_none"
-            | Some "nodcs_smallthresh"
-            | Some "nodcs_bigthresh" -> false
-            | Some "dcs_smallthresh"
-            | Some "dcs_bigthresh" -> true
-            | Some "maybedcs_smallthresh" -> has_benefit
-            | Some _ -> assert false
-          in
           let what_to_specialise =
-            if make_surrogate then
+            if small_enough_to_duplicate then
               W.make_direct_call_surrogate_for what_to_specialise ~fun_var
             else
               what_to_specialise

@@ -303,8 +303,8 @@ let read_one_param ppf position name v =
       use_inlining_arguments_set ~round:1 o2_arguments;
       use_inlining_arguments_set ~round:0 o1_arguments
     end
-  | "unbox-closures" -> failwith "temporarily disabled"
-(*      set "unbox-closures" [ unbox_closures ] v*)
+  | "unbox-closures" ->
+      set "unbox-closures" [ unbox_closures ] v
   | "remove-unused-arguments" ->
       set "remove-unused-arguments" [ remove_unused_arguments ] v
 

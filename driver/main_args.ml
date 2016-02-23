@@ -417,8 +417,14 @@ let mk_dtimings f =
 ;;
 
 let mk_unbox_closures f =
-  "-unbox-closures", Arg.String f,
+  "-unbox-closures", Arg.Unit f,
   " Pass free variables via specialised arguments rather than closures"
+;;
+
+let mk_unbox_closures_factor f =
+  "-unbox-closures-factor", Arg.Int f,
+  "<n > 0>  Scale the size threshold above which unbox-closures will \
+    slow down indirect calls rather than duplicating a function"
 ;;
 
 let mk_unsafe f =
@@ -768,7 +774,7 @@ module type Optcommon_options = sig
   val _inline_branch_cost : string -> unit
   val _inline_indirect_cost : string -> unit
   val _inline_lifting_benefit : string -> unit
-  val _unbox_closures : string -> unit
+  val _unbox_closures : unit -> unit
   val _inline_branch_factor : string -> unit
   val _remove_unused_arguments : unit -> unit
   val _no_unbox_free_vars_of_closures : unit -> unit

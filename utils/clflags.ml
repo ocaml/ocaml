@@ -197,7 +197,8 @@ let inline_max_depth =
 
 let unbox_specialised_args = ref true   (* -no-unbox-specialised-args *)
 let unbox_free_vars_of_closures = ref true
-let unbox_closures = ref None          (* -unbox-closures *)
+let unbox_closures = ref false          (* -unbox-closures *)
+let unbox_closures_factor = ref 1       (* -unbox-closures-factor *)
 let remove_unused_arguments = ref false (* -remove-unused-arguments *)
 
 type inlining_arguments = {
