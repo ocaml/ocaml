@@ -21,6 +21,7 @@ let load s =
     print_endline (Dynlink.error_message e)
 
 let () =
+  ignore (Hashtbl.hash 42.0);
   print_endline "Main is running.";
   Dynlink.init ();
   Dynlink.allow_unsafe_modules true;
