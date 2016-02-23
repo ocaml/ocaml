@@ -31,7 +31,7 @@ let mksig d = Sig.mk ~loc:(symbol_rloc()) d
 let mkmod ?attrs d = Mod.mk ~loc:(symbol_rloc()) ?attrs d
 let mkstr d = Str.mk ~loc:(symbol_rloc()) d
 let mkclass ?attrs d = Cl.mk ~loc:(symbol_rloc()) ?attrs d
-let mkcty d = Cty.mk ~loc:(symbol_rloc()) d
+let mkcty ?attrs d = Cty.mk ~loc:(symbol_rloc()) ?attrs d
 let mkctf ?attrs ?docs d =
   Ctf.mk ~loc:(symbol_rloc()) ?attrs ?docs d
 let mkcf ?attrs ?docs d =
@@ -1195,10 +1195,10 @@ class_signature:
       { mkcty(Pcty_constr (mkloc $4 (rhs_loc 4), List.rev $2)) }
   | clty_longident
       { mkcty(Pcty_constr (mkrhs $1 1, [])) }
-  | OBJECT class_sig_body END
-      { mkcty(Pcty_signature $2) }
-  | OBJECT class_sig_body error
-      { unclosed "object" 1 "end" 3 }
+  | OBJECT attributes class_sig_body END
+      { mkcty ~attrs:$2 (Pcty_signature $3) }
+  | OBJECT attributes class_sig_body error
+      { unclosed "object" 1 "end" 4 }
   | class_signature attribute
       { Cty.attr $1 $2 }
   | extension
@@ -1219,17 +1219,17 @@ class_sig_fields:
 | class_sig_fields class_sig_field     { $2 :: (text_csig 2) @ $1 }
 ;
 class_sig_field:
-    INHERIT class_signature post_item_attributes
-      { mkctf (Pctf_inherit $2) ~attrs:$3 ~docs:(symbol_docs ()) }
-  | VAL value_type post_item_attributes
-      { mkctf (Pctf_val $2) ~attrs:$3 ~docs:(symbol_docs ()) }
-  | METHOD private_virtual_flags label COLON poly_type post_item_attributes
+    INHERIT attributes class_signature post_item_attributes
+      { mkctf (Pctf_inherit $3) ~attrs:($2@$4) ~docs:(symbol_docs ()) }
+  | VAL attributes value_type post_item_attributes
+      { mkctf (Pctf_val $3) ~attrs:($2@$4) ~docs:(symbol_docs ()) }
+  | METHOD attributes private_virtual_flags label COLON poly_type post_item_attributes
       {
-       let (p, v) = $2 in
-       mkctf (Pctf_method ($3, p, v, $5)) ~attrs:$6 ~docs:(symbol_docs ())
+       let (p, v) = $3 in
+       mkctf (Pctf_method ($4, p, v, $6)) ~attrs:($2@$7) ~docs:(symbol_docs ())
       }
-  | CONSTRAINT constrain_field post_item_attributes
-      { mkctf (Pctf_constraint $2) ~attrs:$3 ~docs:(symbol_docs ()) }
+  | CONSTRAINT attributes constrain_field post_item_attributes
+      { mkctf (Pctf_constraint $3) ~attrs:($2@$4) ~docs:(symbol_docs ()) }
   | item_extension post_item_attributes
       { mkctf (Pctf_extension $1) ~attrs:$2 ~docs:(symbol_docs ()) }
   | floating_attribute

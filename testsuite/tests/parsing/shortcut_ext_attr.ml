@@ -34,6 +34,17 @@ class x =
     initializer[@foo] x
   end
 
+(* Class type expressions *)
+class type t =
+  object[@foo]
+    inherit[@foo] t
+    val[@foo] x : t
+    val[@foo] mutable x : t
+    method[@foo] x : t
+    method[@foo] private x : t
+    constraint[@foo] t = t'
+  end
+
 (* Type expressions *)
 type t =
   (module%foo[@foo] M)
