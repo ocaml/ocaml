@@ -9,11 +9,11 @@ default:
 	elif $(BYTECODE_ONLY); then \
 	  echo " => skipped (bytecode only)"; \
 	else \
-	  LD="`ld -v 2>&1`"; \
-	  LDKNOWN="`echo $$LD | grep \"ld64-[0-9]*\"`"; \
-	  LDVER="`echo $$LD | sed \"s/ld64-\\([0-9]*\\).*/\\1/\"`"; \
-	  if [[ -z "$$LDKNOWN" ]]; then \
-	    echo " => skipped (expecting ld version 'ld64-*', got '$$LD')"; \
+	  LDFULL="`ld -v 2>&1`"; \
+	  LD="`echo $$LDFULL | grep -o \"ld64-[0-9]*\"`"; \
+	  LDVER="`echo $$LD | sed \"s/ld64-//\"`"; \
+	  if [[ -z "$$LD" ]]; then \
+	    echo " => skipped (unknown linker: pattern ld64-[0-9]* not found in 'ld -v' output)"; \
 	  elif [[ $$LDVER -lt 224 ]]; then \
 	   echo " => skipped (ld version is $$LDVER, only 224 or above supported)"; \
 	  else \
