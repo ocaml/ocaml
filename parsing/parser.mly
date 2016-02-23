@@ -1118,8 +1118,9 @@ class_field:
   | INHERIT override_flag attributes class_expr parent_binder
     post_item_attributes
       { mkcf (Pcf_inherit ($2, $4, $5)) ~attrs:($3@$6) ~docs:(symbol_docs ()) }
-  | VAL attributes value post_item_attributes
-      { mkcf (Pcf_val $3) ~attrs:($2@$4) ~docs:(symbol_docs ()) }
+  | VAL value post_item_attributes
+      { let v, attrs = $2 in
+        mkcf (Pcf_val v) ~attrs:(attrs@$3) ~docs:(symbol_docs ()) }
   | METHOD method_ post_item_attributes
       { let meth, attrs = $2 in
         mkcf (Pcf_method meth) ~attrs:(attrs@$3) ~docs:(symbol_docs ()) }
@@ -1141,38 +1142,39 @@ parent_binder:
 ;
 value:
 /* TODO: factorize these rules (also with method): */
-    override_flag MUTABLE VIRTUAL label COLON core_type
+    override_flag attributes MUTABLE VIRTUAL label COLON core_type
       { if $1 = Override then syntax_error ();
-        mkloc $4 (rhs_loc 4), Mutable, Cfk_virtual $6 }
-  | VIRTUAL mutable_flag label COLON core_type
-      { mkrhs $3 3, $2, Cfk_virtual $5 }
-  | override_flag mutable_flag label EQUAL seq_expr
-      { mkrhs $3 3, $2, Cfk_concrete ($1, $5) }
-  | override_flag mutable_flag label type_constraint EQUAL seq_expr
+        (mkloc $5 (rhs_loc 5), Mutable, Cfk_virtual $7), $2 }
+  | override_flag attributes VIRTUAL mutable_flag label COLON core_type
+      { if $1 = Override then syntax_error ();
+        (mkrhs $5 5, $4, Cfk_virtual $7), $2 }
+  | override_flag attributes mutable_flag label EQUAL seq_expr
+      { (mkrhs $4 4, $3, Cfk_concrete ($1, $6)), $2 }
+  | override_flag attributes mutable_flag label type_constraint EQUAL seq_expr
       {
-       let e = mkexp_constraint $6 $4 in
-       mkrhs $3 3, $2, Cfk_concrete ($1, e)
+       let e = mkexp_constraint $7 $5 in
+       (mkrhs $4 4, $3, Cfk_concrete ($1, e)), $2
       }
 ;
 method_:
 /* TODO: factorize those rules... */
-    override_flag PRIVATE VIRTUAL attributes label COLON poly_type
+    override_flag attributes PRIVATE VIRTUAL label COLON poly_type
       { if $1 = Override then syntax_error ();
-        (mkloc $5 (rhs_loc 5), Private, Cfk_virtual $7), $4 }
-  | override_flag VIRTUAL private_flag attributes label COLON poly_type
+        (mkloc $5 (rhs_loc 5), Private, Cfk_virtual $7), $2 }
+  | override_flag attributes VIRTUAL private_flag label COLON poly_type
       { if $1 = Override then syntax_error ();
-        (mkloc $5 (rhs_loc 5), $3, Cfk_virtual $7), $4 }
-  | override_flag private_flag attributes label strict_binding
-      { (mkloc $4 (rhs_loc 4), $2,
-        Cfk_concrete ($1, ghexp(Pexp_poly ($5, None)))), $3 }
-  | override_flag private_flag attributes label COLON poly_type EQUAL seq_expr
-      { (mkloc $4 (rhs_loc 4), $2,
-        Cfk_concrete ($1, ghexp(Pexp_poly($8, Some $6)))), $3 }
-  | override_flag private_flag attributes label COLON TYPE lident_list
+        (mkloc $5 (rhs_loc 5), $4, Cfk_virtual $7), $2 }
+  | override_flag attributes private_flag label strict_binding
+      { (mkloc $4 (rhs_loc 4), $3,
+        Cfk_concrete ($1, ghexp(Pexp_poly ($5, None)))), $2 }
+  | override_flag attributes private_flag label COLON poly_type EQUAL seq_expr
+      { (mkloc $4 (rhs_loc 4), $3,
+        Cfk_concrete ($1, ghexp(Pexp_poly($8, Some $6)))), $2 }
+  | override_flag attributes private_flag label COLON TYPE lident_list
     DOT core_type EQUAL seq_expr
       { let exp, poly = wrap_type_annotation $7 $9 $11 in
-        (mkloc $4 (rhs_loc 4), $2,
-        Cfk_concrete ($1, ghexp(Pexp_poly(exp, Some poly)))), $3 }
+        (mkloc $4 (rhs_loc 4), $3,
+        Cfk_concrete ($1, ghexp(Pexp_poly(exp, Some poly)))), $2 }
 ;
 
 /* Class types */
