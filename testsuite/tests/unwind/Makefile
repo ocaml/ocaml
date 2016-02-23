@@ -1,11 +1,24 @@
+BASEDIR=../..
+
 # The -keep_dwarf_unwind option of ld was introduced in ld version 224.1.
 # (The last released version where it is not supported is version 136.)
 default:
 	@printf " ... testing 'unwind_test':"
-	@if [ $(SYSTEM) = macosx ] && ! $(BYTECODE_ONLY) && [[ `ld -v 2>&1` =~ ld64-([0-9]*) ]] && [[ 224 -le $${BASH_REMATCH[1]} ]]; then \
-	  $(MAKE) native_macosx_tests; \
+	@if [ ! $(SYSTEM) = macosx ]; then \
+	  echo " => skipped (not on Mac OSX)"; \
+	elif $(BYTECODE_ONLY); then \
+	  echo " => skipped (bytecode only)"; \
 	else \
-	  echo " => skipped"; \
+	  LD="`ld -v 2>&1`"; \
+	  LDKNOWN="`echo $$LD | grep \"ld64-[0-9]*\"`"; \
+	  LDVER="`echo $$LD | sed \"s/ld64-\\([0-9]*\\).*/\\1/\"`"; \
+	  if [[ -z "$$LDKNOWN" ]]; then \
+	    echo " => skipped (expecting ld version 'ld64-*', got '$$LD')"; \
+	  elif [[ $$LDVER -lt 224 ]]; then \
+	   echo " => skipped (ld version is $$LDVER, only 224 or above supported)"; \
+	  else \
+	    $(MAKE) native_macosx_tests; \
+	  fi; \
 	fi
 
 native_macosx_tests:
