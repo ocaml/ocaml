@@ -30,7 +30,11 @@ class x =
   object[@foo]
     inherit[@foo] x
     val[@foo] x = 3
+    val[@foo] virtual x : t
+    val![@foo] mutable x = 3
     method[@foo] x = 3
+    method[@foo] virtual x : t
+    method![@foo] private x = 3
     initializer[@foo] x
   end
 
