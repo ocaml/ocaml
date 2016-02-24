@@ -503,7 +503,7 @@ class printer  ()= object(self:'self)
           match view_fixity_of_exp e with
           | `Infix s ->
             (match l with
-            | [ arg1; arg2 ] ->
+            | [ (Nolabel, _) as arg1; (Nolabel, _) as arg2 ] ->
                 pp f "@[<2>%a@;%s@;%a@]"
                    (* FIXME associativity lable_x_expression_parm*)
                    self#reset#label_x_expression_param  arg1 s
