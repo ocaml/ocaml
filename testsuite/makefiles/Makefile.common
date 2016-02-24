@@ -74,8 +74,9 @@ else
   ifeq "$(wildcard $(TOPDIR)/flexdll/Makefile)" ""
     FLEXLINK_PREFIX=
   else
+    EMPTY=
     FLEXLINK_PREFIX=OCAML_FLEXLINK="$(WINTOPDIR)/boot/ocamlrun \
-	                            $(WINTOPDIR)/flexdll/flexlink.exe"
+	                            $(WINTOPDIR)/flexdll/flexlink.exe" $(EMPTY)
   endif
 endif
 OCAMLC=$(FLEXLINK_PREFIX)$(OCAMLRUN) $(OTOPDIR)/ocamlc $(CUSTOM) $(OCFLAGS) \
