@@ -68,6 +68,7 @@ endif
 
 OCAML=$(OCAMLRUN) $(OTOPDIR)/ocaml $(OCFLAGS) \
       -init $(OTOPDIR)/testsuite/lib/empty
+EXPECT_TEST=$(OCAMLRUN) $(OTOPDIR)/testsuite/tools/expect_test$(EXE)
 ifeq "$(FLEXLINK)" ""
   FLEXLINK_PREFIX=
 else

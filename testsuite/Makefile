@@ -32,6 +32,7 @@ default:
 	@echo "  one DIR=p       launch the tests located in path p"
 	@echo "  promote DIR=p   promote the reference files for the tests in p"
 	@echo "  lib             build library modules"
+	@echo "  tools           build test tools"
 	@echo "  clean           delete generated files"
 	@echo "  report          print the report for the last execution"
 	@echo
@@ -40,7 +41,7 @@ default:
 	@echo "(default value = $(MAX_TESTSUITE_DIR_RETRIES))"
 
 .PHONY: all
-all: lib
+all: lib tools
 	@for dir in tests/*; do \
 	  $(MAKE) $(NO_PRINT) exec-one DIR=$$dir; \
 	done 2>&1 | tee _log
@@ -48,7 +49,7 @@ all: lib
 	@$(MAKE) report
 
 .PHONY: all-%
-all-%: lib
+all-%: lib tools
 	@for dir in tests/$**; do \
 	  $(MAKE) $(NO_PRINT) exec-one DIR=$$dir; \
 	done 2>&1 | tee _log
@@ -100,7 +101,7 @@ parallel-%: lib
 parallel: parallel-*
 
 .PHONY: list
-list: lib
+list: lib tools
 	@if [ -z "$(FILE)" ]; \
 	  then echo "No value set for variable 'FILE'."; \
 	  exit 1; \
@@ -112,7 +113,7 @@ list: lib
 	@$(MAKE) report
 
 .PHONY: one
-one: lib
+one: lib tools
 	@if [ -z "$(DIR)" ]; then \
 	  echo "No value set for variable 'DIR'."; \
 	  exit 1; \
@@ -165,9 +166,14 @@ promote:
 lib:
 	@cd lib && $(MAKE) -s BASEDIR=$(BASEDIR)
 
+.PHONY: tools
+tools:
+	@cd tools && $(MAKE) -s BASEDIR=$(BASEDIR)
+
 .PHONY: clean
 clean:
 	@cd lib && $(MAKE) BASEDIR=$(BASEDIR) clean
+	@cd tools && $(MAKE) BASEDIR=$(BASEDIR) clean
 	@for file in `$(FIND) interactive tests -name Makefile`; do \
 	  (cd `dirname $$file` && $(MAKE) BASEDIR=$(BASEDIR) clean); \
 	done

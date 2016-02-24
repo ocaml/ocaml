@@ -292,6 +292,8 @@
 /testsuite/tests/warnings/w55.opt.opt_result
 /testsuite/tests/warnings/w58.opt.opt_result
 
+/testsuite/tools/expect_test
+
 /tools/ocamldep
 /tools/ocamldep.opt
 /tools/ocamldep.bak
