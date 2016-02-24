@@ -310,3 +310,7 @@ val normalise_eol : string -> string
 (** [normalise_eol s] returns a fresh copy of [s] with any '\r' characters
    removed. Intended for pre-processing text which will subsequently be printed
    on a channel which performs EOL transformations (i.e. Windows) *)
+
+val delete_eol_spaces : string -> string
+(** [delete_eol_spaces s] returns a fresh copy of [s] with any end of line spaces
+   removed. Intended to normalize the output of the toplevel for tests. *)
