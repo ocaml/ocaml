@@ -352,19 +352,6 @@ let execute_phrase print_outcome ppf phr =
     Warnings.reset_fatal ();
     raise exn
 
-(* Temporary assignment to a reference *)
-
-let protect r newval body =
-  let oldval = !r in
-  try
-    r := newval;
-    let res = body() in
-    r := oldval;
-    res
-  with x ->
-    r := oldval;
-    raise x
-
 (* Read and execute commands from a file, or from stdin if [name] is "". *)
 
 let use_print_results = ref true
@@ -400,7 +387,7 @@ let use_file ppf wrap_mod name =
     (* Skip initial #! line if any *)
     Lexer.skip_sharp_bang lb;
     let success =
-      protect Location.input_name filename (fun () ->
+      protect_refs [ R (Location.input_name, filename) ] (fun () ->
         try
           List.iter
             (fun ph ->
@@ -423,7 +410,7 @@ let mod_use_file ppf name = use_file ppf true name
 let use_file ppf name = use_file ppf false name
 
 let use_silently ppf name =
-  protect use_print_results false (fun () -> use_file ppf name)
+  protect_refs [ R (use_print_results, false) ] (fun () -> use_file ppf name)
 
 (* Reading function for interactive use *)
 

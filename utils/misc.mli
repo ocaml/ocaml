@@ -40,6 +40,13 @@ val split_last: 'a list -> 'a list * 'a
 val may: ('a -> unit) -> 'a option -> unit
 val may_map: ('a -> 'b) -> 'a option -> 'b option
 
+type ref_and_value = R : 'a ref * 'a -> ref_and_value
+
+val protect_refs : ref_and_value list -> (unit -> 'a) -> 'a
+(** [protect_refs l f] temporarily sets [r] to [v] for each [R (r, v)] in [l]
+    while executing [f]. The previous contents of the references is restored
+    even if [f] raises an exception. *)
+
 module Stdlib : sig
   module List : sig
     type 'a t = 'a list
