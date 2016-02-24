@@ -1250,7 +1250,11 @@ class printer  ()= object(self:'self)
     let manifest f =
       match x.ptype_manifest with
       | None -> ()
-      | Some y -> pp f "@;%a" self#core_type y
+      | Some y ->
+        if x.ptype_kind = Ptype_abstract then
+          pp f "%t@;%a" priv self#core_type y
+        else
+          pp f "@;%a" self#core_type y
     in
     let constructor_declaration f pcd =
       pp f "|@;";
@@ -1264,12 +1268,12 @@ class printer  ()= object(self:'self)
       in
       match x.ptype_kind with
       | Ptype_variant xs ->
-          pp f "%t@\n%a" intro
+          pp f "%t%t@\n%a" intro priv
              (self#list ~sep:"@\n" constructor_declaration) xs
       | Ptype_abstract -> ()
       | Ptype_record l ->
-          pp f "%t@;%a" intro self#record_declaration l
-      | Ptype_open -> pp f "%t@;.." intro
+          pp f "%t%t@;%a" intro priv self#record_declaration l
+      | Ptype_open -> pp f "%t%t@;.." intro priv
     in
     let constraints f =
       List.iter
@@ -1278,7 +1282,7 @@ class printer  ()= object(self:'self)
               self#core_type ct1 self#core_type ct2)
         x.ptype_cstrs
     in
-      pp f "%t%t%t%t" priv manifest repr constraints
+      pp f "%t%t%t" manifest repr constraints
 
   method type_extension f x =
     let extension_constructor f x =
