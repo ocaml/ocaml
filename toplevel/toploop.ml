@@ -539,12 +539,15 @@ let loop ppf =
 
 (* Execute a script.  If [name] is "", read the script from stdin. *)
 
-let run_script ppf name args =
+let override_sys_argv args =
   let len = Array.length args in
-  if Array.length Sys.argv < len then invalid_arg "Toploop.run_script";
+  if Array.length Sys.argv < len then invalid_arg "Toploop.override_sys_argv";
   Array.blit args 0 Sys.argv 0 len;
   Obj.truncate (Obj.repr Sys.argv) len;
-  Arg.current := 0;
+  Arg.current := 0
+
+let run_script ppf name args =
+  override_sys_argv args;
   Compmisc.init_path ~dir:(Filename.dirname name) true;
                    (* Note: would use [Filename.abspath] here, if we had it. *)
   begin
