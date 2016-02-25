@@ -251,7 +251,7 @@ class printer  ()= object(self:'self)
     else match x.ptyp_desc with
     | Ptyp_any -> pp f "_";
     | Ptyp_var s -> self#tyvar f  s;
-    | Ptyp_tuple l ->  pp f "(%a)" (self#list self#core_type1 ~sep:"*@;") l
+    | Ptyp_tuple l ->  pp f "(%a)" (self#list self#core_type1 ~sep:"@;*@;") l
     | Ptyp_constr (li, l) ->
         pp f (* "%a%a@;" *) "%a%a"
           (fun f l -> match l with
@@ -1308,7 +1308,7 @@ class printer  ()= object(self:'self)
           (fun f -> function
              | Pcstr_tuple [] -> ()
              | Pcstr_tuple l ->
-                 pp f "@;of@;%a" (self#list self#core_type1 ~sep:"*@;") l
+                 pp f "@;of@;%a" (self#list self#core_type1 ~sep:"@;*@;") l
              | Pcstr_record l -> pp f "@;of@;%a" (self#record_declaration) l
           ) args
           self#attributes attrs
@@ -1317,7 +1317,7 @@ class printer  ()= object(self:'self)
           (fun f -> function
              | Pcstr_tuple [] -> self#core_type1 f r
              | Pcstr_tuple l -> pp f "%a@;->@;%a"
-                                  (self#list self#core_type1 ~sep:"*@;") l
+                                  (self#list self#core_type1 ~sep:"@;*@;") l
                                   self#core_type1 r
              | Pcstr_record l ->
                  pp f "%a@;->@;%a" (self#record_declaration) l self#core_type1 r
