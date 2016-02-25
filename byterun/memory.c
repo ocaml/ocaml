@@ -8,6 +8,7 @@
 #include "domain.h"
 #include "addrmap.h"
 #include "roots.h"
+#include "alloc.h"
 
 static void write_barrier(value obj, int field, value val)
 {
@@ -206,3 +207,96 @@ struct cas_fault_req {
   value newval;
   int success;
 };
+
+#define BVAR_EMPTY      0x10000
+#define BVAR_OWNER_MASK 0x0ffff
+
+CAMLprim value caml_bvar_create(value v)
+{
+  CAMLparam1(v);
+
+  value bv = caml_alloc_small(2, 0);
+  Init_field(bv, 0, v);
+  Init_field(bv, 1, Val_long(caml_domain_self()->id));
+
+  CAMLreturn (bv);
+}
+
+struct bvar_transfer_req {
+  value bv;
+  int new_owner;
+};
+
+static void handle_bvar_transfer(struct domain* self, void *reqp)
+{
+  struct bvar_transfer_req *req = reqp;
+  value bv = req->bv;
+  intnat stat = Long_val(Op_val(bv)[1]);
+  int owner = stat & BVAR_OWNER_MASK;
+
+  if (owner == self->id) {
+    caml_gc_log("Handling bvar transfer [%02d] -> [%02d]", owner, req->new_owner);
+    Op_val(bv)[0] = caml_promote(self, Op_val(bv)[0]);
+    Op_val(bv)[1] = Val_long((stat & ~BVAR_OWNER_MASK) | req->new_owner);
+  } else {
+    /* Race: by the time we handled the RPC, this bvar was
+       no longer owned by us. We recursively forward the
+       request before returning: this guarantees progress
+       since in the worst case all domains are tied up
+       and there's nobody left to win the race */
+    caml_gc_log("Stale bvar transfer [%02d] -> [%02d] ([%02d] got there first)",
+                self->id, req->new_owner, owner);
+    caml_domain_rpc(caml_domain_of_id(owner), &handle_bvar_transfer, req);
+  }
+}
+
+/* Get a bvar's status, transferring it if necessary */
+static intnat bvar_status(value bv)
+{
+  while (1) {
+    intnat stat = Long_val(Op_val(bv)[1]);
+    int owner = stat & BVAR_OWNER_MASK;
+    if (owner == caml_domain_self()->id)
+      return stat;
+
+    /* Otherwise, need to transfer */
+    struct bvar_transfer_req req = {bv, caml_domain_self()->id};
+    caml_gc_log("Transferring bvar from domain [%02d]", owner);
+    caml_domain_rpc(caml_domain_of_id(owner), &handle_bvar_transfer, &req);
+
+    /* We may not have ownership at this point: we might have just
+       handled an incoming ownership request right after we got
+       ownership. So, we have to loop. */
+  }
+}
+
+CAMLprim value caml_bvar_take(value bv)
+{
+  intnat stat = bvar_status(bv);
+  if (stat & BVAR_EMPTY) caml_raise_not_found();
+  CAMLassert(stat == caml_domain_self()->id);
+
+  value v = Op_val(bv)[0];
+  Op_val(bv)[0] = Val_unit;
+  Op_val(bv)[1] = Val_long(caml_domain_self()->id | BVAR_EMPTY);
+
+  return v;
+}
+
+CAMLprim value caml_bvar_put(value bv, value v)
+{
+  intnat stat = bvar_status(bv);
+  if (!(stat & BVAR_EMPTY)) caml_invalid_argument("Put to a full bvar");
+  CAMLassert(stat == (caml_domain_self()->id | BVAR_EMPTY));
+
+  if (!Is_young(bv)) write_barrier(bv, 0, v);
+  Op_val(bv)[0] = v;
+  Op_val(bv)[1] = Val_long(caml_domain_self()->id);
+
+  return Val_unit;
+}
+
+CAMLprim value caml_bvar_is_empty(value bv)
+{
+  return Val_int((Long_val(Op_val(bv)[1]) & BVAR_EMPTY) != 0);
+}

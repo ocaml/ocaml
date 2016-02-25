@@ -47,10 +47,9 @@ type primitive =
   (* Force lazy values *)
   | Plazyforce
   (* Context switches *)
-  | Phandle
   | Pperform
-  | Pcontinue
-  | Pdiscontinue
+  | Presume
+  | Pdelegate
   (* External call *)
   | Pccall of Primitive.description
   (* Exceptions *)

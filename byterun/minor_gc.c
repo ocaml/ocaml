@@ -413,6 +413,7 @@ CAMLexport value caml_promote(struct domain* domain, value root)
 /* Make sure the minor heap is empty by performing a minor collection
    if needed.
 */
+
 void caml_empty_minor_heap (void)
 {
   uintnat minor_allocated_bytes = caml_domain_state->young_end - caml_domain_state->young_ptr;
@@ -420,11 +421,6 @@ void caml_empty_minor_heap (void)
   value **r;
 
   caml_save_stack_gc();
-
-  /*
-  for (r = caml_remembered_set.fiber_ref.base; r < caml_remembered_set.fiber_ref.ptr; r++) {
-    caml_scan_dirty_stack(&caml_darken, (value)*r);
-  } XXX KC */
 
   stat_live_bytes = 0;
 
@@ -481,7 +477,6 @@ void caml_empty_minor_heap (void)
     caml_clean_stack ((value)*r);
   }
   clear_table (&caml_remembered_set.fiber_ref);
-
 
   caml_restore_stack_gc();
 
