@@ -267,7 +267,8 @@ Enable or disable colors in compiler messages (especially warnings and errors).
 The following modes are supported:
 
 .B auto
-use heuristics to enable colors only if the output supports them (an ANSI-compatible tty terminal);
+use heuristics to enable colors only if the output supports them (an
+ANSI-compatible tty terminal);
 
 .B always
 enable colors unconditionally;
