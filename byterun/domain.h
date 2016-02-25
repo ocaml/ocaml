@@ -11,7 +11,6 @@ struct domain {
   int vm_inited;
 
   struct dom_internal* internals;
-  struct caml_runqueue* runqueue;
   struct caml_heap_state* shared_heap;
   struct caml_remembered_set* remembered_set;
   struct caml__roots_block** local_roots;
@@ -19,7 +18,6 @@ struct domain {
   /* FIXME: represent current stack here */
 #else
   value* current_stack;
-  value* parent_stack;
 #endif
 
   struct caml_domain_state* state;

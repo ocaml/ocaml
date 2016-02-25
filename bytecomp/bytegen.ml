@@ -312,7 +312,7 @@ let comp_primitive p sz args =
   | Pduprecord _ -> Kccall("caml_obj_dup", 1)
   | Pccall p -> Kccall(p.prim_name, p.prim_arity)
   | Pperform ->
-      check_stack (sz + 2);
+      check_stack (sz + 4);
       Kperform
   | Pnegint -> Knegint
   | Paddint -> Kaddint
@@ -632,29 +632,24 @@ let rec comp_expr env exp sz cont =
                  (Kmakeblock(List.length args, 0) ::
                   Kccall("caml_make_array", 1) :: cont)
       end
-  | Lprim(Phandle, args) ->
+  | Lprim(Presume, args) ->
       let nargs = List.length args - 1 in
+      assert (nargs = 2);
+      check_stack (sz + 3);
       if is_tailcall cont then
         comp_args env args sz
-          (Khandleterm(sz + nargs) :: discard_dead_code cont)
+          (Kresumeterm(sz + nargs) :: discard_dead_code cont)
       else
-        comp_args env args sz (Khandle :: cont)
-  | Lprim(Pcontinue, args) ->
+        comp_args env args sz (Kresume :: cont)
+  | Lprim(Pdelegate, args) ->
       let nargs = List.length args - 1 in
-      check_stack (sz + nargs + 2);
+      assert (nargs = 1);
+      check_stack (sz + 3);
       if is_tailcall cont then
         comp_args env args sz
-          (Kcontinueterm(sz + nargs) :: discard_dead_code cont)
+          (Kdelegateterm(sz + nargs) :: discard_dead_code cont)
       else
-        comp_args env args sz (Kcontinue :: cont)
-  | Lprim(Pdiscontinue, args) ->
-      let nargs = List.length args - 1 in
-      check_stack (sz + nargs + 2);
-      if is_tailcall cont then
-        comp_args env args sz
-          (Kdiscontinueterm(sz + nargs) :: discard_dead_code cont)
-      else
-        comp_args env args sz (Kdiscontinue :: cont)
+        fatal_error "Delegate used in non-tail position"
 
 (* Integer first for enabling futher optimization (cf. emitcode.ml)  *)
   | Lprim (Pintcomp c, [arg ; (Lconst _ as k)]) ->

@@ -42,6 +42,10 @@ let oper_result_type = function
   | Cintoffloat -> typ_int
   | Craise _ -> typ_void
   | Ccheckbound _ -> typ_void
+  | Cperform -> typ_addr
+  | Cresume -> typ_addr
+  | Cdelegate -> typ_addr
+
 
 (* Infer the size in bytes of the result of a simple expression *)
 
@@ -288,6 +292,9 @@ method select_operation op args =
   | (Cfloatofint, _) -> (Ifloatofint, args)
   | (Cintoffloat, _) -> (Iintoffloat, args)
   | (Ccheckbound _, _) -> self#select_arith Icheckbound args
+  | (Cperform, _) -> (Iperform, args)
+  | (Cresume, _) -> (Iresume_ind, args)
+  | (Cdelegate, _) -> (Idelegate, args)
   | _ -> fatal_error "Selection.select_oper"
 
 method private select_arith_comm op = function

@@ -265,16 +265,29 @@ CAMLextern __thread struct caml__roots_block *caml_local_roots;  /* defined in r
   } \
   CAMLxparamN (x, (size))
 
+#ifdef DEBUG
+#define CAMLcheck_mutexes do {   \
+  struct caml__roots_block* r;   \
+  for (r = caml_local_roots;     \
+       r != caml__frame;         \
+       r = r->next) {            \
+    CAMLassert(r->mutexes == 0); \
+  }                              \
+} while (0)
+#else
+#define CAMLcheck_mutexes do {} while(0)
+#endif
+
 
 #define CAMLreturn0 do{ \
-  CAMLassert(caml_local_roots->mutexes == 0);     \
+  CAMLcheck_mutexes; \
   caml_local_roots = caml__frame; \
   return; \
 }while (0)
 
 #define CAMLreturnT(type, result) do{ \
   type caml__temp_result = (result); \
-  CAMLassert(caml_local_roots->mutexes == 0); \
+  CAMLcheck_mutexes; \
   caml_local_roots = caml__frame; \
   return (caml__temp_result); \
 }while(0)

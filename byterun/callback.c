@@ -31,70 +31,44 @@
 
 CAMLexport __thread int caml_callback_depth = 0;
 
-#ifndef LOCAL_CALLBACK_BYTECODE
 static opcode_t callback_code[] = { ACC, 0, APPLY, 0, POP, 1, STOP };
-#endif
 
-
+static void init_callback_code(void)
+{
 #ifdef THREADED_CODE
-
-static void init_callback_code(void)
-{
   caml_thread_code(callback_code, sizeof(callback_code));
-}
-
-#else
-
-static void init_callback_code(void)
-{
-}
-
 #endif
+}
 
 CAMLexport value caml_callbackN_exn(value closure, int narg, value args[])
 {
+  CAMLparam0();
+  CAMLlocal1(parent_stack);
   int i;
   value res;
-
-  /* some alternate bytecode implementations (e.g. a JIT translator)
-     might require that the bytecode is kept in a local variable on
-     the C stack */
-#ifdef LOCAL_CALLBACK_BYTECODE
-  opcode_t local_callback_code[7];
-#endif
+  parent_stack = Stack_parent(caml_current_stack);
+  Stack_parent(caml_current_stack) = Val_unit;
 
   Assert(narg + 4 <= 256);
-
   caml_extern_sp -= narg + 4;
   for (i = 0; i < narg; i++) caml_extern_sp[i] = args[i]; /* arguments */
-#ifndef LOCAL_CALLBACK_BYTECODE
-  caml_extern_sp[narg] = Val_pc (callback_code + 4); /* return address */
+
+  opcode_t code[7] = {
+    callback_code[0], narg + 3,
+    callback_code[2], narg,
+    callback_code[4], callback_code[5], callback_code[6]
+  };
+
+  caml_extern_sp[narg] = Val_pc (code + 4); /* return address */
   caml_extern_sp[narg + 1] = Val_unit;    /* environment */
   caml_extern_sp[narg + 2] = Val_long(0); /* extra args */
   caml_extern_sp[narg + 3] = closure;
-  callback_code[1] = narg + 3;
-  callback_code[3] = narg;
-  res = caml_interprete(callback_code, sizeof(callback_code));
-#else /*have LOCAL_CALLBACK_BYTECODE*/
-  caml_extern_sp[narg] = Val_pc (local_callback_code + 4); /* return address */
-  caml_extern_sp[narg + 1] = Val_unit;    /* environment */
-  caml_extern_sp[narg + 2] = Val_long(0); /* extra args */
-  caml_extern_sp[narg + 3] = closure;
-  local_callback_code[0] = ACC;
-  local_callback_code[1] = narg + 3;
-  local_callback_code[2] = APPLY;
-  local_callback_code[3] = narg;
-  local_callback_code[4] = POP;
-  local_callback_code[5] =  1;
-  local_callback_code[6] = STOP;
-#ifdef THREADED_CODE
-  caml_thread_code(local_callback_code, sizeof(local_callback_code));
-#endif /*THREADED_CODE*/
-  res = caml_interprete(local_callback_code, sizeof(local_callback_code));
-  caml_release_bytecode(local_callback_code, sizeof(local_callback_code));
-#endif /*LOCAL_CALLBACK_BYTECODE*/
+  res = caml_interprete(code, sizeof(code));
   if (Is_exception_result(res)) caml_extern_sp += narg + 4; /* PR#1228 */
-  return res;
+
+  Assert(Stack_parent(caml_current_stack) == Val_unit);
+  Stack_parent(caml_current_stack) = parent_stack;
+  CAMLreturn (res);
 }
 
 CAMLexport value caml_callback_exn(value closure, value arg1)
