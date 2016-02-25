@@ -518,10 +518,11 @@ class printer  ()= object(self:'self)
                 else s
             in
             (match l with
-            |[v] -> pp f "@[<2>%s@;%a@]" s self#label_x_expression_param v
-            | _ -> pp f "@[<2>%s@;%a@]" s
-                      (self#list self#label_x_expression_param) l
-                   (*FIXME assert false*)
+            | [(Nolabel, _) as v] ->
+              pp f "@[<2>%s@;%a@]" s self#label_x_expression_param v
+            | _ ->
+              pp f "@[<2>%a %a@]" self#simple_expr e
+                (self#list self#label_x_expression_param) l
             )
           | _ ->
             pp f "@[<hov2>%a@]" begin fun f (e,l) ->
