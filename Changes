@@ -17,9 +17,6 @@ Language features:
 - PR#6714: allow [@@ocaml.warning] on most structure and signature items:
   values, modules, module types
   (whitequark)
-- PR#7118, PR#7120: Bug fixed in stack unwinding metadata generation.
-  Was a cause of crashes in GUI programs on OS X.
-  (Bart Jacobs)
 - GPR#26: support for "(type a b)" as syntactic sugar for "(type a) (type b)"
   (Gabriel Scherer)
 - GPR#42: short functor type syntax: "S -> T" for "functor (_ : S) -> T"
@@ -120,6 +117,9 @@ Compilers:
   by Jacques Garrigue)
 - PR#7097:  Strange syntax error message around illegal packaged module
   signature constraints (Alain Frisch, report by Jun Furuse)
+- PR#7118, PR#7120: Bug fixed in stack unwinding metadata generation.
+  Was a cause of crashes in GUI programs on OS X.
+  (Bart Jacobs)
 - GPR#17: some cmm optimizations of integer operations with constants
   (Stephen Dolan, review by Pierre Chambart)
 - GPR#109: new unboxing strategy for float and int references (Vladimir Brankov,
