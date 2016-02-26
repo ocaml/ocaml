@@ -424,6 +424,14 @@ let mk_unbox_closures f =
   " Pass free variables via specialised arguments rather than closures"
 ;;
 
+let mk_unbox_closures_factor f =
+  "-unbox-closures-factor", Arg.Int f,
+  Printf.sprintf "<n > 0>  Scale the size threshold above which \
+      unbox-closures will slow down indirect calls rather than duplicating a \
+      function (default %d)"
+    Clflags.default_unbox_closures_factor
+;;
+
 let mk_unsafe f =
   "-unsafe", Arg.Unit f,
   " Do not compile bounds checking on array and string access"
@@ -772,6 +780,7 @@ module type Optcommon_options = sig
   val _inline_indirect_cost : string -> unit
   val _inline_lifting_benefit : string -> unit
   val _unbox_closures : unit -> unit
+  val _unbox_closures_factor : int -> unit
   val _inline_branch_factor : string -> unit
   val _remove_unused_arguments : unit -> unit
   val _no_unbox_free_vars_of_closures : unit -> unit
@@ -1046,6 +1055,7 @@ struct
     mk_strict_formats F._strict_formats;
     mk_thread F._thread;
     mk_unbox_closures F._unbox_closures;
+    mk_unbox_closures_factor F._unbox_closures_factor;
     mk_inline_max_unroll F._inline_max_unroll;
     mk_unsafe F._unsafe;
     mk_unsafe_string F._unsafe_string;
@@ -1136,6 +1146,7 @@ module Make_opttop_options (F : Opttop_options) = struct
     mk_strict_sequence F._strict_sequence;
     mk_strict_formats F._strict_formats;
     mk_unbox_closures F._unbox_closures;
+    mk_unbox_closures_factor F._unbox_closures_factor;
     mk_unsafe F._unsafe;
     mk_unsafe_string F._unsafe_string;
     mk_version F._version;

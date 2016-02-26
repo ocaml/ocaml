@@ -259,6 +259,13 @@ and set_of_closures = private {
       is essential to transport the closure freshening information to the
       point of use (e.g. a [Project_var] from such an argument).
   *)
+  direct_call_surrogates : Variable.t Variable.Map.t;
+  (** If [direct_call_surrogates] maps [fun_var1] to [fun_var2] then direct
+      calls to [fun_var1] should be redirected to [fun_var2].  This is used
+      to reduce the overhead of transformations that introduce wrapper
+      functions (which will be inlined at direct call sites, but will
+      penalise indirect call sites).
+      [direct_call_surrogates] may not be transitively closed. *)
 }
 
 and function_declarations = private {
@@ -550,6 +557,7 @@ val create_set_of_closures
    : function_decls:function_declarations
   -> free_vars:specialised_to Variable.Map.t
   -> specialised_args:specialised_to Variable.Map.t
+  -> direct_call_surrogates:Variable.t Variable.Map.t
   -> set_of_closures
 
 (** Given a function declaration, find which of its parameters (if any)

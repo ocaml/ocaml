@@ -633,7 +633,8 @@ let add_definitions_of_symbols constant_definitions initialize_symbol_tbl
 let introduce_free_variables_in_set_of_closures
     (var_to_block_field_tbl :
       Flambda.constant_defining_value_block_field Variable.Tbl.t)
-    ({ Flambda.function_decls; free_vars; specialised_args }
+    ({ Flambda.function_decls; free_vars; specialised_args;
+        direct_call_surrogates; }
       as set_of_closures) =
   let add_definition_and_make_substitution var (expr, subst) =
     let searched_var =
@@ -659,8 +660,8 @@ let introduce_free_variables_in_set_of_closures
   let done_something = ref false in
   let function_decls : Flambda.function_declarations =
     Flambda.update_function_declarations function_decls
-      ~funs:(Variable.Map.mapi
-          (fun _fun_var (func_decl : Flambda.function_declaration) ->
+      ~funs:(Variable.Map.map
+          (fun (func_decl : Flambda.function_declaration) ->
              let variables_to_bind =
                (* Closures from the same set must not be bound. *)
                Variable.Set.diff func_decl.free_variables
@@ -717,7 +718,7 @@ let introduce_free_variables_in_set_of_closures
     set_of_closures
   else
     Flambda.create_set_of_closures ~function_decls ~free_vars
-      ~specialised_args
+      ~specialised_args ~direct_call_surrogates
 
 let rewrite_project_var
       (var_to_block_field_tbl

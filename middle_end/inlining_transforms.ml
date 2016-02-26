@@ -186,7 +186,7 @@ let inline_by_copying_function_declaration ~env ~r
     ~args ~args_approxs
     ~(invariant_params:Variable.Set.t Variable.Map.t lazy_t)
     ~(specialised_args : Flambda.specialised_to Variable.Map.t)
-    ~dbg ~simplify =
+    ~direct_call_surrogates ~dbg ~simplify =
   let original_function_decls = function_decls in
   let specialised_args_set = Variable.Map.keys specialised_args in
   let worth_specialising_args, specialisable_args, args, args_decl =
@@ -275,6 +275,19 @@ let inline_by_copying_function_declaration ~env ~r
           Variable.Set.mem func required_functions)
         function_decls.funs
     in
+    let direct_call_surrogates =
+      Closure_id.Map.fold (fun existing surrogate surrogates ->
+          let existing = Closure_id.unwrap existing in
+          let surrogate = Closure_id.unwrap surrogate in
+          if Variable.Map.mem existing funs
+            && Variable.Map.mem surrogate funs
+          then
+            Variable.Map.add existing surrogate surrogates
+          else
+            surrogates)
+        direct_call_surrogates
+        Variable.Map.empty
+    in
     let function_decls =
       Flambda.update_function_declarations ~funs function_decls
     in
@@ -331,6 +344,7 @@ let inline_by_copying_function_declaration ~env ~r
          information than the one being copied. *)
       Flambda.create_set_of_closures ~function_decls ~free_vars
         ~specialised_args:specialisable_args
+        ~direct_call_surrogates
     in
     (* Generate a copy of the function application, including the function
        declaration(s), but with variables (not yet bound) in place of the

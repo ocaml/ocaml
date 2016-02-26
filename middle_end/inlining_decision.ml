@@ -395,8 +395,9 @@ let specialise env r ~lhs_of_application
           ~function_decls ~closure_id_being_applied ~function_decl
           ~args ~args_approxs
           ~invariant_params:value_set_of_closures.invariant_params
-          ~specialised_args:value_set_of_closures.specialised_args ~dbg
-          ~simplify ~inline_requested
+          ~specialised_args:value_set_of_closures.specialised_args
+          ~direct_call_surrogates:value_set_of_closures.direct_call_surrogates
+          ~dbg ~simplify ~inline_requested
       in
       match copied_function_declaration with
       | Some (expr, r_inlined) ->
