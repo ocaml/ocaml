@@ -330,7 +330,7 @@ CAMLexport value caml_promote(struct domain* domain, value root)
     } else {
       /* Though the stack is in the major heap, it can contain objects in the
        * minor heap. They must be promoted. */
-      caml_scan_dirty_stack(caml_oldify_one, root);
+      caml_scan_dirty_stack_domain(caml_oldify_one, root, domain);
     }
   }
 
