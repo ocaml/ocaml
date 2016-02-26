@@ -308,6 +308,8 @@ let read_one_param ppf position name v =
     end
   | "unbox-closures" ->
       set "unbox-closures" [ unbox_closures ] v
+  | "unbox-closures-factor" ->
+      int_setter ppf "unbox-closures-factor" unbox_closures_factor v
   | "remove-unused-arguments" ->
       set "remove-unused-arguments" [ remove_unused_arguments ] v
 

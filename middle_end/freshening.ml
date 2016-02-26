@@ -273,10 +273,15 @@ module Project_var = struct
       * The new environment with added substitution
       * a fresh ffunction_subst with only the substitution of free variables
    *)
-  let subst_free_vars fv subst
+  let subst_free_vars fv subst ~only_freshen_parameters
       : (Flambda.specialised_to * _) Variable.Map.t * _ * _ =
     Variable.Map.fold (fun id lam (fv, subst, t) ->
-        let id, subst, t = new_subst_fv t id subst in
+        let id, subst, t =
+          if only_freshen_parameters then
+            id, subst, t
+          else
+            new_subst_fv t id subst
+        in
         Variable.Map.add id lam fv, subst, t)
       fv
       (Variable.Map.empty, subst, empty)
@@ -289,7 +294,8 @@ module Project_var = struct
       subst_free_vars must have been used to build off_sb
    *)
   let func_decls_subst t (subst : subst)
-        (func_decls : Flambda.function_declarations) =
+        (func_decls : Flambda.function_declarations)
+        ~only_freshen_parameters =
     match subst with
     | Inactive -> func_decls, subst, t
     | Active subst ->
@@ -310,16 +316,22 @@ module Project_var = struct
         function_decl, subst
       in
       let subst, t =
-        Variable.Map.fold (fun orig_id _func_decl (subst, t) ->
-            let _id, subst, t = new_subst_fun t orig_id subst in
-            subst, t)
-          func_decls.funs
-          (subst, t)
+        if only_freshen_parameters then
+          subst, t
+        else
+          Variable.Map.fold (fun orig_id _func_decl (subst, t) ->
+              let _id, subst, t = new_subst_fun t orig_id subst in
+              subst, t)
+            func_decls.funs
+            (subst, t)
       in
       let funs, subst =
         Variable.Map.fold (fun orig_id func_decl (funs, subst) ->
             let func_decl, subst = subst_func_decl orig_id func_decl subst in
-            let id = active_find_var_exn subst orig_id in
+            let id =
+              if only_freshen_parameters then orig_id
+              else active_find_var_exn subst orig_id
+            in
             let funs = Variable.Map.add id func_decl funs in
             funs, subst)
           func_decls.funs
@@ -371,11 +383,12 @@ module Project_var = struct
     }
 end
 
-let apply_function_decls_and_free_vars t fv func_decls =
+let apply_function_decls_and_free_vars t fv func_decls
+      ~only_freshen_parameters =
   let module I = Project_var in
-  let fv, t, of_closures = I.subst_free_vars fv t in
+  let fv, t, of_closures = I.subst_free_vars fv t ~only_freshen_parameters in
   let func_decls, t, of_closures =
-    I.func_decls_subst of_closures t func_decls
+    I.func_decls_subst of_closures t func_decls ~only_freshen_parameters
   in
   fv, func_decls, t, of_closures
 
