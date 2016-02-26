@@ -1,14 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(* Xavier Leroy and Jerome Vouillon, projet Cristal, INRIA Rocquencourt*)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*  Xavier Leroy and Jerome Vouillon, projet Cristal, INRIA Rocquencourt  *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (* Basic operations on core types *)
 
@@ -722,8 +725,8 @@ let undo_compress (changes, old) =
   | Change _ ->
       let log = rev_compress_log [] changes in
       List.iter
-	(fun r -> match !r with
-	  Change (Ccompress (ty, desc, d), next) when ty.desc == d ->
-	    ty.desc <- desc; r := !next
-	| _ -> ())
-	log
+        (fun r -> match !r with
+          Change (Ccompress (ty, desc, d), next) when ty.desc == d ->
+            ty.desc <- desc; r := !next
+        | _ -> ())
+        log

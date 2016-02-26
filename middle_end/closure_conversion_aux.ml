@@ -1,6 +1,6 @@
 (**************************************************************************)
 (*                                                                        *)
-(*                                OCaml                                   *)
+(*                                 OCaml                                  *)
 (*                                                                        *)
 (*                       Pierre Chambart, OCamlPro                        *)
 (*           Mark Shinwell and Leo White, Jane Street Europe              *)
@@ -10,7 +10,7 @@
 (*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
-(*   special exception on linking described in the file ../LICENSE.       *)
+(*   special exception on linking described in the file LICENSE.          *)
 (*                                                                        *)
 (**************************************************************************)
 
@@ -94,11 +94,12 @@ module Function_decls = struct
       body : Lambda.lambda;
       free_idents_of_body : IdentSet.t;
       inline : Lambda.inline_attribute;
+      specialise : Lambda.specialise_attribute;
       is_a_functor : bool;
     }
 
     let create ~let_rec_ident ~closure_bound_var ~kind ~params ~body ~inline
-        ~is_a_functor =
+        ~specialise ~is_a_functor =
       let let_rec_ident =
         match let_rec_ident with
         | None -> Ident.create "unnamed_function"
@@ -111,6 +112,7 @@ module Function_decls = struct
         body;
         free_idents_of_body = Lambda.free_variables body;
         inline;
+        specialise;
         is_a_functor;
       }
 
@@ -121,6 +123,7 @@ module Function_decls = struct
     let body t = t.body
     let free_idents t = t.free_idents_of_body
     let inline t = t.inline
+    let specialise t = t.specialise
     let is_a_functor t = t.is_a_functor
 
     let primitive_wrapper t =
@@ -158,7 +161,8 @@ module Function_decls = struct
   let set_diff (from : IdentSet.t) (idents : Ident.t list) =
     List.fold_right IdentSet.remove idents from
 
-  (* CR lwhite: use a different name from above or explain the difference *)
+  (* CR-someday lwhite: use a different name from above or explain the
+     difference *)
   let all_free_idents function_decls =
     set_diff (set_diff (all_free_idents function_decls)
         (all_params function_decls))

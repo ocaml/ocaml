@@ -57,7 +57,7 @@ val ambiguous__x_y_z : [> `B of 'a * 'a option * 'a option ] -> unit = <fun>
 Warning 57: Ambiguous guarded pattern, variable x may match different or-pattern arguments
 val ambiguous__in_depth :
   [> `A of [> `B of bool option * bool option ] ] -> unit = <fun>
-#             val not_ambiguous__several_orpats :
+#               val not_ambiguous__several_orpats :
   [> `A of
        [> `B of 'a * 'b option * 'c option ] *
        [> `C of 'a * 'd option * 'e option ] *

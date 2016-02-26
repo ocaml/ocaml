@@ -1,14 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (* Detection of partial matches and unused match cases. *)
 
@@ -1704,7 +1707,7 @@ module Conv = struct
     let rec loop pat =
       match pat.pat_desc with
         Tpat_or (pa,pb,_) ->
-	  mkpat (Ppat_or (loop pa, loop pb))
+          mkpat (Ppat_or (loop pa, loop pb))
       | Tpat_any
       | Tpat_var _ ->
           mkpat Ppat_any
@@ -1712,35 +1715,35 @@ module Conv = struct
           mkpat (Ppat_constant (Untypeast.constant c))
       | Tpat_alias (p,_,_) -> loop p
       | Tpat_tuple lst ->
-	  mkpat (Ppat_tuple (List.map loop lst))
+          mkpat (Ppat_tuple (List.map loop lst))
       | Tpat_construct (cstr_lid, cstr, lst) ->
           let id = fresh cstr.cstr_name in
           let lid = { cstr_lid with txt = Longident.Lident id } in
           Hashtbl.add constrs id cstr;
-	  let arg =
-	    match List.map loop lst with
+          let arg =
+            match List.map loop lst with
             | []  -> None
             | [p] -> Some p
-	    | lst -> Some (mkpat (Ppat_tuple lst))
+            | lst -> Some (mkpat (Ppat_tuple lst))
           in
-	  mkpat (Ppat_construct(lid, arg))
+          mkpat (Ppat_construct(lid, arg))
       | Tpat_variant(label,p_opt,row_desc) ->
-	  let arg = Misc.may_map loop p_opt in
+          let arg = Misc.may_map loop p_opt in
           mkpat (Ppat_variant(label, arg))
       | Tpat_record (subpatterns, _closed_flag) ->
-	  let fields =
-	    List.map
-	      (fun (_, lbl, p) ->
+          let fields =
+            List.map
+              (fun (_, lbl, p) ->
                 let id = fresh lbl.lbl_name in
                 Hashtbl.add labels id lbl;
                 (mknoloc (Longident.Lident id), loop p))
-	      subpatterns
-	  in
-	  mkpat (Ppat_record (fields, Open))
+              subpatterns
+          in
+          mkpat (Ppat_record (fields, Open))
       | Tpat_array lst ->
-	  mkpat (Ppat_array (List.map loop lst))
+          mkpat (Ppat_array (List.map loop lst))
       | Tpat_lazy p ->
-	  mkpat (Ppat_lazy (loop p))
+          mkpat (Ppat_lazy (loop p))
     in
     let ps = loop typed in
     (ps, constrs, labels)

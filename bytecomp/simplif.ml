@@ -1,14 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (* Elimination of useless Llet(Alias) bindings.
    Also transform let-bound references into variables. *)
@@ -213,7 +216,8 @@ let simplify_exits lam =
                                          ap_loc=loc;
                                          ap_func=f;
                                          ap_args=[x];
-                                         ap_inlined=Default_inline}
+                                         ap_inlined=Default_inline;
+                                         ap_specialised=Default_specialise}
 
         (* Simplify %apply, for n-ary functions with n > 1 *)
       | Pdirapply loc, [Lapply ap; x]
@@ -223,7 +227,8 @@ let simplify_exits lam =
                                          ap_loc=loc;
                                          ap_func=f;
                                          ap_args=[x];
-                                         ap_inlined=Default_inline}
+                                         ap_inlined=Default_inline;
+                                         ap_specialised=Default_specialise}
 
       | _ -> Lprim(p, ll)
      end
@@ -353,7 +358,8 @@ let simplify_lets lam =
   | Lapply{ap_func = Lfunction{kind = Curried; params; body}; ap_args = args}
     when optimize && List.length params = List.length args ->
       count bv (beta_reduce params body args)
-  | Lapply{ap_func = Lfunction{kind = Tupled; params; body}; ap_args = [Lprim(Pmakeblock _, args)]}
+  | Lapply{ap_func = Lfunction{kind = Tupled; params; body};
+           ap_args = [Lprim(Pmakeblock _, args)]}
     when optimize && List.length params = List.length args ->
       count bv (beta_reduce params body args)
   | Lapply{ap_func = l1; ap_args = ll} ->
@@ -445,10 +451,12 @@ let simplify_lets lam =
   | Lapply{ap_func = Lfunction{kind = Curried; params; body}; ap_args = args}
     when optimize && List.length params = List.length args ->
       simplif (beta_reduce params body args)
-  | Lapply{ap_func = Lfunction{kind = Tupled; params; body}; ap_args = [Lprim(Pmakeblock _, args)]}
+  | Lapply{ap_func = Lfunction{kind = Tupled; params; body};
+           ap_args = [Lprim(Pmakeblock _, args)]}
     when optimize && List.length params = List.length args ->
       simplif (beta_reduce params body args)
-  | Lapply ap -> Lapply {ap with ap_func = simplif ap.ap_func; ap_args = List.map simplif ap.ap_args}
+  | Lapply ap -> Lapply {ap with ap_func = simplif ap.ap_func;
+                                 ap_args = List.map simplif ap.ap_args}
   | Lfunction{kind; params; body = l; attr} ->
       begin match simplif l with
         Lfunction{kind=Curried; params=params'; body; attr}
@@ -644,6 +652,7 @@ let split_default_wrapper ?(create_wrapper_body = fun lam -> lam)
             ap_loc = Location.none;
             ap_should_be_tailcall = false;
             ap_inlined = Default_inline;
+            ap_specialised = Default_specialise;
           }
         in
         let inner_params = List.map map_param params in

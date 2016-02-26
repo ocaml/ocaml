@@ -1,14 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (* Predefined type constructors (with special typing rules in typecore) *)
 
@@ -75,7 +78,8 @@ and type_int32 = newgenty (Tconstr(path_int32, [], ref Mnil))
 and type_int64 = newgenty (Tconstr(path_int64, [], ref Mnil))
 and type_lazy_t t = newgenty (Tconstr(path_lazy_t, [t], ref Mnil))
 and type_string = newgenty (Tconstr(path_string, [], ref Mnil))
-and type_extension_constructor = newgenty (Tconstr(path_extension_constructor, [], ref Mnil))
+and type_extension_constructor =
+      newgenty (Tconstr(path_extension_constructor, [], ref Mnil))
 
 let ident_match_failure = ident_create_predef_exn "Match_failure"
 and ident_out_of_memory = ident_create_predef_exn "Out_of_memory"
@@ -190,7 +194,9 @@ let common_initial_env add_type add_extension empty_env =
         ext_ret_type = None;
         ext_private = Asttypes.Public;
         ext_loc = Location.none;
-        ext_attributes = [{Asttypes.txt="ocaml.warn_on_literal_pattern";loc=Location.none}, Parsetree.PStr[]] }
+        ext_attributes = [{Asttypes.txt="ocaml.warn_on_literal_pattern";
+                           loc=Location.none},
+                          Parsetree.PStr[]] }
   in
   add_extension ident_match_failure
                          [newgenty (Ttuple[type_string; type_int; type_int])] (

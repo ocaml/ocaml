@@ -1,6 +1,6 @@
 (**************************************************************************)
 (*                                                                        *)
-(*                                OCaml                                   *)
+(*                                 OCaml                                  *)
 (*                                                                        *)
 (*                       Pierre Chambart, OCamlPro                        *)
 (*           Mark Shinwell and Leo White, Jane Street Europe              *)
@@ -10,7 +10,7 @@
 (*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
-(*   special exception on linking described in the file ../LICENSE.       *)
+(*   special exception on linking described in the file LICENSE.          *)
 (*                                                                        *)
 (**************************************************************************)
 
@@ -26,6 +26,7 @@ let name_expr = Flambda_utils.name_expr
 type t = {
   current_unit_id : Ident.t;
   symbol_for_global' : (Ident.t -> Symbol.t);
+  filename : string;
   mutable imported_symbols : Symbol.Set.t;
 }
 
@@ -93,6 +94,7 @@ let tupled_function_call_stub original_params unboxed_version
         kind = Direct (Closure_id.wrap unboxed_version);
         dbg = Debuginfo.none;
         inline = Default_inline;
+        specialise = Default_specialise;
       })
   in
   let _, body =
@@ -105,7 +107,7 @@ let tupled_function_call_stub original_params unboxed_version
   in
   Flambda.create_function_declaration ~params:[tuple_param]
     ~body ~stub:true ~dbg:Debuginfo.none ~inline:Default_inline
-    ~is_a_functor:false
+    ~specialise:Default_specialise ~is_a_functor:false
 
 let rec eliminate_const_block (const : Lambda.structured_constant)
       : Lambda.lambda =
@@ -188,7 +190,8 @@ and close t ?debuginfo env (lam : Lambda.lambda) : Flambda.t =
     let set_of_closures =
       let decl =
         Function_decl.create ~let_rec_ident:None ~closure_bound_var ~kind
-          ~params ~body ~inline:attr.inline ~is_a_functor:attr.is_a_functor
+          ~params ~body ~inline:attr.inline ~specialise:attr.specialise
+          ~is_a_functor:attr.is_a_functor
       in
       close_functions t env (Function_decls.create [decl])
     in
@@ -201,7 +204,7 @@ and close t ?debuginfo env (lam : Lambda.lambda) : Flambda.t =
       (name_expr (Project_closure (project_closure))
         ~name:("project_closure_" ^ name))
   | Lapply { ap_func; ap_args; ap_loc; ap_should_be_tailcall = _;
-        ap_inlined; } ->
+        ap_inlined; ap_specialised; } ->
     Lift_code.lifting_helper (close_list t env ap_args)
       ~evaluation_order:`Right_to_left
       ~name:"apply_arg"
@@ -218,6 +221,7 @@ and close t ?debuginfo env (lam : Lambda.lambda) : Flambda.t =
                   ~inner_debuginfo:(Debuginfo.from_location Dinfo_call ap_loc)
                   debuginfo;
               inline = ap_inlined;
+              specialise = ap_specialised;
             })))
   | Lletrec (defs, body) ->
     let env =
@@ -236,7 +240,8 @@ and close t ?debuginfo env (lam : Lambda.lambda) : Flambda.t =
             let function_declaration =
               Function_decl.create ~let_rec_ident:(Some let_rec_ident)
                 ~closure_bound_var ~kind ~params ~body
-                ~inline:attr.inline ~is_a_functor:attr.is_a_functor
+                ~inline:attr.inline ~specialise:attr.specialise
+                ~is_a_functor:attr.is_a_functor
             in
             Some function_declaration
           | _ -> None)
@@ -375,6 +380,7 @@ and close t ?debuginfo env (lam : Lambda.lambda) : Flambda.t =
            inlined attributes to functions applied with the application
            operators. *)
         ap_inlined = Default_inline;
+        ap_specialised = Default_specialise;
       }
     in
     close t env ?debuginfo (Lambda.Lapply apply)
@@ -414,7 +420,11 @@ and close t ?debuginfo env (lam : Lambda.lambda) : Flambda.t =
       ~evaluation_order:`Right_to_left
       ~name:(name ^ "_arg")
       ~create_body:(fun args ->
-        name_expr (Prim (p, args, default_debuginfo debuginfo)) ~name)
+        let inner_debuginfo =
+          Debuginfo.from_filename Debuginfo.Dinfo_call t.filename
+        in
+        name_expr (Prim (p, args, default_debuginfo debuginfo ~inner_debuginfo))
+          ~name)
   | Lswitch (arg, sw) ->
     let scrutinee = Variable.create "switch" in
     let aux (i, lam) = i, close t env lam in
@@ -539,6 +549,7 @@ and close_functions t external_env function_declarations : Flambda.named =
     let fun_decl =
       Flambda.create_function_declaration ~params ~body ~stub ~dbg
         ~inline:(Function_decl.inline decl)
+        ~specialise:(Function_decl.specialise decl)
         ~is_a_functor:(Function_decl.is_a_functor decl)
     in
     match Function_decl.kind decl with
@@ -553,8 +564,6 @@ and close_functions t external_env function_declarations : Flambda.named =
   in
   let function_decls =
     Flambda.create_function_declarations
-      ~set_of_closures_id:
-        (Set_of_closures_id.create (Compilation_unit.get_current_exn ()))
       ~funs:
         (List.fold_left close_one_function Variable.Map.empty
           (Function_decls.to_list function_declarations))
@@ -568,7 +577,11 @@ and close_functions t external_env function_declarations : Flambda.named =
           let internal_var =
             Env.find_var closure_env_without_parameters var
           in
-          let external_var = Env.find_var external_env var in
+          let external_var : Flambda.specialised_to =
+            { var = Env.find_var external_env var;
+              projection = None;
+            }
+          in
           Variable.Map.add internal_var external_var map)
         all_free_idents Variable.Map.empty
     in
@@ -588,7 +601,8 @@ and close_let_bound_expression t ?let_rec_ident let_bound_var env
     let closure_bound_var = Variable.rename let_bound_var in
     let decl =
       Function_decl.create ~let_rec_ident ~closure_bound_var ~kind ~params
-        ~body ~inline:attr.inline ~is_a_functor:attr.is_a_functor
+        ~body ~inline:attr.inline ~specialise:attr.specialise
+        ~is_a_functor:attr.is_a_functor
     in
     let set_of_closures_var =
       Variable.rename let_bound_var ~append:"_set_of_closures"
@@ -606,14 +620,15 @@ and close_let_bound_expression t ?let_rec_ident let_bound_var env
         ~name:(Variable.unique_name let_bound_var)))
   | lam -> Expr (close t env lam)
 
-let lambda_to_flambda ~backend ~module_ident ~size lam : Flambda.program =
+let lambda_to_flambda ~backend ~module_ident ~size ~filename lam
+      : Flambda.program =
   let lam = add_default_argument_wrappers lam in
   let module Backend = (val backend : Backend_intf.S) in
   let compilation_unit = Compilation_unit.get_current_exn () in
   let t =
-    { current_unit_id =
-        Compilation_unit.get_persistent_ident compilation_unit;
+    { current_unit_id = Compilation_unit.get_persistent_ident compilation_unit;
       symbol_for_global' = Backend.symbol_for_global';
+      filename;
       imported_symbols = Symbol.Set.empty;
     }
   in

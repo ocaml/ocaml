@@ -5,7 +5,7 @@ if { a = 0.1; b = 0.2 }.a <> 0.1 then raise Not_found;;
 
 (**
        0 CONSTINT 42
-       2 PUSHACC0 
+       2 PUSHACC0
        3 MAKEBLOCK1 0
        5 POP 1
        7 SETGLOBAL Lib
@@ -16,8 +16,8 @@ if { a = 0.1; b = 0.2 }.a <> 0.1 then raise Not_found;;
       17 BRANCHIFNOT 24
       19 GETGLOBAL Not_found
       21 MAKEBLOCK1 0
-      23 RAISE 
-      24 ATOM0 
+      23 RAISE
+      24 ATOM0
       25 SETGLOBAL T192-getfloatfield-1
-      27 STOP 
+      27 STOP
 **)

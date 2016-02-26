@@ -1,17 +1,19 @@
 #!/bin/sh
 
-#########################################################################
-#                                                                       #
-#                                 OCaml                                 #
-#                                                                       #
-#          Damien Doligez, projet Gallium, INRIA Rocquencourt           #
-#                                                                       #
-#   Copyright 2003 Institut National de Recherche en Informatique et    #
-#   en Automatique.  All rights reserved.  As an exception to the       #
-#   licensing rules of OCaml, this file is freely redistributable,      #
-#   modified or not, without constraints.                               #
-#                                                                       #
-#########################################################################
+#**************************************************************************
+#*                                                                        *
+#*                                 OCaml                                  *
+#*                                                                        *
+#*          Damien Doligez, projet Gallium, INRIA Rocquencourt            *
+#*                                                                        *
+#*   Copyright 2003 Institut National de Recherche en Informatique et     *
+#*     en Automatique.                                                    *
+#*                                                                        *
+#*   All rights reserved.  As an exception to the licensing rules of      *
+#*   OCaml, this file is freely redistributable, modified or not,         *
+#*   without constraints.                                                 *
+#*                                                                        *
+#**************************************************************************
 
 # This script extracts the components from an OCaml version number
 # and provides them as C defines:

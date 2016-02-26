@@ -1,15 +1,17 @@
-#########################################################################
-#                                                                       #
-#                                 OCaml                                 #
-#                                                                       #
-#            Xavier Leroy, projet Cristal, INRIA Rocquencourt           #
-#                                                                       #
-#   Copyright 1999 Institut National de Recherche en Informatique et    #
-#   en Automatique.  All rights reserved.  This file is distributed     #
-#   under the terms of the GNU Library General Public License, with     #
-#   the special exception on linking described in file ../LICENSE.      #
-#                                                                       #
-#########################################################################
+#**************************************************************************
+#*                                                                        *
+#*                                 OCaml                                  *
+#*                                                                        *
+#*            Xavier Leroy, projet Cristal, INRIA Rocquencourt            *
+#*                                                                        *
+#*   Copyright 1999 Institut National de Recherche en Informatique et     *
+#*     en Automatique.                                                    *
+#*                                                                        *
+#*   All rights reserved.  This file is distributed under the terms of    *
+#*   the GNU Lesser General Public License version 2.1, with the          *
+#*   special exception on linking described in the file LICENSE.          *
+#*                                                                        *
+#**************************************************************************
 
 # Configuration for Windows, Mingw compiler
 
@@ -131,7 +133,9 @@ MKEXE_BOOT=$(BYTECC) -o $(1) $(2)
 
 ### How to build a static library
 MKLIB=rm -f $(1); $(TOOLPREF)ar rc $(1) $(2); $(RANLIB) $(1)
-#ml let mklib out files opts = Printf.sprintf "rm -f %s && %sar rcs %s %s %s" out toolpref opts out files;;
+#ml let mklib out files opts =
+#ml   Printf.sprintf "rm -f %s && %sar rcs %s %s %s"
+#ml                  out toolpref opts out files;;
 
 ### Canonicalize the name of a system library
 SYSLIB=-l$(1)

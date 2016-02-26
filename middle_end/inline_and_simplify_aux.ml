@@ -1,6 +1,6 @@
 (**************************************************************************)
 (*                                                                        *)
-(*                                OCaml                                   *)
+(*                                 OCaml                                  *)
 (*                                                                        *)
 (*                       Pierre Chambart, OCamlPro                        *)
 (*           Mark Shinwell and Leo White, Jane Street Europe              *)
@@ -10,7 +10,7 @@
 (*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
-(*   special exception on linking described in the file ../LICENSE.       *)
+(*   special exception on linking described in the file LICENSE.          *)
 (*                                                                        *)
 (**************************************************************************)
 
@@ -25,34 +25,41 @@ module Env = struct
     approx : (scope * Simple_value_approx.t) Variable.Map.t;
     approx_mutable : Simple_value_approx.t Mutable_variable.Map.t;
     approx_sym : Simple_value_approx.t Symbol.Map.t;
-    current_functions : Set_of_closures_id.Set.t;
+    projections : Variable.t Projection.Map.t;
+    current_functions : Set_of_closures_origin.Set.t;
     (* The functions currently being declared: used to avoid inlining
        recursively *)
     inlining_level : int;
-    inside_branch : int;
     (* Number of times "inline" has been called recursively *)
+    inside_branch : int;
     freshening : Freshening.t;
     never_inline : bool ;
-    possible_unrolls : int;
+    never_inline_inside_closures : bool;
+    never_inline_outside_closures : bool;
+    unroll_counts : int Set_of_closures_origin.Map.t;
+    inlining_counts : int Closure_id.Map.t;
+    actively_unrolling : int Set_of_closures_origin.Map.t;
     closure_depth : int;
     inlining_stats_closure_stack : Inlining_stats.Closure_stack.t;
   }
 
   let create ~never_inline ~backend ~round =
-    let possible_unrolls =
-      Clflags.Int_arg_helper.get ~key:round !Clflags.unroll
-    in
     { backend;
       round;
       approx = Variable.Map.empty;
       approx_mutable = Mutable_variable.Map.empty;
       approx_sym = Symbol.Map.empty;
-      current_functions = Set_of_closures_id.Set.empty;
+      projections = Projection.Map.empty;
+      current_functions = Set_of_closures_origin.Set.empty;
       inlining_level = 0;
       inside_branch = 0;
       freshening = Freshening.empty;
       never_inline;
-      possible_unrolls;
+      never_inline_inside_closures = false;
+      never_inline_outside_closures = false;
+      unroll_counts = Set_of_closures_origin.Map.empty;
+      inlining_counts = Closure_id.Map.empty;
+      actively_unrolling = Set_of_closures_origin.Map.empty;
       closure_depth = 0;
       inlining_stats_closure_stack =
         Inlining_stats.Closure_stack.create ();
@@ -64,21 +71,24 @@ module Env = struct
   let local env =
     { env with
       approx = Variable.Map.empty;
+      projections = Projection.Map.empty;
       freshening = Freshening.empty_preserving_activation_state env.freshening;
     }
 
   let inlining_level_up env =
     let max_level =
-      Clflags.Int_arg_helper.get ~key:(env.round) !Clflags.max_inlining_depth
+      Clflags.Int_arg_helper.get ~key:(env.round) !Clflags.inline_max_depth
     in
     if (env.inlining_level + 1) > max_level then
       Misc.fatal_error "Inlining level increased above maximum";
     { env with inlining_level = env.inlining_level + 1 }
 
   let print ppf t =
-    Format.fprintf ppf "Environment maps: %a@.Freshening: %a@."
-        Variable.Set.print (Variable.Map.keys t.approx)
-        Freshening.print t.freshening
+    Format.fprintf ppf
+      "Environment maps: %a@.Projections: %a@.Freshening: %a@."
+      Variable.Set.print (Variable.Map.keys t.approx)
+      (Projection.Map.print Variable.print) t.projections
+      Freshening.print t.freshening
 
   let mem t var = Variable.Map.mem var t.approx
 
@@ -133,12 +143,23 @@ module Env = struct
           (Compilation_unit.get_current_exn ())
           (Symbol.compilation_unit symbol)
       then
-        Misc.fatal_errorf "Symbol %a from the current compilation unit is unbound. \
-                           Maybe there is a missing [Let_symbol] or similar?"
+        Misc.fatal_errorf "Symbol %a from the current compilation unit is \
+            unbound.  Maybe there is a missing [Let_symbol] or similar?"
           Symbol.print symbol;
       let module Backend = (val (t.backend) : Backend_intf.S) in
       Backend.import_symbol symbol
     | approx -> approx
+
+  let add_projection t ~projection ~bound_to =
+    { t with
+      projections =
+        Projection.Map.add projection bound_to t.projections;
+    }
+
+  let find_projection t ~projection =
+    match Projection.Map.find projection t.projections with
+    | exception Not_found -> None
+    | var -> Some var
 
   let does_not_bind t vars =
     not (List.exists (mem t) vars)
@@ -172,7 +193,7 @@ module Env = struct
       really_import_approx_with_scope t
         (Variable.Map.find id t.approx)
     with Not_found ->
-      Misc.fatal_errorf "Inlining_env.find_with_scope_exn: Unbound variable \
+      Misc.fatal_errorf "Env.find_with_scope_exn: Unbound variable \
           %a@.%s@. Environment: %a@."
         Variable.print id
         (Printexc.raw_backtrace_to_string (Printexc.get_callstack max_int))
@@ -201,13 +222,13 @@ module Env = struct
   let activate_freshening t =
     { t with freshening = Freshening.activate t.freshening }
 
-  let enter_set_of_closures_declaration ident t =
+  let enter_set_of_closures_declaration origin t =
     { t with
       current_functions =
-        Set_of_closures_id.Set.add ident t.current_functions; }
+        Set_of_closures_origin.Set.add origin t.current_functions; }
 
-  let inside_set_of_closures_declaration closure_id t =
-    Set_of_closures_id.Set.mem closure_id t.current_functions
+  let inside_set_of_closures_declaration origin t =
+    Set_of_closures_origin.Set.mem origin t.current_functions
 
   let at_toplevel t =
     t.closure_depth = 0
@@ -232,53 +253,143 @@ module Env = struct
     }
 
   let set_never_inline t =
-    { t with never_inline = true }
+    if t.never_inline then t
+    else { t with never_inline = true }
 
-  let unrolling_allowed t =
-    t.possible_unrolls > 0
+  let set_never_inline_inside_closures t =
+    if t.never_inline_inside_closures then t
+    else { t with never_inline_inside_closures = true }
 
-  let inside_unrolled_function t =
-    { t with possible_unrolls = t.possible_unrolls - 1 }
+  let unset_never_inline_inside_closures t =
+    if t.never_inline_inside_closures then
+      { t with never_inline_inside_closures = false }
+    else t
+
+  let set_never_inline_outside_closures t =
+    if t.never_inline_outside_closures then t
+    else { t with never_inline_outside_closures = true }
+
+  let unset_never_inline_outside_closures t =
+    if t.never_inline_outside_closures then
+      { t with never_inline_outside_closures = false }
+    else t
+
+  let actively_unrolling t origin =
+    match Set_of_closures_origin.Map.find origin t.actively_unrolling with
+    | count -> Some count
+    | exception Not_found -> None
+
+  let start_actively_unrolling t origin i =
+    let actively_unrolling =
+      Set_of_closures_origin.Map.add origin i t.actively_unrolling
+    in
+    { t with actively_unrolling }
+
+  let continue_actively_unrolling t origin =
+    let unrolling =
+      try
+        Set_of_closures_origin.Map.find origin t.actively_unrolling
+      with Not_found ->
+        Misc.fatal_error "Unexpected actively unrolled function";
+    in
+    let actively_unrolling =
+      Set_of_closures_origin.Map.add origin (unrolling - 1) t.actively_unrolling
+    in
+    { t with actively_unrolling }
+
+  let unrolling_allowed t origin =
+    let unroll_count =
+      try
+        Set_of_closures_origin.Map.find origin t.unroll_counts
+      with Not_found ->
+        Clflags.Int_arg_helper.get
+          ~key:t.round !Clflags.inline_max_unroll
+    in
+    unroll_count > 0
+
+  let inside_unrolled_function t origin =
+    let unroll_count =
+      try
+        Set_of_closures_origin.Map.find origin t.unroll_counts
+      with Not_found ->
+        Clflags.Int_arg_helper.get
+          ~key:t.round !Clflags.inline_max_unroll
+    in
+    let unroll_counts =
+      Set_of_closures_origin.Map.add
+        origin (unroll_count - 1) t.unroll_counts
+    in
+    { t with unroll_counts }
+
+  let inlining_allowed t id =
+    let inlining_count =
+      try
+        Closure_id.Map.find id t.inlining_counts
+      with Not_found ->
+        max 1 (Clflags.Int_arg_helper.get
+                 ~key:t.round !Clflags.inline_max_unroll)
+    in
+    inlining_count > 0
+
+  let inside_inlined_function t id =
+    let inlining_count =
+      try
+        Closure_id.Map.find id t.inlining_counts
+      with Not_found ->
+        max 1 (Clflags.Int_arg_helper.get
+                 ~key:t.round !Clflags.inline_max_unroll)
+    in
+    let inlining_counts =
+      Closure_id.Map.add id (inlining_count - 1) t.inlining_counts
+    in
+    { t with inlining_counts }
 
   let inlining_level t = t.inlining_level
   let freshening t = t.freshening
-  let never_inline t = t.never_inline
+  let never_inline t = t.never_inline || t.never_inline_outside_closures
 
-  (* CR-soon mshinwell: this is a bit contorted (see use in
-     inlining_decision.ml) *)
   let note_entering_closure t ~closure_id ~debuginfo =
-    { t with
-      inlining_stats_closure_stack =
-        Inlining_stats.Closure_stack.note_entering_closure
-          t.inlining_stats_closure_stack ~closure_id ~debuginfo;
-    }
+    if t.never_inline then t
+    else
+      { t with
+        inlining_stats_closure_stack =
+          Inlining_stats.Closure_stack.note_entering_closure
+            t.inlining_stats_closure_stack ~closure_id ~debuginfo;
+      }
 
   let note_entering_call t ~closure_id ~debuginfo =
-    { t with
-      inlining_stats_closure_stack =
-        Inlining_stats.Closure_stack.note_entering_call
-          t.inlining_stats_closure_stack ~closure_id ~debuginfo;
-    }
+    if t.never_inline then t
+    else
+      { t with
+        inlining_stats_closure_stack =
+          Inlining_stats.Closure_stack.note_entering_call
+            t.inlining_stats_closure_stack ~closure_id ~debuginfo;
+      }
 
   let note_entering_inlined t =
-    { t with
-      inlining_stats_closure_stack =
-        Inlining_stats.Closure_stack.note_entering_inlined
-          t.inlining_stats_closure_stack;
-    }
+    if t.never_inline then t
+    else
+      { t with
+        inlining_stats_closure_stack =
+          Inlining_stats.Closure_stack.note_entering_inlined
+            t.inlining_stats_closure_stack;
+      }
 
   let note_entering_specialised t ~closure_ids =
-    { t with
-      inlining_stats_closure_stack =
-        Inlining_stats.Closure_stack.note_entering_specialised
-          t.inlining_stats_closure_stack ~closure_ids;
-    }
+    if t.never_inline then t
+    else
+      { t with
+        inlining_stats_closure_stack =
+          Inlining_stats.Closure_stack.note_entering_specialised
+            t.inlining_stats_closure_stack ~closure_ids;
+      }
 
   let enter_closure t ~closure_id ~inline_inside ~debuginfo ~f =
     let t =
-      if inline_inside then t
+      if inline_inside && not t.never_inline_inside_closures then t
       else set_never_inline t
     in
+    let t = unset_never_inline_outside_closures t in
     f (note_entering_closure t ~closure_id ~debuginfo)
 
   let record_decision t decision =
@@ -349,6 +460,9 @@ module Result = struct
 
   let map_benefit t f =
     { t with benefit = f t.benefit }
+
+  let add_benefit t b =
+    { t with benefit = Inlining_cost.Benefit.(+) t.benefit b }
 
   let benefit t = t.benefit
 

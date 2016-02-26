@@ -1,14 +1,17 @@
-#########################################################################
-#                                                                       #
-#                                 OCaml                                 #
-#                                                                       #
-#                 Xavier Clerc, SED, INRIA Rocquencourt                 #
-#                                                                       #
-#   Copyright 2010 Institut National de Recherche en Informatique et    #
-#   en Automatique.  All rights reserved.  This file is distributed     #
-#   under the terms of the Q Public License version 1.0.                #
-#                                                                       #
-#########################################################################
+#**************************************************************************
+#*                                                                        *
+#*                                 OCaml                                  *
+#*                                                                        *
+#*                 Xavier Clerc, SED, INRIA Rocquencourt                  *
+#*                                                                        *
+#*   Copyright 2010 Institut National de Recherche en Informatique et     *
+#*     en Automatique.                                                    *
+#*                                                                        *
+#*   All rights reserved.  This file is distributed under the terms of    *
+#*   the GNU Lesser General Public License version 2.1, with the          *
+#*   special exception on linking described in the file LICENSE.          *
+#*                                                                        *
+#**************************************************************************
 
 BASEDIR := $(shell pwd)
 NO_PRINT=`$(MAKE) empty --no-print-directory >/dev/null 2>&1 \
@@ -23,7 +26,8 @@ default:
 	@echo "  all             launch all tests"
 	@echo "  all-foo         launch all tests beginning with foo"
 	@echo "  parallel        launch all tests using GNU parallel"
-	@echo "  parallel-foo    launch all tests beginning with foo using GNU parallel"
+	@echo "  parallel-foo    launch all tests beginning with foo using \
+	GNU parallel"
 	@echo "  list FILE=f     launch the tests listed in f (one per line)"
 	@echo "  one DIR=p       launch the tests located in path p"
 	@echo "  promote DIR=p   promote the reference files for the tests in p"
@@ -31,8 +35,9 @@ default:
 	@echo "  clean           delete generated files"
 	@echo "  report          print the report for the last execution"
 	@echo
-	@echo "all*, parallel* and list can automatically re-run failed test directories if"
-	@echo "MAX_TESTSUITE_DIR_RETRIES permits (default value = $(MAX_TESTSUITE_DIR_RETRIES))"
+	@echo "all*, parallel* and list can automatically re-run failed test"
+	@echo "directories if MAX_TESTSUITE_DIR_RETRIES permits"
+	@echo "(default value = $(MAX_TESTSUITE_DIR_RETRIES))"
 
 .PHONY: all
 all: lib
@@ -77,17 +82,17 @@ all-%: lib
 .PHONY: parallel-%
 parallel-%: lib
 	@echo | parallel >/dev/null 2>/dev/null \
-	  || (echo "Unable to run the GNU parallel tool;";\
-	      echo "You should install it before using the parallel* targets.";\
-	      exit 1)
+	 || (echo "Unable to run the GNU parallel tool;";\
+	     echo "You should install it before using the parallel* targets.";\
+	     exit 1)
 	@echo | parallel --gnu --no-notice >/dev/null 2>/dev/null \
-	  || (echo "Your 'parallel' tool seems incompatible with GNU parallel;";\
-	      echo "This target requires GNU parallel.";\
-	      exit 1)
+	 || (echo "Your 'parallel' tool seems incompatible with GNU parallel.";\
+	     echo "This target requires GNU parallel.";\
+	     exit 1)
 	@for dir in tests/$**; do echo $$dir; done \
-	| parallel --gnu --no-notice --keep-order \
-	    "$(MAKE) $(NO_PRINT) exec-one DIR={} 2>&1" \
-	| tee _log
+	 | parallel --gnu --no-notice --keep-order \
+	     "$(MAKE) $(NO_PRINT) exec-one DIR={} 2>&1" \
+	 | tee _log
 	@$(MAKE) $(NO_PRINT) retries
 	@$(MAKE) report
 
@@ -183,7 +188,8 @@ retry-list:
 	@$(MAKE) $(NO_PRINT) retries
 
 retries:
-	@awk -v retries=1 -v max_retries=$(MAX_TESTSUITE_DIR_RETRIES) -f makefiles/summarize.awk <_log >_retries
+	@awk -v retries=1 -v max_retries=$(MAX_TESTSUITE_DIR_RETRIES) \
+	     -f makefiles/summarize.awk <_log >_retries
 	@test `cat _retries | wc -l` -eq 0 || $(MAKE) $(NO_PRINT) retry-list
 	@rm -f _retries
 

@@ -1,14 +1,17 @@
-/***********************************************************************/
-/*                                                                     */
-/*                                OCaml                                */
-/*                                                                     */
-/*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         */
-/*                                                                     */
-/*  Copyright 1996 Institut National de Recherche en Informatique et   */
-/*  en Automatique.  All rights reserved.  This file is distributed    */
-/*  under the terms of the Q Public License version 1.0.               */
-/*                                                                     */
-/***********************************************************************/
+/**************************************************************************/
+/*                                                                        */
+/*                                OCaml                                   */
+/*                                                                        */
+/*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           */
+/*                                                                        */
+/*   Copyright 1996 Institut National de Recherche en Informatique et     */
+/*     en Automatique.                                                    */
+/*                                                                        */
+/*   All rights reserved.  This file is distributed under the terms of    */
+/*   the GNU Lesser General Public License version 2.1, with the          */
+/*   special exception on linking described in the file LICENSE.          */
+/*                                                                        */
+/**************************************************************************/
 
 /* A simple parser for C-- */
 
@@ -210,11 +213,14 @@ expr:
   | LPAREN FLOATAREF expr expr RPAREN
       { Cop(Cload Double_u, [access_array $3 $4 Arch.size_float]) }
   | LPAREN ADDRASET expr expr expr RPAREN
-      { Cop(Cstore (Word_val, Assignment), [access_array $3 $4 Arch.size_addr; $5]) }
+      { Cop(Cstore (Word_val, Assignment),
+            [access_array $3 $4 Arch.size_addr; $5]) }
   | LPAREN INTASET expr expr expr RPAREN
-      { Cop(Cstore (Word_int, Assignment), [access_array $3 $4 Arch.size_int; $5]) }
+      { Cop(Cstore (Word_int, Assignment),
+            [access_array $3 $4 Arch.size_int; $5]) }
   | LPAREN FLOATASET expr expr expr RPAREN
-      { Cop(Cstore (Double_u, Assignment), [access_array $3 $4 Arch.size_float; $5]) }
+      { Cop(Cstore (Double_u, Assignment),
+            [access_array $3 $4 Arch.size_float; $5]) }
 ;
 exprlist:
     exprlist expr               { $2 :: $1 }

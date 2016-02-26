@@ -1,5 +1,5 @@
 
-#                         type t = ..
+#   type t = ..
 # type t += A
 #   - : extension_constructor = <abstr>
 # - : extension_constructor = <abstr>

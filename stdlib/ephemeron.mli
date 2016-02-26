@@ -1,15 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Damien Doligez, projet Para, INRIA Rocquencourt          *)
-(*                                                                     *)
-(*  Copyright 1997 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the GNU Library General Public License, with    *)
-(*  the special exception on linking described in file ../LICENSE.     *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Damien Doligez, projet Para, INRIA Rocquencourt            *)
+(*                                                                        *)
+(*   Copyright 1997 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (** Ephemerons and weak hash table *)
 
@@ -66,12 +68,12 @@
 
 module type S = sig
   (** Propose the same interface as usual hash table. However since
-      the bindings are weak, [mem h k] is true doesn't mean that a
-      just following [find h k] will not raise the exception
-      [Not_found] since the garbage collector can run between the two.
+      the bindings are weak, even if [mem h k] is true, a subsequent
+      [find h k] may raise [Not_found] because the garbage collector
+      can run between the two.
 
-      Secondly during an iteration the table shouldn't be modified.
-      Instead use {!filter_map_inplace} for that purpose.
+      Moreover, the table shouldn't be modified during a call to [iter].
+      Use [filter_map_inplace] in this case.
   *)
 
   include Hashtbl.S

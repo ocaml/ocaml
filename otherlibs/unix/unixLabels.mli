@@ -1,15 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the GNU Library General Public License, with    *)
-(*  the special exception on linking described in file ../../LICENSE.  *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (** Interface to the Unix system.
    To use as replacement to default {!Unix} module,
@@ -618,9 +620,15 @@ val close_process_full :
 (** {6 Symbolic links} *)
 
 
-val symlink : src:string -> dst:string -> unit
+val symlink : ?to_dir:bool -> src:string -> dst:string -> unit
 (** [symlink source dest] creates the file [dest] as a symbolic link
-   to the file [source]. *)
+   to the file [source]. See {!Unix.symlink} for details of [~to_dir] *)
+
+val has_symlink : unit -> bool
+(** Returns [true] if the user is able to create symbolic links. On Windows,
+   this indicates that the user not only has the SeCreateSymbolicLinkPrivilege
+   but is also running elevated, if necessary. On other platforms, this is
+   simply indicates that the symlink system call is available. *)
 
 val readlink : string -> string
 (** Read the contents of a link. *)

@@ -1,16 +1,19 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Gallium, INRIA Paris                *)
-(*                                                                     *)
-(*  Copyright 2015 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Gallium, INRIA Paris                  *)
+(*                                                                        *)
+(*   Copyright 2015 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
-(* Copy a bytecode executable, removing debugging information 
+(* Copy a bytecode executable, removing debugging information
    and #! header from the copy.
    Usage: stripdebug <source file> <dest file>
 *)
@@ -52,6 +55,3 @@ let _ =
     eprintf "Usage: stripdebug <source file> <destination file>\n";
     exit 2
   end
-
-
-

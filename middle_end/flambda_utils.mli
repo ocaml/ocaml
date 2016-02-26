@@ -1,6 +1,6 @@
 (**************************************************************************)
 (*                                                                        *)
-(*                                OCaml                                   *)
+(*                                 OCaml                                  *)
 (*                                                                        *)
 (*                       Pierre Chambart, OCamlPro                        *)
 (*           Mark Shinwell and Leo White, Jane Street Europe              *)
@@ -10,7 +10,7 @@
 (*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
-(*   special exception on linking described in the file ../LICENSE.       *)
+(*   special exception on linking described in the file LICENSE.          *)
 (*                                                                        *)
 (**************************************************************************)
 
@@ -74,8 +74,13 @@ val make_closure_declaration
 
 val toplevel_substitution
    : Variable.t Variable.Map.t
-  -> Flambda.t
-  -> Flambda.t
+  -> Flambda.expr
+  -> Flambda.expr
+
+val toplevel_substitution_named
+   : Variable.t Variable.Map.t
+  -> Flambda.named
+  -> Flambda.named
 
 (** [bind [var1, expr1; ...; varN, exprN] body] binds using
     [Immutable] [Let] expressions the given [(var, expr)] pairs around the
@@ -197,3 +202,14 @@ val closures_required_by_entry_point
 val all_functions_parameters : Flambda.function_declarations -> Variable.Set.t
 
 val all_free_symbols : Flambda.function_declarations -> Symbol.Set.t
+
+val contains_stub : Flambda.function_declarations -> bool
+
+(* Ensure that projection information is suitably erased from
+   free_vars and specialised_args if we have deleted the variable being
+   projected from. *)
+val clean_projections
+   : which_variables : Flambda.specialised_to Variable.Map.t
+  -> Flambda.specialised_to Variable.Map.t
+
+val projection_to_named : Projection.t -> Flambda.named

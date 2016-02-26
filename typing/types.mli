@@ -1,14 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (** {0 Representation of types and declarations} *)
 
@@ -87,9 +90,10 @@ and type_desc =
       There are also special cases for so-called "class-types", cf. [Typeclass]
       and [Ctype.set_object_name]:
 
-        [Tobject (Tfield(_,_,…(Tfield(_,_,rv)…), Some(`A.#ct`, [rv;t1;…;tn])]
-             ==> [(t1, …, tn) #A.ct]
-        [Tobject (_, Some(`A.#ct`, [Tnil;t1;…;tn])] ==> [(t1, …, tn) A.ct]
+        [Tobject (Tfield(_,_,...(Tfield(_,_,rv)...),
+                         Some(`A.#ct`, [rv;t1;...;tn])]
+             ==> [(t1, ..., tn) #A.ct]
+        [Tobject (_, Some(`A.#ct`, [Tnil;t1;...;tn])] ==> [(t1, ..., tn) A.ct]
 
       where [rv] is the hidden row variable.
   *)

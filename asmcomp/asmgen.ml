@@ -1,14 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (* From lambda to assembly code *)
 
@@ -58,7 +61,8 @@ type clambda_and_constants =
   Clambda.preallocated_block list *
   Clambda.preallocated_constant list
 
-let raw_clambda_dump_if ppf ((ulambda, _, structured_constants):clambda_and_constants) =
+let raw_clambda_dump_if ppf
+      ((ulambda, _, structured_constants):clambda_and_constants) =
   if !dump_rawclambda then
     begin
       Format.fprintf ppf "@.clambda (before Un_anf):@.";

@@ -1,14 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*         Jerome Vouillon, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*          Jerome Vouillon, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 open Asttypes
 open Types
@@ -29,7 +32,9 @@ let lfunction params body =
   | Lfunction {kind = Curried; params = params'; body = body'; attr} ->
       Lfunction {kind = Curried; params = params @ params'; body = body'; attr}
   |  _ ->
-      Lfunction {kind = Curried; params; body; attr = default_function_attribute}
+      Lfunction {kind = Curried; params;
+                 body;
+                 attr = default_function_attribute}
 
 let lapply ap =
   match ap.ap_func with
@@ -43,7 +48,8 @@ let mkappl (func, args) =
           ap_loc=Location.none;
           ap_func=func;
           ap_args=args;
-          ap_inlined=Default_inline};;
+          ap_inlined=Default_inline;
+          ap_specialised=Default_specialise};;
 
 let lsequence l1 l2 =
   if l2 = lambda_unit then l1 else Lsequence(l1, l2)
@@ -456,7 +462,8 @@ let transl_class_rebind ids cl vf =
               ap_loc=Location.none;
               ap_func=Lvar obj_init;
               ap_args=[Lvar self];
-              ap_inlined=Default_inline}
+              ap_inlined=Default_inline;
+              ap_specialised=Default_specialise}
     in
     let path, obj_init' = transl_class_rebind_0 self obj_init0 cl vf in
     if not (Translcore.check_recursive_lambda ids obj_init') then
@@ -599,7 +606,8 @@ open M
     obj_init: creation function (unit -> obj)
     class_init: inheritance function (table -> env_init)
       (one by source code)
-    env_init: parameterisation by the local environment (env -> params -> obj_init)
+    env_init: parameterisation by the local environment
+      (env -> params -> obj_init)
       (one for each combination of inherited class_init )
     env: environnement local
    If ids=0 (immediate object), then only env_init is conserved.

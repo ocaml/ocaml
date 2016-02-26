@@ -1,17 +1,21 @@
-#########################################################################
-#                                                                       #
-#                                 OCaml                                 #
-#                                                                       #
-#            Xavier Leroy, projet Cristal, INRIA Rocquencourt           #
-#                                                                       #
-#   Copyright 1999 Institut National de Recherche en Informatique et    #
-#   en Automatique.  All rights reserved.  This file is distributed     #
-#   under the terms of the Q Public License version 1.0.                #
-#                                                                       #
-#########################################################################
+#**************************************************************************
+#*                                                                        *
+#*                                 OCaml                                  *
+#*                                                                        *
+#*            Xavier Leroy, projet Cristal, INRIA Rocquencourt            *
+#*                                                                        *
+#*   Copyright 1999 Institut National de Recherche en Informatique et     *
+#*     en Automatique.                                                    *
+#*                                                                        *
+#*   All rights reserved.  This file is distributed under the terms of    *
+#*   the GNU Lesser General Public License version 2.1, with the          *
+#*   special exception on linking described in the file LICENSE.          *
+#*                                                                        *
+#**************************************************************************
 
 # The main Makefile
 
+MAKEREC=$(MAKE)
 include Makefile.shared
 
 SHELL=/bin/sh
@@ -236,11 +240,10 @@ install:
 	for i in $(OTHERLIBRARIES); do \
 	  (cd otherlibs/$$i; $(MAKE) install) || exit $$?; \
 	done
-	if test -n "$(WITH_OCAMLDOC)"; then (cd ocamldoc; $(MAKE) install); else :; fi
-	if test -n "$(WITH_DEBUGGER)"; then (cd debugger; $(MAKE) install); \
-	   else :; fi
+	if test -n "$(WITH_OCAMLDOC)"; then (cd ocamldoc; $(MAKE) install); fi
+	if test -n "$(WITH_DEBUGGER)"; then (cd debugger; $(MAKE) install); fi
 	cp config/Makefile $(INSTALL_LIBDIR)/Makefile.config
-	if test -f ocamlopt; then $(MAKE) installopt; else :; fi
+	if test -f ocamlopt; then $(MAKE) installopt; fi
 
 # Installation of the native-code compiler
 installopt:
@@ -275,10 +278,11 @@ installoptopt:
 	if test -f ocamlnat ; then \
 	  cp ocamlnat $(INSTALL_BINDIR)/ocamlnat$(EXE); \
 	  cp toplevel/opttopdirs.cmi $(INSTALL_LIBDIR); \
-	  cp compilerlibs/ocamlopttoplevel.cmxa compilerlibs/ocamlopttoplevel.a \
-	   $(OPTTOPLEVELSTART:.cmo=.cmx) $(OPTTOPLEVELSTART:.cmo=.o) \
-	   $(INSTALL_COMPLIBDIR); \
-	  else :; fi
+	  cp compilerlibs/ocamlopttoplevel.cmxa \
+	     compilerlibs/ocamlopttoplevel.a \
+	     $(OPTTOPLEVELSTART:.cmo=.cmx) $(OPTTOPLEVELSTART:.cmo=.o) \
+	     $(INSTALL_COMPLIBDIR); \
+	fi
 	cd $(INSTALL_COMPLIBDIR) && $(RANLIB) ocamlcommon.a ocamlbytecomp.a \
 	   ocamloptcomp.a
 
@@ -307,7 +311,8 @@ partialclean::
 
 ocamlc: compilerlibs/ocamlcommon.cma compilerlibs/ocamlbytecomp.cma $(BYTESTART)
 	$(CAMLC) $(LINKFLAGS) -compat-32 -o ocamlc \
-	   compilerlibs/ocamlcommon.cma compilerlibs/ocamlbytecomp.cma $(BYTESTART)
+	   compilerlibs/ocamlcommon.cma compilerlibs/ocamlbytecomp.cma \
+	   $(BYTESTART)
 
 # The native-code compiler
 
@@ -366,7 +371,8 @@ partialclean::
 	rm -f compilerlibs/ocamlopttoplevel.cmxa
 
 ocamlnat: compilerlibs/ocamlcommon.cmxa compilerlibs/ocamloptcomp.cmxa \
-    otherlibs/dynlink/dynlink.cmxa compilerlibs/ocamlopttoplevel.cmxa $(OPTTOPLEVELSTART:.cmo=.cmx)
+    otherlibs/dynlink/dynlink.cmxa compilerlibs/ocamlopttoplevel.cmxa \
+    $(OPTTOPLEVELSTART:.cmo=.cmx)
 	$(CAMLOPT) $(LINKFLAGS) -linkall -o ocamlnat \
 	    otherlibs/dynlink/dynlink.cmxa compilerlibs/ocamlcommon.cmxa \
 	    compilerlibs/ocamloptcomp.cmxa compilerlibs/ocamlopttoplevel.cmxa \
@@ -479,7 +485,8 @@ ocamlopt.opt: compilerlibs/ocamlcommon.cmxa compilerlibs/ocamloptcomp.cmxa \
 partialclean::
 	rm -f ocamlopt.opt
 
-$(COMMON:.cmo=.cmx) $(BYTECOMP:.cmo=.cmx) $(MIDDLE_END:.cmo=.cmx) $(ASMCOMP:.cmo=.cmx): ocamlopt
+$(COMMON:.cmo=.cmx) $(BYTECOMP:.cmo=.cmx) $(MIDDLE_END:.cmo=.cmx) \
+$(ASMCOMP:.cmo=.cmx): ocamlopt
 
 # The numeric opcodes
 
@@ -499,11 +506,11 @@ byterun/primitives:
 
 bytecomp/runtimedef.ml: byterun/primitives byterun/caml/fail.h
 	(echo 'let builtin_exceptions = [|'; \
-	 sed -n -e 's|.*/\* \("[A-Za-z_]*"\) \*/$$|  \1;|p' byterun/caml/fail.h | \
-	 sed -e '$$s/;$$//'; \
+	 sed -n -e 's|.*/\* \("[A-Za-z_]*"\) \*/$$|  \1;|p' \
+	     byterun/caml/fail.h; \
 	 echo '|]'; \
 	 echo 'let builtin_primitives = [|'; \
-	 sed -e 's/.*/  "&";/' -e '$$s/;$$//' byterun/primitives; \
+	 sed -e 's/.*/  "&";/' byterun/primitives; \
 	 echo '|]') > bytecomp/runtimedef.ml
 
 partialclean::
@@ -565,7 +572,7 @@ beforedepend:: asmcomp/scheduling.ml
 
 asmcomp/emit.ml: asmcomp/$(ARCH)/emit.mlp tools/cvt_emit
 	echo \# 1 \"$(ARCH)/emit.mlp\" > asmcomp/emit.ml
-	$(CAMLRUN) tools/cvt_emit < asmcomp/$(ARCH)/emit.mlp >> asmcomp/emit.ml \
+	$(CAMLRUN) tools/cvt_emit <asmcomp/$(ARCH)/emit.mlp >>asmcomp/emit.ml \
 	|| { rm -f asmcomp/emit.ml; exit 2; }
 
 partialclean::
@@ -652,25 +659,6 @@ ocamlyacc:
 
 clean::
 	cd yacc; $(MAKE) clean
-
-# Tools
-
-ocamltools: ocamlc ocamlyacc ocamllex asmcomp/cmx_format.cmi \
-            asmcomp/printclambda.cmo
-	cd tools; $(MAKE) all
-
-ocamltoolsopt: ocamlopt
-	cd tools; $(MAKE) opt
-
-ocamltoolsopt.opt: ocamlc.opt ocamlyacc ocamllex asmcomp/cmx_format.cmi \
-                   asmcomp/printclambda.cmx
-	cd tools; $(MAKE) opt.opt
-
-partialclean::
-	cd tools; $(MAKE) clean
-
-alldepend::
-	cd tools; $(MAKE) depend
 
 # OCamldoc
 
@@ -765,7 +753,8 @@ clean::
 	$(CAMLOPT) $(COMPFLAGS) -c $<
 
 partialclean::
-	for d in utils parsing typing bytecomp asmcomp middle_end middle_end/base_types driver toplevel tools; \
+	for d in utils parsing typing bytecomp asmcomp middle_end \
+	         middle_end/base_types driver toplevel tools; \
 	  do rm -f $$d/*.cm[ioxt] $$d/*.cmti $$d/*.annot $$d/*.[so] $$d/*~; done
 	rm -f *~
 

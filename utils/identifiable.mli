@@ -1,6 +1,6 @@
 (**************************************************************************)
 (*                                                                        *)
-(*                                OCaml                                   *)
+(*                                 OCaml                                  *)
 (*                                                                        *)
 (*                       Pierre Chambart, OCamlPro                        *)
 (*           Mark Shinwell and Leo White, Jane Street Europe              *)
@@ -10,7 +10,7 @@
 (*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
-(*   special exception on linking described in the file ../LICENSE.       *)
+(*   special exception on linking described in the file LICENSE.          *)
 (*                                                                        *)
 (**************************************************************************)
 
@@ -70,6 +70,7 @@ module type S = sig
     val rename : key t -> key -> key
     val map_keys : (key -> key) -> 'a t -> 'a t
     val keys : 'a t -> Set.t
+    val data : 'a t -> 'a list
     val of_set : (key -> 'a) -> Set.t -> 'a t
     val transpose_keys_and_data : key t -> key t
     val print :

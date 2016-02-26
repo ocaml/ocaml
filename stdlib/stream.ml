@@ -1,15 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*        Daniel de Rauglaudre, projet Cristal, INRIA Rocquencourt     *)
-(*                                                                     *)
-(*  Copyright 1997 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the GNU Library General Public License, with    *)
-(*  the special exception on linking described in file ../LICENSE.     *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*         Daniel de Rauglaudre, projet Cristal, INRIA Rocquencourt       *)
+(*                                                                        *)
+(*   Copyright 1997 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 type 'a t = 'a cell option
 and 'a cell = { mutable count : int; mutable data : 'a data }
@@ -119,7 +121,10 @@ let rec nget_data n s =
 ;;
 
 let npeek_data n s =
-  let (al, d, len) = nget_data n s in s.count <- (s.count - len); s.data <- d; al
+  let (al, d, len) = nget_data n s in
+  s.count <- (s.count - len);
+  s.data <- d;
+  al
 ;;
 
 let npeek n = function

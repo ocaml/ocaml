@@ -1,6 +1,6 @@
 (**************************************************************************)
 (*                                                                        *)
-(*                                OCaml                                   *)
+(*                                 OCaml                                  *)
 (*                                                                        *)
 (*                       Pierre Chambart, OCamlPro                        *)
 (*           Mark Shinwell and Leo White, Jane Street Europe              *)
@@ -10,7 +10,7 @@
 (*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
-(*   special exception on linking described in the file ../LICENSE.       *)
+(*   special exception on linking described in the file LICENSE.          *)
 (*                                                                        *)
 (**************************************************************************)
 
@@ -93,9 +93,12 @@ let remove_unused_closure_variables program =
             Variable.Set.mem arg all_remaining_arguments)
           set_of_closures.specialised_args
       in
+      let free_vars =
+        Flambda_utils.clean_projections ~which_variables:free_vars
+      in
       let set_of_closures =
-        Flambda.create_set_of_closures ~function_decls ~free_vars
-          ~specialised_args
+        Flambda.create_set_of_closures ~function_decls
+          ~free_vars ~specialised_args
       in
       Set_of_closures set_of_closures
     | e -> e

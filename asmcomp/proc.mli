@@ -1,14 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (* Processor descriptions *)
 
@@ -36,6 +39,14 @@ val loc_parameters: Reg.t array -> Reg.t array
 val loc_external_arguments: Reg.t array array -> Reg.t array array * int
 val loc_external_results: Reg.t array -> Reg.t array
 val loc_exn_bucket: Reg.t
+
+(* The maximum number of arguments of an OCaml to OCaml function call for
+   which it is guaranteed there will be no arguments passed on the stack.
+   (Above this limit, tail call optimization may be disabled.)
+   N.B. The values for this parameter in the backends currently assume
+   that no unboxed floats are passed using the OCaml calling conventions.
+*)
+val max_arguments_for_tailcalls : int
 
 (* Maximal register pressures for pre-spilling *)
 val safe_register_pressure: Mach.operation -> int

@@ -1,15 +1,17 @@
-/***********************************************************************/
-/*                                                                     */
-/*                                OCaml                                */
-/*                                                                     */
-/*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         */
-/*                                                                     */
-/*  Copyright 1996 Institut National de Recherche en Informatique et   */
-/*  en Automatique.  All rights reserved.  This file is distributed    */
-/*  under the terms of the GNU Library General Public License, with    */
-/*  the special exception on linking described in file ../LICENSE.     */
-/*                                                                     */
-/***********************************************************************/
+/**************************************************************************/
+/*                                                                        */
+/*                                 OCaml                                  */
+/*                                                                        */
+/*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           */
+/*                                                                        */
+/*   Copyright 1996 Institut National de Recherche en Informatique et     */
+/*     en Automatique.                                                    */
+/*                                                                        */
+/*   All rights reserved.  This file is distributed under the terms of    */
+/*   the GNU Lesser General Public License version 2.1, with the          */
+/*   special exception on linking described in the file LICENSE.          */
+/*                                                                        */
+/**************************************************************************/
 
 /* Structured input, compact format */
 
@@ -671,7 +673,7 @@ static void caml_parse_header(char * fun_name,
     h->whsize = read64u();
 #else
     errmsg[sizeof(errmsg) - 1] = 0;
-    snprintf(errmsg, sizeof(errmsg) - 1, 
+    snprintf(errmsg, sizeof(errmsg) - 1,
              "%s: object too large to be read back on a 32-bit platform",
              fun_name);
     caml_failwith(errmsg);
@@ -679,7 +681,7 @@ static void caml_parse_header(char * fun_name,
     break;
   default:
     errmsg[sizeof(errmsg) - 1] = 0;
-    snprintf(errmsg, sizeof(errmsg) - 1, 
+    snprintf(errmsg, sizeof(errmsg) - 1,
              "%s: bad object",
              fun_name);
     caml_failwith(errmsg);
@@ -811,7 +813,7 @@ CAMLexport value caml_input_value_from_block(char * data, intnat len)
    result is a [value] that represents a number of bytes
    To handle both the small and the big format,
    we assume 20 bytes are available at [buff + ofs],
-   and we return the data size + the length of the part of the header 
+   and we return the data size + the length of the part of the header
    that remains to be read. */
 
 CAMLprim value caml_marshal_data_size(value buff, value ofs)

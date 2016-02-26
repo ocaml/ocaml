@@ -1,6 +1,6 @@
 (**************************************************************************)
 (*                                                                        *)
-(*                                OCaml                                   *)
+(*                                 OCaml                                  *)
 (*                                                                        *)
 (*                       Pierre Chambart, OCamlPro                        *)
 (*           Mark Shinwell and Leo White, Jane Street Europe              *)
@@ -10,7 +10,7 @@
 (*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
-(*   special exception on linking described in the file ../LICENSE.       *)
+(*   special exception on linking described in the file LICENSE.          *)
 (*                                                                        *)
 (**************************************************************************)
 
@@ -78,6 +78,11 @@ module Benefit : sig
 
   val remove_code : Flambda.t -> t -> t
   val remove_code_named : Flambda.named -> t -> t
+  val remove_projection : Projection.t -> t -> t
+
+  val add_code : Flambda.t -> t -> t
+  val add_code_named : Flambda.named -> t -> t
+  val add_projection : Projection.t -> t -> t
 
   val print : Format.formatter -> t -> unit
 end

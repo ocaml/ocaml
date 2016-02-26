@@ -1,15 +1,17 @@
-#########################################################################
-#                                                                       #
-#                                 OCaml                                 #
-#                                                                       #
-#            Xavier Leroy, projet Cristal, INRIA Rocquencourt           #
-#                                                                       #
-#   Copyright 1999 Institut National de Recherche en Informatique et    #
-#   en Automatique.  All rights reserved.  This file is distributed     #
-#   under the terms of the GNU Library General Public License, with     #
-#   the special exception on linking described in file ../LICENSE.      #
-#                                                                       #
-#########################################################################
+#**************************************************************************
+#*                                                                        *
+#*                                 OCaml                                  *
+#*                                                                        *
+#*            Xavier Leroy, projet Cristal, INRIA Rocquencourt            *
+#*                                                                        *
+#*   Copyright 1999 Institut National de Recherche en Informatique et     *
+#*     en Automatique.                                                    *
+#*                                                                        *
+#*   All rights reserved.  This file is distributed under the terms of    *
+#*   the GNU Lesser General Public License version 2.1, with the          *
+#*   special exception on linking described in the file LICENSE.          *
+#*                                                                        *
+#**************************************************************************
 
 include ../config/Makefile
 
@@ -61,14 +63,15 @@ amd64.o: amd64.S
 INSTALL_LIBDIR=$(DESTDIR)$(LIBDIR)
 
 install:
-	cp libasmrun.$(A) $(INSTALL_LIBDIR)
+	cp libasmrun.$(A) "$(INSTALL_LIBDIR)"
 
 $(LINKEDFILES): %.c: ../byterun/%.c
 	cp ../byterun/$*.c $*.c
 
 # Need special compilation rule so as not to do -I../byterun
 win32.$(O): ../byterun/win32.c
-	$(CC) -c $(NATIVECCCOMPOPTS) -DNATIVE_CODE $(IFLEXDIR) ../byterun/win32.c
+	$(CC) -c $(NATIVECCCOMPOPTS) -DNATIVE_CODE $(IFLEXDIR) \
+	      ../byterun/win32.c
 
 %.$(O): %.c
 	$(CC) $(CFLAGS) -c $<

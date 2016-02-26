@@ -1,14 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (* Translation from typed abstract syntax to lambda terms,
    for the core language *)
@@ -697,6 +700,7 @@ and transl_exp0 e =
       let attr = {
         default_function_attribute with
         inline = Translattribute.get_inline_attribute e.exp_attributes;
+        specialise = Translattribute.get_specialise_attribute e.exp_attributes;
       }
       in
       Lfunction{kind; params; body; attr}
@@ -715,9 +719,13 @@ and transl_exp0 e =
           let inlined, funct =
             Translattribute.get_and_remove_inlined_attribute funct
           in
+          let specialised, funct =
+            Translattribute.get_and_remove_specialised_attribute funct
+          in
           let e = { e with exp_desc = Texp_apply(funct, oargs) } in
-          event_after e (transl_apply ~should_be_tailcall ~inlined
-                           f args' e.exp_loc)
+          event_after e
+            (transl_apply ~should_be_tailcall ~inlined ~specialised
+               f args' e.exp_loc)
       in
       let wrap0 f =
         if args' = [] then f else wrap f in
@@ -771,9 +779,13 @@ and transl_exp0 e =
       let inlined, funct =
         Translattribute.get_and_remove_inlined_attribute funct
       in
+      let specialised, funct =
+        Translattribute.get_and_remove_specialised_attribute funct
+      in
       let e = { e with exp_desc = Texp_apply(funct, oargs) } in
-      event_after e (transl_apply ~should_be_tailcall ~inlined
-                       (transl_exp funct) oargs e.exp_loc)
+      event_after e
+        (transl_apply ~should_be_tailcall ~inlined ~specialised
+           (transl_exp funct) oargs e.exp_loc)
   | Texp_match(arg, pat_expr_list, exn_pat_expr_list, partial) ->
     transl_match e arg pat_expr_list exn_pat_expr_list partial
   | Texp_try(body, pat_expr_list) ->
@@ -865,11 +877,12 @@ and transl_exp0 e =
                because [caml_modify] might be called upon them (e.g. from
                code operating on polymorphic arrays, or functions such as
                [caml_array_blit].
-               To avoid having different Lambda code for bytecode/Closure vs.
-               Flambda, we always generate [Pduparray] here, and deal with it in
-               [Bytegen] (or in the case of Closure, in [Cmmgen], which already
-               has to handle [Pduparray Pmakearray Pfloatarray] in the case where
-               the array turned out to be inconstant).
+               To avoid having different Lambda code for
+               bytecode/Closure vs.  Flambda, we always generate
+               [Pduparray] here, and deal with it in [Bytegen] (or in
+               the case of Closure, in [Cmmgen], which already has to
+               handle [Pduparray Pmakearray Pfloatarray] in the case
+               where the array turned out to be inconstant).
                When not [Pfloatarray], the exception propagates to the handler
                below. *)
             let imm_array = Lprim (Pmakearray (kind, Immutable), ll) in
@@ -882,7 +895,7 @@ and transl_exp0 e =
               | Pfloatarray ->
                   Lconst(Const_float_array(List.map extract_float cl))
               | Pgenarray ->
-                  raise Not_constant                (* can this really happen? *)
+                  raise Not_constant    (* can this really happen? *)
             in
             Lprim (Pduparray (kind, Mutable), [imm_array])
         end
@@ -921,7 +934,8 @@ and transl_exp0 e =
              ap_loc=loc;
              ap_func=Lprim(Pfield 0, [transl_path ~loc e.exp_env cl]);
              ap_args=[lambda_unit];
-             ap_inlined=Default_inline}
+             ap_inlined=Default_inline;
+             ap_specialised=Default_specialise}
   | Texp_instvar(path_self, path, _) ->
       Lprim(Parrayrefu Paddrarray,
             [transl_normal_path path_self; transl_normal_path path])
@@ -934,7 +948,8 @@ and transl_exp0 e =
                   ap_loc=Location.none;
                   ap_func=Translobj.oo_prim "copy";
                   ap_args=[transl_normal_path path_self];
-                  ap_inlined=Default_inline},
+                  ap_inlined=Default_inline;
+                  ap_specialised=Default_specialise},
            List.fold_right
              (fun (path, _, expr) rem ->
                 Lsequence(transl_setinstvar (Lvar cpy) path expr, rem))
@@ -1055,7 +1070,8 @@ and transl_tupled_cases patl_expr_list =
   List.map (fun (patl, guard, expr) -> (patl, transl_guard guard expr))
     patl_expr_list
 
-and transl_apply ?(should_be_tailcall=false) ?(inlined = Default_inline) lam sargs loc =
+and transl_apply ?(should_be_tailcall=false) ?(inlined = Default_inline)
+      ?(specialised = Default_specialise) lam sargs loc =
   let lapply funct args =
     match funct with
       Lsend(k, lmet, lobj, largs, loc) ->
@@ -1069,7 +1085,8 @@ and transl_apply ?(should_be_tailcall=false) ?(inlined = Default_inline) lam sar
                 ap_loc=loc;
                 ap_func=lexp;
                 ap_args=args;
-                ap_inlined=inlined}
+                ap_inlined=inlined;
+                ap_specialised=specialised;}
   in
   let rec build_apply lam args = function
       (None, optional) :: l ->
@@ -1109,7 +1126,10 @@ and transl_apply ?(should_be_tailcall=false) ?(inlined = Default_inline) lam sar
     | [] ->
         lapply lam (List.rev_map fst args)
   in
-  (build_apply lam [] (List.map (fun (l, x) -> may_map transl_exp x, Btype.is_optional l) sargs) : Lambda.lambda)
+  (build_apply lam [] (List.map (fun (l, x) ->
+                                   may_map transl_exp x, Btype.is_optional l)
+                                sargs)
+     : Lambda.lambda)
 
 and transl_function loc untuplify_fn repr partial cases =
   match cases with
@@ -1152,8 +1172,12 @@ and transl_let rec_flag pat_expr_list body =
         [] ->
           body
       | {vb_pat=pat; vb_expr=expr; vb_attributes=attr; vb_loc} :: rem ->
+          let lam = transl_exp expr in
           let lam =
-            Translattribute.add_inline_attribute (transl_exp expr) vb_loc attr
+            Translattribute.add_inline_attribute lam vb_loc attr
+          in
+          let lam =
+            Translattribute.add_specialise_attribute lam vb_loc attr
           in
           Matching.for_let pat.pat_loc lam pat (transl rem)
       in transl pat_expr_list
@@ -1166,8 +1190,13 @@ and transl_let rec_flag pat_expr_list body =
             | _ -> raise(Error(pat.pat_loc, Illegal_letrec_pat)))
         pat_expr_list in
       let transl_case {vb_pat=pat; vb_expr=expr; vb_attributes; vb_loc} id =
+        let lam = transl_exp expr in
         let lam =
-          Translattribute.add_inline_attribute (transl_exp expr) vb_loc
+          Translattribute.add_inline_attribute lam vb_loc
+            vb_attributes
+        in
+        let lam =
+          Translattribute.add_specialise_attribute lam vb_loc
             vb_attributes
         in
         if not (check_recursive_lambda idlist lam) then

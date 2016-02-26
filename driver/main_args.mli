@@ -1,14 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*             Damien Doligez, projet Para, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1998 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*              Damien Doligez, projet Para, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1998 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (* ATTENTION ! When you add or modify a parsing or typing option, do not forget
   to update ocamldoc options too, in odoc_args.ml. *)
@@ -67,6 +70,7 @@ module type Compiler_options =  sig
   val _linkall : unit -> unit
   val _noautolink : unit -> unit
   val _o : string -> unit
+  val _opaque :  unit -> unit
   val _output_obj : unit -> unit
   val _output_complete_obj : unit -> unit
   val _pack : unit -> unit
@@ -119,11 +123,11 @@ module type Optcommon_options = sig
   val _compact : unit -> unit
   val _inline : string -> unit
   val _inline_toplevel : string -> unit
-  val _inlining_stats : unit -> unit
+  val _inlining_report : unit -> unit
   val _dump_pass : string -> unit
-  val _max_inlining_depth : string -> unit
+  val _inline_max_depth : string -> unit
   val _rounds : int -> unit
-  val _unroll : string -> unit
+  val _inline_max_unroll : string -> unit
   val _classic_inlining : unit -> unit
   val _inline_call_cost : string -> unit
   val _inline_alloc_cost : string -> unit
@@ -132,15 +136,17 @@ module type Optcommon_options = sig
   val _inline_indirect_cost : string -> unit
   val _inline_lifting_benefit : string -> unit
   val _unbox_closures : unit -> unit
-  val _branch_inline_factor : string -> unit
-  val _no_inline_recursive_functions : unit -> unit
+  val _inline_branch_factor : string -> unit
   val _remove_unused_arguments : unit -> unit
+  val _no_unbox_free_vars_of_closures : unit -> unit
+  val _no_unbox_specialised_args : unit -> unit
   val _o2 : unit -> unit
   val _o3 : unit -> unit
 
   val _clambda_checks : unit -> unit
   val _dflambda : unit -> unit
-  val _dflambda_invariants : unit -> unit
+  val _drawflambda : unit -> unit
+  val _dflambda_no_invariants : unit -> unit
   val _dflambda_let : int -> unit
   val _dflambda_verbose : unit -> unit
   val _drawclambda : unit -> unit
@@ -171,7 +177,6 @@ module type Optcomp_options = sig
   val _pp : string -> unit
   val _S : unit -> unit
   val _shared : unit -> unit
-  val _opaque :  unit -> unit
 end;;
 
 module type Opttop_options = sig

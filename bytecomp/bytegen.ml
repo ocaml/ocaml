@@ -1,14 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (*  bytegen.ml : translation of lambda terms to lists of instructions. *)
 
@@ -582,7 +585,8 @@ let rec comp_expr env exp sz cont =
                        ap_loc=loc;
                        ap_func=func;
                        ap_args=[arg];
-                       ap_inlined=Default_inline} in
+                       ap_inlined=Default_inline;
+                       ap_specialised=Default_specialise} in
       comp_expr env exp sz cont
   | Lprim(Pnot, [arg]) ->
       let newcont =
@@ -646,7 +650,7 @@ let rec comp_expr env exp sz cont =
                  (Kmakeblock(List.length args, 0) ::
                   Kccall("caml_make_array", 1) :: cont)
       end
-  | Lprim (Pduparray (kind, mutability), [Lprim (Pmakearray (kind', _), args)]) ->
+  | Lprim (Pduparray (kind, mutability), [Lprim (Pmakearray (kind',_),args)]) ->
       assert (kind = kind');
       comp_expr env (Lprim (Pmakearray (kind, mutability), args)) sz cont
   | Lprim (Pduparray _, [arg]) ->
@@ -829,6 +833,10 @@ let rec comp_expr env exp sz cont =
       | Lev_function ->
           let c = comp_expr env lam sz cont in
           let ev = event Event_pseudo Event_function in
+          add_event ev c
+      | Lev_pseudo ->
+          let c = comp_expr env lam sz cont in
+          let ev = event Event_pseudo Event_other in
           add_event ev c
       | Lev_after _ when is_tailcall cont -> (* don't destroy tail call opt *)
           comp_expr env lam sz cont

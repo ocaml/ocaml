@@ -10,13 +10,13 @@ No longer supported: AIX and MacOS X.
 # Reference documents
 
 * Instruction set architecture:
-  _PowerPC User Instruction Set Architecture_, 
+  _PowerPC User Instruction Set Architecture_,
   book 1 of _PowerPC Architecture Book_
- (http://www.ibm.com/developerworks/systems/library/es-archguide-v2.html).
+  (http://www.ibm.com/developerworks/systems/library/es-archguide-v2.html).
 * ELF ABI 32 bits:
-  _System V Application Binary Interface, PowerPC Processor Supplement_ 
+  _System V Application Binary Interface, PowerPC Processor Supplement_
 * ELF ABI 64 bits version 1:
-  _64-bit PowerPC ELF Application Binary Interface Supplement_ 
+  _64-bit PowerPC ELF Application Binary Interface Supplement_
   (http://refspecs.linuxfoundation.org/ELF/ppc64/PPC-elf64abi.html)
 * ELF ABI 64 bits version 2:
    _Power Architecture 64-bit ELF V2 ABI Specification,
@@ -24,4 +24,3 @@ No longer supported: AIX and MacOS X.
   (http://openpowerfoundation.org/technical/technical-resources/technical-specifications/)
 * _The PowerPC Compiler Writer's Guide_, Warthman Associates, 1996.
   (PDF available from various sources on the Web.)
-

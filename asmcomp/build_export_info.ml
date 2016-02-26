@@ -1,6 +1,6 @@
 (**************************************************************************)
 (*                                                                        *)
-(*                                OCaml                                   *)
+(*                                 OCaml                                  *)
 (*                                                                        *)
 (*                       Pierre Chambart, OCamlPro                        *)
 (*           Mark Shinwell and Leo White, Jane Street Europe              *)
@@ -10,7 +10,7 @@
 (*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
-(*   special exception on linking described in the file ../LICENSE.       *)
+(*   special exception on linking described in the file LICENSE.          *)
 (*                                                                        *)
 (**************************************************************************)
 
@@ -283,9 +283,9 @@ and descr_of_named (env : Env.t) (named : Flambda.named)
       in
       Value_id (Env.new_descr env descr)
     | _ ->
-      (* CR pchambart: This should be [assert false], but currently there are a
-         few cases where this is less precise than inline_and_simplify.
-         mshinwell: Can you elaborate? *)
+      (* It would be nice if this were [assert false], but owing to the fact
+         that this pass may propagate less information than for example
+         [Inline_and_simplify], we might end up here. *)
       Value_unknown
     end
   | Move_within_set_of_closures { closure; start_from; move_to; } ->
@@ -319,10 +319,14 @@ and descr_of_named (env : Env.t) (named : Flambda.named)
 and describe_set_of_closures env (set : Flambda.set_of_closures)
       : Export_info.value_set_of_closures =
   let bound_vars_approx =
-    Variable.Map.map (Env.find_approx env) set.free_vars
+    Variable.Map.map (fun (external_var : Flambda.specialised_to) ->
+        Env.find_approx env external_var.var)
+      set.free_vars
   in
   let specialised_args_approx =
-    Variable.Map.map (Env.find_approx env) set.specialised_args
+    Variable.Map.map (fun (spec_to : Flambda.specialised_to) ->
+        Env.find_approx env spec_to.var)
+      set.specialised_args
   in
   let closures_approx =
     (* To build an approximation of the results, we need an
@@ -490,9 +494,11 @@ let build_export_info ~(backend : (module Backend_intf.S))
   if !Clflags.opaque then
     Export_info.empty
   else
-    (* CR pchambart: Should probably use that instead of the ident of
+    (* CR-soon pchambart: Should probably use that instead of the ident of
        the module as global identifier.
-       mshinwell: Is "that" the variable "_global_symbol"? *)
+       mshinwell: Is "that" the variable "_global_symbol"?
+       Yes it is.  We are just assuming that the symbol produced from
+       the identifier of the module is the right one. *)
     let _global_symbol, env =
       describe_program (Env.Global.create_empty ()) program
     in

@@ -1,15 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Pierre Weis, projet Cristal, INRIA Rocquencourt          *)
-(*                                                                     *)
-(*  Copyright 2002 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the GNU Library General Public License, with    *)
-(*  the special exception on linking described in file ../LICENSE.     *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Pierre Weis, projet Cristal, INRIA Rocquencourt            *)
+(*                                                                        *)
+(*   Copyright 2002 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 open CamlinternalFormatBasics
 open CamlinternalFormat
@@ -941,7 +943,7 @@ let scan_caml_float width precision ib =
     if width = 0 || Scanning.end_of_input ib then bad_float ();
     scan_caml_float_rest width precision ib
 (* Special case of nan and infinity:
-  | 'i' -> 
+  | 'i' ->
   | 'n' ->
 *)
   | _ -> bad_float ()

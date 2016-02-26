@@ -1,3 +1,18 @@
+#**************************************************************************
+#*                                                                        *
+#*                                 OCaml                                  *
+#*                                                                        *
+#*                 Damien Doligez, projet Gallium, INRIA                  *
+#*                                                                        *
+#*   Copyright 2015 Institut National de Recherche en Informatique et     *
+#*     en Automatique.                                                    *
+#*                                                                        *
+#*   All rights reserved.  This file is distributed under the terms of    *
+#*   the GNU Lesser General Public License version 2.1, with the          *
+#*   special exception on linking described in the file LICENSE.          *
+#*                                                                        *
+#**************************************************************************
+
 # general patterns
 
 *.o
@@ -101,8 +116,6 @@
 /byterun/.gdb_history
 /byterun/*.d.c
 /byterun/*.pic.c
-
-/compilerlibs
 
 /config/m.h
 /config/s.h
@@ -273,6 +286,8 @@
 
 /testsuite/tests/unboxed-primitive-args/main.ml
 /testsuite/tests/unboxed-primitive-args/stubs.c
+
+/testsuite/tests/unwind/unwind_test
 
 /testsuite/tests/warnings/w55.opt.opt_result
 /testsuite/tests/warnings/w58.opt.opt_result

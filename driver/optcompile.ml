@@ -1,14 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 2002 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 2002 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (* The batch compiler *)
 
@@ -44,7 +47,9 @@ let interface ppf sourcefile outputprefix =
   Warnings.check_fatal ();
   if not !Clflags.print_types then begin
     let deprecated = Builtin_attributes.deprecated_of_sig ast in
-    let sg = Env.save_signature ~deprecated sg modulename (outputprefix ^ ".cmi") in
+    let sg =
+      Env.save_signature ~deprecated sg modulename (outputprefix ^ ".cmi")
+    in
     Typemod.save_signature modulename tsg outputprefix sourcefile
       initial_env sg ;
   end
@@ -79,19 +84,11 @@ let implementation ppf sourcefile outputprefix ~backend =
     in
     if not !Clflags.print_types then begin
       if Config.flambda then begin
-        if !Clflags.o3 then begin
-          Clflags.simplify_rounds := 3;
-          Clflags.use_inlining_arguments_set ~round:0 Clflags.o1_arguments;
-          Clflags.use_inlining_arguments_set ~round:1 Clflags.o2_arguments;
-          Clflags.use_inlining_arguments_set ~round:2 Clflags.o3_arguments
-        end
-        else if !Clflags.o2 then begin
-          Clflags.simplify_rounds := 2;
-          Clflags.use_inlining_arguments_set ~round:0 Clflags.o1_arguments;
-          Clflags.use_inlining_arguments_set ~round:1 Clflags.o2_arguments
-        end
-        else if !Clflags.classic_inlining then begin
-          Clflags.use_inlining_arguments_set Clflags.classic_arguments
+        if !Clflags.classic_inlining then begin
+          Clflags.default_simplify_rounds := 1;
+          Clflags.use_inlining_arguments_set Clflags.classic_arguments;
+          Clflags.unbox_free_vars_of_closures := false;
+          Clflags.unbox_specialised_args := false
         end;
         (typedtree, coercion)
         ++ Timings.(time (Timings.Transl sourcefile)
@@ -105,6 +102,7 @@ let implementation ppf sourcefile outputprefix ~backend =
               Middle_end.middle_end ppf ~source_provenance
                 ~prefixname:outputprefix
                 ~size
+                ~filename:sourcefile
                 ~module_ident
                 ~backend
                 ~module_initializer:lam)
@@ -139,5 +137,4 @@ let implementation ppf sourcefile outputprefix ~backend =
     raise x
 
 let c_file name =
-  let output_name = !Clflags.output_name in
-  if Ccomp.compile_file ~output_name name <> 0 then exit 2
+  if Ccomp.compile_file name <> 0 then exit 2

@@ -1,6 +1,6 @@
 (**************************************************************************)
 (*                                                                        *)
-(*                                OCaml                                   *)
+(*                                 OCaml                                  *)
 (*                                                                        *)
 (*                       Pierre Chambart, OCamlPro                        *)
 (*           Mark Shinwell and Leo White, Jane Street Europe              *)
@@ -10,15 +10,13 @@
 (*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
-(*   special exception on linking described in the file ../LICENSE.       *)
+(*   special exception on linking described in the file LICENSE.          *)
 (*                                                                        *)
 (**************************************************************************)
 
 [@@@ocaml.warning "+a-4-9-30-40-41-42"]
 
 (* CR-soon mshinwell: This module should be removed. *)
-
-
 
 (** Generic identifier type *)
 module type BaseId =
@@ -56,4 +54,3 @@ module UnitId :
   functor (Id : Id) ->
   functor (Compilation_unit : Identifiable.Thing) ->
     UnitId with module Compilation_unit := Compilation_unit
-

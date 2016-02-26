@@ -1,6 +1,6 @@
 (**************************************************************************)
 (*                                                                        *)
-(*                                OCaml                                   *)
+(*                                 OCaml                                  *)
 (*                                                                        *)
 (*                       Pierre Chambart, OCamlPro                        *)
 (*           Mark Shinwell and Leo White, Jane Street Europe              *)
@@ -10,7 +10,7 @@
 (*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
-(*   special exception on linking described in the file ../LICENSE.       *)
+(*   special exception on linking described in the file LICENSE.          *)
 (*                                                                        *)
 (**************************************************************************)
 
@@ -75,17 +75,18 @@ and value_set_of_closures = {
   bound_vars : t Var_within_closure.Map.t;
   invariant_params : Variable.Set.t Variable.Map.t lazy_t;
   size : int option Variable.Map.t lazy_t;
-  specialised_args : Variable.t Variable.Map.t;
+  specialised_args : Flambda.specialised_to Variable.Map.t;
   freshening : Freshening.Project_var.t;
 }
 
 let descr t = t.descr
 
 let print_value_set_of_closures ppf
-      { function_decls = { funs }; invariant_params; _ } =
-  Format.fprintf ppf "(set_of_closures:@ %a invariant_params=%a)"
+      { function_decls = { funs }; invariant_params; freshening; _ } =
+  Format.fprintf ppf "(set_of_closures:@ %a invariant_params=%a freshening=%a)"
     (fun ppf -> Variable.Map.iter (fun id _ -> Variable.print ppf id)) funs
     (Variable.Map.print Variable.Set.print) (Lazy.force invariant_params)
+    Freshening.Project_var.print freshening
 
 let rec print_descr ppf = function
   | Value_int i -> Format.pp_print_int ppf i
@@ -199,7 +200,8 @@ let create_value_set_of_closures
           in
           let num_free_vars = Variable.Set.cardinal free_vars in
           let max_size =
-            Inlining_cost.maximum_interesting_size_of_function_body num_free_vars
+            Inlining_cost.maximum_interesting_size_of_function_body
+              num_free_vars
           in
           Inlining_cost.lambda_smaller' function_decl.body ~than:max_size)
         function_decls.funs)
@@ -211,6 +213,12 @@ let create_value_set_of_closures
     specialised_args;
     freshening;
   }
+
+let update_freshening_of_value_set_of_closures value_set_of_closures
+      ~freshening =
+  (* CR-someday mshinwell: We could maybe check that [freshening] is
+     reasonable. *)
+  { value_set_of_closures with freshening; }
 
 let value_set_of_closures ?set_of_closures_var value_set_of_closures =
   { descr = Value_set_of_closures value_set_of_closures;
@@ -429,7 +437,6 @@ let is_definitely_immutable t =
   match t.descr with
   | Value_string { contents = Some _ }
   | Value_block _ | Value_int _ | Value_char _ | Value_constptr _
-  (* CR mshinwell for pchambart: Is this definitely ok for "lazy" blocks? *)
   | Value_set_of_closures _ | Value_float _ | Value_boxed_int _
   | Value_closure _ -> true
   | Value_string { contents = None } | Value_float_array _
@@ -451,8 +458,8 @@ let get_field t ~field_index:i : get_field_result =
          be a useful point to put a [Misc.fatal_errorf]. *)
       Unreachable
     end
-  (* CR mshinwell: This should probably return Unreachable in more cases.
-     I added a couple more. *)
+  (* CR-someday mshinwell: This should probably return Unreachable in more
+     cases.  I added a couple more. *)
   | Value_bottom
   | Value_int _ | Value_char _ | Value_constptr _ ->
     (* Something seriously wrong is happening: either the user is doing
@@ -623,6 +630,17 @@ let check_approx_for_set_of_closures t : checked_approx_for_set_of_closures =
   | Value_symbol _ ->
     Wrong
 
+type strict_checked_approx_for_set_of_closures =
+  | Wrong
+  | Ok of Variable.t option * value_set_of_closures
+
+let strict_check_approx_for_set_of_closures t
+      : strict_checked_approx_for_set_of_closures =
+  match check_approx_for_set_of_closures t with
+  | Ok (var, value_set_of_closures) -> Ok (var, value_set_of_closures)
+  | Wrong | Unresolved _
+  | Unknown | Unknown_because_of_unresolved_symbol _ -> Wrong
+
 type checked_approx_for_closure_allowing_unresolved =
   | Wrong
   | Unresolved of Symbol.t
@@ -669,8 +687,10 @@ type checked_approx_for_closure =
 
 let check_approx_for_closure t : checked_approx_for_closure =
   match check_approx_for_closure_allowing_unresolved t with
-  | Ok (value_closure, set_of_closures_var, set_of_closures_symbol, value_set_of_closures) ->
-    Ok (value_closure, set_of_closures_var, set_of_closures_symbol, value_set_of_closures)
+  | Ok (value_closure, set_of_closures_var, set_of_closures_symbol,
+      value_set_of_closures) ->
+    Ok (value_closure, set_of_closures_var, set_of_closures_symbol,
+      value_set_of_closures)
   | Wrong | Unknown | Unresolved _ | Unknown_because_of_unresolved_symbol _ ->
     Wrong
 

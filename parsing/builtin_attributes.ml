@@ -1,14 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*                        Alain Frisch, LexiFi                         *)
-(*                                                                     *)
-(*  Copyright 2012 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*                         Alain Frisch, LexiFi                           *)
+(*                                                                        *)
+(*   Copyright 2012 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 open Asttypes
 open Parsetree
@@ -63,7 +66,8 @@ let check_deprecated loc attrs s =
   match deprecated_of_attrs attrs with
   | None -> ()
   | Some "" -> Location.prerr_warning loc (Warnings.Deprecated s)
-  | Some txt -> Location.prerr_warning loc (Warnings.Deprecated (s ^ "\n" ^ txt))
+  | Some txt ->
+      Location.prerr_warning loc (Warnings.Deprecated (s ^ "\n" ^ txt))
 
 let rec check_deprecated_mutable loc attrs s =
   match attrs with
@@ -173,7 +177,8 @@ let with_warning_attribute attrs f =
 let warn_on_literal_pattern =
   List.exists
     (function
-      | ({txt="ocaml.warn_on_literal_pattern"|"warn_on_literal_pattern"; _}, _) -> true
+      | ({txt="ocaml.warn_on_literal_pattern"|"warn_on_literal_pattern"; _}, _)
+        -> true
       | _ -> false
     )
 

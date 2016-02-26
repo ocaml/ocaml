@@ -17,6 +17,9 @@ Language features:
 - PR#6714: allow [@@ocaml.warning] on most structure and signature items:
   values, modules, module types
   (whitequark)
+- PR#7118, PR#7120: Bug fixed in stack unwinding metadata generation.
+  Was a cause of crashes in GUI programs on OS X.
+  (Bart Jacobs)
 - GPR#26: support for "(type a b)" as syntactic sugar for "(type a) (type b)"
   (Gabriel Scherer)
 - GPR#42: short functor type syntax: "S -> T" for "functor (_ : S) -> T"
@@ -161,6 +164,8 @@ Compilers:
   branch merging (Pierre Chambart)
 - GPR#392: put all parsetree invariants in a new module Ast_invariants
   (Jérémie Dimino)
+- GPR#455: provide more debugging information to Js_of_ocaml
+  (Jérôme Vouillon)
 
 Runtime system:
 - PR#3612: allow allocating custom block with finalizers in the minor heap
@@ -187,6 +192,8 @@ Runtime system:
   (Damien Doligez, with help from Leo White and Francois Bobot)
 
 Standard library:
+- PR#1460, GPR#230: Array.map2, Array.iter2
+  (John Christopher McAlpine)
 - PR#5197, GPR#63: Arg: allow flags such as --flag=arg as well as --flag arg
   (Richard Jones)
 - PR#6017, PR#7034, GPR#267: More efficient ifprintf implementation
@@ -301,6 +308,10 @@ Other libraries:
   Before, a handled signal could cause Unix.sleep to return early.
   Now, the sleep is restarted until the given time is elapsed.
   (Xavier Leroy)
+* PR#6120: implement Unix.symlink and Unix.readlink on Windows. Unix.symlink has
+  a new optional argument to_dir (ignored on non-native Windows platforms). stat
+  functions reimplemented to avoid buggy Microsoft CRT implementations (native
+  Windows only)
 - PR#6263: add kind_size_in_bytes and size_in_bytes functions
   to Bigarray module.
   (Runhang Li, review by Mark Shinwell)
@@ -392,6 +403,8 @@ Bug fixes:
 - PR#6808: the parsing of OCAMLRUNPARAM is too lax
   (Damien Doligez)
 - PR#6874: Inefficient code generated for module function arguments
+- PR#6888: The list command of ocamldebug uses the wrong file
+  (Damien Doligez, report by Pierre-Marie Pédrot)
 - PR#6897: Bad error message for some pattern matching on extensible variants
 - PR#6899: Optional parameters and non generalizable type variables
   (Thomas Refis and Leo White)
@@ -447,6 +460,8 @@ Bug fixes:
 - PR#7096: ocamldoc uses an incorrect subscript/superscript style
 - PR#7115: shadowing in a branch of a GADT match breaks unused variable
   warning (Alain Frisch, report by Valentin Gatien-Baron)
+- PR#7133: Jump labels in assembly end up as symbols in the executable on OS X
+  (Bart Jacobs)
 - PR#7135: only warn about ground coercions in -principal mode
   (Jacques Garrigue, report by Jeremy Yallop)
 - GPR#205: Clear caml_backtrace_last_exn before registering as root

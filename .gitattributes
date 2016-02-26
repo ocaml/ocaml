@@ -1,3 +1,18 @@
+#**************************************************************************
+#*                                                                        *
+#*                                 OCaml                                  *
+#*                                                                        *
+#*                 Damien Doligez, projet Gallium, INRIA                  *
+#*                                                                        *
+#*   Copyright 2015 Institut National de Recherche en Informatique et     *
+#*     en Automatique.                                                    *
+#*                                                                        *
+#*   All rights reserved.  This file is distributed under the terms of    *
+#*   the GNU Lesser General Public License version 2.1, with the          *
+#*   special exception on linking described in the file LICENSE.          *
+#*                                                                        *
+#**************************************************************************
+
 # Default behaviour, for if core.autocrlf isn't set
 * text=auto
 
@@ -9,16 +24,20 @@ boot/ocamldep binary
 *.png binary
 *.tfm binary
 
-.gitattributes           ocaml-typo=missing-header
-.gitignore               ocaml-typo=missing-header
-.merlin                  ocaml-typo=missing-header
-.ocp-indent              ocaml-typo=missing-header
-Changes                  ocaml-typo=non-ascii,missing-header
-CONTRIBUTING.md          ocaml-typo=missing-header
-INSTALL                  ocaml-typo=missing-header
-LICENSE                  ocaml-typo=non-printing,missing-header
+# No header for text files (would be too obtrusive).
+*.md                     ocaml-typo=missing-header
+README*                  ocaml-typo=missing-header
+*.adoc                   ocaml-typo=missing-header,long-line,unused-prop
+
+/.merlin                  ocaml-typo=missing-header
+/Changes                  ocaml-typo=non-ascii,missing-header
+/INSTALL                  ocaml-typo=missing-header
+/LICENSE                  ocaml-typo=non-printing,missing-header
+/appveyor.yml             ocaml-typo=long-line,very-long-line
+
 
 asmcomp/*/emit.mlp       ocaml-typo=tab,long-line,unused-prop
+asmcomp/power/NOTES.md   ocaml-typo=missing-header,long-line
 
 asmrun/i386.S            ocaml-typo=long-line
 
@@ -27,9 +46,10 @@ config/gnu               ocaml-typo=prune
 emacs/*.el               ocaml-typo=long-line,unused-prop
 emacs/COPYING            ocaml-typo=tab,non-printing,missing-header
 emacs/ocamltags.in       ocaml-typo=non-printing
-emacs/README*            ocaml-typo=missing-header
 
 experimental             ocaml-typo=prune
+
+manual                   ocaml-typo=prune
 
 ocamlbuild/*             ocaml-typo=long-line
 ocamlbuild/AUTHORS       ocaml-typo=missing-header
@@ -38,6 +58,22 @@ ocamlbuild/TODO          ocaml-typo=missing-header
 
 ocamldoc/Changes.txt     ocaml-typo=missing-header
 ocamldoc/ocamldoc.sty    ocaml-typo=missing-header
+
+otherlibs/win32unix/readlink.c    ocaml-typo=long-line
+otherlibs/win32unix/stat.c        ocaml-typo=long-line
+otherlibs/win32unix/symlink.c     ocaml-typo=long-line
+
+stdlib/sharpbang    ocaml-typo=white-at-eol,missing-lf
+
+# FIXME remove headers in testsuite/tests and remove unused-prop in next line:
+testsuite/tests/**                        ocaml-typo=missing-header,unused-prop
+testsuite/tests/lib-bigarray-2/bigarrf.f  ocaml-typo=missing-header,tab
+testsuite/tests/misc-unsafe/almabench.ml  ocaml-typo=missing-header,long-line
+testsuite/typing                          ocaml-typo=missing-header
+
+tools/magic         ocaml-typo=missing-header
+
+yacc/*.[ch]   ocaml-typo=long-line,very-long-line,unused-prop
 
 # Line-ending specifications, for Windows interoperability
 *.sh text eol=lf

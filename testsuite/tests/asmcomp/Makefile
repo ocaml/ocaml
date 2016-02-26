@@ -1,14 +1,17 @@
-#########################################################################
-#                                                                       #
-#                                 OCaml                                 #
-#                                                                       #
-#                 Xavier Clerc, SED, INRIA Rocquencourt                 #
-#                                                                       #
-#   Copyright 2010 Institut National de Recherche en Informatique et    #
-#   en Automatique.  All rights reserved.  This file is distributed     #
-#   under the terms of the Q Public License version 1.0.                #
-#                                                                       #
-#########################################################################
+#**************************************************************************
+#*                                                                        *
+#*                                OCaml                                   *
+#*                                                                        *
+#*                 Xavier Clerc, SED, INRIA Rocquencourt                  *
+#*                                                                        *
+#*   Copyright 2010 Institut National de Recherche en Informatique et     *
+#*     en Automatique.                                                    *
+#*                                                                        *
+#*   All rights reserved.  This file is distributed under the terms of    *
+#*   the GNU Lesser General Public License version 2.1, with the          *
+#*   special exception on linking described in the file LICENSE.          *
+#*                                                                        *
+#**************************************************************************
 
 BASEDIR=../..
 
@@ -46,6 +49,8 @@ lexcmm.ml: lexcmm.mll
 
 MLCASES=optargs staticalloc bind_tuples is_static
 ARGS_is_static=-I $(OTOPDIR)/byterun is_in_static_data.c
+MLCASES_FLAMBDA=is_static_flambda
+ARGS_is_static_flambda=-I $(OTOPDIR)/byterun is_in_static_data.c
 
 CASES=fib tak quicksort quicksort2 soli \
       arith checkbound tagged-fib tagged-integr tagged-quicksort tagged-tak
@@ -69,7 +74,15 @@ skips:
 
 one_ml:
 	@$(OCAMLOPT) $(ARGS_$(NAME)) -o $(NAME).exe $(NAME).ml && \
-	./$(NAME).exe $(FLAMBDA) && echo " => passed" || echo " => failed"
+	./$(NAME).exe && echo " => passed" || echo " => failed"
+
+one_ml_flambda:
+	@if $(FLAMBDA); then \
+	   $(OCAMLOPT) $(ARGS_$(NAME)) -o $(NAME).exe $(NAME).ml && \
+	   ./$(NAME).exe && echo " => passed" || echo " => failed"; \
+	 else \
+	   echo "=> skipped"; \
+	 fi
 
 one:
 	@$(call CC,$(NAME).out $(ARGS_$(NAME)) $(NAME).$(O) $(ARCH).$(O)) \
@@ -104,6 +117,10 @@ tests: $(CASES:=.$(O))
 	@for c in $(MLCASES); do \
 	  printf " ... testing '$$c':"; \
           $(MAKE) one_ml NAME=$$c; \
+        done
+	@for c in $(MLCASES_FLAMBDA); do \
+	  printf " ... testing '$$c':"; \
+          $(MAKE) one_ml_flambda NAME=$$c; \
         done
 
 promote:

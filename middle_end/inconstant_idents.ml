@@ -1,6 +1,6 @@
 (**************************************************************************)
 (*                                                                        *)
-(*                                OCaml                                   *)
+(*                                 OCaml                                  *)
 (*                                                                        *)
 (*                       Pierre Chambart, OCamlPro                        *)
 (*           Mark Shinwell and Leo White, Jane Street Europe              *)
@@ -10,7 +10,7 @@
 (*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
-(*   special exception on linking described in the file ../LICENSE.       *)
+(*   special exception on linking described in the file LICENSE.          *)
 (*                                                                        *)
 (**************************************************************************)
 
@@ -292,6 +292,7 @@ module Inconstants (P:Param) (Backend:Backend_intf.S) = struct
       List.iter (fun (_,l) -> mark_loop ~toplevel [] l) sw;
       Misc.may (fun l -> mark_loop ~toplevel [] l) def
     | Send { kind = _; meth; obj; args; dbg = _; } ->
+      mark_curr curr;
       mark_var meth curr;
       mark_var obj curr;
       List.iter (fun arg -> mark_var arg curr) args
@@ -322,16 +323,18 @@ module Inconstants (P:Param) (Backend:Backend_intf.S) = struct
             ()
       end
     | Read_symbol_field (symbol, index) ->
-      register_implication ~in_nc:(Symbol_field (symbol, index)) ~implies_in_nc:curr
+      register_implication ~in_nc:(Symbol_field (symbol, index))
+        ~implies_in_nc:curr
     (* Globals are symbols: handle like symbols *)
     | Prim (Lambda.Pgetglobal _id, [], _) -> ()
-    (* Constant constructors: those expressions are constant if all their parameters are:
+    (* Constant constructors: those expressions are constant if all their
+       parameters are:
        - makeblock is compiled to a constant block
        - offset is compiled to a pointer inside a constant closure.
          See Cmmgen for the details
 
-       makeblock(Mutable) can be a 'constant' if it is allocated at toplevel: if this
-       expression is evaluated only once.
+       makeblock(Mutable) can be a 'constant' if it is allocated at
+       toplevel: if this expression is evaluated only once.
     *)
     | Prim (Lambda.Pmakeblock (_tag, Asttypes.Immutable), args, _dbg) ->
       mark_vars args curr
@@ -358,11 +361,24 @@ module Inconstants (P:Param) (Backend:Backend_intf.S) = struct
         mark_var set_of_closures curr
       else
         mark_curr curr
-    | Move_within_set_of_closures
-        ({ closure; start_from = _; move_to = _ }) ->
-      mark_var closure curr
-    | Project_var ({ closure; closure_id = _; var = _ }) ->
-      mark_var closure curr
+    | Move_within_set_of_closures ({ closure; start_from; move_to; }) ->
+      (* CR-someday mshinwell: We should be able to deem these projections
+         (same for the cases below) as constant when from another
+         compilation unit, but there isn't code to handle this yet.  (Note
+         that for Project_var we cannot yet generate a projection from a
+         closure in another compilation unit, since we only lift closed
+         closures.) *)
+      if Closure_id.in_compilation_unit start_from compilation_unit then begin
+        assert (Closure_id.in_compilation_unit move_to compilation_unit);
+        mark_var closure curr
+      end else begin
+        mark_curr curr
+      end
+    | Project_var ({ closure; closure_id; var = _ }) ->
+      if Closure_id.in_compilation_unit closure_id compilation_unit then
+        mark_var closure curr
+      else
+        mark_curr curr
     | Prim (Lambda.Pfield _, [f1], _) ->
       mark_curr curr;
       mark_var f1 curr
@@ -386,27 +402,35 @@ module Inconstants (P:Param) (Backend:Backend_intf.S) = struct
   and mark_loop_set_of_closures ~toplevel:_ curr
         { Flambda. function_decls; free_vars; specialised_args } =
     (* If a function in the set of closures is specialised, do not consider
-       it constant. *)
-    (* CR mshinwell for pchambart: This needs more explanation. *)
-    Variable.Map.iter (fun _ id ->
+       it constant, unless all specialised args are also constant. *)
+    Variable.Map.iter (fun _ (spec_arg : Flambda.specialised_to) ->
           register_implication
-            ~in_nc:(Var id)
+            ~in_nc:(Var spec_arg.var)
             ~implies_in_nc:[Closure function_decls.set_of_closures_id])
         specialised_args;
     (* adds 'function_decls in NC => curr in NC' *)
     register_implication ~in_nc:(Closure function_decls.set_of_closures_id)
       ~implies_in_nc:curr;
     (* a closure is constant if its free variables are constants. *)
-    Variable.Map.iter (fun inner_id var ->
-        register_implication ~in_nc:(Var var)
-          ~implies_in_nc:[Var inner_id; Closure function_decls.set_of_closures_id])
+    Variable.Map.iter (fun inner_id (var : Flambda.specialised_to) ->
+        register_implication ~in_nc:(Var var.var)
+          ~implies_in_nc:[
+            Var inner_id;
+            Closure function_decls.set_of_closures_id
+          ])
       free_vars;
     Variable.Map.iter (fun fun_id (ffunc : Flambda.function_declaration) ->
         (* for each function f in a closure c 'c in NC => f' *)
         register_implication ~in_nc:(Closure function_decls.set_of_closures_id)
           ~implies_in_nc:[Var fun_id];
-        (* function parameters are in NC *)
-        List.iter (fun id -> mark_curr [Var id]) ffunc.params;
+        (* function parameters are in NC unless specialised *)
+        List.iter (fun param ->
+            match Variable.Map.find param specialised_args with
+            | exception Not_found -> mark_curr [Var param]
+            | outer_var ->
+              register_implication ~in_nc:(Var outer_var.var)
+                ~implies_in_nc:[Var param])
+          ffunc.params;
         mark_loop ~toplevel:false [] ffunc.body)
       function_decls.funs
 

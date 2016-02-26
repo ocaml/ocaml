@@ -46,7 +46,7 @@ close(ML);
 open(TOPLEVEL, "$camllight 2>&1 < .input.ml |") ||
        die("Cannot start camllight : $!");
 
-<TOPLEVEL>; <TOPLEVEL>;		# skip the banner
+<TOPLEVEL>; <TOPLEVEL>;	        # skip the banner
 $lastread = <TOPLEVEL>;
 $lastread =~ s/^# //;
 

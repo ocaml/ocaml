@@ -1,6 +1,6 @@
 (**************************************************************************)
 (*                                                                        *)
-(*                                OCaml                                   *)
+(*                                 OCaml                                  *)
 (*                                                                        *)
 (*                       Pierre Chambart, OCamlPro                        *)
 (*           Mark Shinwell and Leo White, Jane Street Europe              *)
@@ -10,7 +10,7 @@
 (*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
-(*   special exception on linking described in the file ../LICENSE.       *)
+(*   special exception on linking described in the file LICENSE.          *)
 (*                                                                        *)
 (**************************************************************************)
 
@@ -32,6 +32,7 @@ let _dump_function_sizes flam ~backend =
 
 let middle_end ppf ~source_provenance ~prefixname ~backend
     ~size
+    ~filename
     ~module_ident
     ~module_initializer =
   let pass_number = ref 0 in
@@ -45,39 +46,39 @@ let middle_end ppf ~source_provenance ~prefixname ~backend
           Flambda.print_program flam
     end
   in
-  let dump_and_check s flam =
-    if !Clflags.dump_flambda
-    then Format.fprintf ppf "%s:@ %a@." s Flambda.print_program flam;
-    check flam
-  in
   let (+-+) flam (name, pass) =
     incr pass_number;
     if !Clflags.dump_flambda_verbose then begin
       Format.fprintf ppf "@.PASS: %s@." name;
-      if !Clflags.flambda_invariant_checks then begin
-        Format.fprintf ppf "Before pass %d, round %d:@ %a@." !pass_number
-          !round_number Flambda.print_program flam;
-        Format.eprintf "\n@?"
-      end;
+      Format.fprintf ppf "Before pass %d, round %d:@ %a@." !pass_number
+        !round_number Flambda.print_program flam;
+      Format.eprintf "\n@?"
     end;
     let timing_pass = (Timings.Flambda_pass (name, source_provenance)) in
     let flam = Timings.accumulate_time timing_pass pass flam in
     if !Clflags.flambda_invariant_checks then begin
-      Timings.accumulate_time (Flambda_pass ("check", source_provenance)) check flam
+      Timings.accumulate_time (Flambda_pass ("check", source_provenance))
+        check flam
     end;
     flam
   in
-  Timings.accumulate_time (Flambda_pass ("middle_end", source_provenance)) (fun () ->
+  Timings.accumulate_time
+    (Flambda_pass ("middle_end", source_provenance)) (fun () ->
     let flam =
       let timing_pass =
         Timings.Flambda_pass ("closure_conversion", source_provenance)
       in
       Timings.accumulate_time timing_pass (fun () ->
           module_initializer
-          |> Closure_conversion.lambda_to_flambda ~backend ~module_ident ~size)
+          |> Closure_conversion.lambda_to_flambda ~backend ~module_ident
+                ~size ~filename)
         ()
     in
-    dump_and_check "After closure conversion" flam;
+    if !Clflags.dump_rawflambda
+    then
+      Format.fprintf ppf "After closure conversion:@ %a@."
+        Flambda.print_program flam;
+    check flam;
     let fast_mode flam =
       pass_number := 0;
       let round = 0 in
@@ -101,7 +102,7 @@ let middle_end ppf ~source_provenance ~prefixname ~backend
       pass_number := 0;
       let round = !round_number in
       incr round_number;
-      if !round_number > !Clflags.simplify_rounds then flam
+      if !round_number > (Clflags.rounds ()) then flam
       else
         flam
         (* Beware: [Lift_constants] must be run before any pass that might
@@ -159,8 +160,17 @@ let middle_end ppf ~source_provenance ~prefixname ~backend
           Location.prerr_warning (Debuginfo.to_location apply.dbg)
             (Warnings.Inlining_impossible "[@inlined] attribute was not \
               used on this function application (the optimizer did not \
+              know what function was being applied)")
+        | Unroll _ ->
+          Location.prerr_warning (Debuginfo.to_location apply.dbg)
+            (Warnings.Inlining_impossible "[@unroll] attribute was not \
+              used on this function application (the optimizer did not \
               know what function was being applied)"));
-    dump_and_check "End of middle end" flam;
-    (* CR mshinwell: add -d... option for this *)
+    if !Clflags.dump_rawflambda
+    then
+      Format.fprintf ppf "End of middle end:@ %a@."
+        Flambda.print_program flam;
+    check flam;
+    (* CR-someday mshinwell: add -d... option for this *)
     (* dump_function_sizes flam ~backend; *)
     flam) ();

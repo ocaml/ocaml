@@ -49,4 +49,6 @@ let set_open_poly (r:[< `Bar | `Foo | `Baz > `Foo `Bar] ref) y = r := y ;;
 let set_open_poly (r:[>`Foo of int] ref) y = r := y ;;
 let set_open_poly (r:[<`Foo of int] ref) y = r := y ;;
 let set_open_poly (r:[`Foo of int] ref) y = r := y ;;
-let set_open_poly (r:[< `Bar | `Foo of float | `Baz > `Foo `Bar] ref) y = r := y ;;
+let set_open_poly (r:[< `Bar | `Foo of float | `Baz > `Foo `Bar] ref) y =
+  r := y
+;;

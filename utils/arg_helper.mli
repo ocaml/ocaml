@@ -1,6 +1,6 @@
 (**************************************************************************)
 (*                                                                        *)
-(*                                OCaml                                   *)
+(*                                 OCaml                                  *)
 (*                                                                        *)
 (*                       Pierre Chambart, OCamlPro                        *)
 (*           Mark Shinwell and Leo White, Jane Street Europe              *)
@@ -10,7 +10,7 @@
 (*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
-(*   special exception on linking described in the file ../LICENSE.       *)
+(*   special exception on linking described in the file LICENSE.          *)
 (*                                                                        *)
 (**************************************************************************)
 
@@ -37,12 +37,19 @@ module Make (S : sig
     val of_string : string -> t
   end
 end) : sig
-  type parsed = {
-    default : S.Value.t;
-    override : S.Value.t S.Key.Map.t;
-  }
+  type parsed
 
   val default : S.Value.t -> parsed
+
+  val set_base_default : S.Value.t -> parsed -> parsed
+
+  val add_base_override : S.Key.t -> S.Value.t -> parsed -> parsed
+
+  val reset_base_overrides : parsed -> parsed
+
+  val set_user_default : S.Value.t -> parsed -> parsed
+
+  val add_user_override : S.Key.t -> S.Value.t -> parsed -> parsed
 
   val parse : string -> help_text:string -> update:parsed ref -> unit
 

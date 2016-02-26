@@ -19,4 +19,3 @@ Debian architecture name: `amd64`
   _OS X ABI Function Call Guide: x86-64 Function Calling Conventions_
 * Windows 64 application binary interface:
   _x64 Software Conventions_ from MSDN
-

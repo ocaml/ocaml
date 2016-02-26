@@ -1,6 +1,6 @@
 (**************************************************************************)
 (*                                                                        *)
-(*                                OCaml                                   *)
+(*                                 OCaml                                  *)
 (*                                                                        *)
 (*                       Pierre Chambart, OCamlPro                        *)
 (*           Mark Shinwell and Leo White, Jane Street Europe              *)
@@ -10,7 +10,7 @@
 (*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
-(*   special exception on linking described in the file ../LICENSE.       *)
+(*   special exception on linking described in the file LICENSE.          *)
 (*                                                                        *)
 (**************************************************************************)
 
@@ -18,7 +18,8 @@
 
 module Constant_defining_value = Flambda.Constant_defining_value
 
-let update_constant_for_sharing sharing_symbol_tbl const : Flambda.constant_defining_value =
+let update_constant_for_sharing sharing_symbol_tbl const
+      : Flambda.constant_defining_value =
   let substitute_symbol sym =
     match Symbol.Tbl.find sharing_symbol_tbl sym with
     | exception Not_found -> sym

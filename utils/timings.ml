@@ -1,14 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*                     Pierre Chambart, OCamlPro                       *)
-(*                                                                     *)
-(*  Copyright 2015 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*                      Pierre Chambart, OCamlPro                         *)
+(*                                                                        *)
+(*   Copyright 2015 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 type file = string
 
@@ -42,7 +45,9 @@ type compiler_pass =
   | Emit of source_provenance
   | Flambda_pass of string * source_provenance
 
-let timings : (compiler_pass, float * float option) Hashtbl.t = Hashtbl.create 20
+let timings : (compiler_pass, float * float option) Hashtbl.t =
+  Hashtbl.create 20
+
 let reset () = Hashtbl.clear timings
 
 let start pass =
@@ -141,4 +146,3 @@ let print ppf =
         Format.fprintf ppf "%s: running since %.03fs@." (pass_name pass)
           (current_time -. start))
     (timings_list ())
-

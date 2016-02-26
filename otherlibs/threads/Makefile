@@ -1,15 +1,17 @@
-#########################################################################
-#                                                                       #
-#                                 OCaml                                 #
-#                                                                       #
-#            Xavier Leroy, projet Cristal, INRIA Rocquencourt           #
-#                                                                       #
-#   Copyright 1999 Institut National de Recherche en Informatique et    #
-#   en Automatique.  All rights reserved.  This file is distributed     #
-#   under the terms of the GNU Library General Public License, with     #
-#   the special exception on linking described in file ../../LICENSE.   #
-#                                                                       #
-#########################################################################
+#**************************************************************************
+#*                                                                        *
+#*                                 OCaml                                  *
+#*                                                                        *
+#*            Xavier Leroy, projet Cristal, INRIA Rocquencourt            *
+#*                                                                        *
+#*   Copyright 1999 Institut National de Recherche en Informatique et     *
+#*     en Automatique.                                                    *
+#*                                                                        *
+#*   All rights reserved.  This file is distributed under the terms of    *
+#*   the GNU Lesser General Public License version 2.1, with the          *
+#*   special exception on linking described in the file LICENSE.          *
+#*                                                                        *
+#**************************************************************************
 
 # FIXME reduce redundancy by including ../Makefile
 
@@ -106,7 +108,9 @@ INSTALL_LIBDIR=$(DESTDIR)$(LIBDIR)
 INSTALL_STUBLIBDIR=$(DESTDIR)$(STUBLIBDIR)
 
 install:
-	if test -f dllvmthreads.so; then cp dllvmthreads.so $(INSTALL_STUBLIBDIR)/.; fi
+	if test -f dllvmthreads.so; then \
+	  cp dllvmthreads.so $(INSTALL_STUBLIBDIR)/.; \
+	fi
 	mkdir -p $(INSTALL_LIBDIR)/vmthreads
 	cp libvmthreads.a $(INSTALL_LIBDIR)/vmthreads/libvmthreads.a
 	cd $(INSTALL_LIBDIR)/vmthreads; $(RANLIB) libvmthreads.a

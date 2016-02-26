@@ -1,14 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Gallium, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 2006 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Gallium, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 2006 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 open Lexing
 open Location
@@ -40,6 +43,14 @@ let to_string d =
   then ""
   else Printf.sprintf "{%s:%d,%d-%d}"
            d.dinfo_file d.dinfo_line d.dinfo_char_start d.dinfo_char_end
+
+let from_filename kind filename = {
+  dinfo_kind = kind;
+  dinfo_file = filename;
+  dinfo_line = 0;
+  dinfo_char_start = 0;
+  dinfo_char_end = 0
+}
 
 let from_location kind loc =
   if loc == Location.none then none else

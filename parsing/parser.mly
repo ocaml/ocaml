@@ -1,14 +1,17 @@
-/***********************************************************************/
-/*                                                                     */
-/*                                OCaml                                */
-/*                                                                     */
-/*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         */
-/*                                                                     */
-/*  Copyright 1996 Institut National de Recherche en Informatique et   */
-/*  en Automatique.  All rights reserved.  This file is distributed    */
-/*  under the terms of the Q Public License version 1.0.               */
-/*                                                                     */
-/***********************************************************************/
+/**************************************************************************/
+/*                                                                        */
+/*                                 OCaml                                  */
+/*                                                                        */
+/*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           */
+/*                                                                        */
+/*   Copyright 1996 Institut National de Recherche en Informatique et     */
+/*     en Automatique.                                                    */
+/*                                                                        */
+/*   All rights reserved.  This file is distributed under the terms of    */
+/*   the GNU Lesser General Public License version 2.1, with the          */
+/*   special exception on linking described in the file LICENSE.          */
+/*                                                                        */
+/**************************************************************************/
 
 /* The parser definition */
 
@@ -775,7 +778,8 @@ module_expr:
       { mkmod ~attrs:$3
           (Pmod_unpack(
                ghexp(Pexp_constraint($4, ghtyp(Ptyp_package $6))))) }
-  | LPAREN VAL attributes expr COLON package_type COLONGREATER package_type RPAREN
+  | LPAREN VAL attributes expr COLON package_type COLONGREATER package_type
+    RPAREN
       { mkmod ~attrs:$3
           (Pmod_unpack(
                ghexp(Pexp_coerce($4, Some(ghtyp(Ptyp_package $6)),
@@ -864,7 +868,8 @@ module_binding:
 ;
 rec_module_bindings:
     rec_module_binding                     { let (b, ext) = $1 in ([b], ext) }
-  | rec_module_bindings and_module_binding { let (l, ext) = $1 in ($2 :: l, ext) }
+  | rec_module_bindings and_module_binding
+      { let (l, ext) = $1 in ($2 :: l, ext) }
 ;
 rec_module_binding:
     MODULE ext_attributes REC UIDENT module_binding_body post_item_attributes
@@ -989,8 +994,10 @@ module_alias:
       , ext }
 ;
 rec_module_declarations:
-    rec_module_declaration                         { let (body, ext) = $1 in ([body], ext) }
-  | rec_module_declarations and_module_declaration { let (l, ext) = $1 in ($2 :: l, ext) }
+    rec_module_declaration
+      { let (body, ext) = $1 in ([body], ext) }
+  | rec_module_declarations and_module_declaration
+      { let (l, ext) = $1 in ($2 :: l, ext) }
 ;
 rec_module_declaration:
     MODULE ext_attributes REC UIDENT COLON module_type post_item_attributes
@@ -1009,7 +1016,8 @@ module_type_declaration_body:
   | EQUAL module_type         { Some $2 }
 ;
 module_type_declaration:
-    MODULE TYPE ext_attributes ident module_type_declaration_body post_item_attributes
+    MODULE TYPE ext_attributes ident module_type_declaration_body
+    post_item_attributes
       { let (ext, attrs) = $3 in
         Mtd.mk (mkrhs $4 4) ?typ:$5 ~attrs:(attrs@$6)
           ~loc:(symbol_rloc()) ~docs:(symbol_docs ())
@@ -1018,12 +1026,14 @@ module_type_declaration:
 /* Class expressions */
 
 class_declarations:
-    class_declaration                           { let (body, ext) = $1 in ([body], ext) }
-  | class_declarations and_class_declaration    { let (l, ext) = $1 in ($2 :: l, ext) }
+    class_declaration
+      { let (body, ext) = $1 in ([body], ext) }
+  | class_declarations and_class_declaration
+      { let (l, ext) = $1 in ($2 :: l, ext) }
 ;
 class_declaration:
-    CLASS ext_attributes virtual_flag class_type_parameters LIDENT class_fun_binding
-    post_item_attributes
+    CLASS ext_attributes virtual_flag class_type_parameters LIDENT
+    class_fun_binding post_item_attributes
       { let (ext, attrs) = $2 in
         Ci.mk (mkrhs $5 5) $6 ~virt:$3 ~params:$4 ~attrs:(attrs@$7)
             ~loc:(symbol_rloc ()) ~docs:(symbol_docs ())
@@ -1105,7 +1115,8 @@ class_fields:
       { $2 :: (text_cstr 2) @ $1 }
 ;
 class_field:
-  | INHERIT override_flag attributes class_expr parent_binder post_item_attributes
+  | INHERIT override_flag attributes class_expr parent_binder
+    post_item_attributes
       { mkcf (Pcf_inherit ($2, $4, $5)) ~attrs:($3@$6) ~docs:(symbol_docs ()) }
   | VAL attributes value post_item_attributes
       { mkcf (Pcf_val $3) ~attrs:($2@$4) ~docs:(symbol_docs ()) }
@@ -1240,12 +1251,14 @@ constrain_field:
         core_type EQUAL core_type          { $1, $3 }
 ;
 class_descriptions:
-    class_description                           { let (body, ext) = $1 in ([body],ext) }
-  | class_descriptions and_class_description    { let (l, ext) = $1 in ($2 :: l, ext) }
+    class_description
+      { let (body, ext) = $1 in ([body],ext) }
+  | class_descriptions and_class_description
+      { let (l, ext) = $1 in ($2 :: l, ext) }
 ;
 class_description:
-    CLASS ext_attributes virtual_flag class_type_parameters LIDENT COLON class_type
-    post_item_attributes
+    CLASS ext_attributes virtual_flag class_type_parameters LIDENT COLON
+    class_type post_item_attributes
       { let (ext, attrs) = $2 in
         Ci.mk (mkrhs $5 5) $7 ~virt:$3 ~params:$4 ~attrs:$8
             ~loc:(symbol_rloc ()) ~docs:(symbol_docs ())
@@ -1259,8 +1272,10 @@ and_class_description:
               ~text:(symbol_text ()) ~docs:(symbol_docs ()) }
 ;
 class_type_declarations:
-    class_type_declaration                              { let (body, ext) = $1 in ([body],ext) }
-  | class_type_declarations and_class_type_declaration  { let (l, ext) = $1 in ($2 :: l, ext) }
+    class_type_declaration
+      { let (body, ext) = $1 in ([body],ext) }
+  | class_type_declarations and_class_type_declaration
+      { let (l, ext) = $1 in ($2 :: l, ext) }
 ;
 class_type_declaration:
     CLASS TYPE ext_attributes virtual_flag class_type_parameters LIDENT EQUAL
@@ -1547,7 +1562,8 @@ simple_expr:
                     $3 }
   | LPAREN MODULE ext_attributes module_expr COLON error
       { unclosed "(" 1 ")" 6 }
-  | mod_longident DOT LPAREN MODULE ext_attributes module_expr COLON package_type RPAREN
+  | mod_longident DOT LPAREN MODULE ext_attributes module_expr COLON
+    package_type RPAREN
       { mkexp(Pexp_open(Fresh, mkrhs $1 1,
         mkexp_attrs (Pexp_constraint (ghexp (Pexp_pack $6),
                                 ghtyp (Ptyp_package $8)))
@@ -1641,8 +1657,10 @@ match_case:
       { Exp.case $1 (Exp.unreachable ~loc:(rhs_loc 3) ())}
 ;
 fun_def:
-    MINUSGREATER seq_expr                        { $2 }
-  | COLON simple_core_type MINUSGREATER seq_expr { mkexp (Pexp_constraint ($4, $2)) }
+    MINUSGREATER seq_expr
+      { $2 }
+  | COLON simple_core_type MINUSGREATER seq_expr
+      { mkexp (Pexp_constraint ($4, $2)) }
 /* Cf #5939: we used to accept (fun p when e0 -> e) */
   | labeled_simple_pattern fun_def
       {
@@ -1830,8 +1848,8 @@ primitive_declaration_body:
   | STRING primitive_declaration_body           { fst $1 :: $2 }
 ;
 primitive_declaration:
-    EXTERNAL ext_attributes val_ident COLON core_type EQUAL primitive_declaration_body
-    post_item_attributes
+    EXTERNAL ext_attributes val_ident COLON core_type EQUAL
+    primitive_declaration_body post_item_attributes
       { let (ext, attrs) = $2 in
         Val.mk (mkrhs $3 3) $5 ~prim:$7 ~attrs:(attrs@$8)
               ~loc:(symbol_rloc ()) ~docs:(symbol_docs ())
@@ -1848,8 +1866,8 @@ type_declarations:
 ;
 
 type_declaration:
-    TYPE ext_attributes nonrec_flag optional_type_parameters LIDENT type_kind constraints
-    post_item_attributes
+    TYPE ext_attributes nonrec_flag optional_type_parameters LIDENT
+    type_kind constraints post_item_attributes
       { let (kind, priv, manifest) = $6 in
         let (ext, attrs) = $2 in
         let ty =
@@ -1962,8 +1980,8 @@ str_exception_declaration:
         , ext }
 ;
 sig_exception_declaration:
-  | EXCEPTION ext_attributes constr_ident generalized_constructor_arguments attributes
-    post_item_attributes
+  | EXCEPTION ext_attributes constr_ident generalized_constructor_arguments
+    attributes post_item_attributes
       { let args, res = $4 in
         let (ext,attrs) = $2 in
           Te.decl (mkrhs $3 3) ~args ?res ~attrs:($5 @ $6)
@@ -2256,17 +2274,17 @@ label:
 /* Constants */
 
 constant:
-  | INT                               { let (n, m) = $1 in Pconst_integer (n, m) }
-  | CHAR                              { Pconst_char $1 }
-  | STRING                            { let (s, d) = $1 in Pconst_string (s, d) }
-  | FLOAT                             { let (f, m) = $1 in Pconst_float (f, m) }
+  | INT          { let (n, m) = $1 in Pconst_integer (n, m) }
+  | CHAR         { Pconst_char $1 }
+  | STRING       { let (s, d) = $1 in Pconst_string (s, d) }
+  | FLOAT        { let (f, m) = $1 in Pconst_float (f, m) }
 ;
 signed_constant:
-    constant                               { $1 }
-  | MINUS INT                              { let (n, m) = $2 in Pconst_integer("-" ^ n, m) }
-  | MINUS FLOAT                            { let (f, m) = $2 in Pconst_float("-" ^ f, m) }
-  | PLUS INT                               { let (n, m) = $2 in Pconst_integer (n, m) }
-  | PLUS FLOAT                             { let (f, m) = $2 in Pconst_float(f, m) }
+    constant     { $1 }
+  | MINUS INT    { let (n, m) = $2 in Pconst_integer("-" ^ n, m) }
+  | MINUS FLOAT  { let (f, m) = $2 in Pconst_float("-" ^ f, m) }
+  | PLUS INT     { let (n, m) = $2 in Pconst_integer (n, m) }
+  | PLUS FLOAT   { let (f, m) = $2 in Pconst_float(f, m) }
 ;
 
 /* Identifiers and long identifiers */
@@ -2363,7 +2381,8 @@ class_longident:
 toplevel_directive:
     SHARP ident                 { Ptop_dir($2, Pdir_none) }
   | SHARP ident STRING          { Ptop_dir($2, Pdir_string (fst $3)) }
-  | SHARP ident INT             { let (n, m) = $3 in Ptop_dir($2, Pdir_int (n ,m)) }
+  | SHARP ident INT             { let (n, m) = $3 in
+                                  Ptop_dir($2, Pdir_int (n ,m)) }
   | SHARP ident val_longident   { Ptop_dir($2, Pdir_ident $3) }
   | SHARP ident mod_longident   { Ptop_dir($2, Pdir_ident $3) }
   | SHARP ident FALSE           { Ptop_dir($2, Pdir_bool false) }
