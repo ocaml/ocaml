@@ -1165,6 +1165,31 @@ and transl_function loc untuplify_fn repr partial cases =
        Matching.for_function loc repr (Lvar param)
          (transl_cases cases) partial)
 
+(* Auxiliary function for transl_let *)
+and transl_letrec pat_expr_list body =
+  let idlist =
+    List.map
+      (fun {vb_pat=pat} -> match pat.pat_desc with
+          Tpat_var (id,_) -> id
+        | Tpat_alias ({pat_desc=Tpat_any}, id,_) -> id
+        | _ -> raise(Error(pat.pat_loc, Illegal_letrec_pat)))
+    pat_expr_list
+  in
+  let transl_case {vb_pat=pat; vb_expr=expr; vb_attributes; vb_loc} id =
+    let lam = transl_exp expr in
+    let lam =
+      Translattribute.add_inline_attribute lam vb_loc
+        vb_attributes
+    in
+    let lam =
+      Translattribute.add_specialise_attribute lam vb_loc
+        vb_attributes
+    in
+    if not (check_recursive_lambda idlist lam) then
+      raise(Error(expr.exp_loc, Illegal_letrec_expr));
+    (id, lam) in
+    Lletrec(List.map2 transl_case pat_expr_list idlist, body)
+
 and transl_let rec_flag pat_expr_list body =
   match rec_flag with
     Nonrecursive ->
@@ -1182,27 +1207,25 @@ and transl_let rec_flag pat_expr_list body =
           Matching.for_let pat.pat_loc lam pat (transl rem)
       in transl pat_expr_list
   | Recursive ->
-      let idlist =
-        List.map
-          (fun {vb_pat=pat} -> match pat.pat_desc with
-              Tpat_var (id,_) -> id
-            | Tpat_alias ({pat_desc=Tpat_any}, id,_) -> id
-            | _ -> raise(Error(pat.pat_loc, Illegal_letrec_pat)))
-        pat_expr_list in
-      let transl_case {vb_pat=pat; vb_expr=expr; vb_attributes; vb_loc} id =
-        let lam = transl_exp expr in
-        let lam =
-          Translattribute.add_inline_attribute lam vb_loc
-            vb_attributes
-        in
-        let lam =
-          Translattribute.add_specialise_attribute lam vb_loc
-            vb_attributes
-        in
-        if not (check_recursive_lambda idlist lam) then
-          raise(Error(expr.exp_loc, Illegal_letrec_expr));
-        (id, lam) in
-      Lletrec(List.map2 transl_case pat_expr_list idlist, body)
+      (* change "_" patterns to sequences *)
+      let is_pat_any = fun {vb_pat = pat} ->
+        match pat.pat_desc with
+        | Tpat_any -> true
+        | _ -> false
+      in
+      let (sequence, real_pat_expr_list) =
+        List.partition is_pat_any pat_expr_list
+      in
+      let sequentialize lam {vb_expr = expr} =
+        Lsequence(transl_exp expr, lam)
+      in
+      let add_sequence expr_list lam =
+        List.fold_left sequentialize lam (List.rev expr_list)
+      in
+      if List.length real_pat_expr_list == 0 then
+        add_sequence sequence body
+      else
+        add_sequence sequence (transl_letrec real_pat_expr_list body)
 
 and transl_setinstvar self var expr =
   let prim =
