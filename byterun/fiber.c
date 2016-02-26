@@ -34,6 +34,12 @@ void caml_scan_dirty_stack(scanning_action f, value stack)
   caml_fatal_error("Fibers unimplemented");
 }
 
+void caml_scan_dirty_stack_domain(scanning_action f, value stack,
+                                  struct domain* domain)
+{
+  caml_fatal_error("Fibers unimplemented");
+}
+
 void caml_clean_stack(value stack)
 {
   caml_fatal_error("Fibers unimplemented");
@@ -43,6 +49,8 @@ void caml_clean_stack_domain(value stack, struct domain* domain)
 {
   caml_fatal_error("Fibers unimplemented");
 }
+
+
 #else
 
 CAMLexport __thread value caml_current_stack;
@@ -279,6 +287,15 @@ void caml_scan_dirty_stack(scanning_action f, value stack)
 {
   Assert(Tag_val(stack) == Stack_tag);
   if (Stack_dirty_domain(stack) == caml_domain_self()) {
+    caml_scan_stack(f, stack);
+  }
+}
+
+void caml_scan_dirty_stack_domain(scanning_action f, value stack,
+                                  struct domain* domain)
+{
+  Assert (Tag_val(stack) == Stack_tag);
+  if (Stack_dirty_domain(stack) == domain) {
     caml_scan_stack(f, stack);
   }
 }

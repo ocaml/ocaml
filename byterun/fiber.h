@@ -28,13 +28,15 @@ CAMLextern __thread intnat caml_trap_barrier_off;
 
 value caml_find_performer(value stack);
 
-void caml_scan_dirty_stack(scanning_action, value stack);
 void caml_scan_stack(scanning_action, value stack);
-void caml_save_stack_gc();
-void caml_restore_stack_gc();
+void caml_scan_dirty_stack(scanning_action, value stack);
+void caml_scan_dirty_stack_domain(scanning_action f, value stack,
+                                  struct domain* domain);
 void caml_clean_stack(value stack);
 void caml_clean_stack_domain(value stack, struct domain* domain);
 
+void caml_save_stack_gc();
+void caml_restore_stack_gc();
 
 /* The table of global identifiers */
 extern caml_root caml_global_data;
