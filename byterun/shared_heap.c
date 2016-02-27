@@ -552,7 +552,7 @@ static void verify_swept (struct caml_heap_state* local) {
 void caml_cycle_heap_stw() {
   struct global_heap_state oldg = global;
   struct global_heap_state newg;
-#if DEBUG
+#ifdef DEBUG
   verify_heap();
 #endif
   newg.UNMARKED     = oldg.MARKED;
