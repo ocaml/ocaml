@@ -312,9 +312,9 @@ CAMLexport value caml_promote(struct domain* domain, value root)
   }
 
   Assert(!oldify_todo_list);
-  oldest_promoted = young_ptr;
+  oldest_promoted = (value)domain->state->young_start;
   caml_gc_log ("caml_promote: root=%p tag=%u young_ptr=%p owner=%d",
-              (value*)root, tag, (value*)oldest_promoted, domain->id);
+              (value*)root, tag, (value*)young_ptr, domain->id);
   promote_domain = domain;
 
   if (tag != Stack_tag) {
