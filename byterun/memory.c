@@ -150,7 +150,7 @@ static void handle_read_fault(struct domain* target, void* reqp) {
   struct read_fault_req* req = reqp;
   value v = Op_val(req->obj)[req->field];
   if (Is_minor(v) && caml_owner_of_young_block(v) == target) {
-    caml_gc_log("Handling read fault for domain [%02d]", target->id);
+    // caml_gc_log("Handling read fault for domain [%02d]", target->id);
     req->ret = caml_promote(target, v);
     Assert (!Is_minor(req->ret));
     /* Update the field so that future requests don't fault. We must
@@ -163,7 +163,7 @@ static void handle_read_fault(struct domain* target, void* reqp) {
        into the read barrier. This always terminates: in the worst
        case, all domains get tied up servicing one fault and then
        there are no more left running to win the race */
-    caml_gc_log("Stale read fault for domain [%02d]", target->id);
+    // caml_gc_log("Stale read fault for domain [%02d]", target->id);
     send_read_fault(req);
   }
 }
@@ -172,12 +172,12 @@ static void send_read_fault(struct read_fault_req* req)
 {
   value v = Op_val(req->obj)[req->field];
   if (Is_minor(v)) {
-    caml_gc_log("Read fault to domain [%02d]", caml_owner_of_young_block(v)->id);
+    // caml_gc_log("Read fault to domain [%02d]", caml_owner_of_young_block(v)->id);
     caml_domain_rpc(caml_owner_of_young_block(v), &handle_read_fault, req);
     Assert(!Is_minor(req->ret));
-    caml_gc_log("Read fault returned (%p)", (void*)req->ret);
+    // caml_gc_log("Read fault returned (%p)", (void*)req->ret);
   } else {
-    caml_gc_log("Stale read fault: already promoted");
+    // caml_gc_log("Stale read fault: already promoted");
     req->ret = v;
   }
 }
@@ -235,7 +235,7 @@ static void handle_bvar_transfer(struct domain* self, void *reqp)
   int owner = stat & BVAR_OWNER_MASK;
 
   if (owner == self->id) {
-    caml_gc_log("Handling bvar transfer [%02d] -> [%02d]", owner, req->new_owner);
+    // caml_gc_log("Handling bvar transfer [%02d] -> [%02d]", owner, req->new_owner);
     Op_val(bv)[0] = caml_promote(self, Op_val(bv)[0]);
     Op_val(bv)[1] = Val_long((stat & ~BVAR_OWNER_MASK) | req->new_owner);
   } else {
@@ -244,8 +244,8 @@ static void handle_bvar_transfer(struct domain* self, void *reqp)
        request before returning: this guarantees progress
        since in the worst case all domains are tied up
        and there's nobody left to win the race */
-    caml_gc_log("Stale bvar transfer [%02d] -> [%02d] ([%02d] got there first)",
-                self->id, req->new_owner, owner);
+    // caml_gc_log("Stale bvar transfer [%02d] -> [%02d] ([%02d] got there first)",
+    //            self->id, req->new_owner, owner);
     caml_domain_rpc(caml_domain_of_id(owner), &handle_bvar_transfer, req);
   }
 }
@@ -261,7 +261,7 @@ static intnat bvar_status(value bv)
 
     /* Otherwise, need to transfer */
     struct bvar_transfer_req req = {bv, caml_domain_self()->id};
-    caml_gc_log("Transferring bvar from domain [%02d]", owner);
+    // caml_gc_log("Transferring bvar from domain [%02d]", owner);
     caml_domain_rpc(caml_domain_of_id(owner), &handle_bvar_transfer, &req);
 
     /* We may not have ownership at this point: we might have just
