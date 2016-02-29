@@ -465,7 +465,7 @@ let message = function
   | Assignment_to_non_mutable_value ->
       "A potential assignment to a non-mutable value was detected \n\
         in this source file.  Such assignments may generate incorrect code \n\
-        when using Flambda.  (Consider using [Sys.opaque_identity].)"
+        when using Flambda."
 ;;
 
 let nerrors = ref 0;;
