@@ -92,7 +92,8 @@ let lambda_smaller' lam ~than:threshold =
       let aux = function _::_::_ -> size := !size + 5 | _ -> () in
       aux sw.consts; aux sw.blocks;
       List.iter (fun (_, lam) -> lambda_size lam) sw.consts;
-      List.iter (fun (_, lam) -> lambda_size lam) sw.blocks
+      List.iter (fun (_, lam) -> lambda_size lam) sw.blocks;
+      Misc.Stdlib.Option.iter lambda_size sw.failaction
     | String_switch (_, sw, def) ->
       List.iter (fun (_, lam) ->
           size := !size + 2;
