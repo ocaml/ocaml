@@ -236,7 +236,7 @@ static void handle_bvar_transfer(struct domain* self, void *reqp)
 
   if (owner == self->id) {
     // caml_gc_log("Handling bvar transfer [%02d] -> [%02d]", owner, req->new_owner);
-    Op_val(bv)[0] = caml_promote(self, Op_val(bv)[0]);
+    caml_modify_field (bv, 0, caml_promote(self, Op_val(bv)[0]));
     Op_val(bv)[1] = Val_long((stat & ~BVAR_OWNER_MASK) | req->new_owner);
   } else {
     /* Race: by the time we handled the RPC, this bvar was
@@ -289,7 +289,7 @@ CAMLprim value caml_bvar_put(value bv, value v)
   if (!(stat & BVAR_EMPTY)) caml_invalid_argument("Put to a full bvar");
   CAMLassert(stat == (caml_domain_self()->id | BVAR_EMPTY));
 
-  if (!Is_young(bv)) write_barrier(bv, 0, v);
+  write_barrier(bv, 0, v);
   Op_val(bv)[0] = v;
   Op_val(bv)[1] = Val_long(caml_domain_self()->id);
 
