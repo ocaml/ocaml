@@ -865,13 +865,7 @@ and simplify_over_application env r ~args ~args_approxs ~function_decls
         inline = inline_requested; specialise = specialise_requested; })
   in
   let expr = Lift_code.lift_lets_expr expr ~toplevel:true in
-  expr, ret r (A.value_unknown Other)
-(* CR mshinwell for lwhite: This causes camlp4 to fail to build with -O3.
-   Can you see what's going on?  This pass gets stuck in an infinite loop.
-   Maybe it's something to do with the approximation of [func_var] being such
-   that the original over-application term appears again?
-  simplify env r expr
-*)
+  simplify (E.set_never_inline env) r expr
 
 and simplify_named env r (tree : Flambda.named) : Flambda.named * R.t =
   match tree with
