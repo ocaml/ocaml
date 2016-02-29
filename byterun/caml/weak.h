@@ -29,6 +29,7 @@ extern value caml_ephe_none;
        others       2..:  keys;
 
     A weak pointer is an ephemeron with the data at caml_ephe_none
+    If fields are added, don't forget to update weak.ml [additional_values].
  */
 
 #define CAML_EPHE_LINK_OFFSET 0

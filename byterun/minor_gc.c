@@ -85,9 +85,9 @@ static void alloc_generic_table (struct generic_table *tbl, asize_t sz,
   if (tbl->base != NULL) caml_stat_free (tbl->base);
   tbl->base = new_table;
   tbl->ptr = tbl->base;
-  tbl->threshold = tbl->base + tbl->size;
+  tbl->threshold = tbl->base + tbl->size * element_size;
   tbl->limit = tbl->threshold;
-  tbl->end = tbl->base + tbl->size + tbl->reserve;
+  tbl->end = tbl->base + (tbl->size + tbl->reserve) * element_size;
 }
 
 void caml_alloc_table (struct caml_ref_table *tbl, asize_t sz, asize_t rsv)
@@ -280,7 +280,7 @@ void caml_oldify_one (value v, value *p)
 static inline int ephe_check_alive_data(struct caml_ephe_ref_elt *re){
   mlsize_t i;
   value child;
-  for (i = 2; i < Wosize_val(re->ephe); i++){
+  for (i = CAML_EPHE_FIRST_KEY; i < Wosize_val(re->ephe); i++){
     child = Field (re->ephe, i);
     if(child != caml_ephe_none
        && Is_block (child) && Is_young (child)
@@ -371,18 +371,21 @@ void caml_empty_minor_heap (void)
     /* Update the ephemerons */
     for (re = caml_ephe_ref_table.base;
          re < caml_ephe_ref_table.ptr; re++){
-      value *key = &Field(re->ephe,re->offset);
-      if (*key != caml_ephe_none && Is_block (*key) && Is_young (*key)){
-        if (Hd_val (*key) == 0){ /* Value copied to major heap */
-          *key = Field (*key, 0);
-        }else{ /* Value not copied so it's dead */
-          Assert(!ephe_check_alive_data(re));
-          *key = caml_ephe_none;
-          Field(re->ephe,1) = caml_ephe_none;
+      if(re->offset < Wosize_val(re->ephe)){
+        /* If it is not the case, the ephemeron has been truncated */
+        value *key = &Field(re->ephe,re->offset);
+        if (*key != caml_ephe_none && Is_block (*key) && Is_young (*key)){
+          if (Hd_val (*key) == 0){ /* Value copied to major heap */
+            *key = Field (*key, 0);
+          }else{ /* Value not copied so it's dead */
+            Assert(!ephe_check_alive_data(re));
+            *key = caml_ephe_none;
+            Field(re->ephe,1) = caml_ephe_none;
+          }
         }
       }
     }
-    /* Run custom block finalisation of dead minor value */
+    /* Run custom block finalisation of dead minor values */
     for (r = caml_finalize_table.base; r < caml_finalize_table.ptr; r++){
       int hd = Hd_val ((value)*r);
       if (hd != 0){         /* If not oldified the finalizer must be called */
@@ -520,8 +523,8 @@ static void realloc_generic_table
     if (tbl->base == NULL){
       caml_fatal_error (msg_error);
     }
-    tbl->end = tbl->base + tbl->size + tbl->reserve;
-    tbl->threshold = tbl->base + tbl->size;
+    tbl->end = tbl->base + (tbl->size + tbl->reserve) * element_size;
+    tbl->threshold = tbl->base + tbl->size * element_size;
     tbl->ptr = tbl->base + cur_ptr;
     tbl->limit = tbl->end;
   }

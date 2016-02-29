@@ -19,7 +19,10 @@ type 'a t;;
 
 external create : int -> 'a t = "caml_weak_create";;
 
-let length x = Obj.size(Obj.repr x) - 2;;
+(** number of additional values in a weak pointer *)
+let additional_values = 2
+
+let length x = Obj.size(Obj.repr x) - additional_values;;
 
 external set : 'a t -> int -> 'a option -> unit = "caml_weak_set";;
 external get : 'a t -> int -> 'a option = "caml_weak_get";;
@@ -162,7 +165,7 @@ module Make (H : Hashtbl.HashedType) : (S with type data = H.t) = struct
         t.table.(t.rover) <- emptybucket;
         t.hashes.(t.rover) <- [| |];
       end else begin
-        Obj.truncate (Obj.repr bucket) (prev_len + 1);
+        Obj.truncate (Obj.repr bucket) (prev_len + additional_values);
         Obj.truncate (Obj.repr hbucket) prev_len;
       end;
       if len > t.limit && prev_len <= t.limit then t.oversize <- t.oversize - 1;
