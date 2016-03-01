@@ -392,19 +392,6 @@ let execute_phrase print_outcome ppf phr =
               false
       end
 
-(* Temporary assignment to a reference *)
-
-let protect r newval body =
-  let oldval = !r in
-  try
-    r := newval;
-    let res = body() in
-    r := oldval;
-    res
-  with x ->
-    r := oldval;
-    raise x
-
 (* Read and execute commands from a file, or from stdin if [name] is "". *)
 
 let use_print_results = ref true
@@ -439,7 +426,7 @@ let use_file ppf wrap_mod name =
     (* Skip initial #! line if any *)
     Lexer.skip_sharp_bang lb;
     let success =
-      protect Location.input_name filename (fun () ->
+      protect_refs [ R (Location.input_name, filename) ] (fun () ->
         try
           List.iter
             (fun ph ->
@@ -462,7 +449,7 @@ let mod_use_file ppf name = use_file ppf true name
 let use_file ppf name = use_file ppf false name
 
 let use_silently ppf name =
-  protect use_print_results false (fun () -> use_file ppf name)
+  protect_refs [ R (use_print_results, false) ] (fun () -> use_file ppf name)
 
 (* Reading function for interactive use *)
 
@@ -577,6 +564,13 @@ let loop ppf =
   done
 
 (* Execute a script.  If [name] is "", read the script from stdin. *)
+
+let override_sys_argv args =
+  let len = Array.length args in
+  if Array.length Sys.argv < len then invalid_arg "Toploop.override_sys_argv";
+  Array.blit args 0 Sys.argv 0 len;
+  Obj.truncate (Obj.repr Sys.argv) len;
+  Arg.current := 0
 
 let run_script ppf name args =
   let len = Array.length args in

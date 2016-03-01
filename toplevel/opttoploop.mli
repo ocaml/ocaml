@@ -120,3 +120,13 @@ val read_interactive_input : (string -> bytes -> int -> int * bool) ref
 (* Hooks for initialization *)
 
 val toplevel_startup_hook : (unit -> unit) ref
+
+(* Misc *)
+
+val override_sys_argv : string array -> unit
+(* [override_sys_argv args] replaces the contents of [Sys.argv] by [args]
+   and reset [Arg.current] to [0].
+
+   This is called by [run_script] so that [Sys.argv] represents
+   "script.ml args..." instead of the full command line:
+   "ocamlrun unix.cma ... script.ml args...". *)

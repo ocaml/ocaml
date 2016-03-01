@@ -40,6 +40,13 @@ val split_last: 'a list -> 'a list * 'a
 val may: ('a -> unit) -> 'a option -> unit
 val may_map: ('a -> 'b) -> 'a option -> 'b option
 
+type ref_and_value = R : 'a ref * 'a -> ref_and_value
+
+val protect_refs : ref_and_value list -> (unit -> 'a) -> 'a
+(** [protect_refs l f] temporarily sets [r] to [v] for each [R (r, v)] in [l]
+    while executing [f]. The previous contents of the references is restored
+    even if [f] raises an exception. *)
+
 module Stdlib : sig
   module List : sig
     type 'a t = 'a list
@@ -303,3 +310,7 @@ val normalise_eol : string -> string
 (** [normalise_eol s] returns a fresh copy of [s] with any '\r' characters
    removed. Intended for pre-processing text which will subsequently be printed
    on a channel which performs EOL transformations (i.e. Windows) *)
+
+val delete_eol_spaces : string -> string
+(** [delete_eol_spaces s] returns a fresh copy of [s] with any end of line spaces
+   removed. Intended to normalize the output of the toplevel for tests. *)
