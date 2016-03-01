@@ -30,6 +30,7 @@ tests/typing-private-bugs
 tests/typing-recmod
 tests/typing-recordarg
 tests/typing-rectypes-bugs
+tests/typing-safe-linking
 tests/typing-short-paths
 tests/typing-signatures
 tests/typing-sigsubst
