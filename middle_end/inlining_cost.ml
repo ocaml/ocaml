@@ -431,16 +431,16 @@ module Whether_sufficient_benefit = struct
         float (t.evaluated_benefit + lifting_benefit)
     end else begin
       (* The estimated benefit is the evaluated benefit times an
-         estimation of the probability that the branch does not matter
-         for performances (is cold). The probability is very roughtly
-         estimated by considering that for every branching the
-         sub-expressions has the same [1 / (1 + factor)] probability
-         [p] of being cold. Hence the probability for the current
-         call to be cold is [p ^ number of nested branch].
-        The probability is expressed as [1 / (1 + factor)] rather
+         estimation of the probability that the branch does actually matter
+         for performance (i.e. is hot).  The probability is very roughly
+         estimated by considering that under every branch the
+         sub-expressions have the same [1 / (1 + factor)] probability
+         [p] of being hot.  Hence the probability for the current
+         call to be hot is [p ^ number of nested branches].
+         The probability is expressed as [1 / (1 + factor)] rather
          than letting the user directly provide [p], since for every
          positive value of [factor] [p] is in [0, 1]. *)
-      let branch_never_taken_estimated_probability =
+      let branch_taken_estimated_probability =
         let inline_branch_factor =
           let factor =
             Clflags.Float_arg_helper.get ~key:t.round
@@ -457,9 +457,9 @@ module Whether_sufficient_benefit = struct
         1. /. (1. +. inline_branch_factor)
       in
       let call_estimated_probability =
-        branch_never_taken_estimated_probability ** float t.branch_depth
+        branch_taken_estimated_probability ** float t.branch_depth
       in
-        float t.evaluated_benefit *. call_estimated_probability
+      float t.evaluated_benefit *. call_estimated_probability
     end
 
   let evaluate t =
