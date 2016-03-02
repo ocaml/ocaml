@@ -329,18 +329,18 @@ Other libraries:
 
 OCamldep:
 - GPR#286: add support for module aliases
-  (jacques Garrigue)
+  (Jacques Garrigue)
 
 Manual:
 - GPR#302: The OCaml reference manual is now included in the manual/
   subdirectory of the main OCaml source repository. Contributions to
   the manual are warmly welcome.
   (François Bobot, review by Florian Angeletti)
-- MPR#6676: ongoing simplification of the "Language Extensions" section
+- PR#6676: ongoing simplification of the "Language Extensions" section
   (Alain Frisch, John Whitington)
-- MPR#7092, GPR#379: Add missing documentation for new 4.03 features
+- PR#7092, GPR#379: Add missing documentation for new 4.03 features
   (Florian Angeletti)
-- MPR#7109, GPR#380: Fix bigarray documentation layout
+- PR#7109, GPR#380: Fix bigarray documentation layout
   (Florian Angeletti, Leo White)
 
 Bug fixes:
