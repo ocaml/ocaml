@@ -259,7 +259,7 @@ extern void caml_init_ieee_floats (void);
 extern void caml_signal_thread(void * lpParam);
 #endif
 
-#ifdef _MSC_VER
+#if defined(_MSC_VER) && __STDC_SECURE_LIB__ >= 200411L
 
 /* PR 4887: avoid crash box of windows runtime on some system calls */
 extern void caml_install_invalid_parameter_handler();
@@ -281,7 +281,7 @@ CAMLexport void caml_main(char **argv)
   /* Machine-dependent initialization of the floating-point hardware
      so that it behaves as much as possible as specified in IEEE */
   caml_init_ieee_floats();
-#ifdef _MSC_VER
+#if defined(_MSC_VER) && __STDC_SECURE_LIB__ >= 200411L
   caml_install_invalid_parameter_handler();
 #endif
   caml_init_custom_operations();
@@ -397,7 +397,7 @@ CAMLexport void caml_startup_code(
   static char proc_self_exe[256];
 
   caml_init_ieee_floats();
-#ifdef _MSC_VER
+#if defined(_MSC_VER) && __STDC_SECURE_LIB__ >= 200411L
   caml_install_invalid_parameter_handler();
 #endif
   caml_init_custom_operations();
