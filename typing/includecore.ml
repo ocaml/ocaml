@@ -183,18 +183,21 @@ and compare_variants env params1 params2 n cstrs1 cstrs2 =
     {Types.cd_id=cstr2; cd_args=arg2; cd_res=ret2}::rem2 ->
       if Ident.name cstr1 <> Ident.name cstr2 then
         [Field_names (n, cstr1, cstr2)]
-      else match ret1, ret2 with
-      | Some r1, Some r2 when not (Ctype.equal env true [r1] [r2]) ->
-          [Field_type cstr1]
-      | Some _, None | None, Some _ ->
-          [Field_type cstr1]
-      | _ ->
-          let r =
-            compare_constructor_arguments env cstr1
-              params1 params2 arg1 arg2
-          in
-          if r <> [] then r
-          else compare_variants env params1 params2 (n+1) rem1 rem2
+      else
+        let r =
+          match ret1, ret2 with
+          | Some r1, Some r2 ->
+              if Ctype.equal env true [r1] [r2] then
+                compare_constructor_arguments env cstr1 [r1] [r2] arg1 arg2
+              else [Field_type cstr1]
+          | Some _, None | None, Some _ ->
+              [Field_type cstr1]
+          | _ ->
+              compare_constructor_arguments env cstr1
+                params1 params2 arg1 arg2
+        in
+        if r <> [] then r
+        else compare_variants env params1 params2 (n+1) rem1 rem2
 
 
 and compare_records env params1 params2 n labels1 labels2 =
