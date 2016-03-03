@@ -237,6 +237,7 @@ IGNORE_DIRS="
         state == "close" && $0 ~ /\*{74}/ { state = "OK"; }
         state == "close" { state = "(last line)"; }
         state == "blurb" && $0 ~ /\* {72}\*/ { state = "close"; }
+        state == "blurb" && $0 ~ /\/LICENSE/ { state = "(license path)" }
         state == "blurb1" && $0 ~ /\*   All rights reserved. .{47} \*/ \
                                                  { state = "blurb"; }
         state == "blurb1" { state = "(blurb line 1)"; }
