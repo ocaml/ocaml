@@ -29,7 +29,6 @@
 int caml_debugger_in_use = 0;
 uintnat caml_event_count;
 int caml_debugger_fork_mode = 1; /* parent by default */
-value marshal_flags = Val_emptylist;
 
 #if !defined(HAS_SOCKETS) || defined(NATIVE_CODE)
 
@@ -74,6 +73,8 @@ void caml_debugger_cleanup_fork(void)
 #include "caml/mlvalues.h"
 #include "caml/stacks.h"
 #include "caml/sys.h"
+
+static value marshal_flags = Val_emptylist;
 
 static int sock_domain;         /* Socket domain for the debugger */
 static union {                  /* Socket address for the debugger */
