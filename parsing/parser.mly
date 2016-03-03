@@ -347,6 +347,10 @@ let extra_csig pos items = extra_text Ctf.text pos items
 let extra_def pos items =
   extra_text (fun txt -> [Ptop_def (Str.text txt)]) pos items
 
+let extra_rhs_core_type ct ~pos =
+  let docs = rhs_info pos in
+  { ct with ptyp_attributes = add_info_attrs docs ct.ptyp_attributes }
+
 type let_binding =
   { lb_pattern: pattern;
     lb_expression: expression;
@@ -2157,13 +2161,18 @@ core_type2:
     simple_core_type_or_tuple
       { $1 }
   | QUESTION LIDENT COLON core_type2 MINUSGREATER core_type2
-      { mktyp(Ptyp_arrow(Optional $2 , $4, $6)) }
+      { let param = extra_rhs_core_type $4 ~pos:4 in
+        mktyp (Ptyp_arrow(Optional $2 , param, $6)) }
   | OPTLABEL core_type2 MINUSGREATER core_type2
-      { mktyp(Ptyp_arrow(Optional $1 , $2, $4)) }
+      { let param = extra_rhs_core_type $2 ~pos:2 in
+        mktyp(Ptyp_arrow(Optional $1 , param, $4))
+      }
   | LIDENT COLON core_type2 MINUSGREATER core_type2
-      { mktyp(Ptyp_arrow(Labelled $1, $3, $5)) }
+      { let param = extra_rhs_core_type $3 ~pos:3 in
+        mktyp(Ptyp_arrow(Labelled $1, param, $5)) }
   | core_type2 MINUSGREATER core_type2
-      { mktyp(Ptyp_arrow(Nolabel, $1, $3)) }
+      { let param = extra_rhs_core_type $1 ~pos:1 in
+        mktyp(Ptyp_arrow(Nolabel, param, $3)) }
 ;
 
 simple_core_type:
@@ -2230,9 +2239,9 @@ row_field:
 ;
 tag_field:
     name_tag OF opt_ampersand amper_type_list attributes
-      { Rtag ($1, $5, $3, List.rev $4) }
+      { Rtag ($1, add_info_attrs (symbol_info ()) $5, $3, List.rev $4) }
   | name_tag attributes
-      { Rtag ($1, $2, true, []) }
+      { Rtag ($1, add_info_attrs (symbol_info ()) $2, true, []) }
 ;
 opt_ampersand:
     AMPERSAND                                   { true }
@@ -2260,13 +2269,26 @@ core_type_list:
   | core_type_list STAR simple_core_type        { $3 :: $1 }
 ;
 meth_list:
-    field SEMI meth_list                     { let (f, c) = $3 in ($1 :: f, c) }
-  | field opt_semi                              { [$1], Closed }
+    field_semi meth_list                     { let (f, c) = $2 in ($1 :: f, c) }
+  | field_semi                                  { [$1], Closed }
+  | field                                       { [$1], Closed }
   | DOTDOT                                      { [], Open }
 ;
 field:
-    label COLON poly_type_no_attr attributes    { ($1, $4, $3) }
+  label COLON poly_type_no_attr attributes
+    { ($1, add_info_attrs (symbol_info ()) $4, $3) }
 ;
+
+field_semi:
+  label COLON poly_type_no_attr attributes SEMI attributes
+    { let info =
+        match rhs_info 4 with
+        | Some _ as info_before_semi -> info_before_semi
+        | None -> symbol_info ()
+      in
+      ($1, add_info_attrs info ($4 @ $6), $3) }
+;
+
 label:
     LIDENT                                      { $1 }
 ;

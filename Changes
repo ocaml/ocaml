@@ -502,6 +502,9 @@ Bug fixes:
   (David Allsopp)
 - GPR#441: better type error location in presence of type constraints
   (Thomas Refis, report by Arseniy Alekseyev)
+- GPR#477: reallow docstrings inside object types, and inside polymorphic
+  variant and arrow types
+  (Thomas Refis)
 
 Features wishes:
 - PR#4518, GPR#29: change location format for reporting errors in ocamldoc
