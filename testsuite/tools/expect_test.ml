@@ -282,7 +282,7 @@ let output_corrected oc ~file_contents correction =
   | s  -> Printf.fprintf oc "\n[%%%%expect{|%s|}]\n" s
 
 let write_corrected ~file ~file_contents correction =
-  let oc = open_out file in
+  let oc = open_out_bin file in
   output_corrected oc ~file_contents correction;
   close_out oc
 
