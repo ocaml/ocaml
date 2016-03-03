@@ -458,13 +458,17 @@ Bug fixes:
 - PR#7108: ocamldoc, have -html preserve custom/extended html generators
   (Armaël Guéneau)
 - PR#7096: ocamldoc uses an incorrect subscript/superscript style
-- PR#7113: -safe-string can break GADT compatibility check
+- PR#7111: reject empty let bindings instead of printing incorrect syntax
+  (Jérémie Dimino)
+* PR#7113: -safe-string can break GADT compatibility check
 - PR#7115: shadowing in a branch of a GADT match breaks unused variable
   warning (Alain Frisch, report by Valentin Gatien-Baron)
 - PR#7133: Jump labels in assembly end up as symbols in the executable on OS X
   (Bart Jacobs)
 - PR#7135: only warn about ground coercions in -principal mode
   (Jacques Garrigue, report by Jeremy Yallop)
+- PR#7160: Type synonym definitions can weaken gadt constructor types
+  (Jacques Garrigue, report by Mikhail Mandrykin)
 - GPR#205: Clear caml_backtrace_last_exn before registering as root
   (report and fix by Frederic Bour)
 - GPR#220: minor -dsource error on recursive modules
@@ -498,8 +502,6 @@ Bug fixes:
   (David Allsopp)
 - GPR#441: better type error location in presence of type constraints
   (Thomas Refis, report by Arseniy Alekseyev)
-- PR#7111: reject empty let bindings instead of printing incorrect syntax
-  (Jérémie Dimino)
 
 Features wishes:
 - PR#4518, GPR#29: change location format for reporting errors in ocamldoc
