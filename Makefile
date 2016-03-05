@@ -216,8 +216,9 @@ install:
 	if test -d $(INSTALL_MANDIR)/man$(MANEXT); then : ; \
 	  else $(MKDIR) $(INSTALL_MANDIR)/man$(MANEXT); fi
 	cp VERSION $(INSTALL_LIBDIR)/
-	cd $(INSTALL_LIBDIR); rm -f dllbigarray.so dllnums.so dllthreads.so \
-	  dllunix.so dllgraphics.so dllstr.so
+	cd $(INSTALL_LIBDIR); rm -f \
+	  dllbigarray$(EXT_DLL) dllnums$(EXT_DLL) dllthreads$(EXT_DLL) \
+	  dllunix$(EXT_DLL) dllgraphics$(EXT_DLL) dllstr$(EXT_DLL)
 	cd byterun; $(MAKE) install
 	cp ocamlc $(INSTALL_BINDIR)/ocamlc$(EXE)
 	cp ocaml $(INSTALL_BINDIR)/ocaml$(EXE)
@@ -408,7 +409,7 @@ utils/config.ml: utils/config.mlp config/Makefile
 	    -e 's|%%EXT_OBJ%%|.o|' \
 	    -e 's|%%EXT_ASM%%|.s|' \
 	    -e 's|%%EXT_LIB%%|.a|' \
-	    -e 's|%%EXT_DLL%%|.so|' \
+	    -e 's|%%EXT_DLL%%|$(EXT_DLL)|' \
 	    -e 's|%%SYSTHREAD_SUPPORT%%|$(SYSTHREAD_SUPPORT)|' \
 	    -e 's|%%ASM%%|$(ASM)|' \
 	    -e 's|%%ASM_CFI_SUPPORTED%%|$(ASM_CFI_SUPPORTED)|' \
