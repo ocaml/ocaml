@@ -1,3 +1,10 @@
+OCaml 4.04.0+dev:
+-----------------
+
+Bug fixes:
+- PR#7165, GPR#494: uncaught exception on invalid lexer directive
+  (Gabriel Scherer, report by KC Sivaramakrishnan using afl-fuzz)
+
 OCaml 4.03.0:
 -------------
 
