@@ -72,7 +72,7 @@ coreboot:
 # Rebuild the library (using byterun/ocamlrun ./ocamlc)
 	$(MAKE) library-cross
 # Promote the new compiler and the new runtime
-	$(MAKE) promote
+	$(MAKE) CAMLRUN=byterun/ocamlrun promote
 # Rebuild the core system
 	$(MAKE) partialclean
 	$(MAKE) core
