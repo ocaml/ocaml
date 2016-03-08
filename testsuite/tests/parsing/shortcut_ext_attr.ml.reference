@@ -672,6 +672,8 @@
       structure_item (shortcut_ext_attr.ml[79,1592+0]..[79,1592+21])
         Pstr_exception
         extension_constructor (shortcut_ext_attr.ml[79,1592+0]..[79,1592+21])
+          attribute "foo"
+            []
           pext_name = "X"
           pext_kind =
             Pext_decl
@@ -819,6 +821,8 @@
               signature_item (shortcut_ext_attr.ml[96,1899+2]..[96,1899+23])
                 Psig_typext
                 type_extension
+                  attribute "foo"
+                    []
                   ptyext_path = "t" (shortcut_ext_attr.ml[96,1899+17]..[96,1899+18])
                   ptyext_params =
                     []
@@ -839,6 +843,8 @@
               signature_item (shortcut_ext_attr.ml[98,1924+2]..[98,1924+23])
                 Psig_exception
                 extension_constructor (shortcut_ext_attr.ml[98,1924+2]..[98,1924+23])
+                  attribute "foo"
+                    []
                   pext_name = "X"
                   pext_kind =
                     Pext_decl
@@ -918,6 +924,8 @@
                 Psig_class
                 [
                   class_description (shortcut_ext_attr.ml[110,2120+2]..[110,2120+23])
+                    attribute "foo"
+                      []
                     pci_virt = Concrete
                     pci_params =
                       []
