@@ -112,7 +112,7 @@ module PR6505b :
   end
 Line _, characters 23-57:
 Warning 8: this pattern-matching is not exhaustive.
-Here is an example of a value that is not matched:
+Here is an example of a case that is not matched:
 `Foo _
 Exception: Match_failure ("", 6, 23).
 |}]

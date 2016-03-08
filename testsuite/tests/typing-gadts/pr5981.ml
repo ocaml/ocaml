@@ -10,7 +10,7 @@ end;;
 [%%expect{|
 Line _, characters 47-84:
 Warning 8: this pattern-matching is not exhaustive.
-Here is an example of a value that is not matched:
+Here is an example of a case that is not matched:
 (A, A)
 module F :
   functor (S : sig type 'a t end) ->
@@ -35,7 +35,7 @@ end;;
 [%%expect{|
 Line _, characters 15-52:
 Warning 8: this pattern-matching is not exhaustive.
-Here is an example of a value that is not matched:
+Here is an example of a case that is not matched:
 (A, A)
 module F :
   functor (S : sig type 'a t end) ->

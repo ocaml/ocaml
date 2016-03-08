@@ -912,19 +912,19 @@ type t = A | B
 - : [< `A | `B ] * t -> int = <fun>
 Line _, characters 0-41:
 Warning 8: this pattern-matching is not exhaustive.
-Here is an example of a value that is not matched:
+Here is an example of a case that is not matched:
 (`AnyExtraTag, `AnyExtraTag)
 - : [> `A | `B ] * [> `A | `B ] -> int = <fun>
 Line _, characters 0-29:
 Warning 8: this pattern-matching is not exhaustive.
-Here is an example of a value that is not matched:
+Here is an example of a case that is not matched:
 (_, 0)
 Line _, characters 21-24:
 Warning 11: this match case is unused.
 - : [< `B ] * int -> int = <fun>
 Line _, characters 0-29:
 Warning 8: this pattern-matching is not exhaustive.
-Here is an example of a value that is not matched:
+Here is an example of a case that is not matched:
 (0, _)
 Line _, characters 21-24:
 Warning 11: this match case is unused.

@@ -101,11 +101,11 @@ module Nonexhaustive =
 [%%expect{|
 Line _, characters 6-34:
 Warning 8: this pattern-matching is not exhaustive.
-Here is an example of a value that is not matched:
+Here is an example of a case that is not matched:
 C1 _
 Line _, characters 6-77:
 Warning 8: this pattern-matching is not exhaustive.
-Here is an example of a value that is not matched:
+Here is an example of a case that is not matched:
 (Bar _, Foo _)
 module Nonexhaustive :
   sig
@@ -150,11 +150,11 @@ end;;
 [%%expect{|
 Line _, characters 10-18:
 Warning 8: this pattern-matching is not exhaustive.
-Here is an example of a value that is not matched:
+Here is an example of a case that is not matched:
 None
 Line _, characters 10-18:
 Warning 8: this pattern-matching is not exhaustive.
-Here is an example of a value that is not matched:
+Here is an example of a case that is not matched:
 Nothing
 module PR6862 :
   sig
@@ -247,7 +247,7 @@ end;;
 [%%expect{|
 Line _, characters 4-50:
 Warning 8: this pattern-matching is not exhaustive.
-Here is an example of a value that is not matched:
+Here is an example of a case that is not matched:
 Any
 module PR6801 :
   sig
@@ -850,7 +850,7 @@ let f : type a. a ty -> a t -> int = fun x y ->
 [%%expect{|
 Line _, characters 2-153:
 Warning 8: this pattern-matching is not exhaustive.
-Here is an example of a value that is not matched:
+Here is an example of a case that is not matched:
 (TE TC, D [| 0. |])
 val f : 'a ty -> 'a t -> int = <fun>
 |}];;
@@ -903,7 +903,7 @@ let f : type a. a ty -> a t -> int = fun x y ->
 type ('a, 'b) pair = { left : 'a; right : 'b; }
 Line _, characters 2-244:
 Warning 8: this pattern-matching is not exhaustive.
-Here is an example of a value that is not matched:
+Here is an example of a case that is not matched:
 {left=TE TC; right=D [| 0. |]}
 val f : 'a ty -> 'a t -> int = <fun>
 |}];;
