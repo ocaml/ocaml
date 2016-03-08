@@ -2047,7 +2047,7 @@ sig_type_extension:
   TYPE ext_attributes nonrec_flag optional_type_parameters type_longident
   PLUSEQ private_flag sig_extension_constructors post_item_attributes
       { let (ext, attrs) = $2 in
-        if $3 <> Recursive then not_expecting 2 "nonrec flag";
+        if $3 <> Recursive then not_expecting 3 "nonrec flag";
         Te.mk (mkrhs $5 5) (List.rev $8) ~params:$4 ~priv:$7
           ~attrs:(attrs @ $9) ~docs:(symbol_docs ())
         , ext }
