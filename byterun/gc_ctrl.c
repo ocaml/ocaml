@@ -607,8 +607,6 @@ CAMLprim value caml_runtime_variant (value unit)
   return caml_copy_string ("d");
 #elif defined (CAML_INSTR)
   return caml_copy_string ("i");
-#elif defined (MMAP_INTERVAL)
-  return caml_copy_string ("m");
 #else
   return caml_copy_string ("");
 #endif
