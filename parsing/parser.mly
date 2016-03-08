@@ -1266,7 +1266,7 @@ class_description:
     CLASS ext_attributes virtual_flag class_type_parameters LIDENT COLON
     class_type post_item_attributes
       { let (ext, attrs) = $2 in
-        Ci.mk (mkrhs $5 5) $7 ~virt:$3 ~params:$4 ~attrs:$8
+        Ci.mk (mkrhs $5 5) $7 ~virt:$3 ~params:$4 ~attrs:(attrs@$8)
             ~loc:(symbol_rloc ()) ~docs:(symbol_docs ())
       , ext }
 ;
@@ -1981,7 +1981,7 @@ str_exception_declaration:
   | EXCEPTION ext_attributes constr_ident EQUAL constr_longident attributes
     post_item_attributes
       { let (ext,attrs) = $2 in
-        Te.rebind (mkrhs $3 3) (mkrhs $5 5) ~attrs:($6 @ $7)
+        Te.rebind (mkrhs $3 3) (mkrhs $5 5) ~attrs:(attrs @ $6 @ $7)
           ~loc:(symbol_rloc()) ~docs:(symbol_docs ())
         , ext }
 ;
@@ -1990,7 +1990,7 @@ sig_exception_declaration:
     attributes post_item_attributes
       { let args, res = $4 in
         let (ext,attrs) = $2 in
-          Te.decl (mkrhs $3 3) ~args ?res ~attrs:($5 @ $6)
+          Te.decl (mkrhs $3 3) ~args ?res ~attrs:(attrs @ $5 @ $6)
             ~loc:(symbol_rloc()) ~docs:(symbol_docs ())
         , ext }
 ;
@@ -2049,7 +2049,7 @@ sig_type_extension:
       { let (ext, attrs) = $2 in
         if $3 <> Recursive then not_expecting 2 "nonrec flag";
         Te.mk (mkrhs $5 5) (List.rev $8) ~params:$4 ~priv:$7
-          ~attrs:$9 ~docs:(symbol_docs ())
+          ~attrs:(attrs @ $9) ~docs:(symbol_docs ())
         , ext }
 ;
 str_extension_constructors:
