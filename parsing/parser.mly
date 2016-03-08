@@ -755,7 +755,7 @@ module_expr:
   | STRUCT attributes structure END
       { mkmod ~attrs:$2 (Pmod_structure(extra_str 3 $3)) }
   | STRUCT attributes structure error
-      { unclosed "struct" 1 "end" 3 }
+      { unclosed "struct" 1 "end" 4 }
   | FUNCTOR attributes functor_args MINUSGREATER module_expr
       { let modexp =
           List.fold_left
@@ -1090,7 +1090,7 @@ class_simple_expr:
   | OBJECT attributes class_structure END
       { mkclass ~attrs:$2 (Pcl_structure $3) }
   | OBJECT attributes class_structure error
-      { unclosed "object" 1 "end" 3 }
+      { unclosed "object" 1 "end" 4 }
   | LPAREN class_expr COLON class_type RPAREN
       { mkclass(Pcl_constraint($2, $4)) }
   | LPAREN class_expr COLON class_type error
@@ -1547,7 +1547,7 @@ simple_expr:
   | LBRACELESS field_expr_list GREATERRBRACE
       { mkexp (Pexp_override $2) }
   | LBRACELESS field_expr_list error
-      { unclosed "{<" 1 ">}" 4 }
+      { unclosed "{<" 1 ">}" 3 }
   | LBRACELESS GREATERRBRACE
       { mkexp (Pexp_override [])}
   | mod_longident DOT LBRACELESS field_expr_list GREATERRBRACE
@@ -1555,7 +1555,7 @@ simple_expr:
   | mod_longident DOT LBRACELESS GREATERRBRACE
       { mkexp(Pexp_open(Fresh, mkrhs $1 1, mkexp (Pexp_override [])))}
   | mod_longident DOT LBRACELESS field_expr_list error
-      { unclosed "{<" 3 ">}" 6 }
+      { unclosed "{<" 3 ">}" 5 }
   | simple_expr SHARP label
       { mkexp(Pexp_send($1, $3)) }
   | simple_expr SHARPOP simple_expr
@@ -1575,7 +1575,7 @@ simple_expr:
                                 ghtyp (Ptyp_package $8)))
                     $5 )) }
   | mod_longident DOT LPAREN MODULE ext_attributes module_expr COLON error
-      { unclosed "(" 3 ")" 7 }
+      { unclosed "(" 3 ")" 8 }
   | extension
       { mkexp (Pexp_extension $1) }
 ;
