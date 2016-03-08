@@ -755,7 +755,7 @@ module_expr:
   | STRUCT attributes structure END
       { mkmod ~attrs:$2 (Pmod_structure(extra_str 3 $3)) }
   | STRUCT attributes structure error
-      { unclosed "struct" 1 "end" 3 }
+      { unclosed "struct" 1 "end" 4 }
   | FUNCTOR attributes functor_args MINUSGREATER module_expr
       { let modexp =
           List.fold_left
@@ -1090,7 +1090,7 @@ class_simple_expr:
   | OBJECT attributes class_structure END
       { mkclass ~attrs:$2 (Pcl_structure $3) }
   | OBJECT attributes class_structure error
-      { unclosed "object" 1 "end" 3 }
+      { unclosed "object" 1 "end" 4 }
   | LPAREN class_expr COLON class_type RPAREN
       { mkclass(Pcl_constraint($2, $4)) }
   | LPAREN class_expr COLON class_type error
@@ -1264,7 +1264,7 @@ class_description:
     CLASS ext_attributes virtual_flag class_type_parameters LIDENT COLON
     class_type post_item_attributes
       { let (ext, attrs) = $2 in
-        Ci.mk (mkrhs $5 5) $7 ~virt:$3 ~params:$4 ~attrs:$8
+        Ci.mk (mkrhs $5 5) $7 ~virt:$3 ~params:$4 ~attrs:(attrs@$8)
             ~loc:(symbol_rloc ()) ~docs:(symbol_docs ())
       , ext }
 ;
@@ -1545,7 +1545,7 @@ simple_expr:
   | LBRACELESS field_expr_list GREATERRBRACE
       { mkexp (Pexp_override $2) }
   | LBRACELESS field_expr_list error
-      { unclosed "{<" 1 ">}" 4 }
+      { unclosed "{<" 1 ">}" 3 }
   | LBRACELESS GREATERRBRACE
       { mkexp (Pexp_override [])}
   | mod_longident DOT LBRACELESS field_expr_list GREATERRBRACE
@@ -1553,7 +1553,7 @@ simple_expr:
   | mod_longident DOT LBRACELESS GREATERRBRACE
       { mkexp(Pexp_open(Fresh, mkrhs $1 1, mkexp (Pexp_override [])))}
   | mod_longident DOT LBRACELESS field_expr_list error
-      { unclosed "{<" 3 ">}" 6 }
+      { unclosed "{<" 3 ">}" 5 }
   | simple_expr SHARP label
       { mkexp(Pexp_send($1, $3)) }
   | simple_expr SHARPOP simple_expr
@@ -1573,7 +1573,7 @@ simple_expr:
                                 ghtyp (Ptyp_package $8)))
                     $5 )) }
   | mod_longident DOT LPAREN MODULE ext_attributes module_expr COLON error
-      { unclosed "(" 3 ")" 7 }
+      { unclosed "(" 3 ")" 8 }
   | extension
       { mkexp (Pexp_extension $1) }
 ;
@@ -1979,7 +1979,7 @@ str_exception_declaration:
   | EXCEPTION ext_attributes constr_ident EQUAL constr_longident attributes
     post_item_attributes
       { let (ext,attrs) = $2 in
-        Te.rebind (mkrhs $3 3) (mkrhs $5 5) ~attrs:($6 @ $7)
+        Te.rebind (mkrhs $3 3) (mkrhs $5 5) ~attrs:(attrs @ $6 @ $7)
           ~loc:(symbol_rloc()) ~docs:(symbol_docs ())
         , ext }
 ;
@@ -1988,7 +1988,7 @@ sig_exception_declaration:
     attributes post_item_attributes
       { let args, res = $4 in
         let (ext,attrs) = $2 in
-          Te.decl (mkrhs $3 3) ~args ?res ~attrs:($5 @ $6)
+          Te.decl (mkrhs $3 3) ~args ?res ~attrs:(attrs @ $5 @ $6)
             ~loc:(symbol_rloc()) ~docs:(symbol_docs ())
         , ext }
 ;
@@ -2045,9 +2045,9 @@ sig_type_extension:
   TYPE ext_attributes nonrec_flag optional_type_parameters type_longident
   PLUSEQ private_flag sig_extension_constructors post_item_attributes
       { let (ext, attrs) = $2 in
-        if $3 <> Recursive then not_expecting 2 "nonrec flag";
+        if $3 <> Recursive then not_expecting 3 "nonrec flag";
         Te.mk (mkrhs $5 5) (List.rev $8) ~params:$4 ~priv:$7
-          ~attrs:$9 ~docs:(symbol_docs ())
+          ~attrs:(attrs @ $9) ~docs:(symbol_docs ())
         , ext }
 ;
 str_extension_constructors:
