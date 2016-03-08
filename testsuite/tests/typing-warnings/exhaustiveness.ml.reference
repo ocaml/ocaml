@@ -65,7 +65,21 @@ Here is an example of a case that is not matched:
 Some ({left=Box A; right=Box A}, _)
 val f : (int t box pair * bool) option -> unit = <fun>
 # val f : (string t box pair * bool) option -> unit = <fun>
-#               type _ t = Int : int t | Bool : bool t
+# Characters 8-39:
+  let f = function {left=Box 0; _ } -> ();;
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Warning 8: this pattern-matching is not exhaustive.
+Here is an example of a case that is not matched:
+{left=Box 1; _ }
+val f : int box pair -> unit = <fun>
+# Characters 8-47:
+  let f = function {left=Box 0;right=Box 1} -> ();;
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Warning 8: this pattern-matching is not exhaustive.
+Here is an example of a case that is not matched:
+{left=Box 0; right=Box 0}
+val f : int box pair -> unit = <fun>
+#             type _ t = Int : int t | Bool : bool t
 #         val f : 'a t -> 'a = <fun>
 #     val g : int t -> int = <fun>
 #         val h : 'a t -> 'a t -> bool = <fun>
