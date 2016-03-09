@@ -68,7 +68,7 @@ let list_concat sep =
   let rec iter = function
       [] -> []
     | [h] -> [h]
-    | h :: q -> h :: sep :: q
+    | h :: q -> h :: sep :: iter q
   in
   iter
 
