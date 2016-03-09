@@ -126,7 +126,10 @@ method! select_operation op args =
   | Caddi | Caddv | Cadda ->
       begin match args with
       (* Add immediate *)
-      | [arg; Cconst_int n] | [Cconst_int n; arg] when self#is_immediate n ->
+      | [arg; Cconst_int n] when self#is_immediate n ->
+          ((if n >= 0 then Iintop_imm(Iadd, n) else Iintop_imm(Isub, -n)),
+           [arg])
+      | [Cconst_int n; arg] when self#is_immediate n ->
           ((if n >= 0 then Iintop_imm(Iadd, n) else Iintop_imm(Isub, -n)),
            [arg])
       (* Shift-add *)
