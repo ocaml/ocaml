@@ -134,16 +134,16 @@ let calling_conventions first_int last_int first_float last_float make_stack
 
 let incoming ofs = Incoming ofs
 let outgoing ofs = Outgoing ofs
-let not_supported ofs = fatal_error "Proc.loc_results: cannot call"
+let not_supported _ofs = fatal_error "Proc.loc_results: cannot call"
 
 let max_arguments_for_tailcalls = 10
 
 let loc_arguments arg =
   calling_conventions 6 15 100 105 outgoing arg
 let loc_parameters arg =
-  let (loc, ofs) = calling_conventions 6 15 100 105 incoming arg in loc
+  let (loc, _ofs) = calling_conventions 6 15 100 105 incoming arg in loc
 let loc_results res =
-  let (loc, ofs) = calling_conventions 0 5 100 105 not_supported res in loc
+  let (loc, _ofs) = calling_conventions 0 5 100 105 not_supported res in loc
 
 (* On the Sparc, all arguments to C functions, even floating-point arguments,
    are passed in %o0..%o5, then on the stack *)
@@ -188,13 +188,13 @@ let loc_external_arguments arg =
   (loc, Misc.align (!ofs + 4) 8)
 
 let loc_external_results res =
-  let (loc, ofs) = calling_conventions 0 1 100 100 not_supported res in loc
+  let (loc, _ofs) = calling_conventions 0 1 100 100 not_supported res in loc
 
 let loc_exn_bucket = phys_reg 0         (* $o0 *)
 
 (* Volatile registers: none *)
 
-let regs_are_volatile rs = false
+let regs_are_volatile _rs = false
 
 (* Registers destroyed by operations *)
 

@@ -93,7 +93,7 @@ let meths_super tbl meths inh_meths =
 
 let bind_super tbl (vals, meths) cl_init =
   transl_vals tbl false StrictOpt vals
-    (List.fold_right (fun (nm, id, def) rem -> Llet(StrictOpt, id, def, rem))
+    (List.fold_right (fun (_nm, id, def) rem -> Llet(StrictOpt, id, def, rem))
        meths cl_init)
 
 let create_object cl obj init =
@@ -117,7 +117,7 @@ let create_object cl obj init =
 let name_pattern default p =
   match p.pat_desc with
   | Tpat_var (id, _) -> id
-  | Tpat_alias(p, id, _) -> id
+  | Tpat_alias(_, id, _) -> id
   | _ -> Ident.create default
 
 let normalize_cl_path cl path =
@@ -192,12 +192,12 @@ let rec build_object_init cl_table obj params inh_init obj_init cl =
         build_object_init cl_table obj (vals @ params) inh_init obj_init cl
       in
       (inh_init, Translcore.transl_let rec_flag defs obj_init)
-  | Tcl_constraint (cl, _, vals, pub_meths, concr_meths) ->
+  | Tcl_constraint (cl, _, _vals, _pub_meths, _concr_meths) ->
       build_object_init cl_table obj params inh_init obj_init cl
 
 let rec build_object_init_0 cl_table params cl copy_env subst_env top ids =
   match cl.cl_desc with
-    Tcl_let (rec_flag, defs, vals, cl) ->
+    Tcl_let (_rec_flag, _defs, vals, cl) ->
       let vals = List.map (fun (id, _, e) -> id,e) vals in
       build_object_init_0 cl_table (vals@params) cl copy_env subst_env top ids
   | _ ->
@@ -206,7 +206,7 @@ let rec build_object_init_0 cl_table params cl copy_env subst_env top ids =
       let obj = if ids = [] then lambda_unit else Lvar self in
       let envs = if top then None else Some env in
       let ((_,inh_init), obj_init) =
-        build_object_init cl_table obj params (envs,[]) (copy_env env) cl in
+        build_object_init cl_table obj params (envs,[]) copy_env cl in
       let obj_init =
         if ids = [] then obj_init else lfunction [self] obj_init in
       (inh_init, lfunction [env] (subst_env env inh_init obj_init))
@@ -232,7 +232,7 @@ let bind_methods tbl meths vals cl_init =
        mkappl (oo_prim getter,
                [Lvar tbl; transl_meth_list (List.map fst methl)] @ names),
        List.fold_right
-         (fun (lab,id) lam -> decr i; Llet(StrictOpt, id, lfield ids !i, lam))
+         (fun (_lab,id) lam -> decr i; Llet(StrictOpt, id, lfield ids !i, lam))
          (methl @ vals) cl_init)
 
 let output_methods tbl methods lam =
@@ -262,7 +262,7 @@ let rec build_class_init cla cstr super inh_init cl_init msubst top cl =
   match cl.cl_desc with
     Tcl_ident ( path, _, _) ->
       begin match inh_init with
-        (obj_init, path')::inh_init ->
+        (obj_init, _path')::inh_init ->
           let lpath = transl_path ~loc:cl.cl_loc cl.cl_env path in
           (inh_init,
            Llet (Strict, obj_init,
@@ -319,15 +319,15 @@ let rec build_class_init cla cstr super inh_init cl_init msubst top cl =
       in
       let cl_init = output_methods cla methods cl_init in
       (inh_init, bind_methods cla str.cstr_meths values cl_init)
-  | Tcl_fun (_, pat, vals, cl, _) ->
+  | Tcl_fun (_, _pat, vals, cl, _) ->
       let (inh_init, cl_init) =
         build_class_init cla cstr super inh_init cl_init msubst top cl
       in
       let vals = List.map bind_id_as_val vals in
       (inh_init, transl_vals cla true StrictOpt vals cl_init)
-  | Tcl_apply (cl, exprs) ->
+  | Tcl_apply (cl, _exprs) ->
       build_class_init cla cstr super inh_init cl_init msubst top cl
-  | Tcl_let (rec_flag, defs, vals, cl) ->
+  | Tcl_let (_rec_flag, _defs, vals, cl) ->
       let (inh_init, cl_init) =
         build_class_init cla cstr super inh_init cl_init msubst top cl
       in
@@ -381,7 +381,7 @@ let rec build_class_init cla cstr super inh_init cl_init msubst top cl =
 
 let rec build_class_lets cl ids =
   match cl.cl_desc with
-    Tcl_let (rec_flag, defs, vals, cl') ->
+    Tcl_let (rec_flag, defs, _vals, cl') ->
       let env, wrap = build_class_lets cl' [] in
       (env, fun x ->
         let lam = Translcore.transl_let rec_flag defs (wrap x) in
@@ -430,7 +430,7 @@ let rec transl_class_rebind obj_init cl vf =
   | Tcl_apply (cl, oexprs) ->
       let path, obj_init = transl_class_rebind obj_init cl vf in
       (path, transl_apply obj_init oexprs Location.none)
-  | Tcl_let (rec_flag, defs, vals, cl) ->
+  | Tcl_let (rec_flag, defs, _vals, cl) ->
       let path, obj_init = transl_class_rebind obj_init cl vf in
       (path, Translcore.transl_let rec_flag defs obj_init)
   | Tcl_structure _ -> raise Exit
@@ -446,7 +446,7 @@ let rec transl_class_rebind obj_init cl vf =
 
 let rec transl_class_rebind_0 self obj_init cl vf =
   match cl.cl_desc with
-    Tcl_let (rec_flag, defs, vals, cl) ->
+    Tcl_let (rec_flag, defs, _vals, cl) ->
       let path, obj_init = transl_class_rebind_0 self obj_init cl vf in
       (path, Translcore.transl_let rec_flag defs obj_init)
   | _ ->
@@ -677,7 +677,7 @@ let transl_class ids cl_id pub_meths cl vflag =
   in
   let new_ids_init = ref [] in
   let env1 = Ident.create "env" and env1' = Ident.create "env'" in
-  let copy_env envs self =
+  let copy_env self =
     if top then lambda_unit else
     Lifused(env2, Lprim(Parraysetu Paddrarray,
                         [Lvar self; Lvar env2; Lvar env1']))

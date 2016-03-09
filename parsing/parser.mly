@@ -1266,7 +1266,7 @@ class_description:
     CLASS ext_attributes virtual_flag class_type_parameters LIDENT COLON
     class_type post_item_attributes
       { let (ext, attrs) = $2 in
-        Ci.mk (mkrhs $5 5) $7 ~virt:$3 ~params:$4 ~attrs:(attrs@$8)
+        Ci.mk (mkrhs $5 5) $7 ~virt:$3 ~params:$4 ~attrs:(attrs @ $8)
             ~loc:(symbol_rloc ()) ~docs:(symbol_docs ())
       , ext }
 ;
@@ -1426,7 +1426,7 @@ expr:
   | expr EQUAL expr
       { mkinfix $1 "=" $3 }
   | expr LESS expr
-      { mkinfix $1 "<" $3 }
+    { mkinfix $1 "<" $3 }
   | expr GREATER expr
       { mkinfix $1 ">" $3 }
   | expr OR expr

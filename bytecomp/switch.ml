@@ -390,13 +390,13 @@ let rec opt_count top cases =
             if lcases < !cut then
               enum top cases
             else if lcases < !more_cut then
-              heuristic top cases
+              heuristic cases
             else
-              divide top cases in
+              divide cases in
       Hashtbl.add t key r ;
       r
 
-and divide top cases =
+and divide cases =
   let lcases = Array.length cases in
   let m = lcases/2 in
   let _,left,right = coupe cases m in
@@ -412,10 +412,10 @@ and divide top cases =
     add_test cm cml ;
   Sep m,(cm, ci)
 
-and heuristic top cases =
+and heuristic cases =
   let lcases = Array.length cases in
 
-  let sep,csep = divide false cases
+  let sep,csep = divide cases
 
   and inter,cinter =
     if !ok_inter then begin
@@ -589,7 +589,7 @@ and enum top cases =
 
       else begin
 
-        let w,c = opt_count false cases in
+        let w,_c = opt_count false cases in
 (*
   Printf.fprintf stderr
   "off=%d tactic=%a for %a\n"
@@ -664,13 +664,13 @@ let switch_min = ref 3
 (* Particular case 0, 1, 2 *)
 let particular_case cases i j =
   j-i = 2 &&
-  (let l1,h1,act1 = cases.(i)
-  and  l2,h2,act2 = cases.(i+1)
+  (let l1,_h1,act1 = cases.(i)
+  and  l2,_h2,_act2 = cases.(i+1)
   and  l3,h3,act3 = cases.(i+2) in
   l1+1=l2 && l2+1=l3 && l3=h3 &&
   act1 <> act3)
 
-let approx_count cases i j n_actions =
+let approx_count cases i j =
   let l = j-i+1 in
   if l < !cut then
      let _,(_,{n=ntests}) = opt_count false (Array.sub cases i l) in
@@ -680,12 +680,12 @@ let approx_count cases i j n_actions =
 
 (* Sends back a boolean that says whether is switch is worth or not *)
 
-let dense {cases=cases ; actions=actions} i j =
+let dense {cases} i j =
   if i=j then true
   else
     let l,_,_ = cases.(i)
     and _,h,_ = cases.(j) in
-    let ntests =  approx_count cases i j (Array.length actions) in
+    let ntests =  approx_count cases i j in
 (*
   (ntests+1) >= theta * (h-l+1)
 *)
@@ -701,8 +701,8 @@ let dense {cases=cases ; actions=actions} i j =
    Software Practice and Exprience Vol. 24(2) 233 (Feb 1994)
 *)
 
-let comp_clusters ({cases=cases ; actions=actions} as s) =
-  let len = Array.length cases in
+let comp_clusters s =
+  let len = Array.length s.cases in
   let min_clusters = Array.make len max_int
   and k = Array.make len 0 in
   let get_min i = if i < 0 then 0 else min_clusters.(i) in

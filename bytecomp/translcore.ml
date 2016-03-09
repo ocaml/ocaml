@@ -37,11 +37,11 @@ let use_dup_for_constant_arrays_bigger_than = 4
 
 (* Forward declaration -- to be filled in by Translmod.transl_module *)
 let transl_module =
-  ref((fun cc rootpath modl -> assert false) :
+  ref((fun _cc _rootpath _modl -> assert false) :
       module_coercion -> Path.t option -> module_expr -> lambda)
 
 let transl_object =
-  ref (fun id s cl -> assert false :
+  ref (fun _id _s _cl -> assert false :
        Ident.t -> string list -> class_expr -> lambda)
 
 (* Compile an exception/extension definition *)
@@ -57,11 +57,11 @@ let transl_extension_constructor env path ext =
     | Some p, Some pack -> Printf.sprintf "%s.%s" pack (Path.name p)
   in
   match ext.ext_kind with
-    Text_decl(args, ret) ->
+    Text_decl _ ->
       Lprim (Pmakeblock (Obj.object_tag, Immutable),
         [Lconst (Const_base (Const_string (name, None)));
          Lprim (prim_fresh_oo_id, [Lconst (Const_base (Const_int 0))])])
-  | Text_rebind(path, lid) ->
+  | Text_rebind(path, _lid) ->
       transl_path ~loc:ext.ext_loc env path
 
 (* Translation of primitives *)
@@ -325,9 +325,6 @@ let primitives_table = create_hashtable 57 [
   "%opaque", Popaque;
 ]
 
-let prim_obj_dup =
-  Primitive.simple ~name:"caml_obj_dup" ~arity:1 ~alloc:true
-
 let find_primitive loc prim_name =
   match prim_name with
       "%revapply" -> Prevapply loc
@@ -365,7 +362,7 @@ let specialize_primitive loc p env ty ~has_constant_constructor =
       intcomp
     else
       match is_function_type env ty with
-      | Some (lhs,rhs) -> specialize_comparison table env lhs
+      | Some (lhs,_rhs) -> specialize_comparison table env lhs
       | None -> gencomp
   with Not_found ->
     let p = find_primitive loc p.prim_name in
@@ -377,7 +374,7 @@ let specialize_primitive loc p env ty ~has_constant_constructor =
         | Some (p2, _) -> [p1;p2]
     in
     match (p, params) with
-      (Psetfield(n, _, init), [p1; p2]) ->
+      (Psetfield(n, _, init), [_p1; p2]) ->
         Psetfield(n, maybe_pointer_type env p2, init)
     | (Parraylength Pgenarray, [p])   -> Parraylength(array_type_kind env p)
     | (Parrayrefu Pgenarray, p1 :: _) -> Parrayrefu(array_type_kind env p1)
@@ -397,7 +394,7 @@ let specialize_primitive loc p env ty ~has_constant_constructor =
 (* Eta-expand a primitive *)
 
 let used_primitives = Hashtbl.create 7
-let add_used_primitive loc p env path =
+let add_used_primitive loc env path =
   match path with
     Some (Path.Pdot _ as path) ->
       let path = Env.normalize_path (Some loc) env path in
@@ -410,7 +407,7 @@ let transl_primitive loc p env ty path =
   let prim =
     try specialize_primitive loc p env ty ~has_constant_constructor:false
     with Not_found ->
-      add_used_primitive loc p env path;
+      add_used_primitive loc env path;
       Pccall p
   in
   match prim with
@@ -452,7 +449,7 @@ let transl_primitive_application loc prim env ty path args =
   with Not_found ->
     if String.length prim_name > 0 && prim_name.[0] = '%' then
       raise(Error(loc, Unknown_builtin_primitive prim_name));
-    add_used_primitive loc prim env path;
+    add_used_primitive loc env path;
     Pccall prim
 
 
@@ -463,13 +460,13 @@ let check_recursive_lambda idlist lam =
     | Lvar v -> not (List.mem v idlist)
     | Llet (_, _, _, _) as lam when check_recursive_recordwith idlist lam ->
         true
-    | Llet(str, id, arg, body) ->
+    | Llet(_str, id, arg, body) ->
         check idlist arg && check_top (add_let id arg idlist) body
     | Lletrec(bindings, body) ->
         let idlist' = add_letrec bindings idlist in
-        List.for_all (fun (id, arg) -> check idlist' arg) bindings &&
+        List.for_all (fun (_id, arg) -> check idlist' arg) bindings &&
         check_top idlist' body
-    | Lprim (Pmakearray (Pgenarray, _), args) -> false
+    | Lprim (Pmakearray (Pgenarray, _), _) -> false
     | Lprim (Pmakearray (Pfloatarray, _), args) ->
         List.for_all (check idlist) args
     | Lsequence (lam1, lam2) -> check idlist lam1 && check_top idlist lam2
@@ -478,16 +475,16 @@ let check_recursive_lambda idlist lam =
 
   and check idlist = function
     | Lvar _ -> true
-    | Lfunction{kind; params; body} -> true
+    | Lfunction _ -> true
     | Llet (_, _, _, _) as lam when check_recursive_recordwith idlist lam ->
         true
-    | Llet(str, id, arg, body) ->
+    | Llet(_str, id, arg, body) ->
         check idlist arg && check (add_let id arg idlist) body
     | Lletrec(bindings, body) ->
         let idlist' = add_letrec bindings idlist in
-        List.for_all (fun (id, arg) -> check idlist' arg) bindings &&
+        List.for_all (fun (_id, arg) -> check idlist' arg) bindings &&
         check idlist' body
-    | Lprim(Pmakeblock(tag, mut), args) ->
+    | Lprim(Pmakeblock _, args) ->
         List.for_all (check idlist) args
     | Lprim (Pmakearray (Pfloatarray, _), _) -> false
     | Lprim (Pmakearray _, args) ->
@@ -544,7 +541,7 @@ let rec name_pattern default = function
   | {c_lhs=p; _} :: rem ->
       match p.pat_desc with
         Tpat_var (id, _) -> id
-      | Tpat_alias(p, id, _) -> id
+      | Tpat_alias(_, id, _) -> id
       | _ -> name_pattern default rem
 
 (* Push the default values under the functional abstractions *)
@@ -701,7 +698,7 @@ and transl_exp0 e =
                                [Lvar cache; Lvar pos], e.exp_loc)}
       else
         transl_primitive e.exp_loc p e.exp_env e.exp_type (Some path)
-  | Texp_ident(path, _, {val_kind = Val_anc _}) ->
+  | Texp_ident(_, _, {val_kind = Val_anc _}) ->
       raise(Error(e.exp_loc, Free_super_var))
   | Texp_ident(path, _, {val_kind = Val_reg | Val_self _}) ->
       transl_path ~loc:e.exp_loc e.exp_env path
@@ -1172,7 +1169,7 @@ and transl_function loc untuplify_fn repr partial cases =
             (fun {c_lhs; c_guard; c_rhs} ->
               (Matching.flatten_pattern size c_lhs, c_guard, c_rhs))
             cases in
-        let params = List.map (fun p -> Ident.create "param") pl in
+        let params = List.map (fun _ -> Ident.create "param") pl in
         ((Tupled, params),
          Matching.for_tupled_function loc params
            (transl_tupled_cases pats_expr_list) partial)
@@ -1212,7 +1209,7 @@ and transl_let rec_flag pat_expr_list body =
             | Tpat_alias ({pat_desc=Tpat_any}, id,_) -> id
             | _ -> raise(Error(pat.pat_loc, Illegal_letrec_pat)))
         pat_expr_list in
-      let transl_case {vb_pat=pat; vb_expr=expr; vb_attributes; vb_loc} id =
+      let transl_case {vb_expr=expr; vb_attributes; vb_loc} id =
         let lam = transl_exp expr in
         let lam =
           Translattribute.add_inline_attribute lam vb_loc
@@ -1246,7 +1243,7 @@ and transl_record env all_labels repres lbl_expr_list opt_init_expr =
     let init_id = Ident.create "init" in
     begin match opt_init_expr with
       None -> ()
-    | Some init_expr ->
+    | Some _ ->
         for i = 0 to Array.length all_labels - 1 do
           let access =
             match all_labels.(i).lbl_repres with

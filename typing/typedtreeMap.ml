@@ -94,7 +94,7 @@ module MakeMap(Map : MapArgument) = struct
       vb_loc = vb.vb_loc;
     }
 
-  and map_bindings rec_flag list =
+  and map_bindings list =
     List.map map_binding list
 
   and map_case {c_lhs; c_guard; c_rhs} =
@@ -113,7 +113,7 @@ module MakeMap(Map : MapArgument) = struct
       match item.str_desc with
           Tstr_eval (exp, attrs) -> Tstr_eval (map_expression exp, attrs)
         | Tstr_value (rec_flag, list) ->
-          Tstr_value (rec_flag, map_bindings rec_flag list)
+          Tstr_value (rec_flag, map_bindings list)
         | Tstr_primitive vd ->
           Tstr_primitive (map_value_description vd)
         | Tstr_type (rf, list) ->
@@ -269,7 +269,7 @@ module MakeMap(Map : MapArgument) = struct
         | Texp_constant _ -> exp.exp_desc
         | Texp_let (rec_flag, list, exp) ->
           Texp_let (rec_flag,
-                    map_bindings rec_flag list,
+                    map_bindings list,
                     map_expression exp)
         | Texp_function (label, cases, partial) ->
           Texp_function (label, map_cases cases, partial)
@@ -354,8 +354,8 @@ module MakeMap(Map : MapArgument) = struct
           )
         | Texp_send (exp, meth, expo) ->
           Texp_send (map_expression exp, meth, may_map map_expression expo)
-        | Texp_new (path, lid, cl_decl) -> exp.exp_desc
-        | Texp_instvar (_, path, _) -> exp.exp_desc
+        | Texp_new _ -> exp.exp_desc
+        | Texp_instvar _ -> exp.exp_desc
         | Texp_setinstvar (path, lid, path2, exp) ->
           Texp_setinstvar (path, lid, path2, map_expression exp)
         | Texp_override (path, list) ->
@@ -504,8 +504,8 @@ module MakeMap(Map : MapArgument) = struct
       match cstr with
           Twith_type decl -> Twith_type (map_type_declaration decl)
         | Twith_typesubst decl -> Twith_typesubst (map_type_declaration decl)
-        | Twith_module (path, lid) -> cstr
-        | Twith_modsubst (path, lid) -> cstr
+        | Twith_module _ -> cstr
+        | Twith_modsubst _ -> cstr
     in
     Map.leave_with_constraint cstr
 
@@ -513,7 +513,7 @@ module MakeMap(Map : MapArgument) = struct
     let mexpr = Map.enter_module_expr mexpr in
     let mod_desc =
       match mexpr.mod_desc with
-          Tmod_ident (p, lid) -> mexpr.mod_desc
+          Tmod_ident _ -> mexpr.mod_desc
         | Tmod_structure st -> Tmod_structure (map_structure st)
         | Tmod_functor (id, name, mtype, mexpr) ->
           Tmod_functor (id, name, Misc.may_map map_module_type mtype,
@@ -552,8 +552,8 @@ module MakeMap(Map : MapArgument) = struct
                      List.map (fun (label, expo) ->
                        (label, may_map map_expression expo)
                      ) args)
-        | Tcl_let (rec_flat, bindings, ivars, cl) ->
-          Tcl_let (rec_flat, map_bindings rec_flat bindings,
+        | Tcl_let (rec_flag, bindings, ivars, cl) ->
+          Tcl_let (rec_flag, map_bindings bindings,
                    List.map (fun (id, name, exp) ->
                      (id, name, map_expression exp)) ivars,
                    map_class_expr cl)

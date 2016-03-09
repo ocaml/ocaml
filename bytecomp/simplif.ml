@@ -26,11 +26,11 @@ exception Real_reference
 let rec eliminate_ref id = function
     Lvar v as lam ->
       if Ident.same v id then raise Real_reference else lam
-  | Lconst cst as lam -> lam
+  | Lconst _ as lam -> lam
   | Lapply ap ->
       Lapply{ap with ap_func = eliminate_ref id ap.ap_func;
                      ap_args = List.map (eliminate_ref id) ap.ap_args}
-  | Lfunction{kind; params; body} as lam ->
+  | Lfunction _ as lam ->
       if IdentSet.mem id (free_variables lam)
       then raise Real_reference
       else lam
@@ -111,13 +111,13 @@ let simplify_exits lam =
   let rec count = function
   | (Lvar _| Lconst _) -> ()
   | Lapply ap -> count ap.ap_func; List.iter count ap.ap_args
-  | Lfunction{kind; params; body = l} -> count l
-  | Llet(str, v, l1, l2) ->
+  | Lfunction {body} -> count body
+  | Llet(_str, _v, l1, l2) ->
       count l2; count l1
   | Lletrec(bindings, body) ->
-      List.iter (fun (v, l) -> count l) bindings;
+      List.iter (fun (_v, l) -> count l) bindings;
       count body
-  | Lprim(p, ll) -> List.iter count ll
+  | Lprim(_p, ll) -> List.iter count ll
   | Lswitch(l, sw) ->
       count_default sw ;
       count l;
@@ -150,15 +150,15 @@ let simplify_exits lam =
          l2 will be removed, so don't count its exits *)
       if count_exit i > 0 then
         count l2
-  | Ltrywith(l1, v, l2) -> count l1; count l2
+  | Ltrywith(l1, _v, l2) -> count l1; count l2
   | Lifthenelse(l1, l2, l3) -> count l1; count l2; count l3
   | Lsequence(l1, l2) -> count l1; count l2
   | Lwhile(l1, l2) -> count l1; count l2
-  | Lfor(_, l1, l2, dir, l3) -> count l1; count l2; count l3
-  | Lassign(v, l) -> count l
-  | Lsend(k, m, o, ll, _) -> List.iter count (m::o::ll)
+  | Lfor(_, l1, l2, _dir, l3) -> count l1; count l2; count l3
+  | Lassign(_v, l) -> count l
+  | Lsend(_k, m, o, ll, _) -> List.iter count (m::o::ll)
   | Levent(l, _) -> count l
-  | Lifused(v, l) -> count l
+  | Lifused(_v, l) -> count l
 
   and count_default sw = match sw.sw_failaction with
   | None -> ()
@@ -267,7 +267,7 @@ let simplify_exits lam =
       with
       | Not_found -> Lstaticraise (i,ls)
       end
-  | Lstaticcatch (l1,(i,[]),(Lstaticraise (j,[]) as l2)) ->
+  | Lstaticcatch (l1,(i,[]),(Lstaticraise (_j,[]) as l2)) ->
       Hashtbl.add subst i ([],simplif l2) ;
       simplif l1
   | Lstaticcatch (l1,(i,xs),l2) ->
@@ -352,7 +352,7 @@ let simplify_lets lam =
       () in
 
   let rec count bv = function
-  | Lconst cst -> ()
+  | Lconst _ -> ()
   | Lvar v ->
       use_var bv v 1
   | Lapply{ap_func = Lfunction{kind = Curried; params; body}; ap_args = args}
@@ -364,9 +364,9 @@ let simplify_lets lam =
       count bv (beta_reduce params body args)
   | Lapply{ap_func = l1; ap_args = ll} ->
       count bv l1; List.iter (count bv) ll
-  | Lfunction{kind; params; body = l} ->
-      count Tbl.empty l
-  | Llet(str, v, Lvar w, l2) when optimize ->
+  | Lfunction {body} ->
+      count Tbl.empty body
+  | Llet(_str, v, Lvar w, l2) when optimize ->
       (* v will be replaced by w in l2, so each occurrence of v in l2
          increases w's refcount *)
       count (bind_var bv v) l2;
@@ -376,9 +376,9 @@ let simplify_lets lam =
       (* If v is unused, l1 will be removed, so don't count its variables *)
       if str = Strict || count_var v > 0 then count bv l1
   | Lletrec(bindings, body) ->
-      List.iter (fun (v, l) -> count bv l) bindings;
+      List.iter (fun (_v, l) -> count bv l) bindings;
       count bv body
-  | Lprim(p, ll) -> List.iter (count bv) ll
+  | Lprim(_p, ll) -> List.iter (count bv) ll
   | Lswitch(l, sw) ->
       count_default bv sw ;
       count bv l;
@@ -395,14 +395,14 @@ let simplify_lets lam =
           end
       | None -> ()
       end
-  | Lstaticraise (i,ls) -> List.iter (count bv) ls
-  | Lstaticcatch(l1, (i,_), l2) -> count bv l1; count bv l2
-  | Ltrywith(l1, v, l2) -> count bv l1; count bv l2
+  | Lstaticraise (_i,ls) -> List.iter (count bv) ls
+  | Lstaticcatch(l1, _, l2) -> count bv l1; count bv l2
+  | Ltrywith(l1, _v, l2) -> count bv l1; count bv l2
   | Lifthenelse(l1, l2, l3) -> count bv l1; count bv l2; count bv l3
   | Lsequence(l1, l2) -> count bv l1; count bv l2
   | Lwhile(l1, l2) -> count Tbl.empty l1; count Tbl.empty l2
-  | Lfor(_, l1, l2, dir, l3) -> count bv l1; count bv l2; count Tbl.empty l3
-  | Lassign(v, l) ->
+  | Lfor(_, l1, l2, _dir, l3) -> count bv l1; count bv l2; count Tbl.empty l3
+  | Lassign(_v, l) ->
       (* Lalias-bound variables are never assigned, so don't increase
          v's refcount *)
       count bv l
@@ -447,7 +447,7 @@ let simplify_lets lam =
       with Not_found ->
         l
       end
-  | Lconst cst as l -> l
+  | Lconst _ as l -> l
   | Lapply{ap_func = Lfunction{kind = Curried; params; body}; ap_args = args}
     when optimize && List.length params = List.length args ->
       simplif (beta_reduce params body args)
@@ -465,7 +465,7 @@ let simplify_lets lam =
       | body ->
           Lfunction{kind; params; body; attr}
       end
-  | Llet(str, v, Lvar w, l2) when optimize ->
+  | Llet(_str, v, Lvar w, l2) when optimize ->
       Hashtbl.add subst v (simplif (Lvar w));
       simplif l2
   | Llet(Strict, v, Lprim(Pmakeblock(0, Mutable), [linit]), lbody)
@@ -481,12 +481,12 @@ let simplify_lets lam =
       begin match count_var v with
         0 -> simplif l2
       | 1 when optimize -> Hashtbl.add subst v (simplif l1); simplif l2
-      | n -> Llet(Alias, v, simplif l1, simplif l2)
+      | _ -> Llet(Alias, v, simplif l1, simplif l2)
       end
   | Llet(StrictOpt, v, l1, l2) ->
       begin match count_var v with
         0 -> simplif l2
-      | n -> mklet(Alias, v, simplif l1, simplif l2)
+      | _ -> mklet(Alias, v, simplif l1, simplif l2)
       end
   | Llet(kind, v, l1, l2) -> mklet(kind, v, simplif l1, simplif l2)
   | Lletrec(bindings, body) ->
@@ -531,7 +531,7 @@ let simplify_lets lam =
 (* Tail call info in annotation files *)
 
 let is_tail_native_heuristic : (int -> bool) ref =
-  ref (fun n -> true)
+  ref (fun _ -> true)
 
 let rec emit_tail_infos is_tail lambda =
   let call_kind args =

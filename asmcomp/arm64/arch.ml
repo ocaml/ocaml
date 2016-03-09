@@ -15,8 +15,6 @@
 (*                                                                        *)
 (**************************************************************************)
 
-let command_line_options = []
-
 (* Specific operations for the ARM processor, 64-bit mode *)
 
 open Format
@@ -81,8 +79,8 @@ let offset_addressing addr delta =
   | Ibased(s, n) -> Ibased(s, n + delta)
 
 let num_args_addressing = function
-  | Iindexed n -> 1
-  | Ibased(s, n) -> 0
+  | Iindexed _ -> 1
+  | Ibased _ -> 0
 
 (* Printing operations and addressing modes *)
 

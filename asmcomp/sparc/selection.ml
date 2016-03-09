@@ -26,7 +26,7 @@ inherit Selectgen.selector_generic as super
 
 method is_immediate n = (n <= 4095) && (n >= -4096)
 
-method select_addressing chunk = function
+method select_addressing _chunk = function
     Cconst_symbol s ->
       (Ibased(s, 0), Ctuple [])
   | Cop((Caddv | Cadda), [Cconst_symbol s; Cconst_int n]) ->

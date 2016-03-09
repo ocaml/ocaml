@@ -47,7 +47,7 @@ let include_err ppf =
   function
   | CM_Virtual_class ->
       fprintf ppf "A class cannot be changed from virtual to concrete"
-  | CM_Parameter_arity_mismatch (ls, lp) ->
+  | CM_Parameter_arity_mismatch _ ->
       fprintf ppf
         "The classes do not have the same number of type parameters"
   | CM_Type_parameter_mismatch (env, trace) ->

@@ -218,7 +218,7 @@ class printer  ()= object(self:'self)
         pp f "[%a] " (* space *)
           (self#list self#type_param ~sep:",") l
 
-  method type_with_label f (label,({ptyp_desc;_}as c) ) =
+  method type_with_label f (label, c) =
     match label with
     | Nolabel ->  self#core_type1 f c (* otherwise parenthesize *)
     | Labelled s -> pp f "%s:%a" s self#core_type1 c
@@ -330,7 +330,7 @@ class printer  ()= object(self:'self)
     else match x.ppat_desc with
     | Ppat_alias (p, s) -> pp f "@[<2>%a@;as@;%a@]"
           self#pattern p protect_ident s.txt (* RA*)
-    | Ppat_or (p1, p2) -> (* *)
+    | Ppat_or _ -> (* *)
         pp f "@[<hov0>%a@]" (self#list ~sep:"@,|" self#pattern)
            (list_of_pattern [] x)
     | _ -> self#pattern1 f x

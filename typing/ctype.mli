@@ -116,7 +116,7 @@ val instance: ?partial:bool -> Env.t -> type_expr -> type_expr
            partial=true  -> newty2 ty.level Tvar for non generic subterms *)
 val instance_def: type_expr -> type_expr
         (* use defaults *)
-val generic_instance: ?partial:bool -> Env.t -> type_expr -> type_expr
+val generic_instance: Env.t -> type_expr -> type_expr
         (* Same as instance, but new nodes at generic_level *)
 val instance_list: Env.t -> type_expr list -> type_expr list
         (* Take an instance of a list of type schemes *)

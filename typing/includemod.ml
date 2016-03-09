@@ -245,11 +245,11 @@ and try_modtypes env cxt subst mty1 mty2 =
       Tcoerce_alias (p1, modtypes env cxt subst mty1 mty2)
   | (Mty_ident p1, _) when may_expand_module_path env p1 ->
       try_modtypes env cxt subst (expand_module_path env cxt p1) mty2
-  | (_, Mty_ident p2) ->
+  | (_, Mty_ident _) ->
       try_modtypes2 env cxt mty1 (Subst.modtype subst mty2)
   | (Mty_signature sig1, Mty_signature sig2) ->
       signatures env cxt subst sig1 sig2
-  | (Mty_functor(param1, None, res1), Mty_functor(param2, None, res2)) ->
+  | (Mty_functor(param1, None, res1), Mty_functor(_param2, None, res2)) ->
       begin match modtypes env (Body param1::cxt) subst res1 res2 with
         Tcoerce_none -> Tcoerce_none
       | cc -> Tcoerce_functor (Tcoerce_none, cc)
@@ -372,34 +372,34 @@ and signature_components old_env env cxt subst paired =
   let comps_rec rem = signature_components old_env env cxt subst rem in
   match paired with
     [] -> []
-  | (Sig_value(id1, valdecl1), Sig_value(id2, valdecl2), pos) :: rem ->
+  | (Sig_value(id1, valdecl1), Sig_value(_id2, valdecl2), pos) :: rem ->
       let cc = value_descriptions env cxt subst id1 valdecl1 valdecl2 in
       begin match valdecl2.val_kind with
-        Val_prim p -> comps_rec rem
+        Val_prim _ -> comps_rec rem
       | _ -> (pos, cc) :: comps_rec rem
       end
-  | (Sig_type(id1, tydecl1, _), Sig_type(id2, tydecl2, _), pos) :: rem ->
+  | (Sig_type(id1, tydecl1, _), Sig_type(_id2, tydecl2, _), _pos) :: rem ->
       type_declarations ~old_env env cxt subst id1 tydecl1 tydecl2;
       comps_rec rem
-  | (Sig_typext(id1, ext1, _), Sig_typext(id2, ext2, _), pos)
+  | (Sig_typext(id1, ext1, _), Sig_typext(_id2, ext2, _), pos)
     :: rem ->
       extension_constructors env cxt subst id1 ext1 ext2;
       (pos, Tcoerce_none) :: comps_rec rem
-  | (Sig_module(id1, mty1, _), Sig_module(id2, mty2, _), pos) :: rem ->
+  | (Sig_module(id1, mty1, _), Sig_module(_id2, mty2, _), pos) :: rem ->
       let p1 = Pident id1 in
       let cc =
         modtypes env (Module id1::cxt) subst
           (Mtype.strengthen (Env.add_functor_arg id1 env) mty1.md_type p1)
           mty2.md_type in
       (pos, cc) :: comps_rec rem
-  | (Sig_modtype(id1, info1), Sig_modtype(id2, info2), pos) :: rem ->
+  | (Sig_modtype(id1, info1), Sig_modtype(_id2, info2), _pos) :: rem ->
       modtype_infos env cxt subst id1 info1 info2;
       comps_rec rem
-  | (Sig_class(id1, decl1, _), Sig_class(id2, decl2, _), pos) :: rem ->
+  | (Sig_class(id1, decl1, _), Sig_class(_id2, decl2, _), pos) :: rem ->
       class_declarations ~old_env env cxt subst id1 decl1 decl2;
       (pos, Tcoerce_none) :: comps_rec rem
   | (Sig_class_type(id1, info1, _),
-     Sig_class_type(id2, info2, _), pos) :: rem ->
+     Sig_class_type(_id2, info2, _), _pos) :: rem ->
       class_type_declarations ~old_env env cxt subst id1 info1 info2;
       comps_rec rem
   | _ ->
@@ -413,7 +413,7 @@ and modtype_infos env cxt subst id info1 info2 =
   try
     match (info1.mtd_type, info2.mtd_type) with
       (None, None) -> ()
-    | (Some mty1, None) -> ()
+    | (Some _, None) -> ()
     | (Some mty1, Some mty2) ->
         check_modtype_equiv env cxt' mty1 mty2
     | (None, Some mty2) ->
@@ -427,9 +427,9 @@ and check_modtype_equiv env cxt mty1 mty2 =
      modtypes env cxt Subst.identity mty2 mty1)
   with
     (Tcoerce_none, Tcoerce_none) -> ()
-  | (c1, c2) ->
+  | (_c1, _c2) ->
       (* Format.eprintf "@[c1 = %a@ c2 = %a@]@."
-        print_coercion c1 print_coercion c2; *)
+        print_coercion _c1 print_coercion _c2; *)
       raise(Error [cxt, env, Modtype_permutation])
 
 (* Simplified inclusion check between module types (for Env) *)
@@ -438,7 +438,7 @@ let check_modtype_inclusion env mty1 path1 mty2 =
   try
     ignore(modtypes env [] Subst.identity
                     (Mtype.strengthen env mty1 path1) mty2)
-  with Error reasons ->
+  with Error _ ->
     raise Not_found
 
 let _ = Env.check_modtype_inclusion := check_modtype_inclusion

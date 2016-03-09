@@ -103,7 +103,7 @@ method! reload_operation op arg res =
 
 method! reload_test tst arg =
   match tst with
-    Iinttest cmp ->
+    Iinttest _ ->
       (* One of the two arguments can reside on stack *)
       if stackp arg.(0) && stackp arg.(1)
       then [| self#makereg arg.(0); arg.(1) |]

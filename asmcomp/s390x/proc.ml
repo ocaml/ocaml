@@ -126,16 +126,16 @@ let calling_conventions
 
 let incoming ofs = Incoming ofs
 let outgoing ofs = Outgoing ofs
-let not_supported ofs = fatal_error "Proc.loc_results: cannot call"
+let not_supported _ofs = fatal_error "Proc.loc_results: cannot call"
 
 let max_arguments_for_tailcalls = 5
 
 let loc_arguments arg =
   calling_conventions 0 4 100 103 outgoing 0 arg
 let loc_parameters arg =
-  let (loc, ofs) = calling_conventions 0 4 100 103 incoming 0 arg in loc
+  let (loc, _ofs) = calling_conventions 0 4 100 103 incoming 0 arg in loc
 let loc_results res =
-  let (loc, ofs) = calling_conventions 0 4 100 103 not_supported 0 res in loc
+  let (loc, _ofs) = calling_conventions 0 4 100 103 not_supported 0 res in loc
 
 (*   C calling conventions under SVR4:
      use GPR 2-6 and FPR 0,2,4,6 just like ML calling conventions.
@@ -150,12 +150,10 @@ let loc_external_arguments arg =
     calling_conventions 0 4 100 103 outgoing 160 arg in
   (Array.map (fun reg -> [|reg|]) loc, ofs)
 
-let extcall_use_push = false
-
 (* Results are in GPR 2 and FPR 0 *)
 
 let loc_external_results res =
-  let (loc, ofs) = calling_conventions 0 0 100 100 not_supported 0 res in loc
+  let (loc, _ofs) = calling_conventions 0 0 100 100 not_supported 0 res in loc
 
 (* Exceptions are in GPR 2 *)
 
@@ -163,7 +161,7 @@ let loc_exn_bucket = phys_reg 0
 
 (* Volatile registers: none *)
 
-let regs_are_volatile rs = false
+let regs_are_volatile _rs = false
 
 (* Registers destroyed by operations *)
 

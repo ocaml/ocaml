@@ -151,7 +151,7 @@ let get_docstring ~info dsl =
   let rec loop = function
     | [] -> None
     | {ds_attached = Info; _} :: rest -> loop rest
-    | ds :: rest ->
+    | ds :: _ ->
         ds.ds_attached <- if info then Info else Docs;
         Some ds
   in

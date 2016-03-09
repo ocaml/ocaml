@@ -383,7 +383,7 @@ let type_iterators =
     | Tvariant row ->
         may (fun (p,_) -> it.it_path p) (row_repr row).row_name
     | _ -> ()
-  and it_path p = ()
+  and it_path _p = ()
   in
   { it_path; it_type_expr = it_do_type_expr; it_do_type_expr;
     it_type_kind; it_class_type; it_module_type;
@@ -436,12 +436,12 @@ let rec copy_type_desc ?(keep_names=false) f = function
   | Tobject(ty, {contents = Some (p, tl)})
                         -> Tobject (f ty, ref (Some(p, List.map f tl)))
   | Tobject (ty, _)     -> Tobject (f ty, ref None)
-  | Tvariant row        -> assert false (* too ambiguous *)
+  | Tvariant _          -> assert false (* too ambiguous *)
   | Tfield (p, k, ty1, ty2) -> (* the kind is kept shared *)
       Tfield (p, field_kind_repr k, f ty1, f ty2)
   | Tnil                -> Tnil
   | Tlink ty            -> copy_type_desc f ty.desc
-  | Tsubst ty           -> assert false
+  | Tsubst _            -> assert false
   | Tunivar _ as ty     -> ty (* always keep the name *)
   | Tpoly (ty, tyl)     ->
       let tyl = List.map (fun x -> norm_univar (f x)) tyl in
@@ -510,7 +510,7 @@ let rec unmark_type ty =
   end
 
 let unmark_iterators =
-  let it_type_expr it ty = unmark_type ty in
+  let it_type_expr _it ty = unmark_type ty in
   {type_iterators with it_type_expr}
 
 let unmark_type_decl decl =
@@ -523,7 +523,7 @@ let unmark_extension_constructor ext =
 
 let unmark_class_signature sign =
   unmark_type sign.csig_self;
-  Vars.iter (fun l (m, v, t) -> unmark_type t) sign.csig_vars
+  Vars.iter (fun _l (_m, _v, t) -> unmark_type t) sign.csig_vars
 
 let unmark_class_type cty =
   unmark_iterators.it_class_type unmark_iterators cty
@@ -542,7 +542,7 @@ let lte_public p1 p2 =  (* Private <= Public *)
 
 let rec find_expans priv p1 = function
     Mnil -> None
-  | Mcons (priv', p2, ty0, ty, _)
+  | Mcons (priv', p2, _ty0, ty, _)
     when lte_public priv priv' && Path.same p1 p2 -> Some ty
   | Mcons (_, _, _, _, rem)   -> find_expans priv p1 rem
   | Mlink {contents = rem} -> find_expans priv p1 rem
@@ -718,7 +718,7 @@ let rec rev_compress_log log r =
   | Change (_, next) ->
       rev_compress_log log next
 
-let undo_compress (changes, old) =
+let undo_compress (changes, _old) =
   match !changes with
     Unchanged
   | Invalid -> ()

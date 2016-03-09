@@ -44,8 +44,8 @@ let get_location ti =
   | Ti_expr e  -> e.exp_loc
   | Ti_class c -> c.cl_loc
   | Ti_mod m   -> m.mod_loc
-  | An_call (l, k) -> l
-  | An_ident (l, s, k) -> l
+  | An_call (l, _k) -> l
+  | An_ident (l, _s, _k) -> l
 ;;
 
 let annotations = ref ([] : annotation list);;

@@ -91,7 +91,7 @@ let rec apply_coercion strict restr arg =
       transl_primitive pc_loc pc_desc pc_env pc_type None
   | Tcoerce_alias (path, cc) ->
       name_lambda strict arg
-        (fun id -> apply_coercion Alias cc (transl_normal_path path))
+        (fun _ -> apply_coercion Alias cc (transl_normal_path path))
 
 and apply_coercion_field get_field (pos, cc) =
   apply_coercion Alias cc (get_field pos)
@@ -192,12 +192,12 @@ let init_shape modl =
         Const_block (1, [Const_pointer 0])
     | Mty_signature sg ->
         Const_block(0, [Const_block(0, init_shape_struct env sg)])
-    | Mty_functor(id, arg, res) ->
+    | Mty_functor _ ->
         raise Not_found (* can we do better? *)
   and init_shape_struct env sg =
     match sg with
       [] -> []
-    | Sig_value(id, vdesc) :: rem ->
+    | Sig_value(_id, vdesc) :: rem ->
         let init_v =
           match Ctype.expand_head env vdesc.val_type with
             {desc = Tarrow(_,_,_,_)} ->
@@ -208,17 +208,17 @@ let init_shape modl =
         init_v :: init_shape_struct env rem
     | Sig_type(id, tdecl, _) :: rem ->
         init_shape_struct (Env.add_type ~check:false id tdecl env) rem
-    | Sig_typext(id, ext, _) :: rem ->
+    | Sig_typext _ :: _ ->
         raise Not_found
     | Sig_module(id, md, _) :: rem ->
         init_shape_mod env md.md_type ::
         init_shape_struct (Env.add_module_declaration id md env) rem
     | Sig_modtype(id, minfo) :: rem ->
         init_shape_struct (Env.add_modtype id minfo env) rem
-    | Sig_class(id, cdecl, _) :: rem ->
+    | Sig_class _ :: rem ->
         Const_pointer 2 (* camlinternalMod.Class *)
         :: init_shape_struct env rem
-    | Sig_class_type(id, ctyp, _) :: rem ->
+    | Sig_class_type _ :: rem ->
         init_shape_struct env rem
   in
   try
@@ -267,9 +267,9 @@ let eval_rec_bindings bindings cont =
   let rec bind_inits = function
     [] ->
       bind_strict bindings
-  | (id, None, rhs) :: rem ->
+  | (_id, None, _rhs) :: rem ->
       bind_inits rem
-  | (id, Some(loc, shape), rhs) :: rem ->
+  | (id, Some(loc, shape), _rhs) :: rem ->
       Llet(Strict, id,
            Lapply{ap_should_be_tailcall=false;
                   ap_loc=Location.none;
@@ -283,14 +283,14 @@ let eval_rec_bindings bindings cont =
       patch_forwards bindings
   | (id, None, rhs) :: rem ->
       Llet(Strict, id, rhs, bind_strict rem)
-  | (id, Some(loc, shape), rhs) :: rem ->
+  | (_id, Some _, _rhs) :: rem ->
       bind_strict rem
   and patch_forwards = function
     [] ->
       cont
-  | (id, None, rhs) :: rem ->
+  | (_id, None, _rhs) :: rem ->
       patch_forwards rem
-  | (id, Some(loc, shape), rhs) :: rem ->
+  | (id, Some(_loc, shape), rhs) :: rem ->
       Lsequence(Lapply{ap_should_be_tailcall=false;
                        ap_loc=Location.none;
                        ap_func=mod_prim "update_mod";
@@ -319,9 +319,9 @@ let rec bound_value_identifiers = function
     [] -> []
   | Sig_value(id, {val_kind = Val_reg}) :: rem ->
       id :: bound_value_identifiers rem
-  | Sig_typext(id, ext, _) :: rem -> id :: bound_value_identifiers rem
-  | Sig_module(id, mty, _) :: rem -> id :: bound_value_identifiers rem
-  | Sig_class(id, decl, _) :: rem -> id :: bound_value_identifiers rem
+  | Sig_typext(id, _, _) :: rem -> id :: bound_value_identifiers rem
+  | Sig_module(id, _, _) :: rem -> id :: bound_value_identifiers rem
+  | Sig_class(id, _, _) :: rem -> id :: bound_value_identifiers rem
   | _ :: rem -> bound_value_identifiers rem
 
 
@@ -349,7 +349,7 @@ let rec transl_module cc rootpath mexp =
             (transl_path ~loc:mexp.mod_loc mexp.mod_env path)
       | Tmod_structure str ->
           fst (transl_struct [] cc rootpath str)
-      | Tmod_functor( param, _, mty, body) ->
+      | Tmod_functor(param, _, _, body) ->
           let bodypath = functor_path rootpath param in
           let inline_attribute =
             Translattribute.get_inline_attribute mexp.mod_attributes
@@ -387,7 +387,7 @@ let rec transl_module cc rootpath mexp =
                     ap_args=[transl_module ccarg None arg];
                     ap_inlined=inlined_attribute;
                     ap_specialised=Default_specialise})
-      | Tmod_constraint(arg, mty, _, ccarg) ->
+      | Tmod_constraint(arg, _, _, ccarg) ->
           transl_module (compose_coercions cc ccarg) rootpath arg
       | Tmod_unpack(arg, _) ->
           apply_coercion Strict cc (Translcore.transl_exp arg)
@@ -456,7 +456,7 @@ and transl_structure fields cc rootpath final_env = function
       | Tstr_primitive descr ->
           record_primitive descr.val_val;
           transl_structure fields cc rootpath final_env rem
-      | Tstr_type(_, decls) ->
+      | Tstr_type _ ->
           transl_structure fields cc rootpath final_env rem
       | Tstr_typext(tyext) ->
           let ids = List.map (fun ext -> ext.ext_id) tyext.tyext_constructors in
@@ -558,7 +558,7 @@ let wrap_globals body =
   let add_global id req =
     if IdentSet.mem id globals then req else IdentSet.add id req in
   let required =
-    Hashtbl.fold (fun path loc -> add_global (Path.head path))
+    Hashtbl.fold (fun path _ -> add_global (Path.head path))
       used_primitives IdentSet.empty
   in
   let required =
@@ -600,11 +600,11 @@ let rec defined_idents = function
     [] -> []
   | item :: rem ->
     match item.str_desc with
-    | Tstr_eval (expr, _) -> defined_idents rem
-    | Tstr_value(rec_flag, pat_expr_list) ->
+    | Tstr_eval _ -> defined_idents rem
+    | Tstr_value(_rec_flag, pat_expr_list) ->
       let_bound_idents pat_expr_list @ defined_idents rem
-    | Tstr_primitive desc -> defined_idents rem
-    | Tstr_type (_, decls) -> defined_idents rem
+    | Tstr_primitive _ -> defined_idents rem
+    | Tstr_type _ -> defined_idents rem
     | Tstr_typext tyext ->
       List.map (fun ext -> ext.ext_id) tyext.tyext_constructors
       @ defined_idents rem
@@ -616,7 +616,7 @@ let rec defined_idents = function
     | Tstr_open _ -> defined_idents rem
     | Tstr_class cl_list ->
       List.map (fun (ci, _) -> ci.ci_id_class) cl_list @ defined_idents rem
-    | Tstr_class_type cl_list -> defined_idents rem
+    | Tstr_class_type _ -> defined_idents rem
     | Tstr_include incl ->
       bound_value_identifiers incl.incl_type @ defined_idents rem
     | Tstr_attribute _ -> defined_idents rem
@@ -627,17 +627,17 @@ let rec more_idents = function
     [] -> []
   | item :: rem ->
     match item.str_desc with
-    | Tstr_eval (expr, _attrs) -> more_idents rem
-    | Tstr_value(rec_flag, pat_expr_list) -> more_idents rem
+    | Tstr_eval _ -> more_idents rem
+    | Tstr_value _ -> more_idents rem
     | Tstr_primitive _ -> more_idents rem
-    | Tstr_type (_, decls) -> more_idents rem
-    | Tstr_typext tyext -> more_idents rem
+    | Tstr_type _ -> more_idents rem
+    | Tstr_typext _ -> more_idents rem
     | Tstr_exception _ -> more_idents rem
-    | Tstr_recmodule decls -> more_idents rem
+    | Tstr_recmodule _ -> more_idents rem
     | Tstr_modtype _ -> more_idents rem
     | Tstr_open _ -> more_idents rem
-    | Tstr_class cl_list -> more_idents rem
-    | Tstr_class_type cl_list -> more_idents rem
+    | Tstr_class _ -> more_idents rem
+    | Tstr_class_type _ -> more_idents rem
     | Tstr_include _ -> more_idents rem
     | Tstr_module {mb_expr={mod_desc = Tmod_structure str}}
     | Tstr_module{mb_expr={mod_desc =
@@ -651,11 +651,11 @@ and all_idents = function
     [] -> []
   | item :: rem ->
     match item.str_desc with
-    | Tstr_eval (expr, _attrs) -> all_idents rem
-    | Tstr_value(rec_flag, pat_expr_list) ->
+    | Tstr_eval _ -> all_idents rem
+    | Tstr_value(_rec_flag, pat_expr_list) ->
       let_bound_idents pat_expr_list @ all_idents rem
     | Tstr_primitive _ -> all_idents rem
-    | Tstr_type (_, decls) -> all_idents rem
+    | Tstr_type _ -> all_idents rem
     | Tstr_typext tyext ->
       List.map (fun ext -> ext.ext_id) tyext.tyext_constructors
       @ all_idents rem
@@ -666,7 +666,7 @@ and all_idents = function
     | Tstr_open _ -> all_idents rem
     | Tstr_class cl_list ->
       List.map (fun (ci, _) -> ci.ci_id_class) cl_list @ all_idents rem
-    | Tstr_class_type cl_list -> all_idents rem
+    | Tstr_class_type _ -> all_idents rem
     | Tstr_include incl ->
       bound_value_identifiers incl.incl_type @ all_idents rem
     | Tstr_module {mb_id;mb_expr={mod_desc = Tmod_structure str}}
@@ -717,7 +717,7 @@ let transl_store_structure glob map prims str =
         | Tstr_primitive descr ->
             record_primitive descr.val_val;
             transl_store rootpath subst rem
-        | Tstr_type(_, decls) ->
+        | Tstr_type _ ->
             transl_store rootpath subst rem
         | Tstr_typext(tyext) ->
             let ids =
@@ -900,7 +900,7 @@ let build_ident_map restr idlist more_ids =
         let rec export_map pos map prims undef = function
         [] ->
           natural_map pos map prims undef
-          | (source_pos, Tcoerce_primitive p) :: rem ->
+          | (_source_pos, Tcoerce_primitive p) :: rem ->
             export_map (pos + 1) map ((pos, p) :: prims) undef rem
           | (source_pos, cc) :: rem ->
             let id = idarray.(source_pos) in
@@ -1061,7 +1061,7 @@ let get_component = function
     None -> Lconst const_unit
   | Some id -> Lprim(Pgetglobal id, [])
 
-let transl_package_flambda component_names target_name coercion =
+let transl_package_flambda component_names coercion =
   let size =
     match coercion with
     | Tcoerce_none -> List.length component_names
@@ -1108,7 +1108,7 @@ let transl_store_package component_names target_name coercion =
                  [Lprim(Pgetglobal target_name, []);
                   get_component id]))
          0 component_names)
-  | Tcoerce_structure (pos_cc_list, id_pos_list) ->
+  | Tcoerce_structure (pos_cc_list, _id_pos_list) ->
       let components =
         Lprim(Pmakeblock(0, Immutable), List.map get_component component_names)
       in
@@ -1116,7 +1116,7 @@ let transl_store_package component_names target_name coercion =
       (List.length pos_cc_list,
        Llet (Strict, blk, apply_coercion Strict coercion components,
              make_sequence
-               (fun pos id ->
+               (fun pos _id ->
                  Lprim(Psetfield(pos, Pointer, Initialization),
                        [Lprim(Pgetglobal target_name, []);
                         Lprim(Pfield pos, [Lvar blk])]))

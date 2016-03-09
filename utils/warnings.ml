@@ -239,7 +239,7 @@ let parse_opt error active flags s =
     | '+' -> loop_letter_num set (i+1)
     | '-' -> loop_letter_num clear (i+1)
     | '@' -> loop_letter_num set_all (i+1)
-    | c -> error ()
+    | _ -> error ()
   and loop_letter_num myset i =
     if i >= String.length s then error () else
     match s.[i] with
@@ -395,7 +395,7 @@ let message = function
       s ^ " belongs to several types: " ^ String.concat " " tl ^
       "\nThe first one was selected. Please disambiguate if this is wrong."
   | Ambiguous_name (_, _, false) -> assert false
-  | Ambiguous_name (slist, tl, true) ->
+  | Ambiguous_name (_slist, tl, true) ->
       "these field labels belong to several types: " ^
       String.concat " " tl ^
       "\nThe first one was selected. Please disambiguate if this is wrong."

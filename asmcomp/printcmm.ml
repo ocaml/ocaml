@@ -54,8 +54,8 @@ let chunk = function
   | Double_u -> "float64u"
 
 let operation = function
-  | Capply(ty, d) -> "app" ^ Debuginfo.to_string d
-  | Cextcall(lbl, ty, alloc, d) ->
+  | Capply(_ty, d) -> "app" ^ Debuginfo.to_string d
+  | Cextcall(lbl, _ty, _alloc, d) ->
       Printf.sprintf "extcall \"%s\"%s" lbl (Debuginfo.to_string d)
   | Cload c -> Printf.sprintf "load %s" (chunk c)
   | Calloc -> "alloc"

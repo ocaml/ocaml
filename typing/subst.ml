@@ -82,7 +82,7 @@ let modtype_path s = function
       with Not_found -> p end
   | Pdot(p, n, pos) ->
       Pdot(module_path s p, n, pos)
-  | Papply(p1, p2) ->
+  | Papply _ ->
       fatal_error "Subst.modtype_path"
 
 let type_path s = function
@@ -90,7 +90,7 @@ let type_path s = function
       begin try Tbl.find id s.types with Not_found -> p end
   | Pdot(p, n, pos) ->
       Pdot(module_path s p, n, pos)
-  | Papply(p1, p2) ->
+  | Papply _ ->
       fatal_error "Subst.type_path"
 
 let type_path s p =
@@ -147,7 +147,7 @@ let rec typexp s ty =
     ty.desc <- Tsubst ty';
     ty'.desc <-
       begin match desc with
-      | Tconstr(p, tl, abbrev) ->
+      | Tconstr(p, tl, _abbrev) ->
           Tconstr(type_path s p, List.map (typexp s) tl, ref Mnil)
       | Tpackage(p, n, tl) ->
           Tpackage(modtype_path s p, n, List.map (typexp s) tl)
@@ -197,7 +197,7 @@ let rec typexp s ty =
               | None ->
                   Tvariant row
           end
-      | Tfield(label, kind, t1, t2) when field_kind_repr kind = Fabsent ->
+      | Tfield(_label, kind, _t1, t2) when field_kind_repr kind = Fabsent ->
           Tlink (typexp s t2)
       | _ -> copy_type_desc (typexp s) desc
       end;
@@ -345,13 +345,13 @@ let extension_constructor s ext =
 
 let rec rename_bound_idents s idents = function
     [] -> (List.rev idents, s)
-  | Sig_type(id, d, _) :: sg ->
+  | Sig_type(id, _, _) :: sg ->
       let id' = Ident.rename id in
       rename_bound_idents (add_type id (Pident id') s) (id' :: idents) sg
-  | Sig_module(id, mty, _) :: sg ->
+  | Sig_module(id, _, _) :: sg ->
       let id' = Ident.rename id in
       rename_bound_idents (add_module id (Pident id') s) (id' :: idents) sg
-  | Sig_modtype(id, d) :: sg ->
+  | Sig_modtype(id, _) :: sg ->
       let id' = Ident.rename id in
       rename_bound_idents (add_modtype id (Mty_ident(Pident id')) s)
                           (id' :: idents) sg
@@ -370,7 +370,7 @@ let rec modtype s = function
           begin try Tbl.find id s.modtypes with Not_found -> mty end
       | Pdot(p, n, pos) ->
           Mty_ident(Pdot(module_path s p, n, pos))
-      | Papply(p1, p2) ->
+      | Papply _ ->
           fatal_error "Subst.modtype"
       end
   | Mty_signature sg ->
@@ -392,19 +392,19 @@ and signature s sg =
 
 and signature_component s comp newid =
   match comp with
-    Sig_value(id, d) ->
+    Sig_value(_id, d) ->
       Sig_value(newid, value_description s d)
-  | Sig_type(id, d, rs) ->
+  | Sig_type(_id, d, rs) ->
       Sig_type(newid, type_declaration s d, rs)
-  | Sig_typext(id, ext, es) ->
+  | Sig_typext(_id, ext, es) ->
       Sig_typext(newid, extension_constructor s ext, es)
-  | Sig_module(id, d, rs) ->
+  | Sig_module(_id, d, rs) ->
       Sig_module(newid, module_declaration s d, rs)
-  | Sig_modtype(id, d) ->
+  | Sig_modtype(_id, d) ->
       Sig_modtype(newid, modtype_declaration s d)
-  | Sig_class(id, d, rs) ->
+  | Sig_class(_id, d, rs) ->
       Sig_class(newid, class_declaration s d, rs)
-  | Sig_class_type(id, d, rs) ->
+  | Sig_class_type(_id, d, rs) ->
       Sig_class_type(newid, cltype_declaration s d, rs)
 
 and module_declaration s decl =

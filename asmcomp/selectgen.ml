@@ -27,7 +27,7 @@ type environment = (Ident.t, Reg.t array) Tbl.t
 
 let oper_result_type = function
     Capply(ty, _) -> ty
-  | Cextcall(s, ty, alloc, _) -> ty
+  | Cextcall(_s, ty, _alloc, _) -> ty
   | Cload c ->
       begin match c with
       | Word_val -> typ_val
@@ -35,7 +35,7 @@ let oper_result_type = function
       | _ -> typ_int
       end
   | Calloc -> typ_val
-  | Cstore (c, _) -> typ_void
+  | Cstore _ -> typ_void
   | Caddi | Csubi | Cmuli | Cmulhi | Cdivi | Cmodi |
     Cand | Cor | Cxor | Clsl | Clsr | Casr |
     Ccmpi _ | Ccmpa _ | Ccmpf _ -> typ_int
@@ -69,11 +69,11 @@ let size_expr env exp =
         end
     | Ctuple el ->
         List.fold_right (fun e sz -> size localenv e + sz) el 0
-    | Cop(op, args) ->
+    | Cop(op, _) ->
         size_machtype(oper_result_type op)
     | Clet(id, arg, body) ->
         size (Tbl.add id (size localenv arg) localenv) body
-    | Csequence(e1, e2) ->
+    | Csequence(_e1, e2) ->
         size localenv e2
     | _ ->
         fatal_error "Selection.size_expr"
@@ -136,7 +136,7 @@ let join opt_r1 seq1 opt_r2 seq2 =
 let join_array rs =
   let some_res = ref None in
   for i = 0 to Array.length rs - 1 do
-    let (r, s) = rs.(i) in
+    let (r, _) = rs.(i) in
     if r <> None then some_res := r
   done;
   match !some_res with
@@ -190,7 +190,7 @@ method is_simple_expr = function
   | Cconst_natpointer _ -> true
   | Cvar _ -> true
   | Ctuple el -> List.for_all self#is_simple_expr el
-  | Clet(id, arg, body) -> self#is_simple_expr arg && self#is_simple_expr body
+  | Clet(_id, arg, body) -> self#is_simple_expr arg && self#is_simple_expr body
   | Csequence(e1, e2) -> self#is_simple_expr e1 && self#is_simple_expr e2
   | Cop(op, args) ->
       begin match op with
@@ -251,9 +251,9 @@ method mark_instr = function
 
 method select_operation op args =
   match (op, args) with
-    (Capply(ty, dbg), Cconst_symbol s :: rem) -> (Icall_imm s, rem)
-  | (Capply(ty, dbg), _) -> (Icall_ind, args)
-  | (Cextcall(s, ty, alloc, dbg), _) -> (Iextcall(s, alloc), args)
+    (Capply _, Cconst_symbol s :: rem) -> (Icall_imm s, rem)
+  | (Capply _, _) -> (Icall_ind, args)
+  | (Cextcall(s, _ty, alloc, _dbg), _) -> (Iextcall(s, alloc), args)
   | (Cload chunk, [arg]) ->
       let (addr, eloc) = self#select_addressing chunk arg in
       (Iload(chunk, addr), [eloc])
@@ -505,7 +505,7 @@ method emit_expr env exp =
           self#insert_debug (Iraise k) dbg rd [||];
           None
       end
-  | Cop(Ccmpf comp, args) ->
+  | Cop(Ccmpf _, _) ->
       self#emit_expr env (Cifthenelse(exp, Cconst_int 1, Cconst_int 0))
   | Cop(op, args) ->
       begin match self#emit_parts_list env args with
@@ -556,7 +556,7 @@ method emit_expr env exp =
   | Csequence(e1, e2) ->
       begin match self#emit_expr env e1 with
         None -> None
-      | Some r1 -> self#emit_expr env e2
+      | Some _ -> self#emit_expr env e2
       end
   | Cifthenelse(econd, eif, eelse) ->
       let (cond, earg) = self#select_condition econd in
@@ -577,12 +577,12 @@ method emit_expr env exp =
           let rscases = Array.map (self#emit_sequence env) ecases in
           let r = join_array rscases in
           self#insert (Iswitch(index,
-                               Array.map (fun (r, s) -> s#extract) rscases))
+                               Array.map (fun (_, s) -> s#extract) rscases))
                       rsel [||];
           r
       end
   | Cloop(ebody) ->
-      let (rarg, sbody) = self#emit_sequence env ebody in
+      let (_rarg, sbody) = self#emit_sequence env ebody in
       self#insert (Iloop(sbody#extract)) [||] [||];
       Some [||]
   | Ccatch(nfail, ids, e1, e2) ->
@@ -796,7 +796,7 @@ method emit_tail env exp =
   | Csequence(e1, e2) ->
       begin match self#emit_expr env e1 with
         None -> ()
-      | Some r1 -> self#emit_tail env e2
+      | Some _ -> self#emit_tail env e2
       end
   | Cifthenelse(econd, eif, eelse) ->
       let (cond, earg) = self#select_condition econd in
@@ -868,7 +868,7 @@ method emit_fundecl f =
   let loc_arg = Proc.loc_parameters rarg in
   let env =
     List.fold_right2
-      (fun (id, ty) r env -> Tbl.add id r env)
+      (fun (id, _ty) r env -> Tbl.add id r env)
       f.Cmm.fun_args rargs Tbl.empty in
   self#insert_moves loc_arg rarg;
   self#emit_tail env f.Cmm.fun_body;
@@ -890,7 +890,7 @@ end
 let is_tail_call nargs =
   assert (Reg.dummy.typ = Int);
   let args = Array.make (nargs + 1) Reg.dummy in
-  let (loc_arg, stack_ofs) = Proc.loc_arguments args in
+  let (_loc_arg, stack_ofs) = Proc.loc_arguments args in
   stack_ofs = 0
 
 let _ =

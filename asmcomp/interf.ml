@@ -91,16 +91,16 @@ let build_graph fundecl =
         add_interf_move i.arg.(0) i.res.(0) i.live;
         interf i.next
     | Iop(Itailcall_ind) -> ()
-    | Iop(Itailcall_imm lbl) -> ()
-    | Iop op ->
+    | Iop(Itailcall_imm _) -> ()
+    | Iop _ ->
         add_interf_set i.res i.live;
         add_interf_self i.res;
         interf i.next
-    | Iifthenelse(tst, ifso, ifnot) ->
+    | Iifthenelse(_tst, ifso, ifnot) ->
         interf ifso;
         interf ifnot;
         interf i.next
-    | Iswitch(index, cases) ->
+    | Iswitch(_index, cases) ->
         for i = 0 to Array.length cases - 1 do
           interf cases.(i)
         done;
@@ -163,14 +163,14 @@ let build_graph fundecl =
         add_pref (weight / 4) i.res.(0) i.arg.(0);
         prefer weight i.next
     | Iop(Itailcall_ind) -> ()
-    | Iop(Itailcall_imm lbl) -> ()
-    | Iop op ->
+    | Iop(Itailcall_imm _) -> ()
+    | Iop _ ->
         prefer weight i.next
-    | Iifthenelse(tst, ifso, ifnot) ->
+    | Iifthenelse(_tst, ifso, ifnot) ->
         prefer (weight / 2) ifso;
         prefer (weight / 2) ifnot;
         prefer weight i.next
-    | Iswitch(index, cases) ->
+    | Iswitch(_index, cases) ->
         for i = 0 to Array.length cases - 1 do
           prefer (weight / 2) cases.(i)
         done;

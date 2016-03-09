@@ -32,7 +32,7 @@ let rec error_of_extension ext =
       match inner with
       | {pstr_desc=Pstr_extension (ext, _)} :: rest ->
           error_of_extension ext :: sub_from rest
-      | {pstr_loc} :: rest ->
+      | _ :: rest ->
           (Location.errorf ~loc
              "Invalid syntax for sub-error of extension '%s'." txt) ::
             sub_from rest

@@ -46,10 +46,10 @@ let rec strengthen env mty p =
 and strengthen_sig env sg p pos =
   match sg with
     [] -> []
-  | (Sig_value(id, desc) as sigelt) :: rem ->
+  | (Sig_value(_, desc) as sigelt) :: rem ->
       let nextpos = match desc.val_kind with Val_prim _ -> pos | _ -> pos+1 in
       sigelt :: strengthen_sig env rem p nextpos
-  | Sig_type(id, {type_kind=Type_abstract}, rs) ::
+  | Sig_type(id, {type_kind=Type_abstract}, _) ::
     (Sig_type(id', {type_private=Private}, _) :: _ as rem)
     when Ident.name id = Ident.name id' ^ "#row" ->
       strengthen_sig env rem p pos
@@ -68,7 +68,7 @@ and strengthen_sig env sg p pos =
               { decl with type_manifest = manif }
       in
       Sig_type(id, newdecl, rs) :: strengthen_sig env rem p pos
-  | (Sig_typext(id, ext, es) as sigelt) :: rem ->
+  | (Sig_typext _ as sigelt) :: rem ->
       sigelt :: strengthen_sig env rem p (pos+1)
   | Sig_module(id, md, rs) :: rem ->
       let str =
@@ -91,9 +91,9 @@ and strengthen_sig env sg p pos =
       Sig_modtype(id, newdecl) ::
       strengthen_sig (Env.add_modtype id decl env) rem p pos
       (* Need to add the module type in case it is manifest *)
-  | (Sig_class(id, decl, rs) as sigelt) :: rem ->
+  | (Sig_class _ as sigelt) :: rem ->
       sigelt :: strengthen_sig env rem p (pos+1)
-  | (Sig_class_type(id, decl, rs) as sigelt) :: rem ->
+  | (Sig_class_type _ as sigelt) :: rem ->
       sigelt :: strengthen_sig env rem p pos
 
 and strengthen_decl env md p =
@@ -171,7 +171,7 @@ let nondep_supertype env mid mty =
 
 let enrich_typedecl env p decl =
   match decl.type_manifest with
-    Some ty -> decl
+    Some _ -> decl
   | None ->
       try
         let orig_decl = Env.find_type p env in
@@ -203,18 +203,18 @@ and enrich_item env p = function
 
 let rec type_paths env p mty =
   match scrape env mty with
-    Mty_ident p -> []
-  | Mty_alias p -> []
+    Mty_ident _ -> []
+  | Mty_alias _ -> []
   | Mty_signature sg -> type_paths_sig env p 0 sg
-  | Mty_functor(param, arg, res) -> []
+  | Mty_functor _ -> []
 
 and type_paths_sig env p pos sg =
   match sg with
     [] -> []
-  | Sig_value(id, decl) :: rem ->
+  | Sig_value(_id, decl) :: rem ->
       let pos' = match decl.val_kind with Val_prim _ -> pos | _ -> pos + 1 in
       type_paths_sig env p pos' rem
-  | Sig_type(id, decl, _) :: rem ->
+  | Sig_type(id, _decl, _) :: rem ->
       Pdot(p, Ident.name id, nopos) :: type_paths_sig env p pos rem
   | Sig_module(id, md, _) :: rem ->
       type_paths env (Pdot(p, Ident.name id, pos)) md.md_type @
@@ -228,15 +228,15 @@ and type_paths_sig env p pos sg =
 
 let rec no_code_needed env mty =
   match scrape env mty with
-    Mty_ident p -> false
+    Mty_ident _ -> false
   | Mty_signature sg -> no_code_needed_sig env sg
   | Mty_functor(_, _, _) -> false
-  | Mty_alias p -> true
+  | Mty_alias _ -> true
 
 and no_code_needed_sig env sg =
   match sg with
     [] -> true
-  | Sig_value(id, decl) :: rem ->
+  | Sig_value(_id, decl) :: rem ->
       begin match decl.val_kind with
       | Val_prim _ -> no_code_needed_sig env rem
       | _ -> false
@@ -246,7 +246,7 @@ and no_code_needed_sig env sg =
       no_code_needed_sig (Env.add_module_declaration id md env) rem
   | (Sig_type _ | Sig_modtype _ | Sig_class_type _) :: rem ->
       no_code_needed_sig env rem
-  | (Sig_typext _ | Sig_class _) :: rem ->
+  | (Sig_typext _ | Sig_class _) :: _ ->
       false
 
 

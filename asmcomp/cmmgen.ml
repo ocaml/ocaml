@@ -156,7 +156,7 @@ and mult_power2 c n = lsl_int c (Cconst_int (Misc.log2 n))
 
 let rec mul_int c1 c2 =
   match (c1, c2) with
-  | (c, Cconst_int 0) | (Cconst_int 0, c) ->
+  | (_, Cconst_int 0) | (Cconst_int 0, _) ->
       Cconst_int 0
   | (c, Cconst_int 1) | (Cconst_int 1, c) ->
       c
@@ -431,7 +431,7 @@ let safe_div_bi =
   safe_divmod_bi div_int (fun c1 -> Cop(Csubi, [Cconst_int 0; c1]))
 
 let safe_mod_bi =
-  safe_divmod_bi mod_int (fun c1 -> Cconst_int 0)
+  safe_divmod_bi mod_int (fun _ -> Cconst_int 0)
 
 (* Bool *)
 
@@ -444,7 +444,7 @@ let test_bool = function
 let box_float c = Cop(Calloc, [alloc_float_header; c])
 
 let rec unbox_float = function
-    Cop(Calloc, [header; c]) -> c
+    Cop(Calloc, [_header; c]) -> c
   | Clet(id, exp, body) -> Clet(id, exp, unbox_float body)
   | Cifthenelse(cond, e1, e2) ->
       Cifthenelse(cond, unbox_float e1, unbox_float e2)
@@ -482,9 +482,9 @@ let rec remove_unit = function
       Ctrywith(remove_unit body, exn, remove_unit handler)
   | Clet(id, c1, c2) ->
       Clet(id, c1, remove_unit c2)
-  | Cop(Capply (mty, dbg), args) ->
+  | Cop(Capply (_mty, dbg), args) ->
       Cop(Capply (typ_void, dbg), args)
-  | Cop(Cextcall(proc, mty, alloc, dbg), args) ->
+  | Cop(Cextcall(proc, _mty, alloc, dbg), args) ->
       Cop(Cextcall(proc, typ_void, alloc, dbg), args)
   | Cexit (_,_) as c -> c
   | Ctuple [] as c -> c
@@ -692,9 +692,9 @@ let rec expr_size env = function
       RHS_block (fundecls_size fundecls + List.length clos_vars)
   | Ulet(id, exp, body) ->
       expr_size (Ident.add id (expr_size env exp) env) body
-  | Uletrec(bindings, body) ->
+  | Uletrec(_bindings, body) ->
       expr_size env body
-  | Uprim(Pmakeblock(tag, mut), args, _) ->
+  | Uprim(Pmakeblock _, args, _) ->
       RHS_block (List.length args)
   | Uprim(Pmakearray((Paddrarray | Pintarray), _), args, _) ->
       RHS_block (List.length args)
@@ -710,7 +710,7 @@ let rec expr_size env = function
         when prim_name = "caml_check_value_is_closure" ->
       (* Used for "-clambda-checks". *)
       expr_size env closure
-  | Usequence(exp, exp') ->
+  | Usequence(_exp, exp') ->
       expr_size env exp'
   | _ -> RHS_nonrec
 
@@ -813,15 +813,15 @@ let split_int64_for_32bit_target arg =
 
 let rec unbox_int bi arg =
   match arg with
-    Cop(Calloc, [hdr; ops; Cop(Clsl, [contents; Cconst_int 32])])
+    Cop(Calloc, [_hdr; _ops; Cop(Clsl, [contents; Cconst_int 32])])
     when bi = Pint32 && size_int = 8 && big_endian ->
       (* Force sign-extension of low 32 bits *)
       Cop(Casr, [Cop(Clsl, [contents; Cconst_int 32]); Cconst_int 32])
-  | Cop(Calloc, [hdr; ops; contents])
+  | Cop(Calloc, [_hdr; _ops; contents])
     when bi = Pint32 && size_int = 8 && not big_endian ->
       (* Force sign-extension of low 32 bits *)
       Cop(Casr, [Cop(Clsl, [contents; Cconst_int 32]); Cconst_int 32])
-  | Cop(Calloc, [hdr; ops; contents]) ->
+  | Cop(Calloc, [_hdr; _ops; contents]) ->
       contents
   | Clet(id, exp, body) -> Clet(id, exp, unbox_int bi body)
   | Cifthenelse(cond, e1, e2) ->
@@ -1182,9 +1182,9 @@ let simplif_primitive_32bits = function
   | Pbintcomp(Pint64, Lambda.Cgt) -> Pccall (default_prim "caml_greaterthan")
   | Pbintcomp(Pint64, Lambda.Cle) -> Pccall (default_prim "caml_lessequal")
   | Pbintcomp(Pint64, Lambda.Cge) -> Pccall (default_prim "caml_greaterequal")
-  | Pbigarrayref(unsafe, n, Pbigarray_int64, layout) ->
+  | Pbigarrayref(_unsafe, n, Pbigarray_int64, _layout) ->
       Pccall (default_prim ("caml_ba_get_" ^ string_of_int n))
-  | Pbigarrayset(unsafe, n, Pbigarray_int64, layout) ->
+  | Pbigarrayset(_unsafe, n, Pbigarray_int64, _layout) ->
       Pccall (default_prim ("caml_ba_set_" ^ string_of_int n))
   | Pstring_load_64(_) -> Pccall (default_prim "caml_string_get64")
   | Pstring_set_64(_) -> Pccall (default_prim "caml_string_set64")
@@ -1197,13 +1197,13 @@ let simplif_primitive p =
   match p with
   | Pduprecord _ ->
       Pccall (default_prim "caml_obj_dup")
-  | Pbigarrayref(unsafe, n, Pbigarray_unknown, layout) ->
+  | Pbigarrayref(_unsafe, n, Pbigarray_unknown, _layout) ->
       Pccall (default_prim ("caml_ba_get_" ^ string_of_int n))
-  | Pbigarrayset(unsafe, n, Pbigarray_unknown, layout) ->
+  | Pbigarrayset(_unsafe, n, Pbigarray_unknown, _layout) ->
       Pccall (default_prim ("caml_ba_set_" ^ string_of_int n))
-  | Pbigarrayref(unsafe, n, kind, Pbigarray_unknown_layout) ->
+  | Pbigarrayref(_unsafe, n, _kind, Pbigarray_unknown_layout) ->
       Pccall (default_prim ("caml_ba_get_" ^ string_of_int n))
-  | Pbigarrayset(unsafe, n, kind, Pbigarray_unknown_layout) ->
+  | Pbigarrayset(_unsafe, n, _kind, Pbigarray_unknown_layout) ->
       Pccall (default_prim ("caml_ba_set_" ^ string_of_int n))
   | p ->
       if size_int = 8 then p else simplif_primitive_32bits p
@@ -1371,7 +1371,7 @@ let rec is_unboxed_number env e =
         | Parrayrefu Pfloatarray -> Boxed Boxed_float
         | Parrayrefs Pfloatarray -> Boxed Boxed_float
         | Pbintofint bi -> Boxed (Boxed_integer bi)
-        | Pcvtbint(src, dst) -> Boxed (Boxed_integer dst)
+        | Pcvtbint(_src, dst) -> Boxed (Boxed_integer dst)
         | Pnegbint bi -> Boxed (Boxed_integer bi)
         | Paddbint bi -> Boxed (Boxed_integer bi)
         | Psubbint bi -> Boxed (Boxed_integer bi)
@@ -1512,9 +1512,9 @@ let rec transl env e =
       begin match (simplif_primitive prim, args) with
         (Pgetglobal id, []) ->
           Cconst_symbol (Ident.name id)
-      | (Pmakeblock(tag, mut), []) ->
+      | (Pmakeblock _, []) ->
           assert false
-      | (Pmakeblock(tag, mut), args) ->
+      | (Pmakeblock(tag, _mut), args) ->
           make_alloc tag (List.map (transl env) args)
       | (Pccall prim, args) ->
           transl_ccall env prim args dbg
@@ -1536,10 +1536,10 @@ let rec transl env e =
             Primitive.simple ~name:"caml_obj_dup" ~arity:1 ~alloc:true
           in
           transl_ccall env prim_obj_dup [arg] dbg
-      | (Pmakearray (kind, _), []) ->
+      | (Pmakearray _, []) ->
           transl_structured_constant (Uconst_block(0, []))
       | (Pmakearray (kind, _), args) -> transl_make_array env kind args
-      | (Pbigarrayref(unsafe, num_dims, elt_kind, layout), arg1 :: argl) ->
+      | (Pbigarrayref(unsafe, _num_dims, elt_kind, layout), arg1 :: argl) ->
           let elt =
             bigarray_get unsafe elt_kind layout
               (transl env arg1) (List.map (transl env) argl) dbg in
@@ -1552,7 +1552,7 @@ let rec transl env e =
           | Pbigarray_caml_int -> force_tag_int elt
           | _ -> tag_int elt
           end
-      | (Pbigarrayset(unsafe, num_dims, elt_kind, layout), arg1 :: argl) ->
+      | (Pbigarrayset(unsafe, _num_dims, elt_kind, layout), arg1 :: argl) ->
           let (argidx, argnewval) = split_last argl in
           return_unit(bigarray_set unsafe elt_kind layout
             (transl env arg1)
@@ -2411,15 +2411,15 @@ and transl_letrec env bindings cont =
     Cop(Cextcall(prim, typ_val, true, Debuginfo.none), [int_const sz]) in
   let rec init_blocks = function
     | [] -> fill_nonrec bsz
-    | (id, exp, RHS_block sz) :: rem ->
+    | (id, _exp, RHS_block sz) :: rem ->
         Clet(id, op_alloc "caml_alloc_dummy" sz, init_blocks rem)
-    | (id, exp, RHS_floatblock sz) :: rem ->
+    | (id, _exp, RHS_floatblock sz) :: rem ->
         Clet(id, op_alloc "caml_alloc_dummy_float" sz, init_blocks rem)
-    | (id, exp, RHS_nonrec) :: rem ->
+    | (id, _exp, RHS_nonrec) :: rem ->
         Clet (id, Cconst_int 0, init_blocks rem)
   and fill_nonrec = function
     | [] -> fill_blocks bsz
-    | (id, exp, (RHS_block _ | RHS_floatblock _)) :: rem ->
+    | (_id, _exp, (RHS_block _ | RHS_floatblock _)) :: rem ->
         fill_nonrec rem
     | (id, exp, RHS_nonrec) :: rem ->
         Clet(id, transl env exp, fill_nonrec rem)
@@ -2430,7 +2430,7 @@ and transl_letrec env bindings cont =
           Cop(Cextcall("caml_update_dummy", typ_void, false, Debuginfo.none),
               [Cvar id; transl env exp]) in
         Csequence(op, fill_blocks rem)
-    | (id, exp, RHS_nonrec) :: rem ->
+    | (_id, _exp, RHS_nonrec) :: rem ->
         fill_blocks rem
   in init_blocks bsz
 

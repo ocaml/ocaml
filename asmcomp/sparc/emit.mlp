@@ -278,16 +278,16 @@ let rec emit_instr i dslot =
     | Lop(Imove | Ispill | Ireload) ->
         let src = i.arg.(0) and dst = i.res.(0) in
         begin match (src, dst) with
-            {loc = Reg rs; typ = (Int | Addr | Val)}, {loc = Reg rd} ->
+            {loc = Reg _; typ = (Int | Addr | Val)}, {loc = Reg _} ->
               `	mov	{emit_reg src}, {emit_reg dst}\n`
-          | {loc = Reg rs; typ = Float}, {loc = Reg rd; typ = Float} ->
+          | {loc = Reg _; typ = Float}, {loc = Reg _; typ = Float} ->
               if !arch_version = SPARC_V9 then
                 `	fmovd	{emit_reg src}, {emit_reg dst}\n`
               else begin
                 `	fmovs	{emit_reg src}, {emit_reg dst}\n`;
                 `	fmovs	{emit_reg(next_in_pair src)}, {emit_reg(next_in_pair dst)}\n`
               end
-          | {loc = Reg rs; typ = Float}, {loc = Reg rd; typ = (Int | Addr | Val)} ->
+          | {loc = Reg _; typ = Float}, {loc = Reg _; typ = (Int | Addr | Val)} ->
               (* This happens when calling C functions and passing a float arg
                  in %o0...%o5 *)
               `	sub	%sp, 8, %sp\n`;
@@ -304,13 +304,13 @@ let rec emit_instr i dslot =
                     fatal_error "Emit: Imove Float [| _; _ |]"
               end;
               `	add	%sp, 8, %sp\n`
-          | {loc = Reg rs; typ = (Int | Addr | Val)}, {loc = Stack sd} ->
+          | {loc = Reg _; typ = (Int | Addr | Val)}, {loc = Stack _} ->
               `	st	{emit_reg src}, {emit_stack dst}\n`
-          | {loc = Reg rs; typ = Float}, {loc = Stack sd} ->
+          | {loc = Reg _; typ = Float}, {loc = Stack _} ->
               `	std	{emit_reg src}, {emit_stack dst}\n`
-          | {loc = Stack ss; typ = (Int | Addr | Val)}, {loc = Reg rd} ->
+          | {loc = Stack _; typ = (Int | Addr | Val)}, {loc = Reg _} ->
               `	ld	{emit_stack src}, {emit_reg dst}\n`
-          | {loc = Stack ss; typ = Float}, {loc = Reg rd} ->
+          | {loc = Stack _; typ = Float}, {loc = Reg _} ->
               `	ldd	{emit_stack src}, {emit_reg dst}\n`
           | (_, _) ->
               fatal_error "Emit: Imove"
@@ -514,7 +514,7 @@ let rec emit_instr i dslot =
         `	st	%f30, [%sp + 96]\n`;
         `	ld	[%sp + 96], {emit_reg i.res.(0)}\n`;
         `	add	%sp, 8, %sp\n`
-    | Lop(Ispecific sop) ->
+    | Lop(Ispecific _) ->
 	assert false
     | Lreloadretaddr ->
         let n = frame_size() in

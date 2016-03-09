@@ -114,39 +114,48 @@ module Options = Main_args.Make_optcomp_options (struct
   let _I dir = include_dirs := dir :: !include_dirs
   let _impl = impl
   let _inline spec =
-    Float_arg_helper.parse spec ~update:inline_threshold
-      ~help_text:"Syntax: -inline <n> | <round>=<n>[,...]"
+    Float_arg_helper.parse spec
+      "Syntax: -inline <n> | <round>=<n>[,...]"  inline_threshold
   let _inline_toplevel spec =
-    Int_arg_helper.parse spec ~update:inline_toplevel_threshold
-      ~help_text:"Syntax: -inline-toplevel <n> | <round>=<n>[,...]"
+    Int_arg_helper.parse spec
+      "Syntax: -inline-toplevel <n> | <round>=<n>[,...]"
+      inline_toplevel_threshold
   let _inlining_report () = inlining_report := true
   let _dump_pass pass = set_dumped_pass pass true
   let _rounds n = simplify_rounds := Some n
   let _inline_max_unroll spec =
-    Int_arg_helper.parse spec ~update:inline_max_unroll
-      ~help_text:"Syntax: -inline-max-unroll <n> | <round>=<n>[,...]"
+    Int_arg_helper.parse spec
+      "Syntax: -inline-max-unroll <n> | <round>=<n>[,...]"
+      inline_max_unroll
   let _classic_inlining () = classic_inlining := true
   let _inline_call_cost spec =
-    Int_arg_helper.parse spec ~update:inline_call_cost
-      ~help_text:"Syntax: -inline-call-cost <n> | <round>=<n>[,...]"
+    Int_arg_helper.parse spec
+      "Syntax: -inline-call-cost <n> | <round>=<n>[,...]"
+      inline_call_cost
   let _inline_alloc_cost spec =
-    Int_arg_helper.parse spec ~update:inline_alloc_cost
-      ~help_text:"Syntax: -inline-alloc-cost <n> | <round>=<n>[,...]"
+    Int_arg_helper.parse spec
+      "Syntax: -inline-alloc-cost <n> | <round>=<n>[,...]"
+       inline_alloc_cost
   let _inline_prim_cost spec =
-    Int_arg_helper.parse spec ~update:inline_prim_cost
-      ~help_text:"Syntax: -inline-prim-cost <n> | <round>=<n>[,...]"
+    Int_arg_helper.parse spec
+      "Syntax: -inline-prim-cost <n> | <round>=<n>[,...]"
+       inline_prim_cost
   let _inline_branch_cost spec =
-    Int_arg_helper.parse spec ~update:inline_branch_cost
-      ~help_text:"Syntax: -inline-branch-cost <n> | <round>=<n>[,...]"
+    Int_arg_helper.parse spec
+      "Syntax: -inline-branch-cost <n> | <round>=<n>[,...]"
+       inline_branch_cost
   let _inline_indirect_cost spec =
-    Int_arg_helper.parse spec ~update:inline_indirect_cost
-      ~help_text:"Syntax: -inline-indirect-cost <n> | <round>=<n>[,...]"
+    Int_arg_helper.parse spec
+      "Syntax: -inline-indirect-cost <n> | <round>=<n>[,...]"
+       inline_indirect_cost
   let _inline_lifting_benefit spec =
-    Int_arg_helper.parse spec ~update:inline_lifting_benefit
-      ~help_text:"Syntax: -inline-lifting-benefit <n> | <round>=<n>[,...]"
+    Int_arg_helper.parse spec
+      "Syntax: -inline-lifting-benefit <n> | <round>=<n>[,...]"
+      inline_lifting_benefit
   let _inline_branch_factor spec =
-    Float_arg_helper.parse spec ~update:inline_branch_factor
-      ~help_text:"Syntax: -inline-branch-factor <n> | <round>=<n>[,...]"
+    Float_arg_helper.parse spec
+      "Syntax: -inline-branch-factor <n> | <round>=<n>[,...]"
+       inline_branch_factor
   let _intf = intf
   let _intf_suffix s = Config.interface_suffix := s
   let _keep_docs = set keep_docs
@@ -154,8 +163,9 @@ module Options = Main_args.Make_optcomp_options (struct
   let _labels = clear classic
   let _linkall = set link_everything
   let _inline_max_depth spec =
-    Int_arg_helper.parse spec ~update:inline_max_depth
-      ~help_text:"Syntax: -inline-max-depth <n> | <round>=<n>[,...]"
+    Int_arg_helper.parse spec
+      "Syntax: -inline-max-depth <n> | <round>=<n>[,...]"
+       inline_max_depth
   let _no_alias_deps = set transparent_modules
   let _no_app_funct = clear applicative_functors
   let _no_float_const_prop = clear float_const_prop

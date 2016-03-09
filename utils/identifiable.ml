@@ -66,7 +66,7 @@ module Make_map (T : Thing) = struct
       m1 m2
 
   let union_right m1 m2 =
-    merge (fun id x y -> match x, y with
+    merge (fun _id x y -> match x, y with
         | None, None -> None
         | None, Some v
         | Some v, None

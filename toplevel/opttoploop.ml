@@ -99,9 +99,9 @@ let rec eval_path = function
       if Ident.persistent id || Ident.global id
       then global_symbol id
       else toplevel_value id
-  | Pdot(p, s, pos) ->
+  | Pdot(p, _s, pos) ->
       Obj.field (eval_path p) pos
-  | Papply(p1, p2) ->
+  | Papply _ ->
       fatal_error "Toploop.eval_path"
 
 let eval_path env path =
@@ -318,7 +318,7 @@ let execute_phrase print_outcome ppf phr =
         let res = load_lambda ppf ~module_ident res size in
         let out_phr =
           match res with
-          | Result v ->
+          | Result _ ->
               if Config.flambda then
                 (* CR-someday trefis: *)
                 ()
@@ -380,7 +380,7 @@ let execute_phrase print_outcome ppf phr =
                        dir_name;
                false
              end
-          | Directive_int f, Pdir_int (n, Some _) ->
+          | Directive_int _, Pdir_int (_, Some _) ->
               fprintf ppf "Wrong integer literal for directive `%s'.@."
                 dir_name;
               false

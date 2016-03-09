@@ -157,7 +157,7 @@ let identity_addressing = Iindexed 0
 
 let offset_addressing (Iindexed n) delta = Iindexed(n + delta)
 
-let num_args_addressing (Iindexed n) = 1
+let num_args_addressing (Iindexed _) = 1
 
 (* Printing operations and addressing modes *)
 

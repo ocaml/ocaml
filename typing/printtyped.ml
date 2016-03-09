@@ -231,7 +231,7 @@ and pattern i ppf x =
   | Tpat_variant (l, po, _) ->
       line i ppf "Tpat_variant \"%s\"\n" l;
       option i pattern ppf po;
-  | Tpat_record (l, c) ->
+  | Tpat_record (l, _c) ->
       line i ppf "Tpat_record\n";
       list i longident_x_pattern ppf l;
   | Tpat_array (l) ->
@@ -291,7 +291,7 @@ and expression i ppf x =
       line i ppf "Texp_apply\n";
       expression i ppf e;
       list i label_x_expression ppf l;
-  | Texp_match (e, l1, l2, partial) ->
+  | Texp_match (e, l1, l2, _partial) ->
       line i ppf "Texp_match\n";
       expression i ppf e;
       list i case ppf l1;

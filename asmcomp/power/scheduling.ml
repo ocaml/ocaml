@@ -38,7 +38,7 @@ method oper_latency = function
   | Ispecific(Imultaddf | Imultsubf) -> 5
   | _ -> 1
 
-method reload_retaddr_latency = 12
+method! reload_retaddr_latency = 12
   (* If we can have that many cycles between the reloadretaddr and the
      return, we can expect that the blr branch will be completely folded. *)
 
@@ -56,7 +56,7 @@ method oper_issue_cycles = function
   | Iintoffloat -> 4
   | _ -> 1
 
-method reload_retaddr_issue_cycles = 3
+method! reload_retaddr_issue_cycles = 3
   (* load then stalling mtlr *)
 
 end

@@ -617,7 +617,7 @@ let default_mapper =
 
 
 
-    location = (fun this l -> l);
+    location = (fun _this l -> l);
 
     extension = (fun this (s, e) -> (map_loc this s, this.payload this e));
     attribute = (fun this (s, e) -> (map_loc this s, this.payload this e));

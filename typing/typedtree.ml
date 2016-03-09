@@ -519,10 +519,10 @@ and 'a class_infos =
 let iter_pattern_desc f = function
   | Tpat_alias(p, _, _) -> f p
   | Tpat_tuple patl -> List.iter f patl
-  | Tpat_construct(_, cstr, patl) -> List.iter f patl
+  | Tpat_construct(_, _, patl) -> List.iter f patl
   | Tpat_variant(_, pat, _) -> may f pat
   | Tpat_record (lbl_pat_list, _) ->
-      List.iter (fun (_, lbl, pat) -> f pat) lbl_pat_list
+      List.iter (fun (_, _, pat) -> f pat) lbl_pat_list
   | Tpat_array patl -> List.iter f patl
   | Tpat_or(p1, p2, _) -> f p1; f p2
   | Tpat_lazy p -> f p

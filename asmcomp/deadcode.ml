@@ -57,7 +57,7 @@ let rec deadcode i =
       let (handler', _) = deadcode handler in
       let (s, _) = deadcode i.next in
       ({i with desc = Icatch(nfail, body', handler'); next = s}, i.live)
-  | Iexit nfail ->
+  | Iexit _ ->
       (i, i.live)
   | Itrywith(body, handler) ->
       let (body', _) = deadcode body in

@@ -36,7 +36,6 @@ let reg_trap_ptr = phys_reg 23
 let reg_alloc_ptr = phys_reg 24
 let reg_alloc_limit = phys_reg 25
 let reg_tmp1 = phys_reg 26
-let reg_tmp2 = phys_reg 27
 let reg_x15 = phys_reg 15
 
 (* Output a label *)
@@ -362,7 +361,7 @@ let num_call_gc_and_check_bound_points instr =
   in
   loop instr (0, 0)
 
-let max_out_of_line_code_offset instr ~num_call_gc ~num_check_bound =
+let max_out_of_line_code_offset ~num_call_gc ~num_check_bound =
   if num_call_gc < 1 && num_check_bound < 1 then 0
   else begin
     let size_of_call_gc = 2 in
@@ -606,7 +605,7 @@ let emit_instr i =
         let dst = i.res.(0) in
         let base =
           match addr with
-          | Iindexed ofs -> i.arg.(0)
+          | Iindexed _ -> i.arg.(0)
           | Ibased(s, ofs) ->
               `	adrp	{emit_reg reg_tmp1}, {emit_symbol_offset s ofs}\n`;
               reg_tmp1 in
@@ -633,7 +632,7 @@ let emit_instr i =
         let src = i.arg.(0) in
         let base =
           match addr with
-          | Iindexed ofs -> i.arg.(1)
+          | Iindexed _ -> i.arg.(1)
           | Ibased(s, ofs) ->
               `	adrp	{emit_reg reg_tmp1}, {emit_symbol_offset s ofs}\n`;
               reg_tmp1 in
@@ -905,7 +904,7 @@ let fundecl fundecl =
     num_call_gc_and_check_bound_points fundecl.fun_body
   in
   let max_out_of_line_code_offset =
-    max_out_of_line_code_offset fundecl.fun_body ~num_call_gc
+    max_out_of_line_code_offset ~num_call_gc
       ~num_check_bound
   in
   BR.relax fundecl.fun_body ~max_out_of_line_code_offset;

@@ -108,7 +108,7 @@ module Stdlib = struct
       let rec aux acc l1 l2 =
         match l1, l2 with
         | [], _ -> (List.rev acc, l2)
-        | h::t, [] -> raise (Invalid_argument "map2_prefix")
+        | _ :: _, [] -> raise (Invalid_argument "map2_prefix")
         | h1::t1, h2::t2 ->
           let h = f h1 h2 in
           aux (h :: acc) t1 t2
@@ -232,7 +232,7 @@ let remove_file filename =
   try
     if Sys.file_exists filename
     then Sys.remove filename
-  with Sys_error msg ->
+  with Sys_error _msg ->
     ()
 
 (* Expand a -I option: if it starts with +, make it relative to the standard
@@ -676,7 +676,7 @@ let delete_eol_spaces src =
       | '\n' ->
         Bytes.set dst i_dst '\n';
         loop (i_src + 1) (i_dst + 1)
-      | c ->
+      | _ ->
         for n = 0 to spaces do
           Bytes.set dst (i_dst + n) src.[i_src - spaces + n]
         done;

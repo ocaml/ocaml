@@ -89,19 +89,19 @@ module IdentSet = Lambda.IdentSet
 
 let missing_globals = ref IdentSet.empty
 
-let is_required (rel, pos) =
+let is_required (rel, _pos) =
   match rel with
     Reloc_setglobal id ->
       IdentSet.mem id !missing_globals
   | _ -> false
 
-let add_required (rel, pos) =
+let add_required (rel, _pos) =
   match rel with
     Reloc_getglobal id ->
       missing_globals := IdentSet.add id !missing_globals
   | _ -> ()
 
-let remove_required (rel, pos) =
+let remove_required (rel, _pos) =
   match rel with
     Reloc_setglobal id ->
       missing_globals := IdentSet.remove id !missing_globals

@@ -73,7 +73,7 @@ let instance_list = Ctype.instance_list Env.empty
 let rec narrow_unbound_lid_error : 'a. _ -> _ -> _ -> _ -> 'a =
   fun env loc lid make_error ->
   let check_module mlid =
-    try ignore (Env.lookup_module true mlid env) with
+    try ignore (Env.lookup_module ~load:true mlid env) with
     | Not_found ->
         narrow_unbound_lid_error env loc mlid (fun lid -> Unbound_module lid)
     | Env.Recmodule ->
@@ -83,7 +83,7 @@ let rec narrow_unbound_lid_error : 'a. _ -> _ -> _ -> _ -> 'a =
   | Longident.Lident _ -> ()
   | Longident.Ldot (mlid, _) ->
       check_module mlid;
-      let md = Env.find_module (Env.lookup_module true mlid env) env in
+      let md = Env.find_module (Env.lookup_module ~load:true mlid env) env in
       begin match Env.scrape_alias env md.md_type with
       | Mty_functor _ ->
           raise (Error (loc, env, Access_functor_as_structure mlid))
@@ -93,7 +93,7 @@ let rec narrow_unbound_lid_error : 'a. _ -> _ -> _ -> _ -> 'a =
       end
   | Longident.Lapply (flid, mlid) ->
       check_module flid;
-      let fmd = Env.find_module (Env.lookup_module true flid env) env in
+      let fmd = Env.find_module (Env.lookup_module ~load:true flid env) env in
       begin match Env.scrape_alias env fmd.md_type with
       | Mty_signature _ ->
           raise (Error (loc, env, Apply_structure_as_functor flid))
@@ -101,7 +101,7 @@ let rec narrow_unbound_lid_error : 'a. _ -> _ -> _ -> _ -> 'a =
           raise (Error (loc, env, Cannot_scrape_alias(flid, p)))
       | _ -> ()
       end;
-      let mmd = Env.find_module (Env.lookup_module true mlid env) env in
+      let mmd = Env.find_module (Env.lookup_module ~load:true mlid env) env in
       check_module mlid;
       begin match Env.scrape_alias env mmd.md_type with
       | Mty_alias p ->
@@ -199,7 +199,7 @@ let transl_modtype = ref (fun _ -> assert false)
 let create_package_mty fake loc env (p, l) =
   let l =
     List.sort
-      (fun (s1, t1) (s2, t2) ->
+      (fun (s1, _t1) (s2, _t2) ->
          if s1.txt = s2.txt then
            raise (Error (loc, env, Multiple_constraints_on_type s1.txt));
          compare s1.txt s2.txt)
@@ -379,7 +379,7 @@ let rec transl_type env policy styp =
       let ty = newobj (transl_fields loc env policy [] o fields) in
       ctyp (Ttyp_object (fields, o)) ty
   | Ptyp_class(lid, stl) ->
-      let (path, decl, is_variant) =
+      let (path, decl, _is_variant) =
         try
           let (path, decl) = Env.lookup_type lid.txt env in
           let rec check decl =
@@ -509,7 +509,7 @@ let rec transl_type env policy styp =
           let ty = mkfield l f and ty' = mkfield l f' in
           if equal env false [ty] [ty'] then () else
           try unify env ty ty'
-          with Unify trace ->
+          with Unify _trace ->
             raise(Error(loc, env, Constructor_mismatch (ty,ty')))
         with Not_found ->
           Hashtbl.add hfields h (l,f)
@@ -632,7 +632,7 @@ let rec transl_type env policy styp =
                           ) l in
       let path = !transl_modtype_longident styp.ptyp_loc env p.txt in
       let ty = newty (Tpackage (path,
-                       List.map (fun (s, pty) -> s.txt) l,
+                       List.map (fun (s, _pty) -> s.txt) l,
                        List.map (fun (_,cty) -> cty.ctyp_type) ptys))
       in
       ctyp (Ttyp_package {
@@ -673,7 +673,7 @@ let rec make_fixed_univars ty =
               {row with row_fixed=true;
                row_fields = List.map
                  (fun (s,f as p) -> match Btype.row_field_repr f with
-                   Reither (c, tl, m, r) -> s, Reither (c, tl, true, r)
+                   Reither (c, tl, _m, r) -> s, Reither (c, tl, true, r)
                  | _ -> p)
                  row.row_fields};
         Btype.iter_row make_fixed_univars row

@@ -72,7 +72,7 @@ let add_superpressure_regs op live_regs res_regs spilled =
     (fun r ->
       if Reg.Set.mem r spilled then () else begin
         match r.loc with
-          Stack s -> ()
+          Stack _ -> ()
         | _ -> let c = Proc.register_class r in
                pressure.(c) <- pressure.(c) + 1
       end)

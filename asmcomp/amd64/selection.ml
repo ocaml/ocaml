@@ -138,7 +138,7 @@ method! is_simple_expr e =
   | _ ->
       super#is_simple_expr e
 
-method select_addressing chunk exp =
+method select_addressing _chunk exp =
   let (a, d) = select_addr exp in
   (* PR#4625: displacement must be a signed 32-bit immediate *)
   if d < -0x8000_0000 || d > 0x7FFF_FFFF
@@ -175,7 +175,7 @@ method! select_operation op args =
   (* Recognize the LEA instruction *)
     Caddi | Caddv | Cadda | Csubi ->
       begin match self#select_addressing Word_int (Cop(op, args)) with
-        (Iindexed d, _) -> super#select_operation op args
+        (Iindexed _, _)
       | (Iindexed2 0, _) -> super#select_operation op args
       | (addr, arg) -> (Ispecific(Ilea addr), [arg])
       end

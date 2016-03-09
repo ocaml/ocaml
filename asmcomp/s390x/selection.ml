@@ -51,7 +51,7 @@ let pseudoregs_for_operation op arg res =
   (* Two-address binary operations: arg.(0) and res.(0) must be the same *)
   | Iintop(Iadd|Isub|Imul|Iand|Ior|Ixor)  | Iaddf|Isubf|Imulf|Idivf ->
       ([|res.(0); arg.(1)|], res)
-  | Ispecific(sop) ->
+  | Ispecific _ ->
     ( [| arg.(0); arg.(1); res.(0) |], [| res.(0) |])
   (* One-address unary operations: arg.(0) and res.(0) must be the same *)
   |  Iintop_imm((Imul|Iand|Ior|Ixor), _) -> (res, res)
@@ -64,7 +64,7 @@ inherit Selectgen.selector_generic as super
 
 method is_immediate n = (n <= 2147483647) && (n >= -2147483648)
 
-method select_addressing chunk exp =
+method select_addressing _chunk exp =
   let (a, d) = select_addr exp in
   (* 20-bit signed displacement *)
   if d < 0x80000 && d >= -0x80000 then begin

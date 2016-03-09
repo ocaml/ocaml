@@ -297,22 +297,22 @@ let diff env1 env2 =
 (* Forward declarations *)
 
 let components_of_module' =
-  ref ((fun ~deprecated env sub path mty -> assert false) :
+  ref ((fun ~deprecated:_ _env _sub _path _mty -> assert false) :
          deprecated:string option -> t -> Subst.t -> Path.t -> module_type ->
        module_components)
 let components_of_module_maker' =
-  ref ((fun (env, sub, path, mty) -> assert false) :
+  ref ((fun (_env, _sub, _path, _mty) -> assert false) :
           t * Subst.t * Path.t * module_type -> module_components_repr)
 let components_of_functor_appl' =
-  ref ((fun f env p1 p2 -> assert false) :
+  ref ((fun _f _env _p1 _p2 -> assert false) :
           functor_components -> t -> Path.t -> Path.t -> module_components)
 let check_modtype_inclusion =
   (* to be filled with Includemod.check_modtype_inclusion *)
-  ref ((fun env mty1 path1 mty2 -> assert false) :
+  ref ((fun _env _mty1 _path1 _mty2 -> assert false) :
           t -> module_type -> Path.t -> module_type -> unit)
 let strengthen =
   (* to be filled with Mtype.strengthen *)
-  ref ((fun env mty path -> assert false) :
+  ref ((fun _env _mty _path -> assert false) :
          t -> module_type -> Path.t -> module_type)
 
 let md md_type =
@@ -524,42 +524,42 @@ let rec find_module_descr path env =
   match path with
     Pident id ->
       begin try
-        let (p, desc) = EnvTbl.find_same id env.components
+        let (_p, desc) = EnvTbl.find_same id env.components
         in desc
       with Not_found ->
         if Ident.persistent id && not (Ident.name id = !current_unit)
         then (find_pers_struct (Ident.name id)).ps_comps
         else raise Not_found
       end
-  | Pdot(p, s, pos) ->
+  | Pdot(p, s, _pos) ->
       begin match get_components (find_module_descr p env) with
         Structure_comps c ->
-          let (descr, pos) = Tbl.find s c.comp_components in
+          let (descr, _pos) = Tbl.find s c.comp_components in
           descr
-      | Functor_comps f ->
+      | Functor_comps _ ->
          raise Not_found
       end
   | Papply(p1, p2) ->
       begin match get_components (find_module_descr p1 env) with
         Functor_comps f ->
           !components_of_functor_appl' f env p1 p2
-      | Structure_comps c ->
+      | Structure_comps _ ->
           raise Not_found
       end
 
 let find proj1 proj2 path env =
   match path with
     Pident id ->
-      let (p, data) = EnvTbl.find_same id (proj1 env)
+      let (_p, data) = EnvTbl.find_same id (proj1 env)
       in data
-  | Pdot(p, s, pos) ->
+  | Pdot(p, s, _pos) ->
       begin match get_components (find_module_descr p env) with
         Structure_comps c ->
-          let (data, pos) = Tbl.find s (proj2 c) in data
-      | Functor_comps f ->
+          let (data, _pos) = Tbl.find s (proj2 c) in data
+      | Functor_comps _ ->
           raise Not_found
       end
-  | Papply(p1, p2) ->
+  | Papply _ ->
       raise Not_found
 
 let find_value =
@@ -627,7 +627,7 @@ let find_module ~alias path env =
   match path with
     Pident id ->
       begin try
-        let (p, data) = EnvTbl.find_same id env.modules
+        let (_p, data) = EnvTbl.find_same id env.modules
         in data
       with Not_found ->
         if Ident.persistent id && not (Ident.name id = !current_unit) then
@@ -635,12 +635,12 @@ let find_module ~alias path env =
           md (Mty_signature(Lazy.force ps.ps_sig))
         else raise Not_found
       end
-  | Pdot(p, s, pos) ->
+  | Pdot(p, s, _pos) ->
       begin match get_components (find_module_descr p env) with
         Structure_comps c ->
-          let (data, pos) = Tbl.find s c.comp_modules in
+          let (data, _pos) = Tbl.find s c.comp_modules in
           md (EnvLazy.force subst_modtype_maker data)
-      | Functor_comps f ->
+      | Functor_comps _ ->
           raise Not_found
       end
   | Papply(p1, p2) ->
@@ -648,7 +648,7 @@ let find_module ~alias path env =
       begin match get_components desc1 with
         Functor_comps f ->
           md begin match f.fcomp_res with
-          | Mty_alias p as mty-> mty
+          | Mty_alias _ as mty -> mty
           | mty ->
               if alias then mty else
               try
@@ -661,7 +661,7 @@ let find_module ~alias path env =
                 Hashtbl.add f.fcomp_subst_cache p2 mty;
                 mty
           end
-      | Structure_comps c ->
+      | Structure_comps _ ->
           raise Not_found
       end
 
@@ -754,7 +754,7 @@ let rec is_functor_arg path env =
       begin try Ident.find_same id env.functor_args; true
       with Not_found -> false
       end
-  | Pdot (p, s, _) -> is_functor_arg p env
+  | Pdot (p, _s, _) -> is_functor_arg p env
   | Papply _ -> true
 
 (* Lookup by name *)
@@ -786,7 +786,7 @@ let rec lookup_module_descr_aux ?loc lid env =
         Structure_comps c ->
           let (descr, pos) = Tbl.find s c.comp_components in
           (Pdot(p, s, pos), descr)
-      | Functor_comps f ->
+      | Functor_comps _ ->
           raise Not_found
       end
   | Lapply(l1, l2) ->
@@ -797,7 +797,7 @@ let rec lookup_module_descr_aux ?loc lid env =
         Functor_comps f ->
           Misc.may (!check_modtype_inclusion env mty2 p2) f.fcomp_arg;
           (Papply(p1, p2), !components_of_functor_appl' f env p1 p2)
-      | Structure_comps c ->
+      | Structure_comps _ ->
           raise Not_found
       end
 
@@ -834,12 +834,12 @@ and lookup_module ~load ?loc lid env : Path.t =
       let (p, descr) = lookup_module_descr ?loc l env in
       begin match get_components descr with
         Structure_comps c ->
-          let (data, pos) = Tbl.find s c.comp_modules in
+          let (_data, pos) = Tbl.find s c.comp_modules in
           let (comps, _) = Tbl.find s c.comp_components in
           let p = Pdot(p, s, pos) in
           report_deprecated ?loc p comps.deprecated;
           p
-      | Functor_comps f ->
+      | Functor_comps _ ->
           raise Not_found
       end
   | Lapply(l1, l2) ->
@@ -851,7 +851,7 @@ and lookup_module ~load ?loc lid env : Path.t =
         Functor_comps f ->
           Misc.may (!check_modtype_inclusion env mty2 p2) f.fcomp_arg;
           p
-      | Structure_comps c ->
+      | Structure_comps _ ->
           raise Not_found
       end
 
@@ -865,10 +865,10 @@ let lookup proj1 proj2 ?loc lid env =
         Structure_comps c ->
           let (data, pos) = Tbl.find s (proj2 c) in
           (Pdot(p, s, pos), data)
-      | Functor_comps f ->
+      | Functor_comps _ ->
           raise Not_found
       end
-  | Lapply(l1, l2) ->
+  | Lapply _ ->
       raise Not_found
 
 let lookup_all_simple proj1 proj2 shadow ?loc lid env =
@@ -880,23 +880,23 @@ let lookup_all_simple proj1 proj2 shadow ?loc lid env =
         | [] -> []
         | ((x, f) :: xs) ->
             (x, f) ::
-              (do_shadow (List.filter (fun (y, g) -> not (shadow x y)) xs))
+              (do_shadow (List.filter (fun (y, _) -> not (shadow x y)) xs))
       in
         do_shadow xl
   | Ldot(l, s) ->
-      let (p, desc) = lookup_module_descr ?loc l env in
+      let (_p, desc) = lookup_module_descr ?loc l env in
       begin match get_components desc with
         Structure_comps c ->
           let comps =
             try Tbl.find s (proj2 c) with Not_found -> []
           in
           List.map
-            (fun (data, pos) -> (data, (fun () -> ())))
+            (fun (data, _pos) -> (data, (fun () -> ())))
             comps
-      | Functor_comps f ->
+      | Functor_comps _ ->
           raise Not_found
       end
-  | Lapply(l1, l2) ->
+  | Lapply _ ->
       raise Not_found
 
 let has_local_constraints env = env.local_constraints
@@ -906,7 +906,7 @@ let cstr_shadow cstr1 cstr2 =
   | Cstr_extension _, Cstr_extension _ -> true
   | _ -> false
 
-let lbl_shadow lbl1 lbl2 = false
+let lbl_shadow _lbl1 _lbl2 = false
 
 let lookup_value =
   lookup (fun env -> env.values) (fun sc -> sc.comp_values)
@@ -1098,7 +1098,7 @@ let iter_env proj1 proj2 f env () =
       let visit =
         match EnvLazy.get_arg mcomps.comps with
         | None -> true
-        | Some (env, sub, path, mty) -> scrape_alias_for_visit env mty
+        | Some (env, _sub, _path, mty) -> scrape_alias_for_visit env mty
       in
       if not visit then () else
       match get_components mcomps with
@@ -1257,35 +1257,35 @@ let rec prefix_idents root pos sub = function
       let nextpos = match decl.val_kind with Val_prim _ -> pos | _ -> pos+1 in
       let (pl, final_sub) = prefix_idents root nextpos sub rem in
       (p::pl, final_sub)
-  | Sig_type(id, decl, _) :: rem ->
+  | Sig_type(id, _, _) :: rem ->
       let p = Pdot(root, Ident.name id, nopos) in
       let (pl, final_sub) =
         prefix_idents root pos (Subst.add_type id p sub) rem in
       (p::pl, final_sub)
-  | Sig_typext(id, ext, _) :: rem ->
+  | Sig_typext(id, _, _) :: rem ->
       let p = Pdot(root, Ident.name id, pos) in
       (* we extend the substitution in case of an inlined record *)
       let (pl, final_sub) =
         prefix_idents root (pos+1) (Subst.add_type id p sub) rem in
       (p::pl, final_sub)
-  | Sig_module(id, mty, _) :: rem ->
+  | Sig_module(id, _, _) :: rem ->
       let p = Pdot(root, Ident.name id, pos) in
       let (pl, final_sub) =
         prefix_idents root (pos+1) (Subst.add_module id p sub) rem in
       (p::pl, final_sub)
-  | Sig_modtype(id, decl) :: rem ->
+  | Sig_modtype(id, _) :: rem ->
       let p = Pdot(root, Ident.name id, nopos) in
       let (pl, final_sub) =
         prefix_idents root pos
                       (Subst.add_modtype id (Mty_ident p) sub) rem in
       (p::pl, final_sub)
-  | Sig_class(id, decl, _) :: rem ->
+  | Sig_class(id, _, _) :: rem ->
       (* pretend this is a type, cf. PR#6650 *)
       let p = Pdot(root, Ident.name id, pos) in
       let (pl, final_sub) =
         prefix_idents root (pos + 1) (Subst.add_type id p sub) rem in
       (p::pl, final_sub)
-  | Sig_class_type(id, decl, _) :: rem ->
+  | Sig_class_type(id, _, _) :: rem ->
       let p = Pdot(root, Ident.name id, nopos) in
       let (pl, final_sub) =
         prefix_idents root pos (Subst.add_type id p sub) rem in
@@ -1662,7 +1662,7 @@ let add_module ?arg id mty env =
 
 let add_local_constraint id info elv env =
   match info with
-    {type_manifest = Some ty; type_newtype_level = Some (lv, _)} ->
+    {type_manifest = Some _; type_newtype_level = Some (lv, _)} ->
       (* elv is the expansion level, lv is the definition level *)
       let env =
         add_type ~check:false
@@ -1711,7 +1711,7 @@ let rec add_signature sg env =
 
 let open_signature slot root sg env0 =
   (* First build the paths and substitution *)
-  let (pl, sub, sg) = prefix_idents_and_subst root Subst.identity sg in
+  let (pl, _sub, sg) = prefix_idents_and_subst root Subst.identity sg in
   let sg = Lazy.force sg in
 
   (* Then enter the components in the environment after substitution *)
@@ -1877,17 +1877,17 @@ let find_all_simple_list proj1 proj2 f lid env acc =
   match lid with
     | None ->
       EnvTbl.fold_name
-        (fun id data acc -> f data acc)
+        (fun _id data acc -> f data acc)
         (proj1 env) acc
     | Some l ->
-      let p, desc = lookup_module_descr l env in
+      let (_p, desc) = lookup_module_descr l env in
       begin match get_components desc with
           Structure_comps c ->
             Tbl.fold
-              (fun s comps acc ->
+              (fun _s comps acc ->
                 match comps with
                   [] -> acc
-                | (data, pos) :: _ ->
+                | (data, _pos) :: _ ->
                   f data acc)
               (proj2 c) acc
         | Functor_comps _ ->

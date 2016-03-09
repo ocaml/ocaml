@@ -131,7 +131,8 @@ module Make (Id : Identifiable.S) = struct
     | No_loop of Id.t
 
   (* Ensure that the dependency graph does not have external dependencies. *)
-  let check dependencies =
+  (* Note: this function is currently not used. *)
+  let _check dependencies =
     Id.Map.iter (fun id set ->
         Id.Set.iter (fun v ->
             if not (Id.Map.mem v dependencies)

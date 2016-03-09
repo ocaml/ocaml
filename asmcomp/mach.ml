@@ -115,9 +115,9 @@ let rec instr_iter f i =
       match i.desc with
         Iend -> ()
       | Ireturn | Iop(Itailcall_ind) | Iop(Itailcall_imm _) -> ()
-      | Iifthenelse(tst, ifso, ifnot) ->
+      | Iifthenelse(_tst, ifso, ifnot) ->
           instr_iter f ifso; instr_iter f ifnot; instr_iter f i.next
-      | Iswitch(index, cases) ->
+      | Iswitch(_index, cases) ->
           for i = 0 to Array.length cases - 1 do
             instr_iter f cases.(i)
           done;

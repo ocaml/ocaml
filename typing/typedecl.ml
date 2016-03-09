@@ -157,7 +157,7 @@ let make_params env params =
   in
     List.map make_param params
 
-let transl_labels loc env closed lbls =
+let transl_labels env closed lbls =
   assert (lbls <> []);
   let all_labels = ref StringSet.empty in
   List.iter
@@ -189,21 +189,21 @@ let transl_labels loc env closed lbls =
       lbls in
   lbls, lbls'
 
-let transl_constructor_arguments loc env closed = function
+let transl_constructor_arguments env closed = function
   | Pcstr_tuple l ->
       let l = List.map (transl_simple_type env closed) l in
       Types.Cstr_tuple (List.map (fun t -> t.ctyp_type) l),
       Cstr_tuple l
   | Pcstr_record l ->
-      let lbls, lbls' = transl_labels loc env closed l in
+      let lbls, lbls' = transl_labels env closed l in
       Types.Cstr_record lbls',
       Cstr_record lbls
 
-let make_constructor loc env type_path type_params sargs sret_type =
+let make_constructor env type_path type_params sargs sret_type =
   match sret_type with
   | None ->
       let args, targs =
-        transl_constructor_arguments loc env true sargs
+        transl_constructor_arguments env true sargs
       in
         targs, None, args, None
   | Some sret_type ->
@@ -212,7 +212,7 @@ let make_constructor loc env type_path type_params sargs sret_type =
       let z = narrow () in
       reset_type_variables ();
       let args, targs =
-        transl_constructor_arguments loc env false sargs
+        transl_constructor_arguments env false sargs
       in
       let tret_type = transl_simple_type env false sret_type in
       let ret_type = tret_type.ctyp_type in
@@ -257,7 +257,7 @@ let transl_declaration env sdecl id =
         let make_cstr scstr =
           let name = Ident.create scstr.pcd_name.txt in
           let targs, tret_type, args, ret_type =
-            make_constructor scstr.pcd_loc env (Path.Pident id) params
+            make_constructor env (Path.Pident id) params
                              scstr.pcd_args scstr.pcd_res
           in
           let tcstr =
@@ -280,7 +280,7 @@ let transl_declaration env sdecl id =
         let tcstrs, cstrs = List.split (List.map make_cstr scstrs) in
           Ttype_variant tcstrs, Type_variant cstrs
       | Ptype_record lbls ->
-          let lbls, lbls' = transl_labels sdecl.ptype_loc env true lbls in
+          let lbls, lbls' = transl_labels env true lbls in
           let rep =
             if List.for_all (fun l -> is_float env l.Types.ld_type) lbls'
             then Record_float
@@ -514,7 +514,7 @@ let check_well_founded env loc path to_check ty =
     if fini then () else try
       visited := TypeMap.add ty exp_nodes !visited;
       match ty.desc with
-      | Tconstr(p, args, _)
+      | Tconstr(p, _, _)
         when not (TypeSet.is_empty exp_nodes) || to_check p ->
           let ty' = Ctype.try_expand_once_opt env ty in
           let ty0 = if TypeSet.is_empty exp_nodes then ty else ty0 in
@@ -741,7 +741,7 @@ let compute_variance_type env check (required, loc) decl tyl =
     if fvl = [] then () else
     let tvl2 = ref TypeMap.empty in
     List.iter2
-      (fun ty (p,n,i) ->
+      (fun ty (p,n,_) ->
         if Btype.is_Tvar ty then () else
         let v =
           if p then if n then full else covariant else conjugate covariant in
@@ -823,7 +823,7 @@ let compute_variance_gadt env check (required, loc as rloc) decl
           let fvl = List.map (Ctype.free_variables ?env:None) tyl in
           let _ =
             List.fold_left2
-              (fun (fv1,fv2) ty (c,n,i) ->
+              (fun (fv1,fv2) ty (c,n,_) ->
                 match fv2 with [] -> assert false
                 | fv :: fv2 ->
                     (* fv1 @ fv2 = free_variables of other parameters *)
@@ -915,14 +915,14 @@ let rec compute_properties_fixpoint env decls required variances immediacies =
   in
   let new_variances =
     List.map2
-      (fun (id, decl) -> compute_variance_decl new_env false decl)
+      (fun (_id, decl) -> compute_variance_decl new_env false decl)
       new_decls required
   in
   let new_variances =
     List.map2 (List.map2 Variance.union) new_variances variances in
   let new_immediacies =
     List.map
-      (fun (id, decl) -> compute_immediacy new_env decl)
+      (fun (_id, decl) -> compute_immediacy new_env decl)
       new_decls
   in
   if new_variances <> variances || new_immediacies <> immediacies then
@@ -947,7 +947,7 @@ let rec compute_properties_fixpoint env decls required variances immediacies =
     new_decls, new_env
   end
 
-let init_variance (id, decl) =
+let init_variance (_id, decl) =
   List.map (fun _ -> Variance.null) decl.type_params
 
 let add_injectivity =
@@ -962,7 +962,7 @@ let add_injectivity =
 let compute_variance_decls env cldecls =
   let decls, required =
     List.fold_right
-      (fun (obj_id, obj_abbr, cl_abbr, clty, cltydef, ci) (decls, req) ->
+      (fun (obj_id, obj_abbr, _cl_abbr, _clty, _cltydef, ci) (decls, req) ->
         let variance = List.map snd ci.ci_params in
         (obj_id, obj_abbr) :: decls,
         (add_injectivity variance, ci.ci_loc) :: req)
@@ -1162,7 +1162,7 @@ let transl_type_decl env rec_flag sdecl_list =
   (* Keep original declaration *)
   let final_decls =
     List.map2
-      (fun tdecl (id2, decl) ->
+      (fun tdecl (_id2, decl) ->
         { tdecl with typ_type = decl }
       ) tdecls final_decls
   in
@@ -1178,7 +1178,7 @@ let transl_extension_constructor env type_path type_params
     match sext.pext_kind with
       Pext_decl(sargs, sret_type) ->
         let targs, tret_type, args, ret_type =
-          make_constructor sext.pext_loc env type_path typext_params
+          make_constructor env type_path typext_params
             sargs sret_type
         in
           args, ret_type, Text_decl(targs, tret_type)
@@ -1633,7 +1633,7 @@ let abstract_type_decl arity =
   generalize_decl decl;
   decl
 
-let approx_type_decl env sdecl_list =
+let approx_type_decl sdecl_list =
   List.map
     (fun sdecl ->
       (Ident.create sdecl.ptype_name.txt,
@@ -1684,7 +1684,7 @@ let explain_unbound_single ppf tv ty =
       let row = Btype.row_repr row in
       if row.row_more == tv then trivial ty else
       explain_unbound ppf tv row.row_fields
-        (fun (l,f) -> match Btype.row_field_repr f with
+        (fun (_l,f) -> match Btype.row_field_repr f with
           Rpresent (Some t) -> t
         | Reither (_,[t],_,_) -> t
         | Reither (_,tl,_,_) -> Btype.newgenty (Ttuple tl)

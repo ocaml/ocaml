@@ -77,7 +77,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
         let hash x =
           try
             Hashtbl.hash x
-          with exn -> 0
+          with _exn -> 0
       end)
 
 
@@ -159,7 +159,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
 
     let install_printer path ty fn =
       let print_val ppf obj =
-        try fn ppf obj with exn -> exn_printer ppf path in
+        try fn ppf obj with _exn -> exn_printer ppf path in
       let printer obj = Oval_printer (fun ppf -> print_val ppf obj) in
       printers := (path, Simple (ty, printer)) :: !printers
 
@@ -196,9 +196,9 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
 
     let tree_of_qualified lookup_fun env ty_path name =
       match ty_path with
-      | Pident id ->
+      | Pident _ ->
           Oide_ident name
-      | Pdot(p, s, pos) ->
+      | Pdot(p, _s, _pos) ->
           if try
                match (lookup_fun (Lident name) env).desc with
                | Tconstr(ty_path', _, _) -> Path.same ty_path ty_path'
@@ -206,7 +206,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
              with Not_found -> false
           then Oide_ident name
           else Oide_dot (Printtyp.tree_of_path p, name)
-      | Papply(p1, p2) ->
+      | Papply _ ->
           Printtyp.tree_of_path ty_path
 
     let tree_of_constr =
@@ -255,7 +255,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
           match (Ctype.repr ty).desc with
           | Tvar _ | Tunivar _ ->
               Oval_stuff "<poly>"
-          | Tarrow(_, ty1, ty2, _) ->
+          | Tarrow _ ->
               Oval_stuff "<fun>"
           | Ttuple(ty_list) ->
               Oval_tuple (tree_of_val_list 0 depth obj ty_list)
@@ -545,15 +545,15 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
     and find_printer depth env ty =
       let rec find = function
       | [] -> raise Not_found
-      | (name, Simple (sch, printer)) :: remainder ->
+      | (_name, Simple (sch, printer)) :: remainder ->
           if Ctype.moregeneral env false sch ty
           then printer
           else find remainder
-      | (name, Generic (path, fn)) :: remainder ->
+      | (_name, Generic (path, fn)) :: remainder ->
           begin match (Ctype.expand_head env ty).desc with
           | Tconstr (p, args, _) when Path.same p path ->
               begin try apply_generic_printer path (fn depth) args
-              with _ -> (fun obj -> out_exn path) end
+              with _ -> (fun _obj -> out_exn path) end
           | _ -> find remainder end in
       find !printers
 
@@ -564,7 +564,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
           let printer = fn (fun depth obj -> tree_of_val depth obj arg) in
           apply_generic_printer path printer args
       | _ ->
-          (fun obj ->
+          (fun _obj ->
             let printer ppf =
               fprintf ppf "<internal error: incorrect arity for '%a'>"
                 Printtyp.path path in

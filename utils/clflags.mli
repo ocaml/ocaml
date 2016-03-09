@@ -17,12 +17,12 @@
 module Int_arg_helper : sig
   type parsed
 
-  val parse : string -> help_text:string -> update:parsed ref -> unit
+  val parse : string -> string -> parsed ref -> unit
 
   type parse_result =
     | Ok
     | Parse_failed of exn
-  val parse_no_error : string -> update:parsed ref -> parse_result
+  val parse_no_error : string -> parsed ref -> parse_result
 
   val get : key:int -> parsed -> int
 end
@@ -31,12 +31,12 @@ end
 module Float_arg_helper : sig
   type parsed
 
-  val parse : string -> help_text:string -> update:parsed ref -> unit
+  val parse : string -> string -> parsed ref -> unit
 
   type parse_result =
     | Ok
     | Parse_failed of exn
-  val parse_no_error : string -> update:parsed ref -> parse_result
+  val parse_no_error : string -> parsed ref -> parse_result
 
   val get : key:int -> parsed -> float
 end

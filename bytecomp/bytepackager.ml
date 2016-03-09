@@ -186,7 +186,7 @@ let rec rename_append_bytecode_list ppf packagename oc mapping defined ofs
 let build_global_target oc target_name members mapping pos coercion =
   let components =
     List.map2
-      (fun m (id1, id2) ->
+      (fun m (_id1, id2) ->
         match m.pm_kind with
         | PM_intf -> None
         | PM_impl _ -> Some id2)
@@ -232,7 +232,7 @@ let package_object_files ppf files targetfile targetname coercion =
     let pos_final = pos_out oc in
     let imports =
       List.filter
-        (fun (name, crc) -> not (List.mem name unit_names))
+        (fun (name, _crc) -> not (List.mem name unit_names))
         (Bytelink.extract_crc_interfaces()) in
     let compunit =
       { cu_name = targetname;

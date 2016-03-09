@@ -48,7 +48,7 @@ let array_element_kind env ty =
   match scrape env ty with
   | Tvar _ | Tunivar _ ->
       Pgenarray
-  | Tconstr(p, args, abbrev) ->
+  | Tconstr(p, _args, _abbrev) ->
       if Path.same p Predef.path_int || Path.same p Predef.path_char then
         Pintarray
       else if Path.same p Predef.path_float then
@@ -120,7 +120,7 @@ let layout_table =
 
 let bigarray_type_kind_and_layout env typ =
   match scrape env typ with
-  | Tconstr(p, [caml_type; elt_type; layout_type], abbrev) ->
+  | Tconstr(_p, [_caml_type; elt_type; layout_type], _abbrev) ->
       (bigarray_decode_type env elt_type kind_table Pbigarray_unknown,
        bigarray_decode_type env layout_type layout_table
                             Pbigarray_unknown_layout)

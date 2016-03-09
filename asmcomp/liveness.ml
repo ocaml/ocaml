@@ -68,12 +68,12 @@ let rec live i finally =
         i.live <- across;
         Reg.add_set_array across i.arg
       end
-  | Iifthenelse(test, ifso, ifnot) ->
+  | Iifthenelse(_test, ifso, ifnot) ->
       let at_join = live i.next finally in
       let at_fork = Reg.Set.union (live ifso at_join) (live ifnot at_join) in
       i.live <- at_fork;
       Reg.add_set_array at_fork i.arg
-  | Iswitch(index, cases) ->
+  | Iswitch(_index, cases) ->
       let at_join = live i.next finally in
       let at_fork = ref Reg.Set.empty in
       for i = 0 to Array.length cases - 1 do

@@ -158,6 +158,7 @@ let int_option_setter ppf name option s =
       (Warnings.Bad_env_variable
          ("OCAMLPARAM", Printf.sprintf "non-integer parameter for \"%s\"" name))
 
+(*
 let float_setter ppf name option s =
   try
     option := float_of_string s
@@ -165,6 +166,7 @@ let float_setter ppf name option s =
     Location.print_warning Location.none ppf
       (Warnings.Bad_env_variable
          ("OCAMLPARAM", Printf.sprintf "non-float parameter for \"%s\"" name))
+*)
 
 let check_bool ppf name s =
   match s with

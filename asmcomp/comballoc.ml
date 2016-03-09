@@ -26,7 +26,7 @@ type allocation_state =
 
 let allocated_size = function
     No_alloc -> 0
-  | Pending_alloc(reg, ofs) -> ofs
+  | Pending_alloc(_, ofs) -> ofs
 
 let rec combine i allocstate =
   match i.desc with
@@ -55,7 +55,7 @@ let rec combine i allocstate =
       let newnext = combine_restart i.next in
       (instr_cons_debug i.desc i.arg i.res i.dbg newnext,
        allocated_size allocstate)
-  | Iop op ->
+  | Iop _ ->
       let (newnext, sz) = combine i.next allocstate in
       (instr_cons_debug i.desc i.arg i.res i.dbg newnext, sz)
   | Iifthenelse(test, ifso, ifnot) ->
