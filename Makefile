@@ -520,65 +520,58 @@ beforedepend:: bytecomp/runtimedef.ml
 
 # Choose the right machine-dependent files
 
-asmcomp/arch.ml: asmcomp/$(ARCH)/arch.ml
-	ln -s $(ARCH)/arch.ml asmcomp/arch.ml
+ARCH_SPECIFIC = \
+  asmcomp/arch.ml asmcomp/proc.ml asmcomp/CSE.ml asmcomp/selection.ml \
+  asmcomp/scheduling.ml asmcomp/reload.ml asmcomp/scheduling.ml \
+  asmcomp/emit.ml
 
 partialclean::
-	rm -f asmcomp/arch.ml
+	rm -f $(ARCH_SPECIFIC)
 
-beforedepend:: asmcomp/arch.ml
+beforedepend:: $(ARCH_SPECIFIC)
 
-asmcomp/proc.ml: asmcomp/$(ARCH)/proc.ml
-	ln -s $(ARCH)/proc.ml asmcomp/proc.ml
+ARCH_OCAMLOPT:=$(ARCH)
 
-partialclean::
-	rm -f asmcomp/proc.ml
+.PHONY: check_arch check_all_arches
 
-beforedepend:: asmcomp/proc.ml
+# This rule provides a quick way to check that machine-dependent
+# files compiles fine for a foreign architecture (passed as ARCH=xxx).
 
-asmcomp/selection.ml: asmcomp/$(ARCH)/selection.ml
-	ln -s $(ARCH)/selection.ml asmcomp/selection.ml
+check_arch:
+	@echo "========= CHECKING asmcomp/$(ARCH) =============="
+	@rm -f $(ARCH_SPECIFIC) $(ARCH_SPECIFIC:.ml=.cmo)
+	@$(MAKE) ARCH_OCAMLOPT=$(ARCH) compilerlibs/ocamloptcomp.cma > /dev/null
+	@rm -f $(ARCH_SPECIFIC) $(ARCH_SPECIFIC:.ml=.cmo)
 
-partialclean::
-	rm -f asmcomp/selection.ml
+ARCHES=amd64 i386 arm arm64 power sparc s390x
 
-beforedepend:: asmcomp/selection.ml
+check_all_arches:
+	@for i in $(ARCHES); do $(MAKE) --no-print-directory check_arch ARCH=$$i; done
 
-asmcomp/CSE.ml: asmcomp/$(ARCH)/CSE.ml
-	ln -s $(ARCH)/CSE.ml asmcomp/CSE.ml
+asmcomp/arch.ml: asmcomp/$(ARCH_OCAMLOPT)/arch.ml
+	ln -s $(ARCH_OCAMLOPT)/arch.ml asmcomp/arch.ml
 
-partialclean::
-	rm -f asmcomp/CSE.ml
+asmcomp/proc.ml: asmcomp/$(ARCH_OCAMLOPT)/proc.ml
+	ln -s $(ARCH_OCAMLOPT)/proc.ml asmcomp/proc.ml
 
-beforedepend:: asmcomp/CSE.ml
+asmcomp/selection.ml: asmcomp/$(ARCH_OCAMLOPT)/selection.ml
+	ln -s $(ARCH_OCAMLOPT)/selection.ml asmcomp/selection.ml
 
-asmcomp/reload.ml: asmcomp/$(ARCH)/reload.ml
-	ln -s $(ARCH)/reload.ml asmcomp/reload.ml
+asmcomp/CSE.ml: asmcomp/$(ARCH_OCAMLOPT)/CSE.ml
+	ln -s $(ARCH_OCAMLOPT)/CSE.ml asmcomp/CSE.ml
 
-partialclean::
-	rm -f asmcomp/reload.ml
+asmcomp/reload.ml: asmcomp/$(ARCH_OCAMLOPT)/reload.ml
+	ln -s $(ARCH_OCAMLOPT)/reload.ml asmcomp/reload.ml
 
-beforedepend:: asmcomp/reload.ml
-
-asmcomp/scheduling.ml: asmcomp/$(ARCH)/scheduling.ml
-	ln -s $(ARCH)/scheduling.ml asmcomp/scheduling.ml
-
-partialclean::
-	rm -f asmcomp/scheduling.ml
-
-beforedepend:: asmcomp/scheduling.ml
+asmcomp/scheduling.ml: asmcomp/$(ARCH_OCAMLOPT)/scheduling.ml
+	ln -s $(ARCH_OCAMLOPT)/scheduling.ml asmcomp/scheduling.ml
 
 # Preprocess the code emitters
 
-asmcomp/emit.ml: asmcomp/$(ARCH)/emit.mlp tools/cvt_emit
-	echo \# 1 \"$(ARCH)/emit.mlp\" > asmcomp/emit.ml
-	$(CAMLRUN) tools/cvt_emit <asmcomp/$(ARCH)/emit.mlp >>asmcomp/emit.ml \
+asmcomp/emit.ml: asmcomp/$(ARCH_OCAMLOPT)/emit.mlp tools/cvt_emit
+	echo \# 1 \"$(ARCH_OCAMLOPT)/emit.mlp\" > asmcomp/emit.ml
+	$(CAMLRUN) tools/cvt_emit <asmcomp/$(ARCH_OCAMLOPT)/emit.mlp >>asmcomp/emit.ml \
 	|| { rm -f asmcomp/emit.ml; exit 2; }
-
-partialclean::
-	rm -f asmcomp/emit.ml
-
-beforedepend:: asmcomp/emit.ml
 
 tools/cvt_emit: tools/cvt_emit.mll
 	cd tools && $(MAKE) cvt_emit
