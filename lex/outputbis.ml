@@ -37,7 +37,7 @@ let output_auto_defs oc has_refill =
 \n    if lexbuf.Lexing.lex_eof_reached then\
 \n      state lexbuf k 256\
 \n    else begin\
-\n      __ocaml_lex_refill (fun lexbuf ->
+\n      __ocaml_lex_refill (fun lexbuf ->\
 \n          lexbuf.Lexing.refill_buff lexbuf ;\
 \n          __ocaml_lex_next_char lexbuf state k)\
 \n        lexbuf\
@@ -188,7 +188,7 @@ let output_automata oc has_refill auto =
 
 (* Output the entries *)
 
-let output_entry sourcefile ic oc has_refill tr e =
+let output_entry ic oc has_refill tr e =
   let init_num, init_moves = e.auto_initial_state in
   fprintf oc "%s %alexbuf =\n  __ocaml_lex_init_lexbuf lexbuf %d; %a"
     e.auto_name output_args e.auto_args
@@ -221,7 +221,7 @@ let output_entry sourcefile ic oc has_refill tr e =
 
 (* Main output function *)
 
-let output_lexdef sourcefile ic oc tr header rh
+let output_lexdef ic oc tr header rh
                   entry_points transitions trailer =
 
   copy_chunk ic oc tr header false;
@@ -231,10 +231,10 @@ let output_lexdef sourcefile ic oc tr header rh
     [] -> ()
   | entry1 :: entries ->
     output_string oc "let rec ";
-    output_entry sourcefile ic oc has_refill tr entry1;
+    output_entry ic oc has_refill tr entry1;
       List.iter
         (fun e -> output_string oc "and ";
-          output_entry sourcefile ic oc has_refill tr e)
+          output_entry ic oc has_refill tr e)
         entries;
       output_string oc ";;\n\n";
   end;

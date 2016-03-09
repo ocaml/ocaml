@@ -139,7 +139,7 @@ let output_env ic oc tr env =
           env in
 
       List.iter
-        (fun ((x,pos),v) ->
+        (fun ((_,pos),v) ->
           fprintf oc "%s\n" !pref ;
           copy_chunk ic oc tr pos false ;
           begin match v with

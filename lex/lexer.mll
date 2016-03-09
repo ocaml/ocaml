@@ -63,8 +63,6 @@ let handle_lexical_error fn lexbuf =
   with Lexical_error (msg, "", 0, 0) ->
     raise(Lexical_error(msg, file, line, column))
 
-let get_input_name () = Sys.argv.(Array.length Sys.argv - 1)
-
 let warning lexbuf msg =
   let p = Lexing.lexeme_start_p lexbuf in
   Printf.eprintf "ocamllex warning:\nFile \"%s\", line %d, character %d: %s.\n"
