@@ -155,6 +155,7 @@ let square_nat nat1 off1 len1 nat2 off2 len2 =
   !c
 ***)
 
+(*
 let gcd_int_nat i nat off len =
   if i = 0 then 1 else
   if is_nat_int nat off len then begin
@@ -170,6 +171,7 @@ let gcd_int_nat i nat off len =
     set_digit_nat nat off (gcd_int (nth_digit_nat remainder 0) i);
     0
   end
+*)
 
 let exchange r1 r2 =
   let old1 = !r1 in r1 := !r2; r2 := old1
@@ -335,8 +337,6 @@ let string_of_digit nat =
 
 *******)
 
-let digits = "0123456789ABCDEF"
-
 (*
    make_power_base affecte power_base des puissances successives de base a
    partir de la puissance 1-ieme.
@@ -364,10 +364,13 @@ let make_power_base base power_base =
   (!i - 2, !j)
 
 (*
+(*
    int_to_string places the representation of the integer int in base 'base'
    in the string s by starting from the end position pos and going towards
    the start, for 'times' places and updates the value of pos.
 *)
+let digits = "0123456789ABCDEF"
+
 let int_to_string int s pos_ref base times =
   let i = ref int
   and j = ref times in
@@ -377,6 +380,7 @@ let int_to_string int s pos_ref base times =
         decr j;
         i := !i / base
      done
+*)
 
 let power_base_int base i =
   if i = 0 || base = 1 then
@@ -387,7 +391,7 @@ let power_base_int base i =
     invalid_arg "power_base_int"
   else begin
          let power_base = make_nat (succ length_of_digit) in
-         let (pmax, pint) = make_power_base base power_base in
+         let (pmax, _pint) = make_power_base base power_base in
          let n = i / (succ pmax)
          and rem = i mod (succ pmax) in
            if n > 0 then begin

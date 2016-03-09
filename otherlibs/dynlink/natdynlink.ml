@@ -120,16 +120,16 @@ let add_check_ifaces allow_ext filename ui ifaces =
            then StrMap.add name (crc,filename) ifaces
            else
              try
-               let (old_crc,old_src) = StrMap.find name ifaces in
+               let (old_crc, _old_src) = StrMap.find name ifaces in
                  if old_crc <> crc
-                 then raise(Error(Inconsistent_import(name)))
+                 then raise(Error(Inconsistent_import name))
                  else ifaces
              with Not_found ->
                if allow_ext then StrMap.add name (crc,filename) ifaces
                else raise (Error(Unavailable_unit name))
     ) ifaces ui.dynu_imports_cmi
 
-let check_implems filename ui implems =
+let check_implems ui implems =
   List.iter
     (fun (name, crco) ->
        match name with
@@ -147,10 +147,10 @@ let check_implems filename ui implems =
          |"Undefined_recursive_module" -> ()
          | _ ->
        try
-         let (old_crc,old_src,state) = StrMap.find name implems in
+         let (old_crc, _old_src, state) = StrMap.find name implems in
            match crco with
              Some crc when old_crc <> crc ->
-               raise(Error(Inconsistent_implementation(name)))
+               raise(Error(Inconsistent_implementation name))
            | _ ->
                match state with
                | Check_inited i ->
@@ -169,7 +169,7 @@ let loadunits filename handle units state =
   let new_implems =
     List.fold_left
       (fun accu ui ->
-         check_implems filename ui accu;
+         check_implems ui accu;
          StrMap.add ui.dynu_name (ui.dynu_crc,filename,Loaded) accu)
       state.implems units in
 

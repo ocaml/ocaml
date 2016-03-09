@@ -1073,7 +1073,7 @@ let establish_server server_fun sockaddr =
   bind sock sockaddr;
   listen sock 5;
   while true do
-    let (s, caller) = accept_non_intr sock in
+    let (s, _caller) = accept_non_intr sock in
     (* The "double fork" trick, the process which calls server_fun will not
        leave a zombie process *)
     match fork() with

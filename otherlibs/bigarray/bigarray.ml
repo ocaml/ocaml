@@ -308,6 +308,7 @@ let _ =
   let _ = Array3.get in
   ()
 
+[@@@ocaml.warning "-32"]
 external get1: unit -> unit = "caml_ba_get_1"
 external get2: unit -> unit = "caml_ba_get_2"
 external get3: unit -> unit = "caml_ba_get_3"
