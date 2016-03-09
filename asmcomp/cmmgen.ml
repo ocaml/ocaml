@@ -2622,7 +2622,7 @@ let transl_all_functions_and_emit_all_constants cont =
        Queue.is_empty functions
     then cont
     else
-      let cont, set = transl_all_functions already_translated cont in
+      let cont, already_translated = transl_all_functions already_translated cont in
       let cont = emit_all_constants cont in
       aux already_translated cont
   in
