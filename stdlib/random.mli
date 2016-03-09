@@ -42,15 +42,15 @@ val int : int -> int
      and [bound] (exclusive).  [bound] must be greater than 0 and less
      than 2{^30}. *)
 
-val int32 : Int32.t -> Int32.t;;
+val int32 : Int32.t -> Int32.t
 (** [Random.int32 bound] returns a random integer between 0 (inclusive)
      and [bound] (exclusive).  [bound] must be greater than 0. *)
 
-val nativeint : Nativeint.t -> Nativeint.t;;
+val nativeint : Nativeint.t -> Nativeint.t
 (** [Random.nativeint bound] returns a random integer between 0 (inclusive)
      and [bound] (exclusive).  [bound] must be greater than 0. *)
 
-val int64 : Int64.t -> Int64.t;;
+val int64 : Int64.t -> Int64.t
 (** [Random.int64 bound] returns a random integer between 0 (inclusive)
      and [bound] (exclusive).  [bound] must be greater than 0. *)
 

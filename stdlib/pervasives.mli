@@ -151,22 +151,26 @@ external __LOC__ : string = "%loc_LOC"
     the file currently being parsed by the compiler, with the standard
     error format of OCaml: "File %S, line %d, characters %d-%d".
     @since 4.02.0
- *)
+*)
+
 external __FILE__ : string = "%loc_FILE"
 (** [__FILE__] returns the name of the file currently being
     parsed by the compiler.
     @since 4.02.0
 *)
+
 external __LINE__ : int = "%loc_LINE"
 (** [__LINE__] returns the line number at which this expression
     appears in the file currently being parsed by the compiler.
     @since 4.02.0
- *)
+*)
+
 external __MODULE__ : string = "%loc_MODULE"
 (** [__MODULE__] returns the module name of the file being
     parsed by the compiler.
     @since 4.02.0
- *)
+*)
+
 external __POS__ : string * int * int * int = "%loc_POS"
 (** [__POS__] returns a tuple [(file,lnum,cnum,enum)], corresponding
     to the location at which this expression appears in the file
@@ -182,13 +186,15 @@ external __LOC_OF__ : 'a -> string * 'a = "%loc_LOC"
     compiler, with the standard error format of OCaml: "File %S, line
     %d, characters %d-%d".
     @since 4.02.0
- *)
+*)
+
 external __LINE_OF__ : 'a -> int * 'a = "%loc_LINE"
 (** [__LINE__ expr] returns a pair [(line, expr)], where [line] is the
     line number at which the expression [expr] appears in the file
     currently being parsed by the compiler.
     @since 4.02.0
  *)
+
 external __POS_OF__ : 'a -> (string * int * int * int) * 'a = "%loc_POS"
 (** [__POS_OF__ expr] returns a pair [(loc,expr)], where [loc] is a
     tuple [(file,lnum,cnum,enum)] corresponding to the location at

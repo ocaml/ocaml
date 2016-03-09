@@ -143,7 +143,7 @@ val usage_string : (key * spec * doc) list -> usage_msg -> string
 (** Returns the message that would have been printed by {!Arg.usage},
     if provided with the same parameters. *)
 
-val align: ?limit: int -> (key * spec * doc) list -> (key * spec * doc) list;;
+val align: ?limit: int -> (key * spec * doc) list -> (key * spec * doc) list
 (** Align the documentation strings by inserting spaces at the first
     space, according to the length of the keyword.  Use a
     space as the first character in a doc string if you want to

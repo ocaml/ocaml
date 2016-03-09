@@ -124,7 +124,7 @@ let clear_parser() =
   Array.fill env.v_stack 0 env.stacksize (Obj.repr ());
   env.lval <- Obj.repr ()
 
-let current_lookahead_fun = ref (fun (x : Obj.t) -> false)
+let current_lookahead_fun = ref (fun (_ : Obj.t) -> false)
 
 let yyparse tables start lexer lexbuf =
   let rec loop cmd arg =
@@ -208,4 +208,4 @@ let rhs_end n = (rhs_end_pos n).pos_cnum;;
 let is_current_lookahead tok =
   (!current_lookahead_fun)(Obj.repr tok)
 
-let parse_error (msg : string) = ()
+let parse_error (_ : string) = ()

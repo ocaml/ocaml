@@ -131,7 +131,7 @@ let to_list a =
 (* Cannot use List.length here because the List module depends on Array. *)
 let rec list_length accu = function
   | [] -> accu
-  | h::t -> list_length (succ accu) t
+  | _::t -> list_length (succ accu) t
 ;;
 
 let of_list = function

@@ -130,7 +130,7 @@ module Win32 = struct
         match s.[i] with
         | '\"' -> add_bs (2*n+1); Buffer.add_char b '\"'; loop (i+1);
         | '\\' -> loop_bs (n+1) (i+1);
-        | c    -> add_bs n; loop i
+        | _    -> add_bs n; loop i
       end
     and add_bs n = for _j = 1 to n do Buffer.add_char b '\\'; done
     in
@@ -151,7 +151,7 @@ module Win32 = struct
     let dir = generic_dirname is_dir_sep current_dir_name path in
     drive ^ dir
   let basename s =
-    let (drive, path) = drive_and_path s in
+    let (_drive, path) = drive_and_path s in
     generic_basename is_dir_sep current_dir_name path
 end
 

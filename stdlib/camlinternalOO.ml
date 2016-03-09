@@ -457,20 +457,20 @@ let lookup_tables root keys =
 
 (**** builtin methods ****)
 
-let get_const x = ret (fun obj -> x)
+let get_const x = ret (fun _obj -> x)
 let get_var n   = ret (fun obj -> Array.unsafe_get obj n)
 let get_env e n =
   ret (fun obj ->
     Array.unsafe_get (Obj.magic (Array.unsafe_get obj e) : obj) n)
 let get_meth n  = ret (fun obj -> sendself obj n)
 let set_var n   = ret (fun obj x -> Array.unsafe_set obj n x)
-let app_const f x = ret (fun obj -> f x)
+let app_const f x = ret (fun _obj -> f x)
 let app_var f n   = ret (fun obj -> f (Array.unsafe_get obj n))
 let app_env f e n =
   ret (fun obj ->
     f (Array.unsafe_get (Obj.magic (Array.unsafe_get obj e) : obj) n))
 let app_meth f n  = ret (fun obj -> f (sendself obj n))
-let app_const_const f x y = ret (fun obj -> f x y)
+let app_const_const f x y = ret (fun _obj -> f x y)
 let app_const_var f x n   = ret (fun obj -> f x (Array.unsafe_get obj n))
 let app_const_meth f x n = ret (fun obj -> f x (sendself obj n))
 let app_var_const f n x = ret (fun obj -> f (Array.unsafe_get obj n) x)

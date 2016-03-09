@@ -135,12 +135,12 @@ module Make(Ord: OrderedType) =
 
     let rec add_min_element v = function
       | Empty -> singleton v
-      | Node (l, x, r, h) ->
+      | Node (l, x, r, _h) ->
         bal (add_min_element v l) x r
 
     let rec add_max_element v = function
       | Empty -> singleton v
-      | Node (l, x, r, h) ->
+      | Node (l, x, r, _h) ->
         bal l x (add_max_element v r)
 
     (* Same as create and bal, but no assumptions are made on the
@@ -159,19 +159,19 @@ module Make(Ord: OrderedType) =
 
     let rec min_elt = function
         Empty -> raise Not_found
-      | Node(Empty, v, r, _) -> v
-      | Node(l, v, r, _) -> min_elt l
+      | Node(Empty, v, _, _) -> v
+      | Node(l, _, _, _) -> min_elt l
 
     let rec max_elt = function
         Empty -> raise Not_found
-      | Node(l, v, Empty, _) -> v
-      | Node(l, v, r, _) -> max_elt r
+      | Node(_, v, Empty, _) -> v
+      | Node(_, _, r, _) -> max_elt r
 
     (* Remove the smallest element of the given set *)
 
     let rec remove_min_elt = function
         Empty -> invalid_arg "Set.remove_min_elt"
-      | Node(Empty, v, r, _) -> r
+      | Node(Empty, _, r, _) -> r
       | Node(l, v, r, _) -> bal (remove_min_elt l) v r
 
     (* Merge two trees l and r into one.
@@ -256,8 +256,8 @@ module Make(Ord: OrderedType) =
 
     let rec inter s1 s2 =
       match (s1, s2) with
-        (Empty, t2) -> Empty
-      | (t1, Empty) -> Empty
+        (Empty, _) -> Empty
+      | (_, Empty) -> Empty
       | (Node(l1, v1, r1, _), t2) ->
           match split v1 t2 with
             (l2, false, r2) ->
@@ -267,7 +267,7 @@ module Make(Ord: OrderedType) =
 
     let rec diff s1 s2 =
       match (s1, s2) with
-        (Empty, t2) -> Empty
+        (Empty, _) -> Empty
       | (t1, Empty) -> t1
       | (Node(l1, v1, r1, _), t2) ->
           match split v1 t2 with
@@ -356,7 +356,7 @@ module Make(Ord: OrderedType) =
 
     let rec cardinal = function
         Empty -> 0
-      | Node(l, v, r, _) -> cardinal l + 1 + cardinal r
+      | Node(l, _, r, _) -> cardinal l + 1 + cardinal r
 
     let rec elements_aux accu = function
         Empty -> accu

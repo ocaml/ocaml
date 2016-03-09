@@ -52,8 +52,8 @@ let rec get_data : type v. int -> v data -> v data = fun count d -> match d with
      | Sempty -> get_data count d2
      | _ -> assert false
      end
- | Sgen {curr = Some None; func = _ } -> Sempty
- | Sgen ({curr = Some(Some a); func = f} as g) ->
+ | Sgen {curr = Some None} -> Sempty
+ | Sgen ({curr = Some(Some a)} as g) ->
      g.curr <- None; Scons(a, d)
  | Sgen g ->
      begin match g.func count with
@@ -230,5 +230,5 @@ and dump_data : type v. (v -> unit) -> v data -> unit = fun f ->
       print_string ")"
   | Slazy _ -> print_string "Slazy"
   | Sgen _ -> print_string "Sgen"
-  | Sbuffio b -> print_string "Sbuffio"
+  | Sbuffio _ -> print_string "Sbuffio"
 ;;

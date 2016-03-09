@@ -39,7 +39,7 @@ let fields x =
   | 0 -> ""
   | 1 -> ""
   | 2 -> sprintf "(%s)" (field x 1)
-  | n -> sprintf "(%s%s)" (field x 1) (other_fields x 2)
+  | _ -> sprintf "(%s%s)" (field x 1) (other_fields x 2)
 ;;
 
 let to_string x =

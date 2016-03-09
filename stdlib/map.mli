@@ -47,6 +47,7 @@ module type OrderedType =
   sig
     type t
       (** The type of the map keys. *)
+
     val compare : t -> t -> int
       (** A total ordering function over the keys.
           This is a two-argument function [f] such that

@@ -55,7 +55,7 @@ module GenHashTable = struct
 
     and 'a bucketlist =
     | Empty
-    | Cons of int (** hash of the key *) * 'a H.container * 'a bucketlist
+    | Cons of int (* hash of the key *) * 'a H.container * 'a bucketlist
 
     (** the hash of the key is kept in order to test the equality of the hash
       before the key. Same reason as for Weak.Make *)
@@ -167,7 +167,7 @@ module GenHashTable = struct
             | ETrue -> h.size <- h.size - 1; next
             | EFalse -> Cons(hk, c, remove_bucket next)
             | EDead ->
-                (** The dead key is automatically removed. It is acceptable
+                (* The dead key is automatically removed. It is acceptable
                     for this function since it already removes a binding *)
                 h.size <- h.size - 1;
                 remove_bucket next
@@ -188,7 +188,7 @@ module GenHashTable = struct
           | ETrue ->
               begin match H.get_data c with
               | None ->
-                  (** This case is not impossible because the gc can run between
+                  (* This case is not impossible because the gc can run between
                       H.equal and H.get_data *)
                   find_rec key hkey rest
               | Some d -> d
@@ -202,7 +202,7 @@ module GenHashTable = struct
 
     let find h key =
       let hkey = H.hash h.seed key in
-      (** TODO inline 3 iterations *)
+      (* TODO inline 3 iterations *)
       find_rec key hkey (h.data.(key_index h hkey))
 
     let find_all h key =
@@ -256,7 +256,7 @@ module GenHashTable = struct
           | ETrue -> true
           | EFalse | EDead -> mem_in_bucket rest
           end
-      | Cons(hk, c, rest) -> mem_in_bucket rest in
+      | Cons(_hk, _c, rest) -> mem_in_bucket rest in
       mem_in_bucket h.data.(key_index h hkey)
 
     let iter f h =
@@ -401,7 +401,7 @@ module K1 = struct
         c
       let hash = H.hash
       let equal c k =
-        (** {!get_key_copy} is not used because the equality of the user can be
+        (* {!get_key_copy} is not used because the equality of the user can be
             the physical equality *)
         match get_key c with
         | None -> GenHashTable.EDead
@@ -421,7 +421,7 @@ module K1 = struct
     include MakeSeeded(struct
         type t = H.t
         let equal = H.equal
-        let hash (seed: int) x = H.hash x
+        let hash (_seed: int) x = H.hash x
       end)
     let create sz = create ~random:false sz
   end
@@ -504,12 +504,12 @@ module K2 = struct
         (struct
           type t = H1.t
           let equal = H1.equal
-          let hash (seed: int) x = H1.hash x
+          let hash (_seed: int) x = H1.hash x
         end)
         (struct
           type t = H2.t
           let equal = H2.equal
-          let hash (seed: int) x = H2.hash x
+          let hash (_seed: int) x = H2.hash x
         end)
     let create sz = create ~random:false sz
   end
@@ -609,7 +609,7 @@ module Kn = struct
     include MakeSeeded(struct
         type t = H.t
         let equal = H.equal
-        let hash (seed: int) x = H.hash x
+        let hash (_seed: int) x = H.hash x
       end)
     let create sz = create ~random:false sz
   end

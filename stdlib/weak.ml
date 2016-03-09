@@ -255,7 +255,7 @@ module Make (H : Hashtbl.HashedType) : (S with type data = H.t) = struct
     find_or t d (fun h index -> add_aux t set (Some d) h index; d)
   ;;
 
-  let find t d = find_or t d (fun h index -> raise Not_found);;
+  let find t d = find_or t d (fun _h _index -> raise Not_found);;
 
   let find_shadow t d iffound ifnotfound =
     let h = H.hash d in
@@ -276,7 +276,7 @@ module Make (H : Hashtbl.HashedType) : (S with type data = H.t) = struct
 
   let remove t d = find_shadow t d (fun w i -> set w i None) ();;
 
-  let mem t d = find_shadow t d (fun w i -> true) false;;
+  let mem t d = find_shadow t d (fun _w _i -> true) false;;
 
   let find_all t d =
     let h = H.hash d in

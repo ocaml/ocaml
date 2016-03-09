@@ -53,7 +53,7 @@ open Printf
 let rec assoc3 x l =
   match l with
   | [] -> raise Not_found
-  | (y1, y2, y3) :: t when y1 = x -> y2
+  | (y1, y2, _) :: _ when y1 = x -> y2
   | _ :: t -> assoc3 x t
 ;;
 
@@ -293,7 +293,7 @@ let add_padding len ksd =
       (* Do not pad undocumented options, so that they still don't show up when
        * run through [usage] or [parse]. *)
       ksd
-  | (kwd, (Symbol (l, _) as spec), msg) ->
+  | (kwd, (Symbol _ as spec), msg) ->
       let cutcol = second_word msg in
       let spaces = String.make ((max 0 (len - cutcol)) + 3) ' ' in
       (kwd, spec, "\n" ^ spaces ^ msg)
