@@ -40,7 +40,7 @@ let name_value v ty =
 let find_named_value name =
   Hashtbl.find named_values name
 
-let check_depth ppf depth obj ty =
+let check_depth depth obj ty =
   if depth <= 0 then begin
     let n = name_value obj ty in
     Some (Outcometree.Oval_stuff ("$" ^ string_of_int n))
@@ -57,19 +57,19 @@ module EvalPath =
         with Symtable.Error _ ->
           raise Error
         end
-    | Pdot(root, fieldname, pos) ->
+    | Pdot(root, _fieldname, pos) ->
         let v = eval_path env root in
         if not (Debugcom.Remote_value.is_block v)
         then raise Error
         else Debugcom.Remote_value.field v pos
-    | Papply(p1, p2) ->
+    | Papply _ ->
         raise Error
     let same_value = Debugcom.Remote_value.same
   end
 
 module Printer = Genprintval.Make(Debugcom.Remote_value)(EvalPath)
 
-let install_printer path ty ppf fn =
+let install_printer path ty _ppf fn =
   Printer.install_printer path ty
     (fun ppf remote_val ->
        try
@@ -90,7 +90,7 @@ let print_exception ppf obj =
 let print_value max_depth env obj (ppf : Format.formatter) ty =
   let t =
     Printer.outval_of_value !max_printer_steps max_depth
-      (check_depth ppf) env obj ty in
+      check_depth env obj ty in
   !Oprint.out_value ppf t
 
 let print_named_value max_depth exp env obj ppf ty =

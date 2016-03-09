@@ -20,7 +20,7 @@ let interrupted = ref false
 
 let is_protected = ref false
 
-let break signum =
+let break _signum =
   if !is_protected
   then interrupted := true
   else raise Sys.Break

@@ -18,7 +18,6 @@
 
 open Misc
 open Unix
-open Primitives
 
 (*** Convert a socket name into a socket address. ***)
 let convert_address address =

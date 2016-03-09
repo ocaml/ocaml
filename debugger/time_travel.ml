@@ -271,7 +271,7 @@ let rec stop_on_event report =
         None   -> find_event ()
       | Some _ -> ()
       end
-  | {rep_type = Trap_barrier; rep_stack_pointer = trap_frame} ->
+  | {rep_type = Trap_barrier} ->
       (* No event at current position. *)
       find_event ()
   | _ ->
@@ -452,7 +452,7 @@ let go_to time =
 
 (* Return the time of the last breakpoint *)
 (* between current time and `max_time'. *)
-let rec find_last_breakpoint max_time =
+let find_last_breakpoint max_time =
   let rec find break =
     let time = current_time () in
     step_forward (max_time -- time);
@@ -559,14 +559,14 @@ let next_1 () =
     None ->                             (* Beginning of the program. *)
       step _1
   | Some event1 ->
-      let (frame1, pc1) = initial_frame() in
+      let (frame1, _pc1) = initial_frame() in
       step _1;
       if not !interrupted then begin
         Symbols.update_current_event ();
         match !current_event with
           None -> ()
         | Some event2 ->
-            let (frame2, pc2) = initial_frame() in
+            let (frame2, _pc2) = initial_frame() in
             (* Call `finish' if we've entered a function. *)
             if frame1 >= 0 && frame2 >= 0 &&
                frame2 - event2.ev_stacksize > frame1 - event1.ev_stacksize
@@ -627,14 +627,14 @@ let previous_1 () =
     None ->                             (* End of the program. *)
       step _minus1
   | Some event1 ->
-      let (frame1, pc1) = initial_frame() in
+      let (frame1, _pc1) = initial_frame() in
       step _minus1;
       if not !interrupted then begin
         Symbols.update_current_event ();
         match !current_event with
           None -> ()
         | Some event2 ->
-            let (frame2, pc2) = initial_frame() in
+            let (frame2, _pc2) = initial_frame() in
             (* Call `start' if we've entered a function. *)
             if frame1 >= 0 && frame2 >= 0 &&
                frame2 - event2.ev_stacksize > frame1 - event1.ev_stacksize

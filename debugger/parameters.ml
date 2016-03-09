@@ -20,7 +20,6 @@ open Primitives
 open Config
 open Debugger_config
 
-let program_loaded = ref false
 let program_name = ref ""
 let socket_name = ref ""
 let arguments = ref ""

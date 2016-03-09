@@ -16,8 +16,6 @@
 open Instruct;;
 open Lexing;;
 open Location;;
-open Primitives;;
-open Source;;
 
 let get_desc ev =
   let loc = ev.ev_loc in

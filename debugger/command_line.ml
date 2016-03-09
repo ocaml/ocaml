@@ -179,7 +179,7 @@ let interprete_line ppf line =
               i.instr_action ppf lexbuf;
               resume_user_input ();
               i.instr_repeat
-          | l ->
+          | _ ->
               error "Ambiguous command."
           end
       | None ->
@@ -216,7 +216,7 @@ let line_loop ppf line_buffer =
         error ("System error: " ^ s) *)
 
 (** Instructions. **)
-let instr_cd ppf lexbuf =
+let instr_cd _ppf lexbuf =
   let dir = argument_eol argument lexbuf in
     if ask_kill_program () then
       try
@@ -225,7 +225,7 @@ let instr_cd ppf lexbuf =
       | Sys_error s ->
           error s
 
-let instr_shell ppf lexbuf =
+let instr_shell _ppf lexbuf =
   let cmdarg = argument_list_eol argument lexbuf in
   let cmd = String.concat " " cmdarg in
   (* perhaps we should use $SHELL -c ? *)
@@ -233,7 +233,7 @@ let instr_shell ppf lexbuf =
   if (err != 0) then
     eprintf "Shell command %S failed with exit code %d\n%!" cmd err
 
-let instr_env ppf lexbuf =
+let instr_env _ppf lexbuf =
   let cmdarg = argument_list_eol argument lexbuf in
   let cmdarg = string_trim (String.concat " " cmdarg) in
   if cmdarg <> "" then
@@ -286,7 +286,7 @@ let instr_dir ppf lexbuf =
                  dirs)
       Debugger_config.load_path_for
 
-let instr_kill ppf lexbuf =
+let instr_kill _ppf lexbuf =
   eol lexbuf;
   if not !loaded then error "The program is not being run.";
   if (yes_or_no "Kill the program being debugged") then begin
@@ -393,7 +393,7 @@ let print_info_list ppf =
   let pr_infos ppf = List.iter (fun i -> fprintf ppf "%s@ " i.info_name)  in
   fprintf ppf "List of info commands: %a@." pr_infos !info_list
 
-let instr_complete ppf lexbuf =
+let instr_complete _ppf lexbuf =
   let ppf = Format.err_formatter in
   let rec print_list l =
     try
@@ -465,7 +465,7 @@ let instr_help ppf lexbuf =
           find_variable
             (fun v _ _ ->
                print_help ("show " ^ v.var_name) ("show " ^ v.var_help))
-            (fun v ->
+            (fun _v ->
                print_help "show" "display debugger variable.";
                print_variable_list ppf)
             ppf
@@ -585,8 +585,8 @@ let instr_source ppf lexbuf =
 
 let instr_set =
   find_variable
-    (fun {var_action = (funct, _)} ppf lexbuf -> funct lexbuf)
-    (function ppf -> error "Argument required.")
+    (fun {var_action = (funct, _)} _ppf lexbuf -> funct lexbuf)
+    (function _ppf -> error "Argument required.")
 
 let instr_show =
   find_variable
@@ -600,8 +600,8 @@ let instr_show =
 
 let instr_info =
   find_info
-    (fun i ppf lexbuf -> i.info_action lexbuf)
-    (function ppf ->
+    (fun i _ppf lexbuf -> i.info_action lexbuf)
+    (function _ppf ->
        error "\"info\" must be followed by the name of an info command.")
 
 let instr_break ppf lexbuf =
@@ -673,7 +673,7 @@ let instr_break ppf lexbuf =
         | Not_found ->
             eprintf "Can\'t find any event there.@."
 
-let instr_delete ppf lexbuf =
+let instr_delete _ppf lexbuf =
   match integer_list_eol Lexer.lexeme lexbuf with
   | [] ->
       if breakpoints_count () <> 0 && yes_or_no "Delete all breakpoints"
@@ -771,7 +771,7 @@ let instr_last ppf lexbuf =
     go_to (History.previous_time count);
     show_current_event ppf
 
-let instr_list ppf lexbuf =
+let instr_list _ppf lexbuf =
   let (mo, beg, e) = list_arguments_eol Lexer.lexeme lexbuf in
     let (curr_mod, line, column) =
       try
@@ -866,9 +866,9 @@ let loading_mode_variable ppf =
   (find_ident
      "loading mode"
      (matching_elements (ref loading_modes) fst)
-     (fun (_, mode) ppf lexbuf ->
+     (fun (_, mode) _ppf lexbuf ->
         eol lexbuf; set_launching_function mode)
-     (function ppf -> error "Syntax error.")
+     (function _ppf -> error "Syntax error.")
      ppf),
   function ppf ->
     let rec find = function
@@ -946,7 +946,7 @@ let info_breakpoints ppf lexbuf =
   end
 ;;
 
-let info_events ppf lexbuf =
+let info_events _ppf lexbuf =
   ensure_loaded ();
   let mdle =
     convert_module (module_of_longident (opt_longident_eol Lexer.lexeme lexbuf))
@@ -1210,7 +1210,7 @@ It can be either:\n\
        var_action = follow_fork_variable;
        var_help =
 "process to follow after forking.\n\
-It can be either :
+It can be either :\n\
   child: the newly created process.\n\
   parent: the process that called fork.\n" }];
 

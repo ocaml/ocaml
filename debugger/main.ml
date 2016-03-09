@@ -29,7 +29,7 @@ open Primitives
 
 let line_buffer = Lexing.from_function read_user_input
 
-let rec loop ppf = line_loop ppf line_buffer
+let loop ppf = line_loop ppf line_buffer
 
 let current_duration = ref (-1L)
 

@@ -125,6 +125,6 @@ let do_backtrace action =
 
 let stack_depth () =
   let num_frames = ref 0 in
-  do_backtrace (function Some ev -> incr num_frames; true
+  do_backtrace (function Some _ev -> incr num_frames; true
                        | None -> num_frames := -1; false);
   !num_frames
