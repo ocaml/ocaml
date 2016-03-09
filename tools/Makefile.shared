@@ -23,7 +23,7 @@ CAMLLEX=$(CAMLRUN) ../boot/ocamllex
 INCLUDES=-I ../utils -I ../parsing -I ../typing -I ../bytecomp -I ../asmcomp \
          -I ../middle_end -I ../middle_end/base_types -I ../driver \
          -I ../toplevel
-COMPFLAGS= -strict-sequence -w +27+32..39 -warn-error A -safe-string $(INCLUDES)
+COMPFLAGS= -absname -w +a-4-9-41-42-44-45-48 -strict-sequence -warn-error A -safe-string -strict-formats $(INCLUDES)
 LINKFLAGS=$(INCLUDES)
 
 all: ocamldep ocamlprof ocamlcp ocamloptp ocamlmktop ocamlmklib dumpobj \
