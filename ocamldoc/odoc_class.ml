@@ -114,7 +114,7 @@ let rec class_elements ?(trans=true) cl =
   let rec iter_kind k =
     match k with
       Class_structure (_, elements) -> elements
-    | Class_constraint (c_kind, ct_kind) ->
+    | Class_constraint (c_kind, _ct_kind) ->
         iter_kind c_kind
       (* FIXME : use c_kind or ct_kind ?
          For now, as ct_kind is not analyzed,

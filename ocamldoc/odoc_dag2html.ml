@@ -32,9 +32,7 @@ and ghost_id
 ;;
 
 external span_id_of_int : int -> span_id = "%identity";;
-external int_of_span_id : span_id -> int = "%identity";;
 external ghost_id_of_int : int -> ghost_id = "%identity";;
-external int_of_ghost_id : ghost_id -> int = "%identity";;
 
 let new_span_id = let i = ref 0 in fun () -> incr i; span_id_of_int !i;;
 
@@ -44,7 +42,6 @@ let new_ghost_id = let i = ref 0 in fun () -> incr i; ghost_id_of_int !i;;
 
 type align = LeftA | CenterA | RightA;;
 type table_data = TDstring of string | TDhr of align;;
-type html_table = (int * align * table_data) array array;;
 
 let html_table_struct indi_txt phony d t =
   let phony =
@@ -315,7 +312,11 @@ let ancestors d =
 ;;
 
 let get_children d parents =
-  let rec merge_children children el =
+  (* XXXX merge_children used to be declared as a recursive function,
+     but it was not.  I've not idea if it a bug or not.  One should
+     either fix it (if this is a bug), or simplify the code otherwise. *)
+
+  let merge_children children el =
     List.fold_right
       (fun (x, _) children ->
          match x with
@@ -419,7 +420,7 @@ let treat_new_row d t =
   let i = Array.length t.table - 1 in
   let rec loop t i j =
     match get_block t i j with
-      Some (parents, max_parent_colspan, span) ->
+      Some (parents, max_parent_colspan, _span) ->
         let children = get_children d parents in
         let children =
           if children = [] then [{elem = Nothing; span = new_span_id ()}]
@@ -499,7 +500,7 @@ let treat_new_row d t =
   loop t i 0
 ;;
 
-let down_it t i k y =
+let down_it t i k =
   t.table.(Array.length t.table - 1).(k) <- t.table.(i).(k);
   for r = i to Array.length t.table - 2 do
     t.table.(r).(k) <- {elem = Ghost (new_ghost_id ()); span = new_span_id ()}
@@ -530,7 +531,7 @@ let equilibrate t =
                 if k = len then loop1 (i + 1)
                 else
                   match t.table.(i).(k).elem with
-                    Elem y when x = y -> down_it t i k y; loop 0
+                    Elem y when x = y -> down_it t i k; loop 0
                   | _ -> loop2 (k + 1)
               in
               loop2 0
@@ -764,7 +765,7 @@ let find_block_with_parents t i jj1 jj2 jj3 jj4 =
   loop i jj1 jj2 jj3 jj4
 ;;
 
-let push_to_right d t i j1 j2 =
+let push_to_right t i j1 j2 =
   let line = t.(i) in
   let rec loop j =
     if j = j2 then j - 1
@@ -806,7 +807,7 @@ let push_to_right d t i j1 j2 =
   loop (j1 + 1)
 ;;
 
-let push_to_left d t i j1 j2 =
+let push_to_left t i j1 j2 =
   let line = t.(i) in
   let rec loop j =
     if j = j1 then j + 1
@@ -848,7 +849,7 @@ let push_to_left d t i j1 j2 =
   loop (j2 - 1)
 ;;
 
-let fill_gap d t i j1 j2 =
+let fill_gap t i j1 j2 =
   let t1 =
     let t1 = Array.copy t.table in
     for i = 0 to Array.length t.table - 1 do
@@ -859,8 +860,8 @@ let fill_gap d t i j1 j2 =
     done;
     t1
   in
-  let j2 = push_to_left d t1 i j1 j2 in
-  let j1 = push_to_right d t1 i j1 j2 in
+  let j2 = push_to_left t1 i j1 j2 in
+  let j1 = push_to_right t1 i j1 j2 in
   if j1 = j2 - 1 then
     let line = t1.(i - 1) in
     let x = line.(j1).span in
@@ -877,7 +878,7 @@ let fill_gap d t i j1 j2 =
   else None
 ;;
 
-let treat_gaps d t =
+let treat_gaps t =
   let i = Array.length t.table - 1 in
   let rec loop t j =
     let line = t.table.(i) in
@@ -890,7 +891,7 @@ let treat_gaps d t =
             let rec loop1 t j1 =
               if j1 < 0 then loop t (j + 1)
               else if y = line.(j1).elem then
-                match fill_gap d t i j1 j with
+                match fill_gap t i j1 j with
                   Some (t, ok) -> if ok then loop t 2 else loop t (j + 1)
                 | None -> loop t (j + 1)
               else loop1 t (j1 - 1)
@@ -947,7 +948,7 @@ let tablify phony no_optim no_group d =
           group_ghost t;
           group_children t;
           group_span_by_common_children d t;
-          let t = if no_optim then t else treat_gaps d t in
+          let t = if no_optim then t else treat_gaps t in
           group_span_last_row t;
           t
         end
@@ -957,7 +958,7 @@ let tablify phony no_optim no_group d =
   loop t
 ;;
 
-let fall d t =
+let fall t =
   for i = 1 to Array.length t.table - 1 do
     let line = t.table.(i) in
     let rec loop j =
@@ -1023,7 +1024,7 @@ let fall d t =
   done
 ;;
 
-let fall2_cool_right t i1 i2 i3 j1 j2 =
+let fall2_cool_right t i1 i2 _i3 j1 j2 =
   let span = t.table.(i2 - 1).(j1).span in
   for i = i2 - 1 downto 0 do
     for j = j1 to j2 - 1 do
@@ -1048,7 +1049,7 @@ let fall2_cool_right t i1 i2 i3 j1 j2 =
   loop j1
 ;;
 
-let fall2_cool_left t i1 i2 i3 j1 j2 =
+let fall2_cool_left t i1 i2 _i3 j1 j2 =
   let span = t.table.(i2 - 1).(j2).span in
   for i = i2 - 1 downto 0 do
     for j = j1 + 1 to j2 do
@@ -1097,7 +1098,7 @@ let do_fall2_right t i1 i2 j1 j2 =
         else
           let new_line =
             Array.init (Array.length t.table.(0))
-              (fun i -> {elem = Nothing; span = new_span_id ()})
+              (fun _ -> {elem = Nothing; span = new_span_id ()})
           in
           let t = {table = Array.append t.table [| new_line |]} in
           loop (cnt - 1) t
@@ -1132,7 +1133,7 @@ let do_fall2_left t i1 i2 j1 j2 =
         else
           let new_line =
             Array.init (Array.length t.table.(0))
-              (fun i -> {elem = Nothing; span = new_span_id ()})
+              (fun _ -> {elem = Nothing; span = new_span_id ()})
           in
           let t = {table = Array.append t.table [| new_line |]} in
           loop (cnt - 1) t
@@ -1447,7 +1448,7 @@ let table_of_dag phony no_optim invert no_group d =
   let d = if invert then invert_dag d else d in
   let t = tablify phony no_optim no_group d in
   let t = if invert then invert_table t else t in
-  fall () t;
+  fall t;
   let t = fall2_right t in
   let t = fall2_left t in
   let t = shorten_too_long t in
@@ -1455,147 +1456,7 @@ let table_of_dag phony no_optim invert no_group d =
 ;;
 
 
-let version = "1.01";;
-
 (* input dag *)
-
-let strip_spaces str =
-  let start =
-    let rec loop i =
-      if i == String.length str then i
-      else
-        match str.[i] with
-          ' ' | '\013' | '\n' | '\t' -> loop (i + 1)
-        | _ -> i
-    in
-    loop 0
-  in
-  let stop =
-    let rec loop i =
-      if i == -1 then i + 1
-      else
-        match str.[i] with
-          ' ' | '\013' | '\n' | '\t' -> loop (i - 1)
-        | _ -> i + 1
-    in
-    loop (String.length str - 1)
-  in
-  if start == 0 && stop == String.length str then str
-  else if start > stop then ""
-  else String.sub str start (stop - start)
-;;
-
-let rec get_line ic =
-  try
-    let line = input_line ic in
-    if String.length line > 0 && line.[0] = '#' then get_line ic
-    else Some (strip_spaces line)
-  with
-    End_of_file -> None
-;;
-
-let input_dag ic =
-  let rec find cnt s =
-    function
-      n :: nl ->
-        if n.valu = s then n, idag_of_int cnt else find (cnt - 1) s nl
-    | [] -> raise Not_found
-  in
-  let add_node pl cl nl cnt =
-    let cl = List.rev cl in
-    let pl = List.rev pl in
-    let (pl, pnl, nl, cnt) =
-      List.fold_left
-        (fun (pl, pnl, nl, cnt) p ->
-           try
-             let (n, p) = find (cnt - 1) p nl in p :: pl, n :: pnl, nl, cnt
-           with
-             Not_found ->
-               let n = {pare = []; valu = p; chil = []} in
-               let p = idag_of_int cnt in p :: pl, n :: pnl, n :: nl, cnt + 1)
-        ([], [], nl, cnt) pl
-    in
-    let pl = List.rev pl in
-    let (cl, nl, cnt) =
-      List.fold_left
-        (fun (cl, nl, cnt) c ->
-           try
-             let (n, c) = find (cnt - 1) c nl in
-             n.pare <- n.pare @ pl; c :: cl, nl, cnt
-           with
-             Not_found ->
-               let n = {pare = pl; valu = c; chil = []} in
-               let c = idag_of_int cnt in c :: cl, n :: nl, cnt + 1)
-        ([], nl, cnt) cl
-    in
-    let cl = List.rev cl in
-    List.iter (fun p -> p.chil <- p.chil @ cl) pnl; nl, cnt
-  in
-  let rec input_parents nl pl cnt =
-    function
-      Some "" -> input_parents nl pl cnt (get_line ic)
-    | Some line ->
-        begin match line.[0] with
-          'o' ->
-            let p =
-              strip_spaces (String.sub line 1 (String.length line - 1))
-            in
-            if p = "" then failwith line
-            else input_parents nl (p :: pl) cnt (get_line ic)
-        | '-' ->
-            if pl = [] then failwith line
-            else input_children nl pl [] cnt (Some line)
-        | _ -> failwith line
-        end
-    | None -> if pl = [] then nl, cnt else failwith "end of file 1"
-  and input_children nl pl cl cnt =
-    function
-      Some "" -> input_children nl pl cl cnt (get_line ic)
-    | Some line ->
-        begin match line.[0] with
-          'o' ->
-            if cl = [] then failwith line
-            else
-              let (nl, cnt) = add_node pl cl nl cnt in
-              input_parents nl [] cnt (Some line)
-        | '-' ->
-            let c =
-              strip_spaces (String.sub line 1 (String.length line - 1))
-            in
-            if c = "" then failwith line
-            else input_children nl pl (c :: cl) cnt (get_line ic)
-        | _ -> failwith line
-        end
-    | None ->
-        if cl = [] then failwith "end of file 2" else add_node pl cl nl cnt
-  in
-  let (nl, _) = input_parents [] [] 0 (get_line ic) in
-  {dag = Array.of_list (List.rev nl)}
-;;
-
-(* testing *)
-
-let map_dag f d =
-  let a =
-    Array.map (fun d -> {pare = d.pare; valu = f d.valu; chil = d.chil}) d.dag
-  in
-  {dag = a}
-;;
-
-let tag_dag d =
-  let c = ref 'A' in
-  map_dag
-    (fun v ->
-       let v = !c in
-       c :=
-         if !c = 'Z' then 'a'
-         else if !c = 'z' then '1'
-         else Char.chr (Char.code !c + 1);
-       String.make 1 v)
-    d
-;;
-
-(* *)
 
 let phony _ = false;;
 let indi_txt n = n.valu;;
@@ -1638,9 +1499,7 @@ let string_table border hts =
   Buffer.contents buf
 ;;
 
-let fname = ref "";;
 let invert = ref false;;
-let char = ref false;;
 let border = ref 0;;
 let no_optim = ref false;;
 let no_group = ref false;;

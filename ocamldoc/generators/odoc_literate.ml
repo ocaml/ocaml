@@ -16,7 +16,6 @@
 open Odoc_info
 module Naming = Odoc_html.Naming
 open Odoc_info.Value
-open Odoc_info.Module
 
 let p = Printf.bprintf
 let bp = Printf.bprintf
@@ -38,20 +37,20 @@ module Generator =
 struct
 class html =
   object (self)
-    inherit Html.html as html
+    inherit Html.html
 
-    method private html_of_module_comment b text =
+    method! private html_of_module_comment b text =
       let br1, br2 =
         match text with
-          [(Odoc_info.Title (n, l_opt, t))] -> false, false
-        | (Odoc_info.Title (n, l_opt, t)) :: _ -> false, true
+          [(Odoc_info.Title _)] -> false, false
+        | (Odoc_info.Title _) :: _ -> false, true
         | _ -> true, true
       in
       if br1 then p b "<br/>";
       self#html_of_text b text;
       if br2 then p b "<br/><br/>\n"
 
-    method private html_of_Title b n l_opt t =
+    method! private html_of_Title b n l_opt t =
       let label1 = self#create_title_label (n, l_opt, t) in
       p b "<a name=\"%s\"></a>\n" (Naming.label_target label1);
       p b "<h%d>" n;
@@ -75,7 +74,7 @@ class html =
       Printf.bprintf b "</div>"
 
     (** Print html code for a value. *)
-    method private html_of_value b v =
+    method! private html_of_value b v =
       Odoc_info.reset_type_names ();
       self#html_of_info b v.val_info;
       bs b "<pre>";

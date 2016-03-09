@@ -18,7 +18,6 @@
 let print_DEBUG s = print_string s ; print_newline ()
 
 open Odoc_info
-open Parameter
 open Value
 open Type
 open Extension
@@ -222,7 +221,7 @@ end)
 
 (** A class with a method to colorize a string which represents OCaml code. *)
 class ocaml_code =
-  object(self)
+  object
     method html_of_code b ?(with_pre=true) code =
       Odoc_ocamlhtml.html_of_code b ~with_pre: with_pre code
   end
@@ -300,7 +299,7 @@ class virtual text =
       | Odoc_info.Custom (s,t) -> self#html_of_custom_text b s t
       | Odoc_info.Target (target, code) -> self#html_of_Target b ~target ~code
 
-    method html_of_custom_text b s t = ()
+    method html_of_custom_text _ _ _ = ()
 
     method html_of_Target b ~target ~code =
       if String.lowercase_ascii target = "html" then bs b code else ()
@@ -433,7 +432,7 @@ class virtual text =
       bs b tag_c;
       bs b ">"
 
-    method html_of_Latex b _ = ()
+    method html_of_Latex _ _ = ()
       (* don't care about LaTeX stuff in HTML. *)
 
     method html_of_Link b s t =
@@ -898,22 +897,31 @@ class html =
 
     (** The file for the index of values. *)
     method index_values = Printf.sprintf "%s_values.html" self#index_prefix
+
     (** The file for the index of types. *)
     method index_types = Printf.sprintf "%s_types.html" self#index_prefix
+
     (** The file for the index of extensions. *)
     method index_extensions = Printf.sprintf "%s_extensions.html" self#index_prefix
+
     (** The file for the index of exceptions. *)
     method index_exceptions = Printf.sprintf "%s_exceptions.html" self#index_prefix
+
     (** The file for the index of attributes. *)
     method index_attributes = Printf.sprintf "%s_attributes.html" self#index_prefix
+
     (** The file for the index of methods. *)
     method index_methods = Printf.sprintf "%s_methods.html" self#index_prefix
+
     (** The file for the index of classes. *)
     method index_classes = Printf.sprintf "%s_classes.html" self#index_prefix
+
     (** The file for the index of class types. *)
     method index_class_types = Printf.sprintf "%s_class_types.html" self#index_prefix
+
     (** The file for the index of modules. *)
     method index_modules = Printf.sprintf "%s_modules.html" self#index_prefix
+
     (** The file for the index of module types. *)
     method index_module_types = Printf.sprintf "%s_module_types.html" self#index_prefix
 
@@ -921,36 +929,45 @@ class html =
     (** The list of attributes. Filled in the [generate] method. *)
     val mutable list_attributes = []
     method list_attributes = list_attributes
+
     (** The list of methods. Filled in the [generate] method. *)
     val mutable list_methods = []
     method list_methods = list_methods
+
     (** The list of values. Filled in the [generate] method. *)
     val mutable list_values = []
     method list_values = list_values
+
     (** The list of extensions. Filled in the [generate] method. *)
     val mutable list_extensions = []
     method list_extensions = list_extensions
+
     (** The list of exceptions. Filled in the [generate] method. *)
     val mutable list_exceptions = []
     method list_exceptions = list_exceptions
+
     (** The list of types. Filled in the [generate] method. *)
     val mutable list_types = []
     method list_types = list_types
+
     (** The list of modules. Filled in the [generate] method. *)
     val mutable list_modules = []
     method list_modules = list_modules
+
     (** The list of module types. Filled in the [generate] method. *)
     val mutable list_module_types = []
     method list_module_types = list_module_types
+
     (** The list of classes. Filled in the [generate] method. *)
     val mutable list_classes = []
     method list_classes = list_classes
+
     (** The list of class types. Filled in the [generate] method. *)
     val mutable list_class_types = []
     method list_class_types = list_class_types
 
     (** The header of pages. Must be prepared by the [prepare_header] method.*)
-    val mutable header = fun b -> fun ?(nav=None) -> fun ?(comments=[]) -> fun _ -> ()
+    val mutable header = fun _ -> fun ?nav:_ -> fun ?comments:_ -> fun _ -> ()
 
     (** Init the style. *)
     method init_style =
@@ -1305,7 +1322,7 @@ class html =
           bs b "<code class=\"type\"> ";
           bs b (self#create_fully_qualified_module_idents_links father s);
           bs b "</code>"
-      | Module_constraint (k, tk) ->
+      | Module_constraint (k, _tk) ->
           (* TODO: what to print ? *)
           self#html_of_module_kind b father ?modu k
       | Module_typeof s ->
@@ -1536,7 +1553,7 @@ class html =
       (
         match e.ex_args, e.ex_ret with
           Cstr_tuple [], None -> ()
-        | l,None ->
+        | _,None ->
             bs b (" "^(self#keyword "of")^" ");
             self#html_of_cstr_args
                    ~par: false b (Name.father e.ex_name) " * " e.ex_args
@@ -1860,7 +1877,7 @@ class html =
           bs b "</table>\n</td>\n</tr>\n</table></div>\n"
 
     (** Print html code for the parameters which have a name and description. *)
-    method html_of_described_parameter_list b m_name l =
+    method html_of_described_parameter_list b _m_name l =
       (* get the params which have a name, and at least one name described. *)
       let l2 = List.filter
           (fun p ->
@@ -2024,7 +2041,7 @@ class html =
           );
           self#html_of_text b [Code "end"]
 
-      | Class_apply capp ->
+      | Class_apply _ ->
           (* TODO: display final type from typedtree *)
           self#html_of_text b [Raw "class application not handled yet"]
 
@@ -2245,7 +2262,7 @@ class html =
             ()
         | Class_structure (l, _) ->
             self#generate_inheritance_info b l
-        | Class_constraint (k, ct) ->
+        | Class_constraint (k, _) ->
             iter_kind k
         | Class_apply _
         | Class_constr _ ->
@@ -2605,7 +2622,7 @@ class html =
              bs b "<br/>";
              self#html_of_Module_list b
                (List.map (fun m -> m.m_name) module_list);
-         | Some i -> self#html_of_info ~indent: false b info
+         | Some _ -> self#html_of_info ~indent: false b info
         );
         bs b "</body>\n</html>";
         Buffer.output_buffer chanout b;
@@ -2615,7 +2632,7 @@ class html =
           raise (Failure s)
 
     (** Generate the values index in the file [index_values.html]. *)
-    method generate_values_index module_list =
+    method generate_values_index _module_list =
       self#generate_elements_index
         self#list_values
         (fun v -> v.val_name)
@@ -2625,7 +2642,7 @@ class html =
         self#index_values
 
     (** Generate the extensions index in the file [index_extensions.html]. *)
-    method generate_extensions_index module_list =
+    method generate_extensions_index _module_list =
       self#generate_elements_index
         self#list_extensions
         (fun x -> x.xt_name)
@@ -2635,7 +2652,7 @@ class html =
         self#index_extensions
 
     (** Generate the exceptions index in the file [index_exceptions.html]. *)
-    method generate_exceptions_index module_list =
+    method generate_exceptions_index _module_list =
       self#generate_elements_index
         self#list_exceptions
         (fun e -> e.ex_name)
@@ -2645,7 +2662,7 @@ class html =
         self#index_exceptions
 
     (** Generate the types index in the file [index_types.html]. *)
-    method generate_types_index module_list =
+    method generate_types_index _module_list =
       self#generate_elements_index
         self#list_types
         (fun t -> t.ty_name)
@@ -2655,7 +2672,7 @@ class html =
         self#index_types
 
     (** Generate the attributes index in the file [index_attributes.html]. *)
-    method generate_attributes_index module_list =
+    method generate_attributes_index _module_list =
       self#generate_elements_index
         self#list_attributes
         (fun a -> a.att_value.val_name)
@@ -2665,7 +2682,7 @@ class html =
         self#index_attributes
 
     (** Generate the methods index in the file [index_methods.html]. *)
-    method generate_methods_index module_list =
+    method generate_methods_index _module_list =
       self#generate_elements_index
         self#list_methods
         (fun m -> m.met_value.val_name)
@@ -2675,7 +2692,7 @@ class html =
         self#index_methods
 
     (** Generate the classes index in the file [index_classes.html]. *)
-    method generate_classes_index module_list =
+    method generate_classes_index _module_list =
       self#generate_elements_index
         self#list_classes
         (fun c -> c.cl_name)
@@ -2685,7 +2702,7 @@ class html =
         self#index_classes
 
     (** Generate the class types index in the file [index_class_types.html]. *)
-    method generate_class_types_index module_list =
+    method generate_class_types_index _module_list =
       self#generate_elements_index
         self#list_class_types
         (fun ct -> ct.clt_name)
@@ -2695,7 +2712,7 @@ class html =
         self#index_class_types
 
     (** Generate the modules index in the file [index_modules.html]. *)
-    method generate_modules_index module_list =
+    method generate_modules_index _module_list =
       self#generate_elements_index
         self#list_modules
         (fun m -> m.m_name)
@@ -2705,7 +2722,7 @@ class html =
         self#index_modules
 
     (** Generate the module types index in the file [index_module_types.html]. *)
-    method generate_module_types_index module_list =
+    method generate_module_types_index _module_list =
       self#generate_elements_index
         self#list_module_types
         (fun mt -> mt.mt_name)

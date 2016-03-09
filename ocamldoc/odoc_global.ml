@@ -18,8 +18,6 @@
 (* Tell ocaml compiler not to generate files. *)
 let _ = Clflags.dont_write_files := true
 
-open Clflags
-
 type source_file =
     Impl_file of string
   | Intf_file of string

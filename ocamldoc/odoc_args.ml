@@ -300,8 +300,8 @@ let default_options = Options.list @
     M.generate_dot ;
   "-customdir", Arg.Unit (fun () -> Printf.printf "%s\n" Odoc_config.custom_generators_path; exit 0),
   M.display_custom_generators_dir ;
-  "-i", Arg.String (fun s -> ()), M.add_load_dir ;
-  "-g", Arg.String (fun s -> ()), M.load_file ^
+  "-i", Arg.String (fun _ -> ()), M.add_load_dir ;
+  "-g", Arg.String (fun _ -> ()), M.load_file ^
   "\n\n *** HTML options ***\n";
 
 (* html only options *)

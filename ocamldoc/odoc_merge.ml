@@ -113,7 +113,7 @@ let merge_info merge_options (m1 : info) (m2 : info) =
       [], [] -> []
     | l, []
     | [], l -> l
-    | l1, l2 ->
+    | l1, _ ->
         if List.mem Merge_before merge_options then
           merge_before_tags (m1.i_before @ m2.i_before)
         else

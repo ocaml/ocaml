@@ -18,7 +18,6 @@
 let print_DEBUG s = print_string s ; print_newline ()
 
 open Odoc_info
-open Parameter
 open Value
 open Type
 open Extension
@@ -293,7 +292,7 @@ class text =
       | Odoc_info.Custom (s,t) -> self#latex_of_custom_text fmt s t
       | Odoc_info.Target (target, code) -> self#latex_of_Target fmt ~target ~code
 
-    method latex_of_custom_text fmt s t = ()
+    method latex_of_custom_text _ _ _ = ()
 
     method latex_of_Target fmt ~target ~code =
       if String.lowercase_ascii target = "latex" then
@@ -519,7 +518,7 @@ class latex =
       match t.ty_parameters with
         [] -> ()
       | [(p,co,cn)] -> print_one (p, co, cn)
-      | l ->
+      | _ ->
           ps fmt "(";
           print_concat fmt ", " print_one t.ty_parameters;
           ps fmt ")"
@@ -814,7 +813,7 @@ class latex =
             [ Code " ";
               Code (self#relative_idents father s) ;
             ]
-      | Module_constraint (k, tk) ->
+      | Module_constraint (k, _tk) ->
           (* TODO: what should we print? *)
           self#latex_of_module_kind fmt father k
       | Module_typeof s ->
@@ -836,7 +835,7 @@ class latex =
           List.iter (self#latex_of_class_element fmt father) eles;
           self#latex_of_text fmt [Latex "\\end{ocamldocobjectend}\n"]
 
-      | Class_apply capp ->
+      | Class_apply _ ->
           (* TODO: print final type from typedtree *)
           self#latex_of_text fmt [Raw "class application not handled yet"]
 
@@ -990,7 +989,7 @@ class latex =
       self#latex_of_text fmt t;
       (
        match mt.mt_type, mt.mt_kind with
-       | Some mtyp, Some kind ->
+       | Some _, Some kind ->
            self#latex_of_text fmt [ Code " = " ];
            self#latex_of_text fmt [ Latex "\\end{ocamldoccode}\n" ];
            self#latex_for_module_type_label fmt mt;

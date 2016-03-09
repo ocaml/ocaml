@@ -126,7 +126,7 @@ let rec string_of_text t =
       | Odoc_types.Latex s -> "{% "^s^" %}"
       | Odoc_types.Link (s, t) ->
           "["^s^"]"^(string_of_text t)
-      | Odoc_types.Ref (name, _, Some text) ->
+      | Odoc_types.Ref (_name, _, Some text) ->
           Printf.sprintf "[%s]" (string_of_text text)
       | Odoc_types.Ref (name, _, None) ->
           iter (Odoc_types.Code name)
@@ -258,7 +258,7 @@ let rec text_list_concat sep l =
       t @ (sep :: (text_list_concat sep q))
 
 let rec text_no_title_no_list t =
-  let rec iter t_ele =
+  let iter t_ele =
     match t_ele with
     | Odoc_types.Title (_,_,t) -> text_no_title_no_list t
     | Odoc_types.List l
@@ -316,7 +316,7 @@ let get_titles_in_text t =
     | Odoc_types.Left t
     | Odoc_types.Right t
     | Odoc_types.Emphasize t -> iter_text t
-    | Odoc_types.Latex s -> ()
+    | Odoc_types.Latex _ -> ()
     | Odoc_types.Link (_, t)
     | Odoc_types.Superscript t
     | Odoc_types.Subscript t  -> iter_text t

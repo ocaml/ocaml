@@ -62,6 +62,7 @@ val hidden_modules : string list ref
 
 (** The files to be analysed. *)
 val files : source_file list ref
+
 (** A counter for errors. *)
 val errors : int ref
 

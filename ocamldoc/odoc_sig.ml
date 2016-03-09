@@ -18,8 +18,6 @@
 open Misc
 open Asttypes
 open Types
-open Typedtree
-open Path
 
 let print_DEBUG s = print_string s ; print_newline ();;
 
@@ -43,7 +41,6 @@ module Signature_search =
       | C of string
       | CT of string
       | X of string
-      | P of string
 
     type tab = (ele, Types.signature_item) Hashtbl.t
 
@@ -96,7 +93,7 @@ module Signature_search =
 
     let search_module table name =
       match Hashtbl.find table (M name) with
-      | (Types.Sig_module (ident, md, _)) -> md.Types.md_type
+      | (Types.Sig_module (_ident, md, _)) -> md.Types.md_type
       | _ -> assert false
 
     let search_module_type table name =
@@ -131,6 +128,7 @@ module Analyser =
   struct
     (** This variable is used to load a file as a string and retrieve characters from it.*)
     let file = ref ""
+
     (** The name of the analysed file. *)
     let file_name = ref ""
 
@@ -190,7 +188,7 @@ module Analyser =
                 let s = get_string_of_file pos pos_end in
                 let (_,comment_opt) =  My_ir.just_after_special !file_name s in
                 [name, comment_opt]
-              | (name, _atts, ct) :: ((name2, _atts2, ct2) as ele2) :: q ->
+              | (name, _atts, ct) :: ((_name2, _atts2, ct2) as ele2) :: q ->
                 let pos = ct.Parsetree.ptyp_loc.Location.loc_end.Lexing.pos_cnum in
                 let pos2 = ct2.Parsetree.ptyp_loc.Location.loc_start.Lexing.pos_cnum in
                 let s = get_string_of_file pos pos2 in
@@ -241,7 +239,7 @@ module Analyser =
                 let s = get_string_of_file pos pos_end in
                 let (_,comment_opt) =  My_ir.just_after_special !file_name s in
                 [name.txt, comment_opt]
-            | {pld_name=name; pld_type=ct} :: ({pld_name=name2; pld_type=ct2} as ele2) :: q ->
+            | {pld_name=name; pld_type=ct} :: ({pld_type=ct2} as ele2) :: q ->
                 let pos = ct.Parsetree.ptyp_loc.Location.loc_end.Lexing.pos_cnum in
                 let pos2 = ct2.Parsetree.ptyp_loc.Location.loc_start.Lexing.pos_cnum in
                 let s = get_string_of_file pos pos2 in
@@ -480,7 +478,7 @@ module Analyser =
         | (Parsetree.Pctf_constraint (_, _)) ->
             (* of (core_type * core_type) *)
             (* FIXME: this corresponds to constraints, isn't it? We don't keep them for now *)
-            let (comment_opt, eles_comments) = get_comments_in_class last_pos loc.Location.loc_start.Lexing.pos_cnum in
+            let (_comment_opt, eles_comments) = get_comments_in_class last_pos loc.Location.loc_start.Lexing.pos_cnum in
             let (inher_l, eles) = f loc.Location.loc_end.Lexing.pos_cnum q in
             (inher_l, eles_comments @ eles)
 
@@ -522,7 +520,7 @@ module Analyser =
             let (inher_l, eles) = f (pos_end + maybe_more) q in
             (inh :: inher_l , eles_comments @ eles)
         | Parsetree.Pctf_attribute _ ->
-            let (comment_opt, eles_comments) = get_comments_in_class last_pos loc.Location.loc_start.Lexing.pos_cnum in
+            let (_comment_opt, eles_comments) = get_comments_in_class last_pos loc.Location.loc_start.Lexing.pos_cnum in
             let (inher_l, eles) = f loc.Location.loc_end.Lexing.pos_cnum q in
             (inher_l, eles_comments @ eles)
 
@@ -588,7 +586,7 @@ module Analyser =
 
     (** Analyse the given signature_item_desc to create the corresponding module element
        (with the given attached comment).*)
-    and analyse_signature_item_desc env signat table current_module_name
+    and analyse_signature_item_desc env _signat table current_module_name
         sig_item_loc pos_start_ele pos_end_ele pos_limit comment_opt sig_item_desc =
         match sig_item_desc with
           Parsetree.Psig_value value_desc ->
@@ -1328,10 +1326,10 @@ module Analyser =
     and analyse_module_kind
         ?(erased = Name.Set.empty) env current_module_name module_type sig_module_type =
       match module_type.Parsetree.pmty_desc with
-      | Parsetree.Pmty_ident longident ->
+      | Parsetree.Pmty_ident _longident ->
           let k = analyse_module_type_kind env current_module_name module_type sig_module_type in
           Module_with ( k, "" )
-      | Parsetree.Pmty_alias longident ->
+      | Parsetree.Pmty_alias _longident ->
           begin
             match sig_module_type with
               Types.Mty_alias path ->
@@ -1491,7 +1489,7 @@ module Analyser =
           in
           Class_signature (inher_l, ele)
 
-      | (Parsetree.Pcty_arrow (parse_label, _, pclass_type), Types.Cty_arrow (label, type_expr, class_type)) ->
+      | (Parsetree.Pcty_arrow _, Types.Cty_arrow _) ->
           raise (Failure "analyse_class_type_kind : Parsetree.Pcty_arrow (...) with Types.Cty_arrow (...)")
 (*
       | (Parsetree.Pcty_constr (longident, _) (*of Longident.t * core_type list *),

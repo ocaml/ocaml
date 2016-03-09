@@ -16,8 +16,6 @@
 
 open Odoc_types
 
-let identchar =
-  "[A-Z a-z_\192-\214\216-\246\248-\255'0-9]"
 let blank = "[ \010\013\009\012]"
 
 let remove_beginning_blanks s =

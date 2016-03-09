@@ -82,7 +82,7 @@ let create_hashtable size init =
 
 (** The function used to return html code for the given comment body. *)
 let html_of_comment = ref
-    (fun (s : string) -> "<b>Odoc_ocamlhtml.html_of_comment not initialized</b>")
+    (fun (_ : string) -> "<b>Odoc_ocamlhtml.html_of_comment not initialized</b>")
 
 let keyword_table =
   create_hashtable 149 [
@@ -423,7 +423,7 @@ and comment = parse
   | "*)"
       { match !comment_start_pos with
         | [] -> assert false
-        | [x] -> comment_start_pos := []
+        | [_] -> comment_start_pos := []
         | _ :: l ->
             store_comment_char '*';
             store_comment_char ')';

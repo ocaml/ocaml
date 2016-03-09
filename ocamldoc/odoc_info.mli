@@ -136,6 +136,7 @@ module Name :
 module Parameter :
   sig
     (** {3 Types} *)
+
     (** Representation of a simple parameter name *)
     type simple_name = Odoc_parameter.simple_name =
         {
@@ -154,6 +155,7 @@ module Parameter :
     type parameter = param_info
 
     (** {3 Functions} *)
+
     (** Acces to the name as a string. For tuples, parenthesis and commas are added. *)
     val complete_name : parameter -> string
 
@@ -342,6 +344,7 @@ module Value :
 module Class :
   sig
     (** {3 Types} *)
+
     (** To keep the order of elements in a class. *)
     type class_element = Odoc_class.class_element =
         Class_attribute of Value.t_attribute
@@ -463,6 +466,7 @@ module Class :
 module Module :
   sig
     (** {3 Types} *)
+
     (** To keep the order of elements in a module. *)
     type module_element = Odoc_module.module_element =
         Element_module of t_module
@@ -914,7 +918,6 @@ module Scan :
   sig
     class scanner :
       object
-      (** Scan of 'leaf elements'. *)
 
         method scan_value : Value.t_value -> unit
 

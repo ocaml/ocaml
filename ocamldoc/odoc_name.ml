@@ -146,7 +146,6 @@ let head_and_tail n =
     Not_found -> (n, "")
 
 let head n = fst (head_and_tail n)
-let tail n = snd (head_and_tail n)
 
 let depth name =
   try

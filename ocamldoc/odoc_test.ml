@@ -117,7 +117,7 @@ struct
     object
       inherit G.generator as base
 
-      method generate l =
+      method! generate l =
         base#generate l;
         g#generate l
     end

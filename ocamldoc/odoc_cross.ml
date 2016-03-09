@@ -58,24 +58,23 @@ module P_alias =
          Some (Module_type_alias _) -> true
        | _ -> false
       )
-    let p_class c _ = (false, false)
-    let p_class_type ct _ = (false, false)
-    let p_value v _ = false
+    let p_class _ _ = (false, false)
+    let p_class_type _ _ = (false, false)
+    let p_value _ _ = false
     let p_recfield _ _ _ = false
     let p_const _ _ _ = false
-    let p_type t _ = (false, false)
+    let p_type _ _ = (false, false)
     let p_extension x _ = x.xt_alias <> None
     let p_exception e _ = e.ex_alias <> None
-    let p_attribute a _ = false
-    let p_method m _ = false
-    let p_section s _ = false
+    let p_attribute _ _ = false
+    let p_method _ _ = false
+    let p_section _ _ = false
   end
 
 (** The module used to get the aliased elements. *)
 module Search_alias = Odoc_search.Search (P_alias)
 
 type alias_state =
-    Alias_resolved
   | Alias_to_resolve
 
 (** Couples of module name aliases. *)
@@ -140,36 +139,6 @@ let get_alias_names module_list =
   Hashtbl.clear exception_aliases;
   build_alias_list (Search_alias.search module_list 0)
 
-exception Found of string
-let name_alias =
-  let rec f t name =
-    try
-      match Hashtbl.find t name with
-        (s, Alias_resolved) -> s
-      | (s, Alias_to_resolve) -> f t s
-    with
-      Not_found ->
-        try
-          Hashtbl.iter
-            (fun n2 (n3, _) ->
-              if Name.prefix n2 name then
-                let ln2 = String.length n2 in
-                let s = n3^(String.sub name ln2 ((String.length name) - ln2)) in
-                raise (Found s)
-            )
-            t ;
-          Hashtbl.replace t name (name, Alias_resolved);
-          name
-        with
-          Found s ->
-            let s2 = f t s in
-            Hashtbl.replace t s2 (s2, Alias_resolved);
-            s2
-  in
-  fun name alias_tbl ->
-    f alias_tbl name
-
-
 module Map_ord =
   struct
     type t = string
@@ -188,7 +157,7 @@ let add_known_element name k =
     Not_found ->
       known_elements := Ele_map.add name [k] !known_elements
 
-let rec get_known_elements name =
+let get_known_elements name =
   try Ele_map.find name !known_elements
   with Not_found -> []
 
@@ -322,11 +291,9 @@ let init_known_elements_map module_list =
 
 (** The type to describe the names not found. *)
 type not_found_name =
-    NF_m of Name.t
   | NF_mt of Name.t
   | NF_mmt of Name.t
   | NF_c of Name.t
-  | NF_ct of Name.t
   | NF_cct of Name.t
   | NF_xt of Name.t
   | NF_ex of Name.t
@@ -392,7 +359,7 @@ let rec associate_in_module module_list (acc_b_modif, acc_incomplete_top_module_
      | Module_typeof _ ->
         (acc_b, acc_inc, acc_names)
 
-     | Module_unpack (code, mta) ->
+     | Module_unpack (_code, mta) ->
         begin
           match mta.mta_module with
             Some _ ->
@@ -608,8 +575,8 @@ and associate_in_class module_list (acc_b_modif, acc_incomplete_top_module_names
   in
   iter_kind (acc_b_modif, acc_incomplete_top_module_names, acc_names_not_found) c.cl_kind
 
-and associate_in_class_type module_list (acc_b_modif, acc_incomplete_top_module_names, acc_names_not_found) ct =
-  let rec iter_kind (acc_b, acc_inc, acc_names) k =
+and associate_in_class_type _module_list (acc_b_modif, acc_incomplete_top_module_names, acc_names_not_found) ct =
+  let iter_kind (acc_b, acc_inc, acc_names) k =
     match k with
       Class_signature (inher_l, _) ->
         let f (acc_b2, acc_inc2, acc_names2) ic =
@@ -654,7 +621,7 @@ and associate_in_class_type module_list (acc_b_modif, acc_incomplete_top_module_
   in
   iter_kind (acc_b_modif, acc_incomplete_top_module_names, acc_names_not_found) ct.clt_kind
 
-and associate_in_type_extension module_list (acc_b_modif, acc_incomplete_top_module_names, acc_names_not_found) te =
+and associate_in_type_extension _module_list (acc_b_modif, acc_incomplete_top_module_names, acc_names_not_found) te =
   List.fold_left
     (fun (acc_b_modif, acc_incomplete_top_module_names, acc_names_not_found) xt ->
        match xt.xt_alias with
@@ -754,7 +721,7 @@ let rec assoc_comments_text_elements parent_name module_list t_ele =
                  | Odoc_search.Res_exception e -> (e.ex_name, RK_exception)
                  | Odoc_search.Res_attribute a -> (a.att_value.val_name, RK_attribute)
                  | Odoc_search.Res_method m -> (m.met_value.val_name, RK_method)
-                 | Odoc_search.Res_section (_ ,t)-> assert false
+                 | Odoc_search.Res_section _-> assert false
                  | Odoc_search.Res_recfield (t, f) ->
                      (Printf.sprintf "%s.%s" t.ty_name f.rf_name, RK_recfield)
                  | Odoc_search.Res_const (t, f) ->
@@ -791,7 +758,7 @@ let rec assoc_comments_text_elements parent_name module_list t_ele =
              match kind with
              | RK_section _ ->
                  (
-                  (** we just verify that we find an element of this kind with this name *)
+                  (* we just verify that we find an element of this kind with this name *)
                   try
                     let re = Str.regexp ("^"^(Str.quote name)^"$") in
                     let t = Odoc_search.find_section module_list re in
@@ -993,7 +960,7 @@ and assoc_comments_parameter parent_name module_list p =
   match p with
     Simple_name sn ->
       sn.sn_text <- ao (assoc_comments_text parent_name module_list) sn.sn_text
-  | Tuple (l, t) ->
+  | Tuple (l, _) ->
       List.iter (assoc_comments_parameter parent_name module_list) l
 
 and assoc_comments_parameter_list parent_name module_list pl =
@@ -1089,11 +1056,9 @@ let associate module_list =
            Odoc_global.pwarning
              (
               match nf with
-                NF_m n -> Odoc_messages.cross_module_not_found n
               | NF_mt n -> Odoc_messages.cross_module_type_not_found n
               | NF_mmt n -> Odoc_messages.cross_module_or_module_type_not_found n
               | NF_c n -> Odoc_messages.cross_class_not_found n
-              | NF_ct n -> Odoc_messages.cross_class_type_not_found n
               | NF_cct n -> Odoc_messages.cross_class_or_class_type_not_found n
               | NF_xt n -> Odoc_messages.cross_extension_not_found n
               | NF_ex n -> Odoc_messages.cross_exception_not_found n

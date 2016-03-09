@@ -16,12 +16,6 @@
 (** Main module for bytecode.
 @todo todo*)
 
-open Config
-open Clflags
-open Misc
-open Format
-open Typedtree
-
 module M = Odoc_messages
 
 let print_DEBUG s = print_string s ; print_newline ()
