@@ -7,7 +7,10 @@ Build system:
 - GPR#324: Compiler developpers only: Adding new primitives to the
   standard runtime doesn't require anymore to run `make bootstrap`
   (FranÃ§ois Bobot)
-
+- GPR#384: Fix compilation using old Microsoft C Compilers not
+  supporting secure CRT functions (SDK Visual Studio 2005 compiler and
+  earlier) and standard 64-bit integer literals (Visual Studio .NET
+  2002 and earlier) (David Allsopp)
 
 OCaml 4.03.0:
 -------------
