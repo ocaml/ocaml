@@ -3,6 +3,9 @@ OCaml 4.04.0:
 
 (Changes that can break existing programs are marked with a "*")
 
+Tools:
+- GPR#452: Make the output of ocamldep is more stable (Alain Frisch)
+
 Build system:
 - GPR#324: Compiler developpers only: Adding new primitives to the
   standard runtime doesn't require anymore to run `make bootstrap`
