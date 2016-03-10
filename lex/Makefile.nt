@@ -19,7 +19,7 @@ include ../config/Makefile
 CAMLRUN ?= ../boot/ocamlrun
 CAMLYACC ?= ../boot/ocamlyacc
 
-CAMLC=$(CAMLRUN) ../boot/ocamlc -I ../boot
+CAMLC=$(CAMLRUN) ../boot/ocamlc -I ../boot -use-prims ../byterun/primitives
 ifeq "$(wildcard ../flexdll/Makefile)" ""
   FLEXLINK_ENV=
 else

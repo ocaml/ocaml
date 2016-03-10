@@ -41,7 +41,7 @@ PUBLIC_INCLUDES=\
   version.h
 
 
-all:: ocamlrun$(EXE) ld.conf libcamlrun.$(A) all-$(RUNTIMED)
+all:: ocamlrun$(EXE) ld.conf libcamlrun.$(A) all-$(RUNTIMED) primitives
 .PHONY: all
 
 all-noruntimed:

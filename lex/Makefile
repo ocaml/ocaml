@@ -18,7 +18,7 @@ include ../config/Makefile
 CAMLRUN ?= ../boot/ocamlrun
 CAMLYACC ?= ../boot/ocamlyacc
 
-CAMLC=$(CAMLRUN) ../boot/ocamlc -strict-sequence -nostdlib -I ../boot
+CAMLC=$(CAMLRUN) ../boot/ocamlc -strict-sequence -nostdlib -I ../boot -use-prims ../byterun/primitives
 CAMLOPT=$(CAMLRUN) ../ocamlopt -nostdlib -I ../stdlib
 COMPFLAGS=-w +33..39 -warn-error A -bin-annot -safe-string
 LINKFLAGS=
