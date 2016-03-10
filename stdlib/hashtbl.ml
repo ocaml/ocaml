@@ -254,19 +254,37 @@ let iter f h =
     flip_ongoing_traversal h;
     raise exn
 
+let rec filter_map_inplace_bucket f h i prec = function
+  | Empty ->
+      begin match prec with
+      | Empty -> h.data.(i) <- Empty
+      | Cons c -> c.next <- Empty
+      end
+  | (Cons ({key; data; next} as c)) as slot ->
+      begin match f key data with
+      | None ->
+          h.size <- h.size - 1;
+          filter_map_inplace_bucket f h i prec next
+      | Some data ->
+          begin match prec with
+          | Empty -> h.data.(i) <- slot
+          | Cons c -> c.next <- slot
+          end;
+          c.data <- data;
+          filter_map_inplace_bucket f h i slot next
+      end
+
 let filter_map_inplace f h =
-  let rec do_bucket = function
-    | Empty ->
-        Empty
-    | Cons(k, d, rest) ->
-        match f k d with
-        | None -> h.size <- h.size - 1; do_bucket rest
-        | Some new_d -> Cons(k, new_d, do_bucket rest)
-  in
   let d = h.data in
-  for i = 0 to Array.length d - 1 do
-    d.(i) <- do_bucket d.(i)
-  done
+  let old_trav = ongoing_traversal h in
+  if not old_trav then flip_ongoing_traversal h;
+  try
+    for i = 0 to Array.length d - 1 do
+      filter_map_inplace_bucket f h i Empty h.data.(i)
+    done
+  with exn when not old_trav ->
+    flip_ongoing_traversal h;
+    raise exn
 
 let fold f h init =
   let rec do_bucket b accu =
