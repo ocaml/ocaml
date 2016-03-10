@@ -200,7 +200,7 @@ let filter_map_inplace f h =
         Empty
     | Cons(k, d, rest) ->
         match f k d with
-        | None -> do_bucket rest
+        | None -> h.size <- h.size - 1; do_bucket rest
         | Some new_d -> Cons(k, new_d, do_bucket rest)
   in
   let d = h.data in
