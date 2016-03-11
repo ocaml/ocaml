@@ -159,6 +159,9 @@ let unsafe_string = ref (not Config.safe_string)
 let classic_inlining = ref false       (* -Oclassic *)
 let inlining_report = ref false    (* -inlining-report *)
 
+let afl_instrument = ref Config.afl_instrument (* -afl-instrument *)
+let afl_inst_ratio = ref 100           (* -afl-inst-ratio *)
+
 let simplify_rounds = ref None        (* -rounds *)
 let default_simplify_rounds = ref 1        (* -rounds *)
 let rounds () =

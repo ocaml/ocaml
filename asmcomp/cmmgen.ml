@@ -2667,7 +2667,8 @@ let transl_function f =
   in
   Cfunction {fun_name = f.label;
              fun_args = List.map (fun id -> (id, typ_val)) f.params;
-             fun_body = transl empty_env body;
+             fun_body = Afl_instrument.instrument_function
+                          (transl empty_env body);
              fun_fast = !Clflags.optimize_for_speed;
              fun_dbg  = f.dbg; }
 
@@ -2905,7 +2906,8 @@ let emit_preallocated_blocks preallocated_blocks cont =
 (* Translate a compilation unit *)
 
 let compunit (ulam, preallocated_blocks, constants) =
-  let init_code = transl empty_env ulam in
+  let init_code =
+    Afl_instrument.instrument_initialiser (transl empty_env ulam) in
   let c1 = [Cfunction {fun_name = Compilenv.make_symbol (Some "entry");
                        fun_args = [];
                        fun_body = init_code; fun_fast = false;

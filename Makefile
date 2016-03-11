@@ -439,6 +439,7 @@ utils/config.ml: utils/config.mlp config/Makefile
 	    -e 's|%%TARGET%%|$(TARGET)|' \
 	    -e 's|%%FLAMBDA%%|$(FLAMBDA)|' \
 	    -e 's|%%SAFE_STRING%%|$(SAFE_STRING)|' \
+	    -e 's|%%AFL_INSTRUMENT%%|$(AFL_INSTRUMENT)|' \
 	    utils/config.mlp > utils/config.ml
 
 partialclean::

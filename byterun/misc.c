@@ -37,7 +37,7 @@ int caml_failed_assert (char * expr, char * file, int line)
   fprintf (stderr, "file %s; line %d ### Assertion failed: %s\n",
            file, line, expr);
   fflush (stderr);
-  exit (100);
+  abort();
 }
 
 void caml_set_fields (value v, unsigned long start, unsigned long filler)
@@ -63,13 +63,13 @@ void caml_gc_message (int level, char *msg, uintnat arg)
 CAMLexport void caml_fatal_error (char *msg)
 {
   fprintf (stderr, "%s", msg);
-  exit(2);
+  abort();
 }
 
 CAMLexport void caml_fatal_error_arg (char *fmt, char *arg)
 {
   fprintf (stderr, fmt, arg);
-  exit(2);
+  abort();
 }
 
 CAMLexport void caml_fatal_error_arg2 (char *fmt1, char *arg1,
@@ -77,7 +77,7 @@ CAMLexport void caml_fatal_error_arg2 (char *fmt1, char *arg1,
 {
   fprintf (stderr, fmt1, arg1);
   fprintf (stderr, fmt2, arg2);
-  exit(2);
+  abort();
 }
 
 /* [size] and [modulo] are numbers of bytes */
