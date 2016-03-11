@@ -7,7 +7,10 @@ Tools:
 - GPR#452: Make the output of ocamldep is more stable (Alain Frisch)
 
 Standard library:
-- PR#4747, GPR#328: Optimize Hashtbl (Alain Frisch)
+- PR#4747, GPR#328: Optimize Hashtbl but using in-place updates of its
+  internal bucket lists.  All operations run in constant stack size
+  and are usually faster, except Hashtbl.copy which can be much
+  slower. (Alain Frisch)
 
 Build system:
 - GPR#324: Compiler developpers only: Adding new primitives to the
