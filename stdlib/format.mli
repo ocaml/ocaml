@@ -565,6 +565,8 @@ val pp_get_formatter_out_functions :
    evaluation of these primitives. For instance,
    [print_string] is equal to [pp_print_string std_formatter]. *)
 
+val pp_flush_formatter : formatter -> unit
+
 (** {6 Convenience formatting functions.} *)
 
 val pp_print_list:
