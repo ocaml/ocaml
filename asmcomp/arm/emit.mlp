@@ -654,7 +654,8 @@ let emit_instr i =
                      | Ishiftor     -> "orr"
                      | Ishiftxor    -> "eor") in
         let op = name_for_shift_operation shiftop in
-        `	{emit_string instr}	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}, {emit_string op} #{emit_int n}\n`; 1
+        `	{emit_string instr}	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}, \
+                                        {emit_reg i.arg.(1)}, {emit_string op} #{emit_int n}\n`; 1
     | Lop(Ispecific(Irevsubimm n)) ->
         `	rsb	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}, #{emit_int n}\n`; 1
     | Lop(Ispecific(Imuladd | Imulsub as op)) ->

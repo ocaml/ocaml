@@ -132,37 +132,6 @@ void caml_set_minor_heap_size (asize_t bsz)
     caml_empty_minor_heap ();
   }
   CAMLassert (caml_young_ptr == caml_young_alloc_end);
-#ifdef MMAP_INTERVAL
-  {
-    static uintnat minor_heap_mapped_bsz = 0;
-    uintnat new_mapped_bsz;
-    new_mapped_bsz = Round_mmap_size (bsz);
-    void *block;
-
-    CAMLassert (caml_young_start != NULL);
-    if (new_mapped_bsz > minor_heap_mapped_bsz){
-      uintnat addbsz = new_mapped_bsz - minor_heap_mapped_bsz;
-      new_heap = (char *) caml_young_start - addbsz;
-      block = caml_mmap_heap (new_heap, addbsz, PROT_READ | PROT_WRITE,
-                              MAP_FIXED);
-      if (block != new_heap){
-        if (minor_heap_mapped_bsz == 0){
-          caml_fatal_error ("cannot initialize minor heap: mmap failed\n");
-        }else{
-          caml_raise_out_of_memory ();
-        }
-      }
-      new_heap_base = new_heap;
-    }else if (new_mapped_bsz < minor_heap_mapped_bsz){
-      uintnat subbsz = minor_heap_mapped_bsz - new_mapped_bsz;
-      (void) caml_mmap_heap (caml_young_start, subbsz, PROT_NONE,
-                             MAP_FIXED | MAP_NORESERVE);
-      new_heap_base = new_heap = (char *) caml_young_start + subbsz;
-    }else{
-      new_heap_base = new_heap = caml_young_base;
-    }
-  }
-#else
   new_heap = caml_aligned_malloc(bsz, 0, &new_heap_base);
   if (new_heap == NULL) caml_raise_out_of_memory();
   if (caml_page_table_add(In_young, new_heap, new_heap + bsz) != 0)
@@ -172,7 +141,6 @@ void caml_set_minor_heap_size (asize_t bsz)
     caml_page_table_remove(In_young, caml_young_start, caml_young_end);
     free (caml_young_base);
   }
-#endif
   caml_young_base = new_heap_base;
   caml_young_start = (value *) new_heap;
   caml_young_end = (value *) (new_heap + bsz);

@@ -89,7 +89,7 @@ one:
 	&& echo " => passed" || echo " => failed"
 
 clean: defaultclean
-	@rm -f ./codegen *.out *.$(O) *.exe
+	@rm -f ./codegen *.out *.out.manifest *.$(O) *.exe
 	@rm -f parsecmm.ml parsecmm.mli lexcmm.ml
 	@rm -f $(CASES:=.s)
 

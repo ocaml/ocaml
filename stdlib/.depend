@@ -13,6 +13,7 @@ camlinternalOO.cmi : obj.cmi
 char.cmi :
 complex.cmi :
 digest.cmi :
+ephemeron.cmi : hashtbl.cmi
 filename.cmi :
 format.cmi : pervasives.cmi buffer.cmi
 gc.cmi :
@@ -48,7 +49,6 @@ stringLabels.cmi :
 sys.cmi :
 uchar.cmi : format.cmi
 weak.cmi : hashtbl.cmi
-ephemeron.cmi : hashtbl.cmi obj.cmi
 arg.cmo : sys.cmi string.cmi printf.cmi list.cmi buffer.cmi array.cmi \
     arg.cmi
 arg.cmx : sys.cmx string.cmx printf.cmx list.cmx buffer.cmx array.cmx \
@@ -87,6 +87,10 @@ complex.cmo : complex.cmi
 complex.cmx : complex.cmi
 digest.cmo : string.cmi char.cmi bytes.cmi digest.cmi
 digest.cmx : string.cmx char.cmx bytes.cmx digest.cmi
+ephemeron.cmo : sys.cmi random.cmi obj.cmi lazy.cmi hashtbl.cmi array.cmi \
+    ephemeron.cmi
+ephemeron.cmx : sys.cmx random.cmx obj.cmx lazy.cmx hashtbl.cmx array.cmx \
+    ephemeron.cmi
 filename.cmo : sys.cmi string.cmi random.cmi printf.cmi lazy.cmi buffer.cmi \
     filename.cmi
 filename.cmx : sys.cmx string.cmx random.cmx printf.cmx lazy.cmx buffer.cmx \
@@ -177,8 +181,6 @@ uchar.cmo : printf.cmi pervasives.cmi format.cmi char.cmi uchar.cmi
 uchar.cmx : printf.cmx pervasives.cmx format.cmx char.cmx uchar.cmi
 weak.cmo : sys.cmi obj.cmi hashtbl.cmi array.cmi weak.cmi
 weak.cmx : sys.cmx obj.cmx hashtbl.cmx array.cmx weak.cmi
-ephemeron.cmo : sys.cmi obj.cmi hashtbl.cmi array.cmi obj.cmi ephemeron.cmi
-ephemeron.cmx : sys.cmx obj.cmx hashtbl.cmx array.cmx obj.cmx ephemeron.cmi
 arg.cmo : sys.cmi string.cmi printf.cmi list.cmi buffer.cmi array.cmi \
     arg.cmi
 arg.p.cmx : sys.cmx string.cmx printf.cmx list.cmx buffer.cmx array.cmx \
@@ -217,6 +219,10 @@ complex.cmo : complex.cmi
 complex.p.cmx : complex.cmi
 digest.cmo : string.cmi char.cmi bytes.cmi digest.cmi
 digest.p.cmx : string.cmx char.cmx bytes.cmx digest.cmi
+ephemeron.cmo : sys.cmi random.cmi obj.cmi lazy.cmi hashtbl.cmi array.cmi \
+    ephemeron.cmi
+ephemeron.p.cmx : sys.cmx random.cmx obj.cmx lazy.cmx hashtbl.cmx array.cmx \
+    ephemeron.cmi
 filename.cmo : sys.cmi string.cmi random.cmi printf.cmi lazy.cmi buffer.cmi \
     filename.cmi
 filename.p.cmx : sys.cmx string.cmx random.cmx printf.cmx lazy.cmx buffer.cmx \
@@ -307,5 +313,3 @@ uchar.cmo : printf.cmi pervasives.cmi format.cmi char.cmi uchar.cmi
 uchar.p.cmx : printf.cmx pervasives.cmx format.cmx char.cmx uchar.cmi
 weak.cmo : sys.cmi obj.cmi hashtbl.cmi array.cmi weak.cmi
 weak.p.cmx : sys.cmx obj.cmx hashtbl.cmx array.cmx weak.cmi
-ephemeron.cmo : sys.cmi obj.cmi hashtbl.cmi array.cmi obj.cmi ephemeron.cmi
-ephemeron.p.cmx : sys.cmx obj.cmx hashtbl.cmx array.cmx obj.cmx ephemeron.cmi
