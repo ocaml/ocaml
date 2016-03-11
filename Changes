@@ -410,7 +410,7 @@ Bug fixes:
 - PR#6938: fix regression on "%047.27{l,L,n}{d,i,x,X,o,u}"
   (Benoît Vaugon, report by Arduino Cascella)
 - PR#6944: let module X = Path in … is not typed as a module alias
-  (Jacques Garrigue, report by def)
+  (Jacques Garrigue, report by Frédéric Bour)
 - PR#6945 and GPR#227: protect Sys and Unix functions against string
     arguments containing the null character '\000'
   (c-cube and Xavier Leroy, report by Daniel Bünzli)
