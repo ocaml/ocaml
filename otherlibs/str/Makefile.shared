@@ -13,9 +13,20 @@
 #*                                                                        *
 #**************************************************************************
 
-include Makefile.shared
+# Makefile for the str library
 
-.depend.nt: .depend
-	sed -e 's/\.o/.$(O)/g' .depend > .depend.nt
+LIBNAME=str
+COBJS=strstubs.$(O)
+CLIBNAME=camlstr
+CAMLOBJS=str.cmo
 
-include .depend.nt
+include ../Makefile
+
+str.cmo: str.cmi
+str.cmx: str.cmi
+
+depend:
+	$(CC) -MM $(CFLAGS) *.c > .depend
+	$(CAMLRUN) ../../tools/ocamldep *.mli *.ml >> .depend
+
+include .depend
