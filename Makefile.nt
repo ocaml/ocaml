@@ -235,10 +235,12 @@ installbyt:
 	  $(MAKEREC) install-flexdll; \
 	fi
 	cp config/Makefile "$(INSTALL_LIBDIR)/Makefile.config"
-	cp README.adoc "$(INSTALL_DISTRIB)/Readme.general.txt"
-	cp README.win32.adoc "$(INSTALL_DISTRIB)/Readme.windows.txt"
-	cp LICENSE "$(INSTALL_DISTRIB)/License.txt"
-	cp Changes "$(INSTALL_DISTRIB)/Changes.txt"
+	if test -n "$(INSTALL_DISTRIB)"; then \
+	   cp README $(INSTALL_DISTRIB)/Readme.general.txt; \
+	   cp README.win32 $(INSTALL_DISTRIB)/Readme.windows.txt; \
+	   cp LICENSE $(INSTALL_DISTRIB)/License.txt; \
+	   cp Changes $(INSTALL_DISTRIB)/Changes.txt; \
+	fi
 
 install-flexdll:
 # The $(if ...) installs the correct .manifest file for MSVC and MSVC64
