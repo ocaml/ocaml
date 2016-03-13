@@ -17,12 +17,15 @@ include Makefile.shared
 
 # To make custom toplevels
 
-ocamlmktop: ocamlmktop.tpl ../config/Makefile
-	sed -e 's|%%BINDIR%%|$(BINDIR)|' ocamlmktop.tpl > ocamlmktop
-	chmod +x ocamlmktop
+OCAMLMKTOP=ocamlmktop.cmo
+OCAMLMKTOP_IMPORTS=misc.cmo identifiable.cmo numbers.cmo config.cmo \
+	           arg_helper.cmo clflags.cmo ccomp.cmo
+
+ocamlmktop: $(OCAMLMKTOP)
+	$(CAMLC) $(LINKFLAGS) -o ocamlmktop $(OCAMLMKTOP_IMPORTS) $(OCAMLMKTOP)
 
 install::
-	cp ocamlmktop "$(INSTALL_BINDIR)"
+	cp ocamlmktop "$(INSTALL_BINDIR)/ocamlmktop$(EXE)"
 
 clean::
 	rm -f ocamlmktop
