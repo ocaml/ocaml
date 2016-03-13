@@ -20,31 +20,32 @@ include ../config/Makefile
 CC=$(BYTECC)
 CFLAGS=-DNDEBUG $(BYTECCCOMPOPTS)
 
-OBJS= closure.o error.o lalr.o lr0.o main.o mkpar.o output.o reader.o \
-  skeleton.o symtab.o verbose.o warshall.o
+OBJS= closure.$(O) error.$(O) lalr.$(O) lr0.$(O) main.$(O) \
+  mkpar.$(O) output.$(O) reader.$(O) \
+  skeleton.$(O) symtab.$(O) verbose.$(O) warshall.$(O)
 
 all: ocamlyacc$(EXE)
 
 ocamlyacc$(EXE): $(OBJS)
-	$(CC) $(CFLAGS) $(CCLINKFLAGS) -o ocamlyacc$(EXE) $(OBJS)
+	$(MKEXE) -o ocamlyacc$(EXE) $(OBJS) $(EXTRALIBS)
 
 version.h : ../VERSION
 	echo "#define OCAML_VERSION \"`sed -e 1q ../VERSION`\"" >version.h
 
 clean:
-	rm -f *.o ocamlyacc$(EXE) *~ version.h
+	rm -f *.$(O) ocamlyacc$(EXE) *~ version.h
 
 depend:
 
-closure.o: defs.h
-error.o: defs.h
-lalr.o: defs.h
-lr0.o: defs.h
-main.o: defs.h version.h
-mkpar.o: defs.h
-output.o: defs.h
-reader.o: defs.h
-skeleton.o: defs.h
-symtab.o: defs.h
-verbose.o: defs.h
-warshall.o: defs.h
+closure.$(O): defs.h
+error.$(O): defs.h
+lalr.$(O): defs.h
+lr0.$(O): defs.h
+main.$(O): defs.h version.h
+mkpar.$(O): defs.h
+output.$(O): defs.h
+reader.$(O): defs.h
+skeleton.$(O): defs.h
+symtab.$(O): defs.h
+verbose.$(O): defs.h
+warshall.$(O): defs.h
