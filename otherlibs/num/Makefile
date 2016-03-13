@@ -13,22 +13,7 @@
 #*                                                                        *
 #**************************************************************************
 
-# Makefile for the "num" (exact rational arithmetic) library
-
-LIBNAME=nums
-EXTRACFLAGS=-DBNG_ARCH_$(BNG_ARCH) -DBNG_ASM_LEVEL=$(BNG_ASM_LEVEL)
-CAMLOBJS=int_misc.cmo nat.cmo big_int.cmo arith_flags.cmo \
-  ratio.cmo num.cmo arith_status.cmo
-CMIFILES=big_int.cmi nat.cmi num.cmi ratio.cmi arith_status.cmi
-COBJS=bng.$(O) nat_stubs.$(O)
-
-include ../Makefile
-
-clean::
-	rm -f *~
-
-bng.$(O): bng.h bng_digit.c \
-       bng_amd64.c bng_ia32.c bng_ppc.c bng_sparc.c
+include Makefile.shared
 
 depend:
 	$(CC) -MM $(CFLAGS) *.c > .depend
