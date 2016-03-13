@@ -13,14 +13,7 @@
 #*                                                                        *
 #**************************************************************************
 
-LIBNAME=bigarray
-EXTRACFLAGS=-I../$(UNIXLIB) -DIN_OCAML_BIGARRAY -DCAML_NAME_SPACE
-EXTRACAMLFLAGS=-I ../$(UNIXLIB)
-COBJS=bigarray_stubs.$(O) mmap_$(UNIX_OR_WIN32).$(O)
-CAMLOBJS=bigarray.cmo
-HEADERS=bigarray.h
-
-include ../Makefile
+include Makefile.shared
 
 depend:
 	$(CC) -MM $(CFLAGS) *.c > .depend
