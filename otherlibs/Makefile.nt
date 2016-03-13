@@ -13,15 +13,4 @@
 #*                                                                        *
 #**************************************************************************
 
-# Common Makefile for otherlibs on the Win32/MinGW ports
-
-include ../Makefile
-
-ifeq "$(wildcard $(ROOTDIR)/flexdll/Makefile)" ""
-export OCAML_FLEXLINK:=
-else
-export OCAML_FLEXLINK:=$(ROOTDIR)/boot/ocamlrun $(ROOTDIR)/flexdll/flexlink.exe
-endif
-
-# Note .. is the current directory (this makefile is included from
-# a subdirectory)
+include Makefile
