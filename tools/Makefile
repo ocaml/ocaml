@@ -14,18 +14,3 @@
 #**************************************************************************
 
 include Makefile.shared
-
-# To make custom toplevels
-
-OCAMLMKTOP=ocamlmktop.cmo
-OCAMLMKTOP_IMPORTS=misc.cmo identifiable.cmo numbers.cmo config.cmo \
-	           arg_helper.cmo clflags.cmo ccomp.cmo
-
-ocamlmktop: $(OCAMLMKTOP)
-	$(CAMLC) $(LINKFLAGS) -o ocamlmktop $(OCAMLMKTOP_IMPORTS) $(OCAMLMKTOP)
-
-install::
-	cp ocamlmktop "$(INSTALL_BINDIR)/ocamlmktop$(EXE)"
-
-clean::
-	rm -f ocamlmktop
