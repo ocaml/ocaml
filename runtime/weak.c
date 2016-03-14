@@ -31,11 +31,29 @@ value caml_ephe_list_head = 0;
 static value ephe_dummy = 0;
 value caml_ephe_none = (value) &ephe_dummy;
 
+#define CAMLassert_valid_ephemeron(eph) do{                                 \
+    CAMLassert (Is_in_heap (eph));                                          \
+    CAMLassert (Tag_val(eph) == Abstract_tag);                              \
+    CAMLassert (CAML_EPHE_FIRST_KEY <= Wosize_val (eph));                   \
+}while(0)
+
+#define CAMLassert_valid_offset(eph,offset) do{                             \
+    CAMLassert_valid_ephemeron(eph);                                        \
+    CAMLassert (0 <= offset);                                               \
+    CAMLassert (offset < Wosize_val (eph) - CAML_EPHE_FIRST_KEY);           \
+}while(0)
+
+CAMLexport mlsize_t caml_ephemeron_key_length(value eph)
+{
+  return Wosize_val (eph) - CAML_EPHE_FIRST_KEY;
+}
+
 #if defined (NATIVE_CODE) && defined (NO_NAKED_POINTERS)
 /** The minor heap is considered alive.
     Outside minor and major heap, x must be black.
 */
-static inline int Is_Dead_during_clean(value x){
+static inline int Is_Dead_during_clean(value x)
+{
   CAMLassert (x != caml_ephe_none);
   CAMLassert (caml_gc_phase == Phase_clean);
   return Is_block (x) && !Is_young (x) && Is_white_val(x);
@@ -43,32 +61,35 @@ static inline int Is_Dead_during_clean(value x){
 /** The minor heap doesn't have to be marked, outside they should
     already be black
 */
-static inline int Must_be_Marked_during_mark(value x){
+static inline int Must_be_Marked_during_mark(value x)
+{
   CAMLassert (x != caml_ephe_none);
   CAMLassert (caml_gc_phase == Phase_mark);
   return Is_block (x) && !Is_young (x);
 }
 #else
-static inline int Is_Dead_during_clean(value x){
+static inline int Is_Dead_during_clean(value x)
+{
   CAMLassert (x != caml_ephe_none);
   CAMLassert (caml_gc_phase == Phase_clean);
   return Is_block (x) && Is_in_heap (x) && Is_white_val(x);
 }
-static inline int Must_be_Marked_during_mark(value x){
+static inline int Must_be_Marked_during_mark(value x)
+{
   CAMLassert (x != caml_ephe_none);
   CAMLassert (caml_gc_phase == Phase_mark);
   return Is_block (x) && Is_in_heap (x);
 }
 #endif
 
-
 /* [len] is a value that represents a number of words (fields) */
-CAMLprim value caml_ephe_create (value len)
+CAMLexport value caml_ephemeron_create (mlsize_t len)
 {
   mlsize_t size, i;
   value res;
 
-  size = Long_val (len) + CAML_EPHE_FIRST_KEY;
+  CAMLassert(len <= CAML_EPHE_MAX_WOSIZE);
+  size = len + CAML_EPHE_FIRST_KEY;
   if (size < CAML_EPHE_FIRST_KEY || size > Max_wosize)
     caml_invalid_argument ("Weak.create");
   res = caml_alloc_shr (size, Abstract_tag);
@@ -76,6 +97,14 @@ CAMLprim value caml_ephe_create (value len)
   Field (res, CAML_EPHE_LINK_OFFSET) = caml_ephe_list_head;
   caml_ephe_list_head = res;
   return res;
+}
+
+CAMLprim value caml_ephe_create (value len)
+{
+  intnat size = Long_val(len);
+  if (size < 0 || size > CAML_EPHE_MAX_WOSIZE)
+    caml_invalid_argument ("Weak.create");
+  return caml_ephemeron_create(size);
 }
 
 CAMLprim value caml_weak_create (value len)
@@ -119,7 +148,8 @@ CAMLprim value caml_weak_create (value len)
 /* If we are in Phase_clean we need to check if the key
    that is going to disappear is dead and so should trigger a cleaning
  */
-static void do_check_key_clean(value ar, mlsize_t offset){
+static void do_check_key_clean(value ar, mlsize_t offset)
+{
   CAMLassert (offset >= CAML_EPHE_FIRST_KEY);
   if (caml_gc_phase == Phase_clean){
     value elt = Field (ar, offset);
@@ -132,7 +162,8 @@ static void do_check_key_clean(value ar, mlsize_t offset){
 
 /* If we are in Phase_clean we need to do as if the key is empty when
    it will be cleaned during this phase */
-static inline int is_ephe_key_none(value ar, mlsize_t offset){
+static inline int is_ephe_key_none(value ar, mlsize_t offset)
+{
   value elt = Field (ar, offset);
   if (elt == caml_ephe_none){
     return 1;
@@ -145,11 +176,21 @@ static inline int is_ephe_key_none(value ar, mlsize_t offset){
   }
 }
 
+/** The offset starts here at 0 */
+static inline mlsize_t raise_if_invalid_offset(value ar, value n,
+                                               char* msg)
+{
+  intnat offset = Long_val (n);
+  if (offset < 0 || offset >= Wosize_val (ar) - CAML_EPHE_FIRST_KEY){
+    caml_invalid_argument (msg);
+  }
+  return offset;
+}
 
 static void do_set (value ar, mlsize_t offset, value v)
 {
   if (Is_block (v) && Is_young (v)){
-    /* modified version of Modify */
+    /* modified version of caml_modify */
     value old = Field (ar, offset);
     Field (ar, offset) = v;
     if (!(Is_block (old) && Is_young (old))){
@@ -160,211 +201,273 @@ static void do_set (value ar, mlsize_t offset, value v)
   }
 }
 
-CAMLprim value caml_ephe_set_key (value ar, value n, value el)
+CAMLexport void caml_ephemeron_set_key(value ar, mlsize_t offset, value k)
 {
-  mlsize_t offset = Long_val (n) + CAML_EPHE_FIRST_KEY;
+  CAMLassert_valid_offset(ar,offset);
   CAMLassert (Is_in_heap (ar));
+
+  offset += CAML_EPHE_FIRST_KEY;
   if (offset < CAML_EPHE_FIRST_KEY || offset >= Wosize_val (ar)){
     caml_invalid_argument ("Weak.set");
   }
   do_check_key_clean(ar,offset);
-  do_set (ar, offset, el);
+  do_set (ar, offset, k);
+}
+
+CAMLprim value caml_ephe_set_key (value ar, value n, value el)
+{
+  mlsize_t offset = raise_if_invalid_offset(ar,n,"Weak.set");
+
+  caml_ephemeron_set_key(ar,offset,el);
   return Val_unit;
 }
 
-CAMLprim value caml_ephe_unset_key (value ar, value n)
+CAMLexport void caml_ephemeron_unset_key(value ar, mlsize_t offset)
 {
-  mlsize_t offset = Long_val (n) + CAML_EPHE_FIRST_KEY;
+  CAMLassert_valid_offset(ar,offset);
   CAMLassert (Is_in_heap (ar));
+
+  offset += CAML_EPHE_FIRST_KEY;
   if (offset < CAML_EPHE_FIRST_KEY || offset >= Wosize_val (ar)){
     caml_invalid_argument ("Weak.set");
   }
   do_check_key_clean(ar,offset);
   Field (ar, offset) = caml_ephe_none;
+}
+
+CAMLprim value caml_ephe_unset_key (value ar, value n)
+{
+  mlsize_t offset = raise_if_invalid_offset (ar,n,"Weak.set");
+
+  caml_ephemeron_unset_key(ar,offset);
   return Val_unit;
 }
 
 value caml_ephe_set_key_option (value ar, value n, value el)
 {
-  mlsize_t offset = Long_val (n) + CAML_EPHE_FIRST_KEY;
-  CAMLassert (Is_in_heap (ar));
-  if (offset < CAML_EPHE_FIRST_KEY || offset >= Wosize_val (ar)){
-    caml_invalid_argument ("Weak.set");
-  }
-  do_check_key_clean(ar,offset);
-  if (el != None_val && Is_block (el)){
+  if (Is_block (el)){
     CAMLassert (Wosize_val (el) == 1);
-    do_set (ar, offset, Field (el, 0));
+    caml_ephe_set_key(ar,n,Field (el, 0));
   }else{
-    Field (ar, offset) = caml_ephe_none;
+    CAMLassert (el == None_val);
+    caml_ephe_unset_key(ar,n);
   }
   return Val_unit;
 }
 
-CAMLprim value caml_weak_set (value ar, value n, value el){
+CAMLprim value caml_weak_set (value ar, value n, value el)
+{
   return caml_ephe_set_key_option(ar,n,el);
 }
 
-CAMLprim value caml_ephe_set_data (value ar, value el)
+CAMLexport void caml_ephemeron_set_data (value ar, value el)
 {
-  CAMLassert (Is_in_heap (ar));
+  CAMLassert_valid_ephemeron(ar);
+
   if (caml_gc_phase == Phase_clean){
     /* During this phase since we don't know which ephemeron have been
        cleaned we always need to check it. */
     caml_ephe_clean(ar);
   };
   do_set (ar, CAML_EPHE_DATA_OFFSET, el);
+}
+
+CAMLprim value caml_ephe_set_data (value ar, value el)
+{
+  caml_ephemeron_set_data (ar, el);
   return Val_unit;
+}
+
+CAMLexport void caml_ephemeron_unset_data (value ar)
+{
+  CAMLassert_valid_ephemeron(ar);
+
+  Field (ar, CAML_EPHE_DATA_OFFSET) = caml_ephe_none;
 }
 
 CAMLprim value caml_ephe_unset_data (value ar)
 {
-  CAMLassert (Is_in_heap (ar));
-  Field (ar, CAML_EPHE_DATA_OFFSET) = caml_ephe_none;
+  caml_ephemeron_unset_data (ar);
   return Val_unit;
 }
 
-CAMLprim value caml_ephe_get_key (value ar, value n)
+static value optionalize(int status, value *x)
 {
-  CAMLparam2 (ar, n);
-  mlsize_t offset = Long_val (n) + CAML_EPHE_FIRST_KEY;
-  CAMLlocal2 (res, elt);
-  CAMLassert (Is_in_heap (ar));
-  if (offset < CAML_EPHE_FIRST_KEY || offset >= Wosize_val (ar)){
-    caml_invalid_argument ("Weak.get_key");
-  }
-  if (is_ephe_key_none(ar, offset)){
+  CAMLparam0();
+  CAMLlocal2(res,v);
+  if(status) {
+    v = *x;
+    res = caml_alloc_small (1, Some_tag);
+    Field (res, 0) = v;
+  } else {
     res = None_val;
+  }
+  CAMLreturn(res);
+}
+
+CAMLexport int caml_ephemeron_get_key (value ar, mlsize_t offset, value *key)
+{
+  value elt;
+  CAMLassert_valid_offset(ar,offset);
+
+  offset += CAML_EPHE_FIRST_KEY;
+
+  if (is_ephe_key_none(ar, offset)){
+    return 0;
   }else{
     elt = Field (ar, offset);
     if (caml_gc_phase == Phase_mark && Must_be_Marked_during_mark(elt)){
       caml_darken (elt, NULL);
     }
-    res = caml_alloc_small (1, Some_tag);
-    Field (res, 0) = elt;
+    *key = elt;
+    return 1;
   }
-  CAMLreturn (res);
 }
 
-CAMLprim value caml_weak_get (value ar, value n){
+CAMLprim value caml_ephe_get_key (value ar, value n)
+{
+  mlsize_t offset = raise_if_invalid_offset (ar,n,"Weak.get_key");
+
+  value data;
+  return optionalize(caml_ephemeron_get_key(ar,offset,&data),&data);
+}
+
+CAMLprim value caml_weak_get (value ar, value n)
+{
   return caml_ephe_get_key(ar, n);
 }
 
-CAMLprim value caml_ephe_get_data (value ar)
+CAMLexport int caml_ephemeron_get_data (value ar, value *data)
 {
-  CAMLparam1 (ar);
-  CAMLlocal2 (res, elt);
-                                                   Assert (Is_in_heap (ar));
+  value elt;
+  CAMLassert_valid_ephemeron(ar);
+
   if(caml_gc_phase == Phase_clean) caml_ephe_clean(ar);
   elt = Field (ar, CAML_EPHE_DATA_OFFSET);
   if (elt == caml_ephe_none){
-    res = None_val;
+    return 0;
   }else{
     if (caml_gc_phase == Phase_mark && Must_be_Marked_during_mark(elt)){
       caml_darken (elt, NULL);
     }
-    res = caml_alloc_small (1, Some_tag);
-    Field (res, 0) = elt;
+    *data = elt;
+    return 1;
   }
-  CAMLreturn (res);
 }
 
-CAMLprim value caml_ephe_get_key_copy (value ar, value n)
+CAMLprim value caml_ephe_get_data (value ar)
 {
-  CAMLparam2 (ar, n);
-  mlsize_t offset = Long_val (n) + CAML_EPHE_FIRST_KEY;
-  CAMLlocal2 (res, elt);
-  value v;  /* Caution: this is NOT a local root. */
-  CAMLassert (Is_in_heap (ar));
-  if (offset < CAML_EPHE_FIRST_KEY || offset >= Wosize_val (ar)){
-    caml_invalid_argument ("Weak.get_copy");
-  }
+  value data;
+  return optionalize(caml_ephemeron_get_data(ar,&data),&data);
+}
 
-  if (is_ephe_key_none(ar, offset)) CAMLreturn (None_val);
+
+static inline void copy_value(value src, value dst)
+{
+  if (Tag_val (src) < No_scan_tag){
+    mlsize_t i;
+    for (i = 0; i < Wosize_val (src); i++){
+      value f = Field (src, i);
+      if (caml_gc_phase == Phase_mark && Must_be_Marked_during_mark(f)){
+        caml_darken (f, NULL);
+      }
+      caml_modify (&Field (dst, i), f);
+    }
+  }else{
+    memmove (Bp_val (dst), Bp_val (src), Bosize_val (src));
+  }
+}
+
+CAMLexport int caml_ephemeron_get_key_copy(value ar, mlsize_t offset,
+                                           value *key)
+{
+  CAMLparam1(ar);
+  value elt,v; /* Caution: they are NOT a local root. */
+  CAMLassert_valid_offset(ar,offset);
+
+  offset += CAML_EPHE_FIRST_KEY;
+
+  if (is_ephe_key_none(ar, offset)) CAMLreturn(0);
   v = Field (ar, offset);
   /** Don't copy custom_block #7279 */
   if (Is_block (v) && Is_in_heap_or_young(v) && Tag_val(v) != Custom_tag ) {
     elt = caml_alloc (Wosize_val (v), Tag_val (v));
           /* The GC may erase or move v during this call to caml_alloc. */
+    if (is_ephe_key_none(ar, offset)) CAMLreturn(0);
     v = Field (ar, offset);
-    if (is_ephe_key_none(ar, offset)) CAMLreturn (None_val);
-    if (Tag_val (v) < No_scan_tag){
-      mlsize_t i;
-      for (i = 0; i < Wosize_val (v); i++){
-        value f = Field (v, i);
-        if (caml_gc_phase == Phase_mark && Must_be_Marked_during_mark(f)){
-          caml_darken (f, NULL);
-        }
-        Modify (&Field (elt, i), f);
-      }
-    }else{
-      memmove (Bp_val (elt), Bp_val (v), Bosize_val (v));
-    }
+    copy_value(v,elt);
+    *key = elt;
+    CAMLreturn(1);
   }else{
     if ( caml_gc_phase == Phase_mark && Must_be_Marked_during_mark(v) ){
       caml_darken (v, NULL);
     };
-    elt = v;
+    *key = v;
+    CAMLreturn(1);
   }
-  res = caml_alloc_small (1, Some_tag);
-  Field (res, 0) = elt;
-
-  CAMLreturn (res);
 }
 
-CAMLprim value caml_weak_get_copy (value ar, value n){
+CAMLprim value caml_ephe_get_key_copy (value ar, value n)
+{
+  mlsize_t offset = raise_if_invalid_offset (ar,n,"Weak.get_copy");
+
+  value key;
+  return optionalize(caml_ephemeron_get_key_copy(ar, offset, &key), &key);
+}
+
+CAMLprim value caml_weak_get_copy (value ar, value n)
+{
   return caml_ephe_get_key_copy(ar,n);
 }
 
-CAMLprim value caml_ephe_get_data_copy (value ar)
+CAMLexport int caml_ephemeron_get_data_copy (value ar, value *data)
 {
   CAMLparam1 (ar);
-  CAMLlocal2 (res, elt);
-  value v;  /* Caution: this is NOT a local root. */
-  CAMLassert (Is_in_heap (ar));
+  value elt,v; /* Caution: they are NOT a local root. */
+  CAMLassert_valid_ephemeron(ar);
 
   if (caml_gc_phase == Phase_clean) caml_ephe_clean(ar);
   v = Field (ar, CAML_EPHE_DATA_OFFSET);
-  if (v == caml_ephe_none) CAMLreturn (None_val);
+  if (v == caml_ephe_none) CAMLreturn(0);
   /** Don't copy custom_block #7279 */
   if (Is_block (v) && Is_in_heap_or_young(v) && Tag_val(v) != Custom_tag ) {
     elt = caml_alloc (Wosize_val (v), Tag_val (v));
           /* The GC may erase or move v during this call to caml_alloc. */
     if (caml_gc_phase == Phase_clean) caml_ephe_clean(ar);
     v = Field (ar, CAML_EPHE_DATA_OFFSET);
-    if (v == caml_ephe_none) CAMLreturn (None_val);
-    if (Tag_val (v) < No_scan_tag){
-      mlsize_t i;
-      for (i = 0; i < Wosize_val (v); i++){
-        value f = Field (v, i);
-        if (caml_gc_phase == Phase_mark && Must_be_Marked_during_mark(f)){
-          caml_darken (f, NULL);
-        }
-        Modify (&Field (elt, i), f);
-      }
-    }else{
-      memmove (Bp_val (elt), Bp_val (v), Bosize_val (v));
-    }
+    if (v == caml_ephe_none) CAMLreturn(0);
+    copy_value(v,elt);
+    *data=elt;
+    CAMLreturn(1);
   }else{
     if ( caml_gc_phase == Phase_mark && Must_be_Marked_during_mark(v) ){
       caml_darken (v, NULL);
     };
-    elt = v;
+    *data = v;
+    CAMLreturn(1);
   }
-  res = caml_alloc_small (1, Some_tag);
-  Field (res, 0) = elt;
+}
 
-  CAMLreturn (res);
+
+CAMLprim value caml_ephe_get_data_copy (value ar)
+{
+  value data;
+  return optionalize(caml_ephemeron_get_data_copy(ar,&data),&data);
+}
+
+CAMLexport int caml_ephemeron_check_key(value ar, mlsize_t offset)
+{
+  CAMLassert_valid_offset(ar,offset);
+
+  offset += CAML_EPHE_FIRST_KEY;
+  return !is_ephe_key_none(ar, offset);
 }
 
 CAMLprim value caml_ephe_check_key (value ar, value n)
 {
-  mlsize_t offset = Long_val (n) + CAML_EPHE_FIRST_KEY;
-  CAMLassert (Is_in_heap (ar));
-  if (offset < CAML_EPHE_FIRST_KEY || offset >= Wosize_val (ar)){
-    caml_invalid_argument ("Weak.check");
-  }
-  return Val_bool (!is_ephe_key_none(ar, offset));
+  mlsize_t offset = raise_if_invalid_offset(ar, n, "Weak.check");
+
+  return Val_bool (caml_ephemeron_check_key(ar, offset));
 }
 
 CAMLprim value caml_weak_check (value ar, value n)
@@ -372,27 +475,35 @@ CAMLprim value caml_weak_check (value ar, value n)
   return caml_ephe_check_key(ar,n);
 }
 
-CAMLprim value caml_ephe_check_data (value ar)
+CAMLexport int caml_ephemeron_check_data (value ar)
 {
+  CAMLassert_valid_ephemeron(ar);
+
   if(caml_gc_phase == Phase_clean) caml_ephe_clean(ar);
-  return Val_bool (Field (ar, CAML_EPHE_DATA_OFFSET) != caml_ephe_none);
+  return Field (ar, CAML_EPHE_DATA_OFFSET) != caml_ephe_none;
 }
 
-CAMLprim value caml_ephe_blit_key (value ars, value ofs,
-                               value ard, value ofd, value len)
+CAMLprim value caml_ephe_check_data (value ar)
 {
-  mlsize_t offset_s = Long_val (ofs) + CAML_EPHE_FIRST_KEY;
-  mlsize_t offset_d = Long_val (ofd) + CAML_EPHE_FIRST_KEY;
-  mlsize_t length = Long_val (len);
-  long i;
-  CAMLassert (Is_in_heap (ars));
-  CAMLassert (Is_in_heap (ard));
-  if (offset_s < CAML_EPHE_FIRST_KEY || offset_s + length > Wosize_val (ars)){
-    caml_invalid_argument ("Weak.blit");
-  }
-  if (offset_d < CAML_EPHE_FIRST_KEY || offset_d + length > Wosize_val (ard)){
-    caml_invalid_argument ("Weak.blit");
-  }
+  return Val_bool (caml_ephemeron_check_data(ar));
+}
+
+CAMLexport void caml_ephemeron_blit_key(value ars, mlsize_t offset_s,
+                                        value ard, mlsize_t offset_d,
+                                        mlsize_t length)
+{
+  if (length == 0) return;
+  intnat i; /** intnat because the second for-loop stops with i == -1 */
+  CAMLassert_valid_offset(ars,offset_s);
+  CAMLassert_valid_offset(ard,offset_d);
+  CAMLassert(length <= Wosize_val(ars) - CAML_EPHE_FIRST_KEY);
+  CAMLassert(length <= Wosize_val(ard) - CAML_EPHE_FIRST_KEY);
+  CAMLassert(offset_s <= Wosize_val(ars) - CAML_EPHE_FIRST_KEY - length);
+  CAMLassert(offset_d <= Wosize_val(ard) - CAML_EPHE_FIRST_KEY - length);
+
+  offset_s += CAML_EPHE_FIRST_KEY;
+  offset_d += CAML_EPHE_FIRST_KEY;
+
   if (caml_gc_phase == Phase_clean){
     caml_ephe_clean(ars);
     caml_ephe_clean(ard);
@@ -406,16 +517,17 @@ CAMLprim value caml_ephe_blit_key (value ars, value ofs,
       do_set (ard, offset_d + i,  Field (ars, offset_s + i));
     }
   }
-  return Val_unit;
 }
 
-CAMLprim value caml_ephe_blit_data (value ars, value ard)
+CAMLprim value caml_ephe_blit_key (value ars, value ofs,
+                                   value ard, value ofd, value len)
 {
-  if(caml_gc_phase == Phase_clean) {
-    caml_ephe_clean(ars);
-    caml_ephe_clean(ard);
-  };
-  do_set (ard, CAML_EPHE_DATA_OFFSET, Field (ars, CAML_EPHE_DATA_OFFSET));
+  if (Long_val(len) == 0) return Val_unit;
+  mlsize_t offset_s = raise_if_invalid_offset(ars, ofs, "Weak.blit");
+  mlsize_t offset_d = raise_if_invalid_offset(ard, ofd, "Weak.blit");
+  mlsize_t length = Long_val (len);
+
+  caml_ephemeron_blit_key(ars,offset_s,ard,offset_d,length);
   return Val_unit;
 }
 
@@ -423,4 +535,22 @@ CAMLprim value caml_weak_blit (value ars, value ofs,
                       value ard, value ofd, value len)
 {
   return caml_ephe_blit_key (ars, ofs, ard, ofd, len);
+}
+
+CAMLexport void caml_ephemeron_blit_data (value ars, value ard)
+{
+  CAMLassert_valid_ephemeron(ars);
+  CAMLassert_valid_ephemeron(ard);
+
+  if(caml_gc_phase == Phase_clean) {
+    caml_ephe_clean(ars);
+    caml_ephe_clean(ard);
+  };
+  do_set (ard, CAML_EPHE_DATA_OFFSET, Field (ars, CAML_EPHE_DATA_OFFSET));
+}
+
+CAMLprim value caml_ephe_blit_data (value ars, value ard)
+{
+  caml_ephemeron_blit_data(ars, ard);
+  return Val_unit;
 }
