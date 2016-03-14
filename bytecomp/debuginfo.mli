@@ -34,5 +34,6 @@ val from_filename: kind -> string -> t
 
 val from_call: Lambda.lambda_event -> t
 val from_raise: Lambda.lambda_event -> t
+val from_other: Location.t -> t
 
 val to_location: t -> Location.t

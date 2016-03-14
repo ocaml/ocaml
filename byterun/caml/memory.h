@@ -26,9 +26,11 @@
 #include "gc.h"
 #include "major_gc.h"
 #include "minor_gc.h"
+#include "gc_ctrl.h"
 /* </private> */
 #include "misc.h"
 #include "mlvalues.h"
+#include <stdint.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -36,6 +38,8 @@ extern "C" {
 
 
 CAMLextern value caml_alloc_shr (mlsize_t wosize, tag_t);
+CAMLextern value caml_alloc_shr_with_profinfo (mlsize_t, tag_t, intnat);
+/* CR mshinwell: add "_no_raise_with_profinfo"?  Used in intern.c. */
 CAMLextern value caml_alloc_shr_no_raise (mlsize_t wosize, tag_t);
 CAMLextern void caml_adjust_gc_speed (mlsize_t, mlsize_t);
 CAMLextern void caml_alloc_dependent_memory (mlsize_t bsz);
@@ -55,6 +59,8 @@ CAMLextern color_t caml_allocation_color (void *hp);
 CAMLextern int caml_huge_fallback_count;
 
 /* void caml_shrink_heap (char *);        Only used in compact.c */
+
+#define PROFINFO_MASK 0x3fffff
 
 /* <private> */
 
@@ -83,7 +89,26 @@ int caml_page_table_initialize(mlsize_t bytesize);
 #define DEBUG_clear(result, wosize)
 #endif
 
-#define Alloc_small(result, wosize, tag) do{    CAMLassert ((wosize) >= 1); \
+/* CR mshinwell: Since e.g. Bigarray stubs aren't built with NATIVE_CODE,
+   we cannot guard some of these sections with NATIVE_CODE as well as
+   WITH_SPACETIME, which is a pity.  We should think about this */
+
+#ifdef WITH_SPACETIME
+
+#define Decode_profinfo_hd(hd) \
+  (((uint64_t) (Profinfo_hd (hd))) << 4)
+
+#define PROFINFO_SHIFT 42
+#define Hd_no_profinfo(hd) ((hd) & ~(0x3fffffull << PROFINFO_SHIFT))
+
+extern int caml_spacetime;
+extern uintnat caml_spacetime_my_profinfo(void);
+
+#endif
+
+#ifndef WITH_SPACETIME
+#define Alloc_small(result, wosize, tag) do {                               \
+                                                CAMLassert ((wosize) >= 1); \
                                           CAMLassert ((tag_t) (tag) < 256); \
                                  CAMLassert ((wosize) <= Max_young_wosize); \
   caml_young_ptr -= Whsize_wosize (wosize);                                 \
@@ -99,6 +124,27 @@ int caml_page_table_initialize(mlsize_t bytesize);
   (result) = Val_hp (caml_young_ptr);                                       \
   DEBUG_clear ((result), (wosize));                                         \
 }while(0)
+#else
+#define Alloc_small(result, wosize, tag) do {                               \
+                                                CAMLassert ((wosize) >= 1); \
+                                          CAMLassert ((tag_t) (tag) < 256); \
+                                 CAMLassert ((wosize) <= Max_young_wosize); \
+  caml_young_ptr -= Whsize_wosize (wosize);                                 \
+  if (caml_young_ptr < caml_young_trigger){                                 \
+    caml_young_ptr += Whsize_wosize (wosize);                               \
+    CAML_INSTR_INT ("force_minor/alloc_small@", 1);                         \
+    Setup_for_gc;                                                           \
+    caml_gc_dispatch ();                                                    \
+    Restore_after_gc;                                                       \
+    caml_young_ptr -= Whsize_wosize (wosize);                               \
+  }                                                                         \
+  Hd_hp (caml_young_ptr) =                                                  \
+    Make_header_with_profinfo ((wosize), (tag), Caml_black,                 \
+      caml_spacetime_my_profinfo());                                        \
+  (result) = Val_hp (caml_young_ptr);                                       \
+  DEBUG_clear ((result), (wosize));                                         \
+}while(0)
+#endif
 
 /* Deprecated alias for [caml_modify] */
 

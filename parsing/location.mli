@@ -53,6 +53,8 @@ val rhs_loc: int -> t
 val input_name: string ref
 val input_lexbuf: Lexing.lexbuf option ref
 
+val to_string : t -> string
+
 val get_pos_info: Lexing.position -> string * int * int (* file, line, char *)
 val print_loc: formatter -> t -> unit
 val print_error: formatter -> t -> unit

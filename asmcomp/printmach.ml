@@ -110,8 +110,7 @@ let operation op arg ppf res =
   | Imove -> regs ppf arg
   | Ispill -> fprintf ppf "%a (spill)" regs arg
   | Ireload -> fprintf ppf "%a (reload)" regs arg
-  | Iconst_int n
-  | Iconst_blockheader n -> fprintf ppf "%s" (Nativeint.to_string n)
+  | Iconst_int n -> fprintf ppf "%s" (Nativeint.to_string n)
   | Iconst_float f -> fprintf ppf "%F" (Int64.float_of_bits f)
   | Iconst_symbol s -> fprintf ppf "\"%s\"" s
   | Icall_ind -> fprintf ppf "call %a" regs arg
@@ -146,6 +145,12 @@ let operation op arg ppf res =
   | Iintoffloat -> fprintf ppf "intoffloat %a" reg arg.(0)
   | Ispecific op ->
       Arch.print_specific_operation reg op ppf arg
+  | Ispacetime_load_node_hole_ptr ->
+    fprintf ppf "spacetime_load_node_hole_ptr"
+  | Ispacetime_node_hole -> fprintf ppf "spacetime_node_hole"
+  | Iprogram_counter -> fprintf ppf "program_counter"
+  | Ilabel label -> fprintf ppf "label:%d" label
+  | Iaddress_of_label label -> fprintf ppf "label@%d" label
 
 let rec instr ppf i =
   if !print_live then begin

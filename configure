@@ -36,6 +36,9 @@ mathlib='-lm'
 dllib=''
 x11_include_dir=''
 x11_lib_dir=''
+libunwind_include_dir=''
+libunwind_lib_dir=''
+libunwind_available=false
 graph_wanted=yes
 pthread_wanted=yes
 dl_defs=''
@@ -48,6 +51,7 @@ partialld="ld -r"
 with_debugger=ocamldebugger
 with_ocamldoc=ocamldoc
 with_frame_pointers=false
+with_spacetime=false
 no_naked_pointers=false
 native_compiler=true
 TOOLPREF=""
@@ -114,6 +118,16 @@ while : ; do
             manext=1;;
         esac
         shift;;
+    -libunwinddir|--libunwinddir)
+        libunwind_include_dir=$2/include;
+        libunwind_lib_dir=$2/lib;
+        shift;;
+    -libunwindlib|--libunwindlib)
+        libunwind_lib_dir=$2; shift;;
+    -libunwindinclude|--libunwindinclude)
+        libunwind_include_dir=$2; shift;;
+    -libunwindlib|--libunwindlib)
+        libunwind_lib_dir=$2; shift;;
     -host*|--host*)
         host_type=$2; shift;;
     -target*|--target*)
@@ -161,6 +175,8 @@ while : ; do
         with_frame_pointers=true;;
     -no-naked-pointers|--no-naked-pointers)
         no_naked_pointers=true;;
+    -spacetime|--spacetime)
+        with_spacetime=true;;
     -no-cfi|--no-cfi)
         with_cfi=false;;
     -no-native-compiler)
@@ -1092,7 +1108,7 @@ echo "UNIX_OR_WIN32=$unix_or_win32" >> Makefile
 echo "UNIXLIB=$unixlib" >> Makefile
 echo "GRAPHLIB=$graphlib" >> Makefile
 
-otherlibraries="$unixlib str num dynlink bigarray"
+otherlibraries="$unixlib str num dynlink bigarray aprof"
 
 # For the Unix library
 
@@ -1737,6 +1753,45 @@ else
     has_huge_pages=false
 fi
 
+if test "$libunwind_include_dir" != ""; then
+  libunwind_include="-I$libunwind_include_dir"
+else
+  libunwind_include=""
+fi
+
+if test "$libunwind_lib_dir" != ""; then
+  libunwind_lib="-L$libunwind_lib_dir"
+else
+  libunwind_lib=""
+fi
+
+if $with_spacetime; then
+  if $arch64; then
+    echo "Spacetime profiling will be available."
+    echo "#define WITH_SPACETIME" >> m.h
+    if [ "$libunwind_lib" != "" ]; then
+      libunwind_lib_temp="-Xl $libunwind_lib"
+    else
+      libunwind_lib_temp=""
+    fi
+    if sh ./hasgot -i libunwind.h $libunwind_lib_temp -Xl -lunwind $libunwind_include; then
+      echo "#define HAS_LIBUNWIND" >> s.h
+      has_libunwind=yes
+      libunwind_available=true
+      echo "libunwind support for Spacetime profiling will be available."
+    else
+      has_libunwind=no
+      libunwind_available=false
+      echo "libunwind support for Spacetime profiling will not be available."
+    fi
+  else
+    echo "Spacetime profiling is not available on 32-bit platforms."
+    with_spacetime=false
+    libunwind_available=false
+    has_libunwind=no
+  fi
+fi
+
 # Finish generated files
 
 cclibs="$cclibs $mathlib"
@@ -1770,7 +1825,7 @@ echo "NATIVECCCOMPOPTS=$nativecccompopts" >> Makefile
 echo "NATIVECCPROFOPTS=$nativeccprofopts" >> Makefile
 echo "NATIVECCLINKOPTS=$nativecclinkopts" >> Makefile
 echo "NATIVECCRPATH=$nativeccrpath" >> Makefile
-echo "NATIVECCLIBS=$cclibs $dllib" >> Makefile
+echo "NATIVECCLIBS=$cclibs $nativecclibs $dllib" >> Makefile
 echo "ASM=$as" >> Makefile
 echo "ASPP=$aspp" >> Makefile
 echo "ASPPPROFFLAGS=$asppprofflags" >> Makefile
@@ -1811,6 +1866,10 @@ echo "WITH_DEBUGGER=${with_debugger}" >>Makefile
 echo "WITH_OCAMLDOC=${with_ocamldoc}" >>Makefile
 echo "ASM_CFI_SUPPORTED=$asm_cfi_supported" >> Makefile
 echo "WITH_FRAME_POINTERS=$with_frame_pointers" >> Makefile
+echo "WITH_SPACETIME=$with_spacetime" >> Makefile
+echo "LIBUNWIND_AVAILABLE=$libunwind_available" >> Makefile
+echo "LIBUNWIND_INCLUDE_FLAGS=$libunwind_include" >> Makefile
+echo "LIBUNWIND_LINK_FLAG=$libunwind_lib" >> Makefile
 echo "TARGET=$target" >> Makefile
 echo "HOST=$host" >> Makefile
 if [ "$ostype" = Cygwin ]; then
@@ -1879,6 +1938,20 @@ else
   inf "        naked pointers forbidden.. yes"
   else
   inf "        naked pointers forbidden.. no"
+  fi
+  if $with_spacetime; then
+    inf "        spacetime profiling....... yes"
+    inf "          ... with libunwind...... $has_libunwind"
+  else
+    inf "        spacetime profiling....... no"
+  fi
+  if test "$has_libunwind" = "yes"; then
+    if test "$libunwind_include_dir" != ""; then
+      inf "        libunwind include dir..... $libunwind_include_dir"
+    fi
+    if test "$libunwind_lib_dir" != ""; then
+      inf "        libunwind library dir..... $libunwind_lib_dir"
+    fi
   fi
   inf "        native dynlink ........... $natdynlink"
   if test "$profiling" = "prof"; then

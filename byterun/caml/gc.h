@@ -16,7 +16,6 @@
 #ifndef CAML_GC_H
 #define CAML_GC_H
 
-
 #include "mlvalues.h"
 
 #define Caml_white (0 << 8)
@@ -45,6 +44,22 @@
                     + (color)                                                 \
                     + (tag_t) (tag)))                                         \
       )
+
+#ifdef WITH_SPACETIME
+extern uintnat caml_spacetime_my_profinfo(void);
+#define Make_header_with_profinfo(wosize, tag, color, profinfo)               \
+      (Make_header(wosize, tag, color)                                        \
+        | ((((intnat) profinfo) & PROFINFO_MASK) << PROFINFO_SHIFT)           \
+      )
+#define Make_header_with_my_profinfo(wosize, tag, color)                      \
+      (Make_header_with_profinfo(wosize, tag, color,                          \
+        caml_spacetime_my_profinfo())                              \
+      )
+#else
+#define Make_header_with_my_profinfo Make_header
+#define Make_header_with_profinfo(wosize, tag, color, profinfo) \
+  Make_header(wosize, tag, color)
+#endif
 
 #define Is_white_val(val) (Color_val(val) == Caml_white)
 #define Is_gray_val(val) (Color_val(val) == Caml_gray)

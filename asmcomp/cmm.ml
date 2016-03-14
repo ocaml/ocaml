@@ -57,6 +57,12 @@ let swap_comparison = function
   | Clt -> Cgt | Cle -> Cge
   | Cgt -> Clt | Cge -> Cle
 
+type label = int
+
+let label_counter = ref 99
+
+let new_label() = incr label_counter; !label_counter
+
 type memory_chunk =
     Byte_unsigned
   | Byte_signed
@@ -70,7 +76,7 @@ type memory_chunk =
   | Double
   | Double_u
 
-type operation =
+and operation =
     Capply of machtype * Debuginfo.t
   | Cextcall of string * machtype * bool * Debuginfo.t
   | Cload of memory_chunk
@@ -87,6 +93,11 @@ type operation =
   | Ccmpf of comparison
   | Craise of Lambda.raise_kind * Debuginfo.t
   | Ccheckbound of Debuginfo.t
+  | Cspacetime_g_node_hole
+  | Cspacetime_g_load_node_hole_ptr
+  | Cprogram_counter of Debuginfo.t
+  | Clabel of label
+  | Caddress_of_label of label
 
 type expression =
     Cconst_int of int
@@ -95,7 +106,7 @@ type expression =
   | Cconst_symbol of string
   | Cconst_pointer of int
   | Cconst_natpointer of nativeint
-  | Cconst_blockheader of nativeint
+  | Cblockheader of nativeint * Debuginfo.t
   | Cvar of Ident.t
   | Clet of Ident.t * expression * expression
   | Cassign of Ident.t * expression
@@ -114,7 +125,9 @@ type fundecl =
     fun_args: (Ident.t * machtype) list;
     fun_body: expression;
     fun_fast: bool;
-    fun_dbg : Debuginfo.t; }
+    fun_dbg : Debuginfo.t;
+    fun_spacetime_node : Ident.t;
+  }
 
 type data_item =
     Cdefine_symbol of string
@@ -135,3 +148,6 @@ type data_item =
 type phrase =
     Cfunction of fundecl
   | Cdata of data_item list
+
+let reset () =
+  label_counter := 99

@@ -93,11 +93,19 @@ let operation = function
   | Ccmpf c -> Printf.sprintf "%sf" (comparison c)
   | Craise (k, d) -> Lambda.raise_kind k ^ Debuginfo.to_string d
   | Ccheckbound d -> "checkbound" ^ Debuginfo.to_string d
+  | Cspacetime_g_load_node_hole_ptr -> "spacetime_load_node_hole_ptr"
+  | Cspacetime_g_node_hole -> "spacetime_node_hole"
+  | Cprogram_counter d -> "program_counter" ^ Debuginfo.to_string d
+  | Clabel label -> "label:" ^ string_of_int label
+  | Caddress_of_label label -> "label@" ^ string_of_int label
 
 let rec expr ppf = function
   | Cconst_int n -> fprintf ppf "%i" n
-  | Cconst_natint n | Cconst_blockheader n ->
+  | Cconst_natint n ->
     fprintf ppf "%s" (Nativeint.to_string n)
+  | Cblockheader(n, d) ->
+    fprintf ppf "block-hdr(%s)%s"
+      (Nativeint.to_string n) (Debuginfo.to_string d)
   | Cconst_float n -> fprintf ppf "%F" n
   | Cconst_symbol s -> fprintf ppf "\"%s\"" s
   | Cconst_pointer n -> fprintf ppf "%ia" n

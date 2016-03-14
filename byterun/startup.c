@@ -266,6 +266,8 @@ extern void caml_install_invalid_parameter_handler();
 
 #endif
 
+extern int ensure_spacetime_dot_o_is_included;
+
 /* Main entry point when loading code from a file */
 
 CAMLexport void caml_main(char **argv)
@@ -277,6 +279,8 @@ CAMLexport void caml_main(char **argv)
   char * shared_lib_path, * shared_libs, * req_prims;
   char * exe_name;
   static char proc_self_exe[256];
+
+  ensure_spacetime_dot_o_is_included++;
 
   /* Machine-dependent initialization of the floating-point hardware
      so that it behaves as much as possible as specified in IEEE */

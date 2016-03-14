@@ -99,7 +99,7 @@ module Make (T : Branch_relaxation_intf.S) = struct
             instr.desc <- T.relax_specific_op specific;
             fixup true (pc + T.instr_size instr.desc) instr.next
           | Lcondbranch (test, lbl) ->
-            let lbl2 = new_label() in
+            let lbl2 = Cmm.new_label() in
             let cont =
               instr_cons (Lbranch lbl) [||] [||]
                 (instr_cons (Llabel lbl2) [||] [||] instr.next)

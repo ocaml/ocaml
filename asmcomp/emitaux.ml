@@ -131,7 +131,7 @@ let emit_frames a =
     try
       Hashtbl.find filenames name
     with Not_found ->
-      let lbl = Linearize.new_label () in
+      let lbl = Cmm.new_label () in
       Hashtbl.add filenames name lbl;
       lbl in
   let emit_frame fd =

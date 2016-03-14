@@ -128,7 +128,7 @@ module Function_decls = struct
 
     let primitive_wrapper t =
       match t.body with
-      | Lprim (Pccall { Primitive. prim_name; }, [body])
+      | Lprim (Pccall { Primitive. prim_name; }, [body], _)
         when prim_name = stub_hack_prim_name -> Some body
       | _ -> None
   end

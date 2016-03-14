@@ -24,6 +24,7 @@ while : ; do
   case "$1" in
     -i) echo "#include <$2>" >> hasgot.c; shift;;
     -t) echo "$2 $var;" >> hasgot.c; var="x$var"; shift;;
+    -Xl) libs="$libs $2"; shift;;
     -l*|-L*|-F*) libs="$libs $1";;
     -framework) libs="$libs $1 $2"; shift;;
     -*) opts="$opts $1";;

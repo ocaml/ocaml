@@ -41,7 +41,7 @@ let _label s = D.label ~typ:QWORD s
 
 let int_reg_name =
   [| RAX; RBX; RDI; RSI; RDX; RCX; R8; R9;
-     R12; R13; R10; R11; RBP; |]
+     R12; R10; R11; R13; RBP; |]
 
 let float_reg_name = Array.init 16 (fun i -> XMM i)
 
@@ -180,6 +180,21 @@ let def_label s = D.label (emit_label s)
 let emit_Llabel fallthrough lbl =
   if not fallthrough && !fastcode_flag then D.align 4;
   def_label lbl
+
+(* Output code to load the address of a label *)
+
+let load_label_addr lbl arg =
+  if !Clflags.dlcode then begin
+    if windows then begin
+      I.mov (label lbl) arg (* movabsq $foo, ... *)
+    end else begin
+      I.mov (mem64_rip QWORD ((emit_label lbl) ^ "@GOTPCREL")) arg
+    end
+  end else if !Clflags.pic_code then begin
+    I.lea (mem64_rip NONE (emit_label lbl)) arg
+  end else begin
+    I.mov (label lbl) arg
+  end
 
 (* Output a pseudo-register *)
 
@@ -463,7 +478,7 @@ let emit_instr fallthrough i =
         | Float, _, _ -> I.movsd (reg src) (reg dst)
         | _ -> I.mov (reg src) (reg dst)
         end
-  | Lop(Iconst_int n | Iconst_blockheader n) ->
+  | Lop(Iconst_int n) ->
       if n = 0n then begin
         match i.res.(0).loc with
         | Reg _ -> I.xor (res i 0) (res i 0)
@@ -491,16 +506,24 @@ let emit_instr fallthrough i =
       record_frame i.live i.dbg
   | Lop(Itailcall_ind) ->
       output_epilogue begin fun () ->
-        I.jmp (arg i 0)
+        I.jmp (arg i 0);
+        if Config.spacetime then begin
+          record_frame i.live i.dbg;
+        end
       end
   | Lop(Itailcall_imm s) ->
-      if s = !function_name then
-        I.jmp (label !tailrec_entry_point)
-      else begin
-        output_epilogue begin fun () ->
-          add_used_symbol s;
-          emit_jump s
+      begin
+        if s = !function_name then
+          I.jmp (label !tailrec_entry_point)
+        else begin
+          output_epilogue begin fun () ->
+            add_used_symbol s;
+            emit_jump s
+          end
         end
+      end;
+      if Config.spacetime then begin
+        record_frame i.live i.dbg
       end
   | Lop(Iextcall(s, alloc)) ->
       add_used_symbol s;
@@ -519,8 +542,12 @@ let emit_instr fallthrough i =
           load_symbol_addr "caml_young_ptr" r11;
           I.mov (mem64 QWORD 0 R11) r15
         end;
-      end else
+      end else begin
+        if Config.spacetime then begin
+          record_frame i.live i.dbg;
+        end;
         emit_call s
+      end
   | Lop(Istackoffset n) ->
       if n < 0
       then I.add (int (-n)) rsp
@@ -669,6 +696,21 @@ let emit_instr fallthrough i =
       I.sqrtsd (arg i 0) (res i 0)
   | Lop(Ispecific(Ifloatsqrtf addr)) ->
       I.sqrtsd (addressing addr REAL8 i 0) (res i 0)
+  | Lop Ispacetime_node_hole ->
+     Misc.fatal_error "Ispacetime_node_hole should have been \
+         expanded by Selectgen"
+  | Lop Ispacetime_load_node_hole_ptr ->
+     Misc.fatal_error "Ispacetime_load_node_hole_ptr should have \
+         been expanded by Selectgen"
+  | Lop Iprogram_counter ->
+     let label = Cmm.new_label () in
+     _label (emit_label label);
+     record_frame Reg.Set.empty i.dbg;
+     load_label_addr label (res i 0)
+  | Lop (Ilabel lbl) ->
+     _label (emit_label lbl)
+  | Lop (Iaddress_of_label lbl) ->
+     load_label_addr lbl (res i 0)
   | Lreloadretaddr ->
       ()
   | Lreturn ->

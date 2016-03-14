@@ -69,6 +69,9 @@ type comparison =
 val negate_comparison: comparison -> comparison
 val swap_comparison: comparison -> comparison
 
+type label = int
+val new_label: unit -> label
+
 type memory_chunk =
     Byte_unsigned
   | Byte_signed
@@ -82,7 +85,7 @@ type memory_chunk =
   | Double                             (* 64-bit-aligned 64-bit float *)
   | Double_u                           (* word-aligned 64-bit float *)
 
-type operation =
+and operation =
     Capply of machtype * Debuginfo.t
   | Cextcall of string * machtype * bool * Debuginfo.t
   | Cload of memory_chunk
@@ -100,15 +103,20 @@ type operation =
   | Ccmpf of comparison
   | Craise of Lambda.raise_kind * Debuginfo.t
   | Ccheckbound of Debuginfo.t
+  | Cspacetime_g_node_hole
+  | Cspacetime_g_load_node_hole_ptr
+  | Cprogram_counter of Debuginfo.t
+  | Clabel of label
+  | Caddress_of_label of label
 
-type expression =
+and expression =
     Cconst_int of int
   | Cconst_natint of nativeint
   | Cconst_float of float
   | Cconst_symbol of string
   | Cconst_pointer of int
   | Cconst_natpointer of nativeint
-  | Cconst_blockheader of nativeint
+  | Cblockheader of nativeint * Debuginfo.t
   | Cvar of Ident.t
   | Clet of Ident.t * expression * expression
   | Cassign of Ident.t * expression
@@ -127,7 +135,9 @@ type fundecl =
     fun_args: (Ident.t * machtype) list;
     fun_body: expression;
     fun_fast: bool;
-    fun_dbg : Debuginfo.t; }
+    fun_dbg : Debuginfo.t;
+    fun_spacetime_node : Ident.t;
+  }
 
 type data_item =
     Cdefine_symbol of string
@@ -148,3 +158,5 @@ type data_item =
 type phrase =
     Cfunction of fundecl
   | Cdata of data_item list
+
+val reset : unit -> unit

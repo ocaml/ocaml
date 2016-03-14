@@ -15,8 +15,7 @@
 
 (* Transformation of Mach code into a list of pseudo-instructions. *)
 
-type label = int
-val new_label: unit -> label
+type label = Cmm.label
 
 type instruction =
   { mutable desc: instruction_desc;

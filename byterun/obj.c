@@ -154,7 +154,8 @@ CAMLprim value caml_obj_truncate (value v, value newsize)
      ref_table. */
   Field (v, new_wosize) =
     Make_header (Wosize_whsize (wosize-new_wosize), Abstract_tag, Caml_black);
-  Hd_val (v) = Make_header (new_wosize, tag, color);
+  Hd_val (v) =
+    Make_header_with_profinfo (new_wosize, tag, color, Profinfo_val(v));
   return Val_unit;
 }
 

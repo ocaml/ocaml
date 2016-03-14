@@ -123,7 +123,7 @@ let inline_ops =
 
 class selector = object (self)
 
-inherit Selectgen.selector_generic as super
+inherit Spacetime_profiling.instruction_selection as super
 
 method is_immediate n = n <= 0x7FFFFFFF && n >= -0x80000000
 
@@ -159,7 +159,10 @@ method! select_store is_assign addr exp =
   match exp with
     Cconst_int n when self#is_immediate n ->
       (Ispecific(Istore_int(Nativeint.of_int n, addr, is_assign)), Ctuple [])
-  | (Cconst_natint n | Cconst_blockheader n) when self#is_immediate_natint n ->
+  | (Cconst_natint n) when self#is_immediate_natint n ->
+      (Ispecific(Istore_int(n, addr, is_assign)), Ctuple [])
+  | (Cblockheader(n, dbg))
+      when self#is_immediate_natint n && not Config.spacetime ->
       (Ispecific(Istore_int(n, addr, is_assign)), Ctuple [])
   | Cconst_pointer n when self#is_immediate n ->
       (Ispecific(Istore_int(Nativeint.of_int n, addr, is_assign)), Ctuple [])

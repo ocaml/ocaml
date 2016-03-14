@@ -40,7 +40,8 @@ let add_default_argument_wrappers lam =
       Primitive.simple ~name:Closure_conversion_aux.stub_hack_prim_name
         ~arity:1 ~alloc:false
     in
-    Lprim (Pccall stub_prim, [body])
+    (* CR mshinwell for lwhite: fix location *)
+    Lprim (Pccall stub_prim, [body], Location.none)
   in
   let defs_are_all_functions (defs : (_ * Lambda.lambda) list) =
     List.for_all (function (_, Lambda.Lfunction _) -> true | _ -> false) defs
@@ -113,8 +114,9 @@ let rec eliminate_const_block (const : Lambda.structured_constant)
       : Lambda.lambda =
   match const with
   | Const_block (tag, consts) ->
+    (* CR mshinwell for lwhite: fix location *)
     Lprim (Pmakeblock (tag, Asttypes.Immutable),
-      List.map eliminate_const_block consts)
+      List.map eliminate_const_block consts, Location.none)
   | Const_base _
   | Const_pointer _
   | Const_immstring _
@@ -314,7 +316,7 @@ and close t ?debuginfo env (lam : Lambda.lambda) : Flambda.t =
           ~name:"send_arg"
           ~create_body:(fun args ->
               Send { kind; meth = meth_var; obj = obj_var; args; dbg; })))
-  | Lprim ((Pdivint | Pmodint) as prim, [arg1; arg2])
+  | Lprim ((Pdivint | Pmodint) as prim, [arg1; arg2], _)
       when not !Clflags.fast -> (* not -unsafe *)
     let arg2 = close t env arg2 in
     let arg1 = close t env arg1 in
@@ -348,9 +350,9 @@ and close t ?debuginfo env (lam : Lambda.lambda) : Flambda.t =
                   name_expr ~name:"result"
                     (Prim (prim, [numerator; denominator],
                       Debuginfo.none))))))))
-  | Lprim ((Pdivint | Pmodint), _) when not !Clflags.fast ->
+  | Lprim ((Pdivint | Pmodint), _, _) when not !Clflags.fast ->
     Misc.fatal_error "Pdivint / Pmodint must have exactly two arguments"
-  | Lprim (Psequor, [arg1; arg2]) ->
+  | Lprim (Psequor, [arg1; arg2], _) ->
     let arg1 = close t env arg1 in
     let arg2 = close t env arg2 in
     let const_true = Variable.create "const_true" in
@@ -358,7 +360,7 @@ and close t ?debuginfo env (lam : Lambda.lambda) : Flambda.t =
     Flambda.create_let const_true (Const (Int 1))
       (Flambda.create_let cond (Expr arg1)
         (If_then_else (cond, Var const_true, arg2)))
-  | Lprim (Psequand, [arg1; arg2]) ->
+  | Lprim (Psequand, [arg1; arg2], _) ->
     let arg1 = close t env arg1 in
     let arg2 = close t env arg2 in
     let const_false = Variable.create "const_false" in
@@ -366,11 +368,11 @@ and close t ?debuginfo env (lam : Lambda.lambda) : Flambda.t =
     Flambda.create_let const_false (Const (Int 0))
       (Flambda.create_let cond (Expr arg1)
         (If_then_else (cond, arg2, Var const_false)))
-  | Lprim ((Psequand | Psequor), _) ->
+  | Lprim ((Psequand | Psequor), _, _) ->
     Misc.fatal_error "Psequand / Psequor must have exactly two arguments"
-  | Lprim (Pidentity, [arg]) -> close t env arg
-  | Lprim (Pdirapply loc, [funct; arg])
-  | Lprim (Prevapply loc, [arg; funct]) ->
+  | Lprim (Pidentity, [arg], _) -> close t env arg
+  | Lprim (Pdirapply loc, [funct; arg], _)
+  | Lprim (Prevapply loc, [arg; funct], _) ->
     let apply : Lambda.lambda_apply =
       { ap_func = funct;
         ap_args = [arg];
@@ -384,7 +386,7 @@ and close t ?debuginfo env (lam : Lambda.lambda) : Flambda.t =
       }
     in
     close t env ?debuginfo (Lambda.Lapply apply)
-  | Lprim (Praise kind, [Levent (arg, event)]) ->
+  | Lprim (Praise kind, [Levent (arg, event)], _) ->
     let arg_var = Variable.create "raise_arg" in
     Flambda.create_let arg_var (Expr (close t env arg))
       (name_expr
@@ -392,23 +394,23 @@ and close t ?debuginfo env (lam : Lambda.lambda) : Flambda.t =
                default_debuginfo ~inner_debuginfo:(Debuginfo.from_raise event)
                  debuginfo))
         ~name:"raise")
-  | Lprim (Pfield _, [Lprim (Pgetglobal id, [])])
+  | Lprim (Pfield _, [Lprim (Pgetglobal id, [], _)], _)
       when Ident.same id t.current_unit_id ->
     Misc.fatal_errorf "[Pfield (Pgetglobal ...)] for the current compilation \
         unit is forbidden upon entry to the middle end"
-  | Lprim (Psetfield (_, _, _), [Lprim (Pgetglobal _, []); _]) ->
+  | Lprim (Psetfield (_, _, _), [Lprim (Pgetglobal _, [], _); _], _) ->
     Misc.fatal_errorf "[Psetfield (Pgetglobal ...)] is \
         forbidden upon entry to the middle end"
-  | Lprim (Pgetglobal id, []) when Ident.is_predef_exn id ->
+  | Lprim (Pgetglobal id, [], _) when Ident.is_predef_exn id ->
     let symbol = t.symbol_for_global' id in
     t.imported_symbols <- Symbol.Set.add symbol t.imported_symbols;
     name_expr (Symbol symbol) ~name:"predef_exn"
-  | Lprim (Pgetglobal id, []) ->
+  | Lprim (Pgetglobal id, [], _) ->
     assert (not (Ident.same id t.current_unit_id));
     let symbol = t.symbol_for_global' id in
     t.imported_symbols <- Symbol.Set.add symbol t.imported_symbols;
     name_expr (Symbol symbol) ~name:"Pgetglobal"
-  | Lprim (p, args) ->
+  | Lprim (p, args, _) ->
     (* One of the important consequences of the ANF-like representation
        here is that we obtain names corresponding to the components of
        blocks being made (with [Pmakeblock]).  This information can be used
@@ -437,7 +439,7 @@ and close t ?debuginfo env (lam : Lambda.lambda) : Flambda.t =
           blocks = List.map aux sw.sw_blocks;
           failaction = Misc.may_map (close t env) sw.sw_failaction;
         }))
-  | Lstringswitch (arg, sw, def) ->
+  | Lstringswitch (arg, sw, def, _) ->
     let scrutinee = Variable.create "string_switch" in
     Flambda.create_let scrutinee (Expr (close t env arg))
       (String_switch (scrutinee,

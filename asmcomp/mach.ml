@@ -41,7 +41,6 @@ type operation =
   | Iconst_int of nativeint
   | Iconst_float of int64
   | Iconst_symbol of string
-  | Iconst_blockheader of nativeint
   | Icall_ind
   | Icall_imm of string
   | Itailcall_ind
@@ -56,10 +55,16 @@ type operation =
   | Inegf | Iabsf | Iaddf | Isubf | Imulf | Idivf
   | Ifloatofint | Iintoffloat
   | Ispecific of Arch.specific_operation
+  | Ispacetime_node_hole
+  | Ispacetime_load_node_hole_ptr
+  | Iprogram_counter
+  | Ilabel of Cmm.label
+  | Iaddress_of_label of Cmm.label
 
 type instruction =
   { desc: instruction_desc;
-    next: instruction;
+    (* CR mshinwell: find out if it is acceptable for this to be mutable. *)
+    mutable next: instruction;
     arg: Reg.t array;
     res: Reg.t array;
     dbg: Debuginfo.t;

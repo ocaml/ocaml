@@ -274,6 +274,10 @@ G(caml_system__code_begin):
 
 /* Allocation */
 
+/* [caml_call_gc] does not need its own Spacetime node since it
+   currently doesn't create any trie nodes except if it invokes finalisers,
+   which are handled separately. */
+
 FUNCTION(G(caml_call_gc))
         CFI_STARTPROC
         RECORD_STACK_FRAME(0)
@@ -291,9 +295,9 @@ LBL(caml_call_gc):
 #else
         pushq   %rbp; CFI_ADJUST(8);
 #endif
+        pushq   %r13; CFI_ADJUST (8);
         pushq   %r11; CFI_ADJUST (8);
         pushq   %r10; CFI_ADJUST (8);
-        pushq   %r13; CFI_ADJUST (8);
         pushq   %r12; CFI_ADJUST (8);
         pushq   %r9; CFI_ADJUST (8);
         pushq   %r8; CFI_ADJUST (8);
@@ -307,6 +311,9 @@ LBL(caml_call_gc):
     /* Save caml_young_ptr, caml_exception_pointer */
         STORE_VAR(%r15, caml_young_ptr)
         STORE_VAR(%r14, caml_exception_pointer)
+#ifdef WITH_SPACETIME
+        STORE_VAR(%r13, caml_spacetime_trie_node_ptr)
+#endif
     /* Save floating-point registers */
         subq    $(16*8), %rsp; CFI_ADJUST (16*8);
         movsd   %xmm0, 0*8(%rsp)
@@ -359,9 +366,9 @@ LBL(caml_call_gc):
         popq    %r8; CFI_ADJUST(-8)
         popq    %r9; CFI_ADJUST(-8)
         popq    %r12; CFI_ADJUST(-8)
-        popq    %r13; CFI_ADJUST(-8)
         popq    %r10; CFI_ADJUST(-8)
         popq    %r11; CFI_ADJUST(-8)
+        popq    %r13; CFI_ADJUST(-8)
 #ifdef WITH_FRAME_POINTERS
         LEAVE_FUNCTION
 #else
@@ -455,6 +462,11 @@ LBL(caml_c_call):
         popq    %r12; CFI_ADJUST(-8)
         STORE_VAR(%r12, caml_last_return_address)
         STORE_VAR(%rsp, caml_bottom_of_stack)
+#ifdef WITH_SPACETIME
+    /* Record the trie node hole pointer that corresponds to
+       [caml_last_return_address] */
+        STORE_VAR(%r13, caml_spacetime_trie_node_ptr)
+#endif
         subq    $8, %rsp; CFI_ADJUST(8) /* equivalent to pushq %r12 */
 #if !defined(SYS_mingw64) && !defined(SYS_cygwin)
     /* Touch the stack to trigger a recoverable segfault
@@ -483,10 +495,29 @@ FUNCTION(G(caml_start_program))
     /* Common code for caml_start_program and caml_callback* */
 LBL(caml_start_program):
     /* Build a callback link */
+#ifdef WITH_SPACETIME
+        PUSH_VAR(caml_spacetime_trie_node_ptr)
+#else
         subq    $8, %rsp; CFI_ADJUST (8)        /* stack 16-aligned */
+#endif
         PUSH_VAR(caml_gc_regs)
         PUSH_VAR(caml_last_return_address)
         PUSH_VAR(caml_bottom_of_stack)
+#ifdef WITH_SPACETIME
+        /* Save arguments to caml_callback* */
+        pushq   %rax; CFI_ADJUST (8)
+        pushq   %rbx; CFI_ADJUST (8)
+        pushq   %rdi; CFI_ADJUST (8)
+        pushq   %rsi; CFI_ADJUST (8)
+        /* No need to push %r12: it's callee-save. */
+        movq    %r12, %rdi
+        LEA_VAR(caml_start_program, %rsi)
+        call    GCALL(caml_spacetime_c_to_ocaml)
+        popq    %rsi; CFI_ADJUST (-8)
+        popq    %rdi; CFI_ADJUST (-8)
+        popq    %rbx; CFI_ADJUST (-8)
+        popq    %rax; CFI_ADJUST (-8)
+#endif
     /* Setup alloc ptr and exception ptr */
         LOAD_VAR(caml_young_ptr, %r15)
         LOAD_VAR(caml_exception_pointer, %r14)
@@ -495,6 +526,9 @@ LBL(caml_start_program):
         pushq   %r13; CFI_ADJUST(8)
         pushq   %r14; CFI_ADJUST(8)
         movq    %rsp, %r14
+#ifdef WITH_SPACETIME
+        LOAD_VAR(caml_spacetime_trie_node_ptr, %r13)
+#endif
     /* Call the OCaml code */
         call    *%r12
 LBL(107):
@@ -509,7 +543,11 @@ LBL(109):
         POP_VAR(caml_bottom_of_stack)
         POP_VAR(caml_last_return_address)
         POP_VAR(caml_gc_regs)
+#ifdef WITH_SPACETIME
+        POP_VAR(caml_spacetime_trie_node_ptr)
+#else
         addq    $8, %rsp; CFI_ADJUST (-8);
+#endif
     /* Restore callee-save registers. */
         POP_CALLEE_SAVE_REGS
     /* Return to caller. */

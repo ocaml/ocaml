@@ -286,9 +286,15 @@ let call_linker file_list startup_file output_name =
   and main_obj_runtime = !Clflags.output_complete_object
   in
   let files = startup_file :: (List.rev file_list) in
+  let libunwind =
+    if not Config.spacetime then []
+    else if not Config.libunwind_available then []
+    (* CR mshinwell: library name is dependent on target arch *)
+    else [Config.libunwind_link_flag; "-lunwind"; "-lunwind-x86_64"]
+  in
   let files, c_lib =
     if (not !Clflags.output_c_object) || main_dll || main_obj_runtime then
-      files @ (List.rev !Clflags.ccobjs) @ runtime_lib (),
+      files @ (List.rev !Clflags.ccobjs) @ runtime_lib () @ libunwind,
       (if !Clflags.nopervasives || main_obj_runtime
        then "" else Config.native_c_libraries)
     else

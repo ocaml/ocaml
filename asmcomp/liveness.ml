@@ -130,6 +130,13 @@ let fundecl ppf f =
   let initially_live = live f.fun_body Reg.Set.empty in
   (* Sanity check: only function parameters can be live at entrypoint *)
   let wrong_live = Reg.Set.diff initially_live (Reg.set_of_array f.fun_args) in
+  (* CR mshinwell: this might not be right *)
+  let wrong_live =
+    if Config.spacetime then
+      Reg.Set.remove Proc.loc_spacetime_node wrong_live
+    else
+      wrong_live
+  in
   if not (Reg.Set.is_empty wrong_live) then begin
     Format.fprintf ppf "%a@." Printmach.regset wrong_live;
     Misc.fatal_error "Liveness.fundecl"

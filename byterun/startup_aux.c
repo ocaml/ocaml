@@ -28,7 +28,13 @@ CAMLexport header_t caml_atom_table[256];
 void caml_init_atom_table(void)
 {
   int i;
-  for(i = 0; i < 256; i++) caml_atom_table[i] = Make_header(0, i, Caml_white);
+  for(i = 0; i < 256; i++) {
+#ifdef NATIVE_CODE
+    caml_atom_table[i] = Make_header_with_my_profinfo(0, i, Caml_white);
+#else
+    caml_atom_table[i] = Make_header(0, i, Caml_white);
+#endif
+  }
   if (caml_page_table_add(In_static_data,
                           caml_atom_table, caml_atom_table + 256) != 0) {
     caml_fatal_error("Fatal error: not enough memory for initial page table");

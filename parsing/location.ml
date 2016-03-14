@@ -69,6 +69,17 @@ let rhs_loc n = {
 let input_name = ref "_none_"
 let input_lexbuf = ref (None : lexbuf option)
 
+let to_string loc =
+  if loc = none
+  then ""
+  else begin
+    let fname = loc.loc_start.pos_fname in
+    let line = loc.loc_start.pos_lnum in
+    let start_char = loc.loc_start.pos_cnum - loc.loc_start.pos_bol in
+    let end_char = loc.loc_end.pos_cnum - loc.loc_start.pos_cnum + start_char in
+    Printf.sprintf "{%s:%d,%d-%d}" fname line start_char end_char
+  end
+
 (* Terminal info *)
 
 let status = ref Terminfo.Uninitialised

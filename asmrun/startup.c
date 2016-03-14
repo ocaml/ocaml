@@ -17,6 +17,8 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
+#include <unistd.h>
 #include "caml/callback.h"
 #include "caml/backtrace.h"
 #include "caml/custom.h"
@@ -34,6 +36,9 @@
 #include "stack.h"
 #include "caml/startup_aux.h"
 #include "caml/sys.h"
+#ifdef WITH_SPACETIME
+#include "spacetime.h"
+#endif
 #ifdef HAS_UI
 #include "caml/ui.h"
 #endif
@@ -95,7 +100,6 @@ extern void caml_install_invalid_parameter_handler();
 
 #endif
 
-
 void caml_main(char **argv)
 {
   char * exe_name;
@@ -116,6 +120,9 @@ void caml_main(char **argv)
   caml_parse_ocamlrunparam();
 #ifdef DEBUG
   caml_gc_message (-1, "### OCaml runtime: debug mode ###\n", 0);
+#endif
+#ifdef WITH_SPACETIME
+  caml_spacetime_initialize();
 #endif
   caml_init_gc (caml_init_minor_heap_wsz, caml_init_heap_wsz,
                 caml_init_heap_chunk_sz, caml_init_percent_free,

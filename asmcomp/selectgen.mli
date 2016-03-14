@@ -86,7 +86,8 @@ class virtual selector_generic : object
      above; overloading this is useful if Ispecific instructions need
      marking *)
 
-  (* The following method is the entry point and should not be overridden *)
+  (* The following method is the entry point and should not be overridden
+     (except by [Spacetime_profiling]). *)
   method emit_fundecl : Cmm.fundecl -> Mach.fundecl
 
   (* The following methods should not be overridden.  They cannot be
@@ -105,6 +106,39 @@ class virtual selector_generic : object
   method emit_expr :
     (Ident.t, Reg.t array) Tbl.t -> Cmm.expression -> Reg.t array option
   method emit_tail : (Ident.t, Reg.t array) Tbl.t -> Cmm.expression -> unit
+
+  (* Only for the use of [Spacetime_profiling]. *)
+  method emit_blockheader
+     : (Ident.t, Reg.t array) Tbl.t
+    -> nativeint
+    -> Debuginfo.t
+    -> Reg.t array option
+  method about_to_emit_call
+     : (Ident.t, Reg.t array) Tbl.t
+    -> Mach.instruction_desc
+    -> Reg.t array
+    -> Cmm.label option
+  method initial_env : unit -> (Ident.t, Reg.t array) Tbl.t
+  method after_body
+     : Cmm.fundecl
+    -> env_after_prologue:(Ident.t, Reg.t array) Tbl.t
+    -> last_insn_of_prologue:Mach.instruction
+    -> unit
+  method insert_env
+     : (Ident.t, Reg.t array) Tbl.t
+    -> Mach.instruction_desc
+    -> Reg.t array
+    -> Reg.t array
+    -> unit
+  method insert_debug_env
+     : (Ident.t, Reg.t array) Tbl.t
+    -> Mach.instruction_desc
+    -> Debuginfo.t
+    -> Reg.t array
+    -> Reg.t array
+    -> unit
+
+  val mutable instr_seq : Mach.instruction
 end
 
 val reset : unit -> unit
