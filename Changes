@@ -388,6 +388,8 @@ Bug fixes:
 - PR#6651: Failing component lookup
 * PR#6664: Crash when finalising lazy values of the wrong type.
   (Damien Doligez)
+- PR#6677: Allow to disable warning 39 (useless "rec") with [@ocaml.warning]
+  applied to the first value binding of the would-be "rec" declaration
 - PR#6672: Unused variance specification allowed in with constraint
 - PR#6744: Univars can escape through polymorphic variants (partial fix)
 - PR#6752: Extensible variant types and scope escaping
