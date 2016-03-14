@@ -250,11 +250,10 @@ CAMLprim value caml_weak_get (value ar, value n){
 CAMLprim value caml_ephe_get_data (value ar)
 {
   CAMLparam1 (ar);
-  mlsize_t offset = 1;
   CAMLlocal2 (res, elt);
                                                    Assert (Is_in_heap (ar));
-  elt = Field (ar, offset);
   if(caml_gc_phase == Phase_clean) caml_ephe_clean(ar);
+  elt = Field (ar, CAML_EPHE_DATA_OFFSET);
   if (elt == caml_ephe_none){
     res = None_val;
   }else{
@@ -316,19 +315,18 @@ CAMLprim value caml_weak_get_copy (value ar, value n){
 CAMLprim value caml_ephe_get_data_copy (value ar)
 {
   CAMLparam1 (ar);
-  mlsize_t offset = 1;
   CAMLlocal2 (res, elt);
   value v;  /* Caution: this is NOT a local root. */
                                                    Assert (Is_in_heap (ar));
 
-  v = Field (ar, offset);
   if (caml_gc_phase == Phase_clean) caml_ephe_clean(ar);
+  v = Field (ar, CAML_EPHE_DATA_OFFSET);
   if (v == caml_ephe_none) CAMLreturn (None_val);
   if (Is_block (v) && Is_in_heap_or_young(v)) {
     elt = caml_alloc (Wosize_val (v), Tag_val (v));
           /* The GC may erase or move v during this call to caml_alloc. */
-    v = Field (ar, offset);
     if (caml_gc_phase == Phase_clean) caml_ephe_clean(ar);
+    v = Field (ar, CAML_EPHE_DATA_OFFSET);
     if (v == caml_ephe_none) CAMLreturn (None_val);
     if (Tag_val (v) < No_scan_tag){
       mlsize_t i;
