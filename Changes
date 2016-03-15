@@ -188,6 +188,9 @@ Compilers:
   metadata generation. Was a cause of crashes in GUI programs on OS X.
   (Bart Jacobs, review by Mark Shinwell)
 
+- PR#7168: Exceeding stack limit in bytecode can lead to a crash.
+  (Jacques-Henri Jourdan)
+
 - GPR#17: some cmm optimizations of integer operations with constants
   (Stephen Dolan, review by Pierre Chambart)
 
