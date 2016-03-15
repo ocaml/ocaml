@@ -211,7 +211,9 @@ a future version of OCaml.
 \item["-short-paths"]
 When a type is visible under several module-paths, use the shortest
 one when printing the type's name in inferred interfaces and error and
-warning messages.
+warning messages. Identifier names starting with an underscore "_" or
+containing double underscores "__" incur a penalty of $+10$ when computing
+their length.
 
 \item["-stdin"]
 Read the standard input as a script file rather than starting an

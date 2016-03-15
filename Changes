@@ -8,22 +8,25 @@ Language features:
   (Alain Frisch)
 
 Tools:
-- GPR#452: Make the output of ocamldep is more stable (Alain Frisch)
+- GPR#452: Make the output of ocamldep is more stable
+  (Alain Frisch)
 
 Standard library:
 - PR#4747, GPR#328: Optimize Hashtbl by using in-place updates of its
   internal bucket lists.  All operations run in constant stack size
   and are usually faster, except Hashtbl.copy which can be much
-  slower. (Alain Frisch)
+  slower.
+  (Alain Frisch)
 
 Build system:
 - GPR#324: Compiler developpers only: Adding new primitives to the
   standard runtime doesn't require anymore to run `make bootstrap`
-  (FranÃ§ois Bobot)
+  (François Bobot)
 - GPR#384: Fix compilation using old Microsoft C Compilers not
   supporting secure CRT functions (SDK Visual Studio 2005 compiler and
   earlier) and standard 64-bit integer literals (Visual Studio .NET
-  2002 and earlier) (David Allsopp)
+  2002 and earlier)
+  (David Allsopp)
 
 OCaml 4.03.0:
 -------------
@@ -109,9 +112,6 @@ Language features:
   (Gabriel Radanne)
 
 Compilers:
-- PR#4080, PR#6537, PR#5333: fix stack overflow in the compiler
-  when -pack'ing a module that includes a module of the same name
-  (Alain Frisch)
 * PR#4231, PR#5461: warning 31 is now fatal by default
   (Warning 31: A module is linked twice in the same executable.)
   This is an interim solution; double-linking of modules has dangerous semantics,
@@ -425,11 +425,11 @@ Manual:
   subdirectory of the main OCaml source repository. Contributions to
   the manual are warmly welcome.
   (François Bobot, review by Florian Angeletti)
-- MPR#6676: ongoing simplification of the "Language Extensions" section
+- PR#6676: ongoing simplification of the "Language Extensions" section
   (Alain Frisch, John Whitington)
-- MPR#7092, GPR#379: Add missing documentation for new 4.03 features
+- PR#7092, GPR#379: Add missing documentation for new 4.03 features
   (Florian Angeletti)
-- MPR#7109, GPR#380: Fix bigarray documentation layout
+- PR#7109, GPR#380: Fix bigarray documentation layout
   (Florian Angeletti, Leo White)
 
 Bug fixes:
@@ -520,7 +520,7 @@ Bug fixes:
 - PR#6938: fix regression on "%047.27{l,L,n}{d,i,x,X,o,u}"
   (Benoît Vaugon, report by Arduino Cascella)
 - PR#6944: let module X = Path in … is not typed as a module alias
-  (Jacques Garrigue, report by def)
+  (Jacques Garrigue, report by Frédéric Bour)
 - PR#6945 and GPR#227: protect Sys and Unix functions against string
     arguments containing the null character '\000'
   (Simon Cruanes and Xavier Leroy, report by Daniel Bünzli)

@@ -1063,7 +1063,8 @@ class printer  ()= object(self:'self)
             pp f "(%a@;:%a)=@;%a" self#simple_pattern p
               self#core_type ty self#expression x)
     | Pexp_constraint (e,t1),Ppat_var {txt;_} ->
-        pp f "%a@;:@ %a@;=@;%a" protect_ident txt self#core_type t1 self#expression e
+        pp f "%a@;:@ %a@;=@;%a" protect_ident txt self#core_type t1
+           self#expression e
     | (_, Ppat_var _) ->
         pp f "%a@ %a" self#simple_pattern p pp_print_pexp_function x
     | _ ->
