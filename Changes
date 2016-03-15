@@ -89,7 +89,7 @@ Language features:
 - GPR#254: @ocaml.warn_on_literal_pattern attribute on constructors to
   warn when the argument is matches against a constant pattern.  This
   attribute is applied on predefined exception constructors which
-  carry purely informational (with no stability guarantee) message.
+  carry purely informational (with no stability guarantee) messages.
   (Alain Frisch)
 - GPR#268: hexadecimal notation for floating-point literals: -0x1.ffffp+987
   In OCaml source code, FP literals can be written using the hexadecimal
@@ -456,7 +456,7 @@ Bug fixes:
 - PR#5887: move the byterun/*.h headers to byterun/caml/*.h to avoid header
     name clashes
   (Jérôme Vouillon and Adrien Nader and whitequark)
-* PR#6081: ocaml now add script's directory to search path, not current
+* PR#6081: ocaml now adds script's directory to search path, not current
     directory
   (Thomas Leonard and Damien Doligez)
 - PR#6108, PR#6802: fail cleanly if dynlink.cma or ocamltoplevel.cma
@@ -471,7 +471,7 @@ Bug fixes:
 * PR#6521: {Bytes,Char,String}.escaped were locale-dependent
   we now escape all non-ASCII-printable instead of a locale-dependent subset.
   (Damien Doligez, report by Jun Furuse)
-- PR#6526: prevent ocamllex from warning unescaped newline inside comments
+- PR#6526: ocamllex should not warn on unescaped newline inside comments
   (Damien Doligez, report by user 'dhekir')
 - PR#6341: ocamldoc -colorize-code adds spurious <br> tags to <pre> blocks
   (Maxence Guesdon, report by Damien Doligez)
