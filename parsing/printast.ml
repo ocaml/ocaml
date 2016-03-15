@@ -341,6 +341,10 @@ and expression i ppf x =
       line i ppf "Pexp_letmodule %a\n" fmt_string_loc s;
       module_expr i ppf me;
       expression i ppf e;
+  | Pexp_letexception (cd, e) ->
+      line i ppf "Pexp_letexception\n";
+      extension_constructor i ppf cd;
+      expression i ppf e;
   | Pexp_assert (e) ->
       line i ppf "Pexp_assert\n";
       expression i ppf e;

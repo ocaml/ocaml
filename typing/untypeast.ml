@@ -450,6 +450,9 @@ let expression sub exp =
     | Texp_letmodule (_id, name, mexpr, exp) ->
         Pexp_letmodule (name, sub.module_expr sub mexpr,
           sub.expr sub exp)
+    | Texp_letexception (ext, exp) ->
+        Pexp_letexception (sub.extension_constructor sub ext,
+                           sub.expr sub exp)
     | Texp_assert exp -> Pexp_assert (sub.expr sub exp)
     | Texp_lazy exp -> Pexp_lazy (sub.expr sub exp)
     | Texp_object (cl, _) ->

@@ -475,7 +475,7 @@ class printer  ()= object(self:'self)
         self#paren true self#reset#expression f x
     | Pexp_ifthenelse _ | Pexp_sequence _ when ifthenelse ->
         self#paren true self#reset#expression f x
-    | Pexp_let _ | Pexp_letmodule _ when semi ->
+    | Pexp_let _ | Pexp_letmodule _ | Pexp_letexception _ when semi ->
         self#paren true self#reset#expression f x
     | Pexp_fun (l, e0, p, e) ->
         pp f "@[<2>fun@;%a@;->@;%a@]"
@@ -571,6 +571,10 @@ class printer  ()= object(self:'self)
     | Pexp_letmodule (s, me, e) ->
         pp f "@[<hov2>let@ module@ %s@ =@ %a@ in@ %a@]" s.txt
           self#reset#module_expr me  self#expression e
+    | Pexp_letexception (cd, e) ->
+        pp f "@[<hov2>let@ exception@ %a@ in@ %a@]"
+          self#extension_constructor cd
+          self#expression e
     | Pexp_assert e ->
         pp f "@[<hov2>assert@ %a@]" self#simple_expr e
     | Pexp_lazy (e) ->

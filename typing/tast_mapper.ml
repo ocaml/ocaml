@@ -323,6 +323,11 @@ let expr sub x =
           sub.module_expr sub mexpr,
           sub.expr sub exp
         )
+    | Texp_letexception (cd, exp) ->
+        Texp_letexception (
+          sub.extension_constructor sub cd,
+          sub.expr sub exp
+        )
     | Texp_assert exp ->
         Texp_assert (sub.expr sub exp)
     | Texp_lazy exp ->

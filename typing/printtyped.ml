@@ -362,6 +362,10 @@ and expression i ppf x =
       line i ppf "Texp_letmodule \"%a\"\n" fmt_ident s;
       module_expr i ppf me;
       expression i ppf e;
+  | Texp_letexception (cd, e) ->
+      line i ppf "Pexp_letexception\n";
+      extension_constructor i ppf cd;
+      expression i ppf e;
   | Texp_assert (e) ->
       line i ppf "Texp_assert";
       expression i ppf e;
