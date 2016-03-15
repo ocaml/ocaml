@@ -90,6 +90,11 @@ val max_young_wosize: int
 val stack_threshold: int
         (* Size in words of safe area at bottom of VM stack,
            see byterun/config.h *)
+val stack_safety_margin: int
+        (* Size in words of the safety margin between the bottom of
+           the stack and the stack pointer. This margin can be used by
+           intermediate computations of some instructions, or the event
+           handler. *)
 
 val architecture: string
         (* Name of processor type for the native-code compiler *)
