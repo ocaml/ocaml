@@ -98,9 +98,10 @@ Compilers:
   (Xavier Leroy, report by Antoine Miné)
 - PR#6636: add --version option
   (whitequark)
-- PR#6737: fix Typedtree attributes on (fun x -> body) expressions
 - PR#6679: fix pprintast printing of constraints in type declarations
-- PR#6845: -no-check-prims to tell ocamlc not to check primitives in runtime
+  (Alain Frisch, report by Jun Furuse)
+- PR#6737: fix Typedtree attributes on (fun x -> body) expressions
+  (Alain Frisch, report by Oleg Kiselyov)
 * PR#6865: remove special case for parsing "let _ = expr" in structures
   (Jérémie Dimino, Alain Frisch)
 * PR#6438, PR#7059, GPR#315: Pattern guard disables exhaustiveness check
@@ -248,7 +249,7 @@ Standard library:
   (Alain Frisch)
 * PR#6494: Add 'equal' functions in modules
   Bytes, Char, Digest, Int32, Int64, Nativeint, and String
-  Users defining their own modules with signature 'module of Int32'
+  Users defining their own modules with signature 'module type of Int32'
   have to extend their implementation.
   (Romain Calascibetta)
 * PR#6524, GPR#79: Filename: Optional ?perms argument to open_temp_file
@@ -262,8 +263,8 @@ Standard library:
 - PR#6585: fix memory leak in win32unix/createprocess.c
   (Alain Frisch, report by user 'aha')
 - PR#6645, GPR#174: Guarantee that Set.add, Set.remove, Set.filter
-  return the original set if no change is required (Alain Frisch,
-  Mohamed Iguernlala)
+  return the original set if no change is required
+  (Alain Frisch, Mohamed Iguernlala)
 - PR#6649, GPR#222: accept (int_of_string "+3")
   (Christopher McAlpine)
 - PR#6694, PR#6695, GPR#124: deprecate functions using ISO-8859-1 character set
@@ -289,7 +290,7 @@ Standard library:
 - GPR#239: remove type-unsafe code from Stream
   (Pierre Chambart, review by Gabriel Scherer and Jeremy Yallop)
 - GPR#250: Check for negative start element in Array.sub
-  (report and fix by Jeremy Yallop)
+  (Jeremy Yallop)
 - GPR#265: new implementation of Queue avoiding Obj.magic
   (Jérémie Dimino)
 - GPR#268, GPR#303: '%h' and '%H' modifiers for printf and scanf to
@@ -313,8 +314,10 @@ Standard library:
   (Simon Cruanes)
 - GPR#329: Add exists, for_all,  mem and memq functions in Array
   (Bernhard Schommer)
-- GPR#337: Add [Hashtbl.filter_map_inplace] (Alain Frisch)
-- GPR#356: Add [Format.kasprintf] (Jérémie Dimino, Mark Shinwell)
+- GPR#337: Add [Hashtbl.filter_map_inplace]
+  (Alain Frisch)
+- GPR#356: Add [Format.kasprintf]
+  (Jérémie Dimino, Mark Shinwell)
 
 Type system:
 - PR#5545: Type annotations on methods cannot control the choice of abbreviation
@@ -332,14 +335,14 @@ Toplevel and debugger:
   (Nick Giannarakis, Berke Durak, Francis Southern and Gabriel Scherer)
 - PR#6396: Warnings-as-errors not properly flushed in the toplevel
   (Alain Frisch)
+- PR#6401: use proper error reporting for toplevel environment initialization:
+  no more Env.Error(_) at start time
+  (Gabriel Scherer, Alain Frisch)
 - PR#6468: toplevel now supports backtraces if invoked with OCAMLRUNPARAM=b
   (whitequark and Jake Donham,
    review by Gabriel Scherer and Jacques-Henri Jourdan)
 - PR#6935, GPR#298: crash in debugger when load_printer is given a directory
   (Junsong Li, review by Gabriel Scherer)
-- PR#6401: use proper error reporting for toplevel environment initialization:
-  no more Env.Error(_) at start time
-  (Gabriel Scherer, Alain Frisch)
 - PR#7081: report preprocessor warnings in the toplevel
   (Valentin Gatien-Baron, review by Jérémie Dimino)
 - PR#7098: Loss of ppx context in toplevel after an exception
@@ -456,10 +459,11 @@ Bug fixes:
   (Jacques Garrigue, report by Leo White)
 * PR#6664: Crash when finalising lazy values of the wrong type.
   (Damien Doligez)
-- PR#6677: Allow to disable warning 39 (useless "rec") with [@ocaml.warning]
-  applied to the first value binding of the would-be "rec" declaration
 - PR#6672: Unused variance specification allowed in with constraint
   (Jacques Garrigue, report by Leo White)
+- PR#6677: Allow to disable warning 39 (useless "rec") with [@ocaml.warning]
+  applied to the first value binding of the would-be "rec" declaration
+  (Alain Frisch, report by Jun Furuse)
 - PR#6744: Univars can escape through polymorphic variants (partial fix)
   (Jacques Garrigue, report by Leo White)
 - PR#6752: Extensible variant types and scope escaping
@@ -533,7 +537,8 @@ Bug fixes:
 - PR#7030: libasmrun_shared.so fails to build on SPARC Solaris
   (report and fix by Patrick Star)
 - PR#7036: Module alias is not taken into account when checking module
-  type compatibility (in a class type) (Jacques Garrigue)
+  type compatibility (in a class type)
+  (Jacques Garrigue)
 - PR#7037: more reproducible builds, don't put temp file names into objects
   (Xavier Leroy)
 - PR#7038: out of memory condition in caml_io_mutex_lock
@@ -542,23 +547,28 @@ Bug fixes:
   (Xavier Leroy)
 - PR#7042 and GPR#295: CSE optimization confuses the FP literals +0.0 and -0.0
   (Xavier Leroy)
-- PR#7152: Typing equality involving non-generalizable type variable
-  (Jacques Garrigue, report by François Bobot)
 - PR#7075: Fix repetitions in ocamldoc generated documentation
   (Florian Angeletti)
 - PR#7082: Object type in recursive module's `with` annotation
+  (Jacques Garrigue and Alain Frisch, report by Nicholas Labich)
+- PR#7096: ocamldoc uses an incorrect subscript/superscript style
+  (Gabriel Scherer, report by user 'pierpa')
 - PR#7108: ocamldoc, have -html preserve custom/extended html generators
   (Armaël Guéneau)
-- PR#7096: ocamldoc uses an incorrect subscript/superscript style
 - PR#7111: reject empty let bindings instead of printing incorrect syntax
   (Jérémie Dimino)
 * PR#7113: -safe-string can break GADT compatibility check
-- PR#7115: shadowing in a branch of a GADT match breaks unused variable
-  warning (Alain Frisch, report by Valentin Gatien-Baron)
-- PR#7133: Jump labels in assembly end up as symbols in the executable on OS X
+  bytes and string are now considered compatible even with -safe-string,
+  which may break exhaustivity for code assuming they were disjoint
+  (Jacques Garrigue, report by Jeremy Yallop)
+- PR#7115: shadowing in a branch of a GADT match breaks unused variable warning
+  (Alain Frisch, report by Valentin Gatien-Baron)
+- PR#7133, GPR#450: generate local jump labels on OS X
   (Bart Jacobs)
 - PR#7135: only warn about ground coercions in -principal mode
   (Jacques Garrigue, report by Jeremy Yallop)
+- PR#7152: Typing equality involving non-generalizable type variable
+  (Jacques Garrigue, report by François Bobot)
 - PR#7160: Type synonym definitions can weaken gadt constructor types
   (Jacques Garrigue, report by Mikhail Mandrykin)
 - GPR#205: Clear caml_backtrace_last_exn before registering as root
@@ -573,16 +583,16 @@ Bug fixes:
   (Daniel Bünzli)
 - GPR#251: fix cross-compilation with ocamldoc enabled
   (whitequark)
-- GPR#280: Fix stdlib dependencies for .p.cmx (Pierre Chambart,
-  Mark Shinwell)
+- GPR#280: Fix stdlib dependencies for .p.cmx
+  (Pierre Chambart, Mark Shinwell)
 - GPR#283: Fix memory leaks in intern.c when OOM is raised
   (Marc Lasson, review by Alain Frisch)
 - GPR#22: Fix the cleaning of weak pointers. In very rare cases
   accessing a value during the cleaning of the weak pointers could
   result in the value being removed from one weak arrays and kept in
   another one. That breaks the property that a value is removed from a
-  weak pointer only when it is dead and garbage collected. (François
-  Bobot, review by Damien Doligez)
+  weak pointer only when it is dead and garbage collected.
+  (François Bobot, review by Damien Doligez)
 - GPR#313: Prevent quadratic cases in CSE
   (Pierre Chambart, review by Xavier Leroy)
 - PR#6795, PR#6996: Make ocamldep report errors passed in
@@ -603,19 +613,24 @@ Features wishes:
   (Sergei Lebedev)
 - PR#4714: List.cons
 - PR#5418 (comments) : generate dependencies with $(CC) instead of gcc
+  (Damien Doligez, report by Michael Grünewald)
 - PR#6167: OCAMLPARAM support for disabling PIC generation ("pic=0")
   (Gabor Pali)
-- PR#6367: introduce Asttypes.arg_label to encode labelled arguments
+- PR#6367, GPR#25: introduce Asttypes.arg_label to encode labelled arguments
+  (Frédéric Bour and Jacques Garrigue)
 - PR#6452, GPR#140: add internal suport for custom printing formats
   (Jérémie Dimino)
 - PR#6611: remove the option wrapper on optional arguments in the syntax tree
+  (Alain Frisch, review by Damien Doligez, request by whitequark)
 - PR#6635: support M.[], M.(), M.{< >} and M.[| |]
   (Jeremy Yallop, review by Gabriel Radanne)
 - PR#6691: install .cmt[i] files for stdlib and compiler-libs
   (David Sheets, request by Gabriel Radanne)
 - PR#6722: compatibility with x32 architecture (x86-64 in ILP32 mode).
   ocamlopt is not supported, but bytecode compiles cleanly.
+  (Adam Borowski and Xavier Leroy)
 - PR#6742: remove duplicate virtual_flag information from Tstr_class
+  (Gabriel Radanne and Jacques Garrigue)
 - PR#6719: improve Buffer.add_channel when not enough input is available
   (Simon Cruanes)
 * PR#6816: reject integer and float literals directly followed by an identifier.
@@ -633,6 +648,7 @@ Features wishes:
 - GPR#137: add untypeast.ml (in open recursion style) to compiler-libs
   (Gabriel Radanne)
 - GPR#142: add a CAMLdrop macro for undoing CAMLparam*/CAMLlocal*
+  (Thomas Braibant and Damien Doligez)
 - GPR#145: speeedup bigarray access by optimizing Cmmgen.bigarray_indexing
   (Vladimir Brankov, review by Gabriel Scherer)
 - GPR#147: [type 'a result = Ok of 'a | Error of 'b] in Pervasives
@@ -640,20 +656,8 @@ Features wishes:
 - GPR#156, GPR#279: optimize caml_frame_descriptors realloc (dynlink speedup)
   (Pierre Chambart, Alain Frisch,
    review by François Bobot, Xavier Leroy and Damien Doligez)
-- GPR#191: Making gc.h and some part of memory.h public
-  (Thomas Refis)
-- GPR#196: Make [Thread.id] and [Thread.self] [noalloc]
-  (Clark Gaebel)
 - GPR#165, GPR#221: fix windows compilation warnings
   (Bernhard Schommer, Gabriel Scherer, report by Alain Frisch)
-- GPR#189: Added .dylib and .so as extensions for ocamlmklib
-  (Edgar Aroutiounian, whitequark)
-- GPR#237: a CONTRIBUTING document
-  (François Bobot, Gabriel Scherer, review by Xavier Leroy)
-- GPR#245: remove a few remaining French comments
-  (Florian Angeletti)
-- GPR#252: improve build instructions in MSVC Windows README
-  (Philip Daian)
 * GPR#170: Parse arbitrary precision integers.
   Accept a single [A-Za-z] as modifier for integers (generalizing 'l','L','n')
   and floats.
@@ -661,12 +665,26 @@ Features wishes:
   This changes PR#6816 a little bit by reading the literal [123a] as a single
   token that can later be rewritten by a ppx preprocessor.
   (Hugo Heuzard)
+- GPR#189: Added .dylib and .so as extensions for ocamlmklib
+  (Edgar Aroutiounian, whitequark)
+- GPR#191: Making gc.h and some part of memory.h public
+  (Thomas Refis)
+- GPR#196: Make [Thread.id] and [Thread.self] [noalloc]
+  (Clark Gaebel)
+- GPR#237: a CONTRIBUTING document
+  (François Bobot, Gabriel Scherer, review by Xavier Leroy)
+- GPR#245: remove a few remaining French comments
+  (Florian Angeletti)
+- GPR#252: improve build instructions in MSVC Windows README
+  (Philip Daian)
 - GPR#308: add experimental support for NetBSD/arm (verified on RaspberryPi)
   (Rich Neswold)
-- GPR#335: Type error messages specify if a type is abstract
-  because no corresponding cmi could be found. (Hugo Heuzard)
+- GPR#335: Type error messages specifies if a type is abstract
+  because no corresponding cmi could be found.
+  (Hugo Heuzard)
 - GPR#365: prevent printing just a single type variable on one side
-  of a type error clash. (Hugo Heuzard)
+  of a type error clash.
+  (Hugo Heuzard)
 - GPR#383: configure: define _ALL_SOURCE for build on AIX7.1
   (tkob)
 - GPR#401: automatically retry failed test directories in the testsuite
