@@ -101,8 +101,20 @@ let unbox_let_float () =
 
 
 let () =
+  let flambda =
+    match Sys.getenv "FLAMBDA" with
+    | "true" -> true
+    | "false" -> false
+    | _ -> failwith "Cannot determine is flambda is enabled"
+    | exception Not_found -> failwith "Cannot determine is flambda is enabled"
+  in
+
   check_noalloc "classify float" unbox_classify_float;
   check_noalloc "compare float" unbox_compare_float;
-  check_noalloc "float refs" unbox_float_refs;
-  check_noalloc "unbox let float" unbox_let_float;
+
+  if not flambda then begin
+    check_noalloc "float refs" unbox_float_refs;
+    check_noalloc "unbox let float" unbox_let_float;
+  end;
+
   ()

@@ -67,14 +67,14 @@ run:
 	@printf " ... testing with"
 	@if $(NATIVECODE_ONLY); then : ; else \
 	   printf " ocamlc"; \
-	   $(MYRUNTIME) ./program.byte$(EXE) $(EXEC_ARGS) \
+	   FLAMBDA=$(FLAMBDA) $(MYRUNTIME) ./program.byte$(EXE) $(EXEC_ARGS) \
 	                >$(MAIN_MODULE).result \
 	   && $(DIFF) $(MAIN_MODULE).reference $(MAIN_MODULE).result \
 	      >/dev/null; \
 	 fi \
 	&& if $(BYTECODE_ONLY); then : ; else \
 	     printf " ocamlopt"; \
-	     ./program.native$(EXE) $(EXEC_ARGS) > $(MAIN_MODULE).result \
+	     FLAMBDA=$(FLAMBDA) ./program.native$(EXE) $(EXEC_ARGS) > $(MAIN_MODULE).result \
 	     && $(DIFF) $(MAIN_MODULE).reference $(MAIN_MODULE).result \
 	                >/dev/null; \
 	   fi \
