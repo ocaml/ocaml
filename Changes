@@ -266,7 +266,7 @@ Standard library:
   return the original set if no change is required
   (Alain Frisch, Mohamed Iguernlala)
 - PR#6649, GPR#222: accept (int_of_string "+3")
-  (Christopher McAlpine)
+  (John Christopher McAlpine)
 - PR#6694, PR#6695, GPR#124: deprecate functions using ISO-8859-1 character set
   in Char, Bytes, String and provide alternatives *_acii using US-ASCII.
   Affected functions:
