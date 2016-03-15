@@ -89,7 +89,7 @@ let type_module =
 (* Forward declaration, to be filled in by Typemod.type_open *)
 
 let type_open =
-  ref (fun _ -> assert false)
+  ref (fun ?forbidden_names _ -> assert false)
 
 (* Forward declaration, to be filled in by Typemod.type_package *)
 
@@ -209,7 +209,7 @@ let iter_expression f e =
     | Pstr_class_type _
     | Pstr_attribute _
     | Pstr_extension _ -> ()
-    | Pstr_include {pincl_mod = me}
+    | Pstr_include {pincl_mods = mes} -> List.iter module_expr mes
     | Pstr_module {pmb_expr = me} -> module_expr me
     | Pstr_recmodule l -> List.iter (fun x -> module_expr x.pmb_expr) l
     | Pstr_class cdl -> List.iter (fun c -> class_expr c.pci_expr) cdl
@@ -1615,8 +1615,8 @@ and is_nonexpansive_mod mexp =
           | Tstr_modtype _ | Tstr_open _ | Tstr_class_type _  -> true
           | Tstr_value (_, pat_exp_list) ->
               List.for_all (fun vb -> is_nonexpansive vb.vb_expr) pat_exp_list
-          | Tstr_module {mb_expr=m;_}
-          | Tstr_include {incl_mod=m;_} -> is_nonexpansive_mod m
+          | Tstr_module {mb_expr=m;_} -> is_nonexpansive_mod m
+          | Tstr_include {incl_mods=m;_} -> List.for_all is_nonexpansive_mod m
           | Tstr_recmodule id_mod_list ->
               List.for_all (fun {mb_expr=m;_} -> is_nonexpansive_mod m)
                 id_mod_list
@@ -2878,11 +2878,16 @@ and type_expect_ ?in_function ?(recarg=Rejected) env sexp ty_expected =
         exp_type = newty (Tpackage (p, nl, tl'));
         exp_attributes = sexp.pexp_attributes;
         exp_env = env }
-  | Pexp_open (ovf, lid, e) ->
-      let (path, newenv) = !type_open ovf env sexp.pexp_loc lid in
-      let exp = type_expect newenv e ty_expected in
+  | Pexp_open (ovf, oseq, e) ->
+      let forbidden_names = Env.Names.make () in
+      let open_item (open_seq,new_env) (lid,attrs) =
+        let (path, new_env) = !type_open ~forbidden_names ovf ~from:env ~into:new_env sexp.pexp_loc lid in
+        Env.Names.incr_current_module forbidden_names;
+        (path,lid,attrs):: open_seq, new_env in
+      let (open_seq, new_env) = List.fold_left open_item ([],env) oseq in
+      let exp = type_expect new_env e ty_expected in
       { exp with
-        exp_extra = (Texp_open (ovf, path, lid, newenv), loc,
+        exp_extra = (Texp_open (ovf, open_seq, new_env), loc,
                      sexp.pexp_attributes) ::
                       exp.exp_extra;
       }

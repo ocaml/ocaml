@@ -360,15 +360,20 @@ and expression i ppf x =
   | Pexp_pack me ->
       line i ppf "Pexp_pack\n";
       module_expr i ppf me
-  | Pexp_open (ovf, m, e) ->
-      line i ppf "Pexp_open %a \"%a\"\n" fmt_override_flag ovf
-        fmt_longident_loc m;
+  | Pexp_open (ovf,seq, e) ->
+      line i ppf "Pexp_open %a\n" fmt_override_flag ovf;
+      list i open_sequence ppf seq;
       expression i ppf e
   | Pexp_extension (s, arg) ->
       line i ppf "Pexp_extension \"%s\"\n" s.txt;
       payload i ppf arg
   | Pexp_unreachable ->
       line i ppf "Pexp_unreachable"
+
+and open_sequence i ppf (lident,attr) =
+  line i ppf "<open>\n";
+  longident_loc i ppf lident;
+  attributes (i+1) ppf attr
 
 and value_description i ppf x =
   line i ppf "value_description %a %a\n" fmt_string_loc
@@ -673,13 +678,12 @@ and signature_item i ppf x =
       attributes i ppf x.pmtd_attributes;
       modtype_declaration i ppf x.pmtd_type
   | Psig_open od ->
-      line i ppf "Psig_open %a %a\n"
-        fmt_override_flag od.popen_override
-        fmt_longident_loc od.popen_lid;
+      line i ppf "Psig_open %a\n" fmt_override_flag od.popen_override;
+      list i open_sequence ppf od.popen_seq;
       attributes i ppf od.popen_attributes
   | Psig_include incl ->
       line i ppf "Psig_include\n";
-      module_type i ppf incl.pincl_mod;
+      list i module_type ppf incl.pincl_mods;
       attributes i ppf incl.pincl_attributes
   | Psig_class (l) ->
       line i ppf "Psig_class\n";
@@ -780,9 +784,9 @@ and structure_item i ppf x =
       attributes i ppf x.pmtd_attributes;
       modtype_declaration i ppf x.pmtd_type
   | Pstr_open od ->
-      line i ppf "Pstr_open %a %a\n"
-        fmt_override_flag od.popen_override
-        fmt_longident_loc od.popen_lid;
+      line i ppf "Pstr_open %a\n"
+        fmt_override_flag od.popen_override;
+      list i open_sequence ppf od.popen_seq;
       attributes i ppf od.popen_attributes
   | Pstr_class (l) ->
       line i ppf "Pstr_class\n";
@@ -793,7 +797,7 @@ and structure_item i ppf x =
   | Pstr_include incl ->
       line i ppf "Pstr_include";
       attributes i ppf incl.pincl_attributes;
-      module_expr i ppf incl.pincl_mod
+      list i module_expr ppf incl.pincl_mods
   | Pstr_extension ((s, arg), attrs) ->
       line i ppf "Pstr_extension \"%s\"\n" s.txt;
       attributes i ppf attrs;

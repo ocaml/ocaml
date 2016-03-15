@@ -350,9 +350,9 @@ end
 
 module Opn = struct
   let mk ?(loc = !default_loc) ?(attrs = []) ?(docs = empty_docs)
-        ?(override = Fresh) lid =
+      ?(override = Fresh) open_seq =
     {
-     popen_lid = lid;
+     popen_seq = open_seq;
      popen_override = override;
      popen_loc = loc;
      popen_attributes = add_docs_attrs docs attrs;
@@ -360,9 +360,9 @@ module Opn = struct
 end
 
 module Incl = struct
-  let mk ?(loc = !default_loc) ?(attrs = []) ?(docs = empty_docs) mexpr =
+  let mk ?(loc = !default_loc) ?(attrs = []) ?(docs = empty_docs) mexprs =
     {
-     pincl_mod = mexpr;
+     pincl_mods = mexprs;
      pincl_loc = loc;
      pincl_attributes = add_docs_attrs docs attrs;
     }

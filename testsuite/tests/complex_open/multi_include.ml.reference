@@ -1,0 +1,41 @@
+
+#                                                                         val sp : ('a, unit, string) format -> 'a = <fun>
+val not : string -> string = <fun>
+val right : string -> string = <fun>
+val wrong : string -> string -> string = <fun>
+val shadow : string -> string -> string = <fun>
+val x : string = "Module M not included"
+val y : string = "Module N not included"
+val z : string = "Module L not included"
+module type S_X = sig val x : string end
+module type S_Y = sig val y : string end
+module type S_Z = sig val z : string end
+module type S_XYZ = sig val x : string val y : string val z : string end
+module M : sig val x : string end
+module N : sig val y : string end
+module L : sig val z : string end
+module Id : functor (M : S_X) -> sig val x : string end
+val pp : ('a, out_channel, unit) format -> 'a = <fun>
+val test : string -> string list -> unit = <fun>
+#   module MNL :
+  sig module Inner : sig val x : string val y : string val z : string end end
+#       Two-level nested include:
+	Module M correctly included
+	Module N correctly included
+	Module L correctly included
+#       Local include:
+	Module M correctly included
+	Module N correctly included
+	Module L correctly included
+#               Nested_global include:
+	Module M correctly included
+	Module N correctly included
+	Module L correctly included
+#   val x : string = "Module M correctly included"
+val y : string = "Module N correctly included"
+val z : string = "Module L correctly included"
+#   Global include:
+	Module M correctly included
+	Module N correctly included
+	Module L correctly included
+# 

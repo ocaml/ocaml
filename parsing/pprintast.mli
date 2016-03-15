@@ -25,6 +25,7 @@ class printer :
         Format.formatter ->
           Asttypes.rec_flag * Parsetree.value_binding list ->
             unit
+		method open_seq: Format.formatter -> Parsetree.open_sequence -> unit
     method case_list :
       Format.formatter -> Parsetree.case list -> unit
     method class_expr : Format.formatter -> Parsetree.class_expr -> unit

@@ -156,8 +156,8 @@ module Exp:
     val object_: ?loc:loc -> ?attrs:attrs -> class_structure -> expression
     val newtype: ?loc:loc -> ?attrs:attrs -> string -> expression -> expression
     val pack: ?loc:loc -> ?attrs:attrs -> module_expr -> expression
-    val open_: ?loc:loc -> ?attrs:attrs -> override_flag -> lid -> expression
-               -> expression
+    val open_: ?loc:loc -> ?attrs:attrs -> override_flag -> open_sequence
+      -> expression -> expression
     val extension: ?loc:loc -> ?attrs:attrs -> extension -> expression
     val unreachable: ?loc:loc -> ?attrs:attrs -> unit -> expression
 
@@ -310,13 +310,13 @@ module Mb:
 module Opn:
   sig
     val mk: ?loc: loc -> ?attrs:attrs -> ?docs:docs ->
-      ?override:override_flag -> lid -> open_description
+      ?override:override_flag -> open_sequence -> open_description
   end
 
 (* Includes *)
 module Incl:
   sig
-    val mk: ?loc: loc -> ?attrs:attrs -> ?docs:docs -> 'a -> 'a include_infos
+    val mk: ?loc: loc -> ?attrs:attrs -> ?docs:docs -> 'a list -> 'a include_infos
   end
 
 (** Value bindings *)

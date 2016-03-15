@@ -112,34 +112,36 @@
         [
           signature_item (attributes.ml[26,254+2]..[27,322+11])
             Psig_include
-            module_type (attributes.ml[26,254+10]..[26,254+61])
-              attribute "foo"
-                []
-              Pmty_with
-              module_type (attributes.ml[26,254+11]..[26,254+35])
+            [
+              module_type (attributes.ml[26,254+10]..[26,254+61])
                 attribute "foo"
                   []
-                Pmty_typeof
-                module_expr (attributes.ml[26,254+27]..[26,254+28])
+                Pmty_with
+                module_type (attributes.ml[26,254+11]..[26,254+35])
                   attribute "foo"
                     []
-                  Pmod_ident "M" (attributes.ml[26,254+27]..[26,254+28])
-              [
-                Pwith_typesubst
-                  type_declaration "t" (attributes.ml[26,254+53]..[26,254+54]) (attributes.ml[26,254+48]..[26,254+61])
-                    ptype_params =
+                  Pmty_typeof
+                  module_expr (attributes.ml[26,254+27]..[26,254+28])
+                    attribute "foo"
                       []
-                    ptype_cstrs =
-                      []
-                    ptype_kind =
-                      Ptype_abstract
-                    ptype_private = Public
-                    ptype_manifest =
-                      Some
-                        core_type (attributes.ml[26,254+58]..[26,254+61])
-                          Ptyp_constr "M.t" (attributes.ml[26,254+58]..[26,254+61])
-                          []
-              ]
+                    Pmod_ident "M" (attributes.ml[26,254+27]..[26,254+28])
+                [
+                  Pwith_typesubst
+                    type_declaration "t" (attributes.ml[26,254+53]..[26,254+54]) (attributes.ml[26,254+48]..[26,254+61])
+                      ptype_params =
+                        []
+                      ptype_cstrs =
+                        []
+                      ptype_kind =
+                        Ptype_abstract
+                      ptype_private = Public
+                      ptype_manifest =
+                        Some
+                          core_type (attributes.ml[26,254+58]..[26,254+61])
+                            Ptyp_constr "M.t" (attributes.ml[26,254+58]..[26,254+61])
+                            []
+                ]
+            ]
               attribute "foo"
                 []
           signature_item (attributes.ml[29,335+2]..[29,335+10])

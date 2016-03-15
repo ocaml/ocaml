@@ -62,6 +62,7 @@ type error =
   | Need_recursive_types of string * string
   | Missing_module of Location.t * Path.t * Path.t
   | Illegal_value_name of Location.t * string
+  | Ambiguous_name of Location.t * string * string
 
 exception Error of error
 
@@ -128,7 +129,7 @@ module EnvTbl =
     let already_defined wrap s tbl x =
       wrap (try Some (fst (Ident.find_name s tbl), x) with Not_found -> None)
 
-    let add slot wrap id x tbl ref_tbl =
+    let add (slot:(string -> [> `Value of ('a*'b) option ] -> unit ) option) wrap id x tbl ref_tbl =
       let slot =
         match slot with
         | None -> nothing
@@ -468,6 +469,7 @@ let check_pers_struct name =
               name
         | Missing_module _ -> assert false
         | Illegal_value_name _ -> assert false
+        | Ambiguous_name _ -> assert false
       in
       let warn = Warnings.No_cmi_file(name, Some msg) in
         Location.prerr_warning Location.none warn
@@ -1707,9 +1709,96 @@ let rec add_signature sg env =
     [] -> env
   | comp :: rem -> add_signature rem (add_item comp env)
 
-(* Open a signature path *)
 
-let open_signature slot root sg env0 =
+(* Names collision tools used in grouped open and signature verification (cf Typemod ) *)
+module Names = struct
+module StringSet=Misc.StringSet
+module StringMap=Misc.StringMap
+type t =
+  {
+    types: StringSet.t ref;
+    modules: StringSet.t ref;
+    modtypes: StringSet.t ref;
+    typexts: StringSet.t ref;
+
+    (* Current module number in a grouped open or include *)
+    current_module: int ref;
+
+    (* The value map stores the module number of the last binding.
+       Multiple bindings inside the same module are always legal.
+       However, reuses of a value name in a different module amongs the same grouped
+       open or include must be tracked down.
+     *)
+    values : int StringMap.t ref
+  }
+
+type field_info = string * ( t -> StringSet.t ref)
+
+let make () =
+  {
+    types = ref StringSet.empty;
+    modules = ref StringSet.empty;
+    modtypes = ref StringSet.empty;
+    typexts = ref StringSet.empty;
+    values = ref StringMap.empty;
+    current_module = ref 0
+  }
+let incr_current_module names = incr names.current_module
+
+(* Names, getters and setters *)
+let types = "type", (fun names -> names.types)
+let modules = "module", (fun names -> names.modules)
+let modtypes = "module type", (fun names -> names.modtypes)
+let typexts = "extension constructor", (fun names -> names.typexts)
+
+let collision_kind_name = function
+  | `Value _ -> "value"
+  | `Constructor _ -> "constructor"
+  | `Label _ -> "label"
+  | `Type _ -> "type"
+  | `Component _ -> "component"
+  | `Module _ -> "module"
+  | `Module_type _ -> "module type"
+  | `Class _ -> "class"
+  | `Class_type _ -> "class type"
+
+(* Delayed error for when a common name appearing in two differents modules inside a grouped open *)
+let error_slot loc name collision =
+  error @@ Ambiguous_name(loc, collision_kind_name collision, name )
+
+(* Checks for grouped open *)
+let check loc default_slot (_,get) name =
+function
+  | None -> default_slot
+  | Some names ->
+  let rset = get names in
+  if StringSet.mem name !rset then
+    Some (error_slot loc)
+  else begin
+      rset := StringSet.add name !rset;
+      default_slot
+    end
+
+let check_value loc default_slot name =
+function
+  | None -> default_slot
+  | Some names ->
+    try begin
+      let binding_module = StringMap.find name !(names.values) in
+      if binding_module = !(names.current_module) then raise Not_found
+        else Some (error_slot loc)
+    end
+    with Not_found ->
+    begin
+      names.values := StringMap.add name !(names.current_module) !(names.values);
+      default_slot
+    end
+
+
+end
+
+(* Open a signature path *)
+let open_signature ?forbidden_names ?(loc=Location.none) slot root sg env0 =
   (* First build the paths and substitution *)
   let (pl, sub, sg) = prefix_idents_and_subst root Subst.identity sg in
   let sg = Lazy.force sg in
@@ -1721,18 +1810,27 @@ let open_signature slot root sg env0 =
       (fun env item p ->
         match item with
           Sig_value(id, decl) ->
+            let slot = Names.check_value loc slot (Ident.name id) forbidden_names in
             store_value slot (Ident.hide id) p decl env env0
         | Sig_type(id, decl, _) ->
+            let slot = Names.(check loc slot types (Ident.name id) forbidden_names )
+            in
             store_type ~check:false slot (Ident.hide id) p decl env env0
         | Sig_typext(id, ext, _) ->
+            let slot = let open Names in
+              check loc slot typexts (Ident.name id) forbidden_names in
             store_extension ~check:false slot (Ident.hide id) p ext env env0
         | Sig_module(id, mty, _) ->
+            let slot = Names.( check loc slot modules (Ident.name id) forbidden_names ) in
             store_module slot (Ident.hide id) p mty env env0
         | Sig_modtype(id, decl) ->
+            let slot = Names.( check loc slot modtypes (Ident.name id) forbidden_names ) in
             store_modtype slot (Ident.hide id) p decl env env0
         | Sig_class(id, decl, _) ->
+            let slot = Names.( check loc slot types (Ident.name id) forbidden_names ) in
             store_class slot (Ident.hide id) p decl env env0
         | Sig_class_type(id, decl, _) ->
+            let slot = Names.( check loc slot types (Ident.name id) forbidden_names ) in
             store_cltype slot (Ident.hide id) p decl env env0
       )
       env0 sg pl in
@@ -1745,7 +1843,7 @@ let open_pers_signature name env =
   open_signature None (Pident(Ident.create_persistent name))
     (Lazy.force ps.ps_sig) env
 
-let open_signature ?(loc = Location.none) ?(toplevel = false) ovf root sg env =
+let open_signature ?(loc = Location.none) ?(toplevel = false) ?forbidden_names ovf root sg env =
   if not toplevel && ovf = Asttypes.Fresh && not loc.Location.loc_ghost
      && (Warnings.is_active (Warnings.Unused_open "")
          || Warnings.is_active (Warnings.Open_shadow_identifier ("", ""))
@@ -1773,9 +1871,9 @@ let open_signature ?(loc = Location.none) ?(toplevel = false) ovf root sg env =
       end;
       used := true
     in
-    open_signature (Some slot) root sg env
+    open_signature ?forbidden_names ~loc (Some slot) root sg env
   end
-  else open_signature None root sg env
+  else open_signature ?forbidden_names ~loc None root sg env
 
 (* Read a signature from a file *)
 
@@ -2010,12 +2108,15 @@ let report_error ppf = function
   | Illegal_value_name(_loc, name) ->
       fprintf ppf "'%s' is not a valid value identifier."
         name
+  | Ambiguous_name(_,kind,name) ->
+    fprintf ppf "@[This grouped open introduces multiple definitions for the %s name %s (which is later used).@,The %s name %s cannot be used without disambiguation.@]" kind name kind name
 
 let () =
   Location.register_error_of_exn
     (function
       | Error (Missing_module (loc, _, _)
               | Illegal_value_name (loc, _)
+              | Ambiguous_name(loc,_,_)
                as err) when loc <> Location.none ->
           Some (Location.error_of_printer loc report_error err)
       | Error err -> Some (Location.error_of_printer_file report_error err)

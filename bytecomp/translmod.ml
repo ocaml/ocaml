@@ -526,22 +526,24 @@ and transl_structure fields cc rootpath final_env = function
           in
           Lletrec(class_bindings, body), size
       | Tstr_include incl ->
-          let ids = bound_value_identifiers incl.incl_type in
-          let modl = incl.incl_mod in
-          let mid = Ident.create "include" in
-          let rec rebind_idents pos newfields = function
-              [] ->
-                transl_structure newfields cc rootpath final_env rem
-            | id :: ids ->
+          let ms = incl.incl_mods, incl.incl_types in
+          let rec rebind_idents k mid pos newfields = function
+            |  [] -> k newfields
+            |  id :: ids ->
                 let body, size =
-                  rebind_idents (pos + 1) (id :: newfields) ids
+                  rebind_idents k mid (pos + 1) (id :: newfields) ids
                 in
                 Llet(Alias, id, Lprim(Pfield pos, [Lvar mid]), body), size
-          in
-          let body, size = rebind_idents 0 fields ids in
-          Llet(pure_module modl, mid, transl_module Tcoerce_none None modl,
-               body), size
-
+          and rebind_mods ms fields = match ms with
+            | [], _ | _, [] ->  transl_structure fields cc rootpath final_env rem
+            | modl::modls, sg::sgs ->
+                let mid = Ident.create "include" in
+                let ids = bound_value_identifiers sg in
+                let body, size =
+                  rebind_idents (rebind_mods (modls,sgs)) mid 0 fields ids in
+                Llet(pure_module modl, mid, transl_module Tcoerce_none None modl,
+                     body), size in
+          rebind_mods ms fields
       | Tstr_modtype _
       | Tstr_open _
       | Tstr_class_type _
@@ -636,7 +638,8 @@ let rec defined_idents = function
       List.map (fun (ci, _) -> ci.ci_id_class) cl_list @ defined_idents rem
     | Tstr_class_type cl_list -> defined_idents rem
     | Tstr_include incl ->
-      bound_value_identifiers incl.incl_type @ defined_idents rem
+      let ll = List.rev @@  List.fold_left (fun l mty -> bound_value_identifiers mty :: l ) [] incl.incl_types in
+      List.flatten ll @ defined_idents rem
     | Tstr_attribute _ -> defined_idents rem
 
 (* second level idents (module M = struct ... let id = ... end),
@@ -686,7 +689,8 @@ and all_idents = function
       List.map (fun (ci, _) -> ci.ci_id_class) cl_list @ all_idents rem
     | Tstr_class_type cl_list -> all_idents rem
     | Tstr_include incl ->
-      bound_value_identifiers incl.incl_type @ all_idents rem
+        let ll = List.rev @@ List.fold_left (fun l mty -> bound_value_identifiers mty :: l ) [] incl.incl_types in
+        List.flatten ll @ all_idents rem
     | Tstr_module {mb_id;mb_expr={mod_desc = Tmod_structure str}}
     | Tstr_module{mb_id;
                   mb_expr={mod_desc =
@@ -837,17 +841,20 @@ let transl_store_structure glob map prims str =
             Lsequence(subst_lambda subst lam,
                       transl_store rootpath (add_idents false ids subst) rem)
         | Tstr_include incl ->
-            let ids = bound_value_identifiers incl.incl_type in
-            let modl = incl.incl_mod in
-            let mid = Ident.create "include" in
-            let rec store_idents pos = function
-                [] -> transl_store rootpath (add_idents true ids subst) rem
+            let rec store_mod ms all_ids ()= match ms with
+              | _ , [] | [], _ -> transl_store rootpath (add_idents true all_ids subst) rem
+              | modl::modls, sg::sgs ->
+                  let ids = bound_value_identifiers sg in
+                  let mid = Ident.create "include" in
+                  Llet(Strict, mid,
+                       subst_lambda subst (transl_module Tcoerce_none None modl),
+                       store_idents (store_mod (modls,sgs) (ids@all_ids)) mid 0 ids)
+            and store_idents k mid pos = function
+                [] -> k ()
               | id :: idl ->
                   Llet(Alias, id, Lprim(Pfield pos, [Lvar mid]),
-                       Lsequence(store_ident id, store_idents (pos + 1) idl)) in
-            Llet(Strict, mid,
-                 subst_lambda subst (transl_module Tcoerce_none None modl),
-                 store_idents 0 ids)
+                       Lsequence(store_ident id, store_idents k mid (pos + 1) idl)) in
+            store_mod (incl.incl_mods, incl.incl_types) [] ()
         | Tstr_modtype _
         | Tstr_open _
         | Tstr_class_type _
@@ -1046,16 +1053,20 @@ let transl_toplevel_item item =
       List.iter set_toplevel_unique_name ids;
       Lletrec(class_bindings, make_sequence toploop_setvalue_id ids)
   | Tstr_include incl ->
-      let ids = bound_value_identifiers incl.incl_type in
-      let modl = incl.incl_mod in
-      let mid = Ident.create "include" in
-      let rec set_idents pos = function
-        [] ->
-          lambda_unit
+     let rec set_mod ms () =
+       match ms with
+       | [],_ | _, [] -> lambda_unit
+       | modl::modls, sg::sgs ->
+    let ids = bound_value_identifiers sg in
+    let mid = Ident.create "include" in
+    Llet(Strict, mid, transl_module Tcoerce_none None modl,
+         set_idents (set_mod (modls,sgs)) mid 0 ids)
+      and set_idents k mid pos = function
+        [] -> k ()
       | id :: ids ->
           Lsequence(toploop_setvalue id (Lprim(Pfield pos, [Lvar mid])),
-                    set_idents (pos + 1) ids) in
-      Llet(Strict, mid, transl_module Tcoerce_none None modl, set_idents 0 ids)
+                    set_idents k mid (pos + 1) ids) in
+      set_mod (incl.incl_mods, incl.incl_types) ()
   | Tstr_modtype _
   | Tstr_open _
   | Tstr_primitive _

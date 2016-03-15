@@ -77,6 +77,7 @@ let open_module bv lid =
       StringMap.fold StringMap.add m bv
   | exception Not_found ->
       add_path bv lid; bv
+let open_modules bv oseq = List.fold_left (fun bv (m,_) -> open_module bv m.txt ) bv oseq
 
 let add_parent bv lid =
   match lid.txt with
@@ -258,8 +259,8 @@ let rec add_expr bv exp =
       let bv = add_pattern bv pat in List.iter (add_class_field bv) fieldl
   | Pexp_newtype (_, e) -> add_expr bv e
   | Pexp_pack m -> add_module bv m
-  | Pexp_open (_ovf, m, e) ->
-      let bv = open_module bv m.txt in add_expr bv e
+  | Pexp_open (_ovf, ms, e) ->
+      let bv = open_modules bv ms in add_expr bv e
   | Pexp_extension (({ txt = ("ocaml.extension_constructor"|
                               "extension_constructor"); _ },
                      PStr [item]) as e) ->
@@ -361,12 +362,14 @@ and add_sig_item (bv, m) item =
       end;
       (bv, m)
   | Psig_open od ->
-      (open_module bv od.popen_lid.txt, m)
+      (open_modules bv od.popen_seq, m)
   | Psig_include incl ->
-      let Node (s, m') = add_modtype_binding bv incl.pincl_mod in
-      add_names s;
-      let add = StringMap.fold StringMap.add m' in
-      (add bv, add m)
+      let add_modtype' (bv,m) incl =
+        let Node (s, m') = add_modtype_binding bv incl in
+        add_names s;
+        let add = StringMap.fold StringMap.add m' in
+        (add bv, add m) in
+      List.fold_left add_modtype' (bv,m) incl.pincl_mods
   | Psig_class cdl ->
       List.iter (add_class_description bv) cdl; (bv, m)
   | Psig_class_type cdtl ->
@@ -452,16 +455,18 @@ and add_struct_item (bv, m) item : _ StringMap.t * _ StringMap.t =
       end;
       (bv, m)
   | Pstr_open od ->
-      (open_module bv od.popen_lid.txt, m)
+      (open_modules bv od.popen_seq, m)
   | Pstr_class cdl ->
       List.iter (add_class_declaration bv) cdl; (bv, m)
   | Pstr_class_type cdtl ->
       List.iter (add_class_type_declaration bv) cdtl; (bv, m)
   | Pstr_include incl ->
-      let Node (s, m') = add_module_binding bv incl.pincl_mod in
-      add_names s;
-      let add = StringMap.fold StringMap.add m' in
-      (add bv, add m)
+      let add_module_binding' (bv,m) incl =
+        let Node (s, m') = add_module_binding bv incl in
+        add_names s;
+        let add = StringMap.fold StringMap.add m' in
+        (add bv, add m) in
+      List.fold_left add_module_binding' (bv,m) incl.pincl_mods
   | Pstr_attribute _ -> (bv, m)
   | Pstr_extension (e, _) ->
       handle_extension e;

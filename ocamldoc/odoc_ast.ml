@@ -898,13 +898,13 @@ module Analyser =
       let f acc item =
         match item.str_desc with
           Typedtree.Tstr_include incl ->
-            acc @ [
-                  { (* FIXME : search within modules and module types, with which env ? *)
-                    im_name = tt_name_from_module_expr incl.incl_mod ;
+            let im incl_mod = { (* FIXME : search within modules and module types, with which env ? *)
+                    im_name = tt_name_from_module_expr incl_mod ;
                     im_module = None ;
                     im_info = None ;
                   }
-                ]
+            in
+	    acc @ List.map im incl.incl_mods
         | _ ->
             acc
       in

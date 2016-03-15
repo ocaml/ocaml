@@ -1065,17 +1065,17 @@ module Analyser =
                   end
               | Parsetree.Pmty_extension _ -> assert false
             in
-            let name = f incl.Parsetree.pincl_mod.Parsetree.pmty_desc in
-            let full_name = Odoc_env.full_module_or_module_type_name env name in
-            let im =
-              {
-                im_name = full_name ;
-                im_module = None ;
-                im_info = comment_opt;
-              }
+	    let im modl =
+              let name = f modl.Parsetree.pmty_desc in
+              let full_name = Odoc_env.full_module_or_module_type_name env name in
+              Element_included_module
+                {
+                  im_name = full_name ;
+                  im_module = None ;
+                  im_info = comment_opt;
+                }
             in
-            (0, env, [ Element_included_module im ]) (* FIXME : extend the environment? How? *)
-
+            (0, env, List.map im incl.Parsetree.pincl_mods) (* FIXME : extend the environment? How? *)
         | Parsetree.Psig_class class_description_list ->
             (* we start by extending the environment *)
             let new_env =

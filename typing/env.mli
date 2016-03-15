@@ -137,11 +137,32 @@ val add_local_constraint: Ident.t -> type_declaration -> int -> t -> t
 val add_item: signature_item -> t -> t
 val add_signature: signature -> t -> t
 
+(* Name collision detection tools *)
+module Names : sig
+type t =
+  {
+    types: Misc.StringSet.t ref;
+    modules: Misc.StringSet.t ref;
+    modtypes: Misc.StringSet.t ref;
+    typexts: Misc.StringSet.t ref;
+    current_module: int ref;
+    values : int Misc.StringMap.t ref
+  }
+(* Field getters *)
+type field_info  = string * ( t -> Misc.StringSet.t ref)
+val types : field_info
+val modules : field_info
+val modtypes : field_info
+val typexts : field_info
+
+val make: unit -> t
+val incr_current_module : t -> unit
+end
+
 (* Insertion of all fields of a signature, relative to the given path.
    Used to implement open. *)
-
 val open_signature:
-    ?loc:Location.t -> ?toplevel:bool -> Asttypes.override_flag -> Path.t ->
+    ?loc:Location.t -> ?toplevel:bool -> ?forbidden_names:Names.t -> Asttypes.override_flag -> Path.t ->
       signature -> t -> t
 val open_pers_signature: string -> t -> t
 
@@ -219,6 +240,7 @@ type error =
   | Need_recursive_types of string * string
   | Missing_module of Location.t * Path.t * Path.t
   | Illegal_value_name of Location.t * string
+  | Ambiguous_name of Location.t * string * string
 
 exception Error of error
 

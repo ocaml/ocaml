@@ -133,9 +133,10 @@ let structure sub str =
 let open_description sub od =
   let loc = sub.location sub od.open_loc in
   let attrs = sub.attributes sub od.open_attributes in
+  let open_seq = List.map (fun (path, lid, attrs) -> (map_loc sub lid, attrs) ) od.open_seq in
   Opn.mk ~loc ~attrs
     ~override:od.open_override
-    (map_loc sub od.open_txt)
+    open_seq
 
 let structure_item sub item =
   let loc = sub.location sub item.str_loc in
@@ -328,8 +329,9 @@ let exp_extra sub (extra, loc, attrs) sexp =
                      sub.typ sub cty2)
     | Texp_constraint cty ->
         Pexp_constraint (sexp, sub.typ sub cty)
-    | Texp_open (ovf, _path, lid, _) ->
-        Pexp_open (ovf, map_loc sub lid, sexp)
+    | Texp_open (ovf, seq, _) ->
+        let seq = List.map (fun (path,lid,attr) -> (map_loc sub lid, attr) ) seq in
+        Pexp_open (ovf, seq, sexp)
     | Texp_poly cto -> Pexp_poly (sexp, map_opt (sub.typ sub) cto)
     | Texp_newtype s -> Pexp_newtype (s, sexp)
   in
@@ -524,7 +526,7 @@ let include_infos f sub incl =
   let loc = sub.location sub incl.incl_loc; in
   let attrs = sub.attributes sub incl.incl_attributes in
   Incl.mk ~loc ~attrs
-    (f sub incl.incl_mod)
+    (List.map (f sub) incl.incl_mods)
 
 let include_declaration sub = include_infos sub.module_expr sub
 let include_description sub = include_infos sub.module_type sub

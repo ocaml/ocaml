@@ -90,7 +90,7 @@ let module_declaration sub x =
   let md_type = sub.module_type sub x.md_type in
   {x with md_type}
 
-let include_infos f x = {x with incl_mod = f x.incl_mod}
+let include_infos f x = {x with incl_mods = List.map f x.incl_mods}
 
 let class_type_declaration sub x =
   class_infos sub (sub.class_type sub) x
@@ -215,8 +215,8 @@ let expr sub x =
         Texp_constraint (sub.typ sub cty)
     | Texp_coerce (cty1, cty2) ->
         Texp_coerce (opt (sub.typ sub) cty1, sub.typ sub cty2)
-    | Texp_open (ovf, path, loc, env) ->
-        Texp_open (ovf, path, loc, sub.env sub env)
+    | Texp_open (ovf, seq, env) ->
+        Texp_open (ovf, seq, sub.env sub env)
     | Texp_newtype _ as d -> d
     | Texp_poly cto -> Texp_poly (opt (sub.typ sub) cto)
   in

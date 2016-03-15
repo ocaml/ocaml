@@ -1,0 +1,32 @@
+
+#       module M : sig val x : string end
+#         module N : sig val x : string end
+#     val x : string = "x"
+# val x : string = "x"
+#   Characters 29-44:
+  include M and N;;
+  ^^^^^^^^^^^^^^^
+Error: Multiple definition of the value name x.
+       Value names must be unique in a grouped include.
+#   module F : functor () -> sig val x : string end
+#   Characters 29-48:
+  include F() and F();;
+  ^^^^^^^^^^^^^^^^^^^
+Error: Multiple definition of the value name x.
+       Value names must be unique in a grouped include.
+#       Characters 74-89:
+  include T and U;;
+  ^^^^^^^^^^^^^^^
+Error: Multiple definition of the type name t.
+       Names must be unique in a given structure or signature.
+#       Characters 100-115:
+  include D and E;;
+  ^^^^^^^^^^^^^^^
+Error: Multiple definition of the module name Nested.
+       Names must be unique in a given structure or signature.
+#       Characters 94-109:
+  include V and W;;
+  ^^^^^^^^^^^^^^^
+Error: Multiple definition of the module type name S.
+       Names must be unique in a given structure or signature.
+# 

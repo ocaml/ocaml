@@ -152,7 +152,7 @@ module MakeIterator(Iter : IteratorArgument) : sig
             List.iter
               (fun (id, _, ct) -> iter_class_type_declaration ct)
               list
-        | Tstr_include incl -> iter_module_expr incl.incl_mod
+        | Tstr_include incl -> List.iter iter_module_expr incl.incl_mods
         | Tstr_attribute _ ->
             ()
       end;
@@ -258,7 +258,7 @@ module MakeIterator(Iter : IteratorArgument) : sig
             iter_core_type ct
         | Texp_coerce (cty1, cty2) ->
             option iter_core_type cty1; iter_core_type cty2
-        | Texp_open (_, path, _, _) -> ()
+        | Texp_open _ -> ()
         | Texp_poly cto -> option iter_core_type cto
         | Texp_newtype s -> ())
         exp.exp_extra;
@@ -384,7 +384,7 @@ module MakeIterator(Iter : IteratorArgument) : sig
         | Tsig_modtype mtd ->
             iter_module_type_declaration mtd
         | Tsig_open _ -> ()
-        | Tsig_include incl -> iter_module_type incl.incl_mod
+        | Tsig_include incl -> List.iter iter_module_type incl.incl_mods
         | Tsig_class list ->
             List.iter iter_class_description list
         | Tsig_class_type list ->

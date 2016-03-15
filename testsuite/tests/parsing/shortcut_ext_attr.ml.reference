@@ -56,7 +56,11 @@
                           expression (shortcut_ext_attr.ml[7,110+3]..[7,110+29])
                             attribute "foo"
                               []
-                            Pexp_open Fresh ""M" (shortcut_ext_attr.ml[7,110+22]..[7,110+23])"
+                            Pexp_open Fresh
+                            [
+                              <open>
+                              "M" (shortcut_ext_attr.ml[7,110+22]..[7,110+23])
+                            ]
                             expression (shortcut_ext_attr.ml[7,110+27]..[7,110+29])
                               Pexp_construct "()" (shortcut_ext_attr.ml[7,110+27]..[7,110+29])
                               None
@@ -630,14 +634,20 @@
       structure_item (shortcut_ext_attr.ml[71,1382+0]..[71,1382+19])
         Pstr_include          attribute "foo"
             []
-        module_expr (shortcut_ext_attr.ml[71,1382+18]..[71,1382+19])
-          Pmod_ident "M" (shortcut_ext_attr.ml[71,1382+18]..[71,1382+19])
+        [
+          module_expr (shortcut_ext_attr.ml[71,1382+18]..[71,1382+19])
+            Pmod_ident "M" (shortcut_ext_attr.ml[71,1382+18]..[71,1382+19])
+        ]
     ]
   structure_item (shortcut_ext_attr.ml[72,1402+0]..[72,1402+16]) ghost
     Pstr_extension "foo"
     [
       structure_item (shortcut_ext_attr.ml[72,1402+0]..[72,1402+16])
-        Pstr_open Fresh "M" (shortcut_ext_attr.ml[72,1402+15]..[72,1402+16])
+        Pstr_open Fresh
+        [
+          <open>
+          "M" (shortcut_ext_attr.ml[72,1402+15]..[72,1402+16])
+        ]
           attribute "foo"
             []
     ]
@@ -797,8 +807,10 @@
             [
               signature_item (shortcut_ext_attr.ml[92,1742+2]..[92,1742+21])
                 Psig_include
-                module_type (shortcut_ext_attr.ml[92,1742+20]..[92,1742+21])
-                  Pmty_ident "M" (shortcut_ext_attr.ml[92,1742+20]..[92,1742+21])
+                [
+                  module_type (shortcut_ext_attr.ml[92,1742+20]..[92,1742+21])
+                    Pmty_ident "M" (shortcut_ext_attr.ml[92,1742+20]..[92,1742+21])
+                ]
                   attribute "foo"
                     []
             ]
@@ -806,7 +818,11 @@
             Psig_extension "foo"
             [
               signature_item (shortcut_ext_attr.ml[93,1764+2]..[93,1764+18])
-                Psig_open Fresh "M" (shortcut_ext_attr.ml[93,1764+17]..[93,1764+18])
+                Psig_open Fresh
+                [
+                  <open>
+                  "M" (shortcut_ext_attr.ml[93,1764+17]..[93,1764+18])
+                ]
                   attribute "foo"
                     []
             ]
