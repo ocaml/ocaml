@@ -18,11 +18,9 @@ open Format
 open Asttypes
 open Clambda
 
-let let_kind =
-  let open Lambda in
-  function
-  | Variable -> "[mut]"
-  | _ -> ""
+let mutable_flag = function
+  | Mutable-> "[mut]"
+  | Immutable -> ""
 
 let value_kind =
   let open Lambda in
@@ -94,15 +92,15 @@ and lam ppf = function
         List.iter (fprintf ppf "@ %a" lam) in
       fprintf ppf "@[<2>(closure@ %a %a)@]" funs clos lams fv
   | Uoffset(l,i) -> fprintf ppf "@[<2>(offset %a %d)@]" lam l i
-  | Ulet(str, kind, id, arg, body) ->
+  | Ulet(mut, kind, id, arg, body) ->
       let rec letbody ul = match ul with
-        | Ulet(str, kind, id, arg, body) ->
+        | Ulet(mut, kind, id, arg, body) ->
             fprintf ppf "@ @[<2>%a%s%s@ %a@]"
-              Ident.print id (let_kind str) (value_kind kind) lam arg;
+              Ident.print id (mutable_flag mut) (value_kind kind) lam arg;
             letbody body
         | _ -> ul in
       fprintf ppf "@[<2>(let@ @[<hv 1>(@[<2>%a%s%s@ %a@]"
-        Ident.print id (let_kind str) (value_kind kind) lam arg;
+        Ident.print id (mutable_flag mut) (value_kind kind) lam arg;
       let expr = letbody body in
       fprintf ppf ")@]@ %a)@]" lam expr
   | Uletrec(id_arg_list, body) ->

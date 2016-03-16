@@ -2300,9 +2300,9 @@ and transl_let env str kind id exp body =
        might require some boxing, but such local references are often
        used in loops and we really want to avoid repeated boxing. *)
     match str, kind with
-    | Variable, Pfloatval ->
+    | Mutable, Pfloatval ->
         Boxed Boxed_float
-    | Variable, Pboxedintval bi ->
+    | Mutable, Pboxedintval bi ->
         Boxed (Boxed_integer bi)
     | _, (Pfloatval | Pboxedintval _) ->
         (* It would be safe to always unbox in this case, but

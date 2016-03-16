@@ -654,7 +654,7 @@ let rec bind_params_rec fpc subst params args body =
         in
         let body' =
           bind_params_rec fpc (Tbl.add p1 u2 subst) pl al body in
-        if occurs_var p1 body then Ulet(Strict, Pgenval, p1', u1, body')
+        if occurs_var p1 body then Ulet(Immutable, Pgenval, p1', u1, body')
         else if no_effects a1 then body'
         else Usequence(a1, body')
       end
@@ -854,7 +854,7 @@ let rec close fenv cenv = function
               [] -> body
             | (arg1, arg2) :: args ->
               iter args
-                (Ulet (Strict, Pgenval, arg1, arg2, body))
+                (Ulet (Immutable, Pgenval, arg1, arg2, body))
         in
         let internal_args =
           (List.map (fun (arg1, _arg2) -> Lvar arg1) first_args)
@@ -897,13 +897,13 @@ let rec close fenv cenv = function
       begin match (str, alam) with
         (Variable, _) ->
           let (ubody, abody) = close fenv cenv body in
-          (Ulet(str, kind, id, ulam, ubody), abody)
+          (Ulet(Mutable, kind, id, ulam, ubody), abody)
       | (_, Value_const _)
         when str = Alias || is_pure lam ->
           close (Tbl.add id alam fenv) cenv body
       | (_, _) ->
           let (ubody, abody) = close (Tbl.add id alam fenv) cenv body in
-          (Ulet(str, kind, id, ulam, ubody), abody)
+          (Ulet(Immutable, kind, id, ulam, ubody), abody)
       end
   | Lletrec(defs, body) ->
       if List.for_all
@@ -923,7 +923,7 @@ let rec close fenv cenv = function
             (fun (id, pos, _approx) sb ->
               Tbl.add id (Uoffset(Uvar clos_ident, pos)) sb)
             infos Tbl.empty in
-        (Ulet(Strict, Pgenval,
+        (Ulet(Immutable, Pgenval,
               clos_ident, clos, substitute !Clflags.float_const_prop sb ubody),
          approx)
       end else begin

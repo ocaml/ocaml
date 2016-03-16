@@ -252,12 +252,12 @@ let rec to_clambda t env (flam : Flambda.t) : Clambda.ulambda =
   | Let { var; defining_expr; body; _ } ->
     (* TODO: synthesize proper value_kind *)
     let id, env_body = Env.add_fresh_ident env var in
-    Ulet (Strict, Pgenval, id, to_clambda_named t env var defining_expr,
+    Ulet (Immutable, Pgenval, id, to_clambda_named t env var defining_expr,
       to_clambda t env_body body)
   | Let_mutable { var = mut_var; initial_value = var; body; contents_kind } ->
     let id, env_body = Env.add_fresh_mutable_ident env mut_var in
     let def = subst_var env var in
-    Ulet (Variable, contents_kind, id, def, to_clambda t env_body body)
+    Ulet (Mutable, contents_kind, id, def, to_clambda t env_body body)
   | Let_rec (defs, body) ->
     let env, defs =
       List.fold_right (fun (var, def) (env, defs) ->
