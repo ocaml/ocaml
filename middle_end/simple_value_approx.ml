@@ -53,7 +53,7 @@ and descr =
   | Value_int of int
   | Value_char of char
   | Value_constptr of int
-  | Value_float of float
+  | Value_float of float option
   | Value_boxed_int : 'a boxed_int * 'a -> descr
   | Value_set_of_closures of value_set_of_closures
   | Value_closure of value_closure
@@ -113,7 +113,8 @@ let rec print_descr ppf = function
     print_value_set_of_closures ppf set_of_closures
   | Value_unresolved sym ->
     Format.fprintf ppf "(unresolved %a)" Symbol.print sym
-  | Value_float f -> Format.pp_print_float ppf f
+  | Value_float (Some f) -> Format.pp_print_float ppf f
+  | Value_float None -> Format.pp_print_string ppf "float"
   | Value_string { contents; size } -> begin
       match contents with
       | None ->
@@ -161,11 +162,48 @@ let augment_with_symbol_field t symbol field =
   | Some _ -> t
 let replace_description t descr = { t with descr }
 
+let augment_with_kind t (kind:Lambda.value_kind) =
+  match kind with
+  | Pgenval -> t
+  | Pfloatval ->
+    begin match t.descr with
+    | Value_float _ ->
+      t
+    | Value_unknown _ | Value_unresolved _ ->
+      { t with descr = Value_float None }
+    | Value_block _
+    | Value_int _
+    | Value_char _
+    | Value_constptr _
+    | Value_boxed_int _
+    | Value_set_of_closures _
+    | Value_closure _
+    | Value_string _
+    | Value_float_array _
+    | Value_bottom ->
+      (* Unreachable *)
+      { t with descr = Value_bottom }
+    | Value_extern _ | Value_symbol _ ->
+      (* We don't know yet *)
+      t
+    end
+  | _ -> t
+
+let augment_kind_with_approx t (kind:Lambda.value_kind) : Lambda.value_kind =
+  match t.descr with
+  | Value_float _ -> Pfloatval
+  | Value_int _ -> Pintval
+  | Value_boxed_int (Int32, _) -> Pboxedintval Pint32
+  | Value_boxed_int (Int64, _) -> Pboxedintval Pint64
+  | Value_boxed_int (Nativeint, _) -> Pboxedintval Pnativeint
+  | _ -> kind
+
 let value_unknown reason = approx (Value_unknown reason)
 let value_int i = approx (Value_int i)
 let value_char i = approx (Value_char i)
 let value_constptr i = approx (Value_constptr i)
-let value_float f = approx (Value_float f)
+let value_float f = approx (Value_float (Some f))
+let value_any_float = approx (Value_float None)
 let value_boxed_int bi i = approx (Value_boxed_int (bi,i))
 
 let value_closure ?closure_var ?set_of_closures_var ?set_of_closures_symbol
@@ -314,7 +352,7 @@ let simplify t (lam : Flambda.t) : simplification_result =
     | Value_constptr n ->
       let const, approx = make_const_ptr n in
       const, Replaced_term, approx
-    | Value_float f ->
+    | Value_float (Some f) ->
       let const, approx = make_const_float f in
       const, Replaced_term, approx
     | Value_boxed_int (t, i) ->
@@ -322,7 +360,7 @@ let simplify t (lam : Flambda.t) : simplification_result =
       const, Replaced_term, approx
     | Value_symbol sym ->
       U.name_expr (Symbol sym) ~name:"symbol", Replaced_term, t
-    | Value_string _ | Value_float_array _
+    | Value_string _ | Value_float_array _ | Value_float None
     | Value_block _ | Value_set_of_closures _ | Value_closure _
     | Value_unknown _ | Value_bottom | Value_extern _ | Value_unresolved _ ->
       lam, Nothing_done, t
@@ -341,7 +379,7 @@ let simplify_named t (named : Flambda.named) : simplification_result_named =
     | Value_constptr n ->
       let const, approx = make_const_ptr_named n in
       const, Replaced_term, approx
-    | Value_float f ->
+    | Value_float (Some f) ->
       let const, approx = make_const_float_named f in
       const, Replaced_term, approx
     | Value_boxed_int (t, i) ->
@@ -349,7 +387,7 @@ let simplify_named t (named : Flambda.named) : simplification_result_named =
       const, Replaced_term, approx
     | Value_symbol sym ->
       Symbol sym, Replaced_term, t
-    | Value_string _ | Value_float_array _
+    | Value_string _ | Value_float_array _ | Value_float None
     | Value_block _ | Value_set_of_closures _ | Value_closure _
     | Value_unknown _ | Value_bottom | Value_extern _ | Value_unresolved _ ->
       named, Nothing_done, t
@@ -363,10 +401,10 @@ let simplify_var t : (Flambda.named * t) option =
   | Value_int n -> Some (make_const_int_named n)
   | Value_char n -> Some (make_const_char_named n)
   | Value_constptr n -> Some (make_const_ptr_named n)
-  | Value_float f -> Some (make_const_float_named f)
+  | Value_float (Some f) -> Some (make_const_float_named f)
   | Value_boxed_int (t, i) -> Some (make_const_boxed_int_named t i)
   | Value_symbol sym -> Some (Symbol sym, t)
-  | Value_string _ | Value_float_array _
+  | Value_string _ | Value_float_array _ | Value_float None
   | Value_block _ | Value_set_of_closures _ | Value_closure _
   | Value_unknown _ | Value_bottom | Value_extern _
   | Value_unresolved _ ->
@@ -710,7 +748,7 @@ let approx_for_bound_var value_set_of_closures var =
 
 let check_approx_for_float t : float option =
   match t.descr with
-  | Value_float f -> Some f
+  | Value_float f -> f
   | Value_unresolved _
   | Value_unknown _ | Value_string _ | Value_float_array _
   | Value_bottom | Value_block _ | Value_int _ | Value_char _

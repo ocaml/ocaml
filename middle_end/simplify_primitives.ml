@@ -41,9 +41,16 @@ let primitive (p : Lambda.primitive) (args, approxs) expr dbg ~size_int
       ~big_endian : Flambda.named * A.t * Inlining_cost.Benefit.t =
   let fpc = !Clflags.float_const_prop in
   match p with
-  | Pmakeblock(tag, Asttypes.Immutable, _value_kind) ->
-    let tag = Tag.create_exn tag in
-    expr, A.value_block tag (Array.of_list approxs), C.Benefit.zero
+  | Pmakeblock(tag_int, Asttypes.Immutable, shape) ->
+    let tag = Tag.create_exn tag_int in
+    let shape = match shape with
+      | None -> List.map (fun _ -> Lambda.Pgenval) args
+      | Some shape -> shape
+    in
+    let approxs = List.map2 A.augment_with_kind approxs shape in
+    let shape = List.map2 A.augment_kind_with_approx approxs shape in
+    Prim (Pmakeblock(tag_int, Asttypes.Immutable, Some shape), args, dbg),
+    A.value_block tag (Array.of_list approxs), C.Benefit.zero
   | Praise _ ->
     expr, A.value_bottom, C.Benefit.zero
   | Pignore -> begin
@@ -143,14 +150,14 @@ let primitive (p : Lambda.primitive) (args, approxs) expr dbg ~size_int
         end
       | _ -> expr, A.value_unknown Other, C.Benefit.zero
       end
-    | [Value_float x] when fpc ->
+    | [Value_float (Some x)] when fpc ->
       begin match p with
       | Pintoffloat -> S.const_int_expr expr (int_of_float x)
       | Pnegfloat -> S.const_float_expr expr (-. x)
       | Pabsfloat -> S.const_float_expr expr (abs_float x)
       | _ -> expr, A.value_unknown Other, C.Benefit.zero
       end
-    | [Value_float n1; Value_float n2] when fpc ->
+    | [Value_float (Some n1); Value_float (Some n2)] when fpc ->
       begin match p with
       | Paddfloat -> S.const_float_expr expr (n1 +. n2)
       | Psubfloat -> S.const_float_expr expr (n1 -. n2)
@@ -206,7 +213,7 @@ let primitive (p : Lambda.primitive) (args, approxs) expr dbg ~size_int
           begin match contents with
           | A.Contents a when i >= 0 && i < size ->
             begin match a.(i) with
-            | None -> expr, A.value_unknown Other, C.Benefit.zero
+            | None -> expr, A.value_any_float, C.Benefit.zero
             | Some v -> S.const_float_expr expr v
             end
           | Contents _ | Unknown_or_mutable ->
@@ -214,4 +221,9 @@ let primitive (p : Lambda.primitive) (args, approxs) expr dbg ~size_int
           end
         | _ -> expr, A.value_unknown Other, C.Benefit.zero
         end
-    | _ -> expr, A.value_unknown Other, C.Benefit.zero
+    | _ ->
+      match Semantics_of_primitives.return_type_of_primitive p with
+      | Float ->
+        expr, A.value_any_float, C.Benefit.zero
+      | Other ->
+        expr, A.value_unknown Other, C.Benefit.zero
