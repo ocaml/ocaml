@@ -52,7 +52,8 @@ let check_noalloc name f =
   match Filename.basename Sys.argv.(0) with
   | "program.byte" | "program.byte.exe" -> ()
   | "program.native" | "program.native.exe" ->
-    if alloc > 100. then failwith name
+      if alloc > 100. then
+        failwith (Printf.sprintf "%s; alloc = %.0f" name alloc)
   | _ -> assert false
 
 module GPR_109 = struct

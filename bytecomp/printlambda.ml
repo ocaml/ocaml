@@ -54,10 +54,10 @@ let boxed_integer_name = function
   | Pint32 -> "int32"
   | Pint64 -> "int64"
 
-let block_kind = function
-  | Pgenblock -> ""
-  | Pfloatblock -> "[float]"
-  | Pboxedintblock bi -> Printf.sprintf "[%s]" (boxed_integer_name bi)
+let value_kind = function
+  | Pgenval -> ""
+  | Pfloatval -> "[float]"
+  | Pboxedintval bi -> Printf.sprintf "[%s]" (boxed_integer_name bi)
 
 let print_boxed_integer_conversion ppf bi1 bi2 =
   fprintf ppf "%s_of_%s" (boxed_integer_name bi2) (boxed_integer_name bi1)
@@ -117,7 +117,7 @@ let primitive ppf = function
   | Psetglobal id -> fprintf ppf "setglobal %a" Ident.print id
   | Pmakeblock(tag, Immutable, _kind) -> fprintf ppf "makeblock %i" tag
   | Pmakeblock(tag, Mutable, kind) ->
-      fprintf ppf "makemutable%s %i" (block_kind kind) tag
+      fprintf ppf "makemutable%s %i" (value_kind kind) tag
   | Pfield n -> fprintf ppf "field %i" n
   | Psetfield(n, ptr, init) ->
       let instr =
@@ -435,11 +435,11 @@ let rec lam ppf = function
       let rec letbody = function
         | Llet(str, k, id, arg, body) ->
             fprintf ppf "@ @[<2>%a =%s%s@ %a@]"
-              Ident.print id (kind str) (block_kind k) lam arg;
+              Ident.print id (kind str) (value_kind k) lam arg;
             letbody body
         | expr -> expr in
       fprintf ppf "@[<2>(let@ @[<hv 1>(@[<2>%a =%s%s@ %a@]"
-        Ident.print id (kind str) (block_kind k) lam arg;
+        Ident.print id (kind str) (value_kind k) lam arg;
       let expr = letbody body in
       fprintf ppf ")@]@ %a)@]" lam expr
   | Lletrec(id_arg_list, body) ->

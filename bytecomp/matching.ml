@@ -1509,8 +1509,8 @@ let inline_lazy_force_cond arg loc =
   let varg = Lvar idarg in
   let tag = Ident.create "tag" in
   let force_fun = Lazy.force code_force_lazy_block in
-  Llet(Strict, Pgenblock, idarg, arg,
-       Llet(Alias, Pgenblock, tag, Lprim(Pccall prim_obj_tag, [varg]),
+  Llet(Strict, Pgenval, idarg, arg,
+       Llet(Alias, Pgenval, tag, Lprim(Pccall prim_obj_tag, [varg]),
             Lifthenelse(
               (* if (tag == Obj.forward_tag) then varg.(0) else ... *)
               Lprim(Pintcomp Ceq,
@@ -1533,7 +1533,7 @@ let inline_lazy_force_switch arg loc =
   let idarg = Ident.create "lzarg" in
   let varg = Lvar idarg in
   let force_fun = Lazy.force code_force_lazy_block in
-  Llet(Strict, Pgenblock, idarg, arg,
+  Llet(Strict, Pgenval, idarg, arg,
        Lifthenelse(
          Lprim(Pisint, [varg]), varg,
          (Lswitch
@@ -1726,7 +1726,7 @@ let bind_sw arg k = match arg with
 | Lvar _ -> k arg
 | _ ->
     let id = Ident.create "switch" in
-    Llet (Strict,Pgenblock,id,arg,k (Lvar id))
+    Llet (Strict,Pgenval,id,arg,k (Lvar id))
 
 
 (* Sequential equality tests *)
@@ -2330,7 +2330,7 @@ let combine_constructor arg ex_pat cstr partial ctx def
                 nonconsts
                 default
             in
-              Llet(Alias, Pgenblock,tag, Lprim(Pfield 0, [arg]), tests)
+              Llet(Alias, Pgenval,tag, Lprim(Pfield 0, [arg]), tests)
       in
         List.fold_right
           (fun (path, act) rem ->
@@ -2407,7 +2407,7 @@ let call_switcher_variant_constant fail arg int_lambda_list =
 
 let call_switcher_variant_constr fail arg int_lambda_list =
   let v = Ident.create "variant" in
-  Llet(Alias, Pgenblock, v, Lprim(Pfield 0, [arg]),
+  Llet(Alias, Pgenval, v, Lprim(Pfield 0, [arg]),
        call_switcher
          fail (Lvar v) min_int max_int int_lambda_list)
 
@@ -2907,7 +2907,7 @@ let compile_matching repr handler_fun arg pat_act_list partial =
 let partial_function loc () =
   (* [Location.get_pos_info] is too expensive *)
   let (fname, line, char) = Location.get_pos_info loc.Location.loc_start in
-  Lprim(Praise Raise_regular, [Lprim(Pmakeblock(0, Immutable, Pgenblock),
+  Lprim(Praise Raise_regular, [Lprim(Pmakeblock(0, Immutable, Pgenval),
           [transl_normal_path Predef.path_match_failure;
            Lconst(Const_block(0,
               [Const_base(Const_string (fname, None));
@@ -3045,7 +3045,7 @@ let for_let loc param pat body =
       Lsequence(param, body)
   | Tpat_var (id, _) ->
       (* fast path, and keep track of simple bindings to unboxable numbers *)
-      let k = Typeopt.block_type_kind pat.pat_env pat.pat_type in
+      let k = Typeopt.value_kind pat.pat_env pat.pat_type in
       Llet(Strict, k, id, param, body)
   | _ ->
       let opt = ref false in
@@ -3147,12 +3147,12 @@ let do_for_multiple_match loc paraml pat_act_list partial =
         let raise_num = next_raise_count () in
         raise_num,
         { cases = List.map (fun (pat, act) -> ([pat], act)) pat_act_list;
-          args = [Lprim(Pmakeblock(0, Immutable, Pgenblock), paraml), Strict];
+          args = [Lprim(Pmakeblock(0, Immutable, Pgenval), paraml), Strict];
           default = [[[omega]],raise_num] }
     | _ ->
         -1,
         { cases = List.map (fun (pat, act) -> ([pat], act)) pat_act_list;
-          args = [Lprim(Pmakeblock(0, Immutable, Pgenblock), paraml), Strict];
+          args = [Lprim(Pmakeblock(0, Immutable, Pgenval), paraml), Strict];
           default = [] } in
 
   try

@@ -262,7 +262,7 @@ let simplify_exits lam =
             (fun x y t -> Ident.add x (Lvar y) t)
             xs ys Ident.empty in
         List.fold_right2
-          (fun y l r -> Llet (Alias, Pgenblock, y, l, r))
+          (fun y l r -> Llet (Alias, Pgenval, y, l, r))
           ys ls (Lambda.subst_lambda env handler)
       with
       | Not_found -> Lstaticraise (i,ls)
@@ -302,7 +302,7 @@ let simplify_exits lam =
 *)
 
 let beta_reduce params body args =
-  List.fold_left2 (fun l param arg -> Llet(Strict, Pgenblock, param, arg, l))
+  List.fold_left2 (fun l param arg -> Llet(Strict, Pgenval, param, arg, l))
                   body params args
 
 (* Simplification of lets *)

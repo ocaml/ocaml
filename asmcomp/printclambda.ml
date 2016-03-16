@@ -24,14 +24,14 @@ let let_kind =
   | Variable -> "[mut]"
   | _ -> ""
 
-let block_kind =
+let value_kind =
   let open Lambda in
   function
-  | Pgenblock -> ""
-  | Pfloatblock -> ":float"
-  | Pboxedintblock Pnativeint -> ":nativeint"
-  | Pboxedintblock Pint32 -> ":int32"
-  | Pboxedintblock Pint64 -> ":int64"
+  | Pgenval -> ""
+  | Pfloatval -> ":float"
+  | Pboxedintval Pnativeint -> ":nativeint"
+  | Pboxedintval Pint32 -> ":int32"
+  | Pboxedintval Pint64 -> ":int64"
 
 
 let rec structured_constant ppf = function
@@ -98,11 +98,11 @@ and lam ppf = function
       let rec letbody ul = match ul with
         | Ulet(str, kind, id, arg, body) ->
             fprintf ppf "@ @[<2>%a%s%s@ %a@]"
-              Ident.print id (let_kind str) (block_kind kind) lam arg;
+              Ident.print id (let_kind str) (value_kind kind) lam arg;
             letbody body
         | _ -> ul in
       fprintf ppf "@[<2>(let@ @[<hv 1>(@[<2>%a%s%s@ %a@]"
-        Ident.print id (let_kind str) (block_kind kind) lam arg;
+        Ident.print id (let_kind str) (value_kind kind) lam arg;
       let expr = letbody body in
       fprintf ppf ")@]@ %a)@]" lam expr
   | Uletrec(id_arg_list, body) ->

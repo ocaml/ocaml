@@ -54,7 +54,10 @@ type primitive =
   | Pgetglobal of Ident.t
   | Psetglobal of Ident.t
   (* Operations on heap blocks *)
-  | Pmakeblock of int * mutable_flag * block_kind
+  | Pmakeblock of int * mutable_flag * value_kind
+       (* value_kind currently describes the content of "ref"-like blocks
+         (i.e. mutable and with a single field *)
+
   | Pfield of int
   | Psetfield of int * immediate_or_pointer * initialization_or_assignment
   | Pfloatfield of int
@@ -152,8 +155,8 @@ and comparison =
 and array_kind =
     Pgenarray | Paddrarray | Pintarray | Pfloatarray
 
-and block_kind =
-    Pgenblock | Pfloatblock | Pboxedintblock of boxed_integer
+and value_kind =
+    Pgenval | Pfloatval | Pboxedintval of boxed_integer
 
 and boxed_integer = Primitive.boxed_integer =
     Pnativeint | Pint32 | Pint64
@@ -224,7 +227,7 @@ type lambda =
   | Lconst of structured_constant
   | Lapply of lambda_apply
   | Lfunction of lfunction
-  | Llet of let_kind * block_kind * Ident.t * lambda * lambda
+  | Llet of let_kind * value_kind * Ident.t * lambda * lambda
   | Lletrec of (Ident.t * lambda) list * lambda
   | Lprim of primitive * lambda list
   | Lswitch of lambda * lambda_switch

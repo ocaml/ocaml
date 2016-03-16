@@ -85,7 +85,7 @@ let close_phrase lam =
   IdentSet.fold (fun id l ->
     let glb, pos = toplevel_value id in
     let glob = Lprim (Pfield pos, [Lprim (Pgetglobal glb, [])]) in
-    Llet(Strict, Pgenblock, id, glob, l)
+    Llet(Strict, Pgenval, id, glob, l)
   ) (free_variables lam) lam
 
 let toplevel_value id =

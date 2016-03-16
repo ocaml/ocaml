@@ -51,7 +51,9 @@ type primitive =
   | Pgetglobal of Ident.t
   | Psetglobal of Ident.t
   (* Operations on heap blocks *)
-  | Pmakeblock of int * mutable_flag * block_kind
+  | Pmakeblock of int * mutable_flag * value_kind
+       (* value_kind currently describes the content of "ref"-like blocks
+         (i.e. mutable and with a single field *)
   | Pfield of int
   | Psetfield of int * immediate_or_pointer * initialization_or_assignment
   | Pfloatfield of int
@@ -143,8 +145,8 @@ type primitive =
 and comparison =
     Ceq | Cneq | Clt | Cgt | Cle | Cge
 
-and block_kind =
-    Pgenblock | Pfloatblock | Pboxedintblock of boxed_integer
+and value_kind =
+    Pgenval | Pfloatval | Pboxedintval of boxed_integer
 
 and array_kind =
     Pgenarray | Paddrarray | Pintarray | Pfloatarray
@@ -208,7 +210,7 @@ type lambda =
   | Lconst of structured_constant
   | Lapply of lambda_apply
   | Lfunction of lfunction
-  | Llet of let_kind * block_kind * Ident.t * lambda * lambda
+  | Llet of let_kind * value_kind * Ident.t * lambda * lambda
   | Lletrec of (Ident.t * lambda) list * lambda
   | Lprim of primitive * lambda list
   | Lswitch of lambda * lambda_switch
@@ -363,7 +365,7 @@ let make_key e =
 let name_lambda strict arg fn =
   match arg with
     Lvar id -> fn id
-  | _ -> let id = Ident.create "let" in Llet(strict, Pgenblock, id, arg, fn id)
+  | _ -> let id = Ident.create "let" in Llet(strict, Pgenval, id, arg, fn id)
 
 let name_lambda_list args fn =
   let rec name_list names = function
@@ -372,7 +374,7 @@ let name_lambda_list args fn =
       name_list (arg :: names) rem
   | arg :: rem ->
       let id = Ident.create "let" in
-      Llet(Strict, Pgenblock, id, arg, name_list (Lvar id :: names) rem) in
+      Llet(Strict, Pgenval, id, arg, name_list (Lvar id :: names) rem) in
   name_list [] args
 
 
@@ -632,7 +634,7 @@ let rec map f lam =
 let bind str var exp body =
   match exp with
     Lvar var' when Ident.same var var' -> body
-  | _ -> Llet(str, Pgenblock, var, exp, body)
+  | _ -> Llet(str, Pgenval, var, exp, body)
 
 and commute_comparison = function
 | Ceq -> Ceq| Cneq -> Cneq

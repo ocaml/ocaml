@@ -63,7 +63,7 @@ let assign_symbols_and_collect_constant_definitions
         (* [Inconstant_idents] always marks these expressions as
            inconstant, so we should never get here. *)
         assert false
-      | Prim (Pmakeblock (tag, _, _block_kind), fields, _) ->
+      | Prim (Pmakeblock (tag, _, _value_kind), fields, _) ->
         assign_symbol ();
         record_definition (AA.Block (Tag.create_exn tag, fields))
       | Read_symbol_field (symbol, field) ->
