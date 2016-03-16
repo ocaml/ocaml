@@ -126,7 +126,7 @@ let code_for_blockheader ~value's_header ~node ~dbg =
        balance. *)
     Clet (pc,
       Cop (Cprogram_counter dbg, []),
-      Cop (Cextcall ("caml_spacetimeenerate_profinfo", [| Int |],
+      Cop (Cextcall ("caml_spacetime_generate_profinfo", [| Int |],
           false, Debuginfo.none),
         [Cvar pc; Cvar address_of_profinfo]))
   in

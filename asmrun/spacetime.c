@@ -576,7 +576,10 @@ debug_printf("doing tail link\n");
      avoid having to pass this function a description of which nodes are
      direct tail call points.  (We cannot just count them and put them at the
      beginning of the node because we need the indexes of elements within the
-     node during instruction selection before we have found all call points.) */
+     node during instruction selection before we have found all call points.)
+     This is now also used for assertion checking in
+     [caml_spacetime_caml_garbage_collection].
+  */
 
   for (field = Node_num_header_words; field < size_including_header - 1;
        field++) {
@@ -944,6 +947,8 @@ void caml_spacetime_c_to_ocaml(void* ocaml_entry_point,
   fflush(stdout);
 }
 
+extern void caml_garbage_collection(void);  /* signals_asm.c */
+
 void caml_spacetime_caml_garbage_collection(void)
 {
   /* Called upon entry to [caml_garbage_collection].
@@ -962,30 +967,33 @@ void caml_spacetime_caml_garbage_collection(void)
   */
 
   value call_site;
-  value caml_garbage_collection;
+  value encoded_caml_garbage_collection;
   value node;
 
-  /* We need to skip over 13 registers.  See asmrun/amd64.S:caml_call_gc. */
+  /* We need to skip over 13 registers to fish out our return address.
+     See asmrun/amd64.S:caml_call_gc. */
   call_site = Encode_call_point_pc(*(((uint64_t*) caml_gc_regs) + 13));
-printf("cs_cgc: call_site encoded = %p\n", (void*) call_site);
 
   /* See point 1 above. */
   node = (value) caml_spacetime_trie_node_ptr;
 
   /* The callee is constant. */
-  caml_garbage_collection = Encode_call_point_pc(&caml_garbage_collection);
-printf("cs_cgc: callee encoded = %p\n", (void*) caml_garbage_collection);
+  encoded_caml_garbage_collection =
+    Encode_call_point_pc(&caml_garbage_collection);
 
+  /* If the call site and callee have been set, we don't check whether there
+     is any child node, since it's possible there might not actually be one
+     (e.g. if no allocation or callbacks performed in
+     [caml_garbage_collection]). */
   assert((Direct_pc_call_site(node, 0) == Val_unit
       && Direct_pc_callee(node, 0) == Val_unit
       && Direct_callee_node(node, 0) == Val_unit)
     || (Direct_pc_call_site(node, 0) == call_site
-      && Direct_pc_callee(node, 0) == caml_garbage_collection
-      && Direct_callee_node(node, 0) != Val_unit));
+      && Direct_pc_callee(node, 0) == encoded_caml_garbage_collection));
 
   /* Initialize the direct call point within the node. */
   Direct_pc_call_site(node, 0) = call_site;
-  Direct_pc_callee(node, 0) = caml_garbage_collection;
+  Direct_pc_callee(node, 0) = encoded_caml_garbage_collection;
 
   /* Set the trie node hole pointer correctly so that when e.g. an
      allocation occurs from within [caml_garbage_collection] the resulting

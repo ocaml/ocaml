@@ -285,6 +285,29 @@ let record_frame live dbg =
   let lbl = record_frame_label live dbg in
   def_label lbl
 
+(* Spacetime instrumentation *)
+
+let spacetime_before_caml_call_gc ~spacetime_index =
+  if Config.spacetime then begin
+    (* At the moment, %r13 is pointing at the hole that in turn points
+       at the start of the node for the current function.  Get hold
+       of the node pointer and move it forwards so it's in the correct
+       place just in case [caml_call_gc] is invoked.  (See
+       [caml_spacetime_caml_garbage_collection] for the exact
+       requirements at that point.) *)
+    I.push r13;
+    cfi_adjust_cfa_offset 8;
+    I.mov (mem64 QWORD 0 R13) r13;
+    assert (spacetime_index >= 2);
+    I.add (int (spacetime_index * 8)) r13
+  end
+
+let spacetime_after_caml_call_gc () =
+  if Config.spacetime then begin
+    I.pop r13;
+    cfi_adjust_cfa_offset (-8)
+  end
+
 (* Record calls to the GC -- we've moved them out of the way *)
 
 type gc_call =
@@ -298,12 +321,10 @@ let call_gc_sites = ref ([] : gc_call list)
 
 let emit_call_gc gc =
   def_label gc.gc_lbl;
-  if Config.spacetime then begin
-    (* See comment before the emission of calls to [caml_alloc*], below. *)
-    I.add (int (gc.gc_spacetime_index * 8)) r13
-  end;
+  spacetime_before_caml_call_gc ~spacetime_index:gc.gc_spacetime_index;
   emit_call "caml_call_gc";
   def_label gc.gc_frame;
+  spacetime_after_caml_call_gc ();
   I.jmp (label gc.gc_return_lbl)
 
 (* Record calls to caml_ml_array_bound_error.
@@ -465,7 +486,6 @@ let emit_global_label s =
   D.global lbl;
   _label lbl
 
-
 (* Output the assembly code for an instruction *)
 
 (* Name of current function *)
@@ -516,7 +536,7 @@ let emit_instr fallthrough i =
       output_epilogue begin fun () ->
         I.jmp (arg i 0);
         if Config.spacetime then begin
-          record_frame i.live i.dbg
+          record_frame Reg.Set.empty i.dbg
         end
       end
   | Lop(Itailcall_imm s) ->
@@ -531,7 +551,7 @@ let emit_instr fallthrough i =
         end
       end;
       if Config.spacetime then begin
-        record_frame i.live i.dbg
+        record_frame Reg.Set.empty i.dbg
       end
   | Lop(Iextcall(s, alloc)) ->
       add_used_symbol s;
@@ -553,7 +573,7 @@ let emit_instr fallthrough i =
       end else begin
         emit_call s;
         if Config.spacetime then begin
-          record_frame i.live i.dbg
+          record_frame Reg.Set.empty i.dbg
         end
       end
   | Lop(Istackoffset n) ->
@@ -622,12 +642,7 @@ let emit_instr fallthrough i =
             gc_frame = lbl_frame;
             gc_spacetime_index = spacetime_index } :: !call_gc_sites
       end else begin
-        if Config.spacetime then begin
-          (* At the moment, %r13 is pointing at the start of the node for the
-             current function.  Move it forwards so it's in the correct place
-             just in case [caml_call_gc] is invoked. *)
-          I.add (int (spacetime_index * 8)) r13
-        end;
+        spacetime_before_caml_call_gc ~spacetime_index;
         begin match n with
         | 16 -> emit_call "caml_alloc1"
         | 24 -> emit_call "caml_alloc2"
@@ -637,6 +652,7 @@ let emit_instr fallthrough i =
             emit_call "caml_allocN"
         end;
         record_frame i.live Debuginfo.none;
+        spacetime_after_caml_call_gc ();
         I.lea (mem64 NONE 8 R15) (res i 0)
       end
   | Lop(Iintop(Icomp cmp)) ->
