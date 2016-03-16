@@ -23,7 +23,9 @@ type integer_operation =
     Iadd | Isub | Imul | Imulh | Idiv | Imod
   | Iand | Ior | Ixor | Ilsl | Ilsr | Iasr
   | Icomp of integer_comparison
-  | Icheckbound
+  | Icheckbound of { spacetime_index : int; }
+    (** For Spacetime only, [Icheckbound] operations take two arguments, the
+        second being the pointer to the trie node for the current function. *)
 
 type test =
     Itruetest
@@ -51,6 +53,8 @@ type operation =
   | Istore of Cmm.memory_chunk * Arch.addressing_mode * bool
                                  (* false = initialization, true = assignment *)
   | Ialloc of { words : int; spacetime_index : int; }
+    (** For Spacetime only, takes one argument, being the pointer to the
+        trie node for the current function. *)
   | Iintop of integer_operation
   | Iintop_imm of integer_operation * int
   | Inegf | Iabsf | Iaddf | Isubf | Imulf | Idivf

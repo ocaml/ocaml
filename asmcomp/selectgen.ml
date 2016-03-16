@@ -240,7 +240,7 @@ method mark_instr = function
       self#mark_tailcall
   | Iop (Ialloc _) ->
       self#mark_call (* caml_alloc*, caml_garbage_collection *)
-  | Iop (Iintop Icheckbound | Iintop_imm(Icheckbound, _)) ->
+  | Iop (Iintop (Icheckbound _) | Iintop_imm(Icheckbound _, _)) ->
       self#mark_c_tailcall (* caml_ml_array_bound_error *)
   | Iraise raise_kind ->
     begin match raise_kind with
@@ -259,6 +259,9 @@ method mark_instr = function
 
 method select_allocation words = Ialloc { words; spacetime_index = 0; }
 method select_allocation_args _env = [| |]
+
+method select_checkbound () = Icheckbound { spacetime_index = 0; }
+method select_checkbound_extra_args () = []
 
 method select_operation op args =
   match (op, args) with
@@ -307,7 +310,10 @@ method select_operation op args =
   | (Cdivf, _) -> (Idivf, args)
   | (Cfloatofint, _) -> (Ifloatofint, args)
   | (Cintoffloat, _) -> (Iintoffloat, args)
-  | (Ccheckbound _, _) -> self#select_arith Icheckbound args
+  | (Ccheckbound _, _) ->
+    let extra_args = self#select_checkbound_extra_args () in
+    let op = self#select_checkbound () in
+    self#select_arith op (args @ extra_args)
   | (Cprogram_counter _, _) -> (Iprogram_counter, args)
   | (Cspacetime_node_hole, _) -> (Ispacetime_node_hole, args)
   | (Cspacetime_load_node_hole_ptr, _) ->

@@ -57,7 +57,7 @@ let rec live i finally =
         let across =
           match op with
           | Icall_ind | Icall_imm _ | Iextcall _
-          | Iintop Icheckbound | Iintop_imm(Icheckbound, _) ->
+          | Iintop (Icheckbound _) | Iintop_imm(Icheckbound _, _) ->
               (* The function call may raise an exception, branching to the
                  nearest enclosing try ... with. Similarly for bounds checks.
                  Hence, everything that must be live at the beginning of

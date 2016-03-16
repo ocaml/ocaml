@@ -360,6 +360,24 @@ class virtual instruction_selection = object (self)
       super#select_allocation_args env
     end
 
+  method select_checkbound () =
+    (* This follows [select_allocation], above. *)
+    if self#can_instrument () then begin
+      let index = !index_within_node in
+      index_within_node := !index_within_node + 3;
+      Mach.Icheckbound { spacetime_index = index; }
+    end else begin
+      super#select_checkbound ()
+    end
+
+  method select_checkbound_extra_args () =
+    if self#can_instrument () then begin
+      (* This follows [select_allocation_args], above. *)
+      [Cmm.Cvar (Lazy.force !spacetime_node_ident)]
+    end else begin
+      super#select_checkbound_extra_args ()
+    end
+
   method! initial_env () =
     let env = super#initial_env () in
     if Config.spacetime then

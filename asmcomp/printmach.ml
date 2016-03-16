@@ -87,7 +87,7 @@ let intop = function
   | Ilsr -> " >>u "
   | Iasr -> " >>s "
   | Icomp cmp -> intcomp cmp
-  | Icheckbound -> " check > "
+  | Icheckbound _ -> " check > "
 
 let test tst ppf arg =
   match tst with

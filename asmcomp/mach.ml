@@ -23,7 +23,7 @@ type integer_operation =
     Iadd | Isub | Imul | Imulh | Idiv | Imod
   | Iand | Ior | Ixor | Ilsl | Ilsr | Iasr
   | Icomp of integer_comparison
-  | Icheckbound
+  | Icheckbound of { spacetime_index : int; }
 
 type test =
     Itruetest

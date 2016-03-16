@@ -348,7 +348,7 @@ let max_register_pressure instr =
 let op_is_pure = function
   | Icall_ind | Icall_imm _ | Itailcall_ind | Itailcall_imm _
   | Iextcall _ | Istackoffset _ | Istore _ | Ialloc _
-  | Iintop(Icheckbound) | Iintop_imm(Icheckbound, _) -> false
+  | Iintop(Icheckbound _) | Iintop_imm(Icheckbound _, _) -> false
   | Ispacetime_load_node_hole_ptr -> false
   | Ispecific(Ilea _) -> true
   | Ispecific _ -> false
