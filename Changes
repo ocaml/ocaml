@@ -468,6 +468,8 @@ Bug fixes:
   (Jacques Garrigue, report by Jeremy Yallop)
 - PR#7160: Type synonym definitions can weaken gadt constructor types
   (Jacques Garrigue, report by Mikhail Mandrykin)
+- PR#7182: Assertion failure with recursive modules and externals
+  (Jacques Garrigue, report by Jeremy Yallop)
 - GPR#205: Clear caml_backtrace_last_exn before registering as root
   (report and fix by Frederic Bour)
 - GPR#220: minor -dsource error on recursive modules
