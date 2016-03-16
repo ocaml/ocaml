@@ -30,8 +30,23 @@ class x =
   object[@foo]
     inherit[@foo] x
     val[@foo] x = 3
+    val[@foo] virtual x : t
+    val![@foo] mutable x = 3
     method[@foo] x = 3
+    method[@foo] virtual x : t
+    method![@foo] private x = 3
     initializer[@foo] x
+  end
+
+(* Class type expressions *)
+class type t =
+  object[@foo]
+    inherit[@foo] t
+    val[@foo] x : t
+    val[@foo] mutable x : t
+    method[@foo] x : t
+    method[@foo] private x : t
+    constraint[@foo] t = t'
   end
 
 (* Type expressions *)

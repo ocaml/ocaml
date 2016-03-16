@@ -4004,9 +4004,14 @@ and type_let ?(check = fun s -> Warnings.Unused_var s)
       spat_sexp_list pat_slot_list in
   current_slot := None;
   if is_recursive && not !rec_needed
-  && Warnings.is_active Warnings.Unused_rec_flag then
-    Location.prerr_warning (List.hd spat_sexp_list).pvb_pat.ppat_loc
-      Warnings.Unused_rec_flag;
+  && Warnings.is_active Warnings.Unused_rec_flag then begin
+    let {pvb_pat; pvb_attributes} = List.hd spat_sexp_list in
+    (* See PR#6677 *)
+    Builtin_attributes.with_warning_attribute pvb_attributes
+      (fun () ->
+         Location.prerr_warning pvb_pat.ppat_loc Warnings.Unused_rec_flag
+      )
+  end;
   List.iter2
     (fun pat exp ->
       ignore(check_partial env pat.pat_type pat.pat_loc [case pat exp]))
