@@ -350,6 +350,16 @@ class virtual instruction_selection = object (self)
       super#select_allocation words
     end
 
+  method! select_allocation_args env =
+    if self#can_instrument () then begin
+      let regs = Tbl.find (Lazy.force !spacetime_node_ident) env in
+      match regs with
+      | [| reg |] -> [| reg |]
+      | _ -> failwith "Expected one register only for spacetime_node_ident"
+    end else begin
+      super#select_allocation_args env
+    end
+
   method! initial_env () =
     let env = super#initial_env () in
     if Config.spacetime then

@@ -258,6 +258,7 @@ method mark_instr = function
 (* Default instruction selection for operators *)
 
 method select_allocation words = Ialloc { words; spacetime_index = 0; }
+method select_allocation_args _env = [| |]
 
 method select_operation op args =
   match (op, args) with
@@ -605,7 +606,8 @@ method emit_expr env exp =
               let rd = self#regs_for typ_val in
               let size = size_expr env (Ctuple new_args) in
               let op = Ialloc { words = size; spacetime_index; } in
-              self#insert (Iop op) [||] rd;
+              let args = self#select_allocation_args env in
+              self#insert (Iop op) args rd;
               self#emit_stores env new_args rd;
               Some rd
           | Ispacetime_node_hole ->

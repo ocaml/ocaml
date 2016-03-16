@@ -287,26 +287,17 @@ let record_frame live dbg =
 
 (* Spacetime instrumentation *)
 
-let spacetime_before_caml_call_gc ~spacetime_index =
-  if Config.spacetime then begin
-    (* At the moment, %r13 is pointing at the hole that in turn points
-       at the start of the node for the current function.  Get hold
-       of the node pointer and move it forwards so it's in the correct
-       place just in case [caml_call_gc] is invoked.  (See
-       [caml_spacetime_caml_garbage_collection] for the exact
-       requirements at that point.) *)
-    I.push r13;
-    cfi_adjust_cfa_offset 8;
-    I.mov (mem64 QWORD 0 R13) r13;
-    assert (spacetime_index >= 2);
-    I.add (int (spacetime_index * 8)) r13
-  end
-
-let spacetime_after_caml_call_gc () =
-  if Config.spacetime then begin
-    I.pop r13;
-    cfi_adjust_cfa_offset (-8)
-  end
+let spacetime_before_caml_call_gc ~node_ptr ~index =
+  (* At the moment, [node_ptr] is pointing at the hole that in turn points
+     at the start of the node for the current function.  Get hold of the node
+     itself and move the pointer forwards, saving it into the distinguished
+     register, so it's in the correct place just in case [caml_call_gc] is
+     invoked.  (See [caml_spacetime_caml_garbage_collection] for the exact
+     requirements at that point.) *)
+  I.mov node_ptr r13;
+  I.mov (mem64 QWORD 0 R13) r13;
+  assert (index >= 2);
+  I.add (int (index * 8)) r13
 
 (* Record calls to the GC -- we've moved them out of the way *)
 
@@ -314,17 +305,22 @@ type gc_call =
   { gc_lbl: label;                      (* Entry label *)
     gc_return_lbl: label;               (* Where to branch after GC *)
     gc_frame: label;                    (* Label of frame descriptor *)
-    gc_spacetime_index : int;           (* Index into Spacetime node *)
+    gc_spacetime : (X86_ast.arg * int) option;
+    (* Spacetime node hole pointer and index *)
   }
 
 let call_gc_sites = ref ([] : gc_call list)
 
 let emit_call_gc gc =
   def_label gc.gc_lbl;
-  spacetime_before_caml_call_gc ~spacetime_index:gc.gc_spacetime_index;
+  begin match gc.gc_spacetime with
+  | None -> assert (not Config.spacetime)
+  | Some (node_ptr, index) ->
+    assert Config.spacetime;
+    spacetime_before_caml_call_gc ~node_ptr ~index
+  end;
   emit_call "caml_call_gc";
   def_label gc.gc_frame;
-  spacetime_after_caml_call_gc ();
   I.jmp (label gc.gc_return_lbl)
 
 (* Record calls to caml_ml_array_bound_error.
@@ -636,13 +632,20 @@ let emit_instr fallthrough i =
         let lbl_frame = record_frame_label i.live Debuginfo.none in
         I.jb (label lbl_call_gc);
         I.lea (mem64 NONE 8 R15) (res i 0);
+        let gc_spacetime =
+          if not Config.spacetime then None
+          else Some (arg i 0, spacetime_index)
+        in
         call_gc_sites :=
           { gc_lbl = lbl_call_gc;
             gc_return_lbl = lbl_redo;
             gc_frame = lbl_frame;
-            gc_spacetime_index = spacetime_index } :: !call_gc_sites
+            gc_spacetime; } :: !call_gc_sites
       end else begin
-        spacetime_before_caml_call_gc ~spacetime_index;
+        if Config.spacetime then begin
+          spacetime_before_caml_call_gc ~node_ptr:(arg i 0)
+            ~index:spacetime_index;
+        end;
         begin match n with
         | 16 -> emit_call "caml_alloc1"
         | 24 -> emit_call "caml_alloc2"
@@ -652,7 +655,6 @@ let emit_instr fallthrough i =
             emit_call "caml_allocN"
         end;
         record_frame i.live Debuginfo.none;
-        spacetime_after_caml_call_gc ();
         I.lea (mem64 NONE 8 R15) (res i 0)
       end
   | Lop(Iintop(Icomp cmp)) ->

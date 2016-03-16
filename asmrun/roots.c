@@ -273,12 +273,6 @@ void caml_oldify_local_roots (void)
 
   /* The stack and local roots */
   sp = caml_bottom_of_stack;
-#ifdef WITH_SPACETIME
-  /* There is an extra word on the stack just before calling [caml_call_gc]
-     when using Spacetime.
-     See asmcomp/amd64/emit.mlp:spacetime_before_caml_call_gc. */
-  sp += sizeof(value);
-#endif
   retaddr = caml_last_return_address;
   regs = caml_gc_regs;
   if (sp != NULL) {
@@ -458,10 +452,6 @@ void caml_do_local_roots(scanning_action f, char * bottom_of_stack,
   struct caml__roots_block *lr;
 
   sp = bottom_of_stack;
-#ifdef WITH_SPACETIME
-  /* See above. */
-  sp += sizeof(value);
-#endif
   retaddr = last_retaddr;
   regs = gc_regs;
   if (sp != NULL) {

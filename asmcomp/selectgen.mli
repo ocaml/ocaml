@@ -109,6 +109,7 @@ class virtual selector_generic : object
 
   (* Only for the use of [Spacetime_profiling]. *)
   method select_allocation : int -> Mach.operation
+  method select_allocation_args : (Ident.t, Reg.t array) Tbl.t -> Reg.t array
   method emit_blockheader
      : (Ident.t, Reg.t array) Tbl.t
     -> nativeint
