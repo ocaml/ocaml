@@ -205,9 +205,12 @@ installbyt:
 	mkdir -p "$(INSTALL_COMPLIBDIR)"
 	cp VERSION "$(INSTALL_LIBDIR)/"
 	cd byterun ; $(MAKEREC) install
+	cp ocamlc "$(INSTALL_BINDIR)/ocamlc.byte.exe"
 	cp ocamlc "$(INSTALL_BINDIR)/ocamlc.exe"
+	cp ocaml "$(INSTALL_BINDIR)/ocaml.byte.exe"
 	cp ocaml "$(INSTALL_BINDIR)/ocaml.exe"
 	cd stdlib ; $(MAKEREC) install
+	cp lex/ocamllex "$(INSTALL_BINDIR)/ocamllex.byte.exe"
 	cp lex/ocamllex "$(INSTALL_BINDIR)/ocamllex.exe"
 	cp yacc/ocamlyacc.exe "$(INSTALL_BINDIR)/ocamlyacc.exe"
 	cp utils/*.cmi utils/*.cmt utils/*.cmti \
@@ -255,6 +258,7 @@ install-flexdll:
 # Installation of the native-code compiler
 installopt:
 	cd asmrun && $(MAKEREC) install
+	cp ocamlopt "$(INSTALL_BINDIR)/ocamlopt.byte.exe"
 	cp ocamlopt "$(INSTALL_BINDIR)/ocamlopt.exe"
 	cd stdlib && $(MAKEREC) installopt
 	cp middle_end/*.cmi middle_end/*.cmt middle_end/*.cmti \
@@ -277,8 +281,11 @@ installopt:
 
 installoptopt:
 	cp ocamlc.opt "$(INSTALL_BINDIR)/ocamlc.opt$(EXE)"
+	cp ocamlc.opt "$(INSTALL_BINDIR)/ocamlc$(EXE)"
 	cp ocamlopt.opt "$(INSTALL_BINDIR)/ocamlopt.opt$(EXE)"
+	cp ocamlopt.opt "$(INSTALL_BINDIR)/ocamlopt$(EXE)"
 	cp lex/ocamllex.opt "$(INSTALL_BINDIR)/ocamllex.opt$(EXE)"
+	cp lex/ocamllex.opt "$(INSTALL_BINDIR)/ocamllex$(EXE)"
 	cp utils/*.cmx parsing/*.cmx typing/*.cmx bytecomp/*.cmx \
            driver/*.cmx asmcomp/*.cmx "$(INSTALL_COMPLIBDIR)"
 	cp compilerlibs/ocamlcommon.cmxa compilerlibs/ocamlcommon.$(A) \
