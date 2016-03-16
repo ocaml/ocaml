@@ -116,14 +116,15 @@ let string_of_loc_kind = function
 
 let block_shape ppf shape = match shape with
   | None | Some [] -> ()
+  | Some l when List.for_all ((=) Pgenval) l -> ()
   | Some [elt] ->
-      Format.fprintf ppf " ( %s )" (field_kind elt)
+      Format.fprintf ppf " (%s)" (field_kind elt)
   | Some (h :: t) ->
-      Format.fprintf ppf " ( %s" (field_kind h);
+      Format.fprintf ppf " (%s" (field_kind h);
       List.iter (fun elt ->
-          Format.fprintf ppf ", %s" (field_kind elt))
+          Format.fprintf ppf ",%s" (field_kind elt))
         t;
-      Format.fprintf ppf " )"
+      Format.fprintf ppf ")"
 
 let primitive ppf = function
   | Pidentity -> fprintf ppf "id"
