@@ -112,9 +112,9 @@ let () =
 
   check_noalloc "classify float" unbox_classify_float;
   check_noalloc "compare float" unbox_compare_float;
+  check_noalloc "float refs" unbox_float_refs;
 
   if not flambda then begin
-    check_noalloc "float refs" unbox_float_refs;
     check_noalloc "unbox let float" unbox_let_float;
   end;
 
