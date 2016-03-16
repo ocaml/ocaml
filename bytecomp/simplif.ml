@@ -470,7 +470,7 @@ let simplify_lets lam =
       simplif l2
   | Llet(Strict, kind, v,
          Lprim(Pmakeblock(0, Mutable, kind_ref) as prim, [linit]), lbody)
-    when optimize ->
+    when optimize && Config.flambda = false ->
       let slinit = simplif linit in
       let slbody = simplif lbody in
       begin try

@@ -207,7 +207,7 @@ let rec approx_of_expr (env : Env.t) (flam : Flambda.t) : Export_info.approx =
     let approx = descr_of_named env defining_expr in
     let env = Env.add_approx env var approx in
     approx_of_expr env body
-  | Let_mutable (_mut_var, _var, body) ->
+  | Let_mutable { body } ->
     approx_of_expr env body
   | Let_rec (defs, body) ->
     let env =

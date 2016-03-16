@@ -96,7 +96,7 @@ type specialised_to = {
 type t =
   | Var of Variable.t
   | Let of let_expr
-  | Let_mutable of Mutable_variable.t * Variable.t * t
+  | Let_mutable of let_mutable
   | Let_rec of (Variable.t * named) list * t
   (** CR-someday lwhite: give Let_rec the same fields as Let. *)
   | Apply of apply
@@ -177,6 +177,13 @@ and let_expr = private {
   free_vars_of_body : Variable.Set.t;
   (** A cache of the free variables of the body of the [let].  This is an
       important optimization. *)
+}
+
+and let_mutable = {
+  var : Mutable_variable.t;
+  initial_value : Variable.t;
+  contents_kind : Lambda.value_kind;
+  body : t;
 }
 
 (** The representation of a set of function declarations (possibly mutually
