@@ -23,8 +23,9 @@
 #    for windows, this is relative to $HOME/jenkins-workspace
 #    for bsd, macos, linux, this is ignored and the build is always in .
 # 3. options:
-#    -conf configure-option
+#    -conf configure-option  add configure-option to configure cmd line
 #    -patch1 file-name       apply patch with -p1
+#    -newmakefiles           do not use Makefile.nt even for Windows
 
 error () {
   echo "$1" >&2
@@ -140,6 +141,7 @@ while [ $# -gt 0 ]; do
   case $1 in
     -conf) confoptions="$confoptions `quote1 "$2"`"; shift 2;;
     -patch1) patch -f -p1 <"$2"; shift 2;;
+    -newmakefiles) nt='';;
     *) error "unknown option $1";;
   esac
 done
