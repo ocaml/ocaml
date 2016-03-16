@@ -115,14 +115,11 @@ let unbox_record_1 float int64 =
   let block = { float; int64 } in
   for i = 1 to 1000 do
     let y_float =
-      Pervasives.float i
-      (* Flambda can't handle if branches unboxing yet *)
-      (* if i mod 2 = 0 then nan else Pervasives.float i *)
+      if i mod 2 = 0 then nan else Pervasives.float i
     in
     block.float <- block.float +. (y_float *. 2.);
     let y_int64 =
-      Int64.of_int i
-      (* if i mod 2 = 0 then Int64.max_int else Int64.of_int i *)
+      if i mod 2 = 0 then Int64.max_int else Int64.of_int i
     in
     block.int64 <- Int64.(add block.int64 (mul y_int64 2L))
   done
@@ -144,13 +141,10 @@ let () =
   check_noalloc "classify float" unbox_classify_float;
   check_noalloc "compare float" unbox_compare_float;
   check_noalloc "float refs" unbox_float_refs;
+  check_noalloc "unbox let float" unbox_let_float;
 
   if flambda then begin
     check_noalloc "float and int64 record" unbox_record;
-  end
-  else begin
-    (* Flambda can't handle if branches unboxing yet *)
-    check_noalloc "unbox let float" unbox_let_float;
   end;
 
   ()
