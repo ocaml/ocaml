@@ -158,7 +158,7 @@ Compilers:
 - PR#7026, GPR#288: remove write barrier for polymorphic variants without
   arguments
   (Simon Cruanes)
-- PR#7031: new warning, ambiguous guarded or-patterns
+- PR#7031: new warning 57, ambiguous guarded or-patterns
   (Luc Maranget, Gabriel Scherer, report by Martin Clochard and Claude Marché)
 - PR#7064, GPR#316: allowing to mark compilation units and sub-modules as
   deprecated
@@ -206,8 +206,9 @@ Compilers:
   (Thomas Refis, Leo White)
 - GPR#306: Instrument the compiler to debug performance regressions
   (Pierre Chambart)
-- GPR#319: add warning for missing cmx files, and extend -opaque option to mli
-  files.
+- GPR#319: add warning 58 for missing cmx files, and
+  extend -opaque option to mli files: a missing .cmx does not warn
+  if the corresponding .cmi is compiled -opaque.
   (Leo White)
 - GPR#388: OCAML_FLEXLINK environment variable allows overriding flexlink
   command (David Allsopp)
@@ -232,8 +233,8 @@ Runtime system:
   (Xavier Leroy)
 - PR#6760: closures evaluated in the toplevel can now be marshalled
   (whitequark, review by Jacques-Henri Jourdan)
-- PR#6902, GPR#210: runtime emits a warning when finalizing an I/O channel
-  which is still open;
+- PR#6902, GPR#210: emit a runtime warning on stderr
+  when finalizing an I/O channel which is still open:
     "channel opened on file '...' dies without being closed"
   this is controlled by OCAMLRUNPARAM=W=1 or with Sys.enable_runtime_warnings.
   The behavior of affected program is not changed,
@@ -668,6 +669,7 @@ Features wishes:
   [let abc = 1 in (+) 123abc] was accepted and is now rejected.
   (Hugo Heuzard)
 - PR#6876: improve warning 6 by listing the omitted labels.
+  (Warning 6: Label omitted in function application)
   (Eyyüb Sari)
 - PR#6924: tiny optim to avoid some spilling of floats in x87
   (Alain Frisch)
