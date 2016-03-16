@@ -139,11 +139,12 @@ cd "$workdir"
 confoptions=""
 while [ $# -gt 0 ]; do
   case $1 in
-    -conf) confoptions="$confoptions `quote1 "$2"`"; shift 2;;
-    -patch1) patch -f -p1 <"$2"; shift 2;;
+    -conf) confoptions="$confoptions `quote1 "$2"`"; shift;;
+    -patch1) patch -f -p1 <"$2"; shift;;
     -newmakefiles) nt='';;
     *) error "unknown option $1";;
   esac
+  shift
 done
 
 #########################################################################
