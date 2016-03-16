@@ -103,8 +103,8 @@ and operation =
   | Ccmpf of comparison
   | Craise of Lambda.raise_kind * Debuginfo.t
   | Ccheckbound of Debuginfo.t
-  | Cspacetime_g_node_hole
-  | Cspacetime_g_load_node_hole_ptr
+  | Cspacetime_node_hole
+  | Cspacetime_load_node_hole_ptr
   | Cprogram_counter of Debuginfo.t
   | Clabel of label
   | Caddress_of_label of label

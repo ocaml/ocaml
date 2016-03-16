@@ -108,6 +108,7 @@ class virtual selector_generic : object
   method emit_tail : (Ident.t, Reg.t array) Tbl.t -> Cmm.expression -> unit
 
   (* Only for the use of [Spacetime_profiling]. *)
+  method select_allocation : int -> Mach.operation
   method emit_blockheader
      : (Ident.t, Reg.t array) Tbl.t
     -> nativeint

@@ -183,3 +183,4 @@ extern value caml_spacetime_min_override_profinfo (value v_unit);
 extern value caml_spacetime_max_override_profinfo (value v_unit);
 extern void caml_spacetime_register_thread(
   value* trie_node_root, value* finaliser_trie_node_root);
+extern void caml_spacetime_caml_garbage_collection(void);

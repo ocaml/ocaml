@@ -14,6 +14,9 @@
 
 module L = Lambda
 
+(* CR mshinwell: Make sure the story is completely straight with regards
+   to %r13. *)
+
 let index_within_node = ref 2 (* Cf. [Node_num_header_words] in the runtime. *)
 (* The [lazy]s are to ensure that we don't create [Ident.t]s at toplevel
    when not using Spacetime profiling.  (This could cause stamps to differ
@@ -80,7 +83,7 @@ let code_for_function_prologue ~function_name =
         body)
   in
   let pc = Ident.create "pc" in
-  Clet (node_hole, Cop (Cspacetime_g_node_hole, []),
+  Clet (node_hole, Cop (Cspacetime_node_hole, []),
     Clet (node, Cop (Cload Word_int, [Cvar node_hole]),
       Clet (must_allocate_node, Cop (Cand, [Cvar node; Cconst_int 1]),
         Clet (pc, Cconst_symbol function_name,
@@ -106,7 +109,7 @@ let code_for_function_prologue ~function_name =
               ]),
             Cvar node))))))
 
-let code_for_allocation_point ~value's_header ~node ~dbg =
+let code_for_blockheader ~value's_header ~node ~dbg =
   let existing_profinfo = Ident.create "existing_profinfo" in
   let profinfo = Ident.create "profinfo" in
   let pc = Ident.create "pc" in
@@ -123,7 +126,7 @@ let code_for_allocation_point ~value's_header ~node ~dbg =
        balance. *)
     Clet (pc,
       Cop (Cprogram_counter dbg, []),
-      Cop (Cextcall ("caml_spacetime_generate_profinfo", [| Int |],
+      Cop (Cextcall ("caml_spacetimeenerate_profinfo", [| Int |],
           false, Debuginfo.none),
         [Cvar pc; Cvar address_of_profinfo]))
   in
@@ -195,7 +198,7 @@ let code_for_call ~node ~callee ~is_tail ~label =
               Cvar callee_slot;
               encode_pc (Cconst_symbol callee);
             ]),
-            Cop (Cspacetime_g_load_node_hole_ptr,
+            Cop (Cspacetime_load_node_hole_ptr,
               [within_node ~index:(index_within_node + 2)])))
       | Indirect callee ->
         let node_hole_ptr = Ident.create "node_hole_ptr" in
@@ -207,7 +210,7 @@ let code_for_call ~node ~callee ~is_tail ~label =
           Cop (Cextcall ("caml_spacetime_indirect_node_hole_ptr",
               [| Int |], false, Debuginfo.none),
             [callee; Cvar place_within_node; caller_node]),
-          Cop (Cspacetime_g_load_node_hole_ptr, [Cvar node_hole_ptr]))))
+          Cop (Cspacetime_load_node_hole_ptr, [Cvar node_hole_ptr]))))
 
 class virtual instruction_selection = object (self)
   inherit Selectgen.selector_generic as super
@@ -281,9 +284,9 @@ class virtual instruction_selection = object (self)
         Some label
       | _ -> None
 
-  method private instrument_allocation_point ~env ~value's_header ~dbg =
+  method private instrument_blockheader ~env ~value's_header ~dbg =
     let instrumentation =
-      code_for_allocation_point
+      code_for_blockheader
         ~node:(Lazy.force !spacetime_node_ident)
         ~value's_header ~dbg
     in
@@ -328,11 +331,23 @@ class virtual instruction_selection = object (self)
   method! emit_blockheader env n dbg =
     if self#can_instrument () then begin
       disable_instrumentation <- true;
-      let result = self#instrument_allocation_point ~env ~value's_header:n ~dbg in
+      let result = self#instrument_blockheader ~env ~value's_header:n ~dbg in
       disable_instrumentation <- false;
       result
     end else begin
       super#emit_blockheader env n dbg
+    end
+
+  method! select_allocation words =
+    if self#can_instrument () then begin
+      (* Leave space for a direct call point.  We cannot easily insert any
+         instrumentation code, so the fields are filled in instead by
+         [caml_spacetime_caml_garbage_collection]. *)
+      let index = !index_within_node in
+      index_within_node := !index_within_node + 3;
+      Mach.Ialloc { words; spacetime_index = index; }
+    end else begin
+      super#select_allocation words
     end
 
   method! initial_env () =

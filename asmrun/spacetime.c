@@ -682,6 +682,29 @@ CAMLprim value* caml_spacetime_indirect_node_hole_ptr
   return &(c_node->data.callee_node);
 }
 
+/* Some notes on why caml_call_gc doesn't need a distinguished node.
+   (Remember that thread switches are irrelevant here because each thread
+   has its own trie.)
+
+   caml_call_gc only invokes OCaml functions in the following circumstances:
+   1. running an OCaml finaliser;
+   2. executing an OCaml signal handler.
+   Both of these are done on the finaliser trie.  Furthermore, both of
+   these invocations start via caml_callback; the code in this file for
+   handling that (caml_spacetime_c_to_ocaml) correctly copes with that by
+   attaching a single "caml_start_program" node that can cope with any
+   number of indirect OCaml calls from that point.
+
+   caml_call_gc may also invoke C functions that cause allocation.  All of
+   these (assuming libunwind support is present) will cause a chain of
+   c_node structures to be attached to the trie, starting at the node hole
+   passed to caml_call_gc from OCaml code.  These structures are extensible
+   and can thus accommodate any number of C backtraces leading from
+   caml_call_gc.
+*/
+
+/* CR mshinwell: check caml_stash_backtrace */
+
 static void* find_trie_node_from_libunwind(int for_allocation)
 {
 #ifdef HAS_LIBUNWIND
@@ -742,6 +765,13 @@ static void* find_trie_node_from_libunwind(int for_allocation)
      node for the current C function that triggered us (i.e. frame #3). */
   innermost_frame = for_allocation ? 2 : 3;
 
+  /* CR mshinwell: we need to do something if there aren't enough frames
+     from libunwind.  This will dereference NULL lower down at the moment
+     if it's an allocation. */
+  if (frames.size - 1 < innermost_frame) {
+    fprintf(stderr, "*** insufficiently many frames from libunwind\n");
+  }
+
   for (frame = frames.size - 1; frame >= innermost_frame; frame--) {
     c_node_type expected_type;
     void* pc = frames.contents[frame];
@@ -772,10 +802,12 @@ static void* find_trie_node_from_libunwind(int for_allocation)
       c_node* prev;
       int found = 0;
 
-      node = caml_spacetime_c_node_of_stored_pointer(*node_hole);
+      node = caml_spacetime_c_node_of_stored_pointer_not_null(*node_hole);
       debug_printf("using existing node %p (size %lld)\n", (void*) node,
         (unsigned long long) Wosize_val(*node_hole));
       assert(node != NULL);
+      assert(node->next == Val_unit
+        || (((uintnat) (node->next)) % sizeof(value) == 0));
 
       prev = NULL;
 
@@ -789,8 +821,7 @@ static void* find_trie_node_from_libunwind(int for_allocation)
         else {
           debug_printf("doesn't match\n");
           prev = node;
-          node =
-            caml_spacetime_c_node_of_stored_pointer(node->next);
+          node = caml_spacetime_c_node_of_stored_pointer(node->next);
         }
       }
       if (!found) {
@@ -813,8 +844,7 @@ static void* find_trie_node_from_libunwind(int for_allocation)
 
   if (for_allocation) {
     assert(caml_spacetime_classify_c_node(node) == ALLOCATION);
-    assert(caml_spacetime_c_node_of_stored_pointer(node->next)
-      != node);
+    assert(caml_spacetime_c_node_of_stored_pointer(node->next) != node);
   }
 
   assert(node->next != (value) NULL);
@@ -840,6 +870,7 @@ static void graft_c_backtrace_onto_trie(void)
      the correct place for attachment of a [caml_start_program] node. */
 
 #ifdef HAS_LIBUNWIND
+  /* CR mshinwell: handle NULL return */
   caml_spacetime_trie_node_ptr
     = (value*) find_trie_node_from_libunwind(0);
 #endif
@@ -866,7 +897,7 @@ void caml_spacetime_c_to_ocaml(void* ocaml_entry_point,
     uintnat size_including_header;
 
     size_including_header =
-      1 /* GC header */ + Node_num_header_words + 2 /* indirect call point */;
+      1 /* GC header */ + Node_num_header_words + Indirect_num_fields;
 
     node = allocate_uninitialized_ocaml_node(size_including_header);
     Hd_val(node) =
@@ -896,7 +927,7 @@ void caml_spacetime_c_to_ocaml(void* ocaml_entry_point,
   assert(Decode_node_pc(Node_pc(node))
     == identifying_pc_for_caml_start_program);
   assert(Tail_link(node) == node);
-  assert(Wosize_val(node) == Node_num_header_words + 2);
+  assert(Wosize_val(node) == Node_num_header_words + Indirect_num_fields);
 
   /* Search the node to find the node hole corresponding to the indirect
      call to the OCaml function. */
@@ -911,6 +942,55 @@ void caml_spacetime_c_to_ocaml(void* ocaml_entry_point,
   debug_printf("c_to_ocaml has moved the node ptr to %p\n",
     (void*) caml_spacetime_trie_node_ptr);
   fflush(stdout);
+}
+
+void caml_spacetime_caml_garbage_collection(void)
+{
+  /* Called upon entry to [caml_garbage_collection].
+     Since [caml_call_gc] points cannot easily be instrumented by
+     [Spacetime_profiling] (the calls are created too late in the
+     compiler pipeline), we have to manually find the correct place in the
+     current OCaml node before [caml_garbage_collection] can continue.
+
+     On entry we expect:
+     1. [caml_allocation_trie_node_ptr] to point to the first of the three
+        fields of a direct call point inside an OCaml node (which is
+        arranged by code in asmcomp/amd64/emit.mlp); and
+     2. [caml_gc_regs] to point at the usual GC register array on the stack
+        with the return address immediately after (at a higher address) than
+        such array.
+  */
+
+  value call_site;
+  value caml_garbage_collection;
+  value node;
+
+  /* We need to skip over 13 registers.  See asmrun/amd64.S:caml_call_gc. */
+  call_site = Encode_call_point_pc(*(((uint64_t*) caml_gc_regs) + 13));
+printf("cs_cgc: call_site encoded = %p\n", (void*) call_site);
+
+  /* See point 1 above. */
+  node = (value) caml_spacetime_trie_node_ptr;
+
+  /* The callee is constant. */
+  caml_garbage_collection = Encode_call_point_pc(&caml_garbage_collection);
+printf("cs_cgc: callee encoded = %p\n", (void*) caml_garbage_collection);
+
+  assert((Direct_pc_call_site(node, 0) == Val_unit
+      && Direct_pc_callee(node, 0) == Val_unit
+      && Direct_callee_node(node, 0) == Val_unit)
+    || (Direct_pc_call_site(node, 0) == call_site
+      && Direct_pc_callee(node, 0) == caml_garbage_collection
+      && Direct_callee_node(node, 0) != Val_unit));
+
+  /* Initialize the direct call point within the node. */
+  Direct_pc_call_site(node, 0) = call_site;
+  Direct_pc_callee(node, 0) = caml_garbage_collection;
+
+  /* Set the trie node hole pointer correctly so that when e.g. an
+     allocation occurs from within [caml_garbage_collection] the resulting
+     nodes are attached correctly. */
+  caml_spacetime_trie_node_ptr = &Direct_callee_node(node, 0);
 }
 
 static uintnat generate_profinfo(void)

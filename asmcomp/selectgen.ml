@@ -46,8 +46,8 @@ let oper_result_type = function
   | Cintoffloat -> typ_int
   | Craise _ -> typ_void
   | Ccheckbound _ -> typ_void
-  | Cspacetime_g_node_hole -> typ_int
-  | Cspacetime_g_load_node_hole_ptr -> typ_void
+  | Cspacetime_node_hole -> typ_int
+  | Cspacetime_load_node_hole_ptr -> typ_void
   | Cprogram_counter _ -> typ_int
   | Clabel _ -> typ_void
   | Caddress_of_label _ -> typ_int
@@ -257,6 +257,8 @@ method mark_instr = function
 
 (* Default instruction selection for operators *)
 
+method select_allocation words = Ialloc { words; spacetime_index = 0; }
+
 method select_operation op args =
   match (op, args) with
     (Capply(ty, dbg), Cconst_symbol s :: rem) -> (Icall_imm s, rem)
@@ -279,7 +281,7 @@ method select_operation op args =
         (Istore(chunk, addr, is_assign), [arg2; eloc])
         (* Inversion addr/datum in Istore *)
       end
-  | (Calloc, _) -> (Ialloc 0, args)
+  | (Calloc, _) -> (self#select_allocation 0), args
   | (Caddi, _) -> self#select_arith_comm Iadd args
   | (Csubi, _) -> self#select_arith Isub args
   | (Cmuli, _) -> self#select_arith_comm Imul args
@@ -306,8 +308,8 @@ method select_operation op args =
   | (Cintoffloat, _) -> (Iintoffloat, args)
   | (Ccheckbound _, _) -> self#select_arith Icheckbound args
   | (Cprogram_counter _, _) -> (Iprogram_counter, args)
-  | (Cspacetime_g_node_hole, _) -> (Ispacetime_node_hole, args)
-  | (Cspacetime_g_load_node_hole_ptr, _) ->
+  | (Cspacetime_node_hole, _) -> (Ispacetime_node_hole, args)
+  | (Cspacetime_load_node_hole_ptr, _) ->
     (Ispacetime_load_node_hole_ptr, args)
   | (Clabel lbl, _) -> (Ilabel lbl, args)
   | (Caddress_of_label lbl, _) -> (Iaddress_of_label lbl, args)
@@ -599,10 +601,11 @@ method emit_expr env exp =
               end;
               self#insert_move_results loc_res rd stack_ofs;
               Some rd
-          | Ialloc _ ->
+          | Ialloc { words = _; spacetime_index; } ->
               let rd = self#regs_for typ_val in
               let size = size_expr env (Ctuple new_args) in
-              self#insert (Iop(Ialloc size)) [||] rd;
+              let op = Ialloc { words = size; spacetime_index; } in
+              self#insert (Iop op) [||] rd;
               self#emit_stores env new_args rd;
               Some rd
           | Ispacetime_node_hole ->

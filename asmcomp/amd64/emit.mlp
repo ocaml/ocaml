@@ -16,6 +16,8 @@
 
 (* Emission of Intel x86_64 assembly code *)
 
+(* CR mshinwell: check alignment of call points for Spacetime *)
+
 open Misc
 open Cmm
 open Arch
@@ -288,12 +290,18 @@ let record_frame live dbg =
 type gc_call =
   { gc_lbl: label;                      (* Entry label *)
     gc_return_lbl: label;               (* Where to branch after GC *)
-    gc_frame: label }                   (* Label of frame descriptor *)
+    gc_frame: label;                    (* Label of frame descriptor *)
+    gc_spacetime_index : int;           (* Index into Spacetime node *)
+  }
 
 let call_gc_sites = ref ([] : gc_call list)
 
 let emit_call_gc gc =
   def_label gc.gc_lbl;
+  if Config.spacetime then begin
+    (* See comment before the emission of calls to [caml_alloc*], below. *)
+    I.add (int (gc.gc_spacetime_index * 8)) r13
+  end;
   emit_call "caml_call_gc";
   def_label gc.gc_frame;
   I.jmp (label gc.gc_return_lbl)
@@ -508,7 +516,7 @@ let emit_instr fallthrough i =
       output_epilogue begin fun () ->
         I.jmp (arg i 0);
         if Config.spacetime then begin
-          record_frame i.live i.dbg;
+          record_frame i.live i.dbg
         end
       end
   | Lop(Itailcall_imm s) ->
@@ -543,10 +551,10 @@ let emit_instr fallthrough i =
           I.mov (mem64 QWORD 0 R11) r15
         end;
       end else begin
+        emit_call s;
         if Config.spacetime then begin
-          record_frame i.live i.dbg;
-        end;
-        emit_call s
+          record_frame i.live i.dbg
+        end
       end
   | Lop(Istackoffset n) ->
       if n < 0
@@ -594,7 +602,7 @@ let emit_instr fallthrough i =
       | Double | Double_u ->
           I.movsd (arg i 0) (addressing addr REAL8 i 1)
       end
-  | Lop(Ialloc n) ->
+  | Lop(Ialloc { words = n; spacetime_index; }) ->
       if !fastcode_flag then begin
         let lbl_redo = new_label() in
         def_label lbl_redo;
@@ -611,8 +619,15 @@ let emit_instr fallthrough i =
         call_gc_sites :=
           { gc_lbl = lbl_call_gc;
             gc_return_lbl = lbl_redo;
-            gc_frame = lbl_frame } :: !call_gc_sites
+            gc_frame = lbl_frame;
+            gc_spacetime_index = spacetime_index } :: !call_gc_sites
       end else begin
+        if Config.spacetime then begin
+          (* At the moment, %r13 is pointing at the start of the node for the
+             current function.  Move it forwards so it's in the correct place
+             just in case [caml_call_gc] is invoked. *)
+          I.add (int (spacetime_index * 8)) r13
+        end;
         begin match n with
         | 16 -> emit_call "caml_alloc1"
         | 24 -> emit_call "caml_alloc2"

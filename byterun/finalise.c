@@ -141,15 +141,12 @@ void caml_final_do_calls (void)
       /* We record the finaliser's execution separately.
          (The code of [caml_callback_exn] will do the hard work of finding
          the correct place in the trie.) */
-      saved_spacetime_trie_node_ptr
-        = caml_spacetime_trie_node_ptr;
-      caml_spacetime_trie_node_ptr
-        = caml_spacetime_finaliser_trie_root;
+      saved_spacetime_trie_node_ptr = caml_spacetime_trie_node_ptr;
+      caml_spacetime_trie_node_ptr = caml_spacetime_finaliser_trie_root;
 #endif
       res = caml_callback_exn (f.fun, f.val + f.offset);
 #if defined(NATIVE_CODE) && defined(WITH_SPACETIME)
-      caml_spacetime_trie_node_ptr
-        = saved_spacetime_trie_node_ptr;
+      caml_spacetime_trie_node_ptr = saved_spacetime_trie_node_ptr;
 #endif
       running_finalisation_function = 0;
       if (Is_exception_result (res)) caml_raise (Extract_exception (res));

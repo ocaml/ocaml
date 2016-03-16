@@ -289,6 +289,9 @@ LBL(caml_call_gc):
         movq    %rax, 0(%rsp)
         addq    $32768, %rsp
 #endif
+    /* Note that Spacetime profiling expects [caml_gc_regs] to be on the
+       stack immediately after the return address.
+       (See [caml_spacetime_caml_garbage_collection].) */
     /* Build array of registers, save it into caml_gc_regs */
 #ifdef WITH_FRAME_POINTERS
         ENTER_FUNCTION          ;
