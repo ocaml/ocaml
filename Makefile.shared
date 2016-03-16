@@ -13,6 +13,9 @@
 #*                                                                        *
 #**************************************************************************
 
+# For users who don't read the INSTALL file
+defaultentry:
+
 # The main Makefile, fragments shared between Makefile and Makefile.nt
 
 include config/Makefile
