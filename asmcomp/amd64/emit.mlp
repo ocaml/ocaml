@@ -288,14 +288,13 @@ let record_frame live dbg =
 (* Spacetime instrumentation *)
 
 let spacetime_before_caml_call_gc ~node_ptr ~index =
-  (* At the moment, [node_ptr] is pointing at the hole that in turn points
-     at the start of the node for the current function.  Get hold of the node
-     itself and move the pointer forwards, saving it into the distinguished
-     register, so it's in the correct place just in case [caml_call_gc] is
-     invoked.  (See [caml_spacetime_caml_garbage_collection] for the exact
-     requirements at that point.) *)
+  (* At the moment, [node_ptr] is pointing at the node for the current
+     OCaml function.  Get hold of the node itself and move the pointer
+     forwards, saving it into the distinguished register, so it's in the
+     correct place just in case [caml_call_gc] is invoked.  (See
+     [caml_spacetime_caml_garbage_collection] for the exact requirements at
+     that point.) *)
   I.mov node_ptr r13;
-  I.mov (mem64 QWORD 0 R13) r13;
   assert (index >= 2);
   I.add (int (index * 8)) r13
 

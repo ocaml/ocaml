@@ -976,6 +976,7 @@ void caml_spacetime_caml_garbage_collection(void)
 
   /* See point 1 above. */
   node = (value) caml_spacetime_trie_node_ptr;
+  assert ((node % sizeof(value)) == 0);
 
   /* The callee is constant. */
   encoded_caml_garbage_collection =
