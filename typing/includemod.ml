@@ -271,12 +271,14 @@ and try_modtypes env cxt subst mty1 mty2 =
 and try_modtypes2 env cxt mty1 mty2 =
   (* mty2 is an identifier *)
   match (mty1, mty2) with
-    (Mty_ident p1, Mty_ident p2) when Path.same p1 p2 ->
+    (Mty_ident p1, Mty_ident p2)
+    when Path.same (Env.normalize_path_prefix None env p1)
+                   (Env.normalize_path_prefix None env p2) ->
       Tcoerce_none
-  | (_, Mty_ident p2) ->
+  | (_, Mty_ident p2) when may_expand_module_path env p2 ->
       try_modtypes env cxt Subst.identity mty1 (expand_module_path env cxt p2)
   | (_, _) ->
-      assert false
+      raise Dont_match
 
 (* Inclusion between signatures *)
 

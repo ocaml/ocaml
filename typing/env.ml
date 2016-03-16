@@ -702,6 +702,16 @@ let normalize_path oloc env path =
     | Some loc ->
         raise (Error(Missing_module(loc, path, normalize_path true env path)))
 
+let normalize_path_prefix oloc env path =
+  match path with
+    Pdot(p, s, pos) ->
+      Pdot(normalize_path oloc env p, s, pos)
+  | Pident _ ->
+      path
+  | Papply _ ->
+      assert false
+
+
 let find_module = find_module ~alias:false
 
 (* Find the manifest type associated to a type when appropriate:
