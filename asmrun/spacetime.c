@@ -1002,6 +1002,14 @@ void caml_spacetime_caml_garbage_collection(void)
   caml_spacetime_trie_node_ptr = &Direct_callee_node(node, 0);
 }
 
+void caml_spacetime_caml_ml_array_bound_error(void)
+{
+  /* Like [caml_spacetime_caml_ml_array_bound_error], but for array bounds
+     check failures. */
+
+
+}
+
 static uintnat generate_profinfo(void)
 {
   uintnat profinfo;

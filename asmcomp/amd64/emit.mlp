@@ -345,16 +345,19 @@ let bound_error_label dbg =
     !bound_error_call
   end
 
+let emit_call_for_call_bound_error () =
+  emit_call "caml_ml_array_bound_error"
+
 let emit_call_bound_error bd =
   def_label bd.bd_lbl;
-  emit_call "caml_ml_array_bound_error";
+  emit_call_for_call_bound_error ();
   def_label bd.bd_frame
 
 let emit_call_bound_errors () =
   List.iter emit_call_bound_error !bound_error_sites;
   if !bound_error_call > 0 then begin
     def_label !bound_error_call;
-    emit_call "caml_ml_array_bound_error"
+    emit_call_for_call_bound_error ()
   end
 
 (* Names for instructions *)
