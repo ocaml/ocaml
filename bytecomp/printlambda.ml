@@ -59,6 +59,11 @@ let value_kind = function
   | Pfloatval -> "[float]"
   | Pboxedintval bi -> Printf.sprintf "[%s]" (boxed_integer_name bi)
 
+let field_kind = function
+  | Pgenval -> "*"
+  | Pfloatval -> "float"
+  | Pboxedintval bi -> boxed_integer_name bi
+
 let print_boxed_integer_conversion ppf bi1 bi2 =
   fprintf ppf "%s_of_%s" (boxed_integer_name bi2) (boxed_integer_name bi1)
 
@@ -107,6 +112,17 @@ let string_of_loc_kind = function
   | Loc_POS -> "loc_POS"
   | Loc_LOC -> "loc_LOC"
 
+let block_shape ppf shape = match shape with
+  | None | Some [] -> ()
+  | Some [elt] ->
+      Format.fprintf ppf " ( %s )" (field_kind elt)
+  | Some (h :: t) ->
+      Format.fprintf ppf " ( %s" (field_kind h);
+      List.iter (fun elt ->
+          Format.fprintf ppf ", %s" (field_kind elt))
+        t;
+      Format.fprintf ppf " )"
+
 let primitive ppf = function
   | Pidentity -> fprintf ppf "id"
   | Pignore -> fprintf ppf "ignore"
@@ -115,9 +131,10 @@ let primitive ppf = function
   | Ploc kind -> fprintf ppf "%s" (string_of_loc_kind kind)
   | Pgetglobal id -> fprintf ppf "global %a" Ident.print id
   | Psetglobal id -> fprintf ppf "setglobal %a" Ident.print id
-  | Pmakeblock(tag, Immutable, _kind) -> fprintf ppf "makeblock %i" tag
-  | Pmakeblock(tag, Mutable, kind) ->
-      fprintf ppf "makemutable%s %i" (value_kind kind) tag
+  | Pmakeblock(tag, Immutable, shape) ->
+      fprintf ppf "makeblock %i%a" tag block_shape shape
+  | Pmakeblock(tag, Mutable, shape) ->
+      fprintf ppf "makemutable %i%a" tag block_shape shape
   | Pfield n -> fprintf ppf "field %i" n
   | Psetfield(n, ptr, init) ->
       let instr =

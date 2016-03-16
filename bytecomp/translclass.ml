@@ -244,7 +244,7 @@ let output_methods tbl methods lam =
       lsequence (mkappl(oo_prim "set_method", [Lvar tbl; lab; code])) lam
   | _ ->
       lsequence (mkappl(oo_prim "set_methods",
-                        [Lvar tbl; Lprim(Pmakeblock(0,Immutable,Pgenval),
+                        [Lvar tbl; Lprim(Pmakeblock(0,Immutable,None),
                                          methods)]))
         lam
 
@@ -485,7 +485,7 @@ let transl_class_rebind ids cl vf =
     Strict, Pgenval, new_init, lfunction [obj_init] obj_init',
     Llet(
     Alias, Pgenval, cla, transl_normal_path path,
-    Lprim(Pmakeblock(0, Immutable, Pgenval),
+    Lprim(Pmakeblock(0, Immutable, None),
           [mkappl(Lvar new_init, [lfield cla 0]);
            lfunction [table]
              (Llet(Strict, Pgenval, env_init,
@@ -747,11 +747,11 @@ let transl_class ids cl_id pub_meths cl vflag =
       Strict, Pgenval, env_init, mkappl (Lvar class_init, [Lvar table]),
       Lsequence(
       mkappl (oo_prim "init_class", [Lvar table]),
-      Lprim(Pmakeblock(0, Immutable, Pgenval),
+      Lprim(Pmakeblock(0, Immutable, None),
             [mkappl (Lvar env_init, [lambda_unit]);
              Lvar class_init; Lvar env_init; lambda_unit]))))
   and lbody_virt lenvs =
-    Lprim(Pmakeblock(0, Immutable, Pgenval),
+    Lprim(Pmakeblock(0, Immutable, None),
           [lambda_unit; Lfunction{kind = Curried;
                                   attr = default_function_attribute;
                                   params = [cla]; body = cl_init};
@@ -771,10 +771,10 @@ let transl_class ids cl_id pub_meths cl vflag =
   let lenv =
     let menv =
       if !new_ids_meths = [] then lambda_unit else
-      Lprim(Pmakeblock(0, Immutable, Pgenval),
+      Lprim(Pmakeblock(0, Immutable, None),
             List.map (fun id -> Lvar id) !new_ids_meths) in
     if !new_ids_init = [] then menv else
-    Lprim(Pmakeblock(0, Immutable, Pgenval),
+    Lprim(Pmakeblock(0, Immutable, None),
           menv :: List.map (fun id -> Lvar id) !new_ids_init)
   and linh_envs =
     List.map (fun (_, p) -> Lprim(Pfield 3, [transl_normal_path p]))
@@ -783,7 +783,7 @@ let transl_class ids cl_id pub_meths cl vflag =
   let make_envs lam =
     Llet(StrictOpt, Pgenval, envs,
          (if linh_envs = [] then lenv else
-         Lprim(Pmakeblock(0, Immutable, Pgenval), lenv :: linh_envs)),
+         Lprim(Pmakeblock(0, Immutable, None), lenv :: linh_envs)),
          lam)
   and def_ids cla lam =
     Llet(StrictOpt, Pgenval, env2,
@@ -804,7 +804,7 @@ let transl_class ids cl_id pub_meths cl vflag =
     if inh_keys = [] then Llet(Alias, Pgenval, cached, Lvar tables, lam) else
     Llet(Strict, Pgenval, cached,
          mkappl (oo_prim "lookup_tables",
-                [Lvar tables; Lprim(Pmakeblock(0, Immutable, Pgenval),
+                [Lvar tables; Lprim(Pmakeblock(0, Immutable, None),
                                     inh_keys)]),
          lam)
   and lset cached i lam =
@@ -831,7 +831,7 @@ let transl_class ids cl_id pub_meths cl vflag =
                        Lvar class_init; Lvar cached]))),
   make_envs (
   if ids = [] then mkappl (lfield cached 0, [lenvs]) else
-  Lprim(Pmakeblock(0, Immutable, Pgenval),
+  Lprim(Pmakeblock(0, Immutable, None),
         if concrete then
           [mkappl (lfield cached 0, [lenvs]);
            lfield cached 1;

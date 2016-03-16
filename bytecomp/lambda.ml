@@ -51,9 +51,7 @@ type primitive =
   | Pgetglobal of Ident.t
   | Psetglobal of Ident.t
   (* Operations on heap blocks *)
-  | Pmakeblock of int * mutable_flag * value_kind
-       (* value_kind currently describes the content of "ref"-like blocks
-         (i.e. mutable and with a single field *)
+  | Pmakeblock of int * mutable_flag * block_shape
   | Pfield of int
   | Psetfield of int * immediate_or_pointer * initialization_or_assignment
   | Pfloatfield of int
@@ -147,6 +145,9 @@ and comparison =
 
 and value_kind =
     Pgenval | Pfloatval | Pboxedintval of boxed_integer
+
+and block_shape =
+  value_kind list option
 
 and array_kind =
     Pgenarray | Paddrarray | Pintarray | Pfloatarray

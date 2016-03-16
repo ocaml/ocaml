@@ -474,7 +474,12 @@ let simplify_lets lam =
       let slinit = simplif linit in
       let slbody = simplif lbody in
       begin try
-       mklet Variable kind_ref v slinit (eliminate_ref v slbody)
+        let kind = match kind_ref with
+          | None -> Pgenval
+          | Some [field_kind] -> field_kind
+          | Some _ -> assert false
+        in
+        mklet Variable kind v slinit (eliminate_ref v slbody)
       with Real_reference ->
         mklet Strict kind v (Lprim(prim, [slinit])) slbody
       end

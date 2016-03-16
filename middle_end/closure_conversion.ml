@@ -114,7 +114,7 @@ let rec eliminate_const_block (const : Lambda.structured_constant)
       : Lambda.lambda =
   match const with
   | Const_block (tag, consts) ->
-    Lprim (Pmakeblock (tag, Asttypes.Immutable, Pgenval),
+    Lprim (Pmakeblock (tag, Asttypes.Immutable, None),
       List.map eliminate_const_block consts)
   | Const_base _
   | Const_pointer _

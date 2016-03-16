@@ -58,7 +58,7 @@ let transl_extension_constructor env path ext =
   in
   match ext.ext_kind with
     Text_decl _ ->
-      Lprim (Pmakeblock (Obj.object_tag, Immutable, Pgenval),
+      Lprim (Pmakeblock (Obj.object_tag, Immutable, None),
         [Lconst (Const_base (Const_string (name, None)));
          Lprim (prim_fresh_oo_id, [Lconst (Const_base (Const_int 0))])])
   | Text_rebind(path, _lid) ->
@@ -152,8 +152,8 @@ let primitives_table = create_hashtable 57 [
   "%field0", Pfield 0;
   "%field1", Pfield 1;
   "%setfield0", Psetfield(0, Pointer, Assignment);
-  "%makeblock", Pmakeblock(0, Immutable, Pgenval);
-  "%makemutable", Pmakeblock(0, Mutable, Pgenval);
+  "%makeblock", Pmakeblock(0, Immutable, None);
+  "%makemutable", Pmakeblock(0, Mutable, None);
   "%raise", Praise Raise_regular;
   "%reraise", Praise Raise_reraise;
   "%raise_notrace", Praise Raise_notrace;
@@ -389,8 +389,8 @@ let specialize_primitive loc p env ty ~has_constant_constructor =
        p1 :: _) ->
         let (k, l) = bigarray_type_kind_and_layout env p1 in
         Pbigarrayset(unsafe, n, k, l)
-    | (Pmakeblock(0, Mutable, Pgenval), [p]) ->
-        Pmakeblock(0, Mutable, value_kind env p)
+    | (Pmakeblock(tag, mut, None), [p1]) ->
+        Pmakeblock(tag, mut, Some [Typeopt.value_kind env p1])
     | _ -> p
 
 (* Eta-expand a primitive *)
@@ -426,7 +426,7 @@ let transl_primitive loc p env ty path =
         let param = Ident.create "prim" in
         Lfunction{kind = Curried; params = [param];
                   attr = default_function_attribute;
-                  body = Lprim(Pmakeblock(0, Immutable, Pgenval),
+                  body = Lprim(Pmakeblock(0, Immutable, None),
                                [lam; Lvar param])}
       | _ -> assert false
     end
@@ -654,7 +654,7 @@ let assert_failed exp =
   let (fname, line, char) =
     Location.get_pos_info exp.exp_loc.Location.loc_start in
   Lprim(Praise Raise_regular, [event_after exp
-    (Lprim(Pmakeblock(0, Immutable, Pgenval),
+    (Lprim(Pmakeblock(0, Immutable, None),
           [transl_normal_path Predef.path_assert_failure;
            Lconst(Const_block(0,
               [Const_base(Const_string (fname, None));
@@ -781,7 +781,7 @@ and transl_exp0 e =
           lam_of_loc kind e.exp_loc
         | (Ploc kind, [arg1]) ->
           let lam = lam_of_loc kind arg1.exp_loc in
-          Lprim(Pmakeblock(0, Immutable, Pgenval), lam :: argl)
+          Lprim(Pmakeblock(0, Immutable, None), lam :: argl)
         | (Ploc _, _) -> assert false
         | (_, _) ->
             begin match (prim, argl) with
@@ -817,7 +817,7 @@ and transl_exp0 e =
       begin try
         Lconst(Const_block(0, List.map extract_constant ll))
       with Not_constant ->
-        Lprim(Pmakeblock(0, Immutable, Pgenval), ll)
+        Lprim(Pmakeblock(0, Immutable, None), ll)
       end
   | Texp_construct(_, cstr, args) ->
       let ll = transl_list args in
@@ -831,13 +831,13 @@ and transl_exp0 e =
           begin try
             Lconst(Const_block(n, List.map extract_constant ll))
           with Not_constant ->
-            Lprim(Pmakeblock(n, Immutable, Pgenval), ll)
+            Lprim(Pmakeblock(n, Immutable, None), ll)
           end
       | Cstr_extension(path, is_const) ->
           if is_const then
             transl_path e.exp_env path
           else
-            Lprim(Pmakeblock(0, Immutable, Pgenval),
+            Lprim(Pmakeblock(0, Immutable, None),
                   transl_path e.exp_env path :: ll)
       end
   | Texp_extension_constructor (_, path) ->
@@ -852,7 +852,7 @@ and transl_exp0 e =
             Lconst(Const_block(0, [Const_base(Const_int tag);
                                    extract_constant lam]))
           with Not_constant ->
-            Lprim(Pmakeblock(0, Immutable, Pgenval),
+            Lprim(Pmakeblock(0, Immutable, None),
                   [Lconst(Const_base(Const_int tag)); lam])
       end
   | Texp_record ((_, lbl1, _) :: _ as lbl_expr_list, opt_init_expr) ->
@@ -1004,7 +1004,7 @@ and transl_exp0 e =
       | Texp_construct (_, {cstr_arity = 0}, _)
         -> transl_exp e
       | Texp_constant(Const_float _) ->
-          Lprim(Pmakeblock(Obj.forward_tag, Immutable, Pgenval),
+          Lprim(Pmakeblock(Obj.forward_tag, Immutable, None),
                 [transl_exp e])
       | Texp_ident(_, _, _) -> (* according to the type *)
           begin match e.exp_type.desc with
@@ -1012,7 +1012,7 @@ and transl_exp0 e =
              forward_tag *)
           | Tvar _ | Tlink _ | Tsubst _ | Tunivar _
           | Tpoly(_,_) | Tfield(_,_,_,_) ->
-              Lprim(Pmakeblock(Obj.forward_tag, Immutable, Pgenval),
+              Lprim(Pmakeblock(Obj.forward_tag, Immutable, None),
                     [transl_exp e])
           (* the following cannot be represented as float/forward/lazy:
              optimize *)
@@ -1035,7 +1035,7 @@ and transl_exp0 e =
                 || has_base_type e Predef.path_int64
               then transl_exp e
               else
-                Lprim(Pmakeblock(Obj.forward_tag, Immutable, Pgenval),
+                Lprim(Pmakeblock(Obj.forward_tag, Immutable, None),
                       [transl_exp e])
           end
       (* other cases compile to a lazy block holding a function *)
@@ -1043,7 +1043,7 @@ and transl_exp0 e =
          let fn = Lfunction {kind = Curried; params = [Ident.create "param"];
                              attr = default_function_attribute;
                              body = transl_exp e} in
-          Lprim(Pmakeblock(Config.lazy_tag, Mutable, Pgenval), [fn])
+          Lprim(Pmakeblock(Config.lazy_tag, Mutable, None), [fn])
       end
   | Texp_object (cs, meths) ->
       let cty = cs.cstr_type in
@@ -1284,8 +1284,8 @@ and transl_record env all_labels repres lbl_expr_list opt_init_expr =
             raise Not_constant
       with Not_constant ->
         match repres with
-          Record_regular -> Lprim(Pmakeblock(0, mut, Pgenval), ll)
-        | Record_inlined tag -> Lprim(Pmakeblock(tag, mut, Pgenval), ll)
+          Record_regular -> Lprim(Pmakeblock(0, mut, None), ll)
+        | Record_inlined tag -> Lprim(Pmakeblock(tag, mut, None), ll)
         | Record_float -> Lprim(Pmakearray (Pfloatarray, mut), ll)
         | Record_extension ->
             let path =
@@ -1294,7 +1294,7 @@ and transl_record env all_labels repres lbl_expr_list opt_init_expr =
               | _ -> assert false
             in
             let slot = transl_path env path in
-            Lprim(Pmakeblock(0, mut, Pgenval), slot :: ll)
+            Lprim(Pmakeblock(0, mut, None), slot :: ll)
     in
     begin match opt_init_expr with
       None -> lam
