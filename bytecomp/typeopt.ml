@@ -129,6 +129,10 @@ let bigarray_type_kind_and_layout env typ =
 
 let value_kind env ty =
   match scrape env ty with
+  | Tconstr(p, _, _) when Path.same p Predef.path_int ->
+      Pintval
+  | Tconstr(p, _, _) when Path.same p Predef.path_char ->
+      Pintval
   | Tconstr(p, _, _) when Path.same p Predef.path_float ->
       Pfloatval
   | Tconstr(p, _, _) when Path.same p Predef.path_int32 ->

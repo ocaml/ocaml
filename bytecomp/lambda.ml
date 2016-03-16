@@ -144,7 +144,7 @@ and comparison =
     Ceq | Cneq | Clt | Cgt | Cle | Cge
 
 and value_kind =
-    Pgenval | Pfloatval | Pboxedintval of boxed_integer
+    Pgenval | Pfloatval | Pboxedintval of boxed_integer | Pintval
 
 and block_shape =
   value_kind list option

@@ -26,11 +26,11 @@ let value_kind =
   let open Lambda in
   function
   | Pgenval -> ""
+  | Pintval -> ":int"
   | Pfloatval -> ":float"
   | Pboxedintval Pnativeint -> ":nativeint"
   | Pboxedintval Pint32 -> ":int32"
   | Pboxedintval Pint64 -> ":int64"
-
 
 let rec structured_constant ppf = function
   | Uconst_float x -> fprintf ppf "%F" x

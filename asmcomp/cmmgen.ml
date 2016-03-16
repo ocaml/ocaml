@@ -2316,6 +2316,8 @@ and transl_let env str kind id exp body =
            return a boxed value (of the same kind).  Indeed, with GADTs,
            different branches could return different types. *)
         is_unboxed_number ~strict:true env exp
+    | _, Pintval ->
+        No_unboxing
   in
   match unboxing with
   | No_unboxing ->
