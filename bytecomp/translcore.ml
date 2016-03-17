@@ -815,14 +815,11 @@ and transl_exp0 e =
                Matching.for_trywith (Lvar id) (transl_cases_try pat_expr_list))
   | Texp_tuple el ->
       let ll, shape = transl_list_with_shape el in
-      if Config.flambda then
+      begin try
+        Lconst(Const_block(0, List.map extract_constant ll))
+      with Not_constant ->
         Lprim(Pmakeblock(0, Immutable, Some shape), ll)
-      else
-        begin try
-          Lconst(Const_block(0, List.map extract_constant ll))
-        with Not_constant ->
-          Lprim(Pmakeblock(0, Immutable, Some shape), ll)
-        end
+      end
   | Texp_construct(_, cstr, args) ->
       let ll, shape = transl_list_with_shape args in
       if cstr.cstr_inlined <> None then begin match ll with
@@ -832,14 +829,11 @@ and transl_exp0 e =
         Cstr_constant n ->
           Lconst(Const_pointer n)
       | Cstr_block n ->
-          if Config.flambda then
+          begin try
+            Lconst(Const_block(n, List.map extract_constant ll))
+          with Not_constant ->
             Lprim(Pmakeblock(n, Immutable, Some shape), ll)
-          else
-            begin try
-              Lconst(Const_block(n, List.map extract_constant ll))
-            with Not_constant ->
-              Lprim(Pmakeblock(n, Immutable, Some shape), ll)
-            end
+          end
       | Cstr_extension(path, is_const) ->
           if is_const then
             transl_path e.exp_env path
@@ -1293,7 +1287,7 @@ and transl_record env all_labels repres lbl_expr_list opt_init_expr =
       else Immutable in
     let lam =
       try
-        if mut = Mutable || Config.flambda then raise Not_constant;
+        if mut = Mutable then raise Not_constant;
         let cl = List.map extract_constant ll in
         match repres with
         | Record_regular -> Lconst(Const_block(0, cl))
