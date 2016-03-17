@@ -382,28 +382,31 @@ CAMLexport int caml_ephemeron_get_key_copy(value ar, mlsize_t offset,
                                            value *key)
 {
   CAMLparam1(ar);
-  value elt,v; /* Caution: they are NOT a local root. */
+  value elt = Val_unit, v; /* Caution: they are NOT a local root. */
   CAMLassert_valid_offset(ar,offset);
 
   offset += CAML_EPHE_FIRST_KEY;
 
-  if (is_ephe_key_none(ar, offset)) CAMLreturn(0);
-  v = Field (ar, offset);
-  /** Don't copy custom_block #7279 */
-  if (Is_block (v) && Is_in_heap_or_young(v) && Tag_val(v) != Custom_tag ) {
-    elt = caml_alloc (Wosize_val (v), Tag_val (v));
-          /* The GC may erase or move v during this call to caml_alloc. */
-    if (is_ephe_key_none(ar, offset)) CAMLreturn(0);
+  while(1) {
+    if(is_ephe_key_none(ar, offset)) CAMLreturn(0);
     v = Field (ar, offset);
-    copy_value(v,elt);
-    *key = elt;
-    CAMLreturn(1);
-  }else{
-    if ( caml_gc_phase == Phase_mark && Must_be_Marked_during_mark(v) ){
-      caml_darken (v, NULL);
-    };
-    *key = v;
-    CAMLreturn(1);
+    /** Don't copy custom_block #7279 */
+    if(!(Is_block (v) && Is_in_heap_or_young(v)  && Tag_val(v) != Custom_tag)) {
+      if ( caml_gc_phase == Phase_mark && Must_be_Marked_during_mark(v) ){
+        caml_darken (v, NULL);
+      };
+      *key = v;
+      CAMLreturn(1);
+    }
+    if (elt != Val_unit &&
+        Wosize_val(v) == Wosize_val(elt) && Tag_val(v) == Tag_val(elt)) {
+      copy_value(v,elt);
+      *key = elt;
+      CAMLreturn(1);
+    }
+    elt = caml_alloc (Wosize_val (v), Tag_val (v));
+    /* The GC may erase, move or even change v during this call to
+       caml_alloc. */
   }
 }
 
@@ -423,28 +426,30 @@ CAMLprim value caml_weak_get_copy (value ar, value n)
 CAMLexport int caml_ephemeron_get_data_copy (value ar, value *data)
 {
   CAMLparam1 (ar);
-  value elt,v; /* Caution: they are NOT a local root. */
+  value elt = Val_unit,v; /* Caution: they are NOT a local root. */
   CAMLassert_valid_ephemeron(ar);
 
-  if (caml_gc_phase == Phase_clean) caml_ephe_clean(ar);
-  v = Field (ar, CAML_EPHE_DATA_OFFSET);
-  if (v == caml_ephe_none) CAMLreturn(0);
-  /** Don't copy custom_block #7279 */
-  if (Is_block (v) && Is_in_heap_or_young(v) && Tag_val(v) != Custom_tag ) {
-    elt = caml_alloc (Wosize_val (v), Tag_val (v));
-          /* The GC may erase or move v during this call to caml_alloc. */
+  while(1) {
     if (caml_gc_phase == Phase_clean) caml_ephe_clean(ar);
     v = Field (ar, CAML_EPHE_DATA_OFFSET);
     if (v == caml_ephe_none) CAMLreturn(0);
-    copy_value(v,elt);
-    *data=elt;
-    CAMLreturn(1);
-  }else{
-    if ( caml_gc_phase == Phase_mark && Must_be_Marked_during_mark(v) ){
-      caml_darken (v, NULL);
-    };
-    *data = v;
-    CAMLreturn(1);
+    /** Don't copy custom_block #7279 */
+    if (!(Is_block (v) && Is_in_heap_or_young(v) && Tag_val(v) != Custom_tag)) {
+      if ( caml_gc_phase == Phase_mark && Must_be_Marked_during_mark(v) ){
+        caml_darken (v, NULL);
+      };
+      *data = v;
+      CAMLreturn(1);
+    }
+    if (elt != Val_unit &&
+        Wosize_val(v) == Wosize_val(elt) && Tag_val(v) == Tag_val(elt)) {
+      copy_value(v,elt);
+      *data = elt;
+      CAMLreturn(1);
+    }
+    elt = caml_alloc (Wosize_val (v), Tag_val (v));
+    /* The GC may erase, move or even change v during this call to
+       caml_alloc. */
   }
 }
 
