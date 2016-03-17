@@ -66,6 +66,7 @@ OCaml 4.04.0:
 
 - GPR#512: Installed `ocamlc`, `ocamlopt`, and `ocamllex` are now the
   native-code versions of the tools, if those versions were built.
+  (Demi Obenour)
 
 - GPR#324: Compiler developpers only: Adding new primitives to the
   standard runtime doesn't require anymore to run `make bootstrap`
