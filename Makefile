@@ -415,7 +415,7 @@ utils/config.ml: utils/config.mlp config/Makefile
 	    -e 's|%%WITH_FRAME_POINTERS%%|$(WITH_FRAME_POINTERS)|' \
 	    -e 's|%%WITH_SPACETIME%%|$(WITH_SPACETIME)|' \
 	    -e 's|%%LIBUNWIND_AVAILABLE%%|$(LIBUNWIND_AVAILABLE)|' \
-	    -e 's|%%LIBUNWIND_LINK_FLAG%%|$(LIBUNWIND_LINK_FLAG)|' \
+	    -e 's|%%LIBUNWIND_LINK_FLAGS%%|$(LIBUNWIND_LINK_FLAGS)|' \
 	    -e 's|%%MKDLL%%|$(MKDLL)|' \
 	    -e 's|%%MKEXE%%|$(MKEXE)|' \
 	    -e 's|%%MKMAINDLL%%|$(MKMAINDLL)|' \

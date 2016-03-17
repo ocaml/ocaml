@@ -45,8 +45,6 @@
 #include "libunwind.h"
 #endif
 
-#pragma GCC optimize ("-O0")
-
 static void debug_printf(const char* format, ...)
 {
 }
@@ -423,7 +421,7 @@ CAMLprim value caml_spacetime_get_trie_root (value v_unit)
 
 CAMLprim value caml_spacetime_do_not_override_profinfo (value v_unit)
 {
-  v_unit = v_unit;
+  v_unit = Val_unit;
   caml_spacetime_use_override_profinfo = Val_false;
   return Val_unit;
 }

@@ -1753,28 +1753,52 @@ else
     has_huge_pages=false
 fi
 
-if test "$libunwind_include_dir" != ""; then
-  libunwind_include="-I$libunwind_include_dir"
-else
-  libunwind_include=""
-fi
-
-if test "$libunwind_lib_dir" != ""; then
-  libunwind_lib="-L$libunwind_lib_dir"
-else
-  libunwind_lib=""
-fi
-
 if $with_spacetime; then
-  if $arch64; then
+  case "$arch,$system" in
+    amd64,*)
+      spacetime_supported=true
+      ;;
+    *)
+      spacetime_supported=false
+      ;;
+  esac
+  libunwind_warning=false
+  if $spacetime_supported; then
     echo "Spacetime profiling will be available."
     echo "#define WITH_SPACETIME" >> m.h
-    if [ "$libunwind_lib" != "" ]; then
-      libunwind_lib_temp="-Xl $libunwind_lib"
+    # On Mac OS X, we always use the system libunwind.
+    if test "$libunwind_lib_dir" != ""; then
+      case "$arch,$system" in
+        amd64,macosx)
+          inf "[WARNING] -libunwind* options are ignored on Mac OS X"
+          libunwind_warning=true
+          libunwind_lib="-framework System"
+          libunwind_lib_temp="$libunwind_lib"
+          ;;
+        *)
+          libunwind_lib="-L$libunwind_lib_dir -lunwind -lunwind-x86_64"
+          libunwind_lib_temp="-Xl $libunwind_lib"
+          ;;
+      esac
     else
-      libunwind_lib_temp=""
+      libunwind_lib=""
     fi
-    if sh ./hasgot -i libunwind.h $libunwind_lib_temp -Xl -lunwind $libunwind_include; then
+    if test "$libunwind_include_dir" != ""; then
+      case "$arch,$system" in
+        amd64,macosx)
+          if ! $libunwind_warning; then
+            inf "[WARNING] -libunwind* options are ignored on Mac OS X"
+          fi
+          libunwind_include=""
+          ;;
+        *)
+          libunwind_include="-I$libunwind_include_dir"
+          ;;
+      esac
+    else
+      libunwind_include=""
+    fi
+    if sh ./hasgot -i libunwind.h $libunwind_lib_temp $libunwind_include; then
       echo "#define HAS_LIBUNWIND" >> s.h
       has_libunwind=yes
       libunwind_available=true
@@ -1869,7 +1893,7 @@ echo "WITH_FRAME_POINTERS=$with_frame_pointers" >> Makefile
 echo "WITH_SPACETIME=$with_spacetime" >> Makefile
 echo "LIBUNWIND_AVAILABLE=$libunwind_available" >> Makefile
 echo "LIBUNWIND_INCLUDE_FLAGS=$libunwind_include" >> Makefile
-echo "LIBUNWIND_LINK_FLAG=$libunwind_lib" >> Makefile
+echo "LIBUNWIND_LINK_FLAGS=$libunwind_lib" >> Makefile
 echo "TARGET=$target" >> Makefile
 echo "HOST=$host" >> Makefile
 if [ "$ostype" = Cygwin ]; then
@@ -1945,14 +1969,22 @@ else
   else
     inf "        spacetime profiling....... no"
   fi
-  if test "$has_libunwind" = "yes"; then
-    if test "$libunwind_include_dir" != ""; then
-      inf "        libunwind include dir..... $libunwind_include_dir"
-    fi
-    if test "$libunwind_lib_dir" != ""; then
-      inf "        libunwind library dir..... $libunwind_lib_dir"
-    fi
-  fi
+  case "$arch,$system" in
+    amd64,macosx)
+      ;;
+    amd64,*)
+      if test "$has_libunwind" = "yes"; then
+        if test "$libunwind_include_dir" != ""; then
+          inf "        libunwind include dir..... $libunwind_include_dir"
+        fi
+        if test "$libunwind_lib_dir" != ""; then
+          inf "        libunwind library dir..... $libunwind_lib_dir"
+        fi
+      fi
+      ;;
+    *)
+      ;;
+  esac
   inf "        native dynlink ........... $natdynlink"
   if test "$profiling" = "prof"; then
   inf "        profiling with gprof ..... supported"

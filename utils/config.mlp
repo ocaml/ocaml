@@ -109,7 +109,7 @@ let asm_cfi_supported = %%ASM_CFI_SUPPORTED%%
 let with_frame_pointers = %%WITH_FRAME_POINTERS%%
 let spacetime = %%WITH_SPACETIME%%
 let libunwind_available = %%LIBUNWIND_AVAILABLE%%
-let libunwind_link_flag = "%%LIBUNWIND_LINK_FLAG%%"
+let libunwind_link_flags = "%%LIBUNWIND_LINK_FLAGS%%"
 
 let ext_obj = "%%EXT_OBJ%%"
 let ext_asm = "%%EXT_ASM%%"

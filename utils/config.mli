@@ -138,5 +138,5 @@ val spacetime : bool
         (* Whether the compiler was configured for Spacetime profiling *)
 val libunwind_available : bool
         (* Whether the libunwind library is available on the target *)
-val libunwind_link_flag : string
-        (* Linker flag to use libunwind *)
+val libunwind_link_flags : string
+        (* Linker flags to use libunwind *)

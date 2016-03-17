@@ -53,15 +53,19 @@ let from_filename kind filename = {
 }
 
 let from_location kind loc =
+  let dinfo_char_start = loc.loc_start.pos_cnum - loc.loc_start.pos_bol in
+  let dinfo_char_end =
+    if loc.loc_end.pos_fname = loc.loc_start.pos_fname
+    then loc.loc_end.pos_cnum - loc.loc_start.pos_bol
+    else loc.loc_start.pos_cnum - loc.loc_start.pos_bol
+  in
   if loc == Location.none then none else
   { dinfo_kind = kind;
     dinfo_file = loc.loc_start.pos_fname;
     dinfo_line = loc.loc_start.pos_lnum;
-    dinfo_char_start = loc.loc_start.pos_cnum - loc.loc_start.pos_bol;
-    dinfo_char_end =
-      if loc.loc_end.pos_fname = loc.loc_start.pos_fname
-      then loc.loc_end.pos_cnum - loc.loc_start.pos_bol
-      else loc.loc_start.pos_cnum - loc.loc_start.pos_bol }
+    dinfo_char_start = max 0 dinfo_char_start;
+    dinfo_char_end = max 0 dinfo_char_end;
+  }
 
 let from_call ev = from_location Dinfo_call ev.Lambda.lev_loc
 let from_raise ev = from_location Dinfo_raise ev.Lambda.lev_loc
