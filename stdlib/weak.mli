@@ -22,8 +22,10 @@ type 'a t
 (** The type of arrays of weak pointers (weak arrays).  A weak
    pointer is a value that the garbage collector may erase whenever
    the value is not used any more (through normal pointers) by the
-   program.  Note that finalisation functions are run after the
-   weak pointers are erased.
+   program.  Note that finalisation functions are run before the
+   weak pointers are erased, because the finalisation functions
+   can make values alive again (before 4.03 the finalisation
+   functions were run before).
 
    A weak pointer is said to be full if it points to a value,
    empty if the value was erased by the GC.
