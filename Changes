@@ -264,6 +264,12 @@ Compilers:
 - GPR#455: provide more debugging information to Js_of_ocaml
   (Jérôme Vouillon)
 
+- GPR#514: Added several command-line flags to explicitly enable
+  settings that are currently the default:
+  `-no-keep-docs`, `-no-keep-locs`, `-no-principal`,
+  `-no-rectypes`, `-no-strict-formats`
+  (Demi Obenour)
+
 Runtime system:
 ===============
 
