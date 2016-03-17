@@ -12,6 +12,15 @@ Language features:
 Tools:
 ======
 
+- GPR#514: Added several flags:
+  - `-no-keep-docs`
+  - `-no-keep-locs`
+  - `-alias-deps`
+  - `-app-funct`
+  - `-no-principal`
+  - `-no-rectypes`
+  (Demi Obenour)
+
 - GPR#452: Make the output of ocamldep is more stable
   (Alain Frisch)
 
