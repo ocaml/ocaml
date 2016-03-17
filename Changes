@@ -27,6 +27,8 @@ Build system:
   earlier) and standard 64-bit integer literals (Visual Studio .NET
   2002 and earlier)
   (David Allsopp)
+- GPR#507: More sharing between Unix and Windows makefiles
+  (whitequark, review by Alain Frisch)
 
 Bug fixes:
 - PR#7112: Aliased arguments ignored for equality of module types
