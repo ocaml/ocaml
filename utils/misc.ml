@@ -179,7 +179,7 @@ module Stdlib = struct
           if is_separator s.[j] then split1 (String.sub s i (j-i) :: res) (j+1)
           else split2 res i (j+1)
         end
-      in split1 [] 0
+      in List.rev (split1 [] 0)
   end
 end
 
