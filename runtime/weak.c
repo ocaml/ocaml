@@ -43,8 +43,16 @@ value caml_ephe_none = (value) &ephe_dummy;
     CAMLassert (offset < Wosize_val (eph) - CAML_EPHE_FIRST_KEY);           \
 }while(0)
 
+#define Assert_not_dead_value(v) do{                                    \
+    Assert ( caml_gc_phase != Phase_clean ||                            \
+             !Is_block(v) ||                                            \
+             !Is_in_heap (v) ||                                         \
+             !Is_white_val(v) );                                       \
+  }while(0)
+
 CAMLexport mlsize_t caml_ephemeron_key_length(value eph)
 {
+  Assert_valid_ephemeron(eph);
   return Wosize_val (eph) - CAML_EPHE_FIRST_KEY;
 }
 
@@ -101,10 +109,7 @@ CAMLexport value caml_ephemeron_create (mlsize_t len)
 
 CAMLprim value caml_ephe_create (value len)
 {
-  intnat size = Long_val(len);
-  if (size < 0 || size > CAML_EPHE_MAX_WOSIZE)
-    caml_invalid_argument ("Weak.create");
-  return caml_ephemeron_create(size);
+  return caml_ephemeron_create(Long_val(len));
 }
 
 CAMLprim value caml_weak_create (value len)
@@ -176,17 +181,6 @@ static inline int is_ephe_key_none(value ar, mlsize_t offset)
   }
 }
 
-/** The offset starts here at 0 */
-static inline mlsize_t raise_if_invalid_offset(value ar, value n,
-                                               char* msg)
-{
-  intnat offset = Long_val (n);
-  if (offset < 0 || offset >= Wosize_val (ar) - CAML_EPHE_FIRST_KEY){
-    caml_invalid_argument (msg);
-  }
-  return offset;
-}
-
 static void do_set (value ar, mlsize_t offset, value v)
 {
   if (Is_block (v) && Is_young (v)){
@@ -216,9 +210,7 @@ CAMLexport void caml_ephemeron_set_key(value ar, mlsize_t offset, value k)
 
 CAMLprim value caml_ephe_set_key (value ar, value n, value el)
 {
-  mlsize_t offset = raise_if_invalid_offset(ar,n,"Weak.set");
-
-  caml_ephemeron_set_key(ar,offset,el);
+  caml_ephemeron_set_key(ar,Long_val(n),el);
   return Val_unit;
 }
 
@@ -237,9 +229,7 @@ CAMLexport void caml_ephemeron_unset_key(value ar, mlsize_t offset)
 
 CAMLprim value caml_ephe_unset_key (value ar, value n)
 {
-  mlsize_t offset = raise_if_invalid_offset (ar,n,"Weak.set");
-
-  caml_ephemeron_unset_key(ar,offset);
+  caml_ephemeron_unset_key(ar,Long_val(n));
   return Val_unit;
 }
 
@@ -320,16 +310,15 @@ CAMLexport int caml_ephemeron_get_key (value ar, mlsize_t offset, value *key)
       caml_darken (elt, NULL);
     }
     *key = elt;
+    Assert_not_dead_value(elt);
     return 1;
   }
 }
 
 CAMLprim value caml_ephe_get_key (value ar, value n)
 {
-  mlsize_t offset = raise_if_invalid_offset (ar,n,"Weak.get_key");
-
   value data;
-  return optionalize(caml_ephemeron_get_key(ar,offset,&data),&data);
+  return optionalize(caml_ephemeron_get_key(ar,Long_val(n),&data),&data);
 }
 
 CAMLprim value caml_weak_get (value ar, value n)
@@ -351,6 +340,7 @@ CAMLexport int caml_ephemeron_get_data (value ar, value *data)
       caml_darken (elt, NULL);
     }
     *data = elt;
+    Assert_not_dead_value(elt);
     return 1;
   }
 }
@@ -400,6 +390,12 @@ CAMLexport int caml_ephemeron_get_key_copy(value ar, mlsize_t offset,
     }
     if (elt != Val_unit &&
         Wosize_val(v) == Wosize_val(elt) && Tag_val(v) == Tag_val(elt)) {
+      /* The allocation may trigger a finalyzer that change the tag
+         and size of the block. Therefore, in addition to checking
+         that the pointer is still alive, we have to check that it
+         still has the same tag and size.
+       */
+      Assert_not_dead_value(v);
       copy_value(v,elt);
       *key = elt;
       CAMLreturn(1);
@@ -412,10 +408,9 @@ CAMLexport int caml_ephemeron_get_key_copy(value ar, mlsize_t offset,
 
 CAMLprim value caml_ephe_get_key_copy (value ar, value n)
 {
-  mlsize_t offset = raise_if_invalid_offset (ar,n,"Weak.get_copy");
-
   value key;
-  return optionalize(caml_ephemeron_get_key_copy(ar, offset, &key), &key);
+  return optionalize(caml_ephemeron_get_key_copy(ar, Long_val(n), &key),
+                     &key);
 }
 
 CAMLprim value caml_weak_get_copy (value ar, value n)
@@ -443,13 +438,14 @@ CAMLexport int caml_ephemeron_get_data_copy (value ar, value *data)
     }
     if (elt != Val_unit &&
         Wosize_val(v) == Wosize_val(elt) && Tag_val(v) == Tag_val(elt)) {
+      /** cf caml_ephemeron_get_key_copy */
+      Assert_not_dead_value(v);
       copy_value(v,elt);
       *data = elt;
       CAMLreturn(1);
     }
     elt = caml_alloc (Wosize_val (v), Tag_val (v));
-    /* The GC may erase, move or even change v during this call to
-       caml_alloc. */
+    /** cf caml_ephemeron_get_key_copy */
   }
 }
 
@@ -470,9 +466,7 @@ CAMLexport int caml_ephemeron_check_key(value ar, mlsize_t offset)
 
 CAMLprim value caml_ephe_check_key (value ar, value n)
 {
-  mlsize_t offset = raise_if_invalid_offset(ar, n, "Weak.check");
-
-  return Val_bool (caml_ephemeron_check_key(ar, offset));
+  return Val_bool (caml_ephemeron_check_key(ar, Long_val(n)));
 }
 
 CAMLprim value caml_weak_check (value ar, value n)
@@ -528,11 +522,8 @@ CAMLprim value caml_ephe_blit_key (value ars, value ofs,
                                    value ard, value ofd, value len)
 {
   if (Long_val(len) == 0) return Val_unit;
-  mlsize_t offset_s = raise_if_invalid_offset(ars, ofs, "Weak.blit");
-  mlsize_t offset_d = raise_if_invalid_offset(ard, ofd, "Weak.blit");
-  mlsize_t length = Long_val (len);
 
-  caml_ephemeron_blit_key(ars,offset_s,ard,offset_d,length);
+  caml_ephemeron_blit_key(ars,Long_val(ofs),ard,Long_val(ofd),Long_val(len));
   return Val_unit;
 }
 

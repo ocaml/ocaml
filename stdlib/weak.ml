@@ -19,17 +19,53 @@ type 'a t
 
 external create : int -> 'a t = "caml_weak_create"
 
+let create l =
+  if not (0 <= l && l <= Obj.Ephemeron.max_ephe_length) then
+    invalid_arg("Weak.create");
+  create l
+
 (** number of additional values in a weak pointer *)
 let additional_values = 2
 
 let length x = Obj.size(Obj.repr x) - additional_values
 
+let raise_if_invalid_offset e o msg =
+  if not (0 <= o && o < length e) then
+    invalid_arg(msg)
+
 external set : 'a t -> int -> 'a option -> unit = "caml_weak_set"
+let set e o x =
+  raise_if_invalid_offset e o "Weak.set";
+  set e o x
 external get : 'a t -> int -> 'a option = "caml_weak_get"
+let get e o =
+  raise_if_invalid_offset e o "Weak.get";
+  get e o
 external get_copy : 'a t -> int -> 'a option = "caml_weak_get_copy"
+let get_copy e o =
+  raise_if_invalid_offset e o "Weak.get_copy";
+  get_copy e o
 external check : 'a t -> int -> bool = "caml_weak_check"
+let check e o =
+  raise_if_invalid_offset e o "Weak.check";
+  check e o
+
 external blit : 'a t -> int -> 'a t -> int -> int -> unit = "caml_weak_blit"
+
 (* blit: src srcoff dst dstoff len *)
+let blit e1 o1 e2 o2 l =
+  let msg = "Weak.blit" in
+  if l < 0 then invalid_arg msg;
+  if l = 0 then ()
+  else begin
+    raise_if_invalid_offset e1 o1 msg;
+    raise_if_invalid_offset e2 o2 msg;
+    let len1 = length e1 in let len2 = length e2 in
+    if not (l <= len1 && l <= len2 &&
+            o1 <= len1 - l && o2 <= len2 - l) then
+      invalid_arg msg;
+    blit e1 o1 e2 o2 l
+  end
 
 let fill ar ofs len x =
   if ofs < 0 || len < 0 || ofs + len > length ar

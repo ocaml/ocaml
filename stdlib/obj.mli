@@ -149,4 +149,7 @@ module Ephemeron: sig
 
   val blit_data : t -> t -> unit
   (** Same as {!Ephemeron.K1.blit_data} *)
+
+  val max_ephe_length: int
+  (** Maximum length of an ephemeron *)
 end

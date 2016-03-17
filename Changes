@@ -2932,6 +2932,14 @@ OCaml 4.04.0 (4 Nov 2016):
   (Florian Angeletti)
 
 ### Debugging and profiling:
+- PR#7173 GPR#515: Add a public C API for weak arrays and ephemerons.
+  Update the documentation for a 4.03 change: finalisation functions
+  are now run before the erasure of the corresponding values.
+  (François Bobot and Jacques-Henri Jourdan, review by Mark Shinwell)
+
+- PR#7203, GPR#534: Add a new primitive caml_alloc_float_array to allocate an
+  array of floats
+  (Thomas Braibant)
 
 - GPR#585: Spacetime, a new memory profiler (Mark Shinwell, Leo White)
 

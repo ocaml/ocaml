@@ -91,17 +91,61 @@ module Ephemeron = struct
 
   type t (** ephemeron *)
 
-  external create: int -> t = "caml_ephe_create"
+  let additional_values = 2
+  let max_ephe_length = Sys.max_array_length - additional_values
 
-  let length x = size(repr x) - 2
+  external create : int -> t = "caml_ephe_create";;
+  let create l =
+    if not (0 <= l && l <= max_ephe_length) then
+      invalid_arg "Obj.Ephemeron.create";
+    create l
+
+  let length x = size(repr x) - additional_values
+
+  let raise_if_invalid_offset e o msg =
+    if not (0 <= o && o < length e) then
+      invalid_arg msg
 
   external get_key: t -> int -> obj_t option = "caml_ephe_get_key"
+  let get_key e o =
+    raise_if_invalid_offset e o "Obj.Ephemeron.get_key";
+    get_key e o
+
   external get_key_copy: t -> int -> obj_t option = "caml_ephe_get_key_copy"
+  let get_key_copy e o =
+    raise_if_invalid_offset e o "Obj.Ephemeron.get_key_copy";
+    get_key_copy e o
+
   external set_key: t -> int -> obj_t -> unit = "caml_ephe_set_key"
+  let set_key e o x =
+    raise_if_invalid_offset e o "Obj.Ephemeron.set_key";
+    set_key e o x
+
   external unset_key: t -> int -> unit = "caml_ephe_unset_key"
+  let unset_key e o =
+    raise_if_invalid_offset e o "Obj.Ephemeron.unset_key";
+    unset_key e o
+
   external check_key: t -> int -> bool = "caml_ephe_check_key"
+  let check_key e o =
+    raise_if_invalid_offset e o "Obj.Ephemeron.check_key";
+    check_key e o
+
   external blit_key : t -> int -> t -> int -> int -> unit
     = "caml_ephe_blit_key"
+  let blit_key e1 o1 e2 o2 l =
+    let msg = "Obj.Ephemeron.blit_key" in
+    if l < 0 then invalid_arg msg;
+    if l = 0 then ()
+    else begin
+      raise_if_invalid_offset e1 o1 msg;
+      raise_if_invalid_offset e2 o2 msg;
+      let len1 = length e1 in let len2 = length e2 in
+      if not (l <= len1 && l <= len2 &&
+              o1 <= len1 - l && o2 <= len2 - l) then
+        invalid_arg msg;
+      blit_key e1 o1 e2 o2 l
+    end
 
   external get_data: t -> obj_t option = "caml_ephe_get_data"
   external get_data_copy: t -> obj_t option = "caml_ephe_get_data_copy"
@@ -109,6 +153,5 @@ module Ephemeron = struct
   external unset_data: t -> unit = "caml_ephe_unset_data"
   external check_data: t -> bool = "caml_ephe_check_data"
   external blit_data : t -> t -> unit = "caml_ephe_blit_data"
-
 
 end
