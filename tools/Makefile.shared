@@ -75,14 +75,6 @@ INSTALL_LIBDIR=$(DESTDIR)$(LIBDIR)
 
 install::
 	cp ocamldep $(INSTALL_BINDIR)/ocamldep.byte$(EXE)
-	if test -f ocamldep.opt; then \
-	  cp ocamldep.opt $(INSTALL_BINDIR)/ocamldep.opt$(EXE); \
-	  cd $(INSTALL_BINDIR); \
-	  ln -sf ocamldep.opt$(EXE) ocamldep$(EXE); \
-	else \
-	  cd $(INSTALL_BINDIR); \
-	  ln -sf ocamldep.byte$(EXE) ocamldep$(EXE); \
-	fi
 
 # The profiler
 
