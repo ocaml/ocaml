@@ -789,7 +789,7 @@ if test $with_sharedlibs = "yes"; then
     i[3456]86-*-haiku*)           natdynlink=true;;
     arm*-*-linux*)                natdynlink=true;;
     arm*-*-freebsd*)              natdynlink=true;;
-    earm*-*-netbsd*)               natdynlink=true;;
+    earm*-*-netbsd*)              natdynlink=true;;
     aarch64-*-linux*)             natdynlink=true;;
   esac
 fi
@@ -874,7 +874,7 @@ esac
 case "$native_compiler" in
     true) ;;
     false)
-      arch=none; model=default; system=unknown;;
+      arch=none; model=default; system=unknown; natdynlink=false;;
 esac
 
 if test -z "$ccoption"; then
