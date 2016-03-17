@@ -1,15 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*    Valerie Menissier-Morain, projet Cristal, INRIA Rocquencourt     *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the GNU Library General Public License, with    *)
-(*  the special exception on linking described in file ../../LICENSE.  *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*     Valerie Menissier-Morain, projet Cristal, INRIA Rocquencourt       *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 open Int_misc
 open Nat
@@ -438,9 +440,12 @@ let sys_big_int_of_string_base s ofs len sgn =
   if len < 2 then sys_big_int_of_string_aux s ofs len sgn 10
   else
     match (s.[ofs], s.[ofs+1]) with
-    | ('0', 'x') | ('0', 'X') -> sys_big_int_of_string_aux s (ofs+2) (len-2) sgn 16
-    | ('0', 'o') | ('0', 'O') -> sys_big_int_of_string_aux s (ofs+2) (len-2) sgn 8
-    | ('0', 'b') | ('0', 'B') -> sys_big_int_of_string_aux s (ofs+2) (len-2) sgn 2
+    | ('0', 'x') | ('0', 'X') ->
+        sys_big_int_of_string_aux s (ofs+2) (len-2) sgn 16
+    | ('0', 'o') | ('0', 'O') ->
+        sys_big_int_of_string_aux s (ofs+2) (len-2) sgn 8
+    | ('0', 'b') | ('0', 'B') ->
+        sys_big_int_of_string_aux s (ofs+2) (len-2) sgn 2
     | _ -> sys_big_int_of_string_aux s ofs len sgn 10
 ;;
 
@@ -459,7 +464,7 @@ let power_base_nat base nat off len =
   if base = 0 then nat_of_int 0 else
   if is_zero_nat nat off len || base = 1 then nat_of_int 1 else
   let power_base = make_nat (succ length_of_digit) in
-  let (pmax, pint) = make_power_base base power_base in
+  let (pmax, _pint) = make_power_base base power_base in
   let (n, rem) =
       let (x, y) = quomod_big_int (sys_big_int_of_nat nat off len)
                                   (big_int_of_int (succ pmax)) in
@@ -657,10 +662,10 @@ let approx_big_int prec bi =
     Bytes.unsafe_of_string
       (string_of_big_int (div_big_int bi (power_int_positive_int 10 n)))
   in
-  let (sign, off, len) =
+  let (sign, off) =
     if Bytes.get s 0 = '-'
-       then ("-", 1, succ prec)
-       else ("", 0, prec) in
+       then ("-", 1)
+       else ("", 0) in
   if (round_futur_last_digit s off (succ prec))
        then (sign^"1."^(String.make prec '0')^"e"^
              (string_of_int (n + 1 - off + Bytes.length s)))
@@ -722,7 +727,7 @@ let two_power_m1_big_int n =
     let idx = n / length_of_digit in
     let size_res = idx + 1 in
     let res = make_nat size_res in
-    set_digit_nat_native res idx 
+    set_digit_nat_native res idx
                          (Nativeint.shift_left 1n (n mod length_of_digit));
     ignore (decr_nat res 0 size_res 0);
     { sign = 1; abs_value = res }
@@ -733,7 +738,8 @@ let two_power_m1_big_int n =
 let shift_right_big_int bi n =
   if n < 0 then invalid_arg "shift_right_big_int"
   else if bi.sign >= 0 then shift_right_towards_zero_big_int bi n
-  else shift_right_towards_zero_big_int (sub_big_int bi (two_power_m1_big_int n)) n
+  else
+    shift_right_towards_zero_big_int (sub_big_int bi (two_power_m1_big_int n)) n
 
 (* Extract N bits starting at ofs.
    Treats bi in two's complement.
@@ -845,7 +851,7 @@ let xor_big_int a b =
 (* Consider a real number [r] such that
    - the integral part of [r] is the bigint [x]
    - 2^54 <= |x| < 2^63
-   - the fractional part of [r] is 0 if [exact = true], 
+   - the fractional part of [r] is 0 if [exact = true],
      nonzero if [exact = false].
    Then, the following function returns [r] correctly rounded to
    the nearest double-precision floating-point number.
@@ -875,4 +881,3 @@ let float_of_big_int x =
     (* Round to float and apply exponent *)
     ldexp (round_big_int_to_float top exact) n
   end
-

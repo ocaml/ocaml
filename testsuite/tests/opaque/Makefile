@@ -1,22 +1,34 @@
-#########################################################################
-#                                                                       #
-#                                 OCaml                                 #
-#                                                                       #
-#                 Xavier Clerc, SED, INRIA Rocquencourt                 #
-#                                                                       #
-#   Copyright 2010 Institut National de Recherche en Informatique et    #
-#   en Automatique.  All rights reserved.  This file is distributed     #
-#   under the terms of the Q Public License version 1.0.                #
-#                                                                       #
-#########################################################################
+#**************************************************************************
+#*                                                                        *
+#*                                OCaml                                   *
+#*                                                                        *
+#*                 Xavier Clerc, SED, INRIA Rocquencourt                  *
+#*                                                                        *
+#*   Copyright 2010 Institut National de Recherche en Informatique et     *
+#*     en Automatique.                                                    *
+#*                                                                        *
+#*   All rights reserved.  This file is distributed under the terms of    *
+#*   the GNU Lesser General Public License version 2.1, with the          *
+#*   special exception on linking described in the file LICENSE.          *
+#*                                                                        *
+#**************************************************************************
 
 BASEDIR=../..
 
 .PHONY: default
 default:
-	@if $(BYTECODE_ONLY); then : ; else \
+	@if $(BYTECODE_ONLY); then $(MAKE) skip ; else \
 	  $(MAKE) compile; \
 	fi
+
+.PHONY: skip
+skip:
+	@echo " ... testing 'test' with ordinary compilation => skipped"
+	@echo " ... testing 'test' with change to opaque interface => skipped"
+	@echo " ... testing 'test' with change to opaque implementation \
+	=> skipped"
+	@echo " ... testing 'test' with change to non-opaque implementation \
+	=> skipped"
 
 .PHONY: compile
 compile:
@@ -45,7 +57,7 @@ compile:
 	  $(OCAMLOPT) fst/opaque_intf.cmx snd/opaque_impl.cmx \
                         fst/regular.cmx test.cmx 2>/dev/null \
             && echo " => passed" || echo " => failed"; \
-	 printf " ... testing 'test' with change to non-opaque implementation"; \
+	 printf " ... testing 'test' with change to non-opaque implementation";\
 	  $(OCAMLOPT) fst/opaque_intf.cmx fst/opaque_impl.cmx \
                         snd/regular.cmx test.cmx 2>/dev/null \
             && echo " => failed" || echo " => passed"; \
@@ -55,9 +67,9 @@ promote:
 
 .PHONY: clean
 clean: defaultclean
-	@rm -f *.cmi *.cmx *.o a.out
+	@rm -f *.cmi *.cmx *.$(O) a.out camlprog.exe
 	@rm -f intf/*.cmi
-	@rm -f fst/*.cmi fst/*.cmx fst/*.o fst/*.mli
-	@rm -f snd/*.cmi snd/*.cmx snd/*.o snd/*.mli
+	@rm -f fst/*.cmi fst/*.cmx fst/*.$(O) fst/*.mli
+	@rm -f snd/*.cmi snd/*.cmx snd/*.$(O) snd/*.mli
 
 include $(BASEDIR)/makefiles/Makefile.common

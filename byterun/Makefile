@@ -1,15 +1,17 @@
-#########################################################################
-#                                                                       #
-#                                 OCaml                                 #
-#                                                                       #
-#            Xavier Leroy, projet Cristal, INRIA Rocquencourt           #
-#                                                                       #
-#   Copyright 1999 Institut National de Recherche en Informatique et    #
-#   en Automatique.  All rights reserved.  This file is distributed     #
-#   under the terms of the GNU Library General Public License, with     #
-#   the special exception on linking described in file ../LICENSE.      #
-#                                                                       #
-#########################################################################
+#**************************************************************************
+#*                                                                        *
+#*                                 OCaml                                  *
+#*                                                                        *
+#*            Xavier Leroy, projet Cristal, INRIA Rocquencourt            *
+#*                                                                        *
+#*   Copyright 1999 Institut National de Recherche en Informatique et     *
+#*     en Automatique.                                                    *
+#*                                                                        *
+#*   All rights reserved.  This file is distributed under the terms of    *
+#*   the GNU Lesser General Public License version 2.1, with the          *
+#*   special exception on linking described in the file LICENSE.          *
+#*                                                                        *
+#**************************************************************************
 
 include Makefile.common
 
@@ -66,9 +68,9 @@ install-noshared:
 .PHONY: install-noshared
 
 install-shared:
-	cp libcamlrun_shared.so $(INSTALL_LIBDIR)/libcamlrun_shared.so
-	cp libcamlrun_pic.a $(INSTALL_LIBDIR)/libcamlrun_pic.a
-	cd $(INSTALL_LIBDIR); $(RANLIB) libcamlrun_pic.a
+	cp libcamlrun_shared.so "$(INSTALL_LIBDIR)/libcamlrun_shared.so"
+	cp libcamlrun_pic.a "$(INSTALL_LIBDIR)/libcamlrun_pic.a"
+	cd "$(INSTALL_LIBDIR)"; $(RANLIB) libcamlrun_pic.a
 .PHONY: install-shared
 
 clean::

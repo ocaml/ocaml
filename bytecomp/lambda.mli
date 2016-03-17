@@ -1,14 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (* The "lambda" intermediate code *)
 
@@ -30,6 +33,17 @@ type loc_kind =
   | Loc_LOC
   | Loc_POS
 
+type immediate_or_pointer =
+  | Immediate
+  | Pointer
+
+type initialization_or_assignment =
+  (* CR-someday mshinwell: For multicore, perhaps it might be necessary to
+     split [Initialization] into two cases, depending on whether the place
+     being initialized is in the heap or not. *)
+  | Initialization
+  | Assignment
+
 type primitive =
     Pidentity
   | Pignore
@@ -42,9 +56,9 @@ type primitive =
   (* Operations on heap blocks *)
   | Pmakeblock of int * mutable_flag
   | Pfield of int
-  | Psetfield of int * bool
+  | Psetfield of int * immediate_or_pointer * initialization_or_assignment
   | Pfloatfield of int
-  | Psetfloatfield of int
+  | Psetfloatfield of int * initialization_or_assignment
   | Pduprecord of Types.record_representation * int
   (* Force lazy values *)
   | Plazyforce
@@ -69,7 +83,11 @@ type primitive =
   (* String operations *)
   | Pstringlength | Pstringrefu | Pstringsetu | Pstringrefs | Pstringsets
   (* Array operations *)
-  | Pmakearray of array_kind
+  | Pmakearray of array_kind * mutable_flag
+  | Pduparray of array_kind * mutable_flag
+  (** For [Pduparray], the argument must be an immutable array.
+      The arguments of [Pduparray] give the kind and mutability of the
+      array being *produced* by the duplication. *)
   | Parraylength of array_kind
   | Parrayrefu of array_kind
   | Parraysetu of array_kind
@@ -125,6 +143,8 @@ type primitive =
   | Pbbswap of boxed_integer
   (* Integer to external pointer *)
   | Pint_as_pointer
+  (* Inhibition of optimisation *)
+  | Popaque
 
 and comparison =
     Ceq | Cneq | Clt | Cgt | Cle | Cge
@@ -164,7 +184,13 @@ type structured_constant =
 type inline_attribute =
   | Always_inline (* [@inline] or [@inline always] *)
   | Never_inline (* [@inline never] *)
+  | Unroll of int (* [@unroll x] *)
   | Default_inline (* no [@inline] attribute *)
+
+type specialise_attribute =
+  | Always_specialise (* [@specialise] or [@specialise always] *)
+  | Never_specialise (* [@specialise never] *)
+  | Default_specialise (* no [@specialise] attribute *)
 
 type function_kind = Curried | Tupled
 
@@ -185,6 +211,7 @@ type shared_code = (int * int) list     (* stack size -> code label *)
 
 type function_attribute = {
   inline : inline_attribute;
+  specialise : specialise_attribute;
   is_a_functor: bool;
 }
 
@@ -223,7 +250,8 @@ and lambda_apply =
     ap_args : lambda list;
     ap_loc : Location.t;
     ap_should_be_tailcall : bool;       (* true if [@tailcall] was specified *)
-    ap_inlined : inline_attribute }     (* specified with the [@inline] attribute *)
+    ap_inlined : inline_attribute; (* specified with the [@inlined] attribute *)
+    ap_specialised : specialise_attribute; }
 
 and lambda_switch =
   { sw_numconsts: int;                  (* Number of integer cases *)
@@ -241,6 +269,13 @@ and lambda_event_kind =
     Lev_before
   | Lev_after of Types.type_expr
   | Lev_function
+  | Lev_pseudo
+
+type program =
+  { code : lambda;
+    main_module_block_size : int; }
+(* Lambda code for the Closure middle-end. The main module block size
+   is required for preallocating the block *)
 
 (* Sharing key *)
 val make_key: lambda -> lambda option
@@ -260,6 +295,7 @@ val transl_path: ?loc:Location.t -> Env.t -> Path.t -> lambda
 val make_sequence: ('a -> lambda) -> 'a list -> lambda
 
 val subst_lambda: lambda Ident.tbl -> lambda -> lambda
+val map : (lambda -> lambda) -> lambda -> lambda
 val bind : let_kind -> Ident.t -> lambda -> lambda -> lambda
 
 val commute_comparison : comparison -> comparison

@@ -1,14 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (* Pretty-printing of C-- code *)
 
@@ -51,12 +54,18 @@ let chunk = function
   | Double_u -> "float64u"
 
 let operation = function
-  | Capply(ty, d) -> "app" ^ Debuginfo.to_string d
-  | Cextcall(lbl, ty, alloc, d) ->
+  | Capply(_ty, d) -> "app" ^ Debuginfo.to_string d
+  | Cextcall(lbl, _ty, _alloc, d) ->
       Printf.sprintf "extcall \"%s\"%s" lbl (Debuginfo.to_string d)
   | Cload c -> Printf.sprintf "load %s" (chunk c)
   | Calloc -> "alloc"
-  | Cstore c -> Printf.sprintf "store %s" (chunk c)
+  | Cstore (c, init) ->
+    let init =
+      match init with
+      | Lambda.Initialization -> "(init)"
+      | Lambda.Assignment -> ""
+    in
+    Printf.sprintf "store %s%s" (chunk c) init
   | Caddi -> "+"
   | Csubi -> "-"
   | Cmuli -> "*"

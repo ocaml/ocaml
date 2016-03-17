@@ -1,21 +1,23 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the GNU Library General Public License, with    *)
-(*  the special exception on linking described in file ../LICENSE.     *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (* List operations *)
 
 let rec length_aux len = function
     [] -> len
-  | a::l -> length_aux (len + 1) l
+  | _::l -> length_aux (len + 1) l
 
 let length l = length_aux 0 l
 
@@ -23,11 +25,11 @@ let cons a l = a::l
 
 let hd = function
     [] -> failwith "hd"
-  | a::l -> a
+  | a::_ -> a
 
 let tl = function
     [] -> failwith "tl"
-  | a::l -> l
+  | _::l -> l
 
 let nth l n =
   if n < 0 then invalid_arg "List.nth" else
@@ -162,20 +164,20 @@ let rec assq x = function
 
 let rec mem_assoc x = function
   | [] -> false
-  | (a, b) :: l -> compare a x = 0 || mem_assoc x l
+  | (a, _) :: l -> compare a x = 0 || mem_assoc x l
 
 let rec mem_assq x = function
   | [] -> false
-  | (a, b) :: l -> a == x || mem_assq x l
+  | (a, _) :: l -> a == x || mem_assq x l
 
 let rec remove_assoc x = function
   | [] -> []
-  | (a, b as pair) :: l ->
+  | (a, _ as pair) :: l ->
       if compare a x = 0 then l else pair :: remove_assoc x l
 
 let rec remove_assq x = function
   | [] -> []
-  | (a, b as pair) :: l -> if a == x then l else pair :: remove_assq x l
+  | (a, _ as pair) :: l -> if a == x then l else pair :: remove_assq x l
 
 let rec find p = function
   | [] -> raise Not_found
@@ -221,7 +223,7 @@ let rec merge cmp l1 l2 =
 let rec chop k l =
   if k = 0 then l else begin
     match l with
-    | x::t -> chop (k-1) t
+    | _::t -> chop (k-1) t
     | _ -> assert false
   end
 ;;

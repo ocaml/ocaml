@@ -1,15 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*              Xavier Leroy, projet Cristal, INRIA Rocquencourt       *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the GNU Library General Public License, with    *)
-(*  the special exception on linking described in file ../LICENSE.     *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*               Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 type token =
     Kwd of string
@@ -182,18 +184,18 @@ let make_lexer keywords =
     match Stream.peek strm__ with
       Some '(' -> Stream.junk strm__; maybe_nested_comment strm__
     | Some '*' -> Stream.junk strm__; maybe_end_comment strm__
-    | Some c -> Stream.junk strm__; comment strm__
+    | Some _ -> Stream.junk strm__; comment strm__
     | _ -> raise Stream.Failure
   and maybe_nested_comment (strm__ : _ Stream.t) =
     match Stream.peek strm__ with
       Some '*' -> Stream.junk strm__; let s = strm__ in comment s; comment s
-    | Some c -> Stream.junk strm__; comment strm__
+    | Some _ -> Stream.junk strm__; comment strm__
     | _ -> raise Stream.Failure
   and maybe_end_comment (strm__ : _ Stream.t) =
     match Stream.peek strm__ with
       Some ')' -> Stream.junk strm__; ()
     | Some '*' -> Stream.junk strm__; maybe_end_comment strm__
-    | Some c -> Stream.junk strm__; comment strm__
+    | Some _ -> Stream.junk strm__; comment strm__
     | _ -> raise Stream.Failure
   in
-  fun input -> Stream.from (fun count -> next_token input)
+  fun input -> Stream.from (fun _count -> next_token input)

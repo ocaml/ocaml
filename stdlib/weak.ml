@@ -1,15 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Damien Doligez, projet Para, INRIA Rocquencourt          *)
-(*                                                                     *)
-(*  Copyright 1997 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the GNU Library General Public License, with    *)
-(*  the special exception on linking described in file ../LICENSE.     *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Damien Doligez, projet Para, INRIA Rocquencourt            *)
+(*                                                                        *)
+(*   Copyright 1997 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (** Weak array operations *)
 
@@ -17,7 +19,10 @@ type 'a t;;
 
 external create : int -> 'a t = "caml_weak_create";;
 
-let length x = Obj.size(Obj.repr x) - 1;;
+(** number of additional values in a weak pointer *)
+let additional_values = 2
+
+let length x = Obj.size(Obj.repr x) - additional_values;;
 
 external set : 'a t -> int -> 'a option -> unit = "caml_weak_set";;
 external get : 'a t -> int -> 'a option = "caml_weak_get";;
@@ -160,7 +165,7 @@ module Make (H : Hashtbl.HashedType) : (S with type data = H.t) = struct
         t.table.(t.rover) <- emptybucket;
         t.hashes.(t.rover) <- [| |];
       end else begin
-        Obj.truncate (Obj.repr bucket) (prev_len + 1);
+        Obj.truncate (Obj.repr bucket) (prev_len + additional_values);
         Obj.truncate (Obj.repr hbucket) prev_len;
       end;
       if len > t.limit && prev_len <= t.limit then t.oversize <- t.oversize - 1;
@@ -250,7 +255,7 @@ module Make (H : Hashtbl.HashedType) : (S with type data = H.t) = struct
     find_or t d (fun h index -> add_aux t set (Some d) h index; d)
   ;;
 
-  let find t d = find_or t d (fun h index -> raise Not_found);;
+  let find t d = find_or t d (fun _h _index -> raise Not_found);;
 
   let find_shadow t d iffound ifnotfound =
     let h = H.hash d in
@@ -271,7 +276,7 @@ module Make (H : Hashtbl.HashedType) : (S with type data = H.t) = struct
 
   let remove t d = find_shadow t d (fun w i -> set w i None) ();;
 
-  let mem t d = find_shadow t d (fun w i -> true) false;;
+  let mem t d = find_shadow t d (fun _w _i -> true) false;;
 
   let find_all t d =
     let h = H.hash d in

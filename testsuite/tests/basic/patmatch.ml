@@ -1,14 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                OCaml                                   *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (* Tests for matchings on integers and characters *)
 
@@ -1610,3 +1613,48 @@ let f = function
   | _ -> false
 
 let () =  printf "PR#6676=Ok\n%!"
+
+(* GPR#234, allow ``[]`` as a user defined constructor *)
+module GPR234HList = struct
+
+  type _ cell =
+    | Int : int -> int cell
+    | Pair : int * int -> (int * int) cell
+    | StrInt : string -> string cell
+    | List : int list -> int list cell
+
+  type hlist =
+    | [] : hlist
+    | ( :: ) : 'a cell * hlist -> hlist
+
+  type 'b foldf = {
+    f: 'a. 'a cell -> 'b -> 'b
+  }
+
+  let fold_hlist : 'b foldf -> 'b -> hlist -> 'b = fun f init l ->
+    let rec loop : hlist -> 'b -> 'b = fun l acc ->
+      match l with
+      | [] -> acc
+      | hd :: tl -> loop tl (f.f hd acc) in
+    loop l init
+
+  let to_int_fold : type a. a cell -> int -> int = fun cell acc ->
+    match cell with
+    | Int x -> x + acc
+    | Pair (x, y) -> x + y + acc
+    | StrInt str -> int_of_string str + acc
+    | List l -> acc + List.fold_left (+) 0 l
+
+  let sum l = fold_hlist {f=to_int_fold} 0 l
+
+  let l = List [1; 2; 3] (* still fine to use normal list here *)
+
+  let ll = [Int 3; Pair (4, 5); StrInt "30"; l]
+
+  let test () = Printf.printf "%d\n" (sum ll)
+
+end
+
+let () = GPR234HList.test ()
+
+let () = printf "GPR#234=Ok\n%!"

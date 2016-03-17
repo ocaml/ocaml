@@ -1,15 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*         Xavier Leroy, projet Cristal, INRIA Rocquencourt            *)
-(*                                                                     *)
-(*  Copyright 2004 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the GNU Library General Public License, with    *)
-(*  the special exception on linking described in file ../LICENSE.     *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*          Xavier Leroy, projet Cristal, INRIA Rocquencourt              *)
+(*                                                                        *)
+(*   Copyright 2004 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 type shape =
   | Function
@@ -69,4 +71,4 @@ let rec update_mod shape o n =
       for i = 0 to Array.length comps - 1 do
         update_mod comps.(i) (Obj.field o i) (Obj.field n i)
       done
-  | Value v -> () (* the value is already there *)
+  | Value _ -> () (* the value is already there *)

@@ -1,15 +1,18 @@
 # 2 "asmcomp/i386/proc.ml"
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (* Description of the Intel 386 processor *)
 
@@ -137,21 +140,24 @@ let calling_conventions first_int last_int first_float last_float make_stack
 
 let incoming ofs = Incoming ofs
 let outgoing ofs = Outgoing ofs
-let not_supported ofs = fatal_error "Proc.loc_results: cannot call"
+let not_supported _ofs = fatal_error "Proc.loc_results: cannot call"
+
+(* Six arguments in integer registers plus eight in global memory. *)
+let max_arguments_for_tailcalls = 14
 
 let loc_arguments arg =
   calling_conventions 0 5 100 99 outgoing arg
 let loc_parameters arg =
-  let (loc, ofs) = calling_conventions 0 5 100 99 incoming arg in loc
+  let (loc, _ofs) = calling_conventions 0 5 100 99 incoming arg in loc
 let loc_results res =
-  let (loc, ofs) = calling_conventions 0 5 100 100 not_supported res in loc
-let loc_external_arguments arg =
+  let (loc, _ofs) = calling_conventions 0 5 100 100 not_supported res in loc
+let loc_external_arguments _arg =
   fatal_error "Proc.loc_external_arguments"
 let loc_external_results res =
   match res with
   | [|{typ=Int};{typ=Int}|] -> [|eax; edx|]
   | _ ->
-      let (loc, ofs) = calling_conventions 0 0 100 100 not_supported res in loc
+      let (loc, _ofs) = calling_conventions 0 0 100 100 not_supported res in loc
 
 let loc_exn_bucket = eax
 
@@ -189,7 +195,7 @@ let destroyed_at_raise = all_phys_regs
 
 (* Maximal register pressure *)
 
-let safe_register_pressure op = 4
+let safe_register_pressure _op = 4
 
 let max_register_pressure = function
     Iextcall(_, _) -> [| 4; max_int |]

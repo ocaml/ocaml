@@ -360,9 +360,9 @@ Error: This expression has type t = < foo : int; .. >
        but an expression was expected of type < bar : int; foo : int >
        Type $0 = < bar : int; .. > is not compatible with type < bar : int > 
        The first object type has an abstract row, it cannot be closed
-#         Characters 98-99:
+#         Characters 97-121:
     (x:<foo:int;bar:int;..>)
-     ^
+    ^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This expression has type < bar : int; foo : int; .. >
        but an expression was expected of type 'a
        The type constructor $1 would escape its scope

@@ -1,15 +1,18 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*          Jerome Vouillon, projet Cristal, INRIA Rocquencourt        *)
-(*          OCaml port by John Malecki and Xavier Leroy                *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*           Jerome Vouillon, projet Cristal, INRIA Rocquencourt          *)
+(*           OCaml port by John Malecki and Xavier Leroy                  *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (************************ Source management ****************************)
 
@@ -64,8 +67,6 @@ type buffer = string * (int * int) list ref
 
 let buffer_max_count = ref 10
 
-let cache_size = 30
-
 let buffer_list =
   ref ([] : (string * buffer) list)
 
@@ -98,7 +99,7 @@ let insert_pos buffer ((position, line) as pair) =
     function
       [] ->
         [(position, line)]
-    | ((pos, lin) as a::l) as l' ->
+    | ((_pos, lin) as a::l) as l' ->
         if lin < line then
           pair::l'
         else if lin = line then
@@ -138,13 +139,13 @@ let line_of_pos buffer position =
           raise Out_of_range
         else
           (0, 1)
-    | ((pos, line) as pair)::l ->
+    | ((pos, _line) as pair)::l ->
         if pos > position then
           find l
         else
           pair
   and find_line previous =
-    let (pos, line) as next = next_line buffer previous in
+    let (pos, _line) as next = next_line buffer previous in
       if pos <= position then
         find_line next
       else
@@ -163,7 +164,7 @@ let pos_of_line buffer line =
           raise Out_of_range
         else
           (0, 1)
-    | ((pos, lin) as pair)::l ->
+    | ((_pos, lin) as pair)::l ->
         if lin > line then
           find l
         else

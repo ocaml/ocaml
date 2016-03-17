@@ -1,17 +1,19 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*        Mehdi Dogguy, PPS laboratory, University Paris Diderot       *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.   Modifications Copyright 2010 Mehdi Dogguy,       *)
-(*  used and distributed as part of OCaml by permission from           *)
-(*  the author.   This file is distributed under the terms of the      *)
-(*  Q Public License version 1.0.                                      *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*         Mehdi Dogguy, PPS laboratory, University Paris Diderot         *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*   Copyright 2010 Mehdi Dogguy                                          *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (* Dump info on .cmi, .cmo, .cmx, .cma, .cmxa, .cmxs files
    and on bytecode executables. *)
@@ -113,8 +115,19 @@ open Cmx_format
 let print_cmx_infos (ui, crc) =
   print_general_infos
     ui.ui_name crc ui.ui_defines ui.ui_imports_cmi ui.ui_imports_cmx;
-  printf "Approximation:\n";
-  Format.fprintf Format.std_formatter "  %a@." Printclambda.approx ui.ui_approx;
+  begin match ui.ui_export_info with
+  | Clambda approx ->
+    printf "Approximation:\n";
+    Format.fprintf Format.std_formatter "  %a@." Printclambda.approx approx
+  | Flambda export ->
+    printf "Flambda export information:\n";
+    let cu =
+      Compilation_unit.create (Ident.create_persistent ui.ui_name)
+        (Linkage_name.create "__dummy__")
+    in
+    Compilation_unit.set_current cu;
+    Format.printf " %a\n" Export_info.print_all export
+  end;
   let pr_funs _ fns =
     List.iter (fun arity -> printf " %d" arity) fns in
   printf "Currying functions:%a\n" pr_funs ui.ui_curry_fun;

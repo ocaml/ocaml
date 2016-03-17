@@ -1,14 +1,16 @@
-;(***********************************************************************)
-;(*                                                                     *)
-;(*                                OCaml                                *)
-;(*                                                                     *)
-;(*          Damien Doligez, projet Moscova, INRIA Rocquencourt         *)
-;(*                                                                     *)
-;(*  Copyright 2003 Institut National de Recherche en Informatique et   *)
-;(*  en Automatique.  All rights reserved.  This file is distributed    *)
-;(*  under the terms of the GNU General Public License.                 *)
-;(*                                                                     *)
-;(***********************************************************************)
+;**************************************************************************
+;*                                                                        *
+;*                                 OCaml                                  *
+;*                                                                        *
+;*           Damien Doligez, projet Moscova, INRIA Rocquencourt           *
+;*                                                                        *
+;*   Copyright 2003 Institut National de Recherche en Informatique et     *
+;*     en Automatique.                                                    *
+;*                                                                        *
+;*   All rights reserved.  This file is distributed under the terms of    *
+;*   the GNU General Public License.                                      *
+;*                                                                        *
+;**************************************************************************
 
 ; An emacs-lisp complement to the "-annot" option of ocamlc and ocamlopt.
 

@@ -67,7 +67,7 @@ compare: $(DEPENDS)
 	done
 
 clean:
-	@rm -f *.cm* *.o *.a $(DEPENDS) $(LINKS) lib.ml *~ *.byt* *.opt*
+	@rm -f *.cm* *.$(O) *.$(A) $(DEPENDS) $(LINKS) lib.ml *~ *.byt* *.opt*
 
 BASEDIR=../..
 include $(BASEDIR)/makefiles/Makefile.common

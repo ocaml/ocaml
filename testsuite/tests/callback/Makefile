@@ -1,14 +1,17 @@
-#########################################################################
-#                                                                       #
-#                                 OCaml                                 #
-#                                                                       #
-#                 Xavier Clerc, SED, INRIA Rocquencourt                 #
-#                                                                       #
-#   Copyright 2010 Institut National de Recherche en Informatique et    #
-#   en Automatique.  All rights reserved.  This file is distributed     #
-#   under the terms of the Q Public License version 1.0.                #
-#                                                                       #
-#########################################################################
+#**************************************************************************
+#*                                                                        *
+#*                                OCaml                                   *
+#*                                                                        *
+#*                 Xavier Clerc, SED, INRIA Rocquencourt                  *
+#*                                                                        *
+#*   Copyright 2010 Institut National de Recherche en Informatique et     *
+#*     en Automatique.                                                    *
+#*                                                                        *
+#*   All rights reserved.  This file is distributed under the terms of    *
+#*   the GNU Lesser General Public License version 2.1, with the          *
+#*   special exception on linking described in the file LICENSE.          *
+#*                                                                        *
+#**************************************************************************
 
 BASEDIR=../..
 
@@ -21,11 +24,18 @@ default:
 	@case " $(OTHERLIBRARIES) " in \
 	  *' unix '*) $(SET_LD_PATH) $(MAKE) run-byte; \
 	              $(SET_LD_PATH) $(MAKE) run-opt;; \
+	  *) $(MAKE) skip;; \
 	esac
 
 .PHONY: common
 common:
 	@$(CC) -c callbackprim.c
+
+.PHONY: skip
+skip:
+	@for c in bytecode native; do \
+	  echo " ... testing '$$c': => skipped" ; \
+	done
 
 .PHONY: run-byte
 run-byte: common

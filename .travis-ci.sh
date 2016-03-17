@@ -1,14 +1,17 @@
-#########################################################################
-#                                                                       #
-#                                 OCaml                                 #
-#                                                                       #
-#              Anil Madhavapeddy, OCaml Labs                            #
-#                                                                       #
-#   Copyright 2014 Institut National de Recherche en Informatique et    #
-#   en Automatique.  All rights reserved.  This file is distributed     #
-#   under the terms of the Q Public License version 1.0.                #
-#                                                                       #
-#########################################################################
+#**************************************************************************
+#*                                                                        *
+#*                                 OCaml                                  *
+#*                                                                        *
+#*              Anil Madhavapeddy, OCaml Labs                             *
+#*                                                                        *
+#*   Copyright 2014 Institut National de Recherche en Informatique et     *
+#*     en Automatique.                                                    *
+#*                                                                        *
+#*   All rights reserved.  This file is distributed under the terms of    *
+#*   the GNU Lesser General Public License version 2.1, with the          *
+#*   special exception on linking described in the file LICENSE.          *
+#*                                                                        *
+#**************************************************************************
 
 PREFIX=~/local
 
@@ -29,13 +32,27 @@ control.
 ------------------------------------------------------------------------
 EOF
     mkdir -p $PREFIX
-    ./configure --prefix $PREFIX
+    ./configure --prefix $PREFIX -with-debug-runtime \
+      -with-instrumented-runtime $CONFIG_ARG
     export PATH=$PREFIX/bin:$PATH
     make world.opt
+    make ocamlnat
     make install
     (cd testsuite && make all)
+    (cd testsuite && make USE_RUNTIME="d" all)
     mkdir external-packages
     cd external-packages
+    git clone git://github.com/ocaml/ocamlbuild
+    mkdir ocamlbuild-install
+    (cd ocamlbuild &&
+        make -f configure.make Makefile.config src/ocamlbuild_config.ml \
+          OCAMLBUILD_PREFIX=$PREFIX \
+          OCAMLBUILD_BINDIR=$PREFIX/bin \
+          OCAMLBUILD_LIBDIR=$PREFIX/lib \
+          OCAML_NATIVE=true \
+          OCAML_NATIVE_TOOLS=true &&
+        make all &&
+        make install)
     git clone git://github.com/ocaml/camlp4
     (cd camlp4 &&
      ./configure --bindir=$PREFIX/bin --libdir=$PREFIX/lib/ocaml \

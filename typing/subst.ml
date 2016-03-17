@@ -1,14 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (* Substitutions *)
 
@@ -21,11 +24,12 @@ type t =
   { types: (Ident.t, Path.t) Tbl.t;
     modules: (Ident.t, Path.t) Tbl.t;
     modtypes: (Ident.t, module_type) Tbl.t;
-    for_saving: bool }
+    for_saving: bool;
+    nongen_level: int }
 
 let identity =
   { types = Tbl.empty; modules = Tbl.empty; modtypes = Tbl.empty;
-    for_saving = false }
+    for_saving = false; nongen_level = generic_level }
 
 let add_type id p s = { s with types = Tbl.add id p s.types }
 
@@ -34,6 +38,8 @@ let add_module id p s = { s with modules = Tbl.add id p s.modules }
 let add_modtype id ty s = { s with modtypes = Tbl.add id ty s.modtypes }
 
 let for_saving s = { s with for_saving = true }
+
+let set_nongen_level s lev = { s with nongen_level = lev }
 
 let loc s x =
   if s.for_saving && not !Clflags.keep_locs then Location.none else x
@@ -76,7 +82,7 @@ let modtype_path s = function
       with Not_found -> p end
   | Pdot(p, n, pos) ->
       Pdot(module_path s p, n, pos)
-  | Papply(p1, p2) ->
+  | Papply _ ->
       fatal_error "Subst.modtype_path"
 
 let type_path s = function
@@ -84,7 +90,7 @@ let type_path s = function
       begin try Tbl.find id s.types with Not_found -> p end
   | Pdot(p, n, pos) ->
       Pdot(module_path s p, n, pos)
-  | Papply(p1, p2) ->
+  | Papply _ ->
       fatal_error "Subst.type_path"
 
 let type_path s p =
@@ -122,7 +128,11 @@ let rec typexp s ty =
           else newty2 ty.level desc
         in
         save_desc ty desc; ty.desc <- Tsubst ty'; ty'
-      else ty
+      else begin (* when adding a module to the environment *)
+        if ty.level < generic_level then
+          ty.level <- min ty.level s.nongen_level;
+        ty
+      end
   | Tsubst ty ->
       ty
 (* cannot do it, since it would omit subsitution
@@ -137,7 +147,7 @@ let rec typexp s ty =
     ty.desc <- Tsubst ty';
     ty'.desc <-
       begin match desc with
-      | Tconstr(p, tl, abbrev) ->
+      | Tconstr(p, tl, _abbrev) ->
           Tconstr(type_path s p, List.map (typexp s) tl, ref Mnil)
       | Tpackage(p, n, tl) ->
           Tpackage(modtype_path s p, n, List.map (typexp s) tl)
@@ -187,7 +197,7 @@ let rec typexp s ty =
               | None ->
                   Tvariant row
           end
-      | Tfield(label, kind, t1, t2) when field_kind_repr kind = Fabsent ->
+      | Tfield(_label, kind, _t1, t2) when field_kind_repr kind = Fabsent ->
           Tlink (typexp s t2)
       | _ -> copy_type_desc (typexp s) desc
       end;
@@ -250,6 +260,7 @@ let type_declaration s decl =
       type_newtype_level = None;
       type_loc = loc s decl.type_loc;
       type_attributes = attrs s decl.type_attributes;
+      type_immediate = decl.type_immediate;
     }
   in
   cleanup_types ();
@@ -334,13 +345,13 @@ let extension_constructor s ext =
 
 let rec rename_bound_idents s idents = function
     [] -> (List.rev idents, s)
-  | Sig_type(id, d, _) :: sg ->
+  | Sig_type(id, _, _) :: sg ->
       let id' = Ident.rename id in
       rename_bound_idents (add_type id (Pident id') s) (id' :: idents) sg
-  | Sig_module(id, mty, _) :: sg ->
+  | Sig_module(id, _, _) :: sg ->
       let id' = Ident.rename id in
       rename_bound_idents (add_module id (Pident id') s) (id' :: idents) sg
-  | Sig_modtype(id, d) :: sg ->
+  | Sig_modtype(id, _) :: sg ->
       let id' = Ident.rename id in
       rename_bound_idents (add_modtype id (Mty_ident(Pident id')) s)
                           (id' :: idents) sg
@@ -359,7 +370,7 @@ let rec modtype s = function
           begin try Tbl.find id s.modtypes with Not_found -> mty end
       | Pdot(p, n, pos) ->
           Mty_ident(Pdot(module_path s p, n, pos))
-      | Papply(p1, p2) ->
+      | Papply _ ->
           fatal_error "Subst.modtype"
       end
   | Mty_signature sg ->
@@ -381,19 +392,19 @@ and signature s sg =
 
 and signature_component s comp newid =
   match comp with
-    Sig_value(id, d) ->
+    Sig_value(_id, d) ->
       Sig_value(newid, value_description s d)
-  | Sig_type(id, d, rs) ->
+  | Sig_type(_id, d, rs) ->
       Sig_type(newid, type_declaration s d, rs)
-  | Sig_typext(id, ext, es) ->
+  | Sig_typext(_id, ext, es) ->
       Sig_typext(newid, extension_constructor s ext, es)
-  | Sig_module(id, d, rs) ->
+  | Sig_module(_id, d, rs) ->
       Sig_module(newid, module_declaration s d, rs)
-  | Sig_modtype(id, d) ->
+  | Sig_modtype(_id, d) ->
       Sig_modtype(newid, modtype_declaration s d)
-  | Sig_class(id, d, rs) ->
+  | Sig_class(_id, d, rs) ->
       Sig_class(newid, class_declaration s d, rs)
-  | Sig_class_type(id, d, rs) ->
+  | Sig_class_type(_id, d, rs) ->
       Sig_class_type(newid, cltype_declaration s d, rs)
 
 and module_declaration s decl =
@@ -423,4 +434,5 @@ let compose s1 s2 =
   { types = merge_tbls (type_path s2) s1.types s2.types;
     modules = merge_tbls (module_path s2) s1.modules s2.modules;
     modtypes = merge_tbls (modtype s2) s1.modtypes s2.modtypes;
-    for_saving = false }
+    for_saving = s1.for_saving || s2.for_saving;
+    nongen_level = min s1.nongen_level s2.nongen_level }

@@ -1,14 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (* Predefined type constructors (with special typing rules in typecore) *)
 
@@ -65,3 +68,10 @@ val build_initial_env:
 
 val builtin_values: (string * Ident.t) list
 val builtin_idents: (string * Ident.t) list
+
+(** All predefined exceptions, exposed as [Ident.t] for flambda (for
+    building value approximations).
+    The [Ident.t] for division by zero is also exported explicitly
+    so flambda can generate code to raise it. *)
+val ident_division_by_zero: Ident.t
+val all_predef_exns : Ident.t list

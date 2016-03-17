@@ -1,6 +1,10 @@
 \chapter{Language extensions} \label{c:extensions}
 \pdfchapter{Language extensions}
 %HEVEA\cutname{extn.html}
+%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Specific macros:
+\newcommand{\tq}{\textquotesingle}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 This chapter describes language extensions and convenience features
 that are implemented in OCaml, but not described in the
@@ -443,9 +447,9 @@ For example, assuming the record type
 \end{verbatim}
 has been declared, the following expressions are equivalent:
 \begin{verbatim}
-          let x = 1 and y = 2 in { x = x; y = y }
-          let x = 1 and y = 2 in { x; y }
-          let x = 1 and y = 2 in { x = x; y }
+          let x = 1. and y = 2. in { x = x; y = y },
+          let x = 1. and y = 2. in { x; y },
+          let x = 1. and y = 2. in { x = x; y }
 \end{verbatim}
 On the object side, all following methods are equivalent:
 \begin{verbatim}
@@ -458,8 +462,8 @@ On the object side, all following methods are equivalent:
 \end{verbatim}
 Likewise, the following functions are equivalent:
 \begin{verbatim}
-          fun {x = x; y = y} -> x + y
-          fun {x; y} -> x + y
+          fun {x = x; y = y} -> x +. y
+          fun {x; y} -> x +. y
 \end{verbatim}
 
 Optionally, a record pattern can be terminated by @';' '_'@ to convey the
@@ -470,11 +474,11 @@ the compiler will warn when a record pattern fails to list all fields of
 the corresponding record type and is not terminated by @';' '_'@.
 Continuing the "point" example above,
 \begin{verbatim}
-          fun {x} -> x + 1
+          fun {x} -> x +. 1.
 \end{verbatim}
 \noindent will warn if warning 9 is on, while
 \begin{verbatim}
-          fun {x; _} -> x + 1
+          fun {x; _} -> x +. 1.
 \end{verbatim}
 \noindent will not warn.  This warning can help spot program points where
 record patterns may need to be modified after new fields are added to a
@@ -512,9 +516,9 @@ actually be unified with "int".
 The other application is to ensure that some definition is sufficiently
 polymorphic.
 \caml
-\?let id : \textquotesingle\-a. \textquotesingle\-a -> \textquotesingle\-a = \<fun x -> x+1\> ;;
+\?let id : \tq\-a. \tq\-a -> \tq\-a = \<fun x -> x+1\> ;;
 \:Error: This definition has type int -> int which is less general than
-\:         \textquotesingle\-a. \textquotesingle\-a -> \textquotesingle\-a
+\:         \tq\-a. \tq\-a -> \tq\-a
 \endcaml
 
 \section{Locally abstract types}
@@ -549,9 +553,10 @@ If several locally abstract types need to be introduced, it is possible to use
 the syntax
 @"fun" '(' "type" typeconstr-name_1 \ldots typeconstr-name_n ')' "->" expr@
 as syntactic sugar for @"fun" '(' "type" typeconstr-name_1 ')' "->" \ldots "->"
-'(' "type" typeconstr-name_n ')' "->" expr@. For instance,
+"fun" '(' "type" typeconstr-name_n ')' "->" expr@. For instance,
 \begin{verbatim}
-        let f = fun (type t u v) -> (foo : (t * u * v) list) -> ...
+        let f = fun (type t u v) -> fun (foo : (t * u * v) list) -> ...
+        let f' (type t u v) (foo : (t * u * v) list) = ...
 \end{verbatim}
 
 This construction is useful because the type constructors it introduces
@@ -1211,6 +1216,49 @@ exhaustive (the "Add" case cannot happen).
           | App(_,_) -> 0
 \end{verbatim}
 
+
+\paragraph{Refutation cases and redundancy} (Introduced in 4.03)
+
+Usually, the exhaustiveness check only tries to check whether the
+cases omitted from the pattern matching are typable or not.
+However, you can force it to try harder by adding {\em refutation cases}:
+\begin{syntax}
+matching-case:
+     pattern ['when' expr] '->' expr
+   | pattern '->' '.'
+\end{syntax}
+In presence of a refutation case, the exhaustiveness check will first
+compute the intersection of the pattern with the complement of the
+cases preceding it. It then checks whether the resulting patterns can
+really match any concrete values by trying to type-check them.
+Wild cards in the generated patterns are handled in a special way: if
+their type is a variant type with only GADT constructors, then the
+pattern is split into the different constructors, in order to check whether
+any of them is possible (this splitting is not done for arguments of these
+constructors, to avoid non-termination.) We also split tuples and
+variant types with only one case, since they may contain GADTs inside.
+For instance, the following code is deemed exhaustive:
+
+\begin{verbatim}
+        type _ t =
+          | Int : int t
+          | Bool : bool t
+
+        let deep : (char t * int) option -> char = function
+          | None -> 'c'
+          | _ -> .
+\end{verbatim}
+
+Namely, the inferred remaining case is "Some _", which is split into
+"Some (Int, _)" and "Some (Bool, _)", which are both untypable.
+Note that the refutation case could be omitted here, because it is
+automatically added when there is only one case in the pattern
+matching.
+
+Another addition is that the redundancy check is now aware of GADTs: a
+case will be detected as redundant if it could be replaced by a
+refutation case using the same pattern.
+
 \paragraph{Advanced examples}
 The "term" type we have defined above is an {\em indexed} type, where
 a type parameter reflects a property of the value contents.
@@ -1272,6 +1320,58 @@ to implement dynamic types.
           | None -> None
           | Some Eq -> Some x
 \end{verbatim}
+\paragraph{Existential type names in error messages}
+
+(Updated in OCaml 4.03.0)
+
+The typing of pattern matching in presence of GADT can generate many
+existential types. When necessary, error messages refer to these
+existential types using compiler-generated names. Currently, the
+compiler generates these names according to the following nomenclature:
+\begin{itemize}
+\item First, types whose name starts with a "$" are existentials.
+\item "$Constr_'a" denotes an existential type introduced for the type
+variable "'a" of the GADT constructor "Constr":
+\caml
+\?   type any = Any : \tq\-name -> any
+\?   let escape (Any x) = \<x\>;;
+\: Error: This expression has type $Any_\tq\-name
+\:        but an expression was expected of type \tq\-a
+\:        The type constructor $Any_\tq\-name would escape its scope
+\endcaml
+\item "$Constr" denotes an existential type introduced for an anonymous
+type variable in the GADT constructor "Constr":
+\caml
+\? type any = Any : _ -> any
+\? let escape (Any x) = \<x\>;;
+\: Error: This expression has type $Any but an expression was expected of type
+\:        \tq\-a
+\:        The type constructor $Any would escape its scope
+\endcaml
+\item "$'a" if the existential variable was unified with the type
+variable "'a" during typing:
+\caml
+\? type (\tq\-arg,\tq\-result,\tq\-aux) fn =
+\?  | Fun: (\tq\-a ->\tq\-b) -> (\tq\-a,\tq\-b,unit) fn
+\?  | Mem1: (\tq\-a ->\tq\-b) * \tq\-a * \tq\-b -> (\tq\-a, \tq\-b, \tq\-a * \tq\-b) fn
+
+\? let apply: (\tq\-arg,\tq\-result, _ ) fn -> \tq\-arg -> \tq\-result = fun f x ->
+\?  match f with
+\?  | Fun f -> f x
+\?  | \<Mem1 (f,y,fy)\> -> if x = y then fy else f x;;
+
+\: Error: This pattern matches values of type
+\:         ($\tq\-arg, $\tq\-result, $\tq\-arg * $\tq\-result) fn
+\:        but a pattern was expected which matches values of type
+\:         ($\tq\-arg, $\tq\-result, unit) fn
+\:        Type $\tq\-arg * $\tq\-result is not compatible with type unit
+\endcaml
+\item "$n" (n a number) is an internally generated existential
+which could not be named using one of the previous schemes.
+\end{itemize}
+
+As shown by the last item, the current behavior is imperfect
+and may be improved in future versions.
 
 \section{Syntax for Bigarray access}\label{s:bigarray-access}
 
@@ -1316,7 +1416,8 @@ The last two entries are valid for any $n > 3$.
 
 \section{Attributes}\label{s:attributes}
 
-(Introduced in OCaml 4.02)
+(Introduced in OCaml 4.02,
+infix notations for constructs other than expressions added in 4.03)
 
 Attributes are ``decorations'' of the syntax tree which are mostly
 ignored by the type-checker but can be used by external tools.  An
@@ -1402,7 +1503,7 @@ typedef: ...
    | typedef item-attribute
 ;
 exception-definition:
-        'exception' constr-name { attribute } [ 'of' typexpr { '*' typexpr } ]
+        'exception' constr-decl
       | 'exception' constr-name '=' constr
 ;
 module-items:
@@ -1484,17 +1585,24 @@ cannot be attached to these floating attributes in @class-field-spec@
 and @class-field@.)
 
 
-It is also possible to specify attributes on expressions using an
-infix syntax.  This applies to all expressions starting with one or
-two keywords: "assert", "begin", "for", "fun", "function", "if",
-"lazy", "let", "let module", "let open", "match", "new", "object",
-"try", "while".  Those expressions supports adding one or several
-attributes just after those initial keyword(s).  For instance:
+It is also possible to specify attributes using an infix syntax. For instance:
 
 \begin{verbatim}
-let [@foo][@bar x] x = 2 in x + 1 === (let x = 2 in x + 1)[@foo][@bar x]
-begin[@foo] ... end               === (begin ... end)[@foo]
+let[@foo] x = 2 in x + 1          === (let x = 2 [@@foo] in x + 1)
+begin[@foo][@bar x] ... end       === (begin ... end)[@foo][@@bar x]
+module[@foo] M = ...              === module M = ... [@@foo]
+type[@foo] t = T                  === type t = T [@@foo]
+method[@foo] m = ...              === method m = ... [@@foo]
 \end{verbatim}
+
+For "let", the attributes are applied to each bindings:
+
+\begin{verbatim}
+let[@foo] x = 2 and y = 3 in x + y === (let x = 2 [@@foo] and y = 3 in x + y)
+let[@foo] x = 2
+and[@bar] y = 3 in x + y           === (let x = 2 [@@foo] and y = 3 [@bar] in x + y)
+\end{verbatim}
+
 
 \subsection{Built-in attributes}
 
@@ -1567,6 +1675,12 @@ Some attributes are understood by the type-checker:
   ``noalloc'', ``unboxed'' and ``untagged'' can be used on external
   definitions to obtain finer control over the C-to-OCaml interface. See
   \ref{s:C-cheaper-call} for more details.
+\item
+  ``ocaml.immediate'' or ``immediate'' applied on an abstract type mark the type as
+  having a non-pointer implementation (e.g. ``int'', ``bool'', ``char'' or
+  enumerated types). Mutation of these immediate types does not activate the
+  garbage collector's write barrier, which can significantly boost performance in
+  programs relying heavily on mutable state.
 \end{itemize}
 
 \begin{verbatim}
@@ -1576,10 +1690,10 @@ module X = struct
 end
   [@@deprecated "Please use module 'Y' instead."]
 
-let x = begin[@warning "+9] ... end in ....
+let x = begin[@warning "+9"] ... end in ....
 
 type t = A | B
-  [@@deprecated "Please use type 's' instead.]
+  [@@deprecated "Please use type 's' instead."]
 
 let f x =
   assert (x >= 0) [@ppwarning "TODO: remove this later"];
@@ -1599,6 +1713,14 @@ type fragile =
 let f = function
 | Int 0 | String "constant" -> () (* trigger warning 52 *)
 | _ -> ()
+
+module Immediate: sig
+  type t [@@immediate]
+  val x: t ref
+end = struct
+  type t = A | B
+  let x = ref 0
+end
   ....
 
 \end{verbatim}
@@ -1606,7 +1728,8 @@ let f = function
 
 \section{Extension nodes}\label{s:extension-nodes}
 
-(Introduced in OCaml 4.02)
+(Introduced in OCaml 4.02,
+infix notations for constructs other than expressions added in 4.03)
 
 Extension nodes are generic placeholders in the syntax tree. They are
 rejected by the type-checker and are intended to be ``expanded'' by external
@@ -1665,23 +1788,24 @@ class-field:
 ;
 \end{syntax}
 
-An infix form is available for extension nodes as expressions, when
-the payload is a single expression.  This form applies to all
-expressions starting with one or two keywords: the first keyword
-followed by the percent sign and then an extension identifier.
+An infix form is available for extension nodes when
+the payload is of the same kind
+(expression with expression, pattern with pattern ...).
 
 Examples:
 
 \begin{verbatim}
 let%foo x = 2 in x + 1     === [%foo let x = 2 in x + 1]
 begin%foo ... end          === [%foo begin ... end]
+module%foo M = ..          === [%%foo module M = ... ]
+val%foo x : t              === [%%foo: val x : t]
 \end{verbatim}
 
 When this form is used together with the infix syntax for attributes,
 the attributes are considered to apply to the payload:
 
 \begin{verbatim}
-let%foo[@bar] x = 2 in x + 1 === [%foo (let x = 2 in x + 1) [@bar]]
+fun%foo[@bar] x -> x + 1 === [%foo (fun x -> x + 1)[@foo ] ];
 \end{verbatim}
 
 \subsection{Built-in extension nodes}
@@ -1702,8 +1826,11 @@ type t = ..
 type t += X of int | Y of string
 let x = [%extension_constructor X]
 let y = [%extension_constructor Y]
-let () = assert (x <> y)
 \end{verbatim}
+\caml
+\? x <> y;;
+\:- : bool = true
+\endcaml
 
 \section{Quoted strings}\label{s:quoted-strings}
 
@@ -1969,3 +2096,25 @@ let invalid = function
   | Point p -> p  (* INVALID *)
   | ...
 \end{verbatim}
+
+
+\section{Local exceptions}
+\ikwd{let\@\texttt{let}}
+\ikwd{exception\@\texttt{exception}}
+
+(Introduced in OCaml 4.04)
+
+It is possible to define local exceptions in expressions:
+
+\begin{syntax}
+expr:
+       ...
+     | "let" "exception" constr-decl "in" expr
+\end{syntax}
+
+
+The syntactic scope of the exception constructor is the inner
+expression, but nothing prevents exception values created with this
+constructor from escaping this scope.  Two executions of the definition
+above result in two incompatible exception constructors (as for any
+exception definition).

@@ -1,14 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(* Xavier Leroy and Jerome Vouillon, projet Cristal, INRIA Rocquencourt*)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*  Xavier Leroy and Jerome Vouillon, projet Cristal, INRIA Rocquencourt  *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (* Operations on core types *)
 
@@ -281,9 +284,9 @@ let associate_fields fields1 fields2 =
         (List.rev p, List.rev s, (List.rev s') @ l')
     | ((n, k, t)::r, (n', k', t')::r') when n = n' ->
         associate ((n, k, t, k', t')::p) s s' (r, r')
-    | ((n, k, t)::r, ((n', k', t')::_ as l')) when n < n' ->
+    | ((n, k, t)::r, ((n', _k', _t')::_ as l')) when n < n' ->
         associate p ((n, k, t)::s) s' (r, l')
-    | (((n, k, t)::r as l), (n', k', t')::r') (* when n > n' *) ->
+    | (((_n, _k, _t)::_ as l), (n', k', t')::r') (* when n > n' *) ->
         associate p s ((n', k', t')::s') (l, r')
   in
   associate [] [] [] (fields1, fields2)
@@ -342,7 +345,7 @@ let row_variable ty =
 
 let set_object_name id rv params ty =
   match (repr ty).desc with
-    Tobject (fi, nm) ->
+    Tobject (_fi, nm) ->
       set_name nm (Some (Path.Pident id, rv::params))
   | _ ->
       assert false
@@ -379,7 +382,7 @@ let rec signature_of_class_type =
   function
     Cty_constr (_, _, cty) -> signature_of_class_type cty
   | Cty_signature sign     -> sign
-  | Cty_arrow (_, ty, cty)   -> signature_of_class_type cty
+  | Cty_arrow (_, _, cty)   -> signature_of_class_type cty
 
 let self_type cty =
   repr (signature_of_class_type cty).csig_self
@@ -415,7 +418,7 @@ let merge_row_fields fi1 fi2 =
 
 let rec filter_row_fields erase = function
     [] -> []
-  | (l,f as p)::fi ->
+  | (_l,f as p)::fi ->
       let fi = filter_row_fields erase fi in
       match row_field_repr f with
         Rabsent -> fi
@@ -508,7 +511,7 @@ let closed_type_decl decl =
                 | Cstr_record l -> List.iter (fun l -> closed_type l.ld_type) l
           )
           v
-    | Type_record(r, rep) ->
+    | Type_record(r, _rep) ->
         List.iter (fun l -> closed_type l.ld_type) r
     | Type_open -> ()
     end;
@@ -656,7 +659,7 @@ let rec generalize_spine ty =
   | _ -> ()
 
 let forward_try_expand_once = (* Forward declaration *)
-  ref (fun env ty -> raise Cannot_expand)
+  ref (fun _env _ty -> raise Cannot_expand)
 
 (*
    Lower the levels of a type (assume [level] is not
@@ -704,7 +707,7 @@ let rec update_level env level ty =
     | None -> ()
     end;
     match ty.desc with
-      Tconstr(p, tl, abbrev) when level < get_level env p ->
+      Tconstr(p, _tl, _abbrev) when level < get_level env p ->
         (* Try first to replace an abbreviation by its expansion. *)
         begin try
           (* if is_newtype env p then raise Cannot_expand; *)
@@ -721,14 +724,14 @@ let rec update_level env level ty =
         if Path.same p p' then raise (Unify [(ty, newvar2 level)]);
         log_type ty; ty.desc <- Tpackage (p', nl, tl);
         update_level env level ty
-    | Tobject(_, ({contents=Some(p, tl)} as nm))
+    | Tobject(_, ({contents=Some(p, _tl)} as nm))
       when level < get_level env p ->
         set_name nm None;
         update_level env level ty
     | Tvariant row ->
         let row = row_repr row in
         begin match row.row_name with
-        | Some (p, tl) when level < get_level env p ->
+        | Some (p, _tl) when level < get_level env p ->
             log_type ty;
             ty.desc <- Tvariant {row with row_name = None}
         | _ -> ()
@@ -861,7 +864,7 @@ let compute_univars ty =
   let node_univars = TypeHash.create 17 in
   let rec add_univar univ inv =
     match inv.inv_type.desc with
-      Tpoly (ty, tl) when List.memq univ (List.map repr tl) -> ()
+      Tpoly (_ty, tl) when List.memq univ (List.map repr tl) -> ()
     | _ ->
         try
           let univs = TypeHash.find node_univars inv.inv_type in
@@ -1022,7 +1025,7 @@ let rec copy ?env ?partial ?keep_names ty =
               (* Return a new copy *)
               Tvariant (copy_row copy true row keep more')
           end
-      | Tfield (p, k, ty1, ty2) ->
+      | Tfield (_p, k, _ty1, ty2) ->
           begin match field_kind_repr k with
             Fabsent  -> Tlink (copy ty2)
           | Fpresent -> copy_type_desc copy desc
@@ -1061,7 +1064,7 @@ let instance_def sch =
   cleanup_types ();
   ty
 
-let generic_instance ?partial env sch =
+let generic_instance env sch =
   let old = !current_level in
   current_level := generic_level;
   let ty = instance env sch in
@@ -1100,6 +1103,7 @@ let new_declaration newtype manifest =
     type_newtype_level = newtype;
     type_loc = Location.none;
     type_attributes = [];
+    type_immediate = false;
   }
 
 let instance_constructor ?in_pattern cstr =
@@ -1277,7 +1281,7 @@ let instance_label fixed lbl =
     match repr lbl.lbl_arg with
       {desc = Tpoly (ty, tl)} ->
         instance_poly fixed tl ty
-    | ty ->
+    | _ ->
         [], copy lbl.lbl_arg
   in
   cleanup_types ();
@@ -1286,7 +1290,7 @@ let instance_label fixed lbl =
 (**** Instantiation with parameter substitution ****)
 
 let unify' = (* Forward declaration *)
-  ref (fun env ty1 ty2 -> raise (Unify []))
+  ref (fun _env _ty1 _ty2 -> raise (Unify []))
 
 let subst env level priv abbrev ty params args body =
   if List.length params <> List.length args then raise (Unify []);
@@ -1435,7 +1439,7 @@ let safe_abbrev env ty =
 let try_expand_once env ty =
   let ty = repr ty in
   match ty.desc with
-    Tconstr (p, _, _) -> repr (expand_abbrev env ty)
+    Tconstr _ -> repr (expand_abbrev env ty)
   | _ -> raise Cannot_expand
 
 (* This one only raises Cannot_expand *)
@@ -1520,7 +1524,7 @@ let expand_head_opt env ty =
    respect the type constraints *)
 let enforce_constraints env ty =
   match ty with
-    {desc = Tconstr (path, args, abbrev); level = level} ->
+    {desc = Tconstr (path, args, _abbrev); level = level} ->
       begin try
         let decl = Env.find_type path env in
         ignore
@@ -1584,7 +1588,7 @@ let rec occur_rec env allow_recursive visited ty0 = function
   | ty ->
   if ty == ty0  then raise Occur;
   match ty.desc with
-    Tconstr(p, tl, abbrev) ->
+    Tconstr(p, _tl, _abbrev) ->
       if allow_recursive && is_contractive env p then () else
       begin try
         if TypeSet.mem ty visited then raise Occur;
@@ -1635,7 +1639,7 @@ let rec local_non_recursive_abbrev visited env p ty =
   let ty = repr ty in
   if not (List.memq ty visited) then begin
     match ty.desc with
-      Tconstr(p', args, abbrev) ->
+      Tconstr(p', args, _abbrev) ->
         if Path.same p p' then raise Occur;
         if is_contractive env p' then () else
         let visited = ty :: visited in
@@ -1929,6 +1933,13 @@ let non_aliasable p decl =
   (* in_pervasives p ||  (subsumed by in_current_module) *)
   in_current_module p && decl.type_newtype_level = None
 
+(* PR#7113: -safe-string should be a global property *)
+let compatible_paths p1 p2 =
+  let open Predef in
+  Path.same p1 p2 ||
+  Path.same p1 path_bytes && Path.same p2 path_string ||
+  Path.same p1 path_string && Path.same p2 path_bytes
+
 (* Check for datatypes carefully; see PR#6348 *)
 let rec expands_to_datatype env ty =
   let ty = repr ty in
@@ -2023,7 +2034,7 @@ and mcomp_fields type_pairs env ty1 ty2 =
   if miss1 <> []  && (object_row ty1).desc = Tnil
   || miss2 <> []  && (object_row ty2).desc = Tnil then raise (Unify []);
   List.iter
-    (function (n, k1, t1, k2, t2) ->
+    (function (_n, k1, t1, k2, t2) ->
        mcomp_kind k1 k2;
        mcomp type_pairs env t1 t2)
     pairs
@@ -2067,7 +2078,7 @@ and mcomp_type_decl type_pairs env p1 p2 tl1 tl2 =
   try
     let decl = Env.find_type p1 env in
     let decl' = Env.find_type p2 env in
-    if Path.same p1 p2 then begin
+    if compatible_paths p1 p2 then begin
       let inj =
         try List.map Variance.(mem Inj) (Env.find_type p1 env).type_variance
         with Not_found -> List.map (fun _ -> false) tl1
@@ -2226,14 +2237,14 @@ let complete_type_list ?(allow_absent=false) env nl1 lv2 mty2 nl2 tl2 =
 (* raise Not_found rather than Unify if the module types are incompatible *)
 let unify_package env unify_list lv1 p1 n1 tl1 lv2 p2 n2 tl2 =
   let ntl2 = complete_type_list env n1 lv2 (Mty_ident p2) n2 tl2
-  and ntl1 = complete_type_list env n2 lv2 (Mty_ident p1) n1 tl1 in
+  and ntl1 = complete_type_list env n2 lv1 (Mty_ident p1) n1 tl1 in
   unify_list (List.map snd ntl1) (List.map snd ntl2);
   if eq_package_path env p1 p2
   || !package_subtype env p1 n1 tl1 p2 n2 tl2
   && !package_subtype env p2 n2 tl2 p1 n1 tl1 then () else raise Not_found
 
 
-let unify_eq env t1 t2 =
+let unify_eq t1 t2 =
   t1 == t2 ||
   match !umode with
   | Expression -> false
@@ -2258,7 +2269,7 @@ let rec unify (env:Env.t ref) t1 t2 =
   if t1 == t2 then () else
   let t1 = repr t1 in
   let t2 = repr t2 in
-  if unify_eq !env t1 t2 then () else
+  if unify_eq t1 t2 then () else
   let reset_tracing = check_trace_gadt_instances !env in
 
   try
@@ -2315,7 +2326,7 @@ and unify2 env t1 t2 =
   let lv = min t1'.level t2'.level in
   update_level !env lv t2;
   update_level !env lv t1;
-  if unify_eq !env t1' t2' then () else
+  if unify_eq t1' t2' then () else
 
   let t1 = repr t1 and t2 = repr t2 in
   if !trace_gadt_instances then begin
@@ -2335,7 +2346,7 @@ and unify2 env t1 t2 =
       (match t2.desc with Tconstr (_, [], _) -> t2' | _ -> t2)
     else (t1, t2)
   in
-  if unify_eq !env t1 t1' || not (unify_eq !env t2 t2') then
+  if unify_eq t1 t1' || not (unify_eq t2 t2') then
     unify3 env t1 t1' t2 t2'
   else
     try unify3 env t2 t2' t1 t1' with Unify trace ->
@@ -2557,7 +2568,7 @@ and unify_kind k1 k2 =
 and unify_row env row1 row2 =
   let row1 = row_repr row1 and row2 = row_repr row2 in
   let rm1 = row_more row1 and rm2 = row_more row2 in
-  if unify_eq !env rm1 rm2 then () else
+  if unify_eq rm1 rm2 then () else
   let r1, r2, pairs = merge_row_fields row1.row_fields row2.row_fields in
   if r1 <> [] && r2 <> [] then begin
     let ht = Hashtbl.create (List.length r1) in
@@ -2672,7 +2683,7 @@ and unify_row_field env fixed1 fixed2 more l f1 f2 =
       and (tl2',tlu2) = split_univars tl2' in
       begin match tlu1, tlu2 with
         [], [] -> ()
-      | (tu1::tlu1), (tu2::_) ->
+      | (tu1::tlu1), _ :: _ ->
           (* Attempt to merge all the types containing univars *)
           List.iter (unify env tu1) (tlu1@tlu2)
       | (tu::_, []) | ([], tu::_) -> occur_univar !env tu
@@ -2923,7 +2934,7 @@ let rec moregen inst_nongen type_pairs env t1 t2 =
               end
           | (Tvariant row1, Tvariant row2) ->
               moregen_row inst_nongen type_pairs env row1 row2
-          | (Tobject (fi1, nm1), Tobject (fi2, nm2)) ->
+          | (Tobject (fi1, _nm1), Tobject (fi2, _nm2)) ->
               moregen_fields inst_nongen type_pairs env fi1 fi2
           | (Tfield _, Tfield _) ->           (* Actually unused *)
               moregen_fields inst_nongen type_pairs env t1' t2'
@@ -3000,7 +3011,7 @@ and moregen_row inst_nongen type_pairs env row1 row2 =
   | _ -> raise (Unify [])
   end;
   List.iter
-    (fun (l,f1,f2) ->
+    (fun (_l,f1,f2) ->
       let f1 = row_field_repr f1 and f2 = row_field_repr f2 in
       if f1 == f2 then () else
       match f1, f2 with
@@ -3189,7 +3200,7 @@ let rec eqtype rename type_pairs subst env t1 t2 =
               end
           | (Tvariant row1, Tvariant row2) ->
               eqtype_row rename type_pairs subst env row1 row2
-          | (Tobject (fi1, nm1), Tobject (fi2, nm2)) ->
+          | (Tobject (fi1, _nm1), Tobject (fi2, _nm2)) ->
               eqtype_fields rename type_pairs subst env fi1 fi2
           | (Tfield _, Tfield _) ->       (* Actually unused *)
               eqtype_fields rename type_pairs subst env t1' t2'
@@ -3338,19 +3349,19 @@ let rec moregen_clty trace type_pairs env cty1 cty2 =
     | Cty_signature sign1, Cty_signature sign2 ->
         let ty1 = object_fields (repr sign1.csig_self) in
         let ty2 = object_fields (repr sign2.csig_self) in
-        let (fields1, rest1) = flatten_fields ty1
-        and (fields2, rest2) = flatten_fields ty2 in
-        let (pairs, miss1, miss2) = associate_fields fields1 fields2 in
+        let (fields1, _rest1) = flatten_fields ty1
+        and (fields2, _rest2) = flatten_fields ty2 in
+        let (pairs, _miss1, _miss2) = associate_fields fields1 fields2 in
         List.iter
-          (fun (lab, k1, t1, k2, t2) ->
+          (fun (lab, _k1, t1, _k2, t2) ->
             begin try moregen true type_pairs env t1 t2 with Unify trace ->
               raise (Failure [CM_Meth_type_mismatch
                                  (lab, env, expand_trace env trace)])
            end)
         pairs;
       Vars.iter
-        (fun lab (mut, v, ty) ->
-           let (mut', v', ty') = Vars.find lab sign1.csig_vars in
+        (fun lab (_mut, _v, ty) ->
+           let (_mut', _v', ty') = Vars.find lab sign1.csig_vars in
            try moregen true type_pairs env ty' ty with Unify trace ->
              raise (Failure [CM_Val_type_mismatch
                                 (lab, env, expand_trace env trace)]))
@@ -3407,16 +3418,16 @@ let match_class_types ?(trace=true) env pat_sch subj_sch =
     moregen true type_pairs env rest1 rest2;
     let error =
       List.fold_right
-        (fun (lab, k1, t1, k2, t2) err ->
+        (fun (lab, k1, _t1, k2, _t2) err ->
            try moregen_kind k1 k2; err with
              Unify _ -> CM_Public_method lab::err)
         pairs error
     in
     let error =
       Vars.fold
-        (fun lab (mut, vr, ty) err ->
+        (fun lab (mut, vr, _ty) err ->
           try
-            let (mut', vr', ty') = Vars.find lab sign1.csig_vars in
+            let (mut', vr', _ty') = Vars.find lab sign1.csig_vars in
             if mut = Mutable && mut' <> Mutable then
               CM_Non_mutable_value lab::err
             else if vr = Concrete && vr' <> Concrete then
@@ -3473,11 +3484,11 @@ let rec equal_clty trace type_pairs subst env cty1 cty2 =
     | Cty_signature sign1, Cty_signature sign2 ->
         let ty1 = object_fields (repr sign1.csig_self) in
         let ty2 = object_fields (repr sign2.csig_self) in
-        let (fields1, rest1) = flatten_fields ty1
-        and (fields2, rest2) = flatten_fields ty2 in
-        let (pairs, miss1, miss2) = associate_fields fields1 fields2 in
+        let (fields1, _rest1) = flatten_fields ty1
+        and (fields2, _rest2) = flatten_fields ty2 in
+        let (pairs, _miss1, _miss2) = associate_fields fields1 fields2 in
         List.iter
-          (fun (lab, k1, t1, k2, t2) ->
+          (fun (lab, _k1, t1, _k2, t2) ->
              begin try eqtype true type_pairs subst env t1 t2 with
                Unify trace ->
                  raise (Failure [CM_Meth_type_mismatch
@@ -3516,7 +3527,7 @@ let match_class_declarations env patt_params patt_type subj_params subj_type =
         let err =
           let k = field_kind_repr k in
           begin match k with
-            Fvar r -> err
+            Fvar _ -> err
           | _      -> CM_Hide_public lab::err
           end
         in
@@ -3532,7 +3543,7 @@ let match_class_declarations env patt_params patt_type subj_params subj_type =
   eqtype true type_pairs subst env rest1 rest2;
   let error =
     List.fold_right
-      (fun (lab, k1, t1, k2, t2) err ->
+      (fun (lab, k1, _t1, k2, _t2) err ->
         let k1 = field_kind_repr k1 in
         let k2 = field_kind_repr k2 in
         match k1, k2 with
@@ -3545,9 +3556,9 @@ let match_class_declarations env patt_params patt_type subj_params subj_type =
   in
   let error =
     Vars.fold
-      (fun lab (mut, vr, ty) err ->
+      (fun lab (mut, vr, _ty) err ->
          try
-           let (mut', vr', ty') = Vars.find lab sign1.csig_vars in
+           let (mut', vr', _ty') = Vars.find lab sign1.csig_vars in
            if mut = Mutable && mut' <> Mutable then
              CM_Non_mutable_value lab::err
            else if vr = Concrete && vr' <> Concrete then
@@ -3640,7 +3651,7 @@ let rec lid_of_path ?(sharp="") = function
       Longident.Lapply (lid_of_path ~sharp p1, lid_of_path p2)
 
 let find_cltype_for_path env p =
-  let path, cl_abbr = Env.lookup_type (lid_of_path ~sharp:"#" p) env in
+  let _path, cl_abbr = Env.lookup_type (lid_of_path ~sharp:"#" p) env in
   match cl_abbr.type_manifest with
     Some ty ->
       begin match (repr ty).desc with
@@ -3722,7 +3733,7 @@ let rec build_subtype env visited loops posi level t =
         if c > Unchanged then (t'',c)
         else (t, Unchanged)
       end
-  | Tconstr(p, tl, abbrev) ->
+  | Tconstr(p, tl, _abbrev) ->
       (* Must check recursion on constructors, since we do not always
          expand them *)
       if memq_warn t visited then (t, Unchanged) else
@@ -3861,10 +3872,10 @@ let rec subtype_rec env trace t1 t2 cstrs =
         subtype_list env trace tl1 tl2 cstrs
     | (Tconstr(p1, [], _), Tconstr(p2, [], _)) when Path.same p1 p2 ->
         cstrs
-    | (Tconstr(p1, tl1, abbrev1), _)
+    | (Tconstr(p1, _tl1, _abbrev1), _)
       when generic_abbrev env p1 && safe_abbrev env t1 ->
         subtype_rec env trace (expand_abbrev env t1) t2 cstrs
-    | (_, Tconstr(p2, tl2, abbrev2))
+    | (_, Tconstr(p2, _tl2, _abbrev2))
       when generic_abbrev env p2 && safe_abbrev env t2 ->
         subtype_rec env trace t1 (expand_abbrev env t2) cstrs
     | (Tconstr(p1, tl1, _), Tconstr(p2, tl2, _)) when Path.same p1 p2 ->
@@ -3968,7 +3979,7 @@ and subtype_fields env trace ty1 ty2 cstrs =
      !univar_pairs) :: cstrs
   in
   List.fold_left
-    (fun cstrs (_, k1, t1, k2, t2) ->
+    (fun cstrs (_, _k1, t1, _k2, t2) ->
       (* Theses fields are always present *)
       subtype_rec env ((t1, t2)::trace) t1 t2 cstrs)
     cstrs pairs
@@ -4067,7 +4078,7 @@ let unalias ty =
 (* Return the arity (as for curried functions) of the given type. *)
 let rec arity ty =
   match (repr ty).desc with
-    Tarrow(_, t1, t2, _) -> 1 + arity t2
+    Tarrow(_, _t1, t2, _) -> 1 + arity t2
   | _ -> 0
 
 (* Check whether an abbreviation expands to itself. *)
@@ -4075,7 +4086,7 @@ let cyclic_abbrev env id ty =
   let rec check_cycle seen ty =
     let ty = repr ty in
     match ty.desc with
-      Tconstr (p, tl, abbrev) ->
+      Tconstr (p, _tl, _abbrev) ->
         p = Path.Pident id || List.memq ty seen ||
         begin try
           check_cycle (ty :: seen) (expand_abbrev_opt env ty)
@@ -4210,7 +4221,7 @@ let rec nondep_type_rec env id ty =
     TypeHash.add nondep_hash ty ty';
     ty'.desc <-
       begin match ty.desc with
-      | Tconstr(p, tl, abbrev) ->
+      | Tconstr(p, tl, _abbrev) ->
           if Path.isfree id p then
             begin try
               Tlink (nondep_type_rec env id
@@ -4255,7 +4266,7 @@ let rec nondep_type_rec env id ty =
             let row =
               copy_row (nondep_type_rec env id) true row true more' in
             match row.row_name with
-              Some (p, tl) when Path.isfree id p ->
+              Some (p, _tl) when Path.isfree id p ->
                 Tvariant {row with row_name = None}
             | _ -> Tvariant row
           end
@@ -4314,6 +4325,7 @@ let nondep_type_decl env mid id is_covariant decl =
       type_newtype_level = None;
       type_loc = decl.type_loc;
       type_attributes = decl.type_attributes;
+      type_immediate = decl.type_immediate;
     }
   with Not_found ->
     clear_hash ();
@@ -4420,7 +4432,7 @@ let rec collapse_conj env visited ty =
     Tvariant row ->
       let row = row_repr row in
       List.iter
-        (fun (l,fi) ->
+        (fun (_l,fi) ->
           match row_field_repr fi with
             Reither (c, t1::(_::_ as tl), m, e) ->
               List.iter (unify env t1) tl;
@@ -4444,3 +4456,25 @@ let same_constr env t1 t2 =
 
 let () =
   Env.same_constr := same_constr
+
+let maybe_pointer_type env typ =
+   match (repr typ).desc with
+  | Tconstr(p, _args, _abbrev) ->
+    begin try
+      let type_decl = Env.find_type p env in
+      not type_decl.type_immediate
+    with Not_found -> true
+    (* This can happen due to e.g. missing -I options,
+       causing some .cmi files to be unavailable.
+       Maybe we should emit a warning. *)
+    end
+  | Tvariant row ->
+      let row = Btype.row_repr row in
+      (* if all labels are devoid of arguments, not a pointer *)
+      not row.row_closed
+      || List.exists
+          (function
+            | _, (Rpresent (Some _) | Reither (false, _, _, _)) -> true
+            | _ -> false)
+          row.row_fields
+  | _ -> true

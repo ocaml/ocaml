@@ -1,14 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 type ('a, 'b) t =
     Empty
@@ -65,7 +68,7 @@ let rec find x = function
 
 let rec mem x = function
     Empty -> false
-  | Node(l, v, d, r, _) ->
+  | Node(l, v, _d, r, _) ->
       let c = compare x v in
       c = 0 || mem x (if c < 0 then l else r)
 
@@ -73,13 +76,13 @@ let rec merge t1 t2 =
   match (t1, t2) with
     (Empty, t) -> t
   | (t, Empty) -> t
-  | (Node(l1, v1, d1, r1, h1), Node(l2, v2, d2, r2, h2)) ->
+  | (Node(l1, v1, d1, r1, _h1), Node(l2, v2, d2, r2, _h2)) ->
       bal l1 v1 d1 (bal (merge r1 l2) v2 d2 r2)
 
 let rec remove x = function
     Empty ->
       Empty
-  | Node(l, v, d, r, h) ->
+  | Node(l, v, d, r, _h) ->
       let c = compare x v in
       if c = 0 then
         merge l r

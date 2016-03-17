@@ -1,15 +1,17 @@
-/***********************************************************************/
-/*                                                                     */
-/*                                OCaml                                */
-/*                                                                     */
-/*          Damien Doligez, projet Moscova, INRIA Rocquencourt         */
-/*                                                                     */
-/*  Copyright 2000 Institut National de Recherche en Informatique et   */
-/*  en Automatique.  All rights reserved.  This file is distributed    */
-/*  under the terms of the GNU Library General Public License, with    */
-/*  the special exception on linking described in file ../LICENSE.     */
-/*                                                                     */
-/***********************************************************************/
+/**************************************************************************/
+/*                                                                        */
+/*                                 OCaml                                  */
+/*                                                                        */
+/*           Damien Doligez, projet Moscova, INRIA Rocquencourt           */
+/*                                                                        */
+/*   Copyright 2000 Institut National de Recherche en Informatique et     */
+/*     en Automatique.                                                    */
+/*                                                                        */
+/*   All rights reserved.  This file is distributed under the terms of    */
+/*   the GNU Lesser General Public License version 2.1, with the          */
+/*   special exception on linking described in the file LICENSE.          */
+/*                                                                        */
+/**************************************************************************/
 
 /* Handling of finalised values. */
 
@@ -113,7 +115,6 @@ void caml_final_do_calls (void)
   value res;
 
   if (running_finalisation_function) return;
-  if (caml_finalise_begin_hook != NULL) (*caml_finalise_begin_hook) ();
   if (to_do_hd != NULL){
     if (caml_finalise_begin_hook != NULL) (*caml_finalise_begin_hook) ();
     caml_gc_message (0x80, "Calling finalisation functions.\n", 0);
@@ -136,7 +137,6 @@ void caml_final_do_calls (void)
     caml_gc_message (0x80, "Done calling finalisation functions.\n", 0);
     if (caml_finalise_end_hook != NULL) (*caml_finalise_end_hook) ();
   }
-  if (caml_finalise_end_hook != NULL) (*caml_finalise_end_hook) ();
 }
 
 /* Call a scanning_action [f] on [x]. */

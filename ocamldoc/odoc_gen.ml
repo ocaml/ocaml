@@ -1,14 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                             OCamldoc                                *)
-(*                                                                     *)
-(*            Maxence Guesdon, projet Gallium, INRIA Rocquencourt      *)
-(*                                                                     *)
-(*  Copyright 2010 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Maxence Guesdon, projet Gallium, INRIA Rocquencourt        *)
+(*                                                                        *)
+(*   Copyright 2010 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (** *)
 
@@ -20,7 +23,7 @@ module type Base = sig
   end;;
 
 module Base_generator : Base = struct
-  class generator : doc_generator = object method generate l = () end
+  class generator : doc_generator = object method generate _ = () end
   end;;
 
 module type Base_functor = functor (G: Base) -> Base

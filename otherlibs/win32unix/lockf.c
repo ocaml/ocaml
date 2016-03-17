@@ -1,17 +1,18 @@
-/***********************************************************************/
-/*                                                                     */
-/*                                OCaml                                */
-/*                                                                     */
-/*  Contributed by Tracy Camp, PolyServe Inc., <campt@polyserve.com>   */
-/*  Further improvements by Reed Wilson                                */
-/*                                                                     */
-/*  Copyright 2002 Institut National de Recherche en Informatique et   */
-/*  en Automatique.  All rights reserved.  This file is distributed    */
-/*  under the terms of the GNU Library General Public License, with    */
-/*  the special exception on linking described in file ../../LICENSE.  */
-/*  under the terms of the GNU Library General Public License.         */
-/*                                                                     */
-/***********************************************************************/
+/**************************************************************************/
+/*                                                                        */
+/*                                 OCaml                                  */
+/*                                                                        */
+/*    Contributed by Tracy Camp, PolyServe Inc., <campt@polyserve.com>    */
+/*                  Further improvements by Reed Wilson                   */
+/*                                                                        */
+/*   Copyright 2002 Institut National de Recherche en Informatique et     */
+/*     en Automatique.                                                    */
+/*                                                                        */
+/*   All rights reserved.  This file is distributed under the terms of    */
+/*   the GNU Lesser General Public License version 2.1, with the          */
+/*   special exception on linking described in the file LICENSE.          */
+/*                                                                        */
+/**************************************************************************/
 
 #include <errno.h>
 #include <fcntl.h>

@@ -1,15 +1,17 @@
-/***********************************************************************/
-/*                                                                     */
-/*                                OCaml                                */
-/*                                                                     */
-/*             Damien Doligez, projet Para, INRIA Rocquencourt         */
-/*                                                                     */
-/*  Copyright 1996 Institut National de Recherche en Informatique et   */
-/*  en Automatique.  All rights reserved.  This file is distributed    */
-/*  under the terms of the GNU Library General Public License, with    */
-/*  the special exception on linking described in file ../LICENSE.     */
-/*                                                                     */
-/***********************************************************************/
+/**************************************************************************/
+/*                                                                        */
+/*                                 OCaml                                  */
+/*                                                                        */
+/*              Damien Doligez, projet Para, INRIA Rocquencourt           */
+/*                                                                        */
+/*   Copyright 1996 Institut National de Recherche en Informatique et     */
+/*     en Automatique.                                                    */
+/*                                                                        */
+/*   All rights reserved.  This file is distributed under the terms of    */
+/*   the GNU Lesser General Public License version 2.1, with the          */
+/*   special exception on linking described in the file LICENSE.          */
+/*                                                                        */
+/**************************************************************************/
 
 #include <string.h>
 #include "caml/custom.h"
@@ -49,6 +51,8 @@
          native code, or [caml_young_trigger].
 */
 
+struct generic_table CAML_TABLE_STRUCT(char);
+
 asize_t caml_minor_heap_wsz;
 static void *caml_young_base = NULL;
 CAMLexport value *caml_young_start = NULL, *caml_young_end = NULL;
@@ -60,30 +64,45 @@ CAMLexport value *caml_young_trigger = NULL;
 
 CAMLexport struct caml_ref_table
   caml_ref_table = { NULL, NULL, NULL, NULL, NULL, 0, 0},
-  caml_weak_ref_table = { NULL, NULL, NULL, NULL, NULL, 0, 0},
   caml_finalize_table = { NULL, NULL, NULL, NULL, NULL, 0, 0};
 /* table of custom blocks containing finalizers in the minor heap */
+
+CAMLexport struct caml_ephe_ref_table
+  caml_ephe_ref_table = { NULL, NULL, NULL, NULL, NULL, 0, 0};
 
 int caml_in_minor_collection = 0;
 
 /* [sz] and [rsv] are numbers of entries */
-void caml_alloc_table (struct caml_ref_table *tbl, asize_t sz, asize_t rsv)
+static void alloc_generic_table (struct generic_table *tbl, asize_t sz,
+                                 asize_t rsv, asize_t element_size)
 {
-  value **new_table;
+  void *new_table;
 
   tbl->size = sz;
   tbl->reserve = rsv;
-  new_table = (value **) caml_stat_alloc ((tbl->size + tbl->reserve)
-                                          * sizeof (value *));
+  new_table = (void *) caml_stat_alloc ((tbl->size + tbl->reserve)
+                                        * element_size);
   if (tbl->base != NULL) caml_stat_free (tbl->base);
   tbl->base = new_table;
   tbl->ptr = tbl->base;
-  tbl->threshold = tbl->base + tbl->size;
+  tbl->threshold = tbl->base + tbl->size * element_size;
   tbl->limit = tbl->threshold;
-  tbl->end = tbl->base + tbl->size + tbl->reserve;
+  tbl->end = tbl->base + (tbl->size + tbl->reserve) * element_size;
 }
 
-static void reset_table (struct caml_ref_table *tbl)
+void caml_alloc_table (struct caml_ref_table *tbl, asize_t sz, asize_t rsv)
+{
+  alloc_generic_table ((struct generic_table *) tbl, sz, rsv, sizeof (value *));
+}
+
+void caml_alloc_ephe_table (struct caml_ephe_ref_table *tbl, asize_t sz,
+                            asize_t rsv)
+{
+  alloc_generic_table ((struct generic_table *) tbl, sz, rsv,
+                       sizeof (struct caml_ephe_ref_elt));
+}
+
+static void reset_table (struct generic_table *tbl)
 {
   tbl->size = 0;
   tbl->reserve = 0;
@@ -91,7 +110,7 @@ static void reset_table (struct caml_ref_table *tbl)
   tbl->base = tbl->ptr = tbl->threshold = tbl->limit = tbl->end = NULL;
 }
 
-static void clear_table (struct caml_ref_table *tbl)
+static void clear_table (struct generic_table *tbl)
 {
     tbl->ptr = tbl->base;
     tbl->limit = tbl->threshold;
@@ -113,37 +132,6 @@ void caml_set_minor_heap_size (asize_t bsz)
     caml_empty_minor_heap ();
   }
   CAMLassert (caml_young_ptr == caml_young_alloc_end);
-#ifdef MMAP_INTERVAL
-  {
-    static uintnat minor_heap_mapped_bsz = 0;
-    uintnat new_mapped_bsz;
-    new_mapped_bsz = Round_mmap_size (bsz);
-    void *block;
-
-    CAMLassert (caml_young_start != NULL);
-    if (new_mapped_bsz > minor_heap_mapped_bsz){
-      uintnat addbsz = new_mapped_bsz - minor_heap_mapped_bsz;
-      new_heap = (char *) caml_young_start - addbsz;
-      block = caml_mmap_heap (new_heap, addbsz, PROT_READ | PROT_WRITE,
-                              MAP_FIXED);
-      if (block != new_heap){
-        if (minor_heap_mapped_bsz == 0){
-          caml_fatal_error ("cannot initialize minor heap: mmap failed\n");
-        }else{
-          caml_raise_out_of_memory ();
-        }
-      }
-      new_heap_base = new_heap;
-    }else if (new_mapped_bsz < minor_heap_mapped_bsz){
-      uintnat subbsz = minor_heap_mapped_bsz - new_mapped_bsz;
-      (void) caml_mmap_heap (caml_young_start, subbsz, PROT_NONE,
-                             MAP_FIXED | MAP_NORESERVE);
-      new_heap_base = new_heap = (char *) caml_young_start + subbsz;
-    }else{
-      new_heap_base = new_heap = caml_young_base;
-    }
-  }
-#else
   new_heap = caml_aligned_malloc(bsz, 0, &new_heap_base);
   if (new_heap == NULL) caml_raise_out_of_memory();
   if (caml_page_table_add(In_young, new_heap, new_heap + bsz) != 0)
@@ -153,7 +141,6 @@ void caml_set_minor_heap_size (asize_t bsz)
     caml_page_table_remove(In_young, caml_young_start, caml_young_end);
     free (caml_young_base);
   }
-#endif
   caml_young_base = new_heap_base;
   caml_young_start = (value *) new_heap;
   caml_young_end = (value *) (new_heap + bsz);
@@ -165,8 +152,8 @@ void caml_set_minor_heap_size (asize_t bsz)
   caml_young_ptr = caml_young_alloc_end;
   caml_minor_heap_wsz = Wsize_bsize (bsz);
 
-  reset_table (&caml_ref_table);
-  reset_table (&caml_weak_ref_table);
+  reset_table ((struct generic_table *) &caml_ref_table);
+  reset_table ((struct generic_table *) &caml_ephe_ref_table);
 }
 
 static value oldify_todo_list = 0;
@@ -257,6 +244,21 @@ void caml_oldify_one (value v, value *p)
   }
 }
 
+/* Test if the ephemeron is alive, everything outside minor heap is alive */
+static inline int ephe_check_alive_data(struct caml_ephe_ref_elt *re){
+  mlsize_t i;
+  value child;
+  for (i = CAML_EPHE_FIRST_KEY; i < Wosize_val(re->ephe); i++){
+    child = Field (re->ephe, i);
+    if(child != caml_ephe_none
+       && Is_block (child) && Is_young (child)
+       && Hd_val (child) != 0){ /* Value not copied to major heap */
+      return 0;
+    }
+  }
+  return 1;
+}
+
 /* Finish the work that was put off by [caml_oldify_one].
    Note that [caml_oldify_one] itself is called by oldify_mopup, so we
    have to be careful to remove the first entry from the list before
@@ -265,6 +267,8 @@ void caml_oldify_mopup (void)
 {
   value v, new_v, f;
   mlsize_t i;
+  struct caml_ephe_ref_elt *re;
+  int redo = 0;
 
   while (oldify_todo_list != 0){
     v = oldify_todo_list;                /* Get the head. */
@@ -285,6 +289,28 @@ void caml_oldify_mopup (void)
       }
     }
   }
+
+  /* Oldify the data in the minor heap of alive ephemeron
+     During minor collection keys outside the minor heap are considered alive */
+  for (re = caml_ephe_ref_table.base;
+       re < caml_ephe_ref_table.ptr; re++){
+    /* look only at ephemeron with data in the minor heap */
+    if (re->offset == 1){
+      value *data = &Field(re->ephe,1);
+      if (*data != caml_ephe_none && Is_block (*data) && Is_young (*data)){
+        if (Hd_val (*data) == 0){ /* Value copied to major heap */
+          *data = Field (*data, 0);
+        } else {
+          if (ephe_check_alive_data(re)){
+            caml_oldify_one(*data,data);
+            redo = 1; /* oldify_todo_list can still be 0 */
+          }
+        }
+      }
+    }
+  }
+
+  if (redo) caml_oldify_mopup ();
 }
 
 /* Make sure the minor heap is empty by performing a minor collection
@@ -294,6 +320,7 @@ void caml_empty_minor_heap (void)
 {
   value **r;
   uintnat prev_alloc_words;
+  struct caml_ephe_ref_elt *re;
 
   if (caml_young_ptr != caml_young_alloc_end){
     if (caml_minor_gc_begin_hook != NULL) (*caml_minor_gc_begin_hook) ();
@@ -309,15 +336,24 @@ void caml_empty_minor_heap (void)
     CAML_INSTR_TIME (tmr, "minor/ref_table");
     caml_oldify_mopup ();
     CAML_INSTR_TIME (tmr, "minor/copy");
-    for (r = caml_weak_ref_table.base; r < caml_weak_ref_table.ptr; r++){
-      if (Is_block (**r) && Is_young (**r)){
-        if (Hd_val (**r) == 0){
-          **r = Field (**r, 0);
-        }else{
-          **r = caml_weak_none;
+    /* Update the ephemerons */
+    for (re = caml_ephe_ref_table.base;
+         re < caml_ephe_ref_table.ptr; re++){
+      if(re->offset < Wosize_val(re->ephe)){
+        /* If it is not the case, the ephemeron has been truncated */
+        value *key = &Field(re->ephe,re->offset);
+        if (*key != caml_ephe_none && Is_block (*key) && Is_young (*key)){
+          if (Hd_val (*key) == 0){ /* Value copied to major heap */
+            *key = Field (*key, 0);
+          }else{ /* Value not copied so it's dead */
+            Assert(!ephe_check_alive_data(re));
+            *key = caml_ephe_none;
+            Field(re->ephe,1) = caml_ephe_none;
+          }
         }
       }
     }
+    /* Run custom block finalisation of dead minor values */
     for (r = caml_finalize_table.base; r < caml_finalize_table.ptr; r++){
       int hd = Hd_val ((value)*r);
       if (hd != 0){         /* If not oldified the finalizer must be called */
@@ -326,14 +362,13 @@ void caml_empty_minor_heap (void)
       }
     }
     CAML_INSTR_TIME (tmr, "minor/update_weak");
-    CAMLassert (caml_young_ptr >= caml_young_alloc_start);
     caml_stat_minor_words += caml_young_alloc_end - caml_young_ptr;
     caml_gc_clock += (double) (caml_young_alloc_end - caml_young_ptr)
                      / caml_minor_heap_wsz;
     caml_young_ptr = caml_young_alloc_end;
-    clear_table (&caml_ref_table);
-    clear_table (&caml_weak_ref_table);
-    clear_table (&caml_finalize_table);
+    clear_table ((struct generic_table *) &caml_ref_table);
+    clear_table ((struct generic_table *) &caml_ephe_ref_table);
+    clear_table ((struct generic_table *) &caml_finalize_table);
     caml_gc_message (0x02, ">", 0);
     caml_in_minor_collection = 0;
     caml_final_empty_young ();
@@ -428,16 +463,20 @@ CAMLexport value caml_check_urgent_gc (value extra_root)
   CAMLreturn (extra_root);
 }
 
-void caml_realloc_ref_table (struct caml_ref_table *tbl)
-{                                           Assert (tbl->ptr == tbl->limit);
+static void realloc_generic_table
+(struct generic_table *tbl, asize_t element_size,
+ char * msg_intr_int, char *msg_threshold, char *msg_growing, char *msg_error)
+{
+                                            Assert (tbl->ptr == tbl->limit);
                                             Assert (tbl->limit <= tbl->end);
                                       Assert (tbl->limit >= tbl->threshold);
 
   if (tbl->base == NULL){
-    caml_alloc_table (tbl, caml_minor_heap_wsz / 8, 256);
+    alloc_generic_table (tbl, caml_minor_heap_wsz / 8, 256,
+                         element_size);
   }else if (tbl->limit == tbl->threshold){
-    CAML_INSTR_INT ("request_minor/realloc_ref_table@", 1);
-    caml_gc_message (0x08, "ref_table threshold crossed\n", 0);
+    CAML_INSTR_INT (msg_intr_int, 1);
+    caml_gc_message (0x08, msg_threshold, 0);
     tbl->limit = tbl->end;
     caml_request_minor_gc ();
   }else{
@@ -446,17 +485,35 @@ void caml_realloc_ref_table (struct caml_ref_table *tbl)
     CAMLassert (caml_requested_minor_gc);
 
     tbl->size *= 2;
-    sz = (tbl->size + tbl->reserve) * sizeof (value *);
-    caml_gc_message (0x08, "Growing ref_table to %"
-                           ARCH_INTNAT_PRINTF_FORMAT "dk bytes\n",
-                     (intnat) sz/1024);
-    tbl->base = (value **) realloc ((char *) tbl->base, sz);
+    sz = (tbl->size + tbl->reserve) * element_size;
+    caml_gc_message (0x08, msg_growing, (intnat) sz/1024);
+    tbl->base = (void *) realloc ((char *) tbl->base, sz);
     if (tbl->base == NULL){
-      caml_fatal_error ("Fatal error: ref_table overflow\n");
+      caml_fatal_error (msg_error);
     }
-    tbl->end = tbl->base + tbl->size + tbl->reserve;
-    tbl->threshold = tbl->base + tbl->size;
+    tbl->end = tbl->base + (tbl->size + tbl->reserve) * element_size;
+    tbl->threshold = tbl->base + tbl->size * element_size;
     tbl->ptr = tbl->base + cur_ptr;
     tbl->limit = tbl->end;
   }
+}
+
+void caml_realloc_ref_table (struct caml_ref_table *tbl)
+{
+  realloc_generic_table
+    ((struct generic_table *) tbl, sizeof (value *),
+     "request_minor/realloc_ref_table@",
+     "ref_table threshold crossed\n",
+     "Growing ref_table to %" ARCH_INTNAT_PRINTF_FORMAT "dk bytes\n",
+     "Fatal error: ref_table overflow\n");
+}
+
+void caml_realloc_ephe_ref_table (struct caml_ephe_ref_table *tbl)
+{
+  realloc_generic_table
+    ((struct generic_table *) tbl, sizeof (struct caml_ephe_ref_elt),
+     "request_minor/realloc_ephe_ref_table@",
+     "ephe_ref_table threshold crossed\n",
+     "Growing ephe_ref_table to %" ARCH_INTNAT_PRINTF_FORMAT "dk bytes\n",
+     "Fatal error: ephe_ref_table overflow\n");
 }

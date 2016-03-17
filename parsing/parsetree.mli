@@ -1,24 +1,41 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (** Abstract syntax tree produced by parsing *)
 
 open Asttypes
 
 type constant =
-    PConst_int of string * char option
-  | PConst_char of char
-  | PConst_string of string * string option
-  | PConst_float of string * char option
+    Pconst_integer of string * char option
+  (* 3 3l 3L 3n
+
+     Suffixes [g-z][G-Z] are accepted by the parser.
+     Suffixes except 'l', 'L' and 'n' are rejected by the typechecker
+  *)
+  | Pconst_char of char
+  (* 'c' *)
+  | Pconst_string of string * string option
+  (* "constant"
+     {delim|other constant|delim}
+  *)
+  | Pconst_float of string * char option
+  (* 3.4 2e5 1.4e-4
+
+     Suffixes [g-z][G-Z] are accepted by the parser.
+     Suffixes are rejected by the typechecker.
+  *)
 
 (** {2 Extension points} *)
 
@@ -301,6 +318,8 @@ and expression_desc =
         (* {< x1 = E1; ...; Xn = En >} *)
   | Pexp_letmodule of string loc * module_expr * expression
         (* let module M = ME in E *)
+  | Pexp_letexception of extension_constructor * expression
+        (* let exception C in E *)
   | Pexp_assert of expression
         (* assert E
            Note: "assert false" is treated in a special way by the

@@ -1,14 +1,17 @@
-#(***********************************************************************)
-#(*                                                                     *)
-#(*                             OCamldoc                                *)
-#(*                                                                     *)
-#(*            Maxence Guesdon, projet Cristal, INRIA Rocquencourt      *)
-#(*                                                                     *)
-#(*  Copyright 2001 Institut National de Recherche en Informatique et   *)
-#(*  en Automatique.  All rights reserved.  This file is distributed    *)
-#(*  under the terms of the Q Public License version 1.0.               *)
-#(*                                                                     *)
-#(***********************************************************************)
+#**************************************************************************
+#*                                                                        *
+#*                                 OCaml                                  *
+#*                                                                        *
+#*             Maxence Guesdon, projet Cristal, INRIA Rocquencourt        *
+#*                                                                        *
+#*   Copyright 2001 Institut National de Recherche en Informatique et     *
+#*     en Automatique.                                                    *
+#*                                                                        *
+#*   All rights reserved.  This file is distributed under the terms of    *
+#*   the GNU Lesser General Public License version 2.1, with the          *
+#*   special exception on linking described in the file LICENSE.          *
+#*                                                                        *
+#**************************************************************************
 
 include ../config/Makefile
 CAMLRUN ?= ../boot/ocamlrun
@@ -84,7 +87,7 @@ INCLUDES_NODEP=	-I $(OCAMLSRCDIR)/stdlib \
 
 INCLUDES=$(INCLUDES_DEP) $(INCLUDES_NODEP)
 
-COMPFLAGS=$(INCLUDES) -warn-error A -safe-string
+COMPFLAGS=$(INCLUDES) -absname -w +a-4-9-41-42-44-45-48 -warn-error A -safe-string -strict-sequence -strict-formats
 LINKFLAGS=$(INCLUDES) -nostdlib
 
 CMOFILES= odoc_config.cmo \
@@ -253,24 +256,24 @@ odoc_see_lexer.ml: odoc_see_lexer.mll
 # Installation targets
 ######################
 install: dummy
-	if test -d $(INSTALL_BINDIR); then : ; else $(MKDIR) $(INSTALL_BINDIR); fi
-	if test -d $(INSTALL_LIBDIR); then : ; else $(MKDIR) $(INSTALL_LIBDIR); fi
-	if test -d $(INSTALL_CUSTOMDIR); then : ; else $(MKDIR) $(INSTALL_CUSTOMDIR); fi
-	$(CP) $(OCAMLDOC) $(INSTALL_BINDIR)/$(OCAMLDOC)$(EXE)
-	$(CP) ocamldoc.hva *.cmi $(OCAMLDOC_LIBCMA) $(INSTALL_LIBDIR)
-	$(CP) $(INSTALL_MLIS) $(INSTALL_CMIS) $(INSTALL_LIBDIR)
-	if test -d $(INSTALL_MANODIR); then : ; else $(MKDIR) $(INSTALL_MANODIR); fi
-	if test -d stdlib_man; then $(CP) stdlib_man/* $(INSTALL_MANODIR); else : ; fi
+	if test -d "$(INSTALL_BINDIR)"; then : ; else $(MKDIR) "$(INSTALL_BINDIR)"; fi
+	if test -d "$(INSTALL_LIBDIR)"; then : ; else $(MKDIR) "$(INSTALL_LIBDIR)"; fi
+	if test -d "$(INSTALL_CUSTOMDIR)"; then : ; else $(MKDIR) "$(INSTALL_CUSTOMDIR)"; fi
+	$(CP) $(OCAMLDOC) "$(INSTALL_BINDIR)/$(OCAMLDOC)$(EXE)"
+	$(CP) ocamldoc.hva *.cmi $(OCAMLDOC_LIBCMA) "$(INSTALL_LIBDIR)"
+	$(CP) $(INSTALL_MLIS) $(INSTALL_CMIS) "$(INSTALL_LIBDIR)"
+	if test -d "$(INSTALL_MANODIR)"; then : ; else $(MKDIR) "$(INSTALL_MANODIR)"; fi
+	if test -d stdlib_man; then $(CP) stdlib_man/* "$(INSTALL_MANODIR)"; else : ; fi
 
 installopt:
 	if test -f $(OCAMLDOC_OPT); then $(MAKE) installopt_really ; fi
 
 installopt_really:
-	if test -d $(INSTALL_BINDIR); then : ; else $(MKDIR) $(INSTALL_BINDIR); fi
-	if test -d $(INSTALL_LIBDIR); then : ; else $(MKDIR) $(INSTALL_LIBDIR); fi
-	$(CP) $(OCAMLDOC_OPT) $(INSTALL_BINDIR)/$(OCAMLDOC_OPT)$(EXE)
-	$(CP) ocamldoc.hva *.cmx $(OCAMLDOC_LIBA) $(OCAMLDOC_LIBCMXA) $(INSTALL_LIBDIR)
-	$(CP) $(INSTALL_MLIS) $(INSTALL_CMIS) $(INSTALL_LIBDIR)
+	if test -d "$(INSTALL_BINDIR)"; then : ; else $(MKDIR) "$(INSTALL_BINDIR)"; fi
+	if test -d "$(INSTALL_LIBDIR)"; then : ; else $(MKDIR) "$(INSTALL_LIBDIR)"; fi
+	$(CP) $(OCAMLDOC_OPT) "$(INSTALL_BINDIR)/$(OCAMLDOC_OPT)$(EXE)"
+	$(CP) ocamldoc.hva *.cmx $(OCAMLDOC_LIBA) $(OCAMLDOC_LIBCMXA) "$(INSTALL_LIBDIR)"
+	$(CP) $(INSTALL_MLIS) $(INSTALL_CMIS) "$(INSTALL_LIBDIR)"
 
 # Testing :
 ###########

@@ -1,15 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the GNU Library General Public License, with    *)
-(*  the special exception on linking described in file ../LICENSE.     *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (** System interface.
 
@@ -264,7 +266,7 @@ val catch_break : bool -> unit
    terminate the program on user interrupt. *)
 
 
-val ocaml_version : string;;
+val ocaml_version : string
 (** [ocaml_version] is the version of OCaml.
     It is a string of the form ["major.minor[.patchlevel][+additional-info]"],
     where [major], [minor], and [patchlevel] are integers, and
@@ -280,3 +282,20 @@ val enable_runtime_warnings: bool -> unit
 
 val runtime_warnings_enabled: unit -> bool
 (** Return whether runtime warnings are currently enabled. *)
+
+(** {6 Optimization} *)
+
+external opaque_identity : 'a -> 'a = "%opaque"
+(** For the purposes of optimization, [opaque_identity] behaves like an
+    unknown (and thus possibly side-effecting) function.
+
+    At runtime, [opaque_identity] disappears altogether.
+
+    A typical use of this function is to prevent pure computations from being
+    optimized away in benchmarking loops.  For example:
+    {[
+      for _round = 1 to 100_000 do
+        ignore (Sys.opaque_identity (my_pure_computation ()))
+      done
+    ]}
+*)

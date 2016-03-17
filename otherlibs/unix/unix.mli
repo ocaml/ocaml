@@ -1,15 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the GNU Library General Public License, with    *)
-(*  the special exception on linking described in file ../../LICENSE.  *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (** Interface to the Unix system.
 
@@ -675,11 +677,43 @@ val close_process_full :
 (** {6 Symbolic links} *)
 
 
-val symlink : string -> string -> unit
-(** [symlink source dest] creates the file [dest] as a symbolic link
-   to the file [source].
+val symlink : ?to_dir:bool -> string -> string -> unit
+(** [symlink ?to_dir source dest] creates the file [dest] as a symbolic link
+   to the file [source]. On Windows, [~to_dir] indicates if the symbolic link
+   points to a directory or a file; if omitted, [symlink] examines [source]
+   using [stat] and picks appropriately, if [source] does not exist then [false]
+   is assumed (for this reason, it is recommended that the [~to_dir] parameter
+   be specified in new code). On Unix, [~to_dir] ignored.
 
-   On Windows: not implemented. *)
+   Windows symbolic links are available in Windows Vista onwards. There are some
+   important differences between Windows symlinks and their POSIX counterparts.
+
+   Windows symbolic links come in two flavours: directory and regular, which
+   designate whether the symbolic link points to a directory or a file. The type
+   must be correct - a directory symlink which actually points to a file cannot
+   be selected with chdir and a file symlink which actually points to a
+   directory cannot be read or written (note that Cygwin's emulation layer
+   ignores this distinction).
+
+   When symbolic links are created to existing targets, this distinction doesn't
+   matter and [symlink] will automatically create the correct kind of symbolic
+   link. The distinction matters when a symbolic link is created to a
+   non-existent target.
+
+   The other caveat is that by default symbolic links are a privileged
+   operation. Administrators will always need to be running elevated (or with
+   UAC disabled) and by default normal user accounts need to be granted the
+   SeCreateSymbolicLinkPrivilege via Local Security Policy (secpol.msc) or via
+   Active Directory.
+
+   {!has_symlink} can be used to check that a process is able to create symbolic
+   links. *)
+
+val has_symlink : unit -> bool
+(** Returns [true] if the user is able to create symbolic links. On Windows,
+   this indicates that the user not only has the SeCreateSymbolicLinkPrivilege
+   but is also running elevated, if necessary. On other platforms, this is
+   simply indicates that the symlink system call is available. *)
 
 val readlink : string -> string
 (** Read the contents of a link.
@@ -845,6 +879,7 @@ val alarm : int -> int
 
 val sleep : int -> unit
 (** Stop execution for the given number of seconds. *)
+
 val sleepf : float -> unit
 (** Stop execution for the given number of seconds.  Like [sleep],
     but fractions of seconds are supported. *)
@@ -1331,7 +1366,8 @@ val getaddrinfo:
 
 type name_info =
   { ni_hostname : string;               (** Name or IP address of host *)
-    ni_service : string }               (** Name of service or port number *)
+    ni_service : string;                (** Name of service or port number *)
+  }
 (** Host and service information returned by {!Unix.getnameinfo}. *)
 
 type getnameinfo_option =

@@ -1,15 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Pierre Weis, projet Cristal, INRIA Rocquencourt          *)
-(*                                                                     *)
-(*  Copyright 2002 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the GNU Library General Public License, with    *)
-(*  the special exception on linking described in file ../LICENSE.     *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Pierre Weis, projet Cristal, INRIA Rocquencourt            *)
+(*                                                                        *)
+(*   Copyright 2002 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (** Formatted input functions. *)
 
@@ -527,9 +529,9 @@ val unescaped : string -> string
 
     Always return a copy of the argument, even if there is no escape sequence
     in the argument.
-    Raise [Scan_failure] if [s] is not properly escaped since [s] has invalid
-    escape sequences or special characters that are not properly escaped
-    (for instance, [String.unescaped "\""] will fail).
+    Raise [Scan_failure] if [s] is not properly escaped (i.e. [s] has invalid
+    escape sequences or special characters that are not properly escaped).
+    For instance, [String.unescaped "\""] will fail.
     @since 4.00.0
 *)
 
@@ -555,4 +557,3 @@ val kfscanf :
     ('a, 'b, 'c, 'd) scanner
   [@@ocaml.deprecated "Use Scanning.from_channel then Scanf.kscanf."]
 (** @deprecated [Scanf.kfscanf] is error prone and deprecated since 4.03.0. *)
-

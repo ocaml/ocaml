@@ -1,16 +1,18 @@
 ":" ; @EMACS@ -batch -l $0 "$@" ; status=$? ; : '--*-Emacs-Lisp-*--' <<';'
 
-;(***********************************************************************)
-;(*                                                                     *)
-;(*                                OCaml                                *)
-;(*                                                                     *)
-;(*                Jacques Garrigue and Ian T Zimmerman                 *)
-;(*                                                                     *)
-;(*  Copyright 1998 Institut National de Recherche en Informatique et   *)
-;(*  en Automatique.  All rights reserved.  This file is distributed    *)
-;(*  under the terms of the GNU General Public License.                 *)
-;(*                                                                     *)
-;(***********************************************************************)
+;**************************************************************************
+;*                                                                        *
+;*                                 OCaml                                  *
+;*                                                                        *
+;*                 Jacques Garrigue and Ian T Zimmerman                   *
+;*                                                                        *
+;*   Copyright 1998 Institut National de Recherche en Informatique et     *
+;*     en Automatique.                                                    *
+;*                                                                        *
+;*   All rights reserved.  This file is distributed under the terms of    *
+;*   the GNU General Public License.                                      *
+;*                                                                        *
+;**************************************************************************
 
 ;; Copyright (C) 1998 Ian Zimmerman <itz@transbay.net>
 ;;  This program is free software; you can redistribute it and/or

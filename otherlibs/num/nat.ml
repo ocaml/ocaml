@@ -1,15 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*    Valerie Menissier-Morain, projet Cristal, INRIA Rocquencourt     *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the GNU Library General Public License, with    *)
-(*  the special exception on linking described in file ../../LICENSE.  *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*     Valerie Menissier-Morain, projet Cristal, INRIA Rocquencourt       *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 open Int_misc
 
@@ -20,28 +22,44 @@ external set_to_zero_nat: nat -> int -> int -> unit = "set_to_zero_nat"
 external blit_nat: nat -> int -> nat -> int -> int -> unit = "blit_nat"
 external set_digit_nat: nat -> int -> int -> unit = "set_digit_nat"
 external nth_digit_nat: nat -> int -> int = "nth_digit_nat"
-external set_digit_nat_native: nat -> int -> nativeint -> unit = "set_digit_nat_native"
+external set_digit_nat_native: nat -> int -> nativeint -> unit
+                             = "set_digit_nat_native"
 external nth_digit_nat_native: nat -> int -> nativeint = "nth_digit_nat_native"
 external num_digits_nat: nat -> int -> int -> int = "num_digits_nat"
-external num_leading_zero_bits_in_digit: nat -> int -> int = "num_leading_zero_bits_in_digit"
+external num_leading_zero_bits_in_digit: nat -> int -> int
+                                       = "num_leading_zero_bits_in_digit"
 external is_digit_int: nat -> int -> bool = "is_digit_int"
 external is_digit_zero: nat -> int -> bool = "is_digit_zero"
 external is_digit_normalized: nat -> int -> bool = "is_digit_normalized"
 external is_digit_odd: nat -> int -> bool = "is_digit_odd"
 external incr_nat: nat -> int -> int -> int -> int = "incr_nat"
-external add_nat: nat -> int -> int -> nat -> int -> int -> int -> int = "add_nat" "add_nat_native"
+external add_nat: nat -> int -> int -> nat -> int -> int -> int -> int
+                = "add_nat" "add_nat_native"
 external complement_nat: nat -> int -> int -> unit = "complement_nat"
 external decr_nat: nat -> int -> int -> int -> int = "decr_nat"
-external sub_nat: nat -> int -> int -> nat -> int -> int -> int -> int = "sub_nat" "sub_nat_native"
-external mult_digit_nat: nat -> int -> int -> nat -> int -> int -> nat -> int -> int = "mult_digit_nat" "mult_digit_nat_native"
-external mult_nat: nat -> int -> int -> nat -> int -> int -> nat -> int -> int -> int = "mult_nat" "mult_nat_native"
-external square_nat: nat -> int -> int -> nat -> int -> int -> int = "square_nat" "square_nat_native"
-external shift_left_nat: nat -> int -> int -> nat -> int -> int -> unit = "shift_left_nat" "shift_left_nat_native"
-external div_digit_nat: nat -> int -> nat -> int -> nat -> int -> int -> nat -> int -> unit = "div_digit_nat" "div_digit_nat_native"
-external div_nat: nat -> int -> int -> nat -> int -> int -> unit = "div_nat" "div_nat_native"
-external shift_right_nat: nat -> int -> int -> nat -> int -> int -> unit = "shift_right_nat" "shift_right_nat_native"
-external compare_digits_nat: nat -> int -> nat -> int -> int = "compare_digits_nat"
-external compare_nat: nat -> int -> int -> nat -> int -> int -> int = "compare_nat" "compare_nat_native"
+external sub_nat: nat -> int -> int -> nat -> int -> int -> int -> int
+                = "sub_nat" "sub_nat_native"
+external mult_digit_nat:
+     nat -> int -> int -> nat -> int -> int -> nat -> int -> int
+   = "mult_digit_nat" "mult_digit_nat_native"
+external mult_nat:
+    nat -> int -> int -> nat -> int -> int -> nat -> int -> int -> int
+  = "mult_nat" "mult_nat_native"
+external square_nat: nat -> int -> int -> nat -> int -> int -> int
+                   = "square_nat" "square_nat_native"
+external shift_left_nat: nat -> int -> int -> nat -> int -> int -> unit
+                       = "shift_left_nat" "shift_left_nat_native"
+external div_digit_nat:
+    nat -> int -> nat -> int -> nat -> int -> int -> nat -> int -> unit
+  = "div_digit_nat" "div_digit_nat_native"
+external div_nat: nat -> int -> int -> nat -> int -> int -> unit
+                = "div_nat" "div_nat_native"
+external shift_right_nat: nat -> int -> int -> nat -> int -> int -> unit
+                        = "shift_right_nat" "shift_right_nat_native"
+external compare_digits_nat: nat -> int -> nat -> int -> int
+                           = "compare_digits_nat"
+external compare_nat: nat -> int -> int -> nat -> int -> int -> int
+                    = "compare_nat" "compare_nat_native"
 external land_digit_nat: nat -> int -> nat -> int -> unit = "land_digit_nat"
 external lor_digit_nat: nat -> int -> nat -> int -> unit = "lor_digit_nat"
 external lxor_digit_nat: nat -> int -> nat -> int -> unit = "lxor_digit_nat"
@@ -137,6 +155,7 @@ let square_nat nat1 off1 len1 nat2 off2 len2 =
   !c
 ***)
 
+(*
 let gcd_int_nat i nat off len =
   if i = 0 then 1 else
   if is_nat_int nat off len then begin
@@ -152,6 +171,7 @@ let gcd_int_nat i nat off len =
     set_digit_nat nat off (gcd_int (nth_digit_nat remainder 0) i);
     0
   end
+*)
 
 let exchange r1 r2 =
   let old1 = !r1 in r1 := !r2; r2 := old1
@@ -317,8 +337,6 @@ let string_of_digit nat =
 
 *******)
 
-let digits = "0123456789ABCDEF"
-
 (*
    make_power_base affecte power_base des puissances successives de base a
    partir de la puissance 1-ieme.
@@ -346,10 +364,13 @@ let make_power_base base power_base =
   (!i - 2, !j)
 
 (*
+(*
    int_to_string places the representation of the integer int in base 'base'
    in the string s by starting from the end position pos and going towards
    the start, for 'times' places and updates the value of pos.
 *)
+let digits = "0123456789ABCDEF"
+
 let int_to_string int s pos_ref base times =
   let i = ref int
   and j = ref times in
@@ -359,6 +380,7 @@ let int_to_string int s pos_ref base times =
         decr j;
         i := !i / base
      done
+*)
 
 let power_base_int base i =
   if i = 0 || base = 1 then
@@ -369,7 +391,7 @@ let power_base_int base i =
     invalid_arg "power_base_int"
   else begin
          let power_base = make_nat (succ length_of_digit) in
-         let (pmax, pint) = make_power_base base power_base in
+         let (pmax, _pint) = make_power_base base power_base in
          let n = i / (succ pmax)
          and rem = i mod (succ pmax) in
            if n > 0 then begin

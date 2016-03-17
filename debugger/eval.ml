@@ -1,15 +1,18 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*          Jerome Vouillon, projet Cristal, INRIA Rocquencourt        *)
-(*          OCaml port by John Malecki and Xavier Leroy                *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*           Jerome Vouillon, projet Cristal, INRIA Rocquencourt          *)
+(*           OCaml port by John Malecki and Xavier Leroy                  *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 open Misc
 open Path
@@ -58,12 +61,12 @@ let rec path event = function
         | None ->
             raise(Error(Unbound_identifier id))
         end
-  | Pdot(root, fieldname, pos) ->
+  | Pdot(root, _fieldname, pos) ->
       let v = path event root in
       if not (Debugcom.Remote_value.is_block v) then
         raise(Error(Not_initialized_yet root));
       Debugcom.Remote_value.field v pos
-  | Papply(p1, p2) ->
+  | Papply _ ->
       fatal_error "Eval.path: Papply"
 
 let rec expression event env = function
@@ -132,10 +135,10 @@ let rec expression event env = function
   | E_field(arg, lbl) ->
       let (v, ty) = expression event env arg in
       begin match (Ctype.repr(Ctype.expand_head_opt env ty)).desc with
-        Tconstr(path, args, _) ->
+        Tconstr(path, _, _) ->
           let tydesc = Env.find_type path env in
           begin match tydesc.type_kind with
-            Type_record(lbl_list, repr) ->
+            Type_record(lbl_list, _repr) ->
               let (pos, ty_res) =
                 find_label lbl env ty path tydesc 0 lbl_list in
               (Debugcom.Remote_value.field v pos, ty_res)

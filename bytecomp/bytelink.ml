@@ -1,14 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (* Link a set of .cmo files and produce a bytecode executable. *)
 
@@ -86,19 +89,19 @@ module IdentSet = Lambda.IdentSet
 
 let missing_globals = ref IdentSet.empty
 
-let is_required (rel, pos) =
+let is_required (rel, _pos) =
   match rel with
     Reloc_setglobal id ->
       IdentSet.mem id !missing_globals
   | _ -> false
 
-let add_required (rel, pos) =
+let add_required (rel, _pos) =
   match rel with
     Reloc_getglobal id ->
       missing_globals := IdentSet.add id !missing_globals
   | _ -> ()
 
-let remove_required (rel, pos) =
+let remove_required (rel, _pos) =
   match rel with
     Reloc_setglobal id ->
       missing_globals := IdentSet.remove id !missing_globals
@@ -593,7 +596,7 @@ let link ppf objfiles output_name =
       link_bytecode_as_c ppf tolink c_file;
       if not (Filename.check_suffix output_name ".c") then begin
         temps := c_file :: !temps;
-        if Ccomp.compile_file ~output_name:(Some obj_file) c_file <> 0 then
+        if Ccomp.compile_file c_file <> 0 then
           raise(Error Custom_runtime);
         if not (Filename.check_suffix output_name Config.ext_obj) ||
            !Clflags.output_complete_object then begin

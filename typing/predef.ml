@@ -1,14 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (* Predefined type constructors (with special typing rules in typecore) *)
 
@@ -75,7 +78,8 @@ and type_int32 = newgenty (Tconstr(path_int32, [], ref Mnil))
 and type_int64 = newgenty (Tconstr(path_int64, [], ref Mnil))
 and type_lazy_t t = newgenty (Tconstr(path_lazy_t, [t], ref Mnil))
 and type_string = newgenty (Tconstr(path_string, [], ref Mnil))
-and type_extension_constructor = newgenty (Tconstr(path_extension_constructor, [], ref Mnil))
+and type_extension_constructor =
+      newgenty (Tconstr(path_extension_constructor, [], ref Mnil))
 
 let ident_match_failure = ident_create_predef_exn "Match_failure"
 and ident_out_of_memory = ident_create_predef_exn "Out_of_memory"
@@ -91,6 +95,21 @@ and ident_assert_failure = ident_create_predef_exn "Assert_failure"
 and ident_undefined_recursive_module =
         ident_create_predef_exn "Undefined_recursive_module"
 
+let all_predef_exns = [
+  ident_match_failure;
+  ident_out_of_memory;
+  ident_invalid_argument;
+  ident_failure;
+  ident_not_found;
+  ident_sys_error;
+  ident_end_of_file;
+  ident_division_by_zero;
+  ident_stack_overflow;
+  ident_sys_blocked_io;
+  ident_assert_failure;
+  ident_undefined_recursive_module;
+]
+
 let path_match_failure = Pident ident_match_failure
 and path_assert_failure = Pident ident_assert_failure
 and path_undefined_recursive_module = Pident ident_undefined_recursive_module
@@ -105,7 +124,10 @@ let decl_abstr =
    type_variance = [];
    type_newtype_level = None;
    type_attributes = [];
+   type_immediate = false;
   }
+
+let decl_abstr_imm = {decl_abstr with type_immediate = true}
 
 let cstr id args =
   {
@@ -126,10 +148,12 @@ and ident_some = ident_create "Some"
 let common_initial_env add_type add_extension empty_env =
   let decl_bool =
     {decl_abstr with
-     type_kind = Type_variant([cstr ident_false []; cstr ident_true []])}
+     type_kind = Type_variant([cstr ident_false []; cstr ident_true []]);
+     type_immediate = true}
   and decl_unit =
     {decl_abstr with
-     type_kind = Type_variant([cstr ident_void []])}
+     type_kind = Type_variant([cstr ident_void []]);
+     type_immediate = true}
   and decl_exn =
     {decl_abstr with
      type_kind = Type_open}
@@ -170,7 +194,9 @@ let common_initial_env add_type add_extension empty_env =
         ext_ret_type = None;
         ext_private = Asttypes.Public;
         ext_loc = Location.none;
-        ext_attributes = [{Asttypes.txt="ocaml.warn_on_literal_pattern";loc=Location.none}, Parsetree.PStr[]] }
+        ext_attributes = [{Asttypes.txt="ocaml.warn_on_literal_pattern";
+                           loc=Location.none},
+                          Parsetree.PStr[]] }
   in
   add_extension ident_match_failure
                          [newgenty (Ttuple[type_string; type_int; type_int])] (
@@ -199,8 +225,8 @@ let common_initial_env add_type add_extension empty_env =
   add_type ident_bool decl_bool (
   add_type ident_float decl_abstr (
   add_type ident_string decl_abstr (
-  add_type ident_char decl_abstr (
-  add_type ident_int decl_abstr (
+  add_type ident_char decl_abstr_imm (
+  add_type ident_int decl_abstr_imm (
   add_type ident_extension_constructor decl_abstr (
     empty_env)))))))))))))))))))))))))))
 

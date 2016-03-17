@@ -1,14 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (* Detection of partial matches and unused match cases. *)
 
@@ -90,9 +93,9 @@ let rec compat p q =
   | Tpat_lazy p, Tpat_lazy q -> compat p q
   | Tpat_construct (_, c1,ps1), Tpat_construct (_, c2,ps2) ->
       Types.equal_tag c1.cstr_tag c2.cstr_tag && compats ps1 ps2
-  | Tpat_variant(l1,Some p1, r1), Tpat_variant(l2,Some p2,_) ->
+  | Tpat_variant(l1,Some p1, _r1), Tpat_variant(l2,Some p2,_) ->
       l1=l2 && compat p1 p2
-  | Tpat_variant (l1,None,r1), Tpat_variant(l2,None,_) ->
+  | Tpat_variant (l1,None, _r1), Tpat_variant(l2,None,_) ->
       l1 = l2
   | Tpat_variant (_, None, _), Tpat_variant (_,Some _, _) -> false
   | Tpat_variant (_, Some _, _), Tpat_variant (_, None, _) -> false
@@ -153,7 +156,7 @@ let rec pretty_val ppf v =
         begin match cstr with
           | Tpat_unpack ->
             fprintf ppf "@[(module %a)@]" pretty_val { v with pat_extra = rem }
-          | Tpat_constraint ctyp ->
+          | Tpat_constraint _ ->
             fprintf ppf "@[(%a : _)@]" pretty_val { v with pat_extra = rem }
           | Tpat_type _ ->
             fprintf ppf "@[(# %a)@]" pretty_val { v with pat_extra = rem }
@@ -320,8 +323,8 @@ let all_record_args lbls = match lbls with
 (* Build argument list when p2 >= p1, where p1 is a simple pattern *)
 let rec simple_match_args p1 p2 = match p2.pat_desc with
 | Tpat_alias (p2,_,_) -> simple_match_args p1 p2
-| Tpat_construct(_, cstr, args) -> args
-| Tpat_variant(lab, Some arg, _) -> [arg]
+| Tpat_construct(_, _, args) -> args
+| Tpat_variant(_, Some arg, _) -> [arg]
 | Tpat_tuple(args)  -> args
 | Tpat_record(args,_) ->  extract_fields (record_arg p1) args
 | Tpat_array(args) -> args
@@ -452,7 +455,7 @@ let do_set_args erase_mutable q r = match q with
     make_pat
       (Tpat_variant (l, arg, row)) q.pat_type q.pat_env::
     rest
-| {pat_desc = Tpat_lazy omega} ->
+| {pat_desc = Tpat_lazy _omega} ->
     begin match r with
       arg::rest ->
         make_pat (Tpat_lazy arg) q.pat_type q.pat_env::rest
@@ -580,7 +583,7 @@ let close_variant env row =
   let row = Btype.row_repr row in
   let nm =
     List.fold_left
-      (fun nm (tag,f) ->
+      (fun nm (_tag,f) ->
         match Btype.row_field_repr f with
         | Reither(_, _, false, e) ->
             (* m=false means that this tag is not explicitly matched *)
@@ -606,23 +609,8 @@ let row_of_pat pat =
   not.
 *)
 
-let generalized_constructor x =
-  match x with
-    ({pat_desc = Tpat_construct(_,c,_);pat_env=env},_) ->
-      c.cstr_generalized
-  | _ -> assert false
-
-let clean_env env =
-  let rec loop =
-    function
-      | [] -> []
-      | x :: xs ->
-          if generalized_constructor x then loop xs else x :: loop xs
-  in
-  loop env
-
 let full_match closing env =  match env with
-| ({pat_desc = Tpat_construct(_,c,_);pat_type=typ},_) :: _ ->
+| ({pat_desc = Tpat_construct(_,c,_)},_) :: _ ->
     if c.cstr_consts < 0 then false (* extensions *)
     else List.length env = c.cstr_consts + c.cstr_nonconsts
 | ({pat_desc = Tpat_variant _} as p,_) :: _ ->
@@ -715,7 +703,7 @@ let pats_of_type ?(always=false) env ty =
         List.for_all (fun cd -> cd.Types.cd_res <> None) cl ->
           let cstrs = fst (Env.find_type_descrs path env) in
           List.map (pat_of_constr (make_pat Tpat_any ty env)) cstrs
-      | Type_record (ldl, _) ->
+      | Type_record _ ->
           let labels = snd (Env.find_type_descrs path env) in
           let fields =
             List.map (fun ld ->
@@ -745,14 +733,6 @@ let rec get_variant_constructors env ty =
     end
   | _ -> fatal_error "Parmatch.get_variant_constructors"
 
-let rec map_filter f  =
-  function
-      [] -> []
-    | x :: xs ->
-        match f x with
-        | None -> map_filter f xs
-        | Some y -> y :: map_filter f xs
-
 (* Sends back a pattern that complements constructor tags all_tag *)
 let complete_constrs p all_tags =
   let c =
@@ -767,7 +747,7 @@ let complete_constrs p all_tags =
 
 let build_other_constrs env p =
   match p.pat_desc with
-    Tpat_construct (_, {cstr_tag=Cstr_constant _|Cstr_block _}, _) -> 
+    Tpat_construct (_, {cstr_tag=Cstr_constant _|Cstr_block _}, _) ->
       let get_tag = function
         | {pat_desc = Tpat_construct (_,c,_)} -> c.cstr_tag
         | _ -> fatal_error "Parmatch.get_tag" in
@@ -795,7 +775,7 @@ let build_other ext env = match env with
       ({cstr_tag=Cstr_extension _} as c),_)},_) :: _ ->
     let c = {c with cstr_name = "*extension*"} in
       make_pat (Tpat_construct(lid, c, [])) Ctype.none Env.empty
-| ({pat_desc = Tpat_construct (_, cd,_)} as p,_) :: _ ->
+| ({pat_desc = Tpat_construct _} as p,_) :: _ ->
     begin match ext with
     | Some ext when Path.same ext (get_type_path p.pat_type p.pat_env) ->
         extra_pat
@@ -893,7 +873,7 @@ let build_other ext env = match env with
       (function f -> Tpat_constant(Const_float (string_of_float f)))
       0.0 (fun f -> f +. 1.0) p env
 
-| ({pat_desc = Tpat_array args} as p,_)::_ ->
+| ({pat_desc = Tpat_array _} as p,_)::_ ->
     let all_lengths =
       List.map
         (fun (p,_) -> match p.pat_desc with
@@ -976,7 +956,7 @@ let rec satisfiables pss qs = match pss with
         satisfiables pss (q::qs)
     | {pat_desc = (Tpat_any | Tpat_var(_))}::qs ->
         let q0 = discr_pat omega pss in
-        let wild p = 
+        let wild p =
           List.map (fun qs -> p::qs) (satisfiables (filter_extra pss) qs) in
         begin match filter_all q0 pss with
           (* first column of pss is made of variables only *)
@@ -1017,12 +997,14 @@ type 'a result =
   | Rnone           (* No matching value *)
   | Rsome of 'a     (* This matching value *)
 
+(*
 let rec try_many  f = function
   | [] -> Rnone
   | (p,pss)::rest ->
       match f (p,pss) with
       | Rnone -> try_many  f rest
       | r -> r
+*)
 
 let rappend r1 r2 =
   match r1, r2 with
@@ -1211,7 +1193,7 @@ let rec pressure_variants tdefs = function
         [] -> pressure_variants tdefs (filter_extra pss)
       | constrs ->
           let rec try_non_omega = function
-              (p,pss) :: rem ->
+              (_p,pss) :: rem ->
                 let ok = pressure_variants tdefs pss in
                 try_non_omega rem && ok
             | [] -> true
@@ -1497,7 +1479,7 @@ let rec le_pat p q =
       Types.equal_tag c1.cstr_tag c2.cstr_tag && le_pats ps qs
   | Tpat_variant(l1,Some p1,_), Tpat_variant(l2,Some p2,_) ->
       (l1 = l2 && le_pat p1 p2)
-  | Tpat_variant(l1,None,r1), Tpat_variant(l2,None,_) ->
+  | Tpat_variant(l1,None,_r1), Tpat_variant(l2,None,_) ->
       l1 = l2
   | Tpat_variant(_,_,_), Tpat_variant(_,_,_) -> false
   | Tpat_tuple(ps), Tpat_tuple(qs) -> le_pats ps qs
@@ -1552,7 +1534,7 @@ let rec lub p q = match p.pat_desc,q.pat_desc with
           when  l1=l2 ->
             let r=lub p1 p2 in
             make_pat (Tpat_variant (l1,Some r,row)) p.pat_type p.pat_env
-| Tpat_variant (l1,None,row), Tpat_variant(l2,None,_)
+| Tpat_variant (l1,None,_row), Tpat_variant(l2,None,_)
               when l1 = l2 -> p
 | Tpat_record (l1,closed),Tpat_record (l2,_) ->
     let rs = record_lubs l1 l2 in
@@ -1704,7 +1686,7 @@ module Conv = struct
     let rec loop pat =
       match pat.pat_desc with
         Tpat_or (pa,pb,_) ->
-	  mkpat (Ppat_or (loop pa, loop pb))
+          mkpat (Ppat_or (loop pa, loop pb))
       | Tpat_any
       | Tpat_var _ ->
           mkpat Ppat_any
@@ -1712,35 +1694,35 @@ module Conv = struct
           mkpat (Ppat_constant (Untypeast.constant c))
       | Tpat_alias (p,_,_) -> loop p
       | Tpat_tuple lst ->
-	  mkpat (Ppat_tuple (List.map loop lst))
+          mkpat (Ppat_tuple (List.map loop lst))
       | Tpat_construct (cstr_lid, cstr, lst) ->
           let id = fresh cstr.cstr_name in
           let lid = { cstr_lid with txt = Longident.Lident id } in
           Hashtbl.add constrs id cstr;
-	  let arg =
-	    match List.map loop lst with
+          let arg =
+            match List.map loop lst with
             | []  -> None
             | [p] -> Some p
-	    | lst -> Some (mkpat (Ppat_tuple lst))
+            | lst -> Some (mkpat (Ppat_tuple lst))
           in
-	  mkpat (Ppat_construct(lid, arg))
-      | Tpat_variant(label,p_opt,row_desc) ->
-	  let arg = Misc.may_map loop p_opt in
+          mkpat (Ppat_construct(lid, arg))
+      | Tpat_variant(label,p_opt,_row_desc) ->
+          let arg = Misc.may_map loop p_opt in
           mkpat (Ppat_variant(label, arg))
       | Tpat_record (subpatterns, _closed_flag) ->
-	  let fields =
-	    List.map
-	      (fun (_, lbl, p) ->
+          let fields =
+            List.map
+              (fun (_, lbl, p) ->
                 let id = fresh lbl.lbl_name in
                 Hashtbl.add labels id lbl;
                 (mknoloc (Longident.Lident id), loop p))
-	      subpatterns
-	  in
-	  mkpat (Ppat_record (fields, Open))
+              subpatterns
+          in
+          mkpat (Ppat_record (fields, Open))
       | Tpat_array lst ->
-	  mkpat (Ppat_array (List.map loop lst))
+          mkpat (Ppat_array (List.map loop lst))
       | Tpat_lazy p ->
-	  mkpat (Ppat_lazy (loop p))
+          mkpat (Ppat_lazy (loop p))
     in
     let ps = loop typed in
     (ps, constrs, labels)
@@ -1912,7 +1894,7 @@ let do_check_fragile_gadt = do_check_fragile_param exhaust_gadt
 (* Exported unused clause check *)
 (********************************)
 
-let check_unused pred tdefs casel =
+let check_unused pred casel =
   if Warnings.is_active Warnings.Unused_match
   || List.exists (fun c -> c.c_rhs.exp_desc = Texp_unreachable) casel then
     let rec do_rec pref = function
@@ -2202,8 +2184,7 @@ let filter_all =
        to get the definitive list of groups *)
     let env = filter_rec [] rs in
     (* then add the omega rows to all groups *)
-    let env = filter_omega env rs in
-    env
+    filter_omega env rs
 
 (* Compute stable bindings *)
 
@@ -2216,7 +2197,7 @@ let rec do_stable rs = match rs with
     match filter_all rs with
     | [] ->
         do_stable (List.map snd rs)
-    | (_,rs)::env ->        
+    | (_,rs)::env ->
         List.fold_left
           (fun xs (_,rs) -> IdSet.inter xs (do_stable rs))
           (do_stable rs) env
@@ -2238,8 +2219,8 @@ let stable p = do_stable [{unseen=[p]; seen=[];}]
 
   Not doing so will yield excessive  warning in
   (module (M:S) } ...) when true -> ....
-  as M is always present in 
-  let module M_mod = unpack M .. in true 
+  as M is always present in
+  let module M_mod = unpack M .. in true
 *)
 
 let all_rhs_idents exp =
@@ -2278,7 +2259,7 @@ let all_rhs_idents exp =
 
 let check_ambiguous_bindings =
   let open Warnings in
-  let warn0 = Ambiguous_pattern [] in  
+  let warn0 = Ambiguous_pattern [] in
   fun cases ->
     if is_active warn0 then
       List.iter

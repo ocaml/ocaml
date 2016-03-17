@@ -1,15 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*          Xavier Leroy and Damien Doligez, INRIA Rocquencourt        *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the GNU Library General Public License, with    *)
-(*  the special exception on linking described in file ../LICENSE.     *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*           Xavier Leroy and Damien Doligez, INRIA Rocquencourt          *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 let generic_quote quotequote s =
   let l = String.length s in
@@ -128,7 +130,7 @@ module Win32 = struct
         match s.[i] with
         | '\"' -> add_bs (2*n+1); Buffer.add_char b '\"'; loop (i+1);
         | '\\' -> loop_bs (n+1) (i+1);
-        | c    -> add_bs n; loop i
+        | _    -> add_bs n; loop i
       end
     and add_bs n = for _j = 1 to n do Buffer.add_char b '\\'; done
     in
@@ -149,7 +151,7 @@ module Win32 = struct
     let dir = generic_dirname is_dir_sep current_dir_name path in
     drive ^ dir
   let basename s =
-    let (drive, path) = drive_and_path s in
+    let (_drive, path) = drive_and_path s in
     generic_basename is_dir_sep current_dir_name path
 end
 

@@ -1,14 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1999 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1999 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (* Combine heap allocations occurring in the same basic block *)
 
@@ -23,7 +26,7 @@ type allocation_state =
 
 let allocated_size = function
     No_alloc -> 0
-  | Pending_alloc(reg, ofs) -> ofs
+  | Pending_alloc(_, ofs) -> ofs
 
 let rec combine i allocstate =
   match i.desc with
@@ -52,7 +55,7 @@ let rec combine i allocstate =
       let newnext = combine_restart i.next in
       (instr_cons_debug i.desc i.arg i.res i.dbg newnext,
        allocated_size allocstate)
-  | Iop op ->
+  | Iop _ ->
       let (newnext, sz) = combine i.next allocstate in
       (instr_cons_debug i.desc i.arg i.res i.dbg newnext, sz)
   | Iifthenelse(test, ifso, ifnot) ->

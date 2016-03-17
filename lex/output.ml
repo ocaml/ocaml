@@ -1,14 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (* Output the DFA tables and its entry points *)
 
@@ -69,7 +72,7 @@ let output_tables oc tbl =
 
 (* Output the entries *)
 
-let output_entry sourcefile ic oc has_refill oci e =
+let output_entry ic oc has_refill oci e =
   let init_num, init_moves = e.auto_initial_state in
   fprintf oc "%s %alexbuf =\
 \n  %a%a  __ocaml_lex_%s_rec %alexbuf %d\n"
@@ -112,7 +115,7 @@ let output_entry sourcefile ic oc has_refill oci e =
 
 exception Table_overflow
 
-let output_lexdef sourcefile ic oc oci header rh tables entry_points trailer =
+let output_lexdef ic oc oci header rh tables entry_points trailer =
   if not !Common.quiet_mode then
     Printf.printf "%d states, %d transitions, table size %d bytes\n"
       (Array.length tables.tbl_base)
@@ -138,11 +141,11 @@ let output_lexdef sourcefile ic oc oci header rh tables entry_points trailer =
     [] -> ()
   | entry1 :: entries ->
     output_string oc "let rec ";
-    output_entry sourcefile ic oc has_refill oci entry1;
+    output_entry ic oc has_refill oci entry1;
       List.iter
         (fun e ->
            output_string oc "and ";
-           output_entry sourcefile ic oc has_refill oci e)
+           output_entry ic oc has_refill oci e)
         entries;
       output_string oc ";;\n\n";
   end;

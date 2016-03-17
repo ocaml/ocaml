@@ -1,14 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (* The interactive toplevel loop *)
 
@@ -62,9 +65,9 @@ let rec eval_path = function
         with Not_found ->
           raise (Symtable.Error(Symtable.Undefined_global name))
       end
-  | Pdot(p, s, pos) ->
+  | Pdot(p, _s, pos) ->
       Obj.field (eval_path p) pos
-  | Papply(p1, p2) ->
+  | Papply _ ->
       fatal_error "Toploop.eval_path"
 
 let eval_path env path =
@@ -323,15 +326,15 @@ let execute_phrase print_outcome ppf phr =
           | Directive_none f, Pdir_none -> f (); true
           | Directive_string f, Pdir_string s -> f s; true
           | Directive_int f, Pdir_int (n,None) ->
-	     begin match Int_literal_converter.int n with
-	     | n -> f n; true
-	     | exception _ ->
-	       fprintf ppf "Integer literal exceeds the range of \
-			    representable integers for directive `%s'.@."
-		       dir_name;
-	       false
-	     end
-	  | Directive_int f, Pdir_int (n, Some _) ->
+             begin match Int_literal_converter.int n with
+             | n -> f n; true
+             | exception _ ->
+               fprintf ppf "Integer literal exceeds the range of \
+                            representable integers for directive `%s'.@."
+                       dir_name;
+               false
+             end
+          | Directive_int _, Pdir_int (_, Some _) ->
               fprintf ppf "Wrong integer literal for directive `%s'.@."
                 dir_name;
               false
@@ -348,19 +351,6 @@ let execute_phrase print_outcome ppf phr =
   with exn ->
     Warnings.reset_fatal ();
     raise exn
-
-(* Temporary assignment to a reference *)
-
-let protect r newval body =
-  let oldval = !r in
-  try
-    r := newval;
-    let res = body() in
-    r := oldval;
-    res
-  with x ->
-    r := oldval;
-    raise x
 
 (* Read and execute commands from a file, or from stdin if [name] is "". *)
 
@@ -397,7 +387,7 @@ let use_file ppf wrap_mod name =
     (* Skip initial #! line if any *)
     Lexer.skip_sharp_bang lb;
     let success =
-      protect Location.input_name filename (fun () ->
+      protect_refs [ R (Location.input_name, filename) ] (fun () ->
         try
           List.iter
             (fun ph ->
@@ -420,7 +410,7 @@ let mod_use_file ppf name = use_file ppf true name
 let use_file ppf name = use_file ppf false name
 
 let use_silently ppf name =
-  protect use_print_results false (fun () -> use_file ppf name)
+  protect_refs [ R (use_print_results, false) ] (fun () -> use_file ppf name)
 
 (* Reading function for interactive use *)
 
@@ -549,12 +539,15 @@ let loop ppf =
 
 (* Execute a script.  If [name] is "", read the script from stdin. *)
 
-let run_script ppf name args =
+let override_sys_argv args =
   let len = Array.length args in
-  if Array.length Sys.argv < len then invalid_arg "Toploop.run_script";
+  if Array.length Sys.argv < len then invalid_arg "Toploop.override_sys_argv";
   Array.blit args 0 Sys.argv 0 len;
   Obj.truncate (Obj.repr Sys.argv) len;
-  Arg.current := 0;
+  Arg.current := 0
+
+let run_script ppf name args =
+  override_sys_argv args;
   Compmisc.init_path ~dir:(Filename.dirname name) true;
                    (* Note: would use [Filename.abspath] here, if we had it. *)
   begin

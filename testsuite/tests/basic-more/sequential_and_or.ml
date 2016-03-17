@@ -1,14 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*                      Pierre Chambart, OCamlPro                      *)
-(*                                                                     *)
-(*  Copyright 2016 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                OCaml                                   *)
+(*                                                                        *)
+(*                       Pierre Chambart, OCamlPro                        *)
+(*                                                                        *)
+(*   Copyright 2016 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 let r = ref 0
 
@@ -116,7 +119,8 @@ let () =
 (* test generation *)
 
 (*
-let values = ["true"; "false"; "true_effect ()"; "false_effect ()"; "unknown_true"; "unknown_false"]
+let values = ["true"; "false"; "true_effect ()"; "false_effect ()";
+              "unknown_true"; "unknown_false"]
 let ops = ["||"; "&&"]
 let count = ref 0
 let f op v1 v2 =

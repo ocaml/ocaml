@@ -1,15 +1,18 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*      Damien Doligez and Francois Rouaix, INRIA Rocquencourt         *)
-(*          Ported to Caml Special Light by John Malecki               *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*       Damien Doligez and Francois Rouaix, INRIA Rocquencourt           *)
+(*           Ported to Caml Special Light by John Malecki                 *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 open Printf
 
@@ -280,6 +283,9 @@ and rw_exp iflag sexp =
   | Pexp_letmodule (_, smod, sexp) ->
       rewrite_mod iflag smod;
       rewrite_exp iflag sexp
+
+  | Pexp_letexception (_cd, exp) ->
+      rewrite_exp iflag exp
 
   | Pexp_assert (cond) -> rewrite_exp iflag cond
 

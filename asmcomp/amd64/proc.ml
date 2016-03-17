@@ -1,15 +1,18 @@
 # 2 "asmcomp/amd64/proc.ml"
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 2000 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 2000 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (* Description of the AMD64 processor *)
 
@@ -27,13 +30,6 @@ let win64 =
   match Config.system with
   | "win64" | "mingw64" | "cygwin" -> true
   | _                   -> false
-
-(* Which asm conventions to use *)
-
-let masm =
-  match Config.ccomp_type with
-  | "msvc" -> true
-  | _      -> false
 
 (* Registers available for register allocation *)
 
@@ -75,6 +71,8 @@ let masm =
      can be destroyed by the dynamic loader according to SVR4 ABI.
      Linux's dynamic loader also destroys r10.
 *)
+
+let max_arguments_for_tailcalls = 10
 
 let int_reg_name =
   match Config.ccomp_type with
@@ -133,7 +131,6 @@ let phys_reg n =
   if n < 100 then hard_int_reg.(n) else hard_float_reg.(n - 100)
 
 let rax = phys_reg 0
-let rcx = phys_reg 5
 let rdx = phys_reg 4
 let rbp = phys_reg 12
 let rxmm15 = phys_reg 115
@@ -176,14 +173,14 @@ let calling_conventions first_int last_int first_float last_float make_stack
 
 let incoming ofs = Incoming ofs
 let outgoing ofs = Outgoing ofs
-let not_supported ofs = fatal_error "Proc.loc_results: cannot call"
+let not_supported _ofs = fatal_error "Proc.loc_results: cannot call"
 
 let loc_arguments arg =
   calling_conventions 0 9 100 109 outgoing arg
 let loc_parameters arg =
-  let (loc, ofs) = calling_conventions 0 9 100 109 incoming arg in loc
+  let (loc, _ofs) = calling_conventions 0 9 100 109 incoming arg in loc
 let loc_results res =
-  let (loc, ofs) = calling_conventions 0 0 100 100 not_supported res in loc
+  let (loc, _ofs) = calling_conventions 0 0 100 100 not_supported res in loc
 
 (* C calling conventions under Unix:
      first integer args in rdi, rsi, rdx, rcx, r8, r9
@@ -199,7 +196,7 @@ let loc_results res =
      Return value in rax or xmm0. *)
 
 let loc_external_results res =
-  let (loc, ofs) = calling_conventions 0 0 100 100 not_supported res in loc
+  let (loc, _ofs) = calling_conventions 0 0 100 100 not_supported res in loc
 
 let unix_loc_external_arguments arg =
   calling_conventions 2 7 100 107 outgoing arg
@@ -248,7 +245,7 @@ let loc_exn_bucket = rax
 
 (* Volatile registers: none *)
 
-let regs_are_volatile rs = false
+let regs_are_volatile _rs = false
 
 (* Registers destroyed by operations *)
 

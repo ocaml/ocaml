@@ -1,14 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*                        Alain Frisch, LexiFi                         *)
-(*                                                                     *)
-(*  Copyright 2012 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*                         Alain Frisch, LexiFi                           *)
+(*                                                                        *)
+(*   Copyright 2012 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (** Helpers to produce Parsetree fragments *)
 
@@ -29,6 +32,19 @@ val default_loc: loc ref
 val with_default_loc: loc -> (unit -> 'a) -> 'a
     (** Set the [default_loc] within the scope of the execution
         of the provided function. *)
+
+(** {2 Constants} *)
+
+module Const : sig
+  val char : char -> constant
+  val string : ?quotation_delimiter:string -> string -> constant
+  val integer : ?suffix:char -> string -> constant
+  val int : ?suffix:char -> int -> constant
+  val int32 : ?suffix:char -> int32 -> constant
+  val int64 : ?suffix:char -> int64 -> constant
+  val nativeint : ?suffix:char -> nativeint -> constant
+  val float : ?suffix:char -> string -> constant
+end
 
 (** {2 Core language} *)
 
@@ -133,6 +149,8 @@ module Exp:
                   -> expression
     val letmodule: ?loc:loc -> ?attrs:attrs -> str -> module_expr -> expression
                    -> expression
+    val letexception: ?loc:loc -> ?attrs:attrs -> extension_constructor -> expression
+      -> expression
     val assert_: ?loc:loc -> ?attrs:attrs -> expression -> expression
     val lazy_: ?loc:loc -> ?attrs:attrs -> expression -> expression
     val poly: ?loc:loc -> ?attrs:attrs -> expression -> core_type option

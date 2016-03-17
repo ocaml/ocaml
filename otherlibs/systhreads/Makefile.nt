@@ -1,15 +1,17 @@
-#########################################################################
-#                                                                       #
-#                                 OCaml                                 #
-#                                                                       #
-#            Xavier Leroy, projet Cristal, INRIA Rocquencourt           #
-#                                                                       #
-#   Copyright 1999 Institut National de Recherche en Informatique et    #
-#   en Automatique.  All rights reserved.  This file is distributed     #
-#   under the terms of the GNU Library General Public License, with     #
-#   the special exception on linking described in file ../../LICENSE.   #
-#                                                                       #
-#########################################################################
+#**************************************************************************
+#*                                                                        *
+#*                                 OCaml                                  *
+#*                                                                        *
+#*            Xavier Leroy, projet Cristal, INRIA Rocquencourt            *
+#*                                                                        *
+#*   Copyright 1999 Institut National de Recherche en Informatique et     *
+#*     en Automatique.                                                    *
+#*                                                                        *
+#*   All rights reserved.  This file is distributed under the terms of    *
+#*   the GNU Lesser General Public License version 2.1, with the          *
+#*   special exception on linking described in the file LICENSE.          *
+#*                                                                        *
+#**************************************************************************
 
 include ../../config/Makefile
 CAMLRUN ?= ../../boot/ocamlrun
@@ -19,8 +21,19 @@ CAMLYACC ?= ../../boot/ocamlyacc
 CAMLC=$(CAMLRUN) ../../ocamlc -I ../../stdlib -I ../win32unix
 CAMLOPT=$(CAMLRUN) ../../ocamlopt -I ../../stdlib -I ../win32unix
 COMPFLAGS=-w +33 -warn-error A -g
+ifeq "$(FLAMBDA)" "true"
+OPTCOMPFLAGS=-O3
+else
+OPTCOMPFLAGS=
+endif
 MKLIB=$(CAMLRUN) ../../tools/ocamlmklib
 CFLAGS=-I../../byterun $(EXTRACFLAGS)
+
+ifeq "$(wildcard ../../flexdll/Makefile)" ""
+  export OCAML_FLEXLINK:=
+else
+  export OCAML_FLEXLINK:=../../boot/ocamlrun ../../flexdll/flexlink.exe
+endif
 
 CAMLOBJS=thread.cmo mutex.cmo condition.cmo event.cmo threadUnix.cmo
 CMIFILES=$(CAMLOBJS:.cmo=.cmi)
@@ -76,17 +89,18 @@ INSTALL_LIBDIR=$(DESTDIR)$(LIBDIR)
 INSTALL_STUBLIBDIR=$(DESTDIR)$(STUBLIBDIR)
 
 install:
-	cp dllthreads.dll $(INSTALL_STUBLIBDIR)/dllthreads.dll
-	cp libthreads.$(A) $(INSTALL_LIBDIR)/libthreads.$(A)
-	mkdir -p $(INSTALL_LIBDIR)/threads
-	cp $(CMIFILES) threads.cma $(INSTALL_LIBDIR)/threads
-	rm -f $(INSTALL_LIBDIR)/threads/stdlib.cma
-	cp threads.h $(INSTALL_LIBDIR)/caml/threads.h
+	cp dllthreads.dll "$(INSTALL_STUBLIBDIR)/dllthreads.dll"
+	cp libthreads.$(A) "$(INSTALL_LIBDIR)/libthreads.$(A)"
+	mkdir -p "$(INSTALL_LIBDIR)/threads"
+	cp $(CMIFILES) threads.cma "$(INSTALL_LIBDIR)/threads"
+	rm -f "$(INSTALL_LIBDIR)/threads/stdlib.cma"
+	cp threads.h "$(INSTALL_LIBDIR)/caml/threads.h"
 
 installopt:
-	cp libthreadsnat.$(A) $(INSTALL_LIBDIR)/libthreadsnat.$(A)
-	cp $(THREAD_OBJS:.cmo=.cmx) threads.cmxa threads.$(A) $(INSTALL_LIBDIR)/threads
-	cp threads.cmxs $(INSTALL_LIBDIR)/threads
+	cp libthreadsnat.$(A) "$(INSTALL_LIBDIR)/libthreadsnat.$(A)"
+	cp $(THREAD_OBJS:.cmo=.cmx) threads.cmxa threads.$(A) \
+	  "$(INSTALL_LIBDIR)/threads"
+	cp threads.cmxs "$(INSTALL_LIBDIR)/threads"
 
 .SUFFIXES: .ml .mli .cmo .cmi .cmx
 
@@ -97,7 +111,7 @@ installopt:
 	$(CAMLC) -c -g $(COMPFLAGS) $<
 
 .ml.cmx:
-	$(CAMLOPT) -c $(COMPFLAGS) $<
+	$(CAMLOPT) -c $(COMPFLAGS) $(OPTCOMPFLAGS) $<
 
 depend:
 

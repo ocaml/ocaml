@@ -1,16 +1,19 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Gallium, INRIA Rocquencourt         *)
-(*                          Bill O'Farrell, IBM                        *)
-(*                                                                     *)
-(*    Copyright 2015 Institut National de Recherche en Informatique    *)
-(*    et en Automatique. Copyright 2015 IBM (Bill O'Farrell with       *)
-(*    help from Tristan Amini). All rights reserved.  This file is     *)
-(*    distributed under the terms of the Q Public License version 1.0. *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*            Xavier Leroy, projet Gallium, INRIA Rocquencourt            *)
+(*                          Bill O'Farrell, IBM                           *)
+(*                                                                        *)
+(*   Copyright 2015 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*   Copyright 2015 IBM (Bill O'Farrell with help from Tristan Amini).    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (* Instruction selection for the Z processor *)
 
@@ -48,7 +51,7 @@ let pseudoregs_for_operation op arg res =
   (* Two-address binary operations: arg.(0) and res.(0) must be the same *)
   | Iintop(Iadd|Isub|Imul|Iand|Ior|Ixor)  | Iaddf|Isubf|Imulf|Idivf ->
       ([|res.(0); arg.(1)|], res)
-  | Ispecific(sop) ->
+  | Ispecific _ ->
     ( [| arg.(0); arg.(1); res.(0) |], [| res.(0) |])
   (* One-address unary operations: arg.(0) and res.(0) must be the same *)
   |  Iintop_imm((Imul|Iand|Ior|Ixor), _) -> (res, res)
@@ -61,7 +64,7 @@ inherit Selectgen.selector_generic as super
 
 method is_immediate n = (n <= 2147483647) && (n >= -2147483648)
 
-method select_addressing chunk exp =
+method select_addressing _chunk exp =
   let (a, d) = select_addr exp in
   (* 20-bit signed displacement *)
   if d < 0x80000 && d >= -0x80000 then begin

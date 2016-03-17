@@ -1,15 +1,17 @@
 ;;; caml-help.el --- Contextual completion and help to caml-mode
-;(***********************************************************************)
-;(*                                                                     *)
-;(*                                OCaml                                *)
-;(*                                                                     *)
-;(*            Didier Remy, projet Cristal, INRIA Rocquencourt          *)
-;(*                                                                     *)
-;(*  Copyright 2001 Institut National de Recherche en Informatique et   *)
-;(*  en Automatique.  All rights reserved.  This file is distributed    *)
-;(*  under the terms of the GNU General Public License.                 *)
-;(*                                                                     *)
-;(***********************************************************************)
+;**************************************************************************
+;*                                                                        *
+;*                                 OCaml                                  *
+;*                                                                        *
+;*             Didier Remy, projet Cristal, INRIA Rocquencourt            *
+;*                                                                        *
+;*   Copyright 2001 Institut National de Recherche en Informatique et     *
+;*     en Automatique.                                                    *
+;*                                                                        *
+;*   All rights reserved.  This file is distributed under the terms of    *
+;*   the GNU General Public License.                                      *
+;*                                                                        *
+;**************************************************************************
 
 ;; Author: Didier Remy, November 2001.
 

@@ -1,14 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                             OCamldoc                                *)
-(*                                                                     *)
-(*            Maxence Guesdon, projet Cristal, INRIA Rocquencourt      *)
-(*                                                                     *)
-(*  Copyright 2001 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Maxence Guesdon, projet Cristal, INRIA Rocquencourt        *)
+(*                                                                        *)
+(*   Copyright 2001 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (** Interface to the information collected in source files. *)
 
@@ -133,6 +136,7 @@ module Name :
 module Parameter :
   sig
     (** {3 Types} *)
+
     (** Representation of a simple parameter name *)
     type simple_name = Odoc_parameter.simple_name =
         {
@@ -151,6 +155,7 @@ module Parameter :
     type parameter = param_info
 
     (** {3 Functions} *)
+
     (** Acces to the name as a string. For tuples, parenthesis and commas are added. *)
     val complete_name : parameter -> string
 
@@ -339,6 +344,7 @@ module Value :
 module Class :
   sig
     (** {3 Types} *)
+
     (** To keep the order of elements in a class. *)
     type class_element = Odoc_class.class_element =
         Class_attribute of Value.t_attribute
@@ -460,6 +466,7 @@ module Class :
 module Module :
   sig
     (** {3 Types} *)
+
     (** To keep the order of elements in a module. *)
     type module_element = Odoc_module.module_element =
         Element_module of t_module
@@ -911,7 +918,6 @@ module Scan :
   sig
     class scanner :
       object
-      (** Scan of 'leaf elements'. *)
 
         method scan_value : Value.t_value -> unit
 

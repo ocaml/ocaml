@@ -1,14 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*             Damien Doligez, projet Para, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1999 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*              Damien Doligez, projet Para, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1999 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 open Asttypes;;
 open Format;;
@@ -41,11 +44,11 @@ let rec fmt_longident_aux f x =
 
 let fmt_longident f x = fprintf f "\"%a\"" fmt_longident_aux x;;
 
-let fmt_longident_loc f x =
+let fmt_longident_loc f (x : Longident.t loc) =
   fprintf f "\"%a\" %a" fmt_longident_aux x.txt fmt_location x.loc;
 ;;
 
-let fmt_string_loc f x =
+let fmt_string_loc f (x : string loc) =
   fprintf f "\"%s\" %a" x.txt fmt_location x.loc;
 ;;
 
@@ -55,12 +58,12 @@ let fmt_char_option f = function
 
 let fmt_constant f x =
   match x with
-  | PConst_int (i,m) -> fprintf f "PConst_int (%s,%a)" i fmt_char_option m;
-  | PConst_char (c) -> fprintf f "PConst_char %02x" (Char.code c);
-  | PConst_string (s, None) -> fprintf f "PConst_string(%S,None)" s;
-  | PConst_string (s, Some delim) ->
+  | Pconst_integer (i,m) -> fprintf f "PConst_int (%s,%a)" i fmt_char_option m;
+  | Pconst_char (c) -> fprintf f "PConst_char %02x" (Char.code c);
+  | Pconst_string (s, None) -> fprintf f "PConst_string(%S,None)" s;
+  | Pconst_string (s, Some delim) ->
       fprintf f "PConst_string (%S,Some %S)" s delim;
-  | PConst_float (s,m) -> fprintf f "PConst_float (%s,%a)" s fmt_char_option m;
+  | Pconst_float (s,m) -> fprintf f "PConst_float (%s,%a)" s fmt_char_option m;
 ;;
 
 let fmt_mutable_flag f x =
@@ -337,6 +340,10 @@ and expression i ppf x =
   | Pexp_letmodule (s, me, e) ->
       line i ppf "Pexp_letmodule %a\n" fmt_string_loc s;
       module_expr i ppf me;
+      expression i ppf e;
+  | Pexp_letexception (cd, e) ->
+      line i ppf "Pexp_letexception\n";
+      extension_constructor i ppf cd;
       expression i ppf e;
   | Pexp_assert (e) ->
       line i ppf "Pexp_assert\n";

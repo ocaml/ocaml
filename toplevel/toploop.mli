@@ -1,14 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 open Format
 
@@ -142,3 +145,13 @@ val toplevel_startup_hook : (unit -> unit) ref
 (* Used by Trace module *)
 
 val may_trace : bool ref
+
+(* Misc *)
+
+val override_sys_argv : string array -> unit
+(* [override_sys_argv args] replaces the contents of [Sys.argv] by [args]
+   and reset [Arg.current] to [0].
+
+   This is called by [run_script] so that [Sys.argv] represents
+   "script.ml args..." instead of the full command line:
+   "ocamlrun unix.cma ... script.ml args...". *)

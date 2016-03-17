@@ -14,12 +14,6 @@
   are all *required*.  The vendor-provided compiler, assembler and make
   have major problems.
 
-* GNU make is needed to build ocamlbuild.  If your system's default
-  make is not GNU make, you need to define the GNUMAKE environment
-  variable to the name of GNU make, typically with this command:
-
-    export GNUMAKE=gmake
-
 == INSTALLATION INSTRUCTIONS
 
 1. Configure the system. From the top directory, do:
@@ -121,7 +115,8 @@ The `configure` script accepts the following options:
         Do not build ocamldoc.
 
 -no-ocamlbuild::
-        Do not build ocamlbuild.
+        Deprecated since 4.03.0, as ocamlbuild is now distributed separately
+        from the compiler distribution.
 
 -no-graph::
         Do not compile the Graphics library.
@@ -239,9 +234,9 @@ or:
         make opt > log.opt 2>&1     # in sh
         make opt >& log.opt         # in csh
 
-5. anchor:step-5[] Compile fast versions of the OCaml compilers, by compiling them
-with the native-code compiler (you have only compiled them to bytecode
-so far).  Just do:
+5. anchor:step-5[] Compile fast versions of the OCaml compilers, by
+compiling them with the native-code compiler (you have only compiled
+them to bytecode so far).  Just do:
 
         make opt.opt
 +

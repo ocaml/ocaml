@@ -1,15 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*        Daniel de Rauglaudre, projet Cristal, INRIA Rocquencourt     *)
-(*                                                                     *)
-(*  Copyright 1997 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the GNU Library General Public License, with    *)
-(*  the special exception on linking described in file ../LICENSE.     *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*         Daniel de Rauglaudre, projet Cristal, INRIA Rocquencourt       *)
+(*                                                                        *)
+(*   Copyright 1997 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 type 'a t = 'a cell option
 and 'a cell = { mutable count : int; mutable data : 'a data }
@@ -50,8 +52,8 @@ let rec get_data : type v. int -> v data -> v data = fun count d -> match d with
      | Sempty -> get_data count d2
      | _ -> assert false
      end
- | Sgen {curr = Some None; func = _ } -> Sempty
- | Sgen ({curr = Some(Some a); func = f} as g) ->
+ | Sgen {curr = Some None} -> Sempty
+ | Sgen ({curr = Some(Some a)} as g) ->
      g.curr <- None; Scons(a, d)
  | Sgen g ->
      begin match g.func count with
@@ -119,7 +121,10 @@ let rec nget_data n s =
 ;;
 
 let npeek_data n s =
-  let (al, d, len) = nget_data n s in s.count <- (s.count - len); s.data <- d; al
+  let (al, d, len) = nget_data n s in
+  s.count <- (s.count - len);
+  s.data <- d;
+  al
 ;;
 
 let npeek n = function
@@ -225,5 +230,5 @@ and dump_data : type v. (v -> unit) -> v data -> unit = fun f ->
       print_string ")"
   | Slazy _ -> print_string "Slazy"
   | Sgen _ -> print_string "Sgen"
-  | Sbuffio b -> print_string "Sbuffio"
+  | Sbuffio _ -> print_string "Sbuffio"
 ;;

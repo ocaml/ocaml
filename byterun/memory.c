@@ -1,15 +1,17 @@
-/***********************************************************************/
-/*                                                                     */
-/*                                OCaml                                */
-/*                                                                     */
-/*             Damien Doligez, projet Para, INRIA Rocquencourt         */
-/*                                                                     */
-/*  Copyright 1996 Institut National de Recherche en Informatique et   */
-/*  en Automatique.  All rights reserved.  This file is distributed    */
-/*  under the terms of the GNU Library General Public License, with    */
-/*  the special exception on linking described in file ../LICENSE.     */
-/*                                                                     */
-/***********************************************************************/
+/**************************************************************************/
+/*                                                                        */
+/*                                 OCaml                                  */
+/*                                                                        */
+/*              Damien Doligez, projet Para, INRIA Rocquencourt           */
+/*                                                                        */
+/*   Copyright 1996 Institut National de Recherche en Informatique et     */
+/*     en Automatique.                                                    */
+/*                                                                        */
+/*   All rights reserved.  This file is distributed under the terms of    */
+/*   the GNU Lesser General Public License version 2.1, with the          */
+/*   special exception on linking described in the file LICENSE.          */
+/*                                                                        */
+/**************************************************************************/
 
 #include <stdlib.h>
 #include <string.h>
@@ -445,7 +447,7 @@ void caml_shrink_heap (char *chunk)
 
 color_t caml_allocation_color (void *hp)
 {
-  if (caml_gc_phase == Phase_mark
+  if (caml_gc_phase == Phase_mark || caml_gc_phase == Phase_clean
       || (caml_gc_phase == Phase_sweep && (addr)hp >= (addr)caml_gc_sweep_hp)){
     return Caml_black;
   }else{
@@ -486,7 +488,7 @@ static inline value caml_alloc_shr_aux (mlsize_t wosize, tag_t tag,
   Assert (Is_in_heap (Val_hp (hp)));
 
   /* Inline expansion of caml_allocation_color. */
-  if (caml_gc_phase == Phase_mark
+  if (caml_gc_phase == Phase_mark || caml_gc_phase == Phase_clean
       || (caml_gc_phase == Phase_sweep && (addr)hp >= (addr)caml_gc_sweep_hp)){
     Hd_hp (hp) = Make_header (wosize, tag, Caml_black);
   }else{

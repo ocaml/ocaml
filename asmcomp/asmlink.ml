@@ -1,14 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (* Link a set of .cmx/.o files and produce an executable *)
 
@@ -132,7 +135,7 @@ let is_required name =
   try ignore (Hashtbl.find missing_globals name); true
   with Not_found -> false
 
-let add_required by (name, crc) =
+let add_required by (name, _crc) =
   try
     let rq = Hashtbl.find missing_globals name in
     rq := by :: !rq
@@ -268,7 +271,7 @@ let link_shared ppf objfiles output_name =
     then output_name ^ ".startup" ^ ext_asm
     else Filename.temp_file "camlstartup" ext_asm in
   let startup_obj = output_name ^ ".startup" ^ ext_obj in
-  Asmgen.compile_unit ~source_provenance:Timings.Startup
+  Asmgen.compile_unit ~source_provenance:Timings.Startup output_name
     startup !Clflags.keep_startup_file startup_obj
     (fun () ->
        make_shared_startup_file ppf
@@ -327,7 +330,7 @@ let link ppf objfiles output_name =
     then output_name ^ ".startup" ^ ext_asm
     else Filename.temp_file "camlstartup" ext_asm in
   let startup_obj = Filename.temp_file "camlstartup" ext_obj in
-  Asmgen.compile_unit ~source_provenance:Timings.Startup
+  Asmgen.compile_unit ~source_provenance:Timings.Startup output_name
     startup !Clflags.keep_startup_file startup_obj
     (fun () -> make_startup_file ppf units_tolink);
   Misc.try_finally

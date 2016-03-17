@@ -1,14 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (* Instruction scheduling for the Power PC *)
 
@@ -35,7 +38,7 @@ method oper_latency = function
   | Ispecific(Imultaddf | Imultsubf) -> 5
   | _ -> 1
 
-method reload_retaddr_latency = 12
+method! reload_retaddr_latency = 12
   (* If we can have that many cycles between the reloadretaddr and the
      return, we can expect that the blr branch will be completely folded. *)
 
@@ -53,7 +56,7 @@ method oper_issue_cycles = function
   | Iintoffloat -> 4
   | _ -> 1
 
-method reload_retaddr_issue_cycles = 3
+method! reload_retaddr_issue_cycles = 3
   (* load then stalling mtlr *)
 
 end

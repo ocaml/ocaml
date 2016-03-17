@@ -1,15 +1,17 @@
-/***********************************************************************/
-/*                                                                     */
-/*                                OCaml                                */
-/*                                                                     */
-/*             Damien Doligez, projet Para, INRIA Rocquencourt         */
-/*                                                                     */
-/*  Copyright 1996 Institut National de Recherche en Informatique et   */
-/*  en Automatique.  All rights reserved.  This file is distributed    */
-/*  under the terms of the GNU Library General Public License, with    */
-/*  the special exception on linking described in file ../LICENSE.     */
-/*                                                                     */
-/***********************************************************************/
+/**************************************************************************/
+/*                                                                        */
+/*                                 OCaml                                  */
+/*                                                                        */
+/*              Damien Doligez, projet Para, INRIA Rocquencourt           */
+/*                                                                        */
+/*   Copyright 1996 Institut National de Recherche en Informatique et     */
+/*     en Automatique.                                                    */
+/*                                                                        */
+/*   All rights reserved.  This file is distributed under the terms of    */
+/*   the GNU Lesser General Public License version 2.1, with the          */
+/*   special exception on linking described in the file LICENSE.          */
+/*                                                                        */
+/**************************************************************************/
 
 #include <string.h>
 
@@ -221,7 +223,7 @@ static void do_compaction (void)
     }
     /* Invert weak pointers. */
     {
-      value *pp = &caml_weak_list_head;
+      value *pp = &caml_ephe_list_head;
       value p;
       word q;
       size_t sz, i;
@@ -233,7 +235,7 @@ static void do_compaction (void)
         while (Ecolor (q) == 0) q = * (word *) q;
         sz = Wosize_ehd (q);
         for (i = 1; i < sz; i++){
-          if (Field (p,i) != caml_weak_none){
+          if (Field (p,i) != caml_ephe_none){
             invert_pointer_at ((word *) &(Field (p,i)));
           }
         }
@@ -402,7 +404,7 @@ void caml_compact_heap (void)
 
   CAMLassert (caml_young_ptr == caml_young_alloc_end);
   CAMLassert (caml_ref_table.ptr == caml_ref_table.base);
-  CAMLassert (caml_weak_ref_table.ptr == caml_weak_ref_table.base);
+  CAMLassert (caml_ephe_ref_table.ptr == caml_ephe_ref_table.base);
 
   do_compaction ();
   CAML_INSTR_TIME (tmr, "compact/main");

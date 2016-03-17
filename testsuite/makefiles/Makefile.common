@@ -1,14 +1,17 @@
-#########################################################################
-#                                                                       #
-#                                 OCaml                                 #
-#                                                                       #
-#                 Xavier Clerc, SED, INRIA Rocquencourt                 #
-#                                                                       #
-#   Copyright 2010 Institut National de Recherche en Informatique et    #
-#   en Automatique.  All rights reserved.  This file is distributed     #
-#   under the terms of the Q Public License version 1.0.                #
-#                                                                       #
-#########################################################################
+#**************************************************************************
+#*                                                                        *
+#*                                 OCaml                                  *
+#*                                                                        *
+#*                 Xavier Clerc, SED, INRIA Rocquencourt                  *
+#*                                                                        *
+#*   Copyright 2010 Institut National de Recherche en Informatique et     *
+#*     en Automatique.                                                    *
+#*                                                                        *
+#*   All rights reserved.  This file is distributed under the terms of    *
+#*   the GNU Lesser General Public License version 2.1, with the          *
+#*   special exception on linking described in the file LICENSE.          *
+#*                                                                        *
+#**************************************************************************
 
 TOPDIR=$(BASEDIR)/..
 WINTOPDIR=`cygpath -m "$(TOPDIR)"`
@@ -20,7 +23,6 @@ OTOPDIR=$(TOPDIR)
 CTOPDIR=$(TOPDIR)
 CYGPATH=echo
 DIFF=diff -q
-CANKILL=true
 SORT=sort
 SET_LD_PATH=CAML_LD_LIBRARY_PATH="$(LD_PATH)"
 
@@ -32,8 +34,6 @@ SET_LD_PATH=CAML_LD_LIBRARY_PATH="$(LD_PATH)"
 # CYGPATH is the command that translates unix-style file names into
 #   whichever syntax is appropriate for arguments of OCaml programs.
 # DIFF is a "diff -q" command that ignores trailing CRs under Windows.
-# CANKILL is true if a script launched by Make can kill an OCaml process,
-#   and false for the mingw and MSVC ports.
 # SORT is the Unix "sort" command. Usually a simple command, but may be an
 #   absolute name if the Windows "sort" command is in the PATH.
 # SET_LD_PATH is a command prefix that sets the path for dynamic libraries
@@ -43,7 +43,19 @@ SET_LD_PATH=CAML_LD_LIBRARY_PATH="$(LD_PATH)"
 
 include $(TOPDIR)/config/Makefile
 
-OCAMLRUN=$(TOPDIR)/boot/ocamlrun$(EXE)
+ifneq ($(USE_RUNTIME),)
+#Check USE_RUNTIME value
+ifeq ($(findstring $(USE_RUNTIME),d i),)
+$(error If set, USE_RUNTIME must be equal to "d" (debug runtime) \
+        or "i" (instrumented runtime))
+endif
+
+RUNTIME_VARIANT=-I $(OTOPDIR)/asmrun -I $(OTOPDIR)/byterun \
+                -runtime-variant $(USE_RUNTIME)
+export OCAMLRUNPARAM?=v=0
+endif
+
+OCAMLRUN=$(TOPDIR)/byterun/ocamlrun$(USE_RUNTIME)$(EXE)
 
 OCFLAGS=-nostdlib -I $(OTOPDIR)/stdlib $(COMPFLAGS)
 OCOPTFLAGS=
@@ -56,17 +68,30 @@ endif
 
 OCAML=$(OCAMLRUN) $(OTOPDIR)/ocaml $(OCFLAGS) \
       -init $(OTOPDIR)/testsuite/lib/empty
-OCAMLC=$(OCAMLRUN) $(OTOPDIR)/ocamlc $(CUSTOM) $(OCFLAGS)
-OCAMLOPT=$(OCAMLRUN) $(OTOPDIR)/ocamlopt $(OCFLAGS)
+EXPECT_TEST=$(OCAMLRUN) $(OTOPDIR)/testsuite/tools/expect_test$(EXE)
+ifeq "$(FLEXLINK)" ""
+  FLEXLINK_PREFIX=
+else
+  ifeq "$(wildcard $(TOPDIR)/flexdll/Makefile)" ""
+    FLEXLINK_PREFIX=
+  else
+    EMPTY=
+    FLEXLINK_PREFIX=OCAML_FLEXLINK="$(WINTOPDIR)/boot/ocamlrun \
+	                            $(WINTOPDIR)/flexdll/flexlink.exe" $(EMPTY)
+  endif
+endif
+OCAMLC=$(FLEXLINK_PREFIX)$(OCAMLRUN) $(OTOPDIR)/ocamlc $(CUSTOM) $(OCFLAGS) \
+       $(RUNTIME_VARIANT)
+OCAMLOPT=$(FLEXLINK_PREFIX)$(OCAMLRUN) $(OTOPDIR)/ocamlopt $(OCFLAGS) \
+         $(RUNTIME_VARIANT)
 OCAMLDOC=$(OCAMLRUN) $(OTOPDIR)/ocamldoc/ocamldoc
 OCAMLLEX=$(OCAMLRUN) $(OTOPDIR)/lex/ocamllex
-OCAMLMKLIB=$(OCAMLRUN) $(OTOPDIR)/tools/ocamlmklib \
-		       -ocamlc "$(OTOPDIR)/boot/ocamlrun$(EXE) \
-		                $(OTOPDIR)/ocamlc $(OCFLAGS)" \
-		       -ocamlopt "$(OTOPDIR)/boot/ocamlrun$(EXE) \
-		                  $(OTOPDIR)/ocamlopt $(OCFLAGS)"
+OCAMLMKLIB=$(FLEXLINK_PREFIX)$(OCAMLRUN) $(OTOPDIR)/tools/ocamlmklib \
+           -ocamlc "$(OTOPDIR)/byterun/ocamlrun$(USE_RUNTIME)$(EXE) \
+                    $(OTOPDIR)/ocamlc $(OCFLAGS) $(RUNTIME_VARIANT)" \
+           -ocamlopt "$(OTOPDIR)/byterun/ocamlrun$(USE_RUNTIME)$(EXE) \
+                      $(OTOPDIR)/ocamlopt $(OCFLAGS) $(RUNTIME_VARIANT)"
 OCAMLYACC=$(TOPDIR)/yacc/ocamlyacc$(EXE)
-OCAMLBUILD=$(TOPDIR)/_build/ocamlbuild/ocamlbuild.native
 DUMPOBJ=$(OCAMLRUN) $(OTOPDIR)/tools/dumpobj
 OBJINFO=$(OCAMLRUN) $(OTOPDIR)/tools/objinfo
 BYTECODE_ONLY=[ "$(ARCH)" = "none" -o "$(ASM)" = "none" ]
@@ -83,7 +108,7 @@ defaultpromote:
 	done
 
 defaultclean:
-	@rm -f *.cmo *.cmi *.cmx *.cma *.cmxa *.cmxs *.$(O) *.$(SO) *.$(A)
+	@rm -f *.cmo *.cmi *.cmx *.cma *.cmxa *.cmxs *.$(O) *.$(SO) *.$(A) *.exe
 	@for dsym in *.dSYM; do \
 	  if [ -d $$dsym ]; then \
 	    rm -fr $$dsym; \
@@ -91,7 +116,7 @@ defaultclean:
 	done
 
 .SUFFIXES:
-.SUFFIXES: .mli .ml .mly .mll .cmi .cmo .cmx .cmm .cmxa .s .S .o .so .c .f
+.SUFFIXES: .mli .ml .mly .mll .cmi .cmo .cmx .cmm .cmxa .s .S .$(O) .so .c .f
 
 .mli.cmi:
 	@$(OCAMLC) -c $(ADD_COMPFLAGS) $<
@@ -121,6 +146,13 @@ defaultclean:
 .cmm.o:
 	@$(OCAMLRUN) ./codegen $*.cmm > $*.s
 	@$(ASM) -o $*.o $*.s
+
+.cmm.obj:
+	@$(OCAMLRUN) ./codegen $*.cmm \
+	| grep -v "_caml_\(young_ptr\|young_limit\|extra_params\
+	\|allocN\|raise_exn\|reraise_exn\)" > $*.s
+	@set -o pipefail ; \
+	$(ASM) $*.obj $*.s | tail -n +2
 
 .S.o:
 	@$(ASPP) $(ASPPFLAGS) -DSYS_$(SYSTEM) -DMODEL_$(MODEL) -o $*.o $*.S

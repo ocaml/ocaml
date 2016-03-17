@@ -1,14 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                OCaml                                   *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 open Bigarray
 open Printf
@@ -411,6 +414,14 @@ let _ =
   test 1 (Array1.dim (from_list int [1;2;3;4;5])) 5;
   test 2 (Array1.dim (from_list_fortran int [1;2;3])) 3;
 
+  testing_function "size_in_bytes_one";
+  test 1 (Array1.size_in_bytes (from_list int [1;2;3;4;5]))
+    (5 * (kind_size_in_bytes int));
+  test 2 (Array1.size_in_bytes (from_list int [])) 0;
+  let int64list = (from_list int64 (List.map Int64.of_int [1;2;3;4;5])) in
+  test 3 (Array1.size_in_bytes int64list) (5 * (kind_size_in_bytes int64));
+  test 4 (Array1.size_in_bytes (from_list int64 (List.map Int64.of_int []))) 0;
+
   testing_function "kind & layout";
   let a = from_list int [1;2;3] in
   test 1 (Array1.kind a) int;
@@ -595,6 +606,10 @@ let _ =
   test 3 (Array2.dim1 b) 4;
   test 4 (Array2.dim2 b) 6;
 
+  testing_function "size_in_bytes_two";
+  let a = Array2.create int c_layout 4 6 in
+  test 1 (Array2.size_in_bytes a) (24 * (kind_size_in_bytes int));
+
   testing_function "sub";
   let a = make_array2 int c_layout 0 5 3 id in
   let b = Array2.sub_left a 2 2 in
@@ -746,6 +761,10 @@ let _ =
   test 5 (Array3.dim2 b) 5;
   test 6 (Array3.dim3 b) 6;
 
+  testing_function "size_in_bytes_three";
+  let a = Array3.create int c_layout 4 5 6 in
+  test 1 (Array3.size_in_bytes a) (120 * (kind_size_in_bytes int));
+
   testing_function "slice1";
   let a = make_array3 int c_layout 0 3 3 3 id in
   test 1 (Array3.slice_left_1 a 0 0) (from_list int [0;1;2]);
@@ -756,6 +775,39 @@ let _ =
   let a = make_array3 int fortran_layout 1 3 3 3 id in
   test 6 (Array3.slice_right_1 a 1 2) (from_list_fortran int [112;212;312]);
   test 7 (Array3.slice_right_1 a 3 1) (from_list_fortran int [131;231;331]);
+
+  testing_function "size_in_bytes_general";
+  let a = Genarray.create int c_layout [|2;2;2;2;2|] in
+  test 1 (Genarray.size_in_bytes a) (32 * (kind_size_in_bytes int));
+
+(* Kind size *)
+  testing_function "kind_size_in_bytes";
+  let arr1 = Array1.create Float32 c_layout 1 in
+  test 1 (kind_size_in_bytes Float32) (Array1.size_in_bytes arr1);
+  let arr1 = Array1.create Float64 c_layout 1 in
+  test 2 (kind_size_in_bytes Float64) (Array1.size_in_bytes arr1);
+  let arr1 = Array1.create Int8_signed c_layout 1 in
+  test 3 (kind_size_in_bytes Int8_signed) (Array1.size_in_bytes arr1);
+  let arr1 = Array1.create Int8_unsigned c_layout 1 in
+  test 4 (kind_size_in_bytes Int8_unsigned) (Array1.size_in_bytes arr1);
+  let arr1 = Array1.create Int16_signed c_layout 1 in
+  test 5 (kind_size_in_bytes Int16_signed) (Array1.size_in_bytes arr1);
+  let arr1 = Array1.create Int16_unsigned c_layout 1 in
+  test 6 (kind_size_in_bytes Int16_unsigned) (Array1.size_in_bytes arr1);
+  let arr1 = Array1.create Int32 c_layout 1 in
+  test 7 (kind_size_in_bytes Int32) (Array1.size_in_bytes arr1);
+  let arr1 = Array1.create Int64 c_layout 1 in
+  test 8 (kind_size_in_bytes Int64) (Array1.size_in_bytes arr1);
+  let arr1 = Array1.create Int c_layout 1 in
+  test 9 (kind_size_in_bytes Int) (Array1.size_in_bytes arr1);
+  let arr1 = Array1.create Nativeint c_layout 1 in
+  test 10 (kind_size_in_bytes Nativeint) (Array1.size_in_bytes arr1);
+  let arr1 = Array1.create Complex32 c_layout 1 in
+  test 11 (kind_size_in_bytes Complex32) (Array1.size_in_bytes arr1);
+  let arr1 = Array1.create Complex64 c_layout 1 in
+  test 12 (kind_size_in_bytes Complex64) (Array1.size_in_bytes arr1);
+  let arr1 = Array1.create Char c_layout 1 in
+  test 13 (kind_size_in_bytes Char) (Array1.size_in_bytes arr1);
 
 (* Reshaping *)
   print_newline();

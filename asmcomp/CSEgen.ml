@@ -1,14 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Gallium, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 2014 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Gallium, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 2014 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (* Common subexpression elimination by value numbering over extended
    basic blocks. *)
@@ -194,7 +197,7 @@ let remove_load_numbering n =
 
 let kill_addr_regs n =
   { n with num_reg =
-              Reg.Map.filter (fun r n -> r.Reg.typ <> Cmm.Addr) n.num_reg }
+              Reg.Map.filter (fun r _n -> r.Reg.typ <> Cmm.Addr) n.num_reg }
 
 (* Prepend a set of moves before [i] to assign [srcs] to [dsts].  *)
 
@@ -204,7 +207,7 @@ let insert_move srcs dsts i =
   match Array.length srcs with
   | 0 -> i
   | 1 -> instr_cons (Iop Imove) srcs dsts i
-  | l -> (* Parallel move: first copy srcs into tmps one by one,
+  | _ -> (* Parallel move: first copy srcs into tmps one by one,
             then copy tmps into dsts one by one *)
          let tmps = Reg.createv_like srcs in
          let i1 = array_fold2 insert_single_move i tmps dsts in

@@ -1,14 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 2002 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 2002 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (* "Package" a set of .cmo files into one .cmo file having the
    original compilation units as sub-modules. *)
@@ -183,7 +186,7 @@ let rec rename_append_bytecode_list ppf packagename oc mapping defined ofs
 let build_global_target oc target_name members mapping pos coercion =
   let components =
     List.map2
-      (fun m (id1, id2) ->
+      (fun m (_id1, id2) ->
         match m.pm_kind with
         | PM_intf -> None
         | PM_impl _ -> Some id2)
@@ -229,7 +232,7 @@ let package_object_files ppf files targetfile targetname coercion =
     let pos_final = pos_out oc in
     let imports =
       List.filter
-        (fun (name, crc) -> not (List.mem name unit_names))
+        (fun (name, _crc) -> not (List.mem name unit_names))
         (Bytelink.extract_crc_interfaces()) in
     let compunit =
       { cu_name = targetname;
@@ -265,8 +268,7 @@ let package_files ppf initial_env files targetfile =
     try
       let coercion =
         Typemod.package_units initial_env files targetcmi targetname in
-      let ret = package_object_files ppf files targetfile targetname coercion in
-      ret
+      package_object_files ppf files targetfile targetname coercion
     with x ->
       remove_file targetfile; raise x
 

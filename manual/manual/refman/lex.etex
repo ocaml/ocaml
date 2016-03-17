@@ -121,6 +121,7 @@ escape-sequence:
         | "\" ("0"\ldots"9") ("0"\ldots"9") ("0"\ldots"9")
         | "\x" ("0"\ldots"9"||"A"\ldots"F"||"a"\ldots"f")
                ("0"\ldots"9"||"A"\ldots"F"||"a"\ldots"f")
+        | "\o" ("0"\ldots"3") ("0"\ldots"7") ("0"\ldots"7")
 \end{syntax}
 
 Character literals are delimited by @"'"@ (single quote) characters.
@@ -137,6 +138,7 @@ The two single quotes enclose either one character different from
 \entree{"\\"\var{space}}{space (SPC)}
 \entree{"\\"\var{ddd}}{the character with ASCII code \var{ddd} in decimal}
 \entree{"\\x"\var{hh}}{the character with ASCII code \var{hh} in hexadecimal}
+\entree{"\\o"\var{ooo}}{the character with ASCII code \var{ooo} in octal}
 \end{tableau}
 
 \subsubsection*{String literals}

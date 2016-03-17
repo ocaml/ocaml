@@ -1,15 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*                         Benoit Vaugon, ENSTA                        *)
-(*                                                                     *)
-(*  Copyright 2014 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the GNU Library General Public License, with    *)
-(*  the special exception on linking described in file ../LICENSE.     *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*                          Benoit Vaugon, ENSTA                          *)
+(*                                                                        *)
+(*   Copyright 2014 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (* Padding position. *)
 type padty =
@@ -538,7 +540,7 @@ let rec erase_rel : type a b c d e f g h i j k l .
     Bool_ty (erase_rel rest)
   | Format_arg_ty (ty, rest) ->
     Format_arg_ty (ty, erase_rel rest)
-  | Format_subst_ty (ty1, ty2, rest) ->
+  | Format_subst_ty (ty1, _ty2, rest) ->
     Format_subst_ty (ty1, ty1, erase_rel rest)
   | Alpha_ty rest ->
     Alpha_ty (erase_rel rest)

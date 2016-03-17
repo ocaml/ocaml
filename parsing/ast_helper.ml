@@ -1,14 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*                        Alain Frisch, LexiFi                         *)
-(*                                                                     *)
-(*  Copyright 2012 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*                         Alain Frisch, LexiFi                           *)
+(*                                                                        *)
+(*   Copyright 2012 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (** Helpers to produce Parsetree fragments *)
 
@@ -28,6 +31,17 @@ let with_default_loc l f =
   default_loc := l;
   try let r = f () in default_loc := old; r
   with exn -> default_loc := old; raise exn
+
+module Const = struct
+  let integer ?suffix i = Pconst_integer (i, suffix)
+  let int ?suffix i = integer ?suffix (string_of_int i)
+  let int32 ?(suffix='l') i = integer ~suffix (Int32.to_string i)
+  let int64 ?(suffix='L') i = integer ~suffix (Int64.to_string i)
+  let nativeint ?(suffix='n') i = integer ~suffix (Nativeint.to_string i)
+  let float ?suffix f = Pconst_float (f, suffix)
+  let char c = Pconst_char c
+  let string ?quotation_delimiter s = Pconst_string (s, quotation_delimiter)
+end
 
 module Typ = struct
   let mk ?(loc = !default_loc) ?(attrs = []) d =
@@ -108,6 +122,7 @@ module Exp = struct
   let setinstvar ?loc ?attrs a b = mk ?loc ?attrs (Pexp_setinstvar (a, b))
   let override ?loc ?attrs a = mk ?loc ?attrs (Pexp_override a)
   let letmodule ?loc ?attrs a b c= mk ?loc ?attrs (Pexp_letmodule (a, b, c))
+  let letexception ?loc ?attrs a b = mk ?loc ?attrs (Pexp_letexception (a, b))
   let assert_ ?loc ?attrs a = mk ?loc ?attrs (Pexp_assert a)
   let lazy_ ?loc ?attrs a = mk ?loc ?attrs (Pexp_lazy a)
   let poly ?loc ?attrs a b = mk ?loc ?attrs (Pexp_poly (a, b))

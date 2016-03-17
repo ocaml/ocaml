@@ -1,14 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (* Compilation of pattern matching *)
 
@@ -69,7 +72,7 @@ let lshift {left=left ; right=right} = match right with
 | _ ->  assert false
 
 let lforget {left=left ; right=right} = match right with
-| x::xs -> {left=omega::left ; right=xs}
+| _::xs -> {left=omega::left ; right=xs}
 |  _ -> assert false
 
 let rec small_enough n = function
@@ -171,7 +174,7 @@ let ctx_matcher p =
       | Cstr_extension _ ->
           let nargs = List.length omegas in
           (fun q rem -> match q.pat_desc with
-          | Tpat_construct (_, cstr',args)
+          | Tpat_construct (_, _cstr',args)
             when List.length args = nargs ->
                 p,args @ rem
           | Tpat_any -> p,omegas @ rem
@@ -393,7 +396,7 @@ type pm_half_compiled_info =
 
 let pretty_cases cases =
   List.iter
-    (fun ((ps),l) ->
+    (fun (ps,_l) ->
       List.iter
         (fun p ->
           Parmatch.top_pretty Format.str_formatter p ;
@@ -1075,7 +1078,7 @@ and precompile_var  args cls def k = match args with
 | []  -> assert false
 | _::((Lvar v as av,_) as arg)::rargs ->
     begin match cls with
-    | [ps,_] -> (* as splitted as it can *)
+    | [_] -> (* as splitted as it can *)
         dont_precompile_var args cls def k
     | _ ->
 (* Precompile *)
@@ -1110,7 +1113,7 @@ and dont_precompile_var args cls def k =
 
 and is_exc p = match p.pat_desc with
 | Tpat_or (p1,p2,_) -> is_exc p1 || is_exc p2
-| Tpat_alias (p,v,_) -> is_exc p
+| Tpat_alias (p,_,_) -> is_exc p
 | Tpat_construct (_,{cstr_tag=Cstr_extension _},_) -> true
 | _ -> false
 
@@ -1322,7 +1325,7 @@ let matcher_constr cstr = match cstr.cstr_arity with
         | None, None -> raise NoMatch
         | Some r1, None -> r1
         | None, Some r2 -> r2
-        | Some (a1::rem1), Some (a2::_) ->
+        | Some (a1::_), Some (a2::_) ->
             {a1 with
              pat_loc = Location.none ;
              pat_desc = Tpat_or (a1, a2, None)}::
@@ -1344,7 +1347,7 @@ let matcher_constr cstr = match cstr.cstr_arity with
 
 let make_constr_matching p def ctx = function
     [] -> fatal_error "Matching.make_constr_matching"
-  | ((arg, mut) :: argl) ->
+  | ((arg, _mut) :: argl) ->
       let cstr = pat_as_constr p in
       let newargs =
         if cstr.cstr_inlined <> None then
@@ -1384,7 +1387,7 @@ let rec matcher_variant_const lab p rem = match p.pat_desc with
 
 let make_variant_matching_constant p lab def ctx = function
     [] -> fatal_error "Matching.make_variant_matching_constant"
-  | ((arg, mut) :: argl) ->
+  | (_ :: argl) ->
       let def = make_default (matcher_variant_const lab) def
       and ctx = filter_ctx p ctx in
       {pm={ cases = []; args = argl ; default=def} ;
@@ -1400,7 +1403,7 @@ let matcher_variant_nonconst lab p rem = match p.pat_desc with
 
 let make_variant_matching_nonconst p lab def ctx = function
     [] -> fatal_error "Matching.make_variant_matching_nonconst"
-  | ((arg, mut) :: argl) ->
+  | ((arg, _mut) :: argl) ->
       let def = make_default (matcher_variant_nonconst lab) def
       and ctx = filter_ctx p ctx in
       {pm=
@@ -1428,7 +1431,7 @@ let divide_variant row ctx {cases = cl; args = al; default=def} =
               add (make_variant_matching_nonconst p lab def ctx) variants
                 (=) (Cstr_block tag) (pat :: patl, action) al
         end
-    | cl -> []
+    | _ -> []
   in
   divide cl
 
@@ -1521,7 +1524,8 @@ let inline_lazy_force_cond arg loc =
                        ap_loc=loc;
                        ap_func=force_fun;
                        ap_args=[varg];
-                       ap_inlined=Default_inline},
+                       ap_inlined=Default_inline;
+                       ap_specialised=Default_specialise},
                 (* ... arg *)
                   varg))))
 
@@ -1543,7 +1547,8 @@ let inline_lazy_force_switch arg loc =
                            ap_loc=loc;
                            ap_func=force_fun;
                            ap_args=[varg];
-                           ap_inlined=Default_inline}) ];
+                           ap_inlined=Default_inline;
+                           ap_specialised=Default_specialise}) ];
                sw_failaction = Some varg } ))))
 
 let inline_lazy_force arg loc =
@@ -1557,7 +1562,7 @@ let inline_lazy_force arg loc =
 
 let make_lazy_matching def = function
     [] -> fatal_error "Matching.make_lazy_matching"
-  | (arg,mut) :: argl ->
+  | (arg,_mut) :: argl ->
       { cases = [];
         args =
           (inline_lazy_force arg Location.none, Strict) :: argl;
@@ -1586,7 +1591,7 @@ let matcher_tuple arity p rem = match p.pat_desc with
 
 let make_tuple_matching arity def = function
     [] -> fatal_error "Matching.make_tuple_matching"
-  | (arg, mut) :: argl ->
+  | (arg, _mut) :: argl ->
       let rec make_args pos =
         if pos >= arity
         then argl
@@ -1623,7 +1628,7 @@ let matcher_record num_fields p rem = match p.pat_desc with
 
 let make_record_matching all_labels def = function
     [] -> fatal_error "Matching.make_record_matching"
-  | ((arg, mut) :: argl) ->
+  | ((arg, _mut) :: argl) ->
       let rec make_args pos =
         if pos >= Array.length all_labels then argl else begin
           let lbl = all_labels.(pos) in
@@ -1670,7 +1675,7 @@ let matcher_array len p rem = match p.pat_desc with
 
 let make_array_matching kind p def ctx = function
   | [] -> fatal_error "Matching.make_array_matching"
-  | ((arg, mut) :: argl) ->
+  | ((arg, _mut) :: argl) ->
       let len = get_key_array p in
       let rec make_args pos =
         if pos >= len
@@ -2013,7 +2018,7 @@ let get_edges low high l = match l with
 let as_interval_canfail fail low high l =
   let store = StoreExp.mk_store () in
 
-  let do_store tag act =
+  let do_store _tag act =
 
     let i =  store.act_store act in
 (*
@@ -2183,7 +2188,7 @@ let mk_failaction_pos partial seen ctx defs  =
   | _,(pss,idef)::rem ->
       let now, later =
         List.partition
-          (fun (p,p_ctx) -> ctx_match p_ctx pss) to_test in
+          (fun (_p,p_ctx) -> ctx_match p_ctx pss) to_test in
       match now with
       | [] -> scan_def env to_test rem
       | _  -> scan_def ((List.map fst now,idef)::env) later rem in
@@ -2214,7 +2219,7 @@ let mk_failaction_pos partial seen ctx defs  =
   end
 
 let combine_constant arg cst partial ctx def
-    (const_lambda_list, total, pats) =
+    (const_lambda_list, total, _pats) =
   let fail, local_jumps =
     mk_failaction_neg partial ctx def in
   let lambda1 =
@@ -2406,7 +2411,7 @@ let call_switcher_variant_constr fail arg int_lambda_list =
        call_switcher
          fail (Lvar v) min_int max_int int_lambda_list)
 
-let combine_variant row arg partial ctx def (tag_lambda_list, total1, pats) =
+let combine_variant row arg partial ctx def (tag_lambda_list, total1, _pats) =
   let row = Btype.row_repr row in
   let num_constr = ref 0 in
   if row.row_closed then
@@ -2434,7 +2439,7 @@ let combine_variant row arg partial ctx def (tag_lambda_list, total1, pats) =
   | None, Some act -> act
   | _,_ ->
       match (consts, nonconsts) with
-      | ([n, act1], [m, act2]) when fail=None ->
+      | ([_, act1], [_, act2]) when fail=None ->
           test_int_or_block arg act1 act2
       | (_, []) -> (* One can compare integers and pointers *)
           make_test_sequence_variant_constant fail arg consts
@@ -2459,7 +2464,7 @@ let combine_variant row arg partial ctx def (tag_lambda_list, total1, pats) =
 
 
 let combine_array arg kind partial ctx def
-    (len_lambda_list, total1, pats)  =
+    (len_lambda_list, total1, _pats)  =
   let fail, local_jumps = mk_failaction_neg partial  ctx def in
   let lambda1 =
     let newvar = Ident.create "len" in
@@ -2486,7 +2491,7 @@ let rec event_branch repr lam =
   | (Llet(str, id, lam, body), _) ->
       Llet(str, id, lam, event_branch repr body)
   | Lstaticraise _,_ -> lam
-  | (_, Some r) ->
+  | (_, Some _) ->
       Printlambda.lambda Format.str_formatter lam ;
       fatal_error
         ("Matching.event_branch: "^Format.flush_str_formatter ())
@@ -2658,10 +2663,10 @@ let rec comp_match_handlers comp_fun partial ctx arg first_match next_matchs =
 (* To find reasonable names for variables *)
 
 let rec name_pattern default = function
-    (pat :: patl, action) :: rem ->
+    (pat :: _, _) :: rem ->
       begin match pat.pat_desc with
         Tpat_var (id, _) -> id
-      | Tpat_alias(p, id, _) -> id
+      | Tpat_alias(_, id, _) -> id
       | _ -> name_pattern default rem
       end
   | _ -> Ident.create default
@@ -2755,7 +2760,7 @@ and do_compile_matching repr partial ctx arg pmh = match pmh with
       compile_no_test
         (divide_lazy (normalize_pat pat))
         ctx_combine repr partial ctx pm
-  | Tpat_variant(lab, _, row) ->
+  | Tpat_variant(_, _, row) ->
       compile_test (compile_match repr partial) partial
         (divide_variant !row)
         (combine_variant !row arg partial)
@@ -2874,7 +2879,7 @@ let check_total total lambda i handler_fun =
     Lstaticcatch(lambda, (i,[]), handler_fun())
   end
 
-let compile_matching loc repr handler_fun arg pat_act_list partial =
+let compile_matching repr handler_fun arg pat_act_list partial =
   let partial = check_partial pat_act_list partial in
   match partial with
   | Partial ->
@@ -2910,16 +2915,16 @@ let partial_function loc () =
                Const_base(Const_int char)]))])])
 
 let for_function loc repr param pat_act_list partial =
-  compile_matching loc repr (partial_function loc) param pat_act_list partial
+  compile_matching repr (partial_function loc) param pat_act_list partial
 
 (* In the following two cases, exhaustiveness info is not available! *)
 let for_trywith param pat_act_list =
-  compile_matching Location.none None
+  compile_matching None
     (fun () -> Lprim(Praise Raise_reraise, [param]))
     param pat_act_list Partial
 
 let simple_for_let loc param pat body =
-  compile_matching loc None (partial_function loc) param [pat, body] Partial
+  compile_matching None (partial_function loc) param [pat, body] Partial
 
 
 (* Optimize binding of immediate tuples
@@ -2978,7 +2983,8 @@ let rec map_return f = function
   | Lsequence (l1, l2) -> Lsequence (l1, map_return f l2)
   | Levent (l, ev) -> Levent (map_return f l, ev)
   | Ltrywith (l1, id, l2) -> Ltrywith (map_return f l1, id, map_return f l2)
-  | Lstaticcatch (l1, b, l2) -> Lstaticcatch (map_return f l1, b, map_return f l2)
+  | Lstaticcatch (l1, b, l2) ->
+      Lstaticcatch (map_return f l1, b, map_return f l2)
   | Lstaticraise _ | Lprim(Praise _, _) as l -> l
   | l -> f l
 

@@ -1,14 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*                     Pierre Chambart, OCamlPro                       *)
-(*                                                                     *)
-(*  Copyright 2015 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*                      Pierre Chambart, OCamlPro                         *)
+(*                                                                        *)
+(*   Copyright 2015 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 type file = string
 
@@ -40,8 +43,11 @@ type compiler_pass =
   | Linearize of source_provenance
   | Scheduling of source_provenance
   | Emit of source_provenance
+  | Flambda_pass of string * source_provenance
 
-let timings : (compiler_pass, float * float option) Hashtbl.t = Hashtbl.create 20
+let timings : (compiler_pass, float * float option) Hashtbl.t =
+  Hashtbl.create 20
+
 let reset () = Hashtbl.clear timings
 
 let start pass =
@@ -123,6 +129,8 @@ let pass_name = function
   | Linearize k -> Printf.sprintf "linearize(%s)" (kind_name k)
   | Scheduling k -> Printf.sprintf "scheduling(%s)" (kind_name k)
   | Emit k -> Printf.sprintf "emit(%s)" (kind_name k)
+  | Flambda_pass (pass, file) ->
+    Printf.sprintf "flambda(%s)(%s)" pass (kind_name file)
 
 let timings_list () =
   let l = Hashtbl.fold (fun pass times l -> (pass, times) :: l) timings [] in
@@ -138,4 +146,3 @@ let print ppf =
         Format.fprintf ppf "%s: running since %.03fs@." (pass_name pass)
           (current_time -. start))
     (timings_list ())
-

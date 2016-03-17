@@ -1,14 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Luc Maranget, projet Moscova, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 2000 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Luc Maranget, projet Moscova, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 2000 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 
 type 'a shared = Shared of 'a | Single of 'a
@@ -375,8 +378,7 @@ let ok_inter = ref false
 let rec opt_count top cases =
   let key = make_key cases in
   try
-    let r = Hashtbl.find t key in
-    r
+    Hashtbl.find t key
   with
   | Not_found ->
       let r =
@@ -388,13 +390,13 @@ let rec opt_count top cases =
             if lcases < !cut then
               enum top cases
             else if lcases < !more_cut then
-              heuristic top cases
+              heuristic cases
             else
-              divide top cases in
+              divide cases in
       Hashtbl.add t key r ;
       r
 
-and divide top cases =
+and divide cases =
   let lcases = Array.length cases in
   let m = lcases/2 in
   let _,left,right = coupe cases m in
@@ -410,10 +412,10 @@ and divide top cases =
     add_test cm cml ;
   Sep m,(cm, ci)
 
-and heuristic top cases =
+and heuristic cases =
   let lcases = Array.length cases in
 
-  let sep,csep = divide false cases
+  let sep,csep = divide cases
 
   and inter,cinter =
     if !ok_inter then begin
@@ -587,7 +589,7 @@ and enum top cases =
 
       else begin
 
-        let w,c = opt_count false cases in
+        let w,_c = opt_count false cases in
 (*
   Printf.fprintf stderr
   "off=%d tactic=%a for %a\n"
@@ -662,13 +664,13 @@ let switch_min = ref 3
 (* Particular case 0, 1, 2 *)
 let particular_case cases i j =
   j-i = 2 &&
-  (let l1,h1,act1 = cases.(i)
-  and  l2,h2,act2 = cases.(i+1)
+  (let l1,_h1,act1 = cases.(i)
+  and  l2,_h2,_act2 = cases.(i+1)
   and  l3,h3,act3 = cases.(i+2) in
   l1+1=l2 && l2+1=l3 && l3=h3 &&
   act1 <> act3)
 
-let approx_count cases i j n_actions =
+let approx_count cases i j =
   let l = j-i+1 in
   if l < !cut then
      let _,(_,{n=ntests}) = opt_count false (Array.sub cases i l) in
@@ -678,12 +680,12 @@ let approx_count cases i j n_actions =
 
 (* Sends back a boolean that says whether is switch is worth or not *)
 
-let dense {cases=cases ; actions=actions} i j =
+let dense {cases} i j =
   if i=j then true
   else
     let l,_,_ = cases.(i)
     and _,h,_ = cases.(j) in
-    let ntests =  approx_count cases i j (Array.length actions) in
+    let ntests =  approx_count cases i j in
 (*
   (ntests+1) >= theta * (h-l+1)
 *)
@@ -699,8 +701,8 @@ let dense {cases=cases ; actions=actions} i j =
    Software Practice and Exprience Vol. 24(2) 233 (Feb 1994)
 *)
 
-let comp_clusters ({cases=cases ; actions=actions} as s) =
-  let len = Array.length cases in
+let comp_clusters s =
+  let len = Array.length s.cases in
   let min_clusters = Array.make len max_int
   and k = Array.make len 0 in
   let get_min i = if i < 0 then 0 else min_clusters.(i) in
@@ -813,8 +815,7 @@ let do_zyva (low,high) arg cases actions =
 *)
   let n_clusters,k = comp_clusters s in
   let clusters = make_clusters s n_clusters k in
-  let r = c_test {arg=arg ; off=0} clusters in
-  r
+  c_test {arg=arg ; off=0} clusters
 
 let abstract_shared actions =
   let handlers = ref (fun x -> x) in

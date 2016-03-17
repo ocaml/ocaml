@@ -1,14 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (* Toplevel directives *)
 
@@ -50,7 +53,8 @@ let order_of_sections =
 
     section_undocumented;
   ])
-
+(* Do not forget to keep the directives synchronized with the manual in
+   manual/manual/cmds/top.etex *)
 
 (* To quit *)
 
@@ -72,7 +76,8 @@ let dir_directory s =
 let _ = add_directive "directory" (Directive_string dir_directory)
     {
       section = section_run;
-      doc = "Add the given directory to search path for source and compiled files.";
+      doc = "Add the given directory to search path for source and compiled \
+             files.";
     }
 
 (* To remove a directory from the load path *)
@@ -284,7 +289,7 @@ let printer_type ppf typename =
       raise Exit in
   printer_type
 
-let match_simple_printer_type ppf desc printer_type =
+let match_simple_printer_type desc printer_type =
   Ctype.begin_def();
   let ty_arg = Ctype.newvar() in
   Ctype.unify !toplevel_env
@@ -294,7 +299,7 @@ let match_simple_printer_type ppf desc printer_type =
   Ctype.generalize ty_arg;
   (ty_arg, None)
 
-let match_generic_printer_type ppf desc path args printer_type =
+let match_generic_printer_type desc path args printer_type =
   Ctype.begin_def();
   let args = List.map (fun _ -> Ctype.newvar ()) args in
   let ty_target = Ctype.newty (Tconstr (path, args, ref Mnil)) in
@@ -319,15 +324,15 @@ let match_printer_type ppf desc =
   let printer_type_old = printer_type ppf "printer_type_old" in
   Ctype.init_def(Ident.current_time());
   try
-    (match_simple_printer_type ppf desc printer_type_new, false)
+    (match_simple_printer_type desc printer_type_new, false)
   with Ctype.Unify _ ->
     try
-      (match_simple_printer_type ppf desc printer_type_old, true)
+      (match_simple_printer_type desc printer_type_old, true)
     with Ctype.Unify _ as exn ->
       match extract_target_parameters desc.val_type with
       | None -> raise exn
       | Some (path, args) ->
-          (match_generic_printer_type ppf desc path args printer_type_new,
+          (match_generic_printer_type desc path args printer_type_new,
            false)
 
 let find_printer_type ppf lid =
@@ -353,7 +358,7 @@ let dir_install_printer ppf lid =
     | None ->
        let print_function =
          if is_old_style then
-           (fun formatter repr -> Obj.obj v (Obj.obj repr))
+           (fun _formatter repr -> Obj.obj v (Obj.obj repr))
          else
            (fun formatter repr -> Obj.obj v formatter (Obj.obj repr)) in
        install_printer path ty_arg print_function
@@ -362,7 +367,7 @@ let dir_install_printer ppf lid =
          | [] ->
             let print_function =
               if is_old_style then
-                (fun formatter repr -> Obj.obj v (Obj.obj repr))
+                (fun _formatter repr -> Obj.obj v (Obj.obj repr))
               else
                 (fun formatter repr -> Obj.obj v formatter (Obj.obj repr)) in
             Zero print_function
@@ -374,7 +379,7 @@ let dir_install_printer ppf lid =
 
 let dir_remove_printer ppf lid =
   try
-    let (ty_arg, path, is_old_style) = find_printer_type ppf lid in
+    let (_ty_arg, path, _is_old_style) = find_printer_type ppf lid in
     begin try
       remove_printer path
     with Not_found ->
@@ -409,7 +414,7 @@ let dir_trace ppf lid =
     let (path, desc) = Env.lookup_value lid !toplevel_env in
     (* Check if this is a primitive *)
     match desc.val_kind with
-    | Val_prim p ->
+    | Val_prim _ ->
         fprintf ppf "%a is an external function and cannot be traced.@."
         Printtyp.longident lid
     | _ ->
@@ -444,7 +449,7 @@ let dir_trace ppf lid =
 
 let dir_untrace ppf lid =
   try
-    let (path, desc) = Env.lookup_value lid !toplevel_env in
+    let (path, _desc) = Env.lookup_value lid !toplevel_env in
     let rec remove = function
     | [] ->
         fprintf ppf "%a was not traced.@." Printtyp.longident lid;
@@ -525,7 +530,7 @@ let reg_show_prim name to_sig doc =
 let () =
   reg_show_prim "show_val"
     (fun env loc id lid ->
-       let path, desc = Typetexp.find_value env loc lid in
+       let _path, desc = Typetexp.find_value env loc lid in
        [ Sig_value (id, desc) ]
     )
     "Print the signature of the corresponding value."
@@ -533,7 +538,7 @@ let () =
 let () =
   reg_show_prim "show_type"
     (fun env loc id lid ->
-       let path, desc = Typetexp.find_type env loc lid in
+       let _path, desc = Typetexp.find_type env loc lid in
        [ Sig_type (id, desc, Trec_not) ]
     )
     "Print the signature of the corresponding type constructor."
@@ -564,7 +569,7 @@ let () =
 let () =
   reg_show_prim "show_module"
     (fun env loc id lid ->
-       let path, md = Typetexp.find_module env loc lid in
+       let _path, md = Typetexp.find_module env loc lid in
        [ Sig_module (id, {md with md_type = trim_signature md.md_type},
                      Trec_not) ]
     )
@@ -573,7 +578,7 @@ let () =
 let () =
   reg_show_prim "show_module_type"
     (fun env loc id lid ->
-       let path, desc = Typetexp.find_modtype env loc lid in
+       let _path, desc = Typetexp.find_modtype env loc lid in
        [ Sig_modtype (id, desc) ]
     )
     "Print the signature of the corresponding module type."
@@ -581,7 +586,7 @@ let () =
 let () =
   reg_show_prim "show_class"
     (fun env loc id lid ->
-       let path, desc = Typetexp.find_class env loc lid in
+       let _path, desc = Typetexp.find_class env loc lid in
        [ Sig_class (id, desc, Trec_not) ]
     )
     "Print the signature of the corresponding class."
@@ -589,7 +594,7 @@ let () =
 let () =
   reg_show_prim "show_class_type"
     (fun env loc id lid ->
-       let path, desc = Typetexp.find_class_type env loc lid in
+       let _path, desc = Typetexp.find_class_type env loc lid in
        [ Sig_class_type (id, desc, Trec_not) ]
     )
     "Print the signature of the corresponding class type."
@@ -735,9 +740,9 @@ let print_directive ppf (name, directive, doc) =
     | Directive_bool _ -> " <bool>"
     | Directive_ident _ -> " <ident>" in
   match doc with
-  | None -> printf "#%s%s@." name param
+  | None -> fprintf ppf "#%s%s@." name param
   | Some doc ->
-      printf "@[<hov 2>#%s%s@\n%a@]@."
+      fprintf ppf "@[<hov 2>#%s%s@\n%a@]@."
         name param
         Format.pp_print_text doc
 

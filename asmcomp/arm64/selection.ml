@@ -1,16 +1,19 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Gallium, INRIA Rocquencourt         *)
-(*                  Benedikt Meurer, University of Siegen              *)
-(*                                                                     *)
-(*    Copyright 2013 Institut National de Recherche en Informatique    *)
-(*    et en Automatique. Copyright 2012 Benedikt Meurer. All rights    *)
-(*    reserved.  This file is distributed  under the terms of the Q    *)
-(*    Public License version 1.0.                                      *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Gallium, INRIA Rocquencourt           *)
+(*                 Benedikt Meurer, University of Siegen                  *)
+(*                                                                        *)
+(*   Copyright 2013 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*   Copyright 2012 Benedikt Meurer.                                      *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (* Instruction selection for the ARM processor *)
 
@@ -73,10 +76,6 @@ let rec run_automata nbits state input =
 let is_logical_immediate n =
   n <> 0 && n <> -1 && run_automata 64 0 n
 
-let is_intconst = function
-    Cconst_int _ -> true
-  | _ -> false
-
 let inline_ops =
   [ "sqrt"; "caml_bswap16_direct"; "caml_int32_direct_bswap";
     "caml_int64_direct_bswap"; "caml_nativeint_direct_bswap" ]
@@ -123,7 +122,10 @@ method! select_operation op args =
   | Caddi | Caddv | Cadda ->
       begin match args with
       (* Add immediate *)
-      | [arg; Cconst_int n] | [Cconst_int n; arg] when self#is_immediate n ->
+      | [arg; Cconst_int n] when self#is_immediate n ->
+          ((if n >= 0 then Iintop_imm(Iadd, n) else Iintop_imm(Isub, -n)),
+           [arg])
+      | [Cconst_int n; arg] when self#is_immediate n ->
           ((if n >= 0 then Iintop_imm(Iadd, n) else Iintop_imm(Isub, -n)),
            [arg])
       (* Shift-add *)

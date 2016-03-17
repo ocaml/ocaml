@@ -1,14 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (* Description of the Power PC *)
 
@@ -165,7 +168,7 @@ let calling_conventions
 
 let incoming ofs = Incoming ofs
 let outgoing ofs = Outgoing ofs
-let not_supported ofs = fatal_error "Proc.loc_results: cannot call"
+let not_supported _ofs = fatal_error "Proc.loc_results: cannot call"
 
 let single_regs arg = Array.map (fun arg -> [| arg |]) arg
 let ensure_single_regs res =
@@ -174,18 +177,20 @@ let ensure_single_regs res =
       | _ -> failwith "Proc.ensure_single_regs")
     res
 
+let max_arguments_for_tailcalls = 8
+
 let loc_arguments arg =
   let (loc, ofs) =
     calling_conventions 0 7 100 112 outgoing 0 false (single_regs arg)
   in
   (ensure_single_regs loc, ofs)
 let loc_parameters arg =
-  let (loc, ofs) =
+  let (loc, _ofs) =
     calling_conventions 0 7 100 112 incoming 0 false (single_regs arg)
   in
   ensure_single_regs loc
 let loc_results res =
-  let (loc, ofs) =
+  let (loc, _ofs) =
     calling_conventions 0 7 100 112 not_supported 0 false (single_regs res)
   in
   ensure_single_regs loc
@@ -239,12 +244,10 @@ let loc_external_arguments =
       then (loc, ofs)
       else (loc, 0)
 
-let extcall_use_push = false
-
 (* Results are in GPR 3 and FPR 1 *)
 
 let loc_external_results res =
-  let (loc, ofs) =
+  let (loc, _ofs) =
     calling_conventions 0 1 100 100 not_supported 0 false (single_regs res)
   in
   ensure_single_regs loc
@@ -255,7 +258,7 @@ let loc_exn_bucket = phys_reg 0
 
 (* Volatile registers: none *)
 
-let regs_are_volatile rs = false
+let regs_are_volatile _rs = false
 
 (* Registers destroyed by operations *)
 

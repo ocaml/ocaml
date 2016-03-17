@@ -1,14 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Pierre Weis && Damien Doligez, INRIA Rocquencourt        *)
-(*                                                                     *)
-(*  Copyright 1998 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Pierre Weis && Damien Doligez, INRIA Rocquencourt          *)
+(*                                                                        *)
+(*   Copyright 1998 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (* When you change this, you need to update the documentation:
    - man/ocamlc.m   in ocaml
@@ -76,6 +79,7 @@ type t =
   | Unreachable_case                        (* 56 *)
   | Ambiguous_pattern of string list        (* 57 *)
   | No_cmx_file of string                   (* 58 *)
+  | Assignment_to_non_mutable_value         (* 59 *)
 ;;
 
 (* If you remove a warning, leave a hole in the numbering.  NEVER change
@@ -143,10 +147,12 @@ let number = function
   | Unreachable_case -> 56
   | Ambiguous_pattern _ -> 57
   | No_cmx_file _ -> 58
+  | Assignment_to_non_mutable_value -> 59
 ;;
 
-let last_warning_number = 58
+let last_warning_number = 59
 ;;
+
 (* Must be the max number returned by the [number] function. *)
 
 let letter = function
@@ -233,7 +239,7 @@ let parse_opt error active flags s =
     | '+' -> loop_letter_num set (i+1)
     | '-' -> loop_letter_num clear (i+1)
     | '@' -> loop_letter_num set_all (i+1)
-    | c -> error ()
+    | _ -> error ()
   and loop_letter_num myset i =
     if i >= String.length s then error () else
     match s.[i] with
@@ -268,7 +274,14 @@ let () = parse_options true defaults_warn_error;;
 let message = function
   | Comment_start -> "this is the start of a comment."
   | Comment_not_end -> "this is not the end of a comment."
-  | Deprecated s -> "deprecated: " ^ s
+  | Deprecated s ->
+      (* Reduce \r\n to \n:
+           - Prevents any \r characters being printed on Unix when processing
+             Windows sources
+           - Prevents \r\r\n being generated on Windows, which affects the
+             testsuite
+       *)
+       "deprecated: " ^ Misc.normalise_eol s
   | Fragile_match "" ->
       "this pattern-matching is fragile."
   | Fragile_match s ->
@@ -382,7 +395,7 @@ let message = function
       s ^ " belongs to several types: " ^ String.concat " " tl ^
       "\nThe first one was selected. Please disambiguate if this is wrong."
   | Ambiguous_name (_, _, false) -> assert false
-  | Ambiguous_name (slist, tl, true) ->
+  | Ambiguous_name (_slist, tl, true) ->
       "these field labels belong to several types: " ^
       String.concat " " tl ^
       "\nThe first one was selected. Please disambiguate if this is wrong."
@@ -428,9 +441,11 @@ let message = function
   | Misplaced_attribute attr_name ->
       Printf.sprintf "the %S attribute cannot appear in this context" attr_name
   | Duplicated_attribute attr_name ->
-      Printf.sprintf "the %S attribute is used more than once on this expression" attr_name
+      Printf.sprintf "the %S attribute is used more than once on this \
+          expression"
+        attr_name
   | Inlining_impossible reason ->
-      Printf.sprintf "Inlining impossible in this context: %s" reason
+      Printf.sprintf "Cannot inline: %s" reason
   | Ambiguous_pattern vars ->
       let msg =
         let vars = List.sort String.compare vars in
@@ -440,11 +455,17 @@ let message = function
         | _::_ ->
             "variables " ^ String.concat "," vars in
       Printf.sprintf
-        "Ambiguous guarded pattern, %s may match different or-pattern arguments" msg
+        "Ambiguous guarded pattern, %s may match different or-pattern \
+          arguments"
+        msg
   | No_cmx_file name ->
       Printf.sprintf
         "no cmx file was found in path for module %s, \
          and its interface was not compiled with -opaque" name
+  | Assignment_to_non_mutable_value ->
+      "A potential assignment to a non-mutable value was detected \n\
+        in this source file.  Such assignments may generate incorrect code \n\
+        when using Flambda."
 ;;
 
 let nerrors = ref 0;;
@@ -484,7 +505,8 @@ let descriptions =
     7, "Method overridden.";
     8, "Partial match: missing cases in pattern-matching.";
     9, "Missing fields in a record pattern.";
-   10, "Expression on the left-hand side of a sequence that doesn't have type\n\
+   10, "Expression on the left-hand side of a sequence that doesn't have \
+      type\n\
    \    \"unit\" (and that is not a function, see warning number 5).";
    11, "Redundant case in a pattern matching (unused match case).";
    12, "Redundant sub-pattern in a pattern-matching.";
@@ -501,7 +523,8 @@ let descriptions =
    23, "Useless record \"with\" clause.";
    24, "Bad module name: the source file name is not a valid OCaml module \
         name.";
-   (* 25, "Pattern-matching with all clauses guarded.  Exhaustiveness cannot be\n\
+   (* 25, "Pattern-matching with all clauses guarded.  Exhaustiveness cannot \
+      be\n\
    \    checked.";  (* Now part of warning 8 *) *)
    26, "Suspicious unused variable: unused variable that is bound\n\
    \    with \"let\" or \"as\", and doesn't start with an underscore (\"_\")\n\
@@ -541,6 +564,7 @@ let descriptions =
    56, "Unreachable case in a pattern-matching (based on type information).";
    57, "Ambiguous binding by pattern.";
    58, "Missing cmx file";
+   59, "Assignment to non-mutable value";
   ]
 ;;
 

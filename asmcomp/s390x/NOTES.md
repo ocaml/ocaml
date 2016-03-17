@@ -6,7 +6,7 @@ running Linux (Debian architecture: `s390x`).
 # Reference documents
 
 * Instruction set architecture:
-   _z/Architecture Principles of Operation_, 
+   _z/Architecture Principles of Operation_,
    SA22-7832-07, eight edition (Feb 2009).
    This is the version that corresponds to z10.
    Newer versions of this manual include additional instructions
@@ -14,6 +14,3 @@ running Linux (Debian architecture: `s390x`).
 * ELF ABI:
    _zSeries ELF Application Binary Interface Supplement_
    (http://refspecs.linuxfoundation.org/ELF/zSeries/index.html)
-
-
-
