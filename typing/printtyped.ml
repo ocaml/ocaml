@@ -121,6 +121,16 @@ let list i f ppf l =
      line i ppf "]\n";
 ;;
 
+let array i f ppf a =
+  if Array.length a = 0 then
+    line i ppf "[]\n"
+  else begin
+    line i ppf "[\n";
+    Array.iter (f (i+1) ppf) a;
+    line i ppf "]\n"
+  end
+;;
+
 let option i f ppf x =
   match x with
   | None -> line i ppf "None\n";
@@ -313,9 +323,9 @@ and expression i ppf x =
   | Texp_variant (l, eo) ->
       line i ppf "Texp_variant \"%s\"\n" l;
       option i expression ppf eo;
-  | Texp_record (l, eo) ->
+  | Texp_record (l, _, _, eo) ->
       line i ppf "Texp_record\n";
-      list i longident_x_expression ppf l;
+      array i record_field ppf l;
       option i expression ppf eo;
   | Texp_field (e, li, _) ->
       line i ppf "Texp_field\n";
@@ -827,9 +837,12 @@ and string_x_expression i ppf (s, _, e) =
   line i ppf "<override> \"%a\"\n" fmt_path s;
   expression (i+1) ppf e;
 
-and longident_x_expression i ppf (li, _, e) =
-  line i ppf "%a\n" fmt_longident li;
-  expression (i+1) ppf e;
+and record_field i ppf = function
+  | Overridden (li, e) ->
+      line i ppf "%a\n" fmt_longident li;
+      expression (i+1) ppf e;
+  | Kept _ ->
+      line i ppf "<kept>"
 
 and label_x_expression i ppf (l, e) =
   line i ppf "<arg>\n";

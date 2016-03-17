@@ -86,8 +86,8 @@ and expression_desc =
       Longident.t loc * constructor_description * expression list
   | Texp_variant of label * expression option
   | Texp_record of
-      (Longident.t loc * label_description * expression) list *
-        expression option
+      record_label_definition array * Types.label_description array *
+      Types.record_representation * expression option
   | Texp_field of expression * Longident.t loc * label_description
   | Texp_setfield of
       expression * Longident.t loc * label_description * expression
@@ -122,6 +122,10 @@ and case =
      c_guard: expression option;
      c_rhs: expression;
     }
+
+and record_label_definition =
+  | Kept of Types.type_expr
+  | Overridden of Longident.t loc * expression
 
 (* Value expressions for the class language *)
 

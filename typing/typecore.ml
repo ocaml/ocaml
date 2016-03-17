@@ -1573,10 +1573,14 @@ let rec is_nonexpansive exp =
   | Texp_construct( _, _, el) ->
       List.for_all is_nonexpansive el
   | Texp_variant(_, arg) -> is_nonexpansive_opt arg
-  | Texp_record(lbl_exp_list, opt_init_exp) ->
-      List.for_all
-        (fun (_, lbl, exp) -> lbl.lbl_mut = Immutable && is_nonexpansive exp)
-        lbl_exp_list
+  | Texp_record (lbl_definitions, lbl_descriptions, _, opt_init_exp) ->
+      Misc.array_for_all2
+        (fun definition lbl ->
+           match definition with
+           | Overridden (_, exp) ->
+               lbl.lbl_mut = Immutable && is_nonexpansive exp
+           | Kept _ -> true)
+        lbl_definitions lbl_descriptions
       && is_nonexpansive_opt opt_init_exp
   | Texp_field(exp, _, _) -> is_nonexpansive exp
   | Texp_array [] -> true
@@ -2278,26 +2282,43 @@ and type_expect_ ?in_function ?(recarg=Rejected) env sexp ty_expected =
         | [] -> ()
       in
       check_duplicates lbl_exp_list;
-      let opt_exp =
-        match opt_exp, lbl_exp_list with
-          None, _ -> None
-        | Some exp, (_lid, lbl, _lbl_exp) :: _ ->
+      let opt_exp, label_definitions =
+        let (_lid, lbl, _lbl_exp) = List.hd lbl_exp_list in
+        match opt_exp with
+          None ->
+            let label_definitions =
+              Array.map (fun lbl ->
+                  let (lid, _lbl, lbl_exp) =
+                    List.find
+                      (fun (_, lbl',_) -> lbl'.lbl_pos = lbl.lbl_pos)
+                      lbl_exp_list
+                  in
+                  Overridden (lid, lbl_exp))
+                lbl.lbl_all
+            in
+            None, label_definitions
+        | Some exp ->
             let ty_exp = instance env exp.exp_type in
             let unify_kept lbl =
-              (* do not connect overridden labels *)
-              if List.for_all
-                  (fun (_, lbl',_) -> lbl'.lbl_pos <> lbl.lbl_pos)
+              match
+                List.find
+                  (fun (_, lbl',_) -> lbl'.lbl_pos = lbl.lbl_pos)
                   lbl_exp_list
-              then begin
-                let _, ty_arg1, ty_res1 = instance_label false lbl
-                and _, ty_arg2, ty_res2 = instance_label false lbl in
-                unify env ty_arg1 ty_arg2;
-                unify env (instance env ty_expected) ty_res2;
-                unify_exp_types exp.exp_loc env ty_exp ty_res1;
-              end in
-            Array.iter unify_kept lbl.lbl_all;
-            Some {exp with exp_type = ty_exp}
-        | _ -> assert false
+              with
+              | lid, _lbl, lbl_exp ->
+                  Overridden (lid, lbl_exp)
+              | exception Not_found -> begin
+                (* do not connect overridden labels *)
+                  let _, ty_arg1, ty_res1 = instance_label false lbl
+                  and _, ty_arg2, ty_res2 = instance_label false lbl in
+                  unify env ty_arg1 ty_arg2;
+                  unify env (instance env ty_expected) ty_res2;
+                  unify_exp_types exp.exp_loc env ty_exp ty_res1;
+                  Kept ty_arg1
+                end
+            in
+            let label_definitions = Array.map unify_kept lbl.lbl_all in
+            Some {exp with exp_type = ty_exp}, label_definitions
       in
       let num_fields =
         match lbl_exp_list with [] -> assert false
@@ -2317,8 +2338,13 @@ and type_expect_ ?in_function ?(recarg=Rejected) env sexp ty_expected =
       end
       else if opt_sexp <> None && List.length lid_sexp_list = num_fields then
         Location.prerr_warning loc Warnings.Useless_record_with;
+      let label_descriptions, record_representation =
+        let (_, { lbl_all; lbl_repres }, _) = List.hd lbl_exp_list in
+        lbl_all, lbl_repres
+      in
       re {
-        exp_desc = Texp_record(lbl_exp_list, opt_exp);
+        exp_desc = Texp_record(label_definitions, label_descriptions,
+                               record_representation, opt_exp);
         exp_loc = loc; exp_extra = [];
         exp_type = instance env ty_expected;
         exp_attributes = sexp.pexp_attributes;

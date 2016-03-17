@@ -306,16 +306,19 @@ module MakeMap(Map : MapArgument) = struct
             | Some exp -> Some (map_expression exp)
           in
           Texp_variant (label, expo)
-        | Texp_record (list, expo) ->
-          let list =
-            List.map (fun (lid, lab_desc, exp) ->
-              (lid, lab_desc, map_expression exp)
-            ) list in
+        | Texp_record (fields, labels, repr, expo) ->
+          let fields =
+            Array.map (function
+                | Kept t -> Kept t
+                | Overridden (lid, exp) ->
+                    Overridden (lid, map_expression exp))
+              fields
+          in
           let expo = match expo with
               None -> expo
             | Some exp -> Some (map_expression exp)
           in
-          Texp_record (list, expo)
+          Texp_record (fields, labels, repr, expo)
         | Texp_field (exp, lid, label) ->
           Texp_field (map_expression exp, lid, label)
         | Texp_setfield (exp1, lid, label, exp2) ->

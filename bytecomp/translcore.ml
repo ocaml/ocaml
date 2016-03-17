@@ -864,12 +864,10 @@ and transl_exp0 e =
             Lprim(Pmakeblock(0, Immutable, None),
                   [Lconst(Const_base(Const_int tag)); lam], e.exp_loc)
       end
-  | Texp_record ((_, lbl1, _) :: _ as lbl_expr_list, opt_init_expr) ->
+  | Texp_record (label_definitions, label_descriptions, repr, opt_init_expr) ->
       transl_record e.exp_loc e.exp_env
-        lbl1.lbl_all lbl1.lbl_repres lbl_expr_list
+        label_descriptions repr label_definitions
         opt_init_expr
-  | Texp_record ([], _) ->
-      fatal_error "Translcore.transl_exp: bad Texp_record"
   | Texp_field(arg, _, lbl) ->
       let access =
         match lbl.lbl_repres with
@@ -1262,8 +1260,16 @@ and transl_setinstvar loc self var expr =
   in
   Lprim(Parraysetu prim, [self; transl_normal_path var; transl_exp expr], loc)
 
-and transl_record loc env all_labels repres lbl_expr_list opt_init_expr =
+and transl_record loc env all_labels repres lbl_definitions opt_init_expr =
   let size = Array.length all_labels in
+  let _, lbl_expr_list =
+    Array.fold_left (fun (i, l) -> function
+        | Kept _ ->
+            succ i, l
+        | Overridden (lid, exp) ->
+            succ i, (lid, all_labels.(i), exp) :: l)
+      (0, []) lbl_definitions
+  in
   (* Determine if there are "enough" fields (only relevant if this is a
      functional-style record update *)
   let no_init = match opt_init_expr with None -> true | _ -> false in

@@ -295,8 +295,11 @@ module MakeIterator(Iter : IteratorArgument) : sig
                 None -> ()
               | Some exp -> iter_expression exp
             end
-        | Texp_record (list, expo) ->
-            List.iter (fun (_, _, exp) -> iter_expression exp) list;
+        | Texp_record (fields, _, _, expo) ->
+            Array.iter (function
+                | Kept _ -> ()
+                | Overridden (_, exp) -> iter_expression exp)
+              fields;
             begin match expo with
                 None -> ()
               | Some exp -> iter_expression exp

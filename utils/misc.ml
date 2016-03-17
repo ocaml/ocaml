@@ -73,6 +73,15 @@ let rec split_last = function
       let (lst, last) = split_last tl in
       (hd :: lst, last)
 
+let array_for_all2 p a1 a2 =
+  if Array.length a1 <> Array.length a2 then
+    invalid_arg "Misc.array_for_all2";
+  let rec loop i =
+    if i = Array.length a1 then true
+    else if p a1.(i) a2.(i) then loop (succ i)
+    else false in
+  loop 0
+
 module Stdlib = struct
   module List = struct
     type 'a t = 'a list
