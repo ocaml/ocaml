@@ -289,6 +289,9 @@ Runtime system:
   now support marshaled data bigger than 4 Gb.
   (Xavier Leroy)
 
+* GPR#22: The undocumented layout of weak arrays has been changed. Finalisation
+  functions are now run before the erasure of the corresponding values.
+
 * GPR#226: select higher levels of optimization for GCC >= 3.4 and Clang
   when compiling the run-time system and C stub code.
   "-std=gnu99 -O2 -fno-strict-aliasing -fwrapv" is used by default.
