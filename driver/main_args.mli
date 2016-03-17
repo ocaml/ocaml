@@ -33,6 +33,7 @@ module type Common_options = sig
   val _short_paths : unit -> unit
   val _strict_sequence : unit -> unit
   val _strict_formats : unit -> unit
+  val _no_strict_formats : unit -> unit
   val _unsafe : unit -> unit
   val _unsafe_string : unit -> unit
   val _version : unit -> unit

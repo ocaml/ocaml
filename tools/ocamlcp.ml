@@ -91,6 +91,7 @@ module Options = Main_args.Make_bytecomp_options (struct
   let _short_paths = option "-short-paths"
   let _strict_sequence = option "-strict-sequence"
   let _strict_formats = option "-strict-formats"
+  let _no_strict_formats = option "-no-strict-formats"
   let _thread () = option "-thread" ()
   let _vmthread () = option "-vmthread" ()
   let _unsafe = option "-unsafe"

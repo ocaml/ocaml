@@ -87,6 +87,7 @@ module Options = Main_args.Make_bytetop_options (struct
   let _stdin () = file_argument ""
   let _strict_sequence = set strict_sequence
   let _strict_formats = set strict_formats
+  let _no_strict_formats () = strict_formats := false
   let _unsafe = set fast
   let _unsafe_string = set unsafe_string
   let _version () = print_version ()
