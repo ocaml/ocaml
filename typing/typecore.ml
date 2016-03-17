@@ -2293,8 +2293,21 @@ and type_expect_ ?in_function ?(recarg=Rejected) env sexp ty_expected =
           None ->
             let label_definitions =
               Array.map (fun lbl ->
-                  let (lid, _lbl, lbl_exp) = matching_label lbl in
-                  Overridden (lid, lbl_exp))
+                  match matching_label lbl with
+                  | (lid, _lbl, lbl_exp) ->
+                      Overridden (lid, lbl_exp)
+                  | exception Not_found ->
+                      let present_indices =
+                        List.map (fun (_, lbl, _) -> lbl.lbl_pos) lbl_exp_list in
+                      let label_names = extract_label_names env ty_expected in
+                      let rec missing_labels n = function
+                          [] -> []
+                        | lbl :: rem ->
+                            if List.mem n present_indices then missing_labels (n + 1) rem
+                            else lbl :: missing_labels (n + 1) rem
+                      in
+                      let missing = missing_labels 0 label_names in
+                      raise(Error(loc, env, Label_missing missing)))
                 lbl.lbl_all
             in
             None, label_definitions
@@ -2320,20 +2333,7 @@ and type_expect_ ?in_function ?(recarg=Rejected) env sexp ty_expected =
       let num_fields =
         match lbl_exp_list with [] -> assert false
         | (_, lbl,_)::_ -> Array.length lbl.lbl_all in
-      if opt_sexp = None && List.length lid_sexp_list <> num_fields then begin
-        let present_indices =
-          List.map (fun (_, lbl, _) -> lbl.lbl_pos) lbl_exp_list in
-        let label_names = extract_label_names env ty_expected in
-        let rec missing_labels n = function
-            [] -> []
-          | lbl :: rem ->
-              if List.mem n present_indices then missing_labels (n + 1) rem
-              else lbl :: missing_labels (n + 1) rem
-        in
-        let missing = missing_labels 0 label_names in
-        raise(Error(loc, env, Label_missing missing))
-      end
-      else if opt_sexp <> None && List.length lid_sexp_list = num_fields then
+      if opt_sexp <> None && List.length lid_sexp_list = num_fields then
         Location.prerr_warning loc Warnings.Useless_record_with;
       let label_descriptions, record_representation =
         let (_, { lbl_all; lbl_repres }, _) = List.hd lbl_exp_list in
